@@ -1,0 +1,960 @@
+amber       
+# AMBER force field 89 Rev A: 
+# All-Atom and united atom Force Field with TIP3P Water, New LP params, cations
+# in DL_POLY utility format
+BLOCK =  atom names and masses (amu)
+75     records
+BR    79.90  
+C     12.01
+CA    12.01
+CB    12.01
+CC    12.01             
+CD    13.02             
+CE    13.02
+CF    13.02
+CG    13.02
+CH    13.02
+CI    13.02
+CJ    13.02
+CK    12.01
+CM    12.01
+CN    12.01
+CP    13.02
+CQ    12.01             
+CR    12.01
+CT    12.01
+CV    12.01
+CW    12.01
+CX    14.03
+CY    13.02             
+CZ    14.03
+C2    14.03
+C3    15.03
+C*    12.01
+CL    35.45
+C0    40.08               c0 is calcium
+F     19.00
+H     1.008
+HC    1.008
+HO    1.008
+HS    1.008
+HW    1.008
+H2    1.008
+H3    1.008
+H4    1.008
+I     126.9
+IM    35.45                 ASSUMED TO BE CL-
+IP    22.99                 ASSUMED TO BE NA+
+M1    999.                  UNDEFINED
+M2    999.                  UNDEFINED
+MG    24.305                magnesium
+N     14.01
+NA    14.01
+NB    14.01
+NZ    14.01
+NP    14.01
+NO    14.01
+NC    14.01
+NT    14.01
+N2    14.01
+N3    14.01
+N*    14.01
+O     16.00
+W     16.00
+OW    16.
+OH    16.00
+OM    16.00
+OS    16.00
+O2    16.00
+P     30.97
+QC    132.9               qc is cesium
+QK    39.10               qk is potassium
+QL     6.94               ql is lithium
+QN    22.99               qn is  sodium
+QR    85.47               qr is rubidium
+S     32.06
+SH    32.06
+SF    32.06
+S*    32.06
+CU    63.55
+FE    55.0
+LP     3.0    
+#
+#  B O N D     P A R A M E T E R S
+#
+BLOCK = Harmonic stretch 
+136     records
+2.0     prefactor
+harm    type
+C   C2     317.       1.522  
+C   C3     317.       1.522  
+C   CA     469.       1.40   
+C   CB     447.       1.419  
+C   CD     469.       1.40   
+C   CH     317.       1.522  
+C   CJ     410.       1.444  
+C   CM     410.       1.444  
+C   CT     317.       1.522
+C   N      490.       1.335  
+C   N*     424.       1.383  
+C   NA     418.       1.388  
+C   NC     457.       1.358  
+C   O      570.       1.229  
+C   O2     656.       1.25   
+C   OH     450.       1.364  
+C*  C2     317.       1.495  
+C*  CB     388.       1.459  
+C*  CG     546.       1.352  
+C*  CT     317.       1.495  
+C*  CW     546.       1.352  
+C*  HC     340.       1.08
+C2  C2     260.       1.526  
+C2  C3     260.       1.526  
+C2  CA     317.       1.51   
+C2  CC     317.       1.504  
+C2  CH     260.       1.526  
+C2  N      337.       1.449  
+C2  N2     337.       1.463  
+C2  N3     367.       1.471  
+C2  NT     367.       1.471  
+C2  OH     386.       1.425  
+C2  OS     320.       1.425  
+C2  S      222.       1.81   
+C2  SH     222.       1.81   
+C3  CH     260.       1.526  
+C3  CM     317.       1.51   
+C3  N      337.       1.449  
+C3  N*     337.       1.475  
+C3  N2     337.       1.463  
+C3  N3     367.       1.471
+C3  OH     386.       1.425  
+C3  OS     320.       1.425  
+C3  S      222.       1.81   
+C3  SH     222.       1.81   
+CA  CA     469.       1.40   
+CA  CB     469.       1.404  
+CA  CD     469.       1.40   
+CA  CJ     427.       1.433  
+CA  CM     427.       1.433
+CA  CN     469.       1.40   
+CA  CT     317.       1.51   
+CA  HC     340.       1.08
+CA  N2     481.       1.340  
+CA  NA     427.       1.381  
+CA  NC     483.       1.339  
+CA  OH     450.       1.364  
+CB  CB     520.       1.370  
+CB  CD     469.       1.40   
+CB  CN     447.       1.419  
+CB  N*     436.       1.374  
+CB  NB     414.       1.391  
+CB  NC     461.       1.354  
+CC  CF     512.       1.375  
+CC  CG     518.       1.371  
+CC  CT     317.       1.504  
+CC  CV     512.       1.375  
+CC  CW     518.       1.371  
+CC  NA     422.       1.385  
+CC  NB     410.       1.394  
+CD  CD     469.       1.40   
+CD  CN     469.       1.40   
+CE  N*     440.       1.371  
+CE  NB     529.       1.304  
+CF  NB     410.       1.394  
+CG  NA     427.       1.381  
+CH  CH     260.       1.526  
+CH  N      337.       1.449  
+CH  N*     337.       1.475  
+CH  N3     367.       1.471  
+CH  NT     367.       1.471  
+CH  OH     386.       1.425  
+CH  OS     320.       1.425  
+CI  NC     502.       1.324  
+CJ  CJ     549.       1.350  
+CJ  CM     549.       1.350  
+CJ  N*     448.       1.365  
+CK  HC     340.       1.08
+CK  N*     440.       1.371
+CK  NB     529.       1.304
+CM  CM     549.       1.350
+CM  CT     317.       1.51
+CM  HC     340.       1.08
+CM  N*     448.       1.365
+CN  NA     428.       1.38   
+CP  NA     477.       1.343  
+CP  NB     488.       1.335  
+CQ  HC     340.       1.08
+CQ  NC     502.       1.324
+CR  HC     340.       1.08
+CR  NA     477.       1.343  
+CR  NB     488.       1.335  
+CT  CT     310.       1.526
+CT  HC     331.       1.09
+CT  N      337.       1.449
+CT  N*     337.       1.475
+CT  N2     337.       1.463  
+CT  N3     367.       1.471  
+CT  OH     320.       1.41
+CT  OS     320.       1.41
+CT  S      222.       1.81   
+CT  SH     222.       1.81   
+CV  HC     340.       1.08
+CV  NB     410.       1.394  
+CW  HC     340.       1.08
+CW  NA     427.       1.381  
+H   N      434.       1.01   
+H   N2     434.       1.01   
+H   NA     434.       1.01   
+H2  N      434.       1.01   
+H2  N2     434.       1.01   
+H2  NT     434.       1.01   
+H3  N2     434.       1.01   
+H3  N3     434.       1.01   
+HO  OH     553.       0.96   
+HO  OS     553.       0.96   
+HS  SH     274.       1.336  
+HW  HW     553.       1.5136
+LP  S      600.       0.679
+LP  SH     600.       0.679
+O2  P      525.       1.48   
+OH  P      230.       1.61   
+OS  C      320.       1.338  
+OS  P      230.       1.61   
+OW  HW     553.       0.9572
+S   S      166.       2.038  
+#--4---4----------12----------12
+#   A N G L E    B E N D
+#
+#--4---4---4----------12----------12
+BLOCK = angle_bend
+362      records
+2.0      prefactor
+harm     type
+C   C2  C2    63.0        112.4 
+C   C2  CH    63.0        112.4 
+C   C2  N     80.0        110.3 
+C   C2  NT    80.0        111.2 
+C   CA  CA    85.         120.  
+C   CA  HC     35.        120.0
+C   CB  CB    85.         119.2 
+C   CB  NB    70.         130.  
+C   CD  CD    85.         120.  
+C   CH  C2    63.0        111.1 
+C   CH  C3    63.0        111.1 
+C   CH  CH    63.0        111.1 
+C   CH  N     63.0        110.1 
+C   CH  N3    80.0        109.7 
+C   CH  NT    80.0        109.7 
+C   CJ  CJ    85.         120.7 
+C   CM  C3    85.         119.7 
+C   CM  CJ    85.         120.7 
+C   CM  CM    85.         120.7
+C   CM  CT     70.        119.7
+C   CM  HC     35.        119.7
+C   CT  CT    63.0        111.1 
+C   CT  HC     35.        109.5
+C   CT  N     63.0        110.1 
+C   CT  N3    80.0        111.2 
+C   N   C2    50.         121.9 
+C   N   C3    50.         121.9 
+C   N   CH    50.         121.9 
+C   N   CT    50.         121.9
+C   N   H     35.         119.8 
+C   N   H2    35.         120.  
+C   N*  CH    70.         117.6 
+C   N*  CJ    70.         121.6 
+C   N*  CM    70.         121.6
+C   N*  CT     70.        117.6
+C   N*  H     35.         119.2
+C   NA  C     70.         126.4 
+C   NA  CA    70.         125.2 
+C   NA  H     35.         116.8 
+C   NC  C     50.         121.9
+C   NC  CA    70.         120.5 
+C   OH  HO     35.        113.0  
+C   OS  CT    100.        116.4
+C*  C2  CH    63.0        115.6 
+C*  CB  CA    85.         134.9 
+C*  CB  CD    85.         134.9 
+C*  CB  CN    85.         108.8 
+C*  CG  NA    70.         108.7 
+C*  CT  CT    63.0        115.6 
+C*  CT  HC     35.        109.5
+C*  CW  HC     35.        120.0
+C*  CW  NA    70.         108.7 
+C2  C   N     70.         116.6 
+C2  C   O     80.         120.4 
+C2  C   O2    70.         117.  
+C2  C*  CB    70.         128.6 
+C2  C*  CG    70.         125.  
+C2  C*  CW    70.         125.  
+C2  C2  C2    63.0        112.4 
+C2  C2  CH    63.0        112.4 
+C2  C2  N     80.0        111.2 
+C2  C2  N2    80.0        111.2 
+C2  C2  N3    80.0        111.2 
+C2  C2  NT    80.0        111.2 
+C2  C2  OS    80.0        109.5 
+C2  C2  S     50.         114.7 
+C2  CA  CA    70.         120.  
+C2  CA  CD    70.         120.  
+C2  CC  CF    70.         131.9 
+C2  CC  CG    70.         129.05
+C2  CC  CV    70.         131.9 
+C2  CC  CW    70.         129.05
+C2  CC  NA    70.         122.2 
+C2  CC  NB    70.         121.05
+C2  CH  C3    63.0        111.5 
+C2  CH  CH    63.0        111.5 
+C2  CH  N     80.0        109.7 
+C2  CH  N*    80.0        109.5 
+C2  CH  NT    80.0        109.7 
+C2  CH  OH    80.0        109.5 
+C2  CH  OS    80.0        109.5 
+C2  N   CH    50.         118.  
+C2  N   H     38.         118.4 
+C2  N2  CA    50.         123.2 
+C2  N2  H2    35.         118.4 
+C2  N2  H3    35.         118.4 
+C2  N3  H3    35.         109.5  
+C2  NT  H2    35.         109.5  
+C2  OH  HO    55.0        108.5  
+C2  OS  C2    100.0       111.8  
+C2  OS  C3    100.0       111.8  
+C2  OS  HO    55.0        108.5  
+C2  OS  P     100.0       120.5  
+C2  S   C3    62.         98.9   
+C2  S   LP    150.         96.7
+C2  S   S     68.         103.7  
+C2  SH  HS    44.         96.0   
+C2  SH  LP    150.         96.7
+C3  C   N     70.         116.6 
+C3  C   O     80.         120.4 
+C3  C   O2    70.         117.  
+C3  C2  CH    63.0        112.4 
+C3  C2  OS    80.0        109.5 
+C3  CH  C3    63.0        111.5 
+C3  CH  CH    63.0        111.5 
+C3  CH  N     80.         109.5 
+C3  CH  NT    80.0        109.7 
+C3  CH  OH    80.0        109.5 
+C3  CM  CJ    85.         119.7 
+C3  N   H     38.         118.4 
+C3  N*  CB    70.         125.8 
+C3  N*  CE    70.         128.8 
+C3  N*  CK    70.         128.8
+C3  N2  CA    50.         123.2 
+C3  N2  H2    35.         118.4 
+C3  N3  H3    35.         109.5
+C3  OH  HO    55.0        108.5  
+C3  OS  P     100.0       120.5  
+C3  S   LP    150.         96.7
+C3  S   S     68.         103.7  
+C3  SH  HS    44.         96.0   
+C3  SH  LP    150.         96.7
+CA  C   CA    85.         120.  
+CA  C   OH    70.         120.  
+CA  C2  CH    63.         114.  
+CA  CA  CA    85.         120.  
+CA  CA  CB    85.         120.  
+CA  CA  CN    85.         120.  
+CA  CA  CT    70.         120.  
+CA  CA  HC     35.        120.0
+CA  CB  CB    85.         117.3 
+CA  CB  CN    85.         116.2 
+CA  CB  NB    70.         132.4 
+CA  CD  CD    85.         120.  
+CA  CJ  CJ    85.         117.0 
+CA  CM  CM    85.         117.0
+CA  CM  HC     35.        123.3
+CA  CN  CB    85.         122.7 
+CA  CN  NA    70.         132.8 
+CA  CT  CT    63.         114.  
+CA  CT  HC     35.        109.5
+CA  N2  CT    50.         123.2 
+CA  N2  H     35.         120.  
+CA  N2  H2    35.         120.  
+CA  N2  H3    35.         120.  
+CA  NA  H     35.         118.0 
+CA  NC  CB    70.         112.2 
+CA  NC  CI    70.         118.6 
+CA  NC  CQ    70.         118.6
+CB  C   NA    70.         111.3 
+CB  C   O     80.         128.8 
+CB  C*  CG    85.         106.4 
+CB  C*  CT    70.         128.6 
+CB  C*  CW    85.         106.4 
+CB  CA  HC     35.        120.0
+CB  CA  N2    70.         123.5 
+CB  CA  NC    70.         117.3 
+CB  CB  N*    70.         106.2 
+CB  CB  NB    70.         110.4 
+CB  CB  NC    70.         127.7 
+CB  CD  CD    85.         120.  
+CB  CN  CD    85.         122.7 
+CB  CN  NA    70.         104.4
+CB  N*  CE    70.         105.4 
+CB  N*  CH    70.         125.8 
+CB  N*  CK    70.         105.4
+CB  N*  CT     70.        125.8
+CB  N*  H     35.         127.3
+CB  NB  CE    70.         103.8 
+CB  NB  CK    70.         103.8
+CB  NC  CI    70.         111.0 
+CB  NC  CQ    70.         111.0
+CC  C2  CH    63.0        113.1 
+CC  CF  NB    70.         109.9 
+CC  CG  NA    70.         105.9 
+CC  CT  CT    63.0        113.1 
+CC  CT  HC     35.        109.5
+CC  CV  HC     35.        120.0
+CC  CV  NB    70.         120.00
+CC  CW  HC     35.        120.0
+CC  CW  NA    70.         120.00
+CC  NA  CP    70.         107.30
+CC  NA  CR    70.         120.00
+CC  NA  H     35.         120.00
+CC  NB  CP    70.         105.3 
+CC  NB  CR    70.         117.0 
+CD  C   CD    85.         120.  
+CD  C   OH    70.         120.  
+CD  CA  CD    85.         120.  
+CD  CB  CN    85.         116.2 
+CD  CD  CD    85.         120.  
+CD  CD  CN    85.         120.  
+CD  CN  NA    70.         132.8 
+CE  N*  CH    70.         128.8 
+CE  N*  CT     70.        128.8
+CE  N*  H     35.         127.3
+CF  CC  NA    70.         105.9 
+CF  NB  CP    70.         105.3 
+CF  NB  CR    70.         105.3 
+CG  CC  NA    70.         108.75
+CG  CC  NB    70.         109.9 
+CG  NA  CN    70.         111.6 
+CG  NA  CP    70.         107.3 
+CG  NA  CR    70.         107.3 
+CG  NA  H     35.         126.35
+CH  C   N     70.         116.6 
+CH  C   O     80.         120.4 
+CH  C   O2    65.         117.  
+CH  C   OH    70.         115.  
+CH  C2  CH    63.0        112.4 
+CH  C2  OH    80.0        109.5 
+CH  C2  OS    80.0        109.5 
+CH  C2  S     50.         114.7 
+CH  C2  SH    50.0        108.6 
+CH  CH  CH    63.0        111.5 
+CH  CH  N     80.0        109.7 
+CH  CH  N*    80.0        109.5 
+CH  CH  N3    80.0        109.7 
+CH  CH  NT    80.0        109.7 
+CH  CH  OH    80.0        109.5 
+CH  CH  OS    80.0        109.5 
+CH  N   H     38.         118.4 
+CH  N*  CJ    70.         121.2 
+CH  N*  CK    70.         128.8
+CH  N3  H3    35.         109.5  
+CH  NT  H2    35.         109.5  
+CH  OH  HO    55.0        108.5  
+CH  OS  CH    100.0       111.8  
+CH  OS  HO    55.0        108.5  
+CH  OS  P     100.0       120.5  
+CJ  C   NA    70.         114.1 
+CJ  C   O     80.         125.3 
+CJ  CA  N2    70.         120.1 
+CJ  CA  NC    70.         121.5 
+CJ  CJ  N*    70.         121.2 
+CJ  CM  CT     85.        119.7
+CJ  N*  CT     70.        121.2
+CJ  N*  H     35.         119.2
+CK  N*  CT     70.        128.8
+CM  C   NA    70.         114.1 
+CM  C   NC    70.         116.6
+CM  C   O     80.         125.3 
+CM  C   OS    70.         117.
+CM  CA  N2    70.         120.1
+CM  CA  NC    70.         121.5
+CM  CA  NA    70.         121.5
+CM  CJ  N*    70.         121.2 
+CM  CM  CT     70.        119.7
+CM  CM  HC     35.        119.7
+CM  CM  N*    70.         121.2
+CM  CT  HC     35.        109.5
+CM  N*  CT     70.        121.2
+CM  N*  H     35.         119.2
+CN  CA  HC     35.        120.0
+CN  NA  CW    70.         111.6 
+CN  NA  H     35.         123.1 
+CP  NA  H     35.         126.35
+CR  NA  CW    70.         120.00
+CR  NA  H     35.         120.00
+CR  NB  CV    70.         117.0 
+CT  C   N     70.         116.6
+CT  C   O     80.         120.4
+CT  C   O2    70.         117.  
+CT  C   OS    70.         117.  
+CT  C*  CW    70.         125.  
+CT  CC  CV    70.         120.00
+CT  CC  CW    70.         120.00
+CT  CC  NA    70.         120.00
+CT  CC  NB    70.         120.00
+CT  CT  CT     40.        109.5
+CT  CT  HC     35.        109.5
+CT  CT  N     80.0        109.7 
+CT  CT  N*     50.        109.5
+CT  CT  N2    80.0        111.2 
+CT  CT  N3    80.0        111.2 
+CT  CT  OH     50.        109.5
+CT  CT  OS     50.        109.5
+CT  CT  S     50.         114.7
+CT  CT  SH    50.0        108.6 
+CT  N   CT    50.         118.  
+CT  N   H     38.         118.4
+CT  N2  H3    35.         118.4 
+CT  N3  CT    50.         113.0 
+CT  N3  H3    35.         109.5  
+CT  OH  HO     55.        108.5 
+CT  OS  CT     60.        109.5
+CT  OS  P     100.        120.5
+CT  S   CT    62.         98.9   
+CT  S   LP    150.         96.7
+CT  S   S     68.         103.7  
+CT  SH  HS    44.         96.0   
+CT  SH  LP    150.         96.7
+CV  CC  NA    70.         120.00
+CW  CC  NA    70.         120.00
+CW  CC  NB    70.         120.00
+CW  NA  H     35.         120.00
+H   N   H     35.         120.  
+H2  N2  H2    35.         120.  
+H2  NT  H2    35.         109.5  
+H3  N   H3    35.         120.  
+H3  N2  H3    35.         120.  
+H3  N3  H3    35.         109.5  
+HC  C*  CB    35.         126.8
+HC  C*  CW    35.         126.8
+HC  CK  N*     35.        123.05
+HC  CK  NB     35.        123.05
+HC  CM  N*     35.        119.1
+HC  CQ  NC     35.        115.45
+HC  CR  NA     35.        120.0
+HC  CR  NB     35.        120.0
+HC  CT  HC     35.        109.5
+HC  CT  N      35.        109.5
+HC  CT  N*     35.        109.5
+HC  CT  N2     35.        109.5
+HC  CT  N3     35.        109.5
+HC  CT  OH     35.        109.5
+HC  CT  OS    35.0        109.5 
+HC  CT  S      35.        109.5
+HC  CT  SH     35.        109.5
+HC  CV  NB     35.        120.0
+HC  CW  NA     35.        120.0
+HO  OH  HO    47.         104.5
+HO  OH  P     45.0        108.5  
+HS  SH  HS     35.        92.07
+HS  SH  LP    150.         96.7
+HW  OW  HW    100.        104.52
+LP  S   LP    150.        160.0
+LP  S   S     150.         96.7
+LP  SH  LP    150.        160.0
+N   C   O     80.         122.9 
+N*  C   NA    70.         115.4 
+N*  C   NC    70.         118.6 
+N*  C   O     80.         120.9 
+N*  CB  NC    70.         126.2 
+N*  CE  NB    70.         113.9 
+N*  CH  OS    80.0        109.5 
+N*  CK  NB    70.         113.9
+N*  CT  OS     50.        109.5
+N2  CA  N2    70.         120.  
+N2  CA  NA    70.         116.0 
+N2  CA  NC    70.         119.3 
+NA  C   O     80.         120.6 
+NA  CA  NC    70.         123.3 
+NA  CP  NA    70.         110.75
+NA  CP  NB    70.         111.6 
+NA  CR  NA    70.         120.00
+NA  CR  NB    70.         120.00
+NC  C   O     80.         122.5 
+NC  CI  NC    70.         129.1 
+NC  CQ  NC    70.         129.1
+O   C   O     80.         126.0 
+O   C   O2     80.        126.0  
+O   C   OS    70.         123.
+O2  C   O2    80.         126.0 
+O2  P   O2    140.0       119.9  
+O2  P   OH    45.0        108.23 
+O2  P   OS    100.0       108.23
+OH  P   OS    45.0        102.6  
+OS  C   NC    70.         120.9
+OS  CT  C     70.         109.5
+OS  P   OS    45.0        102.6  
+P   OS  P     100.        120.5 
+#--4---4---4----------12----------12
+#
+#   D I H E D R A L     P A R A M E T E R S
+#
+#--4---4---4---4----5----------12----------12----------12
+BLOCK = general dihedral
+97     records
+1.0    prefactor
+cos    type
+0.5    elec
+0.5    vdw
+*   C   OS  *       2      4.6        180.           2.
+*   C   C2  *       2      0.0        180.           3.
+*   C   CA  *       4      5.3        180.           2.
+*   C   CB  *       4      4.4        180.           2.
+*   C   CD  *       2      5.3        180.           2.
+*   C   CH  *       4      0.0          0.           2.
+*   C   CJ  *       2      3.1        180.           2.
+*   C   CM  *       4      3.1        180.           2.
+*   C   CT  *       6      0.0          0.           2.
+*   C   N   *       4      10.0       180.           2.
+*   C   N*  *       4      5.8        180.           2.
+*   C   NA  *       4      5.4        180.           2.
+*   C   NC  *       2      8.0        180.           2.
+*   C   OH  *       2      1.8        180.           2.
+*   C*  C2  *       2      0.0          0.           2.
+*   C*  CB  *       4      4.8        180.           2.
+*   C*  CG  *       2      23.6       180.           2.
+*   C*  CT  *       6      0.0          0.           2.
+*   C*  CW  *       4      23.6       180.           2.
+*   C2  C2  *       1      2.0          0.           3.
+*   C2  CA  *       2      0.0          0.           2.
+*   C2  CC  *       2      0.0          0.           2.
+*   C2  CH  *       2      2.0          0.           3.
+*   C2  N   *       2      0.0          0.           3.
+*   C2  N2  *       2      0.0          0.           3.
+*   C2  N3  *       3      1.4          0.           3.
+*   C2  NT  *       2      1.0          0.           3.
+*   C2  N3  *       2      1.0          0.           3.
+*   C2  OH  *       1      0.5          0.           3.
+*   C2  OS  *       1      1.45         0.           3.
+*   C2  S   *       1      1.0          0.           3.
+*   C2  SH  *       1      0.75         0.           3.
+*   CA  CA  *       4      5.3        180.           2.
+*   CA  CB  *       4     10.2        180.           2.
+*   CA  CD  *       2      5.3        180.           2.
+*   CA  CJ  *       2      3.7        180.           2.
+*   CA  CM  *       4      3.7        180.           2.
+*   CA  CN  *       4     10.6        180.           2.
+*   CA  CT  *       6      0.0          0.           2.
+*   CA  N2  *       4      6.8        180.           2.
+*   CA  NA  *       4      6.0        180.           2.
+*   CA  NC  *       2      9.6        180.           2.
+*   CB  CB  *       4      16.3       180.           2.
+*   CB  CD  *       4      5.3        180.           2.
+*   CB  CN  *       4      20.0       180.           2.
+*   CB  N*  *       4      6.6        180.           2.
+*   CB  NB  *       2      5.1        180.           2.
+*   CB  NC  *       2      8.3        180.           2.
+*   CC  CF  *       2      14.3       180.           2.
+*   CC  CG  *       2      15.9       180.           2.
+*   CC  CT  *       6      0.0          0.           2.
+*   CC  CV  *       4      14.3       180.           2.
+*   CC  CW  *       4      15.9       180.           2.
+*   CC  NA  *       4      5.6        180.           2.
+*   CC  NB  *       2      4.8        180.           2.
+*   CD  CD  *       1      5.3        180.           2.
+*   CD  CN  *       2      5.3        180.           2.
+*   CE  N*  *       2      6.7        180.           2.
+*   CE  NB  *       1      20.0       180.           2.
+*   CF  NB  *       1      4.8        180.           2.
+*   CG  NA  *       2      6.0        180.           2.
+*   CH  CH  *       4      2.0          0.           3.
+*   CH  N   *       4      0.0          0.           3.
+*   CH  N*  *       4      0.0          0.           2.
+*   CH  NT  *       4      1.0          0.           3.
+*   CH  N3  *       4      1.0          0.           3.
+*   CH  OH  *       2      0.5          0.           3.
+*   CH  OS  *       2      1.45         0.           3.
+*   CI  NC  *       1     13.5        180.           2.
+*   CJ  CJ  *       1     24.4        180.           2.
+*   CJ  CM  *       2      24.4       180.           2.
+*   CJ  N*  *       2      7.4        180.           2.
+*   CK  N*  *       4      6.7        180.           2.
+*   CK  NB  *       2      20.        180.           2.
+*   CM  CM  *       4      24.4       180.           2.
+*   CM  CT  *       6     0.0           0.           3.
+*   CM  N*  *       4      7.4        180.           2.
+*   CN  NA  *       4      12.2       180.           2.
+*   CP  NA  *       2      9.3        180.           2.
+*   CP  NB  *       1     10.0        180.           2.
+*   CQ  NC  *       2      13.5       180.           2.
+*   CR  NA  *       4      9.3        180.           2.
+*   CR  NB  *       2       10.0      180.           2.
+*   CT  CT  *       9      1.3          0.           3.
+*   CT  N   *       6      0.0          0.           3.
+*   CT  N*  *       6      0.0          0.           2.
+*   CT  N2  *       6      0.0          0.           3.
+*   CT  N3  *       9      1.4          0.           3.
+*   CT  OH  *       3      0.5          0.           3.
+*   CT  OS  *       3      1.15         0.           3.
+*   CT  S   *       3      1.0          0.           3.
+*   CT  SH  *       3      0.75         0.           3.
+*   CV  NB  *       2       4.8       180.           2.
+*   CW  NA  *       4       6.0       180.           2.
+*   OH  P   *       3      0.75         0.           3.
+*   OS  P   *       3      0.75         0.           3.
+#--4---4---4---4----5----------12----------12----------12
+#
+# specific dihedrals
+#
+#--4---4---4---4----5----------12----------12----------12
+BLOCK = specific dihedral interactions
+88      records
+C2  C2  S   LP      1     0.           0.           3.
+CH  C2  SH  LP      1     0.           0.           3.
+LP  S   S   LP      1     0.           0.           3.
+LP  S   S   C2      1     0.           0.           3.
+LP  S   S   CT      1     0.           0.           3.
+O   C   C2  N       1    0.2         180.           3.
+O   C   CH  N       1    0.1         180.           3.
+O   C   CH  C2      1    0.1         180.           3.
+O   C   CH  CH      1    0.1         180.           3.
+HC  CT  C   O       1    0.067       180.           3.
+CT  CT  C   O       1    0.067       180.           3.
+N   CT  C   O       1    0.067       180.           3.
+H   N   C   O       1    2.5         180.           2.
+H   N   C   O       1    0.65          0.           1.
+C2  S   S   C2      1    3.5           0.           2.
+C2  S   S   C2      1    0.6           0.           3.
+CT  S   S   CT      1    3.5           0.           2.
+CT  S   S   CT      1    0.6           0.           3.
+OS  CH  CH  OS      1    0.5           0.           3.
+OS  CH  CH  OS      1    0.5           0.           2.
+OS  CT  CT  OS      1    0.144         0.           3.
+OS  CT  CT  OS      1    0.5           0.           2.
+OS  CT  CT  OH      1    0.144         0.           3.
+OS  CT  CT  OH      1    0.5           0.           2.
+OH  CT  CT  OH      1    0.144         0.           3.
+OH  CT  CT  OH      1    0.5           0.           2.
+CT  CT  OS  CT      1    0.383         0.           3.
+CT  CT  OS  CT      1    0.2         180.           2.
+OS  C2  CH  OS      1    1.0           0.         3.
+OS  C2  CH  OS      1    0.5           0.           2.
+OS  CH  CH  OH      1    0.5           0.         3.
+OS  CH  CH  OH      1    0.5           0.           2.
+OS  CH  C2  OH      1    1.0           0.         3.
+OS  CH  C2  OH      1    0.5           0.           2.
+OS  C2  CH  OH      1    1.0           0.         3.
+OS  C2  CH  OH      1    0.5           0.           2.
+OS  C2  C2  OH      1    2.0           0.         3.
+OS  C2  C2  OH      1    0.5           0.           2.
+OS  C2  C2  OS      1    2.0           0.         3.
+OS  C2  C2  OS      1    0.5           0.           2.
+OH  CH  CH  OH      1    0.5           0.         3.
+OH  CH  CH  OH      1    0.5           0.           2.
+OH  C2  C2  OH      1    2.0           0.         3.
+OH  C2  C2  OH      1    0.5           0.           2.
+OH  C2  CH  OH      1    1.0           0.         3.
+OH  C2  CH  OH      1    0.5           0.           2.
+C2  OS  C2  C2      1    1.45          0.         3.
+C2  OS  C2  C2      1    0.10          0.           2.
+C3  OS  C2  C3      1    1.45          0.         3.
+C3  OS  C2  C3      1    0.10          0.           2.
+CH  OS  CH  C2      1    0.725         0.         3.
+CH  OS  CH  C2      1    0.1           0.           2.
+CH  OS  CH  CH      1    0.725         0.         3.
+CH  OS  CH  CH      1    0.1           0.           2.
+C2  OS  CH  C2      1    0.725         0.         3.
+C2  OS  CH  C2      1    0.1           0.           2.
+C2  OS  CH  C3      1    0.725         0.         3.
+C2  OS  CH  C3      1    0.1           0.           2.
+C3  OS  CH  C3      1    0.725         0.         3.
+C3  OS  CH  C3      1    0.1           0.           2.
+C2  OS  C2  C3      1    0.725         0.         3.
+C2  OS  C2  C3      1    0.1           0.           2.
+CH  OS  CH  N*      1    0.725         0.         3.
+CH  OS  CH  N*      1    0.000         0.           2.
+OH  P   OS  C2      1     .25          0.         3.
+OH  P   OS  C2      1     .75          0.           2.
+OH  P   OS  CH      1     .25          0.         3.
+OH  P   OS  CH      1     .75          0.           2.
+OS  P   OS  CH      1     .25          0.         3.
+OS  P   OS  CH      1     .75          0.           2.
+OS  P   OS  C2      1     .25          0.         3.
+OS  P   OS  C2      1     .75          0.           2.
+OS  P   OS  C3      1     .25          0.         3.
+OS  P   OS  C3      1     .75          0.           2.
+OH  P   OS  C3      1     .25          0.         3.
+OH  P   OS  C3      1     .75          0.           2.
+OH  P   OS  CT      1     .25          0.         3.
+OH  P   OS  CT      1     .75          0.          2.
+OS  P   OS  CT      1     .25          0.         3.
+OS  P   OS  CT      1     .75          0.          2.
+HC  CM  CM  HC      1     1.71       180.          2.
+C   CM  CM  HC      1     6.59       180.          2.
+N*  CM  CM  HC      1     6.59       180.          2.
+N*  CM  CM  C       1     9.51       180.          2.
+N*  CM  CM  CT      1     6.59       180.          2.
+HC  CM  CM  CT      1     1.71       180.          2.
+N*  CM  CM  CA      1     9.51       180.          2.
+CA  CM  CM  HC      1     6.59       180.          2.
+#--4---4---4---4----5----------12----------12----------12
+#
+#  I M P R O P E R   D I H E D R A L S
+#
+#--4---4---4---4----------12----------12----------12
+BLOCK = improper_dihedrals
+24        records
+1.0       prefactor
+cos       type
+0.0       elec
+0.0       vdw
+*   C2  CH  *         14.0         180.          3.
+*   CH  CH  *         14.0         180.          3.
+*   *   N   H          1.0         180.          2.
+*   *   N2  H3         1.0         180.          2.
+*   *   N2  H2         1.0         180.          2.
+*   *   NA  H          1.0         180.          2.
+*   *   C   O         10.5         180.          2.
+*   O2  C   O2        10.5         180.          2.
+*   CH  N   C         14.0         180.          3.
+*   CH  N3  C         14.0         180.          3.
+*   H2  N   H2         1.0         180.          2.
+*   N2  CA  N2        10.5         180.          2.
+*   CH  N   C2         1.0         180.          2.
+*   CT  N   CT         1.0         180.          2.
+*   *   CA  HC         2.          180.          2.
+*   *   C*  HC         0.          180.          2.
+*   *   CW  HC         0.          180.          2.
+*   *   CN  CB         0.          180.          2.
+*   *   CB  CN         0.          180.          2.
+*   *   CB  C*         0.          180.          2.
+*   *   CB  CA         0.          180.          2.
+*   *   CN  CA         0.          180.          2.
+*   *   CN  NA         0.          180.          2.
+#--4---4---4---4----------12----------12----------12
+#
+#
+#--4---4---4---4----------12----------12----------12
+BLOCK = specific improper dihedrals
+6     records
+H2  CH  N2  H2       0.0         180.          3.
+C3  CH  NT  C       14.0         180.          3.
+CH  CH  C   N3       7.0         180.          3.
+C2  CH  C   N3       7.0         180.          3.
+C3  CH  CA  C3       7.0         180.          3.
+C*  NA  CA  CA       0.0         180.          2.
+#
+#  H Y D R O G E N   B O N D S
+#
+#--4---4----------12----------12
+BLOCK = Hydrogen_bonds
+54     records
+1.0    prefactor
+hbnd   type
+H   NB    7557.       2385. 
+H   NC    10238.      3071. 
+H   O     7557.       2385. 
+H   O2    4019.       1409. 
+H   OH    7557.       2385. 
+H   OS    7557.       2385. 
+H   OW    7557.       2385. 
+H   S     265720.     35429.
+H   SH    265720.     35429.
+H2  NB    7557.       2385. 
+H2  NC    10238.      3071. 
+H2  O     10238.      3071. 
+H2  O2    4019.       1409. 
+H2  OH    7557.       2385. 
+H2  OS    7557.       2385. 
+H2  OW    7557.       2385. 
+H2  S     265720.     35429.
+H2  SH    265720.     35429.
+H3  NB    4019.       1409. 
+H3  NC    4019.       1409. 
+H3  O     4019.       1409. 
+H3  O2    4019.       1409. 
+H3  OH    4019.       1409. 
+H3  OS    4019.       1409. 
+H3  OW    4019.       1409. 
+H3  S     7557.       2385. 
+H3  SH    7557.       2385. 
+HO  NB    7557.       2385. 
+HO  NC    10238.      3071. 
+HO  O     7557.       2385. 
+HO  O2    4019.       1409. 
+HO  OH    7557.       2385. 
+HO  OS    7557.       2385. 
+HO  OW    7557.       2385. 
+HO  S     265720.     35429.
+HO  SH    265720.     35429.
+HS  NB    14184.      3082. 
+HS  NC    14184.      3082. 
+HS  O     14184.      3082. 
+HS  O2    4019.       1409. 
+HS  OH    14184.      3082. 
+HS  OS    14184.      3082. 
+HS  OW    14184.      3082. 
+HS  S     265720.     35429.
+HS  SH    265720.     35429.
+HW  NB    7557.       2385. 
+HW  NC    10238.      3071. 
+HW  O     7557.       2385. 
+HW  O2    4019.       1409. 
+HW  OH    7557.       2385. 
+HW  OS    7557.       2385. 
+HW  OW    0000.       0000. 
+HW  S     265720.     35429.
+HW  SH    265720.     35429.
+#
+#
+#  lennard Jones equivalents
+BLOCK = lennard jones equivalents
+3          records
+N   NA  N2  N*  NP  NC  NO                                
+C   C*  CA  CB  CC  CN  CM  CK  CQ  CD  CE  CF  CG  CP  
+C   CI  CJ  CW  CV  CR  CA  CX  CY                      
+#
+# L E N N A R D - J O N E S parameters,    STDA      RE
+# sig(HW) set to 1.0 to avoid overflow (eps = 0)
+BLOCK = 12-6 potential    rmin and eps
+34        records
+1.0      prefactor
+ljmn     type
+C        1.85       0.120
+C0       1.60       0.10
+C2       1.925      0.12
+C3       2.00       0.150
+CH       1.85       0.09
+CT       1.80       0.06
+H        1.00       0.020
+H2       1.00       0.020
+H3       1.00       0.020
+HC       1.54       0.01
+HO       1.00       0.020
+HS       1.00       0.020
+HW       1.00       0.0
+IP       1.87      0.0028
+LP       1.2       0.016
+MG       1.17       0.10
+N        1.75        0.16
+N3       1.85        0.08
+NB       1.75        0.16
+NC       1.75        0.16
+NT       1.85        0.12
+O        1.6        0.20
+O2       1.6        0.20
+OH       1.65        0.15
+OS       1.65        0.15
+OW       1.768      0.152
+P        2.10      0.20
+QC       3.40      8.1e-4
+QK       2.66      3.3e-3
+QL       1.14      0.018
+QN       1.87      0.0028
+QR       2.96      0.00017
+S        2.00      0.20
+SH       2.00      0.20
+#
+BLOCK = 1..4 LJ parameters
+0      records
+#
+BLOCK  =  special 1..4 VDWs 
+0      records
+

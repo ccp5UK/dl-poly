@@ -1,0 +1,182 @@
+\label{macros}
+\subsection*{Introduction}
+
+Macros are simple executable files containing standard UNIX
+commands.  A number of the are supplied with \D and are found in
+the {\em execute} sub-directory\index{sub-directory}.  These are
+not guaranteed to be immaculate but with little adaptation they
+can become a useful tool to a researcher.  The available macros
+are as follows:
+
+{\sl
+\begin{itemize}
+\item cleanup
+\item copy
+\item gopoly
+\item gui
+\item select
+\item store
+\end{itemize}
+}
+
+/noindent The function of each of these is described below. It is
+worth noting that most of these functions can be performed by the
+DL\_POLY Java GUI \cite{smith-gui}.
+
+\subsubsection*{{\sl cleanup}}
+
+{\sl cleanup} removes several standard data files from the {\em
+execute} sub-directory\index{sub-directory}.  It contains the UNIX
+commands:
+\begin{verbatim}
+rm OUTPUT STATIS REVCON REVOLD REVIVE RDFDAT ZDNDAT DEFECTS gopoly.*
+\end{verbatim}
+\noindent and removes the files OUTPUT, REVCON, REVOLD, STATIS,
+REVIVE, DEFECTS and gopoly.* (all variants).  It is useful for
+cleaning the sub-directory\index{sub-directory} up after a run.
+(Useful data should be stored elsewhere however!)
+
+\subsubsection*{{\sl copy}}
+
+{\sl copy} invokes the UNIX commands:
+
+\begin{verbatim}
+mv CONFIG CONFIG.OLD
+mv REVCON CONFIG
+mv REVIVE REVOLD
+\end{verbatim}
+
+\noindent which collectively prepare the \D files in the {\em
+execute} sub-directory\index{sub-directory} for the continuation of
+a simulation.  It is always a good idea to store these files
+elsewhere in addition to using this macro.
+
+\subsubsection*{{\sl gopoly}}
+
+{\sl gopoly} is used to submit a \D job to the HPC$x$, which
+operates a LOAD-LEVELER job queuing system.  It invokes the
+following script:
+
+\begin{verbatim}
+#@ shell = /usr/bin/tcsh
+#
+#@ job_type = parallel
+#@ job_name = gopoly
+#
+#@ cpus = 32
+#
+#@ node_usage = not_shared
+#@ network.MPI = csss,shared,US
+#
+#@ wall_clock_limit = 00:30:00
+#@ account_no = my_account
+#
+#@ output = $(job_name).$(schedd_host).$(jobid).out
+#@ error  = $(job_name).$(schedd_host).$(jobid).err
+#@ notification = never
+#
+#@ bulkxfer = yes
+#@ data_limit = 850000000
+#@ stack_limit = 10000000
+#
+#@ queue
+#
+# ENVIRONMENT SETTINGS
+#
+setenv MP_EAGER_LIMIT 65536
+setenv MP_SHARED_MEMORY yes
+setenv MEMORY_AFFINITY MCM
+setenv MP_TASK_AFFINITY MCM
+setenv MP_SINGLE_THREAD yes
+#
+poe  ./DLPOLY.Z
+\end{verbatim}
+
+\noindent Using LOADLEVELLER, the job is submitted by the UNIX command: \\
+\\
+{\sl llsubmit} {\sl gopoly} \\
+\\
+\noindent where {\sl llsubmit} is a local command for submission
+to the IBM SP4 cluster.  The number of required nodes and the job
+time are indicated in the above script.
+
+\subsubsection*{\sl gui}
+
+{\sl gui} is a macro that starts up the \D Java GUI.  It invokes
+the following UNIX commands:
+
+\begin{verbatim}
+java -jar ../java/GUI.jar $1 &
+\end{verbatim}
+
+\noindent In other words the macro invokes the Java Virtual Machine
+which executes the instructions in the Java archive file GUI.jar,
+which is stored in the {\em java} subdirectory of \D. (Note: Java
+1.3.0 or a higher version is required to run the GUI.)
+
+\subsubsection*{{\sl select}}
+
+{\sl select} is a macro enabling easy selection of one of the test
+cases.  It invokes the UNIX commands:
+
+\begin{verbatim}
+cp ../data/TEST$1/CONTROL   CONTROL
+cp ../data/TEST$1/FIELD     FIELD
+cp ../data/TEST$1/CONFIG    CONFIG
+cp ../data/TEST$1/TABLE     TABLE
+cp ../data/TEST$1/TABEAM    TABEAM
+cp ../data/TEST$1/REFERENCE REFERENCE
+\end{verbatim}
+
+\noindent {\sl select} requires one argument (an integer) to be specified: \\
+\\
+{\sl select n} \\
+\\
+\noindent where {\sl n} is test case number, which ranges from 1 to
+18.
+
+This macro sets up the required input files in the {\em execute}
+sub-directory\index{sub-directory} to run the {\sl n}-th test
+case.  The last three copy commands may not be necessary in
+most cases.
+
+\subsubsection*{{\sl store}}
+
+The {\sl store} macro provides a convenient way of moving data
+back from the {\em execute} sub-directory\index{sub-directory} to
+the {\em data} sub-directory\index{sub-directory}.  It invokes the
+UNIX commands:
+
+\begin{verbatim}
+mkdir        ../data/TEST$1
+cp CONTROL   ../data/TEST$1/CONTROL
+cp FIELD     ../data/TEST$1/FIELD
+cp CONFIG    ../data/TEST$1/CONFIG
+cp TABLE     ../data/TEST$1/TABLE
+cp TABEAM    ../data/TEST$1/TABEAM
+cp REFERENCE ../data/TEST$1/REFERENCE
+mv OUTPUT    ../data/TEST$1/OUTPUT
+mv STATIS    ../data/TEST$1/STATIS
+mv REVCON    ../data/TEST$1/REVCON
+mv REVIVE    ../data/TEST$1/REVIVE
+mv HISTORY   ../data/TEST$1/HISTORY
+mv DEFECTS   ../data/TEST$1/DEFECTS
+mv RDFDAT    ../data/TEST$1/RDFDAT
+mv ZDNDAT    ../data/TEST$1/ZDNDAT
+chmod -R a-w ../data/TEST$1
+\end{verbatim}
+
+\noindent which first creates a new DL\_POLY {\em data/TEST..}
+sub-directory\index{sub-directory} and then moves the standard \D
+output data files into it.
+
+{\sl store} requires one argument:\\
+\\
+{\sl store n}\\
+\\
+\noindent where {\sl n} is a unique string or number to label the
+output data in the {\em data/TESTn} sub-directory.
+
+Note that {\sl store} sets the file access to read-only.  This is
+to prevent the {\sl store} macro overwriting existing data without
+your knowledge.

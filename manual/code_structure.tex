@@ -1,0 +1,461 @@
+\section{Source Code}
+\label{source-code}
+
+\subsection{Modularisation Principles}
+\label{modularisation}
+
+Modules in \D are constructed to define parameters and variables
+(scalars and arrays) and/or develop methods that share much in
+common.  The division is far from arbitrary and module
+interdependence is reduced to minimum.  However, some dependencies
+exist which leads to the following division by groups in
+hierarchical order:
+\begin{itemize}
+
+\item {\bf precision module}:: {\sc kinds\_f90}
+
+The precision module defines the working precision {\tt wp} of all
+real variables and parameters in \D.  By default it is set to 64-bit
+(double) precision.  If the precision is changed, the user must
+check whether the specific platform supports it and make sure it is
+allowed for in the MPI implementation.  If all is OK then the code
+must be recompiled.
+
+\item {\bf MPI module}:: {\sc mpi\_module}
+
+The MPI module implements all MPI functional calls used in \D.  It
+is only used when \D is to be compiled in serial mode.
+
+\item {\bf communication module}:: {\sc comms\_module}
+({\sc mpi\_module})
+
+The communication module defines MPI related parameters and develops
+MPI related functions and subroutines such as: initialisation and
+exit; global synchronisation, sum, maximum and minimum;
+node ID and number of nodes; simulation time.  It is dependent on
+{\sc kinds\_f90} and on {\sc mpi\_module} if MPI is emulated for
+\D compilation in serial mode.  The {\sc mpi\_module} implements
+all MPI functional calls used in \D.
+
+\item {\bf global parameters module}:: {\sc setup\_module}
+
+The global parameters module holds all important global variables
+and parameters (see above).  It is dependent on {\sc kinds\_f90}.
+
+\item {\bf parse module}:: {\sc parse\_module}
+
+The parse module develops several methods used to deal with
+textual input: {\tt get\_line strip\_blanks lower\_case get\_word
+word\_2\_real}.  Depending on the method dependencies on
+{\sc kinds\_f90 comms\_module setup\_module domains\_module} are found.
+
+\item {\bf development module}:: {\sc development\_module}
+
+The development module contains several methods used to help with
+testing and debugging \D.  Depending on the method dependencies on
+{\sc kinds\_f90 comms\_module setup\_module domains\_module} are found.
+
+\item {\bf I/O module}:: {\sc io\_module}
+
+The I/O module contains all important global variables that define
+the I/O methods and types used in the package and contains
+basic routines essential for the I/O in \D.  It is dependent on
+{\sc kinds\_f90}.
+
+\item {\bf domains module}:: {\sc domains\_module}
+
+The domains module defines DD parameters and maps the available
+computer resources on a DD grid.  The module does not depend on
+previous modules but its mapping subroutine is dependent on
+{\sc kinds\_f90} and {\sc comms\_module}.
+
+\item {\bf site module}:: {\sc site\_module}
+
+The site module defines all site related arrays (FIELD) and is
+dependent on {\sc kinds\_f90} only.  However, it also develops an
+allocation method that is dependent on {\sc setup\_module}.
+
+\item {\bf configuration module}:: {\sc config\_module}
+
+The configuration module defines all configuration related arrays
+(CONFIG) and is dependent on {\sc kinds\_f90} only.  However, it
+also develops an allocation method that is dependent on
+{\sc setup\_module}.
+
+\item {\bf defects module}:: {\sc defects\_module}
+
+The defects module defines all defects and configuration related
+arrays (REFERENCE) and is dependent on {\sc kinds\_f90} only.
+However, it also develops an allocation method that is dependent
+on {\sc setup\_module}.
+
+\item {\bf {\em inter}-molecular interactions modules}:: {\sc
+vdw\_module metal\_module \\
+tersoff\_module three\_body\_module four\_body\_module}
+
+The intermolecular modules define all variables and potential
+arrays needed for the calculation of the particular interaction in
+the \D scope.  They depend on {\sc kinds\_f90}.  Their allocation
+methods depend on {\sc setup\_module}.
+
+\item {\bf {\em intra}-molecular and site-related interactions
+modules}:: {\sc core\_shell\_module \\ constraints\_module pmf\_module
+rigid\_bodies\_module tethers\_module \\ bonds\_module angles\_module dihedrals\_module
+inversions\_module}
+
+These modules define all variables and potential arrays needed for
+the calculation of the particular interaction in the \D scope.
+They depend on {\sc kinds\_f90}.  Their allocation methods depend
+on {\sc setup\_module}.
+
+\item {\bf external field module}:: {\sc external\_field\_module}
+
+This module defines all variables and potential arrays needed for
+the application of an external field in the \D scope.  It depends
+on {\sc kinds\_f90} and its allocation method on {\sc setup\_module}.
+
+\item {\bf langevin module}:: {\sc langevin\_module}
+
+This module defines all variables and arrays needed for the
+application of NPT and N$\mat{\sigma}$T Langevin routines
+in the \D scope.  It depends on {\sc kinds\_f90} and its
+allocation method on {\sc setup\_module}.
+
+\item {\bf minimise module}:: {\sc minimise\_module}
+
+This module defines all variables and arrays needed for the
+application of a Conjugate Gradient Method minimisation routine
+in the \D scope.  It depends on {\sc kinds\_f90} and its
+allocation method on {\sc setup\_module}.
+
+\item {\bf ewald module}:: {\sc ewald\_module}
+
+This module defines all variables and arrays needed for the
+refreshment of SPME k-space driven properties in the \D scope
+when an infrequent SPME option is opted for in CONTROL.  It
+depends on {\sc kinds\_f90} and its allocation method on
+{\sc setup\_module}.
+
+\item {\bf msd module}:: {\sc msd\_module}
+
+This module globalises a CONTROL variable.
+
+\item {\bf statistics module}:: {\sc statistics\_module}
+
+This module defines all variables and arrays needed for the
+statistical accountancy of a simulation in \D.  It depends on {\sc
+kinds\_f90} and its allocation method on {\sc setup\_module}.
+
+\item {\bf kinetic module}:: {\sc kinetic\_module}
+
+The kinetic module contains a collection of routines for the
+calculation of various kinetic properties.
+It is dependent on {\sc kinds\_f90}.
+
+\end{itemize}
+
+\subsection{File Structure}
+\label{file-structure}
+
+Generally, the \D file structure can be divided into four groups
+as follows:
+\begin{itemize}
+
+\item {\bf module files} in the {\em source} directory::
+
+{\sc
+kinds\_f90 comms\_module setup\_module \\
+parse\_module development\_module io\_module \\
+domains\_module \\
+site\_module config\_module defects\_module \\
+vdw\_module metal\_module tersoff\_module \\
+three\_body\_module four\_body\_module \\
+core\_shell\_module \\
+constraints\_module pmf\_module \\
+rigid\_bodies\_module \\
+tethers\_module \\
+bonds\_module angles\_module dihedrals\_module inversions\_module \\
+\\
+external\_field\_module langevin\_module minimise\_module \\
+ewald\_module msd\_module statistics\_module \\
+\\
+kinetic\_module gpfa\_module parallel\_fft}
+
+\item {\bf general files} in the {\em source} directory::
+
+{\sc
+warning error scan\_control\_io \\
+numeric\_container spme\_container quaternions\_container \\
+scan\_field read\_config\_parallel scan\_config scan\_control read\_config \\
+set\_bounds \\
+read\_control \\
+vdw\_generate vdw\_table\_read \\
+metal\_generate metal\_table\_read metal\_table\_derivatives \\
+tersoff\_generate dihedrals\_14\_check read\_field \\
+check\_config scale\_config write\_config \\
+trajectory\_write system\_expand \\
+rigid\_bodies\_tags rigid\_bodies\_coms rigid\_bodies\_widths \\
+rigid\_bodies\_setup \\
+tag\_legend report\_topology pass\_shared\_units build\_book\_intra \\
+build\_excl\_intra \\
+scale\_temperature update\_shared\_units \\
+core\_shell\_quench constraints\_tags constraints\_quench \\
+pmf\_comspmf\_tags pmf\_vcoms pmf\_quench \\
+rigid\_bodies\_quench \\
+set\_temperature \\
+vdw\_lrcmetal\_lrc system\_init \\
+export\_atomic\_data set\_halo\_particles \\
+rigid\_bodies\_stress \\
+read\_history \\
+impact core\_shell\_on\_top \\
+deport\_atomic\_data pmf\_units\_set compress\_book\_intra \\
+relocate\_particles \\
+link\_cell\_pairs \\
+metal\_ld\_collect\_eam metal\_ld\_collect\_fst \\
+metal\_ld\_export metal\_ld\_set\_halo \\
+metal\_ld\_compute \\
+exchange\_grid ewald\_spme\_forces \\
+metal\_forces vdw\_forces ewald\_real\_forces \\
+coul\_dddp\_forces coul\_cp\_forces coul\_fscp\_forces \\
+coul\_rfp\_forces rdf\_collect ewald\_excl\_forces \\
+ewald\_frozen\_forces two\_body\_forces \\
+tersoff\_forces three\_body\_forces four\_body\_forces \\
+core\_shell\_forces tethers\_forces \\
+bonds\_forces angles\_forces dihedrals\_forces inversions\_forces \\
+external\_field\_apply external\_field\_correct \\
+langevin\_forces \\
+constraints\_pseudo\_bonds pmf\_pseudo\_bonds \\
+rigid\_bodies\_split\_torque rigid\_bodies\_move minimise\_relax \\
+core\_shell\_relax zero\_k\_optimise \\
+nvt\_e0\_scl nvt\_e1\_scl nvt\_b0\_scl nvt\_b1\_scl \\
+\\
+xscale core\_shell\_kinetic regauss\_temperature \\
+\\
+defects\_reference\_read defects\_reference\_read\_parallel \\
+defects\_reference\_write \\
+defects\_reference\_export defects\_reference\_set\_halo \\
+defects\_link\_cells defects1\_write defects\_write \\
+\\
+msd\_write z\_density\_collect statistics\_collect \\
+system\_revive \\
+rdf\_compute z\_density\_compute statistics\_result \\
+dl\_poly}
+
+\item {\bf VV specific} files in the {\em source/VV} directory::
+
+{\sc
+pseudo\_vv \\
+constraints\_shake\_vv pmf\_shake\_vv \\
+constraints\_rattle pmf\_rattle \\
+nvt\_h0\_scl npt\_h0\_scl nst\_h0\_scl \\
+nve\_0\_vv  nvt\_e0\_vv \\
+nvt\_l0\_vv nvt\_a0\_vv nvt\_b0\_vv nvt\_h0\_vv \\
+npt\_l0\_vv npt\_b0\_vv npt\_h0\_vv npt\_m0\_vv \\
+nst\_l0\_vv nst\_b0\_vv nst\_h0\_vv nst\_m0\_vv \\
+nve\_1\_vv  nvt\_e1\_vv \\
+nvt\_l1\_vv nvt\_a1\_vv nvt\_b1\_vv nvt\_h1\_vv \\
+npt\_l1\_vv npt\_b1\_vv npt\_h1\_vv npt\_m1\_vv \\
+nst\_l1\_vv nst\_b1\_vv nst\_h1\_vv nst\_m1\_vv \\
+md\_vv}
+
+\item {\bf LFV specific} files in the {\em source/LFV} directory::
+
+{\sc
+pseudo\_lfv \\
+constraints\_shake\_lfv pmf\_shake\_lfv \\
+nve\_0\_lfv nvt\_e0\_lfv \\
+nvt\_l0\_lfv nvt\_a0\_lfv nvt\_b0\_lfv nvt\_h0\_lfv \\
+npt\_l0\_lfv npt\_b0\_lfv npt\_h0\_lfv npt\_m0\_lfv \\
+nst\_l0\_lfv nst\_b0\_lfv nst\_h0\_lfv nst\_m0\_lfv \\
+nvt\_l1\_lfv nvt\_a1\_lfv nvt\_b1\_lfv nvt\_h1\_lfv \\
+npt\_l1\_lfv npt\_b1\_lfv npt\_h1\_lfv npt\_m1\_lfv \\
+nst\_l1\_lfv nst\_b1\_lfv nst\_h1\_lfv nst\_m1\_lfv \\
+md\_lfv}
+
+\item {\bf SERIAL specific} files in the {\em source/SERIAL} directory::
+
+{\sc mpif.h mpi\_module ewald\_spme\_forc$_{\verb"~"}$s}
+
+\end{itemize}
+The files in each group are listed in hierarchial order as closely
+as possible.  The further down the list the file, the more dependent
+it is on the files listed above it.  The same hierarchial order is
+followed in the makefiles (see Appendix \ref{makefiles}).
+
+It is worth noting that the files {\sc replay\_history.f90 md\_vv.f90 md\_lfv mpif.h}
+are in fact inclusion files rather than strict FORTRAN90 \index{FORTRAN90}
+type of files.  Should this prove to be a problem and a compiler cannot handle
+this, then they can be incorporated directly in the routines
+where they are used, i.e. {\sc replay\_history.f90 md\_vv.f90 md\_lfv}
+in {\sc dl\_poly.f90} and {\sc  mpif.h} in {\sc comms\_module.f90},
+and then compilation should be attempted.
+
+\subsection{Module Files}
+
+The \D module files contain all global variables (scalars and
+arrays) and parameters as well as some general methods and generic
+functions intrinsically related to the purpose or/and contents of
+the specific module.  The file-names and the methods or/and
+functions developed in them have self-explanatory names.  More
+information of their purpose can be found in their headers.
+
+The rest of files in \D are dependent on the module files in
+various ways.  The dependency relation to a module file is
+explicitly stated in the declaration part of the code.
+
+\subsection{General Files}
+
+The \D general files are common to both MPI and SERIAL version of
+the code.  In most cases, they have self-explanatory names as their
+order is matched as closely as possible to that occurring in the
+main segment of the code - {\sc dl\_poly}.  Only the first five
+files are exception of that rule; {\sc warning} and {\sc error} are
+important reporting subroutines that have call points at various
+places in the code, and {\sc numeric\_container}, and
+{\sc spme\_container} are containers of simple functions and
+subroutines related in some way to their purpose in the code.
+
+\subsection{VV and LFV Specific Files}
+
+These implement the specific integration scheme as file-names are
+finished with the flavour they develop if they have a counterpart
+implementing the same algorithm but in the alternative flavour.
+Names are self-explanatory.
+
+\subsection{SERIAL Specific Files}
+
+These implement an emulation of some general MPI calls used in \D
+source code when compiling in serial mode as well as some modified
+counterparts of the general files changed to allow for faster and/or
+better memory optimised serial execution.  Names are
+self-explanatory.
+
+\subsection{Comments on MPI Handling}
+
+Only a few files make explicit calls to MPI routines: \\
+{\sc
+comms\_module io\_module \\
+read\_config\_parallel read\_config write\_config \\
+check\_config system\_expand \\
+pass\_shared\_units update\_shared\_units \\
+export\_atomic\_data read\_history deport\_atomic\_data \\
+metal\_ld\_export parallel\_fft exchange\_grid \\
+defects\_reference\_write \\
+defects\_reference\_read\_parallel defects\_reference\_read \\
+defects\_reference\_export defects\_write defects1\_write \\
+trajectory\_write msd\_write system\_revive}. \\
+The rest of the files that use MPI functionality in any way make
+implicit calls via generic functions developed in {\sc comms\_module}.
+
+\subsection{Comments on {\sc setup\_module}}
+\label{parameters}
+
+The most important module, by far, is {\sc setup\_module}, which
+holds the most important global parameters and variables (some of
+which serve as ``parameters'' for global array bounds, set in {\sc
+set\_bounds}). A brief account of these is given below:
+
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXXXXXXX\=\kill
+\> {\bf parameter}   \> {\bf value}        \> {\bf function} \\
+\>                   \>                    \> \\
+\> {\tt pi}          \> 3.1415926535897932 \> $\pi$ constant \\
+\> {\tt sqrpi}       \> 1.7724538509055160 \> $\sqrt[2]{\pi}$ constant \\
+\> {\tt rt2}         \> 1.4142135662373095 \> $\sqrt[2]{2}$ constant \\
+\> {\tt rt3}         \> 1.7320508075688772 \> $\sqrt[2]{3}$ constant \\
+\> {\tt r4pie0}      \> 138935.4835        \> electrostatics conversion factor to internal units, i.e. $\frac{1}{4 \pi \epsilon_{o}}$ \\
+\> {\tt boltz}       \> 0.831451115        \> Boltzmann constant in internal units \\
+\> {\tt prsunt}      \> 0.163882576        \> conversion factor for pressure from internal units to katms \\
+\>                   \>                    \> \\
+\> {\tt nread}       \> 5                  \> main input channel \\
+\> {\tt nconf}       \> 11                 \> configuration file input channel \\
+\> {\tt nfield}      \> 12                 \> force field input channel \\
+\> {\tt ntable}      \> 13                 \> tabulated potentials file input channel \\
+\> {\tt nrefdt}      \> 14                 \> reference configuration input channel \\
+\> {\tt nrite}       \> 6                  \> main output channel \\
+\> {\tt nstats}      \> 21                 \> statistical data file output channel \\
+\> {\tt nrest}       \> 22                 \> output channel accumulators restart dump file \\
+\> {\tt nhist}       \> 23                 \> trajectory history file channel \\
+\> {\tt ndefdt}      \> 24                 \> output channel for defects data file \\
+\> {\tt nrdfdt}      \> 25                 \> output channel for RDF data \\
+\> {\tt nzdfdt}      \> 26                 \> output channel for Z-density data file \\
+\>                   \>                    \> \\
+\> {\tt seed(1:2)}   \> {\em variable}     \> pair of seeds for the random number generator \\
+\> {\tt lseed}       \> {\em variable}     \> logical swich on/off indicator for seeding \\
+\>                   \>                    \> \\
+\> {\tt mxsite}      \> {\em variable}     \> max number of molecular sites \\
+\> {\tt mxatyp}      \> {\em variable}     \> max number of unique atomic types \\
+\> {\tt mxtmls}      \> {\em variable}     \> max number of unique molecule types \\
+\> {\tt mxexcl}      \> {\em variable}     \> max number of excluded interactions per atom \\
+\> {\tt mxspl}       \> {\em variable}     \> SPME FFT B-spline order \\
+\> {\tt kmaxa}       \> {\em variable}     \> SPME FFT amended array dimension (a direction) \\
+\> {\tt kmaxb}       \> {\em variable}     \> SPME FFT amended array dimension (b direction) \\
+\> {\tt kmaxc}       \> {\em variable}     \> SPME FFT amended array dimension (c direction) \\
+\> {\tt kmaxa1}      \> {\em variable}     \> SPME FFT original array dimension (a direction) \\
+\> {\tt kmaxb1}      \> {\em variable}     \> SPME FFT original array dimension (b direction) \\
+\> {\tt kmaxc1}      \> {\em variable}     \> SPME FFT original array dimension (c direction) \\
+\> {\tt mxtshl}      \> {\em variable}     \> max number of specified core-shell unit types in system \\
+\> {\tt mxshl}       \> {\em variable}     \> max number of core-shell units per node \\
+\> {\tt mxfshl}      \> {\em variable}     \> max number of related core-shell units (1+1) \\
+\> {\tt mxtcon}      \> {\em variable}     \> max number of specified bond constraints in system \\
+\> {\tt mxcons}      \> {\em variable}     \> max number of constraint bonds per a node \\
+\> {\tt mxfcon}      \> {\em variable}     \> max number of related constraint units (6+1) \\
+\> {\tt mxlshp}      \> {\em variable}     \> max number of shared particles per node \\
+\>                   \>                    \> ${\tt Max} (2~\frac{\tt mxshl}{2},2~\frac{\tt mxcons}{2},\frac{{\tt mxlrgd}~*~{\tt mxrgd}}{2})$ \\
+\> {\tt mxproc}      \> {\em variable}     \> number of neighbour nodes in DD hypercube (26) \\
+\> {\tt mxtpmf(1:2)} \> {\em variable}     \> max number of specified particles in a PMF unit (1:2) \\
+\> {\tt mxpmf}       \> {\em variable}     \> max number of PMF constraints per a node \\
+\> {\tt mxfpmf}      \> {\em variable}     \> max number of related PMF units (1+1) \\
+\> {\tt mxtrgd}      \> {\em variable}     \> max number of types RB units \\
+\> {\tt mxrgd}       \> {\em variable}     \> max number of RB units per node \\
+\> {\tt mxlrgd}      \> {\em variable}     \> max number of constituent particles of an RB unit \\
+\> {\tt mxfrgd}      \> {\em variable}     \> max number of related RB units (1+1) \\
+\> {\tt mxtteth}     \> {\em variable}     \> max number of specified tethered potentials in system \\
+\> {\tt mxteth}      \> {\em variable}     \> max number of tethered atoms per node \\
+\> {\tt mxftet}      \> {\em variable}     \> max number of related tether units (1+1) \\
+\> {\tt mxpteth}     \> {\em variable}     \> max number of parameters for tethered potentials (3) \\
+\> {\tt mxtbnd}      \> {\em variable}     \> max number of specified chemical bond potentials in system \\
+\> {\tt mxbond}      \> {\em variable}     \> max number of chemical bonds per node \\
+\> {\tt mxfbnd}      \> {\em variable}     \> max number of related chemical bonds (1+(6*(6+1))/2) \\
+\> {\tt mxpbnd}      \> {\em variable}     \> max number of parameters for chemical bond potentials (4) \\
+\> {\tt mxtang}      \> {\em variable}     \> max number of specified bond angle potentials in system \\
+\> {\tt mxangl}      \> {\em variable}     \> max number of bond angles per node \\
+\> {\tt mxfang}      \> {\em variable}     \> max number of related bond angles (1+(6*(6+1))/2) \\
+\> {\tt mxpang}      \> {\em variable}     \> max number of parameters for bond angle potentials (6) \\
+\> {\tt mxtdih}      \> {\em variable}     \> max number of specified dihedral angle potentials in system \\
+\> {\tt mxdihd}      \> {\em variable}     \> max number of dihedral angles per node \\
+\> {\tt mxfdih}      \> {\em variable}     \> max number of related dihedral angles (1+((6-2)6*(6+1))/2) \\
+\> {\tt mxpdih}      \> {\em variable}     \> max number of parameters for dihedral angle potentials (7) \\
+\> {\tt mxtinv}      \> {\em variable}     \> max number of specified inversion angle potentials in system \\
+\> {\tt mxinv}       \> {\em variable}     \> max number of inversion angles per node \\
+\> {\tt mxfinv}      \> {\em variable}     \> max number of related inversion angles (1+(6*(6+1))/4) \\
+\> {\tt mxpinv}      \> {\em variable}     \> max number of parameters for inversion angle potentials (3) \\
+\> {\tt mxgrid}      \> {\em variable}     \> max number of grid points in potential arrays \\
+\> {\tt mxrdf }      \> {\em variable}     \> max number of pairwise RDF in system \\
+\> {\tt mxgrdf}      \> {\em variable}     \> number of grid points for RDF and Z-density \\
+\> {\tt mxvdw}       \> {\em variable}     \> max number of van der Waals potentials in system \\
+\> {\tt mxpvdw}      \> {\em variable}     \> max number of van der Waals potential parameters (5) \\
+\> {\tt mxmet}       \> {\em variable}     \> max number of metal potentials in system \\
+\> {\tt mxpmet}      \> {\em variable}     \> max number of metal potential parameters (9) \\
+\> {\tt mxter}       \> {\em variable}     \> max number of Tersoff potentials in system \\
+\> {\tt mxpter}      \> {\em variable}     \> max number of Tersoff potential parameters (11) \\
+\> {\tt mxtbp}       \> {\em variable}     \> max number of three-body potentials in system \\
+\> {\tt mx2tbp}      \> {\em variable}     \> array dimension of three-body potential parameters \\
+\> {\tt mxptbp}      \> {\em variable}     \> max number of three-body potential parameters (5) \\
+\> {\tt mxfbp}       \> {\em variable}     \> max number of four-body potentials in system \\
+\> {\tt mx2fbp}      \> {\em variable}     \> array dimension of four-body potential parameters \\
+\> {\tt mxpfbp}      \> {\em variable}     \> max number of four-body potential parameters (3) \\
+\> {\tt mxpfld}      \> {\em variable}     \> max number of external field parameters (5) \\
+\> {\tt mxstak}      \> {\em variable}     \> dimension of stack arrays for rolling averages \\
+\> {\tt mxnstk}      \> {\em variable}     \> max number of stacked variables \\
+\> {\tt mxlist}      \> {\em variable}     \> max number of atoms in the verlet list on a node \\
+\> {\tt mxcell}      \> {\em variable}     \> max number of link cells per node \\
+\> {\tt mxatms}      \> {\em variable}     \> max number of local+halo atoms per node \\
+\> {\tt mxatms}      \> {\em variable}     \> max number of local atoms per node \\
+\> {\tt mxbuff}      \> {\em variable}     \> max dimension of the principle transfer buffer \\
+\>                   \>                    \> \\
+\> {\tt zero\_plus}  \> {\em variable}     \> the machime representation of $+0$ at working precision \\
+\> {\tt half\_minus} \> {\em variable}     \> the machime representation of $+0.5$ at working precision \\
+\>                   \>                    \> \\
+\> {\tt engunit}     \> {\em variable}     \> the system energy unit \\
+\end{tabbing}

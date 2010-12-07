@@ -1,0 +1,446 @@
+\section{Compiling and Running \D}
+
+\subsection{Compiling the Source Code}
+\label{compilation}
+
+When you have obtained \D from Daresbury Laboratory and unpacked it,
+your next task will be to compile it.  To aid compilation three
+general makefiles have been provided in the sub-directory {\em
+build}.  These are ``Makefile\_MPI'' - for compiling a parallel
+version of \D, and ``Makefile\_SRL1'' and ``Makefile\_SRL2'' - for
+compiling a serial versions (see Appendix \ref{makefiles}).  After
+choosing what the default compilation is to be, the appropriate
+makefile is to be copied as ``Makefile'' in the sub-directory {\em
+source}.  The general \D makefile will build an executable with the
+full range of functionality - sufficient for the test cases and for
+most users' requirements.  In most cases, the user will have to
+modify few entries in the specification part of their makefile to
+match the location of certain software on their system architecture.
+{\bf Note} that {\bf only} FORTRAN90 compiler is required for
+successful build of \D in serial mode, and {\bf only} FORTRAN90\index{FORTRAN90}
+and MPI implementation - for \D in parallel mode.  Should the user
+add additional functionality to the code, major changes of the
+makefile may be required!
+
+In UNIX environment the compilation of the program is initiated by
+typing the command:
+
+{\em make} $target$
+
+\noindent where $target$ is the specification of the required
+machine.  For many computer systems this is all that is required
+to compile a working version of \D. (To determine which targets
+are already defined in the makefile, examine it or type the
+command {\em make} without a nominated target - it will produce a
+list of known targets.)
+
+The full specification of the {\em make} command is as follows
+
+{\em make} $<$TARGET= $\ldots >$ $<$ EX=$\ldots >$ $<$
+BINROOT=$\ldots >$
+
+\noindent where some (or all) of the keywords may be omitted.
+The keywords and their uses are described below.  {\bf Note} that
+keywords may also be set in the UNIX environment (e.g. with the
+``setenv'' command in a TCSH-shell, or ``export'' in BASH-shell).
+
+\subsubsection{Keywords in the Makefiles}
+
+\begin{enumerate}
+\item {\bf TARGET} \\
+The TARGET keyword indicates which kind of computer the code is to
+be compiled for.  This {\bf must} be specified - there is no
+default value.  Valid targets can be listed by the makefile if the
+command {\em make} is typed, without arguments.  The list
+frequently changes as more targets are added and redundant ones
+removed.  Users are encouraged to extend the makefile for
+themselves, using existing targets as examples. \\
+\item {\bf EX} \\
+The EX keyword specifies the executable name.  The default name
+for the executable is ``DLPOLY.Z''. \\
+\item {\bf BINROOT} \\
+The BINROOT keyword specifies the directory in which the
+executable is to be stored.  The default setting is
+``../execute''.
+\end{enumerate}
+
+\subsubsection{Modifying the Makefiles}
+
+\begin{enumerate}
+\item {\bf Changing the FORTRAN90 compiler and MPI implementation} \\
+To specify the FORTRAN90 compiler in a target platform, the user
+must type the full path to the executable in {\bf FC=``...''} and
+all appropriate options (as defined in the relevant FORTRAN90\index{FORTRAN90}
+manual) and the path to the MPI implementation in {\bf
+FCFLAGS=``...''}. The same must be done for the the linker: the
+path to the executable in {\bf LD=``...''} and the appropriate
+options and the path to the MPI implementation in {\bf
+LDFLAGS=``...''}. \\
+\item {\bf Adding new functionality} \\
+To include a new subroutine in the code simply add {\em
+subroutine}.o to the list of object names in the makefile
+(`OBJ\_ALL'').  {\bf Note} that there is a hierarchial order of
+adding file names in the ``OBJ\_MOD'' list whereas such order does
+not exist in the ``OBJ\_ALL'' list.  Therefore, should dependence
+exist between routines listed in the ``OBJ\_ALL'' list, it {\bf
+must} be explicitly declared in the makefile.
+\end{enumerate}
+
+\subsubsection{Note on the Interpolation Scheme}
+\label{interpolation}
+
+In \D two-body-like contributions (van der Waals\index{potential!van der Waals},
+metal\index{potential!metal} and real space Ewald summation\index{Ewald!summation})
+to energy and force are evaluated by interpolation of tables
+constructed at the beginning of execution.  The \D interpolation
+scheme is based on a 3-point linear interpolation in $r$.  {\bf Note}
+that a 5-point linear interpolation in $r$ is ised in \D for
+interpolation of the EAM (metal) forces from EAM table data (TABEAM).
+
+The number of grid points ({\tt mxgrid}) required for
+interpolation in $r$ to give good energy conservation in a
+simulation is:
+\[ {\tt mxgrid} = {\tt Max}({\tt mxgrid}, 1000, {\tt Int}(r_{\tt cut}/0.01 + 0.5) + 4)~~, \]
+where $r_{\tt cut}$ is the main cutoff beyond which the
+contributions from the short-range-like interactions are negligible.
+
+\subsection{Running}
+
+To run the \D executable (DLPOLY.Z) you will initially require
+three to six input data files, which you must
+create in the {\em execute} sub-directory, (or whichever
+sub-directory you keep the executable program).  The first of
+these is the CONTROL file (Section \ref{control-file}), which
+indicates to \D what kind of simulation you want to run, how
+much data you want to gather and for how long you want the job
+to run.  The second file you need is the CONFIG file
+(Section \ref{config-file}).  This contains the atom
+positions and, depending on how the file was created (e.g. whether
+this is a configuration created from `scratch' or the end point of
+another run), the velocities and forces also.  The third file
+required is the FIELD file (Section \ref{field-file}), which
+specifies the nature of the intermolecular interactions, the
+molecular topology and the atomic properties, such as charge and
+mass.  Sometimes you may require a fourth file: TABLE (Section
+\ref{table-file}), which contains short ranged potential and force
+arrays for functional forms not available within \D (usually because
+they are too complex e.g. spline potentials) and/or a fifth file
+TABEAM (Section \ref{tabeam-file}), which contains metal potential
+arrays for non-analytic or too complex functional forms and/or a
+sixth file: REFERENCE (Section \ref{reference-file}), which is
+similar to the CONFIG file and contains the "perfect" crystalline
+structure of the system.
+
+Examples of input files are found in the {\em data} sub-directory,
+which can be copied into the {\em execute} subdirectory using the {\sl
+select} macro found in the {\em execute} sub-directory.
+
+A successful run of \D will generate several data files, which
+appear in the {\em execute} sub-directory.  The most obvious one
+is the file OUTPUT (Section \ref{output-file}), which provides an
+effective summary of the job run: the input information; starting
+configuration; instantaneous and rolling-averaged thermodynamic
+data; minimisation information, final configurations;
+radial distribution functions (RDFs); Z-density profiles
+and job timing data.  The OUTPUT file is human readable.  Also
+present will be the restart files REVIVE (Section
+\ref{revive-file}) and REVCON (Section \ref{revcon-file}).  REVIVE
+contains the accumulated data for a number of thermodynamic
+quantities and RDFs, and is intended to be used as the input file
+for a following run.  It is {\em not} human readable.  The REVCON
+file contains the {\em restart configuration} i.e. the final
+positions, velocities and forces of the atoms when the run ended
+and is human readable.  The STATIS file (Section
+\ref{statis-file}) contains a catalogue of instantaneous values of
+thermodynamic and other variables, in a form suitable for temporal
+or statistical analysis.  Finally, the HISTORY file (Section
+\ref{history-file}) provides a time ordered sequence of
+configurations to facilitate further analysis of the atomic
+motions.  By default this file is formatted (human readable) but
+with little effort from the user it can be generated unformatted.
+You may move these output files back into the {\em data}
+sub-directory using the {\sl store} macro found in the {\em
+execute} sub-directory.
+
+Lastly, \D may also create the files RDFDAT, ZDNDAT, MSDTMP
+and DEFECTS containing the RDF, Z-density, individual means square
+displacement and temperature, and defects data respectively.  They
+are all human readable files.
+
+\subsection{Restarting}
+
+The best approach to running \D is to define from the outset
+precisely the simulation you wish to perform and create the input
+files specific to this requirement.  The program will then perform
+the requested simulation, but may terminate prematurely through
+error, inadequate time allocation or computer failure.  Errors in
+input data are your responsibility, but \D will usually give
+diagnostic messages to help you sort out the trouble.  Running out
+of job time is common and provided you have correctly specified
+the job time variables (using the {\bf close time} and {\bf job
+time} directives - see Section \ref{control-file}) in the CONTROL
+file, \D will stop in a controlled manner, allowing you to restart
+the job as if it had not been interrupted.
+
+To restart a simulation after normal termination you will again
+require the original CONTROL file ({\em augment it to include the}
+{\bf restart} {\em directive and/or extend the length and duration
+of the new targeted MD run}), the FIELD (and TABLE and/or TABEAM)
+file, and a CONFIG file, which is the exact copy of the REVCON file
+created by the previous job.  You will also require a new file:
+REVOLD (Section \ref{revold-file}), which is an exact copy of the
+previous REVIVE file.  If you attempt to restart \D without this
+additional file available, the job will most probably fail.
+{\bf Note} that \D will append new data to the existing STATIS and
+HISTORY files if the run is restarted, other output files will be
+{\bf overwritten}.
+
+In the event of machine failure, you should be able to restart the
+job in the same way from the surviving REVCON and REVIVE files,
+which are dumped at regular intervals to meet just such an
+emergency.  In this case check carefully that the input files are
+intact and use the HISTORY and STATIS files with caution - there
+may be duplicated or missing records.  The reprieve processing
+capabilities of \D are not foolproof - the job may crash while
+these files are being written for example, but they can help a
+great deal.  You are advised to keep backup copies of these files,
+noting the times they were written, to help you avoid going right
+back to the start of a simulation.
+
+You can also extend a simulation beyond its initial allocation of
+timesteps, provided you still have the REVCON and REVIVE files.
+These should be copied to the CONFIG and REVOLD files respectively
+and the directive {\bf timesteps} adjusted in the CONTROL file to
+the new total number of steps required for the simulation.  For
+example if you wish to extend a 10000 step simulation by a further
+5000 steps use the directive {\bf timesteps 15000} in the CONTROL
+file and include the {\bf restart} directive.
+
+Further to the full restart option, there is an alternative
+{\bf restart~scale} directive that will reset the temperature
+at start or {\bf restart~noscale} that will keep the current
+kinetics intact. {/bf Note} that these two options are not
+correct {\bf restart}s but rather modified {\bf start}s as
+they make no use of REVOLD file and will reset internal
+accumulators to zero at start.
+
+{\bf Note that all these options are mutually exlusive!}
+
+If none of the restart options is specified velocities are
+generated anew with Gaussian distribution of the target kinetic
+energy based on the provided temperature in the CONTROL file.
+
+\subsection{Optimising the Starting Structure} \label{minimisation} \index{minimisation}
+
+The preparation of the initial structure of a system for a molecular
+dynamics simulation can be difficult.  It is quite likely that the
+structure created does not correspond to one typical of the
+equilibrium state for the required state point, for the given force
+field employed.  This can make the simulation unstable in the initial
+stages and can even prevent it from proceeding.
+
+For this reason \D has available a selection of structure relaxation
+methods.  Broadly speaking, these are energy minimisation algorithms,
+but their role in \D is not to provide users with true structural
+optimisation procedures capable of finding the ground state structure.
+They are simply intended to help users improve the quality of the
+starting structure prior to a statistical dynamical simulation, which
+implies useage during the equlibration period only!
+
+The available algorithms are:
+\begin{enumerate}
+\item `Zero' temperature molecular dynamics\index{minimisation!zero temperature}.
+This is equivalent to a dynamical simulation at low temperature.
+At each time step the molecules move in the direction of the
+computed forces (and torques), but are not allowed to acquire
+a velocity larger than that corresponding to a temperature of 10 Kelvin.
+The subroutine that performs this procedure is {\sc zero\_k\_optimise}.
+
+\item Conjugate Gradients Metod (CGM) minimisation\index{minimisation!conjugate gradients}.
+This is nominally a simple minimisation of the system configuration
+energy using the conjugate gradients method \cite{shewchuk-94a}.
+The algorithm coded into \D is an adaptation that allows for
+rotation and translation of rigid bodies. Rigid (contraint) bonds
+however are treated as stiff harmonic springs - a strategy which
+we find does allow the bonds to converge within the accuracy
+required by SHAKE.  The subroutine that performs this procedure
+is {\sc minimise\_relax} which makes use of, {\sc minimise\_module}.
+
+\item `Programmed' energy minimisation, involving both MD and CGM\index{minimisation!programmed}.
+This method combines the two as minimisation is invoked by
+user-defined intervals of (usually low temperature) dynamics, in a
+cycle of minimisation - dynamics - minimisation etc., which is
+intended to help the structure relax from overstrained conditions
+(see Section \ref{control-file}).  When using the programmed
+minimisation \D writes (and rewrites) the file CFGMIN \ref{cfgminfile},
+which represents the lowest energy structure found during the
+programmed minimisation.  CFGMIN is written in CONFIG file format
+(see section \ref{config-file}) and can be used in place of the
+original CONFIG file.
+\end{enumerate}
+
+It should be noted that none of these algorithms permit the simulation
+cell to change shape.  It is only the atomic structure that is relaxed.
+After which it is assumed that normal molecular dynamics will commence
+from the final structure.
+
+\subsubsection*{Notes on the Minimisation Procedures}
+
+\begin{enumerate}
+\item The zero temperature dynamics is really dynamics conducted at 10
+Kelvin.  However, the dynamics has been modified so that the velocities
+of the atoms are always directed along the force vectors.  Thus the
+dynamics follows the steepest descent to the (local) minimum.  From any
+given configuration, it will always descend to the same minimum.
+
+\item The conjugate gradient procedure has been adapted to take account
+of the possibilites of constraint bonds and rigid bodies being present
+in the system.  If neither of these is present, the conventional
+unadapted procedure is followed.
+
+\begin{enumerate}
+\item In the case of rigid bodies, atomic forces are resolved into
+molecular forces and torques.  The torques are subsequently transformed
+into an equivalent set of atomic forces which are perpendicular both to
+the instantaneous axis of rotation (defined by the torque vector) and
+to the cylindrical radial displacement vector of the atom from the axis.
+These modified forces are then used in place of the original atomic
+forces in the conjugate gradient scheme.  The atomic displacement
+induced in the conjugate gradient algorithm is corrected to maintain the
+magnitude of the radial position vector, as required for circular motion.
+
+\item With regard to constraint bonds, these are replaced by stiff
+harmonic bonds to permit minimisation.  This is not normally recommended
+as a means to incorporate constraints in minimisation procedures as it
+leads to ill conditioning. However, {\it if the constraints in the
+original structure are satisfied}, we find that provided only small
+atomic displacements are allowed during relaxation it is possible to
+converge to a minimum energy structure. Furthermore, provided the
+harmonic springs are stiff enough, it is possible afterwards to satisfy
+the constraints exactly by further optimising the structure using the
+stiff springs alone, without having a significant affect on the overall
+system energy.
+
+\item Systems with independent constraint bonds and rigid bodies may
+also be minimised by these methods.
+\end{enumerate}
+
+\item Of the three minimisation strategies available in \D, only the
+programmed minimiser is capable of finding more than one minimum
+without the user intervening.
+
+\item Finally, we emphasise once again that the purpose of the
+minimisers in \D is to help improve the quality of the starting
+structure and we believe they are adequate for that purpose.  We do
+not recommend them as general molecular structure optimisers.  They
+may however prove useful for relaxing crystal structures to 0 Kelvin
+for the purpose of identifying a true crystal structure.
+\end{enumerate}
+
+\subsection{Simulation Efficiency and Performance}
+
+Although the \D underlining parallelisation strategy (DD and
+link-cells, see Section \ref{parallelisation}) is extremely
+efficient, it cannot always provide linear parallelisation speed
+gain with increasing processor count for a fixed size system.
+Nevertheless, it will always provide speedup of the simulation (i.e.
+there still is a sufficient speed gain in simulations when the
+number of nodes used in parallel is increased).  The simplest
+explanation why this is is that increasing the processor count for a
+fixed size system decreases not only the work- and memory-load per
+processor but also the ratio size of domain to size of halo (both in
+counts of link cells).  When this ratio falls down to values close
+to one and below, the time \D spends on inevitable communication
+(MPI messages across neighbouring domains to refresh the halo data)
+increases with respect to and eventually becomes prevalent to the
+time \D spends on numeric calculations (integration and forces).  In
+such regimes, the {\bf overall} \D efficiency falls down since
+processors spend more time on staying idle while communicating than
+on computing.
+
+It is important that the user recognises when \D becomes
+vulnerable to decreased efficiency and what possible measures
+could be taken to avoid this.  \D calculates and reports the
+major and secondary link-cell algorithms ($M_{x} \cdot M_{y} \cdot M_{z}$)
+employed in the simulations immediately after execution.  $M_{x}$
+(analogously for $M_{y}$ and $M_{z}$) is the integer number of the
+ratio of the width of the system domains in $x$-direction (i.e.
+perpendicular to the (y,z) plane) to the major and secondary
+(coming from three- and/or four-body and/or Tersoff interactions)
+short-range cutoffs specified for the system:
+\begin{eqnarray}
+M_{x} &=& {\tt Nint} \left[ \frac{W_{x}/P_{x}}{\tt cutoff} \right] \nonumber \\
+W_{x} &=& {\tt MD~box~width~\perp~plane}(y,z) \\ \label{link-cell}
+P_{x} &=& \#({\tt nodes})_{x{\tt -direction}}~~, \nonumber
+\end{eqnarray}
+where $x$, $y$ and $z$ represent the directions along the MD cell
+lattice vectors.  Every domain (node) of the MD cell is loaded with
+$(M_{x}+2) \cdot (M_{y}+2) \cdot (M_{z}+2)$ link-cells of which
+$M_{x} \cdot M_{y} \cdot M_{z}$ belong to that domain and the rest
+are a halo image of link-cells forming the surface of the
+immediate neighbouring domains.  In this respect, if we define
+performance efficiency as minimising communications with respect
+to maximising computation (minimising the halo volume with respect
+to the node volume), best performance efficiency will require
+$M_{x} \approx M_{y} \approx M_{z} \approx M$ and $M \gg 1$.
+The former expression is a necessary condition and only guarantees
+good communication distribution ballancing.  Whereas the latter, is
+a sufficent condition and guarantees prevalance of computation over
+communications.
+
+\D issues a built-in warning when a link-cell algorithms has a
+dimension less than four (i.e. less than four link-cells per
+domain in given direction).  A useful rule of thumb is that
+parallelisation speed-up inefficiency is expected when the ratio
+\begin{equation}
+R = \frac{M_{x} \cdot M_{y} \cdot M_{z}}{(M_{x}+2)
+\cdot (M_{y}+2) \cdot (M_{z}+2)-M_{x} \cdot M_{y} \cdot M_{z}} \label{R-factor}
+\end{equation}
+is close to or drops below one.  In such cases there are three
+strategies for improving the situation that can be used singly or in
+combination.  As obvious from equation (\ref{link-cell}) these are:
+{\bf (i)} decrease the number of nodes used in parallel, {\bf (ii)}
+decrease the cutoff and {\bf (iii)} increase system size.  It is
+crucial to note that increased parallelisation efficiency remains
+even when the link-cell algorithm is used inefficiently.  However,
+\D will issue an error message and cease execution if it detects it
+cannot fit a link-cell per domain as this is the minimum the \D
+link-cell algorithm can work with - $(1 \cdot 1 \cdot 1)$
+corresponding to ratio $R~=~1/26$.
+
+It is worth outlining in terms of the
+${\cal O}({\tt computation~;~communication})$ function what the
+rough scaling performance is like of the most computation and
+communication intensive parts of \D in an MD timestep.
+\begin{description}
+\item[(a)] Domain hallo re-construction in {\sc set\_halo\_particles},
+{\sc metal\_ld\_set\_halo} and \\ {\sc defects\_reference\_set\_halo} -
+${\cal O}\left({\cal N}/P~;~{\cal N}/R)\right)$
+\item[(b)] Verlet neighbourlist construction by link-cells in
+{\sc link\_cell\_pairs} - ${\cal O}\left({\cal N}/P~;~0\right)$,
+may take up to 40\% of the time per timestep
+\item[(c)] Calculation of k-space contributions to energy and forces
+from SMPE by {\sc ewald\_spme\_forces} (depends on {\sc parallel\_fft}
+which depends on {\sc gpfa\_module}) -
+${\cal O}\left({\cal N}~{\normalfont log}~{\cal N}~;~({\cal N}~{\normalfont log}~P)/P\right)$,
+may take up to 40\% of the time per timestep
+\item[(d)] Particle exchange between domains, involving construction
+and connection of new out of domain topology when bonded-like
+interactions exist, by {\sc relocate\_particles} -
+${\cal O}\left({\cal N}~;~(P/{\cal N})^{1/3}\right)$
+\item[(e)] Iterative bond and PMF constraint solvers: \\
+{\sc constraints\_shake\_vv}, {\sc constraints\_rattle\_vv}, {\sc constraints\_shake\_lfv} \\
+and {\sc pmf\_shake\_vv}, {\sc pmf\_rattle\_vv}, {\sc pmf\_shake\_lfv} -
+${\cal O}\left({\cal N}~;~(P/{\cal N})^{1/3}\right)$
+\end{description}
+where ${\cal N}$ is the number of particles, $P~=~P_{x}+P_{y}+P_{z}$ the
+total number of domains in the MD cell and the rest of the quantities
+are as defined in equations (\ref{link-cell}-\ref{R-factor}).
+
+Performance may also affected by the fluctuations in the inter-node
+communication, due to unavoidable communication traffic when a
+simulation job does not have exclusive use of all machine resources.
+Such effects may worsen the performance much, especially when the
+average calculation time is of the same magnitude as or less than
+the average communication time (i.e. nodes spend more time
+communicating rather than computing).

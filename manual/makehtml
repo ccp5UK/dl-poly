@@ -1,0 +1,2 @@
+#!/bin/sh
+latex2html -unsegment -html_version "4.0,math" -no_math -local_icons -white -font_size 12pt -address "Last updated: March 2009 by Ilian T. Todorov (ilian.todorov@stfc.ac.uk)" -info "This document is published using latex2html version 2002-2-1" -top_navigation -bottom_navigation -next_page_in_navigation -previous_page_in_navigation -contents_in_navigation -index_in_navigation MANUAL_USR.tex

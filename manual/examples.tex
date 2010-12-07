@@ -1,0 +1,188 @@
+\section{Test Cases}
+
+Because of the size of the data files for the \D
+standard test cases, they are not shipped in the standard
+download of the \D source.  Instead users are requested
+to download them from the CCP5 FTP server as follows:
+
+\begin{verbatim}
+FTP site : ftp.dl.ac.uk
+Username : anonymous
+Password : your email address
+Directory: ccp5/DL_POLY/DL_POLY_4.0/DATA
+Files    : test_X.tar.gz
+\end{verbatim}
+
+where `\_X' stands for the test case number.
+
+Remember to use the BINARY data option when transferring these
+files.
+
+Unpack the files in the `data' subdirectory using firstly
+`gunzip' to uncompress them and then `tar -xf' to create the
+`TEST\_X' directory.
+
+These are provided so that you may check that your version of
+\D is working correctly.  All the jobs are of a size suitable
+to test the code in parallel execution.  They not not be
+suitable for a single processor computer.  The files are stored
+in compressed format.  The test cases can be run by typing
+
+{\sl select } n
+
+\noindent from the {\em execute} directory, where n is the number of
+the test case.  The {\sl select} macro will copy the appropriate
+CONTROL, CONFIG, and FIELD files to the {\em execute} directory
+ready for execution.  The output file OUTPUT may be compared with
+the file supplied in the {\em data} directory.
+
+It should be noted that the potentials and the simulation
+conditions used in the following test cases are chosen to
+demonstrate functionality only.  {\bf They are not necessarily
+appropriate for serious simulation of the test systems.}
+
+\subsection{Test Case 1 and 2: Sodium Chloride}
+
+These are a 27,000 and 216,000 ion systems respectively with unit
+electric charges on sodium and chlorine.  Simulation at 500~K with a
+NVT Berendsen ensemble.  The SPME method is used to calculate the
+Coulombic interactions.
+
+\subsection{Test Case 3 and 4: DPMC in Water}
+
+These systems consist of 200 and 1,600 DMPC molecules in 9379 and
+75032 water molecules respectively.  Simulation at 300~K using NVE
+ensemble with SPME and RATTLE algorithm for the constrained motion.
+Total system size is 51737 and 413896 atoms respectively.
+
+\subsection{Test Case 5 and 6: KNaSi$_{2}$O$_{5}$}
+
+Potassium Sodium disilicate glass (NaKSi$_{2}$O$_{5}$) using two and
+three-body potentials.  Some of the two-body potentials are read
+from the TABLE file.  Simulation at 1000~K using NVT Nos\'e-Hoover ensemble
+with SPME.  Cubic periodic boundaries are in use. System size is
+69120 and 552960 ions respectively.
+
+\subsection{Test Case 7 and 8: Gramicidin A molecules in Water}
+
+These systems consist of 8 and 16 gramicidin A molecules in aqueous
+solution (32,096 and 256,768 water molecules) with total number of
+atoms 99,120 and 792,960 respectively.  Simulation at 300~K using
+NPT Berendsen ensemble with SPME and SHAKE/RATTLE algorithm for the
+constrained motion.
+
+\subsection{Test Case 9 and 10: SiC with Tersoff Potentials}
+
+These systems consist of 74,088 and 343,000 atoms respectively.
+Simulation at 300~K using NPT Nos\'e-Hoover ensemble with Tersoff forces
+and no electrostatics.
+
+\subsection{Test Case 11 and 12: Cu$_{3}$Au alloy with Sutton-Chen (metal) Potentials}
+
+These systems consist of 32,000 and 256,000 atoms respectively.
+Simulation at 300~K using NVT Nos\'e-Hoover ensemble with Sutton-Chen forces and
+no electrostatics.
+
+\subsection{Test Case 13 and 14: lipid bilayer in water}
+
+These systems consist of 12,428 and 111,852 atoms respectively.
+Simulation at 300~K using NVT Berendsen ensemble with SPME and
+SHAKE/RATTLE algorithm for the constrained motion.
+
+\subsection{Test Case 15 and 16: relaxed and adiabatic shell model MgO}
+
+These systems consist of 8,000 (4,000 shells) and 64,000 (32,000
+shells) atoms respectively.  Simulation at 3000~K using NPT
+Berendsen ensemble with SPME.  FIELD and CONTROL files for each
+shell model are provided separately.
+
+\subsection{Test Case 17 and 18: Potential of mean force on K+ in water MgO}
+
+These systems consist of 13,500 (500 PMFs) and 53,248 (2,048 PMFs)
+atoms respectively.  Simulation at 300~K using NPT Berendsen
+ensemble with SPME and SHAKE/RATTLE algorithm for the constrained
+motion.
+
+\subsection{Test Case 19 and 20: Cu$_{3}$Au alloy with Gupta (metal) Potentials}
+
+These systems consist of 32,000 and 256,000 atoms respectively.
+Simulation at 300~K using NVT Nos\'e-Hoover ensemble with Gupta forces and
+no electrostatics.
+
+\subsection{Test Case 21 and 22: Cu with EAM (metal) Potentials}
+
+These systems consist of 32,000 and 256,000 atoms respectively.
+Simulation at 300~K using NPT Berendsen ensemble with EAM tabulated
+forces and no electrostatics.
+
+\subsection{Test Case 23 and 24: Al with Sutton-Chen (metal) Potentials}
+
+These systems consist of 32,000 and 256,000 atoms respectively.
+Simulation at 300~K using NVT Evans ensemble with Sutton-Chen
+forces and no electrostatics.
+
+\subsection{Test Case 25 and 26: Al with EAM (metal) Potentials}
+
+These systems consist of 32,000 and 256,000 atoms respectively.
+Simulation at 300~K using NVT Evans ensemble with EAM tabulated
+forces and no electrostatics.
+
+\subsection{Test Case 27 and 28: NiAl alloy with EAM (metal) Potentials}
+
+These systems consist of 27,648 and 221,184 atoms respectively.
+Simulation at 300~K using NVT Evans ensemble with EAM tabulated
+forces and no electrostatics.
+
+\subsection{Test Case 29 and 30: Fe with Finnis-Sincair (metal) Potentials}
+
+These systems consist of 31,250 and 250,000 atoms respectively.
+Simulation at 300~K using NPT Berendsen ensemble with Finnis-Sinclair
+forces and no electrostatics.
+
+\subsection{Test Case 31 and 32: Ni with EAM (metal) Potentials}
+
+These systems consist of 32,000 and 256,000 atoms respectively.
+Simulation at 300~K using NPT Berendsen ensemble with EAM tabulated
+forces and no electrostatics.
+
+\subsection{Test Case 33 and 34: SPC IceVII water with constraints}
+
+These systems consist of 11,664 (34,992 atoms) and 93,312 (279,936
+atoms) water molecules respectively.  Simulation at 25~K using NVE
+ensemble with CGM force minimisation and SPME electrostatics.  Both
+constraint bond and rigid body dynamics cases are available.
+
+\subsection{Test Case 35 and 36: NaCl molecules in SPC water represented as CBs+RBs}
+
+These systems consist of 64 (512) NaCl ion pairs with 4,480 (35,840
+) water molecules represented by constraint bonds and 4,416 (35,328)
+water molecules represented by ridig bodies.  Totalling 26,816 (214,528)
+atoms.  Simulation at 295~K using NPT Berendsen ensemble with CGM energy
+minimisation and SPME electrostatics.
+
+\subsection{Test Case 37 and 38: TIP4P water: RBs with a massless charged site}
+
+These systems consist of 7,263 and 58,104 TIP4P rigid body water molecules
+totaling 29,052 and 232,416 particles respectively.  Simulation at 295~K
+using NPT Berendsen ensemble with CGM energy minimisation and SPME electrostatics.
+
+\subsection{Test Case 39 and 40: Ionic liquid dimethylimidazolium chloride}
+
+These systems consist of 44,352 and 354,816 ions respectively.  Simulation
+at 400~K using NPT Berendsen ensemble, using both particle and rigid body
+dynamics with SPME electrostatics.
+
+\section{Benchmark Cases}
+
+\D benchmark test cases are avaliable to download them from the CCP5 FTP
+server as follows:
+
+\begin{verbatim}
+FTP site : ftp.dl.ac.uk
+Username : anonymous
+Password : your email address
+Directory: ccp5/DL_POLY/DL_POLY_4.0/BENCH
+\end{verbatim}
+
+The \D authors provide these on an "AS IS" terms.  For more information
+refer to the README.txt file within.

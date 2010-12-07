@@ -1,0 +1,419 @@
+amber          
+united atom charges from JACS 106,765-784 (1984) : amino acid units + tyo bcr 
+39 residues :ace ala arg asn asp bcr cys cyx gln glu gly hb he hid hie hip ile leu lys met mtl phe pom pro ser thr trp tyo tyr val wat hoh ade cyt gua thy ura dna rna
+residue = ace
+atoms = 3          
+   1    CH3 C3  -0.026
+   2   1C   C    0.526
+   3   2O   O   -0.500
+residue = ala
+atoms = 6
+   1    N   N   -0.520
+   2   1HN  H    .248
+   3   1CA  CH   .215
+   4   3CB  C3   .031
+   5   3C   C    .5260
+   6   5O   O   -.5000
+residue = arg
+atoms = 15
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .237
+   4   3CB  C2    .049
+   5   4CG  C2    .058
+   6   5CD  C2    .111
+   7   6NE  N2   -.493
+   8   7HNE H3    .294
+   9   7CZ  CA    .813
+  10   9NH1 N2  -.6345       
+  11  10HN1 H3    .3615      2
+  12   9NH2 N2  -.6345       
+  13  12HN2 H3    .3615      2
+  14   3C   C     .5260
+  15  14O   O    -.5000
+residue = asn 
+atoms = 10
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .217
+   4   3CB  C2    .003
+   5   4CG  C     .6750
+   6   5OD1 O    -.4700
+   7   5ND2 N    -.8670
+   8   7HND H     .3440      2
+   9   3C   C     .5260
+  10   9O   O    -.5000
+residue = asp
+atoms = 8
+   1    N   N    -0.520
+   2   1HN  H     0.248
+   3   1CA  CH    .246
+   4   3CB  C2   -0.208
+   5   4CG  C     0.620
+   6   5OD  O2   -0.706      2
+   7   3C   C     0.526
+   8   7O   O    -0.500
+residue = bcr 
+atoms = 5
+   1    H   HO    .166
+   2   1O1  OH   -.408
+   3   2C   C     .525
+   4   3O2  O2   -.612
+   5   3O3  O2   -.671
+residue = cys
+atoms = 9
+   1    N   N    -0.520
+   2   1HN  H     0.2480
+   3   1CA  CH    0.146
+   4   3CB  C2    0.100
+   5   4SG  SH    0.827
+   6   5LP  LP   -0.481      2
+   7   5HS  HS    0.135
+   8   3C   C     .5260
+   9   8O   O    -.5000
+residue = cyx
+atoms = 8
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .088
+   4   3CB  C2    .143
+   5   4SG  S     .8240
+   6   5LP  LP   -.4045      2
+   7   3C   C     .5260
+   8   7O   O    -.5000
+residue = gln
+atoms = 11
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .210
+   4   3CB  C2    .053
+   5   4CG  C2   -.043
+   6   5CD  C     .6750
+   7   6OE1 O    -.4700
+   8   6NE2 N    -.8670
+   9   8HNE H     .3440      2
+  10   3C   C     .5260
+  11  10O   O    -.5000
+residue = glu
+atoms = 9
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .246
+   4   3CB  C2    .000
+   5   4CG  C2   -.208
+   6   5CD  C     .620
+   7   6OE  O2   -.706      2
+   8   3C   C     .5260
+   9   8O   O    -.5000
+residue = gly
+atoms = 5
+   1    N   N    -0.520
+   2   1HN  H     0.248
+   3   1CA  C2    .246
+   4   3C   C     .5260
+   5   4O   O    -.5000
+residue = hb   
+atoms = 1
+   1    H   HO   0.285
+residue = he   
+atoms = 1
+   1    H   HO   0.313
+residue = hid
+atoms = 12
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .219
+   4   3CB  C2    .060
+   5   4CG  CC    .089
+   6   5ND1 NA   -.444
+   7   6HND H     .320
+   8   6CE1 CP    .384
+   9   8NE2 NB   -.527
+  10   5CD2 CF    .145
+  11   3C   C     .5260
+  12  11O   O    -.5000
+residue = hie
+atoms = 12
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .219
+   4   3CB  C2    .060
+   5   4CG  CC    0.112
+   6   5ND1 NB   -.527
+   7   6CE1 CP    .384
+   8   7NE2 NA   -.444
+   9   8HNE H     .320
+  10   5CD2 CG    .122
+  11   3C   C     .5260
+  12  11O   O    -.5000
+residue = hip
+atoms = 13
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .195
+   4   3CB  C2    .211
+   5   4CG  CC    0.103
+   6   5ND1 NA   -.613
+   7   6HND H     .478
+   8   6CE1 CP    .719
+   9   8NE2 NA   -.686
+  10   9HNE H     .486
+  11   5CD2 CG    0.353
+  12   3C   C     .5260
+  13  12O   O    -.5000
+residue = ile
+atoms = 9
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .199
+   4   3CB  CH    .030
+   5   4CG2 C3    .001
+   6   4CG1 C2    .017
+   7   6CD1 C3   -.001
+   8   3C   C     .5260
+   9   8O   O    -.5000
+residue = leu
+atoms = 8
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .204
+   4   3CB  C2    .016
+   5   4CG  CH    .054
+   6   5CD  C3   -.014       2
+   7   3C   C     .5260
+   8   7O   O    -.5000
+residue = lys
+atoms = 11
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .227
+   4   3CB  C2    .039
+   5   4CG  C2    .053
+   6   5CD  C2    .048
+   7   6CE  C2    .218
+   8   7NZ  N3   -.272
+   9   8HNZ H3    .311       3
+  10   3C   C     .5260
+  11  10O   O    -.5000
+residue = met
+atoms = 10
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .137
+   4   3CB  C2    .037
+   5   4CG  C2    .090
+   6   5SD  S     .737
+   7   6LP  LP   -0.381       2
+   8   6CE  C3     .007
+   9   3C   C     .5260
+  10   9O   O    -.5000
+residue = mtl
+atoms = 8
+   1    FE  FE    3.0
+   2    CA  CO    2.0
+   3    CU  CU    2.0
+   4    CS  QC    1.0
+   5    K   QK    1.0
+   6    LI  QL    1.0
+   7    NA  QN    1.0
+   8    RB  QR    1.0
+residue = phe  
+atoms = 10
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .214
+   4   3CB  C2    .038
+   5   4CG  CA    .011
+   6   5CD  CD   -.0110      2
+   7   8CE  CD    .004       2
+   8   7CZ  CD   -.003
+   9   3C   C     .5260
+  10   9O   O    -.5000
+residue = pom  
+atoms = 2
+   1    P   P    1.429
+   2   1O   O2   -.850       2
+residue = pro  
+atoms = 7
+   1    N   N    -0.257
+   2   1CD  C2    0.084
+   3   2CG  C2    0.036
+   4   3CB  C2   -.001
+   5   1CA  CH   0.112
+   6   5C   C    0.526
+   7   6O   O     -.500
+residue = ser  
+atoms = 8
+   1    N   N    -0.520
+   2   1HN  H     .2480
+   3   1CA  CH    .292
+   4   3CB  C2    .194
+   5   4OG  OH   -.5500
+   6   5HOG HO    .3100
+   7   3C   C     .5260
+   8   7O   O    -.5000
+residue = thr  
+atoms = 9
+   1    N   N    -0.520
+   2   1HN  H     0.248
+   3   1CA  CH    .268
+   4   3CB  CH    0.211
+   5   4CG  C3    0.007
+   6   4OG  OH   -.5500
+   7   6HOG HO    .3100
+   8   3C   C     .5260
+   9   8O   O    -.5000
+residue = trp  
+atoms = 16
+   1    N   N   -0.520
+   2   1HN  H    .248
+   3   1CA  CH   .248
+   4   3CB  C2   .020
+   5   4CG  C*   0.046
+   6   5CD1 CG   0.117
+   7   6NE1 NA  -.330
+   8   7HNE H    .294
+   9   7CE2 CN   .000
+  10   9CZ2 CD   0.029
+  11  10CH2 CD   0.034
+  12  11CZ3 CD  -.082
+  13  12CE3 CD   .145
+  14   5CD2 CB  -0.275
+  15   3C   C    .5260
+  16  15O   O   -.5000
+residue = tyo
+atoms = 11
+   1    N   N    -.520               
+   2   1HN  H    .248
+   3   1CA  CH   .239
+   4   3CB  C2   .022
+   5   4CG  CA   -.001
+   6   5CD  CD   -.035     2
+   7   8CE  CD   .100      2
+   8    CZ  C    -.121
+   9   8OH  OH   -.492
+  10   3C   C    .526
+  11  10O   O    -.500
+residue = tyr  
+atoms = 12
+   1    N   N    -0.520
+   2   1HN  H     .248
+   3   1CA  CH    .245
+   4   3CB  C2    .022
+   5   4CG  CA   -0.001
+   6   5CD  CD   -.035       2
+   7   8CE  CD    .100       2
+   8    CZ  C    -.121
+   9   8OH  OH   -.368
+  10   9HOH HO    .339
+  11   3C   C     .526
+  12  11O   O    -.500
+residue = val  
+atoms = 7
+   1    N   N    -0.520
+   2   1HN  H     .248
+   3   1CA  CH    .201
+   4   3CB  CH    .033
+   5   4CG  C3    0.006      2
+   6   3C   C     .526
+   7   6O   O    -.500
+residue = wat  
+atoms = 2
+   1    O   OW    -0.834
+   2   1H   HW     0.417     2
+residue = hoh
+atoms = 2
+   1    O   OW    -0.834
+   2   1H   HW     0.417     2
+residue = dna (dna sugar unit) * start of nucleotide data *
+atoms = 11
+   1   2C5* C2   0.153
+   2   1C4* CH   0.185
+   3   2C3* CH   0.172
+   4   3C2* C2  -0.047
+   5   4C1* CH   0.500
+   6   5O4* OS  -0.386
+   7   3O3* OS  -0.535
+   8   1O5* OS  -0.535
+   9   7P   P    1.429
+  10   9O1P O2   -.850 
+  11   9O2P O2   -.850 
+residue = rna (rna sugar unit)
+atoms = 13
+   1   2C5* C2   0.175
+   2   1C4* CH   0.197
+   3   2C3* CH   0.210
+   4   3C2* CH   0.082
+   5   4O2* OH  -0.512
+   6   5HO2*HO   0.316
+   7   4C1* CH   0.522
+   8   7O4* OS  -0.413
+   9   3O3* OS  -0.535
+  10   1O5* OS  -0.535
+  11   9P   P    1.429
+  12  11O1P O2   -.850 
+  13  11O2P O2   -.850 
+residue = ade
+atoms = 11
+   1   2N9  N*   -0.457
+   2   1C8  CE    0.488
+   3   2N7  NB   -0.599
+   4   3C5  CB   -0.151
+   5   4C6  CA    0.813
+   6   5N6  N2   -0.793
+   7   6HN6 H2    0.337    2
+   8   5N1  NC   -0.760
+   9   8C2  CI    0.571
+  10   9N3  NC   -0.717
+  11  10C4  CB    0.695
+residue = cyt (cytosine)
+atoms = 9
+   1   2N1  N*   -0.572
+   2   1C6  CJ    0.377
+   3   2C5  CJ   -0.230
+   4   3C4  CA    0.630
+   5   4N4  N2   -0.743
+   6   5HN4 H2   0.3365      2
+   7   4N3  NC   -0.791
+   8   7C2  C     0.938
+   9   8O2  O    -0.518
+residue = gua (guanine) all atom
+atoms = 13
+   1   2N9  N*   -0.379
+   2   1C8  CE    0.428
+   3   2N7  NB   -0.575
+   4   3C5  CB   -0.088
+   5   4C6  C     0.714
+   6   5O6  O    -0.459
+   7   5N1  NA   -0.746
+   8   7HN1 H     0.340
+   9   7C2  CA    0.842
+  10   9N2  N2   -0.758
+  11  10HN2 H2   0.3285     2
+  12   9N3  NC   -0.702   
+  13  12C4  CB    0.490
+residue = thy 
+atoms = 10
+   1   2N1  N*   -0.739
+   2   1C6  CJ    0.551
+   3   2C5  CM   -0.595
+   4   3C51 C3    0.097
+   5   4C4  C     0.980
+   6   5O4  O    -0.472
+   7   5N3  NA   -1.012
+   8   7HN3 H     0.370
+   9   7C2  C     1.113
+  10   9O2  O    -0.529
+residue = ura (uracil) all atom
+atoms = 9
+   1   2N1  N*   -0.567
+   2   1C6  CJ    0.366
+   3   2C5  CJ   -0.204
+   4   3C4  C     0.572
+   5   4O4  O    -0.394
+   6   4N3  NA   -0.758
+   7   6HN3 H     0.347
+   8   6C2  C     0.896
+   9   8O2  O    -0.494
+
+

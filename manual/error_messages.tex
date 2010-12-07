@@ -1,0 +1,2857 @@
+\label{error-messages}
+\index{error messages}
+\subsection*{Introduction}
+In this appendix we document the error messages\index{error
+messages} encoded in \D and the recommended user action.  The
+correct response is described as the {\bf standard user response}
+in the appropriate sections below, to which the user should refer
+before acting on the error encountered.
+
+The reader should also be aware that some of the error messages
+listed below may be either disabled in, or absent from, the public
+version of \D.  Note that the wording of some of the messages may
+have changed over time, usually to provide more specific
+information.  The most recent wording appears below.
+
+\subsubsection*{The Standard User Response}
+
+\D uses FORTRAN90\index{FORTRAN90} dynamic array allocation to set the array sizes
+at run time.  This means that a single executable may be compiled
+to over all the likely uses of the code.  It is not foolproof
+however.  Sometimes an estimate of the required array sizes is
+difficult to obtain and the calculated value may be too small.
+For this reason \D retains array dimension checks and will
+terminate when an array bound error occurs.
+
+When a dimension error occurs, the {\bf standard user response} is
+to edit the \D \\ subroutine {\sc set\_bounds}.  Locate where the
+variable defining the array dimension is fixed and increase
+accordingly.  To do this you should make use of the dimension
+information that \D prints in the OUTPUT file prior to
+termination.  If no information is supplied, simply doubling the
+size of the variable will usually do the trick.  If the variable
+concerned is defined in one of the support subroutines {\sc
+scan\_config, scan\_field, scan\_control} you will need to insert
+a new line in {\sc set\_bounds} to redefine it - after the
+relevant subroutine has been called!  Finally the code must be
+recompiled, as in this case it will only be necessary to recompile
+{\sc set\_bounds} and not the whole code.
+
+\subsection*{The \D Error Messages}
+
+\subsubsection*{\underline{Message 1}: error - word\_2\_real failure}
+
+The semantics in some of the INPUT files is wrong.  \D has tried
+to read a number but the has found a word in non-number format.
+
+\noindent \underline{\em Action}:
+
+Look into your INPUT files and correct the semantics where
+appropriate and resubmit.  \D will have printed out in the OUTPUT
+file what the found non-uniform word is.
+
+\subsubsection*{\underline{Message 2}: error - too many atom types in FIELD (scan\_field)}
+
+This error arises when \D scans the FIELD file and discovers that
+there are too many different types of atoms in the system (i.e.
+the number of unique atom types exceeds the 1000).
+
+\noindent \underline{\em Action}:
+
+Increase the number of allowed atom types (mmk) in {\sc
+scan\_field}, recompile and resubmit.
+
+\subsubsection*{\underline{Message 3}: error - unknown directive found in CONTROL file}
+
+This error most likely arises when a directive is misspelt in the
+CONTROL file.
+
+\noindent \underline{\em Action}:
+
+Locate the erroneous directive in the CONTROL file and correct
+error and resubmit.
+
+\subsubsection*{\underline{Message 4}: error - unknown directive found in FIELD file}
+
+This error most likely arises when a directive is misspelt or is
+encountered in an incorrect location in the FIELD file, which can
+happen if too few or too many data records are included.
+
+\noindent \underline{\em Action}:
+
+Locate the erroneous directive in the FIELD file and correct error
+and resubmit.
+
+\subsubsection*{\underline{Message 5}: error - unknown energy unit requested}
+
+The \D FIELD file permits a choice of units for input of energy
+parameters.  These may be: electron volts ({\bf eV}); k-calories
+({\bf kcal}); k-joules ({\bf kJ}); Kelvin ({\bf K}elvin); or the
+\D internal units (10 J) ({\bf internal}).  There is no default
+value.  Failure to specify any of these correctly, or reference
+to other energy units, will result in this error message.  See
+documentation of the FIELD file.
+
+\noindent \underline{\em Action}:
+
+Correct energy keyword on {\bf units} directive in FIELD file and
+resubmit.
+
+\subsubsection*{\underline{Message 6}: error - energy unit not specified}
+
+A {\bf units} directive is mandatory in the FIELD file. This error
+indicates that \D has failed to find the required record.
+
+\noindent \underline{\em Action}:
+
+Add {\bf units} directive to FIELD file and resubmit.
+
+\subsubsection*{\underline{Message 8}: error - ewald precision must be a POSITIVE real number}
+
+Ewald precision must be a positive non-zero real number.
+For example 10e-5 is accepted as a standard.
+
+\noindent \underline{\em Action}:
+
+Put a correct number at the "ewald precision" directive in the CONTROL file and resubmit.
+
+\subsubsection*{\underline{Message 10}: error - too many molecule types specified}
+
+This should never happen!  This indicates an erroneous FIELD file
+or corrupted \D executable.  Unlike DL\_POLY\_2, \D does not have a
+set limit on the number of kinds of molecules it can handle in any
+simulation (this is not the same as the number of molecules).
+
+\noindent \underline{\em Action}:
+
+Examine FIELD for erroneous directives, correct and resubmit.
+
+\subsubsection*{\underline{Message 11}: error - duplicate molecule directive in FIELD file}
+
+The number of different types of molecules in a simulation should
+only be specified once.  If \D encounters more than one {\bf
+molecules} directive, it will terminate execution.
+
+\noindent \underline{\em Action}:
+
+Locate the extra {\bf molecule} directive in the FIELD file and
+remove and resubmit.
+
+\subsubsection*{\underline{Message 12}: error - unknown molecule directive in FIELD file}
+
+Once \D encounters the {\bf molecules} directive in the FIELD
+file, it assumes the following records will supply data describing
+the intramolecular force field\index{force field}.  It does not
+then expect to encounter directives not related to these data.
+This error message results if it encounters a unrelated directive.
+The most probable cause is incomplete specification of the data
+(e.g.  when the {\bf finish} directive has been omitted.)
+
+\noindent \underline{\em Action}:
+
+Check the molecular data entries in the FIELD file, correct and
+resubmit.
+
+\subsubsection*{\underline{Message 13}: error - molecule species not specified}
+
+This error arises when \D encounters
+non-bonded\index{potential!non-bonded} force data in the FIELD file,
+{\em before} the molecular species have been specified.
+Under these circumstances it cannot assign the data
+correctly, and therefore terminates.
+
+\noindent \underline{\em Action}:
+
+Make sure the molecular data appears before the
+non-bonded\index{potential!non-bonded} forces data in the FIELD
+file and resubmit.
+
+\subsubsection*{\underline{Message 14}: error - too many unique atom types specified}
+
+This should never happen!  This error most likely arises when the
+FIELD file or/and \D executable are corrupted.
+
+\noindent \underline{\em Action}:
+
+Recompile the program or recreate the FIELD file.  If neither of
+these works, send the problem to us.
+
+
+\subsubsection*{\underline{Message 15}: error - duplicate vdw potential specified}
+
+In processing the FIELD file,  \D keeps a record of the specified
+short range pair potentials as they are read in.  If it detects
+that a given pair potential has been specified before, no attempt
+at a resolution of the ambiguity is made and this error message
+results.  See specification of FIELD file.
+
+\noindent \underline{\em Action}:
+
+Locate the duplication in the FIELD file, rectify and resubmit.
+
+\subsubsection*{\underline{Message 16}: error - strange exit from FIELD file processing}
+
+This should never happen!  It simply means that \D has ceased
+processing the FIELD data, but has not reached the end of the file
+or encountered a {\bf close} directive. Probable cause: corruption
+of the \D executable or of the FIELD file.  We would be interested
+to hear of other reasons!
+
+\noindent \underline{\em Action}:
+
+Recompile the program or recreate the FIELD file.  If neither of
+these works, send the problem to us.
+
+\subsubsection*{\underline{Message 17}: error - strange exit from CONTROL file processing}
+
+See notes on message 16 above.
+
+\subsubsection*{\underline{Message 18}: error - duplicate three-body potential specified}
+
+\D has encountered a repeat specification of a three-body
+potential\index{potential!three-body} in the FIELD file.
+
+\noindent \underline{\em Action}:
+
+Locate the duplicate entry, remove and resubmit job.
+
+\subsubsection*{\underline{Message 19}: error - duplicate four-body potential specified}
+
+A 4-body potential has been duplicated in the FIELD file.
+
+\noindent \underline{\em Action}:
+
+Locate the duplicated four-body
+potential\index{potential!four-body}, remove and resubmit job.
+
+\subsubsection*{\underline{Message 20}: error - too many molecule sites specified}
+
+This should never happen!  This error most likely arises when the
+FIELD file or/and \D executable are corrupted.
+
+\noindent \underline{\em Action}:
+
+Recompile the program or recreate the FIELD file.  If neither of
+these works, send the problem to us.
+
+\subsubsection*{\underline{Message 22}: error - unsuitable radial increment in TABLE file}
+
+This arises when the tabulated
+potentials\index{potential!tabulated} presented in the TABLE file
+have an increment that is greater than that used to define the
+other potentials in the simulation.  Ideally the increment should
+be $r_{\rm cut}/({\tt mxgrid}-4)$, where $r_{\rm cut}$ is the
+potential cutoff for the short range potentials and {\tt mxgrid}
+is the parameter defining the length of the interpolation arrays.
+An increment less than this is permissible however.
+
+\noindent \underline{\em Action}:
+
+The tables must be recalculated with an appropriate increment.
+
+\subsubsection*{\underline{Message 23}: error - incompatible FIELD and TABLE file potentials}
+
+This error arises when the specification of the short range
+potentials is different in the FIELD and TABLE files.  This
+usually means that the order of specification of the potentials is
+different.  When \D finds a change in the order of specification,
+it assumes that the user has forgotten to enter one.
+
+\noindent \underline{\em Action}:
+
+Check the FIELD and TABLE files.  Make sure that you correctly
+specify the pair potentials in the FIELD file, indicating which
+ones are to be presented in the TABLE file.  Then check the TABLE
+file to make sure all the tabulated
+potentials\index{potential!tabulated} are present in the order the
+FIELD file indicates.
+
+\subsubsection*{\underline{Message 24}: error - end of file encountered in TABLE or TABEAM file}
+
+This means the TABLE or TABEAM file is incomplete in some way: either by
+having too few potentials included, or the number of data points
+is incorrect.
+
+\noindent \underline{\em Action}:
+
+Examine the TABLE file contents and regenerate it if it appears to
+be incomplete.  If it look intact, check that the number of data
+points specified is what \D is expecting.
+
+\subsubsection*{\underline{Message 25}: error - wrong atom type found in CONFIG file}
+
+On reading the input file CONFIG, \D performs a check to ensure
+that the atoms specified in the configuration provided are
+compatible with the corresponding FIELD file.  This message
+results if they are not {\em or the parallel reading wrongly
+assumed that CONFIG complies with the DL\_POLY\_3/4 style}.
+
+\noindent \underline{\em Action}:
+
+The possibility exists that one or both of the CONFIG or FIELD
+files has incorrectly specified the atoms in the system.  The user
+must locate the ambiguity, using the data printed in the OUTPUT
+file as a guide, and make the appropriate alteration.  If the
+reason is in the parallel reading then produce a new CONFIG
+using a serial reading and continue working with it.
+
+\subsubsection*{\underline{Message 26}: error - neutral group option now redundant}
+
+\D does not have the neutral group option.
+
+\noindent \underline{\em Action}:
+
+Use the Ewald sum option.  (It's better anyway.)
+
+\subsubsection*{\underline{Message 27}: error - rigid body option now redundant}
+
+\D does not have a rigid body option.
+
+\noindent \underline{\em Action}:
+
+Consider using DL\_POLY\_2 instead.
+
+\subsubsection*{\underline{Message 28}: error - wrongly indexed atom entries found in CONFIG file}
+
+\D has detected that the atom indices in the CONFIG file do not
+form a contnual and/or non-repeating group of indices.
+
+\noindent \underline{\em Action}:
+
+Make sure the CONFIG file is complies with the \D standards.
+You may use the {\bf no index} option in the CONTROL file to
+override the crystalographic sites' reading from the CONFIG file
+from reading by index to reading by order of the atom entries
+with consecutive incremental indexing.  Using this option assumes
+that the FIELD topology description matches the crystalographic
+sites (atoms entries) in the CONFIG file by order (consecutively).
+
+\subsubsection*{\underline{Message 30}: error - too many chemical bonds specified}
+
+This should never happen!  This error most likely arises when the
+FIELD file or/and \D executable are corrupted.
+
+{\em Action}:
+
+Recompile the program or recreate the FIELD file.  If neither of
+these works, send the problem to us.
+
+\subsubsection*{\underline{Message 31}: error - too many chemical bonds per domain}
+
+\D limits the number of chemical bond\index{potential!bond} units
+in the system to be simulated (actually, the number to be processed
+by each node) and checks for the violation of this.  Termination will
+result if the condition is violated.
+
+\noindent \underline{\em Action}:
+
+Use {\bf densvar} option in CONTROL to increase {\tt mxbond}
+(alternatively, increase it by hand in {\sc set\_bounds} and
+recompile) and resubmit.
+
+\subsubsection*{\underline{Message 32}: error - coincidence of particles in core-shell unit}
+
+\D has found a fault in the definition of a core-shell unit in the
+FIELD file.  The same particle has been assigned to the core and
+shell sites.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous entry in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 33}: error - coincidence of particles in constraint bond unit}
+
+\D has found a fault in the definition of a constraint bond unit
+in the FIELD file.  The same particle has been assigned to the
+both sites.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous entry in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 34}: error - length of constraint bond unit~$>=$~real space cutoff (rcut)}
+
+\D has found a constraint bond unit length (FIELD) larger than the
+real space cutoff ({\tt rcut}) (CONTROL).
+
+\noindent \underline{\em Action}:
+
+Increase cutoff in CONTROL or decrease the constraint bondlength
+in FIELD and resubmit.  For small system consider using
+DL\_POLY\_2.
+
+\subsubsection*{\underline{Message 35}: error - coincidence of particles in chemical bond unit}
+
+\D has found a faulty chemical bond in FIELD (defined between the
+same particle).
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous entry in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 36}: error - only one *bonds* directive per molecule is allowed}
+
+\D has found more than one bonds entry per molecule in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous part in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 38}: error - transfer array exceeded in metal\_ld\_export}
+
+This should never happen!
+
+{\em Action}:
+
+Consider using {\tt densvar} option in CONTROL for extremely
+non-equilibrium simulations.  Alternatively, increase {\tt mxbuff}
+in {\sc set\_bounds} recompile and resubmit.  Send the problem to
+us if this is persistent.
+
+Correct the erroneous entry in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 39}: error - density array exceeded in metal\_ld\_export}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+You might consider using {\tt densvar} option in CONTROL.  Send
+the problem to us if this is persistent.
+
+\subsubsection*{\underline{Message 40}: error - too many bond constraints specified}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Recompile the program or recreate the FIELD file.  If neither of
+these works, send the problem to us.
+
+\subsubsection*{\underline{Message 41}: error - too many bond constraints per domain}
+
+\D limits the number of bond constraint\index{constraints!bond} units
+in the system to be simulated (actually, the number to be processed
+by each node) and checks for the violation of this.  Termination will
+result if the condition is violated.
+
+\noindent \underline{\em Action}:
+
+Use {\bf densvar} option in CONTROL to increase {\tt mxcons}
+(alternatively, increase it by hand in {\sc set\_bounds} and
+recompile) and resubmit.
+
+\subsubsection*{\underline{Message 42}: error - undefined direction passed to deport\_atomic\_data}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Send the problem to us.
+
+\subsubsection*{\underline{Message 43}: error - deport\_atomic\_data outgoing transfer buffer exceeded}
+
+This may happen in extremely non-equilibrium simulations or
+usually when the potential in use do not hold the system stable.
+
+\noindent \underline{\em Action}:
+
+Consider using {\tt densvar} option in CONTROL for extremely
+non-equilibrium simulations.  Alternatively, increase {\tt mxbuff}
+in {\sc set\_bounds} recompile and resubmit.
+
+\subsubsection*{\underline{Message 44}: error - deport\_atomic\_data incoming transfer buffer exceeded}
+
+\noindent \underline{\em Action}:
+
+See Message 43
+
+\subsubsection*{\underline{Message 45}: error - too many atoms in CONFIG file}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Recompile and resubmit.  Send the problem to us if this is
+persistent.
+
+\subsubsection*{\underline{Message 46}: error - undefined direction passed to export\_atomic\_data}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Send the problem to us.
+
+\subsubsection*{\underline{Message 47}: error - undefined direction passed to metal\_ld\_export}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Send the problem to us.
+
+\subsubsection*{\underline{Message 48}: error - transfer buffer too small in vdw\_table\_read or metal\_table\_read}
+
+\noindent \underline{\em Action}:
+
+Standard user response.  Increase {\tt mxbuff} in {\sc
+set\_bounds} recompile and resubmit.
+
+\subsubsection*{\underline{Message 49}: error - frozen shell (core-shell) unit specified}
+
+The \D option to freeze the location of an atom (i.e. hold it
+permanently in one position) is not permitted for the shells in
+core-shell units.
+
+\noindent \underline{\em Action}:
+
+Remove the frozen atom option from the FIELD file. Consider using
+a non-polarisable atom instead.
+
+
+\subsubsection*{\underline{Message 50}: error - too many bond angles specified}
+
+This should never happen!  This error most likely arises when the
+FIELD file or/and \D executable are corrupted.
+
+\noindent \underline{\em Action}:
+
+Recompile the program or recreate the FIELD file.  If neither of
+these works, send the problem to us.
+
+\subsubsection*{\underline{Message 51}: error - too many bond angles per domain}
+
+\D limits the number of valence angle\index{potential!valence angle} units
+in the system to be simulated (actually, the number to be processed
+by each node) and checks for the violation of this.  Termination will
+result if the condition is violated.
+
+\noindent \underline{\em Action}:
+
+Use {\bf densvar} option in CONTROL to increase {\tt mxangl}
+(alternatively, increase it by hand in {\sc set\_bounds} and
+recompile) and resubmit.
+
+\subsubsection*{\underline{Message 52}: error - end of FIELD file encountered}
+
+This message results when \D reaches the end of the FIELD file,
+without having read all the data it expects.  Probable causes:
+missing data or incorrect specification of integers on the various
+directives.
+
+\noindent \underline{\em Action}:
+
+Check FIELD file for missing or incorrect data, correct and
+resubmit.
+
+\subsubsection*{\underline{Message 53}: error - end of CONTROL file encountered}
+
+This message results when \D reaches the end of the CONTROL file,
+without having read all the data it expects.  Probable cause:
+missing {\bf finish} directive.
+
+\noindent \underline{\em Action}:
+
+Check CONTROL file, correct and resubmit.
+
+\subsubsection*{\underline{Message 54}: error - outgoing transfer buffer exceeded in export\_atomic\_data}
+
+This may happen in extremely non-equilibrium simulations or
+usually when the potential in use do not hold the system stable.
+
+\noindent \underline{\em Action}:
+
+Consider using {\tt densvar} option in CONTROL for extremely
+non-equilibrium simulations.  Alternatively, increase {\tt mxbuff}
+in {\sc set\_bounds} recompile and resubmit.
+
+\subsubsection*{\underline{Message 55}: error - end of CONFIG file encountered}
+
+This error arises when \D attempts to read more data from the
+CONFIG file than is actually present.  The probable cause is an
+incorrect or absent CONFIG file, but it may be due to the FIELD
+file being incompatible in some way with the CONFIG file.
+
+\noindent \underline{\em Action}:
+
+Check contents of CONFIG file.  If you are convinced it is
+correct, check the FIELD file for inconsistencies.
+
+\subsubsection*{\underline{Message 56}: error - atomic coordinate array exceeded in export\_atomic\_data}
+
+This may happen in extremely non-equilibrium simulations or
+usually when the potential in use do not hold the system stable.
+
+\noindent \underline{\em Action}:
+
+Consider using {\tt densvar} option in CONTROL for extremely
+non-equilibrium simulations.  Alternatively, increase {\tt mxatms}
+in {\sc set\_bounds} recompile and resubmit.
+
+\subsubsection*{\underline{Message 57}: error - too many core-shell units specified}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Recompile the program or recreate the FIELD file.  If neither of
+these works, send the problem to us.
+
+\subsubsection*{\underline{Message 58}: error - number of atoms in system not conserved}
+
+An atom has been lost in transfer between nodes.  This should
+never happen!
+
+\noindent \underline{\em Action}:
+
+Big trouble.  Report problem to authors immediately.
+
+\subsubsection*{\underline{Message 59}: error - too many core-shell units per domain}
+
+\D limits the number of core-shell\index{polarisation!shell model} units
+in the system to be simulated (actually, the number to be processed
+by each node) and checks for the violation of this.  Termination will
+result if the condition is violated.
+
+\noindent \underline{\em Action}:
+
+Use {\bf densvar} option in CONTROL to increase {\tt mxshl}
+(alternatively, increase it by hand in {\sc set\_bounds} and
+recompile) and resubmit.
+
+\subsubsection*{\underline{Message 60}: error - too many dihedral angles specified}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Recompile the program or recreate the FIELD file.  If neither of
+these works, send the problem to us.
+
+\subsubsection*{\underline{Message 61}: error - too many dihedral angles per domain}
+
+\D limits the number of dihedral angle\index{potential!dihedral} units
+in the system to be simulated (actually, the number to be processed
+by each node) and checks for the violation of this.  Termination will
+result if the condition is violated.
+
+\noindent \underline{\em Action}:
+
+Use {\bf densvar} option in CONTROL to increase {\tt mxdihd}
+(alternatively, increase it by hand in {\sc set\_bounds} and
+recompile) and resubmit.
+
+\subsubsection*{\underline{Message 62}: error - too many tethered atoms specified}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Recompile the program or recreate the FIELD file.  If neither of
+these works, send the problem to us.
+
+\subsubsection*{\underline{Message 63}: error - too many tethered atoms per domain}
+
+\D limits the number of tethered atoms\index{potential!tether}
+in the system to be simulated (actually, the number to be processed
+by each node) and checks for the violation of this.  Termination will
+result if the condition is violated.
+
+\noindent \underline{\em Action}:
+
+Use {\bf densvar} option in CONTROL to increase {\tt mxteth}
+(alternatively, increase it by hand in {\sc set\_bounds} and
+recompile) and resubmit.
+
+\subsubsection*{\underline{Message 64}: error - incomplete core-shell unit found in build\_book\_intra}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Report problem to authors.
+
+\subsubsection*{\underline{Message 65}: error - too many excluded pairs specified}
+
+This should never happen!  This error arises when \D is
+identifying the atom pairs that cannot have a pair potential
+between them,  by virtue of being chemically bonded for example
+(see subroutine {\sc build\_excl\_intra}).  Some of the working
+arrays used in this operation may be exceeded, resulting in
+termination of the program.
+
+\noindent \underline{\em Action}:
+
+Contact authors.
+
+\subsubsection*{\underline{Message 66}: error - coincidence of particles in bond angle unit}
+
+\D has found a fault in the definition of a bond angle in the
+FIELD file.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous entry in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 67}: error - coincidence of particles in dihedral unit}
+
+\D has found a fault in the definition of a dihedral unit in the
+FIELD file.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous entry in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 68}: error - coincidence of particles in inversion unit}
+
+\D has found a fault in the definition of a inversion unit in the
+FIELD file.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous entry in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 69}: error - too many link cells required in three\_body\_forces}
+
+This should not happen!  The calculation of three-body
+forces\index{potential!three-body} in \D is handled by the link
+cell algorithm.  This error arises if the required number of link
+cells exceeds the permitted array dimension in the code.
+
+\noindent \underline{\em Action}:
+
+Consider using {\tt densvar} option in CONTROL for extremely
+non-equilibrium simulations.  Alternatively, increase {\tt mxcell}
+in {\sc set\_bounds} recompile and resubmit.
+
+\subsubsection*{\underline{Message 70}: error - constraint\_quench failure}
+
+When a simulation with bond constraints\index{constraints!bond} is
+started, \D attempts to extract the kinetic energy of the
+constrained atom-atom bonds arising from the assignment of initial
+random velocities.  If this procedure fails, the program will
+terminate.  The likely cause is a badly generated initial
+configuration.
+
+\noindent \underline{\em Action}:
+
+Some help may be gained from increasing the cycle limit, by using
+the directive {\bf mxshak} in the CONTROL file. You may also
+consider reducing the tolerance of the SHAKE iteration using the
+directive {\bf shake} in the CONTROL file. However it is probably
+better to take a good look at the starting conditions!
+
+\subsubsection*{\underline{Message 71}: error - too many metal potentials specified}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Report to authors.
+
+\subsubsection*{\underline{Message 72}: error - too many tersoff potentials specified}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Report to authors.
+
+\subsubsection*{\underline{Message 73}: error - too many inversion potentials specified}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Report to authors.
+
+\subsubsection*{\underline{Message 74}: error - unidentified atom in tersoff potential list}
+
+This shows that \D has encountered and erroneous entry for Tersoff
+potentials in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct FIELD and resubmit.
+
+\subsubsection*{\underline{Message 76}: error - duplicate tersoff potential specified}
+
+This shows that \D has encountered and erroneous entry for Tersoff
+potentials in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct FIELD and resubmit.
+
+\subsubsection*{\underline{Message 77}: error - too many inversion angles per domain}
+
+\D limits the number of inversion\index{potential!inversion} units
+in the system to be simulated (actually, the number to be processed
+by each node) and checks for the violation of this.  Termination will
+result if the condition is violated.
+
+\noindent \underline{\em Action}:
+
+Use {\bf densvar} option in CONTROL to increase {\tt mxinv}
+(alternatively, increase it by hand in {\sc set\_bounds} and
+recompile) and resubmit.
+
+\subsubsection*{\underline{Message 78}: error - too many link cells required in tersoff\_forces}
+
+This should not happen!  The calculation of Tersoff
+forces\index{potential!Tersoff} in \D is handled by the link cell
+algorithm.  This error arises if the required number of link cells
+exceeds the permitted array dimension in the code.
+
+\noindent \underline{\em Action}:
+
+Consider using {\tt densvar} option in CONTROL for extremely
+non-equilibrium simulations.  Alternatively, increase {\tt mxcell}
+in {\sc set\_bounds} recompile and resubmit.
+
+\subsubsection*{\underline{Message 79}: error - tersoff potential cutoff undefined}
+
+This shows that \D has encountered and erroneous entry for Tersoff
+potentials in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct FIELD and resubmit.
+
+\subsubsection*{\underline{Message 80}: error - too many pair potentials specified}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Report to authors.
+
+\subsubsection*{\underline{Message 81}: error - unidentified atom in pair potential list}
+
+This shows that \D has encountered and erroneous entry for vdw or
+metal potentials in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct FIELD and resubmit.
+
+\subsubsection*{\underline{Message 82}: error - calculated pair potential index too large}
+
+This should never happen!  In checking the vdw and metal
+potentials specified in the FIELD file \D calculates a unique
+integer indices that henceforth identify every specific potential
+within the program.  If this index becomes too large, termination
+of the program results.
+
+\noindent \underline{\em Action}:
+
+Report to authors.
+
+\subsubsection*{\underline{Message 83}: error - too many three-body potentials specified}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Report to authors.
+
+\subsubsection*{\underline{Message 84}: error - unidentified atom in three-body potential list}
+
+This shows that \D has encountered and erroneous entry at tbp
+definition in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct FIELD and resubmit.
+
+\subsubsection*{\underline{Message 85}: error - required velocities not in CONFIG file}
+
+If the user attempts to start up a \D simulation with any type of
+{\bf restart} directive (see description of CONTROL file,) the
+program will expect the CONFIG file to contain atomic velocities
+as well as positions.  Termination results if these are not
+present.
+
+\noindent \underline{\em Action}:
+
+Either replace the CONFIG file with one containing the velocities,
+or if not available, remove the {\bf restart ...} directive
+altogether and let \D create the velocities for itself.
+
+\subsubsection*{\underline{Message 86}: error - calculated three-body potential index too large}
+
+This should never happen!  \D has a permitted maximum for the
+calculated index for any three-body\index{potential!three-body}
+potential in the system (i.e. as defined in the FIELD file).  If
+there are $m$ distinct types of atom in the system, the index can
+possibly range from $1$ to $(m^{2}*(m-1))/2$.  If the internally
+calculated index exceeds this number, this error report results.
+
+\noindent \underline{\em Action}:
+
+Report to authors.
+
+\subsubsection*{\underline{Message 87}: error - too many link cells required in four\_body\_forces}
+
+This should not happen!  The calculation of four-body
+forces\index{potential!four-body} in \D is handled by the link
+cell algorithm.  This error arises if the required number of link
+cells exceeds the permitted array dimension in the code.
+
+\noindent \underline{\em Action}:
+
+Consider using {\tt densvar} option in CONTROL for extremely
+non-equilibrium simulations.  Alternatively, increase {\tt mxcell}
+in {\sc set\_bounds} recompile and resubmit.
+
+\subsubsection*{\underline{Message 88}: error - legend array exceeded in build\_book\_intra}
+
+This should never happen!  Dimension of legend array exceeded.
+
+\noindent \underline{\em Action}:
+
+Increase parameter {\tt mxfix} in {\sc set\_bounds}, recompile and
+resubmit.  If the error persists contact authors.
+
+\subsubsection*{\underline{Message 89}: error - too many four-body potentials specified}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Report to authors.
+
+\subsubsection*{\underline{Message 90}: error - fluctuations in the total number of frozen particles}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Big trouble.  Report to authors.
+
+\subsubsection*{\underline{Message 91}: error - unidentified atom in four-body potential list}
+
+The specification of a four-body\index{potential!four-body}
+potential in the FIELD file has referenced an atom type that is
+unknown.
+
+\noindent \underline{\em Action}:
+
+Locate the errant atom type in the four-body potential definition
+in the FIELD file and correct.  Make sure this atom type is
+specified by an {\tt atoms} directive earlier in the file.
+
+\subsubsection*{\underline{Message 92}: error - specified metal potentials have different types}
+
+The specified metal\index{potential!metal} interactions in the
+FIELD file are referencing more than one generic type of metal
+potentials.  Only one such type is allowed in the system.
+
+\noindent \underline{\em Action}:
+
+Locate the errant metal type in the metal potential definition
+in the FIELD file and correct.  Make sure only one metal type is
+specified for all relevan atom interactions in the file.
+
+\subsubsection*{\underline{Message 93}: error - PMFs mixing with rigid bodies not allowed}
+
+\noindent \underline{\em Action}:
+
+Correct FIELD and resubmit.
+
+\subsubsection*{\underline{Message 95}: error - error - rcut~$>$~minimum of all half-cell widths}
+
+In order for the minimum image convention to work correctly within
+\D, it is necessary to ensure that the major cutoff applied to the
+pair interactions does not exceed half the perpendicular width of
+the simulation cell.  (The perpendicular width is the shortest
+distance between opposing cell faces.)  Termination results if
+this is detected. In NVE and NVT simulations this can only happen
+at the start of a simulation, but in NPT and N$\mat{\sigma}$T, it
+may occur at any time.
+
+\noindent \underline{\em Action}:
+
+Supply a cutoff that is less than half the cell width.  If running
+constant pressure calculations, use a cutoff that will accommodate
+the fluctuations in the simulation cell.  Study the fluctuations
+in the OUTPUT file to help you with this.
+
+\subsubsection*{\underline{Message 96}: error - incorrect atom totals in metal\_ld\_set\_halo}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Big trouble.  Report to authors.
+
+\subsubsection*{\underline{Message 97}: error - constraints mixing with rigid bodies not allowed}
+
+\noindent \underline{\em Action}:
+
+Correct FIELD and resubmit.
+
+\subsubsection*{\underline{Message 98}: error - incorrect atom assignments metal\_ld\_set\_halo}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Big trouble.  Report to authors.
+
+\subsubsection*{\underline{Message 99}: error - cannot have shells as part of a constraint, rigid body or tether}
+
+\noindent \underline{\em Action}:
+
+Correct FIELD and resubmit.
+
+\subsubsection*{\underline{Message 100}: error - core-shell unit separation $>$ rcut (the system cutoff)}
+
+This could only happen if FIELD and CONFIG do not match each other
+or CONFIG is damaged.
+
+\noindent \underline{\em Action}:
+
+Regenerate CONFIG (and FIELD) and resubmit.
+
+\subsubsection*{\underline{Message 101}: error - calculated four-body potential index too large}
+
+This should never happen!  \D has a permitted maximum for the
+calculated index for any four-body potential in the system (i.e.
+as defined in the FIELD file).  If there are $m$ distinct types of
+atom in the system, the index can possibly range from $1$ to
+$(m^{2}*(m+1)*(m+2))/6$.  If the internally calculated index
+exceeds this number, this error report results.
+
+\noindent \underline{\em Action}:
+
+Report to authors.
+
+\subsubsection*{\underline{Message 102}: error - rcut~$<$~2*rcter (maximum cutoff for tersoff potentials)}
+
+The nature of the Tersoff interaction requires they have at least
+twice shorter cutoff than the standard pair interctions (or the
+major system cutoff).
+
+\noindent \underline{\em Action}:
+
+Decrease Tersoff cutoffs in FIELD or increase cutoff in CONTROL
+and resubmit.
+
+\subsubsection*{\underline{Message 103}: error - parameter mxlshp exceeded in pass\_shared\_units}
+
+Various algorithms (constraint and core-shell ones) require that
+information about `shared' atoms be passed between nodes.  If
+there are too many such atoms, the arrays holding the information
+will be exceeded and \D will terminate execution.
+
+\noindent \underline{\em Action}:
+
+Use {\bf densvar} option in CONTROL to increase {\tt mxlshp}
+(alternatively, increase it by hand in {\sc set\_bounds} and
+recompile) and resubmit.
+
+\subsubsection*{\underline{Message 104}: error - arrays listme and lstout exceeded in pass\_shared\_units}
+
+This should not happen!  Dimensions of indicated arrays have been
+exceeded.
+
+\noindent \underline{\em Action}:
+
+Consider using {\tt densvar} option in CONTROL for extremely
+non-equilibrium simulations.
+
+\subsubsection*{\underline{Message 105}: error - shake algorithm (constraints\_shake) failed to converge}
+
+The SHAKE\index{algorithm!SHAKE} algorithm for bond
+constraints\index{constraints!bond} is iterative.  If the maximum
+number of permitted iterations is exceeded, the program
+terminates.  Possible causes include: a bad starting
+configuration; too large a time step used; incorrect force
+field\index{force field} specification; too high a temperature;
+inconsistent constraints (over-constraint) etc..
+
+\noindent \underline{\em Action}:
+
+You may try to increase the limit of iteration cycles in the
+constraint subroutines by using the directive {\bf mxshak} and/or
+decrease the constraint precision by using the directive {\bf shake}
+in CONTROL.  But the trouble may be much more likely to be cured by
+careful consideration of the physical system being simulated.  For
+example, is the system stressed in some way? Too far from
+equilibrium?
+
+\subsubsection*{\underline{Message 106}: error - neighbour list array too small in link\_cell\_pairs}
+
+Construction of the Verlet neighbour list\index{Verlet neighbour
+list} in subroutine {\sc link\_cell\_pairs} non-bonded (pair) force
+has exceeded the neighbour list array dimensions.
+
+\noindent \underline{\em Action}:
+
+Consider using {\tt densvar} option in CONTROL for extremely
+non-equilibrium simulations or increase by hand {\tt mxlist} in
+{\sc set\_bounds}.
+
+\subsubsection*{\underline{Message 107}: error - too many pairs for rdf look up specified}
+
+This should never happen!  A possible reason is corruption in
+FIELD or/and \D executable.
+
+\noindent \underline{\em Action}:
+
+Reconstruct FIELD, recompile afresh \D and resubmit.  If the
+problem persists get in touch with \D authors.
+
+\subsubsection*{\underline{Message 108}: error - unidentified atom in rdf look up list}
+
+During reading of RDF look up pairs in FIELD \D has found an
+unlisted previously atom type.
+
+\noindent \underline{\em Action}:
+
+Correct FIELD by either defining the new atom type or changing it
+to an already defined one in the erroneous line.  Resubmit.
+
+\subsubsection*{\underline{Message 109}: error - calculated pair rdf index too large}
+
+This should never happen!  In checking the RDF pairs specified in
+the FIELD file \D calculates a unique integer index that
+henceforth identify every RDF pair within the program.  If this
+index becomes too large, termination of the program results.
+
+\noindent \underline{\em Action}:
+
+Report to authors.
+
+\subsubsection*{\underline{Message 108}: error - duplicate rdf look up pair specified}
+
+During reading of RDF look up pairs in FIELD \D has found a
+duplicate entry in the list.
+
+\noindent \underline{\em Action}:
+
+Delete the duplicate line and resubmit.
+
+\subsubsection*{\underline{Message 111}: error - bond constraint unit separation $>$ rcut (the system cutoff)}
+
+This should never happen!  \D has not been able to find an atom in
+a processor domain or its bordering neighbours.
+
+\noindent \underline{\em Action}:
+
+Probable cause: link cells too small. Use larger potential cutoff.
+Contact \D authors.
+
+\subsubsection*{\underline{Message 112}: error - only one *constraints* directive per molecule is allowed}
+
+\D has found more than one constraints entry per molecule in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous part in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 113}: error - intramolecular bookkeeping arrays exceeded in deport\_atomic\_data}
+
+One or more bookkeeping arrays for site-related interactions have
+been exceeded.
+
+\noindent \underline{\em Action}:
+
+Consider using {\tt densvar} option in CONTROL for extremely
+non-equilibrium simulations.  Alternatively, you will need to
+print extra diagnostic data from the {\sc deport\_atomic\_data}
+subroutine to find which boded-like contribution has exceeded
+its assumed limit and then correct for it in {\sc set\_bounds},
+recompile and resubmit.
+
+\subsubsection*{\underline{Message 114}: error - legend array exceeded in deport\_atomic\_data}
+
+The array {\tt legend} has been exceeded.
+
+\noindent \underline{\em Action}:
+
+Try increasing parameter {\tt mxfix} in {\sc set\_bounds},
+recompile and resubmit.  Contact \D authors if the problem
+persists.
+
+\subsubsection*{\underline{Message 115}: error - transfer buffer exceeded in update\_shared\_units}
+
+The transfer buffer has been exceeded.
+
+\noindent \underline{\em Action}:
+
+Consider increasing parameter {\tt mxbuff} in {\sc set\_bounds},
+recompile and resubmit.  Contact \D authors if the problem
+persists.
+
+\subsubsection*{\underline{Message 116}: error - incorrect atom transfer in update\_shared\_units}
+
+An atom has become misplaced during transfer between nodes.
+
+\noindent \underline{\em Action}:
+
+This happens when the simulation is very numerically unstable.
+Consider carefully the physical grounds of your simulation, i.e.
+are you using the adiabatic shell model for accounting polarisation
+with too big a timestep or too large control distances for the
+variable timestep, is the ensemble type NPT or N$\mat{\sigma}$T and
+the system target temperature too close to the melting temperature?
+
+\subsubsection*{\underline{Message 118}: error - construction error in pass\_shared\_units}
+
+This should not happen.
+
+\noindent \underline{\em Action}:
+
+Report to authors.
+
+\subsubsection*{\underline{Message 120}: error - invalid determinant in matrix inversion}
+
+\D occasionally needs to calculate matrix inverses (usually the
+inverse of the matrix of cell vectors, which is of size 3 $\times$
+3).  For safety's sake a check on the determinant is made, to
+prevent inadvertent use of a singular matrix.
+
+\noindent \underline{\em Action}:
+
+Locate the incorrect matrix and fix it - e.g. are cell vectors
+correct?
+
+\subsubsection*{\underline{Message 122}: error - FIELD file not found}
+
+\D failed to find a FIELD file in your directory.
+
+\noindent \underline{\em Action}:
+
+Supply a valid FIELD file before you start a simulation
+
+\subsubsection*{\underline{Message 124}: error - CONFIG file not found}
+
+\D failed to find a CONFIG file in your directory.
+
+\noindent \underline{\em Action}:
+
+Supply a valid CONFIG file before you start a simulation
+
+\subsubsection*{\underline{Message 126}: error - CONTROL file not found}
+
+\D failed to find a CONTROL file in your directory.
+
+\noindent \underline{\em Action}:
+
+Supply a valid CONTROL file before you start a simulation
+
+\subsubsection*{\underline{Message 128}: error - chemical bond unit separation $>$ rcut (the system cutoff)}
+
+This could only happen if FIELD and CONFIG do not match each other
+or if CONFIG is ill defined.
+
+\noindent \underline{\em Action}:
+
+Regenerate CONFIG (and FIELD) and resubmit.
+
+\subsubsection*{\underline{Message 130}: error - bond angle unit diameter $>$ rcut (the system cutoff)}
+
+This could only happen if FIELD and CONFIG do not match each other
+or if CONFIG is ill defined.
+
+\noindent \underline{\em Action}:
+
+Regenerate CONFIG (and FIELD) and resubmit.
+
+\subsubsection*{\underline{Message 132}: error - dihedral angle unit diameter $>$ rcut (the system cutoff)}
+
+This could only happen if FIELD and CONFIG do not match each other
+or if CONFIG is ill defined.
+
+\noindent \underline{\em Action}:
+
+Regenerate CONFIG (and FIELD) and resubmit.
+
+\subsubsection*{\underline{Message 134}: error - inversion angle unit diameter $>$ rcut (the system cutoff)}
+
+This could only happen if FIELD and CONFIG do not match each other
+or if CONFIG is ill defined.
+
+\noindent \underline{\em Action}:
+
+Regenerate CONFIG (and FIELD) and resubmit.
+
+\subsubsection*{\underline{Message 141}: error - duplicate metal potential specified}
+
+During reading of metal potentials (pairs of atom types) in FIELD
+\D has found a duplicate pair of atoms in the list.
+
+\noindent \underline{\em Action}:
+
+Delete one of the duplicate entries and resubmit.
+
+\subsubsection*{\underline{Message 145}: error - no two-body like forces specified}
+
+This error arises when there are no two-body like interactions
+specified in FIELD and CONTROL.  I.e. none of the following
+interactions exists or if does, it has been switched off;
+any coulombic, vdw, metal, tersoff.  In \D expects that particles will
+be kept apparat, stay separated and never go through each other
+due to one of the fore-specified interactions.
+
+\noindent \underline{\em Action}:
+
+Users must alone take measures to prevent such outcome.
+
+\subsubsection*{\underline{Message 150}: error - unknown van der waals potential selected}
+
+\D checks when constructing the interpolation tables for the short
+ranged potentials that the potential function requested is one
+which is of a form known to the program.  If the requested
+potential form is unknown, termination of the program results. The
+most probable cause of this is the incorrect choice of the
+potential keyword in the FIELD file.
+
+\noindent \underline{\em Action}:
+
+Read the \D documentation and find the potential keyword for the
+potential desired.
+
+\subsubsection*{\underline{Message 151}: error - unknown EAM keyword in TABEAM}
+
+\D checks when constructing the interpolation tables for the EAM metal
+potentials that the potential function requested is one which is
+of a form known to the program.  If the requested potential form
+is unknown, termination of the program results. The most probable
+cause of this is the incorrect choice of the potential keyword in
+the FIELD file.
+
+\subsubsection*{\underline{Message 170}: error - too many variables for statistics array }
+
+This error means the statistics arrays appearing in subroutine
+{\sc statistics\_collect} are too small.  This should never
+happen!
+
+\noindent \underline{\em Action}:
+
+Contact \D authors.
+
+\subsubsection*{\underline{Message 200}: error - rdf/z-density buffer array too small in system\_revive}
+
+This error indicates that a global summation buffer array in
+subroutine {\sc system\_revive} is too small, i.e {\tt
+mxbuff}~$<$~{\tt mxgrdf}.  This should never happen!
+
+\noindent \underline{\em Action}:
+
+Contact \D authors.
+
+\subsubsection*{\underline{Message 210}: error - only one *angles* directive per molecule is allowed}
+
+\D has found more than one angles entry per molecule in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous part in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 220}: error - only one *dihedrals* directive per molecule is allowed}
+
+\D has found more than one dihedrals entry per molecule in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous part in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 230}: error - only one *inversions* directive per molecule is allowed}
+
+\D has found more than one inversions entry per molecule in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous part in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 240}: error - only one *tethers* directive per molecule is allowed}
+
+\D has found more than one tethers entry per molecule in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous part in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 300}: error - incorrect boundary condition for link-cell algorithms}
+
+The use of link cells in \D implies the use of appropriate
+boundary conditions.  This error results if the user specifies
+octahedral or dodecahedral boundary conditions, which are only
+available in DL\_POLY\_2.
+
+\noindent \underline{\em Action}:
+
+Correct your boundary condition or consider using DL\_POLY\_2.
+
+\subsubsection*{\underline{Message 305}: error - too few link cells per dimension for many-body and tersoff forces subroutines.}
+
+The link cells algorithms for many-body and tersoff forces in \D
+cannot work with less than 27 link cells.  Depending on the cell
+size and the chosen cut-off, \D may decide that this minimum
+cannot be achieved and terminate. This should never happen!
+
+\noindent \underline{\em Action}:
+
+Decrease many-body and tersoff potentials cutoffs or/and number of
+nodes or/and increase system size.
+
+\subsubsection*{\underline{Message 307}: error - link cell algorithm violation}
+
+\D does not like what you are asking it to do.  Probable cause:
+the cutoff is too large to use link cells in this case.
+
+\noindent \underline{\em Action}:
+
+Rethink the simulation model; reduce the cutoff or/and number of
+nodes or/and increase system size.
+
+\subsubsection*{\underline{Message 308}: error - link cell algorithm in contention with SPME sum precision}
+
+\D does not like what you are asking it to do.  Probable cause:
+you ask for SPME precision that is not achievable by the current
+settings of the link cell algorithm.
+
+\noindent \underline{\em Action}:
+
+Rethink the simulation model; reduce number of nodes or/and SPME sum
+precission or/and increase cutoff.
+
+\subsubsection*{\underline{Message 321}: error - LFV quaternion integrator failed}
+
+This indicates unstable integration but may be due to many reasons.
+
+\noindent \underline{\em Action}:
+
+Rethink the simulation model.  Increase mxquat in CONTROL and resubmit or use VV integration to check system stability.
+
+\subsubsection*{\underline{Message 340}: error - invalid integration option requested}
+
+\D has detected an incompatibility in the simulation instructions,
+namely that the requested integration algorithm is not compatible
+with the physical model.  It {\em may} be possible to override
+this error trap, but it is up to the user to establish if this is
+sensible.
+
+\noindent \underline{\em Action}:
+
+This is a non-recoverable error, unless the user chooses to
+override the restriction.
+
+\subsubsection*{\underline{Message 350}: error - too few degrees of freedom}
+
+This error can arise if a small system is being simulated and the
+number of constraints applied is too large.
+
+\noindent \underline{\em Action}:
+
+Simulate a larger system or reduce the number of constraints.
+
+\subsubsection*{\underline{Message 360}: error - degrees of freedom distribution problem}
+
+This should not happen.
+
+\noindent \underline{\em Action}:
+
+Report problem to authors immediately.
+
+\subsubsection*{\underline{Message 380}: error - simulation temperature not specified or $< 1$ K}
+
+\D has failed to find a {\bf temp} directive in the CONTROL file.
+
+\noindent \underline{\em Action}:
+
+Place a {\bf temp} directive in the CONTROL file, with the
+required temperature specified.
+
+\subsubsection*{\underline{Message 381}: error - simulation timestep not specified}
+
+\D has failed to find a {\bf timestep} directive in the CONTROL
+file.
+
+\noindent \underline{\em Action}:
+
+Place a {\bf timestep} directive in the CONTROL file, with the
+required timestep specified.
+
+\subsubsection*{\underline{Message 382}: error - simulation cutoff not specified}
+
+\D has failed to find a {\bf cutoff} directive in the CONTROL
+file.
+
+\noindent \underline{\em Action}:
+
+Place a {\bf cutoff} directive in the CONTROL file, with the
+required forces cutoff specified.
+
+\subsubsection*{\underline{Message 387}: error - system pressure not specified}
+
+The target system pressure has not been specified in the CONTROL
+file.  Applies to NPT simulations only.
+
+\noindent \underline{\em Action}:
+
+Insert a {\bf press} directive in the CONTROL file specifying the
+required system pressure.
+
+\subsubsection*{\underline{Message 390}: error - npt/nst ensemble requested in non-periodic system}
+
+A non-periodic system has no defined volume, hence the NPT
+algorithm cannot be applied.
+
+\noindent \underline{\em Action}:
+
+Either simulate the system with a periodic boundary, or use
+another ensemble.
+
+\subsubsection*{\underline{Message 392}: error - too many link cells requested}
+
+The number of link cells required for a given simulation exceeds
+the number allowed for by the \D arrays.  Probable cause:  your
+system has expanded unacceptably much to \D.  This may not be
+physically sensible!
+
+\noindent \underline{\em Action}:
+
+Increase the parameter {\tt mxcell}.
+
+\subsubsection*{\underline{Message 402}: error - van der waals not specified}
+
+The user has not set any cutoff in CONTROL, ({\tt rvdw}) - the van
+der Waals\index{potential!van der Waals} potentials cutoff is
+needed in order for \D to proceed.
+
+\noindent \underline{\em Action}:
+
+Supply a cutoff value for the van der Waals terms in the CONTROL
+file using the directive {\tt rvdw}, and resubmit job.
+
+\subsubsection*{\underline{Message 410}: error - cell not consistent with image convention}
+
+The simulation cell vectors appearing in the CONFIG file are not
+consistent with the specified image convention.
+
+\noindent \underline{\em Action}:
+
+Locate the variable {\tt imcon} in the CONFIG file and correct to
+suit the cell vectors.
+
+\subsubsection*{\underline{Message 414}: error - conflicting ensemble options in CONTROL file}
+
+\D has found more than one {\bf ensemble} directive in the CONTROL
+file.
+
+\noindent \underline{\em Action}:
+
+Locate extra {\bf ensemble} directives in CONTROL file and remove.
+
+\subsubsection*{\underline{Message 416}: error - conflicting force options in CONTROL file}
+
+\D has found incompatible directives in the CONTROL file
+specifying the electrostatic interactions options.
+
+\noindent \underline{\em Action}:
+
+Locate the conflicting directives in the CONTROL file and correct.
+
+\subsubsection*{\underline{Message 430}: error - integration routine not available}
+
+A request for a non-existent ensemble\index{ensemble} has been
+made or a request with conflicting options that \D cannot deal
+with.
+
+\noindent \underline{\em Action}:
+
+Examine the CONTROL and FIELD files and remove inappropriate
+specifications.
+
+\subsubsection*{\underline{Message 432}: error -  undefined tersoff potential}
+
+This shows that \D has encountered an unfamiliar entry for Tersoff
+potentials in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct FIELD and resubmit.
+
+\subsubsection*{\underline{Message 433}: error - rcut must be specified for the Ewald sum precision}
+
+When specifying the desired precision for the Ewald
+sum\index{Ewald!summation} in the CONTROL file, it is also
+necessary to specify the real space cutoff {\tt rcut}.
+
+\noindent \underline{\em Action}:
+
+Place the {\bf cut} directive {\em before} the {\bf ewald
+precision} directive in the CONTROL file and rerun.
+
+\subsubsection*{\underline{Message 436}: error - unrecognised ensemble }
+
+An unknown ensemble option has been specified in the CONTROL file.
+
+\noindent \underline{\em Action}:
+
+Locate {\bf ensemble} directive in the CONTROL file and amend
+appropriately.
+
+\subsubsection*{\underline{Message 440}: error - undefined angular potential}
+
+A form of angular potential has been requested which \D does not
+recognise.
+
+\noindent \underline{\em Action}:
+
+Locate the offending potential in the FIELD file and remove.
+Replace with one acceptable to \D if this is possible.
+Alternatively, you may consider defining the required potential in
+the code yourself.  Amendments to subroutines {\sc read\_field}
+and {\sc angles\_forces} will be required.
+
+\subsubsection*{\underline{Message 442}: error - undefined three-body potential}
+
+A form of three-body potential has been requested which \D does
+not recognise.
+
+\noindent \underline{\em Action}:
+
+Locate the offending potential in the FIELD file and remove.
+Replace with one acceptable to \D if this is reasonable.
+Alternatively, you may consider defining the required potential in
+the code yourself. Amendments to subroutines {\sc read\_field} and
+{\sc three\_body\_forces} will be required.
+
+\subsubsection*{\underline{Message 443}: error - undefined four-body potential}
+
+\D has been requested to process a four-body
+potential\index{potential!four-body} it does not recognise.
+
+\noindent \underline{\em Action}:
+
+Check the FIELD file and make sure the keyword is correctly
+defined.  Make sure that subroutine {\sc three\_body\_forces}
+contains the code necessary to deal with the requested potential.
+Add the code required if necessary, by amending subroutines {\sc
+read\_field} and {\sc three\_body\_forces}.
+
+\subsubsection*{\underline{Message 444}: error - undefined bond potential}
+
+\D has been requested to process a bond
+potential\index{potential!bond} it does not recognise.
+
+\noindent \underline{\em Action}:
+
+Check the FIELD file and make sure the keyword is correctly
+defined. Make sure that subroutine {\sc bonds\_forces} contains
+the code necessary to deal with the requested potential.  Add the
+code required if necessary, by amending subroutines {\sc
+read\_field} and {\sc bonds\_forces}.
+
+\subsubsection*{\underline{Message 445}: error - r\_14 $>$ rcut in dihedrals\_forces}
+
+The 1-4 coulombic scaling for a dihedral angle bonding cannot be
+performed since the 1-4 distance has exceeded the system short range
+interaction cutoff, {\tt rcut}, in subroutine {\sc
+dihedral\_forces}.
+
+\noindent \underline{\em Action}:
+
+To prevent this error occurring again increase {\tt rcut}.
+
+\subsubsection*{\underline{Message 446}: error - undefined electrostatic key in
+dihedral\_forces}
+
+The subroutine {\sc dihedral\_forces} has been requested to process
+a form of electrostatic potential\index{potential!electrostatics} it
+does not recognise.
+
+\noindent \underline{\em Action}:
+
+The error arises because the integer key {\tt keyfrc} has an
+inappropriate value (which should not happen in the standard
+version of \D).  Check that the FIELD file correctly specifies the
+potential.  Make sure the version of {\sc dihedral\_forces} does
+contain the potential you are specifying.  Report the error to the
+authors if these checks are correct.
+
+\noindent \underline{\em Action}:
+
+To prevent this error occurring again increase {\tt rvdw}.
+
+\subsubsection*{\underline{Message 447}: error - only one *shells* directive per molecule is allowed}
+
+\D has found more than one shells entry per molecule in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous part in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 448}: error - undefined dihedral potential}
+
+A form of dihedral potential\index{potential!dihedral} has been
+requested which \D does not recognise.
+
+\noindent \underline{\em Action}:
+
+Locate the offending potential in the FIELD file and remove.
+Replace with one acceptable to \D if this is reasonable.
+Alternatively, you may consider defining the required potential in
+the code yourself.  Amendments to subroutines {\sc read\_field}
+and {\sc dihedral\_forces} (and its variants) will be required.
+
+\subsubsection*{\underline{Message 449}: error - undefined inversion potential}
+
+A form of inversion potential\index{potential!inversion} has been
+encountered which \D does not recognise.
+
+\noindent \underline{\em Action}:
+
+Locate the offending potential in the FIELD file and remove.
+Replace with one acceptable to \D if this is reasonable.
+Alternatively, you may consider defining the required potential in
+the code yourself. Amendments to subroutines {\sc read\_field} and
+{\sc inversions\_forces} will be required.
+
+\subsubsection*{\underline{Message 450}: error - undefined tethering potential}
+
+A form of tethering potential\index{potential!tether} has been
+requested which \D does not recognise.
+
+\noindent \underline{\em Action}:
+
+Locate the offending potential in the FIELD file and remove.
+Replace with one acceptable to \D if this is reasonable.
+Alternatively, you may consider defining the required potential in
+the code yourself.  Amendments to subroutines {\sc read\_field}
+and {\sc tethers\_forces} will be required.
+
+\subsubsection*{\underline{Message 451}: error - three-body potential cutoff undefined}
+
+The cutoff radius for a three-body
+potential\index{potential!three-body} has not been defined in the
+FIELD file.
+
+\noindent \underline{\em Action}:
+
+Locate the offending three-body force potential in the FIELD file
+and add the required cutoff.  Resubmit the job.
+
+\subsubsection*{\underline{Message 452}: error - undefined vdw potential}
+
+A form of vdw potential has been requested which \D does not
+recognise.
+
+\noindent \underline{\em Action}:
+
+Locate the offending potential in the FIELD file and remove.
+Replace with one acceptable to \D if this is reasonable.
+Alternatively, you may consider defining the required potential in
+the code yourself.  Amendments to subroutines {\sc read\_field}
+and {\sc vdw\_generate} will be required.
+
+\subsubsection*{\underline{Message 453}: error - four-body potential cutoff undefined}
+
+The cutoff radius for a four-body\index{potential!four-body}
+potential has not been defined in the FIELD file.
+
+\noindent \underline{\em Action}:
+
+Locate the offending four-body force potential in the FIELD file
+and add the required cutoff.  Resubmit the job.
+
+\subsubsection*{\underline{Message 454}: error - unknown external field}
+
+A form of external field potential has been requested which \D
+does not recognise.
+
+\noindent \underline{\em Action}:
+
+Locate the offending potential in the FIELD file and remove.
+Replace with one acceptable to \D if this is reasonable.
+Alternatively, you may consider defining the required potential in
+the code yourself.  Amendments to subroutines {\sc read\_field}
+and {\sc external\_field\_apply} will be required.
+
+\subsubsection*{\underline{Message 461}: error - undefined metal potential}
+
+A form of metal potential has been requested which \D does not
+recognise.
+
+\noindent \underline{\em Action}:
+
+Locate erroneous entry in the FIELD file and correct the potental
+interaction to one of the allowed ones for metals in \D.
+
+\subsubsection*{\underline{Message 462}: error - thermostat friction constant must be$~>~0$}
+
+A zero or negative value for the thermostat\index{thermostat!}
+friction constant has been encountered in the CONTROL file.
+
+\noindent \underline{\em Action}:
+
+Locate the {\bf ensemble} directive in the CONTROL file and assign a
+positive value to the time constant.
+
+\subsubsection*{\underline{Message 463}: error - barostat friction constant must be$~>~0$}
+
+A zero or negative value for the barostat\index{barostat!}
+friction constant has been encountered in the CONTROL file.
+
+\noindent \underline{\em Action}:
+
+Locate the {\bf ensemble} directive in the CONTROL file and assign a
+positive value to the time constant.
+
+\subsubsection*{\underline{Message 464}: error - thermostat relaxation time constant must be$~>~0$}
+
+A zero or negative value for the thermostat\index{thermostat!}
+relaxation time constant has been encountered in the CONTROL file.
+
+\noindent \underline{\em Action}:
+
+Locate the {\bf ensemble} directive in the CONTROL file and assign
+a positive value to the time constant.
+
+\subsubsection*{\underline{Message 466}: error - barostat relaxation time constant must be$~>~0$}
+
+A zero or negative value for the barostat\index{barostat} relaxation
+time constant has been encountered in the CONTROL file.
+
+\noindent \underline{\em Action}:
+
+Locate the {\bf ensemble} directive in the CONTROL file and assign
+a positive value to the time constant.
+
+\subsubsection*{\underline{Message 467}: error - rho must not be zero in valid buckingham potential}
+
+User specified vdw type buckingham potential has a non-zero force
+and zero rho constants.  Only both zero or both non-zero are allowed.
+
+\noindent \underline{\em Action}:
+
+Inspect the FIELD file and change the values in question appropriately.
+
+\subsubsection*{\underline{Message 468}: error - r0 too large for snm potential with current cutoff}
+
+The specified location (r0) of the potential minimum for a shifted
+n-m potential exceeds the specified potential cutoff. A potential
+with the desired minimum cannot be created.
+
+\noindent \underline{\em Action}:
+
+To obtain a potential with the desired minimum it is necessary to
+increase the van der Waals cutoff.  Locate the {\tt rvdw}
+directive in the CONTROL file and reset to a magnitude greater
+than r0.  Alternatively adjust the value of r0 in the FIELD file.
+Check that the FIELD file is correctly formatted.
+
+\subsubsection*{\underline{Message 470}: error - n~$<$~m in definition of n-m potential}
+
+The specification of a n-m potential in the FIELD file implies
+that the exponent m is larger than exponent n.  (Not all versions
+of \D are affected by this.)
+
+\noindent \underline{\em Action}:
+
+Locate the n-m potential in the FIELD file and reverse the order
+of the exponents.  Resubmit the job.
+
+\subsubsection*{\underline{Message 471}: error - rcut~$<$~2*rctbp (maximum cutoff for three-body potentials)}
+
+The cutoff for the pair interactions is smaller than twice that
+for the three-body interactions. This is a bookkeeping requirement
+for \D.
+
+\noindent \underline{\em Action}:
+
+Either use a smaller three-body cutoff, or a larger pair potential
+cutoff.
+
+\subsubsection*{\underline{Message 472}: error - rcut~$<$~ 2*rcfbp (maximum cutoff for four-body potentials)}
+
+The cutoff for the pair interactions is smaller than twice that
+for the four-body interactions. This is a bookkeeping requirement
+for \D.
+
+\noindent \underline{\em Action}:
+
+Either use a smaller four-body cutoff, or a larger pair potential
+cutoff.
+
+\subsubsection*{\underline{Message 474}: error - conjugate gradient mimimiser cycle limit exceeded}
+
+The conjugate gradient minimiser exceeded the iteration limit (100 for the relaxed shell model,
+1000 for the configuration minimiser).
+
+\noindent \underline{\em Action}:
+
+Decrease the respective convergence criterion.  Alternatively,
+you may try to increase the limit by hand in {\sc core\_shell\_relax}
+or in {\sc minimise\_relax} respectively and recompile.  However,
+it is unlikely that such measures will cure the problem as it is
+more likely to lay in the physical description of the system being
+simulated.  For example, are the core-shell spring constants well
+defined?  Is the system being too far from equilibrium?
+
+\subsubsection*{\underline{Message 476}: error - shells MUST all HAVE either zero or non-zero masses}
+
+The polarisation of ions is accounted via a core-shell model as
+the shell dynamics is either relaxed - shells have no mass, or
+adiabatic - all shells have non-zero mass.
+
+\noindent \underline{\em Action}:
+
+Choose which model you would like to use in the simulated system
+and adapt the shell masses in FIELD to comply with your choice.
+
+\subsubsection*{\underline{Message 478}: error - shake algorithms (constraints \& pmf) failed to converge}
+
+Your system has both bond and PMF constraints.  SHAKE (RATTLE\_VV1)
+is done by combined application of both bond and PMF constraints
+SHAKE (RATTLE\_VV1) in an iterative manner until the PMF constraint
+virial converges to a constant.  No such convergence is achieved.
+
+\noindent \underline{\em Action}:
+
+See Message 515.
+
+\subsubsection*{\underline{Message 480}: error - PMF constraint length $>$ minimum of all half-cell widths}
+
+The specified PMF length has exceeded the minimum of all half-cell
+widths.
+
+\noindent \underline{\em Action}:
+
+Specify shorter PMF length or increase MD cell dimensions.
+
+\subsubsection*{\underline{Message 484}: error - only one potential of mean force permitted}
+
+Only one potential of mean force is permitted in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous entries in FIELD.
+
+\subsubsection*{\underline{Message 486}: error - only one of the PMF units is permitted to have frozen atoms}
+
+Only one of the PMF units is permitted to have frozen atoms.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous entries in FIELD.
+
+\subsubsection*{\underline{Message 488}: error - too many PMF constraints per domain}
+
+This should not happen.
+
+\noindent \underline{\em Action}:
+
+Is the use of PMF constraints in your system physically sound?
+
+\subsubsection*{\underline{Message 490}: error - local PMF constraint not found locally}
+
+This should not happen.
+
+\noindent \underline{\em Action}:
+
+Is your system physically sound, is your system equilibrated?
+
+\subsubsection*{\underline{Message 492}: error - a diameter of a PMF unit $>$ minimum of all half cell widths}
+
+The diameter of a PMF unit has exceeded the minimum of all half-cell
+widths.
+
+\noindent \underline{\em Action}:
+
+Consider the physical concept you are trying to imply in the
+simulation.  Increase MD cell dimensions.
+
+\subsubsection*{\underline{Message 494}: error - overconstrained PMF units}
+
+PMF units are oveconstrained.
+
+\noindent \underline{\em Action}:
+
+\D algorithms cannot handle overconstrained PMF units.
+Decrease the number of constraints on the PMFs.
+
+\subsubsection*{\underline{Message 497}: error - pmf\_quench failure}
+
+\noindent \underline{\em Action}:
+
+See Message 515
+
+\subsubsection*{\underline{Message 498}: error - shake algorithm (pmf\_shake) failed to converge}
+
+\noindent \underline{\em Action}:
+
+See Message 515
+
+\subsubsection*{\underline{Message 499}: error - rattle algorithm (pmf\_rattle) failed to converge}
+
+\noindent \underline{\em Action}:
+
+See Message 515
+
+\subsubsection*{\underline{Message 500}: error - PMF unit of zero length is not permitted}
+
+PMF unit of zero length is found in FIELD.  PMF units are either a
+single atom or a group of atoms usually forming a chemical molecule.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous entries in FIELD.
+
+\subsubsection*{\underline{Message 501}: error - coincidence of particles in PMF unit}
+
+A PMF unit must be constituted of non-repeating particles!
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous entries in FIELD.
+
+\subsubsection*{\underline{Message 502}: error - PMF unit member found to be present more than once}
+
+A PMF unit is a group of unique (distingushed) atoms/sites. No
+repetition of a site is allowed in a PMF unit.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous entries in FIELD.
+
+\subsubsection*{\underline{Message 504}: error - cutoff too large for TABLE file}
+
+The requested cutoff exceeds the information in the TABLE file.
+
+\noindent \underline{\em Action}:
+
+Reduce the value of the vdw cutoff ({\tt rvdw}) in the CONTROL
+file or reconstruct the TABLE file.
+
+
+\subsubsection*{\underline{Message 505}: error - EAM metal densities or pair crossfunctions out of range}
+
+The resulting densities or pair crossfunctions are not defined in the TABEAM file.
+
+\noindent \underline{\em Action}:
+
+Recreate a TABEAM file with wider interval of defined densities and pair cross functions.
+
+\subsubsection*{\underline{Message 506}: error - EAM metal densities out of range}
+
+The resulting densities are not defined in the TABEAM file.
+
+\noindent \underline{\em Action}:
+
+Recreate a TABEAM file with wider range of densities.
+
+\subsubsection*{\underline{Message 507}: error - metal density embedding out of range}
+
+In the case of EAM type of metal interactions this indicates
+that the electron density of a particle in the system has
+exceeded the limits for which the embedding function for
+this particle's type is defined (as supplied in TABEAM.  In
+the case of Finnis-Sinclair type of metal interactions, this
+indicates that the density has become negative.
+
+\noindent \underline{\em Action}:
+
+Reconsider the physical sanity and validity of the metal
+interactions in your system and this type of simulation.
+You MUST change the interactions' parameters and/or the
+way the physical base of your investigation is handled in
+MD terms.
+
+\subsubsection*{\underline{Message 508}: error - EAM metal interaction entry in TABEAM unspecified in FIELD}
+
+The specified EAM metal interaction entry found in TABEAM is not specified in FIELD.
+
+\noindent \underline{\em Action}:
+
+For $N$ metal atom types there are $(5N+N^{2})/2$ EAM
+functions in the TABEAM file.  One density ($N$) and one
+embedding ($N$) function for each atom type and $(N+N^{2})/2$
+cross-interaction functions.  Fix the table entries and resubmit.
+
+\subsubsection*{\underline{Message 509}: error - duplicate entry for a pair interaction detected in TABEAM}
+
+A duplicate cross-interaction function entry is detected
+in the TABEAM file.
+
+\noindent \underline{\em Action}:
+
+Remove all duplicate entries in the TABEAM file and resubmit.
+
+\subsubsection*{\underline{Message 510}: error - duplicate entry for a density function detected in TABEAM}
+
+A duplicate density function entry is detected
+in the TABEAM file.
+
+\noindent \underline{\em Action}:
+
+Remove all duplicate entries in the TABEAM file and resubmit.
+
+\subsubsection*{\underline{Message 511}: error - duplicate entry for an embedding function detected in TABEAM}
+
+A duplicate embedding function entry is detected
+in the TABEAM file.
+
+\noindent \underline{\em Action}:
+
+Remove all duplicate entries in the TABEAM file and resubmit.
+
+\subsubsection*{\underline{Message 513}: error - particle assigned to non-existent domain in read\_config}
+
+This can only happen if particle coordinates do not match the cell
+parameters in CONFIG.  Probably, due to negligence or numerical
+inaccuracy inaccuracy in generation of big supercell from a small
+one.
+
+\noindent \underline{\em Action}:
+
+Make sure lattice parameters and particle coordinates marry each
+other.  Increase accuracy when generating a supercell.
+
+\subsubsection*{\underline{Message 514}: error - allowed image conventions are: 0, 1, 2, 3 and 6}
+
+\D has found unsupported boundary condition specified in CONFIG.
+
+\noindent \underline{\em Action}:
+
+Correct your boundary condition or consider using DL\_POLY\_2.
+
+\subsubsection*{\underline{Message 515}: error - rattle algorithm (constraints\_rattle) failed to converge}
+
+The RATTLE\index{algorithm!RATTLE} algorithm for bond
+constraints\index{constraints!bond} is iterative.  If the maximum
+number of permitted iterations is exceeded, the program
+terminates.  Possible causes include: incorrect force
+field\index{force field} specification; too high a temperature;
+inconsistent constraints (over-constraint) etc..
+
+\noindent \underline{\em Action}:
+
+You may try to increase the limit of iteration cycles in the
+constraint subroutines by using the directive {\bf mxshak} and/or
+decrease the constraint precision by using the directive {\bf shake}
+in CONTROL.  But the trouble may be much more likely to be cured by
+careful consideration of the physical system being simulated.  For
+example, is the system stressed in some way? Too far from
+equilibrium?
+
+%\subsubsection*{\underline{Message 516}: error - the number nodes MUST be a power of 2 series number}
+%
+%The DaFT development for the SMPE evaluation in \D supports
+%only k-vector grids with a power of two size in any dimension.
+%Therefore this restricts the types of domain decomposition to
+%$2^{x}~\times~2^{y}~\times~2^{z}$ processor grids.
+%
+%\noindent \underline{\em Action}:
+%
+%You must ensure \D execution on number of processors represented as
+%$2^{x}~\times~2^{y}~\times~2^{z}$.
+
+\subsubsection*{\underline{Message 517}: error - allowed configuration information levels are: 0, 1 and 2}
+
+\D has found an erroneous configuration information level, $l: 0 .le. l .le. 2$,
+(i) for the trajectory option in CONTROL or (ii) in the header of CONFIG.
+
+\noindent \underline{\em Action}:
+
+Correct the error in CONFIG and rerun.
+
+\subsubsection*{\underline{Message 518}: error - control distances for variable timestep not intact}
+
+\D has found the control distances for the variable timestep
+algorithm to be in contention with each other.
+
+\noindent \underline{\em Action}:
+
+{\tt mxdis} MUST BE$~>~2.5 \times$ {\tt mndis}.  Correct in
+CONTROL and rerun.
+
+\subsubsection*{\underline{Message 519}: error - REVOLD is incompatible or does not exist}
+
+Either REVOLD does not exist or its formatting is incompatible.
+
+\noindent \underline{\em Action}:
+
+Change the {\tt restart} option in CONTROL and rerun.
+
+\subsubsection*{\underline{Message 520}: error - domain decomposition failed}
+
+A \D check during the domain decomposition mapping has been violated.
+The number of nodes allowed for imcon = 0 is only 1,2,4 and 8!
+The number of nodes allowed for imcon = 6 is restricted to 2 along the
+z direction!  The number of nodes should not be a prime number since
+these are not factorisable/decomposable!
+
+\noindent \underline{\em Action}:
+
+You must ensure \D execution on a number of processors that complies
+with the advise above.
+
+\subsubsection*{\underline{Message 530}: error - pseudo thermostat thickness MUST comply with: 2 Angs~$<=$~thickness~$<$~a quarter of the minimum MD cell width}
+
+\D has found a check violated while reading CONTROL.
+
+\noindent \underline{\em Action}:
+
+Correct accordingly in CONTROL and resubmit.
+
+\subsubsection*{\underline{Message 540}: error - pseudo thermostat MUST only be used in bulk simulations, i.e. imcon MUST be 1, 2 or 3}
+
+\D has found a check violated while reading CONTROL.
+
+\noindent \underline{\em Action}:
+
+Correct accordingly in CONTROL {nve} or in CONFIG ({\tt imcon})
+and resubmit.
+
+\subsubsection*{\underline{Message 551}: error - REFERENCE not found !!!}
+
+The {\tt defect} detection option is used in conjunction with {\tt restart}
+but no REFERENCE file is found.
+
+\noindent \underline{\em Action}:
+
+Supply a REFERENCE configuration.
+
+\subsubsection*{\underline{Message 552}: error - REFERENCE must contain cell parameters !!!}
+
+REFERENCE MUST contain cell parameters i.e. image convention MUST be {\bf imcon}~$=$~1, 2, 3 or 6.
+
+\noindent \underline{\em Action}:
+
+Supply a properly formatted REFERENCE configuration.
+
+\subsubsection*{\underline{Message 553}: error - REFERENCE is inconsistent !!!}
+
+An atom has been lost in transfer between nodes.  This should
+never happen!
+
+\noindent \underline{\em Action}:
+
+Big trouble.  Report problem to authors immediately.
+
+\subsubsection*{\underline{Message 554}: error - REFERENCE's format different from CONFIG's !!!}
+
+REFERENCE complies to the same rules as CONFIG with the exception
+that image convention MUST be {\bf imcon}~$=$~1, 2, 3 or 6.
+
+\noindent \underline{\em Action}:
+
+Supply a properly formatted REFERENCE configuartion.
+
+\subsubsection*{\underline{Message 555}: error - particle assigned to non-existent domain in defects\_read\_reference}
+
+\noindent \underline{\em Action}:
+
+See Message 513
+
+\subsubsection*{\underline{Message 556}: error - too many atoms in REFERENCE file}
+
+\noindent \underline{\em Action}:
+
+See Message 45
+
+\subsubsection*{\underline{Message 557}: error - undefined direction passed to defects\_reference\_export}
+
+\noindent \underline{\em Action}:
+
+See Message 42
+
+\subsubsection*{\underline{Message 558}: error - outgoing transfer buffer exceeded in defects\_reference\_export}
+
+\noindent \underline{\em Action}:
+
+See Message 54
+
+\subsubsection*{\underline{Message 559}: error - coordinate array exceeded in defects\_reference\_export}
+
+\noindent \underline{\em Action}:
+
+See Message 56
+
+\subsubsection*{\underline{Message 560}: error - rdef found to be $>$ half the shortest interatomic distance in REFERENCE}
+
+The defect detection option relies on a cutoff, rdef, to define the
+vicinity around a site (defined in REFERENCES) in which a particle
+can claim to occupy the site.  Evidently, rdef MUST be $<$ half the
+shortest interatomic distance in REFERENCE.
+
+\noindent \underline{\em Action}:
+
+Decrease the value of rdef at directive {\bf defect} in CONTROL.
+
+\subsubsection*{\underline{Message 570}: error - unsupported image convention (0) for system expansion option nfold}
+
+System expansion is possible only for system with periodicity on
+their boundaries.
+
+\noindent \underline{\em Action}:
+
+Change the image convention in CONFIG to any other suitable periodic
+boundary condition.
+
+\subsubsection*{\underline{Message 580}: error - replay (HISTORY) option can only be used for structural property recalculation}
+
+No structural property has been specified for this option to
+activate itself.
+
+\noindent \underline{\em Action}:
+
+In CONTROL specify properties for recalculation (RDFs,z-density
+profiles, defect detection) or alternatively remove the option.
+
+\subsubsection*{\underline{Message 585}: error - end of file encountered in HISTORY file}
+
+This means that the HISTORY file is incomplete in some way: Either
+should you abort the replay (HISTORY) option or provide a fresh
+HISTORY file before restart.
+
+\noindent \underline{\em Action}:
+
+In CONTROL specify properties for recalculation (RDFs,z-density
+profiles, defect detection) or alternatively remove the option.
+
+\subsubsection*{\underline{Message 590}: error - uknown minimisation type, only "force", "energy" and "distance" are recognised}
+
+Configuration minimisation can take only these three criteria.
+
+\noindent \underline{\em Action}:
+
+In CONTROL specify the criterion you like followed by the needed arguments.
+
+\subsubsection*{\underline{Message 600}: error - "impact" option specified more than once in CONTROL}
+
+Only one instance of the "impact" option is allowed in CONTROL.
+
+\noindent \underline{\em Action}:
+
+Remove any extra instances of the "impact" option in CONTROL.
+
+\subsubsection*{\underline{Message 610}: error - "impact" applied on particle that is either frozen, or the shell of a core-shell unit or part of a RB}
+
+It is the user's responsibility to ensure that impact is
+initiated on a "valid" particle.
+
+\noindent \underline{\em Action}:
+
+In CONTROL remove the "impact" directive or correct the particle
+identity in it so that it complies with the requirements.
+
+\subsubsection*{\underline{Message 620}: error - duplicate or mixed intra-molecular entries specified in FIELD}
+
+The FIELD parser has detected an inconsistency in the
+description of bonding interactions.  It is the user's
+responsibility to ensure that no duplicate or mixed-up
+intra-molecular entries are specified in FIELD.
+
+\noindent \underline{\em Action}:
+
+Look at the preceding warning message in OUTPUT and find out
+which entry of what intra-molecular-like interaction is at
+fault.  Correct the bonding description and try running again.
+
+\subsubsection*{\underline{Message 625}: error - only one *rigid* directive per molecule is allowed}
+
+\D has found more than one rigids entry per molecule in FIELD.
+
+\noindent \underline{\em Action}:
+
+Correct the erroneous part in FIELD and resubmit.
+
+\subsubsection*{\underline{Message 630}: error - too many rigid body units specified}
+
+This should never happen!  This indicates an erroneous FIELD file
+or corrupted \D executable.  Unlike DL\_POLY\_2 \D does not have a
+set limit on the number of rigid body types it can handle in any
+simulation (this is not the same as the total number of RBs in the
+system or per domain).
+
+\noindent \underline{\em Action}:
+
+Examine FIELD for erroneous directives, correct and resubmit.
+
+\subsubsection*{\underline{Message 632}: error - rigid body unit MUST have at least 2 sites}
+
+This is likely to be a corrupted FIELD file.
+
+\noindent \underline{\em Action}:
+
+Examine FIELD for erroneous directives, correct and resubmit.
+
+\subsubsection*{\underline{Message 634}: error - rigid body unit MUST have at least one non-massless site}
+
+No RB dynamics is possible if all sites of a body are massless as no rotational inertia can be defined!
+
+\noindent \underline{\em Action}:
+
+Examine FIELD for erroneous directives, correct and resubmit.
+
+%\subsubsection*{\underline{Message 636}: error - rigid body unit MUST NOT have any frozen site}
+%
+%\D does not permit a site in a rigid body to be frozen,
+%i.e. fixed in one location in space.
+%
+%\noindent \underline{\em Action}:
+%
+%Remove the ‘freeze’ condition from the site concerned.
+%Consider using a very high site mass to achieve a similar effect.
+
+\subsubsection*{\underline{Message 638}: error - coincidence of particles in rigid body unit}
+
+This indicates a corrupted FIELD file as all members of a RB unit
+must be destinguishable from one another.
+
+\noindent \underline{\em Action}:
+
+Examine FIELD for erroneous directives, correct and resubmit.
+
+\subsubsection*{\underline{Message 640}: error - too many rigid body units per domain}
+
+\D limits the number of rigid body\index{rigid body} units
+in the system to be simulated (actually, the number to be processed
+by each node) and checks for the violation of this.  Termination will
+result if the condition is violated.
+
+\noindent \underline{\em Action}:
+
+Use {\bf densvar} option in CONTROL to increase {\tt mxrgd}
+(alternatively, increase it by hand in {\sc set\_bounds} and
+recompile) and resubmit.
+
+\subsubsection*{\underline{Message 642}: error - rigid body unit diameter $>$ rcut (the system cutoff)}
+
+\D domain decomposition limits the size of a RB to a largest
+diagonal $<$ system cutoff.  I.e. the largest RB type is still
+within a linked cell volume.
+
+\noindent \underline{\em Action}:
+
+Increase cutoff.
+
+\subsubsection*{\underline{Message 644}: error - overconstrained rigid body unit}
+
+This is a very unlikely message which usually indicates a corrupted FIELD file
+or unphysically overconstrained system.
+
+\noindent \underline{\em Action}:
+
+Decrease constraint on the system.  Examine FIELD for erroneous directives,
+if any, correct and resubmit.
+
+\subsubsection*{\underline{Message 646}: error - overconstrained constraint unit}
+
+This is a very unlikely message which usually indicates a corrupted FIELD file
+or unphysically overconstrained system.
+
+\noindent \underline{\em Action}:
+
+Decrease constraint on the system.  Examine FIELD for erroneous directives,
+if any, correct and resubmit.
+
+\subsubsection*{\underline{Message 648}:error - quaternion setup failed}
+
+This error indicates that the routine {\sc rigid\_bodies\_setup} has failed
+in reproducing all the atomic positions in rigid units from the centre of mass
+and quaternion vectors it has calculated.
+
+\noindent \underline{\em Action}:
+
+Check the contents of the CONFIG file.  \D builds its local body
+description of a rigid unit type from the {\em first} occurrence of
+such a unit in the CONFIG file.  The error most likely occurs
+because subsequent occurrences were not sufficiently similar
+to this reference structure.  If the problem persists increase
+the value of {\tt tol} in {\sc rigid\_bodies\_setup} and recompile.
+If problems still persist double the value of {\tt dettest} in
+{\sc rigid\_bodies\_setup} and recompile.  If you still
+encounter problems contact the authors.
+
+\subsubsection*{\underline{Message 650}:error - failed to find principal axis system}
+
+This error indicates that the routine {\sc rigid\_bodies\_setup}
+has failed to find the principal axis for a rigid unit.
+
+\noindent \underline{\em Action}:
+
+This is an unlikely error.  \D should correctly handle linear,
+planar and 3-dimensional rigid units.  There is the possibility
+that the unit has all of its mass-bearing particles frozen while
+some of the massless are not or the unit has just one mass-bearing
+particle.  Check the definition of the rigid unit in the CONFIG file,
+if sensible report the error to the authors.
+
+\subsubsection*{\underline{Message 1000}: error - working precision mismatch between FORTRAN90 and MPI implementation}
+
+\D has failed to match the available modes of MPI precision for real
+numbers to the defined in {sc kinds\_f90} FORTRAN90 working
+precision {\tt wp} for real numbers.  {\tt wp} is a precompile
+parameter.
+
+\noindent \underline{\em Action}:
+
+This simply mean that {\tt wp} must have been changed from its
+original value to something else and the new value is not matched by
+the {\tt mpi\_wp} variable in {\sc comms\_module}.  It is the user's
+responsibility to ensure that {\tt wp} and {\tt mpi\_wp} are
+compliant.  Make the necessary corrections to {sc kinds\_f90} and/or
+{\sc comms\_module}.
+
+\subsubsection*{\underline{Message 1001}: error - allocation failure in comms\_module $->$ gcheck\_vector}
+
+\D has failed to find available memory to allocate an array or
+arrays, i.e. there is lack of sufficient memory (per node) on the
+execution machine.
+
+\noindent \underline{\em Action}:
+
+This may simply mean that your simulation is too large for the
+machine you are running on. Consider this before wasting time
+trying a fix.  Try using more processing nodes if they are
+available.  If this is not an option investigate the possibility
+of increasing the heap size for your application.  Talk to your
+systems support people for advice on how to do this.
+
+\subsubsection*{\underline{Message 1002}: error - deallocation failure in comms\_module $->$ gcheck\_vector}
+
+\D has failed to deallocate an array or arrays, i.e. to free
+memory that is no longer in use.
+
+\noindent \underline{\em Action}:
+
+Talk to your systems support people for advice on how to manage
+this.
+
+\subsubsection*{\underline{Message 1003}: error - allocation failure in comms\_module $->$ gisum\_vector}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1004}: error - deallocation failure in comms\_module $->$ gisum\_vector}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1005}: error - allocation failure in comms\_module $->$ grsum\_vector}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1006}: error - deallocation failure in comms\_module $->$ grsum\_vector}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1007}: error - allocation failure in comms\_module $->$ gimax\_vector}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1008}: error - deallocation failure in comms\_module $->$ gimax\_vector}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1009}: error - allocation failure in comms\_module $->$ grmax\_vector}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1010}: error - deallocation failure in comms\_module $->$ grmax\_vector}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1011}: error - allocation failure in parse\_module $->$ get\_record}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1012}: error - deallocation failure in parse\_module $->$ get\_record}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1013}: error - allocation failure in angles\_module $->$ allocate\_angles\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1014}: error - allocation failure in bonds\_module $->$ allocate\_bonds\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1015}: error - allocation failure in core\_shell\_module $->$ \\
+\noindent allocate\_core\_shell\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1016}: error - allocation failure in statistics\_module $->$ allocate\_statitics\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1017}: error - allocation failure in tethers\_module $->$ allocate\_tethers\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1018}: error - allocation failure in constraints\_module $->$ \\
+\noindent allocate\_constraints\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1019}: error - allocation failure in external\_field\_module $->$ \\
+\noindent allocate\_external\_field\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1020}: error - allocation failure in dihedrals\_module $->$ allocate\_dihedrals\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1021}: error - allocation failure in inversions\_module $->$ allocate\_inversion\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1022}: error - allocation failure in vdw\_module $->$ allocate\_vdw\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1023}: error - allocation failure in metal\_module $->$ allocate\_metal\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1024}: error - allocation failure in three\_body\_module $->$ \\
+\noindent allocate\_three\_body\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1025}: error - allocation failure in config\_module $->$ allocate\_config\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1026}: error - allocation failure in site\_module $->$ allocate\_site\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1027}: error - allocation failure in tersoff\_module $->$ alocate\_tersoff\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1028}: error - deallocation failure in angles\_module $->$ deallocate\_angles\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1029}: error - deallocation failure in bonds\_module $->$ deallocate\_bonds\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1030}: error - deallocation failure in core\_shell\_module $->$ \\
+\noindent deallocate\_core\_shell\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1031}: error - deallocation failure in tethers\_module $->$ \\
+\noindent deallocate\_tethers\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1032}: error - deallocation failure in constraints\_module $->$ \\
+\noindent deallocate\_constraints\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1033}: error - deallocation failure in dihedrals\_module $->$ \\
+\noindent deallocate\_dihedrals\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1034}: error - deallocation failure in inversions\_module $->$ \\
+\noindent deallocate\_inversions\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1035}: error - allocation failure in defects\_module $->$ allocate\_defects\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1036}: error - allocation failure in pmf\_module $->$ allocate\_pmf\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1037}: error - deallocation failure in pmf\_module $->$ deallocate\_pmf\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1038}: error - allocation failure in minimise\_module $->$ allocate\_minimise\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1039}: error - deallocation failure in minimise\_module $->$ \\
+\noindent deallocate\_minimise\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1040}: error - allocation failure in ewald\_module $->$ ewald\_allocate\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1041}: error - allocation failure in langevin\_module $->$ \\
+\noindent langevin\_allocate\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1042}: error - allocation failure in rigid\_bodies\_module $->$ \\
+\noindent allocate\_rigid\_bodies\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1043}: error - deallocation failure in rigid\_bodies\_module $->$ \\
+\noindent deallocate\_rigid\_bodies\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1044}: error - allocation failure in comms\_module $->$ gimin\_vector}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1045}: error - deallocation failure in comms\_module $->$ gimin\_vector}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1046}: error - allocation failure in comms\_module $->$ grmin\_vector}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1047}: error - deallocation failure in comms\_module $->$ grmin\_vector}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1048}: error - error - allocation failure in comms\_module $->$ grsum\_matrix}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1049}: error - deallocation failure in comms\_module $->$ grsum\_matrix}
+
+\noindent \underline{\em Action}:
+
+See Message 1002
+
+\subsubsection*{\underline{Message 1050}: error - sorted I/O base communicator not set}
+
+Possible corruption if {\sc io\_module}.  This should never happen!
+
+\noindent \underline{\em Action}:
+
+Make sure you have a clean copy of \D, compiled without any suspicious
+warning messages.  Contact authors if the problem persists.
+
+\subsubsection*{\underline{Message 1053}: error - sorted I/O allocation error}
+
+Your I/O buffer (and possibly batch) size is too big.
+
+\noindent \underline{\em Action}:
+
+Decrease the value of the I/O buffer (and possibly batch) size in
+CONTROL and restart your job.
+
+\subsubsection*{\underline{Message 1056}: error - unkown write option given to sorted I/O}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Contact authors if the problem persists.
+
+\subsubsection*{\underline{Message 1059}: error -  unknown write level given to sorted I/O}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Contact authors if the problem persists.

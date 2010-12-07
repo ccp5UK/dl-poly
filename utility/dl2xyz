@@ -1,0 +1,321 @@
+*************************Running script*******************************
+#!/bin/bash
+# Convert  given simulation from DL_POLY format to XYZ (xmol,xmakemol,...)
+# Scan files to obtain census data
+grep -i "^molecules" FIELD | awk '{print$2}'  > data.FIELD
+grep -i "^nummols" FIELD | awk '{print$2}'  >> data.FIELD
+grep -i "^atoms" FIELD  | awk '{print$2}'  >> data.FIELD
+
+        ln -s CONFIG      fort.1
+        ln -s HISTORY     fort.2
+        ln -s REVCON      fort.3
+        ln -s $DLPOLY/lib/dl2xyz.dict fort.77
+        $DLPOLY/bin/x_dl2xyz
+        rm fort.1 fort.2 fort.3 fort.77
+#
+
+*******************Fortran 90 source**********************************
+
+! Extract a photo from a DL_POLY initial config, trajectory  or
+! end config and convert it to Xmol format.
+
+implicit none
+integer, parameter               :: natmax=50000,maxsym=200
+character*8, dimension(maxsym)   :: dicin,dicout
+character*1                      :: yn,yns
+integer                          :: cenat
+integer                          :: nsym,nstrin,nsrtrj,nstren
+character*80                     :: title
+integer                          :: ntyp,key1,key2,n1,n2,a1,a2
+real*8 , dimension(3,3)          :: cell
+character*8                      :: symin,symtime
+integer                          :: natms,i,j,k,l,nstep,molecules,ioff
+character*8, dimension(:),allocatable       :: symbol
+real*4,	dimension(:,:),allocatable          :: x
+real*8, dimension(3)             :: xxx,x0
+character*24                     :: output
+integer, dimension(:),allocatable           :: nummols,atoms
+
+data nstrin,nsrtrj,nstren/1,2,3/
+
+
+!Read dictionary
+nsym=0
+do
+  nsym = min(nsym+1,maxsym) ; read(77,*,end=4710) dicin(nsym),dicout(nsym)
+  cycle
+enddo
+4710 nsym = nsym-1
+
+write(6,*) 'Conversion of DL_POLY trajectory images to Xmol'
+write(6,*) 'format.'
+write(6,*) 'Do you want to convert an initial(0),'
+write(6,*) ' a trajectory(1),or a final(2) configuration?'
+read(5,*) ntyp
+! Obtain data on system
+open(1,file='data.FIELD',status='old')
+nummols=0 ; atoms=0
+read(1,*) molecules
+allocate (nummols(molecules),atoms(molecules))
+write(6,'("Molecules and atoms/molecule.")')
+do i=1,molecules
+   read(1,*) nummols(i)
+enddo
+do i=1,molecules
+   read(1,*) atoms(i)
+   write(6,'(2i10)') nummols(i),atoms(i)
+enddo
+close(1)
+natms=sum(nummols*atoms)
+write(6,'(''Total     '',i10)') natms
+allocate (symbol(natms),x(3,natms))
+
+if((ntyp.eq.0).or.(ntyp.eq.2)) then
+
+  read(ntyp+1,'(a80)') title
+  write(6,'("Title is :",/,a80)') title
+  read(ntyp+1,'(2i10)') key1,key2
+  write(6,'("Content and boundary condition keys are :",/,2i10)') key1,key2
+  if(key2.gt.0) then
+    read(ntyp+1,'(3f20.0)') cell
+    write(6,'("Cell row vectors are :",/,3f20.5)') cell
+  endif
+  do i = 1,natms
+    read(ntyp+1,'(a8)',end=4711) symbol(i) 
+    do j = 1,nsym  ! determine symbol
+     if(symbol(i).ne.dicin(j)) cycle
+     symbol(i) = dicout(j) ; exit
+    enddo
+
+    read(ntyp+1,'(3f20.0)') x(:,i)
+    if(key1.gt.0) read(ntyp+1,*)
+    if(key1.gt.1) read(ntyp+1,*)
+  enddo
+
+
+  4711 if(i.lt.natms) then
+    write(6,'("Not enough atoms in file")') ; stop
+  endif
+  write(6,*) 'Do you want to centre views on the (initial) position of a'
+  write(6,*) 'particular atom?'
+  read(5,*) yn
+  if(yn.eq.'Y'.or.yn.eq.'y') then
+    write(6,*) 'Which atom?'
+    read(5,*) cenat
+  endif
+
+  write(6,*) 'Name of Xmol file please?'
+  read(5,'(a24)') output
+  open(7,file=output,status='new')
+
+
+  write(7,'(i6)') natms
+  if(ntyp.eq.0) write(7,'("Initial config of :",a80)') title
+  if(ntyp.eq.2) write(7,'("Final config of :",a80)') title
+
+! Centre on atom cenat
+  if(yn.eq.'y'.or.yn.eq.'Y') then
+    x0 = x(:,cenat)
+    do k=1,natms
+      xxx=x(:,k)-x0
+      call images(key2,0,1,1,cell,xxx(1),xxx(2),xxx(3))
+      x(:,k)=xxx
+    enddo
+  endif
+
+    ! Restore molecules to one or other side of the simulation box
+    do i = 1,molecules
+      do j=1,nummols(i)
+        ioff=sum(nummols(1:i-1)*atoms(1:i-1))+(j-1)*atoms(i)
+        do k = ioff+1,ioff+atoms(i)
+          xxx = x(:,k) - x(:,ioff+1)
+          call images(key2,0,1,1,cell,xxx(1),xxx(2),xxx(3))
+          x(:,k) = x(:,ioff+1) + xxx
+        enddo
+      enddo
+   enddo
+
+    do i = 1,natms
+      write(7,'(a8,3f20.4)') symbol(i),x(:,i)
+    enddo
+
+  close(7) ; stop
+
+else if(ntyp.eq.1) then
+  read(ntyp+1,'(a80)') title
+  write(6,'("Title is :",/,a80)') title
+  read(ntyp+1,'(2i10)') key1,key2
+  write(6,'("Content and boundary condition keys are :",/,2i10)') key1,key2
+  write(6,*) 'Give 1st and last atoms to trace and 1st and last photos'
+  read(5,*) a1,a2,n1,n2
+555  write(6,*) 'Do you want to centre views on the (initial) position of a'
+  write(6,*) 'particular atom?'
+  read(5,*) yn
+  if(yn.eq.'Y'.or.yn.eq.'y') then
+    write(6,*) 'Which atom?'
+    read(5,*) cenat
+    if(cenat.gt.a2.or.cenat.lt.a1 )then
+      write(6,*) 'Must be between ',a1,' and ',a2
+      go to 555
+    endif
+    write(6,*) 'Centre on its position in first image (y) or its current'
+    write(6,*) 'position in any image(n)?'
+    read(5,*) yns
+  endif
+
+  write(6,*) 'Name of Xmol file please?'
+  read(5,'(a24)') output
+  open(7,file=output,status='new')
+  !Skip to first photo
+  do k=1,n1-1
+    read(ntyp+1,*,end=4712) ! skip timestep
+    if(key2.gt.0) then      ! cell, if present
+      read(ntyp+1,'(3g12.4)') cell
+    endif
+    if(k.eq.1) then
+      ! Find symbols from 1st photo
+      do i = 1,natms
+        read(ntyp+1,'(a8)',end=4712) symbol(i)
+        do j = 1,nsym  ! determine symbol
+         if(symbol(i).ne.dicin(j)) cycle
+         symbol(i) = dicout(j) ; exit
+        enddo
+
+        read(ntyp+1,*) x(:,i)
+        if(key1.gt.0) read(ntyp+1,*)
+        if(key1.gt.1) read(ntyp+1,*)
+      enddo
+    else
+      do i = 1,natms
+        read(ntyp+1,*,end=4712);read(ntyp+1,*,end=4712) !skip symbol and xyz
+        if(key1.ge.1) read(ntyp+1,*,end=4712) ! velocities and forces are irrelevant 
+        if(key1.ge.2) read(ntyp+1,*,end=4712)
+      enddo
+    endif
+  enddo
+
+
+  do k = n1,n2                 ! loop over requested photos
+    read(ntyp+1,*,end=4713) symtime,nstep    !timestep number
+    write(7,'(i10," atoms (",i5," to",i5,") in")') a2-a1+1 ,a1,a2  !xmol wants it
+    write(7,'("photo ",i5," (timestep ",i7,") of:",a80)') k,nstep,title    !xmol title
+    if(key2.gt.0) then         ! cell, if present, is irrelevant to Xmol
+      read(ntyp+1,'(3g12.4)') cell
+    endif
+
+    do j = 1,a1-1  !skip to first atom
+      read(ntyp+1,*,end=4713); read(ntyp+1,*,end=4713) 
+      if(key1.ge.1) read(ntyp+1,*,end=4713) ! velocities and forces are irrelevant
+      if(key1.ge.2) read(ntyp+1,*,end=4713)
+    enddo
+    if(k.eq.1) then
+      ! Find symbols from 1st photo
+      do i = a1,a2
+        read(ntyp+1,'(a8)',end=4712) symbol(i)
+        do j = 1,nsym  ! determine symbol
+          if(symbol(i).ne.dicin(j)) cycle
+          symbol(i) = dicout(j) ; exit
+        enddo
+
+        read(ntyp+1,*) x(:,i)
+        if(key1.gt.0) read(ntyp+1,*)
+        if(key1.gt.1) read(ntyp+1,*)
+      enddo
+
+!     Centre on atom cenat
+      if(yn.eq.'y'.or.yn.eq.'Y') then
+        x0 = x(:,cenat)
+        do l=1,natms
+          xxx=x(:,l)-x0
+          call images(key2,0,1,1,cell,xxx(1),xxx(2),xxx(3))
+          x(:,l)=xxx
+        enddo
+      endif
+!     Restore molecules to one or other side of the simulation box
+      do i = 1,molecules
+        do j=1,nummols(i)
+          ioff=sum(nummols(1:i-1)*atoms(1:i-1))+(j-1)*atoms(i)
+          do l = ioff+1,ioff+atoms(i)
+            xxx = x(:,l) - x(:,ioff+1)
+            call images(key2,0,1,1,cell,xxx(1),xxx(2),xxx(3))
+            x(:,l) = x(:,ioff+1) + xxx
+          enddo
+        enddo
+      enddo
+
+      do i = a1,a2
+        write(7,'(a8,3f20.4)') symbol(i),x(:,i)
+      enddo
+    else
+      do j = a1,a2
+        read(ntyp+1,*); read(ntyp+1,*,end=4713) x(:,j)
+        if(key1.ge.1) read(ntyp+1,*,end=4713) ! velocities and forces are irrelevant
+        if(key1.ge.2) read(ntyp+1,*,end=4713)
+      enddo
+
+!     Centre on atom cenat
+      if(yn.eq.'y'.or.yn.eq.'Y') then
+        if(k.eq.n1) x0=x(:,cenat)
+        if(k.gt.n1.and.(yns.eq.'N'.or.yns.eq.'n')) x0=x(:,cenat)
+        do l=1,natms
+          xxx=x(:,l)-x0
+          call images(key2,0,1,1,cell,xxx(1),xxx(2),xxx(3))
+          x(:,l)=xxx
+        enddo
+      endif
+!     Restore molecules to one or other side of the simulation box
+      do i = 1,molecules
+        do j=1,nummols(i)
+          ioff=sum(nummols(1:i-1)*atoms(1:i-1))+(j-1)*atoms(i)
+          do l = ioff+1,ioff+atoms(i)
+            xxx = x(:,l) - x(:,ioff+1)
+            call images(key2,0,1,1,cell,xxx(1),xxx(2),xxx(3))
+            x(:,l) = x(:,ioff+1) + xxx
+          enddo
+        enddo
+      enddo
+
+      do i = a1,a2
+        write(7,'(a8,3f20.4)') symbol(i),x(:,i)
+      enddo  
+    endif
+    do j = a2+1,natms  !skip trailing atoms
+      read(ntyp+1,*,end=4713); read(ntyp+1,*,end=4713) 
+      if(key1.ge.1) read(ntyp+1,*,end=4713) ! velocities and forces are irrelevant
+      if(key1.ge.2) read(ntyp+1,*,end=4713)
+    enddo
+
+  enddo
+
+  stop
+
+  4712 write(6,*) 'Last photo in file is :',k-1 ; stop
+  4713 write(6,*) 'Last complete photo translated was:',k-1 ; stop
+      
+endif
+
+stop
+end
+
+
+****************Dictionary File***************************************
+'CH2'		'       C'
+'     CH2'	'       C'
+'CH3'           '       C'
+'     CH3'      '       C'
+'A'		'       O'
+'       A'	'       O'
+'B'             '       O'
+'       B'      '       O'
+'O1'		'       O'
+'     O1'	'       O'
+'C2'            '       C'
+'     C2'       '       C'
+'C3'            '       C'
+'     C3'       '       C'
+'C4'            '       C'
+'     C4'       '       C'
+'C5'            '       C'
+'     C5'       '       C'
+'C6'		'       C'
+'      C6'	'       C'

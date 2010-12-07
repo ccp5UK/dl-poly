@@ -1,0 +1,6 @@
+cp ../data/TEST$1/CONTROL   CONTROL
+cp ../data/TEST$1/FIELD     FIELD
+cp ../data/TEST$1/CONFIG    CONFIG
+cp ../data/TEST$1/TABLE     TABLE
+cp ../data/TEST$1/TABEAM    TABEAM
+cp ../data/TEST$1/REFERENCE REFERENCE

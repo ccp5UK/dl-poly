@@ -1,0 +1,368 @@
+# Master makefile for DL_POLY_4.01 (CUDA+OpenMP version)
+#
+# Author - I.T.Todorov october 2010
+#
+# Define default settings
+#=====================================================================
+
+SHELL=/bin/sh
+
+.SUFFIXES:
+.SUFFIXES: .f90 .cu .o
+
+BINROOT=../execute
+EX=DLPOLY.Z.cu
+EXE=$(BINROOT)/$(EX)
+
+TYPE=master
+
+FC=undefined
+LD=undefined
+
+# Preprocessor defines for CUDA compilation
+PREPROC_DEFINES=-DCOMPILE_CUDA
+
+# Define object files
+#=====================================================================
+
+OBJ_CUDA_MOD = dl_poly_module_cuda.o
+OBJ_MOD = \
+	kinds_f90.o comms_module.o setup_module.o \
+	parse_module.o development_module.o netcdf_modul~.o io_module.o \
+	domains_module.o \
+	site_module.o config_module.o defects_module.o defects1_module.o \
+	vdw_module.o metal_module.o tersoff_module.o \
+	three_body_module.o four_body_module.o \
+	core_shell_module.o \
+	constraints_module.o pmf_module.o \
+	rigid_bodies_module.o \
+	tethers_module.o \
+	bonds_module.o angles_module.o dihedrals_module.o inversions_module.o \
+	\
+	external_field_module.o langevin_module.o minimise_module.o \
+	ewald_module.o msd_module.o statistics_module.o \
+	\
+	kinetic_module.o gpfa_module.o parallel_fft.o \
+
+OBJ_MOD += $(OBJ_CUDA_MOD)
+
+# Object files specific to CUDA port
+OBJ_CUDA_F90 = \
+	dl_poly_wrappers_cuda.o \
+	dl_poly_cuda.o ewald_real_forces_cuda.o ewald_spme_forces_cuda.o \
+	link_cell_pairs_cuda.o metal_forces_cuda.o metal_ld_compute_cuda.o \
+	numeric_container_cuda.o spme_container_cuda.o two_body_forces_cuda.o \
+	update_shared_units_cuda.o vdw_forces_cuda.o \
+	constraints_shake_vv_cuda.o constraints_shake_lfv_cuda.o
+
+OBJ_CUDA_CC =	time_cuda.o
+
+OBJ_CUDA_CU = \
+	dl_poly_init_cu.o \
+	constraints_shake_cu.o \
+	two_body_forces_cu.o link_cell_pairs_cu.o \
+	spme_container_cu.o spme_forces_cu.o ewald_spme_forces_cu.o \
+	metal_ld_compute_cu.o
+
+HEADERS_CUDA = dl_poly_cu.h dl_poly_common_cu.cu
+
+# Other object files, not affected by CUDA port
+OBJ_ALL = \
+	warning.o error.o scan_control_io.o \
+	quaternions_container.o \
+	scan_field.o read_config_parallel.o scan_config.o scan_control.o read_config.o \
+	set_bounds.o \
+	read_control.o \
+	vdw_generate.o vdw_table_read.o \
+	metal_generate.o metal_table_read.o metal_table_derivatives.o \
+	tersoff_generate.o dihedrals_14_check.o read_field.o \
+	check_config.o scale_config.o write_config.o \
+	trajectory_write.o system_expand.o \
+	rigid_bodies_tags.o rigid_bodies_coms.o rigid_bodies_widths.o \
+	rigid_bodies_setup.o \
+	tag_legend.o report_topology.o pass_shared_units.o build_book_intra.o \
+	build_excl_intra.o \
+	scale_temperature.o \
+	core_shell_quench.o constraints_tags.o constraints_quench.o \
+	pmf_coms.o pmf_tags.o pmf_vcoms.o pmf_quench.o \
+	rigid_bodies_quench.o \
+	set_temperature.o \
+	vdw_lrc.o metal_lrc.o system_init.o \
+	export_atomic_data.o set_halo_particles.o \
+	rigid_bodies_stress.o \
+	read_history.o \
+	impact.o core_shell_on_top.o \
+	deport_atomic_data.o pmf_units_set.o compress_book_intra.o \
+	relocate_particles.o \
+	metal_ld_collect_eam.o metal_ld_collect_fst.o \
+	metal_ld_export.o metal_ld_set_halo.o \
+	exchange_grid.o \
+	coul_dddp_forces.o coul_cp_forces.o coul_fscp_forces.o \
+	coul_rfp_forces.o rdf_collect.o ewald_excl_forces.o \
+	ewald_frozen_forces.o \
+	tersoff_forces.o three_body_forces.o four_body_forces.o \
+	core_shell_forces.o tethers_forces.o \
+	bonds_forces.o angles_forces.o dihedrals_forces.o inversions_forces.o \
+	external_field_apply.o external_field_correct.o \
+	langevin_forces.o \
+	constraints_pseudo_bonds.o pmf_pseudo_bonds.o \
+	rigid_bodies_split_torque.o rigid_bodies_move.o minimise_relax.o \
+	core_shell_relax.o zero_k_optimise.o \
+	nvt_e0_scl.o nvt_e1_scl.o nvt_b0_scl.o nvt_b1_scl.o \
+	\
+	pseudo_vv.o \
+	pmf_shake_vv.o \
+	constraints_rattle.o pmf_rattle.o \
+	nvt_h0_scl.o npt_h0_scl.o nst_h0_scl.o \
+	nve_0_vv.o nvt_e0_vv.o \
+	nvt_l0_vv.o nvt_a0_vv.o nvt_b0_vv.o nvt_h0_vv.o \
+	npt_l0_vv.o npt_b0_vv.o npt_h0_vv.o npt_m0_vv.o \
+	nst_l0_vv.o nst_b0_vv.o nst_h0_vv.o nst_m0_vv.o \
+	nvt_h1_scl.o npt_h1_scl.o nst_h1_scl.o \
+	nve_1_vv.o nvt_e1_vv.o \
+	nvt_l1_vv.o nvt_a1_vv.o nvt_b1_vv.o nvt_h1_vv.o \
+	npt_l1_vv.o npt_b1_vv.o npt_h1_vv.o npt_m1_vv.o \
+	nst_l1_vv.o nst_b1_vv.o nst_h1_vv.o nst_m1_vv.o \
+	\
+	pseudo_lfv.o \
+	pmf_shake_lfv.o \
+	nve_0_lfv.o nvt_e0_lfv.o \
+	nvt_l0_lfv.o nvt_a0_lfv.o nvt_b0_lfv.o nvt_h0_lfv.o \
+	npt_l0_lfv.o npt_b0_lfv.o npt_h0_lfv.o npt_m0_lfv.o \
+	nst_l0_lfv.o nst_b0_lfv.o nst_h0_lfv.o nst_m0_lfv.o \
+	nve_1_lfv.o nvt_e1_lfv.o \
+	nvt_l1_lfv.o nvt_a1_lfv.o nvt_b1_lfv.o nvt_h1_lfv.o \
+	npt_l1_lfv.o npt_b1_lfv.o npt_h1_lfv.o npt_m1_lfv.o \
+	nst_l1_lfv.o nst_b1_lfv.o nst_h1_lfv.o nst_m1_lfv.o \
+	\
+	xscale.o core_shell_kinetic.o regauss_temperature.o \
+	\
+	defects_reference_read.o defects_reference_read_parallel.o \
+	defects_reference_write.o \
+	defects_reference_export.o defects_reference_set_halo.o \
+	defects_link_cells.o defects1_write.o defects_write.o \
+	\
+	msd_write.o z_density_collect.o statistics_collect.o \
+	system_revive.o \
+	rdf_compute.o z_density_compute.o statistics_result.o
+
+OBJ_ALL += $(OBJ_CUDA_F90) $(OBJ_CUDA_CC) $(OBJ_CUDA_CU)
+
+# Define CUDA Port Files
+#=====================================================================
+
+FILES_CUDA = \
+	dl_poly_module_cuda.f90 \
+	dl_poly_wrappers_cuda.f90 dl_poly_cuda.f90\
+	ewald_real_forces_cuda.f90 ewald_spme_forces_cuda.f90 \
+	link_cell_pairs_cuda.f90 metal_forces_cuda.f90 \
+	metal_ld_compute_cuda.f90 numeric_container_cuda.f90 \
+	spme_container_cuda.f90 two_body_forces_cuda.f90 \
+	update_shared_units_cuda.f90 vdw_forces_cuda.f90 \
+	constraints_shake_vv_cuda.f90 constraints_shake_lfv_cuda.f90 \
+	\
+	dl_poly_cu.h dl_poly_common_cu.cu dl_poly_init_cu.cu \
+	constraints_shake_cu.cu two_body_forces_cu.cu \
+	link_cell_pairs_cu.cu spme_container_cu.cu spme_forces_cu.cu \
+	ewald_spme_forces_cu.cu metal_ld_compute_cu.cu \
+	\
+	time_cuda.cc
+
+# Define Velocity Verlet files
+#=====================================================================
+
+FILES_VV = \
+	pseudo_vv.f90 \
+	pmf_shake_vv.f90 \
+	constraints_rattle.f90 pmf_rattle.f90 \
+	nvt_h0_scl.f90 npt_h0_scl.f90 nst_h0_scl.f90 \
+	nve_0_vv.f90 nvt_e0_vv.f90 \
+	nvt_l0_vv.f90 nvt_a0_vv.f90 nvt_b0_vv.f90 nvt_h0_vv.f90 \
+	npt_l0_vv.f90 npt_b0_vv.f90 npt_h0_vv.f90 npt_m0_vv.f90 \
+	nst_l0_vv.f90 nst_b0_vv.f90 nst_h0_vv.f90 nst_m0_vv.f90 \
+	nvt_h1_scl.f90 npt_h1_scl.f90 nst_h1_scl.f90 \
+	nve_1_vv.f90 nvt_e1_vv.f90 \
+	nvt_l1_vv.f90 nvt_a1_vv.f90 nvt_b1_vv.f90 nvt_h1_vv.f90 \
+	npt_l1_vv.f90 npt_b1_vv.f90 npt_h1_vv.f90 npt_m1_vv.f90 \
+	nst_l1_vv.f90 nst_b1_vv.f90 nst_h1_vv.f90 nst_m1_vv.f90 \
+	md_vv.f90
+
+# Define LeapFrog Verlet files
+#=====================================================================
+
+FILES_LFV = \
+	pseudo_lfv.f90 \
+	pmf_shake_lfv.f90 \
+	nve_0_lfv.f90 nvt_e0_lfv.f90 \
+	nvt_l0_lfv.f90 nvt_a0_lfv.f90 nvt_b0_lfv.f90 nvt_h0_lfv.f90 \
+	npt_l0_lfv.f90 npt_b0_lfv.f90 npt_h0_lfv.f90 npt_m0_lfv.f90 \
+	nst_l0_lfv.f90 nst_b0_lfv.f90 nst_h0_lfv.f90 nst_m0_lfv.f90 \
+	nve_1_lfv.f90 nvt_e1_lfv.f90 \
+	nvt_l1_lfv.f90 nvt_a1_lfv.f90 nvt_b1_lfv.f90 nvt_h1_lfv.f90 \
+	npt_l1_lfv.f90 npt_b1_lfv.f90 npt_h1_lfv.f90 npt_m1_lfv.f90 \
+	nst_l1_lfv.f90 nst_b1_lfv.f90 nst_h1_lfv.f90 nst_m1_lfv.f90 \
+	md_lfv.f90
+
+# Examine targets manually
+#=====================================================================
+
+all:
+	@echo
+	@echo "You MUST specify a target platform!"
+	@echo
+	@echo "Please examine Makefile for permissible targets!"
+	@echo
+	@echo "If no target suits your system create your own"
+	@echo "using the generic target template provided in"
+	@echo "this Makefile at entry 'uknown_platform:'."
+	@echo
+
+# Fetch CUDA-port-specific files
+#=====================================================================
+
+$(FILES_CUDA):
+	$(MAKE) links_cuda
+
+links_cuda:
+	@for file in ${FILES_CUDA} ; do \
+	echo linking to $$file ; \
+	rm -f $$file ; \
+	ln -s CUDA/$$file $$file ; \
+	done
+
+# Fetch the Velocity Verlet subroutines
+#=====================================================================
+
+$(FILES_VV):
+	$(MAKE) links_vv
+
+links_vv:
+	@for file in ${FILES_VV} ; do \
+	echo linking to $$file ; \
+	rm -f $$file ; \
+	ln -s VV/$$file $$file ; \
+	done
+
+# Fetch the LeapFrog Verlet subroutines
+#=====================================================================
+
+$(FILES_LFV):
+	$(MAKE) links_lfv
+
+links_lfv:
+	@for file in ${FILES_LFV} ; do \
+	echo linking to $$file ; \
+	rm -f $$file ; \
+	ln -s LFV/$$file $$file ; \
+	done
+
+# Clean up the source directory
+#=====================================================================
+
+clean:
+	rm -f $(FILES_VV) $(FILES_LFV) $(FILES_CUDA) *.o *.mod
+
+clean_cuda:
+	rm -f $(OBJ_CUDA_F90) $(OBJ_CUDA_CC) $(OBJ_CUDA_CU) $(FILES_CUDA)
+
+# Generic target template
+#=====================================================================
+uknown_platform:
+	$(MAKE) LD="path to FORTRAN90 Linker-loaDer" \
+	LDFLAGS="appropriate flags for LD (MPI libraries)" \
+	FC="path to FORTRAN90 compiler" \
+	FCFLAGS="appropriate flags for FC (MPI include)" \
+	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
+
+# Generic Target template: CUDA + OpenMP acceleration
+
+# For devices of compute capability 1.3:
+#CUDA_PORT_DEFINES=-D CFG_COMPUTE_MAJOR=1 -D CFG_COMPUTE_MINOR=3
+
+# For devices of compute capability 2.0:
+#CUDA_PORT_DEFINES=-D CFG_COMPUTE_MAJOR=2 -D CFG_COMPUTE_MINOR=0
+
+unknown_platform_cuda_openmp: CUDA_PORT_DEFINES=-D CFG_COMPUTE_MAJOR=XX -D CFG_COMPUTE_MINOR=XX
+unknown_platform_cuda_openmp:
+	$(MAKE) \
+	NVCC="<path to nvcc compiler> -c ${CUDA_PORT_DEFINES}" \
+	NVCCFLAGS="<flags for nvcc compiler> -arch compute_XX -code sm_XX -Xcompiler \"<compiler/preprocessor flags> ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
+	NVCCHEADERS="-I <paths to nvcc and MPI header files>" \
+	LD="<path to FORTRAN90 Linker-loaDer> -o" LDFLAGS="flags for LD: CUDA & MPI Libraries, -openmp etc." \
+	FC="<path to FORTRAN90 compiler> -c" FCFLAGS="flags for FC e.g. -openmp ${PREPROC_DEFINES}" \
+	CXX="<path to C++ compiler> -c ${CUDA_PORT_DEFINES}" CXXFLAGS="<flags for CXX> ${PREPROC_DEFINES}" \
+	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
+
+# System specific targets follow:
+#=====================================================================
+
+# For Tesla:
+tesla: CUDA_PORT_DEFINES = -D CFG_COMPUTE_MAJOR=1 -D CFG_COMPUTE_MINOR=3
+tesla:
+	$(MAKE) \
+	NVCC="nvcc -c ${CUDA_PORT_DEFINES}" \
+	NVCCFLAGS="-arch compute_13 -code sm_13 -Xcompiler \"-fopenmp -O3 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
+	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -I${MPI_HOME}/include" \
+	LD="mpif90 -o" LDFLAGS="-O3 -openmp -Wl,-rpath,${CUDA_HOME}/lib64 -L${CUDA_HOME}/lib64 -lcudart" \
+	FC="mpif90 -c" FCFLAGS="-O3 -openmp -fpp ${PREPROC_DEFINES}" \
+	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
+	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
+
+# For Fermi:
+fermi: CUDA_PORT_DEFINES = -D CFG_COMPUTE_MAJOR=2 -D CFG_COMPUTE_MINOR=0
+fermi:
+	$(MAKE) \
+	NVCC="nvcc -c ${CUDA_PORT_DEFINES}" \
+	NVCCFLAGS="-arch compute_20 -code sm_20 -Xcompiler \"-fopenmp -O3 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
+	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -I${MPI_HOME}/include" \
+	LD="mpif90 -o" LDFLAGS="-O3 -openmp -Wl,-rpath,${CUDA_HOME}/lib64 -L${CUDA_HOME}/lib64 -lcudart" \
+	FC="mpif90 -c" FCFLAGS="-O3 -openmp -fpp ${PREPROC_DEFINES}" \
+	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
+	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
+
+# Default code
+#=====================================================================
+
+master: message check $(OBJ_MOD) $(OBJ_ALL)
+	$(LD) $(EXE) $(LDFLAGS) $(OBJ_MOD) $(OBJ_ALL)
+
+# Message
+message:
+	@echo "DL_POLY_4 compilation in MPI mode"
+	@echo
+	@echo "'Use mpi_module' must change to 'Use mpi' in 'comms_module.f90'"
+	@echo
+
+# Check that a platform has been specified
+check:
+	@if test "${FC}" = "undefined"; then \
+	echo; echo "*** FORTRAN90 compiler unspecified!"; \
+	echo; echo "*** Please edit your Makefile entries!"; \
+	echo; exit 99; \
+	fi; \
+	\
+	if test "${LD}" = "undefined"; then \
+	echo; echo "*** FORTRAN90 Linker-loaDer unspecified!"; \
+	echo; echo "*** Please edit your Makefile entries!"; \
+	echo; exit 99; \
+	fi; \
+	\
+	mkdir -p $(BINROOT) ; touch dl_poly.f90
+
+# Declare rules
+#=====================================================================
+.SUFFIXES: .f90 .cu .o .cc
+.f90.o:
+	$(FC) $(FCFLAGS) $*.f90
+
+.cu.o:
+	$(NVCC) $(NVCCFLAGS) $(NVCCHEADERS) $*.cu
+
+.cc.o:
+	$(CXX) $(CXXFLAGS) $*.cc
+
+# Declare dependencies
+#=====================================================================
+
+$(OBJ_ALL): $(OBJ_MOD)
+$(OBJ_CUDA_CU) $(OBJ_CUDA_CC): $(HEADERS_CUDA)

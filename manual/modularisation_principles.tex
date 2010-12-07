@@ -1,0 +1,99 @@
+\section{The \D Modularisation Principles}
+\label{modularisation-principles}
+
+Modules in \D are constructed to define parameters and variables
+(scalars and arrays) and/or develop methods that share much in
+common.  The division is far from arbitrary and module
+interdependence is reduced to minimum.  However, some dependencies
+exist which leads to the following division by groups in
+hierarchical order:
+\begin{itemize}
+
+\item {\bf precision module}:: {\sc kinds\_f90}
+
+The precision module defines the working precision {\\tt wp} of
+all real variables and parameters in \D.  By default it is set to
+KIND~$=~16$.  If the precision is changed the code must be
+recompiled.  Before users change to higher precision they must
+check wether the specific platform supports such.
+
+\item {\bf communication module}:: {\sc comms\_module}
+
+The communication module defines MPI related parameters ({\tt
+mpi\_wp} dependent on {\tt wp} in {\sc kinds\_f90}) and develops
+MPI related functions and subroutines such us: initialisation and
+exit; global sum, maximum and minimum; node id and number of
+nodes.  It is dependent on {\sc kinds\_f90}.
+
+\item {\bf global parameters module}:: {\sc setup\_module}
+
+The global parameters module holds all important global variables
+and parameters (see above).  It is dependent on {\sc kinds\_f90}
+
+\item {\bf domains module}:: {\sc domains\_module}
+
+The domains module defines DD parameters and maps the available
+computer resources on a DD grid.  The module does not depend on
+previous modules but its mapping subroutine is dependent on all of
+them.
+
+\item {\bf parse module}:: {\sc parse\_module}
+
+The parse module develops several methods used to deal with
+textual input: {\tt get\_line strip\_blanks lower\_case get\_word
+word\_2\_real}.  Depending on the method dependencies on {\sc
+kinds\_f90 comms\_module setup\_module domains\_module} are found.
+
+\item {\bf site module}:: {\sc site\_module}
+
+The site module defines all site related arrays and scalars (FIELD)
+and is dependent on {\sc kinds\_f90} only.  However, it also develops
+an allocation method that is dependent on {\sc setup\_module}.
+
+\item {\bf configuration module}:: {\sc config\_module}
+
+The configuration module defines all configuration related arrays
+and scalars (CONFIG) and is dependent on {\sc kinds\_f90} only.
+However, it also develops an allocation method that is dependent
+on {\sc setup\_module}.
+
+\item {\bf defects module}:: {\sc defects\_module}
+
+The defects module defines all reference configuration related
+arrays and scalars (REFERENCE) used for defects tracking and is
+dependent on {\sc kinds\_f90} only.  However, it also develops
+an allocation method that is dependent on {\sc setup\_module}.
+
+\item {\bf {\em inter}-molecular interactions modules}:: {\sc
+vdw\_module metal\_module \\
+tersoff\_module three\_body\_module four\_body\_module}
+
+The intermolecular modules define all variables and potential
+arrays needed for the calculation of the particular interaction in
+the \D scope.  They depend on {\sc kinds\_f90}.  Their allocation
+methods depend on {\sc setup\_module}.
+
+\item {\bf {\em intra}-molecular and site-related interactions
+modules}:: {\sc core\_shell\_module constraints\_module
+tethers\_module bonds\_module angles\_module \\
+dihedrals\_module inversions\_module}
+
+These modules define all variables and potential arrays needed for
+the calculation of the particular interaction in the \D scope.
+They depend on {\sc kinds\_f90}.  Their allocation methods depend
+on {\sc setup\_module}.
+
+\item {\bf external field module}:: {\sc external\_field\_module}
+
+This module defines all variables and potential arrays needed for
+the application of an external field in the \D scope.  It depends
+on {\sc kinds\_f90} and its allocation method on {\sc
+setup\_module}.
+
+\item {\bf statistics module}:: {\sc statistics\_module}
+
+This module defines all variables and arrays needed for the
+statistical accountancy of a simulation in \D.  It depends on {\sc
+kinds\_f90} and its allocation method on {\sc setup\_module}.
+
+\end{itemize}

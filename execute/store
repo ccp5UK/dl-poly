@@ -1,0 +1,16 @@
+mkdir        ../data/TEST$1
+cp CONTROL   ../data/TEST$1/CONTROL
+cp FIELD     ../data/TEST$1/FIELD
+cp CONFIG    ../data/TEST$1/CONFIG
+cp TABLE     ../data/TEST$1/TABLE
+cp TABEAM    ../data/TEST$1/TABEAM
+cp REFERENCE ../data/TEST$1/REFERENCE
+mv OUTPUT    ../data/TEST$1/OUTPUT
+mv STATIS    ../data/TEST$1/STATIS
+mv REVCON    ../data/TEST$1/REVCON
+mv REVIVE    ../data/TEST$1/REVIVE
+mv HISTORY   ../data/TEST$1/HISTORY
+mv DEFECTS   ../data/TEST$1/DEFECTS
+mv RDFDAT    ../data/TEST$1/RDFDAT
+mv ZDNDAT    ../data/TEST$1/ZDNDAT
+chmod -R a-w ../data/TEST$1

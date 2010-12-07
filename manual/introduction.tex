@@ -1,0 +1,555 @@
+\section{The DL\_POLY Package}
+
+DL\_POLY \cite{smith-96a} is a package of subroutines, programs and
+data files, designed to facilitate molecular dynamics simulations of
+macromolecules, polymers, ionic systems and solutions on a
+distributed memory parallel computer. It is available in two forms:
+DL\_POLY\_2 (written by Bill Smith \& Tim Forester) and \D (written
+by Ilian Todorov \& Bill Smith) \cite{todorov-04a}.  Both versions
+were originally written on behalf of CCP5\index{CCP5}, the UK's
+Collaborative Computational Project on Molecular Simulation, which
+has been in existence since 1980 (\cite{smith-87a}, \WEB\index{WWW}).
+
+The two forms of DL\_POLY differ primarily in their method of
+exploiting parallelism.  DL\_POLY\_2 uses a Replicated Data (RD)
+strategy \cite{smith-91a,smith-93a,smith-94a,smith-94b} which
+works well simulations of up to 30,000 atoms on up to 100 processors.
+\D is based on the Domain Decomposition (DD) strategy
+\cite{todorov-04a,pinches-91a,rapaport-91b,smith-91a,smith-93a},
+and is best suited for large molecular simulations from $10^{3}$
+to $10^{9}$ atoms on large processor counts.  The two packages
+are reasonably compatible, so that it is possible to scale up from
+a DL\_POLY\_2 to a \D simulation with little effort.  It should
+be apparent from these comments that \D is not intended as a
+replacement for DL\_POLY\_2.
+
+Users are reminded that we are interested in hearing what other
+features could be usefully incorporated.  We obviously have ideas
+of our own and CCP5\index{CCP5} strongly influences developments,
+but other input would be welcome nevertheless.  We also request
+that our users respect the integrity of \D source and not pass it
+on to third parties.  We require that all users of the package
+register with us, not least because we need to keep everyone
+abreast of new developments and discovered bugs.  We have
+developed various forms of licence\index{licence}, which we hope
+will ward off litigation (from both sides), without denying access
+to genuine scientific users.
+
+Further information on the DL\_POLY packages may be obtained from
+the DL\_POLY project website - \noindent \WEB\index{WWW}.
+
+\section{Functionality}
+
+The following is a list of the features \D supports.
+
+\subsection{Molecular Systems}
+
+\D will simulate the following molecular species:
+
+\begin{itemize}
+\item Simple atomic systems and mixtures, e.g. Ne, Ar, Kr, etc.
+\item Simple unpolarisable point ions, e.g. NaCl, KCl, etc.
+\item Polarisable point ions and molecules, e.g. MgO, H$_{2}$O, etc.
+\item Simple rigid molecules\index{rigid body} e.g. CCl$_{4}$, SF$_{6}$, Benzene, etc.
+\item Rigid molecular\index{rigid body} ions with point charges e.g. KNO$_{3}$,
+(NH$_{4}$)$_{2}$SO$_{4}$, etc.
+\item Polymers with rigid bonds\index{constraints!bond}, e.g. C$_{n}$H$_{2n+2}$
+\item Polymers with flexible and rigid bonds\index{constraints!bond} and point charges, e.g. proteins, macromolecules etc.
+\item Silicate glasses and zeolites
+\item Simple metals and metal alloys, e.g. Al, Ni, Cu, Cu$_{3}$Au, etc.
+\item Covalent systems as hydro-carbons and transition elements, e.g. C, Si, Ge, SiC, SiGe, ets.
+\end{itemize}
+
+\subsection{Force Field\index{force field}}
+
+The \D force field\index{force field!DL\_POLY} includes the
+following features:
+\begin{enumerate}
+\item All common forms of non-bonded\index{potential!non-bonded} atom-atom (van der Waals) potentials
+\item Atom-atom (and site-site) coulombic\index{potential!electrostatics} potentials
+\item Metal-metal\index{potential!metal} (local density dependent) potentials \cite{baskes-84a,baskes-86a,finnis-84a,sutton-90a,sutton-91a,todd-93a}
+\item Tersoff\index{potential!Tersoff} (local density dependent) potentials (for hydro-carbons) \cite{tersoff-89a}
+\item Three-body\index{potential!three-body} valence angle\index{potential!valence angle} and hydrogen bond\index{potential!bond} potentials
+\item Four-body\index{potential!four-body} inversion\index{potential!inversion} potentials
+\item Ion core-shell polarasation\index{polarisation!shell model}
+\item Tether\index{potential!tether} potentials
+\item Chemical bond\index{potential!chemical bond} potentials
+\item Valence angle\index{potential!valence angle} potentials
+\item Dihedral angle\index{potential!dihedral} (and improper dihedral angle\index{potential!improper dihedral}) potentials
+\item Inversion angle\index{potential!inversion} potentials
+\item External field\index{potential!external field} potentials.
+\end{enumerate}
+
+\noindent The parameters describing these potentials may be
+obtained, for example, from the GROMOS\index{force
+field!GROMOS}\index{GROMOS} \cite{gunsteren-87a},
+Dreiding\index{force field!Dreiding} \cite{mayo-90a} or
+AMBER\index{force field!AMBER}\index{AMBER} \cite{weiner-86a}
+forcefield, which share functional forms.  It is relatively easy
+to adapt \D to user specific force fields\index{force field}.
+
+\subsection{Boundary Conditions}
+\index{boundary conditions}
+
+\D will accommodate the following boundary conditions:
+\begin{enumerate}
+\item None, e.g. isolated molecules {\em in vacuo}
+\item Cubic periodic boundaries
+\item Orthorhombic periodic boundaries
+\item Parallelepiped periodic boundaries
+\item Slab (x,y periodic, z non-periodic).
+\end{enumerate}
+
+\noindent These are describe in detail in Appendix
+\ref{boundary-conditions}.  Note that periodic boundary conditions
+(PBC) $1$ and $5$ above require careful consideration to enable
+efficient load balancing on a parallel computer.
+
+\subsection{Java Graphical User Interface}
+\index{Java GUI}
+
+The \D Graphical User Interface (GUI) is the one that comes with
+DL\_POLY\_2, which is written in the Java\textregistered programming
+language from Sun\textregistered Microsystems.  A major advantage
+of this is the free availability of the Java programming environment
+from Sun\textregistered, and also its portability across platforms.
+The compiled GUI may be run without recompiling on any Java\textregistered
+supported machine.  The GUI is an integral component of the DL\_POLY
+suite and is available on the same terms (see the GUI manual \cite{smith-gui}).
+
+\subsection{Algorithms\index{algorithm}}
+
+\subsubsection{Parallel Algorithms\index{parallelisation}}
+
+\D exclusively employs the {Domain Decomposition}
+\index{parallelisation!Domain Decomposition} parallelisation
+strategy \cite{pinches-91a,rapaport-91b,smith-91a,smith-93a} (see
+Section \ref{parallelisation}).
+
+\subsubsection{Molecular Dynamics Algorithms}
+
+\D offers a selection of MD integration algorithms\index{algorithm}
+couched in both Velocity Verlet (VV) and Leapfrog Verlet (LFV)
+manner \index{algorithm!Verlet} \index{algorithm} \cite{allen-89a}.
+These generate NVE, NVE$_{kin}$, NVT, NPT and N\mat{\sigma}T
+ensembles\index{ensemble} with a selection of
+thermostats\index{thermostat} and barostats\index{barostat}.
+Parallel versions of the RATTLE\index{algorithm!RATTLE}
+\cite{andersen-83a} and SHAKE\index{algorithm!SHAKE}
+\cite{smith-94b} algorithms are used for solving bond
+constraints\index{constraints!bond} in the VV and LFV cast
+integrations respectively.  The rotational motion of
+rigid bodies\index{rigid body} (RBs) is handled with Fincham's
+implicit quaternion\index{quaternions} algorithm\index{algorithm!FIQA}
+(FIQA) \cite{fincham-92a} under the LF scheme or with the
+``NOSQUISH'' algorithm of Miller {\em et al} \index{algorithm!NOSQUISH}
+\cite{miller-02a} under the VV integration.
+
+The following MD algorithms\index{algorithm} are available:
+\begin{enumerate}
+\item Constant E algorithm\index{ensemble!NVE}
+\item Evans\index{ensemble!Evans NVT} constant E$_{kin}$ algorithm \cite{evans-84a}
+\item Langevin\index{ensemble!Langevin NVT} constant T algorithm \cite{adelman-76a}
+\item Andersen\index{ensemble!Andersen NVT} constant T algorithm \cite{andersen-79a}
+\item Berendsen\index{ensemble!Berendsen NVT} constant T algorithm \cite{berendsen-84a}
+\item Nos\'{e}-Hoover\index{ensemble!Nos\'{e}-Hoover NVT} constant T algorithm \cite{hoover-85a}
+\item Langevin\index{ensemble!Langevin NPT} constant T,P algorithm \cite{quigley-04}
+\item Berendsen\index{ensemble!Berendsen NPT} constant T,P algorithm \cite{berendsen-84a}
+\item Nos\'{e}-Hoover\index{ensemble!Nos\'{e}-Hoover NPT} constant T,P algorithm \cite{hoover-85a}
+\item Martyna, Tuckerman and Klein (MTK)\index{ensemble!Martyna-Tuckerman-Klein NPT} constant T,P algorithm \cite{martyna-96a}
+\item Langevin\index{ensemble!Langevin N$\sigma$T} constant T,$\sigma$ algorithm \cite{quigley-04}
+\item Berendsen\index{ensemble!Berendsen N$\sigma$T} constant T,$\mat{\sigma}$ algorithm \cite{berendsen-84a}
+\item Nos\'{e}-Hoover\index{ensemble!Nos\'{e}-Hoover N$\sigma$T} constant T,$\mat{\sigma}$ algorithm \cite{hoover-85a}
+\item Martyna, Tuckerman and Klein (MTK)\index{ensemble!Martyna-Tuckerman-Klein N$\sigma$T} constant T,$\mat{\sigma}$ algorithm \cite{martyna-96a}.
+\end{enumerate}
+
+\subsection{DL\_POLY\_2 features incompatible or unavalable in \D\index{dlpoly2}}
+
+\begin{itemize}
+\item Force field
+\begin{itemize}
+\item Rigid bodies connected with constraint links are {\bf not available}
+\item Shell models specification is {\bf solely} determined
+by the presence of mass on the shells
+\item Dihedral potentials with more than three {\em original}
+parameters (see OPLS) have two artificially added parameters,
+defining the 1-4 electrostatic and van der Waals scaling
+factors, which {\bf must} be placed at fourth and fifth position
+respectively, extending the original parameter list split by them
+\end{itemize}
+\item Boundary conditions
+\begin{itemize}
+\item Truncated octahedral periodic boundaries ({\tt imcon} = 4)
+are {\bf not available}
+\item Rhombic dodecahedral periodic boundaries ({\tt imcon} = 5)
+are {\bf not available}
+\item Hexagonal prism periodic boundaries ({\tt imcon} = 7)
+are {\bf not available}
+\end{itemize}
+\item Electrostatics
+\begin{itemize}
+\item Standard Ewald Summation is {\bf not available}, but is
+{\bf substituted} by Smoothed Particle Mesh Ewald (SPME) summation
+\item Hautman-Klein Ewald Summation for 3D non-periodic
+but 2D periodic systems is {\bf not available}
+\end{itemize}
+\item Non-standard functionality
+\begin{itemize}
+\item Temperature Accelerated Dynamics
+\item Hyperdynamics
+\item Solvation Energies
+\end{itemize}
+\end{itemize}
+
+\section{Programming Style}
+
+The programming style of \D is intended to be as uniform as
+possible.  The following stylistic rules apply throughout.
+Potential contributors of code are requested to note the stylistic
+convention.
+
+\subsection{Programming Language}
+
+\D is written in free format FORTRAN90\index{FORTRAN90}.  In \D
+we have adopted the convention of {\em explicit type declaration}
+i.e. we have used
+\begin{verbatim}
+
+             Implicit None
+
+\end{verbatim}
+in all subroutines.  Thus all variables must be given an explicit
+type: {\tt Integer, Real( Kind = wp)}, etc.
+
+\subsection{Modularisation and Intent}
+
+\D exploits the full potential of the modularisation concept in
+FORTRAN90\index{FORTRAN90}.  Variables having in common description of certain
+feature or method in \D are grouped in modules.  This simplifies
+subroutines' calling sequences and decreases error-proneness in
+programming as subroutines must define what they use and from
+which module.  To decrease error-proneness further, arguments that
+are passed in calling sequences of functions or subroutines have
+defined intent, i.e. whether they are to be:
+\begin{itemize}
+\item passed in only ({\tt Intent (In)}) - the argument is not
+allowed to be changed by the routine
+\item passed out only ({\tt Intent (Out)}) - the ``coming in''
+value of the argument is unimportant
+\item passed in both directions in and out ({\tt Intent (InOut)})
+- the ``coming in'' value of the argument is important and the
+argument is allowed to be changed.
+\end{itemize}
+
+\subsection{Memory Management}
+
+\D exploits the dynamic array allocation features of FORTRAN90
+\index{FORTRAN90} to assign the necessary array dimensions.
+
+\subsection{Target Computers}
+
+\D is intended for distributed memory parallel computers.  It was
+developed on Cray T3E and IBM SP4 architectures.
+
+Compilation of \D in parallel mode requires {\bf only} a FORTRAN90
+\index{FORTRAN90} compiler and Message Passing Interface (MPI) to handle
+communications.  Compilation of \D in serial mode is also possible
+and requires {\bf only} a FORTRAN90 \index{FORTRAN90} compiler.
+
+\subsection{Version Control System (CVS)}
+
+\D was developed with the aid of the CVS\index{CVS} version control
+system. We strongly recommend that users of \D adopt this system for
+local development of the code, particularly where several users
+access the same source code.  For information on CVS\index{CVS}
+please contact \\
+\noindent \href{mailto:info-cvs-request@gnu.org}{info-cvs-request@gnu.org}
+or visit the web site - \href{http://www.cyclic.com/}{http://www.cyclic.com/}\index{WWW}.
+
+\subsection{Internal Documentation}
+
+All subroutines are supplied with a header block of FORTRAN90
+\index{FORTRAN90} comment (!) records giving:
+\begin{enumerate}
+\item A CVS\index{CVS} revision number and associated data
+\item The name of the author and/or modifying author
+\item The version number or date of production
+\item A brief description of the function of the subroutine
+\item A copyright statement.
+\end{enumerate}
+
+\noindent Elsewhere FORTRAN90\index{FORTRAN90} comment cards (!)
+are used liberally.
+
+\subsection{FORTRAN90 Parameters and Arithmetic Precision}
+\label{precision}
+
+All global parameters defined by the FORTRAN90\index{FORTRAN90}
+parameter statements are specified in the
+module file: {\sc setup\_module}, which is included at compilation
+time in all subroutines requiring the parameters.  All parameters
+specified in {\sc setup\_module} are described by one or more
+comment cards.
+
+One super-global parameter is defined at compilation time in the
+{\sc kinds\_f90} module file specifying the working precision ({\tt
+wp}) by kind for real and complex variables and parameters.  The
+default is 64-bit (double) precision, i.e. {\tt Real(wp)}.  Users
+wishing to compile the code with quadruple precision must ensure
+that their architecture and FORTRAN90 compiler can allow that and
+then change the default in {\sc kinds\_f90}.  Changing the precision
+to anything else that is allowed by the FORTRAN90 compiler and the
+machine architecture must also be compliant with the MPI working
+precision {\tt mpi\_wp} as defined in {\sc comms\_module} (in such
+cases users must correct for that in there).
+
+\subsection{Units}\label{units}
+
+Internally all DL\_POLY subroutines and functions assume the use of the
+following defined {\em molecular units}\index{units!DL\_POLY}:
+\begin{itemize}
+\item The unit of time ($t_{o}$) is $1 \times 10^{-12}$ seconds (i.e. picoseconds)
+\item The unit of length ($\ell_{o}$) is $1 \times 10^{-10}$ metres (i.e. \AA ngstroms)
+\item The unit of mass ($m_{o}$) is $1.6605402 \times 10^{-27}$ kilograms (i.e. Daltons - atomic mass units)
+\item The unit of charge ($q_{o}$) is $1.60217733 \times 10^{-19}$ Coulombs (i.e. electrons - units of proton charge)
+\item The unit of energy ($E_{o}=m_{o}(\ell_{o}/t_{o})^{2}$) is $1.6605402 \times 10^{-23}$~Joules (10~J~mol$^{-1}$)
+\item The unit of pressure\index{units!pressure} (${\cal P}_{o}=E_{o}\ell_{o}^{-3}$) is $1.6605402 \times 10^{7}$~Pascals ($163.882576$~atmospheres)
+\item Planck's constant ($\hbar$) which is $6.350780668 \times E_{o} t_{o}$~~.
+\end{itemize}
+
+\noindent In addition, the following conversion factors are used:
+
+\begin{itemize}
+\item The coulombic\index{potential!electrostatics} conversion
+factor ($\gamma_{o}$) is:
+\[ \gamma_{o} = \frac{1}{E_{o}} \left[ \frac{q_{o}^{2}}{4 \pi \epsilon_{o} \ell_{o}} \right] = 138935.4835~~, \]
+such that:
+\[U_{\tt MKS}=E_{o}\gamma_{o}U_{\tt Internal}~~,\]
+where $U$ represents the configuration energy.
+\item The Boltzmann factor ($k_{B}$) is $0.831451115~E_{o}$~K$^{-1}$,
+such that:
+\[T=E_{kin}/k_{B}\]
+represents the conversion from kinetic energy (in internal units)
+to temperature (in Kelvin).
+\end{itemize}
+
+\noindent {\bf Note:} In the \D OUTPUT file, the print out of
+pressure\index{units!pressure} is in units of katms
+(kilo-atmospheres) at all times.  The unit of energy is either
+DL\_POLY units specified above, or in other units specified by the
+user at run time.  The default is DL\_POLY units.
+
+\subsection{Error Messages}
+
+All errors detected by \D during run time initiate a call to the
+subroutine {\sc error}, which prints an error message in the
+standard output file and terminates the program.  All terminations
+of the program are global (i.e. every node of the parallel
+computer will be informed of the termination condition and stop
+executing).
+
+In addition to terminal error messages, \D will sometimes print
+warning messages.  These indicate that the code has detected
+something that is unusual or inconsistent.  The detection is
+non-fatal, but the user should make sure that the warning does
+represent a harmless condition.
+
+\section{Directory Structure}
+\label{directory-structure}vac
+
+The entire \D package is stored in a UNIX directory structure. The
+topmost directory is named {\em dl\_poly\_4.nn}, where {\em nn} is
+a generation number.  Beneath this directory are several
+sub-directories named: {\em source\index{sub-directory!source}},
+{\em utility\index{sub-directory!utility}},
+{\em data\index{sub-directory!data}},
+{\em bench\index{sub-directory!bench}},
+{\em execute\index{sub-directory!execute}},
+{\em build\index{sub-directory!build}},
+{\em public\index{sub-directory!public}}, and
+{\em java\index{sub-directory!java}}.
+
+Briefly, the content of each sub-directory is as follows:
+\begin{tabbing}
+XXXXXXXXXXXXXXX\= XXXXXXXX\= \kill
+sub-directory\> ~ \> contents \\
+\> ~ \> \\
+{\em source} \> primary subroutines for the \D package \\
+{\em utility} \> subroutines, programs and example data for all utilities \\
+{\em data} \> example input and output files for \D \\
+{\em bench} \> large test cases suitable for benchmarking \\
+{\em execute} \> the \D run-time directory \\
+{\em build} \> makefiles to assemble and compile \D programs \\
+{\em public} \> directory of routines donated by \D users \\
+{\em java} \> directory of Java and FORTRAN routines for the Java GUI. \\
+\end{tabbing}
+
+\noindent A more detailed description of each sub-directory
+follows.
+
+\subsection{The {\em source} Sub-directory}
+
+In this sub-directory all the essential source code for \D,
+excluding the utility software is stored.  In keeping with the
+`package' concept of \D, it does not contain any complete
+programs; these are assembled at compile time using an appropriate
+makefile.  The subroutines in this sub-directory are documented in
+Chapter \ref{source}.
+
+\subsection{The {\em utility} Sub-directory}
+
+This sub-directory stores all the utility subroutines, functions and
+programs in \D, together with examples of data.  Some of the various
+routines in this sub-directory are documented in the DL\_POLY\_2
+User Manual.  Users who devise their own utilities are advised
+to store them in the {\em utility} sub-directory.
+
+\subsection{The {\em data} Sub-directory}
+
+This sub-directory contains examples of input and output files for
+testing the released version of \D.  The examples of input data
+are copied into the {\em execute} sub-directory when a program is
+being tested.  The test cases are documented in Chapter \ref{data}.
+Note that these are no longer within the distribution of any
+DL\_POLY version but are made available on-line at the DL\_POLY FTP
+- \FTP\index{FTP}.
+
+\subsection{The {\em bench} Sub-directory}
+
+This directory contains examples of input and output data for \D
+that are suitable for benchmarking \D on large scale computers.
+These are described in Chapter \ref{data}. Note that these are no
+longer within the distribution of any DL\_POLY version but
+are made available on-line at the DL\_POLY FTP - \FTP\index{FTP}.
+
+\subsection{The {\em execute} Sub-directory}
+
+In the supplied version of \D, this sub-directory contains only a
+few macros for copying and storing data from and to the {\em data}
+sub-directory and for submitting programs for execution (see
+Appendix \ref{macros}).  However, when a \D program is assembled
+by using the appropriate makefile, it will be placed in this
+sub-directory and will subsequently be executed from here.
+The output from the job will also appear here, so users will
+find it convenient to use this sub-directory if they wish to
+use \D as intended.  (The experienced user is not at all
+required to use \D this way however.)
+
+\subsection{The {\em build} Sub-directory}
+
+This sub-directory contains the standard makefiles for the
+creation (i.e. compilation and linking) of the \D simulation
+program.  The makefiles supplied select the appropriate
+subroutines from the {\em source} sub-directory and deposit the
+executable program in the {\em execute} directory.  The user is
+advised to copy the appropriate makefile into the {\em source}
+directory, in case any modifications are required.  The copy in
+the {\em build} sub-directory will then serve as a backup.
+
+\subsection{The {\em public} Sub-directory}
+
+This sub-directory contains assorted routines donated by DL\_POLY
+users.  Potential users should note that these routines are {\bf
+unsupported} and come {\bf without any guarantee or liability
+whatsoever}.  They should be regarded as potentially useful
+resources to be hacked into shape as needed by the user.  This
+directory is available from the CCP5\index{CCP5} Program Library
+by direct FTP\index{FTP}(see below).
+
+\subsection{The {\em java} Sub-directory}
+\index{Java GUI}
+
+The \D Java Graphical User Interface (GUI)\index{Graphical User
+Interface} is based on the Java language developed by Sun.  The
+Java source code for this GUI is to be found in this
+sub-directory, along with a few FORTRAN sub-sub-directories which
+contain some additional capabilities accessible from the GUI.
+These sources are complete and sufficient to create a working GUI,
+provided the user has installed the Java Development Kit, (1.3 or
+above) which is available free from Sun at
+\href{http://java.sun.com/}{http://java.sun.com/}\index{WWW}.
+The GUI, once compiled, may be executed
+on any machine where Java is installed, though note the FORTRAN
+components will need to be recompiled if the machine is changed
+\cite{smith-gui}.
+
+\section{Obtaining the Source Code}\index{user registration} \index{\D software licence}
+
+To obtain a copy of \D it is necessary to have internet connection.
+Log on to the DL\_POLY website - \WEB\index{WWW},
+and follow the links to the \D registration page, where you will
+firstly be shown the \D software licence, which details the
+terms and conditions under which the code will be supplied.  {\bf By
+proceeding further with the registration and download process you
+are signalling your acceptance of the terms of this licence.}  Click
+the `Registration' button to find the registration page, where you
+will be invited to enter your name, address and e-mail address.  The
+code is supplied free of charge to {\bf academic} users, but
+{\bf commercial} users will be required to purchase a software licence.
+
+Once the online registration has been completed, information
+on downloading the \D source code will be sent by e-mail, so {\bf
+it is therefore essential to supply a correct e-mail address}.
+
+The {\em data} and {\em bench} subdirectories of \D are not issued
+in the standard package, but can be downloaded directly from the
+FTP site (in the \mbox{ccp5/DL\_POLY/DL\_POLY\_4.0/} directory).
+
+\noindent {\bf Note:} Daresbury Laboratory is the {\bf sole centre} for
+the distribution of \D and copies obtained from elsewhere will be
+regarded as illegal and will not be supported.
+
+\section{OS and Hardware Specific Ports}
+
+\D is available as a Microsoft port, offered with Microsoft\textregistered
+(\href{http://www.microsoft.com/}{http://www.microsoft.com/})\index{WWW}
+self-installers (MSI) for 32- and 64-bit Windows OS's to build
+an OS native executable, which can utilise the parallelism of
+modern multi-core/multi-processor personal computers.
+
+\D is also available as a CUDA+OpenMP port, offered as extra
+source within the {\em source} directory (see the README.txt
+for further information).  The purpose of this development,
+a collaboration with the Irish Centre for High-End Computing
+(ICHEC - \href{http://www.ichec.ie/}{http://www.ichec.ie/}),
+is to harness the power offered by NVIDIA\textregistered
+(\href{http://www.nvidia.com/}{http://www.nvidia.com/}\index{WWW}) GPUs.
+
+{\bf Note that no support is offered for these highly specific
+developments!}
+
+\section{Other Information}
+
+The DL\_POLY website - \WEB\index{WWW},
+provides additional information in the form of
+\begin{enumerate}
+\item Access to all documentation (including licences)
+\item Frequently asked questions
+\item Bug reports
+\item Access to the DL\_POLY online forum.
+\end{enumerate}
+
+\noindent
+Daresbury Laboratory also maintains two DL\_POLY associated electronic
+mailing lists:
+\begin{enumerate}
+\item {\em dl\_poly\_news} - to which all registered DL\_POLY users
+are automatically subscribed.  It is via this list that error reports
+and announcements of new versions are made.  If you are a DL\_POLY
+user, but not on this list you may request to be added.  Contact \\
+\noindent{\href{mailto:ilian.todorov@stfc.ac.uk}{ilian.todorov@stfc.ac.uk}}
+\item {\em dl\_poly\_mail} - is a group list which is available to
+DL\_POLY users by request.  Its purpose is to allow DL\_POLY users
+to broadcast information and queries to each other.
+To subscribe to this list send a mail message to
+{\href{mailto:majordomo@dl.ac.uk}{majordomo@dl.ac.uk}}
+with the one-line message: $subscribe~dl\_poly\_mail$.
+Subsequent messages may be broadcast by e-mailing to:
+{\href{mailto:dl\_poly\_mail@dl.ac.uk}{dl\_poly\_mail@dl.ac.uk}}.
+{\bf Note} that this is a vetted list, so electronic spam is not possible.
+\end{enumerate}
+
+The DL\_POLY {\bf Forum} is a web based centre for all DL\_POLY users
+to exchange comments and queries.  You may access the forum through the
+DL\_POLY website.  A registration (and vetting) process is required
+before you can use the forum, but it is open, in principle, to everyone.

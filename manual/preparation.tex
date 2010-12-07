@@ -1,0 +1,129 @@
+\section{A Guide to Preparing Input Files}
+
+The CONFIG file and the FIELD file can be quite large and unwieldy
+particularly if a polymer or biological molecule is involved in the
+simulation.  This section outlines the paths to follow when trying
+to construct files for such systems.  The description of the \D
+force field in Chapter \ref{force-field} is essential reading.  The
+various utility routines mentioned in this section are described in
+greater detail in the DL\_POLY\_2 User Manual.  Many of these
+have been incorporated into the \D Graphical User
+Interface\index{Graphical User Interface} \cite{smith-gui} and may
+be conveniently used from there.
+
+\subsection {Inorganic Materials}
+
+The utility {\sc genlat} can be used to construct the CONFIG file
+for relatively simple lattice structures.  Input is interactive. The
+FIELD file for such systems are normally small and can be
+constructed by hand.  Otherwise, the input of force field data for
+crystalline systems is particularly simple, if no angular forces are
+required (notable exceptions to this are zeolites and silicate
+glasses - see below).  Such systems require only the specification
+of the atomic types and the necessary pair forces.  The reader is
+referred to the description of the \D FIELD file for further details
+(Section \ref{field-file}).
+
+\D can simulate zeolites and silicate (or other) glasses.  Both
+these materials require the use of angular forces to describe the
+local structure correctly.  In both cases the angular terms are
+included as {\em three-body terms}, the forms of which are described
+in Chapter \ref{force-field}.  These terms are entered into the
+FIELD file with the pair potentials.
+
+An alternative way of handling zeolites is to treat the zeolite
+framework as a kind of macromolecule (see below).  Specifying all
+this is tedious and is best done computationally: what is required
+is to determine the nearest image neighbours of all atoms and assign
+appropriate bond and valence angle potentials.  What must be avoided
+at all costs is specifying the angle potentials {\em without}
+specifying bond potentials\index{potential!bond}.  In this case \D
+will automatically cancel the non-bonded\index{potential!non-bonded}
+forces between atoms linked via valence
+angles\index{potential!valence angle} and the system will collapse.
+The advantage of this method is that the calculation is likely to be
+faster than using three-body\index{potential!three-body} forces.
+This method is not recommended for amorphous systems.
+
+\subsection{Macromolecules}
+
+Simulations of proteins are best tackled using the package
+DLPROTEIN \cite{dlprotein}\index{DLPROTEIN} which is an adaptation
+of DL\_POLY specific to protein modelling.  However, you may
+simulate proteins and other macromolecules with \D if you wish.
+This is described below.
+
+If you select a {\em protein} structure from a SEQNET file (e.g.
+from the Brookhaven database), use the utility {\sc proseq} to
+generate the file CONFIG.  This will then function as input for
+\D.  Some caution is required here however, as the protein
+structure may not be fully determined and atoms may be missing
+from the CONFIG file.
+
+If you have the ``edit.out'' file produced by AMBER\index{AMBER}
+for your molecule use this as the CONNECT\_DAT input file for the
+utility {\sc ambforce}.  {\sc ambforce} will produce the \D FIELD
+and CONFIG files for your molecule.
+
+If you do not have the ``edit.out'' file things are a little more
+tricky, particularly in coming up with appropriate partial charges
+for atomic sites.  However, there are a series of utilities that
+will at least produce the CONNECT\_DAT file for use with {\sc
+ambforce}.  We now outline these utilities and the order in which
+they should be used.
+
+If you have a structure from the Cambridge Structural database
+(CSDB) then use the utility {\sc fraccon} to take fractional
+coordinate data and produce a CONNECT\_DAT and ``ambforce.dat''
+file for use with {\sc ambforce}.  Note that you will need to
+modify {\sc fraccon} to get the AMBER\index{AMBER} names correct
+for sites in your molecule.  The version of {\sc fraccon} supplied
+with \D is specific to the valinomycin molecule.
+
+If you require an all atom force field and the database file does
+not contain hydrogen positions then use the utility {\sc fracfill}
+in place of {\sc fraccon}.  {\sc fraccon} produces an output file
+HFILL which should then be used as input for the utility {\sc
+hfill}.  The {\sc hfill} utility fills out the structure with the
+missing hydrogens.  (Note that you may need to know what the
+atomic charges are in some systems, for example the AMBER charges
+from the literature.)
+
+Note: with minor modifications the utilities {\sc fracfill} and {\sc
+fraccon} can be used on structures from databases other than the
+Cambridge structural database.
+
+\subsection{Adding Solvent to a Structure}
+
+The utility {\sc wateradd} adds water from an equilibrated
+configuration of 256 SPC water molecules at 300 K to fill out the
+MD cell.  The utility {\sc solvadd} fills out the MD box with
+single-site solvent molecules from a fcc lattice.  The FIELD files
+will then need to be edited to account for the solvent molecules
+added to the file.
+
+Hint: to save yourself some work in entering the non-bonded
+interactions variables involving solvent sites to the FIELD file put
+two bogus atoms of each solvent type at the end of the CONNECT\_DAT
+file (for AMBER\index{AMBER} force-fields\index{force field}) the
+utility {\sc ambforce} will then evaluate all the
+non-bonded\index{potential!non-bonded} variables required by \D.
+Remember to delete the bogus entries from the CONFIG file before
+running \D.
+
+\subsection{Analysing Results}
+
+\D is not designed to calculate every conceivable property you
+might wish from a simulation.  Apart from some obvious
+thermodynamic quantities and radial distribution functions, it
+does not calculate anything beyond the atomic trajectories.  You
+must therefore be prepared to post-process the HISTORY file if you
+want other information.  There are some utilities in the \D
+package to help with this, but the list is far from exhaustive. In
+time, we hope to have many more.  Our users are invited to submit
+code to the \D {\em public} library to help with this.
+
+The utilities available are described in the DL\_POLY\_2 User
+Manual.  Users should also be aware that many of these utilities are
+incorporated into the DL\_POLY Graphical User
+Interface\index{Graphical User Interface} \cite{smith-gui}.

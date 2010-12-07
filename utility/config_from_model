@@ -1,0 +1,2222 @@
+Utilities to make a CONFIG file from and MSI Model. Mark Calleja
+
+
+      subroutine config_from_model (xcell,ycell,zcell,pbc,istatus)
+
+c*********************************************************************
+c
+c     dl_poly/sdk routine to construct a DL_POLY CONFIG file from
+c     the current CERIUS model
+c
+c     copyright - Department of Earth Sciences, Univ. of Cambridge
+c     author    - m.calleja august 2000
+c
+c*********************************************************************
+
+#define mxatms 2000
+
+#include "msdefs.inc"
+
+      integer      pbc,xcell,ycell,zcell,istatus,m,n
+      integer      atomids(mxatms),count,kkk,i,j,k
+      integer      id(mxatms),entries(mxatms)
+      integer      acl(mxatms),at_num(mxatms)
+      double precision coor(3,1),a(3),b(3),c(3)
+      double precision xyz(mxatms,3),di,dj,dk,xx,yy,zz
+      double precision cell(9),convert(3,3)
+      character*8  aname(mxatms)
+      character    symbol*2
+
+      istatus=0
+
+      if (pbc.lt.0.or.pbc.gt.7) then
+        write (*,*) 'PBC index not in valid range'
+        istatus=1
+        return
+      endif
+
+      call msD_MOD_Current(model,istatus)
+
+      if (istatus.ne.0) then
+        write (*,*) 'msD_MOD_Current failed with status ', istatus
+        return
+      endif
+
+      call msD_MOD_NumAtoms(model, msD_SYM_ALL, count, istatus)
+
+      if (istatus.ne.0) then
+        write (*,*) 'msD_MOD_NumAtoms failed with status ', istatus
+        return
+      endif
+
+      if (count.eq.0) then
+        write (*,*) 'Model has no atoms!'
+        return
+      endif
+ 
+      call msD_MOD_AtomList
+     x (model, msD_SYM_ALL, atomids, mxatms, count, istatus)
+
+      if (istatus.ne.0) then
+        write (*,*) 'msD_MOD_AtomList failed with status ', istatus
+        return
+      endif
+
+      call msD_Type(atomids, count, acl, istatus)
+      call msD_ACL_AtomicNumber(acl, count, at_num, istatus) 
+
+      if (istatus.ne.0) then
+        write (*,*) 'msD_ATM_Mass failed with status ', istatus
+        return
+      endif
+
+      call msD_MOD_3DCellVector(model, a, b, c, istatus)
+
+      if (istatus.ne.0) then
+        write (*,*) 'msD_MOD_3DCellVector failed with status ', istatus
+        return
+      endif
+
+      do i=1,count
+        call msD_XYZ(atomids(i),1, coor, istatus)
+
+        do j=1,3
+          xyz(i,j)=coor(j,1)
+        enddo
+
+        call msD_ATM_TypeSymbol(atomids(i), 1, symbol, 2, istatus)
+        aname(i)=symbol
+      enddo
+
+      do i=1,3
+        cell(i)  =a(i)*xcell
+        cell(i+3)=b(i)*ycell
+        cell(i+6)=c(i)*zcell
+      enddo
+
+      open(88,file='CONFIG')
+
+      write(88,'("CONFIG file produced by CERIUS")')
+      write(88,'(2i10)') 0,pbc
+      write(88,'(3f20.10)')cell
+
+      do  i=1,count
+        entries(i)=1
+      enddo
+
+      kkk=0
+      do  m=1,count
+         if(entries(m).eq.1) then
+            do  n=m,count
+               if(aname(n).eq.aname(m)) then
+                  entries(n)=0
+                  do  k=1,zcell
+                     dk=dble(k-1)
+                     do  j=1,ycell
+                        dj=dble(j-1)
+                        do  i=1,xcell
+                           di=dble(i-1)
+                           xx=di*a(1)+dj*b(1)+dk*c(1)+xyz(n,1)
+                           yy=di*a(2)+dj*b(2)+dk*c(2)+xyz(n,2)
+                           zz=di*a(3)+dj*b(3)+dk*c(3)+xyz(n,3)
+                           kkk=kkk+1
+                           write(88,'(a2,2i16,/,3g20.10)')
+     x                       aname(n),kkk,at_num(n),xx,yy,zz
+                        enddo
+                     enddo
+                  enddo
+               endif
+           enddo
+        endif
+      enddo
+
+      close(88)
+      return
+      end
+*****************************************************************************
+
+!#############################################################################
+!#
+!#          file_maker.adf: application definitions for SDK_DL_FILE_MAKER
+!#
+!#############################################################################
+!
+## Header information
+
+$NAME SDK_DL_FILE_MAKER
+$IDENTIFIER file_maker
+!  - Add any defaults for the file here (remove comment character) -
+!$DEFAULTS
+$LANGUAGE Fortran
+$DECLARATIONS
+#include "msdefs.inc"
+
+      integer mxatms,mxbas,mxbnd,mxang,mxdih,mxinv,mxvdw,mxhbd,mxd
+      integer mxcon,mxpts,mxpbnd,mxpang,mxpdih,mxpinv,mxpvdw,mxphbd
+      parameter (mxatms=10000,mxbas=1000,mxbnd=10000,mxang=10000)
+      parameter (mxdih=10000,mxinv=10000,mxvdw=1000,mxhbd=10000)
+      parameter (mxd=100,mxcon=600,mxpts=100,mxpbnd=3,mxpang=3)
+      parameter (mxpdih=5,mxpinv=2,mxpvdw=3,mxphbd=5)
+
+      character*80 title
+      character*40 ensemble,electro,restart,fname,tabopt,eunit,fitopt
+      character*40 vdw_type,bnd_type,head_group,ceram_ff
+      character*8 name(mxatms),aname(mxbas),atname,nam1,nam2
+      character*8 dsym(mxd),idvdw(2,mxvdw),idhbd(3,mxhbd)
+      character*4 kbnd(mxbnd),kang(mxang),kdih(mxdih),kinv(mxinv)
+      character*4 khbd(mxhbd),kvdw(mxvdw)
+
+      integer nstrun,nsteql,multt,nstbts,nstbpo,nxbnd,nxang,nxdih
+      integer nstrdf,nstack,intsta,nstraj,istraj,nxinv,nxvdw,nxpbnd
+      integer lvtraj,keyres,keyfce,keyens,nxatms,nxpang,nxhbd,nbnd
+      integer natms,nxbas,nbas,i,ii,nx,ny,nz,keyfit,nxpdih,nxpinv
+      integer nlinks,keytab,ngrid,num_pts,max_pts,nxphbd,nxd,nang
+      integer nxpvdw,ndih,ninv,nhbd,nvdw,nxcon,setup,status,model
+      integer keyhed,keycer,pbc,xcell,ycell,zcell
+      integer no(mxbas),id(mxatms),msi_id(mxatms),msi_lst(mxatms)
+      integer ibnd(2,mxbnd),mid(mxdih),idk(mxd)
+      integer link(20,mxatms),iang(3,mxang),idih(4,mxdih)
+      integer invr(4,mxinv),list(mxatms),ident(mxatms)
+      integer jdk(mxd),ida(mxatms),lab(mxcon)
+
+      real*8 tstep,temp,press,rcut,rprim,delr,tem,harea,oh1b
+      real*8 rvdw,epsq,tolnce,qtntol,ewltol,fcecap,nh1b
+      real*8 timjob,timcls,taut,taup,xxx,yyy,zzz,volm
+      real*8 cc1b,ch1b,ebond,dihscl,splx,sply,ecnvrt,cnab
+      real*8 cc2b,cc3b,ccab,co1b,co2b,coab,cn1b,cn2b,cn3b
+      real*8 eps(3),sig(3),edih(4),sptx(mxpts),spty(mxpts)
+      real*8 dd(mxpts),gg(mxpts),aa(mxpts),zz(mxpts)
+      real*8 ucell(9),cell(9),uxyz(3,mxbas),xyz(3,mxatms)
+      real*8 mass(mxatms),chge(mxatms),pdih(mxpdih,mxdih)
+      real*8 dmss(mxd),dchg(mxd),drad(mxd),dang(mxd),deps(mxd)
+      real*8 pbnd(mxpbnd,mxbnd),pang(mxpang,mxang),pvdw(mxpvdw,mxvdw)
+      real*8 phbd(mxphbd,mxhbd),pinv(mxpinv,mxinv),dsig(mxd)
+      real*8 rad(mxatms),dzet(mxd),bord(mxbnd)
+      real*8 con(mxcon,mxcon),vec(mxcon,mxcon),eig(mxcon)
+
+      logical dl_all_pairs,dl_cap,dl_collect,dl_nvdw
+      logical dl_coul,dl_prnt_rdf,dl_rdf,dl_tscale
+      logical dl_traject,dl_zden,dl_zero,dl_polpbc
+      logical lbuck,lmorse,lchg,lfdisp,dl_flip,dl_tet
+
+c.....Dynamic memory declarations
+
+      common/ctr_i/nstrun,nsteql,multt,nstbpo,nstrdf,nstack,
+     x      intsta,nstraj,istraj,lvtraj,keyres,keyfce,keyens,
+     x      nstbts,setup,status,nbas,nxbas,i,ii,nx,ny,nz,model,
+     x      nxatms,natms,nlinks,no,id,msi_id,keytab,keyfit,
+     x      ngrid,num_pts,max_pts,nxbnd,nxang,nxdih,nxinv,nxvdw,
+     x      nxhbd,nxd,nxcon,nxpbnd,nxpang,nxpdih,nxpinv,nxpvdw,
+     x      nxphbd,keyhed,keycer
+
+      common/ctr_r/tstep,temp,press,rcut,rprim,delr,volm,harea,
+     x      rvdw,epsq,tolnce,qtntol,ewltol,fcecap,timjob,oh1b,
+     x      timcls,taut,taup,xxx,yyy,zzz,ebond,cc1b,ch1b,nh1b,
+     x      cc2b,cc3b,ccab,co1b,co2b,coab,cn1b,cn2b,cn3b,cnab,
+     x      dihscl,splx,sply,tem,ecnvrt,eps,sig,edih,ucell,
+     x      cell,sptx,spty,zz,uxyz,xyz
+
+      common/ctr_l/dl_all_pairs,dl_cap,dl_collect,dl_nvdw,
+     x      dl_coul,dl_prnt_rdf,dl_rdf,dl_traject,dl_zden,
+     x      dl_zero,dl_tscale,dl_polpbc,lbuck,lmorse,lchg,
+     x      lfdisp,dl_flip,dl_tet
+
+      common/ctr_c/electro,ensemble,restart,atname,aname,fname,
+     x      tabopt,fitopt,eunit,nam1,nam2,title,vdw_type,bnd_type,
+     x      head_group,ceram_ff
+
+      common / interface / xcell,ycell,zcell,pbc
+
+##-----------------------------------------------------------
+$COMMAND DL_DREI_FIELD_MK
+@HELP
+Construct a DL_POLY FIELD file using Dreiding force field
+@INPUT fname/A
+      call drei_field
+     x  (title,fname,kbnd,kang,kdih,kinv,khbd,kvdw,idvdw,idhbd,
+     x  name,dsym,lmorse,lbuck,lchg,lfdisp,natms,nbnd,nang,
+     x  ndih,ninv,nhbd,nxcon,nxatms,nxbnd,nxang,nxdih,nxinv,nxvdw,
+     x  nxhbd,nxpbnd,nxpang,nxpdih,nxpinv,nxpvdw,nxphbd,nxd,id,
+     x  mid,ibnd,iang,idih,invr,list,link,idk,jdk,ida,lab,ident,
+     x  msi_id,msi_lst,mass,chge,pbnd,pang,pdih,pinv,pvdw,phbd,
+     x  cell,rad,xyz,dmss,dchg,drad,dang,deps,dsig,dzet,bord,con,
+     x  vec,eig,model,status)
+
+##-----------------------------------------------------------
+$COMMAND DL_CERAM_FIELD_MK
+@HELP
+Construct a DL_POLY FIELD file using ceramic force field
+@INPUT fname/A
+      call ceram_field
+     x  (dl_tet,lfdisp,title,fname,name,keycer,nxatms,natms,
+     x  nxbnd,nbnd,id,list,link,ibnd,msi_id,msi_lst,rad,cell,
+     x  xyz,model,status)
+
+##-----------------------------------------------------------
+$COMMAND DL_CERCON
+@HELP
+Convert a CERIUS topology file into DL_POLY FIELD (Dreiding) and CONFIG
+@INPUT fname/A
+      call cercon
+     x  (title,fname,kbnd,kang,kdih,kinv,khbd,kvdw,idvdw,idhbd,
+     x  name,dsym,lmorse,lbuck,lchg,lfdisp,natms,nbnd,nang,ndih,
+     x  ninv,nhbd,nxcon,nxatms,nxbnd,nxang,nxdih,nxinv,nxvdw,
+     x  nxhbd,nxpbnd,nxpang,nxpdih,nxpinv,nxpvdw,nxphbd,nxd,id,
+     x  mid,ibnd,iang,idih,invr,list,link,idk,jdk,ida,lab,ident,
+     x  mass,chge,pbnd,pang,pdih,pinv,pvdw,phbd,cell,rad,xyz,
+     x  dmss,dchg,drad,dang,deps,dsig,dzet,bord,con,vec,eig,
+     x  status)
+
+##-----------------------------------------------------------
+$COMMAND DL_CFG_RD
+@HELP
+Select and read a DL_POLY CONFIG file (or equivalent).
+@INPUT fname/A
+      call rdcfg
+     x     (title,fname,natms,nxatms,name,id,cell,xyz,status)
+      if(status.eq.0)call showmodel
+     x     (natms,nbnd,nxatms,nxbnd,model,id,name,list,link,ibnd,
+     x     msi_id,msi_lst,rad,cell,xyz,status)
+
+##-----------------------------------------------------------
+$COMMAND DL_XYZ_RD
+@HELP
+Select and read an XYZ configuration file (or equivalent).
+@INPUT fname/A
+      call rdxyz
+     x     (title,fname,natms,nxatms,name,id,cell,xyz,status)
+      if(status.eq.0)call showmodel
+     x     (natms,nbnd,nxatms,nxbnd,model,id,name,list,link,ibnd,
+     x     msi_id,msi_lst,rad,cell,xyz,status)
+
+##-----------------------------------------------------------
+$COMMAND DL_SEQ_RD
+@HELP
+Select and read a SEQNET configuration file.
+@INPUT fname/A
+      call rdseq
+     x     (title,fname,natms,nxatms,name,id,cell,xyz,status)
+      if(status.eq.0)call showmodel
+     x     (natms,nbnd,nxatms,nxbnd,model,id,name,list,link,ibnd,
+     x     msi_id,msi_lst,rad,cell,xyz,status)
+
+##-----------------------------------------------------------
+$COMMAND DL_INC_CHG
+@HELP
+Include charges in making FIELD file
+@INIT lchg/.true.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_FLIP
+@HELP
+Flip over coordinates of polymer chains
+@INIT dl_flip/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_CER_TET
+@HELP
+Select tetargonal ions option for ceramic force field
+@INIT dl_tet/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_FLD_DISP
+@HELP
+Display configuration when making FIELD file
+@INIT lfdisp/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_ALL_PAIRS
+@HELP
+Select all pairs for forces diagram
+@INIT dl_all_pairs/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_CAP
+@HELP
+Activate force capping
+@INIT dl_cap/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_COLLECT
+@HELP
+Activate data collection in equilibration period
+@INIT dl_collect/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_NVDW
+@HELP
+Disable Van der Waals forces calculations
+@INIT dl_nvdw/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_COUL
+@HELP
+Disable Coulombic forces calculations
+@INIT dl_coul/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_RDF
+@HELP
+Calculate radial distribution functions
+@INIT dl_rdf/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_PRNT_RDF
+@HELP
+Print results of RDF calculations
+@INIT dl_prnt_rdf/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_TRAJECT
+@HELP
+Enable HISTORY file production
+@INIT dl_traject/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_TSCALE
+@HELP
+Enable temperature scaling
+@INIT dl_tscale/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_ZDEN
+@HELP
+Calculate Z density profile
+@INIT dl_zden/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_ZERO
+@HELP
+Select zero temperature optimization
+@INIT dl_zero/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_ENSEMBLE
+@HELP
+Select the required ensemble for the simulation. Options:
+NVE   - Microcanonical
+E-NVT - Evans Canonical NVT
+B-NVT - Berendsen NVT
+H-NVT - Nose'-Hoover Canonical NVT
+B-NPT - Berendsen constant pressure NPT 
+H-NPT - Hoover constant pressure NPT
+B-NST - Berendsen constant stress NPT
+H-NST - Hoover constant stress NPT
+PMF   = Potential of mean force NVE
+##
+@INIT ensemble/'NVE'
+@INPUT
+      ensemble/A/'NVE,E-NVT,B-NVT,H-NVT,B-NPT,H-NPT,B-NST,H-NST,PMF'
+      call chkens(ensemble,keyens)
+
+##
+@OUTPUT -copyrange
+      ensemble/a
+##-----------------------------------------------------------
+$COMMAND DL_ELECTRO
+@HELP
+Select the required electrostatics method. Options:
+EWALD  - Ewald Sum
+DIELEC - Distance dielectric
+T-COUL - Truncated Coulombic
+S-COUL - Shifted Coulombic 
+R-FLD  - Reaction Field
+##
+@INIT electro/'EWALD'
+@INPUT
+      electro/A/'EWALD,DISTAN,T-COUL,S-COUL,R-FLD'
+      call chkelec(electro,keyfce)
+
+##
+@OUTPUT -copyrange
+      electro/a
+##-----------------------------------------------------------
+$COMMAND DL_RESTART
+@HELP
+Specify restart control. Options:
+NONE     - start new simulation
+RESTART  - restart simulation from last run
+SCALE    - restart simulation with T scaling
+##
+@INIT restart/'NONE'
+@INPUT
+      restart/A/'NONE,RESTART,SCALE'
+      call chkrest(restart,keyres)
+
+##
+@OUTPUT -copyrange
+      restart/a
+##-----------------------------------------------------------
+$COMMAND DL_HEAD_GROUP
+@HELP
+Select the required head group for chain polymer. Options:
+NONE   - None
+SOAP   - Sodium-carboxylate 
+COOH   - Acidic carboxy group
+PHENOL - p-Phenol group
+TAB    - Trimethylammonium bromide
+##
+@INIT head_group/'NONE'
+@INPUT
+      head_group/A/'NONE,SOAP,COOH,PHENOL,TAB'
+      call chkhed(head_group,keyhed)
+
+##
+@OUTPUT -copyrange
+      head_group/a
+##-----------------------------------------------------------
+$COMMAND DL_CERAM_TYPE
+@HELP
+Select the required head group for chain polymer. Options:
+LC_a   - Lewis-Catlow model a
+LC_b   - Lewis-Catlow model b
+LC_c1  - Lewis-Catlow shell model c(i)
+LC_c2  - Lewis-Catlow shell model c(ii)
+GULP   - Bush-Gale-Catlow-Battle shell model
+##
+@INIT ceram_ff/'LC_a'
+@INPUT
+      ceram_ff/A/'LC_a,LC_b,LC_c1,LC_c2,GULP'
+      call chkcer(ceram_ff,keycer)
+##
+@OUTPUT -copyrange
+      ceram_ff/a
+##-----------------------------------------------------------
+$COMMAND DL_VDW_TYPE
+@HELP
+Specify VDW potential type. Options:
+LJ       - Lennard-Jones
+BUCK     - Buckingham exp-6
+##
+@INIT vdw_type/'LJ'
+@INPUT
+      vdw_type/A/'LJ,BUCK'
+      if(vdw_type.eq."BUCK")then
+
+	lbuck=.true.
+
+      else	
+
+	lbuck=.false.
+
+      endif
+
+##
+@OUTPUT -copyrange
+      vdw_type/a
+##-----------------------------------------------------------
+$COMMAND DL_BND_TYPE
+@HELP
+Specify bond potential type. Options:
+HARM  - Harmonic Potential
+MORSE - Morse Potential
+##
+@INIT bnd_type/'HARM'
+@INPUT
+      bnd_type/A/'HARM,MORSE'
+      if(bnd_type.eq."MORSE")then
+
+	lmorse=.true.
+
+      else	
+
+	lmorse=.false.
+
+      endif
+
+##
+@OUTPUT -copyrange
+      bnd_type/a
+##-----------------------------------------------------------
+$COMMAND DL_TEMP
+@HELP
+System temperature.
+@INIT temp/100.d0
+@INPUT /D
+@OUTPUT / F6.1
+
+##-----------------------------------------------------------
+$COMMAND DL_PRESS
+@HELP
+System pressure
+@INIT press/0.d0
+@INPUT /D
+@OUTPUT / F6.1
+
+##-----------------------------------------------------------
+$COMMAND DL_TSTEP
+@HELP
+Simulation time step.
+@INIT tstep/0.001d0
+@INPUT /D
+@OUTPUT / F6.3
+
+##-----------------------------------------------------------
+$COMMAND DL_CUT
+@HELP
+Forces cut off radius.
+@INIT rcut/10.d0
+@INPUT /D
+@OUTPUT / F6.2
+
+##-----------------------------------------------------------
+$COMMAND DL_PRIM
+@HELP
+Forces primary cut off radius.
+@INIT rprim/0.d0
+@INPUT /D
+@OUTPUT / F6.2
+
+##-----------------------------------------------------------
+$COMMAND DL_DELR
+@HELP
+Verlet list shell width
+@INIT delr/1.d0
+@INPUT /D
+@OUTPUT / F6.2
+
+##-----------------------------------------------------------
+$COMMAND DL_RVDW
+@HELP
+Van der Waals forces cut off radius.
+@INIT rvdw/0.d0
+@INPUT /D
+@OUTPUT / F6.2
+
+##-----------------------------------------------------------
+$COMMAND DL_NSTEP
+@HELP
+Number of time steps in simulation.
+@INIT nstrun/10
+@INPUT /I
+@OUTPUT /i8
+
+##-----------------------------------------------------------
+$COMMAND DL_EQUIL
+@HELP
+Number of timesteps in equilibration.
+@INIT nsteql/10
+@INPUT /I
+@OUTPUT /i8 
+
+##-----------------------------------------------------------
+$COMMAND DL_MULT
+@HELP
+Multiple timestep specification.
+@INIT multt/1
+@INPUT /I
+@OUTPUT /i6 
+
+##-----------------------------------------------------------
+$COMMAND DL_NSTBTS
+@HELP
+Temperature scaling interval
+@INIT nstbts/10
+@INPUT /I
+@OUTPUT /i6 
+
+##-----------------------------------------------------------
+$COMMAND DL_NSTBPO
+@HELP
+Interval for data printout.
+@INIT nstbpo/10
+@INPUT /I
+@OUTPUT /i6 
+
+##-----------------------------------------------------------
+$COMMAND DL_NSTAK
+@HELP
+Stack level of rolling average.
+@INIT nstack/100
+@INPUT /I
+@OUTPUT /i6 
+
+##-----------------------------------------------------------
+$COMMAND DL_NSTAT
+@HELP
+Interval for STATIS data.
+@INIT intsta/10
+@INPUT /I
+@OUTPUT /i6 
+
+##-----------------------------------------------------------
+$COMMAND DL_NSTRDF
+@HELP
+Start point for RDF accumulation
+@INIT nstrdf/10
+@INPUT /I
+@OUTPUT /i6 
+
+##-----------------------------------------------------------
+$COMMAND DL_NSTRAJ
+@HELP
+Start point for HISTORY file data
+@INIT nstraj/100
+@INPUT /I
+@OUTPUT /i6 
+
+##-----------------------------------------------------------
+$COMMAND DL_ISTRAJ
+@HELP
+Dumping interval for HISTORY file
+@INIT istraj/100
+@INPUT /I
+@OUTPUT /i6 
+
+##-----------------------------------------------------------
+$COMMAND DL_LVTRAJ
+@HELP
+Information level for HISTORY file (0,1,2)
+@INIT lvtraj/0
+@INPUT /I
+@OUTPUT /i6 
+
+##-----------------------------------------------------------
+$COMMAND DL_TIM_JOB
+@HELP
+Required job time.
+@INIT timjob/100.d0
+@INPUT /D
+@OUTPUT / F6.1
+
+##-----------------------------------------------------------
+$COMMAND DL_TIM_CLS
+@HELP
+Job closure time.
+@INIT timcls/10.d0
+@INPUT /D
+@OUTPUT / F6.1
+
+##-----------------------------------------------------------
+$COMMAND DL_EPS
+@HELP
+Relative permittivity
+@INIT epsq/1.d0
+@INPUT /D
+@OUTPUT / F6.1
+
+##-----------------------------------------------------------
+$COMMAND DL_TOL_EWLD
+@HELP
+Relative precision of ewald sum
+@INIT ewltol/0.00001d0
+@INPUT /D
+@OUTPUT / F8.6
+
+##-----------------------------------------------------------
+$COMMAND DL_FCE_CAP
+@HELP
+Maximum force cap
+@INIT fcecap/10000.d0
+@INPUT /D
+@OUTPUT / F8.1
+
+##-----------------------------------------------------------
+$COMMAND DL_TOL_SHK
+@HELP
+SHAKE tolerance.
+@INIT tolnce/0.00001d0
+@INPUT /D
+@OUTPUT / F8.6
+##-----------------------------------------------------------
+$COMMAND DL_TOL_QTN
+@HELP
+QSHAKE tolerance.
+@INIT qtntol/0.00001d0
+@INPUT /D
+@OUTPUT / F8.6
+
+##-----------------------------------------------------------
+$COMMAND DL_ENS_TAUT
+@HELP
+Temperature relaxation time.
+@INIT taut/1.d0
+@INPUT /D
+@OUTPUT / F6.3
+
+##-----------------------------------------------------------
+$COMMAND DL_ENS_TAUP
+@HELP
+Pressure relaxation time.
+@INIT taup/1.d0
+@INPUT /D
+@OUTPUT / F6.3
+
+##-----------------------------------------------------------
+$COMMAND DL_AX
+@HELP
+Define X component of unit cell vector A
+@INIT ucell(1)/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_AY
+@HELP
+Define Y component of unit cell vector A
+@INIT ucell(2)/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_AZ
+@HELP
+Define Z component of unit cell vector A
+@INIT ucell(3)/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_BX
+@HELP
+Define X component of unit cell vector B
+@INIT ucell(4)/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_BY
+@HELP
+Define Y component of unit cell vector B
+@INIT ucell(5)/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_BZ
+@HELP
+Define Z component of unit cell vector B
+@INIT ucell(6)/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_CX
+@HELP
+Define X component of unit cell vector C
+@INIT ucell(7)/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_CY
+@HELP
+Define Y component of unit cell vector C
+@INIT ucell(8)/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_CZ
+@HELP
+Define Z component of unit cell vector C
+@INIT ucell(9)/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_NAME
+@HELP
+Define atomic label or name
+@INIT atname/''
+@INPUT /A
+
+      if(atname.ne."")call atmnum(atname,ii)
+
+@OUTPUT /A8
+
+##-----------------------------------------------------------
+$COMMAND DL_ATNO
+@HELP
+Define atomic label or name
+@INIT ii/0
+@INPUT /I
+
+      if(ii.ne.0)call atmnam(atname,ii)
+
+@OUTPUT /i4
+
+##-----------------------------------------------------------
+$COMMAND DL_X
+@HELP
+Define X component of atom fractional coordinate
+@INIT xxx/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_Y
+@HELP
+Define Y component of atom fractional coordinate
+@INIT yyy/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_Z
+@HELP
+Define Z component of atom fractional coordinate
+@INIT zzz/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_TITLE
+@HELP
+Define a header record for CONTROL file
+@INIT title/''
+@INPUT /A
+@OUTPUT /A10
+
+##-----------------------------------------------------------
+$COMMAND DL_ENTER
+@HELP
+Add atom details to unit cell contents list
+@INPUT
+
+      call addatom(nbas,nxbas,ii,atname,xxx,yyy,zzz,
+     x     no,aname,uxyz)
+
+##-----------------------------------------------------------
+$COMMAND DL_ATOM_COUNT
+@HELP
+Display the number of atoms in unit cell
+@OUTPUT 
+nbas/i4
+
+##-----------------------------------------------------------
+$COMMAND DL_NX
+@HELP
+Replication of unit cell in A direction
+@INIT nx/1
+@INPUT /I
+@OUTPUT /i4
+
+##-----------------------------------------------------------
+$COMMAND DL_NY
+@HELP
+Replication of unit cell in B direction
+@INIT ny/1
+@INPUT /I
+@OUTPUT /i4
+
+##-----------------------------------------------------------
+$COMMAND DL_NZ
+@HELP
+Replication of unit cell in C direction
+@INIT nz/1
+@INPUT /I
+@OUTPUT /i4
+
+##-----------------------------------------------------------
+$COMMAND DL_XCELL
+@HELP
+Number of unitcells in the X direction
+@INPUT xcell / i / 1:
+@OUTPUT xcell/i4
+
+##-----------------------------------------------------------
+$COMMAND DL_YCELL
+@HELP
+Number of unitcells in the Y direction
+@INPUT ycell / i / 1:
+@OUTPUT ycell/i4
+
+##-----------------------------------------------------------
+$COMMAND DL_ZCELL
+@HELP
+Number of unitcells in the Z direction
+@INPUT zcell / i / 1:
+@OUTPUT zcell/i4
+
+##-----------------------------------------------------------
+$COMMAND DL_PBC
+@HELP
+DLPOLY PBC index
+@INPUT pbc / i / 1:
+@OUTPUT pbc/i4
+
+##-----------------------------------------------------------
+$COMMAND DL_NLINKS
+@HELP
+Define number of C-C links in the polymer chain
+@INIT nlinks/1
+@INPUT /I
+@OUTPUT /i4
+
+##-----------------------------------------------------------
+$COMMAND DL_VOLM
+@HELP
+Define system volume (assuming cubic system).
+@INIT volm/1000.d0
+@INPUT /D
+@OUTPUT /F8.2
+
+##-----------------------------------------------------------
+$COMMAND DL_AREA
+@HELP
+Define polymer chain head area (square Angstrom)
+@INIT harea/25.d0
+@INPUT /D
+@OUTPUT /F8.2
+
+##-----------------------------------------------------------
+$COMMAND DL_CC1B
+@HELP
+Define C-C single bondlength 
+@INIT cc1b/1.54d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_CC2B
+@HELP
+Define C-C double bondlength 
+@INIT cc2b/1.34d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_CC3B
+@HELP
+Define C-C triple bondlength 
+@INIT cc3b/1.2d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_CCAB
+@HELP
+Define C-C aromatic bondlength 
+@INIT ccab/1.39d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_CH1B
+@HELP
+Define C-H bondlength 
+@INIT ch1b/1.09d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_CO1B
+@HELP
+Define C-O single bondlength 
+@INIT co1b/1.43d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_CO2B
+@HELP
+Define C-O double bondlength 
+@INIT co2b/1.22d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_COAB
+@HELP
+Define C-O aromatic bondlength 
+@INIT coab/1.36d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_OH1B
+@HELP
+Define O-H bondlength 
+@INIT oh1b/0.96d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_CN1B
+@HELP
+Define C-N single bondlength 
+@INIT cn1b/1.47d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_CN2B
+@HELP
+Define C-N double bondlength 
+@INIT cn2b/1.27d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_CN3B
+@HELP
+Define C-N triple bondlength 
+@INIT cn3b/1.16d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_CNAB
+@HELP
+Define C-N aromatic bondlength 
+@INIT cnab/1.35d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_NH1B
+@HELP
+Define N-H bondlength 
+@INIT nh1b/1.01d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_EPSCC
+@HELP
+Define C-C Lennard Jones Epsilon parameter
+@INIT eps(1)/0.2977d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_EPSCH
+@HELP
+Define C-H Lennard Jones Epsilon parameter
+@INIT eps(2)/0.1573d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_EPSHH
+@HELP
+Define H-H Lennard Jones Epsilon parameter
+@INIT eps(3)/0.0831d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_SIGCC
+@HELP
+Define C-C Lennard Jones Sigma parameter
+@INIT sig(1)/3.4d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_SIGCH
+@HELP
+Define C-H Lennard Jones Sigma parameter
+@INIT sig(2)/3.1d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_SIGHH
+@HELP
+Define H-H Lennard Jones Sigma parameter
+@INIT sig(3)/2.8d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_EBOND
+@HELP
+Define C-C bond energy
+@INIT ebond/348.d0
+@INPUT /D
+@OUTPUT /F10.4
+
+##-----------------------------------------------------------
+$COMMAND DL_EDIH1
+@HELP
+Define first dihedral energy parameter
+@INIT edih(1)/8.832d0
+@INPUT /D
+@OUTPUT /F10.6
+
+##-----------------------------------------------------------
+$COMMAND DL_EDIH2
+@HELP
+Define second dihedral energy parameter
+@INIT edih(2)/18.087d0
+@INPUT /D
+@OUTPUT /F10.6
+##-----------------------------------------------------------
+$COMMAND DL_EDIH3
+@HELP
+Define third dihedral energy parameter
+@INIT edih(3)/4.88d0
+@INPUT /D
+@OUTPUT /F10.6
+
+##-----------------------------------------------------------
+$COMMAND DL_EDIH4
+@HELP
+Define fourth dihedral energy parameter
+@INIT edih(4)/-31.8d0
+@INPUT /D
+@OUTPUT /F10.6
+
+##-----------------------------------------------------------
+$COMMAND DL_DIHSCL
+@HELP
+Define second dihedral energy parameter
+@INIT dihscl/0.5d0
+@INPUT /D
+@OUTPUT /F10.6
+
+##-----------------------------------------------------------
+$COMMAND DL_POLPBC
+@HELP
+Apply periodic boundary to polymer coordinates to put into cell
+@INIT dl_polpbc/.false.
+@INPUT /L
+@OUTPUT /L1
+
+##-----------------------------------------------------------
+$COMMAND DL_FA_NAME
+@HELP
+Define first atomic label or name for potential table
+@INIT nam1/''
+@INPUT /A
+@OUTPUT /A8
+
+##-----------------------------------------------------------
+$COMMAND DL_SA_NAME
+@HELP
+Define second atomic label or name for potential table
+@INIT nam2/''
+@INPUT /A
+@OUTPUT /A8
+
+##-----------------------------------------------------------
+$COMMAND DL_NGRID
+@HELP
+Apply periodic boundary to polymer coordinates to put into cell
+@INIT ngrid/1000
+@INPUT /I
+@OUTPUT /I6
+
+##-----------------------------------------------------------
+$COMMAND DL_SPLX
+@HELP
+Define X coordinate of spline potential
+@INIT splx/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_SPLY
+@HELP
+Define Y coordinate of spline potential
+@INIT sply/0.d0
+@INPUT /D
+@OUTPUT /F10.7
+
+##-----------------------------------------------------------
+$COMMAND DL_SPL_ENT
+@HELP
+Add spline point to fitting data
+@INPUT
+
+      call addspl(num_pts,max_pts,splx,sply,sptx,spty)
+
+##-----------------------------------------------------------
+$COMMAND DL_ENG_UNITS
+@HELP
+Select the required energy units defining the potential. Options:
+DL_POLY - DL_POLY internal units
+E_VOLT  - Electron volts
+K_CAL   - k-calories per mole
+K_JOULE - k-Joules per mole
+##
+@INIT eunit/'DL_POLY'
+@INPUT
+      eunit/A/'DL_POLY,E_VOLT,K_CAL,K_JOULE'
+      call chkunits(eunit,ecnvrt)
+
+##
+@OUTPUT -copyrange
+      eunit/a
+##-----------------------------------------------------------
+$COMMAND DL_NUM_PTS
+@HELP
+Display the number of points in spline fitting data
+@OUTPUT 
+num_pts/i4
+
+##-----------------------------------------------------------
+$COMMAND DL_TAB_OPTS
+@HELP
+Select a special potential set for a TABLE file. Options:
+NONE  - No special potential required
+SiO2  - Silica glass potential (Vessal)
+AgI   - Silver Iodide potential (Ray,Rahman,Vashishta)
+##
+@INIT tabopt/'NONE'
+@INPUT
+      tabopt/A/'NONE,SiO2,AgI'
+      call chktable(tabopt,keytab)
+
+##
+@OUTPUT -copyrange
+      tabopt/a
+##-----------------------------------------------------------
+$COMMAND DL_FIT_OPTS
+@HELP
+Select a potential fitting procedure for a TABLE file. Options:
+SPLINE   - Fit using Spline functions
+GAUSSIAN - Fit using Gaussian functions
+##
+@INIT fitopt/'SPLINE'
+@INPUT
+      fitopt/A/'SPLINE,GAUSSIAN'
+      call chkfit(fitopt,keyfit)
+
+##
+@OUTPUT -copyrange
+      fitopt/a
+##-----------------------------------------------------------
+$COMMAND DL_CONTROL_LD
+@HELP
+Load the CONTROL file for further editing
+@INPUT fname/A
+      call rdcnt
+     x     (title,fname,electro,restart,ensemble,dl_cap,dl_rdf,
+     x     dl_all_pairs,dl_zero,dl_prnt_rdf,dl_coul,dl_traject,
+     x     dl_tscale,dl_collect,dl_zden,dl_nvdw,intsta,istraj,
+     x     keyens,keyfce,keyres,lvtraj,multt,nstack,nstrdf,
+     x     nstbpo,nstbts,nsteql,nstraj,nstrun,delr,epsq,fcecap,
+     x     press,qtntol,rcut,rprim,rvdw,taup,taut,temp,timcls,
+     x     timjob,tolnce,tstep,ewltol,status)
+
+##-----------------------------------------------------------
+$COMMAND DL_MAKE_CONTROL
+@HELP
+Generate the CONTROL file.
+@INPUT
+
+      call ctrgen
+     x  (title,dl_cap,dl_rdf,dl_all_pairs,dl_zero,dl_prnt_rdf,dl_coul,
+     x   dl_traject,dl_tscale,dl_collect,dl_zden,dl_nvdw,intsta,
+     x   istraj,keyens,keyfce,keyres,lvtraj,multt,nstack,
+     x   nstrdf,nstbpo,nstbts,nsteql,nstraj,nstrun,delr,epsq,
+     x   fcecap,press,qtntol,rcut,rprim,rvdw,taup,taut,temp,
+     x   timcls,timjob,tolnce,tstep,ewltol,status)
+
+##-----------------------------------------------------------
+$COMMAND DL_LATTICE_FROM_MODEL
+@HELP
+Generate the CONFIG file from current model.
+@INPUT
+
+      call config_from_model
+     x (xcell,ycell,zcell,pbc,status)
+
+##-----------------------------------------------------------
+$COMMAND DL_MAKE_LATTICE
+@HELP
+Generate the LATTICE file.
+@INPUT
+
+      call genlat
+     x  (title,nbas,nxbas,natms,nxatms,nx,ny,nz,aname,name,
+     x   no,id,ucell,cell,uxyz,xyz,status)
+      if(status.eq.0)call showmodel
+     x     (natms,nbnd,nxatms,nxbnd,model,id,name,list,link,ibnd,
+     x     msi_id,msi_lst,rad,cell,xyz,status)
+
+##-----------------------------------------------------------
+$COMMAND DL_MAKE_CHAIN
+@HELP
+Generate the CHAIN POLYMER file.
+@INPUT
+
+      call chain
+     x  (dl_flip,title,name,keyhed,natms,nxatms,nlinks,harea,
+     x  cc1b,cc2b,cc3b,ccab,ch1b,co1b,co2b,coab,oh1b,cn1b,cn2b,
+     x  cn3b,cnab,nh1b,id,cell,xyz,status)
+      if(status.eq.0)call showmodel
+     x     (natms,nbnd,nxatms,nxbnd,model,id,name,list,link,ibnd,
+     x     msi_id,msi_lst,rad,cell,xyz,status)
+
+##-----------------------------------------------------------
+$COMMAND DL_MAKE_POLYMER
+@HELP
+Generate the AMORPHOUS POLYMER file.
+@INPUT
+
+      call polygrow
+     x     (title,name,dl_polpbc,natms,nxatms,nlinks,volm,temp,cc1b,
+     x     ch1b,ebond,dihscl,id,eps,sig,edih,cell,xyz,status)
+      if(status.eq.0)call showmodel
+     x     (natms,nbnd,nxatms,nxbnd,model,id,name,list,link,ibnd,
+     x     msi_id,msi_lst,rad,cell,xyz,status)
+
+##-----------------------------------------------------------
+$COMMAND DL_MAKE_BUCKY
+@HELP
+Generate the BUCKMINSTER FULLERENE file.
+@INPUT
+
+      call bucky
+     x     (title,natms,mxatms,ccab,name,id,cell,xyz,status)
+      if(status.eq.0)call showmodel
+     x     (natms,nbnd,nxatms,nxbnd,model,id,name,list,link,ibnd,
+     x     msi_id,msi_lst,rad,cell,xyz,status)
+
+##-----------------------------------------------------------
+$COMMAND DL_MAKE_TABLE
+@HELP
+Generate a TABLE file.
+@INPUT
+
+      call maketab(title,nam1,nam2,keytab,keyfit,num_pts,max_pts,
+     x     ngrid,rcut,ecnvrt,sptx,spty,dd,gg,aa,zz,status)
+
+##-----------------------------------------------------------
+$COMMAND DL_CONFIG_NFOLD
+@HELP
+Create an expanded CONFIG file
+@INPUT fname/A
+
+      call nfold(dl_flip,fname,name,nxatms,nx,ny,nz,xyz,status)
+
+##-----------------------------------------------------------
+## Application startup section
+$STARTUP
+!  - code to be run only at startup -
+
+##-----------------------------------------------------------
+## Initialization section
+$INITIALIZE
+!  - code to be run at startup and each reinitialization
+      data xcell/5/
+      data ycell/5/
+      data zcell/5/
+      data pbc/0/
+
+      lbuck     = .false.
+      lmorse    = .false.
+      setup     = 1
+      status    = 0
+      model     = 0
+      nbas      = 0
+      natms     = 0
+      nxbas     = mxbas
+      nxatms    = mxatms
+      num_pts   = 0
+      max_pts   = mxpts
+      keyres    = 0
+      keyfce    = 2
+      keyhed    = 0
+      keycer    = 0
+      keyens    = 0
+      keytab    = 0
+      keyfit    = 0
+      nxbnd     = mxbnd
+      nxang     = mxang
+      nxdih     = mxdih
+      nxinv     = mxinv
+      nxvdw     = mxvdw
+      nxhbd     = mxhbd
+      nxd       = mxd
+      nxcon     = mxcon
+      nxpbnd    = mxpbnd
+      nxpang    = mxpang
+      nxpdih    = mxpdih
+      nxpinv    = mxpinv
+      nxpvdw    = mxpvdw
+      nxphbd    = mxphbd
+      ecnvrt    = 1.d0
+      title     = ""
+##-----------------------------------------------------------
+## Termination section
+$TERMINATE
+
+##-----------------------------------------------------------
+## Define the application state variables
+$STATE
+
+@SAVE_STATE
+!  - any code to be run before saving state variables -
+
+@LOAD_STATE
+!  - any code to be run after loading state variables -
+##-----------------------------------------------------------
+$END
+
+
+****************************************************************
+
+##############################################################################
+#
+#      file_maker.gdf: GUI definitions for application SDK_DL_FILE_MAKER
+#
+##############################################################################
+
+# card definition
+CARD -i dl_file_maker_Card -t "FILE_MAKER"
+"CONTROL" P dl_control_file_Panel
+"CONFIG" S dl_file_maker_Menu0
+"FIELD" S dl_field_maker_Menu1
+"Display" S dl_file_read_Menu2
+"Tools" S dl_file_tools_Menu0
+"Reset" C SDK_DL_FILE_MAKER/RESET
+ENDCARD
+
+STRING -i _Pdl_file_maker_Menu0 -t
+ "This menu selects type of CONFIG file to make"
+MENU -i dl_file_maker_Menu0
+"From Model" P dl_Model_file_Panel
+"Lattice" P dl_lattice_file_Panel
+"Chain"   P dl_chain_file_Panel
+"Polymer" P dl_polymer_file_Panel
+"Bucky"   P dl_bucky_file_Panel
+ENDMENU
+
+STRING -i _Pdl_field_maker_Menu1 -t
+ "This menu selects type of force field to make a FIELD file"
+MENU -i dl_field_maker_Menu1
+"Ceramic" P dl_poly_ceramic_Panel
+"Dreiding" P dl_poly_dreiding_Panel
+"TABLE" P dl_table_file_Panel
+ENDMENU
+
+STRING -i _Pdl_file_read_Menu2 -t
+ "This menu selects a configuration file to read"
+MENU -i dl_file_read_Menu2
+"CONFIG" P dl_config_read_Panel
+"XYZ" P dl_xyz_read_Panel
+"SEQNET" P dl_seq_read_Panel
+ENDMENU
+
+STRING -i _Pdl_file_tools_Menu0 -t
+ "This menu selects file operation tools"
+MENU -i dl_file_tools_Menu0
+"Cercon" P dl_cercon_Panel
+"N_Fold" P dl_config_nfold_Panel
+ENDMENU
+
+STRING -i _Pdl_poly_dreiding_Panel -t
+ "This panel constructs a DL_POLY FIELD (Dreiding) file from a nominated CONFIG file"
+PANEL   -i dl_poly_dreiding_Panel -t "Dreiding FIELD File Maker" -c [800,200] -m SDK_DL_FILE_MAKER
+LABEL   -c [0.0,0.0] -l "Select required CONFIG file:"
+BROWSER -c [0.0,-3.5] -f CFGPOL* -a LOAD -o DL_DREI_FIELD_MK
+POPUP   -c [0.0,-4.2] -l "Bond type" -o DL_BND_TYPE
+POPUP   -c [0.0,-4.9] -l "VDW type" -o DL_VDW_TYPE
+CHECK   -c [0.0,-5.6] -l "Display CONFIG file"  -o DL_FLD_DISP
+CHECK   -c [0.0,-6.3] -l "Include charges"  -o DL_INC_CHG
+ENDPANEL
+
+STRING -i _Pdl_poly_ceramic_Panel -t
+ "This panel constructs a DL_POLY FIELD (Ceramics) file from a nominated CONFIG file"
+PANEL   -i dl_poly_ceramic_Panel -t "Ceramics FIELD File Maker" -c [800,200] -m SDK_DL_FILE_MAKER
+LABEL   -c [0.0,0.0] -l "Select required CONFIG file:"
+BROWSER -c [0.0,-3.5] -f CFGLAT* -a LOAD -o DL_CERAM_FIELD_MK
+POPUP   -c [0.0,-4.2] -l "Forcefield" -o DL_CERAM_TYPE
+CHECK   -c [0.0,-5.6] -l "Display CONFIG file"  -o DL_FLD_DISP
+CHECK   -c [0.0,-6.3] -l "Tetragonal ion option"  -o DL_CER_TET
+ENDPANEL
+
+STRING -i _Pdl_cercon_Panel -t
+ "This panel converts a selected CERIUS file to a DL_POLY FIELD (Dreiding) and CONFIG file"
+PANEL   -i dl_cercon_Panel -t "CERIUS File Converter" -c [800,200] -m SDK_DL_FILE_MAKER
+LABEL   -c [0.0,0.0] -l "Select required CERIUS file:"
+BROWSER -c [0.0,-3.5] -f *.MSI -a LOAD -o DL_CERCON
+POPUP   -c [0.0,-4.2] -l "Bond type" -o DL_BND_TYPE
+POPUP   -c [0.0,-4.9] -l "VDW type" -o DL_VDW_TYPE
+CHECK   -c [0.0,-5.6] -l "Include charges"  -o DL_INC_CHG
+ENDPANEL
+
+STRING -i _Pdl_config_read_Panel -t
+ "This panel reads a selected DL_POLY CONFIG file"
+PANEL   -i dl_config_read_Panel -t "CONFIG File Reader" -c [800,400] -m SDK_DL_FILE_MAKER
+LABEL   -c [0.0,0.0] -l "Select required CONFIG file:"
+BROWSER -c [0.0,-3.5] -f CFG* -a LOAD -o DL_CFG_RD
+ENDPANEL
+
+STRING -i _Pdl_control_edit_Panel -t
+ "This panel loads a selected DL_POLY CONTROL file for editing"
+PANEL   -i dl_control_edit_Panel -t "CONTROL File Editor" -c [1000,400] -m SDK_DL_FILE_MAKER
+LABEL   -c [0.0,0.0] -l "Select required CONTROL file:"
+BROWSER -c [0.0,-3.5] -f CNT* -a LOAD -o DL_CONTROL_LD -W dl_cntl_Group
+ENDPANEL
+
+STRING -i _Pdl_xyz_read_Panel -t
+ "This panel reads a selected XYZ configuration file"
+PANEL   -i dl_xyz_read_Panel -t "XYZ File Reader" -c [800,400] -m SDK_DL_FILE_MAKER
+LABEL   -c [0.0,0.0] -l "Select required XYZ file:"
+BROWSER -c [0.0,-3.5] -f XYZ* -a LOAD -o DL_XYZ_RD
+ENDPANEL
+
+STRING -i _Pdl_seq_read_Panel -t
+ "This panel reads a selected SEQNET configuration file"
+PANEL   -i dl_seq_read_Panel -t "SEQNET File Reader" -c [800,400] -m SDK_DL_FILE_MAKER
+LABEL   -c [0.0,0.0] -l "Select required SEQNET file:"
+BROWSER -c [0.0,-3.5] -f SEQ* -a LOAD -o DL_SEQ_RD
+ENDPANEL
+
+STRING -i _Pdl_control_file_Panel -t
+ "This panel selects the CONTROL file maker"
+PANEL   -i dl_control_file_Panel -t "CONTROL File Maker" -c [800,70] -m SDK_DL_FILE_MAKER
+LABEL   -c [0.0,6.3] -l "System Control Variables"
+PUSHB   -c [0.0,5.6] -l "MAKE" -o DL_MAKE_CONTROL
+PUSHB   -c [3.0,5.6] -l "EDIT" -panel -z dl_control_edit_Panel
+TEXT    -c [0.0,4.9] -p "File Header" -v 80 -b 12 -o DL_TITLE -g dl_cntl_Group
+FLOAT   -c [0.0,4.2] -w 1.7 -v 6 -o DL_TEMP -g dl_cntl_Group
+LABEL   -c [1.9,4.2] -l "Temperature"
+FLOAT   -c [0.0,3.5] -w 1.7 -v 6 -o DL_PRESS -g dl_cntl_Group
+LABEL   -c [1.9,3.5] -l "Pressure"
+FLOAT   -c [0.0,2.8] -w 1.7 -v 6 -o DL_TSTEP -g dl_cntl_Group
+LABEL   -c [1.9,2.8] -l "Time step"
+FLOAT   -c [0.0,2.1] -w 1.7 -v 6 -o DL_CUT -g dl_cntl_Group
+LABEL   -c [1.9,2.1] -l "Cut off"
+FLOAT   -c [0.0,1.4] -w 1.7 -v 6 -o DL_DELR -g dl_cntl_Group
+LABEL   -c [1.9,1.4] -l "Verlet shell width"
+FLOAT   -c [0.0,0.7] -w 1.7 -v 6 -o DL_RVDW -g dl_cntl_Group
+LABEL   -c [1.9,0.7] -l "VDW cut off"
+FLOAT   -c [0.0,0.0] -w 1.7 -v 6 -o DL_PRIM -g dl_cntl_Group
+LABEL   -c [1.9,0.0] -l "Primary cut off"
+FLOAT   -c [0.0,-0.7] -w 1.7 -v 6 -o DL_EPS -g dl_cntl_Group
+LABEL   -c [1.9,-0.7] -l "Dielectric const."
+FLOAT   -c [0.0,-1.4] -w 1.7 -v 6 -o DL_ENS_TAUT   -g dl_cntl_Group
+LABEL   -c [1.9,-1.4] -l "Temp.  Relaxation (ps)" 
+FLOAT   -c [0.0,-2.1] -w 1.7 -v 6 -o DL_ENS_TAUP   -g dl_cntl_Group
+LABEL   -c [1.9,-2.1] -l "Press. Relaxation (ps)" 
+POPUP   -c [0.0,-2.8] -l "Ensemble........." -o DL_ENSEMBLE -g dl_cntl_Group
+POPUP   -c [0.0,-3.5] -l "Electrostatics..." -o DL_ELECTRO -g dl_cntl_Group
+PUSHB   -c [0.0,-4.2] -l "Program Controls..." -panel
+                      -z dl_prg_Panel
+ENDPANEL
+
+STRING -i _Pdl_prg_Panel -t
+ "This panel is used to define the program control variables"
+PANEL   -i dl_prg_Panel -t "Program controls" -c [900,70] -m SDK_DL_FILE_MAKER
+LABEL   -c [0.0,8.0] -l "Program Control Variables"
+INTEGER -c [0.0,7.3] -w 1.7 -v 8 -o DL_NSTEP -g dl_cntl_Group
+LABEL   -c [1.9,7.3] -l "Number of Steps"
+INTEGER -c [0.0,6.6] -w 1.7 -v 8 -o DL_EQUIL -g dl_cntl_Group
+LABEL   -c [1.9,6.6] -l "Equilibration Steps"
+INTEGER -c [0.0,5.9] -w 1.7 -v 6 -o DL_MULT -g dl_cntl_Group
+LABEL   -c [1.9,5.9] -l "Multiple Time step"
+INTEGER -c [0.0,5.2] -w 1.7 -v 6 -o DL_NSTBPO -g dl_cntl_Group
+LABEL   -c [1.9,5.2] -l "Print interval"
+INTEGER -c [0.0,4.5] -w 1.7 -v 6 -o DL_NSTAK -g dl_cntl_Group
+LABEL   -c [1.9,4.5] -l "Stack interval"
+INTEGER -c [0.0,3.8] -w 1.7 -v 6 -o DL_NSTAT -g dl_cntl_Group
+LABEL   -c [1.9,3.8] -l "Stats interval"
+FLOAT   -c [0.0,3.1] -w 1.7 -v 8 -o DL_TOL_EWLD -g dl_cntl_Group
+LABEL   -c [1.9,3.1] -l "Ewald precision"
+FLOAT   -c [0.0,2.4] -w 1.7 -v 8 -o DL_TOL_SHK -g dl_cntl_Group
+LABEL   -c [1.9,2.4] -l "SHAKE Tolerance"
+FLOAT   -c [0.0,1.7] -w 1.7 -v 8 -o DL_TOL_QTN -g dl_cntl_Group
+LABEL   -c [1.9,1.7] -l "Quaternion Tolerance"
+FLOAT   -c [0.0,1.0] -w 1.7 -v 8 -o DL_TIM_JOB -g dl_cntl_Group
+LABEL   -c [1.9,1.0] -l "Job Time (s)"
+FLOAT   -c [0.0,0.3] -w 1.7 -v 8 -o DL_TIM_CLS -g dl_cntl_Group
+LABEL   -c [1.9,0.3] -l "Close Time"
+POPUP   -c [0.0,-0.4] -l "Restart Option" -o DL_RESTART -g dl_cntl_Group
+PUSHB   -c [0.0,-1.1] -l "More Options..." -panel
+                      -z dl_ops_Panel
+ENDPANEL
+
+STRING  -i _Pdl_ops_Panel -t
+ "This panel defines special options"
+PANEL   -i dl_ops_Panel  -t "More Options" -c [1000,70] -m SDK_DL_FILE_MAKER
+LABEL   -c [0.0,4.3] -l "Select Option:"
+CHECK   -c [0.0,3.6] -l "All Pairs"  -o DL_ALL_PAIRS -g dl_cntl_Group
+CHECK   -c [0.0,2.9] -l "Cap Forces"  -o DL_CAP -g dl_cntl_Group
+FLOAT   -c [0.0,2.2] -w 1.7 -v 8 -o DL_FCE_CAP -g dl_cntl_Group
+LABEL   -c [1.9,2.2] -l "Force cap"
+CHECK   -c [0.0,1.5] -l "Collect"  -o DL_COLLECT -g dl_cntl_Group
+CHECK   -c [0.0,0.8] -l "Disable VDW Forces"  -o DL_NVDW -g dl_cntl_Group
+CHECK   -c [0.0,0.1] -l "Disable Coulomb Forces"  -o DL_COUL -g dl_cntl_Group
+CHECK   -c [0.0,-0.6] -l "Calculate RDF"  -o DL_RDF -g dl_cntl_Group
+LABEL   -c [1.9,-1.3] -l "RDF start time step"
+INTEGER -c [0.0,-1.3] -w 1.7 -v 6 -o DL_NSTRDF -g dl_cntl_Group
+CHECK   -c [0.0,-2.0] -l "Print RDF"  -o DL_PRNT_RDF -g dl_cntl_Group
+CHECK   -c [0.0,-2.7] -l "Produce HISTORY file"  -o DL_TRAJECT -g dl_cntl_Group
+INTEGER -c [0.0,-3.4] -w 1.5 -v 8 -o DL_NSTRAJ -g dl_cntl_Group
+INTEGER -c [1.5,-3.4] -w 1.5 -v 6 -o DL_ISTRAJ -g dl_cntl_Group
+INTEGER -c [3.0,-3.4] -w 1.5 -v 6 -o DL_LVTRAJ -g dl_cntl_Group
+CHECK   -c [0.0,-4.1] -l "Enable T scaling"  -o DL_TSCALE -g dl_cntl_Group
+INTEGER -c [0.0,-4.8] -w 1.7 -v 6 -o DL_NSTBTS -g dl_cntl_Group
+LABEL   -c [1.9,-4.8] -l "T scaling interval"
+CHECK   -c [0.0,-5.5] -l "Z-Density"  -o DL_ZDEN -g dl_cntl_Group
+CHECK   -c [0.0,-6.2] -l "Zero K MD"  -o DL_ZERO -g dl_cntl_Group
+ENDPANEL
+
+STRING -i _Pdl_Model_file_Panel -t
+PANEL -i dl_Model_file_Panel -t "CONFIG File Maker" -c [800,50] -m SDK_DL_FILE_MAKER
+LABEL -c [0.0,7.1] -l "Number of unitcells in each direction:-"
+INTEGER -c [0.0,6.5] -l x: -v 3 -o DL_XCELL
+INTEGER -c [1.5,6.5] -l y: -v 3 -o DL_YCELL
+INTEGER -c [3.0,6.5] -l z: -v 3 -o DL_ZCELL
+INTEGER -c [0.0,5.7] -w 1.0 -v 2 -o DL_PBC
+LABEL -c [1.5,5.7] -l "PBC index"
+PUSHB -c [0.0,4.9] -l "MAKE" -o DL_LATTICE_FROM_MODEL
+ENDPANEL
+
+STRING -i _Pdl_lattice_file_Panel -t
+ "This panel selects the LATTICE file maker"
+PANEL -i dl_lattice_file_Panel -t "LATTICE File Maker" -c [800,50] -m SDK_DL_FILE_MAKER
+PUSHB -c [0.0,10.7] -l "MAKE" -o DL_MAKE_LATTICE
+LABEL -c [0.0,10.0] -l "Enter Unit Cell Vectors:"
+LABEL -c [0.0,9.3] -l "A-vector:"
+FLOAT -c [0.0,8.6] -w 1.8 -v 10 -o DL_AX
+FLOAT -c [2.0,8.6] -w 1.8 -v 10 -o DL_AY
+FLOAT -c [4.0,8.6] -w 1.8 -v 10 -o DL_AZ
+LABEL -c [0.0,7.9] -l "B-vector:"
+FLOAT -c [0.0,7.2] -w 1.8 -v 10 -o DL_BX
+FLOAT -c [2.0,7.2] -w 1.8 -v 10 -o DL_BY
+FLOAT -c [4.0,7.2] -w 1.8 -v 10 -o DL_BZ
+LABEL -c [0.0,6.5] -l "C-vector:"
+FLOAT -c [0.0,5.8] -w 1.8 -v 10 -o DL_CX
+FLOAT -c [2.0,5.8] -w 1.8 -v 10 -o DL_CY
+FLOAT -c [4.0,5.8] -w 1.8 -v 10 -o DL_CZ
+LABEL -c [0.0,5.1] -l "Replication in A,B,C directions:"
+INTEGER -c [0.0,4.4] -w 1.0 -v 4 -o DL_NX
+INTEGER -c [2.0,4.4] -w 1.0 -v 4 -o DL_NY
+INTEGER -c [4.0,4.4] -w 1.0 -v 4 -o DL_NZ
+LABEL -c [0.0,3.7] -l "Enter Unit Cell Contents:"
+TEXT  -c [0.0,3.0] -p "Atom name" -v 8 -b 10 -W atom_group -g atom_group -o DL_NAME
+INTEGER  -c [0.0,2.3] -w 1.0 -v 4 -W atom_group -g atom_group -o DL_ATNO
+LABEL    -c [1.5,2.3] -l "Atomic number"
+FLOAT -c [0.0,1.6] -w 1.8 -v 10 -o DL_X
+FLOAT -c [2.0,1.6] -w 1.8 -v 10 -o DL_Y
+FLOAT -c [4.0,1.6] -w 1.8 -v 10 -o DL_Z
+PUSHB -c [0.0,0.9] -l "ENTER" -o DL_ENTER
+LABEL -c [0.0,0.2] -l "Atoms in unit cell:"
+LABEL -c [4.0,0.2] -variable -v 6 -o DL_ATOM_COUNT
+ENDPANEL
+
+STRING -i _Pdl_config_nfold_Panel -t
+ "This panel selects the N-fold expansion of a CONFIG file"
+PANEL -i dl_config_nfold_Panel -t "N-Fold Expansion" -c [800,300] -m SDK_DL_FILE_MAKER
+LABEL   -c [0.0,0.0] -l "Select required CONFIG file:"
+BROWSER -c [0.0,-3.5] -f CFG* -a LOAD -o DL_CONFIG_NFOLD
+LABEL -c [0.0,-4.2] -l "Replication in A,B,C directions:"
+INTEGER -c [0.0,-4.9] -w 1.0 -v 4 -o DL_NX
+INTEGER -c [2.0,-4.9] -w 1.0 -v 4 -o DL_NY
+INTEGER -c [4.0,-4.9] -w 1.0 -v 4 -o DL_NZ
+CHECK   -c [0.0,-5.6] -l "Flip over"  -o DL_FLIP
+ENDPANEL
+
+STRING -i _Pdl_chain_file_Panel -t
+ "This panel selects the CHAIN POLYMER file maker"
+PANEL -i dl_chain_file_Panel -t "CHAIN POLYMER File Maker" -c [800,300] -m SDK_DL_FILE_MAKER
+PUSHB -c [0.0,0.0] -l "MAKE" -o DL_MAKE_CHAIN
+INTEGER  -c [0.0,-0.7] -w 1.0 -v 4 -o DL_NLINKS
+LABEL    -c [1.5,-0.7] -l "Number of C atoms"
+LABEL -c [0.0,-1.4] -l "Chain head area (A^2):"
+FLOAT -c [0.0,-2.1] -w 1.8 -v 10 -o DL_AREA
+POPUP   -c [0.0,-2.8] -l "Head group........." -o DL_HEAD_GROUP
+CHECK   -c [0.0,-3.5] -l "Flip over"  -o DL_FLIP
+PUSHB   -c [0.0,-4.2] -l "Bond lengths..." -panel
+                      -z dl_bond_Panel
+ENDPANEL
+
+STRING -i _Pdl_polymer_file_Panel -t
+ "This panel selects the AMORPHOUS POLYMER file maker"
+PANEL -i dl_polymer_file_Panel -t "AMORPHOUS POLYMER File Maker" -c [800,50] -m SDK_DL_FILE_MAKER
+PUSHB -c [0.0,10.7] -l "MAKE" -o DL_MAKE_POLYMER
+INTEGER  -c [0.0,10.0] -w 1.0 -v 4 -o DL_NLINKS
+LABEL    -c [1.5,10.0] -l "Number of C atoms"
+LABEL -c [0.0,9.3] -l "System Volume and Temperature:"
+FLOAT -c [0.0,8.6] -w 1.8 -v 10 -o DL_VOLM
+FLOAT -c [2.0,8.6] -w 1.8 -v 10 -o DL_TEMP
+LABEL -c [0.0,7.9] -l "C-C and C-H Bondlengths (A):"
+FLOAT -c [0.0,7.2] -w 1.8 -v 10 -o DL_CC1B
+FLOAT -c [2.0,7.2] -w 1.8 -v 10 -o DL_CH1B
+LABEL -c [0.0,6.5] -l "C-C, C-H and H-H LJ Epsilon (kJ/mol):"
+FLOAT -c [0.0,5.8] -w 1.8 -v 10 -o DL_EPSCC
+FLOAT -c [2.0,5.8] -w 1.8 -v 10 -o DL_EPSCH
+FLOAT -c [4.0,5.8] -w 1.8 -v 10 -o DL_EPSHH
+LABEL -c [0.0,5.1] -l "C-C, C-H and H-H LJ Sigma (A):"
+FLOAT -c [0.0,4.4] -w 1.8 -v 10 -o DL_SIGCC
+FLOAT -c [2.0,4.4] -w 1.8 -v 10 -o DL_SIGCH
+FLOAT -c [4.0,4.4] -w 1.8 -v 10 -o DL_SIGHH
+FLOAT -c [0.0,3.5] -w 1.8 -v 10 -o DL_EBOND
+LABEL -c [2.0,3.5] -l "C-C Bond Energy (kJ/mol)"
+LABEL -c [0.0,2.8] -l "Dihedral Energy Constants (kJ/mol):"
+FLOAT -c [0.0,2.1] -w 1.8 -v 10 -o DL_EDIH1
+FLOAT -c [2.0,2.1] -w 1.8 -v 10 -o DL_EDIH2
+FLOAT -c [4.0,2.1] -w 1.8 -v 10 -o DL_EDIH3
+FLOAT -c [6.0,2.1] -w 1.8 -v 10 -o DL_EDIH4
+FLOAT -c [0.0,1.2] -w 1.8 -v 10 -o DL_DIHSCL
+LABEL -c [2.0,1.2] -l "Dihedral LJ Scaling Factor"
+CHECK   -c [0.0,0.3] -l "Apply PBC to Chain"  -o DL_POLPBC
+ENDPANEL
+
+STRING -i _Pdl_bucky_file_Panel -t
+ "This panel selects the BUCKMINSTER FULLERENE file maker"
+PANEL -i dl_bucky_file_Panel -t "BUCKYBALL File Maker" -c [800,300] -m SDK_DL_FILE_MAKER
+PUSHB -c [0.0,0.7] -l "MAKE" -o DL_MAKE_BUCKY
+LABEL -c [2.0,0.0] -l "C-C Bondlength (A):"
+FLOAT -c [0.0,0.0] -w 1.8 -v 10 -o DL_CCAB
+ENDPANEL
+
+STRING -i _Pdl_table_file_Panel -t
+ "This panel selects the TABLE file maker"
+PANEL   -i dl_table_file_Panel -t "TABLE File Maker" -c [800,150] -m SDK_DL_FILE_MAKER
+LABEL   -c [0.0,7.0] -l "Table Control Variables"
+PUSHB   -c [0.0,6.3] -l "MAKE" -o DL_MAKE_TABLE
+TEXT  -c [0.0,5.6] -v 8 -b 10 -o DL_FA_NAME
+TEXT  -c [2.0,5.6] -p "Atom names" -v 8 -b 10 -o DL_SA_NAME
+INTEGER -c [0.0,4.9] -w 1.7 -v 6 -o DL_NGRID
+LABEL   -c [1.9,4.9] -l "Number of grid points"
+FLOAT   -c [0.0,4.2] -w 1.7 -v 6 -o DL_CUT
+LABEL   -c [1.9,4.2] -l "Cut off"
+LABEL -c [0.0,3.5] -l "Enter Data Points: r ; V(r)"
+FLOAT -c [0.0,2.8] -w 1.8 -v 10 -o DL_SPLX
+FLOAT -c [2.0,2.8] -w 1.8 -v 10 -o DL_SPLY
+PUSHB -c [0.0,2.1] -l "ENTER" -o DL_SPL_ENT
+LABEL -c [0.0,1.4] -l "Points so far:"
+LABEL -c [4.0,1.4] -variable -v 6 -o DL_NUM_PTS
+POPUP   -c [0.0,0.7] -l "Energy Units" -o DL_ENG_UNITS
+POPUP   -c [0.0,0.0] -l "Fitting Options" -o DL_FIT_OPTS
+POPUP   -c [0.0,-.7] -l "Special Options" -o DL_TAB_OPTS
+ENDPANEL
+
+STRING -i _Pdl_bond_Panel -t
+ "This panel defines bond lengths"
+PANEL   -i dl_bond_Panel -t "Bond Lengths" -c [800,150] -m SDK_DL_FILE_MAKER
+LABEL -c [0.0,0.0] -l "Default bondlengths (A):"
+LABEL -c [2.0,-0.7] -l "C-C Single"
+FLOAT -c [0.0,-0.7] -w 1.8 -v 10 -o DL_CC1B
+LABEL -c [2.0,-1.4] -l "C-C Double"
+FLOAT -c [0.0,-1.4] -w 1.8 -v 10 -o DL_CC2B
+LABEL -c [2.0,-2.1] -l "C-C Triple"
+FLOAT -c [0.0,-2.1] -w 1.8 -v 10 -o DL_CC3B
+LABEL -c [2.0,-2.8] -l "C-C Aromatic"
+FLOAT -c [0.0,-2.8] -w 1.8 -v 10 -o DL_CCAB
+LABEL -c [2.0,-3.5] -l "C-H Bond"
+FLOAT -c [0.0,-3.5] -w 1.8 -v 10 -o DL_CH1B
+LABEL -c [2.0,-4.2] -l "C-O Single"
+FLOAT -c [0.0,-4.2] -w 1.8 -v 10 -o DL_CO1B
+LABEL -c [2.0,-4.9] -l "C-O Double"
+FLOAT -c [0.0,-4.9] -w 1.8 -v 10 -o DL_CO2B
+LABEL -c [2.0,-5.6] -l "C-O Aromatic"
+FLOAT -c [0.0,-5.6] -w 1.8 -v 10 -o DL_COAB
+LABEL -c [2.0,-6.3] -l "O-H Bond"
+FLOAT -c [0.0,-6.3] -w 1.8 -v 10 -o DL_OH1B
+LABEL -c [2.0,-7.0] -l "C-N Single"
+FLOAT -c [0.0,-7.0] -w 1.8 -v 10 -o DL_CN1B
+LABEL -c [2.0,-7.7] -l "C-N Double"
+FLOAT -c [0.0,-7.7] -w 1.8 -v 10 -o DL_CN2B
+LABEL -c [2.0,-8.4] -l "C-N Triple"
+FLOAT -c [0.0,-8.4] -w 1.8 -v 10 -o DL_CN3B
+LABEL -c [2.0,-9.1] -l "C-N Aromatic"
+FLOAT -c [0.0,-9.1] -w 1.8 -v 10 -o DL_CNAB
+LABEL -c [2.0,-9.8] -l "N-H Bond"
+FLOAT -c [0.0,-9.8] -w 1.8 -v 10 -o DL_NH1B
+ENDPANEL
+
+
+**********************************************************************
+
+# Makefile written by genmake version 1.21
+# for platform irix.
+# File created: Fri Feb 18 08:59:36 GMT 19100
+
+SHELL           = /bin/sh
+
+SDK_ROOT        = 
+
+LICENSE_FILE    = $(SDK_ROOT)/msilicense.dat:$(SDK_ROOT)/msilicense.demo
+ADFPROC         = $(SDK_ROOT)/tools/adfproc
+PALPROC         = $(SDK_ROOT)/tools/palproc
+
+ADFPROCFLAGS    = -S$(SDK_ROOT)/tools/data -Hauto -Oauto -L$(LICENSE_FILE)
+PALPROCFLAGS    = -S$(SDK_ROOT)/tools/data -Oauto
+
+TIMESTAMP       = $(SDK_ROOT)/tools/make_stamp
+VALIDATE        = $(SDK_ROOT)/tools/bin/irix/sdk_validate
+VALIDATEFLAGS   = -l $(LICENSE_FILE)
+
+CC              = /usr/bin/cc
+F77             = /usr/bin/f77
+AR              = /usr/bin/ar
+LD              = $(CC) -w
+
+INC             = -I. -I$(SDK_ROOT)/include
+CUSTOM_INC      =
+
+CUSTOM_CPPDEF   =
+OPT             = -n32 -mips3 -O -DSYSV -DSYSTYPE_SYSV
+CUSTOM_OPT      =
+FOPT            = -n32 -mips3 -O
+CUSTOM_FOPT     =
+LOPT            = -n32 -mips3
+CUSTOM_LOPT     =
+STD_LDLIBS      = -lftn -lbsd -lmalloc -lm
+CUSTOM_LDLIBS   =
+
+CFLAGS          = $(CUSTOM_OPT) $(OPT) $(CUSTOM_INC) $(INC)
+FFLAGS          = $(CUSTOM_FOPT) $(FOPT) $(CUSTOM_INC) $(INC)
+ARFLAGS         = qsvl
+LDFLAGS         = $(CUSTOM_LOPT) $(LOPT)
+LDLIBS          = $(STD_LDLIBS) $(CUSTOM_LDLIBS)
+
+SDKLIBDIR=$(SDK_ROOT)/lib/irix
+VPATH=obj/irix
+
+SOURCES =  \
+    potAgI.f \
+    chain.f \
+    rotate.f \
+    vdwass.f \
+    hbdass.f \
+    invass.f \
+    dihass.f \
+    bndass.f \
+    angass.f \
+    maketab.f \
+    showmodel.f \
+    addatom.f \
+    atmrad.f \
+    strip.f \
+    chkcer.f \
+    rdseq.f \
+    rdcfg.f \
+    outcon.f \
+    cercon.f \
+    bucky.f \
+    chkrest.f \
+    rdcnt.f \
+    strchg.f \
+    intstr.f \
+    dblstr.f \
+    addspl.f \
+    sp2sp3.f \
+    sp3sp3.f \
+    sp2sp2.f \
+    sprspr.f \
+    connect.f \
+    tabgauss.f \
+    polygrow.f \
+    border.f \
+    select.f \
+    chkens.f \
+    dcell.f \
+    duni.f \
+    invert.f \
+    chkfit.f \
+    chkunits.f \
+    extract.f \
+    ctrgen.f \
+    tabspline.f \
+    chkhed.f \
+    gaussfit.f \
+    rdxyz.f \
+    shellsort.f \
+    carboxy.f \
+    spline.f \
+    chkelec.f \
+    drei_field.f \
+    ceram_field.f \
+    chktable.f \
+    euler.f \
+    genlat.f \
+    trimethyl.f \
+    potSiO2.f \
+    atmnam.f \
+    phenol.f \
+    atmnum.f \
+    dreiding.f \
+    soap.f \
+    loc8.f \
+    jacobi.f \
+    nfold.f \
+    quote.f \
+    config_from_model.f \
+    auto/file_maker_pal.c \
+    auto/file_ma_auto.f
+
+OBJECTS =  \
+    potAgI.o \
+    chain.o \
+    rotate.o \
+    vdwass.o \
+    hbdass.o \
+    invass.o \
+    dihass.o \
+    bndass.o \
+    angass.o \
+    maketab.o \
+    showmodel.o \
+    addatom.o \
+    atmrad.o \
+    strip.o \
+    chkcer.o \
+    rdseq.o \
+    rdcfg.o \
+    outcon.o \
+    cercon.o \
+    bucky.o \
+    chkrest.o \
+    rdcnt.o \
+    strchg.o \
+    intstr.o \
+    dblstr.o \
+    addspl.o \
+    sp2sp3.o \
+    sp3sp3.o \
+    sp2sp2.o \
+    sprspr.o \
+    connect.o \
+    tabgauss.o \
+    polygrow.o \
+    border.o \
+    select.o \
+    chkens.o \
+    dcell.o \
+    duni.o \
+    invert.o \
+    chkfit.o \
+    chkunits.o \
+    extract.o \
+    ctrgen.o \
+    tabspline.o \
+    chkhed.o \
+    gaussfit.o \
+    rdxyz.o \
+    shellsort.o \
+    carboxy.o \
+    spline.o \
+    chkelec.o \
+    drei_field.o \
+    ceram_field.o \
+    chktable.o \
+    euler.o \
+    genlat.o \
+    trimethyl.o \
+    potSiO2.o \
+    atmnam.o \
+    phenol.o \
+    atmnum.o \
+    dreiding.o \
+    soap.o \
+    loc8.o \
+    jacobi.o \
+    nfold.o \
+    quote.o \
+    config_from_model.o \
+    file_maker_pal.o \
+    file_ma_auto.o
+
+PAL = file_maker.pal
+PALOUT = auto/file_maker_pal.c
+LIB = file_maker.a
+BIN = file_maker.exe
+
+APP_LIBRARIES   = 
+
+C2_LIBRARIES = \
+           $(SDKLIBDIR)/c2ext.a \
+           $(VPATH)/$(LIB) $(APP_LIBRARIES)\
+           $(SDKLIBDIR)/c2ext.a \
+           $(SDKLIBDIR)/c2locore.a \
+           $(SDKLIBDIR)/common.a
+
+MP_LIBS = $(SDKLIBDIR)/mp_stub.a 
+
+CUSTOM_LIBRARIES =
+LIBRARIES = $(C2_LIBRARIES) $(CUSTOM_LIBRARIES)
+
+# General Rules
+
+.c.o:
+	$(CC) $(CFLAGS) -o $(VPATH)/$@ -c $<
+
+
+.f.o:
+	$(F77) $(FFLAGS) -o $(VPATH)/$@ -c $<
+
+default:    codegen lib bin
+
+
+# File-specific Rules
+
+$(PALOUT): $(PAL)
+	$(PALPROC) $(PAL) $(PALPROCFLAGS)
+
+DATEOBJ = $(VPATH)/_datestamp.o
+$(BIN): $(LIBRARIES)
+	@$(TIMESTAMP) $(DATEOBJ) $(OPT)
+	$(LD) $(LDFLAGS) -o $(VPATH)/$(BIN).tmp $(DATEOBJ) $(LIBRARIES) $(MP_LIBS) $(LDLIBS)
+	mv $(VPATH)/$(BIN).tmp $(VPATH)/$(BIN)
+	-@$(VALIDATE) $(VALIDATEFLAGS) $(VPATH)/$(BIN)
+	-@rm $(DATEOBJ)
+
+$(LIB): $(OBJECTS)
+	-@rm -f $(VPATH)/$(LIB)
+	@ln -sf $(VPATH) .o
+	$(AR) $(ARFLAGS) $(VPATH)/$(LIB) \
+           .o/potAgI.o .o/chain.o .o/rotate.o .o/vdwass.o \
+           .o/hbdass.o .o/invass.o .o/dihass.o .o/bndass.o \
+           .o/angass.o .o/maketab.o .o/showmodel.o .o/addatom.o \
+           .o/atmrad.o .o/strip.o .o/chkcer.o .o/rdseq.o \
+           .o/rdcfg.o .o/outcon.o .o/cercon.o .o/bucky.o \
+           .o/chkrest.o .o/rdcnt.o .o/strchg.o .o/intstr.o \
+           .o/dblstr.o .o/addspl.o .o/sp2sp3.o .o/sp3sp3.o \
+           .o/sp2sp2.o .o/sprspr.o .o/connect.o .o/tabgauss.o \
+           .o/polygrow.o .o/border.o .o/select.o .o/chkens.o \
+           .o/dcell.o .o/duni.o .o/invert.o .o/chkfit.o \
+           .o/chkunits.o .o/extract.o .o/ctrgen.o .o/tabspline.o \
+           .o/chkhed.o .o/gaussfit.o .o/rdxyz.o .o/shellsort.o \
+           .o/carboxy.o .o/spline.o .o/chkelec.o .o/drei_field.o \
+           .o/ceram_field.o .o/chktable.o .o/euler.o .o/genlat.o \
+           .o/trimethyl.o .o/potSiO2.o .o/atmnam.o .o/phenol.o \
+           .o/atmnum.o .o/dreiding.o .o/soap.o .o/loc8.o \
+           .o/jacobi.o .o/nfold.o .o/quote.o .o/config_from_model.o \
+           .o/file_maker_pal.o .o/file_ma_auto.o
+	@rm .o
+
+auto/file_ma_auto.f: file_maker.adf
+	$(ADFPROC) file_maker.adf $(ADFPROCFLAGS)
+
+file_maker_pal.o:     auto/file_maker_pal.c
+	$(CC) $(CFLAGS) -o $(VPATH)/$@ -c auto/file_maker_pal.c
+
+file_ma_auto.o:     auto/file_ma_auto.f
+	$(F77) $(FFLAGS) -o $(VPATH)/$@ -c auto/file_ma_auto.f
+
+
+# Dependencies
+
+bin:        $(BIN)
+lib:        $(LIB)
+codegen:    $(PALOUT) auto/file_ma_auto.f 
+
+config_from_model.o:	config_from_model.f
+potAgI.o:	potAgI.f
+chain.o:	chain.f
+rotate.o:	rotate.f
+vdwass.o:	vdwass.f
+hbdass.o:	hbdass.f
+invass.o:	invass.f
+dihass.o:	dihass.f
+bndass.o:	bndass.f
+angass.o:	angass.f
+maketab.o:	maketab.f
+showmodel.o:	showmodel.f
+showmodel.o:	$(SDK_ROOT)/include/msdefs.inc
+showmodel.o:	$(SDK_ROOT)/include/api_stderr.inc
+showmodel.o:	$(SDK_ROOT)/include/api_params.inc
+showmodel.o:	$(SDK_ROOT)/include/msd_apidefs.inc
+showmodel.o:	$(SDK_ROOT)/include/mss_apidefs.inc
+showmodel.o:	$(SDK_ROOT)/include/msg_apidefs.inc
+showmodel.o:	$(SDK_ROOT)/include/msp_apidefs.inc
+showmodel.o:	$(SDK_ROOT)/include/msa_apidefs.inc
+showmodel.o:	$(SDK_ROOT)/include/msf_apidefs.inc
+showmodel.o:	$(SDK_ROOT)/include/mst_apidefs.inc
+showmodel.o:	$(SDK_ROOT)/include/msu_apidefs.inc
+showmodel.o:	$(SDK_ROOT)/include/msz_apidefs.inc
+addatom.o:	addatom.f
+atmrad.o:	atmrad.f
+strip.o:	strip.f
+chkcer.o:	chkcer.f
+rdseq.o:	rdseq.f
+rdcfg.o:	rdcfg.f
+outcon.o:	outcon.f
+cercon.o:	cercon.f
+bucky.o:	bucky.f
+chkrest.o:	chkrest.f
+rdcnt.o:	rdcnt.f
+strchg.o:	strchg.f
+intstr.o:	intstr.f
+dblstr.o:	dblstr.f
+addspl.o:	addspl.f
+sp2sp3.o:	sp2sp3.f
+sp3sp3.o:	sp3sp3.f
+sp2sp2.o:	sp2sp2.f
+sprspr.o:	sprspr.f
+connect.o:	connect.f
+tabgauss.o:	tabgauss.f
+polygrow.o:	polygrow.f
+border.o:	border.f
+select.o:	select.f
+chkens.o:	chkens.f
+dcell.o:	dcell.f
+duni.o:	duni.f
+invert.o:	invert.f
+chkfit.o:	chkfit.f
+chkunits.o:	chkunits.f
+extract.o:	extract.f
+ctrgen.o:	ctrgen.f
+tabspline.o:	tabspline.f
+chkhed.o:	chkhed.f
+gaussfit.o:	gaussfit.f
+rdxyz.o:	rdxyz.f
+shellsort.o:	shellsort.f
+carboxy.o:	carboxy.f
+spline.o:	spline.f
+chkelec.o:	chkelec.f
+drei_field.o:	drei_field.f
+ceram_field.o:	ceram_field.f
+chktable.o:	chktable.f
+euler.o:	euler.f
+genlat.o:	genlat.f
+trimethyl.o:	trimethyl.f
+potSiO2.o:	potSiO2.f
+atmnam.o:	atmnam.f
+phenol.o:	phenol.f
+atmnum.o:	atmnum.f
+dreiding.o:	dreiding.f
+soap.o:	soap.f
+loc8.o:	loc8.f
+jacobi.o:	jacobi.f
+nfold.o:	nfold.f
+quote.o:	quote.f
+file_maker_pal.o:	auto/file_maker_pal.c
+file_maker_pal.o:	$(SDK_ROOT)/include/msu_apidefs.h
+file_ma_auto.o:	auto/file_ma_auto.f
+file_ma_auto.o:	$(SDK_ROOT)/include/sch_nullvl.inc
+file_ma_auto.o:	$(SDK_ROOT)/include/msdefs.inc
+file_ma_auto.o:	$(SDK_ROOT)/include/api_stderr.inc
+file_ma_auto.o:	$(SDK_ROOT)/include/api_params.inc
+file_ma_auto.o:	$(SDK_ROOT)/include/msd_apidefs.inc
+file_ma_auto.o:	$(SDK_ROOT)/include/mss_apidefs.inc
+file_ma_auto.o:	$(SDK_ROOT)/include/msg_apidefs.inc
+file_ma_auto.o:	$(SDK_ROOT)/include/msp_apidefs.inc
+file_ma_auto.o:	$(SDK_ROOT)/include/msa_apidefs.inc
+file_ma_auto.o:	$(SDK_ROOT)/include/msf_apidefs.inc
+file_ma_auto.o:	$(SDK_ROOT)/include/mst_apidefs.inc
+file_ma_auto.o:	$(SDK_ROOT)/include/msu_apidefs.inc
+file_ma_auto.o:	$(SDK_ROOT)/include/msz_apidefs.inc
+
+**********************************************************************

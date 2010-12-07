@@ -1,0 +1,2689 @@
+\section{The INPUT Files}
+\label{input-files}
+
+\begin{figure}[htbp]
+\begin{center}
+\vskip 1ex
+\centerline{\psfig{file=dlpoly_files.eps,height=12cm}}
+\caption[\D input (left) and output (right) files]
+{\D input (left) and output (right) files.  {\bf Note}:
+files marked with an asterisk are non-mandatory.}
+%\vskip 1ex
+\end{center}
+\end{figure}
+
+\D requires seven input files named CONTROL, CONFIG, FIELD, TABLE,
+TABEAM, REFERENCE and REVOLD.  The first three files are mandatory,
+whereas TABLE and TABEAM are only used to input certain kinds of
+pair or metal potentials, and may not always be required.  REFERENCE
+is required only if defect detection is switched on in CONTROL.
+REVOLD is required only if the job represents a continuation of a
+previous job.  In the following sections we describe the form and
+content of these files.
+
+\subsection{The CONTROL File}
+\label{control-file}
+
+The CONTROL file is read by the subroutine {\sc read\_control} and
+defines the control variables for running a \D job.  (It is also
+read by the subroutine {\sc scan\_control} in the {\sc
+set\_bounds} routine.)  It makes extensive use of {\bf directives}
+and {\bf keywords}.  Directives are character strings that appear
+as the first entry on a data record (or line) and which invoke a
+particular operation or provide numerical parameters.  Also
+associated with each directive may be one or more keywords, which
+may qualify a particular directive by, for example, adding extra
+options.  Directives can appear in any order in the CONTROL file,
+except for the {\bf finish} directive which marks the end of the
+file.  Some of the directives are mandatory (for example the {\bf
+timestep} directive that defines the timestep), others are
+optional.
+
+This way of constructing the file is very convenient, but it has
+inherent dangers.  It is, for example, quite easy to specify
+contradictory directives, or invoke algorithms\index{algorithm}
+that do not work together.  By large \D tries to sort out these
+difficulties and print helpful error messages, but it does not
+claim to be fully foolproof.  Another common mistake is to specify
+more than once a directive that has no contradictory, disabling,
+altering or antagonistic directives - then the one specified
+last will be used as a control directive (for example
+{\bf densvar, equil, steps, press, mxshak, shake, ...}).
+Fortunately, in most cases the CONTROL file will be small and
+easy to check visually.  It is important to think carefully about
+a simulation beforehand and ensure that \D is being asked to do
+something that is physically reasonable.  It should also be
+remembered that the present capabilities the package may not
+allow the simulation required and it may be necessary for you
+yourself to add new features.
+
+An example CONTROL file appears below.  The directives and
+keywords appearing are described in the following section.  The
+exapmle lists all possible and not mutually excluding directives
+in a particular order.  Although this order is not mandatory, it
+is highly recommended.
+
+\begin{verbatim}
+TITLE RECORD: DL_POLY_3 SAFE ORDER OF CONTROL DIRECTIVES
+
+# SYSTEM REPLICATION & IMPACT OPTION
+nfold              10 10 10
+impact 1 2000 7.5 1.0 2.0 3.0
+
+# DENSITY VARIATION ARRAY BOOST
+densvar                  10 %
+
+# INDEX AND VERIFICATION BYPASS
+no index
+no strict
+
+# INTERACTIONS BYPASS
+no electostatics
+no vdw
+
+# DIRECT CALCULATION OF VDW/METAL INTERACTIONS INSTEAD OF
+# EVALUATION BY SPLINING OVER TABULATED VALUES IN MEMORY
+vdw direct
+metal direct
+
+# FORCE-SHIFT VDW INTERACTIONS SO THAT ENERGY AND FORCE
+# CONTRIBUTIONS FALL SMOOTHLY TO ZERO WHEN APPROACHING R_CUT
+vdw shift
+
+# RANDOM NUMBER GENERATOR SEEDING
+seed 100 200
+
+# I/O READ: METHOD, READER COUNT, BATCH & BUFFER SIZES
+io read  mpiio        2 50000 5000
+
+# I/O WRITE: METHOD, TYPE, WRITER COUNT, BATCH & BUFFER SIZES
+io write mpiio sorted 8 50000 5000
+
+# SLAB SIMULATION PARALLEL CONTROL
+slab
+
+# RESTART OPTIONS
+restart noscale
+dump                   1000 steps
+
+# SYSTEM TARGET TEMPERATURE AND PRESSURE
+temperature           300.0 Kelvin
+pressure              0.001 k-atmospheres
+
+# SYSTEM CUTOFFS AND ELECTROSTATICS
+cutoff                 10.0 Angstroms
+rvdw                    8.0 Angstroms
+exclude
+epsilon                 1.0
+ewald precision         1.0e-6
+ewald evaluate            4
+
+# RELAXED SHELL MODEL TOLERANCE
+rlxtol                  1.0 force
+
+# CONSTRANTS ITERATION LENGTH and TOLERANCE
+mxshak                  250 cycles
+shake                   1.0e-4
+
+# INTEGRATION FLAVOUR, ENSEMBLE AND PSEUDO THERMOSTAT
+integration velocity verlet
+ensemble nst hoover 0.5 0.5
+pseudo langevin   2.0 150.0
+
+# INTEGRATION TIMESTEP
+variable timestep     0.001 pico-seconds
+mindis                 0.03 Angstroms
+maxdis                 0.10 Angstroms
+
+# SUMULATION & EQUILIBRATION LENGTH
+steps                 10000 steps
+equilibration          1000 steps
+
+# EQUILIBRATION DIRECTIVES
+zero
+cap                    2000 kT/Angstrom
+scale                     5 steps
+regauss                   3 steps
+minimise force      20  1.0
+optimise energy         0.001
+
+# STATISTICS
+collect
+stack                    50 deep
+stats                    10 steps
+
+# OUTPUT
+print                     2 steps
+
+# HISTORY
+replay
+trajectory          20 30 0
+
+# DEFECTS
+defects          40 15 0.75
+
+# MSDTMP
+msdtmp                1000 100
+
+# RDF & Z-DENSITY
+binsize                0.05 Angstroms
+rdf                       7 steps
+print rdf
+zden                      7 steps
+print zden
+
+# EXECUTION TIME
+job time               1000 seconds
+close time               10 seconds
+
+# FINISH
+finish
+\end{verbatim}
+
+\subsubsection{The CONTROL File Format}
+
+The file is free-formatted and not case-sensitive.  Every line is
+treated as a command sentence (record).  Commented records
+(beginning with a \#) and blank lines are not processed and may be
+added to aid legibility (see example above).  Records must be
+limited in length to 100 characters.  Records are read in words
+({\bf directives} and additional {\bf keywords} and {\bf
+numbers}), as a word must not exceed 40 characters in length.
+Words are recognised as such by separation by one or more space
+characters.  Additional annotation is not recommended but may be
+added onto a directive line after the last control word in it.
+
+\begin{itemize}
+\item The first record in the CONTROL file is a header (up to 100
+characters long) to aid identification of the file.
+\item The last record is a {\bf finish} directive, which marks
+the end of the input data.
+\end{itemize}
+
+Between the header and the {\bf finish} directive, a wide choice
+of control directives may be inserted.  These are described below.
+
+\subsubsection{The CONTROL File Directives}
+
+The directives available are as follows:
+
+\begin{tabbing}
+X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
+\> {\bf directive:}                             \> {\bf meaning:} \\
+\>                                              \> \\
+\> {\bf binsize} $f$                            \> set the bin size for radial and z-density distribution functions to \\
+\>                                              \> $f$ \AA~ (if $10^{-5}$~\AA~$\le~f~\le~r_{\rm cut}/4$ or undefined, $f$ defaults to $0.05$ \AA) \\
+\>                                              \> \\
+\> {\bf cap} (forces) $f$                       \> cap forces during equilibration period, $f$ is maximum \\
+\>                                              \> cap in units of k$_{B}$T/\AA~~(default $f~=~1000$ k$_{B}$T/\AA) \\
+\>                                              \> \\
+\> {\bf close time} $f$                         \> set job closure time to $f$ seconds \\
+\>                                              \> \\
+\> {\bf collect}                                \> include equilibration data in overall statistics \\
+\>                                              \> \\
+\> {\bf coul}omb                                \> calculate electrostatic forces using direct Coulomb sum\index{direct Coulomb sum}\index{potential!electrostatics} \\
+\>                                              \> \\
+\> {\bf cut}off $f$                             \> set required long-ranged interactions\index{potential!electrostatics} cutoff, $r_{\rm cut}$, to $f$ \AA~ \\
+\>                                              \> \\
+\> {\bf defe}cts $i~j~f$                        \> write DEFECTS file with controls: \\
+\>                                              \> $i~=$ start timestep for dumping defects configurations (default $i~=~0$) \\
+\>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$)\\
+\>                                              \> $f~=$ site-interstitial cutoff (default $f~=~{\rm Min}\left[0.75,r_{\rm cut}/3\right]$~\AA, \\
+\>                                              \> ${\rm Min}\left[0.3,r_{\rm cut}/3\right]$~\AA~$\le~f~\le~{\rm Min}\left[1.2,r_{\rm cut}/2\right]$~\AA) \\
+\>                                              \> \\
+\> {\bf densvar} $f$                            \> allow for local variation of $\approx f$ \% in the system density \\
+\>                                              \> of (i) particles and (ii) any present bonded-like entities (very \\
+\>                                              \> useful for extremely non-equilibrium simulations, default $f~=~0$) \\
+\> {\bf distan}ce                               \> calculate electrostatic forces using Coulomb sum with \\
+\>                                              \> distance dependent dielectric\index{distance dependant dielectric} \\
+\>                                              \> \\
+\> {\bf dump} $n$                               \> set restart data dump interval to $n$ steps (default $n~=~1000$) \\
+\>                                              \> \\
+\> {\bf ensemble nve}                           \> select NVE ensemble\index{ensemble!NVE} (default ensemble) \\
+\>                                              \> \\
+\> {\bf ensemble nvt evans}                     \> select NVE$_{kin}$ ensemble\index{ensemble!Evans NVT}, type Evans with \\
+\>                                              \> Gaussian constraints thermostat\index{thermostat} \\
+\>                                              \> \\
+\> {\bf ensemble nvt lang}evin $f$              \> select NVT ensemble\index{ensemble!Langevin NVT}, type Langevin with thermostat\index{thermostat} \\
+\>                                              \> relaxation speed (friction) constant $f$ in ps$^{-1}$ \\
+\>                                              \> \\
+\> {\bf ensemble nvt ander}sen $f_{1}~f_{2}$    \> select NVT ensemble\index{ensemble!Langevin NVT}, type Andersen with $f_{1},~f_{2}$ as the \\
+\>                                              \> thermostat\index{thermostat} relaxation time in ps and softness ( $0 \le f_{2} \le 1$) \\
+\>                                              \> \\
+\> {\bf ensemble nvt ber}endesen $f$            \> select NVT ensemble\index{ensemble!Berendsen NVT}, type Berendsen with thermostat\index{thermostat} \\
+\>                                              \> relaxation constant $f$ in ps \\
+\>                                              \> \\
+\> {\bf ensemble nvt hoover} $f$                \> select NVT ensemble\index{ensemble!Nos\'{e}-Hoover NVT}, type Nose-Hoover with thermostat\index{thermostat} \\
+\>                                              \> relaxation constant $f$ in ps \\
+\>                                              \> \\
+\> {\bf ensemble npt lang}evin $f_{1}~f_{2}$    \> select NPT ensemble\index{ensemble!Langevin NPT}, type Langevin, with $f_{1},~f_{2}$ as the \\
+\>                                              \> thermostat\index{thermostat} and barostat\index{barostat} relaxation speed (friction) constants in ps$^{-1}$ \\
+\>                                              \> \\
+\> {\bf ensemble npt ber}endsen $f_{1}~f_{2}$   \> select NPT ensemble\index{ensemble!Berendsen NPT}, type Berendsen with $f_{1},~f_{2}$ as the \\
+\>                                              \> thermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
+\>                                              \> \\
+\> {\bf ensemble npt hoover} $f_{1}~f_{2}$      \> select NPT ensemble\index{ensemble!Nos\'{e}-Hoover NPT}, type Nose-Hoover, with $f_{1},~f_{2}$ as the \\
+\>                                              \> athermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
+\>                                              \> \\
+\> {\bf ensemble npt mtk} $f_{1}~f_{2}$         \> select NPT ensemble\index{ensemble!Martyna-Tuckerman-Klein NPT}, type Martyna-Tuckerman-Klein with \\
+\>                                              \> $f_{1},~f_{2}$ as the thermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
+\>                                              \> \\
+\> {\bf ensemble nst lang}evin $f_{1}~f_{2}$    \> select N$\mat{\sigma}$T ensemble\index{ensemble!Langevin N$\mat{\sigma}$T}, type Langevin with $f_{1},~f_{2}$ as the \\
+\>                                              \> thermostat\index{thermostat} and barostat\index{barostat} relaxation speed (friction) constants in ps$^{-1}$ \\
+\>                                              \> \\
+\> {\bf ensemble nst ber}endsen $f_{1}~f_{2}$   \> select N$\mat{\sigma}$T ensemble\index{ensemble!Berendsen N$\sigma$T}, type Berendsen with $f_{1},~f_{2}$ as \\
+\>                                              \> the thermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
+\>                                              \> \\
+\> {\bf ensemble nst hoover} $f_{1}~f_{2}$      \> select N$\mat{\sigma}$T ensemble\index{ensemble!Nos\'{e}-Hoover N$\sigma$T}, type Nose-Hoover with $f_{1},~f_{2}$ as \\
+\>                                              \> the thermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
+\>                                              \> \\
+\> {\bf ensemble nst mtk} $f_{1}~f_{2}$         \> select N$\sigma$T ensemble\index{ensemble!Martyna-Tuckerman-Klein N$\sigma$T}, type Martyna-Tuckerman-Klein with \\
+\>                                              \> $f_{1},~f_{2}$ as the thermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
+\>                                              \> \\
+\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf area} \> select NP$_{n}$AT ensemble, type $Q$ (i.e. {\em lang}, {\em ber}, \\
+\>                                              \> {\em hoover} or {\em mtk}), with $f_{1},~f_{2}$ as the thermostat\index{thermostat} \\
+\>                                              \> and barostat\index{barostat} relaxation times in ps \\
+\>                                              \> \\
+\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf tens}ion $\gamma$ \> select NP$_{n}\gamma$T ensemble, type $Q$ (i.e. {\em lang}, {\em ber}, \\
+\>                                              \> {\em hoover} or {\em mtk}), with $f_{1},~f_{2}$ as the thermostat\index{thermostat} \\
+\>                                              \> and barostat\index{barostat} relaxation times in ps and set required \\
+\>                                              \> simulation (target/external) surface tension to $\gamma$ dyn/cm \\
+\>                                              \> \\
+\> {\bf eps}ilon (constant) $f$                 \> set relative dielectric constant to $f$ (default $f~=~1.0$) \\
+\>                                              \> \\
+\> {\bf equil}ibration (steps) $n$              \> equilibrate system for the first $n$ timesteps (default $n~=~0$) \\
+\>                                              \> \\
+\> {\bf ewald evalu}ate (every) $n$             \> evaluate the k-space contributions to the Ewald sum\index{Ewald!SPME}\index{potential!electrostatics} \\
+\>                                              \> once every $n$ timesteps ($1~\le~n~\le~10$, activated when $n~\ge~2$, \\
+\>                                              \> $n~<~1$ or undefined defaults to $n~=~1$, $n~>~10$ defaults to $n~=~4$) \\
+\>                                              \> \\
+\> {\bf ewald precision} $f$                    \> calculate electrostatic forces using Ewald sum\index{Ewald!SPME}\index{potential!electrostatics} with \\
+\>                                              \> automatic parameter optimisation \\
+\>                                              \> ($10^{-20}~\le~f~\le~0.5$, default $f~=~10^{-20}$) \\
+\>                                              \> \\
+\> {\bf ewald} (sum) $\alpha~k_{1}~k_{2}~k_{3}$ \> calculate electrostatic forces using Ewald sum\index{Ewald!SPME}\index{potential!electrostatics} with \\
+\>                                              \> $\alpha~=~$ Ewald convergence parameter in \AA$^{-1}$ \\
+\>                                              \> $k1~=$ is the maximum k-vector index in x-direction \\
+\>                                              \> $k2~=$ is the maximum k-vector index in y-direction \\
+\>                                              \> $k3~=$ is the maximum k-vector index in z-direction \\
+\>                                              \> \\
+\> {\bf exclu}de                                \> switch on extended coulombic exclusion affecting intra-molecular \\
+\>                                              \> interactions such as: chemical bonds and bond angles; as well as \\
+\>                                              \> bond constraints between ions that have shells and cores \\
+\>                                              \> \\
+\> {\bf finish}                                 \> close the CONTROL file (last data record) \\
+\>                                              \> \\
+\> {\bf impact} $i~j~~~E~~x~y~z$                \> initiate impact on the particle with index $i$ ($i \ge 1$) at timestep \\
+\>                                              \> $j$ ($i \ge 0$) with energy $E$ ($E \ge 0$) in kilo-eV and direction \\
+\>                                              \> vector $x~y~z$ from the Cartesian origin (centre) of the MD box \\
+\>                                              \> (defaults: $i = 1, j = 0, E = 0, x = 1, y = 1, z = 1$) \\
+\>                                              \> \\
+\> {\bf integrat}or {\em string}                \> set the type of Verlet integrator, where {\em string} can only be \\
+\>                                              \> {\em leapfrog} or {\em velocity}, as the later is the default \\
+\>                                              \> \\
+\> {\bf io read} {\em method}  $j$ $k$ $l$ $e$  \> set the the general I/O read interface to: \\
+\>                                              \> {\bf \em method} :: {\em mpiio} for MPI-I/O, {\em direct} for parallel direct access \\
+\>                                              \> \phantom{x} FORTRAN I/O or {\em master} for traditional master I/O or {\em netcdf} \\
+\>                                              \> \phantom{x} for netCDF I/O provided \D is compiled in a \\
+\>                                              \> \phantom{x} netCDF-enabled mode (default {\em mpiio}) \\
+\>                                              \> \phantom{xxx} {\bf \em j, reader count} :: $1~\le~j~\le~{\tt job~size}$ \\
+\>                                              \> \phantom{xxxx} (default $j~=~2^{Int\left[Log\left\{Min({\tt job~size},2\sqrt{\tt job~size})\right\}/Log(2)\right]}$) \\
+\>                                              \> \phantom{xxxx} is the designated number of processes to \\
+\>                                              \> \phantom{xxxx} carry out I/O read operations simultaneously \\
+\>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
+\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~1,000,000$ (default $50,000$) \\
+\>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
+\>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
+\>                                              \> \phantom{xxxx} I/O groups (= I/O readers) for domain distribution purposes \\
+\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $5,000$) \\
+\>                                              \> \phantom{x} is the maximum number of ASCII line records read in a batch \\
+\>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
+\>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
+\>                                              \> \\
+  \> {\bf io writ}e {\em method} $rp$ {\em type} $j$ $k$ $l$ $e$ \> set the the general I/O write interface to: \\
+\>                                              \> {\bf \em method} :: {\em mpiio} for MPI-I/O, {\em direct} for parallel direct access \\
+\>                                              \> \phantom{x} FORTRAN I/O or {\em master} for traditional master I/O or {\em netcdf} \\
+\>                                              \> \phantom{x} for netCDF I/O provided \D is compiled in a \\
+\>                                              \> \phantom{x} netCDF-enabled mode (default {\em mpiio}) \\
+\>                                              \> \phantom{x} {\bf WARRNING: {\em direct} is not a platfotm portable} \\
+\>                                              \> \phantom{x} {\bf solution (as it fails on LUSTRE but works on GPFS)} \\
+\>                                              \> {\bf NOTE that {\em rp} is only applicable for the {\em netcdf} method} \\
+\>                                              \> {\bf \em rp, real precision} :: {\em 32bit} or {\em amber} for 32-bit (float), \\
+\>                                              \> \phantom{x} otherwise 64-bit (double) is defaulted if unspecified \\
+\>                                              \> {\bf \em type} :: {\em sorted} or {\em unsort}ed (DD scrambled) by global index output \\
+\>                                              \> \phantom{x} (default {\em sorted}) \\
+\>                                              \> \phantom{xxx} {\bf \em j, writer count} :: $1~\le~j~\le~{\tt job~size}$ \\
+\>                                              \> \phantom{xxxx} (default $j~=~2^{Int\left[Log\left\{Min({\tt job~size},8\sqrt{\tt job~size})\right\}/Log(2)\right]}$) \\
+\>                                              \> \phantom{xxxx} is the designated number of processes to \\
+\>                                              \> \phantom{xxxx} carry out I/O write operations simultaneously \\
+\>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
+\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~1,000,000$ (default $50,000$) \\
+\>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
+\>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
+\>                                              \> \phantom{xxxx} I/O groups (= I/O writers) for global sorting purposes \\
+\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $5,000$) \\
+\>                                              \> \phantom{x} is the maximum number of ASCII line records written in a batch \\
+\>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
+\>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
+\>                                              \> \\
+\> {\bf job time} $f$                           \> set job time to $f$ seconds \\
+\>                                              \> \\
+\> {\bf maxdis} $f$                             \> set maximum distance allowed in variable timestep (control) \\
+\>                                              \> to $f$ \AA (default $f~=~0.10$ \AA) \\
+\>                                              \> \\
+\> {\bf metal direct}                           \> enforces the direct calculation of metal interactions defined \\
+\>                                              \> by explicit potential forms, i.e. it will not work for metal \\
+\>                                              \> alloy systems using the EAM (TABEAM) \\
+\>                                              \> \\
+\> {\bf mindis} $f$                             \> set minimum distance allowed in variable timestep (control) \\
+\>                                              \> to $f$ \AA (default $f~=~0.03$ \AA) \\
+\>                                              \> \\
+\> {\bf minim}ise {\em string} $n$ $f$          \> minimise the instantaneous system configuration every \\
+\>                                              \> $n$ steps during equilibration (with respect to the last \\
+\>                                              \> equilibration step) using conjugate gradient method (CGM) \\
+\>                                              \> with respect to the criterion, {\em string}, and tolerance, $f$, \\
+\>                                              \> where this criterion can only be {\em force} ($1~\le~f~\le~1000$, \\
+\>                                              \> default $f~=~100$) or {\em energy} ($0~<~f~\le~0.01$, default \\
+\>                                              \> $f~=~0.005$) or {\em distance} (maximum absolute displacement in \\
+\>                                              \> \AA, $10^{-6}~\le~f~\le~0.1$, default $f~=~0.005$); the lowest {\em string} \\
+\>                                              \> CGM minimised configuration during equlibration is saved \\
+\>                                              \> in a file, CFGMIN which has the same format as CONFIG \\
+\>                                              \> \\
+\> {\bf msdtmp} $i~j$                           \> write MSDTMP file, containing particles' individual $\sqrt{MSD}$ \\
+\>                                              \> (in \AA) and T$_{mean}$ (in Kelvin), with controls: \\
+\>                                              \> $i~=$ start timestep for dumping configurations (default $i~=~0$) \\
+\>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$) \\
+\>                                              \> \\
+\> {\bf mult}iple (timestep) $n$                \> act exactly the same as {\bf ewald evalu}ate (every) $n$ \\
+\>                                              \> \\
+\> {\bf mxquat} $n$                             \> set FIQA iterations limit to $n$ (default $n~=~100$) \\
+\>                                              \> \\
+\> {\bf mxshak} $n$                             \> set shake/rattle iterations limit to $n$ (default $n~=~250$) \\
+\>                                              \> \\
+\> {\bf nfold} $i~j~k$                          \> option to create matching CONFIG\_i\_j\_k and FIELD\_i\_j\_k \\
+\>                                              \> for a volumetrically expanded version of the current system \\
+\>                                              \> (CONFIG and FIELD) by replicating CONFIG's contents \\
+\>                                              \> ($i$, $j$, $k$) times along the MD cell lattice vectors \\
+\>                                              \> while preserving FIELD's topology template intact \\
+\>                                              \> \\
+\> {\bf no elec}                                \> ignore electrostatics in simulation \\
+\>                                              \> \\
+\> {\bf no ind}ex                               \> ignore particles' indices as read from the CONFIG file \\
+\>                                              \> and set particles' indexing by order of reading, \\
+\>                                              \> this option assumes that the FIELD topology description \\
+\>                                              \> matches the crystalographic sites from the CONFIG file by \\
+\>                                              \> their order of reading rather than by their actual indexing \\
+\>                                              \> \\
+\> {\bf no str}ict                              \> {\bf (i)} abort strict checks such as; on existance of well defined \\
+\>                                              \> system cutoff, on contiguity of particles' indices when \\
+\>                                              \> connecting CONFIG (crystallographic listing) to FIELD \\
+\>                                              \> (topology), on IO when {\bf io} {\em mpiio/direct sorted} is selected, etc., \\
+\>                                              \> {\bf (ii)} abort display of warnings, non-leading to error messages \\
+\>                                              \> and of iteration cycles in minimisation/relaxation routines, \\
+\>                                              \> {\bf (iii)} assume safe defaults for the general simulation cutoff, \\
+\>                                              \> temperature, pressure and job times \\
+\>                                              \> \\
+\> {\bf no vdw}                                 \> ignore short range (non-bonded)\index{potential!non-bonded} interactions in simulation \\
+\>                                              \> \\
+\> {\bf optim}ise {\em string} $f$              \> minimise the system configuration at start during equilibration \\
+\>                                              \> using conjugate gradient method (CGM) with respect to the \\
+\>                                              \> criterion, {\em string}, and tolerance, $f$, where the criterion can only \\
+\>                                              \> be {\em force} ($1~\le~f~\le~1000$, default $f~=~100$) or {\em energy} \\
+\>                                              \> ($0~<~f~\le~0.01$, default $f~=~0.005$) or {\em distance} (maximum \\
+\>                                              \> absolute displacement in \AA) ($10^{-6}~\le~f~\le~0.1$, default \\
+\>                                              \> $f~=~0.005$); the CGM minimised configuration is saved \\
+\>                                              \> in a file, CFGMIN which has the same format as CONFIG \\
+\>                                              \> \\
+\> {\bf pres}sure $f$                           \> set required system pressure to $f$ katms \\
+\>                                              \> (target pressure for constant pressure\index{units!pressure} ensembles) \\
+\>                                              \> \\
+\> {\bf print} (every) $n$                      \> print system data every $n$ timesteps \\
+\>                                              \> \\
+\> {\bf print rdf}                              \> print radial distribution functions \\
+\>                                              \> \\
+\> {\bf print zden}                             \> print Z-density profile \\
+\>                                              \> \\
+\> {\bf pseudo} {\em string} $f_{1}~f_{2}$      \> attach a pseudo thermal bath with a thermostat of type \\
+\>                                              \> {\em string}, where string can only be {\em langevin} or {\em direct} \\
+\>                                              \> (if neither is specified both are applied in order \\
+\>                                              \> {\em langevin$\rightarrow$direct}), $f_{1}$ is the thickness of the thermostat \\
+\>                                              \> layers, attached on the inside of the MD cell boundaries, \\
+\>                                              \> in units of \AA~~(default $f{1}~=~2$ \AA), $f_{2}$ is the \\
+\>                                              \> thermostat temperature in Kelvin ($f{2}~\ge~1$), which \\
+\>                                              \> when unspecified defaults to the system target temperature \\
+\>                                              \> \\
+\> {\bf quater}nion (tolerance) $f$             \> set quaternion tolerance to f (default $10^{-8}$) \\
+\>                                              \> \\
+\> {\bf rdf} (sampling) (every) $f$             \> calculate and collect radial distribution functions \\
+\>                                              \> every $f$ timesteps (default $f~=~1$) \\
+\>                                              \> \\
+\> {\bf reaction} (field)                       \> calculate electrostatic forces using reaction field\index{reaction field} electrostatics\index{potential!electrostatics} \\
+\>                                              \> \\
+\> {\bf reaction} (field) {\bf damp} $\alpha$   \> calculate electrostatic forces using reaction field\index{reaction field} electrostatics\index{potential!electrostatics} \\
+\>                                              \> with Fennell \cite{fennell-06} damping (Ewald-like convergence) \\
+\>                                              \> parameter $\alpha$ in \AA$^{-1}$ \\
+\>                                              \> \\
+\> {\bf reaction} (field) {\bf precision} $f$   \> calculate electrostatic forces using reaction field\index{reaction field} electrostatics\index{potential!electrostatics} \\
+\>                                              \> with Fennell \cite{fennell-06} damping (Ewald-like) automatic parameter \\
+\>                                              \> optimisation ($10^{-20}~\le~f~\le~0.5$, default $f~=~10^{-20}$) \\
+\>                                              \> \\
+\> {\bf regaus}s (every) $n$                    \> resample the instantaneous system momenta distribution \\
+\>                                              \> every $n$ steps during equilibration \\
+\>                                              \> (with respect to the last equilibration step) \\
+\>                                              \> \\
+\> {\bf replay}                                 \> abort simulation and replay HISTORY to recalculate structural \\
+\>                                              \> properties such as RDFs, z-density profiles, defects detection \\
+\>                                              \> (execution holts if no property is specified) \\
+\>                                              \> \\
+\> {\bf restart}                                \> restart job from end point of previous run \\
+\>                                              \> (i.e. continue current simulation, REVOLD required) \\
+\>                                              \> \\
+\> {\bf restart noscale}                        \> restart job from previous run without scaling \\
+\>                                              \> system temperature (i.e. begin a new simulation from \\
+\>                                              \> older run without temperature reset, REVOLD is not used) \\
+\>                                              \> \\
+\> {\bf restart scale}                          \> restart job from previous run with scaling \\
+\>                                              \> system temperature (i.e. begin a new simulation from \\
+\>                                              \> older run with temperature reset, REVOLD is not used) \\
+\>                                              \> \\
+\> {\bf rlxtol} $f$                             \> set tolerance for relaxed shell model to $f$ \\
+\>                                              \> (default $f~=~1$ in D~\AA~~ps$^{-2}$) \\
+\>                                              \> \\
+\> {\bf rvdw} (cutoff) $f$                      \> set required short-ranged interactions cutoff to $f$ \AA \\
+\>                                              \> \\
+\> {\bf scale} (temperature) (every) $n$        \> rescale system temperature every $n$ steps during equilibration \\
+\>                                              \> (with respect to the last equilibration step, \\
+\>                                              \> (atomic velocities are scaled collectively) \\
+\>                                              \> \\
+\> {\bf seed} $n_{1}~n_{2}$                     \> seed control to the random number generator used in the \\
+\>                                              \> generation of gaussian distributions and stochastic processes \\
+\>                                              \> \\
+\> {\bf shake} (tolerance) $f$                  \> set shake/rattle tolerance to $f$ (default $f~=~10^{-6}$) \\
+\>                                              \> \\
+\> {\bf shift}                                  \> calculate electrostatic forces using force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
+\>                                              \> \\
+\> {\bf shift damp} $\alpha$                    \> calculate electrostatic forces using force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
+\>                                              \> with Fennell \cite{fennell-06} damping (Ewald-like convergence) \\
+\>                                              \> parameter $\alpha$ in \AA$^{-1}$ \\
+\>                                              \> \\
+\> {\bf shift precision} $f$                    \> calculate electrostatic forces using force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
+\>                                              \> with Fennell \cite{fennell-06} damping (Ewald-like) automatic parameter \\
+\>                                              \> optimisation ($10^{-20}~\le~f~\le~0.5$, default $f~=~10^{-20}$) \\
+\>                                              \> \\
+\> {\bf slab}                                   \> limits the number of processors in z-direction to 2 \\
+\>                                              \> for slab simulations \\
+\>                                              \> \\
+\> {\bf spme evalu}ate (every) $n$              \> act exactly the same as {\bf ewald evalu}ate (every) $n$ \\
+\>                                              \> \\
+\> {\bf spme precision} $f$                     \> act exactly the same as {\bf ewald precision} $f$ \\
+\>                                              \> \\
+\> {\bf spme} (sum) $\alpha~k_{1}~k_{2}~k_{3}$  \> calculate electrostatic forces using Ewald sum\index{Ewald!SPME}\index{potential!electrostatics} with \\
+\>                                              \> $\alpha~=~$ Ewald convergence parameter in \AA$^{-1}$ \\
+\>                                              \> $k1~=$ is twice the maximum k-vector index in x-direction \\
+\>                                              \> $k2~=$ is twice the maximum k-vector index in y-direction \\
+\>                                              \> $k3~=$ is twice the maximum k-vector index in z-direction \\
+\>                                              \> \\
+\> {\bf stack} (size) $n$                       \> set rolling average stack to {\em n} timesteps \\
+\>                                              \> \\
+\> {\bf stats} (every) $n$                      \> accumulate statistics data every $n$ timesteps \\
+\>                                              \> \\
+\> {\bf steps} $n$                              \> run simulation for $n$ timesteps (default $n~=~0$, \\
+\>                                              \> corresponding to a "dry" run) \\
+\>                                              \> \\
+\> {\bf temp}erature $f$                        \> set required simulation temperature to $f$ Kelvin \\
+\>                                              \> (target temperature for constant temperature\index{units!temperature} ensembles) \\
+\>                                              \> \\
+\> {\bf traj}ectory $i~j~k$                     \> write HISTORY file with controls: \\
+\>                                              \> $i~=$ start timestep for dumping configurations (default $i~=~0$) \\
+\>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$) \\
+\>                                              \> $k~=$ data level (default $k~=~0$, see Table \ref{keytrj}) \\
+\>                                              \> \\
+\> {\bf timestep} $f$                           \> set timestep to $f$ ps \\
+\>                                              \> \\
+\> {\bf variable timestep} $f$                  \> variable timestep, start with timestep of $f$ ps \\
+\>                                              \> \\
+\> {\bf vdw direct}                             \> enforces the direct calculation of van der Waals interactions \\
+\>                                              \> defined by explicit potential forms, i.e. it will not work for \\
+\>                                              \> systems using tabulated potentials (TABLE) \\
+\>                                              \> \\
+\> {\bf vdw shift}                              \> applies a force-shifting procedure to all van der Waals \\
+\>                                              \> potentials (except the shifted-force n-m potential) so \\
+\>                                              \> that the VDW interactions's energy and force contributions \\
+\>                                              \> fall to zero smoothly for distances aproaching $r_{\rm cut}$ \\
+\>                                              \> \\
+\> {\bf zden} (sampling) (every) $f$            \> calculate and collect the Z-density profile \\
+\>                                              \> every $f$ timesteps (default $f~=~1$) \\
+\>                                              \> \\
+\> {\bf zero}                                   \> perform zero temperature MD run (reset target system \\
+\>                                              \> temperature $10$ Kelvin) \\
+\end{tabbing}
+
+\noindent {\bf Note} that in some cases additional keywords, shown in
+brackets ``(...)'', may also be supplied in the directives, or
+directives may be used in a long form.  However, it is strongly
+recommended that the user uses only the {\bf bold} part of these
+directives.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{keytrj} Internal Trajectory/Defects File Key}
+\vskip 1ex
+\begin{tabular}{|r|l|}
+\hline
+{\tt keytrj} & \multicolumn{1}{c|}{meaning} \\
+\hline
+0 & coordinates only in file \\
+1 & coordinates and velocities in file \\
+2 & coordinates, velocities and forces in file \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\end{table}
+
+\subsubsection{Further Comments on the CONTROL File}
+
+\begin{enumerate}
+\item A number of the directives (or their {\bf mutually
+exclusive} alternatives) are {\bf mandatory}:
+\begin{enumerate}
+\item {\bf cut}: specifying the short range forces cutoff.  {\bf
+It is compulsory in all circumstances as all \D algorithms are
+directly or indirectly dependent on it.}
+\item {\bf temp} or {\bf zero}: specifying the system temperature
+(not mutually exclusive but if {\bf temp} has to preceed
+{\bf zero} in CONTROL if {\bf zero} is needed.  {\bf Use only one
+instance of these in CONTROL!}  If a "dry run" is performed (see
+below) these can be omitted.
+\item {\bf timestep} or {\bf variable timestep}: specifying the
+simulation timestep.  {\bf Use only one instance of these in
+CONTROL!} If a "dry run" is performed (see below) and a timestep
+length is not supplied a default one of $0.001$ ps is provided.
+\item {\bf ewald/spme sum/precision} \index{Ewald!summation}
+or {\bf coul} or {\bf shift} or {\bf distan} or {\bf reaction}
+or {\bf no elec}: specifying the required coulombic forces
+option.  Apart from {\bf no elec} the rest of the directives are
+mutually exclusive from one another.  {\bf If none is specified
+then none is applied!}
+\end{enumerate}
+
+\item Some directives are optional.  If not specified \D will take
+default values if necessary.  (The defaults are specified above in
+the list of directives.)  However fail-safe \D is, not always will
+it assume a default value for certain parameters.  To enable \D to
+be even more liberal in the fail-safe features, users are recommended
+to use {\bf no strict} option.
+
+\item The {\bf steps} and {\bf equilibration} directives have a
+default of zero.  If not used or used with their default values a
+"dry run" is performed.  This includes force generation and system
+dump (REVCON and REVIVE) and, depending on the rest of the options,
+may include; velocity generation, force capping, application of the
+CGM minimiser, application of the pseudo thermostat, and dumps of
+HISTORY, DEFECTS, RDFDAT, ZDNDAT and MSDTMP.  {\bf Note} that, since
+no actual dynamics is to be performed, the {\bf temperature} and
+{\bf pressure} directives do not play any role and are therefore
+not necessary.
+
+\item If the CGM minimiser, {\bf minim}ise, is specified with zero
+frequency, it is only applied at timestep zero if
+${\bf equilibration}~\ge~{\bf steps}$ (i.e. optimise structure at
+start only!).  This is equvalent to using the {\bf optim}ise
+directive.  In this way it can be used as a configuration
+optimiser at the beginning of the equlibration period or when
+a "dry run" ({\bf steps} $= 0$) is performed (i.e. equilibrate
+without any actual dynamics!).
+
+\item The {\bf variable timestep} (or also {\bf timestep variable})
+option requires the user to specify an initial guess for a
+reasonable timestep for the system (in picoseconds).  The simulation
+is unlikely to retain this as the operational timestep however, as
+the latter may change in response to the dynamics of the system. The
+option is used in conjunction with the default values of {\bf
+maxdis} ($0.03$~\AA) and {\bf mindis} ($0.10$~\AA), which can also
+be optionally altered if used as directives (note the rule that {\bf
+maxdis}~$>~2.5$~{\bf mindis} applies).  These distances serve as
+control values in the variable timestep algorithm, which calculates
+the greatest distance a particle has travelled in any timestep
+during the simulation.  If the maximum distance is exceeded, the
+timestep variable is halved and the step repeated.  If the greatest
+move is less than the minimum allowed, the timestep variable is
+doubled and the step repeated.  In this way the integration timestep
+self-adjusts in response to the dynamics of the system.
+
+\item The {\bf job time} and {\bf close time} directives are
+required to ensure a controlled close down procedure when a job
+runs out of time.  The time specified by the {\bf job time}
+directive indicates the total time allowed for the job.  (This
+must obviously be set equal to the time specified to the operating
+system when the job is submitted.)  The {\bf close time} directive
+represents the time \D will require to write and close all the
+data files at the end of processing.  This means the {\em
+effective} processing time limit is equal to the job time minus
+the close time.  Thus when \D reaches the effective job time limit
+it begins the close down procedure with enough time in hand to
+ensure the files are correctly written.  In this way you may be
+sure the restart files etc. are complete when the job terminates.
+{\bf Note} that setting the close time too small will mean the job
+will crash before the files have been finished.  If it is set too
+large \D will begin closing down too early.  How large the close
+time needs to be to ensure safe close down is system dependent and
+a matter of experience.  It generally increases with increasing
+simulation system size.
+
+\item The starting options for a simulation are governed by the
+keyword {\bf restart}.  If this is {\bf not} specified in the
+control file, the simulation will start as new.  When specifed, it
+will continue a previous simulation ({\bf restart}) provided all
+needed restart files are in place and not corrupted.  If they are
+not in place or are found corrupted, it will start a new simulation
+without initial temperature scaling of the previous configuration
+({\bf restart noscale}).  Internally these options are handled by
+the integer variable {\tt keyres}, which is explained in Table \ref{keyres}.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{keyres} Internal Restart Key}
+\vskip 1ex
+\begin{tabular}{|r|l|}
+\hline
+{\tt keyres} & \multicolumn{1}{c|}{meaning} \\
+\hline
+0 & start new simulation from CONFIG file \\
+  & and assign velocities from Gaussian distribution \\
+1 & continue current simulation \\
+2 & start new simulation from CONFIG file \\
+  & and rescale velocities to desired temperature \\
+3 & start new simulation from CONFIG file \\
+  & and {\bf do not} rescale velocities \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\end{table}
+
+\item The various {\bf ensemble} options (i.e.
+{\bf nve} \index{ensemble!NVE},
+{\bf nvt evans} \index{ensemble!Evans NVT},
+{\bf nvt ander}sen \index{ensemble!Andersen NVT},
+{\bf nvt lang}evin \index{ensemble!Langevin NVT},
+{\bf nvt ber}endsen \index{ensemble!Berendsen NVT},
+{\bf nvt hoover} \index{ensemble!Nos\'{e}-Hoover NVT},
+{\bf npt lang}evin \index{ensemble!Langevin NPT},
+{\bf npt ber}endsen \index{ensemble!Berendsen NPT},
+{\bf npt hoover} \index{ensemble!Nos\'{e}-Hoover NPT},
+{\bf npt mtk} \index{ensemble!Martyna-Tuckerman-Klein NPT},
+{\bf nst lang}evin \index{ensemble!Langevin N$\sigma$T},
+{\bf nst ber}endsen \index{ensemble!Berendsen N$\sigma$T},
+{\bf nst hoover} \index{ensemble!Nos\'{e}-Hoover N$\sigma$T},
+{\bf nst mtk} \index{ensemble!Martyna-Tuckerman-Klein  N$\sigma$T})
+are mutually exclusive, though none is mandatory (the default is
+the NVE ensemble\index{ensemble!NVE}).  These options are handled
+internally by the integer variable {\tt keyens}.  The meaning of
+this variable is explained in Table \ref{keyens}.  The {\bf nst}
+keyword is also used in the N$\sigma$T ensembles extension to
+NP$_{n}$AT and NP$_{n}\gamma$T ones.  {\bf Note} that
+these semi-isotropic ensembles are only correct for infinite
+interfaces placed perpendicularly to the z axis!  This means
+that the interface is homogenious (unbroken) and continuous
+in the (x,y) plane of the MD cell, which assumes that that two
+of the cell vectors have a cross product only in the z
+direction.  (For example, if the MD box is defined by
+its lattice vectors $(\vek{a},\vek{b},\vek{c})$ then
+$\vek{a} \times \vek{b} = \pm (0,0,1)$.)
+It is the users' responsibility to ensure this holds for
+their model system.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{keyens} Internal Ensemble Key}
+\vskip 1ex
+\begin{tabular}{|r|l|}
+\hline
+{\tt keyens} & \multicolumn{1}{c|}{meaning} \\
+\hline
+ 0 & Microcanonical ensemble\index{ensemble!microcanonical|see{ensemble,NVE}} (NVE) \index{ensemble!NVE} \\
+ 1 & Evans NVT\index{ensemble!Evans NVT} ensemble (NVE$_{kin}$) \\
+10 & Langevin NVT\index{ensemble!Langevin NVT} ensemble \\
+11 & Berendsen NVT ensemble\index{ensemble!Berendsen NVT} \\
+12 & Nos\'{e}-Hoover NVT ensemble\index{ensemble!Nos\'{e}-Hoover NVT} \\
+20 & Langevin NPT\index{ensemble!Langevin NPT} ensemble \\
+21 & Berendsen NPT ensemble\index{ensemble!Berendsen NPT} \\
+22 & Nos\'{e}-Hoover NPT ensemble\index{ensemble!Nos\'{e}-Hoover NPT} \\
+23 & Martyna-Tuckerman-Klein NPT ensemble \index{ensemble!Martyna-Tuckerman-Klein NPT} \\
+30 & Langevin N$\mat{\sigma}$T\index{ensemble!Langevin N$\mat{\sigma}$T} ensemble \\
+31 & Berendsen N$\mat{\sigma}$T ensemble\index{ensemble!Berendsen N$\sigma$T} \\
+32 & Nos\'{e}-Hoover N$\mat{\sigma}$T ensemble\index{ensemble!Nos\'{e}-Hoover N$\sigma$T} \\
+33 & Martyna-Tuckerman-Klein N\mat{\sigma}T ensemble \index{ensemble!Martyna-Tuckerman-Klein N$\sigma$T} \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\end{table}
+
+\item The {\bf zero} directive, enables a "zero temperature"
+optimisation.  The target temperature of the simulation is reset to
+$10$ Kelvin and a crude energy minimiser:
+\begin{equation}
+\vek{v}_{i} \leftarrow \left\{ \begin{array} {l@{\qquad:\qquad}l}
+0 & \vek{v}_{i} \cdot \vek{f}_{i} < 0 \\
+\vek{f}_{i} \; \frac{\vek{v}_{i}~\cdot~\vek{f}_{i}}
+{\vek{f}_{i}~\cdot~\vek{f}_{i}} & \vek{v}_{i} \cdot
+\vek{f}_{i} \ge 0
+\end{array} \right.
+\end{equation}
+is used to help the system relax before each integration of the
+equations of motion (measures are taken to conserve the MD cell
+momentum).  This must not be thought of as a true energy
+minimization method.  {\bf Note} that this optimisation is applied
+irrespectively of whether the simulation runs in equilibration or
+statistical mode.
+
+The algorithm is developed in the \D routine {\sc zero\_k\_optimise}.
+
+\item The {\bf impact} $i$ $j$ $E$ $x$ $y$ $z$ directive will
+not be activated if the particle index is beyond the one of
+the last particle.  The option will fail in a controlled manner
+at application time if the particle is found to be in a frozen
+state or the shell of an ion or part of a rigid body.  During
+application the center of mass momentum is re-zeroed to prevent
+any drifts.  The user must take care to have the impact
+initiated after any possible equlibration.  Otherwise, the
+system will be thermostated and the impact energy disipated
+during the equlibration.
+
+\item The {\bf pseudo} option is intended to be used in highly
+non-equilibrium simulations when users are primarily interested in
+the structural changes in the core of the simulated system as the
+the MD cell boundaries of the system are coupled to a thermal bath.
+
+The thermal bath can be used with two types of temperature scaling
+algorithms - {\bf(i)} Langevin (stochastic thermostat) and {\bf(ii)}
+Direct (direct thermostat).  If no type is specified then the
+Langevin temperature control algorithm is applied first followed the
+Direct one.  The user is also required to specify the width of the
+pseudo thermostat, $f_{1}$ (in \AA), which must be larger than 2~\AA~
+and less than or equal to a quarter of minimum width of the MD cell.
+The thermostat is an $f_{1}$ \AA~ thick buffer layer attached on the
+inside at the MD cell boundaries.
+
+The temperature of the bath is specified by the user, $T~=~f_{2}$
+(in Kelvin), which must be larger than 1 Kelvin.  If none is supplied
+by the user, $T$ defaults to the system target temperature.
+
+\begin{itemize}
+\item {\bf pseudo langevin}
+
+The stochasticity of the Langevin thermostat emulates an infinite
+environment around the MD cell, providing a means for ``natural''
+heat exchange between the MD system and the heath bath thus aiding
+possible heat build up in the system.  In this way the instantaneous
+temperature of the system is driven naturally towards the bath
+temperature.  Every particle within the thermostat buffer layer is
+coupled to a viscous background and a stochastic heat bath, such
+that
+\begin{eqnarray}
+{d \vek{r}_{i}(t) \over d t} &=& \vek{v}_{i}(t) \nonumber \\
+{d \vek{v}_{i}(t) \over d t} &=& {{\vek{f}_{i}(t)+\vek{R}_{i}(t)}
+\over m_{i}} - \chi (t) \; \vek{v}_{i}(t)~~,
+\end{eqnarray}
+where $\chi (t)$ is the friction parameter from the dynamics in the
+the MD cell and $R(t)$ is stochastic force with zero mean that
+satisfies the fluctuation-dissipation theorem:
+\begin{equation}
+\left< R^{\alpha}_{i}(t)~R^{\beta}_{j}(t^\prime) \right> =
+2~\chi(t)~m_{i}~k_{B}T~\delta_{ij}~\delta_{\alpha
+\beta}~\delta(t-t^\prime)~~,
+\end{equation}
+where superscripts denote Cartesian indices, subscripts particle
+indices, $k_{B}$ is the Boltzmann constant, $T$ the bath
+temperature and $m_{i}$ the particle's mass.  The algorithm is
+implemented in routine {\sc pseudo} and has two stages:
+\begin{itemize}
+\item Generate random forces on all particles within
+the thermostat.  Here, care must be exercised to prevent
+introduction of non-zero net force when the random forces are added
+to the system force field.
+\item Rescale the kinetic energy of the thermostat bath so that
+particles within have Gaussian distributed kinetic energy with
+respect to the target temperature and determine the (Gaussian
+constraint) friction within the thermostat:
+\begin{equation}
+\chi(t) = Max \left( 0, \frac
+{\sum_{i} [\vec{f}_{i}(t) + \vec{R}_{i}(t)] \cdot \vec{v}_{i}(t)}
+{\sum_{i} m_{i}~\vec{v}_{i}^{2}(t)} \right)~~.
+\end{equation}
+Care must be exercised to prevent introduction of non-zero net
+momentum.  (Users are reminded to use for target temperature the
+temperature at which the original system was equilibrated in order
+to avoid simulation instabilities.)
+\end{itemize}
+The effect of this algorithm is to relax the buffer region of the
+system on a local scale and to effectively dissipate the incoming
+excess kinetic energy from the rest of the system, thus emulating an
+infinite-like environment surrounding the MD cell.  The thermostat
+width matters as the more violent the events on the inside of the MD
+cell, the bigger width may be needed in order to ensure safe
+dissipation of the excess kinetic energy.
+
+\item {\bf pseudo direct}
+
+The Direct thermostat is the simplest possible model allowing for
+heat exchange between the MD system and the heath bath.  All (mass,
+non-frozen) particles within the bath have their kinetic energy
+scaled to $1.5~k_{B}T~$ at the end of each time step during the
+simulation.  Care is exercised to prevent introduction of non-zero
+net momentum when scaling velocities. (Users are reminded to use for
+target temperature the temperature at which the original system was
+equilibrated in order to avoid simulation instabilities.) Due to the
+``unphysical'' nature of this temperature control the thermostat
+width does not matter to the same extent as in the case of the
+Langevin thermostat.
+\end{itemize}
+
+{\bf Note} that embedding a thermostat in the MD cell walls is bound to
+produce {\bf wrong ensemble averages}, and instantaneous pressure
+and stress build-ups at the thermostat boundary.  Therefore,
+ensembles lose their meaning as such and so does the conserved
+quantity for true ensembles.  {\em If the {\bf pseudo} thermostat
+option is specified without any type of temperature control in
+CONTROL then both types will be applied in the order
+Langevin$\rightarrow$Direct at each time step during the
+simulation}.
+
+The algorithms are developed in the \D routines {\sc pseudo\_vv} and
+{\sc pseudo\_lfv} respectively.
+
+\item The {\bf defe}cts option will trigger reading of REFERENCE
+(see Section \ref{reference-file}), which defines a reference MD
+cell with particles' positions defining the crystalline lattice
+sites.  If REFERENCE is not found the simulation will either \\
+{\bf ( i)} holt if the simulation has been restarted, i.e. is a
+continuation of an old one - the {\bf restart} option is used in
+CONTROL and the REVOLD (see Section \ref{revold-file}) file has
+been provided. \\
+or \\
+{\bf (ii)} recover using CONFIG (see Section \ref{config-file})
+if it is a new simulation run, i.e {\bf restart} option is not
+used in CONTROL or REVOLD has not been provided.
+
+The actual defect detection is based on comparison of the simulated
+MD cell to the reference MD cell based on a user defined
+site-interstitial cutoff, $R_{def}$,
+\begin{equation}
+{\rm Min}\left[0.3,r_{\rm cut}/3\right]~\AA~\le~R_{def}~\le~{\rm Min}\left[1.2,r_{\rm cut}/2\right]~\AA \nonumber
+\end{equation}
+with a default value of ${\rm Min}\left[0.75,r_{\rm cut}/3\right]$~\AA.
+(If the supplied value exceeds the limits the simulation execution
+will holt).  If a particle, $p$, is located in the vicinity of a
+site, $s$, defined by a sphere with its centre at this site and a
+radius, $R_{def}$, then the particle is a {\em first hand} claimee
+of $s$, and the site is not vacant.  Otherwise, the site is
+presumed vacant and the particle is presumed a general interstitial.
+If a site, $s$, is claimed and another particle, $p\prime$, is
+located within the sphere around it, then $p\prime$ becomes an
+interstitial associated with $s$.  After all particles and all sites
+are considered, it is clear which sites are vacancies.  Finally,
+for every claimed site, distances between the site and its
+{\em first hand} claimee and interstitials are compared and the
+particle with the shortest one becomes the {\em real} claimee.  If a
+{\em first hand} claimee of $s$ is not the {\em real} claimee it
+becomes an interstitial associated with $s$.  At this stage it is
+clear which particles are interstitials.  The sum of interstitials
+and vacancies gives the total number of defects in the simulated MD
+cell.
+
+Frozen particles and particles detected to be shells of
+polarisable ions are not considered in the defect detection.
+
+{\bf Note} that the algorithm cannot be applied safely if $R_{def}$ is
+larger than half the shortest interatomic distance within the
+reference MD cell since a particle may; (i) claim more than one
+site, (ii) be an interstitial associated with more than one site, or
+both (i) and (ii).  On the other hand, low values of $R_{def}$ are
+likely to lead to slight overestimation of defects.
+
+If the simulation and reference MD cell have the same number of
+atoms then the total number of interstitials is always equal to the
+total number of defects.
+
+\item The tolerance for relaxed shell model {\bf rlxtol}, is a last
+resort option to aid shell relaxation of systems with very energetic
+and/or rough potential surface.  Users are advised to use it with
+caution, should there really need be, as the use of high values may
+result in physically incorrect dynamics.
+
+\item The difference between the directives {\bf ewald} and {\bf spme}
+is only in the {\bf ewald/spme sum} directive, in which the
+{\bf ewald sum} specifies the indices of the maximum k-vector, whereas
+the {\bf spme sum} the dimensions of the 3D charge array
+(which are exactly twice the maximum k-vector indices).  {\bf Note}
+that in either case, \D will carry out the
+SPME\index{Ewald!SPME}\index{potential!electrostatics} coulombic evaluation.
+
+\item The force selection directives
+{\bf ewald/spme sum/precision}\index{Ewald!summation},
+{\bf reaction}, {\bf coul}, {\bf shift}, {\bf dist}, {\bf no elec}
+are handled internally by the integer variable {\tt keyfce}.
+See Table \ref{keyfce} for an explanation of this variable.
+{\bf Note} that all these options with the exception of the last,
+{\bf no elec}, are mutually exclusive.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{keyfce} Electrostatics Key}
+\vskip 1ex
+\begin{tabular}{|r|l|}
+\hline
+{\tt keyfce} & \multicolumn{1}{c|}{meaning} \\
+\hline
+\multicolumn{2}{|c|} {Electrostatics are evaluated as follows:}\\
+\hline
+0  & Ignore electrostatic\index{potential!electrostatics} interactions \\
+2  & SPM Ewald summation\index{Ewald!SPME}\index{potential!electrostatics}\\
+4  & Coulomb sum with distance dependent dielectric\index{distance dependant dielectric} \\
+6  & Standard truncated Coulomb sum\index{direct Coulomb sum} \\
+8  & Force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
+10 & Reaction field electrostatics\index{reaction field} \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\end{table}
+
+\item {\bf ewald evaluate} or {\bf multiple} are not mutually
+exclusive and it is the first instance of these in CONTROL that
+is read and applied in the following simulation.
+
+\item The choice of reaction field electrostatics
+(directive {\bf reaction}) relies on the specification of the
+relative dielectric constant external to the cavity.  This is
+specified by the {\bf eps} directive.
+
+\item The directive {\bf ewald/spme evaluate} is only triggered
+when {\bf ewald/spme sum/precision} is present.  It sets an infrequent
+evaluation of the k-space contributions to the Ewald summation.
+Although this option decreases the simulation cost it also inherently
+decreases the accuracy of the dynamics.  {\bf Note} that the usage of
+this feature may lead to inacuarte or even wrong and unphysical
+dynamics as the less frequent the evaluation, the greater the inacuarcy.
+
+\item \D uses two different potential cutoffs.  These are as
+follows:
+\begin{enumerate}
+\item  $r_{\rm cut}$ - the universal cutoff set by {\bf cutoff}.
+It applies to the real space part of the electrostatics calculations
+and to the van der Waals\index{potential!van der Waals} potentials if
+no other cutoff is applied.
+\item $r_{\rm vdw}$ - the user-specified cutoff for the van
+der Waals potentials set by {\bf rvdw}.  If not specified its value
+defaults to $r_{\rm cut}$.
+\end{enumerate}
+
+\item Constraint algorithms in \D, SHAKE/RATTLE (see Section
+\ref{shake-rattle}), use default iteration precision of 10$^{-6}$
+and limit of iteration cycles of 250.  Users may experience that
+during optimisation of a new built system containing constraints
+simulation may fail prematurely since a constraint algorithm failed
+to converge.  In such cases directives {\bf mxshak} (to increase)
+and {\bf shake} (to decrease) may be used to decrease the strain in
+the system and stablise the simulation numerics until equilibration
+is achieved.
+
+\item \D's DD strategy assumes that the local (per domain/node or
+link cell) density of various system entities (i.e. atoms, bonds,
+angles, etc.) does not vary much during a simulation and some
+limits for these are assumed empirically.  This may not the case in
+extremely non-equilibrium simulations, where the assumed limits
+are prone to be exceeded or in some specific systems where these
+do not hold from the start.  A way to tackle such circumstances and
+avoid simulations crash (by controlled termination) is to use the
+{\bf densvar} $f$ option.  In the {\sc set\_bounds} subroutine \D
+makes assumptions at the beginning of the simulation and corrects
+the lengths of bonded-like interaction lists arrays ({\tt mxshl,
+mxcons, mxteth, mxbond, mxangl, mxdihd, mxinv}) as well as the
+lengths of link-cell ({\tt mxlist}) and domain ({\tt mxatms})
+lists arrays when the option is activated with $f > 0$.  Greater
+values of $f$ will correspond to allocation bigger global arrays
+and larger memory consumption by \D during the simulation.
+{\bf Note} that this option may demand more memory than available
+on the computer architecture.  In such cases \D will terminate
+with an array allocation failure message.
+
+\item As a default, \D does not store statistical data during the
+equilibration period.  If the directive {\bf collect} is used,
+equilibration data will be incorporated into the overall statistics.
+
+\item {\bf io {\em action} [{\em options}]} controls how I/O is performed
+by \D.  The options can help the performance of I/O
+operations within \D for potentially large files during the run.
+The form of the command depends on the value of {\bf action},
+which may take the value either {\bf read} or {\bf write}.
+In general, this command should only be used for tuning the
+I/O subsystem in \D for large runs.  For small to average
+sized systems the built-in defaults usually suffice.
+
+\begin{enumerate}
+\item {\bf io read {\em method} [{\em options}]}
+
+With action set to {\bf read} the {\bf io} command controls how
+the reading of large files is performed.  {\em method} controls
+how the disk is accessed.  Possible values are {\em mpiio},
+in which case MPI-I/O is used, {\em direct}, which uses
+parallel FORTRAN direct access files, and {\em master} which
+performs all I/O through a master processor, or {\em netcdf}
+for netCDF I/O provided \D is compiled in a netCDF-enabled mode.
+{\em mpiio} is the recommended method, and for large systems
+{\em master} should be avoided.  Available options depend
+on which method is to be used, and all are optional in each
+case.  Where numerical values are to be supplied specifying
+0 or a negative numbers indicates that \D will resort to
+the default value.  The possible options are:
+
+\begin{itemize}
+\item {\bf io read mpiio$|$direct$|$netcdf [$j$ [$k$ [$l$ [$e$]]]]}
+
+$j$ specifies the number of processors that shall access
+the disk.  $k$ specifies the maximum number of particles
+that the reading processors shall deal with at any one time.
+Large values give good performance, but may results in an
+unacceptable memory overhead.  $l$ specifies the maximum
+number of particles that the reading processors shall
+read from the disk in one I/O transaction.  Large values
+give good performance, but may results in an unacceptable
+memory overhead.  $e$ accepts $Y$es only to switch global
+error checking performed by the I/O subsystem, the default
+is $N$o.
+
+\item {\bf io read master [$l$]}
+
+$l$ specifies the maximum number of particles that the
+reading process shall read from the disk in one I/O
+transaction.  Large values give good performance, but may
+results in an unacceptable memory overhead.
+\end{itemize}
+
+\item {\bf io writ}e {\bf{\em method} [{\em rp}] {\em type} [{\em options}]}
+
+With action set to {\bf writ}e the {\bf io} command
+controls how the writing of large files is performed.
+{\em method} controls how the disk is accessed.  Possible
+values are {\em mpiio}, in which case MPI-I/O is used,
+{\em direct}, which uses parallel FORTRAN direct access
+files, and {\em master} which performs all I/O through
+a master processor, or {\em netcdf} for netCDF I/O
+provided \D is compiled in a netCDF-enabled mode.
+{\em mpiio} is the recommended method, and for
+large systems {\em master} should be avoided and also
+THE DIRECT OPTION IS NOT STRICTLY PORTABLE, and so may
+cause problems on some machines.  {\em rp} is an
+optional specification, only applicable to {\em netcdf}
+method for opting the binary precision for real numbers.
+It only takes {\em 32bit} or {\em amber} for 32-bit
+(float) precision, otherwise 64-bit (double) precision
+is defaulted.  {\em type} controls the ordering of the
+particles on output.  Possible values are {\em sort}ed
+and {\em unsort}ed.  {\em sort}ed ensures that the
+ordering of the particles the default - sequential,
+ascending.  Whereas {\em unsort}ed uses the natural internal
+ordering of \D which changes during the simulation.
+The recommended and default value is {\em sort}ed.  If none
+is specified \D defaultes to the {\em sort}ed type of I/O.
+It should be noted that the overhead of the {\em sort}ed
+otion compared to the {\em unsort}ed is usually very small.
+Available options depend on which method is to be used, and
+all are optional in each case.  Where numerical values are
+to be supplied specifying 0 or a negative numbers
+indicates that \D will resort to the default value.
+The possible options are:
+
+\begin{itemize}
+\item {\bf io writ}e {\bf mpiio$|$direct$|$netcdf [rp] sort$|$unsort [$j$ [$k$ [$l$ [$e$]]]]}
+
+$j$ specifies the number of processors that shall access
+the disk.  $k$ specifies the maximum number of particles
+that the writing processors shall deal with at any one time.
+Large values give good performance, but may results in an
+unacceptable memory overhead.  $l$ specifies the maximum
+number of particles that the writing processors shall
+write to the disk in one I/O transaction.  Large values
+give good performance, but may results in an unacceptable
+memory overhead.  $e$ accepts $Y$es only to switch global
+error checking performed by the I/O subsystem, the default
+is $N$o.
+
+\item {\bf io write master sort$|$unsort [$l$]}
+
+$l$ specifies the maximum number of particles that the
+writing process shall write to the disk in one I/O
+transaction.  Large values give good performance, but may
+results in an unacceptable memory overhead.
+\end{itemize}
+\end{enumerate}
+
+\end{enumerate}
+
+\noindent Users are advised to study the example CONTROL files
+appearing in the {\em data} sub-directory to see how different
+files are constructed.
+
+\subsection{The CONFIG File}
+\label{config-file}
+
+The CONFIG file contains the dimensions of the unit cell, the key
+for periodic boundary conditions and the atomic labels,
+coordinates, velocities and forces.  This file is read by the
+subroutine {\sc read\_config} (optionally by {\sc scan\_config})
+in the {\sc set\_bounds} routine.  The first few records of a
+typical CONFIG file are shown below:
+
+\begin{verbatim}
+IceI structure 6x6x6 unit cells with proton disorder
+         2         3               276
+  26.988000000000000   0.000000000000000   0.000000000000000
+ -13.494000000000000  23.372293600000000   0.000000000000000
+   0.000000000000000   0.000000000000000  44.028000000000000
+      OW         1
+    -2.505228382        -1.484234330        -7.274585343
+    0.5446573999        -1.872177437       -0.7702718106
+     3515.939287         13070.74357         4432.030587
+      HW         2
+    -1.622622646        -1.972916834        -7.340573742
+     1.507099154        -1.577400769         4.328786484
+     7455.527553        -4806.880540        -1255.814536
+      HW         3
+    -3.258494716        -2.125627191        -7.491549620
+     2.413871957        -4.336956694         2.951142896
+    -7896.278327        -8318.045939        -2379.766752
+      OW         4
+    0.9720599243E-01    -2.503798635        -3.732081894
+     1.787340483        -1.021777575        0.5473436377
+     9226.455153         9445.662860         5365.202509
+
+etc.
+\end{verbatim}
+
+\subsubsection{The CONFIG File Format}
+
+The file is free-formatted and not case sensitive.  Every line is
+treated as a command sentence (record).  However, line records are
+limited to 72 characters in length.  Records are read in words,
+as a word must not exceed 40 characters in length.  Words are
+recognised as such by separation by one or more space characters.
+The first record in the CONFIG file is a header (up to 72
+characters long) to aid identification of the file.  Blank and
+commented lines are not allowed.
+
+\subsubsection{Definitions of Variables in the CONFIG File}
+
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXX\=\kill
+{\bf record 1} \\
+\> {\tt header}  \> a72     \> title line \\
+{\bf record 2} \\
+\> {\tt levcfg}  \> integer \> CONFIG file key.  See Table \ref{levcfg} for permitted values \\
+\> {\tt imcon}   \> integer \> Periodic boundary key. See Table \ref{imcon} for permitted values \\
+\> {\tt megatm}  \> integer \> Optinal, total number of particles (crystalographic entities) \\
+{\bf record 3}   \>         \> omitted if {\tt imcon} = 0 \\
+\> {\tt cell(1)} \> real    \> x component of $a$ cell vector \\
+\> {\tt cell(2)} \> real    \> y component of $a$ cell vector \\
+\> {\tt cell(3)} \> real    \> z component of $a$ cell vector \\
+{\bf record 4}   \>         \> omitted if {\tt imcon} = 0 \\
+\> {\tt cell(4)} \> real    \> x component of $b$ cell vector \\
+\> {\tt cell(5)} \> real    \> y component of $b$ cell vector \\
+\> {\tt cell(6)} \> real    \> z component of $b$ cell vector \\
+{\bf record 5}   \>         \> omitted if {\tt imcon} = 0 \\
+\> {\tt cell(7)} \> real    \> x component of $c$ cell vector \\
+\> {\tt cell(8)} \> real    \> y component of $c$ cell vector \\
+\> {\tt cell(9)} \> real    \> z component of $c$ cell vector \\
+\end{tabbing}
+
+\noindent {\bf Note} that {\bf record 2} may contain more information
+apart from the mandatory as listed above.  If the file has been
+produced by \D then it also contains other items intended to help
+possible parallel I/O reading.
+
+Subsequent records consists of blocks of between 2 and 4 records
+depending on the value of the {\tt levcfg} variable.  Each block
+refers to one atom.  The atoms {\bf do not} need to be listed
+sequentially in order of increasing index.  Within each block the
+data are as follows:
+\begin{tabbing}
+X\=XXXXXXX\=XXXXXX\=XXXXXX\kill
+{\bf record i} \\
+\> {\tt atmnam}  \> a8      \> atom name \\
+\> {\tt index}   \> integer \> atom index \\
+{\bf record ii} \\
+\> {\tt xxx}     \> real    \> x coordinate \\
+\> {\tt yyy}     \> real    \> y coordinate \\
+\> {\tt zzz}     \> real    \> z coordinate \\
+{\bf record iii} \>         \> included only if {\tt levcfg} $>0$ \\
+\> {\tt vxx}     \> real    \> x component of velocity \\
+\> {\tt vyy}     \> real    \> y component of velocity \\
+\> {\tt vzz}     \> real    \> x component of velocity \\
+{\bf record iv}  \>         \> included only if {\tt levcfg} $>1$ \\
+\> {\tt fxx}     \> real    \> x component of force \\
+\> {\tt fyy}     \> real    \> y component of force \\
+\> {\tt fzz}     \> real    \> z component of force \\
+\end{tabbing}
+
+\noindent {\bf Note} that on {\bf record i} only the atom name is
+strictly mandatory, any other items are not read by \D but may be
+added to aid alternative uses of the file, for example the \D
+Graphical User Interface\index{Graphical User
+Interface}\cite{smith-gui}.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{levcfg} CONFIG File Key (record 2)}
+\vskip 1ex
+\begin{tabular}{|r|l|}
+\hline
+{\tt levcfg} & \multicolumn{1}{c|}{meaning} \\
+\hline
+0 & coordinates included in file \\
+1 & coordinates and velocities included in file \\
+2 & coordinates, velocities and forces included in file \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\end{table}
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{imcon} Periodic Boundary Key (record 2)}
+\vskip 1ex
+\begin{tabular}{|r|l|}
+\hline
+{\tt imcon} & \multicolumn{1}{c|}{meaning} \\
+\hline
+0 & no periodic boundaries \\
+1 & cubic boundary conditions\index{boundary conditions!cubic} \\
+2 & orthorhombic boundary conditions \\
+3 & parallelepiped boundary conditions \\
+6 & x-y parallelogram boundary conditions with \\
+  & no periodicity in the z direction \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\end{table}
+
+\subsubsection{Further Comments on the CONFIG File}
+
+The CONFIG file has the same format as the output file REVCON
+(Section \ref{revcon-file}).  When restarting from a previous run
+of \D (i.e. using the {\bf restart}, {\bf restart noscale} or {\bf
+restart scale} directives in the CONTROL file - above), the CONFIG
+file must be replaced by the REVCON file, which is renamed as the
+CONFIG file.  The {\sl copy} macro in the {\em execute}
+sub-directory of \D does this for you.
+
+The CONFIG file has the same format as the optional output file
+CFGMIN, which is only produced when the {\bf minimise} ({\bf optimise})
+option has been used during an equilibration simulation or a "dry run".
+
+\subsection{The FIELD File}
+\label{field-file}
+
+The FIELD file contains the force field information defining the
+nature of the molecular forces.  This information explicitly
+includes the (site) topology of the system which sequence {\bf must}
+be matched (implicitly) in the crystallographic description of the
+system in the CONFIG file.  The FIELD file is read by the subroutine
+{\sc read\_field}. (It is also read by the subroutine {\sc
+scan\_field} in the {\sc set\_bounds} routine.) Excerpts from a
+force field file are shown below.  The example is the antibiotic
+Valinomycin in a cluster of 146 water molecules.
+
+\begin{verbatim}
+Valinomycin Molecule with 146 SPC Waters
+UNITS kcal
+
+MOLECULES    2
+Valinomycin
+NUMMOLS 1
+ATOMS 168
+    O        16.0000     -0.4160         1
+    OS       16.0000     -0.4550         1
+    "          "           "        "
+    "          "           "        "
+    HC        1.0080      0.0580         1
+    C        12.0100      0.4770         1
+BONDS 78
+harm   31   19 674.000     1.44900
+harm   33   31 620.000     1.52600
+    "    "    "    "         "
+    "    "    "    "         "
+harm  168   19 980.000     1.33500
+harm  168  162 634.000     1.52200
+CONSTRAINTS 90
+   20   19    1.000017
+   22   21    1.000032
+    "    "     "
+    "    "     "
+  166  164    1.000087
+  167  164    0.999968
+ANGLES 312
+harm   43    2   44  200.00      116.40
+harm   69    5   70  200.00      116.40
+  "    "    "    "     "           "
+  "    "    "    "     "           "
+harm   18  168  162  160.00      120.40
+harm   19  168  162  140.00      116.60
+DIHEDRALS 371
+harm    1   43    2   44  2.3000      180.00
+harm   31   43    2   44  2.3000      180.00
+  "    "    "    "    "     "           "
+  "    "    "    "    "     "           "
+cos   149   17  161   16  10.500      180.00
+cos   162   19  168   18  10.500      180.00
+FINISH
+SPC Water
+NUMMOLS 146
+ATOMS  3
+    OW       16.0000     -0.8200
+    HW        1.0080      0.4100
+    HW        1.0080      0.4100
+CONSTRAINTS  3
+    1    2    1.0000
+    1    3    1.0000
+    2    3    1.63299
+FINISH
+VDW   45
+C       C         lj   0.12000      3.2963
+C       CT        lj   0.08485      3.2518
+"       "         "     "            "
+"       "         "     "            "
+"       "         "     "            "
+OW      OS        lj   0.15100      3.0451
+OS      OS        lj   0.15000      2.9400
+CLOSE
+\end{verbatim}
+
+\subsubsection{The FIELD File Format}
+
+The file is free-formatted and not case-sensitive. Every line is
+treated as a command sentence (record).  Commented records
+(beginning with a \#) and blank lines are not processed and may be
+added to aid legibility (see example above).  Records must be
+limited in length to 100 characters.  Records are read in words,
+as a word must not exceed 40 characters in length.  Words are
+recognised as such by separation by one or more space characters.
+The contents of the file are variable and are defined by the use
+of {\bf directives}.  Additional information is associated with
+the directives.
+
+\subsubsection{Definitions of Variables in the FIELD File}
+
+The file divides into three sections: general information, molecular
+descriptions, and non-bonded\index{potential!non-bonded} interaction descriptions, appearing in that
+order in the file.
+
+\paragraph{General information}
+
+The first viable record in the FIELD file is the title.  The
+second is the {\bf units} directive.  Both of these are mandatory.
+\begin{tabbing}
+X\=XXXXXXXXXX\=XXXXX\=\kill
+{\bf record 1} \\
+\> header      \> a100 \> field file header \\
+{\bf record 2}\\
+\> {\bf units} \> a40  \> Unit of energy used for input and output \\
+\end{tabbing}
+
+\noindent The energy units on the {\bf units} directive are
+described by additional keywords\index{units!energy}:
+\begin{description}
+\item[a.] {\bf eV}, for electron-volts per mol
+\item[b.] {\bf kcal}, for k-calories per mol
+\item[c.] {\bf kJ}, for k-Joules per mol
+\item[d.] {\bf K}elvin, for Kelvin per mol
+\item[e.] {\bf internal}, for DL\_POLY internal units (10 Joules per mol).
+\end{description}
+
+\noindent If no units keyword is entered, DL\_POLY internal units
+are assumed for both input and output.  The {\bf units} directive
+only affects the input and output interfaces, all internal
+calculations are handled using DL\_POLY units.  System input and
+output energies are read in {\bf units per MD cell}.
+
+{\bf Note} that all energy bearing potential parameters are read
+in terms of the specified energy units.  If such a parameter
+depends on an angle then the dependence is read in terms of
+radians although the following angle in the parameter sequence
+is read in terms of degrees.
+
+\paragraph{Molecular details}
+
+It is important for the user to understand that there is an
+organisational correspondence between the FIELD file and the
+CONFIG file described above.  It is required that the order of
+specification of molecular types and their atomic constituents in
+the FIELD file follows the order of indices in which they appear
+in the CONFIG file.  Failure to adhere to this common sequence
+will be detected by \D and result in premature termination of the
+job. It is therefore essential to work from the CONFIG file when
+constructing the FIELD file.  It is not as difficult as it sounds!
+
+The entry of the molecular details begins with the mandatory
+directive:
+
+\noindent {\bf molecules {\em n}}
+
+\noindent where {\em n} is an integer specifying the number of
+different {\em types} of molecule appearing in the FIELD file.
+Once this directive has been encountered, \D enters the {\em
+molecular description} environment in which only molecular
+description keywords and data are valid.
+
+Immediately following the {\bf molecules} directive, are the records
+defining individual molecules:
+
+\begin{enumerate}
+
+\item {\em name-of-molecule} \\
+which can be any character string up to 100 characters in length.
+({\bf Note}: this is not a directive, just a simple character string.)
+
+\item {\bf nummols {\em n}} \\
+where {\em n} is the number of times a molecule of this type
+appears in the simulated system.  The molecular data then follow
+in subsequent records:
+
+\item {\bf atoms {\em n}} \\
+where {\em n} indicates the number of atoms in this type of
+molecule.  A number of records follow, each giving details of the
+atoms in the molecule i.e. site names, masses and charges.  Each
+record carries the entries:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> {\tt sitnam} \> a8      \> atomic site name \\
+\> {\tt weight} \> real    \> atomic site mass \\
+\> {\tt chge}   \> real    \> atomic site charge \\
+\> {\tt nrept}  \> integer \> repeat counter \\
+\> {\tt ifrz}   \> integer \> `frozen' atom (if {\tt ifrz}$~>~0$) \\
+\end{tabbing}
+The integer {\tt nrept} need not be specified if the atom/site is
+not frozen (in which case a value of 1 is assumed.)  A number
+greater than 1 specified here indicates that the next ({\tt nrept}
+- 1) entries in the CONFIG file are ascribed the atomic
+characteristics given in the current record.  The sum of the
+repeat numbers for all atoms in a molecule should equal the number
+specified by the {\bf atoms} directive.
+
+\item{\bf shell {\em n}} \\
+where {\em n} is the number of core-shell units.  Each of the
+subsequent {\em n} records contains:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> index 1 ($i$) \> integer \> site index of core \\
+\> index 2 ($j$) \> integer \> site index of shell \\
+\> spring  ($k$) \> real    \> force constant of core-shell spring \\
+\end{tabbing}
+The spring potential is
+\begin{equation}
+U(r)~=~{1 \over 2}~k~r_{ij}^{2}~~,
+\end{equation}
+with the force constant $k$ entered in units of {\tt
+engunit}$\times$\AA$^{-2}$, where {\tt engunit} is the energy unit
+specified in the {\bf units} directive.
+
+{\bf Note} that the atomic site indices referred to above are
+indices arising from numbering each atom in the molecule from 1 to
+the number specified in the {\bf atoms} directive for this
+molecule.  This same numbering scheme should be used for all
+descriptions of this molecule, including the {\bf constraints},
+{\bf pmf}, {\bf rigid}, {\b teth}, {\bf bonds}, {\bf angles},
+{\bf dihedrals} and {\bf inversions} entries described below.
+\D will itself construct the global indices for all atoms in the systems.
+
+This directive (and associated data records) need not be specified if
+the molecule contains no core-shell units.
+
+\item {\bf constraints {\em n}} \\
+where {\em n} is the number of constraint bonds in the molecule.
+Each of the following {\em n} records contains:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> index 1    \> integer \> first atomic site index \\
+\> index 2    \> integer \> second atomic site index \\
+\> bondlength \> real    \> constraint bond\index{constraints!bond} length \\
+\end{tabbing}
+This directive (and associated data records) need not be specified
+if the molecule contains no constraint
+bonds\index{constraints!bond}.  See the note on the atomic indices
+appearing under the {\bf shell} directive above.
+
+\item {\bf pmf {\em b}} \\
+where {\em b} is the potential of mean force bondlength (\AA).
+There follows the definitions of two PMF units:
+\begin{enumerate}
+\item {\bf pmf unit {\em n1}} \\
+where {\em n1} is the number of sites in the first unit.  The subsequent
+{\em n1} records provide the site indices and weighting.  Each record contains:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> index      \> integer \> atomic site index \\
+\> weight     \> real    \> site weighting \\
+\end{tabbing}
+\item {\bf pmf unit {\em n2}} \\
+where {\em n2} is the number of sites in the second unit.  The subsequent
+{\em n2} records provide the site indices and weighting.  Each record contains:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> index      \> integer \> atomic site index \\
+\> weight     \> real    \> site weighting \\
+\end{tabbing}
+\end{enumerate}
+This directive (and associated data records) need not be specified
+if no PMF constraints are present\index{constraints!PMF}.  See the
+note on the atomic indices appearing under the {\bf shell} directive.
+
+{\bf Note} that if a site weighting is not supplied \D will assume
+it is zero.  However, \D detects that all sites in a PMF unit have
+zero weighting then the PMF unit sites will be assigned the masses
+of the original atomic sites.
+
+The PMF bondlength applies to the distance between the centres of the
+two PMF units.  The centre, $\vec{R}_{i}$, of each unit is given by
+\begin{equation}
+\vek{R}_{i}~=~\frac{\sum_{j=1}^{n_{i}} w_{j}~\vec{r}_{j}}{\sum_{j=1}^{n_{j}} w_{j}}~~,
+\end{equation}
+where $r_{j}$ is a site position and $w_{j}$ the site weighting.
+
+{\bf Note} that the PMF constraint is intramolecular.  To define
+a constraint between two molecules, the molecules must be described as
+part of the same \D ``molecule''.  \D allows only one type of PMF
+constraint per system.  The value of nummols for this molecule
+determines the number of PMF constraint in the system.
+
+{\bf Note} that in \D PMF constraints are handeled in every available
+ensemble.
+
+\item{\bf rigid {\em n}}\\
+where {\em n} is the number of basic rigid units in the molecule.  It is
+followed by at least {\em n} records, each specifying the sites in a rigid
+unit:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> m      \> integer \> number of sites in rigid unit \\
+\> site 1 \> integer \> first site atomic index \\
+\> site 2 \> integer \> second site atomic index \\
+\> site 3 \> integer \> third site atomic index \\
+\> .. \> .. \> {\em etc.} \\
+\> site m \> integer \> m'th site atomic index \\
+\end{tabbing}
+Up to 15 sites can be specified on the first record.  Additional records
+can be used if necessary.  Up to 16 sites are specified per record thereafter.
+
+This directive (and associated data records) need not be specified if the
+molecule contains no rigid units.  See the note on the atomic indices
+appearing under the {\bf shell} directive above.
+
+\item{\bf teth {\em n}} \\
+where {\em n} is the number of tethered atoms in the molecule.  It
+is followed {\em n} records specifying the tehered sites in the
+molecule:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> tether key    \> a4      \> potential key, see Table \ref{tether-table} \\
+\> index 1 ($i$) \> integer \> atomic site index \\
+\> variable 1    \> real    \> potential parameter, see Table \ref{tether-table} \\
+\> variable 2    \> real    \> potential parameter, see Table \ref{tether-table} \\
+\end{tabbing}
+The meaning of these variables is given in Table
+\ref{tether-table}.
+
+This directive (and associated data records) need not be specified
+if the molecule contains no flexible chemical bonds.  See the note
+on the atomic indices appearing under the {\bf shell} directive
+above.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{tether-table} Tethering Potentials}
+\vskip 1ex
+\begin{tabular}{|l|l|c|c|c|c|}
+\hline
+key & potential type & \multicolumn{3}{c|}{Variables (1-3)} & functional form \\
+\hline
+            &            &         &         &         & \\
+{\bf harm}  & Harmonic   & $k$     &         &         &
+$ U(r) = \frac{1}{2}~k~(r_{i}-r_{i}^{t=0})^{2}$ \\
+
+            &            &         &         &         & \\
+{\bf rhrm}  & Restraint  & $k$     & $r_{c}$ &         &
+$U(r) = \frac{1}{2}~k~(r_{i}-r_{i}^{t=0})^{2}~:~|r_{i}-r_{i}^{t=0}| \le r_{c}$ \\
+            &            &         &         &         &
+$U(r) = \frac{1}{2}~k~r_{c}^{2}+k~r_{c}(|r_{i}-r_{i}^{t=0}|-r_{c})~:~|r_{i}-r_{i}^{t=0}|>r_{c}$ \\
+            &            &         &         &         & \\
+{\bf quar}  & Quartic    & $k$     & $k'$    & $k''$   &
+$U(r) = \frac{k}{2}~(r_{i}-r_{i}^{t=0})^{2}+\frac{k'}{3}~(r_{i}-r_{i}^{t=0})^{3}$ \\
+            &            &         &         &         &
+$+\frac{k''}{4}~(r_{i}-r_{i}^{t=0})^{4}$ \\
+            &            &         &         &         & \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\end{table}
+
+\item{\bf bonds {\em n}} \\
+where {\em n} is the number of flexible chemical bonds in the
+molecule.  Each of the subsequent {\em n} records contains:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> bond key      \> a4      \> potential key, see Table \ref{bond-table} \\
+\> index 1 ($i$) \> integer \> first atomic site index in bond \\
+\> index 2 ($j$) \> integer \> second atomic site index in bond \\
+\> variable 1    \> real    \> potential parameter, see Table \ref{bond-table} \\
+\> variable 2    \> real    \> potential parameter, see Table \ref{bond-table} \\
+\> variable 3    \> real    \> potential parameter, see Table \ref{bond-table} \\
+\> variable 4    \> real    \> potential parameter, see Table \ref{bond-table} \\
+\end{tabbing}
+The meaning of these variables is given in Table \ref{bond-table}.
+
+This directive (and associated data records) need not be specified
+if the molecule contains no flexible chemical bonds.  See the note
+on the atomic indices appearing under the {\bf shell} directive
+above.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{bond-table} Chemical Bond Potentials}
+\vskip 1ex
+\begin{tabular}{|l|l|c|c|c|c|c|}
+\hline
+key & potential type & \multicolumn{4}{c|}{Variables (1-4)} & functional form \\
+\hline
+            &                    &            &          &          &       & \\
+{\bf harm}  & Harmonic           & $k$        & $r_{0}$  &          &       &
+$U(r) = \frac{1}{2}~k~(r_{ij}-r_{0})^{2}$ \\
+{\bf -hrm}  &                    &            &          &          &       & \\
+            &                    &            &          &          &       & \\
+{\bf mors}  & Morse              & $E_{0}$    & $r_{0}$  & $k$      &       &
+$U(r) = E_{0}~[\{1-\exp(-k~(r_{ij}-r_{0}))\}^{2}-1]$ \\
+{\bf -mrs}  &                    &            &          &          &       & \\
+            &                    &            &          &          &       & \\
+{\bf 12-6}  & 12-6               & $A$        & $B$      &          &       &
+$U(r) = \left (\frac{A}{r_{ij}^{12}}\right)-\left(\frac{B}{r_{ij}^{6}}\right)$ \\
+{\bf -126}  &                    &            &          &          &       & \\
+            &                    &            &          &          &       & \\
+{\bf lj}    & Lennard-Jones      & $\epsilon$ & $\sigma$ &          &       &
+$U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r_{ij}} \right)^{12} - \left( \frac{\sigma}{r_{ij}}\right)^{6} \right]$ \\
+{\bf -lj}   &                    &            &          &          &       & \\
+            &                    &            &          &          &       & \\
+{\bf rhrm}  & Restraint          & $k$        & $r_{0}$  & $r_{c}$  &       &
+$U(r) = \frac{1}{2}~k~(r_{ij}-r_{0})^{2}~:~|r_{ij}-r_{0}| \le r_{c}$ \\
+{\bf -rhm}  &                    &            &          &          &       &
+$U(r) = \frac{1}{2}~k~r_{c}^{2}+k~r_{c}(|r_{ij}-r_{0}|-r_{c})~:~|r_{ij}-r_{0}|>r_{c}$ \\
+            &                    &            &          &          &       & \\
+{\bf quar}  & Quartic            & $k$        & $r_{0}$  & $k'$     & $k''$ &
+$U(r) = \frac{k}{2}~(r_{ij}-r_{0})^{2}+\frac{k'}{3}~(r_{ij}-r_{0})^{3}$ \\
+{\bf -qur}  &                    &            &          &          &       &
+$+\frac{k''}{4}~(r_{ij}-r_{0})^{4}$ \\
+            &                    &            &          &          &       & \\
+{\bf buck}  & Buckingham         & $A$        & $\rho$   & $C$      &       &
+$U(r) = A~\exp\left(-\frac{r_{ij}}{\rho}\right)-\frac{C}{r_{ij}^{6}}$ \\
+{\bf -bck}  &                    &            &          &          &       & \\
+            &                    &            &          &          &       & \\
+{\bf coul}  & Coulomb            & $k$        &          &          &       &
+$U(r) = k \cdot U^{Electrostatics}(r_{ij}) \; \left(= \frac{k}{4\pi\epsilon_{0}\epsilon}\frac{q_{i}q_{j}}{r_{ij}}\right)$ \\
+{\bf -cul}  &                    &            &          &          &       & \\
+            &                    &            &          &          &       & \\
+{\bf fene}  & Shifted$^{*}$ FENE & $k$        & $R_{o}$  & $\Delta$ & &
+$U(r) = -0.5~k~R_{o}~ln\left[1-\left(\frac{r_{ij}-\Delta}{R_{o}^{2}}\right)^{2}\right] : r_{ij} < R_{o} + \Delta$ \\
+{\bf -fne}  &                    &            &          &          &       &
+$U(r) = \infty : r_{ij} \ge R_{o} + \Delta$ \\
+            &                    &            &          &          &       & \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+$^{*}$ Note: $\Delta$ defaults to zero if $|\Delta| > 0.5~R_{o}$ or
+if it is not specified in the FIELD file.
+
+{\bf Note:} Bond potentials\index{potential!bond} with a dash (-) as
+the first character of the keyword, do not contribute to the {\em
+excluded atoms list} (see Section \ref{force-field}).  In this case
+\D will also calculate the non-bonded\index{potential!non-bonded}
+pair potentials between the described atoms, unless these are
+deactivated by another potential specification.
+\vskip 1ex
+\end{table}
+
+\item{\bf angles {\em n}} \\
+where {\em n} is the number of valence
+angle\index{potential!valence angle} bonds in the molecule.  Each
+of the {\em n} records following contains:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> angle key     \> a4      \> potential key, see Table \ref{angle-table} \\
+\> index 1 ($i$) \> integer \> first atomic site index \\
+\> index 2 ($j$) \> integer \> second atomic site index (central site) \\
+\> index 3 ($k$) \> integer \> third atomic site index \\
+\> variable 1    \> real    \> potential parameter, see Table \ref{angle-table} \\
+\> variable 2    \> real    \> potential parameter, see Table \ref{angle-table} \\
+\> variable 3    \> real    \> potential parameter, see Table \ref{angle-table} \\
+\> variable 4    \> real    \> potential parameter, see Table \ref{angle-table} \\
+\end{tabbing}
+The meaning of these variables is given in Table
+\ref{angle-table}.
+
+This directive (and associated data records) need not be specified
+if the molecule contains no angular terms.  See the note on the
+atomic indices appearing under the {\bf shell} directive above.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{angle-table} Valence Angle Potentials}
+\vskip 1ex
+\begin{tabular}{|l|l|c|c|c|c|c|}
+\hline
+key & potential type & \multicolumn{4}{c|}{Variables (1-4)} & functional form\dag \\
+\hline
+           &                     &     &              &            &            & \\
+{\bf harm} & Harmonic            & $k$ & $\theta_{0}$ &            &            &
+$U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}$ \\
+{\bf -hrm} &                     &     &              &            &            & \\
+           &                     &     &              &            &            & \\
+{\bf quar} & Quartic             & $k$ & $\theta_{0}$ & $k'$       & $k''$      &
+$U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2} + {k'\over 3}(\theta - \theta_{0})^{3} + {k''\over 4}(\theta - \theta_{0})^{4}$ \\
+{\bf -qur} &                     &     &              &            &            & \\
+           &                     &     &              &            &            & \\
+{\bf thrm} & Truncated harmonic  & $k$ & $\theta_{0}$ & $\rho$     &            &
+$U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2} \exp[-(r_{ij}^{8} + r_{ik}^{8})/\rho^{8}]$ \\
+{\bf -thm} &                     &     &              &            &            & \\
+           &                     &     &              &            &            & \\
+{\bf shrm} & Screened harmonic   & $k$ & $\theta_{0}$ & $\rho_{1}$ & $\rho_{2}$ &
+$U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}\exp[-(r_{ij}/\rho_{1} + r_{ik}/\rho_{2})]$ \\
+{\bf -shm} &                     &     &              &            &            & \\
+           &                     &     &              &            &            & \\
+{\bf bvs1} & Screened Vessal \cite{vessal-94a} & $k$ & $\theta_{0}$ & $\rho_{1}$ & $\rho_{2}$ &
+$U(\theta) = {k \over 8(\theta-\pi)^{2}} \left\{ \left[ (\theta_{0} - \pi)^{2} -(\theta-\pi)^{2}\right]^{2}\right\} \times$ \\
+{\bf -bv1} &                     &     &              &            &            &
+$\exp[-(r_{ij}/\rho_{1} + r_{ik}/\rho_{2})]$ \\
+           &                     &     &              &            &            & \\
+{\bf bvs2} & Truncated Vessal \cite{smith-95a} & $k$ & $\theta_{0}$ & $a$ & $\rho$ &
+$U(\theta) = k~(\theta-\theta_{0})^{2}~\big[ \theta^a (\theta+\theta_{0}-2\pi)^{2}$ \\
+{\bf -bv2} &                     &     &              &            &            &
+$+ {a \over 2} \pi^{a-1} (\theta_{0}-\pi)^{3}\big] \exp[-(r_{ij}^{8} + r_{ik}^{8})/\rho^{8}]$ \\
+           &                     &     &              &            &            & \\
+{\bf hcos} & Harmonic Cosine     & $k$ & $\theta_{0}$ &            &            &
+$U(\theta) = {k \over 2}~(\cos(\theta) - \cos(\theta_{0}))^{2}$ \\
+{\bf -hcs} &                     &     &              &            &            & \\
+           &                     &     &              &            &            & \\
+{\bf cos}  & Cosine              & $A$ & $\delta$     & $m$        &            &
+$U(\theta) = A~[1+\cos(m~\theta-\delta)]$ \\
+{\bf -cos} &                     &     &              &            &            & \\
+           &                     &     &              &            &            & \\
+{\bf mmsb} & MM3 stretch-bend \cite{allinger-89a} & $A$ & $\theta_{0}$ & $r_{ij}^{o}$ & $r_{jk}^{o}$ &
+$U(\theta) = A~(\theta-\theta_{0})~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o})$ \\
+{\bf -msb} &                     &     &              &            &            & \\
+           &                     &     &              &            &            & \\
+{\bf mmsb} & Compass \cite{sun-98} & $A$ & $r_{ij}^{o}$ & $r_{jk}^{o}$ &        &
+$U(\theta) = A~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o})$ \\
+{\bf -msb} & stretch-stretch     &     &              &            &            & \\
+           &                     &     &              &            &            & \\
+{\bf mmsb} & Compass \cite{sun-98} & $A$ & $\theta_{0}$ & $r_{ij}^{o}$ &        &
+$U(\theta) = A~(\theta-\theta_{0})~(r_{ij} - r_{ij}^{o})$ \\
+{\bf -msb} & stretch-bend        &     &              &            &            & \\
+           &                     &     &              &            &            & \\
+{\bf mmsb} & Compass \cite{sun-98} & $A$ & $B$       & $C$       & $\theta_{0}$ &
+$U(\theta) = A~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o}) + (\theta-\theta_{0}) \times $ \\
+{\bf -msb} & all terms           & $r_{ij}^{o}$ & $r_{jk}^{o}$ &   &            &
+$ [B~(r_{ij} - r_{ij}^{o})+C~(r_{ik} - r_{ik}^{o})] $ \\
+           &                     &     &              &            &            & \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\dag $\theta$ is the $i$-$j$-$k$ angle.
+
+{\bf Note:} valence angle\index{potential!valence angle}
+potentials with a dash (-) as the first character of the keyword,
+do not contribute to the {\em excluded atoms list} (see Section
+\ref{force-field}).  In this case \D will calculate the
+non-bonded\index{potential!non-bonded} pair potentials between the
+described atoms.
+\vskip 1ex
+\end{table}
+
+\item{\bf dihedrals {\em n}} \\
+where {\em n} is the number of dihedral interactions present in
+the molecule.  Each of the following {\em n} records contains:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> dihedral key  \> a4      \> potential key, see Table \ref{dihedral-table} \\
+\> index 1 ($i$) \> integer \> first atomic site index \\
+\> index 2 ($j$) \> integer \> second atomic site index (central site) \\
+\> index 3 ($k$) \> integer \> third atomic site index \\
+\> index 4 ($l$) \> integer \> fourth atomic site index \\
+\> variable 1    \> real    \> first potential parameter, see Table \ref{dihedral-table} \\
+\> variable 2    \> real    \> second potential parameter, see Table \ref{dihedral-table} \\
+\> variable 3    \> real    \> third potential parameter, see Table \ref{dihedral-table} \\
+\> variable 4    \> real    \> 1-4 electrostatic interaction scale factor \\
+\> variable 5    \> real    \> 1-4 van der Waals\index{potential!van der Waals} interaction scale factor \\
+\> variable 6    \> real    \> fourth potential parameter, see Table \ref{dihedral-table} \\
+\> variable 7    \> real    \> fifth potential parameter, see Table \ref{dihedral-table} \\
+\end{tabbing}
+The meaning of the variables 1-3,6-7 is given in Table
+\ref{dihedral-table}.  The variables 4 and 5 specify the scaling
+factor for the 1-4 electrostatic and van der Waals non-bonded
+interactions respectively.
+
+This directive (and associated data records) need not be specified
+if the molecule contains no dihedral\index{potential!dihedral}
+angle terms.  See the note on the atomic indices appearing under
+the {\bf shell} directive above.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{dihedral-table} Dihedral Angle Potentials}
+\vskip 1ex
+\begin{tabular}{|l|l|c|c|c|c|}
+\hline
+key & potential type & \multicolumn{3}{c|}{Variables (1-3,6-7)} & functional form\ddag \\
+\hline
+           &                 &         &            &         & \\
+{\bf cos}  & Cosine          & $A$     & $\delta$   & $m$     &
+$U(\phi) = A~\left[ 1 + \cos(m\phi - \delta) \right]$ \\
+           &                 &         &            &         & \\
+{\bf harm} & Harmonic        & $k$     & $\phi_{0}$ &         &
+$U(\phi) = {k \over 2}~(\phi - \phi_{0})^{2}$ \\
+           &                 &         &            &         & \\
+{\bf hcos} & Harmonic cosine & $k$     & $\phi_{0}$ &         &
+$U(\phi) = {k \over 2}~(\cos(\phi) - \cos(\phi_{0}))^{2}$ \\
+           &                 &         &            &         & \\
+{\bf cos3} & Triple cosine   & $A_{1}$ & $A_{2}$    & $A_{3}$ &
+$U(\phi) = {1 \over 2}~\{ A_{1}~(1+\cos(\phi))~+$ \\
+           &                 &         &            &         &
+$A_{2}~(1-\cos(2\phi))~+$ \\
+           &                 &         &            &         &
+$A_{3}~(1+\cos(3\phi)) \}$ \\
+           &                 &         &            &         & \\
+{\bf ryck} & Ryckaert-Bellemans \cite{ryckaert-75a} & $A$     & & &
+$U(\phi) = A~\{a+b~\cos(\phi)+c~\cos^{2}(\phi)~+$ \\
+           &                 &         &            &         &
+$d~\cos^{3}(\phi)+e~\cos^{4}(\phi)+f~\cos^{5}(\phi) \}$ \\
+           &                 &         &            &         & \\
+{\bf rbf} & Fluorinated Ryckaert-                   & $A$     & & &
+$U(\phi) = A~\{ a+b~\cos(\phi)+c~\cos^{2}(\phi)~+$ \\
+           & Bellemans \cite{schmidt-96a}           &         & & &
+$d~\cos^{3}(\phi)+e~\cos^{4}(\phi)+f~\cos^{5}(\phi))~+$ \\
+           &                 &         &            &         &
+$g~\exp(-h(\phi-\pi)^{2})) \}$ \\
+           &                 &         &            &         & \\
+{\bf opls} & OPLS torsion    & $A_{0}$ & $A_{1}$    & $A_{2}$ &
+$U(\phi) = A_{0} + \frac{1}{2}~\{ A_{1}~(1+\cos(\phi-\phi_{0}))~+$ \\
+           &                 & $A_{3}$ & $\phi_{0}$ &         &
+$A_{2}~(1-\cos(2(\phi-\phi_{0})))~+$ \\
+           &                 &         &            &         &
+$A_{3}~(1+\cos(3(\phi-\phi_{0}))) \}$ \\
+           &                 &         &            &         & \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\ddag $\phi$ is the $i$-$j$-$k$-$l$ dihedral angle\index{potential!dihedral}.
+\vskip 1ex
+\end{table}
+
+\item{\bf inversions {\em n}} \\
+where {\em n} is the number of inversion interactions present in
+the molecule.  Each of the following {\em n} records contains:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> inversion key \> a4      \> potential key, see Table \ref{inversion-table} \\
+\> index 1 ($i$) \> integer \> first atomic site index (central site) \\
+\> index 2 ($j$) \> integer \> second atomic site index \\
+\> index 3 ($k$) \> integer \> third atomic site index \\
+\> index 4 ($l$) \> integer \> fourth atomic site index \\
+\> variable 1    \> real    \> potential parameter, see Table \ref{inversion-table} \\
+\> variable 2    \> real    \> potential parameter, see Table \ref{inversion-table} \\
+\> variable 3    \> real    \> potential parameter, see Table \ref{inversion-table} \\
+\end{tabbing}
+The meaning of the variables 1-2 is given in Table
+\ref{inversion-table}.
+
+This directive (and associated data records) need not be specified
+if the molecule contains no inversion angle terms.  See the note
+on the atomic indices appearing under the {\bf shell} directive
+above.
+
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{inversion-table} Inversion Angle Potentials}
+\vskip 1ex
+\begin{tabular}{|l|l|c|c|c|c|}
+\hline
+key & potential type & \multicolumn{3}{c|}{Variables (1-3)} & functional form\ddag \\
+\hline
+           &                 &     &            &            & \\
+{\bf harm} & Harmonic        & $k$ & $\phi_{0}$ &            &
+$U(\phi) = {k \over 2}~(\phi - \phi_{0})^{2}$ \\
+           &                 &     &            &            & \\
+{\bf hcos} & Harmonic cosine & $k$ & $\phi_{0}$ &            &
+$U(\phi)={k \over 2}~(\cos(\phi) - \cos(\phi_{0}))^{2}$ \\
+           &                 &     &            &            & \\
+{\bf plan} & Planar          & $A$ &            &            &
+$U(\phi) = A~[1 - \cos(\phi)]$ \\
+           &                 &     &            &            & \\
+{\bf xpln} & Extended planar & $k$ & $m$        & $\phi_{0}$ &
+$U(\phi) = {k \over 2}~[ 1 - \cos(m~\phi - \phi_{0}) ]$ \\
+           &                 &     &            &            & \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\ddag $\phi$ is the $i$-$j$-$k$-$l$ inversion angle\index{potential!inversion}.
+\vskip 1ex
+\end{table}
+
+\item {\bf finish} \\
+This directive is entered to signal to \D that the entry of the
+details of a molecule has been completed.
+
+The entries for a second molecule may now be entered, beginning with
+the {\em name-of-molecule} record and ending with the {\bf finish}
+directive.
+
+The cycle is repeated until all the types of molecules indicated by
+the {\bf molecules} directive have been entered.
+
+\end{enumerate}
+
+The user is recommended to look at the example FIELD files in the {\em
+data} directory to see how typical FIELD files are constructed.
+
+\paragraph{Non-bonded Interactions}
+
+Non-bonded interactions are identified by atom types as opposed to
+specific atomic indices.  The following different types of
+non-bonded\index{potential!non-bonded} potentials are available in
+\D; {\bf vdw} - van der Waals pair\index{potential!van der Waals},
+{\bf metal} - metal\index{potential!metal}, {\bf tersoff} -
+Tersoff\index{potential!Tersoff}, {\bf tbp} -
+three-body\index{potential!three-body} and {\bf fbp} -
+four-body\index{potential!four-body}.  Each of these types is
+specified by a specific {\bf keyword} as described bellow.
+
+\begin{enumerate}
+
+\item {\bf vdw {\em n}} \\
+where {\em n} is the number of pair potentials to be entered.  It
+is followed by {\em n} records, each specifying a particular pair
+potential in the following manner:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> atmnam 1     \> a8   \> first atom type \\
+\> atmnam 2     \> a8   \> second atom type \\
+\> key          \> a4   \> potential key, see Table \ref{vdw-table} \\
+\> variable 1   \> real \> potential parameter, see Table \ref{vdw-table} \\
+\> variable 2   \> real \> potential parameter, see Table \ref{vdw-table} \\
+\> variable 3   \> real \> potential parameter, see Table \ref{vdw-table} \\
+\> variable 4   \> real \> potential parameter, see Table \ref{vdw-table} \\
+\> variable 5   \> real \> potential parameter, see Table \ref{vdw-table} \\
+\end{tabbing}
+The variables pertaining to each potential are described in Table
+\ref{vdw-table}.
+
+{\bf Note} that any pair potential not specified in the FIELD
+file, will be assumed to be zero.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{vdw-table} Pair Potentials}
+\vskip 1ex
+\begin{tabular}{|l|l|c|c|c|c|c|c|}
+\hline
+key & potential type & \multicolumn{5}{c|}{Variables (1-5)}& functional form \\
+\hline
+           &                           &            &          &          &         &                      & \\
+{\bf tab}  & Tabulation                &            &          &          &         &                      &
+tabulated potential \\
+           &                           &            &          &          &         &                      & \\
+{\bf 12-6} & 12-6                      & $A$        & $B$      &          &         &                      &
+$U(r) = \left( \frac{A}{r^{12}} \right) - \left( \frac{B}{r^{6}} \right)$ \\
+           &                           &            &          &          &         &                      & \\
+{\bf lj}   & Lennard-Jones             & $\epsilon$ & $\sigma$ &          &         &                      &
+$U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r}\right)^{6} \right]$ \\
+           &                           &            &          &          &         &                      & \\
+{\bf nm}   & n-m                       & $E_{o}$    & $n$      & $m$      & $r_{0}$ &                      &
+$U(r) = \frac{E_{o}}{(n-m)} \left[ m \left( \frac{r_{o}}{r} \right)^{n}
+-n \left( \frac{r_{o}}{r} \right)^{m} \right]$ \\
+           &                           &            &          &          &         &                      & \\
+{\bf buck} & Buckingham                & $A$        & $\rho$   & $C$      &         &                      &
+$U(r) = A~\exp \left( -\frac{r}{\rho} \right) - \frac{C}{r^{6}}$ \\
+           &                           &            &          &          &         &                      & \\
+{\bf bhm}  & Born-Huggins              & $A$        & $B$      & $\sigma$ & $C$     & $D$                  &
+$U(r)=A~\exp[B(\sigma-r)]-\frac{C}{r^{6}}-\frac{D}{r^{8}}$\\
+           & -Meyer                    &            &          &          &         &                      & \\
+           &                           &            &          &          &         &                      & \\
+{\bf hbnd} & 12-10 H-bond              & $A$        & $B$      &          &         &                      &
+$U(r) = \left( \frac{A}{r^{12}} \right) - \left( \frac{B}{r^{10}} \right)$ \\
+           &                           &            &          &          &         &                      & \\
+{\bf snm}  & Shifted force$^{\dagger}$ & $E_{o}$    & $n$      & $m$      & $r_{0}$ & $r_{c}$$^{\ddagger}$ &
+$U(r) = \frac{\alpha E_{o}}{(n-m)}\times$ \\
+           & n-m  \cite{clarke-86a}    &            &          &          &         &                      &
+$\left[ m\beta^{n} \left\{ \left( \frac{r_{o}}{r} \right)^{n} -
+\left( \frac{1}{\gamma} \right)^{n} \right\} - n\beta^{m} \left\{
+\left( \frac{r_{o}}{r} \right)^{m} - \left( \frac{1}{\gamma}
+\right)^{m}\right\} \right]$ \\
+           &                           &            &          &          &         &                      &
+$+ \frac{nm\alpha E_{o}}{(n-m)} \left( \frac{r-\gamma r_{o}}
+{\gamma r_{o}} \right) \left\{ \left( \frac{\beta}{\gamma}
+\right)^{n} - \left( \frac{\beta}{\gamma} \right)^{m} \right\}$ \\
+           &                           &            &          &          &         &                      & \\
+{\bf mors} & Morse                     & $E_{0}$    & $r_{0}$  & $k$      &         &                      &
+$U(r) = E_{0}[\{1-\exp(-k(r-r_{0}))\}^{2}-1]$ \\
+           &                           &            &          &          &         &                      & \\
+{\bf wca}  & Shifted$^{*}$ Weeks-      & $\epsilon$ & $\sigma$ & $\Delta$ &         &                      &
+$U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r-\Delta} \right)^{12} -
+\left( \frac{\sigma}{r-\Delta}\right)^{6} \right] + \epsilon : r_{ij} < 2^{1 \over 6}~\sigma + \Delta$ \\
+           & Chandler-Anderson         &            &          &          &         &                      &
+$U(r) = 0 : r_{ij} \ge 2^{1 \over 6}~\sigma + \Delta$ \\
+           &                           &            &          &          &         &                      & \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+$^{\dagger}$ Note: in this formula the terms $\alpha$,
+$\beta$ and $\gamma$ are compound expressions involving the
+variables $E_{o},n,m,r_{0}$ and $r_{c}$.  See Section \ref{vdw}
+for further details.
+
+$^{\ddagger}$ Note: $r_{c}$ defaults to the general van der Waals
+cutoff ({\tt rvdw} or {\tt rcut}) if it is set to zero or not
+specified in the FIELD file.
+
+$^{*}$ Note: $\Delta$ defaults to zero if $|\Delta| > 0.5~\sigma$ or
+it is not specified in the FIELD file.
+\vskip 1ex
+\end{table}
+
+\item {\bf metal {\em n}} \\
+where {\em n} is the number of metal potentials to be entered.  It
+is followed by {\em n} records, each specifying a particular metal
+potential in the following manner:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> atmnam 1     \> a8   \> first atom type \\
+\> atmnam 2     \> a8   \> second atom type \\
+\> key          \> a4   \> potential key, see Table \ref{metal-table} \\
+\> variable 1   \> real \> potential parameter, see Table \ref{metal-table} \\
+\> variable 2   \> real \> potential parameter, see Table \ref{metal-table} \\
+\> variable 3   \> real \> potential parameter, see Table \ref{metal-table} \\
+\> variable 4   \> real \> potential parameter, see Table \ref{metal-table} \\
+\> variable 5   \> real \> potential parameter, see Table \ref{metal-table} \\
+\> variable 6   \> real \> potential parameter, see Table \ref{metal-table} \\
+\> variable 7   \> real \> potential parameter, see Table \ref{metal-table} \\
+\> variable 8   \> real \> potential parameter, see Table \ref{metal-table} \\
+\> variable 9   \> real \> potential parameter, see Table \ref{metal-table} \\
+\end{tabbing}
+The variables pertaining to each potential are described in Table
+\ref{metal-table}.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{metal-table} Metal Potential}
+\vskip 1ex
+\begin{tabular}{|l|l|c|c|c|c|c|c|}
+\hline
+key & potential type & \multicolumn{5}{c|}{Variables (1-5,6-9)}& functional form \\
+\hline
+           &                 &         &         &         &     &          & \\
+{\bf eam}  & EAM             &         &         &         &     &          &
+tabulated potential \\
+           &                 &         &         &         &     &          & \\
+{\bf fnsc} & Finnis-Sinclair & $c_{0}$ & $c_{1}$ & $c_{2}$ & $c$ & $A$      &
+$U_{i}(r) = {1 \over 2} \sum\limits_{j \ne i} (r_{ij}-c)^{2} (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}) - A \sqrt{\rho_{i}}$ \\
+           &                 &  $d$    & $\beta$ &         &     &          &
+$\rho_{i} = \sum\limits_{j\ne i} \left[(r_{ij}-d)^{2} + \beta \frac{(r_{ij}-d)^{3}}{d}\right]$ \\
+           &                 &         &         &         &     &          & \\
+{\bf exfs} & Extended        & $c_{0}$ & $c_{1}$ & $c_{2}$ &$c_{3}$&$c_{4}$ &
+$U_{i}(r) = {1 \over 2} \sum\limits_{j \ne i} (r_{ij}-c)^{2} (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}+c_{3}r_{ij}^{3}+c_{4}r_{ij}^{4})$ \\
+           & Finnis-Sinclair &  $c$    & $A$     & $d$     & $B$ &          &
+$- A \sqrt{\rho_{i}} ~~,~~ \rho_{i} = \sum\limits_{j\ne i} \left[(r_{ij}-d)^{2} + B^{2} (r_{ij}-d)^{4}\right]$ \\
+           &                 &         &         &         &     &          & \\
+{\bf stch} & Sutton-Chen     & $\epsilon$ & $a$  & $n$     & $m$ & $c$      &
+$U_{i}(r) = \epsilon \left[ {1 \over 2} \sum\limits_{j \ne i} \left(
+\frac{a}{r_{ij}} \right)^{n} - c \sqrt{\rho_{i}} \right]$ \\
+           &                 &         &         &         &     &          &
+$\rho_{i} = \sum\limits_{j\ne i} \left(\frac{a}{r_{ij}}\right )^{m}$ \\
+           &                 &         &         &         &     &          & \\
+{\bf gupt} & Gupta           & $A$     & $r_{0}$ & $p$     & $B$ & $q_{ij}$ &
+$U_{i}(r) = {1 \over 2} \sum\limits_{j \ne i} A \exp \left(-p \frac{r_{ij}-r_{0}}{r_{0}}\right) - B \sqrt{\rho_{i}}$ \\
+           &                 &         &         &         &     &          &
+$\rho_{i} = \sum\limits_{j\ne i} \exp \left(-2 q_{ij} \frac{r_{ij}-r_{0}}{r_{0}}\right)$ \\
+           &                 &         &         &         &     &          & \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\end{table}
+
+\item {\bf rdf {\em n}} \\
+where {\em n} is the number of RDF pairs to be entered.  It is
+followed by {\em n} records, each specifying a particular RDF pair
+in the following manner:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> atmnam 1     \> a8   \> first atom type \\
+\> atmnam 2     \> a8   \> second atom type \\
+\end{tabbing}
+
+By default in DL\_POLY\_2 and \D every {\bf vdw} and {\bf met}
+potential specifies an RDF pair.  If the control option
+{\bf rdf {\em f}} is specified in the CONTROL file then all pairs
+defined in {\bf vdw} and/or {\bf met} potentials sections will
+also have their RDF calculated.  The user has two choices to enable
+the calculation of RDFs in systems with force fields that do not
+have {\bf vdw} and/or {\bf met} potentials: (i) to define fictitious
+potentials with zero contributions or (ii) to use {\bf rdf {\em n}}
+option - which not only provides a neater way for specification of
+RDF pairs but also better memory efficiency since \D will not
+allocate (additional) potential arrays for fictitious interactions
+that will not be used.  (This option is not available in DL\_POLY\_2.)
+
+{\bf Note} that {\bf rdf} and {\bf vdw/met} are not complementary -
+i.e. if the former is used none of the pairs defined by the latter
+will be considered for RDF calculations.
+
+The selected RDFs are calculated in the {\sc rdf\_collect} by
+collecting distance information from all two-body pairs as encountered
+in the Verlet neighbour list created in the {\sc link\_cell\_pairs}
+routine within the {\sc two\_body\_forces} routine.  In the
+construction of the Verlet neighbour list, pairs of particles
+(part of the exclusion list) are excluded.  The exclusion list contains
+particles that are part of:
+\begin{itemize}
+\item core-shell units
+\item bond constraints
+\item chemical bonds, that are NOT distance restraints
+\item valence angles, that are NOT distance restraints
+\item dihedrals
+\item inversions
+\item frozen particles
+\end{itemize}
+RDF pairs containing type(s) of particles that fall in this list will
+be polluted.  However, there are many ways to overcome such effects.
+
+\item {\bf tersoff {\em n}} \\
+where {\em n} is the number of specified Tersoff potentials.  It
+is followed by $2n$ records specifying $n$ particular Tersoff
+single atom type parameters and $n(n+1)/2$ records specifying
+cross atom type parameters in the following manner:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+{\bf potential 1 : record 1} \\
+\> atmnam       \> a8   \> atom type \\
+\> key          \> a4   \> potential key, see Table \ref{tersoff-table} \\
+\> variable 1   \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> variable 2   \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> variable 3   \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> variable 4   \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> variable 5   \> real \> cutoff range for this potential (\AA) \ref{tersoff-table} \\
+{\bf potential 1 : record 2} \\
+\> variable 6   \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> variable 7   \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> variable 8   \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> variable 9   \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> variable 10  \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> variable 11  \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> ... \> ... \> ... \\
+\> ... \> ... \> ... \\
+{\bf potential $n$ : record $2n-1$} \\
+\> ... \> ... \> ... \\
+{\bf potential $n$ : record $2n$} \\
+\> ... \> ... \> ... \\
+{\bf cross term $1$ : record $2n+1$} \\
+\> atmnam 1     \> a8   \> first atom type \\
+\> atmnam 2     \> a8   \> second atom type \\
+\> variable a   \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> variable b   \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> variable c   \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> ... \> ... \> ... \\
+\> ... \> ... \> ... \\
+{\bf cross term $n(n+1)/2$ : record $2n+n(n+1)/2$} \\
+\> ... \> ... \> ... \\
+\end{tabbing}
+The variables pertaining to each potential are described in Table
+\ref{tersoff-table}.
+
+Note that the fifth variable is the range at which the particular
+tersoff\index{potential!Tersoff} potential is truncated.  The
+distance is in \AA.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{tersoff-table} Tersoff Potential}
+\vskip 1ex
+\begin{tabular}{|l|l|c|c|c|c|c|c|c|}
+\hline
+key & potential type & \multicolumn{6}{c|}{Variables (1-5,6-11,a-c)} & functional form \\
+\hline
+           &          &        &          &        &     &     &     & \\
+{\bf ters} & Tersoff  & $A$    & $a$      & $B$    & $b$ & $R$ &     &
+Potential form \\
+           & (single) & $S$    & $\beta$  & $\eta$ & $c$ & $d$ & $h$ &
+as shown in \\
+           &          &        &          &        &     &     &     &
+Section \\
+           & (cross)  & $\chi$ & $\omega$ & $\delta$ &   &     &     &
+\ref{tersoff} \\
+           &          &        &          &        &     &     &     & \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\end{table}
+
+\item {\bf tbp {\em n}} \\
+where {\em n} is the number of three-body potentials to be
+entered.  It is followed by {\em n} records, each specifying a
+particular three-body potential in the following manner:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> atmnam 1 ($i$) \> a8   \> first atom type \\
+\> atmnam 2 ($j$) \> a8   \> second (central) atom type \\
+\> atmnam 3 ($k$) \> a8   \> third atom type \\
+\> key            \> a4   \> potential key, see Table \ref{tbp-table} \\
+\> variable 1     \> real \> potential parameter, see Table \ref{tbp-table} \\
+\> variable 2     \> real \> potential parameter, see Table \ref{tbp-table} \\
+\> variable 3     \> real \> potential parameter, see Table \ref{tbp-table} \\
+\> variable 4     \> real \> potential parameter, see Table \ref{tbp-table} \\
+\> variable 5     \> real \> cutoff range for this potential (\AA) \\
+\end{tabbing}
+The variables pertaining to each potential are described in Table
+\ref{tbp-table}.
+
+Note that the fifth variable is the range at which the three
+body\index{potential!three-body} potential is truncated.  The
+distance is in \AA, measured from the central atom.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{tbp-table} Three-body Potentials}
+\vskip 1ex
+\begin{tabular}{|l|l|c|c|c|c|c|}
+\hline
+key & potential type & \multicolumn{4}{c|}{Variables (1-4)} & functional form\dag \\
+\hline
+           &                                        &           &              &            &            & \\
+{\bf harm} & Harmonic                               & $k$       & $\theta_{0}$ &            &            &
+$U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}$ \\
+           &                                        &           &              &            &            & \\
+{\bf thrm} & Truncated harmonic                     & $k$       & $\theta_{0}$ & $\rho$     &            &
+$U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}~\exp[-(r_{ij}^{8} + r_{ik}^{8})/\rho^{8}]$ \\
+           &                                        &           &              &            &            & \\
+{\bf shrm} & Screened harmonic                      & $k$       & $\theta_{0}$ & $\rho_{1}$ & $\rho_{2}$ &
+$U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}\exp[-(r_{ij}/\rho_{1} + r_{ik}/\rho_{2})]$ \\
+           &                                        &           &              &            &            & \\
+{\bf bvs1} & Screened Vessal \cite{vessal-94a}      & $k$       & $\theta_{0}$ & $\rho_{1}$ & $\rho_{2}$ &
+$U(\theta) = {k \over 8(\theta-\theta_{0})^{2}} \left\{ \left[ (\theta_{0} -\pi)^{2} -(\theta-\pi)^{2}\right]^{2}\right\} \times$ \\
+           &                                        &           &              &            &            &
+$\exp[-(r_{ij}/\rho_{1} + r_{ik}/\rho_{2})]$ \\
+           &                                        &           &              &            &            & \\
+{\bf bvs2} & Truncated Vessal \cite{smith-95a}      & $k$       & $\theta_{0}$ & $a$        & $\rho$     &
+$U(\theta) = k~(\theta-\theta_{0})^{2}~\big[ \theta^a (\theta-\theta_{0})^{2} (\theta+\theta_{0}-2\pi){^{2}}$ \\
+           &                                        &           &              &            &            &
+$+ {a \over 2} \pi^{a-1}(\theta_{0}-\pi)^{3}\big]~\exp[-(r_{ij}^{8} + r_{ik}^{8})/\rho^{8}]$ \\
+           &                                        &           &              &            &            & \\
+{\bf hbnd} & H-bond \cite{mayo-90a}                 & $D_{hb}$  & $R_{hb}$     &            &            &
+$U(\theta) = D_{hb}~\cos^{4}(\theta) \times$ \\
+           &                                        &           &              &            &            &
+$[5(R_{hb}/r_{jk})^{12} - 6(R_{hb}/r_{jk})^{10}]$ \\
+           &                                        &           &              &            &            & \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\dag $\theta$ is the $i$-$j$-$k$ angle.
+\vskip 1ex
+\end{table}
+
+\item {\bf fbp {\em n}} \\
+where {\em n} is the number of four-body potentials to be entered.
+It is followed by {\em n} records, each specifying a particular
+four-body potential in the following manner:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> atmnam 1 ($i$) \> a8   \> first (central) atom type \\
+\> atmnam 2 ($j$) \> a8   \> second atom type \\
+\> atmnam 3 ($k$) \> a8   \> third atom type \\
+\> atmnam 4 ($l$) \> a8   \> fourth atom type \\
+\> key            \> a4   \> potential key, see Table \ref{fbp-table} \\
+\> variable 1     \> real \> potential parameter, see Table \ref{fbp-table} \\
+\> variable 2     \> real \> potential parameter, see Table \ref{fbp-table} \\
+\> variable 3     \> real \> cutoff range for this potential (\AA) \\
+\end{tabbing}
+The variables pertaining to each potential are described in Table
+\ref{fbp-table}.
+
+Note that the third variable is the range at which the
+four-body\index{potential!four-body} potential is truncated.  The
+distance is in \AA, measured from the central atom.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{fbp-table} Four-body Potentials}
+\vskip 1ex
+\begin{tabular}{|l|l|c|c|c|}
+\hline
+key & potential type & \multicolumn{2}{c|}{Variables (1-2)} & functional form\ddag \\
+\hline
+           &                 &     &            & \\
+{\bf harm} & Harmonic        & $k$ & $\phi_{0}$ &
+$U(\phi) = {k \over 2}~(\phi - \phi_{0})^{2}$ \\
+           &                 &     &            & \\
+{\bf hcos} & Harmonic cosine & $k$ & $\phi_{0}$ &
+$U(\phi) = {k \over 2}~(\cos(\phi) - \cos(\phi_{0}))^{2}$ \\
+           &                 &     &            & \\
+{\bf plan} & Planar          & $A$ &            &
+$U(\phi) = A~[1 - \cos(\phi)]$ \\
+           &                 &     &            & \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\ddag $\phi$ is the $i$-$j$-$k$-$l$ four-body angle\index{potential!four-body}.
+\vskip 1ex
+\end{table}
+
+\end{enumerate}
+
+\subsubsection{External Field}
+
+The presence of an external field is flagged by the directive: \\
+\\
+{\bf extern} \\
+\\
+\noindent The following line in the FIELD file must contain another
+directive indicating what type of field is to be applied, followed
+by the field parameters. The variables pertaining to each field
+potential are described in Table \ref{external-field-table}.
+
+{\bf Note:} only one type of field can be applied at a time.
+
+{\bf Note} that external force parameters are read in terms of
+the specified energy units and the general DL\_POLY units so
+that the two sides of the equation defining the field are balanced.
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{external-field-table} External Fields}
+\vskip 1ex
+\begin{tabular}{|l|l|c|c|c|c|l|}
+\hline
+key & potential type & \multicolumn{4}{c|}{Variables (1-4)} & functional form\dag \\
+\hline
+           &                     &         &         &         &               & \\
+{\bf elec} & Electric Field      & $E_{x}$ & $E_{y}$ & $E_{z}$ &               &
+$\vek{F} = q \; \vek{E}$ \\
+           &                     &         &         &         &               & \\
+{\bf oshr} & Oscillating Shear   & $A$     & $n$     &         &               &
+$\vek{F}_x = A \; \cos(2 n\pi~z/L_{z})$ \\
+           &                     &         &         &         &               & \\
+{\bf shrx} & Continuous Shear    & $A$     & $z_{0}$ &         &               &
+$\vek{v}_x = \frac{A}{2} \frac{|z|}{z}~:~|z|~>~z_{0}$ \\
+           &                     &         &         &         &               & \\
+{\bf grav} & Gravitational Field & $G_{x}$ & $G_{y}$ & $G_{z}$ &               &
+$\vek{F} = m \; \vek{G}$ \\
+           &                     &         &         &         &               & \\
+{\bf magn} & Magnetic Field      & $H_{x}$ & $H_{y}$ & $H_{z}$ &               &
+$\vek{F} = q \; (\vek{v} \times \vek{H})$ \\
+           &                     &       &           &         &               & \\
+{\bf sphr} & Containing Sphere   & $A$   & $R_{0}$   & $n$     & $R_{\rm cut}$ &
+$\vek{F} = A \; (R_{0} - r)^{-n}~:~r > R_{\rm cut}$ \\
+           &                     &       &           &         &               & \\
+{\bf zbnd} & Repulsive Wall      & $A$   & $z_{0}$   & $p$     &               &
+$\vek{F} = A \; (z_{0} - z) ~:~p \; z > p \; z_{0}$ \\
+           &                     &       &           &         &               & \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\end{table}
+
+\subsubsection{Closing the FIELD File}
+
+The FIELD file must be closed with the directive:\\
+\\
+{\bf close}
+\\
+\noindent which signals the end of the force field data.  Without
+this directive \D will abort.
+
+\subsection{The REFERENCE File}
+\label{reference-file}
+
+The REFERENCE has the same format and structure as CONFIG
+(see Section \ref{config-file}) file with the exception that
+${\tt imcon}~{\bf MUST~BE} \ne 0$.  REFERENCE may contain
+more or less particles than CONFIG does and may have
+particles whith identities that are not defined in FIELD
+(see Section \ref{field-file}).  The positions of these
+particles are used to define the crystalline lattice sites
+to whitch the particles in CONFIG compare during simulation
+when the defect detection option, {\bf defe}cts, is used.
+REFERENCE is read by the subroutine {\sc defects\_reference\_read}.
+
+\subsection{The REVOLD File}
+\label{revold-file}
+
+This file contains statistics arrays from a previous job.  It is
+not required if the current job is not a continuation of a
+previous run (i.e. if the {\bf restart} directive is not present
+in the CONTROL file - see above).  The file is unformatted and
+therefore not human readable.  \D normally produces the file
+REVIVE (see Section \ref{revive-file}) at the end of a job which
+contains the statistics data.  REVIVE should be copied to REVOLD
+before a continuation run commences.  This may be done by the {\sl
+copy} macro supplied in the {\em execute} sub-directory of \D.
+
+\subsubsection{Format}
+
+The REVOLD file is unformatted.  All variables appearing are
+written in native working precision (see Section
+\ref{ewald-precision}) real representation. Nominally, integer
+quantities (e.g. the timestep number {\tt nstep}) are represented
+by the the nearest real number.  The contents are as follows (the
+dimensions of array variables are given in brackets, in terms of
+parameters from the {\sc setup\_module} file - see Section
+\ref{parameters}).
+
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXX\=\kill
+{\bf record 1}: \\
+\> {\tt nstep}  \> timestep of final configuration \\
+\> {\tt numacc} \> number of configurations used in averages \\
+\> {\tt numrdf} \> number of configurations used in RDF averages \\
+\> {\tt numzdn} \> number of configurations used in Z-density averages \\
+\> {\tt time}   \> elapsed simulation time \\
+\> {\tt tmst}   \> elapsed simulation before averages were switched on \\
+\> {\tt chit}   \> thermostat related quantity (first) \\
+\> {\tt chip}   \> barostat related quantity \\
+\> {\tt cint}   \> thermostat related quantity (second) \\
+{\bf record 2}: \\
+\> {\tt eta}    \>  scaling factors for simulation cell matrix elements (9) \\
+{\bf record 3}: \\
+\> {\tt stpval} \>  instantaneous values of thermodynamic variables ({\tt mxnstk}) \\
+{\bf record 4}: \\
+\> {\tt sumval} \>  average values of thermodynamic variables ({\tt mxnstk}) \\
+{\bf record 5}: \\
+\> {\tt ssqval} \>  fluctuation (squared) of thermodynamic variables ({\tt mxnstk}) \\
+{\bf record 6}: \\
+\> {\tt zumval} \>  running totals of thermodynamic variables ({\tt mxnstk}) \\
+{\bf record 7}: \\
+\> {\tt ravval} \>  rolling averages of thermodynamic variables ({\tt mxnstk}) \\
+{\bf record 8}: \\
+\> {\tt stkval} \>  stacked values of thermodynamic variables ({\tt mxstak}$\times${\tt mxnstk}) \\
+{\bf record 9}: \\
+\> {\tt strcon} \>  constraint bond stress (9) \\
+{\bf record 10}: \\
+\> {\tt strpmf} \>  PMF constraint stress (9) \\
+{\bf record 11}: \\
+\> {\tt stress} \>  atomic stress (9) \\
+{\bf record 12}: (Optional) \\
+\> {\tt rdf}    \> RDF array ({\tt mxgrdf}$\times${\tt mxrdf})\\
+{\bf record 13}: (Optional) \\
+\> {\tt zdens}  \> Z-density array ({\tt mxgrdf}$\times${\tt mxatyp})\\
+\end{tabbing}
+
+\subsubsection{Further Comments}
+
+Note that different versions of \D may have a different order of
+the above parameters or include more or less such.  Therefore a
+different versions of \D may render any existing REVOLD file
+unreadable by the code.
+
+\subsection{The TABLE File}
+\label{table-file}
+
+The TABLE file provides an alternative way of reading in the short
+range potentials - in tabular form.  This is particularly useful if
+an analytical form of the potential does not exist or is too
+complicated to specify in the {\sc vdw\_generate} subroutine. The
+table file is read by the subroutine {\sc vdw\_table\_read} (see Chapter
+\ref{source}).
+
+The option of using tabulated\index{potential!tabulated}
+potentials is specified in the FIELD file (see above).  The
+specific potentials that are to be tabulated are indicated by the
+use of the {\bf tab} keyword on the record defining the short
+range potential (see Table \ref{vdw-table}).
+
+\subsubsection{The TABLE File Format}
+
+The file is free-formatted but blank and commented lines are not
+allowed.
+
+\subsubsection{Definitions of Variables}
+
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXX\=\kill
+{\bf record 1} \\
+\> {\tt header} \> a100    \> file header\\
+{\bf record 2} \\
+\> {\tt delpot} \> real    \> mesh resolution in \AA~(${\tt delport} = \frac{\tt cutpot}{{\tt ngrid}-4}$) \\
+\> {\tt cutpot} \> real    \> cutoff used to define tables in \AA \\
+\> {\tt ngrid}  \> integer \> number of grid points in tables \\
+\end{tabbing}
+The subsequent records define each tabulated potential in turn,
+{in the order indicated by the specification in the FIELD file}.
+Each potential is defined by a header record and a set of data
+records with the potential and force tables.
+
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXX\=\kill
+{\bf header record:}\\
+\> {\tt atom 1} \> a8   \> first atom type \\
+\> {\tt atom 2} \> a8   \> second atom type \\
+{\bf potential data records:} ({\em number of data records} $=$ {\tt Int}(({\tt ngrid}+3)/4)) \\
+\> {\tt data 1} \> real \> data item 1 \\
+\> {\tt data 2} \> real \> data item 2 \\
+\> {\tt data 3} \> real \> data item 3 \\
+\> {\tt data 4} \> real \> data item 4 \\
+{\bf force data records:} ({\em number of data records} $=$ {\tt Int}(({\tt ngrid}+3)/4)) \\
+\> {\tt data 1} \> real \> data item 1 \\
+\> {\tt data 2} \> real \> data item 2 \\
+\> {\tt data 3} \> real \> data item 3 \\
+\> {\tt data 4} \> real \> data item 4 \\
+\end{tabbing}
+
+\subsubsection{Further Comments}
+
+It should be noted that the number of grid points in the TABLE file
+should not be less than the number of grid points \D is expecting.
+(This number is given by the parameter {\tt mxgrid} calculated in
+the {\sc setup\_module} file - see Section \ref{interpolation} and
+\ref{parameters}.)  \D will re-interpolate the tables if {\tt
+ngrid}$>${\tt mxgrid}, but will abort if {\tt ngrid}$<${\tt mxgrid}.
+
+The potential and force tables are used to fill the internal
+arrays {\tt vvdw} and {\tt gvdw} respectively (see Section
+\ref{vdw}).  The contents of force arrays are derived from the
+potential via the formula:
+\begin{equation}
+G(r)=-r\frac{\partial}{\partial r}U(r)~~.
+\end{equation}
+{\bf Note}, this is {\em not} the same as the true force.
+
+During simulation, interactions beyond distance
+$Min(r_{\rm cut},{\tt cutpot})$ are discarded.
+
+\subsection{The TABEAM File}
+\label{tabeam-file}
+
+The TABEAM file contains the tabulated potential functions (no explicit
+analytic form) describing the EAM\index{potential!EAM} metal
+interactions in the MD system.  This file is read by the subroutine
+{\sc metal\_table\_read} (see Chapter \ref{source}).
+
+The EAM potential for an $n$ component metal alloy requires the
+specification of $n$ electron density functions (one for each atom type)
+and $n$ embedding functions (again one for each atom type) and
+$n(n+1)/2$ {\em cross} pair potential functions.  This makes $n(n+5)/2$
+functions in total.  {\bf Note} that the option of using EAM\index{potential!EAM}
+interactions must also be {\em explicitly} declared in the FIELD file
+so that for the $n$ component alloy there are $n(n+1)/2$ {\em cross} pair
+potential ({\bf eam}) keyword entries in FIELD (see above).  ({\bf Note}
+that all metal interactions must be of the same type!)
+
+\subsubsection{The TABEAM File Format}
+
+The file is free-formatted but blank and commented lines are not
+allowed.
+
+\subsubsection{Definitions of Variables}
+
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXX\=\kill
+{\bf record 1} \\
+\> {\tt header} \> a100    \> file header\\
+{\bf record 2} \\
+\> {\tt numpot} \> integer \> number of potential functions in file \\
+\end{tabbing}
+The subsequent records define the $n(n+5)/2$ functions for an $n$
+component alloy - $n$ electron density functions (one for each atom type)
+- {\bf dens}ity keyword, $n$ embedding functions (again one for each atom
+type) - {\bf embe}ding keyword, and $n(n+1)/2$ {\em cross} pair potential
+functions - {\bf pair}s keyword.  The functions may appear in any random
+order in TABEAM as their identification is based on their unique keyword,
+defined first in the function's header record.  The header record is
+followed by predefined number of data records {\bf as a maximum of four data
+per record are read in} - allowing for incompletion of the very last record.
+
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXX\=\kill
+{\bf header record:}\\
+\> {\bf keyword} \> a4      \> type of EAM function: {\bf dens}, {\bf embe}d or {\bf pair} \\
+\> {\tt atom 1}  \> a8      \> first atom type \\
+\> {\tt atom 2}  \> a8      \> second atom type - only specified for {\bf pair} potential functions \\
+\> {\tt ngrid}   \> integer \> number of function data points to read in \\
+\> {\tt limit 1} \> real    \> lower interpolation limit in \AA~for {\bf dens} and {\bf pair} \\
+\>               \>         \> or in density units for {\bf embe}d \\
+\> {\tt limit 2} \> real    \> upper interpolation limit in \AA~for {\bf dens} and {\bf pair} \\
+\>               \>         \> or in density units for {\bf embe}d \\
+{\bf funtion data records:} ({\em number of data records} $=$ {\tt Int}(({\tt ngrid}+3)/4)) \\
+\> {\tt data 1}  \> real    \> data item 1 \\
+\> {\tt data 2}  \> real    \> data item 2 \\
+\> {\tt data 3}  \> real    \> data item 3 \\
+\> {\tt data 4}  \> real    \> data item 4 \\
+\end{tabbing}
+
+\subsubsection{Further Comments}
+
+The tabled data are used to fill the internal arrays {\tt gmet},
+{\tt fmet} and {\tt vmet} respectively (see Section
+\ref{metal}).  The force arrays are generated from these (by the
+{\sc metal\_table\_derivatives} routine) using a five point
+interpolation precedure.  During simulation, interactions beyond
+distance $Min(r_{\rm cut},{\tt limit 2})$ are discarded, whereas
+interactions at distances shorter than {\tt limit 1} will cause the
+simulation to abort.  The simulation will also abort if any local
+density exceeds the limits for the embedding function.

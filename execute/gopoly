@@ -1,0 +1,32 @@
+#@ shell = /usr/bin/tcsh
+#
+#@ job_type = parallel
+#@ job_name = gopoly
+#
+#@ cpus = 32
+#
+#@ node_usage = not_shared
+#@ network.MPI = csss,shared,US
+#
+#@ wall_clock_limit = 00:30:00
+#@ account_no = mine
+#
+#@ output = $(job_name).$(schedd_host).$(jobid).out
+#@ error  = $(job_name).$(schedd_host).$(jobid).err
+#@ notification = never
+#
+#@ bulkxfer = yes
+#@ data_limit = 850000000
+#@ stack_limit = 10000000
+#
+#@ queue
+#
+# ENVIRONMENT SETTINGS
+#
+setenv MP_EAGER_LIMIT 65536
+setenv MP_SHARED_MEMORY yes
+setenv MEMORY_AFFINITY MCM
+setenv MP_TASK_AFFINITY MCM
+setenv MP_SINGLE_THREAD yes
+#
+poe  ./DLPOLY.Z
