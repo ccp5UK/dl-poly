@@ -52,6 +52,11 @@ template<typename T_> struct complex {
 #  error "either of CFG_COMPUTE_{MAJOR, MINOR} haven't been defined"
 #endif
 
+#if ((CFG_COMPUTE_MAJOR == 1) && (CFG_COMPUTE_MINOR < 3))
+#  error "Compilation error: Compute capability (CFG_COMPUTE_MAJOR.CFG_COMPUTE_MINOR) \
+must be set to 1.3 or greater in Makefile"
+#endif
+
 #define CFG_OVERLAP_WITH_HOST        1
 
 /* For testing purposes only -- forces those who include dl_poly_cuda_common.cu
