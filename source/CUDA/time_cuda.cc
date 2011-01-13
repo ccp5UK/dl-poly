@@ -169,8 +169,8 @@ void stop_timing(int aIndex) {
 
 
 #define define_timer(NAME)\
-  extern "C" void start_timing_##NAME##() { start_timing(NAME); }\
-  extern "C" void stop_timing_##NAME##() { stop_timing(NAME); }
+  extern "C" void start_timing_##NAME () { start_timing(NAME); }\
+  extern "C" void stop_timing_##NAME () { stop_timing(NAME); }
 
 define_timer(total);
 define_timer(any);

@@ -46,7 +46,8 @@ Subroutine link_cell_pairs_helper(       &
   safe=.true.
 
 
-!$OMP PARALLEL PRIVATE(ix,iy,iz,ic, ix1,ix2,iy1,iy2,iz1,iz2,jx,jy,jz,jc,ipass,nlx0s,nly0s,nlz0s,nlx1e,nly1e,nlz1e,ibig,i,ii,j,jj,kk,ll,j_start,safe,rsq)
+!$OMP PARALLEL PRIVATE(ix,iy,iz,ic, ix1,ix2,iy1,iy2,iz1,iz2,jx,jy,jz,jc,ipass,&
+!$OMP nlx0s,nly0s,nlz0s,nlx1e,nly1e,nlz1e,ibig,i,ii,j,jj,kk,ll,j_start,safe,rsq)
   Do ipass=1,2
 
 ! primary loop over domain subcells
@@ -210,7 +211,7 @@ End Subroutine link_cell_pairs_helper
 Subroutine link_cell_pairs_remove_exclusions_helper(&
      ibegin,iend)
   Use setup_module
-  Use config_module,  Only : natms,ltg,lexatm,list,mxexcl
+  Use config_module,  Only : natms,ltg,lexatm,list
 
   Implicit None
   Integer, Intent(In) :: ibegin,iend
@@ -256,7 +257,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Use setup_module
   Use domains_module, Only : nprx,npry,nprz
   Use config_module,  Only : cell,natms,nlast,ltg,lfrzn, &
-                             xxx,yyy,zzz,lexatm,list,mxexcl
+                             xxx,yyy,zzz,lexatm,list
 
 #ifdef COMPILE_CUDA
   Use dl_poly_cuda_module
@@ -633,7 +634,7 @@ Call start_timing_link_cell_pairs()
 !   over from the host again.
 ! 20100218/ck: when needed to finalise, mind if lbook==.true. as the list
 !   will be stil lneeded for the exclusions part.
-     If (dl_poly_cuda_offload_tbforces()==.false. .and. lbook==.false.) Then
+     If ((.not.dl_poly_cuda_offload_tbforces()) .and. (.not.lbook)) Then
         Call link_cell_pairs_cuda_finalise()
      End If
 
@@ -822,7 +823,7 @@ Call start_timing_link_cell_pairs()
 #ifdef COMPILE_CUDA
   ! In the CUDA port, frozen atom pairs are not included in the
   !  list() to begin with, so they don't need to be removed here
-  If (dl_poly_cuda_offload_link_cell_pairs() == .false.) Then
+  If (.not.dl_poly_cuda_offload_link_cell_pairs()) Then
 #endif
      If (megfrz > 1) Then
         Do i=1,natms
@@ -858,7 +859,7 @@ Call start_timing_link_cell_pairs()
      Call start_timing_link_cell_pairs_cuda_remove_excluded()
      If (dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable()) Then
         Call link_cell_pairs_cuda_invoke_remove_exclusions()
-        If (dl_poly_cuda_offload_tbforces()==.false. .and. lbook==.true.) Then
+        If (.not.dl_poly_cuda_offload_tbforces()) Then
            Call link_cell_pairs_cuda_finalise()
         End If
      Else

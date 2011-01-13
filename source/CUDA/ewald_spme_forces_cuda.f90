@@ -143,7 +143,9 @@ Subroutine spme_forces_helper(&
   fff2=0.0_wp
   fff3=0.0_wp
 
-  !$OMP PARALLEL DO REDUCTION(+:fff0,fff1,fff2,fff3) PRIVATE(i,tmp,l,k,j,ll,kk,jj,bdxl,bdyl,bdzl,bdxk,bdyk,bdzk,bdxj,bdyj,bdzj,qsum,fix,fiy,fiz,fx,fy,fz)
+  !$OMP PARALLEL DO REDUCTION(+:fff0,fff1,fff2,fff3) &
+  !$OMP PRIVATE(i,tmp,l,k,j,ll,kk,jj,bdxl,bdyl,bdzl,bdxk,bdyk,bdzk,&
+  !$OMP         bdxj,bdyj,bdzj,qsum,fix,fiy,fiz,fx,fy,fz)
   Do i=ibegin,min(natms,ibegin+iiters-1)
      tmp=chge(i)
 

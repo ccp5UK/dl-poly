@@ -79,7 +79,8 @@ Subroutine two_body_forces_cuda_helper(&
 
   Allocate (xdf(1:512),ydf(1:512),zdf(1:512),rsqdf(1:512))
 
-!$OMP PARALLEL PRIVATE(i,limit,aaa,bbb,ccc,engmetloc,virmetloc,engvdwloc,virvdwloc,engcpe_rlloc,vircpe_rlloc,stressloc,k,j)
+!$OMP PARALLEL PRIVATE(i,limit,aaa,bbb,ccc,engmetloc,virmetloc,&
+!$OMP engvdwloc,virvdwloc,engcpe_rlloc,vircpe_rlloc,stressloc,k,j)
   engmetloc=0.0_wp
   virmetloc=0.0_wp
   engvdwloc=0.0_wp
@@ -355,7 +356,7 @@ Subroutine two_body_forces                        &
 ! In particular, only tabulated calculations are available in metal_forces and vdw_forces
 ! The CUDA acceleration is not called if direct calculation is required
  If (dl_poly_cuda_offload_tbforces() .and. dl_poly_cuda_is_cuda_capable() &
-     .and. ld_vdw == .false. .and. ld_met == .false.) Then
+     .and. (.not.ld_vdw) .and. (.not.ld_met)) Then
 
      Call two_body_forces_cuda_initialise(&
           cuda_ilo, natms,&

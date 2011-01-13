@@ -111,7 +111,7 @@ Subroutine metal_ld_compute                &
 ! The CUDA port implements the features of dl_poly_3 - a subset of those found in dl_poly_4
 ! In particular, only tabulated calculations are available in metal_ld_compute
 ! The CUDA acceleration is not called if direct calculation is required
-  If (dl_poly_cuda_offload_metal_ld_compute() .and. ld_met==.false.) Then
+  If (dl_poly_cuda_offload_metal_ld_compute() .and. (.not.ld_met)) Then
      Call metal_ld_compute_cuda_initialise(&
           0,mxatms,natms,mxgrid,ntpmet,mxmet,mxatdm,mxlist,&
           xxx,yyy,zzz,list,ltype,ltpmet,lstmet,vmet,dmet,cell,rho)
