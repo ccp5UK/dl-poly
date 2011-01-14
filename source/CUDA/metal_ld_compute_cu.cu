@@ -55,11 +55,12 @@ template<typename T_> struct host_data {
 
 static host_data<real> sHD;
 
-//extern "C" void metal_ld_compute_cuda_initialise_
 extern "C" void metal_ld_compute_cuda_initialise
-(int *aIsListOnline, int *aMXATMS, int *aNATMS, int *aMXGRID, int *aNTPMET, int *aMXMET, int *aMXATDM, int *aMXLIST,
- real *aXXX, real *aYYY, real *aZZZ, int *aLIST, int *aLTYPE, int *aLTPMET, int *aLSTMET, real *aVMET, real *aDMET,
- real *aCELL, real *aRHO) {
+                (int *aIsListOnline, int *aMXATMS, int *aNATMS, 
+                 int *aMXGRID, int *aNTPMET, int *aMXMET, int *aMXATDM, int *aMXLIST,
+                 real *aXXX, real *aYYY, real *aZZZ, 
+                 int *aLIST, int *aLTYPE, int *aLTPMET, int *aLSTMET, 
+                 real *aVMET, real *aDMET, real *aCELL, real *aRHO) {
 
   sHD.mIsListAlreadyOnline = *aIsListOnline;
   sHD.mMXATMS = sCD.mMXATMS = *aMXATMS;
@@ -79,8 +80,8 @@ extern "C" void metal_ld_compute_cuda_initialise
   real lDummy;
   wrapper_f_invert(sCD.mCELL, sCD.mCELL_INVERTED, &lDummy);
 
-  if (CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY && sHD.mMXMET<CFG_K1_MXMET_MAX_VALUE) {
-    printf("%s::%s: can only handled mxmet<%d when CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY"
+if (CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY && sHD.mMXMET > CFG_K1_MXMET_MAX_VALUE) {
+    printf("%s::%s: can only handle mxmet<%d when CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY"
 	   " is enabled; found %d.\n",
 	   __FILE__, __FUNCTION__, CFG_K1_MXMET_MAX_VALUE, sHD.mMXMET);
     exit(-1);
@@ -350,6 +351,9 @@ template<typename T_, unsigned int GY_, unsigned int BX_, int IMCON_> __global__
 //       T_  lDMET_1_K0_1 = *dmet<T_>(1,lK0,1);
 //       T_  lDMET_3_K0_1 = *dmet<T_>(3,lK0,1);
 // #endif
+#if (!CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY)
+      T_  lDMET_3_K0_1 = *dmet<T_>(3,lK0,1);
+#endif
       int lLTPMET_K0   = CONSTANT_DATA.mLTPMET[lK0-1];
 
       // +1 extra register for this var
