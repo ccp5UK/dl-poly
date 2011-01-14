@@ -82,23 +82,27 @@ void link_cell_pairs_cuda_set_is_in_valid_context(int aIs) {
   }
 
 template<typename T_> struct constant_data {
-  int mNATMS, mMXATMS, mNCELLS, mMXLIST, mNSBCLL, mNLP, mNLP3, mNLX, mNLY, mMXATDM;
+  T_ *mXXX, *mYYY, *mZZZ;
+  
+  int *mLFRZN, *mAT_LIST, *mLCT_START;
+  int *mLIST;
+  int *mLTG;
+  int *mLEXATM;
+
+  T_ mRCSQ;
+
+  int mNATMS, mMXATMS, mNCELLS, mMXLIST, mNSBCLL;
+  int mNLP, mNLP3, mNLX, mNLY, mMXATDM;
   int mMEGFRZ;
   int mNLX_Plus_2xNLP, mNLY_Plus_2xNLP;
+  int mMXEXCL;
   int3 mNLXYZ0E, mNLXYZ1S;
-  T_* mXXX, *mYYY, *mZZZ;
-  int *mLFRZN, *mAT_LIST, *mLCT_START;
-  T_ mRCSQ;
+
   /* the ni{x,y,z} constants; the second half of the array holds the
    * negated values.
    */
 #define NLP3_MAX 14
   int3 mNIXYZ[2*NLP3_MAX];
-  int *mLIST;
-
-  int  mMXEXCL;
-  int *mLTG;
-  int *mLEXATM;
 };
 
 __device__ __constant__ constant_data<real> CONSTANT_DATA;
