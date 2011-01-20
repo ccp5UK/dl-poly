@@ -89,6 +89,8 @@ template<typename T_> struct constant_data {
   int *mLTG;
   int *mLEXATM;
 
+  int3 *mNIXYZ;
+
   T_ mRCSQ;
 
   int mNATMS, mMXATMS, mNCELLS, mMXLIST, mNSBCLL;
@@ -97,12 +99,6 @@ template<typename T_> struct constant_data {
   int mNLX_Plus_2xNLP, mNLY_Plus_2xNLP;
   int mMXEXCL;
   int3 mNLXYZ0E, mNLXYZ1S;
-
-  /* the ni{x,y,z} constants; the second half of the array holds the
-   * negated values.
-   */
-#define NLP3_MAX 14
-  int3 mNIXYZ[2*NLP3_MAX];
 };
 
 __device__ __constant__ constant_data<real> CONSTANT_DATA;
@@ -216,9 +212,10 @@ extern "C" void link_cell_pairs_cuda_initialise(
   sCD.mNLXYZ0E   = make_int3(*aNLX0E, *aNLY0E, *aNLZ0E);
   sCD.mNLXYZ1S   = make_int3(*aNLX1S, *aNLY1S, *aNLZ1S);
 
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mXXX,       sCD.mMXATMS*sizeof(real)));
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mYYY,       sCD.mMXATMS*sizeof(real)));
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mZZZ,       sCD.mMXATMS*sizeof(real)));
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mXXX, sCD.mMXATMS*sizeof(real)));
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mYYY, sCD.mMXATMS*sizeof(real)));
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mZZZ, sCD.mMXATMS*sizeof(real)));
+
   BIND_TEXTURE_REAL_1D(TEXTURE_DATA_XXX, sCD.mXXX, sCD.mMXATMS);
   BIND_TEXTURE_REAL_1D(TEXTURE_DATA_YYY, sCD.mYYY, sCD.mMXATMS);
   BIND_TEXTURE_REAL_1D(TEXTURE_DATA_ZZZ, sCD.mZZZ, sCD.mMXATMS);
@@ -228,24 +225,28 @@ extern "C" void link_cell_pairs_cuda_initialise(
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mLCT_START, (sCD.mNCELLS+1)*sizeof(int)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mLIST, (512 + (1+sCD.mMXLIST)*sCD.mMXATDM)*sizeof(int)));
 
+  /* ni{x,y,z} constants; the second half of this array holds the
+   * negated values. */
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mNIXYZ, 2*sCD.mNLP3*sizeof(int3)));
+
   if (sHD.mIsLBOOKTrue) {
     CUDA_SAFE_CALL(cudaMalloc(&sCD.mLTG, sCD.mMXATMS*sizeof(int)));
     CUDA_SAFE_CALL(cudaMalloc(&sCD.mLEXATM, (1+sCD.mMXEXCL)*sCD.mMXATDM*sizeof(int)));
   }
 
   start_timing_link_cell_pairs_cuda_write();
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mXXX,       aXXX,
-                            sCD.mMXATMS*sizeof(real), cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mYYY,       aYYY,
-                            sCD.mMXATMS*sizeof(real), cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mZZZ,       aZZZ,
-                            sCD.mMXATMS*sizeof(real), cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mLFRZN,     aLFRZN,
-                            sCD.mMXATMS*sizeof(int), cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mAT_LIST,   aAT_LIST,
-                            sCD.mMXATMS*sizeof(int), cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mLCT_START, aLCT_START,
-                            (sCD.mNCELLS+1)*sizeof(int), cudaMemcpyHostToDevice));
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mXXX, aXXX, sCD.mMXATMS*sizeof(real), 
+                            cudaMemcpyHostToDevice));
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mYYY, aYYY, sCD.mMXATMS*sizeof(real), 
+                            cudaMemcpyHostToDevice));
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mZZZ, aZZZ, sCD.mMXATMS*sizeof(real), 
+                            cudaMemcpyHostToDevice));
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mLFRZN, aLFRZN, sCD.mMXATMS*sizeof(int), 
+                            cudaMemcpyHostToDevice));
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mAT_LIST, aAT_LIST, sCD.mMXATMS*sizeof(int), 
+                            cudaMemcpyHostToDevice));
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mLCT_START, aLCT_START, (sCD.mNCELLS+1)*sizeof(int), 
+                            cudaMemcpyHostToDevice));
 
   if (sHD.mIsLBOOKTrue) {
     // TODO: this can be collected from the two body force's CUDA copy.
@@ -257,11 +258,15 @@ extern "C" void link_cell_pairs_cuda_initialise(
 			      (1+sCD.mMXEXCL)*sCD.mMXATDM*sizeof(int), cudaMemcpyHostToDevice));
   }
 
-  int lNLP3 = *aNLP3;
-  for (int lI=0 ; lI<lNLP3 ; lI++) {
-   sCD.mNIXYZ[lI]          = make_int3( aNIX[lI],  aNIY[lI],  aNIZ[lI]);
-   sCD.mNIXYZ[NLP3_MAX+lI] = make_int3(-aNIX[lI], -aNIY[lI], -aNIZ[lI]);
+  // Create a temporary NIXYZ array - the second half stores the negated values
+  int3 *lNIXYZ = (int3*) malloc(2*sCD.mNLP3*sizeof(int3));
+  for (int lI=0 ; lI < sCD.mNLP3 ; lI++) {
+    lNIXYZ[lI]           = make_int3( aNIX[lI],  aNIY[lI],  aNIZ[lI]);
+    lNIXYZ[sCD.mNLP3+lI] = make_int3(-aNIX[lI], -aNIY[lI], -aNIZ[lI]);
   }
+  cudaMemcpy(sCD.mNIXYZ, lNIXYZ, 2*sCD.mNLP3*sizeof(int3), cudaMemcpyHostToDevice);
+  free(lNIXYZ);
+
   CUDA_SAFE_CALL(cudaMemcpyToSymbol(CONSTANT_DATA, (void*)&sCD, sizeof(constant_data<real>)));
   stop_timing_link_cell_pairs_cuda_write();
 
@@ -336,6 +341,7 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
   lBlockIdx.z = blockIdx.x / (aDims.x*aDims.y);
 
   int lMEGFRZ = CONSTANT_DATA.mMEGFRZ;
+  int lNLP3   = CONSTANT_DATA.mNLP3;
 
   // compute i{x,y,z}, then i{x,y,z}{1,2}, from the blockIdx vector:
   int3 lIXYZ  = CONSTANT_DATA.mNLXYZ0E + 1 + lBlockIdx;
@@ -370,7 +376,7 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
       T_  aYYY_I   = fetch_real_1d(TEXTURE_DATA_YYY, lI-1);//CONSTANT_DATA.mYYY[lI - 1];
       T_  aZZZ_I   = fetch_real_1d(TEXTURE_DATA_ZZZ, lI-1);//CONSTANT_DATA.mZZZ[lI - 1];
 
-      int lOff = (IPASS_-1)*NLP3_MAX;
+      int lOff = (IPASS_-1)*lNLP3;
 
       for (int lKK = IPASS_ + threadIdx.y ; lKK <= CONSTANT_DATA.mNSBCLL ; lKK += BY_) {
         int3 lNIXYZ = CONSTANT_DATA.mNIXYZ[lOff+lKK-1];
@@ -774,7 +780,7 @@ extern "C" void link_cell_pairs_cuda_invoke() {
                                      &sCD.mNCELLS, &sCD.mNLP, &sCD.mNLP3, &sCD.mNSBCLL,
                                      &sCD.mMEGFRZ, &sCD.mRCSQ);
   } else {
-      int lHostATMs = (int)((1.0 - sHD.mPercentageOffloadedToTheDevice)*sCD.mNATMS);
+    int lHostATMs = (int)((1.0 - sHD.mPercentageOffloadedToTheDevice)*sCD.mNATMS);
     int lIATM_HstBegin, lIATM_HstEnd, lIATM_DevBegin;
     if (sHD.mPercentageOffloadedToTheDevice==1.0) {
       lIATM_DevBegin = 1;
