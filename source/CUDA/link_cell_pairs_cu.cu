@@ -288,6 +288,7 @@ extern "C" void link_cell_pairs_cuda_finalise() {
   CUDA_SAFE_CALL(cudaFree(sCD.mAT_LIST));
   CUDA_SAFE_CALL(cudaFree(sCD.mLCT_START));
   CUDA_SAFE_CALL(cudaFree(sCD.mLIST));
+  CUDA_SAFE_CALL(cudaFree(sCD.mNIXYZ));
 
   if (sHD.mIsLBOOKTrue) {
     CUDA_SAFE_CALL(cudaFree(sCD.mLTG));
