@@ -385,7 +385,8 @@ extern "C" void two_body_forces_cuda_initialise(
      * there is enough room available.
      */
     if (CFG_MXVDW_MAX_VALUE<lMXVDW) {
-      printf("%s::%s:   cannot handle mxvdw=%d; disable CFG_LSTLTPVDW_FETCH_FROM_CONSTANT_MEMORY"
+      printf("%s::%s: cannot handle mxvdw=%d; Try setting"
+             " CFG_LSTLTPVDW_FETCH_FROM_CONSTANT_MEMORY to zero"
 	     " or increase CFG_MXVDW_MAX_VALUE\n",
 	     __FILE__, __FUNCTION__, lMXVDW);
       exit(-1);
@@ -1320,7 +1321,7 @@ extern "C" void two_body_forces_cuda_invoke(
 
     int lBytesNeeded = (12 + (lOUT_StripeSizeInItems + 12)*lUnroll_D)*sizeof(real);
     if (sHD.mScratchpadSize < lBytesNeeded) {
-      printf("%s::%s: run out of scratch gmem: requested %db (lOUT_StripeSizeInItems=%d,"
+      printf("%s::%s: Out of global memory: requested %db (lOUT_StripeSizeInItems=%d,"
              " lUnroll_D=%d, lLIMIT_MaxInH=%d), can reserve up to %db\n",
              __FILE__, __FUNCTION__,
              (lOUT_StripeSizeInItems + 16)*lUnroll_D*sizeof(real),
@@ -1337,9 +1338,9 @@ extern "C" void two_body_forces_cuda_invoke(
 
     int lSharedMemorySize = 10*lNT*sizeof(real);// + lNT*4*sizeof(real);
     if (lSharedMemorySize > (16*1024 - 128)) {
-      printf("%s::%s: run out of smem: requested %db, can reserve up to %db\n",
+      printf("%s::%s: Out of shared memory: requested %db, can reserve up to %db\n",
              __FILE__, __FUNCTION__, lSharedMemorySize, (16*1024 - 128));
-      printf("%s::%s:   threads/block = %d\n",
+      printf("%s::%s: threads/block = %d\n",
              __FILE__, __FUNCTION__, lNT);
       exit(-1);
     }

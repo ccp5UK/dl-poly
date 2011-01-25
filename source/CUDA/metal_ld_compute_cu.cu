@@ -82,8 +82,9 @@ extern "C" void metal_ld_compute_cuda_initialise
 
 if (CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY && sHD.mMXMET > CFG_K1_MXMET_MAX_VALUE) {
     printf("%s::%s: can only handle mxmet<%d when CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY"
-	   " is enabled; found %d.\n",
-	   __FILE__, __FUNCTION__, CFG_K1_MXMET_MAX_VALUE, sHD.mMXMET);
+	   " is enabled; found %d. Try setting CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY"
+           " to zero in %s\n",
+	   __FILE__, __FUNCTION__, CFG_K1_MXMET_MAX_VALUE, sHD.mMXMET, __FILE__);
     exit(-1);
   }
 
