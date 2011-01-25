@@ -253,7 +253,7 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
 ! construct B-splines
 
 #ifdef COMPILE_CUDA
-  If (dl_poly_cuda_is_cuda_capable()) Then
+  If (dl_poly_cuda_offload_bspgen() .and. dl_poly_cuda_is_cuda_capable()) Then
      Call spme_container_cuda_bspgen_initialise(30000,natms,mxspl,nospl,xxx,yyy,zzz)
      Call spme_container_cuda_bspgen_invoke(bspx,bspy,bspz,bsdx,bsdy,bsdz)
      Call spme_container_cuda_bspgen_finalise()

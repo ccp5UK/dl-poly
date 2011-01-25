@@ -433,7 +433,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 ! ijb workspace arrays for DaFT
 
 #ifdef COMPILE_CUDA
-     If (dl_poly_cuda_offload_ewald_spme_forces()) Then
+     If (dl_poly_cuda_offload_ewald_spme_forces() .and. dl_poly_cuda_is_cuda_capable()) Then
         Call dl_poly_cuda_allocate_pinned_default(block_x*block_y*block_z, 16, cpqqq_local)
         Call c_f_pointer(cpqqq_local,  pqqq_local,  (/block_x,block_y,block_z/))
         qqq_local  => remap_lb_complex_3d(pqqq_local, 1, 1, 1)
@@ -549,7 +549,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 !       functions, then hold the data online to avoid redundant transfers.
 !       They will then be freed near the exit of this subroutine.
 !
-  If (dl_poly_cuda_offload_ewald_spme_forces()) Then
+  If (dl_poly_cuda_offload_ewald_spme_forces() .and. dl_poly_cuda_is_cuda_capable()) Then
      Call spme_container_cuda_bspgen_set_leave_bspdxyz_data_online(.true.)
   End If
 
@@ -572,7 +572,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 #ifdef COMPILE_CUDA
   Call start_timing_ewald_spme_forces_ccarray()
 
-  If (dl_poly_cuda_offload_ewald_spme_forces_ccarray()) Then
+  If (dl_poly_cuda_offload_ewald_spme_forces_ccarray() .and. dl_poly_cuda_is_cuda_capable()) Then
      Call ewald_spme_forces_cuda_ccarray_initialise(&
           nlast,mxspl,mxatms,ixb,iyb,izb,ixt,iyt,izt,ixx,iyy,izz,&
           bspx,bspy,bspz,bsdx,bsdy,bsdz,it,chge,&
@@ -1096,7 +1096,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
 #ifdef COMPILE_CUDA
   Call start_timing_ewald_spme_forces_ccharge()
-  If (dl_poly_cuda_offload_ewald_spme_forces_cccharge()) Then
+  If (dl_poly_cuda_offload_ewald_spme_forces_cccharge() .and. dl_poly_cuda_is_cuda_capable()) Then
      Call ewald_spme_forces_cuda_cccharge_initialise(&
           block_x, block_y, block_z, kmaxa, kmaxb, kmaxc,&
           qqq_local, bscx, bscy, bscz,&
@@ -1253,7 +1253,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 #ifdef COMPILE_CUDA
   Call spme_container_cuda_bspgen_set_is_under_ewald_spme_forces(.false., natms)
 ! CUDA: Remove the bs{p,d}{xyz} if they have been left online:
-  If (dl_poly_cuda_offload_ewald_spme_forces()) Then
+  If (dl_poly_cuda_offload_ewald_spme_forces() .and. dl_poly_cuda_is_cuda_capable()) Then
      Call spme_container_cuda_bspgen_kill_bspdxyz_data()
   End If
 

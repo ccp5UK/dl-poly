@@ -14,7 +14,9 @@ Module dl_poly_cuda_module
 Use kinds_f90
 
 ! Define interfaces for CUDA-port-related C functions
+
 Interface
+
    ! metal_ld_compute
    Subroutine metal_ld_compute_cuda_initialise                  &
               (IsListOnline, mxatms,                            &
@@ -326,6 +328,28 @@ Interface
 
 
 ! Device offload and query routines
+   Subroutine dl_poly_cuda_offload_set(offload_link_cell_pairs,           &
+                                       offload_tbforces,                  &
+                                       offload_constraints_shake,         &
+                                       offload_metal_ld_compute,          &
+                                       offload_ewald_spme_forces,         &
+                                       offload_spme_forces,               &
+                                       offload_bspgen,                    &
+                                       offload_ewald_spme_forces_ccarray, &
+                                       offload_ewald_spme_forces_cccharge) bind(c)
+     Use iso_c_binding
+     Logical( c_bool ), Value :: offload_link_cell_pairs,           &
+                                 offload_tbforces,                  &
+                                 offload_constraints_shake,         &
+                                 offload_metal_ld_compute,          &
+                                 offload_ewald_spme_forces,         &
+                                 offload_spme_forces,               &
+                                 offload_bspgen,                    &
+                                 offload_ewald_spme_forces_ccarray, &
+                                 offload_ewald_spme_forces_cccharge
+
+   End Subroutine dl_poly_cuda_offload_set
+
    Logical Function dl_poly_cuda_is_cuda_capable () bind(c)
    End Function dl_poly_cuda_is_cuda_capable
 
@@ -336,7 +360,7 @@ Interface
    End Function dl_poly_cuda_offload_link_cell_pairs
 
    Logical Function dl_poly_cuda_offload_constraints_shake() bind(c)
-   End Function Dl_poly_cuda_offload_constraints_shake
+   End Function dl_poly_cuda_offload_constraints_shake
 
    Logical Function dl_poly_cuda_offload_metal_ld_compute() bind(c)
    End Function dl_poly_cuda_offload_metal_ld_compute
@@ -352,6 +376,9 @@ Interface
 
    Logical Function dl_poly_cuda_offload_spme_forces() bind(c)
    End Function dl_poly_cuda_offload_spme_forces
+
+   Logical Function dl_poly_cuda_offload_bspgen() bind(c)
+   End Function dl_poly_cuda_offload_bspgen
 
 
 ! Timing Interfaces:
@@ -929,6 +956,8 @@ Interface
    End Subroutine stop_timing_vdw_forces
 End Interface
 
+! Miscellaneous functions/subroutines needed for the CUDA port
+
 Contains
   Function remap_lb_real_2d(array, lb1, lb2) result(ptr)
     Integer, intent(in) :: lb1, lb2
@@ -958,4 +987,129 @@ Contains
     ptr => array
   End Function remap_lb_integer_2d
 
+! At initialisation, check certain parameters to see if offloading to 
+! GPU is possible (i.e. if the relevant functionality has been implemented).
+
+  Subroutine dl_poly_cuda_check_offload_conditions(keyfce, imcon) 
+    Use iso_c_binding
+    Use metal_module, Only : ld_met,ntpmet
+    Use vdw_module  , Only : ld_vdw
+    Use setup_module, Only : mxspl,nrite
+
+    Implicit None
+
+    Integer               :: keypot
+    Integer, Intent( In ) :: keyfce, imcon
+
+    Logical( c_bool ) :: offload_link_cell_pairs   = .true., &
+                         offload_tbforces          = .true., &
+                         offload_constraints_shake = .true., &
+                         offload_metal_ld_compute  = .true., &
+                         offload_ewald_spme_forces = .true., &
+                         offload_spme_forces       = .true., &
+                         offload_bspgen            = .true., &
+                         offload_ewald_spme_forces_ccarray  = .true., &
+                         offload_ewald_spme_forces_cccharge = .true.
+      
+    Write(nrite,*)
+
+    ! Compute keypot variable
+    Call metal_ld_compute_get_keypot(keypot)
+
+    ! Link_cell_pairs: no unimplemented functionality - always offloadable
+
+    ! Two-body forces:
+    If (ld_vdw) Then
+       Write(nrite,'(1x,a)') 'CUDA Port Warning (two_body_forces): ld_vdw is true'
+       offload_tbforces = .false.
+    Endif
+
+    If (ld_met) Then
+       Write(nrite,'(1x,a)') 'CUDA Port Warning (two_body_forces): ld_met is true'
+       offload_tbforces = .false.
+    End If
+
+    If ( keyfce /= 0 .and. keyfce /= 2 ) Then
+       Write(nrite,'(1x,a)') 'CUDA Port Warning (two_body_forces): found unsupported keyfce value'
+       Write(nrite,'(1x,a)') 'Only keyfce = 0,2 are supported'
+       offload_tbforces = .false.
+    Endif
+
+    If ( imcon /= 2 .and. imcon /= 3 ) Then
+       Write(nrite,'(1x,a)') 'CUDA Port Warning (two_body_forces): found unsupported imcon value'
+       Write(nrite,'(1x,a)') 'Only imcon = 2,3 are supported'
+       offload_tbforces = .false.
+    Endif
+
+    If ( keypot == 0 .and. ntpmet > 0 ) Then
+       Write(nrite,'(1x,a)') 'CUDA Port Warning (two_body_forces): found unsupported keypot (0) and ntpmet (>0) values'
+       offload_tbforces = .false.
+    Endif
+
+    If ( .not. offload_tbforces ) Then
+       Write(nrite,'(1x,a,/)') 'Disabling CUDA acceleration for two_body_forces (if applicable)'
+    Endif
+
+
+    ! Constraints Shake
+    If ( imcon /= 2 .and. imcon /= 3 ) Then
+       Write(nrite,'(1x,a)') 'CUDA Port Warning (constraints_shake): found unsupported imcon value'
+       Write(nrite,'(1x,a)') 'Only imcon = 2,3 are supported'
+       offload_constraints_shake = .false.
+    Endif
+
+    If ( .not. offload_constraints_shake ) Then
+       Write(nrite,'(1x,a,/)') 'Disabling CUDA acceleration for constraints_shake (if applicable)'
+    Endif
+
+
+    ! Metal LD Compute
+    If ( ld_met ) Then
+       Write(nrite,'(1x,a)') 'CUDA Port Warning (metal_ld_compute): ld_met is true'
+       offload_metal_ld_compute = .false. 
+    End If
+
+    If ( keypot == 0 ) Then
+       Write(nrite,'(1x,a)') 'CUDA Port Warning (metal_ld_compute): found unsupported keypot value (0)'
+       offload_metal_ld_compute = .false.
+    Endif    
+
+    If ( .not. offload_metal_ld_compute ) Then
+       Write(nrite,'(1x,a,/)') 'Disabling CUDA acceleration for metal_ld_compute (if applicable)'
+    Endif
+
+    ! Ewald_spme_forces (top-level)
+    ! no unimplemented functionality at top level
+
+    ! Ewald_spme_forces -> bspgen (spme_container.f90)
+    ! Ewald_spme_forces -> spme_forces (ewald_spme_forces.f90)
+    If ( mxspl /= 8 ) Then
+       Write(nrite,'(1x,a  )') 'CUDA Port Warning (spme_forces): found non-default mxspl value (mxspl /= 8)'
+       Write(nrite,'(1x,a,/)') 'Disabling CUDA acceleration for spme_forces (if applicable)'
+       offload_spme_forces = .false.
+    Endif
+
+    ! Ewald_spme_forces -> ewald_spme_forces_ccharge
+
+    ! Ewald_spme_forces -> ewald_spme_forces_ccarray
+
+    ! bspgen (spme_container.f90) - Always offloaded
+
+    ! Set some static truth variables so that C routines can 
+    ! check what will be offloaded (dl_poly_init_cu.cu)
+    Call dl_poly_cuda_offload_set                &
+             (offload_link_cell_pairs,           &
+              offload_tbforces,                  &
+              offload_constraints_shake,         &
+              offload_metal_ld_compute,          &
+              offload_ewald_spme_forces,         &
+              offload_spme_forces,               &
+              offload_bspgen,                    &
+              offload_ewald_spme_forces_ccarray, &
+              offload_ewald_spme_forces_cccharge)
+
+  End Subroutine dl_poly_cuda_check_offload_conditions
+
 End Module dl_poly_cuda_module
+
+

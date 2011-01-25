@@ -54,7 +54,7 @@ Subroutine metal_ld_compute                &
   Use comms_module,  Only : mxnode,gsum,gcheck
   Use setup_module
   Use config_module, Only : cell,natms,ltype,list,xxx,yyy,zzz
-  Use metal_module,  Only : ld_met,ntpmet,ltpmet,fmet,lstmet,vmet,dmet
+  Use metal_module,  Only : ntpmet,ltpmet,fmet,lstmet,vmet,dmet
 
 #ifdef COMPILE_CUDA
   Use dl_poly_cuda_module
@@ -111,7 +111,7 @@ Subroutine metal_ld_compute                &
 ! The CUDA port implements the features of dl_poly_3 - a subset of those found in dl_poly_4
 ! In particular, only tabulated calculations are available in metal_ld_compute
 ! The CUDA acceleration is not called if direct calculation is required
-  If (dl_poly_cuda_offload_metal_ld_compute() .and. (.not.ld_met)) Then
+  If (dl_poly_cuda_offload_metal_ld_compute() .and. dl_poly_cuda_is_cuda_capable()) Then
      Call metal_ld_compute_cuda_initialise(&
           0,mxatms,natms,mxgrid,ntpmet,mxmet,mxatdm,mxlist,&
           xxx,yyy,zzz,list,ltype,ltpmet,lstmet,vmet,dmet,cell,rho)

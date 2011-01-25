@@ -198,12 +198,12 @@ Subroutine two_body_forces                        &
                                 fxx,fyy,fzz
   Use ewald_module
   Use vdw_module,        Only : ntpvdw, prmvdw
-  Use metal_module,      Only : ld_met,ntpmet,ltpmet,lstmet,vmet,dmet
+  Use metal_module,      Only : ntpmet,ltpmet,lstmet,vmet,dmet
   Use statistics_module, Only : numrdf
 
 #ifdef COMPILE_CUDA
 ! Needed by the CUDA code
-  Use vdw_module,        Only : ld_vdw,ls_vdw,lstvdw,ltpvdw,vvdw,gvdw
+  Use vdw_module,        Only : ls_vdw,lstvdw,ltpvdw,vvdw,gvdw
   Use dl_poly_cuda_module
   Use iso_c_binding
 #endif
@@ -355,8 +355,7 @@ Subroutine two_body_forces                        &
 ! The CUDA port implements the features of dl_poly_3 - a subset of those found in dl_poly_4
 ! In particular, only tabulated calculations are available in metal_forces and vdw_forces
 ! The CUDA acceleration is not called if direct calculation is required
- If (dl_poly_cuda_offload_tbforces() .and. dl_poly_cuda_is_cuda_capable() &
-     .and. (.not.ld_vdw) .and. (.not.ld_met)) Then
+ If (dl_poly_cuda_offload_tbforces() .and. dl_poly_cuda_is_cuda_capable()) Then
 
      Call two_body_forces_cuda_initialise(&
           cuda_ilo, natms,&

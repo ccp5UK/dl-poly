@@ -212,7 +212,7 @@ Program dl_poly
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
           "**         **  contributors:  i.j.bush               ****** O ****", &
-          "*************  version:  4.01.0    /   october 2010  ******* L ***", &
+          "*************  version:  4.01.1   /   november 2010  ******* L ***", &
           "*************  Execution on ", mxnode, "    node(s)  ******** Y **", &
           "******************************************************************"
   End If
@@ -529,6 +529,8 @@ Program dl_poly
 ! cuda: do the second stage of the cuda initialisations now that the
 ! dl poly data structures have been populated.
   Call dl_poly_cuda_initialise2(mxatms, mxcons)
+! Check for unimplemented functionality in CUDA port
+  Call dl_poly_cuda_check_offload_conditions(keyfce, imcon) 
 #endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

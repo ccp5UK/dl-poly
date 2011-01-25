@@ -622,7 +622,7 @@ Call start_timing_link_cell_pairs()
 
 
 #ifdef COMPILE_CUDA
-  if (dl_poly_cuda_offload_link_cell_pairs()) Then
+  if (dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable()) Then
      Call link_cell_pairs_cuda_initialise(                   &
        natms,mxatms,ncells,mxlist,mxatdm,nsbcll,nlp,nlx,nly, &
        nlx0e, nly0e, nlz0e, nlx1s, nly1s, nlz1s,             &
@@ -640,7 +640,7 @@ Call start_timing_link_cell_pairs()
 
 ! 20100226/ck: uncomment this to study the effect of sorted atom lists
 !   to the CUDA kernels of two_body_forces.
-!     If (dl_poly_cuda_offload_tbforces()==.true. .and. lbook==.false.) Then
+!     If (dl_poly_cuda_offload_tbforces() .and. (.not. lbook)) Then
 !        Call link_cell_pairs_cuda_invoke_sort_atoms()
 !     End If
   Else
@@ -823,7 +823,8 @@ Call start_timing_link_cell_pairs()
 #ifdef COMPILE_CUDA
   ! In the CUDA port, frozen atom pairs are not included in the
   !  list() to begin with, so they don't need to be removed here
-  If (.not.dl_poly_cuda_offload_link_cell_pairs()) Then
+  If (.not.dl_poly_cuda_offload_link_cell_pairs() .and. &
+       dl_poly_cuda_is_cuda_capable()) Then
 #endif
      If (megfrz > 1) Then
         Do i=1,natms
@@ -857,7 +858,8 @@ Call start_timing_link_cell_pairs()
 
 #ifdef COMPILE_CUDA
      Call start_timing_link_cell_pairs_cuda_remove_excluded()
-     If (dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable()) Then
+     If (dl_poly_cuda_offload_link_cell_pairs() .and. &
+         dl_poly_cuda_is_cuda_capable()) Then
         Call link_cell_pairs_cuda_invoke_remove_exclusions()
         If (.not.dl_poly_cuda_offload_tbforces()) Then
            Call link_cell_pairs_cuda_finalise()
