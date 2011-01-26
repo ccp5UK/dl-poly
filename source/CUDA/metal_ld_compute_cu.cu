@@ -139,7 +139,7 @@ if (CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY && sHD.mMXMET > CFG_K1_MXMET_MAX_VA
     for (int lL=1 ; lL<=sHD.mNTPMET ; lL++) {
       lKEYPOT = aLTPMET[lL-1];
       if (lL>1) {
-        if (lKEYPOT != aLTPMET[(lL-1)]) {
+        if (lKEYPOT != aLTPMET[(lL-2)]) {
           int lError = 92;
           wrapper_f_error(&lError);
         }

@@ -339,7 +339,7 @@ extern "C" void two_body_forces_cuda_initialise(
       for (int lL=1 ; lL<=sHD.mNTPMET ; lL++) {
         lKEYPOT = aLTPMET[lL-1];
         if (lL>1) {
-          if (lKEYPOT != aLTPMET[(lL-1)]) {
+          if (lKEYPOT != aLTPMET[(lL-2)]) {
             int lError = 92;
             wrapper_f_error(&lError);
           }
