@@ -126,12 +126,10 @@ if (CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY && sHD.mMXMET > CFG_K1_MXMET_MAX_VA
 
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mVMET,   sHD.mMXGRID*sHD.mMXMET*2*sizeof(real)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mDMET,   sHD.mMXGRID*sHD.mMXMET*2*sizeof(real)));
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mRHO,    sHD.mMXATMS*sizeof(real)));
 
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mRHO_JATM_ACCU, sCD.mNATMS*sHD.mMXLIST*sizeof(real)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mRHO_IATM_ACCU, sCD.mNATMS*sizeof(real)));
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mRHO,
-			    CFG_K2_THREADBLOCKS*sCD.mMXATMS*sizeof(real)));
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mRHO, CFG_K2_THREADBLOCKS*sCD.mMXATMS*sizeof(real)));
 
   static int sHasKeypotBeenComputed = 0;
   if (!sHasKeypotBeenComputed) {
