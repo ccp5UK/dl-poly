@@ -38,9 +38,9 @@ template<typename T_> struct constant_data {
   int *mLTYPE, *mLIST;
   T_ *mVMET, *mDMET, *mRHO;
   T_ *mXXX, *mYYY, *mZZZ;
-  T_   mCELL[9], mCELL_REC[9], mCELL_INVERTED[9];
-  T_   *mRHO_JATM_ACCU;
-  T_   *mRHO_IATM_ACCU;
+  T_ mCELL[9], mCELL_REC[9], mCELL_INVERTED[9];
+  T_ *mRHO_JATM_ACCU;
+  T_ *mRHO_IATM_ACCU;
 
 };
 
@@ -60,7 +60,8 @@ extern "C" void metal_ld_compute_cuda_initialise
                  int *aMXGRID, int *aNTPMET, int *aMXMET, int *aMXATDM, int *aMXLIST,
                  real *aXXX, real *aYYY, real *aZZZ, 
                  int *aLIST, int *aLTYPE, int *aLTPMET, int *aLSTMET, 
-                 real *aVMET, real *aDMET, real *aCELL, real *aRHO) {
+                 real *aVMET, real *aDMET, real *aCELL, real *aRHO) 
+{
 
   sHD.mIsListAlreadyOnline = *aIsListOnline;
   sHD.mMXATMS = sCD.mMXATMS = *aMXATMS;
@@ -80,7 +81,7 @@ extern "C" void metal_ld_compute_cuda_initialise
   real lDummy;
   wrapper_f_invert(sCD.mCELL, sCD.mCELL_INVERTED, &lDummy);
 
-if (CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY && sHD.mMXMET > CFG_K1_MXMET_MAX_VALUE) {
+  if (CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY && sHD.mMXMET > CFG_K1_MXMET_MAX_VALUE) {
     printf("%s::%s: can only handle mxmet<%d when CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY"
 	   " is enabled; found %d. Try setting CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY"
            " to zero in %s\n",
@@ -88,10 +89,10 @@ if (CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY && sHD.mMXMET > CFG_K1_MXMET_MAX_VA
     exit(-1);
   }
 
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mXXX,    sHD.mMXATMS*sizeof(real)));
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mYYY,    sHD.mMXATMS*sizeof(real)));
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mZZZ,    sHD.mMXATMS*sizeof(real)));
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mLTYPE,  sHD.mMXATMS*sizeof(int)));
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mXXX, sHD.mMXATMS*sizeof(real)));
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mYYY, sHD.mMXATMS*sizeof(real)));
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mZZZ, sHD.mMXATMS*sizeof(real)));
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mLTYPE, sHD.mMXATMS*sizeof(int)));
 
 #if (!CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY)
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mLSTMET, sHD.mMXMET*sizeof(int)));
@@ -113,19 +114,20 @@ if (CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY && sHD.mMXMET > CFG_K1_MXMET_MAX_VA
     int lLSTMET_I = aLSTMET[lI-1];
     for (int lJ=1 ; lJ<=4 ; lJ++) {
       sCD.mDMET_1234_K0_1[lLSTMET_I-1][lJ-1] =
-          *F3D_ADDRESS(aDMET, 1,1,1, sCD.mMXGRID, sCD.mMXMET, lJ, lLSTMET_I, 1);
+        *F3D_ADDRESS(aDMET, 1,1,1, sCD.mMXGRID, sCD.mMXMET, lJ, lLSTMET_I, 1);
       if (lJ==3) {
-          sCD.mDMET_1234_K0_1[lLSTMET_I-1][lJ-1] *=sCD.mDMET_1234_K0_1[lLSTMET_I-1][lJ-1];
+        sCD.mDMET_1234_K0_1[lLSTMET_I-1][lJ-1] *=sCD.mDMET_1234_K0_1[lLSTMET_I-1][lJ-1];
       }
       if (lJ==4) {
-          sCD.mDMET_1234_K0_1[lLSTMET_I-1][lJ-1] = ((real) 1) /  sCD.mDMET_1234_K0_1[lLSTMET_I-1][lJ-1];
+        sCD.mDMET_1234_K0_1[lLSTMET_I-1][lJ-1] 
+          = ((real) 1) /  sCD.mDMET_1234_K0_1[lLSTMET_I-1][lJ-1];
       }
     }
   }
 #endif
 
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mVMET,   sHD.mMXGRID*sHD.mMXMET*2*sizeof(real)));
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mDMET,   sHD.mMXGRID*sHD.mMXMET*2*sizeof(real)));
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mVMET, sHD.mMXGRID*sHD.mMXMET*2*sizeof(real)));
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mDMET, sHD.mMXGRID*sHD.mMXMET*2*sizeof(real)));
 
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mRHO_JATM_ACCU, sCD.mNATMS*sHD.mMXLIST*sizeof(real)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mRHO_IATM_ACCU, sCD.mNATMS*sizeof(real)));
@@ -180,18 +182,17 @@ if (CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY && sHD.mMXMET > CFG_K1_MXMET_MAX_VA
 			    cudaMemcpyHostToDevice));
 #endif
 
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mVMET, aVMET,
-			    sHD.mMXGRID*sHD.mMXMET*2*sizeof(real),
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mVMET, aVMET, sHD.mMXGRID*sHD.mMXMET*2*sizeof(real),
 			    cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mDMET, aDMET,
-			    sHD.mMXGRID*sHD.mMXMET*2*sizeof(real),
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mDMET, aDMET, sHD.mMXGRID*sHD.mMXMET*2*sizeof(real),
 			    cudaMemcpyHostToDevice));
 
   if (link_cell_pairs_cuda_is_in_valid_context()) {
     link_cell_pairs_cuda_push_lists(1);
     sHD.mIsListAlreadyOnline = 1;
   } else {
-    CUDA_SAFE_CALL(cudaMemcpy(sCD.mLIST, aLIST, sHD.mMXATDM*(1+sHD.mMXLIST)*sizeof(int), cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(sCD.mLIST, aLIST, sHD.mMXATDM*(1+sHD.mMXLIST)*sizeof(int), 
+                              cudaMemcpyHostToDevice));
     sHD.mIsListAlreadyOnline = 1;
   }
 
@@ -199,7 +200,8 @@ if (CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY && sHD.mMXMET > CFG_K1_MXMET_MAX_VA
   stop_timing_metal_ld_compute_cuda_write();
 }
 
-extern "C" void metal_ld_compute_cuda_finalise() {
+extern "C" void metal_ld_compute_cuda_finalise() 
+{
   CUDA_SAFE_CALL(cudaFree(sCD.mXXX));
   CUDA_SAFE_CALL(cudaFree(sCD.mYYY));
   CUDA_SAFE_CALL(cudaFree(sCD.mZZZ));
@@ -218,8 +220,10 @@ extern "C" void metal_ld_compute_cuda_finalise() {
   CUDA_SAFE_CALL(cudaFree(sCD.mRHO));
 }
 
-template<typename T_> __device__
-void obtain_iatm_specific(int aIATM, T_& aXXX_I, T_& aYYY_I, T_& aZZZ_I, int& aLIMIT, int& aAI) {
+template<typename T_> 
+__device__ void obtain_iatm_specific(int aIATM, T_& aXXX_I, T_& aYYY_I, T_& aZZZ_I, 
+                                     int& aLIMIT, int& aAI) 
+{
 
   if (threadIdx.x==0) {
     aXXX_I = CONSTANT_DATA.mXXX[aIATM-1];
@@ -231,8 +235,9 @@ void obtain_iatm_specific(int aIATM, T_& aXXX_I, T_& aYYY_I, T_& aZZZ_I, int& aL
   aAI    = CONSTANT_DATA.mLTYPE[aIATM-1];
 }
 
-template<typename T_, int IMCON_> __device__ void obtain_jatm_rsqdf(
-  int aJATM, T_ aXXX_I, T_ aYYY_I, T_ aZZZ_I, T_& aRSQDF) {
+template<typename T_, int IMCON_> 
+__device__ void obtain_jatm_rsqdf(int aJATM, T_ aXXX_I, T_ aYYY_I, T_ aZZZ_I, T_& aRSQDF) 
+{
 
   T_ lXXX_J = CONSTANT_DATA.mXXX[aJATM-1];
   T_ lYYY_J = CONSTANT_DATA.mYYY[aJATM-1];
@@ -250,11 +255,11 @@ template<typename T_, int IMCON_> __device__ void obtain_jatm_rsqdf(
 
   if (IMCON_==3) { // parallelepiped boundary conditions
     T_ lXSS = CONSTANT_DATA.mCELL_INVERTED[0]*aXDF + CONSTANT_DATA.mCELL_INVERTED[3]*aYDF +
-      CONSTANT_DATA.mCELL_INVERTED[6]*aZDF;
+              CONSTANT_DATA.mCELL_INVERTED[6]*aZDF;
     T_ lYSS = CONSTANT_DATA.mCELL_INVERTED[1]*aXDF + CONSTANT_DATA.mCELL_INVERTED[4]*aYDF +
-      CONSTANT_DATA.mCELL_INVERTED[7]*aZDF;
+              CONSTANT_DATA.mCELL_INVERTED[7]*aZDF;
     T_ lZSS = CONSTANT_DATA.mCELL_INVERTED[2]*aXDF + CONSTANT_DATA.mCELL_INVERTED[5]*aYDF +
-      CONSTANT_DATA.mCELL_INVERTED[8]*aZDF;
+              CONSTANT_DATA.mCELL_INVERTED[8]*aZDF;
 
     lXSS = lXSS - anint(lXSS);
     lYSS = lYSS - anint(lYSS);
@@ -267,17 +272,20 @@ template<typename T_, int IMCON_> __device__ void obtain_jatm_rsqdf(
   aRSQDF = add(mul(aXDF,aXDF), add(mul(aYDF,aYDF), mul(aZDF,aZDF)));
 }
 
-template<typename T_> __device__ T_* vmet(int aX, int aY, int aZ) {
+template<typename T_> __device__ T_* vmet(int aX, int aY, int aZ) 
+{
   return(dev_f3d_address<T_,0>(CONSTANT_DATA.mVMET, 1,1,1,
                                CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX, aY, aZ));
 }
 
-template<typename T_> __device__ T_* dmet(int aX, int aY, int aZ) {
+template<typename T_> __device__ T_* dmet(int aX, int aY, int aZ) 
+{
   return(dev_f3d_address<T_,0>(CONSTANT_DATA.mDMET, 1,1,1,
                                CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX, aY, aZ));
 }
 
-template<typename T_> __device__ T_ metal_forces_calc_gamma(T_ aPPx, T_ aT1, T_ aT2) {
+template<typename T_> __device__ T_ metal_forces_calc_gamma(T_ aPPx, T_ aT1, T_ aT2) 
+{
   T_ lSelect_T1T2 = (aPPx < (T_)0) ? aT1 : aT2;
   T_ lPlusMinus1  = (aPPx < (T_)0) ? ((T_) 1) : ((T_) -1);
   T_ lGamma = madd(lSelect_T1T2, ((T_)0.5), mul(add(aT2,-aT1),add(aPPx, lPlusMinus1)));
@@ -285,7 +293,8 @@ template<typename T_> __device__ T_ metal_forces_calc_gamma(T_ aPPx, T_ aT1, T_ 
 }
 
 template<typename T_>
-__device__ T_ metal_forces_calc_gamma(T_ *aBase, int aX, int aY, int aZ, T_ aPPx) {
+__device__ T_ metal_forces_calc_gamma(T_ *aBase, int aX, int aY, int aZ, T_ aPPx) 
+{
   T_ lGVK0 = *dev_f3d_address<T_,0>(aBase, 1,1,1, CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX+3, aY, aZ);
   T_ lGVK1 = *dev_f3d_address<T_,0>(aBase, 1,1,1, CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX+4, aY, aZ);
   T_ lGVK2 = *dev_f3d_address<T_,0>(aBase, 1,1,1, CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX+5, aY, aZ);
@@ -296,23 +305,29 @@ __device__ T_ metal_forces_calc_gamma(T_ *aBase, int aX, int aY, int aZ, T_ aPPx
 
 
 template<typename T_>
-__device__ T_ metal_forces_calc_gamma_vmet(int aX, int aY, int aZ, T_ aPPx) {
+__device__ T_ metal_forces_calc_gamma_vmet(int aX, int aY, int aZ, T_ aPPx) 
+{
   return(metal_forces_calc_gamma(CONSTANT_DATA.mVMET, aX, aY, aZ, aPPx));
 }
 
 template<typename T_>
-__device__ T_ metal_forces_calc_gamma_dmet(int aX, int aY, int aZ, T_ aPPx) {
+__device__ T_ metal_forces_calc_gamma_dmet(int aX, int aY, int aZ, T_ aPPx) 
+{
   return(metal_forces_calc_gamma(CONSTANT_DATA.mDMET, aX, aY, aZ, aPPx));
 }
 
-template<typename T_,unsigned int BX_> __global__ void metal_ld_compute_cuda_k0(int aI) {
+template<typename T_,unsigned int BX_> 
+__global__ void metal_ld_compute_cuda_k0(int aI) 
+{
   for (int lIATM=aI+blockIdx.y*BX_+threadIdx.x;
        lIATM<=CONSTANT_DATA.mNATMS ; lIATM+=gridDim.y*BX_) {
     CONSTANT_DATA.mRHO_IATM_ACCU[lIATM-1] = (T_)0;
   }
 }
 
-template<typename T_, unsigned int GY_, unsigned int BX_, int IMCON_> __global__ void metal_ld_compute_cuda_k1(int aI) {
+template<typename T_, unsigned int GY_, unsigned int BX_, int IMCON_> 
+__global__ void metal_ld_compute_cuda_k1(int aI) 
+{
   extern __shared__ T_ shared[];
 
   // +1 reg for the gridDim.y increment (instead of a constant)
@@ -342,14 +357,9 @@ template<typename T_, unsigned int GY_, unsigned int BX_, int IMCON_> __global__
 
       lAJ = CONSTANT_DATA.mLTYPE[lJATM - 1];
 
-      int lKEY         = max(lAI,lAJ) * (max(lAI,lAJ)-1) / 2 + min(lAI,lAJ);
-      int lK0          = CONSTANT_DATA.mLSTMET[lKEY - 1];
-// #if (CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY)
-//       T_  lDMET_1_K0_1 = CONSTANT_DATA.mDMET_1234_K0_1[lK0-1][1-1];
-// #else
-//       T_  lDMET_1_K0_1 = *dmet<T_>(1,lK0,1);
-//       T_  lDMET_3_K0_1 = *dmet<T_>(3,lK0,1);
-// #endif
+      int lKEY = max(lAI,lAJ) * (max(lAI,lAJ)-1) / 2 + min(lAI,lAJ);
+      int lK0  = CONSTANT_DATA.mLSTMET[lKEY - 1];
+
 #if (!CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY)
       T_  lDMET_3_K0_1 = *dmet<T_>(3,lK0,1);
 #endif
@@ -397,7 +407,11 @@ template<typename T_, unsigned int GY_, unsigned int BX_, int IMCON_> __global__
       *F2D_ADDRESS(CONSTANT_DATA.mRHO_JATM_ACCU, 1, 1, CONSTANT_DATA.mMXLIST, lJ, lIATM) = lRHO_JATM_Update;
     }
     __syncthreads();
+#if !CFG_UNIFIED_ADDRESS_SPACE
     psum<T_,BX_,1>();
+#else
+    psum_uas<T_,BX_,1>(shared);
+#endif
     if (threadIdx.x==0) {
         // +2 registers for this
         CONSTANT_DATA.mRHO_IATM_ACCU[lIATM-1] = shared[0];
@@ -406,7 +420,9 @@ template<typename T_, unsigned int GY_, unsigned int BX_, int IMCON_> __global__
   }
 }
 
-template<typename T_, unsigned int BX_> __global__ void metal_ld_compute_cuda_k2(int aI) {
+template<typename T_, unsigned int BX_> 
+__global__ void metal_ld_compute_cuda_k2(int aI) 
+{
   T_ *lRHO = CONSTANT_DATA.mRHO + blockIdx.y*CONSTANT_DATA.mMXATMS;
 
   /* Cleanup the 'rho' array; this is what the host does as well as necessary
@@ -433,8 +449,8 @@ template<typename T_, unsigned int BX_> __global__ void metal_ld_compute_cuda_k2
     for (int lJ=1+threadIdx.x ; lJ<=lLIMIT ; lJ+=BX_) {
       int lJATM = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), lJ, lIATM);
       if (lJATM<=CONSTANT_DATA.mNATMS) {
-          lRHO[lJATM-1] +=
-              *F2D_ADDRESS(CONSTANT_DATA.mRHO_JATM_ACCU, 1, 1, CONSTANT_DATA.mMXLIST, lJ, lIATM);
+        lRHO[lJATM-1] +=
+          *F2D_ADDRESS(CONSTANT_DATA.mRHO_JATM_ACCU, 1, 1, CONSTANT_DATA.mMXLIST, lJ, lIATM);
       }
     }
     if (threadIdx.x==0) {
@@ -444,17 +460,22 @@ template<typename T_, unsigned int BX_> __global__ void metal_ld_compute_cuda_k2
   }
 }
 
- template<typename T_, unsigned int GX_, unsigned int BX_, int NS_> __global__ void metal_ld_compute_cuda_k3b(int aI) {
+template<typename T_, unsigned int GX_, unsigned int BX_, int NS_> 
+__global__ void metal_ld_compute_cuda_k3b(int aI) 
+{
   for (int lI=aI+threadIdx.x+blockIdx.x*BX_ ; lI<=CONSTANT_DATA.mNATMS ; lI+=GX_*BX_) {
     T_ lV = CONSTANT_DATA.mRHO[lI-1];
+    
     for (int lU=1 ; lU<NS_ ; lU++) {
       lV += (CONSTANT_DATA.mRHO + lU*CONSTANT_DATA.mMXATMS)[lI-1];
     }
+    
     CONSTANT_DATA.mRHO[lI-1] = lV;
   }
 }
 
-extern "C" void metal_ld_compute_cuda_invoke() {
+extern "C" void metal_ld_compute_cuda_invoke() 
+{
   cudaError_t lLastError;
 
   start_timing_metal_ld_compute_cuda_k0();
