@@ -6,7 +6,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 ! gradient method
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith october 2010
+! author    - i.t.todorov & w.smith march 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,6 +17,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use core_shell_module
   Use statistics_module, Only : pass
+  Use kinetic_module,    Only : freeze_atoms
 
   Implicit None
 
@@ -29,7 +30,8 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
   Integer,           Save :: keyopt
   Integer                 :: fail(1:2),i,ia,ib,jshl,local_index
   Real( Kind = wp ), Save :: grad_tol,step,eng,eng0,eng1,eng2, &
-                             grad,grad0,grad1,grad2,onorm,sgn,stride,gamma
+                             grad,grad0,grad1,grad2,onorm,sgn, &
+                             stride,gamma,fff(0:3)
 
 ! Optimisation iteration and convergence limits
 
@@ -37,12 +39,12 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
   Real( Kind = wp ), Save :: grad_pass
 
-  Integer,           Allocatable       :: lstopt(:,:)
+  Integer,           Allocatable       :: lstopt(:,:),lst_sh(:)
   Real( Kind = wp ), Allocatable       :: fxt(:),fyt(:),fzt(:)
   Real( Kind = wp ), Allocatable, Save :: oxt(:),oyt(:),ozt(:)
 
   fail=0
-  Allocate (lstopt(1:2,1:mxshl),                       Stat=fail(1))
+  Allocate (lstopt(1:2,1:mxshl),lst_sh(1:mxatms),       Stat=fail(1))
   Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'core_shell_relax allocation failure, node: ', idnode
@@ -324,20 +326,40 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
      If (l_rdf) lrdf=l_rdf
 
-! Zero shells' velocities and forces
+! Zero shells' velocities and forces and redistribute
+! the residual force to the rest of the system to prevent
+! COM force generation
 
+     lst_sh(1:natms)=0
+     fff(0)=Real(natms,wp)
+     fff(1:3)=0.0_wp
      Do i=1,ntshl
         ib=lstopt(2,i)
         If (ib > 0) Then
-           vxx(ib)=0.0_wp ; vyy(ib)=0.0_wp ; vzz(ib)=0.0_wp
-           fxx(ib)=0.0_wp ; fyy(ib)=0.0_wp ; fzz(ib)=0.0_wp
+           lst_sh(ib)=1
+           fff(0)=fff(0)-1.0_wp
+           fff(1)=fff(1)+fxx(ib) ; fxx(ib)=0.0_wp ; vxx(ib)=0.0_wp
+           fff(2)=fff(2)+fyy(ib) ; fyy(ib)=0.0_wp ; vyy(ib)=0.0_wp
+           fff(3)=fff(3)+fzz(ib) ; fzz(ib)=0.0_wp ; vzz(ib)=0.0_wp
+        End If
+     End Do
+     If (mxnode > 1) Call gsum(fff)
+     fff(1:3)=fff(1:3)/fff(0)
+     Do i=1,natms
+        If (lst_sh(i) == 0) Then
+           fxx(i)=fxx(i)+fff(1)
+           fyy(i)=fyy(i)+fff(2)
+           fzz(i)=fzz(i)+fff(3)
         End If
      End Do
 
+! Frozen atoms option
+
+     Call freeze_atoms()
   End If
 
-  Deallocate (lstopt,      Stat=fail(1))
-  Deallocate (fxt,fyt,fzt, Stat=fail(2))
+  Deallocate (lstopt,lst_sh, Stat=fail(1))
+  Deallocate (fxt,fyt,fzt,   Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'core_shell_relax deallocation failure, node: ', idnode
      Call error(0)
