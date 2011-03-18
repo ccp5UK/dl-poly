@@ -167,7 +167,7 @@ Subroutine defects_reference_export &
   safe=.true.
 
 ! Find whether a particle that belongs to this domain (idnode) falls
-! into the halo of the nighbouring domain in the direction of mdir, i.e.
+! into the halo of the neighbouring domain in the direction of mdir, i.e.
 ! the particle is is within the 'minus halo' of this domain and has
 ! to be exported into the neighbouring domain in the direction of mdir.
 ! If a particle is to be exported across domains then all config

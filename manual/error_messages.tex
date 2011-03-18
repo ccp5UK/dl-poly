@@ -85,10 +85,10 @@ and resubmit.
 \subsubsection*{\underline{Message 5}: error - unknown energy unit requested}
 
 The \D FIELD file permits a choice of units for input of energy
-parameters.  These may be: electron volts ({\bf eV}); k-calories
-({\bf kcal}); k-joules ({\bf kJ}); Kelvin ({\bf K}elvin); or the
-\D internal units (10 J) ({\bf internal}).  There is no default
-value.  Failure to specify any of these correctly, or reference
+parameters.  These may be: electron-Volts ({\bf eV}); k-calories per mol
+({\bf kcal}/mol); k-Joules per mol ({\bf kJ}/mol); Kelvin per Boltzmann
+({\bf K}elvin/Boltzmann); or the \D internal units, 10 Joules per mol ({\bf internal}).
+There is no default value.  Failure to specify any of these correctly, or reference
 to other energy units, will result in this error message.  See
 documentation of the FIELD file.
 
@@ -1516,7 +1516,9 @@ physically sensible!
 
 \noindent \underline{\em Action}:
 
-Increase the parameter {\tt mxcell}.
+Consider using {\tt densvar} option in CONTROL for extremely
+non-equilibrium simulations.  Alternatively, increase {\tt mxcell}
+in {\sc set\_bounds} recompile and resubmit.
 
 \subsubsection*{\underline{Message 402}: error - van der waals not specified}
 
@@ -2480,10 +2482,19 @@ has failed to find the principal axis for a rigid unit.
 \noindent \underline{\em Action}:
 
 This is an unlikely error.  \D should correctly handle linear,
-planar and 3-dimensional rigid units.  There is the possibility
-that the unit has all of its mass-bearing particles frozen while
-some of the massless are not or the unit has just one mass-bearing
-particle.  Check the definition of the rigid unit in the CONFIG file,
+planar and 3-dimensional rigid units.  There is the remote
+possibility that the unit has all of its mass-bearing particles
+frozen while some of the massless are not or the unit has just
+one mass-bearing particle.  Another, more likely, possibility,
+in case of linear molecules is that the precision of the coordinates
+of these linear molecules' constituentsi, as produced by the user,
+is not good enough, which leads \D to accepting it as non-linear
+while, in fact, it is and then failing at the current point.
+It is quite possible, despite considered as wrong practice, that
+the user defined system of linear RBs is, in fact, generated from
+a system of CBs (3 per RB) which has not been run in a high enough
+SHAKE/RATTLE tolerance accuracy (10\^-8 and higher may be needed).
+Check the definition of the rigid unit in the CONFIG file,
 if sensible report the error to the authors.
 
 \subsubsection*{\underline{Message 1000}: error - working precision mismatch between FORTRAN90 and MPI implementation}

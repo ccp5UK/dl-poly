@@ -7,7 +7,7 @@ Subroutine metal_ld_set_halo(imcon,rmet,keyfce,rho)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith  april 1999
-! amended   - i.t.todorov october 2004
+! amended   - i.t.todorov march 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -28,15 +28,16 @@ Subroutine metal_ld_set_halo(imcon,rmet,keyfce,rho)
   Real( Kind = wp ), Save :: cut,sidex,sidey,sidez,dispx,dispy,dispz
 
   Logical           :: safe
-  Integer           :: fail,i,mlast
+  Integer           :: fail,nlx,nly,nlz,i,mlast,mlast_tmp1,mlast_tmp2
   Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9), &
                        cwx,cwy,cwz,ecwx,ecwy,ecwz,  &
                        uuu,vvv,www
 
-  Integer, Dimension( : ), Allocatable :: iwrk
+  Integer,           Allocatable :: iwrk(:)
+  Real( Kind = wp ), Allocatable :: ott(:)
 
   fail=0
-  Allocate (iwrk(1:mxatms), Stat=fail)
+  Allocate (iwrk(1:mxatms),ott(1:mxatms), Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'metal_ld_set_halo allocation failure, node: ', idnode
      Call error(0)
@@ -61,7 +62,7 @@ Subroutine metal_ld_set_halo(imcon,rmet,keyfce,rho)
      idx=Mod(idnode,nprx)
 
 ! Get the domains' dimensions in reduced space
-! (domains are geometrically equvalent)
+! (domains are geometrically equivalent)
 
      sidex=1.0_wp/Real(nprx,wp)
      sidey=1.0_wp/Real(npry,wp)
@@ -87,14 +88,20 @@ Subroutine metal_ld_set_halo(imcon,rmet,keyfce,rho)
 
   Call dcell(cell,celprp)
 
+! calculate link cell dimensions per node
+
+  nlx=Int(sidex*celprp(7)/cut)
+  nly=Int(sidey*celprp(8)/cut)
+  nlz=Int(sidez*celprp(9)/cut)
+
 ! Calculate a link-cell width in every direction in the
 ! reduced space of the domain
 ! First term = the width of the domain in reduced space
 ! Second term = number of link-cells per domain per direction
 
-  cwx=sidex/Real( Int(sidex*celprp(7)/cut),wp )
-  cwy=sidey/Real( Int(sidey*celprp(8)/cut),wp )
-  cwz=sidez/Real( Int(sidez*celprp(9)/cut),wp )
+  cwx=sidex/Real(nlx,wp)
+  cwy=sidey/Real(nly,wp)
+  cwz=sidez/Real(nlz,wp)
 
 ! "Positive halo" widths in reduced space as needed by SPME for
 ! b-splines. To be used in halo transport in NEGATIVE DIRECTIONS!!!
@@ -138,18 +145,57 @@ Subroutine metal_ld_set_halo(imcon,rmet,keyfce,rho)
 
 ! exchange atom data in -/+ x directions
 
+  If (nprx == 2 .and. nlx == 1) mlast_tmp1 = mlast ! Put tab on mlast
   Call metal_ld_export(-1,sidex,sidey,sidez,ecwx,ecwy,ecwz,mlast,iwrk,rho)
+  If (nprx == 2 .and. nlx == 1) mlast_tmp2 = mlast ! Put tab on mlast
   Call metal_ld_export( 1,sidex,sidey,sidez,cwx,cwy,cwz,mlast,iwrk,rho)
+  If (nprx == 2 .and. nlx == 1 .and. idx == 1) Then ! Handle exception
+     Do i=mlast_tmp1+1,mlast
+        ott(i)=xxx(i)
+     End Do
+     Do i=mlast_tmp1+1,mlast_tmp1+mlast-mlast_tmp2
+        xxx(i)=ott(i+mlast_tmp2-mlast_tmp1)
+     End Do
+     Do i=mlast_tmp1+mlast-mlast_tmp2+1,mlast
+        xxx(i)=ott(i+mlast_tmp2-mlast)
+     End Do
+  End If
 
 ! exchange atom data in -/+ y directions
 
+  If (npry == 2 .and. nly == 1) mlast_tmp1 = mlast ! Put tab on mlast
   Call metal_ld_export(-2,sidex,sidey,sidez,ecwx,ecwy,ecwz,mlast,iwrk,rho)
+  If (npry == 2 .and. nly == 1) mlast_tmp2 = mlast ! Put tab on mlast
   Call metal_ld_export( 2,sidex,sidey,sidez,cwx,cwy,cwz,mlast,iwrk,rho)
+  If (npry == 2 .and. nly == 1 .and. idy == 1) Then ! Handle exception
+     Do i=mlast_tmp1+1,mlast
+        ott(i)=yyy(i)
+     End Do
+     Do i=mlast_tmp1+1,mlast_tmp1+mlast-mlast_tmp2
+        yyy(i)=ott(i+mlast_tmp2-mlast_tmp1)
+     End Do
+     Do i=mlast_tmp1+mlast-mlast_tmp2+1,mlast
+        yyy(i)=ott(i+mlast_tmp2-mlast)
+     End Do
+  End If
 
 ! exchange atom data in -/+ z directions
 
+  If (nprz == 2 .and. nlz == 1) mlast_tmp1 = mlast ! Put tab on mlast
   Call metal_ld_export(-3,sidex,sidey,sidez,ecwx,ecwy,ecwz,mlast,iwrk,rho)
+  If (nprz == 2 .and. nlz == 1) mlast_tmp2 = mlast ! Put tab on mlast
   Call metal_ld_export( 3,sidex,sidey,sidez,cwx,cwy,cwz,mlast,iwrk,rho)
+  If (nprz == 2 .and. nlz == 1 .and. idz == 1) Then ! Handle exception
+     Do i=mlast_tmp1+1,mlast
+        ott(i)=zzz(i)
+     End Do
+     Do i=mlast_tmp1+1,mlast_tmp1+mlast-mlast_tmp2
+        zzz(i)=ott(i+mlast_tmp2-mlast_tmp1)
+     End Do
+     Do i=mlast_tmp1+mlast-mlast_tmp2+1,mlast
+        zzz(i)=ott(i+mlast_tmp2-mlast)
+     End Do
+  End If
 
 ! check atom totals after data transfer
 
@@ -178,7 +224,7 @@ Subroutine metal_ld_set_halo(imcon,rmet,keyfce,rho)
      zzz(i)=cell(3)*uuu+cell(6)*vvv+cell(9)*www
   End Do
 
-  Deallocate (iwrk, Stat=fail)
+  Deallocate (iwrk,ott, Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'metal_ld_set_halo deallocation failure, node: ', idnode
      Call error(0)

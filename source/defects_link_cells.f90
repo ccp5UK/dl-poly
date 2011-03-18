@@ -58,7 +58,7 @@ Subroutine defects_link_cells &
      idx=Mod(idnode,nprx)
 
 ! Get the domains' dimensions in reduced space
-! (domains are geometrically equvalent)
+! (domains are geometrically equivalent)
 
      sidex=1.0_wp/Real(nprx,wp)
      sidey=1.0_wp/Real(npry,wp)
@@ -112,7 +112,7 @@ Subroutine defects_link_cells &
   End Do
 
 ! Form linked list
-! Initilise link arrays
+! Initialise link arrays
 
   link=0
   Do i=1,ncells
@@ -210,7 +210,7 @@ Subroutine defects_link_cells &
 
         icell=1+ix+(nlx+2)*(iy+(nly+2)*iz)
 
-! link points to the next in chain or zero if end of chain occures
+! link points to the next in chain or zero if end of chain occurs
 ! this is the old lct(icell)
 
         link(i)=lct(icell)

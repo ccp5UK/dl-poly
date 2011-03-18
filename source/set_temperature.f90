@@ -60,8 +60,8 @@ Subroutine set_temperature            &
   Integer,           Allocatable :: qn(:),tpn(:)
   Integer,           Allocatable :: qs(:,:),tps(:)
 
-! initilise rotational and translational DoF if no RB are present
-! or re-initilise if all are frozen (does no harm)
+! initialise rotational and translational DoF if no RB are present
+! or re-initialise if all are frozen (does no harm)
 
   If (megrgd == 0) Then
      degtra=Int(0,ip)

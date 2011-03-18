@@ -13,7 +13,7 @@ Subroutine read_field                      &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov march 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -90,7 +90,7 @@ Subroutine read_field                      &
                             isite1,isite2,isite3,isite4,is(1:4),js(1:4),         &
                             irept,nrept,ifrz,ntmp,i,j,ia,ja,jtpatm,ntab,keypot,  &
                             iatm1,iatm2,iatm3,iatm4,katom0,katom1,katom2,katom3, &
-                            ishls,nshels,icnst,nconst,frzcon,ipmf,jpmf,          &
+                            ishls,nshels,icnst,nconst,frzcon,ipmf,jpmf,kpmf,     &
                             nrigid,irgd,jrgd,krgd,lrgd,frzrgd,iteth,nteth,       &
                             ibond,nbonds,iang,nangle,idih,ndihed,iinv,ninver,    &
                             itprdf,keyrdf,itpvdw,keyvdw,itpmet,keymet,           &
@@ -98,8 +98,6 @@ Subroutine read_field                      &
                             itbp,itptbp,keytbp,ktbp,                             &
                             ifbp,itpfbp,keyfbp,ka1,ka2,ka3,kfbp,nfld
   Real( Kind = wp )      :: weight,charge,pmf_tmp(1:2),parpot(1:30),tmp
-
-  Integer, Allocatable   :: lstpmf1(:,:),lstrgd1(:,:)
 
 
 
@@ -111,11 +109,11 @@ Subroutine read_field                      &
   ntpshl = 0
   ntpmls = 0
 
-! Default flag for existance of molecules
+! Default flag for existence of molecules
 
   lmols =.false.
 
-! Initialise enrgy units for interactions flag
+! Initialise energy units for interactions flag
 
   lunits  = .false.
 
@@ -159,12 +157,12 @@ Subroutine read_field                      &
   megdih = 0
   meginv = 0
 
-! Default for existance of intra-like interactions (including
+! Default for existence of intra-like interactions (including
 ! shells and tethers)
 
   lbook = .false.
 
-! Default flag for existance of excluded intra-interaction
+! Default flag for existence of excluded intra-interaction
 
   lexcl = .false.
 
@@ -174,7 +172,7 @@ Subroutine read_field                      &
   lshl_one = .false. ! A massless shell existence indicator
   lshl_all = .true.  ! All shells are massless indicator
 
-! Default flags for existance a table for vdw interactions
+! Default flags for existence a table for vdw interactions
 
   ltable=.false.
 
@@ -219,7 +217,7 @@ Subroutine read_field                      &
         If (word(1:2) == 'ev') Then
 
            engunit = 9648.530821_wp
-           If (idnode == 0) Write(nrite,"(/,1x,'energy units = eV/mol')")
+           If (idnode == 0) Write(nrite,"(/,1x,'energy units = eV')")
 
         Else If (word(1:4) == 'kcal') Then
 
@@ -238,7 +236,7 @@ Subroutine read_field                      &
         Else If (word(1:1) == 'k') Then
 
            engunit = boltz
-           If (idnode == 0) Write(nrite,"(/,1x,'energy units = Kelvin/mol')")
+           If (idnode == 0) Write(nrite,"(/,1x,'energy units = Kelvin/Boltzmann')")
 
         Else If (word(1:1) == ' ') Then
 
@@ -654,7 +652,6 @@ Subroutine read_field                      &
 ! read PMF bondlength
 
                  Call get_word(record,word)
-                 If (word(1:5) == 'units') Call get_word(record,word)
                  prmpmf=word_2_real(word)
 
                  If (idnode == 0) Then
@@ -756,7 +753,7 @@ Subroutine read_field                      &
                     End Do
                  End If
 
-! PMF reciprocqal total unit masses
+! PMF reciprocal total unit masses
 
                  Do ipmf=1,2
                     pmfwgt(0,ipmf)=1.0_wp/Sum(pmfwgt(1:mxtpmf(ipmf),ipmf))
@@ -793,37 +790,16 @@ Subroutine read_field                      &
                     End Do
                  End If
 
-! Check for multiple PMF unit's entries
-
-                 Allocate (lstpmf1(1:Max(mxtpmf(1),mxtpmf(2)),1:2), Stat = fail)
-                 If (fail > 0) Then
-                    Write(nrite,'(/,1x,a,i0)') 'read_field PMF allocation failure, node: ', idnode
-                    Call error(0)
-                 End If
+! Check for mistyped PMF unit's entries and joined PMF units
 
                  Do ipmf=1,2
-                    lstpmf1(:,ipmf)=lstpmf(:,ipmf)
-                    jpmf=mxtpmf(ipmf)
-                    Call shellsort(jpmf,lstpmf1(1:jpmf,ipmf))
-                 End Do
-
-                 Do ipmf=1,2
-                    Do jpmf=2,mxtpmf(ipmf)
-                       safe = (safe .and. (lstpmf1(jpmf,ipmf) == lstpmf1(jpmf-1,ipmf)))
+                    Do jpmf=1,mxtpmf(ipmf)
+                       Do kpmf=jpmf+1,mxtpmf(ipmf)
+                          If (lstpmf(kpmf,ipmf) == lstpmf(jpmf,ipmf)) Call error(501)
+                       End Do
                     End Do
                  End Do
-                 If (safe) Call error(501)
-
-                 Do jpmf=1,Max(mxtpmf(1),mxtpmf(2))
-                    safe = (safe .and. (lstpmf1(jpmf,1) == lstpmf1(jpmf,2)))
-                 End Do
-                 If (safe) Call error(502)
-
-                 Deallocate (lstpmf1, Stat = fail)
-                 If (fail > 0) Then
-                    Write(nrite,'(/,1x,a,i0)') 'read_field PMF deallocation failure, node: ', idnode
-                    Call error(0)
-                 End If
+                 If (Any(lstpmf(1:mxtpmf(1),1) == lstpmf(1:mxtpmf(2),2))) Call error(502)
 
 ! read RBs: number, size, indices
 
@@ -864,7 +840,7 @@ Subroutine read_field                      &
                     If (lrgd < 2 .or. lrgd > mxlrgd) Call error(632)
 
                     Do jrgd=1,lrgd
-                       If (Mod(jrgd+1,12) == 0) Then
+                       If (Mod(jrgd+1,16) == 0) Then
                           word(1:1)='#'
                           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                              Call get_line(safe,nfield,record)
@@ -930,39 +906,19 @@ Subroutine read_field                      &
                     End Do
                  End Do
 
-! Check for duplicate or joint RB entries
-
-                 Allocate (lstrgd1(0:mxlrgd,1:numrgd(itmols)), Stat = fail)
-                 If (fail > 0) Then
-                    Write(nrite,'(/,1x,a,i0)') 'read_field rigid bodies allocation failure, node: ', idnode
-                    Call error(0)
-                 End If
-
-                 Do irgd=1,numrgd(itmols)
-                    jrgd=irgd+nrigid-numrgd(itmols)
-                    lstrgd1(:,irgd)=lstrgd(:,jrgd)
-
-                    lrgd=lstrgd1(0,irgd)
-                    Call shellsort(lrgd,lstrgd1(1:lrgd,irgd))
-                 End Do
+! Check for duplicate or joined RB entries
 
                  Do irgd=nrigid-numrgd(itmols)+1,nrigid
-                    lrgd=lstrgd1(0,irgd)
+                    lrgd=lstrgd(0,irgd)
 
                     Do jrgd=irgd+1,nrigid
-                       krgd=lstrgd1(0,jrgd)
-                       If ((Any(lstrgd1(1:krgd,jrgd) == lstrgd1(1:lrgd,irgd)))) Then
+                       krgd=lstrgd(0,jrgd)
+                       If ((Any(lstrgd(1:krgd,jrgd) == lstrgd(1:lrgd,irgd)))) Then
                            Call warning(400,Real(irgd,wp),Real(jrgd,wp),0.0_wp)
                            Call error(620)
                        End If
                     End Do
                  End Do
-
-                 Deallocate (lstrgd1, Stat = fail)
-                 If (fail > 0) Then
-                    Write(nrite,'(/,1x,a,i0)') 'read_field rigid bodies deallocation failure, node: ', idnode
-                    Call error(0)
-                 End If
 
 ! read tethered atom indices and tethering parameters
 
@@ -1098,7 +1054,7 @@ Subroutine read_field                      &
                     Call lower_case(word)
                     keyword=word(1:4)
 
-                    If (keyword(1:1) == '-') lexcl=.true.
+                    If (keyword(1:1) /= '-') lexcl=.true.
 
                     If      (keyword == 'harm') Then
                        keybnd(nbonds)=1
@@ -1259,7 +1215,7 @@ Subroutine read_field                      &
                     Call lower_case(word)
                     keyword=word(1:4)
 
-                    If (keyword(1:1) == '-') lexcl=.true.
+                    If (keyword(1:1) /= '-') lexcl=.true.
 
                     If      (keyword == 'harm') Then
                        keyang(nangle)=1
@@ -2888,7 +2844,7 @@ Subroutine read_field                      &
 
         Call dihedrals_14_check(l_str,ntpmls,nummols,numang,numdih,lstang,lstdih,prmdih)
 
-! test for existance/applience of any two-body or tersoff interactions!!!
+! test for existence/appliance of any two-body or tersoff interactions!!!
 
         If ( keyfce == 0 .and. ntpvdw == 0 .and. &
              ntpmet == 0 .and. ntpter == 0 ) Call error(145)

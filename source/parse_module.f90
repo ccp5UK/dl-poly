@@ -298,11 +298,11 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 function for extracting real numbers from a character string
-! with no blanks between the charaters of the number.  The optional
+! with no blanks between the characters of the number.  The optional
 ! argument 'def' suppresses error reporting to return a safe value
 !
-! (1) Numbers as 2.0e-3/3.d-04 are processible as only one slash is
-!     permited in the string!
+! (1) Numbers as 2.0e-3/3.d-04 are processable as only one slash is
+!     permitted in the string!
 ! (2) Numbers cannot start or finish with a slash!
 ! (3) A blank string is read as zero!
 ! (4) Numbers must sensible!

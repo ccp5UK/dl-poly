@@ -5,7 +5,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 ! dl_poly_4 subroutine for constructing RBs' totational inertia tesnors
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov february 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -307,7 +307,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
      End If
 
      rotall=rgdrix(1,irgd)+rgdriy(1,irgd)+rgdriz(1,irgd)
-     If (rotall <= 1.0e-8_wp) rotall=1.0_wp
+     If (rotall <= 1.0e-5_wp) rotall=1.0_wp
 
 ! test for type of unit (point/linear/bulk RB == ill=2/1/0)
 ! and get reciprocal of RI in RB unit internal frame of axis
@@ -513,7 +513,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
   End If
   lstsit=0
 
-! initilise rotational and translational DoF
+! initialise rotational and translational DoF
 
   degtra=Int(0,ip)
   degrot=Int(0,ip)
@@ -611,7 +611,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
      nsite=nsite+numsit(itmols)
   End Do
 
-! In case of any refreezing changes efresh the local list of frozen atoms
+! In case of any refreezing changes refresh the local list of frozen atoms
 
   If (lstsit(0) > 0) Then
      Do i=1,nlast
@@ -788,7 +788,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 
 ! OUT OF GLOBAL SCOPE & BACK IN DOMAIN SCOPE
 
-! set-up qauternions
+! set-up quaternions
 
   Call q_setup()
 

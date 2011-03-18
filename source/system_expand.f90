@@ -323,7 +323,7 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
            End If
 
            If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
-               io_write == IO_WRITE_SORTED_MASTER) idm=0 ! Initilise node number
+               io_write == IO_WRITE_SORTED_MASTER) idm=0 ! Initialise node number
 
 ! If a local atom has a global index nattot
 

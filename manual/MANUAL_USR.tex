@@ -1,10 +1,9 @@
 \documentclass[11pt,a4paper,dvipdfm]{report}
 \setcounter{secnumdepth}{5}
 
-\input{psfig.tex}
-
 %packages
 \usepackage{makeidx}
+%\usepackage{epstopdf} %if pdflatex $1.tex in makedoc
 \usepackage[dvips]{graphicx}
 \usepackage[usenames,dvipsnames]{color}
 \usepackage
@@ -78,9 +77,10 @@ Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
 \parskip 1ex
 
 %commands
-\newcommand{\D}{\mbox{DL\_POLY\_4} }
-\newcommand{\WEB}{\href{http://www.ccp5.ac.uk/DL\_POLY/}{http://www.ccp5.ac.uk/DL\_POLY/}}
-\newcommand{\FTP}{\href{ftp://ftp.dl.ac.uk/ccp5/DL\_POLY/}{ftp://ftp.dl.ac.uk/ccp5/DL\_POLY/}}
+\usepackage{xspace}
+\newcommand{\D}{{DL\_POLY\_4}\xspace}
+\newcommand{\WEB}{\href{http://www.ccp5.ac.uk/DL\_POLY/}{http://www.ccp5.ac.uk/DL\_POLY/}\xspace}
+\newcommand{\FTP}{\href{ftp://ftp.dl.ac.uk/ccp5/DL\_POLY/}{ftp://ftp.dl.ac.uk/ccp5/DL\_POLY/}\xspace}
 \newcommand{\vek}[1]{\mbox{$\underline{#1}$}}
 \newcommand{\mat}[1]{\mbox{$\underline{\underline{\bf #1}}$}}
 
@@ -96,7 +96,7 @@ Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
 STFC  Daresbury Laboratory \\
 Daresbury, Warrington WA4 4AD \\
 Cheshire, UK}
-\date{Version 4.01.0,~~October 2010}
+\date{Version 4.02.0,~~January 2011}
 \end{titlepage}
 
 \maketitle

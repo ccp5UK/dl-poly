@@ -2,8 +2,8 @@ Subroutine pmf_units_set()
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for setting the existance of the PMF units on the
-! node where supposingly PMF constraints exist
+! dl_poly_4 subroutine for setting the existence of the PMF units on the
+! node where supposedly PMF constraints exist
 !
 ! Note: (1) Deals with listpmf, legpmf and ntpmf
 !       (2) Applies only at the end of relocate_particles
@@ -38,7 +38,7 @@ Subroutine pmf_units_set()
 
   safe=.true.
 
-! is it ok not to compress the bookeeping list arrays
+! is it ok not to compress the bookkeeping list arrays
 ! since it's safe - there's enough buffering space
 
   ok=.true.

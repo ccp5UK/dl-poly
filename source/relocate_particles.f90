@@ -11,7 +11,7 @@ Subroutine relocate_particles        &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov august 2010
+! amended   - i.t.todorov march 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -51,7 +51,7 @@ Subroutine relocate_particles        &
   Real( Kind = wp ), Save :: sidex,sidey,sidez,cut
 
   Logical           :: safe(1:9)
-  Integer           :: i,nlimit
+  Integer           :: nlx,nly,nlz,i,nlimit
   Real( Kind = wp ) :: big(1:3),celprp(1:10),rcell(1:9),det, &
                        cwx,cwy,cwz, dispx,dispy,dispz, uuu,vvv,www
 
@@ -70,7 +70,7 @@ Subroutine relocate_particles        &
      idx=Mod(idnode,nprx)
 
 ! Get the domains' dimensions in reduced space
-! (domains are geometrically equvalent)
+! (domains are geometrically equivalent)
 
      sidex=1.0_wp/Real(nprx,wp)
      sidey=1.0_wp/Real(npry,wp)
@@ -85,7 +85,7 @@ Subroutine relocate_particles        &
 
   If (imcon == 0 .or. imcon == 6) Then
 
-! find maximum x,y,z postions
+! find maximum x,y,z positions
 
      big=0.0_wp
 
@@ -140,14 +140,20 @@ Subroutine relocate_particles        &
      dispy=0.5_wp-sidey*(Real(idy,wp)+0.5_wp)
      dispz=0.5_wp-sidez*(Real(idz,wp)+0.5_wp)
 
+! calculate link cell dimensions per node
+
+     nlx=Int(sidex*celprp(7)/cut)
+     nly=Int(sidey*celprp(8)/cut)
+     nlz=Int(sidez*celprp(9)/cut)
+
 ! Calculate a link-cell width in every direction in the
 ! reduced space of the domain
 ! First term = the width of the domain in reduced space
 ! Second term = number of link-cells per domain per direction
 
-     cwx=sidex/Real( Int(sidex*celprp(7)/cut),wp )
-     cwy=sidey/Real( Int(sidey*celprp(8)/cut),wp )
-     cwz=sidez/Real( Int(sidez*celprp(9)/cut),wp )
+     cwx=sidex/Real(nlx,wp)
+     cwy=sidey/Real(nly,wp)
+     cwz=sidez/Real(nlz,wp)
 
 ! Get the inverse cell matrix
 
@@ -213,8 +219,8 @@ Subroutine relocate_particles        &
 ! Change nlast and refresh gtl or record global atom indices for local sorting
 ! since particles may have been relocated across domains as the
 ! the old halo is invalid and a new one is not set yet.  This allows for
-! local_index serach over natms in pmf_units_set and compress_book_intra.
-! Otherwise, everywhere else in the code, the serach is over nlast as
+! local_index search over natms in pmf_units_set and compress_book_intra.
+! Otherwise, everywhere else in the code, the search is over nlast as
 ! domain only indices are caught by the condition (1 >= index <= natms)!!!
 
         nlast=natms
@@ -264,7 +270,7 @@ Subroutine relocate_particles        &
         If (m_rgd  > 0) Call pass_shared_units &
      (mxrgd, Lbound(listrgd,Dim=1),Ubound(listrgd,Dim=1),ntrgd, listrgd,mxfrgd,legrgd,lshmv_rgd,lishp_rgd,lashp_rgd)
 
-! Compress the rest of the bookeeping arrays if needed
+! Compress the rest of the bookkeeping arrays if needed
 
         If (megtet > 0) Call compress_book_intra &
            (mxteth,ntteth,Ubound(listtet,Dim=1),listtet,mxftet,legtet)

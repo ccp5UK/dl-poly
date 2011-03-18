@@ -101,7 +101,7 @@ Subroutine system_revive                                            &
 
   Call write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
 
-! node 0 handles i/o
+! node 0 handles I/O
 
   If (idnode == 0) Then
 

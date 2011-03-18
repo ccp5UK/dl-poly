@@ -204,7 +204,7 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
   safe=.true.
   safe1=.true.
 
-! Initilise RB data set for preventing duplication
+! Initialise RB data set for preventing duplication
 
   lrgd(1:ntrgd)=0
 

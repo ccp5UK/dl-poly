@@ -162,7 +162,7 @@ Subroutine nst_b1_lfv                          &
         dens0(i) = dens(i)
      End Do
 
-! Initilise and get h_z for iso=2
+! Initialise and get h_z for iso=2
 
      h_z=0
      If (iso == 2) Then

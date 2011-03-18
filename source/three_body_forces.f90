@@ -56,7 +56,7 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
                        pterm,vterm,gamma,gamsa,gamsb,gamsc,        &
                        strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:2)
 
-! Number of neighbouring cells to look arround for counting
+! Number of neighbouring cells to look around for counting
 ! many-body interactions
 
   Integer, Parameter :: nsbcll = 27
@@ -93,7 +93,7 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
      idx=Mod(idnode,nprx)
 
 ! Get the domains' dimensions in reduced space
-! (domains are geometrically equvalent)
+! (domains are geometrically equivalent)
 
      sidex=1.0_wp/Real(nprx,wp)
      sidey=1.0_wp/Real(npry,wp)
@@ -154,7 +154,7 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
   End Do
 
 ! Form linked list
-! Initilise link arrays
+! Initialise link arrays
 
   link=0
 
@@ -263,7 +263,7 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
 
            lst(icell)=lst(icell)+1
 
-! link points to the next in chain or zero if end of chain occures
+! link points to the next in chain or zero if end of chain occurs
 ! this is the old lct(icell)
 
            link(i)=lct(icell)
@@ -310,7 +310,7 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
         If (lct(icell) > 0) Then
 
 ! Initialise extended head of chain array (for all subcells
-! arround icell and icell itself at a very first instance)
+! around icell and icell itself at a very first instance)
 ! and its length (mini-list of neighbour cell contents)
 
            k=0
@@ -540,7 +540,7 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
 
   Else If (ktyp == 4) Then
 
-! screened vessal potential type 1
+! screened Vessal potential type 1
 
      k0    =prmtbp(1,kktbp)
      theta0=prmtbp(2,kktbp)
@@ -562,7 +562,7 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
 
   Else If (ktyp == 5) Then
 
-! truncated vessal potential type 2
+! truncated Vessal potential type 2
 
      k0    =prmtbp(1,kktbp)
      theta0=prmtbp(2,kktbp)

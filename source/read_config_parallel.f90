@@ -103,7 +103,7 @@ Subroutine read_config_parallel                                    &
   do_read = (Mod( idnode, per_read_proc ) == 0 .and. idnode < per_read_proc * n_read_procs_use)
   my_read_proc_num = idnode / per_read_proc
 
-! Íote 'first_at' and 'orig_first_at' have one more element
+! Note 'first_at' and 'orig_first_at' have one more element
 ! in the array than strictly required - makes it easier to
 ! check that reading by the last I/O processor has finished
 
@@ -163,7 +163,7 @@ Subroutine read_config_parallel                                    &
 
   Else
 
-! It is Illegal to pass unallocated alloctable arrays to routines.
+! It is Illegal to pass unallocated allocatable arrays to routines.
 ! Therefore for arrays that are used by the mpi_scatterv calls
 ! below allocate them to zero size if they are not used on this core
 
@@ -177,7 +177,7 @@ Subroutine read_config_parallel                                    &
 
   End If
 
-! Initilise extreme box dimensions
+! Initialise extreme box dimensions
 
   xhi = 0.0_wp
   yhi = 0.0_wp

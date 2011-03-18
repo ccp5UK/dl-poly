@@ -102,7 +102,7 @@ Subroutine statistics_collect                &
      End If
   End If
 
-! instantenious properties of system
+! instanteneous properties of system
 
 ! configurational energy
 
@@ -186,7 +186,7 @@ Subroutine statistics_collect                &
 ! mean squared displacements per species, dependent on
 ! particle displacements from initial positions (at t=0)
 
-  amsd = 0.0_wp ! initilise
+  amsd = 0.0_wp ! initialise
 
   If (nstep == nsteql+1) Then ! re-initialise
      Do i=1,natms

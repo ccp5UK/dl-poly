@@ -2,10 +2,10 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for writing configuartion file
+! dl_poly_4 subroutine for writing configuration file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2010
+! author    - i.t.todorov march 2011
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -211,7 +211,7 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
         Call error(0)
      End If
 
-! Node 0 handles i/o
+! node 0 handles I/O
 
      If (idnode == 0) Then
 
@@ -311,7 +311,7 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
 
            jj=0
            Do i=1,jatms
-              Write(record, Fmt='(a8,i10,a54,a1)') atmnam(i),ltg(i),Repeat(' ',54),lf
+              Write(record, Fmt='(a8,i10,a54,a1)') atmnam(i),iwrk(i),Repeat(' ',54),lf
               jj=jj+1
               Do k=1,recsz
                  chbat(k,jj) = record(k:k)
@@ -401,12 +401,17 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
         fname = name(1:Len_Trim(name)) // '.nc'
      End If
 
-     Call io_set_parameters( user_comm = dlp_comm_world )
+! Write header only at start, where just one node is needed
+
+     Call io_set_parameters( user_comm = MPI_COMM_SELF )
      Call io_init( recsz )
+
+! Sort existence issues
      Call io_delete( fname )
      If (io_write == IO_WRITE_SORTED_NETCDF) &
-        Call io_nc_create( dlp_comm_world, fname, cfgname, megatm )
-     Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
+        Call io_nc_create( MPI_COMM_SELF, fname, cfgname, megatm )
+
+     Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
 
 ! Non netCDF
 
@@ -418,34 +423,23 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
 
 ! Write header
 
-        If (idnode == 0) Then
-           record=' '
-           Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
-           Call io_write_record( fh, rec_mpi_io, record )
+        record=' '
+        Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
+        Call io_write_record( fh, rec_mpi_io, record )
+        rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
 
-           Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,imcon,megatm,nstep,tstep,time,lf
-           rec_mpi_io=Int(1,MPI_OFFSET_KIND)
-           Call io_write_record( fh, rec_mpi_io, record )
-        End If
-
-! Start of file
-
-        rec_mpi_io=Int(2,MPI_OFFSET_KIND)
+        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,imcon,megatm,nstep,tstep,time,lf
+        Call io_write_record( fh, rec_mpi_io, record )
+        rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
 
 ! Write the cell information if present
 
         If (imcon > 0) Then
-           If (idnode == 0) Then
-              Do i = 0, 2
-                 Write( record, '( 3f20.10, a12, a1 )' ) cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
-                 Call io_write_record( fh, rec_mpi_io, record )
-                 rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
-              End Do
-           End If
-
-! Start of file
-
-           rec_mpi_io=Int(5,MPI_OFFSET_KIND)
+           Do i = 0, 2
+              Write( record, '( 3f20.10, a12, a1 )' ) cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
+              Call io_write_record( fh, rec_mpi_io, record )
+              rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
+           End Do
         End If
 
      Else ! netCDF write
@@ -482,6 +476,17 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
 
      End If
 
+     Call io_close( fh )
+     Call io_finalize
+
+     Call gsync()
+
+! Write the rest
+
+     Call io_set_parameters( user_comm = dlp_comm_world )
+     Call io_init( recsz )
+     Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_WRONLY, fh )
+
      Call io_write_sorted_file( fh, levcfg, IO_RESTART, rec_mpi_io, natms,      &
           ltg, atmnam, (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /), xxx, yyy, zzz, &
           vxx, vyy, vzz, fxx, fyy, fzz, ierr )
@@ -515,7 +520,7 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
         Call error(0)
      End If
 
-! Node 0 handles i/o
+! node 0 handles I/O
 
      If (idnode == 0) Then
 

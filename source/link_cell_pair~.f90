@@ -39,14 +39,14 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Real( Kind = wp ) :: rsq,det,rcell(1:9),celprp(1:10), &
                        dispx,dispy,dispz, xdc,ydc,zdc
 
-! Number of neighbouring cells to look arround for single counting
+! Number of neighbouring cells to look around for single counting
 ! of two body interactions
 
   Integer, Parameter :: nsbcll = 14
 
 ! Direction arrays for jumping around in link-cell space so that
 ! ALL two body interactions are single counted within a domain
-! (but not over-all as double counting still occures at the
+! (but not over-all as double counting still occurs at the
 ! border for neghbouring link-cells onto neghbouring domains).
 
   Integer, Dimension( 1:nsbcll ), Parameter :: &
@@ -85,7 +85,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
      idx=Mod(idnode,nprx)
 
 ! Get the domains' dimensions in reduced space
-! (domains are geometrically equvalent)
+! (domains are geometrically equivalent)
 
      sidex=1.0_wp/Real(nprx,wp)
      sidey=1.0_wp/Real(npry,wp)
@@ -151,7 +151,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   End Do
 
 ! Form linked list
-! Initilise link arrays
+! Initialise link arrays
 
   link=0
   Do i=1,ncells
@@ -257,7 +257,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
      icell=1+ix+(nlx+2)*(iy+(nly+2)*iz)
 
-! link points to the next in chain or zero if end of chain occures
+! link points to the next in chain or zero if end of chain occurs
 ! this is the old lct(icell)
 
      link(i)=lct(icell)
@@ -269,7 +269,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
   End Do
 
-! initialise verley neighbourlist arrays
+! initialise verlet neighbourlist arrays
 
 !  list=0      ! (DEBUG)
   list(0,:)=0 !  (FIRST DIMENSION ONLY)

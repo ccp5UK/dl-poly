@@ -6,7 +6,7 @@ Subroutine build_book_intra              &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for initilising global bookkeeping of intra-like
+! dl_poly_4 subroutine for initialising global bookkeeping of intra-like
 ! interactions: core-shell, bond constraints, PMF constraints, RBs,
 ! tethered atoms, chemical bonds, valence angles, torsion and improper
 ! torsion angles, and inversion angles

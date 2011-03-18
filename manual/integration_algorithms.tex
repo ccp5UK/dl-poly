@@ -219,7 +219,7 @@ be noted that this formula is an approximation only.
 \begin{figure}[htbp]
 \begin{center}
 \vskip 1ex
-\centerline{\psfig{figure=shake.eps,height=8cm}}
+\centerline{\includegraphics[height=8.0cm]{shake.eps}}
 \caption[The SHAKE (RATTLE\_VV1) schematics and associated vectors]
 {The SHAKE (RATTLE\_VV1) schematics and associated vectors.  The
 algorithm calculates the constraint force $\vek{G}_{ij}=-\vek{G}_{ji}$
@@ -2091,7 +2091,7 @@ those describing the motion of a single atom, except that the force is
 the total force acting on the rigid body i.e. $\vek{F}$ in equation
 (\ref{netforce}) and the mass is the total mass of the rigid body unit
 i.e. $M$ in equation (\ref{netmass}).  These equations can be integrated
-by the standard Verlet LF or VV algorithms described in the previous
+by the standard Verlet LFV or VV algorithms described in the previous
 sections.  Thus we need only consider the rotational motion here.
 
 The rotational equation of motion for a rigid body\index{equations of
@@ -2139,14 +2139,14 @@ q_3 & -q_2 & ~q_1 & ~q_0}
 \pmatrix{0 \cr \hat{\omega}_{x} \cr \hat{\omega}_{y} \cr \hat{\omega}_{z}}~~.
 \end{equation}
 
-Rotational motion in \D is handled by two different methods.  For LF implementation,
+Rotational motion in \D is handled by two different methods.  For LFV implementation,
 the Fincham Implicit Quaternion Algorithm (FIQA) is used\index{algorithm!FIQA}
 \cite{fincham-92a}.  The VV implementation uses the NOSQUISH\index{algorithm!NOSQUISH}
 algorithm of Miller {\em et al.} \cite{miller-02a}.  The implementation of FIQA is
 coded in {\sc q\_update} and NOSQUSH in {\sc no\_squish} both contained within
 {\sc quaternion\_container}.
 
-The LF implementation begins by integrating the angular velocity equation in the local frame:
+The LFV implementation begins by integrating the angular velocity equation in the local frame:
 \begin{equation}
 \hat{\vek{\omega}}(t+{ \Delta t\over 2}) = \hat{\vek{\omega}}(t-{ \Delta t\over 2}) +
  \Delta t \; \hat{\mat{I}}^{-1} \cdot \dot{\hat{\vek{\omega}}}(t)~~.

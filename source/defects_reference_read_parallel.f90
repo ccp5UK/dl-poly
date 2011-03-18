@@ -1,5 +1,5 @@
-Subroutine defects_reference_read_parallel                               &
-           (lvcfgr, imcon, celr, l_ind, l_str, megref, read_buffer_size, &
+Subroutine defects_reference_read_parallel                                &
+           (lvcfgr, imconr, celr, l_ind, l_str, megref, read_buffer_size, &
             fast, fh, top_skip, nrefs, namr, indr, xr, yr, zr)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -8,7 +8,7 @@ Subroutine defects_reference_read_parallel                               &
 ! in parallel
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush & i.t.todorov october 2010
+! author    - i.j.bush & i.t.todorov march 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,7 +23,7 @@ Subroutine defects_reference_read_parallel                               &
   Implicit None
 
   Logical,                           Intent( In    ) :: l_ind,l_str,fast
-  Integer,                           Intent( In    ) :: lvcfgr,imcon,megref,read_buffer_size,fh
+  Integer,                           Intent( In    ) :: lvcfgr,imconr,megref,read_buffer_size,fh
   Integer( Kind = MPI_OFFSET_KIND ), Intent( In    ) :: top_skip
   Real( Kind = wp ),                 Intent( In    ) :: celr(1:9)
   Character( Len = 8 ),              Intent(   Out ) :: namr(1:mxatms)
@@ -97,7 +97,7 @@ Subroutine defects_reference_read_parallel                               &
   do_read = (Mod( idnode, per_read_proc ) == 0 .and. idnode < per_read_proc * n_read_procs_use)
   my_read_proc_num = idnode / per_read_proc
 
-! Íote 'first_at' and 'orig_first_at' have one more element
+! Note 'first_at' and 'orig_first_at' have one more element
 ! in the array than strictly required - makes it easier to
 ! check that reading by the last I/O processor has finished
 
@@ -154,7 +154,7 @@ Subroutine defects_reference_read_parallel                               &
 
   Else
 
-! It is Illegal to pass unallocated alloctable arrays to routines.
+! It is Illegal to pass unallocated allocatable arrays to routines.
 ! Therefore for arrays that are used by the mpi_scatterv calls
 ! below allocate them to zero size if they are not used on this core
 
@@ -170,7 +170,7 @@ Subroutine defects_reference_read_parallel                               &
 
   Call invert(celr,rcell,det)
 
-! Initialise domain localised atom counter (config_module),
+! Initialise domain localised atom counter (defects._module),
 ! dispatched atom counter and safe dispatch flag
 
   nrefs =0
@@ -305,7 +305,7 @@ Subroutine defects_reference_read_parallel                               &
 ! Assign atoms positions in fractional coordinates to the correct domains
 ! (DD bounding)
 
-        Call pbcshift(imcon,celr,to_read,axx_read,ayy_read,azz_read)
+        Call pbcshift(imconr,celr,to_read,axx_read,ayy_read,azz_read)
         n_held=0
         Do i=1,to_read
            sxx=rcell(1)*axx_read(i)+rcell(4)*ayy_read(i)+rcell(7)*azz_read(i)
@@ -468,7 +468,7 @@ Dispatch:  Do i=1,n_loc
 
   Return
 
-! error exit for CONFIG file read
+! error exit for REFERNCE file read
 
 100 Continue
   Call error(554)

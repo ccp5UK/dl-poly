@@ -7,7 +7,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester may 1993
-! amended   - i.t.todorov march 2006
+! amended   - i.t.todorov february 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -16,7 +16,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
   Use setup_module
   Use site_module,   Only : ntpatm,numtyp
   Use config_module, Only : volm,natms,ltype,lfrzn
-  Use vdw_module,    Only : lstvdw,ltpvdw,prmvdw
+  Use vdw_module,    Only : ls_vdw,lstvdw,ltpvdw,prmvdw
 
   Implicit None
 
@@ -29,6 +29,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
                        eadd,padd,denprd,plrc
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: numfrz
+
   fail=0
   Allocate (numfrz(mxatyp), Stat=fail)
   If (fail > 0) Then
@@ -36,7 +37,14 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
      Call error(0)
   End If
 
-! initalise counter arrays and evaluate number density in system
+! initialise long-range corrections to energy and pressure
+
+  plrc = 0.0_wp
+  elrc = 0.0_wp
+
+  If (ls_vdw) Go To 10 ! force-shifting
+
+! initialise counter arrays and evaluate number density in system
 
   numfrz = 0
   Do i=1,natms
@@ -48,11 +56,6 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
 ! twopi factor
 
   twopi = 2.0_wp*pi
-
-! initialise long-range corrections to energy and pressure
-
-  plrc = 0.0_wp
-  elrc = 0.0_wp
 
 ! Evaluate only for 3D periodic systems
 
@@ -161,6 +164,8 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
      End Do
 
   End If
+
+10 Continue
 
   If (idnode == 0) Write(nrite,"(/,/,1x, &
      & 'long-range correction for: vdw energy  ',e15.6,/,26x, &

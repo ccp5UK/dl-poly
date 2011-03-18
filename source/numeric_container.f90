@@ -30,7 +30,7 @@
 ! Function local_index - finds the local atom number given the global
 !                        atom number
 !
-! Subroutine dcell - calculates the dimensional properies of a
+! Subroutine dcell - calculates the dimensional properties of a
 !                    simulation cell
 !
 ! Subroutine invert - calculates the invert of a 3x3 matrix using
@@ -41,9 +41,9 @@
 !
 ! Subroutine pbcshift - calculates the minimum image of atoms within
 !                       a specified MD cell in accordance with the DD
-!                       boundary convetion
+!                       boundary convention
 !
-! Subroutine jacobi - diagonalises real symmetric matices by the
+! Subroutine jacobi - diagonalises real symmetric matrices by the
 !                     Jacobi method
 !
 ! Subroutine mat_mul - calculates product of two 3x3 matrices written
@@ -735,7 +735,7 @@ Subroutine dcell(aaa,bbb)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine to calculate the dimensional properies of a
+! dl_poly_4 subroutine to calculate the dimensional properties of a
 ! simulation cell specified by the input 3x3 matrix aaa (cell vectors in
 ! rows, the matrix is in the form of one dimensional reading
 ! (row1,row2,row3).
@@ -1080,7 +1080,7 @@ Subroutine pbcshift(imcon,cell,natms,xxx,yyy,zzz)
 !
 ! dl_poly_4 subroutine for calculating the minimum image of atoms within
 ! a specified MD cell in accordance with the domain decomposition
-! boundary convetion for fractional coordinates: every coordinate must
+! boundary convention for fractional coordinates: every coordinate must
 ! be intervaled as [-0.5,+0.5)
 !
 ! Note: in all cases the centre of the MD cell is at (0,0,0)
@@ -1319,10 +1319,10 @@ Subroutine jacobi(n,aaa,vvv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! Diagonalisation of real square symmetric matices by the Jacobi method:
+! Diagonalisation of real square symmetric matrices by the Jacobi method:
 ! a sequence of Jacobi rotations
 !
-! Users must ensure the symmetry of the input martix
+! Users must ensure the symmetry of the input matrix
 !
 ! input parameters: n   - matrix dimension
 !                   aaa - the matrix to be diagonalised
@@ -1357,7 +1357,7 @@ Subroutine jacobi(n,aaa,vvv)
 !  l=0 ! Iteration counter
 
 ! Rescale (lower triangle) matrix for optimal accuracy
-! by the largest by magnitude diagonal elenment
+! by the largest by magnitude diagonal element
 
   scale=0.0_wp
   Do i=1,n
@@ -1412,7 +1412,7 @@ Subroutine jacobi(n,aaa,vvv)
      Do While (pass)
         pass=.false.
 
-! Loop arround the strictly lower triangle matrix
+! Loop around the strictly lower triangle matrix
 
         Do i=2,n
            Do j=1,i-1

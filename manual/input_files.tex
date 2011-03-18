@@ -4,7 +4,7 @@
 \begin{figure}[htbp]
 \begin{center}
 \vskip 1ex
-\centerline{\psfig{file=dlpoly_files.eps,height=12cm}}
+\centerline{\includegraphics[height=12.0cm]{dlpoly_files.eps}}
 \caption[\D input (left) and output (right) files]
 {\D input (left) and output (right) files.  {\bf Note}:
 files marked with an asterisk are non-mandatory.}
@@ -1421,7 +1421,7 @@ The file divides into three sections: general information, molecular
 descriptions, and non-bonded\index{potential!non-bonded} interaction descriptions, appearing in that
 order in the file.
 
-\paragraph{General information}
+\subsubsection*{General information}
 
 The first viable record in the FIELD file is the title.  The
 second is the {\bf units} directive.  Both of these are mandatory.
@@ -1436,10 +1436,10 @@ X\=XXXXXXXXXX\=XXXXX\=\kill
 \noindent The energy units on the {\bf units} directive are
 described by additional keywords\index{units!energy}:
 \begin{description}
-\item[a.] {\bf eV}, for electron-volts per mol
-\item[b.] {\bf kcal}, for k-calories per mol
-\item[c.] {\bf kJ}, for k-Joules per mol
-\item[d.] {\bf K}elvin, for Kelvin per mol
+\item[a.] {\bf eV}, for electron-Volts
+\item[b.] {\bf kcal}/mol, for k-calories per mol
+\item[c.] {\bf kJ}/mol, for k-Joules per mol
+\item[d.] {\bf K}elvin/Boltzmann, for Kelvin per Boltzmann
 \item[e.] {\bf internal}, for DL\_POLY internal units (10 Joules per mol).
 \end{description}
 
@@ -1455,7 +1455,7 @@ depends on an angle then the dependence is read in terms of
 radians although the following angle in the parameter sequence
 is read in terms of degrees.
 
-\paragraph{Molecular details}
+\subsubsection*{Molecular details}
 
 It is important for the user to understand that there is an
 organisational correspondence between the FIELD file and the
@@ -1999,7 +1999,7 @@ the {\bf molecules} directive have been entered.
 The user is recommended to look at the example FIELD files in the {\em
 data} directory to see how typical FIELD files are constructed.
 
-\paragraph{Non-bonded Interactions}
+\subsubsection*{Non-bonded Interactions}
 
 Non-bonded interactions are identified by atom types as opposed to
 specific atomic indices.  The following different types of

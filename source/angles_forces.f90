@@ -250,7 +250,7 @@ Subroutine angles_forces(imcon,engang,virang,stress)
 
         Else If (keya == 5) Then
 
-! screened vessal potential (type 1)
+! screened Vessal potential (type 1)
 
            k     =prmang(1,kk)
            theta0=prmang(2,kk)
@@ -397,7 +397,7 @@ Subroutine angles_forces(imcon,engang,virang,stress)
 
            pterm=a*dr1*dr2 + dtheta*m
 
-           gamma=k*rsint
+           gamma=m*rsint
            gamsa=-a*dr2-b*dtheta
            gamsc=-a*dr1-c*dtheta
            vterm=-(gamsa*rab+gamsc*rbc)

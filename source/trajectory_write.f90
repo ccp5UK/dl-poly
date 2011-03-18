@@ -163,7 +163,7 @@ Subroutine trajectory_write &
 
                     Read(Unit=nhist, Fmt=*, End=20)                     ! title record
                     rec=rec+Int(1,ip)
-                    Read(Unit=nhist, Fmt='(a)', End=20) record(1:recsz) ! bookeeping record
+                    Read(Unit=nhist, Fmt='(a)', End=20) record(1:recsz) ! bookkeeping record
                     Call tabs_2_blanks(record) ; Call strip_blanks(record)
                     rec=rec+Int(1,ip)
 
@@ -438,7 +438,7 @@ Subroutine trajectory_write &
         Call error(0)
      End If
 
-! node 0 handles i/o
+! node 0 handles I/O
 
      If (idnode == 0) Then
 
@@ -754,7 +754,7 @@ Subroutine trajectory_write &
         Call error(0)
      End If
 
-! node 0 handles i/o
+! node 0 handles I/O
 
      If (idnode == 0) Then
 
@@ -987,7 +987,7 @@ Subroutine trajectory_write &
 
                     Read(Unit=nhist, Fmt=*, End=120)                     ! title record
                     rec=rec+Int(1,ip)
-                    Read(Unit=nhist, Fmt='(a)', End=110) record(1:recsz) ! bookeeping record
+                    Read(Unit=nhist, Fmt='(a)', End=120) record(1:recsz) ! bookkeeping record
                     Call tabs_2_blanks(record) ; Call strip_blanks(record)
                     rec=rec+Int(1,ip)
 
@@ -1012,7 +1012,7 @@ Subroutine trajectory_write &
 
                  Else
 
-                    Read(Unit=nhist, Fmt='(a)', End=120)                 ! timestep record
+                    Read(Unit=nhist, Fmt=*, End=120)                 ! timestep record
                     rec=rec+Int(1,ip)
 
                     word=' '
@@ -1218,7 +1218,7 @@ Subroutine trajectory_write &
         Call error(0)
      End If
 
-! node 0 handles i/o
+! node 0 handles I/O
 
      If (idnode == 0) Then
 

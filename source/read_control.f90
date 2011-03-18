@@ -101,12 +101,12 @@ Subroutine read_control                           &
 
 ! defaults for direct evaluation and force-shifting of VDW interactions
 !
-! ld_vdw = .false. ! (initilised in vdw_module)
-! ls_vdw = .false. ! (initilised in vdw_module)
+! ld_vdw = .false. ! (initialised in vdw_module)
+! ls_vdw = .false. ! (initialised in vdw_module)
 !
 ! defaults for direct evaluation of metal interactions
 !
-! ld_met = .false. ! (initilised in metal_module)
+! ld_met = .false. ! (initialised in metal_module)
 
 ! default impact option: option applied, particle index,
 ! timestep of impact, energy of impact, (3) direction of impact
@@ -1534,7 +1534,7 @@ Subroutine read_control                           &
            & /,1x,'MSDTMP file start    ',10x,i10,                   &
            & /,1x,'MSDTMP file interval ',10x,i10)") nstmsd,istmsd
 
-! read trajectotory printing option
+! read trajectory printing option
 
      Else If (word(1:4) == 'traj') Then
 
@@ -1552,17 +1552,17 @@ Subroutine read_control                           &
         itmp = Abs(Nint(word_2_real(word)))
         keytrj = Max(keytrj,itmp)
 
-        If (idnode == 0) Write(nrite,"(/,1x,'trajectory file option on  ', &
-           & /,1x,'trajectory file start       ',3x,i10,                   &
-           & /,1x,'trajectory file interval    ',3x,i10,                   &
+        If (idnode == 0) Write(nrite,"(/,1x,'trajectory file option on', &
+           & /,1x,'trajectory file start       ',3x,i10,                 &
+           & /,1x,'trajectory file interval    ',3x,i10,                 &
            & /,1x,'trajectory file info key    ',3x,i10)") nstraj,istraj,keytrj
 
         If (keytrj > 3) Call error(517)
-        If (keytrj == 3) Write(nrite,'(2(/,1x,a))')                      &
-           '*** warning - trajectory file info key == 3 generates ***', &
-           '*** HISTORY in an unindexed and consize manner !!! ***'
+        If (keytrj == 3) Write(nrite,'(2(/,1x,a))')                     &
+           '%%% warning - trajectory file info key == 3 generates %%%', &
+           '%%% HISTORY in an unindexed and consize manner !!! %%%'
 
-! read defect trajectotory printing option
+! read defect trajectory printing option
 
      Else If (word(1:4) == 'defe') Then
 

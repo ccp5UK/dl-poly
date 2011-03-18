@@ -7,7 +7,7 @@ Subroutine defects_write &
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2010
+! author    - i.t.todorov march 2011
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -64,7 +64,7 @@ Subroutine defects_write &
   Character( Len = recsz )          :: record
   Character                         :: lf
 
-! Number of neighbouring cells to look arround for counting defects
+! Number of neighbouring cells to look around for counting defects
 
   Integer, Parameter :: nsbcll = 27
 
@@ -128,110 +128,105 @@ Subroutine defects_write &
 ! how many frames and records are in there
 
      lexist=.true.
-     If (idnode == 0) Then
-
-        If (keyres == 1) Then
-           Inquire(File='DEFECTS', Exist=lexist)
-        Else
-           lexist=.false.
-        End If
+     If (keyres == 1) Then
+        If (idnode == 0) Inquire(File='DEFECTS', Exist=lexist)
         If (mxnode > 1) Call gcheck(lexist)
+     Else
+        lexist=.false.
+     End If
 
-        If (.not.lexist) Then
+! Generate file is non-existent
 
-           rec=Int(2,ip)
-           frm=Int(0,ip)
+10   Continue
+     If (.not.lexist) Then
+
+        If (idnode == 0) Then
            Open(Unit=ndefdt, File='DEFECTS', Form='formatted', Access='direct', Status='replace', Recl=recsz)
            Write(Unit=ndefdt, Fmt='(a72,a1)',           Rec=1) cfgname(1:72),lf
            Write(Unit=ndefdt, Fmt='(f7.3,a23,2i21,a1)', Rec=2) rdef,Repeat(' ',23),frm,rec,lf
            Close(Unit=ndefdt)
+        End If
+        rec=Int(2,ip)
+        frm=Int(0,ip)
 
-        Else
+! Get some sense of it
+
+     Else
+
+        safe=.true.
+        If (idnode == 0) Then
 
            Open(Unit=ndefdt, File='DEFECTS', Form='formatted')
 
-           l_tmp =.true.
            Do While (.true.)
+
+              record(1:recsz)=' '
               If (l_tmp) Then
-                 Read(Unit=ndefdt, Fmt=*, End=10)            ! title record
+
+                 Read(Unit=ndefdt, Fmt=*, End=20)                     ! title record
                  rec=rec+Int(1,ip)
-                 record=' '
-                 Read(Unit=ndefdt, Fmt='(a)', End=10) record ! bookeeping record
-                 Call tabs_2_blanks(record)
+                 Read(Unit=ndefdt, Fmt='(a)', End=20) record(1:recsz) ! bookkeeping record
                  rec=rec+Int(1,ip)
 
-                 Call get_word(record,word)
+                 Call tabs_2_blanks(record) ; Call get_word(record(1:recsz),word)
                  If (word(1:Len_Trim(word)) /= 'timestep') Then
-                    Call get_word(record,word) ; frm=Nint(word_2_real(word,0.0_wp),ip)
-                    Call get_word(record,word) ; rec=Nint(word_2_real(word,0.0_wp),ip)
+                    Call get_word(record(1:recsz),word) ; Call get_word(record(1:recsz),word)
+                    Call get_word(record(1:recsz),word) ; frm=Nint(word_2_real(word,0.0_wp),ip)
+                    Call get_word(record(1:recsz),word) ; rec=Nint(word_2_real(word,0.0_wp),ip)
                     If (frm /= Int(0,ip) .and. rec > Int(2,ip)) Then
-                       Go To 10
+                       Go To 20 ! New style
                     Else
-                       l_tmp=.false.
+                       l_tmp=.false. ! TOUGH, old style
                        rec=Int(2,ip)
                        frm=Int(0,ip)
                     End If
                  Else
-                    l_tmp=.false.
+                    safe=.false. ! Overwrite the file, it's junk to me
+                    Go To 20
                  End If
+
               Else
-                 Read(Unit=ndefdt, Fmt=*, End=10)            ! timestep record
-                 rec=rec+Int(1,ip)
-                 record=' '
-                 Read(Unit=ndefdt, Fmt='(a)', End=10) record ! defects record
-                 Call tabs_2_blanks(record)
+
+                 Read(Unit=ndefdt, Fmt=*, End=20)                     ! timestep record
                  rec=rec+Int(1,ip)
 
-                 Call get_word(record,word) ; Call get_word(record,word)
-                 j=Nint(word_2_real(word))
+                 Read(Unit=ndefdt, Fmt='(a)', End=20) record(1:recsz) ! defects record
+                 rec=rec+Int(1,ip)
 
-                 Do i=1,3
-                    Read(Unit=ndefdt, Fmt=*, End=10)
-                    rec=rec+Int(1,ip)
-                 End Do
+                 Call tabs_2_blanks(record) ; Call get_word(record(1:recsz),word)
+                 Call get_word(record(1:recsz),word) ; j=Nint(word_2_real(word))
 
-                 Do i=1,2*j
-                    Read(Unit=ndefdt, Fmt=*, End=10)
+                 Do i=1,3+2*j ! 3 lines for cell parameters and 2*j entries for defects
+                    Read(Unit=ndefdt, Fmt=*, End=20)
                     rec=rec+Int(1,ip)
                  End Do
                  frm=frm+Int(1,ip)
+
               End If
+
            End Do
 
-10         Continue
+20         Continue
            Close(Unit=ndefdt)
 
-           If (mxnode > 1) Then
-              Call gsync()
-
-              buffer(1)=Real(frm,wp)
-              buffer(2)=Real(rec,wp)
-              Call gsum(buffer(1:2))
-              frm=Nint(buffer(1),ip)
-              rec=Nint(buffer(2),ip)
-           End If
         End If
 
-     Else
+        If (mxnode > 1) Call gcheck(safe)
+        If (.not.safe) Then
+           lexist=.false.
 
-        If (mxnode > 1) Call gcheck(lexist)
+           rec=Int(0,ip)
+           frm=Int(0,ip)
 
-        If (.not.lexist) Then
+           Go To 10
+        Else If (mxnode > 1) Then
+           buffer(1)=Real(frm,wp)
+           buffer(2)=Real(rec,wp)
 
-           rec=Int(2,ip)
+           Call gsum(buffer(1:2))
 
-        Else
-
-           If (mxnode > 1) Then
-              Call gsync()
-
-              buffer(1)=Real(frm,wp)
-              buffer(2)=Real(rec,wp)
-              Call gsum(buffer(1:2))
-              frm=Nint(buffer(1),ip)
-              rec=Nint(buffer(2),ip)
-           End If
-
+           frm=Nint(buffer(1),ip)
+           rec=Nint(buffer(2),ip)
         End If
 
      End If
@@ -656,19 +651,19 @@ Subroutine defects_write &
      If (idnode == 0) Then
         Write(record, Fmt='(a8,i10,2f12.6,i5,f7.3,a18,a1)') &
            'timestep',nstep,tstep,time,imcon,rdef,Repeat(' ',18),lf
-        Call io_write_record( fh, rec_mpi_io, record )
+        Call io_write_record( fh, rec_mpi_io, record(1:recsz) )
         rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
 
         Write(record, Fmt='(a8,i10,a15,i10,a11,i10,a8,a1)') &
            'defects ',megni+megnv, ' interstitials ',megni, ' vacancies ',megnv,Repeat(' ',8),lf
-        Call io_write_record( fh, rec_mpi_io, record )
+        Call io_write_record( fh, rec_mpi_io, record(1:recsz) )
         rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
 
         Do i = 0, 2
            Write( record, '( 3f20.10, a12, a1 )' ) &
                 cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), &
                 Repeat( ' ', 12 ), lf
-           Call io_write_record( fh, rec_mpi_io, record )
+           Call io_write_record( fh, rec_mpi_io, record(1:recsz) )
            rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
         End Do
      End If
@@ -708,7 +703,6 @@ Subroutine defects_write &
 
      j=0
      Do i=1,nv
-        rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
         Write(record, Fmt='(a2,a8,i10,a52,a1)') 'v_',namv(i),indv(i),Repeat(' ',52),lf
         j=j+1
         Do k=1,recsz
@@ -736,7 +730,7 @@ Subroutine defects_write &
      If (idnode == 0) Then
         rec_mpi_io=Int(1,MPI_OFFSET_KIND)
         Write(record, Fmt='(f7.3,a23,2i21,a1)') rdef,Repeat(' ',23),frm,rec,lf
-        Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record )
+        Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record(1:recsz) )
      End If
 
      Call io_close( fh )

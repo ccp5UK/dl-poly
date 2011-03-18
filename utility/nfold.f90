@@ -132,7 +132,7 @@ Program nfold
   End If
   Write(*,*)
 
-! Check file existance
+! Check file existence
 
   Inquire(File=f_in(1:Len_Trim(f_in)),Exist=exists)
   If (exists) Then

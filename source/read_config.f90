@@ -7,7 +7,7 @@ Subroutine read_config &
 ! particle density
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov march 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -71,9 +71,9 @@ Subroutine read_config &
 
   If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
-! Real space cutoff shorthend by 25%
+! Real space cutoff shortened by 50% but not < 2 Angstroms
 
-  cut=0.75_wp*rcut+1.0e-6_wp
+  cut=Max(0.5_wp*rcut,2.0_wp)+1.0e-6_wp
 
 ! Get this node's (domain's) coordinates
 
@@ -82,7 +82,7 @@ Subroutine read_config &
   idx=Mod(idnode,nprx)
 
 ! Get the domains' dimensions in reduced space
-! (domains are geometrically equvalent)
+! (domains are geometrically equivalent)
 
   sidex=1.0_wp/Real(nprx,wp)
   sidey=1.0_wp/Real(npry,wp)
@@ -106,7 +106,7 @@ Subroutine read_config &
   If (ncells == 0) Call error(307)
 
 ! Amend volume of density cell if cluster, slab or bulk slab
-! cell dimentional properties overwritten but not needed anyway
+! cell dimensional properties overwritten but not needed anyway
 
   If (imcon == 0 .or. imcon == 6 .or. imc_n == 6) Then
      celh=cell
@@ -497,16 +497,16 @@ Subroutine read_config &
 
   If (io_read /= IO_READ_MASTER) Then
 
-! This section is not strictly neccessary.  However, the new read in method
-! means the atoms are not neccessarily in the same order in memory as the
+! This section is not strictly necessary.  However, the new read in method
+! means the atoms are not necessarily in the same order in memory as the
 ! older, slower, method would put them.  This bit makes sure that the order
 ! is so that 'ltg' is strictly monotonically increasing.  This captures the
 ! common case where CONFIG has the 'ltg' values all in order (or not
-! specified), but there is no easy way for the general case of arbitary
+! specified), but there is no easy way for the general case of arbitrary
 ! ordering of the 'ltg' values in CONFIG.  Of course, this makes no
 ! difference to the science and to restarts.  However, for initial runs it
 ! means the initial velocities will not be the same as the old method for
-! the arbitary ordering case.
+! the arbitrary ordering case.
 
      atmnam( 1:natms ) = atmnam( lsi( 1:natms ) )
      ltg( 1:natms ) = ltg( lsi( 1:natms ) )
@@ -536,7 +536,7 @@ Subroutine read_config &
 ! READ CONFIG END
 
 ! PARTICLE DENSITY START
-! Allocate and initilise particle density array
+! Allocate and initialise particle density array
 
   fail=0
   Allocate (pda(1:ncells), Stat=fail(1))
@@ -633,7 +633,7 @@ Subroutine read_config &
   End If
 
 ! Approximation for maximum global density by
-! disbalance in domain density between domains
+! imbalance of domain density between domains
 
   dens0=pda_max/vcell
   If (mxnode > 1) Then
@@ -644,7 +644,7 @@ Subroutine read_config &
      Else If (1.25_wp*pda_dom_min > pda_dom_max) Then
         dens = pda_dom_max/vcell
      Else
-        dens = dens0 ! too big a disbalance (take no risk)
+        dens = dens0 ! too big an imbalance (take no risk)
      End If
   End If
 

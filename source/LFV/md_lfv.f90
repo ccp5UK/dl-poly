@@ -66,7 +66,7 @@
 
 100  Continue ! Only used when relaxed is false
 
-! Initialize force arrays and stress tensor (these are all aditive
+! Initialize force arrays and stress tensor (these are all additive
 ! in the force subroutines)
 
      fxx = 0.0_wp
@@ -75,7 +75,7 @@
 
      stress = 0.0_wp
 
-! Calculate pair-like forces (metal,vdw,elsectrostatic) and add lrc
+! Calculate pair-like forces (metal,vdw,electrostatic) and add lrc
 
      If (.not.(mxmet == 0 .and. keyfce == 0 .and. l_n_v .and. l_n_r)) &
         Call two_body_forces                      &

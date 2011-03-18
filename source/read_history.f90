@@ -250,7 +250,7 @@ Subroutine read_history(l_str,megatm,levcfg,imcon,nstep,tstep,time)
 
      indatm=0
 
-! Initilise total number of atoms counter
+! Initialise total number of atoms counter
 
      nattot=0
 

@@ -1191,7 +1191,7 @@ Subroutine error(kode)
 
      End If
 
-! close all i/o channels
+! close all I/O channels
 
      Close(nrite)
      Close(nhist)

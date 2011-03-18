@@ -7,7 +7,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov august 2008
+! amended   - i.t.todorov march 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,11 +30,18 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
   Real( Kind = wp ), Save :: cut,sidex,sidey,sidez,dispx,dispy,dispz
 
   Logical           :: oldjob
-  Integer           :: i,j,ia,ib
+  Integer           :: fail,nlx,nly,nlz,i,j,ia,ib,nlast_tmp1,nlast_tmp2
   Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9), &
                        cwx,cwy,cwz,ecwx,ecwy,ecwz,  &
                        uuu,vvv,www
 
+  Real( Kind = wp ), Allocatable :: ott(:)
+
+  Allocate (ott(1:mxatms), Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'set_halo_particles allocation failure, node: ', idnode
+     Call error(0)
+  End If
 
   If (newjob) Then
      newjob = .false.
@@ -55,7 +62,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
      idx=Mod(idnode,nprx)
 
 ! Get the domains' dimensions in reduced space
-! (domains are geometrically equvalent)
+! (domains are geometrically equivalent)
 
      sidex=1.0_wp/Real(nprx,wp)
      sidey=1.0_wp/Real(npry,wp)
@@ -83,14 +90,20 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
 
   Call dcell(cell,celprp)
 
+! calculate link cell dimensions per node
+
+  nlx=Int(sidex*celprp(7)/cut)
+  nly=Int(sidey*celprp(8)/cut)
+  nlz=Int(sidez*celprp(9)/cut)
+
 ! Calculate a link-cell width in every direction in the
 ! reduced space of the domain
 ! First term = the width of the domain in reduced space
 ! Second term = number of link-cells per domain per direction
 
-  cwx=sidex/Real( Int(sidex*celprp(7)/cut),wp )
-  cwy=sidey/Real( Int(sidey*celprp(8)/cut),wp )
-  cwz=sidez/Real( Int(sidez*celprp(9)/cut),wp )
+  cwx=sidex/Real(nlx,wp)
+  cwy=sidey/Real(nly,wp)
+  cwz=sidez/Real(nlz,wp)
 
 ! "Positive halo" widths in reduced space as needed by SPME for
 ! b-splines. To be used in halo transport in NEGATIVE DIRECTIONS!!!
@@ -152,18 +165,57 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
 
 ! exchange atom data in -/+ x directions
 
+  If (nprx == 2 .and. nlx == 1) nlast_tmp1 = nlast ! Put tab on nlast
   Call export_atomic_data(-1,sidex,sidey,sidez,ecwx,ecwy,ecwz)
+  If (nprx == 2 .and. nlx == 1) nlast_tmp2 = nlast ! Put tab on nlast
   Call export_atomic_data( 1,sidex,sidey,sidez,cwx,cwy,cwz)
+  If (nprx == 2 .and. nlx == 1 .and. idx == 1) Then ! Handle exception
+     Do i=nlast_tmp1+1,nlast
+        ott(i)=xxx(i)
+     End Do
+     Do i=nlast_tmp1+1,nlast_tmp1+nlast-nlast_tmp2
+        xxx(i)=ott(i+nlast_tmp2-nlast_tmp1)
+     End Do
+     Do i=nlast_tmp1+nlast-nlast_tmp2+1,nlast
+        xxx(i)=ott(i+nlast_tmp2-nlast)
+     End Do
+  End If
 
 ! exchange atom data in -/+ y directions
 
+  If (npry == 2 .and. nly == 1) nlast_tmp1 = nlast ! Put tab on nlast
   Call export_atomic_data(-2,sidex,sidey,sidez,ecwx,ecwy,ecwz)
+  If (npry == 2 .and. nly == 1) nlast_tmp2 = nlast ! Put tab on nlast
   Call export_atomic_data( 2,sidex,sidey,sidez,cwx,cwy,cwz)
+  If (npry == 2 .and. nly == 1 .and. idy == 1) Then ! Handle exception
+     Do i=nlast_tmp1+1,nlast
+        ott(i)=yyy(i)
+     End Do
+     Do i=nlast_tmp1+1,nlast_tmp1+nlast-nlast_tmp2
+        yyy(i)=ott(i+nlast_tmp2-nlast_tmp1)
+     End Do
+     Do i=nlast_tmp1+nlast-nlast_tmp2+1,nlast
+        yyy(i)=ott(i+nlast_tmp2-nlast)
+     End Do
+  End If
 
 ! exchange atom data in -/+ z directions
 
+  If (nprz == 2 .and. nlz == 1) nlast_tmp1 = nlast ! Put tab on nlast
   Call export_atomic_data(-3,sidex,sidey,sidez,ecwx,ecwy,ecwz)
+  If (nprz == 2 .and. nlz == 1) nlast_tmp2 = nlast ! Put tab on nlast
   Call export_atomic_data( 3,sidex,sidey,sidez,cwx,cwy,cwz)
+  If (nprz == 2 .and. nlz == 1 .and. idz == 1) Then ! Handle exception
+     Do i=nlast_tmp1+1,nlast
+        ott(i)=zzz(i)
+     End Do
+     Do i=nlast_tmp1+1,nlast_tmp1+nlast-nlast_tmp2
+        zzz(i)=ott(i+nlast_tmp2-nlast_tmp1)
+     End Do
+     Do i=nlast_tmp1+nlast-nlast_tmp2+1,nlast
+        zzz(i)=ott(i+nlast_tmp2-nlast)
+     End Do
+  End If
 
 ! restore atomic coordinates to real coordinates
 
@@ -229,6 +281,12 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
   If (oldjob .and. m_rgd > 0) Then
      Call rigid_bodies_tags()
      Call rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
+  End If
+
+  Deallocate (ott, Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'set_halo_particles deallocation failure, node: ', idnode
+     Call error(0)
   End If
 
 End Subroutine set_halo_particles

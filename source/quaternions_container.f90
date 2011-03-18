@@ -15,7 +15,7 @@ Subroutine q_setup()
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for setting up RBs' quternions
+! dl_poly_4 subroutine for setting up RBs' quaternions
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov october 2010

@@ -34,7 +34,7 @@ Subroutine defects_reference_set_halo  &
   Integer,           Save :: idx,idy,idz
   Real( Kind = wp ), Save :: sidex,sidey,sidez,dispx,dispy,dispz
 
-  Integer           :: i,j,ia,ib
+  Integer           :: nlx,nly,nlz,i,j,ia,ib
   Real( Kind = wp ) :: celprp(1:10)
 
 
@@ -52,7 +52,7 @@ Subroutine defects_reference_set_halo  &
      idx=Mod(idnode,nprx)
 
 ! Get the domains' dimensions in reduced space
-! (domains are geometrically equvalent)
+! (domains are geometrically equivalent)
 
      sidex=1.0_wp/Real(nprx,wp)
      sidey=1.0_wp/Real(npry,wp)
@@ -78,14 +78,20 @@ Subroutine defects_reference_set_halo  &
 
   Call dcell(cell,celprp)
 
-! Calculate a link-cell(cut) width in every direction in the
+! calculate link cell dimensions per node
+
+  nlx=Int(sidex*celprp(7)/cut)
+  nly=Int(sidey*celprp(8)/cut)
+  nlz=Int(sidez*celprp(9)/cut)
+
+! Calculate a link-cell width in every direction in the
 ! reduced space of the domain
 ! First term = the width of the domain in reduced space
 ! Second term = number of link-cells per domain per direction
 
-  cwx=sidex/Real( Int(sidex*celprp(7)/cut),wp )
-  cwy=sidey/Real( Int(sidey*celprp(8)/cut),wp )
-  cwz=sidez/Real( Int(sidez*celprp(9)/cut),wp )
+  cwx=sidex/Real(nlx,wp)
+  cwy=sidey/Real(nly,wp)
+  cwz=sidez/Real(nlz,wp)
 
 ! Convert site positions from MD cell centred reduced space coordinates
 ! to reduced space coordinates of this node

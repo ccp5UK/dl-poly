@@ -83,7 +83,7 @@ Subroutine check_config(levcfg,imcon,l_str,lpse,keyens,keyfce,keyres,megatm)
 
   If (keyres > 0 .and. levcfg < 1) Call error(85)
 
-  If (l_str) iwrk(1:natms) = 0 ! initilise
+  If (l_str) iwrk(1:natms) = 0 ! initialise
 
 ! Safe flag
 
@@ -123,8 +123,8 @@ Subroutine check_config(levcfg,imcon,l_str,lpse,keyens,keyfce,keyres,megatm)
               loc_ind=lsi(indatm)
 
 ! Second check: Do particle identities and their order from the topology
-! (FIELD) match the one found in the cristalographic data (CONFIG)?
-! Check for unidentified atoms in CONFIG by their existance in FIELD
+! (FIELD) match the one found in the crystallographic data (CONFIG)?
+! Check for unidentified atoms in CONFIG by their existence in FIELD
 
               If (atmnam(loc_ind) /= sitnam(mol_sit+m)) Then
                  Write(nrite,"(/,/,1x, 'unidentified atom label :',a8,': atom number ',i5)") atmnam(loc_ind),loc_ind

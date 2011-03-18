@@ -151,7 +151,7 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
                     Read(Unit=nhist, Fmt=*, End=10)            ! title record
                     rec=rec+Int(1,ip)
                     record=' '
-                    Read(Unit=nhist, Fmt='(a)', End=10) record ! bookeeping record
+                    Read(Unit=nhist, Fmt='(a)', End=10) record ! bookkeeping record
                     Call tabs_2_blanks(record)
                     rec=rec+Int(1,ip)
 
@@ -383,7 +383,7 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
         Call error(0)
      End If
 
-! node 0 handles i/o
+! node 0 handles I/O
 
      If (idnode == 0) Then
 
@@ -574,7 +574,7 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
         Call error(0)
      End If
 
-! node 0 handles i/o
+! node 0 handles I/O
 
      If (idnode == 0) Then
 

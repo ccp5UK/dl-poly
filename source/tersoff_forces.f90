@@ -54,7 +54,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
                        fxa,fya,fza, fxc,fyc,fzc,                     &
                        strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:2)
 
-! Number of neighbouring cells to look arround for counting tersoff
+! Number of neighbouring cells to look around for counting tersoff
 ! interactions
 
   Integer, Parameter :: nsbcll = 27
@@ -99,7 +99,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
      idx=Mod(idnode,nprx)
 
 ! Get the domains' dimensions in reduced space
-! (domains are geometrically equvalent)
+! (domains are geometrically equivalent)
 
      sidex=1.0_wp/Real(nprx,wp)
      sidey=1.0_wp/Real(npry,wp)
@@ -164,7 +164,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   End Do
 
 ! Form linked list
-! Initilise link arrays
+! Initialise link arrays
 
   link=0
   Do i=1,ncells
@@ -272,7 +272,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
            lst(icell)=lst(icell)+1
 
-! link points to the next in chain or zero if end of chain occures
+! link points to the next in chain or zero if end of chain occurs
 ! this is the old lct(icell)
 
            link(i)=lct(icell)
@@ -318,7 +318,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
            If (lct(icell) > 0) Then
 
 ! Initialise extended head of chain array (for all subcells
-! arround icell and icell itself at the very first instance)
+! around icell and icell itself at the very first instance)
 ! and its length (mini-list of neighbour cell contents)
 
               k=0

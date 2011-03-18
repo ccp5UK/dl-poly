@@ -55,7 +55,7 @@ Subroutine pass_shared_units &
 
   safe=.true.
 
-! is it ok not to compress the bookeeping list arrays
+! is it ok not to compress the bookkeeping list arrays
 ! since it's safe - there's enough buffering space
 
   ok=.true.

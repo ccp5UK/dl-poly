@@ -2,7 +2,7 @@ Subroutine regauss_temperature(imcon,megrgd)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine to regauss the instantenious system temperature
+! dl_poly_4 subroutine to regauss the instanteneous system temperature
 ! by random pairwise swaps of the energy scaled momenta of dynamically
 ! active particles (no massless shells or massless RB members)
 !

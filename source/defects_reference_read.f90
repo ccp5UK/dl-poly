@@ -6,7 +6,7 @@ Subroutine defects_reference_read &
 ! dl_poly_4 subroutine for reading particles data from REFERENCE file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov march 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -159,14 +159,17 @@ Subroutine defects_reference_read &
      End If
      If (.not.safe) Go To 100
 
-! Close CONFIG
+! Close REFERENCE
 
      If (idnode == 0) Close(Unit=nrefdt)
 
      If      (fast       ) Then
-        megref = i                ! Define megref
+        If (megref == 0) Then          ! Define megref
+           If (idnode == 0) megref = i ! It's already been read on master
+           If (mxnode > 1) Call gsum(megref)
+        End If
      Else If (megref == 0) Then
-        io_read = IO_READ_MASTER  ! Abort parallel reading
+        io_read = IO_READ_MASTER       ! Abort parallel reading
      End If
 
   End If
@@ -226,7 +229,7 @@ Subroutine defects_reference_read &
         Call error(552) ! Lattice parameters are a must
      End If
 
-! Close CONFIG
+! Close REFERENCE
 
      If (idnode == 0) Close(Unit=nrefdt)
      If (mxnode > 1) Call gsync()
@@ -299,7 +302,7 @@ Subroutine defects_reference_read &
 
      indatm=0
 
-! Initilise total number of atoms and index counter
+! Initialise total number of atoms and index counter
 
      megref=0
      j=0
@@ -328,7 +331,7 @@ Subroutine defects_reference_read &
 
            Go To 50
 
-! When hings have gone wrong then
+! When things have gone wrong then
 
 30         Continue
            safe=.false.
@@ -460,11 +463,7 @@ Subroutine defects_reference_read &
 ! top_skip is header size
 
      If (io_read /= IO_READ_NETCDF) Then
-        If (imcon == 0) Then
-           top_skip = Int(2,MPI_OFFSET_KIND)
-        Else
-           top_skip = Int(5,MPI_OFFSET_KIND)
-        End If
+        top_skip = Int(5,MPI_OFFSET_KIND) ! imcon is a must
      Else
         top_skip = Int(1,MPI_OFFSET_KIND) ! This is now the frame = 1
      End If

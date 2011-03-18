@@ -25,7 +25,7 @@ Subroutine rigid_bodies_stress(strcom,ggx,ggy,ggz)
 
   Integer :: i,irgd,jrgd,krgd,lrgd,rgdtyp
 
-! Initilise stress
+! Initialise stress
 
   strcom=0.0_wp
 
@@ -101,7 +101,7 @@ Subroutine rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx,fyy,fzz)
 
   Integer :: i,irgd,jrgd,krgd,lrgd,rgdtyp
 
-! Initilise stress
+! Initialise stress
 
   strcom=0.0_wp
 
@@ -209,7 +209,7 @@ Subroutine rigid_bodies_str_ss(strcom)
 
   Call images(imcon,cell,krgd,gxx,gyy,gzz)
 
-! Initilise stress
+! Initialise stress
 
   strcom=0.0_wp
 

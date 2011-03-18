@@ -5,7 +5,7 @@
 ! dl_poly_4 inclusion for serial compilation of MPI calls
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2009
+! author    - i.t.todorov march 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,10 +29,11 @@
 
 ! GLOBAL
 
-  Integer, Parameter :: MPI_UNDEFINED   = 0
-  Integer, Parameter :: MPI_COMM_NULL   = 0
-  Integer, Parameter :: MPI_COMM_WORLD  = 1
-  Integer, Parameter :: MPI_STATUS_SIZE = 1
+  Integer, Parameter :: MPI_UNDEFINED   = -1
+  Integer, Parameter :: MPI_COMM_NULL   =  0
+  Integer, Parameter :: MPI_COMM_SELF   =  1
+  Integer, Parameter :: MPI_COMM_WORLD  =  1
+  Integer, Parameter :: MPI_STATUS_SIZE =  1
 
 ! MPI_MODES for MPI-I/O
 

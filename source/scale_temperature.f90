@@ -2,7 +2,7 @@ Subroutine scale_temperature(imcon,sigma,degtra,degrot,degfre)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine to scale the instantenious system temperature
+! dl_poly_4 subroutine to scale the instanteneous system temperature
 ! to the target temperature
 !
 ! Note: zeroes angular momentum in non-periodic systems, frozen

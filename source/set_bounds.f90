@@ -8,7 +8,7 @@ Subroutine set_bounds                                        &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2010
+! author    - i.t.todorov march 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -343,7 +343,7 @@ Subroutine set_bounds                                        &
 
   cut=rcut+1.0e-6_wp
 
-! calculate link cell dimentions per node
+! calculate link cell dimensions per node
 
   sidex=1.0_wp/Real(nprx,wp)
   sidey=1.0_wp/Real(npry,wp)
@@ -374,11 +374,11 @@ Subroutine set_bounds                                        &
 
 ! SPME electrostatics particularities
 
-! qlx,qly,qlz - SPME fictional link-cell dimentions postulating that:
+! qlx,qly,qlz - SPME fictional link-cell dimensions postulating that:
 ! nprx <= kmaxa/mxspl, npry <= kmaxb/mxspl, nprz <= kmaxc/mxspl.
 ! Otherwise, this node's b-splines in SPME will need 'positive halo'
-! that is not on the imediate neighbouring nodes in negative
-! directions but beyound them (which may mean self-halo in some cases)
+! that is not on the immediate neighbouring nodes in negative
+! directions but beyond them (which may mean self-halo in some cases)
 
   kmaxa = kmaxa1
   kmaxb = kmaxb1
@@ -415,16 +415,15 @@ Subroutine set_bounds                                        &
 
 ! density variation affects the link-cell arrays' dimension
 ! more than domains(+halo) arrays' dimensions, in case of
-! events of extreme collaps in atomic systems (aggregation)
+! events of extreme collapse in atomic systems (aggregation)
 
 ! mxlist is the maximum length of link-cell list (dens * 4/3 pi rcut^3)
-! + 50% extra tolerance (f(dens0,dens) * 6/3 pi rcut^3)
+! + 75% extra tolerance (f(dens0,dens) * 7.5/3 pi rcut^3)
 
-
-  If (mxnode == 1 .or. imcon == 0) Then
-     mxlist = Nint( (dvar**1.7_wp) * (0.75_wp*dens0+0.25_wp*dens)*2.0_wp*pi*rcut**3)
+  If (mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
+     mxlist = Nint( (dvar**1.7_wp) * (0.75_wp*dens0+0.25_wp*dens)*2.5_wp*pi*rcut**3)
   Else
-     mxlist = Nint( (dvar**1.7_wp) * (0.25_wp*dens0+0.75_wp*dens)*2.0_wp*pi*rcut**3)
+     mxlist = Nint( (dvar**1.7_wp) * (0.25_wp*dens0+0.75_wp*dens)*2.5_wp*pi*rcut**3)
   End If
   mxlist = Min(mxlist,megatm-1)
 
@@ -440,7 +439,11 @@ Subroutine set_bounds                                        &
 ! set dimension of working coordinate arrays
 
   mxatms = Max(1 , Nint(test * Real((ilx+3)*(ily+3)*(ilz+3),wp)))
-  mxatms = Min(mxatms,(27*megatm)/2)
+  If (mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
+    mxatms = Min(mxatms,27*megatm)
+  Else
+    mxatms = Min(mxatms,(27*megatm)/2)
+  End If
 
 ! maximum number of particles per domain (no halo)
 

@@ -8,7 +8,7 @@ atomic coordinates, velocities and forces; an incremental
 dump file of atomic coordinates of defected particles
 (interstitials) and sites (vacancies); an incremental dump
 file of of individual atomic mean square displacement and
-temperature; a dump file  of all atomic coordinates of a
+temperature; a dump file of all atomic coordinates of a
 minimised structure; an incremental summary file of the
 simulation; a restart (final) configuration file; a restart
 (final) statistics accumulators file; a radial distribution
@@ -263,9 +263,9 @@ extra numbers appear on the end of the second line of the file:
 \item an integer indicating the number of minimisation cycles
 required to obtain the structure,
 \item the configuration energy of the minimised configuration expressed
-in  \D units \ref{units}, and
+in \D units \ref{units}, and
 \item the configuration energy of the initial structure expressed
-in  \D units \ref{units}.
+in \D units \ref{units}.
 \end{enumerate}
 
 \subsection{The OUTPUT File}
@@ -397,14 +397,14 @@ as parameter {\tt mxstak} in the {\sc setup\_module} file (see
 Section \ref{file-structure}).  The default value is {\tt mxstak}
 $=~100$.
 
-\paragraph*{Energy Units:}
+\subsubsection*{Energy Units}
 
 The energy unit for the energy and virial data appearing in the
 OUTPUT is defined by the {\bf units} directive appearing in the
 FIELD file.  System energies are therefore read in {\bf units}
 per MD cell.
 
-\paragraph*{Pressure units:}
+\subsubsection*{Pressure Units}
 
 The unit of pressure\index{units!pressure} is katms, irrespective
 of what energy unit is chosen.

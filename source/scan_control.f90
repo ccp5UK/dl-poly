@@ -346,7 +346,7 @@ Subroutine scan_control                              &
 
            cut=rcut+1.0e-6_wp
 
-! fix cell vectors for image conditions with dicontinuties
+! fix cell vectors for image conditions with discontinuties
 
            If (imcon == 0) Then
 
@@ -511,7 +511,7 @@ Subroutine scan_control                              &
 
            cut=rcut+1.0e-6_wp
 
-! fix cell vectors for image conditions with dicontinuties
+! fix cell vectors for image conditions with discontinuties
 
            If (imcon == 0) Then
 

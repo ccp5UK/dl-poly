@@ -5,7 +5,7 @@ Module comms_module
 ! dl_poly_4 module for global communication routines and functions
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2010
+! author    - i.t.todorov february 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -13,6 +13,9 @@ Module comms_module
   Use mpi!_module
 
   Implicit None
+
+!  Include 'mpif.h'  ! Needed instead "Use mpi" for some machines
+!  Include 'mpiof.h' ! Needed for ScaliMPI
 
   Integer, Save :: wp_mpi = 0 , &
                    idnode = 0 , &

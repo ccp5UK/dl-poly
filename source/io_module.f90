@@ -16,7 +16,7 @@ Module io_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.j.bush november 2010
-! amended   - i.t.todorov october 2010
+! amended   - i.t.todorov march 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -420,7 +420,7 @@ Contains
   Subroutine io_delete( file_name )
 
     ! Delete a file - note that it is NOT an error to try to
-    ! delete a non-existant file, it is silently ignored
+    ! delete a non-existent file, it is silently ignored
     ! THIS ROUTINE BLOCKS ACROSS ALL THE COMM.
     ! Arguments are:
     ! FILE_NAME  : the file name
@@ -589,7 +589,7 @@ Contains
     ! USER_COMM             : The communicator that the data for this run spans
     ! USER_METHOD_WRITE     : The method used for writing
     ! USER_METHOD_READ      : The method used for reading
-    ! USER_N_IO_PROCS_WRITE : The number ofwriting processors.  A non-positive number
+    ! USER_N_IO_PROCS_WRITE : The number of writing processors.  A non-positive number
     !                         means use the default number of processors.
     ! USER_N_IO_PROCS_READ  : The number of reading processors.  A non-positive number
     !                         means use the default number of processors.
@@ -758,7 +758,7 @@ Contains
     End If
 
     ! Create the I/O communicators, IO_COMM which contains only those procs
-    ! which wil perform I/O, and IO_GATHER_COMM, which contains at rank 0 the
+    ! which will perform I/O, and IO_GATHER_COMM, which contains at rank 0 the
     ! proc which will perform the I/O for all other procs in the give instantiation
     ! of IO_GATHER_COMM.  As a processor can not ( easily ) determine if it is
     ! a member of a given communicator or not ( if it's not in a communicator
@@ -833,7 +833,7 @@ Contains
        End Select
     Case( IO_HISTORD )
        size_local = N_HISTORD_DATA + size_local
-       D_IND = 1
+       D_IND = 4
     Case( IO_MSDTMP )
        size_local = N_MSDTMP_DATA + size_local
        W_IND = 1
@@ -864,7 +864,7 @@ Contains
     End If
 
     ! Allocate stuff required only on the I/O processors
-    ! Note it's not a standard to pass un unallocated array unless the
+    ! Note it's not a standard to pass an unallocated array unless the
     ! dummy argument is allocatable.  Here this is not the case hence allocate
     ! to size zero on procs that will not need the array.
     If ( do_io ) Then
@@ -933,7 +933,7 @@ Contains
        ! gain we get from larger batches.
        ! Note the earlier method had to make the most pessimistic assumption -
        ! that all atoms for this batch belonged to one I/O processor.  This
-       ! is particuarly poor when there are many writers, partially because
+       ! is particularly poor when there are many writers, partially because
        ! the number of atoms written by each processor will be, on average,
        ! small, partially because the messages used to construct the sorted
        ! arrays will be short.
@@ -961,7 +961,7 @@ Contains
 
           ! For this batch size what is the biggest number of atoms ant processor
           ! needs to hold ? First find out within an io_gather_group how many
-          ! atoms a the I/O processor for that group will hold
+          ! atoms the I/O processor for that group will hold
           Call MPI_ALLREDUCE( Max( local_top - local_bottom + 1, 0 ), n_gathered, 1, &
                MPI_INTEGER, MPI_SUM, io_gather_comm, ierr )
           ! If we are covering all the remaining atoms can now exit
@@ -1188,7 +1188,7 @@ Contains
       ! ATOM_NAME           : The atoms' names
       ! WEIGHT              : The atoms' weights
       ! CHARGE              : The atoms' charges
-      ! WEIGHT              : The atoms' RMS dispalcement (??)
+      ! RMS                 : The atoms' displacement from its position at t=0
       ! RX, RY, RZ          : The components of the atoms' positions
       ! VX, VY, VZ          : The components of the atoms' velocities
       ! FX, FY, FZ          : The components of the forces on the atoms
@@ -1377,7 +1377,7 @@ Contains
       ! GATHERED_DATA          : The gathered atomic data
       ! GATHERED_NAME          : The gathered atomic names
       ! N_GATHERED             : Amount of data gathered onto the I/O proc
-      ! ERROR                  : Zero on succesful return
+      ! ERROR                  : Zero on successful return
 
       Implicit None
 
@@ -1606,8 +1606,8 @@ Contains
       ! data reorganization which is part of the global sort.
       ! Arguments are:
       ! IO_COMM: The communicator which the I/O procs span
-      ! N      : The number of atoms in this btach for this I/O processor
-      ! N_REORG: The number of atoms that are on each processor after the reorganzation
+      ! N      : The number of atoms in this batch for this I/O processor
+      ! N_REORG: The number of atoms that are on each processor after the reorganisation
 
       Implicit None
 
@@ -1640,7 +1640,7 @@ Contains
       ! is spread across the processors spanned by IO_COMM.  The local arrays
       ! are assumed already sorted.
       ! The arguments are:
-      ! IO_COMM       : The communictor
+      ! IO_COMM       : The communicator
       ! N             : The number of atoms in the batch currently on this processor
       ! INDICES       : The atomic indices
       ! DATA          : The atomic data
@@ -1689,7 +1689,7 @@ Contains
       End If
       Call MPI_ALLREDUCE( my_first, first_in_batch, 1, MPI_INTEGER, MPI_MIN, io_comm, ierr )
 
-      ! Find the first atom on each Proc - remember the atoms are being outputted
+      ! Find the first atom on each proc - remember the atoms are being outputted
       ! in one big contiguous block of indices
       Allocate( first_atom( 0:n_in_io_comm - 1 ), Stat = error )
       If ( .not. ok( error == 0, io_comm ) ) Then
@@ -1730,7 +1730,7 @@ Contains
          displs_send( i ) = displs_send(  i - 1 ) + to_send( i - 1 )
       End Do
 
-      ! The amount to be recved in the alltoallv later on is simply the amount sent
+      ! The amount to be received in the alltoallv later on is simply the amount sent
       Allocate( to_recv( 0:n_in_io_comm - 1 ), Stat = error )
       If ( .not. ok( error == 0, io_comm ) ) Then
          error = IO_ALLOCATION_ERROR
@@ -1738,7 +1738,7 @@ Contains
       End If
       Call MPI_ALLTOALL( to_send, 1, MPI_INTEGER, to_recv, 1, MPI_INTEGER, io_comm, ierr )
 
-      ! And now the displacements for recieveing
+      ! And now the displacements for receiving
       Allocate( displs_recv( 0:n_in_io_comm - 1 ), Stat = error )
       If ( .not. ok( error == 0, io_comm ) ) Then
          error = IO_ALLOCATION_ERROR
@@ -1868,7 +1868,7 @@ Contains
 
             ! Atom name - change structure according to whether
             ! the weight, charge and rsd are stored or not
-            ! Also note slight pain due to array og character not being the same as character( Len( Size( array ) )
+            ! Also note slight pain due to array of character not being the same as character( Len( Size( array ) )
             ! being extremely careful here as MPI only knows about character( Len = 1 ), so the derived
             ! type can ONLY be an array of char ....
             Select Case( write_options )
@@ -2005,17 +2005,19 @@ Contains
             Call netcdf_put_var( 'charges'  , desc, data( Q_IND, 1:n ), (/ indices( 1 ), frame /), (/     n, 1 /) )
          End Select
 
-         Select Case( write_level )
-         Case( 0 )
-            Call netcdf_put_var( 'coordinates', desc, data( RX_IND:RZ_IND, 1:n ), (/  1, indices( 1 ), frame /), (/ 3, n, 1 /) )
-         Case( 1 )
-            Call netcdf_put_var( 'coordinates', desc, data( RX_IND:RZ_IND, 1:n ), (/  1, indices( 1 ), frame /), (/ 3, n, 1 /) )
-            Call netcdf_put_var( 'velocities' , desc, data( VX_IND:VZ_IND, 1:n ), (/  1, indices( 1 ), frame /), (/ 3, n, 1 /) )
-         Case( 2 )
-            Call netcdf_put_var( 'coordinates', desc, data( RX_IND:RZ_IND, 1:n ), (/  1, indices( 1 ), frame /), (/ 3, n, 1 /) )
-            Call netcdf_put_var( 'velocities' , desc, data( VX_IND:VZ_IND, 1:n ), (/  1, indices( 1 ), frame /), (/ 3, n, 1 /) )
-            Call netcdf_put_var( 'forces'     , desc, data( FX_IND:FZ_IND, 1:n ), (/  1, indices( 1 ), frame /), (/ 3, n, 1 /) )
-         End Select
+         If ( write_options /= IO_MSDTMP ) Then
+            Select Case( write_level )
+            Case( 0 )
+               Call netcdf_put_var( 'coordinates', desc, data( RX_IND:RZ_IND, 1:n ), (/  1, indices( 1 ), frame /), (/ 3, n, 1 /) )
+            Case( 1 )
+               Call netcdf_put_var( 'coordinates', desc, data( RX_IND:RZ_IND, 1:n ), (/  1, indices( 1 ), frame /), (/ 3, n, 1 /) )
+               Call netcdf_put_var( 'velocities' , desc, data( VX_IND:VZ_IND, 1:n ), (/  1, indices( 1 ), frame /), (/ 3, n, 1 /) )
+            Case( 2 )
+               Call netcdf_put_var( 'coordinates', desc, data( RX_IND:RZ_IND, 1:n ), (/  1, indices( 1 ), frame /), (/ 3, n, 1 /) )
+               Call netcdf_put_var( 'velocities' , desc, data( VX_IND:VZ_IND, 1:n ), (/  1, indices( 1 ), frame /), (/ 3, n, 1 /) )
+               Call netcdf_put_var( 'forces'     , desc, data( FX_IND:FZ_IND, 1:n ), (/  1, indices( 1 ), frame /), (/ 3, n, 1 /) )
+            End Select
+         End If
 
       End If
 
@@ -2407,7 +2409,7 @@ Contains
 
     ! Derive from the base communicator two further ones, IO_COMM and IO_GATHER_COMM.
     ! IO_COMM has N_IO_PROCS_WRITE and contains the processors that will perform I/O.
-    ! Each member in IO_COMM is also processor zero in an insantiation of
+    ! Each member in IO_COMM is also processor zero in an instantiation of
     ! IO_GATHER_COMM.  This communicator is used to gather ( or, for reads, scatter )
     ! the data onto the I/O processor.  DO_IO indicates if this processor is a member
     ! of IO_COMM.

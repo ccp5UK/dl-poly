@@ -16,7 +16,7 @@ standard DL_POLY_2.20 version with the exceptions of:
       (imcon = 5) and Hexagonal Prism (imcon = 7) periodic boundary
       conventions.
   (3) Classic Ewald and Hautman-Klein Ewald Coulomb evaluations.
-  (4) Temperature Accelerated Dynamics, Hyperdynamics and
+  (4) Temperature Accelerated Dynamics, Hyper-Dynamics and
       solvation energies.
 
 No previous DL_POLY_3/4 feature is deprecated.  ALL NEW features are
@@ -48,7 +48,7 @@ Warnings:
   (2) REVIVE files produced by version 2 and 3 are not compatible.
       Furthermore, restarting runs across different sub-versions
       may not be possible.
-  (3) The DL_POLY_4 parallel performace and efficiency are considered
+  (3) The DL_POLY_4 parallel performance and efficiency are considered
       very-good-to-excellent as long as (i) all CPU cores are loaded
       with no less than 500 particles each and (ii) the major linked
       cells algorithm has no dimension less than 4.
@@ -91,7 +91,7 @@ are present in the system.  The relative performance between the LVF
 and VV integration (per timestep) is observed to vary in the limits
 *** [LFV(t)-VV(t)]/VV(t) = -5:+5% ***.  However, the VV algorithms
 treat CB/PMF/RB entities in more precise (symplectic) manner than
-the LFV ones and thus not only have better numerical strability but
+the LFV ones and thus not only have better numerical stability but
 also produce more accurate dynamics.
 
 Makefiles:
@@ -111,8 +111,8 @@ Note that in `comms_module.f90' it is crucial that line 13 reads as:
 
 If the parallel OS environment, you are compiling on, is not fully F90
 compatible then the `Use mpi' entry in `comms_module.f90' will be
-interpreted as erroneous.  This is easly overcome by commenting out
-`Use mpi' and insering "Include 'mpif.h'" after `Implicit None'.
+interpreted as erroneous.  This is easily overcome by commenting out
+`Use mpi' and inserting "Include 'mpif.h'" after `Implicit None'.
 
 If there is an `entry' in the Makefile for the particular combination
 of architecture, compiler & MPI library, then the user may
@@ -123,12 +123,12 @@ instantiate the compilation by:
 If there is not a suitable entry, the user should advise with a
 computer scientist or the administrator of the particular machine.
 
-The necessary components for the sourse compilation are:
+The necessary components for the source compilation are:
   (1) a FORTRAN90 compliant compiler (if the full PATH to it is not
       passed to the DEFAULT ENVIRONMENT PATH, then it MUST be
       explicitly supplied in the Makefile)
   (2) MPI2 (or MPI1 + MPI-I/O) libraries COMPILED for the architecture
-      and the tageted compiler (if the full PATH to these is not
+      and the targeted compiler (if the full PATH to these is not
       passed to the DEFAULT ENVIRONMENT PATH, then it MUST be
       explicitly supplied in the Makefile)
   (3) a MAKE command (Makefile interpreter in the system SHELL)
@@ -165,7 +165,7 @@ compiler, MPI library & netCDF library.
 
 Compiling the CUDA+OpenMP Port:
 -------------------------------
-This is not a supported feature and users are refered to the
+This is not a supported feature and users are referred to the
 README_CUDA.txt within the CUDA folder for further information.
 
 Contacts at STFC Daresbury Laboratory:

@@ -80,7 +80,7 @@ Subroutine two_body_forces                        &
   End If
 
 ! If k-space SPME is evaluated in full infrequently
-! check wheather at this timestep to evaluate or "refresh"
+! check whether at this timestep to evaluate or "refresh"
 ! with old values.  At restart allocate the "refresh"
 ! k-space SPME arrays and force the full force evaluation.
 

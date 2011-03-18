@@ -103,7 +103,7 @@ Subroutine minimise_relax &
 
      pass = 0
 
-! total number of active particles (exluding frozen sites and massless shells)
+! total number of active particles (excluding frozen sites and massless shells)
 
      total=0.0_wp
      Do i=1,natms

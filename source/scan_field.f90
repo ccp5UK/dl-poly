@@ -342,7 +342,7 @@ Subroutine scan_field                                 &
                     mxlrgd=Max(mxlrgd,jrgd)
 
                     Do lrgd=1,jrgd
-                       If (Mod(lrgd+1,12) == 0) Then
+                       If (Mod(lrgd+1,16) == 0) Then
                           word(1:1)='#'
                           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                              Call get_line(safe,nfield,record)
