@@ -15,8 +15,8 @@ Module io_module
 ! And nobody bothers to change that ( famous last words ).
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush november 2010
-! amended   - i.t.todorov march 2011
+! author    - i.j.bush april 2011
+! amended   - i.t.todorov april 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -389,7 +389,8 @@ Contains
 
        ! using parallel direct access
        Else If ( known_files( io_file_handle )%method == FILE_FORTRAN ) Then
-          If (mxnode > 1) Call gsync()
+          ! Leave in sync
+          Call MPI_BARRIER( base_comm, ierr )
           Close(Unit=file_handle)
 
        ! using netCDF
@@ -452,7 +453,7 @@ Contains
 
     ! Make sure that proc 0 has finished deleting the file before
     ! everybody else carriers on
-    If (mxnode > 1) Call gsync() ! don't open while rank 0 still deleting
+    Call MPI_BARRIER( base_comm, ierr )
 
   End Subroutine io_delete
 
@@ -502,7 +503,7 @@ Contains
     If ( Present( user_comm ) ) Then
        ! Use a copy of the communicator to avoid potential message clashes with what
        ! is happening outside this module - e.g. if asynchronous messages are in
-       ! flight while the I/O is occuring
+       ! flight while the I/O is occurring
        Call MPI_COMM_DUP( user_comm, base_comm, ierr )
     End If
 
@@ -907,7 +908,7 @@ Contains
     bottom_batch   = 1
     top_batch      = Min( batch_size_write, tot_atoms )
 
-    ! For netcdf close the file and reopen it so that the communicator
+    ! For netCDF close the file and reopen it so that the communicator
     ! associated with the file only contains those processors which will actually
     ! do the I/O.  This seems to avoid some problems on the Cray XT series.
     If ( known_files( file_handle )%method == FILE_NETCDF ) Then
@@ -1156,7 +1157,7 @@ Contains
        Return
     End If
 
-    ! For netcdf reopen the file in its original state
+    ! For netCDF reopen the file in its original state
     If ( do_io ) Then
        If ( known_files( file_handle )%method == FILE_NETCDF ) Then
           Call netcdf_close( desc )
@@ -1253,8 +1254,8 @@ Contains
                local_data( FY_IND, global_index_rank( i ) ) = fy( i )
                local_data( FZ_IND, global_index_rank( i ) ) = fz( i )
             End If
-
          End If
+
          ! Now whatever extra may be required
          Select Case( write_options )
          Case( IO_HISTORY )
@@ -1977,7 +1978,7 @@ Contains
 
       Else
 
-         ! Netcdf write
+         ! netCDF write
          ln = Size( name, Dim = 1 )
          frame = Int(first_record,Kind(frame))
 
@@ -1988,21 +1989,22 @@ Contains
             Call netcdf_put_var( 'indices'  , desc, indices, (/ indices( 1 ), frame /), (/     n, 1 /) )
          Case( IO_HISTORY )
             ! History File
-            Call netcdf_put_var( 'atomnames', desc, name              , (/ indices( 1 ), frame /), (/ ln, n, 1 /) )
-            Call netcdf_put_var( 'indices'  , desc, indices           , (/ indices( 1 ), frame /), (/     n, 1 /) )
-            Call netcdf_put_var( 'masses'   , desc, data( W_IND, 1:n ), (/ indices( 1 ), frame /), (/     n, 1 /) )
-            Call netcdf_put_var( 'charges'  , desc, data( Q_IND, 1:n ), (/ indices( 1 ), frame /), (/     n, 1 /) )
+            If (frame == 1) Then
+               Call netcdf_put_var( 'atomnames', desc, name              , (/ indices( 1 ), frame /), (/ ln, n, 1 /) )
+               Call netcdf_put_var( 'indices'  , desc, indices           , (/ indices( 1 ), frame /), (/     n, 1 /) )
+               Call netcdf_put_var( 'masses'   , desc, data( W_IND, 1:n ), (/ indices( 1 ), frame /), (/     n, 1 /) )
+               Call netcdf_put_var( 'charges'  , desc, data( Q_IND, 1:n ), (/ indices( 1 ), frame /), (/     n, 1 /) )
+            End If
             Call netcdf_put_var( 'rsd'      , desc, data( D_IND, 1:n ), (/ indices( 1 ), frame /), (/     n, 1 /) )
          Case( IO_HISTORD )
             ! Short History File
-            Call netcdf_put_var( 'atomnames', desc, name              , (/ indices( 1 ), frame /), (/ ln, n, 1 /) )
+            If (frame == 1) &
+               Call netcdf_put_var( 'atomnames', desc, name              , (/ indices( 1 ), frame /), (/ ln, n, 1 /) )
             Call netcdf_put_var( 'rsd'      , desc, data( D_IND, 1:n ), (/ indices( 1 ), frame /), (/     n, 1 /) )
          Case( IO_MSDTMP )
-            ! MSDTMP file
-            Call netcdf_put_var( 'atomnames', desc, name              , (/ indices( 1 ), frame /), (/ ln, n, 1 /) )
-            Call netcdf_put_var( 'indices'  , desc, indices           , (/ indices( 1 ), frame /), (/     n, 1 /) )
-            Call netcdf_put_var( 'masses'   , desc, data( W_IND, 1:n ), (/ indices( 1 ), frame /), (/     n, 1 /) )
-            Call netcdf_put_var( 'charges'  , desc, data( Q_IND, 1:n ), (/ indices( 1 ), frame /), (/     n, 1 /) )
+
+! Impossible for the time being
+
          End Select
 
          If ( write_options /= IO_MSDTMP ) Then

@@ -40,7 +40,7 @@ Contains
 
     If (fail > 0) Call error(1040)
 
-    fcx = 0.0_wp ; fcy = 0.0_wp ; fcx = 0.0_wp
+    fcx = 0.0_wp ; fcy = 0.0_wp ; fcz = 0.0_wp
 
   End Subroutine ewald_allocate_arrays
 

@@ -6,8 +6,8 @@ Module netcdf_module
 ! I/O only in the CONFIG like files: REFERENCE, HISTORY, REVCON & CFGMIN
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush october 2010
-! amended   - i.t.todorov october 2010
+! author    - i.j.bush april 2011
+! amended   - i.t.todorov april 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -36,6 +36,7 @@ Module netcdf_module
      Integer :: spatial_var_id, cell_spatial_var_id, cell_angular_var_id
      Integer :: form_id, imcon_id, time_step_id, time_id, step_id, cell_id, cell_lengths_id, cell_angles_id
      Integer :: coords_id, vels_id, forces_id, name_id, index_id, w_id, q_id, rsd_id
+     Integer :: dummy_id
   End Type netcdf_desc
 
   Private

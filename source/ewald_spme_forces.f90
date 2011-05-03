@@ -937,11 +937,11 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use kinds_f90
+!    Use kinds_f90
     Use comms_module,  Only : idnode,mxnode,gsum
-    Use setup_module
+!    Use setup_module
     Use config_module, Only : natms,chge,fxx,fyy,fzz
-    Use ewald_module
+!    Use ewald_module
 
     Implicit None
 

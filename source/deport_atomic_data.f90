@@ -11,7 +11,7 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov october 2010
+! amended   - i.t.todorov april 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -733,9 +733,8 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
            sumval(j-1)=sumval(jj-1)
            sumval(j  )=sumval(jj  )
            Do kk=1,mxstak
-              l=2*kk
-              stkval(l-1,j)=stkval(kk,jj-1)
-              stkval(l  ,j)=stkval(kk,jj  )
+              stkval(kk,j-1)=stkval(kk,jj-1)
+              stkval(kk,j  )=stkval(kk,jj  )
            End Do
         End If
 

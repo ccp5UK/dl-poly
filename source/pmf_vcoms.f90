@@ -96,7 +96,7 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf)
               If (listpmf(0,1,ipmf) == gpmf2) Then
                  Do jpmf=1,2
 
-! Get the c.o.m. momentum of this unit
+! Get the COM momentum of this unit
 
                     Do k=1,mxtpmf(jpmf)
                        l=((gpmf2-gpmf1)*(mxtpmf(1)+mxtpmf(2))+(jpmf-1)*mxtpmf(1)+(k-1))*iadd
@@ -119,7 +119,7 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf)
         buffer=0.0_wp
      End If
 
-   End Do
+  End Do
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then

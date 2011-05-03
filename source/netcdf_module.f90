@@ -6,8 +6,8 @@ Module netcdf_module
 ! I/O only in the CONFIG like files: REFERENCE, HISTORY, REVCON & CFGMIN
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush october 2010
-! amended   - i.t.todorov october 2010
+! author    - i.j.bush april 2011
+! amended   - i.t.todorov aplril 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -46,13 +46,14 @@ Module netcdf_module
      Integer :: spatial_var_id, cell_spatial_var_id, cell_angular_var_id
      Integer :: form_id, imcon_id, time_step_id, time_id, step_id, cell_id, cell_lengths_id, cell_angles_id
      Integer :: coords_id, vels_id, forces_id, name_id, index_id, w_id, q_id, rsd_id
+     Integer :: dummy_id
   End Type netcdf_desc
 
   Private
 
   ! The printing precision for reals. Affects only entities of dimension "atom" size
   Integer :: pp = wp
-  ! The netcdf handle corresponding to the real printing precision
+  ! The netCDF handle corresponding to the real printing precision
   Integer :: ncp = NF90_DOUBLE
 
   Interface netcdf_put_var
@@ -158,6 +159,7 @@ Contains
     Call check( nf90_put_att( desc%ncid, NF90_GLOBAL, "CreationTime"     , Trim( earth_time ) ) )
 
     Call check( nf90_def_dim( desc%ncid, "spatial", 3             , desc%spatial_id ) )
+    Call check( nf90_def_dim( desc%ncid, "dummy"  , 1             , desc%dummy_id ) )
     Call check( nf90_def_dim( desc%ncid, "atom"   , n             , desc%atom_id    ) )
     Call check( nf90_def_dim( desc%ncid, "frame"  , NF90_UNLIMITED, desc%frame_id   ) )
     Call check( nf90_def_dim( desc%ncid, "label"  , 8             , desc%label_id ) )
@@ -225,21 +227,21 @@ Contains
     Call check( nf90_put_att( desc%ncid, desc%forces_id, "units", "Dalton*Angstrom/picosecond^2" ) )
 
     Call check( nf90_def_var( desc%ncid, "atomnames", NF90_CHAR, &
-         (/ desc%label_id, desc%atom_id, desc%frame_id /), desc%name_id  ) )
+         (/ desc%label_id, desc%atom_id, desc%dummy_id /), desc%name_id  ) )
     Call check( nf90_var_par_access( desc%ncid, desc%name_id, NF90_INDEPENDENT ) )
 
     Call check( nf90_def_var( desc%ncid, "indices"  , NF90_INT , &
-         (/ desc%atom_id, desc%frame_id /), desc%index_id ) )
+         (/ desc%atom_id, desc%dummy_id /), desc%index_id ) )
     Call check( nf90_var_par_access( desc%ncid, desc%index_id, NF90_INDEPENDENT ) )
 
     Call check( nf90_def_var( desc%ncid, "masses", ncp, &
-         (/ desc%atom_id, desc%frame_id /), desc%w_id ) )
+         (/ desc%atom_id, desc%dummy_id /), desc%w_id ) )
     Call check( nf90_var_par_access( desc%ncid, desc%w_id, NF90_INDEPENDENT ) )
 
     Call check( nf90_put_att( desc%ncid, desc%w_id, "units", "Dalton" ) )
 
     Call check( nf90_def_var( desc%ncid, "charges", ncp, &
-         (/ desc%atom_id, desc%frame_id /), desc%q_id ) )
+         (/ desc%atom_id, desc%dummy_id /), desc%q_id ) )
     Call check( nf90_var_par_access( desc%ncid, desc%q_id, NF90_INDEPENDENT ) )
     Call check( nf90_put_att( desc%ncid, desc%q_id, "units", "atomic charge units" ) )
 

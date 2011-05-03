@@ -13,7 +13,7 @@ Subroutine read_field                      &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2011
+! author    - i.t.todorov april 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -86,7 +86,7 @@ Subroutine read_field                      &
   Character( Len = 40  ) :: word
   Character( Len = 4   ) :: keyword
   Character( Len = 8   ) :: atom0,atom1,atom2,atom3
-  Integer                :: fail,itmols,isite,jsite,ksite,msite,nsite,           &
+  Integer                :: itmols,isite,jsite,ksite,msite,nsite,                &
                             isite1,isite2,isite3,isite4,is(1:4),js(1:4),         &
                             irept,nrept,ifrz,ntmp,i,j,ia,ja,jtpatm,ntab,keypot,  &
                             iatm1,iatm2,iatm3,iatm4,katom0,katom1,katom2,katom3, &
@@ -100,8 +100,6 @@ Subroutine read_field                      &
   Real( Kind = wp )      :: weight,charge,pmf_tmp(1:2),parpot(1:30),tmp
 
 
-
-  fail = 0
 
 ! Initialise number of unique atom and shell types and of different types of molecules
 
@@ -799,7 +797,9 @@ Subroutine read_field                      &
                        End Do
                     End Do
                  End Do
-                 If (Any(lstpmf(1:mxtpmf(1),1) == lstpmf(1:mxtpmf(2),2))) Call error(502)
+                 Do jpmf=1,mxtpmf(2)
+                    If (Any(lstpmf(1:mxtpmf(1),1) == lstpmf(jpmf,2))) Call error(502)
+                 End Do
 
 ! read RBs: number, size, indices
 

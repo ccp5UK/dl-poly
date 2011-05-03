@@ -702,7 +702,7 @@ Subroutine scan_field                                 &
   mxf(5)=mxftet
 
   mxbond=Max(mxbond,mxnode*mtbond)
-  If (mxbond > 0) mxfbnd=mxfbnd+(mxb*(mxb+1))/2
+  If (mxbond > 0) mxfbnd=mxfbnd+(mxb*(mxb+1))
   mxf(6)=mxfbnd
 
   mxangl=Max(mxangl,mxnode*mtangl)

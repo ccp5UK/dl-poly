@@ -440,9 +440,9 @@ Subroutine set_bounds                                        &
 
   mxatms = Max(1 , Nint(test * Real((ilx+3)*(ily+3)*(ilz+3),wp)))
   If (mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
-    mxatms = Min(mxatms,27*megatm)
+    mxatms = Nint(Min(Real(mxatms,wp),Real(27.0_wp,wp)*Real(megatm,wp)))
   Else
-    mxatms = Min(mxatms,(27*megatm)/2)
+    mxatms = Nint(Min(Real(mxatms,wp),Real(13.5_wp,wp)*Real(megatm,wp)))
   End If
 
 ! maximum number of particles per domain (no halo)

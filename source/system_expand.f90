@@ -10,7 +10,7 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
 ! supported image conditions: 1,2,3, 6(nz==1)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2010
+! author    - i.t.todorov april 2011
 ! contrib   - w.smith, i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -63,7 +63,7 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
 
 ! Some parameters and variables needed by io_module interfaces
 
-  Integer                           :: fh, io_write, batsz
+  Integer                           :: fh, io_write
   Character( Len = recsz )          :: record2, record3
   Character                         :: lf
 
@@ -96,7 +96,6 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
 ! Get write buffer size and line feed character
 
   Call io_get_parameters( user_method_write      = io_write )
-  Call io_get_parameters( user_buffer_size_write = batsz    )
   Call io_get_parameters( user_line_feed         = lf       )
 
 ! Print elapsed time and option header
@@ -176,36 +175,31 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
      End Do
   End Do
 
+  If (idnode == 0) Then
+
 ! Make sure CONFIG(new) is empty and open it
 
-  If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
-      io_write == IO_WRITE_UNSORTED_DIRECT .or. &
-      io_write == IO_WRITE_SORTED_MPIIO    .or. &
-      io_write == IO_WRITE_SORTED_DIRECT   .or. &
-      io_write == IO_WRITE_SORTED_NETCDF) Then
+     If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
+         io_write == IO_WRITE_UNSORTED_DIRECT .or. &
+         io_write == IO_WRITE_SORTED_MPIIO    .or. &
+         io_write == IO_WRITE_SORTED_DIRECT   .or. &
+         io_write == IO_WRITE_SORTED_NETCDF) Then
 
-     Call io_set_parameters( user_comm = dlp_comm_world )
-     Call io_init( recsz )
-     Call io_delete( fcfg(1:Len_Trim(fcfg) ) )
-     If (io_write == IO_WRITE_SORTED_NETCDF) &
-        Call io_nc_create( dlp_comm_world, fcfg(1:Len_Trim(fcfg)), cfgname, megatm*nall )
-     Call io_open( io_write, dlp_comm_world, fcfg(1:Len_Trim(fcfg)), MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
+        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_init( recsz )
+        Call io_delete( fcfg(1:Len_Trim(fcfg) ) )
+        If (io_write == IO_WRITE_SORTED_NETCDF) Call io_nc_create( MPI_COMM_SELF, fcfg(1:Len_Trim(fcfg)), cfgname, megatm*nall )
+        Call io_open( io_write, MPI_COMM_SELF, fcfg(1:Len_Trim(fcfg)), MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
 
-  Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
-           io_write == IO_WRITE_SORTED_MASTER ) Then
+     Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
+              io_write == IO_WRITE_SORTED_MASTER ) Then
 
-     If (idnode == 0) Then
         Open(Unit=nconf, File=fcfg(1:Len_Trim(fcfg)), Status='replace')
         Close(Unit=nconf)
         Open(Unit=nconf, File=fcfg(1:Len_Trim(fcfg)), Form='formatted', Access='direct', Recl=recsz)
      End If
-     If (mxnode > 1) Call gsync()
-
-  End If
 
 ! Write configuration file headers
-
-  If (idnode == 0) Then
 
      Write(nrite,'(1x,2a)') '*** Expanding CONFIG in file ',fcfg(1:Len_Trim(fcfg))
      Write(nrite,'(1x,a)') '***'
@@ -274,6 +268,12 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
   If (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
       io_write == IO_WRITE_SORTED_MPIIO   .or. &
       io_write == IO_WRITE_SORTED_NETCDF) Then
+
+     If (idnode == 0) Then
+        Call io_close( fh )
+        Call io_finalize
+     End If
+
      Allocate( atmnam_scaled( 1:natms * nall ), ltg_scaled( 1:natms * nall ), Stat = fail(1) )
      Allocate( x_scaled( 1:natms * nall ), y_scaled( 1:natms * nall ), z_scaled( 1:natms * nall ), &
                Stat = fail(2) )
@@ -281,6 +281,7 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
         Write(nrite,'(/,1x,a,i0)') 'system_expand allocation failure 0, node: ', idnode
         Call error(0)
      End If
+
   End If
 
 ! Line counter in CONFIG(new):levcfg=0
@@ -417,7 +418,7 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
 
            Else
 
-! Determine sending node if diffrent from zero for io_write = 2 or 12
+! Determine sending node if different from zero for UN/SORTED MASTER
 
               If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
                   io_write == IO_WRITE_SORTED_MASTER) Then
@@ -455,6 +456,10 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
   If      (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
            io_write == IO_WRITE_SORTED_MPIIO   .or. &
            io_write == IO_WRITE_SORTED_NETCDF) Then
+
+     Call io_set_parameters( user_comm = dlp_comm_world )
+     Call io_init( recsz )
+     Call io_open( io_write, dlp_comm_world, fcfg(1:Len_Trim(fcfg)), MPI_MODE_WRONLY, fh )
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         top_skip = Int(5,MPI_OFFSET_KIND)

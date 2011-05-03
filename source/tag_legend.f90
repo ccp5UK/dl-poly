@@ -25,7 +25,7 @@ Subroutine tag_legend(safe,iatm,nt,legend,mxf)
 
   last = legend(0,iatm)
 
-! Get local safety no array overfloat
+! Get local safety no array overflow
 
   safe_local = (last < mxf-1)
 

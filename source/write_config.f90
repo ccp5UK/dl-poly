@@ -5,7 +5,7 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
 ! dl_poly_4 subroutine for writing configuration file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2011
+! author    - i.t.todorov april 2011
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -47,7 +47,7 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
 
   Logical               :: ready
   Character( Len = 40 ) :: fname
-  Integer(Kind=ip)      :: rec          ! record line
+  Integer(Kind=ip)      :: rec,rec1     ! record line
 
   Integer               :: fail(1:4),i,k,jj,jdnode,jatms
 
@@ -68,6 +68,7 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx,ayy,azz
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: bxx,byy,bzz
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: cxx,cyy,czz
+
 
 ! Get write method buffer size and line feed character
 
@@ -95,7 +96,7 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
   End If
 
 ! Notes:
-! the MPI_IO records are numbered from 0 (not 1)
+! the MPI-I/O records are numbered from 0 (not 1)
 ! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
 !   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
 !   both declared as: Integer(kind = MPI_OFFSET_KIND)
@@ -105,57 +106,68 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
   If      (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
            io_write == IO_WRITE_UNSORTED_DIRECT) Then
 
-     Call io_set_parameters( user_comm = dlp_comm_world )
-     Call io_init( recsz )
-     Call io_delete( name )
-     Call io_open( io_write, dlp_comm_world, name, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
-
+! Write header only at start, where just one node is needed
 ! Start of file
 
      rec_mpi_io=Int(1-1,MPI_OFFSET_KIND)
+     jj=0
+     If (idnode == 0) Then
+
+        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_init( recsz )
+        Call io_delete( name ) ! Sort existence issues
+        Call io_open( io_write, MPI_COMM_SELF, name, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
 
 ! Accumulate header
 
-     If (idnode == 0) Then
         Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
+        jj=jj+1
         Do k=1,recsz
-           chbat(k,1) = record(k:k)
+           chbat(k,jj) = record(k:k)
         End Do
 
         Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,imcon,megatm,nstep,tstep,time,lf
+        jj=jj+1
         Do k=1,recsz
-           chbat(k,2) = record(k:k)
+           chbat(k,jj) = record(k:k)
         End Do
-     End If
-     jj = 2
 
 ! Accumulate header - optional cell information (if present)
 
-     If (imcon > 0) Then
-        If (idnode == 0) Then
-           Write(record, Fmt='(3f20.10,a12,a1)') cell(1),cell(2),cell(3),Repeat(' ',12),lf
-           Do k=1,recsz
-              chbat(k,3) = record(k:k)
-           End Do
-
-           Write(record, Fmt='(3f20.10,a12,a1)') cell(4),cell(5),cell(6),Repeat(' ',12),lf
-           Do k=1,recsz
-              chbat(k,4) = record(k:k)
-           End Do
-
-           Write(record, Fmt='(3f20.10,a12,a1)') cell(7),cell(8),cell(9),Repeat(' ',12),lf
-           Do k=1,recsz
-              chbat(k,5) = record(k:k)
+        If (imcon > 0) Then
+           Do i = 0, 2
+              Write(record, Fmt='(3f20.10,a12,a1)') &
+                   cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+              jj=jj+1
+              Do k=1,recsz
+                 chbat(k,jj) = record(k:k)
+              End Do
            End Do
         End If
-        jj = 5
+
+! Dump header
+
+        Call io_write_batch( fh, rec_mpi_io, jj, chbat )
+
+        Call io_close( fh )
+        Call io_finalize
+
+     Else
+
+        jj=jj+2
+        If (imcon > 0) jj=jj+3
+
      End If
+     Call gsync()
 
-! Dump header and update start of file
+     Call io_set_parameters( user_comm = dlp_comm_world )
+     Call io_init( recsz )
+     Call io_delete( name )
+     Call io_open( io_write, dlp_comm_world, name, MPI_MODE_WRONLY, fh )
 
-     If (idnode == 0) Call io_write_batch( fh, rec_mpi_io, jj, chbat )
+! Start of file (updated)
+
      rec_mpi_io=Int(jj,MPI_OFFSET_KIND)+Int(n_atm(0),MPI_OFFSET_KIND)*Int(levcfg+2,MPI_OFFSET_KIND)
-
      jj=0
      Do i=1,natms
         Write(record, Fmt='(a8,i10,a54,a1)') atmnam(i),ltg(i),Repeat(' ',54),lf
@@ -212,7 +224,10 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
      End If
 
 ! node 0 handles I/O
+! Start of file
 
+     rec=Int(0,ip)
+     jj=0
      If (idnode == 0) Then
 
 ! Write configuration data to new configuration file
@@ -222,44 +237,35 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
 ! Accumulate header
 
         Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
+        jj=jj+1
         Do k=1,recsz
-           chbat(k,1) = record(k:k)
+           chbat(k,jj) = record(k:k)
         End Do
 
         Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,imcon,megatm,nstep,tstep,time,lf
+        jj=jj+1
         Do k=1,recsz
-           chbat(k,2) = record(k:k)
+           chbat(k,jj) = record(k:k)
         End Do
-
-        jj = 2
 
 ! Accumulate header - optional cell information (if present)
 
         If (imcon > 0) Then
-           Write(record, Fmt='(3f20.10,a12,a1)') cell(1),cell(2),cell(3),Repeat(' ',12),lf
-           Do k=1,recsz
-              chbat(3,jj) = record(k:k)
+           Do i = 0, 2
+              Write(record, Fmt='(3f20.10,a12,a1)') &
+                   cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+              jj=jj+1
+              Do k=1,recsz
+                 chbat(k,jj) = record(k:k)
+              End Do
            End Do
-
-           Write(record, Fmt='(3f20.10,a12,a1)') cell(4),cell(5),cell(6),Repeat(' ',12),lf
-           Do k=1,recsz
-              chbat(4,jj) = record(k:k)
-           End Do
-
-           Write(record, Fmt='(3f20.10,a12,a1)') cell(7),cell(8),cell(9),Repeat(' ',12),lf
-           Do k=1,recsz
-              chbat(5,jj) = record(k:k)
-           End Do
-
-           jj = 5
         End If
 
 ! Dump header and update start of file
 
-        Write(Unit=nconf, Fmt='(73a)', Rec=Int(1,ip)) (chbat(:,k), k=1,jj)
-        rec=Int(5,ip)
-
-        jatms=natms
+        Write(Unit=nconf, Fmt='(73a)', Rec=rec+Int(1,ip)) (chbat(:,k), k=1,jj)
+        rec=Int(jj,ip)
+        jj=0
 
         Do i=1,natms
            iwrk(i)=ltg(i)
@@ -282,6 +288,7 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
            End If
         End Do
 
+        jatms=natms
         ready=.true.
         Do jdnode=0,mxnode-1
            If (jdnode > 0) Then
@@ -402,83 +409,89 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
      End If
 
 ! Write header only at start, where just one node is needed
+! Start of file
 
-     Call io_set_parameters( user_comm = MPI_COMM_SELF )
-     Call io_init( recsz )
+     rec_mpi_io=Int(1-1,MPI_OFFSET_KIND)
+     jj=0
+     If (idnode == 0) Then
 
-! Sort existence issues
-     Call io_delete( fname )
-     If (io_write == IO_WRITE_SORTED_NETCDF) &
-        Call io_nc_create( MPI_COMM_SELF, fname, cfgname, megatm )
-
-     Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
+        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_init( recsz )
+        Call io_delete( fname ) ! Sort existence issues
+        If (io_write == IO_WRITE_SORTED_NETCDF) Call io_nc_create( MPI_COMM_SELF, fname, cfgname, megatm )
+        Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
 
 ! Non netCDF
 
-     If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-
-! Start of file
-
-        rec_mpi_io=Int(1-1,MPI_OFFSET_KIND)
+        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
 
 ! Write header
 
-        record=' '
-        Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
-        Call io_write_record( fh, rec_mpi_io, record )
-        rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
+           Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
+           Call io_write_record( fh, Int(jj,MPI_OFFSET_KIND), record )
+           jj=jj+1
 
-        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,imcon,megatm,nstep,tstep,time,lf
-        Call io_write_record( fh, rec_mpi_io, record )
-        rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
+           Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,imcon,megatm,nstep,tstep,time,lf
+           Call io_write_record( fh, Int(jj,MPI_OFFSET_KIND), record )
+           jj=jj+1
 
-! Write the cell information if present
+! Write optional cell information (if present)
 
-        If (imcon > 0) Then
-           Do i = 0, 2
-              Write( record, '( 3f20.10, a12, a1 )' ) cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
-              Call io_write_record( fh, rec_mpi_io, record )
-              rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
-           End Do
-        End If
+           If (imcon > 0) Then
+              Do i = 0, 2
+                 Write( record, '( 3f20.10, a12, a1 )' ) &
+                      cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                 Call io_write_record( fh, Int(jj,MPI_OFFSET_KIND), record )
+                 jj=jj+1
+              End Do
+           End If
 
-     Else ! netCDF write
+        Else ! netCDF write
 
-        i=1 ! For config there is only one frame
-        rec_mpi_io = Int(i,MPI_OFFSET_KIND) ! This is the "frame number" which is not a long integer!
+           jj=1 ! For config there is only one frame
 
-        Call io_nc_put_var( 'time'           , fh,   time, i, 1 )
-        Call io_nc_put_var( 'step'           , fh,  nstep, i, 1 )
-        Call io_nc_put_var( 'datalevel'      , fh, levcfg, i, 1 )
-        Call io_nc_put_var( 'imageconvention', fh,  imcon, i, 1 )
-        Call io_nc_put_var( 'timestep'       , fh,  tstep, i, 1 )
+           Call io_nc_put_var( 'time'           , fh,   time, jj, 1 )
+           Call io_nc_put_var( 'step'           , fh,  nstep, jj, 1 )
+           Call io_nc_put_var( 'datalevel'      , fh, levcfg, jj, 1 )
+           Call io_nc_put_var( 'imageconvention', fh,  imcon, jj, 1 )
+           Call io_nc_put_var( 'timestep'       , fh,  tstep, jj, 1 )
 
-        If (imcon > 0) Then
-           Call dcell(cell,celprp) ! get cell properties
+           If (imcon > 0) Then
+              Call dcell(cell,celprp) ! get cell properties
 
-           cell_vecs = Reshape( cell, (/ 3, 3 /) )
+              cell_vecs = Reshape( cell, (/ 3, 3 /) )
 
-           lengths( 1 ) = celprp( 1 )
-           lengths( 2 ) = celprp( 2 )
-           lengths( 3 ) = celprp( 3 )
+              lengths( 1 ) = celprp( 1 )
+              lengths( 2 ) = celprp( 2 )
+              lengths( 3 ) = celprp( 3 )
 
-           angles ( 1 ) = Acos( celprp( 5 ) )
-           angles ( 2 ) = Acos( celprp( 6 ) )
-           angles ( 3 ) = Acos( celprp( 4 ) )
-           angles = angles * 180.0_wp / ( 4.0_wp * Atan( 1.0_wp ) ) ! Convert to degrees
+              angles ( 1 ) = Acos( celprp( 5 ) )
+              angles ( 2 ) = Acos( celprp( 6 ) )
+              angles ( 3 ) = Acos( celprp( 4 ) )
+              angles = angles * 180.0_wp / ( 4.0_wp * Atan( 1.0_wp ) ) ! Convert to degrees
 
 ! Print
 
-           Call io_nc_put_var( 'cell'        , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
-           Call io_nc_put_var( 'cell_lengths', fh, lengths  , (/    1, i /), (/    3, 1 /) )
-           Call io_nc_put_var( 'cell_angles' , fh, angles   , (/    1, i /), (/    3, 1 /) )
+              Call io_nc_put_var( 'cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
+              Call io_nc_put_var( 'cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
+              Call io_nc_put_var( 'cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
+           End If
+
+        End If
+
+        Call io_close( fh )
+        Call io_finalize
+
+     Else
+
+        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
+           jj=jj+2
+           If (imcon > 0) jj=jj+3
+        Else
+           jj=1
         End If
 
      End If
-
-     Call io_close( fh )
-     Call io_finalize
-
      Call gsync()
 
 ! Write the rest
@@ -487,6 +500,7 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
      Call io_init( recsz )
      Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_WRONLY, fh )
 
+     rec_mpi_io=rec_mpi_io+Int(jj,MPI_OFFSET_KIND)
      Call io_write_sorted_file( fh, levcfg, IO_RESTART, rec_mpi_io, natms,      &
           ltg, atmnam, (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /), xxx, yyy, zzz, &
           vxx, vyy, vzz, fxx, fyy, fzz, ierr )
@@ -521,24 +535,31 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
      End If
 
 ! node 0 handles I/O
+! Start of file
 
+     rec=Int(0,ip)
      If (idnode == 0) Then
 
 ! Write configuration data to new configuration file
 
         Open(Unit=nconf, File=name, Form='formatted', Access='direct', Recl=recsz, Status='replace')
 
-        Write(Unit=nconf, Fmt='(a72,a1)',            Rec=Int(1,ip)) cfgname(1:72),lf
-        Write(Unit=nconf, Fmt='(4i10,1p,2e16.7,a1)', Rec=Int(2,ip)) levcfg,imcon,megatm,nstep,tstep,time,lf
-        jj=2
-        If (imcon > 0) Then
-           Write(Unit=nconf, Fmt='(3f20.10,a12,a1)', Rec=Int(3,ip)) cell(1),cell(2),cell(3),Repeat(' ',12),lf
-           Write(Unit=nconf, Fmt='(3f20.10,a12,a1)', Rec=Int(4,ip)) cell(4),cell(5),cell(6),Repeat(' ',12),lf
-           Write(Unit=nconf, Fmt='(3f20.10,a12,a1)', Rec=Int(5,ip)) cell(7),cell(8),cell(9),Repeat(' ',12),lf
-           jj=5
-        End If
+! Write header
 
-        jatms=natms
+        rec=rec+Int(1,ip)
+        Write(Unit=nconf, Fmt='(a72,a1)',            Rec=rec) cfgname(1:72),lf
+        rec=rec+Int(1,ip)
+        Write(Unit=nconf, Fmt='(4i10,1p,2e16.7,a1)', Rec=rec) levcfg,imcon,megatm,nstep,tstep,time,lf
+
+! Write optional cell information (if present)
+
+        If (imcon > 0) Then
+           Do i = 0, 2
+              rec=rec+Int(1,ip)
+              Write(Unit=nconf, Fmt='(3f20.10,a12,a1)', Rec=rec) &
+                   cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+           End Do
+        End If
 
         Do i=1,natms
            iwrk(i)=ltg(i)
@@ -561,6 +582,7 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
            End If
         End Do
 
+        jatms=natms
         ready=.true.
         Do jdnode=0,mxnode-1
            If (jdnode > 0) Then
@@ -589,18 +611,18 @@ Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
            End If
 
            Do i=1,jatms
-              rec=Int(jj,ip)+Int(iwrk(i)-1,ip)*Int(levcfg+2)+Int(1,ip)
-              Write(Unit=nconf, Fmt='(a8,i10,a54,a1)',     Rec=rec) chbuf(i),iwrk(i),Repeat(' ',54),lf
-              rec=rec+Int(1,ip)
-              Write(Unit=nconf, Fmt='(3g20.10,a12,a1)',    Rec=rec) axx(i),ayy(i),azz(i),Repeat(' ',12),lf
+              rec1=rec+Int(iwrk(i)-1,ip)*Int(levcfg+2)+Int(1,ip)
+              Write(Unit=nconf, Fmt='(a8,i10,a54,a1)',     Rec=rec1) chbuf(i),iwrk(i),Repeat(' ',54),lf
+              rec1=rec1+Int(1,ip)
+              Write(Unit=nconf, Fmt='(3g20.10,a12,a1)',    Rec=rec1) axx(i),ayy(i),azz(i),Repeat(' ',12),lf
 
               If (levcfg > 0) Then
-                 rec=rec+Int(1,ip)
-                 Write(Unit=nconf, Fmt='(3g20.10,a12,a1)', Rec=rec) bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
+                 rec1=rec1+Int(1,ip)
+                 Write(Unit=nconf, Fmt='(3g20.10,a12,a1)', Rec=rec1) bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
 
                  If (levcfg > 1) Then
-                    rec=rec+Int(1,ip)
-                    Write(Unit=nconf, Fmt='(3g20.10,a12,a1)', Rec=rec) cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
+                    rec1=rec1+Int(1,ip)
+                    Write(Unit=nconf, Fmt='(3g20.10,a12,a1)', Rec=rec1) cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
                  End If
               End If
            End Do

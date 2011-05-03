@@ -7,7 +7,7 @@ Subroutine trajectory_write &
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov april 2010
 ! contrib   - w.smith, i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -62,7 +62,7 @@ Subroutine trajectory_write &
 
   Logical                :: lexist,safe,ready
   Character( Len = 40 )  :: word
-  Integer                :: fail(1:5),i,j,k,jdnode,jatms
+  Integer                :: fail(1:5),i,jj,k,jdnode,jatms
   Integer(Kind=ip)       :: rec1
   Real( Kind = wp )      :: buffer(1:2)
   Real( Kind = wp )      :: celprp(1:10),cell_vecs(1:3,1:3)
@@ -71,7 +71,7 @@ Subroutine trajectory_write &
 ! Some parameters and variables needed by io_module interfaces
 
   Integer                           :: fh, io_write, batsz
-  Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io
+  Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io,jj_io
   Character                         :: lf
   Character( Len = 200 )            :: record
 
@@ -87,6 +87,7 @@ Subroutine trajectory_write &
 
   Integer :: file_p, file_r
   Integer :: io_p, io_r
+
 
   If (.not.(nstep >= nstraj .and. Mod(nstep-nstraj,istraj) == 0)) Return
 
@@ -138,17 +139,19 @@ Subroutine trajectory_write &
            rec=Int(2,ip)
            frm=Int(0,ip)
         Else
-           Call io_set_parameters( user_comm = dlp_comm_world )
-           Call io_nc_create( dlp_comm_world, fname, cfgname, megatm )
+           If (idnode == 0) Then
+              Call io_set_parameters( user_comm = MPI_COMM_SELF )
+              Call io_nc_create( MPI_COMM_SELF, fname, cfgname, megatm )
+           End If
         End If
 
 ! Get some sense out of it
 
      Else
 
+        safe=.true.
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
 
-           safe=.true.
            If (idnode == 0) Then
 
               Open(Unit=nhist, File=fname, Form='formatted')
@@ -193,11 +196,11 @@ Subroutine trajectory_write &
                     rec=rec+Int(1,ip)
 
                     Call get_word(record(1:recsz),word) ; Call get_word(record(1:recsz),word)
-                    Call get_word(record(1:recsz),word) ; j=Nint(word_2_real(word))
+                    Call get_word(record(1:recsz),word) ; jj=Nint(word_2_real(word))
                     Call get_word(record(1:recsz),word) ; k=Nint(word_2_real(word))
 
                     word=' '
-                    i = 3 + (2+k)*j ! total number of lines to read
+                    i = 3 + (2+k)*jj ! total number of lines to read
                     Write(word,'( "(", i0, "( / ) )" )') i-1
                     Read(Unit=nhist, Fmt=word, End=20)
                     rec=rec+Int(i,ip)
@@ -224,7 +227,7 @@ Subroutine trajectory_write &
               buffer(1)=Real(frm,wp)
               buffer(2)=Real(rec,wp)
 
-              Call gsum(buffer(1:2))
+              Call MPI_BCAST(buffer(1:2), 2, wp_mpi, 0, dlp_comm_world, ierr)
 
               frm=Nint(buffer(1),ip)
               rec=Nint(buffer(2),ip)
@@ -232,14 +235,16 @@ Subroutine trajectory_write &
 
         Else ! netCDF read
 
-           Call io_set_parameters( user_comm = dlp_comm_world )
-           Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_RDONLY, fh )
+           If (idnode == 0) Then
+              Call io_set_parameters( user_comm = MPI_COMM_SELF )
+              Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_RDONLY, fh )
 
 ! Get the precision that the history file was written in
 ! and check it matches the requested precision
 
-           Call io_nc_get_file_real_precision( fh, file_p, file_r, ierr )
-           safe = (ierr == 0)
+              Call io_nc_get_file_real_precision( fh, file_p, file_r, ierr )
+              safe = (ierr == 0)
+           End If
            Call gcheck(safe)
            If (.not.safe) Then
               If (idnode == 0) Write(nrite,'(/,1x,a)') &
@@ -247,12 +252,14 @@ Subroutine trajectory_write &
 
 ! Sync before killing for the error in the hope that something sensible happens
 
-              Call gsync
+              Call gsync()
               Call error(0)
            End If
 
-           Call io_nc_get_real_precision( io_p, io_r, ierr )
-           safe = (ierr == 0)
+           If (idnode == 0) Then
+              Call io_nc_get_real_precision( io_p, io_r, ierr )
+              safe = (ierr == 0)
+           End If
            Call gcheck(safe)
            If (.not.safe) Then
               If (idnode == 0) Write(nrite,'(/,1x,a)') &
@@ -260,11 +267,11 @@ Subroutine trajectory_write &
 
 ! Sync before killing for the error in the hope that something sensible happens
 
-              Call gsync
+              Call gsync()
               Call error(0)
            End If
 
-           safe = (io_p == file_p .and. io_r == file_r)
+           If (idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
            Call gcheck(safe)
            If (.not.safe) Then
               If (idnode == 0) Then
@@ -286,19 +293,20 @@ Subroutine trajectory_write &
                  End Select
               End If
 
-              Call gsync
+              Call gsync()
               Call error(0)
            End If
 
 ! Get the frame number to check
-! For netcdf this is the "frame number" which is not a long integer!
+! For netCDF this is the "frame number" which is not a long integer!
 
-           Call io_nc_get_dim( 'frame', fh, i )
+           If (idnode == 0) Call io_nc_get_dim( 'frame', fh, jj )
+           Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
 
-           If (i > 0) Then
-              frm=Int(i,ip)
+           If (jj > 0) Then
+              frm=Int(jj,ip)
 
-              Call io_close( fh )
+              If (idnode == 0) Call io_close( fh )
            Else ! Overwrite the file, it's junk to me
               lexist=.false.
 
@@ -331,6 +339,12 @@ Subroutine trajectory_write &
      n_atm(0)=Sum(n_atm(0:idnode))
   End If
 
+! Notes:
+! the MPI-I/O records are numbered from 0 (not 1)
+! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
+!   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
+!   both declared as: Integer(kind = MPI_OFFSET_KIND)
+
 ! Update frame
 
   frm=frm+Int(1,ip)
@@ -340,75 +354,90 @@ Subroutine trajectory_write &
   If      (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
            io_write == IO_WRITE_UNSORTED_DIRECT) Then
 
+! Write header and cell information, where just one node is needed
+! Start of file
+
+     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+     jj=0
+     If (idnode == 0) Then
+
+        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_init( recsz )
+        Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_WRONLY, fh )
+
+        Write(record(1:recsz), Fmt='(a8,4i10,2f12.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
+        jj=jj+1
+        Do k=1,recsz
+           chbat(k,jj) = record(k:k)
+        End Do
+
+        Do i = 0, 2
+           Write(record(1:recsz), Fmt='(3f20.10,a12,a1)') &
+                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+           jj=jj+1
+           Do k=1,recsz
+              chbat(k,jj) = record(k:k)
+           End Do
+        End Do
+
+! Dump header and cell information
+
+        Call io_write_batch( fh, rec_mpi_io, jj, chbat )
+
+        Call io_close( fh )
+        Call io_finalize
+
+     Else
+
+        jj=jj+4
+
+     End If
+     Call gsync()
+
+! Start of file
+
+     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(jj,MPI_OFFSET_KIND)+Int(n_atm(0),MPI_OFFSET_KIND)*Int(keytrj+2,MPI_OFFSET_KIND)
+     jj=0
+
      Call io_set_parameters( user_comm = dlp_comm_world )
      Call io_init( recsz )
      Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_WRONLY, fh )
 
-! Start of file
-
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
-
-! Write header and cell information
-
-     If (idnode == 0) Then
-        Write(record(1:recsz), Fmt='(a8,4i10,2f12.6,a1)') &
-             'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
-        Call io_write_record( fh, rec_mpi_io, record(1:recsz) )
-        rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
-
-        Do i = 0, 2
-           Write(record(1:recsz), Fmt='(3f20.10,a12,a1)') &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), &
-                Repeat( ' ', 12 ), lf
-           Call io_write_record( fh, rec_mpi_io, record(1:recsz) )
-           rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
-        End Do
-     End If
-
-! Start of file
-
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(4,MPI_OFFSET_KIND)+Int(n_atm(0),MPI_OFFSET_KIND)*Int(keytrj+2,MPI_OFFSET_KIND)
-
-     j=0
      Do i=1,natms
-        Write(record(1:recsz), Fmt='(a8,i10,3f12.6,a18,a1)') &
-             atmnam(i),ltg(i),weight(i),chge(i),rsd(i),Repeat(' ',18),lf
-        j=j+1
+        Write(record(1:recsz), Fmt='(a8,i10,3f12.6,a18,a1)') atmnam(i),ltg(i),weight(i),chge(i),rsd(i),Repeat(' ',18),lf
+        jj=jj+1
         Do k=1,recsz
-           chbat(k,j) = record(k:k)
+           chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') &
-             xxx(i),yyy(i),zzz(i),Repeat(' ',12),lf
-        j=j+1
+        Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') xxx(i),yyy(i),zzz(i),Repeat(' ',12),lf
+        jj=jj+1
         Do k=1,recsz
-           chbat(k,j) = record(k:k)
+           chbat(k,jj) = record(k:k)
         End Do
 
         If (keytrj > 0) Then
-           Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') &
-                vxx(i),vyy(i),vzz(i),Repeat(' ',12),lf
-           j=j+1
+           Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') vxx(i),vyy(i),vzz(i),Repeat(' ',12),lf
+           jj=jj+1
            Do k=1,recsz
-              chbat(k,j) = record(k:k)
+              chbat(k,jj) = record(k:k)
            End Do
         End If
 
         If (keytrj > 1) Then
-           Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') &
-                fxx(i),fyy(i),fzz(i),Repeat(' ',12),lf
-           j=j+1
+           Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') fxx(i),fyy(i),fzz(i),Repeat(' ',12),lf
+           jj=jj+1
            Do k=1,recsz
-              chbat(k,j) = record(k:k)
+              chbat(k,jj) = record(k:k)
            End Do
         End If
 
 ! Dump batch and update start of file
 
-        If (j + keytrj + 2 >= batsz .or. i == natms) Then
-           Call io_write_batch( fh, rec_mpi_io, j, chbat )
-           rec_mpi_io=rec_mpi_io+Int(j,MPI_OFFSET_KIND)
-           j=0
+        If (jj + keytrj + 2 >= batsz .or. i == natms) Then
+           Call io_write_batch( fh, rec_mpi_io, jj, chbat )
+           rec_mpi_io=rec_mpi_io+Int(jj,MPI_OFFSET_KIND)
+           jj=0
         End If
      End Do
 
@@ -416,8 +445,7 @@ Subroutine trajectory_write &
 
      rec=rec+Int(4,ip)+Int(megatm,ip)*Int(keytrj+2,ip)
      If (idnode == 0) Then
-        Write(record(1:recsz), Fmt='(3i10,2i21,a1)') &
-             keytrj,imcon,megatm,frm,rec,lf
+        Write(record(1:recsz), Fmt='(3i10,2i21,a1)') keytrj,imcon,megatm,frm,rec,lf
         Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record(1:recsz) )
      End If
 
@@ -439,46 +467,35 @@ Subroutine trajectory_write &
      End If
 
 ! node 0 handles I/O
+! Start of file
 
+     jj=0
      If (idnode == 0) Then
 
         Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Recl=recsz)
 
 ! Accumulate header
 
-        j=0
-        Write(record(1:recsz), Fmt='(a8,4i10,2f12.6,a1)') &
-             'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
-        j=j+1
+        Write(record(1:recsz), Fmt='(a8,4i10,2f12.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
+        jj=jj+1
         Do k=1,recsz
-           chbat(k,j) = record(k:k)
+           chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record(1:recsz), Fmt='(3f20.10,a12,a1)') &
-             cell(1),cell(2),cell(3),Repeat(' ',12),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
-        End Do
-
-        Write(record(1:recsz), Fmt='(3f20.10,a12,a1)') &
-             cell(4),cell(5),cell(6),Repeat(' ',12),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
-        End Do
-
-        Write(record(1:recsz), Fmt='(3f20.10,a12,a1)') &
-             cell(7),cell(8),cell(9),Repeat(' ',12),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
+        Do i = 0, 2
+           Write(record(1:recsz), Fmt='(3f20.10,a12,a1)') &
+                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+           jj=jj+1
+           Do k=1,recsz
+              chbat(k,jj) = record(k:k)
+           End Do
         End Do
 
 ! Dump header and update start of file
 
-        Write(Unit=nhist, Fmt='(73a)', Rec=rec+Int(1,ip)) (chbat(:,k), k=1,j)
-        rec=rec+Int(4,ip)
+        Write(Unit=nhist, Fmt='(73a)', Rec=rec+Int(1,ip)) (chbat(:,k), k=1,jj)
+        rec=rec+Int(jj,ip)
+        jj=0
 
         Do i=1,natms
            iwrk(i)=ltg(i)
@@ -510,7 +527,6 @@ Subroutine trajectory_write &
         End If
 
         jatms=natms
-
         ready=.true.
         Do jdnode=0,mxnode-1
            If (jdnode > 0) Then
@@ -542,46 +558,41 @@ Subroutine trajectory_write &
               End If
            End If
 
-           j=0
            Do i=1,jatms
-              Write(record(1:recsz), Fmt='(a8,i10,3f12.6,a18,a1)') &
-                   chbuf(i),iwrk(i),eee(i),ddd(i),fff(i),Repeat(' ',18),lf
-              j=j+1
+              Write(record(1:recsz), Fmt='(a8,i10,3f12.6,a18,a1)') chbuf(i),iwrk(i),eee(i),ddd(i),fff(i),Repeat(' ',18),lf
+              jj=jj+1
               Do k=1,recsz
-                 chbat(k,j) = record(k:k)
+                 chbat(k,jj) = record(k:k)
               End Do
 
-              Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') &
-                   axx(i),ayy(i),azz(i),Repeat(' ',12),lf
-              j=j+1
+              Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') axx(i),ayy(i),azz(i),Repeat(' ',12),lf
+              jj=jj+1
               Do k=1,recsz
-                 chbat(k,j) = record(k:k)
+                 chbat(k,jj) = record(k:k)
               End Do
 
               If (keytrj >= 1) Then
-                 Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') &
-                      bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
-                 j=j+1
+                 Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
+                 jj=jj+1
                  Do k=1,recsz
-                    chbat(k,j) = record(k:k)
+                    chbat(k,jj) = record(k:k)
                  End Do
               End If
 
               If (keytrj >= 2) Then
-                 Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') &
-                      cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
-                 j=j+1
+                 Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
+                 jj=jj+1
                  Do k=1,recsz
-                    chbat(k,j) = record(k:k)
+                    chbat(k,jj) = record(k:k)
                  End Do
               End If
 
 ! Dump batch and update start of file
 
-              If (j + keytrj + 2 >= batsz .or. i == jatms) Then
-                 Write(Unit=nhist, Fmt='(73a)', Rec=rec+Int(1,ip)) (chbat(:,k), k=1,j)
-                 rec=rec+Int(j,ip)
-                 j=0
+              If (jj + keytrj + 2 >= batsz .or. i == jatms) Then
+                 Write(Unit=nhist, Fmt='(73a)', Rec=rec+Int(1,ip)) (chbat(:,k), k=1,jj)
+                 rec=rec+Int(jj,ip)
+                 jj=0
               End If
            End Do
         End Do
@@ -643,71 +654,89 @@ Subroutine trajectory_write &
            io_write == IO_WRITE_SORTED_DIRECT .or. &
            io_write == IO_WRITE_SORTED_NETCDF) Then
 
-     Call io_set_parameters( user_comm = dlp_comm_world )
-     Call io_init( recsz )
-     Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_WRONLY, fh )
-
-     If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-
+! Write header only at start, where just one node is needed
 ! Start of file
 
-        rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+     jj_io=rec_mpi_io
+     jj=0 ! netCDF current frame
+     If (idnode == 0) Then
+
+        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_init( recsz )
+        Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_WRONLY, fh )
+
+! Non netCDF
+
+        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
 
 ! Write header and cell information
 
-        If (idnode == 0) Then
-           Write(record(1:recsz), Fmt='(a8,4i10,2f12.6,a1)') &
-                'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
-           Call io_write_record( fh, rec_mpi_io, record(1:recsz) )
-           rec_mpi_io=rec_mpi_io + Int(1,MPI_OFFSET_KIND)
+           Write(record(1:recsz), Fmt='(a8,4i10,2f12.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
+           Call io_write_record( fh, jj_io, record(1:recsz) )
+           jj_io=jj_io + Int(1,MPI_OFFSET_KIND)
 
            Do i = 0, 2
               Write(record(1:recsz), Fmt='(3f20.10,a12,a1)') &
-                   cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), &
-                   Repeat( ' ', 12 ), lf
-              Call io_write_record( fh, rec_mpi_io, record(1:recsz) )
-              rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
+                   cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+              Call io_write_record( fh, jj_io, record(1:recsz) )
+              jj_io=jj_io+Int(1,MPI_OFFSET_KIND)
            End Do
-        End If
 
-! Start of file
-
-        rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(4,MPI_OFFSET_KIND)
-
-     Else ! netCDF write
+        Else ! netCDF write
 
 ! Get the current and new frame numbers
 
-        Call io_nc_get_dim( 'frame', fh, i )
-        i = i + 1
-        rec_mpi_io = Int(i,MPI_OFFSET_KIND)
+           Call io_nc_get_dim( 'frame', fh, jj )
+           jj = jj + 1
 
-        Call io_nc_put_var( 'time'           , fh,   time, i, 1 )
-        Call io_nc_put_var( 'step'           , fh,  nstep, i, 1 )
-        Call io_nc_put_var( 'datalevel'      , fh, keytrj, i, 1 )
-        Call io_nc_put_var( 'imageconvention', fh,  imcon, i, 1 )
-        Call io_nc_put_var( 'timestep '      , fh,  tstep, i, 1 )
+           Call io_nc_put_var( 'time'           , fh,   time, jj, 1 )
+           Call io_nc_put_var( 'step'           , fh,  nstep, jj, 1 )
+           Call io_nc_put_var( 'datalevel'      , fh, keytrj, jj, 1 )
+           Call io_nc_put_var( 'imageconvention', fh,  imcon, jj, 1 )
+           Call io_nc_put_var( 'timestep '      , fh,  tstep, jj, 1 )
 
-        Call dcell(cell,celprp) ! get cell properties
+           Call dcell(cell,celprp) ! get cell properties
 
-        cell_vecs = Reshape( cell, (/ 3, 3 /) )
+           cell_vecs = Reshape( cell, (/ 3, 3 /) )
 
-        lengths( 1 ) = celprp( 1 )
-        lengths( 2 ) = celprp( 2 )
-        lengths( 3 ) = celprp( 3 )
+           lengths( 1 ) = celprp( 1 )
+           lengths( 2 ) = celprp( 2 )
+           lengths( 3 ) = celprp( 3 )
 
-        angles ( 1 ) = Acos( celprp( 5 ) )
-        angles ( 2 ) = Acos( celprp( 6 ) )
-        angles ( 3 ) = Acos( celprp( 4 ) )
-        angles = angles * 180.0_wp / ( 4.0_wp * Atan( 1.0_wp ) ) ! Convert to degrees
+           angles ( 1 ) = Acos( celprp( 5 ) )
+           angles ( 2 ) = Acos( celprp( 6 ) )
+           angles ( 3 ) = Acos( celprp( 4 ) )
+           angles = angles * 180.0_wp / ( 4.0_wp * Atan( 1.0_wp ) ) ! Convert to degrees
 
 ! Print
 
-        Call io_nc_put_var( 'cell'        , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
-        Call io_nc_put_var( 'cell_lengths', fh, lengths  , (/    1, i /), (/    3, 1 /) )
-        Call io_nc_put_var( 'cell_angles' , fh, angles   , (/    1, i /), (/    3, 1 /) )
+           Call io_nc_put_var( 'cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
+           Call io_nc_put_var( 'cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
+           Call io_nc_put_var( 'cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
+
+        End If
+
+        Call io_close( fh )
+        Call io_finalize
 
      End If
+     Call gsync()
+
+! Start of file
+
+     If (io_write /= IO_WRITE_SORTED_NETCDF) Then
+        rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(4,MPI_OFFSET_KIND)
+     Else ! netCDF write
+        Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+        rec_mpi_io = Int(jj,MPI_OFFSET_KIND)
+     End If
+
+! Write the rest
+
+     Call io_set_parameters( user_comm = dlp_comm_world )
+     Call io_init( recsz )
+     Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_WRONLY, fh )
 
      Call io_write_sorted_file( fh, keytrj, IO_HISTORY, rec_mpi_io, natms, &
           ltg, atmnam, weight, chge, rsd, xxx, yyy, zzz,                   &
@@ -731,8 +760,7 @@ Subroutine trajectory_write &
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         rec=rec+Int(4,ip)+Int(megatm,ip)*Int(keytrj+2,ip)
         If (idnode == 0) Then
-           Write(record(1:recsz), Fmt='(3i10,2i21,a1)') &
-                keytrj,imcon,megatm,frm,rec,lf
+           Write(record(1:recsz), Fmt='(3i10,2i21,a1)') keytrj,imcon,megatm,frm,rec,lf
            Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record(1:recsz) )
         End If
      End If
@@ -763,14 +791,11 @@ Subroutine trajectory_write &
         rec=rec+Int(1,ip)
         Write(Unit=nhist, Fmt='(a8,4i10,2f12.6,a1)', Rec=rec) 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
 
-        rec=rec+Int(1,ip)
-        Write(Unit=nhist, Fmt='(3f20.10,a12,a1)', Rec=rec) cell(1),cell(2),cell(3),Repeat(' ',12),lf
-
-        rec=rec+Int(1,ip)
-        Write(Unit=nhist, Fmt='(3f20.10,a12,a1)', Rec=rec) cell(4),cell(5),cell(6),Repeat(' ',12),lf
-
-        rec=rec+Int(1,ip)
-        Write(Unit=nhist, Fmt='(3f20.10,a12,a1)', Rec=rec) cell(7),cell(8),cell(9),Repeat(' ',12),lf
+        Do i = 0, 2
+           rec=rec+Int(1,ip)
+           Write(Unit=nhist, Fmt='(3f20.10,a12,a1)', Rec=rec) &
+                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+        End Do
 
         Do i=1,natms
            iwrk(i)=ltg(i)
@@ -802,7 +827,6 @@ Subroutine trajectory_write &
         End If
 
         jatms=natms
-
         ready=.true.
         Do jdnode=0,mxnode-1
            If (jdnode > 0) Then
@@ -852,11 +876,10 @@ Subroutine trajectory_write &
               End If
            End Do
         End Do
-        rec1=Int(megatm,ip)*Int(keytrj+2,ip)
 
 ! Update main header
 
-        rec=rec+rec1
+        rec=rec+Int(megatm,ip)*Int(keytrj+2,ip)
         Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,ip)) keytrj,imcon,megatm,frm,rec,lf
 
         Close(Unit=nhist)
@@ -962,17 +985,19 @@ Subroutine trajectory_write &
            rec=Int(2,ip)
            frm=Int(0,ip)
         Else
-           Call io_set_parameters( user_comm = dlp_comm_world )
-           Call io_nc_create( dlp_comm_world, fname, cfgname, megatm )
+           If (idnode == 0) Then
+              Call io_set_parameters( user_comm = MPI_COMM_SELF )
+              Call io_nc_create( MPI_COMM_SELF, fname, cfgname, megatm )
+           End If
         End If
 
 ! Get some sense of it
 
      Else
 
+        safe=.true.
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
 
-           safe=.true.
            If (idnode == 0) Then
 
               Open(Unit=nhist, File=fname, Form='formatted')
@@ -1043,7 +1068,7 @@ Subroutine trajectory_write &
               buffer(1)=Real(frm,wp)
               buffer(2)=Real(rec,wp)
 
-              Call gsum(buffer(1:2))
+              Call MPI_BCAST(buffer(1:2), 2, wp_mpi, 0, dlp_comm_world, ierr)
 
               frm=Nint(buffer(1),ip)
               rec=Nint(buffer(2),ip)
@@ -1051,18 +1076,79 @@ Subroutine trajectory_write &
 
         Else ! netCDF read
 
-           Call io_set_parameters( user_comm = dlp_comm_world )
-           Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_RDONLY, fh )
+           If (idnode == 0) Then
+              Call io_set_parameters( user_comm = MPI_COMM_SELF )
+              Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_RDONLY, fh )
+
+! Get the precision that the history file was written in
+! and check it matches the requested precision
+
+              Call io_nc_get_file_real_precision( fh, file_p, file_r, ierr )
+              safe = (ierr == 0)
+           End If
+           Call gcheck(safe)
+           If (.not.safe) Then
+              If (idnode == 0) Write(nrite,'(/,1x,a)') &
+  "Can not determine precision in an exisiting HISTORY.nc file in trajectory_write"
+
+! Sync before killing for the error in the hope that something sensible happens
+
+              Call gsync()
+              Call error(0)
+           End If
+
+           If (idnode == 0) Then
+              Call io_nc_get_real_precision( io_p, io_r, ierr )
+              safe = (ierr == 0)
+           End If
+           Call gcheck(safe)
+           If (.not.safe) Then
+              If (idnode == 0) Write(nrite,'(/,1x,a)') &
+  "Can not determine the desired writing precision in trajectory_write"
+
+! Sync before killing for the error in the hope that something sensible happens
+
+              Call gsync()
+              Call error(0)
+           End If
+
+           If (idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
+           Call gcheck(safe)
+           If (.not.safe) Then
+              If (idnode == 0) Then
+                 Write(nrite,'(/,1x,a)') &
+  "Requested writing precision inconsistent with that in an existing HISTORY.nc"
+                 Write(nrite, Fmt='(1x,a)', Advance='No') "Precision requested:"
+                 Select Case( Selected_real_kind( io_p, io_r ) )
+                 Case( Kind( 1.0 ) )
+                    Write(nrite,'(1x,a)') "Single"
+                 Case( Kind( 1.0d0 ) )
+                    Write(nrite,'(1x,a)') "Double"
+                 End Select
+                 Write(nrite, Fmt='(1x,a)', Advance='No') "Precision in file  :"
+                 Select Case( Selected_real_kind( file_p, file_r ) )
+                 Case( Kind( 1.0 ) )
+                    Write(nrite,'(1x,a)') "Single"
+                 Case( Kind( 1.0d0 ) )
+                    Write(nrite,'(1x,a)') "Double"
+                 End Select
+              End If
+
+              Call gsync()
+              Call error(0)
+           End If
 
 ! Get the frame number to check
-! For netcdf this is the "frame number" which is not a long integer!
+! For netCDF this is the "frame number" which is not a long integer!
 
-           Call io_nc_get_dim( 'frame', fh, i )
+           jj=0
+           If (idnode == 0) Call io_nc_get_dim( 'frame', fh, jj )
+           Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
 
-           If (i > 0) Then
-              frm=Int(i,ip)
+           If (jj > 0) Then
+              frm=Int(jj,ip)
 
-              Call io_close( fh )
+           If (idnode == 0) Call io_close( fh )
            Else ! Overwrite the file, it's junk to me
               lexist=.false.
 
@@ -1114,65 +1200,87 @@ Subroutine trajectory_write &
      Call io_init( recsz )
      Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_WRONLY, fh )
 
-     If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-
+! Write header only at start, where just one node is needed
 ! Start of file
 
-        rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+     jj_io=rec_mpi_io
+     jj=0 ! netCDF current frame
+     If (idnode == 0) Then
+
+        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_init( recsz )
+        Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_WRONLY, fh )
+
+! Non netCDF
+
+        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
 
 ! Write header and cell information
 
-        If (idnode == 0) Then
-           Write(record(1:recsz), Fmt='(a8,i6,f8.5,f12.5,a1)') &
-                'timestep',nstep,tstep,time,lf
-           Call io_write_record( fh, rec_mpi_io, record(1:recsz) )
-           rec_mpi_io=rec_mpi_io + Int(1,MPI_OFFSET_KIND)
+           Write(record(1:recsz), Fmt='(a8,i6,f8.5,f12.5,a1)') 'timestep',nstep,tstep,time,lf
+           Call io_write_record( fh, jj_io, record(1:recsz) )
+           jj_io=jj_io + Int(1,MPI_OFFSET_KIND)
 
            Do i = 0, 2
-              Write( record(1:recsz), Fmt='(3f10.3,a4,a1)') &
-                   cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), &
-                   Repeat( ' ', 4 ), lf
-              Call io_write_record( fh, rec_mpi_io, record(1:recsz) )
-              rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
+              Write(record(1:recsz), Fmt='(3f10.3,a4,a1)') &
+                   cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 4 ), lf
+              Call io_write_record( fh, jj_io, record(1:recsz) )
+              jj_io=jj_io+Int(1,MPI_OFFSET_KIND)
            End Do
-        End If
 
-! Start of file
-
-        rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(4,MPI_OFFSET_KIND)
-
-     Else ! netCDF write
+        Else ! netCDF write
 
 ! Get the current and new frame numbers
 
-        Call io_nc_get_dim( 'frame', fh, i )
-        i = i + 1
-        rec_mpi_io = Int(i,MPI_OFFSET_KIND)
+           Call io_nc_get_dim( 'frame', fh, jj )
+           jj = jj + 1
 
-        Call io_nc_put_var( 'time'           , fh,   time, i, 1 )
-        Call io_nc_put_var( 'step'           , fh,  nstep, i, 1 )
-        Call io_nc_put_var( 'timestep '      , fh,  tstep, i, 1 )
+           Call io_nc_put_var( 'time'           , fh,   time, jj, 1 )
+           Call io_nc_put_var( 'step'           , fh,  nstep, jj, 1 )
+           Call io_nc_put_var( 'timestep '      , fh,  tstep, jj, 1 )
 
-        Call dcell(cell,celprp) ! get cell properties
+           Call dcell(cell,celprp) ! get cell properties
 
-        cell_vecs = Reshape( cell, (/ 3, 3 /) )
+           cell_vecs = Reshape( cell, (/ 3, 3 /) )
 
-        lengths( 1 ) = celprp( 1 )
-        lengths( 2 ) = celprp( 2 )
-        lengths( 3 ) = celprp( 3 )
+           lengths( 1 ) = celprp( 1 )
+           lengths( 2 ) = celprp( 2 )
+           lengths( 3 ) = celprp( 3 )
 
-        angles ( 1 ) = Acos( celprp( 5 ) )
-        angles ( 2 ) = Acos( celprp( 6 ) )
-        angles ( 3 ) = Acos( celprp( 4 ) )
-        angles = angles * 180.0_wp / ( 4.0_wp * Atan( 1.0_wp ) ) ! Convert to degrees
+           angles ( 1 ) = Acos( celprp( 5 ) )
+           angles ( 2 ) = Acos( celprp( 6 ) )
+           angles ( 3 ) = Acos( celprp( 4 ) )
+           angles = angles * 180.0_wp / ( 4.0_wp * Atan( 1.0_wp ) ) ! Convert to degrees
 
 ! Print
 
-        Call io_nc_put_var( 'cell'        , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
-        Call io_nc_put_var( 'cell_lengths', fh, lengths  , (/    1, i /), (/    3, 1 /) )
-        Call io_nc_put_var( 'cell_angles' , fh, angles   , (/    1, i /), (/    3, 1 /) )
+           Call io_nc_put_var( 'cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
+           Call io_nc_put_var( 'cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
+           Call io_nc_put_var( 'cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
+
+        End If
+
+        Call io_close( fh )
+        Call io_finalize
 
      End If
+     Call gsync()
+
+! Start of file
+
+     If (io_write /= IO_WRITE_SORTED_NETCDF) Then
+        rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(4,MPI_OFFSET_KIND)
+     Else ! netCDF write
+        Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+        rec_mpi_io = Int(jj,MPI_OFFSET_KIND)
+     End If
+
+! Write the rest
+
+     Call io_set_parameters( user_comm = dlp_comm_world )
+     Call io_init( recsz )
+     Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_WRONLY, fh )
 
      Call io_write_sorted_file( fh, 0*keytrj, IO_HISTORD, rec_mpi_io, natms, &
           ltg, atmnam,  (/ 0.0_wp /),  (/ 0.0_wp /), rsd, xxx, yyy, zzz,     &
@@ -1197,8 +1305,7 @@ Subroutine trajectory_write &
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         rec=rec+Int(4,ip)+Int(megatm,ip)
         If (idnode == 0) Then
-           Write(record(1:recsz), Fmt='(2i2,3i10,a1)') &
-                keytrj,imcon,megatm,frm,rec,lf
+           Write(record(1:recsz), Fmt='(2i2,3i10,a1)') keytrj,imcon,megatm,frm,rec,lf
            Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record(1:recsz) )
         End If
      End If
@@ -1227,14 +1334,11 @@ Subroutine trajectory_write &
         rec=rec+Int(1,ip)
         Write(Unit=nhist, Fmt='(a8,i6,f8.5,f12.5,a1)', Rec=rec) 'timestep',nstep,tstep,time,lf
 
-        rec=rec+Int(1,ip)
-        Write(Unit=nhist, Fmt='(3f10.3,a4,a1)', Rec=rec) cell(1),cell(2),cell(3),Repeat(' ',4),lf
-
-        rec=rec+Int(1,ip)
-        Write(Unit=nhist, Fmt='(3f10.3,a4,a1)', Rec=rec) cell(4),cell(5),cell(6),Repeat(' ',4),lf
-
-        rec=rec+Int(1,ip)
-        Write(Unit=nhist, Fmt='(3f10.3,a4,a1)', Rec=rec) cell(7),cell(8),cell(9),Repeat(' ',4),lf
+        Do i = 0, 2
+           rec=rec+Int(1,ip)
+           Write(Unit=nhist, Fmt='(3f10.3,a4,a1)', Rec=rec) &
+                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 4 ), lf
+        End Do
 
         Do i=1,natms
            iwrk(i)=ltg(i)
@@ -1248,7 +1352,6 @@ Subroutine trajectory_write &
         End Do
 
         jatms=natms
-
         ready=.true.
         Do jdnode=0,mxnode-1
            If (jdnode > 0) Then
@@ -1271,11 +1374,10 @@ Subroutine trajectory_write &
               Write(Unit=nhist, Fmt='(a6,4f7.1,a1)', Rec=rec1) chbuf(i),axx(i),ayy(i),azz(i),fff(i),lf
            End Do
         End Do
-        rec1=rec1+Int(megatm,ip)
 
 ! Update main header
 
-        rec=rec+rec1
+        rec=rec+Int(megatm,ip)
         Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,ip)) keytrj,imcon,megatm,frm,rec,lf
 
         Close(Unit=nhist)

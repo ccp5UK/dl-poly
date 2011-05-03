@@ -7,7 +7,7 @@ Subroutine defects1_write &
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2011
+! author    - i.t.todorov april 2011
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -15,24 +15,24 @@ Subroutine defects1_write &
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use site_module,   Only : ntpshl,unqshl
-  Use config_module, Only : cfgname,cell,natms,nlast, &
-                            atmnam,ltg,lfrzn,xxx,yyy,zzz
+  Use site_module,     Only : ntpshl,unqshl
+  Use config_module,   Only : cfgname,cell,natms,nlast, &
+                              atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use defects1_module
-  Use parse_module,  Only : tabs_2_blanks, get_word, word_2_real
-  Use io_module,     Only : io_set_parameters,        &
-                            io_get_parameters,        &
-                            io_init, io_open,         &
-                            io_write_record,          &
-                            io_write_batch,           &
-                            io_close, io_finalize,    &
-                            IO_WRITE_UNSORTED_MPIIO,  &
-                            IO_WRITE_UNSORTED_DIRECT, &
-                            IO_WRITE_UNSORTED_MASTER, &
-                            IO_WRITE_SORTED_MPIIO,    &
-                            IO_WRITE_SORTED_DIRECT,   &
-                            IO_WRITE_SORTED_NETCDF,   &
-                            IO_WRITE_SORTED_MASTER
+  Use parse_module,    Only : tabs_2_blanks, get_word, word_2_real
+  Use io_module,       Only : io_set_parameters,        &
+                              io_get_parameters,        &
+                              io_init, io_open,         &
+                              io_write_record,          &
+                              io_write_batch,           &
+                              io_close, io_finalize,    &
+                              IO_WRITE_UNSORTED_MPIIO,  &
+                              IO_WRITE_UNSORTED_DIRECT, &
+                              IO_WRITE_UNSORTED_MASTER, &
+                              IO_WRITE_SORTED_MPIIO,    &
+                              IO_WRITE_SORTED_DIRECT,   &
+                              IO_WRITE_SORTED_NETCDF,   &
+                              IO_WRITE_SORTED_MASTER
 
   Implicit None
 
@@ -159,19 +159,19 @@ Subroutine defects1_write &
 
            Do While (.true.)
 
-              record(1:recsz)=' '
+              record=' '
               If (l_tmp) Then
 
-                 Read(Unit=ndefdt, Fmt=*, End=20)                     ! title record
+                 Read(Unit=ndefdt, Fmt=*, End=20)            ! title record
                  rec=rec+Int(1,ip)
-                 Read(Unit=ndefdt, Fmt='(a)', End=20) record(1:recsz) ! bookkeeping record
+                 Read(Unit=ndefdt, Fmt='(a)', End=20) record ! bookkeeping record
                  rec=rec+Int(1,ip)
 
-                 Call tabs_2_blanks(record) ; Call get_word(record(1:recsz),word)
+                 Call tabs_2_blanks(record) ; Call get_word(record,word)
                  If (word(1:Len_Trim(word)) /= 'timestep') Then
-                    Call get_word(record(1:recsz),word) ; Call get_word(record(1:recsz),word)
-                    Call get_word(record(1:recsz),word) ; frm=Nint(word_2_real(word,0.0_wp),ip)
-                    Call get_word(record(1:recsz),word) ; rec=Nint(word_2_real(word,0.0_wp),ip)
+                    Call get_word(record,word) ; Call get_word(record,word)
+                    Call get_word(record,word) ; frm=Nint(word_2_real(word,0.0_wp),ip)
+                    Call get_word(record,word) ; rec=Nint(word_2_real(word,0.0_wp),ip)
                     If (frm /= Int(0,ip) .and. rec > Int(2,ip)) Then
                        Go To 20 ! New style
                     Else
@@ -186,14 +186,14 @@ Subroutine defects1_write &
 
               Else
 
-                 Read(Unit=ndefdt, Fmt=*, End=20)                     ! timestep record
+                 Read(Unit=ndefdt, Fmt=*, End=20)            ! timestep record
                  rec=rec+Int(1,ip)
 
-                 Read(Unit=ndefdt, Fmt='(a)', End=20) record(1:recsz) ! defects record
+                 Read(Unit=ndefdt, Fmt='(a)', End=20) record ! defects record
                  rec=rec+Int(1,ip)
 
-                 Call tabs_2_blanks(record) ; Call get_word(record(1:recsz),word)
-                 Call get_word(record(1:recsz),word) ; j=Nint(word_2_real(word))
+                 Call tabs_2_blanks(record) ; Call get_word(record,word)
+                 Call get_word(record,word) ; j=Nint(word_2_real(word))
 
                  Do i=1,3+2*j ! 3 lines for cell parameters and 2*j entries for defects
                     Read(Unit=ndefdt, Fmt=*, End=20)
@@ -222,7 +222,7 @@ Subroutine defects1_write &
            buffer(1)=Real(frm,wp)
            buffer(2)=Real(rec,wp)
 
-           Call gsum(buffer(1:2))
+           Call MPI_BCAST(buffer(1:2), 2, wp_mpi, 0, dlp_comm_world, ierr)
 
            frm=Nint(buffer(1),ip)
            rec=Nint(buffer(2),ip)
@@ -239,10 +239,6 @@ Subroutine defects1_write &
      cutdef=Min(rcut/3.0_wp,2.0_wp*rdef)
      mxlcdef=Nint(((rcut/cutdef)**3+0.15_wp)*mxcell)
   End If
-
-! Update frame
-
-  frm=frm+Int(1,ip)
 
 ! Update rcell
 
@@ -402,7 +398,7 @@ Subroutine defects1_write &
 ! An atom qualifies to claim a site (occupies > 0)
 ! when the site is vacant - not occupied/taken (taken=0).
 ! If the site is not claimed yet then the atom is marked
-! as a claimee of this site (ocupies > 0) and not an
+! as a claimee of this site (occupies > 0) and not an
 ! interstitial (interstitial = 0).  If the site is
 ! already taken by another atom then the atom is marked
 ! as an interstitial of this site (interstitial > 0).
@@ -428,7 +424,7 @@ Subroutine defects1_write &
         j=link(j)
         If (j /= 0) Go To 200
 
-! end of loop over the real subcell contetnts jc
+! end of loop over the real subcell contents jc
 
      End If
 
@@ -463,7 +459,7 @@ Subroutine defects1_write &
      End Do
   End Do
 
-! Check safty on rdef length
+! Check safety on rdef length
 
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe) Call error(560)
@@ -547,7 +543,7 @@ Subroutine defects1_write &
         j=link(j)
         If (j /= 0) Go To 600
 
-! end of loop over the subcell contetnts jc
+! end of loop over the subcell contents jc
 
      End If
 
@@ -579,18 +575,18 @@ Subroutine defects1_write &
      End Do
   End Do
 
-! Include the following if you want occupant/site type missmatches printed out
+! Include the following if you want occupant/site type mismatches printed out
 ! printing from many nodes can be messy
 !
 !     taken = 0
 !     Do i=1,natms
 !        If (occupies(i) > 0 .and. atmnam(i) /= namr1(occupies(i))) Then
-!!           Write(Unit=*,'(3(1x,a))') 'occupant/site type missmatch:', atmnam(i), namr1(occupies(i))
+!!           Write(Unit=*,'(3(1x,a))') 'occupant/site type mismatch:', atmnam(i), namr1(occupies(i))
 !           taken = taken + 1
 !        End If
 !     End Do
 !     If (mxnode > 1) Call gsum(taken)
-!     If (idnode == 0) Write(nrite,'(3(1x,a,i10))') 'occupant/site type missmatches', taken
+!     If (idnode == 0) Write(nrite,'(3(1x,a,i10))') 'occupant/site type mismatches', taken
 
 ! Interstitials: i <= natms & interstitial(i) /= 0 means we've found an interstitial
 
@@ -632,10 +628,72 @@ Subroutine defects1_write &
 
   chbat=' '
 
+! Notes:
+! the MPI-I/O records are numbered from 0 (not 1)
+! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
+!   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
+!   both declared as: Integer(kind = MPI_OFFSET_KIND)
+
+! Update frame
+
+  frm=frm+Int(1,ip)
+
   If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
       io_write == IO_WRITE_UNSORTED_DIRECT .or. &
       io_write == IO_WRITE_SORTED_MPIIO    .or. &
       io_write == IO_WRITE_SORTED_DIRECT) Then
+
+! Write header and cell information, where just one node is needed
+! Start of file
+
+     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+     j=0
+     If (idnode == 0) Then
+
+        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_init( recsz )
+        Call io_open( io_write, MPI_COMM_SELF, 'DEFECTS1', MPI_MODE_WRONLY, fh )
+
+        Write(record, Fmt='(a8,i10,2f12.6,i5,f7.3,a18,a1)') &
+           'timestep',nstep,tstep,time,imcon,rdef,Repeat(' ',18),lf
+        j=j+1
+        Do k=1,recsz
+           chbat(k,j) = record(k:k)
+        End Do
+
+        Write(record, Fmt='(a8,i10,a15,i10,a11,i10,a8,a1)') &
+           'defects ',megni+megnv, ' interstitials ',megni, ' vacancies ',megnv,Repeat(' ',8),lf
+        j=j+1
+        Do k=1,recsz
+           chbat(k,j) = record(k:k)
+        End Do
+
+        Do i = 0, 2
+           Write( record, '( 3f20.10, a12, a1 )' ) &
+                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+           j=j+1
+           Do k=1,recsz
+              chbat(k,j) = record(k:k)
+           End Do
+        End Do
+
+! Dump header and cell information
+
+        Call io_write_batch( fh, rec_mpi_io, j, chbat )
+
+        Call io_close( fh )
+        Call io_finalize
+
+     Else
+
+        j=j+5
+
+     End If
+     Call gsync()
+
+! Start of file
+
+     rec=rec+Int(j,ip)
 
      Call io_set_parameters( user_comm = dlp_comm_world )
      Call io_init( recsz )
@@ -643,35 +701,7 @@ Subroutine defects1_write &
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
-
-! Write header and cell information
-
-     If (idnode == 0) Then
-        Write(record, Fmt='(a8,i10,2f12.6,i5,f7.3,a18,a1)') &
-           'timestep',nstep,tstep,time,imcon,rdef,Repeat(' ',18),lf
-        Call io_write_record( fh, rec_mpi_io, record(1:recsz) )
-        rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
-
-        Write(record, Fmt='(a8,i10,a15,i10,a11,i10,a8,a1)') &
-           'defects ',megni+megnv, ' interstitials ',megni, ' vacancies ',megnv,Repeat(' ',8),lf
-        Call io_write_record( fh, rec_mpi_io, record(1:recsz) )
-        rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
-
-        Do i = 0, 2
-           Write( record, '( 3f20.10, a12, a1 )' ) &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), &
-                Repeat( ' ', 12 ), lf
-           Call io_write_record( fh, rec_mpi_io, record(1:recsz) )
-           rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
-        End Do
-     End If
-
-! Start of file
-
-     rec=rec+Int(5,ip)
      rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(ni_n(0),MPI_OFFSET_KIND)
-
      j=0
      Do i=1,ni
         Write(record, Fmt='(a2,a8,i10,a52,a1)') 'i_',nami(i),indi(i),Repeat(' ',52),lf
@@ -698,9 +728,10 @@ Subroutine defects1_write &
 ! Start of file
 
      rec=rec+Int(2*megni,ip)
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(nv_n(0),MPI_OFFSET_KIND)
 
-     j=0
+! Start of file
+
+     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(nv_n(0),MPI_OFFSET_KIND)
      Do i=1,nv
         Write(record, Fmt='(a2,a8,i10,a52,a1)') 'v_',namv(i),indv(i),Repeat(' ',52),lf
         j=j+1
@@ -727,9 +758,8 @@ Subroutine defects1_write &
 ! Update main header
 
      If (idnode == 0) Then
-        rec_mpi_io=Int(1,MPI_OFFSET_KIND)
         Write(record, Fmt='(f7.3,a23,2i21,a1)') rdef,Repeat(' ',23),frm,rec,lf
-        Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record(1:recsz) )
+        Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record )
      End If
 
      Call io_close( fh )
@@ -744,6 +774,10 @@ Subroutine defects1_write &
         Call error(0)
      End If
 
+! node 0 handles I/O
+! Start of file
+
+     j=0
      If (idnode == 0) Then
         Open(Unit=ndefdt, File='DEFECTS1', Form='formatted', Access='direct', Recl=recsz)
 
@@ -763,28 +797,20 @@ Subroutine defects1_write &
            chbat(k,j) = record(k:k)
         End Do
 
-        Write(record, Fmt='(3f20.10,a12,a1)') cell(1),cell(2),cell(3),Repeat(' ',12),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
-        End Do
-
-        Write(record, Fmt='(3f20.10,a12,a1)') cell(4),cell(5),cell(6),Repeat(' ',12),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
-        End Do
-
-        Write(record, Fmt='(3f20.10,a12,a1)') cell(7),cell(8),cell(9),Repeat(' ',12),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
+        Do i = 0, 2
+           Write(record, Fmt='(3f20.10,a12,a1)') &
+                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+           j=j+1
+           Do k=1,recsz
+              chbat(k,j) = record(k:k)
+           End Do
         End Do
 
 ! Dump header and update start of file
 
         Write(Unit=ndefdt, Fmt='(73a)', Rec=rec+Int(1,ip)) (chbat(:,k), k=1,j)
         rec=rec+Int(5,ip)
+        j=0
 
         Do i=1,ni
            chbuf(i)=nami(i)
@@ -796,7 +822,6 @@ Subroutine defects1_write &
         End Do
 
         jatms=ni
-
         ready=.true.
         Do jdnode=0,mxnode-1
            If (jdnode > 0) Then
@@ -813,7 +838,6 @@ Subroutine defects1_write &
               End If
            End If
 
-           j=0
            Do i=1,jatms
               Write(record, Fmt='(a2,a8,i10,a52,a1)') 'i_',chbuf(i),iwrk(i),Repeat(' ',52),lf
               j=j+1
@@ -862,7 +886,6 @@ Subroutine defects1_write &
         End Do
 
         jatms=nv
-
         ready=.true.
         Do jdnode=0,mxnode-1
            If (jdnode > 0) Then
@@ -880,7 +903,6 @@ Subroutine defects1_write &
               End If
            End If
 
-           j=0
            Do i=1,jatms
               Write(record, Fmt='(a2,a8,i10,a52,a1)') 'v_',chbuf(i),iwrk(i),Repeat(' ',52),lf
               j=j+1

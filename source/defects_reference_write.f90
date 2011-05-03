@@ -6,7 +6,7 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
 !           defects detection
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2010
+! author    - i.t.todorov april 2011
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -49,7 +49,7 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
   Integer, Parameter :: recsz = 73 ! default record size
 
   Logical               :: ready
-  Integer(Kind=ip)      :: rec          ! record line
+  Integer(Kind=ip)      :: rec,rec1! record line
 
   Integer               :: fail(1:4),i,k,jj,jdnode,jatms
 
@@ -107,7 +107,7 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
   End If
 
 ! Notes:
-! the MPI_IO records are numbered from 0 (not 1)
+! the MPI-I/O records are numbered from 0 (not 1)
 ! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
 !   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
 !   both declared as: Integer(kind = MPI_OFFSET_KIND)
@@ -117,49 +117,58 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
   If      (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
            io_write == IO_WRITE_UNSORTED_DIRECT) Then
 
-     Call io_set_parameters( user_comm = dlp_comm_world )
-     Call io_init( recsz )
-     Call io_delete( name )
-     Call io_open( io_write, dlp_comm_world, name, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
-
+! Write header only at start, where just one node is needed
 ! Start of file
 
      rec_mpi_io=Int(1-1,MPI_OFFSET_KIND)
+     jj=0
+     If (idnode == 0) Then
+
+        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_init( recsz )
+        Call io_delete( name ) ! Sort existence issues
+        Call io_open( io_write, MPI_COMM_SELF, name, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
 
 ! Accumulate header
 
-     If (idnode == 0) Then
         Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
+        jj=jj+1
         Do k=1,recsz
-           chbat(k,1) = record(k:k)
+           chbat(k,jj) = record(k:k)
         End Do
 
         Write(record, Fmt='(3i10,a42,a1)') 0,imcon,megref,Repeat(' ',42),lf
+        jj=jj+1
         Do k=1,recsz
-           chbat(k,2) = record(k:k)
+           chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record, Fmt='(3f20.10,a12,a1)') cell(1),cell(2),cell(3),Repeat(' ',12),lf
-        Do k=1,recsz
-           chbat(k,3) = record(k:k)
+        Do i = 0, 2
+           Write(record, Fmt='(3f20.10,a12,a1)') &
+                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+           jj=jj+1
+           Do k=1,recsz
+              chbat(k,jj) = record(k:k)
+           End Do
         End Do
 
-        Write(record, Fmt='(3f20.10,a12,a1)') cell(4),cell(5),cell(6),Repeat(' ',12),lf
-        Do k=1,recsz
-           chbat(k,4) = record(k:k)
-        End Do
+! Dump header
 
-        Write(record, Fmt='(3f20.10,a12,a1)') cell(7),cell(8),cell(9),Repeat(' ',12),lf
-        Do k=1,recsz
-           chbat(k,5) = record(k:k)
-        End Do
+        Call io_write_batch( fh, rec_mpi_io, jj, chbat )
+
+        Call io_close( fh )
+        Call io_finalize
+
+     Else
+
+        jj=jj+5
+
      End If
-     jj=5
+     Call gsync()! Start of file (updated)
 
-! Dump header and update start of file
-
-     If (idnode == 0) Call io_write_batch( fh, rec_mpi_io, jj, chbat )
-     rec_mpi_io=Int(jj,MPI_OFFSET_KIND)+Int(n_atm(0),MPI_OFFSET_KIND)*Int(2,MPI_OFFSET_KIND)
+     Call io_set_parameters( user_comm = dlp_comm_world )
+     Call io_init( recsz )
+     Call io_open( io_write, dlp_comm_world, name, MPI_MODE_WRONLY, fh )
 
 ! Get to real space
 
@@ -173,6 +182,9 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
 
      Call pbcshift(imcon,cell,nrefs,axx,ayy,azz)
 
+! Start of file (updated)
+
+     rec_mpi_io=Int(jj,MPI_OFFSET_KIND)+Int(n_atm(0),MPI_OFFSET_KIND)*Int(2,MPI_OFFSET_KIND)
      jj=0
      Do i=1,nrefs
         Write(record, Fmt='(a8,i10,a54,a1)') namr(i),indr(i),Repeat(' ',54),lf
@@ -210,7 +222,10 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
      End If
 
 ! node 0 handles I/O
+! Start of file
 
+     rec=Int(0,ip)
+     jj=0
      If (idnode == 0) Then
 
 ! Obliterate old REFERENCE if not needed and print header
@@ -220,36 +235,31 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
 ! Accumulate header
 
         Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
+        jj=jj+1
         Do k=1,recsz
-           chbat(k,1) = record(k:k)
+           chbat(k,jj) = record(k:k)
         End Do
 
         Write(record, Fmt='(3i10,a42,a1)') 0,imcon,megref,Repeat(' ',42),lf
+        jj=jj+1
         Do k=1,recsz
-           chbat(k,2) = record(k:k)
+           chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record, Fmt='(3f20.10,a12,a1)') cell(1),cell(2),cell(3),Repeat(' ',12),lf
-        Do k=1,recsz
-           chbat(k,3) = record(k:k)
+        Do i = 0, 2
+           Write(record, Fmt='(3f20.10,a12,a1)') &
+                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+           jj=jj+1
+           Do k=1,recsz
+              chbat(k,jj) = record(k:k)
+           End Do
         End Do
-
-        Write(record, Fmt='(3f20.10,a12,a1)') cell(4),cell(5),cell(6),Repeat(' ',12),lf
-        Do k=1,recsz
-           chbat(k,4) = record(k:k)
-        End Do
-
-        Write(record, Fmt='(3f20.10,a12,a1)') cell(7),cell(8),cell(9),Repeat(' ',12),lf
-        Do k=1,recsz
-           chbat(k,5) = record(k:k)
-        End Do
-
-        jj = 5
 
 ! Dump header and update start of file
 
         Write(Unit=nrefdt, Fmt='(73a)', Rec=Int(1,ip)) (chbat(:,k), k=1,jj)
-        rec=Int(5,ip)
+        rec=Int(jj,ip)
+        jj=0
 
 ! Get to real space
 
@@ -263,7 +273,6 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
         End Do
 
         jatms=nrefs
-
         ready=.true.
         Do jdnode=0,mxnode-1
            If (jdnode > 0) Then
@@ -292,7 +301,6 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
 
            Call pbcshift(imcon,cell,jatms,axx,ayy,azz)
 
-           jj=0
            Do i=1,jatms
               Write(record, Fmt='(a8,i10,a54,a1)') chbuf(i),iwrk(i),Repeat(' ',54),lf
               jj=jj+1
@@ -348,78 +356,90 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
            io_write == IO_WRITE_SORTED_NETCDF) Then
 
 ! Write header only at start, where just one node is needed
+! Start of file
 
-     Call io_set_parameters( user_comm = MPI_COMM_SELF )
-     Call io_init( recsz )
+     rec_mpi_io=Int(1-1,MPI_OFFSET_KIND)
+     jj=0
+     If (idnode == 0) Then
 
-! Sort existence issues
-     Call io_delete( name )
-     If (io_write == IO_WRITE_SORTED_NETCDF) &
+        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_init( recsz )
+        Call io_delete( name ) ! Sort existence issues
+        If (io_write == IO_WRITE_SORTED_NETCDF) &
         Call io_nc_create( MPI_COMM_SELF, name, cfgname, megref )
 
-     Call io_open( io_write, MPI_COMM_SELF, name, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
+        Call io_open( io_write, MPI_COMM_SELF, name, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
 
 ! Non netCDF
 
-     If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-
-! Start of file
-
-        rec_mpi_io=Int(1-1,MPI_OFFSET_KIND)
+        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
 
 ! Write header
 
-        record=' '
-        Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
-        Call io_write_record( fh, rec_mpi_io, record )
-        rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
+           Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
+           Call io_write_record( fh, Int(jj,MPI_OFFSET_KIND), record )
+           jj=jj+1
 
-        Write(record, Fmt='(3i10,a42,a1)') 0,imcon,megref,Repeat(' ',42),lf
-        Call io_write_record( fh, rec_mpi_io, record )
-        rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
+           Write(record, Fmt='(3i10,a42,a1)') 0,imcon,megref,Repeat(' ',42),lf
+           Call io_write_record( fh, Int(jj,MPI_OFFSET_KIND), record )
+           jj=jj+1
 
-        Do i = 0, 2
-           Write( record, '( 3f20.10, a12, a1 )' ) cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
-           Call io_write_record( fh, rec_mpi_io, record )
-           rec_mpi_io=rec_mpi_io+Int(1,MPI_OFFSET_KIND)
-        End Do
+           Do i = 0, 2
+              Write( record, '( 3f20.10, a12, a1 )' ) cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
+              Call io_write_record( fh, Int(jj,MPI_OFFSET_KIND), record )
+              jj=jj+1
+           End Do
 
-     Else ! netCDF write
+        Else ! netCDF write
 
-        i=1 ! For config there is only one frame
-        rec_mpi_io = Int(i,MPI_OFFSET_KIND) ! This is the "frame number" which is not a long integer!
+           jj=1 ! For config there is only one frame
 
-        Call io_nc_put_var( 'time'           , fh, 0.0_wp, i, 1 )
-        Call io_nc_put_var( 'step'           , fh,      0, i, 1 )
-        Call io_nc_put_var( 'datalevel'      , fh,      0, i, 1 )
-        Call io_nc_put_var( 'imageconvention', fh,  imcon, i, 1 )
-        Call io_nc_put_var( 'timestep'       , fh, 0.0_wp, i, 1 )
+           Call io_nc_put_var( 'time'           , fh, 0.0_wp, jj, 1 )
+           Call io_nc_put_var( 'step'           , fh,      0, jj, 1 )
+           Call io_nc_put_var( 'datalevel'      , fh,      0, jj, 1 )
+           Call io_nc_put_var( 'imageconvention', fh,  imcon, jj, 1 )
+           Call io_nc_put_var( 'timestep'       , fh, 0.0_wp, jj, 1 )
 
-        Call dcell(cell,celprp) ! get cell properties
+           Call dcell(cell,celprp) ! get cell properties
 
-        cell_vecs = Reshape( cell, (/ 3, 3 /) )
+           cell_vecs = Reshape( cell, (/ 3, 3 /) )
 
-        lengths( 1 ) = celprp( 1 )
-        lengths( 2 ) = celprp( 2 )
-        lengths( 3 ) = celprp( 3 )
+           lengths( 1 ) = celprp( 1 )
+           lengths( 2 ) = celprp( 2 )
+           lengths( 3 ) = celprp( 3 )
 
-        angles ( 1 ) = Acos( celprp( 5 ) )
-        angles ( 2 ) = Acos( celprp( 6 ) )
-        angles ( 3 ) = Acos( celprp( 4 ) )
-        angles = angles * 180.0_wp / ( 4.0_wp * Atan( 1.0_wp ) ) ! Convert to degrees
+           angles ( 1 ) = Acos( celprp( 5 ) )
+           angles ( 2 ) = Acos( celprp( 6 ) )
+           angles ( 3 ) = Acos( celprp( 4 ) )
+           angles = angles * 180.0_wp / ( 4.0_wp * Atan( 1.0_wp ) ) ! Convert to degrees
 
 ! Print
 
-        Call io_nc_put_var( 'cell'        , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
-        Call io_nc_put_var( 'cell_lengths', fh, lengths  , (/    1, i /), (/    3, 1 /) )
-        Call io_nc_put_var( 'cell_angles' , fh, angles   , (/    1, i /), (/    3, 1 /) )
+           Call io_nc_put_var( 'cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
+           Call io_nc_put_var( 'cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
+           Call io_nc_put_var( 'cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
+
+        End If
+
+        Call io_close( fh )
+        Call io_finalize
+
+     Else
+
+        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
+           jj=jj+5
+        Else
+           jj=1
+        End If
 
      End If
-
-     Call io_close( fh )
-     Call io_finalize
-
      Call gsync()
+
+! Write the rest
+
+     Call io_set_parameters( user_comm = dlp_comm_world )
+     Call io_init( recsz )
+     Call io_open( io_write, dlp_comm_world, name, MPI_MODE_WRONLY, fh )
 
 ! Get to real space
 
@@ -435,10 +455,7 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
 
 ! Write the rest
 
-     Call io_set_parameters( user_comm = dlp_comm_world )
-     Call io_init( recsz )
-     Call io_open( io_write, dlp_comm_world, name, MPI_MODE_WRONLY, fh )
-
+     rec_mpi_io=rec_mpi_io+Int(jj,MPI_OFFSET_KIND)
      Call io_write_sorted_file( fh, 0, IO_RESTART, rec_mpi_io, nrefs,          &
           indr, namr, (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /), axx, ayy, azz, &
           (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /),                            &
@@ -471,18 +488,23 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
      End If
 
 ! node 0 handles I/O
+! Start of file
 
+     rec=Int(0,ip)
      If (idnode == 0) Then
 
 ! Obliterate old REFERENCE if not needed and print header
 
         Open(Unit=nrefdt, File=name, Form='formatted', Access='direct', Recl=73, Status='replace')
-        Write(Unit=nrefdt, Fmt='(a72,a1)',         Rec=Int(1,ip)) cfgname(1:72),lf
-        Write(Unit=nrefdt, Fmt='(3i10,a42,a1)',    Rec=Int(2,ip)) 0,imcon,megref,Repeat(' ',42),lf
-        Write(Unit=nrefdt, Fmt='(3f20.10,a12,a1)', Rec=Int(3,ip)) cell(1),cell(2),cell(3),Repeat(' ',12),lf
-        Write(Unit=nrefdt, Fmt='(3f20.10,a12,a1)', Rec=Int(4,ip)) cell(4),cell(5),cell(6),Repeat(' ',12),lf
-        Write(Unit=nrefdt, Fmt='(3f20.10,a12,a1)', Rec=Int(5,ip)) cell(7),cell(8),cell(9),Repeat(' ',12),lf
-        jj=5
+        rec=rec+Int(1,ip)
+        Write(Unit=nrefdt, Fmt='(a72,a1)',         Rec=rec) cfgname(1:72),lf
+        rec=rec+Int(1,ip)
+        Write(Unit=nrefdt, Fmt='(3i10,a42,a1)',    Rec=rec) 0,imcon,megref,Repeat(' ',42),lf
+        Do i = 0, 2
+           rec=rec+Int(1,ip)
+           Write(Unit=nrefdt, Fmt='(3f20.10,a12,a1)', Rec=rec) &
+                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+        End Do
 
 ! Get to real space
 
@@ -496,7 +518,6 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
         End Do
 
         jatms=nrefs
-
         ready=.true.
         Do jdnode=0,mxnode-1
            If (jdnode > 0) Then
@@ -526,11 +547,11 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
            Call pbcshift(imcon,cell,jatms,axx,ayy,azz)
 
            Do i=1,jatms
-              rec=Int(jj,ip)+Int(iwrk(i)-1,ip)*Int(2)+Int(1,ip)
-              Write(Unit=nrefdt, Fmt='(a8,i10,a54,a1)', Rec=rec) chbuf(i),iwrk(i),Repeat(' ',54),lf
+              rec1=rec+Int(iwrk(i)-1,ip)*Int(2)+Int(1,ip)
+              Write(Unit=nrefdt, Fmt='(a8,i10,a54,a1)', Rec=rec1) chbuf(i),iwrk(i),Repeat(' ',54),lf
 
-              rec=rec+Int(1,ip)
-              Write(Unit=nrefdt, Fmt='(3g20.10,a12,a1)', Rec=rec) axx(i),ayy(i),azz(i),Repeat(' ',12),lf
+              rec1=rec1+Int(1,ip)
+              Write(Unit=nrefdt, Fmt='(3g20.10,a12,a1)', Rec=rec1) axx(i),ayy(i),azz(i),Repeat(' ',12),lf
            End Do
         End Do
 

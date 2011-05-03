@@ -23,7 +23,7 @@ Subroutine statistics_collect                &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1992
-! amended   - i.t.todorov september 2008
+! amended   - i.t.todorov april 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -216,12 +216,13 @@ Subroutine statistics_collect                &
 
      If (mxnode > 1) Call gsum(amsd(1:ntpatm))
   Else If (nstep == 0) Then
-     Do i=1,natms
-        If (l_msd) Then
+     If (l_msd) Then
+        Do i=1,natms
            j=2*i
+           stpval(iadd+j-1)=0.0_wp
            ravval(iadd+j  )=vxx(i)**2+vyy(i)**2+vzz(i)**2
-        End If
-     End Do
+        End Do
+     End If
   End If
 
   If (l_msd) iadd = iadd + 2*mxatdm
