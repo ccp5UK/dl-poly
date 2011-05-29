@@ -5,10 +5,10 @@ Subroutine coul_rfp_forces &
 !
 ! dl_poly_4 subroutine for calculating coulombic energy and force terms
 ! in a periodic system using reaction field potential (correcting for
-! the existence of a dipol moment outside rcut)
+! the existence of a dipole moment outside rcut)
 !
 ! Note: RF potential can be generalised (R1) by using a damping function
-! as used for damping the real space coulombic interation in the
+! as used for damping the real space coulombic interaction in the
 ! standard Ewald summation.  This generalisation applies when alpha > 0.
 !
 ! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
@@ -16,7 +16,7 @@ Subroutine coul_rfp_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester february 1995
-! amended   - i.t.todorov march 2009
+! amended   - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,7 +29,7 @@ Subroutine coul_rfp_forces &
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
-  Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ), Dimension( 1:mx_two ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
   Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 

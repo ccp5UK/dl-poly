@@ -9,8 +9,7 @@ Subroutine system_revive                                            &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith december 1992
-! amended   - i.t.todorov august 2009
-! amended   - i.j.bush december 2009
+! amended   - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -274,9 +273,9 @@ Subroutine system_revive                                            &
      If (mxnode > 1) Call gsync()
      If (idnode == 0) Then
         If (l_rout) Then
-           Write(Unit=nrest, Fmt=forma, Advance='No') fpl
+           Write(Unit=nrest, Fmt=forma, Advance='No') fpl(1:9)
         Else
-           Write(Unit=nrest) fpl
+           Write(Unit=nrest) fpl(1:9)
         End If
      End If
   End If

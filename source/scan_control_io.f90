@@ -77,7 +77,7 @@ Subroutine scan_control_io()
 
 ! read slab option
 ! limiting DD slicing in z direction to 2 for load balancing purposes
-! this is really a prescan in order to get the MD box dimensions
+! this is really a pre-scan in order to get the MD box dimensions
 ! when scan_config before the option is read again in scan_control
 
      If      (word(1:4) == 'slab') Then

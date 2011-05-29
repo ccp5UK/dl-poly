@@ -621,11 +621,11 @@ Subroutine defects_write &
 
   ni_n=0 ; ni_n(idnode+1)=ni
   If (mxnode > 1) Call gsum(ni_n)
-  ni_n(0)=2*Sum(ni_n(0:idnode)) ! 2 lines per record
+  ni_n(0)=Sum(ni_n(0:idnode))
 
   nv_n=0 ; nv_n(idnode+1)=nv
   If (mxnode > 1) Call gsum(nv_n)
-  nv_n(0)=2*Sum(nv_n(0:idnode)) ! 2 lines per record
+  nv_n(0)=Sum(nv_n(0:idnode))
 
   chbat=' '
 
@@ -702,7 +702,7 @@ Subroutine defects_write &
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(ni_n(0),MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(2,MPI_OFFSET_KIND)*Int(ni_n(0),MPI_OFFSET_KIND)
      j=0
      Do i=1,ni
         Write(record, Fmt='(a2,a8,i10,a52,a1)') 'i_',nami(i),indi(i),Repeat(' ',52),lf
@@ -728,11 +728,11 @@ Subroutine defects_write &
 
 ! Start of file
 
-     rec=rec+Int(2*megni,ip)
+     rec=rec+Int(2,ip)*Int(megni,ip)
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(nv_n(0),MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(2,MPI_OFFSET_KIND)*Int(nv_n(0),MPI_OFFSET_KIND)
      Do i=1,nv
         Write(record, Fmt='(a2,a8,i10,a52,a1)') 'v_',namv(i),indv(i),Repeat(' ',52),lf
         j=j+1
@@ -754,7 +754,7 @@ Subroutine defects_write &
            j=0
         End If
      End Do
-     rec=rec+Int(2*megnv,ip)
+     rec=rec+Int(2,ip)*Int(megnv,ip)
 
 ! Update main header
 
@@ -810,7 +810,7 @@ Subroutine defects_write &
 ! Dump header and update start of file
 
         Write(Unit=ndefdt, Fmt='(73a)', Rec=rec+Int(1,ip)) (chbat(:,k), k=1,j)
-        rec=rec+Int(5,ip)
+        rec=rec+Int(j,ip)
         j=0
 
         Do i=1,ni
@@ -827,8 +827,8 @@ Subroutine defects_write &
         Do jdnode=0,mxnode-1
            If (jdnode > 0) Then
               Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,DefWrite_tag,dlp_comm_world,ierr)
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefWrite_tag,dlp_comm_world,status,ierr)
 
+              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefWrite_tag,dlp_comm_world,status,ierr)
               If (jatms > 0) Then
                  Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,DefWrite_tag,dlp_comm_world,status,ierr)
                  Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,DefWrite_tag,dlp_comm_world,status,ierr)
@@ -865,7 +865,6 @@ Subroutine defects_write &
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefWrite_tag,dlp_comm_world,status,ierr)
 
         Call MPI_SEND(ni,1,MPI_INTEGER,0,DefWrite_tag,dlp_comm_world,ierr)
-
         If (ni > 0) Then
            Call MPI_SEND(nami,8*ni,MPI_CHARACTER,0,DefWrite_tag,dlp_comm_world,ierr)
            Call MPI_SEND(indi,ni,MPI_INTEGER,0,DefWrite_tag,dlp_comm_world,ierr)
@@ -893,7 +892,6 @@ Subroutine defects_write &
               Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,DefWrite_tag,dlp_comm_world,ierr)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefWrite_tag,dlp_comm_world,status,ierr)
-
               If (jatms > 0) Then
                  Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,DefWrite_tag,dlp_comm_world,status,ierr)
                  Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,DefWrite_tag,dlp_comm_world,status,ierr)
@@ -930,7 +928,6 @@ Subroutine defects_write &
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefWrite_tag,dlp_comm_world,status,ierr)
 
         Call MPI_SEND(nv,1,MPI_INTEGER,0,DefWrite_tag,dlp_comm_world,ierr)
-
         If (nv > 0) Then
            Call MPI_SEND(namv,8*nv,MPI_CHARACTER,0,DefWrite_tag,dlp_comm_world,ierr)
            Call MPI_SEND(indv,nv,MPI_INTEGER,0,DefWrite_tag,dlp_comm_world,ierr)
@@ -947,7 +944,7 @@ Subroutine defects_write &
         Write(Unit=ndefdt, Fmt='(f7.3,a23,2i21,a1)', Rec=2) rdef,Repeat(' ',23),frm,rec,lf
         Close(Unit=ndefdt)
      Else
-        rec=rec+Int(5+2*(megni+megnv),ip)
+        rec=rec+Int(5,ip)+Int(2,ip)*Int(megni+megnv,ip)
      End If
 
      Deallocate (chbuf,iwrk, Stat=fail(1))

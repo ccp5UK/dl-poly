@@ -357,7 +357,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 
 ! ryckaert-bellemans potential
 !
-! reference: chem.phys.lett., vol.30, p.123 (1975)
+! reference: chem. phys. lett., vol. 30, p. 123 (1975)
 ! ATTENTION: Modified to have the transition configuration correspond
 !            to theta=180 rather than theta=0 as in original form
 
@@ -499,7 +499,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 
         scale=prmdih(4,kk)
 
-! scaled charge product times dielectric cosntants
+! scaled charge product times dielectric constants
 
         chgprd=scale*chge(ia)*chge(id)*r4pie0/epsq
         If (Abs(chgprd) > zero_plus .and. keyfce > 0) Then
@@ -605,7 +605,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 
         scale=prmdih(5,kk)
 
-! initialise deafult force contribution
+! initialise default force contribution
 
         gamma=0.0_wp
 

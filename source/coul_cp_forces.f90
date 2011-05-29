@@ -8,7 +8,7 @@ Subroutine coul_cp_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester february 1993
-! amended   - i.t.todorov february 2008
+! amended   - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,7 +20,7 @@ Subroutine coul_cp_forces &
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: rcut,epsq
-  Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ), Dimension( 1:mx_two ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
   Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 

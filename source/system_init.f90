@@ -10,7 +10,7 @@ Subroutine system_init                                       &
 ! initial thermodynamic and structural accumulators
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2009
+! author    - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -366,17 +366,15 @@ Subroutine system_init                                       &
               End If
            End Do
         End Do
-        Do k=1,9
-           If (idnode == 0) Then
-              If (l_rin) Then
-                 Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) fpl(1:9)
-              Else
-                 Read(Unit=nrest, IOStat=keyio) fpl(1:9)
-              End If
+        If (idnode == 0) Then
+           If (l_rin) Then
+              Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) fpl(1:9)
+           Else
+              Read(Unit=nrest, IOStat=keyio) fpl(1:9)
            End If
-           If (keyio /= 0) i_tmp=1
-           If (mxnode > 1) Call gsum(fpl)
-        End Do
+        End If
+        If (keyio /= 0) i_tmp=1
+        If (mxnode > 1) Call gsum(fpl(1:9))
 
 ! If anything is wrong
 

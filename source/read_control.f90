@@ -1,9 +1,10 @@
 Subroutine read_control                           &
            (levcfg,l_vv,l_str,l_n_e,l_n_r,l_n_v,  &
            rcut,rvdw,rbin,nstfce,alpha,width,     &
-           l_exp,lecx,lfcap,lzero,lmin,           &
+           l_exp,lecx,lfcap,l_top,lzero,lmin,     &
            ltgaus,ltscal,lvar,leql,lpse,          &
-           lsim,lrdf,lprdf,lzdn,lpzdn,ltraj,ldef, &
+           lsim,lrdf,lprdf,lzdn,lpzdn,            &
+           ltraj,ldef,lrsd,                       &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,      &
            temp,press,strext,keyres,              &
            tstep,mndis,mxdis,nstrun,nsteql,       &
@@ -14,14 +15,15 @@ Subroutine read_control                           &
            rlx_tol,mxshak,tolnce,mxquat,quattol,  &
            nstrdf,nstzdn,                         &
            nstmsd,istmsd,nstraj,istraj,keytrj,    &
-           nsdef,isdef,rdef,ndump,timjob,timcls)
+           nsdef,isdef,rdef,nsrsd,isrsd,rrsd,     &
+           ndump,timjob,timcls)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2010
+! author    - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -46,11 +48,11 @@ Subroutine read_control                           &
   Real( Kind = wp ),      Intent( InOut ) :: alpha
 
   Logical,                Intent(   Out ) :: l_exp,lecx,             &
-                                             lfcap,lzero,lmin,       &
+                                             lfcap,l_top,lzero,lmin, &
                                              ltgaus,ltscal,          &
                                              lvar,leql,lpse,lsim,    &
                                              lrdf,lprdf,lzdn,lpzdn,  &
-                                             ltraj,ldef
+                                             ltraj,ldef,lrsd
 
 
   Integer,                Intent(   Out ) :: nx,ny,nz,imd,tmd,       &
@@ -64,7 +66,9 @@ Subroutine read_control                           &
                                              nstrdf,nstzdn,          &
                                              nstmsd,istmsd,          &
                                              nstraj,istraj,keytrj,   &
-                                             nsdef,isdef,ndump
+                                             nsdef,isdef,            &
+                                             nsrsd,isrsd,            &
+                                             ndump
 
   Real( Kind = wp ),      Intent(   Out ) :: emd,vmx,vmy,vmz,        &
                                              temp,press,strext(1:9), &
@@ -74,7 +78,7 @@ Subroutine read_control                           &
                                              wthpse,tmppse,min_tol,  &
                                              fmax,epsq,rlx_tol,      &
                                              tolnce,quattol,         &
-                                             rdef,timjob,timcls
+                                             rdef,rrsd,timjob,timcls
 
 
   Logical                                 :: limp,lens,lforc,        &
@@ -90,7 +94,7 @@ Subroutine read_control                           &
   Real( Kind = wp )                       :: rcell(1:9),rcut1,rvdw1,tmp
 
 
-! intitialize system control variables and their logical switches
+! initialise system control variables and their logical switches
 
 ! default expansion option
 
@@ -148,7 +152,7 @@ Subroutine read_control                           &
 
   nstrun = 0
 
-! number of steps for equilbration and default for exclusion of
+! number of steps for equilibration and default for exclusion of
 ! statistics collection during those steps
 
   nsteql = 0
@@ -194,9 +198,9 @@ Subroutine read_control                           &
 
 ! default thermostat and barostat friction time constants
 
-  taut = 0.0_wp ! termostat relaxation time
+  taut = 0.0_wp ! thermostat relaxation time
   soft = 0.0_wp ! Softness for Andersen thermostat
-  taup = 0.0_wp ! baroostat relaxation time
+  taup = 0.0_wp ! barostat relaxation time
   chi  = 0.0_wp ! Stochastic Dynamics (SD Langevin) thermostat friction
   tai  = 0.0_wp ! Stochastic Dynamics (SD Langevin) barostat friction
   iso  = 0      ! no semi-isotropic feature
@@ -211,6 +215,10 @@ Subroutine read_control                           &
 
   lfcap = .false.
   fmax  = 1000.0_wp
+
+! default switch for printing topology
+
+  l_top = .true.
 
 ! defaults for: force key = no electrostatics,
 ! specified force field = not yet, relative dielectric constant = 1
@@ -267,7 +275,7 @@ Subroutine read_control                           &
   nstmsd = 0
   istmsd = 1
 
-! default switch for trajectory outputing and defaults for
+! default switch for trajectory outputting and defaults for
 ! (i) step to start at, (ii) every step after to be collected,
 ! (iii) level of information to output
 
@@ -276,7 +284,7 @@ Subroutine read_control                           &
   istraj = 1
   keytrj = 0
 
-! default switch for defects outputing and defaults for
+! default switch for defects outputting and defaults for
 ! (i) step to start at, (ii) every step after to be collected,
 ! (iii) default value for accepting an atom has defected
 
@@ -284,6 +292,15 @@ Subroutine read_control                           &
   nsdef  = 0
   isdef  = 1
   rdef   = Min(0.75_wp,rcut/3.0_wp)
+
+! default switch for displacements outputting and defaults for
+! (i) step to start at, (ii) every step after to be collected,
+! (iii) cutoff value for accepting an atom has moved
+
+  lrsd   =.false.
+  nsrsd  = 0
+  isrsd  = 1
+  rrsd   = 0.15_wp
 
 ! default value for data dumping interval
 
@@ -1268,7 +1285,7 @@ Subroutine read_control                           &
         If (lforc) Call error(416)
         lforc=.true.
 
-! read Coulombic potential option
+! read coulombic potential option
 
      Else If (word(1:4) == 'coul') Then
 
@@ -1278,7 +1295,7 @@ Subroutine read_control                           &
         If (lforc) Call error(416)
         lforc=.true.
 
-! read force-shifted Coulombic potential option
+! read force-shifted coulombic potential option
 
      Else If (word(1:5) == 'shift') Then
 
@@ -1394,9 +1411,15 @@ Subroutine read_control                           &
 
         Else If (word1(1:3) == 'str' ) Then
 
-           If (idnode == 0) Write(nrite,"(/,1x,a)") "no strict option on"
+           If (idnode == 0) Write(nrite,"(/,1x,a)") "no strict option on (avoids printing unessential warnings in OUTPUT)"
 
-        Else If (word1(1:4) == 'link') Then ! UNTRANSFERABLE OPTION FROM DL_POLY_2
+        Else If (word1(1:3) == 'top' ) Then
+
+           If (idnode == 0) Write(nrite,"(/,1x,a)") "no topology option on (avoids printing extended FIELD topology in OUTPUT)"
+
+           l_top = .false.
+
+        Else If (word1(1:4) == 'link') Then ! NON-TRANSFERABLE OPTION FROM DL_POLY_2
 
            Call warning(38,0.0_wp,0.0_wp,0.0_wp)
 
@@ -1416,14 +1439,14 @@ Subroutine read_control                           &
         rlx_tol = Max(1.0_wp,Abs(word_2_real(word)))
         If (idnode == 0) Write(nrite,"(/,1x,'tolerance for relaxed shell model',1x,1p,e12.4)") rlx_tol
 
-! read maximum number of iterations in contraint algorithms
+! read maximum number of iterations in constraint algorithms
 
      Else If (word(1:6) == 'mxshak') Then
 
         Call get_word(record,word)
         mxshak = Abs(Nint(word_2_real(word)))
 
-! read tolerance for contraint algorithms
+! read tolerance for constraint algorithms
 
      Else If (word(1:5) == 'shake') Then
 
@@ -1562,7 +1585,7 @@ Subroutine read_control                           &
            '%%% warning - trajectory file info key == 3 generates %%%', &
            '%%% HISTORY in an unindexed and consize manner !!! %%%'
 
-! read defect trajectory printing option
+! read defects trajectory printing option
 
      Else If (word(1:4) == 'defe') Then
 
@@ -1597,6 +1620,33 @@ Subroutine read_control                           &
            If (idnode == 0) Write(nrite, "(/,1x,'%%% defects1 file option on %%%')")
         End If
 
+! read displacements trajectory printing option
+
+     Else If (word(1:4) == 'disp') Then
+
+        lrsd = .true.
+
+        Call get_word(record,word)
+        itmp = Abs(Nint(word_2_real(word)))
+        nsrsd = Max(nsrsd,itmp)
+
+        Call get_word(record,word)
+        itmp = Abs(Nint(word_2_real(word)))
+        isrsd = Max(isrsd,itmp)
+
+        Call get_word(record,word)
+        tmp = Abs(word_2_real(word))
+        If (tmp > rrsd) Then
+           rrsd = tmp
+        Else
+           Call warning(470,tmp,rrsd,0.0_wp)
+        End If
+
+        If (idnode == 0) Write(nrite, "(/,1x,'displacements file option on', &
+           & /,1x,'DISPDAT file start        ',5x,i10,                       &
+           & /,1x,'DISPDAT file interval     ',5x,i10,                       &
+           & /,1x,'DISPDAT distance condition (Ang)',2x,1p,e12.4)") nsrsd,isrsd,rrsd
+
 ! read DL_POLY_2 multiple timestep option (compatibility)
 ! as DL_POLY_4 infrequent k-space SPME evaluation option
 
@@ -1604,7 +1654,7 @@ Subroutine read_control                           &
 
         Call warning(36,0.0_wp,0.0_wp,0.0_wp)
 
-!!!! OTHER UNTRANSFERABLE OPTIONS FROM DL_POLY_2 !!!!
+!!!! OTHER NON-TRANSFERABLE OPTIONS FROM DL_POLY_2 !!!!
 ! read primary cutoff option for multiple timestepping
 
      Else If (word(1:4) == 'prim') Then
@@ -1623,7 +1673,7 @@ Subroutine read_control                           &
 
         Call warning(37,0.0_wp,0.0_wp,0.0_wp)
 
-!!!! OTHER UNTRANSFERABLE OPTIONS FROM DL_POLY_2 !!!!
+!!!! OTHER NON-TRANSFERABLE OPTIONS FROM DL_POLY_2 !!!!
 
 ! read data dumping interval
 
@@ -1654,7 +1704,7 @@ Subroutine read_control                           &
 
         End If
 
-! read close-down time allowence
+! read close-down time allowance
 
      Else If (word(1:5) == 'close') Then
 
@@ -1883,7 +1933,7 @@ Subroutine read_control                           &
 
 ! abort if there's no structural property to recalculate
 
-     If ((.not.lrdf) .and. (.not.lzdn) .and. (.not.ldef)) Call error(580)
+     If (.not.(lrdf .or. lzdn .or. ldef .or. lrsd)) Call error(580)
 
      If (keyres /= 0) Then
         keyres=0 ! Force clean restart

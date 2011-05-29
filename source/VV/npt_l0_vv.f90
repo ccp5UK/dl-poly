@@ -18,19 +18,18 @@ Subroutine npt_l0_vv                                 &
 !            J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2010
+! author    - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,       Only : idnode,mxnode,gsum,gmax
+  Use comms_module,    Only : idnode,mxnode,gsum,gmax
   Use setup_module
-  Use site_module,        Only : ntpatm,dens
-  Use config_module,      Only : cell,volm,natms,ltg,lfrzn,weight, &
-                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use langevin_module,    Only : l_lan_s,fxl,fyl,fzl,fpl
-  Use core_shell_module,  Only : ntshl,listshl
-  Use kinetic_module,     Only : getvom,getkin,kinstress
+  Use site_module,     Only : ntpatm,dens,ntpshl,unqshl
+  Use config_module,   Only : cell,volm,natms,lfrzn,atmnam,weight, &
+                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use langevin_module, Only : l_lan_s,fxl,fyl,fzl,fpl
+  Use kinetic_module,  Only : getvom,getkin,kinstress
 
   Implicit None
 
@@ -401,7 +400,7 @@ Subroutine npt_l0_vv                                 &
 
         mxdr = 0.0_wp
         Do i=1,natms
-           If (All(listshl(2,1:ntshl) /= ltg(i))) &
+           If (.not.Any(unqshl(1:ntpshl) == atmnam(i))) &
               mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
         End Do
         mxdr=Sqrt(mxdr)

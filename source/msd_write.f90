@@ -338,12 +338,13 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
               Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Traject_tag,dlp_comm_world,ierr)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+              If (jatms > 0) Then
+                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
 
-              Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-              Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-
-              Call MPI_RECV(ddd,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-              Call MPI_RECV(eee,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(ddd,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(eee,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+              End If
            End If
 
            jj=0
@@ -384,12 +385,13 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,dlp_comm_world,status,ierr)
 
         Call MPI_SEND(natms,1,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
+        If (natms > 0) Then
+           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
 
-        Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Traject_tag,dlp_comm_world,ierr)
-        Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
-
-        Call MPI_SEND(ddd,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-        Call MPI_SEND(eee,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(ddd,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(eee,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+        End If
 
 ! Save offset pointer
 
@@ -526,12 +528,13 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
               Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Traject_tag,dlp_comm_world,ierr)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+              If (jatms > 0) Then
+                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
 
-              Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-              Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-
-              Call MPI_RECV(ddd,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-              Call MPI_RECV(eee,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(ddd,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(eee,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+              End If
            End If
 
            Do i=1,jatms
@@ -561,12 +564,13 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,dlp_comm_world,status,ierr)
 
         Call MPI_SEND(natms,1,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
+        If (natms > 0) Then
+           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
 
-        Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Traject_tag,dlp_comm_world,ierr)
-        Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
-
-        Call MPI_SEND(ddd,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-        Call MPI_SEND(eee,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(ddd,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(eee,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+        End If
 
         rec=rec+Int(megatm+1,ip)
 

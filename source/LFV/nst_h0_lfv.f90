@@ -16,7 +16,7 @@ Subroutine nst_h0_lfv                                &
 !
 ! iso=0 fully anisotropic barostat
 ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
-! iso=2 semi-isotropic barostat to constant normal pressure & surface tesnion
+! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
 !
 ! reference: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
@@ -32,18 +32,17 @@ Subroutine nst_h0_lfv                                &
 ! reference3: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,       Only : idnode,mxnode,gmax
+  Use comms_module,   Only : idnode,mxnode,gmax
   Use setup_module
-  Use site_module,        Only : ntpatm,dens
-  Use config_module,      Only : cell,volm,natms,ltg,lfrzn,weight, &
-                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use core_shell_module,  Only : ntshl,listshl
-  Use kinetic_module,     Only : getcom,getvom,kinstress
+  Use site_module,    Only : ntpatm,dens,ntpshl,unqshl
+  Use config_module,  Only : cell,volm,natms,lfrzn,atmnam,weight, &
+                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use kinetic_module, Only : getcom,getvom,kinstress
 
   Implicit None
 
@@ -483,7 +482,7 @@ Subroutine nst_h0_lfv                                &
 
      mxdr = 0.0_wp
      Do i=1,natms
-        If (All(listshl(2,1:ntshl) /= ltg(i))) &
+        If (.not.Any(unqshl(1:ntpshl) == atmnam(i))) &
            mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
      End Do
      mxdr=Sqrt(mxdr)

@@ -11,17 +11,17 @@ Subroutine nvt_b0_vv                                 &
 ! (not symplectic)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2010
+! author    - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,       Only : idnode,mxnode,gmax
+  Use comms_module,   Only : idnode,mxnode,gmax
   Use setup_module
-  Use config_module,      Only : natms,ltg,lfrzn,weight, &
-                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use core_shell_module,  Only : ntshl,listshl
-  Use kinetic_module,     Only : getvom
+  Use site_module,    Only : ntpshl,unqshl
+  Use config_module,  Only : natms,lfrzn,atmnam,weight, &
+                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use kinetic_module, Only : getvom
 
   Implicit None
 
@@ -252,7 +252,7 @@ Subroutine nvt_b0_vv                                 &
 
         mxdr = 0.0_wp
         Do i=1,natms
-           If (All(listshl(2,1:ntshl) /= ltg(i))) &
+           If (.not.Any(unqshl(1:ntpshl) == atmnam(i))) &
               mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
         End Do
         mxdr=Sqrt(mxdr)

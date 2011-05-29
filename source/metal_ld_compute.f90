@@ -12,7 +12,7 @@ Subroutine metal_ld_compute                &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov june 2009
+! amended   - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,7 +27,7 @@ Subroutine metal_ld_compute                &
   Integer,                                  Intent( In    ) :: imcon,keyfce
   Real( Kind = wp ),                        Intent( In    ) :: rmet
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent( In    ) :: elrcm,vlrcm
-  Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ), Dimension( 1:mx_two ), Intent( InOut ) :: xdf,ydf,zdf,rsqdf
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent(   Out ) :: rho
   Real( Kind = wp ),                        Intent(   Out ) :: engden,virden
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress

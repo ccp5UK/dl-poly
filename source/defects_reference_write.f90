@@ -279,13 +279,14 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
               Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Traject_tag,dlp_comm_world,ierr)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+              If (jatms > 0) Then
+                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
 
-              Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-              Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-
-              Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-              Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-              Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+              End If
 
 ! Get to real space
 
@@ -333,13 +334,14 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,dlp_comm_world,status,ierr)
 
         Call MPI_SEND(nrefs,1,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
+        If (nrefs > 0) Then
+           Call MPI_SEND(namr,8*nrefs,MPI_CHARACTER,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(indr,nrefs,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
 
-        Call MPI_SEND(namr,8*nrefs,MPI_CHARACTER,0,Traject_tag,dlp_comm_world,ierr)
-        Call MPI_SEND(indr,nrefs,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
-
-        Call MPI_SEND(xr,nrefs,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-        Call MPI_SEND(yr,nrefs,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-        Call MPI_SEND(zr,nrefs,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(xr,nrefs,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(yr,nrefs,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(zr,nrefs,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+        End If
 
      End If
 
@@ -524,13 +526,14 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
               Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Traject_tag,dlp_comm_world,ierr)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+              If (jatms > 0) Then
+                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
 
-              Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-              Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-
-              Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-              Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-              Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+              End If
 
 ! Get to real space
 
@@ -564,13 +567,14 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,dlp_comm_world,status,ierr)
 
         Call MPI_SEND(nrefs,1,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
+        If (nrefs > 0) Then
+           Call MPI_SEND(namr,8*nrefs,MPI_CHARACTER,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(indr,nrefs,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
 
-        Call MPI_SEND(namr,8*nrefs,MPI_CHARACTER,0,Traject_tag,dlp_comm_world,ierr)
-        Call MPI_SEND(indr,nrefs,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
-
-        Call MPI_SEND(xr,nrefs,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-        Call MPI_SEND(yr,nrefs,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-        Call MPI_SEND(zr,nrefs,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(xr,nrefs,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(yr,nrefs,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(zr,nrefs,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+         End If
 
      End If
 

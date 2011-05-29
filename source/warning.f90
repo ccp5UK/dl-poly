@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov april 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -486,6 +486,12 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,/)') &
         '*** warning - further semi-isotropic barostat option search abandoned !!! ***'
+
+     Else If (kode == 470) Then
+
+        Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                  &
+        '*** warning - control distance for diplacement qualification MUST be >= 0.25 Ang !!! ***', &
+        '*** displacements distance condition will default from ', a, ' to ', b, ' Ang !!! ***'
 
      Else
 

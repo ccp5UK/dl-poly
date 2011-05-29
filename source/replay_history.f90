@@ -82,6 +82,26 @@
               Call kinstress(vxx,vyy,vzz,strkin)
            End If
            engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+        Else
+           If (megrgd > 0) Then
+              rgdvxx(1:ntrgd) = 0.0_wp
+              rgdvyy(1:ntrgd) = 0.0_wp
+              rgdvzz(1:ntrgd) = 0.0_wp
+
+              rgdoxx(1:ntrgd) = 0.0_wp
+              rgdoyy(1:ntrgd) = 0.0_wp
+              rgdozz(1:ntrgd) = 0.0_wp
+
+              strknt = 0.0_wp
+              engrot = 0.0_wp
+           End If
+           vxx(1:natms) = 0.0_wp
+           vyy(1:natms) = 0.0_wp
+           vzz(1:natms) = 0.0_wp
+
+           strknf = 0.0_wp
+           strkin = 0.0_wp
+           engke = 0.0_wp
         End If
 
 ! Calculate physical quantities and collect statistics,
@@ -89,8 +109,7 @@
 
         Call statistics_collect              &
            (leql,nsteql,lzdn,nstzdn,         &
-           nstmsd,istmsd,megatm,             &
-           keyres,keyens,intsta,             &
+           keyres,keyens,intsta,imcon,       &
            degfre,degshl,degrot,             &
            isw,tstep,time,tmsth,             &
            engcpe,vircpe,engsrp,virsrp,      &

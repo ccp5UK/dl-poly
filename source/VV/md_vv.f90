@@ -69,12 +69,16 @@
            vircom=-(strcom(1)+strcom(5)+strcom(9))
         End If
 
-! Write trajectory and defects data if needed immediately after restart
+! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
 
         If (ltraj .and. keyres /= 1) Call trajectory_write &
            (imcon,keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
         If (ldef .and. keyres /= 1) Call defects_write &
            (imcon,rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time)
+        If (l_msd .and. keyres /= 1) Call msd_write &
+           (keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
+        If (lrsd .and. keyres /= 1) Call rsd_write &
+           (imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
      End If
 
 ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
@@ -652,8 +656,7 @@
 
         Call statistics_collect              &
            (leql,nsteql,lzdn,nstzdn,         &
-           nstmsd,istmsd,megatm,             &
-           keyres,keyens,intsta,             &
+           keyres,keyens,intsta,imcon,       &
            degfre,degshl,degrot,             &
            nstep,tstep,time,tmst,            &
            engcpe,vircpe,engsrp,virsrp,      &
@@ -1180,8 +1183,7 @@
 
         Call statistics_collect              &
            (leql,nsteql,lzdn,nstzdn,         &
-           nstmsd,istmsd,megatm,             &
-           keyres,keyens,intsta,             &
+           keyres,keyens,intsta,imcon,       &
            degfre,degshl,degrot,             &
            nstep,tstep,time,tmst,            &
            engcpe,vircpe,engsrp,virsrp,      &
@@ -1237,15 +1239,16 @@
               & 130('-'))") nstep
         End If
 
-! Write trajectory data
+! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
         If (ltraj) Call trajectory_write &
            (imcon,keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
-
-! Write defects data
-
         If (ldef) Call defects_write &
            (imcon,rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time)
+        If (l_msd) Call msd_write &
+           (keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
+        If (lrsd) Call rsd_write &
+           (imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
 ! Save restart data in event of system crash
 
@@ -1265,12 +1268,16 @@
            vircom=-(strcom(1)+strcom(5)+strcom(9))
         End If
 
-! Write trajectory and defects data if needed immediately after restart
+! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
 
         If (ltraj .and. keyres /= 1) Call trajectory_write &
            (imcon,keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
         If (ldef .and. keyres /= 1) Call defects_write &
            (imcon,rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time)
+        If (l_msd .and. keyres /= 1) Call msd_write &
+           (keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
+        If (lrsd .and. keyres /= 1) Call rsd_write &
+           (imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
      End If
 
 ! Complete time check

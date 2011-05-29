@@ -5,7 +5,7 @@ Module comms_module
 ! dl_poly_4 module for global communication routines and functions
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2011
+! author    - i.t.todorov april 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -43,7 +43,8 @@ Module comms_module
                         Updpmfun_tag = 1188, &
                         Metldexp_tag = 1199, &
                         DefExport_tag= 2200, &
-                        DefWrite_tag = 2211
+                        DefWrite_tag = 2211, &
+                        RsdWrite_tag = 2222
 
   Public :: init_comms, exit_comms, abort_comms, &
             gsync, gcheck, gsum, gmax, gtime

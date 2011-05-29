@@ -202,7 +202,7 @@ Subroutine statistics_result            &
 
 10 Continue
 
-! scale densities for average volume and averge volume and cell
+! scale densities for average volume and average volume and cell
 
   Do i=1,ntpatm
      If (numtyp(i) > zero_plus) dens(i)=dens(i)*(volm/avvol)

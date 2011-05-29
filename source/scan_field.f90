@@ -15,7 +15,7 @@ Subroutine scan_field                                 &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith november 1994
-! amended   - i.t.todorov april 2008
+! amended   - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -451,7 +451,7 @@ Subroutine scan_field                                 &
 
            End Do
 
- 1000      Continue
+1000       Continue
 
         End Do
 

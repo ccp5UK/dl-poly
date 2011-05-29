@@ -22,7 +22,7 @@ Subroutine npt_l1_vv                          &
 !            J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,13 +30,12 @@ Subroutine npt_l1_vv                          &
   Use comms_module,       Only : idnode,mxnode,gsum,gmax
   Use setup_module
   Use domains_module,     Only : map
-  Use site_module,        Only : ntpatm,dens
-  Use config_module,      Only : cell,volm,natms,nlast,nfree,     &
-                                 lsi,lsa,ltg,lfrzn,lstfre,weight, &
+  Use site_module,        Only : ntpatm,dens,ntpshl,unqshl
+  Use config_module,      Only : cell,volm,natms,nlast,nfree,        &
+                                 lsi,lsa,lfrzn,lstfre,atmnam,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
   Use langevin_module,    Only : l_lan_s,fxl,fyl,fzl,fpl
-  Use core_shell_module,  Only : ntshl,listshl
   Use kinetic_module,     Only : getvom,getknf,getknt,getknr, &
                                  kinstresf,kinstrest
 
@@ -761,7 +760,7 @@ Subroutine npt_l1_vv                          &
 
         mxdr = 0.0_wp
         Do i=1,natms
-           If (All(listshl(2,1:ntshl) /= ltg(i))) &
+           If (.not.Any(unqshl(1:ntpshl) == atmnam(i))) &
               mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
         End Do
         mxdr=Sqrt(mxdr)

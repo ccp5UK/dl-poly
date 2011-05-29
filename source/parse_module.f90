@@ -242,7 +242,7 @@ Contains
     rec_len  = Len_Trim(record)
     word_len = Len(word)
 
-! Initialise counters and word, and keep-transfering boolean
+! Initialise counters and word, and keep-transferring boolean
 
     rec_ind  = 0
     word_ind = 0
@@ -251,7 +251,7 @@ Contains
 
     transfer = .true.
 
-! Start transfering
+! Start transferring
 
     Do While (transfer)
 

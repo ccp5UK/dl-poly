@@ -6,22 +6,22 @@ Subroutine langevin_forces(temp,tstep,chi,fxr,fyr,fzr)
 ! with the target temperature and the Langevin thermostat friction
 !
 ! Note: (1) This algorithm breaks reversibility due to the random
-!           generastion of forces.
+!           generation of forces.
 !       (2) Random forces do not contribute to the stress and virial
 !           of the system they are accounted by the system pressure.
 !       (3) Random forces do not apply to frozen and massless particles
 !           as well as shells.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gsum
   Use setup_module,      Only : nrite,boltz,mxatms,zero_plus
-  Use config_module,     Only : natms,lfrzn,ltg,weight
-  Use core_shell_module, Only : ntshl,listshl
+  Use site_module,       Only : ntpshl,unqshl
+  Use config_module,     Only : natms,lfrzn,atmnam,weight
 
   Implicit None
 
@@ -52,12 +52,12 @@ Subroutine langevin_forces(temp,tstep,chi,fxr,fyr,fzr)
 
   scale = Sqrt(2.0_wp * chi * boltz * temp / tstep)
 
-! Make variance = target variance and nulify the rest and
+! Make variance = target variance and nullify the rest and
 ! calculate force COM correction
 
   vom = 0.0_wp
   Do i=1,natms
-     If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. All(listshl(2,1:ntshl) /= ltg(i))) Then
+     If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. (.not.Any(unqshl(1:ntpshl) == atmnam(i)))) Then
         q(i) = 1
 
         tmp = scale*Sqrt(weight(i))

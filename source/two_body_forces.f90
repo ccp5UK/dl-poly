@@ -27,7 +27,7 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2009
+! author    - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -72,7 +72,7 @@ Subroutine two_body_forces                        &
   Real( Kind = wp ), Dimension( : ), Allocatable :: rho
 
   fail=0
-  Allocate (xdf(1:mxatms),ydf(1:mxatms),zdf(1:mxatms),rsqdf(1:mxatms), Stat=fail(1))
+  Allocate (xdf(1:mx_two),ydf(1:mx_two),zdf(1:mx_two),rsqdf(1:mx_two), Stat=fail(1))
   If (ntpmet > 0) Allocate (rho(1:mxatms),                             Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'two_body_forces allocation failure, node: ', idnode

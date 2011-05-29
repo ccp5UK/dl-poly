@@ -14,7 +14,7 @@ Subroutine nvt_l1_lfv                          &
 ! - leapfrog verlet with Langevin thermostat (standard brownian dynamics)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,11 +22,11 @@ Subroutine nvt_l1_lfv                          &
   Use comms_module,       Only : idnode,mxnode,gmax,gcheck
   Use setup_module
   Use domains_module,     Only : map
-  Use config_module,      Only : cell,natms,nlast,nfree, &
-                                 lsi,lsa,ltg,lstfre,weight, &
+  Use site_module,        Only : ntpshl,unqshl
+  Use config_module,      Only : cell,natms,nlast,nfree,       &
+                                 lsi,lsa,lstfre,atmnam,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
-  Use core_shell_module,  Only : ntshl,listshl
   Use kinetic_module,     Only : getknr,kinstresf,kinstrest
 
   Implicit None
@@ -547,7 +547,7 @@ Subroutine nvt_l1_lfv                          &
 
      mxdr = 0.0_wp
      Do i=1,natms
-        If (All(listshl(2,1:ntshl) /= ltg(i))) &
+        If (.not.Any(unqshl(1:ntpshl) == atmnam(i))) &
            mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
      End Do
      mxdr=Sqrt(mxdr)

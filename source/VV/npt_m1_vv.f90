@@ -22,7 +22,7 @@ Subroutine npt_m1_vv                          &
 !            Mol. Phys., 1996, Vol. 87 (5), p. 1117
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,12 +30,11 @@ Subroutine npt_m1_vv                          &
   Use comms_module,       Only : idnode,mxnode,gmax
   Use setup_module
   Use domains_module,     Only : map
-  Use site_module,        Only : ntpatm,dens
+  Use site_module,        Only : ntpatm,dens,ntpshl,unqshl
   Use config_module,      Only : cell,volm,natms,nlast,nfree, &
-                                 ltg,lfrzn,lstfre,weight,     &
+                                 lfrzn,lstfre,atmnam,weight,  &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
-  Use core_shell_module,  Only : ntshl,listshl
   Use kinetic_module,     Only : getvom,kinstresf,kinstrest
 
   Implicit None
@@ -673,7 +672,7 @@ Subroutine npt_m1_vv                          &
 
         mxdr = 0.0_wp
         Do i=1,natms
-           If (All(listshl(2,1:ntshl) /= ltg(i))) &
+           If (.not.Any(unqshl(1:ntpshl) == atmnam(i))) &
               mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
         End Do
         mxdr=Sqrt(mxdr)

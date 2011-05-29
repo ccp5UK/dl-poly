@@ -1,7 +1,6 @@
 Subroutine statistics_collect                &
            (leql,nsteql,lzdn,nstzdn,         &
-           nstmsd,istmsd,megatm,             &
-           keyres,keyens,intsta,             &
+           keyres,keyens,intsta,imcon,       &
            degfre,degshl,degrot,             &
            nstep,tstep,time,tmst,            &
            engcpe,vircpe,engsrp,virsrp,      &
@@ -31,15 +30,16 @@ Subroutine statistics_collect                &
   Use comms_module,   Only : idnode,mxnode,gsum
   Use setup_module
   Use site_module,    Only : ntpatm,numtyp
-  Use config_module,  Only : cfgname,cell,volm,natms,ltype,vxx,vyy,vzz
+  Use config_module,  Only : cfgname,cell,volm,natms,ltype, &
+                             xxx,yyy,zzz,vxx,vyy,vzz
   Use statistics_module
   Use msd_module
 
   Implicit None
 
   Logical,           Intent( In    ) :: leql,lzdn
-  Integer,           Intent( In    ) :: nsteql,nstzdn,nstmsd,istmsd, &
-                                        megatm,keyres,keyens,intsta,nstep
+  Integer,           Intent( In    ) :: nsteql,nstzdn,keyres, &
+                                        keyens,intsta,imcon,nstep
 
   Integer(Kind=ip),  Intent( In    ) :: degfre,degshl,degrot
 
@@ -102,7 +102,7 @@ Subroutine statistics_collect                &
      End If
   End If
 
-! instanteneous properties of system
+! instantaneous properties of system
 
 ! configurational energy
 
@@ -197,35 +197,39 @@ Subroutine statistics_collect                &
   End If
 
   If (nstep > 0) Then
+     If (stptmp < 1.0_wp) Then ! HISTORY is replayed and no velocity field exists
+        Do i=1,natms
+           xto(i)=xxx(i)-xin(i)
+           yto(i)=yyy(i)-yin(i)
+           zto(i)=zzz(i)-zin(i)
+        End Do
+        Call images(imcon,cell,natms,xto,yto,xto)
+     Else                      ! velocity field exists
+        Do i=1,natms
+           xto(i)=xto(i)+vxx(i)*tstep
+           yto(i)=yto(i)+vyy(i)*tstep
+           zto(i)=zto(i)+vzz(i)*tstep
+        End Do
+     End If
+
      Do i=1,natms
-        xto(i)=xto(i)+vxx(i)*tstep
-        yto(i)=yto(i)+vyy(i)*tstep
-        zto(i)=zto(i)+vzz(i)*tstep
-
         rsd(i)=Sqrt(xto(i)**2+yto(i)**2+zto(i)**2)
-
-        If (l_msd) Then
-           j=2*i
-           stpval(iadd+j-1)=rsd(i)**2
-           stpval(iadd+j  )=vxx(i)**2+vyy(i)**2+vzz(i)**2
-        End If
 
         k=ltype(i)
         amsd(k)=amsd(k)+rsd(i)**2
      End Do
-
      If (mxnode > 1) Call gsum(amsd(1:ntpatm))
-  Else If (nstep == 0) Then
-     If (l_msd) Then
-        Do i=1,natms
-           j=2*i
-           stpval(iadd+j-1)=0.0_wp
-           ravval(iadd+j  )=vxx(i)**2+vyy(i)**2+vzz(i)**2
-        End Do
-     End If
   End If
 
-  If (l_msd) iadd = iadd + 2*mxatdm
+  If (l_msd) Then
+     Do i=1,natms
+        j=2*i
+        stpval(iadd+j-1)=rsd(i)**2
+        stpval(iadd+j  )=vxx(i)**2+vyy(i)**2+vzz(i)**2
+     End Do
+
+     iadd = iadd + 2*mxatdm
+  End If
 
   Do k=1,ntpatm
      If (numtyp(k) > zero_plus) stpval(iadd+k)=amsd(k)/Max(numtyp(k),1.0_wp)
@@ -258,10 +262,10 @@ Subroutine statistics_collect                &
 
      If (l_msd) Then
         Write(nstats,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
-          nstep,time,iadd-2*mxatdm,(stpval(k),k=1,27),(stpval(k),k=28+2*mxatdm,iadd)
+             nstep,time,iadd-2*mxatdm,(stpval(k),k=1,27),(stpval(k),k=28+2*mxatdm,iadd)
      Else
         Write(nstats,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
-          nstep,time,iadd,(stpval(k),k=1,iadd)
+             nstep,time,iadd,(stpval(k),k=1,iadd)
      End If
 
      Close(Unit=nstats)
@@ -331,10 +335,6 @@ Subroutine statistics_collect                &
 
   If ( lzdn .and. ((.not.leql) .or. nstep >= nsteql) .and. &
        Mod(nstep,nstzdn) == 0 ) Call z_density_collect()
-
-! write MSD file
-
-  If (l_msd) Call msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
 
 ! Catch time of starting statistical averages
 

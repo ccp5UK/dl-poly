@@ -21,18 +21,18 @@ Subroutine nvt_a1_vv                          &
 !  particles' momenta of a particle subset on each domain)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gsum,gmax
   Use setup_module
-  Use site_module,        Only : dofsit
   Use domains_module,     Only : map
-  Use config_module,      Only : cell,natms,nlast,nfree,lsite,          &
-                                 lsi,lsa,ltg,lfrzn,lfree,lstfre,weight, &
-                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use site_module,        Only : dofsit,ntpshl,unqshl
+  Use config_module,      Only : cell,natms,nlast,nfree,lsite,      &
+                                 lsi,lsa,lfrzn,lfree,lstfre,atmnam, &
+                                 weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
   Use core_shell_module,  Only : ntshl,listshl,lshmv_shl,lishp_shl,lashp_shl
   Use kinetic_module,     Only : getvom,getknr,kinstresf,kinstrest
@@ -520,7 +520,7 @@ Subroutine nvt_a1_vv                          &
 
         mxdr = 0.0_wp
         Do i=1,natms
-           If (All(listshl(2,1:ntshl) /= ltg(i))) &
+           If (.not.Any(unqshl(1:ntpshl) == atmnam(i))) &
               mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
         End Do
         mxdr=Sqrt(mxdr)
@@ -757,7 +757,7 @@ Subroutine nvt_a1_vv                          &
      j = 0
      tmp = tstep/taut
      Do i=1,natms
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. All(listshl(2,1:ntshl) /= ltg(i))) Then
+        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. (.not.Any(unqshl(1:ntpshl) == atmnam(i)))) Then
            If (uni() <= tmp) Then
               j = j + 1
               qn(i) = 1

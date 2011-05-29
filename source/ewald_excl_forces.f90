@@ -10,7 +10,7 @@ Subroutine ewald_excl_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov february 2008
+! amended   - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,7 +24,7 @@ Subroutine ewald_excl_forces &
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
-  Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: xdf,ydf,zdf
+  Real( Kind = wp ), Dimension( 1:mx_two ), Intent( In    ) :: xdf,ydf,zdf
   Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 

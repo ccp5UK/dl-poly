@@ -16,7 +16,7 @@ Subroutine nst_h1_scl &
 !
 ! iso=0 fully anisotropic barostat
 ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
-! iso=2 semi-isotropic barostat to constant normal pressure & surface tesnion
+! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
 !
 ! reference: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !

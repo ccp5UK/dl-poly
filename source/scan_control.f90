@@ -43,7 +43,7 @@ Subroutine scan_control                              &
   Integer,           Parameter :: mxspl_def = 8
   Real( Kind = wp ), Parameter :: rcut_def  = 1.5_wp
 
-! deafult reading indices options
+! default reading indices options
 
   l_ind=.true.
 

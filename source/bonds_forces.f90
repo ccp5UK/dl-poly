@@ -8,7 +8,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith july 1992
-! amended   - i.t.todorov august 2010
+! amended   - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -43,7 +43,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
   Integer           :: fail(1:2),i,j,ia,ib,keyb,kk,local_index
   Real( Kind = wp ) :: rab,rab2,fx,fy,fz,gamma,omega, &
                        term,term1,term2,eps,sig,      &
-                       k,k2,k3,k4,r0,dr,dr2,          &
+                       k,k2,k3,k4,r0,dr,dra,dr2,      &
                        e0,rc,a,b,c,rho,delta,         &
                        exp1,tt,erc,fer,b0,chgprd,     &
                        engc12,virc12,buffer(1:4),     &
@@ -267,11 +267,12 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 
            k =prmbnd(1,kk)
            r0=prmbnd(2,kk)
-           dr=Abs(rab-r0)
+           dr=rab-r0
+           dra=Abs(dr)
            rc=prmbnd(3,kk)
 
-           omega=k*(0.5_wp*Min(dr,rc)**2 + rc*Max(dr-rc,0.0_wp))
-           gamma=k*Sign(Min(dr,rc),dr)/rab
+           omega=k*(0.5_wp*Min(dra,rc)**2 + rc*Max(dra-rc,0.0_wp))
+           gamma=k*Sign(Min(dra,rc),dr)/rab
 
         Else If (keyb == 6) Then
 

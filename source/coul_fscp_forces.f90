@@ -10,14 +10,14 @@ Subroutine coul_fscp_forces &
 ! therefore aa = 1/(rcut)**2 and U(rcut) = 0 therefore bb = -2/(rcut)
 !
 ! Note: FS potential can be generalised (R1) by using a damping function
-! as used for damping the real space coulombic interation in the
+! as used for damping the real space coulombic interaction in the
 ! standard Ewald summation.  This generalisation applies when alpha > 0.
 !
 ! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester october 1995
-! amended   - i.t.todorov march 2009
+! amended   - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,7 +30,7 @@ Subroutine coul_fscp_forces &
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
-  Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ), Dimension( 1:mx_two ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
   Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 

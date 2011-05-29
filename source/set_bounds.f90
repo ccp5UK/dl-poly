@@ -8,7 +8,7 @@ Subroutine set_bounds                                        &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2011
+! author    - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -387,15 +387,12 @@ Subroutine set_bounds                                        &
 ! mxspl = 0 is an indicator for no SPME electrostatics in CONTROL
 
   If (mxspl == 0) Then
+
      qlx = ilx
      qly = ily
      qlz = ilz
-  Else
-     qlx = Min(ilx , kmaxa1/(mxspl*nprx))
-     qly = Min(ily , kmaxb1/(mxspl*npry))
-     qlz = Min(ilz , kmaxc1/(mxspl*nprz))
 
-     If (qlx*qly*qlz == 0) Call error(308)
+  Else
 
 ! ensure (kmaxa,kmaxb,kmaxc) consistency with what DD
 ! (map_domains is already called) and DaFT are capble of
@@ -404,6 +401,15 @@ Subroutine set_bounds                                        &
      Call adjust_kmax( kmaxa, nprx )
      Call adjust_kmax( kmaxb, npry )
      Call adjust_kmax( kmaxc, nprz )
+
+! Calculate and check ql.
+
+     qlx = Min(ilx , kmaxa/(mxspl*nprx))
+     qly = Min(ily , kmaxb/(mxspl*npry))
+     qlz = Min(ilz , kmaxc/(mxspl*nprz))
+
+     If (qlx*qly*qlz == 0) Call error(308)
+
   End If
 
 
@@ -426,6 +432,10 @@ Subroutine set_bounds                                        &
      mxlist = Nint( (dvar**1.7_wp) * (0.25_wp*dens0+0.75_wp*dens)*2.5_wp*pi*rcut**3)
   End If
   mxlist = Min(mxlist,megatm-1)
+
+! two_body_forces pair arrays
+
+  mx_two=Max(mxexcl,mxlist)
 
 ! get link-cell volume
 
@@ -478,7 +488,7 @@ Subroutine set_bounds                                        &
                    2*mxteth + 3*mxbond + 4*mxangl           + &
                    5*mxdihd + 5*mxinv))                     / &
                   (Min(ilx,ily,ilz)*Max(Nint(rcut),1))      , &
-                ((Mod(mxnode-1,1)+1)*11*mxatms)             / &
+                (Merge( 2, 0, mxnode > 1)*11*mxatms)        / &
                  Min(qlx,qly,qlz)                           , &
                 2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
                 0*(2*kmaxa*kmaxb*kmaxc+10)                  , &
