@@ -29,11 +29,9 @@ directive {\bf traj} appears in the CONTROL file.
 The HISTORY file can become {\em very} large, especially if it is
 formatted.  For serious simulation work it is recommended that the
 file be written to a scratch disk capable of accommodating a large
-data file.  Alternatively, the file may be written as unformatted
-(users must change that themselfs and recompile), which has the
-additional advantage of speed.  However, writing an unformatted
-file has the disadvantage that the file may not be readily
-readable except by the machine on which it was created.
+data file.  Alternatively, the file may be written in netCDF format
+instead of in ASCII (users must change ensure this functionality is
+available), which has the additional advantage of speed.
 
 The HISTORY has the following structure:
 \begin{tabbing}
@@ -117,11 +115,7 @@ appears in the CONTROL file.
 The MSDTMP file can become {\em very} large, especially if it is
 formatted.  For serious simulation work it is recommended that the
 file be written to a scratch disk capable of accommodating a large
-data file.  Alternatively, the file may be written as unformatted
-(users must change that themselfs and recompile), which has the
-additional advantage of speed.  However, writing an unformatted
-file has the disadvantage that the file may not be readily
-readable except by the machine on which it was created.
+data file.
 
 The MSDTMP has the following structure:
 \begin{tabbing}
@@ -174,11 +168,7 @@ directive {\bf defects} appears in the CONTROL file.
 The DEFECTS file may become {\em very} large, especially if it is
 formatted.  For serious simulation work it is recommended that the
 file be written to a scratch disk capable of accommodating a large
-data file.  Alternatively, the file may be written as unformatted
-(users must change that themselfs and recompile), which has the
-additional advantage of speed.  However, writing an unformatted
-file has the disadvantage that the file may not be readily
-readable except by the machine on which it was created.
+data file.
 
 The DEFECTS has the following structure:
 \begin{tabbing}
@@ -247,6 +237,78 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 \> {\tt xxx}    \> real    \> x coordinate from REFERENCE \\
 \> {\tt yyy}    \> real    \> y coordinate from REFERENCE \\
 \> {\tt zzz}    \> real    \> z coordinate from REFERENCE \\
+\end{tabbing}
+
+\subsection{The RSDDAT File}
+\label{rsddat-file}
+
+The RSDDAT file is the dump file of atomic coordinates of atoms
+that are displaced from their original position at $t~=~0$ farther
+than a preset cutoff.  Its principal use is for off-line analysis.
+The file is written by the subroutine {\sc rsd\_write}.  The control
+variables for this file are {\tt lrsd, nsrsd, isrsd} and {\tt rrsd}
+which are created internally, based on information read from
+the {\bf displacements} directive in the CONTROL file (see Section
+\ref{control-file}).  The RSDDAT file will be created only if the
+directive {\bf defects} appears in the CONTROL file.
+
+The RSDDAT file may become {\em very} large, especially if it is
+formatted.  For serious simulation work it is recommended that the
+file be written to a scratch disk capable of accommodating a large
+data file.
+
+The RSDDAT has the following structure:
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
+{\bf record 1} \\
+\> {\tt header}  \> a72     \> file header \\
+{\bf record 2} \\
+\> {\tt rdef}    \> real    \> displacement qualifying cutoff (\AA) in last frame \\
+\> {\tt frame}   \> integer \> number configuration frames in file \\
+\> {\tt records} \> integer \> number of records in file \\
+\end{tabbing}
+
+For timesteps greater than {\tt nsrsd} the RSDDAT file is
+appended at intervals specified by the {\bf displacements} directive
+in the CONTROL file, with the following information for each
+configuration:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
+{\bf record i} \\
+\> {\tt timestep}      \> a8      \> the character string ``timestep'' \\
+\> {\tt nstep}         \> integer \> the current time-step \\
+\> {\tt tstep}         \> real    \> integration timestep (ps) \\
+\> {\tt time}          \> real    \> elapsed simulation time (ps) \\
+\> {\tt imcon}         \> integer \> periodic boundary key (see Table \ref{imcon}) \\
+\> {\tt rrsd}          \> real    \> displacement qualifying cutoff (\AA) \\
+{\bf record ii} \\
+\> {\tt displacements} \> a13     \> the character string ``displacements'' \\
+\> {\tt nrsd}          \> integer \> the total number of displacements \\
+{\bf record iii} \\
+\> {\tt cell(1)}       \> real    \> x component of $a$ cell vector \\
+\> {\tt cell(2)}       \> real    \> y component of $a$ cell vector \\
+\> {\tt cell(3)}       \> real    \> z component of $a$ cell vector \\
+{\bf record iv} \\
+\> {\tt cell(4)}       \> real    \> x component of $b$ cell vector \\
+\> {\tt cell(5)}       \> real    \> y component of $b$ cell vector \\
+\> {\tt cell(6)}       \> real    \> z component of $b$ cell vector \\
+{\bf record v} \\
+\> {\tt cell(7)}       \> real    \> x component of $c$ cell vector \\
+\> {\tt cell(8)}       \> real    \> y component of $c$ cell vector \\
+\> {\tt cell(9)}       \> real    \> z component of $c$ cell vector \\
+\end{tabbing}
+This is followed by the {\tt nrsd} displacements for the current
+timestep, as each atom has the following data lines:
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
+{\bf record a}  \\
+\> {\tt atmnam} \> a10     \> atomic label from CONFIG \\
+\> {\tt iatm}   \> integer \> atom index from CONFIG \\
+\> {\tt ratm}   \> real    \> atom displacement from its position at $t~=~0$ \\
+{\bf record b} \\
+\> {\tt xxx}    \> real    \> x coordinate \\
+\> {\tt yyy}    \> real    \> y coordinate \\
+\> {\tt zzz}    \> real    \> z coordinate \\
 \end{tabbing}
 
 \subsection{The CFGMIN File}

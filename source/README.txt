@@ -1,4 +1,4 @@
-DL_POLY_4.01
+DL_POLY_4.02
 ============
 
 The source is in fully self-contained free formatted FORTRAN90+MPI2
@@ -171,4 +171,3 @@ README_CUDA.txt within the CUDA folder for further information.
 Contacts at STFC Daresbury Laboratory:
 --------------------------------------
 Dr. I.T. Todorov :: ilian.todorov@stfc.ac.uk
-Prof. W. Smith   :: bill.smith@stfc.ac.uk

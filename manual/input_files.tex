@@ -73,9 +73,10 @@ impact 1 2000 7.5 1.0 2.0 3.0
 # DENSITY VARIATION ARRAY BOOST
 densvar                  10 %
 
-# INDEX AND VERIFICATION BYPASS
+# INDEX AND VERIFICATION BYPASS AND NO TOPOLOGY REPORTING
 no index
 no strict
+no topology
 
 # INTERACTIONS BYPASS
 no electostatics
@@ -159,8 +160,12 @@ print                     2 steps
 replay
 trajectory          20 30 0
 
-# DEFECTS
+# DEFECTS TRAJECTORY - DEFECTS
 defects          40 15 0.75
+
+# DISPLACEMENTS TRAJECTORY - RSDDAT
+displacements    70 10 0.25
+
 
 # MSDTMP
 msdtmp                1000 100
@@ -225,9 +230,10 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf cut}off $f$                             \> set required long-ranged interactions\index{potential!electrostatics} cutoff, $r_{\rm cut}$, to $f$ \AA~ \\
 \>                                              \> \\
-\> {\bf defe}cts $i~j~f$                        \> write DEFECTS file with controls: \\
-\>                                              \> $i~=$ start timestep for dumping defects configurations (default $i~=~0$) \\
-\>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$)\\
+\> {\bf defe}cts $i~j~f$                        \> write defects trajectory file, DEFECTS, with controls: \\
+\>                                              \> $i~=$ start timestep for dumping defects configurations \\
+\>                                              \> \phantom{xxx} (default $i~=~0$) \\
+\>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$) \\
 \>                                              \> $f~=$ site-interstitial cutoff (default $f~=~{\rm Min}\left[0.75,r_{\rm cut}/3\right]$~\AA, \\
 \>                                              \> ${\rm Min}\left[0.3,r_{\rm cut}/3\right]$~\AA~$\le~f~\le~{\rm Min}\left[1.2,r_{\rm cut}/2\right]$~\AA) \\
 \>                                              \> \\
@@ -236,6 +242,12 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> useful for extremely non-equilibrium simulations, default $f~=~0$) \\
 \> {\bf distan}ce                               \> calculate electrostatic forces using Coulomb sum with \\
 \>                                              \> distance dependent dielectric\index{distance dependant dielectric} \\
+\>                                              \> \\
+\> {\bf disp}lacements $i~j~f$                  \> write displacements trajectory file, RSDDAT, with controls: \\
+\>                                              \> $i~=$ start timestep for dumping displacements configurations \\
+\>                                              \> \phantom{xxx} (default $i~=~0$) \\
+\>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$) \\
+\>                                              \> $f~=$ displacement qualifying cutoff (default $f~=~0.15~\AA$) \\
 \>                                              \> \\
 \> {\bf dump} $n$                               \> set restart data dump interval to $n$ steps (default $n~=~1000$) \\
 \>                                              \> \\
@@ -423,9 +435,11 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> {\bf (iii)} assume safe defaults for the general simulation cutoff, \\
 \>                                              \> temperature, pressure and job times \\
 \>                                              \> \\
-\> {\bf no vdw}                                 \> ignore short range (non-bonded)\index{potential!non-bonded} interactions in simulation \\
+\> {\bf no top}ology                            \> skip detailed topology reporting during read of FILED in OUTPUT \\
+\>                                              \> (no FILED replication), useful for large bio-chemcal simulations \\
 \>                                              \> \\
-\> {\bf optim}ise {\em string} $f$              \> minimise the system configuration at start during equilibration \\
+\> {\bf no vdw}                                 \> ignore short range (non-bonded)\index{potential!non-bonded} interactions in simulation \\
+\>                                              \> \\\> {\bf optim}ise {\em string} $f$              \> minimise the system configuration at start during equilibration \\
 \>                                              \> using conjugate gradient method (CGM) with respect to the \\
 \>                                              \> criterion, {\em string}, and tolerance, $f$, where the criterion can only \\
 \>                                              \> be {\em force} ($1~\le~f~\le~1000$, default $f~=~100$) or {\em energy} \\
@@ -472,8 +486,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> (with respect to the last equilibration step) \\
 \>                                              \> \\
 \> {\bf replay}                                 \> abort simulation and replay HISTORY to recalculate structural \\
-\>                                              \> properties such as RDFs, z-density profiles, defects detection \\
-\>                                              \> (execution holts if no property is specified) \\
+\>                                              \> properties such as RDFs, z-density profiles, defects and \\
+\>                                              \> displacements trajectories (execution halts if no property is specified) \\
 \>                                              \> \\
 \> {\bf restart}                                \> restart job from end point of previous run \\
 \>                                              \> (i.e. continue current simulation, REVOLD required) \\
@@ -898,7 +912,7 @@ The algorithms are developed in the \D routines {\sc pseudo\_vv} and
 (see Section \ref{reference-file}), which defines a reference MD
 cell with particles' positions defining the crystalline lattice
 sites.  If REFERENCE is not found the simulation will either \\
-{\bf ( i)} holt if the simulation has been restarted, i.e. is a
+{\bf ( i)} halt if the simulation has been restarted, i.e. is a
 continuation of an old one - the {\bf restart} option is used in
 CONTROL and the REVOLD (see Section \ref{revold-file}) file has
 been provided. \\
@@ -915,7 +929,7 @@ site-interstitial cutoff, $R_{def}$,
 \end{equation}
 with a default value of ${\rm Min}\left[0.75,r_{\rm cut}/3\right]$~\AA.
 (If the supplied value exceeds the limits the simulation execution
-will holt).  If a particle, $p$, is located in the vicinity of a
+will halt).  If a particle, $p$, is located in the vicinity of a
 site, $s$, defined by a sphere with its centre at this site and a
 radius, $R_{def}$, then the particle is a {\em first hand} claimee
 of $s$, and the site is not vacant.  Otherwise, the site is
@@ -946,6 +960,12 @@ likely to lead to slight overestimation of defects.
 If the simulation and reference MD cell have the same number of
 atoms then the total number of interstitials is always equal to the
 total number of defects.
+
+\item The {\bf disp}lacements option will trigger dump of atom
+displacements based on a qualifying cutoff in a trajectory like
+manner.  Dsiplacemets of atoms from their original position at
+the end of equlibration (the start of statistics), $t~=0~$, is
+carried out at each timestep.
 
 \item The tolerance for relaxed shell model {\bf rlxtol}, is a last
 resort option to aid shell relaxation of systems with very energetic
@@ -1975,6 +1995,9 @@ $U(\phi) = A~[1 - \cos(\phi)]$ \\
 {\bf xpln} & Extended planar & $k$ & $m$        & $\phi_{0}$ &
 $U(\phi) = {k \over 2}~[ 1 - \cos(m~\phi - \phi_{0}) ]$ \\
            &                 &     &            &            & \\
+{\bf calc} & Calcite         & $A$ & $B$        &            &
+$U(u)= Au^{2}+Bu^{4}$ \\
+           &                 &     &            &            & \\
 \hline
 \end{tabular}
 \vskip 1ex
@@ -1982,6 +2005,8 @@ $U(\phi) = {k \over 2}~[ 1 - \cos(m~\phi - \phi_{0}) ]$ \\
 \ddag $\phi$ is the $i$-$j$-$k$-$l$ inversion angle\index{potential!inversion}.
 \vskip 1ex
 \end{table}
+{\bf Note} that the calcite potential is not dependent on an angle $\phi$,
+but on a {\em displacement} $u$.  See section \ref{calcite} for details.
 
 \item {\bf finish} \\
 This directive is entered to signal to \D that the entry of the

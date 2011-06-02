@@ -1,6 +1,6 @@
-# Master makefile for DL_POLY_4.01 (developer version)
+# Master makefile for DL_POLY_4.02 (developer version)
 #
-# Author - I.J.Bush october 2010
+# Author - I.J.Bush june 2011
 #
 #
 # Define default settings
@@ -65,6 +65,11 @@ OBJ_ALL = \
 	export_atomic_data.o set_halo_particles.o \
 	rigid_bodies_stress.o \
 	read_history.o \
+	defects_reference_read.o defects_reference_read_parallel.o \
+	defects_reference_write.o \
+	defects_reference_export.o defects_reference_set_halo.o \
+	defects_link_cells.o defects1_write.o defects_write.o \
+	msd_write.o rsd_write.o \
 	impact.o core_shell_on_top.o \
 	deport_atomic_data.o pmf_units_set.o compress_book_intra.o \
 	relocate_particles.o \
@@ -114,12 +119,7 @@ OBJ_ALL = \
 	\
 	xscale.o core_shell_kinetic.o regauss_temperature.o \
 	\
-	defects_reference_read.o defects_reference_read_parallel.o \
-	defects_reference_write.o \
-	defects_reference_export.o defects_reference_set_halo.o \
-	defects_link_cells.o defects1_write.o defects_write.o \
-	\
-	msd_write.o z_density_collect.o statistics_collect.o \
+	z_density_collect.o statistics_collect.o \
 	system_revive.o \
 	rdf_compute.o z_density_compute.o statistics_result.o \
 	dl_poly.o
@@ -451,7 +451,7 @@ core_shell_on_top.o: comms_module.o config_module.o core_shell_module.o \
 core_shell_quench.o: comms_module.o config_module.o core_shell_module.o \
 	kinds_f90.o setup_module.o
 core_shell_relax.o: comms_module.o config_module.o core_shell_module.o \
-	kinds_f90.o setup_module.o statistics_module.o
+	kinds_f90.o kinetic_module.o setup_module.o statistics_module.o
 coul_cp_forces.o: config_module.o kinds_f90.o setup_module.o
 coul_dddp_forces.o: config_module.o kinds_f90.o setup_module.o
 coul_fscp_forces.o: comms_module.o config_module.o kinds_f90.o setup_module.o
@@ -530,8 +530,8 @@ inversions_module.o: kinds_f90.o setup_module.o
 io_module.o: comms_module.o kinds_f90.o netcdf_modul~.o
 kinetic_module.o: comms_module.o config_module.o kinds_f90.o \
 	rigid_bodies_module.o setup_module.o
-langevin_forces.o: comms_module.o config_module.o core_shell_module.o \
-	kinds_f90.o setup_module.o
+langevin_forces.o: comms_module.o config_module.o kinds_f90.o setup_module.o \
+	site_module.o
 langevin_module.o: kinds_f90.o setup_module.o
 link_cell_pairs.o: comms_module.o config_module.o domains_module.o \
 	kinds_f90.o setup_module.o
@@ -635,6 +635,8 @@ rigid_bodies_tags.o: comms_module.o config_module.o rigid_bodies_module.o \
 	setup_module.o
 rigid_bodies_widths.o: comms_module.o config_module.o kinds_f90.o \
 	rigid_bodies_module.o setup_module.o
+rsd_write.o: comms_module.o config_module.o io_module.o kinds_f90.o \
+	parse_module.o setup_module.o site_module.o statistics_module.o
 scale_config.o: config_module.o development_module.o kinds_f90.o
 scale_temperature.o: comms_module.o config_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o setup_module.o
@@ -684,7 +686,8 @@ two_body_forces.o: comms_module.o config_module.o ewald_module.o kinds_f90.o \
 	metal_module.o setup_module.o statistics_module.o vdw_module.o
 update_shared_units.o: comms_module.o domains_module.o kinds_f90.o \
 	setup_module.o
-vdw_forces.o: config_module.o kinds_f90.o setup_module.o vdw_module.o
+vdw_forces.o: comms_module.o config_module.o kinds_f90.o setup_module.o \
+	vdw_module.o
 vdw_generate.o: kinds_f90.o setup_module.o vdw_module.o
 vdw_lrc.o: comms_module.o config_module.o kinds_f90.o setup_module.o \
 	site_module.o vdw_module.o

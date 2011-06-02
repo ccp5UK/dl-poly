@@ -836,6 +836,72 @@ the virial is zero) and the matrix is symmetric.
 In \D inversion\index{potential!inversion} forces are handled by
 the routine {\sc inversions\_forces}.
 
+\subsection{The Calcite Four-Body Potential}
+\label{calcite}
+
+\begin{figure}[htbp]
+\begin{center}
+\vskip 1ex
+\centerline{\includegraphics[height=6.9cm]{calcite.eps}}
+\caption{The vectors of the calcite potential}
+\label{calcfig}
+\vskip 1ex
+\end{center}
+\end{figure}
+
+\index{potential!calcite} This potential \cite{rohl-03a} is designed to help
+maintain the planar structure of the carbonate anion $[CO_{3}]^{2-}$ in a
+similar manner to the planar inversion potential described above.  However,
+it is {\em not} an angular potential.  It is dependent on the perpendicular
+displacement ($u$) of an atom $a$ from a plane defined by three other atoms
+$b$, $c$, and $d$ (see Figure \ref{calcfig}) and has the form:
+\begin{equation}
+U_{abcd}(u)=Au^{2}+Bu^{4}~~, \label{calcite1}
+\end{equation}
+where the displacement $u$ is given by
+\begin{equation}
+u=\frac{\vek{r}_{ab}\cdot\vek{r}_{bc}\times\vek{r}_{bd}}{|\vek{r}_{bc}\times\vek{r}_{bd}|}~~. \label{calcite2}
+\end{equation}
+Vectors $\vek{r}_{ab}$,$\vek{r}_{ac}$ and $\vek{r}_{ad}$ define bonds between
+the central atom $a$ and the peripheral atoms $b$, $c$ and $d$.  Vectors
+$\vek{r}_{bc}$ and $\vek{r}_{bd}$ define the plane and are related to the bond
+vectors by
+\begin{eqnarray}
+\vek{r}_{bc}&=&\vek{r}_{ac}-\vek{r}_{ab} \nonumber \\
+\vek{r}_{bd}&=&\vek{r}_{ad}-\vek{r}_{ab}~~.
+\end{eqnarray}
+In what follows it is convenient to define the vector product appearing in
+both the numerator and denominator of equation (\ref{calcite2}) as the vector
+$\vek{w}_{cd}$ {\em vis.}
+\begin{equation}
+\vek{w}_{cd}=\vek{r}_{bc}\times\vek{r}_{bd}~~.
+\end{equation}
+We also define the quantity $\gamma(u)$ as
+\begin{equation}
+\gamma(u)=-(2Au+4Bu^{3})~~.
+\end{equation}
+The forces on the individual atoms due to the calcite potential are
+then given by
+\begin{eqnarray}
+\vek{f}_{a}&=&-\gamma(u)~\hat{\vek{w}}_{cd} \nonumber \\
+\vek{f}_{c}&=&\phantom{+}\vek{r}_{bd}\times(\vek{r}_{ab}-u\hat{\vek{w}}_{cd})~\gamma(u)/w_{cd} \nonumber \\
+\vek{f}_{d}&=&-\vek{r}_{bc}\times(\vek{r}_{ab}- u\hat{\vek{w}}_{cd})~\gamma(u)/w_{cd} \\
+\vek{f}_{b}&=&-(\vek{f}_{a}+\vek{f}_{c}+\vek{f}_{d})~~,\nonumber
+\end{eqnarray}
+where $w_{cd}=|\vek{w}_{cd}|$ and $\hat{\vek{w}}_{cd}=\vek{w}_{cd}/w_{cd}$.
+The virial contribution $\psi_{abcd}(u)$ is given by
+\begin{equation}
+\psi_{abcd}(u)=2Au^{2}+4Bu^{4}
+\end{equation}
+and the stress tensor contribution $\sigma_{abcd}^{\alpha\beta}(u)$ by
+\begin{equation}
+\sigma_{abcd}^{\alpha\beta}(u)=\frac{u~\gamma(u)}{w_{cd}^{2}}~w_{cd}^{\alpha}~w_{cd}^{\beta}~~.
+\end{equation}
+
+In \D the calcite\index{potential!calcite} forces are handled by the routine
+{\sc inversions\_forces}, which is a convenient {\em intramolecular} four-body
+force routine. However, it is manifestly {\em not} an inversion potential as such.
+
 \subsection{Tethering Forces}
 
 \D also allows atomic sites to be tethered\index{potential!tether}
@@ -895,8 +961,7 @@ where $\alpha$ and $\beta$ indicate the $x,y,z$ components.  The
 atomic stress tensor\index{stress tensor} derived in this way is
 symmetric.
 
-In \D tether forces are handled by the routine {\sc
-tethers\_forces}.
+In \D tether forces are handled by the routine {\sc tethers\_forces}.
 
 \section{The Intermolecular Potential Functions}
 
@@ -1225,7 +1290,7 @@ five point interpolation precedure.
 -\frac{\partial U_{1}}{\partial \vek{r_{k}}} &=& \sum_{j=1,j \ne k}^{N} \left\{
 2 (r_{kj}-c) (c_{0}+c_{1}r_{kj}+c_{2}r_{kj}^{2}+c_{3}r_{kj}^{3}+c_{4}r_{kj}^{4}) + \right. \nonumber \\
 & & \phantom{xxxxxxx} \left. (r_{kj}-c)^{2} (c_{1}+2c_{2}r_{kj}+3c_{3}r_{kj}^{2}+4c_{4}r_{kj}^{3}) \right\}
-\frac{\vek{r_{kj}}}{r_{kj}} \nonumber \\
+\frac{\vek{r_{kj}}}{r_{kj}} \\
 -\frac{\partial U_{2}}{\partial \vek{r_{k}}} &=& -\sum_{j=1,j \ne k}^{N}
 {A \over 2} \left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
 \left\{ 2(r_{kj}-d) + 4 B^{2} (r_{kj}-d)^{3}\right\} \frac{\vek{r_{kj}}}{r_{kj}}~~. \nonumber
