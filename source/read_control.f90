@@ -412,7 +412,7 @@ Subroutine read_control                           &
         l_tim = .true.
         If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% generate detailed timing !!! %%%"
 
-     Else If (word(1:5) == 'l_nor') Then
+     Else If (word(1:5) == 'l_tor') Then
 
         l_tor = .true.
         If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% Turn off production of REVCON & REVIVE !!! %%%"
