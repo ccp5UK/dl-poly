@@ -186,7 +186,7 @@ Subroutine read_field                      &
   If (idnode == 0) Then
      Open(Unit=nfield, File = 'FIELD', Status = 'old')
      Write(nrite,"(/,/,1x,'SYSTEM SPECIFICATION')")
-     If (.not. l_top) Write(nrite,"(/,1x,'detailed tiopology opted out')")
+     If (.not.l_top) Write(nrite,"(/,1x,'detailed tiopology opted out')")
   End If
 
 ! omit first line

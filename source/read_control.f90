@@ -23,7 +23,7 @@ Subroutine read_control                           &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov june 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -411,6 +411,11 @@ Subroutine read_control                           &
 
         l_tim = .true.
         If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% generate detailed timing !!! %%%"
+
+     Else If (word(1:5) == 'l_nor') Then
+
+        l_tor = .true.
+        If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% Turn off production of REVCON & REVIVE !!! %%%"
 
 ! read VDW options
 

@@ -554,7 +554,7 @@ Program dl_poly
 
 ! Save restart data (final)
 
-  Call system_revive                                                &
+  If (.not.l_tor) Call system_revive                                &
            (imcon,rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
            chit,cint,chip,eta,strcon,strpmf,stress)
 

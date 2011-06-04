@@ -1252,7 +1252,8 @@
 
 ! Save restart data in event of system crash
 
-        If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun) Call system_revive &
+        If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.l_tor)) &
+           Call system_revive                                       &
            (imcon,rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
            chit,cint,chip,eta,strcon,strpmf,stress)
 
