@@ -2,12 +2,17 @@
 !
 ! Function uni - generates a random number
 !
-! Subroutine gauss - constructs velocity arrays with a gaussian
-!                    distribution of unit variance (zero mean)
-!
 ! Subroutine box_mueller - generates gaussian random numbers of unit
 !                          variance (with zero mean and standard
 !                          variation of 1)
+!
+! Subroutine gauss_old - constructs velocity arrays with a gaussian
+!                        distribution of unit variance (zero mean) by
+!                        an approximation of the Central Limit Theorem
+!
+! Subroutine gauss - constructs velocity arrays with a gaussian
+!                    distribution of unit variance (zero mean) using
+!                    the box-mueller method
 !
 ! Subroutine erfcgen - generates interpolation tables for erfc and its
 !                      derivative
@@ -20,7 +25,10 @@
 ! Subroutine shellsort2 - sorts an integer array in ascending order,
 !                         keeping the original ranking of the array
 !
-! Subroutine dcell - calculates the dimensional properies of a
+! Function local_index - finds the local atom number given the global
+!                        atom number
+!
+! Subroutine dcell - calculates the dimensional properties of a
 !                    simulation cell
 !
 ! Subroutine invert - calculates the invert of a 3x3 matrix using
@@ -31,13 +39,15 @@
 !
 ! Subroutine pbcshift - calculates the minimum image of atoms within
 !                       a specified MD cell in accordance with the DD
-!                       boundary convetion
+!                       boundary convention
 !
-! Subroutine jacobi - diagonalises real symmetric matices by the
+! Subroutine jacobi - diagonalises real symmetric matrices by the
 !                     Jacobi method
 !
-! Subroutine matmul - calculates product of two 3x3 matrices written
+! Subroutine mat_mul - calculates product of two 3x3 matrices written
 !                     in a DL_POLY format as vectors
+!
+! Subroutine gtime - provides timing
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -95,7 +105,7 @@ Function uni()
   If (newjob .or. lseed) Then
      newjob = .false.
 
-! If no seeding is specified then default to DL_POLY schema
+! If no seeding is specified then default to DL_POLY scheme
 
      If (lseed) Then
 
@@ -175,62 +185,13 @@ Function uni()
 
 End Function uni
 
-Subroutine gauss(natms,vxx,vyy,vzz)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine for constructing velocity arrays with a gaussian
-! distribution of unit variance (zero mean), based on the method
-! described by Allen and Tildesley in "Computer Simulation of Liquids",
-! Clarendon Press 1987 P347
-!
-! copyright - daresbury laboratory
-! author    - w.smith july 1992
-! amended   - i.t.todorov august 2004
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use kinds_f90
-
-  Implicit None
-
-  Real( Kind = wp ), Parameter :: a1 = 3.949846138_wp
-  Real( Kind = wp ), Parameter :: a3 = 0.252408784_wp
-  Real( Kind = wp ), Parameter :: a5 = 0.076542912_wp
-  Real( Kind = wp ), Parameter :: a7 = 0.008355968_wp
-  Real( Kind = wp ), Parameter :: a9 = 0.029899776_wp
-
-  Integer,                             Intent( In    ) :: natms
-  Real( Kind = wp ), Dimension( 1:* ), Intent(   Out ) :: vxx,vyy,vzz
-
-  Integer           :: i
-  Real( Kind = wp ) :: uni,rrr,rr2
-
-  Do i=1,natms
-
-     rrr=(uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()-6.0_wp)/4.0_wp
-     rr2=rrr*rrr
-     vxx(i)=rrr*(a1+rr2*(a3+rr2*(a5+rr2*(a7+rr2*a9))))
-
-     rrr=(uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()-6.0_wp)/4.0_wp
-     rr2=rrr*rrr
-     vyy(i)=rrr*(a1+rr2*(a3+rr2*(a5+rr2*(a7+rr2*a9))))
-
-     rrr=(uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()+uni()-6.0_wp)/4.0_wp
-     rr2=rrr*rrr
-     vzz(i)=rrr*(a1+rr2*(a3+rr2*(a5+rr2*(a7+rr2*a9))))
-
-  End Do
-
-End Subroutine gauss
-
 Subroutine box_mueller(gauss1,gauss2)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 routine using the box-mueller method for generating
 ! gaussian random numbers of unit variance (with zero mean and standard
-! variation of 1).  Otherwise an approximation of the Central Limit
+! variation of 1).  Otherwise, an approximation of the Central Limit
 ! Theorem must be used: G = (1/A)*[Sum_i=1,N(Ri) - AN/2]*(12/N)^(1/2),
 ! where A is the number of outcomes from the random throw Ri and N is
 ! the number of tries.
@@ -251,10 +212,10 @@ Subroutine box_mueller(gauss1,gauss2)
   Logical           :: newjob = .true.
   Real( Kind = wp ) :: uni,ran0,ran1,ran2
 
-! make sure duni is initialised
+! make sure uni is initialised
 
   If (newjob) Then
-     newjob=.false.
+     newjob = .false.
      ran0=uni()
   End If
 
@@ -275,6 +236,156 @@ Subroutine box_mueller(gauss1,gauss2)
   gauss2=ran0*ran2
 
 End Subroutine box_mueller
+
+Subroutine gauss_old(natms,vxx,vyy,vzz)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine for constructing velocity arrays with a gaussian
+! distribution of unit variance (zero mean), based on the method
+! described by Allen and Tildesley in "Computer Simulation of Liquids",
+! Clarendon Press 1987, P347.  It is based on an approximation of the
+! Central Limit Theorem : G = (1/A)*[Sum_i=1,N(Ri) - AN/2]*(12/N)^(1/2),
+! where A is the number of outcomes from the random throw Ri and N is
+! the number of tries.
+!
+! copyright - daresbury laboratory
+! author    - w.smith july 1992
+! amended   - i.t.todorov july 2010
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+
+  Implicit None
+
+  Real( Kind = wp ), Parameter :: a1 = 3.949846138_wp
+  Real( Kind = wp ), Parameter :: a3 = 0.252408784_wp
+  Real( Kind = wp ), Parameter :: a5 = 0.076542912_wp
+  Real( Kind = wp ), Parameter :: a7 = 0.008355968_wp
+  Real( Kind = wp ), Parameter :: a9 = 0.029899776_wp
+
+  Integer,                             Intent( In    ) :: natms
+  Real( Kind = wp ), Dimension( 1:* ), Intent(   Out ) :: vxx,vyy,vzz
+
+  Integer           :: i,j
+  Real( Kind = wp ) :: uni,rrr,rr2
+
+  Do i=1,natms
+     rrr=0.0_wp
+     Do j=1,12
+        rrr=rrr+uni()
+     End Do
+     rrr=(rrr-6.0_wp)/4.0_wp
+     rr2=rrr*rrr
+     vxx(i)=rrr*(a1+rr2*(a3+rr2*(a5+rr2*(a7+rr2*a9))))
+
+     rrr=0.0_wp
+     Do j=1,12
+        rrr=rrr+uni()
+     End Do
+     rrr=(rrr-6.0_wp)/4.0_wp
+     rr2=rrr*rrr
+     vyy(i)=rrr*(a1+rr2*(a3+rr2*(a5+rr2*(a7+rr2*a9))))
+
+     rrr=0.0_wp
+     Do j=1,12
+        rrr=rrr+uni()
+     End Do
+     rrr=(rrr-6.0_wp)/4.0_wp
+     rr2=rrr*rrr
+     vzz(i)=rrr*(a1+rr2*(a3+rr2*(a5+rr2*(a7+rr2*a9))))
+  End Do
+
+End Subroutine gauss_old
+
+Subroutine gauss(natms,vxx,vyy,vzz)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine for constructing velocity arrays with a gaussian
+! distribution of unit variance (zero mean), based on the box-mueller
+! method
+!
+! copyright - daresbury laboratory
+! author    - w.smith july 2010
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+
+  Integer,                             Intent( In    ) :: natms
+  Real( Kind = wp ), Dimension( 1:* ), Intent(   Out ) :: vxx,vyy,vzz
+
+  Integer           :: i,j
+  Real( Kind = wp ) :: gauss1,gauss2
+
+  Do i=1,(natms+1)/2
+     j=natms+1-i
+
+     Call box_mueller(gauss1,gauss2)
+     vxx(i)=gauss1
+     vxx(j)=gauss2
+
+     Call box_mueller(gauss1,gauss2)
+     vyy(i)=gauss1
+     vyy(j)=gauss2
+
+     Call box_mueller(gauss1,gauss2)
+     vzz(i)=gauss1
+     vzz(j)=gauss2
+  End Do
+
+End Subroutine gauss
+
+Subroutine erfcgen(rcut,alpha,mxgrid,erc,fer)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine for generating interpolation tables for erfc and its
+! derivative - for use with Ewald sum
+!
+! copyright - daresbury laboratory
+! author    - t.forester december 1994
+! amended   - i.t.todorov august 2004
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+
+  Implicit None
+
+  Real( Kind = wp ), Parameter :: sqrpi = 1.7724538509055160e0_wp
+  Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
+  Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
+  Real( Kind = wp ), Parameter :: a3 =  1.421413741_wp
+  Real( Kind = wp ), Parameter :: a4 = -1.453152027_wp
+  Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
+  Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
+
+  Integer,                                  Intent( In    ) :: mxgrid
+  Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha
+  Real( Kind = wp ), Dimension( 1:mxgrid ), Intent(   Out ) :: erc,fer
+
+  Integer           :: i
+  Real( Kind = wp ) :: drewd,exp1,rrr,rsq,tt
+
+! look-up tables for real space part of ewald sum
+
+  drewd = rcut/Real(mxgrid-4,wp)
+
+  Do i=1,mxgrid
+     rrr = Real(i,wp)*drewd
+     rsq = rrr*rrr
+
+     tt = 1.0_wp/(1.0_wp + pp*alpha*rrr)
+     exp1 = Exp(-(alpha*rrr)**2)
+
+     erc(i) = tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1/rrr
+     fer(i) = (erc(i) + 2.0_wp*(alpha/sqrpi)*exp1)/rsq
+  End Do
+
+End Subroutine erfcgen
 
 Function match(n,ind_top,list)
 
@@ -465,7 +576,7 @@ Subroutine dcell(aaa,bbb)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine to calculate the dimensional properies of a
+! dl_poly_4 subroutine to calculate the dimensional properties of a
 ! simulation cell specified by the input 3x3 matrix aaa (cell vectors in
 ! rows, the matrix is in the form of one dimensional reading
 ! (row1,row2,row3).
@@ -515,9 +626,9 @@ Subroutine dcell(aaa,bbb)
   bxc2=aaa(6)*aaa(7)-aaa(4)*aaa(9)
   bxc3=aaa(4)*aaa(8)-aaa(5)*aaa(7)
 
-  cxa1=aaa(8)*aaa(3)-aaa(2)*aaa(9)
-  cxa2=aaa(1)*aaa(9)-aaa(3)*aaa(7)
-  cxa3=aaa(2)*aaa(7)-aaa(1)*aaa(8)
+  cxa1=aaa(8)*aaa(3)-aaa(9)*aaa(2)
+  cxa2=aaa(9)*aaa(1)-aaa(7)*aaa(3)
+  cxa3=aaa(7)*aaa(2)-aaa(8)*aaa(1)
 
 ! calculate volume of cell
 
@@ -630,9 +741,9 @@ Subroutine images(imcon,cell,pairs,xxx,yyy,zzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for calculating the minimum image distance of
+! dl_poly_4 subroutine for calculating the minimum image vector of
 ! atom pairs within a specified MD cell.  The cell matrix is in the form
-! of one dimensional array reading (row1,row2,row3)
+! of one dimensional array reading (row1,row2,row3).
 !
 ! Image conditions
 !
@@ -826,7 +937,7 @@ Subroutine pbcshift(imcon,cell,natms,xxx,yyy,zzz)
 !
 ! dl_poly_4 subroutine for calculating the minimum image of atoms within
 ! a specified MD cell in accordance with the domain decomposition
-! boundary convetion for fractional coordinates: every coordinate must
+! boundary convention for fractional coordinates: every coordinate must
 ! be intervaled as [-0.5,+0.5)
 !
 ! Note: in all cases the centre of the MD cell is at (0,0,0)
@@ -1027,7 +1138,7 @@ Subroutine pbcshift(imcon,cell,natms,xxx,yyy,zzz)
         STOP
      End If
 
-     det = 1.0_wp/det
+     det=1.0_wp/det
 
      rcell(1) =  det*cell(5)
      rcell(2) = -det*cell(2)
@@ -1086,10 +1197,10 @@ Subroutine jacobi(n,aaa,vvv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! Diagonalisation of real square symmetric matices by the Jacobi method:
+! Diagonalisation of real square symmetric matrices by the Jacobi method:
 ! a sequence of Jacobi rotations
 !
-! Users must ensure the symmetry of the input martix
+! Users must ensure the symmetry of the input matrix
 !
 ! input parameters: n   - matrix dimension
 !                   aaa - the matrix to be diagonalised
@@ -1114,9 +1225,8 @@ Subroutine jacobi(n,aaa,vvv)
   Real( Kind = wp ), Dimension ( 1:n , 1:n ), Intent( InOut ) :: aaa,vvv
 
   Real( Kind = wp ), Parameter :: rho = 1.0e-20_wp
-
   Logical           :: pass
-  Integer           :: i,j,k,l
+  Integer           :: i,j,k ! ,l
   Real( Kind = wp ) :: zero_plus
   Real( Kind = wp ) :: scale,test,                      &
                        v_d_hor,v_d_off,v_d_ver,v_d_mid, &
@@ -1129,7 +1239,7 @@ Subroutine jacobi(n,aaa,vvv)
 !  l=0 ! Iteration counter
 
 ! Rescale (lower triangle) matrix for optimal accuracy
-! by the largest by magnitude diagonal elenment
+! by the largest by magnitude diagonal element
 
   scale=0.0_wp
   Do i=1,n
@@ -1181,10 +1291,10 @@ Subroutine jacobi(n,aaa,vvv)
 
 ! Recycle until moving tolerance satisfied
 
-     Do while (pass)
+     Do While (pass)
         pass=.false.
 
-! Loop arround the strictly lower triangle matrix
+! Loop around the strictly lower triangle matrix
 
         Do i=2,n
            Do j=1,i-1
@@ -1244,7 +1354,7 @@ Subroutine jacobi(n,aaa,vvv)
 
 End Subroutine jacobi
 
-Subroutine matmul(aaa,bbb,ccc)
+Subroutine mat_mul(aaa,bbb,ccc)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1261,20 +1371,20 @@ Subroutine matmul(aaa,bbb,ccc)
 
   Real( Kind = wp ), Intent( In    ) :: aaa(1:9),bbb(1:9)
   Real( Kind = wp ), Intent(   Out ) :: ccc(1:9)
-  
+
   ccc(1)=aaa(1)*bbb(1)+aaa(4)*bbb(2)+aaa(7)*bbb(3)
   ccc(2)=aaa(2)*bbb(1)+aaa(5)*bbb(2)+aaa(8)*bbb(3)
   ccc(3)=aaa(3)*bbb(1)+aaa(6)*bbb(2)+aaa(9)*bbb(3)
-  
+
   ccc(4)=aaa(1)*bbb(4)+aaa(4)*bbb(5)+aaa(7)*bbb(6)
   ccc(5)=aaa(2)*bbb(4)+aaa(5)*bbb(5)+aaa(8)*bbb(6)
   ccc(6)=aaa(3)*bbb(4)+aaa(6)*bbb(5)+aaa(9)*bbb(6)
-  
+
   ccc(7)=aaa(1)*bbb(7)+aaa(4)*bbb(8)+aaa(7)*bbb(9)
   ccc(8)=aaa(2)*bbb(7)+aaa(5)*bbb(8)+aaa(8)*bbb(9)
   ccc(9)=aaa(3)*bbb(7)+aaa(6)*bbb(8)+aaa(9)*bbb(9)
 
-End Subroutine matmul
+End Subroutine mat_mul
 
 Subroutine gtime(t)
 

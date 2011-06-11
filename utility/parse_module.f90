@@ -10,19 +10,19 @@ Module parse_module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Implicit None
- 
-  Public :: strip_blanks, lower_case, get_word, word_2_real
+
+  Public :: tabs_2_blanks, strip_blanks, lower_case, get_word, word_2_real
 
 Contains
 
-  Subroutine strip_blanks(record)
+  Subroutine tabs_2_blanks(record)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine to strip blanks from both ends of string
+! dl_poly_4 subroutine to convert tabs into blanks in a string
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2004
+! author    - i.t.todorov may 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,29 +30,30 @@ Contains
 
     Character( Len = * ), Intent( InOut ) :: record
 
-    Integer :: i,j,k
+    Integer              :: i
 
-    record = Trim(record)
-
-    k = Len(record)
-    j = 0
-
-    Do i=1,k
-       If (record(i:i) /= ' ') Then
-          j=i
-          Go To 10
-       End If
+    Do i=1,Len_Trim(record)
+       If (record(i:i) == Achar(9)) record(i:i) = ' '
     End Do
 
-10  Continue
+  End Subroutine tabs_2_blanks
 
-    If (j > 1) Then
-       Do i=j,k
-          record(i-j+1:i-j+1) = record(i:i)
-          record(i:i) = ' '
-       End Do
-       record = Trim(record)
-    End If
+  Subroutine strip_blanks(record)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine to strip blanks from either end of a string
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov july 2009
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Implicit None
+
+    Character( Len = * ), Intent( InOut ) :: record
+
+    record = Trim(Adjustl(record))
 
   End Subroutine strip_blanks
 
@@ -163,7 +164,7 @@ Contains
     rec_len  = Len_Trim(record)
     word_len = Len(word)
 
-! Initialise counters and word, and keep-transfering boolean
+! Initialise counters and word, and keep-transferring boolean
 
     rec_ind  = 0
     word_ind = 0
@@ -172,7 +173,7 @@ Contains
 
     transfer = .true.
 
-! Start transfering
+! Start transferring
 
     Do While (transfer)
 
@@ -214,22 +215,22 @@ Contains
 
   End Subroutine get_word
 
-  Function word_2_real(word,def)
+  Function word_2_real(word,def,report)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 function for extracting real numbers from a character string
-! with no blanks between the charaters of the number.  The optional
+! with no blanks between the characters of the number.  The optional
 ! argument 'def' suppresses error reporting to return a safe value
 !
-! (1) Numbers as 2.0e-3/3.d-04 are processible as only one slash is
-!     permited in the string!
+! (1) Numbers as 2.0e-3/3.d-04 are processable as only one slash is
+!     permitted in the string!
 ! (2) Numbers cannot start or finish with a slash!
 ! (3) A blank string is read as zero!
 ! (4) Numbers must sensible!
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2008
+! author    - i.t.todorov november 2009
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -239,10 +240,14 @@ Contains
 
     Character( Len = * ), Intent( In    )           :: word
     Real( kind = wp ),    Intent( In    ), Optional :: def
+    Logical,              Intent( In    ), Optional :: report
 
-    Character( Len = 20 ) :: forma
+    Character( Len = 40 ) :: forma
+    Logical               :: l_report = .true.
     Integer               :: word_end,slash_position
     Real( kind = wp )     :: word_2_real,denominator
+
+    If (Present(report)) l_report = report
 
     denominator = 1.0_wp
 
@@ -263,26 +268,26 @@ Contains
     If (slash_position > 0) Then
        forma = ' '
        Write(forma, 20) word_end - slash_position
-       Read(word(slash_position + 1:word_end), forma, Err = 30) denominator
+       Read(word(slash_position + 1:word_end), forma, Err=30) denominator
        word_end = slash_position - 1
     End If
 
     forma = ' '
     Write(forma,20) word_end
-    Read(word(1:word_end), forma, Err = 30) word_2_real
+    Read(word(1:word_end), forma, Err=30) word_2_real
     word_2_real = word_2_real / denominator
 
     Return
 
-20  Format('(f',i4,'.0)')
+20  Format('(f',i0,'.0)')
 30  Continue
     If (Present(def)) Then
        word_2_real = def
-       Write(*,'(1x,3a,g20.10,a)') &
+       If (l_report) Write(Unit = *, Fmt = '(1x,3a,g20.10,a)') &
           "*** warning - word_2_real defaulted word # ", word(1:word_end), " # to number # ", def, " # ***"
     Else
        word_2_real = 0.0_wp
-       Write(*,'(1x,3a)') &
+       Write(Unit = *, Fmt = '(1x,3a)') &
           "*** warning - word_2_real exepected to read a number but found # ", word(1:word_end), " # ***"
     End If
 
@@ -294,7 +299,7 @@ Contains
 !
 ! dl_poly_4 function for truncating real numbers to the approximate
 ! precision in decimal digits for the +/-0.___E+/-___ representation,
-! which is 2*kind(real)-1 or 2*wp-1, as defined by kinds_f90 (wp)
+! which is 2*Bit_Size(real)-1
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov october 2005
@@ -308,7 +313,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: r
 
     Logical               , Save :: newjob = .true.
-    Character( Len = 20  ), Save :: forma  = ' '
+    Character( Len = 40  ), Save :: forma  = ' '
     Integer               , Save :: k      = 0
 
     Character( Len = 100 ) :: word
@@ -318,18 +323,18 @@ Contains
     If (newjob) Then
        newjob = .false.
 
-       k = 2*wp + 2
+       k = 64/4 - 1! Bit_Size(0.0_wp)/4 - 1
 
-       Write(forma ,10) k+7,k
-10     Format('(0p,e',i4,'.',i4,')')
+       Write(forma ,10) k+10,k
+10     Format('(0p,e',i0,'.',i0,')')
     End If
 
     word = ' '
     Write(word,forma) r
+    Call lower_case(word)
     word_end = Len_Trim(word)
     e_position = 0
-    e_position = Index(word,'E')
-    If (e_position == 0) e_position = Index(word,'e')
+    e_position = Index(word,'e')
     Do i=e_position-3,word_end
        If (i+3 <= word_end) Then
           word(i:i)=word(i+3:i+3)

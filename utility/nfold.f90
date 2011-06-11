@@ -38,6 +38,8 @@ Program nfold
 ! to a format from above by a nx*ny*nz volumetric multiplication
 ! of the MD cell contents along the MD cell vectors
 !
+! f95 -o nfold.exe kinds_f90.f90 parse_module.f90 numeric_container.f90 nfold.f90
+!
 ! copyright - daresbury laboratory
 ! authors   - w.smith & i.t.todorov june 2009
 !

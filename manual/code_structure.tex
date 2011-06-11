@@ -207,6 +207,11 @@ vdw\_lrcmetal\_lrc system\_init \\
 export\_atomic\_data set\_halo\_particles \\
 rigid\_bodies\_stress \\
 read\_history \\
+defects\_reference\_read defects\_reference\_read\_parallel \\
+defects\_reference\_write \\
+defects\_reference\_export defects\_reference\_set\_halo \\
+defects\_link\_cells defects1\_write defects\_write \\
+msd\_write rsd\_write \\
 impact core\_shell\_on\_top \\
 deport\_atomic\_data pmf\_units\_set compress\_book\_intra \\
 relocate\_particles \\
@@ -231,12 +236,7 @@ nvt\_e0\_scl nvt\_e1\_scl nvt\_b0\_scl nvt\_b1\_scl \\
 \\
 xscale core\_shell\_kinetic regauss\_temperature \\
 \\
-defects\_reference\_read defects\_reference\_read\_parallel \\
-defects\_reference\_write \\
-defects\_reference\_export defects\_reference\_set\_halo \\
-defects\_link\_cells defects1\_write defects\_write \\
-\\
-msd\_write z\_density\_collect statistics\_collect \\
+z\_density\_collect statistics\_collect \\
 system\_revive \\
 rdf\_compute z\_density\_compute statistics\_result \\
 dl\_poly}
@@ -343,7 +343,7 @@ metal\_ld\_export parallel\_fft exchange\_grid \\
 defects\_reference\_write \\
 defects\_reference\_read\_parallel defects\_reference\_read \\
 defects\_reference\_export defects\_write defects1\_write \\
-trajectory\_write msd\_write system\_revive}. \\
+trajectory\_write msd\_write rsd\_write system\_revive}. \\
 The rest of the files that use MPI functionality in any way make
 implicit calls via generic functions developed in {\sc comms\_module}.
 
