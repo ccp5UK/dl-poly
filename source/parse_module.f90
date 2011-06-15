@@ -46,11 +46,11 @@ Contains
 ! broadcast it to all other nodes
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2004
+! author    - i.t.todorov june 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use comms_module, Only : idnode,mxnode,gsync,gcheck,gsum
+    Use comms_module
 
     Implicit None
 
@@ -82,7 +82,8 @@ Contains
           End Do
 
           Call gcheck(safe)
-          Call gsum(line)
+
+          Call MPI_BCAST(line(1:rec_len), rec_len, MPI_INTEGER, 0, dlp_comm_world, ierr)
        End If
 
        Go To 200
@@ -99,7 +100,7 @@ Contains
 
        line = 0
 
-       Call gsum(line)
+       Call MPI_BCAST(line(1:rec_len), rec_len, MPI_INTEGER, 0, dlp_comm_world, ierr)
 
        Do i=1,rec_len
           record(i:i) = Char(line(i))

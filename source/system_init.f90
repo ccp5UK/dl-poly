@@ -15,7 +15,7 @@ Subroutine system_init                                       &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,  Only : idnode,mxnode,gsum,gcheck
+  Use comms_module
   Use setup_module
   Use site_module,   Only : ntpatm,numtyp,dens
   Use config_module, Only : volm,natms,ltg,ltype,xxx,yyy,zzz
@@ -44,7 +44,7 @@ Subroutine system_init                                       &
 
   Logical           :: l_tmp
   Integer           :: i,j,k,keyio,i_tmp,gidx
-  Real( Kind = wp ) :: dnstep,dnumac,dnumrd,dnumzd,r_mxnode,dgidx,xyz(1:6)
+  Real( Kind = wp ) :: dnstep,dnumac,dnumrd,dnumzd,r_mxnode,xyz(0:6)
 
 
   If (newjob .and. l_rin) Then
@@ -135,7 +135,7 @@ Subroutine system_init                                       &
            Read(Unit=nrest, IOStat=keyio, End=100) xyz(1),xyz(2),xyz(3)
         End If
      End If
-     If (mxnode > 1) Call gsum(xyz(1:3))
+     If (mxnode > 1) Call MPI_BCAST(xyz(1:3), 3, wp_mpi, 0, dlp_comm_world, ierr)
      If (Abs(xyz(1)-rcut) > 1.0e-6_wp .or. Abs(xyz(2)-rbin) > 1.0e-6_wp .or. &
          Nint(xyz(3)) /= megatm) Call error(519)
 
@@ -185,16 +185,16 @@ Subroutine system_init                                       &
 
 ! calculate virtot = virtot-vircon-virpmf
 
-        virtot = (stpval(12)-stpval(17)-stpval(26)) * engunit
         vircon = stpval(17) * engunit
         virpmf = stpval(26) * engunit
+        virtot = (stpval(12)-stpval(17)-stpval(26)) * engunit
      End If
 
 100  Continue
 
 ! If 'restart' is impossible go to 'restart noscale' and reinitialise
 
-     If (mxnode > 1) Call gsum(keyio)
+     If (mxnode > 1) Call MPI_BCAST(keyio, 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
      If (keyio /= 0) Then
         If (idnode == 0) Then
            Call warning(190,0.0_wp,0.0_wp,0.0_wp)
@@ -204,41 +204,41 @@ Subroutine system_init                                       &
         Go To 50
      End If
 
-! broadcast stored variables via a global sum
+! broadcast stored variables
 
      If (mxnode > 1) Then
-        Call gsum(nstep)
-        Call gsum(numacc)
-        Call gsum(numrdf)
-        Call gsum(numzdn)
-        Call gsum(time)
-        Call gsum(tmst)
-        Call gsum(chit)
-        Call gsum(chip)
-        Call gsum(cint)
-        Call gsum(eta)
-        Call gsum(stpval)
-        Call gsum(stpvl0)
-        Call gsum(sumval)
-        Call gsum(ssqval)
-        Call gsum(zumval)
-        Call gsum(ravval)
+        Call MPI_BCAST(nstep,                 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+        Call MPI_BCAST(numacc,                1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+        Call MPI_BCAST(numrdf,                1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+        Call MPI_BCAST(numzdn,                1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+        Call MPI_BCAST(time,                  1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(tmst,                  1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(chit,                  1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(chip,                  1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(cint,                  1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(eta(1:9),              9, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(stpval(1:mxnstk), mxnstk, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(stpvl0(1:mxnstk), mxnstk, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(sumval(1:mxnstk), mxnstk, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(ssqval(1:mxnstk), mxnstk, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(zumval(1:mxnstk), mxnstk, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(ravval(1:mxnstk), mxnstk, wp_mpi,      0, dlp_comm_world, ierr)
         Do k=1,mxnstk
-           Call gsum(stkval(1:mxstak,k))
+           Call MPI_BCAST(stkval(1:mxstak,k), mxstak, wp_mpi,      0, dlp_comm_world, ierr)
         End Do
-        Call gsum(strcon)
-        Call gsum(strpmf)
-        Call gsum(stress)
-        Call gsum(virtot)
-        Call gsum(vircon)
-        Call gsum(virpmf)
+        Call MPI_BCAST(strcon(1:9),           9, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(strpmf(1:9),           9, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(stress(1:9),           9, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(vircon,                1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(virpmf,                1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(virtot,                1, wp_mpi,      0, dlp_comm_world, ierr)
 
 ! rdf table - broadcast and normalise
 
         r_mxnode=1.0_wp/Real(mxnode,wp)
         If (lrdf) Then
            Do k=1,mxrdf
-              Call gsum(rdf(1:mxgrdf,k))
+              Call MPI_BCAST(rdf(1:mxgrdf,k), mxgrdf, wp_mpi, 0, dlp_comm_world, ierr)
 
               Do j=1,mxgrdf
                  rdf(j,k) = rdf(j,k)*r_mxnode
@@ -250,7 +250,7 @@ Subroutine system_init                                       &
 
         If (lzdn) Then
            Do k=1,mxatyp
-              Call gsum(zdens(1:mxgrdf,k))
+              Call MPI_BCAST(zdens(1:mxgrdf,k), mxgrdf, wp_mpi, 0, dlp_comm_world, ierr)
 
               Do j=1,mxgrdf
                  zdens(j,k) = zdens(j,k)*r_mxnode
@@ -281,25 +281,21 @@ Subroutine system_init                                       &
      i_tmp=0
 
      Do k=1,megatm
-        dgidx=0.0_wp
         xyz=0.0_wp
 
         If (idnode == 0) Then
            If (l_rin) Then
               Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) &
-                  dgidx,xyz(1),xyz(2),xyz(3),xyz(4),xyz(5),xyz(6)
+                  xyz(0),xyz(1),xyz(2),xyz(3),xyz(4),xyz(5),xyz(6)
            Else
               Read(Unit=nrest, IOStat=keyio) &
-                  dgidx,xyz(1),xyz(2),xyz(3),xyz(4),xyz(5),xyz(6)
+                  xyz(0),xyz(1),xyz(2),xyz(3),xyz(4),xyz(5),xyz(6)
            End If
         End If
         If (keyio /= 0) i_tmp=1
 
-        If (mxnode > 1) Then
-           Call gsum(dgidx)
-           Call gsum(xyz)
-        End If
-        gidx=Nint(dgidx)
+        If (mxnode > 1) Call MPI_BCAST(xyz(0:6), 7, wp_mpi, 0, dlp_comm_world, ierr)
+        gidx=Nint(xyz(0))
 
 ! assign particle initial positions and final displacements
 ! to the corresponding domains
@@ -319,7 +315,7 @@ Subroutine system_init                                       &
 
 ! If 'restart' is impossible go to 'restart noscale' and reinitialise
 
-     If (mxnode > 1) Call gsum(i_tmp)
+     If (mxnode > 1) Call MPI_BCAST(i_tmp, 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
      If (i_tmp /= 0) Then
         If (idnode == 0) Then
            Call warning(190,0.0_wp,0.0_wp,0.0_wp)
@@ -336,25 +332,21 @@ Subroutine system_init                                       &
         i_tmp=0 ! Error accumulator: keyio is still zero otherwise we cannot get here
 
         Do k=1,megatm
-           dgidx=0.0_wp
-           xyz(1:3)=0.0_wp
+           xyz(0:3)=0.0_wp
 
            If (idnode == 0) Then
               If (l_rin) Then
                  Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) &
-                     dgidx,xyz(1),xyz(2),xyz(3)
+                     xyz(0),xyz(1),xyz(2),xyz(3)
               Else
                  Read(Unit=nrest, IOStat=keyio) &
-                     dgidx,xyz(1),xyz(2),xyz(3)
+                     xyz(0),xyz(1),xyz(2),xyz(3)
               End If
            End If
            If (keyio /= 0) i_tmp=1
 
-           If (mxnode > 1) Then
-              Call gsum(dgidx)
-              Call gsum(xyz)
-           End If
-           gidx=Nint(dgidx)
+           If (mxnode > 1) Call MPI_BCAST(xyz(0:3), 4, wp_mpi, 0, dlp_comm_world, ierr)
+           gidx=Nint(xyz(0))
 
 ! assign random particle forces to the corresponding domains
 
@@ -374,11 +366,11 @@ Subroutine system_init                                       &
            End If
         End If
         If (keyio /= 0) i_tmp=1
-        If (mxnode > 1) Call gsum(fpl(1:9))
+        If (mxnode > 1) Call MPI_BCAST(fpl(1:9), 9, wp_mpi, 0, dlp_comm_world, ierr)
 
 ! If anything is wrong
 
-        If (mxnode > 1) Call gsum(i_tmp)
+        If (mxnode > 1) Call MPI_BCAST(i_tmp, 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
         If (i_tmp /= 0) Then
            If (idnode == 0) Then
               Call warning(190,0.0_wp,0.0_wp,0.0_wp)

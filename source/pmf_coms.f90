@@ -150,7 +150,7 @@ Subroutine pmf_coms(imcon,indpmf,pxx,pyy,pzz)
         buffer=0.0_wp
      End If
 
-! Check if a PMF unit has a diameter > of the minumum of all half-cell width
+! Check if a PMF unit has a diameter > of the minimum of all half-cell width
 
      If (mxnode > 1) Call gcheck(safe(2))
      If (.not.safe(2)) Call error(492)

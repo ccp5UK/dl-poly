@@ -7,12 +7,12 @@ Subroutine vdw_table_read(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1994
-! amended   - i.t.todorov august 2004
+! amended   - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module, Only : idnode,mxnode,gsum
+  Use comms_module
   Use setup_module, Only : ntable,nrite,mxgrid,mxbuff,engunit
   Use site_module,  Only : ntpatm,unqatm
   Use vdw_module,   Only : ntpvdw,lstvdw,ltpvdw,prmvdw,gvdw,vvdw
@@ -140,7 +140,7 @@ Subroutine vdw_table_read(rvdw)
               buffer((i-1)*4+1:(i-1)*4+l)=0.0_wp
            End If
         End Do
-        If (mxnode > 1) Call gsum(buffer(1:ngrid))
+        If (mxnode > 1) Call MPI_BCAST(buffer(1:ngrid), ngrid, wp_mpi, 0, dlp_comm_world, ierr)
 
 ! reconstruct arrays using 3pt interpolation
 
@@ -175,7 +175,7 @@ Subroutine vdw_table_read(rvdw)
               buffer((i-1)*4+1:(i-1)*4+l)=0.0_wp
            End If
         End Do
-        If (mxnode > 1) Call gsum(buffer(1:ngrid))
+        If (mxnode > 1) Call MPI_BCAST(buffer(1:ngrid), ngrid, wp_mpi, 0, dlp_comm_world, ierr)
 
 ! reconstruct arrays using 3pt interpolation
 

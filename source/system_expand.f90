@@ -10,7 +10,7 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
 ! supported image conditions: 1,2,3, 6(nz==1)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2011
+! author    - i.t.todorov may 2011
 ! contrib   - w.smith, i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -323,14 +323,11 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
               If (mxnode > 1) Call gsum(xyz0)
            End If
 
-           If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
-               io_write == IO_WRITE_SORTED_MASTER) idm=0 ! Initialise node number
-
 ! If a local atom has a global index nattot
 
            If (lsa(indatm) == nattot) Then
 
-! Determine sending node if diffrent from zero for io_write = 2 or 12
+! Determine sending node if different from zero for UN/SORTED MASTER
 
               If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
                   io_write == IO_WRITE_SORTED_MASTER) Then
@@ -422,14 +419,13 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
 
               If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
                   io_write == IO_WRITE_SORTED_MASTER) Then
-
-                 idm=idnode
+                 idm=0 ! Initialise node number
                  If (mxnode > 1) Call gsum(idm)
 
                  Do iz=1,nz
                     Do iy=1,ny
                        Do ix=1,nx
-                          rec   = offset + Int(2,ip)*(Int(i_xyz(ix,iy,iz),ip)*Int(setspc,ip) + Int(m,ip))
+                          rec = offset + Int(2,ip)*(Int(i_xyz(ix,iy,iz),ip)*Int(setspc,ip) + Int(m,ip))
 
                           If (idnode == 0) Then
                              Call MPI_RECV(record2,recsz,MPI_CHARACTER,idm,Traject_tag,dlp_comm_world,status,ierr)
@@ -468,10 +464,10 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
      End If
 
      Call io_write_sorted_file( fh, 0, IO_RESTART, top_skip, at_scaled, &
-          ltg_scaled, atmnam_scaled,                                                  &
-          (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /),                                   &
-          x_scaled, y_scaled, z_scaled,                                               &
-          (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /),                                   &
+          ltg_scaled, atmnam_scaled,                                    &
+          (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /),                     &
+          x_scaled, y_scaled, z_scaled,                                 &
+          (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /),                     &
           (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /), ierr )
 
      If ( ierr /= 0 ) Then
