@@ -176,7 +176,7 @@ Subroutine error(kode)
 
      Else If (kode ==   45) Then
 
-        Write(nrite,'(/,1x,a)') 'error - too many atoms in CONFIG file'
+        Write(nrite,'(/,1x,a)') 'error - too many atoms in CONFIG file or per domain'
 
      Else If (kode ==   46) Then
 
