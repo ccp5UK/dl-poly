@@ -607,12 +607,18 @@ these works, send the problem to us.
 
 \subsubsection*{\underline{Message 58}: error - number of atoms in system not conserved}
 
-An atom has been lost in transfer between nodes.  This should
-never happen!
+Either and an atom has been lost in transfer between nodes/domains.
 
 \noindent \underline{\em Action}:
 
-Big trouble.  Report problem to authors immediately.
+If this error is issued at start before timestep zero in a simulation
+then it your CONFIG file or the first frame of your HISTRORY (replayed)
+is corrupted.  Check out for mangled/blank lines in CONFIG/HISTORY, or
+blank line/s at the end or missing End of Line character in CONFIG.  If
+this error is issued after timestep zero in a simulation that is not
+replaying HISTORY then it is big trouble and you may report that to the
+authors.  If it is during replaying HISTORY then your HISTORY file has
+corrupted frames and you must correct it before tring again.
 
 \subsubsection*{\underline{Message 59}: error - too many core-shell units per domain}
 
