@@ -613,12 +613,13 @@ Either and an atom has been lost in transfer between nodes/domains.
 
 If this error is issued at start before timestep zero in a simulation
 then it your CONFIG file or the first frame of your HISTRORY (replayed)
-is corrupted.  Check out for mangled/blank lines in CONFIG/HISTORY, or
-blank line/s at the end or missing End of Line character in CONFIG.  If
-this error is issued after timestep zero in a simulation that is not
-replaying HISTORY then it is big trouble and you may report that to the
-authors.  If it is during replaying HISTORY then your HISTORY file has
-corrupted frames and you must correct it before tring again.
+is corrupted.  Check out for mangled/blank lines in CONFIG/HISTORY, or a
+blank line(s) at the end of CONFIG or missing FOF (End Of File)
+character in CONFIG.  If this error is issued after timestep zero in a
+simulation that is not replaying HISTORY then it is big trouble and you
+should report that to the authors.  If it is during replaying HISTORY
+then your HISTORY file has corrupted frames and you must correct it
+before trying again.
 
 \subsubsection*{\underline{Message 59}: error - too many core-shell units per domain}
 
