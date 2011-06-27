@@ -2201,7 +2201,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> atmnam 2     \> a8   \> second atom type \\
 \end{tabbing}
 
-By default in DL\_POLY\_2 and \D every {\bf vdw} and {\bf met}
+By default in DL\_POLY\_Classic and \D every {\bf vdw} and {\bf met}
 potential specifies an RDF pair.  If the control option
 {\bf rdf {\em f}} is specified in the CONTROL file then all pairs
 defined in {\bf vdw} and/or {\bf met} potentials sections will
@@ -2212,7 +2212,7 @@ potentials with zero contributions or (ii) to use {\bf rdf {\em n}}
 option - which not only provides a neater way for specification of
 RDF pairs but also better memory efficiency since \D will not
 allocate (additional) potential arrays for fictitious interactions
-that will not be used.  (This option is not available in DL\_POLY\_2.)
+that will not be used.  (This option is not available in DL\_POLY\_Classic.)
 
 {\bf Note} that {\bf rdf} and {\bf vdw/met} are not complementary -
 i.e. if the former is used none of the pairs defined by the latter

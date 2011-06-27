@@ -4,14 +4,14 @@ DL\_POLY \cite{smith-96a} is a package of subroutines, programs and
 data files, designed to facilitate molecular dynamics simulations of
 macromolecules, polymers, ionic systems and solutions on a
 distributed memory parallel computer. It is available in two forms:
-DL\_POLY\_2 (written by Bill Smith \& Tim Forester) and \D (written
+DL\_POLY\_Classic (written by Bill Smith \& Tim Forester) and \D (written
 by Ilian Todorov \& Bill Smith) \cite{todorov-04a}.  Both versions
 were originally written on behalf of CCP5\index{CCP5}, the UK's
 Collaborative Computational Project on Molecular Simulation, which
 has been in existence since 1980 (\cite{smith-87a}, \WEB\index{WWW}).
 
 The two forms of DL\_POLY differ primarily in their method of
-exploiting parallelism.  DL\_POLY\_2 uses a Replicated Data (RD)
+exploiting parallelism.  DL\_POLY\_Classic uses a Replicated Data (RD)
 strategy \cite{smith-91a,smith-93a,smith-94a,smith-94b} which
 works well simulations of up to 30,000 atoms on up to 100 processors.
 \D is based on the Domain Decomposition (DD) strategy
@@ -19,9 +19,9 @@ works well simulations of up to 30,000 atoms on up to 100 processors.
 and is best suited for large molecular simulations from $10^{3}$
 to $10^{9}$ atoms on large processor counts.  The two packages
 are reasonably compatible, so that it is possible to scale up from
-a DL\_POLY\_2 to a \D simulation with little effort.  It should
+a DL\_POLY\_Classic to a \D simulation with little effort.  It should
 be apparent from these comments that \D is not intended as a
-replacement for DL\_POLY\_2.
+replacement for DL\_POLY\_Classic.
 
 Users are reminded that we are interested in hearing what other
 features could be usefully incorporated.  We obviously have ideas
@@ -109,7 +109,7 @@ efficient load balancing on a parallel computer.
 \index{Java GUI}
 
 The \D Graphical User Interface (GUI) is the one that comes with
-DL\_POLY\_2, which is written in the Java\textregistered programming
+DL\_POLY\_Classic, which is written in the Java\textregistered programming
 language from Sun\textregistered Microsystems.  A major advantage
 of this is the free availability of the Java programming environment
 from Sun\textregistered, and also its portability across platforms.
@@ -163,7 +163,7 @@ The following MD algorithms\index{algorithm} are available:
 \item Martyna, Tuckerman and Klein (MTK)\index{ensemble!Martyna-Tuckerman-Klein N$\sigma$T} constant T,$\mat{\sigma}$ algorithm \cite{martyna-96a}.
 \end{enumerate}
 
-\subsection{DL\_POLY\_2 features incompatible or unavalable in \D\index{dlpoly2}}
+\subsection{DL\_POLY\_Classic features incompatible or unavalable in \D\index{dlpoly2}}
 
 \begin{itemize}
 \item Force field
@@ -400,7 +400,7 @@ Chapter \ref{source}.
 
 This sub-directory stores all the utility subroutines, functions and
 programs in \D, together with examples of data.  Some of the various
-routines in this sub-directory are documented in the DL\_POLY\_2
+routines in this sub-directory are documented in the DL\_POLY\_Classic
 User Manual.  Users who devise their own utilities are advised
 to store them in the {\em utility} sub-directory.
 

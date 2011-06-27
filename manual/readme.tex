@@ -11,7 +11,7 @@ f90 standards with exception of the FORTRAN2003 feature TR15581, which
 is very rarely unavailable in the nowadays FORTRAN95 compilers.
 
 This version supports ALL features that are available in the
-standard DL_POLY_2.20 version with the exceptions of:
+standard DL_POLY_Classic version with the exceptions of:
   (1) RIDGID BODIES linked by constraint bonds (CB) or
       potential of mean field (PMF) constraints.
   (2) Truncated octahedral (imcon = 4), Rhombic Dodecahedral
@@ -34,7 +34,7 @@ K. Trachenko & M.T. Dove, J. Mater. Chem., 16, 1611-1618 (2006)".
 Warnings:
 ---------
   (1) DL_POLY_4 can produce index ordered REVCON, HISTORY and MSDTMP
-      files which are restartable by DL_POLY_2.  Although such
+      files which are restartable by DL_POLY_Classic.  Although such
       printed outputs look unscrambled, the actual printing process
       is not.  Unscrambled printing is slightly more expensive than
       natural (scrambled) printing.  The cost time-wise is little,
@@ -55,14 +55,15 @@ Warnings:
       with no less than 500 particles each and (ii) the major linked
       cells algorithm has no dimension less than 4.
   (4) Although DL_POLY_4 can be compiled in a serial mode, users are
-      advised to consider DL_POLY_2 as a suitable alternative to
+      advised to consider DL_POLY_Classic as a suitable alternative to
       DL_POLY_4 when simulations are likely to be serial jobs for
       systems containing < 500 particles-per-processor.  In such
       circumstances, with both codes compiled in serial mode, the
       difference in performance, measured by the time-per-timestep
-      ratio [DL_POLY_2(t)-DL_POLY_4(t)]/DL_POLY_2(t), varies in the
-      range -5:+5%.  This variation depends strongly on the system
-      force-field complexity and very weakly on the system size.
+      ratio [DL_POLY_Classic(t)-DL_POLY_4(t)]/DL_POLY_Classic(t),
+      varies in the range -5:+5%.  This variation depends strongly on
+      the system force-field complexity and very weakly on the system
+      size.
 
 Integration Defaults:
 ---------------------
