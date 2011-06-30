@@ -987,10 +987,10 @@ Contains
     ptr => array
   End Function remap_lb_integer_2d
 
-! At initialisation, check certain parameters to see if offloading to 
+! At initialisation, check certain parameters to see if offloading to
 ! GPU is possible (i.e. if the relevant functionality has been implemented).
 
-  Subroutine dl_poly_cuda_check_offload_conditions(keyfce, imcon) 
+  Subroutine dl_poly_cuda_check_offload_conditions(keyfce, imcon)
     Use iso_c_binding
     Use metal_module, Only : ld_met,ntpmet
     Use vdw_module  , Only : ld_vdw
@@ -1010,7 +1010,7 @@ Contains
                          offload_bspgen            = .true., &
                          offload_ewald_spme_forces_ccarray  = .true., &
                          offload_ewald_spme_forces_cccharge = .true.
-      
+
     Write(nrite,*)
 
     ! Compute keypot variable
@@ -1066,13 +1066,13 @@ Contains
     ! Metal LD Compute
     If ( ld_met ) Then
        Write(nrite,'(1x,a)') 'CUDA Port Warning (metal_ld_compute): ld_met is true'
-       offload_metal_ld_compute = .false. 
+       offload_metal_ld_compute = .false.
     End If
 
     If ( keypot == 0 ) Then
        Write(nrite,'(1x,a)') 'CUDA Port Warning (metal_ld_compute): found unsupported keypot value (0)'
        offload_metal_ld_compute = .false.
-    Endif    
+    Endif
 
     If ( .not. offload_metal_ld_compute ) Then
        Write(nrite,'(1x,a,/)') 'Disabling CUDA acceleration for metal_ld_compute (if applicable)'
@@ -1095,7 +1095,7 @@ Contains
 
     ! bspgen (spme_container.f90) - Always offloaded
 
-    ! Set some static truth variables so that C routines can 
+    ! Set some static truth variables so that C routines can
     ! check what will be offloaded (dl_poly_init_cu.cu)
     Call dl_poly_cuda_offload_set                &
              (offload_link_cell_pairs,           &

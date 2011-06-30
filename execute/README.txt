@@ -1,6 +1,6 @@
 The `execute' Sub-directory
 
-In the supplied version of DL_POLY, this sub-directory is intended to
+In the supplied version of DL_POLY_4, this sub-directory is intended to
 be the `working' directory from which jobs are submitted for execution
 and the data files manipulated.  For these purposes the sub-directory
 contains a few macros for copying and storing data files from and to
@@ -9,7 +9,7 @@ These are described below.
 
 Executing the Program
 
-To run DL_POLY, it is necessary first to ensure that the program is
+To run DL_POLY_4, it is necessary first to ensure that the program is
 compiled (from the source sub-directory) and that the files CONTROL,
 CONFIG and FIELD are present in the execute subdirectory.  (Some of
 the macros described below will help with this.)
@@ -20,7 +20,7 @@ submitting the command:
 llsubmit gopoly
 
 where in this example the macro `gopoly', specifies all necessary and
-some extra variriables controling the execution.  Execution on one CPU
+some extra variables controlling the execution.  Execution on one CPU
 can simply be performed by typing `./DLPOLY.Z'.  In any case, the
 program will allocate the data files automatically.  All output data
 files will be returned to the execute sub-directory.
@@ -51,7 +51,7 @@ If you type, in the execute sub-directory, the command:
 
 store n
 
-where n is an alphameric string, the macro will store all input and
+where n is an alphanumeric string, the macro will store all input and
 output files within the execute directory into the data sub-directory
 as the corresponding files /TESTn/.
 

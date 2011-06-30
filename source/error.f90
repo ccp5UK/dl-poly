@@ -919,7 +919,7 @@ Subroutine error(kode)
 
      Else If (kode ==  620) Then
 
-        Write(nrite,'(/,1x,a)') 'error - duplicate or mixed intra-molecular entries specified in FILED'
+        Write(nrite,'(/,1x,a)') 'error - duplicate or mixed intra-molecular entries specified in FIELD'
 
      Else If (kode ==  625) Then
 

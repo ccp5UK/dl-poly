@@ -73,13 +73,13 @@ static bool offload_ewald_spme_forces_ccarray  = true;
 static bool offload_ewald_spme_forces_cccharge = true;
 
 extern "C" void dl_poly_cuda_offload_set(bool offload_link_cell_pairs_f90,
-                                         bool offload_tbforces_f90,                  
-                                         bool offload_constraints_shake_f90,         
-                                         bool offload_metal_ld_compute_f90,          
-                                         bool offload_ewald_spme_forces_f90,         
-                                         bool offload_spme_forces_f90,  
+                                         bool offload_tbforces_f90,
+                                         bool offload_constraints_shake_f90,
+                                         bool offload_metal_ld_compute_f90,
+                                         bool offload_ewald_spme_forces_f90,
+                                         bool offload_spme_forces_f90,
                                          bool offload_bspgen_f90,
-                                         bool offload_ewald_spme_forces_ccarray_f90, 
+                                         bool offload_ewald_spme_forces_ccarray_f90,
                                          bool offload_ewald_spme_forces_cccharge_f90)
 {
   // The offload_cuda array comes from the f90 subroutine

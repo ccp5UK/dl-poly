@@ -5,7 +5,7 @@ Subroutine report_topology               &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for reporting FILED topology
+! dl_poly_4 subroutine for reporting FIELD topology
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov january 2008

@@ -5,7 +5,7 @@ Subroutine check_config(levcfg,imcon,l_str,lpse,keyens,keyfce,keyres,megatm)
 ! dl_poly_4 subroutine for reporting and checking the configuration data
 ! in CONFIG for: (i) unsuitable simulation options in CONTROL and
 ! (ii) connectivity to FIELD; before connecting the crystallographic
-! data (positions+) to the topology (sites+), i.e. CONFIG to FILED
+! data (positions+) to the topology (sites+), i.e. CONFIG to FIELD
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov march 2010

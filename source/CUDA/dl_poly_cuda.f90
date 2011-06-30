@@ -530,7 +530,7 @@ Program dl_poly
 ! dl poly data structures have been populated.
   Call dl_poly_cuda_initialise2(mxatms, mxcons)
 ! Check for unimplemented functionality in CUDA port
-  Call dl_poly_cuda_check_offload_conditions(keyfce, imcon) 
+  Call dl_poly_cuda_check_offload_conditions(keyfce, imcon)
 #endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

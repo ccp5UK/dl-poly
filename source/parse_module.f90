@@ -108,9 +108,9 @@ Contains
 
     End If
 
-    Call tabs_2_blanks(record)
-
 200 Continue
+
+    Call tabs_2_blanks(record)
 
     Deallocate (line, Stat = fail)
     If (fail > 0) Call error(1012)
@@ -369,7 +369,7 @@ Contains
     Else
        word_2_real = 0.0_wp
        If (idnode == 0) Write(nrite,'(1x,3a)') &
-          "*** warning - word_2_real exepected to read a number but found # ", word(1:word_end), " # ***"
+          "*** warning - word_2_real expected to read a number but found # ", word(1:word_end), " # ***"
        Call error(1)
     End If
 

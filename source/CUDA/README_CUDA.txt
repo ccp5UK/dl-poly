@@ -1,14 +1,14 @@
-DL_POLY_4.01 CUDA+OpenMP PORT - an ICHEC-STFC Collaboration
+DL_POLY_4.02 CUDA+OpenMP PORT - an ICHEC-STFC Collaboration
 ===========================================================
 
-Developed by Christos Kartsaklis and Ruairi Nestor
-(ruairi.nestor@ichec.ie) in collaboration with
-Ilian Todorov (ilian.todorov@stfc.ac.uk).
+Developed by Christos Kartsaklis, Ruairi Nestor and Peter
+Nash (dlpoly-gpu@ichec.ie) in collaboration with Ilian
+Todorov (ilian.todorov@stfc.ac.uk).
 
 
 PORT STATUS
 ===========
-GPU assisted compuation is only available to the following subset
+GPU assisted computation is only available to the following subset
 of the DL_POLY_4 features/functionality/routines:
 
 * link_cell_pairs - building the Verlet Neighbour List using Link
@@ -45,14 +45,14 @@ If single precision is desired, as soon as the FORTRAN90 sources'
 precision has been modified in kinds_f90.f90, change
 CFG_DOUBLE_PRECISION to 0 in dl_poly_cu.h and recompile.
 
-Depending on the compute cability of the GPU (1.3 and 2.0 are
+Depending on the compute capability of the GPU (1.3 and 2.0 are
 supported currently), the CFG_COMPUTE_{MAJOR, MINOR} constants have
 to be set accordingly in the Makefile.
 
 Concurrent execution of accelerated functions on the host and device
 is enabled by default. To disable concurrent execution
 (i.e. so that accelerated functions execute on the device only), the
-preprocessor vairable CFG_OVERLAP_WITH_HOST should be set to 0 in
+preprocessor variable CFG_OVERLAP_WITH_HOST should be set to 0 in
 dl_poly_cu.h before compilation.
 
 Finally, CUDA (& OpenMP, if present) acceleration for a particular
@@ -129,8 +129,7 @@ export OMP_NUM_THREADS=4
 export MV2_CPU_MAPPING="0,2:4,6:1,3:5,7"
 ./cleanup ; mpiexec -n 4 -npernode 2 ./DLPOLY.Z.cu
 ….
-Bound MPI process 0 (pid=14627; affined to CPU(s)  0 2 4 6; 4 OpenMP thread(s)) to device 0@stoney52
-Bound MPI process 1 (pid=14628; affined to CPU(s)  1 3 5 7; 4 OpenMP thread(s)) to device 1@stoney52
+Bound MPI process 0 (pid=14627; affined to CPU(s)  0 2 4 6; 4 OpenMP thread(s)) to device 0@stoney52 Bound MPI process 1 (pid=14628; affined to CPU(s)  1 3 5 7; 4 OpenMP thread(s)) to device 1@stoney52
 Bound MPI process 2 (pid=8581; affined to CPU(s)  0 2 4 6; 4 OpenMP thread(s)) to device 0@stoney51
 Bound MPI process 3 (pid=8582; affined to CPU(s)  1 3 5 7; 4 OpenMP thread(s)) to device 1@stoney51
 
@@ -158,6 +157,5 @@ unforseen behaviours of the builds.
 
 Contacts at ICHEC & STFC Daresbury Laboratory:
 ----------------------------------------------
-
-Dr. R. Nestor     :: ruairi.nestor@ichec.ie
-Dr. I.T. Todorov  :: ilian.todorov@stfc.ac.uk
+Dr. P. Nash      :: dlpoly-gpu@ichec.ie
+Dr. I.T. Todorov :: ilian.todorov@stfc.ac.uk

@@ -1,0 +1,3 @@
+rm -f *.class
+javac *.java
+jar -cfm GUI.jar manifesto *.class MINIDREI MINIOPLS CERAMICS WATER300K About_DL_POLY Acknowledge Licence Disclaimer TestInfo FRGLIB

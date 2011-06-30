@@ -1,7 +1,7 @@
 Benchmark Test Cases for DL_POLY_4
 ----------------------------------
 
-Innterested users can obtain the banchmark test cases
+Interested users can obtain the benchmark test cases
 from the CCP5 FTP server as follows:
 
 FTP site : ftp.dl.ac.uk
@@ -9,9 +9,10 @@ Username : anonymous
 Password : your email address
 Directory: ccp5/DL_POLY/DL_POLY_4.0/BENCH
 
-The directories within contain small samples of the systems
-for benchmarking.  To enlarge the systems one can use two
-approaches:
+The user may as well download BENCH.tar.gz containing the
+whole distribution.  The directories within contain small
+samples of the systems for benchmarking. To enlarge the
+systems one can use two approaches:
 
 (i ) Enlarge them by using the F90 source that will only
      apply to the CONFIG or *.inp crystallographic file.
@@ -23,7 +24,7 @@ approaches:
      timesteps).  Since the starting samples are quite
      small the cutoff value in the corresponding CONTROLs
      must be augmented by hand to 2 A for a successful
-     enlargement and then reverted back to its orginal
+     enlargement and then reverted back to its original
      value.  This task can be done in serial as well as
      in parallel.  Consult the user manual for more
-     information on the forementioned options.
+     information on the aforementioned options.

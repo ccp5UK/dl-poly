@@ -323,11 +323,11 @@ __global__ void spme_forces_cuda_k1(int aI, int aLast_I, T_ *aOUT) {
 #pragma unroll 2
       for (int lK=1 ; lK<=MXSPL_ ; lK++) {
         int lKK = CONSTANT_DATA.mIXXYYZZ[1*CONSTANT_DATA.mNATMS + lI -1] - lK + 2;
-	
+
         T_ lBDXK = shared[0*MXSPL_*MXSPL_ + (lL-1)*MXSPL_ + lK -1];
         T_ lBDYK = shared[1*MXSPL_*MXSPL_ + (lL-1)*MXSPL_ + lK -1];
         T_ lBDZK = shared[2*MXSPL_*MXSPL_ + (lL-1)*MXSPL_ + lK -1];
-	
+
         T_ lQSUM  = qqq(lJJ, lKK, lLL);
         T_ lBDXJ  = lQSUM * lBDXK * lBSDX_J_I;
         T_ lBDYJ  = lQSUM * lBDYK * lBSPX_J_I;
@@ -369,7 +369,7 @@ __global__ void spme_forces_cuda_k1(int aI, int aLast_I, T_ *aOUT) {
           aOUT[4*(lI-aI) + threadIdx.x] = shared[threadIdx.x];
         }
       } else {
-	
+
 	/* This is a less optimised version of the fragment above. I've kept it
 	 * for referencing purposes.
 	 */
@@ -483,7 +483,7 @@ extern "C" void spme_forces_cuda_invoke(real *aFFF,
         aFFF[1] += lF_HST[0];
         aFFF[2] += lF_HST[1];
         aFFF[3] += lF_HST[2];
-	
+
         if (sCD.mL_CP) {
           aFCX[lI+lU-1] += lF_HST[0];
           aFCY[lI+lU-1] += lF_HST[1];

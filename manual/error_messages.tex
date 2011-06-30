@@ -469,14 +469,14 @@ See Message 43
 \subsubsection*{\underline{Message 45}: error - too many atoms in CONFIG file or per domain}
 
 This can happen in circumstances when indeed the CONFIG file has more
-atoms listed than defined in FILED, or when one of the domains (managed
+atoms listed than defined in FIELD, or when one of the domains (managed
 by an MPI process) has higher particle density than the system average
 and contains more particles than allowed by the default based on the
 system.
 
 \noindent \underline{\em Action}:
 
-Check if CONFIG and FILED numbers of particles match.  Try executing on
+Check if CONFIG and FIELD numbers of particles match.  Try executing on
 various number of processors.  Try using the {\bf densvar} option in
 CONTROL to increase {\tt mxatms} (alternatively, increase it by hand in
 {\sc set\_bounds} and recompile) and resubmit.  Send the problem to us

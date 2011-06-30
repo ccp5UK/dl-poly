@@ -83,7 +83,7 @@ void link_cell_pairs_cuda_set_is_in_valid_context(int aIs) {
 
 template<typename T_> struct constant_data {
   T_ *mXXX, *mYYY, *mZZZ;
-  
+
   int *mLFRZN, *mAT_LIST, *mLCT_START;
   int *mLIST;
   int *mLTG;
@@ -235,17 +235,17 @@ extern "C" void link_cell_pairs_cuda_initialise(
   }
 
   start_timing_link_cell_pairs_cuda_write();
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mXXX, aXXX, sCD.mMXATMS*sizeof(real), 
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mXXX, aXXX, sCD.mMXATMS*sizeof(real),
                             cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mYYY, aYYY, sCD.mMXATMS*sizeof(real), 
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mYYY, aYYY, sCD.mMXATMS*sizeof(real),
                             cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mZZZ, aZZZ, sCD.mMXATMS*sizeof(real), 
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mZZZ, aZZZ, sCD.mMXATMS*sizeof(real),
                             cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mLFRZN, aLFRZN, sCD.mMXATMS*sizeof(int), 
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mLFRZN, aLFRZN, sCD.mMXATMS*sizeof(int),
                             cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mAT_LIST, aAT_LIST, sCD.mMXATMS*sizeof(int), 
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mAT_LIST, aAT_LIST, sCD.mMXATMS*sizeof(int),
                             cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mLCT_START, aLCT_START, (sCD.mNCELLS+1)*sizeof(int), 
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mLCT_START, aLCT_START, (sCD.mNCELLS+1)*sizeof(int),
                             cudaMemcpyHostToDevice));
 
   if (sHD.mIsLBOOKTrue) {
@@ -382,7 +382,7 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
       for (int lKK = IPASS_ + threadIdx.y ; lKK <= CONSTANT_DATA.mNSBCLL ; lKK += BY_) {
         int3 lNIXYZ = CONSTANT_DATA.mNIXYZ[lOff+lKK-1];
         int3 lJXYZ = lIXYZ + lNIXYZ;
-	
+
         if (IPASS_==1 || (lJXYZ.x <= CONSTANT_DATA.mNLXYZ0E.x) || (lJXYZ.x >= CONSTANT_DATA.mNLXYZ1S.x) ||
             (lJXYZ.y <= CONSTANT_DATA.mNLXYZ0E.y) || (lJXYZ.y >= CONSTANT_DATA.mNLXYZ1S.y) ||
             (lJXYZ.z <= CONSTANT_DATA.mNLXYZ0E.z) || (lJXYZ.z >= CONSTANT_DATA.mNLXYZ1S.z)) {
@@ -400,7 +400,7 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
             }
           }
         }
-      }	
+      }
 
       if (BX_>32) __syncthreads();
 

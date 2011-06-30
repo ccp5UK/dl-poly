@@ -723,10 +723,10 @@ __global__ void constraints_shake_cuda_invoke_bh() {
         T_ lPRMCON = CONSTANT_DATA.mPRMCON_K[lK-1];
         T_ lDT2 = addp3(lDXT,lDXT,lDYT,lDYT,lDZT,lDZT);
 
-#define lGAMMA shared[6*BX_+threadIdx.x]	
+#define lGAMMA shared[6*BX_+threadIdx.x]
         lGAMMA = lGamma_mul * msub(lDT2,lPRMCON,lPRMCON)/
                  ((lAMTI+lAMTJ) * addp3(lDXX, lDXT, lDYY, lDYT, lDZZ, lDZT));
-	
+
         if (lI <= CONSTANT_DATA.mNATMS) {
 #define UPDSTRCON(I,A1,A2) shared[(I)*BX_ + threadIdx.x] = m3add(shared[(I)*BX_ + threadIdx.x], lGAMMA, lD##A1, lD##A2)
           UPDSTRCON(0, XX, XX); UPDSTRCON(1, XX, YY); UPDSTRCON(2, XX, ZZ);

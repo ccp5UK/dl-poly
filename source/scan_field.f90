@@ -11,7 +11,7 @@ Subroutine scan_field                                 &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for raw scanning the contents of the filed file
+! dl_poly_4 subroutine for raw scanning the contents of the FIELD file
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith november 1994
@@ -729,7 +729,7 @@ Subroutine scan_field                                 &
 
   Return
 
-! FILED file does not exist
+! FIELD file does not exist
 
 20 Continue
   Call error(122)
