@@ -13,11 +13,6 @@ c
 c     copyright daresbury laboratory 1996
 c     author        t forester   feb 1996
 c
-c     itt
-c     2010-10-30 17:20:53
-c     1.3
-c     Exp
-c
 c***********************************************************************
 
       implicit real*8(a-h,o-z)

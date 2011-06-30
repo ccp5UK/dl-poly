@@ -15,8 +15,8 @@ main()
  double step=0.0, dummyf;
  double x, y, z;
  FILE *fp, *out;
- 
- out=fopen("output","w"); 
+
+ out=fopen("output","w");
 
 /* Use system command zcat to read compressed file */
  sprintf(buffer,"/usr/bin/zcat %s\0", "HISTORY.Z");
@@ -32,15 +32,15 @@ main()
 
     if((stat=fscanf(fp,"%s   %d   %d   %d   %d  %lf\n",
                    &dummy,&timestep,&total,&dummyi,&dummyi,&step)) != EOF) {
-       printf("Timestep=%d (%f ps)   Total=%d\n", 
+       printf("Timestep=%d (%f ps)   Total=%d\n",
                timestep, (double) timestep*step, total);
 
        conf++;
 
 /* Save every 10 configuration (to make xmol movie) */
-       if((conf % 10) == 0) 
+       if((conf % 10) == 0)
           save_ok=1;
-       else 
+       else
           save_ok=0;
 
        if(save_ok)

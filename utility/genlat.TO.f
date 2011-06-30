@@ -1,18 +1,15 @@
       program genlat2
-c     
-c***********************************************************************
-c     
-c     program to generate a truncated octahedral cell from a perfect 
-c     lattice
-c     author - w.smith oct. 1992
-c     
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
 c
 c***********************************************************************
-c     
+c
+c     program to generate a truncated octahedral cell from a perfect
+c     lattice
+c
+c     copyright daresbury laboratory
+c     author - w.smith oct. 1992
+c
+c***********************************************************************
+c
       implicit real*8 (a-h,o-z)
       parameter (mxatom=10)
       dimension xb(mxatom),yb(mxatom),zb(mxatom)
@@ -40,7 +37,7 @@ c
       write(10,'(a80)')title
       write(10,'(2i10)')0,4
       write(10,'(3f20.8)')wdth,0.d0,0.d0,0.d0,wdth,0.d0,0.d0,0.d0,wdth
-c     
+c
 c     set up lattice
       matms=0
       do  n=1,natms

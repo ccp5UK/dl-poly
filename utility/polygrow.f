@@ -1,34 +1,28 @@
       program polygrow
-c     
-c*********************************************************************
-c     
-c     dl_poly utility for generating an amorphous polymer chain
-c     
-c     copyright daresbury laboratory march 1995
-c     
-c     author    w.smith march 1995
-c     
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
 c
 c*********************************************************************
-c     
+c
+c     dl_poly utility for generating an amorphous polymer chain
+c
+c     copyright daresbury laboratory march 1995
+c     author    w.smith march 1995
+c
+c*********************************************************************
+c
       implicit real*8(a-h,o-z)
-      
+
       parameter (mxatms=906,nsearch=100,mxtry=25,mxfail=1000)
-      
+
       logical opr,lrej
 
       dimension xbs(4),ybs(4),zbs(4),rot(9)
       dimension eps(3),sig(3),edih(4)
       dimension xxx(mxatms),yyy(mxatms),zzz(mxatms)
-      
+
       data opr/.false./,pi/3.141592653589793d0/
 
 c     enter the control variables
-      
+
       write(*,*)'Enter number of monomers in chain'
       read(*,*)nlinks
       write(*,'(i12)')nlinks
@@ -70,7 +64,7 @@ c     calculate mass density (amu/A^3)
       rho=(14.0268d0*dble(nlinks)+2.0158d0)/volm
 
 c     initialise random numbers
-      
+
       start=duni()
 
 c     linear width of cell
@@ -78,25 +72,25 @@ c     linear width of cell
       size=volm**(1.d0/3.d0)
 
 c     define tetrahedral groups
-      
+
       xbs(1)=0.d0
       ybs(1)=0.d0
       zbs(1)=1.d0
-      
+
       xbs(2)=2.d0*sqrt(2.d0)/3.d0
       ybs(2)=0.d0
       zbs(2)=-1.d0/3.d0
-      
+
       xbs(3)=-sqrt(2.d0)/3.d0
       ybs(3)=-sqrt(2.d0/3.d0)
       zbs(3)=-1.d0/3.d0
-      
+
       xbs(4)=-sqrt(2.d0)/3.d0
       ybs(4)=sqrt(2.d0/3.d0)
       zbs(4)=-1.d0/3.d0
-      
+
 c     position first tetrahedron
-      
+
       natms=1
       xx0=0.d0
       yy0=0.d0
@@ -110,11 +104,11 @@ c     position first tetrahedron
       xxx(1)=chbond*xxt+xx0
       yyy(1)=chbond*yyt+yy0
       zzz(1)=chbond*zzt+zz0
-      
+
       link=0
       nstep=0
       do ntrial=1,nsearch*nlinks
-         
+
          lhist=0
          nfail=0
          link=link+1
@@ -126,7 +120,7 @@ c     position first tetrahedron
          lhist=lhist+1
 
          if(lhist.gt.mxtry)then
-         
+
             lhist=0
             nfail=nfail+1
             if(nfail.gt.mxfail)go to 200
@@ -182,7 +176,7 @@ c     growth direction vector and rotation matrix
          zz0=ccbond*zzt+zz0
          alp=atan2(-yyt,-xxt)
          bet=acos(-zzt)
-         
+
          natms=natms+3
 
       enddo
@@ -213,7 +207,7 @@ c     growth direction vector and rotation matrix
 c*********************************************************************
 c
 c     dl_poly routine to select or reject a new CH2 monomer
-c     added to a chain using the boltzman factor as the 
+c     added to a chain using the boltzman factor as the
 c     selection criterion
 c
 c     copyright daresbury laboratory march 1995
@@ -231,7 +225,7 @@ c*********************************************************************
       save heng
       data rgas/8.31451d-3/,heng/0.d0/
 
-      
+
       lrej=.false.
       boltz=1.d0/(temp*rgas)
       eng=edih(1)-ebond-heng
@@ -292,7 +286,7 @@ c     C-C backbone LJ interactions
       i=natms+1
 
       do j=2,natms-8,3
-         
+
          ddx=xxx(i)-xxx(j)
          ddy=yyy(i)-yyy(j)
          ddz=zzz(i)-zzz(j)
@@ -301,7 +295,7 @@ c     C-C backbone LJ interactions
          ddz=ddz-size*anint(ddz/size)
          rat=(sig(1)**2/(ddx*ddx+ddy*ddy+ddz*ddz))**3
          eng=eng+4.d0*eps(1)*(rat**2-rat)
-         
+
       enddo
 
 c     C-H interactions
@@ -329,7 +323,7 @@ c     C-H interactions
          endif
 
       enddo
-            
+
 c     initialise energy for replacement Hydrogen atom
 
       teng=0.d0
@@ -342,11 +336,11 @@ c     H-H 1-4 LJ interactions
          do j=1,natms
 
             if(j.eq.k)then
-               
+
                k=k+3
-               
+
             else
-               
+
                fact=1.d0
                if(j.ge.natms-1.or.natms.eq.4)fact=dihscl
                ddx=xxx(i)-xxx(j)
@@ -359,13 +353,13 @@ c     H-H 1-4 LJ interactions
                eterm=4.d0*fact*eps(3)*(rat**2-rat)
                eng=eng+eterm
                if(i.eq.natms+4)teng=teng+eterm
-            
+
             endif
 
          enddo
 
       enddo
-      
+
 c     apply selection criterion
 
       if(eng.gt.0.d0)then
@@ -378,33 +372,33 @@ c     apply selection criterion
       return
       end
       function duni()
-c     
+c
 c*********************************************************************
-c     
+c
 c     dl_poly random number generator based on the universal
 c     random number generator of marsaglia, zaman and tsang
 c     (stats and prob. lett. 8 (1990) 35-39.) it must be
 c     called once to initialise parameters u,c,cd,cm
-c     
+c
 c     copyright daresbury laboratory 1992
 c     author -  w.smith         july 1992
-c     
+c
 c*********************************************************************
-c     
+c
       logical new
       real*8 duni
       real*4 u(97)
       save u,c,cd,cm,uni,ir,jr,new
       data new/.true./
       if(new)then
-c     
+c
 c     initial values of i,j,k must be in range 1 to 178 (not all 1)
 c     initial value of l must be in range 0 to 168.
          i=12
          j=34
          k=56
          l=78
-c     
+c
          ir=97
          jr=33
          new=.false.
@@ -426,7 +420,7 @@ c
          cd= 7654321.0/16777216.0
          cm=16777213.0/16777216.0
       else
-c     
+c
 c     calculate random number
          uni=u(ir)-u(jr)
          if(uni.lt.0.0)uni=uni+1.0
@@ -453,7 +447,6 @@ c     r' is a vector in a molecular frame, r the corresponding vector
 c     in the laboratory frame and R is the rotation matrix
 c
 c     copyright daresbury laboratory march 1995
-c
 c     author w. smith march 1995
 c
 c*********************************************************************
@@ -486,8 +479,8 @@ c*********************************************************************
 c*********************************************************************
 c
 c     dl_poly routine to transform a vector from the local (molecule-
-c     fixed) frame of reference (xl,yl,zl) to the global frame of 
-c     reference (xg,yg,zg) and vice-versa using the rotation matrix 
+c     fixed) frame of reference (xl,yl,zl) to the global frame of
+c     reference (xg,yg,zg) and vice-versa using the rotation matrix
 c     defined by the matrix equation rl = (Rot) rg.
 c
 c     copyright daresbury laboratory march 1995

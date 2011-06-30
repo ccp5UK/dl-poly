@@ -1,25 +1,20 @@
       subroutine hread
      x  (history,cfgname,atmnam,iflg,imcon,keytrj,natms,nstep,tstep,
      x   cell,chge,weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz)
-      
-c     
+
+c
 c***********************************************************************
-c     
-c     dl_poly subroutine for reading the formatted history file 
-c     
+c
+c     dl_poly subroutine for reading the formatted history file
+c
 c     copyright - daresbury laboratory 1996
 c     author    - w. smith jan 1996.
 c
 c     single processor version
 c
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
-c     
 c***********************************************************************
-c     
-      
+c
+
       implicit real*8(a-h,o-z)
 
       logical new
@@ -27,7 +22,7 @@ c
       character*80 cfgname
       character*40 history
       character*8 atmnam(*),step
-      
+
       dimension cell(9)
       dimension chge(*),weight(*)
       dimension xxx(*),yyy(*),zzz(*)
@@ -43,9 +38,9 @@ c
 c     open history file if new job
 
       if(new)then
-      
+
         open(nhist,file=history,status='old',err=100)
-        
+
         read(nhist,'(a80)',err=200) cfgname
         write(*,'(a,a)')'# History file header: ',cfgname
         read(nhist,'(2i10)',end=200) ktrj,imcon
@@ -60,10 +55,10 @@ c     open history file if new job
         new=.false.
 
       endif
-        
-      read(nhist,'(a8,4i10,f12.6)',end=200) 
+
+      read(nhist,'(a8,4i10,f12.6)',end=200)
      x    step,nstep,matms,ktrj,imcon,tstep
-      
+
       if(natms.ne.matms)then
 
         write(*,'(a)')'# error - incorrect number of atoms in file'
@@ -71,9 +66,9 @@ c     open history file if new job
         stop
 
       endif
-      
+
       if(imcon.gt.0) read(nhist,'(3g12.4)',end=200) cell
-      
+
       do i = 1,natms
         read(nhist,'(a8,i10,2f12.6)',end=200)
      x    atmnam(i),j,weight(i),chge(i)
@@ -89,7 +84,7 @@ c     open history file if new job
           read(nhist,'(1p,3e12.4)',end=200) fx,fy,fz
         endif
       enddo
-      
+
       iflg=1
 
       return

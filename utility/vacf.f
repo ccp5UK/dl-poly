@@ -2,21 +2,16 @@
 
 c*********************************************************************
 c
-c     dl_poly routine to calculate velocity autocorrelation function 
+c     dl_poly routine to calculate velocity autocorrelation function
 c     for selected atoms
 c
 c     copyright daresbury laboratory 1995
 c     author  w.smith jan 1995
 c
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
-c
 c*********************************************************************
 
       implicit real*8(a-h,o-z)
-      
+
       parameter (mxatms=1080,npts=128,nstr=250)
       character*8 atname
       character*8 atmnam
@@ -26,9 +21,9 @@ c*********************************************************************
       dimension vacf(npts,nstr),vcr0(npts,nstr,3),vcf(npts)
       dimension idv(npts),nvm(npts),key(npts)
       complex*16 aaa(npts),www(npts)
-      
+
       write(*,'(a)')'Velocity Autocorrelation Program'
-      
+
 c     read the control variables
 
 c     number of atoms
@@ -77,7 +72,7 @@ c     initialise velocity autocorrelation arrays
             vcr0(j,i,3)=0.d0
          enddo
       enddo
-            
+
 c     open HISTORY file and read headers
 
       open (10,file=fname,form='formatted')
@@ -107,9 +102,9 @@ c     open HISTORY file and read headers
 
          nsampl=0
          do i=1,natms
-               
+
             read(10,*,end=100) atmnam
-            read(10,*) 
+            read(10,*)
             read(10,*) xxx,yyy,zzz
             if(levcfg.gt.1)read(10,*)
             if(atmnam.eq.atname)then
@@ -125,7 +120,7 @@ c     open HISTORY file and read headers
                endif
 
             endif
-         
+
          enddo
 
          if(nsampl.gt.nstr)then
@@ -136,7 +131,7 @@ c     open HISTORY file and read headers
          endif
 
 c     calculate velocity autocorrelation function
-         
+
          if(mod(nsvacf,iovacf).eq.0)then
 
             lor=min(lor+1,novacf)
@@ -171,13 +166,13 @@ c     calculate velocity autocorrelation function
          enddo
 
       enddo
-         
+
   100 continue
 
       last=min(nsvacf,nvacf)
-         
+
 c     normalise velocity autocorrelation functions
-         
+
       do i=1,nsampl
 
          rnorm=dble(nvm(1))/vacf(1,i)
@@ -189,7 +184,7 @@ c     normalise velocity autocorrelation functions
          enddo
 
       enddo
-      
+
 c     calculate normalised vacf
 
       vint=0.0d0
@@ -197,9 +192,9 @@ c     calculate normalised vacf
 
          vsum=0.0d0
          do i=1,nsampl
-            
+
             vsum=vsum+vacf(j,i)
-            
+
          enddo
 
          vcf(j)=vsum/dble(nsampl)
@@ -236,32 +231,31 @@ c     perform power spectrum
 
          freq=dble(i-1)/(dble(npts)*tstep)
          write(*,'(1p,2e15.7)')freq,real(aaa(i))
-         
+
       enddo
       write(*,'(a)')'&'
-      
+
       stop
       end
       subroutine fft(ind,isw,ndiv,key,aaa,wfft,bbb)
 c***********************************************************************
-c     
-c     fast fourier transform routine
-c     
-c     copyright daresbury laboratory 1994
 c
+c     fast fourier transform routine
+c
+c     copyright daresbury laboratory 1994
 c     author w smith
 c
 c***********************************************************************
-      
+
       implicit real*8(a-h,o-z)
-      
+
       logical check
       complex*16 aaa(ndiv),bbb(ndiv),wfft(ndiv),ttt
       dimension key(ndiv)
       data tpi/6.2831853072d0/
    10 format(1h0,'error - number of points not a power of two')
-      
-c     
+
+c
 c     check that array is of suitable length
       nt=1
       check=.true.
@@ -276,11 +270,11 @@ c     check that array is of suitable length
          write(*,10)
          stop
       endif
-      
+
       if(ind.gt.0)then
-c     
+c
 c     set reverse bit address array
-         
+
          do kkk=1,ndiv
             iii=0
             jjj=kkk-1
@@ -291,9 +285,9 @@ c     set reverse bit address array
             enddo
             key(kkk)=iii+1
          enddo
-c     
+c
 c     initialise complex exponential factors
-         
+
          tpn=tpi/dble(ndiv)
          arg=0.d0
          np1=ndiv+1
@@ -304,30 +298,30 @@ c     initialise complex exponential factors
             wfft(i+1)=cmplx(cos(arg),sin(arg))
             wfft(np1-i)=conjg(wfft(i+1))
          enddo
-         
+
          return
       endif
-      
-c     
+
+c
 c     take conjugate of exponentials if required
-      
+
       if(isw.lt.0)then
-         
+
          do i=1,ndiv
             wfft(i)=conjg(wfft(i))
          enddo
-         
+
       endif
-      
-c     
+
+c
 c     take copy input array
-      
+
       do i=1,ndiv
          bbb(i)=aaa(i)
       enddo
-c     
+c
 c     perform fourier transform
-      
+
       kkk=0
       nu1=nu-1
       np2=ndiv/2
@@ -349,9 +343,9 @@ c     perform fourier transform
          np2=np2/2
 
       enddo
-c     
+c
 c     unscramble the fft using bit address array
-      
+
       do kkk=1,ndiv
          iii=key(kkk)
          if(iii.gt.kkk)then
@@ -360,17 +354,17 @@ c     unscramble the fft using bit address array
             bbb(iii)=ttt
          endif
       enddo
-c     
+c
 c     restore exponentials to unconjugated values if necessary
-      
+
       if(isw.lt.0)then
-         
+
          do i=1,ndiv
             wfft(i)=conjg(wfft(i))
          enddo
-         
+
       endif
-      
+
       return
       end
 

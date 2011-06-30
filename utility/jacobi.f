@@ -1,38 +1,33 @@
       subroutine jacobi(a,v,n)
-c     
+c
 c***********************************************************************
-c     
+c
 c     diagonalisation of real symmetric matices by jacobi method
-c     
+c
 c     input parameters:
-c     
+c
 c     a(n,n) is the matrix to be diagonalised
 c     v(n,n) is the eigenvector matrix
 c     n   is the dimension of the matrices
-c     
+c
 c     jacobi processes lower triangle only (upper triangle unchanged)
-c     
+c
 c     variable rho sets absolute tolerance on convergence
 c     variable tes is a moving tolerance that diminishes
 c     on each pass until at true convergence tes<rho
-c     
+c
 c     copyright daresbury laboratory 1993
 c     author w.smith 1993
 c
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
-c
 c***********************************************************************
-c     
-      implicit real*8(a-h,o-z)      
+c
+      implicit real*8(a-h,o-z)
       logical pass
       dimension a(n,n),v(n,n)
       rho=1.0d-16
       tes=0.0d0
       scl=0.0d0
-c     
+c
 c     initialize eigenvectors
       do i=1,n
          do j=1,n
@@ -40,7 +35,7 @@ c     initialize eigenvectors
          enddo
          v(i,i)=1.0d0
       enddo
-c     
+c
 c     rescale matrix for optimal accuracy
       do i=1,n
          if(abs(a(i,i)).gt.scl)scl=abs(a(i,i))
@@ -50,7 +45,7 @@ c     rescale matrix for optimal accuracy
             a(i,j)=a(i,j)/scl
          enddo
       enddo
-c     
+c
 c     set initial value of moving tolerance
       do i=2,n
          do j=1,i-1
@@ -60,7 +55,7 @@ c     set initial value of moving tolerance
       tes=sqrt(tes)
   100 tes=tes/dble(n)
       if(tes.lt.rho)tes=rho
-c     
+c
 c     jacobi diagonalisation
   200 pass=.false.
       do i=2,n
@@ -103,13 +98,13 @@ c     jacobi diagonalisation
             endif
          enddo
       enddo
-c     
+c
 c     recycle until moving tolerance satisfied
       if(pass)go to 200
-c     
+c
 c     recycle until absolute tolerance satisfied
       if(tes.gt.rho)go to 100
-c     
+c
 c     rescale matrix
       do i=1,n
          do j=1,i

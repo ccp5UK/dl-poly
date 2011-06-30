@@ -1,19 +1,14 @@
       program bucky
-c     
-c*********************************************************************
-c     
-c     construction of buckminster fullerene molecule
-c     
-c     copyright daresbury laboratory  november 1994
-c     author w. smith     november 1994
-c     
-c     itt
-c     2010-10-30 17:20:49
-c     1.3
-c     Exp
 c
 c*********************************************************************
-c     
+c
+c     construction of buckminster fullerene molecule
+c
+c     copyright daresbury laboratory  november 1994
+c     author w. smith     november 1994
+c
+c*********************************************************************
+c
       implicit real*8(a-h,o-z)
       logical same
       dimension o(9,3),c(3,61)
@@ -74,8 +69,8 @@ c
             enddo
          endif
       enddo
-      
+
       close (8)
-      
+
       end
-      
+

@@ -2,8 +2,8 @@ c*********************************************************************
 c
 c     dl_poly utility for calculating energy of perfect LJ FCC lattice
 c
-c     author - w.smith Nov. 1998
 c     copyright daresbury laboratory 1998
+c     author - w.smith Nov. 1998
 c
 c*********************************************************************
 

@@ -1,21 +1,16 @@
       program statblock2
-c     
+c
 c**********************************************************************
-c     
+c
 c     blocking method for estimating standard error of mean
-c     
+c
 c     (reference - tildesley and allen, p191  (1987)
-c     
+c
 c     copyright daresbury laboratory 1996
 c     author - t. forester sept 1996
-c     
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
-c     
+c
 c**********************************************************************
-c     
+c
       parameter (ndeg=25,mxrows=10000,mxcols=20)
       implicit real*8 (a-h,o-z)
       dimension list(mxcols),record(mxcols),d(mxrows,mxcols)
@@ -36,12 +31,12 @@ c
       ncols=min(ncols,mxcols)
       write(*,*)'identify columns to be processed'
       read(*,*)(list(j),j=1,ncols)
-c     
+c
 c     open the statistical data file
-      
+
       open(7,file=statfile)
-      
-c     
+
+c
 c     read in statistical data
       do i=1,mxrows
         read(7,*,end=100)(record(j),j=1,mcols)
@@ -56,13 +51,13 @@ c     read in statistical data
         call exit()
       endif
 
-c     
+c
 c     calculate errors using blocking method
 
       niter = min(m,ndeg)
       write(*,*) 'number of blocks used ',niter
 
-c     
+c
 c     calculate averages
       write(*,*)'calculated averages'
       do l=1,ncols
@@ -87,7 +82,7 @@ c     calculate averages
       enddo
 
       do iter = 2,niter
-c     
+c
 c     block length
 
         tb = dble(m)/dble(iter)
@@ -102,7 +97,7 @@ c     block length
             j1 = 1 + nint(dble(j-1)*tb)
             j2 = nint(dble(j)*tb)
             nb = j2 -j1 + 1
-            
+
             do i = j1,j2
 
               dd = dd + d(i,l)
@@ -229,7 +224,7 @@ c     construct b = a.(a transpose)  (m x m)
          enddo
 
       enddo
-      
+
 c
 c     find inverse of b
 
@@ -255,7 +250,7 @@ c     construct (b^-1)a  (m x n)
       enddo
 
 c
-c     find coefficients 
+c     find coefficients
 
       do i = 1,m
 
@@ -312,9 +307,9 @@ c         write(*,95) x(i), y(i), ax
       end
 
       subroutine invert(nnn,nmax,aaa,bbb)
-c     
+c
 c***********************************************************************
-c     
+c
 c     routine to invert a real symmetric matrix (reference:
 c     computing methods v.ii, i.s. berezin and n.p.zhidkov,
 c     pergamon press 1965). note that the matrices are
@@ -323,14 +318,14 @@ c     where i>j and k=(i*(i-1))/2+j ).
 c     the matrices aaa and bbb may be equivalenced though
 c     this will destroy the contents of the original
 c     array.
-c     
+c
 c     general version for all real symmetric matrices
-c     
+c
 c     copyright daresbury laboratory 1993
 c     author w.smith (added to dl_poly july 1993)
-c     
+c
 c***********************************************************************
-c     
+c
       implicit real*8(a-h,o-z)
 c
 c     maximum matrix (mbig*mbig) to invert
@@ -358,8 +353,8 @@ c     pack matrix aaa into a triangular form
          enddo
       enddo
 
-         
-c     
+
+c
 c     factorize matrix aaa into upper and lower forms
       do l=1,nnn
          do m=1,l
@@ -393,7 +388,7 @@ c     factorize matrix aaa into upper and lower forms
             endif
          enddo
       enddo
-c     
+c
 c     invert lower triangular matrix
       do l=1,nnn
          n=ind(l,l)
@@ -419,7 +414,7 @@ c     invert lower triangular matrix
             endif
          enddo
       enddo
-c     
+c
 c     form product of upper and lower inverse triangular matrices
       do l=1,nnn
          do m=1,l

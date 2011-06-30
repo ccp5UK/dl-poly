@@ -1,30 +1,25 @@
 c     program hisxyz
 c*********************************************************************
-c     
+c
 c     dl_poly program to convert HISTORY files to
 c     a standard XYZ file for the XMOL package
-c     
+c
 c     copyright daresbury laboratory 1997
 c     author  w.smith june 1997
-c     
-c     wl
-c     1996/02/15 14:33:26
-c     1.1.1.1
-c     Exp
-c     
+c
 c*********************************************************************
-      
+
       implicit real*8(a-h,o-z)
-      
+
       parameter (mxatms=2490)
       character*40 fname
       character*80 title
       character*8 atmnam(mxatms),newnam(mxatms),dummy
       dimension xxx(mxatms),yyy(mxatms),zzz(mxatms)
-      
+
       write(*,'(a)')
      x  'HISTORY to XYZ File Converter'
-      
+
       write(*,'(a)')'Enter name of file to convert'
       read(5,*)fname
       write(*,'(a)')'Output file will be called HIS.xyz'
@@ -62,7 +57,7 @@ c*********************************************************************
         write(8,'(i5)')natms
         write(8,'(a80)')title
         do i=1,natms
-          
+
           write(8,'(a2,3f12.4)')newnam(i)(1:2),xxx(i),yyy(i),zzz(i)
 
         enddo
@@ -75,22 +70,17 @@ c*********************************************************************
       subroutine strip(string,length)
 
 c***********************************************************************
-c     
+c
 c     DL_POLY routine to strip blanks from start of a string
 c     maximum length is 255 characters
-c     
+c
 c     copyright daresbury laboratory 1993
 c     author   t.forester       july 1993
-c     
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
-c     
+c
 c***********************************************************************
 
       character*(*) string
-      
+
       imax = min(length,255)
       do i = 1,imax
 
@@ -112,12 +102,13 @@ c***********************************************************************
       end
       subroutine whatname(natms,newnam,atmnam)
 c*********************************************************************
-c     
+c
 c     dl_poly utility program
 c     reassign atom names in a known list of atoms
+c
 c     copyright daresbury laboratory jun 1997
 c     author w.smith jun 1997
-c     
+c
 c*********************************************************************
 
       character*8 atmnam(*),newnam(*)

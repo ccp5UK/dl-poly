@@ -1,4 +1,4 @@
-Dear Dr. Smith, 
+Dear Dr. Smith,
 
 I am sending to you two files which contain force field parameters as
 in the 95-96 versions of AMBER (all atom forcefields). Although
@@ -28,21 +28,21 @@ http://azazello.chem.unc.edu/alex/alex.html
 
 filename="amb96.ff"
 
-amber       
-# AMBER force field 89 Rev A: 
+amber
+# AMBER force field 89 Rev A:
 # All-Atom and united atom Force Field with TIP3P Water, New LP params, cations
 # in DL_POLY utility format
 BLOCK =  atom names and masses (amu)
 53     records
-BR    79.90  
+BR    79.90
 C     12.01
 CA    12.01
 CB    12.01
-CC    12.01             
+CC    12.01
 CK    12.01
 CM    12.01
 CN    12.01
-CQ    12.01             
+CQ    12.01
 CR    12.01
 CT    12.01
 CV    12.01
@@ -90,45 +90,45 @@ Cs    132.91
 #
 #  B O N D     P A R A M E T E R S
 #
-BLOCK = Harmonic stretch 
+BLOCK = Harmonic stretch
 83      records
 2.0     prefactor
 harm    type
-C   CA     469.       1.409   
-C   CB     447.       1.419  
-C   CM     410.       1.444  
+C   CA     469.       1.409
+C   CB     447.       1.419
+C   CM     410.       1.444
 C   CT     317.       1.522
-C   N      490.       1.335  
-C   N*     424.       1.383  
-C   NA     418.       1.388  
-C   NC     457.       1.358  
-C   O      570.       1.229  
-C   O2     656.       1.25   
-C   OH     450.       1.364  
-C*  CB     388.       1.459  
-C*  CT     317.       1.495  
-C*  CW     546.       1.352  
+C   N      490.       1.335
+C   N*     424.       1.383
+C   NA     418.       1.388
+C   NC     457.       1.358
+C   O      570.       1.229
+C   O2     656.       1.25
+C   OH     450.       1.364
+C*  CB     388.       1.459
+C*  CT     317.       1.495
+C*  CW     546.       1.352
 C*  HC     367.       1.08
-CA  CA     469.       1.40   
-CA  CB     469.       1.404  
+CA  CA     469.       1.40
+CA  CB     469.       1.404
 CA  CM     427.       1.433
-CA  CN     469.       1.40   
-CA  CT     317.       1.51   
-CA  N2     481.       1.340  
-CA  NA     427.       1.381  
-CA  NC     483.       1.339  
+CA  CN     469.       1.40
+CA  CT     317.       1.51
+CA  N2     481.       1.340
+CA  NA     427.       1.381
+CA  NC     483.       1.339
 CA  HA     367.       1.080
 CA  H4     367.       1.080
-CB  CB     520.       1.370  
-CB  CN     447.       1.419  
-CB  N*     436.       1.374  
-CB  NB     414.       1.391  
-CB  NC     461.       1.354  
-CC  CT     317.       1.504  
-CC  CV     512.       1.375  
-CC  CW     518.       1.371  
-CC  NA     422.       1.385  
-CC  NB     410.       1.394  
+CB  CB     520.       1.370
+CB  CN     447.       1.419
+CB  N*     436.       1.374
+CB  NB     414.       1.391
+CB  NC     461.       1.354
+CC  CT     317.       1.504
+CC  CV     512.       1.375
+CC  CW     518.       1.371
+CC  NA     422.       1.385
+CC  NB     410.       1.394
 CK  N*     440.       1.371
 CK  NB     529.       1.304
 CK  H5     367.       1.080
@@ -138,11 +138,11 @@ CM  N*     448.       1.365
 CM  HA     367.       1.080
 CM  H4     367.       1.080
 CM  H5     367.       1.080
-CN  NA     428.       1.38   
+CN  NA     428.       1.38
 CQ  H5     367.       1.080
 CQ  NC     502.       1.324
-CR  NA     477.       1.343  
-CR  NB     488.       1.335  
+CR  NA     477.       1.343
+CR  NB     488.       1.335
 CR  H5     367.       1.080
 CT  CT     310.       1.526
 CT  F      367.       1.380
@@ -153,30 +153,30 @@ CT  H3     340.       1.09
 CT  HP     340.       1.09
 CT  N      337.       1.449
 CT  N*     337.       1.475
-CT  N2     337.       1.463  
-CT  N3     367.       1.471  
+CT  N2     337.       1.463
+CT  N3     367.       1.471
 CT  OH     320.       1.41
 CT  OS     320.       1.41
-CT  S      227.       1.81   
-CT  SH     237.       1.81   
-CV  NB     410.       1.394  
+CT  S      227.       1.81
+CT  SH     237.       1.81
+CV  NB     410.       1.394
 CV  H4     367.       1.080
-CW  NA     427.       1.381  
+CW  NA     427.       1.381
 CW  H4     367.       1.080
-H   N      434.       1.01   
+H   N      434.       1.01
 H   N*     434.       1.01
-H   N2     434.       1.01   
-H   NA     434.       1.01   
+H   N2     434.       1.01
+H   NA     434.       1.01
 H   N3     434.       1.01
-HO  OH     553.       0.96   
-HO  OS     553.       0.96   
-HS  SH     274.       1.336  
-O2  P      525.       1.48   
-OH  P      230.       1.61   
-OS  P      230.       1.61   
+HO  OH     553.       0.96
+HO  OS     553.       0.96
+HS  SH     274.       1.336
+O2  P      525.       1.48
+OH  P      230.       1.61
+OS  P      230.       1.61
 OW  HW     553.       0.9572
 HW  HW     553.       1.5136
-S   S      166.       2.038  
+S   S      166.       2.038
 #--4---4----------12----------12
 #   A N G L E    B E N D
 #
@@ -185,77 +185,77 @@ BLOCK = angle_bend
 187      records
 2.0      prefactor
 harm     type
-C   CA  CA    63.         120.  
+C   CA  CA    63.         120.
 C   CA  HA    35.         120.
-C   CB  CB    63.         119.2 
-C   CB  NB    70.         130.  
+C   CB  CB    63.         119.2
+C   CB  NB    70.         130.
 C   CM  CM    63.         120.7
 C   CM  CT     70.        119.7
 C   CM  HA    35.         119.7
 C   CM  H4    35.         119.7
-C   CT  CT    63.0        111.1 
-C   CT  N     63.0        110.1 
-C   CT  N3    80.0        111.2 
+C   CT  CT    63.0        111.1
+C   CT  N     63.0        110.1
+C   CT  N3    80.0        111.2
 C   CT  H1    50.         109.5
 C   CT  HP    50.         109.5
 C   CT  HC    50.         109.5
 C   N   CT    50.         121.9
-C   N   H     30.         120.0 
+C   N   H     30.         120.0
 C   N*  CM    70.         121.6
 C   N*  CT     70.        117.6
 C   N*  H     30.         119.2
-C   NA  C     70.         126.4 
-C   NA  CA    70.         125.2 
-C   NA  H     30.         116.8 
-C   NC  CA    70.         120.5 
-C   OH  HO     35.        113.0  
-C*  CB  CA    63.         134.9 
-C*  CB  CN    63.         108.8 
-C*  CT  CT    63.0        115.6 
+C   NA  C     70.         126.4
+C   NA  CA    70.         125.2
+C   NA  H     30.         116.8
+C   NC  CA    70.         120.5
+C   OH  HO     35.        113.0
+C*  CB  CA    63.         134.9
+C*  CB  CN    63.         108.8
+C*  CT  CT    63.0        115.6
 C*  CT  HC     50.        109.5
 C*  CW  H4    35.         120.0
-C*  CW  NA    70.         108.7 
-CA  C   CA    63.         120.  
-CA  C   OH    70.         120.  
-CA  CA  CA    63.         120.  
-CA  CA  CB    63.         120.  
-CA  CA  CN    63.         120.  
-CA  CA  CT    70.         120.  
+C*  CW  NA    70.         108.7
+CA  C   CA    63.         120.
+CA  C   OH    70.         120.
+CA  CA  CA    63.         120.
+CA  CA  CB    63.         120.
+CA  CA  CN    63.         120.
+CA  CA  CT    70.         120.
 CA  CA  HA    35.         120.
 CA  CA  H4    35.         120.
-CA  CB  CB    63.         117.3 
-CA  CB  CN    63.         116.2 
-CA  CB  NB    70.         132.4 
+CA  CB  CB    63.         117.3
+CA  CB  CN    63.         116.2
+CA  CB  NB    70.         132.4
 CA  CM  CM    63.         117.0
 CA  CM  H4    35.         123.3
 CA  CM  HA    35.         123.3
-CA  CN  CB    63.         122.7 
-CA  CN  NA    70.         132.8 
-CA  CT  CT    63.         114.  
+CA  CN  CB    63.         122.7
+CA  CN  NA    70.         132.8
+CA  CT  CT    63.         114.
 CA  CT  HC     50.        109.5
-CA  N2  CT    50.         123.2 
-CA  N2  H     35.         120.  
-CA  NA  H     30.         118.0 
-CA  NC  CB    70.         112.2 
+CA  N2  CT    50.         123.2
+CA  N2  H     35.         120.
+CA  NA  H     30.         118.0
+CA  NC  CB    70.         112.2
 CA  NC  CQ    70.         118.6
-CB  C   NA    70.         111.3 
-CB  C   O     80.         128.8 
-CB  C*  CT    70.         128.6 
-CB  C*  CW    63.         106.4 
-CB  CA  N2    70.         123.5 
-CB  CA  NC    70.         117.3 
+CB  C   NA    70.         111.3
+CB  C   O     80.         128.8
+CB  C*  CT    70.         128.6
+CB  C*  CW    63.         106.4
+CB  CA  N2    70.         123.5
+CB  CA  NC    70.         117.3
 CB  CA  HA    35.         120.0
 CB  CA  H4    35.         120.0
-CB  CB  N*    70.         106.2 
-CB  CB  NB    70.         110.4 
-CB  CB  NC    70.         127.7 
+CB  CB  N*    70.         106.2
+CB  CB  NB    70.         110.4
+CB  CB  NC    70.         127.7
 CB  CN  NA    70.         104.4
 CB  N*  CK    70.         105.4
 CB  N*  CT     70.        125.8
 CB  N*  H     30.         125.8
 CB  NB  CK    70.         103.8
 CB  NC  CQ    70.         111.0
-CC  CT  CT    63.0        113.1 
+CC  CT  CT    63.0        113.1
 CC  CT  HC     50.        109.5
 CC  CV  H4    35.         120.0
 CC  CV  NB    70.         120.00
@@ -263,10 +263,10 @@ CC  CW  H4    35.         120.0
 CC  CW  NA    70.         120.00
 CC  NA  CR    70.         120.00
 CC  NA  H     30.         120.00
-CC  NB  CR    70.         117.0 
+CC  NB  CR    70.         117.0
 CK  N*  CT     70.        128.8
-CM  C   NA    70.         114.1 
-CM  C   O     80.         125.3 
+CM  C   NA    70.         114.1
+CM  C   O     80.         125.3
 CM  CA  N2    70.         120.1
 CM  CA  NC    70.         121.5
 CM  CM  CT     70.        119.7
@@ -276,50 +276,50 @@ CM  CM  H4    35.         119.7
 CM  CT  HC     50.        109.5
 CM  N*  CT     70.        121.2
 CM  N*  H     30.         121.2
-CN  NA  CW    70.         111.6 
-CN  NA  H     30.         123.1 
+CN  NA  CW    70.         111.6
+CN  NA  H     30.         123.1
 CN  CA  HA    35.         120.0
 CR  NA  CW    70.         120.00
 CR  NA  H     30.         120.00
-CR  NB  CV    70.         117.0 
+CR  NB  CV    70.         117.0
 CT  C   N     70.         116.6
 CT  C   O     80.         120.4
-CT  C   O2    70.         117.  
-CT  C*  CW    70.         125.  
+CT  C   O2    70.         117.
+CT  C*  CW    70.         125.
 CT  CC  CV    70.         120.00
 CT  CC  CW    70.         120.00
 CT  CC  NA    70.         120.00
 CT  CC  NB    70.         120.00
 CT  CT  CT     40.        109.5
 CT  CT  HC     50.        109.5
-CT  CT  N     80.0        109.7 
+CT  CT  N     80.0        109.7
 CT  CT  N*     50.        109.5
-CT  CT  N2    80.0        111.2 
-CT  CT  N3    80.0        111.2 
+CT  CT  N2    80.0        111.2
+CT  CT  N3    80.0        111.2
 CT  CT  OH     50.        109.5
 CT  CT  OS     50.        109.5
 CT  CT  S     50.         114.7
-CT  CT  SH    50.0        108.6 
+CT  CT  SH    50.0        108.6
 CT  CT  H1    50.         109.5
 CT  CT  H2    50.         109.5
 CT  CT  HP    50.         109.5
-CT  N   CT    50.         118.  
+CT  N   CT    50.         118.
 CT  N   H     30.         118.4
 CT  N2  H     35.         118.4
 CT  N3  H     50.         109.5
-CT  OH  HO     55.        108.5 
+CT  OH  HO     55.        108.5
 CT  OS  CT     60.        109.5
 CT  OS  P     100.        120.5
-CT  S   CT    62.         98.9   
-CT  S   S     68.         103.7  
-CT  SH  HS    43.         96.0   
+CT  S   CT    62.         98.9
+CT  S   S     68.         103.7
+CT  SH  HS    43.         96.0
 CV  CC  NA    70.         120.00
 CW  CC  NA    70.         120.00
 CW  CC  NB    70.         120.00
 CW  NA  H     30.         120.00
 F   CT  F     77.         109.1
 F   CT  H1    35.         109.5
-H   N   H     35.         120.  
+H   N   H     35.         120.
 H   N2  H     35.         120.
 H   N3  H     35.         109.5
 H1  CT  H1    35.         109.5
@@ -342,36 +342,36 @@ H5  CQ  NC    35.         115.45
 H5  CR  NA    35.         120.0
 H5  CR  NB    35.         120.0
 HC  CT  HC     35.        109.5
-HO  OH  P     45.0        108.5  
+HO  OH  P     45.0        108.5
 HP  CT  HP    35.         109.5
 HP  CT  N3    50.         109.5
 HS  SH  HS     35.        92.07
 HW  OW  HW    100.        104.52
-N   C   O     80.         122.9 
-N*  C   NA    70.         115.4 
-N*  C   NC    70.         118.6 
-N*  C   O     80.         120.9 
-N*  CB  NC    70.         126.2 
+N   C   O     80.         122.9
+N*  C   NA    70.         115.4
+N*  C   NC    70.         118.6
+N*  C   O     80.         120.9
+N*  CB  NC    70.         126.2
 N*  CK  NB    70.         113.9
 N*  CT  OS     50.        109.5
-N2  CA  N2    70.         120.  
-N2  CA  NA    70.         116.0 
-N2  CA  NC    70.         119.3 
-NA  C   O     80.         120.6 
-NA  CA  NC    70.         123.3 
+N2  CA  N2    70.         120.
+N2  CA  NA    70.         116.0
+N2  CA  NC    70.         119.3
+NA  C   O     80.         120.6
+NA  CA  NC    70.         123.3
 NA  CR  NA    70.         120.00
 NA  CR  NB    70.         120.00
-NC  C   O     80.         122.5 
+NC  C   O     80.         122.5
 NC  CQ  NC    70.         129.1
-O   C   O     80.         126.0 
+O   C   O     80.         126.0
 O   C   O2    80.         126.0
-O2  C   O2    80.         126.0 
-O2  P   O2    140.0       119.9  
-O2  P   OH    45.0        108.23 
+O2  C   O2    80.         126.0
+O2  P   O2    140.0       119.9
+O2  P   OH    45.0        108.23
 O2  P   OS    100.0       108.23
-OH  P   OS    45.0        102.6  
-OS  P   OS    45.0        102.6  
-P   OS  P     100.        120.5 
+OH  P   OS    45.0        102.6
+OS  P   OS    45.0        102.6
+P   OS  P     100.        120.5
 #--4---4---4----------12----------12
 #
 #   D I H E D R A L     P A R A M E T E R S
@@ -531,9 +531,9 @@ hbnd   type
 #  lennard Jones equivalents
 BLOCK = lennard jones equivalents
 3          records
-N   NA  N2  N*  NP  NC  NO  NB                               
-C   C*  CA  CB  CC  CN  CM  CK  CQ  CD  CE  CF  CG  CP  
-C   CI  CJ  CW  CV  CR  CX  CY                      
+N   NA  N2  N*  NP  NC  NO  NB
+C   C*  CA  CB  CC  CN  CM  CK  CQ  CD  CE  CF  CG  CP
+C   CI  CJ  CW  CV  CR  CX  CY
 #
 # L E N N A R D - J O N E S parameters,    STDA      RE
 # sig(HW) set to 1.0 to avoid overflow (eps = 0)
@@ -577,79 +577,79 @@ F        1.75      0.061
 BLOCK = 1..4 LJ parameters
 0      records
 #
-BLOCK  =  special 1..4 VDWs 
+BLOCK  =  special 1..4 VDWs
 0      records
 
 ----------------------------------------------------------------------
 
 filename="amb96.dat"
 
-amber         
+amber
 all atom charges from JCC 7, 230-252 (1986) : amino acid units, rna, dna + tyo + bcr
 48 residues : ace ala arg asn asp bcr cra crb crc cys cyx gln glu gly hb he hid hie hip ile leu lys met mth mtl nhe nma nme phe pom pro ser thr trp tyo tyr val wat hoh cip cim ade cyt gua thy ura dna rna
 residue = ace
 atoms = 4
-   1   2CH3 CT  -0.3662        
+   1   2CH3 CT  -0.3662
    2   1HH3 HC   0.1123      3
    3   1C   C    0.5972
    4   3O   O   -0.5679
 residue = ala
 atoms = 8
-   1   2N   N   -0.4157        
-   2   1H   H    .2719                     
-   3   1CA  CT   .0337         
-   4   3HA  H1   .0823                     
-   5   3CB  CT  -.1825         
-   6   5HB  HC   .0603       3             
-   7   3C   C    .5973                     
-   8   7O   O   -.5679                     
-residue = arg             
+   1   2N   N   -0.4157
+   2   1H   H    .2719
+   3   1CA  CT   .0337
+   4   3HA  H1   .0823
+   5   3CB  CT  -.1825
+   6   5HB  HC   .0603       3
+   7   3C   C    .5973
+   8   7O   O   -.5679
+residue = arg
 atoms = 19
-   1   2N   N    -0.3479       
-   2   1H   H     .2747                    
-   3   1CA  CT   -.2637        
-   4   3HA  H1    .1560                    
-   5   3CB  CT   -.0007        
-   6   5HB  HC    .0327      2             
-   7   5CG  CT    .0390        
-   8   7HG  HC    .0285      2             
-   9   7CD  CT    .0486        
-  10   9HD  H1    .0687      2             
-  11   9NE  N2   -.5295        
-  12  11HE  H     .3456                    
-  13  11CZ  CA    .8076                    
-  14  13NH1 N2   -.8627    
-  15  14HH1 H     .4478      2             
-  16  13NH2 N2   -.8627               
-  17  16HH2 H     .4478      2             
-  18   3C   C     .7341                    
-  19  18O   O    -.5894                    
-residue = asn   
-atoms = 12 
-   1   2N   N    -0.4157       
-   2   1H   H     .2719                    
-   3   1CA  CT    .0143        
-   4   3HA  H1    .1048                    
-   5   3CB  CT   -.2041        
-   6   5HB  HC    .0797      2             
-   7   5CG  C     .7130                    
-   8   7OD1 O    -.5931                    
-   9   7ND2 N    -.9191        
-  10   9HD2 H     .4196      2             
-  11   3C   C     .5973                    
-  12  11O   O    -.5679                    
-residue = asp 
-atoms = 10                       
-   1   2N   N    -0.5163       
-   2   1H   H     0.2936                   
-   3   1CA  CT    0.0381       
-   4   3HA  H1    0.088                    
-   5   3CB  CT   -0.0303       
-   6   5HB  HC   -0.0122     2             
-   7   5CG  C     0.7994                   
-   8   7OD  O2   -0.8014     2             
-   9   3C   C     0.5366                   
-  10   9O   O    -0.5819                   
+   1   2N   N    -0.3479
+   2   1H   H     .2747
+   3   1CA  CT   -.2637
+   4   3HA  H1    .1560
+   5   3CB  CT   -.0007
+   6   5HB  HC    .0327      2
+   7   5CG  CT    .0390
+   8   7HG  HC    .0285      2
+   9   7CD  CT    .0486
+  10   9HD  H1    .0687      2
+  11   9NE  N2   -.5295
+  12  11HE  H     .3456
+  13  11CZ  CA    .8076
+  14  13NH1 N2   -.8627
+  15  14HH1 H     .4478      2
+  16  13NH2 N2   -.8627
+  17  16HH2 H     .4478      2
+  18   3C   C     .7341
+  19  18O   O    -.5894
+residue = asn
+atoms = 12
+   1   2N   N    -0.4157
+   2   1H   H     .2719
+   3   1CA  CT    .0143
+   4   3HA  H1    .1048
+   5   3CB  CT   -.2041
+   6   5HB  HC    .0797      2
+   7   5CG  C     .7130
+   8   7OD1 O    -.5931
+   9   7ND2 N    -.9191
+  10   9HD2 H     .4196      2
+  11   3C   C     .5973
+  12  11O   O    -.5679
+residue = asp
+atoms = 10
+   1   2N   N    -0.5163
+   2   1H   H     0.2936
+   3   1CA  CT    0.0381
+   4   3HA  H1    0.088
+   5   3CB  CT   -0.0303
+   6   5HB  HC   -0.0122     2
+   7   5CG  C     0.7994
+   8   7OD  O2   -0.8014     2
+   9   3C   C     0.5366
+  10   9O   O    -0.5819
 residue = bcr
 atoms = 5
    1   2H   HO    .166
@@ -657,403 +657,403 @@ atoms = 5
    3   2C   C     .525
    4   3O2  O2   -.612
    5   3O3  O2   -.671
-residue = cra   
+residue = cra
 atoms = 5
-   1   2C1  CT     .2442       
-   2   1H1  HC  -.020675   2               
-   3   1O2  OS    -.4057                   
-   4   3C3  CT     .2442       
-   5   4H3  HC  -.020675    2              
-residue = crb 
-atoms = 5  
-   1   2C1  CT     .2442       
-   2   1H1  HC  -.020675     2             
-   3   1O2  OS    -.4057                   
-   4   3C3  CT     .2442       
-   5   4H3  HC  -.020675     2             
-residue = crc 
-atoms = 5 
-   1   2C1  CT     .2442       
-   2   1H1  HC  -.020675     2             
-   3   1O2  OS    -.4057                   
-   4   3C3  CT     .2442       
-   5   4H3  HC  -.020675     2             
-residue = cys  
-atoms = 10 
-   1   2N   N    -0.4157       
-   2   1H   H     0.2719                   
-   3   1CA  CT    0.0213       
-   4   3HA  H1    0.1124                   
-   5   3CB  CT   -0.1231       
-   6   5HB  H1    0.1112     2             
-   7   5SG  SH   -0.3119       
-   8   7HG  HS    0.1933                   
-   9   3C   C     0.5973                   
-  10   9O   O    -.5679                    
-residue = cyx    
-atoms = 9  
-   1   2N   N    -0.4157       
-   2   1H   H     .2719                    
-   3   1CA  CT    .0429        
-   4   3HA  H1    .0766                    
-   5   3CB  CT   -.0790        
-   6   5HB  H1    .0910      2             
-   7   5SG  S    -.1081                    
-   8   3C   C     .5973                    
-   9   8O   O    -.5679                    
-residue = gln 
-atoms = 14 
-   1   2N   N    -0.4157             1     
-   2   1H   H     .2719                    
-   3   1CA  CT   -.0031              1     
-   4   3HA  H1    .0850                    
-   5   3CB  CT   -.0036              2     
-   6   5HB  HC    .0171      2             
-   7   5CG  CT   -.0645              2     
-   8   7HG  HC    .0352      2             
-   9   7CD  C     .6951                    
-  10   9OE1 O    -.6086                    
-  11   9NE2 N    -.9407              2     
-  12  11HE2 H     .4251      2             
-  13   3C   C     .5973                    
-  14  13O   O    -.5679                    
-residue = glu    
-atoms = 12  
-   1   2N   N    -0.5163             1     
-   2   1H   H     .2936                    
-   3   1CA  CT    .0397              1     
-   4   3HA  H1    .1105                    
-   5   3CB  CT    .0560              2     
-   6   5HB  HC   -.0173      2             
-   7   5CG  CT    .0136              2     
-   8   7HG  HC   -.0425      2             
-   9   7CD  C     .8054                    
-  10   9OE  O2   -.8188      2             
-  11   3C   C     .5366                    
-  12  11O   O    -.5819                    
-residue = gly 
-atoms = 6  
-   1   2N   N    -0.4157             1     
-   2   1H   H     0.2719                   
-   3   1CA  CT   -.0252              2     
-   4   3HA  H1    .0698      2             
-   5   3C   C     .5973                    
-   6   5O   O    -.5679                    
-residue = hb   
-atoms = 1 
-   1    H   HO   0.285                     
-residue = he    
-atoms = 1 
-   1    H   HO   0.313                     
-residue = hid    
-atoms = 16
-   1   2N   N    -0.4157             1     
-   2   1H   H     .2719                    
-   3   1CA  CT    .0188              1     
-   4   3HA  H1    .0881                    
-   5   3CB  CT   -.0462              2     
-   6   5HB  HC    .0402       2            
-   7   5CG  CC   -.0266                    
-   8   7ND1 NA   -.3811              1     
-   9   8HD1 H     .3649                    
-  10   8CE1 CR    .2057              1     
-  11  10HE1 H5    .1392                    
-  12  10NE2 NB   -.5727                    
-  13  12CD2 CV    .1292              1     
-  14  13HD2 H4    .1147                    
-  15   3C   C     .5973                    
-  16  15O   O    -.5679                    
-residue = hie  
-atoms = 16 
-   1   2N   N    -0.4157             1     
-   2   1H   H     .2719                    
-   3   1CA  CT   -.0581              1     
-   4   3HA  H1    .1360                    
-   5   3CB  CT   -.0074              2     
-   6   5HB  HC    .0367       2            
-   7   5CG  CC    0.1868                   
-   8   7ND1 NB   -.5432                    
-   9   8CE1 CR    .1635              1     
-  10   9HE1 H5    .1435                    
-  11   9NE2 NA   -.2795              1     
-  12  11HE2 H     .3339                    
-  13   7CD2 CW   -0.2207             1     
-  14  13HD2 H4    .1862                    
-  15   3C   C     .5973                    
-  16  15O   O    -.5679                    
-residue = hip 
-atoms = 17 
-   1   2N   N    -0.3479             1     
-   2   1H   H     .2747                    
-   3   1CA  CT   -.1354              1     
-   4   3HA  H1    .1212                    
-   5   3CB  CT   -.0414              2     
-   6   5HB  HC    .0810       2            
-   7   5CG  CC   -.0012                    
-   8   7ND1 NA   -.1513              1     
-   9   8HD1 H     .3866                    
-  10   8CE1 CR   -.0170              1     
-  11  10HE1 H5    .2681                    
-  12  10NE2 NA   -.1718              1     
-  13  12HE2 H     .3911                    
-  14   7CD2 CW   -0.1141             1     
-  15  14HD2 H4    .2317                    
-  16   3C   C     .7341                    
-  17  16O   O    -.5894                    
-residue = ile  
-atoms = 14 
-   1   2N   N    -0.4157             1     
-   2   1H   H     .2719                    
-   3   1CA  CT   -.0597              1     
-   4   3HA  H1    .0869                    
-   5   3CB  CT    .1303              1     
-   6   5HB  HC    .0187                    
-   7   5CG2 CT   -.3204              3     
-   8   7HG2 HC    .0882       3            
-   9   5CG1 CT   -.0430              2     
-  10   9HG1 HC    .0236       2            
-  11   9CD1 CT   -.0660              3     
-  12  11HD1 HC    .0186       3            
-  13   3C   C     .5973                    
-  14  13O   O    -.5679                    
-residue = leu  
+   1   2C1  CT     .2442
+   2   1H1  HC  -.020675   2
+   3   1O2  OS    -.4057
+   4   3C3  CT     .2442
+   5   4H3  HC  -.020675    2
+residue = crb
+atoms = 5
+   1   2C1  CT     .2442
+   2   1H1  HC  -.020675     2
+   3   1O2  OS    -.4057
+   4   3C3  CT     .2442
+   5   4H3  HC  -.020675     2
+residue = crc
+atoms = 5
+   1   2C1  CT     .2442
+   2   1H1  HC  -.020675     2
+   3   1O2  OS    -.4057
+   4   3C3  CT     .2442
+   5   4H3  HC  -.020675     2
+residue = cys
+atoms = 10
+   1   2N   N    -0.4157
+   2   1H   H     0.2719
+   3   1CA  CT    0.0213
+   4   3HA  H1    0.1124
+   5   3CB  CT   -0.1231
+   6   5HB  H1    0.1112     2
+   7   5SG  SH   -0.3119
+   8   7HG  HS    0.1933
+   9   3C   C     0.5973
+  10   9O   O    -.5679
+residue = cyx
+atoms = 9
+   1   2N   N    -0.4157
+   2   1H   H     .2719
+   3   1CA  CT    .0429
+   4   3HA  H1    .0766
+   5   3CB  CT   -.0790
+   6   5HB  H1    .0910      2
+   7   5SG  S    -.1081
+   8   3C   C     .5973
+   9   8O   O    -.5679
+residue = gln
 atoms = 14
-   1   2N   N    -0.4157             1     
-   2   1H   H     .2719                    
-   3   1CA  CT   -.0518              1     
-   4   3HA  H1    .0922                    
-   5   3CB  CT   -.1102              2     
-   6   5HB  HC    .0457       2            
-   7   5CG  CT    .3531              1     
-   8   7HG  HC   -.0361                    
-   9   7CD1 CT   -.4121              3     
-  10   9HD1 HC    .1000       3            
-  11   7CD2 CT   -.4121              3     
+   1   2N   N    -0.4157             1
+   2   1H   H     .2719
+   3   1CA  CT   -.0031              1
+   4   3HA  H1    .0850
+   5   3CB  CT   -.0036              2
+   6   5HB  HC    .0171      2
+   7   5CG  CT   -.0645              2
+   8   7HG  HC    .0352      2
+   9   7CD  C     .6951
+  10   9OE1 O    -.6086
+  11   9NE2 N    -.9407              2
+  12  11HE2 H     .4251      2
+  13   3C   C     .5973
+  14  13O   O    -.5679
+residue = glu
+atoms = 12
+   1   2N   N    -0.5163             1
+   2   1H   H     .2936
+   3   1CA  CT    .0397              1
+   4   3HA  H1    .1105
+   5   3CB  CT    .0560              2
+   6   5HB  HC   -.0173      2
+   7   5CG  CT    .0136              2
+   8   7HG  HC   -.0425      2
+   9   7CD  C     .8054
+  10   9OE  O2   -.8188      2
+  11   3C   C     .5366
+  12  11O   O    -.5819
+residue = gly
+atoms = 6
+   1   2N   N    -0.4157             1
+   2   1H   H     0.2719
+   3   1CA  CT   -.0252              2
+   4   3HA  H1    .0698      2
+   5   3C   C     .5973
+   6   5O   O    -.5679
+residue = hb
+atoms = 1
+   1    H   HO   0.285
+residue = he
+atoms = 1
+   1    H   HO   0.313
+residue = hid
+atoms = 16
+   1   2N   N    -0.4157             1
+   2   1H   H     .2719
+   3   1CA  CT    .0188              1
+   4   3HA  H1    .0881
+   5   3CB  CT   -.0462              2
+   6   5HB  HC    .0402       2
+   7   5CG  CC   -.0266
+   8   7ND1 NA   -.3811              1
+   9   8HD1 H     .3649
+  10   8CE1 CR    .2057              1
+  11  10HE1 H5    .1392
+  12  10NE2 NB   -.5727
+  13  12CD2 CV    .1292              1
+  14  13HD2 H4    .1147
+  15   3C   C     .5973
+  16  15O   O    -.5679
+residue = hie
+atoms = 16
+   1   2N   N    -0.4157             1
+   2   1H   H     .2719
+   3   1CA  CT   -.0581              1
+   4   3HA  H1    .1360
+   5   3CB  CT   -.0074              2
+   6   5HB  HC    .0367       2
+   7   5CG  CC    0.1868
+   8   7ND1 NB   -.5432
+   9   8CE1 CR    .1635              1
+  10   9HE1 H5    .1435
+  11   9NE2 NA   -.2795              1
+  12  11HE2 H     .3339
+  13   7CD2 CW   -0.2207             1
+  14  13HD2 H4    .1862
+  15   3C   C     .5973
+  16  15O   O    -.5679
+residue = hip
+atoms = 17
+   1   2N   N    -0.3479             1
+   2   1H   H     .2747
+   3   1CA  CT   -.1354              1
+   4   3HA  H1    .1212
+   5   3CB  CT   -.0414              2
+   6   5HB  HC    .0810       2
+   7   5CG  CC   -.0012
+   8   7ND1 NA   -.1513              1
+   9   8HD1 H     .3866
+  10   8CE1 CR   -.0170              1
+  11  10HE1 H5    .2681
+  12  10NE2 NA   -.1718              1
+  13  12HE2 H     .3911
+  14   7CD2 CW   -0.1141             1
+  15  14HD2 H4    .2317
+  16   3C   C     .7341
+  17  16O   O    -.5894
+residue = ile
+atoms = 14
+   1   2N   N    -0.4157             1
+   2   1H   H     .2719
+   3   1CA  CT   -.0597              1
+   4   3HA  H1    .0869
+   5   3CB  CT    .1303              1
+   6   5HB  HC    .0187
+   7   5CG2 CT   -.3204              3
+   8   7HG2 HC    .0882       3
+   9   5CG1 CT   -.0430              2
+  10   9HG1 HC    .0236       2
+  11   9CD1 CT   -.0660              3
+  12  11HD1 HC    .0186       3
+  13   3C   C     .5973
+  14  13O   O    -.5679
+residue = leu
+atoms = 14
+   1   2N   N    -0.4157             1
+   2   1H   H     .2719
+   3   1CA  CT   -.0518              1
+   4   3HA  H1    .0922
+   5   3CB  CT   -.1102              2
+   6   5HB  HC    .0457       2
+   7   5CG  CT    .3531              1
+   8   7HG  HC   -.0361
+   9   7CD1 CT   -.4121              3
+  10   9HD1 HC    .1000       3
+  11   7CD2 CT   -.4121              3
   12  11HD2 HC    .1000       3
-  13   3C   C     .5973                    
-  14  13O   O    -.5679                    
-residue = lys 
-atoms = 16  
-   1   2N   N    -0.3479       
-   2   1H   H     .2747                    
-   3   1CA  CT   -.2400        
-   4   3HA  H1    .1426                    
-   5   3CB  CT   -.0094        
-   6   5HB  HC    .0362    2            
-   7   5CG  CT    .0187        
-   8   7HG  HC    .0103    2            
-   9   7CD  CT   -.0479        
-  10   9HD  HC    .0621    2            
-  11   9CE  CT   -.0143        
-  12  11HE  HP    .1135    2            
-  13  11NZ  N3   -.3854        
-  14  13HZ  H     .3400    3            
-  15   3C   C     .7341                    
-  16  15O   O    -.5894                    
-residue = met 
-atoms = 13 
-   1   2N   N    -0.4157       
-   2   1H   H     .2719                    
-   3   1CA  CT   -.0237        
-   4   3HA  H1    .088                     
-   5   3CB  CT    .0342        
-   6   5HB  HC    .0241       2            
-   7   5CG  CT    .0018        
-   8   7HG  H1    .0440       2            
-   9   7SD  S    -.2737                    
-  10   9CE  CT   -.0536       
-  11  10HE  H1    .0684       3            
-  12   3C   C     .5973                    
-  13  12O   O    -.5679                    
-residue = mth 
-atoms = 2 
-   1   2CA  CT   -.4640        
-   2   1HA  HC    .1160       4            
+  13   3C   C     .5973
+  14  13O   O    -.5679
+residue = lys
+atoms = 16
+   1   2N   N    -0.3479
+   2   1H   H     .2747
+   3   1CA  CT   -.2400
+   4   3HA  H1    .1426
+   5   3CB  CT   -.0094
+   6   5HB  HC    .0362    2
+   7   5CG  CT    .0187
+   8   7HG  HC    .0103    2
+   9   7CD  CT   -.0479
+  10   9HD  HC    .0621    2
+  11   9CE  CT   -.0143
+  12  11HE  HP    .1135    2
+  13  11NZ  N3   -.3854
+  14  13HZ  H     .3400    3
+  15   3C   C     .7341
+  16  15O   O    -.5894
+residue = met
+atoms = 13
+   1   2N   N    -0.4157
+   2   1H   H     .2719
+   3   1CA  CT   -.0237
+   4   3HA  H1    .088
+   5   3CB  CT    .0342
+   6   5HB  HC    .0241       2
+   7   5CG  CT    .0018
+   8   7HG  H1    .0440       2
+   9   7SD  S    -.2737
+  10   9CE  CT   -.0536
+  11  10HE  H1    .0684       3
+  12   3C   C     .5973
+  13  12O   O    -.5679
+residue = mth
+atoms = 2
+   1   2CA  CT   -.4640
+   2   1HA  HC    .1160       4
 residue = mtl
-atoms = 8 
-   1    FE  FE    3.0                      
-   1    CA  CO    2.0                      
-   1    CU  CU    2.0                      
-   1    CS  QC    1.0                      
-   1    K   QK    1.0                      
-   1    LI  QL    1.0                      
-   1    NA  QN    1.0                      
-   1    RB  QR    1.0                      
-residue = nhe  
-atoms = 2 
-   1   2N   N     -0.463       
-   2   1HN  H     .2315      2             
-residue = nma    
-atoms = 12 
-   1   2C1  CT    -.0411             3     
-   2   1H1  HC    .0173                   
-   3   1H2  HC     .0173                   
-   4   1H3  HC     .0173                   
-   5   1C   C      .5869                   
-   6   5O   O     -.5911                   
-   7   5N   N     -.4192             1     
-   8   7HN  H      .2823                   
-   9   7C2  CT    -.2078             3     
-  10   9H4  HC     .1127                   
-  11   9H5  HC     .1127                   
-  12   9H6  HC     .1127                   
-residue = nme 
-atoms = 4 
-   1   2N   N    -0.4157             1     
-   2   1H   H     .2719                    
-   3   1CH3 CT   -.1490              3     
-   4   3HH3 H1    .0976      3             
-residue = phe  
+atoms = 8
+   1    FE  FE    3.0
+   1    CA  CO    2.0
+   1    CU  CU    2.0
+   1    CS  QC    1.0
+   1    K   QK    1.0
+   1    LI  QL    1.0
+   1    NA  QN    1.0
+   1    RB  QR    1.0
+residue = nhe
+atoms = 2
+   1   2N   N     -0.463
+   2   1HN  H     .2315      2
+residue = nma
+atoms = 12
+   1   2C1  CT    -.0411             3
+   2   1H1  HC    .0173
+   3   1H2  HC     .0173
+   4   1H3  HC     .0173
+   5   1C   C      .5869
+   6   5O   O     -.5911
+   7   5N   N     -.4192             1
+   8   7HN  H      .2823
+   9   7C2  CT    -.2078             3
+  10   9H4  HC     .1127
+  11   9H5  HC     .1127
+  12   9H6  HC     .1127
+residue = nme
+atoms = 4
+   1   2N   N    -0.4157             1
+   2   1H   H     .2719
+   3   1CH3 CT   -.1490              3
+   4   3HH3 H1    .0976      3
+residue = phe
 atoms = 19
-   1   2N   N    -0.4157             1     
-   2   1H   H     .2719                    
-   3   1CA  CT   -.0024              1 
-   4   3HA  H1    .0978                    
-   5   3CB  CT   -.0343              2     
-   6   5HB  HC    .0295      2             
-   7   5CG  CA    .0118                    
-   8   7CD1 CA   -.1256              1     
-   9   8HD1 HA    .1330   
-  10   7CD2 CA   -.1256              1     
-  11  10HD2 HA    .1330      
-  12   8CE1 CA   -.1704              1     
-  13  12HE1 HA    .1430  
-  14  10CE2 CA   -.1704              1     
+   1   2N   N    -0.4157             1
+   2   1H   H     .2719
+   3   1CA  CT   -.0024              1
+   4   3HA  H1    .0978
+   5   3CB  CT   -.0343              2
+   6   5HB  HC    .0295      2
+   7   5CG  CA    .0118
+   8   7CD1 CA   -.1256              1
+   9   8HD1 HA    .1330
+  10   7CD2 CA   -.1256              1
+  11  10HD2 HA    .1330
+  12   8CE1 CA   -.1704              1
+  13  12HE1 HA    .1430
+  14  10CE2 CA   -.1704              1
   15  14HE2 HA    .1430
-  16  12CZ  CA   -.1072              1     
-  17  16HZ  HA    .1297                    
-  18   3C   C     .5973                    
-  19  18O   O    -.5679                    
-residue = pom 
-atoms = 2 
-   1   2P   P    1.385                     
-   2   1O   O2   -.847       2             
-residue = pro 
-atoms = 11 
-   1   2N   N    -0.2548                   
-   2   1CD  CT    0.0192             2     
-   3   2HD  H1   0.0391      2             
-   4   2CG  CT    .0189              2     
-   5   4HG  HC   0.0213      2             
-   6   4CB  CT    -.007              2     
-   7   6HB  HC   0.0253      2             
-   8   6CA  CT   -.0266              1     
-   9   8HA  H1   0.0641                    
-  10   8C   C    0.5896                    
-  11  10O   O     -.5748                   
-residue = ser 
-atoms = 10 
-   1   2N   N    -0.4157             1     
-   2   1H   H     .2719                    
-   3   1CA  CT   -.0249              1     
-   4   3HA  H1    .0843                    
-   5   3CB  CT    .2117              2     
-   6   5HB  H1    .0352      2             
-   7   5OG  OH   -.6546              1     
-   8   7HG  HO    .4275                    
-   9   3C   C     .5973                    
-  10   9O   O    -.5679                    
+  16  12CZ  CA   -.1072              1
+  17  16HZ  HA    .1297
+  18   3C   C     .5973
+  19  18O   O    -.5679
+residue = pom
+atoms = 2
+   1   2P   P    1.385
+   2   1O   O2   -.847       2
+residue = pro
+atoms = 11
+   1   2N   N    -0.2548
+   2   1CD  CT    0.0192             2
+   3   2HD  H1   0.0391      2
+   4   2CG  CT    .0189              2
+   5   4HG  HC   0.0213      2
+   6   4CB  CT    -.007              2
+   7   6HB  HC   0.0253      2
+   8   6CA  CT   -.0266              1
+   9   8HA  H1   0.0641
+  10   8C   C    0.5896
+  11  10O   O     -.5748
+residue = ser
+atoms = 10
+   1   2N   N    -0.4157             1
+   2   1H   H     .2719
+   3   1CA  CT   -.0249              1
+   4   3HA  H1    .0843
+   5   3CB  CT    .2117              2
+   6   5HB  H1    .0352      2
+   7   5OG  OH   -.6546              1
+   8   7HG  HO    .4275
+   9   3C   C     .5973
+  10   9O   O    -.5679
 residue = thr
-atoms = 12 
-   1   2N   N    -0.4157             1     
-   2   1H   H     0.2719                   
-   3   1CA  CT   -.0389              1     
-   4   3HA  H1    0.1007                   
-   5   3CB  CT    0.3654             1     
-   6   5HB  H1    0.0043                   
-   7   5CG  CT    -0.2438            3     
-   8   7HG2 HC    .0642      3             
-   9   5OG  OH   -.6761              1     
-  10   9HG1 HO    .4102                    
-  11   3C   C     .5973                    
-  12  11O   O    -.5679                    
-residue = trp 
-atoms = 23 
-   1   2N   N   -0.4157              1     
-   2   1H   H    .2719                     
-   3   1CA  CT  -.0275               1     
-   4   3HA  H1   0.1123                    
-   5   3CB  CT   -0.005              2     
-   6   5HB  HC   0.0339     2              
-   7   5CG  C*   -0.1415                   
-   8   7CD1 CW   -.1638              1     
-   9   8HD1 H4   0.2062                    
-  10   8NE1 NA  -.3418               1     
-  11  10HE1 H    .3412                     
-  12  10CE2 CN   .138                      
-  13  12CZ2 CA  -0.2601              1     
-  14  13HZ2 HA   0.1572                    
-  15  13CH2 CA  -0.1134              1     
-  16  15HH2 HA   0.1417                    
-  17  15CZ3 CA   -.1972              1     
-  18  17HZ3 HA   0.1447                    
-  19  17CE3 CA   -.2387              1     
-  20  19HE3 HA   0.170                     
-  21   7CD2 CB   0.1243                    
-  22   3C   C    .5973                     
-  23  22O   O   -.5679                     
+atoms = 12
+   1   2N   N    -0.4157             1
+   2   1H   H     0.2719
+   3   1CA  CT   -.0389              1
+   4   3HA  H1    0.1007
+   5   3CB  CT    0.3654             1
+   6   5HB  H1    0.0043
+   7   5CG  CT    -0.2438            3
+   8   7HG2 HC    .0642      3
+   9   5OG  OH   -.6761              1
+  10   9HG1 HO    .4102
+  11   3C   C     .5973
+  12  11O   O    -.5679
+residue = trp
+atoms = 23
+   1   2N   N   -0.4157              1
+   2   1H   H    .2719
+   3   1CA  CT  -.0275               1
+   4   3HA  H1   0.1123
+   5   3CB  CT   -0.005              2
+   6   5HB  HC   0.0339     2
+   7   5CG  C*   -0.1415
+   8   7CD1 CW   -.1638              1
+   9   8HD1 H4   0.2062
+  10   8NE1 NA  -.3418               1
+  11  10HE1 H    .3412
+  12  10CE2 CN   .138
+  13  12CZ2 CA  -0.2601              1
+  14  13HZ2 HA   0.1572
+  15  13CH2 CA  -0.1134              1
+  16  15HH2 HA   0.1417
+  17  15CZ3 CA   -.1972              1
+  18  17HZ3 HA   0.1447
+  19  17CE3 CA   -.2387              1
+  20  19HE3 HA   0.170
+  21   7CD2 CB   0.1243
+  22   3C   C    .5973
+  23  22O   O   -.5679
 residue = tyo    - warning: charges may not be quite right!
-atoms = 19 
-   1   2N   N    -0.463              1     
-   2   1HN  H     .252                     
-   3   1CA  CT   0.029               1     
-   4   3HA  HC    .048                     
-   5   3CB  CT   -.098               2     
-   6   5HB  HC    .038       2             
-   7   5CG  CA   -0.030                    
-   8   7CD1 CA   -.002               1     
-   9   8HD1 HC   0.064      
-  10   8CE1 CA  -0.264               1     
-  11  10HE1 HC   0.102                    
-  12  10CZ  C    .462                      
-  13  12OH  OH   -.657               1     
-  14  12CE2 CA  -0.264               1     
-  15  16HE2 HC   0.102                    
-  16   7CD2 CA   -.002               1     
-  17  16HD2 HC   0.064                    
-  18   3C   C     .616                     
-  19  18O   O    -.504                     
-residue = tyr 
-atoms = 20 
-   1   2N   N    -0.4157             1     
-   2   1H   H     .2719                    
-   3   1CA  CT   -.0014              1     
-   4   3HA  H1    .0876                    
-   5   3CB  CT   -.0152              2     
-   6   5HB  HC    .0295      2             
-   7   5CG  CA   -0.0011                   
-   8   7CD1 CA   -.1906              1     
-   9   8HD1 HA   0.1699     
-  10   8CE1 CA  -0.2341              1     
-  11  10HE1 HA   0.1656                   
-  12  10CZ  C    .3226                     
-  13  12OH  OH   -.5579              1     
-  14  13HH  HO    .3992                    
-  15  12CE2 CA  -0.2341              1     
-  16  15HE2 HA   0.1656                   
-  17   7CD2 CA   -.1906              1     
-  18  17HD2 HA   0.1699                   
-  19   3C   C     .5973                    
-  20  19O   O    -.5679                    
+atoms = 19
+   1   2N   N    -0.463              1
+   2   1HN  H     .252
+   3   1CA  CT   0.029               1
+   4   3HA  HC    .048
+   5   3CB  CT   -.098               2
+   6   5HB  HC    .038       2
+   7   5CG  CA   -0.030
+   8   7CD1 CA   -.002               1
+   9   8HD1 HC   0.064
+  10   8CE1 CA  -0.264               1
+  11  10HE1 HC   0.102
+  12  10CZ  C    .462
+  13  12OH  OH   -.657               1
+  14  12CE2 CA  -0.264               1
+  15  16HE2 HC   0.102
+  16   7CD2 CA   -.002               1
+  17  16HD2 HC   0.064
+  18   3C   C     .616
+  19  18O   O    -.504
+residue = tyr
+atoms = 20
+   1   2N   N    -0.4157             1
+   2   1H   H     .2719
+   3   1CA  CT   -.0014              1
+   4   3HA  H1    .0876
+   5   3CB  CT   -.0152              2
+   6   5HB  HC    .0295      2
+   7   5CG  CA   -0.0011
+   8   7CD1 CA   -.1906              1
+   9   8HD1 HA   0.1699
+  10   8CE1 CA  -0.2341              1
+  11  10HE1 HA   0.1656
+  12  10CZ  C    .3226
+  13  12OH  OH   -.5579              1
+  14  13HH  HO    .3992
+  15  12CE2 CA  -0.2341              1
+  16  15HE2 HA   0.1656
+  17   7CD2 CA   -.1906              1
+  18  17HD2 HA   0.1699
+  19   3C   C     .5973
+  20  19O   O    -.5679
 residue = val
 atoms = 12
-   1   2N   N    -0.4157             1     
-   2   1H   H     .2719                  
-   3   1CA  CT   -.0875              1     
-   4   3HA  H1    .0969                    
-   5   3CB  CT    .2985              1     
-   6   5HB  HC   -.0297                    
-   7   5CG1 CT   -0.3192             3     
+   1   2N   N    -0.4157             1
+   2   1H   H     .2719
+   3   1CA  CT   -.0875              1
+   4   3HA  H1    .0969
+   5   3CB  CT    .2985              1
+   6   5HB  HC   -.0297
+   7   5CG1 CT   -0.3192             3
    8   7HG1 HC    0.0791     3
-   9   5CG2 CT   -0.3192             3     
+   9   5CG2 CT   -0.3192             3
   10   9HG2 HC    0.0791     3
-  11   3C   C     .5973                    
-  12  11O   O    -.5679                    
-residue = wat                      = wat   
-atoms = 2                          2       
-   1   2O   OW    -0.834             2     
+  11   3C   C     .5973
+  12  11O   O    -.5679
+residue = wat                      = wat
+atoms = 2                          2
+   1   2O   OW    -0.834             2
    2   1H   HW     0.417     2
-residue = hoh 
+residue = hoh
 atoms = 2
    1    O   OW    -0.834
    2   1H   HW     0.417     2
@@ -1078,9 +1078,9 @@ atoms = 16
   11   9O4* OS  -0.368
   12   5O3* OS  -0.509
   13   1O5* OS  -0.509
-  14  12P   P    1.385                     
-  15  14O1P O2   -.847  
-  16  14O2P O2   -.847  
+  14  12P   P    1.385
+  15  14O1P O2   -.847
+  16  14O2P O2   -.847
 residue = rna (rna sugar unit)
 atoms = 18
    1   3C5* CT   0.180
@@ -1098,9 +1098,9 @@ atoms = 18
   13  11O4* OS  -0.343
   14   5O3* OS  -0.509
   15   1O5* OS  -0.509
-  16  14P   P    1.385                     
-  17  16O1P O2   -.847  
-  18  16O2P O2   -.847  
+  16  14P   P    1.385
+  17  16O1P O2   -.847
+  18  16O2P O2   -.847
 residue = ade   (adenosine) all atom
 atoms = 13
    1   2N9  N*   -0.073
@@ -1136,16 +1136,16 @@ atoms = 14
    3   2H8  HC    0.046
    4   2N7  NB   -0.543
    5   4C5  CB   -0.060
-   6   5C6  C     0.690   
+   6   5C6  C     0.690
    7   6O6  O    -0.458
    8   6N1  NA   -0.729
    9   8HN1 H     0.336
   10   8C2  CA    0.871
   11  10N2  N2   -0.778
   12  11HN2 H2    0.332     2
-  13  10N3  NC   -0.709   
+  13  10N3  NC   -0.709
   14  13C4  CB    0.391
-residue = thy 
+residue = thy
 atoms = 12
    1   2N1  N*   -0.217
    2   1C6  CM    0.034

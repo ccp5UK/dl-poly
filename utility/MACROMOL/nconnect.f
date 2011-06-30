@@ -8,22 +8,17 @@ c
 c     author t.forester feb 1996
 c     copyright daresbury laboratory 1996
 c
-c     itt
-c     2010-10-30 17:20:53
-c     1.3
-c     Exp
-c
 c***********************************************************************
 
       character*4 name
 
       if(name(1:1).eq."C") then
-         
+
         icn = 4
-        if(name(2:2).le."F") then 
-          if(name.eq."C   ") icn = 3   
-          if(name.eq."C*  ") icn = 3    
-          if(name.eq."C2  ") icn = 2   
+        if(name(2:2).le."F") then
+          if(name.eq."C   ") icn = 3
+          if(name.eq."C*  ") icn = 3
+          if(name.eq."C2  ") icn = 2
           if(name.eq."C3  ") icn = 1
           if(name.eq."CA  ") icn = 3
           if(name.eq."CB  ") icn = 3
@@ -32,7 +27,7 @@ c***********************************************************************
           if(name.eq."CE  ") icn = 2
           if(name.eq."CF  ") icn = 2
 
-        elseif(name(2:2).le."M") then 
+        elseif(name(2:2).le."M") then
 
           if(name.eq."CG  ") icn = 2
           if(name.eq."CH  ") icn = 3
@@ -59,14 +54,14 @@ c***********************************************************************
           if(name.eq."CW  ") icn = 3
 
         endif
-          
+
       elseif (name(1:1).eq."N") then
-          
+
         if(name.eq."N   ") icn = 3
         if(name.eq."N*  ") icn = 3
         if(name.eq."N2  ") icn = 3
         if(name.eq."N3  ") icn = 4
-        if(name.eq."NA  ") icn = 3     
+        if(name.eq."NA  ") icn = 3
         if(name.eq."NB  ") icn = 2
         if(name.eq."NC  ") icn = 2
         if(name.eq."NE  ") icn = 3
@@ -78,9 +73,9 @@ c***********************************************************************
         if(name.eq."NR6*") icn = 3
         if(name.eq."NT  ") icn = 3
         if(name.eq."NZ  ") icn = 3
-          
+
       elseif (name(1:1).eq."O") then
-          
+
         if(name.eq."O   ") icn = 1
         if(name.eq."O2  ") icn = 1
         if(name.eq."OA  ") icn = 2
@@ -88,30 +83,30 @@ c***********************************************************************
         if(name.eq."OM  ") icn = 1
         if(name.eq."OS  ") icn = 2
         if(name.eq."OW  ") icn = 2
-          
+
       elseif (name(1:1).eq."H") then
-          
+
         icn = 1
         if(name(1:2).eq."HW") icn =2
-          
+
       elseif (name(1:1).eq."S") then
-          
+
         icn = 4
         if(name(2:2).eq.'g') icn = 2 ! gromos sulphur
-          
+
       elseif (name(1:1).eq."P") then
-          
+
         icn = 4
-          
+
       elseif (name(1:2).eq."LP") then
-          
+
         icn = 1
-        
+
       else
 
          icn = 0
-       
+
        endif
-       return 
+       return
        end
 

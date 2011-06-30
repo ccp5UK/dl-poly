@@ -1,21 +1,16 @@
       program statblock
-c     
-c**********************************************************************
-c     
-c     blocking method for estimating standard error of mean
-c     
-c     (reference - Flyvbjerg and Petersen  JCP 91 (1989) 461)
-c     
-c     copyright daresbury laboratory 1993
-c     author - w. smith nov 1992
-c     
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
 c
 c**********************************************************************
-c     
+c
+c     blocking method for estimating standard error of mean
+c
+c     (reference - Flyvbjerg and Petersen  JCP 91 (1989) 461)
+c
+c     copyright daresbury laboratory 1993
+c     author - w. smith nov 1992
+c
+c**********************************************************************
+c
       parameter (ndeg=13,mxrows=10000,mxcols=20)
       implicit real*8 (a-h,o-z)
       dimension list(mxcols),record(mxcols),d(mxrows,mxcols)
@@ -33,12 +28,12 @@ c
       ncols=min(ncols,mxcols)
       write(*,*)'identify columns to be processed'
       read(*,*)(list(j),j=1,ncols)
-c     
+c
 c     open the statistical data file
-      
+
       open(7,file=statfile)
-      
-c     
+
+c
 c     read in statistical data
       do i=1,mxrows
          read(7,'(a)',end=100)
@@ -47,9 +42,9 @@ c     read in statistical data
             d(i,k)=record(list(k))
          enddo
       enddo
-  100 m=min(i-1,maxdat)
+  100 m=min(i-1,mxrows)
       write(*,*)'number of data points read',m
-c     
+c
 c     calculate averages
       write(*,*)'calculated averages'
       do l=1,ncols
@@ -60,7 +55,7 @@ c     calculate averages
          aver(l)=aver(l)/dble(m)
       enddo
       write(*,'(1p,20e12.4)')(aver(j),j=1,ncols)
-c     
+c
 c     calculate errors using blocking method
       write(*,*)'calculated standard errors'
       do l=1,ncols
@@ -88,7 +83,7 @@ c     calculate errors using blocking method
       do  i=1,min(n,ndeg)
          write(*,'(1p,20e12.4)')(sigma(i,j),j=1,ncols)
       enddo
-c     
+c
 c     calculate uncertainties in errors
       write(*,*)'error of standard error'
       do l=1,ncols

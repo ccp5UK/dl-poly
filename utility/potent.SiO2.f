@@ -1,23 +1,18 @@
       program potent
-c     
+c
 c**********************************************************************
-c     
+c
 c     dl_poly utility program
 c
 c     construct potential arrays for silica and related systems
-c     based on Vessal's model for constant volume systems: 
+c     based on Vessal's model for constant volume systems:
 c     Phil. Mag. B 60 (1989) 753-775
 c
 c     copyright - daresbury laboratory 1994
 c     author    - w. smith july 1994
-c     
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
 c
 c**********************************************************************
-c     
+c
       implicit real*8(a-h,o-z)
       parameter (mxgrid=5000,ntable=10)
       dimension uuu(mxgrid,2),ggg(mxgrid,2),elrc(2),vlrc(2)
@@ -37,7 +32,7 @@ c
       silicon='Si4+    '
       oxygen='O2-     '
 
-c     
+c
 c     silicon-oxygen potential
       j=1
       do i=1,maxgrd
@@ -66,7 +61,7 @@ c     silicon-oxygen potential
       enddo
       elrc(1)=uuu(maxgrd-4,1)*rcut**3/3.d0
       vlrc(1)=-2.d0*uuu(maxgrd-4,1)*rcut**3
-c     
+c
 c     oxygen-oxygen potential
       j=2
       do i=1,maxgrd
@@ -96,7 +91,7 @@ c     oxygen-oxygen potential
       enddo
       elrc(2)=uuu(maxgrd-4,2)*rcut**3/3.d0
       vlrc(2)=-2.d0*uuu(maxgrd-4,2)*rcut**3
-c     
+c
 c     conversions to required units
       do  j=1,2
         elrc(j)=elrc(j)*1.60217733e-19/1.6605402e-23
@@ -106,7 +101,7 @@ c     conversions to required units
           ggg(i,j)=ggg(i,j)*1.60217733e-19/1.6605402e-23
         enddo
       enddo
-c     
+c
 c     write out potentials
       open(ntable,file='TABLE')
       write(ntable,'(a)')'Silica Potential - DL_POLY units'

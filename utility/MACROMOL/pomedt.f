@@ -2,18 +2,13 @@
 
 c***********************************************************************
 c
-c     dl_poly utility to reprocesses files produced by the dl_poly 
+c     dl_poly utility to reprocesses files produced by the dl_poly
 c     utility pdb2edt, for files with nucleotide residues.
 c     In particular residues entries 'POM' (phosphate groups) are
 c     seperated from the rest of the residue.
 c
 c     author t. forester feb 1996
 c     copyright daresbury laboratory 1996
-c
-c     itt
-c     2010-10-30 17:20:53
-c     1.3
-c     Exp
 c
 c***********************************************************************
 
@@ -49,7 +44,7 @@ c***********************************************************************
           backspace(10)
 c
 c     search for phosphate residue entries
-          
+
           lfnd = 0
           ip = 0
           do i = 1,nlines
@@ -72,7 +67,7 @@ c     if no phosphate : then write it all out ...
 
               write(11,'(5x,a,//,5x,a,/)')
      x             'RESIDUE     =  POM','BOND ARRAY BEGINS'
-            
+
               do k = ip,ip+2
 
                 if((line(k)(14:14).eq.'P').or.
@@ -106,7 +101,7 @@ c     if no phosphate : then write it all out ...
 
               write(11,'(5x,a,//,5x,a,/)')
      x             'RESIDUE     =  POM','BOND ARRAY BEGINS'
-            
+
               do k = ip,ip+2
 
                 if((line(k)(14:14).eq.'P').or.
@@ -136,7 +131,7 @@ c     if no phosphate : then write it all out ...
 
               write(11,'(5x,a,//,5x,a,/)')
      x             'RESIDUE     =  POM','BOND ARRAY BEGINS'
-            
+
             do k = ip,ip+2
 
               if((line(k)(14:14).eq.'P').or.

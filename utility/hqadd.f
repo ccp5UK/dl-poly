@@ -1,17 +1,12 @@
        subroutine hqadd
      x   (x0,y0,z0,xa,ya,za,xb,yb,zb,xc,yc,zc,hx,hy,hz,bl)
-c                  
+c
 c***********************************************************************
-c     
+c
 c     dlpoly utility to add 1 hydrogen to a tertiary amide site
 c
 c     copyright daresbury laboratory 1993
 c     author -     t forester    feb 1993
-c
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
 c
 c***********************************************************************
 

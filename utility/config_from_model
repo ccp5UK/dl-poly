@@ -53,7 +53,7 @@ c*********************************************************************
         write (*,*) 'Model has no atoms!'
         return
       endif
- 
+
       call msD_MOD_AtomList
      x (model, msD_SYM_ALL, atomids, mxatms, count, istatus)
 
@@ -63,7 +63,7 @@ c*********************************************************************
       endif
 
       call msD_Type(atomids, count, acl, istatus)
-      call msD_ACL_AtomicNumber(acl, count, at_num, istatus) 
+      call msD_ACL_AtomicNumber(acl, count, at_num, istatus)
 
       if (istatus.ne.0) then
         write (*,*) 'msD_ATM_Mass failed with status ', istatus
@@ -428,7 +428,7 @@ NVE   - Microcanonical
 E-NVT - Evans Canonical NVT
 B-NVT - Berendsen NVT
 H-NVT - Nose'-Hoover Canonical NVT
-B-NPT - Berendsen constant pressure NPT 
+B-NPT - Berendsen constant pressure NPT
 H-NPT - Hoover constant pressure NPT
 B-NST - Berendsen constant stress NPT
 H-NST - Hoover constant stress NPT
@@ -449,7 +449,7 @@ Select the required electrostatics method. Options:
 EWALD  - Ewald Sum
 DIELEC - Distance dielectric
 T-COUL - Truncated Coulombic
-S-COUL - Shifted Coulombic 
+S-COUL - Shifted Coulombic
 R-FLD  - Reaction Field
 ##
 @INIT electro/'EWALD'
@@ -481,7 +481,7 @@ $COMMAND DL_HEAD_GROUP
 @HELP
 Select the required head group for chain polymer. Options:
 NONE   - None
-SOAP   - Sodium-carboxylate 
+SOAP   - Sodium-carboxylate
 COOH   - Acidic carboxy group
 PHENOL - p-Phenol group
 TAB    - Trimethylammonium bromide
@@ -525,7 +525,7 @@ BUCK     - Buckingham exp-6
 
 	lbuck=.true.
 
-      else	
+      else
 
 	lbuck=.false.
 
@@ -548,7 +548,7 @@ MORSE - Morse Potential
 
 	lmorse=.true.
 
-      else	
+      else
 
 	lmorse=.false.
 
@@ -627,7 +627,7 @@ $COMMAND DL_EQUIL
 Number of timesteps in equilibration.
 @INIT nsteql/10
 @INPUT /I
-@OUTPUT /i8 
+@OUTPUT /i8
 
 ##-----------------------------------------------------------
 $COMMAND DL_MULT
@@ -635,7 +635,7 @@ $COMMAND DL_MULT
 Multiple timestep specification.
 @INIT multt/1
 @INPUT /I
-@OUTPUT /i6 
+@OUTPUT /i6
 
 ##-----------------------------------------------------------
 $COMMAND DL_NSTBTS
@@ -643,7 +643,7 @@ $COMMAND DL_NSTBTS
 Temperature scaling interval
 @INIT nstbts/10
 @INPUT /I
-@OUTPUT /i6 
+@OUTPUT /i6
 
 ##-----------------------------------------------------------
 $COMMAND DL_NSTBPO
@@ -651,7 +651,7 @@ $COMMAND DL_NSTBPO
 Interval for data printout.
 @INIT nstbpo/10
 @INPUT /I
-@OUTPUT /i6 
+@OUTPUT /i6
 
 ##-----------------------------------------------------------
 $COMMAND DL_NSTAK
@@ -659,7 +659,7 @@ $COMMAND DL_NSTAK
 Stack level of rolling average.
 @INIT nstack/100
 @INPUT /I
-@OUTPUT /i6 
+@OUTPUT /i6
 
 ##-----------------------------------------------------------
 $COMMAND DL_NSTAT
@@ -667,7 +667,7 @@ $COMMAND DL_NSTAT
 Interval for STATIS data.
 @INIT intsta/10
 @INPUT /I
-@OUTPUT /i6 
+@OUTPUT /i6
 
 ##-----------------------------------------------------------
 $COMMAND DL_NSTRDF
@@ -675,7 +675,7 @@ $COMMAND DL_NSTRDF
 Start point for RDF accumulation
 @INIT nstrdf/10
 @INPUT /I
-@OUTPUT /i6 
+@OUTPUT /i6
 
 ##-----------------------------------------------------------
 $COMMAND DL_NSTRAJ
@@ -683,7 +683,7 @@ $COMMAND DL_NSTRAJ
 Start point for HISTORY file data
 @INIT nstraj/100
 @INPUT /I
-@OUTPUT /i6 
+@OUTPUT /i6
 
 ##-----------------------------------------------------------
 $COMMAND DL_ISTRAJ
@@ -691,7 +691,7 @@ $COMMAND DL_ISTRAJ
 Dumping interval for HISTORY file
 @INIT istraj/100
 @INPUT /I
-@OUTPUT /i6 
+@OUTPUT /i6
 
 ##-----------------------------------------------------------
 $COMMAND DL_LVTRAJ
@@ -699,7 +699,7 @@ $COMMAND DL_LVTRAJ
 Information level for HISTORY file (0,1,2)
 @INIT lvtraj/0
 @INPUT /I
-@OUTPUT /i6 
+@OUTPUT /i6
 
 ##-----------------------------------------------------------
 $COMMAND DL_TIM_JOB
@@ -911,7 +911,7 @@ Add atom details to unit cell contents list
 $COMMAND DL_ATOM_COUNT
 @HELP
 Display the number of atoms in unit cell
-@OUTPUT 
+@OUTPUT
 nbas/i4
 
 ##-----------------------------------------------------------
@@ -993,7 +993,7 @@ Define polymer chain head area (square Angstrom)
 ##-----------------------------------------------------------
 $COMMAND DL_CC1B
 @HELP
-Define C-C single bondlength 
+Define C-C single bondlength
 @INIT cc1b/1.54d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1001,7 +1001,7 @@ Define C-C single bondlength
 ##-----------------------------------------------------------
 $COMMAND DL_CC2B
 @HELP
-Define C-C double bondlength 
+Define C-C double bondlength
 @INIT cc2b/1.34d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1009,7 +1009,7 @@ Define C-C double bondlength
 ##-----------------------------------------------------------
 $COMMAND DL_CC3B
 @HELP
-Define C-C triple bondlength 
+Define C-C triple bondlength
 @INIT cc3b/1.2d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1017,7 +1017,7 @@ Define C-C triple bondlength
 ##-----------------------------------------------------------
 $COMMAND DL_CCAB
 @HELP
-Define C-C aromatic bondlength 
+Define C-C aromatic bondlength
 @INIT ccab/1.39d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1025,7 +1025,7 @@ Define C-C aromatic bondlength
 ##-----------------------------------------------------------
 $COMMAND DL_CH1B
 @HELP
-Define C-H bondlength 
+Define C-H bondlength
 @INIT ch1b/1.09d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1033,7 +1033,7 @@ Define C-H bondlength
 ##-----------------------------------------------------------
 $COMMAND DL_CO1B
 @HELP
-Define C-O single bondlength 
+Define C-O single bondlength
 @INIT co1b/1.43d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1041,7 +1041,7 @@ Define C-O single bondlength
 ##-----------------------------------------------------------
 $COMMAND DL_CO2B
 @HELP
-Define C-O double bondlength 
+Define C-O double bondlength
 @INIT co2b/1.22d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1049,7 +1049,7 @@ Define C-O double bondlength
 ##-----------------------------------------------------------
 $COMMAND DL_COAB
 @HELP
-Define C-O aromatic bondlength 
+Define C-O aromatic bondlength
 @INIT coab/1.36d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1057,7 +1057,7 @@ Define C-O aromatic bondlength
 ##-----------------------------------------------------------
 $COMMAND DL_OH1B
 @HELP
-Define O-H bondlength 
+Define O-H bondlength
 @INIT oh1b/0.96d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1065,7 +1065,7 @@ Define O-H bondlength
 ##-----------------------------------------------------------
 $COMMAND DL_CN1B
 @HELP
-Define C-N single bondlength 
+Define C-N single bondlength
 @INIT cn1b/1.47d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1073,7 +1073,7 @@ Define C-N single bondlength
 ##-----------------------------------------------------------
 $COMMAND DL_CN2B
 @HELP
-Define C-N double bondlength 
+Define C-N double bondlength
 @INIT cn2b/1.27d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1081,7 +1081,7 @@ Define C-N double bondlength
 ##-----------------------------------------------------------
 $COMMAND DL_CN3B
 @HELP
-Define C-N triple bondlength 
+Define C-N triple bondlength
 @INIT cn3b/1.16d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1089,7 +1089,7 @@ Define C-N triple bondlength
 ##-----------------------------------------------------------
 $COMMAND DL_CNAB
 @HELP
-Define C-N aromatic bondlength 
+Define C-N aromatic bondlength
 @INIT cnab/1.35d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1097,7 +1097,7 @@ Define C-N aromatic bondlength
 ##-----------------------------------------------------------
 $COMMAND DL_NH1B
 @HELP
-Define N-H bondlength 
+Define N-H bondlength
 @INIT nh1b/1.01d0
 @INPUT /D
 @OUTPUT /F10.7
@@ -1274,7 +1274,7 @@ K_JOULE - k-Joules per mole
 $COMMAND DL_NUM_PTS
 @HELP
 Display the number of points in spline fitting data
-@OUTPUT 
+@OUTPUT
 num_pts/i4
 
 ##-----------------------------------------------------------
@@ -1613,9 +1613,9 @@ LABEL   -c [1.9,0.0] -l "Primary cut off"
 FLOAT   -c [0.0,-0.7] -w 1.7 -v 6 -o DL_EPS -g dl_cntl_Group
 LABEL   -c [1.9,-0.7] -l "Dielectric const."
 FLOAT   -c [0.0,-1.4] -w 1.7 -v 6 -o DL_ENS_TAUT   -g dl_cntl_Group
-LABEL   -c [1.9,-1.4] -l "Temp.  Relaxation (ps)" 
+LABEL   -c [1.9,-1.4] -l "Temp.  Relaxation (ps)"
 FLOAT   -c [0.0,-2.1] -w 1.7 -v 6 -o DL_ENS_TAUP   -g dl_cntl_Group
-LABEL   -c [1.9,-2.1] -l "Press. Relaxation (ps)" 
+LABEL   -c [1.9,-2.1] -l "Press. Relaxation (ps)"
 POPUP   -c [0.0,-2.8] -l "Ensemble........." -o DL_ENSEMBLE -g dl_cntl_Group
 POPUP   -c [0.0,-3.5] -l "Electrostatics..." -o DL_ELECTRO -g dl_cntl_Group
 PUSHB   -c [0.0,-4.2] -l "Program Controls..." -panel
@@ -1854,7 +1854,7 @@ ENDPANEL
 
 SHELL           = /bin/sh
 
-SDK_ROOT        = 
+SDK_ROOT        =
 
 LICENSE_FILE    = $(SDK_ROOT)/msilicense.dat:$(SDK_ROOT)/msilicense.demo
 ADFPROC         = $(SDK_ROOT)/tools/adfproc
@@ -2043,7 +2043,7 @@ PALOUT = auto/file_maker_pal.c
 LIB = file_maker.a
 BIN = file_maker.exe
 
-APP_LIBRARIES   = 
+APP_LIBRARIES   =
 
 C2_LIBRARIES = \
            $(SDKLIBDIR)/c2ext.a \
@@ -2052,7 +2052,7 @@ C2_LIBRARIES = \
            $(SDKLIBDIR)/c2locore.a \
            $(SDKLIBDIR)/common.a
 
-MP_LIBS = $(SDKLIBDIR)/mp_stub.a 
+MP_LIBS = $(SDKLIBDIR)/mp_stub.a
 
 CUSTOM_LIBRARIES =
 LIBRARIES = $(C2_LIBRARIES) $(CUSTOM_LIBRARIES)
@@ -2120,7 +2120,7 @@ file_ma_auto.o:     auto/file_ma_auto.f
 
 bin:        $(BIN)
 lib:        $(LIB)
-codegen:    $(PALOUT) auto/file_ma_auto.f 
+codegen:    $(PALOUT) auto/file_ma_auto.f
 
 config_from_model.o:	config_from_model.f
 potAgI.o:	potAgI.f

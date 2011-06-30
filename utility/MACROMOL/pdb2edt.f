@@ -1,7 +1,7 @@
       program pbd2edt
 
 c***********************************************************************
-c     
+c
 c     dl_poly routine to read a broohaven pdb file
 c     (or the AMBER processed equivalent) and to extract ...
 c     1)  atom  names and types
@@ -13,16 +13,11 @@ c
 c     author t.forester feb 1996
 c     copyright daresbury laboratory 1996
 c
-c     itt
-c     2010-10-30 17:20:53
-c     1.3
-c     Exp
-c
 c***********************************************************************
-      
+
       parameter(mxres=50, mxsit=30)
       implicit real*8(a-h,o-z)
-      
+
       character*8 header
       character*80 oneline,pdbfile
       character*4 name,ambnam,oxt
@@ -65,12 +60,12 @@ c     flag for all hydrogens present
         dna=.false.
       else
         write(6,*) ' you must answer "y" or "n"'
-        write(6,*) 
+        write(6,*)
         yes = .false.
       endif
-        
+
       if(.not.yes) goto 199
-      
+
  399  write(*,'(/,2a)')'do you want atom charges read from ',
      x     pdbfile(1:20)
       read(*,'(a80)') oneline
@@ -83,14 +78,14 @@ c     flag for all hydrogens present
         write(*,'(/,a)') ' charges will be read from residue map file'
       else
         write(6,*) ' you must answer "y" or "n"'
-        write(6,*) 
+        write(6,*)
         yes = .false.
       endif
-      
+
       if(.not.yes) goto 399
-c     
+c
 c     read charge and name database
-      
+
       nres=0
       call data_read
      x  (mxres,mxsit,nres,join,qoxt,oxt,header,
@@ -110,9 +105,9 @@ c     modify dna/rna residues in database to include backbone
       if(dna.or.rna) call res_back
      x   (bac,mxres,mxsit,nres,join,
      x   resnam,sitnam,ffnam,qsit,rept,nsite)
-      
-c     
-c     process pdb file to make into AMBER style edit.out      
+
+c
+c     process pdb file to make into AMBER style edit.out
       blank = -9999.99
       irs = 0
       lres = 0
@@ -136,29 +131,29 @@ c     get cell vectors
           cell(7) = c1*cos(bet)
           cell(8) = (b1*c1*cos(alp) - cell(4)*cell(7))/cell(5)
           cell(9) = sqrt(c1*c1 - cell(8)**2-cell(7)**2)
-          
+
           write(11,'(/,a,/,3(3f20.10,/))')'CELL_VECTORS',cell
-          
+
         elseif((oneline(1:4).eq.'ATOM').or.
      x     (oneline(1:6).eq.'HETATM')) then
           backspace(10)
           i = i+1
         read(10,'(6x,i5,2x,a4,a3,a2,i4,4x,3f8.3,f7.3)',end=100,err=100)
-     x       idum,name,res,strand,ires,x,y,z,q 
+     x       idum,name,res,strand,ires,x,y,z,q
 
         if(strand.ne.strand1) then
           write(11,'(/,6x,a,/)') 'MOLECULE'
           strand1=strand
         endif
-            
+
         if(irs.ne.ires) then
-c     
+c
 c     a new residue has been found
-c     
+c
 c     check all atoms found in previous residue
-          
+
           safe=.true.
-          
+
           if(irs.gt.0.and.rold.ne.'mtl') then
 
             call  res_check
@@ -166,7 +161,7 @@ c     check all atoms found in previous residue
           endif
 
           hsafe = (safe.and.hsafe)
-          
+
           irs=ires
           if(res.eq.'HIS'.or.res.eq.'his') res = his
           rold =res
@@ -177,10 +172,10 @@ c     check all atoms found in previous residue
           write(11,'(a,i4,a,a3)')'     RESIDUE',ires,' =  ',res
           write(11,*)
           write(11,'(a,i6)')'     BOND ARRAY BEGINS WITH ',i
-          write(11,*) 
-c     
+          write(11,*)
+c
 c     find residue in database
-          
+
           call lowcase(res,3)
           yes=.false.
           do jres = 1,nres
@@ -203,11 +198,11 @@ c     find residue in database
         call lowcase(res,3)
         call strip(name,4)
 c
-c     site counter 
+c     site counter
         ll = ll+1
-c     
+c
 c     assign ff names and check charges
-        
+
         q1 = blank
         j = -99
 
@@ -216,7 +211,7 @@ c     assign ff names and check charges
      x       mxsit,nsite)
         if(jj.gt.0) index(jj)=i
 c
-c     find connection ... 
+c     find connection ...
 
         if(ll.gt.1.and.jj.gt.0) then
           kk = join(jj,lres)
@@ -224,29 +219,29 @@ c     find connection ...
             if(count(kk).gt.0.) j = index(kk)
           endif
         endif
-        
+
         if(.not.charge) then
           if(jj.gt.0) q1 = qsit(jj,lres)
         else
           q1 = q
         endif
         if(jj.gt.0) ambnam = ffnam(jj,lres)
-        
-c     
+
+c
 c     apply patch for terminating oxygen
-        
-        if(name.eq.'OXT ') then 
+
+        if(name.eq.'OXT ') then
             q1 = qoxt
             ambnam=oxt
         endif
-        
+
         if(j.eq.0) j = -99
-        
-        if(q1.eq.blank) then 
-          write(6,*) 'could not find atom ',name,' ', i, 
+
+        if(q1.eq.blank) then
+          write(6,*) 'could not find atom ',name,' ', i,
      x         ' residue ',res,' in database'
           call exit(0)
-          
+
         elseif(q1.ne.q) then
           if(abs(q1-q).le.0.0006) then
             q = q1
@@ -257,19 +252,19 @@ c     apply patch for terminating oxygen
      x           ' ',name,'(',res,') : ',q, ' vs ',q1
           endif
         endif
-c     
+c
 c     write out edit out file
-     
+
         if(header.eq.'amber   ') then
           if(dna.or.rna) call name_fix(name,4)
         endif
-        
+
         write(11,'(2i5,3x,a4,2x,a4,6x,3f10.4,f10.6)')
      x       i,j,name,ambnam,x,y,z,q1
-        
+
       endif
       enddo
-      
+
  100  close(10)
       close(11)
 
@@ -297,13 +292,13 @@ c     write out edit out file
       subroutine lowcase(string,length)
 
 c***********************************************************************
-c     
+c
 c     DL_POLY routine to lowercase a string of up to 255 characters.
 c     Transportable to non-ASCII machines
-c     
+c
 c     copyright daresbury laboratory 1993
 c     author    t. forester     july 1993
-c     
+c
 c***********************************************************************
 
       character*1 string(*)
@@ -377,17 +372,17 @@ c***********************************************************************
       subroutine strip(string,length)
 
 c***********************************************************************
-c     
+c
 c     DL_POLY routine to strip blanks from start of a string
 c     maximum length is 255 characters
-c     
+c
 c     copyright daresbury laboratory 1993
 c     author   t.forester       july 1993
-c     
+c
 c***********************************************************************
 
       character*(*) string
-      
+
       imax = min(length,255)
       do i = 1,imax
 
@@ -444,10 +439,10 @@ c     to be found from force field
       qoxt = -9.d50
 
 c     header
-      read(20,*) 
+      read(20,*)
 c     number of residues
-      read(20,*) nres  
-      
+      read(20,*) nres
+
       do lres = 1,nres
         read(20,'(10x,a4)') resnam(lres)
         call strip (resnam(lres),4)
@@ -480,35 +475,35 @@ c     pick up qoxt charge ...
      x     ' units read in from database ',oneline
       return
       end
-      
+
       subroutine data_find
      x     (lres,jj,name,res,sitnam,count,rept,mxres,
      x     mxsit,nsite)
-      
+
       implicit real*8(a-h,o-z)
       character*4 name,sitnam(mxsit,mxres),res
       dimension rept(mxsit,mxres),count(mxsit)
       dimension nsite(mxres)
-      
-c     
+
+c
 c     look at as many characters as necessry to uniquely identify
 c     the site
-      
+
       k = 1
-      
+
  10   look = 0
       jj= 0
       do i = 1,nsite(lres)
-        
+
         if(sitnam(i,lres)(1:k).eq.name(1:k)) then
 
           jj = i
           look = look+1
-          
+
         endif
-        
+
       enddo
-      
+
       if(look.eq.0) then
         write(*,*) 'could not locate site "',name,'" in residue ',
      x       res(1:3)
@@ -517,13 +512,13 @@ c     the site
         count(jj) = count(jj)+1.d0
         return
       endif
-      
+
       k = k+1
       if(k.gt.4) then
         write(*,*) look,' sites with "',name,'" in residue ',res(1:3)
         call exit(0)
       endif
-      
+
       goto 10
       end
 
@@ -538,7 +533,7 @@ c     the site
       logical safe
 
       safe=.true.
-      
+
       do i = 1,nsite(lres)
 
         if(abs(count(i)-rept(i,lres)).gt.0.5) then
@@ -551,7 +546,7 @@ c     the site
         do i = 1,nsite(lres)
 
           j = nint(count(i)-rept(i,lres))
-          
+
           if(j.lt.0) then
             if((sitnam(i,lres)(1:1).ne.'H').and.
      x           (sitnam(i,lres)(1:2).ne.'LP'))
@@ -575,7 +570,7 @@ c     the site
      x   resnam,sitnam,ffnam,qsit,rept,nsite)
 
 c     subroutine to append 'backbone' data into 'residue' data
-c     
+c
       implicit real*8(a-h,o-z)
 
       logical yes
@@ -620,7 +615,7 @@ c     assume backbone comes before residues...
             ffnam(k+nnn,jres) = ffnam(k,lbac)
             qsit(k+nnn,jres) = qsit(k,lbac)
             rept(k+nnn,jres) = rept(k,lbac)
-            
+
             join(k+nnn,jres) = join(k,lbac)+nnn
 
           enddo
@@ -645,7 +640,7 @@ c     replaces * (pdb convention) in backbone name with ' : amber style
       do i = 1,kk
 
         if(name(i).eq.'*') name(i) = "'"
-        
+
       enddo
       return
       end

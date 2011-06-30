@@ -1,41 +1,36 @@
-c      program xdenc
+       program xdenc
 
 c*********************************************************************
-c     
+c
 c     dl_poly program to calculate planar densities of all atom types
 c     in a given direction from a dl_poly CONFIG file
-c     
+c
 c     copyright daresbury laboratory 1996
 c     author  w.smith oct 1996
-c     
-c     wl
-c     1996/02/15 14:33:26
-c     1.1.1.1
-c     Exp
 c
 c*********************************************************************
-      
+
       implicit real*8(a-h,o-z)
-      
+
       parameter (ndiv=500,ntyp=4)
       character*40 fname
       character*80 title
       character*8 atname,atmnam(ntyp)
       dimension cell(9),xden(ndiv,ntyp)
-        
+
 c     open the I/O files
-      
+
       open(5,file='xden_input')
       open(6,file='xden_output')
-      
+
       write(6,'(a)')'# X-density Program'
-      
+
 c     name of selected CONFIG file
       read(5,*)fname
 
 c     total number of atoms in a CONFIG file configuration
       read(5,*)natms
-      
+
 c     bin width for X density histogram
       read(5,*)delx
 
@@ -47,13 +42,13 @@ c     projection vector
       zz0=zz0/rrr
 
 c     check on specified control variables
-      
+
       write(6,'(a,a40)')'# name of target CONFIG file   : ',fname
       write(6,'(a,i8)')'# total no. of atoms in config  : ',natms
       write(6,'(a,1p,e12.4)')'# x-density histogram bin width : ',delx
       write(6,'(a,1p,3e12.4)')'# normalised projection vector  : ',
      x    xx0,yy0,zz0
-        
+
 c     open CONFIG file
 
       open(7,file=fname)
@@ -77,15 +72,15 @@ c     open CONFIG file
 
 c     initialise x-density array
 
-      
+
       do j=1,ntyp
         do i=1,ndiv
-          
+
           xden(i,j)=0.d0
-          
+
         enddo
       enddo
-      
+
 c     read configuration
 
       ityp=0
@@ -140,5 +135,5 @@ c     print out final histogram
       enddo
 
       stop
-      
+
       end

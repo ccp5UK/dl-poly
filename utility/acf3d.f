@@ -13,13 +13,7 @@ c     This program contains dummy routines for machine,gisum,and gdsum
 c     to allow running on a single processor.
 c
 c     copyright daresbury laboratory 1993.
-c
 c     author t. forester  April 1993.
-c
-c     itt
-c     2010-10-30 17:20:49
-c     1.3
-c     Exp
 c
 c***********************************************************************
 
@@ -109,9 +103,9 @@ c     read in data
       read(10,'(a8)',end=100) oneline
 
       if(imcon.gt.0) then
-         read(10,*) 
-         read(10,*) 
-         read(10,*) 
+         read(10,*)
+         read(10,*)
+         read(10,*)
       endif
 
       if(lvf.eq.1) then
@@ -143,7 +137,7 @@ c     read in data
             read(10,*)
             read(10,*) vxx(i),vyy(i),vzz(i)
          enddo
-      
+
       endif
 c
 c     counter for correlation function index
@@ -167,7 +161,7 @@ c     generate list of atoms of interest
             endif
 
          enddo
-         
+
          jmax = j
 
          write(*,*) jmax ,' atoms of interest'
@@ -228,7 +222,7 @@ c     number of points in acf
 
 c
 c     sum arrays across nodes - replicated data strategy
-      
+
       if(mxnode.gt.1) call gdsum(acf(1),ncor,buffer)
       if(mxnode.gt.1) call gisum(norm(1),ncor,ibuff)
 c
@@ -255,7 +249,7 @@ c     integral by Trapezium rule
 
          sum = 0.d0
          do i = 1,it
-            
+
             if(i.gt.1) sum = sum+0.5d0*(acf(i)+acf(i-1))*tstep
             write(11,20) dble(i-1)*tstep,acf(i),sum
 
@@ -269,7 +263,7 @@ c     integral by Trapezium rule
      x     5x,'time(ps)',10x,'acf(i)',10x,'integral')
    20 format (f10.3,1p,6x,e14.6,6x,e14.6)
 
-      write(*,*) 'done: output in ',outfile 
+      write(*,*) 'done: output in ',outfile
       end
 
       subroutine error(ierr,idnode)

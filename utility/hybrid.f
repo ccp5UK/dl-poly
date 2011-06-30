@@ -1,7 +1,7 @@
       program hybrid
-c     
+c
 c**********************************************************************
-c     
+c
 c     dl_poly utility to determine the probable hybridization of atoms
 c     in an organic molecule based on a bondlength criterion (warning -
 c     not foolproof, but a useful start)
@@ -9,13 +9,12 @@ c
 c     molecular configuration specified in dl_poly CONFIG file
 c
 c     for use with Dreiding forcefield
-c     
+c
 c     copyright daresbury laboratory 1999
-c     
 c     author w. smith november 1999
-c     
+c
 c**********************************************************************
-c     
+c
       implicit real*8(a-h,o-z)
       parameter (mxatm=2500,mega=1000000,mxpair=15)
       parameter (pi=3.141592653589793d0)
@@ -25,19 +24,19 @@ c
       dimension xxx(mxatm),yyy(mxatm),zzz(mxatm)
       dimension list(mxatm,mxpair),num(mxatm)
       dimension cell(9),rcell(9),celprp(10)
-c     
+c
 c     read control parameters
 
       write(*,'(a)')'enter the maximum permitted bondlength:'
       read(*,*)bond
       write(*,'(a)')'enter name of config file'
       read(*,'(a40)')fname
-c     
+c
 c     open files
 
       open(7,file=fname,err=200)
       open(8,file='CFGHYB')
-c     
+c
 c     read configuration data
       read(7,'(a)')title
       write(*,'(a)')'File header: ',title
@@ -72,7 +71,7 @@ c     read configuration data
   100 natm=i-1
       write(*,'(a,i6)')'number of atoms in config file: ',natm
       close (7)
-c     
+c
 c     initialize num array
 
       do i=1,natm
@@ -80,7 +79,7 @@ c     initialize num array
         num(i)=0
 
       enddo
-c     
+c
 c     determine bonds in system
       k=0
       last=natm
@@ -123,7 +122,7 @@ c     determine bonds in system
       enddo
       npairs=k
       write(*,'(a,i6)')'number of bonds in config file: ',npairs
-c     
+c
 c     determine probable hybridizations
 
       do i=1,natm
@@ -187,24 +186,24 @@ c     now check for possible resonance condition
       do i=1,natm
 
         if(name(i).eq."O_3".or.name(i).eq."N_3")then
-          
+
           do j=1,num(i)
-            
+
             if(name(j).eq."C_2")name(i)=name(i)(1:1)//"_2"
-            
+
           enddo
-          
+
         endif
-        
+
       enddo
-c      
+c
 c     write out new config file
-      
+
       do i=1,natm
-        
+
         write(8,'(a8,i10)')name(i),i
         write(8,'(3f20.10)')xxx(i),yyy(i),zzz(i)
-        
+
       enddo
       close (8)
       stop
@@ -215,17 +214,17 @@ c     write out new config file
 
       end
       subroutine invert(a,b,d)
-c     
+c
 c***********************************************************************
-c     
+c
 c     dl_poly subroutine to invert a 3 * 3 matrix using cofactors
 c
 c     copyright - daresbury laboratory 1992
 c     author    - w. smith       april 1992
-c     
+c
 c***********************************************************************
-c     
-      
+c
+
       real*8 a,b,d,r
 
       dimension a(9),b(9)

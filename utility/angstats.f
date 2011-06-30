@@ -1,21 +1,32 @@
+c***********************************************************************
+c
+c     dl_poly utility for calculating bond angle statistics
+c
+c     copyright - daresbury laboratory
+c     author    - w. smith
+c
+c     single processor version
+c
+c***********************************************************************
+
       implicit real*8(a-h,o-z)
       parameter(pi=3.1415926536d0)
       parameter(mxtheta=512,mxatms=1080,mxconf=3000,mxcell=2000)
-      
+
       character*40   fname
       character*80   title
       character*8    name(mxatms)
-      dimension lst(mxcell),lct(mxcell),ltype(mxatms)   
+      dimension lst(mxcell),lct(mxcell),ltype(mxatms)
       dimension nix(27),niy(27),link(mxatms),niz(27)
       dimension xxx(mxatms),yyy(mxatms),zzz(mxatms)
-      dimension cell(9),rcell(9),cprp(10),theta(mxtheta) 
+      dimension cell(9),rcell(9),cprp(10),theta(mxtheta)
       dimension latinx(mxatms),chge(mxatms),weight(mxatms)
       data nix/0,-1,-1,-1,0,0,-1,-1,-1,0,1,-1,0,1,
      x  1,1,1,0,0,1,-1,1,0,-1,1,0,-1/
       data niy/0,0,-1,1,1,0,0,0,-1,-1,-1,1,1,1,
      x  0,1,-1,-1,0,0,0,1,1,1,-1,-1,-1/
       data niz/0,0,0,0,0,1,1,1,1,1,1,1,1,1,
-     x  0,0,0,0,-1,-1,-1,-1,-1,-1,-1,-1,-1/ 
+     x  0,0,0,0,-1,-1,-1,-1,-1,-1,-1,-1,-1/
 c     name of the history
       fname="HISTORY"
 c     total number of atoms in the history file configuration
@@ -25,7 +36,7 @@ c     max number of configuration to sample
 c     the length of theta array
       ncorr=100
       rcut=2.d0
-      deltheta=pi/dble(ncorr) 
+      deltheta=pi/dble(ncorr)
       iflg=0
       keytrj=0
       do i=1,mxtheta
@@ -40,7 +51,7 @@ c     the length of theta array
 c     check for appropriate boundary conditions
 
         if(imcon.ge.1.and.imcon.le.3) then
-          
+
           call invert(cell,rcell,det)
           call dcell(cell,cprp)
 
@@ -124,7 +135,7 @@ c     construct mini-list of neighbour cell contents
         do ii=1,lst(icell)
 
           i=latinx(ii)
-          if(name(i).eq."Si4+") then 
+          if(name(i).eq."Si4+") then
             last=limit
             do kk=1,limit/2
 
@@ -141,7 +152,7 @@ c     make labels etc consistent with angfrc.f
                 ib = i
                 ic = k
 
-                if(name(ia).eq."O2-")then          
+                if(name(ia).eq."O2-")then
                   sxab = xxx(ia)-xxx(ib)
                   sxab = sxab-nint(sxab)
                   syab = yyy(ia)-yyy(ib)
@@ -153,7 +164,7 @@ c     make labels etc consistent with angfrc.f
                     yab=cell(2)*sxab+cell(5)*syab+cell(8)*szab
                     if(abs(yab).lt.rcut)then
                       zab=cell(3)*sxab+cell(6)*syab+cell(9)*szab
-                      if(name(ic).eq."O2-")then 
+                      if(name(ic).eq."O2-")then
                         if(abs(zab).lt.rcut)then
                           sxbc = xxx(ic)-xxx(ib)
                           sxbc = sxbc-nint(sxbc)
@@ -187,7 +198,7 @@ c     normalise direction vectors
                                   thet=acos(xab*xbc+yab*ybc+zab*zbc)
 
                                   kkk=int(thet/deltheta)
-                                  theta(kkk)=theta(kkk)+1.d0 
+                                  theta(kkk)=theta(kkk)+1.d0
 
                                 endif
                               endif
@@ -211,58 +222,53 @@ c     normalise the angle
 
       rnorm=0
       do i=2,ncorr-1,2
-        rnorm=rnorm+(theta(i-1)+4.d0*theta(i)+theta(i+1))/3.d0 
+        rnorm=rnorm+(theta(i-1)+4.d0*theta(i)+theta(i+1))/3.d0
       enddo
       do i=1,ncorr
-        theta(i)=theta(i)/rnorm 
+        theta(i)=theta(i)/rnorm
       enddo
       open(8,file='output')
       do i=1,ncorr
         write(8,'(1p,2e14.6)')deltheta*(dble(i)-0.5d0),theta(i)
       enddo
-      close(8) 
+      close(8)
       end
       subroutine dcell(aaa,bbb)
 
-c     
+c
 c***********************************************************************
-c     
+c
 c     dl_poly subroutine to calculate the dimensional properties of
 c     a simulation cell specified by the input matrix aaa.
 c     the results are returned in the array bbb, with :
-c     
+c
 c     bbb(1 to 3) - lengths of cell vectors
 c     bbb(4 to 6) - cosines of cell angles
 c     bbb(7 to 9) - perpendicular cell widths
 c     bbb(10)     - cell volume
-c     
+c
 c     copyright daresbury laboratory 1992
 c     author - w. smith         july 1992
-c     
-c     itt
-c     2010-10-30 17:20:49
-c     1.3
-c     Exp
-c     
+c
 c***********************************************************************
-c     
+c
 
       implicit real*8 (a-h,o-z)
 
       dimension aaa(9),bbb(10)
-c     
+c
 c     calculate lengths of cell vectors
 
       bbb(1)=sqrt(aaa(1)*aaa(1)+aaa(2)*aaa(2)+aaa(3)*aaa(3))
       bbb(2)=sqrt(aaa(4)*aaa(4)+aaa(5)*aaa(5)+aaa(6)*aaa(6))
       bbb(3)=sqrt(aaa(7)*aaa(7)+aaa(8)*aaa(8)+aaa(9)*aaa(9))
-c     
+c
 c     calculate cosines of cell angles
 
       bbb(4)=(aaa(1)*aaa(4)+aaa(2)*aaa(5)+aaa(3)*aaa(6))/(bbb(1)*bbb(2))
       bbb(5)=(aaa(1)*aaa(7)+aaa(2)*aaa(8)+aaa(3)*aaa(9))/(bbb(1)*bbb(3))
       bbb(6)=(aaa(4)*aaa(7)+aaa(5)*aaa(8)+aaa(6)*aaa(9))/(bbb(2)*bbb(3))
-c     
+c
 c     calculate vector products of cell vectors
 
       axb1=aaa(2)*aaa(6)-aaa(3)*aaa(5)
@@ -274,11 +280,11 @@ c     calculate vector products of cell vectors
       cxa1=aaa(8)*aaa(3)-aaa(2)*aaa(9)
       cxa2=aaa(1)*aaa(9)-aaa(3)*aaa(7)
       cxa3=aaa(2)*aaa(7)-aaa(1)*aaa(8)
-c     
+c
 c     calculate volume of cell
 
       bbb(10)=abs(aaa(1)*bxc1+aaa(2)*bxc2+aaa(3)*bxc3)
-c     
+c
 c     calculate cell perpendicular widths
 
       bbb(7)=bbb(10)/sqrt(bxc1*bxc1+bxc2*bxc2+bxc3*bxc3)
@@ -288,26 +294,21 @@ c     calculate cell perpendicular widths
       return
       end
       subroutine invert(a,b,d)
-c     
+c
 c***********************************************************************
-c     
+c
 c     dl_poly subroutine to invert a 3 * 3 matrix using cofactors
-c     
+c
 c     copyright - daresbury laboratory 1992
 c     author    - w. smith       april 1992
-c     
-c     itt
-c     2010-10-30 17:20:49
-c     1.3
-c     Exp
-c     
+c
 c***********************************************************************
-c     
-      
+c
+
       real*8 a,b,d,r
 
       dimension a(9),b(9)
-c     
+c
 c     calculate adjoint matrix
       b(1)=a(5)*a(9)-a(6)*a(8)
       b(2)=a(3)*a(8)-a(2)*a(9)
@@ -318,12 +319,12 @@ c     calculate adjoint matrix
       b(7)=a(4)*a(8)-a(5)*a(7)
       b(8)=a(2)*a(7)-a(1)*a(8)
       b(9)=a(1)*a(5)-a(2)*a(4)
-c     
+c
 c     calculate determinant
       d=a(1)*b(1)+a(4)*b(2)+a(7)*b(3)
       r=0.d0
       if(abs(d).gt.0.d0)r=1.d0/d
-c     
+c
 c     complete inverse matrix
       b(1)=r*b(1)
       b(2)=r*b(2)
@@ -339,25 +340,20 @@ c     complete inverse matrix
       subroutine hread
      x  (history,cfgname,atmnam,iflg,imcon,keytrj,natms,nstep,tstep,
      x   cell,chge,weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz)
-      
-c     
+
+c
 c***********************************************************************
-c     
-c     dl_poly subroutine for reading the formatted history file 
-c     
+c
+c     dl_poly subroutine for reading the formatted history file
+c
 c     copyright - daresbury laboratory 1996
 c     author    - w. smith jan 1996.
 c
 c     single processor version
 c
-c     itt
-c     2010-10-30 17:20:49
-c     1.3
-c     Exp
-c     
 c***********************************************************************
-c     
-      
+c
+
       implicit real*8(a-h,o-z)
 
       logical new
@@ -365,7 +361,7 @@ c
       character*80 cfgname
       character*40 history
       character*8 atmnam(*),step
-      
+
       dimension cell(9)
       dimension chge(*),weight(*)
       dimension xxx(*),yyy(*),zzz(*)
@@ -381,9 +377,9 @@ c
 c     open history file if new job
 
       if(new)then
-      
+
         open(nhist,file=history,status='old',err=100)
-        
+
         read(nhist,'(a80)',err=200) cfgname
         write(*,'(a,a)')'# History file header: ',cfgname
         read(nhist,'(2i10)',end=200) ktrj,imcon
@@ -398,10 +394,10 @@ c     open history file if new job
         new=.false.
 
       endif
-        
-      read(nhist,'(a8,4i10,f12.6)',end=200) 
+
+      read(nhist,'(a8,4i10,f12.6)',end=200)
      x    step,nstep,matms,ktrj,imcon,tstep
-      
+
       if(natms.ne.matms)then
 
         write(*,'(a)')'# error - incorrect number of atoms in file'
@@ -409,9 +405,9 @@ c     open history file if new job
         stop
 
       endif
-      
+
       if(imcon.gt.0) read(nhist,'(3g12.4)',end=200) cell
-      
+
       do i = 1,natms
         read(nhist,'(a8,i10,2f12.6)',end=200)
      x    atmnam(i),j,weight(i),chge(i)
@@ -427,7 +423,7 @@ c     open history file if new job
           read(nhist,'(1p,3e12.4)',end=200) fx,fy,fz
         endif
       enddo
-      
+
       iflg=1
 
       return

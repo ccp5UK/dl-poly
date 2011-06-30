@@ -1,29 +1,24 @@
       program wateradd
-      
+
 c***********************************************************************
-c     
+c
 c     DL_POLY utility
-c     
+c
 c     Program to add SPC water molecules to a structure to fill
 c     out the MD cell.
 c     Assumes atomic postions are in a form compatible
 c     with the CONFIG file used in DL_POLY with periodic boundary
 c     conditions.
 c     Water is added from 'water.300K' file
-c     
+c
 c     input file = CONFIG
 c     output file = CONFIG.plusH2O
-c     
-c     copyright Daresbury laboratory 1993
+c
+c     copyright daresbury laboratory 1993
 c     author -     t.  forester  feb 1993
-c     
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
 c
 c***********************************************************************
-      
+
       implicit real*8(a-h,o-z)
       parameter(mxatm = 100000)
       parameter(mxcell= 1000000)
@@ -41,7 +36,7 @@ c***********************************************************************
       dimension xd(mxatm),yd(mxatm),zd(mxatm)
 
       dimension lct(mxcell),link(mxatm)
-      
+
       data nix/  0, 1, 0, 0,-1, 1, 0,-1, 1, 0,-1, 1,-1, 1,
      x   -1, 0, 0, 1,-1, 0, 1,-1, 0, 1,-1, 1,-1/
       data niy/  0, 0, 1, 0, 1, 1,-1, 0, 0, 1,-1,-1, 1, 1,
@@ -49,33 +44,33 @@ c***********************************************************************
       data niz/  0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
      x    0, 0,-1, 0, 0,-1,-1,-1,-1,-1,-1,-1,-1/
 
-c     
+c
 c     tolerance for O - solute distance
-      
+
       write(*,*) 'minimum Ow-solute distance ? '
       read(*,*) tolnce
       tolnce= tolnce**2
 
-c     
+c
 c     tolerance for water site- water site distance
 
       write(*,*)'minimum Ow/Hw - Ow/Hw distance ? '
       read(*,*) tolow
       tolow=tolow**2
-c     
+c
 c     device identities
-      
+
       iwt = 7
       ird = 8
       iwr = 9
-      
+
       open(iwt,file='water.300K')
       open(ird,file='CONFIG')
       open(iwr,file='CONFIG.plusH2O')
-      
+
       read(ird,'(a80)') rdline
       write(iwr,'(a80)') rdline
-      
+
       read(ird,'(2i10)') levcfg,imcon
       if(imcon.eq.0) call error(50)
 
@@ -89,16 +84,16 @@ c     imcon = 10 for ellipsoidal boundary
       else
         write(iwr,'(2i10)') 0,0
       endif
-      
+
       do i = 1,mxatm
-        
+
         read(ird,'(a8)',end=100) name(i)
         read(ird,'(3f20.8)',end=100) xxx(i),yyy(i),zzz(i)
         if(levcfg.gt.0) read(ird,*,end=100)
         if(levcfg.gt.1) read(ird,*,end=100)
 
       enddo
-      
+
   100 natm = i-1
 
       call invert(cell,rcell,det)
@@ -112,11 +107,11 @@ c     place solute atoms into link list
      x   (natm,ncells,imcon,tolnce,xdc,ydc,zdc,
      x   lct,link,cell,rcell,ssx,ssy,ssz,xxx,yyy,zzz)
 c
-c     read in data from water300K - equilibrated water 
+c     read in data from water300K - equilibrated water
 
       read(iwt,*)
       read(iwt,*) axcub, naa
-      
+
       do i = 1,naa
 
         read(iwt,*)
@@ -129,15 +124,15 @@ c     read in data from water300K - equilibrated water
 c
 c     define number of water blocks to use
 
-      imax=int((abs(cell(1))+abs(cell(4))+abs(cell(7)))/axcub+.99d0)/2+1 
+      imax=int((abs(cell(1))+abs(cell(4))+abs(cell(7)))/axcub+.99d0)/2+1
       jmax=int((abs(cell(2))+abs(cell(5))+abs(cell(8)))/axcub+.99d0)/2+1
-      kmax=int((abs(cell(3))+abs(cell(6))+abs(cell(9)))/axcub+.99d0)/2+1 
-      
-c     
+      kmax=int((abs(cell(3))+abs(cell(6))+abs(cell(9)))/axcub+.99d0)/2+1
+
+c
 c     inverse of MD cell
-      
+
       call invert(cell,rcell,det)
-      
+
       write(*,*) 'inserting water '
       write(*,*)
 
@@ -178,18 +173,18 @@ c     additional checks on non standard periodic boundaries
      x     (iplus,ncells,natm,14,tolnce,xdc,ydc,zdc,lct,
      x     link,lstrem,nix,niy,niz,ssx,ssy,ssz,xxx,yyy,zzz,cell)
 
-        
+
       endif
 
 c
 c     write out final structure
 
       do i = 1,natm+3*iplus
-        
+
         write(iwr,'(a8,i10)') name(i),i
         write(iwr,'(3f20.8)') xxx(i),yyy(i),zzz(i)
       enddo
-      
+
       write(*,*)
       write(*,*) 'all done: added ',iplus,' waters'
       write(*,*) 'output in CONFIG.plusH2O'
@@ -198,18 +193,18 @@ c     write out final structure
 
       subroutine images
      x     (imcon,idnode,mxnode,natm,cell,xxx,yyy,zzz)
-      
-c     
+
+c
 c***********************************************************************
-c     
+c
 c     dl_poly subroutine for calculating the minimum image
 c     of atom pairs within a specified MD cell
-c     
+c
 c     parallel replicated data version
-c     
+c
 c     copyright - daresbury laboratory 1992
 c     author    - w. smith march 1992.
-c     
+c
 c     for
 c     imcon=0 no boundary conditions apply
 c     imcon=1 standard cubic boundaries apply
@@ -218,112 +213,112 @@ c     imcon=3 parallelepiped boundaries apply
 c     imcon=4 truncated octahedron boundaries apply
 c     imcon=5 rhombic dodecahedron boundaries apply
 c     imcon=6 x-y parallelogram, z non-periodic
-c     
+c
 c     note: in all cases the centre of the cell is at (0,0,0)
-c     warning - replicated data version: does not re-merge 
+c     warning - replicated data version: does not re-merge
 c     coordinate arrays
-c     
+c
 c***********************************************************************
-c     
-      
+c
+
       implicit real*8 (a-h,o-z)
 
       dimension xxx(*),yyy(*),zzz(*)
       dimension cell(9),rcell(9)
 
       if(imcon.eq.1)then
-c     
+c
 c     standard cubic boundary conditions
-         
+
          aaa=1.d0/cell(1)
 
          do i=idnode+1,natm,mxnode
-            
+
             xxx(i)=xxx(i)-cell(1)*nint(aaa*xxx(i))
             yyy(i)=yyy(i)-cell(1)*nint(aaa*yyy(i))
             zzz(i)=zzz(i)-cell(1)*nint(aaa*zzz(i))
-            
+
          enddo
-         
+
       else if(imcon.eq.2)then
-c     
+c
 c     rectangular (slab) boundary conditions
-         
+
          aaa=1.d0/cell(1)
          bbb=1.d0/cell(5)
          ccc=1.d0/cell(9)
-         
+
          do i=idnode+1,natm,mxnode
-            
+
            xxx(i)=xxx(i)-cell(1)*nint(aaa*xxx(i))
            yyy(i)=yyy(i)-cell(5)*nint(bbb*yyy(i))
            zzz(i)=zzz(i)-cell(9)*nint(ccc*zzz(i))
-            
+
          enddo
-         
+
       else if(imcon.eq.3)then
-c     
+c
 c     parallelepiped boundary conditions
-         
+
          call invert(cell,rcell,det)
          if(abs(det).lt.1.d-6)call error(120)
-         
+
          do i=idnode+1,natm,mxnode
-            
+
             ssx=(rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i))
             ssy=(rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i))
             ssz=(rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i))
-            
+
             xss=ssx-nint(ssx)
             yss=ssy-nint(ssy)
             zss=ssz-nint(ssz)
-            
+
             xxx(i)=(cell(1)*xss+cell(4)*yss+cell(7)*zss)
             yyy(i)=(cell(2)*xss+cell(5)*yss+cell(8)*zss)
             zzz(i)=(cell(3)*xss+cell(6)*yss+cell(9)*zss)
-            
+
          enddo
-         
+
       else if(imcon.eq.4)then
-c     
+c
 c     truncated octahedral boundary conditions
-         
+
          if(.not.(abs(cell(1)-cell(5)).lt.1.d-3.and.
      x      abs(cell(5)-cell(9)).lt.1.d-3)) call error(120)
-         
+
          aaa=1.d0/cell(1)
-         
+
          do i=idnode+1,natm,mxnode
-            
+
             xxx(i)=xxx(i)-cell(1)*nint(aaa*xxx(i))
             yyy(i)=yyy(i)-cell(1)*nint(aaa*yyy(i))
             zzz(i)=zzz(i)-cell(1)*nint(aaa*zzz(i))
-            
+
             if((abs(xxx(i))+abs(yyy(i))+abs(zzz(i))).ge.
      x           (0.75d0*cell(1)))then
-               
+
                xxx(i)=xxx(i)-0.5d0*sign(cell(1),xxx(i))
                yyy(i)=yyy(i)-0.5d0*sign(cell(1),yyy(i))
                zzz(i)=zzz(i)-0.5d0*sign(cell(1),zzz(i))
-               
+
             endif
-            
+
          enddo
-         
+
       else if(imcon.eq.5)then
-c     
+c
 c     rhombic dodecahedral boundary conditions
-         
+
          rt2=sqrt(2.d0)
          if(abs(cell(1)-cell(5)).gt.1.d-3.or.
      x      abs(cell(9)-cell(1)*rt2).gt.1.d-3)
      x      call error(120)
-         
+
          aaa=1.d0/cell(1)
          bbb=1.d0/cell(9)
-         
+
          do i=idnode+1,natm,mxnode
-            
+
            ssx= xxx(i)*aaa
            ssy= yyy(i)*aaa
            ssz= zzz(i)*bbb
@@ -343,27 +338,27 @@ c     rhombic dodecahedral boundary conditions
            xxx(i) = ssx*cell(1)
            yyy(i) = ssy*cell(1)
            zzz(i) = ssz*cell(9)
-            
+
          enddo
 
        else if(imcon.eq.6)then
-c     
+c
 c     parallelogram in x-y, z non periodic
-         
+
          call invert(cell,rcell,det)
          if(abs(det).lt.1.d-6)call error(120)
-         
+
          do i=idnode+1,natm,mxnode
-            
+
             ssx=(rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i))
             ssy=(rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i))
-            
+
             xss=ssx-nint(ssx)
             yss=ssy-nint(ssy)
-            
+
             xxx(i)=(cell(1)*xss+cell(4)*yss+cell(7)*zss)
             yyy(i)=(cell(2)*xss+cell(5)*yss+cell(8)*zss)
-            
+
          enddo
 
       endif
@@ -372,17 +367,17 @@ c     parallelogram in x-y, z non periodic
       end
 
       subroutine invert(a,b,d)
-c     
+c
 c***********************************************************************
-c     
+c
 c     dl_poly subroutine to invert a 3 * 3 matrix using cofactors
 c
 c     copyright - daresbury laboratory 1992
 c     author    - w. smith april 1992.
-c     
+c
 c***********************************************************************
-c     
-      
+c
+
       real*8 a,b,d,r
 
       dimension a(9),b(9)
@@ -417,8 +412,18 @@ c     complete inverse matrix
       end
 
       subroutine error(kode)
+
+c***********************************************************************
+c
+c     dl_poly subroutine
+c
+c     copyright - daresbury laboratory
+c     author    - t. forester
+c
+c***********************************************************************
+
       implicit real*8(a-h,o-z)
-      
+
       write(*,*)
       if(kode.eq.50) then
         write(*,*) ' error - invalid image convention'
@@ -445,6 +450,15 @@ c     complete inverse matrix
      x   (natm,ncells,imcon,tolnce,xdc,ydc,zdc,
      x   lct,link,cell,rcell,ssx,ssy,ssz,xxx,yyy,zzz)
 
+c***********************************************************************
+c
+c     dl_poly subroutine
+c
+c     copyright - daresbury laboratory
+c     author    - t. forester
+c
+c***********************************************************************
+
       implicit real*8(a-h,o-z)
       parameter(mxcell=1000000)
 
@@ -468,9 +482,9 @@ c
 c     check for enough link cells
 
       if(ncells.gt.mxcell) call error(100)
-c     
+c
 c     check system is big enough
-        
+
       linc =.false.
       if(ilx.lt.3) linc = .true.
       if(ily.lt.3) linc = .true.
@@ -478,68 +492,78 @@ c     check system is big enough
 
       if(linc) call error(110)
 
-c     
+c
 c     calculate link cell indices
-        
+
       do i = 1,ncells
-          
+
         lct(i)=0
-          
+
       enddo
-c     
+c
 c     link-cell cutoff for reduced space
-        
+
       xdc = dble(ilx)
       ydc = dble(ily)
       zdc = dble(ilz)
 
-c     
+c
 c     reduced space coordinates
-      
+
       call images(imcon,0,1,natm,cell,xxx,yyy,zzz)
-        
+
       do i = 1,natm
-          
+
         ssx(i)=(rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i))+0.5d0
         ssy(i)=(rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i))+0.5d0
         ssz(i)=(rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i))+0.5d0
-          
+
       enddo
-c     
-c     link neighbours 
-        
+c
+c     link neighbours
+
       do i = 1,natm
-          
+
         ix = int(xdc*ssx(i))
         iy = int(ydc*ssy(i))
         iz = int(zdc*ssz(i))
-          
+
         icell = 1+ix+ilx*(iy+ily*iz)
-          
+
         j = lct(icell)
         lct(icell)=i
         link(i)=j
-          
+
       enddo
 
-      return 
+      return
       end
 
       subroutine lnkimg(jy,ily,cy)
+
+c***********************************************************************
+c
+c     dl_poly subroutine
+c
+c     copyright - daresbury laboratory
+c     author    - t. forester
+c
+c***********************************************************************
+
       implicit real*8(a-h,o-z)
 
       if(jy.ge.ily) then
-        
+
         jy = jy-ily
         cy = 1.d0
-                
+
       elseif(jy.lt.0) then
-                
+
         jy = jy+ily
         cy =-1.d0
-                
+
       endif
-      
+
       return
       end
 
@@ -548,8 +572,17 @@ c     link neighbours
      x   naa,natm,nsbcll,mxatm,axcub,tolnce,xdc,ydc,zdc,lct,link,
      x   nix,niy,niz,xxx,yyy,zzz,ssx,ssy,ssz,cell,rcell)
 
+c***********************************************************************
+c
+c     dl_poly subroutine
+c
+c     copyright - daresbury laboratory
+c     author    - t. forester
+c
+c***********************************************************************
+
       implicit real*8(a-h,o-z)
-      
+
       logical ladd
 
       character*8 ow,hw,name(*)
@@ -569,35 +602,35 @@ c     link neighbours
       ilz=int(zdc+0.5d0)
 
       do i = -imax,imax
-        
+
         xi = dble(i)*axcub
-        
+
         do j = -jmax,jmax
 
           yi = dble(j)*axcub
-          
+
           do k = -kmax,kmax
-            
-            zi = dble(k)*axcub 
-            
+
+            zi = dble(k)*axcub
+
             do l = 1,naa
-              
-              xo = xi + ox(l) 
+
+              xo = xi + ox(l)
               yo = yi + oy(l)
               zo = zi + oz(l)
-c     
+c
 c     check if water is in basic MD cell
-              
+
               sx=(rcell(1)*xo+rcell(4)*yo+rcell(7)*zo)
               sy=(rcell(2)*xo+rcell(5)*yo+rcell(8)*zo)
               sz=(rcell(3)*xo+rcell(6)*yo+rcell(9)*zo)
-              
+
               if(abs(sx).le..5d0) then
                 if(abs(sy).le..5d0) then
                   if(abs(sz).le..5d0)then
 c
 c     compute link cell index
-                
+
                     sx=sx+0.5d0
                     sy=sy+0.5d0
                     sz=sz+0.5d0
@@ -611,7 +644,7 @@ c     flag to add water
                     ladd = .true.
 c
 c     loop over nearby link cells of solute
-                
+
                     nsbcll = 27
                     do kc = 1,nsbcll
 
@@ -622,51 +655,51 @@ c     loop over nearby link cells of solute
                       jx=ix+nix(kc)
                       jy=iy+niy(kc)
                       jz=iz+niz(kc)
-c     
+c
 c     minimum image convention for link cells
 
                       call lnkimg(jx,ilx,cx)
                       call lnkimg(jy,ily,cy)
                       call lnkimg(jz,ilz,cz)
-c     
+c
 c     index of neighbouring cell
-              
+
                       jc = 1+jx+ilx*(jy+ily*jz)
                       jj=lct(jc)
-c     
+c
 c     ignore if empty
 
                       if(jj.gt.0) then
-                    
+
   300                   continue
-                    
-c     
+
+c
 c     distance in real space : minimum image applied
-                      
+
                         sxd = ssx(jj)-sx+cx
                         syd = ssy(jj)-sy+cy
                         szd = ssz(jj)-sz+cz
-                      
+
                         xd=cell(1)*sxd+cell(4)*syd+cell(7)*szd
                         yd=cell(2)*sxd+cell(5)*syd+cell(8)*szd
                         zd=cell(3)*sxd+cell(6)*syd+cell(9)*szd
-                      
+
                         rsq = xd*xd+yd*yd+zd*zd
-c     
+c
 c     test of distance
                         if(rsq.lt.tolnce) then
                           ladd =.false.
                         endif
-                        
+
                         jj=link(jj)
                         if(jj.gt.0) goto 300
-                    
+
                       endif
-                  
+
                     enddo
-c     
+c
 c     add O to structure
-                
+
                     if(ladd) then
 
                       iplus = iplus + 1
@@ -677,13 +710,13 @@ c     add O to structure
                       yyy(k1) = yo
                       zzz(k1) = zo
                       name(k1) = ow
-                
+
                       k2 = k1 + 1
                       name(k2) = hw
                       xxx(k2) = xi + h1x(l)
                       yyy(k2) = yi + h1y(l)
                       zzz(k2) = zi + h1z(l)
-                
+
                       k3 = k1 + 2
                       name(k3) = hw
                       xxx(k3) = xi + h2x(l)
@@ -697,29 +730,38 @@ c     add O to structure
               endif
 
             enddo
-            
+
           enddo
-          
+
         enddo
-        
+
       enddo
 
-      return 
+      return
       end
-      
+
       subroutine spcchk
      x     (iplus,ncells,natm,nsbcll,tolnce,xdc,ydc,zdc,lct,
      x     link,lstrem,nix,niy,niz,ssx,ssy,ssz,xxx,yyy,zzz,cell)
-      
+
+c***********************************************************************
+c
+c     dl_poly subroutine
+c
+c     copyright - daresbury laboratory
+c     author    - t. forester
+c
+c***********************************************************************
+
       implicit real*8(a-h,o-z)
-      
+
       dimension lct(*),link(*)
       dimension ssx(*),ssy(*),ssz(*)
       dimension xxx(*),yyy(*),zzz(*)
       dimension nix(*),niy(*),niz(*)
       dimension cell(*)
       dimension lstrem(*)
-      
+
       ilx = int(xdc+0.5d0)
       ily = int(ydc+0.5d0)
       ilz = int(zdc+0.5d0)
@@ -729,71 +771,71 @@ c     add O to structure
       iz=0
 
       irem =0
-      
+
       do ic = 1,ncells
 
         ii=lct(ic)
         if(ii.gt.0) then
-c     
+c
 c     secondary loop over subcells
-          
+
           do kc = 1,nsbcll
-            
+
             ii = lct(ic)
 
             cx = 0.d0
             cy = 0.d0
             cz = 0.d0
-            
+
             jx=ix+nix(kc)
             jy=iy+niy(kc)
             jz=iz+niz(kc)
 
-c     
+c
 c     minimum image convention for link cells
-            
+
             call lnkimg(jx,ilx,cx)
             call lnkimg(jy,ily,cy)
             call lnkimg(jz,ilz,cz)
-c     
+c
 c     index of neighbouring cell
-            
+
             jc =1+jx+ilx*(jy+ily*jz)
             jj=lct(jc)
 
-c     
+c
 c     ignore if empty of water
-            
+
             if(jj.gt.0) then
-              
+
   200        continue
 c
 c     water molecule id for site ii
 
               ik = (ii-natm-1)/3 +1
-              
+
               if(ic.eq.jc) jj=link(ii)
               if(jj.gt.0) then
-                
+
   300           continue
-                
-c     
+
+c
 c     distance in real space : minimum image applied
 
-                
+
                 sxd = ssx(jj)-ssx(ii)+cx
                 syd = ssy(jj)-ssy(ii)+cy
                 szd = ssz(jj)-ssz(ii)+cz
-                
+
                 xd=cell(1)*sxd+cell(4)*syd+cell(7)*szd
                 yd=cell(2)*sxd+cell(5)*syd+cell(8)*szd
                 zd=cell(3)*sxd+cell(6)*syd+cell(9)*szd
-                
+
                 rsq = xd*xd + yd*yd + zd*zd
 
-c     
+c
 c     test of distance
-                
+
                 if(rsq.lt.tolnce) then
 c
 c     make sure sites are not on same water molecule!
@@ -806,58 +848,58 @@ c     make sure sites are not on same water molecule!
 
                         irem = irem+1
                         lstrem(irem) = max(ik,jk)
-                    
+
                       endif
                     endif
                   endif
 
                 endif
-                
+
                 jj=link(jj)
                 if(jj.gt.natm) goto 300
-                
+
               endif
-              
+
               jj=lct(jc)
               ii=link(ii)
-              
+
               if(ii.gt.natm) goto 200
-              
+
             endif
-            
+
           enddo
-          
+
         endif
-        
+
         ix=ix+1
         if(ix.ge.ilx) then
-          
+
           ix=0
           iy=iy+1
-          
+
           if(iy.ge.ily) then
-            
+
             iy=0
             iz=iz+1
-            
+
           endif
-          
+
         endif
-        
+
       enddo
 c
 c     remove unwanted water molecules
- 
+
       call cleanup(natm,iplus,irem,lstrem,xxx,yyy,zzz)
 
-      return 
+      return
       end
 
       subroutine shellsort(n,list)
 
 c***********************************************************************
 c
-c     dlpoly shell sort routine. 
+c     dlpoly shell sort routine.
 c     Sorts an array of integers into ascending order
 c
 c     copyright daresbury laboratory 1993
@@ -882,50 +924,50 @@ c     iterate shell sort
    10  do nn = 1,nl
 c
 c     begin insertion sort on nnth list
-            
+
             do i = nn+nl,n,nl
 
                imax = list(i)
                ix = i
 c
 c     find location for insertion
-               
+
                j = i
   100          j = j-nl
 
                if(j.lt.1) goto 110
 
                if (list(j).gt.imax) then
-                     
+
                   ix = j
-                     
+
                else
-               
+
                   j =1
 
                endif
-                  
+
                goto 100
   110           continue
-               
+
 c
 c     insert in index array
 
                do j = i,ix+nl,-nl
-                  
+
                   list(j) = list(j-nl)
-                  
+
                enddo
-               
+
                list(ix) = imax
 
             enddo
 
          enddo
-         
+
          nl = nl/2
          if(nl.gt.0) goto 10
-         
+
       endif
 
       return
@@ -1016,7 +1058,7 @@ c
       dimension cell(*)
       dimension xd(*),yd(*),zd(*)
       dimension lstrem(*)
-      
+
       natm1 = natm+3*iplus
       irem = 0
 c
@@ -1033,7 +1075,7 @@ c     check that Ow is in central box
           sz = abs(ssz(i) -0.5d0)
 
           if(sx+sy+sz.gt.0.75d0) then
-            
+
             irem = irem+1
             lstrem(irem) = (i-natm-1)/3 + 1
 
@@ -1078,7 +1120,7 @@ c     ellipsoidal shell
           endif
 
         enddo
-      
+
       endif
 c
 c     remove unwanted waters
@@ -1093,20 +1135,20 @@ c
 c     water molecule number
 
         ik = (i-natm-1)/3 + 1
-          
+
         ii = 0
 
         do j = i+1,natm1
 
           jk = (j-natm - 1)/3 + 1
-              
+
           if(jk.ne.ik) then
 
             ii=ii+1
             xd(ii) = xxx(i)-xxx(j)
             yd(ii) = yyy(i)-yyy(j)
             zd(ii) = zzz(i)-zzz(j)
-                
+
           endif
 
         enddo
@@ -1114,11 +1156,11 @@ c
 c     periodic image
 
         call images(imcon,0,1,ii,cell,xd,yd,zd)
-        
+
         check = .true.
 
         do j = 1,ii
-              
+
           rsq = xd(j)**2+ yd(j)**2 +zd(j)**2
           if(rsq.lt.tolnce) check = .false.
 
@@ -1134,7 +1176,7 @@ c
 c     remove unwanted waters
 
       call cleanup(natm,iplus,irem,lstrem,xxx,yyy,zzz)
-      
+
       natm1 = natm+3*iplus
 
       return
@@ -1142,49 +1184,58 @@ c     remove unwanted waters
 
       subroutine  cleanup(natm,iplus,irem,lstrem,xxx,yyy,zzz)
 
+c***********************************************************************
+c
+c     dl_poly subroutine
+c
+c     copyright - daresbury laboratory
+c     author    - t. forester
+c
+c***********************************************************************
+
       implicit real*8(a-h,o-z)
       dimension xxx(*),yyy(*),zzz(*)
       dimension lstrem(*)
-c     
+c
 c     sort into order
-      
+
       call shellsort(irem,lstrem)
-c     
+c
 c     remove redundancies from list
-      
+
       ii = 0
       do i = irem,2,-1
-        
+
         if(lstrem(i-1).eq.lstrem(i)) then
-          
+
           ii=ii+1
-          
+
           do jj = i,irem
             lstrem(jj)=lstrem(jj+1)
           enddo
-          
+
         endif
-        
+
       enddo
-      
+
       irem = irem-ii
-c     
+c
 c     go through list and remove all the ones we don't want
-      
+
       do ik = irem,1,-1
-        
+
         j = natm + (lstrem(ik)-1)*3 + 1
         ntot=natm+3*(iplus)
-        
+
         do i = j,ntot-3
-          
+
           xxx(i) = xxx(i+3)
           yyy(i) = yyy(i+3)
           zzz(i) = zzz(i+3)
-          
+
         enddo
 
-        iplus = iplus-1        
+        iplus = iplus-1
 
       enddo
 

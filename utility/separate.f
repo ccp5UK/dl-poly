@@ -89,7 +89,7 @@ c     shift molecule 2
          x(id)=x(id)-ax*nint(x(id)/ax)
          y(id)=y(id)-by*nint(y(id)/by)
          z(id)=z(id)-cz*nint(z(id)/cz)
-         
+
       enddo
 
 c     write new config file

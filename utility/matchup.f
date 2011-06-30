@@ -6,7 +6,7 @@ c     copyright daresbury laboratory
 c     author w.smith march 2004
 c
 c*********************************************************************
-      
+
       implicit none
 
       integer, parameter :: npass=10
@@ -81,7 +81,7 @@ c     print out best fit
       end
 
       subroutine cfgread(fname,natms,imcon,cell,xxx,yyy,zzz)
-      
+
 c*********************************************************************
 c
 c     read a DL_POLY CONFIG file
@@ -149,116 +149,116 @@ c     close CONFIG file
       end
 
       subroutine centre(natms,xx0,yy0,zz0)
-      
+
 c*********************************************************************
-c     
+c
 c     subroutine to centre the template
-c     
+c
 c     copyright daresbury laboratory
 c     author w.smith march 2004
-c     
+c
 c*********************************************************************
-      
+
       implicit none
-      
+
       integer i,natms
       real*8 rrr,xx0,yy0,zz0
-      
+
       dimension xx0(*),yy0(*),zz0(*)
       dimension rrr(3)
-      
+
       rrr(1)=0.d0
       rrr(2)=0.d0
       rrr(3)=0.d0
-      
+
       do i=1,natms
-        
+
         rrr(1)=rrr(1)+xx0(i)
         rrr(2)=rrr(2)+yy0(i)
         rrr(3)=rrr(3)+zz0(i)
-        
+
       enddo
-      
+
       rrr(1)=rrr(1)/dble(natms)
       rrr(2)=rrr(2)/dble(natms)
       rrr(3)=rrr(3)/dble(natms)
-      
+
       do i=1,natms
-        
+
         xx0(i)=xx0(i)-rrr(1)
         yy0(i)=yy0(i)-rrr(2)
         zz0(i)=zz0(i)-rrr(3)
-        
+
       enddo
-      
+
       return
       end
 
       subroutine slide(natms,xx0,yy0,zz0,xx1,yy1,zz1)
-      
+
 c*********************************************************************
-c     
+c
 c     slide structure to best match of template
-c     
+c
 c     copyright daresbury laboratory
 c     author w.smith march 2004
-c     
+c
 c*********************************************************************
-      
+
       implicit none
-      
+
       integer i,natms
       real*8 rrr,xx0,yy0,zz0,xx1,yy1,zz1
-      
+
       dimension xx0(*),yy0(*),zz0(*),xx1(*),yy1(*),zz1(*)
       dimension rrr(3)
-      
+
       rrr(1)=0.d0
       rrr(2)=0.d0
       rrr(3)=0.d0
-      
+
       do i=1,natms
-        
+
         rrr(1)=rrr(1)+(xx1(i)-xx0(i))
         rrr(2)=rrr(2)+(yy1(i)-yy0(i))
         rrr(3)=rrr(3)+(zz1(i)-zz0(i))
-        
+
       enddo
-      
+
       rrr(1)=rrr(1)/dble(natms)
       rrr(2)=rrr(2)/dble(natms)
       rrr(3)=rrr(3)/dble(natms)
-      
+
       do i=1,natms
-        
+
         xx1(i)=xx1(i)-rrr(1)
         yy1(i)=yy1(i)-rrr(2)
         zz1(i)=zz1(i)-rrr(3)
-        
+
       enddo
-      
+
       return
       end
 
       subroutine rotate(natms,xx0,yy0,zz0,xx1,yy1,zz1)
-      
+
 c*********************************************************************
-c     
+c
 c     subroutine to centre the template
-c     
+c
 c     copyright daresbury laboratory
 c     author w.smith march 2004
-c     
+c
 c*********************************************************************
-      
+
       implicit none
-      
+
       integer i,j,k,natms
       real*8 xx0,yy0,zz0,xx1,yy1,zz1,mat,vec,aaa,qqq,rot,txx,tyy,tzz
-      
+
       dimension xx0(*),yy0(*),zz0(*),xx1(*),yy1(*),zz1(*)
       dimension aaa(3,3),mat(4,4),vec(4,4),qqq(4),rot(3,3)
-      
+
 c     zero work arrays
 
       do i=1,3
@@ -270,7 +270,7 @@ c     zero work arrays
 c     calculate optimisation parameters
 
       do i=1,natms
-        
+
         aaa(1,1)=aaa(1,1)+xx0(i)*xx1(i)
         aaa(2,1)=aaa(2,1)+yy0(i)*xx1(i)
         aaa(3,1)=aaa(3,1)+zz0(i)*xx1(i)
@@ -280,7 +280,7 @@ c     calculate optimisation parameters
         aaa(1,3)=aaa(1,3)+xx0(i)*zz1(i)
         aaa(2,3)=aaa(2,3)+yy0(i)*zz1(i)
         aaa(3,3)=aaa(3,3)+zz0(i)*zz1(i)
-        
+
       enddo
 
 c     construct optimisation matrix
@@ -386,28 +386,21 @@ c*********************************************************************
       subroutine jacobi(n,a,v)
 
 c***********************************************************************
-c     
+c
 c     diagonalisation of real symmetric matices by jacobi method
-c     
+c
 c     input parameters:
-c     
+c
 c     a(n,n) is the matrix to be diagonalised
 c     v(n,n) is the eigenvector matrix
 c     n   is the dimension of the matrices
-c     
+c
 c     jacobi processes lower triangle only (upper triangle unchanged)
-c     
+c
 c     variable rho sets absolute tolerance on convergence
 c     variable tes is a moving tolerance that diminishes
 c     on each pass until at true convergence tes<rho
-c     
-c     author w.smith 1993
-c     
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
-c     
+c
 c***********************************************************************
 
       implicit none
@@ -453,87 +446,87 @@ c     set initial value of moving tolerance
       tes=sqrt(tes)
 
 c     recycle until absolute tolerance satisfied
-        
+
       do while(tes.gt.rho)
-        
+
         pass=.true.
         tes=tes/dble(n)
         if(tes.lt.rho)tes=rho
-        
+
 c     recycle until moving tolerance satisfied
-        
+
         do while(pass)
-          
+
           pass=.false.
-          
+
 c     jacobi diagonalisation
 
           do i=2,n
-            
+
             do j=1,i-1
-              
+
               if(abs(a(i,j)).ge.tes)then
-                
+
                 pass=.true.
                 v1=a(j,j)
                 v2=a(i,j)
                 v3=a(i,i)
                 u=0.5d0*(v1-v3)
-                
+
                 if(abs(u).lt.rho)then
-                  
+
                   omg=-1.0d0
-                  
+
                 else
-                  
+
                   omg=-v2/sqrt(v2*v2+u*u)
                   if(u.lt.0.0d0)omg=-omg
-                  
+
                 endif
-                
+
                 s=omg/sqrt(2.0d0*(1.0d0+sqrt(1.0d0-omg*omg)))
                 c=sqrt(1.0d0-s*s)
-                
+
                 do k=1,n
-                  
+
                   if(k.ge.i)then
-                    
+
                     tem=a(k,j)*c-a(k,i)*s
                     a(k,i)=a(k,j)*s+a(k,i)*c
                     a(k,j)=tem
-                    
+
                   else if(k.lt.j)then
-                    
+
                     tem=a(j,k)*c-a(i,k)*s
                     a(i,k)=a(j,k)*s+a(i,k)*c
                     a(j,k)=tem
-                    
+
                   else
-                    
+
                     tem=a(k,j)*c-a(i,k)*s
                     a(i,k)=a(k,j)*s+a(i,k)*c
                     a(k,j)=tem
-                    
+
                   endif
-                  
+
                   tem=v(k,j)*c-v(k,i)*s
                   v(k,i)=v(k,j)*s+v(k,i)*c
                   v(k,j)=tem
-                  
+
                 enddo
-                
+
                 a(j,j)=v1*c*c+v3*s*s-2.0d0*v2*s*c
                 a(i,i)=v1*s*s+v3*c*c+2.0d0*v2*s*c
                 a(i,j)=(v1-v3)*s*c+v2*(c*c-s*s)
-                
+
               endif
-              
+
             enddo
-            
+
           enddo
-          
+
         enddo
-        
+
       enddo
 
 c     rescale matrix

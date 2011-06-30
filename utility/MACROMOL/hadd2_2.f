@@ -12,11 +12,6 @@ c
 c     author t forester    feb 1996
 c     copyright daresbury laboratory 1996
 c
-c     itt
-c     2010-10-30 17:20:53
-c     1.3
-c     Exp
-c
 c*********************************************************************
 
       implicit real*8(a-h,o-z)
@@ -113,7 +108,7 @@ c     bonds  b-a-c are linear!!
       az = -az
 
 c
-c     construct first a-H vector 
+c     construct first a-H vector
 
       theta = 90.d0 - angd*0.5d0
       theta = theta*(3.141592653589793d0/180.d0)
@@ -157,5 +152,5 @@ c     get H positions
       hz(2) = z(1) + ahz
 
       return
-      
+
       end

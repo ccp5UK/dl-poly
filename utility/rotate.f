@@ -3,17 +3,12 @@
 
 c***********************************************************************
 c
-c     DL_POLY utility to rotate water molecule through the 
-c     Euler angles (alp,bet,gam) in lab fixed axes system. 
+c     DL_POLY utility to rotate water molecule through the
+c     Euler angles (alp,bet,gam) in lab fixed axes system.
 c     The first data point is taken as the origin for the rotation
 c
 c     copyright daresbury laboratory 1993
 c     author  - t. forester     july 1993
-c
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
 c
 c***********************************************************************
 
@@ -31,12 +26,12 @@ c     create hydrogen positions - bondlength 1.0d0
       z(2) = z(1)
 c
 c     rotate about z by gam
-      
+
       cs = cos(gam)
       sn = sin(gam)
 
       do i = 1,2
- 
+
          xa = cs*x(i) - sn*y(i)
          ya = sn*x(i) + cs*y(i)
          x(i) = xa
@@ -50,7 +45,7 @@ c     rotate about x by bet
       sn = sin(bet)
 
       do i = 1,2
- 
+
          ya = cs*y(i) - sn*z(i)
          za = sn*y(i) + cs*z(i)
          y(i) = ya
@@ -64,7 +59,7 @@ c     rotate about z by alp
       sn = sin(alp)
 
       do i = 1,2
- 
+
          xa = cs*x(i) - sn*y(i)
          ya = sn*x(i) + cs*y(i)
          x(i) = xa
@@ -89,12 +84,12 @@ c     rotate about z by alp
       return
       end
 
- 
 
 
 
-                  
-               
- 
 
-               
+
+
+
+
+

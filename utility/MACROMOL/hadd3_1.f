@@ -13,11 +13,6 @@ c
 c     copyright daresbury laboratory 1993
 c     author        t forester   feb 1993
 c
-c     itt
-c     2010-10-30 17:20:53
-c     1.3
-c     Exp
-c
 c***********************************************************************
 
       implicit real*8(a-h,o-z)
@@ -30,7 +25,7 @@ c     convert angle between -180 and 180 degrees
 
 c
 c     convert to radians
-      
+
       ang = angd*3.1415926d0/180.0d0
       csa = cos(ang)
 c
@@ -57,7 +52,7 @@ c     find which way bond is oriented
       else if (abs(xab).gt.abs(zab)) then
          ip = 2
       endif
-  
+
       do i = 1,ip
          temp = zab
          zab = yab
@@ -72,7 +67,7 @@ c     construct a-h vector in transformed x-y plane
       ahy = sqrt(0.5d0)*sign(1.d0,yab)*sign(1.d0,90.d0-abs(angd))
 
 c
-c     solve quadratic for z component 
+c     solve quadratic for z component
 
       aa = xab*ahx + yab*ahy
       c = aa*aa - csa*csa
@@ -115,7 +110,7 @@ c     generate basis vectors perpendicular to b-a vector
       dox = ahx*rd
       doy = ahy*rd
       doz = ahz*rd
-      
+
       ax = yab*doz - zab*doy
       ay = zab*dox - xab*doz
       az = xab*doy - yab*dox
@@ -123,7 +118,7 @@ c     generate basis vectors perpendicular to b-a vector
       ax = ax*ra
       ay = ay*ra
       az = az*ra
-      
+
       bx = ay*zab - az*yab
       by = az*xab - ax*zab
       bz = ax*yab - ay*xab
@@ -178,6 +173,6 @@ c     rotate around b-a bond by -120 degrees for third H
       hz(3) = z(1) + ahz
 
       return
-      
+
       end
 

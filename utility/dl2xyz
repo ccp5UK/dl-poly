@@ -81,7 +81,7 @@ if((ntyp.eq.0).or.(ntyp.eq.2)) then
     write(6,'("Cell row vectors are :",/,3f20.5)') cell
   endif
   do i = 1,natms
-    read(ntyp+1,'(a8)',end=4711) symbol(i) 
+    read(ntyp+1,'(a8)',end=4711) symbol(i)
     do j = 1,nsym  ! determine symbol
      if(symbol(i).ne.dicin(j)) cycle
      symbol(i) = dicout(j) ; exit
@@ -188,7 +188,7 @@ else if(ntyp.eq.1) then
     else
       do i = 1,natms
         read(ntyp+1,*,end=4712);read(ntyp+1,*,end=4712) !skip symbol and xyz
-        if(key1.ge.1) read(ntyp+1,*,end=4712) ! velocities and forces are irrelevant 
+        if(key1.ge.1) read(ntyp+1,*,end=4712) ! velocities and forces are irrelevant
         if(key1.ge.2) read(ntyp+1,*,end=4712)
       enddo
     endif
@@ -204,7 +204,7 @@ else if(ntyp.eq.1) then
     endif
 
     do j = 1,a1-1  !skip to first atom
-      read(ntyp+1,*,end=4713); read(ntyp+1,*,end=4713) 
+      read(ntyp+1,*,end=4713); read(ntyp+1,*,end=4713)
       if(key1.ge.1) read(ntyp+1,*,end=4713) ! velocities and forces are irrelevant
       if(key1.ge.2) read(ntyp+1,*,end=4713)
     enddo
@@ -277,10 +277,10 @@ else if(ntyp.eq.1) then
 
       do i = a1,a2
         write(7,'(a8,3f20.4)') symbol(i),x(:,i)
-      enddo  
+      enddo
     endif
     do j = a2+1,natms  !skip trailing atoms
-      read(ntyp+1,*,end=4713); read(ntyp+1,*,end=4713) 
+      read(ntyp+1,*,end=4713); read(ntyp+1,*,end=4713)
       if(key1.ge.1) read(ntyp+1,*,end=4713) ! velocities and forces are irrelevant
       if(key1.ge.2) read(ntyp+1,*,end=4713)
     enddo
@@ -291,7 +291,7 @@ else if(ntyp.eq.1) then
 
   4712 write(6,*) 'Last photo in file is :',k-1 ; stop
   4713 write(6,*) 'Last complete photo translated was:',k-1 ; stop
-      
+
 endif
 
 stop

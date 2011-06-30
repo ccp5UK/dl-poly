@@ -1,35 +1,30 @@
 c      program sclexp
 
 c*********************************************************************
-c     
+c
 c     dl_poly program to scale the volume of a CONFIG file
-c     
+c
 c     copyright daresbury laboratory 2000
 c     author  w.smith june 2000
-c     
-c     wl
-c     1996/02/15 14:33:26
-c     1.1.1.1
-c     Exp
 c
 c*********************************************************************
-      
+
       implicit real*8(a-h,o-z)
-      
+
       parameter (mxatms=999999)
 
       character*40 fname
       character*80 title
       character*8 atname
       dimension cell(9)
-        
+
 c     open the I/O files
-      
+
 c      open(5,file='scale_input')
 c      open(6,file='scale_output')
-      
+
       write(*,'(a)')'# Scale CONFIG Program'
-      
+
 c     name of selected CONFIG file
       write(*,'(a)')'Enter name of CONFIG file'
       read(*,*)fname
@@ -40,11 +35,11 @@ c     required volume scale factor
       read(*,*)scale
 
 c     check on specified control variables
-      
+
       write(*,'(a,a40)')    '# name of target CONFIG file   : ',fname
       write(*,'(a,1p,e12.4)')'# requred volume scale factor  : ',scale
       scale=scale**(1.d0/3.d0)
-        
+
 c     open CONFIG file
 
       open(7,file=fname)
@@ -98,5 +93,5 @@ c     read configuration
       close (8)
       write(*,'(a)')'job done'
       stop
-      
+
       end

@@ -1,13 +1,13 @@
       program cfgchk
 
 c*********************************************************************
-c     
-c     dl_poly utility program for checking a CONFIG file to ensure 
+c
+c     dl_poly utility program for checking a CONFIG file to ensure
 c     an absence of close or zero atomic contacts
-c     
-c     author w.smith december 1998
+c
 c     copyright daresbury laboratory 1998
-c     
+c     author w.smith december 1998
+c
 c*********************************************************************
 
       implicit real*8 (a-h,o-z)
@@ -36,8 +36,8 @@ c*********************************************************************
 
       do i=1,mxatms
 
-        read(7,*,end=100)name,k
-        read(7,*)xxx(k),yyy(k),zzz(k)
+        read(7,*,end=100)name
+        read(7,*)xxx(i),yyy(i),zzz(i)
         if(levcfg.gt.0)read(7,*)vxx,vyy,vzz
         if(levcfg.gt.1)read(7,*)fxx,fyy,fzz
 
@@ -56,7 +56,7 @@ c*********************************************************************
       do m=1,mlast
 
         if(m.gt.nlast)last=mlast
-        
+
         do i=1,last
 
           j=i+m
@@ -66,7 +66,7 @@ c*********************************************************************
           ddy=yyy(i)-yyy(j)
           ddz=zzz(i)-zzz(j)
           if(imcon.gt.0)then
-            
+
             sdx=rcell(1)*ddx+rcell(4)*ddy+rcell(7)*ddz
             sdy=rcell(2)*ddx+rcell(5)*ddy+rcell(8)*ddz
             sdz=rcell(3)*ddx+rcell(6)*ddy+rcell(9)*ddz
@@ -90,7 +90,7 @@ c*********************************************************************
             write(*,'(1p,3e12.4)')rsq,sqrt(rsq)
 
           endif
-          
+
         enddo
 
       enddo
@@ -103,19 +103,14 @@ c*********************************************************************
       subroutine invert(a,b,d)
 
 c***********************************************************************
-c     
+c
 c     dl_poly subroutine to invert a 3 * 3 matrix using cofactors
-c     
+c
 c     copyright - daresbury laboratory 1992
 c     author    - w. smith       april 1992
-c     
-c     itt
-c     2010-10-30 17:20:49
-c     1.3
-c     Exp
-c     
+c
 c***********************************************************************
-      
+
       implicit none
 
       real*8 a,b,d,r

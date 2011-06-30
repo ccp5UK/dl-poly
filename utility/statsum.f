@@ -1,97 +1,96 @@
       program statsum
-      
+
 c---------------------------------------------------------------------
-c     
+c
 c     dl_poly utility program to summarise the contents of a
 c     dl_poly STATIS file
-c     
+c
 c     copyright daresbury laboratory
 c     author w.smith september 2007
 c
 c---------------------------------------------------------------------
-      
+
       implicit none
-      
+
       logical fixvolume
       character*80 record
       integer i,step,nitems,count,ntypes
       real(8) time,fac1,fac2
       real(8), allocatable :: data(:),average(:),variance(:)
-      
+
 c     open the STATIS file
-      
+
       open(7,file='STATIS')
-      
+
 c     write headers
-      
+
       read(7,'(a80)')record
       write(*,'(a80)')record
       read(7,'(a80)')record
       write(*,'(a80)')record
-      
+
 c     read file contents
-      
+
       count=0
       do while(.true.)
-        
+
         read(7,*,end=100)step,time,nitems
-        
+
 c     allocate data arrays
-        
+
         if(count.eq.0)then
-          
+
           allocate(data(nitems),average(nitems),variance(nitems))
           do i=1,nitems
             average(i)=0.d0
             variance(i)=0.d0
           enddo
-          
+
         endif
-        
+
 c     update counter
-        
+
         count=count+1
-c Corrected by C.A.J.Fisher 2011
-        fac1=dble(count-1)/dble(count)
         fac2=1.d0/dble(count)
-        
+        fac1=dble(count-1)/dble(count)
+
 c     read data records
-        
+
         read(7,'(5e14.6)')data
-        
+
 c     accumulate average and variance data
-        
+
         do i=1,nitems
-          
+
           variance(i)=fac1*(variance(i)+fac2*(data(i)-average(i))**2)
           average(i)=fac1*average(i)+fac2*data(i)
-          
+
         enddo
-      
+
       enddo
-      
+
 c     close STATIS file
-      
+
  100  close(7)
       write(*,*)'number of data records read: ',count
-      
+
 c     summarise average data
-      
+
       do i=1,nitems
         variance(i)=sqrt(variance(i))
       enddo
-      
+
 c     check if system has a constant volume
-      
+
       fixvolume=(variance(19).lt.1.d-8)
       if(fixvolume)then
         ntypes=nitems-36
       else
         ntypes=nitems-45
       endif
-      
+
 c     write out calculated properties
-      
+
  10   format(1x,a20,1p,2e12.4)
       write(*,10)'system temperature  ',average(2),variance(2)
       write(*,10)'system pressure     ',average(27),variance(27)
@@ -143,7 +142,7 @@ c     write out calculated properties
       do i=28,ntypes+27
         write(*,20)'MSD of Atom Type',i-27,average(i),variance(i)
       enddo
-      
+
       end
 
-         
+

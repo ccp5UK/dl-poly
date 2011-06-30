@@ -1,5 +1,5 @@
-gromos      
-united atom charges and site names from dataset 37C4 
+gromos
+united atom charges and site names from dataset 37C4
 39 residues : ala arg asn asp ash cys cyx cy1 gln glu guh gly hia hib hih hyp ile leu lys lyh met ion phe pom pro ser thr trp tyr val wat hoh dna rna ade cyt gua thy ura
 residue = ala
 atoms = 6
@@ -13,9 +13,9 @@ residue = arg
 atoms = 15
    1    N   N    -0.280
    2   1HN  H     0.280
-   3   1CA  CH1   0.0  
-   4   3CB  CH2   0.0  
-   5   4CG  CH2   0.0  
+   3   1CA  CH1   0.0
+   4   3CB  CH2   0.0
+   5   4CG  CH2   0.0
    6   5CD  CH2   0.09
    7   6NE  NE   -.11
    8   7HNE H     .24
@@ -253,7 +253,7 @@ atoms = 7
    5    ZN  ZN    2.0
    6    SI  SI    0.0
    7    CL  CL    -1.
-residue = phe  
+residue = phe
 atoms = 10
    1    N   N    -0.280
    2   1HN  H     0.280
@@ -265,11 +265,11 @@ atoms = 10
    8   7CZ  CR61  .0
    9   3C   C     .380
   10   9O   O    -.380
-residue = pom  
+residue = pom
 atoms = 2
    1    P   P     0.99
    2   1O   OM   -.635      2
-residue = pro  
+residue = pro
 atoms = 7
    1    N   N     .0
    2   1CD  CH2   .0
@@ -278,7 +278,7 @@ atoms = 7
    5   1CA  CH1   .0
    6   5C   C    0.38
    7   6O   O     -.38
-residue = ser  
+residue = ser
 atoms = 8
    1    N   N    -0.280
    2   1HN  H     0.280
@@ -288,7 +288,7 @@ atoms = 8
    6   5HOG HO    .398
    7   3C   C     .380
    8   7O   O    -.380
-residue = thr  
+residue = thr
 atoms = 9
    1    N   N    -0.280
    2   1HN  H     0.280
@@ -299,7 +299,7 @@ atoms = 9
    7   6HOG HO    .398
    8   3C   C     .380
    9   8O   O    -.380
-residue = trp  
+residue = trp
 atoms = 16
    1    N   N   -0.280
    2   1HN  H    .280
@@ -317,7 +317,7 @@ atoms = 16
   14   5CD2 CB   .0
   15   3C   C    .380
   16  15O   O   -.380
-residue = tyr  
+residue = tyr
 atoms = 12
    1    N   N    -0.280
    2   1HN  H     .280
@@ -331,7 +331,7 @@ atoms = 12
   10   9HOH HO    .398
   11   3C   C     .38
   12  11O   O    -.38
-residue = val  
+residue = val
 atoms = 7
    1    N   N    -0.280
    2   1HN  H     .280
@@ -340,7 +340,7 @@ atoms = 7
    5   4CG  CH3   .0        2
    6   3C   C     .38
    7   6O   O    -.38
-residue = wat  
+residue = wat
 atoms = 2
    1    O   OW    -0.82
    2   1H   HW     0.41      2
@@ -359,8 +359,8 @@ atoms = 11
    7   3O3* OS  -0.36
    8   1O5* OS  -0.36
    9   8P   P     0.99
-  10   9O1P OM   -.635  
-  11   9O2P OM   -.635  
+  10   9O1P OM   -.635
+  11   9O2P OM   -.635
 residue = rna (rna sugar unit)
 atoms = 13
    1   2C5* CS2  0.0
@@ -374,8 +374,8 @@ atoms = 13
    9   3O3* OS  -0.36
   10   1O5* OS  -0.36
   11  10P   P     0.99
-  12  11O1P OM   -.635     
-  13  11O2P OM   -.635     
+  12  11O1P OM   -.635
+  13  11O2P OM   -.635
 residue = ade  (dade, ade in gromos)
 atoms = 11
    1   2N9  NR5*  -0.2
@@ -415,7 +415,7 @@ atoms = 13
   11  10HN2 H     0.415      2
   12  11N3  NR6  -0.36
   13  12C4  CB    0.2
-residue = thy 
+residue = thy
 atoms = 10
    1   2N1  NR6* -0.20
    2   1C6  CR61  0.20
@@ -427,7 +427,7 @@ atoms = 10
    8   7HN3 H     0.28
    9   7C2  CB    0.38
   10   9O2  O    -0.38
-residue = ura (uracil) 
+residue = ura (uracil)
 atoms = 9
    1   2N1  NR6* -0.2
    2   1C6  CR61  0.2

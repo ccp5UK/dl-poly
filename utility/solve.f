@@ -1,25 +1,20 @@
       subroutine solve(ndim,lpv,aaa,xxx,bbb)
-c     
+c
 c***********************************************************************
-c     
+c
 c     gaussian elimination routine with pivoting
-c     
+c
 c     copyright daresbury laboratory 1987
 c     w. smith aug. 1987
 c
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
-c
 c***********************************************************************
-c     
+c
 
       implicit real*8(a-h,o-z)
 
       dimension aaa(ndim,ndim),xxx(ndim),bbb(ndim),lpv(ndim)
-      
-c     
+
+c
 c     initialise pivot arrays
 
       do j=1,ndim
@@ -28,19 +23,19 @@ c     initialise pivot arrays
 
       enddo
 
-c     
+c
 c     construct upper triangular matrix
-c     
+c
 
       do  i=1,ndim-1
 
-c     
+c
 c     locate pivot elements
-         
+
          lpc=i
          lpr=i
          piv=aaa(i,i)
-         
+
          do j=i,ndim
 
             do k=i,ndim
@@ -54,13 +49,13 @@ c     locate pivot elements
             enddo
 
          enddo
-c     
+c
 c     perform row pivots
-         
+
          saveit=bbb(lpr)
          bbb(lpr)=bbb(i)
          bbb(i)=saveit
-         
+
          do j=i,ndim
 
             saveit=aaa(lpr,j)
@@ -69,7 +64,7 @@ c     perform row pivots
 
          enddo
 
-c     
+c
 c     perform column pivots
 
          do j=1,ndim
@@ -80,7 +75,7 @@ c     perform column pivots
 
          enddo
 
-c     
+c
 c     remove pivot columns
 
          do j=i+1,ndim
@@ -99,19 +94,19 @@ c     remove pivot columns
 
          enddo
 
-c     
+c
 c     record pivoting data
-         
+
          keepit=lpv(lpc)
          lpv(lpc)=lpv(i)
          lpv(i)=keepit
-         
-c     
+
+c
 c     end of upper triangulation
 
       enddo
 
-c     
+c
 c     solve for unknowns by back substitution
       do i=ndim,2,-1
 
@@ -127,7 +122,7 @@ c     solve for unknowns by back substitution
 
       bbb(1)=bbb(1)/aaa(1,1)
 
-c     
+c
 c     re-order solution vectors according to pivot
 
       do i=1,ndim

@@ -1,15 +1,10 @@
 c**********************************************************************
 c
-c     test program for fft routine 
+c     test program for fft routine
 c     fourier transforms a cosine function
 c
 c     copyright daresbury laboratory 1998
 c     author w.smith july 1998
-c
-c     itt
-c     2010-10-30 17:20:49
-c     1.3
-c     Exp
 c
 c**********************************************************************
 
@@ -32,7 +27,7 @@ c     set up the cosine function (with period 1/4 of window width)
         aaa(i+1)=cmplx(cos(arg),0.d0)
         aaa(np1-i)=conjg(aaa(i+1))
       enddo
-      
+
 c     initialise the fft routine
 
       call fft(1,1,ndiv,key,aaa,wfft,bbb)
@@ -52,24 +47,24 @@ c     print result
       end
       subroutine fft(ind,isw,ndiv,key,aaa,wfft,bbb)
 c***********************************************************************
-c     
+c
 c     fast fourier transform routine
-c     
+c
 c     copyright daresbury laboratory 1994
 c
 c     author w smith
 c
 c***********************************************************************
-      
+
       implicit real*8(a-h,o-z)
-      
+
       logical check
       complex*16 aaa(ndiv),bbb(ndiv),wfft(ndiv),ttt
       dimension key(ndiv)
       data tpi/6.2831853072d0/
    10 format(1h0,'error - number of points not a power of two')
-      
-c     
+
+c
 c     check that array is of suitable length
       nt=1
       check=.true.
@@ -84,11 +79,11 @@ c     check that array is of suitable length
          write(*,10)
          stop
       endif
-      
+
       if(ind.gt.0)then
-c     
+c
 c     set reverse bit address array
-         
+
          do kkk=1,ndiv
             iii=0
             jjj=kkk-1
@@ -99,9 +94,9 @@ c     set reverse bit address array
             enddo
             key(kkk)=iii+1
          enddo
-c     
+c
 c     initialise complex exponential factors
-         
+
          np1=ndiv+1
          np2=ndiv/2
          tpn=tpi/dble(ndiv)
@@ -111,30 +106,30 @@ c     initialise complex exponential factors
             wfft(i+1)=cmplx(cos(arg),sin(arg))
             wfft(np1-i)=conjg(wfft(i+1))
          enddo
-         
+
          return
       endif
-      
-c     
+
+c
 c     take conjugate of exponentials if required
-      
+
       if(isw.lt.0)then
-         
+
          do i=1,ndiv
             wfft(i)=conjg(wfft(i))
          enddo
-         
+
       endif
-      
-c     
+
+c
 c     take copy input array
-      
+
       do i=1,ndiv
          bbb(i)=aaa(i)
       enddo
-c     
+c
 c     perform fourier transform
-      
+
       kkk=0
       np2=ndiv/2
       do l=1,nu
@@ -154,9 +149,9 @@ c     perform fourier transform
          np2=np2/2
 
       enddo
-c     
+c
 c     unscramble the fft using bit address array
-      
+
       do kkk=1,ndiv
          iii=key(kkk)
          if(iii.gt.kkk)then
@@ -165,16 +160,16 @@ c     unscramble the fft using bit address array
             bbb(iii)=ttt
          endif
       enddo
-c     
+c
 c     restore exponentials to unconjugated values if necessary
-      
+
       if(isw.lt.0)then
-         
+
          do i=1,ndiv
             wfft(i)=conjg(wfft(i))
          enddo
-         
+
       endif
-      
+
       return
       end

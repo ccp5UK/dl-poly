@@ -1,17 +1,12 @@
        subroutine hadd1_3(x,y,z,hx,hy,hz,bl)
-c                  
+c
 c***********************************************************************
-c     
+c
 c     dlpoly utility to add 1 hydrogen to a tertiary site
 c
 c     copyright daresbury laboratory 1993
 c     author -     t forester    feb 1993
 c     modified     t forester    feb 1996
-c
-c     itt
-c     2010-10-30 17:20:53
-c     1.3
-c     Exp
 c
 c***********************************************************************
 

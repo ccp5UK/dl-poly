@@ -13,11 +13,6 @@ c
 c     copyright darsebury laboratory 1993
 c     author -  t. forester     june 1993
 c
-c     itt
-c     2010-10-30 17:20:53
-c     1.3
-c     Exp
-c
 c***********************************************************************
 
       implicit real*8 (a-h,o-z)
@@ -137,10 +132,10 @@ c     assign amber names and charges (unique for valinomycin molecule!)
          enddo
 
          nami = name(i)
-         if(nami(1:1).eq.'N') then 
+         if(nami(1:1).eq.'N') then
             ambnam(i) = 'N     '
 
-         elseif(nami(1:1).eq.'H') then 
+         elseif(nami(1:1).eq.'H') then
             ambnam(i) = 'H     '
 
          elseif (nami(1:1).eq.'C') then
@@ -158,10 +153,10 @@ c     assign amber names and charges (unique for valinomycin molecule!)
 
          if (nami(1:1).eq.'H'.and.namj(1:1).eq.'C') then
             ambnam(i)='HC    '
-           
+
          elseif (nami(1:1).eq.'C'.and.ict(i).eq.4) then
             ambnam(i) = 'CT    '
-         
+
          elseif (nami(1:1).eq.'O'.and.ict(i).eq.2) then
             ambnam(i) = 'OS    '
 
@@ -186,7 +181,7 @@ c     if C not bonded to O => is CT
             endif
          endif
       enddo
-c     
+c
 c     set up lattice
 
       do  i=1,natms

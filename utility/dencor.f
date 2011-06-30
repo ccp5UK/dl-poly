@@ -6,15 +6,10 @@ c     of the fourier transform of the density in space and time
 c
 c     original dencor program written by w.smith march 82
 c     adapted for dl_poly by w.smith november 1994
-c     parallel version 
+c     parallel version
 c
-c     author w smith 1994
 c     copyright daresbury laboratory 1994
-c
-c     itt
-c     2010-10-30 17:20:49
-c     1.3
-c     Exp
+c     author w smith 1994
 c
 c***********************************************************************
       implicit real*8(a-h,o-z)
@@ -109,8 +104,8 @@ c***********************************************************************
 c
 c     read in control variables and check parameters
 c
-c     author w smith 1994
 c     copyright daresbury laboratory 1994
+c     author w smith 1994
 c
 c***********************************************************************
       implicit real*8(a-h,o-z)
@@ -187,7 +182,7 @@ c     check on control parameters
      x        'error - insufficient core allocated. ',kcore,
      x        ' words required'
          kill=.true.
-         
+
       endif
 
       if(nbits(ntime).ne.1)then
@@ -211,13 +206,13 @@ c     check on control parameters
       subroutine forden
      x     (idnode,mxnode,natm,ncon,kmax,lchg,chge,xxx,yyy,zzz,
      x      elc,emc,enc,sxyz,dxyz,buff,ekx,eky,ekz)
-      
+
 c***********************************************************************
-c     
+c
 c     calculate spatial fourier transform of density
-c     
-c     author w smith 1994
+c
 c     copyright daresbury laboratory 1994
+c     author w smith 1994
 c
 c***********************************************************************
       implicit real*8(a-h,o-z)
@@ -243,10 +238,10 @@ c     zero the particle density accumulator
       enddo
 
 c     open history and density files
-      
+
       open(iconf,file='HISTORY',status='old',err=200)
       open(iwork,file='DEN_SPC',form='unformatted')
-      
+
       read(iconf,'(a80)')header
       if(idnode.eq.0)then
          write(irite,'(a)')'# HISTORY file header:'
@@ -255,20 +250,20 @@ c     open history and density files
       read(iconf,'(2i10)')levtrj,imcon
 
 c     check file particulars
-      
+
       if(imcon.eq.0)then
         if(idnode.eq.0)
      x       write(irite,'(a)')
      x       'error - no periodic boundary in HISTORY file'
         call exit()
       endif
-      
+
       do nstp=1,ncon
 
          read(iconf,*,end=100)
 
 c     read in configuration data
-        
+
         read(iconf,*,end=100)cell(1),cell(2),cell(3)
         read(iconf,*,end=100)cell(4),cell(5),cell(6)
         read(iconf,*,end=100)cell(7),cell(8),cell(9)
@@ -276,11 +271,11 @@ c     read in configuration data
 c     calculate reciprocal lattice basis
 
         call invert(cell,rcell,det)
-        
+
 c     read atomic data
 
         do i=1,natm
-          
+
           if(lchg)then
              read(iconf,*)atname,idx,mass,chge(i)
           else
@@ -292,11 +287,11 @@ c     read atomic data
           xxx(i)=xx*rcell(1)+yy*rcell(4)+zz*rcell(7)
           yyy(i)=xx*rcell(2)+yy*rcell(5)+zz*rcell(8)
           zzz(i)=xx*rcell(3)+yy*rcell(6)+zz*rcell(9)
-          
+
         enddo
 
 c     calculate fourier exponential terms
-        
+
         m=0
         do i=idnode+1,natm,mxnode
           m=m+1
@@ -367,7 +362,7 @@ c     start loop over k vectors
         enddo
 
 c     global sum of fourier transform of density
-        
+
         call gdsum(dxyz,2*klim,buff)
         do k=1,klim
            dxyz(k)=rnatm*conjg(dxyz(k))
@@ -379,7 +374,7 @@ c     store fourier transform of density
         if(idnode.eq.0)write(iwork)(dxyz(j),j=1,klim)
 
       enddo
-     
+
   100 continue
 
       nstp=nstp-1
@@ -418,7 +413,7 @@ c     write out the density summary
 
       close (iconf)
       call timchk(1,wtime)
-      
+
       return
   200 continue
 
@@ -432,11 +427,11 @@ c     write out the density summary
      x  ckr0,ckr)
 
 c***********************************************************************
-c     
+c
 c     calculate density correlation function
-c     
-c     author w smith 1994
+c
 c     copyright daresbury laboratory 1994
+c     author w smith 1994
 c
 c***********************************************************************
 
@@ -457,7 +452,7 @@ c     open files isave1 and iwork
 
       endif
 
-c     
+c
 c     set control parameters
       norg=ntime/ngap
       klim=((2*kmax+1)**3-1)/2
@@ -472,7 +467,7 @@ c     set control parameters
 
       lor=0
       mor=0
-      
+
 c
 c     initialise arrays
 
@@ -482,7 +477,7 @@ c     initialise arrays
       do l=1,ntime
         num(l)=0
       enddo
-c     
+c
 c     start of loop over time steps
 
       do n=0,ncon
@@ -517,11 +512,11 @@ c     start of loop over time steps
   200 continue
 
       last=min(n-1,ntime)
-c     
+c
 c     normalise correlation functions
 
       do k=1,iblk
-        
+
         rnorm=dble(num(1))/real(cfkt(1+(k-1)*ntime))
 
         do l=1,last
@@ -552,20 +547,20 @@ c     store correlation functions in disc file
 
 
       if(idnode.eq.0)then
-           
+
          write(irite,'(a)')'# Intermediate Scattering Functions: F(k,t)'
          write(isave1)(cfkt(j),j=1,ntime*iblk)
          call tabulate(idnode,mxnode,kmax,ntime,tstep,kvec,cfkt)
-           
+
          do kdnode=1,mxnode-1
-              
+
             call csend(1744549,kdnode,4,kdnode,0)
             call crecv(1744550,cfkt,16*ntime*iblk)
             write(isave1)(cfkt(j),j=1,ntime*iblk)
             call tabulate(kdnode,mxnode,kmax,ntime,tstep,kvec,cfkt)
-              
+
          enddo
-           
+
       else
 
          call crecv(1744549,kdnode,4)
@@ -573,7 +568,7 @@ c     store correlation functions in disc file
 
       endif
 
-c     
+c
 c     close files
       if(idnode.eq.0)then
          close (isave1)
@@ -598,8 +593,8 @@ c***********************************************************************
 c
 c    calculate fourier transform of density correlation function
 c
-c     author w smith 1994
 c     copyright daresbury laboratory 1994
+c     author w smith 1994
 c
 c***********************************************************************
 c
@@ -611,7 +606,7 @@ c
       dimension key(*),wind(*),kvec(3,*)
       data a0,a1,a2/0.42d0,0.50d0,0.08d0/
 
-c     
+c
 c     set control parameters
 
       ntime2=2*ntime
@@ -682,29 +677,29 @@ c
 c     apply window function
 
          do j=1,ntime4
-            
+
             if(j.le.ntime)then
-               
+
                fta(j)=wind(j)*cfkt(j+ntime*(k-1))
 
             else
-               
+
                fta(j)=(0.d0,0.d0)
-               
+
             endif
-            
+
          enddo
-         
+
          fta(1)=fta(1)/2.d0
-         
-c     
+
+c
 c     apply complex fourier transform
-         
+
          call fft(ind,isw,ntime4,key,fta,work,fta)
 
-c     
+c
 c     store fourier coefficients
-         
+
          m=1
          do j=1,ntime2,2
 
@@ -736,20 +731,20 @@ c     calculate k vector indices for printing
 c     save fourier coefficients
 
       if(idnode.eq.0)then
-           
+
          write(irite,'(a)')'# Dynamic Structure Factors: S(k,w)'
          write(isave2)(cfkt(j),j=1,ntime*iblk)
          call tabulate(idnode,mxnode,kmax,ntime,omega,kvec,cfkt)
-           
+
          do kdnode=1,mxnode-1
-              
+
             call csend(1534549,kdnode,4,kdnode,0)
             call crecv(1534550,cfkt,16*ntime*iblk)
             write(isave2)(cfkt(j),j=1,ntime*iblk)
             call tabulate(kdnode,mxnode,kmax,ntime,omega,kvec,cfkt)
-              
+
          enddo
-           
+
       else
 
          call crecv(1534549,kdnode,4)
@@ -757,7 +752,7 @@ c     save fourier coefficients
 
       endif
 
-c     
+c
 c     close files
 
       close (isave1)
@@ -781,9 +776,8 @@ c**********************************************************************
 c
 c     dl_poly utility for counting number of set bits in an integer N
 c
-c     author w smith
-c
 c     copyright daresbury laboratory 1994
+c     author w smith 1994
 c
 c**********************************************************************
 c
@@ -802,17 +796,17 @@ c
       return
       end
       subroutine invert(a,b,d)
-c     
+c
 c***********************************************************************
-c     
+c
 c     dl_poly subroutine to invert a 3 * 3 matrix using cofactors
 c
 c     copyright - daresbury laboratory 1992
 c     author    - w. smith       april 1992
-c     
+c
 c***********************************************************************
-c     
-      
+c
+
       real*8 a,b,d,r
 
       dimension a(9),b(9)
@@ -847,23 +841,22 @@ c     complete inverse matrix
       end
       subroutine fft(ind,isw,ndiv,key,aaa,wfft,bbb)
 c***********************************************************************
-c     
-c     fast fourier transform routine
-c     
-c     copyright daresbury laboratory 1994
 c
+c     fast fourier transform routine
+c
+c     copyright daresbury laboratory 1994
 c     author w smith
 c
 c***********************************************************************
-      
+
       implicit real*8(a-h,o-z)
       parameter (irite=6)
       logical check
       complex*16 aaa(ndiv),bbb(ndiv),wfft(ndiv),ttt
       dimension key(ndiv)
       data tpi/6.2831853072d0/
-      
-c     
+
+c
 c     check that array is of suitable length
       nt=1
       check=.true.
@@ -879,11 +872,11 @@ c     check that array is of suitable length
      x   write(irite,'(a)')'error - number of points not a power of two'
          call exit()
       endif
-      
+
       if(ind.gt.0)then
-c     
+c
 c     set reverse bit address array
-         
+
          do kkk=1,ndiv
             iii=0
             jjj=kkk-1
@@ -894,9 +887,9 @@ c     set reverse bit address array
             enddo
             key(kkk)=iii+1
          enddo
-c     
+c
 c     initialise complex exponential factors
-         
+
          tpn=tpi/dble(ndiv)
          arg=0.d0
          np1=ndiv+1
@@ -907,30 +900,30 @@ c     initialise complex exponential factors
             wfft(i+1)=cmplx(cos(arg),sin(arg))
             wfft(np1-i)=conjg(wfft(i+1))
          enddo
-         
+
          return
       endif
-      
-c     
+
+c
 c     take conjugate of exponentials if required
-      
+
       if(isw.lt.0)then
-         
+
          do i=1,ndiv
             wfft(i)=conjg(wfft(i))
          enddo
-         
+
       endif
-      
-c     
+
+c
 c     take copy input array
-      
+
       do i=1,ndiv
          bbb(i)=aaa(i)
       enddo
-c     
+c
 c     perform fourier transform
-      
+
       kkk=0
       nu1=nu-1
       np2=ndiv/2
@@ -952,9 +945,9 @@ c     perform fourier transform
          np2=np2/2
 
       enddo
-c     
+c
 c     unscramble the fft using bit address array
-      
+
       do kkk=1,ndiv
          iii=key(kkk)
          if(iii.gt.kkk)then
@@ -963,17 +956,17 @@ c     unscramble the fft using bit address array
             bbb(iii)=ttt
          endif
       enddo
-c     
+c
 c     restore exponentials to unconjugated values if necessary
-      
+
       if(isw.lt.0)then
-         
+
          do i=1,ndiv
             wfft(i)=conjg(wfft(i))
          enddo
-         
+
       endif
-      
+
       return
       end
       subroutine tabulate(idnode,mxnode,kmax,ntime,tstep,kvec,cfkt)
@@ -1020,21 +1013,22 @@ c
       return
       end
       subroutine machine(idnode,mxnode)
-c     
+c
 c*********************************************************************
-c     
+c
 c     dl_poly subroutine for obtaining charcteristics of
 c     the computer on which the program is being run
-c     
+c
 c     this version is for the intel hypercube
 c
+c     copyright daresbury laboratory
 c     author - w.smith july 1992
-c     
+c
 c*********************************************************************
-c     
-      
+c
+
       implicit real*8(a-h,o-z)
-      
+
 c
 c     number of nodes available to program
 
@@ -1053,8 +1047,11 @@ c***********************************************************************
 c
 c     timing routine (time elapsed in seconds)
 c
+c     copyright daresbury laboratory
+c     author - w.smith july 1992
+c
 c***********************************************************************
-c     
+c
       parameter (irite=6)
       real*8 time
       save init

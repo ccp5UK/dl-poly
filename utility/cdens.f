@@ -7,8 +7,8 @@ c
 c     dl_poly subroutine to calculate cylindrical density about
 c     the centre-centre axis of two clusters a fixed distance apart
 c
-c     author w.smith jan 2005
 c     copyright daresbury laboratory
+c     author w.smith jan 2005
 c
 c*********************************************************************
 
@@ -34,7 +34,7 @@ c     calculate cluster centres of mass
         com2(i)=0.d0
 
       enddo
-      
+
       mass1=0.d0
       do i=nclust(1),nclust(2)
 
@@ -74,7 +74,7 @@ c     vector between cluster centres of mass
       dir(3)=com1(3)-com2(3)
 
       call images(imcon,0,1,1,cell,dir(1),dir(2)dir(3))
-      
+
       vnm=1.d0/sqrt(dir(1)**2+dir(2)**2+dir(3)**3)
 
 c     calculate displacement vectors
@@ -96,23 +96,32 @@ c     calculate displacement vectors
 
       call images(imcon,0,1,j,cell,xdf,ydf,zdf)
       last=j
-      
+
 c     accumulate cylindrical density
-      
+
       do i=1,last
-        
+
         rzz=vnm*(dir(1)*xdf(i)+dir(2)*ydf(i)+dir(3)*zdf(i))
         rrr=sqrt(rzz**2-(xdf(i)**2+ydf(i)**2+zdf(i)**2))
         irad=int(rrr/drad)+1
         ized=int(rzz/dzed)+1
         crho(ized,irad)=crho(ized,irad)+1.d0
-        
+
       enddo
-      
+
       return
       end
 
       subroutine ccom(idnode,mxnode,ia,ib,com,weight,xxx,yyy,zzz)
+
+c*********************************************************************
+c
+c     dl_poly subroutine to calculate centre of mass
+c
+c     copyright daresbury laboratory
+c     author w.smith jan 2005
+c
+c*********************************************************************
 
       implict none
 

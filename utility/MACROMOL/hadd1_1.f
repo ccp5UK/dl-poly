@@ -8,11 +8,6 @@ c
 c     copyright daresbury laboratory 1996
 c     author -      t forester   feb 1996
 c
-c     itt
-c     2010-10-30 17:20:53
-c     1.3
-c     Exp
-c
 c***********************************************************************
 
       implicit real*8(a-h,o-z)
@@ -43,7 +38,7 @@ c     construct arbitary vector
       ohz = 1.d-2
 
 c     make sure it is not too close to c-o vector
-      
+
       if(abs(xab).gt. 0.9d0) then
 
          ohx = 1.d-2
@@ -87,7 +82,7 @@ c     get H positions
       hz(1) = z(1) + ahz
 
       return
-      
+
       end
 
 

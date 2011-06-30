@@ -1,9 +1,12 @@
       program shape
 
 c***********************************************************************
-c     
+c
 c     calculate the shape of a gold cluster with attached chains
-c     
+c
+c     copyright daresbury laboratory
+c     author w.smith
+c
 c***********************************************************************
 
       implicit none
@@ -165,20 +168,20 @@ c     open HISTORY file
         nstr=nstr+1
 
         if(imcon.gt.0)then
-          
+
 c     convert to reduced coordinates
-          
+
           do i=1,nclust
-            
+
             sxx=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
             syy=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
             szz=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
             xxx(i)=sxx
             yyy(i)=syy
             zzz(i)=szz
-            
+
           enddo
-          
+
 c     unscramble periodic boundary effects
 
           do i=2,nclust
@@ -194,16 +197,16 @@ c     unscramble periodic boundary effects
           enddo
 
 c     restore to natural coordinates
-          
+
           do i=1,nclust
-            
+
             sxx=cell(1)*xxx(i)+cell(4)*yyy(i)+cell(7)*zzz(i)
             syy=cell(2)*xxx(i)+cell(5)*yyy(i)+cell(8)*zzz(i)
             szz=cell(3)*xxx(i)+cell(6)*yyy(i)+cell(9)*zzz(i)
             xxx(i)=sxx
             yyy(i)=syy
             zzz(i)=szz
-            
+
           enddo
 
         endif

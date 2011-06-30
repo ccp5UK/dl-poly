@@ -1,7 +1,7 @@
-AMBER united atom charges from JACS 106,765-784 (1984) : amino acid units + tyo bcr 
+AMBER united atom charges from JACS 106,765-784 (1984) : amino acid units + tyo bcr
 39 residues :ace ala arg asn asp bcr cys cyx gln glu gly hb he hid hie hip ile leu lys met mtl phe pom pro ser thr trp tyo tyr val wat hoh ade cyt gua thy ura dna rna
 residue = ace
-atoms = 3          
+atoms = 3
    1    CH3 C3  -0.026
    2   1C   C    0.526
    3   2O   O   -0.500
@@ -24,13 +24,13 @@ atoms = 15
    7   6NE  N2   -.493
    8   7HNE H3    .294
    9   7CZ  CA    .813
-  10   9NH1 N2  -.6345       
+  10   9NH1 N2  -.6345
   11  10HN1 H3    .3615      2
-  12   9NH2 N2  -.6345       
+  12   9NH2 N2  -.6345
   13  12HN2 H3    .3615      2
   14   3C   C     .5260
   15  14O   O    -.5000
-residue = asn 
+residue = asn
 atoms = 10
    1    N   N    -0.520
    2   1HN  H     .2480
@@ -52,7 +52,7 @@ atoms = 8
    6   5OD  O2   -0.706      2
    7   3C   C     0.526
    8   7O   O    -0.500
-residue = bcr 
+residue = bcr
 atoms = 5
    1    H   HO    .166
    2   1O1  OH   -.408
@@ -111,10 +111,10 @@ atoms = 5
    3   1CA  C2    .246
    4   3C   C     .5260
    5   4O   O    -.5000
-residue = hb   
+residue = hb
 atoms = 1
    1    H   HO   0.285
-residue = he   
+residue = he
 atoms = 1
    1    H   HO   0.313
 residue = hid
@@ -216,7 +216,7 @@ atoms = 8
    6    LI  QL    1.0
    7    NA  QN    1.0
    8    RB  QR    1.0
-residue = phe  
+residue = phe
 atoms = 10
    1    N   N    -0.520
    2   1HN  H     .2480
@@ -228,11 +228,11 @@ atoms = 10
    8   7CZ  CD   -.003
    9   3C   C     .5260
   10   9O   O    -.5000
-residue = pom  
+residue = pom
 atoms = 2
    1    P   P    1.429
    2   1O   O2   -.850       2
-residue = pro  
+residue = pro
 atoms = 7
    1    N   N    -0.257
    2   1CD  C2    0.084
@@ -241,7 +241,7 @@ atoms = 7
    5   1CA  CH   0.112
    6   5C   C    0.526
    7   6O   O     -.500
-residue = ser  
+residue = ser
 atoms = 8
    1    N   N    -0.520
    2   1HN  H     .2480
@@ -251,7 +251,7 @@ atoms = 8
    6   5HOG HO    .3100
    7   3C   C     .5260
    8   7O   O    -.5000
-residue = thr  
+residue = thr
 atoms = 9
    1    N   N    -0.520
    2   1HN  H     0.248
@@ -262,7 +262,7 @@ atoms = 9
    7   6HOG HO    .3100
    8   3C   C     .5260
    9   8O   O    -.5000
-residue = trp  
+residue = trp
 atoms = 16
    1    N   N   -0.520
    2   1HN  H    .248
@@ -282,7 +282,7 @@ atoms = 16
   16  15O   O   -.5000
 residue = tyo
 atoms = 11
-   1    N   N    -.520               
+   1    N   N    -.520
    2   1HN  H    .248
    3   1CA  CH   .239
    4   3CB  C2   .022
@@ -293,7 +293,7 @@ atoms = 11
    9   8OH  OH   -.492
   10   3C   C    .526
   11  10O   O    -.500
-residue = tyr  
+residue = tyr
 atoms = 12
    1    N   N    -0.520
    2   1HN  H     .248
@@ -307,7 +307,7 @@ atoms = 12
   10   9HOH HO    .339
   11   3C   C     .526
   12  11O   O    -.500
-residue = val  
+residue = val
 atoms = 7
    1    N   N    -0.520
    2   1HN  H     .248
@@ -316,7 +316,7 @@ atoms = 7
    5   4CG  C3    0.006      2
    6   3C   C     .526
    7   6O   O    -.500
-residue = wat  
+residue = wat
 atoms = 2
    1    O   OW    -0.834
    2   1H   HW     0.417     2
@@ -383,9 +383,9 @@ atoms = 13
    9   7C2  CA    0.842
   10   9N2  N2   -0.758
   11  10HN2 H2   0.3285     2
-  12  11N3  NC   -0.702   
+  12  11N3  NC   -0.702
   13  12C4  CB    0.490
-residue = thy 
+residue = thy
 atoms = 10
    1   2N1  N*   -0.739
    2   1C6  CJ    0.551

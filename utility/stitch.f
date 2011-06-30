@@ -1,3 +1,15 @@
+      program stitch
+
+c*********************************************************************
+c
+c     dl_poly program for removing the effect of a periodic boundary
+c     on a CONFIG file.
+c
+c     copyright daresbury laboratory
+c     author w.smith 2006
+c
+c*********************************************************************
+
       implicit none
 
       integer, parameter :: lenrec=80
@@ -5,7 +17,7 @@
       integer, parameter :: no=8
       integer, parameter :: in=7
       integer, parameter :: mxatms=100000
-      
+
       logical go,findstring
       character*8 aname
       character*40 CNAME,FNAME
@@ -14,7 +26,7 @@
       integer nbnds,ncons,intstr,afix,bfix,ibnds,mxbnds
       real*8 cell,xxx,yyy,zzz,sx,sy,sz,rcell,det,rsq,rmx,rmn
       real*8 xdf,ydf,zdf
-      
+
       character*8 name(mxatms)
       dimension cell(9),rcell(9),link(2,mxatms)
       dimension xdf(mxatms),ydf(mxatms),zdf(mxatms)
@@ -120,7 +132,7 @@ c     construct reduced coordinates
          xxx(m)=sx
          yyy(m)=sy
          zzz(m)=sz
-      enddo     
+      enddo
 
 c     set up fix arrays
 
@@ -203,7 +215,7 @@ c     write new CONFIG file
          xxx(m)=sx
          yyy(m)=sy
          zzz(m)=sz
-      enddo     
+      enddo
       close(no)
 
 c     check for periodic boundary effects
@@ -238,19 +250,14 @@ c     abort file readers
       subroutine invert(a,b,d)
 
 c***********************************************************************
-c     
+c
 c     dl_poly subroutine to invert a 3 * 3 matrix using cofactors
-c     
+c
 c     copyright - daresbury laboratory 1992
 c     author    - w. smith       april 1992
-c     
-c     wl
-c     2002/05/31 14:52:39
-c     1.1
-c     Exp
-c     
+c
 c***********************************************************************
-      
+
       implicit none
 
       real*8 a,b,d,r
@@ -292,26 +299,21 @@ c     complete inverse matrix
       function intstr(word,len,lst)
 
 c***********************************************************************
-c     
-c     dl_poly function for extracting integers from a 
+c
+c     dl_poly function for extracting integers from a
 c     character string
-c     
+c
 c     copyright - daresbury laboratory 1994
 c     author    - w. smith may 1994.
-c     
+c
 c     parameters:
 c     word   - input character string
 c     len    - working length of character string
 c     lst    - location of space character at end of
 c     integer string
-c     
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
-c     
+c
 c***********************************************************************
-      
+
       implicit none
 
       logical flag,count,final
@@ -328,22 +330,22 @@ c***********************************************************************
       flag=.false.
       final=.false.
       count=.false.
-      
+
       do while(lst.lt.len.and.(.not.final))
 
         lst=lst+1
         flag=.false.
 
         do j=0,9
-          
+
           if(n(j).eq.word(lst))then
-            
+
             intstr=10*intstr+j
             count=.true.
             flag=.true.
-            
+
           endif
-          
+
         enddo
 
         if(count.and.(.not.flag))final=.true.
@@ -362,24 +364,19 @@ c***********************************************************************
       enddo
 
       return
-      
+
       end
       logical function findstring(seek,string,here)
 
 c***********************************************************************
-c     
+c
 c     DL_POLY routine to find an explicit string in an input record
 c     note: variable `seek' is a character string while variable
 c    `string' is a character*1 array i.e. code is application specific
 c
 c     copyright daresbury laboratory
 c     author    w.smith   jan   2004
-c     
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
-c     
+c
 c***********************************************************************
 
       implicit none

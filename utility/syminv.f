@@ -1,7 +1,7 @@
       subroutine syminv(nnn,aaa,bbb,bbi)
-c     
+c
 c***********************************************************************
-c     
+c
 c     routine to invert a real symmetric matrix (reference:
 c     computing methods v.ii, i.s. berezin and n.p.zhidkov,
 c     pergamon press 1965). note that the matrices are
@@ -10,22 +10,18 @@ c     where i>j and k=(i*(i-1))/2+j ).
 c     the matrices aaa and bbb may be equivalenced though
 c     this will destroy the contents of the original
 c     array.
-c     
+c
 c     general version for all real symmetric matrices
-c     
+c
+c     copyright - daresbury laboratory 1993
 c     author w.smith (added to dl_poly july 1993)
-c     
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
-c     
+c
 c***********************************************************************
-c     
+c
       implicit real*8(a-h,o-z)
       dimension aaa(*),bbb(*),bbi(*)
       ind(i,j)=(max0(i,j)*(max0(i,j)-1))/2+min0(i,j)
-c     
+c
 c     factorize matrix aaa into upper and lower forms
       do l=1,nnn
         do m=1,l
@@ -59,7 +55,7 @@ c     factorize matrix aaa into upper and lower forms
           endif
         enddo
       enddo
-c     
+c
 c     invert lower triangular matrix
       do l=1,nnn
         n=ind(l,l)
@@ -85,7 +81,7 @@ c     invert lower triangular matrix
           endif
         enddo
       enddo
-c     
+c
 c     form product of upper and lower inverse triangular matrices
       do l=1,nnn
         do m=1,l

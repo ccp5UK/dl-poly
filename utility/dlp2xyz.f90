@@ -80,7 +80,7 @@ Program dlp2xyz
 ! proceeding
 
   Write(*,*)
-  Write(*,'(1x,3a,i2)') 'You specified file: ', fin(1:Len_Trim(fin)) 
+  Write(*,'(1x,3a,i2)') 'You specified file: ', fin(1:Len_Trim(fin))
   Write(*,*)
 
 ! Create name for the XYZ configuration

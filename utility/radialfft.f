@@ -5,13 +5,7 @@ c
 c     dl_poly routine for 3d radial fourier tranform
 c
 c     copyright daresbury laboratory 1994
-c
 c     author w.smith
-c
-c     itt
-c     2010-10-30 17:20:50
-c     1.3
-c     Exp
 c
 c**********************************************************************
 
@@ -23,7 +17,7 @@ c**********************************************************************
 
 c
 c     read in data
-      
+
       do i=1,mxd
 
          read(*,*,end=100)bbb(i),aaa(i)
@@ -65,7 +59,7 @@ c$$$      aaa(1)=aaa(1)/2.d0
 
       delk=pi/(delr*dble(nnn))
       do i=1,nnn
-         
+
          write(*,'(1p,2e14.6)')delk*dble(i),bbb(i)
 
       enddo
@@ -75,26 +69,25 @@ c$$$      aaa(1)=aaa(1)/2.d0
       end
       subroutine radfft(isw,nnn,delr,aaa,bbb)
 c***********************************************************************
-c     
+c
 c     dl_poly 3D radial fourier transform routine using lado's method
 c     reference: j. comput. phys. 8 (1971) 417
-c     
-c     copyright daresbury laboratory 1994
 c
+c     copyright daresbury laboratory 1994
 c     author w smith
 c
 c     note: first data point is i*delr not 0
 c
 c***********************************************************************
-      
+
       implicit real*8(a-h,o-z)
       parameter (pi=3.141592653589793d0)
 
       dimension aaa(nnn),bbb(nnn)
 
-c     
+c
 c     perform fourier transform
-      
+
       sw=pi*dble(isw)/dble(nnn)
 
       do j=1,nnn
@@ -110,6 +103,6 @@ c     perform fourier transform
          bbb(j)=(4.d0*dble(nnn)*delr**3/dble(j))*bbb(j)
 
       enddo
-            
+
       return
       end
