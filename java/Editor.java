@@ -395,9 +395,12 @@ author    - w.smith 2011
 
             if (e.getSource() instanceof JButton) {
                 if(arg.equals("New")) {
+                    if(edit && !safe) saveEdit(0);
                     config=getConfig(home,ftype);
                     if(config != null)
                         cfgsav=copyConfig(config);
+                    else
+                        pane.newBuild();
                     pane.restore();
                 }
                 else if(arg.equals("Clr")) {

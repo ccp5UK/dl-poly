@@ -353,6 +353,8 @@ author    - w.smith 2011
 			    editor.closeEditor();
 			editor=new Editor(job);
 		    }
+                    else if(editor != null)
+                        editor.pane.newBuild();
                 }
                 else if(arg.equals("XYZ")) {
                     ftype="XYZ";
@@ -363,6 +365,8 @@ author    - w.smith 2011
 			    editor.closeEditor();
 			editor=new Editor(job);
 		    }
+                    else if(editor != null)
+                        editor.pane.newBuild();
                 }
                 else if(arg.equals("PDB")) {
                     ftype="PDB";
@@ -373,6 +377,8 @@ author    - w.smith 2011
 			    editor.closeEditor();
 			editor=new Editor(job);
 		    }
+                    else if(editor != null)
+                        editor.pane.newBuild();
                 }
                 else if(arg.equals("MSI")) {
                     ftype="MSI";
@@ -383,6 +389,8 @@ author    - w.smith 2011
 			    editor.closeEditor();
 			editor=new Editor(job);
 		    }
+                    else if(editor != null)
+                        editor.pane.newBuild();
                 }
                 else if(arg.equals("Lattice")){
                     if(maklat != null)
