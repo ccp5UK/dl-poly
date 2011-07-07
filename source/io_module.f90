@@ -16,7 +16,7 @@ Module io_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.j.bush april 2011
-! amended   - i.t.todorov april 2011
+! amended   - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -91,12 +91,12 @@ Module io_module
   ! Default values
   Integer  , Parameter :: default_method_write      = IO_WRITE_SORTED_MPIIO
   Integer  , Parameter :: default_method_read       = IO_READ_MPIIO
-  Integer  , Parameter :: default_batch_size_write  = 50000
-  Integer  , Parameter :: default_batch_size_read   = 50000
+  Integer  , Parameter :: default_batch_size_write  = 2000000
+  Integer  , Parameter :: default_batch_size_read   = 2000000
   Integer  , Parameter :: default_n_io_procs_write  = 8
   Integer  , Parameter :: default_n_io_procs_read   = 2
-  Integer  , Parameter :: default_buffer_size_write = 5000
-  Integer  , Parameter :: default_buffer_size_read  = 5000
+  Integer  , Parameter :: default_buffer_size_write = 20000
+  Integer  , Parameter :: default_buffer_size_read  = 20000
   Character, Parameter :: default_lf                = Achar( 10 )
 
   ! Parameters for method.  Default to sensible values where possible

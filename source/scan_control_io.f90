@@ -5,7 +5,7 @@ Subroutine scan_control_io()
 ! dl_poly_4 subroutine for scanning the I/O options in the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov july 2011
 ! amended   - i.j.bush october 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -42,7 +42,9 @@ Subroutine scan_control_io()
 
   Integer            :: io_read,io_write,itmp, err_r
   Logical            :: l_io_r,l_io_w,l_tmp
-  Integer, Parameter :: MAX_BATCH_SIZE = 1000000
+  Integer, Parameter :: MAX_BATCH_SIZE  = 10000000 !~1GB memory per writer
+  Integer, Parameter :: MAX_BUFFER_SIZE =   100000 !~1GB memory per node/domain
+
 
 ! flags
 
@@ -158,7 +160,7 @@ Subroutine scan_control_io()
               Call io_set_parameters( user_n_io_procs_read = itmp )
 
 ! get read batch size
-! 1 <= batch <= MAX_BATCH_SIZE, default 50000
+! 1 <= batch <= MAX_BATCH_SIZE, default 2000000
 ! Note zero or negative values indicate use the default
 
               Call get_word( record, word )
@@ -189,7 +191,7 @@ Subroutine scan_control_io()
            End If
 
 ! get read buffer size
-! 100 <= buffer <= 100000, default 5000
+! 100 <= buffer <= MAX_BUFFER_SIZE, default 20000
 ! Note zero or negative values indicate use the default
 
            Call get_word( record, word )
@@ -198,7 +200,7 @@ Subroutine scan_control_io()
               Call io_get_parameters( user_buffer_size_read = itmp )
               If (idnode == 0) Write(nrite,"(1x,'I/O read buffer size (assumed)',1x,i10)") itmp
            Else
-              itmp = Min( Max( itmp,100 ),Min( itmp,100000 ))
+              itmp = Min( Max( itmp,100 ),Min( itmp,MAX_BUFFER_SIZE ))
               Call io_set_parameters( user_buffer_size_read = itmp )
               If (idnode == 0) Write(nrite,"(1x,'I/O read buffer size set to   ',1x,i10)") itmp
            End If
@@ -331,7 +333,7 @@ Subroutine scan_control_io()
               Call io_set_parameters( user_n_io_procs_write = itmp )
 
 ! get write batch size
-! 1 <= batch <= MAX_BATCH_SIZE, default 5000
+! 1 <= batch <= MAX_BATCH_SIZE, default 2000000
 ! Note zero or negative values indicate use the default
 
               Call get_word( record, word )
@@ -363,7 +365,7 @@ Subroutine scan_control_io()
            End If
 
 ! get write buffer size
-! 100 <= buffer <= 100000, default 5000
+! 100 <= buffer <= MAX_BUFFER_SIZE, default 20000
 ! Note zero or negative values indicate use the default
 
            Call get_word( record, word )
@@ -372,7 +374,7 @@ Subroutine scan_control_io()
               Call io_get_parameters( user_buffer_size_write = itmp )
               If (idnode == 0) Write(nrite,"(1x,'I/O write buffer size (assumed)',i10)") itmp
            Else
-              itmp = Min( Max( itmp,100 ),Min( itmp,100000 ))
+              itmp = Min( Max( itmp,100 ),Min( itmp,MAX_BUFFER_SIZE ))
               Call io_set_parameters( user_buffer_size_write = itmp )
               If (idnode == 0) Write(nrite,"(1x,'I/O write buffer size set to   ',i10)") itmp
            End If

@@ -22,7 +22,7 @@ standard DL_POLY_Classic version with the exceptions of:
 No previous DL_POLY_3/4 feature is deprecated.  ALL NEW features are
 documented in the "DL_POLY_4 User Manual".
 
-Refernce:
+Reference:
 ---------
 Thank you for using the DL_POLY_4 package in your work.  Please,
 acknowledge our efforts by including the following reference when

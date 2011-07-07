@@ -194,7 +194,7 @@ Program dl_poly
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
           "**         **  contributors:  i.j.bush               ****** O ****", &
-          "*************  version:  4.02      /      june 2011  ******* L ***", &
+          "*************  version:  4.02      /      july 2011  ******* L ***", &
           "*************  Execution on ", mxnode, "    node(s)  ******** Y **", &
           "******************************************************************"
   End If

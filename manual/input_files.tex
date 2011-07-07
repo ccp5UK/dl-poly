@@ -95,10 +95,10 @@ vdw shift
 seed 100 200
 
 # I/O READ: METHOD, READER COUNT, BATCH & BUFFER SIZES
-io read  mpiio        2 50000 5000
+io read  mpiio        2 2000000 20000
 
 # I/O WRITE: METHOD, TYPE, WRITER COUNT, BATCH & BUFFER SIZES
-io write mpiio sorted 8 50000 5000
+io write mpiio sorted 8 2000000 20000
 
 # SLAB SIMULATION PARALLEL CONTROL
 slab
@@ -343,11 +343,11 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \phantom{xxxx} is the designated number of processes to \\
 \>                                              \> \phantom{xxxx} carry out I/O read operations simultaneously \\
 \>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~1,000,000$ (default $50,000$) \\
+\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~10,000,000$ (default $2,000,000$) \\
 \>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
 \>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
 \>                                              \> \phantom{xxxx} I/O groups (= I/O readers) for domain distribution purposes \\
-\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $5,000$) \\
+\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $20,000$) \\
 \>                                              \> \phantom{x} is the maximum number of ASCII line records read in a batch \\
 \>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
 \>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
@@ -369,11 +369,11 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \phantom{xxxx} is the designated number of processes to \\
 \>                                              \> \phantom{xxxx} carry out I/O write operations simultaneously \\
 \>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~1,000,000$ (default $50,000$) \\
+\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~10,000,000$ (default $2,000,000$) \\
 \>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
 \>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
 \>                                              \> \phantom{xxxx} I/O groups (= I/O writers) for global sorting purposes \\
-\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $5,000$) \\
+\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $20,000$) \\
 \>                                              \> \phantom{x} is the maximum number of ASCII line records written in a batch \\
 \>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
 \>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
