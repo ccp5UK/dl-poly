@@ -1102,17 +1102,17 @@ Call start_timing_link_cell_pairs()
 
   End If
 
-	  Do i=1,natms
-      ii=ltg(i)
-      kk=list(0,i)
-      Do ll=1,kk
-         j=list(ll,i)
-         jj=ltg(j)
-          If (j <= natms .or. ii < jj) Then
-             Write(idnode+101,'(2i8)') ii,jj
-          End If
-    End Do
-  End Do
+!	  Do i=1,natms
+!      ii=ltg(i)
+!      kk=list(0,i)
+!      Do ll=1,kk
+!         j=list(ll,i)
+!         jj=ltg(j)
+!          If (j <= natms .or. ii < jj) Then
+!             Write(idnode+101,'(2i8)') ii,jj
+!          End If
+!    End Do
+!  End Do
 
   Deallocate (nix,niy,niz,                   Stat=fail(1))
   Deallocate (which_cell,at_list,            Stat=fail(2))
