@@ -14,7 +14,7 @@ Subroutine link_cell_pairs_helper(       &
              ibegin,iend,nix,niy,niz,    &
              nlx,nly, nlx0e, nly0e,      &
              nlz0e, nlx1s, nly1s, nlz1s, &
-             lct_start,at_list,          &
+             lct_start,at_list,			 		 &
              ncells,nlp,nlp3,nsbcll,megfrz,rcsq)
   Use kinds_f90
   Use comms_module,   Only : idnode,mxnode,gcheck,gmax
@@ -29,25 +29,85 @@ Subroutine link_cell_pairs_helper(       &
                           nly1s, nlz1s, ibegin, iend, ncells,  &
                           nlp, nsbcll, nlp3, megfrz
 
+	Logical, Dimension( : ), Allocatable				:: nir
+
   Integer, Dimension(1:mxatms)  , Intent (In) :: at_list
   Integer, Dimension(1:ncells+1), Intent(In) :: lct_start
   Integer, Dimension(1:nlp3)    , Intent (In) :: nix,niy,niz;
 
   Real (Kind=wp), Intent (In) :: rcsq
 
-  Logical           :: safe
+  Logical :: safe
   Integer :: ix,iy,iz,ic, ix1,ix2,iy1,iy2,iz1,iz2, &
              jx,jy,jz,jc,ipass,nlx0s,nly0s,nlz0s,  &
-             nlx1e,nly1e,nlz1e,ibig,               &
-             i,ii,j,jj,kk,ll,j_start
-  Real (Kind=wp) :: rsq
+             nlx1e,nly1e,nlz1e,ibig,nlr2,nsbcll_t, &
+             i,ii,j,jj,kk,ll,j_start,fail(1:2)
+
+
+  Real (Kind=wp) :: rsq,nlp2,dispx,dispy,dispz,det
 
   ibig=0
   safe=.true.
 
+	fail=0
+	Allocate (nir(1:nsbcll), Stat=fail(1))
+	 If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'link_cell_pairs allocation failure, node: ', idnode
+     Call error(0)
+  End If
 
-!$OMP PARALLEL PRIVATE(ix,iy,iz,ic, ix1,ix2,iy1,iy2,iz1,iz2,jx,jy,jz,jc,ipass,&
-!$OMP nlx0s,nly0s,nlz0s,nlx1e,nly1e,nlz1e,ibig,i,ii,j,jj,kk,ll,j_start,safe,rsq)
+  nir=.false.
+
+	nir=.false.
+  nlp2=Real(nlp**2,wp)
+  nlr2=(nlp-1)**2
+  nsbcll_t=0
+
+  !Do iz=0,nlp
+  !   If (iz > 0) Then
+  !      dispz=Real(iz-1,wp)**2
+  !   Else
+  !      dispz=0.0_wp
+  !   End If
+
+  !   jz=iz**2
+
+  !  Do iy=-nlp,nlp
+  !      If (iz == 0 .and. iy < 0) Go To 20
+
+  !      ibig=Abs(iy)
+  !      If (ibig > 0) Then
+  !         dispy=Real(ibig-1,wp)**2
+  !      Else
+  !         dispy=0.0_wp
+  !      End If
+
+  !      det=dispz+dispy
+  !      If (det > nlp2) Go To 20
+
+  !      jy=iy**2
+
+  !      Do ix=-nlp,nlp
+  !         If (iz == 0 .and. iy == 0 .and. ix < 0) Go To 10
+
+  !         ibig=Abs(ix)
+  !         If (ibig > 0) Then
+  !            dispx=Real(ibig-1,wp)**2
+  !         Else
+  !            dispx=0.0_wp
+  !         End If
+  !         rsq=det+dispx
+  !         If (rsq > nlp2) Go To 10
+  !         jx=ix**2
+  !         nsbcll_t=nsbcll_t+1
+  !         nir(nsbcll_t)=(jx+jy+jz <= nlr2)
+!10         Continue
+!        End Do
+!20      Continue
+!     End Do
+!  End Do
+
+!$OMP PARALLEL PRIVATE(ix,iy,iz,ic, ix1,ix2,iy1,iy2,iz1,iz2,jx,jy,jz,jc,ipass,nlx0s,nly0s,nlz0s,nlx1e,nly1e,nlz1e,ibig,i,ii,j,jj,kk,ll,j_start,safe,rsq)
   Do ipass=1,2
 
 ! primary loop over domain subcells
@@ -63,6 +123,7 @@ Subroutine link_cell_pairs_helper(       &
           Do ix=nlx0e+1,nlx1s-1
              ix1=ix-nlx0e
              ix2=ix-nlx1s
+
 
 ! When ipass = 2 be on the domain's border link-cells
 
@@ -107,93 +168,161 @@ Subroutine link_cell_pairs_helper(       &
 
 ! When ipass = 2 be on the halo link-cells
 
-                         If ( (ipass == 1) .or.                     &
+                        If ( (ipass == 1) .or.                     &
                               (jx <= nlx0e) .or. (jx >= nlx1s) .or. &
                               (jy <= nly0e) .or. (jy >= nly1s) .or. &
                               (jz <= nlz0e) .or. (jz >= nlz1s) ) Then
 
+
+! If atom pairs are guaranteed to be within the cutoff
+                           If (nir(kk)) Then
+
 ! index of neighbouring cell
-                            jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)
+                              jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)
 
 ! get the secondary list particle index in linked-list local description
 
-                            If (jc /= ic) Then
+                              If (jc /= ic) Then
 
 ! if j-th subcell is not the i-th subcell
 ! get head of chain of j-th subcell
 
-                               j_start=lct_start(jc)
+                                 j_start=lct_start(jc)
 
-                            Else
+                              Else
 
 ! if j-th subcell is the same as the i-th subcell
 ! get next in line in the linked list
 
-                               j_start=ii+1
+                                 j_start=ii+1
 
-                            End If
+                              End If
+
+! check for overfloat
+                              ll=list(0,i)+lct_start(jc+1)-j_start
+                              If (ll <= mxlist) Then
+                                 ibig=Max(ibig,ll)
 
 ! loop over secondary cell contents
 
-                            Do jj=j_start,lct_start(jc+1)-1
+                                 Do jj=j_start,lct_start(jc+1)-1
 
 ! get domain local particle index
 
-                               j=at_list(jj)
+                                    j=at_list(jj)
 
-! test for frozen atom pairs (frozen atom pairs DO NOT interact)
-
-                               If (megfrz <= 1 .and. lfrzn(i)*lfrzn(j) == 0) Then
-
-! distance in real space
-
-                                  rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
-
-! check cutoff criterion (atom pairs MUST BE within the cutoff)
-                                  If (rsq <= rcsq) Then
-
-! check for overfloat and add an entry
-
-                                     ll=list(0,i)+1
-                                     If (ll > mxlist) Then
-                                        ibig=Max(ibig,ll)
-                                        safe=.false.
-                                     Else
-                                        ibig=Max(ibig,ll)
-                                        list(0,i)=ll
-                                        list(ll,i)=j
-                                     End If
-
-! end of if-block for cutoff criterion
-
-                                  End If
-
-! end of if-block on non-frozen atoms
-
-                               End If
+! add an entry
+                                    ll=list(0,i)+1
+                                    list(0,i)=ll
+                                    list(ll,i)=j
 
 ! end of loop over secondary cell contents
 
-                            End Do
+                                 End Do
+
+                              Else
+
+! loop over secondary cell contents
+
+                                 Do jj=j_start,lct_start(jc+1)-1
+
+! get domain particle index
+                                    j=at_list(jj)
+
+! check for overfloat and add an entry
+
+                                    ll=list(0,i)+1
+																		If (ll <= mxlist) Then
+																			 list(0,i)=ll
+																			 list(ll,i)=j
+																		Else
+																			 safe=.false.
+																		End If
+                                       ibig=Max(ibig,ll)
+
+! end of loop over secondary cell contents
+																			End Do
+                                  End If
+
+! if atom pairs are not guaranteed to be within the cutoff of each other
+! distance in real space is needed for checking the cutoff criterion
+
+                           Else
+
+! index of neighbouring cell
+
+                              jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)
+
+! get the secondary list particle index in linked-list local description
+
+                              If (jc /= ic) Then
+
+! if j-th subcell is not the i-th subcell
+! get head of chain of j-th subcell
+
+                               	 j_start=lct_start(jc)
+
+                              Else
+
+! if j-th subcell is the same as the i-th subcell
+! get next in line in the linked list
+
+                                 j_start=ii+1
+
+                              End If
+
+! loop over secondary cell contents
+
+                              Do jj=j_start,lct_start(jc+1)-1
+
+! get domain local particle index
+
+                                 j=at_list(jj)
+
+! atom pairs MUST BE within the cutoff
+
+                                 rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
+                                 If (rsq <= rcsq) Then
+
+! check for overfloat and add an entry
+
+                                    ll=list(0,i)+1
+                                    If (ll <= mxlist) Then
+                                       list(0,i)=ll
+                                       list(ll,i)=j
+                                    Else
+                                       safe=.false.
+                                    End If
+                                      ibig=Max(ibig,ll)
+
+! end of cutoff criterion check
+
+                                 End If
+
+! end of loop over secondary cell contents
+
+                              End Do
 
 ! end of inner if-block on cells and borders
 
-                         End If
+                         	 End If
 
 ! end of secondary loop over subcells
 
-                      End Do
+												End If
 
 ! end of bypass if primary cell particle > natms
 
-                   End If
+                   		End Do
 
 ! end of loop over primary cell contents
-                End Do
+                	 End If
 
 ! end of outer if-block on cells and borders
 
-             End If
+             		End Do
+
+						 End If
 
 ! end of loops over ix,iy,iz
 
@@ -211,7 +340,7 @@ End Subroutine link_cell_pairs_helper
 Subroutine link_cell_pairs_remove_exclusions_helper(&
      ibegin,iend)
   Use setup_module
-  Use config_module,  Only : natms,ltg,lexatm,list
+  Use config_module,  Only : natms,ltg,lexatm,list,mxexcl
 
   Implicit None
   Integer, Intent(In) :: ibegin,iend
@@ -257,7 +386,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Use setup_module
   Use domains_module, Only : nprx,npry,nprz
   Use config_module,  Only : cell,natms,nlast,ltg,lfrzn, &
-                             xxx,yyy,zzz,lexatm,list
+                             xxx,yyy,zzz,lexatm,list,mxexcl
 
 #ifdef COMPILE_CUDA
   Use dl_poly_cuda_module
@@ -279,7 +408,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Integer           :: fail(1:4),                            &
                        icell,ncells,ipass,kk,ll,             &
                        ibig,i,ii,j,jj, j_start,              &
-                       nlx,nly,nlz,nlp,nlp3,nsbcll,          &
+                       nlx,nly,nlz,nlp,nlr2,nlp3,nsbcll,     &
                        nlx0s,nly0s,nlz0s, nlx0e,nly0e,nlz0e, &
                        nlx1s,nly1s,nlz1s, nlx1e,nly1e,nlz1e, &
                        ix,iy,iz,ic, ix1,ix2,iy1,iy2,iz1,iz2, &
@@ -288,7 +417,8 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Real( Kind = wp ) :: rsq,det,rcell(1:9),celprp(1:10), &
                        dispx,dispy,dispz, xdc,ydc,zdc,nlp2
 
-  Integer,           Dimension( : ), Allocatable :: nix,niy,niz,         &
+  Logical,					 Dimension( : ), Allocatable :: nir
+	Integer,           Dimension( : ), Allocatable :: nix,niy,niz,         &
                                                     lct_count,lct_start, &
                                                     lct_where,which_cell,at_list
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
@@ -316,7 +446,7 @@ Call start_timing_link_cell_pairs()
      idx=Mod(idnode,nprx)
 
 ! Get the domains' dimensions in reduced space
-! (domains are geometrically equvalent)
+! (domains are geometrically equivalent)
 
      sidex=1.0_wp/Real(nprx,wp)
      sidey=1.0_wp/Real(npry,wp)
@@ -352,7 +482,7 @@ Call start_timing_link_cell_pairs()
   nlp=1
   nlp2=Real(natms,wp)
   det=nlp2/Real(nlx*nly*nlz,wp)
-  Do While (det > 130.0_wp)
+  Do While (det > 100.0_wp)
      nlp=nlp+1
      rsq=Real(nlp,wp)
      nlx=Int(dispx*rsq)
@@ -364,7 +494,7 @@ Call start_timing_link_cell_pairs()
   nlp3=(1+(1+2*nlp)**3)/2
 
   fail=0
-  Allocate (nix(1:nlp3),niy(1:nlp3),niz(1:nlp3),                              Stat=fail(1))
+  Allocate (nix(1:nlp3),niy(1:nlp3),niz(1:nlp3),nir(1:nlp3),                  Stat=fail(1))
   Allocate (which_cell(1:mxatms),at_list(1:mxatms),                           Stat=fail(2))
   Allocate (lct_count(1:ncells),lct_start(1:ncells+1 ),lct_where(1:ncells+1), Stat=fail(3))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                        Stat=fail(4))
@@ -376,11 +506,12 @@ Call start_timing_link_cell_pairs()
 ! Create jump-around arrays in link-cell space mapping a
 ! discrete 3D BALL so that ALL two body interactions are
 ! single counted within a domain (but not over-all as
-! double counting still occures globally for all shared
+! double counting still occurs globally for all shared
 ! inter-domain/semi-hello/cross-domain pairs.
 
-  nix=0 ; niy=0 ; niz=0
+  nix=0 ; niy=0 ; niz=0 ; nir=.false.
   nlp2=Real(nlp**2,wp)
+	nlr2=(nlp-1)**2
   nsbcll=0
   Do iz=0,nlp
      If (iz > 0) Then
@@ -388,6 +519,8 @@ Call start_timing_link_cell_pairs()
      Else
         dispz=0.0_wp
      End If
+
+		 jz=iz**2
 
      Do iy=-nlp,nlp
         If (iz == 0 .and. iy < 0) Go To 20
@@ -402,6 +535,8 @@ Call start_timing_link_cell_pairs()
         det=dispz+dispy
         If (det > nlp2) Go To 20
 
+				jy=iy**2
+
         Do ix=-nlp,nlp
            If (iz == 0 .and. iy == 0 .and. ix < 0) Go To 10
 
@@ -414,10 +549,15 @@ Call start_timing_link_cell_pairs()
 
            rsq=det+dispx
            If (rsq > nlp2) Go To 10
-           nsbcll=nsbcll+1
-           nix(nsbcll)=ix
+
+					 jx=ix**2
+
+					 nsbcll=nsbcll+1
+
+					 nix(nsbcll)=ix
            niy(nsbcll)=iy
            niz(nsbcll)=iz
+					 nir(nsbcll)=(jx+jy+jz <= nlr2)
 10         Continue
         End Do
 20      Continue
@@ -456,7 +596,7 @@ Call start_timing_link_cell_pairs()
   End Do
 
 ! Form linked list
-! Initilise cell contents counter
+! Initialise cell contents counter
 
   lct_count = 0
 
@@ -610,7 +750,7 @@ Call start_timing_link_cell_pairs()
      lct_where( which_cell( i ) ) = lct_where( which_cell( i ) ) + 1
   End Do
 
-! initialise verley neighbourlist arrays
+! initialise verlet neighbourlist arrays
 
 !  list=0      ! (DEBUG)
   list(0,:)=0 !  (FIRST DIMENSION ONLY)
@@ -622,7 +762,7 @@ Call start_timing_link_cell_pairs()
 
 
 #ifdef COMPILE_CUDA
-  if (dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable()) Then
+  if (dl_poly_cuda_offload_link_cell_pairs()) Then
      Call link_cell_pairs_cuda_initialise(                   &
        natms,mxatms,ncells,mxlist,mxatdm,nsbcll,nlp,nlx,nly, &
        nlx0e, nly0e, nlz0e, nlx1s, nly1s, nlz1s,             &
@@ -634,13 +774,13 @@ Call start_timing_link_cell_pairs()
 !   over from the host again.
 ! 20100218/ck: when needed to finalise, mind if lbook==.true. as the list
 !   will be stil lneeded for the exclusions part.
-     If ((.not.dl_poly_cuda_offload_tbforces()) .and. (.not.lbook)) Then
+     If (dl_poly_cuda_offload_tbforces()==.false. .and. lbook==.false.) Then
         Call link_cell_pairs_cuda_finalise()
      End If
 
 ! 20100226/ck: uncomment this to study the effect of sorted atom lists
 !   to the CUDA kernels of two_body_forces.
-!     If (dl_poly_cuda_offload_tbforces() .and. (.not. lbook)) Then
+!     If (dl_poly_cuda_offload_tbforces()==.true. .and. lbook==.false.) Then
 !        Call link_cell_pairs_cuda_invoke_sort_atoms()
 !     End If
   Else
@@ -648,16 +788,15 @@ Call start_timing_link_cell_pairs()
 
 ! primary loop over domain subcells
 
-    Do iz=nlz0e+1,nlz1s-1
-       iz1=iz-nlz0e
-       iz2=iz-nlz1s
-       Do iy=nly0e+1,nly1s-1
-          iy1=iy-nly0e
-          iy2=iy-nly1s
-
-          Do ix=nlx0e+1,nlx1s-1
-             ix1=ix-nlx0e
-             ix2=ix-nlx1s
+  Do iz=nlz0e+1,nlz1s-1
+     iz1=iz-nlz0e
+     iz2=iz-nlz1s
+     Do iy=nly0e+1,nly1s-1
+        iy1=iy-nly0e
+        iy2=iy-nly1s
+        Do ix=nlx0e+1,nlx1s-1
+           ix1=ix-nlx0e
+           ix2=ix-nlx1s
 
 ! loop over the domain's link-cells only (ipass=1) and
 ! over the domain's border link-cells only (ipass=2)
@@ -678,131 +817,203 @@ Call start_timing_link_cell_pairs()
 
 ! loop over primary cell contents
 
-                Do ii=lct_start(ic),lct_start(ic+1)-1
+                 Do ii=lct_start(ic),lct_start(ic+1)-1
 
 ! get domain local particle index
 
-                   i=at_list(ii)
+                    i=at_list(ii)
 
 ! bypass if primary cell particle > natms
 
-                   If (i <= natms) Then
+                    If (i <= natms) Then
 
 ! secondary loop over subcells
 
-                      Do kk=ipass,nsbcll
+                       Do kk=ipass,nsbcll
 
-                         If (ipass == 1) Then
-                            jx=ix+nix(kk)
-                            jy=iy+niy(kk)
-                            jz=iz+niz(kk)
-                         Else
-                            jx=ix-nix(kk)
-                            jy=iy-niy(kk)
-                            jz=iz-niz(kk)
-                         End If
+                          If (ipass == 1) Then
+                             jx=ix+nix(kk)
+                             jy=iy+niy(kk)
+                             jz=iz+niz(kk)
+                          Else
+                             jx=ix-nix(kk)
+                             jy=iy-niy(kk)
+                             jz=iz-niz(kk)
+                          End If
 
 ! When ipass = 2 be on the halo link-cells only
 
-                         If ( (ipass == 1) .or.                     &
-                              (jx <= nlx0e) .or. (jx >= nlx1s) .or. &
-                              (jy <= nly0e) .or. (jy >= nly1s) .or. &
-                              (jz <= nlz0e) .or. (jz >= nlz1s) ) Then
+                          If ( (ipass == 1) .or.                     &
+                               (jx <= nlx0e) .or. (jx >= nlx1s) .or. &
+                               (jy <= nly0e) .or. (jy >= nly1s) .or. &
+                               (jz <= nlz0e) .or. (jz >= nlz1s) ) Then
+
+! if atom pairs are guaranteed to be within the cutoff
+
+                             If (nir(kk)) Then
 
 ! index of neighbouring cell
 
-                            jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)
+                                jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)
 
 ! get the secondary list particle index in linked-list local description
 
-                            If (jc /= ic) Then
+                                If (jc /= ic) Then
 
 ! if j-th subcell is not the i-th subcell
 ! get head of chain of j-th subcell
 
-                               j_start=lct_start(jc)
+                                   j_start=lct_start(jc)
 
-                            Else
+                                Else
 
 ! if j-th subcell is the same as the i-th subcell
 ! get next in line in the linked list
 
-                               j_start=ii+1
+                                   j_start=ii+1
 
-                            End If
+                                End If
+
+! check for overfloat
+
+                                ll=list(0,i)+lct_start(jc+1)-j_start
+                                If (ll <= mxlist) Then
+                                   ibig=Max(ibig,ll)
 
 ! loop over secondary cell contents
 
-                            Do jj=j_start,lct_start(jc+1)-1
+                                   Do jj=j_start,lct_start(jc+1)-1
 
 ! get domain local particle index
 
-                               j=at_list(jj)
+                                      j=at_list(jj)
 
-! test for frozen atom pairs (frozen atom pairs DO NOT interact) is now put outside
-!
-!                               If (lfrzn(i)*lfrzn(j) == 0) Then
-
-! distance in real space
-
-                                  rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
-
-! check cutoff criterion (atom pairs MUST BE within the cutoff)
-
-                                  If (rsq <= rcsq) Then
-
-! check for overfloat and add an entry
-
-                                     ll=list(0,i)+1
-                                     If (ll > mxlist) Then
-                                        ibig=Max(ibig,ll)
-                                        safe=.false.
-                                     Else
-                                        ibig=Max(ibig,ll)
-                                        list(0,i)=ll
-                                        list(ll,i)=j
-                                     End If
-
-! end of if-block for cutoff criterion
-
-                                  End If
-
-! end of if-block on non-frozen atoms
-!
-!                               End If
+! add an entry
+                                      ll=list(0,i)+1
+                                      list(0,i)=ll
+                                      list(ll,i)=j
 
 ! end of loop over secondary cell contents
 
-                            End Do
+                                   End Do
+
+                                Else
+
+! loop over secondary cell contents
+
+                                   Do jj=j_start,lct_start(jc+1)-1
+
+! get domain local particle index
+
+                                      j=at_list(jj)
+
+! check for overfloat and add an entry
+
+                                      ll=list(0,i)+1
+                                      If (ll <= mxlist) Then
+                                         list(0,i)=ll
+                                         list(ll,i)=j
+                                      Else
+                                         safe=.false.
+                                      End If
+                                      ibig=Max(ibig,ll)
+
+! end of loop over secondary cell contents
+
+                                   End Do
+                                End If
+
+! if atom pairs are not guaranteed to be within the cutoff of each other
+! distance in real space is needed for checking the cutoff criterion
+
+                             Else
+
+! index of neighbouring cell
+
+                                jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)
+
+! get the secondary list particle index in linked-list local description
+
+                                If (jc /= ic) Then
+
+! if j-th subcell is not the i-th subcell
+! get head of chain of j-th subcell
+
+                                   j_start=lct_start(jc)
+
+                                Else
+
+! if j-th subcell is the same as the i-th subcell
+! get next in line in the linked list
+
+                                   j_start=ii+1
+
+                                End If
+
+! loop over secondary cell contents
+
+                                Do jj=j_start,lct_start(jc+1)-1
+
+! get domain local particle index
+
+                                   j=at_list(jj)
+
+! atom pairs MUST BE within the cutoff
+
+                                   rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
+                                   If (rsq <= rcsq) Then
+
+! check for overfloat and add an entry
+
+                                      ll=list(0,i)+1
+                                      If (ll <= mxlist) Then
+                                         list(0,i)=ll
+                                         list(ll,i)=j
+                                      Else
+                                         safe=.false.
+                                      End If
+                                      ibig=Max(ibig,ll)
+
+! end of cutoff criterion check
+
+                                   End If
+
+! end of loop over secondary cell contents
+
+                                End Do
+
+! end of bypass on real space cutoff check for safe subcells
+
+                             End If
 
 ! end of inner if-block on cells and borders
 
-                         End If
+                          End If
 
 ! end of secondary loop over subcells
 
-                      End Do
+                       End Do
 
 ! end of bypass if primary cell particle > natms
 
-                   End If
+                    End If
 
 ! end of loop over primary cell contents
 
-                End Do
+                 End Do
 
 ! end of outer if-block on cells and borders
 
-             End If
+              End If
 
 ! end of loops over ix,iy,iz
 
-          End Do
+           End Do
 
 ! end of loop over passes
 
-       End Do
-    End Do
+        End Do
+     End Do
   End Do
 
 #ifdef COMPILE_CUDA
@@ -823,8 +1034,7 @@ Call start_timing_link_cell_pairs()
 #ifdef COMPILE_CUDA
   ! In the CUDA port, frozen atom pairs are not included in the
   !  list() to begin with, so they don't need to be removed here
-  If (.not.dl_poly_cuda_offload_link_cell_pairs() .and. &
-       dl_poly_cuda_is_cuda_capable()) Then
+  If (dl_poly_cuda_offload_link_cell_pairs() == .false.) Then
 #endif
      If (megfrz > 1) Then
         Do i=1,natms
@@ -851,17 +1061,16 @@ Call start_timing_link_cell_pairs()
 #endif
 
 
-! Remove exluded interactions from the verlet neighbour list
+! Remove excluded interactions from the verlet neighbour list
 
 
   If (lbook) Then
 
 #ifdef COMPILE_CUDA
      Call start_timing_link_cell_pairs_cuda_remove_excluded()
-     If (dl_poly_cuda_offload_link_cell_pairs() .and. &
-         dl_poly_cuda_is_cuda_capable()) Then
+     If (dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable()) Then
         Call link_cell_pairs_cuda_invoke_remove_exclusions()
-        If (.not.dl_poly_cuda_offload_tbforces()) Then
+        If (dl_poly_cuda_offload_tbforces()==.false. .and. lbook==.true.) Then
            Call link_cell_pairs_cuda_finalise()
         End If
      Else
@@ -892,6 +1101,18 @@ Call start_timing_link_cell_pairs()
 #endif
 
   End If
+
+	  Do i=1,natms
+      ii=ltg(i)
+      kk=list(0,i)
+      Do ll=1,kk
+         j=list(ll,i)
+         jj=ltg(j)
+          If (j <= natms .or. ii < jj) Then
+             Write(idnode+101,'(2i8)') ii,jj
+          End If
+    End Do
+  End Do
 
   Deallocate (nix,niy,niz,                   Stat=fail(1))
   Deallocate (which_cell,at_list,            Stat=fail(2))

@@ -54,7 +54,7 @@ Subroutine metal_ld_compute                &
   Use comms_module,  Only : mxnode,gsum,gcheck
   Use setup_module
   Use config_module, Only : cell,natms,ltype,list,xxx,yyy,zzz
-  Use metal_module,  Only : ntpmet,ltpmet,fmet,lstmet,vmet,dmet
+  Use metal_module,  Only : ld_met,ntpmet,ltpmet,fmet,lstmet,vmet,dmet
 
 #ifdef COMPILE_CUDA
   Use dl_poly_cuda_module
@@ -65,7 +65,7 @@ Subroutine metal_ld_compute                &
   Integer,                                  Intent( In    ) :: imcon,keyfce
   Real( Kind = wp ),                        Intent( In    ) :: rmet
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent( In    ) :: elrcm,vlrcm
-  Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ), Dimension( 1:mx_two ), Intent( InOut ) :: xdf,ydf,zdf,rsqdf
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent(   Out ) :: rho
   Real( Kind = wp ),                        Intent(   Out ) :: engden,virden
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
@@ -111,7 +111,7 @@ Subroutine metal_ld_compute                &
 ! The CUDA port implements the features of dl_poly_3 - a subset of those found in dl_poly_4
 ! In particular, only tabulated calculations are available in metal_ld_compute
 ! The CUDA acceleration is not called if direct calculation is required
-  If (dl_poly_cuda_offload_metal_ld_compute() .and. dl_poly_cuda_is_cuda_capable()) Then
+  If (dl_poly_cuda_offload_metal_ld_compute() .and. ld_met .eqv. .false.) Then !*CHANGE == to .eqv.
      Call metal_ld_compute_cuda_initialise(&
           0,mxatms,natms,mxgrid,ntpmet,mxmet,mxatdm,mxlist,&
           xxx,yyy,zzz,list,ltype,ltpmet,lstmet,vmet,dmet,cell,rho)

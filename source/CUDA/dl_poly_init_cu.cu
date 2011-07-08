@@ -62,15 +62,15 @@ extern "C" __host__ void dl_poly_cuda_allocate_pinned_default(
 // Perform some checks at initialisation to decide what's offloaded
 // to the device (to trap unimplemented functionality):
 
-static bool offload_link_cell_pairs   = true;
-static bool offload_tbforces          = true;
-static bool offload_constraints_shake = true;
-static bool offload_metal_ld_compute  = true;
-static bool offload_ewald_spme_forces = true;
-static bool offload_spme_forces       = true;
-static bool offload_bspgen            = true;
-static bool offload_ewald_spme_forces_ccarray  = true;
-static bool offload_ewald_spme_forces_cccharge = true;
+static bool offload_link_cell_pairs   = false;
+static bool offload_tbforces          = false;
+static bool offload_constraints_shake = false;
+static bool offload_metal_ld_compute  = false;
+static bool offload_ewald_spme_forces = false;
+static bool offload_spme_forces       = false;
+static bool offload_bspgen            = false;
+static bool offload_ewald_spme_forces_ccarray  = false;
+static bool offload_ewald_spme_forces_cccharge = false;
 
 extern "C" void dl_poly_cuda_offload_set(bool offload_link_cell_pairs_f90,
                                          bool offload_tbforces_f90,

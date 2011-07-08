@@ -135,12 +135,12 @@ Program dl_poly
 ! general flags
 
   Logical           :: l_vv,l_n_e,l_n_r,l_n_v, &
-                       l_ind,l_str,l_exp,      &
+                       l_ind,l_str,l_top,l_exp,&
                        lecx,lfcap,lzero,       &
                        lmin,ltgaus,ltscal,     &
                        lvar,leql,lpse,lsim,    &
                        lrdf,lprdf,lzdn,lpzdn,  &
-                       ltraj,ldef,             &
+                       ltraj,ldef,lrsd,        &
                        safe,lbook,lexcl,       &
                        relaxed_shl = .true.,   &
                        relaxed_min = .true.
@@ -154,7 +154,8 @@ Program dl_poly
                        keyens,iso,intsta,keypse,nstbpo,    &
                        keyfce,mxshak,mxquat,nstrdf,nstzdn, &
                        nstmsd,istmsd,nstraj,istraj,keytrj, &
-                       nsdef,isdef,ndump,nstep,keyshl,     &
+                       nsdef,isdef,nsrsd,isrsd,            &
+                       ndump,nstep,keyshl,                 &
                        atmfre,atmfrz,megatm,megfrz,        &
                        megshl,megcon,megpmf,megrgd,        &
                        megtet,megbnd,megang,megdih,meginv
@@ -169,7 +170,7 @@ Program dl_poly
                        alpha,epsq,fmax,                                &
                        rcut,rvdw,rmet,rbin,rcter,rctbp,rcfbp,          &
                        width,mndis,mxdis,wthpse,tmppse,                &
-                       rlx_tol,min_tol,tolnce,quattol,rdef,            &
+                       rlx_tol,min_tol,tolnce,quattol,rdef,rrsd,       &
                        emd,vmx,vmy,vmz,temp,sigma,                     &
                        press,strext(1:9),ten,                          &
                        taut,soft,taup,chi,tai,                         &
@@ -272,9 +273,10 @@ Program dl_poly
   Call read_control                               &
            (levcfg,l_vv,l_str,l_n_e,l_n_r,l_n_v,  &
            rcut,rvdw,rbin,nstfce,alpha,width,     &
-           l_exp,lecx,lfcap,lzero,lmin,           &
+           l_exp,lecx,lfcap,l_top,lzero,lmin,     &
            ltgaus,ltscal,lvar,leql,lpse,          &
-           lsim,lrdf,lprdf,lzdn,lpzdn,ltraj,ldef, &
+           lsim,lrdf,lprdf,lzdn,lpzdn,            &
+           ltraj,ldef,lrsd,                       &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,      &
            temp,press,strext,keyres,              &
            tstep,mndis,mxdis,nstrun,nsteql,       &
@@ -285,12 +287,13 @@ Program dl_poly
            rlx_tol,mxshak,tolnce,mxquat,quattol,  &
            nstrdf,nstzdn,                         &
            nstmsd,istmsd,nstraj,istraj,keytrj,    &
-           nsdef,isdef,rdef,ndump,timjob,timcls)
+           nsdef,isdef,rdef,nsrsd,isrsd,rrsd,     &
+           ndump,timjob,timcls)
 
 ! READ SIMULATION FORCE FIELD
 
   Call read_field                          &
-           (imcon,l_n_v,l_str,             &
+           (imcon,l_n_v,l_str,l_top,       &
            rcut,rvdw,rmet,width,keyfce,    &
            lbook,lexcl,keyshl,             &
            rcter,rctbp,rcfbp,              &
