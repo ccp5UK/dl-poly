@@ -456,6 +456,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! if atom pairs are guaranteed to be within the cutoff
 
                              If (nir(kk)) Then
+
 ! index of neighbouring cell
 
                                 jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)

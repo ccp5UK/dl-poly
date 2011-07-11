@@ -31,7 +31,7 @@ Program dl_poly
 ! dl_poly_4 is based on dl_poly_3 by i.t.todorov & w.smith.
 !
 ! copyright - daresbury laboratory
-! authors   - i.t.todorov & w.smith 2010
+! authors   - i.t.todorov & w.smith 2011
 ! contributors: i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -118,7 +118,10 @@ Program dl_poly
 
   Implicit None
 
-! newjob used for trajectory_write & defects_write
+! newjob used for trajectory_write &
+!                 defects_write    &
+!                 msd_write        &
+!                 rsd_write        &
 
   Logical, Save :: newjob = .true.
 
@@ -134,15 +137,15 @@ Program dl_poly
 
 ! general flags
 
-  Logical           :: l_vv,l_n_e,l_n_r,l_n_v, &
-                       l_ind,l_str,l_top,l_exp,&
-                       lecx,lfcap,lzero,       &
-                       lmin,ltgaus,ltscal,     &
-                       lvar,leql,lpse,lsim,    &
-                       lrdf,lprdf,lzdn,lpzdn,  &
-                       ltraj,ldef,lrsd,        &
-                       safe,lbook,lexcl,       &
-                       relaxed_shl = .true.,   &
+  Logical           :: l_vv,l_n_e,l_n_r,l_n_v,  &
+                       l_ind,l_str,l_top,l_exp, &
+                       lecx,lfcap,lzero,        &
+                       lmin,ltgaus,ltscal,      &
+                       lvar,leql,lpse,lsim,     &
+                       lrdf,lprdf,lzdn,lpzdn,   &
+                       ltraj,ldef,lrsd,         &
+                       safe,lbook,lexcl,        &
+                       relaxed_shl = .true.,    &
                        relaxed_min = .true.
 
 ! 'isw' is used for vv stage control
@@ -213,7 +216,7 @@ Program dl_poly
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
           "**         **  contributors:  i.j.bush               ****** O ****", &
-          "*************  version:  4.01.1   /   november 2010  ******* L ***", &
+          "*************  version:  4.02      /      july 2011  ******* L ***", &
           "*************  Execution on ", mxnode, "    node(s)  ******** Y **", &
           "******************************************************************"
   End If
@@ -584,7 +587,7 @@ Program dl_poly
 
 ! Save restart data (final)
 
-  Call system_revive                                                &
+  If (.not.l_tor) Call system_revive                                &
            (imcon,rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
            chit,cint,chip,eta,strcon,strpmf,stress)
 
