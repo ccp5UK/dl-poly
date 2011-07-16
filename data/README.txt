@@ -3,7 +3,7 @@ Standard Test Cases for DL_POLY_4
 
 Because of the size of the data files for the DL_POLY_4
 standard test cases, they are not shipped in the standard
-download of the DL_POLY_4 source.  Instead users are requested
+download of the DL_POLY_4 source.  Instead, users are requested
 to download them from the CCP5 FTP server as follows:
 
 FTP site : ftp.dl.ac.uk
