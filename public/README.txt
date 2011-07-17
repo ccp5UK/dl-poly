@@ -1,5 +1,5 @@
 The DL_POLY 'public' directory
-----------------------------------
+------------------------------
 
 This sub-directory is where software contributed by users is stored.
 Such contributions are welcome.  If you have any contribution to make
