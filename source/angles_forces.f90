@@ -6,7 +6,7 @@ Subroutine angles_forces(imcon,engang,virang,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov august 2010
+! amended   - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -318,7 +318,7 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            m    =prmang(3,kk)
            a    =m*theta-delta
 
-           gamma=k*m*Sin(a)*rsint
+           gamma=-k*m*Sin(a)*rsint
            pterm=k*(1.0_wp+Cos(a))
            vterm=0.0_wp
            gamsa=0.0_wp

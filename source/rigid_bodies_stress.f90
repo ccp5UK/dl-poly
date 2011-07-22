@@ -6,14 +6,14 @@ Subroutine rigid_bodies_stress(strcom,ggx,ggy,ggz)
 ! tensor
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2008
+! author    - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : mxnode,gsum
   Use setup_module,        Only : mxtrgd,mxrgd,mxlrgd
-  Use config_module,       Only : natms,fxx,fyy,fzz
+  Use config_module,       Only : natms,lfrzn,fxx,fyy,fzz
   Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd
 
   Implicit None
@@ -42,10 +42,10 @@ Subroutine rigid_bodies_stress(strcom,ggx,ggy,ggz)
      If (rgdfrz(0,rgdtyp) < lrgd) Then
         Do jrgd=1,lrgd
            krgd=krgd+1
-           If (indrgd(jrgd,irgd) > 0 .and. indrgd(jrgd,irgd) <= natms .and. &
-               rgdfrz(jrgd,rgdtyp) == 0) Then
-              i=indrgd(jrgd,irgd) ! local index of particle/site
 
+           i=indrgd(jrgd,irgd) ! local index of particle/site
+
+           If (i > 0 .and. i <= natms .and. lfrzn(i) == 0) Then
               strcom(1)=strcom(1)-ggx(krgd)*fxx(i)
               strcom(2)=strcom(2)-ggx(krgd)*fyy(i)
               strcom(3)=strcom(3)-ggx(krgd)*fzz(i)
@@ -88,7 +88,7 @@ Subroutine rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx,fyy,fzz)
   Use kinds_f90
   Use comms_module,        Only : mxnode,gsum
   Use setup_module,        Only : mxatms,mxtrgd,mxrgd,mxlrgd
-  Use config_module,       Only : natms
+  Use config_module,       Only : natms,lfrzn
   Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd
 
   Implicit None
@@ -118,10 +118,10 @@ Subroutine rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx,fyy,fzz)
      If (rgdfrz(0,rgdtyp) < lrgd) Then
         Do jrgd=1,lrgd
            krgd=krgd+1
-           If (indrgd(jrgd,irgd) > 0 .and. indrgd(jrgd,irgd) <= natms .and. &
-               rgdfrz(jrgd,rgdtyp) == 0) Then
-              i=indrgd(jrgd,irgd) ! local index of particle/site
 
+           i=indrgd(jrgd,irgd) ! local index of particle/site
+
+           If (i > 0 .and. i <= natms .and. lfrzn(i) == 0) Then
               strcom(1)=strcom(1)-ggx(krgd)*fxx(i)
               strcom(2)=strcom(2)-ggx(krgd)*fyy(i)
               strcom(3)=strcom(3)-ggx(krgd)*fzz(i)
@@ -164,7 +164,7 @@ Subroutine rigid_bodies_str_ss(strcom)
   Use kinds_f90
   Use comms_module,        Only : idnode,mxnode,gsum
   Use setup_module,        Only : nrite,mxtrgd,mxrgd,mxlrgd
-  Use config_module,       Only : cell,natms,xxx,yyy,zzz,fxx,fyy,fzz
+  Use config_module,       Only : cell,natms,lfrzn,xxx,yyy,zzz,fxx,fyy,fzz
   Use rigid_bodies_module, Only : ntrgd,rgdimc,rgdfrz,listrgd,indrgd
 
   Implicit None
@@ -226,10 +226,10 @@ Subroutine rigid_bodies_str_ss(strcom)
      If (rgdfrz(0,rgdtyp) < lrgd) Then
         Do jrgd=1,lrgd
            krgd=krgd+1
-           If (indrgd(jrgd,irgd) > 0 .and. indrgd(jrgd,irgd) <= natms .and. &
-               rgdfrz(jrgd,rgdtyp) == 0) Then
-              i=indrgd(jrgd,irgd) ! local index of particle/site
 
+           i=indrgd(jrgd,irgd) ! local index of particle/site
+
+           If (i > 0 .and. i <= natms .and. lfrzn(i) == 0) Then
               strcom(1)=strcom(1)-gxx(krgd)*fxx(i)
               strcom(2)=strcom(2)-gxx(krgd)*fyy(i)
               strcom(3)=strcom(3)-gxx(krgd)*fzz(i)

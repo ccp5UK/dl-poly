@@ -921,12 +921,15 @@ in {\sc set\_bounds} recompile and resubmit.
 
 \subsubsection*{\underline{Message 88}: error - legend array exceeded in build\_book\_intra}
 
-This should never happen!  Dimension of legend array exceeded.
+The second dimension of a legend array has been exceeded.
 
 \noindent \underline{\em Action}:
 
-Increase parameter {\tt mxfix} in {\sc set\_bounds}, recompile and
-resubmit.  If the error persists contact authors.
+If you have an intra-molecular (like) interaction present in abundance
+in your model that you suspect is driving this out of bound error
+increase its legend bound value, {\tt mxf}interaction, at the end of
+{\sc scan\_field}, recompile and resubmit.  If the error persists
+contact authors.
 
 \subsubsection*{\underline{Message 89}: error - too many four-body potentials specified}
 
