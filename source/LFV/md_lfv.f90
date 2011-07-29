@@ -553,7 +553,7 @@
               Call npt_l1_lfv                  &
            (lvar,mndis,mxdis,tstep,            &
            degfre,sigma,chi,consv,             &
-           press,tai,chip,eta,                 &
+           degrot,press,tai,chip,eta,          &
            virtot,elrc,virlrc,                 &
            strkin,strknf,strknt,engke,engrot,  &
            imcon,mxshak,tolnce,mxquat,quattol, &
@@ -583,7 +583,7 @@
               Call npt_h1_lfv                  &
            (lvar,mndis,mxdis,tstep,            &
            degfre,sigma,taut,chit,cint,consv,  &
-           press,taup,chip,eta,                &
+           degrot,press,taup,chip,eta,         &
            virtot,elrc,virlrc,                 &
            strkin,strknf,strknt,engke,engrot,  &
            imcon,mxshak,tolnce,mxquat,quattol, &
@@ -598,7 +598,7 @@
               Call npt_m1_lfv                  &
            (lvar,mndis,mxdis,tstep,            &
            degfre,sigma,taut,chit,cint,consv,  &
-           press,taup,chip,eta,                &
+           degrot,press,taup,chip,eta,         &
            virtot,elrc,virlrc,                 &
            strkin,strknf,strknt,engke,engrot,  &
            imcon,mxshak,tolnce,mxquat,quattol, &
@@ -613,7 +613,7 @@
               Call nst_l1_lfv                  &
            (lvar,mndis,mxdis,tstep,            &
            iso,degfre,sigma,chi,consv,         &
-           press,tai,chip,eta,                 &
+           degrot,press,tai,chip,eta,          &
            stress,strext,ten,elrc,virlrc,      &
            strkin,strknf,strknt,engke,engrot,  &
            imcon,mxshak,tolnce,mxquat,quattol, &
@@ -643,7 +643,7 @@
               Call nst_h1_lfv                     &
            (lvar,mndis,mxdis,tstep,               &
            iso,degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,                   &
+           degrot,press,taup,chip,eta,            &
            stress,strext,ten,elrc,virlrc,         &
            strkin,strknf,strknt,engke,engrot,     &
            imcon,mxshak,tolnce,mxquat,quattol,    &
@@ -658,7 +658,7 @@
               Call nst_m1_lfv                     &
            (lvar,mndis,mxdis,tstep,               &
            iso,degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,                   &
+           degrot,press,taup,chip,eta,            &
            stress,strext,ten,elrc,virlrc,         &
            strkin,strknf,strknt,engke,engrot,     &
            imcon,mxshak,tolnce,mxquat,quattol,    &

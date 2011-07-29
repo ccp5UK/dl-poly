@@ -1,7 +1,7 @@
 Subroutine nst_l1_vv                          &
            (isw,lvar,mndis,mxdis,tstep,       &
            iso,degfre,sigma,chi,consv,        &
-           press,tai,chip,eta,                &
+           degrot,press,tai,chip,eta,         &
            stress,strext,ten,elrc,virlrc,     &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -28,7 +28,7 @@ Subroutine nst_l1_vv                          &
 !            J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -51,7 +51,7 @@ Subroutine nst_l1_vv                          &
   Logical,           Intent( In    ) :: lvar
   Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,sigma,chi,press,tai
   Integer,           Intent( In    ) :: iso
-  Integer(Kind=ip),  Intent( In    ) :: degfre
+  Integer(Kind=ip),  Intent( In    ) :: degfre,degrot
   Real( Kind = wp ), Intent( InOut ) :: eta(1:9)
   Real( Kind = wp ), Intent(   Out ) :: consv,chip
   Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -180,7 +180,7 @@ Subroutine nst_l1_vv                          &
 ! inertia parameter for barostat
 
      temp  = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-     pmass = ((2.0_wp*sigma + 3.0_wp*boltz*temp)/3.0_wp)*(2.0_wp*pi/tai)**2
+     pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*temp / (2.0_wp*pi*tai)**2
 
 ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -270,6 +270,17 @@ Subroutine nst_l1_vv                          &
 
   If (isw == 0) Then
 
+     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
+
+! Get strcom & vircom when starting afresh
+
+     If (l_lan_s) Then
+        l_lan_s = .false.
+
+        Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl)
+        vircom=-(strcom(1)+strcom(5)+strcom(9))
+     End If
+
 ! store initial values
 
      Do i=1,matms
@@ -312,8 +323,6 @@ Subroutine nst_l1_vv                          &
      eta0 =eta
      engke0=engke
      engrot0=engrot
-
-     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
 
 100  Continue
 
@@ -366,8 +375,8 @@ Subroutine nst_l1_vv                          &
 
         str1=str+fpl
         Call nst_h1_scl &
-           (1,hstep,degfre,pmass,tai,volm,press,  &
-           iso,ten,h_z,strext,str1,stress,strcom, &
+           (1,hstep,degfre,degrot,pmass,tai,volm,press,  &
+           iso,ten,h_z,strext,str1,stress,strcom,        &
            vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke)
 
 ! integrate and apply Langevin thermostat - 1/4 step
@@ -941,6 +950,11 @@ Subroutine nst_l1_vv                          &
         End Do
      End If
 
+! Get RB COM stress and virial
+
+     Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
+     vircom=-(strcom(1)+strcom(5)+strcom(9))
+
 ! update velocity of RBs
 
      krgd=0
@@ -1143,8 +1157,8 @@ Subroutine nst_l1_vv                          &
 
      str1=str+fpl
      Call nst_h1_scl &
-           (1,hstep,degfre,pmass,tai,volm,press,  &
-           iso,ten,h_z,strext,str1,stress,strcom, &
+           (1,hstep,degfre,degrot,pmass,tai,volm,press,  &
+           iso,ten,h_z,strext,str1,stress,strcom,        &
            vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke)
 
 ! integrate and apply Langevin thermostat - 1/4 step
@@ -1220,11 +1234,6 @@ Subroutine nst_l1_vv                          &
 
      strkin=strknf+strknt
      engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
-
-! Get RB COM stress and virial
-
-     Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
-     vircom=-(strcom(1)+strcom(5)+strcom(9))
 
   End If
 

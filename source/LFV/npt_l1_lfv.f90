@@ -1,7 +1,7 @@
 Subroutine npt_l1_lfv                          &
            (lvar,mndis,mxdis,tstep,            &
            degfre,sigma,chi,consv,             &
-           press,tai,chip,eta,                 &
+           degrot,press,tai,chip,eta,          &
            virtot,elrc,virlrc,                 &
            strkin,strknf,strknt,engke,engrot,  &
            imcon,mxshak,tolnce,mxquat,quattol, &
@@ -23,7 +23,7 @@ Subroutine npt_l1_lfv                          &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith february 2009
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -43,7 +43,7 @@ Subroutine npt_l1_lfv                          &
 
   Logical,           Intent( In    ) :: lvar
   Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,sigma,chi,press,tai
-  Integer(Kind=ip),  Intent( In    ) :: degfre
+  Integer(Kind=ip),  Intent( In    ) :: degfre,degrot
   Real( Kind = wp ), Intent( InOut ) :: chip
   Real( Kind = wp ), Intent(   Out ) :: eta(1:9),consv
   Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -165,8 +165,8 @@ Subroutine npt_l1_lfv                          &
 ! inertia parameters for barostat
 
      temp  = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-     pmass = (2.0_wp*sigma + 3.0_wp*boltz*temp)*(2.0_wp*pi/tai)**2
-     factor= 3.0_wp/Real(degfre,wp)
+     pmass = (Real(degfre-degrot,wp) + 3.0_wp)*boltz*temp / (2.0_wp*pi*tai)**2
+     factor= 3.0_wp/Real(degfre-degrot,wp)
 
 ! set number of constraint+pmf shake iterations and general iteration cycles
 

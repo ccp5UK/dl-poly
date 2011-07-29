@@ -952,8 +952,8 @@ Subroutine read_control                           &
                  & /,1x,'thermostat friction     (ps^-1)',3x,1p,e12.4,                                     &
                  & /,1x,'barostat friction       (ps^-1)',3x,1p,e12.4)") chi,tai
 
-!                 taut=chi
-!                 taup=2.0_wp*pi/tai
+!                 taut=1/(2.0_wp*pi*chi)
+!                 taup=1/(2.0_wp*pi*tai)
 
               If (lens) Call error(414)
               lens=.true.

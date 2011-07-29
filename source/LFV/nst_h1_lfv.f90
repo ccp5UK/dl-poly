@@ -1,7 +1,7 @@
 Subroutine nst_h1_lfv                             &
            (lvar,mndis,mxdis,tstep,               &
            iso,degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,                   &
+           degrot,press,taup,chip,eta,            &
            stress,strext,ten,elrc,virlrc,         &
            strkin,strknf,strknt,engke,engrot,     &
            imcon,mxshak,tolnce,mxquat,quattol,    &
@@ -36,7 +36,7 @@ Subroutine nst_h1_lfv                             &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2009
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -57,7 +57,7 @@ Subroutine nst_h1_lfv                             &
   Logical,           Intent( In    ) :: lvar
   Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,sigma,taut,press,taup
   Integer,           Intent( In    ) :: iso
-  Integer(Kind=ip),  Intent( In    ) :: degfre
+  Integer(Kind=ip),  Intent( In    ) :: degfre,degrot
   Real( Kind = wp ), Intent( InOut ) :: chit,cint,eta(1:9)
   Real( Kind = wp ), Intent(   Out ) :: consv,chip
   Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -196,7 +196,7 @@ Subroutine nst_h1_lfv                             &
      Else If (iso == 2) Then
         ceng  = 2.0_wp*sigma + 3.0_wp*boltz*tmp
      End If
-     pmass = ((2.0_wp*sigma + 3.0_wp*boltz*tmp)/3.0_wp)*taup**2
+     pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*tmp*taup**2
 
 ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 

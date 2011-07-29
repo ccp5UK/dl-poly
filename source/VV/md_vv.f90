@@ -65,7 +65,11 @@
 ! Get RB COM stress and virial at restart
 
         If (megrgd > 0) Then
-           Call rigid_bodies_str_ss(strcom)
+           If (l_lan .and. (.not.l_lan_s)) Then
+              Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl)
+           Else
+              Call rigid_bodies_str_ss(strcom)
+           End If
            vircom=-(strcom(1)+strcom(5)+strcom(9))
         End If
 
@@ -344,7 +348,7 @@
               Call npt_l1_vv                  &
            (isw,lvar,mndis,mxdis,tstep,       &
            degfre,sigma,chi,consv,            &
-           press,tai,chip,eta,                &
+           degrot,press,tai,chip,eta,         &
            virtot,elrc,virlrc,                &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -374,7 +378,7 @@
               Call npt_h1_vv                  &
            (isw,lvar,mndis,mxdis,tstep,       &
            degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,               &
+           degrot,press,taup,chip,eta,        &
            virtot,elrc,virlrc,                &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -389,7 +393,7 @@
               Call npt_m1_vv                  &
            (isw,lvar,mndis,mxdis,tstep,       &
            degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,               &
+           degrot,press,taup,chip,eta,        &
            virtot,elrc,virlrc,                &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -404,7 +408,7 @@
               Call nst_l1_vv                  &
            (isw,lvar,mndis,mxdis,tstep,       &
            iso,degfre,sigma,chi,consv,        &
-           press,tai,chip,eta,                &
+           degrot,press,tai,chip,eta,         &
            stress,strext,ten,elrc,virlrc,     &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -434,7 +438,7 @@
               Call nst_h1_vv                      &
            (isw,lvar,mndis,mxdis,tstep,           &
            iso,degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,                   &
+           degrot,press,taup,chip,eta,            &
            stress,strext,ten,elrc,virlrc,         &
            strkin,strknf,strknt,engke,engrot,     &
            imcon,mxshak,tolnce,                   &
@@ -449,7 +453,7 @@
               Call nst_m1_vv                      &
            (isw,lvar,mndis,mxdis,tstep,           &
            iso,degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,                   &
+           degrot,press,taup,chip,eta,            &
            stress,strext,ten,elrc,virlrc,         &
            strkin,strknf,strknt,engke,engrot,     &
            imcon,mxshak,tolnce,                   &
@@ -948,7 +952,7 @@
               Call npt_l1_vv                  &
            (isw,lvar,mndis,mxdis,tstep,       &
            degfre,sigma,chi,consv,            &
-           press,tai,chip,eta,                &
+           degrot,press,tai,chip,eta,         &
            virtot,elrc,virlrc,                &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -978,7 +982,7 @@
               Call npt_h1_vv                  &
            (isw,lvar,mndis,mxdis,tstep,       &
            degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,               &
+           degrot,press,taup,chip,eta,        &
            virtot,elrc,virlrc,                &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -993,7 +997,7 @@
               Call npt_m1_vv                  &
            (isw,lvar,mndis,mxdis,tstep,       &
            degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,               &
+           degrot,press,taup,chip,eta,        &
            virtot,elrc,virlrc,                &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -1008,7 +1012,7 @@
               Call nst_l1_vv                  &
            (isw,lvar,mndis,mxdis,tstep,       &
            iso,degfre,sigma,chi,consv,        &
-           press,tai,chip,eta,                &
+           degrot,press,tai,chip,eta,         &
            stress,strext,ten,elrc,virlrc,     &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -1038,7 +1042,7 @@
               Call nst_h1_vv                      &
            (isw,lvar,mndis,mxdis,tstep,           &
            iso,degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,                   &
+           degrot,press,taup,chip,eta,            &
            stress,strext,ten,elrc,virlrc,         &
            strkin,strknf,strknt,engke,engrot,     &
            imcon,mxshak,tolnce,                   &
@@ -1053,7 +1057,7 @@
               Call nst_m1_vv                      &
            (isw,lvar,mndis,mxdis,tstep,           &
            iso,degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,                   &
+           degrot,press,taup,chip,eta,            &
            stress,strext,ten,elrc,virlrc,         &
            strkin,strknf,strknt,engke,engrot,     &
            imcon,mxshak,tolnce,                   &
@@ -1265,7 +1269,11 @@
 ! Get RB COM stress and virial at restart
 
         If (megrgd > 0) Then
-           Call rigid_bodies_str_ss(strcom)
+           If (l_lan .and. (.not.l_lan_s)) Then
+              Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl)
+           Else
+              Call rigid_bodies_str_ss(strcom)
+           End If
            vircom=-(strcom(1)+strcom(5)+strcom(9))
         End If
 

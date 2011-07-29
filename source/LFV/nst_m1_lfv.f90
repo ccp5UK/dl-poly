@@ -1,7 +1,7 @@
 Subroutine nst_m1_lfv                             &
            (lvar,mndis,mxdis,tstep,               &
            iso,degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,                   &
+           degrot,press,taup,chip,eta,            &
            stress,strext,ten,elrc,virlrc,         &
            strkin,strknf,strknt,engke,engrot,     &
            imcon,mxshak,tolnce,mxquat,quattol,    &
@@ -29,7 +29,7 @@ Subroutine nst_m1_lfv                             &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2009
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -50,7 +50,7 @@ Subroutine nst_m1_lfv                             &
   Logical,           Intent( In    ) :: lvar
   Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,sigma,taut,press,taup
   Integer,           Intent( In    ) :: iso
-  Integer(Kind=ip),  Intent( In    ) :: degfre
+  Integer(Kind=ip),  Intent( In    ) :: degfre,degrot
   Real( Kind = wp ), Intent( InOut ) :: chit,cint,eta(1:9)
   Real( Kind = wp ), Intent(   Out ) :: consv,chip
   Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -74,7 +74,7 @@ Subroutine nst_m1_lfv                             &
   Integer                 :: fail(1:20),matms,iter,kit,i,j,i1,i2, &
                              irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp ), Save :: volm0,elrc0,virlrc0,h_z
-  Real( Kind = wp ), Save :: qmass,ceng,pmass
+  Real( Kind = wp ), Save :: qmass,ceng,pmass,rf
   Real( Kind = wp )       :: hstep,rstep,fac
   Real( Kind = wp )       :: chit1,chit2,eta1(1:9),eta2(1:9),chip0,chip3
   Real( Kind = wp )       :: cell0(1:9),celprp(1:10)
@@ -189,7 +189,8 @@ Subroutine nst_m1_lfv                             &
      Else If (iso == 2) Then
         ceng  = 2.0_wp*sigma + 3.0_wp*boltz*tmp
      End If
-     pmass = ((2.0_wp*sigma + 3.0_wp*boltz*tmp)/3.0_wp)*taup**2
+     pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*tmp*taup**2
+     rf    = 1.0_wp / Real(degfre-degrot,wp)
 
 ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -542,7 +543,7 @@ Subroutine nst_m1_lfv                             &
 
   strkin=strknf+strknt
   engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
-  fac=2.0_wp*engke/Real(degfre,wp)
+  fac=2.0_wp*engke*rf
 
 ! update rotational energy at full step
 
@@ -578,7 +579,7 @@ Subroutine nst_m1_lfv                             &
 ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
   chip0 = Sqrt( eta2(1)**2 + 2*eta2(2)**2 + 2*eta2(3)**2 + eta2(5)**2 + 2*eta2(6)**2 + eta2(9)**2 )
-  chip3 = (eta2(1) + eta2(5) + eta2(9))/Real(degfre,wp)
+  chip3 = (eta2(1) + eta2(5) + eta2(9))*rf
 
 ! iterate forces, vircon, virpmf, chit and eta
 
@@ -815,7 +816,7 @@ Subroutine nst_m1_lfv                             &
 
         strkin=strknf+strknt
         engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
-        fac=2.0_wp*engke/Real(degfre,wp)
+        fac=2.0_wp*engke*rf
 
 ! propagate chit and eta sets and couple
 ! (strcon,strpmf,chit2,eta2 are new here!!!)
@@ -845,7 +846,7 @@ Subroutine nst_m1_lfv                             &
 ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
         chip0 = Sqrt( eta2(1)**2 + 2*eta2(2)**2 + 2*eta2(3)**2 + eta2(5)**2 + 2*eta2(6)**2 + eta2(9)**2 )
-        chip3 = (eta2(1) + eta2(5) + eta2(9))/Real(degfre,wp)
+        chip3 = (eta2(1) + eta2(5) + eta2(9))*rf
 
      End If
 

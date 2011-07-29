@@ -1,7 +1,7 @@
 Subroutine npt_m1_vv                          &
            (isw,lvar,mndis,mxdis,tstep,       &
            degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,               &
+           degrot,press,taup,chip,eta,        &
            virtot,elrc,virlrc,                &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -22,7 +22,7 @@ Subroutine npt_m1_vv                          &
 !            Mol. Phys., 1996, Vol. 87 (5), p. 1117
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -42,7 +42,7 @@ Subroutine npt_m1_vv                          &
   Integer,           Intent( In    ) :: isw
   Logical,           Intent( In    ) :: lvar
   Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,sigma,taut,press,taup
-  Integer(Kind=ip),  Intent( In    ) :: degfre
+  Integer(Kind=ip),  Intent( In    ) :: degfre,degrot
   Real( Kind = wp ), Intent( InOut ) :: chit,cint,chip
   Real( Kind = wp ), Intent(   Out ) :: eta(1:9),consv
   Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -151,7 +151,7 @@ Subroutine npt_m1_vv                          &
      qmass = 2.0_wp*sigma*taut**2
      tmp   = 2.0_wp*sigma / (boltz*Real(degfre,wp))
      ceng  = 2.0_wp*sigma + boltz*tmp
-     pmass = (2.0_wp*sigma + 3.0_wp*boltz*tmp)*taup**2
+     pmass = (Real(degfre-degrot,wp) + 3.0_wp)*boltz*tmp*taup**2
 
 ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -304,7 +304,7 @@ Subroutine npt_m1_vv                          &
 ! integrate and apply npt_h1_scl barostat - 1/2 step
 
         Call npt_h1_scl &
-           (1,hstep,degfre,pmass,chit,volm,press,vir,virtot,vircom, &
+           (1,hstep,degfre,degrot,pmass,chit,volm,press,vir,virtot,vircom, &
            vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke)
 
 ! integrate and apply nvt_h1_scl thermostat - 1/4 step
@@ -795,6 +795,11 @@ Subroutine npt_m1_vv                          &
         End Do
      End If
 
+! Get RB COM stress and virial
+
+     Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
+     vircom=-(strcom(1)+strcom(5)+strcom(9))
+
 ! update velocity of RBs
 
      krgd=0
@@ -943,7 +948,7 @@ Subroutine npt_m1_vv                          &
 ! integrate and apply npt_h1_scl barostat - 1/2 step
 
      Call npt_h1_scl &
-           (1,hstep,degfre,pmass,chit,volm,press,vir,virtot,vircom, &
+           (1,hstep,degfre,degrot,pmass,chit,volm,press,vir,virtot,vircom, &
            vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke)
 
 ! integrate and apply nvt_h1_scl thermostat - 1/4 step
@@ -1010,11 +1015,6 @@ Subroutine npt_m1_vv                          &
 
      strkin=strknf+strknt
      engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
-
-! Get RB COM stress and virial
-
-     Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
-     vircom=-(strcom(1)+strcom(5)+strcom(9))
 
   End If
 

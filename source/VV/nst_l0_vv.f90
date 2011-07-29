@@ -24,7 +24,7 @@ Subroutine nst_l0_vv                                 &
 !            J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -152,7 +152,7 @@ Subroutine nst_l0_vv                                 &
 ! inertia parameter for barostat
 
      temp  = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-     pmass = ((2.0_wp*sigma + 3.0_wp*boltz*temp)/3.0_wp)*(2.0_wp*pi/tai)**2
+     pmass = ((2.0_wp*sigma + 3.0_wp*boltz*temp)/3.0_wp) / (2.0_wp*pi*tai)**2
 
 ! set number of constraint+pmf shake iterations and general iteration cycles
 

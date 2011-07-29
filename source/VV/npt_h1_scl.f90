@@ -1,5 +1,5 @@
 Subroutine npt_h1_scl &
-           (sw,tstep,degfre,pmass,chit,volm,press,vircon,virtot,vircom, &
+           (sw,tstep,degfre,degrot,pmass,chit,volm,press,vircon,virtot,vircom, &
            vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -8,13 +8,13 @@ Subroutine npt_h1_scl &
 ! when singled RBs are present
 !
 ! sw=1 coupling to NVT thermostat for MTK ensembles,
-!                                   factor=3/degfre
+!                                   factor=3/(degfre-degrot)
 !
 ! sw=0 coupling to NVT thermostat for Nose-Hoover ensembles,
 !                                   factor=0
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2008
+! author    - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,7 +26,7 @@ Subroutine npt_h1_scl &
   Implicit None
 
   Integer,           Intent( In    ) :: sw
-  Integer(Kind=ip),  Intent( In    ) :: degfre
+  Integer(Kind=ip),  Intent( In    ) :: degfre,degrot
 
   Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,press,vircon,virtot,vircom
   Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
@@ -46,7 +46,7 @@ Subroutine npt_h1_scl &
      newjob = .false.
 
      factor = 0.0_wp
-     If (sw == 1) factor = 3.0_wp/Real(degfre,wp)
+     If (sw == 1) factor = 3.0_wp/Real(degfre-degrot,wp)
   End If
 
 ! thermostat chip to 1/4*tstep

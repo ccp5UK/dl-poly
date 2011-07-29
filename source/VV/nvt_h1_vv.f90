@@ -18,7 +18,7 @@ Subroutine nvt_h1_vv                          &
 !            Mol. Phys., 1996, Vol. 87 (5), p. 1117
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -632,6 +632,11 @@ Subroutine nvt_h1_vv                          &
         End Do
      End If
 
+! Get RB COM stress and virial
+
+     Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
+     vircom=-(strcom(1)+strcom(5)+strcom(9))
+
 ! update velocity of RBs
 
      krgd=0
@@ -782,11 +787,6 @@ Subroutine nvt_h1_vv                          &
      Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt)
 
      strkin=strknf+strknt
-
-! Get RB COM stress and virial
-
-     Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
-     vircom=-(strcom(1)+strcom(5)+strcom(9))
 
   End If
 

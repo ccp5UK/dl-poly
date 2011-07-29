@@ -13,7 +13,7 @@ Subroutine read_field                      &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -2312,7 +2312,7 @@ Subroutine read_field                      &
 ! generate metal force arrays
 
            If (keypot == 0) Then
-              Call metal_table_read()
+              Call metal_table_read(l_top)
            Else
               Call metal_generate(rmet)
            End If

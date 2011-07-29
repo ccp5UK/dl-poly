@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2011
+! author    - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -405,9 +405,9 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,2(f12.7,a),3(/,1x,a),/)')                            &
         '*** warning - minimisation tolerance', a, ' defaults to', b, ' !!! ***', &
-        '*** force   : 1.0     <= tolerance <= 1000.0, default = 100.0 ***',      &
-        '*** energy  : 0.0     <  tolerance <= 0.01  , default = 0.005 ***',      &
-        '*** distance: 1.0e-6  <= tolerance <= 0.1   , default = 0.005 ***'
+        '*** force   : 1.0    <= tolerance <= 1000.00, default = 50.00 ***',      &
+        '*** energy  : 0.0    <  tolerance <=    0.01, default = 0.005 ***',      &
+        '*** distance: 1.0e-6 <= tolerance <=    0.10, default = 0.005 ***'
 
      Else If (kode == 370) Then
 

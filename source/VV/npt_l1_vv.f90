@@ -1,7 +1,7 @@
 Subroutine npt_l1_vv                          &
            (isw,lvar,mndis,mxdis,tstep,       &
            degfre,sigma,chi,consv,            &
-           press,tai,chip,eta,                &
+           degrot,press,tai,chip,eta,         &
            virtot,elrc,virlrc,                &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -22,7 +22,7 @@ Subroutine npt_l1_vv                          &
 !            J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -44,7 +44,7 @@ Subroutine npt_l1_vv                          &
   Integer,           Intent( In    ) :: isw
   Logical,           Intent( In    ) :: lvar
   Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,sigma,chi,press,tai
-  Integer(Kind=ip),  Intent( In    ) :: degfre
+  Integer(Kind=ip),  Intent( In    ) :: degfre,degrot
   Real( Kind = wp ), Intent( InOut ) :: chip
   Real( Kind = wp ), Intent(   Out ) :: eta(1:9),consv
   Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -162,7 +162,7 @@ Subroutine npt_l1_vv                          &
 ! inertia parameter for barostat
 
      temp  = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-     pmass = (2.0_wp*sigma + 3.0_wp*boltz*temp)*(2.0_wp*pi/tai)**2
+     pmass = (Real(degfre-degrot,wp) + 3.0_wp)*boltz*temp / (2.0_wp*pi*tai)**2
 
 ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -179,7 +179,7 @@ Subroutine npt_l1_vv                          &
 
 ! Generate Langevin forces for particles and
 ! Langevin pseudo-tensor force for barostat piston
-! if not read from REVOLD
+! if not read from REVOLD.
 
      If (l_lan_s) Then
         Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
@@ -194,9 +194,6 @@ Subroutine npt_l1_vv                          &
            tmp=tmp/Sqrt(Real(mxnode,wp))
         End If
         tmp=tmp*Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)/3.0_wp
-        fpl(1)=tmp
-        fpl(5)=tmp
-        fpl(9)=tmp
      Else
         tmp=(fpl(1)+fpl(5)+fpl(9))/3.0_wp
         fpl=0.0_wp
@@ -257,6 +254,17 @@ Subroutine npt_l1_vv                          &
 
   If (isw == 0) Then
 
+     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
+
+! Get strcom & vircom when starting afresh
+
+     If (l_lan_s) Then
+        l_lan_s = .false.
+
+        Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl)
+        vircom=-(strcom(1)+strcom(5)+strcom(9))
+     End If
+
 ! store initial values
 
      Do i=1,matms
@@ -299,8 +307,6 @@ Subroutine npt_l1_vv                          &
      chip0=chip
      engke0=engke
      engrot0=engrot
-
-     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
 
 100  Continue
 
@@ -353,7 +359,7 @@ Subroutine npt_l1_vv                          &
 
         vir1=vir-3.0_wp*fpl(1)
         Call npt_h1_scl &
-           (1,hstep,degfre,pmass,tai,volm,press,vir1,virtot,vircom, &
+           (1,hstep,degfre,degrot,pmass,tai,volm,press,vir1,virtot,vircom, &
            vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke)
 
 ! integrate and apply Langevin thermostat - 1/4 step
@@ -868,7 +874,6 @@ Subroutine npt_l1_vv                          &
 ! Langevin pseudo-tensor force for barostat piston
 
      Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
-     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
 
      fpl=0.0_wp
      tmp=-6.0_wp
@@ -915,6 +920,13 @@ Subroutine npt_l1_vv                          &
            vxx,vyy,vzz)
         End Do
      End If
+
+     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
+
+! Get RB COM stress and virial
+
+     Call rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx+fxl,fyy+fyl,fzz+fzl)
+     vircom=-(strcom(1)+strcom(5)+strcom(9))
 
 ! update velocity of RBs
 
@@ -1118,7 +1130,7 @@ Subroutine npt_l1_vv                          &
 
      vir1=vir-3.0_wp*fpl(1)
      Call npt_h1_scl &
-           (1,hstep,degfre,pmass,tai,volm,press,vir1,virtot,vircom, &
+           (1,hstep,degfre,degrot,pmass,tai,volm,press,vir1,virtot,vircom, &
            vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke)
 
 ! integrate and apply Langevin thermostat - 1/4 step
@@ -1199,11 +1211,6 @@ Subroutine npt_l1_vv                          &
 
      strkin=strknf+strknt
      engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
-
-! Get RB COM stress and virial
-
-     Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
-     vircom=-(strcom(1)+strcom(5)+strcom(9))
 
   End If
 

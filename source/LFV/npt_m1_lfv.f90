@@ -1,7 +1,7 @@
 Subroutine npt_m1_lfv                          &
            (lvar,mndis,mxdis,tstep,            &
            degfre,sigma,taut,chit,cint,consv,  &
-           press,taup,chip,eta,                &
+           degrot,press,taup,chip,eta,         &
            virtot,elrc,virlrc,                 &
            strkin,strknf,strknt,engke,engrot,  &
            imcon,mxshak,tolnce,mxquat,quattol, &
@@ -23,7 +23,7 @@ Subroutine npt_m1_lfv                          &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith february 2009
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -42,7 +42,7 @@ Subroutine npt_m1_lfv                          &
 
   Logical,           Intent( In    ) :: lvar
   Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,sigma,taut,press,taup
-  Integer(Kind=ip),  Intent( In    ) :: degfre
+  Integer(Kind=ip),  Intent( In    ) :: degfre,degrot
   Real( Kind = wp ), Intent( InOut ) :: chit,cint,chip
   Real( Kind = wp ), Intent(   Out ) :: eta(1:9),consv
   Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -163,8 +163,8 @@ Subroutine npt_m1_lfv                          &
      qmass = 2.0_wp*sigma*taut**2
      tmp   = 2.0_wp*sigma / (boltz*Real(degfre,wp))
      ceng  = 2.0_wp*sigma + boltz*tmp
-     pmass = (2.0_wp*sigma + 3.0_wp*boltz*tmp)*taup**2
-     factor= 3.0_wp/Real(degfre,wp)
+     pmass = (Real(degfre-degrot,wp) + 3.0_wp)*boltz*tmp*taup**2
+     factor= 3.0_wp/Real(degfre-degrot,wp)
 
 ! set number of constraint+pmf shake iterations and general iteration cycles
 

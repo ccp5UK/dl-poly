@@ -21,7 +21,7 @@ Subroutine nvt_a1_vv                          &
 !  particles' momenta of a particle subset on each domain)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -607,6 +607,11 @@ Subroutine nvt_a1_vv                          &
         End Do
      End If
 
+! Get RB COM stress and virial
+
+     Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
+     vircom=-(strcom(1)+strcom(5)+strcom(9))
+
 ! update velocity of RBs
 
      krgd=0
@@ -1115,11 +1120,6 @@ Subroutine nvt_a1_vv                          &
 ! update rotational energy
 
      engrot=getknr(rgdoxx,rgdoyy,rgdozz)
-
-! Get RB COM stress and virial
-
-     Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
-     vircom=-(strcom(1)+strcom(5)+strcom(9))
 
   End If
 

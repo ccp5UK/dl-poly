@@ -1,4 +1,4 @@
-Subroutine metal_table_read()
+Subroutine metal_table_read(l_top)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,7 +7,7 @@ Subroutine metal_table_read()
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2006
-! amended   - i.t.todorov august 2006
+! amended   - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -19,6 +19,8 @@ Subroutine metal_table_read()
   Use parse_module, Only : get_line,get_word,lower_case,word_2_real
 
   Implicit None
+
+  Logical, Intent( In    ) :: l_top
 
   Logical                :: safe
   Character( Len = 200 ) :: record
@@ -107,7 +109,8 @@ Subroutine metal_table_read()
      End Do
 
      If (katom1 == 0 .or. katom2 == 0) Then
-        If (idnode == 0) Write(nrite,'(a)') '****',atom1,'***',atom2,'****'
+        If (idnode == 0 .and. l_top) &
+           Write(nrite,'(a)') '****',atom1,'***',atom2,'****'
         Call  error(81)
      End If
 
@@ -118,7 +121,8 @@ Subroutine metal_table_read()
      buffer(3)=finish
      buffer(4)=(finish-start)/Real(ngrid-1,wp)
 
-     If (idnode == 0) Write(nrite,"(1x,i10,4x,2a8,3x,2a4,2x,i6,1p,3e15.6)") &
+     If (idnode == 0 .and. l_top) &
+        Write(nrite,"(1x,i10,4x,2a8,3x,2a4,2x,i6,1p,3e15.6)") &
         ipot,atom1,atom2,'EAM-',keyword,ngrid,start,finish,buffer(4)
 
 ! limits shifted for DL_POLY interpolation
@@ -263,7 +267,7 @@ Subroutine metal_table_read()
   End Do
 
   If (idnode == 0) Close(Unit=ntable)
-  If (idnode == 0) Write(nrite,'(/,1x,a)') 'potential tables read from TABEAM file'
+  If (idnode == 0 .and. l_top) Write(nrite,'(/,1x,a)') 'potential tables read from TABEAM file'
 
   Deallocate (cpair,cdens,cembed, Stat=fail(1))
   Deallocate (buffer,             Stat=fail(2))

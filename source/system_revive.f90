@@ -216,7 +216,7 @@ Subroutine system_revive                                            &
 
   If (mxnode > 1) Call gsync()
 
-! Write langevin arrays if needed
+! Write Langevin arrays if needed
 
   If (l_lan) Then
      If (idnode == 0) Then

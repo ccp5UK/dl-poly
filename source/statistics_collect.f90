@@ -153,6 +153,12 @@ Subroutine statistics_collect                &
 
 ! store current values in statistics array
 
+!  If (idnode == 0) Write(nrite,'(4(/,5e12.4))')   &
+!     engke  , engrot , stpprs , stpprs , stpvol , &
+!     vircpe , virsrp , virter , virtbp , virfbp , &
+!     virfld , virshl , vircon , virpmf , vircom , &
+!     virtet , virbnd , virang , virdih , virinv
+
   stpval(1) =stpcns/engunit
   stpval(2) =stptmp
   stpval(3) =stpcfg/engunit

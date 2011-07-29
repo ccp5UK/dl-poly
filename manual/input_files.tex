@@ -395,7 +395,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> equilibration step) using conjugate gradient method (CGM) \\
 \>                                              \> with respect to the criterion, {\em string}, and tolerance, $f$, \\
 \>                                              \> where this criterion can only be {\em force} ($1~\le~f~\le~1000$, \\
-\>                                              \> default $f~=~100$) or {\em energy} ($0~<~f~\le~0.01$, default \\
+\>                                              \> default $f~=~50$) or {\em energy} ($0~<~f~\le~0.01$, default \\
 \>                                              \> $f~=~0.005$) or {\em distance} (maximum absolute displacement in \\
 \>                                              \> \AA, $10^{-6}~\le~f~\le~0.1$, default $f~=~0.005$); the lowest {\em string} \\
 \>                                              \> CGM minimised configuration during equlibration is saved \\
@@ -439,10 +439,11 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> (no FIELD replication), useful for large bio-chemcal simulations \\
 \>                                              \> \\
 \> {\bf no vdw}                                 \> ignore short range (non-bonded)\index{potential!non-bonded} interactions in simulation \\
-\>                                              \> \\\> {\bf optim}ise {\em string} $f$              \> minimise the system configuration at start during equilibration \\
+\>                                              \> \\
+\> {\bf optim}ise {\em string} $f$              \> minimise the system configuration at start during equilibration \\
 \>                                              \> using conjugate gradient method (CGM) with respect to the \\
 \>                                              \> criterion, {\em string}, and tolerance, $f$, where the criterion can only \\
-\>                                              \> be {\em force} ($1~\le~f~\le~1000$, default $f~=~100$) or {\em energy} \\
+\>                                              \> be {\em force} ($1~\le~f~\le~1000$, default $f~=~50$) or {\em energy} \\
 \>                                              \> ($0~<~f~\le~0.01$, default $f~=~0.005$) or {\em distance} (maximum \\
 \>                                              \> absolute displacement in \AA) ($10^{-6}~\le~f~\le~0.1$, default \\
 \>                                              \> $f~=~0.005$); the CGM minimised configuration is saved \\

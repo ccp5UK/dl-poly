@@ -1,7 +1,7 @@
 Subroutine nst_m1_vv                              &
            (isw,lvar,mndis,mxdis,tstep,           &
            iso,degfre,sigma,taut,chit,cint,consv, &
-           press,taup,chip,eta,                   &
+           degrot,press,taup,chip,eta,            &
            stress,strext,ten,elrc,virlrc,         &
            strkin,strknf,strknt,engke,engrot,     &
            imcon,mxshak,tolnce,                   &
@@ -28,7 +28,7 @@ Subroutine nst_m1_vv                              &
 !            Mol. Phys., 1996, Vol. 87 (5), p. 1117
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -49,7 +49,7 @@ Subroutine nst_m1_vv                              &
   Logical,           Intent( In    ) :: lvar
   Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,sigma,taut,press,taup
   Integer,           Intent( In    ) :: iso
-  Integer(Kind=ip),  Intent( In    ) :: degfre
+  Integer(Kind=ip),  Intent( In    ) :: degfre,degrot
   Real( Kind = wp ), Intent( InOut ) :: chit,cint,eta(1:9)
   Real( Kind = wp ), Intent(   Out ) :: consv,chip
   Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -175,7 +175,7 @@ Subroutine nst_m1_vv                              &
      Else If (iso == 2) Then
         ceng  = 2.0_wp*sigma + 3.0_wp*boltz*tmp
      End If
-     pmass = ((2.0_wp*sigma + 3.0_wp*boltz*tmp)/3.0_wp)*taup**2
+     pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*tmp*taup**2
 
 ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -333,8 +333,8 @@ Subroutine nst_m1_vv                              &
 ! integrate and apply nst_h1_scl barostat - 1/2 step
 
         Call nst_h1_scl &
-           (1,hstep,degfre,pmass,chit,volm,press, &
-           iso,ten,h_z,strext,str,stress,strcom,  &
+           (1,hstep,degfre,degrot,pmass,chit,volm,press, &
+           iso,ten,h_z,strext,str,stress,strcom,         &
            vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke)
 
 ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
@@ -841,6 +841,11 @@ Subroutine nst_m1_vv                              &
         End Do
      End If
 
+! Get RB COM stress and virial
+
+     Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
+     vircom=-(strcom(1)+strcom(5)+strcom(9))
+
 ! update RB members positions
 
      krgd=0
@@ -989,8 +994,8 @@ Subroutine nst_m1_vv                              &
 ! integrate and apply nst_h1_scl barostat - 1/2 step
 
      Call nst_h1_scl &
-           (1,hstep,degfre,pmass,chit,volm,press, &
-           iso,ten,h_z,strext,str,stress,strcom,  &
+           (1,hstep,degfre,degrot,pmass,chit,volm,press, &
+           iso,ten,h_z,strext,str,stress,strcom,         &
            vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke)
 
 ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
@@ -1052,11 +1057,6 @@ Subroutine nst_m1_vv                              &
 
      strkin=strknf+strknt
      engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
-
-! Get RB COM stress and virial
-
-     Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
-     vircom=-(strcom(1)+strcom(5)+strcom(9))
 
   End If
 

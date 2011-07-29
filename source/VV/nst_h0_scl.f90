@@ -20,7 +20,7 @@ Subroutine nst_h0_scl &
 ! reference: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2009
+! author    - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -42,13 +42,13 @@ Subroutine nst_h0_scl &
   Real( Kind = wp ), Intent(   Out ) :: engke
 
 
+  Logical,     Save :: newjob = .true.
+
   Integer           :: i
 
   Real( Kind = wp ) :: a1,a2,a3,a5,a6,a9,b1,b2,b3,b5,b6,b9, vxt,vyt,vzt
 
-! initialise factor for Nose-Hoover enssembles
-
-  Real( Kind = wp ) :: factor = 0.0_wp
+  Real( Kind = wp ) :: rf, factor
 
 ! uni is the diagonal unit matrix
 
@@ -57,6 +57,16 @@ Subroutine nst_h0_scl &
 
   Real( Kind = wp ) :: hstep,qstep
 
+
+! Initialise factor and 1/Nf for Nose-Hoover ensembles
+
+  If (newjob) Then
+     newjob = .false.
+
+     factor = 0.0_wp
+     rf = 0.0_wp
+     If (sw == 1) rf=1.0_wp/Real(degfre,wp)
+  End If
 
 ! timestep derivatives
 
@@ -77,7 +87,7 @@ Subroutine nst_h0_scl &
 
 ! barostat eta to 1/2*tstep
 
-  If (sw == 1) factor = 2.0_wp*engke/Real(degfre,wp)
+  If (sw == 1) factor = 2.0_wp*engke*rf
 
 ! split anisotropic from semi-isotropic barostats (iso=0,1,2)
 
@@ -105,7 +115,7 @@ Subroutine nst_h0_scl &
 ! factor = Tr(eta)/Nf if sw=1, where Nf is degfre,
 ! else if sw=0 then factor=0, by default
 
-  If (sw == 1) factor = (eta(1)+eta(5)+eta(9))/Real(degfre,wp)
+  If (sw == 1) factor = (eta(1)+eta(5)+eta(9))*rf
 
   a1 = -tstep*(eta(1)+factor)
   a2 = -tstep*eta(2)
@@ -147,7 +157,7 @@ Subroutine nst_h0_scl &
 
 ! barostat eta to full (2/2)*tstep
 
-  If (sw == 1) factor = 2.0_wp*engke/Real(degfre,wp)
+  If (sw == 1) factor = 2.0_wp*engke*rf
 
 ! split anisotropic from semi-isotropic barostats (iso=0,1,2)
 

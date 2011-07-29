@@ -115,13 +115,17 @@ angular momentum about origin (which we impose).
 In the case of rigid bodies\index{rigid body} (see Section \ref{rigid})
 the first part of equation (\ref{freedom})
 \begin{equation}
-f{\prime} = 3{\cal N} - 3{\cal N}_{frozen}
+f\prime = 3{\cal N} - 3{\cal N}_{frozen}
 \end{equation}
 splits into
 \begin{equation}
-f{\prime} = \left( 3{\cal N}^{FP} - 3{\cal N}^{FP}_{frozen} \right) +
-            \left( 3{\cal N}^{RB {\bf (tra)}} - 3{\cal N}^{RB {\bf (tra)}}_{frozen} \right) +
-            \left( 3{\cal N}^{RB {\bf (rot)}} - 3{\cal N}^{RB {\bf (rot)}}_{frozen} \right)~~.
+f\prime = \left( 3{\cal N}^{FP} - 3{\cal N}^{FP}_{frozen} \right) +
+          \left( 3{\cal N}^{RB {\bf (tra)}} - 3{\cal N}^{RB {\bf (tra)}}_{frozen} \right) +
+          \left( 3{\cal N}^{RB {\bf (rot)}} - 3{\cal N}^{RB {\bf (rot)}}_{frozen} \right)
+\end{equation}
+or
+\begin{equation}
+f\prime = f^{FP} + f^{RB {\bf (tra)}} + f^{RB {\bf (rot)}}~~.
 \end{equation}
 Here FP stands for a free particle, i.e. a particle not
 participating in the constitution of a rigid body, and RB for a
@@ -445,7 +449,7 @@ the kinetic temperature constraint $\chi$ can be found as follows:
 \frac{d}{dt} {\cal T} &\propto& \frac{d}{dt} \left(\frac{1}{2}\sum_{i} m_{i} \vek{v}_{i}^{2} \right) =
 \sum_{i} m_{i} \vek{v}_{i} \cdot \frac{d}{dt} \vek{v}_{i} = 0 \nonumber \\
 & & \sum_{i} m_{i} \vek{v}_{i}(t) \cdot
-\left\{ \frac{\vek{f}_{i}(t)}{m_{i}} - \chi (t) \; \vek{v}_{i}(t) \right\} = 0 \\ \label{Evans}
+\left\{ \frac{\vek{f}_{i}(t)}{m_{i}} - \chi (t) \; \vek{v}_{i}(t) \right\} = 0 \label{Evans} \\ 
 \chi (t) &=& \frac {\sum_{i} \vek{v}_{i}(t) \cdot \vek{f}_{i}(t)} {\sum_{i} m_{i} \vek{v}_{i}^{2}(t)}~~. \nonumber
 \end{eqnarray}
 
@@ -454,7 +458,7 @@ The conventional VV1 and VV2 steps are carried out as before
 the start of VV1 and after the end of VV2 there is an application of
 thermal constraining.  This involves the calculation of $\chi (t)$
 before the VV1 stage and $\chi (t+\Delta t)$ after the VV2 stage
-with consequtive thermalisation on the unthermostated velocities
+with consecutive thermalisation on the unthermostated velocities
 for half a timestep at each stage in the following manner:
 \begin{enumerate}
 \item Thermostat VV1
@@ -687,7 +691,7 @@ F(\vek{v}_{i}) = \sqrt{\left(\frac{m_{i}}{2 \pi k_{B}T_{\tt ext}}\right)^{3}}
 \exp \left(-\frac{m_{i}~\vek{v}_{i}^{2}}{2 k_{B}T_{\tt ext}}\right) =
 \sqrt{\frac{k_{B}T_{\tt ext}}{2 m_{i}}}~{\tt Gauss}(0,1)~~.
 \end{equation}
-where subscripts denote particle indeces, $k_{B}$ is the Boltzmann
+where subscripts denote particle indices, $k_{B}$ is the Boltzmann
 constant, $T_{\tt ext}$ the target temperature and $m_{i}$ the particle's mass.
 The thermostat can be made softer by mixing the new momentum
 $\vek{v}_{i}^{\tt new}$ drawn from $F(\vek{v}_{i})$ with the old
@@ -995,28 +999,29 @@ The instantaneous pressure in a system,
 \begin{equation}
 {\cal P}(t) = \frac{\left[ 2 E_{kin}(t) - {\cal W}_{\rm atomic}(t) -
 {\cal W}_{\rm constrain}(t - \Delta t) -
-{\cal W}_{\rm PMF}(t - \Delta t) \right]} {3 V(t)}~~,
+{\cal W}_{\rm PMF}(t - \Delta t) \right]} {3 V(t)}~~, \label{prs_inst}
 \end{equation}
 is a function of the system volume, kinetic energy and virial, ${\cal W}$.
 \newline {\bf Note} that when bond constraints or/and PMF constraints
 are present in the system ${\cal P}$ will not converge to the exact
-value of $P_{\rm ext}$.  This is due to iterative nature of the
-constrained motion in which the virials ${\cal W}_{\rm constrain}$
-and ${\cal W}_{\rm PMF}$ are calculated retrospectively to the
-forcefield virial ${\cal W}_{\rm atomic}$.
+value of $P_{\rm ext}$ during equilibration in NPT and N$\sigma$T
+simulations.  This is due to iterative nature of the constrained
+motion, in which the virials ${\cal W}_{\rm constrain}$ and ${\cal W}_{\rm PMF}$
+are calculated retrospectively to the forcefield virial ${\cal W}_{\rm atomic}$.
 
 The instantaneous stress tensor in a system,
 \begin{equation}
 \mat{\sigma}(t) = \mat{\sigma}_{kin}(t) + \mat{\sigma}_{\rm atomic}(t) +
-\mat{\sigma}_{\rm constrain}(t - \Delta t) + \mat{\sigma}_{\rm PMF}(t - \Delta t)~~,
+\mat{\sigma}_{\rm constrain}(t - \Delta t) + \mat{\sigma}_{\rm PMF}(t - \Delta t)~~, \label{str_inst}
 \end{equation}
 is a sum of the forcefield, $\mat{\sigma}_{\rm atomic}$, constrain,
 $\mat{\sigma}_{\rm constrains}$, and PMF, $\mat{\sigma}_{\rm PMF}$, stresses.
 \newline {\bf Note} that when bond constraints or/and PMF constraints are
 present in the system, the quantity $\frac{{\tt Tr}[\mat{\sigma}]}{3 V}$
-will not converge to the exact value of $P_{\rm ext}$.  This is due to
-iterative nature of the constrained motion in which the constrain and PMF
-stresses are calculated retrospectively to the forcefield stress.
+will not converge to the exact value of $P_{\rm ext}$ during equilibration
+in NPT and N$\sigma$T simulations.  This is due to iterative nature of the
+constrained motion in which the constraint and PMF stresses are calculated
+retrospectively to the forcefield stress.
 
 \subsection{Langevin Barostat}
 
@@ -1309,7 +1314,7 @@ barostat equation of motion to:
 \end{array} \right.
 \end{equation}
 where $\gamma_{\rm ext}$ is the user defined external surface tesnion
-and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantenious hight of the
+and $h_{z}(t) = V(t) / A_{xy}(t)$ is the intsanteneous hight of the
 MD box (or MD box volume over area).
 
 The VV and LFV flavours of the non-isotropic Langevin barostat
@@ -1493,7 +1498,7 @@ barostat equation of motion to:
 \end{array} \right.
 \end{equation}
 where $\gamma_{\rm ext}$ is the user defined external surface tesnion
-and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantenious hight of the
+and $h_{z}(t) = V(t) / A_{xy}(t)$ is the intsanteneous hight of the
 MD box (or MD box volume over area).
 
 The VV and LFV flavours of the non-isotropic Berendsen barostat (and thermostat)
@@ -1818,7 +1823,7 @@ equation of motion and the conserved quantity to:
 (f+3)~k_{B}~T_{\rm ext}~\int_o^t \chi (s) ds~~. \nonumber
 \end{eqnarray}
 where $\gamma_{\rm ext}$ is the user defined external surface tesnion
-and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantenious hight of the
+and $h_{z}(t) = V(t) / A_{xy}(t)$ is the intsanteneous hight of the
 MD box (or MD box volume over area).
 
 The VV and LFV flavours of the non-isotropic Nos\'e-Hoover
@@ -1957,7 +1962,7 @@ equation of motion and the conserved quantity to:
 (f+3)~k_{B}~T_{\rm ext}~\int_o^t \chi (s) ds~~, \nonumber
 \end{eqnarray}
 where $\gamma_{\rm ext}$ is the user defined external surface tesnion
-and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantenious hight of the
+and $h_{z}(t) = V(t) / A_{xy}(t)$ is the intsanteneous hight of the
 MD box (or MD box volume over area).
 
 The Martyna-Tuckerman-Klein equations of motion have same
@@ -2046,6 +2051,11 @@ rotational inertia matrix \mat{I}, whose components are given by:
 I_{\alpha\beta}=\sum_{j=1}^{N_{sites}} m_{j} (d_{j}^{2}
 \delta_{\alpha \beta}-d_{j}^{\alpha} r_{j}^{\beta})~~,
 \end{equation}
+and COM stress and virial respectively written down as:
+\begin{eqnarray}
+\sigma^{\alpha\beta}=\sum_{j=1}^{N_{sites}} d_{j}^{\alpha} f_{j}^{\beta} \nonumber \\
+{\cal W} = -\sum_{j=1}^{N_{sites}} \vek{d}_{j} \cdot \vek{f}_{j}~~,
+\end{eqnarray}
 where $\vek{d}_{j}$ is the displacement vector of the atom $j$ from the
 COM, and is given by:
 \begin{equation}
@@ -2127,7 +2137,7 @@ angular velocity acting on the body transformed to the local body frame.
 Integration of $\hat{\vek{\omega}}$ is complicated by the fact that as the
 rigid body rotates, so does the local reference frame.  So it is necessary
 to integrate equations (\ref{euler}) simultaneously with an integration of
-the quaternions describing the orientiation of the rigid body.  The equation
+the quaternions describing the orientation of the rigid body.  The equation
 describing this is:
 \begin{equation}
 \pmatrix{\dot{q}_0 \cr \dot{q}_1 \cr \dot{q}_2 \cr \dot{q}_3 \cr}=
@@ -2239,28 +2249,67 @@ quaternion momenta to a full timestep:
 
 \subsection{Thermostats and Barostats coupling to the Rigid Body Equations of Motion}
 
+In the presence of rigid bodies in the atomic system the system's instantaneous pressure,
+equation (\ref{prs_inst}):
+\begin{equation}
+{\cal P}(t) = \frac{\left[ 2 E_{kin}(t) -
+{\cal W}_{\rm atomic}(t) - {\cal W}_{\rm COM}(t) -
+{\cal W}_{\rm constrain}(t - \Delta t) -
+{\cal W}_{\rm PMF}(t - \Delta t) - \right]} {3 V(t)}
+\end{equation}
+and stress, equation (\ref{str_inst}):
+\begin{equation}
+\mat{\sigma}(t) = \mat{\sigma}_{kin}(t) +
+\mat{\sigma}_{\rm atomic}(t) + \mat{\sigma}_{\rm COM}(t) +
+\mat{\sigma}_{\rm constrain}(t - \Delta t) + \mat{\sigma}_{\rm PMF}(t - \Delta t)
+\end{equation}
+are augmented to include the RBs' COM virial and stress contributions.  {\bf Note} that
+the kinetic energy and stress in the above also include the contributions of the
+RB's COM kinetic energy and stress!
+
 It is straightforward to couple the rigid body equations of motion to a thermostat\index{thermostat}
-and/or barostat\index{barostat}.  The thermostat is coupled to both the translational and rotational
-degrees of freedom and so both the translational and rotational velocities are thermostated in
-the same manner as the purely atomic velocities.  The barostat, however, is coupled only to the
-translational degrees of freedom and does not contribute to the rotational motion.
+and/or barostat\index{barostat}.  The thermostat is coupled to both the translational and
+rotational degrees of freedom and so both the translational and rotational velocities are
+thermostated in the same manner as the purely atomic velocities.  The barostat, however,
+is coupled only to the translational degrees of freedom and does not contribute to the
+rotational motion.  Therefore, if we notion the change of the system's degrees of freedom as:
+\begin{equation}
+f \rightarrow F = f + f^{RB {\bf (tra)}} + f^{RB {\bf (rot)}}
+\end{equation}
+then all equations of motion defining the ensembles as described in this chapter are
+subject to the following notional changes in order to include the RB contributions:
+\begin{eqnarray}
+\sigma(f) &\rightarrow& ~~~~~\sigma(F) ~~~~~~~~~~~~~~= ~~~~~~\sigma(f + f^{RB {\bf (tra)}} + f^{RB {\bf (rot)}}) \nonumber \\
+{\cal H}(f) &\rightarrow& ~~~~{\cal H}(F) ~~~~~~~~~~~~~~~= ~~~~~{\cal H}(f + f^{RB {\bf (tra)}} + f^{RB {\bf (rot)}}) \nonumber \\
+p_{mass}(f) &\rightarrow& p_{mass}(F - f^{RB {\bf (rot)}}) = p_{mass}(f + f^{RB {\bf (tra)}}) \\
+\eta(f) &\rightarrow& ~~~~~\eta(F - f^{RB {\bf (rot)}}) = ~~~~~~\eta(f + f^{RB {\bf (tra)}}) \nonumber \\
+\mat{\eta}(f) &\rightarrow& ~~~~~\mat{\eta}(F - f^{RB {\bf (rot)}}) = ~~~~~~\mat{\eta}(f + f^{RB {\bf (tra)}})~~, \nonumber
+\end{eqnarray}
+where $f$ refers to the degrees of freedom in the system (see equation (\ref{freedom})), $\sigma$
+is the system target energy (see equation (\ref{sigma})), ${\cal H}$ is the conserved quantity of
+the ensemble (if there is such defined), $E_{kin}$ (!includes RB COM kinetic energy too) and
+$E_{rot}$ are the kinetic and rotational energies of the system, $p_{mass}$ is the barostat mass, and
+$\eta$ and $\mat{\eta}$ are the barostat friction coefficient or matrix of coefficients respectively.
 
 There are two slight technicalities with the Evans and Andersen ensembles that are worth mentioning.
 
 Since both the translational and rotational velocities contribute towards temperature, equation (\ref{Evans}),
-showing the derivation of the the thermostat friction in the Evans ensemble by imposing a Gaussian
-cosntraint on the system's instantenious temperature, changes to:
+showing the derivation of the thermostat friction in the Evans ensemble by imposing a Gaussian
+cosntraint on the system's intsanteneous temperature, changes to:
 \begin{eqnarray}
 \frac{d}{dt} {\cal T} = 0 ~~~~~~\propto~~~~~~ \frac{d}{dt} \left( \frac{1}{2} \sum_{i}^{FP} m_{i} \vek{v}_{i}^{2} + \frac{1}{2} \sum_{j}^{RB} M_{j} \vek{V}_{j}^{2} +
 \frac{1}{2} \sum_{j}^{RB} \hat{\vek{\omega}}_{j}^{T} \cdot \hat{\mat{I}}_{j} \cdot \hat{\vek{\omega}}_{j} \right) = 0 \nonumber \\
 \left\{ \sum_{i}^{FP} \vek{v}_{i}(t) \cdot \vek{f}_{i}(t) + \sum_{j}^{RB} \vek{V}_{j}(t) \cdot \vek{F}_{j}(t) +
-\sum_{j}^{RB} \hat{\vek{\omega}}_{j}(t) \cdot \hat{\vek{\tau}}(t) \right\} - ~~~~~~~~~~~~~~~~~~~~~~~~~\\
+\sum_{j}^{RB} \hat{\vek{\omega}}_{j}(t) \cdot \hat{\vek{\tau}}(t) \right\} - ~~~~~~~~~~~~~~~~~~~~~~~~~  \nonumber \\
 ~~~~~~~~~~~~~~~~~~~\chi (t) \left\{ \sum_{i}^{FP} m_{i} \vek{v}_{i}^{2}(t) +
-\sum_{j}^{RB} M_{j} \vek{V}_{j}^{2}(t) + \sum_{j}^{RB} \hat{\vek{\omega}}_{j}^{T}(t) \cdot \hat{\mat{I}}_{j} \cdot \hat{\vek{\omega}}_{j}(t) \right\} = 0~~. \nonumber
+\sum_{j}^{RB} M_{j} \vek{V}_{j}^{2}(t) + \sum_{j}^{RB} \hat{\vek{\omega}}_{j}^{T}(t) \cdot \hat{\mat{I}}_{j} \cdot \hat{\vek{\omega}}_{j}(t) \right\} = 0 \\
+\chi (t) = \frac {\left\{ \sum_{i}^{FP} \vek{v}_{i}(t) \cdot \vek{f}_{i}(t) + \sum_{j}^{RB} \vek{V}_{j}(t) \cdot \vek{F}_{j}(t) +
+\sum_{j}^{RB} \hat{\vek{\omega}}_{j}(t) \cdot \hat{\vek{\tau}}(t) \right\}} {2\left[ E_{kin}(t) + E_{rot}(t) \right]}~~, \nonumber
 \end{eqnarray}
+where $E_{kin}$ contains both the kinetic contribution form the free particles and the RBs' COMs.
 
-In the case of the Andersen ensemble, if a Poisson slected particle constitues a RB then the whole
-RB is Poisson selected.  Poisson slected RBs' tarnslational and angular velocities together with
+In the case of the Andersen ensemble, if a Poisson selected particle constitutes a RB then the whole
+RB is Poisson selected.  Poisson selected RBs' tarnslational and angular velocities together with
 Poisson selected FPs' velocities sample the same Gaussian distribution isokinetically
 (Boltzmann distribution), where the isokineticity to target temperature is dependent upon the
 total of the Poisson selected FPs' and RBs' degrees of freedom.

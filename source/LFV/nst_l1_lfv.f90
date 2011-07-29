@@ -1,7 +1,7 @@
 Subroutine nst_l1_lfv                          &
            (lvar,mndis,mxdis,tstep,            &
            iso,degfre,sigma,chi,consv,         &
-           press,tai,chip,eta,                 &
+           degrot,press,tai,chip,eta,          &
            stress,strext,ten,elrc,virlrc,      &
            strkin,strknf,strknt,engke,engrot,  &
            imcon,mxshak,tolnce,mxquat,quattol, &
@@ -29,7 +29,7 @@ Subroutine nst_l1_lfv                          &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2009
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov july 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -50,7 +50,7 @@ Subroutine nst_l1_lfv                          &
   Logical,           Intent( In    ) :: lvar
   Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,sigma,chi,press,tai
   Integer,           Intent( In    ) :: iso
-  Integer(Kind=ip),  Intent( In    ) :: degfre
+  Integer(Kind=ip),  Intent( In    ) :: degfre,degrot
   Real( Kind = wp ), Intent( InOut ) :: eta(1:9)
   Real( Kind = wp ), Intent(   Out ) :: consv,chip
   Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -74,7 +74,7 @@ Subroutine nst_l1_lfv                          &
   Integer                 :: fail(1:20),matms,iter,kit,i,j,i1,i2, &
                              irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp ), Save :: volm0,elrc0,virlrc0,h_z
-  Real( Kind = wp ), Save :: temp,pmass
+  Real( Kind = wp ), Save :: temp,pmass,rf
   Real( Kind = wp )       :: hstep,rstep,fac,uni
   Real( Kind = wp )       :: eta1(1:9),eta2(1:9),chip3
   Real( Kind = wp )       :: cell0(1:9),celprp(1:10)
@@ -185,7 +185,8 @@ Subroutine nst_l1_lfv                          &
 ! inertia parameter for barostat
 
      temp  = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-     pmass = ((2.0_wp*sigma + 3.0_wp*boltz*temp)/3.0_wp)*(2.0_wp*pi/tai)**2
+     pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*temp / (2.0_wp*pi*tai)**2
+     rf    = 1.0_wp / Real(degfre-degrot,wp)
 
 ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -552,7 +553,7 @@ Subroutine nst_l1_lfv                          &
 
   strkin=strknf+strknt
   engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
-  fac=2.0_wp*engke/Real(degfre,wp)
+  fac=2.0_wp*engke*rf
 
 ! update rotational energy at full step
 
@@ -586,7 +587,7 @@ Subroutine nst_l1_lfv                          &
   End If
 
   eta2 = 0.5_wp*(eta+eta1)
-  chip3 = (eta2(1) + eta2(5) + eta2(9))/Real(degfre,wp)
+  chip3 = (eta2(1) + eta2(5) + eta2(9))*rf
 
 ! iterate forces, vircon, virpmf, chit and eta
 
@@ -843,7 +844,7 @@ Subroutine nst_l1_lfv                          &
 
         strkin=strknf+strknt
         engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
-        fac=2.0_wp*engke/Real(degfre,wp)
+        fac=2.0_wp*engke*rf
 
 ! propagate eta set and couple
 ! (strcon,strpmf,eta2 are new!!!)
@@ -868,7 +869,7 @@ Subroutine nst_l1_lfv                          &
         End If
 
         eta2 = 0.5_wp*(eta+eta1)
-        chip3 = (eta2(1) + eta2(5) + eta2(9))/Real(degfre,wp)
+        chip3 = (eta2(1) + eta2(5) + eta2(9))*rf
 
      End If
 
