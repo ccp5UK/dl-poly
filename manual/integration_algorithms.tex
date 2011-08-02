@@ -412,7 +412,7 @@ PMF constraints\index{constraints!PMF}.  The constraint procedures,
 i.e. SHAKE or RATTLE, for both types of constraineds are applied
 iteratively in order bonds-PMFs until convergence of ${\cal W}_{PMF}$
 reached.  The number of iteration cycles is limited by the same limit
-as for the constraint procedures.
+as for the bond constraints' procedures (SHAKE/RATTLE).
 
 \section{Thermostats}
 
@@ -2112,7 +2112,7 @@ motion!rigid body} is:
 in which $\vek{J}$ is the angular momentum\index{angular momentum} of
 the rigid body defined by the expression:
 \begin{equation}
-\vek{J} = \sum_{j=1}^{N_{sites}} m_{j} \vek{d}_{j}\times \vek{v}_{j}~~,
+\vek{J} = \sum_{j=1}^{N_{sites}} m_{j} \vek{d}_{j} \times \vek{v}_{j}~~,
 \end{equation}
 and $\vek{\omega}$ is the angular velocity\index{angular velocity}.
 
@@ -2122,8 +2122,15 @@ universal frame and is given by:
 \vek{\tau} = \sum_{j=1}^{N_{sites}} \vek{d}_{j} \times \vek{f}_{j}~~.
 \end{equation}
 
-The rotational equations of motion, written in the local frame of the
-rigid body, are given by Euler's equations\index{equations of motion!Euler}
+The rotational equations of motion for rigid bodies in a theromostat can
+be written as:
+\begin{equation}
+\dot{\vek{J}_{i}} = \vek{\tau}_{i} - \vek{\omega}_{i} \times \vek{J}_{i} + \frac{\chi}{q_{mass}} \vek{J}_{i}~~,
+\end{equation}
+where $i$ is the index of the rigid body, $\chi$ and ${q_{mass}}$ are
+the thermostat friction coefficient and mass.  In the local frame of the
+rigid body and without the thermostat term, these simplify to the Euler's
+equations\index{equations of motion!Euler}
 \begin{eqnarray}
 \dot{\hat{\omega}}_{x} &=&
 {\hat{\tau}_{x} \over \hat{I}_{xx}}+(\hat{I}_{yy}-\hat{I}_{zz})~\hat{\omega}_{y}~\hat{\omega}_{z} \nonumber \\
@@ -2255,7 +2262,7 @@ equation (\ref{prs_inst}):
 {\cal P}(t) = \frac{\left[ 2 E_{kin}(t) -
 {\cal W}_{\rm atomic}(t) - {\cal W}_{\rm COM}(t) -
 {\cal W}_{\rm constrain}(t - \Delta t) -
-{\cal W}_{\rm PMF}(t - \Delta t) - \right]} {3 V(t)}
+{\cal W}_{\rm PMF}(t - \Delta t) \right]} {3 V(t)}
 \end{equation}
 and stress, equation (\ref{str_inst}):
 \begin{equation}
@@ -2285,17 +2292,20 @@ p_{mass}(f) &\rightarrow& p_{mass}(F - f^{RB {\bf (rot)}}) = p_{mass}(f + f^{RB 
 \eta(f) &\rightarrow& ~~~~~\eta(F - f^{RB {\bf (rot)}}) = ~~~~~~\eta(f + f^{RB {\bf (tra)}}) \nonumber \\
 \mat{\eta}(f) &\rightarrow& ~~~~~\mat{\eta}(F - f^{RB {\bf (rot)}}) = ~~~~~~\mat{\eta}(f + f^{RB {\bf (tra)}})~~, \nonumber
 \end{eqnarray}
-where $f$ refers to the degrees of freedom in the system (see equation (\ref{freedom})), $\sigma$
-is the system target energy (see equation (\ref{sigma})), ${\cal H}$ is the conserved quantity of
-the ensemble (if there is such defined), $E_{kin}$ (!includes RB COM kinetic energy too) and
-$E_{rot}$ are the kinetic and rotational energies of the system, $p_{mass}$ is the barostat mass, and
-$\eta$ and $\mat{\eta}$ are the barostat friction coefficient or matrix of coefficients respectively.
+where $f$ refers to the degrees of freedom in the system (see equation (\ref{freedom})),
+$\sigma$ is the system target energy (see equation (\ref{sigma})), ${\cal H}$ is the
+conserved quantity of the ensemble (if there is such defined), $E_{kin}$ (!includes
+RB COM kinetic energy too) and $E_{rot}$ are respectively the kinetic and rotational
+energies of the system, $p_{mass}$ is the barostat mass, and $\eta$ and $\mat{\eta}$
+are the barostat friction coefficient or matrix of coefficients respectively.
 
-There are two slight technicalities with the Evans and Andersen ensembles that are worth mentioning.
+There are two slight technicalities with the Evans and Andersen ensembles that are
+worth mentioning.
 
-Since both the translational and rotational velocities contribute towards temperature, equation (\ref{Evans}),
-showing the derivation of the thermostat friction in the Evans ensemble by imposing a Gaussian
-cosntraint on the system's intsanteneous temperature, changes to:
+Since both the translational and rotational velocities contribute towards temperature,
+equation (\ref{Evans}), showing the derivation of the thermostat friction in the Evans
+ensemble by imposing a Gaussian cosntraint on the system's intsanteneous temperature,
+changes to:
 \begin{eqnarray}
 \frac{d}{dt} {\cal T} = 0 ~~~~~~\propto~~~~~~ \frac{d}{dt} \left( \frac{1}{2} \sum_{i}^{FP} m_{i} \vek{v}_{i}^{2} + \frac{1}{2} \sum_{j}^{RB} M_{j} \vek{V}_{j}^{2} +
 \frac{1}{2} \sum_{j}^{RB} \hat{\vek{\omega}}_{j}^{T} \cdot \hat{\mat{I}}_{j} \cdot \hat{\vek{\omega}}_{j} \right) = 0 \nonumber \\
@@ -2306,10 +2316,12 @@ cosntraint on the system's intsanteneous temperature, changes to:
 \chi (t) = \frac {\left\{ \sum_{i}^{FP} \vek{v}_{i}(t) \cdot \vek{f}_{i}(t) + \sum_{j}^{RB} \vek{V}_{j}(t) \cdot \vek{F}_{j}(t) +
 \sum_{j}^{RB} \hat{\vek{\omega}}_{j}(t) \cdot \hat{\vek{\tau}}(t) \right\}} {2\left[ E_{kin}(t) + E_{rot}(t) \right]}~~, \nonumber
 \end{eqnarray}
-where $E_{kin}$ contains both the kinetic contribution form the free particles and the RBs' COMs.
+where $E_{kin}$ contains both the kinetic contribution form the free particles and the
+RBs' COMs.
 
-In the case of the Andersen ensemble, if a Poisson selected particle constitutes a RB then the whole
-RB is Poisson selected.  Poisson selected RBs' tarnslational and angular velocities together with
-Poisson selected FPs' velocities sample the same Gaussian distribution isokinetically
-(Boltzmann distribution), where the isokineticity to target temperature is dependent upon the
-total of the Poisson selected FPs' and RBs' degrees of freedom.
+In the case of the Andersen ensemble, if a Poisson selected particle constitutes a
+RB then the whole RB is Poisson selected.  Poisson selected RBs' translational and
+angular velocities together with Poisson selected FPs' velocities sample the same
+Gaussian distribution isokinetically (Boltzmann distribution), where the
+isokineticity to target temperature is dependent upon the total of the Poisson
+selected FPs' and RBs' degrees of freedom.

@@ -66,7 +66,7 @@ Subroutine metal_table_read(l_top)
      Call get_line(safe,ntable,record)
      If (.not.safe) Go To 100
 
-! indentify data type
+! identify data type
 
      Call get_word(record,keyword)
      Call lower_case(keyword)

@@ -2,7 +2,7 @@ Subroutine constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for indentifying, constructing and indexing
+! dl_poly_4 subroutine for identifying, constructing and indexing
 ! constraints' vectors for iterative (constraints) algorithms
 !
 ! Note: must be used in conjunction with integration algorithms

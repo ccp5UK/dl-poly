@@ -12,7 +12,7 @@ Subroutine pmf_shake_vv                &
 !       VV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -128,17 +128,19 @@ Subroutine pmf_shake_vv                &
 ! for non-frozen domain particles accumulate PMF constraint stress
 ! and atomic position corrections
 
-                    If (l <= natms .and. lfrzn(l) == 0) Then
-                       strpmf(1) = strpmf(1) - tmp*pxx(ipmf)*pxx(ipmf)
-                       strpmf(2) = strpmf(2) - tmp*pxx(ipmf)*pyy(ipmf)
-                       strpmf(3) = strpmf(3) - tmp*pxx(ipmf)*pzz(ipmf)
-                       strpmf(5) = strpmf(5) - tmp*pyy(ipmf)*pyy(ipmf)
-                       strpmf(6) = strpmf(6) - tmp*pyy(ipmf)*pzz(ipmf)
-                       strpmf(9) = strpmf(9) - tmp*pzz(ipmf)*pzz(ipmf)
+                    If (l > 0 .and. l <= natms) Then ! l is a domain particle
+                       If (lfrzn(l) == 0) Then
+                          strpmf(1) = strpmf(1) - tmp*pxx(ipmf)*pxx(ipmf)
+                          strpmf(2) = strpmf(2) - tmp*pxx(ipmf)*pyy(ipmf)
+                          strpmf(3) = strpmf(3) - tmp*pxx(ipmf)*pzz(ipmf)
+                          strpmf(5) = strpmf(5) - tmp*pyy(ipmf)*pyy(ipmf)
+                          strpmf(6) = strpmf(6) - tmp*pyy(ipmf)*pzz(ipmf)
+                          strpmf(9) = strpmf(9) - tmp*pzz(ipmf)*pzz(ipmf)
 
-                       xxx(l)=xxx(l)+pxx(ipmf)*gamm(jpmf)
-                       yyy(l)=yyy(l)+pyy(ipmf)*gamm(jpmf)
-                       zzz(l)=zzz(l)+pzz(ipmf)*gamm(jpmf)
+                          xxx(l)=xxx(l)+pxx(ipmf)*gamm(jpmf)
+                          yyy(l)=yyy(l)+pyy(ipmf)*gamm(jpmf)
+                          zzz(l)=zzz(l)+pzz(ipmf)*gamm(jpmf)
+                       End If
                     End If
                  End Do
               End If

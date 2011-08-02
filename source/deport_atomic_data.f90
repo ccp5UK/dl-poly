@@ -1007,14 +1007,14 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
 
         legpmf(:,newatm) = 0
         Do While (buffer(kmove+1) > 0.0_wp .and. safe)
-           jj=Nint(buffer(kmove+1)) ! PMF global indentifier
+           jj=Nint(buffer(kmove+1)) ! PMF global identifier
            kmove=kmove+1
            Do k=1,mxtpmf(1)
               kmove=kmove+1
               i1pmf(k)=Nint(buffer(kmove))
            End Do
 
-           kmove=kmove+1            ! omit PMF units presence indentifier
+           kmove=kmove+1            ! omit PMF units presence identifier
            Do k=1,mxtpmf(2)         ! and deal with it in pmf_units_set
               kmove=kmove+1
               i2pmf(k)=Nint(buffer(kmove))
@@ -1040,7 +1040,7 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
                     listpmf(k,1,jpmf)=i1pmf(k)
                  End Do
 
-! PMF units presence indentifier holds zero temporarely
+! PMF units presence identifier holds zero temporarily
 ! it's dealt with in pmf_units_set
 
                  listpmf(0,2,jpmf)=0
@@ -1179,8 +1179,8 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
               End If
            Else
               If (lrgd(2) == 0) Then  ! Unduplication: Details have already been sent -
-                 kmove=kmove-1        ! back up once for the zero read at end of datapack
-              Else                    ! Data already persent - jump over it as it's not needed
+                 kmove=kmove-1        ! back up once for the zero read at end of data-pack
+              Else                    ! Data already present - jump over it as it's not needed
                  l=10                 ! Compensate for the 'l' extra unread buffers
                  kmove=kmove+l+lrgd(-1)-2
               End If

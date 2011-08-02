@@ -363,7 +363,7 @@ Subroutine read_field                      &
                        atom1=word(1:8)
 
                        Call get_word(record,word)
-                       weight=word_2_real(word)
+                       weight=Abs(word_2_real(word))
 
                        Call get_word(record,word)
                        charge=word_2_real(word)

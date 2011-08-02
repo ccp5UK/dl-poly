@@ -41,6 +41,8 @@ Subroutine npt_h1_scl &
   Real( Kind = wp ), Save :: factor
   Real( Kind = wp )       :: scale
 
+  Real( Kind = wp ) :: hstep,qstep
+
 
   If (newjob) Then
      newjob = .false.
@@ -49,17 +51,22 @@ Subroutine npt_h1_scl &
      If (sw == 1) factor = 3.0_wp/Real(degfre-degrot,wp)
   End If
 
+! timestep derivatives
+
+  hstep=0.5_wp*tstep
+  qstep=0.5_wp*hstep
+
 ! thermostat chip to 1/4*tstep
 
-  chip = chip*Exp(-0.25_wp*tstep*chit)
+  chip = chip*Exp(-qstep*chit)
 
 ! barostat chip to 1/2*tstep
 
-  chip = chip + 0.5_wp*tstep*( (2.0_wp*(1.0_wp+factor)*engke-vircon-virtot-vircom) - 3.0_wp*press*volm ) / pmass
+  chip = chip + hstep*( (2.0_wp*(1.0_wp+factor)*engke-vircon-virtot-vircom) - 3.0_wp*press*volm ) / pmass
 
 ! thermostat chip to 2/4*tstep
 
-  chip = chip*Exp(-0.25_wp*tstep*chit)
+  chip = chip*Exp(-qstep*chit)
 
 ! barostat the velocities to full 1*tstep
 
@@ -84,14 +91,14 @@ Subroutine npt_h1_scl &
 
 ! thermostat chip to 3/4*tstep
 
-  chip = chip*Exp(-0.25_wp*tstep*chit)
+  chip = chip*Exp(-qstep*chit)
 
 ! barostat chip to full (1/2 + 1/2)*tstep
 
-  chip = chip + 0.5_wp*tstep*( (2.0_wp*(1.0_wp+factor)*engke-vircon-virtot-vircom) - 3.0_wp*press*volm ) / pmass
+  chip = chip + hstep*( (2.0_wp*(1.0_wp+factor)*engke-vircon-virtot-vircom) - 3.0_wp*press*volm ) / pmass
 
 ! thermostat chip to full (4/4)*tstep
 
-  chip = chip*Exp(-0.25_wp*tstep*chit)
+  chip = chip*Exp(-qstep*chit)
 
 End Subroutine npt_h1_scl

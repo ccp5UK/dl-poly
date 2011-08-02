@@ -8,7 +8,7 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf)
 ! Note: must be used in conjunction with integration algorithms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2004
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -70,7 +70,7 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf)
 
 ! Copy particles' velocities to buffer in an orderly manner
 
-                    If (j <= natms) Then
+                    If (j > 0 .and. j <= natms) Then ! j is a domain particle
                        l=((gpmf-gpmf1)*(mxtpmf(1)+mxtpmf(2))+(jpmf-1)*mxtpmf(1)+(k-1))*iadd
                        buffer(l+1)=vxx(j)
                        buffer(l+2)=vyy(j)

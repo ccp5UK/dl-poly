@@ -2,7 +2,7 @@ Subroutine rigid_bodies_tags()
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for indentifying and indexing RB units
+! dl_poly_4 subroutine for identifying and indexing RB units
 !
 ! Note: must be used in conjunction with integration algorithms
 !

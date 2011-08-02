@@ -6,7 +6,7 @@ Subroutine pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf)
 ! springs for use with the conjugate gradient method (minimise_relax.f90)
 !
 ! copyright - daresbury laboratory
-! author    - w.smith and i.t.todorov march 2007
+! author    - w.smith and i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -51,7 +51,7 @@ Subroutine pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf)
 
 ! For domain particles
 
-              If (l <= natms) Then
+              If (l > 0 .and. l <= natms) Then
 
 ! Accumulate energy
 

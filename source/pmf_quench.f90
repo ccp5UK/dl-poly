@@ -5,7 +5,7 @@ Subroutine pmf_quench(imcon,mxshak,tolnce)
 ! dl_poly_4 subroutine for applying PMF constraint quench
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2005
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -117,10 +117,12 @@ Subroutine pmf_quench(imcon,mxshak,tolnce)
 
 ! improve approximate PMF particles velocity and force (if non-frozen)
 
-                 If (l <= natms .and. lfrzn(l) == 0) Then
-                    vxt(l)=vxt(l)+pxx(ipmf)*gamm(jpmf)
-                    vyt(l)=vyt(l)+pyy(ipmf)*gamm(jpmf)
-                    vzt(l)=vzt(l)+pzz(ipmf)*gamm(jpmf)
+                 If (l > 0 .and. l <= natms) Then ! l is a domain particle
+                    If (lfrzn(l) == 0) Then
+                       vxt(l)=vxt(l)+pxx(ipmf)*gamm(jpmf)
+                       vyt(l)=vyt(l)+pyy(ipmf)*gamm(jpmf)
+                       vzt(l)=vzt(l)+pzz(ipmf)*gamm(jpmf)
+                    End If
                  End If
               End Do
            End If
@@ -142,10 +144,12 @@ Subroutine pmf_quench(imcon,mxshak,tolnce)
               If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
                  Do k=1,mxtpmf(jpmf)
                     l=indpmf(k,jpmf,ipmf)
-                    If (l <= natms .and. lfrzn(l) == 0) Then
-                       vxx(l)=vxx(l)+vxt(l)
-                       vyy(l)=vyy(l)+vyt(l)
-                       vzz(l)=vzz(l)+vzt(l)
+                    If (l > 0 .and. l <= natms) Then ! l is a domain particle
+                       If (lfrzn(l) == 0) Then
+                          vxx(l)=vxx(l)+vxt(l)
+                          vyy(l)=vyy(l)+vyt(l)
+                          vzz(l)=vzz(l)+vzt(l)
+                       End If
                     End If
                  End Do
               End If

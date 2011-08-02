@@ -8,7 +8,7 @@ Subroutine pmf_coms(imcon,indpmf,pxx,pyy,pzz)
 ! Note: must be used in conjunction with integration algorithms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2004
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,7 +27,7 @@ Subroutine pmf_coms(imcon,indpmf,pxx,pyy,pzz)
 
   Logical                 :: safe(1:2)
 
-  Real( Kind = wp )       :: celprp(1:10),width
+  Real( Kind = wp )       :: celprp(1:10),width,xmin,xmax,ymin,ymax,zmin,zmax
 
   Integer                 :: fail(1:3),gpmf,gpmf1,gpmf2,ipmf,jpmf,iadd, &
                              j,k,l,m
@@ -84,7 +84,7 @@ Subroutine pmf_coms(imcon,indpmf,pxx,pyy,pzz)
 
 ! Copy particles' coordinates to buffer in an orderly manner
 
-                    If (j <= natms) Then
+                    If (j > 0 .and. j <= natms) Then ! j is a domain particle
                        l=((gpmf-gpmf1)*(mxtpmf(1)+mxtpmf(2))+(jpmf-1)*mxtpmf(1)+(k-1))*iadd
                        buffer(l+1)=xxx(j)
                        buffer(l+2)=yyy(j)
@@ -123,9 +123,18 @@ Subroutine pmf_coms(imcon,indpmf,pxx,pyy,pzz)
 
                     Call images(imcon,cell,mxtpmf(jpmf),xxt,yyt,zzt)
 
+                    xmin=0.0_wp ; xmax = 0.0_wp
+                    ymin=0.0_wp ; ymax = 0.0_wp
+                    zmin=0.0_wp ; zmax = 0.0_wp
                     Do k=1,mxtpmf(jpmf)
+                       xmin=Min(xmin,xxt(k)) ; xmax=Max(xmax,xxt(k))
+                       ymin=Min(ymin,yyt(k)) ; ymax=Max(ymax,yyt(k))
+                       zmin=Min(zmin,zzt(k)) ; zmax=Max(zmax,zzt(k))
                        safe(2)=safe(2) .and. (Sqrt(xxt(k)**2+yyt(k)**2+zzt(k)**2) < width/2.0_wp)
                     End Do
+                    safe(2)=safe(2) .and. (xmax-xmin < width/2.0_wp) &
+                                    .and. (ymax-ymin < width/2.0_wp) &
+                                    .and. (zmax-zmin < width/2.0_wp)
 
 ! Get the COM of this unit
 
@@ -178,135 +187,3 @@ Subroutine pmf_coms(imcon,indpmf,pxx,pyy,pzz)
   End If
 
 End Subroutine pmf_coms
-
-Subroutine pmf_update(indpmf)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for updating PMF positions in the halo
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov september 2007
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use kinds_f90
-  Use comms_module,  Only : idnode,mxnode,gsum
-  Use setup_module
-  Use config_module, Only : natms,xxx,yyy,zzz
-  Use pmf_module,    Only : ntpmf,listpmf
-
-  Implicit None
-
-  Integer, Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
-
-  Logical :: safe
-  Integer :: fail,pmfmem,iblock,gpmf,gpmf1,gpmf2,ipmf,jpmf,j,k,l,m
-
-  Logical,           Allocatable :: lstpmf_sh(:,:)
-  Real( Kind = wp ), Allocatable :: buffer(:)
-
-  fail=0
-  Allocate (lstpmf_sh(1:2,mxpmf),buffer(1:mxbuff), Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_update allocation failure, node: ', idnode
-     Call error(0)
-  End If
-
-  pmfmem=3*(mxtpmf(1)+mxtpmf(2))
-  iblock=mxbuff/2
-
-! Loop over all global PMF constraints
-
-  lstpmf_sh=.false. ! no unit is shared initialisation
-  gpmf1=1           ! number of passed global PMFs
-  buffer=0.0_wp     ! coordinates buffer
-  l=0               ! buffer indexing
-  Do gpmf=1,mxpmf
-
-! Loop over all local to this node PMF constraints matching the global one
-
-     Do ipmf=1,ntpmf
-        If (listpmf(0,1,ipmf) == gpmf) Then
-
-! Loop over all shared PMF units present on my domain (no halo)
-
-           Do jpmf=1,2
-              If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
-
-! Loop over their members present on my domain (no halo) and detect shared units
-
-                 Do k=1,mxtpmf(jpmf)
-                    j=indpmf(k,jpmf,ipmf)
-                    If (j > natms) lstpmf_sh(jpmf,ipmf)=.true.
-                 End Do
-
-! Copy shared particles' coordinates to buffer in an orderly manner
-
-                 If (lstpmf_sh(jpmf,ipmf)) Then
-                    Do k=1,mxtpmf(jpmf)
-                       j=indpmf(k,jpmf,ipmf)
-
-                       If (j <= natms) Then
-                          buffer(l+1)=xxx(j)
-                          buffer(l+2)=yyy(j)
-                          buffer(l+3)=zzz(j)
-                       End If
-                       l=l+3
-                    End Do
-                 End If
-
-              End If
-           End Do
-        End If
-     End Do
-
-! Check if it safe to fill up the buffer
-
-     safe=((l+(gpmf-gpmf1+1)*pmfmem) < iblock)
-
-! If not safe or we've finished looping over all global PMFs
-
-     If ((.not.safe) .or. gpmf == mxpmf) Then
-        If (mxnode > 1) Call gsum(buffer)
-
-        m=0
-        Do gpmf2=gpmf1,gpmf
-           Do ipmf=1,ntpmf
-              If (listpmf(0,1,ipmf) == gpmf2) Then
-                 Do jpmf=1,2
-
-! Recover shared particles' coordinates from buffer in an orderly manner
-
-                    If (lstpmf_sh(jpmf,ipmf)) Then
-                       Do k=1,mxtpmf(jpmf)
-                          j=indpmf(k,jpmf,ipmf)
-
-                          If (j > natms) Then
-                             xxx(j)=buffer(m+1)
-                             yyy(j)=buffer(m+2)
-                             zzz(j)=buffer(m+3)
-                          End If
-                          m=m+3
-                       End Do
-                    End If
-
-                 End Do
-              End If
-           End Do
-        End Do
-
-        gpmf1=gpmf2
-        buffer=0.0_wp
-        l=0
-     End If
-
-   End Do
-
-  Deallocate (lstpmf_sh,buffer, Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_update deallocation failure, node: ', idnode
-     Call error(0)
-  End If
-
-End Subroutine pmf_update

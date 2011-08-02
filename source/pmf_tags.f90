@@ -2,13 +2,13 @@ Subroutine pmf_tags(imcon,lstitr,indpmf,pxx,pyy,pzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for indentifying, constructing and indexing PMF
+! dl_poly_4 subroutine for identifying, constructing and indexing PMF
 ! constraints' vectors for iterative (constraints) algorithms
 !
 ! Note: must be used in conjunction with integration algorithms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2004
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -41,8 +41,8 @@ Subroutine pmf_tags(imcon,lstitr,indpmf,pxx,pyy,pzz)
         If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
            Do k=1,mxtpmf(jpmf)
               j=local_index(listpmf(k,jpmf,ipmf),nlast,lsi,lsa)
-              indpmf(k,jpmf,ipmf)=j ! It cannot be zero
-              If (j <= natms) lstitr(j)=(lfrzn(j) == 0)
+              indpmf(k,jpmf,ipmf)=j
+              If (j > 0 .and. j <= natms) lstitr(j)=(lfrzn(j) == 0)
            End Do
         End If
      End Do
