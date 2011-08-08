@@ -1,5 +1,5 @@
 Subroutine nvt_h1_vv                          &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            sigma,taut,chit,cint,consv,        &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -18,7 +18,7 @@ Subroutine nvt_h1_vv                          &
 !            Mol. Phys., 1996, Vol. 87 (5), p. 1117
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2011
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -37,7 +37,8 @@ Subroutine nvt_h1_vv                          &
 
   Integer,           Intent( In    ) :: isw
   Logical,           Intent( In    ) :: lvar
-  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,sigma,taut
+  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp, &
+                                        sigma,taut
   Real( Kind = wp ), Intent( InOut ) :: chit,cint
   Real( Kind = wp ), Intent(   Out ) :: consv
   Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -534,7 +535,7 @@ Subroutine nvt_h1_vv                          &
         mxdr=Sqrt(mxdr)
         If (mxnode > 1) Call gmax(mxdr)
 
-        If (mxdr < mndis .or. mxdr > mxdis) Then
+        If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
 
 ! scale tstep and derivatives
 
@@ -558,6 +559,10 @@ Subroutine nvt_h1_vv                          &
               Else
                  hstep = tstep
                  tstep = 2.00_wp*tstep
+              End If
+              If (tstep > mxstp) Then
+                 tstep = mxstp
+                 hstep = 0.50_wp*tstep
               End If
               If (idnode == 0) Write(nrite,"(/,1x, &
                  & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep

@@ -1,5 +1,5 @@
 Subroutine nst_b1_lfv                          &
-           (lvar,mndis,mxdis,tstep,            &
+           (lvar,mndis,mxdis,mxstp,tstep,      &
            iso,sigma,taut,chit,                &
            press,taup,chip,eta,                &
            stress,strext,ten,elrc,virlrc,      &
@@ -27,7 +27,7 @@ Subroutine nst_b1_lfv                          &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith february 2009
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -45,7 +45,8 @@ Subroutine nst_b1_lfv                          &
   Implicit None
 
   Logical,           Intent( In    ) :: lvar
-  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,sigma,taut,press,taup
+  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp, &
+                                        sigma,taut,press,taup
   Real( Kind = wp ), Intent(   Out ) :: chit,chip,eta(1:9)
   Real( Kind = wp ), Intent( InOut ) :: tstep
   Integer,           Intent( In    ) :: iso
@@ -861,7 +862,7 @@ Subroutine nst_b1_lfv                          &
      mxdr=Sqrt(mxdr)
      If (mxnode > 1) Call gmax(mxdr)
 
-     If (mxdr < mndis .or. mxdr > mxdis) Then
+     If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
 
 ! scale tstep and derivatives
 
@@ -885,6 +886,10 @@ Subroutine nst_b1_lfv                          &
            Else
               hstep = tstep
               tstep = 2.00_wp*tstep
+           End If
+           If (tstep > mxstp) Then
+              tstep = mxstp
+              hstep = 0.50_wp*tstep
            End If
            If (idnode == 0) Write(nrite,"(/,1x, &
               & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep

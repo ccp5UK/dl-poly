@@ -106,28 +106,28 @@
 
 ! Microcanonical ensemble
 
-              Call nve_0_vv                          &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
+              Call nve_0_vv                                &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
            megpmf,strpmf,virpmf)
 
            Else If (keyens ==  1) Then
 
 ! Evans thermostat (Gaussian temperature constraints)
 
-              Call nvt_e0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
+              Call nvt_e0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
            chit)
 
            Else If (keyens == 10) Then
 
 ! Langevin thermostat (Stochastic Dynamics)
 
-              Call nvt_l0_vv                                  &
-           (isw,lvar,mndis,mxdis,temp,tstep,chi,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,          &
+              Call nvt_l0_vv                                        &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep,chi,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,                &
            megpmf,strpmf,virpmf)
 
            Else If (keyens == 11) Then
@@ -135,7 +135,7 @@
 ! Andersen thermostat (Stochastic Dynamics)
 
               Call nvt_a0_vv                         &
-           (isw,lvar,mndis,mxdis,temp,tstep,         &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep,   &
            keyshl,taut,soft,strkin,engke,            &
            imcon,mxshak,tolnce,megcon,strcon,vircon, &
            megpmf,strpmf,virpmf)
@@ -144,116 +144,116 @@
 
 ! Berendsen thermostat
 
-              Call nvt_b0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
+              Call nvt_b0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
            sigma,taut,chit)
 
            Else If (keyens == 13) Then
 
 ! Nose-Hoover thermostat
 
-              Call nvt_h0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
+              Call nvt_h0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
            sigma,taut,chit,cint,consv)
 
            Else If (keyens == 20) Then
 
 ! Langevin thermostat and isotropic barostat
 
-              Call npt_l0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           degfre,sigma,chi,consv,                   &
-           press,tai,chip,eta,virtot,                &
+              Call npt_l0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           degfre,sigma,chi,consv,                         &
+           press,tai,chip,eta,virtot,                      &
            elrc,virlrc)
 
            Else If (keyens == 21) Then
 
 ! Berendsen thermostat and isotropic barostat
 
-              Call npt_b0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           sigma,taut,chit,                          &
-           press,taup,chip,eta,virtot,               &
+              Call npt_b0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           sigma,taut,chit,                                &
+           press,taup,chip,eta,virtot,                     &
            elrc,virlrc)
 
            Else If (keyens == 22) Then
 
 ! Nose-Hoover thermostat and isotropic barostat
 
-              Call npt_h0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           degfre,sigma,taut,chit,cint,consv,        &
-           press,taup,chip,eta,virtot,               &
+              Call npt_h0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           degfre,sigma,taut,chit,cint,consv,              &
+           press,taup,chip,eta,virtot,                     &
            elrc,virlrc)
 
            Else If (keyens == 23) Then
 
 ! Martyna-Tuckerman-Klein (MTK) thermostat and isotropic barostat
 
-              Call npt_m0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           degfre,sigma,taut,chit,cint,consv,        &
-           press,taup,chip,eta,virtot,               &
+              Call npt_m0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           degfre,sigma,taut,chit,cint,consv,              &
+           press,taup,chip,eta,virtot,                     &
            elrc,virlrc)
 
            Else If (keyens == 30) Then
 
 ! Langevin thermostat and barostat anisotropic (cell shape varying)
 
-              Call nst_l0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           iso,degfre,sigma,chi,consv,               &
-           press,strext,ten,tai,chip,eta,stress,     &
+              Call nst_l0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           iso,degfre,sigma,chi,consv,                     &
+           press,strext,ten,tai,chip,eta,stress,           &
            elrc,virlrc)
 
            Else If (keyens == 31) Then
 
 ! Berendsen thermostat and barostat anisotropic (cell shape varying)
 
-              Call nst_b0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           iso,sigma,taut,chit,                      &
-           press,strext,ten,taup,chip,eta,stress,    &
+              Call nst_b0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           iso,sigma,taut,chit,                            &
+           press,strext,ten,taup,chip,eta,stress,          &
            elrc,virlrc)
 
            Else If (keyens == 32) Then
 
 ! Nose-Hoover thermostat and anisotropic barostat (cell shape varying)
 
-              Call nst_h0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           iso,degfre,sigma,taut,chit,cint,consv,    &
-           press,strext,ten,taup,chip,eta,stress,    &
+              Call nst_h0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           iso,degfre,sigma,taut,chit,cint,consv,          &
+           press,strext,ten,taup,chip,eta,stress,          &
            elrc,virlrc)
 
            Else If (keyens == 33) Then
 
 ! MTK thermostat and anisotropic barostat (cell shape varying)
 
-              Call nst_m0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           iso,degfre,sigma,taut,chit,cint,consv,    &
-           press,strext,ten,taup,chip,eta,stress,    &
+              Call nst_m0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           iso,degfre,sigma,taut,chit,cint,consv,          &
+           press,strext,ten,taup,chip,eta,stress,          &
            elrc,virlrc)
 
            Else
@@ -269,7 +269,7 @@
 ! Microcanonical ensemble
 
               Call nve_1_vv                   &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
            megcon,strcon,vircon,              &
@@ -281,7 +281,7 @@
 ! Evans thermostat (Gaussian temperature constraints)
 
               Call nvt_e1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            chit,                              &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -293,26 +293,26 @@
 
 ! Langevin thermostat (Stochastic Dynamics)
 
-              Call nvt_l1_vv                  &
-           (isw,lvar,mndis,mxdis,temp,tstep,  &
-           chi,                               &
-           strkin,strknf,strknt,engke,engrot, &
-           imcon,mxshak,tolnce,               &
-           megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf,              &
+              Call nvt_l1_vv                       &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep, &
+           chi,                                    &
+           strkin,strknf,strknt,engke,engrot,      &
+           imcon,mxshak,tolnce,                    &
+           megcon,strcon,vircon,                   &
+           megpmf,strpmf,virpmf,                   &
            strcom,vircom)
 
            Else If (keyens == 11) Then
 
 ! Andersen thermostat (Stochastic Dynamics)
 
-              Call nvt_a1_vv                  &
-           (isw,lvar,mndis,mxdis,temp,tstep,  &
-           keyshl,taut,soft,                  &
-           strkin,strknf,strknt,engke,engrot, &
-           imcon,mxshak,tolnce,               &
-           megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf,              &
+              Call nvt_a1_vv                       &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep, &
+           keyshl,taut,soft,                       &
+           strkin,strknf,strknt,engke,engrot,      &
+           imcon,mxshak,tolnce,                    &
+           megcon,strcon,vircon,                   &
+           megpmf,strpmf,virpmf,                   &
            strcom,vircom)
 
            Else If (keyens == 12) Then
@@ -320,7 +320,7 @@
 ! Berendsen thermostat
 
               Call nvt_b1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            sigma,taut,chit,                   &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -333,7 +333,7 @@
 ! Nose-Hoover thermostat
 
               Call nvt_h1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            sigma,taut,chit,cint,consv,        &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -346,7 +346,7 @@
 ! Langevin thermostat and isotropic barostat
 
               Call npt_l1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            degfre,sigma,chi,consv,            &
            degrot,press,tai,chip,eta,         &
            virtot,elrc,virlrc,                &
@@ -361,7 +361,7 @@
 ! Berendsen thermostat and isotropic barostat
 
               Call npt_b1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            sigma,taut,chit,                   &
            press,taup,chip,eta,               &
            virtot,elrc,virlrc,                &
@@ -376,7 +376,7 @@
 ! Nose-Hoover thermostat and isotropic barostat
 
               Call npt_h1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            degfre,sigma,taut,chit,cint,consv, &
            degrot,press,taup,chip,eta,        &
            virtot,elrc,virlrc,                &
@@ -391,7 +391,7 @@
 ! Martyna-Tuckerman-Klein (MTK) thermostat and isotropic barostat
 
               Call npt_m1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            degfre,sigma,taut,chit,cint,consv, &
            degrot,press,taup,chip,eta,        &
            virtot,elrc,virlrc,                &
@@ -406,7 +406,7 @@
 ! Langevin thermostat and barostat anisotropic (cell shape varying)
 
               Call nst_l1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            iso,degfre,sigma,chi,consv,        &
            degrot,press,tai,chip,eta,         &
            stress,strext,ten,elrc,virlrc,     &
@@ -421,7 +421,7 @@
 ! Berendsen thermostat and barostat anisotropic (cell shape varying)
 
               Call nst_b1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            iso,sigma,taut,chit,               &
            press,taup,chip,eta,               &
            stress,strext,ten,elrc,virlrc,     &
@@ -436,7 +436,7 @@
 ! Nose-Hoover thermostat and anisotropic barostat (cell shape varying)
 
               Call nst_h1_vv                      &
-           (isw,lvar,mndis,mxdis,tstep,           &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,     &
            iso,degfre,sigma,taut,chit,cint,consv, &
            degrot,press,taup,chip,eta,            &
            stress,strext,ten,elrc,virlrc,         &
@@ -451,7 +451,7 @@
 ! MTK thermostat and anisotropic barostat (cell shape varying)
 
               Call nst_m1_vv                      &
-           (isw,lvar,mndis,mxdis,tstep,           &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,     &
            iso,degfre,sigma,taut,chit,cint,consv, &
            degrot,press,taup,chip,eta,            &
            stress,strext,ten,elrc,virlrc,         &
@@ -710,28 +710,28 @@
 
 ! Microcanonical ensemble
 
-              Call nve_0_vv                          &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
+              Call nve_0_vv                                &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
            megpmf,strpmf,virpmf)
 
            Else If (keyens ==  1) Then
 
 ! Evans thermostat (Gaussian temperature constraints)
 
-              Call nvt_e0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
+              Call nvt_e0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
            chit)
 
            Else If (keyens == 10) Then
 
 ! Langevin thermostat (Stochastic Dynamics)
 
-              Call nvt_l0_vv                                  &
-           (isw,lvar,mndis,mxdis,temp,tstep,chi,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,          &
+              Call nvt_l0_vv                                        &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep,chi,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,                &
            megpmf,strpmf,virpmf)
 
            Else If (keyens == 11) Then
@@ -739,7 +739,7 @@
 ! Andersen thermostat (Stochastic Dynamics)
 
               Call nvt_a0_vv                         &
-           (isw,lvar,mndis,mxdis,temp,tstep,         &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep,   &
            keyshl,taut,soft,strkin,engke,            &
            imcon,mxshak,tolnce,megcon,strcon,vircon, &
            megpmf,strpmf,virpmf)
@@ -748,116 +748,116 @@
 
 ! Berendsen thermostat
 
-              Call nvt_b0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
+              Call nvt_b0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
            sigma,taut,chit)
 
            Else If (keyens == 13) Then
 
 ! Nose-Hoover thermostat
 
-              Call nvt_h0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
+              Call nvt_h0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
            sigma,taut,chit,cint,consv)
 
            Else If (keyens == 20) Then
 
 ! Langevin thermostat and isotropic barostat
 
-              Call npt_l0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           degfre,sigma,chi,consv,                   &
-           press,tai,chip,eta,virtot,                &
+              Call npt_l0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           degfre,sigma,chi,consv,                         &
+           press,tai,chip,eta,virtot,                      &
            elrc,virlrc)
 
            Else If (keyens == 21) Then
 
 ! Berendsen thermostat and isotropic barostat
 
-              Call npt_b0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           sigma,taut,chit,                          &
-           press,taup,chip,eta,virtot,               &
+              Call npt_b0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           sigma,taut,chit,                                &
+           press,taup,chip,eta,virtot,                     &
            elrc,virlrc)
 
            Else If (keyens == 22) Then
 
 ! Nose-Hoover thermostat and isotropic barostat
 
-              Call npt_h0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           degfre,sigma,taut,chit,cint,consv,        &
-           press,taup,chip,eta,virtot,               &
+              Call npt_h0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           degfre,sigma,taut,chit,cint,consv,              &
+           press,taup,chip,eta,virtot,                     &
            elrc,virlrc)
 
            Else If (keyens == 23) Then
 
 ! Martyna-Tuckerman-Klein (MTK) thermostat and isotropic barostat
 
-              Call npt_m0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           degfre,sigma,taut,chit,cint,consv,        &
-           press,taup,chip,eta,virtot,               &
+              Call npt_m0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           degfre,sigma,taut,chit,cint,consv,              &
+           press,taup,chip,eta,virtot,                     &
            elrc,virlrc)
 
            Else If (keyens == 30) Then
 
 ! Langevin thermostat and barostat anisotropic (cell shape varying)
 
-              Call nst_l0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           iso,degfre,sigma,chi,consv,               &
-           press,strext,ten,tai,chip,eta,stress,     &
+              Call nst_l0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           iso,degfre,sigma,chi,consv,                     &
+           press,strext,ten,tai,chip,eta,stress,           &
            elrc,virlrc)
 
            Else If (keyens == 31) Then
 
 ! Berendsen thermostat and barostat anisotropic (cell shape varying)
 
-              Call nst_b0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           iso,sigma,taut,chit,                      &
-           press,strext,ten,taup,chip,eta,stress,    &
+              Call nst_b0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           iso,sigma,taut,chit,                            &
+           press,strext,ten,taup,chip,eta,stress,          &
            elrc,virlrc)
 
            Else If (keyens == 32) Then
 
 ! Nose-Hoover thermostat and anisotropic barostat (cell shape varying)
 
-              Call nst_h0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           iso,degfre,sigma,taut,chit,cint,consv,    &
-           press,strext,ten,taup,chip,eta,stress,    &
+              Call nst_h0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           iso,degfre,sigma,taut,chit,cint,consv,          &
+           press,strext,ten,taup,chip,eta,stress,          &
            elrc,virlrc)
 
            Else If (keyens == 33) Then
 
 ! MTK thermostat and anisotropic barostat (cell shape varying)
 
-              Call nst_m0_vv                         &
-           (isw,lvar,mndis,mxdis,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           iso,degfre,sigma,taut,chit,cint,consv,    &
-           press,strext,ten,taup,chip,eta,stress,    &
+              Call nst_m0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           megpmf,strpmf,virpmf,                           &
+           iso,degfre,sigma,taut,chit,cint,consv,          &
+           press,strext,ten,taup,chip,eta,stress,          &
            elrc,virlrc)
 
            Else
@@ -873,7 +873,7 @@
 ! Microcanonical ensemble
 
               Call nve_1_vv                   &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
            megcon,strcon,vircon,              &
@@ -885,7 +885,7 @@
 ! Evans thermostat (Gaussian temperature constraints)
 
               Call nvt_e1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            chit,                              &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -897,26 +897,26 @@
 
 ! Langevin thermostat (Stochastic Dynamics)
 
-              Call nvt_l1_vv                  &
-           (isw,lvar,mndis,mxdis,temp,tstep,  &
-           chi,                               &
-           strkin,strknf,strknt,engke,engrot, &
-           imcon,mxshak,tolnce,               &
-           megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf,              &
+              Call nvt_l1_vv                       &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep, &
+           chi,                                    &
+           strkin,strknf,strknt,engke,engrot,      &
+           imcon,mxshak,tolnce,                    &
+           megcon,strcon,vircon,                   &
+           megpmf,strpmf,virpmf,                   &
            strcom,vircom)
 
            Else If (keyens == 11) Then
 
 ! Andersen thermostat (Stochastic Dynamics)
 
-              Call nvt_a1_vv                  &
-           (isw,lvar,mndis,mxdis,temp,tstep,  &
-           keyshl,taut,soft,                  &
-           strkin,strknf,strknt,engke,engrot, &
-           imcon,mxshak,tolnce,               &
-           megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf,              &
+              Call nvt_a1_vv                       &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep, &
+           keyshl,taut,soft,                       &
+           strkin,strknf,strknt,engke,engrot,      &
+           imcon,mxshak,tolnce,                    &
+           megcon,strcon,vircon,                   &
+           megpmf,strpmf,virpmf,                   &
            strcom,vircom)
 
            Else If (keyens == 12) Then
@@ -924,7 +924,7 @@
 ! Berendsen thermostat
 
               Call nvt_b1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            sigma,taut,chit,                   &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -937,7 +937,7 @@
 ! Nose-Hoover thermostat
 
               Call nvt_h1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            sigma,taut,chit,cint,consv,        &
            strkin,strknf,strknt,engke,engrot, &
            imcon,mxshak,tolnce,               &
@@ -950,7 +950,7 @@
 ! Langevin thermostat and isotropic barostat
 
               Call npt_l1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            degfre,sigma,chi,consv,            &
            degrot,press,tai,chip,eta,         &
            virtot,elrc,virlrc,                &
@@ -965,7 +965,7 @@
 ! Berendsen thermostat and isotropic barostat
 
               Call npt_b1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            sigma,taut,chit,                   &
            press,taup,chip,eta,               &
            virtot,elrc,virlrc,                &
@@ -980,7 +980,7 @@
 ! Nose-Hoover thermostat and isotropic barostat
 
               Call npt_h1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            degfre,sigma,taut,chit,cint,consv, &
            degrot,press,taup,chip,eta,        &
            virtot,elrc,virlrc,                &
@@ -995,7 +995,7 @@
 ! Martyna-Tuckerman-Klein (MTK) thermostat and isotropic barostat
 
               Call npt_m1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            degfre,sigma,taut,chit,cint,consv, &
            degrot,press,taup,chip,eta,        &
            virtot,elrc,virlrc,                &
@@ -1010,7 +1010,7 @@
 ! Langevin thermostat and barostat anisotropic (cell shape varying)
 
               Call nst_l1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            iso,degfre,sigma,chi,consv,        &
            degrot,press,tai,chip,eta,         &
            stress,strext,ten,elrc,virlrc,     &
@@ -1025,7 +1025,7 @@
 ! Berendsen thermostat and barostat anisotropic (cell shape varying)
 
               Call nst_b1_vv                  &
-           (isw,lvar,mndis,mxdis,tstep,       &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
            iso,sigma,taut,chit,               &
            press,taup,chip,eta,               &
            stress,strext,ten,elrc,virlrc,     &
@@ -1040,7 +1040,7 @@
 ! Nose-Hoover thermostat and anisotropic barostat (cell shape varying)
 
               Call nst_h1_vv                      &
-           (isw,lvar,mndis,mxdis,tstep,           &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,     &
            iso,degfre,sigma,taut,chit,cint,consv, &
            degrot,press,taup,chip,eta,            &
            stress,strext,ten,elrc,virlrc,         &
@@ -1055,7 +1055,7 @@
 ! MTK thermostat and anisotropic barostat (cell shape varying)
 
               Call nst_m1_vv                      &
-           (isw,lvar,mndis,mxdis,tstep,           &
+           (isw,lvar,mndis,mxdis,mxstp,tstep,     &
            iso,degfre,sigma,taut,chit,cint,consv, &
            degrot,press,taup,chip,eta,            &
            stress,strext,ten,elrc,virlrc,         &

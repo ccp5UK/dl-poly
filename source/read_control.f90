@@ -7,7 +7,7 @@ Subroutine read_control                           &
            ltraj,ldef,lrsd,                       &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,      &
            temp,press,strext,keyres,              &
-           tstep,mndis,mxdis,nstrun,nsteql,       &
+           tstep,mndis,mxdis,mxstp,nstrun,nsteql, &
            keymin,nstmin,min_tol,nstgaus,nstscal, &
            keyens,iso,taut,soft,taup,chi,tai,ten, &
            keypse,wthpse,tmppse,                  &
@@ -23,7 +23,7 @@ Subroutine read_control                           &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2011
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -70,14 +70,14 @@ Subroutine read_control                           &
                                              nsrsd,isrsd,            &
                                              ndump
 
-  Real( Kind = wp ),      Intent(   Out ) :: emd,vmx,vmy,vmz,        &
-                                             temp,press,strext(1:9), &
-                                             tstep,mndis,mxdis,      &
-                                             taut,soft,taup,         &
-                                             chi,tai,ten,            &
-                                             wthpse,tmppse,min_tol,  &
-                                             fmax,epsq,rlx_tol,      &
-                                             tolnce,quattol,         &
+  Real( Kind = wp ),      Intent(   Out ) :: emd,vmx,vmy,vmz,         &
+                                             temp,press,strext(1:9),  &
+                                             tstep,mndis,mxdis,mxstp, &
+                                             taut,soft,taup,          &
+                                             chi,tai,ten,             &
+                                             wthpse,tmppse,min_tol,   &
+                                             fmax,epsq,rlx_tol,       &
+                                             tolnce,quattol,          &
                                              rdef,rrsd,timjob,timcls
 
 
@@ -147,6 +147,7 @@ Subroutine read_control                           &
   lvar  = .false.
   mndis = 0.03_wp
   mxdis = 0.10_wp
+  mxstp = 0.0_wp
 
 ! total number of steps to run
 
@@ -472,11 +473,11 @@ Subroutine read_control                           &
 
         l_exp = .true.
         Call get_word(record,word)
-        nx = Nint(Abs(word_2_real(word)))
+        nx = Max(1,Nint(Abs(word_2_real(word))))
         Call get_word(record,word)
-        ny = Nint(Abs(word_2_real(word)))
+        ny = Max(1,Nint(Abs(word_2_real(word))))
         Call get_word(record,word)
-        nz = Nint(Abs(word_2_real(word)))
+        nz = Max(1,Nint(Abs(word_2_real(word))))
         If (idnode == 0) Write(nrite,"(/,1x,'system expansion opted',9x,3i5)") nx,ny,nz
 
 ! read impact option
@@ -647,15 +648,21 @@ Subroutine read_control                           &
 
 ! read minimum and maximum distance for variable timestep
 
-     Else If (word(1:6) == 'mindis' .or. word(1:6) == 'maxdis') Then
+     Else If (word(1:6) == 'mindis' .or. &
+              word(1:6) == 'maxdis' .or. &
+              word(1:6) == 'mxstep') Then
 
         If (word(1:6) == 'mindis') Then
            Call get_word(record,word)
-           mndis=word_2_real(word)
+           mndis=Abs(word_2_real(word))
         End If
         If (word(1:6) == 'maxdis') Then
            Call get_word(record,word)
-           mxdis=word_2_real(word)
+           mxdis=Abs(word_2_real(word))
+        End If
+        If (word(1:6) == 'mxstep') Then
+           Call get_word(record,word)
+           mxstp=Abs(word_2_real(word))
         End If
 
 ! read number of timesteps
@@ -1843,11 +1850,17 @@ Subroutine read_control                           &
            Write(nrite,"(/,1x,'variable simulation timestep (ps)',1x,1p,e12.4)") tstep
 
            Write(nrite,"(/,1x,a,2(/,1x,a,7x,1p,e12.4))") &
-           "control distances for variable timestep",    &
+           "controls for variable timestep",             &
            "minimum distance Dmin (Ang)",mndis,          &
            "maximum distance Dmax (Ang)",mxdis
         End If
-
+        If (mxstp > zero_plus) Then
+           If (idnode == 0) Write(nrite,"(1x,a,7x,1p,e12.4))") &
+           "timestep ceiling mxstp (ps)",mxstp
+           tstep=Min(tstep,mxstp)
+        Else
+           mxstp=Huge(1.0_wp)
+        End If
      Else
 
         Call warning(140,mndis,mxdis,0.0_wp)

@@ -81,7 +81,7 @@ Subroutine constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
      Else If ((i == 0 .and. j == 0) .or. (i > natms .and. j > natms) .or. &
               (i == 0 .and. j > natms) .or. (j == 0 .and. i > natms)) Then
 
-! constraints lying otside or completely in the halo, or partly in the
+! constraints lying outside or completely in the halo, or partly in the
 ! halo and partly outside it are not considered and zero bond vectors
 ! are assigned (DEBUG)
 

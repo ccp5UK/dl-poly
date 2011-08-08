@@ -13,7 +13,7 @@ Subroutine read_field                      &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2011
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -384,6 +384,9 @@ Subroutine read_field                      &
   Write(nrite,"(9x,i10,4x,a8,2f15.6,2i10)") ksite+1,atom1,weight,charge,nrept,ifrz
 
                        Do irept=1,nrept
+                          ksite=ksite+1
+                          If (ksite > numsit(itmols)) Call error(21)
+
                           nsite=nsite+1
                           If (nsite > mxsite) Call error(20)
 
@@ -393,7 +396,6 @@ Subroutine read_field                      &
                           frzsit(nsite)=ifrz
                           If (wgtsit(nsite) > 1.0E-6_wp) dofsit(nsite)=3.0_wp*Real(Abs(1-ifrz),wp)
                        End Do
-                       ksite=ksite+nrept
 
 ! establish list of unique atom types
 

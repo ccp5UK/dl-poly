@@ -188,7 +188,7 @@ XXXXXXXXXX\=XXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\kill\\
 
 It is worth noting that the last four ensembles are also optionally
 available in an extended from to constant normal pressure and
-constant surface area, NP$_{n}$AT, or constant surface tesnison,
+constant surface area, NP$_{n}$AT, or constant surface tension,
 NP$_{n}\gamma$T \cite{ikeguchi-04}.
 
 \section{Bond Constraints}
@@ -429,10 +429,11 @@ Berendsen \cite{berendsen-84a} and Nos\'e-Hoover \cite{hoover-85a}. Of
 these only the Nos\'e-Hoover algorithm generates trajectories in the
 canonical (NVT) ensemble.  The rest will produce properties that
 typically differ from canonical averages by
-${\cal O}(1/{\cal N})$ \cite{allen-89a}, as the Evans algorithm
-generates trajectories in the (NVE$_{kin}$) ensemble.
-The Langevin method does not generate any proper enesemble at all
-as it impose Brownian Dynamics (or Stochastic Dynamics) on the system.
+${\cal O}(1/{\cal N})$ \cite{allen-89a} (where $\cal N$ is the number
+of particles in the system), as the Evans algorithm generates
+trajectories in the (NVE$_{kin}$) ensemble.  The Langevin method does
+not generate any proper ensemble at all as it imposes Brownian
+Dynamics (or Stochastic Dynamics) on the system.
 
 \subsection{Evans Thermostat (Gaussian Constraints)}
 
@@ -450,8 +451,9 @@ the kinetic temperature constraint $\chi$ can be found as follows:
 \sum_{i} m_{i} \vek{v}_{i} \cdot \frac{d}{dt} \vek{v}_{i} = 0 \nonumber \\
 & & \sum_{i} m_{i} \vek{v}_{i}(t) \cdot
 \left\{ \frac{\vek{f}_{i}(t)}{m_{i}} - \chi (t) \; \vek{v}_{i}(t) \right\} = 0 \label{Evans} \\ 
-\chi (t) &=& \frac {\sum_{i} \vek{v}_{i}(t) \cdot \vek{f}_{i}(t)} {\sum_{i} m_{i} \vek{v}_{i}^{2}(t)}~~. \nonumber
+\chi (t) &=& \frac {\sum_{i} \vek{v}_{i}(t) \cdot \vek{f}_{i}(t)} {\sum_{i} m_{i} \vek{v}_{i}^{2}(t)}~~, \nonumber
 \end{eqnarray}
+where $\cal T$ is the instantaneous temperature defined in equation (\ref {tinst}).
 
 The VV implementation of the Evans algorithm is straight forward.
 The conventional VV1 and VV2 steps are carried out as before
@@ -1045,9 +1047,10 @@ p_{mass} &=& \frac{(f+3)~k_{B}~T_{\rm ext}}{(2 \pi~\chi_{p})^{2}} \nonumber \\
 \end{eqnarray}
 where $\chi$ and $\chi_{p}$ are the user defined {\em constants}
 (positive, in units of ps$^{-1}$), specifying the thermostat and
-barostat friction parameters, $R(t)$ is the Langevin stochastic force,
-see equation (\ref{langevin}), and $R_{p}$ is the stochastic
-(Langevin) pressure variable
+barostat friction parameters, $R(t)$ is the Langevin stochastic force
+(see equation (\ref{langevin})), ${\cal P}$ the instantaneous pressure
+(equation (\ref{prs_inst})) and $R_{p}$ is the stochastic (Langevin)
+pressure variable
 \begin{equation}
 \left< R_{p}(t)~R_{p}(t^\prime)\right> = 2~\chi_{p}~p_{mass}~k_{B}T~\delta(t-t^\prime)~~,
 \end{equation}
@@ -1241,8 +1244,8 @@ p_{mass} &=& \frac{(f+3)}{3}~\frac{k_{B}~T_{\rm ext}}{(2 \pi~\chi_{P})^{2}} \non
 \frac{d}{dt}\mat{H}(t) &=& \mat{\eta}(t) \cdot \mat{H}(t) \nonumber \\
 \frac{d}{dt} V(t) &=& {\tt Tr} [\mat{\eta}(t)]~V(t)~~. \nonumber
 \end{eqnarray}
-where $\mat{\sigma}$ is the stress tensor and $\mat{1}$ is the
-identity matrix.
+where $\mat{\sigma}$ is the stress tensor (equation (\ref{str_inst}))
+and $\mat{1}$ is the identity matrix.
 
 The conserved quantity these generate is:
 \begin{equation}
@@ -1298,7 +1301,7 @@ constraining of the barostat equation of motion to:
 \end{equation}
 
 Similarly, this ensemble is optionally extending to constant
-normal pressure and constant surface tesnison, NP$_{n}\gamma$T
+normal pressure and constant surface tension, NP$_{n}\gamma$T
 \cite{ikeguchi-04}, by semi-isotropic constraining of the
 barostat equation of motion to:
 \begin{equation}
@@ -1314,7 +1317,7 @@ barostat equation of motion to:
 \end{array} \right.
 \end{equation}
 where $\gamma_{\rm ext}$ is the user defined external surface tesnion
-and $h_{z}(t) = V(t) / A_{xy}(t)$ is the intsanteneous hight of the
+and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantaneous hight of the
 MD box (or MD box volume over area).
 
 The VV and LFV flavours of the non-isotropic Langevin barostat
@@ -1332,8 +1335,8 @@ step
 \begin{equation}
 {d{\cal P}(t) \over dt} = {{P_{\rm ext} - {\cal P}(t)} \over \tau_{P}}~~,
 \end{equation}
-where ${\cal P}$ is the instantaneous pressure and $\tau_{P}$ is
-the barostat relaxation time constant.
+where ${\cal P}$ is the instantaneous pressure (equation (\ref{prs_inst}))
+and $\tau_{P}$ is the barostat relaxation time constant.
 
 \vskip 2ex
 \noindent {\bf Cell size variations}
@@ -1457,7 +1460,8 @@ variations is straightforward.  A tensor \mat{\eta} is defined as
 \mat{\eta}(t) = \mat{1} - {\beta \Delta t \over \tau_{P}}
 (P_{\rm ext}~\mat{1} - \mat{\sigma}(t) / V(t))~~,
 \end{equation}
-where $\mat{1}$ is the identity matrix.  Then new cell vectors
+where where $\mat{\sigma}$ is the stress tensor (equation (\ref{str_inst}))
+and $\mat{1}$ is the identity matrix.  Then new cell vectors
 and volume are given by
 \begin{eqnarray}
 \mat{H}(t + \Delta t) &\leftarrow& \mat{\eta}(t) \cdot \mat{H}(t) \nonumber \\
@@ -1484,7 +1488,7 @@ constraining of the barostat equation of motion to:
 \end{equation}
 
 Similarly, this ensemble is optionally extending to constant
-normal pressure and constant surface tesnison, NP$_{n}\gamma$T
+normal pressure and constant surface tension, NP$_{n}\gamma$T
 \cite{ikeguchi-04}, by semi-isotropic constraining of the
 barostat equation of motion to:
 \begin{equation}
@@ -1498,7 +1502,7 @@ barostat equation of motion to:
 \end{array} \right.
 \end{equation}
 where $\gamma_{\rm ext}$ is the user defined external surface tesnion
-and $h_{z}(t) = V(t) / A_{xy}(t)$ is the intsanteneous hight of the
+and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantaneous hight of the
 MD box (or MD box volume over area).
 
 The VV and LFV flavours of the non-isotropic Berendsen barostat (and thermostat)
@@ -1532,13 +1536,13 @@ p_{mass} &=& (f+3)~k_{B}~T_{\rm ext}~\tau_{P}^{2} \nonumber \\
 \frac{d}{dt} V(t) &=& [3 \eta (t)]~V(t)~~, \nonumber
 \end{eqnarray}
 where $\eta$ is the barostat friction coefficient, $\vek{R}_{0}(t)$
-the system centre of mass at time $t$, $q_{mass}$ the thermostat
-mass, $\tau_{T}$ a specified time constant for temperature
-fluctuations, $p_{mass}$ the barostat mass, $\tau_{P}$ a specified
-time constant for pressure fluctuations, ${\cal P}$ the
-instantaneous pressure\index{units!pressure} and $V$ the system
-volume.  \mat{H} is the cell matrix whose columns are the three cell
-vectors $\vek{a}, \vek{b}, \vek{c}$.
+the system centre of mass at time $t$, $q_{mass}$ the thermostat mass,
+$\tau_{T}$ a specified time constant for temperature fluctuations,
+$\sigma$ the target thermostat energy (equation (\ref{sigma})),
+$p_{mass}$ the barostat mass, $\tau_{P}$ a specified time constant
+for pressure fluctuations, ${\cal P}$ the instantaneous pressure\index{units!pressure}
+(equation (\ref{prs_inst})) and $V$ the system volume.  \mat{H} is the
+cell matrix whose columns are the three cell vectors $\vek{a}, \vek{b}, \vek{c}$.
 
 The conserved quantity is, to within a constant, the Gibbs free energy
 of the system:
@@ -1736,9 +1740,9 @@ p_{mass} &=& \frac{(f+3)}{3}~k_{B}~T_{\rm ext}~\tau_{P}^{2} \nonumber \\
 \frac{d}{dt}\mat{H}(t) &=& \mat{\eta}(t) \cdot \mat{H}(t) \nonumber \\
 \frac{d}{dt} V(t) &=& {\tt Tr} [\mat{\eta}(t)]~V(t)~~, \nonumber
 \end{eqnarray}
-where $\mat{\sigma}$ is the stress tensor and $\mat{1}$ is the
-identity matrix.  The VV and LFV algorithmic equations are,
-therefore, written in the same fashion as above with slight
+where $\mat{\sigma}$ is the stress tensor (equation (\ref{str_inst})) and
+$\mat{1}$ is the identity matrix.  The VV and LFV algorithmic equations
+are, therefore, written in the same fashion as above with slight
 modifications in (i) the equations for the thermostat and barostat
 frictions, and (ii) the equations for the system volume and cell
 parameters.  The modifications in (i) for the VV couched algorithm
@@ -1803,7 +1807,7 @@ the thermostat equation of motion and the conserved quantity to:
 \end{eqnarray}
 
 Similarly, this ensemble is optionally extending to constant
-normal pressure and constant surface tesnison, NP$_{n}\gamma$T
+normal pressure and constant surface tension, NP$_{n}\gamma$T
 \cite{ikeguchi-04}, by semi-isotropic constraining of the
 barostat equation of motion  and slight amending the thermostat
 equation of motion and the conserved quantity to:
@@ -1823,7 +1827,7 @@ equation of motion and the conserved quantity to:
 (f+3)~k_{B}~T_{\rm ext}~\int_o^t \chi (s) ds~~. \nonumber
 \end{eqnarray}
 where $\gamma_{\rm ext}$ is the user defined external surface tesnion
-and $h_{z}(t) = V(t) / A_{xy}(t)$ is the intsanteneous hight of the
+and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantaneous hight of the
 MD box (or MD box volume over area).
 
 The VV and LFV flavours of the non-isotropic Nos\'e-Hoover
@@ -1942,7 +1946,7 @@ the thermostat equation of motion and the conserved quantity to:
 \end{eqnarray}
 
 Similarly, this ensemble is optionally extending to constant
-normal pressure and constant surface tesnison, NP$_{n}\gamma$T
+normal pressure and constant surface tension, NP$_{n}\gamma$T
 \cite{ikeguchi-04}, by semi-isotropic constraining of the
 barostat equation of motion  and slight amending the thermostat
 equation of motion and the conserved quantity to:
@@ -1962,7 +1966,7 @@ equation of motion and the conserved quantity to:
 (f+3)~k_{B}~T_{\rm ext}~\int_o^t \chi (s) ds~~, \nonumber
 \end{eqnarray}
 where $\gamma_{\rm ext}$ is the user defined external surface tesnion
-and $h_{z}(t) = V(t) / A_{xy}(t)$ is the intsanteneous hight of the
+and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantaneous hight of the
 MD box (or MD box volume over area).
 
 The Martyna-Tuckerman-Klein equations of motion have same
@@ -2304,7 +2308,7 @@ worth mentioning.
 
 Since both the translational and rotational velocities contribute towards temperature,
 equation (\ref{Evans}), showing the derivation of the thermostat friction in the Evans
-ensemble by imposing a Gaussian cosntraint on the system's intsanteneous temperature,
+ensemble by imposing a Gaussian constraint on the system's instantaneous temperature,
 changes to:
 \begin{eqnarray}
 \frac{d}{dt} {\cal T} = 0 ~~~~~~\propto~~~~~~ \frac{d}{dt} \left( \frac{1}{2} \sum_{i}^{FP} m_{i} \vek{v}_{i}^{2} + \frac{1}{2} \sum_{j}^{RB} M_{j} \vek{V}_{j}^{2} +
@@ -2316,8 +2320,9 @@ changes to:
 \chi (t) = \frac {\left\{ \sum_{i}^{FP} \vek{v}_{i}(t) \cdot \vek{f}_{i}(t) + \sum_{j}^{RB} \vek{V}_{j}(t) \cdot \vek{F}_{j}(t) +
 \sum_{j}^{RB} \hat{\vek{\omega}}_{j}(t) \cdot \hat{\vek{\tau}}(t) \right\}} {2\left[ E_{kin}(t) + E_{rot}(t) \right]}~~, \nonumber
 \end{eqnarray}
-where $E_{kin}$ contains both the kinetic contribution form the free particles and the
-RBs' COMs.
+where where $\cal T$ is the instantaneous temperature defined in equation
+(\ref {tinst}) and $E_{kin}$ in the final expression contains both the kinetic
+contribution form the free particles and the RBs' COMs.
 
 In the case of the Andersen ensemble, if a Poisson selected particle constitutes a
 RB then the whole RB is Poisson selected.  Poisson selected RBs' translational and

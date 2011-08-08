@@ -10,7 +10,7 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
 ! supported image conditions: 1,2,3, 6(nz==1)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov august 2011
 ! contrib   - w.smith, i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -309,25 +309,34 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
 
            nattot=nattot+1
 
+! Grab the coordinates of the first atom of this molecule
+
            If (m == 1) Then
               If (lsa(indatm) == nattot) Then
                  loc_ind=lsi(indatm)
                  xyz0(1)=xxx(loc_ind)
                  xyz0(2)=yyy(loc_ind)
                  xyz0(3)=zzz(loc_ind)
+
+                 If (mxnode > 1) Then
+                    idm=idnode
+                    Call gsum(idm)
+                    Call MPI_BCAST(xyz0(1:3), 3, wp_mpi, idm, dlp_comm_world, ierr)
+                 End If
               Else
-                 xyz0(1)=0.0_wp
-                 xyz0(2)=0.0_wp
-                 xyz0(3)=0.0_wp
+                 If (mxnode > 1) Then
+                    idm=0
+                    Call gsum(idm)
+                    Call MPI_BCAST(xyz0(1:3), 3, wp_mpi, idm, dlp_comm_world, ierr)
+                 End If
               End If
-              If (mxnode > 1) Call gsum(xyz0)
            End If
 
 ! If a local atom has a global index nattot
 
            If (lsa(indatm) == nattot) Then
 
-! Determine sending node if different from zero for UN/SORTED MASTER
+! Determine sending node for UN/SORTED MASTER
 
               If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
                   io_write == IO_WRITE_SORTED_MASTER) Then
@@ -335,7 +344,7 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
                  If (mxnode > 1) Call gsum(idm)
               End If
 
-! Get the local index of the particle and replicate it.
+! Get the local index of the particle and bound its coordinates
 
               loc_ind=lsi(indatm)
 
@@ -359,8 +368,9 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
 
 ! Write 2 records @ line 'rec+1' and 'rec+2' for particle 'index' in CONFIG(new)
 
-                       rec   = offset + Int(2,ip)*(Int(i_xyz(ix,iy,iz),ip)*Int(setspc,ip) + Int(m,ip))
-                       index = Int((rec - Int(5,ip))/Int(2,ip))
+                       index = Int(i_xyz(ix,iy,iz),ip)*Int(setspc,ip) + Int(m,ip)
+                       rec   = offset + Int(2,ip)*index - Int(2,ip)
+                       index = index + (offset - Int(5,ip))/Int(2,ip)
 
                        If (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
                            io_write == IO_WRITE_SORTED_MPIIO   .or. &
@@ -379,7 +389,7 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
                        Else
 
                           Write(record2, Fmt='(a8,i10,a54,a1)') atmnam(loc_ind),index,Repeat(' ',54),lf
-                          Write(record3, Fmt='(3f20.12,a12,a1)') x,y,z,Repeat(' ',12),lf
+                          Write(record3, Fmt='(3g20.12,a12,a1)') x,y,z,Repeat(' ',12),lf
 
                           If (io_write == IO_WRITE_UNSORTED_DIRECT .or. &
                               io_write == IO_WRITE_SORTED_DIRECT) Then
@@ -415,7 +425,7 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
 
            Else
 
-! Determine sending node if different from zero for UN/SORTED MASTER
+! Determine sending node for UN/SORTED MASTER
 
               If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
                   io_write == IO_WRITE_SORTED_MASTER) Then
@@ -425,7 +435,7 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
                  Do iz=1,nz
                     Do iy=1,ny
                        Do ix=1,nx
-                          rec = offset + Int(2,ip)*(Int(i_xyz(ix,iy,iz),ip)*Int(setspc,ip) + Int(m,ip))
+                          rec   = offset + Int(2,ip)*(Int(i_xyz(ix,iy,iz),ip)*Int(setspc,ip) + Int(m,ip)) - Int(2,ip)
 
                           If (idnode == 0) Then
                              Call MPI_RECV(record2,recsz,MPI_CHARACTER,idm,Traject_tag,dlp_comm_world,status,ierr)

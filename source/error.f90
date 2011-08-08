@@ -6,7 +6,7 @@ Subroutine error(kode)
 ! controlled termination of the program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -93,6 +93,10 @@ Subroutine error(kode)
      Else If (kode ==   20) Then
 
         Write(nrite,'(/,1x,a)') 'error - too many molecule sites specified'
+
+     Else If (kode ==   21) Then
+
+        Write(nrite,'(/,1x,a)') 'error - molecule contains more atoms/sites than declared'
 
      Else If (kode ==   22) Then
 

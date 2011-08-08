@@ -1,9 +1,9 @@
-Subroutine npt_m0_lfv                                &
-           (lvar,mndis,mxdis,tstep,strkin,engke,     &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
-           megpmf,strpmf,virpmf,                     &
-           degfre,sigma,taut,chit,cint,consv,        &
-           press,taup,chip,eta,virtot,               &
+Subroutine npt_m0_lfv                                  &
+           (lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,   &
+           megpmf,strpmf,virpmf,                       &
+           degfre,sigma,taut,chit,cint,consv,          &
+           press,taup,chip,eta,virtot,                 &
            elrc,virlrc)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -18,7 +18,7 @@ Subroutine npt_m0_lfv                                &
 !            Mol. Phys., 1996, Vol. 87 (5), p. 1117
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -33,7 +33,7 @@ Subroutine npt_m0_lfv                                &
   Implicit None
 
   Logical,           Intent( In    ) :: lvar
-  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis
+  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
   Real( Kind = wp ), Intent( InOut ) :: tstep
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
@@ -414,7 +414,7 @@ Subroutine npt_m0_lfv                                &
      mxdr=Sqrt(mxdr)
      If (mxnode > 1) Call gmax(mxdr)
 
-     If (mxdr < mndis .or. mxdr > mxdis) Then
+     If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
 
 ! scale tstep
 
@@ -438,6 +438,10 @@ Subroutine npt_m0_lfv                                &
            Else
               hstep = tstep
               tstep = 2.00_wp*tstep
+           End If
+           If (tstep > mxstp) Then
+              tstep = mxstp
+              hstep = 0.50_wp*tstep
            End If
            If (idnode == 0) Write(nrite,"(/,1x, &
               & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep

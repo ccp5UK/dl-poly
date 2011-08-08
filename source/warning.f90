@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2011
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -213,7 +213,7 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode == 210) Then
 
-        Write(nrite,'(3(/,1x,a),2(f8.0,a),/)')                        &
+        Write(nrite,'(3(/,1x,a),2(f8.0,a),/)')                      &
         '*** warning - system under great constraint !!! ***',      &
         '*** degrees of freedom <=  total number of particles ***', &
         '*** ', a, '    <= ', b, ' ***'
@@ -280,7 +280,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i8,a))') &
+        Write(nrite,'(/,1x,a,3(i8,a))')                           &
         '*** warning - PMF unit', ia, ' and rigid body unit', ib, &
         ' on molecular species type ', ic, ' in illegal configuration !!! ***'
 
@@ -300,7 +300,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i8,a))') &
+        Write(nrite,'(/,1x,a,3(i8,a))')                                  &
         '*** warning - core-shell unit', ia, ' and rigid body unit', ib, &
         ' on molecular species type ', ic, ' in illegal configuration !!! ***'
 
@@ -320,7 +320,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i8,a))') &
+        Write(nrite,'(/,1x,a,3(i8,a))')                                  &
         '*** warning - constraint unit', ia, ' and rigid body unit', ib, &
         ' on molecular species type ', ic, ' in illegal configuration !!! ***'
 
@@ -329,7 +329,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i8,a))') &
+        Write(nrite,'(/,1x,a,2(i8,a))')                                         &
         '*** warning - rigid body unit', ia, ' on molecular species type ', ib, &
         ' forced to freeze !!! ***'
 
@@ -338,7 +338,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i8,a))') &
+        Write(nrite,'(/,1x,a,2(i8,a))')                                         &
         '*** warning - constraint unit', ia, ' on molecular species type ', ib, &
         ' forced to freeze !!! ***'
 
@@ -348,7 +348,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i8,a))') &
+        Write(nrite,'(/,1x,a,3(i8,a))')                                         &
         '*** warning - rigid body unit', ia, ' on molecular species type ', ib, &
         ' set to have type ', ic, ' is problematic !!! ***'
 
@@ -358,7 +358,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i8,a))') &
+        Write(nrite,'(/,1x,a,3(i8,a))')                       &
         '*** warning - site', ia, ' of constraint unit ', ib, &
         ' on molecular species type', ic, ' is problematic !!! ***'
 
@@ -489,7 +489,7 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode == 470) Then
 
-        Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                  &
+        Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                                  &
         '*** warning - control distance for diplacement qualification MUST be >= 0.25 Ang !!! ***', &
         '*** displacements distance condition will default from ', a, ' to ', b, ' Ang !!! ***'
 

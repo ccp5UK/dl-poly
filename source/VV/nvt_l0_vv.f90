@@ -1,6 +1,6 @@
-Subroutine nvt_l0_vv                                          &
-           (isw,lvar,mndis,mxdis,temp,tstep,chi,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,          &
+Subroutine nvt_l0_vv                                                &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep,chi,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,                &
            megpmf,strpmf,virpmf)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -18,7 +18,7 @@ Subroutine nvt_l0_vv                                          &
 ! (brownian dynamics, not symplectic due to the random forces)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -34,7 +34,8 @@ Subroutine nvt_l0_vv                                          &
 
   Integer,           Intent( In    ) :: isw
   Logical,           Intent( In    ) :: lvar
-  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,temp,chi
+  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp, &
+                                        temp,chi
   Real( Kind = wp ), Intent( InOut ) :: tstep
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
@@ -305,20 +306,20 @@ Subroutine nvt_l0_vv                                          &
         mxdr=Sqrt(mxdr)
         If (mxnode > 1) Call gmax(mxdr)
 
-        If (mxdr < mndis .or. mxdr > mxdis) Then
+        If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
 
 ! scale tstep and derivatives, and get scaler for Langevin random forces
 
            If (mxdr > mxdis) Then
               lv_up = .true.
               If (lv_dn) Then
+                 tmp = Sqrt(4.0_wp/3.0_wp)
                  tstep = 0.75_wp*tstep
                  hstep = 0.50_wp*tstep
-                 tmp = Sqrt(4.0_wp/3.0_wp)
               Else
+                 tmp = Sqrt(2.0_wp)
                  tstep = hstep
                  hstep = 0.50_wp*tstep
-                 tmp = Sqrt(2.0_wp)
               End If
               If (idnode == 0) Write(nrite,"(/,1x, &
                  & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
@@ -326,13 +327,18 @@ Subroutine nvt_l0_vv                                          &
            If (mxdr < mndis) Then
               lv_dn = .true.
               If (lv_up) Then
+                 tmp = Sqrt(2.0_wp/3.0_wp)
                  tstep = 1.50_wp*tstep
                  hstep = 0.50_wp*tstep
-                 tmp = Sqrt(2.0_wp/3.0_wp)
               Else
+                 tmp = Sqrt(0.5_wp)
                  hstep = tstep
                  tstep = 2.00_wp*tstep
-                 tmp = Sqrt(0.5_wp)
+              End If
+              If (tstep > mxstp) Then
+                 tmp = tmp*Sqrt(tstep/mxstp)
+                 tstep = mxstp
+                 hstep = 0.50_wp*tstep
               End If
               If (idnode == 0) Write(nrite,"(/,1x, &
                  & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep

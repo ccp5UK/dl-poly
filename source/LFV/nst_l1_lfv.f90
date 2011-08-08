@@ -1,5 +1,5 @@
 Subroutine nst_l1_lfv                          &
-           (lvar,mndis,mxdis,tstep,            &
+           (lvar,mndis,mxdis,mxstp,tstep,      &
            iso,degfre,sigma,chi,consv,         &
            degrot,press,tai,chip,eta,          &
            stress,strext,ten,elrc,virlrc,      &
@@ -29,7 +29,7 @@ Subroutine nst_l1_lfv                          &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2009
-! amended   - i.t.todorov july 2011
+! amended   - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -48,7 +48,8 @@ Subroutine nst_l1_lfv                          &
   Implicit None
 
   Logical,           Intent( In    ) :: lvar
-  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,sigma,chi,press,tai
+  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp, &
+                                        sigma,chi,press,tai
   Integer,           Intent( In    ) :: iso
   Integer(Kind=ip),  Intent( In    ) :: degfre,degrot
   Real( Kind = wp ), Intent( InOut ) :: eta(1:9)
@@ -1013,20 +1014,20 @@ Subroutine nst_l1_lfv                          &
      mxdr=Sqrt(mxdr)
      If (mxnode > 1) Call gmax(mxdr)
 
-     If (mxdr < mndis .or. mxdr > mxdis) Then
+     If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
 
 ! scale tstep and derivatives, and get scaler for Langevin random forces
 
         If (mxdr > mxdis) Then
            lv_up = .true.
            If (lv_dn) Then
+              tmp = Sqrt(4.0_wp/3.0_wp)
               tstep = 0.75_wp*tstep
               hstep = 0.50_wp*tstep
-              tmp = Sqrt(4.0_wp/3.0_wp)
            Else
+              tmp = Sqrt(2.0_wp)
               tstep = hstep
               hstep = 0.50_wp*tstep
-              tmp = Sqrt(2.0_wp)
            End If
            If (idnode == 0) Write(nrite,"(/,1x, &
               & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
@@ -1034,13 +1035,18 @@ Subroutine nst_l1_lfv                          &
         If (mxdr < mndis) Then
            lv_dn = .true.
            If (lv_up) Then
+              tmp = Sqrt(2.0_wp/3.0_wp)
               tstep = 1.50_wp*tstep
               hstep = 0.50_wp*tstep
-              tmp = Sqrt(2.0_wp/3.0_wp)
            Else
+              tmp = Sqrt(0.5_wp)
               hstep = tstep
               tstep = 2.00_wp*tstep
-              tmp = Sqrt(0.5_wp)
+           End If
+           If (tstep > mxstp) Then
+              tmp = tmp*Sqrt(tstep/mxstp)
+              tstep = mxstp
+              hstep = 0.50_wp*tstep
            End If
            If (idnode == 0) Write(nrite,"(/,1x, &
               & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep

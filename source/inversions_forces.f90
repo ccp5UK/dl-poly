@@ -6,7 +6,7 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1996
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -32,7 +32,7 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
                        udx,udy,udz,udn,rud, vdx,vdy,vdz,vdn,rvd,wwd,   &
                        cosb,cosc,cosd, rubc,rubd,rucd,rucb,rudb,rudc,  &
                        rvbc,rvbd,rvcd,rvcb,rvdb,rvdc,                  &
-                       thb,thc,thd,  k,th0,cos0,a,m,                   &
+                       thb,thc,thd,  k,th0,cos0,a,b,m,                 &
                        uuu,uu2,uun,uux,uuy,uuz,                        &
                        pterm,vterm,gamma,gamb,gamc,gamd,               &
                        fax,fay,faz, fbx,fby,fbz,                       &
@@ -216,7 +216,7 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
            uux=yac*zad-zac*yad
            uuy=zac*xad-xac*zad
            uuz=xac*yad-yac*xad
-           uun=1.0_wp/Sqrt(ubx**2+uby**2+ubz**2)
+           uun=1.0_wp/Sqrt(uux**2+uuy**2+uuz**2)
            uux=uun*uux
            uuy=uun*uuy
            uuz=uun*uuz
@@ -373,10 +373,13 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
 
 ! planar calcite potential
 
-           uu2=uuu*uuu
-           m=2.0_wp*prminv(kk,1)+4.0_wp*prminv(kk,2)*uu2
+           a=prminv(1,kk)
+           b=prminv(2,kk)
 
-           pterm=uu2*(prminv(kk,1)+prminv(kk,2)*uu2)
+           uu2=uuu*uuu
+           m=2.0_wp*a+4.0_wp*b*uu2
+
+           pterm=uu2*(a+b*uu2)
            vterm=uu2*m
            gamma=-uuu*m
            gamb=0.0_wp

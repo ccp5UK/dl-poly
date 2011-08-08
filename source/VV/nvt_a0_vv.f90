@@ -1,5 +1,5 @@
 Subroutine nvt_a0_vv                                 &
-           (isw,lvar,mndis,mxdis,temp,tstep,         &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep,   &
            keyshl,taut,soft,strkin,engke,            &
            imcon,mxshak,tolnce,megcon,strcon,vircon, &
            megpmf,strpmf,virpmf)
@@ -17,7 +17,7 @@ Subroutine nvt_a0_vv                                 &
 !  particles' momenta of a particle subset on each domain)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -34,7 +34,8 @@ Subroutine nvt_a0_vv                                 &
 
   Integer,           Intent( In    ) :: isw,keyshl
   Logical,           Intent( In    ) :: lvar
-  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,temp,taut,soft
+  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp, &
+                                        temp,taut,soft
   Real( Kind = wp ), Intent( InOut ) :: tstep
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
@@ -276,7 +277,7 @@ Subroutine nvt_a0_vv                                 &
         mxdr=Sqrt(mxdr)
         If (mxnode > 1) Call gmax(mxdr)
 
-        If (mxdr < mndis .or. mxdr > mxdis) Then
+        If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
 
 ! scale tstep and derivatives
 
@@ -300,6 +301,10 @@ Subroutine nvt_a0_vv                                 &
               Else
                  hstep = tstep
                  tstep = 2.00_wp*tstep
+              End If
+              If (tstep > mxstp) Then
+                 tstep = mxstp
+                 hstep = 0.50_wp*tstep
               End If
               If (idnode == 0) Write(nrite,"(/,1x, &
                  & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep

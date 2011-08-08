@@ -159,7 +159,7 @@ Program dl_poly
   Real( Kind = wp ) :: timelp,timjob,timcls,tstep,time,tmst,tmsth,     &
                        alpha,epsq,fmax,                                &
                        rcut,rvdw,rmet,rbin,rcter,rctbp,rcfbp,          &
-                       width,mndis,mxdis,wthpse,tmppse,                &
+                       width,mndis,mxdis,mxstp,wthpse,tmppse,          &
                        rlx_tol,min_tol,tolnce,quattol,rdef,rrsd,       &
                        emd,vmx,vmy,vmz,temp,sigma,                     &
                        press,strext(1:9),ten,                          &
@@ -260,7 +260,7 @@ Program dl_poly
            ltraj,ldef,lrsd,                       &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,      &
            temp,press,strext,keyres,              &
-           tstep,mndis,mxdis,nstrun,nsteql,       &
+           tstep,mndis,mxdis,mxstp,nstrun,nsteql, &
            keymin,nstmin,min_tol,nstgaus,nstscal, &
            keyens,iso,taut,soft,taup,chi,tai,ten, &
            keypse,wthpse,tmppse,                  &
