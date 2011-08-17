@@ -16,11 +16,13 @@ Subroutine nst_h0_scl &
 ! iso=0 fully anisotropic barostat
 ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
 ! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+!                               or with orthorhombic constraints (ten=0.0_wp)
+! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
 !
 ! reference: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2011
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -89,18 +91,20 @@ Subroutine nst_h0_scl &
 
   If (sw == 1) factor = 2.0_wp*engke*rf
 
-! split anisotropic from semi-isotropic barostats (iso=0,1,2)
+! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
 
   If (iso == 0) Then
      eta=eta + hstep*(strcon+stress+strkin + factor*uni - (press*uni+strext)*volm)/pmass
   Else
-     If      (iso == 1) Then
-        eta(1:8)=0.0_wp
-     Else If (iso == 2) Then
+     eta=0.0_wp
+     If      (iso == 2) Then
         eta(1)=eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + factor - (press+strext(1)-ten/h_z)*volm)/pmass
-        eta(2:4)=0.0_wp
         eta(5)=eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + factor - (press+strext(5)-ten/h_z)*volm)/pmass
-        eta(6:8)=0.0_wp
+     Else If (iso == 3) Then
+        eta(1)=0.5_wp*(eta(1)+eta(5)) + hstep*( 0.5_wp*                        &
+               (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
+               factor - (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm ) / pmass
+        eta(5)=eta(1)
      End If
      eta(9)=eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + factor - (press+strext(9))*volm)/pmass
   End If
@@ -159,18 +163,20 @@ Subroutine nst_h0_scl &
 
   If (sw == 1) factor = 2.0_wp*engke*rf
 
-! split anisotropic from semi-isotropic barostats (iso=0,1,2)
+! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
 
   If (iso == 0) Then
      eta=eta + hstep*(strcon+stress+strkin + factor*uni - (press*uni+strext)*volm)/pmass
   Else
-     If      (iso == 1) Then
-        eta(1:8)=0.0_wp
-     Else If (iso == 2) Then
+     eta=0.0_wp
+     If      (iso == 2) Then
         eta(1)=eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + factor - (press+strext(1)-ten/h_z)*volm)/pmass
-        eta(2:4)=0.0_wp
         eta(5)=eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + factor - (press+strext(5)-ten/h_z)*volm)/pmass
-        eta(6:8)=0.0_wp
+     Else If (iso == 3) Then
+        eta(1)=0.5_wp*(eta(1)+eta(5)) + hstep*( 0.5_wp*                        &
+               (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
+               factor - (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm ) / pmass
+        eta(5)=eta(1)
      End If
      eta(9)=eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + factor - (press+strext(9))*volm)/pmass
   End If

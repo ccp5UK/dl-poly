@@ -816,7 +816,8 @@ Subroutine npt_l1_lfv                          &
      cell=cell0*scale
   End If
 
-! Update RB oreintation, and velocity and position of RB's contituents
+! Update RB orientation and COM position,
+! velocity and position of RB's constituents
 ! Initialise safety flag for quaternion convergence
 
   safe=.true.

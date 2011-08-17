@@ -613,7 +613,7 @@ Subroutine nvt_e1_lfv                          &
   End Do
 
 ! Update RB orientation and COM position,
-! velocity and position of RB's contituents
+! velocity and position of RB's constituents
 ! Initialise safety flag for quaternion convergence
 
   safe=.true.

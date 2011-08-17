@@ -21,8 +21,8 @@ Subroutine nst_h1_vv                              &
 ! iso=0 fully anisotropic barostat
 ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
 ! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-!
-! reference: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
+!                               or with orthorhombic constraints (ten=0.0_wp)
+! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
 !
 ! Note: (1) this ensemble is modified from its original form as in
 !           reference1 to that shown in reference2, and now there is
@@ -33,6 +33,7 @@ Subroutine nst_h1_vv                              &
 ! reference1: Melchionna, Ciccotti and Holian, Mol Phys 1993, 78, p533
 ! reference2: Martyna, Tuckerman, Tobias, Klein
 !             Mol. Phys., 1996, Vol. 87 (5), p. 1117
+! reference3: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov august 2011
@@ -164,10 +165,10 @@ Subroutine nst_h1_vv                              &
         dens0(i) = dens(i)
      End Do
 
-! Initialise and get h_z for iso=2
+! Initialise and get h_z for iso>1
 
      h_z=0
-     If (iso == 2) Then
+     If (iso > 1) Then
         Call dcell(cell,celprp)
         h_z=celprp(9)
      End If
@@ -182,6 +183,8 @@ Subroutine nst_h1_vv                              &
         ceng  = 2.0_wp*sigma + 1.0_wp*boltz*tmp
      Else If (iso == 2) Then
         ceng  = 2.0_wp*sigma + 3.0_wp*boltz*tmp
+     Else If (iso == 3) Then
+        ceng  = 2.0_wp*sigma + 2.0_wp*boltz*tmp
      End If
      pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*tmp*taup**2
 
@@ -827,9 +830,9 @@ Subroutine nst_h1_vv                              &
         dens(i)=dens0(i)*tmp
      End Do
 
-! get h_z for iso=2
+! get h_z for iso>1
 
-     If (iso == 2) Then
+     If (iso > 1) Then
         Call dcell(cell,celprp)
         h_z=celprp(9)
      End If

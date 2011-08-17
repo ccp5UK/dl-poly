@@ -22,7 +22,7 @@ latex $1.tex
 
 # Convert to PDF
 #
-#pdflatex $1.tex
+#pdflatex --shell-escape $1.tex
 dvipdfm -o $1.pdf $1.dvi
 
 # Clean compilation

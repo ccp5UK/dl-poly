@@ -1,6 +1,6 @@
 Subroutine statistics_collect                &
            (leql,nsteql,lzdn,nstzdn,         &
-           keyres,keyens,intsta,imcon,       &
+           keyres,keyens,iso,intsta,imcon,   &
            degfre,degshl,degrot,             &
            nstep,tstep,time,tmst,            &
            engcpe,vircpe,engsrp,virsrp,      &
@@ -11,7 +11,8 @@ Subroutine statistics_collect                &
            engtet,virtet,engfld,virfld,      &
            engbnd,virbnd,engang,virang,      &
            engdih,virdih,enginv,virinv,      &
-           engke,engrot,consv,vircom,strtot, &
+           engke,engrot,consv,vircom,        &
+           strtot,press,strext,              &
            stpeng,stpvir,stpcfg,stpeth,      &
            stptmp,stpprs,stpvol)
 
@@ -22,7 +23,7 @@ Subroutine statistics_collect                &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1992
-! amended   - i.t.todorov april 2011
+! amended   - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -39,11 +40,11 @@ Subroutine statistics_collect                &
 
   Logical,           Intent( In    ) :: leql,lzdn
   Integer,           Intent( In    ) :: nsteql,nstzdn,keyres, &
-                                        keyens,intsta,imcon,nstep
+                                        keyens,iso,intsta,imcon,nstep
 
   Integer(Kind=ip),  Intent( In    ) :: degfre,degshl,degrot
 
-  Real( Kind = wp ), Intent( In    ) :: tstep,time,          &
+  Real( Kind = wp ), Intent( In    ) :: tstep,time,                  &
                                         engcpe,vircpe,engsrp,virsrp, &
                                         engter,virter,               &
                                         engtbp,virtbp,engfbp,virfbp, &
@@ -52,7 +53,8 @@ Subroutine statistics_collect                &
                                         engtet,virtet,engfld,virfld, &
                                         engbnd,virbnd,engang,virang, &
                                         engdih,virdih,enginv,virinv, &
-                                        engke,engrot,consv,vircom,strtot(1:9)
+                                        engke,engrot,consv,vircom,   &
+                                        strtot(1:9),press,strext(1:9)
 
   Real( Kind = wp ), Intent( InOut ) :: tmst
   Real( Kind = wp ), Intent(   Out ) :: stpeng,stpvir,stpcfg,stpeth, &
@@ -62,7 +64,8 @@ Subroutine statistics_collect                &
 
   Logical                 :: l_tmp
   Integer                 :: fail,i,j,k,iadd,kstak
-  Real( Kind = wp )       :: stpcns,stpshl,stprot,sclnv1,sclnv2,zistk,celprp(1:10)
+  Real( Kind = wp )       :: stpcns,stpshl,stprot,sclnv1,sclnv2,zistk, &
+                             celprp(1:10),h_z
 
 
   Real( Kind = wp ), Allocatable :: amsd(:)
@@ -246,7 +249,7 @@ Subroutine statistics_collect                &
 ! pressure tensor (derived for the stress tensor)
 
   Do i=1,9
-     stpval(iadd+i)=strtot(i)*prsunt/(stpvol)
+     stpval(iadd+i)=strtot(i)*prsunt/stpvol
   End Do
 
   iadd = iadd + 9
@@ -254,11 +257,28 @@ Subroutine statistics_collect                &
 ! cell parameters
 
   If (keyens >= 20) Then
+
      Do i=1,9
        stpval(iadd+i)=cell(i)
      End Do
 
      iadd = iadd + 9
+
+     If (iso > 0) Then
+        h_z=celprp(9)
+
+        stpval(iadd+1)=h_z
+        stpval(iadd+2)=stpvol/h_z
+
+        iadd = iadd + 2
+
+        If (iso > 1) Then
+           stpval(iadd+1)= -h_z*(strtot(1)-(press+strext(1)))*tenunt
+           stpval(iadd+2)= -h_z*(strtot(5)-(press+strext(5)))*tenunt
+
+           iadd = iadd + 2
+        End If
+     End If
   End If
 
 ! write statistics file

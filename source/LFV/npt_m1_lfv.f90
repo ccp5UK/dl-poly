@@ -767,7 +767,7 @@ Subroutine npt_m1_lfv                          &
         engke=engkf+engkt
 
 ! propagate chit and chip sets and couple
-! (vircon,virpmf,chit2,chip2 are new here!!!)
+! (vircon,virpmf,chit2,chip2 are freshly new here!!!)
 
         chit1 = chit + tstep*(2.0_wp*(engke+engrot)+pmass*chip2**2-ceng)/qmass
         chip1 = (chip + tstep*((2.0_wp*(1.0_wp+factor)*engke-virtot-vircon-virpmf-vircom) - &
@@ -789,7 +789,8 @@ Subroutine npt_m1_lfv                          &
      cell=cell0*scale
   End If
 
-! Update RB oreintation, and velocity and position of RB's contituents
+! Update RB orientation and COM position,
+! velocity and position of RB's constituents
 ! Initialise safety flag for quaternion convergence
 
   safe=.true.

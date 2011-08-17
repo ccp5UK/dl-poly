@@ -1,31 +1,86 @@
-\documentclass[11pt,a4paper,dvipdfm]{report}
+\documentclass[11pt,a4paper,twoside,dvipdfm,pdflatex]{report}
+
+% Floats settings
+% Alter some LaTeX defaults for better treatment of figures:
+% See p.105 of "TeX Unbound" for suggested values.
+% See pp. 199-200 of Lamport's "LaTeX" book for details.
+% General parameters, for ALL pages:
+\renewcommand{\topfraction}{0.9} % max fraction of floats at top
+\renewcommand{\bottomfraction}{0.8} % max fraction of floats at bottom
+% Parameters for TEXT pages (not float pages):
+\setcounter{topnumber}{2}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{4} % 2 may work better
+\setcounter{dbltopnumber}{2} % for 2-column pages
+\renewcommand{\dbltopfraction}{0.9} % fit big float above 2-col. text
+\renewcommand{\textfraction}{0.07} % allow minimal text w. figs
+% Parameters for FLOAT pages (not text pages):
+\renewcommand{\floatpagefraction}{0.7} % require fuller float pages
+% N.B.: floatpagefraction MUST be less than topfraction !!
+\renewcommand{\dblfloatpagefraction}{0.7} % require fuller float pages
+% remember to use [htp] or [htpb] for placement
+
+\newcommand{\UnderscoreCommands}{\do\index}
+
+% Layout settings
+\usepackage[portrait]{geometry}
+\setlength{\textheight}{236mm} \setlength{\textwidth}{165mm}
+\setlength{\topmargin}{-7mm} \setlength{\headsep}{10mm}
+\setlength{\headheight}{10mm} \setlength{\footskip}{10mm}
+\setlength{\oddsidemargin}{-2mm} \setlength{\evensidemargin}{-2mm}
+
+% Paragraph settings
+\setlength{\parindent}{0.0cm}
+\setlength{\parskip}{1ex}
 \setcounter{secnumdepth}{5}
 
-%packages
-\usepackage{makeidx}
-%\usepackage{epstopdf} %if pdflatex $1.tex in makedoc
+% General Packages
+\usepackage{fix-cm,array,tabularx,multicol,dcolumn,makeidx,ifthen,enumitem}
+% times - for TNR fonts
+
+% General Language
+\usepackage[english]{babel}
+
 \usepackage[dvips]{graphicx}
 \usepackage[usenames,dvipsnames]{color}
+%pdfLATEX% \usepackage[update,prepend,pdftex]{epstopdf}
+%pdfLATEX% \usepackage[pdftex]{graphicx,color}
+
+% Define some eye-pleasing colors for this document
+\definecolor{webgreen}{rgb}{0,0.5,0}
+\definecolor{webbrown}{rgb}{0.6,0,0}
+\definecolor{webblue}{rgb}{0,0,0.75}
+
 \usepackage
-[dvipdfm,
-%------------- Back referencing Info --------------------
-pagebackref, %or backref
-%------------ Doc View ----------------------------------
-bookmarksopen=true,
-bookmarks=true,
-pdfpagemode=UseOutlines,
-pdfstartpage=1,
-pdfstartview=FitH,
-%------------- Doc Colours ------------------------------
+% Driver
+[dvipdfm, % pdftex,
+% Configuration Options
+raiselinks=true,
+breaklinks=true,
+plainpages=true,
+backref=true,
+pagebackref=true,
+pdfpagelabels,
+% Extension Options
+encap,
 colorlinks=true,
-filecolor=webbrown, %defined below
-citecolor=webgreen, %defined below
-linkcolor=webblue, %defined below
-urlcolor=webblue, %defined below
-%------------- Doc Info ---------------------------------
+citecolor=webgreen, %defined above
+linkcolor=webbrown, %defined above
+urlcolor=webblue,   %defined above
+% PDF-Specific Options
+bookmarks=true,
+bookmarksopen=true,
+bookmarksopenlevel=1
+% PDF Display & Information Options
+pdfpagemode=UseOutlines,
+pdfpagelayout=OneColumn, % TwoColumnRight
+pdfstartpage=1,
+pdfstartview=FitBV,
+pdfdisplaydoctitle=true,
 pdftitle={THE DL-POLY-4 USER MANUAL},
 pdfauthor={I.T. Todorov},
 pdfsubject={Guide to the DL-POLY-4 Package},
+pdfcreator={I.T. Todorov},
 pdfkeywords={General Purpose Molecular Dynamics (MD) Software;
 Domain Decomposition (DD), Liked Cells (LC);
 Symplectic Integration, Velocity Verlet (VV), Leapfrog Verlet (LFV),
@@ -38,7 +93,8 @@ User Defined Intra- \& Inter-molecular Force-field,
 Frozen Particles, External Fields;
 Constraint Bonds (CB) \& Potential of Mean Field (PMF) Dynamics
 with SHAKE (LFV) \& RATTLE (VV),
-DD Rigid Body (RB) Dynamics with Euler-Quaternions (LFV) \& No-Squish (VV);
+DD Rigid Body (RB) Dynamics with Euler-Quaternions using
+FIQA (LFV) \& NOSQUISH (VV) integration schemes;
 Long-ranged Coulomb Interactions by Parallelised Smoothed
 Particle Mesh Ewald (SPME) using Memory Distributed 3D FFT (DaFT),
 Damped Force-shifted Coulomb, Ion Polarisation by Dinamical
@@ -49,32 +105,13 @@ Optimised Parallel (ASCII \& netCDF Amber) I/O (includes MPI-I/O),
 Verifiable \& User Extendable Source Code in Self-Contained \& Portable,
 Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
 ]{hyperref}
-%
-%Define some eye-pleasing colors for this document
-%
-\definecolor{webgreen}{rgb}{0,0.5,0}
-\definecolor{webbrown}{rgb}{0.6,0,0}
-\definecolor{webblue}{rgb}{0,0,0.75}
+%pdfLATEX% \DeclareGraphicsRule{.eps}{pdf}{.pdf}{`epstopdf #1}
+%pdfLATEX% \pdfcompresslevel=9
 
-% Layout settings
-\setlength{\textheight}{236mm} \setlength{\textwidth}{165mm}
-\setlength{\topmargin}{-7mm} \setlength{\headsep}{10mm}
-\setlength{\footskip}{10mm} \setlength{\oddsidemargin}{-2mm}
-\setlength{\evensidemargin}{-2mm}
+\usepackage[all]{hypcap}
 
-%pagestyle
+%General Pagestyle
 \usepackage{fancyhdr}
-\pagestyle{fancy}
-\lhead{\copyright STFC}
-\chead{}
-\rhead{Preface}
-\lfoot{}
-\cfoot{\thepage}
-\rfoot{}
-
-%paragraph settings
-\parindent 0ex
-\parskip 1ex
 
 %commands
 \usepackage{xspace}
@@ -87,48 +124,99 @@ Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
 \makeindex
 
 \begin{document}
-\pagenumbering{alph} \setcounter{page}{0}
-\addcontentsline{toc}{chapter}{\underline{THE \D USER MANUAL}}
 
+%       T I T L E   P A G E
+
+%pagestyle
+\pagenumbering{alph} \setcounter{page}{0}
+\pagestyle{empty}
+
+\renewcommand{\chaptermark}[1]{\markboth{#1}{#1}} % remember chapter title
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}} % section number and title
+
+% The pdfdummystart counter is a workaround to get correct
+% bookmarks for the pre-CHAPTERS in pdf files
+
+\newcounter{pdfdummystart}
+
+\refstepcounter{pdfdummystart}
+\addcontentsline{toc}{chapter}{\underline{THE \D USER MANUAL}}
 \begin{titlepage}
-\title{THE \D USER MANUAL}
-\author{I.T. Todorov \& W. Smith \\ \\
+\title{\fontsize{20}{25} \selectfont THE~~\D~~USER~~MANUAL}
+\author{{\large \bf I.T. Todorov \& W. Smith} \\ \\
 STFC Daresbury Laboratory \\
 Daresbury, Warrington WA4 4AD \\
-Cheshire, UK}
-\date{Version 4.03,~~September 2011}
+Cheshire, England, United Kingdom}
+\date{\bf Version 4.03,~~September 2011}
+\clearpage
 \end{titlepage}
 
 \maketitle
 \clearpage
 
+%       P R E F A C E
+
+%pagestyle
+\pagestyle{fancy}
+\lhead{\copyright STFC}
+\chead{}
+\rhead{Preface}
+\lfoot{}
+\cfoot{\thepage}
+\rfoot{}
 \pagenumbering{roman} \setcounter{page}{1}
 
-\maketitle \addcontentsline{toc}{section}{About \D}
+\newpage
+\refstepcounter{pdfdummystart}
+\addcontentsline{toc}{section}{About \D}
 \input about_dlpoly.tex
-\maketitle \addcontentsline{toc}{section}{Disclaimer}
+
+\newpage
+\refstepcounter{pdfdummystart}
+\addcontentsline{toc}{section}{Disclaimer}
 \input disclaimer.tex
-\maketitle \addcontentsline{toc}{section}{Acknowledgements}
+
+\newpage
+\refstepcounter{pdfdummystart}
+\addcontentsline{toc}{section}{Acknowledgements}
 \input acknowledgements.tex
-\maketitle \addcontentsline{toc}{section}{Manual Notation}
+
+\newpage
+\refstepcounter{pdfdummystart}
+\addcontentsline{toc}{section}{Manual Notation}
 \input manual_notation.tex
+
+%       C O N T E N T S
 
 %pagestyle
 \rhead{Contents}
 
+\newpage
+\refstepcounter{pdfdummystart}
 \addcontentsline{toc}{chapter}{\underline{Contents}}
 \tableofcontents
 \clearpage
+
+\newpage
+\refstepcounter{pdfdummystart}
 \addcontentsline{toc}{chapter}{\underline{List of Tables}}
 \listoftables
 \clearpage
+
+\refstepcounter{pdfdummystart}
+\newpage
 \addcontentsline{toc}{chapter}{\underline{List of Figures}}
 \listoffigures
 \clearpage
 
-\pagenumbering{arabic} \setcounter{page}{1}
+%       R E A L   M A N U A L
+
+\definecolor{webbrown}{rgb}{0,0,0.75}
+
+\cleardoublepage
 
 %pagestyle
+\pagenumbering{arabic} \setcounter{page}{1}
 \rhead{Section \thesection}
 
 \chapter{Introduction}
@@ -214,10 +302,15 @@ and output files for which are in the {\em data} sub-directory.
 
 \input examples.tex
 
-\clearpage
+%       A P P E N D I C E S
+
+%\cleardoublepage
+
+%pagestyle
+\rhead{Appendix \thechapter}
+
 \appendix
 \addcontentsline{toc}{chapter}{\underline{Appendices}}
-\rhead{Appendix \thechapter}
 
 \chapter{\D Periodic Boundary Conditions}
 \input boundary_conditions.tex
@@ -234,14 +327,42 @@ and output files for which are in the {\em data} sub-directory.
 \chapter{\D README}
 \input readme.tex
 
-\clearpage
-\addcontentsline{toc}{chapter}{Bibliography}
-\bibliographystyle{dl_poly}
+% The pdfdummyend counter is a workaround to get correct
+% bookmarks for the index & bibliography in pdf files
+
+\newcounter{pdfdummyend}
+
+%       B I B L I O G R A P H Y
+
+\cleardoublepage
+
+%pagestyle
 \rhead{Bibliography}
+%
+\refstepcounter{pdfdummyend}
+\addcontentsline{toc}{chapter}{Bibliography}
+
+\bibliographystyle{dl_poly}
 \bibliography{dl_poly}
 
-\clearpage
-\addcontentsline{toc}{chapter}{Index}
+%
+%       I N D E X
+
+\cleardoublepage
+%
+%pagestyle
 \rhead{Index}
+
+\refstepcounter{pdfdummyend}
+\addcontentsline{toc}{chapter}{Index}
+
+\renewcommand{\see}[2]{\mbox{} \mbox{\textit{see} #1}}
 \printindex
+
+\newpage
+
+%pagestyle
+\pagestyle{empty}
+\cleardoublepage
+
 \end{document}

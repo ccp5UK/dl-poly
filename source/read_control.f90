@@ -1049,23 +1049,49 @@ Subroutine read_control                           &
                  iso=1
                  If (idnode == 0) Write(nrite,"(2(/,1x,a))")                     &
                     'semi-isotropic barostat : constant normal pressure (Pn) &', &
-                    '        (NPnAT)         : constant surface area (A)'
+                    '       (N-Pn-A-T)       : constant surface area (A)'
               Else If (word(1:4) == 'tens') Then
                  iso=2
                  Call get_word(record,word)
                  ten = Abs(word_2_real(word))
                  If (idnode == 0) Write(nrite,"(3(/,1x,a),1p,e11.4)")             &
                     'semi-isotropic barostat : constant normal pressure (Pn) &',  &
-                    '      (NPngammaT)       : constant surface tension (gamma)', &
+                    '     (N-Pn-gamma-T)     : constant surface tension (gamma)', &
                     'sumulation surface tension (dyn/cm)', ten
                  ten=ten/tenunt
+
+                 Call get_word(record,word)
+                 If (word(1:4) == 'semi') Then
+                    iso=3
+                    If (idnode == 0) Write(nrite,"(1x,a)") &
+                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                 Else If (Len_Trim(word) > 0) Then
+                    Call strip_blanks(record)
+                    If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Call warning(460,0.0_wp,0.0_wp,0.0_wp)
+                 End If
+              Else If (word(1:4) == 'orth') Then
+                 Call get_word(record,word)
+                 If (Len_Trim(word) == 0) Then
+                    iso=2
+                    If (idnode == 0) Write(nrite,"(1x,a)") &
+                       'semi-isotropic barostat : orthorhombic MD cell constraints'
+                 Else If (word(1:4) == 'semi') Then
+                    iso=3
+                    If (idnode == 0) Write(nrite,"(1x,a)") &
+                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                 Else
+                    Call strip_blanks(record)
+                    If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Call warning(460,0.0_wp,0.0_wp,0.0_wp)
+                 End If
               Else If (Len_Trim(word) > 0 ) Then
                  Call strip_blanks(record)
-                 If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+                 If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (iso /= 0 .and. idnode == 0) Write(nrite,'(2(/,1x,a))')            &
-                 '*** warning - semi-isotropic ensembles are only correct for ***', &
+              If (iso >= 1 .and. iso <= 2 .and. idnode == 0) Write(nrite,'(2(/,1x,a))') &
+                 '*** warning - semi-isotropic ensembles are only correct for ***',     &
                  '*** infinite interfaces placed perpendicularly to the z axis !!! ***'
 
               If (lens) Call error(414)
@@ -1091,23 +1117,49 @@ Subroutine read_control                           &
                  iso=1
                  If (idnode == 0) Write(nrite,"(2(/,1x,a))")                     &
                     'semi-isotropic barostat : constant normal pressure (Pn) &', &
-                    '        (NPnAT)         : constant surface area (A)'
+                    '       (N-Pn-A-T)       : constant surface area (A)'
               Else If (word(1:4) == 'tens') Then
                  iso=2
                  Call get_word(record,word)
                  ten = Abs(word_2_real(word))
                  If (idnode == 0) Write(nrite,"(3(/,1x,a),1p,e11.4)")             &
                     'semi-isotropic barostat : constant normal pressure (Pn) &',  &
-                    '      (NPngammaT)       : constant surface tension (gamma)', &
+                    '     (N-Pn-gamma-T)     : constant surface tension (gamma)', &
                     'sumulation surface tension (dyn/cm)', ten
                  ten=ten/tenunt
+
+                 Call get_word(record,word)
+                 If (word(1:4) == 'semi') Then
+                    iso=3
+                    If (idnode == 0) Write(nrite,"(1x,a)") &
+                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                 Else If (Len_Trim(word) > 0) Then
+                    Call strip_blanks(record)
+                    If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Call warning(460,0.0_wp,0.0_wp,0.0_wp)
+                 End If
+              Else If (word(1:4) == 'orth') Then
+                 Call get_word(record,word)
+                 If (Len_Trim(word) == 0) Then
+                    iso=2
+                    If (idnode == 0) Write(nrite,"(1x,a)") &
+                       'semi-isotropic barostat : orthorhombic MD cell constraints'
+                 Else If (word(1:4) == 'semi') Then
+                    iso=3
+                    If (idnode == 0) Write(nrite,"(1x,a)") &
+                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                 Else
+                    Call strip_blanks(record)
+                    If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Call warning(460,0.0_wp,0.0_wp,0.0_wp)
+                 End If
               Else If (Len_Trim(word) > 0 ) Then
                  Call strip_blanks(record)
-                 If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+                 If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (iso /= 0 .and. idnode == 0) Write(nrite,'(2(/,1x,a))')            &
-                 '*** warning - semi-isotropic ensembles are only correct for ***', &
+              If (iso >= 1 .and. iso <= 2 .and. idnode == 0) Write(nrite,'(2(/,1x,a))') &
+                 '*** warning - semi-isotropic ensembles are only correct for ***',     &
                  '*** infinite interfaces placed perpendicularly to the z axis !!! ***'
 
               If (lens) Call error(414)
@@ -1131,23 +1183,49 @@ Subroutine read_control                           &
                  iso=1
                  If (idnode == 0) Write(nrite,"(2(/,1x,a))")                     &
                     'semi-isotropic barostat : constant normal pressure (Pn) &', &
-                    '        (NPnAT)         : constant surface area (A)'
+                    '       (N-Pn-A-T)       : constant surface area (A)'
               Else If (word(1:4) == 'tens') Then
                  iso=2
                  Call get_word(record,word)
                  ten = Abs(word_2_real(word))
                  If (idnode == 0) Write(nrite,"(3(/,1x,a),1p,e11.4)")             &
                     'semi-isotropic barostat : constant normal pressure (Pn) &',  &
-                    '      (NPngammaT)       : constant surface tension (gamma)', &
+                    '     (N-Pn-gamma-T)     : constant surface tension (gamma)', &
                     'sumulation surface tension (dyn/cm)', ten
                  ten=ten/tenunt
+
+                 Call get_word(record,word)
+                 If (word(1:4) == 'semi') Then
+                    iso=3
+                    If (idnode == 0) Write(nrite,"(1x,a)") &
+                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                 Else If (Len_Trim(word) > 0) Then
+                    Call strip_blanks(record)
+                    If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Call warning(460,0.0_wp,0.0_wp,0.0_wp)
+                 End If
+              Else If (word(1:4) == 'orth') Then
+                 Call get_word(record,word)
+                 If (Len_Trim(word) == 0) Then
+                    iso=2
+                    If (idnode == 0) Write(nrite,"(1x,a)") &
+                       'semi-isotropic barostat : orthorhombic MD cell constraints'
+                 Else If (word(1:4) == 'semi') Then
+                    iso=3
+                    If (idnode == 0) Write(nrite,"(1x,a)") &
+                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                 Else
+                    Call strip_blanks(record)
+                    If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Call warning(460,0.0_wp,0.0_wp,0.0_wp)
+                 End If
               Else If (Len_Trim(word) > 0 ) Then
                  Call strip_blanks(record)
-                 If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+                 If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (iso /= 0 .and. idnode == 0) Write(nrite,'(2(/,1x,a))')            &
-                 '*** warning - semi-isotropic ensembles are only correct for ***', &
+              If (iso >= 1 .and. iso <= 2 .and. idnode == 0) Write(nrite,'(2(/,1x,a))') &
+                 '*** warning - semi-isotropic ensembles are only correct for ***',     &
                  '*** infinite interfaces placed perpendicularly to the z axis !!! ***'
 
               If (lens) Call error(414)
@@ -1171,23 +1249,49 @@ Subroutine read_control                           &
                  iso=1
                  If (idnode == 0) Write(nrite,"(2(/,1x,a))")                     &
                     'semi-isotropic barostat : constant normal pressure (Pn) &', &
-                    '        (NPnAT)         : constant surface area (A)'
+                    '       (N-Pn-A-T)       : constant surface area (A)'
               Else If (word(1:4) == 'tens') Then
                  iso=2
                  Call get_word(record,word)
                  ten = Abs(word_2_real(word))
                  If (idnode == 0) Write(nrite,"(3(/,1x,a),1p,e11.4)")             &
                     'semi-isotropic barostat : constant normal pressure (Pn) &',  &
-                    '      (NPngammaT)       : constant surface tension (gamma)', &
+                    '     (N-Pn-gamma-T)     : constant surface tension (gamma)', &
                     'sumulation surface tension (dyn/cm)', ten
                  ten=ten/tenunt
+
+                 Call get_word(record,word)
+                 If (word(1:4) == 'semi') Then
+                    iso=3
+                    If (idnode == 0) Write(nrite,"(1x,a)") &
+                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                 Else If (Len_Trim(word) > 0) Then
+                    Call strip_blanks(record)
+                    If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Call warning(460,0.0_wp,0.0_wp,0.0_wp)
+                 End If
+              Else If (word(1:4) == 'orth') Then
+                 Call get_word(record,word)
+                 If (Len_Trim(word) == 0) Then
+                    iso=2
+                    If (idnode == 0) Write(nrite,"(1x,a)") &
+                       'semi-isotropic barostat : orthorhombic MD cell constraints'
+                 Else If (word(1:4) == 'semi') Then
+                    iso=3
+                    If (idnode == 0) Write(nrite,"(1x,a)") &
+                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                 Else
+                    Call strip_blanks(record)
+                    If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Call warning(460,0.0_wp,0.0_wp,0.0_wp)
+                 End If
               Else If (Len_Trim(word) > 0 ) Then
                  Call strip_blanks(record)
-                 If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+                 If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (iso /= 0 .and. idnode == 0) Write(nrite,'(2(/,1x,a))')            &
-                 '*** warning - semi-isotropic ensembles are only correct for ***', &
+              If (iso >= 1 .and. iso <= 2 .and. idnode == 0) Write(nrite,'(2(/,1x,a))') &
+                 '*** warning - semi-isotropic ensembles are only correct for ***',     &
                  '*** infinite interfaces placed perpendicularly to the z axis !!! ***'
 
               If (lens) Call error(414)

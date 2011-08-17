@@ -6,7 +6,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2011
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -103,7 +103,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
         If (idnode == 0) Then
            Open(Unit=nrsddt, File='RSDDAT', Form='formatted', Access='direct', Status='replace', Recl=recsz)
            Write(Unit=nrsddt, Fmt='(a72,a1)',           Rec=1) cfgname(1:72),lf
-           Write(Unit=nrsddt, Fmt='(f7.3,a23,2i21,a1)', Rec=2) rrsd,Repeat(' ',23),frm,rec,lf
+           Write(Unit=nrsddt, Fmt='(f11.3,a19,2i21,a1)', Rec=2) rrsd,Repeat(' ',19),frm,rec,lf
            Close(Unit=nrsddt)
         End If
         rec=Int(2,ip)
@@ -260,8 +260,8 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
         Call io_init( recsz )
         Call io_open( io_write, MPI_COMM_SELF, 'RSDDAT', MPI_MODE_WRONLY, fh )
 
-        Write(record, Fmt='(a8,i10,2f12.6,i5,f7.3,a18,a1)') &
-           'timestep',nstep,tstep,time,imcon,rrsd,Repeat(' ',18),lf
+        Write(record, Fmt='(a8,i10,2f12.6,i5,f11.3,a14,a1)') &
+           'timestep',nstep,tstep,time,imcon,rrsd,Repeat(' ',14),lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
@@ -306,7 +306,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
      Call io_open( io_write, dlp_comm_world, 'RSDDAT', MPI_MODE_WRONLY, fh )
 
      Do i=1,n
-        Write(record, Fmt='(a8,i10,f7.3,a47,a1)') nam(i),ind(i),dr(i),Repeat(' ',47),lf
+        Write(record, Fmt='(a8,i10,f11.3,a43,a1)') nam(i),ind(i),dr(i),Repeat(' ',43),lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
@@ -331,7 +331,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
      rec=rec+Int(5,ip)+Int(2,ip)*Int(megn,ip)
      If (idnode == 0) Then
-        Write(record, Fmt='(f7.3,a23,2i21,a1)') rrsd,Repeat(' ',23),frm,rec,lf
+        Write(record, Fmt='(f11.3,a19,2i21,a1)') rrsd,Repeat(' ',19),frm,rec,lf
         Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record )
      End If
 
@@ -357,8 +357,8 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
 ! Accumulate header
 
-        Write(record, Fmt='(a8,i10,2f12.6,i5,f7.3,a18,a1)') &
-           'timestep',nstep,tstep,time,imcon,rrsd,Repeat(' ',18),lf
+        Write(record, Fmt='(a8,i10,2f12.6,i5,f11.3,a14,a1)') &
+           'timestep',nstep,tstep,time,imcon,rrsd,Repeat(' ',14),lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
@@ -414,7 +414,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
            End If
 
            Do i=1,jatms
-              Write(record, Fmt='(a8,i10,f7.3,a47,a1)') chbuf(i),iwrk(i),dr(i),Repeat(' ',47),lf
+              Write(record, Fmt='(a8,i10,f11.3,a43,a1)') chbuf(i),iwrk(i),dr(i),Repeat(' ',43),lf
               j=j+1
               Do k=1,recsz
                  chbat(k,j) = record(k:k)
@@ -438,7 +438,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
 ! Update main header
 
-        Write(Unit=nrsddt, Fmt='(f7.3,a23,2i21,a1)', Rec=2) rrsd,Repeat(' ',23),frm,rec,lf
+        Write(Unit=nrsddt, Fmt='(f11.3,a19,2i21,a1)', Rec=2) rrsd,Repeat(' ',19),frm,rec,lf
 
         Close(Unit=nrsddt)
 

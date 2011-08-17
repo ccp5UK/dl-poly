@@ -21,11 +21,12 @@ Subroutine nst_l1_vv                          &
 ! iso=0 fully anisotropic barostat
 ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
 ! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+!                               or with orthorhombic constraints (ten=0.0_wp)
+! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
 !
-! reference: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
-!
-! reference: D. Quigley and M.I.J. Probert
-!            J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
+! reference1: D. Quigley and M.I.J. Probert
+!             J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
+! reference2: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov august 2011
@@ -170,10 +171,10 @@ Subroutine nst_l1_vv                          &
         dens0(i) = dens(i)
      End Do
 
-! Initialise and get h_z for iso=2
+! Initialise and get h_z for iso>1
 
      h_z=0
-     If (iso == 2) Then
+     If (iso > 1) Then
         Call dcell(cell,celprp)
         h_z=celprp(9)
      End If
@@ -893,9 +894,9 @@ Subroutine nst_l1_vv                          &
         dens(i)=dens0(i)*tmp
      End Do
 
-! get h_z for iso=2
+! get h_z for iso>1
 
-     If (iso == 2) Then
+     If (iso > 1) Then
         Call dcell(cell,celprp)
         h_z=celprp(9)
      End If

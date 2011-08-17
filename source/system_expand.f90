@@ -368,9 +368,9 @@ Subroutine system_expand(imcon,nx,ny,nz,megatm)
 
 ! Write 2 records @ line 'rec+1' and 'rec+2' for particle 'index' in CONFIG(new)
 
-                       index = Int(i_xyz(ix,iy,iz),ip)*Int(setspc,ip) + Int(m,ip)
-                       rec   = offset + Int(2,ip)*index - Int(2,ip)
-                       index = index + (offset - Int(5,ip))/Int(2,ip)
+                       index = i_xyz(ix,iy,iz)*setspc + m
+                       rec   = offset + Int(2,ip)*Int(index,ip) - Int(2,ip)
+                       index = index + Int((offset - Int(5,ip))/Int(2,ip))
 
                        If (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
                            io_write == IO_WRITE_SORTED_MPIIO   .or. &

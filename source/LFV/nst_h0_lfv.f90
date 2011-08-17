@@ -17,8 +17,8 @@ Subroutine nst_h0_lfv                                  &
 ! iso=0 fully anisotropic barostat
 ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
 ! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-!
-! reference: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
+!                               or with orthorhombic constraints (ten=0.0_wp)
+! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
 !
 ! Note: (1) this ensemble is modified from its original form as in
 !           reference1 to that shown in reference2, and now there is
@@ -142,10 +142,10 @@ Subroutine nst_h0_lfv                                  &
         dens0(i) = dens(i)
      End Do
 
-! Initialise and get h_z for iso=2
+! Initialise and get h_z for iso>1
 
      h_z=0
-     If (iso == 2) Then
+     If (iso > 1) Then
         Call dcell(cell,celprp)
         h_z=celprp(9)
      End If
@@ -160,6 +160,8 @@ Subroutine nst_h0_lfv                                  &
         ceng  = 2.0_wp*sigma + 1.0_wp*boltz*tmp
      Else If (iso == 2) Then
         ceng  = 2.0_wp*sigma + 3.0_wp*boltz*tmp
+     Else If (iso == 3) Then
+        ceng  = 2.0_wp*sigma + 2.0_wp*boltz*tmp
      End If
      pmass = ((2.0_wp*sigma + 3.0_wp*boltz*tmp)/3.0_wp)*taup**2
 
@@ -286,21 +288,23 @@ Subroutine nst_h0_lfv                                  &
   eta2 =0.0_wp
   chip0=0.0_wp
 
-! split anisotropic from semi-isotropic barostats (iso=0,1,2)
+! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
 
   chit1 = chit + tstep*(-ceng)/qmass
   If (iso == 0) Then
-     eta1=(eta + tstep*(stress+strkin - (press*uni+strext)*volm)/pmass)
+     eta1=eta + tstep*(stress+strkin - (press*uni+strext)*volm)/pmass
   Else
-     If      (iso == 1) Then
-        eta1(1:8)=0.0_wp
-     Else If (iso == 2) Then
-        eta1(1)=(eta(1) + tstep*(stress(1)+strkin(1) - (press+strext(1)-ten/h_z)*volm)/pmass)
-        eta1(2:4)=0.0_wp
-        eta1(5)=(eta(5) + tstep*(stress(5)+strkin(5) - (press+strext(5)-ten/h_z)*volm)/pmass)
-        eta1(6:8)=0.0_wp
+     eta1=0.0_wp
+     If      (iso == 2) Then
+        eta1(1)=eta(1) + tstep*(stress(1)+strkin(1) - (press+strext(1)-ten/h_z)*volm)/pmass
+        eta1(5)=eta(5) + tstep*(stress(5)+strkin(5) - (press+strext(5)-ten/h_z)*volm)/pmass
+     Else If (iso == 3) Then
+        eta1(1)=0.5_wp*(eta(1)+eta(5)) + tstep*( 0.5_wp*    &
+                (stress(1)+strkin(1)+stress(5)+strkin(5)) - &
+                (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm )/pmass
+        eta1(5)=eta1(1)
      End If
-     eta1(9)=(eta(9) + tstep*(stress(9)+strkin(9) - (press+strext(9))*volm)/pmass)
+     eta1(9)=eta(9) + tstep*(stress(9)+strkin(9) - (press+strext(9))*volm)/pmass
   End If
 
   chit2 = 0.5_wp*(chit+chit1)
@@ -309,6 +313,8 @@ Subroutine nst_h0_lfv                                  &
 ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
   chip0 = Sqrt( eta2(1)**2 + 2*eta2(2)**2 + 2*eta2(3)**2 + eta2(5)**2 + 2*eta2(6)**2 + eta2(9)**2 )
+
+! iterate forces, strcon, strpmf, chit and eta
 
   Do iter=1,mxiter
 
@@ -319,9 +325,9 @@ Subroutine nst_h0_lfv                                  &
         If (weight(i) > 1.0e-6_wp) Then
            tmp=1.0_wp/weight(i)
 
-           vxx(i)=vxt(i) + tstep*( tmp*fxx(i) - chit2*uxt(i) - eta2(1)*uxt(i)+eta2(2)*uyt(i)+eta2(3)*uzt(i) )
-           vyy(i)=vyt(i) + tstep*( tmp*fyy(i) - chit2*uyt(i) - eta2(2)*uxt(i)+eta2(5)*uyt(i)+eta2(6)*uzt(i) )
-           vzz(i)=vzt(i) + tstep*( tmp*fzz(i) - chit2*uzt(i) - eta2(3)*uxt(i)+eta2(6)*uyt(i)+eta2(9)*uzt(i) )
+           vxx(i)=vxt(i) + tstep*( tmp*fxx(i) - (chit2*uxt(i) + eta2(1)*uxt(i)+eta2(2)*uyt(i)+eta2(3)*uzt(i)) )
+           vyy(i)=vyt(i) + tstep*( tmp*fyy(i) - (chit2*uyt(i) + eta2(2)*uxt(i)+eta2(5)*uyt(i)+eta2(6)*uzt(i)) )
+           vzz(i)=vzt(i) + tstep*( tmp*fzz(i) - (chit2*uzt(i) + eta2(3)*uxt(i)+eta2(6)*uyt(i)+eta2(9)*uzt(i)) )
 
            xxx(i)=xxt(i) + tstep*(vxx(i) + oxt(i)*eta1(1)+oyt(i)*eta1(2)+ozt(i)*eta1(3))
            yyy(i)=yyt(i) + tstep*(vyy(i) + oxt(i)*eta1(2)+oyt(i)*eta1(5)+ozt(i)*eta1(6))
@@ -440,27 +446,28 @@ Subroutine nst_h0_lfv                                  &
         engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
 ! propagate chit and eta sets and couple
-! (strcon,strpmf,chit2,eta2 are freshly new!!!)
+! (strcon,strpmf,chit2,eta2 are freshly new here!!!)
 
-! split anisotropic from semi-isotropic barostats (iso=0,1,2)
+! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
 
         chit1 = chit + tstep*(2.0_wp*engke+pmass*chip0**2-ceng)/qmass
         If (iso == 0) Then
-           eta1=(eta + tstep*(strcon+strpmf+stress+strkin - &
-                              (press*uni+strext)*volm)/pmass)*Exp(-tstep*chit2)
+           eta1=(eta + tstep*(strcon+strpmf+stress+strkin - (press*uni+strext)*volm)/pmass)*Exp(-tstep*chit2)
         Else
-           If      (iso == 1) Then
-              eta1(1:8)=0.0_wp
-           Else If (iso == 2) Then
-              eta1(1)=(eta(1) + tstep*(strcon(1)+strpmf(1)+stress(1)+strkin(1) - &
-                                       (press+strext(1)-ten/h_z)*volm)/pmass)*Exp(-tstep*chit2)
-              eta1(2:4)=0.0_wp
-              eta1(5)=(eta(5) + tstep*(strcon(5)+strpmf(5)+stress(5)+strkin(5) - &
-                                       (press+strext(5)-ten/h_z)*volm)/pmass)*Exp(-tstep*chit2)
-              eta1(6:8)=0.0_wp
+           If      (iso == 2) Then
+              eta1(1)=(eta(1) + tstep*( strcon(1)+strpmf(1)+stress(1)+strkin(1) - &
+                                        (press+strext(1)-ten/h_z)*volm )/pmass)*Exp(-tstep*chit2)
+              eta1(5)=(eta(5) + tstep*( strcon(5)+strpmf(5)+stress(5)+strkin(5) - &
+                                        (press+strext(5)-ten/h_z)*volm )/pmass)*Exp(-tstep*chit2)
+           Else If (iso == 3) Then
+              eta1(1)=(0.5_wp*(eta(1)+eta(5)) + tstep*( 0.5_wp*    &
+                       (strcon(1)+strpmf(1)+stress(1)+strkin(1)  + &
+                        strcon(5)+strpmf(5)+stress(5)+strkin(5)) - &
+                       (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm )/pmass)*Exp(-tstep*chit2)
+              eta1(5)=eta1(1)
            End If
-           eta1(9)=(eta(9) + tstep*(strcon(9)+strpmf(9)+stress(9)+strkin(9) - &
-                                    (press+strext(9))*volm)/pmass)*Exp(-tstep*chit2)
+           eta1(9)=(eta(9) + tstep*( strcon(9)+strpmf(9)+stress(9)+strkin(9) - &
+                                     (press+strext(9))*volm )/pmass)*Exp(-tstep*chit2)
         End If
 
         chit2 = 0.5_wp*(chit+chit1)
@@ -470,7 +477,7 @@ Subroutine nst_h0_lfv                                  &
 
         chip0 = Sqrt( eta2(1)**2 + 2*eta2(2)**2 + 2*eta2(3)**2 + eta2(5)**2 + 2*eta2(6)**2 + eta2(9)**2 )
 
-    End If
+     End If
 
   End Do
 
@@ -560,9 +567,9 @@ Subroutine nst_h0_lfv                                  &
      dens(i)=dens0(i)*tmp
   End Do
 
-! get h_z for iso=2
+! get h_z for iso>1
 
-  If (iso == 2) Then
+  If (iso > 1) Then
      Call dcell(cell,celprp)
      h_z=celprp(9)
   End If

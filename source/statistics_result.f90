@@ -9,7 +9,7 @@ Subroutine statistics_result            &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith december 1992
-! amended   - i.t.todorov october 2010
+! amended   - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,7 +29,7 @@ Subroutine statistics_result            &
 
   Logical           :: check
   Integer           :: i,j,iadd
-  Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,celprp(1:10),h_z
+  Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty
 
 ! shell relaxation convergence statistics
 
@@ -168,19 +168,32 @@ Subroutine statistics_result            &
         End Do
      End If
 
-     If (iso /= 0) Then
-        Call dcell(avcel,celprp)
-        h_z=celprp(9)
-        If (idnode == 0) &
-           Write(nrite,"(/,/,16x,'Average surface area    (Angs^2)',10x,1p,e12.4)") avvol/h_z
-        If (iso == 2) Then
-           tmp= -h_z * ( (sumval(iadd-8)+sumval(iadd-7)) - (2.0_wp*press+strext(1)+strext(5)) ) / 2.0
-           If (idnode == 0) &
-              Write(nrite,"(/,/,16x,'Average surface tension (dyn/cm)',10x,1p,e12.4)") tmp*tenunt/prsunt
+     iadd = iadd+9
+
+     If (iso > 0) Then
+        h_z=sumval(iadd+1)
+
+        If (idnode == 0) Then
+           Write(nrite,"(/,/,16x,'Average surface area, fluctuations & mean estimate (Angs^2)',/)")
+           Write(nrite,'(1p,3e12.4)') sumval(iadd+2),ssqval(iadd+2),avvol/h_z
+        End If
+
+        iadd = iadd+2
+
+        If (iso > 1) Then
+           tx= -h_z * ( sumval(iadd-9-8-2)/prsunt - (press+strext(1)) ) * tenunt
+           ty= -h_z * ( sumval(iadd-9-7-2)/prsunt - (press+strext(5)) ) * tenunt
+           If (idnode == 0) Then
+              Write(nrite,"(/,16x,'Average surface tension, fluctuations & mean estimate in x (dyn/cm)',/)")
+              Write(nrite,'(1p,3e12.4)') sumval(iadd+1),ssqval(iadd+1),tx
+              Write(nrite,"(/,16x,'Average surface tension, fluctuations & mean estimate in y (dyn/cm)',/)")
+              Write(nrite,'(1p,3e12.4)') sumval(iadd+2),ssqval(iadd+2),ty
+           End If
+
+           iadd = iadd+2
         End If
      End If
 
-     iadd = iadd+9
   End If
 
 ! Write out remaining registers

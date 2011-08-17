@@ -650,7 +650,7 @@ Subroutine npt_b1_lfv                          &
            chit,strkin,strknf,strknt,engke,engrot)
 
 ! Berendsen barostat and thermostat are not coupled
-! calculate system pressure (vircon and virpmf are new here!!!)
+! calculate system pressure (vircon and virpmf are freshly new here!!!)
 
         pr = (2.0_wp*engke-virtot-vircon-virpmf-vircom) / (3.0_wp*volm)
 
@@ -667,8 +667,8 @@ Subroutine npt_b1_lfv                          &
 
   If (megcon == 0 .and. megpmf == 0) cell=scale*czero
 
-! Update RB oreintation and COM position,
-! velocity and position of RB's contituents
+! Update RB orientation and COM position,
+! velocity and position of RB's constituents
 ! Initialise safety flag for quaternion convergence
 
   safe=.true.

@@ -284,7 +284,8 @@ Program dl_poly
 
 ! CHECK MD CONFIGURATION
 
-  Call check_config(levcfg,imcon,l_str,lpse,keyens,keyfce,keyres,megatm)
+  Call check_config &
+           (levcfg,imcon,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
 ! l_scl: rescale CONFIG to CFGSCL and exit gracefully
 

@@ -450,7 +450,7 @@ the kinetic temperature constraint $\chi$ can be found as follows:
 \frac{d}{dt} {\cal T} &\propto& \frac{d}{dt} \left(\frac{1}{2}\sum_{i} m_{i} \vek{v}_{i}^{2} \right) =
 \sum_{i} m_{i} \vek{v}_{i} \cdot \frac{d}{dt} \vek{v}_{i} = 0 \nonumber \\
 & & \sum_{i} m_{i} \vek{v}_{i}(t) \cdot
-\left\{ \frac{\vek{f}_{i}(t)}{m_{i}} - \chi (t) \; \vek{v}_{i}(t) \right\} = 0 \label{Evans} \\ 
+\left\{ \frac{\vek{f}_{i}(t)}{m_{i}} - \chi (t) \; \vek{v}_{i}(t) \right\} = 0 \label{Evans} \\
 \chi (t) &=& \frac {\sum_{i} \vek{v}_{i}(t) \cdot \vek{f}_{i}(t)} {\sum_{i} m_{i} \vek{v}_{i}^{2}(t)}~~, \nonumber
 \end{eqnarray}
 where $\cal T$ is the instantaneous temperature defined in equation (\ref {tinst}).
@@ -1252,7 +1252,7 @@ The conserved quantity these generate is:
 {\cal H}_{\rm N\mat{\sigma}T} = {\cal H}_{\rm NVE} + {p_{mass}~{\tt Tr}[\mat{\eta} \cdot \mat{\eta}^{T}] \over 2} + P_{\rm ext} V(t)~~.
 \end{equation}
 
-The VV and LFV algorithmic equations are, therefore,
+the VV and LFV algorithmic equations are, therefore,
 written in the same fashion as in the isotropic case with
 slight modifications.  For the VV couched algorithm
 these are of the following sort
@@ -1293,10 +1293,10 @@ This ensemble is optionally extending to constant normal pressure
 and constant surface area, NP$_{n}$AT \cite{ikeguchi-04}, by semi-isotropic
 constraining of the barostat equation of motion to:
 \begin{equation}
-\frac{d}{dt} \eta_{\alpha\beta}(t) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
-\frac{\sigma_{zz}(t) - P_{\rm ext}~V(t)}{p_{mass}} + \frac{2 E_{kin}(t)}{f} \frac{1}{p_{mass}} -
+\frac{d}{dt} \eta_{\alpha\beta}(t) = \left\{ \begin{array} {l@{\quad:\quad}l}
+\frac{\sigma_{zz}(t) - P_{\rm ext}~V(t)}{p_{mass}} + \frac{2 E_{kin}(t)}{f~p_{mass}} -
 \chi_{p} \eta_{zz}(t) + \frac{R_{p,zz}(t)}{p_{mass}} & (\alpha = \beta) = z \\
-0 & (\alpha,\beta) \ne z~~.
+0~~~;~~~\eta_{\alpha\beta}(0) = 0 & (\alpha,\beta) \ne z~~.
 \end{array} \right.
 \end{equation}
 
@@ -1305,20 +1305,37 @@ normal pressure and constant surface tension, NP$_{n}\gamma$T
 \cite{ikeguchi-04}, by semi-isotropic constraining of the
 barostat equation of motion to:
 \begin{equation}
-\frac{d}{dt} \eta_{\alpha\beta}(t) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+\frac{d}{dt} \eta_{\alpha\beta}(t) = \left\{ \begin{array} {l@{\quad:\quad}l}
 \frac{\sigma_{\alpha\alpha}(t) - \left[ P_{\rm ext} - \gamma_{\rm ext} / h_{z}(t) \right]~V(t)}{p_{mass}} +
-\frac{2 E_{kin}(t)}{f} \frac{1}{p_{mass}} - \chi_{p} \eta_{\alpha\alpha}(t) +
+\frac{2 E_{kin}(t)}{f~p_{mass}} - \chi_{p} \eta_{\alpha\alpha}(t) +
 \frac{R_{p,\alpha\alpha}(t)}{p_{mass}} & (\alpha = \beta) = x,y \\
 & \\
 \frac{\sigma_{zz}(t) - P_{\rm ext}~V(t)}{p_{mass}} +
 \frac{2 E_{kin}(t)}{f} \frac{1}{p_{mass}} - \chi_{p} \eta_{zz}(t) +
 \frac{R_{p,zz}(t)}{p_{mass}} & (\alpha = \beta) = z \\
-0 & (\alpha \ne \beta) = x,y,z~~,
-\end{array} \right.
+0~~~;~~~\eta_{\alpha\beta}(0) = 0 & (\alpha \ne \beta) = x,y,z
+\end{array} \right. ,
 \end{equation}
-where $\gamma_{\rm ext}$ is the user defined external surface tesnion
+where $\gamma_{\rm ext}$ is the user defined external surface tension
 and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantaneous hight of the
-MD box (or MD box volume over area).
+MD box (or MD box volume over area).  The instnatneous surface
+tension is defined as
+\begin{equation}
+\gamma_{\alpha}(t)=-h_{z}(t)\left[ \sigma_{\alpha\alpha}(t) - P_{\rm ext} \right]~~.\label{gamma}
+\end{equation}
+The case $\gamma_{\rm ext}=0$ generates the NPT anisotropic ensemble for
+the orthorhombic cell (imcon=2 in CONFIG, see Appendix~\ref{boundary-conditions}).
+This can be considered as an "orthorhombic" constraint on the N$\sigma$T ensemble.
+The constraint can be strengthened further, to a "semi-orthorhombic" one, by
+imposing that the MD cell change isotropically in the $(x,y)$ plane
+which leads to the following modification in the N$P_{n}\gamma$T set of equatons
+\begin{eqnarray}
+\frac{d}{dt} \eta_{\alpha\alpha}(t) = \frac{\left[\sigma_{xx}(t)+\sigma_{yy}(t)\right]/2 -
+\left[ P_{\rm ext} - \gamma_{\rm ext} / h_{z}(t) \right]~V(t)}{p_{mass}} +
+\frac{2~E_{kin}(t)}{f~p_{mass}} - \\
+\phantom{xxxxxxxxxxxxxx}- \chi_{p} \eta_{\alpha\alpha}(t) +
+\frac{R_{p,xx}(t)+R_{p,yy}(t)}{2~p_{mass}}~~:~~(\alpha = \beta) = x,y~~.\nonumber
+\end{eqnarray}
 
 The VV and LFV flavours of the non-isotropic Langevin barostat
 (and Nos\'{e}-Hoover thermostat) are implemented in the \D routines
@@ -1479,7 +1496,7 @@ This ensemble is optionally extending to constant normal pressure
 and constant surface area, NP$_{n}$AT \cite{ikeguchi-04}, by semi-isotropic
 constraining of the barostat equation of motion to:
 \begin{equation}
-\frac{d}{dt} \eta_{\alpha\delta}(t) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+\eta_{\alpha\delta}(t) = \left\{ \begin{array} {l@{\quad:\quad}l}
 1 - {\beta \Delta t \over \tau_{P}} \left[ P_{\rm ext} - \sigma_{zz}(t) / V(t) \right]
 & (\alpha = \delta) = z \\
 1 & (\alpha = \delta) = x,y \\
@@ -1492,7 +1509,7 @@ normal pressure and constant surface tension, NP$_{n}\gamma$T
 \cite{ikeguchi-04}, by semi-isotropic constraining of the
 barostat equation of motion to:
 \begin{equation}
-\frac{d}{dt} \eta_{\alpha\delta}(t) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+\eta_{\alpha\delta}(t) = \left\{ \begin{array} {l@{\quad:\quad}l}
 1 - {\beta \Delta t \over \tau_{P}} \left[ P_{\rm ext} - \gamma_{\rm ext}~V(t) / h_{z}(t) -
 \sigma_{\alpha\alpha}(t) / V(t) \right] & (\alpha = \delta) = x,y \\
 & \\
@@ -1501,9 +1518,21 @@ barostat equation of motion to:
 0 & (\alpha \ne \delta)~~,
 \end{array} \right.
 \end{equation}
-where $\gamma_{\rm ext}$ is the user defined external surface tesnion
+where $\gamma_{\rm ext}$ is the user defined external surface tension
 and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantaneous hight of the
-MD box (or MD box volume over area).
+MD box (or MD box volume over area).  One defines the instantaneous surface
+tension as given in equation (\ref{gamma}).  The case $\gamma_{\rm ext}=0$
+generates the NPT anisotropic ensemble for the orthorhombic cell
+(imcon=2 in CONFIG, see Appendix~\ref{boundary-conditions}).  This
+can be considered as an "orthorhombic" constraint on the N$\sigma$T ensemble.
+The constraint can be strengthened further, to a "semi-orthorhombic" one, by
+imposing that the MD cell change isotropically in the $(x,y)$ plane
+which leads to the following change in the equations above
+\begin{equation}
+\eta_{\alpha\alpha}(t) = 1 - {\beta \Delta t \over \tau_{P}}
+\left[ P_{\rm ext} - \gamma_{\rm ext}~ \frac{V(t)}{h_{z}(t)} -
+\frac{\sigma_{xx}(t)+\sigma_{yy}(t)}{2~V(t)} \right]~~:~~(\alpha = \delta) = x,y~~.
+\end{equation}
 
 The VV and LFV flavours of the non-isotropic Berendsen barostat (and thermostat)
 are implemented in the \D routines {\sc nst\_b0\_vv} and {\sc nst\_b0\_lfv} respectively.
@@ -1794,10 +1823,10 @@ and constant surface area, NP$_{n}$AT \cite{ikeguchi-04}, by semi-isotropic
 constraining of the barostat equation of motion and slight amending
 the thermostat equation of motion and the conserved quantity to:
 \begin{eqnarray}
-\frac{d}{dt} \eta_{\alpha\beta}(t) &=& \left\{ \begin{array} {l@{\qquad:\qquad}l}
+\frac{d}{dt} \eta_{\alpha\beta}(t) &=& \left\{ \begin{array} {l@{\quad:\quad}l}
 \frac{\sigma_{zz}(t) - P_{\rm ext}~V(t)}{p_{mass}} -
 \chi(t) \eta_{zz}(t) & (\alpha = \beta) = z \\
-0 & (\alpha,\beta) \ne z
+0~~~;~~~\eta_{\alpha\beta}(0) = 0 & (\alpha,\beta) \ne z
 \end{array} \right. \nonumber \\
 \frac{d}{dt} \chi(t) &=& \frac{2 E_{kin}(t) + p_{mass}~{\tt Tr}[\mat{\eta}(t) \cdot
 \mat{\eta}(t)^{T}] - 2 \sigma - k_{B}~T_{\rm ext}}{q_{mass}} \\
@@ -1809,16 +1838,16 @@ the thermostat equation of motion and the conserved quantity to:
 Similarly, this ensemble is optionally extending to constant
 normal pressure and constant surface tension, NP$_{n}\gamma$T
 \cite{ikeguchi-04}, by semi-isotropic constraining of the
-barostat equation of motion  and slight amending the thermostat
+barostat equation of motion and slight amending the thermostat
 equation of motion and the conserved quantity to:
 \begin{eqnarray}
-\frac{d}{dt} \eta_{\alpha\beta}(t) &=& \left\{ \begin{array} {l@{\qquad:\qquad}l}
+\frac{d}{dt} \eta_{\alpha\beta}(t) &=& \left\{ \begin{array} {l@{\quad:\quad}l}
 \frac{\sigma_{\alpha\alpha}(t) - \left[ P_{\rm ext} - \gamma_{\rm ext} / h_{z}(t) \right]~V(t)}{p_{mass}} -
 \chi(t) \eta_{\alpha\alpha}(t) & (\alpha = \beta) = x,y \\
 & \\
 \frac{\sigma_{zz}(t) - P_{\rm ext}~V(t)}{p_{mass}} -
 \chi(t) \eta_{zz}(t) & (\alpha = \beta) = z \\
-0 & (\alpha \ne \beta) = x,y,z
+0~~~;~~~\eta_{\alpha\beta}(0) = 0 & (\alpha \ne \beta) = x,y,z
 \end{array} \right. \nonumber \\
 \frac{d}{dt} \chi(t) &=& \frac{2 E_{kin}(t) + p_{mass}~{\tt Tr}[\mat{\eta}(t) \cdot
 \mat{\eta}(t)^{T}] - 2 \sigma - 3~k_{B}~T_{\rm ext}}{q_{mass}} \\
@@ -1826,9 +1855,25 @@ equation of motion and the conserved quantity to:
 {p_{mass}~{\tt Tr}[\mat{\eta} \cdot \mat{\eta}^{T}] \over 2} + P_{\rm ext} V(t) +
 (f+3)~k_{B}~T_{\rm ext}~\int_o^t \chi (s) ds~~. \nonumber
 \end{eqnarray}
-where $\gamma_{\rm ext}$ is the user defined external surface tesnion
+where $\gamma_{\rm ext}$ is the user defined external surface tension
 and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantaneous hight of the
-MD box (or MD box volume over area).
+MD box (or MD box volume over area).  One defines the instantaneous surface
+tension as given in equation (\ref{gamma}).  The case $\gamma_{\rm ext}=0$
+generates the NPT anisotropic ensemble for the orthorhombic cell
+(imcon=2 in CONFIG, see Appendix~\ref{boundary-conditions}).  This
+can be considered as an "orthorhombic" constraint on the N$\sigma$T ensemble.
+The constraint can be strengthened further, to a "semi-orthorhombic" one, by
+imposing that the MD cell change isotropically in the $(x,y)$ plane which
+leads to the following changes in the equations above
+\begin{eqnarray}
+\frac{d}{dt} \eta_{\alpha\alpha}(t) &=& \frac{\left[\sigma_{xx}(t)+\sigma_{yy}(t)\right]/2 -
+\left[ P_{\rm ext} - \gamma_{\rm ext} / h_{z}(t) \right]~V(t)}{p_{mass}} -
+\chi (t) \eta_{\alpha\alpha}(t)~~:~~(\alpha = \beta) = x,y \nonumber \\
+ & & \\
+{\cal H}_{\rm NP_{n}{\gamma}{=0}T} &=& {\cal H}_{\rm NVE} + {q_{mass}~\chi (t)^{2} \over 2} +
+{p_{mass}~{\tt Tr}[\mat{\eta} \cdot \mat{\eta}^{T}] \over 2} + P_{\rm ext} V(t) +
+(f+2)~k_{B}~T_{\rm ext}~\int_o^t \chi (s) ds~~.\nonumber
+\end{eqnarray}
 
 The VV and LFV flavours of the non-isotropic Nos\'e-Hoover
 barostat (and thermostat) are implemented in the \D routines
@@ -1933,10 +1978,10 @@ and constant surface area, NP$_{n}$AT \cite{ikeguchi-04}, by semi-isotropic
 constraining of the barostat equation of motion and slight amending
 the thermostat equation of motion and the conserved quantity to:
 \begin{eqnarray}
-\frac{d}{dt} \eta_{\alpha\beta}(t) &=& \left\{ \begin{array} {l@{\qquad:\qquad}l}
-\frac{\sigma_{zz}(t) - P_{\rm ext}~V(t)}{p_{mass}} + \frac{2 E_{kin}(t)}{f} \frac{1}{p_{mass}} -
+\frac{d}{dt} \eta_{\alpha\beta}(t) &=& \left\{ \begin{array} {l@{\quad:\quad}l}
+\frac{\sigma_{zz}(t) - P_{\rm ext}~V(t)}{p_{mass}} + \frac{2 E_{kin}(t)}{f~p_{mass}} -
 \chi(t) \eta_{zz}(t) & (\alpha = \beta) = z \\
-0 & (\alpha,\beta) \ne z
+0~~~;~~~\eta_{\alpha\beta}(0) = 0 & (\alpha,\beta) \ne z
 \end{array} \right. \nonumber \\
 \frac{d}{dt} \chi(t) &=& \frac{2 E_{kin}(t) + p_{mass}~{\tt Tr}[\mat{\eta}(t) \cdot
 \mat{\eta}(t)^{T}] - 2 \sigma - k_{B}~T_{\rm ext}}{q_{mass}} \\
@@ -1948,16 +1993,16 @@ the thermostat equation of motion and the conserved quantity to:
 Similarly, this ensemble is optionally extending to constant
 normal pressure and constant surface tension, NP$_{n}\gamma$T
 \cite{ikeguchi-04}, by semi-isotropic constraining of the
-barostat equation of motion  and slight amending the thermostat
+barostat equation of motion and slight amending the thermostat
 equation of motion and the conserved quantity to:
 \begin{eqnarray}
-\frac{d}{dt} \eta_{\alpha\beta}(t) &=& \left\{ \begin{array} {l@{\qquad:\qquad}l}
+\frac{d}{dt} \eta_{\alpha\beta}(t) &=& \left\{ \begin{array} {l@{\quad:\quad}l}
 \frac{\sigma_{\alpha\alpha}(t) - \left[ P_{\rm ext} - \gamma_{\rm ext} / h_{z}(t) \right]~V(t)}{p_{mass}} +
 \frac{2 E_{kin}(t)}{f} \frac{1}{p_{mass}} - \chi(t) \eta_{\alpha\alpha}(t) & (\alpha = \beta) = x,y \\
 & \\
 \frac{\sigma_{zz}(t) - P_{\rm ext}~V(t)}{p_{mass}} +
-\frac{2 E_{kin}(t)}{f} \frac{1}{p_{mass}} - \chi(t) \eta_{zz}(t) & (\alpha = \beta) = z \\
-0 & (\alpha \ne \beta) = x,y,z
+\frac{2 E_{kin}(t)}{f~p_{mass}} - \chi(t) \eta_{zz}(t) & (\alpha = \beta) = z \\
+0~~~;~~~\eta_{\alpha\beta}(0) = 0 & (\alpha \ne \beta) = x,y,z
 \end{array} \right. \nonumber \\
 \frac{d}{dt} \chi(t) &=& \frac{2 E_{kin}(t) + p_{mass}~{\tt Tr}[\mat{\eta}(t) \cdot
 \mat{\eta}(t)^{T}] - 2 \sigma - 3~k_{B}~T_{\rm ext}}{q_{mass}} \\
@@ -1965,12 +2010,28 @@ equation of motion and the conserved quantity to:
 {p_{mass}~{\tt Tr}[\mat{\eta} \cdot \mat{\eta}^{T}] \over 2} + P_{\rm ext} V(t) +
 (f+3)~k_{B}~T_{\rm ext}~\int_o^t \chi (s) ds~~, \nonumber
 \end{eqnarray}
-where $\gamma_{\rm ext}$ is the user defined external surface tesnion
+where $\gamma_{\rm ext}$ is the user defined external surface tension
 and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantaneous hight of the
-MD box (or MD box volume over area).
+MD box (or MD box volume over area).  One defines the instantaneous surface
+tension as given in equation (\ref{gamma}).  The case $\gamma_{\rm ext}=0$
+generates the NPT anisotropic ensemble for the orthorhombic cell
+(imcon=2 in CONFIG, see Appendix~\ref{boundary-conditions}).  This
+can be considered as an "orthorhombic" constraint on the N$\sigma$T ensemble.
+The constraint can be strengthened further, to a "semi-orthorhombic" one, by
+imposing that the MD cell change isotropically in the $(x,y)$ plane which
+leads to the following changes in the equations above
+\begin{eqnarray}
+\frac{d}{dt} \eta_{\alpha\alpha}(t) &=& \frac{\left[\sigma_{xx}(t)+\sigma_{yy}(t)\right]/2 -
+\left[ P_{\rm ext} - \gamma_{\rm ext} / h_{z}(t) \right]~V(t)}{p_{mass}} + \frac{2~E_{kin}(t)}{f~p_{mass}} -
+\chi (t) \eta_{\alpha\alpha}(t)~:~\nonumber \\
+ & & \phantom{xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx}~:~(\alpha = \beta) = x,y\\
+{\cal H}_{\rm NP_{n}{\gamma}{=0}T} &=& {\cal H}_{\rm NVE} + {q_{mass}~\chi (t)^{2} \over 2} +
+{p_{mass}~{\tt Tr}[\mat{\eta} \cdot \mat{\eta}^{T}] \over 2} + P_{\rm ext} V(t) +
+(f+2)~k_{B}~T_{\rm ext}~\int_o^t \chi (s) ds~~.\nonumber
+\end{eqnarray}
 
-The Martyna-Tuckerman-Klein equations of motion have same
-conserved quantities as the Nos\'e-Hoover's ones but are proven
+Although the Martyna-Tuckerman-Klein equations of motion have same
+conserved quantities as the Nos\'e-Hoover's ones they are proven
 to generate ensembles that conserve the phase space volume and
 thus have well defined conserved quantities even in presence of
 forces external to the system \cite{martyna-94a}, which is not

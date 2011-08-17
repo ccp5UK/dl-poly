@@ -660,7 +660,7 @@
 
         Call statistics_collect              &
            (leql,nsteql,lzdn,nstzdn,         &
-           keyres,keyens,intsta,imcon,       &
+           keyres,keyens,iso,intsta,imcon,   &
            degfre,degshl,degrot,             &
            nstep,tstep,time,tmst,            &
            engcpe,vircpe,engsrp,virsrp,      &
@@ -671,7 +671,8 @@
            engtet,virtet,engfld,virfld,      &
            engbnd,virbnd,engang,virang,      &
            engdih,virdih,enginv,virinv,      &
-           engke,engrot,consv,vircom,strtot, &
+           engke,engrot,consv,vircom,        &
+           strtot,press,strext,              &
            stpeng,stpvir,stpcfg,stpeth,      &
            stptmp,stpprs,stpvol)
 
@@ -1187,7 +1188,7 @@
 
         Call statistics_collect              &
            (leql,nsteql,lzdn,nstzdn,         &
-           keyres,keyens,intsta,imcon,       &
+           keyres,keyens,iso,intsta,imcon,   &
            degfre,degshl,degrot,             &
            nstep,tstep,time,tmst,            &
            engcpe,vircpe,engsrp,virsrp,      &
@@ -1198,7 +1199,8 @@
            engtet,virtet,engfld,virfld,      &
            engbnd,virbnd,engang,virang,      &
            engdih,virdih,enginv,virinv,      &
-           engke,engrot,consv,vircom,strtot, &
+           engke,engrot,consv,vircom,        &
+           strtot,press,strext,              &
            stpeng,stpvir,stpcfg,stpeth,      &
            stptmp,stpprs,stpvol)
 

@@ -18,6 +18,12 @@ Subroutine nst_h1_lfv                             &
 !
 ! Parrinello-Rahman type: changing cell shape
 !
+! iso=0 fully anisotropic barostat
+! iso=1 semi-isotropic barostat to constant normal pressure & surface area
+! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+!                               or with orthorhombic constraints (ten=0.0_wp)
+! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
+!
 ! Note: (1) this ensemble is modified from its original form as in
 !           reference1 to that shown in reference2, and now there is
 !           coupling between the thermostat and the barostat
@@ -27,12 +33,7 @@ Subroutine nst_h1_lfv                             &
 ! reference1: Melchionna, Ciccotti and Holian, Mol Phys 1993, 78, p533
 ! reference2: Martyna, Tuckerman, Tobias, Klein
 !             Mol. Phys., 1996, Vol. 87 (5), p. 1117
-!
-! iso=0 fully anisotropic barostat
-! iso=1 semi-isotropic barostat to constant normal pressure & surface area
-! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-!
-! reference: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
+! reference3: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2009
@@ -178,10 +179,10 @@ Subroutine nst_h1_lfv                             &
         dens0(i) = dens(i)
      End Do
 
-! Initialise and get h_z for iso=2
+! Initialise and get h_z for iso>1
 
      h_z=0
-     If (iso == 2) Then
+     If (iso > 1) Then
         Call dcell(cell,celprp)
         h_z=celprp(9)
      End If
@@ -196,6 +197,8 @@ Subroutine nst_h1_lfv                             &
         ceng  = 2.0_wp*sigma + 1.0_wp*boltz*tmp
      Else If (iso == 2) Then
         ceng  = 2.0_wp*sigma + 3.0_wp*boltz*tmp
+     Else If (iso == 3) Then
+        ceng  = 2.0_wp*sigma + 2.0_wp*boltz*tmp
      End If
      pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*tmp*taup**2
 
@@ -566,21 +569,23 @@ Subroutine nst_h1_lfv                             &
   eta2 =0.0_wp
   chip0=0.0_wp
 
-! split anisotropic from semi-isotropic barostats (iso=0,1,2)
+! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
 
-  chit1=chit+tstep*(-ceng)/qmass
+  chit1 = chit + tstep*(-ceng)/qmass
   If (iso == 0) Then
-     eta1=(eta+tstep*((stress+strkin+strcom) - (press*uni+strext)*volm)/pmass)
+     eta1=eta + tstep*(strcom+stress+strkin - (press*uni+strext)*volm)/pmass
   Else
-     If      (iso == 1) Then
-        eta1(1:8)=0.0_wp
-     Else If (iso == 2) Then
-        eta1(1)=(eta(1)+tstep*((stress(1)+strkin(1)+strcom(1)) - (press+strext(1)-ten/h_z)*volm)/pmass)
-        eta1(2:4)=0.0_wp
-        eta1(5)=(eta(5)+tstep*((stress(5)+strkin(5)+strcom(5)) - (press+strext(5)-ten/h_z)*volm)/pmass)
-        eta1(6:8)=0.0_wp
+     eta1=0.0_wp
+     If      (iso == 2) Then
+        eta1(1)=eta(1) + tstep*(strcom(1)+stress(1)+strkin(1) - (press+strext(1)-ten/h_z)*volm)/pmass
+        eta1(5)=eta(5) + tstep*(strcom(5)+stress(5)+strkin(5) - (press+strext(5)-ten/h_z)*volm)/pmass
+     Else If (iso == 3) Then
+        eta1(1)=0.5_wp*(eta(1)+eta(5)) + tstep*( 0.5_wp*                        &
+                (strcom(1)+stress(1)+strkin(1)+strcom(5)+stress(5)+strkin(5)) - &
+                (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm )/pmass
+        eta1(5)=eta1(1)
      End If
-     eta1(9)=(eta(9)+tstep*((stress(9)+strkin(9)+strcom(9)) - (press+strext(9))*volm)/pmass)
+     eta1(9)=eta(9) + tstep*(strcom(9)+stress(9)+strkin(9) - (press+strext(9))*volm)/pmass
   End If
 
   chit2 = 0.5_wp*(chit+chit1)
@@ -590,7 +595,7 @@ Subroutine nst_h1_lfv                             &
 
   chip0 = Sqrt( eta2(1)**2 + 2*eta2(2)**2 + 2*eta2(3)**2 + eta2(5)**2 + 2*eta2(6)**2 + eta2(9)**2 )
 
-! iterate forces, vircon, virpmf, chit and eta
+! iterate forces, strcon, strpmf, chit and eta
 
   Do iter=1,mxiter
 
@@ -827,25 +832,28 @@ Subroutine nst_h1_lfv                             &
         engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
 ! propagate chit and eta sets and couple
-! (strcon,strpmf,chit2,eta2 are new here!!!)
+! (strcon,strpmf,chit2,eta2 are freshly new here!!!)
+!
+! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
 
-        chit1=chit+tstep*(2.0_wp*(engke+engrot)+pmass*chip0**2-ceng)/qmass
+        chit1 = chit + tstep*(2.0_wp*(engke+engrot)+pmass*chip0**2-ceng)/qmass
         If (iso == 0) Then
-           eta1=(eta+tstep*((stress+strkin+strcon+strpmf+strcom) - &
-                            (press*uni+strext)*volm)/pmass)*Exp(-tstep*chit2)
+           eta1=(eta + tstep*(strcom+strcon+strpmf+stress+strkin - (press*uni+strext)*volm)/pmass)*Exp(-tstep*chit2)
         Else
-           If      (iso == 1) Then
-              eta1(1:8)=0.0_wp
-           Else If (iso == 2) Then
-              eta1(1)=(eta(1)+tstep*((stress(1)+strkin(1)+strcon(1)+strpmf(1)+strcom(1)) - &
-                                       (press+strext(1)-ten/h_z)*volm)/pmass)*Exp(-tstep*chit2)
-              eta1(2:4)=0.0_wp
-              eta1(5)=(eta(5)+tstep*((stress(5)+strkin(5)+strcon(5)+strpmf(5)+strcom(5)) - &
-                                       (press+strext(5)-ten/h_z)*volm)/pmass)*Exp(-tstep*chit2)
-              eta1(6:8)=0.0_wp
+           If      (iso == 2) Then
+              eta1(1)=(eta(1) + tstep*( strcom(1)+strcon(1)+strpmf(1)+stress(1)+strkin(1) - &
+                                        (press+strext(1)-ten/h_z)*volm )/pmass)*Exp(-tstep*chit2)
+              eta1(5)=(eta(5) + tstep*( strcom(5)+strcon(5)+strpmf(5)+stress(5)+strkin(5) - &
+                                        (press+strext(5)-ten/h_z)*volm )/pmass)*Exp(-tstep*chit2)
+           Else If (iso == 3) Then
+              eta1(1)=(0.5_wp*(eta(1)+eta(5)) + tstep*( 0.5_wp*              &
+                       (strcom(1)+strcon(1)+strpmf(1)+stress(1)+strkin(1)  + &
+                        strcom(5)+strcon(5)+strpmf(5)+stress(5)+strkin(5)) - &
+                       (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm )/pmass)*Exp(-tstep*chit2)
+              eta1(5)=eta1(1)
            End If
-           eta1(9)=(eta(9)+tstep*((stress(9)+strkin(9)+strcon(9)+strpmf(9)+strcom(9)) - &
-                                 (press+strext(9))*volm)/pmass)*Exp(-tstep*chit2)
+           eta1(9)=(eta(9) + tstep*( strcom(9)+strcon(9)+strpmf(9)+stress(9)+strkin(9) - &
+                                     (press+strext(9))*volm )/pmass)*Exp(-tstep*chit2)
         End If
 
         chit2 = 0.5_wp*(chit+chit1)
@@ -868,7 +876,8 @@ Subroutine nst_h1_lfv                             &
      Call mat_mul(aaa,cell0,cell)
   End If
 
-! Update RB oreintation, and velocity and position of RB's contituents
+! Update RB orientation and COM position,
+! velocity and position of RB's constituents
 ! Initialise safety flag for quaternion convergence
 
   safe=.true.
@@ -1070,9 +1079,9 @@ Subroutine nst_h1_lfv                             &
      dens(i)=dens0(i)*tmp
   End Do
 
-! get h_z for iso=2
+! get h_z for iso>1
 
-  If (iso == 2) Then
+  If (iso > 1) Then
      Call dcell(cell,celprp)
      h_z=celprp(9)
   End If

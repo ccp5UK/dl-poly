@@ -22,6 +22,8 @@ Subroutine nst_b1_lfv                          &
 ! iso=0 fully anisotropic barostat
 ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
 ! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+!                               or with orthorhombic constraints (ten=0.0_wp)
+! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
 !
 ! reference: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
@@ -162,10 +164,10 @@ Subroutine nst_b1_lfv                          &
         dens0(i) = dens(i)
      End Do
 
-! Initialise and get h_z for iso=2
+! Initialise and get h_z for iso>1
 
      h_z=0
-     If (iso == 2) Then
+     If (iso > 1) Then
         Call dcell(cell,celprp)
         h_z=celprp(9)
      End If
@@ -472,30 +474,28 @@ Subroutine nst_b1_lfv                          &
 ! Berendsen barostat and thermostat are not coupled
 ! calculate Berendsen barostat: eta (strcon and strpmf are assumed zero!!!)
 
-! split anisotropic from semi-isotropic barostats (iso=0,1,2)
+! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
 
   If (iso == 0) Then
-     eta=uni + tstep*beta*(strcom+strcon+strpmf+stress+strkin - &
-                           (press*uni+strext)*volm)/(taup*volm)
+     eta=uni + tstep*beta*(strcom+stress+strkin-(press*uni+strext)*volm)/(taup*volm)
   Else
+     eta=0.0_wp
      If      (iso == 1) Then
         eta(1)=1.0_wp
-        eta(2:4)=0.0_wp
         eta(5)=1.0_wp
-        eta(6:8)=0.0_wp
      Else If (iso == 2) Then
-        eta(1)=1.0_wp + tstep*beta*(strcom(1)+strcon(1)+strpmf(1)+stress(1)+strkin(1) - &
-                                    (press+strext(1)-ten/h_z)*volm)/(taup*volm)
-        eta(2:4)=0.0_wp
-        eta(5)=1.0_wp + tstep*beta*(strcom(5)+strpmf(5)+stress(5)+strkin(5) - &
-                                    (press+strext(5)-ten/h_z)*volm)/(taup*volm)
-        eta(6:8)=0.0_wp
+        eta(1)=1.0_wp + tstep*beta*(strcom(1)+stress(1)+strkin(1)-(press+strext(1)-ten/h_z)*volm)/(taup*volm)
+        eta(5)=1.0_wp + tstep*beta*(strcom(5)+stress(5)+strkin(5)-(press+strext(5)-ten/h_z)*volm)/(taup*volm)
+     Else If (iso == 3) Then
+        eta(1)=1.0_wp + tstep*beta*( 0.5_wp*                                   &
+               (strcom(1)+stress(1)+strkin(1)+strcom(5)+stress(5)+strkin(5)) - &
+               (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm )/(taup*volm)
+        eta(5)=eta(1)
      End If
-     eta(9)=1.0_wp + tstep*beta*(strcom(9)+strcon(9)+strpmf(9)+stress(9)+strkin(9) - &
-                                 (press+strext(9))*volm)/(taup*volm)
+     eta(9)=1.0_wp + tstep*beta*(strcom(9)+stress(9)+strkin(9)-(press+strext(9))*volm)/(taup*volm)
   End If
 
-! iterate forces, vircon, chit and chip
+! iterate forces, strcon, chit and eta
 
   Do iter=1,mxiter
 
@@ -687,29 +687,26 @@ Subroutine nst_b1_lfv                          &
            chit,strkin,strknf,strknt,engke,engrot)
 
 ! Berendsen barostat and thermostat are not coupled
-! calculate Berendsen barostat: eta (strcon and strpmf are new here!!!)
+! calculate Berendsen barostat: eta (strcon and strpmf are freshly new here!!!)
 
-! split anisotropic from semi-isotropic barostats (iso=0,1,2)
+! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
 
         If (iso == 0) Then
-           eta=uni + tstep*beta*(strcom+strcon+strpmf+stress+strkin - &
-                                 (press*uni+strext)*volm)/(taup*volm)
+           eta=uni + tstep*beta*(strcom+strcon+strpmf+stress+strkin-(press*uni+strext)*volm)/(taup*volm)
         Else
-           If      (iso == 1) Then
-              eta(1)=1.0_wp
-              eta(2:4)=0.0_wp
-              eta(5)=1.0_wp
-              eta(6:8)=0.0_wp
-           Else If (iso == 2) Then
-              eta(1)=1.0_wp + tstep*beta*(strcom(1)+strcon(1)+strpmf(1)+stress(1)+strkin(1) - &
-                                          (press+strext(1)-ten/h_z)*volm)/(taup*volm)
-              eta(2:4)=0.0_wp
-              eta(5)=1.0_wp + tstep*beta*(strcom(5)+strpmf(5)+stress(5)+strkin(5) - &
-                                          (press+strext(5)-ten/h_z)*volm)/(taup*volm)
-              eta(6:8)=0.0_wp
+           If      (iso == 2) Then
+              eta(1)=1.0_wp + tstep*beta*( strcom(1)+strcon(1)+strpmf(1)+stress(1)+strkin(1) - &
+                                           (press+strext(1)-ten/h_z)*volm )/(taup*volm)
+              eta(5)=1.0_wp + tstep*beta*( strcom(5)+strcon(5)+strpmf(5)+stress(5)+strkin(5) - &
+                                           (press+strext(5)-ten/h_z)*volm )/(taup*volm)
+           Else If (iso == 3) Then
+              eta(1)=1.0_wp + tstep*beta*( 0.5_wp*                         &
+                     (strcom(1)+strcon(1)+strpmf(1)+stress(1)+strkin(1)  + &
+                      strcom(5)+strcon(5)+strpmf(5)+stress(5)+strkin(5)) - &
+                     (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm )/(taup*volm)
+              eta(5)=eta(1)
            End If
-           eta(9)=1.0_wp + tstep*beta*(strcom(9)+strcon(9)+strpmf(9)+stress(9)+strkin(9) - &
-                                       (press+strext(9))*volm)/(taup*volm)
+           eta(9)=1.0_wp + tstep*beta*(strcom(9)+strcon(9)+strpmf(9)+stress(9)+strkin(9)-(press+strext(9))*volm)/(taup*volm)
         End If
 
      End If
@@ -720,8 +717,8 @@ Subroutine nst_b1_lfv                          &
 
   If (megcon == 0 .and. megpmf == 0) Call mat_mul(eta,czero,cell)
 
-! Update RB oreintation and COM position,
-! velocity and position of RB's contituents
+! Update RB orientation and COM position,
+! velocity and position of RB's constituents
 ! Initialise safety flag for quaternion convergence
 
   safe=.true.
@@ -932,9 +929,9 @@ Subroutine nst_b1_lfv                          &
      dens(i)=dens0(i)*tmp
   End Do
 
-! get h_z for iso=2
+! get h_z for iso>1
 
-  If (iso == 2) Then
+  If (iso > 1) Then
      h_z=celprp(9)
   End If
 

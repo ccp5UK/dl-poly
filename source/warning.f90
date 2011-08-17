@@ -147,9 +147,12 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode == 110) Then
 
-        Write(nrite,'(2(/,1x,a),/)')                                                  &
-        '*** warning - image convention incompatible with NsT ensembles concept ***', &
-        '*** imcon reset to 3 ***'
+        ia=Nint(a)
+        ib=Nint(b)
+
+        Write(nrite,'(2(/,1x,a),2(i6,a),/)')                  &
+        '*** warning - image convention incompatible with the set NsT ensemble ***', &
+        '*** imcon reset from ', ia,' to ', ib,' !!! ***'
 
      Else If (kode == 120) Then
 

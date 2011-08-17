@@ -135,6 +135,7 @@ pseudo langevin   2.0 150.0
 variable timestep     0.001 pico-seconds
 mindis                 0.03 Angstroms
 maxdis                 0.10 Angstroms
+mxstep                0.005 pico-seconds
 
 # SUMULATION & EQUILIBRATION LENGTH
 steps                 10000 steps
@@ -280,7 +281,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf ensemble npt mtk} $f_{1}~f_{2}$         \> select NPT ensemble\index{ensemble!Martyna-Tuckerman-Klein NPT}, type Martyna-Tuckerman-Klein with \\
 \>                                              \> $f_{1},~f_{2}$ as the thermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
 \>                                              \> \\
-\> {\bf ensemble nst lang}evin $f_{1}~f_{2}$    \> select N$\mat{\sigma}$T ensemble\index{ensemble!Langevin N$\mat{\sigma}$T}, type Langevin with $f_{1},~f_{2}$ as the \\
+\> {\bf ensemble nst lang}evin $f_{1}~f_{2}$    \> select N$\mat{\sigma}$T ensemble\index{ensemble!Langevin N$\sigma$T}, type Langevin with $f_{1},~f_{2}$ as the \\
 \>                                              \> thermostat\index{thermostat} and barostat\index{barostat} relaxation speed (friction) constants in ps$^{-1}$ \\
 \>                                              \> \\
 \> {\bf ensemble nst ber}endsen $f_{1}~f_{2}$   \> select N$\mat{\sigma}$T ensemble\index{ensemble!Berendsen N$\sigma$T}, type Berendsen with $f_{1},~f_{2}$ as \\
@@ -300,6 +301,19 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> {\em hoover} or {\em mtk}), with $f_{1},~f_{2}$ as the thermostat\index{thermostat} \\
 \>                                              \> and barostat\index{barostat} relaxation times in ps and set required \\
 \>                                              \> simulation (target/external) surface tension to $\gamma$ dyn/cm \\
+\>                                              \> \\
+\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf tens} $\gamma$ {\bf semi} \> \phantom{xxx} select the same NP$_{n}\gamma$T ensemble as above but with \\
+\>                                                                   \> \phantom{xxx} the "semi-anisotropic constraint" so that the\\
+\>                                                                   \> \phantom{xxx} MD cell changes isotropically in the $(x,y)$ plane \\
+\>                                              \> \\
+\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf orth}orhombic             \> \phantom{xxx} select the NPT anisotropic ensemble for the orthorhombic\\
+\>                                                                   \> \phantom{xxx} MD cell ("orthorhombic constraint" - equivalent to the \\
+\>                                                                   \> \phantom{xxx} NP$_{n}\gamma$T ensemble when $\gamma=0$: NP$_{n}\gamma=0$T ) \\
+\>                                              \> \\
+\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf orth semi}                \> \phantom{xxx} select the same NP$_{n}\gamma=0$T ensemble as above but with the \\
+\>                                                                   \> \phantom{xxx} "semi-anisotropic constraint" so that the MD cell changes \\
+\>                                                                   \> \phantom{xxx} isotropically in the $(x,y)$ plane ("semi-orthorhombic \\
+\>                                                                   \> \phantom{xxx} constraint" - equivalent to the NP$_{n}\gamma=0$T semi ensemble) \\
 \>                                              \> \\
 \> {\bf eps}ilon (constant) $f$                 \> set relative dielectric constant to $f$ (default $f~=~1.0$) \\
 \>                                              \> \\
@@ -412,6 +426,10 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf mxshak} $n$                             \> set shake/rattle iterations limit to $n$ (default $n~=~250$) \\
 \>                                              \> \\
+\>                                              \> \\
+\> {\bf mxstep} $f$                             \> set maximum timestep value in variable timestep (control) to $f$ \\
+\>                                              \> ps (no default $f~=~0.0$ ps but if not opted sets to Huge(1.0)) \\
+\>                                              \> \\
 \> {\bf nfold} $i~j~k$                          \> option to create matching CONFIG\_i\_j\_k and FIELD\_i\_j\_k \\
 \>                                              \> for a volumetrically expanded version of the current system \\
 \>                                              \> (CONFIG and FIELD) by replicating CONFIG's contents \\
@@ -423,10 +441,10 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf no ind}ex                               \> ignore particles' indices as read from the CONFIG file \\
 \>                                              \> and set particles' indexing by order of reading, \\
 \>                                              \> this option assumes that the FIELD topology description \\
-\>                                              \> matches the crystalographic sites from the CONFIG file by \\
+\>                                              \> matches the crystallographic sites from the CONFIG file by \\
 \>                                              \> their order of reading rather than by their actual indexing \\
 \>                                              \> \\
-\> {\bf no str}ict                              \> {\bf (i)} abort strict checks such as; on existance of well defined \\
+\> {\bf no str}ict                              \> {\bf (i)} abort strict checks such as; on existence of well defined \\
 \>                                              \> system cutoff, on contiguity of particles' indices when \\
 \>                                              \> connecting CONFIG (crystallographic listing) to FIELD \\
 \>                                              \> (topology), on IO when {\bf io} {\em mpiio/direct sorted} is selected, etc., \\
@@ -653,18 +671,21 @@ without any actual dynamics!).
 option requires the user to specify an initial guess for a
 reasonable timestep for the system (in picoseconds).  The simulation
 is unlikely to retain this as the operational timestep however, as
-the latter may change in response to the dynamics of the system. The
-option is used in conjunction with the default values of {\bf
-maxdis} ($0.10$~\AA) and {\bf mindis} ($0.0i3$~\AA), which can also
-be optionally altered if used as directives (note the rule that {\bf
-maxdis}~$>~2.5$~{\bf mindis} applies).  These distances serve as
+the latter may change in response to the dynamics of the system.  The
+option is used in conjunction with the default values of {\bf maxdis}
+($0.10$~\AA) and {\bf mindis} ($0.03$~\AA), which can also be
+optionally altered if used as directives (note the rule that
+{\bf maxdis}~$>~2.5$~{\bf mindis} applies).  Also, an additional
+{\bf mxstep} (in ps) control can be applied.  These serve as
 control values in the variable timestep algorithm, which calculates
 the greatest distance a particle has travelled in any timestep
 during the simulation.  If the maximum distance is exceeded, the
 timestep variable is halved and the step repeated.  If the greatest
 move is less than the minimum allowed, the timestep variable is
-doubled and the step repeated.  In this way the integration timestep
-self-adjusts in response to the dynamics of the system.
+doubled and the step repeated provided it does not exceed the
+user specified {\bf mxstep}.  If it does then it scales to
+{\bf mxstep} and the step is repeated.  In this way the integration
+timestep self-adjusts in response to the dynamics of the system.
 
 \item The {\bf job time} and {\bf close time} directives are
 required to ensure a controlled close down procedure when a job
@@ -766,7 +787,7 @@ their model system.
 21 & Berendsen NPT ensemble\index{ensemble!Berendsen NPT} \\
 22 & Nos\'{e}-Hoover NPT ensemble\index{ensemble!Nos\'{e}-Hoover NPT} \\
 23 & Martyna-Tuckerman-Klein NPT ensemble \index{ensemble!Martyna-Tuckerman-Klein NPT} \\
-30 & Langevin N$\mat{\sigma}$T\index{ensemble!Langevin N$\mat{\sigma}$T} ensemble \\
+30 & Langevin N$\mat{\sigma}$T\index{ensemble!Langevin N$\sigma$T} ensemble \\
 31 & Berendsen N$\mat{\sigma}$T ensemble\index{ensemble!Berendsen N$\sigma$T} \\
 32 & Nos\'{e}-Hoover N$\mat{\sigma}$T ensemble\index{ensemble!Nos\'{e}-Hoover N$\sigma$T} \\
 33 & Martyna-Tuckerman-Klein N\mat{\sigma}T ensemble \index{ensemble!Martyna-Tuckerman-Klein N$\sigma$T} \\

@@ -100,7 +100,7 @@ to adapt \D to user specific force fields\index{force field}.
 \item Slab (x,y periodic, z non-periodic).
 \end{enumerate}
 
-\noindent These are describe in detail in Appendix
+\noindent These are described in detail in Appendix
 \ref{boundary-conditions}.  Note that periodic boundary conditions
 (PBC) $1$ and $5$ above require careful consideration to enable
 efficient load balancing on a parallel computer.
@@ -157,7 +157,7 @@ The following MD algorithms\index{algorithm} are available:
 \item Berendsen\index{ensemble!Berendsen NPT} constant T,P algorithm \cite{berendsen-84a}
 \item Nos\'{e}-Hoover\index{ensemble!Nos\'{e}-Hoover NPT} constant T,P algorithm \cite{hoover-85a}
 \item Martyna, Tuckerman and Klein (MTK)\index{ensemble!Martyna-Tuckerman-Klein NPT} constant T,P algorithm \cite{martyna-96a}
-\item Langevin\index{ensemble!Langevin N$\sigma$T} constant T,$\sigma$ algorithm \cite{quigley-04}
+\item Langevin\index{ensemble!Langevin N$\sigma$T} constant T,$\mat{\sigma}$ algorithm \cite{quigley-04}
 \item Berendsen\index{ensemble!Berendsen N$\sigma$T} constant T,$\mat{\sigma}$ algorithm \cite{berendsen-84a}
 \item Nos\'{e}-Hoover\index{ensemble!Nos\'{e}-Hoover N$\sigma$T} constant T,$\mat{\sigma}$ algorithm \cite{hoover-85a}
 \item Martyna, Tuckerman and Klein (MTK)\index{ensemble!Martyna-Tuckerman-Klein N$\sigma$T} constant T,$\mat{\sigma}$ algorithm \cite{martyna-96a}.
@@ -246,32 +246,20 @@ argument is allowed to be changed.
 \D exploits the dynamic array allocation features of FORTRAN90
 \index{FORTRAN90} to assign the necessary array dimensions.
 
-\subsection{Target Computers}
+\subsection{Target Platforms}
 
-\D is intended for distributed memory parallel computers.  It was
-developed on Cray T3E and IBM SP4 architectures.
+\D is intended for distributed memory parallel computers.
 
 Compilation of \D in parallel mode requires {\bf only} a FORTRAN90
 \index{FORTRAN90} compiler and Message Passing Interface (MPI) to handle
 communications.  Compilation of \D in serial mode is also possible
 and requires {\bf only} a FORTRAN90 \index{FORTRAN90} compiler.
 
-\subsection{Version Control System (CVS)}
-
-\D was developed with the aid of the CVS\index{CVS} version control
-system. We strongly recommend that users of \D adopt this system for
-local development of the code, particularly where several users
-access the same source code.  For information on CVS\index{CVS}
-please contact \\
-\noindent \href{mailto:info-cvs-request@gnu.org}{info-cvs-request@gnu.org}
-or visit the web site - \href{http://www.cyclic.com/}{http://www.cyclic.com/}\index{WWW}.
-
 \subsection{Internal Documentation}
 
 All subroutines are supplied with a header block of FORTRAN90
 \index{FORTRAN90} comment (!) records giving:
 \begin{enumerate}
-\item A CVS\index{CVS} revision number and associated data
 \item The name of the author and/or modifying author
 \item The version number or date of production
 \item A brief description of the function of the subroutine
@@ -526,24 +514,13 @@ provides additional information in the form of
 \end{enumerate}
 
 \noindent
-Daresbury Laboratory also maintains two DL\_POLY associated electronic
-mailing lists:
-\begin{enumerate}
-\item {\em dl\_poly\_news} - to which all registered DL\_POLY users
+Daresbury Laboratory also maintains a \D associated electronic mailing
+list, {\em dl\_poly\_4\_news}, to which all registered \D users
 are automatically subscribed.  It is via this list that error reports
-and announcements of new versions are made.  If you are a DL\_POLY
-user, but not on this list you may request to be added.  Contact \\
-\noindent{\href{mailto:ilian.todorov@stfc.ac.uk}{ilian.todorov@stfc.ac.uk}}
-\item {\em dl\_poly\_mail} - is a group list which is available to
-DL\_POLY users by request.  Its purpose is to allow DL\_POLY users
-to broadcast information and queries to each other.
-To subscribe to this list send a mail message to
-{\href{mailto:majordomo@dl.ac.uk}{majordomo@dl.ac.uk}}
-with the one-line message: $subscribe~dl\_poly\_mail$.
-Subsequent messages may be broadcast by e-mailing to:
-{\href{mailto:dl\_poly\_mail@dl.ac.uk}{dl\_poly\_mail@dl.ac.uk}}.
-{\bf Note} that this is a vetted list, so electronic spam is not possible.
-\end{enumerate}
+and announcements of new versions are made.  If you are a \D
+user, but not on this list you may request to be added by sending
+a mail message to {\href{mailto:majordomo@dl.ac.uk}{majordomo@dl.ac.uk}}
+with the one-line message: $subscribe~dl\_poly\_4\_news$.
 
 The DL\_POLY {\bf Forum} is a web based centre for all DL\_POLY users
 to exchange comments and queries.  You may access the forum through the

@@ -1,4 +1,5 @@
-Subroutine check_config(levcfg,imcon,l_str,lpse,keyens,keyfce,keyres,megatm)
+Subroutine check_config &
+           (levcfg,imcon,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -8,7 +9,7 @@ Subroutine check_config(levcfg,imcon,l_str,lpse,keyens,keyfce,keyres,megatm)
 ! data (positions+) to the topology (sites+), i.e. CONFIG to FIELD
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2010
+! author    - i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -21,7 +22,7 @@ Subroutine check_config(levcfg,imcon,l_str,lpse,keyens,keyfce,keyres,megatm)
   Implicit None
 
   Logical, Intent( In    ) :: l_str,lpse
-  Integer, Intent( In    ) :: levcfg,keyens,keyfce,keyres,megatm
+  Integer, Intent( In    ) :: levcfg,keyens,iso,keyfce,keyres,megatm
   Integer, Intent( InOut ) :: imcon
 
   Logical                :: safe
@@ -60,9 +61,18 @@ Subroutine check_config(levcfg,imcon,l_str,lpse,keyens,keyfce,keyres,megatm)
 
 ! Check image conditions for nst ensembles
 
-  If ((imcon == 1 .or. imcon == 2) .and. keyens >= 30) Then
-     imcon = 3
-     Call warning(110,0.0_wp,0.0_wp,0.0_wp)
+  If (keyens >= 30) Then
+     If (iso == 0) Then
+        If (imcon == 1 .or. imcon == 2) Then
+           Call warning(110,Real(imcon,wp),3.0_wp,0.0_wp)
+           imcon = 3
+        End If
+     Else ! iso > 0
+        If (imcon == 1) Then
+           Call warning(110,Real(imcon,wp),3.0_wp,0.0_wp)
+           imcon = 2
+        End If
+     End If
   End If
 
 ! Check image condition for pseudo
