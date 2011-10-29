@@ -14,17 +14,13 @@ author    - w.smith 2000
 
 *********************************************************************
          */
-    public static MakeControl home;
-    public static ComVar job;
-    public static JTextField tfcap,tistrdf,tnstraj,tistraj,tlevcon,ttscal;
-    public static JTextField tistzden,tnstbts;
-    public static int istrdf,nstraj,istraj,levcon,tscal,nstbts,istzden;
-    public static double fcap;
-    public static JButton close;
-    public static JCheckBox ballpairs,blcap,blzeql,blvdw,blrdf,blprdf;
-    public static JCheckBox bltraj,bltscal,blzden,blpzden,blzero;
-    public static boolean allpairs,lcap,lzeql,lvdw,lrdf,lprdf;
-    public static boolean ltraj,ltscal,lzden,lpzden,lzero;
+    private static MakeControl home;
+    private static ComVar job;
+    private static JTextField tfcap,tistrdf,tnstraj,tistraj,tlevcon,ttscal;
+    private static JTextField tistzden,tnstbts;
+    private static JButton close;
+    private static JCheckBox ballpairs,blcap,blzeql,blvdw,blrdf,blprdf;
+    private static JCheckBox bltraj,bltscal,blzden,blpzden,blzero;
 
     // Define the Graphical User Interface
 
@@ -222,10 +218,6 @@ author    - w.smith 2000
 *********************************************************************
          */
 
-        // set parameters values
-
-        home.setcmvValues();
-
         // set panel
 
         ballpairs.setSelected(allpairs);
@@ -246,6 +238,39 @@ author    - w.smith 2000
         blpzden.setSelected(lpzden);
         tistzden.setText(String.valueOf(istzden));
         blzero.setSelected(lzero);
+
+    }
+
+    void getParams() {
+        /*
+*********************************************************************
+
+dl_poly/java GUI routine
+
+copyright - daresbury laboratory
+author    - w.smith 2000
+
+*********************************************************************
+         */
+
+        istrdf=BML.giveInteger(tistrdf.getText(),1);
+        istzden=BML.giveInteger(tistzden.getText(),1);
+        nstbts=BML.giveInteger(tnstbts.getText(),1);
+        nstraj=BML.giveInteger(tnstraj.getText(),1);
+        istraj=BML.giveInteger(tistraj.getText(),1);
+        levcon=BML.giveInteger(tlevcon.getText(),1);
+        fcap=BML.giveDouble(tfcap.getText(),1);
+        allpairs=ballpairs.isSelected();
+        lcap=blcap.isSelected();
+        lvdw=blvdw.isSelected();
+        lzeql=blzeql.isSelected();
+        lrdf=blrdf.isSelected();
+        lprdf=blprdf.isSelected();
+        ltraj=bltraj.isSelected();
+        ltscal=bltscal.isSelected();
+        lzden=blzden.isSelected();
+        lpzden=blpzden.isSelected();
+        lzero=blzero.isSelected();
 
     }
 
@@ -278,7 +303,7 @@ author    - w.smith 2000
 
 *********************************************************************
          */
-        home.getcmvValues();
+        getParams();
         home.cmv=null;
         job.setVisible(false);
     }

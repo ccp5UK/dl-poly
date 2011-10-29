@@ -14,18 +14,15 @@ author    - w.smith 2000
 
 *********************************************************************
          */
-    public static MakeControl home;
-    public static RadDam job;
-    public static JTextField tdstart,tdintval,tdefcut,tatom,timpstp,tenergy,tvect1;
-    public static JTextField tvect2,tvect3,tvarstp,tmindis,tmaxdis,tnstmsdtmp;
-    public static JTextField timsdtmp,tthick,tptemp;
-    public static JComboBox pseudtyp;
-    public static JButton close;
-    public static JCheckBox bldefects,blvarstp,blmsdtmp,blpseudo;
-    public static boolean ldefects,lvarstp,lmsdtmp,lpseudo;
-    public static int dstart,impstp,dintval,atom,nstmsdtmp,imsdtmp,ipseudtyp;
-    public static double defcut,energy,vect1,vect2,vect3,varstp;
-    public static double mindis,maxdis,thick,ptemp;
+    private static MakeControl home;
+    private static RadDam job;
+    private static JTextField tdstart,tdintval,tdefcut,tatom,timpstp,tenergy,tvect1;
+    private static JTextField tvect2,tvect3,tvarstp,tmindis,tmaxdis,tnstmsdtmp;
+    private static JTextField timsdtmp,tthick,tptemp;
+    private static JComboBox pseudtyp;
+    private static JButton close;
+    private static JCheckBox bldefects,blvarstp,blmsdtmp,blpseudo;
+
 
     // Define the Graphical User Interface
 
@@ -224,10 +221,6 @@ author    - w.smith 2000
 *********************************************************************
          */
 
-        // set parameters values
-
-        home.setrdmValues();
-
         // set panel
 
         bldefects.setSelected(ldefects);
@@ -251,6 +244,42 @@ author    - w.smith 2000
         pseudtyp.setSelectedIndex(ipseudtyp);
         tthick.setText(String.valueOf(thick));
         tptemp.setText(String.valueOf(ptemp));
+
+    }
+
+    void getParams(){
+        /*
+*********************************************************************
+
+dl_poly/java GUI routine
+
+copyright - daresbury laboratory
+author    - w.smith 2011
+
+*********************************************************************
+         */
+
+        ldefects=bldefects.isSelected();
+        dstart=BML.giveInteger(tdstart.getText(),1);
+        dintval=BML.giveInteger(tdintval.getText(),1);
+        defcut=BML.giveDouble(tdefcut.getText(),1);
+        atom=BML.giveInteger(tatom.getText(),1);
+        impstp=BML.giveInteger(timpstp.getText(),1);
+        energy=BML.giveDouble(tenergy.getText(),1);
+        vect1=BML.giveDouble(tvect1.getText(),1);
+        vect2=BML.giveDouble(tvect2.getText(),1);
+        vect3=BML.giveDouble(tvect3.getText(),1);
+        lvarstp=blvarstp.isSelected();
+        varstp=BML.giveDouble(tvarstp.getText(),1);
+        mindis=BML.giveDouble(tmindis.getText(),1);
+        maxdis=BML.giveDouble(tmaxdis.getText(),1);
+        lmsdtmp=blmsdtmp.isSelected();
+        nstmsdtmp=BML.giveInteger(tnstmsdtmp.getText(),1);
+        imsdtmp=BML.giveInteger(timsdtmp.getText(),1);
+        lpseudo=blpseudo.isSelected();
+        ipseudtyp=pseudtyp.getSelectedIndex();
+        thick=BML.giveDouble(tthick.getText(),1);
+        ptemp=BML.giveDouble(tptemp.getText(),1);
 
     }
 
@@ -283,7 +312,7 @@ author    - w.smith 2000
 
 *********************************************************************
          */
-        home.getrdmValues();
+        getParams();
         home.rdm=null;
         job.setVisible(false);
     }

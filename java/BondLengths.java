@@ -33,9 +33,10 @@ author    - w.smith 2000
          */
 
         super();
-	setTitle("Set Bond Lengths");
+        setTitle("Set Bond Lengths");
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         getContentPane().setLayout(new GridLayout(15,2));
 
@@ -257,7 +258,7 @@ author    - w.smith 2000
             println("Bondlengths now reset");
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
 }

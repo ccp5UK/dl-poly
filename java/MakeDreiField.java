@@ -48,6 +48,7 @@ author    - w.smith 2000
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -210,7 +211,7 @@ author    - w.smith 2000
             call=dreiField();
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
     int dreiField() {
@@ -235,11 +236,11 @@ author    - w.smith december 2000
         if(lgetf) config=getConfig(home,"CFG");
         if(config==null || config.natms==0)return 0;
 
-	if(config.structure == null)
-	    config.structure=new Structure(config);
+        if(config.structure == null)
+            config.structure=new Structure(config);
 
         if(config.structure.nmols <= 0) return -1;
-	struct=config.structure;
+        struct=config.structure;
 
         // write the contiguized CONFIG file
 
@@ -265,11 +266,11 @@ author    - w.smith december 2000
         // display the CONFIG file
 
         if(lshow){
-	    if(home.editor != null)
-		home.editor.job.setVisible(false);
-	    home.editor=new Editor(home);
-	    lshow=false;
-	}
+            if(!editor.isVisible())
+                editor.showEditor();
+            editor.pane.restore();
+            lshow=false;
+        }
 
         // construct the FIELD file
 
@@ -280,7 +281,7 @@ author    - w.smith december 2000
             try {
                 DataOutputStream outStream = new DataOutputStream(new FileOutputStream(fldfile));
 
-                //	FIELD file header
+                //      FIELD file header
 
                 outStream.writeBytes(config.title+"\n");
                 outStream.writeBytes("UNITS kcal"+"\n");
@@ -459,7 +460,7 @@ author w.smith december 2000
 
             for(int i=0;i<6;i++) {
                 record = reader.readLine();
-	    }
+            }
 
 
             // read MINIDREI contents

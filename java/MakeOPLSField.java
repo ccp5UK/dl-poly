@@ -43,6 +43,7 @@ author    - w.smith 2002
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -147,7 +148,7 @@ author    - w.smith 2002
             call=OPLSField();
         }
         else if (arg.trim().equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
     int OPLSField() {
@@ -195,7 +196,7 @@ author    - w.smith january 2002
         // define system structure
 
         config.structure=new Structure(config);
-	struct=config.structure;
+        struct=config.structure;
         if(struct.nmols <= 0) return -2;
 
         // write a new CONFIG file
@@ -210,11 +211,11 @@ author    - w.smith january 2002
         // display the new CONFIG file
 
         if(lshow){
-	    if(home.editor != null)
-		home.editor.job.setVisible(false);
-	    home.editor=new Editor(home);
-	    lshow=false;
-	}
+            if(!editor.isVisible())
+                editor.showEditor();
+            editor.pane.restore();
+            lshow=false;
+        }
 
         // construct the FIELD file
 
@@ -225,7 +226,7 @@ author    - w.smith january 2002
             try {
                 DataOutputStream outStream = new DataOutputStream(new FileOutputStream(fldfile));
 
-                //	FIELD file header
+                //      FIELD file header
 
                 outStream.writeBytes(config.title+"\n");
                 outStream.writeBytes("UNITS kcal"+"\n");
@@ -1022,7 +1023,7 @@ author w.smith march 2003
 
 *********************************************************************
          */
-	println("Warning - OPLS atom identity not assigned to atom"+BML.fmt(i+1,10)
+        println("Warning - OPLS atom identity not assigned to atom"+BML.fmt(i+1,10)
         +"  "+config.atoms[i].zsym);
     }
 
@@ -1054,7 +1055,7 @@ author w.smith jan 2004
         cfgnew.pbc=config.pbc;
         cfgnew.pbc.cell=config.pbc.cell;
         cfgnew.atoms=new Element[cfgnew.natms];
-	cfgnew.xyz=new double[3][cfgnew.natms];
+        cfgnew.xyz=new double[3][cfgnew.natms];
 
         // identify water molecules
 

@@ -48,6 +48,7 @@ author    - w.smith 2001
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -228,15 +229,15 @@ author    - w.smith 2001
             isampl=BML.giveInteger(sample.getText(),1);
             iorig=BML.giveInteger(origin.getText(),1);
             rcut=BML.giveDouble(cutoff.getText(),1);
-	    npnts=gdiff();
+            npnts=gdiff();
             if(npnts>0) gdfFile();
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
         else if (arg.equals("Plot")) {
             if(hovplt != null)
-                hovplt.job.setVisible(false);
+                hovplt.job.dispose();
             hovplt=new HovePlot(home,hname);
         }
     }
@@ -254,9 +255,9 @@ author    - w.smith october 2007
          */
         boolean all;
         int nsgdff,new_atoms,npts,nogdff,lsr,msr,iconf,imcon,natms;
-	int nta,ntb,n,m;
+        int nta,ntb,n,m;
         double rcut2,f1,f2,uuu,vvv,www,rmsx,rmsy,rmsz,rsq,tcut,rnorm;
-	double bcell[];
+        double bcell[];
         LineNumberReader lnr=null;
         double cell[]=new double[9];
         double rcell[]=new double[9];
@@ -338,13 +339,13 @@ author    - w.smith october 2007
                 return -2;
             }
             natms=BML.nint(info[7]);
-	    imcon=BML.nint(info[5]);
-	    if(imcon < 1 || imcon > 3){
-		println("Error - incorrect periodic boundary condition");
-		info[0]=-1.0;
-		lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
-		return -4;
-	    }
+            imcon=BML.nint(info[5]);
+            if(imcon < 1 || imcon > 3){
+                println("Error - incorrect periodic boundary condition");
+                info[0]=-1.0;
+                lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
+                return -4;
+            }
 
             // initialise gdiff arrays
 
@@ -361,171 +362,171 @@ author    - w.smith october 2007
                 gdff0=new double[lencor][natms][3];
             }
             OUT:
-	    for(iconf=0;iconf<nconf;iconf++) {
+            for(iconf=0;iconf<nconf;iconf++) {
 
-		lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
-		if(BML.nint(info[3])<0 && BML.nint(info[3])!=-1) {
-		    println("Error - HISTORY file data error");
-		    info[0]=-1.0;
-		    lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
-		    return -3;
-		}
-		if(lnr == null) break OUT;
-		if(iconf==0)info[9]=info[6];
-		if(iconf==1)tstep=info[8]*(info[6]-info[9]);
-		if(BML.nint(info[3])==-1)break OUT;
+                lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
+                if(BML.nint(info[3])<0 && BML.nint(info[3])!=-1) {
+                    println("Error - HISTORY file data error");
+                    info[0]=-1.0;
+                    lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
+                    return -3;
+                }
+                if(lnr == null) break OUT;
+                if(iconf==0)info[9]=info[6];
+                if(iconf==1)tstep=info[8]*(info[6]-info[9]);
+                if(BML.nint(info[3])==-1)break OUT;
 
-		if(iconf == 0){
-		    bcell=AML.dcell(cell);
-		    tcut=0.5*BML.min(bcell[6],bcell[7],bcell[8]);
-		    if(rcut > tcut){
-			println("Warning - cut off reset to "+BML.fmt(tcut,10));
-			rcut=tcut;
-			rcut2=rcut*rcut;
-			delr=rcut/mxrad;
-		    }
-		}
+                if(iconf == 0){
+                    bcell=AML.dcell(cell);
+                    tcut=0.5*BML.min(bcell[6],bcell[7],bcell[8]);
+                    if(rcut > tcut){
+                        println("Warning - cut off reset to "+BML.fmt(tcut,10));
+                        rcut=tcut;
+                        rcut2=rcut*rcut;
+                        delr=rcut/mxrad;
+                    }
+                }
 
-		// select relevant atoms for calculation
+                // select relevant atoms for calculation
 
-		n=0;
-		rcell=AML.invert(cell);
-		for(int i=0;i<natms;i++) {
-		    if(all || name[i].equals(name1) || name[i].equals(name2)) {
-			newname[n]=name[i];
-			xy2[0][n]=xyz[0][i]*rcell[0]+xyz[1][i]*rcell[3]+xyz[2][i]*rcell[6];
-			xy2[1][n]=xyz[0][i]*rcell[1]+xyz[1][i]*rcell[4]+xyz[2][i]*rcell[7];
-			xy2[2][n]=xyz[0][i]*rcell[2]+xyz[1][i]*rcell[5]+xyz[2][i]*rcell[8];
-			n++;
-		    }
-		}
-		new_atoms=n;
-		if(ipass==0 && iconf==0)
-		    println("Number of atoms of selected type : "+BML.fmt(new_atoms,8));
-		if(new_atoms == 0) {
-		    println("Error - zero atoms of specified type");
-		    info[0]=-1.0;
-		    lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
-		    return -6;
-		}
+                n=0;
+                rcell=AML.invert(cell);
+                for(int i=0;i<natms;i++) {
+                    if(all || name[i].equals(name1) || name[i].equals(name2)) {
+                        newname[n]=name[i];
+                        xy2[0][n]=xyz[0][i]*rcell[0]+xyz[1][i]*rcell[3]+xyz[2][i]*rcell[6];
+                        xy2[1][n]=xyz[0][i]*rcell[1]+xyz[1][i]*rcell[4]+xyz[2][i]*rcell[7];
+                        xy2[2][n]=xyz[0][i]*rcell[2]+xyz[1][i]*rcell[5]+xyz[2][i]*rcell[8];
+                        n++;
+                    }
+                }
+                new_atoms=n;
+                if(ipass==0 && iconf==0)
+                    println("Number of atoms of selected type : "+BML.fmt(new_atoms,8));
+                if(new_atoms == 0) {
+                    println("Error - zero atoms of specified type");
+                    info[0]=-1.0;
+                    lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
+                    return -6;
+                }
 
-		// running average of cell vectors
+                // running average of cell vectors
 
-		f1=((double)iconf)/(iconf+1);
-		f2=1.0/(iconf+1);
-		for(int i=0;i<9;i++)
-		    avcell[i]=f1*avcell[i]+f2*cell[i];
+                f1=((double)iconf)/(iconf+1);
+                f2=1.0/(iconf+1);
+                for(int i=0;i<9;i++)
+                    avcell[i]=f1*avcell[i]+f2*cell[i];
 
-		// store initial positions of atoms
+                // store initial positions of atoms
 
-		if(iconf == ipass) {
-		    for(int i=0;i<new_atoms;i++){
-			xy0[0][i]=xy2[0][i];
-			xy0[1][i]=xy2[1][i];
-			xy0[2][i]=xy2[2][i];
-		    }
-		}
+                if(iconf == ipass) {
+                    for(int i=0;i<new_atoms;i++){
+                        xy0[0][i]=xy2[0][i];
+                        xy0[1][i]=xy2[1][i];
+                        xy0[2][i]=xy2[2][i];
+                    }
+                }
 
-		// accumulate incremental distances
+                // accumulate incremental distances
 
-		else if(iconf>ipass) {
-		    for(int i=0;i<new_atoms;i++) {
-			uuu=xy2[0][i]-xy1[0][i];
-			vvv=xy2[1][i]-xy1[1][i];
-			www=xy2[2][i]-xy1[2][i];
-			uuu=uuu-BML.nint(uuu);
-			vvv=vvv-BML.nint(vvv);
-			www=www-BML.nint(www);
-			xy0[0][i]+=uuu;
-			xy0[1][i]+=vvv;
-			xy0[2][i]+=www;
-		    }
-		}
+                else if(iconf>ipass) {
+                    for(int i=0;i<new_atoms;i++) {
+                        uuu=xy2[0][i]-xy1[0][i];
+                        vvv=xy2[1][i]-xy1[1][i];
+                        www=xy2[2][i]-xy1[2][i];
+                        uuu=uuu-BML.nint(uuu);
+                        vvv=vvv-BML.nint(vvv);
+                        www=www-BML.nint(www);
+                        xy0[0][i]+=uuu;
+                        xy0[1][i]+=vvv;
+                        xy0[2][i]+=www;
+                    }
+                }
 
-		//store data for next cycle
+                //store data for next cycle
 
-		for(int i=0;i<new_atoms;i++) {
-		    xy1[0][i]=xy2[0][i];
-		    xy1[1][i]=xy2[1][i];
-		    xy1[2][i]=xy2[2][i];
-		}
+                for(int i=0;i<new_atoms;i++) {
+                    xy1[0][i]=xy2[0][i];
+                    xy1[1][i]=xy2[1][i];
+                    xy1[2][i]=xy2[2][i];
+                }
 
-		// calculate distinct correlation function
+                // calculate distinct correlation function
 
-		if(iconf%isampl == ipass) {
-		    if(nsgdff%iorig==0) {
-			lsr=Math.min(lsr+1,nogdff);
-			msr=(msr+1)%nogdff;
-			imd[msr]=0;
-			for(int i=0;i<new_atoms;i++) {
-			    gdff0[msr][i][0]=xy0[0][i];
-			    gdff0[msr][i][1]=xy0[1][i];
-			    gdff0[msr][i][2]=xy0[2][i];
-			}
-			nsgdff++;
-			for(int j=0;j<lsr;j++) {
-			    m=imd[j];
-			    imd[j]=m+1;
-			    msm[m]++;
-			    for(int i=0;i<new_atoms;i++) {
-				if(all || newname[i].equals(name2)){
-				    for(int k=0;k<new_atoms;k++){
-					if((i != k) && (all || newname[k].equals(name1))){
-					    uuu=xy0[0][i]-gdff0[j][k][0];
-					    vvv=xy0[1][i]-gdff0[j][k][1];
-					    www=xy0[2][i]-gdff0[j][k][2];
-					    uuu=uuu-BML.nint(uuu);
-					    vvv=vvv-BML.nint(vvv);
-					    www=www-BML.nint(www);
-					    rmsx=uuu*avcell[0]+vvv*avcell[3]+www*avcell[6];
-					    rmsy=uuu*avcell[1]+vvv*avcell[4]+www*avcell[7];
-					    rmsz=uuu*avcell[2]+vvv*avcell[5]+www*avcell[8];
-					    rsq=rmsx*rmsx+rmsy*rmsy+rmsz*rmsz;
-					    if(rsq < rcut2) {
-						gdff[m][(int)(Math.sqrt(rsq)/delr)]+=1.0;
-					    }
-					}
-				    }
-				}
-			    }
-			}
-		    }
-		}
-		if(iconf==nconf-1) {
-		    info[0]=-1.0;
-		    lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
-		}
-		if(BML.nint(info[3])==-1) iconf--;
-	    }
-	    npts=Math.min(nogdff,nsgdff);
-	    if(ipass==0)
-		println("Number of configurations read: "+BML.fmt(iconf,8));
-	}
+                if(iconf%isampl == ipass) {
+                    if(nsgdff%iorig==0) {
+                        lsr=Math.min(lsr+1,nogdff);
+                        msr=(msr+1)%nogdff;
+                        imd[msr]=0;
+                        for(int i=0;i<new_atoms;i++) {
+                            gdff0[msr][i][0]=xy0[0][i];
+                            gdff0[msr][i][1]=xy0[1][i];
+                            gdff0[msr][i][2]=xy0[2][i];
+                        }
+                        nsgdff++;
+                        for(int j=0;j<lsr;j++) {
+                            m=imd[j];
+                            imd[j]=m+1;
+                            msm[m]++;
+                            for(int i=0;i<new_atoms;i++) {
+                                if(all || newname[i].equals(name2)){
+                                    for(int k=0;k<new_atoms;k++){
+                                        if((i != k) && (all || newname[k].equals(name1))){
+                                            uuu=xy0[0][i]-gdff0[j][k][0];
+                                            vvv=xy0[1][i]-gdff0[j][k][1];
+                                            www=xy0[2][i]-gdff0[j][k][2];
+                                            uuu=uuu-BML.nint(uuu);
+                                            vvv=vvv-BML.nint(vvv);
+                                            www=www-BML.nint(www);
+                                            rmsx=uuu*avcell[0]+vvv*avcell[3]+www*avcell[6];
+                                            rmsy=uuu*avcell[1]+vvv*avcell[4]+www*avcell[7];
+                                            rmsz=uuu*avcell[2]+vvv*avcell[5]+www*avcell[8];
+                                            rsq=rmsx*rmsx+rmsy*rmsy+rmsz*rmsz;
+                                            if(rsq < rcut2) {
+                                                gdff[m][(int)(Math.sqrt(rsq)/delr)]+=1.0;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if(iconf==nconf-1) {
+                    info[0]=-1.0;
+                    lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
+                }
+                if(BML.nint(info[3])==-1) iconf--;
+            }
+            npts=Math.min(nogdff,nsgdff);
+            if(ipass==0)
+                println("Number of configurations read: "+BML.fmt(iconf,8));
+        }
 
-	// normalise distinct correlation function
+        // normalise distinct correlation function
 
-	bcell=AML.dcell(avcell);
-	if(all){
-	    nta=new_atoms;
-	    ntb=new_atoms;
-	}
-	else{
-	    nta=0;
-	    ntb=0;
-	    for(int i=0;i<new_atoms;i++){
-		if(newname[i].equals(name1))nta++;
-		if(newname[i].equals(name2))ntb++;
-	    }
-	}
-	if(name1.equals(name2))
-	    rnorm=bcell[9]/(4*Math.PI*Math.pow(delr,3)*(double)(nta*nta));
-	else
-	    rnorm=bcell[9]/(4*Math.PI*Math.pow(delr,3)*(double)(nta*ntb));
-	for(int j=0;j<npts;j++) {
-	    for(int i=0;i<mxrad;i++)
-		gdff[j][i]=(rnorm*gdff[j][i]/msm[j])/(Math.pow((i-0.5),2)+1.0/12.0);
-	}
-	return npts;
+        bcell=AML.dcell(avcell);
+        if(all){
+            nta=new_atoms;
+            ntb=new_atoms;
+        }
+        else{
+            nta=0;
+            ntb=0;
+            for(int i=0;i<new_atoms;i++){
+                if(newname[i].equals(name1))nta++;
+                if(newname[i].equals(name2))ntb++;
+            }
+        }
+        if(name1.equals(name2))
+            rnorm=bcell[9]/(4*Math.PI*Math.pow(delr,3)*(double)(nta*nta));
+        else
+            rnorm=bcell[9]/(4*Math.PI*Math.pow(delr,3)*(double)(nta*ntb));
+        for(int j=0;j<npts;j++) {
+            for(int i=0;i<mxrad;i++)
+                gdff[j][i]=(rnorm*gdff[j][i]/msm[j])/(Math.pow((i-0.5),2)+1.0/12.0);
+        }
+        return npts;
     }
     void gdfFile() {
         /*
@@ -549,7 +550,7 @@ author    - w.smith 2001
 
             // print out final distinct correlation functions
 
-	    tstep*=(double)isampl;
+            tstep*=(double)isampl;
 
             for(int j=0;j<npnts;j++) {
                 time=tstep*(j+1);

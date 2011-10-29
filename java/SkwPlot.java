@@ -40,6 +40,7 @@ author    - w.smith 2001
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -186,7 +187,7 @@ author    - w.smith 2001
                 if(npnts>0) {
                     skwXY(npnts,kv1,kv2,kv3);
                     if(graf != null)
-                        graf.job.setVisible(false);
+                        graf.job.dispose();
                     graf=new GraphDraw(home);
                     if(sname.toUpperCase().indexOf("DENFKT")>=0) {
                         graf.xlabel.setText("Time (ps)");
@@ -208,7 +209,7 @@ author    - w.smith 2001
             }
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
     int rdskw(int kk1,int kk2,int kk3) {

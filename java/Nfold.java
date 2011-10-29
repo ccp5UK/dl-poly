@@ -40,6 +40,7 @@ author    - w.smith 2001
         setTitle("N-Fold Expansion");
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -213,7 +214,7 @@ author    - w.smith 2001
             call=n_fold();
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
     int n_fold() {
@@ -380,9 +381,9 @@ author w. smith january 2001
 
         if(lshow) {
             config=cfgbig;
-	    if(home.editor != null)
-		home.editor.job.setVisible(false);
-	    home.editor=new Editor(home);
+            if(!editor.isVisible())
+                editor.showEditor();
+            editor.pane.restore();
         }
 
         return 0;

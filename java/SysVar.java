@@ -14,16 +14,10 @@ author    - w.smith 2000
 
 *********************************************************************
          */
-    public static MakeControl home=null;
-    public static SysVar job=null;
-    public static JComboBox ensemble,electro;
-    public static JTextField ttemp,tpress,ttstep,trcut,tdelr,trvdw,trprim,tepsq,ttaut,ttaup,tgamt;
-    public static double temp,press,tstep,rcut,delr,rvdw,rprim,epsq,taut,taup,ewltol,shktol,qtntol;
-    public static double jobtim,tclose,fcap,gamt;
-    public static int numctr,nstrun,nsteql,mult,nstbpo,nstack,intsta,keyens,keyres;
-    public static int nstraj,istraj,levcon,nstbts,keyfce;
-    public static boolean allpairs,lcap,lzeql,ltraj,ltscal,lvdw;
-    private static String fname;
+    private static MakeControl home=null;
+    private static SysVar job=null;
+    private static JComboBox ensemble,electro;
+    private static JTextField ttemp,tpress,ttstep,trcut,tdelr,trvdw,trprim,tepsq,ttaut,ttaup,tgamt;
     private static JButton close;
 
     // Define the Graphical User Interface
@@ -234,9 +228,6 @@ author    - w.smith 2000
 
 *********************************************************************
          */
-        // set parameters
-
-        home.setsysValues();
 
         // set panel
 
@@ -253,6 +244,32 @@ author    - w.smith 2000
         tgamt.setText(String.valueOf(gamt));
         ensemble.setSelectedIndex(keyens);
         electro.setSelectedIndex(keyfce/2);
+    }
+
+    void getParams(){
+        /*
+*********************************************************************
+
+dl_poly/java GUI routine
+
+copyright - daresbury laboratory
+author    - w.smith 2000
+
+*********************************************************************
+         */
+
+        temp=BML.giveDouble(ttemp.getText(),1);
+        press=BML.giveDouble(tpress.getText(),1);
+        tstep=BML.giveDouble(ttstep.getText(),1);
+        rcut=BML.giveDouble(trcut.getText(),1);
+        delr=BML.giveDouble(tdelr.getText(),1);
+        rvdw=BML.giveDouble(trvdw.getText(),1);
+        rprim=BML.giveDouble(trprim.getText(),1);
+        epsq=BML.giveDouble(tepsq.getText(),1);
+        taut=BML.giveDouble(ttaut.getText(),1);
+        taup=BML.giveDouble(ttaup.getText(),1);
+        keyens=ensemble.getSelectedIndex();
+        keyfce=2*electro.getSelectedIndex();
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -273,7 +290,7 @@ author    - w.smith 2000
         }
     }
 
-    static void byebye() {
+    void byebye() {
         /*
 *********************************************************************
 
@@ -284,7 +301,7 @@ author    - w.smith 2000
 
 *********************************************************************
          */
-        home.getsysValues();
+	getParams();
         home.sys=null;
         job.setVisible(false);
     }

@@ -1,4 +1,4 @@
-DL_POLY_4.02
+DL_POLY_4.03
 ============
 
 The source is in fully self-contained free formatted FORTRAN90+MPI2
@@ -45,7 +45,7 @@ Warnings:
       particle per second with optimal number of writers and (ii)
       reading speeds of 10^4 to 10^5 particles per second per reader.
       For more information on I/O options consult the user manual.
-  (2) REVIVE files produced by version 2 and 3 are not compatible.
+  (2) REVIVE files produced by different versions are not compatible.
       Furthermore, restarting runs across different sub-versions
       may not be possible.
   (3) The DL_POLY_4 parallel performance and efficiency are considered

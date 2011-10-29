@@ -81,6 +81,6 @@ author    - w.smith 2001
         else if (arg.equals(" No ")) {
             home.alert=false;
         }
-        setVisible(false);
+	dispose();
     }
 }

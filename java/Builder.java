@@ -246,7 +246,7 @@ author    - w.smith 2000
                                 if(Math.abs((double)(zpos[k]-zpos[j])) > scale*4)showbond=false;
                                 if(home.edit)showbond=true;
                             }
-			    if(!home.showbonds)showbond=false;
+                            if(!home.showbonds)showbond=false;
                             if(home.config.atoms[k].zsym.indexOf("QW") == 0)showbond=false;
                             if(showbond) {
                                 u=dia[k]/2;
@@ -339,6 +339,8 @@ author    - w.smith 2003
             for (int i=0;i<home.config.natms;i++) {
                 lst[i]=i;
                 rad=fac*home.config.atoms[i].zrad;
+                if(home.config.atoms[i].dotify)
+                    rad/=3.0;;
                 dia[i]=(int)(2*scale*rad);
                 xpos[i]=(int)(scale*(home.config.xyz[0][i]-rad))+tilex/2+shx;
                 ypos[i]=-(int)(scale*(home.config.xyz[2][i]+rad))+tiley/2+shy;
@@ -371,8 +373,7 @@ author    - w.smith 2000
         mark1=-1;
         mark2=-1;
         home.safe=true;
-        //        scale=37.5;
-        //        if(home.config != null && home.config.pbc.imcon > 0)
+        if(home.config != null && home.config.pbc.imcon > 0)
             scale=setBoxScale();
         repaint();
     }
@@ -752,7 +753,7 @@ author    - w.smith 2002
 *********************************************************************
          */
         int k;
-        double ddd,rscale;
+        double ddd,width,rscale;
 
         // Get identity of clicked atom
 
@@ -762,7 +763,10 @@ author    - w.smith 2002
             for(int i=0;i<home.config.natms;i++) {
                 ddd=Math.sqrt(Math.pow(home.config.xyz[0][i]-(sx-shx)*rscale,2)+
                 Math.pow(home.config.xyz[2][i]-(sy+shy)*rscale,2));
-                if(ddd < fac*home.config.atoms[i].zrad) {
+                width=fac*home.config.atoms[i].zrad;
+                if(home.config.atoms[i].dotify)
+                    width=fac*home.config.atoms[i].zrad/3.0;
+                if(ddd < width) {
                     if(k < 0)
                         k=i;
                     else if(home.config.xyz[1][k] > home.config.xyz[1][i])
@@ -1148,13 +1152,13 @@ author    - w.smith 2002
 
                 k=getAtom();
                 if(k >= 0) {
-		    nhdel=0;
-		    for (int i=0;i<home.config.structure.lbnd[k];i++)
-			if(home.config.atoms[home.config.structure.bond[i][k]].znum == 1) nhdel++;
-		    if(nhdel > 0)
-			delHAtoms(k);
-		    else
-			hydrogenAtom(k);
+                    nhdel=0;
+                    for (int i=0;i<home.config.structure.lbnd[k];i++)
+                        if(home.config.atoms[home.config.structure.bond[i][k]].znum == 1) nhdel++;
+                    if(nhdel > 0)
+                        delHAtoms(k);
+                    else
+                        hydrogenAtom(k);
                 }
                 else {
                     nhdel=0;
@@ -1212,8 +1216,10 @@ author    - w.smith 2002
         hyb=0;
         val=0;
         str=home.config.atoms[k].zsym;
-        stick=home.config.atoms[k].zrad+(new Element("H_")).zrad;
-
+        if( str.indexOf("OW") >= 0)
+            stick=home.config.atoms[k].zrad+(new Element("HW")).zrad;
+        else
+            stick=home.config.atoms[k].zrad+(new Element("H_")).zrad;
         if(str.indexOf("C_1") >= 0) {
             hyb=1;
             val=2;
@@ -1575,41 +1581,41 @@ author    - w.smith 2002
         int n,m=0;
 
         if(ngroup == 0) {
-	    if(k >= 0) {
-		m=0;
-		int zapp[]=new int[nhdel];
-		for (int i=0;i<home.config.structure.lbnd[k];i++) {
-		    if(home.config.atoms[home.config.structure.bond[i][k]].znum == 1) {
-			zapp[m]=home.config.structure.bond[i][k];
-			m++;
-		    }
-		}
-		for(int i=0;i<nhdel;i++) {
-		    for(int j=i+1;j<nhdel;j++) {
-			n=zapp[j];
-			if(zapp[j] < zapp[i]) {
-			    n=zapp[i];
-			    zapp[i]=zapp[j];
-			}
-			zapp[j]=n-1;
-		    }
-		    deleteAtom(zapp[i]);
-		}
-	    }
-	    else {
-		for (int i=0;i<nhdel;i++) {
-		    OUT:
-		    for(int j=m;j<home.config.natms;j++) {
-			if(home.config.atoms[j].znum == 1) {
-			    deleteAtom(j);
-			    m=j;
-			    break OUT;
-			}
-		    }
-		}
-	    }
-	}
-	else {
+            if(k >= 0) {
+                m=0;
+                int zapp[]=new int[nhdel];
+                for (int i=0;i<home.config.structure.lbnd[k];i++) {
+                    if(home.config.atoms[home.config.structure.bond[i][k]].znum == 1) {
+                        zapp[m]=home.config.structure.bond[i][k];
+                        m++;
+                    }
+                }
+                for(int i=0;i<nhdel;i++) {
+                    for(int j=i+1;j<nhdel;j++) {
+                        n=zapp[j];
+                        if(zapp[j] < zapp[i]) {
+                            n=zapp[i];
+                            zapp[i]=zapp[j];
+                        }
+                        zapp[j]=n-1;
+                    }
+                    deleteAtom(zapp[i]);
+                }
+            }
+            else {
+                for (int i=0;i<nhdel;i++) {
+                    OUT:
+                    for(int j=m;j<home.config.natms;j++) {
+                        if(home.config.atoms[j].znum == 1) {
+                            deleteAtom(j);
+                            m=j;
+                            break OUT;
+                        }
+                    }
+                }
+            }
+        }
+        else {
             for (int i=0;i<nhdel;i++) {
                 OUT:
                     for(int j=m;j<home.config.natms;j++) {
@@ -1721,8 +1727,8 @@ author    - w.smith 2002
 
         j=0;
         for(int i=0;i<home.config.structure.nbnds;i++) {
-	    m=home.config.structure.join[0][i];
-	    n=home.config.structure.join[1][i];
+            m=home.config.structure.join[0][i];
+            n=home.config.structure.join[1][i];
             if(m != k && n != k) {
                 if(m > k) m--;
                 if(n > k) n--;
@@ -1938,7 +1944,7 @@ author    - w.smith 2002
                 home.config.structure.lbnd[j]++;
                 home.config.structure.lbnd[k]++;
             }
-	    //}
+            //}
     }
 
     void shiftMolecule(String activity) {
@@ -2379,7 +2385,9 @@ author    - w.smith 2002
                         angle[0][n]=bond[j][i];
                         angle[1][n]=m;
                         angle[2][n]=bond[k][i];
-                        if(home.config.atoms[m].zsym.charAt(2) == '3')
+                        if(home.config.atoms[m].zsym.charAt(1) == 'W')
+                            angcon[n]=-1.0/3.0;
+                        else if(home.config.atoms[m].zsym.charAt(2) == '3')
                             angcon[n]=-1.0/3.0;
                         else if(home.config.atoms[m].zsym.charAt(2) == '2')
                             angcon[n]=-1.0/2.0;
@@ -2513,7 +2521,7 @@ author    - w.smith 2002
                 dxyz[2][m]+=gzb;
             }
 
-	}
+        }
 
         return energy;
     }

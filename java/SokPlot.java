@@ -39,6 +39,7 @@ author    - w.smith 2001
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -143,7 +144,7 @@ author    - w.smith 2001
             npnts=rdsok(fname,name1,name2);
             if(npnts>0) {
                 if(graf != null)
-                    graf.job.setVisible(false);
+                    graf.job.dispose();
                 graf=new GraphDraw(home);
                 sokXY(npnts,name1,name2);
                 graf.xlabel.setText("k (1/A)");
@@ -153,7 +154,7 @@ author    - w.smith 2001
             }
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
     int rdsok(String fname,String atnam1,String atnam2) {

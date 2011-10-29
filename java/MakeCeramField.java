@@ -43,6 +43,7 @@ author    - w.smith 2001
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -129,12 +130,10 @@ author    - w.smith 2001
         home=here;
         ltetr=false;
         lshow=true;
-        if(config==null) {
+        if(config==null)
             natms=0;
-        }
-        else {
+        else
             natms=config.natms;
-        }
 
         // instantiate application
 
@@ -178,7 +177,7 @@ author    - w.smith 2001
             call=ceramField();
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
 
@@ -195,7 +194,7 @@ author    - w.smith january 2001
 **********************************************************************
          */
 
-	Structure struct;
+        Structure struct;
         String fldfile,cfgfile;
         boolean lnew,kill,lmols,lsha,lshb;
         double det,xd,yd,zd,ssx,ssy,ssz,xss,yss,zss,rsq;
@@ -205,17 +204,17 @@ author    - w.smith january 2001
         // read the CONFIG file
 
         if(lgetf) config=getConfig(home,"CFG");
-	if(config==null || config.natms==0)return 0;
+        if(config==null || config.natms==0)return 0;
         natms=config.natms;
         imcon=config.pbc.imcon;
 
-	// check if structure has been defined
+        // check if structure has been defined
 
-	if(config.structure == null)
-	    config.structure=new Structure(config);
+        if(config.structure == null)
+            config.structure=new Structure(config);
 
         if(config.structure.nmols <= 0) return -1;
-	struct=config.structure;
+        struct=config.structure;
 
         // write the contiguized CONFIG file
 
@@ -225,9 +224,9 @@ author    - w.smith january 2001
         // display the CONFIG file
 
         if(lshow) {
-	    if(home.editor != null)
-		home.editor.job.setVisible(false);
-	    home.editor=new Editor(home);
+            if(!editor.isVisible())
+                editor.showEditor();
+            editor.pane.restore();
         }
 
         // create arrays
@@ -264,7 +263,7 @@ author    - w.smith january 2001
         try {
             DataOutputStream outStream = new DataOutputStream(new FileOutputStream(fldfile));
 
-            //	FIELD file header
+            //  FIELD file header
 
             outStream.writeBytes(config.title+"\n");
             outStream.writeBytes("UNITS eV"+"\n");
@@ -472,7 +471,7 @@ author w.smith january 2001
             }
             if(ffield.equals("LC_c1") || ffield.equals("LC_c2")) {
                 if(ntatm > 2) {
-		    println("Force field not suitable for mixed oxides");
+                    println("Force field not suitable for mixed oxides");
                     return -6;
                 }
                 for(i=0;i<nunq;i++) {
@@ -534,5 +533,3 @@ author    - w.smith 2001
         return 0.0;
     }
 }
-
-

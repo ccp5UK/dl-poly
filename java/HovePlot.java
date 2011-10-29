@@ -42,6 +42,7 @@ author    - w.smith 2001
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -117,7 +118,7 @@ author    - w.smith 2001
         npnts=0;
         nseq=0;
         ldens=false;
-	hovefile.setText(null);
+        hovefile.setText(null);
         dens.setSelected(ldens);
         seqno.setText(String.valueOf(nseq));
     }
@@ -141,7 +142,7 @@ author    - w.smith 2001
         npnts=0;
         nseq=0;
         ldens=false;
-	hovefile.setText(hovename);
+        hovefile.setText(hovename);
         dens.setSelected(ldens);
         seqno.setText(String.valueOf(nseq));
     }
@@ -159,20 +160,20 @@ author    - w.smith 2001
          */
         String arg = (String)e.getActionCommand();
         if (arg.equals("  Plot  ")) {
-	    hname=hovefile.getText();
-	    if(hname.length()==0)hname=null;
+            hname=hovefile.getText();
+            if(hname.length()==0)hname=null;
             nseq=BML.giveInteger(seqno.getText(),1);
             ldens=dens.isSelected();
-	    if(hname == null){
-		hname=selectFileNameBegins(home,"HOVG");
-		println("File selected is "+hname+hname.toUpperCase().indexOf("HOVGSL"));
-	    }
+            if(hname == null){
+                hname=selectFileNameBegins(home,"HOVG");
+                println("File selected is "+hname+hname.toUpperCase().indexOf("HOVGSL"));
+            }
             if(hname != null) {
                 npnts=rdhove(ldens,nseq);
                 if(npnts>0) {
                     hovXY(npnts,name1,name2);
                     if(graf != null)
-                        graf.job.setVisible(false);
+                        graf.job.dispose();
                     graf=new GraphDraw(home);
                     graf.xlabel.setText("Radius (A)");
                     if(hname.toUpperCase().indexOf("HOVGSL")>=0) {
@@ -191,7 +192,7 @@ author    - w.smith 2001
             }
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
     int rdhove(boolean lden,int nseq) {

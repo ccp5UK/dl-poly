@@ -153,7 +153,7 @@ Subroutine build_book_intra              &
         End Do
 
 ! If there are atoms of this molecule on this node, get global indices and
-! corresponding local_idices of the specific intra-like unit.  If any of
+! corresponding local_indices of the specific intra-like unit.  If any of
 ! the local indices exists increase the local number of these intra-like
 ! units (local = belongs to this node).  If it's safe to proceed (array
 ! bounds check) record the global number of the intra-like unit and the

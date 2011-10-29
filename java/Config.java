@@ -136,7 +136,7 @@ author    - w.smith march 2011
                         resizeArrays();
                     if(!namstr.equals("")) {
                         atoms[i]=new Element(namstr);
-                    natms++;
+                        natms++;
                     }
                     else {
                         println("Error  - unknown atom type in CONFIG file: "+namstr);
@@ -642,6 +642,7 @@ author    - w.smith march 2011
             atomz[n].zsym=new String(atoms[n].zsym);
             atomz[n].zcol=new Color(atoms[n].zcol.getRGB());
             atomz[n].covalent=atoms[n].covalent;
+            atomz[n].dotify=atoms[n].dotify;
             uvw[0][n]=xyz[0][n];
             uvw[1][n]=xyz[1][n];
             uvw[2][n]=xyz[2][n];

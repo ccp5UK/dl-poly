@@ -46,6 +46,7 @@ author    - w.smith 2001
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -197,7 +198,7 @@ author    - w.smith 2001
             if(npnts>0) {
                 msdXY(npnts,atname);
                 if(graf != null)
-                    graf.job.setVisible(false);
+                    graf.job.dispose();
                 graf=new GraphDraw(home);
                 graf.xlabel.setText("Time (ps)");
                 graf.ylabel.setText("MSD (A^2)");
@@ -206,7 +207,7 @@ author    - w.smith 2001
             }
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
     int calcMSD() {

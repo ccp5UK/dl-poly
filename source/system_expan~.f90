@@ -17,40 +17,33 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
 
   Use kinds_f90
   Use comms_module
-  Use setup_module,        Only : nfield,nconf,nrite,mxatms
+  Use setup_module,  Only : nfield,nconf,nrite
   Use site_module
-  Use config_module,       Only : cfgname,cell,natms,lsi,lsa, &
-                                  atmnam,xxx,yyy,zzz
-  Use core_shell_module,   Only : numshl,lstshl
-  Use constraints_module,  Only : numcon,lstcon
-  Use rigid_bodies_module, Only : numrgd,lstrgd
-  Use bonds_module,        Only : numbonds,lstbnd
-  Use angles_module,       Only : numang,lstang
-  Use dihedrals_module,    Only : numdih,lstdih
-  Use inversions_module,   Only : numinv,lstinv
-  Use parse_module,        Only : tabs_2_blanks, get_word, strip_blanks, &
-                                  lower_case, word_2_real
-  Use io_module,           Only : io_set_parameters,        &
-                                  io_get_parameters,        &
-                                  io_init, io_nc_create,    &
-                                  io_open, io_write_record, &
-                                  io_nc_put_var,            &
-                                  io_write_sorted_file,     &
-                                  io_close, io_finalize,    &
-                                  io_delete,                &
-                                  io_close, io_finalize,    &
-                                  IO_RESTART,               &
-                                  IO_BASE_COMM_NOT_SET,     &
-                                  IO_ALLOCATION_ERROR,      &
-                                  IO_UNKNOWN_WRITE_OPTION,  &
-                                  IO_UNKNOWN_WRITE_LEVEL,   &
-                                  IO_WRITE_UNSORTED_MPIIO,  &
-                                  IO_WRITE_UNSORTED_DIRECT, &
-                                  IO_WRITE_UNSORTED_MASTER, &
-                                  IO_WRITE_SORTED_MPIIO,    &
-                                  IO_WRITE_SORTED_DIRECT,   &
-                                  IO_WRITE_SORTED_NETCDF,   &
-                                  IO_WRITE_SORTED_MASTER
+  Use config_module, Only : cfgname,cell,natms,lsi,lsa, &
+                            atmnam,xxx,yyy,zzz
+  Use parse_module,  Only : tabs_2_blanks, get_word, strip_blanks, &
+                            lower_case, word_2_real
+  Use io_module,     Only : io_set_parameters,        &
+                            io_get_parameters,        &
+                            io_init, io_nc_create,    &
+                            io_open, io_write_record, &
+                            io_nc_put_var,            &
+                            io_write_sorted_file,     &
+                            io_close, io_finalize,    &
+                            io_delete,                &
+                            io_close, io_finalize,    &
+                            IO_RESTART,               &
+                            IO_BASE_COMM_NOT_SET,     &
+                            IO_ALLOCATION_ERROR,      &
+                            IO_UNKNOWN_WRITE_OPTION,  &
+                            IO_UNKNOWN_WRITE_LEVEL,   &
+                            IO_WRITE_UNSORTED_MPIIO,  &
+                            IO_WRITE_UNSORTED_DIRECT, &
+                            IO_WRITE_UNSORTED_MASTER, &
+                            IO_WRITE_SORTED_MPIIO,    &
+                            IO_WRITE_SORTED_DIRECT,   &
+                            IO_WRITE_SORTED_NETCDF,   &
+                            IO_WRITE_SORTED_MASTER
 
   Implicit None
 
@@ -60,23 +53,13 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
 
   Integer, Parameter     :: recsz = 73 ! default record size
 
-  Logical                :: safex,safey,safez,safer,safel,safe
-
   Character( Len = 200 ) :: record,record1
   Character( Len = 40  ) :: word,fcfg,ffld
-  Integer                :: fail(1:5),nall, i,ix,iy,iz,m, &
-                            itmols,setspc,imols,          &
-                            indatm,indatm1,nattot,mxiter, &
-                            sapmpt,sapmtt,iatm,jatm,      &
-                            ishls,nshels,icnst,nconst,    &
-                            nrigid,irgd,lrgd,             &
-                            ibond,nbonds,iang,nangle,     &
-                            idih,ndihed,iinv,ninver,      &
-                            idm,loc_ind,index,at_scaled
+  Integer                :: fail(1:4),nall,setspc,i,k,l,m,ix,iy,iz, &
+                            indatm,nattot,idm,loc_ind,index,at_scaled
   Integer(Kind=ip)       :: offset,rec
-  Real( Kind = wp )      :: fx,fy,fz, x,y,z, t, cut,  &
-                            celprp(1:10),hwx,hwy,hwz, &
-                            x1(1:1),y1(1:1),z1(1:1),  &
+  Real( Kind = wp )      :: fx,fy,fz, x,y,z, t ,celprp(1:10),   &
+                            xyz0(1:3), x1(1:1),y1(1:1),z1(1:1), &
                             cell_vecs(1:3,1:3), lengths(1:3), angles(1:3)
 
 ! Some parameters and variables needed by io_module interfaces
@@ -92,8 +75,7 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
                                                         f7,f8,f9, &
                                                         x_scaled, &
                                                         y_scaled, &
-                                                        z_scaled, &
-                                                        xm,ym,zm
+                                                        z_scaled
 
   Integer,           Dimension( :,:,: ), Allocatable :: i_xyz
 
@@ -103,12 +85,10 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
 
 
   fail=0
-  Allocate (f1(1:nx),f2(1:nx),f3(1:nx),                      Stat=fail(1))
-  Allocate (f4(1:ny),f5(1:ny),f6(1:ny),                      Stat=fail(2))
-  Allocate (f7(1:nz),f8(1:nz),f9(1:nz),                      Stat=fail(3))
-  Allocate (i_xyz(1:nx,1:ny,1:nz),                           Stat=fail(4))
-  Allocate (xm(1:10*mxatms),ym(1:10*mxatms),zm(1:10*mxatms), Stat=fail(5))
-
+  Allocate (f1(1:nx),f2(1:nx),f3(1:nx), Stat=fail(1))
+  Allocate (f4(1:ny),f5(1:ny),f6(1:ny), Stat=fail(2))
+  Allocate (f7(1:nz),f8(1:nz),f9(1:nz), Stat=fail(3))
+  Allocate (i_xyz(1:nx,1:ny,1:nz),      Stat=fail(4))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'system_expand allocation failure, node: ', idnode
      Call error(0)
@@ -197,13 +177,6 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
   End Do
 
   Call dcell(cell,celprp) ! get cell properties
-
-! define half cell widths and bond-length limit
-
-  hwx = celprp(7)/2.0_wp
-  hwy = celprp(8)/2.0_wp
-  hwz = celprp(9)/2.0_wp
-  cut = Min( rcut/2.0_wp , 3.0_wp)
 
   If (idnode == 0) Then
 
@@ -328,350 +301,37 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
 
   at_scaled = 0
 
-! running site and topology related intra-indices
+  Do k=1,ntpmls
+     setspc=nummols(k)*numsit(k)
+     Do l=1,nummols(k)
+        Do m=1,numsit(k)
 
-  nshels=0
-  nconst=0
-  nrigid=0
-  nbonds=0
-  nangle=0
-  ndihed=0
-  ninver=0
+! Increase global atom counter in CONFIG(old)
 
-  If (idnode == 0) Write(nrite,Fmt='(/,1x,a,i10,2/))') 'Checking topological contiguity of molecules...'
+           nattot=nattot+1
 
-  sapmpt=0
-  Do itmols=1,ntpmls
-     setspc=nummols(itmols)*numsit(itmols)
+! Grab the coordinates of the first atom of this molecule
 
-     sapmtt=0
-     Do imols=1,nummols(itmols)
-        If (numsit(itmols) > 10*mxatms) Call error(0)
+           If (m == 1) Then
+              If (lsa(indatm) == nattot) Then  ! If a local atom has a global index nattot
+                 loc_ind=lsi(indatm)
+                 xyz0(1)=xxx(loc_ind)
+                 xyz0(2)=yyy(loc_ind)
+                 xyz0(3)=zzz(loc_ind)
 
-! Grab the coordinates of the atoms constituting this molecule
-
-        indatm1=indatm
-        Do m=1,numsit(itmols)
-           nattot=nattot+1 ! Increase global atom counter in CONFIG(old)
-
-           If (lsa(indatm1) == nattot) Then  ! If a local atom has a global index nattot
-              loc_ind=lsi(indatm1)
-              xm(m)=xxx(loc_ind)
-              ym(m)=yyy(loc_ind)
-              zm(m)=zzz(loc_ind)
-              indatm1=indatm1+1 ! Increase local atom counter
-           Else
-              xm(m)=0.0_wp
-              ym(m)=0.0_wp
-              zm(m)=0.0_wp
+                 If (mxnode > 1) Then
+                    idm=idnode
+                    Call gsum(idm)
+                    Call MPI_BCAST(xyz0(1:3), 3, wp_mpi, idm, dlp_comm_world, ierr)
+                 End If
+              Else
+                 If (mxnode > 1) Then
+                    idm=0
+                    Call gsum(idm)
+                    Call MPI_BCAST(xyz0(1:3), 3, wp_mpi, idm, dlp_comm_world, ierr)
+                 End If
+              End If
            End If
-        End Do
-        nattot=nattot-numsit(itmols)
-
-        If (mxnode > 1) Then
-           Call gsum(xm(1:numsit(itmols)))
-           Call gsum(ym(1:numsit(itmols)))
-           Call gsum(zm(1:numsit(itmols)))
-        End If
-
-! Start unwrapping - not safe at start for each molecule
-
-        indatm1=nattot-sapmpt-sapmtt
-        safe=.false. ; mxiter=0
-        Do While ((.not.safe) .and. mxiter < 42) ! meaning of LUEE is the limit
-           If (.not.safe) mxiter=mxiter+1
-
-           If (mxiter == 42 .and. (.not.safe) .and. idnode == 0) &
-              Write(nrite,Fmt='(/,1x,2(a,i10))') 'MOLECULAR TYPE #: ',itmols, ' MOLECULE #: ',imols
-
-           safe=.true.
-
-           safel=.true.
-           Do ishls=1,numshl(itmols)
-              nshels=nshels+1
-
-              iatm=lstshl(1,nshels)-nattot
-              jatm=lstshl(2,nshels)-nattot
-
-              safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
-              safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
-              safez=(Abs(zm(jatm)-zm(iatm)) < hwz)
-              safer=(safex .and. safey .and. safez)
-              If (.not.safer) Then
-                 x1(1)=xm(jatm)-xm(iatm)
-                 y1(1)=ym(jatm)-ym(iatm)
-                 z1(1)=zm(jatm)-zm(iatm)
-                 Call images(imcon,cell,1,x1,y1,z1)
-                 xm(jatm)=x1(1)+xm(iatm)
-                 ym(jatm)=y1(1)+ym(iatm)
-                 zm(jatm)=z1(1)+zm(iatm)
-              End If
-              safex=(Abs(xm(jatm)-xm(iatm)) < cut)
-              safey=(Abs(ym(jatm)-ym(iatm)) < cut)
-              safez=(Abs(zm(jatm)-zm(iatm)) < cut)
-              safer=(safex .and. safey .and. safez)
-
-              safel=(safel .and. safer)
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
-                 Write(nrite,Fmt='(/,1x,a,2i10)') 'CORE_SHELL UNIT #(LOCAL & GLOBAL):',ishls,nshels
-                 Write(nrite,Fmt='(1x,a,3(1x,l1))') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z',safex,safey,safez
-
-                 Write(nrite,Fmt='(1x,a,i10,3f10.1)') 'CORE  ',lstshl(1,nshels),xm(iatm),ym(iatm),zm(iatm)
-                 Write(nrite,Fmt='(1x,a,i10,3f10.1)') 'SHELL ',lstshl(2,nshels),xm(jatm),ym(jatm),zm(jatm)
-              End If
-           End Do
-           safe=(safe .and. safel)
-
-           safel=.true.
-           Do icnst=1,numcon(itmols)
-              nconst=nconst+1
-
-              iatm=lstcon(1,nconst)-indatm1
-              jatm=lstcon(2,nconst)-indatm1
-
-              safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
-              safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
-              safez=(Abs(zm(jatm)-zm(iatm)) < hwz)
-              safer=(safex .and. safey .and. safez)
-              If (.not.safer) Then
-                 x1(1)=xm(jatm)-xm(iatm)
-                 y1(1)=ym(jatm)-ym(iatm)
-                 z1(1)=zm(jatm)-zm(iatm)
-                 Call images(imcon,cell,1,x1,y1,z1)
-                 xm(jatm)=x1(1)+xm(iatm)
-                 ym(jatm)=y1(1)+ym(iatm)
-                 zm(jatm)=z1(1)+zm(iatm)
-              End If
-              safex=(Abs(xm(jatm)-xm(iatm)) < cut)
-              safey=(Abs(ym(jatm)-ym(iatm)) < cut)
-              safez=(Abs(zm(jatm)-zm(iatm)) < cut)
-              safer=(safex .and. safey .and. safez)
-
-              safel=(safel .and. safer)
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
-                 Write(nrite,Fmt='(/,1x,a,2i10)') 'CONSTRAINT UNIT #(LOCAL & GLOBAL):',icnst,nconst
-                 Write(nrite,Fmt='(1x,a,3(1x,l1))') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z',safex,safey,safez
-                 Write(nrite,Fmt='(2i10,3f10.1)') 1,lstcon(1,nconst),xm(iatm),ym(iatm),zm(iatm)
-                 Write(nrite,Fmt='(2i10,3f10.1)') 2,lstcon(2,nconst),xm(jatm),ym(jatm),zm(jatm)
-              End If
-           End Do
-           safe=(safe .and. safel)
-
-           safel=.true.
-           Do irgd=1,numrgd(itmols)
-              nrigid=nrigid+1
-
-              lrgd=lstrgd(0,nrigid)
-              iatm=lstrgd(1,nrigid)-indatm1
-              Do i=2,lrgd
-                 jatm=lstrgd(i,nrigid)-indatm1
-
-                 safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
-                 safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
-                 safez=(Abs(zm(jatm)-zm(iatm)) < hwz)
-                 safer=(safex .and. safey .and. safez)
-                 If (.not.safer) Then
-                    x1(1)=xm(jatm)-xm(iatm)
-                    y1(1)=ym(jatm)-ym(iatm)
-                    z1(1)=zm(jatm)-zm(iatm)
-                    Call images(imcon,cell,1,x1,y1,z1)
-                    xm(jatm)=x1(1)+xm(iatm)
-                    ym(jatm)=y1(1)+ym(iatm)
-                    zm(jatm)=z1(1)+zm(iatm)
-                 End If
-                 safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
-                 safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
-                 safez=(Abs(zm(jatm)-zm(iatm)) < hwz)
-                 safer=(safex .and. safey .and. safez)
-
-                 safel=(safel .and. safer)
-              End Do
-
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
-                 Write(nrite,Fmt='(/,1x,a,2i10)') 'RIGID BODY UNIT #(LOCAL & GLOBAL):',irgd,nrigid
-                 Write(nrite,Fmt='(1x,a)') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z'
-                 Do i=1,lrgd
-                    iatm=lstrgd(i,nrigid)-indatm1
-                    Write(nrite,Fmt='(2i10,3f10.1)') i,lstrgd(i,nrigid),xm(iatm),ym(iatm),zm(iatm)
-                 End Do
-              End If
-           End Do
-           safe=(safe .and. safel)
-
-           safel=.true.
-           Do ibond=1,numbonds(itmols)
-              nbonds=nbonds+1
-
-              iatm=lstbnd(1,nbonds)-indatm1
-              jatm=lstbnd(2,nbonds)-indatm1
-
-              safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
-              safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
-              safez=(Abs(zm(jatm)-zm(iatm)) < hwz)
-              safer=(safex .and. safey .and. safez)
-              If (.not.safer) Then
-                 x1(1)=xm(jatm)-xm(iatm)
-                 y1(1)=ym(jatm)-ym(iatm)
-                 z1(1)=zm(jatm)-zm(iatm)
-                 Call images(imcon,cell,1,x1,y1,z1)
-                 xm(jatm)=x1(1)+xm(iatm)
-                 ym(jatm)=y1(1)+ym(iatm)
-                 zm(jatm)=z1(1)+zm(iatm)
-              End If
-              safex=(Abs(xm(jatm)-xm(iatm)) < cut)
-              safey=(Abs(ym(jatm)-ym(iatm)) < cut)
-              safez=(Abs(zm(jatm)-zm(iatm)) < cut)
-              safer=(safex .and. safey .and. safez)
-
-              safel=(safel .and. safer)
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
-                 Write(nrite,Fmt='(/,1x,a,2i10)') 'BOND UNIT #(LOCAL & GLOBAL):',ibond,nbonds
-                 Write(nrite,Fmt='(1x,a,3(1x,l1))') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z',safex,safey,safez
-                 Write(nrite,Fmt='(2i10,3f10.1)') 1,lstbnd(1,nbonds),xm(iatm),ym(iatm),zm(iatm)
-                 Write(nrite,Fmt='(2i10,3f10.1)') 2,lstbnd(2,nbonds),xm(jatm),ym(jatm),zm(jatm)
-              End If
-           End Do
-           safe=(safe .and. safel)
-
-           safel=.true.
-           Do iang=1,numang(itmols)
-              nangle=nangle+1
-
-              iatm=lstang(1,nangle)-indatm1
-              Do i=2,3
-                 jatm=lstang(i,nangle)-indatm1
-
-                 safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
-                 safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
-                 safez=(Abs(zm(jatm)-zm(iatm)) < hwz)
-                 safer=(safex .and. safey .and. safez)
-                 If (.not.safer) Then
-                    x1(1)=xm(jatm)-xm(iatm)
-                    y1(1)=ym(jatm)-ym(iatm)
-                    z1(1)=zm(jatm)-zm(iatm)
-                    Call images(imcon,cell,1,x1,y1,z1)
-                    xm(jatm)=x1(1)+xm(iatm)
-                    ym(jatm)=y1(1)+ym(iatm)
-                    zm(jatm)=z1(1)+zm(iatm)
-                 End If
-                 safex=(Abs(xm(jatm)-xm(iatm)) < cut)
-                 safey=(Abs(ym(jatm)-ym(iatm)) < cut)
-                 safez=(Abs(zm(jatm)-zm(iatm)) < cut)
-                 safer=(safex .and. safey .and. safez)
-
-                 safel=(safel .and. safer)
-              End Do
-
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
-                 Write(nrite,Fmt='(/,1x,a,2i10)') 'ANGLE UNIT #(LOCAL & GLOBAL):',iang,nangle
-                 Write(nrite,Fmt='(1x,a)') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z'
-                 Do i=1,3
-                    iatm=lstang(i,nangle)-indatm1
-                    Write(nrite,Fmt='(2i10,3f10.1)') i,lstang(i,nangle),xm(iatm),ym(iatm),zm(iatm)
-                 End Do
-              End If
-           End Do
-           safe=(safe .and. safel)
-
-           safel=.true.
-           Do idih=1,numdih(itmols)
-              ndihed=ndihed+1
-
-              iatm=lstdih(1,ndihed)-indatm1
-              Do i=2,4
-                 jatm=lstdih(i,ndihed)-indatm1
-
-                 safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
-                 safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
-                 safez=(Abs(zm(jatm)-zm(iatm)) < hwz)
-                 safer=(safex .and. safey .and. safez)
-                 If (.not.safer) Then
-                    x1(1)=xm(jatm)-xm(iatm)
-                    y1(1)=ym(jatm)-ym(iatm)
-                    z1(1)=zm(jatm)-zm(iatm)
-                    Call images(imcon,cell,1,x1,y1,z1)
-                    xm(jatm)=x1(1)+xm(iatm)
-                    ym(jatm)=y1(1)+ym(iatm)
-                    zm(jatm)=z1(1)+zm(iatm)
-                 End If
-                 x=Real(i,wp)/2.0_wp*cut
-                 safex=(Abs(xm(jatm)-xm(iatm)) < x)
-                 safey=(Abs(ym(jatm)-ym(iatm)) < x)
-                 safez=(Abs(zm(jatm)-zm(iatm)) < x)
-                 safer=(safex .and. safey .and. safez)
-
-                 safel=(safel .and. safer)
-              End Do
-
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
-                 Write(nrite,Fmt='(/,1x,a,2i10)') 'DIHEDRAL UNIT #(LOCAL & GLOBAL):',idih,ndihed
-                 Write(nrite,Fmt='(1x,a)') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z'
-                 Do i=1,4
-                    iatm=lstdih(i,ndihed)-indatm1
-                    Write(nrite,Fmt='(2i10,3f10.1)') i,lstdih(i,ndihed),xm(iatm),ym(iatm),zm(iatm)
-                 End Do
-              End If
-           End Do
-           safe=(safe .and. safel)
-
-           safel=.true.
-           Do iinv=1,numinv(itmols)
-              ninver=ninver+1
-
-              iatm=lstinv(1,ninver)-indatm1
-              Do i=2,4
-                 jatm=lstinv(i,ninver)-indatm1
-
-                 safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
-                 safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
-                 safez=(Abs(zm(jatm)-zm(iatm)) < hwz)
-                 safer=(safex .and. safey .and. safez)
-                 If (.not.safer) Then
-                    x1(1)=xm(jatm)-xm(iatm)
-                    y1(1)=ym(jatm)-ym(iatm)
-                    z1(1)=zm(jatm)-zm(iatm)
-                    Call images(imcon,cell,1,x1,y1,z1)
-                    xm(jatm)=x1(1)+xm(iatm)
-                    ym(jatm)=y1(1)+ym(iatm)
-                    zm(jatm)=z1(1)+zm(iatm)
-                 End If
-                 safex=(Abs(xm(jatm)-xm(iatm)) < cut)
-                 safey=(Abs(ym(jatm)-ym(iatm)) < cut)
-                 safez=(Abs(zm(jatm)-zm(iatm)) < cut)
-                 safer=(safex .and. safey .and. safez)
-
-                 safel=(safel .and. safer)
-              End Do
-
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
-                 Write(nrite,Fmt='(/,1x,a,2i10)') 'INVERSION UNIT #(LOCAL & GLOBAL):',iinv,ninver
-                 Write(nrite,Fmt='(1x,a)') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z'
-                 Do i=1,4
-                    iatm=lstinv(i,ninver)-indatm1
-                    Write(nrite,Fmt='(2i10,3f10.1)') i,lstinv(i,ninver),xm(iatm),ym(iatm),zm(iatm)
-                 End Do
-              End If
-           End Do
-           safe=(safe .and. safel)
-
-           If (safe .and. imols < nummols(itmols)) Then
-              nshels=nshels-numshl(itmols)
-              nconst=nconst-numcon(itmols)
-              nrigid=nrigid-numrgd(itmols)
-              nbonds=nbonds-numbonds(itmols)
-              nangle=nangle-numang(itmols)
-              ndihed=ndihed-numdih(itmols)
-              ninver=ninver-numinv(itmols)
-           End If
-        End Do
-
-        If (.not.safe) Then
-           If (idnode == 0) Write(nrite,Fmt='(/,1x,a,i10))') 'Topological contiguity failure!!!'
-           Call error(0)
-        End If
-
-        Do m=1,numsit(itmols)
-           nattot=nattot+1 ! Increase global atom counter in CONFIG(old)
 
            If (lsa(indatm) == nattot) Then ! If a local atom has a global index nattot
 
@@ -683,9 +343,17 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
                  If (mxnode > 1) Call gsum(idm)
               End If
 
-! Get the local index of the particle
+! Get the local index of the particle and bound its coordinates
 
               loc_ind=lsi(indatm)
+
+              x1=xxx(loc_ind)-xyz0(1)
+              y1=yyy(loc_ind)-xyz0(2)
+              z1=zzz(loc_ind)-xyz0(3)
+              Call images(imcon,cell,1,x1,y1,z1)
+              x1=x1+xyz0(1)
+              y1=y1+xyz0(2)
+              z1=z1+xyz0(3)
 
 ! Do particle replication by vector displacements in cyclic (z,y,x) directions
 
@@ -693,9 +361,9 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
                  Do iy=1,ny
                     Do ix=1,nx
 
-                       x=xm(m)+f1(ix)+f4(iy)+f7(iz)
-                       y=ym(m)+f2(ix)+f5(iy)+f8(iz)
-                       z=zm(m)+f3(ix)+f6(iy)+f9(iz)
+                       x=x1(1)+f1(ix)+f4(iy)+f7(iz)
+                       y=y1(1)+f2(ix)+f5(iy)+f8(iz)
+                       z=z1(1)+f3(ix)+f6(iy)+f9(iz)
 
 ! Write 2 records @ line 'rec+1' and 'rec+2' for particle 'index' in CONFIG(new)
 
@@ -783,13 +451,10 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
               End If
 
            End If
+
         End Do
-
-        sapmtt = sapmtt + numsit(itmols)
-        offset = offset + Int(2,ip)*Int(numsit(itmols),ip)
+        offset = offset + Int(2,ip)*Int(numsit(k),ip)
      End Do
-
-     sapmpt = sapmpt + sapmtt
      offset = offset + Int(2,ip)*Int(nall-1,ip)*Int(setspc,ip)
   End Do
 

@@ -7,7 +7,7 @@ Subroutine defects_write &
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2011
+! author    - i.t.todorov october 2011
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -158,6 +158,7 @@ Subroutine defects_write &
 
            Open(Unit=ndefdt, File='DEFECTS', Form='formatted')
 
+           l_tmp =.true.
            Do While (.true.)
 
               record=' '

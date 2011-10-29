@@ -40,6 +40,7 @@ author    - w.smith 2000
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+	setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -84,28 +85,6 @@ author    - w.smith 2000
         test.addItem("TEST18");
         test.addItem("TEST19");
         test.addItem("TEST20");
-        test.addItem("TEST21");
-        test.addItem("TEST22");
-        test.addItem("TEST23");
-        test.addItem("TEST24");
-        test.addItem("TEST25");
-        test.addItem("TEST26");
-        test.addItem("TEST27");
-        test.addItem("TEST28");
-        test.addItem("TEST29");
-        test.addItem("TEST30");
-        test.addItem("TEST31");
-        test.addItem("TEST32");
-        test.addItem("TEST33");
-        test.addItem("TEST34");
-        test.addItem("TEST35");
-        test.addItem("TEST36");
-        test.addItem("TEST37");
-        test.addItem("TEST38");
-        test.addItem("TEST39");
-        test.addItem("TEST40");
-        test.addItem("TEST41");
-        test.addItem("TEST42");
         fix(test,grd,gbc,2,1,1,1);
 
         // Copy files from archive
@@ -205,7 +184,7 @@ author    - w.smith 2000
 
         String arg = (String)e.getActionCommand();
         if (arg.equals("Select")) {
-            dname=test.getSelectedItem().toString()/*+"/VV"*/;
+            dname=test.getSelectedItem().toString()+"/VV";
             println("About to overwrite current DL_POLY I/O files");
             danger=new WarningBox(home,"Warning!",true);
             danger.setVisible(true);
@@ -232,7 +211,7 @@ author    - w.smith 2000
             viewResource("TestInfo");
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+	    job.dispose();
         }
     }
     void fetchFiles() {

@@ -45,6 +45,7 @@ author    - w.smith 2011
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -451,7 +452,7 @@ author    - w.smith 2011
             status=-3;
             return status;
         }
- 	config.structure=new Structure(config);
+        config.structure=new Structure(config);
         cprp=AML.dcell(unit);
         wdth=0.5*BML.min(nxnum*cprp[7],nynum*cprp[8],nznum*cprp[9]);
         println("New CONFIG file "+fname+" created");
@@ -461,9 +462,9 @@ author    - w.smith 2011
 
         // Draw structure
 
- 	if(home.editor != null)
- 	    home.editor.job.setVisible(false);
- 	home.editor=new Editor(home);
+        if(!editor.isVisible())
+            editor.showEditor();
+        editor.pane.restore();
 
         return status;
     }
@@ -520,7 +521,7 @@ author    - w.smith 2011
             if(kill)
                 System.exit(0);
             else
-                job.setVisible(false);
+                job.dispose();
         }
     }
 }

@@ -20,6 +20,7 @@ author    - w.smith 2011
          */
     private static GUI job;
     private static String page="Welcome to the DL_POLY GUI (c) W. Smith 2011.";
+    private static JMenuItem itemGD;
 
     public GUI() {
         /*
@@ -37,7 +38,7 @@ author    - w.smith 2011
 
         super();
         setTitle("DL_POLY GUI");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
         fontMain=new Font("Verdana",Font.BOLD,14);
         setFont(fontMain);
         grd = new GridLayout(1,1);
@@ -79,8 +80,8 @@ author    - w.smith 2011
 
         // File menu A
 
-        JMenuItem itemAAa,itemAAb,itemAAc,itemAAd;
-        JMenuItem itemAB,itemAC,itemAD,itemAE,itemAF,itemAG,itemAH,itemAI;
+        JMenuItem itemAAa,itemAAb,itemAAc,itemAAd,itemAB;
+        JMenuItem itemAC,itemAD,itemAE,itemAF,itemAG,itemAH;
         JMenu File = MyMenu("File");
         JMenu subFileAA = MyMenu("Load Config");
         subFileAA.add(itemAAa = MyMenuItem("CFG"));
@@ -90,13 +91,12 @@ author    - w.smith 2011
         subFileAA.setForeground(Color.black);
         File.add(subFileAA);
         File.add(itemAB = MyMenuItem("Delete Config"));
-        File.add(itemAC = MyMenuItem("View File"));
-        File.add(itemAD = MyMenuItem("Delete File"));
-        File.add(itemAE = MyMenuItem("Defaults"));
-        File.add(itemAF = MyMenuItem("Print Text"));
-        File.add(itemAG = MyMenuItem("Print Graphics"));
-        File.add(itemAH = MyMenuItem("Reset"));
-        File.add(itemAI = MyMenuItem("Quit"));
+        File.add(itemAC = MyMenuItem("Delete File"));
+        File.add(itemAD = MyMenuItem("Defaults"));
+        File.add(itemAE = MyMenuItem("Print Text"));
+        File.add(itemAF = MyMenuItem("Print Graphics"));
+        File.add(itemAG = MyMenuItem("Reset"));
+        File.add(itemAH = MyMenuItem("Quit"));
         File.setFont(fontMain);
         File.setForeground(art.fore);
         File.setBackground(art.back);
@@ -112,7 +112,6 @@ author    - w.smith 2011
         itemAF.addActionListener(new GUIMenuHandler());
         itemAG.addActionListener(new GUIMenuHandler());
         itemAH.addActionListener(new GUIMenuHandler());
-        itemAI.addActionListener(new GUIMenuHandler());
 
         // FileMaker menu C
 
@@ -121,7 +120,6 @@ author    - w.smith 2011
         JMenuItem itemCCa,itemCCb,itemCCc,itemCCd,itemCCe;
         JMenuItem itemCDa,itemCDb,itemCDc,itemCDd,itemCDe;
         JMenu FileMaker  = MyMenu("FileMaker");
-        FileMaker.add(itemFA = MyMenuItem("Show Editor"));
         FileMaker.add(itemCA = MyMenuItem("CONTROL"));
         JMenu subFileMakerCB = MyMenu("CONFIG");
         subFileMakerCB.add(itemCBa = MyMenuItem("Lattice"));
@@ -149,6 +147,7 @@ author    - w.smith 2011
         FileMaker.setForeground(art.fore);
         FileMaker.setBackground(art.back);
         FileMaker.setFont(fontMain);
+        FileMaker.add(itemFA = MyMenuItem("Show Editor"));
         top.add(FileMaker);
         itemFA.addActionListener(new GUIMenuHandler());
         itemCA.addActionListener(new GUIMenuHandler());
@@ -187,7 +186,7 @@ author    - w.smith 2011
         JMenuItem itemEBa,itemEBb,itemEBc;
         JMenuItem itemECa,itemECb,itemECc;
         JMenuItem itemEDa,itemEDb,itemEDc;
-        JMenuItem itemEEa,itemEEb;
+        JMenuItem itemEEa,itemEEb,itemEEc,itemEEd;
         JMenu Analysis  = MyMenu("Analysis");
         Analysis.add(itemE0 = MyMenuItem("Statistics"));
         JMenu subAnalysisEA = MyMenu("Structure");
@@ -216,7 +215,9 @@ author    - w.smith 2011
         Analysis.add(subAnalysisED);
         JMenu subAnalysisEE = MyMenu("Tools");
         subAnalysisEE.add(itemEEa = MyMenuItem("What Atoms?"));
-        subAnalysisEE.add(itemEEb = MyMenuItem("Plot"));
+        subAnalysisEE.add(itemEEb = MyMenuItem("Graph Draw"));
+        subAnalysisEE.add(itemEEc = MyMenuItem("Compare Cfgs"));
+        subAnalysisEE.add(itemEEd = MyMenuItem("Show Clusters"));
         subAnalysisEE.setForeground(Color.black);
         Analysis.add(subAnalysisEE);
         Analysis.setForeground(art.fore);
@@ -238,34 +239,48 @@ author    - w.smith 2011
         itemEDb.addActionListener(new GUIMenuHandler());
         itemEEa.addActionListener(new GUIMenuHandler());
         itemEEb.addActionListener(new GUIMenuHandler());
+        itemEEc.addActionListener(new GUIMenuHandler());
+        itemEEd.addActionListener(new GUIMenuHandler());
 
         // Information menu G
 
-        JMenuItem itemGA,itemGB,itemGC,itemGD,itemGE,itemGF;
-        JMenuItem itemGG,itemGH,itemGI;
+        JMenuItem itemGA,itemGBa,itemGBb,itemGBc,itemGBd,itemGBe;
+        JMenuItem itemGBf,itemGBg,itemGBh,itemGC,itemGE,itemGF;
         JMenu Help  = MyMenu("Information");
-        Help.add(itemGA = MyMenuItem("About DL_POLY"));
-        Help.add(itemGB = MyMenuItem("Disclaimer"));
-        Help.add(itemGC = MyMenuItem("Licence"));
-        Help.add(itemGD = MyMenuItem("Acknowledgements"));
-        Help.add(itemGE = MyMenuItem("MINIDREI"));
-        Help.add(itemGF = MyMenuItem("MINIOPLS"));
-        Help.add(itemGG = MyMenuItem("CERAMICS"));
-        Help.add(itemGH = MyMenuItem("Test Cases"));
-        Help.add(itemGI = MyMenuItem("Clear Text"));
+        Help.add(itemGA = MyMenuItem("View File"));
+        JMenu subHelpGB = MyMenu("GUI Files");
+        subHelpGB.add(itemGBa = MyMenuItem("About DL_POLY"));
+        subHelpGB.add(itemGBb = MyMenuItem("Disclaimer"));
+        subHelpGB.add(itemGBc = MyMenuItem("Licence"));
+        subHelpGB.add(itemGBd = MyMenuItem("Acknowledgements"));
+        subHelpGB.add(itemGBe = MyMenuItem("MINIDREI"));
+        subHelpGB.add(itemGBf = MyMenuItem("MINIOPLS"));
+        subHelpGB.add(itemGBg = MyMenuItem("CERAMICS"));
+        subHelpGB.add(itemGBh = MyMenuItem("Test Cases"));
+        subHelpGB.setForeground(Color.black);
+        Help.add(subHelpGB);
+        Help.add(itemGC = MyMenuItem("Edit Text"));
+        Help.add(itemGD = MyMenuItem("Save Text"));
+        Help.add(itemGE = MyMenuItem("Clear Text"));
+        Help.add(itemGF = MyMenuItem("Notepad"));
         Help.setForeground(art.fore);
         Help.setBackground(art.back);
         Help.setFont(fontMain);
         top.add(Help);
         itemGA.addActionListener(new GUIMenuHandler());
-        itemGB.addActionListener(new GUIMenuHandler());
-        itemGC.addActionListener(new GUIMenuHandler());
+        itemGBa.addActionListener(new GUIMenuHandler());
+        itemGBb.addActionListener(new GUIMenuHandler());
+        itemGBc.addActionListener(new GUIMenuHandler());
+        itemGBd.addActionListener(new GUIMenuHandler());
+        itemGBe.addActionListener(new GUIMenuHandler());
+        itemGBf.addActionListener(new GUIMenuHandler());
+        itemGBg.addActionListener(new GUIMenuHandler());
+        itemGBh.addActionListener(new GUIMenuHandler());
         itemGD.addActionListener(new GUIMenuHandler());
+        itemGC.addActionListener(new GUIMenuHandler());
         itemGE.addActionListener(new GUIMenuHandler());
         itemGF.addActionListener(new GUIMenuHandler());
-        itemGG.addActionListener(new GUIMenuHandler());
-        itemGH.addActionListener(new GUIMenuHandler());
-        itemGI.addActionListener(new GUIMenuHandler());
+        itemGD.setEnabled(false);
 
         // Invoke menu bar
 
@@ -300,44 +315,38 @@ author    - w.smith 2011
                 if(arg.equals("Quit")) {
                     System.exit(0);
                 }
-                else if(arg.equals("View File")) {
-                    getViewFile(job);
-                }
                 else if(arg.equals("Delete Config")) {
-                    config=null;
-		    cfgsav=null;
-		    if(editor != null)
-			editor.closeEditor();
+                    config=new Config();
+                    cfgsav=new Config();
+                    editor.pane.restore();
                 }
                 else if(arg.equals("Delete File")) {
                     zappFile(job);
                 }
                 else if(arg.equals("Defaults")) {
                     if(newdefs != null)
-                        newdefs.job.setVisible(false);
+                        newdefs.job.dispose();
                     newdefs=new ChgDefaults(job);
                 }
                 else if(arg.equals("Reset")) {
                     startGUI();
                     clearScreen();
-		    config=null;
-		    if(editor != null)
-			editor.closeEditor();
+                    executable=new String(defaultexecutable);
+                    editor.closeEditor();
+                    editor=new Editor(job);
                     println("GUI variables reinitialized");
                 }
                 else if(arg.equals("Print Text")) {
                     printOut();
                 }
                 else if(arg.equals("Print Graphics")) {
-		    if(config == null)
-			println("Error - No configuration to print");
-		    else
-			editor.pane.printOut();
+                    if(config == null)
+                        println("Error - No configuration to print");
+                    else
+                        editor.pane.printOut();
                 }
                 else if(arg.equals("Show Editor")) {
-                    if(editor != null)
-                        editor.closeEditor();
-		    editor=new Editor(job);
+                    editor.showEditor();
                 }
                 else if(arg.equals("CONTROL")){
                     if(makctr != null)
@@ -347,196 +356,212 @@ author    - w.smith 2011
                 else if(arg.equals("CFG")) {
                     ftype="CFG";
                     println("CFG file input selected");
-		    config=getConfig(job,ftype);
-		    if(config != null) {
-			if(editor != null)
-			    editor.closeEditor();
-			editor=new Editor(job);
-		    }
+                    config=getConfig(job,ftype);
+                    if(config != null){
+                        editor.pane.restore();
+                        if(!editor.isVisible())
+                            editor.showEditor();
+                    }
                     else if(editor != null)
                         editor.pane.newBuild();
                 }
                 else if(arg.equals("XYZ")) {
                     ftype="XYZ";
                     println("XYZ file input selected");
-		    config=getConfig(job,ftype);
-		    if(config != null) {
-			if(editor != null)
-			    editor.closeEditor();
-			editor=new Editor(job);
-		    }
+                    config=getConfig(job,ftype);
+                    if(config != null){
+                        editor.pane.restore();
+                        if(!editor.isVisible())
+                            editor.showEditor();
+                    }
                     else if(editor != null)
                         editor.pane.newBuild();
                 }
                 else if(arg.equals("PDB")) {
                     ftype="PDB";
                     println("PDB file input selected");
-		    config=getConfig(job,ftype);
-		    if(config != null) {
-			if(editor != null)
-			    editor.closeEditor();
-			editor=new Editor(job);
-		    }
+                    config=getConfig(job,ftype);
+                    if(config != null){
+                        editor.pane.restore();
+                        if(!editor.isVisible())
+                            editor.showEditor();
+                    }
                     else if(editor != null)
                         editor.pane.newBuild();
                 }
                 else if(arg.equals("MSI")) {
                     ftype="MSI";
                     println("MSI file input selected");
-		    config=getConfig(job,ftype);
-		    if(config != null) {
-			if(editor != null)
-			    editor.closeEditor();
-			editor=new Editor(job);
-		    }
+                    config=getConfig(job,ftype);
+                    if(config != null){
+                        editor.pane.restore();
+                        if(!editor.isVisible())
+                            editor.showEditor();
+                    }
                     else if(editor != null)
                         editor.pane.newBuild();
                 }
                 else if(arg.equals("Lattice")){
                     if(maklat != null)
-                        maklat.job.setVisible(false);
+                        maklat.job.dispose();
                     maklat=new MakeLattice(job);
                 }
                 else if(arg.equals("Bucky")){
                     if(makbuk != null)
-                        makbuk.job.setVisible(false);
+                        makbuk.job.dispose();
                     makbuk=new MakeBucky(job);
                 }
                 else if(arg.equals("Polymer")){
                     if(makpol != null)
-                        makpol.job.setVisible(false);
+                        makpol.job.dispose();
                     makpol=new MakePoly(job);
                 }
                 else if(arg.equals("Chain")){
                     if(makchain != null)
-                        makchain.job.setVisible(false);
+                        makchain.job.dispose();
                     makchain=new MakeChain(job);
                 }
                 else if(arg.equals("N_fold")){
                     if(enfold != null)
-                        enfold.job.setVisible(false);
+                        enfold.job.dispose();
                     enfold=new Nfold(job);
                 }
                 else if(arg.equals("BondLengths")){
                     if(bondlen != null)
-                        bondlen.job.setVisible(false);
+                        bondlen.job.dispose();
                     bondlen=new BondLengths(job);
                 }
                 else if(arg.equals("Add Solvent")){
                     if(addh2o != null)
-                        addh2o.job.setVisible(false);
+                        addh2o.job.dispose();
                     addh2o=new SolventAdd(job);
                 }
                 else if(arg.equals("Slice")){
                     if(slcrev != null)
-                        slcrev.job.setVisible(false);
+                        slcrev.job.dispose();
                     slcrev=new Slice(job);
                 }
                 else if(arg.equals("Insert Molecule")){
                     if(insmol != null)
-                        insmol.job.setVisible(false);
+                        insmol.job.dispose();
                     insmol=new InsertMolecule(job);
                 }
                 else if(arg.equals("Blank")){
                     if(makblank != null)
-                        makblank.job.setVisible(false);
+                        makblank.job.dispose();
                     makblank=new MakeBlankField(job);
                 }
                 else if(arg.equals("Dreiding")){
                     if(makdrei != null)
-                        makdrei.job.setVisible(false);
+                        makdrei.job.dispose();
                     makdrei=new MakeDreiField(job);
                 }
                 else if(arg.equals("OPLS")){
                     if(makopls != null)
-                        makopls.job.setVisible(false);
+                        makopls.job.dispose();
                     makopls=new MakeOPLSField(job);
                 }
                 else if(arg.equals("Ceramics")){
                     if(makceram != null)
-                        makceram.job.setVisible(false);
+                        makceram.job.dispose();
                     makceram=new MakeCeramField(job);
                 }
                 else if(arg.equals("Table")){
                     if(maktable != null)
-                        maktable.job.setVisible(false);
+                        maktable.job.dispose();
                     maktable=new MakeTable(job);
                 }
                 else if(arg.equals("Run DL_POLY")){
                     if(runjob != null)
-                        runjob.job.setVisible(false);
+                        runjob.job.dispose();
                     runjob=new Execute(job);
                 }
                 else if(arg.equals("Store/Fetch Data")){
                     if(datarc != null)
-                        datarc.job.setVisible(false);
+                        datarc.job.dispose();
                     datarc=new DataArchiver(job);
                 }
                 else if(arg.equals("RDF_Plot")){
                     if(rdfplt != null)
-                        rdfplt.job.setVisible(false);
+                        rdfplt.job.dispose();
                     rdfplt=new RDFPlot(job);
                 }
                 else if(arg.equals("RDF_Calc")){
                     if(rdfcal != null)
-                        rdfcal.job.setVisible(false);
+                        rdfcal.job.dispose();
                     rdfcal=new RDFCalc(job);
                 }
                 else if(arg.equals("S(k)")){
                     if(sokplt != null)
-                        sokplt.job.setVisible(false);
+                        sokplt.job.dispose();
                     sokplt=new SokPlot(job);
                 }
                 else if(arg.equals("Z_Density")){
                     if(zdnplt != null)
-                        zdnplt.job.setVisible(false);
+                        zdnplt.job.dispose();
                     zdnplt=new ZdenPlot(job);
+                }
+                else if(arg.equals("Compare Cfgs")){
+                    if(cfgcom != null)
+                        cfgcom.job.dispose();
+                    cfgcom=new ConfigCompare(job);
+                }
+                else if(arg.equals("Show Clusters")){
+                    if(shoclus != null)
+                        shoclus.job.dispose();
+                    shoclus=new ShowClusters(job);
                 }
                 else if(arg.equals("MSD")){
                     if(msdrun != null)
-                        msdrun.job.setVisible(false);
+                        msdrun.job.dispose();
                     msdrun=new RunMSD(job);
                 }
                 else if(arg.equals("VAF")){
                     if(vafrun != null)
-                        vafrun.job.setVisible(false);
+                        vafrun.job.dispose();
                     vafrun=new RunVAF(job);
                 }
                 else if(arg.equals("FAF")){
                     if(fafrun != null)
-                        fafrun.job.setVisible(false);
+                        fafrun.job.dispose();
                     fafrun=new RunFAF(job);
                 }
                 else if(arg.equals("Gs(r,t)")){
                     if(gslcal != null)
-                        gslcal.job.setVisible(false);
+                        gslcal.job.dispose();
                     gslcal=new GslCalc(job);
                 }
                 else if(arg.equals("Gd(r,t)")){
                     if(gdfcal != null)
-                        gdfcal.job.setVisible(false);
+                        gdfcal.job.dispose();
                     gdfcal=new GdfCalc(job);
                 }
                 else if(arg.equals("S(k,w)")) {
                     if(skwcal != null)
-                        skwcal.job.setVisible(false);
+                        skwcal.job.dispose();
                     skwcal=new SkwCalc(job);
                 }
                 else if(arg.equals("CONFIG")) {
                     config=getConfig(job,"CONFIG");
+                    if(!editor.isVisible())
+                        editor.showEditor();
+                    editor.pane.restore();
                 }
                 else if(arg.equals("REVCON")) {
                     config=getConfig(job,"REVCON");
+                    if(!editor.isVisible())
+                        editor.showEditor();
+                    editor.pane.restore();
                 }
-                else if(arg.equals("Plot")) {
+                else if(arg.equals("Graph Draw")) {
                     if(graf != null)
-                        graf.job.setVisible(false);
+                        graf.job.dispose();
                     graf=new GraphDraw(job);
                 }
                 else if(arg.equals("What Atoms?")) {
                     println("Select required CONFIG file for input");
                     if((fname=selectFileNameContains(job,"CFG"))!=null) {
-                        AML.whatAtoms(job,fname);
+                        AML.whatAtoms(fname);
                     }
                     else {
                         println("File selection cancelled");
@@ -544,11 +569,14 @@ author    - w.smith 2011
                 }
                 else if(arg.equals("Statistics")){
                     if(graf != null)
-                        graf.job.setVisible(false);
+                        graf.job.dispose();
                     graf=new GraphDraw(job);
                     if(staprp != null)
-                        staprp.job.setVisible(false);
+                        staprp.job.dispose();
                     staprp=new StatProp(job);
+                }
+                else if(arg.equals("View File")) {
+                    getViewFile(job);
                 }
                 else if(arg.equals("About DL_POLY")) {
                     viewResource("About_DL_POLY");
@@ -573,6 +601,29 @@ author    - w.smith 2011
                 }
                 else if(arg.equals("Test Cases")) {
                     viewResource("TestInfo");
+                }
+                else if(arg.equals("Run Notepad")) {
+                    try {
+                        Process texteditor=Runtime.getRuntime().exec("notepad");
+                    }
+                    catch(IOException ee) {
+                        println("Error - unable to start notepad editor");
+                    }
+                }
+                else if(arg.equals("Edit Text")) {
+                    if(board.isEditable()) {
+                       board.setEditable(false);
+                       itemGD.setEnabled(false);
+                    }
+                    else {
+                       board.setEditable(true);
+                       itemGD.setEnabled(true);
+                    }
+                }
+                else if(arg.equals("Save Text")) {
+                    board.setEditable(false);
+                    itemGD.setEnabled(false);
+                    saveText(job);
                 }
                 else if(arg.equals("Clear Text")) {
                     clearScreen();
@@ -600,15 +651,16 @@ author    - w.smith 2011
         if(args.length>0)scheme=args[0].toLowerCase();
         art=new ColorScheme(scheme);
 
-	// Set starting values
+        // Set starting values
 
         startGUI();
 
         // Set up Graphical User interface
 
         job = new GUI();
-	job.pack();
+        job.pack();
         job.setVisible(true);
+        editor=new Editor(job);
         println(page);
 
     }
@@ -628,6 +680,9 @@ author    - w.smith 2011
         // Initialise GUI variables
 
         ftype="CFG";
+        config=new Config();
+        cfgsav=new Config();
+
 
         // File numbers
 
@@ -644,6 +699,7 @@ author    - w.smith 2011
         numrdf=0;
         numsok=0;
         numsol=0;
+        numins=0;
         numzdn=0;
         nummsd=0;
         numvaf=0;
@@ -686,12 +742,6 @@ author    - w.smith 2011
         rotcos=Math.cos(Math.PI*rotdef/180.0);
         rotsin=Math.sin(Math.PI*rotdef/180.0);
 
-        // nullify processes
-        //
-        //	proc=null;
-        //	prdf=null;
-        //	pgdf=null;
-        //	pskw=null;
     }
 
     void draggedResponse(int a,int b){}
@@ -762,4 +812,5 @@ author    - w.smith 2011
         paint(g2d);
         return Printable.PAGE_EXISTS;
     }
+
 }

@@ -41,11 +41,12 @@ author    - w.smith 2000
 
 *********************************************************************
          */
-	super();
+        super();
         setTitle("Make Polymer");
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -531,7 +532,7 @@ author    w.smith november 2000
         config.xyz=xyz;
         config.title="Amorphous polymer with"+BML.fmt(ncarbons,4)+" units";
         config.pbc.buildBoundary(config.pbc.imcon);
-	config.structure=new Structure(config);
+        config.structure=new Structure(config);
 
         // write CONFIG file
 
@@ -541,9 +542,9 @@ author    w.smith november 2000
 
         // Draw structure
 
-	if(home.editor != null)
-	    home.editor.job.setVisible(false);
-	home.editor=new Editor(home);
+        if(!editor.isVisible())
+            editor.showEditor();
+        editor.pane.restore();
 
         return 0;
     }
@@ -732,7 +733,7 @@ author    - w.smith 2000
             status=polyGrow();
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
 }

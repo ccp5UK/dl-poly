@@ -487,7 +487,10 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 
 ! flag error if rad > cutoff
 
-        If (rad > rcut) safe(2) = .false.
+        If (rad > rcut) Then
+           Write(*,*) i,ia,ib,ic,id,rad,rcut
+           safe(2) = .false.
+        End If
 
 ! initialise defaults for coulombic energy and force contributions
 

@@ -105,6 +105,10 @@ Program dl_poly
 
   Use kinetic_module
 
+! LANGEVIN MODULE
+
+  Use langevin_module
+
 ! DEVELOPMENT MODULE
 
   Use development_module
@@ -172,7 +176,7 @@ Program dl_poly
   Real( Kind = wp ) :: timelp,timjob,timcls,tstep,time,tmst,tmsth,     &
                        alpha,epsq,fmax,                                &
                        rcut,rvdw,rmet,rbin,rcter,rctbp,rcfbp,          &
-                       width,mndis,mxdis,wthpse,tmppse,                &
+                       width,mndis,mxdis,mxstp,wthpse,tmppse,          &
                        rlx_tol,min_tol,tolnce,quattol,rdef,rrsd,       &
                        emd,vmx,vmy,vmz,temp,sigma,                     &
                        press,strext(1:9),ten,                          &
@@ -216,7 +220,7 @@ Program dl_poly
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
           "**         **  contributors:  i.j.bush               ****** O ****", &
-          "*************  version:  4.02      /      july 2011  ******* L ***", &
+          "*************  version:  4.03    /    november 2011  ******* L ***", &
           "*************  Execution on ", mxnode, "    node(s)  ******** Y **", &
           "******************************************************************"
   End If
@@ -282,7 +286,7 @@ Program dl_poly
            ltraj,ldef,lrsd,                       &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,      &
            temp,press,strext,keyres,              &
-           tstep,mndis,mxdis,nstrun,nsteql,       &
+           tstep,mndis,mxdis,mxstp,nstrun,nsteql, &
            keymin,nstmin,min_tol,nstgaus,nstscal, &
            keyens,iso,taut,soft,taup,chi,tai,ten, &
            keypse,wthpse,tmppse,                  &
@@ -306,7 +310,8 @@ Program dl_poly
 
 ! CHECK MD CONFIGURATION
 
-  Call check_config(levcfg,imcon,l_str,lpse,keyens,keyfce,keyres,megatm)
+  Call check_config &
+           (levcfg,imcon,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
 ! l_scl: rescale CONFIG to CFGSCL and exit gracefully
 
@@ -358,7 +363,7 @@ Program dl_poly
 
 ! Expand current system if opted for
 
-  If (l_exp) Call system_expand(imcon,nx,ny,nz,megatm)
+  If (l_exp) Call system_expand(imcon,rcut,nx,ny,nz,megatm)
 
 ! EXIT gracefully
 

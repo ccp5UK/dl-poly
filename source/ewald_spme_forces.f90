@@ -241,7 +241,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      tyy(i)=kmaxb_r*(rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+0.5_wp)
      tzz(i)=kmaxc_r*(rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+0.5_wp)
 
-! Get in DD bounds in kmax grid space in case tiny inacuracies created edge effects
+! Get in DD bounds in kmax grid space in case tiny inaccuracies created edge effects
 
      If (i <= natms) Then
         If      (txx(i) < ixbm1_r) Then

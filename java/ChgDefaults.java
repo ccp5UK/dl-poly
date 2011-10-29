@@ -34,6 +34,7 @@ author    - w.smith 2000
 
         getContentPane().setForeground(art.fore);
         getContentPane().setBackground(art.back);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         getContentPane().setLayout(new GridLayout(4,2));
 
@@ -142,10 +143,7 @@ author    - w.smith 2001
             println("GUI defaults now changed");
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
 }
-
-
-

@@ -45,6 +45,7 @@ author    - w.smith 2001
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -209,7 +210,7 @@ author    - w.smith 2001
             rdfFile();
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
     void gofr() {
@@ -282,7 +283,7 @@ author    - w.smith may 2005
         info[4]=0.0;
         info[5]=0.0;
         if(form) {
-	    lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
+            lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
             if(BML.nint(info[3])<0 && BML.nint(info[3])!=-1) {
                 println("Error - HISTORY file data error");
                 return;
@@ -293,13 +294,13 @@ author    - w.smith may 2005
             return;
         }
         natms=BML.nint(info[7]);
-	imcon=BML.nint(info[5]);
-	if(imcon < 1 || imcon > 3) {
-	    println("Error - incorrect periodic boundary condition");
-	    info[0]=-1.0;
-	    lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
-	    return;
-	}
+        imcon=BML.nint(info[5]);
+        if(imcon < 1 || imcon > 3) {
+            println("Error - incorrect periodic boundary condition");
+            info[0]=-1.0;
+            lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
+            return;
+        }
 
         name=new String[natms];
         chge=new double[natms];
@@ -324,16 +325,16 @@ author    - w.smith may 2005
                     }
                 }
 
-		if(iconf == 0){
-		    bcell=AML.dcell(cell);
-		    tcut=0.5*BML.min(bcell[6],bcell[7],bcell[8]);
-		    if(rcut > tcut){
-			println("Warning - cut off reset to "+BML.fmt(tcut,10));
-			rcut=tcut;
-			rcut2=rcut*rcut;
-			delr=rcut/mxrad;
-		    }
-		}
+                if(iconf == 0){
+                    bcell=AML.dcell(cell);
+                    tcut=0.5*BML.min(bcell[6],bcell[7],bcell[8]);
+                    if(rcut > tcut){
+                        println("Warning - cut off reset to "+BML.fmt(tcut,10));
+                        rcut=tcut;
+                        rcut2=rcut*rcut;
+                        delr=rcut/mxrad;
+                    }
+                }
 
                 work=AML.invert(cell);
                 for(int i=0;i<natms;i++) {
@@ -413,7 +414,7 @@ author    - w.smith 2005
 
 *********************************************************************
          */
-	rrr = new double[lenrdf];
+        rrr = new double[lenrdf];
         try {
             DataOutputStream out = new DataOutputStream(new FileOutputStream("RDFDAT"));
             out.writeBytes("Radial distribution function for atoms "+name1+" "+name2+"\n");
@@ -425,13 +426,13 @@ author    - w.smith 2005
                 out.writeBytes(BML.fmt(rrr[i],14)+BML.fmt(rdf[i],14)+"\n");
             }
             out.close();
-	    if(graf != null)
-		graf.job.setVisible(false);
-	    graf=new GraphDraw(home);
-	    graf.xlabel.setText("r (A)");
-	    graf.ylabel.setText("t (ps)");
-	    graf.plabel.setText("RDF of "+name1.trim()+" "+name2.trim());
-	    graf.extraPlot(lenrdf,rrr,rdf);
+            if(graf != null)
+                graf.job.dispose();
+            graf=new GraphDraw(home);
+            graf.xlabel.setText("r (A)");
+            graf.ylabel.setText("t (ps)");
+            graf.plabel.setText("RDF of "+name1.trim()+" "+name2.trim());
+            graf.extraPlot(lenrdf,rrr,rdf);
         }
         catch(Exception e) {
             println("Error - file RDFDAT");

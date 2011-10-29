@@ -39,6 +39,7 @@ author    - w.smith 2000
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -221,7 +222,7 @@ author    - w.smith november 2000
         config.pbc.cell[4]=base;
         config.pbc.cell[8]=base;
         config.pbc.buildBoundary(config.pbc.imcon);
-	config.structure=new Structure(config);
+        config.structure=new Structure(config);
 
         // write CONFIG file
 
@@ -231,9 +232,9 @@ author    - w.smith november 2000
 
         // Draw structure
 
- 	if(home.editor != null)
- 	    home.editor.job.setVisible(false);
-	home.editor=new Editor(home);
+        if(!editor.isVisible())
+            editor.showEditor();
+        editor.pane.restore();
 
         return 0;
     }
@@ -296,7 +297,7 @@ author    - w.smith november 2000
             }
         }
         config.natms=n;
-	config.structure=new Structure(config);
+        config.structure=new Structure(config);
         println("Number of atoms created : "+config.natms);
 
         // write CONFIG file
@@ -308,9 +309,9 @@ author    - w.smith november 2000
 
         // Draw structure
 
- 	if(home.editor != null)
- 	    home.editor.job.setVisible(false);
-	home.editor=new Editor(home);
+        if(!editor.isVisible())
+            editor.showEditor();
+        editor.pane.restore();
 
         return 0;
     }
@@ -339,7 +340,7 @@ author    - w.smith 2000
             call=tube();
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
 }

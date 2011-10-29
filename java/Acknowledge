@@ -1,10 +1,8 @@
 Acknowledgements
 
 The DL_POLY Java GUI was written by W. Smith at Daresbury Laboratory
-2000-2010.
+2000-2011.
 
-Special thanks go to:
-
-Daniel Hanlon - for invaluable advice on Java and Java techniques.
-David Laff - for installing Java and support software on request.
-Alex Cote - for helpful discussions in implementing Java.
+Thanks are due to Daresbury colleagues
+Daniel Hanlon, David Laff, Alex Cote, Ilian Todorov, Maurice Leslie, Chin Yong,
+Paul Sherwood, Jens Thomas.

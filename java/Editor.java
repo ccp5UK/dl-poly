@@ -48,6 +48,7 @@ author    - w.smith 2011
         grd = new GridBagLayout();
         gbc = new GridBagConstraints();
         getContentPane().setLayout(grd);
+        setDefaultCloseOperation(HIDE_ON_CLOSE);
         gbc.fill=GridBagConstraints.BOTH;
 
         // Define the Molecular Builder
@@ -84,23 +85,16 @@ author    - w.smith 2011
         home=here;
         safe=true;
 
-        if(config == null){
-            if(cfgsav == null){
-                config=new Config();
-            }
-            else{
-                config=copyConfig(cfgsav);
-            }
-        }
-        else{
-            cfgsav=copyConfig(config);
-        }
+        if(config.natms > 0)
+	    cfgsav=copyConfig(config);
+        else if(cfgsav.natms > 0)
+            config=copyConfig(cfgsav);
 
         // Set up Editor interface
 
         job = new Editor();
         job.pack();
-        job.setVisible(true);
+
     }
 
     // define the editor buttons
@@ -328,9 +322,9 @@ author    - w.smith 2011
         itemAAl.addActionListener(new EditMenuHandler());
         itemAAm.addActionListener(new EditMenuHandler());
         itemAAn.addActionListener(new EditMenuHandler());
+        itemAAo.addActionListener(new EditMenuHandler());
         itemAAp.addActionListener(new EditMenuHandler());
         itemAAq.addActionListener(new EditMenuHandler());
-        itemAAo.addActionListener(new EditMenuHandler());
         itemABa.addActionListener(new EditMenuHandler());
         itemABb.addActionListener(new EditMenuHandler());
         itemABc.addActionListener(new EditMenuHandler());
@@ -397,7 +391,7 @@ author    - w.smith 2011
                 if(arg.equals("New")) {
                     if(edit && !safe) saveEdit(0);
                     config=getConfig(home,ftype);
-                    if(config != null)
+                    if(config.natms > 0)
                         cfgsav=copyConfig(config);
                     else
                         pane.newBuild();
@@ -405,8 +399,7 @@ author    - w.smith 2011
                 }
                 else if(arg.equals("Clr")) {
                     if(edit && !safe) saveEdit(0);
-                    config=null;
-                    cfgsav=null;
+                    cfgsav=new Config();
                     pane.newBuild();
                     pane.restore();
                 }
@@ -619,7 +612,7 @@ author    - w.smith 2011
         pane.mark1=-1;
         pane.mark2=-1;
         //pane.scale=37.5;
-        if(cfgsav == null) {
+        if(cfgsav.natms == 0) {
             println("No edit backup available");
         }
         else {
@@ -705,7 +698,7 @@ author    - w.smith 2011
             saveEdit(0);
         }
         else {
-            if(cfgsav!=null)
+            if(cfgsav.natms > 0)
                 config=copyConfig(cfgsav);
             edit=true;
             pane.fragment=null;
@@ -1624,11 +1617,39 @@ author    - w.smith 2011
         pane.repaint();
     }
 
+    void showEditor() {
+        /*
+*********************************************************************
+
+dl_poly/java GUI routine to reveal the hidden editor
+
+copyrigh2t - daresbury laboratory
+author    - w.smith 2011
+
+*********************************************************************
+         */
+	job.setVisible(true);
+    }
+
+    void hideEditor() {
+        /*
+*********************************************************************
+
+dl_poly/java GUI routine to hide the visible editor
+
+copyrigh2t - daresbury laboratory
+author    - w.smith 2011
+
+*********************************************************************
+         */
+	job.setVisible(false);
+    }
+
     void closeEditor() {
         /*
 *********************************************************************
 
-dl_poly/java GUI routine
+dl_poly/java GUI routine to shut down editor
 
 copyright - daresbury laboratory
 author    - w.smith 2011
@@ -1638,8 +1659,7 @@ author    - w.smith 2011
 
             if(edit && !safe) saveEdit(0);
             edit=false;
-            if(config!= null && config.natms == 0) config=null;
-            job.setVisible(false);
+            job.dispose();
     }
 
 }

@@ -48,6 +48,7 @@ author    - w.smith 2001
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -221,11 +222,11 @@ author    - w.smith 2001
             if(npnts>0) gslFile();
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
         else if (arg.equals("Plot")) {
             if(hovplt != null)
-                hovplt.job.setVisible(false);
+                hovplt.job.dispose();
             hovplt=new HovePlot(home,hname);
         }
     }
@@ -245,7 +246,7 @@ author    - w.smith march 2001
         boolean all;
         int nsgslf,nat,npts,nogslf,lsr,msr,iconf,imcon,natms,k,n,m;
         double rcut2,f1,f2,uuu,vvv,www,rmsx,rmsy,rmsz,rsq,tcut;
-	double bcell[];
+        double bcell[];
         LineNumberReader lnr=null;
         double cell[]=new double[9];
         double rcell[]=new double[9];
@@ -325,13 +326,13 @@ author    - w.smith march 2001
                 return -2;
             }
             natms=BML.nint(info[7]);
-	    imcon=BML.nint(info[5]);
-	    if(imcon < 1 || imcon > 3){
-		println("Error - incorrect periodic boundary condition");
-		info[0]=-1.0;
-		lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
-		return -4;
-	    }
+            imcon=BML.nint(info[5]);
+            if(imcon < 1 || imcon > 3){
+                println("Error - incorrect periodic boundary condition");
+                info[0]=-1.0;
+                lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
+                return -4;
+            }
 
             // initialise gself arrays
 
@@ -346,43 +347,43 @@ author    - w.smith march 2001
                 gslf0=new double[lencor][natms][3];
             }
             OUT:
-	    for(iconf=0;iconf<nconf;iconf++) {
-		lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
-		if(BML.nint(info[3])<0 && BML.nint(info[3])!=-1) {
-		    println("Error - HISTORY file data error");
-		    info[0]=-1.0;
-		    lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
-		    return -3;
-		}
-		if(lnr == null) break OUT;
-		if(iconf==0)info[9]=info[6];
-		if(iconf==1)tstep=info[8]*(info[6]-info[9]);
-		if(BML.nint(info[3])==-1)break OUT;
+            for(iconf=0;iconf<nconf;iconf++) {
+                lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
+                if(BML.nint(info[3])<0 && BML.nint(info[3])!=-1) {
+                    println("Error - HISTORY file data error");
+                    info[0]=-1.0;
+                    lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
+                    return -3;
+                }
+                if(lnr == null) break OUT;
+                if(iconf==0)info[9]=info[6];
+                if(iconf==1)tstep=info[8]*(info[6]-info[9]);
+                if(BML.nint(info[3])==-1)break OUT;
 
-		if(iconf == 0){
-		    bcell=AML.dcell(cell);
-		    tcut=0.5*BML.min(bcell[6],bcell[7],bcell[8]);
-		    if(rcut > tcut){
-			println("Warning - cut off reset to "+BML.fmt(tcut,10));
-			rcut=tcut;
-			rcut2=rcut*rcut;
-			delr=rcut/mxrad;
-		    }
-		}
+                if(iconf == 0){
+                    bcell=AML.dcell(cell);
+                    tcut=0.5*BML.min(bcell[6],bcell[7],bcell[8]);
+                    if(rcut > tcut){
+                        println("Warning - cut off reset to "+BML.fmt(tcut,10));
+                        rcut=tcut;
+                        rcut2=rcut*rcut;
+                        delr=rcut/mxrad;
+                    }
+                }
 
-		// select relevant atoms for calculation
+                // select relevant atoms for calculation
 
-		n=0;
-		rcell=AML.invert(cell);
-		if(iconf==0) {
-		    for(int i=0;i<natms;i++) {
-			acm[0][i]=0.0;
-			acm[1][i]=0.0;
-			acm[2][i]=0.0;
-		    }
-		}
-		for(int i=0;i<natms;i++) {
-		    if(all || name[i].equals(atname)) {
+                n=0;
+                rcell=AML.invert(cell);
+                if(iconf==0) {
+                    for(int i=0;i<natms;i++) {
+                        acm[0][i]=0.0;
+                        acm[1][i]=0.0;
+                        acm[2][i]=0.0;
+                    }
+                }
+                for(int i=0;i<natms;i++) {
+                    if(all || name[i].equals(atname)) {
                             if(n==natms) {
                                 println("Error - too many atoms of specified type");
                                 info[0]=-1.0;
@@ -393,98 +394,98 @@ author    - w.smith march 2001
                             xy1[1][n]=xyz[0][i]*rcell[1]+xyz[1][i]*rcell[4]+xyz[2][i]*rcell[7];
                             xy1[2][n]=xyz[0][i]*rcell[2]+xyz[1][i]*rcell[5]+xyz[2][i]*rcell[8];
                             n++;
-		    }
-		}
-		nat=n;
-		if(ipass==0 && iconf==0)
-		    println("Number of atoms of selected type : "+BML.fmt(nat,8));
-		if(nat == 0) {
-		    println("Error - zero atoms of specified type");
-		    info[0]=-1.0;
-		    lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
-		    return -6;
-		}
+                    }
+                }
+                nat=n;
+                if(ipass==0 && iconf==0)
+                    println("Number of atoms of selected type : "+BML.fmt(nat,8));
+                if(nat == 0) {
+                    println("Error - zero atoms of specified type");
+                    info[0]=-1.0;
+                    lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
+                    return -6;
+                }
 
-		// running average of cell vectors
+                // running average of cell vectors
 
-		f1=((double)iconf)/(iconf+1);
-		f2=1.0/(iconf+1);
-		for(int i=0;i<9;i++)
-		    avcell[i]=f1*avcell[i]+f2*cell[i];
+                f1=((double)iconf)/(iconf+1);
+                f2=1.0/(iconf+1);
+                for(int i=0;i<9;i++)
+                    avcell[i]=f1*avcell[i]+f2*cell[i];
 
-		if(iconf>ipass) {
+                if(iconf>ipass) {
 
-		    // accumulate incremental distances
+                    // accumulate incremental distances
 
-		    for(int i=0;i<nat;i++) {
-			uuu=xy1[0][i]-xy0[0][i];
-			vvv=xy1[1][i]-xy0[1][i];
-			www=xy1[2][i]-xy0[2][i];
-			uuu=uuu-BML.nint(uuu);
-			vvv=vvv-BML.nint(vvv);
-			www=www-BML.nint(www);
-			acm[0][i]+=(uuu*avcell[0]+vvv*avcell[3]+www*avcell[6]);
-			acm[1][i]+=(uuu*avcell[1]+vvv*avcell[4]+www*avcell[7]);
-			acm[2][i]+=(uuu*avcell[2]+vvv*avcell[5]+www*avcell[8]);
-		    }
-		}
+                    for(int i=0;i<nat;i++) {
+                        uuu=xy1[0][i]-xy0[0][i];
+                        vvv=xy1[1][i]-xy0[1][i];
+                        www=xy1[2][i]-xy0[2][i];
+                        uuu=uuu-BML.nint(uuu);
+                        vvv=vvv-BML.nint(vvv);
+                        www=www-BML.nint(www);
+                        acm[0][i]+=(uuu*avcell[0]+vvv*avcell[3]+www*avcell[6]);
+                        acm[1][i]+=(uuu*avcell[1]+vvv*avcell[4]+www*avcell[7]);
+                        acm[2][i]+=(uuu*avcell[2]+vvv*avcell[5]+www*avcell[8]);
+                    }
+                }
 
-		for(int i=0;i<nat;i++) {
-		    xy0[0][i]=xy1[0][i];
-		    xy0[1][i]=xy1[1][i];
-		    xy0[2][i]=xy1[2][i];
-		}
+                for(int i=0;i<nat;i++) {
+                    xy0[0][i]=xy1[0][i];
+                    xy0[1][i]=xy1[1][i];
+                    xy0[2][i]=xy1[2][i];
+                }
 
-		// calculate self correlation function
+                // calculate self correlation function
 
-		if(iconf>ipass) {
-		    if(iconf%isampl == ipass) {
-			if(nsgslf%iorig==0) {
-			    lsr=Math.min(lsr+1,nogslf);
-			    msr=(msr+1)%nogslf;
-			    imd[msr]=0;
-			    for(int i=0;i<nat;i++) {
-				gslf0[msr][i][0]=0.0;
-				gslf0[msr][i][1]=0.0;
-				gslf0[msr][i][2]=0.0;
-			    }
-			}
-			nsgslf++;
-			for(int j=0;j<lsr;j++) {
-			    m=imd[j];
-			    imd[j]=m+1;
-			    msm[m]++;
+                if(iconf>ipass) {
+                    if(iconf%isampl == ipass) {
+                        if(nsgslf%iorig==0) {
+                            lsr=Math.min(lsr+1,nogslf);
+                            msr=(msr+1)%nogslf;
+                            imd[msr]=0;
+                            for(int i=0;i<nat;i++) {
+                                gslf0[msr][i][0]=0.0;
+                                gslf0[msr][i][1]=0.0;
+                                gslf0[msr][i][2]=0.0;
+                            }
+                        }
+                        nsgslf++;
+                        for(int j=0;j<lsr;j++) {
+                            m=imd[j];
+                            imd[j]=m+1;
+                            msm[m]++;
 
-			    for(int i=0;i<nat;i++) {
-				rmsx=gslf0[j][i][0]+acm[0][i];
-				rmsy=gslf0[j][i][1]+acm[1][i];
-				rmsz=gslf0[j][i][2]+acm[2][i];
-				rsq=rmsx*rmsx+rmsy*rmsy+rmsz*rmsz;
-				gslf0[j][i][0]=rmsx;
-				gslf0[j][i][1]=rmsy;
-				gslf0[j][i][2]=rmsz;
-				if(rsq < rcut2) {
-				    k=(int)(Math.sqrt(rsq)/delr);
-				    gslf[m][k]+=1.0;
-				}
-			    }
-			}
-			for(int i=0;i<nat;i++) {
-			    acm[0][i]=0.0;
-			    acm[1][i]=0.0;
-			    acm[2][i]=0.0;
-			}
-		    }
-		}
-	    }
-	    if(iconf==nconf-1) {
-		info[0]=-1.0;
-		lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
-	    }
-	    if(BML.nint(info[3])==-1) iconf--;
-	    npts=Math.min(nogslf,nsgslf);
-	    if(ipass==0)
-		println("Number of configurations read: "+BML.fmt(iconf,8));
+                            for(int i=0;i<nat;i++) {
+                                rmsx=gslf0[j][i][0]+acm[0][i];
+                                rmsy=gslf0[j][i][1]+acm[1][i];
+                                rmsz=gslf0[j][i][2]+acm[2][i];
+                                rsq=rmsx*rmsx+rmsy*rmsy+rmsz*rmsz;
+                                gslf0[j][i][0]=rmsx;
+                                gslf0[j][i][1]=rmsy;
+                                gslf0[j][i][2]=rmsz;
+                                if(rsq < rcut2) {
+                                    k=(int)(Math.sqrt(rsq)/delr);
+                                    gslf[m][k]+=1.0;
+                                }
+                            }
+                        }
+                        for(int i=0;i<nat;i++) {
+                            acm[0][i]=0.0;
+                            acm[1][i]=0.0;
+                            acm[2][i]=0.0;
+                        }
+                    }
+                }
+            }
+            if(iconf==nconf-1) {
+                info[0]=-1.0;
+                lnr=hread(fname,name,lnr,info,cell,chge,weight,xyz,vel,frc);
+            }
+            if(BML.nint(info[3])==-1) iconf--;
+            npts=Math.min(nogslf,nsgslf);
+            if(ipass==0)
+                println("Number of configurations read: "+BML.fmt(iconf,8));
         }
 
         // normalise self correlation function

@@ -17,6 +17,7 @@ author    - w.smith 2000
     private static GUI home;
     private static double time0,time1;
     public static Execute job;
+    private static JTextField task;
     private static JButton exec,stat,zapp,updt,dlte,ctrl,fild,cnfg,tabl,close;
     private static WarningBox danger=null;
 
@@ -38,6 +39,7 @@ author    - w.smith 2000
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -45,90 +47,97 @@ author    - w.smith 2000
 
         gbc.fill=GridBagConstraints.BOTH;
 
+        int n=0;
+
         // Run button
 
         exec = new JButton("Run");
         exec.setBackground(art.butn);
         exec.setForeground(art.butf);
-        fix(exec,grd,gbc,0,0,1,1);
+        fix(exec,grd,gbc,0,n,1,1);
 
         // Define the Close button
 
         close = new JButton("Close");
         close.setBackground(art.butn);
         close.setForeground(art.butf);
-        fix(close,grd,gbc,1,0,1,1);
+        fix(close,grd,gbc,1,n++,1,1);
+
+        // Describe the run command
+
+        fix(new JLabel("Current run command:"),grd,gbc,0,n++,2,1);
+        task=new JTextField();
+        task.setBackground(art.scrn);
+        task.setForeground(art.scrf);
+        fix(task,grd,gbc,0,n,2,1);
 
         // Input file selection
 
-        JLabel lab1=new JLabel("Select required input files:");
-        fix(lab1,grd,gbc,0,1,2,1);
+        fix(new JLabel("Select required input files:"),grd,gbc,0,n++,2,1);
 
         // Select the CONTROL file
 
         ctrl = new JButton("CONTROL");
         ctrl.setBackground(art.butn);
         ctrl.setForeground(art.butf);
-        fix(ctrl,grd,gbc,0,2,1,1);
+        fix(ctrl,grd,gbc,0,n,1,1);
 
         // Select the CONFIG file
 
         cnfg = new JButton("CONFIG");
         cnfg.setBackground(art.butn);
         cnfg.setForeground(art.butf);
-        fix(cnfg,grd,gbc,1,2,1,1);
+        fix(cnfg,grd,gbc,1,n++,1,1);
 
         // Select the FIELD file
 
         fild = new JButton("FIELD");
         fild.setBackground(art.butn);
         fild.setForeground(art.butf);
-        fix(fild,grd,gbc,0,3,1,1);
+        fix(fild,grd,gbc,0,n,1,1);
 
         // Select the TABLE file
 
         tabl = new JButton("TABLE");
         tabl.setBackground(art.butn);
         tabl.setForeground(art.butf);
-        fix(tabl,grd,gbc,1,3,1,1);
+        fix(tabl,grd,gbc,1,n++,1,1);
 
         // Job monitoring options
 
-        JLabel lab2 = new JLabel("Job monitoring options:");
-        fix(lab2,grd,gbc,0,4,2,1);
+        fix(new JLabel("Job monitoring options:"),grd,gbc,0,n++,2,1);
 
         // Kill job
 
         zapp = new JButton("Kill");
         zapp.setBackground(art.butn);
         zapp.setForeground(art.butf);
-        fix(zapp,grd,gbc,0,5,1,1);
+        fix(zapp,grd,gbc,0,n,1,1);
 
         // Job status
 
         stat = new JButton("Status");
         stat.setBackground(art.butn);
         stat.setForeground(art.butf);
-        fix(stat,grd,gbc,1,5,1,1);
+        fix(stat,grd,gbc,1,n++,1,1);
 
         // File handling options
 
-        JLabel lab3 = new JLabel("File handling options:");
-        fix(lab3,grd,gbc,0,6,2,1);
+        fix(new JLabel("File handling options:"),grd,gbc,0,n++,2,1);
 
         // Clear data files
 
         dlte = new JButton("Clear");
         dlte.setBackground(art.butn);
         dlte.setForeground(art.butf);
-        fix(dlte,grd,gbc,0,7,1,1);
+        fix(dlte,grd,gbc,0,n,1,1);
 
         // Update data files
 
         updt = new JButton("Update");
         updt.setBackground(art.butn);
         updt.setForeground(art.butf);
-        fix(updt,grd,gbc,1,7,1,1);
+        fix(updt,grd,gbc,1,n++,1,1);
 
         // Register action buttons
 
@@ -157,9 +166,12 @@ author    - w.smith 2000
 *********************************************************************
          */
         home=here;
-        println("Activated DL_POLY Execute");
+        println("Activated DL_POLY Execute panel");
         job=new Execute();
         job.pack();
+        if(executable==null)
+            executable=new String(defaultexecutable);
+        task.setText(executable);
         job.setVisible(true);
     }
 
@@ -179,25 +191,26 @@ author    - w.smith 2000
         if (arg.equals("Run")) {
             try {
                 if(proc == null) {
-                    if(!(new File("DLPOLY.Z")).exists()) {
-                        println("Error - DLPOLY.Z executable not available");
+                    executable=task.getText();
+                    if(!(new File(executable)).exists()) {
+                        println("Error - "+executable+" program not available");
                     }
                     else {
                         time0=(double)System.currentTimeMillis();
-                        proc=Runtime.getRuntime().exec("DLPOLY.Z &");
-                        println("DL_POLY job submitted: "+String.valueOf(proc));
+                        proc=Runtime.getRuntime().exec(executable+"&");
+                        println(executable+" job submitted: "+String.valueOf(proc));
                     }
                 }
                 else {
-                    println("Error - DL_POLY job already running");
+                    println("Error - "+executable+" job already running");
                 }
             }
             catch(IOException ee) {
-                println("Error DL_POLY job submission failure");
+                println("Error - "+executable+" job submission failure");
             }
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
         else if (arg.equals("CONTROL")) {
             println("Select required CONTROL file");
@@ -236,24 +249,24 @@ author    - w.smith 2000
                 println("No file selected");
         }
         else if (arg.equals("Kill") && proc != null) {
-            println("Cancelling DL_POLY job: "+String.valueOf(proc));
+            println("Cancelling "+executable+" job: "+String.valueOf(proc));
             proc.destroy();
             proc=null;
-            println("DL_POLY job cancelled");
+            println(executable+" job cancelled");
         }
         else if (arg.equals("Status") && proc != null) {
             try {
                 int state=proc.exitValue();
                 if(state==0)
-                    println("DL_POLY has terminated normally");
+                    println(executable+" has terminated normally");
                 else
-                    println("DL_POLY has terminated abnormally");
+                    println(executable+" has terminated abnormally");
                 proc=null;
             }
             catch(IllegalThreadStateException ee) {
                 time1=((double)System.currentTimeMillis()-time0)/1000.;
 
-                println("DL_POLY job is running. Elapsed time (s)= "+BML.fmt(time1,9));
+                println(executable+" job is running. Elapsed time (s)= "+BML.fmt(time1,9));
             }
         }
         else if (arg.equals("Clear")) {

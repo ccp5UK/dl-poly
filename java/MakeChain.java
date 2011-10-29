@@ -50,6 +50,7 @@ author    - w.smith 2011
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -408,8 +409,8 @@ author    w.smith 2011
             cell[8]=2.0*cell[8]+zgap;
         } else {
             for(int i=0;i<natms;i++)
-		xyz[2][i]-=cell[8]/2.0;
-	}
+                xyz[2][i]-=cell[8]/2.0;
+        }
         println("Chain terminated successfully");
         println("Number of atoms generated:"+BML.fmt(natms,8));
 
@@ -424,8 +425,8 @@ author    w.smith 2011
         config.pbc.cell=cell;
         config.xyz=xyz;
         config.title="Chain polymer with"+BML.fmt(ncarbons,4)+" units and "+headgroup+" Head Group";
-	config.pbc.buildBoundary(config.pbc.imcon);
-	config.structure=new Structure(config);
+        config.pbc.buildBoundary(config.pbc.imcon);
+        config.structure=new Structure(config);
 
         // write CONFIG file
 
@@ -435,9 +436,9 @@ author    w.smith 2011
 
         // Draw structure
 
-	if(home.editor != null)
-	    home.editor.job.setVisible(false);
-	home.editor=new Editor(home);
+        if(!editor.isVisible())
+            editor.showEditor();
+        editor.pane.restore();
 
         return 0;
     }
@@ -839,7 +840,7 @@ author    - w.smith 2011
             status=chain();
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
 }

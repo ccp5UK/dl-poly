@@ -39,6 +39,7 @@ author    - w.smith 2001
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+	setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -129,7 +130,7 @@ author    - w.smith 2001
             if(npnts>0) {
                 zdenXY(npnts,name);
                 if(graf != null)
-                    graf.job.setVisible(false);
+                    graf.job.dispose();
                 graf=new GraphDraw(home);
                 graf.xlabel.setText("Z-Distance (A)");
                 graf.ylabel.setText("D(z)");
@@ -138,7 +139,7 @@ author    - w.smith 2001
             }
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
     int rdzden(String fname,String atnam1) {

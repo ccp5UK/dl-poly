@@ -15,7 +15,7 @@ author    - w.smith March 2011
     public String zsym;
     public Color zcol;
     public double zrad,zmas,zchg;
-    public boolean covalent;
+    public boolean covalent,dotify;
 
     public Element(){
         /*
@@ -34,6 +34,7 @@ author    - w.smith march 2011
         zrad=0.0;
         zsym=null;
         zcol=null;
+	dotify=false;
 	covalent=false;
     }
 
@@ -55,7 +56,7 @@ author    - w.smith march 2011
         zcol=null;
         zsym=BML.fmt(atnam,8);
 	covalent=false;
-
+        dotify=false;
         if(zsym.charAt(0)=='H') {
             if(zsym.indexOf("H ") == 0) {
                 znum=1;
@@ -74,7 +75,7 @@ author    - w.smith march 2011
             else if(zsym.indexOf("HW") == 0) {
                 znum=1;
                 zmas=1.00797;
-                zrad=0.37;
+                zrad=0.32;
                 zcol=Color.white;
 		covalent=true;
             }
@@ -255,7 +256,7 @@ author    - w.smith march 2011
             else if(zsym.indexOf("OW") == 0) {
                 znum=8;
                 zmas=15.9994;
-                zrad=0.74;
+                zrad=0.64;
                 zcol=Color.red;
 		covalent=true;
             }

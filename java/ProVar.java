@@ -14,14 +14,12 @@ author    - w.smith 2000
 
 *********************************************************************
          */
-    public static MakeControl home;
-    public static ProVar job;
-    public static JComboBox restopt,algorithm;
-    public static JTextField tnstrun,tnsteql,tmult,tnstbpo,tnstack,tintsta,tewltol,tshktol,tqtntol;
-    public static JTextField tjobtim,ttclose;
-    public static int nstrun,nsteql,mult,nstbpo,nstack,intsta,keyres,keyalg;
-    public static double jobtim,tclose,ewltol,shktol,qtntol;
-    public static JButton close;
+    private static MakeControl home;
+    private static ProVar job;
+    private static JComboBox restopt,algorithm;
+    private static JTextField tnstrun,tnsteql,tmult,tnstbpo,tnstack,tintsta,tewltol,tshktol,tqtntol;
+    private static JTextField tjobtim,ttclose;
+    private static JButton close;
 
     // Define the Graphical User Interface
 
@@ -52,7 +50,7 @@ author    - w.smith 2000
 
         // Panel label
 
-        fix(new JLabel("Select options:",JLabel.LEFT),grd,gbc,0,n,3,1);
+        fix(new JLabel("Select options:",JLabel.LEFT),grd,gbc,0,n++,3,1);
 
         // Restart option
 
@@ -206,9 +204,6 @@ author    - w.smith 2000
 
 *********************************************************************
          */
-        // set parameters
-
-        home.setprvValues();
 
         // set panel contents
 
@@ -225,6 +220,34 @@ author    - w.smith 2000
         tjobtim.setText(String.valueOf(jobtim));
         ttclose.setText(String.valueOf(tclose));
         restopt.setSelectedIndex(keyres);
+    }
+
+    void getParams(){
+        /*
+*********************************************************************
+
+dl_poly/java GUI routine
+
+copyright - daresbury laboratory
+author    - w.smith 2011
+
+*********************************************************************
+         */
+
+        keyalg=algorithm.getSelectedIndex();
+        ewltol=BML.giveDouble(tewltol.getText(),1);
+        qtntol=BML.giveDouble(tqtntol.getText(),1);
+        shktol=BML.giveDouble(tshktol.getText(),1);
+        jobtim=BML.giveDouble(tjobtim.getText(),1);
+        tclose=BML.giveDouble(ttclose.getText(),1);
+        nstrun=BML.giveInteger(tnstrun.getText(),1);
+        nsteql=BML.giveInteger(tnsteql.getText(),1);
+        mult=BML.giveInteger(tmult.getText(),1);
+        nstbpo=BML.giveInteger(tnstbpo.getText(),1);
+        nstack=BML.giveInteger(tnstack.getText(),1);
+        intsta=BML.giveInteger(tintsta.getText(),1);
+        keyres=restopt.getSelectedIndex();
+
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -256,7 +279,7 @@ author    - w.smith 2000
 
 *********************************************************************
          */
-        home.getprvValues();
+        getParams();
         home.prv=null;
         job.setVisible(false);
     }

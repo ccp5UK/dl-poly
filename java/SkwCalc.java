@@ -45,6 +45,7 @@ author    - w.smith 2001
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -195,11 +196,11 @@ author    - w.smith 2001
             numskw++;
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
         else if (arg.equals("Plot")) {
             if(skwplt != null)
-                skwplt.job.setVisible(false);
+                skwplt.job.dispose();
             skwplt=new SkwPlot(home,sname);
         }
     }
@@ -459,7 +460,7 @@ author    - w.smith nov 2007
                 }
             }
             println("Number of configurations processed: "+BML.fmt(nn,8));
-	    nconf=nn;
+            nconf=nn;
             return true;
     }
     boolean correl(){
@@ -606,7 +607,7 @@ author    - w smith nov 2007
         while(lencor2<=lencor){
             lencor2*=2;
         }
-	lencor4=2*lencor2;
+        lencor4=2*lencor2;
 
         //allocate arrays
 

@@ -14,17 +14,13 @@ author    - w.smith 2000
 
 *********************************************************************
          */
-    public static MakeControl home;
-    public static EopVar job;
-    public static JTextField tbinsize,tdensvar,tdump,tewldev,tmxquat,tmxshak;
-    public static JTextField tnfold1,tnfold2,tnfold3,tspmeev,tregauss;
-    public static JButton close;
-    public static JCheckBox blexclude,blmetdir,blvdwdir,blnoindex,blnostrict,blreplay;
-    public static JCheckBox blpslab,blvdwshift,blnotopo;
-    public static boolean lexclude,lmetdir,lvdwdir,lnoindex,lnostrict,lreplay,lpslab;
-    public static boolean lvdwshift,lnotopo;
-    public static int ndump,ewldev,spmeev,mxquat,mxshak,nfold1,nfold2,nfold3,nregauss;
-    public static double binsize,densvar;
+    private static MakeControl home;
+    private static EopVar job;
+    private static JTextField tbinsize,tdensvar,tdump,tewldev,tmxquat,tmxshak;
+    private static JTextField tnfold1,tnfold2,tnfold3,tspmeev,tregauss;
+    private static JButton close;
+    private static JCheckBox blexclude,blmetdir,blvdwdir,blnoindex,blnostrict,blreplay;
+    private static JCheckBox blpslab,blvdwshift,blnotopo;
 
     // Define the Graphical User Interface
 
@@ -243,10 +239,6 @@ author    - w.smith 2000
 *********************************************************************
          */
 
-        // set parameters values
-
-        home.seteopValues();
-
         // set panel
 
         tbinsize.setText(String.valueOf(binsize));
@@ -269,6 +261,41 @@ author    - w.smith 2000
         blreplay.setSelected(lreplay);
         blpslab.setSelected(lpslab);
         blvdwshift.setSelected(lvdwshift);
+
+    }
+
+    void getParams(){
+        /*
+*********************************************************************
+
+dl_poly/java GUI routine
+
+copyright - daresbury laboratory
+author    - w.smith 2011
+
+*********************************************************************
+         */
+
+        binsize=BML.giveDouble(tbinsize.getText(),1);
+        densvar=BML.giveDouble(tdensvar.getText(),1);
+        ndump=BML.giveInteger(tdump.getText(),1);
+        ewldev=BML.giveInteger(tewldev.getText(),1);
+        spmeev=BML.giveInteger(tspmeev.getText(),1);
+        lexclude=blexclude.isSelected();
+        mxquat=BML.giveInteger(tmxquat.getText(),1);
+        mxshak=BML.giveInteger(tmxshak.getText(),1);
+        nfold1=BML.giveInteger(tnfold1.getText(),1);
+        nfold2=BML.giveInteger(tnfold2.getText(),1);
+        nfold3=BML.giveInteger(tnfold3.getText(),1);
+        lmetdir=blmetdir.isSelected();
+        lvdwdir=blvdwdir.isSelected();
+        lnoindex=blnoindex.isSelected();
+        lnostrict=blnostrict.isSelected();
+        lnotopo=blnotopo.isSelected();
+        nregauss=BML.giveInteger(tregauss.getText(),1);
+        lreplay=blreplay.isSelected();
+        lpslab=blpslab.isSelected();
+        lvdwshift=blvdwshift.isSelected();
 
     }
 
@@ -301,7 +328,7 @@ author    - w.smith 2000
 
 *********************************************************************
          */
-        home.geteopValues();
+        getParams();
         home.eop=null;
         job.setVisible(false);
     }

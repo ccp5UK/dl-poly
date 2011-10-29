@@ -357,7 +357,7 @@ author    - w.smith january 2001
         }
     }
     
-    static void whatAtoms(GUI home, String fname) {
+    static void whatAtoms(String fname) {
         /*
 *********************************************************************
          
@@ -383,9 +383,9 @@ author    - w.smith february 2001
         
         try {
             LineNumberReader lnr = new LineNumberReader(new FileReader(fname));
-            home.println("Reading file: "+fname);
+            Basic.println("Reading file: "+fname);
             record = lnr.readLine();
-            home.println("File header record: "+record);
+            Basic.println("File header record: "+record);
             record = lnr.readLine();
             levcfg=BML.giveInteger(record,1);
             imcon =BML.giveInteger(record,2);
@@ -430,19 +430,78 @@ author    - w.smith february 2001
             lnr.close();
         }
         catch(FileNotFoundException e) {
-            home.println("Error - file not found: " + fname);
+            Basic.println("Error - file not found: " + fname);
         }
         catch(Exception e) {
-            home.println("Error reading file: " + fname + " "+e);
+            Basic.println("Error reading file: " + fname + " "+e);
         }
         if(nunq>0) {
-            home.println("Unique atom types in system and populations:");
+            Basic.println("Unique atom types in system and populations:");
             int tot=0;
             for(int i=0;i<nunq;i++) {
-                home.println(BML.fmt(name[i],8)+BML.fmt(num[i],6));
+                Basic.println(BML.fmt(name[i],8)+BML.fmt(num[i],6));
                 tot+=num[i];
             }
-            home.println("Total number of atoms:"+BML.fmt(tot,8));
+            Basic.println("Total number of atoms:"+BML.fmt(tot,8));
+        }
+    }
+    
+    static void whatAtoms(Config cfg) {
+        /*
+*********************************************************************
+         
+dl_poly/java method to determine what atom types are present
+in a configuration loaded into the GUI
+         
+copyright - daresbury laboratory
+author    - w.smith august 2011
+         
+*********************************************************************
+         */
+        int nunq=0,nua=10;
+        String[] name;
+        int[] num;
+        boolean lunq;
+        
+        num=new int[nua];
+        name=new String[nua];
+        
+        // scan the configuration
+        
+	for(int i=0;i<cfg.natms;i++) {
+	    
+	    lunq=true;
+	    for(int j=0;j<nunq;j++) {
+		if(cfg.atoms[i].zsym.equals(name[j])) {
+		    lunq=false;
+		    num[j]++;
+		}
+	    }
+            
+	    if(lunq) {
+		if(nunq==nua) {
+		    nua*=2;
+		    int nun[]=new int[nua];
+		    String ttt[]=new String[nua];
+		    System.arraycopy(name,0,ttt,0,nua/2);
+		    System.arraycopy(num,0,nun,0,nua/2);
+		    name=ttt;
+		    num=nun;
+		}
+		name[nunq]=cfg.atoms[i].zsym;
+		num[nunq]=1;
+		nunq++;
+	    }
+	}
+
+        if(nunq>0) {
+            Basic.println("Unique atom types in system and populations:");
+            int tot=0;
+            for(int i=0;i<nunq;i++) {
+                Basic.println(BML.fmt(name[i],8)+BML.fmt(num[i],6));
+                tot+=num[i];
+            }
+            Basic.println("Total number of atoms:"+BML.fmt(tot,8));
         }
     }
     
@@ -594,7 +653,7 @@ author    - w.smith november 2000
         }
     }
     
-    static int gaussfit(GUI home,int npnts,double ccc[],double eee[],double x[],
+    static int gaussfit(int npnts,double ccc[],double eee[],double x[],
     double y[],double z[],double g1[],double g2[],double g3[]) {
         /*
 ***********************************************************************
@@ -632,7 +691,7 @@ java version january 2001 author w.smith
             k0=-1;
         }
         else if(npnts<4) {
-            home.println("Error - too few data points for gaussian fit");
+            Basic.println("Error - too few data points for gaussian fit");
             return -1;
         }
         
@@ -762,8 +821,8 @@ java version january 2001 author w.smith
         
         // print out best parameters
         
-        home.println("Best coefficients: "+BML.fmt(ccc[0],12)+BML.fmt(ccc[1],12)+BML.fmt(ccc[2],12));
-        home.println("Best exponents   : "+BML.fmt(eee[0],12)+BML.fmt(eee[1],12)+BML.fmt(eee[2],12));
+        Basic.println("Best coefficients: "+BML.fmt(ccc[0],12)+BML.fmt(ccc[1],12)+BML.fmt(ccc[2],12));
+        Basic.println("Best exponents   : "+BML.fmt(eee[0],12)+BML.fmt(eee[1],12)+BML.fmt(eee[2],12));
         return 0;
     }
     

@@ -42,6 +42,7 @@ author    - w.smith 2001
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -319,7 +320,7 @@ author    - w.smith 2001
             startUp();
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
 
@@ -609,7 +610,7 @@ copyright - daresbury laboratory
 
         // calculate gaussian parameters
 
-        call=AML.gaussfit(home,npnts,ccc,eee,xx,yy,zz,aa,dd,gg);
+        call=AML.gaussfit(npnts,ccc,eee,xx,yy,zz,aa,dd,gg);
         if(call<0)return -3;
 
         // print out potential arrays for comparison

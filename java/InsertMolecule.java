@@ -37,6 +37,7 @@ author    - w.smith 2011
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -122,19 +123,27 @@ author    - w.smith 2011
          */
         int call;
         String arg = (String)e.getActionCommand();
-       if (arg.equals("Load"))
+        if (arg.equals("Load")){
+            println("Please supply the substrate CONFIG file");
             config=getConfig(home,"CFG");
-        else if (arg.equals("Insert")) {
-            if(config == null)
-                println("Error - no substrate present");
-            else {
-                dis=BML.giveDouble(dsm.getText(),1);
-                call=addmolecule();
-            }
+            if(!editor.isVisible())
+                editor.showEditor();
+	    editor.pane.restore();
         }
-        else if (arg.equals("Close")) {
-            job.setVisible(false);
-        }
+       else if (arg.equals("Insert")) {
+           if(config == null || config.natms == 0){
+               println("Please supply the substrate CONFIG file");
+               config=getConfig(home,"CFG");
+           }
+           dis=BML.giveDouble(dsm.getText(),1);
+           call=addmolecule();
+           if(!editor.isVisible())
+               editor.showEditor();
+	    editor.pane.restore();
+       }
+       else if (arg.equals("Close")) {
+           job.dispose();
+       }
     }
 
     int addmolecule() {
@@ -162,6 +171,9 @@ author    - w.smith 2011
         double dsp[]=new double[3];
         int hitlist[]=new int[config.natms];
 
+        // Get molecule to be inserted
+
+        println("Please supply a molecule for insertion");
         newcfg=getConfig(home,"CFG");
 
         dis2=dis*dis;
@@ -173,34 +185,34 @@ author    - w.smith 2011
 
         for(int j=0;j<newcfg.natms;j++) {
 
-	    if(newcfg.atoms[j].znum > 1) {
+            if(newcfg.atoms[j].znum > 1) {
 
-		for(int i=0;i<config.natms;i++) {
+                for(int i=0;i<config.natms;i++) {
 
-		    if(config.atoms[i].znum > 1) {
+                    if(config.atoms[i].znum > 1) {
 
-			// atomic separation
+                        // atomic separation
 
-			dsp[0]=config.xyz[0][i]-newcfg.xyz[0][j];
-			dsp[1]=config.xyz[1][i]-newcfg.xyz[1][j];
-			dsp[2]=config.xyz[2][i]-newcfg.xyz[2][j];
+                        dsp[0]=config.xyz[0][i]-newcfg.xyz[0][j];
+                        dsp[1]=config.xyz[1][i]-newcfg.xyz[1][j];
+                        dsp[2]=config.xyz[2][i]-newcfg.xyz[2][j];
 
-			// minimum image
+                        // minimum image
 
-			config.pbc.images(dsp);
+                        config.pbc.images(dsp);
 
-			// interatomic distance
+                        // interatomic distance
 
-			ddd=dsp[0]*dsp[0]+dsp[1]*dsp[1]+dsp[2]*dsp[2];
+                        ddd=dsp[0]*dsp[0]+dsp[1]*dsp[1]+dsp[2]*dsp[2];
 
-			// overlap check
+                        // overlap check
 
-			if(ddd < dis2) hitlist[i]=1;
+                        if(ddd < dis2) hitlist[i]=1;
 
-		    }
-		}
-	    }
-	}
+                    }
+                }
+            }
+        }
 
         // identify redundant molecules
 
@@ -241,6 +253,7 @@ author    - w.smith 2011
                 config.atoms[k].zsym=new String(config.atoms[i].zsym);
                 config.atoms[k].zcol=new Color(config.atoms[i].zcol.getRGB());
                 config.atoms[k].covalent=config.atoms[i].covalent;
+                config.atoms[k].dotify=config.atoms[i].dotify;
                 config.xyz[0][k]=config.xyz[0][i];
                 config.xyz[1][k]=config.xyz[1][i];
                 config.xyz[2][k]=config.xyz[2][i];
@@ -267,6 +280,7 @@ author    - w.smith 2011
             config.atoms[k].zsym=new String(newcfg.atoms[i].zsym);
             config.atoms[k].zcol=new Color(newcfg.atoms[i].zcol.getRGB());
             config.atoms[k].covalent=newcfg.atoms[i].covalent;
+            config.atoms[k].dotify=newcfg.atoms[i].dotify;
             config.xyz[0][k]=newcfg.xyz[0][i];
             config.xyz[1][k]=newcfg.xyz[1][i];
             config.xyz[2][k]=newcfg.xyz[2][i];
@@ -277,11 +291,11 @@ author    - w.smith 2011
 
         // write new CONFIG file
 
-        fname="CFGSOL."+String.valueOf(numsol);
+        fname="CFGINS."+String.valueOf(numins);
         if(config.configWrite(fname)){
             println("File "+fname+" created");
             println("Number of atoms in "+fname+" : "+config.natms);
-            numsol++;
+            numins++;
         }
 
         // rebuild molecular structure
@@ -290,9 +304,7 @@ author    - w.smith 2011
 
         // Draw modified structure
 
-        if(home.editor != null)
-            home.editor.job.setVisible(false);
-        home.editor=new Editor(home);
+        editor.pane.restore();
         return k;
     }
 

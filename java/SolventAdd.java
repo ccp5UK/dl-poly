@@ -42,6 +42,7 @@ author    - w.smith 2001
 
         getContentPane().setBackground(art.back);
         getContentPane().setForeground(art.fore);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setFont(fontMain);
         GridBagLayout grd = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -236,7 +237,7 @@ author    - w.smith 2001
         }
         else if (arg.equals("Make")) {
             lfetch=false;
-            if(config == null)lfetch=true;
+            if(config == null || config.natms ==0)lfetch=true;
             lslab=slab.isSelected();
             dws=BML.giveDouble(wsd.getText(),1);
             dww=BML.giveDouble(wwd.getText(),1);
@@ -249,7 +250,7 @@ author    - w.smith 2001
                 println("Problem encountered adding solvent");
         }
         else if (arg.equals("Close")) {
-            job.setVisible(false);
+            job.dispose();
         }
     }
 
@@ -270,10 +271,18 @@ author    - w. smith 2011
 
         // Load solute if required
 
-        if(lfetch || config == null)
+        if(lfetch){
+            println("Please supply a solute CONFIG file");
             solute=getConfig(home,"CFG");
+        }
         else
             solute=copyConfig(config);
+
+        // Ensure Editor is visible
+
+        if(!editor.isVisible())
+            editor.showEditor();
+	editor.pane.restore();
 
         // Check periodic boundary
 
@@ -327,16 +336,15 @@ author    - w. smith 2011
         if(config.configWrite(fname)){
             println("File "+fname+" created");
             println("Number of atoms in "+fname+" : "+config.natms);
+	    AML.whatAtoms(config);
             numsol++;
         }
 
         // Draw modified structure
 
-	config.pbc.images(config.natms,config.xyz);
+        config.pbc.images(config.natms,config.xyz);
         config.structure=new Structure(config);
-        if(home.editor != null)
-            home.editor.job.setVisible(false);
-        home.editor=new Editor(home);
+        editor.pane.restore();
 
         return true;
     }
@@ -359,6 +367,8 @@ author    - w. smith 2011
         // Load solvent
 
         solvent=new Config();
+
+        solventfile=sfil.getText();
 
         if(!solvent.rdCFG(solventfile)) {
             println("Error - reading solvent file:" + solventfile);
@@ -442,6 +452,7 @@ author    - w. smith 2011
                         config.atoms[n].zsym=new String(solvent.atoms[m].zsym);
                         config.atoms[n].zcol=new Color(solvent.atoms[m].zcol.getRGB());
                         config.atoms[n].covalent=solvent.atoms[m].covalent;
+                        config.atoms[n].dotify=solvent.atoms[m].dotify;
                         config.xyz[0][n]=basx+solvent.xyz[0][m];
                         config.xyz[1][n]=basy+solvent.xyz[1][m];
                         config.xyz[2][n]=basz+solvent.xyz[2][m];
@@ -523,6 +534,7 @@ author    - w. smith 2011
                 config.atoms[n].zsym=new String(config.atoms[i].zsym);
                 config.atoms[n].zcol=new Color(config.atoms[i].zcol.getRGB());
                 config.atoms[n].covalent=config.atoms[i].covalent;
+                config.atoms[n].dotify=config.atoms[i].dotify;
                 config.xyz[0][n]=config.xyz[0][i];
                 config.xyz[1][n]=config.xyz[1][i];
                 config.xyz[2][n]=config.xyz[2][i];
@@ -605,6 +617,7 @@ author    - w. smith 2011
                 config.atoms[n].zsym=new String(config.atoms[i].zsym);
                 config.atoms[n].zcol=new Color(config.atoms[i].zcol.getRGB());
                 config.atoms[n].covalent=config.atoms[i].covalent;
+                config.atoms[n].dotify=config.atoms[i].dotify;
                 config.xyz[0][n]=config.xyz[0][i];
                 config.xyz[1][n]=config.xyz[1][i];
                 config.xyz[2][n]=config.xyz[2][i];
@@ -633,29 +646,29 @@ author    - w.smith 2011
         boolean zapp;
         double ddd,sss;
 
-	config.pbc.images(config.natms,config.xyz);
+        config.pbc.images(config.natms,config.xyz);
 
         // identify solvent atoms outside of the slab
 
-	j0=0;
-	zapp=false;
-	mol=hitlist[0];
-	sss=Math.sqrt(slx*slx+sly*sly+slz*slz);
-	for(int i=0;i<config.natms;i++) {
-	    if(config.atoms[i].znum > 1) {
+        j0=0;
+        zapp=false;
+        mol=hitlist[0];
+        sss=Math.sqrt(slx*slx+sly*sly+slz*slz);
+        for(int i=0;i<config.natms;i++) {
+            if(config.atoms[i].znum > 1) {
                 ddd=(slx*config.xyz[0][i]+sly*config.xyz[1][i]+slz*config.xyz[2][i])/sss;
                 if(ddd < bot || ddd > top) zapp=true;
-	    }
-	    if(i+1 == config.natms || hitlist[i+1] > mol) {
-		if(zapp) {
-		    for(int j=j0;j<=i;j++)
-			hitlist[j]=-mol;
-		}
-		if(i+1 < config.natms)mol=hitlist[i+1];
-		zapp=false;
-		j0=i+1;
-	    }
-	}
+            }
+            if(i+1 == config.natms || hitlist[i+1] > mol) {
+                if(zapp) {
+                    for(int j=j0;j<=i;j++)
+                        hitlist[j]=-mol;
+                }
+                if(i+1 < config.natms)mol=hitlist[i+1];
+                zapp=false;
+                j0=i+1;
+            }
+        }
 
         // Remove redundant molecules
 
@@ -669,10 +682,11 @@ author    - w.smith 2011
                 config.atoms[k].zsym=new String(config.atoms[i].zsym);
                 config.atoms[k].zcol=new Color(config.atoms[i].zcol.getRGB());
                 config.atoms[k].covalent=config.atoms[i].covalent;
+                config.atoms[k].dotify=config.atoms[i].dotify;
                 config.xyz[0][k]=config.xyz[0][i];
                 config.xyz[1][k]=config.xyz[1][i];
                 config.xyz[2][k]=config.xyz[2][i];
-		hitlist[k]=hitlist[i];
+                hitlist[k]=hitlist[i];
                 k++;
             }
         }
@@ -722,26 +736,26 @@ author    - w.smith 2011
 
         // flag overlapping molecules for removal
 
-	j0=0;
-	zapp=false;
-	mol=Math.abs(hitlist[0]);
-	for(int i=0;i<config.natms;i++) {
-	    if(config.atoms[i].znum > 1) {
-		if(hitlist[i] < 0) zapp=true;
-	    }
-	    if(i+1 == config.natms || Math.abs(hitlist[i+1]) > mol) {
-		if(zapp) {
-		    for(int j=j0;j<=i;j++)
-			hitlist[j]=-mol;
-		}
-		if(i+1 < config.natms)
-		    mol=Math.abs(hitlist[i+1]);
-		zapp=false;
-		j0=i+1;
-	    }
-	}
+        j0=0;
+        zapp=false;
+        mol=Math.abs(hitlist[0]);
+        for(int i=0;i<config.natms;i++) {
+            if(config.atoms[i].znum > 1) {
+                if(hitlist[i] < 0) zapp=true;
+            }
+            if(i+1 == config.natms || Math.abs(hitlist[i+1]) > mol) {
+                if(zapp) {
+                    for(int j=j0;j<=i;j++)
+                        hitlist[j]=-mol;
+                }
+                if(i+1 < config.natms)
+                    mol=Math.abs(hitlist[i+1]);
+                zapp=false;
+                j0=i+1;
+            }
+        }
 
-	// Remove redundant molecules
+        // Remove redundant molecules
 
         k=0;
         for(int i=0;i<config.natms;i++) {
@@ -753,6 +767,7 @@ author    - w.smith 2011
                 config.atoms[k].zsym=new String(config.atoms[i].zsym);
                 config.atoms[k].zcol=new Color(config.atoms[i].zcol.getRGB());
                 config.atoms[k].covalent=config.atoms[i].covalent;
+                config.atoms[k].dotify=config.atoms[i].dotify;
                 config.xyz[0][k]=config.xyz[0][i];
                 config.xyz[1][k]=config.xyz[1][i];
                 config.xyz[2][k]=config.xyz[2][i];
@@ -775,6 +790,7 @@ author    - w.smith 2011
             config.atoms[k].zsym=new String(solute.atoms[i].zsym);
             config.atoms[k].zcol=new Color(solute.atoms[i].zcol.getRGB());
             config.atoms[k].covalent=solute.atoms[i].covalent;
+            config.atoms[k].dotify=solute.atoms[i].dotify;
             config.xyz[0][k]=solute.xyz[0][i];
             config.xyz[1][k]=solute.xyz[1][i];
             config.xyz[2][k]=solute.xyz[2][i];

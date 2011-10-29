@@ -42,6 +42,8 @@ author    - w.smith 2006
     public static final int MXATMS=100;
     public static final int MXJOIN=100;
     public static String ftype=null;
+    public static String defaultexecutable="DLPOLY.Z";
+    public static String executable=null;
     public static Font fontMain;
     public static boolean perspective=true;
     public static boolean showbonds=true;
@@ -63,6 +65,8 @@ author    - w.smith 2006
     public static RDFCalc rdfcal=null;
     public static SokPlot sokplt=null;
     public static ZdenPlot zdnplt=null;
+    public static ConfigCompare cfgcom=null;
+    public static ShowClusters shoclus=null;
     public static Slice slcrev=null;
     public static InsertMolecule insmol=null;
     public static RunMSD msdrun=null;
@@ -91,10 +95,21 @@ author    - w.smith 2006
     public static int nummsi,numpdb,numrdf,numsok,nummsd,numvaf,numfaf;
     public static int numstat,numzdn,numgdf,numhov,numgsl,numskw,numh2o;
     public static int numblk,numdre,numopl,numcer,numsav,numslc,numsko;
-    public static int numsol;
+    public static int numsol,numins;
     public static double cc1b,cc2b,cc3b,ccab,ch1b,cn1b,cn2b,cn3b,cnab;
     public static double coab,nh1b,oh1b,co1b,co2b,bondpc,tradef,rotdef;
     public static double rotcos,rotsin,incx,incy,incz;
+    public static int nstrun,nsteql,mult,nstbpo,nstack,intsta,keyens,keyres,istrdf;
+    public static int nstraj,istraj,levcon,nstbts,keyfce,keyalg,ndump,ewldev,spmeev,mxquat;
+    public static int mxshak,nfold1,nfold2,nfold3,nregauss,istzden;
+    public static int dstart,impstp,dintval,atom,nstmsdtmp,imsdtmp,ipseudtyp;
+    public static boolean allpairs,lcap,lzeql,lrdf,lprdf,ltraj,ltscal,lzden,lzero,lvdw;
+    public static boolean lpzden,lexclude,ldefects,lvarstp,lmsdtmp,lpseudo,lnotopo;
+    public static boolean lmetdir,lvdwdir,lnoindex,lnostrict,lreplay,lpslab,lvdwshift;
+    public static double temp,press,tstep,rcut,delr,rvdw,rprim,epsq,taut,taup,ewltol;
+    public static double jobtim,tclose,fcap,gamt,binsize,densvar,shktol,qtntol;
+    public static double defcut,energy,vect1,vect2,vect3,varstp;
+    public static double mindis,maxdis,thick,ptemp;
     public static Process proc=null;
     public static String fname=null;
     public GuiFileFilter mf;
@@ -855,6 +870,61 @@ double wfft[][]=new double[2][ndiv];
         return;
     }
 
+    static void saveText(GUI home) {
+
+/*
+**********************************************************************
+
+Write the contents of the GUI text area into a file
+
+*********************************************************************
+*/
+
+        File output;
+        JFileChooser selector;
+        FileWriter writer;
+
+        if(board.getText().length() > 0) {
+
+            try{
+
+                // default file name is "TEXTSAVE.txt"
+
+                output = new File("TEXTSAVE.txt");
+
+                // create a file chooser
+
+                selector = new JFileChooser(new File("./"));
+                selector.setSelectedFile(output);
+
+                // display the dialog
+
+                if (selector.showSaveDialog(home) == JFileChooser.APPROVE_OPTION) {
+
+                    // get the selected file
+
+                    output=selector.getSelectedFile();
+
+                    // create a file writer
+
+                    writer = new FileWriter(output);
+
+                    // write the contents of the text area into file
+
+                    writer.append(board.getText());
+
+                    // close the file writer
+
+                    writer.close();
+
+                    println("Output text file successfully saved");
+                }
+            }catch(IOException e){
+                println("Error - Unable to save text file");
+            }
+        }
+    }
+
     static Config getConfig(GUI here,String ftype) {
         /*
 *********************************************************************
@@ -974,7 +1044,15 @@ author    - w.smith 2011
             cfgcpy.pbc.cell[i]=cfg.pbc.cell[i];
         cfgcpy.pbc.buildBoundary(cfg.pbc.imcon);
         for(int i=0;i<cfg.natms;i++){
-            cfgcpy.atoms[i]=new Element(cfg.atoms[i].zsym);
+            cfgcpy.atoms[i]=new Element();
+            cfgcpy.atoms[i].znum=cfg.atoms[i].znum;
+            cfgcpy.atoms[i].zmas=cfg.atoms[i].zmas;
+            cfgcpy.atoms[i].zchg=cfg.atoms[i].zchg;
+            cfgcpy.atoms[i].zrad=cfg.atoms[i].zrad;
+            cfgcpy.atoms[i].zsym=new String(cfg.atoms[i].zsym);
+            cfgcpy.atoms[i].zcol=new Color(cfg.atoms[i].zcol.getRGB());
+            cfgcpy.atoms[i].covalent=cfg.atoms[i].covalent;
+            cfgcpy.atoms[i].dotify=cfg.atoms[i].dotify;
             cfgcpy.xyz[0][i]=cfg.xyz[0][i];
             cfgcpy.xyz[1][i]=cfg.xyz[1][i];
             cfgcpy.xyz[2][i]=cfg.xyz[2][i];
