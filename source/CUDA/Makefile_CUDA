@@ -1,6 +1,6 @@
 # Master makefile for DL_POLY_4.01 (CUDA+OpenMP version)
 #
-# Author - I.T.Todorov october 2010
+# Author - I.T.Todorov november 2011
 #
 # Define default settings
 #=====================================================================
@@ -18,6 +18,10 @@ TYPE=master
 
 FC=undefined
 LD=undefined
+
+CUDA_HOME=/usr/local/cuda
+CUDA_SDK=/usr/local/cuda/NVIDIA_GPU_Computing_SDK/C
+MPI_HOME=/opt/openmpi/1.4.3/intel
 
 # Preprocessor defines for CUDA compilation
 PREPROC_DEFINES=-DCOMPILE_CUDA
@@ -206,7 +210,7 @@ FILES_LFV = \
 # Examine targets manually
 #=====================================================================
 
-all:
+all:ftp://ftp.dl.ac.uk/ccp5/DL_POLY/DL_POLY_4.0/BENCH/
 	@echo
 	@echo "You MUST specify a target platform!"
 	@echo

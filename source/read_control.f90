@@ -1959,7 +1959,7 @@ Subroutine read_control                           &
            "maximum distance Dmax (Ang)",mxdis
         End If
         If (mxstp > zero_plus) Then
-           If (idnode == 0) Write(nrite,"(1x,a,7x,1p,e12.4))") &
+           If (idnode == 0) Write(nrite,"(1x,a,7x,1p,e12.4)") &
            "timestep ceiling mxstp (ps)",mxstp
            tstep=Min(tstep,mxstp)
         Else
