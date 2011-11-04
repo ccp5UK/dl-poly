@@ -13,7 +13,7 @@ Subroutine read_field                      &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov november 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -843,14 +843,16 @@ Subroutine read_field                      &
                     If (lrgd < 2 .or. lrgd > mxlrgd) Call error(632)
 
                     Do jrgd=1,lrgd
-                       If (Mod(jrgd+1,16) == 0) Then
+                       If (Mod(jrgd,16) == 0) Then
                           word(1:1)='#'
                           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                              Call get_line(safe,nfield,record)
                              If (.not.safe) Go To 2000
+                             Call get_word(record,word)
                           End Do
+                       Else
+                          Call get_word(record,word)
                        End If
-                       Call get_word(record,word)
 
                        iatm1=Nint(word_2_real(word))
                        lstrgd(jrgd,nrigid)=iatm1

@@ -1,4 +1,4 @@
-# Master makefile for DL_POLY_4.01 (CUDA+OpenMP version)
+# Master makefile for DL_POLY_4.03 (CUDA+OpenMP version)
 #
 # Author - I.T.Todorov november 2011
 #
@@ -95,6 +95,11 @@ OBJ_ALL = \
 	export_atomic_data.o set_halo_particles.o \
 	rigid_bodies_stress.o \
 	read_history.o \
+	defects_reference_read.o defects_reference_read_parallel.o \
+	defects_reference_write.o \
+	defects_reference_export.o defects_reference_set_halo.o \
+	defects_link_cells.o defects1_write.o defects_write.o \
+	msd_write.o rsd_write.o \
 	impact.o core_shell_on_top.o \
 	deport_atomic_data.o pmf_units_set.o compress_book_intra.o \
 	relocate_particles.o \
@@ -141,14 +146,9 @@ OBJ_ALL = \
 	\
 	xscale.o core_shell_kinetic.o regauss_temperature.o \
 	\
-	defects_reference_read.o defects_reference_read_parallel.o \
-	defects_reference_write.o \
-	defects_reference_export.o defects_reference_set_halo.o \
-	defects_link_cells.o defects1_write.o defects_write.o \
-	\
-	msd_write.o z_density_collect.o statistics_collect.o \
+	z_density_collect.o statistics_collect.o \
 	system_revive.o \
-	rdf_compute.o z_density_compute.o statistics_result.o
+	rdf_compute.o z_density_compute.o statistics_result.o \
 
 OBJ_ALL += $(OBJ_CUDA_F90) $(OBJ_CUDA_CC) $(OBJ_CUDA_CU)
 
@@ -210,7 +210,7 @@ FILES_LFV = \
 # Examine targets manually
 #=====================================================================
 
-all:ftp://ftp.dl.ac.uk/ccp5/DL_POLY/DL_POLY_4.0/BENCH/
+all:
 	@echo
 	@echo "You MUST specify a target platform!"
 	@echo

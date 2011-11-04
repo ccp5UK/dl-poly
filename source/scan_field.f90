@@ -15,7 +15,7 @@ Subroutine scan_field                                 &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith november 1994
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov november 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -342,14 +342,16 @@ Subroutine scan_field                                 &
                     mxlrgd=Max(mxlrgd,jrgd)
 
                     Do lrgd=1,jrgd
-                       If (Mod(lrgd+1,16) == 0) Then
+                       If (Mod(lrgd,16) == 0) Then
                           word(1:1)='#'
                           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                              Call get_line(safe,nfield,record)
                              If (.not.safe) Go To 30
+                             Call get_word(record,word)
                           End Do
+                       Else
+                          Call get_word(record,word)
                        End If
-                       Call get_word(record,word)
                     End Do
                  End Do
 

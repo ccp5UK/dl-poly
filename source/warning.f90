@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov november 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,7 +30,7 @@ Subroutine warning(kode,a,b,c)
 
         ia=Nint(a)
 
-        Write(nrite,'(/,1x,a,i6,a,/)') &
+        Write(nrite,'(/,1x,a,i0,a,/)') &
         '*** warning - node ', ia, ' mapped on vacuum (no particles) !!! ***'
 
      Else If (kode ==   2) Then
@@ -38,7 +38,7 @@ Subroutine warning(kode,a,b,c)
         ia=Nint(a)
         ib=Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i6,a),/)') &
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
         '*** warning - DD with ', ia, ' idle nodes, (out of ', ib, ' ) mapped on vacuum !!! ***'
 
      Else If (kode ==   3) Then
@@ -78,7 +78,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i10,a),/)') &
+        Write(nrite,'(/,1x,a,3(i0,a),/)') &
         '*** warning - : 1..4 scale factors reset for molecule: ', ia, ' sites: ',ib, ' & ', ic, ' ***'
 
      Else If (kode ==  30) Then
@@ -135,7 +135,7 @@ Subroutine warning(kode,a,b,c)
         ia=Nint(a)
         ib=Nint(b)
 
-        Write(nrite,'(2(/,1x,a),2(i6,a),/)')                  &
+        Write(nrite,'(2(/,1x,a),2(i0,a),/)')                  &
         '*** warning - cannot activate link cell option ***', &
         '*** more link-cells ', ia,' than allowed ', ib,' !!! ***'
 
@@ -150,7 +150,7 @@ Subroutine warning(kode,a,b,c)
         ia=Nint(a)
         ib=Nint(b)
 
-        Write(nrite,'(2(/,1x,a),2(i6,a),/)')                  &
+        Write(nrite,'(2(/,1x,a),2(i0,a),/)')                                         &
         '*** warning - image convention incompatible with the set NsT ensemble ***', &
         '*** imcon reset from ', ia,' to ', ib,' !!! ***'
 
@@ -175,7 +175,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i12,a),/)') &
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
         '*** warning - required export buffer array size ', ia, ' and actual: ', ib, ' !!! ***'
 
      Else If (kode == 160) Then
@@ -183,7 +183,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i8,a),/)') &
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
         '*** warning - required export array size ', ia, ' and actual: ', ib, ' !!! ***'
 
      Else If (kode == 170) Then
@@ -191,7 +191,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i12,a),/)') &
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
         '*** warning - required export density buffer array size ', ia, ' and actual: ', ib, ' !!! ***'
 
      Else If (kode == 180) Then
@@ -199,7 +199,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i8,a),/)') &
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
         '*** warning - required export density array size ', ia, ' and actual: ', ib, ' !!! ***'
 
      Else If (kode == 190) Then
@@ -216,10 +216,13 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode == 210) Then
 
-        Write(nrite,'(3(/,1x,a),2(f8.0,a),/)')                      &
+        ia = Nint(a)
+        ib = Nint(b)
+
+        Write(nrite,'(3(/,1x,a),2(i0,a),/)')                        &
         '*** warning - system under great constraint !!! ***',      &
         '*** degrees of freedom <=  total number of particles ***', &
-        '*** ', a, '    <= ', b, ' ***'
+        '*** ', ia, ' <= ', ib, ' ***'
 
      Else If (kode == 220) Then
 
@@ -230,7 +233,7 @@ Subroutine warning(kode,a,b,c)
 
         ia = Nint(a)
 
-        Write(nrite,'(/,1x,a,i2,a,/,1x,a,/)')                             &
+        Write(nrite,'(/,1x,a,i0,a,/,1x,a,/)')                             &
         '*** warning - PMF unit', ia, ' weight is detected zero !!! ***', &
         '*** member weights defaulted to atom type masses (or units) ***'
 
@@ -238,7 +241,7 @@ Subroutine warning(kode,a,b,c)
 
         ia = Nint(a)
 
-        Write(nrite,'(/,1x,a,i6,a,/)') &
+        Write(nrite,'(/,1x,a,i0,a,/)') &
         '*** warning - total number of nodes running in parallel: ', ia, ' !!! ***'
 
      Else If (kode == 250) Then
@@ -246,7 +249,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i8,a),/)') &
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
         '*** warning - required coulombic exclusion array size ', ia, ' and actual (mxexcl): ', ib, ' !!! ***'
 
      Else If (kode == 260) Then
@@ -260,7 +263,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i8,a),/)') &
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
         '*** warning - required buffer size is ', ia, ' and actual ', ib, ' !!! ***'
 
      Else If (kode == 280) Then
@@ -274,7 +277,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i8,a),/)') &
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
         '*** warning - required link-cell list size is ', ia, ' and actual (mxlist) ', ib, ' !!! ***'
 
      Else If (kode == 295) Then
@@ -283,7 +286,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i8,a))')                           &
+        Write(nrite,'(/,1x,a,3(i0,a))')                           &
         '*** warning - PMF unit', ia, ' and rigid body unit', ib, &
         ' on molecular species type ', ic, ' in illegal configuration !!! ***'
 
@@ -293,7 +296,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i8,a),/)')                                &
+        Write(nrite,'(/,1x,a,3(i0,a),/)')                                &
         '*** warning - core-shell unit', ia, ' and constraint unit', ib, &
         ' on molecular species type ', ic, ' in illegal configuration !!! ***'
 
@@ -303,7 +306,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i8,a))')                                  &
+        Write(nrite,'(/,1x,a,3(i0,a))')                                  &
         '*** warning - core-shell unit', ia, ' and rigid body unit', ib, &
         ' on molecular species type ', ic, ' in illegal configuration !!! ***'
 
@@ -313,7 +316,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i8,a),/)')                            &
+        Write(nrite,'(/,1x,a,3(i0,a),/)')                            &
         '*** warning - core-shell unit', ia, ' and tether unit', ib, &
         ' on molecular species type ', ic, ' in illegal configuration !!! ***'
 
@@ -323,7 +326,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i8,a))')                                  &
+        Write(nrite,'(/,1x,a,3(i0,a))')                                  &
         '*** warning - constraint unit', ia, ' and rigid body unit', ib, &
         ' on molecular species type ', ic, ' in illegal configuration !!! ***'
 
@@ -332,7 +335,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i8,a))')                                         &
+        Write(nrite,'(/,1x,a,2(i0,a))')                                         &
         '*** warning - rigid body unit', ia, ' on molecular species type ', ib, &
         ' forced to freeze !!! ***'
 
@@ -341,7 +344,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i8,a))')                                         &
+        Write(nrite,'(/,1x,a,2(i0,a))')                                         &
         '*** warning - constraint unit', ia, ' on molecular species type ', ib, &
         ' forced to freeze !!! ***'
 
@@ -351,7 +354,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i8,a))')                                         &
+        Write(nrite,'(/,1x,a,3(i0,a))')                                         &
         '*** warning - rigid body unit', ia, ' on molecular species type ', ib, &
         ' set to have type ', ic, ' is problematic !!! ***'
 
@@ -361,7 +364,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i8,a))')                       &
+        Write(nrite,'(/,1x,a,3(i0,a))')                       &
         '*** warning - site', ia, ' of constraint unit ', ib, &
         ' on molecular species type', ic, ' is problematic !!! ***'
 
@@ -371,7 +374,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
         ic = Nint(c)
 
-        Write(nrite,'(/,1x,a,3(i8,a))') &
+        Write(nrite,'(/,1x,a,3(i0,a))') &
         '*** warning - site', ia, ' , member ', ib, ' of PMF unit', ic, ' is problematic !!! ***'
 
      Else If (kode == 310) Then
@@ -417,7 +420,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i3,a),2(/,1x,a),/)')                                      &
+        Write(nrite,'(/,1x,a,2(i0,a),2(/,1x,a),/)')                                      &
         '*** warning - k-space evaluation interval', ia, ' defaults to', ib, ' !!! ***', &
         '*** the interval must be a positive integer beteen 1 and 10 ***',               &
         '*** values > 10 default to 4, no value or 0 defaults to 1 ***'
@@ -426,7 +429,7 @@ Subroutine warning(kode,a,b,c)
 
         ia = Nint(a)
 
-        Write(nrite,'(/,1x,a,i10,a,/)') &
+        Write(nrite,'(/,1x,a,i0,a,/)') &
         '*** warning - IMPACT applied before the end of the equlibration period (', ia, ' step) !!! ***'
 
      Else If (kode == 390) Then
@@ -434,7 +437,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2i10,a,/)') &
+        Write(nrite,'(/,1x,a,2i0,a,/)') &
         '*** warning - core-shell unit mix-up or duplicate specification (', ia, ib, ' ) !!! ***'
 
      Else If (kode == 400) Then
@@ -442,7 +445,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,i10,a,/)') &
+        Write(nrite,'(/,1x,a,i0,a,/)') &
         '*** warning - constraint or rigid body duplicate specification (', ia, ib, ' ) !!! ***'
 
      Else If (kode == 410) Then
@@ -450,7 +453,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,i10,a,/)') &
+        Write(nrite,'(/,1x,a,i0,a,/)') &
         '*** warning - tethered atom duplicate specification (', ia, ib, ' ) !!! ***'
 
      Else If (kode == 420) Then
@@ -458,7 +461,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2i10,a,/)') &
+        Write(nrite,'(/,1x,a,2i0,a,/)') &
         '*** warning - chemical bond duplicate specification (', ia, ib, ' ) !!! ***'
 
      Else If (kode == 430) Then
@@ -466,7 +469,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2i10,a,/)') &
+        Write(nrite,'(/,1x,a,2i0,a,/)') &
         '*** warning - bond angle duplicate specification (', ia, ib, ' ) !!! ***'
 
      Else If (kode == 440) Then
@@ -474,7 +477,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2i10,a,/)') &
+        Write(nrite,'(/,1x,a,2i0,a,/)') &
         '*** warning - dihedral angle duplicate specification (', ia, ib, ' ) !!! ***'
 
      Else If (kode == 450) Then
@@ -482,7 +485,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2i10,a,/)') &
+        Write(nrite,'(/,1x,a,2i0,a,/)') &
         '*** warning - inversion angle duplicate specification (', ia, ib, ' ) !!! ***'
 
      Else If (kode == 460) Then
