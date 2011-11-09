@@ -12,7 +12,7 @@ Subroutine constraints_rattle         &
 !       VV applicable ONLY
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov november 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,7 +26,7 @@ Subroutine constraints_rattle         &
 
   Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
-  Integer,           Intent( In    ) :: lstopt(1:2,1:mxcons)
+  Integer,           Intent( In    ) :: lstopt(0:2,1:mxcons)
   Real( Kind = wp ), Intent( In    ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
   Integer,           Intent( In    ) :: listot(1:mxatms)
   Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
@@ -75,16 +75,9 @@ Subroutine constraints_rattle         &
 
      esig=0.0_wp
      Do k=1,ntcons
-        i=lstopt(1,k)
-        j=lstopt(2,k)
-
-! for all constrained particles, native and shared
-
-        If ( (i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms) &
-             .and. lfrzn(i)*lfrzn(j) == 0 ) Then
-
-! if a pair is frozen and constraint bonded, it is more frozen
-! than constrained (users!!!)
+        If (lstopt(0,k) == 0) Then
+           i=lstopt(1,k)
+           j=lstopt(2,k)
 
            amti=tstep/weight(i)
            amtj=tstep/weight(j)
@@ -134,13 +127,9 @@ Subroutine constraints_rattle         &
 ! update velocities locally
 
         Do k=1,ntcons
-           i=lstopt(1,k)
-           j=lstopt(2,k)
-
-! for all constrained particles, native and shared
-
-           If ( (i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms) &
-                .and. lfrzn(i)*lfrzn(j) == 0 ) Then
+           If (lstopt(0,k) == 0) Then
+              i=lstopt(1,k)
+              j=lstopt(2,k)
 
               If (i <= natms .and. lfrzn(i) == 0) Then
                  dli = 1.0_wp/Real(listot(i),wp)

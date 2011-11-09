@@ -6,7 +6,7 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
 ! initial structure of a molecule defined by constraints
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2008
+! author    - i.t.todorov november 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -32,7 +32,7 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
 
   fail=0
   Allocate (lstitr(1:mxatms),                                       Stat=fail(1))
-  Allocate (lstopt(1:2,1:mxcons),listot(1:mxatms),                  Stat=fail(2))
+  Allocate (lstopt(0:2,1:mxcons),listot(1:mxatms),                  Stat=fail(2))
   Allocate (dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons),dt(1:mxcons), Stat=fail(3))
   Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),              Stat=fail(4))
   If (Any(fail > 0)) Then
@@ -71,24 +71,15 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
 
      esig=0.0_wp
      Do k=1,ntcons
-        i=lstopt(1,k)
-        j=lstopt(2,k)
-
-! for all constrained particles, native and shared
-
-        If ( (i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms) &
-             .and. lfrzn(i)*lfrzn(j) == 0 ) Then
+        If (lstopt(0,k) == 0) Then
+           i=lstopt(1,k)
+           j=lstopt(2,k)
 
 ! if a pair is frozen and constraint bonded, it is more frozen
 ! than constrained (users!!!)
 
            amti=1.0_wp/weight(i)
            amtj=1.0_wp/weight(j)
-
-! no corrections for frozen atoms
-
-           If (lfrzn(i) /= 0) amti=0.0_wp
-           If (lfrzn(j) /= 0) amtj=0.0_wp
 
 ! no corrections for frozen atoms
 
@@ -137,13 +128,9 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
 ! update velocities
 
         Do k=1,ntcons
-           i=lstopt(1,k)
-           j=lstopt(2,k)
-
-! for all constrained particles, native and shared
-
-           If ( (i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms) &
-                .and. lfrzn(i)*lfrzn(j) == 0 ) Then
+           If (lstopt(0,k) == 0) Then
+              i=lstopt(1,k)
+              j=lstopt(2,k)
 
               If (i <= natms .and. lfrzn(i) == 0) Then
                  dli = 1.0_wp/Real(listot(i),wp)

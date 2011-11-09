@@ -615,19 +615,20 @@ these works, send the problem to us.
 
 \subsubsection*{\underline{Message 58}: error - number of atoms in system not conserved}
 
-Either and an atom has been lost in transfer between nodes/domains.
+Either and an atom has been lost in transfer between nodes/domains or your FIELD is ill defined with respect to what is supplied in CONFIG/HISTORY.
 
 \noindent \underline{\em Action}:
 
 If this error is issued at start before timestep zero in a simulation
-then it your CONFIG file or the first frame of your HISTRORY (replayed)
-is corrupted.  Check out for mangled/blank lines in CONFIG/HISTORY, or a
-blank line(s) at the end of CONFIG or missing FOF (End Of File)
-character in CONFIG.  If this error is issued after timestep zero in a
-simulation that is not replaying HISTORY then it is big trouble and you
-should report that to the authors.  If it is during replaying HISTORY
-then your HISTORY file has corrupted frames and you must correct it
-before trying again.
+then it is either your FIELD file is ill defined or that your CONFIG file
+(or the first frame of your HISTRORY being replayed).  Check out for
+mistyped number or identities of molecules, atoms, etc. in FIELD and for
+mangled/blank lines in CONFIG/HISTORY, or a blank line(s) at the end of
+CONFIG or missing FOF (End Of File) character in CONFIG.  If this error
+is issued after timestep zero in a simulation that is not replaying
+HISTORY then it is big trouble and you should report that to the authors.
+If it is during replaying HISTORY then your HISTORY file has corrupted
+frames and you must correct it before trying again.
 
 \subsubsection*{\underline{Message 59}: error - too many core-shell units per domain}
 

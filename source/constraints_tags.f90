@@ -8,7 +8,7 @@ Subroutine constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
 ! Note: must be used in conjunction with integration algorithms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov november 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,7 +24,7 @@ Subroutine constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
 
   Integer,           Intent( In    ) :: imcon
   Logical,           Intent( InOut ) :: lstitr(1:mxatms)
-  Integer,           Intent(   Out ) :: lstopt(1:2,1:mxcons)
+  Integer,           Intent(   Out ) :: lstopt(0:2,1:mxcons)
   Real( Kind = wp ), Intent(   Out ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
   Integer,           Intent(   Out ) :: listot(1:mxatms)
 
@@ -50,6 +50,10 @@ Subroutine constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
   Do k=1,ntcons
      lunsafe(k)=.false.
 
+! Opt out bond from action by default
+
+     lstopt(0,k)=1
+
 ! indices of atoms in bond
 
      i=local_index(listcon(1,k),nlast,lsi,lsa)
@@ -64,19 +68,30 @@ Subroutine constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
 
      If ((i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms)) Then
 
+! if a pair is frozen and constraint bonded
+! it is more frozen than constrained (users!!!)
+
+        If (lfrzn(i)*lfrzn(j) == 0) Then
+
+! Select bond for action if product gives zero
+
+           lstopt(0,k)=0
+
 ! calculate bond vectors
 
-        dxx(k)=xxx(i)-xxx(j)
-        dyy(k)=yyy(i)-yyy(j)
-        dzz(k)=zzz(i)-zzz(j)
+           dxx(k)=xxx(i)-xxx(j)
+           dyy(k)=yyy(i)-yyy(j)
+           dzz(k)=zzz(i)-zzz(j)
 
 ! indicate sharing on local ends of bonds
 ! summed contributions (quench/shake/rattle) for each local
 ! constrained bonded atom must be weighted by listot(atom) -
 ! how many bond constraints an atom is involved in
 
-        If (i <= natms) listot(i)=listot(i)+1
-        If (j <= natms) listot(j)=listot(j)+1
+           If (i <= natms) listot(i)=listot(i)+1
+           If (j <= natms) listot(j)=listot(j)+1
+
+        End If
 
      Else If ((i == 0 .and. j == 0) .or. (i > natms .and. j > natms) .or. &
               (i == 0 .and. j > natms) .or. (j == 0 .and. i > natms)) Then

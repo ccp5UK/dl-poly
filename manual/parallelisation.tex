@@ -273,10 +273,9 @@ distributes the SPME charge array over the processors in a manner
 that is completely commensurate with the distribution of the
 configuration data under the DD strategy.  As a consequence the
 FFT handles all the necessary communication implicit in a
-distributed SPME application.  However, the FFT communications
-are only patterned in a power of two series manner.  The \D subroutine
-{\sc ewald\_spme\_forces} perfoms the bulk of the FFT operations
-and charge array construction, while {\sc spme\_forces} calculates the forces.
+distributed SPME application.  The \D subroutine {\sc ewald\_spme\_forces}
+perfoms the bulk of the FFT operations and charge array construction,
+while {\sc spme\_forces} calculates the forces.
 
 Other routines required to calculate the Ewald sum include {\sc ewald\_module}, \\
 {\sc ewald\_excl\_forces}, \\ {\sc ewald\_frozen\_forces} and {\sc spme\_container}.

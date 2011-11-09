@@ -12,7 +12,7 @@ Subroutine constraints_shake_vv        &
 !       VV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov november 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,7 +26,7 @@ Subroutine constraints_shake_vv        &
 
   Integer,           Intent( In    ) :: imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
-  Integer,           Intent( In    ) :: lstopt(1:2,1:mxcons)
+  Integer,           Intent( In    ) :: lstopt(0:2,1:mxcons)
   Real( Kind = wp ), Intent( In    ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
   Integer,           Intent( In    ) :: listot(1:mxatms)
   Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
@@ -74,19 +74,17 @@ Subroutine constraints_shake_vv        &
 ! calculate temporary bond vector
 
      Do k=1,ntcons
-        i=lstopt(1,k)
-        j=lstopt(2,k)
+        If (lstopt(0,k) == 0) Then
+           i=lstopt(1,k)
+           j=lstopt(2,k)
 
-! for all constrained particles, native and shared
-
-        If ((i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms)) Then
            dxt(k)=xxx(i)-xxx(j)
            dyt(k)=yyy(i)-yyy(j)
            dzt(k)=zzz(i)-zzz(j)
-        Else
-           dxt(k)=0.0_wp
-           dyt(k)=0.0_wp
-           dzt(k)=0.0_wp
+        Else ! DEBUG
+!           dxt(k)=0.0_wp
+!           dyt(k)=0.0_wp
+!           dzt(k)=0.0_wp
         End If
      End Do
 
@@ -97,22 +95,12 @@ Subroutine constraints_shake_vv        &
 ! calculate maximum error in bondlength
 
      Do k=1,ntcons
-        dt2(k) =0.0_wp
-        esig(k)=0.0_wp
-
-        i=lstopt(1,k)
-        j=lstopt(2,k)
-
-! for all constrained particles, native and shared
-
-        If ( (i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms) &
-             .and. lfrzn(i)*lfrzn(j) == 0 ) Then
-
-! if a pair is frozen and constraint bonded, it is more frozen
-! than constrained (users!!!)
-
+        If (lstopt(0,k) == 0) Then
            dt2(k) =dxt(k)**2+dyt(k)**2+dzt(k)**2 - prmcon(listcon(0,k))**2
            esig(k)=0.5_wp*Abs(dt2(k))/prmcon(listcon(0,k))
+        Else
+          dt2(k) =0.0_wp
+          esig(k)=0.0_wp
         End If
      End Do
 
@@ -136,16 +124,9 @@ Subroutine constraints_shake_vv        &
 ! calculate constraint forces
 
         Do k=1,ntcons
-           i=lstopt(1,k)
-           j=lstopt(2,k)
-
-! for all constrained particles, native and shared
-
-           If ( (i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms) &
-                .and. lfrzn(i)*lfrzn(j) == 0 ) Then
-
-! if a pair is frozen and constraint bonded, it is more frozen
-! than constrained (users!!!)
+           If (lstopt(0,k) == 0) Then
+              i=lstopt(1,k)
+              j=lstopt(2,k)
 
               amti=tstep2/weight(i)
               amtj=tstep2/weight(j)
@@ -193,13 +174,9 @@ Subroutine constraints_shake_vv        &
 ! update positions locally
 
         Do k=1,ntcons
-           i=lstopt(1,k)
-           j=lstopt(2,k)
-
-! for all constrained particles, native and shared
-
-           If ( (i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms) &
-                .and. lfrzn(i)*lfrzn(j) == 0 ) Then
+           If (lstopt(0,k) == 0) Then
+              i=lstopt(1,k)
+              j=lstopt(2,k)
 
 ! apply position corrections if non-frozen
 
