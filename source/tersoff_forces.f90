@@ -565,11 +565,11 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
               cost  = (xtf(jj)*xtf(kk)+ytf(jj)*ytf(kk)+ztf(jj)*ztf(kk))
               If (Abs(cost) > 1.0_wp) cost=Sign(1.0_wp,cost)
               gtheta= 1.0_wp + (ci/di)**2 - ci**2 / (di**2 + (hi-cost)**2)
-              eterm = eterm + gtheta*prmter2(ikter,2)*scr(kk)
-              vterm = vterm + gtheta*prmter2(ikter,2)*gcr(kk)*rtf(kk)
+              eterm = eterm + gtheta*prmter2(ikter,2)*scr(kk) !SUM of L_{ij}
+              vterm = vterm + gtheta*prmter2(ikter,2)*gcr(kk)*rtf(kk) !SUM of d/dr_i of L_{ij} - first part, i.e. no angular part so it is used in the virial
 
               gam(kk) = gtheta
-              gvr(kk) = 2.0_wp * ci**2 * (hi-cost) / (di**2 + (hi-cost)**2)**2
+              gvr(kk) = 2.0_wp * ci**2 * (hi-cost) / (di**2 + (hi-cost)**2)**2 ! d(gtheta)/sint*d(theta)
 
            End If
 
@@ -586,21 +586,21 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   gam_ij=prmter2(ijter,1)
   gamma=0.0_wp
   If (eterm > zero_plus) Then
-     gam_ij = gam_ij*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei)
+     gam_ij = gam_ij*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei) ! gamma_{ij}
      gamma  = 0.5_wp * prmter2(ijter,1) * bi * (bi*eterm)**(ei-1.0_wp) * &
-              eat(jj) * (1.0_wp + (bi*eterm)**ei)**(-0.5_wp/ei - 1.0_wp)
+              eat(jj) * (1.0_wp + (bi*eterm)**ei)**(-0.5_wp/ei - 1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
   End If
 
 ! if two-body interaction is opted out
 
   If (Nint(prmter2(ijter,3)) == 1) gam_ij=gam_ij-prmter2(ijter,1)
 
-  gterm=(grt(jj)-gam_ij*gat(jj))
+  gterm=(grt(jj)-gam_ij*gat(jj)) ! force_ij (no three body part)
 
   If (iatm <= natms) Then
 
-     engter = engter + 0.5_wp*(ert(jj) - gam_ij*eat(jj))
-     virter = virter + 0.5_wp*(gamma*vterm + gterm*rtf(jj))
+     engter = engter + 0.5_wp*(ert(jj) - gam_ij*eat(jj)) ! energy_ij/2 (double counting)
+     virter = virter + 0.5_wp*(gamma*vterm + gterm*rtf(jj)) ! virial_ij (double counting)
 
      fxx(iatm)=fxx(iatm)+0.5_wp*gterm*xtf(jj)
      fyy(iatm)=fyy(iatm)+0.5_wp*gterm*ytf(jj)
@@ -648,19 +648,19 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
            If (lfrzn(iatm)*lfrzn(jatm)*lfrzn(katm) == 0) Then
 
-              gam_j = 0.5_wp*gamma*prmter2(ikter,2)*scr(kk)*gvr(kk)
-              gam_k = 0.5_wp*gamma*prmter2(ikter,2)*gcr(kk)*gam(kk)
+              gam_j = 0.5_wp*gamma*prmter2(ikter,2)*scr(kk)*gvr(kk) ! term in d/dr_l L_{ij} no derivative of Fc
+              gam_k = 0.5_wp*gamma*prmter2(ikter,2)*gcr(kk)*gam(kk) ! term in d/dr_l L_{ij} no derivative of gamma
 
 ! calculate contribution to atomic forces
 
               cost=(xtf(jj)*xtf(kk)+ytf(jj)*ytf(kk)+ztf(jj)*ztf(kk))
               If (Abs(cost) > 1.0_wp) cost=Sign(1.0_wp,cost)
 
-              fxa = gam_j*(xtf(kk)-xtf(jj)*cost)/rtf(jj)
+              fxa = gam_j*(xtf(kk)-xtf(jj)*cost)/rtf(jj) ! contributions from k to i and j
               fya = gam_j*(ytf(kk)-ytf(jj)*cost)/rtf(jj)
               fza = gam_j*(ztf(kk)-ztf(jj)*cost)/rtf(jj)
 
-              fxc = gam_j*(xtf(jj)-xtf(kk)*cost)/rtf(kk) - gam_k*xtf(kk)
+              fxc = gam_j*(xtf(jj)-xtf(kk)*cost)/rtf(kk) - gam_k*xtf(kk) ! contributions from k to i only (via j)
               fyc = gam_j*(ytf(jj)-ytf(kk)*cost)/rtf(kk) - gam_k*ytf(kk)
               fzc = gam_j*(ztf(jj)-ztf(kk)*cost)/rtf(kk) - gam_k*ztf(kk)
 
