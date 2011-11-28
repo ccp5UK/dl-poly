@@ -16,7 +16,7 @@ Module io_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.j.bush april 2011
-! amended   - i.t.todorov july 2011
+! amended   - m.seaton november 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -674,9 +674,9 @@ Contains
 
   End Subroutine io_get_parameters
 
-  Subroutine io_write_sorted_file( file_handle, write_level, write_options, first_record,  &
-                                   n_atoms, global_indices, atom_name, weight, charge, rsd,   &
-                                   rx, ry, rz, vx, vy, vz, fx, fy, fz,                        &
+  Subroutine io_write_sorted_file( file_handle, write_level, write_options, first_record,   &
+                                   n_atoms, global_indices, atom_name, weight, charge, rsd, &
+                                   rx, ry, rz, vx, vy, vz, fx, fy, fz,                      &
                                    error )
 
     ! Write a single atomic configuration using MPI-I/O to the file corresponding to FILE_HANDLE.
@@ -1170,12 +1170,15 @@ Contains
        Call netcdf_get_def( known_files( file_handle )%desc )
     End If
 
+    ! Free comms
+    Call free_io_comm( io_comm, io_gather_comm )
+
     ! Leave in sync
     Call MPI_BARRIER( base_comm, ierr )
 
   Contains
 
-    Subroutine sort_local( write_level, write_options, global_index_rank, &
+    Subroutine sort_local( write_level, write_options, global_index_rank,                    &
          global_indices, rx, ry, rz, vx, vy, vz, fx, fy, fz, weight, charge, rsd, atom_name, &
          local_global_indices, local_data, local_name )
 
@@ -1805,7 +1808,7 @@ Contains
     End Subroutine global_sort
 
     Subroutine config_out( io_comm, write_level, write_options, file_handle, first_record, &
-         n, indices, data, name, error )
+                           n, indices, data, name, error )
 
       ! Write the config to disk !
       ! Arguments are:
@@ -2459,7 +2462,7 @@ Contains
        ! Generate io_comm
        colour = Mod( rank_base, everyth_for_io )
 
-       do_io = colour == 0
+       do_io = ( colour == 0 )
 
        If ( .not. do_io ) Then
           colour = MPI_UNDEFINED
@@ -2491,8 +2494,22 @@ Contains
 
   End Subroutine split_io_comm
 
+  Subroutine free_io_comm( io_comm, io_gather_comm )
+
+    ! Freeing IO_COMM and IO_GATHER_COMM.
+
+    Implicit None
+
+    Integer, Intent(   Out ) :: io_comm
+    Integer, Intent(   Out ) :: io_gather_comm
+
+    Call MPI_COMM_FREE( io_comm, ierr )
+    Call MPI_COMM_FREE( io_gather_comm, ierr )
+
+  End Subroutine free_io_comm
+
   Subroutine batch_limits_set( local_global_indices, bottom_batch, top_batch, &
-       local_bottom, local_top )
+             local_bottom, local_top )
 
     ! Search for where to find the range of atoms BOTTOM_BATCH:TOP_BATCH in the local
     ! data.  Note we probably will not actually have the very atom BOTTOM_BATCH so

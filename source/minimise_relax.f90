@@ -13,7 +13,7 @@ Subroutine minimise_relax &
 !       keymin=2 : absolute displacement
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith october 2010
+! author    - i.t.todorov & w.smith november 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -65,7 +65,7 @@ Subroutine minimise_relax &
   If (megcon > 0 .or. megpmf > 0) Then
      Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
      If (megcon > 0) Then
-        Allocate (lstopt(1:2,1:mxcons),listot(1:mxatms),          Stat=fail(2))
+        Allocate (lstopt(0:2,1:mxcons),listot(1:mxatms),          Stat=fail(2))
         Allocate (dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons),      Stat=fail(3))
      End If
      If (megpmf > 0) Then
