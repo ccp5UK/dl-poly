@@ -16,7 +16,7 @@ Module io_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.j.bush april 2011
-! amended   - m.seaton november 2011
+! amended   - m.a.seaton november 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1171,7 +1171,7 @@ Contains
     End If
 
     ! Free comms
-    Call free_io_comm( io_comm, io_gather_comm )
+    Call free_io_comm( do_io, io_comm, io_gather_comm )
 
     ! Leave in sync
     Call MPI_BARRIER( base_comm, ierr )
@@ -2484,7 +2484,7 @@ Contains
        Else
           colour = MPI_UNDEFINED
        End If
-       do_io = colour == 0
+       do_io = ( colour == 0 )
        Call MPI_COMM_SPLIT( base_comm, colour, key, io_comm, ierr )
 
        ! And now the gather comm
@@ -2494,16 +2494,21 @@ Contains
 
   End Subroutine split_io_comm
 
-  Subroutine free_io_comm( io_comm, io_gather_comm )
+  Subroutine free_io_comm( do_io, io_comm, io_gather_comm )
 
     ! Freeing IO_COMM and IO_GATHER_COMM.
 
     Implicit None
 
-    Integer, Intent(   Out ) :: io_comm
-    Integer, Intent(   Out ) :: io_gather_comm
+    Logical                  :: do_io
+    ! Note we can not set an intent on this - on procs NOT doing I/O it is
+    ! intent Out, on procs doing I/O it is InOut
+    Integer                  :: io_comm
+    Integer, Intent( InOut ) :: io_gather_comm
 
-    Call MPI_COMM_FREE( io_comm, ierr )
+    If( do_io ) Then
+       Call MPI_COMM_FREE( io_comm, ierr )
+    End If
     Call MPI_COMM_FREE( io_gather_comm, ierr )
 
   End Subroutine free_io_comm
