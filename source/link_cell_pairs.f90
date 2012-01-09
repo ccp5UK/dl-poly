@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2011
+! author    - i.t.todorov january 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,7 +30,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1,match
 
-  Integer           :: fail(1:4),                            &
+  Integer           :: fail(1:4),l_end,m_end,                &
                        icell,ncells,ipass,kk,ll,             &
                        ibig,i,ii,j,jj, j_start,              &
                        nlx,nly,nlz,nlp,nlr2,nlp3,nsbcll,     &
@@ -112,7 +112,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   nlp=1
   nlp2=Real(natms,wp)
   det=nlp2/Real(nlx*nly*nlz,wp)
-  Do While (det > 100.0_wp)
+  Do While (det > 50.0_wp)
      nlp=nlp+1
      rsq=Real(nlp,wp)
      nlx=Int(dispx*rsq)
@@ -188,7 +188,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
            nix(nsbcll)=ix
            niy(nsbcll)=iy
            niz(nsbcll)=iz
-           nir(nsbcll)=(jx+jy+jz <= nlr2)
+           nir(nsbcll)=(jx+jy+jz < nlr2)
 10         Continue
         End Do
 20      Continue
@@ -243,7 +243,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! link-cell on the domain (halo)
 !***************************************************************
 ! Note(1): Due to numerical inaccuracy it is possible that some
-! domain particles (1,natms) may have like-cell space
+! domain particles (1,natms) may have link-cell space
 ! coordinates in the halo / at least one coordinate as shown
 ! (nlx+1,nly+1,nlz+1)^(nlp-1,nlp-1,nlp-1) /
 ! as well as halo particles (natms+1,nlast) may have link-cell
@@ -383,8 +383,8 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
 ! initialise verlet neighbourlist arrays
 
-!  list=0      ! (DEBUG)
-  list(0,:)=0 !  (FIRST DIMENSION ONLY)
+!  list=0         ! (DEBUG)
+  list(-2:0,:)=0 ! (COUNTING DIMENSIONS ONLY)
 
 ! initial values of control variables
 
@@ -630,49 +630,65 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
      Call error(106)
   End If
 
-! Remove frozen pairs
+! Rear down frozen pairs
 
   If (megfrz > 1) Then
      Do i=1,natms
+        l_end=list(0,i)
+        m_end=l_end
+
         ii=lfrzn(i)
         If (ii > 0) Then
-           kk=1
-           ll=list(0,i)
-           Do While (kk <= ll)
-              jj=lfrzn(list(kk,i))
+           Do kk=l_end,1,-1
+              j =list(kk,i)
+              jj=lfrzn(j)
               If (jj > 0) Then
-                 If (kk < ll) list(kk,i)=list(ll,i)
-                 list(ll,i)=0
-                 ll=ll-1
-                 list(0,i)=ll
-              Else
-                 kk=kk+1
+                 If (kk < m_end) Then
+                    list(kk,i)=list(m_end,i)
+                    list(m_end,i)=j
+                 End If
+                 m_end=m_end-1
               End If
            End Do
         End If
+
+        list(-2,i)=list(0,i) ! End of full non-repeatable half VNL (FNRH VNL)
+        list( 0,i)=m_end     ! End of new list with no frozen pairs (NFP)
+     End Do
+  Else
+     Do i=1,natms
+        list(-2,i)=list(0,i) ! End of full non-repeatable half VNL (FNRH VNL)
      End Do
   End If
 
-! Remove excluded interactions from the verlet neighbour list
+! Rear down excluded pairs on top of the frozen ones
 
   If (lbook) Then
      Do i=1,natms
+        l_end=list(0,i)
+        m_end=l_end
+
         ii=lexatm(0,i)
         If (ii > 0) Then
-           kk=1
-           ll=list(0,i)
-           Do While (kk <= ll)
-              jj=ltg(list(kk,i))
+           Do kk=l_end,1,-1
+              j =list(kk,i)
+              jj=ltg(j)
               If (match(jj,ii,lexatm(1:ii,i))) Then
-                 If (kk < ll) list(kk,i)=list(ll,i)
-                 list(ll,i)=0
-                 ll=ll-1
-                 list(0,i)=ll
-              Else
-                 kk=kk+1
+                 If (kk < m_end) Then
+                    list(kk,i)=list(m_end,i)
+                    list(m_end,i)=j
+                 End If
+                 m_end=m_end-1
               End If
            End Do
         End If
+
+        list(-1,i)=list(0,i) ! End of NFP FNRH VNL
+        list( 0,i)=m_end     ! End of new list with no excluded interactions (NXI)
+     End Do
+  Else
+     Do i=1,natms
+        list(-1,i)=list(0,i) ! End of NFP FNRH VNL
      End Do
   End If
 

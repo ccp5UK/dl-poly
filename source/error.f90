@@ -6,7 +6,7 @@ Subroutine error(kode)
 ! controlled termination of the program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov december 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -353,10 +353,6 @@ Subroutine error(kode)
      Else If (kode ==   89) Then
 
         Write(nrite,'(/,1x,a)') 'error - too many four-body potentials specified'
-
-     Else If (kode ==   90) Then
-
-        Write(nrite,'(/,1x,a)') 'error - fluctuations in the total number of frozen particles'
 
      Else If (kode ==   91) Then
 
@@ -972,6 +968,10 @@ Subroutine error(kode)
      Else If (kode ==  650) Then
 
         Write(nrite,'(/,1x,a)') 'error - failed to find principal axis system'
+
+     Else If (kode ==  655) Then
+
+        Write(nrite,'(/,1x,a)') 'error - FENE bond breaking failure'
 
      Else If (kode == 1000) Then
 

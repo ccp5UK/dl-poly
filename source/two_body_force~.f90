@@ -34,7 +34,7 @@ Subroutine two_body_forces                        &
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gsum
   Use setup_module
-  Use config_module,     Only : cell,volm,sumchg,natms, &
+  Use config_module,     Only : cell,volm,sumchg,natms,nlast,lsi,lsa, &
                                 lexatm,list,xxx,yyy,zzz
   Use ewald_module
   Use vdw_module,        Only : ntpvdw
@@ -60,8 +60,8 @@ Subroutine two_body_forces                        &
   Logical,           Save :: new_nz    = .true.
   Real( Kind = wp ), Save :: factor_nz = 0.0_wp
 
-  Logical           :: safe = .true., l_do_rdf
-  Integer           :: fail(1:2),i,j,k,limit
+  Logical           :: safe = .true.
+  Integer           :: fail(1:2),i,j,k,limit,local_index
   Real( Kind = wp ) :: engcpe_rc,vircpe_rc,engcpe_rl,vircpe_rl, &
                        engcpe_ex,vircpe_ex,engcpe_fr,vircpe_fr, &
                        engcpe_nz,vircpe_nz,                     &
@@ -78,8 +78,6 @@ Subroutine two_body_forces                        &
      Write(nrite,'(/,1x,a,i0)') 'two_body_forces allocation failure, node: ', idnode
      Call error(0)
   End If
-
-  l_do_rdf = (lrdf .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstrdf) == 0)
 
 ! If k-space SPME is evaluated in full infrequently
 ! check whether at this timestep to evaluate or "refresh"
@@ -250,100 +248,66 @@ Subroutine two_body_forces                        &
 
 ! accumulate radial distribution functions
 
-     If (l_do_rdf) Call rdf_collect(i,rcut,rsqdf)
+     If ( lrdf .and. ((.not.leql) .or. nstep >= nsteql) .and. &
+          Mod(nstep,nstrdf) == 0 ) Call rdf_collect(i,rcut,rsqdf)
 
   End Do
 
-  If (safe) Then
-     tmp=0.0_wp
-  Else
-     tmp=1.0_wp
-  End If
+! counter for rdf statistics outside loop structure
 
-! In the case of excluded interactions
-! accumulate further radial distribution functions and/or
-! calculate Ewald corrections due to long-range exclusions
-! if (keyfce == 2 .and. l_fce)
-
-  If ( lbook .and. (l_do_rdf .or. (keyfce == 2 .and. l_fce)) ) Then
-
-! outer loop over atoms
-
-     Do i=1,natms
-
-! Get list limit
-
-        limit=list(-1,i)-list(0,i)
-        If (limit > 0) Then
-
-! calculate interatomic distances
-
-           Do k=1,limit
-              j=list(list(0,i)+k,i)
-
-              xdf(k)=xxx(i)-xxx(j)
-              ydf(k)=yyy(i)-yyy(j)
-              zdf(k)=zzz(i)-zzz(j)
-           End Do
-
-! periodic boundary conditions
-
-           Call images(imcon,cell,limit,xdf,ydf,zdf)
-
-! square of distances
-
-           Do k=1,limit
-              rsqdf(k)=xdf(k)**2+ydf(k)**2+zdf(k)**2
-           End Do
-
-! accumulate radial distribution functions
-
-           If (l_do_rdf) Call rdf_excl_collect(i,rcut,rsqdf)
+  If ( lrdf .and. ((.not.leql) .or. nstep >= nsteql) .and. &
+       Mod(nstep,nstrdf) == 0 ) numrdf = numrdf + 1
 
 ! Ewald corrections
 
-           If (keyfce == 2 .and. l_fce) Then
-              Call ewald_excl_forces &
-           (i,rcut,alpha,epsq,xdf,ydf,zdf,rsqdf,engacc,viracc,stress)
-
-              engcpe_ex=engcpe_ex+engacc
-              vircpe_ex=vircpe_ex+viracc
-           End If
-
-        End If
-
-     End Do
-
-  End If
-
-! counter for rdf statistics outside loop structures
-
-  If (l_do_rdf) numrdf = numrdf + 1
-
-  Deallocate (xdf,ydf,zdf,rsqdf,   Stat=fail(1))
-  If (ntpmet > 0) Deallocate (rho, Stat=fail(2))
-  If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'two_body_forces deallocation failure, node: ', idnode
-     Call error(0)
-  End If
-
-! Further Ewald corrections or an infrequent refresh
-
   If (keyfce == 2) Then
-     If (l_fce) Then
+
+! calculate coulombic forces, Ewald sum - exclusion corrections
+! from intra-like molecular interactions
+
+     If (lbook .and. l_fce) Then
+
+! outer loop over atoms
+
+        Do i=1,natms
+
+! calculate interatomic distances
+
+           Do k=1,lexatm(0,i)
+
+              j=local_index(lexatm(k,i),nlast,lsi,lsa)
+
+              If (j > 0) Then
+                 xdf(k)=xxx(i)-xxx(j)
+                 ydf(k)=yyy(i)-yyy(j)
+                 zdf(k)=zzz(i)-zzz(j)
+              Else
+                 xdf(k)=0.0_wp
+                 ydf(k)=0.0_wp
+                 zdf(k)=0.0_wp
+              End If
+           End Do
+
+! periodic boundary condition
+
+           Call images(imcon,cell,lexatm(0,i),xdf,ydf,zdf)
+
+! calculate correction terms
+
+           Call ewald_excl_forces &
+                (i,alpha,epsq,xdf,ydf,zdf,engacc,viracc,stress)
+
+           engcpe_ex=engcpe_ex+engacc
+           vircpe_ex=vircpe_ex+viracc
+
+        End Do
+
+     End If
 
 ! frozen pairs corrections to coulombic forces
 
-        If (megfrz /= 0) Call ewald_frozen_forces &
-           (imcon,rcut,alpha,epsq,keyens,engcpe_fr,vircpe_fr,stress)
-
-     Else
-
-! Refresh all Ewald k-space contributions but the non-zero system charge
-
-        Call ewald_refresh(engcpe_rc,vircpe_rc,engcpe_ex,vircpe_ex,engcpe_fr,vircpe_fr,stress)
-
-     End If
+     If (megfrz /= 0 .and. l_fce) Call ewald_frozen_forces &
+        (imcon,rcut,alpha,epsq,megfrz,engcpe_fr,vircpe_fr,stress)
 
 ! non-zero total system charge correction (for the whole system)
 ! ( Fuchs, Proc. R. Soc., A, 151, (585),1935 )
@@ -357,6 +321,18 @@ Subroutine two_body_forces                        &
         engcpe_nz=factor_nz/volm
         vircpe_nz=-3.0_wp*engcpe_nz
      End If
+
+  End If
+
+! Refresh ewald k-space contributions
+
+  If (keyfce == 2 .and. (.not.l_fce)) &
+     Call ewald_refresh(engcpe_rc,vircpe_rc,engcpe_ex,vircpe_ex,engcpe_fr,vircpe_fr,stress)
+
+  If (safe) Then
+     tmp=0.0_wp
+  Else
+     tmp=1.0_wp
   End If
 
 ! sum up contributions to potentials
@@ -425,5 +401,12 @@ Subroutine two_body_forces                        &
   stress(1) = stress(1) + tmp
   stress(5) = stress(5) + tmp
   stress(9) = stress(9) + tmp
+
+  Deallocate (xdf,ydf,zdf,rsqdf,   Stat=fail(1))
+  If (ntpmet > 0) Deallocate (rho, Stat=fail(2))
+  If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'two_body_forces deallocation failure, node: ', idnode
+     Call error(0)
+  End If
 
 End Subroutine two_body_forces

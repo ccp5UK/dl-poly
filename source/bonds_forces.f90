@@ -8,7 +8,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith july 1992
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov december 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -39,7 +39,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
   Logical, Save           :: newjob = .true. , damp
   Real( Kind = wp ), Save :: twopi,rtwopi, aa,bb, rfld0,rfld1
 
-  Logical           :: safe
+  Logical           :: safe(1:2)
   Integer           :: fail(1:2),i,j,ia,ib,keyb,kk,local_index
   Real( Kind = wp ) :: rab,rab2,fx,fy,fz,gamma,omega, &
                        term,term1,term2,eps,sig,      &
@@ -137,9 +137,9 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 
 ! Check for uncompressed units
 
-  safe = .not. Any(lunsafe(1:ntbond))
-  If (mxnode > 1) Call gcheck(safe)
-  If (.not.safe) Then
+  safe(1) = .not. Any(lunsafe(1:ntbond))
+  If (mxnode > 1) Call gcheck(safe(1))
+  If (.not.safe(1)) Then
      Do j=0,mxnode-1
         If (idnode == j) Then
            Do i=1,ntbond
@@ -368,7 +368,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 
 ! undefined potential
 
-                 safe=.false.
+                 safe(1)=.false.
 
               End If
 
@@ -391,14 +391,20 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
            dr   =rab-delta
 
            term =1.0_wp-(dr/r0)**2
-           omega=-0.5_wp*k*r0**2 * Log(term)
-           gamma=k*dr/term/rab
+           If (term > 0) Then
+              omega=-0.5_wp*k*r0**2 * Log(term)
+              gamma=k*dr/term/rab
+           Else
+              safe(2)=.false.
+              omega=0.0_wp
+              gamma=0.0_wp
+           End If
 
         Else
 
 ! undefined potential
 
-           safe=.false.
+           safe(1)=.false.
            omega=0.0_wp
            gamma=0.0_wp
 
@@ -478,7 +484,8 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 ! check for undefined potentials
 
   If (mxnode > 1) Call gcheck(safe)
-  If (.not.safe) Call error(444)
+  If (.not.safe(1)) Call error(444)
+  If (.not.safe(2)) Call error(655)
 
   Deallocate (lunsafe,lstopt, Stat=fail(1))
   Deallocate (xdab,ydab,zdab, Stat=fail(2))

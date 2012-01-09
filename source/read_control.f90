@@ -1,21 +1,21 @@
-Subroutine read_control                           &
-           (levcfg,l_vv,l_str,l_n_e,l_n_r,l_n_v,  &
-           rcut,rvdw,rbin,nstfce,alpha,width,     &
-           l_exp,lecx,lfcap,l_top,lzero,lmin,     &
-           ltgaus,ltscal,lvar,leql,lpse,          &
-           lsim,lrdf,lprdf,lzdn,lpzdn,            &
-           ltraj,ldef,lrsd,                       &
-           nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,      &
-           temp,press,strext,keyres,              &
-           tstep,mndis,mxdis,mxstp,nstrun,nsteql, &
-           keymin,nstmin,min_tol,nstgaus,nstscal, &
-           keyens,iso,taut,soft,taup,chi,tai,ten, &
-           keypse,wthpse,tmppse,                  &
-           fmax,nstbpo,intsta,keyfce,epsq,        &
-           rlx_tol,mxshak,tolnce,mxquat,quattol,  &
-           nstrdf,nstzdn,                         &
-           nstmsd,istmsd,nstraj,istraj,keytrj,    &
-           nsdef,isdef,rdef,nsrsd,isrsd,rrsd,     &
+Subroutine read_control                                &
+           (levcfg,l_vv,l_str,l_n_e,l_n_r,l_n_v,       &
+           rcut,rvdw,rbin,nstfce,alpha,width,          &
+           l_exp,lecx,lfcap,l_top,lzero,lmin,          &
+           ltgaus,ltscal,lvar,leql,lpse,               &
+           lsim,lrdf,lprdf,lzdn,lpzdn,                 &
+           ltraj,ldef,lrsd,                            &
+           nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
+           temp,press,strext,keyres,                   &
+           tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
+           keymin,nstmin,min_tol,nstgaus,nstscal,      &
+           keyens,iso,taut,chi,soft,gama,taup,tai,ten, &
+           keypse,wthpse,tmppse,                       &
+           fmax,nstbpo,intsta,keyfce,epsq,             &
+           rlx_tol,mxshak,tolnce,mxquat,quattol,       &
+           nstrdf,nstzdn,                              &
+           nstmsd,istmsd,nstraj,istraj,keytrj,         &
+           nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
            ndump,timjob,timcls)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -23,7 +23,7 @@ Subroutine read_control                           &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov december 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -31,7 +31,7 @@ Subroutine read_control                           &
   Use comms_module,        Only : idnode
   Use setup_module
   Use config_module,       Only : sysname
-  Use langevin_module,     Only : l_lan,langevin_allocate_arrays
+  Use langevin_module,     Only : l_lan,l_gst,langevin_allocate_arrays
   Use parse_module
   Use vdw_module,          Only : ld_vdw,ls_vdw
   Use metal_module,        Only : ld_met
@@ -73,8 +73,8 @@ Subroutine read_control                           &
   Real( Kind = wp ),      Intent(   Out ) :: emd,vmx,vmy,vmz,         &
                                              temp,press,strext(1:9),  &
                                              tstep,mndis,mxdis,mxstp, &
-                                             taut,soft,taup,          &
-                                             chi,tai,ten,             &
+                                             taut,chi,soft,gama,      &
+                                             taup,tai,ten,            &
                                              wthpse,tmppse,min_tol,   &
                                              fmax,epsq,rlx_tol,       &
                                              tolnce,quattol,          &
@@ -200,9 +200,10 @@ Subroutine read_control                           &
 ! default thermostat and barostat friction time constants
 
   taut = 0.0_wp ! thermostat relaxation time
-  soft = 0.0_wp ! Softness for Andersen thermostat
-  taup = 0.0_wp ! barostat relaxation time
   chi  = 0.0_wp ! Stochastic Dynamics (SD Langevin) thermostat friction
+  soft = 0.0_wp ! Softness for Andersen thermostat
+  gama = 0.0_wp ! Stochastic (Langevin) friction on a thermostat
+  taup = 0.0_wp ! barostat relaxation time
   tai  = 0.0_wp ! Stochastic Dynamics (SD Langevin) barostat friction
   iso  = 0      ! no semi-isotropic feature
   ten  = 0.0_wp ! surface tension
@@ -933,6 +934,24 @@ Subroutine read_control                           &
               If (lens) Call error(414)
               lens=.true.
 
+           Else If (word(1:3) == 'gst') Then
+
+              keyens = 14
+              l_gst = .true.
+
+              Call get_word(record,word)
+              taut = Abs(word_2_real(word))
+
+              Call get_word(record,word)
+              gama = Abs(word_2_real(word))
+
+              If (idnode == 0) Write(nrite,"(1x,'Ensemble : NVT gentle stochastic thermostat', &
+                 & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                         &
+                 & /,1x,'friction on thermostat  (ps^-1)',3x,1p,e12.4)") taut,gama
+
+              If (lens) Call error(414)
+              lens=.true.
+
            Else
 
               Call strip_blanks(record)
@@ -1420,24 +1439,11 @@ Subroutine read_control                           &
 
         Call get_word(record,word)
 
-        If      (word(1:9) == 'precision') Then
-
-           Call get_word(record,word)
-           tmp = Abs(word_2_real(word))
-           If (idnode == 0) Write(nrite,"(1x,'Ewald sum-like precision',10x,1p,e12.4)") tmp
-
-           tmp = Max(Min(Abs(tmp),0.5_wp),1.0e-20_wp)
-           alpha = Sqrt(Abs(Log(tmp*rcut*Sqrt(Abs(Log(tmp*rcut))))))/rcut
-
-           If (idnode == 0) Write(nrite,"(1x,'Damping parameter (A^-1)',10x,1p,e12.4)") alpha
-
-        Else If (word(1:4) == 'damp') Then
-
+        If (word(1:4) == 'damp') Then
            Call get_word(record,word)
            alpha = Abs(word_2_real(word))
 
            If (idnode == 0) Write(nrite,"(1x,'Damping parameter (A^-1)',10x,1p,e12.4)") alpha
-
         End If
         If (alpha > zero_plus) Then
            If (idnode == 0) Write(nrite,"(1x,'Fennell damping applied')")
@@ -1457,24 +1463,11 @@ Subroutine read_control                           &
         If (word(1:5) == 'field') Call get_word(record,word)
         Call get_word(record,word)
 
-        If      (word(1:9) == 'precision') Then
-
-           Call get_word(record,word)
-           tmp = Abs(word_2_real(word))
-           If (idnode == 0) Write(nrite,"(1x,'Ewald sum-like precision',10x,1p,e12.4)") tmp
-
-           tmp = Max(Min(Abs(tmp),0.5_wp),1.0e-20_wp)
-           alpha = Sqrt(Abs(Log(tmp*rcut*Sqrt(Abs(Log(tmp*rcut))))))/rcut
-
-           If (idnode == 0) Write(nrite,"(1x,'Damping parameter (A^-1)',10x,1p,e12.4)") alpha
-
-        Else If (word(1:4) == 'damp') Then
-
+        If (word(1:4) == 'damp') Then
            Call get_word(record,word)
            alpha = Abs(word_2_real(word))
 
            If (idnode == 0) Write(nrite,"(1x,'Damping parameter (A^-1)',10x,1p,e12.4)") alpha
-
         End If
         If (alpha > zero_plus) Then
            If (idnode == 0) Write(nrite,"(1x,'Fennell damping applied')")

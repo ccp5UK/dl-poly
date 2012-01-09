@@ -1,5 +1,5 @@
 Subroutine ewald_excl_forces &
-           (iatm,rcut,alpha,epsq,xdf,ydf,zdf,rsqdf,engcpe_ex,vircpe_ex,stress)
+           (iatm,alpha,epsq,xdf,ydf,zdf,engcpe_ex,vircpe_ex,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -9,20 +9,22 @@ Subroutine ewald_excl_forces &
 ! Note: exclusion correction terms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2011
+! author    - w.smith august 1998
+! amended   - i.t.todorov may 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module
-  Use config_module, Only : natms,ltg,list,chge,fxx,fyy,fzz
+  Use config_module, Only : natms,nlast,lsi,lsa,lfrzn,chge, &
+                            lexatm,fxx,fyy,fzz
   Use ewald_module
 
   Implicit None
 
   Integer,                                  Intent( In    ) :: iatm
-  Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xdf,ydf,zdf
   Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
@@ -37,20 +39,11 @@ Subroutine ewald_excl_forces &
   Real( Kind = wp ), Parameter :: r42  = 1.0_wp/42.0_wp
   Real( Kind = wp ), Parameter :: r216 = 1.0_wp/216.0_wp
 
-  Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: rcsq
-
-  Integer           :: jatm,m,idi,limit
+  Integer           :: jatm,m,local_index
   Real( Kind = wp ) :: chgea,chgprd,rsq,rrr,alpr,alpr2, &
                        erfr,egamma,exp1,tt,             &
                        fix,fiy,fiz,fx,fy,fz,            &
                        strs1,strs2,strs3,strs5,strs6,strs9
-
-  If (newjob) Then
-     newjob = .false.
-
-     rcsq=rcut**2
-  End If
 
 ! initialise potential energy and virial
 
@@ -66,10 +59,6 @@ Subroutine ewald_excl_forces &
   strs6=0.0_wp
   strs9=0.0_wp
 
-! global identity of iatm
-
-  idi=ltg(iatm)
-
 ! start of primary loop for forces evaluation
 
   chgea = chge(iatm)
@@ -78,7 +67,10 @@ Subroutine ewald_excl_forces &
 
   If (Abs(chgea) > zero_plus) Then
 
-     chgea = chgea*r4pie0/epsq
+! halve the charge of iatm since exclusions are double counted
+! lexatm(:,iatm) points to jatm & lexatm(:,jatm) points to iatm
+
+     chgea = 0.5_wp*chgea*r4pie0/epsq
 
 ! load forces
 
@@ -86,92 +78,113 @@ Subroutine ewald_excl_forces &
      fiy=fyy(iatm)
      fiz=fzz(iatm)
 
-! Get list limit
+     Do m=1,lexatm(0,iatm)
 
-     limit=list(-1,iatm)-list(0,iatm)
-     Do m=1,limit
+! atomic index
 
-! atomic index,charge and interatomic distance
+        jatm=local_index(lexatm(m,iatm),nlast,lsi,lsa)
 
-        jatm=list(list(0,iatm)+m,iatm)
-        chgprd=chge(jatm)
-        rsq=rsqdf(m)
+! particles must be native or natively shared to this node (idnode)
 
-! frozen pairs are ignored by default, they are not dealt with here
+        If (jatm > 0) Then
+           chgprd=chge(jatm)
 
-        If (Abs(chgprd) > zero_plus .and. rsq < rcsq) Then
+! ignore interaction the charge is zero
+! ignore frozen pairs, they must not be dealt with here
+
+           If (Abs(chgprd) > zero_plus .and. lfrzn(iatm)*lfrzn(jatm) == 0) Then
 
 ! charge product
 
-           chgprd=chgprd*chgea
+              chgprd=chgprd*chgea
 
-           rrr  =Sqrt(rsq)
-           alpr =rrr*alpha
-           alpr2=alpr*alpr
+! calculate interatomic distance
+
+              rsq=xdf(m)**2+ydf(m)**2+zdf(m)**2
+
+              rrr  =Sqrt(rsq)
+              alpr =rrr*alpha
+              alpr2=alpr*alpr
 
 ! calculate error function and derivative
 
-           If (alpr < 1.0e-2_wp) Then
+              If (alpr < 1.0e-2_wp) Then
 
 ! close particles (core-shell units) - small distances limit
 
-              erfr=2.0_wp*chgprd*(alpha/sqrpi) * &
-              (1.0_wp+alpr2*(-rr3+alpr2*(r10+alpr2*(-r42+alpr2*r216))))
+                 erfr=2.0_wp*chgprd*(alpha/sqrpi) * &
+                 (1.0_wp+alpr2*(-rr3+alpr2*(r10+alpr2*(-r42+alpr2*r216))))
 
-              egamma=-4.0_wp*chgprd*(alpha**3/sqrpi) * &
-              (rr3+alpr2*(-2.0_wp*r10+alpr2*(3.0_wp*r42-4.0_wp*alpr2*r216)))
+                 egamma=-4.0_wp*chgprd*(alpha**3/sqrpi) * &
+                 (rr3+alpr2*(-2.0_wp*r10+alpr2*(3.0_wp*r42-4.0_wp*alpr2*r216)))
 
-           Else
+              Else
 
 ! distant particles - traditional
 
-              exp1 =Exp(-(alpha*rrr)**2)
-              tt   =1.0_wp/(1.0_wp+pp*alpha*rrr)
+                 exp1 =Exp(-(alpha*rrr)**2)
+                 tt   =1.0_wp/(1.0_wp+pp*alpha*rrr)
 
-              erfr=chgprd * &
-              (1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/rrr
+                 erfr=chgprd * &
+                 (1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/rrr
 
-              egamma=-(erfr-2.0_wp*chgprd*(alpha/sqrpi)*exp1)/rsq
+                 egamma=-(erfr-2.0_wp*chgprd*(alpha/sqrpi)*exp1)/rsq
 
-           End If
+              End If
 
 ! calculate forces
 
-           fx = egamma*xdf(m)
-           fy = egamma*ydf(m)
-           fz = egamma*zdf(m)
+              fx = egamma*xdf(m)
+              fy = egamma*ydf(m)
+              fz = egamma*zdf(m)
 
-           fix=fix+fx
-           fiy=fiy+fy
-           fiz=fiz+fz
-
-! infrequent calculations copying
-
-           If (l_cp) Then
-              fcx(iatm)=fcx(iatm)+fx
-              fcy(iatm)=fcy(iatm)+fy
-              fcz(iatm)=fcz(iatm)+fz
-           End If
-
-           If (jatm <= natms) Then
-
-              fxx(jatm)=fxx(jatm)-fx
-              fyy(jatm)=fyy(jatm)-fy
-              fzz(jatm)=fzz(jatm)-fz
+              fix=fix+fx
+              fiy=fiy+fy
+              fiz=fiz+fz
 
 ! infrequent calculations copying
 
               If (l_cp) Then
-                 fcx(jatm)=fcx(jatm)-fx
-                 fcy(jatm)=fcy(jatm)-fy
-                 fcz(jatm)=fcz(jatm)-fz
+                 fcx(iatm)=fcx(iatm)+fx
+                 fcy(iatm)=fcy(iatm)+fy
+                 fcz(iatm)=fcz(iatm)+fz
               End If
 
-           End If
+              If (jatm <= natms) Then
 
-           If (jatm <= natms .or. idi < ltg(jatm)) Then
+                 fxx(jatm)=fxx(jatm)-fx
+                 fyy(jatm)=fyy(jatm)-fy
+                 fzz(jatm)=fzz(jatm)-fz
 
-! add potential energy and virial
+! infrequent calculations copying
+
+                 If (l_cp) Then
+                    fcx(jatm)=fcx(jatm)-fx
+                    fcy(jatm)=fcy(jatm)-fy
+                    fcz(jatm)=fcz(jatm)-fz
+                 End If
+
+              Else
+
+! account for the half inclusion of force corrections for iatm
+! when natms < jatm <= nlast, i.e. iatm and jatm are on different
+! nodes but see each other as a node seeing its halo
+
+                 fix=fix+fx
+                 fiy=fiy+fy
+                 fiz=fiz+fz
+
+! infrequent calculations copying
+
+                 If (l_cp) Then
+                    fcx(iatm)=fcx(iatm)+fx
+                    fcy(iatm)=fcy(iatm)+fy
+                    fcz(iatm)=fcz(iatm)+fz
+                 End If
+
+              End If
+
+! calculate potential energy and virial
 
               engcpe_ex = engcpe_ex - erfr
               vircpe_ex = vircpe_ex - egamma*rsq
@@ -183,7 +196,7 @@ Subroutine ewald_excl_forces &
                  v_ex = v_ex - egamma*rsq
               End If
 
-! add stress tensor
+! calculate stress tensor
 
               strs1 = strs1 + xdf(m)*fx
               strs2 = strs2 + xdf(m)*fy
@@ -193,7 +206,6 @@ Subroutine ewald_excl_forces &
               strs9 = strs9 + zdf(m)*fz
 
            End If
-
         End If
 
      End Do

@@ -1,16 +1,16 @@
-Subroutine nvt_h0_scl &
-           (tstep,ceng,qmass,pmass,chip, &
+Subroutine nvt_g0_scl &
+           (tstep,ceng,qmass,temp,gama,r_0,pmass,chip, &
            vxx,vyy,vzz,chit,cint,engke)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 routine to integrate and apply NVT Nose-Hoover thermostat
+! with a Langevin process
 !
 ! Note: coupling to NPT barostat included as factor=pmass*chip^2
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2004
-! amended   - w.smith january 2010
+! author    - i.t.todorov january 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,13 +22,14 @@ Subroutine nvt_h0_scl &
   Implicit None
 
   Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
+                                                               temp,gama,r_0,    &
                                                                pmass,chip
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
   Real( Kind = wp ),                        Intent( InOut ) :: chit,cint
   Real( Kind = wp ),                        Intent(   Out ) :: engke
 
   Integer           :: i
-  Real( Kind = wp ) :: hstep,qstep,factor,scale
+  Real( Kind = wp ) :: hstep,qstep,factor,scale,fex
 
 
 ! timestep derivative and factor
@@ -45,9 +46,12 @@ Subroutine nvt_h0_scl &
 
   engke=getkin(vxx,vyy,vzz)
 
+  fex=Exp(-gama*hstep)
+
 ! update chit to 1/2*tstep
 
-  chit=chit + hstep*(2.0_wp*engke + factor - ceng)/qmass
+  chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*temp/qmass)*r_0 + &
+       hstep*(2.0_wp*engke + factor - ceng)/qmass
 
 ! update chi(=cint) to 3/4*tstep
 
@@ -68,10 +72,11 @@ Subroutine nvt_h0_scl &
 
 ! update chit to full (2/2)*tstep
 
-  chit=chit + hstep*(2.0_wp*engke + factor - ceng)/qmass
+  chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*temp/qmass)*r_0 + &
+       hstep*(2.0_wp*engke + factor - ceng)/qmass
 
 ! update chi(=cint) to 4/4*tstep
 
   cint=cint + qstep*chit
 
-End Subroutine nvt_h0_scl
+End Subroutine nvt_g0_scl

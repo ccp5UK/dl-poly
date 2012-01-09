@@ -1,6 +1,6 @@
 # Master makefile for DL_POLY_4.03 (serial version 2)
 #
-# Author - I.T.Todorov may 2011
+# Author - I.T.Todorov january 2012
 #
 #
 # Define default settings
@@ -80,7 +80,7 @@ OBJ_ALL = \
 	exchange_grid.o ewald_spme_forces.o \
 	metal_forces.o vdw_forces.o ewald_real_forces.o \
 	coul_dddp_forces.o coul_cp_forces.o coul_fscp_forces.o \
-	coul_rfp_forces.o rdf_collect.o ewald_excl_forces.o \
+	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o ewald_excl_forces.o \
 	ewald_frozen_forces.o two_body_forces.o \
 	tersoff_forces.o three_body_forces.o four_body_forces.o \
 	core_shell_forces.o tethers_forces.o \
@@ -95,25 +95,25 @@ OBJ_ALL = \
 	pseudo_vv.o \
 	constraints_shake_vv.o pmf_shake_vv.o \
 	constraints_rattle.o pmf_rattle.o \
-	nvt_h0_scl.o npt_h0_scl.o nst_h0_scl.o \
+	nvt_h0_scl.o nvt_g0_scl.o npt_h0_scl.o nst_h0_scl.o \
 	nve_0_vv.o nvt_e0_vv.o \
-	nvt_l0_vv.o nvt_a0_vv.o nvt_b0_vv.o nvt_h0_vv.o \
+	nvt_l0_vv.o nvt_a0_vv.o nvt_b0_vv.o nvt_h0_vv.o nvt_g0_vv.o \
 	npt_l0_vv.o npt_b0_vv.o npt_h0_vv.o npt_m0_vv.o \
 	nst_l0_vv.o nst_b0_vv.o nst_h0_vv.o nst_m0_vv.o \
-	nvt_h1_scl.o npt_h1_scl.o nst_h1_scl.o \
+	nvt_h1_scl.o nvt_g1_scl.o npt_h1_scl.o nst_h1_scl.o \
 	nve_1_vv.o nvt_e1_vv.o \
-	nvt_l1_vv.o nvt_a1_vv.o nvt_b1_vv.o nvt_h1_vv.o \
+	nvt_l1_vv.o nvt_a1_vv.o nvt_b1_vv.o nvt_h1_vv.o nvt_g1_vv.o \
 	npt_l1_vv.o npt_b1_vv.o npt_h1_vv.o npt_m1_vv.o \
 	nst_l1_vv.o nst_b1_vv.o nst_h1_vv.o nst_m1_vv.o \
 	\
 	pseudo_lfv.o \
 	constraints_shake_lfv.o pmf_shake_lfv.o \
 	nve_0_lfv.o nvt_e0_lfv.o \
-	nvt_l0_lfv.o nvt_a0_lfv.o nvt_b0_lfv.o nvt_h0_lfv.o \
+	nvt_l0_lfv.o nvt_a0_lfv.o nvt_b0_lfv.o nvt_h0_lfv.o nvt_g0_lfv.o \
 	npt_l0_lfv.o npt_b0_lfv.o npt_h0_lfv.o npt_m0_lfv.o \
 	nst_l0_lfv.o nst_b0_lfv.o nst_h0_lfv.o nst_m0_lfv.o \
 	nve_1_lfv.o nvt_e1_lfv.o \
-	nvt_l1_lfv.o nvt_a1_lfv.o nvt_b1_lfv.o nvt_h1_lfv.o \
+	nvt_l1_lfv.o nvt_a1_lfv.o nvt_b1_lfv.o nvt_h1_lfv.o nvt_g1_lfv.o \
 	npt_l1_lfv.o npt_b1_lfv.o npt_h1_lfv.o npt_m1_lfv.o \
 	nst_l1_lfv.o nst_b1_lfv.o nst_h1_lfv.o nst_m1_lfv.o \
 	\
@@ -136,14 +136,14 @@ FILES_VV = \
 	pseudo_vv.f90 \
 	constraints_shake_vv.f90 pmf_shake_vv.f90 \
 	constraints_rattle.f90 pmf_rattle.f90 \
-	nvt_h0_scl.f90 npt_h0_scl.f90 nst_h0_scl.f90 \
+	nvt_h0_scl.f90 nvt_g0_scl.f90 npt_h0_scl.f90 nst_h0_scl.f90 \
 	nve_0_vv.f90 nvt_e0_vv.f90 \
-	nvt_l0_vv.f90 nvt_a0_vv.f90 nvt_b0_vv.f90 nvt_h0_vv.f90 \
+	nvt_l0_vv.f90 nvt_a0_vv.f90 nvt_b0_vv.f90 nvt_h0_vv.f90 nvt_g0_vv.f90 \
 	npt_l0_vv.f90 npt_b0_vv.f90 npt_h0_vv.f90 npt_m0_vv.f90 \
 	nst_l0_vv.f90 nst_b0_vv.f90 nst_h0_vv.f90 nst_m0_vv.f90 \
-	nvt_h1_scl.f90 npt_h1_scl.f90 nst_h1_scl.f90 \
+	nvt_h1_scl.f90 nvt_g1_scl.f90 npt_h1_scl.f90 nst_h1_scl.f90 \
 	nve_1_vv.f90 nvt_e1_vv.f90 \
-	nvt_l1_vv.f90 nvt_a1_vv.f90 nvt_b1_vv.f90 nvt_h1_vv.f90 \
+	nvt_l1_vv.f90 nvt_a1_vv.f90 nvt_b1_vv.f90 nvt_h1_vv.f90 nvt_g1_vv.f90 \
 	npt_l1_vv.f90 npt_b1_vv.f90 npt_h1_vv.f90 npt_m1_vv.f90 \
 	nst_l1_vv.f90 nst_b1_vv.f90 nst_h1_vv.f90 nst_m1_vv.f90 \
 	md_vv.f90
@@ -155,11 +155,11 @@ FILES_LFV = \
 	pseudo_lfv.f90 \
 	constraints_shake_lfv.f90 pmf_shake_lfv.f90 \
 	nve_0_lfv.f90 nvt_e0_lfv.f90 \
-	nvt_l0_lfv.f90 nvt_a0_lfv.f90 nvt_b0_lfv.f90 nvt_h0_lfv.f90 \
+	nvt_l0_lfv.f90 nvt_a0_lfv.f90 nvt_b0_lfv.f90 nvt_h0_lfv.f90 nvt_g0_lfv.f90 \
 	npt_l0_lfv.f90 npt_b0_lfv.f90 npt_h0_lfv.f90 npt_m0_lfv.f90 \
 	nst_l0_lfv.f90 nst_b0_lfv.f90 nst_h0_lfv.f90 nst_m0_lfv.f90 \
 	nve_1_lfv.f90 nvt_e1_lfv.f90 \
-	nvt_l1_lfv.f90 nvt_a1_lfv.f90 nvt_b1_lfv.f90 nvt_h1_lfv.f90 \
+	nvt_l1_lfv.f90 nvt_a1_lfv.f90 nvt_b1_lfv.f90 nvt_h1_lfv.f90 nvt_g1_lfv.f90 \
 	npt_l1_lfv.f90 npt_b1_lfv.f90 npt_h1_lfv.f90 npt_m1_lfv.f90 \
 	nst_l1_lfv.f90 nst_b1_lfv.f90 nst_h1_lfv.f90 nst_m1_lfv.f90 \
 	md_lfv.f90

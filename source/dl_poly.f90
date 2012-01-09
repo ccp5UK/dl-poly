@@ -31,7 +31,7 @@ Program dl_poly
 ! dl_poly_4 is based on dl_poly_3 by i.t.todorov & w.smith.
 !
 ! copyright - daresbury laboratory
-! authors   - i.t.todorov & w.smith 2011
+! authors   - i.t.todorov & w.smith 2012
 ! contributors: i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -156,26 +156,26 @@ Program dl_poly
 
 ! elrcm,vlrcm - metal energy and virial are array-like and in metal_module
 
-  Real( Kind = wp ) :: timelp,timjob,timcls,tstep,time,tmst,tmsth,     &
-                       alpha,epsq,fmax,                                &
-                       rcut,rvdw,rmet,rbin,rcter,rctbp,rcfbp,          &
-                       width,mndis,mxdis,mxstp,wthpse,tmppse,          &
-                       rlx_tol,min_tol,tolnce,quattol,rdef,rrsd,       &
-                       emd,vmx,vmy,vmz,temp,sigma,                     &
-                       press,strext(1:9),ten,                          &
-                       taut,soft,taup,chi,tai,                         &
-                       chit,eta(1:9),chip,cint,consv,                  &
-                       strtot(1:9),virtot,elrc,virlrc,                 &
-                       strkin(1:9),engke,strknf(1:9),strknt(1:9),      &
-                       engrot,strcom(1:9),vircom,                      &
-                       engcpe,vircpe,engsrp,virsrp,                    &
-                       engter,virter,engtbp,virtbp,engfbp,virfbp,      &
-                       engshl,shlke,virshl,                            &
-                       strcon(1:9),vircon,strpmf(1:9),virpmf,          &
-                       stress(1:9),engtet,virtet,                      &
-                       engbnd,virbnd,engang,virang,                    &
-                       engdih,virdih,enginv,virinv,                    &
-                       engfld,virfld,                                  &
+  Real( Kind = wp ) :: timelp,timjob,timcls,tstep,time,tmst,tmsth, &
+                       alpha,epsq,fmax,                            &
+                       rcut,rvdw,rmet,rbin,rcter,rctbp,rcfbp,      &
+                       width,mndis,mxdis,mxstp,wthpse,tmppse,      &
+                       rlx_tol,min_tol,tolnce,quattol,rdef,rrsd,   &
+                       emd,vmx,vmy,vmz,temp,sigma,                 &
+                       press,strext(1:9),ten,                      &
+                       taut,chi,soft,gama,taup,tai,                &
+                       chit,eta(1:9),chip,cint,consv,              &
+                       strtot(1:9),virtot,elrc,virlrc,             &
+                       strkin(1:9),engke,strknf(1:9),strknt(1:9),  &
+                       engrot,strcom(1:9),vircom,                  &
+                       engcpe,vircpe,engsrp,virsrp,                &
+                       engter,virter,engtbp,virtbp,engfbp,virfbp,  &
+                       engshl,shlke,virshl,                        &
+                       strcon(1:9),vircon,strpmf(1:9),virpmf,      &
+                       stress(1:9),engtet,virtet,                  &
+                       engbnd,virbnd,engang,virang,                &
+                       engdih,virdih,enginv,virinv,                &
+                       engfld,virfld,                              &
                        stptmp,stpprs,stpvol,stpcfg,stpeng,stpeth,stpvir
 
 ! SET UP COMMUNICATIONS & CLOCKING
@@ -198,7 +198,7 @@ Program dl_poly
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
           "**         **  contributors:  i.j.bush               ****** O ****", &
-          "*************  version:  4.03    /    november 2011  ******* L ***", &
+          "*************  version:  4.03     /    january 2012  ******* L ***", &
           "*************  Execution on ", mxnode, "    node(s)  ******** Y **", &
           "******************************************************************"
   End If
@@ -251,24 +251,24 @@ Program dl_poly
 
 ! READ SIMULATION CONTROL PARAMETERS
 
-  Call read_control                               &
-           (levcfg,l_vv,l_str,l_n_e,l_n_r,l_n_v,  &
-           rcut,rvdw,rbin,nstfce,alpha,width,     &
-           l_exp,lecx,lfcap,l_top,lzero,lmin,     &
-           ltgaus,ltscal,lvar,leql,lpse,          &
-           lsim,lrdf,lprdf,lzdn,lpzdn,            &
-           ltraj,ldef,lrsd,                       &
-           nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,      &
-           temp,press,strext,keyres,              &
-           tstep,mndis,mxdis,mxstp,nstrun,nsteql, &
-           keymin,nstmin,min_tol,nstgaus,nstscal, &
-           keyens,iso,taut,soft,taup,chi,tai,ten, &
-           keypse,wthpse,tmppse,                  &
-           fmax,nstbpo,intsta,keyfce,epsq,        &
-           rlx_tol,mxshak,tolnce,mxquat,quattol,  &
-           nstrdf,nstzdn,                         &
-           nstmsd,istmsd,nstraj,istraj,keytrj,    &
-           nsdef,isdef,rdef,nsrsd,isrsd,rrsd,     &
+  Call read_control                                    &
+           (levcfg,l_vv,l_str,l_n_e,l_n_r,l_n_v,       &
+           rcut,rvdw,rbin,nstfce,alpha,width,          &
+           l_exp,lecx,lfcap,l_top,lzero,lmin,          &
+           ltgaus,ltscal,lvar,leql,lpse,               &
+           lsim,lrdf,lprdf,lzdn,lpzdn,                 &
+           ltraj,ldef,lrsd,                            &
+           nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
+           temp,press,strext,keyres,                   &
+           tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
+           keymin,nstmin,min_tol,nstgaus,nstscal,      &
+           keyens,iso,taut,chi,soft,gama,taup,tai,ten, &
+           keypse,wthpse,tmppse,                       &
+           fmax,nstbpo,intsta,keyfce,epsq,             &
+           rlx_tol,mxshak,tolnce,mxquat,quattol,       &
+           nstrdf,nstzdn,                              &
+           nstmsd,istmsd,nstraj,istraj,keytrj,         &
+           nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
            ndump,timjob,timcls)
 
 ! READ SIMULATION FORCE FIELD
@@ -445,7 +445,7 @@ Program dl_poly
   If (mxnode > 1) Call gsum(j)
   If (j > 0) Call warning(2,Real(j,wp),Real(mxnode,wp),0.0_wp)
 
-! Initialize kinetic stress and energy contributions,
+! Initialise kinetic stress and energy contributions,
 ! energy(or stress) and virial accumulators for rigid bodies,
 ! electrostatics, short-range potentials, tersoff potentials
 ! three- and four-body potentials, core-shell and tether

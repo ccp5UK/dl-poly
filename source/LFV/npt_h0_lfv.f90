@@ -25,7 +25,7 @@ Subroutine npt_h0_lfv                                  &
 !             Mol. Phys., 1996, Vol. 87 (5), p. 1117
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov january 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -259,7 +259,7 @@ Subroutine npt_h0_lfv                                  &
   chip2=0.0_wp
 
   chit1 = chit + tstep*(-ceng)/qmass
-  chip1 = (chip + tstep*((2.0_wp*engke-virtot) - 3.0_wp*press*vzero)/pmass)
+  chip1 = chip + tstep*((2.0_wp*engke-virtot) - 3.0_wp*press*vzero)/pmass
 
   chit2 = 0.5_wp*(chit+chit1)
   chip2 = 0.5_wp*(chip+chip1)
@@ -400,8 +400,8 @@ Subroutine npt_h0_lfv                                  &
 ! (volm=vzero, vircon,virpmf,chit2,chip2 are freshly new here!!!)
 
         chit1 = chit + tstep*(2.0_wp*engke+pmass*chip2**2-ceng)/qmass
-        chip1 = (chip + tstep*((2.0_wp*engke-virtot-vircon-virpmf) - &
-                               3.0_wp*press*vzero)/pmass)*Exp(-tstep*chit2)
+        chip1 = chip*Exp(-tstep*chit2) + tstep*( (2.0_wp*engke-virtot-vircon-virpmf) - &
+                                                3.0_wp*press*vzero )/pmass
 
         chit2 = 0.5_wp*(chit+chit1)
         chip2 = 0.5_wp*(chip+chip1)

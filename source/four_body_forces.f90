@@ -179,7 +179,7 @@ Subroutine four_body_forces(imcon,rcfbp,engfbp,virfbp,stress)
 ! (nbx+3,nby+3,nby+3) right-most link-cell on the domain
 !***************************************************************
 ! Note: Due to numerical inaccuracy it is possible that some
-! domain particles (1,natms) may have like-cell space
+! domain particles (1,natms) may have link-cell space
 ! coordinates in the inner-most layer of the double link-cell
 ! halo / at least one coordinate as shown (nbx+2,nby+2,nbz+2)^
 ! (1,1,1) / as well as particles (natms+1,nlast) from the inner-

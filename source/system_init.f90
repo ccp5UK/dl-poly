@@ -10,7 +10,7 @@ Subroutine system_init                                       &
 ! initial thermodynamic and structural accumulators
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov december 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -261,7 +261,7 @@ Subroutine system_init                                       &
 
   End If
 
-! initialize initial positions to current positions
+! initialise initial positions to current positions
 ! and final displacements to zero
 
   Do i=1,natms
@@ -380,6 +380,39 @@ Subroutine system_init                                       &
            Go To 50
         Else
            l_lan_s=.false.
+        End If
+
+     End If
+
+! Read Langevin process gaussian variable if needed
+
+     If (l_gst) Then
+
+        i_tmp=0 ! Error accumulator: keyio is still zero otherwise we cannot get here
+
+        If (idnode == 0) Then
+           If (l_rin) Then
+              Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) r_0
+           Else
+              Read(Unit=nrest, IOStat=keyio) r_0
+           End If
+        End If
+        If (keyio /= 0) i_tmp=1
+
+        If (mxnode > 1) Call MPI_BCAST(r_0, 1, wp_mpi, 0, dlp_comm_world, ierr)
+
+! If anything is wrong
+
+        If (mxnode > 1) Call MPI_BCAST(i_tmp, 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+        If (i_tmp /= 0) Then
+           If (idnode == 0) Then
+              Call warning(190,0.0_wp,0.0_wp,0.0_wp)
+              Close(Unit=nrest)
+           End If
+           l_gst_s=.true.
+           Go To 50
+        Else
+           l_gst_s=.false.
         End If
 
      End If

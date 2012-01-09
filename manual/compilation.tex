@@ -72,14 +72,14 @@ To specify the FORTRAN90 compiler in a target platform, the user
 must type the full path to the executable in {\bf FC=``...''} and
 all appropriate options (as defined in the relevant FORTRAN90\index{FORTRAN90}
 manual) and the path to the MPI implementation in {\bf
-FCFLAGS=``...''}. The same must be done for the the linker: the
+FCFLAGS=``...''}. The same must be done for the linker: the
 path to the executable in {\bf LD=``...''} and the appropriate
 options and the path to the MPI implementation in {\bf
 LDFLAGS=``...''}. \\
 \item {\bf Adding new functionality} \\
 To include a new subroutine in the code simply add {\em
 subroutine}.o to the list of object names in the makefile
-(`OBJ\_ALL'').  {\bf Note} that there is a hierarchial order of
+(`OBJ\_ALL'').  {\bf Note} that there is a hierarchal order of
 adding file names in the ``OBJ\_MOD'' list whereas such order does
 not exist in the ``OBJ\_ALL'' list.  Therefore, should dependence
 exist between routines listed in the ``OBJ\_ALL'' list, it {\bf
@@ -167,6 +167,40 @@ and DEFECTS containing the RDF, Z-density, individual means square
 displacement and temperature, and defects data respectively.  They
 are all human readable files.
 
+\subsection{Parallel I/O}
+
+Many users that have suffered loss of data in the OUTPUT, especially
+running in parallel and when an error occurs on parallel architectures.
+In such circumstances the OUTPUT may be empty or incomplete, despite
+being clear that the actual simulation has progressed well beyond what
+has been printed in OUTPUT.  Ultimately, this is due to OS's I/O
+buffers not being flushed as a default by the particular OS when
+certain kind of errors occurs, especially MPI related.  The safest way
+to avoid loss of information in such circumstances is to write the
+OUTPUT data to the default output channel ("the screen").  There is an
+easy way to do this in \D, which is to use the {\bf l\_scr} keyword in
+the CONTROL file.  The batch daemon will then place the output in the
+standard output file, which can then be of use to the user, or
+alternatively on many batch systems the output can be redirected into
+another file, allowing an easier following of the job progress over
+time.  This latter technique is also useful on interactive systems
+where simply printing to the screen could lead to large amounts of
+output.  However, such situations could be easily avoided by
+redirecting the output using the ">" symbol, for instance:
+"mpirun -n 4 DLPOLY.Z > OUTPUT".
+
+It is also worth noting that the use of large batch and buffer
+numbers can speed up enormously the performance of the parallel I/O,
+for example putting in CONTROL (see Section \ref{control-file}):
+\begin{verbatim}
+io read mpiio         128 10000000 1000000
+io write mpiio        512 10000000 1000000
+\end{verbatim}
+at large processor count jobs (over 1000).  However, this help comes
+at a price as larger batches and buffers also requires more memory.
+So at smaller processor counts the job will abort at the point of
+trying to use some of the allocated arrays responsible for these.
+
 \subsection{Restarting}
 
 The best approach to running \D is to define from the outset
@@ -224,7 +258,7 @@ correct {\bf restart}s but rather modified {\bf start}s as
 they make no use of REVOLD file and will reset internal
 accumulators to zero at start.
 
-{\bf Note that all these options are mutually exlusive!}
+{\bf Note that all these options are mutually exclusive!}
 
 If none of the restart options is specified velocities are
 generated anew with Gaussian distribution of the target kinetic
@@ -245,7 +279,7 @@ but their role in \D is not to provide users with true structural
 optimisation procedures capable of finding the ground state structure.
 They are simply intended to help users improve the quality of the
 starting structure prior to a statistical dynamical simulation, which
-implies useage during the equlibration period only!
+implies usage during the equilibration period only!
 
 The available algorithms are:
 \begin{enumerate}
@@ -256,11 +290,11 @@ computed forces (and torques), but are not allowed to acquire
 a velocity larger than that corresponding to a temperature of 10 Kelvin.
 The subroutine that performs this procedure is {\sc zero\_k\_optimise}.
 
-\item Conjugate Gradients Metod (CGM) minimisation\index{minimisation!conjugate gradients}.
+\item Conjugate Gradients Method (CGM) minimisation\index{minimisation!conjugate gradients}.
 This is nominally a simple minimisation of the system configuration
 energy using the conjugate gradients method \cite{shewchuk-94a}.
 The algorithm coded into \D is an adaptation that allows for
-rotation and translation of rigid bodies. Rigid (contraint) bonds
+rotation and translation of rigid bodies. Rigid (constraint) bonds
 however are treated as stiff harmonic springs - a strategy which
 we find does allow the bonds to converge within the accuracy
 required by SHAKE.  The subroutine that performs this procedure
@@ -294,7 +328,7 @@ dynamics follows the steepest descent to the (local) minimum.  From any
 given configuration, it will always descend to the same minimum.
 
 \item The conjugate gradient procedure has been adapted to take account
-of the possibilites of constraint bonds and rigid bodies being present
+of the possibilities of constraint bonds and rigid bodies being present
 in the system.  If neither of these is present, the conventional
 unadapted procedure is followed.
 
@@ -384,8 +418,8 @@ to maximising computation (minimising the halo volume with respect
 to the node volume), best performance efficiency will require
 $M_{x} \approx M_{y} \approx M_{z} \approx M$ and $M \gg 1$.
 The former expression is a necessary condition and only guarantees
-good communication distribution ballancing.  Whereas the latter, is
-a sufficent condition and guarantees prevalance of computation over
+good communication distribution balancing.  Whereas the latter, is
+a sufficient condition and guarantees prevalence of computation over
 communications.
 
 \D issues a built-in warning when a link-cell algorithms has a

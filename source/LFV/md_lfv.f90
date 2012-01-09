@@ -66,7 +66,7 @@
 
 100  Continue ! Only used when relaxed is false
 
-! Initialize force arrays and stress tensor (these are all additive
+! Initialise force arrays and stress tensor (these are all additive
 ! in the force subroutines)
 
      fxx = 0.0_wp
@@ -366,6 +366,16 @@
            megpmf,strpmf,virpmf,                       &
            sigma,taut,chit,cint,consv)
 
+           Else If (keyens == 14) Then
+
+! Nose-Hoover thermostat
+
+              Call nvt_g0_lfv                               &
+           (lvar,mndis,mxdis,mxstp,temp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,        &
+           megpmf,strpmf,virpmf,                            &
+           sigma,taut,gama,chit,cint,consv)
+
            Else If (keyens == 20) Then
 
 ! Langevin thermostat and isotropic barostat
@@ -541,6 +551,19 @@
               Call nvt_h1_lfv                  &
            (lvar,mndis,mxdis,mxstp,tstep,      &
            sigma,taut,chit,cint,consv,         &
+           strkin,strknf,strknt,engke,engrot,  &
+           imcon,mxshak,tolnce,mxquat,quattol, &
+           megcon,strcon,vircon,               &
+           megpmf,strpmf,virpmf,               &
+           strcom,vircom)
+
+           Else If (keyens == 14) Then
+
+! Nose-Hoover thermostat
+
+              Call nvt_g1_lfv                  &
+           (lvar,mndis,mxdis,mxstp,temp,tstep, &
+           sigma,taut,gama,chit,cint,consv,    &
            strkin,strknf,strknt,engke,engrot,  &
            imcon,mxshak,tolnce,mxquat,quattol, &
            megcon,strcon,vircon,               &

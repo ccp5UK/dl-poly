@@ -222,7 +222,7 @@ metal\_ld\_compute \\
 exchange\_grid ewald\_spme\_forces \\
 metal\_forces vdw\_forces ewald\_real\_forces \\
 coul\_dddp\_forces coul\_cp\_forces coul\_fscp\_forces \\
-coul\_rfp\_forces rdf\_collect ewald\_excl\_forces \\
+coul\_rfp\_forces rdf\_collect rdf\_excl\_collect ewald\_excl\_forces \\
 ewald\_frozen\_forces two\_body\_forces \\
 tersoff\_forces three\_body\_forces four\_body\_forces \\
 core\_shell\_forces tethers\_forces \\
@@ -247,13 +247,14 @@ dl\_poly}
 pseudo\_vv \\
 constraints\_shake\_vv pmf\_shake\_vv \\
 constraints\_rattle pmf\_rattle \\
-nvt\_h0\_scl npt\_h0\_scl nst\_h0\_scl \\
+nvt\_h0\_scl nvt\_g0\_scl npt\_h0\_scl nst\_h0\_scl \\
 nve\_0\_vv  nvt\_e0\_vv \\
-nvt\_l0\_vv nvt\_a0\_vv nvt\_b0\_vv nvt\_h0\_vv \\
+nvt\_l0\_vv nvt\_a0\_vv nvt\_b0\_vv nvt\_h0\_vv nvt\_g0\_vv \\
 npt\_l0\_vv npt\_b0\_vv npt\_h0\_vv npt\_m0\_vv \\
 nst\_l0\_vv nst\_b0\_vv nst\_h0\_vv nst\_m0\_vv \\
+nvt\_h1\_scl nvt\_g1\_scl npt\_h1\_scl nst\_h1\_scl \\
 nve\_1\_vv  nvt\_e1\_vv \\
-nvt\_l1\_vv nvt\_a1\_vv nvt\_b1\_vv nvt\_h1\_vv \\
+nvt\_l1\_vv nvt\_a1\_vv nvt\_b1\_vv nvt\_h1\_vv nvt\_g1\_vv \\
 npt\_l1\_vv npt\_b1\_vv npt\_h1\_vv npt\_m1\_vv \\
 nst\_l1\_vv nst\_b1\_vv nst\_h1\_vv nst\_m1\_vv \\
 md\_vv}
@@ -264,10 +265,10 @@ md\_vv}
 pseudo\_lfv \\
 constraints\_shake\_lfv pmf\_shake\_lfv \\
 nve\_0\_lfv nvt\_e0\_lfv \\
-nvt\_l0\_lfv nvt\_a0\_lfv nvt\_b0\_lfv nvt\_h0\_lfv \\
+nvt\_l0\_lfv nvt\_a0\_lfv nvt\_b0\_lfv nvt\_h0\_lfv nvt\_g0\_lfv \\\
 npt\_l0\_lfv npt\_b0\_lfv npt\_h0\_lfv npt\_m0\_lfv \\
 nst\_l0\_lfv nst\_b0\_lfv nst\_h0\_lfv nst\_m0\_lfv \\
-nvt\_l1\_lfv nvt\_a1\_lfv nvt\_b1\_lfv nvt\_h1\_lfv \\
+nvt\_l1\_lfv nvt\_a1\_lfv nvt\_b1\_lfv nvt\_h1\_lfv nvt\_g1\_lfv \\\
 npt\_l1\_lfv npt\_b1\_lfv npt\_h1\_lfv npt\_m1\_lfv \\
 nst\_l1\_lfv nst\_b1\_lfv nst\_h1\_lfv nst\_m1\_lfv \\
 md\_lfv}
@@ -277,9 +278,9 @@ md\_lfv}
 {\sc mpif.h mpi\_module ewald\_spme\_forc$_{\verb"~"}$s}
 
 \end{itemize}
-The files in each group are listed in hierarchial order as closely
+The files in each group are listed in hierarchal order as closely
 as possible.  The further down the list the file, the more dependent
-it is on the files listed above it.  The same hierarchial order is
+it is on the files listed above it.  The same hierarchal order is
 followed in the makefiles (see Appendix \ref{makefiles}).
 
 It is worth noting that the files {\sc replay\_history.f90 md\_vv.f90 md\_lfv mpif.h}

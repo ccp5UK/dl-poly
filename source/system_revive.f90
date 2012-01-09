@@ -9,7 +9,7 @@ Subroutine system_revive                                            &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith december 1992
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov january 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -276,6 +276,20 @@ Subroutine system_revive                                            &
            Write(Unit=nrest, Fmt=forma, Advance='No') fpl(1:9)
         Else
            Write(Unit=nrest) fpl(1:9)
+        End If
+     End If
+  End If
+
+  If (mxnode > 1) Call gsync()
+
+! Write Langevin process gaussian variable if needed
+
+  If (l_gst) Then
+     If (idnode == 0) Then
+        If (l_rout) Then
+           Write(Unit=nrest, Fmt=forma, Advance='No') r_0
+        Else
+           Write(Unit=nrest) r_0
         End If
      End If
   End If

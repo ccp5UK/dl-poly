@@ -143,7 +143,7 @@ Contains
 
   Subroutine initialize_fft( n_dims, lengths, proc_grid, my_grid_pos, Block, communicator, context )
 
-    ! This initializes things like the comms pattern and trigs
+    ! This initialises things like the comms pattern and trigs
     ! data for the FFT.
 
     Implicit None

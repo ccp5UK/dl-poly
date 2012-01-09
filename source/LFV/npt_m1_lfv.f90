@@ -23,7 +23,7 @@ Subroutine npt_m1_lfv                          &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith february 2009
-! amended   - i.t.todorov august 2011
+! amended   - i.t.todorov january 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -526,7 +526,7 @@ Subroutine npt_m1_lfv                          &
   chip2=0.0_wp
 
   chit1 = chit + tstep*(-ceng)/qmass
-  chip1 = (chip + tstep*((2.0_wp*(1.0_wp+factor)*engke-virtot-vircom) - 3.0_wp*press*vzero)/pmass)
+  chip1 = chip + tstep*((2.0_wp*(1.0_wp+factor)*engke-virtot-vircom) - 3.0_wp*press*vzero)/pmass
 
   chit2 = 0.5_wp*(chit+chit1)
   chip2 = 0.5_wp*(chip+chip1)
@@ -770,8 +770,9 @@ Subroutine npt_m1_lfv                          &
 ! (vircon,virpmf,chit2,chip2 are freshly new here!!!)
 
         chit1 = chit + tstep*(2.0_wp*(engke+engrot)+pmass*chip2**2-ceng)/qmass
-        chip1 = (chip + tstep*((2.0_wp*(1.0_wp+factor)*engke-virtot-vircon-virpmf-vircom) - &
-                               3.0_wp*press*vzero)/pmass)*Exp(-tstep*chit2)
+        chip1 = chip*Exp(-tstep*chit2) +                                             &
+                tstep*( (2.0_wp*(1.0_wp+factor)*engke-virtot-vircon-virpmf-vircom) - &
+                       3.0_wp*press*vzero )/pmass
 
         chit2 = 0.5_wp*(chit+chit1)
         chip2 = 0.5_wp*(chip+chip1)

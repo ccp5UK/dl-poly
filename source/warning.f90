@@ -57,6 +57,19 @@ Subroutine warning(kode,a,b,c)
         Write(nrite,'(/,1x,a,f12.4,a,/)') &
         '*** warning - non-zero total system charge: ', a, ' !!! ***'
 
+     Else If (kode ==   6) Then
+
+        ia = Nint(a)
+        ib = Nint(b)
+
+        Write(nrite,'(/,1x,a,2(i0,a),2(/,a),a,/)')                         &
+        '*** warning - maximum length of linked cell list: ', ia,          &
+        ' is less thanmaximum length of particle exclusion list: ',        &
+        ib, ' !!! ***',                                                    &
+        '*** this may be due to using too short a cutoff in CONTROL ',     &
+        'and/or a badly defined intramolecular topology in FIELD !!! ***', &
+        '*** further potential problems may be expected !!! ***'
+
      Else If (kode ==   7) Then
 
         Write(nrite,'(/,1x,a,f12.6,a,/,1x,a,/)')                    &

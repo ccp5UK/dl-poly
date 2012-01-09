@@ -7,7 +7,7 @@ Module setup_module
 ! set @ execution time
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov december 2011
 !
 ! Note(1): The following internal units apply everywhere
 !
@@ -128,7 +128,7 @@ Module setup_module
     mxtdih,mxdihd,mxfdih,mxpdih,mxtinv,mxinv,mxfinv,mxpinv,     &
     mxgrid,mxrdf,mxgrdf,mxvdw,mxpvdw,mxmet,mxpmet,mxter,mxpter, &
     mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,mxpfld,             &
-    mxstak,mxnstk,mxlist,mx_two,mxcell,mxatms,mxatdm,mxbuff
+    mxstak,mxnstk,mxlist,mxcell,mxatms,mxatdm,mxbuff
 
 ! zero+ and half- :: defined in set_bounds
 

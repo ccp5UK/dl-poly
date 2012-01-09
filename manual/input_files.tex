@@ -64,7 +64,7 @@ in a particular order.  Although this order is not mandatory, it
 is highly recommended.
 
 \begin{verbatim}
-TITLE RECORD: DL_POLY_3 SAFE ORDER OF CONTROL DIRECTIVES
+TITLE RECORD: DL_POLY_4 SAFE ORDER OF CONTROL DIRECTIVES
 
 # SYSTEM REPLICATION & IMPACT OPTION
 nfold              10 10 10
@@ -496,10 +496,6 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> with Fennell \cite{fennell-06} damping (Ewald-like convergence) \\
 \>                                              \> parameter $\alpha$ in \AA$^{-1}$ \\
 \>                                              \> \\
-\> {\bf reaction} (field) {\bf precision} $f$   \> calculate electrostatic forces using reaction field\index{reaction field} electrostatics\index{potential!electrostatics} \\
-\>                                              \> with Fennell \cite{fennell-06} damping (Ewald-like) automatic parameter \\
-\>                                              \> optimisation ($10^{-20}~\le~f~\le~0.5$, default $f~=~10^{-20}$) \\
-\>                                              \> \\
 \> {\bf regaus}s (every) $n$                    \> resample the instantaneous system momenta distribution \\
 \>                                              \> every $n$ steps during equilibration \\
 \>                                              \> (with respect to the last equilibration step) \\
@@ -538,10 +534,6 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf shift damp} $\alpha$                    \> calculate electrostatic forces using force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
 \>                                              \> with Fennell \cite{fennell-06} damping (Ewald-like convergence) \\
 \>                                              \> parameter $\alpha$ in \AA$^{-1}$ \\
-\>                                              \> \\
-\> {\bf shift precision} $f$                    \> calculate electrostatic forces using force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
-\>                                              \> with Fennell \cite{fennell-06} damping (Ewald-like) automatic parameter \\
-\>                                              \> optimisation ($10^{-20}~\le~f~\le~0.5$, default $f~=~10^{-20}$) \\
 \>                                              \> \\
 \> {\bf slab}                                   \> limits the number of processors in z-direction to 2 \\
 \>                                              \> for slab simulations \\
@@ -2236,11 +2228,11 @@ allocate (additional) potential arrays for fictitious interactions
 that will not be used.  (This option is not available in DL\_POLY\_Classic.)
 
 {\bf Note} that {\bf rdf} and {\bf vdw/met} are not complementary -
-i.e. if the former is used none of the pairs defined by the latter
-will be considered for RDF calculations.
+i.e. if the former is used in FILED none of the pairs defined by the
+latter will be considered for RDF calculations.
 
-The selected RDFs are calculated in the {\sc rdf\_collect} by
-collecting distance information from all two-body pairs as encountered
+The selected RDFs are calculated in the {\sc rdf\_collect} and {\sc rdf\_excl\_collect}
+by collecting distance information from all two-body pairs as encountered
 in the Verlet neighbour list created in the {\sc link\_cell\_pairs}
 routine within the {\sc two\_body\_forces} routine.  In the
 construction of the Verlet neighbour list, pairs of particles
@@ -2537,7 +2529,7 @@ The REVOLD file is unformatted.  All variables appearing are
 written in native working precision (see Section
 \ref{ewald-precision}) real representation. Nominally, integer
 quantities (e.g. the timestep number {\tt nstep}) are represented
-by the the nearest real number.  The contents are as follows (the
+by the nearest real number.  The contents are as follows (the
 dimensions of array variables are given in brackets, in terms of
 parameters from the {\sc setup\_module} file - see Section
 \ref{parameters}).

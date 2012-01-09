@@ -139,7 +139,7 @@ Subroutine statistics_result            &
 ! print out average pressure tensor
 
   If (idnode == 0) Then
-     Write(nrite,"(/,/,16x,'Average pressure tensor  (katms)',30x,'r.m.s. fluctuations ',/)")
+     Write(nrite,"(/,/,16x,'Average pressure tensor  (katms)',30x,'r.m.s. fluctuations',/)")
 
      Do i=iadd,iadd+6,3
         Write(nrite,'(9x,1p,3e12.4,24x,3e12.4)') (sumval(i+j),j = 1,3),(ssqval(i+j),j = 1,3)

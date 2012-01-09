@@ -130,7 +130,7 @@ Subroutine defects_link_cells &
 ! (nlx+1,nly+1,nly+1) right-most link-cell on the domain (halo)
 !***************************************************************
 ! Note: Due to numerical inaccuracy it is possible that some
-! domain particles (1,na) may have like-cell space
+! domain particles (1,na) may have link-cell space
 ! coordinates in the halo / at least one coordinate as shown
 ! (nlx+1,nly+1,nlz+1)^(0,0,0) / as well as halo particles
 ! (na+1,nl) may have link-cell coordinates in the domain

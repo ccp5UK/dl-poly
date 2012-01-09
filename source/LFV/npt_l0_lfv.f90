@@ -18,7 +18,7 @@ Subroutine npt_l0_lfv                                  &
 !            J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov january 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -63,7 +63,7 @@ Subroutine npt_l0_lfv                                  &
   Real( Kind = wp )       :: chip1,chip2
   Real( Kind = wp )       :: vzero
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
-                             scale,vom(1:3),sclv,sclf
+                             scale,vom(1:3),sclv,sclf,fex
 
 
   Logical,           Allocatable :: lstitr(:)
@@ -259,13 +259,15 @@ Subroutine npt_l0_lfv                                  &
 
   engke=getkin(uxt,uyt,uzt)
 
+  fex=Exp(-tstep*tai)
+
 ! propagate chip set and couple
 ! (vircon,virpmf,chip2 are zero!!!)
 ! augment vir to include the random force on the barostat
 
   chip2=0.0_wp
-  chip1 = (chip + tstep*((2.0_wp*(1.0_wp+factor)*engke-virtot) + &
-                         3.0_wp*fpl(1) - 3.0_wp*press*vzero)/pmass)*Exp(-tstep*tai)
+  chip1 = chip*fex + tstep*( (2.0_wp*(1.0_wp+factor)*engke-virtot) + &
+                            3.0_wp*fpl(1) - 3.0_wp*press*vzero )/pmass
   chip2 = 0.5_wp*(chip+chip1)
 
 ! iterate forces, vircon, virpmf and chip
@@ -406,8 +408,8 @@ Subroutine npt_l0_lfv                                  &
 ! (volm=vzero, vircon,virpmf,chip2 are freshly new here!!!)
 ! augment vir to include the random force on the barostat
 
-        chip1 = (chip + tstep*((2.0_wp*(1.0_wp+factor)*engke-virtot-vircon-virpmf) + &
-                               3.0_wp*fpl(1) - 3.0_wp*press*vzero)/pmass)*Exp(-tstep*tai)
+        chip1 = chip*fex + tstep*( (2.0_wp*(1.0_wp+factor)*engke-virtot-vircon-virpmf) + &
+                                  3.0_wp*fpl(1) - 3.0_wp*press*vzero )/pmass
         chip2 = 0.5_wp*(chip+chip1)
 
      End If

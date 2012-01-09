@@ -948,14 +948,6 @@ This should never happen!
 
 Report to authors.
 
-\subsubsection*{\underline{Message 90}: error - fluctuations in the total number of frozen particles}
-
-This should never happen!
-
-\noindent \underline{\em Action}:
-
-Big trouble.  Report to authors.
-
 \subsubsection*{\underline{Message 91}: error - unidentified atom in four-body potential list}
 
 The specification of a four-body\index{potential!four-body}
@@ -2522,6 +2514,14 @@ a system of CBs (3 per RB) which has not been run in a high enough
 SHAKE/RATTLE tolerance accuracy (10\^-8 and higher may be needed).
 Check the definition of the rigid unit in the CONFIG file,
 if sensible report the error to the authors.
+
+\subsubsection*{\underline{Message 655}: error - FENE bond breaking failure}
+
+A FENE type bond was broken.
+
+\noindent \underline{\em Action}:
+
+Examine FIELD for erroneous directives, if any, correct and resubmit.
 
 \subsubsection*{\underline{Message 1000}: error - working precision mismatch between FORTRAN90 and MPI implementation}
 

@@ -125,7 +125,7 @@ is accomplished by the following scheme:
 \item Every atom (site) in the simulated system is assigned a
 unique `global' index number from $1$ to $N$.
 \item Every processor maintains a list of the local indices of
-the the atoms in its domain.  (This is the local atom list.)
+the atoms in its domain.  (This is the local atom list.)
 \item Every processor also maintains a sorted (in ascending order)
 local list of global atom indices of the atoms in its domain.
 (This is the local sorted atom list.)
@@ -192,7 +192,7 @@ pairs can only interact if they are in the same link cell, or are
 in link cells that share a common face.  Thus using the link cell
 `address' of each atom, interacting pairs are located easily and
 efficiently via the `link list' that identifies the atoms in each
-link cell.  So efficient is this process that the the link list
+link cell.  So efficient is this process that the link list
 can be recreated every time step at negligible cost.
 
 For reasons, partly historical, the link list is used to construct
@@ -264,9 +264,9 @@ outlined above, since the real space interactions are now short
 ranged (implemented in {\sc ewald\_real\_forces} routine).
 
 The reciprocal space component is calculated using Fast Fourier
-Transform (FFT) scheme of the SMPE method \cite{essmann-95a,bush-06a},
-Section \ref{SPME}.  The parallelisation of this scheme is entirely
-handled within the \D by the 3D FFT routine {\sc parallel\_fft},
+Transform (FFT) scheme of the SMPE method \cite{essmann-95a,bush-06a} as
+discussed in Section \ref{SPME}.  The parallelisation of this scheme is
+entirely handled within the \D by the 3D FFT routine {\sc parallel\_fft},
 (using {\sc gpfa\_module}) which is known as the Daresbury advanced
 Fourier Transform, due to I.J. Bush \cite{bush-00a}.  This routine
 distributes the SPME charge array over the processors in a manner
@@ -339,7 +339,7 @@ processors which manage the domains in contact with its own.
 The receiving processor compares the incoming list with its own and
 keeps a record of the shared atoms and the processors which share
 them.
-\item In the first stage of the the algorithms, the atoms
+\item In the first stage of the algorithms, the atoms
 are updated through the usual Verlet\index{algorithm!Verlet}
 algorithm, without regard to the bond
 constraints\index{constraints!bond}.

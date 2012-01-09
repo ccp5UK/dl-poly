@@ -3,16 +3,16 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for calculating tersoff forces (energy and
-! virial) arising from the tersoff potential(s) as defined by
+! virial) arising from the tersoff potential as defined by
 ! J. Tersoff, Phys. Rev. B 39 (1989) 5566
 !
 ! Note: coordinates are converted to reduced units to avoid a call to
-! images. The link cell algorithm used here necessitates a
+! images.  The link cell algorithm used here necessitates a
 ! parallelepiped cell geometry.
 !
 ! copyright - daresbury laboratory
-! author    - w.smith october 2004
-! amended   - i.t.todorov august 2008
+! author    - w.smith  october 2004
+! amended   - i.t.todorov january 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -36,22 +36,22 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Real( Kind = wp ), Save :: sidex,sidey,sidez,rdr
 
 ! flag for undefined potentials NOT NEEDED HERE YET
-  Logical           :: lx0,lx1,ly0,ly1,lz0,lz1 !,safe
+  Logical           :: lx0,lx1,ly0,ly1,lz0,lz1,flag3 !,safe
 
-  Integer           :: fail(1:5),                      &
+  Integer           :: fail(1:6),                      &
                        i,j,k, ii,jj,kk,ll,             &
                        nbx,nby,nbz, ncells,            &
                        ix,iy,iz,icell, jx,jy,jz,jcell, &
                        iatm,jatm,katm, iter,jter,kter, &
                        ijter,ikter,limit
 
-  Real( Kind = wp ) :: dispx,dispy,dispz, xdc,ydc,zdc,               &
-                       rcell(1:9),celprp(1:10),det,                  &
-                       sxij,syij,szij,                               &
-                       gk0,gk1,gk2,vk0,vk1,vk2,                      &
-                       t1,t2,ppp,bi,ei,ci,di,hi,gtheta,cost,         &
-                       eterm,vterm,gterm,gamma,gam_ij,gam_j,gam_k,   &
-                       fxa,fya,fza, fxc,fyc,fzc,                     &
+  Real( Kind = wp ) :: dispx,dispy,dispz, xdc,ydc,zdc,             &
+                       rcell(1:9),celprp(1:10),det,                &
+                       sxij,syij,szij,                             &
+                       gk0,gk1,gk2,vk0,vk1,vk2,                    &
+                       t1,t2,ppp,bi,ei,ci,di,hi,gtheta,cost,       &
+                       eterm,vterm,gterm,gamma,gam_ij,gam_j,gam_k, &
+                       fxa,fya,fza, fxc,fyc,fzc,                   &
                        strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:2)
 
 ! Number of neighbouring cells to look around for counting tersoff
@@ -70,14 +70,15 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
   Real( Kind = wp ), Dimension( : ), Allocatable :: xtf,ytf,ztf,rtf
   Real( Kind = wp ), Dimension( : ), Allocatable :: ert,eat,grt,gat
-  Real( Kind = wp ), Dimension( : ), Allocatable :: scr,gcr,gam,gvr
+  Real( Kind = wp ), Dimension( : ), Allocatable :: scr,gcr,gam,gvr,cst
 
   fail=0
   Allocate (link(1:mxatms),listin(1:mxatms),lct(1:mxcell),lst(1:mxcell), Stat=fail(1))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
-  Allocate (xtf(1:mxatms),ytf(1:mxatms),ztf(1:mxatms),rtf(1:mxatms),     Stat=fail(3))
-  Allocate (ert(1:mxatms),eat(1:mxatms),grt(1:mxatms),gat(1:mxatms),     Stat=fail(4))
-  Allocate (scr(1:mxatms),gcr(1:mxatms),gam(1:mxatms),gvr(1:mxatms),     Stat=fail(5))
+  Allocate (xtf(1:mxlist),ytf(1:mxlist),ztf(1:mxlist),rtf(1:mxlist),     Stat=fail(3))
+  Allocate (ert(1:mxlist),eat(1:mxlist),grt(1:mxlist),gat(1:mxlist),     Stat=fail(4))
+  Allocate (scr(1:mxlist),gcr(1:mxlist),                                 Stat=fail(5))
+  Allocate (cst(1:mxlist),gam(1:mxlist),gvr(1:mxlist),                   Stat=fail(6))
 
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'tersoff_forces allocation failure, node: ', idnode
@@ -183,7 +184,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 ! (nbx+3,nby+3,nby+3) right-most link-cell on the domain
 !***************************************************************
 ! Note: Due to numerical inaccuracy it is possible that some
-! domain particles (1,natms) may have like-cell space
+! domain particles (1,natms) may have link-cell space
 ! coordinates in the inner-most layer of the double link-cell
 ! halo / at least one coordinate as shown (nbx+2,nby+2,nbz+2)^
 ! (1,1,1) / as well as particles (natms+1,nlast) from the inner-
@@ -522,6 +523,10 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
                           If (rtf(jj) <= vmbp(1,ijter,1)) Then
 
+! triplet occurrence flag
+
+                             flag3=.false.
+
 ! potential energy and virial terms
 
                              vterm=0.0_wp
@@ -530,6 +535,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 ! initialise work arrays
 
                              Do kk=1,limit
+                                cst(kk)=0.0_wp
                                 gam(kk)=0.0_wp
                                 gvr(kk)=0.0_wp
                              End Do
@@ -560,14 +566,17 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
            If (lfrzn(iatm)*lfrzn(jatm)*lfrzn(katm) == 0) Then
 
+              flag3 = .true.
+
 ! bond-angle is detected, force and virial parameters calculation
 
-              cost  = (xtf(jj)*xtf(kk)+ytf(jj)*ytf(kk)+ztf(jj)*ztf(kk))
+              cost  = xtf(jj)*xtf(kk)+ytf(jj)*ytf(kk)+ztf(jj)*ztf(kk)
               If (Abs(cost) > 1.0_wp) cost=Sign(1.0_wp,cost)
               gtheta= 1.0_wp + (ci/di)**2 - ci**2 / (di**2 + (hi-cost)**2)
               eterm = eterm + gtheta*prmter2(ikter,2)*scr(kk) !SUM of L_{ij}
               vterm = vterm + gtheta*prmter2(ikter,2)*gcr(kk)*rtf(kk) !SUM of d/dr_i of L_{ij} - first part, i.e. no angular part so it is used in the virial
 
+              cst(kk) = cost
               gam(kk) = gtheta
               gvr(kk) = 2.0_wp * ci**2 * (hi-cost) / (di**2 + (hi-cost)**2)**2 ! d(gtheta)/sint*d(theta)
 
@@ -580,26 +589,22 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   End Do
 
 ! calculate contribution to energy, virial, two-body stress and forces
-! (all associated with the head atom) and add a factor of 0.5_wp
+! (all associated with the head atom) and put a factor of 0.5_wp
 ! to correct for the double counting
 
   gam_ij=prmter2(ijter,1)
   gamma=0.0_wp
-  If (eterm > zero_plus) Then
+  If (flag3) Then
      gam_ij = gam_ij*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei) ! gamma_{ij}
      gamma  = 0.5_wp * prmter2(ijter,1) * bi * (bi*eterm)**(ei-1.0_wp) * &
               eat(jj) * (1.0_wp + (bi*eterm)**ei)**(-0.5_wp/ei - 1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
   End If
 
-! if two-body interaction is opted out
-
-  If (Nint(prmter2(ijter,3)) == 1) gam_ij=gam_ij-prmter2(ijter,1)
-
   gterm=(grt(jj)-gam_ij*gat(jj)) ! force_ij (no three body part)
 
   If (iatm <= natms) Then
 
-     engter = engter + 0.5_wp*(ert(jj) - gam_ij*eat(jj)) ! energy_ij/2 (double counting)
+     engter = engter + 0.5_wp*(ert(jj) - gam_ij*eat(jj))    ! energy_ij/2 (double counting)
      virter = virter + 0.5_wp*(gamma*vterm + gterm*rtf(jj)) ! virial_ij (double counting)
 
      fxx(iatm)=fxx(iatm)+0.5_wp*gterm*xtf(jj)
@@ -653,8 +658,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
 ! calculate contribution to atomic forces
 
-              cost=(xtf(jj)*xtf(kk)+ytf(jj)*ytf(kk)+ztf(jj)*ztf(kk))
-              If (Abs(cost) > 1.0_wp) cost=Sign(1.0_wp,cost)
+              cost=cst(kk)
 
               fxa = gam_j*(xtf(kk)-xtf(jj)*cost)/rtf(jj) ! contributions from k to i and j
               fya = gam_j*(ytf(kk)-ytf(jj)*cost)/rtf(jj)
@@ -749,7 +753,8 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Deallocate (xxt,yyt,zzt,         Stat=fail(2))
   Deallocate (xtf,ytf,ztf,rtf,     Stat=fail(3))
   Deallocate (ert,eat,grt,gat,     Stat=fail(4))
-  Deallocate (scr,gcr,gam,gvr,     Stat=fail(5))
+  Deallocate (scr,gcr,             Stat=fail(5))
+  Deallocate (cst,gam,gvr,         Stat=fail(6))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'tersoff_forces deallocation failure, node: ', idnode
      Call error(0)

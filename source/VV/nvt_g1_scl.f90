@@ -1,20 +1,19 @@
-Subroutine nvt_h1_scl &
-           (tstep,ceng,qmass,pmass,chip, &
-           vxx,vyy,vzz,                  &
-           rgdvxx,rgdvyy,rgdvzz,         &
-           rgdoxx,rgdoyy,rgdozz,         &
+Subroutine nvt_g1_scl &
+           (tstep,ceng,qmass,temp,gama,r_0,pmass,chip, &
+           vxx,vyy,vzz,                                &
+           rgdvxx,rgdvyy,rgdvzz,                       &
+           rgdoxx,rgdoyy,rgdozz,                       &
            chit,cint,engke,engrot)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 routine to integrate and apply NVT Nose-Hoover thermostat
-! when singled RBs are present
+! with a Langevin process when singled RBs are present
 !
 ! Note: coupling to NPT barostat included as factor=pmass*chip^2
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2008
-! amended   - w.smith january 2010
+! author    - i.t.todorov january 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,6 +26,7 @@ Subroutine nvt_h1_scl &
   Implicit None
 
   Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
+                                                               temp,gama,r_0,    &
                                                                pmass,chip
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
   Real( Kind = wp ), Dimension( 1:mxrgd ),  Intent( InOut ) :: rgdvxx,rgdvyy,rgdvzz
@@ -35,7 +35,7 @@ Subroutine nvt_h1_scl &
   Real( Kind = wp ),                        Intent(   Out ) :: engke,engrot
 
   Integer           :: i,j,irgd
-  Real( Kind = wp ) :: engkf,engkt,hstep,qstep,factor,scale
+  Real( Kind = wp ) :: engkf,engkt,hstep,qstep,factor,scale,fex
 
 
 ! timestep derivative and factor
@@ -57,9 +57,12 @@ Subroutine nvt_h1_scl &
 
   engrot=getknr(rgdoxx,rgdoyy,rgdozz)
 
+  fex=Exp(-gama*hstep)
+
 ! update chit to 1/2*tstep
 
-  chit=chit + hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
+  chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*temp/qmass)*r_0 + &
+       hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
 
 ! update chi(=cint) to 3/4*tstep
 
@@ -93,10 +96,11 @@ Subroutine nvt_h1_scl &
 
 ! update chit to full (2/2)*tstep
 
-  chit=chit + hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
+  chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*temp/qmass)*r_0 + &
+       hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
 
 ! update chi(=cint) to 4/4*tstep
 
   cint=cint + qstep*chit
 
-End Subroutine nvt_h1_scl
+End Subroutine nvt_g1_scl

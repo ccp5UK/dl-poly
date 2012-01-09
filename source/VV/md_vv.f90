@@ -160,6 +160,16 @@
            megpmf,strpmf,virpmf,                           &
            sigma,taut,chit,cint,consv)
 
+           Else If (keyens == 14) Then
+
+! Gentle-Stochastic thermostat
+
+              Call nvt_g0_vv                                    &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,            &
+           megpmf,strpmf,virpmf,                                &
+           sigma,taut,gama,chit,cint,consv)
+
            Else If (keyens == 20) Then
 
 ! Langevin thermostat and isotropic barostat
@@ -341,6 +351,19 @@
            megpmf,strpmf,virpmf,              &
            strcom,vircom)
 
+           Else If (keyens == 14) Then
+
+! Gentle-Stochastic thermostat
+
+              Call nvt_g1_vv                       &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep, &
+           sigma,taut,gama,chit,cint,consv,        &
+           strkin,strknf,strknt,engke,engrot,      &
+           imcon,mxshak,tolnce,                    &
+           megcon,strcon,vircon,                   &
+           megpmf,strpmf,virpmf,                   &
+           strcom,vircom)
+
            Else If (keyens == 20) Then
 
 ! Langevin thermostat and isotropic barostat
@@ -509,7 +532,7 @@
 
 100  Continue ! Only used when relaxed is false
 
-! Initialize force arrays and stress tensor (these are all additive
+! Initialise force arrays and stress tensor (these are all additive
 ! in the force subroutines)
 
      fxx = 0.0_wp
@@ -765,6 +788,16 @@
            megpmf,strpmf,virpmf,                           &
            sigma,taut,chit,cint,consv)
 
+           Else If (keyens == 14) Then
+
+! Gentle-Stochastic thermostat
+
+              Call nvt_g0_vv                                    &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,            &
+           megpmf,strpmf,virpmf,                                &
+           sigma,taut,gama,chit,cint,consv)
+
            Else If (keyens == 20) Then
 
 ! Langevin thermostat and isotropic barostat
@@ -944,6 +977,19 @@
            imcon,mxshak,tolnce,               &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
+           strcom,vircom)
+
+           Else If (keyens == 14) Then
+
+! Gentle-Stochastic thermostat
+
+              Call nvt_g1_vv                       &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep, &
+           sigma,taut,gama,chit,cint,consv,        &
+           strkin,strknf,strknt,engke,engrot,      &
+           imcon,mxshak,tolnce,                    &
+           megcon,strcon,vircon,                   &
+           megpmf,strpmf,virpmf,                   &
            strcom,vircom)
 
            Else If (keyens == 20) Then

@@ -1385,7 +1385,7 @@ Subroutine jacobi(n,aaa,vvv)
   End Do
   test=Sqrt(2.0_wp*test)
 
-! Initialize eigenvectors
+! Initialise eigenvectors
 
   vvv=0.0_wp
   Do i=1,n

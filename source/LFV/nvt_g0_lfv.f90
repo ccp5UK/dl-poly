@@ -1,21 +1,20 @@
-Subroutine npt_m0_lfv                                  &
-           (lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,   &
-           megpmf,strpmf,virpmf,                       &
-           degfre,sigma,taut,chit,cint,consv,          &
-           press,taup,chip,eta,virtot,                 &
-           elrc,virlrc)
+Subroutine nvt_g0_lfv                                       &
+           (lvar,mndis,mxdis,mxstp,temp,tstep,strkin,engke, &
+           imcon,mxshak,tolnce,megcon,strcon,vircon,        &
+           megpmf,strpmf,virpmf,                            &
+           sigma,taut,gama,chit,cint,consv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for integrating newtonian equations of motion in
-! molecular dynamics - leapfrog verlet with Nose-Hoover thermostat and
-! barostat (isotropic pressure control) and MTK coupling (symplectic)
+! molecular dynamics - leapfrog verlet with gentle ergodic thermostat -
+! a Nose-Hoover thermostat chained to a Langevin thermostat
 !
-! isotropic cell fluctuations
+! reference1: B. Leimkuhler, E. Noorizadeh, F. Theil
+!             J. Stat. Phys. (2009) 135: 261–277
 !
-! reference: Martyna, Tuckerman, Tobias, Klein
-!            Mol. Phys., 1996, Vol. 87 (5), p. 1117
+! reference2: A. Samoletov, M.A.J. Chaplain, C.P. Dettmann
+!             J. Stat. Phys. (2007) 128, 1321–1336
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov january 2012
@@ -23,17 +22,18 @@ Subroutine npt_m0_lfv                                  &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,   Only : idnode,mxnode,gmax
+  Use comms_module,    Only : idnode,mxnode,gmax,gsum
   Use setup_module
-  Use site_module,    Only : ntpatm,dens,ntpshl,unqshl
-  Use config_module,  Only : cell,volm,natms,lfrzn,atmnam,weight, &
-                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use kinetic_module, Only : getvom,getkin,kinstress
+  Use site_module,     Only : ntpshl,unqshl
+  Use config_module,   Only : natms,atmnam,weight, &
+                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use langevin_module, Only : r_0
+  Use kinetic_module,  Only : getkin,kinstress
 
   Implicit None
 
   Logical,           Intent( In    ) :: lvar
-  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
+  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp,temp
   Real( Kind = wp ), Intent( InOut ) :: tstep
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
@@ -42,28 +42,19 @@ Subroutine npt_m0_lfv                                  &
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon,strpmf(1:9),virpmf
 
-  Integer(Kind=ip),  Intent( In    ) :: degfre
-  Real( Kind = wp ), Intent( In    ) :: sigma,taut
+  Real( Kind = wp ), Intent( In    ) :: sigma,taut,gama
   Real( Kind = wp ), Intent( InOut ) :: chit,cint
   Real( Kind = wp ), Intent(   Out ) :: consv
-  Real( Kind = wp ), Intent( In    ) :: press,taup
-  Real( Kind = wp ), Intent( InOut ) :: chip
-  Real( Kind = wp ), Intent(   Out ) :: eta(1:9)
-  Real( Kind = wp ), Intent( In    ) :: virtot
-  Real( Kind = wp ), Intent( InOut ) :: elrc,virlrc
 
 
   Logical,           Save :: newjob = .true.
   Logical                 :: safe,lv_up,lv_dn
   Integer,           Save :: mxiter,mxkit
-  Integer                 :: fail(1:10),iter,kit,i
-  Real( Kind = wp ), Save :: cell0(1:9),volm0,elrc0,virlrc0
-  Real( Kind = wp ), Save :: qmass,ceng,pmass,factor
-  Real( Kind = wp )       :: hstep,rstep
-  Real( Kind = wp )       :: chit1,chit2,chip1,chip2
-  Real( Kind = wp )       :: vzero
-  Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
-                             scale,vom(1:3)
+  Integer                 :: fail(1:9),iter,kit,i
+  Real( Kind = wp ), Save :: qmass,ceng
+  Real( Kind = wp )       :: hstep,rstep,uni
+  Real( Kind = wp )       :: chit1,chit2
+  Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,fex
 
 
   Logical,           Allocatable :: lstitr(:)
@@ -77,29 +68,25 @@ Subroutine npt_m0_lfv                                  &
   Real( Kind = wp ), Allocatable :: xxt(:),yyt(:),zzt(:)
   Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
   Real( Kind = wp ), Allocatable :: fxt(:),fyt(:),fzt(:)
-  Real( Kind = wp ), Allocatable :: uxt(:),uyt(:),uzt(:)
-
-  Real( Kind = wp ), Allocatable, Save :: dens0(:)
 
   fail=0
   If (megcon > 0 .or. megpmf > 0) Then
-     Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
+     Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
      If (megcon > 0) Then
-        Allocate (lstopt(0:2,1:mxcons),listot(1:mxatms),          Stat=fail( 2))
-        Allocate (dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons),      Stat=fail( 3))
+        Allocate (lstopt(0:2,1:mxcons),listot(1:mxatms),          Stat=fail(2))
+        Allocate (dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons),      Stat=fail(3))
      End If
      If (megpmf > 0) Then
-        Allocate (indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf), Stat=fail( 4))
-        Allocate (pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf),         Stat=fail( 5))
+        Allocate (indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf), Stat=fail(4))
+        Allocate (pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf),         Stat=fail(5))
      End If
   End If
-  Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),            Stat=fail( 6))
-  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail( 7))
-  Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail( 8))
-  Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail( 9))
-  Allocate (uxt(1:mxatms),uyt(1:mxatms),uzt(1:mxatms),            Stat=fail(10))
+  Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),            Stat=fail(6))
+  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail(7))
+  Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail(8))
+  Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(9))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'npt_m0 allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'nvt_g0 allocation failure, node: ', idnode
      Call error(0)
   End If
 
@@ -107,33 +94,14 @@ Subroutine npt_m0_lfv                                  &
   If (newjob) Then
      newjob = .false.
 
-! store initial values of volume, long range corrections and density
-
-     cell0   = cell
-     volm0   = volm
-     elrc0   = elrc
-     virlrc0 = virlrc
-
-     Allocate (dens0(1:mxatyp), Stat=fail(1))
-     If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'dens0 allocation failure, node: ', idnode
-        Call error(0)
-     End If
-     Do i=1,ntpatm
-        dens0(i) = dens(i)
-     End Do
-
-! inertia parameters for Nose-Hoover thermostat and barostat
+! inertia parameter for Nose-Hoover thermostat
 
      qmass = 2.0_wp*sigma*taut**2
-     tmp   = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-     ceng  = 2.0_wp*sigma + boltz*tmp
-     pmass = (2.0_wp*sigma + 3.0_wp*boltz*tmp)*taup**2
-     factor= 3.0_wp/Real(degfre,wp)
+     ceng  = 2.0_wp*sigma
 
 ! set number of constraint+pmf shake iterations and general iteration cycles
 
-     mxiter=7
+     mxiter=3
      If (megcon > 0 .or.  megpmf > 0) Then
         mxkit=1
         mxiter=mxiter+1
@@ -153,6 +121,18 @@ Subroutine npt_m0_lfv                                  &
 ! for iterative PMF constraint algorithms
 
      If (megpmf > 0) Call pmf_tags(imcon,lstitr,indpmf,pxx,pyy,pzz)
+  End If
+
+! generate a Gaussian random number for use in the
+! Langevin process on the thermostat friction
+
+  r_0=-6.0_wp
+  Do i=1,12
+     r_0=r_0+uni()
+  End Do
+  If (mxnode > 1) Then
+     Call gsum(r_0)
+     r_0=r_0/Sqrt(Real(mxnode,wp))
   End If
 
 ! timestep derivatives
@@ -180,10 +160,6 @@ Subroutine npt_m0_lfv                                  &
      fzt(i) = fzz(i)
   End Do
 
-! store temporary volume
-
-  vzero=volm
-
 100 Continue
 
 ! constraint virial and stress tensor
@@ -206,9 +182,9 @@ Subroutine npt_m0_lfv                                  &
 ! estimate velocity at full step
 
         tmp=hstep/weight(i)
-        uxt(i)=vxt(i)+tmp*fxt(i)
-        uyt(i)=vyt(i)+tmp*fyt(i)
-        uzt(i)=vzt(i)+tmp*fzt(i)
+        oxt(i)=vxt(i)+tmp*fxt(i)
+        oyt(i)=vyt(i)+tmp*fyt(i)
+        ozt(i)=vzt(i)+tmp*fzt(i)
 
 ! first estimate of new velocities - no thermostat
 
@@ -217,61 +193,43 @@ Subroutine npt_m0_lfv                                  &
         vyy(i)=vyt(i)+tmp*fyt(i)
         vzz(i)=vzt(i)+tmp*fzt(i)
 
-! first estimate of new positions
-
-        xxx(i)=xxt(i)+tstep*vxx(i)
-        yyy(i)=yyt(i)+tstep*vyy(i)
-        zzz(i)=zzt(i)+tstep*vzz(i)
-
-! first estimate of position at half step
-
-        oxt(i)=0.5_wp*(xxt(i)+xxx(i))
-        oyt(i)=0.5_wp*(yyt(i)+yyy(i))
-        ozt(i)=0.5_wp*(zzt(i)+zzz(i))
-
      Else
 
-        uxt(i)=0.0_wp
-        uyt(i)=0.0_wp
-        uzt(i)=0.0_wp
+        oxt(i)=0.0_wp
+        oyt(i)=0.0_wp
+        ozt(i)=0.0_wp
 
      End If
   End Do
 
 ! calculate kinetic energy
 
-  engke=getkin(uxt,uyt,uzt)
+  engke=getkin(oxt,oyt,ozt)
 
-! propagate chit and chip sets and couple
-! (vircon,virpmf,chit2,chip2 are zero!!!)
+! propagate chit set
 
-  chit2=0.0_wp
-  chip2=0.0_wp
-
-  chit1 = chit + tstep*(-ceng)/qmass
-  chip1 = chip + tstep*((2.0_wp*(1.0_wp+factor)*engke-virtot) - 3.0_wp*press*vzero)/pmass
-
+  fex=Exp(-gama*tstep)
+  chit1=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*temp/qmass)*r_0 + &
+        tstep*(2.0_wp*engke-ceng)/qmass
   chit2 = 0.5_wp*(chit+chit1)
-  chip2 = 0.5_wp*(chip+chip1)
 
-! iterate forces, vircon, virpmf, chit and chip
+! iterate chit and forces
 
   Do iter=1,mxiter
 
 ! update velocity and position using Nose-Hoover thermostating
-! and barostating in leapfrog verlet scheme
 
      Do i=1,natms
         If (weight(i) > 1.0e-6_wp) Then
            tmp=1.0_wp/weight(i)
 
-           vxx(i)=vxt(i)+tstep*(tmp*fxx(i)-(chit2+(1.0_wp+factor)*chip2)*uxt(i))
-           vyy(i)=vyt(i)+tstep*(tmp*fyy(i)-(chit2+(1.0_wp+factor)*chip2)*uyt(i))
-           vzz(i)=vzt(i)+tstep*(tmp*fzz(i)-(chit2+(1.0_wp+factor)*chip2)*uzt(i))
+           vxx(i)=vxt(i)+tstep*(tmp*fxx(i) - chit2*oxt(i))
+           vyy(i)=vyt(i)+tstep*(tmp*fyy(i) - chit2*oyt(i))
+           vzz(i)=vzt(i)+tstep*(tmp*fzz(i) - chit2*ozt(i))
 
-           xxx(i)=xxt(i)+tstep*(vxx(i)+chip1*oxt(i))
-           yyy(i)=yyt(i)+tstep*(vyy(i)+chip1*oyt(i))
-           zzz(i)=zzt(i)+tstep*(vzz(i)+chip1*ozt(i))
+           xxx(i)=xxt(i)+tstep*vxx(i)
+           yyy(i)=yyt(i)+tstep*vyy(i)
+           zzz(i)=zzt(i)+tstep*vzz(i)
         End If
      End Do
 
@@ -280,15 +238,6 @@ Subroutine npt_m0_lfv                                  &
      If (megcon > 0 .or. megpmf > 0) Then
         safe=.false.
         kit =0
-
-! update volume
-
-        volm=vzero*Exp(3.0_wp*tstep*chip1)
-
-! scale cell vectors - isotropic
-
-        scale=(volm/volm0)**(1.0_wp/3.0_wp)
-        cell=cell0*scale
 
 ! store integrated positions
 
@@ -367,37 +316,24 @@ Subroutine npt_m0_lfv                                  &
 ! calculate velocity at full step
 
      Do i=1,natms
-        uxt(i)=0.5_wp*(vxt(i)+vxx(i))
-        uyt(i)=0.5_wp*(vyt(i)+vyy(i))
-        uzt(i)=0.5_wp*(vzt(i)+vzz(i))
+        oxt(i)=0.5_wp*(vxt(i)+vxx(i))
+        oyt(i)=0.5_wp*(vyt(i)+vyy(i))
+        ozt(i)=0.5_wp*(vzt(i)+vzz(i))
      End Do
 
      If (iter < mxiter) Then
 
-! calculate position at half step
-
-        Do i=1,natms
-           oxt(i)=0.5_wp*(xxt(i)+xxx(i))
-           oyt(i)=0.5_wp*(yyt(i)+yyy(i))
-           ozt(i)=0.5_wp*(zzt(i)+zzz(i))
-        End Do
-
 ! calculate kinetic energy
 
-        engke=getkin(uxt,uyt,uzt)
+        engke=getkin(oxt,oyt,ozt)
 
-! propagate chit and chip sets and couple
-! (volm=vzero, vircon,virpmf,chit2,chip2 are freshly new here!!!)
+! propagate chit set
 
-        chit1 = chit + tstep*(2.0_wp*engke+pmass*chip2**2-ceng)/qmass
-        chip1 = chip*Exp(-tstep*chit2) +                                      &
-                tstep*( (2.0_wp*(1.0_wp+factor)*engke-virtot-vircon-virpmf) - &
-                       3.0_wp*press*vzero )/pmass
-
+        chit1=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*temp/qmass)*r_0 + &
+              tstep*(2.0_wp*engke-ceng)/qmass
         chit2 = 0.5_wp*(chit+chit1)
-        chip2 = 0.5_wp*(chip+chip1)
 
-    End If
+     End If
 
   End Do
 
@@ -417,7 +353,7 @@ Subroutine npt_m0_lfv                                  &
 
      If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
 
-! scale tstep
+! scale tstep and derivatives
 
         If (mxdr > mxdis) Then
            lv_up = .true.
@@ -463,91 +399,39 @@ Subroutine npt_m0_lfv                                  &
      End If
   End If
 
-! update volume and scale cell vectors - isotropic
-
-  If (megcon == 0 .and. megpmf == 0) Then
-     volm=vzero*Exp(3.0_wp*tstep*chip1)
-
-     scale=(volm/volm0)**(1.0_wp/3.0_wp)
-     cell=cell0*scale
-  End If
-
-! adjust long range corrections and number density
-
-  tmp=(volm0/volm)
-  elrc=elrc0*tmp
-  virlrc=virlrc0*tmp
-  Do i=1,ntpatm
-     dens(i)=dens0(i)*tmp
-  End Do
-
 ! update chit and cint (cint is at full timestep)
 
   chit=chit1
   cint=cint+tstep*chit2
 
-! update chip
-
-  chip=chip1
-
-! construct a 'mock' scaling tensor
-
-  Do i=2,8
-     eta(i)=0.0_wp
-  End Do
-  eta(1)=chip
-  eta(5)=chip
-  eta(9)=chip
-
 ! conserved quantity less kinetic and potential energy terms
 ! (it is at full timestep)
 
-  consv = 0.5_wp*qmass*chit2**2 + 0.5_wp*pmass*chip2**2 + ceng*cint + press*volm
-
-! remove system centre of mass velocity
-
-  Call getvom(vom,vxx,vyy,vzz)
-  Do i=1,natms
-     If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-        vxx(i)=vxx(i)-vom(1)
-        vyy(i)=vyy(i)-vom(2)
-        vzz(i)=vzz(i)-vom(3)
-     End If
-  End Do
-
-  Call getvom(vom,uxt,uyt,uzt)
-  Do i=1,natms
-     If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-        uxt(i)=uxt(i)-vom(1)
-        uyt(i)=uyt(i)-vom(2)
-        uzt(i)=uzt(i)-vom(3)
-     End If
-  End Do
+  consv = 0.5_wp*qmass*chit2**2 + ceng*cint
 
 ! update kinetic energy and stress at full step
 
-  Call kinstress(uxt,uyt,uzt,strkin)
+  Call kinstress(oxt,oyt,ozt,strkin)
   engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
   If (megcon > 0 .or. megpmf > 0) Then
-     Deallocate (lstitr,           Stat=fail( 1))
+     Deallocate (lstitr,           Stat=fail(1))
      If (megcon > 0) Then
-        Deallocate (lstopt,listot, Stat=fail( 2))
-        Deallocate (dxx,dyy,dzz,   Stat=fail( 3))
+        Deallocate (lstopt,listot, Stat=fail(2))
+        Deallocate (dxx,dyy,dzz,   Stat=fail(3))
      End If
      If (megpmf > 0) Then
-        Deallocate (indpmf,        Stat=fail( 4))
-        Deallocate (pxx,pyy,pzz,   Stat=fail( 5))
+        Deallocate (indpmf,        Stat=fail(4))
+        Deallocate (pxx,pyy,pzz,   Stat=fail(5))
      End If
   End If
-  Deallocate (oxt,oyt,ozt,         Stat=fail( 6))
-  Deallocate (xxt,yyt,zzt,         Stat=fail( 7))
-  Deallocate (vxt,vyt,vzt,         Stat=fail( 8))
-  Deallocate (fxt,fyt,fzt,         Stat=fail( 9))
-  Deallocate (uxt,uyt,uzt,         Stat=fail(10))
+  Deallocate (oxt,oyt,ozt,         Stat=fail(6))
+  Deallocate (xxt,yyt,zzt,         Stat=fail(7))
+  Deallocate (vxt,vyt,vzt,         Stat=fail(8))
+  Deallocate (fxt,fyt,fzt,         Stat=fail(9))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'npt_m0 deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'nvt_g0 deallocation failure, node: ', idnode
      Call error(0)
   End If
 
-End Subroutine npt_m0_lfv
+End Subroutine nvt_g0_lfv

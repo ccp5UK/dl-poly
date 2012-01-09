@@ -7,7 +7,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov may 2008
+! amended   - i.t.todorov january 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -169,7 +169,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! (nlx+1,nly+1,nly+1) right-most link-cell on the domain (halo)
 !***************************************************************
 ! Note(1): Due to numerical inaccuracy it is possible that some
-! domain particles (1,natms) may have like-cell space
+! domain particles (1,natms) may have link-cell space
 ! coordinates in the halo / at least one coordinate as shown
 ! (nlx+1,nly+1,nlz+1)^(0,0,0) / as well as halo particles
 ! (natms+1,nlast) may have link-cell coordinates in the domain
@@ -271,8 +271,8 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
 ! initialise verlet neighbourlist arrays
 
-!  list=0      ! (DEBUG)
-  list(0,:)=0 !  (FIRST DIMENSION ONLY)
+!  list=0         ! (DEBUG)
+  list(-2:0,:)=0 ! (COUNTING DIMENSIONS ONLY)
 
 ! initial values of control variables
 
@@ -392,19 +392,31 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
                                            End Do
                                         End If
 
-                                        If (linc) Then
-
 ! check for overfloat and add an entry
 
-                                           ll=list(0,i)+1
-                                           If (ll > mxlist) Then
-                                              ibig=Max(ibig,ll)
-                                              safe=.false.
+                                        ll=Max(list(0,i),list(-1,i))+1
+                                        If (ll > mxlist) Then
+                                           ibig=Max(ibig,ll)
+                                           safe=.false.
+                                        Else
+                                           If (linc) Then
+                                              list(0,i)=list(0,i)+1
+                                              If (list(-1,i) > 0) Then ! roll
+                                                 list(-1,i)=list(-1,i)+1
+                                                 list(list(-1,i),i)=list(list(0,i),i)
+                                              End If
+                                              list(list(0,i),i)=j
                                            Else
-                                              list(0,i)=ll
-                                              list(ll,i)=j
+                                              If      (list(-1,i) == 0) Then
+                                                 list(-1,i)=list(0,i)+1
+                                                 list(list(-1,i),i)=j
+                                              Else If (list(-1,i) >  0) Then
+                                                 list(-1,i)=list(-1,i)+1
+                                                 list(list(-1,i),i)=j
+                                              Else !If (list(-1,i) <  0) Then
+                                                 safe=.false.
+                                              End If
                                            End If
-
                                         End If
 
 ! end of if-block for cutoff criterion
@@ -462,6 +474,26 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! end of loop over passes
 
   End Do
+
+  If (megfrz > 1) Then
+     Do i=1,natms
+        If (list(-2,i) == 0) list(-2,i)=list(0,i) ! End of full non-repeatable half VNL (FNRH VNL)
+     End Do
+  Else
+     Do i=1,natms
+        list(-2,i)=list(0,i) ! End of full non-repeatable half VNL (FNRH VNL)
+     End Do
+  End If
+
+  If (lbook) Then
+     Do i=1,natms
+        If (list(-1,i) == 0) list(-1,i)=list(0,i) ! End of NFP FNRH VNL
+     End Do
+  Else
+     Do i=1,natms
+        list(-1,i)=list(0,i) ! End of NFP FNRH VNL
+     End Do
+  End If
 
 ! terminate job if neighbour list array exceeded
 
