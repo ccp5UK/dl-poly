@@ -993,7 +993,7 @@ an extension of the Nos\'e-Hoover algorithm \cite{hoover-85a}
 in which the thermostat friction, $\chi$, has its own Brownian dynamics:
 \begin{equation}
 {d \chi (t) \over dt} = \frac{2 E_{kin}(t) - 2 \sigma}{q_{mass}} - \gamma~\chi(t) +
-\frac{\sqrt{2~\gamma~k_{B}~T_{\rm ext}~q_{mass}}}{q_{mass}}~{d \omega(t) \over d t}~~,
+\frac{\sqrt{2~\gamma~k_{B}~T_{\rm ext}~q_{mass}}}{q_{mass}}~{d \omega(t) \over d t}~~, \label{Ornstein-Uhlenbeck}
 \end{equation}
 governed by the Langevin friction $\gamma$ (positive, in units of ps$^{-1}$),
 where $\omega(t)$ is the standard Brownian motion (Wiener process - {\tt Gauss}(0,1)),
@@ -1005,6 +1005,18 @@ is the thermostat mass, which depends on a specified time constant
 $\tau_{T}$ (for temperature fluctuations normally in the range [0.5,
 2] ps).
 
+It is worth noting that equation (\ref{Ornstein-Uhlenbeck}) similar
+to the Ornstein-Uhlenbeck equation:
+\begin{equation}
+{d \chi \over dt} = -\frac{\alpha\sigma^{2}}{2}\chi + \sigma {d \omega \over dt}~~,
+\end{equation}
+which for a given realization of the Wiener process $\omega(t)$ has
+exact solution:
+\begin{equation}
+\chi_{n+1} = e^{-\epsilon t} \left( \chi_{n} + \sigma
+\sqrt{\frac{e^{2~\epsilon t} - 1}{2 \epsilon}} \Delta \omega \right)~~,
+\end{equation}
+where $\epsilon = \alpha\sigma^{2}/2$ and $\Delta \omega \sim \mathcal{N}(0,1)$.
 The VV implementation of the Gentle Stochastic Thermostat algorithm
 takes place in a symplectic manner as follows:
 \begin{enumerate}

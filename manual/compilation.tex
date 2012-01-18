@@ -186,8 +186,8 @@ another file, allowing an easier following of the job progress over
 time.  This latter technique is also useful on interactive systems
 where simply printing to the screen could lead to large amounts of
 output.  However, such situations could be easily avoided by
-redirecting the output using the ">" symbol, for instance:
-"mpirun -n 4 DLPOLY.Z > OUTPUT".
+redirecting the output using the "$>$" symbol, for instance:
+"mpirun -n 4 DLPOLY.Z $>$ OUTPUT".
 
 It is also worth noting that the use of large batch and buffer
 numbers can speed up enormously the performance of the parallel I/O,
@@ -200,6 +200,9 @@ at large processor count jobs (over 1000).  However, this help comes
 at a price as larger batches and buffers also requires more memory.
 So at smaller processor counts the job will abort at the point of
 trying to use some of the allocated arrays responsible for these.
+
+More information about \D parallel I/O can be found in the following
+references \cite{todorov-09a,todorov-08a,bush-10a}.
 
 \subsection{Restarting}
 
