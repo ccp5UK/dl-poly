@@ -63,6 +63,7 @@ extern "C" __host__ void dl_poly_cuda_allocate_pinned_default(
 // to the device (to trap unimplemented functionality):
 
 static bool offload_link_cell_pairs   = false;
+static bool offload_link_cell_pairs_re = false;
 static bool offload_tbforces          = false;
 static bool offload_constraints_shake = false;
 static bool offload_metal_ld_compute  = false;
@@ -73,6 +74,7 @@ static bool offload_ewald_spme_forces_ccarray  = false;
 static bool offload_ewald_spme_forces_cccharge = false;
 
 extern "C" void dl_poly_cuda_offload_set(bool offload_link_cell_pairs_f90,
+                                         bool offload_link_cell_pairs_re_f90,
                                          bool offload_tbforces_f90,
                                          bool offload_constraints_shake_f90,
                                          bool offload_metal_ld_compute_f90,
@@ -85,6 +87,7 @@ extern "C" void dl_poly_cuda_offload_set(bool offload_link_cell_pairs_f90,
   // The offload_cuda array comes from the f90 subroutine
   // dl_poly_cuda_check_offload_conditions()
   offload_link_cell_pairs            = offload_link_cell_pairs_f90;
+  offload_link_cell_pairs_re         = offload_link_cell_pairs_re_f90;
   offload_tbforces                   = offload_tbforces_f90;
   offload_constraints_shake          = offload_constraints_shake_f90;
   offload_metal_ld_compute           = offload_metal_ld_compute_f90;
@@ -108,6 +111,12 @@ extern "C" __host__ int dl_poly_cuda_offload_tbforces() {
 
 extern "C" __host__ int dl_poly_cuda_offload_link_cell_pairs() {
   if (offload_link_cell_pairs)
+    return (sTRUE);
+  return (sFALSE);
+}
+
+extern "C" __host__ int dl_poly_cuda_offload_link_cell_pairs_re() {
+  if (offload_link_cell_pairs_re)
     return (sTRUE);
   return (sFALSE);
 }
