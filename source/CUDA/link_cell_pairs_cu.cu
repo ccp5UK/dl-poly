@@ -83,25 +83,51 @@ void link_cell_pairs_cuda_set_is_in_valid_context(int aIs) {
     exit(-1);                                                      \
   }
 
-template<typename T_> struct constant_data {
-  int mNATMS, mMXATMS, mNCELLS, mMXLIST, mNSBCLL, mNLP, mNLP3, mNLX, mNLY, mMXATDM;
-  int mMEGFRZ;
-  int mNLX_Plus_2xNLP, mNLY_Plus_2xNLP;
-  int3 mNLXYZ0E, mNLXYZ1S;
-  T_* mXXX, *mYYY, *mZZZ;
-  int *mLFRZN, *mAT_LIST, *mLCT_START;
-  T_ mRCSQ;
-  /* the ni{x,y,z} constants; the second half of the array holds the
-   * negated values.
-   */
-#define NLP3_MAX 14
-  int3 mNIXYZ[2*NLP3_MAX];
-  int *mLIST;
+//template<typename T_> struct constant_data {
+//  int mNATMS, mMXATMS, mNCELLS, mMXLIST, mNSBCLL, mNLP, mNLP3, mNLX, mNLY, mMXATDM;
+//  int mMEGFRZ;
+//  int mNLX_Plus_2xNLP, mNLY_Plus_2xNLP;
+//  int3 mNLXYZ0E, mNLXYZ1S;
+//  T_* mXXX, *mYYY, *mZZZ;
+//  int *mLFRZN, *mAT_LIST, *mLCT_START;
+//  T_ mRCSQ;
+//  /* the ni{x,y,z} constants; the second half of the array holds the
+//   * negated values.
+//   */
+//#define NLP3_MAX 14
+//  int3 mNIXYZ[2*NLP3_MAX];
+//  int *mLIST;
 
-  int  mMXEXCL;
+//  int  mMXEXCL;
+// int *mLTG;
+//  int *mLEXATM;
+//};
+
+//malysaght240112
+template<typename T_> struct constant_data {
+  T_ *mXXX, *mYYY, *mZZZ;
+
+  int *mLFRZN;
+  int *mAT_LIST, *mLCT_START;
+  int *mLIST;
   int *mLTG;
   int *mLEXATM;
+
+  int3 *mNIXYZ;
+
+  T_ mRCSQ;
+
+  int mNATMS, mMXATMS, mNCELLS, mMXLIST, mNSBCLL;
+  int mNLP, mNLP3, mNLX, mNLY, mMXATDM;
+  int mMEGFRZ;
+  int mNLX_Plus_2xNLP, mNLY_Plus_2xNLP;
+  int mMXEXCL;
+  int3 mNLXYZ0E, mNLXYZ1S;
 };
+//end_malysaght240112
+
+
+
 
 __device__ __constant__ constant_data<real> CONSTANT_DATA;
 static                  constant_data<real> sCD;
@@ -224,7 +250,14 @@ extern "C" void link_cell_pairs_cuda_initialise(
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mLFRZN,     sCD.mMXATMS*sizeof(int)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mAT_LIST,   sCD.mMXATMS*sizeof(int)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mLCT_START, (sCD.mNCELLS+1)*sizeof(int)));
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mLIST, (512 + (1+sCD.mMXLIST)*sCD.mMXATDM)*sizeof(int)));
+//  CUDA_SAFE_CALL(cudaMalloc(&sCD.mLIST, (512 + (1+sCD.mMXLIST)*sCD.mMXATDM)*sizeof(int)));
+//malysaght240112
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mLIST, (512 + (1+2+sCD.mMXLIST)*sCD.mMXATDM)*sizeof(int)));
+
+  /* ni{x,y,z} constants; the second half of this array holds the
+   * negated values. */
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mNIXYZ, 2*sCD.mNLP3*sizeof(int3)));
+
 
   if (sHD.mIsLBOOKTrue) {
     CUDA_SAFE_CALL(cudaMalloc(&sCD.mLTG, sCD.mMXATMS*sizeof(int)));
@@ -255,11 +288,28 @@ extern "C" void link_cell_pairs_cuda_initialise(
 			      (1+sCD.mMXEXCL)*sCD.mMXATDM*sizeof(int), cudaMemcpyHostToDevice));
   }
 
-  int lNLP3 = *aNLP3;
-  for (int lI=0 ; lI<lNLP3 ; lI++) {
-   sCD.mNIXYZ[lI]          = make_int3( aNIX[lI],  aNIY[lI],  aNIZ[lI]);
-   sCD.mNIXYZ[NLP3_MAX+lI] = make_int3(-aNIX[lI], -aNIY[lI], -aNIZ[lI]);
+//  int lNLP3 = *aNLP3;
+//  for (int lI=0 ; lI<lNLP3 ; lI++) {
+//   sCD.mNIXYZ[lI]          = make_int3( aNIX[lI],  aNIY[lI],  aNIZ[lI]);
+//   sCD.mNIXYZ[NLP3_MAX+lI] = make_int3(-aNIX[lI], -aNIY[lI], -aNIZ[lI]);
+//  }
+
+
+//malysaght240112
+  // Create a temporary NIXYZ array - the second half stores the negated values
+  int3 *lNIXYZ = (int3*) malloc(2*sCD.mNLP3*sizeof(int3));
+  for (int lI=0 ; lI < sCD.mNLP3 ; lI++) {
+    lNIXYZ[lI]           = make_int3( aNIX[lI],  aNIY[lI],  aNIZ[lI]);
+    lNIXYZ[sCD.mNLP3+lI] = make_int3(-aNIX[lI], -aNIY[lI], -aNIZ[lI]);
   }
+  cudaMemcpy(sCD.mNIXYZ, lNIXYZ, 2*sCD.mNLP3*sizeof(int3), cudaMemcpyHostToDevice);
+  free(lNIXYZ);
+//end_malysaght240112
+
+
+
+
+
   CUDA_SAFE_CALL(cudaMemcpyToSymbol(CONSTANT_DATA, (void*)&sCD, sizeof(constant_data<real>)));
   stop_timing_link_cell_pairs_cuda_write();
 	//printf ("Calling initialise \n");
@@ -281,6 +331,9 @@ extern "C" void link_cell_pairs_cuda_finalise() {
   CUDA_SAFE_CALL(cudaFree(sCD.mAT_LIST));
   CUDA_SAFE_CALL(cudaFree(sCD.mLCT_START));
   CUDA_SAFE_CALL(cudaFree(sCD.mLIST));
+//malysaght240112
+  CUDA_SAFE_CALL(cudaFree(sCD.mNIXYZ));
+//end_malysaght240112
 
   if (sHD.mIsLBOOKTrue) {
     CUDA_SAFE_CALL(cudaFree(sCD.mLTG));
@@ -315,7 +368,11 @@ template<typename T_> __global__ void link_cell_pairs_cuda_k0() {
    */
   int lIdx = 1 + blockIdx.x*blockDim.x + threadIdx.x;
   while (lIdx<=CONSTANT_DATA.mMXATDM) {
-    *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 0, lIdx) = (T_)0;
+    *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0, lIdx) = (T_)0;
+//malysaght240112
+    *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 1, lIdx) = (T_)0;
+    *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 2, lIdx) = (T_)0;
+//end_malysaght240112
     lIdx += blockDim.x*gridDim.x;
   }
 }
@@ -334,6 +391,7 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
   lBlockIdx.z = blockIdx.x / (aDims.x*aDims.y);
 
   int lMEGFRZ = CONSTANT_DATA.mMEGFRZ;
+  int lNLP3   = CONSTANT_DATA.mNLP3;
 
   // compute i{x,y,z}, then i{x,y,z}{1,2}, from the blockIdx vector:
   int3 lIXYZ  = CONSTANT_DATA.mNLXYZ0E + 1 + lBlockIdx;
@@ -358,7 +416,9 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
 
     if (lI>= aIATMBegin && lI <= CONSTANT_DATA.mNATMS) {
       if (threadIdx.x==0) {
-        shared[threadIdx.z] = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 0, lI);
+//malysaght240112
+        shared[threadIdx.z] = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0+2, lI);
+//end_malysaght240112
       }
 
       if (BX_>32) __syncthreads();
@@ -368,7 +428,8 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
       T_  aYYY_I   = fetch_real_1d(TEXTURE_DATA_YYY, lI-1);//CONSTANT_DATA.mYYY[lI - 1];
       T_  aZZZ_I   = fetch_real_1d(TEXTURE_DATA_ZZZ, lI-1);//CONSTANT_DATA.mZZZ[lI - 1];
 
-      int lOff = (IPASS_-1)*NLP3_MAX;
+//      int lOff = (IPASS_-1)*NLP3_MAX;
+      int lOff = (IPASS_-1)*lNLP3;
 
       for (int lKK = IPASS_ + threadIdx.y ; lKK <= CONSTANT_DATA.mNSBCLL ; lKK += BY_) {
         int3 lNIXYZ = CONSTANT_DATA.mNIXYZ[lOff+lKK-1];
@@ -387,7 +448,9 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
             int lJ     = jjresult(lJJ, lMEGFRZ, aLFRZN_I, aXXX_I, aYYY_I, aZZZ_I);
             if (lJ != -1) {
               int lSlot = atomicAdd(&shared[threadIdx.z], 1);
-              *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 1+lSlot, lI) = lJ;
+///malysaght240112
+              *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 1+2+lSlot, lI) = lJ;
+///end_malysaght240112
             }
           }
         }
@@ -396,7 +459,9 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
       if (BX_>32) __syncthreads();
 
       if (threadIdx.x==0) {
-          *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 0, lI) = shared[threadIdx.z];
+//malysaght240112
+          *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0+2, lI) = shared[threadIdx.z];
+//end_malysaght240112
       }
     }
   }
@@ -427,20 +492,24 @@ extern "C" void link_cell_pairs_cuda_pull_lists(int aLastIteration) {
 
   if (lHostATMs==0) {
     start_timing_link_cell_pairs_cuda_read();
-    CUDA_SAFE_CALL(cudaMemcpy(F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1), 0, 1),
-                              F2D_ADDRESS(sCD.mLIST, 0, 1, (sCD.mMXLIST+1), 0, 1),
-                              aLastIteration*(1+sCD.mMXLIST)*sizeof(int),
+//malysaght240112
+    CUDA_SAFE_CALL(cudaMemcpy(F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1+2), 0, 1),
+                              F2D_ADDRESS(sCD.mLIST, 0, 1, (sCD.mMXLIST+1+2), 0, 1),
+                              aLastIteration*(1+2+sCD.mMXLIST)*sizeof(int),
                               cudaMemcpyDeviceToHost));
+//end_malysaght240112
     stop_timing_link_cell_pairs_cuda_read();
   } else {
     if (sHD.mSparseDataTransfers) {
       link_cell_pairs_sparseListTransfer_any(lHostATMs+1, aLastIteration - lHostATMs);
     } else {
       start_timing_link_cell_pairs_cuda_read();
-      CUDA_SAFE_CALL(cudaMemcpy(F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1), 0, lHostATMs+1),
-                                F2D_ADDRESS(sCD.mLIST, 0, 1, (sCD.mMXLIST+1), 0, lHostATMs+1),
-                                (aLastIteration - lHostATMs)*(1+sCD.mMXLIST)*sizeof(int),
+//malysaght240112
+      CUDA_SAFE_CALL(cudaMemcpy(F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1+2), 0, lHostATMs+1),
+                                F2D_ADDRESS(sCD.mLIST, 0, 1, (sCD.mMXLIST+1+2), 0, lHostATMs+1),
+                                (aLastIteration - lHostATMs)*(1+2+sCD.mMXLIST)*sizeof(int),
                                 cudaMemcpyDeviceToHost));
+//end_malysaght240112
       stop_timing_link_cell_pairs_cuda_read();
     }
   }
@@ -459,10 +528,12 @@ extern "C" void link_cell_pairs_cuda_push_lists(int aFirstIteration) {
 
   start_timing_link_cell_pairs_cuda_write();
 
-  CUDA_SAFE_CALL(cudaMemcpy(F2D_ADDRESS(sCD.mLIST, 0, 1, (sCD.mMXLIST+1), 0, aFirstIteration),
-                            F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1), 0, aFirstIteration),
-                            (lHostATMs - aFirstIteration + 1)*(1+sCD.mMXLIST)*sizeof(int),
+//malysaght240112
+  CUDA_SAFE_CALL(cudaMemcpy(F2D_ADDRESS(sCD.mLIST, 0, 1, (sCD.mMXLIST+1+2), 0, aFirstIteration),
+                            F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1+2), 0, aFirstIteration),
+                            (lHostATMs - aFirstIteration + 1)*(1+2+sCD.mMXLIST)*sizeof(int),
                             cudaMemcpyHostToDevice));
+//end_malysaght240112
   stop_timing_link_cell_pairs_cuda_write();
 }
 
@@ -470,7 +541,9 @@ extern "C" void link_cell_pairs_cuda_push_lists(int aFirstIteration) {
 __global__ void link_cell_pairs_sparse_list_transfer_reorder(int aIATM_Begin, int aN, int *aOUT_Lengths) {
 
   for (int lI=blockIdx.x*blockDim.x + threadIdx.x ; lI<aN ; lI += gridDim.x*blockDim.x) {
-    aOUT_Lengths[lI] = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 0, aIATM_Begin+lI);
+//malysaght240112
+    aOUT_Lengths[lI] = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0+2, aIATM_Begin+lI);
+//end_malysaght240112
   }
 
 }
@@ -522,7 +595,7 @@ __global__ void link_cell_pairs_sparse_list_transfer_pack(int aIATM_Begin, int a
     for (int lJ=threadIdx.x ; lJ<lLength ; lJ+=blockDim.x) {
 
       aOUT_PackedLists[lPB_Offset + lJ] =
-          *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 1+lJ, aIATM_Begin+lI);
+          *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 1+2+lJ, aIATM_Begin+lI); //malysaght240112
     }
   }
 }
@@ -542,9 +615,11 @@ extern "C" void link_cell_pairs_sparseListTransfer_any(int aIATM_Begin, int aN) 
     lN -= lK;
 
     if (lN<=2048) { // contiguous strategy:
-      CUDA_SAFE_CALL(cudaMemcpy(F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1), 0, aIATM_Begin + lOffset),
-                                F2D_ADDRESS(sCD.mLIST, 0, 1, (sCD.mMXLIST+1), 0, aIATM_Begin + lOffset),
-                                lN*(1+sCD.mMXLIST)*sizeof(int), cudaMemcpyDeviceToHost));
+//malysaght240112
+      CUDA_SAFE_CALL(cudaMemcpy(F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1+2), 0+2, aIATM_Begin + lOffset),
+                                F2D_ADDRESS(sCD.mLIST, 0, 1, (sCD.mMXLIST+1+2), 0+2, aIATM_Begin + lOffset),
+                                lN*(1+sCD.mMXLIST+2)*sizeof(int), cudaMemcpyDeviceToHost));
+//end_malysaght240112
       break;
     }
   }
@@ -662,10 +737,13 @@ extern "C" void link_cell_pairs_sparseListTransfer(int aIATM_Begin, int aN) {
     int lOffset = lI==0 ? 0 : lHST_Lengths[lI-1];
     int lLength = lHST_Lengths[lI] - lOffset;
 
-    *F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1), 0, aIATM_Begin+lI) = lLength;
+//malysaght240112
+    *F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1+2), 0+2, aIATM_Begin+lI) = lLength;
+//end_malysaght240112
 
     if (lLength>0) {
-      __builtin_memcpy(F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1), 1, aIATM_Begin+lI),
+//malysaght240112
+      __builtin_memcpy(F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1+2), 1+2, aIATM_Begin+lI),
 	     lHST_PackedLists+lOffset,
 	     lLength*sizeof(int));
     }
@@ -680,13 +758,14 @@ extern "C" void link_cell_pairs_push_the_lists_back_if_necessary(int aIATM_DevBe
   /* If the various forces are executed exclusively on the host,
    * move the lists to host memory.
    */
-  if (!dl_poly_cuda_offload_tbforces()) {
+  if (!dl_poly_cuda_offload_tbforces() || !dl_poly_cuda_offload_link_cell_pairs_re() ) {
     start_timing_link_cell_pairs_cuda_read();
-
-    CUDA_SAFE_CALL(cudaMemcpy(F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1), 0, aIATM_DevBegin),
-                              F2D_ADDRESS(sCD.mLIST, 0, 1, (sCD.mMXLIST+1), 0, aIATM_DevBegin),
-                              (sCD.mNATMS-aHostATMs)*(1+sCD.mMXLIST)*sizeof(int),
+//malysaght240112
+    CUDA_SAFE_CALL(cudaMemcpy(F2D_ADDRESS(sHD.mLIST, 0, 1, (sCD.mMXLIST+1+2), 0, aIATM_DevBegin),
+                              F2D_ADDRESS(sCD.mLIST, 0, 1, (sCD.mMXLIST+1+2), 0, aIATM_DevBegin),
+                              (sCD.mNATMS-aHostATMs)*(1+2+sCD.mMXLIST)*sizeof(int),
                               cudaMemcpyDeviceToHost));
+//end_malysaght240112
 
     stop_timing_link_cell_pairs_cuda_read();
   }
@@ -854,7 +933,8 @@ extern "C" void link_cell_pairs_cuda_invoke() {
      * for link_cell_pairs_cuda_invoke_remove_exclusions_(..) invocation
      * time.
      */
-    if (!sHD.mIsLBOOKTrue) {
+//malysaght240112
+    if (!sHD.mIsLBOOKTrue || !dl_poly_cuda_offload_link_cell_pairs_re()) {
       link_cell_pairs_push_the_lists_back_if_necessary(lIATM_DevBegin, lHostATMs);
     }
 
@@ -881,6 +961,7 @@ void link_cell_pairs_cuda_invoke_remove_exclusions(int aI) {
    */
   extern __shared__ int shared[];
 
+
   for (int lI=aI+blockIdx.y ; lI<=CONSTANT_DATA.mNATMS ; lI+= GY_) {
     int lII = *F2D_ADDRESS(CONSTANT_DATA.mLEXATM, 0, 1, (CONSTANT_DATA.mMXEXCL+1), 0, lI);
     if (lII<=0)
@@ -897,11 +978,18 @@ void link_cell_pairs_cuda_invoke_remove_exclusions(int aI) {
     }
 
     if (BX_>32) __syncthreads();
+//malysaght240112
+    int lLL=*F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 2, lI);
+    // note : Filling in list(-1,i)
+    *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 1, lI)=lLL;
 
-    int lLL=*F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 0, lI);
+
+//end_malysaght240112
 
     for (int lKK=1+threadIdx.x ; lKK<=lLL ; lKK+=BX_) {
-      int lJATM = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), lKK, lI);
+//malysaght240112
+      int lJATM = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), lKK+2, lI);
+//end_malysaght240112
       /* This acecss here is expensive; what happens is because the items in
        * lexatm use global identifiers, and "jatm" is a local identifier, a
        * translation is necessary (ltg=local-to-global).
@@ -943,7 +1031,9 @@ void link_cell_pairs_cuda_invoke_remove_exclusions(int aI) {
      */
     if (shared[0]<lLL) {
       for (int lU=threadIdx.x ; lU<=shared[0] ; lU+=BX_) {
-        *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), lU, lI)= shared[lU];
+//malysaght240112
+        *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), lU+2, lI)= shared[lU];
+//end_malysaght240112
       }
     }
   }
@@ -997,7 +1087,7 @@ __global__ void link_cell_pairs_cuda_invoke_find_max_list_length(int aI, int aIE
 
   int lMax=0;
   for (int lI=aI+threadIdx.x ; lI<=aIEnd ; lI+=BX_) {
-    int lNextLIMIT = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 0, lI);
+    int lNextLIMIT = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0+2, lI);
     lMax = max(lMax, lNextLIMIT);
   }
   shared[threadIdx.x] = lMax;
@@ -1013,7 +1103,7 @@ __global__ void link_cell_pairs_cuda_invoke_sort_atoms(int aI, int aIEnd) {
   extern __shared__ int shared[];
 
   for (int lI=aI+blockIdx.y ; lI<=aIEnd ; lI+=gridDim.y) {
-    int lLIMIT = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 0, lI);
+    int lLIMIT = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0+2, lI);
     if (lLIMIT<=16) // mealingless for half-warp work (or less)
       continue;
 
@@ -1022,7 +1112,7 @@ __global__ void link_cell_pairs_cuda_invoke_sort_atoms(int aI, int aIEnd) {
     for (int lU=1+threadIdx.x ; lU<=lNUM ; lU+=BX_) {
       if (lU<=lLIMIT)
         shared[lU-1] =
-            *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), lU, lI);
+            *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), lU+2, lI);
       else
         shared[lU-1] = INT_MAX;
     }
@@ -1061,7 +1151,7 @@ __global__ void link_cell_pairs_cuda_invoke_sort_atoms(int aI, int aIEnd) {
 
     __syncthreads();
     for (int lU=1+threadIdx.x ; lU<=lLIMIT ; lU+=BX_) {
-      *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), lU, lI) = shared[lU-1];
+      *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), lU+2, lI) = shared[lU-1];
     }
     __syncthreads();
   }
