@@ -57,7 +57,7 @@ template<typename T_> struct complex {
 must be set to 1.3 or greater in Makefile"
 #endif
 
-#define CFG_OVERLAP_WITH_HOST        1
+#define CFG_OVERLAP_WITH_HOST        0
 
 /* For testing purposes only -- forces those who include dl_poly_cuda_common.cu
  * to use macros/functions that do not guarantee multiply-add separation.
@@ -143,6 +143,7 @@ extern "C" int dl_poly_cuda_is_cuda_capable();
 extern "C" int dl_poly_cuda_is_cuda_capable();
 extern "C" int dl_poly_cuda_offload_tbforces();
 extern "C" int dl_poly_cuda_offload_link_cell_pairs();
+extern "C" int dl_poly_cuda_offload_link_cell_pairs_re();
 extern "C" int dl_poly_cuda_offload_ewald_spme_forces();
 extern "C" int dl_poly_cuda_offload_spme_forces();
 extern "C" int dl_poly_cuda_offload_metal_ld_compute();
