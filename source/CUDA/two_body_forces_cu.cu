@@ -370,7 +370,7 @@ extern "C" void two_body_forces_cuda_initialise(
     sHD.mFreeList = 0;
   } else {
     // note: +512 is headroom space
-    CUDA_SAFE_CALL(cudaMalloc((void**)&sCD.mLIST, (512+lMXATDM*(1+sCD.mMXLIST))*sizeof(int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&sCD.mLIST, (512+lMXATDM*(1+2+sCD.mMXLIST))*sizeof(int)));
     sHD.mFreeList = 1;
   }
 
@@ -426,7 +426,7 @@ extern "C" void two_body_forces_cuda_initialise(
   CUDA_SAFE_CALL(cudaMemcpy(sCD.mZZZ, aZZZ, sCD.mMXATMS*sizeof(real), cudaMemcpyHostToDevice));
 
   if (!sHD.mIsListAlreadyOnline) {
-    CUDA_SAFE_CALL(cudaMemcpy(sCD.mLIST, aLIST, lMXATDM*(1+sCD.mMXLIST)*sizeof(int), cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(sCD.mLIST, aLIST, lMXATDM*(1+2+sCD.mMXLIST)*sizeof(int), cudaMemcpyHostToDevice));
     sHD.mIsListAlreadyOnline = 1;
   }
 
@@ -524,7 +524,8 @@ extern "C" void two_body_forces_cuda_finalise() {
 template<typename T_> __device__ void obtain_iatm_specific(
   int aIATM, T_& aXXX_I, T_& aYYY_I, T_& aZZZ_I, int& aLIMIT, int& aIDI) {
 
-  aLIMIT = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 0, aIATM);
+  aLIMIT = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0+2, aIATM);
+
 
   if (aLIMIT > 0) {
     aXXX_I = CONSTANT_DATA.mXXX[aIATM-1];
@@ -922,7 +923,7 @@ __global__ void two_body_forces_cuda_k1(int aUnroll, int aIATM_Begin, T_ *aOUT, 
 
       for (int lTIdx = threadIdx.x ; lTIdx<lLIMIT ; lTIdx+=BX_) {
         T_ lFX_J=0, lFY_J=0, lFZ_J=0;
-        int lJATM = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 1+lTIdx, lIATM);
+        int lJATM = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 1+lTIdx+2, lIATM);
         int lIDJ;
         T_ lXDF, lYDF, lZDF, lRSQDF;
 
@@ -1074,9 +1075,9 @@ __global__ void two_body_forces_cuda_k2(int lIATM_Begin, int lUnroll, T_ *aIN, i
 
   T_ *lOUT = aOUT + blockIdx.x*CONSTANT_DATA.mMXATMS + blockIdx.y*3*CONSTANT_DATA.mMXATMS;
 
-  int *lListBaseAddress = F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 0, lIATM_Begin+blockIdx.y);
+  int *lListBaseAddress = F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0+2, lIATM_Begin+blockIdx.y);
 
-  for (int lI=blockIdx.y ; lI<lUnroll ; lI+=gridDim.y, lListBaseAddress+=gridDim.y*(CONSTANT_DATA.mMXLIST+1)) {
+  for (int lI=blockIdx.y ; lI<lUnroll ; lI+=gridDim.y, lListBaseAddress+=gridDim.y*(CONSTANT_DATA.mMXLIST+1+2)) {
     int   lLIMIT   = lListBaseAddress[0];
     real *lIN_Base = aIN + lI*lIN_StripeSizeInItems + 3 + blockIdx.x*CFG_MAX_LIMIT;
 
@@ -1095,7 +1096,7 @@ __global__ void two_body_forces_cuda_k2(int lIATM_Begin, int lUnroll, T_ *aIN, i
   if (BX_>32) __syncthreads();
 
   for (int lI=blockIdx.y+threadIdx.x*gridDim.y ; lI<lUnroll ; lI+=BX_*gridDim.y) {
-    if ((*F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 0, lIATM_Begin+lI))>0) {
+    if ((*F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0+2, lIATM_Begin+lI))>0) {
       T_ lV = aIN[lI*lIN_StripeSizeInItems + blockIdx.x];
       if (lV != (T_)0)
         lOUT[lIATM_Begin+lI-1] += lV;
@@ -1112,10 +1113,10 @@ __global__ void two_body_forces_cuda_k2_debug
     (int lIATM_Begin, int lUnroll, T_ *aIN, int lIN_StripeSizeInItems, T_ *aOUT) {
 
   for (int lI=lIATM_Begin ; lI<=lIATM_Begin+lUnroll-1 ; lI++) {
-    int lLIMIT = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 0, lI);
+    int lLIMIT = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0+2, lI);
 
     if (threadIdx.x<lLIMIT) {
-      int lJATM = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 1+threadIdx.x, lI);
+      int lJATM = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 1+2+threadIdx.x, lI);
       aOUT[blockIdx.x*CONSTANT_DATA.mMXATMS + lJATM -1] +=
           aIN[(lI-lIATM_Begin)*lIN_StripeSizeInItems + 3 + blockIdx.x*CFG_MAX_LIMIT + threadIdx.x];
 
