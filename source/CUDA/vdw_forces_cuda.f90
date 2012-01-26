@@ -22,7 +22,7 @@ Subroutine vdw_forces_helper &
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: rvdw
-  Real( Kind = wp ), Dimension( 1:mx_two ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
   Real( Kind = wp ),                        Intent(   Out ) :: engvdw,virvdw
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
   Real( Kind = wp ),                        Intent( In    ) :: dlrpot,rdr,rcsq
@@ -224,7 +224,7 @@ Subroutine vdw_forces &
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: rvdw
-  Real( Kind = wp ), Dimension( 1:mx_two ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
 	Real( Kind = wp ),                        Intent( Out   ) :: engvdw,virvdw
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
