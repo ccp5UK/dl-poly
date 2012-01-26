@@ -107,7 +107,7 @@ OBJ_ALL = \
 	metal_ld_export.o metal_ld_set_halo.o \
 	exchange_grid.o \
 	coul_dddp_forces.o coul_cp_forces.o coul_fscp_forces.o \
-	coul_rfp_forces.o rdf_collect.o rdf_collect_excl.o ewald_excl_forces.o \
+	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o ewald_excl_forces.o \
 	ewald_frozen_forces.o \
 	tersoff_forces.o three_body_forces.o four_body_forces.o \
 	core_shell_forces.o tethers_forces.o \
