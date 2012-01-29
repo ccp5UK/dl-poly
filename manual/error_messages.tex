@@ -1470,11 +1470,16 @@ Simulate a larger system or reduce the number of constraints.
 
 \subsubsection*{\underline{Message 360}: error - degrees of freedom distribution problem}
 
-This should not happen.
+This should never happen for a dynamically sensical system.  This
+error arises if a model system contains one or more free, zero mass
+particles.  Zero mass (mass-less) particles/sites are only allowed for
+shells in core-shell units and as part of rigid bodies (mass-less but
+charged RB sites).
 
 \noindent \underline{\em Action}:
 
-Report problem to authors immediately.
+Inspect your FIELD to find and correct the erroneous entries,
+and try again.
 
 \subsubsection*{\underline{Message 380}: error - simulation temperature not specified or $< 1$ K}
 

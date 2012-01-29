@@ -119,8 +119,8 @@ Subroutine set_temperature            &
 
   tmp=0.0_wp
   Do i=1,natms
-  If (dofsit(lsite(i)) > zero_plus) & ! Omit shells' negative DoFs
-     tmp=tmp+dofsit(lsite(i))
+     If (dofsit(lsite(i)) > zero_plus) & ! Omit shells' negative DoFs
+        tmp=tmp+dofsit(lsite(i))
   End Do
   If (mxnode > 1) Call gsum(tmp)
   If (Nint(tmp,ip)-non-com /= degfre) Call error(360)

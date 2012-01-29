@@ -394,7 +394,7 @@ Subroutine read_field                      &
                           wgtsit(nsite)=weight
                           chgsit(nsite)=charge
                           frzsit(nsite)=ifrz
-                          If (wgtsit(nsite) > 1.0E-6_wp) dofsit(nsite)=3.0_wp*Real(Abs(1-ifrz),wp)
+                          If (wgtsit(nsite) > 1.0e-6_wp) dofsit(nsite)=3.0_wp*Real(Abs(1-ifrz),wp)
                        End Do
 
 ! establish list of unique atom types

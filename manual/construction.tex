@@ -201,15 +201,19 @@ routines listed and described in Chapter \ref{integration-algorithms}.
 As mentioned elsewhere, \D does not contain many routines for
 computing system properties during a simulation.  Radial
 distributions may be calculated however, by using the routines
-{\sc rdf\_collect} and {\sc rdf\_compute}.  Similarly, Z-density
-distribution may be calculated by using the routines
-{\sc z\_density\_collect} and {\sc z\_density\_compute}.  Ordinary
-thermodynamic quantities are calculated by the routine
+{\sc rdf\_collect}, {\sc rdf\_excl\_collect} and {\sc rdf\_compute}.
+Similarly, Z-density distribution may be calculated by using the
+routines {\sc z\_density\_collect} and {\sc z\_density\_compute}.
+Ordinary thermodynamic quantities are calculated by the routine
 {\sc statistics\_collect}, which also writes the STATIS file (Section
 \ref{statis-file}).  Routine {\sc trajectory\_write} writes the
 HISTORY (Section \ref{history-file}) file for later (postmortem)
 analysis.  Routine {\sc defects\_write} writes the DEFECTS (Section
-\ref{defects-file}) file for later (postmortem) analysis.
+\ref{defects-file}) file for later (postmortem) analysis.  Routine
+{\sc msd\_write} writes the MSDTMP (Section \ref{msdtmp-file})
+file for later (postmortem) analysis.  Routine {\sc rsd\_write}
+writes the RSDDAT (Section \ref{rsddat-file}) file for later
+(postmortem) analysis.
 
 Job termination is handled by the routine {\sc statistics\_result}
 which writes the final summaries in the OUTPUT file and dumps the
