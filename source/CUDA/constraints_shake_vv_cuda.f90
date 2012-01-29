@@ -12,7 +12,7 @@ Subroutine constraints_shake_vv        &
 !       VV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov november 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -46,7 +46,7 @@ Subroutine constraints_shake_vv        &
 
   Integer,           Intent( In    ) :: imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
-  Integer,           Intent( In    ) :: lstopt(1:2,1:mxcons)
+  Integer,           Intent( In    ) :: lstopt(0:2,1:mxcons)
   Real( Kind = wp ), Intent( In    ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
   Integer,           Intent( In    ) :: listot(1:mxatms)
   Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
@@ -54,7 +54,12 @@ Subroutine constraints_shake_vv        &
   Real( Kind = wp ), Intent(   Out ) :: vircon
 
   Logical           :: safe
-  Integer           :: fail(1:2),i,j,k,icyc
+  Integer           :: fail(1:3),i,j,k,icyc
+
+!malysaght170112
+  Integer, Dimension( : , : ), Allocatable :: lstopt_cuda
+!end_malysaght170112
+
   Real( Kind = wp ) :: amti,amtj,dli,dlj,gamma,gammi,gammj,tstep2
   Real( Kind = wp ) :: esigmax
 
@@ -100,11 +105,18 @@ Subroutine constraints_shake_vv        &
   If (dl_poly_cuda_offload_constraints_shake() .and. &
        dl_poly_cuda_is_cuda_capable()             .and. &
        dl_poly_cuda_constraints_shake_ntcons_enough_to_offload(ntcons)) Then
-
+!malysaght170112
+     Allocate(lstopt_cuda(1:2,1:mxcons), stat=fail(3))
+     If (fail(3) > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'constraints_shake allocation failure, node: ', idnode
+        Call error(0)
+     End If
+     lstopt_cuda(:,:) = lstopt(1:2,1:mxcons)
+!end_malysaght170112
      Call constraints_shake_cuda_initialise(&
           ntcons, mxcons, mxatms, natms,imcon,&
           lsi,lsa,lishp_con,lashp_con,mop,mxbuff,nlast,&
-          lstopt, lfrzn, listcon, listot,&
+          lstopt_cuda, lfrzn, listcon, listot,&               !malysaght170112: lstopt_cuda passed
           prmcon, weight,&
           dxx, dyy, dzz, dxt, dyt, dzt, dt2, tstep2, tolnce, cell,&
           xxx, yyy, zzz, xxt, yyt, zzt, strcon, is_vv)
@@ -137,6 +149,14 @@ Subroutine constraints_shake_vv        &
 
   If (.not.safe) Call error(105)
 
+!malysaght170112
+     Deallocate(lstopt_cuda, stat=fail(3))
+     If (fail(3) > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'constraints_shake Deallocation failure, node: ', idnode
+        Call error(0)
+     End If
+!end_malysaght170112
+
   Else
 #endif
 
@@ -153,19 +173,17 @@ Subroutine constraints_shake_vv        &
 ! calculate temporary bond vector
 
      Do k=1,ntcons
-        i=lstopt(1,k)
-        j=lstopt(2,k)
+        If (lstopt(0,k) == 0) Then
+            i=lstopt(1,k)
+            j=lstopt(2,k)
 
-! for all constrained particles, native and shared
-
-        If ((i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms)) Then
-           dxt(k)=xxx(i)-xxx(j)
-           dyt(k)=yyy(i)-yyy(j)
-           dzt(k)=zzz(i)-zzz(j)
-        Else
-           dxt(k)=0.0_wp
-           dyt(k)=0.0_wp
-           dzt(k)=0.0_wp
+            dxt(k)=xxx(i)-xxx(j)
+            dyt(k)=yyy(i)-yyy(j)
+            dzt(k)=zzz(i)-zzz(j)
+        Else ! DEBUG
+!           dxt(k)=0.0_wp
+!           dyt(k)=0.0_wp
+!           dzt(k)=0.0_wp
         End If
      End Do
 
@@ -176,22 +194,12 @@ Subroutine constraints_shake_vv        &
 ! calculate maximum error in bondlength
 
      Do k=1,ntcons
-        dt2(k) =0.0_wp
-        esig(k)=0.0_wp
-
-        i=lstopt(1,k)
-        j=lstopt(2,k)
-
-! for all constrained particles, native and shared
-
-        If ( (i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms) &
-             .and. lfrzn(i)*lfrzn(j) == 0 ) Then
-
-! if a pair is frozen and constraint bonded, it is more frozen
-! than constrained (users!!!)
-
-           dt2(k) =dxt(k)**2+dyt(k)**2+dzt(k)**2 - prmcon(listcon(0,k))**2
+        If (lstopt(0,k) == 0) Then
+           dt2(k)=dxt(k)**2+dyt(k)**2+dzt(k)**2 - prmcon(listcon(0,k))**2
            esig(k)=0.5_wp*Abs(dt2(k))/prmcon(listcon(0,k))
+        Else
+           dt2(k) = 0.0_wp
+           esig(k)= 0.0_wp
         End If
      End Do
 
@@ -215,16 +223,9 @@ Subroutine constraints_shake_vv        &
 ! calculate constraint forces
 
         Do k=1,ntcons
-           i=lstopt(1,k)
-           j=lstopt(2,k)
-
-! for all constrained particles, native and shared
-
-           If ( (i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms) &
-                .and. lfrzn(i)*lfrzn(j) == 0 ) Then
-
-! if a pair is frozen and constraint bonded, it is more frozen
-! than constrained (users!!!)
+           If (lstopt(0,k) == 0) Then
+              i=lstopt(1,k)
+              j=lstopt(2,k)
 
               amti=tstep2/weight(i)
               amtj=tstep2/weight(j)
@@ -272,13 +273,9 @@ Subroutine constraints_shake_vv        &
 ! update positions locally
 
         Do k=1,ntcons
-           i=lstopt(1,k)
-           j=lstopt(2,k)
-
-! for all constrained particles, native and shared
-
-           If ( (i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms) &
-                .and. lfrzn(i)*lfrzn(j) == 0 ) Then
+           If (lstopt(0,k) == 0) Then
+              i=lstopt(1,k)
+              j=lstopt(2,k)
 
 ! apply position corrections if non-frozen
 

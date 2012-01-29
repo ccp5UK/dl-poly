@@ -29,7 +29,7 @@ Interface
                                                               natms, mxgrid, ntpmet, &
                                                               mxmet, mxatdm, mxlist
 
-     Integer,            Dimension( 0:mxlist,1:mxatdm )    :: list
+     Integer,            Dimension( -2:mxlist,1:mxatdm )    :: list
      Integer,            Dimension( 1:mxatms )             :: ltype
      Integer,            Dimension( 1:mxmet )              :: ltpmet, lstmet
 
@@ -182,7 +182,7 @@ Interface
      Integer :: cuda_ilo, natms, mxlist, mxatms, mxatdm, mxmet, mxgrid, &
                 mxvdw, ntpmet, ntpvdw, keyfce, imcon
      Integer, Dimension( 1:mxvdw )                        :: lstvdw, ltpvdw
-     Integer, Dimension( 0:mxlist,1:mxatdm )              :: list
+     Integer, Dimension( -2:mxlist,1:mxatdm )              :: list
      Integer, Dimension( 1:mxatms )                       :: ltype, ltg
      Integer, Dimension( 1:mxmet )                        :: ltpmet, lstmet
 
@@ -222,7 +222,7 @@ Interface
      Integer,           Dimension( 1:nlp3 )            :: nix,niy,niz
      Integer,           Dimension( 1:mxatms )          :: at_list, lfrzn, ltg
      Integer,           Dimension( 1:ncells+1 )        :: lct_start
-     Integer,           Dimension( 0:mxlist,1:mxatdm ) :: list
+     Integer,           Dimension( -2:mxlist,1:mxatdm ) :: list
      Integer,           Dimension( 0:mxexcl,1:mxatdm ) :: lexatm
 
      Real( Kind = wp ), Dimension( 1:mxatms )          :: xxx, yyy, zzz
@@ -329,6 +329,7 @@ Interface
 
 ! Device offload and query routines
    Subroutine dl_poly_cuda_offload_set(offload_link_cell_pairs,           &
+                                       offload_link_cell_pairs_re,        & 
                                        offload_tbforces,                  &
                                        offload_constraints_shake,         &
                                        offload_metal_ld_compute,          &
@@ -339,6 +340,7 @@ Interface
                                        offload_ewald_spme_forces_cccharge) bind(c)
      Use iso_c_binding
      Logical( c_bool ), Value :: offload_link_cell_pairs,           &
+                                 offload_link_cell_pairs_re,        &
                                  offload_tbforces,                  &
                                  offload_constraints_shake,         &
                                  offload_metal_ld_compute,          &
@@ -358,6 +360,9 @@ Interface
 
    Logical Function dl_poly_cuda_offload_link_cell_pairs() bind(c)
    End Function dl_poly_cuda_offload_link_cell_pairs
+
+   Logical Function dl_poly_cuda_offload_link_cell_pairs_re() bind(c)
+   End Function dl_poly_cuda_offload_link_cell_pairs_re
 
    Logical Function dl_poly_cuda_offload_constraints_shake() bind(c)
    End Function dl_poly_cuda_offload_constraints_shake
@@ -1001,13 +1006,14 @@ Contains
     Integer               :: keypot
     Integer, Intent( In ) :: keyfce, imcon
 
-    Logical( c_bool ) :: offload_link_cell_pairs   = .true., &
-                         offload_tbforces          = .true., &
-                         offload_constraints_shake = .true., &
-                         offload_metal_ld_compute  = .true., &
-                         offload_ewald_spme_forces = .true., &
-                         offload_spme_forces       = .true., &
-                         offload_bspgen            = .true., &
+    Logical( c_bool ) :: offload_link_cell_pairs    = .true., &
+                         offload_link_cell_pairs_re = .false., &
+                         offload_tbforces           = .true., &
+                         offload_constraints_shake  = .true., &
+                         offload_metal_ld_compute   = .true., &
+                         offload_ewald_spme_forces  = .true., &
+                         offload_spme_forces        = .true., &
+                         offload_bspgen             = .true., &
                          offload_ewald_spme_forces_ccarray  = .true., &
                          offload_ewald_spme_forces_cccharge = .true.
 
@@ -1016,7 +1022,11 @@ Contains
     ! Compute keypot variable
     Call metal_ld_compute_get_keypot(keypot)
 
-    ! Link_cell_pairs: no unimplemented functionality - always offloadable
+    ! Link_cell_pairs: 
+    ! malysaght250112: offload_link_cell_pairs_re should be set to .false. until fix is implemented
+    If ( .not. offload_link_cell_pairs_re ) Then
+       Write(nrite,'(1x,a,/)') 'Disabling CUDA acceleration for link_cell_pairs_remove_exclusions (if applicable)'
+    Endif
 
     ! Two-body forces:
     If (ld_vdw) Then
@@ -1099,6 +1109,7 @@ Contains
     ! check what will be offloaded (dl_poly_init_cu.cu)
     Call dl_poly_cuda_offload_set                &
              (offload_link_cell_pairs,           &
+              offload_link_cell_pairs_re,        &
               offload_tbforces,                  &
               offload_constraints_shake,         &
               offload_metal_ld_compute,          &
