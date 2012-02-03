@@ -100,7 +100,7 @@ Subroutine link_cell_pairs_helper(       &
   !         If (rsq > nlp2) Go To 10
   !         jx=ix**2
   !         nsbcll_t=nsbcll_t+1
-  !         nir(nsbcll_t)=(jx+jy+jz <= nlr2)
+  !         nir(nsbcll_t)=(jx+jy+jz < nlr2)
 !10         Continue
 !        End Do
 !20      Continue
@@ -232,18 +232,17 @@ Subroutine link_cell_pairs_helper(       &
 ! check for overfloat and add an entry
 
                                     ll=list(0,i)+1
-        	                    If (ll <= mxlist) Then
-		                       list(0,i)=ll
-			               list(ll,i)=j
-			            Else
-			       	       safe=.false.
-			            End If
-                                    ibig=Max(ibig,ll)
+																		If (ll <= mxlist) Then
+																			 list(0,i)=ll
+																			 list(ll,i)=j
+																		Else
+																			 safe=.false.
+																		End If
+                                       ibig=Max(ibig,ll)
 
 ! end of loop over secondary cell contents
-		        	End Do
-
-                             End If
+																			End Do
+                                  End If
 
 ! if atom pairs are not guaranteed to be within the cutoff of each other
 ! distance in real space is needed for checking the cutoff criterion
@@ -306,24 +305,24 @@ Subroutine link_cell_pairs_helper(       &
 
 ! end of inner if-block on cells and borders
 
-                            End If
+                         	 End If
 
 ! end of secondary loop over subcells
 
-		          End If
+												End If
 
 ! end of bypass if primary cell particle > natms
 
-              		End Do
+                   		End Do
 
 ! end of loop over primary cell contents
-                     End If
+                	 End If
 
 ! end of outer if-block on cells and borders
 
-                  End Do
+             		End Do
 
-	      End If
+						 End If
 
 ! end of loops over ix,iy,iz
 
@@ -345,33 +344,27 @@ Subroutine link_cell_pairs_remove_exclusions_helper(&
 
   Implicit None
   Integer, Intent(In) :: ibegin,iend
-  Integer             :: i, j, ii, kk, ll, jj
-  Integer             :: l_end, m_end
+  Integer             :: i, ii, kk, ll, jj
   Logical             :: match
-
 
 !$OMP PARALLEL DO PRIVATE(i,ii,kk,ll,jj)
   Do i=ibegin,iend
-     l_end=list(0,i)
-     m_end=l_end
-
      ii=lexatm(0,i)
      If (ii > 0) Then
-        Do kk=l_end,1,-1
-           j=list(kk,i)
-           jj=ltg(j)
+        kk=1
+        ll=list(0,i)
+        Do While (kk <= ll)
+           jj=ltg(list(kk,i))
            If (match(jj,ii,lexatm(1:ii,i))) Then
-              If (kk < m_end) Then
-                 list(kk,i)=list(m_end,i)
-                 list(m_end,i)=j
-              End If
-              m_end=m_end-1
+              If (kk < ll) list(kk,i)=list(ll,i)
+              list(ll,i)=0
+              ll=ll-1
+              list(0,i)=ll
+           Else
+              kk=kk+1
            End If
         End Do
      End If
-     
-     list(-1,i)=list(0,i) ! End of NFP FNRH VNL
-     list(0,i)=m_end      ! End of new list with no excluded interactions (NXI)
   End Do
 !$OMP END PARALLEL DO
 End Subroutine link_cell_pairs_remove_exclusions_helper
@@ -384,7 +377,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2012
+! author    - i.t.todorov february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -393,7 +386,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Use setup_module
   Use domains_module, Only : nprx,npry,nprz
   Use config_module,  Only : cell,natms,nlast,ltg,lfrzn, &
-                             xxx,yyy,zzz,lexatm,list,mxexcl
+                             xxx,yyy,zzz,lexatm,list
 
 #ifdef COMPILE_CUDA
   Use dl_poly_cuda_module
@@ -412,9 +405,9 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1,match
 
-  Integer           :: fail(1:4),l_end,m_end,                &
+  Integer           :: fail(1:4),                            &
                        icell,ncells,ipass,kk,ll,             &
-                       ibig,i,ii,j,jj,j_start,               &
+                       ibig,i,ii,j,jj, j_start,              &
                        nlx,nly,nlz,nlp,nlr2,nlp3,nsbcll,     &
                        nlx0s,nly0s,nlz0s, nlx0e,nly0e,nlz0e, &
                        nlx1s,nly1s,nlz1s, nlx1e,nly1e,nlz1e, &
@@ -490,7 +483,6 @@ Call start_timing_link_cell_pairs()
   nlp2=Real(natms,wp)
   det=nlp2/Real(nlx*nly*nlz,wp)
   Do While (det > 50.0_wp)
-!  Do While (det > 130.0_wp)
      nlp=nlp+1
      rsq=Real(nlp,wp)
      nlx=Int(dispx*rsq)
@@ -558,14 +550,14 @@ Call start_timing_link_cell_pairs()
            rsq=det+dispx
            If (rsq > nlp2) Go To 10
 
-	   jx=ix**2
+					 jx=ix**2
 
-       	   nsbcll=nsbcll+1
+					 nsbcll=nsbcll+1
 
-       	   nix(nsbcll)=ix
+					 nix(nsbcll)=ix
            niy(nsbcll)=iy
            niz(nsbcll)=iz
-	   nir(nsbcll)=(jx+jy+jz < nlr2)
+					 nir(nsbcll)=(jx+jy+jz < nlr2)
 10         Continue
         End Do
 20      Continue
@@ -761,7 +753,7 @@ Call start_timing_link_cell_pairs()
 ! initialise verlet neighbourlist arrays
 
 !  list=0      ! (DEBUG)
-  list(-2:0,:)=0 !  (FIRST DIMENSION ONLY)
+  list(-2,:)=0 !  (FIRST DIMENSION ONLY)
 
 ! initial values of control variables
 
@@ -776,18 +768,13 @@ Call start_timing_link_cell_pairs()
        nlx0e, nly0e, nlz0e, nlx1s, nly1s, nlz1s,             &
        xxx,yyy,zzz,lfrzn,at_list,lct_start,list,             &
        nlp3,nix,niy,niz,rcsq,lbook,mxexcl,lexatm,ltg,megfrz)
-
-
      Call link_cell_pairs_cuda_invoke()
 ! 20100129/ck: do not finalise here -- this will keep the list online, i.e.
 !   on the card for the rest of the kernels to access without copying it
 !   over from the host again.
 ! 20100218/ck: when needed to finalise, mind if lbook==.true. as the list
 !   will be stil lneeded for the exclusions part.
-
-! malysaght250112: dl_poly_cuda_offload_link_cell_pairs_re() should be set to false
-! for the moment. 
-     If (dl_poly_cuda_offload_tbforces()==.false. .and. lbook==.false. .or. dl_poly_cuda_offload_link_cell_pairs_re()==.false.) Then
+     If (dl_poly_cuda_offload_tbforces()==.false. .and. lbook==.false.) Then
         Call link_cell_pairs_cuda_finalise()
      End If
 
@@ -1033,7 +1020,6 @@ Call start_timing_link_cell_pairs()
   End If
 #endif
 
-
 ! terminate job if neighbour list array exceeded
 
   If (mxnode > 1) Call gcheck(safe)
@@ -1044,7 +1030,7 @@ Call start_timing_link_cell_pairs()
   End If
 
 
-! Rear down frozen pairs
+! Remove frozen pairs
 #ifdef COMPILE_CUDA
   ! In the CUDA port, frozen atom pairs are not included in the
   !  list() to begin with, so they don't need to be removed here
@@ -1052,30 +1038,22 @@ Call start_timing_link_cell_pairs()
 #endif
      If (megfrz > 1) Then
         Do i=1,natms
-           l_end=list(0,i)
-           m_end=l_end
-
            ii=lfrzn(i)
            If (ii > 0) Then
-              Do kk=l_end,1,-1 
-                 j =list(kk,i) 
-                 jj=lfrzn(j) 
+              kk=1
+              ll=list(0,i)
+              Do While (kk <= ll)
+                 jj=lfrzn(list(kk,i))
                  If (jj > 0) Then
-                    If (kk < m_end) Then 
-                       list(kk,i)=list(m_end,i)
-                       list(m_end,i)=j
-                    End If
-                    m_end=m_end-1
+                    If (kk < ll) list(kk,i)=list(ll,i)
+                    list(ll,i)=0
+                    ll=ll-1
+                    list(0,i)=ll
+                 Else
+                    kk=kk+1
                  End If
               End Do
            End If
-
-           list(-2,i)=list(0,i) ! End of full non-repeatable half VNL (FNRH VNL)
-           list( 0,i)=m_end     ! End of new list with no frozen pairs (NFP)
-        End Do
-     Else
-        Do i=1,natms
-           list(-2,i)=list(0,i) !End of full non-repeatable half VNL (FNRH VNL)
         End Do
      End If
 #ifdef COMPILE_CUDA
@@ -1083,19 +1061,14 @@ Call start_timing_link_cell_pairs()
 #endif
 
 
-! Rear down excluded pairs on top of the frozen ones
+! Remove excluded interactions from the verlet neighbour list
 
 
   If (lbook) Then
 
-!malysaght110112: note: _cuda_invoke_remove_exclusions needs to be updated. For
-!the moment, dl_poly_cuda_offload_link_cell_pairs_re() should be set to .false.
-!When set to false, the remove_exclusions is invoked on the host. This will
-!be changed so that _remove_exclusions is invoked on the device as previously. 
-
 #ifdef COMPILE_CUDA
      Call start_timing_link_cell_pairs_cuda_remove_excluded()
-     If (dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable() .and. dl_poly_cuda_offload_link_cell_pairs_re()) Then
+     If (dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable()) Then
         Call link_cell_pairs_cuda_invoke_remove_exclusions()
         If (dl_poly_cuda_offload_tbforces()==.false. .and. lbook==.true.) Then
            Call link_cell_pairs_cuda_finalise()
@@ -1104,40 +1077,42 @@ Call start_timing_link_cell_pairs()
 #endif
 
      Do i=1,natms
-        l_end=list(0,i)
-        m_end=l_end
-
         ii=lexatm(0,i)
         If (ii > 0) Then
-           Do kk=l_end,1,-1
-              j=list(kk,i)
-              jj=ltg(j)
+           kk=1
+           ll=list(0,i)
+           Do While (kk <= ll)
+              jj=ltg(list(kk,i))
               If (match(jj,ii,lexatm(1:ii,i))) Then
-                 If (kk < m_end) Then
-                    list(kk,i)=list(m_end,i)
-                    list(m_end,i)=j
-                 End If
-                 m_end=m_end-1
+                 If (kk < ll) list(kk,i)=list(ll,i)
+                 list(ll,i)=0
+                 ll=ll-1
+                 list(0,i)=ll
+              Else
+                 kk=kk+1
               End If
-           End Do 
+           End Do
         End If
-
-        list(-1,i)=list(0,i) ! End of NFP FNRH VNL
-        list( 0,i)=m_end     ! End of new list with no excluded interactions (NXI)
      End Do
 
 #ifdef COMPILE_CUDA
      End If
   Call stop_timing_link_cell_pairs_cuda_remove_excluded()
 #endif
-  Else
-
-     Do i=1,natms
-        list(-1,i)=list(0,i) !End of NFP FNRH VNL
-     End Do
 
   End If
 
+!	  Do i=1,natms
+!      ii=ltg(i)
+!      kk=list(0,i)
+!      Do ll=1,kk
+!         j=list(ll,i)
+!         jj=ltg(j)
+!          If (j <= natms .or. ii < jj) Then
+!             Write(idnode+101,'(2i8)') ii,jj
+!          End If
+!    End Do
+!  End Do
 
   Deallocate (nix,niy,niz,                   Stat=fail(1))
   Deallocate (which_cell,at_list,            Stat=fail(2))

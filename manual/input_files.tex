@@ -269,6 +269,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf ensemble nvt hoover} $f$                \> select NVT ensemble\index{ensemble!Nos\'{e}-Hoover NVT}, type Nose-Hoover with thermostat\index{thermostat} \\
 \>                                              \> relaxation constant $f$ in ps \\
 \>                                              \> \\
+\> {\bf ensemble nvt gst} $f_{1}~f_{2}$         \> select NVT ensemble\index{ensemble!Gentle Stochastic NVT}, type Gentle Stochastic with thermostat\index{thermostat} \\
+\>                                              \> relaxation constant $f_{1}$ in ps and Langevin friction $f_{1}$ in ps$^{-1}$ \\
+\>                                              \> \\
 \> {\bf ensemble npt lang}evin $f_{1}~f_{2}$    \> select NPT ensemble\index{ensemble!Langevin NPT}, type Langevin, with $f_{1},~f_{2}$ as the \\
 \>                                              \> thermostat\index{thermostat} and barostat\index{barostat} relaxation speed (friction) constants in ps$^{-1}$ \\
 \>                                              \> \\
