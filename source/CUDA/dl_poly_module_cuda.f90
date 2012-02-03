@@ -1009,7 +1009,7 @@ Contains
     Logical( c_bool ) :: offload_link_cell_pairs    = .true., &
                          offload_link_cell_pairs_re = .false., &
                          offload_tbforces           = .true., &
-                         offload_constraints_shake  = .true., &
+                         offload_constraints_shake  = .false., &
                          offload_metal_ld_compute   = .true., &
                          offload_ewald_spme_forces  = .true., &
                          offload_spme_forces        = .true., &
