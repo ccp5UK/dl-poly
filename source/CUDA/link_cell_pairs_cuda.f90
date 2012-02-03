@@ -107,7 +107,8 @@ Subroutine link_cell_pairs_helper(       &
 !     End Do
 !  End Do
 
-!$OMP PARALLEL PRIVATE(ix,iy,iz,ic, ix1,ix2,iy1,iy2,iz1,iz2,jx,jy,jz,jc,ipass,nlx0s,nly0s,nlz0s,nlx1e,nly1e,nlz1e,ibig,i,ii,j,jj,kk,ll,j_start,safe,rsq)
+!$OMP PARALLEL PRIVATE(ix,iy,iz,ic, ix1,ix2,iy1,iy2,iz1,iz2, &
+!$OMP jx,jy,jz,jc,ipass,nlx0s,nly0s,nlz0s,nlx1e,nly1e,nlz1e,ibig,i,ii,j,jj,kk,ll,j_start,safe,rsq)
   Do ipass=1,2
 
 ! primary loop over domain subcells
@@ -341,7 +342,7 @@ End Subroutine link_cell_pairs_helper
 Subroutine link_cell_pairs_remove_exclusions_helper(&
      ibegin,iend)
   Use setup_module
-  Use config_module,  Only : natms,ltg,lexatm,list,mxexcl
+  Use config_module,  Only : natms,ltg,lexatm,list
 
   Implicit None
   Integer, Intent(In) :: ibegin,iend
@@ -393,7 +394,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Use setup_module
   Use domains_module, Only : nprx,npry,nprz
   Use config_module,  Only : cell,natms,nlast,ltg,lfrzn, &
-                             xxx,yyy,zzz,lexatm,list,mxexcl
+                             xxx,yyy,zzz,lexatm,list
 
 #ifdef COMPILE_CUDA
   Use dl_poly_cuda_module
@@ -787,7 +788,8 @@ Call start_timing_link_cell_pairs()
 
 ! malysaght250112: dl_poly_cuda_offload_link_cell_pairs_re() should be set to false
 ! for the moment. 
-     If (dl_poly_cuda_offload_tbforces()==.false. .and. lbook==.false. .or. dl_poly_cuda_offload_link_cell_pairs_re()==.false.) Then
+     If (dl_poly_cuda_offload_tbforces().eqv..false. .and. lbook .eqv. .false. .or. &
+          dl_poly_cuda_offload_link_cell_pairs_re() .eqv. .false.) Then
         Call link_cell_pairs_cuda_finalise()
      End If
 
@@ -1048,7 +1050,7 @@ Call start_timing_link_cell_pairs()
 #ifdef COMPILE_CUDA
   ! In the CUDA port, frozen atom pairs are not included in the
   !  list() to begin with, so they don't need to be removed here
-  If (dl_poly_cuda_offload_link_cell_pairs() == .false.) Then
+  If (dl_poly_cuda_offload_link_cell_pairs() .eqv. .false.) Then
 #endif
      If (megfrz > 1) Then
         Do i=1,natms
@@ -1095,36 +1097,37 @@ Call start_timing_link_cell_pairs()
 
 #ifdef COMPILE_CUDA
      Call start_timing_link_cell_pairs_cuda_remove_excluded()
-     If (dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable() .and. dl_poly_cuda_offload_link_cell_pairs_re()) Then
+     If (dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable() .and. &
+         dl_poly_cuda_offload_link_cell_pairs_re()) Then
         Call link_cell_pairs_cuda_invoke_remove_exclusions()
-        If (dl_poly_cuda_offload_tbforces()==.false. .and. lbook==.true.) Then
+        If (dl_poly_cuda_offload_tbforces().eqv..false. .and. lbook .eqv..true.) Then
            Call link_cell_pairs_cuda_finalise()
         End If
      Else
 #endif
 
-     Do i=1,natms
-        l_end=list(0,i)
-        m_end=l_end
+       Do i=1,natms
+          l_end=list(0,i)
+          m_end=l_end
 
-        ii=lexatm(0,i)
-        If (ii > 0) Then
-           Do kk=l_end,1,-1
-              j=list(kk,i)
-              jj=ltg(j)
-              If (match(jj,ii,lexatm(1:ii,i))) Then
-                 If (kk < m_end) Then
-                    list(kk,i)=list(m_end,i)
-                    list(m_end,i)=j
-                 End If
-                 m_end=m_end-1
-              End If
-           End Do 
-        End If
+          ii=lexatm(0,i)
+          If (ii > 0) Then
+             Do kk=l_end,1,-1
+                j=list(kk,i)
+                jj=ltg(j)
+                If (match(jj,ii,lexatm(1:ii,i))) Then
+                   If (kk < m_end) Then
+                       list(kk,i)=list(m_end,i)
+                       list(m_end,i)=j
+                   End If
+                   m_end=m_end-1
+                End If
+             End Do 
+          End If
 
-        list(-1,i)=list(0,i) ! End of NFP FNRH VNL
-        list( 0,i)=m_end     ! End of new list with no excluded interactions (NXI)
-     End Do
+          list(-1,i)=list(0,i) ! End of NFP FNRH VNL
+          list( 0,i)=m_end     ! End of new list with no excluded interactions (NXI)
+       End Do
 
 #ifdef COMPILE_CUDA
      End If

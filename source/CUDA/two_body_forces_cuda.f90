@@ -312,7 +312,8 @@ Subroutine two_body_forces                        &
 
 #ifdef COMPILE_CUDA
   If (dl_poly_cuda_offload_tbforces() .and. &
-      dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable() .and. dl_poly_cuda_offload_link_cell_pairs_re()) Then
+      dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable() &
+      .and. dl_poly_cuda_offload_link_cell_pairs_re()) Then
      cuda_ilo = 1;
   Else
      cuda_ilo = 0;
