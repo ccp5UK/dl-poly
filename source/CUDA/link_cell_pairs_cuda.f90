@@ -415,7 +415,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
   Integer           :: fail(1:4),l_end,m_end,                &
                        icell,ncells,ipass,kk,ll,             &
-                       ibig,i,ii,j,jj,j_start,               &
+                       ibig,i,ii,j,jj, j_start,              &
                        nlx,nly,nlz,nlp,nlr2,nlp3,nsbcll,     &
                        nlx0s,nly0s,nlz0s, nlx0e,nly0e,nlz0e, &
                        nlx1s,nly1s,nlz1s, nlx1e,nly1e,nlz1e, &

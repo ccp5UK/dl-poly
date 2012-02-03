@@ -269,6 +269,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf ensemble nvt hoover} $f$                \> select NVT ensemble\index{ensemble!Nos\'{e}-Hoover NVT}, type Nose-Hoover with thermostat\index{thermostat} \\
 \>                                              \> relaxation constant $f$ in ps \\
 \>                                              \> \\
+\> {\bf ensemble nvt gst} $f_{1}~f_{2}$         \> select NVT ensemble\index{ensemble!Gentle Stochastic NVT}, type Gentle Stochastic with thermostat\index{thermostat} \\
+\>                                              \> relaxation constant $f_{1}$ in ps and Langevin friction $f_{1}$ in ps$^{-1}$ \\
+\>                                              \> \\
 \> {\bf ensemble npt lang}evin $f_{1}~f_{2}$    \> select NPT ensemble\index{ensemble!Langevin NPT}, type Langevin, with $f_{1},~f_{2}$ as the \\
 \>                                              \> thermostat\index{thermostat} and barostat\index{barostat} relaxation speed (friction) constants in ps$^{-1}$ \\
 \>                                              \> \\
@@ -2607,7 +2610,7 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 1} \\
 \> {\tt header} \> a100    \> file header\\
 {\bf record 2} \\
-\> {\tt delpot} \> real    \> mesh resolution in \AA~(${\tt delport} = \frac{\tt cutpot}{{\tt ngrid}-4}$) \\
+\> {\tt delpot} \> real    \> mesh resolution in \AA~(${\tt delpot} = \frac{\tt cutpot}{{\tt ngrid}-4}$) \\
 \> {\tt cutpot} \> real    \> cutoff used to define tables in \AA \\
 \> {\tt ngrid}  \> integer \> number of grid points in tables \\
 \end{tabbing}

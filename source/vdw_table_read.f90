@@ -7,7 +7,7 @@ Subroutine vdw_table_read(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1994
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov january 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -63,16 +63,27 @@ Subroutine vdw_table_read(rvdw)
 
   dlrpot=rvdw/Real(mxgrid-4,wp)
 
-  If (Abs(delpot-dlrpot) <= 1.0e-8_wp) delpot=dlrpot
-  If ( (delpot > dlrpot) .or. (ngrid-4 /= Nint(cutpot/delpot)) ) Then
-     If (idnode == 0) Write(nrite,"(                    &
-        & 'expected radial increment : ',1p,e15.7,/,    &
-        & 'TABLE    radial increment : ',1p,e15.7,/,/,  &
-        & 'expected number of grid points : ',0p,i10,/, &
-        & 'grid points in TABLE           : ',i10)") dlrpot, delpot, mxgrid, ngrid
-
+  safe=.false.
+  If (Abs(delpot-dlrpot) <= 1.0e-8_wp) Then
+     safe=.true.
+     delpot=dlrpot
+  End If
+  If ( (delpot > dlrpot .and. (.not.safe)) .or. &
+       (ngrid-4 /= Nint(cutpot/delpot)) ) Then
+     If (idnode == 0) Then
+        Write(nrite,"(/,                                          &
+           & 'expected (minimum) radial increment : ',1p,e15.7,/, &
+           & 'TABLE file         radial increment : ',1p,e15.7)") &
+           dlrpot, delpot
+        Write(nrite,"(/,                                             &
+           & 'expected (minimum) number of grid points : ',0p,i10,/, &
+           & 'TABLE file stated  number of grid points : ',0p,i10,/, &
+           & 'TABLE file derived number of grid points : ',0p,i10)") &
+           mxgrid, ngrid, Nint(cutpot/delpot)+4
+     End If
      Call error(22)
   End If
+  safe=.true.
 
   If (cutpot < rvdw) Call error(504)
   If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
@@ -91,7 +102,6 @@ Subroutine vdw_table_read(rvdw)
 ! read pair potential labels and long-range corrections
 
         Call get_line(safe,ntable,record)
-
         If (.not.safe) Go To 100
 
         Call get_word(record,atom1)
