@@ -264,7 +264,7 @@ Interface
      Integer, Dimension( 1:mxproc )     :: lashp_con
      Integer, Dimension( 1:mxatms )     :: lsi, lsa, lfrzn, listot
      Integer, Dimension( 1:26 )         :: mop
-     Integer, Dimension( 1:2,1:mxcons ) :: lstopt
+     Integer, Dimension( 0:2,1:mxcons ) :: lstopt
      Integer, Dimension( 0:2,1:mxcons ) :: listcon
 
      Real( Kind = wp )                        :: tstep2, tolnce
@@ -1009,7 +1009,7 @@ Contains
     Logical( c_bool ) :: offload_link_cell_pairs    = .true., &
                          offload_link_cell_pairs_re = .false., &
                          offload_tbforces           = .true., &
-                         offload_constraints_shake  = .false., &
+                         offload_constraints_shake  = .true., &
                          offload_metal_ld_compute   = .true., &
                          offload_ewald_spme_forces  = .true., &
                          offload_spme_forces        = .true., &

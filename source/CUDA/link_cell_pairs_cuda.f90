@@ -778,18 +778,21 @@ Call start_timing_link_cell_pairs()
        xxx,yyy,zzz,lfrzn,at_list,lct_start,list,             &
        nlp3,nix,niy,niz,rcsq,lbook,mxexcl,lexatm,ltg,megfrz)
 
-
      Call link_cell_pairs_cuda_invoke()
+
 ! 20100129/ck: do not finalise here -- this will keep the list online, i.e.
 !   on the card for the rest of the kernels to access without copying it
 !   over from the host again.
 ! 20100218/ck: when needed to finalise, mind if lbook==.true. as the list
 !   will be stil lneeded for the exclusions part.
 
-! malysaght250112: dl_poly_cuda_offload_link_cell_pairs_re() should be set to false
-! for the moment. 
      If (dl_poly_cuda_offload_tbforces().eqv..false. .and. lbook .eqv. .false. .or. &
           dl_poly_cuda_offload_link_cell_pairs_re() .eqv. .false.) Then
+        Call link_cell_pairs_cuda_finalise()
+     End If
+! malysaght250112: dl_poly_cuda_offload_link_cell_pairs_re() should be set to false
+! for the moment. 
+     If (dl_poly_cuda_offload_link_cell_pairs_re() .eqv. .false.) Then
         Call link_cell_pairs_cuda_finalise()
      End If
 

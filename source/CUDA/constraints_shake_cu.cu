@@ -379,20 +379,22 @@ constraints_shake_cuda_initialise_install_red_struct(int *aLSTOPT, int *aLFRZN) 
    */
 
   for (int lK=0 ; lK<sCD.mNTCONS ; lK++) {
-    int2 lIJ = ((int2*) aLSTOPT)[lK];
-    int lLFRZN_I = aLFRZN[lIJ.x-1], lLFRZN_J = aLFRZN[lIJ.y-1];
+//malysaght060212 : changed from int2 to int3 to account for extra dimension in LSTOPT
+//                  (.x and .y --> .y and .z)
+      int3 lIJ = ((int3*) aLSTOPT)[lK];
 
-    if (lIJ.x>0 && lIJ.y>0 && (lIJ.x<=sCD.mNATMS || lIJ.y<=sCD.mNATMS) && (lLFRZN_I==0 || lLFRZN_J==0)) {
+      int lLFRZN_I = aLFRZN[lIJ.y-1], lLFRZN_J = aLFRZN[lIJ.z-1];
 
-      if (lLFRZN_I==0 && lIJ.x<=sCD.mNATMS) {
-        lOcc[lIJ.x-1].push_back(lK);
+      if (*F2D_ADDRESS(sHD.mLSTOPT,1,1,2+1,1,lK) == 0){  
+         if (lLFRZN_I==0 && lIJ.y<=sCD.mNATMS) {
+             lOcc[lIJ.y-1].push_back(lK);
+         }
+
+         if (lLFRZN_J==0 && lIJ.z<=sCD.mNATMS) {
+             lOcc[lIJ.z-1].push_back(sCD.mNTCONS + lK);
+         }
       }
-
-      if (lLFRZN_J==0 && lIJ.y<=sCD.mNATMS) {
-        lOcc[lIJ.y-1].push_back(sCD.mNTCONS + lK);
-      }
-    }
-  }
+   }
 
   /* We now need to 'flatten out' the lOcc structure so that it is transportable to the
    * device. We will create two structures: lCounts (to be writen in sCD.mIJSo) and
@@ -518,7 +520,9 @@ extern "C" void constraints_shake_cuda_initialise
   }
 
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mWEIGHT, sCD.mMXATMS*sizeof(real)));
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mLSTOPT, 2*sCD.mNTCONS*sizeof(int)));
+//malysaght060212 : Accounting for extra dimension in LSTOPT in vanilla code
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mLSTOPT, (2+1)*sCD.mNTCONS*sizeof(int)));
+//end_malysaght060212
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mLFRZN,  sCD.mMXATMS*sizeof(int)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mLISTOT, sCD.mMXATMS*sizeof(int)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mLISTCON,3*sCD.mNTCONS*sizeof(int)));
@@ -537,7 +541,9 @@ extern "C" void constraints_shake_cuda_initialise
   CUDA_SAFE_CALL(cudaMemcpy(sCD.mDZZ,     aDZZ,     sCD.mNTCONS*sizeof(real), cudaMemcpyHostToDevice));
   CUDA_SAFE_CALL(cudaMemcpy(sCD.mPRMCON_K,  lPRMCON_K,  sCD.mNTCONS*sizeof(real), cudaMemcpyHostToDevice));
   CUDA_SAFE_CALL(cudaMemcpy(sCD.mWEIGHT,  aWEIGHT,  sHD.mNLAST*sizeof(real), cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(sCD.mLSTOPT,  aLSTOPT,  2*sCD.mNTCONS*sizeof(int), cudaMemcpyHostToDevice));
+//malysaght060212 : Accounting for extra dimension in LSTOPT in vanilla code
+  CUDA_SAFE_CALL(cudaMemcpy(sCD.mLSTOPT,  aLSTOPT,  (2+1)*sCD.mNTCONS*sizeof(int), cudaMemcpyHostToDevice));
+//end_malysaght060212
   CUDA_SAFE_CALL(cudaMemcpy(sCD.mLFRZN,   aLFRZN,   sHD.mNLAST*sizeof(int), cudaMemcpyHostToDevice));
   CUDA_SAFE_CALL(cudaMemcpy(sCD.mLISTOT,  aLISTOT,  sHD.mNLAST*sizeof(int), cudaMemcpyHostToDevice));
 
@@ -609,12 +615,16 @@ __global__ void constraints_shake_cuda_th() {
 
   if (!ISFINALRED_) {
     for (int lK=1+blockIdx.y*BX_+threadIdx.x ; lK<=CONSTANT_DATA.mNTCONS ; lK+=gridDim.y*BX_) {
-      int lI = *F2D_ADDRESS(CONSTANT_DATA.mLSTOPT, 1,1, 2, 1,lK);
-      int lJ = *F2D_ADDRESS(CONSTANT_DATA.mLSTOPT, 1,1, 2, 2,lK);
+//malysaght060212 : Accounting for extra dimension in LSTOPT in vanilla code
+      int lI = *F2D_ADDRESS(CONSTANT_DATA.mLSTOPT, 1,1, 2+1, 1+1,lK);
+      int lJ = *F2D_ADDRESS(CONSTANT_DATA.mLSTOPT, 1,1, 2+1, 2+1,lK);
+//end_malysaght060212
 
       T_ lDXT = (T_)0, lDYT=(T_)0, lDZT=(T_)0;
 
-      if ((lI>0 && lJ>0) && (lI<=CONSTANT_DATA.mNATMS || lJ<=CONSTANT_DATA.mNATMS)) {
+//      if ((lI>0 && lJ>0) && (lI<=CONSTANT_DATA.mNATMS || lJ<=CONSTANT_DATA.mNATMS)) {
+//malysaght060212 : Accounting for new condition in vanilla code
+      if (*F2D_ADDRESS(CONSTANT_DATA.mLSTOPT,1,1,2+1,1,lK) == 0){
         lDXT = CONSTANT_DATA.mXXX[lI-1] - CONSTANT_DATA.mXXX[lJ-1];
         lDYT = CONSTANT_DATA.mYYY[lI-1] - CONSTANT_DATA.mYYY[lJ-1];
         lDZT = CONSTANT_DATA.mZZZ[lI-1] - CONSTANT_DATA.mZZZ[lJ-1];
@@ -629,8 +639,11 @@ __global__ void constraints_shake_cuda_th() {
       int lLFRZN_I = CONSTANT_DATA.mLFRZN[lI-1];
       int lLFRZN_J = CONSTANT_DATA.mLFRZN[lJ-1];
 
-      if ((lI>0 && lJ>0) && (lI<=CONSTANT_DATA.mNATMS || lJ<=CONSTANT_DATA.mNATMS) &&
-          lLFRZN_I*lLFRZN_J==0) {
+
+//malysaght060212 : Accounting for new condition in vanilla code
+      if (*F2D_ADDRESS(CONSTANT_DATA.mLSTOPT,1,1,2+1,1,lK) == 0){
+
+
         lDT2 = addp3(lDXT,lDXT,lDYT,lDYT,lDZT,lDZT);
         T_ lPRMCON = CONSTANT_DATA.mPRMCON_K[lK-1];
         T_ lESIG1  = ((T_) 0.5)*fabs(msub(lDT2, lPRMCON, lPRMCON)) / lPRMCON;
@@ -700,55 +713,57 @@ __global__ void constraints_shake_cuda_invoke_bh() {
     }
 
     for (int lK=1+blockIdx.y*BX_+threadIdx.x ; lK<=CONSTANT_DATA.mNTCONS ; lK+=gridDim.y*BX_) {
-      int lI = *F2D_ADDRESS(CONSTANT_DATA.mLSTOPT, 1,1, 2, 1,lK);
-      int lJ = *F2D_ADDRESS(CONSTANT_DATA.mLSTOPT, 1,1, 2, 2,lK);
+//malysaght060212 : Accounting for extra dimension in LSTOPT in vanilla code
+      int lI = *F2D_ADDRESS(CONSTANT_DATA.mLSTOPT, 1,1, 2+1, 1+1,lK);
+      int lJ = *F2D_ADDRESS(CONSTANT_DATA.mLSTOPT, 1,1, 2+1, 2+1,lK);
+//end_malysaght060212
       int lLFRZN_I = CONSTANT_DATA.mLFRZN[lI-1];
       int lLFRZN_J = CONSTANT_DATA.mLFRZN[lJ-1];
 
-      if ((lI>0 && lJ>0) && (lI<=CONSTANT_DATA.mNATMS || lJ<=CONSTANT_DATA.mNATMS) &&
-          lLFRZN_I*lLFRZN_J==0) {
-        T_ lAMTI = CONSTANT_DATA.mTSTEP2 / CONSTANT_DATA.mWEIGHT[lI-1];
-        T_ lAMTJ = CONSTANT_DATA.mTSTEP2 / CONSTANT_DATA.mWEIGHT[lJ-1];
-        if (lLFRZN_I!=0)
-          lAMTI = (T_)0;
-        if (lLFRZN_J!=0)
-          lAMTJ = (T_)0;
+//malysaght060212 : Accounting for new conditional in vanilla code       
+        if (*F2D_ADDRESS(CONSTANT_DATA.mLSTOPT,1,1,2+1,1,lK) == 0){
+           T_ lAMTI = CONSTANT_DATA.mTSTEP2 / CONSTANT_DATA.mWEIGHT[lI-1];
+           T_ lAMTJ = CONSTANT_DATA.mTSTEP2 / CONSTANT_DATA.mWEIGHT[lJ-1];
+           if (lLFRZN_I!=0)
+              lAMTI = (T_)0;
+              if (lLFRZN_J!=0)
+                 lAMTJ = (T_)0;
 
-        T_ lDXX = CONSTANT_DATA.mDXX[lK-1];
-        T_ lDYY = CONSTANT_DATA.mDYY[lK-1];
-        T_ lDZZ = CONSTANT_DATA.mDZZ[lK-1];
-        T_ lDXT = CONSTANT_DATA.mDXT[lK-1];
-        T_ lDYT = CONSTANT_DATA.mDYT[lK-1];
-        T_ lDZT = CONSTANT_DATA.mDZT[lK-1];
-        T_ lPRMCON = CONSTANT_DATA.mPRMCON_K[lK-1];
-        T_ lDT2 = addp3(lDXT,lDXT,lDYT,lDYT,lDZT,lDZT);
+                 T_ lDXX = CONSTANT_DATA.mDXX[lK-1];
+                 T_ lDYY = CONSTANT_DATA.mDYY[lK-1];
+                 T_ lDZZ = CONSTANT_DATA.mDZZ[lK-1];
+                 T_ lDXT = CONSTANT_DATA.mDXT[lK-1];
+                 T_ lDYT = CONSTANT_DATA.mDYT[lK-1];
+                 T_ lDZT = CONSTANT_DATA.mDZT[lK-1];
+                 T_ lPRMCON = CONSTANT_DATA.mPRMCON_K[lK-1];
+                 T_ lDT2 = addp3(lDXT,lDXT,lDYT,lDYT,lDZT,lDZT);
 
 #define lGAMMA shared[6*BX_+threadIdx.x]
-        lGAMMA = lGamma_mul * msub(lDT2,lPRMCON,lPRMCON)/
+                 lGAMMA = lGamma_mul * msub(lDT2,lPRMCON,lPRMCON)/
                  ((lAMTI+lAMTJ) * addp3(lDXX, lDXT, lDYY, lDYT, lDZZ, lDZT));
 
-        if (lI <= CONSTANT_DATA.mNATMS) {
+                 if (lI <= CONSTANT_DATA.mNATMS) {
 #define UPDSTRCON(I,A1,A2) shared[(I)*BX_ + threadIdx.x] = m3add(shared[(I)*BX_ + threadIdx.x], lGAMMA, lD##A1, lD##A2)
-          UPDSTRCON(0, XX, XX); UPDSTRCON(1, XX, YY); UPDSTRCON(2, XX, ZZ);
-          UPDSTRCON(3, YY, YY); UPDSTRCON(4, YY, ZZ);
-          UPDSTRCON(5, ZZ, ZZ);
+                    UPDSTRCON(0, XX, XX); UPDSTRCON(1, XX, YY); UPDSTRCON(2, XX, ZZ);
+                    UPDSTRCON(3, YY, YY); UPDSTRCON(4, YY, ZZ);
+                    UPDSTRCON(5, ZZ, ZZ);
 #undef UPDSTRCON
 
-          if (lLFRZN_I==0) {
-            T_ lGAMMI = -lGammIJ_mul * lGAMMA * lAMTI;
-            CONSTANT_DATA.mXXT[lK-1] = lDXX*lGAMMI;
-            CONSTANT_DATA.mYYT[lK-1] = lDYY*lGAMMI;
-            CONSTANT_DATA.mZZT[lK-1] = lDZZ*lGAMMI;
-          }
-        }
-        if (lJ <= CONSTANT_DATA.mNATMS && lLFRZN_J==0) {
-          T_ lGAMMJ = lGammIJ_mul * lGAMMA * lAMTJ;
-          CONSTANT_DATA.mXXT[CONSTANT_DATA.mNTCONS+lK-1] = lDXX*lGAMMJ;
-          CONSTANT_DATA.mYYT[CONSTANT_DATA.mNTCONS+lK-1] = lDYY*lGAMMJ;
-          CONSTANT_DATA.mZZT[CONSTANT_DATA.mNTCONS+lK-1] = lDZZ*lGAMMJ;
-        }
+                    if (lLFRZN_I==0) {
+                       T_ lGAMMI = -lGammIJ_mul * lGAMMA * lAMTI;
+                       CONSTANT_DATA.mXXT[lK-1] = lDXX*lGAMMI;
+                       CONSTANT_DATA.mYYT[lK-1] = lDYY*lGAMMI;
+                       CONSTANT_DATA.mZZT[lK-1] = lDZZ*lGAMMI;
+                    }
+                 }
+                 if (lJ <= CONSTANT_DATA.mNATMS && lLFRZN_J==0) {
+                     T_ lGAMMJ = lGammIJ_mul * lGAMMA * lAMTJ;
+                     CONSTANT_DATA.mXXT[CONSTANT_DATA.mNTCONS+lK-1] = lDXX*lGAMMJ;
+                     CONSTANT_DATA.mYYT[CONSTANT_DATA.mNTCONS+lK-1] = lDYY*lGAMMJ;
+                     CONSTANT_DATA.mZZT[CONSTANT_DATA.mNTCONS+lK-1] = lDZZ*lGAMMJ;
+                 }
+             }
       }
-    }
 #undef lGAMMA
     __syncthreads();
 

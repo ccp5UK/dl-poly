@@ -63,7 +63,6 @@ int link_cell_pairs_cuda_is_in_valid_context() {
 void link_cell_pairs_cuda_set_is_in_valid_context(int aIs) {
   //printf ("Calling link cell pairs\n");
 	int *lIsInValidcontext = link_cell_pairs_cuda_get_pointer_is_in_valid_context();
-  //printf ("*lIsInValidcontext = %d aIs = %d\n", *lIsInValidcontext, aIs);
 	if (dl_poly_cuda_offload_link_cell_pairs()==dl_poly_cuda_fortran_false()) {
     printf("%s::%s: can change context when acceleration has been disabled.\n",
 	   __FILE__, __FUNCTION__);
@@ -83,27 +82,7 @@ void link_cell_pairs_cuda_set_is_in_valid_context(int aIs) {
     exit(-1);                                                      \
   }
 
-//template<typename T_> struct constant_data {
-//  int mNATMS, mMXATMS, mNCELLS, mMXLIST, mNSBCLL, mNLP, mNLP3, mNLX, mNLY, mMXATDM;
-//  int mMEGFRZ;
-//  int mNLX_Plus_2xNLP, mNLY_Plus_2xNLP;
-//  int3 mNLXYZ0E, mNLXYZ1S;
-//  T_* mXXX, *mYYY, *mZZZ;
-//  int *mLFRZN, *mAT_LIST, *mLCT_START;
-//  T_ mRCSQ;
-//  /* the ni{x,y,z} constants; the second half of the array holds the
-//   * negated values.
-//   */
-//#define NLP3_MAX 14
-//  int3 mNIXYZ[2*NLP3_MAX];
-//  int *mLIST;
-
-//  int  mMXEXCL;
-// int *mLTG;
-//  int *mLEXATM;
-//};
-
-//malysaght240112
+//malysaght240112 : modification of constant_data structure
 template<typename T_> struct constant_data {
   T_ *mXXX, *mYYY, *mZZZ;
 
@@ -168,6 +147,7 @@ extern "C" void link_cell_pairs_cuda_initialise(
     int *aAT_LIST, int *aLCT_START, int *aLIST, int *aNLP3,
     int *aNIX, int *aNIY, int *aNIZ, real *aRCSQ,
     int *aLBOOK, int *aMXEXCL, int *aLEXATM, int *aLTG, int *aMEGFRZ) {
+
 
 
   sHD.mDynamicRatios = dl_poly_cuda_getenv("dlpolycuda_linkcellpairs_dynamic_ratios",
@@ -240,6 +220,7 @@ extern "C" void link_cell_pairs_cuda_initialise(
   sCD.mNLXYZ0E   = make_int3(*aNLX0E, *aNLY0E, *aNLZ0E);
   sCD.mNLXYZ1S   = make_int3(*aNLX1S, *aNLY1S, *aNLZ1S);
 
+
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mXXX,       sCD.mMXATMS*sizeof(real)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mYYY,       sCD.mMXATMS*sizeof(real)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mZZZ,       sCD.mMXATMS*sizeof(real)));
@@ -250,7 +231,6 @@ extern "C" void link_cell_pairs_cuda_initialise(
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mLFRZN,     sCD.mMXATMS*sizeof(int)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mAT_LIST,   sCD.mMXATMS*sizeof(int)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mLCT_START, (sCD.mNCELLS+1)*sizeof(int)));
-//  CUDA_SAFE_CALL(cudaMalloc(&sCD.mLIST, (512 + (1+sCD.mMXLIST)*sCD.mMXATDM)*sizeof(int)));
 //malysaght240112
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mLIST, (512 + (1+2+sCD.mMXLIST)*sCD.mMXATDM)*sizeof(int)));
 
@@ -263,6 +243,7 @@ extern "C" void link_cell_pairs_cuda_initialise(
     CUDA_SAFE_CALL(cudaMalloc(&sCD.mLTG, sCD.mMXATMS*sizeof(int)));
     CUDA_SAFE_CALL(cudaMalloc(&sCD.mLEXATM, (1+sCD.mMXEXCL)*sCD.mMXATDM*sizeof(int)));
   }
+
 
   start_timing_link_cell_pairs_cuda_write();
   CUDA_SAFE_CALL(cudaMemcpy(sCD.mXXX,       aXXX,
@@ -283,7 +264,6 @@ extern "C" void link_cell_pairs_cuda_initialise(
     CUDA_SAFE_CALL(cudaMemcpy(sCD.mLTG, aLTG,
                               sCD.mMXATMS*sizeof(int), cudaMemcpyHostToDevice));
 
-    // XXX: This is probably constant.
     CUDA_SAFE_CALL(cudaMemcpy(sCD.mLEXATM, aLEXATM,
 			      (1+sCD.mMXEXCL)*sCD.mMXATDM*sizeof(int), cudaMemcpyHostToDevice));
   }
@@ -307,18 +287,14 @@ extern "C" void link_cell_pairs_cuda_initialise(
 //end_malysaght240112
 
 
-
-
-
   CUDA_SAFE_CALL(cudaMemcpyToSymbol(CONSTANT_DATA, (void*)&sCD, sizeof(constant_data<real>)));
   stop_timing_link_cell_pairs_cuda_write();
-	//printf ("Calling initialise \n");
+
   link_cell_pairs_cuda_set_is_in_valid_context(1);
 }
 
 extern "C" void link_cell_pairs_cuda_finalise() {
   link_cell_pairs_cuda_set_is_in_valid_context(0);
-	//printf("Calling finalise\n");
   CUDA_SAFE_CALL(cudaFree(sHD.mDEV_ScratchBuffer));
   CUDA_SAFE_CALL(cudaFree(sCD.mXXX));
   CUDA_SAFE_CALL(cudaUnbindTexture(&TEXTURE_DATA_XXX));

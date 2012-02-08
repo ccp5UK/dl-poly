@@ -56,10 +56,6 @@ Subroutine constraints_shake_vv        &
   Logical           :: safe
   Integer           :: fail(1:3),i,j,k,icyc
 
-!malysaght170112
-  Integer, Dimension( : , : ), Allocatable :: lstopt_cuda
-!end_malysaght170112
-
   Real( Kind = wp ) :: amti,amtj,dli,dlj,gamma,gammi,gammj,tstep2
   Real( Kind = wp ) :: esigmax
 
@@ -101,22 +97,16 @@ Subroutine constraints_shake_vv        &
   icyc=0
   safe=.false.
 
+    
+
 #ifdef COMPILE_CUDA
   If (dl_poly_cuda_offload_constraints_shake() .and. &
        dl_poly_cuda_is_cuda_capable()             .and. &
        dl_poly_cuda_constraints_shake_ntcons_enough_to_offload(ntcons)) Then
-!malysaght170112
-     Allocate(lstopt_cuda(1:2,1:mxcons), stat=fail(3))
-     If (fail(3) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'constraints_shake allocation failure, node: ', idnode
-        Call error(0)
-     End If
-     lstopt_cuda(:,:) = lstopt(1:2,1:mxcons)
-!end_malysaght170112
      Call constraints_shake_cuda_initialise(&
           ntcons, mxcons, mxatms, natms,imcon,&
           lsi,lsa,lishp_con,lashp_con,mop,mxbuff,nlast,&
-          lstopt_cuda, lfrzn, listcon, listot,&               !malysaght170112: lstopt_cuda passed
+          lstopt, lfrzn, listcon, listot,&              
           prmcon, weight,&
           dxx, dyy, dzz, dxt, dyt, dzt, dt2, tstep2, tolnce, cell,&
           xxx, yyy, zzz, xxt, yyt, zzt, strcon, is_vv)
@@ -145,17 +135,10 @@ Subroutine constraints_shake_vv        &
      Call constraints_shake_cuda_copy_local_positions_to_host()
      Call constraints_shake_cuda_finalise()
 
+
 ! error exit for non-convergence
 
   If (.not.safe) Call error(105)
-
-!malysaght170112
-     Deallocate(lstopt_cuda, stat=fail(3))
-     If (fail(3) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'constraints_shake Deallocation failure, node: ', idnode
-        Call error(0)
-     End If
-!end_malysaght170112
 
   Else
 #endif
@@ -322,6 +305,7 @@ Subroutine constraints_shake_vv        &
 #ifdef COMPILE_CUDA
   End If
 #endif
+
 
 ! global sum of stress tensor
 
