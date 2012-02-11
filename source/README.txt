@@ -113,7 +113,7 @@ Note that in `comms_module.f90' it is crucial that line 13 reads as:
 If the parallel OS environment, you are compiling on, is not fully F90
 compatible then the `Use mpi' entry in `comms_module.f90' will be
 interpreted as erroneous.  This is easily overcome by commenting out
-`Use mpi' and inserting "Include 'mpif.h'" after `Implicit None'.
+`Use mpi' and uncommenting "Include 'mpif.h'" just after `Implicit None'.
 
 If there is an `entry' in the Makefile for the particular combination
 of architecture, compiler & MPI library, then the user may

@@ -1,9 +1,9 @@
 DL_POLY_4.02 CUDA+OpenMP PORT - an ICHEC-STFC Collaboration
 ===========================================================
 
-Developed by Christos Kartsaklis, Ruairi Nestor and Peter
-Nash (dlpoly-gpu@ichec.ie) in collaboration with Ilian
-Todorov (ilian.todorov@stfc.ac.uk).
+Developed by Michael Lysaght, Peter Nash, Ruairi Nestor and
+Christos Kartsaklis,  and  (dlpoly-gpu@ichec.ie) in
+collaboration with Ilian Todorov (ilian.todorov@stfc.ac.uk).
 
 
 PORT STATUS

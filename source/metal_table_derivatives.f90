@@ -7,7 +7,7 @@ Subroutine metal_table_derivatives(ityp,buffer,vvv)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2006
-! amended   - i.t.todorov august 2006
+! amended   - i.t.todorov february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -18,7 +18,7 @@ Subroutine metal_table_derivatives(ityp,buffer,vvv)
 
   Integer,           Intent( In    ) :: ityp
   Real( Kind = wp ), Intent( In    ) :: buffer(1:mxbuff)
-  Real( Kind = wp ), Intent(   Out ) :: vvv(1:mxgrid,1:mxmet,1:2)
+  Real( Kind = wp ), Intent( InOut ) :: vvv(1:mxgrid,1:mxmet,1:2)
 
   Integer           :: i,v_end,i_start,i_end
   Real( Kind = wp ) :: delmet,aa0,aa1,aa2,aa3,aa4, &

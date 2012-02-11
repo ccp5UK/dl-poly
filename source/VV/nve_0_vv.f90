@@ -186,7 +186,6 @@ Subroutine nve_0_vv                                        &
            lstopt,dxx,dyy,dzz,listot,  &
            xxx,yyy,zzz,str,vir)
 
-
 ! constraint virial and stress tensor
 
               vircon=vircon+vir
