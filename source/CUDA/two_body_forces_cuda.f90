@@ -325,6 +325,7 @@ Subroutine two_body_forces                        &
 #ifdef COMPILE_CUDA
      Call metal_ld_compute_get_keypot(keypot)
 
+
 ! CUDA: (1) Unfortunately, due to the global stuff that metal_ld_compute
 !       invokes (metal_ld_export), these functions cannot be easilly
 !       integrated with the two_body_forces_cuda_invoke.

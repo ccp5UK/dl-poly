@@ -157,5 +157,5 @@ unforseen behaviours of the builds.
 
 Contacts at ICHEC & STFC Daresbury Laboratory:
 ----------------------------------------------
-Dr. P. Nash      :: dlpoly-gpu@ichec.ie
+Dr. M.A. Lysaght :: dlpoly-gpu@ichec.ie
 Dr. I.T. Todorov :: ilian.todorov@stfc.ac.uk

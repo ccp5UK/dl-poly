@@ -641,9 +641,7 @@ __global__ void constraints_shake_cuda_th() {
 
 
 //malysaght060212 : Accounting for new condition in vanilla code
-      if (*F2D_ADDRESS(CONSTANT_DATA.mLSTOPT,1,1,2+1,1,lK) == 0){
-
-
+      if (*F2D_ADDRESS(CONSTANT_DATA.mLSTOPT,1,1,2+1,1,lK) == 0) { 
         lDT2 = addp3(lDXT,lDXT,lDYT,lDYT,lDZT,lDZT);
         T_ lPRMCON = CONSTANT_DATA.mPRMCON_K[lK-1];
         T_ lESIG1  = ((T_) 0.5)*fabs(msub(lDT2, lPRMCON, lPRMCON)) / lPRMCON;

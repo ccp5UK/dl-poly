@@ -143,6 +143,8 @@ Subroutine constraints_shake_vv        &
   Else
 #endif
 
+ 
+
   Do While ((.not.safe) .and. icyc < mxshak)
      icyc=icyc+1
 
