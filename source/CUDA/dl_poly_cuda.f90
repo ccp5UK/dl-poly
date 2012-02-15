@@ -40,9 +40,8 @@ Program dl_poly
 ! Irish Centre for High-End Computing (ICHEC)
 ! http://www.ichec.ie
 !
-! Developed by Christos Kartsaklis (christos.kartsaklis@ichec.ie) in
-! collaboration with I.T. Todorov (i.t.todorov@dl.ac.uk) and
-! W. Smith (w.smith@dl.ac.uk) from STFC Daresbury Laboratory.
+! Originally developed by Christos Kartsaklis in collaboration with
+! I.T. Todorov (i.t.todorov@dl.ac.uk).
 !
 ! Distributed under the same license that the original, unmodified,
 ! DL_POLY_4 is. You should have received these sources from the
@@ -220,9 +219,12 @@ Program dl_poly
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
           "**         **  contributors:  i.j.bush               ****** O ****", &
-          "*************  version:  4.03     /    january 2012  ******* L ***", &
+          "*************  version:  4.03.1   /   february 2012  ******* L ***", &
           "*************  Execution on ", mxnode, "    node(s)  ******** Y **", &
           "******************************************************************"
+
+     Write(nrite,'(1x,a,/)') &
+          "$ ICHEC CUDA port by m.lysaght, p.nash, r.nestor & c.kartsaklis $"
   End If
 
 #ifdef COMPILE_CUDA

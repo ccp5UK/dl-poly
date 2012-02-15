@@ -543,7 +543,6 @@
 
 ! Calculate pair-like forces (metal,vdw,electrostatic) and add lrc
 
-
      If (.not.(mxmet == 0 .and. keyfce == 0 .and. l_n_v .and. l_n_r)) &
         Call two_body_forces                      &
            (imcon,rcut,rvdw,rmet,keyens,          &
@@ -551,7 +550,6 @@
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &
            engcpe,vircpe,engsrp,virsrp,stress)
-
 
 ! Calculate tersoff forces
 
