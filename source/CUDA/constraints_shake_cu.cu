@@ -385,7 +385,8 @@ constraints_shake_cuda_initialise_install_red_struct(int *aLSTOPT, int *aLFRZN) 
 
       int lLFRZN_I = aLFRZN[lIJ.y-1], lLFRZN_J = aLFRZN[lIJ.z-1];
 
-      if (*F2D_ADDRESS(sHD.mLSTOPT,1,1,2+1,1,lK) == 0){  
+//malysaght150212: the conditional below works fine for filling in lOcc buffer
+        if (lIJ.y>0 && lIJ.z>0 && (lIJ.y<=sCD.mNATMS || lIJ.z<=sCD.mNATMS) && (lLFRZN_I==0 || lLFRZN_J==0)) {
          if (lLFRZN_I==0 && lIJ.y<=sCD.mNATMS) {
              lOcc[lIJ.y-1].push_back(lK);
          }

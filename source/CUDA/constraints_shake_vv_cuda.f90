@@ -140,6 +140,7 @@ Subroutine constraints_shake_vv        &
 
   If (.not.safe) Call error(105)
 
+
   Else
 #endif
 
