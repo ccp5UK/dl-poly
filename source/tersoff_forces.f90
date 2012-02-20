@@ -79,7 +79,6 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Allocate (ert(1:mxlist),eat(1:mxlist),grt(1:mxlist),gat(1:mxlist),     Stat=fail(4))
   Allocate (scr(1:mxlist),gcr(1:mxlist),                                 Stat=fail(5))
   Allocate (cst(1:mxlist),gam(1:mxlist),gvr(1:mxlist),                   Stat=fail(6))
-
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'tersoff_forces allocation failure, node: ', idnode
      Call error(0)

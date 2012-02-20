@@ -7,7 +7,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov january 2012
+! amended   - i.t.todorov february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -238,15 +238,15 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
            If      (lx0) Then
               ix=0
            Else If (lx1) Then
-              ix=nlx
+              ix=nlx+1
            Else If (ly0) Then
               iy=0
            Else If (ly1) Then
-              iy=nly
+              iy=nly+1
            Else If (lz0) Then
               iz=0
            Else If (lz1) Then
-              iz=nlz
+              iz=nlz+1
            End If
         End If
      End If
@@ -403,7 +403,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
                                               list(0,i)=list(0,i)+1
                                               If (list(-1,i) > 0) Then ! roll
                                                  list(-1,i)=list(-1,i)+1
-                                                 list(list(-1,i),i)=list(list(0,i),i)
+                                                 list(list(-1,i),i)=list(list(0,i)+1,i)
                                               End If
                                               list(list(0,i),i)=j
                                            Else

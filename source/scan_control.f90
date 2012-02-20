@@ -10,7 +10,7 @@ Subroutine scan_control                              &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -452,25 +452,28 @@ Subroutine scan_control                              &
 
         If (mxspl /= 0) Then
 
-! (1) to Max(rvdw,Max(cellwidth*mxspl/kmax)) satisfying SPME b-splines
+! (1) to Max(rcut,Max(cellwidth*mxspl/kmax)) satisfying SPME b-splines
 ! propagation width
 
            If (.not.lrcut) Then
               lrcut=.true.
               Call dcell(cell,celprp)
-              rcut=Max( rcut,rvdw,rmet,2.0_wp*rcter+1.0e-6_wp,        &
+              rcut=Max( rcut                                         , &
                         Max(celprp(7)*Real(mxspl,wp)/Real(kmaxa1,wp) , &
                             celprp(8)*Real(mxspl,wp)/Real(kmaxb1,wp) , &
                             celprp(9)*Real(mxspl,wp)/Real(kmaxc1,wp)) )
            End If
 
-! (2) to 2.0_wp*rcter+1.0e-6_wp if only tersoff potentials exist
+! Reset rvdw, rmet and rcut when only tersoff potentials are opted for
 
            If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r) Then
-              lrcut=.true.
-              rcut=Min(rcut,2.0_wp*rcter+1.0e-6_wp)
               rvdw=0.0_wp
               rmet=0.0_wp
+              If (.not.l_str) Then
+                 rcut=2.0_wp*rcter+1.0e-6_wp
+              Else
+                 rcut=Max(rcut,2.0_wp*rcter+1.0e-6_wp)
+              End If
            End If
 
         Else
@@ -483,24 +486,24 @@ Subroutine scan_control                              &
 
 ! So there is rcut and some kind of electrostatics(-: or neither
 
-! Reset (1) rcut to Max(rvdw,rmet) if any of them exists
+! Reset rcut to something sensible if sensible is an option
 
-           If ((.not.lrcut) .and. (lrvdw .or. lrmet)) Then
+           If ( ((.not.lrcut) .or. (.not.l_str)) .and. &
+                (lrvdw .or. lrmet .or. lter) ) Then
               lrcut=.true.
-              rcut=Max(rvdw,rmet)
+              rcut=Max(rvdw,rmet,2.0_wp*rcter+1.0e-6_wp)
            End If
 
-! Reset (2) rcut to rcut=2.0_wp*rcter+1.0e-6_wp if only
-! tersoff potentials exist
+! Reset rvdw and rmet when only tersoff potentials are opted for and
+! possibly reset rcut to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
 
            If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r) Then
-              lrcut=.true.
-              If (.not.l_str) Then
-                 rcut=2.0_wp*rcter+1.0e-6_wp
-                 lrcut=.true.
-              End If
               rvdw=0.0_wp
               rmet=0.0_wp
+              If (.not.l_str) Then
+                 lrcut=.true.
+                 rcut=2.0_wp*rcter+1.0e-6_wp
+              End If
            End If
 
 ! rcut must exist

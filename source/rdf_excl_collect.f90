@@ -8,21 +8,21 @@ Subroutine rdf_excl_collect(iatm,rcut,rsqdf)
 ! Note: to be used as part of two_body_forces
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2011
+! author    - i.t.todorov february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module,      Only : mxatms,mxgrdf,zero_plus
+  Use setup_module,      Only : mxlist,mxatms,mxgrdf,zero_plus
   Use site_module,       Only : numtyp
   Use config_module,     Only : natms,ltg,ltype,list
   Use statistics_module, Only : ntprdf,lstrdf,rdf
 
   Implicit None
 
-  Integer,                                 Intent( In    ) :: iatm
-  Real( Kind = wp ),                       Intent( In    ) :: rcut
-  Real( Kind = wp ), Dimension( 1:mxatms), Intent( In    ) :: rsqdf
+  Integer,                                  Intent( In    ) :: iatm
+  Real( Kind = wp ),                        Intent( In    ) :: rcut
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rsqdf
 
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: rcsq,rdelr

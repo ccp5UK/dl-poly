@@ -9,21 +9,21 @@ Subroutine rdf_collect(iatm,rcut,rsqdf)
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester march 1994
-! amended   - i.t.todorov february 2008
+! amended   - i.t.todorov february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module,      Only : mxatms,mxgrdf,zero_plus
+  Use setup_module,      Only : mxlist,mxatms,mxgrdf,zero_plus
   Use site_module,       Only : numtyp
   Use config_module,     Only : natms,ltg,ltype,list
   Use statistics_module, Only : ntprdf,lstrdf,rdf
 
   Implicit None
 
-  Integer,                                 Intent( In    ) :: iatm
-  Real( Kind = wp ),                       Intent( In    ) :: rcut
-  Real( Kind = wp ), Dimension( 1:mxatms), Intent( In    ) :: rsqdf
+  Integer,                                  Intent( In    ) :: iatm
+  Real( Kind = wp ),                        Intent( In    ) :: rcut
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rsqdf
 
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: rcsq,rdelr

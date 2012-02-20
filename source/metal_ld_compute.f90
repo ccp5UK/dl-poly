@@ -12,14 +12,14 @@ Subroutine metal_ld_compute                &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : mxnode,gsum,gcheck
   Use setup_module
-  Use config_module, Only : cell,natms,ltype,list,xxx,yyy,zzz
+  Use config_module, Only : cell,natms,ltg,ltype,list,xxx,yyy,zzz
   Use metal_module,  Only : ntpmet,ltpmet,fmet
 
   Implicit None
@@ -98,6 +98,7 @@ Subroutine metal_ld_compute                &
      Else                  ! FST contributions
         Call metal_ld_collect_fst(i,rsqdf,rho,rmet)
      End If
+
   End Do
 
 ! Check safety for densities
@@ -135,6 +136,7 @@ Subroutine metal_ld_compute                &
 ! catch unsafe value
 
               If (l < 1) Then
+                 Write(*,*) 'good density range problem: (LTG,RHO) ',ltg(i),rho(i)
                  safe=.false.
                  l=2
               End If
@@ -172,6 +174,7 @@ Subroutine metal_ld_compute                &
 
            Else
 
+              Write(*,*) 'bad density range problem: (LTG,RHO) ',ltg(i),rho(i)
               safe=.false.
 
            End If

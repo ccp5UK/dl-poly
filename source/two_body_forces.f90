@@ -132,10 +132,10 @@ Subroutine two_body_forces                        &
 
 ! calculate local density in metals
 
-     Call metal_ld_compute             &
-       (imcon,rmet,keyfce,elrcm,vlrcm, &
-       xdf,ydf,zdf,rsqdf,              &
-       rho,engden,virden,stress)
+     Call metal_ld_compute                 &
+           (imcon,rmet,keyfce,elrcm,vlrcm, &
+           xdf,ydf,zdf,rsqdf,              &
+           rho,engden,virden,stress)
 
   End If
 

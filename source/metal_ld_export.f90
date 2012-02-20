@@ -165,9 +165,11 @@ Subroutine metal_ld_export(mdir,sidex,sidey,sidez,cwx,cwy,cwz,mlast,iwrk,rho)
 
 ! Find whether a particle that belongs to this domain (idnode) falls
 ! into the halo of the neighbouring domain in the direction of mdir,
-! i.e. the particle is within the 'minus halo' of this domain and its
-! local density (rho) and index (ltg) exported into the neighbouring
-! domain in the direction of mdir.
+! i.e. the particle is within the 'minus halo' of this domain and has
+! to be exported into the neighbouring domain in the direction of mdir.
+! If a particle is to be exported across domains then its local density
+! (rho) and index (ltg=iwrk) also have to be exported across to the
+! receiving domain.
 
 ! LOOP OVER ALL PARTICLES ON THIS NODE
 

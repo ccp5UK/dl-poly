@@ -10,7 +10,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1992
-! amended   - i.t.todorov august 2010
+! amended   - i.t.todorov february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -18,7 +18,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
   Use comms_module,     Only : idnode,mxnode,gsync,gsum,gcheck
   Use setup_module,     Only : nrite,mxdihd,mxgrid, &
                                pi,sqrpi,r4pie0,zero_plus
-  Use config_module,    Only : cell,natms,nlast,lsi,lsa,lfrzn,ltype, &
+  Use config_module,    Only : cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
                                chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use dihedrals_module, Only : ntdihd,keydih,listdih,prmdih
   Use vdw_module,       Only : ntpvdw,lstvdw,vvdw,gvdw
@@ -488,7 +488,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 ! flag error if rad > cutoff
 
         If (rad > rcut) Then
-           Write(*,*) i,ia,ib,ic,id,rad,rcut
+           Write(*,*) i,ltg(ia),ltg(ib),ltg(ic),ltg(id),rcut,rad
            safe(2) = .false.
         End If
 

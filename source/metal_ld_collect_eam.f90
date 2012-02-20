@@ -9,19 +9,19 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov may 2008
+! amended   - i.t.todorov february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module
-  Use config_module, Only : natms,ltype,list
+  Use config_module, Only : natms,ltg,ltype,list
   Use metal_module,  Only : dmet
 
   Implicit None
 
   Integer,                                  Intent( In    ) :: iatm
-  Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: rsqdf
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rsqdf
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: rho
   Logical,                                  Intent( InOut ) :: safe
 
@@ -77,7 +77,15 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
         End If
 
         rho(iatm) = rho(iatm) + density
-        If (ai == aj .and. jatm <= natms) rho(jatm) = rho(jatm) + density
+
+        If (rho(iatm) < -zero_plus .or. density < -zero_plus) &
+           Write(*,*) 'negative density: (LTG,RHO_SUM,RHO) ',ltg(iatm),rho(iatm),density
+
+        If (ai == aj .and. jatm <= natms) Then
+           rho(jatm) = rho(jatm) + density
+           If (rho(jatm) < -zero_plus .or. density < -zero_plus) &
+              Write(*,*) 'negative density: (LTG,RHO_SUM,RHO) ',ltg(jatm),rho(jatm),density
+        End If
 
      End If
 
@@ -116,6 +124,9 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
         End If
 
         rho(jatm) = rho(jatm) + density
+
+        If (rho(jatm) < -zero_plus .or. density < -zero_plus) &
+           Write(*,*) 'negative density: (LTG,RHO_SUM,RHO) ',ltg(jatm),rho(jatm),density
 
      End If
 

@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov june 2009
+! amended   - i.t.todorov february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -21,7 +21,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,rmet)
   Implicit None
 
   Integer,                                  Intent( In    ) :: iatm
-  Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: rsqdf
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rsqdf
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: rho
   Real( Kind = wp ),                        Intent( In    ) :: rmet
 
