@@ -7,7 +7,7 @@ Subroutine read_config_parallel                                    &
 ! dl_poly_4 subroutine for reading in the CONFIG data file in parallel
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush & i.t.todorov october 2010
+! author    - i.j.bush & i.t.todorov february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -352,18 +352,32 @@ Subroutine read_config_parallel                                    &
               syy=rcell(2)*axx_read(i)+rcell(5)*ayy_read(i)+rcell(8)*azz_read(i)
               szz=rcell(3)*axx_read(i)+rcell(6)*ayy_read(i)+rcell(9)*azz_read(i)
 
+! sxx,syy,szz are in [-0.5,0.5) interval as values as 0.4(9) may pose a problem
+
               sxx=sxx-Anint(sxx) ; If (sxx >= half_minus) sxx=-sxx
               syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
               szz=szz-Anint(szz) ; If (szz >= half_minus) szz=-szz
 
-! sxx,syy,szz are in [-0.5,0.5) interval and values as 0.4(9) may pose a problem
+! fold back coordinates
 
-              ipx=Int((sxx+0.5_wp)*nprx_r) ; If (ipx == nprx) ipx=ipx-1
-              ipy=Int((syy+0.5_wp)*npry_r) ; If (ipy == npry) ipy=ipy-1
-              ipz=Int((szz+0.5_wp)*nprz_r) ; If (ipz == nprz) ipz=ipz-1
+              axx_read(i)=cell(1)*sxx+cell(4)*syy+cell(7)*szz
+              ayy_read(i)=cell(2)*sxx+cell(5)*syy+cell(8)*szz
+              azz_read(i)=cell(3)*sxx+cell(6)*syy+cell(9)*szz
+
+! assign domain coordinates (call for errors)
+
+              ipx=Int((sxx+0.5_wp)*nprx_r) !; If (ipx == nprx) ipx=ipx-1
+              ipy=Int((syy+0.5_wp)*npry_r) !; If (ipy == npry) ipy=ipy-1
+              ipz=Int((szz+0.5_wp)*nprz_r) !; If (ipz == nprz) ipz=ipz-1
+
+! check for errors
+
+              If (ipx == nprx .or. ipy == npry .or. ipz == nprz) Call error(513)
+
+! assign domain
 
               idm=ipx+nprx*(ipy+npry*ipz)
-              If (idm < 0 .or. idm > (mxnode-1)) Call error(513)
+!              If (idm < 0 .or. idm > (mxnode-1)) Call error(513)
 
               owner_read(i) = idm
               n_held(idm) = n_held(idm)+1

@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2011
+! author    - i.t.todorov february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -418,6 +418,14 @@ Subroutine read_control                                &
 
         l_tor = .true.
         If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% Turn off production of REVCON & REVIVE !!! %%%"
+
+     Else If (word(1:5) == 'l_dis') Then
+
+        l_dis = .true.
+        r_dis = Min( r_dis , word_2_real(word,0.1_wp) )
+        If (idnode == 0) Write(nrite,"(2(/,1x,a),1p,e12.4)")                            &
+           "%%% Turn on the check on minimum separation distance between VNL pairs at re/start!!! %%%", &
+           "%%% separation criterion (Angsroms) %%% ", r_dis
 
 ! read VDW options
 

@@ -5,7 +5,7 @@ Module development_module
 ! dl_poly_4 development module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2011
+! author    - i.t.todorov february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,12 +20,13 @@ Module development_module
   Logical, Save :: l_his  = .false. ! HISTORY generation after reading with termination
   Logical, Save :: l_scl  = .false. ! CONFIG rescaling to CFGSCL after reading with termination
   Logical, Save :: l_trm  = .false. ! termination flag
-  Logical, Save :: l_tim  = .false. ! Turn on detailed timing, mostly for IJB in optimisation work
-  Logical, Save :: l_tor  = .false. ! Turn off production of REVCON & REVIVE
+  Logical, Save :: l_tim  = .false. ! detailed timing
+  Logical, Save :: l_tor  = .false. ! no production of REVCON & REVIVE
+  Logical, Save :: l_dis  = .false. ! check on minimum separation distance between VNL pairs at re/start
 
   Real( Kind = wp ), Save :: cels(1:9) = 0.0_wp ! CFGSCL lattice parameters
-
   Real( Kind = wp ), Save :: t_zero
+  Real( Kind = wp ), Save :: r_dis = 0.5_wp ! l_dis default check condition
 
 Contains
 

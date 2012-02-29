@@ -7,7 +7,7 @@ Subroutine read_config &
 ! particle density
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2011
+! author    - i.t.todorov february 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -15,7 +15,7 @@ Subroutine read_config &
   Use comms_module
   Use setup_module,   Only : nconf,nrite,half_minus
   Use config_module,  Only : imc_n,cell,allocate_config_arrays_read, &
-                             natms,nlast,atmnam,ltg,lsi,lsa, &
+                             natms,nlast,atmnam,lsi,lsa,ltg, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use domains_module, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
   Use parse_module,   Only : tabs_2_blanks, &
@@ -47,7 +47,7 @@ Subroutine read_config &
                             ipx,ipy,ipz,nlx,nly,nlz,ix,iy,iz, &
                             read_buffer_size
   Real( Kind = wp )      :: celprp(1:10),rcell(1:9),celh(1:9),det, &
-                            volm,vcell,dispx,dispy,dispz,    &
+                            volm,vcell,dispx,dispy,dispz,          &
                             sxx,syy,szz,xdc,ydc,zdc,               &
                             pda_max,pda_min,pda_ave,               &
                             pda_dom_max,pda_dom_min
@@ -357,18 +357,32 @@ Subroutine read_config &
               syy=rcell(2)*axx(i)+rcell(5)*ayy(i)+rcell(8)*azz(i)
               szz=rcell(3)*axx(i)+rcell(6)*ayy(i)+rcell(9)*azz(i)
 
+! sxx,syy,szz are in [-0.5,0.5) interval as values as 0.4(9) may pose a problem
+
               sxx=sxx-Anint(sxx) ; If (sxx >= half_minus) sxx=-sxx
               syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
               szz=szz-Anint(szz) ; If (szz >= half_minus) szz=-szz
 
-! sxx,syy,szz are in [-0.5,0.5) interval and values as 0.4(9) may pose a problem
+! fold back coordinates
 
-              ipx=Int((sxx+0.5_wp)*nprx_r) ; If (ipx == nprx) ipx=ipx-1
-              ipy=Int((syy+0.5_wp)*npry_r) ; If (ipy == npry) ipy=ipy-1
-              ipz=Int((szz+0.5_wp)*nprz_r) ; If (ipz == nprz) ipz=ipz-1
+              axx(i)=cell(1)*sxx+cell(4)*syy+cell(7)*szz
+              ayy(i)=cell(2)*sxx+cell(5)*syy+cell(8)*szz
+              azz(i)=cell(3)*sxx+cell(6)*syy+cell(9)*szz
+
+! assign domain coordinates (call for errors)
+
+              ipx=Int((sxx+0.5_wp)*nprx_r) !; If (ipx == nprx) ipx=ipx-1
+              ipy=Int((syy+0.5_wp)*npry_r) !; If (ipy == npry) ipy=ipy-1
+              ipz=Int((szz+0.5_wp)*nprz_r) !; If (ipz == nprz) ipz=ipz-1
+
+! check for errors
+
+              If (ipx == nprx .or. ipy == npry .or. ipz == nprz) Call error(513)
+
+! assign domain
 
               idm=ipx+nprx*(ipy+npry*ipz)
-              If (idm < 0 .or. idm > (mxnode-1)) Call error(513)
+!              If (idm < 0 .or. idm > (mxnode-1)) Call error(513)
 
               If (idm == idnode) Then
                  natms=natms+1
@@ -577,18 +591,26 @@ Subroutine read_config &
      syy=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
      szz=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
 
+! sxx,syy,szz are in [-0.5,0.5) interval as values as 0.4(9) may pose a problem
+
      sxx=sxx-Anint(sxx) ; If (sxx >= half_minus) sxx=-sxx
      syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
      szz=szz-Anint(szz) ; If (szz >= half_minus) szz=-szz
 
-! sxx,syy,szz are in [-0.5,0.5) interval and values as 0.4(9) may pose a problem
+! assign domain coordinates (call for errors)
 
-     ipx=Int((sxx+0.5_wp)*nprx_r) ; If (ipx == nprx) ipx=ipx-1
-     ipy=Int((syy+0.5_wp)*npry_r) ; If (ipy == npry) ipy=ipy-1
-     ipz=Int((szz+0.5_wp)*nprz_r) ; If (ipz == nprz) ipz=ipz-1
+     ipx=Int((sxx+0.5_wp)*nprx_r) !; If (ipx == nprx) ipx=ipx-1
+     ipy=Int((syy+0.5_wp)*npry_r) !; If (ipy == npry) ipy=ipy-1
+     ipz=Int((szz+0.5_wp)*nprz_r) !; If (ipz == nprz) ipz=ipz-1
+
+! check for errors
+
+     If (ipx == nprx .or. ipy == npry .or. ipz == nprz) Call error(513)
+
+! assign domain
 
      idm=ipx+nprx*(ipy+npry*ipz)
-     If (idm < 0 .or. idm > (mxnode-1)) Call error(513)
+!     If (idm < 0 .or. idm > (mxnode-1)) Call error(513)
 
 ! Put all particles in bounded link-cell space: lower and upper
 ! bounds as 1 <= i_coordinate <= nl_coordinate

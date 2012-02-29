@@ -13,7 +13,7 @@ Subroutine ewald_frozen_forces &
 !       need this calculation just once!
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2011
+! author    - i.t.todorov february 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -38,7 +38,7 @@ Subroutine ewald_frozen_forces &
   Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
   Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
 
-  Logical, Save     :: newjob = .true., l_ens_do = .true.
+  Logical, Save     :: newjob = .true.
 
   Logical           :: ll_cp
   Integer           :: fail,i,j,k,ii,jj,idi,nzfr,limit
@@ -58,15 +58,7 @@ Subroutine ewald_frozen_forces &
      Call error(0)
   End If
 
-  If (.not.l_ens_do) Then
-     Go To 100
-  Else
-     If (keyens < 20) Then
-        ll_cp=l_cp
-        l_cp =.true.
-     End If
-  End If
-
+  ll_cp=.true.
   If (newjob) Then
      newjob = .false.
 
@@ -75,6 +67,28 @@ Subroutine ewald_frozen_forces &
      If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
      rcsq=rcut**2
+
+     If (keyens < 20 .and. (.not.l_cp)) Then ! so we won't fail
+        Allocate (fcx(1:mxatms),fcy(1:mxatms),fcz(1:mxatms), Stat = fail)
+        If (fail > 0) Call error(1040) ! as not called in ewald_module
+
+        ll_cp=l_cp ! =.false. so we do shadow copying
+        l_cp =.true.
+     End If
+  Else
+     If (keyens < 20 .and. (.not.l_cp)) Then ! All's been done but needs copying
+        Do i=1,natms
+           fxx(i)=fxx(i)+fcx(i)
+           fyy(i)=fyy(i)+fcy(i)
+           fzz(i)=fzz(i)+fcz(i)
+        End Do
+
+        engcpe_fr=e_fr
+        vircpe_fr=v_fr
+        stress=stress+s_fr
+
+        Return
+     End If
   End If
 
   Call invert(cell,rcell,det)
@@ -136,7 +150,7 @@ Subroutine ewald_frozen_forces &
         ii=nz_fr(0)+i
         idi=gfr(ii) ! =ltg(l_ind(i))
 
-        Do jj=1,nz_fr(0)
+        Do jj=1,nz_fr(0) ! -, on nodes<idnode
            xrr=xfr(ii)-xfr(jj)
            yrr=yfr(ii)-yfr(jj)
            zrr=zfr(ii)-zfr(jj)
@@ -207,7 +221,7 @@ Subroutine ewald_frozen_forces &
            End If
         End Do
 
-        Do j=i+1,nz_fr(idnode+1)
+        Do j=i+1,nz_fr(idnode+1) ! =, node=idnode (OVERLAP but no SELF)!
            jj=nz_fr(0)+j
 
            xrr=xfr(ii)-xfr(jj)
@@ -253,50 +267,38 @@ Subroutine ewald_frozen_forces &
            fyy(l_ind(i))=fyy(l_ind(i))-fy
            fzz(l_ind(i))=fzz(l_ind(i))-fz
 
+           fxx(l_ind(j))=fxx(l_ind(j))+fx
+           fyy(l_ind(j))=fyy(l_ind(j))+fy
+           fzz(l_ind(j))=fzz(l_ind(j))+fz
+
 ! infrequent calculations copying
 
            If (l_cp) Then
               fcx(l_ind(i))=fcx(l_ind(i))-fx
               fcy(l_ind(i))=fcy(l_ind(i))-fy
               fcz(l_ind(i))=fcz(l_ind(i))-fz
+
+              fcx(l_ind(j))=fcx(l_ind(j))+fx
+              fcy(l_ind(j))=fcy(l_ind(j))+fy
+              fcz(l_ind(j))=fcz(l_ind(j))+fz
            End If
-
-           If (l_ind(j) <= natms) Then
-
-              fxx(l_ind(j))=fxx(l_ind(j))+fx
-              fyy(l_ind(j))=fyy(l_ind(j))+fy
-              fzz(l_ind(j))=fzz(l_ind(j))+fz
-
-! infrequent calculations copying
-
-              If (l_cp) Then
-                 fcx(l_ind(j))=fcx(l_ind(j))+fx
-                 fcy(l_ind(j))=fcy(l_ind(j))+fy
-                 fcz(l_ind(j))=fcz(l_ind(j))+fz
-              End If
-
-           End If
-
-           If (l_ind(j) <= natms .or. idi < ltg(l_ind(j))) Then
 
 ! calculate potential energy and virial
 
-              engcpe_fr = engcpe_fr - erfr
-              vircpe_fr = vircpe_fr - egamma*rsq
+           engcpe_fr = engcpe_fr - erfr
+           vircpe_fr = vircpe_fr - egamma*rsq
 
 ! calculate stress tensor
 
-              strs1 = strs1 + xrr*fx
-              strs2 = strs2 + xrr*fy
-              strs3 = strs3 + xrr*fz
-              strs5 = strs5 + yrr*fy
-              strs6 = strs6 + yrr*fz
-              strs9 = strs9 + zrr*fz
-
-           End If
+           strs1 = strs1 + xrr*fx
+           strs2 = strs2 + xrr*fy
+           strs3 = strs3 + xrr*fz
+           strs5 = strs5 + yrr*fy
+           strs6 = strs6 + yrr*fz
+           strs9 = strs9 + zrr*fz
         End Do
 
-        Do jj=nz_fr(0)+nz_fr(idnode+1)+1,nzfr
+        Do jj=nz_fr(0)+nz_fr(idnode+1)+1,nzfr ! +, on nodes>idnode
            xrr=xfr(ii)-xfr(jj)
            yrr=yfr(ii)-yfr(jj)
            zrr=zfr(ii)-zfr(jj)
@@ -525,27 +527,10 @@ Subroutine ewald_frozen_forces &
      s_fr(9) = strs9
   End If
 
-100 Continue
-  If (keyens < 20) Then
-     If (l_ens_do) Then ! first round
-        l_ens_do=.false.
+! Don't forget to cancel shadow copying, otherwise
+! the l_cp switch will call problems elsewhere
 
-        l_cp=ll_cp
-     Else               ! consecutive rounds
-        engcpe_fr = e_fr
-        vircpe_fr = v_fr
-
-        stress(1) = s_fr(1)
-        stress(2) = s_fr(2)
-        stress(3) = s_fr(3)
-        stress(4) = s_fr(4)
-        stress(5) = s_fr(5)
-        stress(6) = s_fr(6)
-        stress(7) = s_fr(7)
-        stress(8) = s_fr(8)
-        stress(9) = s_fr(9)
-     End If
-  End If
+  If (.not.ll_cp) l_cp=ll_cp
 
   Deallocate (l_ind,nz_fr, Stat=fail)
   If (fail > 0) Then

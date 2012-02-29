@@ -102,11 +102,11 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      izt=(idz+1)*(kmaxc/nprz)
 
      ixbm1_r=Real(ixb-1,wp)
-     ixtm0_r=Nearest(Real(ixt,wp),-1.0_wp)
+     ixtm0_r=Nearest( Real(ixt,wp) , -1.0_wp )
      iybm1_r=Real(iyb-1,wp)
-     iytm0_r=Nearest(Real(iyt,wp),-1.0_wp)
+     iytm0_r=Nearest( Real(iyt,wp) , -1.0_wp )
      izbm1_r=Real(izb-1,wp)
-     iztm0_r=Nearest(Real(izt,wp),-1.0_wp)
+     iztm0_r=Nearest( Real(izt,wp) , -1.0_wp )
 
 ! Real values of kmax vectors
 

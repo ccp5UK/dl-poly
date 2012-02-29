@@ -14,7 +14,7 @@ Subroutine rdf_collect(iatm,rcut,rsqdf)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module,      Only : mxlist,mxatms,mxgrdf,zero_plus
+  Use setup_module,      Only : mxlist,mxgrdf,zero_plus
   Use site_module,       Only : numtyp
   Use config_module,     Only : natms,ltg,ltype,list
   Use statistics_module, Only : ntprdf,lstrdf,rdf

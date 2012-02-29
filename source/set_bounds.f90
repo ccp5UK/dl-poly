@@ -31,10 +31,11 @@ Subroutine set_bounds                                        &
                        test,vcell,rcter,rctbp,rcfbp,         &
                        sidex,sidey,sidez,xhi,yhi,zhi
 
-! define zero+ and half- (setup_module)
+! define zero+ and half+/- (setup_module)
 
-  zero_plus  = Nearest(0.0_wp,1.0_wp)
-  half_minus = Nearest(0.5_wp,-1.0_wp)
+  zero_plus  = Nearest( 0.0_wp ,  1.0_wp)
+  half_plus  = Nearest( 0.5_wp , +1.0_wp)
+  half_minus = Nearest( 0.5_wp , -1.0_wp)
 
 ! scan the FIELD file data
 
@@ -284,7 +285,7 @@ Subroutine set_bounds                                        &
 
 ! maximum number of parameters for tersoff potentials
 
-  mxpter = 11
+  mxpter = 14
 
 
 
@@ -395,7 +396,7 @@ Subroutine set_bounds                                        &
   Else
 
 ! ensure (kmaxa,kmaxb,kmaxc) consistency with what DD
-! (map_domains is already called) and DaFT are capble of
+! (map_domains is already called) and DaFT are capable of
 ! or comment out adjustments if using ewald_spme_force~
 
      Call adjust_kmax( kmaxa, nprx )

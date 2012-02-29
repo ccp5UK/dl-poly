@@ -130,9 +130,9 @@ Module setup_module
     mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,mxpfld,             &
     mxstak,mxnstk,mxlist,mxcell,mxatms,mxatdm,mxbuff
 
-! zero+ and half- :: defined in set_bounds
+! zero+ and half+/- :: defined in set_bounds
 
-  Real( Kind = wp ), Save :: zero_plus,half_minus
+  Real( Kind = wp ), Save :: zero_plus,half_plus,half_minus
 
 ! ENGUNIT :: defined in read_field
 ! engunit = 9648.530821_wp for eV/mol - most used

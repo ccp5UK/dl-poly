@@ -199,7 +199,7 @@ Subroutine scan_control                              &
 
         Call get_word(record,word)
         If (word(1:5) == 'times' .or. word(1:4) == 'step') Call get_word(record,word)
-        nstfce=Nint(Abs(word_2_real(word)))
+        nstfce=Max(nstfce,Nint(Abs(word_2_real(word))))
 
 ! read electrostatics
 
@@ -213,7 +213,7 @@ Subroutine scan_control                              &
 
            Call get_word(record,word)
            If (word(1:5) == 'every') Call get_word(record,word)
-           nstfce=Nint(Abs(word_2_real(word)))
+           nstfce=Max(nstfce,Nint(Abs(word_2_real(word))))
 
         Else
 

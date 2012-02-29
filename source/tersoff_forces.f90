@@ -573,7 +573,8 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
               If (Abs(cost) > 1.0_wp) cost=Sign(1.0_wp,cost)
               gtheta= 1.0_wp + (ci/di)**2 - ci**2 / (di**2 + (hi-cost)**2)
               eterm = eterm + gtheta*prmter2(ikter,2)*scr(kk) !SUM of L_{ij}
-              vterm = vterm + gtheta*prmter2(ikter,2)*gcr(kk)*rtf(kk) !SUM of d/dr_i of L_{ij} - first part, i.e. no angular part so it is used in the virial
+              vterm = vterm + gtheta*prmter2(ikter,2)*gcr(kk)*rtf(kk)
+! SUM of d/dr_i of L_{ij} - first part, i.e. no angular part so it is used in the virial
 
               cst(kk) = cost
               gam(kk) = gtheta
