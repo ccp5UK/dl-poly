@@ -13,7 +13,7 @@ Subroutine read_field                      &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2011
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -57,9 +57,9 @@ Subroutine read_field                      &
 
   Use external_field_module
 
-! STATTISTICS MODULE
+! STATISTICS MODULE
 
-  Use statistics_module       ! for rdf
+  Use statistics_module ! for rdf
 
 ! PARSE MODULE
 
@@ -81,7 +81,7 @@ Subroutine read_field                      &
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
                             l_shl,l_con,l_rgd,l_tet,l_bnd,l_ang,l_dih,l_inv, &
-                            lshl_one,lshl_all,lpmf,ltable,lmet_safe
+                            lshl_one,lshl_all,lpmf,lmet_safe,lter_safe
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
   Character( Len = 4   ) :: keyword
@@ -169,10 +169,6 @@ Subroutine read_field                      &
   keyshl   = 1
   lshl_one = .false. ! A massless shell existence indicator
   lshl_all = .true.  ! All shells are massless indicator
-
-! Default flags for existence a table for vdw interactions
-
-  ltable=.false.
 
 ! Default potential cutoffs
 
@@ -2000,7 +1996,6 @@ Subroutine read_field                      &
         Call get_word(record,word)
         ntpvdw=Nint(word_2_real(word))
         Call get_word(record,word)
-        ltable=(word(1:5) == 'table')
 
         If (idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of specified vdw potentials       ',i10)") ntpvdw
@@ -2059,8 +2054,6 @@ Subroutine read_field                      &
               Call error(452)
 
            End If
-
-           ltable=(ltable .or. (keypot == 0))
 
            If (keypot == 0) Then
               If (idnode == 0 .and. l_top) &
@@ -2149,12 +2142,12 @@ Subroutine read_field                      &
               End Do
            End If
 
-! generate nonbonded force arrays
+! generate vdw force arrays
 
            If (.not.l_n_v) Then
-              Call vdw_generate(ltable,rvdw)
-
-              If (ltable) Call vdw_table_read(rvdw)
+              If ((.not. ld_vdw) .or. lt_vdw) Call vdw_generate(rvdw)
+              If (lt_vdw) Call vdw_table_read(rvdw)
+              If (ld_vdw .and. Any(ltpvdw(1:ntpvdw) > 0)) Call vdw_direct_fs_generate(rvdw)
            End If
 
         End If
@@ -2315,10 +2308,13 @@ Subroutine read_field                      &
 
 ! generate metal force arrays
 
-           If (keypot == 0) Then
-              Call metal_table_read(l_top)
-           Else
-              Call metal_generate(rmet)
+           If (.not.ld_met) Then
+              Call allocate_metal_table_arrays()
+              If (lt_met) Then ! lt_met=(keypot==0)
+                 Call metal_table_read(l_top)
+              Else
+                 Call metal_generate(rmet)
+              End If
            End If
 
         End If
@@ -2340,6 +2336,7 @@ Subroutine read_field                      &
         If (.not.lunits) Call error(6)
         If (.not.lmols) Call error(13)
 
+        lter_safe=.true.
         Do itpter=1,ntpter
            parpot=0.0_wp
 
@@ -2358,6 +2355,8 @@ Subroutine read_field                      &
 
            If      (keyword == 'ters') Then
               keypot=1
+           Else If (keyword == 'kihs') Then
+              keypot=2
            Else
 
               If (idnode == 0) Write(nrite,'(/,1x,a)') keyword
@@ -2385,19 +2384,55 @@ Subroutine read_field                      &
 
            parpot(6 )=word_2_real(word)      ! S_i
            Call get_word(record,word)
-           parpot(7 )=word_2_real(word)      ! beta_i
-           Call get_word(record,word)
-           parpot(8 )=word_2_real(word)      ! eta_i
-           Call get_word(record,word)
-           parpot(9 )=word_2_real(word)      ! c_i
-           Call get_word(record,word)
-           parpot(10)=word_2_real(word)      ! d_i
-           Call get_word(record,word)
-           parpot(11)=word_2_real(word)      ! h_i
 
-           If (idnode == 0 .and. l_top) Then
+           If      (keypot == 1) Then
+
+              parpot(7 )=word_2_real(word)      ! beta_i
+              Call get_word(record,word)
+              parpot(8 )=word_2_real(word)      ! eta_i
+              Call get_word(record,word)
+              parpot(9 )=word_2_real(word)      ! c_i
+              Call get_word(record,word)
+              parpot(10)=word_2_real(word)      ! d_i
+              Call get_word(record,word)
+              parpot(11)=word_2_real(word)      ! h_i
+
+              If (idnode == 0 .and. l_top) Then
   Write(nrite,"(1x,i10,5x,a8,3x,a4,1x,10(1p,e13.4))") itpter,atom0,keyword,(parpot(j),j=1,5)
-  Write(nrite,"(32x,10(1p,e13.4))") (parpot(j),j=6,mxpter)
+  Write(nrite,"(32x,10(1p,e13.4))") (parpot(j),j=6,11)
+              End If
+
+           Else If (keypot == 2) Then
+
+              parpot(7 )=word_2_real(word)      ! eta_i
+              Call get_word(record,word)
+              parpot(8 )=word_2_real(word)      ! delta_i
+              Call get_word(record,word)
+              parpot(9 )=word_2_real(word)      ! c1_i
+              Call get_word(record,word)
+              parpot(10)=word_2_real(word)      ! c2_i
+              Call get_word(record,word)
+              parpot(11)=word_2_real(word)      ! c3_i
+
+              word(1:1)='#'
+              Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                 Call get_line(safe,nfield,record)
+                 If (.not.safe) Go To 2000
+                 Call get_word(record,word)
+              End Do
+
+              parpot(12)=word_2_real(word)      ! c4_i
+              Call get_word(record,word)
+              parpot(13)=word_2_real(word)      ! c5_i
+              Call get_word(record,word)
+              parpot(14)=word_2_real(word)      ! h_i
+
+              If (idnode == 0 .and. l_top) Then
+  Write(nrite,"(1x,i10,5x,a8,3x,a4,1x,10(1p,e13.4))") itpter,atom0,keyword,(parpot(j),j=1,5)
+  Write(nrite,"(32x,10(1p,e13.4))") (parpot(j),j=6,11)
+  Write(nrite,"(32x,10(1p,e13.4))") (parpot(j),j=12,mxpter)
+              End If
+
            End If
 
            katom0=0
@@ -2410,10 +2445,10 @@ Subroutine read_field                      &
 
 ! convert parameters to internal units
 
-           If (keypot == 1) Then
-              parpot(1)=parpot(1)*engunit
-              parpot(3)=parpot(3)*engunit
-           End If
+           parpot(1)=parpot(1)*engunit
+           parpot(3)=parpot(3)*engunit
+
+           If (keypot == 2) parpot(8)=0.5_wp/parpot(8) ! eta_i=1/(2delta_i)
 
            If (lstter(katom0) > 0) Call error(76)
 
@@ -2421,6 +2456,10 @@ Subroutine read_field                      &
 
            lstter(katom0)=itpter
            ltpter(itpter)=keypot
+
+           If (itpter > 1) Then
+              If (keypot /= ltpter(itpter-1)) lter_safe=.false.
+           End If
 
 ! calculate max tersoff cutoff
 
@@ -2434,7 +2473,10 @@ Subroutine read_field                      &
 
         End Do
 
+! test tersoff potentials mix-up and cutoff conditions
+
         If (ntpter > 0) Then
+           If (.not.lter_safe) Call error(90)
            If (rcter < 1.0e-6_wp) Call error(79)
            If (rcut < 2.0_wp*rcter) Call error(102)
         End If
@@ -2461,11 +2503,9 @@ Subroutine read_field                      &
            atom2=word(1:8)
 
            Call get_word(record,word)
-           parpot(1)=word_2_real(word,1.0_wp)                                       ! chi_ij
+           parpot(1)=word_2_real(word,1.0_wp)                                       ! chi_ij for type ters or alpha_ij for type kihs
            Call get_word(record,word)
-           parpot(2)=word_2_real(word,1.0_wp)                                       ! omega_ij
-           Call get_word(record,word)
-           parpot(3)=Merge(1.0_wp,0.0_wp,Abs(word_2_real(word,0.0_wp)) > zero_plus) ! delta_ij
+           parpot(2)=word_2_real(word,1.0_wp)                                       ! omega_ij or alpha_ij for type kihs beta_ij
 
            katom1=0
            katom2=0
@@ -2484,10 +2524,9 @@ Subroutine read_field                      &
 
            prmter2(keyter,1)=parpot(1)
            prmter2(keyter,2)=parpot(2)
-           prmter2(keyter,3)=parpot(3)
 
            If (idnode == 0 .and. l_top) &
-  Write(nrite,"(1x,i10,5x,2a8,1x,2f15.6,i6)") icross,atom1,atom2,(parpot(j),j=1,2),Nint(parpot(3))
+  Write(nrite,"(1x,i10,5x,2a8,1x,2f15.6)") icross,atom1,atom2,(parpot(j),j=1,2)
 
         End Do
 

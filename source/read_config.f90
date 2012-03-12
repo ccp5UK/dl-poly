@@ -7,7 +7,7 @@ Subroutine read_config &
 ! particle density
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2011
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,7 +17,7 @@ Subroutine read_config &
   Use config_module,  Only : imc_n,cell,allocate_config_arrays_read, &
                              natms,nlast,atmnam,lsi,lsa,ltg, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use domains_module, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
+  Use domains_module
   Use parse_module,   Only : tabs_2_blanks, &
                              strip_blanks, get_word, word_2_real
   Use io_module,      Only : io_set_parameters,io_get_parameters,     &
@@ -32,8 +32,6 @@ Subroutine read_config &
   Real( Kind = wp ), Intent( InOut ) :: xhi,yhi,zhi
   Real( Kind = wp ), Intent(   Out ) :: dens0,dens
 
-  Integer           :: idx,idy,idz
-  Real( Kind = wp ) :: sidex,sidey,sidez
   Real( Kind = wp ) :: cut
 
   Character( Len = 200 ) :: record
@@ -44,10 +42,10 @@ Subroutine read_config &
                             fast
   Integer                :: fail(1:4),i,j,idm,icell,ncells,   &
                             mxatms,indatm,nattot,totatm,      &
-                            ipx,ipy,ipz,nlx,nly,nlz,ix,iy,iz, &
-                            read_buffer_size
+                            ipx,ipy,ipz,nlx,nly,nlz,          &
+                            ix,iy,iz,jx,jy,jz,read_buffer_size
   Real( Kind = wp )      :: celprp(1:10),rcell(1:9),celh(1:9),det, &
-                            volm,vcell,dispx,dispy,dispz,          &
+                            volm,vcell,                            &
                             sxx,syy,szz,xdc,ydc,zdc,               &
                             pda_max,pda_min,pda_ave,               &
                             pda_dom_max,pda_dom_min
@@ -75,19 +73,6 @@ Subroutine read_config &
 
   cut=Max(0.5_wp*rcut,2.0_wp)+1.0e-6_wp
 
-! Get this node's (domain's) coordinates
-
-  idz=idnode/(nprx*npry)
-  idy=idnode/nprx-idz*npry
-  idx=Mod(idnode,nprx)
-
-! Get the domains' dimensions in reduced space
-! (domains are geometrically equivalent)
-
-  sidex=1.0_wp/Real(nprx,wp)
-  sidey=1.0_wp/Real(npry,wp)
-  sidez=1.0_wp/Real(nprz,wp)
-
 ! Get the dimensional properties of the MD cell
 
   Call dcell(cell,celprp)
@@ -95,9 +80,9 @@ Subroutine read_config &
 
 ! Calculate the number of link-cells per domain in every direction
 
-  nlx=Int(sidex*celprp(7)/cut)
-  nly=Int(sidey*celprp(8)/cut)
-  nlz=Int(sidez*celprp(9)/cut)
+  nlx=Int(celprp(7)/(cut*nprx_r))
+  nly=Int(celprp(8)/(cut*npry_r))
+  nlz=Int(celprp(9)/(cut*nprz_r))
 
   ncells=nlx*nly*nlz
 
@@ -371,19 +356,16 @@ Subroutine read_config &
 
 ! assign domain coordinates (call for errors)
 
-              ipx=Int((sxx+0.5_wp)*nprx_r) !; If (ipx == nprx) ipx=ipx-1
-              ipy=Int((syy+0.5_wp)*npry_r) !; If (ipy == npry) ipy=ipy-1
-              ipz=Int((szz+0.5_wp)*nprz_r) !; If (ipz == nprz) ipz=ipz-1
+              ipx=Int((sxx+0.5_wp)*nprx_r)
+              ipy=Int((syy+0.5_wp)*npry_r)
+              ipz=Int((szz+0.5_wp)*nprz_r)
 
 ! check for errors
 
               If (ipx == nprx .or. ipy == npry .or. ipz == nprz) Call error(513)
-
 ! assign domain
 
               idm=ipx+nprx*(ipy+npry*ipz)
-!              If (idm < 0 .or. idm > (mxnode-1)) Call error(513)
-
               If (idm == idnode) Then
                  natms=natms+1
 
@@ -560,27 +542,20 @@ Subroutine read_config &
   End If
   pda=0.0_wp
 
-! Calculate the displacements from the origin of the MD cell
-! to the bottom left corner of the left-most halo link-cell
-
-! First term (0.5_wp) = move to the bottom left corner of MD cell
-! Second term, first term (side) = scale by the number of domains
-! in the given direction
-! Second term, second term, first term (id) = move to the bottom
-! left corner of this domain in the given direction
-! Second term, second term, second term (1.0_wp/Real(nl,wp)) =
-! move to the bottom left corner of the left-most link-cell
-! (the one that constructs the halo)
-
-  dispx=0.5_wp-sidex*(Real(idx,wp)-1.0_wp/Real(nlx,wp))
-  dispy=0.5_wp-sidey*(Real(idy,wp)-1.0_wp/Real(nly,wp))
-  dispz=0.5_wp-sidez*(Real(idz,wp)-1.0_wp/Real(nlz,wp))
-
 ! Get the total number of link-cells in MD cell per direction
 
   xdc=Real(nlx*nprx,wp)
   ydc=Real(nly*npry,wp)
   zdc=Real(nlz*nprz,wp)
+
+! Shifts from global to local link-cell space:
+! (0,0,0) left-most link-cell on the domain (halo)
+! (nlx+2*nlp-1,nly+2*nlp-1,nly+2*nlp-1) right-most
+! link-cell on the domain (halo)
+
+  jx=-nlx*idx
+  jy=-nly*idy
+  jz=-nlz*idz
 
 ! Get the inverse cell matrix
 
@@ -591,49 +566,34 @@ Subroutine read_config &
      syy=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
      szz=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
 
-! sxx,syy,szz are in [-0.5,0.5) interval as values as 0.4(9) may pose a problem
+! Get cell coordinates accordingly
 
-     sxx=sxx-Anint(sxx) ; If (sxx >= half_minus) sxx=-sxx
-     syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
-     szz=szz-Anint(szz) ; If (szz >= half_minus) szz=-szz
-
-! assign domain coordinates (call for errors)
-
-     ipx=Int((sxx+0.5_wp)*nprx_r) !; If (ipx == nprx) ipx=ipx-1
-     ipy=Int((syy+0.5_wp)*npry_r) !; If (ipy == npry) ipy=ipy-1
-     ipz=Int((szz+0.5_wp)*nprz_r) !; If (ipz == nprz) ipz=ipz-1
-
-! check for errors
-
-     If (ipx == nprx .or. ipy == npry .or. ipz == nprz) Call error(513)
-
-! assign domain
-
-     idm=ipx+nprx*(ipy+npry*ipz)
-!     If (idm < 0 .or. idm > (mxnode-1)) Call error(513)
+     ix =  Int(xdc*(sxx+0.5_wp)) + 1 + jx
+     iy =  Int(ydc*(syy+0.5_wp)) + 1 + jy
+     iz =  Int(zdc*(szz+0.5_wp)) + 1 + jz
 
 ! Put all particles in bounded link-cell space: lower and upper
 ! bounds as 1 <= i_coordinate <= nl_coordinate
 
-     ix = Max( Min( Int(xdc*(sxx+dispx)) , nlx) , 1)
-     iy = Max( Min( Int(ydc*(syy+dispy)) , nly) , 1)
-     iz = Max( Min( Int(zdc*(szz+dispz)) , nlz) , 1)
+     ix = Max( Min( ix , nlx) , 1)
+     iy = Max( Min( iy , nly) , 1)
+     iz = Max( Min( iz , nlz) , 1)
 
 ! Hypercube function transformation (counting starts from one
 ! rather than zero /map_domains/
 
      icell=1+(ix-1)+nlx*((iy-1)+nly*(iz-1))
 
-     If (idm == idnode) pda(icell)=pda(icell)+1.0_wp
+     pda(icell)=pda(icell)+1.0_wp
   End Do
 
   pda_max=  0.0_wp
   pda_min=100.0_wp
   pda_ave=  0.0_wp
-  Do idm=1,ncells
-     pda_max=Max(pda(idm),pda_max)
-     pda_min=Min(pda(idm),pda_min)
-     pda_ave=pda_ave+pda(idm)
+  Do icell=1,ncells
+     pda_max=Max(pda(icell),pda_max)
+     pda_min=Min(pda(icell),pda_min)
+     pda_ave=pda_ave+pda(icell)
   End Do
   pda_ave=pda_ave/Real(ncells,wp)
 
@@ -655,7 +615,7 @@ Subroutine read_config &
   End If
 
 ! Approximation for maximum global density by
-! imbalance of domain density between domains
+! the inter-domain imbalance of domain density
 
   dens0=pda_max/vcell
   If (mxnode > 1) Then

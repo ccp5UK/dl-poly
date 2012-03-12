@@ -3,12 +3,14 @@ Subroutine tersoff_generate(rcter)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for generating potential energy and force arrays
-! for tersoff forces only, based on potential form as defined by
-! J. Tersoff, Phys. Rev. B 39 (1989) 5566
+! for tersoff forces only, based on potential forms as defined by
+! 1) J. Tersoff, Phys. Rev. B 39 (1989) 5566 and
+! 2) T. Kumagai, S. Izumi, S. Hara, and S. Sakai, Computational
+!    Materials Science 39, 457 (2007), ISSN 09270256
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith  october 2004
-! amended   - i.t.todorov october 2004
+! amended   - i.t.todorov january 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -32,7 +34,7 @@ Subroutine tersoff_generate(rcter)
   Do katom1=1,ntpter
      Do katom2=1,katom1
 
-        If (ltpter(katom1) == 1 .and. ltpter(katom2) == 1) Then
+        If (ltpter(katom1)*ltpter(katom2) /= 0) Then
 
            ipt=lstter(katom1)
            jpt=lstter(katom2)
@@ -63,11 +65,20 @@ Subroutine tersoff_generate(rcter)
                  If (rrr <= sij) Then
                     arg=pi*(rrr-rij)/(sij-rij)
 
-                    vmbp(i,kpt,1)=0.5_wp*(1.0_wp+Cos(arg))
-                    gmbp(i,kpt,1)=0.5_wp*pi*rrr*Sin(arg)/(sij-rij)
+                    If      (ltpter(katom1)*ltpter(katom2) == 1) Then
 
-!                Else the rest is anyway initialised to zero
+                       vmbp(i,kpt,1)=0.5_wp*(1.0_wp+Cos(arg))
+                       gmbp(i,kpt,1)=0.5_wp*pi*rrr*Sin(arg)/(sij-rij)
 
+                    Else If (ltpter(katom1)*ltpter(katom2) == 4) Then
+
+! Murty's corection to screening function (vmbp)
+! M.V.R. Murty, H.A. Atwater, Phys. Rev. B 51 (1995) 4889-4993
+
+                       vmbp(i,kpt,1)=0.5_wp+9.0_wp/16.0_wp*Cos(arg)-1.0_wp/16.0_wp*Cos(3.0_wp*arg)
+                       gmbp(i,kpt,1)=0.75_wp*pi*rrr*(Sin(arg))**3/(sij-rij)
+
+                    End If
                  End If
               End If
            End Do

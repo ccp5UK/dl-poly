@@ -8,7 +8,7 @@ Subroutine set_bounds                                        &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2011
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -483,7 +483,7 @@ Subroutine set_bounds                                        &
 ! REMOVE 0*(...) in mxbuff estimation (penultimate line) if using ewald_spme_force~
 
   mxbuff = Max( (Merge( 2, 0, mxnode > 1)                   * &
-                  ((17+9+mxexcl+6+mxstak)*mxatdm            + &
+                  ((18+9+mxexcl+6+mxstak)*mxatdm            + &
                    3*mxshl + 3*mxcons                       + &
                    (mxtpmf(1)+mxtpmf(2)+2)*mxpmf            + &
                    (mxlrgd+19)*Max(mxtrgd,mxrgd)            + &

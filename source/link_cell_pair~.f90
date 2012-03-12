@@ -6,14 +6,15 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2012
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gcheck,gmax,gsum
   Use setup_module
-  Use domains_module,     Only : nprx,npry,nprz
+  Use domains_module,     Only : idx,idy,idz, nprx,npry,nprz, &
+                                 nprx_r,npry_r,nprz_r
   Use config_module,      Only : cell,natms,nlast,ltg,lfrzn, &
                                  xxx,yyy,zzz,lexatm,list
   Use development_module, Only : l_dis,r_dis
@@ -25,8 +26,6 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Real( Kind = wp ) , Intent( In    ) :: rcut
 
   Logical,           Save :: newjob = .true.
-  Integer,           Save :: idx,idy,idz
-  Real( Kind = wp ), Save :: sidex,sidey,sidez
   Real( Kind = wp ), Save :: cut,rcsq
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1,match
@@ -79,19 +78,6 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
      cut=rcut+1.0e-6_wp
      rcsq=rcut**2
-
-! Get this node's (domain's) coordinates
-
-     idz=idnode/(nprx*npry)
-     idy=idnode/nprx-idz*npry
-     idx=Mod(idnode,nprx)
-
-! Get the domains' dimensions in reduced space
-! (domains are geometrically equivalent)
-
-     sidex=1.0_wp/Real(nprx,wp)
-     sidey=1.0_wp/Real(npry,wp)
-     sidez=1.0_wp/Real(nprz,wp)
   End If
 
 ! Get the dimensional properties of the MD cell
@@ -108,9 +94,9 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
 ! Calculate the number of link-cells per domain in every direction
 
-  dispx=sidex*celprp(7)/cut
-  dispy=sidey*celprp(8)/cut
-  dispz=sidez*celprp(9)/cut
+  dispx=celprp(7)/(cut*nprx_r)
+  dispy=celprp(8)/(cut*npry_r)
+  dispz=celprp(9)/(cut*nprz_r)
 
   nlx=Int(dispx)
   nly=Int(dispy)
@@ -150,9 +136,9 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! (nlx+1,nly+1,nly+1) right-most
 ! link-cell on the domain (halo)
 
-  jx=-nlx*idx
-  jy=-nly*idy
-  jz=-nlz*idz
+  jx=1-nlx*idx
+  jy=1-nly*idy
+  jz=1-nlz*idz
 
 !***************************************************************
 ! Note(1): Due to numerical inaccuracy it is possible that some
@@ -168,7 +154,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! Note(2): In SPME, at high accuracy of the ewald summation
 ! the b-splines may need more positive halo width than the
 ! standard one of one link-cell (in set_halo_particles it is
-! insured that such is supplied). Such large positive halo may
+! ensured that such is supplied).  Such large positive halo may
 ! lead to EDGE EFFECTs - link-cells constituting the positive
 ! halo may have larger dimensions than the domain link-cells.
 !***************************************************************
@@ -188,19 +174,19 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! Get cell coordinates accordingly
 
      If (xxt(i) > -half_plus) Then
-        ix =  Int(xdc*(xxt(i)+0.5_wp)) + 1 + jx
+        ix = Int(xdc*(xxt(i)+0.5_wp)) + jx
      Else
-        ix = -Int(xdc*Abs(xxt(i)+0.5_wp)) + jx
+        ix =-Int(xdc*Abs(xxt(i)+0.5_wp)) + jx - 1
      End If
      If (yyt(i) > -half_plus) Then
-        iy =  Int(ydc*(yyt(i)+0.5_wp)) + 1 + jy
+        iy = Int(ydc*(yyt(i)+0.5_wp)) + jy
      Else
-        iy = -Int(ydc*Abs(yyt(i)+0.5_wp)) + jy
+        iy =-Int(ydc*Abs(yyt(i)+0.5_wp)) + jy - 1
      End If
      If (zzt(i) > -half_plus) Then
-        iz =  Int(zdc*(zzt(i)+0.5_wp)) + 1 + jz
+        iz = Int(zdc*(zzt(i)+0.5_wp)) + jz
      Else
-        iz = -Int(zdc*Abs(zzt(i)+0.5_wp)) + jz
+        iz =-Int(zdc*Abs(zzt(i)+0.5_wp)) + jz - 1
      End If
 
 ! Correction for halo particles (natms+1,nlast) of this domain
@@ -215,7 +201,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
      lz1=(iz == nlz)
      If ( (lx0 .or. lx1) .and. &
           (ly0 .or. ly1) .and. &
-          (lz0 .or. lz1) ) Then
+          (lz0 .or. lz1) ) Then ! 8 corners of the domain's cube in RS
         If      (lx0) Then
            ix=0
         Else If (lx1) Then
@@ -230,13 +216,6 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
            iz=nlz+1
         End If
      End If
-
-! Put all particles in bounded link-cell space: lower and upper
-! bounds as 0 <= i_coordinate <= nl_coordinate+1
-!
-!     ix = Max( Min( ix , nlx+1) , 0)
-!     iy = Max( Min( iy , nly+1) , 0)
-!     iz = Max( Min( iz , nlz+1) , 0)
 
 ! Check for residual halo
 
@@ -280,36 +259,18 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
 ! Get cell coordinates accordingly
 
-     ix =  Int(xdc*(xxt(i)+0.5_wp)) + 1 + jx
-     iy =  Int(ydc*(yyt(i)+0.5_wp)) + 1 + jy
-     iz =  Int(zdc*(zzt(i)+0.5_wp)) + 1 + jz
+     ix = Int(xdc*(xxt(i)+0.5_wp)) + jx
+     iy = Int(ydc*(yyt(i)+0.5_wp)) + jy
+     iz = Int(zdc*(zzt(i)+0.5_wp)) + jz
 
 ! Correction for domain (idnode) only particles (1,natms) but due to
 ! some tiny numerical inaccuracy kicked into its halo link-cell space
-
-     lx0=(ix == 0)
-     lx1=(ix == nlx+1)
-     ly0=(iy == 0)
-     ly1=(iy == nly+1)
-     lz0=(iz == 0)
-     lz1=(iz == nlz+1)
-     If (lx0 .or. lx1 .or. ly0 .or. ly1 .or. lz0 .or. lz1) Then
-        If (lx0) ix=1
-        If (lx1) ix=nlx
-
-        If (ly0) iy=1
-        If (ly1) iy=nly
-
-        If (lz0) iz=1
-        If (lz1) iz=nlz
-     End If
-
 ! Put all particles in bounded link-cell space: lower and upper
-! bounds as 0 <= i_coordinate <= nl_coordinate+1
-!
-!     ix = Max( Min( ix , nlx+1) , 0)
-!     iy = Max( Min( iy , nly+1) , 0)
-!     iz = Max( Min( iz , nlz+1) , 0)
+! bounds as 1 <= i_coordinate <= nl_coordinate
+
+     ix = Max( Min( ix , nlx) , 1)
+     iy = Max( Min( iy , nly) , 1)
+     iz = Max( Min( iz , nlz) , 1)
 
 ! Hypercube function transformation (counting starts from one
 ! rather than zero /map_domains/ and two more link-cells per

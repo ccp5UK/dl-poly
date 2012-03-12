@@ -27,7 +27,7 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2011
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -132,9 +132,9 @@ Subroutine two_body_forces                        &
 
 ! calculate local density in metals
 
-     Call metal_ld_compute                 &
-           (imcon,rmet,keyfce,elrcm,vlrcm, &
-           xdf,ydf,zdf,rsqdf,              &
+     Call metal_ld_compute          &
+           (imcon,rmet,elrcm,vlrcm, &
+           xdf,ydf,zdf,rsqdf,       &
            rho,engden,virden,stress)
 
   End If

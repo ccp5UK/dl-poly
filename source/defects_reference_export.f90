@@ -1,5 +1,4 @@
-Subroutine defects_reference_export &
-           (mdir,sidex,sidey,sidez,cwx,cwy,cwz,nlrefs,namr,indr,xr,yr,zr)
+Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -10,7 +9,7 @@ Subroutine defects_reference_export &
 ! onto this node (idnode)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2010
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,19 +21,16 @@ Subroutine defects_reference_export &
   Implicit None
 
   Integer,              Intent( In    ) :: mdir
-  Real( Kind = wp ),    Intent( In    ) :: sidex,sidey,sidez,cwx,cwy,cwz
-  Integer,              Intent( InOut ) :: nlrefs
+  Integer,              Intent( InOut ) :: ixyz(1:mxatms),nlrefs
   Character( Len = 8 ), Intent( InOut ) :: namr(1:mxatms)
   Integer,              Intent( InOut ) :: indr(1:mxatms)
   Real( Kind = wp ),    Intent( InOut ) :: xr(1:mxatms),yr(1:mxatms),zr(1:mxatms)
 
-
-  Logical           :: safe
-  Integer           :: fail,i,j,iblock,jdnode,kdnode,imove,jmove,itmp
-  Real( Kind = wp ) :: shovex,shovey,shovez,begin,final,xyz
+  Logical           :: safe,lsx,lsy,lsz,lex,ley,lez
+  Integer           :: fail,i,j,iblock,jxyz,ix,iy,iz,kx,ky,kz, &
+                       jdnode,kdnode,imove,jmove,itmp
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
-
 
   fail=0
   Allocate (buffer(1:mxbuff), Stat=fail)
@@ -53,107 +49,62 @@ Subroutine defects_reference_export &
 
 ! DIRECTION SETTINGS INITIALISATION
 
-! define the relative displacement between the coordinate systems'
-! origins of neighbouring domains with respect to this domain
-! (idnode) in the direction of mdir (shovex,shovey,shovez)
-! in order to push all particles of this domain (idnode) in the
-! direction of mdir
-
-! define 'minus halo' limits in the direction of mdir (begin,final)
-! |begin-final| is the link cell width in reduced space (cwx,cwy,cwz)
-
 ! define the neighbouring domains as sending and receiving with
 ! respect to the direction (mdir)
+! k.   - direction selection factor
+! jxyz - halo reduction factor
+! ls.  - wrap-around +1 in . direction (domain on the left MD cell border)
+! le.  - wrap-around -1 in . direction (domain on the right MD cell border)
 ! jdnode - destination (send to), knode - source (receive from)
 
-! Direction -x
+  kx = 0 ; ky = 0 ; kz = 0
+  lsx = .false. ; lex = .false.
+  lsy = .false. ; ley = .false.
+  lsz = .false. ; lez = .false.
+  If      (mdir == -1) Then ! Direction -x
+     kx  = 1
+     jxyz= 1
+     lsx = (idx == 0)
 
-  If      (mdir == -1) Then
+     jdnode = map(1)
+     kdnode = map(2)
+  Else If (mdir ==  1) Then ! Direction +x
+     kx  = 1
+     jxyz= 2
+     lex = (idx == nprx-1)
 
-     shovex=sidex
-     shovey=0.0_wp
-     shovez=0.0_wp
+     jdnode = map(2)
+     kdnode = map(1)
+  Else If (mdir == -2) Then ! Direction -y
+     ky  = 1
+     jxyz= 10
+     lsy = (idy == 0)
 
-     begin=-0.5_wp*sidex
-     final=begin+cwx
+     jdnode = map(3)
+     kdnode = map(4)
+  Else If (mdir ==  2) Then ! Direction +y
+     ky  = 1
+     jxyz= 20
+     ley = (idy == npry-1)
 
-     jdnode=map(1)
-     kdnode=map(2)
+     jdnode = map(4)
+     kdnode = map(3)
+  Else If (mdir == -3) Then ! Direction -z
+     kz  = 1
+     jxyz= 100
+     lsz = (idz == 0)
 
-! Direction +x
+     jdnode = map(5)
+     kdnode = map(6)
+  Else If (mdir ==  3) Then ! Direction +z
+     kz  = 1
+     jxyz= 200
+     lez = (idz == nprz-1)
 
-  Else If (mdir ==  1) Then
-
-     shovex=-sidex
-     shovey=0.0_wp
-     shovez=0.0_wp
-
-     final=0.5_wp*sidex
-     begin=final-cwx
-
-     jdnode=map(2)
-     kdnode=map(1)
-
-! Direction -y
-
-  Else If (mdir == -2) Then
-
-     shovex=0.0_wp
-     shovey=sidey
-     shovez=0.0_wp
-
-     begin=-0.5_wp*sidey
-     final=begin+cwy
-
-     jdnode=map(3)
-     kdnode=map(4)
-
-! Direction +y
-
-  Else If (mdir ==  2) Then
-
-     shovex=0.0_wp
-     shovey=-sidey
-     shovez=0.0_wp
-
-     final=0.5_wp*sidey
-     begin=final-cwy
-
-     jdnode=map(4)
-     kdnode=map(3)
-
-! Direction -z
-
-  Else If (mdir == -3) Then
-
-     shovex=0.0_wp
-     shovey=0.0_wp
-     shovez=sidez
-
-     begin=-0.5_wp*sidez
-     final=begin+cwz
-
-     jdnode=map(5)
-     kdnode=map(6)
-
-! Direction +z
-
-  Else If (mdir ==  3) Then
-
-     shovex=0.0_wp
-     shovey=0.0_wp
-     shovez=-sidez
-
-     final=0.5_wp*sidez
-     begin=final-cwz
-
-     jdnode=map(6)
-     kdnode=map(5)
-
+     jdnode = map(6)
+     kdnode = map(5)
   Else
-
      Call error(557)
-
   End If
 
 ! Initialise counters for length of sending and receiving buffers
@@ -166,66 +117,65 @@ Subroutine defects_reference_export &
 
   safe=.true.
 
-! Find whether a particle that belongs to this domain (idnode) falls
-! into the halo of the neighbouring domain in the direction of mdir, i.e.
-! the particle is is within the 'minus halo' of this domain and has
-! to be exported into the neighbouring domain in the direction of mdir.
-! If a particle is to be exported across domains then all config
-! properties of the particle (i.e. the particle itself) also have to
-! be exported across to the receiving domain.
-
 ! LOOP OVER ALL PARTICLES ON THIS NODE
 
   Do i=1,nlrefs
 
-     If      (mdir == -1 .or. mdir == 1) Then
+! If the particle is within the remaining 'inverted halo' of this domain
 
-        xyz=xr(i)
+     If (ixyz(i) > 0) Then
 
-     Else If (mdir == -2 .or. mdir == 2) Then
+! Get the necessary halo indices
 
-        xyz=yr(i)
+        ix=Mod(ixyz(i),10)           ! [0,1,2,3=1+2]
+        iy=Mod(ixyz(i)-ix,100)       ! [0,10,20,30=10+20]
+        iz=Mod(ixyz(i)-(ix+iy),1000) ! [0,100,200,300=100+200]
 
-     Else If (mdir == -3 .or. mdir == 3) Then
+! If the particle is within the correct halo for the selected direction
 
-        xyz=zr(i)
+        j=ix*kx+iy*ky+iz*kz
+        If (j == jxyz .or. (j > jxyz .and. Mod(j,3) == 0)) Then
 
-     End If
+! Reduce halo index (new remaining halo)
+!
+!           ixyz(i)=ixyz(i)-jxyz
 
-! Is this particle from this domain in the halo of the neighbouring
-! domain in the direction of mdir?
+! If safe to proceed
 
-     If (xyz >= begin .and. xyz < final) Then
+           If ((imove+13) <= iblock) Then
 
-! Is it safe to proceed?
+! pack positions and apply possible wrap-around corrections for receiver
 
-        If ((imove+12) > iblock) Then
+              buffer(imove+ 1)=xr(i)
+              If (lsx) buffer(imove+1)=buffer(imove+1)+1.0_wp
+              If (lex) buffer(imove+1)=buffer(imove+1)-1.0_wp
+              buffer(imove+ 2)=yr(i)
+              If (lsy) buffer(imove+2)=buffer(imove+2)+1.0_wp
+              If (ley) buffer(imove+2)=buffer(imove+2)-1.0_wp
+              buffer(imove+ 3)=zr(i)
+              If (lsz) buffer(imove+3)=buffer(imove+3)+1.0_wp
+              If (lez) buffer(imove+3)=buffer(imove+3)-1.0_wp
 
-           safe=.false.
+! pack config indexing, site name halo indexing arrays
 
-        Else
+              buffer(imove+ 4)=Real(indr(i),wp)
+              buffer(imove+ 5)=Real(Ichar(namr(i)(1:1)),wp)
+              buffer(imove+ 6)=Real(Ichar(namr(i)(2:2)),wp)
+              buffer(imove+ 7)=Real(Ichar(namr(i)(3:3)),wp)
+              buffer(imove+ 8)=Real(Ichar(namr(i)(4:4)),wp)
+              buffer(imove+ 9)=Real(Ichar(namr(i)(5:5)),wp)
+              buffer(imove+10)=Real(Ichar(namr(i)(6:6)),wp)
+              buffer(imove+11)=Real(Ichar(namr(i)(7:7)),wp)
+              buffer(imove+12)=Real(Ichar(namr(i)(8:8)),wp)
+              buffer(imove+13)=Real(ixyz(i),wp)
 
-! pack positions
+           Else
 
-           buffer(imove+ 1)=xr(i)+shovex
-           buffer(imove+ 2)=yr(i)+shovey
-           buffer(imove+ 3)=zr(i)+shovez
+              safe=.false.
 
-! pack config indexing and site name arrays
-
-           buffer(imove+ 4)=Real(indr(i),wp)
-           buffer(imove+ 5)=Real(Ichar(namr(i)(1:1)),wp)
-           buffer(imove+ 6)=Real(Ichar(namr(i)(2:2)),wp)
-           buffer(imove+ 7)=Real(Ichar(namr(i)(3:3)),wp)
-           buffer(imove+ 8)=Real(Ichar(namr(i)(4:4)),wp)
-           buffer(imove+ 9)=Real(Ichar(namr(i)(5:5)),wp)
-           buffer(imove+10)=Real(Ichar(namr(i)(6:6)),wp)
-           buffer(imove+11)=Real(Ichar(namr(i)(7:7)),wp)
-           buffer(imove+12)=Real(Ichar(namr(i)(8:8)),wp)
+           End If
 
         End If
-
-        imove=imove+12
 
      End If
 
@@ -257,10 +207,10 @@ Subroutine defects_reference_export &
 
 ! Check for array bound overflow (can arrays cope with incoming data)
 
-  safe=((nlrefs+jmove/12) <= mxatms)
+  safe=((nlrefs+jmove/13) <= mxatms)
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe) Then
-     itmp=nlrefs+jmove/12
+     itmp=nlrefs+jmove/13
      If (mxnode > 1) Call gmax(itmp)
      Call warning(160,Real(itmp,wp),Real(mxatms,wp),0.0_wp)
      Call error(559)
@@ -282,7 +232,7 @@ Subroutine defects_reference_export &
      j=0
   End If
 
-  Do i=1,jmove/12
+  Do i=1,jmove/13
      nlrefs=nlrefs+1
 
 ! unpack positions
@@ -291,7 +241,7 @@ Subroutine defects_reference_export &
      yr(nlrefs)=buffer(j+2)
      zr(nlrefs)=buffer(j+3)
 
-! unpack config indexing and site arrays
+! unpack config indexing, site name halo indexing arrays
 
      indr(nlrefs)=Nint(buffer(j+4))
      namr(nlrefs)(1:1)=Char(Nint(buffer(j+ 5)))
@@ -302,8 +252,9 @@ Subroutine defects_reference_export &
      namr(nlrefs)(6:6)=Char(Nint(buffer(j+10)))
      namr(nlrefs)(7:7)=Char(Nint(buffer(j+11)))
      namr(nlrefs)(8:8)=Char(Nint(buffer(j+12)))
+     ixyz(nlrefs)=Nint(buffer(j+13))
 
-     j=j+12
+     j=j+13
   End Do
 
   Deallocate (buffer, Stat=fail)

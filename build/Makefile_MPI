@@ -1,6 +1,6 @@
 # Master makefile for DL_POLY_4.03 (parallel version)
 #
-# Author - I.T.Todorov january 2012
+# Author - I.T.Todorov march 2012
 #
 #
 # Define default settings
@@ -47,7 +47,7 @@ OBJ_ALL = \
 	scan_field.o read_config_parallel.o scan_config.o scan_control.o read_config.o \
 	set_bounds.o \
 	read_control.o \
-	vdw_generate.o vdw_table_read.o \
+	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
 	check_config.o scale_config.o write_config.o \
@@ -84,7 +84,8 @@ OBJ_ALL = \
 	ewald_frozen_forces.o two_body_forces.o \
 	tersoff_forces.o three_body_forces.o four_body_forces.o \
 	core_shell_forces.o tethers_forces.o \
-	bonds_forces.o angles_forces.o dihedrals_forces.o inversions_forces.o \
+	intra_coul.o bonds_forces.o angles_forces.o \
+	inversions_forces.o dihedrals_14_vdw.o dihedrals_forces.o \
 	external_field_apply.o external_field_correct.o \
 	langevin_forces.o \
 	constraints_pseudo_bonds.o pmf_pseudo_bonds.o \

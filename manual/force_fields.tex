@@ -208,7 +208,8 @@ where $\alpha$ and $\beta$ indicate the $x,y,z$ components.  The
 atomic stress tensor\index{stress tensor} derived in this way is
 symmetric.
 
-In \D bond forces are handled by the routine {\sc bonds\_forces}.
+In \D bond forces are handled by the routine {\sc bonds\_forces}
+(and {\sc intra\_coul} called within).
 
 \subsection{Distance Restraints}
 
@@ -238,7 +239,7 @@ different key words:
 \end{enumerate}
 
 In \D distance restraints\index{distance restraints} are handled
-by the routine {\sc bonds\_forces}.
+by the routine {\sc bonds\_forces} (and {\sc intra\_coul} called within).
 
 \subsection{Valence Angle Potentials}
 
@@ -623,7 +624,8 @@ angle\index{potential!valence angle} intercation (1-4 checks are
 performed in {\sc dihedrals\_14\_check} routine).  1-4 interactions
 do, of course, contribute to the atomic virial.
 
-In \D dihedral forces are handled by the routine {\sc dihedrals\_forces}.
+In \D dihedral forces are handled by the routine {\sc dihedrals\_forces}
+(and {\sc intra\_coul} and {\sc dihedrals\_14\_vdw} called within).
 
 \subsection{Improper Dihedral Angle Potentials}
 

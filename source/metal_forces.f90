@@ -8,7 +8,7 @@ Subroutine metal_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -102,208 +102,206 @@ Subroutine metal_forces &
      End If
 
      k0=lstmet(key)
+     If (ltpmet(k0) > 0) Then ! this is a valid metal interaction
 
-     If (ld_met .and. keypot /= 0) Then
-        k1=Max(ai,aj)
-        k2=Min(ai,aj)
+! Zero energy and force components
 
-        kmx=k1*(k1-1)/2+k2
-        kmn=k2*(k2-1)/2+k1
-
-        k1=lstmet(kmx)
-        k2=lstmet(kmn)
-     End If
+        eng   = 0.0_wp
+        gamma1= 0.0_wp
+        gamma2= 0.0_wp
+        gamma = 0.0_wp
 
 ! interatomic distance
 
-     rsq = rsqdf(m)
+        rsq = rsqdf(m)
 
-     If (ld_met .and. keypot /= 0) Then ! direct calculation
+        If (ld_met .and. keypot /= 0) Then ! direct calculation
 
-! validity and truncation of potential
+! truncation of potential
 
-        If (ltpmet(k0) > 0 .and. rsq < rcsq) Then
+           If (rsq <= rcsq) Then
+
+              k1=Max(ai,aj)
+              k2=Min(ai,aj)
+
+              kmx=k1*(k1-1)/2+k2
+              kmn=k2*(k2-1)/2+k1
+
+              k1=lstmet(kmx)
+              k2=lstmet(kmn)
 
 ! interpolation parameters
 
-           rrr = Sqrt(rsq)
+              rrr = Sqrt(rsq)
 
-           If      (ltpmet(k0) == 1) Then
+              If      (ltpmet(k0) == 1) Then
 
 ! finnis-sinclair potentials
 
-              cc0=prmmet(1,k0)
-              cc1=prmmet(2,k0)
-              cc2=prmmet(3,k0)
-              ccc=prmmet(4,k0)
-              ddd=prmmet(6,k0)
-              bet=prmmet(7,k0)
-              cut1=ccc
-              cut2=ddd
+                 cc0=prmmet(1,k0)
+                 cc1=prmmet(2,k0)
+                 cc2=prmmet(3,k0)
+                 ccc=prmmet(4,k0)
+                 ddd=prmmet(6,k0)
+                 bet=prmmet(7,k0)
+                 cut1=ccc
+                 cut2=ddd
 
 ! calculate pair forces and energies
 
-              gamma1=0.0_wp
-              eng   =0.0_wp
-              If (rrr <= cut1) Then
-                 gamma1 = -rrr*(2.0_wp*(cc0+cc1*rrr+cc2*rrr**2) * &
-                          (rrr-ccc)+(cc1+2.0_wp*cc2*rrr)*(rrr-ccc)**2)
+                 If (rrr <= cut1) Then
+                    gamma1 = -rrr*(2.0_wp*(cc0+cc1*rrr+cc2*rrr**2) * &
+                             (rrr-ccc)+(cc1+2.0_wp*cc2*rrr)*(rrr-ccc)**2)
 
-                 If (jatm <= natms .or. idi < ltg(jatm)) &
-                    eng = (cc0+cc1*rrr+cc2*rrr**2)*(rrr-ccc)**2
-              End If
+                    If (jatm <= natms .or. idi < ltg(jatm)) &
+                       eng = (cc0+cc1*rrr+cc2*rrr**2)*(rrr-ccc)**2
+                 End If
 
 ! calculate density contributions
 
-              gamma2=0.0_wp
-              If (rrr <= cut2) &
-                 gamma2 = -rrr*(2.0_wp*(rrr-ddd)+3.0_wp*bet*(rrr-ddd)**2/ddd)
+                 If (rrr <= cut2) gamma2 = -rrr*(2.0_wp*(rrr-ddd)+3.0_wp*bet*(rrr-ddd)**2/ddd)
 
-              If (ai == aj) Then
-                 t1=prmmet(5,k0)**2
-                 t2=t1
-              Else
-                 t1=prmmet(5,k1)**2
-                 t2=prmmet(5,k2)**2
-              End If
+                 If (ai == aj) Then
+                    t1=prmmet(5,k0)**2
+                    t2=t1
+                 Else
+                    t1=prmmet(5,k1)**2
+                    t2=prmmet(5,k2)**2
+                 End If
 
-           Else If (ltpmet(k0) == 2) Then
+              Else If (ltpmet(k0) == 2) Then
 
 ! extended finnis-sinclair potentials
 
-              cc0=prmmet(1,k0)
-              cc1=prmmet(2,k0)
-              cc2=prmmet(3,k0)
-              cc3=prmmet(4,k0)
-              cc4=prmmet(5,k0)
-              ccc=prmmet(6,k0)
-              ddd=prmmet(8,k0)
-              bbb=prmmet(9,k0)
-              cut1=ccc
-              cut2=ddd
+                 cc0=prmmet(1,k0)
+                 cc1=prmmet(2,k0)
+                 cc2=prmmet(3,k0)
+                 cc3=prmmet(4,k0)
+                 cc4=prmmet(5,k0)
+                 ccc=prmmet(6,k0)
+                 ddd=prmmet(8,k0)
+                 bbb=prmmet(9,k0)
+                 cut1=ccc
+                 cut2=ddd
 
 ! calculate pair forces and energies
 
-              gamma1=0.0_wp
-              eng   =0.0_wp
-              If (rrr <= cut1) Then
-                 gamma1 = -rrr*(2.0_wp*(cc0+cc1*rrr+cc2*rrr**2+cc3*rrr**3+cc4*rrr**4)*(rrr-ccc) + &
-                                (cc1+2.0_wp*cc2*rrr+3.0_wp*cc3*rrr**2+4.0_wp*cc4*rrr**3)*(rrr-ccc)**2)
+                 If (rrr <= cut1) Then
+                    gamma1 = -rrr*(2.0_wp*(cc0+cc1*rrr+cc2*rrr**2+cc3*rrr**3+cc4*rrr**4)*(rrr-ccc) + &
+                                   (cc1+2.0_wp*cc2*rrr+3.0_wp*cc3*rrr**2+4.0_wp*cc4*rrr**3)*(rrr-ccc)**2)
 
-                 If (jatm <= natms .or. idi < ltg(jatm)) &
-                    eng = (cc0+cc1*rrr+cc2*rrr**2+cc3*rrr**3+cc4*rrr**4)*(rrr-ccc)**2
-              End If
+                    If (jatm <= natms .or. idi < ltg(jatm)) &
+                       eng = (cc0+cc1*rrr+cc2*rrr**2+cc3*rrr**3+cc4*rrr**4)*(rrr-ccc)**2
+                 End If
 
 ! calculate density contributions
 
-              gamma2=0.0_wp
-              If (rrr <= cut2) &
-                 gamma2 = -rrr*(2.0_wp*(rrr-ddd)+4.0_wp*bbb*2*(rrr-ddd)**3)
+                 If (rrr <= cut2) gamma2 = -rrr*(2.0_wp*(rrr-ddd)+4.0_wp*bbb*2*(rrr-ddd)**3)
 
-              If (ai == aj) Then
-                 t1=prmmet(7,k0)**2
-                 t2=t1
-              Else
-                 t1=prmmet(7,k1)**2
-                 t2=prmmet(7,k2)**2
-              End If
+                 If (ai == aj) Then
+                    t1=prmmet(7,k0)**2
+                    t2=t1
+                 Else
+                    t1=prmmet(7,k1)**2
+                    t2=prmmet(7,k2)**2
+                 End If
 
-           Else If (ltpmet(k0) == 3) Then
+              Else If (ltpmet(k0) == 3) Then
 
 ! sutton-chen potentials
 
-              eps=prmmet(1,k0)
-              sig=prmmet(2,k0)
-              nnn=Nint(prmmet(3,k0))
-              mmm=Nint(prmmet(4,k0))
+                 eps=prmmet(1,k0)
+                 sig=prmmet(2,k0)
+                 nnn=Nint(prmmet(3,k0))
+                 mmm=Nint(prmmet(4,k0))
 
 ! calculate pair forces and energies
 
-              gamma1=Real(nnn,wp)*eps*(sig/rrr)**nnn
-              eng   =0.0_wp
-              If (jatm <= natms .or. idi < ltg(jatm)) &
-                    eng = gamma1/Real(nnn,wp)
+                 gamma1=Real(nnn,wp)*eps*(sig/rrr)**nnn
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                       eng = gamma1/Real(nnn,wp)
 
 ! calculate density contributions
 
-              gamma2=Real(mmm,wp)*(sig/rrr)**mmm
+                 gamma2=Real(mmm,wp)*(sig/rrr)**mmm
 
-              If (ai == aj) Then
-                 t1=(prmmet(1,k0)*prmmet(5,k0))**2
-                 t2=t1
-              Else
-                 t1=(prmmet(1,k1)*prmmet(5,k1))**2
-                 t2=(prmmet(1,k2)*prmmet(5,k2))**2
-              End If
+                 If (ai == aj) Then
+                    t1=(prmmet(1,k0)*prmmet(5,k0))**2
+                    t2=t1
+                 Else
+                    t1=(prmmet(1,k1)*prmmet(5,k1))**2
+                    t2=(prmmet(1,k2)*prmmet(5,k2))**2
+                 End If
 
-           Else If (ltpmet(k0) == 4) Then
+              Else If (ltpmet(k0) == 4) Then
 
 ! gupta potentials
 
-              aaa=prmmet(1,k0)
-              rr0=prmmet(2,k0)
-              ppp=prmmet(3,k0)
-              qqq=prmmet(5,k0)
+                 aaa=prmmet(1,k0)
+                 rr0=prmmet(2,k0)
+                 ppp=prmmet(3,k0)
+                 qqq=prmmet(5,k0)
 
-              cut1=(rrr-rr0)/rr0
-              cut2=cut1+1.0_wp
+                 cut1=(rrr-rr0)/rr0
+                 cut2=cut1+1.0_wp
 
 ! calculate pair forces and energies
 
-              gamma1=2.0_wp*aaa*Exp(-ppp*cut1)*ppp*cut2
-              eng   =0.0_wp
-              If (jatm <= natms .or. idi < ltg(jatm)) &
-                    eng = gamma1/(ppp*cut2)
+                 gamma1=2.0_wp*aaa*Exp(-ppp*cut1)*ppp*cut2
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                       eng = gamma1/(ppp*cut2)
 
 ! calculate density contributions
 
-              gamma2=2.0_wp*Exp(-2.0_wp*qqq**cut1)*qqq*cut2
+                 gamma2=2.0_wp*Exp(-2.0_wp*qqq**cut1)*qqq*cut2
 
-              t1=prmmet(4,k0)**2
-              t2=t1
+                 t1=prmmet(4,k0)**2
+                 t2=t1
 
-           End If
+              End If
 
-           If (ai > aj) Then
-              gamma = (gamma1-gamma2*(rho(iatm)*t1+rho(jatm)*t2))/rsq
-           Else
-              gamma = (gamma1-gamma2*(rho(iatm)*t2+rho(jatm)*t1))/rsq
-           End If
+              If (ai > aj) Then
+                 gamma = (gamma1-gamma2*(rho(iatm)*t1+rho(jatm)*t2))/rsq
+              Else
+                 gamma = (gamma1-gamma2*(rho(iatm)*t2+rho(jatm)*t1))/rsq
+              End If
 
-           fx = gamma*xdf(m)
-           fy = gamma*ydf(m)
-           fz = gamma*zdf(m)
+              fx = gamma*xdf(m)
+              fy = gamma*ydf(m)
+              fz = gamma*zdf(m)
 
-           fix=fix+fx
-           fiy=fiy+fy
-           fiz=fiz+fz
+              fix=fix+fx
+              fiy=fiy+fy
+              fiz=fiz+fz
 
-           If (jatm <= natms) Then
+              If (jatm <= natms) Then
 
-              fxx(jatm)=fxx(jatm)-fx
-              fyy(jatm)=fyy(jatm)-fy
-              fzz(jatm)=fzz(jatm)-fz
+                 fxx(jatm)=fxx(jatm)-fx
+                 fyy(jatm)=fyy(jatm)-fy
+                 fzz(jatm)=fzz(jatm)-fz
 
-           End If
+              End If
 
-           If (jatm <= natms .or. idi < ltg(jatm)) Then
+              If (jatm <= natms .or. idi < ltg(jatm)) Then
 
 ! calculate interaction energy
 
-              engmet = engmet + eng
+                 engmet = engmet + eng
 
 ! calculate virial
 
-              virmet = virmet - gamma*rsq
+                 virmet = virmet - gamma*rsq
 
 ! calculate stress tensor
 
-              strs1 = strs1 + xdf(m)*fx
-              strs2 = strs2 + xdf(m)*fy
-              strs3 = strs3 + xdf(m)*fz
-              strs5 = strs5 + ydf(m)*fy
-              strs6 = strs6 + ydf(m)*fz
-              strs9 = strs9 + zdf(m)*fz
+                 strs1 = strs1 + xdf(m)*fx
+                 strs2 = strs2 + xdf(m)*fy
+                 strs3 = strs3 + xdf(m)*fz
+                 strs5 = strs5 + ydf(m)*fy
+                 strs6 = strs6 + ydf(m)*fz
+                 strs9 = strs9 + zdf(m)*fz
+
+              End If
 
            End If
 
@@ -311,9 +309,9 @@ Subroutine metal_forces &
 
      Else ! tabulated calculation
 
-! validity and truncation of potential
+! truncation of potential
 
-        If (ltpmet(k0) >= 0 .and. Abs(vmet(1,k0,1)) > zero_plus .and. rsq <= vmet(3,k0,1)**2) Then
+        If (Abs(vmet(1,k0,1)) > zero_plus .and. rsq <= vmet(3,k0,1)**2) Then
 
 ! interpolation parameters
 
@@ -379,10 +377,6 @@ Subroutine metal_forces &
                     gamma2 = t2 + 0.5_wp*(t2-t1)*(ppd-1.0_wp)
                  End If
 
-              Else
-
-                 gamma2=0.0_wp
-
               End If
 
 ! contribution from second metal atom identity
@@ -421,10 +415,6 @@ Subroutine metal_forces &
                     Else
                        gamma3 = t2 + 0.5_wp*(t2-t1)*(ppd-1.0_wp)
                     End If
-
-                 Else
-
-                    gamma3=0.0_wp
 
                  End If
 

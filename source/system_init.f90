@@ -10,7 +10,7 @@ Subroutine system_init                                       &
 ! initial thermodynamic and structural accumulators
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2011
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,7 +20,7 @@ Subroutine system_init                                       &
   Use site_module,   Only : ntpatm,numtyp,dens
   Use config_module, Only : volm,natms,ltg,ltype,xxx,yyy,zzz
   Use langevin_module
-  Use vdw_module,    Only : ntpvdw
+  Use vdw_module,    Only : ls_vdw,ntpvdw
   Use metal_module,  Only : ntpmet
 
   Use statistics_module
@@ -449,11 +449,12 @@ Subroutine system_init                                       &
 
 ! Get long-range corrections
 
-  elrc   = 0.0_wp
-  virlrc = 0.0_wp
-  If (ntpvdw > 0) Call vdw_lrc(imcon,rvdw,elrc,virlrc)
+! elrc & virlrc arrays are zeroed in vdw_module,
+! no lrc when vdw interactions are force-shifted
 
-! elrcm & virlrcm arrays are zeroed in metal_module
+  If (ntpvdw > 0 .and. (.not.ls_vdw)) Call vdw_lrc(imcon,rvdw,elrc,virlrc)
+
+! elrcm & vlrcm arrays are zeroed in metal_module
 
   If (ntpmet > 0) Call metal_lrc(imcon,rmet,elrcm,vlrcm)
 

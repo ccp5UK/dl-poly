@@ -6,7 +6,7 @@ Subroutine error(kode)
 ! controlled termination of the program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2011
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -353,6 +353,10 @@ Subroutine error(kode)
      Else If (kode ==   89) Then
 
         Write(nrite,'(/,1x,a)') 'error - too many four-body potentials specified'
+
+     Else If (kode ==   90) Then
+
+        Write(nrite,'(/,1x,a)') 'error - specified tersoff potentials have different types'
 
      Else If (kode ==   91) Then
 
@@ -1188,6 +1192,18 @@ Subroutine error(kode)
      Else If (kode == 1059) Then
 
         Write(nrite,'(/,1x,a)') 'error - unknown write level given to sorted I/O'
+
+     Else If (kode == 1063) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in vdw_module -> allocate_vdw_table_arrays'
+
+     Else If (kode == 1066) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in vdw_module -> allocate_vdw_direct_fs_arrays'
+
+     Else If (kode == 1069) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in metal_module -> allocate_metal_table_arrays'
 
      Else
 

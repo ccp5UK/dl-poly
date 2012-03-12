@@ -6,7 +6,7 @@ Module domains_module
 ! and arrays for the entire package
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2010
+! author    - i.t.todorov march 2012
 ! contrib   - i.j.bush august 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -15,8 +15,11 @@ Module domains_module
 
   Implicit None
 
-  Integer          , Public, Save :: nprx,npry,nprz, map(1:26),mop(1:26)
-  Real( Kind = wp ), Public, Save :: nprx_r,npry_r,nprz_r
+  Integer          , Public, Save :: nprx,npry,nprz, &   ! dimensions of the 3D processor/domain grid
+                                     idx,idy,idz,    &   ! this domain's coordinates on the grid
+                                     map(1:26),mop(1:26) ! neighbourhood coordinates map of the grid
+  Real( Kind = wp ), Public, Save :: nprx_r,npry_r,nprz_r, & ! RS = reduced space [-0.5:0.5)^3
+                                     r_nprx,r_npry,r_nprz    ! domain's length in RS
 
   Public  :: map_domains
   Private
@@ -47,7 +50,7 @@ Contains
     Integer,           Intent( In    ) :: imcon
     Real( Kind = wp ), Intent( In    ) :: wx,wy,wz ! MD cell Cartesian widths
 
-    Integer                            :: i,j, idx,idy,idz, jdx,jdy,jdz
+    Integer                            :: i,j, jdx,jdy,jdz
 
 ! Limits on the (x,y,z) sizes of the processor grid
 
@@ -180,11 +183,11 @@ Contains
     map=0
     mop=0
 
-! Define npr._r
+! Define npr._r & r_npr.
 
-    nprx_r = Real(nprx,wp)
-    npry_r = Real(npry,wp)
-    nprz_r = Real(nprz,wp)
+    nprx_r = Real(nprx,wp) ; r_nprx = 1.0_wp/nprx_r
+    npry_r = Real(npry,wp) ; r_npry = 1.0_wp/npry_r
+    nprz_r = Real(nprz,wp) ; r_nprz = 1.0_wp/nprz_r
 
 ! construct map of neighbouring nodes and domains
 

@@ -7,7 +7,7 @@ Subroutine read_config_parallel                                    &
 ! dl_poly_4 subroutine for reading in the CONFIG data file in parallel
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush & i.t.todorov february 2012
+! author    - i.j.bush & i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -69,6 +69,7 @@ Subroutine read_config_parallel                                    &
   Real( Kind = wp ),    Dimension( :, : ), Allocatable :: scatter_buffer
 
   Character( Len = 1 ), Dimension( :, : ), Allocatable :: rec_buff
+
 
 ! Get reading method, total number of I/O heads and buffer size
 
@@ -366,9 +367,9 @@ Subroutine read_config_parallel                                    &
 
 ! assign domain coordinates (call for errors)
 
-              ipx=Int((sxx+0.5_wp)*nprx_r) !; If (ipx == nprx) ipx=ipx-1
-              ipy=Int((syy+0.5_wp)*npry_r) !; If (ipy == npry) ipy=ipy-1
-              ipz=Int((szz+0.5_wp)*nprz_r) !; If (ipz == nprz) ipz=ipz-1
+              ipx=Int((sxx+0.5_wp)*nprx_r)
+              ipy=Int((syy+0.5_wp)*npry_r)
+              ipz=Int((szz+0.5_wp)*nprz_r)
 
 ! check for errors
 
@@ -377,8 +378,6 @@ Subroutine read_config_parallel                                    &
 ! assign domain
 
               idm=ipx+nprx*(ipy+npry*ipz)
-!              If (idm < 0 .or. idm > (mxnode-1)) Call error(513)
-
               owner_read(i) = idm
               n_held(idm) = n_held(idm)+1
            End Do

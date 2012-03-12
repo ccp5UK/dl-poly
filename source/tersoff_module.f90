@@ -6,7 +6,7 @@ Module tersoff_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2008
+! author    - i.t.todorov january 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -45,7 +45,7 @@ Contains
     Allocate (lstter(1:mxter),                     Stat = fail(2))
     Allocate (ltpter(1:mxter),                     Stat = fail(3))
     Allocate (prmter(1:mxpter,1:mxter),            Stat = fail(4))
-    Allocate (prmter2(1:nprter,1:3),               Stat = fail(5))
+    Allocate (prmter2(1:nprter,1:2),               Stat = fail(5))
     Allocate (vmbp(1:mxgrid,1:nprter,1:3),         Stat = fail(6))
     Allocate (gmbp(1:mxgrid,1:nprter,1:3),         Stat = fail(7))
 

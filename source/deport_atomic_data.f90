@@ -1,17 +1,15 @@
-Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
+Subroutine deport_atomic_data(mdir,lbook)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 routine to deport atomic data in domain boundary regions
-!
-! all particle coordinates are in reduced space with origin localised
-! onto this node (idnode)
+! dl_poly_4 routine to deport atomic and topological data of particles
+! leaving this domain
 !
 ! NOTE: When executing on one node we need not get here at all!
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov april 2011
+! amended   - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -50,18 +48,17 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
 
   Logical,           Intent( In    ) :: lbook
   Integer,           Intent( In    ) :: mdir
-  Real( Kind = wp ), Intent( In    ) :: sidex,sidey,sidez,cwx,cwy,cwz
 
-  Logical           :: safe,safe1,check
+  Logical           :: safe,lsx,lsy,lsz,lex,ley,lez, &
+                       stay,safe1,check
   Integer           :: fail(1:3),iblock,jdnode,kdnode,         &
                        imove,jmove,kmove,keep,                 &
-                       i,j,k,l,jj,kk,                          &
+                       i,j,k,l,jj,kk,jxyz,ix,iy,iz,kx,ky,kz,   &
                        newatm,iatm,jatm,katm,latm,             &
                        jshels,kshels,jconst,kconst,jpmf,kpmf,  &
                        jrigid,krigid,jteths,kteths,            &
                        jbonds,kbonds,jangle,kangle,            &
                        jdihed,kdihed,jinver,kinver
-  Real( Kind = wp ) :: shovex,shovey,shovez,begin,final,xyz
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
   Integer,           Dimension( : ), Allocatable :: i1pmf,i2pmf
@@ -76,116 +73,69 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
      Call error(0)
   End If
 
-
 ! Set buffer limit (half for outgoing data - half for incoming)
 
   iblock=mxbuff/2
 
 ! DIRECTION SETTINGS INITIALISATION
 
-! define the relative displacement between the coordinate systems'
-! origins of neighbouring domains with respect to this domain
-! (idnode) in the direction of mdir (shovex,shovey,shovez)
-! in order to push all particles of this domain (idnode) in the
-! direction of mdir
-
-! define halo limits in the direction of mdir (begin,final)
-! |begin-final| is the link cell width in reduced space (cwx,cwy,cwz)
-
 ! define the neighbouring domains as sending and receiving with
 ! respect to the direction (mdir)
+! k.   - direction selection factor
+! jxyz - halo reduction factor
+! ls.  - wrap-around +1 in . direction (domain on the left MD cell border)
+! le.  - wrap-around -1 in . direction (domain on the right MD cell border)
 ! jdnode - destination (send to), knode - source (receive from)
 
-! Direction -x
+  kx = 0 ; ky = 0 ; kz = 0
+  lsx = .false. ; lex = .false.
+  lsy = .false. ; ley = .false.
+  lsz = .false. ; lez = .false.
+  If      (mdir == -1) Then ! Direction -x
+     kx  = 1
+     jxyz= 1
+     lsx = (idx == 0)
 
-  If      (mdir == -1) Then
+     jdnode = map(1)
+     kdnode = map(2)
+  Else If (mdir ==  1) Then ! Direction +x
+     kx  = 1
+     jxyz= 2
+     lex = (idx == nprx-1)
 
-     shovex=sidex
-     shovey=0.0_wp
-     shovez=0.0_wp
+     jdnode = map(2)
+     kdnode = map(1)
+  Else If (mdir == -2) Then ! Direction -y
+     ky  = 1
+     jxyz= 10
+     lsy = (idy == 0)
 
-     final=-0.5_wp*sidex
-     begin=final-cwx
+     jdnode = map(3)
+     kdnode = map(4)
+  Else If (mdir ==  2) Then ! Direction +y
+     ky  = 1
+     jxyz= 20
+     ley = (idy == npry-1)
 
-     jdnode=map(1)
-     kdnode=map(2)
+     jdnode = map(4)
+     kdnode = map(3)
+  Else If (mdir == -3) Then ! Direction -z
+     kz  = 1
+     jxyz= 100
+     lsz = (idz == 0)
 
-! Direction +x
+     jdnode = map(5)
+     kdnode = map(6)
+  Else If (mdir ==  3) Then ! Direction +z
+     kz  = 1
+     jxyz= 200
+     lez = (idz == nprz-1)
 
-  Else If (mdir ==  1) Then
-
-     shovex=-sidex
-     shovey=0.0_wp
-     shovez=0.0_wp
-
-     begin=0.5_wp*sidex
-     final=begin+cwx
-
-     jdnode=map(2)
-     kdnode=map(1)
-
-! Direction -y
-
-  Else If (mdir == -2) Then
-
-     shovex=0.0_wp
-     shovey=sidey
-     shovez=0.0_wp
-
-     final=-0.5_wp*sidey
-     begin=final-cwy
-
-     jdnode=map(3)
-     kdnode=map(4)
-
-! Direction +y
-
-  Else If (mdir ==  2) Then
-
-     shovex=0.0_wp
-     shovey=-sidey
-     shovez=0.0_wp
-
-     begin=0.5_wp*sidey
-     final=begin+cwy
-
-     jdnode=map(4)
-     kdnode=map(3)
-
-! Direction -z
-
-  Else If (mdir == -3) Then
-
-     shovex=0.0_wp
-     shovey=0.0_wp
-     shovez=sidez
-
-     final=-0.5_wp*sidez
-     begin=final-cwz
-
-     jdnode=map(5)
-     kdnode=map(6)
-
-! Direction +z
-
-  Else If (mdir ==  3) Then
-
-     shovex=0.0_wp
-     shovey=0.0_wp
-     shovez=-sidez
-
-     begin=0.5_wp*sidez
-     final=begin+cwz
-
-     jdnode=map(6)
-     kdnode=map(5)
-
+     jdnode = map(6)
+     kdnode = map(5)
   Else
-
      Call error(42)
-
   End If
-
 
 ! Initialise counters for length of sending and receiving buffers
 ! buffer(1) and buffer(iblock+1) contain the actual number of
@@ -208,471 +158,33 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
 
   lrgd(1:ntrgd)=0
 
-
-! Find whether a particle that belongs to this domain (idnode) has
-! moved into the halo of the domain in the direction of mdir, i.e.
-! the particle is not within the boundaries of this domain and has
-! to be exported into the neighbouring domain in the direction of mdir.
-! If a particle is to be moved across domains then all config and intra
-! properties of the particle (i.e. the particle itself) also have to
-! be moved across to the receiving domain.
-
 ! LOOP OVER ALL PARTICLES ON THIS NODE
 
   Do i=1,natms
+     stay=.false. ! the particle is assumed to be leaving
 
-     If      (mdir == -1 .or. mdir == 1) Then
+! If the particle is no longer scheduled to leave
+! this domain in any direction
 
-        xyz=xxx(i)
+     If (ixyz(i) == 0) Then
+        stay=.true.
+     Else ! If (ixyz(i) > 0) Then ! Get the necessary halo indices
+        ix=Mod(ixyz(i),10)           ! [0,1,2]
+        iy=Mod(ixyz(i)-ix,100)       ! [0,10,20]
+        iz=Mod(ixyz(i)-(ix+iy),1000) ! [0,100,200]
 
-     Else If (mdir == -2 .or. mdir == 2) Then
+! If the particle is scheduled to leave in the selected
+! direction then reduce its move index, otherwise tag it as staying
 
-        xyz=yyy(i)
-
-     Else If (mdir == -3 .or. mdir == 3) Then
-
-        xyz=zzz(i)
-
+        j=ix*kx+iy*ky+iz*kz
+        If (j == jxyz) Then
+           ixyz(i)=ixyz(i)-jxyz
+        Else
+           stay=.true.
+        End If
      End If
 
-! Has this particle moved from this domain into the halo of this domain?
-
-     If (xyz >= begin .and. xyz < final) Then
-
-! Is it safe to proceed?
-
-        If (imove+17 <= iblock) Then
-
-! pack positions
-
-           buffer(imove+1)=xxx(i)+shovex
-           buffer(imove+2)=yyy(i)+shovey
-           buffer(imove+3)=zzz(i)+shovez
-
-! pack velocities
-
-           buffer(imove+4)=vxx(i)
-           buffer(imove+5)=vyy(i)
-           buffer(imove+6)=vzz(i)
-
-! pack forces
-
-           buffer(imove+7)=fxx(i)
-           buffer(imove+8)=fyy(i)
-           buffer(imove+9)=fzz(i)
-
-! pack config bookkeeping arrays
-
-           buffer(imove+10)=Real(ltg(i),wp)
-           buffer(imove+11)=Real(lsite(i),wp)
-
-! pack initial positions
-
-           buffer(imove+12)=xin(i)
-           buffer(imove+13)=yin(i)
-           buffer(imove+14)=zin(i)
-
-! pack final displacements
-
-           buffer(imove+15)=xto(i)
-           buffer(imove+16)=yto(i)
-           buffer(imove+17)=zto(i)
-
-           imove=imove+17
-
-        Else
-
-           safe=.false.
-
-        End If
-
-! pack Langevin force arrays
-
-        If (l_lan) Then
-           If (imove+3 <= iblock) Then
-              buffer(imove+1)=fxl(i)
-              buffer(imove+2)=fyl(i)
-              buffer(imove+3)=fzl(i)
-
-              imove=imove+3
-           Else
-              safe=.false.
-           End If
-        End If
-
-! pack minimisation arrays
-
-        If (l_x) Then
-           If (imove+3 <= iblock) Then
-              buffer(imove+1)=oxx(i)
-              buffer(imove+2)=oyy(i)
-              buffer(imove+3)=ozz(i)
-
-              imove=imove+3
-           Else
-              safe=.false.
-           End If
-        End If
-
-! pack k-space SPME force arrays
-
-        If (.not.l_fce) Then
-           If (imove+3 <= iblock) Then
-              buffer(imove+1)=fcx(i)
-              buffer(imove+2)=fcy(i)
-              buffer(imove+3)=fcz(i)
-
-              imove=imove+3
-           Else
-              safe=.false.
-           End If
-        End If
-
-! pack MSD arrays
-
-        If (l_msd) Then
-           If (imove+2*(6+mxstak) <= iblock) Then
-              jj=27+2*i
-              buffer(imove+ 1)=stpvl0(jj-1)
-              buffer(imove+ 2)=stpvl0(jj  )
-              buffer(imove+ 3)=stpval(jj-1)
-              buffer(imove+ 4)=stpval(jj  )
-              buffer(imove+ 5)=zumval(jj-1)
-              buffer(imove+ 6)=zumval(jj  )
-              buffer(imove+ 7)=ravval(jj-1)
-              buffer(imove+ 8)=ravval(jj  )
-              buffer(imove+ 9)=ssqval(jj-1)
-              buffer(imove+10)=ssqval(jj  )
-              buffer(imove+11)=sumval(jj-1)
-              buffer(imove+12)=sumval(jj  )
-              Do kk=1,mxstak
-                 l=2*kk
-                 buffer(imove+12+l-1)=stkval(kk,jj-1)
-                 buffer(imove+12+l  )=stkval(kk,jj  )
-              End Do
-
-              imove=imove+2*(6+mxstak)
-           Else
-              safe=.false.
-           End If
-        End If
-
-! If intra-molecular entities exist in the system
-
-        If (lbook .and. safe) Then
-
-! pack the exclusion list
-
-           kk=lexatm(0,i)
-           If (imove+1 <= iblock) Then
-              imove=imove+1
-              buffer(imove)=Real(kk,wp)
-           Else
-              safe=.false.
-           End If
-           If (imove+kk <= iblock .and. safe) Then
-              Do k=1,kk
-                 imove=imove+1
-                 buffer(imove)=Real(lexatm(k,i),wp)
-              End Do
-           Else
-              safe=.false.
-           End If
-
-! the order of packing up intra bookkeeping arays must be the same as
-! their scanning in build_book_intra
-
-! pack core-shell details
-
-           jj=1
-           Do While (legshl(jj,i) > 0 .and. safe)
-              If (imove+3 <= iblock) Then
-                 kk=legshl(jj,i)
-
-                 Do k=0,2
-                    imove=imove+1
-                    buffer(imove)=Real(listshl(k,kk),wp)
-                 End Do
-
-                 jj=jj+1
-              Else
-                 safe=.false.
-              End If
-           End Do
-           If (imove+1 <= iblock) Then
-              imove=imove+1
-              buffer(imove)=0.0_wp
-           Else
-              safe=.false.
-           End If
-
-! pack contraint details
-
-           jj=1
-           Do While (legcon(jj,i) > 0 .and. safe)
-              If (imove+3 <= iblock) Then
-                 kk=legcon(jj,i)
-
-                 Do k=0,2
-                    imove=imove+1
-                    buffer(imove)=Real(listcon(k,kk),wp)
-                 End Do
-
-                 jj=jj+1
-              Else
-                 safe=.false.
-              End If
-           End Do
-           If (imove+1 <= iblock) Then
-              imove=imove+1
-              buffer(imove)=0.0_wp
-           Else
-              safe=.false.
-           End If
-
-! pack PMF details
-
-           jj=1
-           Do While (legpmf(jj,i) > 0 .and. safe)
-              If (imove+mxtpmf(1)+mxtpmf(2)+2 <= iblock) Then
-                 kk=legpmf(jj,i)
-
-                 Do k=0,mxtpmf(1)
-                    imove=imove+1
-                    buffer(imove)=Real(listpmf(k,1,kk),wp)
-                 End Do
-
-                 Do k=0,mxtpmf(2)
-                    imove=imove+1
-                    buffer(imove)=Real(listpmf(k,2,kk),wp)
-                 End Do
-
-                 jj=jj+1
-              Else
-                 safe=.false.
-              End If
-           End Do
-           If (imove+1 <= iblock) Then
-              imove=imove+1
-              buffer(imove)=0.0_wp
-           Else
-              safe=.false.
-           End If
-
-! pack RB details
-
-!           jj=1
-!           Do While (legrgd(jj,i) > 0 .and. safe)
-!              l=12
-!              If (imove+mxlrgd+l <= iblock) Then
-!                 kk=legrgd(jj,i)
-!
-!                 Do k=-1,listrgd(-1,kk)
-!                    imove=imove+1
-!                    buffer(imove)=Real(listrgd(k,kk),wp)
-!                 End Do
-!
-!                 buffer(imove+1)=q0(kk)
-!                 buffer(imove+2)=q1(kk)
-!                 buffer(imove+3)=q2(kk)
-!                 buffer(imove+4)=q3(kk)
-!                 imove=imove+4
-!
-!                 buffer(imove+1)=rgdvxx(kk)
-!                 buffer(imove+2)=rgdvyy(kk)
-!                 buffer(imove+3)=rgdvzz(kk)
-!                 imove=imove+3
-!
-!                 buffer(imove+1)=rgdoxx(kk)
-!                 buffer(imove+2)=rgdoyy(kk)
-!                 buffer(imove+3)=rgdozz(kk)
-!                 imove=imove+3
-!
-!                 jj=jj+1
-!              Else
-!                 safe=.false.
-!              End If
-!           End Do
-!           If (imove+1 <= iblock) Then
-!              imove=imove+1
-!              buffer(imove)=0.0_wp
-!           Else
-!              safe=.false.
-!           End If
-
-           jj=1
-           Do While (legrgd(jj,i) > 0 .and. safe)
-              l=12
-              If (imove+mxlrgd+l <= iblock) Then
-                 kk=legrgd(jj,i)
-
-                 Do k=-1,1
-                    imove=imove+1
-                    buffer(imove)=Real(listrgd(k,kk),wp)
-                 End Do
-
-! Bypass if the data has already been sent
-
-                 If (lrgd(kk) == 0) Then
-                    Do k=2,listrgd(-1,kk)
-                       imove=imove+1
-                       buffer(imove)=Real(listrgd(k,kk),wp)
-                    End Do
-
-                    buffer(imove+1)=q0(kk)
-                    buffer(imove+2)=q1(kk)
-                    buffer(imove+3)=q2(kk)
-                    buffer(imove+4)=q3(kk)
-                    imove=imove+4
-
-                    buffer(imove+1)=rgdvxx(kk)
-                    buffer(imove+2)=rgdvyy(kk)
-                    buffer(imove+3)=rgdvzz(kk)
-                    imove=imove+3
-
-                    buffer(imove+1)=rgdoxx(kk)
-                    buffer(imove+2)=rgdoyy(kk)
-                    buffer(imove+3)=rgdozz(kk)
-                    imove=imove+3
-
-                    lrgd(kk)=1
-                 End If
-
-                 jj=jj+1
-              Else
-                 safe=.false.
-              End If
-           End Do
-           If (imove+1 <= iblock) Then
-              imove=imove+1
-              buffer(imove)=0.0_wp
-           Else
-              safe=.false.
-           End If
-
-! pack tether details
-
-           jj=1
-           Do While (legtet(jj,i) > 0 .and. safe)
-              If (imove+2 <= iblock) Then
-                 kk=legtet(jj,i)
-
-                 Do k=0,1
-                    imove=imove+1
-                    buffer(imove)=Real(listtet(k,kk),wp)
-                 End Do
-
-                 jj=jj+1
-              Else
-                 safe=.false.
-              End If
-           End Do
-           If (imove+1 <= iblock) Then
-              imove=imove+1
-              buffer(imove)=0.0_wp
-           Else
-              safe=.false.
-           End If
-
-! pack bond details
-
-           jj=1
-           Do While (legbnd(jj,i) > 0 .and. safe)
-              If (imove+3 <= iblock) Then
-                 kk=legbnd(jj,i)
-
-                 Do k=0,2
-                    imove=imove+1
-                    buffer(imove)=Real(listbnd(k,kk),wp)
-                 End Do
-
-                 jj=jj+1
-              Else
-                 safe=.false.
-              End If
-           End Do
-           If (imove+1 <= iblock) Then
-              imove=imove+1
-              buffer(imove)=0.0_wp
-           Else
-              safe=.false.
-           End If
-
-! pack valence angle details
-
-           jj=1
-           Do While (legang(jj,i) > 0 .and. safe)
-              If (imove+4 <= iblock) Then
-                 kk=legang(jj,i)
-
-                 Do k=0,3
-                    imove=imove+1
-                    buffer(imove)=Real(listang(k,kk),wp)
-                 End Do
-
-                 jj=jj+1
-              Else
-                 safe=.false.
-              End If
-           End Do
-           If (imove+1 <= iblock) Then
-              imove=imove+1
-              buffer(imove)=0.0_wp
-           Else
-              safe=.false.
-           End If
-
-! pack dihedral angle details
-
-           jj=1
-           Do While (legdih(jj,i) > 0 .and. safe)
-              If (imove+5 <= iblock) Then
-                 kk=legdih(jj,i)
-
-                 Do k=0,4
-                    imove=imove+1
-                    buffer(imove)=Real(listdih(k,kk),wp)
-                 End Do
-
-                 jj=jj+1
-              Else
-                 safe=.false.
-              End If
-           End Do
-           If (imove+1 <= iblock) Then
-              imove=imove+1
-              buffer(imove)=0.0_wp
-           Else
-              safe=.false.
-           End If
-
-! pack inversion angle details
-
-           jj=1
-           Do While (leginv(jj,i) > 0 .and. safe)
-              If (imove+5 <= iblock) Then
-                 kk=leginv(jj,i)
-
-                 Do k=0,4
-                    imove=imove+1
-                    buffer(imove)=Real(listinv(k,kk),wp)
-                 End Do
-
-                 jj=jj+1
-              Else
-                 safe=.false.
-              End If
-           End Do
-           If (imove+1 <= iblock) Then
-              imove=imove+1
-              buffer(imove)=0.0_wp
-           Else
-              safe=.false.
-           End If
-
-        End If
-
-     Else
+     If (stay) Then ! keep it
 
         keep=keep+1
 
@@ -690,6 +202,7 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
 
         ltg(keep)=ltg(i)
         lsite(keep)=lsite(i)
+        ixyz(keep)=ixyz(i)
 
         xin(keep)=xin(i)
         yin(keep)=yin(i)
@@ -756,8 +269,449 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
            leginv(:,keep)=leginv(:,i)
         End If
 
-     End If
+     Else ! not staying = leaving, pack all
 
+! If safe to proceed
+
+        If (imove+18 <= iblock) Then
+
+! pack positions and apply possible wrap-around corrections for receiver
+
+           buffer(imove+1)=xxx(i)
+           If (lsx) buffer(imove+1)=buffer(imove+1)+1.0_wp
+           If (lex) buffer(imove+1)=buffer(imove+1)-1.0_wp
+           buffer(imove+2)=yyy(i)
+           If (lsy) buffer(imove+2)=buffer(imove+2)+1.0_wp
+           If (ley) buffer(imove+2)=buffer(imove+2)-1.0_wp
+           buffer(imove+3)=zzz(i)
+           If (lsz) buffer(imove+3)=buffer(imove+3)+1.0_wp
+           If (lez) buffer(imove+3)=buffer(imove+3)-1.0_wp
+
+! pack velocities
+
+           buffer(imove+4)=vxx(i)
+           buffer(imove+5)=vyy(i)
+           buffer(imove+6)=vzz(i)
+
+! pack forces
+
+           buffer(imove+7)=fxx(i)
+           buffer(imove+8)=fyy(i)
+           buffer(imove+9)=fzz(i)
+
+! pack config indexing, site and move indexing arrays
+
+           buffer(imove+10)=Real(ltg(i),wp)
+           buffer(imove+11)=Real(lsite(i),wp)
+           buffer(imove+12)=Real(ixyz(i),wp)
+
+! pack initial positions
+
+           buffer(imove+13)=xin(i)
+           buffer(imove+14)=yin(i)
+           buffer(imove+15)=zin(i)
+
+! pack final displacements
+
+           buffer(imove+16)=xto(i)
+           buffer(imove+17)=yto(i)
+           buffer(imove+18)=zto(i)
+
+           imove=imove+18
+
+        Else
+
+           safe=.false.
+
+        End If
+
+! pack Langevin force arrays
+
+        If (l_lan .and. safe) Then
+           If (imove+3 <= iblock) Then
+              buffer(imove+1)=fxl(i)
+              buffer(imove+2)=fyl(i)
+              buffer(imove+3)=fzl(i)
+
+              imove=imove+3
+           Else
+              safe=.false.
+           End If
+        End If
+
+! pack minimisation arrays
+
+        If (l_x .and. safe) Then
+           If (imove+3 <= iblock) Then
+              buffer(imove+1)=oxx(i)
+              buffer(imove+2)=oyy(i)
+              buffer(imove+3)=ozz(i)
+
+              imove=imove+3
+           Else
+              safe=.false.
+           End If
+        End If
+
+! pack k-space SPME force arrays
+
+        If ((.not.l_fce) .and. safe) Then
+           If (imove+3 <= iblock) Then
+              buffer(imove+1)=fcx(i)
+              buffer(imove+2)=fcy(i)
+              buffer(imove+3)=fcz(i)
+
+              imove=imove+3
+           Else
+              safe=.false.
+           End If
+        End If
+
+! pack MSD arrays
+
+        If (l_msd .and. safe) Then
+           If (imove+2*(6+mxstak) <= iblock) Then
+              jj=27+2*i
+              buffer(imove+ 1)=stpvl0(jj-1)
+              buffer(imove+ 2)=stpvl0(jj  )
+              buffer(imove+ 3)=stpval(jj-1)
+              buffer(imove+ 4)=stpval(jj  )
+              buffer(imove+ 5)=zumval(jj-1)
+              buffer(imove+ 6)=zumval(jj  )
+              buffer(imove+ 7)=ravval(jj-1)
+              buffer(imove+ 8)=ravval(jj  )
+              buffer(imove+ 9)=ssqval(jj-1)
+              buffer(imove+10)=ssqval(jj  )
+              buffer(imove+11)=sumval(jj-1)
+              buffer(imove+12)=sumval(jj  )
+              Do kk=1,mxstak
+                 l=2*kk
+                 buffer(imove+12+l-1)=stkval(kk,jj-1)
+                 buffer(imove+12+l  )=stkval(kk,jj  )
+              End Do
+
+              imove=imove+2*(6+mxstak)
+           Else
+              safe=.false.
+           End If
+        End If
+
+! If intra-molecular entities exist in the system
+
+        If (lbook .and. safe) Then
+
+! pack the exclusion list
+
+           kk=lexatm(0,i)
+           If (imove+1 <= iblock) Then
+              imove=imove+1
+              buffer(imove)=Real(kk,wp)
+           Else
+              safe=.false.
+           End If
+           If (imove+kk <= iblock .and. safe) Then
+              Do k=1,kk
+                 imove=imove+1
+                 buffer(imove)=Real(lexatm(k,i),wp)
+              End Do
+           Else
+              safe=.false.
+           End If
+
+! the order of packing up intra bookkeeping arrays must be the same as
+! their scanning in build_book_intra
+
+! pack core-shell details
+
+           jj=1
+           Do While (legshl(jj,i) > 0 .and. safe)
+              If (imove+3 <= iblock) Then
+                 kk=legshl(jj,i)
+
+                 Do k=0,2
+                    imove=imove+1
+                    buffer(imove)=Real(listshl(k,kk),wp)
+                 End Do
+
+                 jj=jj+1
+              Else
+                 safe=.false.
+              End If
+           End Do
+           If (imove+1 <= iblock .and. safe) Then
+              imove=imove+1
+              buffer(imove)=0.0_wp
+           Else
+              safe=.false.
+           End If
+
+! pack constraint details
+
+           jj=1
+           Do While (legcon(jj,i) > 0 .and. safe)
+              If (imove+3 <= iblock) Then
+                 kk=legcon(jj,i)
+
+                 Do k=0,2
+                    imove=imove+1
+                    buffer(imove)=Real(listcon(k,kk),wp)
+                 End Do
+
+                 jj=jj+1
+              Else
+                 safe=.false.
+              End If
+           End Do
+           If (imove+1 <= iblock .and. safe) Then
+              imove=imove+1
+              buffer(imove)=0.0_wp
+           Else
+              safe=.false.
+           End If
+
+! pack PMF details
+
+           jj=1
+           Do While (legpmf(jj,i) > 0 .and. safe)
+              If (imove+mxtpmf(1)+mxtpmf(2)+2 <= iblock) Then
+                 kk=legpmf(jj,i)
+
+                 Do k=0,mxtpmf(1)
+                    imove=imove+1
+                    buffer(imove)=Real(listpmf(k,1,kk),wp)
+                 End Do
+
+                 Do k=0,mxtpmf(2)
+                    imove=imove+1
+                    buffer(imove)=Real(listpmf(k,2,kk),wp)
+                 End Do
+
+                 jj=jj+1
+              Else
+                 safe=.false.
+              End If
+           End Do
+           If (imove+1 <= iblock .and. safe) Then
+              imove=imove+1
+              buffer(imove)=0.0_wp
+           Else
+              safe=.false.
+           End If
+
+! pack RB details
+
+!           jj=1
+!           Do While (legrgd(jj,i) > 0 .and. safe)
+!              l=12
+!              If (imove+mxlrgd+l <= iblock) Then
+!                 kk=legrgd(jj,i)
+!
+!                 Do k=-1,listrgd(-1,kk)
+!                    imove=imove+1
+!                    buffer(imove)=Real(listrgd(k,kk),wp)
+!                 End Do
+!
+!                 buffer(imove+1)=q0(kk)
+!                 buffer(imove+2)=q1(kk)
+!                 buffer(imove+3)=q2(kk)
+!                 buffer(imove+4)=q3(kk)
+!                 imove=imove+4
+!
+!                 buffer(imove+1)=rgdvxx(kk)
+!                 buffer(imove+2)=rgdvyy(kk)
+!                 buffer(imove+3)=rgdvzz(kk)
+!                 imove=imove+3
+!
+!                 buffer(imove+1)=rgdoxx(kk)
+!                 buffer(imove+2)=rgdoyy(kk)
+!                 buffer(imove+3)=rgdozz(kk)
+!                 imove=imove+3
+!
+!                 jj=jj+1
+!              Else
+!                 safe=.false.
+!              End If
+!           End Do
+!           If (imove+1 <= iblock .and. safe) Then
+!              imove=imove+1
+!              buffer(imove)=0.0_wp
+!           Else
+!              safe=.false.
+!           End If
+
+           jj=1
+           Do While (legrgd(jj,i) > 0 .and. safe)
+              l=12
+              If (imove+mxlrgd+l <= iblock) Then
+                 kk=legrgd(jj,i)
+
+                 Do k=-1,1
+                    imove=imove+1
+                    buffer(imove)=Real(listrgd(k,kk),wp)
+                 End Do
+
+! Bypass if the data has already been sent
+
+                 If (lrgd(kk) == 0) Then
+                    Do k=2,listrgd(-1,kk)
+                       imove=imove+1
+                       buffer(imove)=Real(listrgd(k,kk),wp)
+                    End Do
+
+                    buffer(imove+1)=q0(kk)
+                    buffer(imove+2)=q1(kk)
+                    buffer(imove+3)=q2(kk)
+                    buffer(imove+4)=q3(kk)
+                    imove=imove+4
+
+                    buffer(imove+1)=rgdvxx(kk)
+                    buffer(imove+2)=rgdvyy(kk)
+                    buffer(imove+3)=rgdvzz(kk)
+                    imove=imove+3
+
+                    buffer(imove+1)=rgdoxx(kk)
+                    buffer(imove+2)=rgdoyy(kk)
+                    buffer(imove+3)=rgdozz(kk)
+                    imove=imove+3
+
+                    lrgd(kk)=1
+                 End If
+
+                 jj=jj+1
+              Else
+                 safe=.false.
+              End If
+           End Do
+           If (imove+1 <= iblock .and. safe) Then
+              imove=imove+1
+              buffer(imove)=0.0_wp
+           Else
+              safe=.false.
+           End If
+
+! pack tether details
+
+           jj=1
+           Do While (legtet(jj,i) > 0 .and. safe)
+              If (imove+2 <= iblock) Then
+                 kk=legtet(jj,i)
+
+                 Do k=0,1
+                    imove=imove+1
+                    buffer(imove)=Real(listtet(k,kk),wp)
+                 End Do
+
+                 jj=jj+1
+              Else
+                 safe=.false.
+              End If
+           End Do
+           If (imove+1 <= iblock .and. safe) Then
+              imove=imove+1
+              buffer(imove)=0.0_wp
+           Else
+              safe=.false.
+           End If
+
+! pack bond details
+
+           jj=1
+           Do While (legbnd(jj,i) > 0 .and. safe)
+              If (imove+3 <= iblock) Then
+                 kk=legbnd(jj,i)
+
+                 Do k=0,2
+                    imove=imove+1
+                    buffer(imove)=Real(listbnd(k,kk),wp)
+                 End Do
+
+                 jj=jj+1
+              Else
+                 safe=.false.
+              End If
+           End Do
+           If (imove+1 <= iblock .and. safe) Then
+              imove=imove+1
+              buffer(imove)=0.0_wp
+           Else
+              safe=.false.
+           End If
+
+! pack valence angle details
+
+           jj=1
+           Do While (legang(jj,i) > 0 .and. safe)
+              If (imove+4 <= iblock) Then
+                 kk=legang(jj,i)
+
+                 Do k=0,3
+                    imove=imove+1
+                    buffer(imove)=Real(listang(k,kk),wp)
+                 End Do
+
+                 jj=jj+1
+              Else
+                 safe=.false.
+              End If
+           End Do
+           If (imove+1 <= iblock .and. safe) Then
+              imove=imove+1
+              buffer(imove)=0.0_wp
+           Else
+              safe=.false.
+           End If
+
+! pack dihedral angle details
+
+           jj=1
+           Do While (legdih(jj,i) > 0 .and. safe)
+              If (imove+5 <= iblock) Then
+                 kk=legdih(jj,i)
+
+                 Do k=0,4
+                    imove=imove+1
+                    buffer(imove)=Real(listdih(k,kk),wp)
+                 End Do
+
+                 jj=jj+1
+              Else
+                 safe=.false.
+              End If
+           End Do
+           If (imove+1 <= iblock .and. safe) Then
+              imove=imove+1
+              buffer(imove)=0.0_wp
+           Else
+              safe=.false.
+           End If
+
+! pack inversion angle details
+
+           jj=1
+           Do While (leginv(jj,i) > 0 .and. safe)
+              If (imove+5 <= iblock) Then
+                 kk=leginv(jj,i)
+
+                 Do k=0,4
+                    imove=imove+1
+                    buffer(imove)=Real(listinv(k,kk),wp)
+                 End Do
+
+                 jj=jj+1
+              Else
+                 safe=.false.
+              End If
+           End Do
+           If (imove+1 <= iblock .and. safe) Then
+              imove=imove+1
+              buffer(imove)=0.0_wp
+           Else
+              safe=.false.
+           End If
+
+        End If
+
+     End If
   End Do
 
 ! Check for array bound overflow (have arrays coped with outgoing data)
@@ -817,24 +771,25 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
      fyy(newatm)=buffer(kmove+8)
      fzz(newatm)=buffer(kmove+9)
 
-! unpack config bookkeeping arrays
+! unpack config indexing, site and move indexing arrays
 
      ltg(newatm)=Nint(buffer(kmove+10))
      lsite(newatm)=Nint(buffer(kmove+11))
+     ixyz(newatm)=Nint(buffer(kmove+12))
 
 ! unpack initial positions arrays
 
-     xin(newatm)=buffer(kmove+12)
-     yin(newatm)=buffer(kmove+13)
-     zin(newatm)=buffer(kmove+14)
+     xin(newatm)=buffer(kmove+13)
+     yin(newatm)=buffer(kmove+14)
+     zin(newatm)=buffer(kmove+15)
 
 ! unpack initial positions arrays
 
-     xto(newatm)=buffer(kmove+15)
-     yto(newatm)=buffer(kmove+16)
-     zto(newatm)=buffer(kmove+17)
+     xto(newatm)=buffer(kmove+16)
+     yto(newatm)=buffer(kmove+17)
+     zto(newatm)=buffer(kmove+18)
 
-     kmove=kmove+17
+     kmove=kmove+18
 
 ! unpack Langevin force arrays
 
@@ -904,9 +859,9 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
         End Do
         lexatm(kk+1:mxexcl,newatm)=0
 
-! the order of unpacking intra bookkeeping arays must be the same as
+! the order of unpacking intra bookkeeping arrays must be the same as
 ! the order of their scanning in build_book_intra in order to rebuild
-! correctly the new list arrayes and create new legend arrays
+! correctly the new list arrays and create new legend arrays
 
 ! set initial intra counters
 
@@ -963,7 +918,7 @@ Subroutine deport_atomic_data(mdir,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
         End Do
         kmove=kmove+1
 
-! unpack bond contraint details
+! unpack bond constraint details
 
         legcon(:,newatm) = 0
         Do While (buffer(kmove+1) > 0.0_wp .and. safe)

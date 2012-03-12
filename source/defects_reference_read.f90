@@ -6,7 +6,7 @@ Subroutine defects_reference_read &
 ! dl_poly_4 subroutine for reading particles data from REFERENCE file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2011
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -403,13 +403,17 @@ Subroutine defects_reference_read &
 
 ! sxx,syy,szz are in [-0.5,0.5) interval and values as 0.4(9) may pose a problem
 
-              ipx=Int((sxx+0.5_wp)*nprx_r) ; If (ipx == nprx) ipx=ipx-1
-              ipy=Int((syy+0.5_wp)*npry_r) ; If (ipy == npry) ipy=ipy-1
-              ipz=Int((szz+0.5_wp)*nprz_r) ; If (ipz == nprz) ipz=ipz-1
+              ipx=Int((sxx+0.5_wp)*nprx_r)
+              ipy=Int((syy+0.5_wp)*npry_r)
+              ipz=Int((szz+0.5_wp)*nprz_r)
+
+! check for errors
+
+              If (ipx == nprx .or. ipy == npry .or. ipz == nprz) Call error(555)
+
+! assign domain
 
               idm=ipx+nprx*(ipy+npry*ipz)
-              If (idm < 0 .or. idm > (mxnode-1)) Call error(555)
-
               If (idm == idnode) Then
                  nrefs=nrefs+1
 

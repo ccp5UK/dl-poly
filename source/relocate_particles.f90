@@ -7,18 +7,18 @@ Subroutine relocate_particles        &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 routine to arrange relocation of data between neighbouring
-! domains/nodes after position update
+! domains/nodes after positions updates
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov march 2011
+! amended   - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gsum,gmax,gcheck
   Use setup_module
-  Use domains_module,     Only : nprx,npry,nprz
+  Use domains_module
 
   Use site_module
   Use config_module
@@ -47,14 +47,12 @@ Subroutine relocate_particles        &
   Real( Kind = wp ), Intent( In    ) :: rcut
 
   Logical,           Save :: newjob = .true.
-  Integer,           Save :: idx,idy,idz
-  Real( Kind = wp ), Save :: sidex,sidey,sidez,cut
+  Real( Kind = wp ), Save :: cut
 
   Logical           :: safe(1:9)
-  Integer           :: nlx,nly,nlz,i,nlimit
+  Integer           :: i,nlimit
   Real( Kind = wp ) :: big(1:3),celprp(1:10),rcell(1:9),det, &
-                       cwx,cwy,cwz, dispx,dispy,dispz, uuu,vvv,www
-
+                       ipx,ipy,ipz,uuu,vvv,www
 
   If (newjob) Then
      newjob = .false.
@@ -62,19 +60,6 @@ Subroutine relocate_particles        &
 ! image conditions not compliant with DD and link-cell
 
      If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
-
-! Get this node's (domain's) coordinates
-
-     idz=idnode/(nprx*npry)
-     idy=idnode/nprx-idz*npry
-     idx=Mod(idnode,nprx)
-
-! Get the domains' dimensions in reduced space
-! (domains are geometrically equivalent)
-
-     sidex=1.0_wp/Real(nprx,wp)
-     sidey=1.0_wp/Real(npry,wp)
-     sidez=1.0_wp/Real(nprz,wp)
 
 ! Define cut
 
@@ -125,81 +110,93 @@ Subroutine relocate_particles        &
 
   If (mxnode > 1) Then
 
-! Calculate the displacements from the origin of the MD cell
-! to the origin of this domain in reduced space
-
-! First term (0.5_wp) = move to the bottom left corner of MD cell
-! Second term, first term (side) = scale by the number of domains
-! in the given direction
-! Second term, second term, first term (id) = move to the bottom
-! left corner of this domain in the given direction
-! Second term, second term, second term (0.5_wp) = move to the
-! middle of this domain
-
-     dispx=0.5_wp-sidex*(Real(idx,wp)+0.5_wp)
-     dispy=0.5_wp-sidey*(Real(idy,wp)+0.5_wp)
-     dispz=0.5_wp-sidez*(Real(idz,wp)+0.5_wp)
-
-! calculate link cell dimensions per node
-
-     nlx=Int(sidex*celprp(7)/cut)
-     nly=Int(sidey*celprp(8)/cut)
-     nlz=Int(sidez*celprp(9)/cut)
-
-! Calculate a link-cell width in every direction in the
-! reduced space of the domain
-! First term = the width of the domain in reduced space
-! Second term = number of link-cells per domain per direction
-
-     cwx=sidex/Real(nlx,wp)
-     cwy=sidey/Real(nly,wp)
-     cwz=sidez/Real(nlz,wp)
-
-! Get the inverse cell matrix
-
      Call invert(cell,rcell,det)
 
-! Convert atomic positions from centred Cartesian coordinates
-! to reduced space coordinates of this node
+! Convert atomic positions from MD centred
+! Cartesian coordinates to reduced space ones.
+! Populate the move (former halo) indicator array.
+! Here we assume no particle has moved more than
+! a link-cell width (> rcut) in any direction
+! since last call to relocate as we don't test this!!!
 
+     ixyz(1:natms)=0 ! Initialise move (former halo) indicator
      Do i=1,natms
         uuu=xxx(i)
         vvv=yyy(i)
         www=zzz(i)
 
-        xxx(i)=rcell(1)*uuu+rcell(4)*vvv+rcell(7)*www+dispx
-        yyy(i)=rcell(2)*uuu+rcell(5)*vvv+rcell(8)*www+dispy
-        zzz(i)=rcell(3)*uuu+rcell(6)*vvv+rcell(9)*www+dispz
+        xxx(i)=rcell(1)*uuu+rcell(4)*vvv+rcell(7)*www
+        yyy(i)=rcell(2)*uuu+rcell(5)*vvv+rcell(8)*www
+        zzz(i)=rcell(3)*uuu+rcell(6)*vvv+rcell(9)*www
+
+! assign domain coordinates (call for errors)
+
+        ipx=Int((xxx(i)+0.5_wp)*nprx_r)
+        ipy=Int((yyy(i)+0.5_wp)*npry_r)
+        ipz=Int((zzz(i)+0.5_wp)*nprz_r)
+
+        If (idx == 0) Then
+           If (xxx(i) < -half_plus) ixyz(i)=ixyz(i)+1
+        Else
+           If (ipx < idx) ixyz(i)=ixyz(i)+1
+        End If
+        If (idx == nprx-1) Then
+           If (xxx(i) >= half_minus) ixyz(i)=ixyz(i)+2
+        Else
+           If (ipx > idx) ixyz(i)=ixyz(i)+2
+        End If
+
+        If (idy == 0) Then
+           If (yyy(i) < -half_plus) ixyz(i)=ixyz(i)+10
+        Else
+           If (ipy < idy) ixyz(i)=ixyz(i)+10
+        End If
+        If (idy == npry-1) Then
+           If (yyy(i) >= half_minus) ixyz(i)=ixyz(i)+20
+        Else
+           If (ipy > idy) ixyz(i)=ixyz(i)+20
+        End If
+
+        If (idz == 0) Then
+           If (zzz(i) < -half_plus) ixyz(i)=ixyz(i)+100
+        Else
+           If (ipz < idz) ixyz(i)=ixyz(i)+100
+        End If
+        If (idz == nprz-1) Then
+           If (zzz(i) >= half_minus) ixyz(i)=ixyz(i)+200
+        Else
+           If (ipz > idz) ixyz(i)=ixyz(i)+200
+        End If
      End Do
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
-     Call deport_atomic_data( 1,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
+     Call deport_atomic_data(-1,lbook)
+     Call deport_atomic_data( 1,lbook)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
-     Call deport_atomic_data( 2,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
+     Call deport_atomic_data(-2,lbook)
+     Call deport_atomic_data( 2,lbook)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
-     Call deport_atomic_data( 3,lbook,sidex,sidey,sidez,cwx,cwy,cwz)
+     Call deport_atomic_data(-3,lbook)
+     Call deport_atomic_data( 3,lbook)
 
 ! check system for loss of atoms
 
-     nlimit=natms
-     Call gsum(nlimit)
-     If (nlimit /= megatm) Call error(58)
+     safe(1)=(All(ixyz(1:natms) == 0)) ; Call gcheck(safe(1))
+     nlimit=natms ; Call gsum(nlimit)
+     If ((.not.safe(1)) .or. nlimit /= megatm) Call error(58)
 
 ! restore atomic coordinates to real coordinates
 ! and reassign atom properties
 
      Do i=1,natms
-        uuu=xxx(i)-dispx
-        vvv=yyy(i)-dispy
-        www=zzz(i)-dispz
+        uuu=xxx(i)
+        vvv=yyy(i)
+        www=zzz(i)
 
         xxx(i)=cell(1)*uuu+cell(4)*vvv+cell(7)*www
         yyy(i)=cell(2)*uuu+cell(5)*vvv+cell(8)*www
@@ -286,11 +283,13 @@ Subroutine relocate_particles        &
 
      End If
 
-  End If
+  Else
 
 ! Restore periodic boundaries
 
-  Call pbcshift(imcon,cell,natms,xxx,yyy,zzz)
+     Call pbcshift(imcon,cell,natms,xxx,yyy,zzz)
+
+  End If
 
 ! Halt program if potential cutoff exceeds cell width
 

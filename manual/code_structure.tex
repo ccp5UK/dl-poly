@@ -189,7 +189,7 @@ numeric\_container spme\_container quaternions\_container \\
 scan\_field read\_config\_parallel scan\_config scan\_control read\_config \\
 set\_bounds \\
 read\_control \\
-vdw\_generate vdw\_table\_read \\
+vdw\_generate vdw\_table\_read vdw\_direct\_fs\_generate \\
 metal\_generate metal\_table\_read metal\_table\_derivatives \\
 tersoff\_generate dihedrals\_14\_check read\_field \\
 check\_config scale\_config write\_config \\
@@ -226,7 +226,8 @@ coul\_rfp\_forces rdf\_collect rdf\_excl\_collect ewald\_excl\_forces \\
 ewald\_frozen\_forces two\_body\_forces \\
 tersoff\_forces three\_body\_forces four\_body\_forces \\
 core\_shell\_forces tethers\_forces \\
-bonds\_forces angles\_forces dihedrals\_forces inversions\_forces \\
+intra\_coul bonds\_forces angles\_forces \\
+inversions\_forces dihedrals\_14\_vdw dihedrals\_forces \\
 external\_field\_apply external\_field\_correct \\
 langevin\_forces \\
 constraints\_pseudo\_bonds pmf\_pseudo\_bonds \\

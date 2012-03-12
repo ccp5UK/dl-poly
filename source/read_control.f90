@@ -23,19 +23,20 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2012
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,        Only : idnode
+  Use comms_module,    Only : idnode
   Use setup_module
-  Use config_module,       Only : sysname
-  Use langevin_module,     Only : l_lan,l_gst,langevin_allocate_arrays
+  Use config_module,   Only : sysname
+  Use langevin_module, Only : l_lan,l_gst,langevin_allocate_arrays
   Use parse_module
-  Use vdw_module,          Only : ld_vdw,ls_vdw
-  Use metal_module,        Only : ld_met
-  Use defects1_module,     Only : l_dfx
+  Use vdw_module,      Only : lt_vdw,ld_vdw,ls_vdw, &
+                              allocate_vdw_direct_fs_arrays
+  Use metal_module,    Only : lt_met,ld_met
+  Use defects1_module, Only : l_dfx
 
   Use development_module
 
@@ -461,8 +462,12 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         If (word(1:6) == 'direct') Then
-           ld_met = .true.
            If (idnode == 0) Write(nrite,"(/,1x,a)") "metal direct option on"
+           If (lt_met) Then
+              Call warning(480,0.0_wp,0.0_wp,0.0_wp)
+           Else
+              ld_met = .true.
+           End If
         End If
 
 ! read slab option (dealt with in scan_control<-set_bounds,

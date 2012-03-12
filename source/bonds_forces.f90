@@ -8,7 +8,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith july 1992
-! amended   - i.t.todorov december 2011
+! amended   - i.t.todorov march 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,23 +29,12 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
   Integer,                             Intent( In    ) :: keyfce
   Real( Kind = wp ),                   Intent( InOut ) :: engcpe,vircpe
 
-  Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
-  Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
-  Real( Kind = wp ), Parameter :: a3 =  1.421413741_wp
-  Real( Kind = wp ), Parameter :: a4 = -1.453152027_wp
-  Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
-  Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
-
-  Logical, Save           :: newjob = .true. , damp
-  Real( Kind = wp ), Save :: twopi,rtwopi, aa,bb, rfld0,rfld1
-
   Logical           :: safe(1:2)
   Integer           :: fail(1:2),i,j,ia,ib,keyb,kk,local_index
   Real( Kind = wp ) :: rab,rab2,fx,fy,fz,gamma,omega, &
                        term,term1,term2,eps,sig,      &
                        k,k2,k3,k4,r0,dr,dra,dr2,      &
-                       e0,rc,a,b,c,rho,delta,         &
-                       exp1,tt,erc,fer,b0,chgprd,     &
+                       e0,rc,a,b,c,rho,delta,chgprd,  &
                        engc12,virc12,buffer(1:4),     &
                        strs1,strs2,strs3,strs5,strs6,strs9
 
@@ -59,44 +48,6 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'bond_forces allocation failure, node: ', idnode
      Call error(0)
-  End If
-
-
-  If (newjob) Then
-     newjob = .false.
-
-! Define constants
-
-     twopi = 2.0_wp*pi
-     rtwopi= 1.0_wp/twopi
-
-! Check for damped force-shifted coulombic and reaction field interactions
-! and set force and potential shifting parameters dependingly
-
-     damp=.false.
-     If (alpha > zero_plus) Then
-        damp=.true.
-
-        exp1= Exp(-(alpha*rcut)**2)
-        tt  = 1.0_wp/(1.0_wp+pp*alpha*rcut)
-
-        erc = tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1/rcut
-        fer = (erc + 2.0_wp*(alpha/sqrpi)*exp1)/rcut**2
-
-        aa  = fer*rcut
-        bb  = -(erc + aa*rcut)
-     Else If (keyfce == 8) Then
-        aa =  1.0_wp/rcut**2
-        bb = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
-     End If
-
-! set reaction field terms for RFC
-
-     If (keyfce == 10) Then
-        b0    = 2.0_wp*(epsq - 1.0_wp)/(2.0_wp*epsq + 1.0_wp)
-        rfld0 = b0/rcut**3
-        rfld1 = (1.0_wp + 0.5_wp*b0)/rcut
-     End If
   End If
 
 ! calculate atom separation vectors
@@ -222,7 +173,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
            term=k*dr
 
            omega=term*0.5_wp*dr
-           gamma=term/rab
+           gamma=-term/rab
 
         Else If (keyb == 2) Then
 
@@ -235,7 +186,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
            term=Exp(-k*(rab-r0))
 
            omega=e0*term*(term-2.0_wp)
-           gamma=2.0_wp*e0*k*term*(1.0_wp-term)/rab
+           gamma=-2.0_wp*e0*k*term*(1.0_wp-term)/rab
 
         Else If (keyb == 3) Then
 
@@ -247,7 +198,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
            term=rab**(-6)
 
            omega=term*(a*term-b)
-           gamma=-6.0_wp*term*(2.0_wp*a*term-b)/rab2
+           gamma=6.0_wp*term*(2.0_wp*a*term-b)/rab2
 
         Else If (keyb == 4) Then
 
@@ -259,7 +210,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
            term=(sig/rab)**6
 
            omega=4.0_wp*eps*term*(term-1.0_wp)
-           gamma=-24.0_wp*eps*term*(2.0_wp*term-1.0_wp)/rab2
+           gamma=24.0_wp*eps*term*(2.0_wp*term-1.0_wp)/rab2
 
         Else If (keyb == 5) Then
 
@@ -272,7 +223,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
            rc=prmbnd(3,kk)
 
            omega=k*(0.5_wp*Min(dra,rc)**2 + rc*Max(dra-rc,0.0_wp))
-           gamma=k*Sign(Min(dra,rc),dr)/rab
+           gamma=-k*Sign(Min(dra,rc),dr)/rab
 
         Else If (keyb == 6) Then
 
@@ -287,7 +238,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
            dr2=dr**2
 
            omega=dr2 * (0.5_wp*k2+k3*dr/3.0_wp+0.25_wp*k4*dr2)
-           gamma=dr*(k2+k3*dr+k4*dr2)/rab
+           gamma=-dr*(k2+k3*dr+k4*dr2)/rab
 
         Else If (keyb == 7) Then
 
@@ -301,84 +252,25 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
            term2=-c/rab**6
 
            omega=term1+term2
-           gamma=-(term1/rho+6.0_wp*term2/rab)/rab
+           gamma=(term1/rho+6.0_wp*term2/rab)/rab
 
         Else If (keyb == 8) Then
 
-! scaled charge product times dielectric cosntants
+           omega=0.0_wp
+           gamma=0.0_wp
+
+! scaled charge product times dielectric constants
 
            chgprd=(prmbnd(1,kk)/engunit)*chge(ia)*chge(ib)*r4pie0/epsq
            If (Abs(chgprd) > zero_plus .and. keyfce > 0) Then
-
-! Electrostatics by ewald sum
-
-              If      (keyfce ==  2) Then
-
-                 omega = chgprd/rab
-                 gamma = -omega/rab2
-
-              Else If (keyfce ==  4) Then
-
-! distance dependent dielectric
-
-                 omega = chgprd/rab2
-                 gamma = -2.0_wp*omega/rab2
-
-! direct coulombic
-
-              Else If (keyfce ==  6) Then
-
-                 omega = chgprd/rab
-                 gamma = -omega/rab2
-
-! force shifted coulombic and reaction field
-
-              Else If (keyfce ==  8 .or. keyfce == 10) Then
-
-                 If (damp) Then ! calculate damping contributions
-                    exp1= Exp(-(alpha*rab)**2)
-                    tt  = 1.0_wp/(1.0_wp+pp*alpha*rab)
-
-                    erc = tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1/rab
-                    fer = (erc + 2.0_wp*(alpha/sqrpi)*exp1)/rab2
-
-                    omega = chgprd*(erc + aa*rab + bb)
-                    gamma = -chgprd*(fer - aa/rab)
-                 End If
-
-                 If      (keyfce ==  8) Then ! force shifted coulombic
-                    If (.not.damp) Then ! pure
-                       omega = chgprd*(1.0_wp/rab + aa*rab + bb)
-                       gamma = -chgprd*(1.0_wp/rab2 - aa)/rab
-                    Else                ! damped
-                       omega = omega
-                       gamma = gamma
-                    End If
-                 Else If (keyfce == 10) Then ! reaction field
-                    If (.not.damp) Then ! pure
-                       omega = chgprd*(1.0_wp/rab + 0.5_wp*rfld0*rab2 - rfld1)
-                       gamma = -chgprd*(1.0_wp/rab**3 - rfld0)
-                    Else                ! damped
-                       omega = omega + chgprd*(0.5_wp*rfld0*rab2 - rfld1)
-                       gamma = gamma - chgprd*(- rfld0)
-                    End If
-                 End If
-
-              Else
-
-! undefined potential
-
-                 safe(1)=.false.
-
-              End If
+              Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rab,rab2,omega,gamma,safe(1))
 
 ! correct electrostatic energy and virial
 
               If (ia <= natms) Then
                  engc12 = engc12 + omega
-                 virc12 = virc12 + gamma*rab2
+                 virc12 = virc12 - gamma*rab2
               End If
-
            End If
 
         Else If (keyb == 9) Then
@@ -393,7 +285,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
            term =1.0_wp-(dr/r0)**2
            If (term > 0) Then
               omega=-0.5_wp*k*r0**2 * Log(term)
-              gamma=k*dr/term/rab
+              gamma=-k*dr/term/rab
            Else
               safe(2)=.false.
               omega=0.0_wp
@@ -412,9 +304,9 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 
 ! calculate forces
 
-        fx = -gamma*xdab(i)
-        fy = -gamma*ydab(i)
-        fz = -gamma*zdab(i)
+        fx = gamma*xdab(i)
+        fy = gamma*ydab(i)
+        fz = gamma*zdab(i)
 
         If (ia <= natms) Then
 
@@ -425,7 +317,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 ! calculate bond energy and virial
 
            engbnd=engbnd+omega
-           virbnd=virbnd+gamma*rab2
+           virbnd=virbnd-gamma*rab2
 
 ! calculate stress tensor
 

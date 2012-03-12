@@ -34,7 +34,7 @@ Module config_module
   Integer,              Allocatable, Save :: lfrzn(:),lfree(:)
   Integer,              Allocatable, Save :: lsi(:),lsa(:),ltg(:)
   Integer,              Allocatable, Save :: lexatm(:,:)
-  Integer,              Allocatable, Save :: list(:,:)
+  Integer,              Allocatable, Save :: ixyz(:),list(:,:)
   Integer,              Allocatable, Save :: lstfre(:),gtl(:)
 
   Real( Kind = wp ),    Allocatable, Save :: weight(:),chge(:)
@@ -211,7 +211,7 @@ Contains
 
     Allocate (lsite(1:mxatms),ltype(1:mxatms),           Stat = fail(1))
     Allocate (lfrzn(1:mxatms),lfree(1:mxatms),           Stat = fail(2))
-    Allocate (lexatm(0:mxexcl,1:mxatdm),                 Stat = fail(3))
+    Allocate (lexatm(0:mxexcl,1:mxatdm),ixyz(1:mxatms),  Stat = fail(3))
     Allocate (list(-2:mxlist,1:mxatdm),lstfre(1:mxatdm), Stat = fail(4))
     Allocate (weight(1:mxatms),chge(1:mxatms),           Stat = fail(5))
 
@@ -220,7 +220,7 @@ Contains
     lsite = 0 ; ltype = 0
     lfrzn = 0 ; lfree = 0
 
-    lexatm = 0
+    lexatm = 0 ; ixyz = 0
     list = 0 ; lstfre = 0
 
     weight = 0.0_wp ; chge = 0.0_wp

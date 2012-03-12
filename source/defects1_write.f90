@@ -7,7 +7,7 @@ Subroutine defects1_write &
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2011
+! author    - i.t.todorov march 2012
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -118,9 +118,9 @@ Subroutine defects1_write &
 ! the one provided in REFERENCE, a smaller halo(cutoff(rdef)) is to be set
 
      cut=rdef+0.15_wp
-     Call defects_reference_set_halo   &
-           (imcon,cut,cwx,cwy,cwz,dxl, &
-           dxr,dyl,dyr,dzl,dzr,        &
+     Call defects_reference_set_halo  &
+           (imcon,cut,cwx,cwy,cwz,    &
+           dxl,dxr,dyl,dyr,dzl,dzr,   &
            nrefs1,nlrefs1,namr1,lri1,lra1,indr1,xr1,yr1,zr1)
 
 ! If the keyres=1, is DEFECTS1 old (does it exist) and
@@ -297,7 +297,7 @@ Subroutine defects1_write &
 
 ! Partition sites and atoms in link-celled space with same imcon, cell and cutoff!!!
 
-  Allocate (lctr(1:mxlcdef),lct(1:mxlcdef), Stat=fail(1))
+  Allocate (lctr(0:mxlcdef),lct(0:mxlcdef), Stat=fail(1))
   If (fail(1) > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'defects1_write allocation failure 1, node: ', idnode
      Call error(0)
@@ -344,7 +344,7 @@ Subroutine defects1_write &
 
               taken=0 ! Assume the site is vacant
 
-! secondary loop over subcells of paticles
+! secondary loop over subcells of particles
 
               Do kk=1,nsbcll
 

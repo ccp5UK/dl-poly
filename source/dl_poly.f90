@@ -154,6 +154,7 @@ Program dl_poly
 
   Integer(Kind=ip)  :: degfre,degshl,degtra,degrot
 
+! elrc,virlrc - vdw energy and virial are scalars and in vdw_module
 ! elrcm,vlrcm - metal energy and virial are array-like and in metal_module
 
   Real( Kind = wp ) :: timelp,timjob,timcls,tstep,time,tmst,tmsth, &
@@ -165,7 +166,7 @@ Program dl_poly
                        press,strext(1:9),ten,                      &
                        taut,chi,soft,gama,taup,tai,                &
                        chit,eta(1:9),chip,cint,consv,              &
-                       strtot(1:9),virtot,elrc,virlrc,             &
+                       strtot(1:9),virtot,                         &
                        strkin(1:9),engke,strknf(1:9),strknt(1:9),  &
                        engrot,strcom(1:9),vircom,                  &
                        engcpe,vircpe,engsrp,virsrp,                &
@@ -198,7 +199,7 @@ Program dl_poly
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
           "**         **  contributors:  i.j.bush               ****** O ****", &
-          "*************  version:  4.03.1   /   february 2012  ******* L ***", &
+          "*************  version:  4.03.2    /     march 2012  ******* L ***", &
           "*************  Execution on ", mxnode, "    node(s)  ******** Y **", &
           "******************************************************************"
   End If

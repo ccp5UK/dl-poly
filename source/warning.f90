@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2011
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -511,6 +511,11 @@ Subroutine warning(kode,a,b,c)
         Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                                  &
         '*** warning - control distance for diplacement qualification MUST be >= 0.25 Ang !!! ***', &
         '*** displacements distance condition will default from ', a, ' to ', b, ' Ang !!! ***'
+
+     Else If (kode == 480) Then
+
+        Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)') &
+        '*** warning - "metal direct" option disabled as incompatible with EAM (TABEAM)!!! ***'
 
      Else
 

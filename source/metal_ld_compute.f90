@@ -1,6 +1,6 @@
-Subroutine metal_ld_compute                &
-           (imcon,rmet,keyfce,elrcm,vlrcm, &
-           xdf,ydf,zdf,rsqdf,              &
+Subroutine metal_ld_compute         &
+           (imcon,rmet,elrcm,vlrcm, &
+           xdf,ydf,zdf,rsqdf,       &
            rho,engden,virden,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -12,7 +12,7 @@ Subroutine metal_ld_compute                &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov february 2012
+! amended   - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,7 +24,7 @@ Subroutine metal_ld_compute                &
 
   Implicit None
 
-  Integer,                                  Intent( In    ) :: imcon,keyfce
+  Integer,                                  Intent( In    ) :: imcon
   Real( Kind = wp ),                        Intent( In    ) :: rmet
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent( In    ) :: elrcm,vlrcm
   Real( Kind = wp ), Dimension( 1:mxlist ), Intent( InOut ) :: xdf,ydf,zdf,rsqdf
@@ -66,10 +66,7 @@ Subroutine metal_ld_compute                &
 ! outer loop over atoms
 
   Do i=1,natms
-
-! Get list limit
-
-     limit=list(0,i)
+     limit=list(0,i) ! Get list limit
 
 ! calculate interatomic distances
 
@@ -98,7 +95,6 @@ Subroutine metal_ld_compute                &
      Else                  ! FST contributions
         Call metal_ld_collect_fst(i,rsqdf,rho,rmet)
      End If
-
   End Do
 
 ! Check safety for densities
@@ -227,6 +223,6 @@ Subroutine metal_ld_compute                &
 
 ! obtain atomic densities for outer border regions
 
-  Call metal_ld_set_halo(imcon,rmet,keyfce,rho)
+  Call metal_ld_set_halo(rho)
 
 End Subroutine metal_ld_compute

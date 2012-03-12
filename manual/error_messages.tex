@@ -1773,8 +1773,8 @@ recognise.
 Locate the offending potential in the FIELD file and remove.
 Replace with one acceptable to \D if this is reasonable.
 Alternatively, you may consider defining the required potential in
-the code yourself.  Amendments to subroutines {\sc read\_field}
-and {\sc vdw\_generate} will be required.
+the code yourself.  Amendments to subroutines {\sc read\_field},
+{\sc vdw\_generate}* and {\sc dihedrals\_14\_vdw} will be required.
 
 \subsubsection*{\underline{Message 453}: error - four-body potential cutoff undefined}
 
@@ -2553,7 +2553,7 @@ execution machine.
 \noindent \underline{\em Action}:
 
 This may simply mean that your simulation is too large for the
-machine you are running on. Consider this before wasting time
+machine you are running on.  Consider this before wasting time
 trying a fix.  Try using more processing nodes if they are
 available.  If this is not an option investigate the possibility
 of increasing the heap size for your application.  Talk to your
@@ -2897,3 +2897,21 @@ This should never happen!
 \noindent \underline{\em Action}:
 
 Contact authors if the problem persists.
+
+\subsubsection*{\underline{Message 1061}: error - allocation failure in vdw\_module $->$ allocate\_vdw\_table\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1063}: error - allocation failure in vdw\_module $->$ allocate\_vdw\_direct\_fs\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1069}: error - allocation failure in metal\_module $->$ allocate\_metal\_table\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001

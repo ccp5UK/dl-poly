@@ -1,4 +1,4 @@
-Subroutine vdw_generate(ltable,rvdw)
+Subroutine vdw_generate(rvdw)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,23 +7,26 @@ Subroutine vdw_generate(ltable,rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov march 2008
+! amended   - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module, Only : mxgrid,zero_plus
-  Use vdw_module,   Only : ntpvdw,ltpvdw,prmvdw,gvdw,vvdw
+  Use vdw_module
 
   Implicit None
 
-  Logical,           Intent( In    ) :: ltable
   Real( Kind = wp ), Intent( In    ) :: rvdw
 
   Integer           :: i,ivdw
   Real( Kind = wp ) :: dlrpot,r,r0,r0rn,r0rm,r_6,sor6, &
                        rho,a,b,c,d,e0,k,n,m,sig,eps,   &
                        alpha,beta,t1,t2,t3
+
+! allocate arrays for tabulating
+
+  Call allocate_vdw_table_arrays()
 
 ! define grid resolution for potential arrays
 
@@ -32,6 +35,7 @@ Subroutine vdw_generate(ltable,rvdw)
 ! construct arrays for all types of vdw potential
 
   Do ivdw=1,ntpvdw
+
      If (ltpvdw(ivdw) == 1) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
@@ -220,7 +224,7 @@ Subroutine vdw_generate(ltable,rvdw)
 
      Else
 
-        If (.not.ltable) Call error(150)
+        If (.not.lt_vdw) Call error(150)
 
      End If
 

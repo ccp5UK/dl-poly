@@ -1,37 +1,32 @@
-Subroutine metal_ld_export(mdir,sidex,sidey,sidez,cwx,cwy,cwz,mlast,iwrk,rho)
+Subroutine metal_ld_export(mdir,mlast,iwrk,rho)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 routine to export atomic density data in domain boundary
-! regions
-!
-! all particle coordinates are in reduced space with origin localised
-! onto this node (idnode)
+! dl_poly_4 routine to export metal density data in domain boundary
+! regions for halo formation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2004
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module
+  Use setup_module,  Only : nrite,mxatms,mxbuff
   Use domains_module
-  Use config_module, Only : xxx,yyy,zzz
+  Use config_module, Only : ixyz
 
   Implicit None
 
   Integer,           Intent( In    ) :: mdir
-  Real( Kind = wp ), Intent( In    ) :: sidex,sidey,sidez,cwx,cwy,cwz
   Integer,           Intent( InOut ) :: mlast,iwrk(1:mxatms)
   Real( Kind = wp ), Intent( InOut ) :: rho(1:mxatms)
 
   Logical           :: safe
-  Integer           :: fail,i,j,iblock,jdnode,kdnode,imove,jmove,itmp
-  Real( Kind = wp ) :: shovex,shovey,shovez,begin,final,xyz
+  Integer           :: fail,i,j,iblock,jxyz,ix,iy,iz,kx,ky,kz, &
+                       jdnode,kdnode,imove,jmove,itmp
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
-
 
   fail=0
   Allocate (buffer(1:mxbuff), Stat=fail)
@@ -50,107 +45,51 @@ Subroutine metal_ld_export(mdir,sidex,sidey,sidez,cwx,cwy,cwz,mlast,iwrk,rho)
 
 ! DIRECTION SETTINGS INITIALISATION
 
-! define the relative displacement between the coordinate systems'
-! origins of neighbouring domains with respect to this domain
-! (idnode) in the direction of mdir (shovex,shovey,shovez)
-! in order to push all particles of this domain (idnode) in the
-! direction of mdir
-
-! define 'minus halo' limits in the direction of mdir (begin,final)
-! |begin-final| is the link cell width in reduced space (cwx,cwy,cwz)
-
 ! define the neighbouring domains as sending and receiving with
 ! respect to the direction (mdir)
+! k.   - direction selection factor
+! jxyz - halo reduction factor
 ! jdnode - destination (send to), knode - source (receive from)
 
-! Direction -x
+  kx = 0 ; ky = 0 ; kz = 0
+  If      (mdir == -1) Then ! Direction -x
+     kx  = 1
+     jxyz= 1
 
-  If      (mdir == -1) Then
+     jdnode = map(1)
+     kdnode = map(2)
+  Else If (mdir ==  1) Then ! Direction +x
+     kx  = 1
+     jxyz= 2
 
-     shovex=sidex
-     shovey=0.0_wp
-     shovez=0.0_wp
+     jdnode = map(2)
+     kdnode = map(1)
+  Else If (mdir == -2) Then ! Direction -y
+     ky  = 1
+     jxyz= 10
 
-     begin=-0.5_wp*sidex
-     final=begin+cwx
+     jdnode = map(3)
+     kdnode = map(4)
+  Else If (mdir ==  2) Then ! Direction +y
+     ky  = 1
+     jxyz= 20
 
-     jdnode=map(1)
-     kdnode=map(2)
+     jdnode = map(4)
+     kdnode = map(3)
+  Else If (mdir == -3) Then ! Direction -z
+     kz  = 1
+     jxyz= 100
 
-! Direction +x
+     jdnode = map(5)
+     kdnode = map(6)
+  Else If (mdir ==  3) Then ! Direction +z
+     kz  = 1
+     jxyz= 200
 
-  Else If (mdir ==  1) Then
-
-     shovex=-sidex
-     shovey=0.0_wp
-     shovez=0.0_wp
-
-     final=0.5_wp*sidex
-     begin=final-cwx
-
-     jdnode=map(2)
-     kdnode=map(1)
-
-! Direction -y
-
-  Else If (mdir == -2) Then
-
-     shovex=0.0_wp
-     shovey=sidey
-     shovez=0.0_wp
-
-     begin=-0.5_wp*sidey
-     final=begin+cwy
-
-     jdnode=map(3)
-     kdnode=map(4)
-
-! Direction +y
-
-  Else If (mdir ==  2) Then
-
-     shovex=0.0_wp
-     shovey=-sidey
-     shovez=0.0_wp
-
-     final=0.5_wp*sidey
-     begin=final-cwy
-
-     jdnode=map(4)
-     kdnode=map(3)
-
-! Direction -z
-
-  Else If (mdir == -3) Then
-
-     shovex=0.0_wp
-     shovey=0.0_wp
-     shovez=sidez
-
-     begin=-0.5_wp*sidez
-     final=begin+cwz
-
-     jdnode=map(5)
-     kdnode=map(6)
-
-! Direction +z
-
-  Else If (mdir ==  3) Then
-
-     shovex=0.0_wp
-     shovey=0.0_wp
-     shovez=-sidez
-
-     final=0.5_wp*sidez
-     begin=final-cwz
-
-     jdnode=map(6)
-     kdnode=map(5)
-
+     jdnode = map(6)
+     kdnode = map(5)
   Else
-
      Call error(47)
-
   End If
 
 ! Initialise counters for length of sending and receiving buffers
@@ -163,59 +102,43 @@ Subroutine metal_ld_export(mdir,sidex,sidey,sidez,cwx,cwy,cwz,mlast,iwrk,rho)
 
   safe=.true.
 
-! Find whether a particle that belongs to this domain (idnode) falls
-! into the halo of the neighbouring domain in the direction of mdir,
-! i.e. the particle is within the 'minus halo' of this domain and has
-! to be exported into the neighbouring domain in the direction of mdir.
-! If a particle is to be exported across domains then its local density
-! (rho) and index (ltg=iwrk) also have to be exported across to the
-! receiving domain.
-
 ! LOOP OVER ALL PARTICLES ON THIS NODE
+
 
   Do i=1,mlast
 
-     If      (mdir == -1 .or. mdir == 1) Then
+! If the particle is within the remaining 'inverted halo' of this domain
 
-        xyz=xxx(i)
+     If (ixyz(i) > 0) Then
 
-     Else If (mdir == -2 .or. mdir == 2) Then
+! Get the necessary halo indices
 
-        xyz=yyy(i)
+        ix=Mod(ixyz(i),10)           ! [0,1,2,3=1+2]
+        iy=Mod(ixyz(i)-ix,100)       ! [0,10,20,30=10+20]
+        iz=Mod(ixyz(i)-(ix+iy),1000) ! [0,100,200,300=100+200]
 
-     Else If (mdir == -3 .or. mdir == 3) Then
+! If the particle is within the correct halo for the given direction
 
-        xyz=zzz(i)
-
-     End If
-
-! Is this particle from this domain in the halo of the neighbouring
-! domain in the direction of mdir?
-
-     If (xyz >= begin .and. xyz < final) Then
+        j=ix*kx+iy*ky+iz*kz
+        If (j == jxyz .or. (j > jxyz .and. Mod(j,3) == 0)) Then
 
 ! Is it safe to proceed?
 
-        If ((imove+5) > iblock) Then
+           If ((imove+2) > iblock) Then
 
-           safe=.false.
+              safe=.false.
 
-        Else
+           Else
 
-! pack positions
+! pack particle density, indexing (iwrk=ltg) and remaining halo indexing arrays
 
-           buffer(imove+1)=xxx(i)+shovex
-           buffer(imove+2)=yyy(i)+shovey
-           buffer(imove+3)=zzz(i)+shovez
+              buffer(imove+1)=rho(i)
+              buffer(imove+2)=Real(iwrk(i),wp)
+           End If
 
-! pack density and ltg number
-
-           buffer(imove+4)=rho(i)
-           buffer(imove+5)=Real(iwrk(i),wp)
+           imove=imove+2
 
         End If
-
-        imove=imove+5
 
      End If
 
@@ -247,7 +170,7 @@ Subroutine metal_ld_export(mdir,sidex,sidey,sidez,cwx,cwy,cwz,mlast,iwrk,rho)
 
 ! Check for array bound overflow (can arrays cope with incoming data)
 
-  safe=((mlast+jmove/5) <= mxatms)
+  safe=((mlast+jmove/2) <= mxatms)
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe) Then
      itmp=mlast+jmove/5
@@ -272,21 +195,15 @@ Subroutine metal_ld_export(mdir,sidex,sidey,sidez,cwx,cwy,cwz,mlast,iwrk,rho)
      j=0
   End If
 
-  Do i=1,jmove/5
+  Do i=1,jmove/2
      mlast=mlast+1
 
-! unpack positions
+! unpack particle density, indexing (iwrk=ltg) and remaining halo indexing arrays
 
-     xxx(mlast)=buffer(j+1)
-     yyy(mlast)=buffer(j+2)
-     zzz(mlast)=buffer(j+3)
+     rho(mlast) =buffer(j+1)
+     iwrk(mlast)=Nint(buffer(j+2))
 
-! unpack density and ltg number
-
-     rho(mlast)=buffer(j+4)
-     iwrk(mlast)=Nint(buffer(j+5))
-
-     j=j+5
+     j=j+2
   End Do
 
   Deallocate (buffer, Stat=fail)

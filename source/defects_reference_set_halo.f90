@@ -1,6 +1,6 @@
-Subroutine defects_reference_set_halo  &
-           (imcon,cut,cwx,cwy,cwz,dxl, &
-           dxr,dyl,dyr,dzl,dzr,        &
+Subroutine defects_reference_set_halo &
+           (imcon,cut,cwx,cwy,cwz,    &
+           dxl,dxr,dyl,dyr,dzl,dzr,   &
            nrefs,nlrefs,namr,lri,lra,indr,xr,yr,zr)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -9,15 +9,15 @@ Subroutine defects_reference_set_halo  &
 ! neighbouring domains/nodes for REFERENCE
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2010
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,   Only : idnode
-  Use setup_module,   Only : mxatms
-  Use config_module,  Only : cell
-  Use domains_module, Only : nprx,npry,nprz
+  Use comms_module,  Only : idnode
+  Use setup_module,  Only : nrite,mxatms
+  Use config_module, Only : cell
+  Use domains_module
 
   Implicit None
 
@@ -31,12 +31,18 @@ Subroutine defects_reference_set_halo  &
   Real( Kind = wp ),    Intent( InOut ) :: xr(1:mxatms),yr(1:mxatms),zr(1:mxatms)
 
   Logical,           Save :: newjob = .true.
-  Integer,           Save :: idx,idy,idz
-  Real( Kind = wp ), Save :: sidex,sidey,sidez,dispx,dispy,dispz
 
-  Integer           :: nlx,nly,nlz,i,j,ia,ib
-  Real( Kind = wp ) :: celprp(1:10)
+  Integer           :: fail,nlx,nly,nlz,i,j,ia,ib
+  Real( Kind = wp ) :: celprp(1:10),xdc,ydc,zdc
 
+  Integer, Allocatable :: ixyz(:)
+
+  fail=0
+  Allocate (ixyz(1:mxatms), Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'defects_reference_set_halo allocation failure, node: ', idnode
+     Call error(0)
+  End If
 
   If (newjob) Then
      newjob = .false.
@@ -44,34 +50,6 @@ Subroutine defects_reference_set_halo  &
 ! image conditions not compliant with DD and link-cell
 
      If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
-
-! Get this node's (domain's) coordinates
-
-     idz=idnode/(nprx*npry)
-     idy=idnode/nprx-idz*npry
-     idx=Mod(idnode,nprx)
-
-! Get the domains' dimensions in reduced space
-! (domains are geometrically equivalent)
-
-     sidex=1.0_wp/Real(nprx,wp)
-     sidey=1.0_wp/Real(npry,wp)
-     sidez=1.0_wp/Real(nprz,wp)
-
-! Calculate the displacements from the origin of the MD cell
-! to the origin of this domain in reduced space
-
-! First term (0.5_wp) = move to the bottom left corner of MD cell
-! Second term, first term (side) = scale by the number of domains
-! in the given direction
-! Second term, second term, first term (id) = move to the bottom
-! left corner of this domain in the given direction
-! Second term, second term, second term (0.5_wp) = move to the
-! middle of this domain
-
-     dispx=0.5_wp-sidex*(Real(idx,wp)+0.5_wp)
-     dispy=0.5_wp-sidey*(Real(idy,wp)+0.5_wp)
-     dispz=0.5_wp-sidez*(Real(idz,wp)+0.5_wp)
   End If
 
 ! Get the dimensional properties of the MD cell
@@ -80,57 +58,65 @@ Subroutine defects_reference_set_halo  &
 
 ! calculate link cell dimensions per node
 
-  nlx=Int(sidex*celprp(7)/cut)
-  nly=Int(sidey*celprp(8)/cut)
-  nlz=Int(sidez*celprp(9)/cut)
+  nlx=Int(celprp(7)/(cut*nprx_r))
+  nly=Int(celprp(8)/(cut*npry_r))
+  nlz=Int(celprp(9)/(cut*nprz_r))
 
-! Calculate a link-cell width in every direction in the
-! reduced space of the domain
-! First term = the width of the domain in reduced space
-! Second term = number of link-cells per domain per direction
+! Get the total number of link-cells in MD cell per direction
 
-  cwx=sidex/Real(nlx,wp)
-  cwy=sidey/Real(nly,wp)
-  cwz=sidez/Real(nlz,wp)
+  xdc=Real(nlx*nprx,wp)
+  ydc=Real(nly*npry,wp)
+  zdc=Real(nlz*nprz,wp)
 
-! Convert site positions from MD cell centred reduced space coordinates
-! to reduced space coordinates of this node
+! link-cell widths in reduced space
 
-  nlrefs=nrefs
+  cwx=1.0_wp/xdc
+  cwy=1.0_wp/ydc
+  cwz=1.0_wp/zdc
+
+! Distance from the - edge of this domain
+
+  dxl=(-0.5_wp+cwx)+Real(idx,wp)*r_nprx
+  dyl=(-0.5_wp+cwy)+Real(idy,wp)*r_npry
+  dzl=(-0.5_wp+cwz)+Real(idz,wp)*r_nprz
+
+! Distance from the + edge of this domain
+
+  dxr=(-0.5_wp-cwx)+Real(idx+1,wp)*r_nprx
+  dyr=(-0.5_wp-cwy)+Real(idy+1,wp)*r_npry
+  dzr=(-0.5_wp-cwz)+Real(idz+1,wp)*r_nprz
+
+! Convert atomic positions from MD cell centred
+! Cartesian coordinates to reduced space ones
+! Populate the halo indicator array
+
+  nlrefs=nrefs     ! No halo exists yet
+  ixyz(1:nlrefs)=0 ! Initialise halo indicator
   Do i=1,nlrefs
-     xr(i)=xr(i)+dispx
-     yr(i)=yr(i)+dispy
-     zr(i)=zr(i)+dispz
+     If (xr(i) < dxl) ixyz(i)=ixyz(i)+1
+     If (xr(i) > dxr) ixyz(i)=ixyz(i)+2
+
+     If (yr(i) < dyl) ixyz(i)=ixyz(i)+10
+     If (yr(i) > dyr) ixyz(i)=ixyz(i)+20
+
+     If (zr(i) < dzl) ixyz(i)=ixyz(i)+100
+     If (zr(i) > dzr) ixyz(i)=ixyz(i)+200
   End Do
 
 ! exchange atom data in -/+ x directions
 
-  Call defects_reference_export &
-           (-1,sidex,sidey,sidez,cwx,cwy,cwz,nlrefs,namr,indr,xr,yr,zr)
-  Call defects_reference_export &
-           ( 1,sidex,sidey,sidez,cwx,cwy,cwz,nlrefs,namr,indr,xr,yr,zr)
+  Call defects_reference_export(-1,ixyz,nlrefs,namr,indr,xr,yr,zr)
+  Call defects_reference_export( 1,ixyz,nlrefs,namr,indr,xr,yr,zr)
 
 ! exchange atom data in -/+ y directions
 
-  Call defects_reference_export &
-           (-2,sidex,sidey,sidez,cwx,cwy,cwz,nlrefs,namr,indr,xr,yr,zr)
-  Call defects_reference_export &
-           ( 2,sidex,sidey,sidez,cwx,cwy,cwz,nlrefs,namr,indr,xr,yr,zr)
+  Call defects_reference_export(-2,ixyz,nlrefs,namr,indr,xr,yr,zr)
+  Call defects_reference_export( 2,ixyz,nlrefs,namr,indr,xr,yr,zr)
 
 ! exchange atom data in -/+ z directions
 
-  Call defects_reference_export &
-           (-3,sidex,sidey,sidez,cwx,cwy,cwz,nlrefs,namr,indr,xr,yr,zr)
-  Call defects_reference_export &
-           ( 3,sidex,sidey,sidez,cwx,cwy,cwz,nlrefs,namr,indr,xr,yr,zr)
-
-! restore site coordinates to MD centred reduced space coordinates
-
-  Do i=1,nlrefs
-     xr(i)=xr(i)-dispx
-     yr(i)=yr(i)-dispy
-     zr(i)=zr(i)-dispz
-  End Do
+  Call defects_reference_export(-3,ixyz,nlrefs,namr,indr,xr,yr,zr)
+  Call defects_reference_export( 3,ixyz,nlrefs,namr,indr,xr,yr,zr)
 
   Do i=1,nlrefs
      lri(i)=i
@@ -155,8 +141,18 @@ Subroutine defects_reference_set_halo  &
 
 ! Get domain halo limits in reduced space
 
-  dxl=-dispx-sidex*0.5_wp-cwx ; dxr=-dispx+sidex*0.5_wp+cwx
-  dyl=-dispy-sidey*0.5_wp-cwy ; dyr=-dispy+sidey*0.5_wp+cwy
-  dzl=-dispz-sidez*0.5_wp-cwz ; dzr=-dispz+sidez*0.5_wp+cwz
+  dxl=(-0.5_wp-cwx)+Real(idx,wp)*r_nprx
+  dyl=(-0.5_wp-cwy)+Real(idy,wp)*r_npry
+  dzl=(-0.5_wp-cwz)+Real(idz,wp)*r_nprz
+
+  dxr=(-0.5_wp+cwx)+Real(idx+1,wp)*r_nprx
+  dyr=(-0.5_wp+cwy)+Real(idy+1,wp)*r_npry
+  dzr=(-0.5_wp+cwz)+Real(idz+1,wp)*r_nprz
+
+  Deallocate (ixyz, Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'defects_reference_set_halo deallocation failure, node: ', idnode
+     Call error(0)
+  End If
 
 End Subroutine defects_reference_set_halo

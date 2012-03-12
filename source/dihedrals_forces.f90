@@ -10,18 +10,18 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1992
-! amended   - i.t.todorov february 2012
+! amended   - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,     Only : idnode,mxnode,gsync,gsum,gcheck
   Use setup_module,     Only : nrite,mxdihd,mxgrid, &
-                               pi,sqrpi,r4pie0,zero_plus
+                               pi,r4pie0,zero_plus
   Use config_module,    Only : cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
                                chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use dihedrals_module, Only : ntdihd,keydih,listdih,prmdih
-  Use vdw_module,       Only : ntpvdw,lstvdw,vvdw,gvdw
+  Use vdw_module,       Only : ntpvdw
 
   Implicit None
 
@@ -34,18 +34,11 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
   Real( Kind = wp ),                   Intent( InOut ) :: engcpe,vircpe, &
                                                           engsrp,virsrp
 
-  Real( Kind = wp ), Parameter :: aa1 =  0.254829592_wp
-  Real( Kind = wp ), Parameter :: aa2 = -0.284496736_wp
-  Real( Kind = wp ), Parameter :: aa3 =  1.421413741_wp
-  Real( Kind = wp ), Parameter :: aa4 = -1.453152027_wp
-  Real( Kind = wp ), Parameter :: aa5 =  1.061405429_wp
-  Real( Kind = wp ), Parameter :: pp  =  0.3275911_wp
-
-  Logical,           Save :: newjob = .true. , damp
-  Real( Kind = wp ), Save :: dlrpot,twopi,rtwopi, aa,bb, rfld0,rfld1
+  Logical,           Save :: newjob = .true.
+  Real( Kind = wp ), Save :: twopi,rtwopi
 
   Logical                 :: safe(1:3)
-  Integer                 :: fail(1:4),i,j,ia,ib,ic,id,kk,k,ka,kb,l,local_index
+  Integer                 :: fail(1:4),i,j,ia,ib,ic,id,kk,ai,aj,local_index
   Real( Kind = wp )       :: xab,yab,zab, xac,yac,zac,                 &
                              xad,yad,zad,rad,rad2,rrad,rrad2,          &
                              xbc,ybc,zbc,rrbc,                         &
@@ -57,9 +50,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
                              pcx,pcy,pcz,pc2,rpc1,rpc2,                &
                              pbpc,cost,sint,rsint,theta,theta0,dtheta, &
                              a,a0,a1,a2,a3,d,m,term,pterm,gamma,       &
-                             scale,chgprd,coul,fcoul,                  &
-                             exp1,tt,erc,fer,b0,                       &
-                             vk,vk1,vk2,gk,gk1,gk2,t1,t2,ppp,          &
+                             scale,chgprd,coul,fcoul,eng,              &
                              engc14,virc14,engs14,virs14,              &
                              strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:5)
 
@@ -85,37 +76,8 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 
 ! Define constants
 
-     dlrpot= rvdw/Real(mxgrid-4,wp)
      twopi = 2.0_wp*pi
      rtwopi= 1.0_wp/twopi
-
-! Check for damped force-shifted coulombic and reaction field interactions
-! and set force and potential shifting parameters dependingly
-
-     damp=.false.
-     If (alpha > zero_plus) Then
-        damp=.true.
-
-        exp1= Exp(-(alpha*rcut)**2)
-        tt  = 1.0_wp/(1.0_wp+pp*alpha*rcut)
-
-        erc = tt*(aa1+tt*(aa2+tt*(aa3+tt*(aa4+tt*aa5))))*exp1/rcut
-        fer = (erc + 2.0_wp*(alpha/sqrpi)*exp1)/rcut**2
-
-        aa  = fer*rcut
-        bb  = -(erc + aa*rcut)
-     Else If (keyfce == 8) Then
-        aa =  1.0_wp/rcut**2
-        bb = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
-     End If
-
-! set reaction field terms for RFC
-
-     If (keyfce == 10) Then
-        b0    = 2.0_wp*(epsq - 1.0_wp)/(2.0_wp*epsq + 1.0_wp)
-        rfld0 = b0/rcut**3
-        rfld1 = (1.0_wp + 0.5_wp*b0)/rcut
-     End If
   End If
 
 ! calculate atom separation vectors
@@ -492,11 +454,6 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
            safe(2) = .false.
         End If
 
-! initialise defaults for coulombic energy and force contributions
-
-        coul =0.0_wp
-        fcoul=0.0_wp
-
 ! 1-4 electrostatics: adjust by weighting factor
 ! assumes 1-4 interactions are in the exclude list and Rad < rcut
 
@@ -507,65 +464,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
         chgprd=scale*chge(ia)*chge(id)*r4pie0/epsq
         If (Abs(chgprd) > zero_plus .and. keyfce > 0) Then
 
-! Electrostatics by ewald sum
-
-           If      (keyfce ==  2) Then
-
-              coul = chgprd*rrad
-              fcoul= coul*rrad2
-
-! distance dependent dielectric
-
-           Else If (keyfce ==  4) Then
-
-              coul = chgprd*rrad2
-              fcoul= 2.0_wp*coul*rrad2
-
-! direct coulombic
-
-           Else If (keyfce ==  6) Then
-
-              coul = chgprd*rrad
-              fcoul= coul*rrad2
-
-! force shifted coulombic and reaction field
-
-           Else If (keyfce ==  8 .or. keyfce == 10) Then
-
-              If (damp) Then ! calculate damping contributions
-                 exp1= Exp(-(alpha*rad)**2)
-                 tt  = 1.0_wp/(1.0_wp+pp*alpha*rad)
-
-                 erc = tt*(aa1+tt*(aa2+tt*(aa3+tt*(aa4+tt*aa5))))*exp1*rrad
-                 fer = (erc + 2.0_wp*(alpha/sqrpi)*exp1)*rrad2
-
-                 coul = chgprd*(erc + aa*rad + bb)
-                 fcoul= chgprd*(fer - aa*rrad)
-              End If
-
-              If      (keyfce ==  8) Then ! force shifted coulombic
-                 If (.not.damp) Then ! pure
-                    coul = chgprd*(rrad + aa*rad + bb)
-                    fcoul= chgprd*(rrad2 - aa)*rrad
-                 Else                ! damped
-                    coul = coul
-                    fcoul= fcoul
-                 End If
-              Else If (keyfce == 10) Then ! reaction field
-                 If (.not.damp) Then ! pure
-                    coul = chgprd*(rrad + 0.5_wp*rfld0*rad2 - rfld1)
-                    fcoul= chgprd*(rrad*rrad2 - rfld0)
-                 Else                ! damped
-                    coul = coul  + chgprd*(0.5_wp*rfld0*rad2 - rfld1)
-                    fcoul= fcoul + chgprd*(- rfld0)
-                 End If
-              End If
-
-           Else
-
-              safe(3) = .false.
-
-           End If
+           Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad,rad2,coul,fcoul,safe(3))
 
            fx = fcoul*xad
            fy = fcoul*yad
@@ -607,92 +506,51 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 ! assumes 1-4 interactions are in the exclude list and Rad < rvdw
 
         scale=prmdih(5,kk)
+        If (Abs(scale) > zero_plus .and. ntpvdw > 0) Then
 
-! initialise default force contribution
+! atomic type indices
 
-        gamma=0.0_wp
+           ai=ltype(ia)
+           aj=ltype(id)
 
-        If (ntpvdw > 0) Then
+           Call dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 
-! atomic and potential function indices
+           gamma = scale*gamma
+           eng   = scale*eng
 
-           ka=Max(ltype(ia),ltype(id))
-           kb=Min(ltype(ia),ltype(id))
-           k=lstvdw((ka*(ka-1))/2+kb)
+           fx = gamma*xad
+           fy = gamma*yad
+           fz = gamma*zad
 
-           If (Abs(scale*vvdw(1,k)) > zero_plus) Then
+           If (ia <= natms) Then
 
-! apply truncation of potential (rad < rvdw)
+! add scaled 1-4 short-range potential energy and virial
 
-              If (rad < rvdw) Then
-
-! determine interpolation panel for force arrays
-
-                 l=Int(rad/dlrpot)
-                 ppp=rad/dlrpot-Real(l,wp)
-
-! calculate interaction energy using 3-point interpolation
-
-                 vk  = vvdw(l,k)
-                 vk1 = vvdw(l+1,k)
-                 vk2 = vvdw(l+2,k)
-
-                 t1 = vk  + (vk1 - vk)*ppp
-                 t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-
-! calculate scaled 1-4 short-range potential energy contribution
-
-                 If (ia <= natms) engs14=engs14 + (t1+(t2-t1)*ppp*0.5_wp)*scale
-
-! calculate forces using 3-point interpolation
-
-                 gk  = gvdw(l,k)
-                 gk1 = gvdw(l+1,k)
-                 gk2 = gvdw(l+2,k)
-
-                 t1 = gk  + (gk1 - gk)*ppp
-                 t2 = gk1 + (gk2 - gk1)*(ppp - 1.0_wp)
-
-                 gamma = scale*(t1 +(t2-t1)*ppp*0.5_wp)*rrad2
-
-                 fx = gamma*xad
-                 fy = gamma*yad
-                 fz = gamma*zad
-
-                 If (ia <= natms) Then
-
-! calculate scaled 1-4 short-range potential virial
-
-                    virs14=virs14-gamma*rad2
+              engs14=engs14+eng
+              virs14=virs14-gamma*rad2
 
 ! calculate stress tensor
 
-                    strs1 = strs1 + xad*fx
-                    strs2 = strs2 + xad*fy
-                    strs3 = strs3 + xad*fz
-                    strs5 = strs5 + yad*fy
-                    strs6 = strs6 + yad*fz
-                    strs9 = strs9 + zad*fz
+              strs1 = strs1 + xad*fx
+              strs2 = strs2 + xad*fy
+              strs3 = strs3 + xad*fz
+              strs5 = strs5 + yad*fy
+              strs6 = strs6 + yad*fz
+              strs9 = strs9 + zad*fz
 
-                    fxx(ia)=fxx(ia)+fx
-                    fyy(ia)=fyy(ia)+fy
-                    fzz(ia)=fzz(ia)+fz
-
-                 End If
-
-                 If (id <= natms) Then
-
-                    fxx(id)=fxx(id)-fx
-                    fyy(id)=fyy(id)-fy
-                    fzz(id)=fzz(id)-fz
-
-                 End If
-
-              End If
+              fxx(ia) = fxx(ia) + fx
+              fyy(ia) = fyy(ia) + fy
+              fzz(ia) = fzz(ia) + fz
 
            End If
 
-! End If of (ntpvdw > 0)
+           If (id <= natms) Then
+
+              fxx(id) = fxx(id) - fx
+              fyy(id) = fyy(id) - fy
+              fzz(id) = fzz(id) - fz
+
+           End If
 
         End If
 

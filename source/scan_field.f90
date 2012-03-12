@@ -15,7 +15,7 @@ Subroutine scan_field                                 &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith november 1994
-! amended   - i.t.todorov november 2011
+! amended   - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,6 +23,8 @@ Subroutine scan_field                                 &
   Use comms_module, Only : idnode,mxnode,gcheck
   Use setup_module, Only : nfield,ntable
   Use parse_module, Only : get_line,get_word,lower_case,word_2_real
+  Use vdw_module,   Only : lt_vdw
+  Use metal_module, Only : lt_met
 
   Implicit None
 
@@ -40,7 +42,7 @@ Subroutine scan_field                                 &
   Character( Len = 40  ) :: word
   Character( Len = 8   ) :: name
 
-  Logical           :: l_n_e,check,ltable,safe
+  Logical           :: l_n_e,check,safe
   Integer           :: mxtmls,itmols,nummols,numsit,isite,ksite,nrept,         &
                        mxsite,mxatyp,megatm,i,j,k,nfld,mxexcl,                 &
                        numshl,mtshl,mxtshl,mxshl,ishls,mxfshl,                 &
@@ -475,10 +477,11 @@ Subroutine scan_field                                 &
 
      Else If (word(1:3) == 'vdw') Then
 
-        ltable=.false.
+!        lt_vdw=.false. ! initialised in vdw_module
+
         Call get_word(record,word)
         If (word(1:3) == 'tab') Then
-           ltable=.true.
+           lt_vdw=.true.
         Else
            mxvdw=Nint(word_2_real(word))
         End If
@@ -494,12 +497,12 @@ Subroutine scan_field                                 &
 
            Call get_word(record,word)
            Call get_word(record,word)
-           If (word(1:3) == 'tab') ltable=.true.
+           If (word(1:3) == 'tab') lt_vdw=.true.
         End Do
 
         mxvdw=Max(mxvdw,(mxatyp*(mxatyp+1))/2)
 
-        If (ltable) Then
+        If (lt_vdw) Then
            If (idnode == 0) Open(Unit=ntable, File='TABLE')
 
            Call get_line(safe,ntable,record)
@@ -520,7 +523,7 @@ Subroutine scan_field                                 &
 
      Else If (word(1:3) == 'met') Then
 
-        ltable=.false.
+!        lt_met=.false. ! initilised in metal_module
 
         Call get_word(record,word)
         mxmet=Nint(word_2_real(word))
@@ -536,12 +539,12 @@ Subroutine scan_field                                 &
 
            Call get_word(record,word)
            Call get_word(record,word)
-           If (word(1:3) == 'eam') ltable=.true.
+           If (word(1:3) == 'eam') lt_met=.true.
         End Do
 
         mxmet=Max(mxmet,(mxatyp*(mxatyp+1))/2)
 
-        If (ltable) Then
+        If (lt_met) Then
            If (idnode == 0) Open(Unit=ntable, File='TABEAM')
 
            Call get_line(safe,ntable,record)
