@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov february 2012
+! amended   - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -78,13 +78,13 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
 
         rho(iatm) = rho(iatm) + density
 
-        If (rho(iatm) < -zero_plus .or. density < -zero_plus) &
-           Write(*,*) 'negative density: (LTG,RHO_SUM,RHO) ',ltg(iatm),rho(iatm),density
+!        If (rho(iatm) < -zero_plus .or. density < -zero_plus) &
+!           Write(*,*) 'negative density: (LTG,RHO_SUM,RHO) ',ltg(iatm),rho(iatm),density
 
         If (ai == aj .and. jatm <= natms) Then
            rho(jatm) = rho(jatm) + density
-           If (rho(jatm) < -zero_plus .or. density < -zero_plus) &
-              Write(*,*) 'negative density: (LTG,RHO_SUM,RHO) ',ltg(jatm),rho(jatm),density
+!           If (rho(jatm) < -zero_plus .or. density < -zero_plus) &
+!              Write(*,*) 'negative density: (LTG,RHO_SUM,RHO) ',ltg(jatm),rho(jatm),density
         End If
 
      End If
@@ -125,8 +125,8 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
 
         rho(jatm) = rho(jatm) + density
 
-        If (rho(jatm) < -zero_plus .or. density < -zero_plus) &
-           Write(*,*) 'negative density: (LTG,RHO_SUM,RHO) ',ltg(jatm),rho(jatm),density
+!        If (rho(jatm) < -zero_plus .or. density < -zero_plus) &
+!           Write(*,*) 'negative density: (LTG,RHO_SUM,RHO) ',ltg(jatm),rho(jatm),density
 
      End If
 
