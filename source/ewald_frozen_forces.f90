@@ -119,7 +119,7 @@ Subroutine ewald_frozen_forces &
   nz_fr(0) = Sum(nz_fr(0:idnode)) ! Offset
 
   nzfr = Sum(nz_fr(1:mxnode))     ! Total
-  If (.false.) Then ! (nzfr <= 10*mxatms) Then
+  If (nzfr <= 10*mxatms) Then
 
      Allocate (cfr(1:nzfr),xfr(1:nzfr),yfr(1:nzfr),zfr(1:nzfr), Stat=fail)
      If (fail > 0) Then
