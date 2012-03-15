@@ -13,7 +13,6 @@ Subroutine vdw_forces &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,  Only : idnode
   Use setup_module
   Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
   Use vdw_module

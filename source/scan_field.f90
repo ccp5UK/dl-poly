@@ -523,7 +523,7 @@ Subroutine scan_field                                 &
 
      Else If (word(1:3) == 'met') Then
 
-!        lt_met=.false. ! initilised in metal_module
+!        lt_met=.false. ! initialised in metal_module
 
         Call get_word(record,word)
         mxmet=Nint(word_2_real(word))
@@ -539,7 +539,22 @@ Subroutine scan_field                                 &
 
            Call get_word(record,word)
            Call get_word(record,word)
-           If (word(1:3) == 'eam') lt_met=.true.
+           If      (word(1:3) ==  'eam') Then
+              lt_met=.true.
+           Else If (word(1:4) == 'fnsc') Then
+              Call get_word(record,word) ; Call get_word(record,word)
+              Call get_word(record,word) ; Call get_word(record,word)
+              rmet=Max(rmet,word_2_real(word))
+              Call get_word(record,word) ; Call get_word(record,word)
+              rmet=Max(rmet,word_2_real(word))
+           Else If (word(1:4) == 'exfs') Then
+              Call get_word(record,word) ; Call get_word(record,word)
+              Call get_word(record,word) ; Call get_word(record,word)
+              Call get_word(record,word) ; Call get_word(record,word)
+              rmet=Max(rmet,word_2_real(word))
+              Call get_word(record,word) ; Call get_word(record,word)
+              rmet=Max(rmet,word_2_real(word))
+           End If
         End Do
 
         mxmet=Max(mxmet,(mxatyp*(mxatyp+1))/2)

@@ -41,7 +41,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 
   Use langevin_module,     Only : l_lan,fxl,fyl,fzl
   Use minimise_module,     Only : l_x,oxx,oyy,ozz
-  Use ewald_module,        Only : l_fce,fcx,fcy,fcz
+  Use ewald_module
   Use msd_module
 
   Implicit None
@@ -173,10 +173,13 @@ Subroutine deport_atomic_data(mdir,lbook)
         iy=Mod(ixyz(i)-ix,100)       ! [0,10,20]
         iz=Mod(ixyz(i)-(ix+iy),1000) ! [0,100,200]
 
+! Filter the move index for the selected direction
+
+        j=ix*kx+iy*ky+iz*kz
+
 ! If the particle is scheduled to leave in the selected
 ! direction then reduce its move index, otherwise tag it as staying
 
-        j=ix*kx+iy*ky+iz*kz
         If (j == jxyz) Then
            ixyz(i)=ixyz(i)-jxyz
         Else
@@ -224,7 +227,13 @@ Subroutine deport_atomic_data(mdir,lbook)
            ozz(keep)=ozz(i)
         End If
 
-        If (.not.l_fce) Then
+        If (lf_cp) Then
+           ffx(keep)=ffx(i)
+           ffy(keep)=ffy(i)
+           ffz(keep)=ffz(i)
+        End If
+
+        If (l_cp) Then
            fcx(keep)=fcx(i)
            fcy(keep)=fcy(i)
            fcz(keep)=fcz(i)
@@ -353,9 +362,23 @@ Subroutine deport_atomic_data(mdir,lbook)
            End If
         End If
 
+! pack frozen-frozen k-space SPME force arrays
+
+        If (lf_cp .and. safe) Then
+           If (imove+3 <= iblock) Then
+              buffer(imove+1)=ffx(i)
+              buffer(imove+2)=ffy(i)
+              buffer(imove+3)=ffz(i)
+
+              imove=imove+3
+           Else
+              safe=.false.
+           End If
+        End If
+
 ! pack k-space SPME force arrays
 
-        If ((.not.l_fce) .and. safe) Then
+        If (l_cp .and. safe) Then
            If (imove+3 <= iblock) Then
               buffer(imove+1)=fcx(i)
               buffer(imove+2)=fcy(i)
@@ -811,9 +834,19 @@ Subroutine deport_atomic_data(mdir,lbook)
         kmove=kmove+3
      End If
 
+! unpack frozen-frozen k-space SPME force arrays
+
+     If (lf_cp) Then
+        ffx(newatm)=buffer(kmove+1)
+        ffy(newatm)=buffer(kmove+2)
+        ffz(newatm)=buffer(kmove+3)
+
+        kmove=kmove+3
+     End If
+
 ! unpack k-space SPME force arrays
 
-     If (.not.l_fce) Then
+     If (l_cp) Then
         fcx(newatm)=buffer(kmove+1)
         fcy(newatm)=buffer(kmove+2)
         fcz(newatm)=buffer(kmove+3)

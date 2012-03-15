@@ -14,8 +14,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,  Only : nrite,mxbond, &
-                            pi,sqrpi,r4pie0,zero_plus,engunit
+  Use setup_module,  Only : nrite,mxbond,r4pie0,zero_plus,engunit
   Use config_module, Only : cell,natms,nlast,lsi,lsa,lfrzn, &
                             chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use bonds_module,  Only : ntbond,keybnd,listbnd,prmbnd

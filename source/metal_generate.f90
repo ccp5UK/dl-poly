@@ -7,7 +7,7 @@ Subroutine metal_generate(rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 2006
-! amended   - i.t.todorov june 2009
+! amended   - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -68,6 +68,9 @@ Subroutine metal_generate(rmet)
               cut1=ccc+4.0_wp*dlrpot
               cut2=ddd+4.0_wp*dlrpot
 
+              vmet(3,imet,1:2)=cut1
+              dmet(3,imet,1)=cut2
+
               Do i=5,mxgrid
                  rrr=Real(i,wp)*dlrpot
 
@@ -107,6 +110,9 @@ Subroutine metal_generate(rmet)
               bbb=prmmet(9,imet)
               cut1=ccc+4.0_wp*dlrpot
               cut2=ddd+4.0_wp*dlrpot
+
+              vmet(3,imet,1:2)=cut1
+              dmet(3,imet,1)=cut2
 
               Do i=5,mxgrid
                  rrr=Real(i,wp)*dlrpot

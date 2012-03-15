@@ -33,8 +33,7 @@ Subroutine read_control                                &
   Use config_module,   Only : sysname
   Use langevin_module, Only : l_lan,l_gst,langevin_allocate_arrays
   Use parse_module
-  Use vdw_module,      Only : lt_vdw,ld_vdw,ls_vdw, &
-                              allocate_vdw_direct_fs_arrays
+  Use vdw_module,      Only : ld_vdw,ls_vdw
   Use metal_module,    Only : lt_met,ld_met
   Use defects1_module, Only : l_dfx
 

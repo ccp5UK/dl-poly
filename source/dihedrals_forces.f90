@@ -16,8 +16,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 
   Use kinds_f90
   Use comms_module,     Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,     Only : nrite,mxdihd,mxgrid, &
-                               pi,r4pie0,zero_plus
+  Use setup_module,     Only : nrite,mxdihd,pi,r4pie0,zero_plus
   Use config_module,    Only : cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
                                chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use dihedrals_module, Only : ntdihd,keydih,listdih,prmdih
@@ -40,7 +39,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
   Logical                 :: safe(1:3)
   Integer                 :: fail(1:4),i,j,ia,ib,ic,id,kk,ai,aj,local_index
   Real( Kind = wp )       :: xab,yab,zab, xac,yac,zac,                 &
-                             xad,yad,zad,rad,rad2,rrad,rrad2,          &
+                             xad,yad,zad,rad,rad2,                     &
                              xbc,ybc,zbc,rrbc,                         &
                              xcd,ycd,zcd,                              &
                              fax,fay,faz, fb1x,fb1y,fb1z,              &
@@ -443,9 +442,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
         zad=zac+zcd
 
         rad2  = xad**2+yad**2+zad**2
-        rrad2 = 1.0_wp/rad2
         rad   = Sqrt(rad2)
-        rrad  = 1.0_wp/rad
 
 ! flag error if rad > cutoff
 

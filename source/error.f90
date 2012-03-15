@@ -376,15 +376,11 @@ Subroutine error(kode)
 
      Else If (kode ==   96) Then
 
-        Write(nrite,'(/,1x,a)') 'error - incorrect atom totals in metal_ld_set_halo'
+        Write(nrite,'(/,1x,a)') 'error - incorrect atom totals/density assignments in metal_ld_set_halo'
 
      Else If (kode ==   97) Then
 
         Write(nrite,'(/,1x,a)') 'error - constraints mixing with rigid bodies not allowed'
-
-     Else If (kode ==   98) Then
-
-        Write(nrite,'(/,1x,a)') 'error - incorrect atom assignments metal_ld_set_halo'
 
      Else If (kode ==   99) Then
 
@@ -1139,7 +1135,7 @@ Subroutine error(kode)
 
      Else If (kode == 1040) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in ewald_module -> ewald_allocate_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in ewald_module -> ewald_allocate_kall_arrays'
 
      Else If (kode == 1041) Then
 
@@ -1204,6 +1200,10 @@ Subroutine error(kode)
      Else If (kode == 1069) Then
 
         Write(nrite,'(/,1x,a)') 'error - allocation failure in metal_module -> allocate_metal_table_arrays'
+
+     Else If (kode == 1070) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in ewald_module -> ewald_allocate_kfrz_arrays'
 
      Else
 

@@ -15,7 +15,7 @@ Subroutine defects_reference_set_halo &
 
   Use kinds_f90
   Use comms_module,  Only : idnode
-  Use setup_module,  Only : nrite,mxatms
+  Use setup_module,  Only : nrite,mxatms,zero_plus
   Use config_module, Only : cell
   Use domains_module
 
@@ -76,15 +76,15 @@ Subroutine defects_reference_set_halo &
 
 ! Distance from the - edge of this domain
 
-  dxl=(-0.5_wp+cwx)+Real(idx,wp)*r_nprx
-  dyl=(-0.5_wp+cwy)+Real(idy,wp)*r_npry
-  dzl=(-0.5_wp+cwz)+Real(idz,wp)*r_nprz
+  dxl=Nearest( (-0.5_wp+cwx)+Real(idx,wp)*r_nprx , +1.0_wp)+zero_plus
+  dyl=Nearest( (-0.5_wp+cwy)+Real(idy,wp)*r_npry , +1.0_wp)+zero_plus
+  dzl=Nearest( (-0.5_wp+cwz)+Real(idz,wp)*r_nprz , +1.0_wp)+zero_plus
 
 ! Distance from the + edge of this domain
 
-  dxr=(-0.5_wp-cwx)+Real(idx+1,wp)*r_nprx
-  dyr=(-0.5_wp-cwy)+Real(idy+1,wp)*r_npry
-  dzr=(-0.5_wp-cwz)+Real(idz+1,wp)*r_nprz
+  dxr=Nearest( (-0.5_wp-cwx)+Real(idx+1,wp)*r_nprx , -1.0_wp)-zero_plus
+  dyr=Nearest( (-0.5_wp-cwy)+Real(idy+1,wp)*r_npry , -1.0_wp)-zero_plus
+  dzr=Nearest( (-0.5_wp-cwz)+Real(idz+1,wp)*r_nprz , -1.0_wp)-zero_plus
 
 ! Convert atomic positions from MD cell centred
 ! Cartesian coordinates to reduced space ones
@@ -93,14 +93,14 @@ Subroutine defects_reference_set_halo &
   nlrefs=nrefs     ! No halo exists yet
   ixyz(1:nlrefs)=0 ! Initialise halo indicator
   Do i=1,nlrefs
-     If (xr(i) < dxl) ixyz(i)=ixyz(i)+1
-     If (xr(i) > dxr) ixyz(i)=ixyz(i)+2
+     If (xr(i) <= dxl) ixyz(i)=ixyz(i)+1
+     If (xr(i) >= dxr) ixyz(i)=ixyz(i)+2
 
-     If (yr(i) < dyl) ixyz(i)=ixyz(i)+10
-     If (yr(i) > dyr) ixyz(i)=ixyz(i)+20
+     If (yr(i) <= dyl) ixyz(i)=ixyz(i)+10
+     If (yr(i) >= dyr) ixyz(i)=ixyz(i)+20
 
-     If (zr(i) < dzl) ixyz(i)=ixyz(i)+100
-     If (zr(i) > dzr) ixyz(i)=ixyz(i)+200
+     If (zr(i) <= dzl) ixyz(i)=ixyz(i)+100
+     If (zr(i) >= dzr) ixyz(i)=ixyz(i)+200
   End Do
 
 ! exchange atom data in -/+ x directions
@@ -141,13 +141,17 @@ Subroutine defects_reference_set_halo &
 
 ! Get domain halo limits in reduced space
 
-  dxl=(-0.5_wp-cwx)+Real(idx,wp)*r_nprx
-  dyl=(-0.5_wp-cwy)+Real(idy,wp)*r_npry
-  dzl=(-0.5_wp-cwz)+Real(idz,wp)*r_nprz
+! Distance from the - edge of this domain
 
-  dxr=(-0.5_wp+cwx)+Real(idx+1,wp)*r_nprx
-  dyr=(-0.5_wp+cwy)+Real(idy+1,wp)*r_npry
-  dzr=(-0.5_wp+cwz)+Real(idz+1,wp)*r_nprz
+  dxl=Nearest( (-0.5_wp-cwx)+Real(idx,wp)*r_nprx , -1.0_wp)-zero_plus
+  dyl=Nearest( (-0.5_wp-cwy)+Real(idy,wp)*r_npry , -1.0_wp)-zero_plus
+  dzl=Nearest( (-0.5_wp-cwz)+Real(idz,wp)*r_nprz , -1.0_wp)-zero_plus
+
+! Distance from the + edge of this domain
+
+  dxr=Nearest( (-0.5_wp+cwx)+Real(idx+1,wp)*r_nprx , +1.0_wp)+zero_plus
+  dyr=Nearest( (-0.5_wp+cwy)+Real(idy+1,wp)*r_npry , +1.0_wp)+zero_plus
+  dzr=Nearest( (-0.5_wp+cwz)+Real(idz+1,wp)*r_nprz , +1.0_wp)+zero_plus
 
   Deallocate (ixyz, Stat=fail)
   If (fail > 0) Then

@@ -12,7 +12,6 @@ Subroutine defects_link_cells &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module, Only : idnode
   Use setup_module
   Use domains_module
 

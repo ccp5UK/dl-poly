@@ -79,12 +79,13 @@ Subroutine two_body_forces                        &
      Call error(0)
   End If
 
-! If k-space SPME is evaluated in full infrequently
-! check whether at this timestep to evaluate or "refresh"
-! with old values.  At restart allocate the "refresh"
-! k-space SPME arrays and force the full force evaluation.
+! If k-space SPME is evaluated infrequently check whether
+! at this timestep to evaluate or "refresh" with old values.
+! At restart allocate the "refresh" arrays and force a fresh
+! evaluation.  Repeat the same but only for the SPME k-space
+! frozen-frozen evaluations in constant volume ensembles only.
 
-  If (keyfce == 2) Call ewald_check(nstep,nsteql,nstfce)
+  If (keyfce == 2) Call ewald_check(keyens,megfrz,nsteql,nstfce,nstep)
 
 ! initialise energy and virial accumulators
 

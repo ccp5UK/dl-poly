@@ -1,5 +1,5 @@
 Subroutine ewald_frozen_forces &
-           (imcon,rcut,alpha,epsq,keyens,engcpe_fr,vircpe_fr,stress)
+           (imcon,rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -9,11 +9,12 @@ Subroutine ewald_frozen_forces &
 ! Note: Forces (as well as velocities) on frozen atoms are zeroed at the
 !       end (and any COM drift removed) but corrections to the stress
 !       and the virial are important as they feed into the system
-!       pressure response.  No volume changing ensembles (keyens < 20)
-!       need this calculation just once!
+!       pressure response.  Constant volume ensembles (keyens < 20)
+!       need this calculation just once! - controlled by lf_fce in
+!       ewald_check<-two_body_forces
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2011
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,7 +27,7 @@ Subroutine ewald_frozen_forces &
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: imcon,keyens
+  Integer,                             Intent( In    ) :: imcon
   Real( Kind = wp ),                   Intent( In    ) :: rcut,alpha,epsq
   Real( Kind = wp ),                   Intent(   Out ) :: engcpe_fr,vircpe_fr
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
@@ -40,25 +41,16 @@ Subroutine ewald_frozen_forces &
 
   Logical, Save     :: newjob = .true.
 
-  Logical           :: ll_cp
   Integer           :: fail,i,j,k,ii,jj,idi,nzfr,limit
   Real( Kind = wp ) :: rcsq,det,rcell(1:9),xrr,yrr,zrr,rrr,rsq, &
                        chgprd,erfr,egamma,exp1,tt,              &
                        fx,fy,fz,xss,yss,zss,                    &
                        strs1,strs2,strs3,strs5,strs6,strs9
 
-  Integer,           Dimension( : ), Allocatable :: l_ind,nz_fr, gfr
+  Integer,           Dimension( : ), Allocatable :: l_ind,nz_fr
   Real( Kind = wp ), Dimension( : ), Allocatable :: cfr,xfr,yfr,zfr
   Real( Kind = wp ), Dimension( : ), Allocatable :: xdf,ydf,zdf,rsqdf
 
-  fail=0
-  Allocate (l_ind(1:mxatdm),nz_fr(0:mxnode), Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'ewald_frozen_forces allocation failure, node: ', idnode
-     Call error(0)
-  End If
-
-  ll_cp=.true.
   If (newjob) Then
      newjob = .false.
 
@@ -67,28 +59,39 @@ Subroutine ewald_frozen_forces &
      If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
      rcsq=rcut**2
+  End If
 
-     If (keyens < 20 .and. (.not.l_cp)) Then ! so we won't fail
-        Allocate (fcx(1:mxatms),fcy(1:mxatms),fcz(1:mxatms), Stat = fail)
-        If (fail > 0) Call error(1040) ! as not called in ewald_module
+  If (.not.lf_fce) Then ! All's been done but needs copying
+     Do i=1,natms
+        fxx(i)=fxx(i)+ffx(i)
+        fyy(i)=fyy(i)+ffy(i)
+        fzz(i)=fzz(i)+ffz(i)
+     End Do
 
-        ll_cp=l_cp ! =.false. so we do shadow copying
-        l_cp =.true.
-     End If
-  Else
-     If (keyens < 20 .and. (.not.l_cp)) Then ! All's been done but needs copying
+     engcpe_fr=ef_fr
+     vircpe_fr=vf_fr
+     stress=stress+sf_fr
+
+     If (l_cp) Then
         Do i=1,natms
-           fxx(i)=fxx(i)+fcx(i)
-           fyy(i)=fyy(i)+fcy(i)
-           fzz(i)=fzz(i)+fcz(i)
+           fcx(i)=fcx(i)+ffx(i)
+           fcy(i)=fcy(i)+ffy(i)
+           fcz(i)=fcz(i)+ffz(i)
         End Do
 
-        engcpe_fr=e_fr
-        vircpe_fr=v_fr
-        stress=stress+s_fr
-
-        Return
+        e_fr=ef_fr
+        v_fr=vf_fr
+        s_fr=sf_fr
      End If
+
+     Return
+  End If
+
+  fail=0
+  Allocate (l_ind(1:mxatdm),nz_fr(0:mxnode), Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'ewald_frozen_forces allocation failure, node: ', idnode
+     Call error(0)
   End If
 
   Call invert(cell,rcell,det)
@@ -116,15 +119,14 @@ Subroutine ewald_frozen_forces &
   nz_fr(0) = Sum(nz_fr(0:idnode)) ! Offset
 
   nzfr = Sum(nz_fr(1:mxnode))     ! Total
-  If (nzfr <= 10*mxatms) Then
+  If (.false.) Then ! (nzfr <= 10*mxatms) Then
 
-     Allocate (gfr(1:nzfr),cfr(1:nzfr),xfr(1:nzfr),yfr(1:nzfr),zfr(1:nzfr), Stat=fail)
+     Allocate (cfr(1:nzfr),xfr(1:nzfr),yfr(1:nzfr),zfr(1:nzfr), Stat=fail)
      If (fail > 0) Then
         Write(nrite,'(/,1x,a,i0)') 'ewald_frozen_forces allocation failure 1, node: ', idnode
         Call error(0)
      End If
 
-     gfr=0
      cfr=0.0_wp
      xfr=0.0_wp
      yfr=0.0_wp
@@ -132,14 +134,12 @@ Subroutine ewald_frozen_forces &
      Do i=1,nz_fr(idnode+1)
         ii=nz_fr(0)+i
 
-        gfr(ii)=ltg(l_ind(i))
         cfr(ii)=chge(l_ind(i))
         xfr(ii)=xxx(l_ind(i))
         yfr(ii)=yyy(l_ind(i))
         zfr(ii)=zzz(l_ind(i))
      End Do
      If (mxnode > 1) Then
-        Call gsum(gfr)
         Call gsum(cfr)
         Call gsum(xfr)
         Call gsum(yfr)
@@ -148,7 +148,6 @@ Subroutine ewald_frozen_forces &
 
      Do i=1,nz_fr(idnode+1)
         ii=nz_fr(0)+i
-        idi=gfr(ii) ! =ltg(l_ind(i))
 
         Do jj=1,nz_fr(0) ! -, on nodes<idnode
            xrr=xfr(ii)-xfr(jj)
@@ -194,30 +193,20 @@ Subroutine ewald_frozen_forces &
            fyy(l_ind(i))=fyy(l_ind(i))-fy
            fzz(l_ind(i))=fzz(l_ind(i))-fz
 
+! redundant calculations copying
+
+           If (lf_cp) Then
+              ffx(l_ind(i))=ffx(l_ind(i))-fx
+              ffy(l_ind(i))=ffy(l_ind(i))-fy
+              ffz(l_ind(i))=ffz(l_ind(i))-fz
+           End If
+
 ! infrequent calculations copying
 
            If (l_cp) Then
               fcx(l_ind(i))=fcx(l_ind(i))-fx
               fcy(l_ind(i))=fcy(l_ind(i))-fy
               fcz(l_ind(i))=fcz(l_ind(i))-fz
-           End If
-
-           If (idi < gfr(jj)) Then
-
-! calculate potential energy and virial
-
-              engcpe_fr = engcpe_fr - erfr
-              vircpe_fr = vircpe_fr - egamma*rsq
-
-! calculate stress tensor
-
-              strs1 = strs1 + xrr*fx
-              strs2 = strs2 + xrr*fy
-              strs3 = strs3 + xrr*fz
-              strs5 = strs5 + yrr*fy
-              strs6 = strs6 + yrr*fz
-              strs9 = strs9 + zrr*fz
-
            End If
         End Do
 
@@ -270,6 +259,18 @@ Subroutine ewald_frozen_forces &
            fxx(l_ind(j))=fxx(l_ind(j))+fx
            fyy(l_ind(j))=fyy(l_ind(j))+fy
            fzz(l_ind(j))=fzz(l_ind(j))+fz
+
+! redundant calculations copying
+
+           If (lf_cp) Then
+              ffx(l_ind(i))=ffx(l_ind(i))-fx
+              ffy(l_ind(i))=ffy(l_ind(i))-fy
+              ffz(l_ind(i))=ffz(l_ind(i))-fz
+
+              ffx(l_ind(j))=ffx(l_ind(j))+fx
+              ffy(l_ind(j))=ffy(l_ind(j))+fy
+              ffz(l_ind(j))=ffz(l_ind(j))+fz
+           End If
 
 ! infrequent calculations copying
 
@@ -342,6 +343,14 @@ Subroutine ewald_frozen_forces &
            fyy(l_ind(i))=fyy(l_ind(i))-fy
            fzz(l_ind(i))=fzz(l_ind(i))-fz
 
+! redundant calculations copying
+
+           If (lf_cp) Then
+              ffx(l_ind(i))=ffx(l_ind(i))-fx
+              ffy(l_ind(i))=ffy(l_ind(i))-fy
+              ffz(l_ind(i))=ffz(l_ind(i))-fz
+           End If
+
 ! infrequent calculations copying
 
            If (l_cp) Then
@@ -350,27 +359,23 @@ Subroutine ewald_frozen_forces &
               fcz(l_ind(i))=fcz(l_ind(i))-fz
            End If
 
-           If (idi < gfr(jj)) Then
-
 ! calculate potential energy and virial
 
-              engcpe_fr = engcpe_fr - erfr
-              vircpe_fr = vircpe_fr - egamma*rsq
+            engcpe_fr = engcpe_fr - erfr
+            vircpe_fr = vircpe_fr - egamma*rsq
 
 ! calculate stress tensor
 
-              strs1 = strs1 + xrr*fx
-              strs2 = strs2 + xrr*fy
-              strs3 = strs3 + xrr*fz
-              strs5 = strs5 + yrr*fy
-              strs6 = strs6 + yrr*fz
-              strs9 = strs9 + zrr*fz
-
-           End If
+            strs1 = strs1 + xrr*fx
+            strs2 = strs2 + xrr*fy
+            strs3 = strs3 + xrr*fz
+            strs5 = strs5 + yrr*fy
+            strs6 = strs6 + yrr*fz
+            strs9 = strs9 + zrr*fz
         End Do
      End Do
 
-     Deallocate (gfr,cfr,xfr,yfr,zfr, Stat=fail)
+     Deallocate (cfr,xfr,yfr,zfr, Stat=fail)
      If (fail > 0) Then
         Write(nrite,'(/,1x,a,i0)') 'ewald_frozen_forces deallocation failure 1, node: ', idnode
         Call error(0)
@@ -389,6 +394,7 @@ Subroutine ewald_frozen_forces &
 
      Do ii=1,nz_fr(idnode+1)
         i=l_ind(nz_fr(idnode+1))
+        idi=ltg(ii)
 
 ! Get list limit
 
@@ -443,6 +449,14 @@ Subroutine ewald_frozen_forces &
                  fyy(i)=fyy(i)-fy
                  fzz(i)=fzz(i)-fz
 
+! redundant calculations copying
+
+                 If (lf_cp) Then
+                    ffx(i)=ffx(i)-fx
+                    ffy(i)=ffy(i)-fy
+                    ffz(i)=ffz(i)-fz
+                 End If
+
 ! infrequent calculations copying
 
                  If (l_cp) Then
@@ -456,6 +470,14 @@ Subroutine ewald_frozen_forces &
                     fxx(j)=fxx(j)+fx
                     fyy(j)=fyy(j)+fy
                     fzz(j)=fzz(j)+fz
+
+! redundant calculations copying
+
+                    If (lf_cp) Then
+                       ffx(j)=ffx(j)+fx
+                       ffy(j)=ffy(j)+fy
+                       ffz(j)=ffz(j)+fz
+                    End If
 
 ! infrequent calculations copying
 
@@ -510,6 +532,23 @@ Subroutine ewald_frozen_forces &
   stress(8) = stress(8) + strs6
   stress(9) = stress(9) + strs9
 
+! redundant calculations copying
+
+  If (lf_cp) Then
+     ef_fr=engcpe_fr
+     vf_fr=vircpe_fr
+
+     sf_fr(1) = strs1
+     sf_fr(2) = strs2
+     sf_fr(3) = strs3
+     sf_fr(4) = strs2
+     sf_fr(5) = strs5
+     sf_fr(6) = strs6
+     sf_fr(7) = strs3
+     sf_fr(8) = strs6
+     sf_fr(9) = strs9
+  End If
+
 ! infrequent calculations copying
 
   If (l_cp) Then
@@ -526,11 +565,6 @@ Subroutine ewald_frozen_forces &
      s_fr(8) = strs6
      s_fr(9) = strs9
   End If
-
-! Don't forget to cancel shadow copying, otherwise
-! the l_cp switch will call problems elsewhere
-
-  If (.not.ll_cp) l_cp=ll_cp
 
   Deallocate (l_ind,nz_fr, Stat=fail)
   If (fail > 0) Then

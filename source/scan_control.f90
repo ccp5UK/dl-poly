@@ -10,7 +10,7 @@ Subroutine scan_control                              &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2012
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -304,7 +304,7 @@ Subroutine scan_control                              &
 
 ! Sort rcut as the maximum of all valid cutoffs
 
-  If (.not.lrcut) rcut=Max(rcut,rvdw,rmet,2.0_wp*rcter+1.0e-6_wp)
+  rcut=Max(rcut,rvdw,rmet,2.0_wp*rcter+1.0e-6_wp)
 
   If (idnode == 0) Rewind(nread)
 

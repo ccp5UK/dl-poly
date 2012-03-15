@@ -11,7 +11,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,        Only : idnode,mxnode,gcheck
+  Use comms_module,        Only : idnode
   Use setup_module
   Use domains_module
   Use site_module
@@ -28,8 +28,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
   Real( Kind = wp ), Save :: cut
 
   Logical           :: oldjob
-  Integer           :: fail,nlx,nly,nlz,i,j,ia,ib,  &
-                       nlast_tmp1,nlast_tmp2
+  Integer           :: fail,nlx,nly,nlz,i,j,ia,ib
   Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9), &
                        xdc,ydc,zdc,cwx,cwy,cwz,ecwx,ecwy,ecwz
 
@@ -98,15 +97,15 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
 
 ! Distance from the - edge of this domain
 
-  ecwx=(-0.5_wp+ecwx)+Real(idx,wp)*r_nprx
-  ecwy=(-0.5_wp+ecwy)+Real(idy,wp)*r_npry
-  ecwz=(-0.5_wp+ecwz)+Real(idz,wp)*r_nprz
+  ecwx=Nearest( (-0.5_wp+ecwx)+Real(idx,wp)*r_nprx , +1.0_wp)+zero_plus
+  ecwy=Nearest( (-0.5_wp+ecwy)+Real(idy,wp)*r_npry , +1.0_wp)+zero_plus
+  ecwz=Nearest( (-0.5_wp+ecwz)+Real(idz,wp)*r_nprz , +1.0_wp)+zero_plus
 
 ! Distance from the + edge of this domain
 
-  cwx=(-0.5_wp-cwx)+Real(idx+1,wp)*r_nprx
-  cwy=(-0.5_wp-cwy)+Real(idy+1,wp)*r_npry
-  cwz=(-0.5_wp-cwz)+Real(idz+1,wp)*r_nprz
+  cwx=Nearest( (-0.5_wp-cwx)+Real(idx+1,wp)*r_nprx , -1.0_wp)-zero_plus
+  cwy=Nearest( (-0.5_wp-cwy)+Real(idy+1,wp)*r_npry , -1.0_wp)-zero_plus
+  cwz=Nearest( (-0.5_wp-cwz)+Real(idz+1,wp)*r_nprz , -1.0_wp)-zero_plus
 
 ! Get the inverse cell matrix
 
@@ -123,75 +122,30 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
      yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
      zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
 
-     If (xxt(i) < ecwx) ixyz(i)=ixyz(i)+1
-     If (xxt(i) >  cwx) ixyz(i)=ixyz(i)+2
+     If (xxt(i) <= ecwx) ixyz(i)=ixyz(i)+1
+     If (xxt(i) >=  cwx) ixyz(i)=ixyz(i)+2
 
-     If (yyt(i) < ecwy) ixyz(i)=ixyz(i)+10
-     If (yyt(i) >  cwy) ixyz(i)=ixyz(i)+20
+     If (yyt(i) <= ecwy) ixyz(i)=ixyz(i)+10
+     If (yyt(i) >=  cwy) ixyz(i)=ixyz(i)+20
 
-     If (zzt(i) < ecwz) ixyz(i)=ixyz(i)+100
-     If (zzt(i) >  cwz) ixyz(i)=ixyz(i)+200
+     If (zzt(i) <= ecwz) ixyz(i)=ixyz(i)+100
+     If (zzt(i) >=  cwz) ixyz(i)=ixyz(i)+200
   End Do
 
 ! exchange atom data in -/+ x directions
 
-  If (nprx == 2 .and. nlx == 1) nlast_tmp1 = nlast  ! Put tab on nlast
-  nlast_tmp1 = nlast ! Put tab on nlast
   Call export_atomic_data(-1,xxt,yyt,zzt)
-  If (nprx == 2 .and. nlx == 1) nlast_tmp2 = nlast  ! Put tab on nlast
-  nlast_tmp2 = nlast ! Put tab on nlast
   Call export_atomic_data( 1,xxt,yyt,zzt)
-  If (nprx == 2 .and. nlx == 1 .and. idx == 1) Then ! Handle exception
-     Do i=nlast_tmp1+1,nlast
-        ott(i)=xxt(i)
-     End Do
-     Do i=nlast_tmp1+1,nlast_tmp1+nlast-nlast_tmp2
-        xxt(i)=ott(i+nlast_tmp2-nlast_tmp1)
-     End Do
-     Do i=nlast_tmp1+nlast-nlast_tmp2+1,nlast
-        xxt(i)=ott(i+nlast_tmp2-nlast)
-     End Do
-  End If
 
 ! exchange atom data in -/+ y directions
 
-  If (npry == 2 .and. nly == 1) nlast_tmp1 = nlast  ! Put tab on nlast
-  nlast_tmp1 = nlast ! Put tab on nlast
   Call export_atomic_data(-2,xxt,yyt,zzt)
-  If (npry == 2 .and. nly == 1) nlast_tmp2 = nlast  ! Put tab on nlast
-  nlast_tmp2 = nlast ! Put tab on nlast
   Call export_atomic_data( 2,xxt,yyt,zzt)
-  If (npry == 2 .and. nly == 1 .and. idy == 1) Then ! Handle exception
-     Do i=nlast_tmp1+1,nlast
-        ott(i)=yyt(i)
-     End Do
-     Do i=nlast_tmp1+1,nlast_tmp1+nlast-nlast_tmp2
-        yyt(i)=ott(i+nlast_tmp2-nlast_tmp1)
-     End Do
-     Do i=nlast_tmp1+nlast-nlast_tmp2+1,nlast
-        yyt(i)=ott(i+nlast_tmp2-nlast)
-     End Do
-  End If
 
 ! exchange atom data in -/+ z directions
 
-  If (nprz == 2 .and. nlz == 1) nlast_tmp1 = nlast  ! Put tab on nlast
-  nlast_tmp1 = nlast ! Put tab on nlast
   Call export_atomic_data(-3,xxt,yyt,zzt)
-  If (nprz == 2 .and. nlz == 1) nlast_tmp2 = nlast  ! Put tab on nlast
-  nlast_tmp2 = nlast ! Put tab on nlast
   Call export_atomic_data( 3,xxt,yyt,zzt)
-  If (nprz == 2 .and. nlz == 1 .and. idz == 1) Then ! Handle exception
-     Do i=nlast_tmp1+1,nlast
-        ott(i)=zzt(i)
-     End Do
-     Do i=nlast_tmp1+1,nlast_tmp1+nlast-nlast_tmp2
-        zzt(i)=ott(i+nlast_tmp2-nlast_tmp1)
-     End Do
-     Do i=nlast_tmp1+nlast-nlast_tmp2+1,nlast
-        zzt(i)=ott(i+nlast_tmp2-nlast)
-     End Do
-  End If
 
 ! Convert MD cell centered atomic positions (of the halo only)
 ! from reduced space coordinates to Cartesian coordinates

@@ -27,7 +27,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
   Real( Kind = wp ),    Intent( InOut ) :: xr(1:mxatms),yr(1:mxatms),zr(1:mxatms)
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez
-  Integer           :: fail,i,j,iblock,jxyz,ix,iy,iz,kx,ky,kz, &
+  Integer           :: fail,i,j,iblock,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
                        jdnode,kdnode,imove,jmove,itmp
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
@@ -53,6 +53,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
 ! respect to the direction (mdir)
 ! k.   - direction selection factor
 ! jxyz - halo reduction factor
+! kxyz - corrected halo reduction factor particles haloing both +&- sides
 ! ls.  - wrap-around +1 in . direction (domain on the left MD cell border)
 ! le.  - wrap-around -1 in . direction (domain on the right MD cell border)
 ! jdnode - destination (send to), knode - source (receive from)
@@ -64,6 +65,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
   If      (mdir == -1) Then ! Direction -x
      kx  = 1
      jxyz= 1
+     kxyz= 3
      lsx = (idx == 0)
 
      jdnode = map(1)
@@ -71,6 +73,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
   Else If (mdir ==  1) Then ! Direction +x
      kx  = 1
      jxyz= 2
+     kxyz= 3
      lex = (idx == nprx-1)
 
      jdnode = map(2)
@@ -78,6 +81,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
   Else If (mdir == -2) Then ! Direction -y
      ky  = 1
      jxyz= 10
+     kxyz= 30
      lsy = (idy == 0)
 
      jdnode = map(3)
@@ -85,6 +89,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
   Else If (mdir ==  2) Then ! Direction +y
      ky  = 1
      jxyz= 20
+     kxyz= 30
      ley = (idy == npry-1)
 
      jdnode = map(4)
@@ -92,6 +97,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
   Else If (mdir == -3) Then ! Direction -z
      kz  = 1
      jxyz= 100
+     kxyz= 300
      lsz = (idz == 0)
 
      jdnode = map(5)
@@ -99,6 +105,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
   Else If (mdir ==  3) Then ! Direction +z
      kz  = 1
      jxyz= 200
+     kxyz= 300
      lez = (idz == nprz-1)
 
      jdnode = map(6)
@@ -131,14 +138,18 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
         iy=Mod(ixyz(i)-ix,100)       ! [0,10,20,30=10+20]
         iz=Mod(ixyz(i)-(ix+iy),1000) ! [0,100,200,300=100+200]
 
-! If the particle is within the correct halo for the selected direction
+! Filter the halo index for the selected direction
 
         j=ix*kx+iy*ky+iz*kz
-        If (j == jxyz .or. (j > jxyz .and. Mod(j,3) == 0)) Then
 
-! Reduce halo index (new remaining halo)
-!
-!           ixyz(i)=ixyz(i)-jxyz
+! If the particle is halo to both +&- sides
+! use the corrected halo reduction factor
+
+        If (j > jxyz .and. Mod(j,3) == 0) jxyz=kxyz
+
+! If the particle is within the correct halo for the selected direction
+
+        If (j == jxyz) Then
 
 ! If safe to proceed
 
@@ -156,7 +167,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
               If (lsz) buffer(imove+3)=buffer(imove+3)+1.0_wp
               If (lez) buffer(imove+3)=buffer(imove+3)-1.0_wp
 
-! pack config indexing, site name halo indexing arrays
+! pack config indexing, site name and remaining halo indexing arrays
 
               buffer(imove+ 4)=Real(indr(i),wp)
               buffer(imove+ 5)=Real(Ichar(namr(i)(1:1)),wp)
@@ -167,7 +178,9 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
               buffer(imove+10)=Real(Ichar(namr(i)(6:6)),wp)
               buffer(imove+11)=Real(Ichar(namr(i)(7:7)),wp)
               buffer(imove+12)=Real(Ichar(namr(i)(8:8)),wp)
-              buffer(imove+13)=Real(ixyz(i),wp)
+              buffer(imove+13)=Real(ixyz(i)-jxyz,wp)
+
+              imove=imove+13
 
            Else
 

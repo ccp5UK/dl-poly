@@ -14,66 +14,40 @@ Subroutine metal_ld_set_halo(rho)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,  Only : idnode,mxnode,gcheck
+  Use comms_module,  Only : mxnode,gcheck
   Use setup_module,  Only : nrite,mxatms
-  Use config_module, Only : natms,nlast,ltg
+  Use config_module, Only : natms,nlast,ixyz
 
   Implicit None
 
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: rho
 
   Logical           :: safe
-  Integer           :: fail,mlast,i
+  Integer           :: mlast
 
-  Integer,           Dimension( : ), Allocatable :: iwrk
+! No halo, start with domain only particles
 
-  fail=0
-  Allocate (iwrk(1:mxatms), Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_ld_set_halo allocation failure, node: ', idnode
-     Call error(0)
-  End If
-
-! Copy domain only ltg in iwrk
-
-  mlast=natms ! No halo
-  Do i=1,mlast
-     iwrk(i)=ltg(i)
-  End Do
+  mlast=natms
 
 ! exchange atom data in -/+ x directions
 
-  Call metal_ld_export(-1,mlast,iwrk,rho)
-  Call metal_ld_export( 1,mlast,iwrk,rho)
+  Call metal_ld_export(-1,mlast,rho)
+  Call metal_ld_export( 1,mlast,rho)
 
 ! exchange atom data in -/+ y directions
 
-  Call metal_ld_export(-2,mlast,iwrk,rho)
-  Call metal_ld_export( 2,mlast,iwrk,rho)
+  Call metal_ld_export(-2,mlast,rho)
+  Call metal_ld_export( 2,mlast,rho)
 
 ! exchange atom data in -/+ z directions
 
-  Call metal_ld_export(-3,mlast,iwrk,rho)
-  Call metal_ld_export( 3,mlast,iwrk,rho)
+  Call metal_ld_export(-3,mlast,rho)
+  Call metal_ld_export( 3,mlast,rho)
 
 ! check atom totals after data transfer
 
   safe=(mlast == nlast)
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe) Call error(96)
-
-! check incoming atomic density assignments
-
-  Do i=natms+1,nlast
-     safe=(ltg(i) == iwrk(i))
-  End Do
-  If (mxnode > 1) Call gcheck(safe)
-  If (.not.safe) Call error(98)
-
-  Deallocate (iwrk, Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_ld_set_halo deallocation failure, node: ', idnode
-     Call error(0)
-  End If
 
 End Subroutine metal_ld_set_halo

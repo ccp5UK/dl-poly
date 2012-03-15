@@ -1,4 +1,4 @@
-Subroutine metal_ld_export(mdir,mlast,iwrk,rho)
+Subroutine metal_ld_export(mdir,mlast,rho)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -19,11 +19,11 @@ Subroutine metal_ld_export(mdir,mlast,iwrk,rho)
   Implicit None
 
   Integer,           Intent( In    ) :: mdir
-  Integer,           Intent( InOut ) :: mlast,iwrk(1:mxatms)
+  Integer,           Intent( InOut ) :: mlast
   Real( Kind = wp ), Intent( InOut ) :: rho(1:mxatms)
 
   Logical           :: safe
-  Integer           :: fail,i,j,iblock,jxyz,ix,iy,iz,kx,ky,kz, &
+  Integer           :: fail,i,j,iblock,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
                        jdnode,kdnode,imove,jmove,itmp
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
@@ -49,42 +49,49 @@ Subroutine metal_ld_export(mdir,mlast,iwrk,rho)
 ! respect to the direction (mdir)
 ! k.   - direction selection factor
 ! jxyz - halo reduction factor
+! kxyz - corrected halo reduction factor particles haloing both +&- sides
 ! jdnode - destination (send to), knode - source (receive from)
 
   kx = 0 ; ky = 0 ; kz = 0
   If      (mdir == -1) Then ! Direction -x
      kx  = 1
      jxyz= 1
+     kxyz= 3
 
      jdnode = map(1)
      kdnode = map(2)
   Else If (mdir ==  1) Then ! Direction +x
      kx  = 1
      jxyz= 2
+     kxyz= 3
 
      jdnode = map(2)
      kdnode = map(1)
   Else If (mdir == -2) Then ! Direction -y
      ky  = 1
      jxyz= 10
+     kxyz= 30
 
      jdnode = map(3)
      kdnode = map(4)
   Else If (mdir ==  2) Then ! Direction +y
      ky  = 1
      jxyz= 20
+     kxyz= 30
 
      jdnode = map(4)
      kdnode = map(3)
   Else If (mdir == -3) Then ! Direction -z
      kz  = 1
      jxyz= 100
+     kxyz= 300
 
      jdnode = map(5)
      kdnode = map(6)
   Else If (mdir ==  3) Then ! Direction +z
      kz  = 1
      jxyz= 200
+     kxyz= 300
 
      jdnode = map(6)
      kdnode = map(5)
@@ -117,26 +124,35 @@ Subroutine metal_ld_export(mdir,mlast,iwrk,rho)
         iy=Mod(ixyz(i)-ix,100)       ! [0,10,20,30=10+20]
         iz=Mod(ixyz(i)-(ix+iy),1000) ! [0,100,200,300=100+200]
 
-! If the particle is within the correct halo for the given direction
+! Filter the halo index for the selected direction
 
         j=ix*kx+iy*ky+iz*kz
-        If (j == jxyz .or. (j > jxyz .and. Mod(j,3) == 0)) Then
 
-! Is it safe to proceed?
+! If the particle is halo to both +&- sides
+! use the corrected halo reduction factor
 
-           If ((imove+2) > iblock) Then
+        If (j > jxyz .and. Mod(j,3) == 0) jxyz=kxyz
 
-              safe=.false.
+! If the particle is within the correct halo for the selected direction
+
+        If (j == jxyz) Then
+
+! If safe to proceed
+
+           If ((imove+2) <= iblock) Then
+
+! pack particle density and halo indexing
+
+              buffer(imove+1)=rho(i)
+              buffer(imove+2)=Real(ixyz(i)-jxyz,wp)
+
+              imove=imove+2
 
            Else
 
-! pack particle density, indexing (iwrk=ltg) and remaining halo indexing arrays
+              safe=.false.
 
-              buffer(imove+1)=rho(i)
-              buffer(imove+2)=Real(iwrk(i),wp)
            End If
-
-           imove=imove+2
 
         End If
 
@@ -198,10 +214,10 @@ Subroutine metal_ld_export(mdir,mlast,iwrk,rho)
   Do i=1,jmove/2
      mlast=mlast+1
 
-! unpack particle density, indexing (iwrk=ltg) and remaining halo indexing arrays
+! unpack particle density and remaining halo indexing
 
      rho(mlast) =buffer(j+1)
-     iwrk(mlast)=Nint(buffer(j+2))
+     ixyz(mlast)=Nint(buffer(j+2))
 
      j=j+2
   End Do

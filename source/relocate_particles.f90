@@ -16,7 +16,7 @@ Subroutine relocate_particles        &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,       Only : idnode,mxnode,gsum,gmax,gcheck
+  Use comms_module,       Only : mxnode,gsum,gmax,gcheck
   Use setup_module
   Use domains_module
 
