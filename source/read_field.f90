@@ -2909,7 +2909,8 @@ Subroutine read_field                      &
 
 ! check and resolve any conflicting 14 dihedral specifications
 
-        Call dihedrals_14_check(l_str,ntpmls,nummols,numang,numdih,lstang,lstdih,prmdih)
+        Call dihedrals_14_check &
+           (l_str,ntpmls,nummols,numang,keyang,lstang,numdih,lstdih,prmdih)
 
 ! test for existence/appliance of any two-body or tersoff interactions!!!
 

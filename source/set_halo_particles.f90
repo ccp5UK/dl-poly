@@ -32,10 +32,10 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
   Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9), &
                        xdc,ydc,zdc,cwx,cwy,cwz,ecwx,ecwy,ecwz
 
-  Real( Kind = wp ), Dimension( : ), Allocatable :: ott,xxt,yyt,zzt
+  Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
   fail=0
-  Allocate (ott(1:mxatms),xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail)
+  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'set_halo_particles allocation failure, node: ', idnode
      Call error(0)
@@ -210,7 +210,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
      Call rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
   End If
 
-  Deallocate (ott,xxt,yyt,zzt, Stat=fail)
+  Deallocate (xxt,yyt,zzt, Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'set_halo_particles deallocation failure, node: ', idnode
      Call error(0)

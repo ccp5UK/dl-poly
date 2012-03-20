@@ -15,7 +15,7 @@ Subroutine metal_forces &
   Use kinds_f90
   Use setup_module
   Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
-  Use metal_module,  Only : ld_met,ntpmet,lstmet,ltpmet,vmet,dmet,prmmet
+  Use metal_module,  Only : ld_met,lstmet,ltpmet,vmet,dmet,prmmet
 
   Implicit None
 

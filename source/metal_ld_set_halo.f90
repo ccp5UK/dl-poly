@@ -5,8 +5,8 @@ Subroutine metal_ld_set_halo(rho)
 ! dl_poly_4 routine to arrange exchange of density data between
 ! neighbouring domains/nodes
 !
-! Note: all depends on the ixyz halo array set in set_halo, this
-!       assumes that (i) rmet=rcut! & (ii) all the error checks in there
+! Note: all depends on the ixyz halo array set in set_halo, this assumes
+!       that (i) rmet=rcut! as well as (ii) all the error checks in there
 !
 ! copyright - daresbury laboratory
 ! amended   - i.t.todorov march 2012
@@ -15,8 +15,8 @@ Subroutine metal_ld_set_halo(rho)
 
   Use kinds_f90
   Use comms_module,  Only : mxnode,gcheck
-  Use setup_module,  Only : nrite,mxatms
-  Use config_module, Only : natms,nlast,ixyz
+  Use setup_module,  Only : mxatms
+  Use config_module, Only : natms,nlast
 
   Implicit None
 

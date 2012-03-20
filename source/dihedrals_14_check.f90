@@ -1,4 +1,5 @@
-Subroutine dihedrals_14_check(l_str,ntpmls,nummols,numang,numdih,lstang,lstdih,prmdih)
+Subroutine dihedrals_14_check &
+           (l_str,ntpmls,nummols,numang,keyang,lstang,numdih,lstdih,prmdih)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,7 +8,7 @@ Subroutine dihedrals_14_check(l_str,ntpmls,nummols,numang,numdih,lstang,lstdih,p
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1999
-! amended   - i.t.todorov august 2004
+! amended   - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -15,8 +16,8 @@ Subroutine dihedrals_14_check(l_str,ntpmls,nummols,numang,numdih,lstang,lstdih,p
   Use setup_module, Only : mxtmls,mxtang,mxtdih,mxpdih
 
   Logical,           Intent( In    ) :: l_str
-  Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls),             &
-                                        numang(1:mxtmls),lstang(1:3,1:mxtang),&
+  Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls),numang(1:mxtmls), &
+                                        keyang(1:mxtang),lstang(1:3,1:mxtang),     &
                                         numdih(1:mxtmls),lstdih(1:4,1:mxtdih)
   Real( Kind = wp ), Intent( InOut ) :: prmdih(1:mxpdih,1:mxtdih)
 
@@ -36,27 +37,31 @@ Subroutine dihedrals_14_check(l_str,ntpmls,nummols,numang,numdih,lstang,lstdih,p
 
      Do imols=1,nummols(itmols)
 
-! check for valence angle and dihedral angle conflicts
+! check for valence angle on dihedral angle conflicts
 
         Do langle=1,numang(itmols)
 
-           iang=lstang(1,langle+kangle)
-           jang=lstang(3,langle+kangle)
+           If (keyang(langle+kangle) > 0) Then
 
-           Do ldihed=1,numdih(itmols)
+              iang=lstang(1,langle+kangle)
+              jang=lstang(3,langle+kangle)
 
-              idih=lstdih(1,ldihed+kdihed)
-              jdih=lstdih(4,ldihed+kdihed)
+              Do ldihed=1,numdih(itmols)
 
-              If (Min(iang,jang) == Min(idih,jdih) .and. Max(iang,jang) == Max(idih,jdih)) Then
+                 idih=lstdih(1,ldihed+kdihed)
+                 jdih=lstdih(4,ldihed+kdihed)
 
-                 prmdih(4,ldihed+kdihed)=0.0_wp
-                 prmdih(5,ldihed+kdihed)=0.0_wp
-                 If (l_str) Call warning(20,Real(itmols,wp),Real(idih,wp),Real(jdih,wp))
+                 If (Min(iang,jang) == Min(idih,jdih) .and. Max(iang,jang) == Max(idih,jdih)) Then
 
-              End If
+                    prmdih(4,ldihed+kdihed)=0.0_wp
+                    prmdih(5,ldihed+kdihed)=0.0_wp
+                    If (l_str) Call warning(20,Real(itmols,wp),Real(idih,wp),Real(jdih,wp))
 
-           End Do
+                 End If
+
+              End Do
+
+           End If
 
         End Do
 
