@@ -122,7 +122,7 @@ Subroutine pseudo_vv                                      &
 ! qualify non-shell, non-frozen free particles (n) for a random kick
 ! qualify RBs (r) by them and derive related shells (s)
 
-! tpn(idnode) number of thermostated particles on this node (idnode)
+! tpn(idnode) number of thermostatted particles on this node (idnode)
 ! ntp - grand total of non-shell, non-frozen particles to thermostat
 
      qn(1:natms)     = 0 ! unqualified particle (non-massless, non-shells, non-frozen)
@@ -223,7 +223,7 @@ Subroutine pseudo_vv                                      &
 
      If (ntp == 0) Return
 
-! tps(idnode) number of thermostated core-shell units on this node (idnode)
+! tps(idnode) number of thermostatted core-shell units on this node (idnode)
 ! stp - grand total of core-shell units to thermostat
 
      j = 0
@@ -265,7 +265,7 @@ Subroutine pseudo_vv                                      &
      End Do
      Call gsum(j)
 
-! tpr(idnode) number of thermostated RB units on this node (idnode)
+! tpr(idnode) number of thermostatted RB units on this node (idnode)
 ! rtp - grand total of RB units to thermostat
 ! (can be larger than megrgd due to sharing)
 
@@ -307,7 +307,7 @@ Subroutine pseudo_vv                                      &
            End If
         End Do
      End If
-! tpn(idnode) number of thermostated free particles on this node (idnode)
+! tpn(idnode) number of thermostatted free particles on this node (idnode)
 ! ntp - grand total of non-shell, non-frozen free particles to thermostat
      If (mxnode > 1) Then
         Do i=0,mxnode-1

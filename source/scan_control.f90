@@ -41,7 +41,7 @@ Subroutine scan_control                              &
 ! default spline for SPME and minimum real space cutoff
 
   Integer,           Parameter :: mxspl_def = 8
-  Real( Kind = wp ), Parameter :: rcut_def  = 1.5_wp
+  Real( Kind = wp ), Parameter :: rcut_def  = 1.0_wp
 
 ! default reading indices options
 
@@ -346,7 +346,7 @@ Subroutine scan_control                              &
 
            cut=rcut+1.0e-6_wp
 
-! fix cell vectors for image conditions with discontinuties
+! fix cell vectors for image conditions with discontinuities
 
            If (imcon == 0) Then
 
@@ -452,7 +452,7 @@ Subroutine scan_control                              &
 
         If (mxspl /= 0) Then
 
-! (1) to Max(rcut,Max(cellwidth*mxspl/kmax)) satisfying SPME b-splines
+! (1) to Max(rcut,Max(cell_width*mxspl/kmax)) satisfying SPME b-splines
 ! propagation width
 
            If (.not.lrcut) Then

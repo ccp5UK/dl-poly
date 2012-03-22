@@ -12,7 +12,7 @@ Subroutine set_temperature            &
 ! dl_poly_4 subroutine for setting the initial system temperature
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -169,11 +169,11 @@ Subroutine set_temperature            &
      ntp = Sum(tpn)
 
 ! Save core-shell internal energy vectors due to possible hits
-! tps(idnode) number of thermostated core-shell units on this node (idnode)
+! tps(idnode) number of thermostatted core-shell units on this node (idnode)
 ! stp - grand total of core-shell units to thermostat
 
      j = 0
-     If (keyshl == 1) Then
+     If (keyshl == 1) Then ! just for the adiabatic shell model
         If (lshmv_shl) Then ! refresh the q array for shared core-shell units
            qn(natms+1:nlast) = 0
            Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn)
@@ -227,7 +227,7 @@ Subroutine set_temperature            &
               If (i2 <= natms) k = k + 1
            End If
         End Do
-! tpn(idnode) number of thermostated free particles on this node (idnode)
+! tpn(idnode) number of thermostatted free particles on this node (idnode)
 ! ntp - grand total of non-shell, non-frozen free particles to thermostat
         If (mxnode > 1) Then
            Do i=0,mxnode-1
@@ -276,6 +276,8 @@ Subroutine set_temperature            &
               If (rgdfrz(0,rgdtyp) == 0 .and. i1 <= natms) Then
                  j = j + 1
 
+! Get scaler to target variance/Sqrt(weight)
+
                  tmp = 1.0_wp/Sqrt(rgdwgt(0,rgdtyp))
                  vxx(i1) = vxt(j)*tmp
                  vyy(i1) = vyt(j)*tmp
@@ -284,6 +286,9 @@ Subroutine set_temperature            &
 
               If (i2 <= natms) Then
                  j = j + 1
+
+! Get scaler to target variance/Sqrt(weight) -
+! 3 different reciprocal moments of inertia
 
                  vxx(i2) = vxt(j)*Sqrt(rgdrix(2,rgdtyp))
                  vyy(i2) = vyt(j)*Sqrt(rgdriy(2,rgdtyp))
@@ -358,7 +363,7 @@ Subroutine set_temperature            &
            End If
         End Do
 
-     Else
+     Else ! no RBs present in the system
 
 ! generate starting velocities
 
@@ -370,12 +375,17 @@ Subroutine set_temperature            &
 ! (adiabatic shells, constraints, PMFs are
 ! to be sorted out later by quenching)
 
+        j = 0
         Do i=1,natms
            If (qn(i) == 1) Then
+              j = j + 1
+
+! Get scaler to target variance/Sqrt(weight)
+
               tmp = 1.0_wp/Sqrt(weight(i))
-              vxx(i) = vxt(i)*tmp
-              vyy(i) = vyt(i)*tmp
-              vzz(i) = vzt(i)*tmp
+              vxx(i) = vxt(j)*tmp
+              vyy(i) = vyt(j)*tmp
+              vzz(i) = vzt(j)*tmp
            End If
         End Do
 

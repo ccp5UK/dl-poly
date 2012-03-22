@@ -435,7 +435,7 @@ Subroutine set_bounds                                        &
   mxlist = Min(mxlist,megatm-1) ! mxexcl
 
   If (mxlist < mxexcl) Then
-     Call warning(3,Real(mxlist,wp),Real(mxexcl,wp),0.0_wp)
+     Call warning(6,Real(mxlist,wp),Real(mxexcl,wp),0.0_wp)
      mxlist=mxexcl
   End If
 

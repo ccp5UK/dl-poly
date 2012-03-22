@@ -161,7 +161,7 @@ Subroutine read_control                                &
 
 ! switch for pseudo thermostat (not applied), type of scaling
 ! (default 0 where 0 - Langevin+direct, 1 - Langevin and 2 - direct) and
-! minimum width of the thermostated boundaries in Angs
+! minimum width of the thermostatted boundaries in Angs
 ! minimum temperature of the thermostat
 
   lpse   = .false.

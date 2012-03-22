@@ -69,9 +69,10 @@ Subroutine read_config &
 
   If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
-! Real space cutoff shortened by 50% but not < 2 Angstroms
+! Real space cutoff shortened by 50% but not < 1 Angstrom
+!(=rcut_def in scan_control)
 
-  cut=Max(0.5_wp*rcut,2.0_wp)+1.0e-6_wp
+  cut=Max(0.5_wp*rcut,1.0_wp)+1.0e-6_wp
 
 ! Get the dimensional properties of the MD cell
 
@@ -553,9 +554,9 @@ Subroutine read_config &
 ! (nlx+2*nlp-1,nly+2*nlp-1,nly+2*nlp-1) right-most
 ! link-cell on the domain (halo)
 
-  jx=-nlx*idx
-  jy=-nly*idy
-  jz=-nlz*idz
+  jx=1-nlx*idx
+  jy=1-nly*idy
+  jz=1-nlz*idz
 
 ! Get the inverse cell matrix
 
@@ -568,9 +569,9 @@ Subroutine read_config &
 
 ! Get cell coordinates accordingly
 
-     ix =  Int(xdc*(sxx+0.5_wp)) + 1 + jx
-     iy =  Int(ydc*(syy+0.5_wp)) + 1 + jy
-     iz =  Int(zdc*(szz+0.5_wp)) + 1 + jz
+     ix = Int(xdc*(sxx+0.5_wp)) + jx
+     iy = Int(ydc*(syy+0.5_wp)) + jy
+     iz = Int(zdc*(szz+0.5_wp)) + jz
 
 ! Put all particles in bounded link-cell space: lower and upper
 ! bounds as 1 <= i_coordinate <= nl_coordinate
@@ -597,10 +598,9 @@ Subroutine read_config &
   End Do
   pda_ave=pda_ave/Real(ncells,wp)
 
+  pda_dom_max=pda_ave
+  pda_dom_min=pda_ave
   If (mxnode > 1) Then
-     pda_dom_max=pda_ave
-     pda_dom_min=pda_ave
-
      Call gmax(pda_dom_max)
      Call gmin(pda_dom_min)
 
@@ -609,9 +609,6 @@ Subroutine read_config &
 
      Call gsum(pda_ave)
      pda_ave=pda_ave/Real(mxnode,wp)
-  Else
-     pda_dom_max=dens
-     pda_dom_min=dens
   End If
 
 ! Approximation for maximum global density by
@@ -628,6 +625,8 @@ Subroutine read_config &
      Else
         dens = dens0 ! too big an imbalance (take no risk)
      End If
+  Else
+     dens = 1.25_wp*pda_ave/vcell ! allow 25% imbalance
   End If
 
   Deallocate (pda, Stat=fail(1))

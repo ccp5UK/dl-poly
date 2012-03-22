@@ -166,7 +166,7 @@ Subroutine read_field                      &
 
 ! default shell model - none
 
-  keyshl   = 1
+  keyshl   = 0
   lshl_one = .false. ! A massless shell existence indicator
   lshl_all = .true.  ! All shells are massless indicator
 
@@ -193,7 +193,6 @@ Subroutine read_field                      &
 ! read and process directives from field file
 
   Do While (.true.)
-
      word(1:1)='#'
      Do While (word(1:1) == '#' .or. word(1:1) == ' ')
         Call get_line(safe,nfield,record)
@@ -271,6 +270,11 @@ Subroutine read_field                      &
 
         Do itmols=1,ntpmls
 
+! initialise frozen constraints & RBs counters
+
+           frzcon=0
+           frzrgd=0
+
 ! expectation values for once off definitions of bonded quantities
 ! PMFs make an exception (as defined once and only once per system)
 
@@ -299,12 +303,6 @@ Subroutine read_field                      &
 ! read molecular data
 
            Do While (.true.)
-
-! initialise frozen constraints & RBs counters
-
-              frzcon=0
-              frzrgd=0
-
               word(1:1)='#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                  Call get_line(safe,nfield,record)
@@ -1684,7 +1682,6 @@ Subroutine read_field                      &
                  Call error(12)
 
               End If
-
            End Do
 
 ! just finished with this type molecule data

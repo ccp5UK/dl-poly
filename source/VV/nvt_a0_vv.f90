@@ -360,7 +360,7 @@ Subroutine nvt_a0_vv                                 &
 ! qualify non-shell, non-frozen particles (n) for a random kick
 ! derive related shells (s)
 
-! tpn(idnode) number of thermostated particles on this node (idnode)
+! tpn(idnode) number of thermostatted particles on this node (idnode)
 ! ntp - grand total of non-shell, non-frozen particles to thermostat
 
      qn(1:natms)     = 0 ! unqualified particle (non-massless, non-shells, non-frozen)
@@ -387,7 +387,7 @@ Subroutine nvt_a0_vv                                 &
 
      If (ntp == 0) Go To 200
 
-! tps(idnode) number of thermostated core-shell units on this node (idnode)
+! tps(idnode) number of thermostatted core-shell units on this node (idnode)
 ! stp - grand total of core-shell units to thermostat
 
      j = 0
