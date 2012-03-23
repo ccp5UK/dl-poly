@@ -106,7 +106,7 @@ Subroutine constraints_shake_lfv        &
      Call constraints_shake_cuda_initialise(&
           ntcons, mxcons, mxatms, natms,imcon,&
           lsi,lsa,lishp_con,lashp_con,mop,mxbuff,nlast,&
-          lstopt, lfrzn, listcon, listot,&         
+          lstopt, lfrzn, listcon, listot,&
           prmcon, weight,&
           dxx, dyy, dzz, dxt, dyt, dzt, dt2, tstep2, tolnce, cell,&
           xxx, yyy, zzz, xxt, yyt, zzt, strcon, is_vv)

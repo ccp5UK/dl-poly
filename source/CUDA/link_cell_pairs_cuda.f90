@@ -370,7 +370,7 @@ Subroutine link_cell_pairs_remove_exclusions_helper(&
            End If
         End Do
      End If
-     
+
      list(-1,i)=list(0,i) ! End of NFP FNRH VNL
      list(0,i)=m_end      ! End of new list with no excluded interactions (NXI)
   End Do
@@ -791,7 +791,7 @@ Call start_timing_link_cell_pairs()
      If (dl_poly_cuda_offload_tbforces().eqv..false. .and. lbook .eqv. .false.) Then
         Call link_cell_pairs_cuda_finalise()
 ! malysaght250112: dl_poly_cuda_offload_link_cell_pairs_re() should be set to false
-! for the moment. 
+! for the moment.
      Else If (dl_poly_cuda_offload_link_cell_pairs_re() .eqv. .false.) Then
         Call link_cell_pairs_cuda_finalise()
      End If
@@ -1062,11 +1062,11 @@ Call start_timing_link_cell_pairs()
 
            ii=lfrzn(i)
            If (ii > 0) Then
-              Do kk=l_end,1,-1 
-                 j =list(kk,i) 
-                 jj=lfrzn(j) 
+              Do kk=l_end,1,-1
+                 j =list(kk,i)
+                 jj=lfrzn(j)
                  If (jj > 0) Then
-                    If (kk < m_end) Then 
+                    If (kk < m_end) Then
                        list(kk,i)=list(m_end,i)
                        list(m_end,i)=j
                     End If
@@ -1096,7 +1096,7 @@ Call start_timing_link_cell_pairs()
 !malysaght110112: note: _cuda_invoke_remove_exclusions needs to be updated. For
 !the moment, dl_poly_cuda_offload_link_cell_pairs_re() should be set to .false.
 !When set to false, the remove_exclusions is invoked on the host. This will
-!be changed so that _remove_exclusions is invoked on the device as previously. 
+!be changed so that _remove_exclusions is invoked on the device as previously.
 
 #ifdef COMPILE_CUDA
      Call start_timing_link_cell_pairs_cuda_remove_excluded()
@@ -1125,7 +1125,7 @@ Call start_timing_link_cell_pairs()
                    End If
                    m_end=m_end-1
                 End If
-             End Do 
+             End Do
           End If
 
           list(-1,i)=list(0,i) ! End of NFP FNRH VNL

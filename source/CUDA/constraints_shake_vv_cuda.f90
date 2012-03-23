@@ -97,7 +97,7 @@ Subroutine constraints_shake_vv        &
   icyc=0
   safe=.false.
 
-    
+
 
 #ifdef COMPILE_CUDA
   If (dl_poly_cuda_offload_constraints_shake() .and. &
@@ -106,7 +106,7 @@ Subroutine constraints_shake_vv        &
      Call constraints_shake_cuda_initialise(&
           ntcons, mxcons, mxatms, natms,imcon,&
           lsi,lsa,lishp_con,lashp_con,mop,mxbuff,nlast,&
-          lstopt, lfrzn, listcon, listot,&              
+          lstopt, lfrzn, listcon, listot,&
           prmcon, weight,&
           dxx, dyy, dzz, dxt, dyt, dzt, dt2, tstep2, tolnce, cell,&
           xxx, yyy, zzz, xxt, yyt, zzt, strcon, is_vv)
@@ -144,7 +144,7 @@ Subroutine constraints_shake_vv        &
   Else
 #endif
 
- 
+
 
   Do While ((.not.safe) .and. icyc < mxshak)
      icyc=icyc+1

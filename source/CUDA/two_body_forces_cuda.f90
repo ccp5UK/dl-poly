@@ -483,7 +483,7 @@ Subroutine two_body_forces                        &
 ! accumulate radial distribution functions
 
 
-     If (l_do_rdf) Call rdf_collect(i,rcut,rsqdf)  
+     If (l_do_rdf) Call rdf_collect(i,rcut,rsqdf)
 
 
   End Do
@@ -497,7 +497,7 @@ Subroutine two_body_forces                        &
 ! In the case of excluded interactions
 ! accumulate furhter radial distribution functions and/or
 ! calculate Ewald corrections due to long-range exclusions
-! if (keyfce == 2 .and. l_fce)  
+! if (keyfce == 2 .and. l_fce)
 
 #ifdef COMPILE_CUDA
   End If
@@ -531,10 +531,10 @@ Subroutine two_body_forces                        &
 
                Do k=1,limit
                   j=list(list(0,i)+k,i)
-                  
+
                   xdf(k)=xxx(i)-xxx(j)
                   ydf(k)=yyy(i)-yyy(j)
-                  zdf(k)=zzz(i)-zzz(j) 
+                  zdf(k)=zzz(i)-zzz(j)
                End Do
 
 ! periodic boundary condition
@@ -556,7 +556,7 @@ Subroutine two_body_forces                        &
                If (keyfce == 2 .and. l_fce) Then
                   Call ewald_excl_forces &
                 (i,rcut,alpha,epsq,xdf,ydf,zdf,rsqdf,engacc,viracc,stress)
-             
+
 
                   engcpe_ex=engcpe_ex+engacc
                   vircpe_ex=vircpe_ex+viracc
@@ -571,7 +571,7 @@ Subroutine two_body_forces                        &
 !counter for rdf statistics outside loop structures
 
       If (l_do_rdf) numrdf = numrdf+1
-      
+
       Deallocate (xdf,ydf,zdf,rsqdf,   Stat=fail(1))
       If (ntpmet > 0) Deallocate (rho, Stat=fail(2))
       If (Any(fail > 0)) Then
@@ -589,7 +589,7 @@ Subroutine two_body_forces                        &
              If (megfrz /= 0) Call ewald_frozen_forces &
                 (imcon,rcut,alpha,epsq,keyens,engcpe_fr,vircpe_fr,stress)
 
-         Else 
+         Else
 
  ! Refresh all Ewald k-space contributions but the non-zero system charge
 

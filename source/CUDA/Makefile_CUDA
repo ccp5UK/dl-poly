@@ -1,6 +1,6 @@
 # Master makefile for DL_POLY_4.03 (CUDA+OpenMP version)
 #
-# Author - I.T.Todorov january 2012
+# Author - I.T.Todorov march 2012
 #
 # Define default settings
 #=====================================================================
@@ -111,7 +111,8 @@ OBJ_ALL = \
 	ewald_frozen_forces.o \
 	tersoff_forces.o three_body_forces.o four_body_forces.o \
 	core_shell_forces.o tethers_forces.o \
-	bonds_forces.o angles_forces.o dihedrals_forces.o inversions_forces.o \
+	intra_coul.o bonds_forces.o angles_forces.o \
+	dihedrals_14_vdw.o dihedrals_forces.o inversions_forces.o \
 	external_field_apply.o external_field_correct.o \
 	langevin_forces.o \
 	constraints_pseudo_bonds.o pmf_pseudo_bonds.o \

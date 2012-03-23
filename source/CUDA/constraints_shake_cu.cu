@@ -642,7 +642,7 @@ __global__ void constraints_shake_cuda_th() {
 
 
 //malysaght060212 : Accounting for new condition in vanilla code
-      if (*F2D_ADDRESS(CONSTANT_DATA.mLSTOPT,1,1,2+1,1,lK) == 0) { 
+      if (*F2D_ADDRESS(CONSTANT_DATA.mLSTOPT,1,1,2+1,1,lK) == 0) {
         lDT2 = addp3(lDXT,lDXT,lDYT,lDYT,lDZT,lDZT);
         T_ lPRMCON = CONSTANT_DATA.mPRMCON_K[lK-1];
         T_ lESIG1  = ((T_) 0.5)*fabs(msub(lDT2, lPRMCON, lPRMCON)) / lPRMCON;
@@ -719,7 +719,7 @@ __global__ void constraints_shake_cuda_invoke_bh() {
       int lLFRZN_I = CONSTANT_DATA.mLFRZN[lI-1];
       int lLFRZN_J = CONSTANT_DATA.mLFRZN[lJ-1];
 
-//malysaght060212 : Accounting for new conditional in vanilla code       
+//malysaght060212 : Accounting for new conditional in vanilla code
         if (*F2D_ADDRESS(CONSTANT_DATA.mLSTOPT,1,1,2+1,1,lK) == 0){
            T_ lAMTI = CONSTANT_DATA.mTSTEP2 / CONSTANT_DATA.mWEIGHT[lI-1];
            T_ lAMTJ = CONSTANT_DATA.mTSTEP2 / CONSTANT_DATA.mWEIGHT[lJ-1];

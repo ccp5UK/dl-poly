@@ -329,7 +329,7 @@ Interface
 
 ! Device offload and query routines
    Subroutine dl_poly_cuda_offload_set(offload_link_cell_pairs,           &
-                                       offload_link_cell_pairs_re,        & 
+                                       offload_link_cell_pairs_re,        &
                                        offload_tbforces,                  &
                                        offload_constraints_shake,         &
                                        offload_metal_ld_compute,          &
@@ -1022,7 +1022,7 @@ Contains
     ! Compute keypot variable
     Call metal_ld_compute_get_keypot(keypot)
 
-    ! Link_cell_pairs: 
+    ! Link_cell_pairs:
     ! malysaght250112: offload_link_cell_pairs_re should be set to .false. until fix is implemented
     If ( .not. offload_link_cell_pairs_re ) Then
        Write(nrite,'(1x,a,/)') 'Disabling CUDA acceleration for link_cell_pairs_remove_exclusions (if applicable)'
