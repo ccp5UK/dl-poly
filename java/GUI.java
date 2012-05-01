@@ -38,6 +38,7 @@ author    - w.smith 2011
 
         super();
         setTitle("DL_POLY GUI");
+        setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         fontMain=new Font("Verdana",Font.BOLD,14);
         setFont(fontMain);
@@ -358,6 +359,7 @@ author    - w.smith 2011
                     println("CFG file input selected");
                     config=getConfig(job,ftype);
                     if(config != null){
+                        cfgsav=copyConfig(config);
                         editor.pane.restore();
                         if(!editor.isVisible())
                             editor.showEditor();
@@ -370,6 +372,7 @@ author    - w.smith 2011
                     println("XYZ file input selected");
                     config=getConfig(job,ftype);
                     if(config != null){
+                        cfgsav=copyConfig(config);
                         editor.pane.restore();
                         if(!editor.isVisible())
                             editor.showEditor();
@@ -382,6 +385,7 @@ author    - w.smith 2011
                     println("PDB file input selected");
                     config=getConfig(job,ftype);
                     if(config != null){
+                        cfgsav=copyConfig(config);
                         editor.pane.restore();
                         if(!editor.isVisible())
                             editor.showEditor();
@@ -394,6 +398,7 @@ author    - w.smith 2011
                     println("MSI file input selected");
                     config=getConfig(job,ftype);
                     if(config != null){
+                        cfgsav=copyConfig(config);
                         editor.pane.restore();
                         if(!editor.isVisible())
                             editor.showEditor();

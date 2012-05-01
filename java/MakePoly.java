@@ -533,6 +533,7 @@ author    w.smith november 2000
         config.title="Amorphous polymer with"+BML.fmt(ncarbons,4)+" units";
         config.pbc.buildBoundary(config.pbc.imcon);
         config.structure=new Structure(config);
+	cfgsav=copyConfig(config);
 
         // write CONFIG file
 

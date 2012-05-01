@@ -53,7 +53,7 @@ author    - w.smith march 2011
         zmas=0.0;
         zchg=0.0;
         zrad=1.0;
-        zcol=null;
+        zcol=Color.gray;
         zsym=BML.fmt(atnam,8);
 	covalent=false;
         dotify=false;

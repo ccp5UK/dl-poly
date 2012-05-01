@@ -453,6 +453,7 @@ author    - w.smith 2011
             return status;
         }
         config.structure=new Structure(config);
+	cfgsav=copyConfig(config);
         cprp=AML.dcell(unit);
         wdth=0.5*BML.min(nxnum*cprp[7],nynum*cprp[8],nznum*cprp[9]);
         println("New CONFIG file "+fname+" created");

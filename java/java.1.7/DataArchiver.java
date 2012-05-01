@@ -18,7 +18,7 @@ author    - w.smith 2000
     public static DataArchiver job;
     private static JButton select,store,fetch,info,close;
     private static JTextField dirold,dirnew;
-    private static JComboBox test;
+    private static JComboBox<String> test;
     private static String dname="DEFAULT";
     private static WarningBox danger;
 
@@ -62,7 +62,7 @@ author    - w.smith 2000
 
         // Test case choice
 
-        test = new JComboBox();
+        test = new JComboBox<String>();
         test.setBackground(art.scrn);
         test.setForeground(art.scrf);
         test.addItem("TEST1");

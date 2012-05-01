@@ -22,6 +22,15 @@ author    - w.smith 2006
 *********************************************************************
          */
 
+/* Set DLPC=true to enable DLPC features such as
+   Bias Potential Hyper-Dynamics, Temperature Accelerated Dynamics,
+   Nudged Elastic band, Solvation tools and Meta-Dynamics
+
+   Set DLP4=true to enable DLP4 features such as
+   Radiation Damage */
+
+    public static final boolean DLPC=true;
+    public static final boolean DLP4=true;
     public static final int TILEX=500;
     public static final int TILEY=500;
     public static final int SCREENX=600;
@@ -42,7 +51,11 @@ author    - w.smith 2006
     public static final int MXATMS=100;
     public static final int MXJOIN=100;
     public static String ftype=null;
-    public static String defaultexecutable="DLPOLY.Z";
+
+/* DLPOLY.X for DLPC and DLPOLY.Z for DLP4 */
+
+    public static String defaultexecutable="./DLPOLY.Z";
+
     public static String executable=null;
     public static Font fontMain;
     public static boolean perspective=true;
@@ -101,15 +114,23 @@ author    - w.smith 2006
     public static double rotcos,rotsin,incx,incy,incz;
     public static int nstrun,nsteql,mult,nstbpo,nstack,intsta,keyens,keyres,istrdf;
     public static int nstraj,istraj,levcon,nstbts,keyfce,keyalg,ndump,ewldev,spmeev,mxquat;
-    public static int mxshak,nfold1,nfold2,nfold3,nregauss,istzden;
+    public static int mxshak,nfold1,nfold2,nfold3,nregauss,istzden,num_neb;
     public static int dstart,impstp,dintval,atom,nstmsdtmp,imsdtmp,ipseudtyp;
+    public static int hyp_units_key,hyp_opt_key,num_block,num_track,num_black;
+    public static int ncolvar,nq4,nq6,ntet,meta_step_int,hkey,num_start,num_intvl;
+    public static int num_swtch,sol_key,mix_key,non_lin_exp,hyp_key;
     public static boolean allpairs,lcap,lzeql,lrdf,lprdf,ltraj,ltscal,lzden,lzero,lvdw;
     public static boolean lpzden,lexclude,ldefects,lvarstp,lmsdtmp,lpseudo,lnotopo;
     public static boolean lmetdir,lvdwdir,lnoindex,lnostrict,lreplay,lpslab,lvdwshift;
+    public static boolean lrdm,lhyp,goneb,bpdpath,lmetd,lstein,ltet,lglobpe;
+    public static boolean llocpe,lsol,lremass;
     public static double temp,press,tstep,rcut,delr,rvdw,rprim,epsq,taut,taup,ewltol;
     public static double jobtim,tclose,fcap,gamt,binsize,densvar,shktol,qtntol;
-    public static double defcut,energy,vect1,vect2,vect3,varstp;
-    public static double mindis,maxdis,thick,ptemp;
+    public static double defcut,energy,vect1,vect2,vect3,varstp,hyp_opt_tol;
+    public static double globpe_scale,locpe_scale,ref_w_aug,h_aug,wt_dt;
+    public static double mindis,maxdis,thick,ptemp,ebias,vmin,catch_radius,neb_spring;
+    public static String hyp_target,basin_1,basin_2,system_a,system_b;
+    public static double deltad,low_temp,lambda;
     public static Process proc=null;
     public static String fname=null;
     public GuiFileFilter mf;

@@ -197,7 +197,7 @@ author    - w.smith 2000
                     }
                     else {
                         time0=(double)System.currentTimeMillis();
-                        proc=Runtime.getRuntime().exec(executable+"&");
+                        proc=Runtime.getRuntime().exec(executable+" &");
                         println(executable+" job submitted: "+String.valueOf(proc));
                     }
                 }

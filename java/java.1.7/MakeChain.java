@@ -22,7 +22,7 @@ author    - w.smith 2011
     private static JLabel lab1,lab2,lab3,lab4,lab5,pass;
     private static JTextField nc,area,eon,gapz;
     private static JCheckBox chk1,chk2;
-    private static JComboBox head;
+    private static JComboBox<String> head;
     private static boolean flip,twin;
     private static String headgroup;
     private static int keyhed,ncarbons,nethos;
@@ -108,7 +108,7 @@ author    - w.smith 2011
 
         // Head group choice
 
-        head = new JComboBox();
+        head = new JComboBox<String>();
         head.setBackground(art.scrn);
         head.setForeground(art.scrf);
         head.addItem("None");

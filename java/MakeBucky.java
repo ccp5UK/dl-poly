@@ -223,6 +223,7 @@ author    - w.smith november 2000
         config.pbc.cell[8]=base;
         config.pbc.buildBoundary(config.pbc.imcon);
         config.structure=new Structure(config);
+	cfgsav=copyConfig(config);
 
         // write CONFIG file
 
@@ -298,6 +299,7 @@ author    - w.smith november 2000
         }
         config.natms=n;
         config.structure=new Structure(config);
+	cfgsav=copyConfig(config);
         println("Number of atoms created : "+config.natms);
 
         // write CONFIG file

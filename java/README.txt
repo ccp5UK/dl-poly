@@ -1,11 +1,9 @@
-DL_POLY_4 Java GUI (beta release)
-=================================
+DL_POLY_4 Java GUI
+==================
 
 The DL_POLY_4 adapted GUI is provided on "AS IS" terms under the
-Licence (within this source directory), i.e. with no support.
-There is no manual at the present, however the current one
-http://www.cse.scitech.ac.uk/ccg/software/DL_POLY_CLASSIC/MANUALS/GUIMAN2.pdf
-will be very helpful to read.
+Licence (within this source directory), i.e. with no support what-
+so-ever!
 
 Shell commands within this source directory:
 ============================================

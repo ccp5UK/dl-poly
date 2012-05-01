@@ -375,7 +375,7 @@ author    - w.smith may 2011
          */
         LineNumberReader lnr=null;
         String record="",namstr="";
-        String label,header,atom,hetatm,pdbres;
+        String label,header,atom,hetatm,pdbres,remark;
         double x,y,z,xlo,xhi,ylo,yhi,zlo,zhi,ddd;
 
         natms=0;
@@ -391,6 +391,7 @@ author    - w.smith may 2011
         atom="ATOM";
         hetatm="HETATM";
         pdbres="PDBRES";
+	remark="REMARK";
 
         // open PDB file
 
@@ -401,32 +402,40 @@ author    - w.smith may 2011
             // read configuration
 
             while((record=lnr.readLine()) != null) {
+
                 if(record.indexOf(header)>=0) {
-                    title=record.substring(10,71);
-                    println("File header record: "+title);
+                    title=record.substring(9,79);
+                    println("Header: "+title);
+                }
+                else if(record.indexOf(remark)>=0) {
+                    println("Remark: "+record.substring(9));
                 }
                 else if(record.indexOf(atom)>=0 || record.indexOf(hetatm)>=0) {
                     if(natms == atoms.length)
                         resizeArrays();
-
-                    label=new String(record);
-                    record=lnr.readLine().substring(12);
-                    namstr=BML.fmt(BML.giveWord(record,1).trim(),8);
-                    record=record.substring(18);
-                    x=BML.giveDouble(record,1);
-                    y=BML.giveDouble(record,2);
-                    z=BML.giveDouble(record,3);
+		    label=BML.giveWord(record,1);
+                    namstr=BML.fmt(BML.giveWord(record,3).trim(),8);
+                    x=BML.giveDouble(record,6);
+                    y=BML.giveDouble(record,7);
+                    z=BML.giveDouble(record,8);
                     if(label.indexOf(hetatm)>=0 && namstr.equals("O       ")) namstr="OW      ";
                     atoms[natms]=new Element(namstr);
                     xyz[0][natms]=x;
                     xyz[1][natms]=y;
                     xyz[2][natms]=z;
-                    xlo=Math.min(xlo,x);
-                    ylo=Math.min(xlo,y);
-                    zlo=Math.min(xlo,z);
-                    xhi=Math.max(xhi,x);
-                    yhi=Math.max(yhi,y);
-                    zhi=Math.max(zhi,z);
+                    if(natms == 0) {
+                        xlo=xhi=x;
+                        ylo=yhi=y;
+                        zlo=zhi=z;
+		    }
+                    else {
+                        xlo=Math.min(xlo,x);
+                        ylo=Math.min(ylo,y);
+                        zlo=Math.min(zlo,z);
+                        xhi=Math.max(xhi,x);
+                        yhi=Math.max(yhi,y);
+                        zhi=Math.max(zhi,z);
+                    }
                     natms++;
                 }
             }
@@ -444,19 +453,21 @@ author    - w.smith may 2011
         // centre the cell contents
 
         for(int i=0;i<natms;i++) {
-            xyz[0][i]-=(xhi-xlo)/2.0;
-            xyz[1][i]-=(yhi-ylo)/2.0;
-            xyz[2][i]-=(zhi-zlo)/2.0;
+            xyz[0][i]-=(xhi+xlo)/2.0;
+            xyz[1][i]-=(yhi+ylo)/2.0;
+            xyz[2][i]-=(zhi+zlo)/2.0;
         }
 
         // build boundary condition
 
-        ddd=Math.pow(((xhi-xlo)*(yhi-ylo)*(zhi-zlo)/natms),(1.0/3.0));
+        ddd=Math.max(Math.max(xhi-xlo,yhi-ylo),zhi-zlo);
+        ddd=Math.pow((ddd*ddd*ddd/natms),(1.0/3.0));
         pbc.cell[0]=-(xlo-xhi)+ddd;
         pbc.cell[4]=-(ylo-yhi)+ddd;
         pbc.cell[8]=-(zlo-zhi)+ddd;
         pbc.buildBoundary(pbc.imcon);
         structure = new Structure(this);
+	println("Number of atoms found: "+natms);
         println("Selected PDB file loaded successfully");
 
         return true;
