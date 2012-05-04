@@ -6,7 +6,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
 ! neighbouring domains/nodes
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov april 2012
+! amended   - i.t.todorov may 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
