@@ -6,7 +6,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
 ! neighbouring domains/nodes
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov march 2012
+! amended   - i.t.todorov april 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -82,9 +82,9 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
 ! used in the halo transport in NEGATIVE DIRECTIONS ONLY!!!
 
   If (keyfce == 2) Then
-     ecwx=Real(mxspl,wp)/Real(kmaxa,wp)
-     ecwy=Real(mxspl,wp)/Real(kmaxb,wp)
-     ecwz=Real(mxspl,wp)/Real(kmaxc,wp)
+     ecwx=Real(kmaxa,wp)/Real(mxspl,wp)
+     ecwy=Real(kmaxb,wp)/Real(mxspl,wp)
+     ecwz=Real(kmaxc,wp)/Real(mxspl,wp)
 
      ecwx=Max(cwx,ecwx)
      ecwy=Max(cwy,ecwy)

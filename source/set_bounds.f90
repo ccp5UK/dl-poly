@@ -8,7 +8,7 @@ Subroutine set_bounds                                        &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov april 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -468,7 +468,7 @@ Subroutine set_bounds                                        &
 
 ! maximum number of variables in stack arrays
 
-  mxnstk = 45+mxatyp
+  mxnstk = 50+mxatyp
 
 ! update maximum number of variables in stack arrays if MSD option is used
 

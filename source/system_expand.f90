@@ -10,7 +10,7 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
 ! supported image conditions: 1,2,3, 6(nz==1)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2011
+! author    - i.t.todorov april 2012
 ! contrib   - w.smith, i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -654,7 +654,7 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
            End Do
            safe=(safe .and. safel)
 
-           If (safe .and. imols < nummols(itmols)) Then
+           If ((.not.safe) .and. imols < nummols(itmols)) Then
               nshels=nshels-numshl(itmols)
               nconst=nconst-numcon(itmols)
               nrigid=nrigid-numrgd(itmols)
