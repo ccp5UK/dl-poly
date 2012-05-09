@@ -33,7 +33,7 @@ Subroutine metal_ld_compute_get_keypot(keypotr)
 End Subroutine metal_ld_compute_get_keypot
 
 Subroutine metal_ld_compute                &
-           (imcon,rmet,keyfce,elrcm,vlrcm, &
+           (imcon,rmet,elrcm,vlrcm, &
            xdf,ydf,zdf,rsqdf,              &
            rho,engden,virden,stress)
 
@@ -53,7 +53,7 @@ Subroutine metal_ld_compute                &
   Use kinds_f90
   Use comms_module,  Only : mxnode,gsum,gcheck
   Use setup_module
-  Use config_module, Only : cell,natms,ltype,list,xxx,yyy,zzz
+  Use config_module, Only : cell,natms,ltg,ltype,list,xxx,yyy,zzz
   Use metal_module,  Only : ld_met,ntpmet,ltpmet,fmet,lstmet,vmet,dmet
 
 #ifdef COMPILE_CUDA
@@ -62,7 +62,7 @@ Subroutine metal_ld_compute                &
 
   Implicit None
 
-  Integer,                                  Intent( In    ) :: imcon,keyfce
+  Integer,                                  Intent( In    ) :: imcon
   Real( Kind = wp ),                        Intent( In    ) :: rmet
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent( In    ) :: elrcm,vlrcm
   Real( Kind = wp ), Dimension( 1:mxlist ), Intent( InOut ) :: xdf,ydf,zdf,rsqdf
@@ -194,6 +194,7 @@ Subroutine metal_ld_compute                &
 ! catch unsafe value
 
               If (l < 1) Then
+                 Write(*,*) 'good density range problem: (LTG,RHO)',ltg(i),rho(i) 
                  safe=.false.
                  l=2
               End If
@@ -231,6 +232,7 @@ Subroutine metal_ld_compute                &
 
            Else
 
+              Write(*,*) 'bad density range problem: (LTG,RHO) ',ltg(i),rho(i)
               safe=.false.
 
            End If
@@ -283,7 +285,7 @@ Subroutine metal_ld_compute                &
 
 ! obtain atomic densities for outer border regions
 
-  Call metal_ld_set_halo(imcon,rmet,keyfce,rho)
+  Call metal_ld_set_halo(rho)
 
 #ifdef COMPILE_CUDA
   Call stop_timing_metal_ld_compute()

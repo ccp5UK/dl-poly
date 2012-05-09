@@ -16,7 +16,7 @@ Subroutine vdw_forces_helper &
   Use kinds_f90
   Use setup_module
   Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
-  Use vdw_module,    Only : ls_vdw,lstvdw,ltpvdw,vvdw,gvdw
+  Use vdw_module
 
   Implicit None
 
@@ -206,15 +206,14 @@ Subroutine vdw_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov spetember 2010
+! amended   - i.t.todorov march 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module
-	Use comms_module,  Only :idnode
   Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
-  Use vdw_module,    only : ld_vdw,ls_vdw,lstvdw,ltpvdw,vvdw,gvdw,prmvdw
+  Use vdw_module
 
 #ifdef COMPILE_CUDA
   Use dl_poly_cuda_module
@@ -225,13 +224,13 @@ Subroutine vdw_forces &
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: rvdw
   Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
-	Real( Kind = wp ),                        Intent( Out   ) :: engvdw,virvdw
+  Real( Kind = wp ),                        Intent( Out   ) :: engvdw,virvdw
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
-	Logical, 					Save :: newjob = .true.
-	Real( Kind =wp), 	Save :: dlrpot,rdr,rcsq
+  Logical,         Save :: newjob = .true.
+  Real( Kind =wp), Save :: dlrpot,rdr,rcsq
 
-  Integer 					:: fail,m,idi,ai,aj,jatm,key,k,l,ityp
+  Integer :: m,idi,ai,aj,jatm,key,k,l,ityp
   Real( Kind = wp ) :: rsq,rrr,ppp,gamma,eng,          &
                        r0,r0rn,r0rm,r_6,sor6,          &
                        rho,a,b,c,d,e0,kk,              &
@@ -240,9 +239,6 @@ Subroutine vdw_forces &
                        gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3, &
                        strs1,strs2,strs3,strs5,strs6,strs9
 
-	!Possible force-shifting arrays
-	Logical,					Allocatable, Save :: anew(:)
-	Real( Kind = wp ), Allocatable, Save :: afs(:),bfs(:)
 
 #ifdef COMPILE_CUDA
   Call start_timing_vdw_forces()
@@ -250,18 +246,6 @@ Subroutine vdw_forces &
 
   If (newjob) Then
      newjob=.false.
-
-!force-shfting arrays
-
-		If (ls_vdw) Then
-			fail = 0
-			Allocate (anew(1:mxvdw),afs(1:mxvdw),bfs(1:mxvdw), Stat = fail)
-			If (fail > 0) Then
-					Write(nrite,'(/,1x,a,i0)') 'vdw_forces allocation failure, node:', idnode
-					Call error(0)
-			End If
-			anew = .true.
-		End If
 
 ! define grid resolution for potential arrays and interpolation spacing
 
@@ -324,8 +308,6 @@ Subroutine vdw_forces &
      ityp=ltpvdw(k)
      If (ityp >= 0 .and. rsq < rcsq) Then
 
-        If (ld_vdw) Then ! direct calculation
-
 ! Zero energy and force magnitude
 
            eng   = 0.0_wp
@@ -333,36 +315,27 @@ Subroutine vdw_forces &
 
 ! Get separation distance
 
-           rrr = Sqrt(rsq)
 
-           If      (ityp == 1) Then
+           rrr = Sqrt(rsq)
+           If (ld_vdw) Then !direct calculation
+               If (ityp == 1) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
 
-              a=prmvdw(1,k)
-              b=prmvdw(2,k)
+                  a=prmvdw(1,k)
+                  b=prmvdw(2,k)
 
-              r_6=rrr**(-6)
+                  r_6=rrr**(-6)
 
-              If (jatm <= natms .or. idi < ltg(jatm)) &
-              eng   = r_6*(a*r_6-b)
-              gamma = 6.0_wp*r_6*(2.0_wp*a*r_6-b)/rsq
+                  If (jatm <= natms .or. idi < ltg(jatm)) &
+                      eng   = r_6*(a*r_6-b)
+                      gamma = 6.0_wp*r_6*(2.0_wp*a*r_6-b)/rsq
 
-              If (ls_vdw) Then ! force-shifting
-                 If (anew(k)) Then
-                    anew(k) = .false.
-
-                    r_6=rvdw**(-6)
-
-                    afs(k) =-6.0_wp*r_6*(2.0_wp*a*r_6-b)
-                    bfs(k) =-r_6*(a*r_6-b) - afs(k)
-                    afs(k) = afs(k)/rvdw
-                 End If
-
-                 If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma + afs(k)/rrr
-              End If
+                  If (ls_vdw) Then ! force-shifting
+                      If (jatm <= natms .or. idi < ltg(jatm)) &
+                          eng   = eng + afs(k)*rrr + bfs(k)
+                          gamma = gamma + afs(k)/rrr
+                  End If
 
            Else If (ityp == 2) Then
 
@@ -378,16 +351,6 @@ Subroutine vdw_forces &
               gamma = 24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)/rsq
 
               If (ls_vdw) Then ! force-shifting
-                 If (anew(k)) Then
-                    anew(k) = .false.
-
-                    sor6=(sig/rvdw)**6
-
-                    afs(k) =-24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)
-                    bfs(k) =-4.0_wp*eps*sor6*(sor6-1.0_wp) - afs(k)
-                    afs(k) = afs(k)/rvdw
-                 End If
-
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
                  gamma = gamma + afs(k)/rrr
@@ -412,19 +375,6 @@ Subroutine vdw_forces &
               gamma = e0*mm*n*(r0rn-r0rm)*b/rsq
 
               If (ls_vdw) Then ! force-shifting
-                 If (anew(k)) Then
-                    anew(k) = .false.
-
-                    a=r0/rvdw
-                    b=1.0_wp/(n-mm)
-                    r0rn=a**n
-                    r0rm=a**mm
-
-                    afs(k) =-e0*mm*n*(r0rn-r0rm)*b
-                    bfs(k) =-e0*(mm*r0rn-n*r0rm)*b - afs(k)
-                    afs(k) = afs(k)/rvdw
-                 End If
-
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
                  gamma = gamma + afs(k)/rrr
@@ -455,18 +405,6 @@ Subroutine vdw_forces &
               gamma = (t1*b+6.0_wp*t2)/rsq
 
               If (ls_vdw) Then ! force-shifting
-                 If (anew(k)) Then
-                    anew(k) = .false.
-
-                    b=rvdw/rho
-                    t1=a*Exp(-b)
-                    t2=-c/rvdw**6
-
-                    afs(k) =-(t1*b+6.0_wp*t2)
-                    bfs(k) =-(t1+t2) - afs(k)
-                    afs(k) = afs(k)/rvdw
-                 End If
-
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
                  gamma = gamma + afs(k)/rrr
@@ -491,18 +429,6 @@ Subroutine vdw_forces &
               gamma = (t1*rrr*b+6.0_wp*t2+8.0_wp*t3)/rsq
 
               If (ls_vdw) Then ! force-shifting
-                 If (anew(k)) Then
-                    anew(k) = .false.
-
-                    t1=a*Exp(b*(sig-rvdw))
-                    t2=-c/rvdw**6
-                    t3=-d/rvdw**8
-
-                    afs(k) =-(t1*rvdw*b+6.0_wp*t2+8.0_wp*t3)
-                    bfs(k) =-(t1+t2+t3) - afs(k)
-                    afs(k) = afs(k)/rvdw
-                 End If
-
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
                  gamma = gamma + afs(k)/rrr
@@ -523,17 +449,6 @@ Subroutine vdw_forces &
               gamma = (12.0_wp*t1+10.0_wp*t2)/rsq
 
               If (ls_vdw) Then ! force-shifting
-                 If (anew(k)) Then
-                    anew(k) = .false.
-
-                    t1=a/rvdw**12
-                    t2=-b/rvdw**10
-
-                    afs(k) =-(12.0_wp*t1+10.0_wp*t2)
-                    bfs(k) =-(t1+t2) - afs(k)
-                    afs(k) = afs(k)/rvdw
-                 End If
-
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
                  gamma = gamma + afs(k)/rrr
@@ -581,16 +496,6 @@ Subroutine vdw_forces &
               gamma = -2.0_wp*e0*kk*t1*(1.0_wp-t1)/rrr
 
               If (ls_vdw) Then ! force-shifting
-                 If (anew(k)) Then
-                    anew(k) = .false.
-
-                    t1=Exp(-kk*(rvdw-r0))
-
-                    afs(k) = 2.0_wp*e0*kk*t1*(1.0_wp-t1)*rvdw
-                    bfs(k) =-e0*t1*(t1-2.0_wp) - afs(k)
-                    afs(k) = afs(k)/rvdw
-                 End If
-
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
                  gamma = gamma + afs(k)/rrr
@@ -613,16 +518,6 @@ Subroutine vdw_forces &
                  gamma = 24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)/(rrr*(rrr-d))
 
                  If (ls_vdw) Then ! force-shifting
-                    If (anew(k)) Then
-                       anew(k) = .false.
-
-                       sor6=(sig/(rvdw-d))**6
-
-                       afs(k) =-(24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)/(rvdw-d))*rvdw
-                       bfs(k) =-(4.0_wp*eps*sor6*(sor6-1.0_wp)+eps) - afs(k)
-                       afs(k) = afs(k)/rvdw
-                    End If
-
                     If (jatm <= natms .or. idi < ltg(jatm)) &
                     eng   = eng + afs(k)*rrr + bfs(k)
                     gamma = gamma + afs(k)/rrr
@@ -644,7 +539,7 @@ Subroutine vdw_forces &
                  t1 = vk  + (vk1 - vk )*ppp
                  t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
-                 eng = eng + (t1 + (t2-t1)*ppp*0.5_wp)
+                 eng = t1 + (t2-t1)*ppp*0.5_wp
                  If (ls_vdw) eng = eng - gvdw(mxgrid,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgrid,k) ! force-shifting
               End If
 
@@ -662,50 +557,24 @@ Subroutine vdw_forces &
 
            End If
 
-! calculate forces
+         Else If (Abs(vvdw(1,k)) > zero_plus) Then ! no direct = fully tabulated calculation
 
-           fx = gamma*xdf(m)
-           fy = gamma*ydf(m)
-           fz = gamma*zdf(m)
-
-           fix=fix+fx
-           fiy=fiy+fy
-           fiz=fiz+fz
-
-           If (jatm <= natms) Then
-
-              fxx(jatm)=fxx(jatm)-fx
-              fyy(jatm)=fyy(jatm)-fy
-              fzz(jatm)=fzz(jatm)-fz
-
-           End If
-
-           If (jatm <= natms .or. idi < ltg(jatm)) Then
-
-! add interaction energy
-
-              engvdw = engvdw + eng
-
-! add virial
-
-              virvdw = virvdw - gamma*rsq
-
-! add stress tensor
-
-              strs1 = strs1 + xdf(m)*fx
-              strs2 = strs2 + xdf(m)*fy
-              strs3 = strs3 + xdf(m)*fz
-              strs5 = strs5 + ydf(m)*fy
-              strs6 = strs6 + ydf(m)*fz
-              strs9 = strs9 + zdf(m)*fz
-
-           End If
-
-        Else If (Abs(vvdw(1,k)) > zero_plus) Then ! tabulated calculation
-
-           rrr = Sqrt(rsq)
            l   = Int(rrr*rdr)
            ppp = rrr*rdr - Real(l,wp)
+
+! calculate interaction energy using 3-point interpolation
+
+           If (jatm <= natms .or. idi < ltg(jatm)) Then
+              vk  = vvdw(l,k)
+              vk1 = vvdw(l+1,k)
+              vk2 = vvdw(l+2,k)
+
+              t1 = vk  + (vk1 - vk )*ppp
+              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+
+              eng = t1 + (t2-t1)*ppp*0.5_wp
+              If (ls_vdw) eng = eng - gvdw(mxgrid,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgrid,k) ! force-shifting
+           End If
 
            ! calculate forces using 3-point interpolation
 
@@ -720,6 +589,7 @@ Subroutine vdw_forces &
            If (ls_vdw) gamma = gamma - gvdw(mxgrid,k)/(rrr*rvdw) ! force-shifting
 
            ! calculate forces
+          End If
 
            fx = gamma*xdf(m)
            fy = gamma*ydf(m)
@@ -739,19 +609,10 @@ Subroutine vdw_forces &
 
            If (jatm <= natms .or. idi < ltg(jatm)) Then
 
-              ! calculate interaction energy using 3-point interpolation
+              ! add interaction energy 
 
-              vk  = vvdw(l,k)
-              vk1 = vvdw(l+1,k)
-              vk2 = vvdw(l+2,k)
-
-              t1 = vk  + (vk1 - vk )*ppp
-              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-
-              engvdw = engvdw + (t1 + (t2-t1)*ppp*0.5_wp)
-              If (ls_vdw) engvdw = engvdw - gvdw(mxgrid,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgrid,k) ! force-shifting
-
-              ! calculate virial
+              engvdw = engvdw + eng
+              ! add virial
 
               virvdw = virvdw - gamma*rsq
 
@@ -767,8 +628,6 @@ Subroutine vdw_forces &
            End If
 
         End If
-
-     End If
 
   End Do
 

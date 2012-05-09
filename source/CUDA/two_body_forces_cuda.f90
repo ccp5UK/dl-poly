@@ -266,12 +266,13 @@ Subroutine two_body_forces                        &
 
   l_do_rdf = (lrdf .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstrdf) == 0)
 
-! If k-space SPME is evaluated in full infrequently
-! check wheather at this timestep to evaluate or "refresh"
-! with old values.  At restart allocate the "refresh"
-! k-space SPME arrays and force the full force evaluation.
+! If k-space SPME is evaluated infrequently check whether
+! at this timestep to evaluate or "refresh" with old values.
+! At restart allocate the "refresh" arrays and force a fresh
+! evaluation.  Repeat the same but only for the SPME k-space
+! frozen-frozen evaluations in constant volume ensembles only.
 
-  If (keyfce == 2) Call ewald_check(nstep,nsteql,nstfce)
+  If (keyfce == 2) Call ewald_check(keyens,megfrz,nsteql,nstfce,nstep)
 
 ! initialise energy and virial accumulators
 
@@ -344,7 +345,7 @@ Subroutine two_body_forces                        &
 
 ! calculate local density in metals
      Call metal_ld_compute             &
-          (imcon,rmet,keyfce,elrcm,vlrcm, &
+          (imcon,rmet,elrcm,vlrcm, &
           xdf,ydf,zdf,rsqdf,              &
           rho,engden,virden,stress)
   End If
@@ -587,7 +588,7 @@ Subroutine two_body_forces                        &
 ! frozen pairs corrections to coulombic forces
 
              If (megfrz /= 0) Call ewald_frozen_forces &
-                (imcon,rcut,alpha,epsq,keyens,engcpe_fr,vircpe_fr,stress)
+                (imcon,rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
 
          Else
 

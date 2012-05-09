@@ -181,7 +181,8 @@ Program dl_poly
                        press,strext(1:9),ten,                      &
                        taut,chi,soft,gama,taup,tai,                &
                        chit,eta(1:9),chip,cint,consv,              &
-                       strtot(1:9),virtot,elrc,virlrc,             &
+                       strtot(1:9),virtot,                         &
+!                       elrc,virlrc,             &
                        strkin(1:9),engke,strknf(1:9),strknt(1:9),  &
                        engrot,strcom(1:9),vircom,                  &
                        engcpe,vircpe,engsrp,virsrp,                &

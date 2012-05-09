@@ -86,6 +86,7 @@ void link_cell_pairs_cuda_set_is_in_valid_context(int aIs) {
 template<typename T_> struct constant_data {
   T_ *mXXX, *mYYY, *mZZZ;
 
+  int *mNIR;
   int *mLFRZN;
   int *mAT_LIST, *mLCT_START;
   int *mLIST;
@@ -97,7 +98,7 @@ template<typename T_> struct constant_data {
   T_ mRCSQ;
 
   int mNATMS, mMXATMS, mNCELLS, mMXLIST, mNSBCLL;
-  int mNLP, mNLP3, mNLX, mNLY, mMXATDM;
+  int mNLP, mNLP3,mNLP3b, mNLX, mNLY, mMXATDM;
   int mMEGFRZ;
   int mNLX_Plus_2xNLP, mNLY_Plus_2xNLP;
   int mMXEXCL;
@@ -118,6 +119,7 @@ template<typename T_> struct host_data {
   dim3 mK1_BlockDims;
   int mSparseDataTransfers;
 
+  int *mNIR;
   int *mAT_LIST, *mLCT_START, *mLIST;
   int *mDEV_ScratchBuffer;
   size_t  mDEV_ScratchBuffer_Size;
@@ -143,8 +145,8 @@ extern "C" void link_cell_pairs_cuda_initialise(
     int *aNLP, int *aNLX, int *aNLY,
     int *aNLX0E, int *aNLY0E, int *aNLZ0E,
     int *aNLX1S, int *aNLY1S, int *aNLZ1S,
-    real *aXXX, real *aYYY, real *aZZZ, int *aLFRZN,
-    int *aAT_LIST, int *aLCT_START, int *aLIST, int *aNLP3,
+    real *aXXX, real *aYYY, real *aZZZ, int *aLFRZN, int *aNIR,
+    int *aAT_LIST, int *aLCT_START, int *aLIST, int *aNLP3, int *aNLP3b,
     int *aNIX, int *aNIY, int *aNIZ, real *aRCSQ,
     int *aLBOOK, int *aMXEXCL, int *aLEXATM, int *aLTG, int *aMEGFRZ) {
 
@@ -194,7 +196,10 @@ extern "C" void link_cell_pairs_cuda_initialise(
   sHD.mNIX       = aNIX;
   sHD.mNIY       = aNIY;
   sHD.mNIZ       = aNIZ;
-
+//malysaght300412
+  sHD.mNIR 	 = aNIR;
+  sCD.mNIR	 = aNIR;
+//end_malysaght300412
   sCD.mRCSQ      = *aRCSQ;
   sCD.mNATMS     = *aNATMS;
   sCD.mMXATMS    = *aMXATMS;
@@ -204,6 +209,7 @@ extern "C" void link_cell_pairs_cuda_initialise(
   sCD.mNSBCLL    = *aNSBCLL;
   sCD.mNLP       = *aNLP;
   sCD.mNLP3      = *aNLP3;
+  sCD.mNLP3b     = *aNLP3b;
   sCD.mNLX       = *aNLX;
   sCD.mNLY       = *aNLY;
   sCD.mNLX_Plus_2xNLP = sCD.mNLX+2*sCD.mNLP;
@@ -228,15 +234,16 @@ extern "C" void link_cell_pairs_cuda_initialise(
   BIND_TEXTURE_REAL_1D(TEXTURE_DATA_YYY, sCD.mYYY, sCD.mMXATMS);
   BIND_TEXTURE_REAL_1D(TEXTURE_DATA_ZZZ, sCD.mZZZ, sCD.mMXATMS);
 
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mNIR,       2*sCD.mNLP3*sizeof(int)));  
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mLFRZN,     sCD.mMXATMS*sizeof(int)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mAT_LIST,   sCD.mMXATMS*sizeof(int)));
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mLCT_START, (sCD.mNCELLS+1)*sizeof(int)));
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mLCT_START, (sCD.mNCELLS+1+1)*sizeof(int)));
 //malysaght240112
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mLIST, (512 + (1+2+sCD.mMXLIST)*sCD.mMXATDM)*sizeof(int)));
 
   /* ni{x,y,z} constants; the second half of this array holds the
    * negated values. */
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mNIXYZ, 2*sCD.mNLP3*sizeof(int3)));
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mNIXYZ, 2*sCD.mNLP3b*sizeof(int3)));
 
 
   if (sHD.mIsLBOOKTrue) {
@@ -257,7 +264,7 @@ extern "C" void link_cell_pairs_cuda_initialise(
   CUDA_SAFE_CALL(cudaMemcpy(sCD.mAT_LIST,   aAT_LIST,
                             sCD.mMXATMS*sizeof(int), cudaMemcpyHostToDevice));
   CUDA_SAFE_CALL(cudaMemcpy(sCD.mLCT_START, aLCT_START,
-                            (sCD.mNCELLS+1)*sizeof(int), cudaMemcpyHostToDevice));
+                            (sCD.mNCELLS+1+1)*sizeof(int), cudaMemcpyHostToDevice));
 
   if (sHD.mIsLBOOKTrue) {
     // TODO: this can be collected from the two body force's CUDA copy.
@@ -277,12 +284,12 @@ extern "C" void link_cell_pairs_cuda_initialise(
 
 //malysaght240112
   // Create a temporary NIXYZ array - the second half stores the negated values
-  int3 *lNIXYZ = (int3*) malloc(2*sCD.mNLP3*sizeof(int3));
-  for (int lI=0 ; lI < sCD.mNLP3 ; lI++) {
+  int3 *lNIXYZ = (int3*) malloc(2*sCD.mNLP3b*sizeof(int3));
+  for (int lI=0 ; lI < sCD.mNLP3b ; lI++) {
     lNIXYZ[lI]           = make_int3( aNIX[lI],  aNIY[lI],  aNIZ[lI]);
-    lNIXYZ[sCD.mNLP3+lI] = make_int3(-aNIX[lI], -aNIY[lI], -aNIZ[lI]);
+    lNIXYZ[sCD.mNLP3b+lI] = make_int3(-aNIX[lI], -aNIY[lI], -aNIZ[lI]);
   }
-  cudaMemcpy(sCD.mNIXYZ, lNIXYZ, 2*sCD.mNLP3*sizeof(int3), cudaMemcpyHostToDevice);
+  cudaMemcpy(sCD.mNIXYZ, lNIXYZ, 2*sCD.mNLP3b*sizeof(int3), cudaMemcpyHostToDevice);
   free(lNIXYZ);
 //end_malysaght240112
 
@@ -303,6 +310,7 @@ extern "C" void link_cell_pairs_cuda_finalise() {
   CUDA_SAFE_CALL(cudaFree(sCD.mZZZ));
   CUDA_SAFE_CALL(cudaUnbindTexture(&TEXTURE_DATA_ZZZ));
 
+  CUDA_SAFE_CALL(cudaFree(sCD.mNIR));
   CUDA_SAFE_CALL(cudaFree(sCD.mLFRZN));
   CUDA_SAFE_CALL(cudaFree(sCD.mAT_LIST));
   CUDA_SAFE_CALL(cudaFree(sCD.mLCT_START));
@@ -368,6 +376,7 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
 
   int lMEGFRZ = CONSTANT_DATA.mMEGFRZ;
   int lNLP3   = CONSTANT_DATA.mNLP3;
+  int lNLP3b   = CONSTANT_DATA.mNLP3b;
 
   // compute i{x,y,z}, then i{x,y,z}{1,2}, from the blockIdx vector:
   int3 lIXYZ  = CONSTANT_DATA.mNLXYZ0E + 1 + lBlockIdx;
@@ -390,7 +399,9 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
   for (int lII = lII_Bounds.x + threadIdx.z ; lII<=lII_Bounds.y ; lII += BZ_) {
     int lI = CONSTANT_DATA.mAT_LIST[lII-1];
 
-    if (lI>= aIATMBegin && lI <= CONSTANT_DATA.mNATMS) {
+//    if (lI>= aIATMBegin && lI <= CONSTANT_DATA.mNATMS) {
+    if (lI>= aIATMBegin) {
+
       if (threadIdx.x==0) {
 //malysaght240112
         shared[threadIdx.z] = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0+2, lI);
@@ -400,12 +411,12 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
       if (BX_>32) __syncthreads();
 
       int aLFRZN_I = CONSTANT_DATA.mLFRZN[lI - 1];
+
       T_  aXXX_I   = fetch_real_1d(TEXTURE_DATA_XXX, lI-1);//CONSTANT_DATA.mXXX[lI - 1];
       T_  aYYY_I   = fetch_real_1d(TEXTURE_DATA_YYY, lI-1);//CONSTANT_DATA.mYYY[lI - 1];
       T_  aZZZ_I   = fetch_real_1d(TEXTURE_DATA_ZZZ, lI-1);//CONSTANT_DATA.mZZZ[lI - 1];
 
-//      int lOff = (IPASS_-1)*NLP3_MAX;
-      int lOff = (IPASS_-1)*lNLP3;
+      int lOff = (IPASS_-1)*lNLP3b;
 
       for (int lKK = IPASS_ + threadIdx.y ; lKK <= CONSTANT_DATA.mNSBCLL ; lKK += BY_) {
         int3 lNIXYZ = CONSTANT_DATA.mNIXYZ[lOff+lKK-1];
@@ -415,21 +426,23 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
             (lJXYZ.y <= CONSTANT_DATA.mNLXYZ0E.y) || (lJXYZ.y >= CONSTANT_DATA.mNLXYZ1S.y) ||
             (lJXYZ.z <= CONSTANT_DATA.mNLXYZ0E.z) || (lJXYZ.z >= CONSTANT_DATA.mNLXYZ1S.z)) {
 
-          int lJC = 1 + lJXYZ.x + CONSTANT_DATA.mNLX_Plus_2xNLP * (lJXYZ.y + CONSTANT_DATA.mNLY_Plus_2xNLP*lJXYZ.z);
 
-          int lJ_START = (lJC != lIC) ? CONSTANT_DATA.mLCT_START[lJC-1] : (lII+1);
-          int lJ_END   = CONSTANT_DATA.mLCT_START[lJC+1-1]-1;
+             int lJC = 1 + lJXYZ.x + CONSTANT_DATA.mNLX_Plus_2xNLP * (lJXYZ.y + CONSTANT_DATA.mNLY_Plus_2xNLP*lJXYZ.z);
 
-          for (int lJJ = lJ_START + threadIdx.x ; lJJ<=lJ_END ; lJJ += BX_) {
-            int lJ     = jjresult(lJJ, lMEGFRZ, aLFRZN_I, aXXX_I, aYYY_I, aZZZ_I);
-            if (lJ != -1) {
-              int lSlot = atomicAdd(&shared[threadIdx.z], 1);
+             int lJ_START = (lJC != lIC) ? CONSTANT_DATA.mLCT_START[lJC-1] : (lII+1);
+             int lJ_END   = CONSTANT_DATA.mLCT_START[lJC+1-1]-1;
+
+             for (int lJJ = lJ_START + threadIdx.x ; lJJ<=lJ_END ; lJJ += BX_) {
+                 int lJ     = jjresult(lJJ, lMEGFRZ, aLFRZN_I, aXXX_I, aYYY_I, aZZZ_I);
+
+                 if (lJ != -1) {
+                    int lSlot = atomicAdd(&shared[threadIdx.z], 1);
 ///malysaght240112
-              *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 1+2+lSlot, lI) = lJ;
+                    *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 1+2+lSlot, lI) = lJ;
 ///end_malysaght240112
-            }
-          }
-        }
+                 }
+             }
+         } 
       }
 
       if (BX_>32) __syncthreads();

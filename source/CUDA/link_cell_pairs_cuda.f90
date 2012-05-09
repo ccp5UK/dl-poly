@@ -29,7 +29,7 @@ Subroutine link_cell_pairs_helper(       &
                           nly1s, nlz1s, ibegin, iend, ncells,  &
                           nlp, nsbcll, nlp3, megfrz
 
-	Logical, Dimension( : ), Allocatable				:: nir
+   Logical, Dimension( : ), Allocatable :: nir
 
   Integer, Dimension(1:mxatms)  , Intent (In) :: at_list
   Integer, Dimension(1:ncells+1), Intent(In) :: lct_start
@@ -45,6 +45,8 @@ Subroutine link_cell_pairs_helper(       &
 
 
   Real (Kind=wp) :: rsq,nlp2,dispx,dispy,dispz,det
+
+  print*, 'IN HELPER'
 
   ibig=0
   safe=.true.
@@ -390,11 +392,13 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,   Only : idnode,mxnode,gcheck,gmax
+  Use comms_module,   Only : idnode,mxnode,gcheck,gmax,gsum
   Use setup_module
-  Use domains_module, Only : nprx,npry,nprz
+  Use domains_module, Only : idx,idy,idz,nprx,npry,nprz,&
+                             nprx_r,npry_r,nprz_r
   Use config_module,  Only : cell,natms,nlast,ltg,lfrzn, &
                              xxx,yyy,zzz,lexatm,list
+  Use development_module, Only : l_dis, r_dis
 
 #ifdef COMPILE_CUDA
   Use dl_poly_cuda_module
@@ -407,8 +411,8 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Real( Kind = wp ) , Intent( In    ) :: rcut
 
   Logical,           Save :: newjob = .true.
-  Integer,           Save :: idx,idy,idz
-  Real( Kind = wp ), Save :: sidex,sidey,sidez
+!  Integer,           Save :: idx,idy,idz
+!  Real( Kind = wp ), Save :: sidex,sidey,sidez
   Real( Kind = wp ), Save :: cut,rcsq
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1,match
@@ -416,21 +420,26 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Integer           :: fail(1:4),l_end,m_end,                &
                        icell,ncells,ipass,kk,ll,             &
                        ibig,i,ii,j,jj, j_start,              &
-                       nlx,nly,nlz,nlp,nlr2,nlp3,nsbcll,     &
+                       nlx,nly,nlz,nlp,nlp2,nlp3,nlp3_b,nsbcll,&
                        nlx0s,nly0s,nlz0s, nlx0e,nly0e,nlz0e, &
                        nlx1s,nly1s,nlz1s, nlx1e,nly1e,nlz1e, &
                        ix,iy,iz,ic, ix1,ix2,iy1,iy2,iz1,iz2, &
                        jx,jy,jz,jc
 
   Real( Kind = wp ) :: rsq,det,rcell(1:9),celprp(1:10), &
-                       dispx,dispy,dispz, xdc,ydc,zdc,nlp2
+                       dispx,dispy,dispz, xdc,ydc,zdc,nlr2
 
-  Logical,					 Dimension( : ), Allocatable :: nir
-	Integer,           Dimension( : ), Allocatable :: nix,niy,niz,         &
+!malysaght300412
+  Integer,           Dimension( : ), Allocatable :: nir_int
+!end_malysaght300412
+  Logical,           Dimension( : ), Allocatable :: nir
+  Integer,           Dimension( : ), Allocatable :: nix,niy,niz,         &
                                                     lct_count,lct_start, &
                                                     lct_where,which_cell,at_list
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
+
+  print*, 'NOW IN LINK CELLS'
 #ifdef COMPILE_CUDA
 Call start_timing_link_cell_pairs()
 #endif
@@ -446,30 +455,28 @@ Call start_timing_link_cell_pairs()
 
      cut=rcut+1.0e-6_wp
      rcsq=rcut**2
-
-! Get this node's (domain's) coordinates
-
-     idz=idnode/(nprx*npry)
-     idy=idnode/nprx-idz*npry
-     idx=Mod(idnode,nprx)
-
-! Get the domains' dimensions in reduced space
-! (domains are geometrically equivalent)
-
-     sidex=1.0_wp/Real(nprx,wp)
-     sidey=1.0_wp/Real(npry,wp)
-     sidez=1.0_wp/Real(nprz,wp)
   End If
 
 ! Get the dimensional properties of the MD cell
 
   Call dcell(cell,celprp)
 
+
+! halt program if potential cutoff exceeds the minimum half-cell width
+
+  det=Min(celprp(7),celprp(8),celprp(9))
+  If (rcut > det/2.0_wp) Then
+     Call warning(3,rcut,det/2.0_wp,0.0_wp)
+     Call error(95)
+  End If
+
 ! Calculate the number of link-cells per domain in every direction
 
-  dispx=sidex*celprp(7)/cut
-  dispy=sidey*celprp(8)/cut
-  dispz=sidez*celprp(9)/cut
+
+  dispx=celprp(7)/(cut*nprx_r)
+  dispy=celprp(8)/(cut*npry_r)
+  dispz=celprp(9)/(cut*nprz_r)
+
 
   nlx=Int(dispx)
   nly=Int(dispy)
@@ -488,8 +495,11 @@ Call start_timing_link_cell_pairs()
 ! subcelling and new link-cell parameters
 
   nlp=1
-  nlp2=Real(natms,wp)
-  det=nlp2/Real(nlx*nly*nlz,wp)
+!  nlp2=Real(natms,wp)
+  nlr2=Real(natms,wp)
+!  det=nlp2/Real(nlx*nly*nlz,wp)
+  det=nlr2/Real(nlx*nly*nlz,wp)
+
   Do While (det > 50.0_wp)
 !  Do While (det > 130.0_wp)
      nlp=nlp+1
@@ -497,15 +507,20 @@ Call start_timing_link_cell_pairs()
      nlx=Int(dispx*rsq)
      nly=Int(dispy*rsq)
      nlz=Int(dispz*rsq)
-     det=nlp2/Real(nlx*nly*nlz,wp)
+!     det=nlp2/Real(nlx*nly*nlz,wp)
+     det=nlr2/Real(nlx*nly*nlz,wp)
   End Do
   ncells=(nlx+2*nlp)*(nly+2*nlp)*(nlz+2*nlp)
   nlp3=(1+(1+2*nlp)**3)/2
+  nlp3_b=nlp3
 
   fail=0
+!malysaght300412
+  Allocate (nir_int(1:nlp3)) 
+!end_malysaght300412
   Allocate (nix(1:nlp3),niy(1:nlp3),niz(1:nlp3),nir(1:nlp3),                  Stat=fail(1))
   Allocate (which_cell(1:mxatms),at_list(1:mxatms),                           Stat=fail(2))
-  Allocate (lct_count(1:ncells),lct_start(1:ncells+1 ),lct_where(1:ncells+1), Stat=fail(3))
+  Allocate (lct_count(0:ncells),lct_start(0:ncells+1 ),lct_where(0:ncells+1), Stat=fail(3))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                        Stat=fail(4))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'link_cell_pairs allocation failure, node: ', idnode
@@ -519,54 +534,79 @@ Call start_timing_link_cell_pairs()
 ! inter-domain/semi-hello/cross-domain pairs.
 
   nix=0 ; niy=0 ; niz=0 ; nir=.false.
-  nlp2=Real(nlp**2,wp)
-	nlr2=(nlp-1)**2
+  nlp2=nlp**2
+!  nlr2=(nlp-1)**2
+  nlp3=(nlp-1)**2
   nsbcll=0
   Do iz=0,nlp
      If (iz > 0) Then
-        dispz=Real(iz-1,wp)**2
+!        dispz=Real(iz-1,wp)**2
+        iz1=(iz-1)**2
      Else
-        dispz=0.0_wp
+!        dispz=0.0_wp
+         iz1=0 
      End If
 
-		 jz=iz**2
+     jz=iz**2
 
      Do iy=-nlp,nlp
         If (iz == 0 .and. iy < 0) Go To 20
 
         ibig=Abs(iy)
         If (ibig > 0) Then
-           dispy=Real(ibig-1,wp)**2
+!           dispy=Real(ibig-1,wp)**2
+           iy1=(ibig-1)**2
         Else
-           dispy=0.0_wp
+!           dispy=0.0_wp
+           iy1=0
         End If
 
-        det=dispz+dispy
-        If (det > nlp2) Go To 20
+!        det=dispz+dispy
+!        If (det > nlp2) Go To 20
 
-				jy=iy**2
+        ll=iz1+iy1
+        If (ll > nlp2) Go To 20
+ 
+
+!        jy=iy**2
+        jy=jz+iy**2
 
         Do ix=-nlp,nlp
            If (iz == 0 .and. iy == 0 .and. ix < 0) Go To 10
 
            ibig=Abs(ix)
            If (ibig > 0) Then
-              dispx=Real(ibig-1,wp)**2
+!              dispx=Real(ibig-1,wp)**2
+              ix1=(ibig-1)**2
            Else
-              dispx=0.0_wp
+              ix1 = 0
+!              dispx=0.0_wp
            End If
 
-           rsq=det+dispx
-           If (rsq > nlp2) Go To 10
+!           rsq=det+dispx
+!           If (rsq > nlp2) Go To 10
 
-	   jx=ix**2
+!           jx=ix**2
 
-       	   nsbcll=nsbcll+1
+           If (ll+ix1 > nlp2) Go To 10
 
-       	   nix(nsbcll)=ix
+           jx=jy+ix**2
+
+
+           nsbcll=nsbcll+1
+
+           nix(nsbcll)=ix
            niy(nsbcll)=iy
            niz(nsbcll)=iz
-	   nir(nsbcll)=(jx+jy+jz < nlr2)
+!           nir(nsbcll)=(jx+jy+jz < nlr2)
+           nir(nsbcll)=(jx < nlp3)
+!malysaght300412
+           If (jx < nlp3) Then
+            nir_int(nsbcll)=1
+           Else
+            nir_int(nsbcll)=0
+           End If
+!end_malysaght300412
 10         Continue
         End Do
 20      Continue
@@ -586,9 +626,9 @@ Call start_timing_link_cell_pairs()
 ! move to the bottom left corner of the left-most link-cell
 ! (the one in the halo)
 
-  dispx=0.5_wp-sidex*(Real(idx,wp)-Real(nlp,wp)/Real(nlx,wp))
-  dispy=0.5_wp-sidey*(Real(idy,wp)-Real(nlp,wp)/Real(nly,wp))
-  dispz=0.5_wp-sidez*(Real(idz,wp)-Real(nlp,wp)/Real(nlz,wp))
+!  dispx=0.5_wp-sidex*(Real(idx,wp)-Real(nlp,wp)/Real(nlx,wp))
+!  dispy=0.5_wp-sidey*(Real(idy,wp)-Real(nlp,wp)/Real(nly,wp))
+!  dispz=0.5_wp-sidez*(Real(idz,wp)-Real(nlp,wp)/Real(nlz,wp))
 
 ! Get the inverse cell matrix
 
@@ -599,15 +639,19 @@ Call start_timing_link_cell_pairs()
 ! the left-most link-cell
 
   Do i=1,nlast
-     xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+dispx
-     yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+dispy
-     zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+dispz
+!     xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+dispx
+!     yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+dispy
+!     zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+dispz
+     xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
+     yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
+     zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+
   End Do
 
 ! Form linked list
 ! Initialise cell contents counter
 
-  lct_count = 0
+!  lct_count = 0
 
 ! Get the total number of link-cells in MD cell per direction
 
@@ -615,10 +659,16 @@ Call start_timing_link_cell_pairs()
   ydc=Real(nly*npry,wp)
   zdc=Real(nlz*nprz,wp)
 
-! Move ALL particles in link-cell space:
+! Shifts from global to local link-cell space:
 ! (0,0,0) left-most link-cell on the domain (halo)
 ! (nlx+2*nlp-1,nly+2*nlp-1,nly+2*nlp-1) right-most
 ! link-cell on the domain (halo)
+
+  jx=nlp-nlx*idx
+  jy=nlp-nly*idy
+  jz=nlp-nlz*idz
+
+
 !***************************************************************
 ! Note(1): Due to numerical inaccuracy it is possible that some
 ! domain particles (1,natms) may have link-cell space
@@ -664,69 +714,27 @@ Call start_timing_link_cell_pairs()
   nly1e=nly+2*nlp-1
   nlz1e=nlz+2*nlp-1
 
-  Do i=1,nlast
+  ! Form linked list
+! Initialise cell contents counter
 
-! Push cell coordinates accordingly
+  lct_count = 0
 
-     If (xxt(i) > -zero_plus) Then
-        ix=Int(xdc*xxt(i))
-     Else
-        ix=Int(xdc*(xxt(i)-1.0_wp))
-     End If
-     If (yyt(i) > -zero_plus) Then
-        iy=Int(ydc*yyt(i))
-     Else
-        iy=Int(ydc*(yyt(i)-1.0_wp))
-     End If
-     If (zzt(i) > -zero_plus) Then
-        iz=Int(zdc*zzt(i))
-     Else
-        iz=Int(zdc*(zzt(i)-1.0_wp))
-     End If
+  Do i=1,natms
 
+! Get cell coordinates accordingly
+
+     ix = Int(xdc*(xxt(i)+0.5_wp)) + jx
+     iy = Int(ydc*(yyt(i)+0.5_wp)) + jy
+     iz = Int(zdc*(zzt(i)+0.5_wp)) + jz
+
+! Correction for domain (idnode) only particles (1,natms) but due to
+! some tiny numerical inaccuracy kicked into its halo link-cell space
 ! Put all particles in bounded link-cell space: lower and upper bound
+! bounds as nl_coordinate_0e+1 <= i_coordinate <= nl_coordinate_1s-1!
 
-     ix = Max( Min( ix , nlx1e) , nlx0s)
-     iy = Max( Min( iy , nly1e) , nly0s)
-     iz = Max( Min( iz , nlz1e) , nlz0s)
-
-! Correction for particles (1,natms) belonging to this domain
-! (idnode) but due to some tiny numerical inaccuracy kicked into
-! the halo link-cell space and vice-versa particles from the
-! halo (natms+1,nlast) kicked into the domain link-cell space
-
-     If (i <= natms) Then
-        If (ix <= nlx0e) ix=nlx0e+1
-        If (ix >= nlx1s) ix=nlx1s-1
-
-        If (iy <= nly0e) iy=nly0e+1
-        If (iy >= nly1s) iy=nly1s-1
-
-        If (iz <= nlz0e) iz=nlz0e+1
-        If (iz >= nlz1s) iz=nlz1s-1
-     Else
-        lx0=(ix == nlx0e+1)
-        lx1=(ix == nlx1s-1)
-        ly0=(iy == nly0e+1)
-        ly1=(iy == nly1s-1)
-        lz0=(iz == nlz0e+1)
-        lz1=(iz == nlz1s-1)
-        If ((lx0 .or. lx1) .and. (ly0 .or. ly1) .and. (lz0 .or. lz1)) Then
-           If      (lx0) Then
-              ix=nlx0e
-           Else If (lx1) Then
-              ix=nlx1s
-           Else If (ly0) Then
-              iy=nly0e
-           Else If (ly1) Then
-              iy=nly1s
-           Else If (lz0) Then
-              iz=nlz0e
-           Else If (lz1) Then
-              iz=nlz1s
-           End If
-        End If
-     End If
+     ix = Max( Min( ix , nlx1s-1) , nlx0e+1)
+     iy = Max( Min( iy , nly1s-1) , nly0e+1)
+     iz = Max( Min( iz , nlz1s-1) , nlz0e+1)
 
 ! Hypercube function transformation (counting starts from one
 ! rather than zero /map_domains/ and 2*nlp more link-cells per
@@ -743,12 +751,96 @@ Call start_timing_link_cell_pairs()
      which_cell(i) = icell
 
   End Do
+  Do i=natms+1,nlast
+
+! Get cell coordinates accordingly
+
+     If (xxt(i) > -half_plus) Then
+        ix = Int(xdc*(xxt(i)+0.5_wp)) + jx
+     Else
+        ix =-Int(xdc*Abs(xxt(i)+0.5_wp)) + jx - 1
+     End If
+     If (yyt(i) > -half_plus) Then
+        iy = Int(ydc*(yyt(i)+0.5_wp)) + jy
+     Else
+        iy =-Int(ydc*Abs(yyt(i)+0.5_wp)) + jy - 1
+     End If
+     If (zzt(i) > -half_plus) Then
+        iz = Int(zdc*(zzt(i)+0.5_wp)) + jz
+     Else
+        iz =-Int(zdc*Abs(zzt(i)+0.5_wp)) + jz - 1
+     End If
+
+! Correction for halo particles (natms+1,nlast) of this domain
+! (idnode) but due to some tiny numerical inaccuracy kicked into
+! the domain only link-cell space
+
+     lx0=(ix == nlx0e+1)
+     lx1=(ix == nlx1s-1)
+     ly0=(iy == nly0e+1)
+     ly1=(iy == nly1s-1)
+     lz0=(iz == nlz0e+1)
+     lz1=(iz == nlz1s-1)
+     If ( (lx0 .or. lx1) .and. &
+          (ly0 .or. ly1) .and. &
+          (lz0 .or. lz1) ) Then ! 8 corners of the domain's cube in RS
+        If      (lx0) Then
+           ix=nlx0e
+        Else If (lx1) Then
+           ix=nlx1s
+        Else If (ly0) Then
+           iy=nly0e
+        Else If (ly1) Then
+           iy=nly1s
+        Else If (lz0) Then
+           iz=nlz0e
+        Else If (lz1) Then
+           iz=nlz1s
+        End If
+     End If
+
+! Check for residual halo
+
+     lx0=(ix < nlx0s)
+     lx1=(ix > nlx1e)
+     ly0=(iy < nly0s)
+     ly1=(iy > nly1e)
+     lz0=(iz < nlz0s)
+     lz1=(iz > nlz1e)
+     If ( .not. &
+          (lx0 .or. lx1 .or. &
+           ly0 .or. ly1 .or. &
+           lz0 .or. lz1) ) Then
+
+! Hypercube function transformation (counting starts from one
+! rather than zero /map_domains/ and 2*nlp more link-cells per
+! dimension are accounted /coming from the halo/)
+
+        icell = 1 + ix + (nlx + 2*nlp)*(iy + (nly + 2*nlp)*iz)
+
+     Else
+
+! Put possible residual halo in cell=0
+
+        icell = 0
+
+     End If
+
+! count cell content
+
+     lct_count(icell) = lct_count(icell) + 1
+
+! backwards relationship
+
+     which_cell(i) = icell
+
+  End Do
 
 ! break down local list to list of linked-cell lists
 
-  lct_start(1) = 1
-  Do i=2,ncells+1
-     lct_start(i) = lct_start(i-1) + lct_count(i-1)
+  lct_start(0) = 1
+  Do icell=1,ncells+1
+     lct_start(icell) = lct_start(icell-1) + lct_count(icell-1)
   End Do
 
 ! domain local to linked-lists local mapping
@@ -759,26 +851,27 @@ Call start_timing_link_cell_pairs()
      lct_where( which_cell( i ) ) = lct_where( which_cell( i ) ) + 1
   End Do
 
-! initialise verlet neighbourlist arrays
+! initialise verlet neighbourlist (VNL) arrays
 
-!  list=0      ! (DEBUG)
-  list(-2:0,:)=0 !  (FIRST DIMENSION ONLY)
+!  list=0               ! (DEBUG)
+  list(-2:0,1:natms)=0 ! (COUNTING DIMENSIONS ONLY)
 
 ! initial values of control variables
 
   ibig=0
   safe=.true.
 
-
+  print*, 'NOW CALLING CUDA'
 #ifdef COMPILE_CUDA
   if (dl_poly_cuda_offload_link_cell_pairs()) Then
      Call link_cell_pairs_cuda_initialise(                   &
        natms,mxatms,ncells,mxlist,mxatdm,nsbcll,nlp,nlx,nly, &
        nlx0e, nly0e, nlz0e, nlx1s, nly1s, nlz1s,             &
-       xxx,yyy,zzz,lfrzn,at_list,lct_start,list,             &
-       nlp3,nix,niy,niz,rcsq,lbook,mxexcl,lexatm,ltg,megfrz)
+       xxx,yyy,zzz,lfrzn,nir_int,at_list,lct_start,list,     &
+       nlp3,nlp3_b,nix,niy,niz,rcsq,lbook,mxexcl,lexatm,ltg,megfrz)
 
 
+     print*, 'NOW CALLING INVOKE'
      Call link_cell_pairs_cuda_invoke()
 
 
@@ -796,6 +889,7 @@ Call start_timing_link_cell_pairs()
         Call link_cell_pairs_cuda_finalise()
      End If
 
+     print*, 'NOW CALLING FINAL'
 ! 20100226/ck: uncomment this to study the effect of sorted atom lists
 !   to the CUDA kernels of two_body_forces.
 !     If (dl_poly_cuda_offload_tbforces()==.true. .and. lbook==.false.) Then
@@ -841,10 +935,6 @@ Call start_timing_link_cell_pairs()
 
                     i=at_list(ii)
 
-! bypass if primary cell particle > natms
-
-                    If (i <= natms) Then
-
 ! secondary loop over subcells
 
                        Do kk=ipass,nsbcll
@@ -868,9 +958,6 @@ Call start_timing_link_cell_pairs()
 
 ! if atom pairs are guaranteed to be within the cutoff
 
-                             If (nir(kk)) Then
-
-! index of neighbouring cell
 
                                 jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)
 
@@ -893,29 +980,29 @@ Call start_timing_link_cell_pairs()
                                 End If
 
 ! check for overfloat
-
-                                ll=list(0,i)+lct_start(jc+1)-j_start
-                                If (ll <= mxlist) Then
-                                   ibig=Max(ibig,ll)
+                                If (nir_int(kk)) Then
+                                   ll=list(0,i)+lct_start(jc+1)-j_start
+                                   If (ll <= mxlist) Then
+                                      ibig=Max(ibig,ll)
 
 ! loop over secondary cell contents
 
-                                   Do jj=j_start,lct_start(jc+1)-1
+                                      Do jj=j_start,lct_start(jc+1)-1
 
 ! get domain local particle index
 
-                                      j=at_list(jj)
+                                          j=at_list(jj)
 
 ! add an entry
-                                      ll=list(0,i)+1
-                                      list(0,i)=ll
-                                      list(ll,i)=j
+                                          ll=list(0,i)+1
+                                          list(ll,i)=j
+                                          list(0,i)=ll
 
 ! end of loop over secondary cell contents
 
-                                   End Do
+                                     End Do
 
-                                Else
+                                   Else
 
 ! loop over secondary cell contents
 
@@ -929,12 +1016,12 @@ Call start_timing_link_cell_pairs()
 
                                       ll=list(0,i)+1
                                       If (ll <= mxlist) Then
-                                         list(0,i)=ll
                                          list(ll,i)=j
                                       Else
+                                         ibig=Max(ibig,ll)
                                          safe=.false.
                                       End If
-                                      ibig=Max(ibig,ll)
+                                      list(0,i)=ll
 
 ! end of loop over secondary cell contents
 
@@ -947,28 +1034,6 @@ Call start_timing_link_cell_pairs()
                              Else
 
 ! index of neighbouring cell
-
-                                jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)
-
-! get the secondary list particle index in linked-list local description
-
-                                If (jc /= ic) Then
-
-! if j-th subcell is not the i-th subcell
-! get head of chain of j-th subcell
-
-                                   j_start=lct_start(jc)
-
-                                Else
-
-! if j-th subcell is the same as the i-th subcell
-! get next in line in the linked list
-
-                                   j_start=ii+1
-
-                                End If
-
-! loop over secondary cell contents
 
                                 Do jj=j_start,lct_start(jc+1)-1
 
@@ -985,12 +1050,12 @@ Call start_timing_link_cell_pairs()
 
                                       ll=list(0,i)+1
                                       If (ll <= mxlist) Then
-                                         list(0,i)=ll
                                          list(ll,i)=j
                                       Else
                                          safe=.false.
+                                         ibig=Max(ibig,ll)
                                       End If
-                                      ibig=Max(ibig,ll)
+                                      list(0,i)=ll
 
 ! end of cutoff criterion check
 
@@ -1014,7 +1079,7 @@ Call start_timing_link_cell_pairs()
 
 ! end of bypass if primary cell particle > natms
 
-                    End If
+!                    End If
 
 ! end of loop over primary cell contents
 
@@ -1049,6 +1114,54 @@ Call start_timing_link_cell_pairs()
   End If
 
 
+  ! check on minimum separation distance between VNL pairs at re/start
+
+  If (l_dis) Then
+     l_dis=.false. ! at re/start ONLY
+     r_dis=r_dis**2
+
+     det=0.0_wp
+     Do i=1,natms
+        ii=ltg(i)
+
+!        iz=(which_cell(i)-1)/((nlx + 2*nlp)*(nlx + 2*nlp))
+!        iy=(which_cell(i)-1)/(nlx + 2*nlp) - (nly + 2*nlp)*iz
+!        ix=Mod(which_cell(i)-1,nlx + 2*nlp)
+
+        Do kk=1,list(0,i)
+           j =list(kk,i)
+           jj=ltg(j)
+
+!           jz=(which_cell(j)-1)/((nlx + 2*nlp)*(nlx + 2*nlp))
+!           jy=(which_cell(j)-1)/(nlx + 2*nlp) - (nly + 2*nlp)*jz
+!           jx=Mod(which_cell(j)-1,nlx + 2*nlp)
+
+           If (j <= natms .or. ii < jj) Then
+              rsq=(xxx(i)-xxx(j))**2+(yyy(i)-yyy(j))**2+(zzz(i)-zzz(j))**2
+              If (rsq < r_dis) Then
+                 Write(nrite,'(/,1x,a,2i10,a)')                   &
+                      '*** warning - pair with global indeces: ', &
+                      ii,jj,' violates minimum separation distance'
+                 safe=.false.
+                 det=det+1.0_wp
+              End If
+           End If
+        End Do
+     End Do
+     r_dis=Sqrt(r_dis)
+
+     If (mxnode > 1) Then
+         Call gcheck(safe)
+         Call gsum(det)
+     End If
+
+     If ((.not.safe) .and. idnode == 0) Write(nrite,'(/,1x,a,i0,2a)') &
+        '*** warning - ', Int(det,ip), ' number of pairs violated ',  &
+        'the minimum separation distance ***'
+     End If 
+
+
+  print*, 'NOW IN FROZEN'
 ! Rear down frozen pairs
 #ifdef COMPILE_CUDA
   ! In the CUDA port, frozen atom pairs are not included in the
@@ -1091,6 +1204,7 @@ Call start_timing_link_cell_pairs()
 ! Rear down excluded pairs on top of the frozen ones
 
 
+  print*, 'NOW IN REMOVE EXCL'
   If (lbook) Then
 
 !malysaght110112: note: _cuda_invoke_remove_exclusions needs to be updated. For
@@ -1098,17 +1212,22 @@ Call start_timing_link_cell_pairs()
 !When set to false, the remove_exclusions is invoked on the host. This will
 !be changed so that _remove_exclusions is invoked on the device as previously.
 
+     print*, 'NOW IN REMOVE EXCL'
 #ifdef COMPILE_CUDA
+     print*, 'AAA'
      Call start_timing_link_cell_pairs_cuda_remove_excluded()
      If (dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable() .and. &
          dl_poly_cuda_offload_link_cell_pairs_re()) Then
+         print*, 'BBB'
         Call link_cell_pairs_cuda_invoke_remove_exclusions()
         If (dl_poly_cuda_offload_tbforces().eqv..false. .and. lbook .eqv..true.) Then
+         print*, 'CCC'
            Call link_cell_pairs_cuda_finalise()
         End If
      Else
 #endif
 
+       print*, 'NOW IN REMOVE EXCL'
        Do i=1,natms
           l_end=list(0,i)
           m_end=l_end
@@ -1131,6 +1250,7 @@ Call start_timing_link_cell_pairs()
           list(-1,i)=list(0,i) ! End of NFP FNRH VNL
           list( 0,i)=m_end     ! End of new list with no excluded interactions (NXI)
        End Do
+       print*, 'NOW END OF DO'
 
 #ifdef COMPILE_CUDA
      End If
@@ -1144,7 +1264,13 @@ Call start_timing_link_cell_pairs()
 
   End If
 
+  print*, 'LIST'
+  do i = 1,1000
+     print*, list(0,i),list(1,i),list(2,i)
+  end do
 
+
+  print*, 'NOW DEALLOCATING'
   Deallocate (nix,niy,niz,                   Stat=fail(1))
   Deallocate (which_cell,at_list,            Stat=fail(2))
   Deallocate (lct_count,lct_start,lct_where, Stat=fail(3))

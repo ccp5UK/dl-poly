@@ -213,15 +213,15 @@ Interface
    Subroutine link_cell_pairs_cuda_initialise                        &
               (natms,mxatms,ncells,mxlist,mxatdm,nsbcll,nlp,nlx,nly, &
               nlx0e, nly0e, nlz0e, nlx1s, nly1s, nlz1s,              &
-              xxx,yyy,zzz,lfrzn,at_list,lct_start,list,              &
-              nlp3,nix,niy,niz,rcsq,lbook,mxexcl,lexatm,ltg,megfrz) bind(c)
+              xxx,yyy,zzz,lfrzn,nir_int,at_list,lct_start,list,      &
+              nlp3,nlp3b,nix,niy,niz,rcsq,lbook,mxexcl,lexatm,ltg,megfrz) bind(c)
      Use kinds_f90
      Logical :: lbook
      Integer :: natms,mxatms,ncells,mxlist,mxatdm,nsbcll,nlp,nlx,nly,   &
-                nlx0e, nly0e, nlz0e, nlx1s, nly1s, nlz1s, nlp3, mxexcl,megfrz
-     Integer,           Dimension( 1:nlp3 )            :: nix,niy,niz
+                nlx0e, nly0e, nlz0e, nlx1s, nly1s, nlz1s, nlp3,nlp3b,mxexcl,megfrz
+     Integer,           Dimension( 1:nlp3b )           :: nir_int,nix,niy,niz
      Integer,           Dimension( 1:mxatms )          :: at_list, lfrzn, ltg
-     Integer,           Dimension( 1:ncells+1 )        :: lct_start
+     Integer,           Dimension( 0:ncells+1 )        :: lct_start
      Integer,           Dimension( -2:mxlist,1:mxatdm ) :: list
      Integer,           Dimension( 0:mxexcl,1:mxatdm ) :: lexatm
 

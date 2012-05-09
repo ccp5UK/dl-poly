@@ -35,7 +35,7 @@ OBJ_MOD = \
 	parse_module.o development_module.o netcdf_modul~.o io_module.o \
 	domains_module.o \
 	site_module.o config_module.o defects_module.o defects1_module.o \
-	vdw_module.o metal_module.o tersoff_module.o \
+	vdw_module.o vdw_direct_fs_generate.o metal_module.o tersoff_module.o \
 	three_body_module.o four_body_module.o \
 	core_shell_module.o \
 	constraints_module.o pmf_module.o \
@@ -77,7 +77,7 @@ OBJ_ALL = \
 	scan_field.o read_config_parallel.o scan_config.o scan_control.o read_config.o \
 	set_bounds.o \
 	read_control.o \
-	vdw_generate.o vdw_table_read.o \
+	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o\
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
 	check_config.o scale_config.o write_config.o \
