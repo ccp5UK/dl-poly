@@ -337,13 +337,11 @@ template<typename T_>  __device__ int jjresult(int aJJ, int aMEGFRZ, int aLFRZN_
   T_ lYYY_J    = fetch_real_1d(TEXTURE_DATA_YYY, lJ-1);//CONSTANT_DATA.mYYY[lJ-1];
   T_ lZZZ_J    = fetch_real_1d(TEXTURE_DATA_ZZZ, lJ-1);//CONSTANT_DATA.mZZZ[lJ-1];
 
-//  if (aMEGFRZ <= 1 && aLFRZN_I*lLFRZN_J == 0) {
     T_ lRSQ = (lXXX_J-aXXX_I)*(lXXX_J-aXXX_I) +
               (lYYY_J-aYYY_I)*(lYYY_J-aYYY_I) +
               (lZZZ_J-aZZZ_I)*(lZZZ_J-aZZZ_I);
     if (lRSQ <= CONSTANT_DATA.mRCSQ)
       return (lJ);
-//  }
   return (-1);
 }
 
@@ -399,9 +397,7 @@ __device__ void link_cell_pairs_cuda_k1_0(int3 aDims, int aIATMBegin) {
   for (int lII = lII_Bounds.x + threadIdx.z ; lII<=lII_Bounds.y ; lII += BZ_) {
     int lI = CONSTANT_DATA.mAT_LIST[lII-1];
 
-//    if (lI>= aIATMBegin && lI <= CONSTANT_DATA.mNATMS) {
-    if (lI>= aIATMBegin) {
-
+    if (lI>= aIATMBegin && lI <= CONSTANT_DATA.mNATMS) {
       if (threadIdx.x==0) {
 //malysaght240112
         shared[threadIdx.z] = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0+2, lI);
