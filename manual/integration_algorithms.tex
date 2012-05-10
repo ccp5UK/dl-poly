@@ -424,18 +424,17 @@ $T_{\rm ext}$.  When this is done the equations of motion are
 modified and the system no longer samples the microcanonical
 ensemble\index{ensemble!NVE}.  Instead trajectories in the canonical
 (NVT) ensemble\index{ensemble!canonical}, or something close to it
-are generated.  \D comes with five different thermostats: Evans
+are generated.  \D comes with six different thermostats: Evans
 (Gaussian constraints)\index{constraints!Gaussian} \cite{evans-84a},
 Langevin \cite{adelman-76a,izaguirre-01}, Andersen \cite{andersen-79a},
-Berendsen \cite{berendsen-84a} and Nos\'e-Hoover \cite{hoover-85a}. Of
-these only the Nos\'e-Hoover algorithm generates trajectories in the
-canonical (NVT) ensemble.  The rest will produce properties that
-typically differ from canonical averages by
-${\cal O}(1/{\cal N})$ \cite{allen-89a} (where $\cal N$ is the number
-of particles in the system), as the Evans algorithm generates
-trajectories in the (NVE$_{kin}$) ensemble.  The Langevin method does
-not generate any proper ensemble at all as it imposes Brownian
-Dynamics (or Stochastic Dynamics) on the system.
+Berendsen \cite{berendsen-84a}, Nos\'e-Hoover \cite{hoover-85a} and
+the gentle stochastic thermostat \cite{leimkuhler-09,samoletov-07}.  Of
+these, only the gentle stochastic thermostat, Nos\'e-Hoover and
+Langevin algorithms generate trajectories in the canonical (NVT)
+ensemble.  The rest will produce properties that typically differ
+from canonical averages by ${\cal O}(1/{\cal N})$ \cite{allen-89a}
+(where $\cal N$ is the number of particles in the system), as the
+Evans algorithm generates trajectories in the (NVE$_{kin}$) ensemble.
 
 \subsection{Evans Thermostat (Gaussian Constraints)}
 
@@ -545,7 +544,7 @@ same but also incorporate RB dynamics.
 \subsection{Langevin Thermostat}
 
 The Langevin thermostat works by coupling every particle to a
-viscous background and a stochastic heath bath such that
+viscous background and a stochastic heath bath (Brownian dynamics) such that
 \begin{eqnarray}
 {d \vek{r}_{i}(t) \over d t} &=& \vek{v}_{i}(t) \nonumber \\
 {d \vek{v}_{i}(t) \over d t} &=& {{\vek{f}_{i}(t)+\vek{R}_{i}(t)} \over
@@ -1116,8 +1115,8 @@ same but also incorporate RB dynamics.
 The size and shape of the simulation cell may be dynamically
 adjusted by coupling the system to a barostat in order to obtain a
 desired average pressure ($P_{\rm ext}$) and/or isotropic stress
-tensor\index{stress tensor} ($\mat{\sigma}$).  \D has three such
-algorithms: with the Langevin type barostat \cite{quigley-04},
+tensor\index{stress tensor} ($\mat{\sigma}$).  \D has four such
+algorithms: the Langevin type barostat \cite{quigley-04},
 the Berendsen barostat \cite{berendsen-84a}, the
 Nos\'{e}-Hoover type barostat \cite{hoover-85a} and the
 Martyna-Tuckerman-Klein (MTK) barsotat \cite{martyna-96a}.  Only
