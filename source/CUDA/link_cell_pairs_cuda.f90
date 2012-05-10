@@ -411,8 +411,6 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Real( Kind = wp ) , Intent( In    ) :: rcut
 
   Logical,           Save :: newjob = .true.
-!  Integer,           Save :: idx,idy,idz
-!  Real( Kind = wp ), Save :: sidex,sidey,sidez
   Real( Kind = wp ), Save :: cut,rcsq
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1,match
@@ -429,9 +427,6 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Real( Kind = wp ) :: rsq,det,rcell(1:9),celprp(1:10), &
                        dispx,dispy,dispz, xdc,ydc,zdc,nlr2
 
-!malysaght300412
-  Integer,           Dimension( : ), Allocatable :: nir_int
-!end_malysaght300412
   Logical,           Dimension( : ), Allocatable :: nir
   Integer,           Dimension( : ), Allocatable :: nix,niy,niz,         &
                                                     lct_count,lct_start, &
@@ -439,7 +434,6 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
 
-  print*, 'NOW IN LINK CELLS'
 #ifdef COMPILE_CUDA
 Call start_timing_link_cell_pairs()
 #endif
@@ -495,19 +489,15 @@ Call start_timing_link_cell_pairs()
 ! subcelling and new link-cell parameters
 
   nlp=1
-!  nlp2=Real(natms,wp)
   nlr2=Real(natms,wp)
-!  det=nlp2/Real(nlx*nly*nlz,wp)
   det=nlr2/Real(nlx*nly*nlz,wp)
 
   Do While (det > 50.0_wp)
-!  Do While (det > 130.0_wp)
      nlp=nlp+1
      rsq=Real(nlp,wp)
      nlx=Int(dispx*rsq)
      nly=Int(dispy*rsq)
      nlz=Int(dispz*rsq)
-!     det=nlp2/Real(nlx*nly*nlz,wp)
      det=nlr2/Real(nlx*nly*nlz,wp)
   End Do
   ncells=(nlx+2*nlp)*(nly+2*nlp)*(nlz+2*nlp)
@@ -515,9 +505,6 @@ Call start_timing_link_cell_pairs()
   nlp3_b=nlp3
 
   fail=0
-!malysaght300412
-  Allocate (nir_int(1:nlp3)) 
-!end_malysaght300412
   Allocate (nix(1:nlp3),niy(1:nlp3),niz(1:nlp3),nir(1:nlp3),                  Stat=fail(1))
   Allocate (which_cell(1:mxatms),at_list(1:mxatms),                           Stat=fail(2))
   Allocate (lct_count(0:ncells),lct_start(0:ncells+1 ),lct_where(0:ncells+1), Stat=fail(3))
@@ -535,15 +522,12 @@ Call start_timing_link_cell_pairs()
 
   nix=0 ; niy=0 ; niz=0 ; nir=.false.
   nlp2=nlp**2
-!  nlr2=(nlp-1)**2
   nlp3=(nlp-1)**2
   nsbcll=0
   Do iz=0,nlp
      If (iz > 0) Then
-!        dispz=Real(iz-1,wp)**2
         iz1=(iz-1)**2
      Else
-!        dispz=0.0_wp
          iz1=0 
      End If
 
@@ -554,21 +538,15 @@ Call start_timing_link_cell_pairs()
 
         ibig=Abs(iy)
         If (ibig > 0) Then
-!           dispy=Real(ibig-1,wp)**2
            iy1=(ibig-1)**2
         Else
-!           dispy=0.0_wp
            iy1=0
         End If
-
-!        det=dispz+dispy
-!        If (det > nlp2) Go To 20
 
         ll=iz1+iy1
         If (ll > nlp2) Go To 20
  
 
-!        jy=iy**2
         jy=jz+iy**2
 
         Do ix=-nlp,nlp
@@ -576,17 +554,10 @@ Call start_timing_link_cell_pairs()
 
            ibig=Abs(ix)
            If (ibig > 0) Then
-!              dispx=Real(ibig-1,wp)**2
               ix1=(ibig-1)**2
            Else
               ix1 = 0
-!              dispx=0.0_wp
            End If
-
-!           rsq=det+dispx
-!           If (rsq > nlp2) Go To 10
-
-!           jx=ix**2
 
            If (ll+ix1 > nlp2) Go To 10
 
@@ -598,15 +569,7 @@ Call start_timing_link_cell_pairs()
            nix(nsbcll)=ix
            niy(nsbcll)=iy
            niz(nsbcll)=iz
-!           nir(nsbcll)=(jx+jy+jz < nlr2)
            nir(nsbcll)=(jx < nlp3)
-!malysaght300412
-           If (jx < nlp3) Then
-            nir_int(nsbcll)=1
-           Else
-            nir_int(nsbcll)=0
-           End If
-!end_malysaght300412
 10         Continue
         End Do
 20      Continue
@@ -639,9 +602,6 @@ Call start_timing_link_cell_pairs()
 ! the left-most link-cell
 
   Do i=1,nlast
-!     xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+dispx
-!     yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+dispy
-!     zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+dispz
      xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
      yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
      zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
@@ -650,8 +610,6 @@ Call start_timing_link_cell_pairs()
 
 ! Form linked list
 ! Initialise cell contents counter
-
-!  lct_count = 0
 
 ! Get the total number of link-cells in MD cell per direction
 
@@ -861,7 +819,6 @@ Call start_timing_link_cell_pairs()
   ibig=0
   safe=.true.
 
-  print*, 'NOW CALLING CUDA'
 #ifdef COMPILE_CUDA
   if (dl_poly_cuda_offload_link_cell_pairs()) Then
      Call link_cell_pairs_cuda_initialise(                   &
@@ -871,7 +828,6 @@ Call start_timing_link_cell_pairs()
        nlp3,nlp3_b,nix,niy,niz,rcsq,lbook,mxexcl,lexatm,ltg,megfrz)
 
 
-     print*, 'NOW CALLING INVOKE'
      Call link_cell_pairs_cuda_invoke()
 
 
@@ -889,7 +845,6 @@ Call start_timing_link_cell_pairs()
         Call link_cell_pairs_cuda_finalise()
      End If
 
-     print*, 'NOW CALLING FINAL'
 ! 20100226/ck: uncomment this to study the effect of sorted atom lists
 !   to the CUDA kernels of two_body_forces.
 !     If (dl_poly_cuda_offload_tbforces()==.true. .and. lbook==.false.) Then
@@ -1079,7 +1034,6 @@ Call start_timing_link_cell_pairs()
 
 ! end of bypass if primary cell particle > natms
 
-!                    End If
 
 ! end of loop over primary cell contents
 
@@ -1161,7 +1115,6 @@ Call start_timing_link_cell_pairs()
      End If 
 
 
-  print*, 'NOW IN FROZEN'
 ! Rear down frozen pairs
 #ifdef COMPILE_CUDA
   ! In the CUDA port, frozen atom pairs are not included in the
@@ -1204,7 +1157,6 @@ Call start_timing_link_cell_pairs()
 ! Rear down excluded pairs on top of the frozen ones
 
 
-  print*, 'NOW IN REMOVE EXCL'
   If (lbook) Then
 
 !malysaght110112: note: _cuda_invoke_remove_exclusions needs to be updated. For
@@ -1212,22 +1164,17 @@ Call start_timing_link_cell_pairs()
 !When set to false, the remove_exclusions is invoked on the host. This will
 !be changed so that _remove_exclusions is invoked on the device as previously.
 
-     print*, 'NOW IN REMOVE EXCL'
 #ifdef COMPILE_CUDA
-     print*, 'AAA'
      Call start_timing_link_cell_pairs_cuda_remove_excluded()
      If (dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable() .and. &
          dl_poly_cuda_offload_link_cell_pairs_re()) Then
-         print*, 'BBB'
         Call link_cell_pairs_cuda_invoke_remove_exclusions()
         If (dl_poly_cuda_offload_tbforces().eqv..false. .and. lbook .eqv..true.) Then
-         print*, 'CCC'
            Call link_cell_pairs_cuda_finalise()
         End If
      Else
 #endif
 
-       print*, 'NOW IN REMOVE EXCL'
        Do i=1,natms
           l_end=list(0,i)
           m_end=l_end
@@ -1250,7 +1197,6 @@ Call start_timing_link_cell_pairs()
           list(-1,i)=list(0,i) ! End of NFP FNRH VNL
           list( 0,i)=m_end     ! End of new list with no excluded interactions (NXI)
        End Do
-       print*, 'NOW END OF DO'
 
 #ifdef COMPILE_CUDA
      End If
@@ -1264,13 +1210,6 @@ Call start_timing_link_cell_pairs()
 
   End If
 
-  print*, 'LIST'
-  do i = 1,1000
-     print*, list(0,i),list(1,i),list(2,i)
-  end do
-
-
-  print*, 'NOW DEALLOCATING'
   Deallocate (nix,niy,niz,                   Stat=fail(1))
   Deallocate (which_cell,at_list,            Stat=fail(2))
   Deallocate (lct_count,lct_start,lct_where, Stat=fail(3))
