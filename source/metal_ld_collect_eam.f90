@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov march 2012
+! amended   - i.t.todorov may 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -75,7 +75,7 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
         Else
            density = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
         End If
-
+        If (density < 0.0_wp) density = -density ! for non-smooth descend to zero, or ascend from zero
         rho(iatm) = rho(iatm) + density
 
         If (rho(iatm) < -zero_plus .or. density < -zero_plus) &
@@ -114,20 +114,15 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
         vk1 = dmet(l+4,ai,1)
         vk2 = dmet(l+5,ai,1)
 
-              t1 = vk0 + (vk1 - vk0)*ppp
-              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+        t1 = vk1 + ppp*(vk1 - vk0)
+        t2 = vk1 + ppp*(vk2 - vk1)
 
-              density = t1 + (t2-t1)*ppp*0.5_wp
-
-!        t1 = vk1 + ppp*(vk1 - vk0)
-!        t2 = vk1 + ppp*(vk2 - vk1)
-
-!        If (ppp < 0.0_wp) Then
-!           density = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
-!        Else
-!           density = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
-!        End If
-
+        If (ppp < 0.0_wp) Then
+           density = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+        Else
+           density = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+        End If
+        If (density < 0.0_wp) density = -density ! for non-smooth descend to zero, or ascend from zero
         rho(jatm) = rho(jatm) + density
 
         If (rho(jatm) < -zero_plus .or. density < -zero_plus) &
