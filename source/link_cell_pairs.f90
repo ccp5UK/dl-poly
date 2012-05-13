@@ -13,8 +13,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gcheck,gmax,gsum
   Use setup_module
-  Use domains_module,     Only : idx,idy,idz, nprx,npry,nprz, &
-                                 nprx_r,npry_r,nprz_r
+  Use domains_module
   Use config_module,      Only : cell,natms,nlast,ltg,lfrzn, &
                                  xxx,yyy,zzz,lexatm,list
   Use development_module, Only : l_dis,r_dis
@@ -183,6 +182,24 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   End Do
 !  Write(*,*) 'NLP',nlp,nsbcll,nlx,nly,nlz
 
+! Get the total number of link-cells in MD cell per direction
+
+  xdc=Real(nlx*nprx,wp)
+  ydc=Real(nly*npry,wp)
+  zdc=Real(nlz*nprz,wp)
+
+! Calculate the displacements from the origin of the MD cell
+! to the bottom left corner of the left-most halo link-cell
+
+! First term (0.5) = move to the bottom left corner of the MD cell
+! Second term (-id./npr.) = move to the bottom left corner of this domain
+! Third term (nlp/nl./npr.) = move to the bottom left corner of the
+! left-most link-cell (the one in the halo)
+
+  dispx=0.5_wp-Real(idx,wp)*r_nprx+Real(nlp,wp)/Real(xdc,wp)
+  dispy=0.5_wp-Real(idy,wp)*r_npry+Real(nlp,wp)/Real(ydc,wp)
+  dispz=0.5_wp-Real(idz,wp)*r_nprz+Real(nlp,wp)/Real(zdc,wp)
+
 ! Get the inverse cell matrix
 
   Call invert(cell,rcell,det)
@@ -191,25 +208,10 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! Cartesian coordinates to reduced space coordinates
 
   Do i=1,nlast
-     xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-     yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-     zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+     xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+dispx
+     yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+dispy
+     zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+dispz
   End Do
-
-! Get the total number of link-cells in MD cell per direction
-
-  xdc=Real(nlx*nprx,wp)
-  ydc=Real(nly*npry,wp)
-  zdc=Real(nlz*nprz,wp)
-
-! Shifts from global to local link-cell space:
-! (0,0,0) left-most link-cell on the domain (halo)
-! (nlx+2*nlp-1,nly+2*nlp-1,nly+2*nlp-1) right-most
-! link-cell on the domain (halo)
-
-  jx=nlp-nlx*idx
-  jy=nlp-nly*idy
-  jz=nlp-nlz*idz
 
 !***************************************************************
 ! Note(1): Due to numerical inaccuracy it is possible that some
@@ -265,9 +267,9 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
 ! Get cell coordinates accordingly
 
-     ix = Int(xdc*(xxt(i)+0.5_wp)) + jx
-     iy = Int(ydc*(yyt(i)+0.5_wp)) + jy
-     iz = Int(zdc*(zzt(i)+0.5_wp)) + jz
+     ix = Int(xdc*xxt(i))
+     iy = Int(ydc*yyt(i))
+     iz = Int(zdc*zzt(i))
 
 ! Correction for domain (idnode) only particles (1,natms) but due to
 ! some tiny numerical inaccuracy kicked into its halo link-cell space
@@ -297,68 +299,74 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
 ! Get cell coordinates accordingly
 
-     If (xxt(i) > -half_plus) Then
-        ix = Int(xdc*(xxt(i)+0.5_wp)) + jx
+     If (xxt(i) > -zero_plus) Then
+        ix = Int(xdc*xxt(i))
      Else
-        ix =-Int(xdc*Abs(xxt(i)+0.5_wp)) + jx - 1
+        ix =-1
      End If
-     If (yyt(i) > -half_plus) Then
-        iy = Int(ydc*(yyt(i)+0.5_wp)) + jy
+     If (yyt(i) > -zero_plus) Then
+        iy = Int(ydc*yyt(i))
      Else
-        iy =-Int(ydc*Abs(yyt(i)+0.5_wp)) + jy - 1
+        iy =-1
      End If
-     If (zzt(i) > -half_plus) Then
-        iz = Int(zdc*(zzt(i)+0.5_wp)) + jz
+     If (zzt(i) > -zero_plus) Then
+        iz = Int(zdc*zzt(i))
      Else
-        iz =-Int(zdc*Abs(zzt(i)+0.5_wp)) + jz - 1
+        iz =-1
      End If
+
+! Exclude all any negative bound residual halo
+
+     If (ix >= 0 .and. iy >= 0 .and. iz >=0) Then
 
 ! Correction for halo particles (natms+1,nlast) of this domain
 ! (idnode) but due to some tiny numerical inaccuracy kicked into
 ! the domain only link-cell space
 
-     lx0=(ix == nlx0e+1)
-     lx1=(ix == nlx1s-1)
-     ly0=(iy == nly0e+1)
-     ly1=(iy == nly1s-1)
-     lz0=(iz == nlz0e+1)
-     lz1=(iz == nlz1s-1)
-     If ( (lx0 .or. lx1) .and. &
-          (ly0 .or. ly1) .and. &
-          (lz0 .or. lz1) ) Then ! 8 corners of the domain's cube in RS
-        If      (lx0) Then
-           ix=nlx0e
-        Else If (lx1) Then
-           ix=nlx1s
-        Else If (ly0) Then
-           iy=nly0e
-        Else If (ly1) Then
-           iy=nly1s
-        Else If (lz0) Then
-           iz=nlz0e
-        Else If (lz1) Then
-           iz=nlz1s
+        lx0=(ix == nlx0e+1)
+        lx1=(ix == nlx1s-1)
+        ly0=(iy == nly0e+1)
+        ly1=(iy == nly1s-1)
+        lz0=(iz == nlz0e+1)
+        lz1=(iz == nlz1s-1)
+        If ( (lx0 .or. lx1) .and. &
+             (ly0 .or. ly1) .and. &
+             (lz0 .or. lz1) ) Then ! 8 corners of the domain's cube in RS
+           If      (lx0) Then
+              ix=nlx0e
+           Else If (lx1) Then
+              ix=nlx1s
+           Else If (ly0) Then
+              iy=nly0e
+           Else If (ly1) Then
+              iy=nly1s
+           Else If (lz0) Then
+              iz=nlz0e
+           Else If (lz1) Then
+              iz=nlz1s
+           End If
         End If
-     End If
 
-! Check for residual halo
+! Check for positive bound residual halo
 
-     lx0=(ix < nlx0s)
-     lx1=(ix > nlx1e)
-     ly0=(iy < nly0s)
-     ly1=(iy > nly1e)
-     lz0=(iz < nlz0s)
-     lz1=(iz > nlz1e)
-     If ( .not. &
-          (lx0 .or. lx1 .or. &
-           ly0 .or. ly1 .or. &
-           lz0 .or. lz1) ) Then
+        lx1=(ix > nlx1e)
+        ly1=(iy > nly1e)
+        lz1=(iz > nlz1e)
+        If (.not.(lx1 .or. ly1 .or. lz1)) Then
 
 ! Hypercube function transformation (counting starts from one
 ! rather than zero /map_domains/ and 2*nlp more link-cells per
 ! dimension are accounted /coming from the halo/)
 
-        icell = 1 + ix + (nlx + 2*nlp)*(iy + (nly + 2*nlp)*iz)
+           icell = 1 + ix + (nlx + 2*nlp)*(iy + (nly + 2*nlp)*iz)
+
+        Else
+
+! Put possible residual halo in cell=0
+
+           icell = 0
+
+        End If
 
      Else
 
