@@ -86,9 +86,9 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
      ecwy=Real(kmaxb,wp)/Real(mxspl,wp)
      ecwz=Real(kmaxc,wp)/Real(mxspl,wp)
 
-     ecwx=Max(cwx,ecwx)
-     ecwy=Max(cwy,ecwy)
-     ecwz=Max(cwz,ecwz)
+     ecwx=Min(cwx,ecwx)
+     ecwy=Min(cwy,ecwy)
+     ecwz=Min(cwz,ecwz)
   Else
      ecwx=cwx
      ecwy=cwy
