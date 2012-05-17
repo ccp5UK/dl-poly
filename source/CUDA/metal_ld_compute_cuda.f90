@@ -194,7 +194,7 @@ Subroutine metal_ld_compute                &
 ! catch unsafe value
 
               If (l < 1) Then
-                 Write(*,*) 'good density range problem: (LTG,RHO)',ltg(i),rho(i) 
+                 Write(*,*) 'good density range problem: (LTG,RHO)',ltg(i),rho(i)
                  safe=.false.
                  l=2
               End If

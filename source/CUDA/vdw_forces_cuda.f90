@@ -609,7 +609,7 @@ Subroutine vdw_forces &
 
            If (jatm <= natms .or. idi < ltg(jatm)) Then
 
-              ! add interaction energy 
+              ! add interaction energy
 
               engvdw = engvdw + eng
               ! add virial

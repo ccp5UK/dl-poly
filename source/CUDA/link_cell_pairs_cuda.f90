@@ -460,7 +460,7 @@ Call start_timing_link_cell_pairs()
      If (iz > 0) Then
         iz1=(iz-1)**2
      Else
-         iz1=0 
+         iz1=0
      End If
 
      jz=iz**2
@@ -477,7 +477,7 @@ Call start_timing_link_cell_pairs()
 
         ll=iz1+iy1
         If (ll > nlp2) Go To 20
- 
+
 
         jy=jz+iy**2
 
@@ -626,7 +626,7 @@ Call start_timing_link_cell_pairs()
   End Do
   Do i=natms+1,nlast
 
-     
+
      If (xxt(i) > -zero_plus) Then
         ix = Int(xdc*xxt(i))
      Else
@@ -699,7 +699,7 @@ Call start_timing_link_cell_pairs()
 
 !Put possible residual halo in cell=0
          icell = 0
-   
+
       End If
 
 ! count cell content
@@ -799,12 +799,12 @@ Call start_timing_link_cell_pairs()
 ! index of primary cell
 
                  ic=1+ix+(nlx+2*nlp)*(iy+(nly+2*nlp)*iz)
-                 
+
 ! loop over primary cell contents
 
                  Do ii=lct_start(ic),lct_start(ic+1)-1
 
-    
+
 ! get domain local particle index
 
                     i=at_list(ii)
@@ -1028,7 +1028,7 @@ Call start_timing_link_cell_pairs()
      If ((.not.safe) .and. idnode == 0) Write(nrite,'(/,1x,a,i0,2a)') &
         '*** warning - ', Int(det,ip), ' number of pairs violated ',  &
         'the minimum separation distance ***'
-     End If 
+     End If
 
 
 ! Rear down frozen pairs

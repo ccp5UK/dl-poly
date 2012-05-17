@@ -352,7 +352,7 @@ Subroutine metal_forces &
 
   If (newjob) Then
      newjob = .false.
-     If (ld_met) rcsq=rmet**2 
+     If (ld_met) rcsq=rmet**2
   End If
 
 ! initialise potential energy and virial
