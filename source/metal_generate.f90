@@ -7,7 +7,7 @@ Subroutine metal_generate(rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 2006
-! amended   - i.t.todorov march 2012
+! amended   - i.t.todorov may 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -44,9 +44,9 @@ Subroutine metal_generate(rmet)
 
 ! store array specification parameters
 
-           vmet(1,imet,1)=Real(mxgrid-4,wp)
-           vmet(2,imet,1)=3.0_wp*dlrpot            ! l_int(min) >= 1
-           vmet(3,imet,1)=dlrpot*Real(mxgrid-4,wp) ! =rmet=rcut
+           vmet(1,imet,1)=Real(mxgrid,wp)
+           vmet(2,imet,1)=0.0_wp                 ! l_int(min) >= 1
+           vmet(3,imet,1)=dlrpot*Real(mxgrid,wp) ! =rmet=rcut
            vmet(4,imet,1)=dlrpot
 
            Do i=1,4

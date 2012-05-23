@@ -12,7 +12,7 @@ Subroutine metal_ld_compute         &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov march 2012
+! amended   - i.t.todorov may 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -93,7 +93,7 @@ Subroutine metal_ld_compute         &
      If (keypot == 0) Then ! EAM contributions
         Call metal_ld_collect_eam(i,rsqdf,rho,safe)
      Else                  ! FST contributions
-        Call metal_ld_collect_fst(i,rsqdf,rho,rmet)
+        Call metal_ld_collect_fst(i,rsqdf,rho,safe,rmet)
      End If
   End Do
 
@@ -120,28 +120,25 @@ Subroutine metal_ld_compute         &
 
 ! check for unsafe densities (mind start was shifted)
 
-           If (rho(i) >= fmet(2,k0,1)+fmet(4,k0,1) .and. rho(i) <= fmet(3,k0,1)) Then
+           If (rho(i) >= fmet(2,k0,1)+5.0_wp*fmet(4,k0,1) .and. rho(i) <= fmet(3,k0,1)) Then
 
 ! interpolation parameters
 
               rdr = 1.0_wp/fmet(4,k0,1)
               rrr = rho(i) - fmet(2,k0,1)
-              l   = Nint(rrr*rdr)
-              ppp = rrr*rdr - Real(l,wp)
-
-! catch unsafe value
-
-              If (l < 1) Then
+              l   = Min(Nint(rrr*rdr),Int(fmet(1,k0,1))-1)
+              If (l < 2) Then ! catch unsafe value
                  Write(*,*) 'good density range problem: (LTG,RHO) ',ltg(i),rho(i)
                  safe=.false.
                  l=2
               End If
+              ppp = rrr*rdr - Real(l,wp)
 
 ! calculate embedding energy using 3-point interpolation
 
-              fk0 = fmet(l+3,k0,1)
-              fk1 = fmet(l+4,k0,1)
-              fk2 = fmet(l+5,k0,1)
+              fk0 = fmet(l-1,k0,1)
+              fk1 = fmet(l  ,k0,1)
+              fk2 = fmet(l+1,k0,1)
 
               t1 = fk1 + ppp*(fk1 - fk0)
               t2 = fk1 + ppp*(fk2 - fk1)
@@ -155,9 +152,9 @@ Subroutine metal_ld_compute         &
 ! calculate derivative of embedding function wrt density
 ! using 3-point interpolation and store result in rho array
 
-              fk0 = fmet(l+3,k0,2)
-              fk1 = fmet(l+4,k0,2)
-              fk2 = fmet(l+5,k0,2)
+              fk0 = fmet(l-1,k0,2)
+              fk1 = fmet(l  ,k0,2)
+              fk2 = fmet(l+1,k0,2)
 
               t1 = fk1 + ppp*(fk1 - fk0)
               t2 = fk1 + ppp*(fk2 - fk1)

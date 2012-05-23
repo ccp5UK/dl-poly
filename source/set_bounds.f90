@@ -8,7 +8,7 @@ Subroutine set_bounds                                        &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2012
+! author    - i.t.todorov may 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -428,9 +428,9 @@ Subroutine set_bounds                                        &
 ! + 75% extra tolerance (f(dens0,dens) * 7.5/3 pi rcut^3)
 
   If (mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
-     mxlist = Nint( (dvar**1.7_wp) * (0.75_wp*dens0+0.25_wp*dens)*2.5_wp*pi*rcut**3)
+     mxlist = Nint( (dvar**1.7_wp) * (0.65_wp*dens0+0.35_wp*dens)*2.5_wp*pi*rcut**3)
   Else
-     mxlist = Nint( (dvar**1.7_wp) * (0.25_wp*dens0+0.75_wp*dens)*2.5_wp*pi*rcut**3)
+     mxlist = Nint( (dvar**1.7_wp) * (0.35_wp*dens0+0.65_wp*dens)*2.5_wp*pi*rcut**3)
   End If
   mxlist = Min(mxlist,megatm-1) ! mxexcl
 

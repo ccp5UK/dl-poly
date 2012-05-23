@@ -7,7 +7,7 @@ Subroutine metal_table_read(l_top)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2006
-! amended   - i.t.todorov july 2011
+! amended   - i.t.todorov may 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -117,18 +117,13 @@ Subroutine metal_table_read(l_top)
 ! store working parameters
 
      buffer(1)=Real(ngrid+4,wp) ! as if there are 4 extra elements after finish
-     buffer(2)=start
-     buffer(3)=finish
      buffer(4)=(finish-start)/Real(ngrid-1,wp)
+     buffer(2)=start-5.0_wp*buffer(4)
+     buffer(3)=finish
 
      If (idnode == 0 .and. l_top) &
         Write(nrite,"(1x,i10,4x,2a8,3x,2a4,2x,i6,1p,3e15.6)") &
         ipot,atom1,atom2,'EAM-',keyword,ngrid,start,finish,buffer(4)
-
-! limits shifted for DL_POLY interpolation
-
-     buffer(2)=buffer(2)-buffer(4) ! l_int(min) >= 1
-     buffer(3)=buffer(3)-buffer(4) ! l_int(max) < ngrid
 
 ! check array dimensions
 
@@ -191,7 +186,7 @@ Subroutine metal_table_read(l_top)
 ! adapt derivatives for use in interpolation
 
         Do i=5,ngrid+4
-           vmet(i,k0,2)=-(Real(i-4,wp)*buffer(4)+buffer(2))*vmet(i,k0,2)
+           vmet(i,k0,2)=-(Real(i,wp)*buffer(4)+buffer(2))*vmet(i,k0,2)
         End Do
 
      Else If (ktype == 2) Then
@@ -230,7 +225,7 @@ Subroutine metal_table_read(l_top)
         dmet(4,katom1,2)=0.0_wp
 
         Do i=5,ngrid+4
-           dmet(i,katom1,2)=-(Real(i-4,wp)*buffer(4)+buffer(2))*dmet(i,katom1,2)
+           dmet(i,katom1,2)=-(Real(i,wp)*buffer(4)+buffer(2))*dmet(i,katom1,2)
         End Do
 
      Else If (ktype == 3) Then

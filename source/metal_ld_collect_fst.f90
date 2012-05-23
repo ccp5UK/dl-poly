@@ -1,4 +1,4 @@
-Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,rmet)
+Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov february 2012
+! amended   - i.t.todorov may 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,6 +23,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,rmet)
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rsqdf
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: rho
+  Logical,                                  Intent( InOut ) :: safe
   Real( Kind = wp ),                        Intent( In    ) :: rmet
 
   Logical,           Save :: newjob = .true.
@@ -195,14 +196,18 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,rmet)
 
               rdr = 1.0_wp/dmet(4,k0,1)
               rrr = Sqrt(rsq) - dmet(2,k0,1)
-              l   = Nint(rrr*rdr)
+              l   = Min(Nint(rrr*rdr),Int(dmet(1,k0,1))-1)
+              If (l < 2) Then ! catch unsafe value
+                 safe=.false.
+                 l=2
+              End If
               ppp = rrr*rdr - Real(l,wp)
 
 ! calculate density using 3-point interpolation
 
-              vk0 = dmet(l+3,k0,1)
-              vk1 = dmet(l+4,k0,1)
-              vk2 = dmet(l+5,k0,1)
+              vk0 = dmet(l-1,k0,1)
+              vk1 = dmet(l  ,k0,1)
+              vk2 = dmet(l+1,k0,1)
 
               t1 = vk1 + ppp*(vk1 - vk0)
               t2 = vk1 + ppp*(vk2 - vk1)
