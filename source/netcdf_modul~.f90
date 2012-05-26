@@ -496,7 +496,7 @@ Contains
 
     Implicit None
 
-    Write(Unit=*, Fmt=*) ' *** NOT netCDF COMPILED BUILD!!! ***'
+    Write(Unit=*, Fmt=*) ' *** NOT netCDF COMPILED BUILD !!! ***'
     Call error(0)
     Stop
 

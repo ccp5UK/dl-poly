@@ -1,4 +1,4 @@
-Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
+Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -47,6 +47,7 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
 
   Implicit None
 
+  Logical,           Intent( In    ) :: l_str
   Integer,           Intent( In    ) :: imcon,nx,ny,megatm
   Real( Kind = wp ), Intent( In    ) :: rcut
   Integer,           Intent( InOut ) :: nz
@@ -522,9 +523,9 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
   x=0.5_wp*Min(fx*celprp(7),fy*celprp(8),fz*celprp(9))
 
   If (idnode == 0) Then
-     Write(nrite,'(1x,3a)') '*** ', fcfg(1:Len_Trim(fcfg)), ' expansion completed!'
-     Write(nrite,'(1x,a,i10,a)') '*** Size: ', nall*megatm, ' particles.'
-     Write(nrite,'(1x,a,f10.2,a)') '*** Maximum radius of cutoff: ', x, ' Angstoms.'
+     Write(nrite,'(/,1x,3a)') '*** ', fcfg(1:Len_Trim(fcfg)), ' expansion completed !'
+     Write(nrite,'(1x,a,i10,a)') '*** Size: ', nall*megatm, ' particles'
+     Write(nrite,'(1x,a,f10.2,a)') '*** Maximum radius of cutoff: ', x, ' Angstroms'
      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') t
      Open(Unit=nfield, File='FIELD', Status='old')
      Open(Unit=nconf, File=ffld(1:Len_Trim(ffld)), Status='replace')
@@ -566,7 +567,7 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
            Write(Unit=nconf,Fmt='(a)') record1(1:Len_Trim(record1))
            Close(Unit=nfield)
            Close(Unit=nconf)
-           Write(nrite,'(1x,3a)') '*** ', ffld(1:Len_Trim(ffld)), ' expansion done!'
+           Write(nrite,'(1x,3a)') '*** ', ffld(1:Len_Trim(ffld)), ' expansion done !'
            Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') t
            Write(nrite,'(1x,a)') '*** Simulation continues as scheduled...'
            Go To 10

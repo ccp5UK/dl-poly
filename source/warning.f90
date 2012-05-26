@@ -49,8 +49,8 @@ Subroutine warning(kode,a,b,c)
      Else If (kode ==   4) Then
 
         Write(nrite,'(/,1x,2(a,/))')                            &
-        '*** warning - system with uncharged particles!!! ***', &
-        '*** "no elec" or/and "no strict" directives in CONTROL may speed up simulation!!! ***'
+        '*** warning - system with uncharged particles !!! ***', &
+        '*** "no elec" or/and "no strict" directives in CONTROL may speed up simulation !!! ***'
 
      Else If (kode ==   5) Then
 

@@ -164,7 +164,7 @@ Subroutine pmf_shake_lfv               &
                    ' , with head particle numbers, U1:', listpmf(1,1,ipmf), &
                    ' & U2:', listpmf(1,2,ipmf), ' ,',                       &
                    ' , converges to a length of', Sqrt(pt2(ipmf)+dis2),     &
-                   ' Angstoms with factor', esig(ipmf), ' contributes towards next error !!! ***'
+                   ' Angstroms with factor', esig(ipmf), ' contributes towards next error !!! ***'
            End Do
         End If
         Call gsync()

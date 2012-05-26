@@ -424,7 +424,7 @@ Subroutine read_control                                &
         l_dis = .true.
         r_dis = Min( r_dis , word_2_real(word,0.1_wp) )
         If (idnode == 0) Write(nrite,"(2(/,1x,a),1p,e12.4)")                            &
-           "%%% Turn on the check on minimum separation distance between VNL pairs at re/start!!! %%%", &
+           "%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%", &
            "%%% separation criterion (Angsroms) %%% ", r_dis
 
 ! read VDW options

@@ -1,4 +1,4 @@
-Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
+Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -10,7 +10,7 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
 ! supported image conditions: 1,2,3, 6(nz==1)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2012
+! author    - i.t.todorov may 2012
 ! contrib   - w.smith, i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -54,6 +54,7 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
 
   Implicit None
 
+  Logical,           Intent( In    ) :: l_str
   Integer,           Intent( In    ) :: imcon,nx,ny,megatm
   Real( Kind = wp ), Intent( In    ) :: rcut
   Integer,           Intent( InOut ) :: nz
@@ -74,9 +75,9 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
                             idih,ndihed,iinv,ninver,      &
                             idm,loc_ind,index,at_scaled
   Integer(Kind=ip)       :: offset,rec
-  Real( Kind = wp )      :: fx,fy,fz, x,y,z, t, cut,  &
-                            celprp(1:10),hwx,hwy,hwz, &
-                            x1(1:1),y1(1:1),z1(1:1),  &
+  Real( Kind = wp )      :: fx,fy,fz, x,y,z, t, cut, c4,  &
+                            celprp(1:10), hwx,hwy,hwz, r, &
+                            x1(1:1),y1(1:1),z1(1:1),      &
                             cell_vecs(1:3,1:3), lengths(1:3), angles(1:3)
 
 ! Some parameters and variables needed by io_module interfaces
@@ -203,7 +204,8 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
   hwx = celprp(7)/2.0_wp
   hwy = celprp(8)/2.0_wp
   hwz = celprp(9)/2.0_wp
-  cut = Min( rcut/2.0_wp , 3.0_wp)
+  cut = Min(rcut/2.0_wp , 3.0_wp)
+  c4  = 4.5_wp
 
   If (idnode == 0) Then
 
@@ -381,7 +383,7 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
         Do While ((.not.safe) .and. mxiter < 42) ! meaning of LUEE is the limit
            If (.not.safe) mxiter=mxiter+1
 
-           If (mxiter == 42 .and. (.not.safe) .and. idnode == 0) &
+           If ((mxiter == 42 .and. (.not.safe)) .and. (l_str .and. idnode == 0)) &
               Write(nrite,Fmt='(/,1x,2(a,i10))') 'MOLECULAR TYPE #: ',itmols, ' MOLECULE #: ',imols
 
            safe=.true.
@@ -390,8 +392,8 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
            Do ishls=1,numshl(itmols)
               nshels=nshels+1
 
-              iatm=lstshl(1,nshels)-nattot
-              jatm=lstshl(2,nshels)-nattot
+              iatm=lstshl(1,nshels)-indatm1
+              jatm=lstshl(2,nshels)-indatm1
 
               safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
               safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
@@ -405,14 +407,23 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
                  xm(jatm)=x1(1)+xm(iatm)
                  ym(jatm)=y1(1)+ym(iatm)
                  zm(jatm)=z1(1)+zm(iatm)
+                 safer=.true.
               End If
-              safex=(Abs(xm(jatm)-xm(iatm)) < cut)
-              safey=(Abs(ym(jatm)-ym(iatm)) < cut)
-              safez=(Abs(zm(jatm)-zm(iatm)) < cut)
-              safer=(safex .and. safey .and. safez)
+              x=Abs(xm(jatm)-xm(iatm))
+              y=Abs(ym(jatm)-ym(iatm))
+              z=Abs(zm(jatm)-zm(iatm))
+              safex=(x < cut)
+              safey=(y < cut)
+              safez=(z < cut)
+              r=Sqrt(x**2+y**2+z**2)
+              If (safex .and. safey .and. safez) safer=(r < cut)
+              If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. idnode == 0)) Then
+                 Write(nrite,Fmt='(/,1x,a,1f7.2,a)') 'POSSIBLE DISTANCE VIOLATION: ', r, '  Angsroms'
+                 If (r > c4) Write(nrite,Fmt='(1x,a)') '*** WARNING **** WARNING *** '
+              End If
 
               safel=(safel .and. safer)
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
+              If ((mxiter == 42 .and. (.not.safel)) .and. (l_str .and. idnode == 0)) Then
                  Write(nrite,Fmt='(/,1x,a,2i10)') 'CORE_SHELL UNIT #(LOCAL & GLOBAL):',ishls,nshels
                  Write(nrite,Fmt='(1x,a,3(1x,l1))') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z',safex,safey,safez
 
@@ -441,14 +452,23 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
                  xm(jatm)=x1(1)+xm(iatm)
                  ym(jatm)=y1(1)+ym(iatm)
                  zm(jatm)=z1(1)+zm(iatm)
+                 safer=.true.
               End If
-              safex=(Abs(xm(jatm)-xm(iatm)) < cut)
-              safey=(Abs(ym(jatm)-ym(iatm)) < cut)
-              safez=(Abs(zm(jatm)-zm(iatm)) < cut)
-              safer=(safex .and. safey .and. safez)
+              x=Abs(xm(jatm)-xm(iatm))
+              y=Abs(ym(jatm)-ym(iatm))
+              z=Abs(zm(jatm)-zm(iatm))
+              safex=(x < cut)
+              safey=(y < cut)
+              safez=(z < cut)
+              r=Sqrt(x**2+y**2+z**2)
+              If (safex .and. safey .and. safez) safer=(r < cut)
+              If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. idnode == 0)) Then
+                 Write(nrite,Fmt='(/,1x,a,1f7.2,a)') 'POSSIBLE DISTANCE VIOLATION: ', r, '  Angsroms'
+                 If (r > c4) Write(nrite,Fmt='(1x,a)') '*** WARNING **** WARNING *** '
+              End If
 
               safel=(safel .and. safer)
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
+              If ((mxiter == 42 .and. (.not.safel)) .and. (l_str .and. idnode == 0)) Then
                  Write(nrite,Fmt='(/,1x,a,2i10)') 'CONSTRAINT UNIT #(LOCAL & GLOBAL):',icnst,nconst
                  Write(nrite,Fmt='(1x,a,3(1x,l1))') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z',safex,safey,safez
                  Write(nrite,Fmt='(2i10,3f10.1)') 1,lstcon(1,nconst),xm(iatm),ym(iatm),zm(iatm)
@@ -478,16 +498,25 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
                     xm(jatm)=x1(1)+xm(iatm)
                     ym(jatm)=y1(1)+ym(iatm)
                     zm(jatm)=z1(1)+zm(iatm)
+                    safer=.true.
                  End If
-                 safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
-                 safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
-                 safez=(Abs(zm(jatm)-zm(iatm)) < hwz)
-                 safer=(safex .and. safey .and. safez)
+                 x=Abs(xm(jatm)-xm(iatm))
+                 y=Abs(ym(jatm)-ym(iatm))
+                 z=Abs(zm(jatm)-zm(iatm))
+                 safex=(x < cut)
+                 safey=(y < cut)
+                 safez=(z < cut)
+                 r=Sqrt(x**2+y**2+z**2)
+                 If (safex .and. safey .and. safez) safer=(r < cut)
+                 If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. idnode == 0)) Then
+                    Write(nrite,Fmt='(/,1x,a,1f7.2,a)') 'POSSIBLE DISTANCE VIOLATION: ', r, '  Angsroms'
+                    If (r > c4) Write(nrite,Fmt='(1x,a)') '*** WARNING **** WARNING *** '
+                 End If
 
                  safel=(safel .and. safer)
               End Do
 
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
+              If ((mxiter == 42 .and. (.not.safel)) .and. (l_str .and. idnode == 0)) Then
                  Write(nrite,Fmt='(/,1x,a,2i10)') 'RIGID BODY UNIT #(LOCAL & GLOBAL):',irgd,nrigid
                  Write(nrite,Fmt='(1x,a)') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z'
                  Do i=1,lrgd
@@ -517,14 +546,23 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
                  xm(jatm)=x1(1)+xm(iatm)
                  ym(jatm)=y1(1)+ym(iatm)
                  zm(jatm)=z1(1)+zm(iatm)
+                 safer=.true.
               End If
-              safex=(Abs(xm(jatm)-xm(iatm)) < cut)
-              safey=(Abs(ym(jatm)-ym(iatm)) < cut)
-              safez=(Abs(zm(jatm)-zm(iatm)) < cut)
-              safer=(safex .and. safey .and. safez)
+              x=Abs(xm(jatm)-xm(iatm))
+              y=Abs(ym(jatm)-ym(iatm))
+              z=Abs(zm(jatm)-zm(iatm))
+              safex=(x < cut)
+              safey=(y < cut)
+              safez=(z < cut)
+              r=Sqrt(x**2+y**2+z**2)
+              If (safex .and. safey .and. safez) safer=(r < cut)
+              If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. idnode == 0)) Then
+                 Write(nrite,Fmt='(/,1x,a,1f7.2,a)') 'POSSIBLE DISTANCE VIOLATION: ', r, '  Angsroms'
+                 If (r > c4) Write(nrite,Fmt='(1x,a)') '*** WARNING **** WARNING *** '
+              End If
 
               safel=(safel .and. safer)
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
+              If ((mxiter == 42 .and. (.not.safel)) .and. (l_str .and. idnode == 0)) Then
                  Write(nrite,Fmt='(/,1x,a,2i10)') 'BOND UNIT #(LOCAL & GLOBAL):',ibond,nbonds
                  Write(nrite,Fmt='(1x,a,3(1x,l1))') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z',safex,safey,safez
                  Write(nrite,Fmt='(2i10,3f10.1)') 1,lstbnd(1,nbonds),xm(iatm),ym(iatm),zm(iatm)
@@ -553,16 +591,25 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
                     xm(jatm)=x1(1)+xm(iatm)
                     ym(jatm)=y1(1)+ym(iatm)
                     zm(jatm)=z1(1)+zm(iatm)
+                    safer=.true.
                  End If
-                 safex=(Abs(xm(jatm)-xm(iatm)) < cut)
-                 safey=(Abs(ym(jatm)-ym(iatm)) < cut)
-                 safez=(Abs(zm(jatm)-zm(iatm)) < cut)
-                 safer=(safex .and. safey .and. safez)
+                 x=Abs(xm(jatm)-xm(iatm))
+                 y=Abs(ym(jatm)-ym(iatm))
+                 z=Abs(zm(jatm)-zm(iatm))
+                 safex=(x < cut)
+                 safey=(y < cut)
+                 safez=(z < cut)
+                 r=Sqrt(x**2+y**2+z**2)
+                 If (safex .and. safey .and. safez) safer=(r < cut)
+                 If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. idnode == 0)) Then
+                    Write(nrite,Fmt='(/,1x,a,1f7.2,a)') 'POSSIBLE DISTANCE VIOLATION: ', r, '  Angsroms'
+                    If (r > c4) Write(nrite,Fmt='(1x,a)') '*** WARNING **** WARNING *** '
+                 End If
 
                  safel=(safel .and. safer)
               End Do
 
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
+              If ((mxiter == 42 .and. (.not.safel)) .and. (l_str .and. idnode == 0)) Then
                  Write(nrite,Fmt='(/,1x,a,2i10)') 'ANGLE UNIT #(LOCAL & GLOBAL):',iang,nangle
                  Write(nrite,Fmt='(1x,a)') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z'
                  Do i=1,3
@@ -593,17 +640,26 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
                     xm(jatm)=x1(1)+xm(iatm)
                     ym(jatm)=y1(1)+ym(iatm)
                     zm(jatm)=z1(1)+zm(iatm)
+                    safer=.true.
                  End If
-                 x=Real(i,wp)/2.0_wp*cut
-                 safex=(Abs(xm(jatm)-xm(iatm)) < x)
-                 safey=(Abs(ym(jatm)-ym(iatm)) < x)
-                 safez=(Abs(zm(jatm)-zm(iatm)) < x)
-                 safer=(safex .and. safey .and. safez)
+                 t=real(i,wp)/2.0_wp*cut
+                 x=Abs(xm(jatm)-xm(iatm))
+                 y=Abs(ym(jatm)-ym(iatm))
+                 z=Abs(zm(jatm)-zm(iatm))
+                 safex=(x < t)
+                 safey=(y < t)
+                 safez=(z < t)
+                 r=Sqrt(x**2+y**2+z**2)
+                 If (safex .and. safey .and. safez) safer=(r < t)
+                 If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. idnode == 0)) Then
+                    Write(nrite,Fmt='(/,1x,a,1f7.2,a)') 'POSSIBLE DISTANCE VIOLATION: ', r, '  Angsroms'
+                    If (r > c4) Write(nrite,Fmt='(1x,a)') '*** WARNING **** WARNING *** '
+                 End If
 
                  safel=(safel .and. safer)
               End Do
 
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
+              If ((mxiter == 42 .and. (.not.safel)) .and. (l_str .and. idnode == 0)) Then
                  Write(nrite,Fmt='(/,1x,a,2i10)') 'DIHEDRAL UNIT #(LOCAL & GLOBAL):',idih,ndihed
                  Write(nrite,Fmt='(1x,a)') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z'
                  Do i=1,4
@@ -634,16 +690,25 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
                     xm(jatm)=x1(1)+xm(iatm)
                     ym(jatm)=y1(1)+ym(iatm)
                     zm(jatm)=z1(1)+zm(iatm)
+                    safer=.true.
                  End If
-                 safex=(Abs(xm(jatm)-xm(iatm)) < cut)
-                 safey=(Abs(ym(jatm)-ym(iatm)) < cut)
-                 safez=(Abs(zm(jatm)-zm(iatm)) < cut)
-                 safer=(safex .and. safey .and. safez)
+                 x=Abs(xm(jatm)-xm(iatm))
+                 y=Abs(ym(jatm)-ym(iatm))
+                 z=Abs(zm(jatm)-zm(iatm))
+                 safex=(x < cut)
+                 safey=(y < cut)
+                 safez=(z < cut)
+                 r=Sqrt(x**2+y**2+z**2)
+                 If (safex .and. safey .and. safez) safer=(r < cut)
+                 If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. idnode == 0)) Then
+                    Write(nrite,Fmt='(/,1x,a,1f7.2,a)') 'POSSIBLE DISTANCE VIOLATION: ', r, '  Angsroms'
+                    If (r > c4) Write(nrite,Fmt='(1x,a)') '*** WARNING **** WARNING *** '
+                 End If
 
                  safel=(safel .and. safer)
               End Do
 
-              If (mxiter == 42 .and. (.not.safel) .and. idnode == 0) Then
+              If ((mxiter == 42 .and. (.not.safel)) .and. (l_str .and. idnode == 0)) Then
                  Write(nrite,Fmt='(/,1x,a,2i10)') 'INVERSION UNIT #(LOCAL & GLOBAL):',iinv,ninver
                  Write(nrite,Fmt='(1x,a)') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z'
                  Do i=1,4
@@ -654,7 +719,7 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
            End Do
            safe=(safe .and. safel)
 
-           If ((.not.safe) .and. imols < nummols(itmols)) Then
+           If ((.not.safe) .or. imols /= nummols(itmols)) Then
               nshels=nshels-numshl(itmols)
               nconst=nconst-numcon(itmols)
               nrigid=nrigid-numrgd(itmols)
@@ -665,10 +730,8 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
            End If
         End Do
 
-        If (.not.safe) Then
-           If (idnode == 0) Write(nrite,Fmt='(/,1x,a,i10))') 'Topological contiguity failure!!!'
-           Call error(0)
-        End If
+        If ((.not.safe) .and. idnode == 0) Write(nrite,Fmt='(/,1x,a)') &
+           '*** warning - possible topological contiguity failures occurred !!! ***'
 
         Do m=1,numsit(itmols)
            nattot=nattot+1 ! Increase global atom counter in CONFIG(old)
@@ -857,9 +920,9 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
   x=0.5_wp*Min(fx*celprp(7),fy*celprp(8),fz*celprp(9))
 
   If (idnode == 0) Then
-     Write(nrite,'(1x,3a)') '*** ', fcfg(1:Len_Trim(fcfg)), ' expansion completed!'
-     Write(nrite,'(1x,a,i10,a)') '*** Size: ', nall*megatm, ' particles.'
-     Write(nrite,'(1x,a,f10.2,a)') '*** Maximum radius of cutoff: ', x, ' Angstoms.'
+     Write(nrite,'(/,1x,3a)') '*** ', fcfg(1:Len_Trim(fcfg)), ' expansion completed !'
+     Write(nrite,'(1x,a,i10,a)') '*** Size: ', nall*megatm, ' particles'
+     Write(nrite,'(1x,a,f10.2,a)') '*** Maximum radius of cutoff: ', x, ' Angstroms'
      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') t
      Open(Unit=nfield, File='FIELD', Status='old')
      Open(Unit=nconf, File=ffld(1:Len_Trim(ffld)), Status='replace')
@@ -901,7 +964,7 @@ Subroutine system_expand(imcon,rcut,nx,ny,nz,megatm)
            Write(Unit=nconf,Fmt='(a)') record1(1:Len_Trim(record1))
            Close(Unit=nfield)
            Close(Unit=nconf)
-           Write(nrite,'(1x,3a)') '*** ', ffld(1:Len_Trim(ffld)), ' expansion done!'
+           Write(nrite,'(1x,3a)') '*** ', ffld(1:Len_Trim(ffld)), ' expansion done !'
            Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') t
            Write(nrite,'(1x,a)') '*** Simulation continues as scheduled...'
            Go To 10

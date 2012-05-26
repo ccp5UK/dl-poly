@@ -338,7 +338,7 @@ Program dl_poly
 
 ! Expand current system if opted for
 
-  If (l_exp) Call system_expand(imcon,rcut,nx,ny,nz,megatm)
+  If (l_exp) Call system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
 
 ! EXIT gracefully
 
