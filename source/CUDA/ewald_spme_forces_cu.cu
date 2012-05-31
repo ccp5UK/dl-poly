@@ -639,6 +639,10 @@ extern "C" void ewald_spme_forces_cuda_ccarray_invoke() {
     CUDA_SAFE_CALL(cudaEventSynchronize(lCE_K1_DevStop));
     CUDA_SAFE_CALL(cudaEventElapsedTime(&lCE_K1_Dev_ElapsedTime, lCE_K1_DevStart, lCE_K1_DevStop));
     lCE_K1_Dev_ElapsedTime /= 1000.0f;
+//malysaght310512
+    CUDA_SAFE_CALL(cudaEventDestroy(lCE_K1_DevStart));
+    CUDA_SAFE_CALL(cudaEventDestroy(lCE_K1_DevStop));
+//end_malysaght310512
 
     CUDA_SAFE_CALL(cudaThreadSynchronize());
     lLastError = cudaGetLastError();
