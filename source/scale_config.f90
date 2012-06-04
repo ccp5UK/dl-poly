@@ -1,4 +1,4 @@
-Subroutine scale_config(imcon,megatm)
+Subroutine scale_config(levcfg,imcon,megatm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,7 +6,7 @@ Subroutine scale_config(imcon,megatm)
 ! from CONFIG to new lattice parameters and saving it in CFGSCL
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2009
+! author    - i.t.todorov may 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -16,10 +16,10 @@ Subroutine scale_config(imcon,megatm)
 
   Implicit None
 
-  Integer, Intent( In    ) :: imcon,megatm
+  Integer, Intent( In    ) :: levcfg,imcon,megatm
 
   Character ( Len = 6 ) :: name
-  Integer               :: i,levcfg,nstep
+  Integer               :: i,nstep
   Real( Kind = wp )     :: rcell(1:9),det,uuu,vvv,www,tstep,time
 
 ! Get the inverse cell matrix
@@ -49,11 +49,12 @@ Subroutine scale_config(imcon,megatm)
 ! Write REVCON
 
   name   = 'CFGSCL' ! file name
-  levcfg = 2        ! define level of information in REVCON
   nstep  = 0        ! no steps done
   tstep  = 0.0_wp   ! no step exists
   time   = 0.0_wp   ! time is not relevant
 
-  Call write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
+  rcell = cell ; cell = cels
+  Call write_config(name,levcfg,imcon,megatm,nstep,tstep,time)
+  cell = rcell
 
 End Subroutine scale_config

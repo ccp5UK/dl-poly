@@ -327,7 +327,7 @@ Program dl_poly
         Write(nrite,'(1x,a)') "*** ... ***"
      End If
 
-     Call scale_config(imcon,megatm)
+     Call scale_config(levcfg,imcon,megatm)
 
      Call gtime(timelp)
      If (idnode == 0) Then

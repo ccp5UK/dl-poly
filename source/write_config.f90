@@ -1,4 +1,4 @@
-Subroutine write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
+Subroutine write_config(name,levcfg,imcon,megatm,nstep,tstep,time)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !

@@ -458,7 +458,7 @@ Subroutine minimise_relax &
         name = 'CFGMIN' ! file name
         levcfg = 0      ! define level of information in file
 
-        Call write_config(name,imcon,levcfg,megatm,i-1,eng_min/engunit,eng_0/engunit)
+        Call write_config(name,levcfg,imcon,megatm,i-1,eng_min/engunit,eng_0/engunit)
      End If
 
 ! setup new quternions

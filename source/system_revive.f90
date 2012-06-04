@@ -98,7 +98,7 @@ Subroutine system_revive                                            &
   name = 'REVCON' ! file name
   levcfg = 2      ! define level of information in REVCON
 
-  Call write_config(name,imcon,levcfg,megatm,nstep,tstep,time)
+  Call write_config(name,levcfg,imcon,megatm,nstep,tstep,time)
 
 ! node 0 handles I/O
 
