@@ -6,7 +6,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -260,8 +260,8 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
         Call io_init( recsz )
         Call io_open( io_write, MPI_COMM_SELF, 'RSDDAT', MPI_MODE_WRONLY, fh )
 
-        Write(record, Fmt='(a8,i10,2f12.6,i5,f11.3,a14,a1)') &
-           'timestep',nstep,tstep,time,imcon,rrsd,Repeat(' ',14),lf
+        Write(record, Fmt='(a8,i10,2f20.6,i3,f11.3,a1)') &
+           'timestep',nstep,tstep,time,imcon,rrsd,lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
@@ -357,8 +357,8 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
 ! Accumulate header
 
-        Write(record, Fmt='(a8,i10,2f12.6,i5,f11.3,a14,a1)') &
-           'timestep',nstep,tstep,time,imcon,rrsd,Repeat(' ',14),lf
+        Write(record, Fmt='(a8,i10,2f20.6,i3,f11.3,a1)') &
+           'timestep',nstep,tstep,time,imcon,rrsd,lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)

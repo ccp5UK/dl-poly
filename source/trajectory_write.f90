@@ -7,7 +7,7 @@ Subroutine trajectory_write &
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2010
+! author    - i.t.todorov june 2012
 ! contrib   - w.smith, i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -365,7 +365,7 @@ Subroutine trajectory_write &
         Call io_init( recsz )
         Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_WRONLY, fh )
 
-        Write(record(1:recsz), Fmt='(a8,4i10,2f12.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
+        Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -476,7 +476,7 @@ Subroutine trajectory_write &
 
 ! Accumulate header
 
-        Write(record(1:recsz), Fmt='(a8,4i10,2f12.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
+        Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -674,7 +674,7 @@ Subroutine trajectory_write &
 
 ! Write header and cell information
 
-           Write(record(1:recsz), Fmt='(a8,4i10,2f12.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
+           Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
            Call io_write_record( fh, jj_io, record(1:recsz) )
            jj_io=jj_io + Int(1,MPI_OFFSET_KIND)
 
@@ -791,7 +791,7 @@ Subroutine trajectory_write &
         Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Recl=recsz)
 
         rec=rec+Int(1,ip)
-        Write(Unit=nhist, Fmt='(a8,4i10,2f12.6,a1)', Rec=rec) 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
+        Write(Unit=nhist, Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
 
         Do i = 0, 2
            rec=rec+Int(1,ip)

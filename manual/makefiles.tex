@@ -3,7 +3,7 @@
 \begin{verbatim}
 # Master makefile for DL_POLY_4.03 (developer version)
 #
-# Author - I.T.Todorov march 2012
+# Author - I.T.Todorov june 2012
 #
 #
 # Define default settings
@@ -168,13 +168,22 @@ FILES_LFV = \
 
 all:
 	@echo
-	@echo "You MUST specify a target platform!"
+	@echo "You MUST specify or choose a permissive target platform!"
 	@echo
-	@echo "Please examine Makefile for permissible targets!"
+	@echo "The available, permissive targets are displayed below:"
 	@echo
-	@echo "If no target suits your system create your own"
-	@echo "using the generic target template provided in"
-	@echo "this Makefile at entry 'uknown_platform:'."
+	@echo "hpc || lake || newton || dirac || franklin ||"
+	@echo "hpcx || hpcx-debug || BGL || BGP ||"
+	@echo "hector || hector-pgi-debug ||"
+	@echo "hector-gnu || hector-gnu-debug ||"
+	@echo "hector-cray || hector-cray-debug ||"
+	@echo "hector-pathscale || hector-pathscale-debug ||"
+	@echo "hector-X2 || hector-X2-debug"
+	@echo
+	@echo "Please examine this Makefile's targets for details!"
+	@echo "If no target suits your system then create your own"
+	@echo "using the advice in generic target template provided"
+	@echo "in this Makefile under the entry 'uknown_platform:'."
 	@echo
 
 # Fetch the Velocity Verlet subroutines
@@ -874,7 +883,7 @@ zero_k_optimise.o: comms_module.o config_module.o kinds_f90.o \
 \begin{verbatim}
 # Master makefile for DL_POLY_4.03 (parallel version)
 #
-# Author - I.T.Todorov march 2012
+# Author - I.T.Todorov june 2012
 #
 #
 # Define default settings
@@ -1039,13 +1048,22 @@ FILES_LFV = \
 
 all:
 	@echo
-	@echo "You MUST specify a target platform!"
+	@echo "You MUST specify or choose a permissive target platform!"
 	@echo
-	@echo "Please examine Makefile for permissible targets!"
+	@echo "The available, permissive targets are displayed below:"
 	@echo
-	@echo "If no target suits your system create your own"
-	@echo "using the generic target template provided in"
-	@echo "this Makefile at entry 'uknown_platform:'."
+	@echo "hpc || lake || newton || dirac || franklin ||"
+	@echo "hpcx || hpcx-debug || BGL || BGP ||"
+	@echo "hector || hector-pgi-debug ||"
+	@echo "hector-gnu || hector-gnu-debug ||"
+	@echo "hector-cray || hector-cray-debug ||"
+	@echo "hector-pathscale || hector-pathscale-debug ||"
+	@echo "hector-X2 || hector-X2-debug"
+	@echo
+	@echo "Please examine this Makefile's targets for details!"
+	@echo "If no target suits your system then create your own"
+	@echo "using the advice in generic target template provided"
+	@echo "in this Makefile under the entry 'uknown_platform:'."
 	@echo
 
 # Fetch the Velocity Verlet subroutines
@@ -1296,7 +1314,7 @@ $(OBJ_ALL): $(OBJ_MOD)
 \begin{verbatim}
 # Master makefile for DL_POLY_4.03 (serial version 1)
 #
-# Author - I.T.Todorov march 2012
+# Author - I.T.Todorov june 2012
 #
 #
 # Define default settings
@@ -1466,13 +1484,16 @@ FILES_LFV = \
 
 all:
 	@echo
-	@echo "You MUST specify a target platform!"
+	@echo "You MUST specify or choose a permissive target platform!"
 	@echo
-	@echo "Please examine Makefile for permissible targets!"
+	@echo "The available, permissive targets are displayed below:"
 	@echo
-	@echo "If no target suits your system create your own"
-	@echo "using the generic target template provided in"
-	@echo "this Makefile at entry 'uknown_platform:'."
+	@echo "win || win-debug"
+	@echo
+	@echo "Please examine this Makefile's targets for details!"
+	@echo "If no target suits your system then create your own"
+	@echo "using the advice in generic target template provided"
+	@echo "in this Makefile under the entry 'uknown_platform:'."
 	@echo
 
 # Fetch MPI-SERIAL subroutines
@@ -1593,7 +1614,7 @@ $(OBJ_ALL): $(OBJ_MOD)
 \begin{verbatim}
 # Master makefile for DL_POLY_4.03 (serial version 2)
 #
-# Author - I.T.Todorov march 2012
+# Author - I.T.Todorov june 2012
 #
 #
 # Define default settings
@@ -1763,13 +1784,16 @@ FILES_LFV = \
 
 all:
 	@echo
-	@echo "You MUST specify a target platform!"
+	@echo "You MUST specify or choose a permissive target platform!"
 	@echo
-	@echo "Please examine Makefile for permissible targets!"
+	@echo "The available, permissive targets are displayed below:"
 	@echo
-	@echo "If no target suits your system create your own"
-	@echo "using the generic target template provided in"
-	@echo "this Makefile at entry 'uknown_platform:'."
+	@echo "win || win-debug"
+	@echo
+	@echo "Please examine this Makefile's targets for details!"
+	@echo "If no target suits your system then create your own"
+	@echo "using the advice in generic target template provided"
+	@echo "in this Makefile under the entry 'uknown_platform:'."
 	@echo
 
 # Fetch MPI-SERIAL subroutines
