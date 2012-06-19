@@ -305,9 +305,9 @@ BGP:
 #================== CRAY XT3/6 pgi compilers (default) ===============
 hector:
 	$(MAKE) LD="ftn -o" \
-	LDFLAGS="-O3 -fastsse" \
+	LDFLAGS="-O3" \
 	FC="ftn -c" \
-	FCFLAGS="-O3 -fastsse" \
+	FCFLAGS="-O3" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pgi compilers - DEBUG =================
@@ -1185,9 +1185,9 @@ BGP:
 #================== CRAY XT3/6 pgi compilers (default) ===============
 hector:
 	$(MAKE) LD="ftn -o" \
-	LDFLAGS="-O3 -fastsse" \
+	LDFLAGS="-O3" \
 	FC="ftn -c" \
-	FCFLAGS="-O3 -fastsse" \
+	FCFLAGS="-O3" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pgi compilers - DEBUG =================

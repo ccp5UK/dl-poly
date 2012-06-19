@@ -157,6 +157,7 @@ Subroutine defects1_write &
 
            Open(Unit=ndefdt, File='DEFECTS1', Form='formatted')
 
+           l_tmp =.true.
            Do While (.true.)
 
               record=' '

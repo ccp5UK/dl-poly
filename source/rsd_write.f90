@@ -118,6 +118,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
            Open(Unit=nrsddt, File='RSDDAT', Form='formatted')
 
+           l_tmp =.true.
            Do While (.true.)
 
               record=' '
