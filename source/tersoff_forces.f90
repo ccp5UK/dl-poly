@@ -569,14 +569,15 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
 ! bond-angle is detected, force and virial parameters calculation
 
-              cost  = xtf(jj)*xtf(kk)+ytf(jj)*ytf(kk)+ztf(jj)*ztf(kk)
+              cost = xtf(jj)*xtf(kk)+ytf(jj)*ytf(kk)+ztf(jj)*ztf(kk)
               If (Abs(cost) > 1.0_wp) cost=Sign(1.0_wp,cost)
-              gtheta= 1.0_wp + (ci/di)**2 - ci**2 / (di**2 + (hi-cost)**2)
-              eterm = eterm + gtheta*prmter2(ikter,2)*scr(kk) !SUM of L_{ij}
-              vterm = vterm + gtheta*prmter2(ikter,2)*gcr(kk)*rtf(kk)
-! SUM of d/dr_i of L_{ij} - first part, i.e. no angular part so it is used in the virial
-
               cst(kk) = cost
+
+              gtheta= 1.0_wp + (ci/di)**2 - ci**2 / (di**2 + (hi-cost)**2)
+              eterm = eterm + gtheta*prmter2(ikter,2)*scr(kk) ! L_{ij}
+              vterm = vterm + gtheta*prmter2(ikter,2)*gcr(kk)*rtf(kk)
+! d/dr_i of L_{ij} - first part, i.e. no angular part so it is used in the virial
+
               gam(kk) = gtheta
               gvr(kk) = 2.0_wp * ci**2 * (hi-cost) / (di**2 + (hi-cost)**2)**2 ! d(gtheta)/sint*d(theta)
 
@@ -589,23 +590,24 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   End Do
 
 ! calculate contribution to energy, virial, two-body stress and forces
-! (all associated with the head atom) and put a factor of 0.5_wp
-! to correct for the double counting
+! (all associated with the head atom)
 
   gam_ij=prmter2(ijter,1)
   gamma=0.0_wp
   If (flag3) Then
-     gam_ij = gam_ij*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei) ! gamma_{ij}
-     gamma  = 0.5_wp * prmter2(ijter,1) * bi * (bi*eterm)**(ei-1.0_wp) * &
-              eat(jj) * (1.0_wp + (bi*eterm)**ei)**(-0.5_wp/ei - 1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
+     gam_ij = prmter2(ijter,1)*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei) ! gamma_{ij}
+     gamma  = eat(jj) * prmter2(ijter,1) * bi*(bi*eterm)**(ei-1.0_wp) * &
+              0.5_wp*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei - 1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
   End If
 
   gterm=(grt(jj)-gam_ij*gat(jj)) ! force_ij (no three body part)
 
+! Counteract the double counting with the 0.5_wp factor
+
   If (iatm <= natms) Then
 
-     engter = engter + 0.5_wp*(ert(jj) - gam_ij*eat(jj))    ! energy_ij/2 (double counting)
-     virter = virter + 0.5_wp*(gamma*vterm + gterm*rtf(jj)) ! virial_ij (double counting)
+     engter = engter + 0.5_wp*(ert(jj) - gam_ij*eat(jj))    ! energy_ij
+     virter = virter + 0.5_wp*(gamma*vterm + gterm*rtf(jj)) ! virial_ij
 
      fxx(iatm)=fxx(iatm)+0.5_wp*gterm*xtf(jj)
      fyy(iatm)=fyy(iatm)+0.5_wp*gterm*ytf(jj)
@@ -653,12 +655,12 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
            If (lfrzn(iatm)*lfrzn(jatm)*lfrzn(katm) == 0) Then
 
-              gam_j = 0.5_wp*gamma*prmter2(ikter,2)*scr(kk)*gvr(kk) ! term in d/dr_l L_{ij} no derivative of Fc
-              gam_k = 0.5_wp*gamma*prmter2(ikter,2)*gcr(kk)*gam(kk) ! term in d/dr_l L_{ij} no derivative of gamma
-
-! calculate contribution to atomic forces
+              gam_j = 0.5_wp*gamma*prmter2(ikter,2)*scr(kk)*gvr(kk) ! term in d/dr_k L_{ij} no derivative of Fc
+              gam_k = 0.5_wp*gamma*prmter2(ikter,2)*gcr(kk)*gam(kk) ! term in d/dr_k L_{ij} no derivative of gamma
 
               cost=cst(kk)
+
+! calculate contribution to atomic forces
 
               fxa = gam_j*(xtf(kk)-xtf(jj)*cost)/rtf(jj) ! contributions from k to i and j
               fya = gam_j*(ytf(kk)-ytf(jj)*cost)/rtf(jj)
