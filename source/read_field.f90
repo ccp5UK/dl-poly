@@ -13,7 +13,8 @@ Subroutine read_field                      &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov june 2012
+! contrib   - r.davidchak june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -482,7 +483,7 @@ Subroutine read_field                      &
 
                     If (frzsit(isite2) /= 0) Call error(49)
 
-! establish list of unique shell types (most certainly ntpshl < ntpatm < mxatyp)
+! establish list of unique shell types (most certainly ntpshl <= ntpatm <= mxatyp)
 
                     If (.not.Any(unqshl(1:ntpshl) == sitnam(isite2))) Then
                        ntpshl=ntpshl+1
@@ -2187,7 +2188,11 @@ Subroutine read_field                      &
            keyword=word(1:4)
 
            If      (keyword(1:3) == 'eam' ) Then
-              keypot=0
+              keypot=0 ! tabmet=1 set in scan_field
+              lmet_safe=(tabmet == 1)
+           Else If (keyword(1:4) == 'eeam' ) Then
+              keypot=0 ! tabmet=2 set in scan_field
+              lmet_safe=(tabmet == 2)
            Else If (keyword(1:4) == 'fnsc') Then
               keypot=1
            Else If (keyword(1:4) == 'exfs') Then
@@ -2307,7 +2312,7 @@ Subroutine read_field                      &
 
            If (.not.ld_met) Then
               Call allocate_metal_table_arrays()
-              If (lt_met) Then ! lt_met=(keypot==0)
+              If (tabmet > 0) Then ! tabmet=(keypot=0)
                  Call metal_table_read(l_top)
               Else
                  Call metal_generate(rmet)
@@ -2500,9 +2505,9 @@ Subroutine read_field                      &
            atom2=word(1:8)
 
            Call get_word(record,word)
-           parpot(1)=word_2_real(word,1.0_wp)                                       ! chi_ij for type ters or alpha_ij for type kihs
+           parpot(1)=word_2_real(word,1.0_wp)   ! chi_ij for type ters or alpha_ij for type kihs
            Call get_word(record,word)
-           parpot(2)=word_2_real(word,1.0_wp)                                       ! omega_ij or alpha_ij for type kihs beta_ij
+           parpot(2)=word_2_real(word,1.0_wp)   ! omega_ij or alpha_ij for type kihs beta_ij
 
            katom1=0
            katom2=0

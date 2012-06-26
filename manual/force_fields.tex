@@ -1200,8 +1200,8 @@ F(\rho_{i}) &=& -A \sqrt{\rho_{i}}~~, \nonumber
 \end{eqnarray}
 with parameters: $c_{0}$, $c_{1}$, $c_{2}$, $c$, $A$, $d$, $\beta$,
 both $c$ and $d$ are cutoffs.  Since first being proposed a number of
-alternative analysical forms have been proposed, some of which are
-descibed below.  The rules for combining different metal potentials to
+alternative analytical forms have been proposed, some of which are
+described below.  The rules for combining different metal potentials to
 model alloys are different from the EAM potentials (see below).
 \item Extended Finnis-Sinclair potential \cite{dai-06}:  ({\bf exfs})
 It has the following form:
@@ -1284,7 +1284,7 @@ five point interpolation precedure.
 2 (r_{kj}-c) (c_{0}+c_{1}r_{kj}+c_{2}r_{kj}^{2}) +
 (r_{kj}-c)^{2} (c_{1}+2c_{2}r_{kj}) \right\} \frac{\vek{r_{kj}}}{r_{kj}} \nonumber \\
 -\frac{\partial U_{2}}{\partial \vek{r_{k}}} &=& -\sum_{j=1,j \ne k}^{N}
-{A \over 2} \left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+{A \over 2} \left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \left\{ 2(r_{kj}-d) + 3 \beta \frac{(r_{kj}-d)^{2}}{d} \right\} \frac{\vek{r_{kj}}}{r_{kj}}~~.
 \end{eqnarray}
 \item Extended Finnis-Sinclair force
@@ -1294,7 +1294,7 @@ five point interpolation precedure.
 & & \phantom{xxxxxxx} \left. (r_{kj}-c)^{2} (c_{1}+2c_{2}r_{kj}+3c_{3}r_{kj}^{2}+4c_{4}r_{kj}^{3}) \right\}
 \frac{\vek{r_{kj}}}{r_{kj}} \\
 -\frac{\partial U_{2}}{\partial \vek{r_{k}}} &=& -\sum_{j=1,j \ne k}^{N}
-{A \over 2} \left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+{A \over 2} \left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \left\{ 2(r_{kj}-d) + 4 B^{2} (r_{kj}-d)^{3}\right\} \frac{\vek{r_{kj}}}{r_{kj}}~~. \nonumber
 \end{eqnarray}
 \item Sutton-Chen force
@@ -1302,7 +1302,7 @@ five point interpolation precedure.
 -\frac{\partial U_{1}}{\partial \vek{r_{k}}} &=& -\sum_{j=1,j \ne k}^{N} n \epsilon
 \left( \frac{a}{r_{kj}} \right)^{n} \frac{\vek{r_{kj}}}{r_{kj}} \nonumber \\
 -\frac{\partial U_{2}}{\partial \vek{r_{k}}} &=& \sum_{j=1,j \ne k}^{N} \frac{m c \epsilon}{2}
-\left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+\left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \left( \frac{a}{r_{kj}} \right)^{m} \frac{\vek{r_{kj}}}{r_{kj}}~~.
 \end{eqnarray}
 \item Gupta force
@@ -1310,7 +1310,7 @@ five point interpolation precedure.
 -\frac{\partial U_{1}}{\partial \vek{r_{k}}} &=& -\sum_{j=1,j \ne k}^{N} \frac{A p}{r_{0}}
 \exp \left( -p \frac{r_{kj}-r_{0}}{r_{0}} \right) \frac{\vek{r_{kj}}}{r_{kj}} \nonumber \\
 -\frac{\partial U_{2}}{\partial \vek{r_{k}}} &=& \sum_{j=1,j \ne k}^{N} \frac{B q_{kj}}{r_{0}}
-\left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+\left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \exp \left( -2 q_{kj} \frac{r_{kj}-r_{0}}{r_{0}} \right) \frac{\vek{r_{kj}}}{r_{kj}}~~.
 \end{eqnarray}
 \end{enumerate}
@@ -1345,7 +1345,7 @@ The same as above.
 \left\{ 2 (r_{ij}-c) (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}) +
 (r_{ij}-c)^{2} (c_{1}+2c_{2}r_{ij}) \right\} r_{ij} \nonumber \\
 \Psi_{2} &=& {1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N}
-{A \over 2} \left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+{A \over 2} \left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \left\{ 2(r_{ij}-d) + 3 \beta \frac{(r_{ij}-d)^{2}}{d} \right\} r_{ij}a~~.
 \end{eqnarray}
 \item Extended Finnis-Sinclair virial
@@ -1354,7 +1354,7 @@ The same as above.
 \left\{ 2 (r_{ij}-c) (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}+c_{3}r_{ij}^{3}+c_{4}r_{ij}^{4}) + \right. \nonumber \\
 & & \phantom{xxxxxxxx} \left. (r_{ij}-c)^{2} (c_{1}+2c_{2}r_{ij}+3c_{3}r_{ij}^{2}+4c_{4}r_{ij}i^{3}) \right\} r_{ij} \\
 \Psi_{2} &=& {1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N}
-{A \over 2} \left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+{A \over 2} \left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \left\{ 2(r_{ij}-d) + 4 B^{2} (r_{ij}-d)^{3} \right\} r_{ij}a~~. \nonumber
 \end{eqnarray}
 \item Sutton-Chen virial
@@ -1368,7 +1368,7 @@ The same as above.
 \Psi_{1} &=& -{1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N}
 \frac{A p}{r_{0}} \exp \left( -p \frac{r_{ij}-r_{0}}{r_{0}} \right) r_{ij} \nonumber \\
 \Psi_{2} &=& {1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N} \frac{B q_{ij}}{r_{0}}
-\left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+\left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \exp \left( -2 q_{ij} \frac{r_{ij}-r_{0}}{r_{0}} \right) r_{ij}~~.
 \end{eqnarray}
 \end{enumerate}

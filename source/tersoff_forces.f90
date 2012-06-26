@@ -4,7 +4,11 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 !
 ! dl_poly_4 subroutine for calculating tersoff forces (energy and
 ! virial) arising from the tersoff potential as defined by
-! J. Tersoff, Phys. Rev. B 39 (1989) 5566
+!
+! 1) J. Tersoff, Phys. Rev. B 39 (1989) 5566
+!
+! 2) T. Kumagai, S. Izumi, S. Hara, and S. Sakai, Computational
+!    Materials Science 39, 457 (2007), ISSN 09270256
 !
 ! Note: coordinates are converted to reduced units to avoid a call to
 ! images.  The link cell algorithm used here necessitates a
@@ -12,7 +16,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith  october 2004
-! amended   - i.t.todorov january 2012
+! amended   - i.t.todorov june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -32,26 +36,27 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
 
   Logical,           Save :: newjob = .true.
-  Integer,           Save :: idx,idy,idz
+  Integer,           Save :: idx,idy,idz,keypot
   Real( Kind = wp ), Save :: sidex,sidey,sidez,rdr
 
 ! flag for undefined potentials NOT NEEDED HERE YET
   Logical           :: lx0,lx1,ly0,ly1,lz0,lz1,flag3 !,safe
 
-  Integer           :: fail(1:6),                      &
+  Integer           :: fail(1:7),                      &
                        i,j,k, ii,jj,kk,ll,             &
                        nbx,nby,nbz, ncells,            &
                        ix,iy,iz,icell, jx,jy,jz,jcell, &
                        iatm,jatm,katm, iter,jter,kter, &
                        ijter,ikter,limit
 
-  Real( Kind = wp ) :: dispx,dispy,dispz, xdc,ydc,zdc,             &
-                       rcell(1:9),celprp(1:10),det,                &
-                       sxij,syij,szij,                             &
-                       gk0,gk1,gk2,vk0,vk1,vk2,                    &
-                       t1,t2,ppp,bi,ei,ci,di,hi,gtheta,cost,       &
-                       eterm,vterm,gterm,gamma,gam_ij,gam_j,gam_k, &
-                       fxa,fya,fza, fxc,fyc,fzc,                   &
+  Real( Kind = wp ) :: dispx,dispy,dispz, xdc,ydc,zdc,               &
+                       rcell(1:9),celprp(1:10),det,                  &
+                       sxij,syij,szij,                               &
+                       gk0,gk1,gk2,vk0,vk1,vk2,                      &
+                       t1,t2,ppp,bi,ei,ci,di,c1i,c2i,c3i,c4i,c5i,hi, &
+                       ak,bk,xkj,ykj,zkj,gtheta,cost,hmct2,c4exp,    &
+                       eterm,vterm,gterm,gamma,gam_ij,gam_j,gam_k,   &
+                       fxa,fya,fza, fxc,fyc,fzc,                     &
                        strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:2)
 
 ! Number of neighbouring cells to look around for counting tersoff
@@ -70,19 +75,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
   Real( Kind = wp ), Dimension( : ), Allocatable :: xtf,ytf,ztf,rtf
   Real( Kind = wp ), Dimension( : ), Allocatable :: ert,eat,grt,gat
-  Real( Kind = wp ), Dimension( : ), Allocatable :: scr,gcr,gam,gvr,cst
-
-  fail=0
-  Allocate (link(1:mxatms),listin(1:mxatms),lct(1:mxcell),lst(1:mxcell), Stat=fail(1))
-  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
-  Allocate (xtf(1:mxlist),ytf(1:mxlist),ztf(1:mxlist),rtf(1:mxlist),     Stat=fail(3))
-  Allocate (ert(1:mxlist),eat(1:mxlist),grt(1:mxlist),gat(1:mxlist),     Stat=fail(4))
-  Allocate (scr(1:mxlist),gcr(1:mxlist),                                 Stat=fail(5))
-  Allocate (cst(1:mxlist),gam(1:mxlist),gvr(1:mxlist),                   Stat=fail(6))
-  If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'tersoff_forces allocation failure, node: ', idnode
-     Call error(0)
-  End If
+  Real( Kind = wp ), Dimension( : ), Allocatable :: scr,gcr,gam,gvr,cst,rkj,wkj
 
 
   If (newjob) Then
@@ -108,6 +101,29 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 ! Get reciprocal of interpolation interval
 
      rdr=Real(mxgrid-4,wp)/rcter
+
+! check on mixing tersoff types
+
+     keypot=0
+     Do i=1,ntpter
+        keypot=ltpter(i)
+        If (i > 1) Then
+           If (keypot /= ltpter(i-1)) Call error(90)
+        End If
+     End Do
+  End If
+
+  fail=0
+  Allocate (link(1:mxatms),listin(1:mxatms),lct(1:mxcell),lst(1:mxcell), Stat=fail(1))
+  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
+  Allocate (xtf(1:mxlist),ytf(1:mxlist),ztf(1:mxlist),rtf(1:mxlist),     Stat=fail(3))
+  Allocate (ert(1:mxlist),eat(1:mxlist),grt(1:mxlist),gat(1:mxlist),     Stat=fail(4))
+  Allocate (scr(1:mxlist),gcr(1:mxlist),                                 Stat=fail(5))
+  Allocate (cst(1:mxlist),gam(1:mxlist),gvr(1:mxlist),                   Stat=fail(6))
+  If (keypot == 2) Allocate (rkj(1:mxlist),wkj(1:mxlist),                Stat=fail(7))
+  If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'tersoff_forces allocation failure, node: ', idnode
+     Call error(0)
   End If
 
 ! Get the dimensional properties of the MD cell
@@ -495,11 +511,22 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
 ! Get parameters for iatm
 
-                    bi=prmter(7, iter)
-                    ei=prmter(8, iter)
-                    ci=prmter(9, iter)
-                    di=prmter(10,iter)
-                    hi=prmter(11,iter)
+                    If      (keypot == 1) Then ! TERS
+                       bi=prmter(7, iter)
+                       ei=prmter(8, iter)
+                       ci=prmter(9, iter)
+                       di=prmter(10,iter)
+                       hi=prmter(11,iter)
+                    Else If (keypot == 2) Then ! KIHS
+                       ei =prmter(7, iter)
+                       di =prmter(8, iter)
+                       c1i=prmter(9, iter)
+                       c2i=prmter(10,iter)
+                       c3i=prmter(11,iter)
+                       c4i=prmter(12,iter)
+                       c5i=prmter(13,iter)
+                       hi =prmter(14,iter)
+                    End If
 
 ! bond-angle detection
 
@@ -538,6 +565,12 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
                                 gam(kk)=0.0_wp
                                 gvr(kk)=0.0_wp
                              End Do
+                             If (keypot == 2) Then ! KIHS
+                                Do kk=1,limit
+                                   rkj(kk)=0.0_wp
+                                   wkj(kk)=0.0_wp
+                                End Do
+                             End If
 
 ! (SHIFT TO LEFT)
 ! calculate bond factor
@@ -573,13 +606,37 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
               If (Abs(cost) > 1.0_wp) cost=Sign(1.0_wp,cost)
               cst(kk) = cost
 
-              gtheta= 1.0_wp + (ci/di)**2 - ci**2 / (di**2 + (hi-cost)**2)
-              eterm = eterm + gtheta*prmter2(ikter,2)*scr(kk) ! L_{ij}
-              vterm = vterm + gtheta*prmter2(ikter,2)*gcr(kk)*rtf(kk)
+              If      (keypot == 1) Then ! TERS
+                 gtheta= 1.0_wp + (ci/di)**2 - ci**2 / (di**2 + (hi-cost)**2)
+                 eterm = eterm + gtheta*prmter2(ikter,2)*scr(kk) ! L_{ij}
+                 vterm = vterm + gtheta*prmter2(ikter,2)*gcr(kk)*rtf(kk)
 ! d/dr_i of L_{ij} - first part, i.e. no angular part so it is used in the virial
 
-              gam(kk) = gtheta
-              gvr(kk) = 2.0_wp * ci**2 * (hi-cost) / (di**2 + (hi-cost)**2)**2 ! d(gtheta)/sint*d(theta)
+                 gam(kk) = gtheta
+                 gvr(kk) = 2.0_wp * ci**2 * (hi-cost) / (di**2 + (hi-cost)**2)**2 ! d(gtheta)/sint*d(theta)
+              Else If (keypot == 2) Then ! KIHS
+                 ak =prmter2(1,ikter)
+                 bk =prmter2(2,ikter)
+
+                 xkj=xtf(jj)*rtf(jj)-xtf(kk)*rtf(kk)
+                 ykj=ytf(jj)*rtf(jj)-ytf(kk)*rtf(kk)
+                 zkj=ztf(jj)*rtf(jj)-ztf(kk)*rtf(kk)
+
+                 rkj(kk)=Sqrt(xkj**2+ykj**2+zkj**2)
+                 wkj(kk)=Exp(ak * rkj(kk)**bk)
+
+                 hmct2=(hi-cost)**2
+                 c4exp=c4i*Exp(-c5i*hmct2)
+
+                 gtheta= c1i + c2i*hmct2*(1.0_wp+c4exp)/(c3i+hmct2)
+                 eterm = eterm + gtheta*wkj(kk)*scr(kk) ! L_{ij}
+                 vterm = vterm + gtheta*wkj(kk)*(gcr(kk) - scr(kk)*ak*bk*rkj(kk)**(bk-1))*rtf(kk)
+! d/dr_k of L_{ij} - first part, i.e. no angular part so it is used in the virial
+
+                 gam(kk) = gtheta
+                 gvr(kk) = 2.0_wp * (c2i/(c3i+hmct2)) * (hi-cost) * & ! d(gtheta)/sint*d(theta)
+                           ((c3i/(c3i+hmct2))*(1.0_wp+c4exp) - hmct2*c5i*c4exp)
+              End If
 
            End If
 
@@ -592,12 +649,22 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 ! calculate contribution to energy, virial, two-body stress and forces
 ! (all associated with the head atom)
 
-  gam_ij=prmter2(ijter,1)
-  gamma=0.0_wp
-  If (flag3) Then
-     gam_ij = prmter2(ijter,1)*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei) ! gamma_{ij}
-     gamma  = eat(jj) * prmter2(ijter,1) * bi*(bi*eterm)**(ei-1.0_wp) * &
+  If      (keypot == 1) Then ! TERS
+     gam_ij=1.0_wp
+     gamma=0.0_wp
+     If (flag3) Then
+        gam_ij = (1.0_wp+eterm**ei)**(-di) ! gamma_{ij}
+        gamma  = eat(jj) * ei * eterm**(ei-1.0_wp) * &
+                 di * (1.0_wp+eterm**ei)**(-di-1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
+     End If
+  Else If (keypot == 2) Then ! KIHS
+     gam_ij=prmter2(ijter,1)
+     gamma=0.0_wp
+     If (flag3) Then
+        gam_ij = prmter2(ijter,1)*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei) ! gamma_{ij}
+        gamma  = eat(jj) * prmter2(ijter,1) * bi*(bi*eterm)**(ei-1.0_wp) * &
               0.5_wp*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei - 1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
+     End If
   End If
 
   gterm=(grt(jj)-gam_ij*gat(jj)) ! force_ij (no three body part)
@@ -655,8 +722,20 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
            If (lfrzn(iatm)*lfrzn(jatm)*lfrzn(katm) == 0) Then
 
-              gam_j = 0.5_wp*gamma*prmter2(ikter,2)*scr(kk)*gvr(kk) ! term in d/dr_k L_{ij} no derivative of Fc
-              gam_k = 0.5_wp*gamma*prmter2(ikter,2)*gcr(kk)*gam(kk) ! term in d/dr_k L_{ij} no derivative of gamma
+              If      (keypot == 1) Then ! TERS
+                 gam_j = 0.5_wp*gamma*prmter2(ikter,2)*scr(kk)*gvr(kk) ! term in d/dr_k L_{ij} no derivative of Fc
+                 gam_k = 0.5_wp*gamma*prmter2(ikter,2)*gcr(kk)*gam(kk) ! term in d/dr_k L_{ij} no derivative of gamma
+              Else If (keypot == 2) Then ! KIHS
+                 ak =prmter2(1,ikter)
+                 bk =prmter2(2,ikter)
+
+! Counteract the double counting with the 0.5_wp factor
+
+                 gam_j = 0.5_wp*gamma*scr(kk)*wkj(kk)*gvr(kk) ! term in d/dr_k L_{ij} no derivative of Fc*wkj
+                 gam_k = 0.5_wp*gamma*gam(kk)*wkj(kk)*(gcr(kk) - scr(kk)*ak*bk*rkj(kk)**(bk-1))
+              End If
+
+! term in d/dr_k L_{ij} no derivative of gamma
 
               cost=cst(kk)
 
@@ -751,12 +830,13 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   stress(8) = stress(8) + strs6
   stress(9) = stress(9) + strs9
 
-  Deallocate (link,listin,lct,lst, Stat=fail(1))
-  Deallocate (xxt,yyt,zzt,         Stat=fail(2))
-  Deallocate (xtf,ytf,ztf,rtf,     Stat=fail(3))
-  Deallocate (ert,eat,grt,gat,     Stat=fail(4))
-  Deallocate (scr,gcr,             Stat=fail(5))
-  Deallocate (cst,gam,gvr,         Stat=fail(6))
+  Deallocate (link,listin,lct,lst,      Stat=fail(1))
+  Deallocate (xxt,yyt,zzt,              Stat=fail(2))
+  Deallocate (xtf,ytf,ztf,rtf,          Stat=fail(3))
+  Deallocate (ert,eat,grt,gat,          Stat=fail(4))
+  Deallocate (scr,gcr,                  Stat=fail(5))
+  Deallocate (cst,gam,gvr,              Stat=fail(6))
+  If (keypot == 2) Deallocate (rkj,wkj, Stat=fail(7))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'tersoff_forces deallocation failure, node: ', idnode
      Call error(0)

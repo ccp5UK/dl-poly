@@ -515,7 +515,7 @@ Subroutine warning(kode,a,b,c)
      Else If (kode == 480) Then
 
         Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)') &
-        '*** warning - "metal direct" option disabled as incompatible with EAM (TABEAM)!!! ***'
+        '*** warning - "metal direct" option disabled as incompatible with EAM potentials (TABEAM)!!! ***'
 
      Else
 

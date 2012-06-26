@@ -6,7 +6,7 @@ Module metal_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -14,10 +14,10 @@ Module metal_module
 
   Implicit None
 
-  Logical,                        save :: lt_met = .false., &
-                                          ld_met = .false.
+  Logical,                        save :: ld_met = .false.
 
-  Integer,                        Save :: ntpmet = 0
+  Integer,                        Save :: ntpmet = 0 , &
+                                          tabmet = 0
 
 
   Integer,           Allocatable, Save :: lstmet(:),ltpmet(:)
@@ -65,7 +65,7 @@ Contains
 
   Subroutine allocate_metal_table_arrays()
 
-    Use setup_module, Only : mxmet,mxgrid
+    Use setup_module, Only : mxmet,mxmed,mxatyp,mxgrid
 
     Implicit None
 
@@ -73,15 +73,15 @@ Contains
 
     fail = 0
 
-    Allocate (vmet(1:mxgrid,1:mxmet,1:2), Stat = fail(1))
-    Allocate (dmet(1:mxgrid,1:mxmet,1:2), Stat = fail(2))
-    Allocate (fmet(1:mxgrid,1:mxmet,1:2), Stat = fail(3))
+    Allocate (vmet(1:mxgrid,1:mxmet, 1:2), Stat = fail(1))
+    Allocate (dmet(1:mxgrid,1:mxmed, 1:2), Stat = fail(2))
+    Allocate (fmet(1:mxgrid,1:mxatyp,1:2), Stat = fail(3))
 
     If (Any(fail > 0)) Call error(1069)
 
-    vmet   = 0.0_wp
-    dmet   = 0.0_wp
-    fmet   = 0.0_wp
+    vmet = 0.0_wp
+    dmet = 0.0_wp
+    fmet = 0.0_wp
 
   End Subroutine allocate_metal_table_arrays
 
