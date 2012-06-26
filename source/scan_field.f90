@@ -562,9 +562,9 @@ Subroutine scan_field                                 &
 
         mxmet=Max(mxmet,(mxatyp*(mxatyp+1))/2)
         If      (tabmet == 0) Then
-           mxmed=mxatyp
-        Else If (tabmet == 1) Then
            mxmed=mxmet
+        Else If (tabmet == 1) Then
+           mxmed=mxatyp
         Else If (tabmet == 2) Then
            mxmed=mxatyp**2
         End If

@@ -169,7 +169,8 @@ Subroutine metal_ld_compute         &
 
              Else ! RLD: assume that fmet(rho(i) > fmet(3,k0,1)) = fmet(rho(i) = fmet(3,k0,1))
 
-               rho(i) = fmet(3,k0,1)
+               engden = engden + fmet(3,k0,1)
+               rho(i) = 0.0_wp
 
              End If
            Else
