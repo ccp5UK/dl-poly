@@ -186,7 +186,7 @@ Subroutine metal_table_read(l_top)
 
 ! calculate derivative of pair potential function
 
-        Call metal_table_derivatives(k0,buffer,vmet)
+        Call metal_table_derivatives(k0,buffer,Size(vmet,2),vmet)
 
 ! adapt derivatives for use in interpolation
 
@@ -226,7 +226,7 @@ Subroutine metal_table_read(l_top)
 
 ! calculate derivative of density function
 
-        Call metal_table_derivatives(k0,buffer,dmet)
+        Call metal_table_derivatives(k0,buffer,Size(dmet,2),dmet)
 
 ! adapt derivatives for use in interpolation
 
@@ -266,7 +266,7 @@ Subroutine metal_table_read(l_top)
 
 ! calculate derivative of embedding function
 
-        Call metal_table_derivatives(katom1,buffer,fmet)
+        Call metal_table_derivatives(katom1,buffer,Size(fmet,2),fmet)
 
      End If
 

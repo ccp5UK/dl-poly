@@ -1,4 +1,4 @@
-Subroutine metal_table_derivatives(ityp,buffer,vvv)
+Subroutine metal_table_derivatives(ityp,buffer,v2d,vvv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -12,13 +12,13 @@ Subroutine metal_table_derivatives(ityp,buffer,vvv)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module, Only : zero_plus,mxmet,mxgrid,mxbuff
+  Use setup_module, Only : zero_plus,mxgrid,mxbuff
 
   Implicit None
 
-  Integer,           Intent( In    ) :: ityp
+  Integer,           Intent( In    ) :: ityp,v2d
   Real( Kind = wp ), Intent( In    ) :: buffer(1:mxbuff)
-  Real( Kind = wp ), Intent( InOut ) :: vvv(1:mxgrid,1:mxmet,1:2)
+  Real( Kind = wp ), Intent( InOut ) :: vvv(1:mxgrid,1:v2d,1:2)
 
   Integer           :: i,v_end,i_start,i_end
   Real( Kind = wp ) :: delmet,aa0,aa1,aa2,aa3,aa4, &

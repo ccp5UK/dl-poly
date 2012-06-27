@@ -16,7 +16,7 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
 
   Use kinds_f90
   Use setup_module
-  Use config_module, Only : natms,ltg,ltype,list
+  Use config_module, Only : natms,ltype,list
   Use metal_module,  Only : tabmet,dmet
   Use site_module,   Only : ntpatm
 
