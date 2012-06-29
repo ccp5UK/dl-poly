@@ -167,12 +167,15 @@ Subroutine metal_ld_compute         &
                     rho(i) = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
                  End If
 
-             Else ! RLD: assume that fmet(rho(i) > fmet(3,k0,1)) = fmet(rho(i) = fmet(3,k0,1))
+              Else ! RLD: assume that fmet(rho(i) > fmet(3,k0,1)) = fmet(rho(i) = fmet(3,k0,1))
 
-               engden = engden + fmet(3,k0,1)
-               rho(i) = 0.0_wp
+                l      = Nint(fmet(1,k0,1))
 
-             End If
+                engden = engden + fmet(l,k0,1)
+
+                rho(i) = 0.0_wp
+
+              End If
            Else
               Write(*,*) 'bad density range problem: (LTG,RHO) ',ltg(i),rho(i)
               safe=.false.

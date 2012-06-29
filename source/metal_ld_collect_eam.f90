@@ -80,19 +80,11 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
 
            If (ppp < 0.0_wp) Then ! density is a positive function!
               density = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+              If (density < 0.0_wp) density = t1 ! for non-smooth descend to zero, or ascend from zero
            Else
               density = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+              If (density < 0.0_wp) density = t2 ! for non-smooth descend to zero, or ascend from zero
            End If
-           If (density < 0.0_wp) density = -density ! for non-smooth descend to zero, or ascend from zero
-
-           rho(iatm) = rho(iatm) + density
-           If (ki == kj .and. jatm <= natms) rho(jatm) = rho(jatm) + density
-
-        Else
-
-           l=Nint(dmet(1,kj,1))
-
-           density=dmet(l,kj,1)
 
            rho(iatm) = rho(iatm) + density
            If (ki == kj .and. jatm <= natms) rho(jatm) = rho(jatm) + density
@@ -128,18 +120,11 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
 
               If (ppp < 0.0_wp) Then ! density is a positive function!
                  density = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                 If (density < 0.0_wp) density = t1 ! for non-smooth descend to zero, or ascend from zero
               Else
                  density = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                 If (density < 0.0_wp) density = t2 ! for non-smooth descend to zero, or ascend from zero
               End If
-              If (density < 0.0_wp) density = -density ! for non-smooth descend to zero, or ascend from zero
-
-              rho(jatm) = rho(jatm) + density
-
-           Else
-
-              l=Nint(dmet(1,ki,1))
-
-              density=dmet(l,ki,1)
 
               rho(jatm) = rho(jatm) + density
 
