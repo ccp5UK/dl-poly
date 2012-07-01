@@ -1150,20 +1150,23 @@ Verlet\index{algorithm!Verlet} neighbour list (see above).
 The metal potentials in \D follow two similar but distinct formalisms.
 The first of these is the embedded atom model (EAM)
 \cite{baskes-84a,baskes-86a} and the second is the Finnis-Sinclair
-model (FS) \cite{finnis-84a}. Both are density dependent potentials
+model (FS) \cite{finnis-84a}.  Both are density dependent potentials
 derived from density functional theory (DFT) and describe the bonding
 of a metal atom ultimately in terms of the local electronic density.
 They are suitable for calculating the properties of metals
-\index{potential!metal} and metal alloys.
+\index{potential!metal} and metal alloys.  The extended EAM (EEAM)
+is a generalisation of the EAM formalism, and can include both EAM
+and FS type of mixing rules (see below).
 
 For single component metals the two approaches are the same.  {\bf
 However}, they are subtly different in the way they are extended to
-handle alloys (see below). It follows that EAM and FS class potentials
+handle alloys (see below).  It follows that EAM and FS class potentials
 cannot be mixed in a single simulation.  Furthermore, even for FS
 class potentials possessing different analytical forms there is no
-agreed procedure for mixing the parameters.  The user is therefore
-strongly advised to be consistent in the choice of potential when
-modelling alloys.
+agreed procedure for mixing the parameters.  Mixing EAM and EEAM
+potentials is only possible if the EAM ones are generalised to EEAM
+form (see below).  The user is, therefore, strongly advised to be
+consistent in the choice of potential when modelling alloys.
 
 The general form of the EAM and FS potentials is \cite{friedel-52a}
 \begin{equation}
@@ -1184,13 +1187,18 @@ interacting particles in the MD box.
 
 The types of metal potentials available in \D are as follows:
 \begin{enumerate}
-\item EAM potential:  ({\bf eam})
+\item EAM potential:  ({\bf eam})\index{potential!EAM}
 There are no explicit mathematical expressions for EAM potentials, so
 this potential type is read exclusively in the form of interpolation
 arrays from the TABEAM table file (as implemented in the {\sc
 metal\_table\_read} routine - Section \ref{tabeam-file}.)  The rules
 for combining the potentials from different metals to handle alloys
 are different from the FS class of potentials (see below).
+\item Extended EAM (EEAM) potential ({\bf eeam})\index{potential!EEAM}
+Similar to EAM above, the EEAM potential is given in the form of
+interpolation arrays from the TABEAM file, but the rules for combining
+the potentials from different metals are different from both EAM and FS
+classes (see below).
 \item Finnis-Sinclair potential \cite{finnis-84a}:  ({\bf fnsc})
 Finnis-Sinclair potential is explicitly analytical.  It has the following form:
 \begin{eqnarray}
@@ -1273,7 +1281,7 @@ a sum of pair forces:
 \frac{\partial \rho_{kj}(r_{kj})}{\partial r_{kj}} \frac{\vek{r_{kj}}}{r_{kj}}~~. \nonumber
 \end{eqnarray}
 \begin{enumerate}
-\item EAM force \\
+\item EAM/EEAM force \\
 The same as shown above.  However, it is worth noting that the
 generation of the force arrays from tabulated data (implemented
 in the {\sc metal\_table\_derivatives} routine) is done using a
@@ -1337,7 +1345,7 @@ which equates to:
 \frac{\partial F(\rho_{j})}{\partial \rho_{j}} \right) \frac{\partial \rho_{ij}(r_{ij})}{\partial r_{ij}} r_{ij}~~. \nonumber
 \end{eqnarray}
 \begin{enumerate}
-\item EAM virial \\
+\item EAM/EEAM virial \\
 The same as above.
 \item Finnis-Sinclair virial
 \begin{eqnarray}
@@ -1396,7 +1404,7 @@ where $\rho_{i}^{o}$ is the uncorrected local density and
 $\bar{\rho}$ is the {\em mean particle density}.  Evaluating the
 integral part of the above equation yields:
 \begin{enumerate}
-\item EAM density correction \\
+\item EAM/EEAM density correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
 \item Finnis-Sinclair density correction \\
 No long-ranged corrections apply beyond cutoffs $c$ and $d$.
@@ -1435,7 +1443,7 @@ U_{2}^{0} + \delta U_{2} \nonumber \\
 $\rho_{i}$ has already been corrected.  Evaluating the
 integral part of the above equations yields:
 \begin{enumerate}
-\item EAM energy correction \\
+\item EAM/EEAM energy correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
 \item Finnis-Sinclair energy correction \\
 No long-ranged corrections apply beyond cutoffs $c$ and $d$.
@@ -1485,7 +1493,7 @@ be computed by the methods used in the short ranged potentials:
 \end{eqnarray}
 Evaluating the integral part of the above equations yields:
 \begin{enumerate}
-\item EAM virial correction \\
+\item EAM/EEAM virial correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
 \item Finnis-Sinclair virial correction \\
 No long-ranged corrections apply beyond cutoffs $c$ and $d$.
@@ -1566,20 +1574,28 @@ For the FS case \cite{sutton-91a} a different rule applies:
 so that atoms of type $A$ and $B$ contribute the same densities to
 each other, but not to atoms of the same type.
 
+It is worth noting that in the EEAM potential, all densities
+can be different:
+\begin{equation}
+\rho^{AA}_{ij}(r_{ij}) \neq \rho^{BB}_{ij}(r_{ij}) \neq \rho^{AB}_{ij}(r_{ij}) \neq
+\rho^{BA}_{ij}(r_{ij})~~!
+\end{equation}
+
 Thus when specifying these potentials in the \D FIELD file for
 an alloy composed of $n$ different metal atom types both EAM and FS
-require the specification of $n(n+1)/2$ pair functions
-$V^{AB}_{ij}(r_{ij})$.  However, the EAM requires only $n$ density
-functions $\rho^{AA}_{ij}(r_{ij})$, whereas the FS class requires all
-the cross functions $\rho^{AB}_{ij}(r_{ij})$ or $n(n+1)/2$ in total.
-In addition to the $n(n+1)/2$ pair functions and $n$ density functions
-the EAM requires further specification of $n$ functional forms of the
-density dependence (i.e. the embedding function $F(\rho_{i})$ in (\ref{um})).
+potential types require the specification of $n(n+1)/2$ pair functions
+$V^{AB}_{ij}(r_{ij})$.  However, the EAM and FS require only $n$ density
+functions $\rho^{AA}_{ij}(r_{ij})$, whereas the EEAM class requires all
+the possible cross functions $\rho^{AB}_{ij}(r_{ij})$ or $n^2$ in total.
+In addition to the $n(n+1)/2$ pair functions and $n$ or $n^2$ density
+functions the EAM and EEAM require further specification of $n$
+functional forms of the density dependence (i.e. the embedding function
+$F(\rho_{i})$ in (\ref{um})).
 
-For EAM potentials all the functions are supplied in tabular form via
-the table file TABEAM (see section \ref{tabeam-file}) to which \D is
-redirected by the FIELD file data.  The FS potentials are defined via
-the necessary parameters in the FIELD file.
+For EAM and EEAM potentials all the functions are supplied in tabular
+form via the table file TABEAM (see section \ref{tabeam-file}) to which
+\D is redirected by the FIELD file data.  The FS potentials are defined
+via the necessary parameters in the FIELD file.
 
 \subsection{Tersoff Potential}
 \label{tersoff}

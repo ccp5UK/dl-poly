@@ -21,7 +21,7 @@ Subroutine metal_ld_compute         &
   Use comms_module,  Only : mxnode,gsum,gcheck
   Use setup_module
   Use config_module, Only : cell,natms,ltg,ltype,list,xxx,yyy,zzz
-  Use metal_module,  Only : ntpmet,ltpmet,fmet
+  Use metal_module,  Only : ls_met,ntpmet,ltpmet,fmet
 
   Implicit None
 
@@ -121,13 +121,18 @@ Subroutine metal_ld_compute         &
 
 ! check for unsafe densities (mind start was shifted)
 
-           If (rho(i) >= fmet(2,k0,1)+5.0_wp*fmet(4,k0,1)) Then
-              If (rho(i) <= fmet(3,k0,1)) Then
+           If (.not.ls_met) Then ! fmet over rho grid
+              rhosqr = rho(i)
+           Else                  ! fmet over Sqrt(rho) grid
+              rhosqr = Sqrt(rho(i))
+           End If
+           If (rhosqr >= fmet(2,k0,1)+5.0_wp*fmet(4,k0,1)) Then
+              If (rhosqr <= fmet(3,k0,1)) Then
 
 ! interpolation parameters
 
                  rdr = 1.0_wp/fmet(4,k0,1)
-                 rrr = rho(i) - fmet(2,k0,1)
+                 rrr = rhosqr - fmet(2,k0,1)
                  l   = Min(Nint(rrr*rdr),Nint(fmet(1,k0,1))-1)
                  If (l < 6) Then ! catch unsafe value
                     Write(*,*) 'good density range problem: (LTG,RHO) ',ltg(i),rho(i)
@@ -162,9 +167,17 @@ Subroutine metal_ld_compute         &
                  t2 = fk1 + ppp*(fk2 - fk1)
 
                  If (ppp < 0.0_wp) Then
-                    rho(i) = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                    If (.not.ls_met) Then ! fmet over rho grid
+                       rho(i) = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                    Else                  ! fmet over Sqrt(rho) grid
+                       rho(i) = 0.5_wp*(t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp))/rhosqr
+                    End If
                  Else
-                    rho(i) = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                    If (.not.ls_met) Then ! fmet over rho grid
+                       rho(i) = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                    Else                  ! fmet over Sqrt(rho) grid
+                       rho(i) = 0.5_wp*(t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp))/rhosqr
+                    End If
                  End If
 
               Else ! RLD: assume that fmet(rho(i) > fmet(3,k0,1)) = fmet(rho(i) = fmet(3,k0,1))

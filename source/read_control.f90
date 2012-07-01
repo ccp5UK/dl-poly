@@ -34,7 +34,7 @@ Subroutine read_control                                &
   Use langevin_module, Only : l_lan,l_gst,langevin_allocate_arrays
   Use parse_module
   Use vdw_module,      Only : ld_vdw,ls_vdw
-  Use metal_module,    Only : ld_met,tabmet
+  Use metal_module,    Only : ld_met,ls_met,tabmet
   Use defects1_module, Only : l_dfx
 
   Use development_module
@@ -455,18 +455,31 @@ Subroutine read_control                                &
 
         End If
 
-! read metal direct evaluation option
-
      Else If (word(1:5) == 'metal') Then
 
         Call get_word(record,word)
-        If (word(1:6) == 'direct') Then
+        If      (word(1:6) == 'direct') Then
+
+! read metal direct evaluation option
+
            If (idnode == 0) Write(nrite,"(/,1x,a)") "metal direct option on"
            If (tabmet > 0) Then
               Call warning(480,0.0_wp,0.0_wp,0.0_wp)
            Else
               ld_met = .true.
            End If
+
+        Else If (word(1:7) == 'sqrtrho') Then
+
+! read metal sqrtrho interpolation option for EAM embeding function in TABEAM
+
+           If (idnode == 0) Write(nrite,"(/,1x,a)") "metal sqrtrho option on"
+           If (tabmet > 0) Then
+              ls_met = .true.
+           Else
+              Call warning(490,0.0_wp,0.0_wp,0.0_wp)
+           End If
+
         End If
 
 ! read slab option (dealt with in scan_control<-set_bounds,

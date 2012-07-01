@@ -14,7 +14,8 @@ Module metal_module
 
   Implicit None
 
-  Logical,                        save :: ld_met = .false.
+  Logical,                        save :: ld_met = .false., &
+                                          ls_met = .false.
 
   Integer,                        Save :: ntpmet = 0 , &
                                           tabmet = 0
