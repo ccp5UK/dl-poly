@@ -205,7 +205,12 @@ the Licence Period      the period beginning when the Licensee agrees
     "DL_POLY is a molecular dynamics simulation software written by
     W. Smith, T.R. Forester and I.T. Todorov and has been obtained
     from STFC's Daresbury Laboratory via the website
-    http://www.ccp5.ac.uk/DL_POLY".
+    http://www.ccp5.ac.uk/DL_POLY"
+
+    and cite the following reference:
+
+    "I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,
+    `J. Mater. Chem.', 16, 1911-1918 (2006)".
 
 5.  TERMINATION
 

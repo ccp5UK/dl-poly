@@ -1281,7 +1281,12 @@ a sum of pair forces:
 \frac{\partial \rho_{kj}(r_{kj})}{\partial r_{kj}} \frac{\vek{r_{kj}}}{r_{kj}}~~. \nonumber
 \end{eqnarray}
 \begin{enumerate}
-\item EAM/EEAM force \\
+\item EAM force \\
+The same as shown above.  However, it is worth noting that the
+generation of the force arrays from tabulated data (implemented
+in the {\sc metal\_table\_derivatives} routine) is done using a
+five point interpolation precedure.
+\item EEAM force \\
 The same as shown above.  However, it is worth noting that the
 generation of the force arrays from tabulated data (implemented
 in the {\sc metal\_table\_derivatives} routine) is done using a
@@ -1345,7 +1350,9 @@ which equates to:
 \frac{\partial F(\rho_{j})}{\partial \rho_{j}} \right) \frac{\partial \rho_{ij}(r_{ij})}{\partial r_{ij}} r_{ij}~~. \nonumber
 \end{eqnarray}
 \begin{enumerate}
-\item EAM/EEAM virial \\
+\item EAM virial \\
+The same as above.
+\item EEAM virial \\
 The same as above.
 \item Finnis-Sinclair virial
 \begin{eqnarray}
@@ -1404,7 +1411,9 @@ where $\rho_{i}^{o}$ is the uncorrected local density and
 $\bar{\rho}$ is the {\em mean particle density}.  Evaluating the
 integral part of the above equation yields:
 \begin{enumerate}
-\item EAM/EEAM density correction \\
+\item EAM density correction \\
+No long-ranged corrections apply beyond $r_{\rm met}$.
+\item EEAM density correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
 \item Finnis-Sinclair density correction \\
 No long-ranged corrections apply beyond cutoffs $c$ and $d$.
@@ -1443,7 +1452,9 @@ U_{2}^{0} + \delta U_{2} \nonumber \\
 $\rho_{i}$ has already been corrected.  Evaluating the
 integral part of the above equations yields:
 \begin{enumerate}
-\item EAM/EEAM energy correction \\
+\item EAM energy correction \\
+No long-ranged corrections apply beyond $r_{\rm met}$.
+\item EEAM energy correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
 \item Finnis-Sinclair energy correction \\
 No long-ranged corrections apply beyond cutoffs $c$ and $d$.
@@ -1493,7 +1504,9 @@ be computed by the methods used in the short ranged potentials:
 \end{eqnarray}
 Evaluating the integral part of the above equations yields:
 \begin{enumerate}
-\item EAM/EEAM virial correction \\
+\item EAM virial correction \\
+No long-ranged corrections apply beyond $r_{\rm met}$.
+\item EEAM virial correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
 \item Finnis-Sinclair virial correction \\
 No long-ranged corrections apply beyond cutoffs $c$ and $d$.
@@ -1574,7 +1587,7 @@ For the FS case \cite{sutton-91a} a different rule applies:
 so that atoms of type $A$ and $B$ contribute the same densities to
 each other, but not to atoms of the same type.
 
-It is worth noting that in the EEAM potential, all densities
+It is worth noting that in the EEAM potential framework all densities
 can be different:
 \begin{equation}
 \rho^{AA}_{ij}(r_{ij}) \neq \rho^{BB}_{ij}(r_{ij}) \neq \rho^{AB}_{ij}(r_{ij}) \neq
