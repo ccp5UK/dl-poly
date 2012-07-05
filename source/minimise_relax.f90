@@ -13,7 +13,7 @@ Subroutine minimise_relax &
 !       keymin=2 : absolute displacement
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith november 2011
+! author    - i.t.todorov & w.smith june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -142,9 +142,9 @@ Subroutine minimise_relax &
 
      l_mov=.false.
 
-! Minimum min_pass = 10*min_tol
+! Minimum needed for a pass for this minimisation cycle
 
-     min_pass = 10.0_wp*min_tol
+     min_pass = Huge(1.0_wp)
 
 ! Avoid rdf calculation redundancy
 
@@ -179,7 +179,7 @@ Subroutine minimise_relax &
      gzz(i)=fzz(i)
   End Do
 
-! Minimimised energy is current configuration energy
+! Minimised energy is current configuration energy
 
   eng=stpcfg
 
@@ -243,12 +243,12 @@ Subroutine minimise_relax &
 
      pass(1)=pass(1)+1.0_wp
 
-! Minimum min_pass = 10*min_tol
+! min_pass = Min(min_pass,._tol)
 
      If      (keymin == 0) Then
         min_pass = Min(min_pass,grad_tol)
      Else If (keymin == 1) Then
-        min_pass = Min(min_pass,eng_tol)
+        If (keyopt > 0) min_pass = Min(min_pass,eng_tol)
      Else If (keymin == 2) Then
         min_pass = Min(min_pass,dist_tol)
      End If
@@ -411,7 +411,7 @@ Subroutine minimise_relax &
 
 100 Continue
 
-  l_x=(.not.relaxed) ! Transportaion flag
+  l_x=(.not.relaxed) ! Transportation flag
   If (relaxed) Then
 
 ! Final/Only printout
@@ -461,7 +461,7 @@ Subroutine minimise_relax &
         Call write_config(name,levcfg,imcon,megatm,i-1,eng_min/engunit,eng_0/engunit)
      End If
 
-! setup new quternions
+! setup new quaternions
 
      If (l_mov) Call q_setup()
 
