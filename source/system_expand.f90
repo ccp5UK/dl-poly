@@ -340,7 +340,7 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
   ndihed=0
   ninver=0
 
-  If (idnode == 0) Write(nrite,Fmt='(/,1x,a,i10,2/))') 'Checking topological contiguity of molecules...'
+  If (idnode == 0) Write(nrite,Fmt='(/,1x,a,i10,2/)') 'Checking topological contiguity of molecules...'
 
   sapmpt=0
   Do itmols=1,ntpmls
