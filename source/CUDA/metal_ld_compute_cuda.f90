@@ -32,9 +32,9 @@ Subroutine metal_ld_compute_get_keypot(keypotr)
   keypotr = keypot
 End Subroutine metal_ld_compute_get_keypot
 
-Subroutine metal_ld_compute                &
+Subroutine metal_ld_compute         &
            (imcon,rmet,elrcm,vlrcm, &
-           xdf,ydf,zdf,rsqdf,              &
+           xdf,ydf,zdf,rsqdf,       &
            rho,engden,virden,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -46,7 +46,7 @@ Subroutine metal_ld_compute                &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov may 2008
+! amended   - i.t.todorov july 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -54,7 +54,7 @@ Subroutine metal_ld_compute                &
   Use comms_module,  Only : mxnode,gsum,gcheck
   Use setup_module
   Use config_module, Only : cell,natms,ltg,ltype,list,xxx,yyy,zzz
-  Use metal_module,  Only : ld_met,ntpmet,ltpmet,fmet,lstmet,vmet,dmet
+  Use metal_module,  Only : ls_met,ntpmet,ltpmet,fmet
 
 #ifdef COMPILE_CUDA
   Use dl_poly_cuda_module
@@ -121,10 +121,7 @@ Subroutine metal_ld_compute                &
 #endif
 
   Do i=1,natms
-
-! Get list limit
-
-     limit=list(0,i)
+     limit=list(0,i) ! Get list limit
 
 ! calculate interatomic distances
 
@@ -151,7 +148,7 @@ Subroutine metal_ld_compute                &
      If (keypot == 0) Then ! EAM contributions
         Call metal_ld_collect_eam(i,rsqdf,rho,safe)
      Else                  ! FST contributions
-        Call metal_ld_collect_fst(i,rsqdf,rho)
+        Call metal_ld_collect_fst(i,rsqdf,rho,safe,rmet)
      End If
   End Do
 
@@ -182,59 +179,77 @@ Subroutine metal_ld_compute                &
 
 ! check for unsafe densities (mind start was shifted)
 
-           If (rho(i) >= fmet(2,k0,1)+fmet(4,k0,1) .and. rho(i) <= fmet(3,k0,1)) Then
+           If (.not.ls_met) Then ! fmet over rho grid
+              rhosqr = rho(i)
+           Else                  ! fmet over Sqrt(rho) grid
+              rhosqr = Sqrt(rho(i))
+           End If
+           If (rhosqr >= fmet(2,k0,1)+5.0_wp*fmet(4,k0,1)) Then
+              If (rhosqr <= fmet(3,k0,1)) Then
 
 ! interpolation parameters
 
-              rdr = 1.0_wp/fmet(4,k0,1)
-              rrr = rho(i) - fmet(2,k0,1)
-              l   = Nint(rrr*rdr)
-              ppp = rrr*rdr - Real(l,wp)
-
-! catch unsafe value
-
-              If (l < 1) Then
-                 Write(*,*) 'good density range problem: (LTG,RHO)',ltg(i),rho(i)
-                 safe=.false.
-                 l=2
-              End If
+                 rdr = 1.0_wp/fmet(4,k0,1)
+                 rrr = rhosqr - fmet(2,k0,1)
+                 l   = Min(Nint(rrr*rdr),Nint(fmet(1,k0,1))-1)
+                 If (l < 6) Then ! catch unsafe value
+                    Write(*,*) 'good density range problem: (LTG,RHO) ',ltg(i),rho(i)
+                    safe=.false.
+                    l=6
+                 End If
+                 ppp = rrr*rdr - Real(l,wp)
 
 ! calculate embedding energy using 3-point interpolation
 
-              fk0 = fmet(l+3,k0,1)
-              fk1 = fmet(l+4,k0,1)
-              fk2 = fmet(l+5,k0,1)
+                 fk0 = fmet(l-1,k0,1)
+                 fk1 = fmet(l  ,k0,1)
+                 fk2 = fmet(l+1,k0,1)
 
-              t1 = fk1 + ppp*(fk1 - fk0)
-              t2 = fk1 + ppp*(fk2 - fk1)
+                 t1 = fk1 + ppp*(fk1 - fk0)
+                 t2 = fk1 + ppp*(fk2 - fk1)
 
-              If (ppp < 0.0_wp) Then
-                 engden = engden + t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
-              Else
-                 engden = engden + t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
-              End If
+                 If (ppp < 0.0_wp) Then
+                    engden = engden + t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                 Else
+                    engden = engden + t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                 End If
 
 ! calculate derivative of embedding function wrt density
 ! using 3-point interpolation and store result in rho array
 
-              fk0 = fmet(l+3,k0,2)
-              fk1 = fmet(l+4,k0,2)
-              fk2 = fmet(l+5,k0,2)
+                 fk0 = fmet(l-1,k0,2)
+                 fk1 = fmet(l  ,k0,2)
+                 fk2 = fmet(l+1,k0,2)
 
-              t1 = fk1 + ppp*(fk1 - fk0)
-              t2 = fk1 + ppp*(fk2 - fk1)
+                 t1 = fk1 + ppp*(fk1 - fk0)
+                 t2 = fk1 + ppp*(fk2 - fk1)
 
-              If (ppp < 0.0_wp) Then
-                 rho(i) = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
-              Else
-                 rho(i) = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                 If (ppp < 0.0_wp) Then
+                    If (.not.ls_met) Then ! fmet over rho grid
+                       rho(i) = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                    Else                  ! fmet over Sqrt(rho) grid
+                       rho(i) = 0.5_wp*(t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp))/rhosqr
+                    End If
+                 Else
+                    If (.not.ls_met) Then ! fmet over rho grid
+                       rho(i) = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                    Else                  ! fmet over Sqrt(rho) grid
+                       rho(i) = 0.5_wp*(t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp))/rhosqr
+                    End If
+                 End If
+
+              Else ! RLD: assume that fmet(rho(i) > fmet(3,k0,1)) = fmet(rho(i) = fmet(3,k0,1))
+
+                l      = Nint(fmet(1,k0,1))
+
+                engden = engden + fmet(l,k0,1)
+
+                rho(i) = 0.0_wp
+
               End If
-
            Else
-
               Write(*,*) 'bad density range problem: (LTG,RHO) ',ltg(i),rho(i)
               safe=.false.
-
            End If
 
         End If
@@ -256,7 +271,7 @@ Subroutine metal_ld_compute                &
 
         Else If (rho(i) < -zero_plus) Then
 
-! check for unsafe densities (rho was initilised to zero)
+! check for unsafe densities (rho was initialised to zero)
 
            safe=.false.
 

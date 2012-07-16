@@ -87,7 +87,7 @@ Subroutine metal_forces &
      jatm=list(m,iatm)
      aj=ltype(jatm)
 
-    If      (tabmet == 1) Then ! EAM
+     If      (tabmet == 1) Then ! EAM
         ki=ai
         kj=aj
      Else If (tabmet == 2) Then ! EEAM

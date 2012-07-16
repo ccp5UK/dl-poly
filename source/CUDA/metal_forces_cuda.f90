@@ -16,8 +16,9 @@ Subroutine metal_forces_helper &
 
   Use kinds_f90
   Use setup_module
+  Use site_module,   Only : ntpatm
   Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
-  Use metal_module,  Only : ntpmet,lstmet,ltpmet,vmet,dmet
+  Use metal_module,  Only : ld_met,tabmet,lstmet,ltpmet,vmet,dmet,prmmet
 
   Implicit None
 
@@ -28,9 +29,9 @@ Subroutine metal_forces_helper &
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
   Logical,                                  Intent( InOut ) :: safe
 
-  Integer           :: m,idi,ai,aj,jatm,key,k0,l,ld
+  Integer           :: m,idi,ai,ki,jatm,aj,kj,key,k0,l,ld
   Real( Kind = wp ) :: fix,fiy,fiz,fx,fy,fz,          &
-                       rsq,rdr,rrr,ppp,ppd,           &
+                       rsq,rdr,rrr,ppp,ppd,eng,       &
                        gk0,gk1,gk2,vk0,vk1,vk2,t1,t2, &
                        gamma,gamma1,gamma2,gamma3,    &
                        strs1,strs2,strs3,strs5,strs6,strs9
@@ -66,6 +67,14 @@ Subroutine metal_forces_helper &
      jatm=list(m,iatm)
      aj=ltype(jatm)
 
+     If      (tabmet == 1) Then ! EAM
+        ki=ai
+        kj=aj
+     Else If (tabmet == 2) Then ! EEAM
+        ki=(aj-1)*ntpatm+ai ! aj-ai
+        kj=(ai-1)*ntpatm+aj ! ai-aj
+     End If
+
      If (ai > aj) Then
         key=ai*(ai-1)/2 + aj
      Else
@@ -73,42 +82,64 @@ Subroutine metal_forces_helper &
      End If
 
      k0=lstmet(key)
+     keypot=ltpmet(k0)
+     If (keypot >= 0) Then ! this is a valid metal interaction
 
 ! interatomic distance
 
-     rsq = rsqdf(m)
+        rsq = rsqdf(m)
 
-! validity and truncation of potential
+! truncation of potential
 
-     If (ltpmet(k0) >= 0 .and. Abs(vmet(1,k0,1)) > zero_plus .and. rsq <= vmet(3,k0,1)**2) Then
+        If (Abs(vmet(1,k0,1)) > zero_plus) Then
+           If (rsq <= vmet(3,k0,1)**2) Then
 
 ! interpolation parameters
 
-        rdr = 1.0_wp/vmet(4,k0,1)
-        rrr = Sqrt(rsq) - vmet(2,k0,1)
-        l   = Nint(rrr*rdr)
-        ppp = rrr*rdr - Real(l,wp)
-
-! catch unsafe value: EAM
-
-        If (keypot == 0 .and. l < 2) Then
-           safe=.false.
-           l=2
-        End If
+              rdr = 1.0_wp/vmet(4,k0,1)
+              rrr = Sqrt(rsq) - vmet(2,k0,1)
+              l   = Min(Nint(rrr*rdr),Nint(vmet(1,k0,1))-1)
+              If (l < 6) Then ! catch unsafe value
+                 safe=.false.
+                 l=6
+              End If
+              ppp = rrr*rdr - Real(l,wp)
 
 ! calculate pair forces using 3-point interpolation
 
-        gk0 = vmet(l+3,k0,2)
-        gk1 = vmet(l+4,k0,2)
-        gk2 = vmet(l+5,k0,2)
+              gk0 = vmet(l-1,k0,2)
+              gk1 = vmet(l  ,k0,2)
+              gk2 = vmet(l+1,k0,2)
 
-        t1 = gk1 + ppp*(gk1 - gk0)
-        t2 = gk1 + ppp*(gk2 - gk1)
+              t1 = gk1 + ppp*(gk1 - gk0)
+              t2 = gk1 + ppp*(gk2 - gk1)
 
-        If (ppp < 0.0_wp) Then
-           gamma1 = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
-        Else
-           gamma1 = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+              If (ppp < 0.0_wp) Then
+                 gamma1 = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+              Else
+                 gamma1 = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+              End If
+
+! calculate interaction energy using 3-point interpolation
+
+              If (jatm <= natms .or. idi < ltg(jatm)) Then
+
+                 vk0 = vmet(l-1,k0,1)
+                 vk1 = vmet(l  ,k0,1)
+                 vk2 = vmet(l+1,k0,1)
+
+                 t1 = vk1 + ppp*(vk1 - vk0)
+                 t2 = vk1 + ppp*(vk2 - vk1)
+
+                 If (ppp < 0.0_wp) Then
+                    eng = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                 Else
+                    eng = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                 End If
+
+              End If
+
+           End If
         End If
 
 ! calculate embedding forces using 3-point interpolation
@@ -117,68 +148,60 @@ Subroutine metal_forces_helper &
 
 ! contribution from first metal atom identity
 
-           If (rsq <= dmet(3,aj,1)**2) Then
+           If (Abs(dmet(1,kj,1)) > zero_plus) Then
+              If (rsq <= dmet(3,kj,1)**2) Then
 
 ! interpolation parameters
 
-              rdr = 1.0_wp/dmet(4,aj,1)
-              rrr = Sqrt(rsq) - dmet(2,aj,1)
-              ld  = Nint(rrr*rdr)
-              ppd = rrr*rdr - Real(ld,wp)
+                 rdr = 1.0_wp/dmet(4,kj,1)
+                 rrr = Sqrt(rsq) - dmet(2,kj,1)
+                 ld  = Min(Nint(rrr*rdr),Nint(dmet(1,kj,1))-1)
+                 If (ld < 6) Then ! catch unsafe value: EAM
+                    safe=.false.
+                    ld=6
+                 End If
+                 ppd = rrr*rdr - Real(ld,wp)
 
-! catch unsafe value: EAM
+                 gk0 = dmet(ld-1,kj,2)
+                 gk1 = dmet(ld  ,kj,2)
+                 gk2 = dmet(ld+1,kj,2)
 
-              If (ld < 2) Then
-                 safe=.false.
-                 ld=2
+                 t1 = gk1 + ppd*(gk1 - gk0)
+                 t2 = gk1 + ppd*(gk2 - gk1)
+
+                 If (ppd < 0.0_wp) Then
+                    gamma2 = t1 + 0.5_wp*(t2-t1)*(ppd+1.0_wp)
+                 Else
+                    gamma2 = t2 + 0.5_wp*(t2-t1)*(ppd-1.0_wp)
+                 End If
+
               End If
-
-              gk0 = dmet(ld+3,aj,2)
-              gk1 = dmet(ld+4,aj,2)
-              gk2 = dmet(ld+5,aj,2)
-
-              t1 = gk1 + ppd*(gk1 - gk0)
-              t2 = gk1 + ppd*(gk2 - gk1)
-
-              If (ppd < 0.0_wp) Then
-                 gamma2 = t1 + 0.5_wp*(t2-t1)*(ppd+1.0_wp)
-              Else
-                 gamma2 = t2 + 0.5_wp*(t2-t1)*(ppd-1.0_wp)
-              End If
-
-           Else
-
-              gamma2=0.0_wp
-
            End If
 
 ! contribution from second metal atom identity
 
-           If (ai == aj) Then
+           If (ki == kj) Then
 
               gamma3=gamma2
 
-           Else
+           Else If (Abs(dmet(1,ki,1)) > zero_plus) Then
 
-              If (rsq <= dmet(3,ai,1)**2) Then
+              If (rsq <= dmet(3,ki,1)**2) Then
 
 ! interpolation parameters
 
-                 rdr = 1.0_wp/dmet(4,ai,1)
-                 rrr = Sqrt(rsq) - dmet(2,ai,1)
-                 ld  = Nint(rrr*rdr)
+                 rdr = 1.0_wp/dmet(4,ki,1)
+                 rrr = Sqrt(rsq) - dmet(2,ki,1)
+                 ld  = Min(Nint(rrr*rdr),Nint(dmet(1,ki,1))-1)
+                 If (ld < 6) Then ! catch unsafe value: EAM
+                    safe=.false.
+                    ld=6
+                 End If
                  ppd = rrr*rdr - Real(ld,wp)
 
-! catch unsafe value: EAM
-
-                 If (ld < 2) Then
-                    safe=.false.
-                    ld=2
-                 End If
-
-                 gk0 = dmet(ld+3,ai,2)
-                 gk1 = dmet(ld+4,ai,2)
-                 gk2 = dmet(ld+5,ai,2)
+                 gk0 = dmet(ld-1,ki,2)
+                 gk1 = dmet(ld  ,ki,2)
+                 gk2 = dmet(ld+1,ki,2)
 
                  t1 = gk1 + ppd*(gk1 - gk0)
                  t2 = gk1 + ppd*(gk2 - gk1)
@@ -189,10 +212,6 @@ Subroutine metal_forces_helper &
                     gamma3 = t2 + 0.5_wp*(t2-t1)*(ppd-1.0_wp)
                  End If
 
-              Else
-
-                 gamma3=0.0_wp
-
               End If
 
            End If
@@ -201,17 +220,21 @@ Subroutine metal_forces_helper &
 
         Else ! FST, interpolation parameters are the same for all force arrays
 
-           gk0 = dmet(l+3,k0,2)
-           gk1 = dmet(l+4,k0,2)
-           gk2 = dmet(l+5,k0,2)
+           If (rsq <= dmet(3,k0,1)**2) Then
 
-           t1 = gk1 + ppp*(gk1 - gk0)
-           t2 = gk1 + ppp*(gk2 - gk1)
+              gk0 = dmet(l-1,k0,2)
+              gk1 = dmet(l  ,k0,2)
+              gk2 = dmet(l+1,k0,2)
 
-           If (ppp < 0.0_wp) Then
-              gamma2 = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
-           Else
-              gamma2 = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+              t1 = gk1 + ppp*(gk1 - gk0)
+              t2 = gk1 + ppp*(gk2 - gk1)
+
+              If (ppp < 0.0_wp) Then
+                 gamma2 = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+              Else
+                 gamma2 = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+              End If
+
            End If
 
            If (ai > aj) Then
@@ -240,22 +263,11 @@ Subroutine metal_forces_helper &
 
         If (jatm <= natms .or. idi < ltg(jatm)) Then
 
-! calculate interaction energy using 3-point interpolation
+! add interaction energy using 3-point interpolation
 
-           vk0 = vmet(l+3,k0,1)
-           vk1 = vmet(l+4,k0,1)
-           vk2 = vmet(l+5,k0,1)
+           engmet = engmet + eng
 
-           t1 = vk1 + ppp*(vk1 - vk0)
-           t2 = vk1 + ppp*(vk2 - vk1)
-
-           If (ppp < 0.0_wp) Then
-              engmet = engmet + t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
-           Else
-              engmet = engmet + t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
-           End If
-
-! calculate virial
+! add virial
 
            virmet = virmet - gamma*rsq
 
@@ -307,14 +319,16 @@ Subroutine metal_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov june 2009
+! amended   - i.t.todorov june 2012
+! contrib   - r.davidchak june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module
+  Use site_module,   Only : ntpatm
   Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
-  Use metal_module,  Only : ld_met,lstmet,ltpmet,vmet,dmet,prmmet
+  Use metal_module,  Only : ld_met,tabmet,lstmet,ltpmet,vmet,dmet,prmmet
 
 #ifdef COMPILE_CUDA
   Use dl_poly_cuda_module
@@ -333,7 +347,8 @@ Subroutine metal_forces &
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: rcsq
 
-  Integer           :: m,idi,ai,aj,jatm,key,kmn,kmx,k0,keypot,k1,k2,l,ld
+  Integer           :: m,idi,ai,ki,jatm,aj,kj, &
+                       key,kmn,kmx,k0,keypot,k1,k2,l,ld
   Real( Kind = wp ) :: fix,fiy,fiz,fx,fy,fz,          &
                        rsq,rdr,rrr,ppd,eng,           &
                        gk0,gk1,gk2,vk0,vk1,vk2,t1,t2, &
@@ -348,10 +363,11 @@ Subroutine metal_forces &
   Call start_timing_metal_forces()
 #endif
 
-! check on mixing metal types
+! set cutoff condition
 
   If (newjob) Then
      newjob = .false.
+
      If (ld_met) rcsq=rmet**2
   End If
 
@@ -390,6 +406,14 @@ Subroutine metal_forces &
      jatm=list(m,iatm)
      aj=ltype(jatm)
 
+     If      (tabmet == 1) Then ! EAM
+        ki=ai
+        kj=aj
+     Else If (tabmet == 2) Then ! EEAM
+        ki=(aj-1)*ntpatm+ai ! aj-ai
+        kj=(ai-1)*ntpatm+aj ! ai-aj
+     End If
+
      If (ai > aj) Then
         key=ai*(ai-1)/2 + aj
      Else
@@ -398,13 +422,14 @@ Subroutine metal_forces &
 
      k0=lstmet(key)
      keypot=ltpmet(k0)
-     If (keypot >= 0) Then !this is a valid metal interaction
+     If (keypot >= 0) Then ! This is a valid metal interaction
 
 ! Zero energy and force components
 
         eng   = 0.0_wp
         gamma1= 0.0_wp
         gamma2= 0.0_wp
+        gamma3= 0.0_wp
         gamma = 0.0_wp
 
 ! interatomic distance
@@ -484,7 +509,7 @@ Subroutine metal_forces &
 ! calculate pair forces and energies
 
                  If (rrr <= cut1) Then
-                    gamma1 =-rrr*(2.0_wp*(cc0+cc1*rrr+cc2*rrr**2+cc3*rrr**3+cc4*rrr**4)*(rrr-ccc) + &
+                    gamma1 = -rrr*(2.0_wp*(cc0+cc1*rrr+cc2*rrr**2+cc3*rrr**3+cc4*rrr**4)*(rrr-ccc) + &
                                    (cc1+2.0_wp*cc2*rrr+3.0_wp*cc3*rrr**2+4.0_wp*cc4*rrr**3)*(rrr-ccc)**2)
 
                     If (jatm <= natms .or. idi < ltg(jatm)) &
@@ -607,56 +632,55 @@ Subroutine metal_forces &
 
 ! truncation of potential
 
-           If (Abs(vmet(1,k0,1)) > zero_plus .and. rsq <= vmet(3,k0,1)**2) Then
+           If (Abs(vmet(1,k0,1)) > zero_plus) Then
+              If (rsq <= vmet(3,k0,1)**2) Then
 
 ! interpolation parameters
 
-              rdr = 1.0_wp/vmet(4,k0,1)
-              rrr = Sqrt(rsq) - vmet(2,k0,1)
-              l   = Nint(rrr*rdr)
-              ppp = rrr*rdr - Real(l,wp)
-
-! catch unsafe value: EAM
-
-              If (keypot == 0 .and. l < 2) Then
-                 safe=.false.
-                 l=2
-              End If
+                 rdr = 1.0_wp/vmet(4,k0,1)
+                 rrr = Sqrt(rsq) - vmet(2,k0,1)
+                 l   = Min(Nint(rrr*rdr),Nint(vmet(1,k0,1))-1)
+                 If (l < 6) Then ! catch unsafe value
+                    safe=.false.
+                    l=6
+                 End If
+                 ppp = rrr*rdr - Real(l,wp)
 
 ! calculate pair forces using 3-point interpolation
 
-              gk0 = vmet(l+3,k0,2)
-              gk1 = vmet(l+4,k0,2)
-              gk2 = vmet(l+5,k0,2)
+                 gk0 = vmet(l-1,k0,2)
+                 gk1 = vmet(l  ,k0,2)
+                 gk2 = vmet(l+1,k0,2)
 
-              t1 = gk1 + ppp*(gk1 - gk0)
-              t2 = gk1 + ppp*(gk2 - gk1)
+                 t1 = gk1 + ppp*(gk1 - gk0)
+                 t2 = gk1 + ppp*(gk2 - gk1)
 
-              If (ppp < 0.0_wp) Then
-                 gamma1 = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
-              Else
-                 gamma1 = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
-              End If
+                 If (ppp < 0.0_wp) Then
+                    gamma1 = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                 Else
+                    gamma1 = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                 End If
 
 ! calculate interaction energy using 3-point interpolation
 
-              If (jatm <= natms .or. idi < ltg(jatm)) Then
+                 If (jatm <= natms .or. idi < ltg(jatm)) Then
 
-                 vk0 = vmet(l+3,k0,1)
-                 vk1 = vmet(l+4,k0,1)
-                 vk2 = vmet(l+5,k0,1)
+                    vk0 = vmet(l-1,k0,1)
+                    vk1 = vmet(l  ,k0,1)
+                    vk2 = vmet(l+1,k0,1)
 
-                 t1 = vk1 + ppp*(vk1 - vk0)
-                 t2 = vk1 + ppp*(vk2 - vk1)
+                    t1 = vk1 + ppp*(vk1 - vk0)
+                    t2 = vk1 + ppp*(vk2 - vk1)
 
-                 If (ppp < 0.0_wp) Then
-                    eng = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
-                 Else
-                    eng = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                    If (ppp < 0.0_wp) Then
+                       eng = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                    Else
+                       eng = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                    End If
+
                  End If
 
               End If
-
            End If
 
 ! calculate embedding forces using 3-point interpolation
@@ -665,70 +689,70 @@ Subroutine metal_forces &
 
 ! contribution from first metal atom identity
 
-              If (Abs(dmet(1,aj,1)) > zero_plus .and. rsq <= dmet(3,aj,1)**2) Then
+              If (Abs(dmet(1,kj,1)) > zero_plus) Then
+                 If (rsq <= dmet(3,kj,1)**2) Then
 
 ! interpolation parameters
 
-                 rdr = 1.0_wp/dmet(4,aj,1)
-                 rrr = Sqrt(rsq) - dmet(2,aj,1)
-                 ld  = Nint(rrr*rdr)
-                 ppd = rrr*rdr - Real(ld,wp)
+                    rdr = 1.0_wp/dmet(4,kj,1)
+                    rrr = Sqrt(rsq) - dmet(2,kj,1)
+                    ld  = Min(Nint(rrr*rdr),Nint(dmet(1,kj,1))-1)
+                    If (ld < 6) Then ! catch unsafe value: EAM
+                       safe=.false.
+                       ld=6
+                    End If
+                    ppd = rrr*rdr - Real(ld,wp)
 
-! catch unsafe value: EAM
+                    gk0 = dmet(ld-1,kj,2)
+                    gk1 = dmet(ld  ,kj,2)
+                    gk2 = dmet(ld+1,kj,2)
 
-                 If (ld < 2) Then
-                    safe=.false.
-                    ld=2
+                    t1 = gk1 + ppd*(gk1 - gk0)
+                    t2 = gk1 + ppd*(gk2 - gk1)
+
+                    If (ppd < 0.0_wp) Then
+                       gamma2 = t1 + 0.5_wp*(t2-t1)*(ppd+1.0_wp)
+                    Else
+                       gamma2 = t2 + 0.5_wp*(t2-t1)*(ppd-1.0_wp)
+                    End If
+
                  End If
-
-                 gk0 = dmet(ld+3,aj,2)
-                 gk1 = dmet(ld+4,aj,2)
-                 gk2 = dmet(ld+5,aj,2)
-
-                 t1 = gk1 + ppd*(gk1 - gk0)
-                 t2 = gk1 + ppd*(gk2 - gk1)
-
-                 If (ppd < 0.0_wp) Then
-                    gamma2 = t1 + 0.5_wp*(t2-t1)*(ppd+1.0_wp)
-                 Else
-                    gamma2 = t2 + 0.5_wp*(t2-t1)*(ppd-1.0_wp)
-                 End If
-
               End If
 
 ! contribution from second metal atom identity
 
-              If (ai == aj) Then
+              If (ki == kj) Then
 
                  gamma3=gamma2
 
-              Else If (Abs(dmet(1,ai,1)) > zero_plus .and. rsq <= dmet(3,ai,1)**2) Then
+              Else If (Abs(dmet(1,ki,1)) > zero_plus) Then
+
+                 If (rsq <= dmet(3,ki,1)**2) Then
 
 ! interpolation parameters
 
-                 rdr = 1.0_wp/dmet(4,ai,1)
-                 rrr = Sqrt(rsq) - dmet(2,ai,1)
-                 ld  = Nint(rrr*rdr)
-                 ppd = rrr*rdr - Real(ld,wp)
+                    rdr = 1.0_wp/dmet(4,ki,1)
+                    rrr = Sqrt(rsq) - dmet(2,ki,1)
+                    ld  = Min(Nint(rrr*rdr),Nint(dmet(1,ki,1))-1)
+                    If (ld < 6) Then ! catch unsafe value: EAM
+                       safe=.false.
+                       ld=6
+                    End If
+                    ppd = rrr*rdr - Real(ld,wp)
 
-! catch unsafe value: EAM
+                    gk0 = dmet(ld-1,ki,2)
+                    gk1 = dmet(ld  ,ki,2)
+                    gk2 = dmet(ld+1,ki,2)
 
-                 If (ld < 2) Then
-                    safe=.false.
-                    ld=2
-                 End If
+                    t1 = gk1 + ppd*(gk1 - gk0)
+                    t2 = gk1 + ppd*(gk2 - gk1)
 
-                 gk0 = dmet(ld+3,ai,2)
-                 gk1 = dmet(ld+4,ai,2)
-                 gk2 = dmet(ld+5,ai,2)
+                    If (ppd < 0.0_wp) Then
+                       gamma3 = t1 + 0.5_wp*(t2-t1)*(ppd+1.0_wp)
+                    Else
+                       gamma3 = t2 + 0.5_wp*(t2-t1)*(ppd-1.0_wp)
+                    End If
 
-                 t1 = gk1 + ppd*(gk1 - gk0)
-                 t2 = gk1 + ppd*(gk2 - gk1)
-
-                 If (ppd < 0.0_wp) Then
-                    gamma3 = t1 + 0.5_wp*(t2-t1)*(ppd+1.0_wp)
-                 Else
-                    gamma3 = t2 + 0.5_wp*(t2-t1)*(ppd-1.0_wp)
                  End If
 
               End If
@@ -739,9 +763,9 @@ Subroutine metal_forces &
 
               If (rsq <= dmet(3,k0,1)**2) Then
 
-                 gk0 = dmet(l+3,k0,2)
-                 gk1 = dmet(l+4,k0,2)
-                 gk2 = dmet(l+5,k0,2)
+                 gk0 = dmet(l-1,k0,2)
+                 gk1 = dmet(l  ,k0,2)
+                 gk2 = dmet(l+1,k0,2)
 
                  t1 = gk1 + ppp*(gk1 - gk0)
                  t2 = gk1 + ppp*(gk2 - gk1)

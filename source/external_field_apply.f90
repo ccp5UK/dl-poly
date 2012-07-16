@@ -7,7 +7,7 @@ Subroutine external_field_apply(imcon,keyshl,tstep,engfld,virfld)
 ! Note: Only one field at a time is allowed
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov july 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -157,6 +157,10 @@ Subroutine external_field_apply(imcon,keyshl,tstep,engfld,virfld)
               oxt(i)=prmfld(1)*weight(i)
               oyt(i)=prmfld(2)*weight(i)
               ozt(i)=prmfld(3)*weight(i)
+           Else ! for the sake of massless sites of RBs
+              oxt(i)=0.0_wp
+              oyt(i)=0.0_wp
+              ozt(i)=0.0_wp
            End If
         End Do
 
@@ -176,9 +180,9 @@ Subroutine external_field_apply(imcon,keyshl,tstep,engfld,virfld)
 
         Do i=1,natms
            If (lfrzn(i) == 0) Then
-              fxx(i)=fxx(i) + oyt(i)
-              fyy(i)=fyy(i) + ozt(i)
-              fzz(i)=fzz(i) + oxt(i)
+              fxx(i)=fxx(i) + oxt(i)
+              fyy(i)=fyy(i) + oyt(i)
+              fzz(i)=fzz(i) + ozt(i)
            End If
         End Do
 

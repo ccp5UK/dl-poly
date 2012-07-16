@@ -10,15 +10,16 @@ Subroutine scan_control                              &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov july 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module, Only : idnode,mxnode,gcheck
-  Use setup_module, Only : nread,nrite,pi,zero_plus
-  Use parse_module, Only : get_line,get_word,lower_case,word_2_real
+  Use comms_module,       Only : idnode,mxnode,gcheck
+  Use setup_module,       Only : nread,nrite,pi,zero_plus
+  Use parse_module,       Only : get_line,get_word,lower_case,word_2_real
   Use msd_module
+  Use development_module, Only : l_trm
 
   Implicit None
 
@@ -32,10 +33,10 @@ Subroutine scan_control                              &
   Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rbin,alpha
 
   Logical                :: carry,safe,lrcut,lrvdw,lrmet, &
-                            lelec,lrdf,lvdw,lmet,l_n_m,lter
+                            lelec,lrdf,lvdw,lmet,l_n_m,lter,l_exp
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
-  Integer                :: itmp
+  Integer                :: itmp,nstrun
   Real( Kind = wp )      :: celprp(1:10),cut,eps,fac,tol,tol1,rbin1
 
 ! default spline for SPME and minimum real space cutoff
@@ -100,6 +101,11 @@ Subroutine scan_control                              &
   kmaxa1 = 0
   kmaxb1 = 0
   kmaxc1 = 0
+
+! default number of steps and expansion option
+
+  nstrun = 0
+  l_exp = .false.
 
 ! default stack size
 
@@ -176,6 +182,19 @@ Subroutine scan_control                              &
 
         Call get_word(record,word)
         rbin = Abs(word_2_real(word))
+
+! read number of timesteps
+
+     Else If (word(1:5) == 'steps') Then
+
+        Call get_word(record,word)
+        nstrun = Nint(word_2_real(word))
+
+! read expansion option
+
+     Else If (word(1:5) == 'nfold') Then
+
+        l_exp = .true.
 
 ! read stack size
 
@@ -558,6 +577,10 @@ Subroutine scan_control                              &
   End Do
 
   If (idnode == 0) Close(Unit=nread)
+
+! When expanding and not running the small system prepare to exit gracefully
+
+  l_trm = (l_exp .and. nstrun == 0)
 
   Return
 

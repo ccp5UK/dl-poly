@@ -8,22 +8,24 @@ Subroutine set_bounds                                        &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2012
+! author    - i.t.todorov july 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,   Only : idnode,mxnode
+  Use comms_module,       Only : idnode,mxnode
   Use setup_module
-  Use domains_module, Only : map_domains,nprx,npry,nprz
-  Use config_module,  Only : cfgname,imc_n,cell,volm
+  Use domains_module,     Only : map_domains,nprx,npry,nprz
+  Use config_module,      Only : cfgname,imc_n,cell,volm
   Use msd_module
+  Use development_module, Only : l_trm
 
   Implicit None
 
   Logical,           Intent(   Out ) :: l_vv,l_str,l_n_e,l_n_r,l_n_v,l_ind
   Integer,           Intent(   Out ) :: levcfg,imcon,nstfce
-  Real( Kind = wp ), Intent(   Out ) :: rcut,rvdw,rmet,rbin,alpha,width
+  Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
+  Real( Kind = wp ), Intent(   Out ) :: rcut
 
   Logical           :: lter,ltbp,lfbp
   Integer           :: ilx,ily,ilz,qlx,qly,qlz,megatm
@@ -340,6 +342,8 @@ Subroutine set_bounds                                        &
 
 
 
+10 Continue ! possible rcut redefinition if l_trm=.true.
+
 ! define cut
 
   cut=rcut+1.0e-6_wp
@@ -358,7 +362,16 @@ Subroutine set_bounds                                        &
 
   If (idnode == 0) Write(nrite,'(/,1x,a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
 
-  If (ilx*ily*ilz == 0) Call error(307)
+  If (ilx*ily*ilz == 0) Then
+     If (.not.l_trm) Then
+        Call error(307)
+     Else ! we are prepared to exit gracefully(-:
+        rcut=Min(sidex*celprp(7),sidey*celprp(8),sidez*celprp(9))-1.0e-6_wp
+        If (idnode == 0) Write(nrite,'(/,1x,a)') &
+           "*** warning - real space cutoff reset has occured, early run termination is due !!! ***"
+        Go To 10
+     End If
+  End If
 
   If (ilx < 4 .or. ily < 4 .or. ilz < 4) Call warning(100,0.0_wp,0.0_wp,0.0_wp)
 
