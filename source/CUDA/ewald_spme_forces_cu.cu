@@ -698,8 +698,10 @@ extern "C" void ewald_spme_forces_cuda_ccarray_invoke() {
          &sCD_CCARRAY.mBLOCK_XYZ.y,
          &sCD_CCARRAY.mBLOCK_XYZ.z,
          sHD_CCARRAY.mQQC_LOCAL, lQQC_LOCALL_H);
-    delete[] lQQC_LOCALL_H;
+//malysaght110612: note memory leak here -- fix
+//    delete[] lQQC_LOCALL_H;
   }
+  delete[] lQQC_LOCALL_H;
 
   if (sHD_CCARRAY.mDynamicRatios) {
     double lPI_Dev = lCE_K1_Dev_ElapsedTime / ((double) lUnroll_D);
