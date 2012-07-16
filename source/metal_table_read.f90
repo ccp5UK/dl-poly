@@ -3,11 +3,12 @@ Subroutine metal_table_read(l_top)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for reading potential energy and force arrays
-! from TABEAM file (for metal EAM forces only)
+! from TABEAM file (for metal EAM & EEAM forces only)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2006
-! amended   - i.t.todorov may 2012
+! amended   - i.t.todorov june 2012
+! contrib   - r.davidchak june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -15,7 +16,7 @@ Subroutine metal_table_read(l_top)
   Use comms_module, Only : idnode,mxnode,gsum
   Use setup_module, Only : ntable,nrite,mxgrid,mxbuff,engunit
   Use site_module,  Only : ntpatm,unqatm
-  Use metal_module, Only : ntpmet,lstmet,vmet,dmet,fmet
+  Use metal_module, Only : ntpmet,tabmet,lstmet,vmet,dmet,fmet
   Use parse_module, Only : get_line,get_word,lower_case,word_2_real
 
   Implicit None
@@ -35,8 +36,12 @@ Subroutine metal_table_read(l_top)
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
   fail=0
-  Allocate (cpair(1:(ntpmet*(ntpmet+1))/2),cdens(1:ntpmet),cembed(1:ntpmet), Stat=fail(1))
-  Allocate (buffer(1:mxbuff),                                                Stat=fail(2))
+  If      (tabmet == 1) Then                          ! EAM
+     Allocate (cpair(1:(ntpmet*(ntpmet+1))/2),cdens(1:ntpmet),   cembed(1:ntpmet), Stat=fail(1))
+  Else If (tabmet == 2) Then                          ! EEAM
+     Allocate (cpair(1:(ntpmet*(ntpmet+1))/2),cdens(1:ntpmet**2),cembed(1:ntpmet), Stat=fail(1))
+  End If
+  Allocate (buffer(1:mxbuff),                                                      Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'metal_table_read allocation failure, node: ', idnode
      Call error(0)
@@ -83,7 +88,7 @@ Subroutine metal_table_read(l_top)
 ! identify atom types
 
      Call get_word(record,atom1)
-     If (ktype == 1) Then
+     If (ktype == 1 .or. (ktype == 2 .and. tabmet == 2)) Then
         Call get_word(record,atom2)
      Else
         atom2 = atom1
@@ -181,7 +186,7 @@ Subroutine metal_table_read(l_top)
 
 ! calculate derivative of pair potential function
 
-        Call metal_table_derivatives(k0,buffer,vmet)
+        Call metal_table_derivatives(k0,buffer,Size(vmet,2),vmet)
 
 ! adapt derivatives for use in interpolation
 
@@ -193,39 +198,45 @@ Subroutine metal_table_read(l_top)
 
 ! density function terms
 
-        cd=cd+1
-        If (Any(cdens(1:cd-1) == katom1)) Then
-           Call error(510)
-        Else
-           cdens(cd)=katom1
+        If      (tabmet == 1) Then ! EAM
+           k0=katom1
+        Else If (tabmet == 2) Then ! EEAM
+           k0=(katom1-1)*ntpatm+katom2
         End If
 
-        dmet(1,katom1,1)=buffer(1)
-        dmet(2,katom1,1)=buffer(2)
-        dmet(3,katom1,1)=buffer(3)
-        dmet(4,katom1,1)=buffer(4)
+        cd=cd+1
+        If (Any(cdens(1:cd-1) == k0)) Then
+           Call error(510)
+        Else
+           cdens(cd)=k0
+        End If
+
+        dmet(1,k0,1)=buffer(1)
+        dmet(2,k0,1)=buffer(2)
+        dmet(3,k0,1)=buffer(3)
+        dmet(4,k0,1)=buffer(4)
 
         Do i=5,mxgrid
            If (i-4 > ngrid) Then
-             dmet(i,katom1,1)=0.0_wp
+             dmet(i,k0,1)=0.0_wp
            Else
-             dmet(i,katom1,1)=buffer(i)
+             dmet(i,k0,1)=buffer(i)
            End If
         End Do
 
 ! calculate derivative of density function
 
-        Call metal_table_derivatives(katom1,buffer,dmet)
+        Call metal_table_derivatives(k0,buffer,Size(dmet,2),dmet)
 
 ! adapt derivatives for use in interpolation
 
-        dmet(1,katom1,2)=0.0_wp
-        dmet(2,katom1,2)=0.0_wp
-        dmet(3,katom1,2)=0.0_wp
-        dmet(4,katom1,2)=0.0_wp
+        dmet(1,k0,2)=0.0_wp
+        dmet(2,k0,2)=0.0_wp
+        dmet(3,k0,2)=0.0_wp
+        dmet(4,k0,2)=0.0_wp
 
         Do i=5,ngrid+4
-           dmet(i,katom1,2)=-(Real(i,wp)*buffer(4)+buffer(2))*dmet(i,katom1,2)
+           dmet(i,k0,2)=-(Real(i,wp)*buffer(4)+buffer(2))*dmet(i,k0,2)
         End Do
 
      Else If (ktype == 3) Then
@@ -255,7 +266,7 @@ Subroutine metal_table_read(l_top)
 
 ! calculate derivative of embedding function
 
-        Call metal_table_derivatives(katom1,buffer,fmet)
+        Call metal_table_derivatives(katom1,buffer,Size(fmet,2),fmet)
 
      End If
 

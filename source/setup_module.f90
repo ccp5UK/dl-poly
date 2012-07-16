@@ -7,7 +7,7 @@ Module setup_module
 ! set @ execution time
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2011
+! author    - i.t.todorov june 2012
 !
 ! Note(1): The following internal units apply everywhere
 !
@@ -118,16 +118,16 @@ Module setup_module
 
 ! GLOBAL PARAMETERS FOR ARRAYS' BOUNDS LIMITS (set_bounds)
 
-  Integer, Save ::                                              &
-    mxsite,mxatyp,mxtmls,mxexcl,                                &
-    mxspl,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1,               &
-    mxtshl,mxshl,mxfshl,mxtcon,mxcons,mxfcon,mxlshp,mxproc,     &
-    mxtpmf(1:2),mxpmf,mxfpmf,mxtrgd,mxrgd,mxlrgd,mxfrgd,        &
-    mxtteth,mxteth,mxftet,mxpteth,                              &
-    mxtbnd,mxbond,mxfbnd,mxpbnd,mxtang,mxangl,mxfang,mxpang,    &
-    mxtdih,mxdihd,mxfdih,mxpdih,mxtinv,mxinv,mxfinv,mxpinv,     &
-    mxgrid,mxrdf,mxgrdf,mxvdw,mxpvdw,mxmet,mxpmet,mxter,mxpter, &
-    mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,mxpfld,             &
+  Integer, Save ::                                                    &
+    mxsite,mxatyp,mxtmls,mxexcl,                                      &
+    mxspl,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1,                     &
+    mxtshl,mxshl,mxfshl,mxtcon,mxcons,mxfcon,mxlshp,mxproc,           &
+    mxtpmf(1:2),mxpmf,mxfpmf,mxtrgd,mxrgd,mxlrgd,mxfrgd,              &
+    mxtteth,mxteth,mxftet,mxpteth,                                    &
+    mxtbnd,mxbond,mxfbnd,mxpbnd,mxtang,mxangl,mxfang,mxpang,          &
+    mxtdih,mxdihd,mxfdih,mxpdih,mxtinv,mxinv,mxfinv,mxpinv,           &
+    mxgrid,mxrdf,mxgrdf,mxvdw,mxpvdw,mxmet,mxmed,mxpmet,mxter,mxpter, &
+    mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,mxpfld,                   &
     mxstak,mxnstk,mxlist,mxcell,mxatms,mxatdm,mxbuff
 
 ! zero+ and half+/- :: defined in set_bounds

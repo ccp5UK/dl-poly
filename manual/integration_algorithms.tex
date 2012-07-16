@@ -168,9 +168,9 @@ XXXXXXXXXX\=XXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\kill\\
 {\sc nvt\_b1\_vv} \> {\sc nvt\_b1\_lfv} \> The same as the above but also incorporating RB integration \\
 {\sc nvt\_h0\_vv} \> {\sc nvt\_h0\_lfv} \> Constant T algorithm\index{ensemble!Nos\'{e}-Hoover NVT} (Hoover \cite{hoover-85a}) \\
 {\sc nvt\_h1\_vv} \> {\sc nvt\_h1\_lfv} \> The same as the above but also incorporating RB integration \\
-{\sc nvt\_g0\_vv} \> {\sc nvt\_g0\_lfv} \> Constant T algorithm\index{ensemble!Gentle Stochastic NVT} (GST \cite{leimkuhler-09}) \\
+{\sc nvt\_g0\_vv} \> {\sc nvt\_g0\_lfv} \> Constant T algorithm\index{ensemble!Gentle Stochastic NVT} (GST \cite{leimkuhler-09a}) \\
 {\sc nvt\_g1\_vv} \> {\sc nvt\_g1\_lfv} \> The same as the above but also incorporating RB integration \\
-{\sc npt\_l0\_vv} \> {\sc npt\_l0\_lfv} \> Constant T,P algorithm\index{ensemble!Langevin NPT} (Langevin \cite{quigley-04}) \\
+{\sc npt\_l0\_vv} \> {\sc npt\_l0\_lfv} \> Constant T,P algorithm\index{ensemble!Langevin NPT} (Langevin \cite{quigley-04a}) \\
 {\sc npt\_l1\_vv} \> {\sc npt\_l1\_lfv} \> The same as the above but also incorporating RB integration \\
 {\sc npt\_b0\_vv} \> {\sc npt\_b0\_lfv} \> Constant T,P algorithm\index{ensemble!Berendsen NPT} (Berendsen \cite{berendsen-84a}) \\
 {\sc npt\_b1\_vv} \> {\sc npt\_b1\_lfv} \> The same as the above but also incorporating RB integration \\
@@ -178,7 +178,7 @@ XXXXXXXXXX\=XXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\kill\\
 {\sc npt\_h1\_vv} \> {\sc npt\_h1\_lfv} \> The same as the above but also incorporating RB integration \\
 {\sc npt\_m0\_vv} \> {\sc npt\_m0\_lfv} \> Constant T,P algorithm\index{ensemble!Martyna-Tuckerman-Klein NPT} (Martyna-Tuckerman-Klein \cite{martyna-96a}) \\
 {\sc npt\_m1\_vv} \> {\sc npt\_m1\_lfv} \> The same as the above but also incorporating RB integration \\
-{\sc npt\_l0\_vv} \> {\sc npt\_l0\_lfv} \> Constant T,$\mat{\sigma}$ algorithm\index{ensemble!Langevin N$\sigma$T} (Langevin \cite{quigley-04}) \\
+{\sc npt\_l0\_vv} \> {\sc npt\_l0\_lfv} \> Constant T,$\mat{\sigma}$ algorithm\index{ensemble!Langevin N$\sigma$T} (Langevin \cite{quigley-04a}) \\
 {\sc npt\_l1\_vv} \> {\sc npt\_l1\_lfv} \> The same as the above but also incorporating RB integration \\
 {\sc nst\_b0\_vv} \> {\sc nst\_b0\_lfv} \> Constant T,$\mat{\sigma}$ algorithm\index{ensemble!Berendsen N$\sigma$T} (Berendsen \cite{berendsen-84a}) \\
 {\sc nst\_b1\_vv} \> {\sc nst\_b1\_lfv} \> The same as the above but also incorporating RB integration \\
@@ -191,7 +191,7 @@ XXXXXXXXXX\=XXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\kill\\
 It is worth noting that the last four ensembles are also optionally
 available in an extended from to constant normal pressure and
 constant surface area, NP$_{n}$AT, or constant surface tension,
-NP$_{n}\gamma$T \cite{ikeguchi-04}.
+NP$_{n}\gamma$T \cite{ikeguchi-04a}.
 
 \section{Bond Constraints}
 \label{shake-rattle}
@@ -426,9 +426,9 @@ ensemble\index{ensemble!NVE}.  Instead trajectories in the canonical
 (NVT) ensemble\index{ensemble!canonical}, or something close to it
 are generated.  \D comes with six different thermostats: Evans
 (Gaussian constraints)\index{constraints!Gaussian} \cite{evans-84a},
-Langevin \cite{adelman-76a,izaguirre-01}, Andersen \cite{andersen-79a},
+Langevin \cite{adelman-76a,izaguirre-01a}, Andersen \cite{andersen-79a},
 Berendsen \cite{berendsen-84a}, Nos\'e-Hoover \cite{hoover-85a} and
-the gentle stochastic thermostat \cite{leimkuhler-09,samoletov-07}.  Of
+the gentle stochastic thermostat \cite{leimkuhler-09a,samoletov-07a}.  Of
 these, only the gentle stochastic thermostat, Nos\'e-Hoover and
 Langevin algorithms generate trajectories in the canonical (NVT)
 ensemble.  The rest will produce properties that typically differ
@@ -578,7 +578,7 @@ The generation of random forces is implemented in the routine
 {\sc langevin\_forces}.
 
 The VV implementation of the algorithm is tailored in a Langevin
-Impulse (LI) manner \cite{izaguirre-01}:
+Impulse (LI) manner \cite{izaguirre-01a}:
 \begin{enumerate}
 \item VV1:
 \begin{eqnarray}
@@ -594,7 +594,7 @@ Impulse (LI) manner \cite{izaguirre-01}:
 \end{eqnarray}
 where $\vec{Z}_{1}(\chi , \Delta t)$ and $\vec{Z}_{2}(\chi , \Delta
 t)$ are joint Gaussian random variables of zero mean, sampling from
-a {\em bivariate} Gaussian distribution \cite{izaguirre-01}:
+a {\em bivariate} Gaussian distribution \cite{izaguirre-01a}:
 \begin{equation}
 \left[
   \begin{array}{c}
@@ -983,7 +983,7 @@ same but also incorporate RB dynamics.
 
 \subsection{Gentle Stochastic Thermostat}
 
-The Gentle Stochastic Thermostat \cite{leimkuhler-09,samoletov-07} is
+The Gentle Stochastic Thermostat \cite{leimkuhler-09a,samoletov-07a} is
 an extension of the Nos\'e-Hoover algorithm \cite{hoover-85a}
 \begin{eqnarray}
 {d \vek{r}(t) \over d t} &=& \vek{v}(t) \nonumber \\
@@ -1116,7 +1116,7 @@ The size and shape of the simulation cell may be dynamically
 adjusted by coupling the system to a barostat in order to obtain a
 desired average pressure ($P_{\rm ext}$) and/or isotropic stress
 tensor\index{stress tensor} ($\mat{\sigma}$).  \D has four such
-algorithms: the Langevin type barostat \cite{quigley-04},
+algorithms: the Langevin type barostat \cite{quigley-04a},
 the Berendsen barostat \cite{berendsen-84a}, the
 Nos\'{e}-Hoover type barostat \cite{hoover-85a} and the
 Martyna-Tuckerman-Klein (MTK) barsotat \cite{martyna-96a}.  Only
@@ -1157,7 +1157,7 @@ retrospectively to the forcefield stress.
 
 \subsection{Langevin Barostat}
 
-\D implements a Langevin barostat \cite{quigley-04} for isotropic and
+\D implements a Langevin barostat \cite{quigley-04a} for isotropic and
 anisotropic cell fluctuations.
 
 \vskip 2ex
@@ -1418,7 +1418,7 @@ It is worth noting \D uses Taylor expansion truncated to the
 quadratic term to approximate exponentials of tensorial terms.
 
 This ensemble is optionally extending to constant normal pressure
-and constant surface area, NP$_{n}$AT \cite{ikeguchi-04}, by semi-isotropic
+and constant surface area, NP$_{n}$AT \cite{ikeguchi-04a}, by semi-isotropic
 constraining of the barostat equation of motion to:
 \begin{equation}
 \frac{d}{dt} \eta_{\alpha\beta}(t) = \left\{ \begin{array} {l@{\quad:\quad}l}
@@ -1430,7 +1430,7 @@ constraining of the barostat equation of motion to:
 
 Similarly, this ensemble is optionally extending to constant
 normal pressure and constant surface tension, NP$_{n}\gamma$T
-\cite{ikeguchi-04}, by semi-isotropic constraining of the
+\cite{ikeguchi-04a}, by semi-isotropic constraining of the
 barostat equation of motion to:
 \begin{equation}
 \frac{d}{dt} \eta_{\alpha\beta}(t) = \left\{ \begin{array} {l@{\quad:\quad}l}
@@ -1621,7 +1621,7 @@ and the velocity updates for VV and LFV algorithms as
 \end{eqnarray}
 
 This ensemble is optionally extending to constant normal pressure
-and constant surface area, NP$_{n}$AT \cite{ikeguchi-04}, by semi-isotropic
+and constant surface area, NP$_{n}$AT \cite{ikeguchi-04a}, by semi-isotropic
 constraining of the barostat equation of motion to:
 \begin{equation}
 \eta_{\alpha\delta}(t) = \left\{ \begin{array} {l@{\quad:\quad}l}
@@ -1634,7 +1634,7 @@ constraining of the barostat equation of motion to:
 
 Similarly, this ensemble is optionally extending to constant
 normal pressure and constant surface tension, NP$_{n}\gamma$T
-\cite{ikeguchi-04}, by semi-isotropic constraining of the
+\cite{ikeguchi-04a}, by semi-isotropic constraining of the
 barostat equation of motion to:
 \begin{equation}
 \eta_{\alpha\delta}(t) = \left\{ \begin{array} {l@{\quad:\quad}l}
@@ -1946,7 +1946,7 @@ where $f$ is the system's degrees of freedom - equation
 (\ref{freedom}).
 
 This ensemble is optionally extending to constant normal pressure
-and constant surface area, NP$_{n}$AT \cite{ikeguchi-04}, by semi-isotropic
+and constant surface area, NP$_{n}$AT \cite{ikeguchi-04a}, by semi-isotropic
 constraining of the barostat equation of motion and slight amending
 the thermostat equation of motion and the conserved quantity to:
 \begin{eqnarray}
@@ -1964,7 +1964,7 @@ the thermostat equation of motion and the conserved quantity to:
 
 Similarly, this ensemble is optionally extending to constant
 normal pressure and constant surface tension, NP$_{n}\gamma$T
-\cite{ikeguchi-04}, by semi-isotropic constraining of the
+\cite{ikeguchi-04a}, by semi-isotropic constraining of the
 barostat equation of motion and slight amending the thermostat
 equation of motion and the conserved quantity to:
 \begin{eqnarray}
@@ -2099,7 +2099,7 @@ for the isotropic cell fluctuations case and
 for the anisotropic cell fluctuations case.
 
 This ensemble is optionally extending to constant normal pressure
-and constant surface area, NP$_{n}$AT \cite{ikeguchi-04}, by semi-isotropic
+and constant surface area, NP$_{n}$AT \cite{ikeguchi-04a}, by semi-isotropic
 constraining of the barostat equation of motion and slight amending
 the thermostat equation of motion and the conserved quantity to:
 \begin{eqnarray}
@@ -2117,7 +2117,7 @@ the thermostat equation of motion and the conserved quantity to:
 
 Similarly, this ensemble is optionally extending to constant
 normal pressure and constant surface tension, NP$_{n}\gamma$T
-\cite{ikeguchi-04}, by semi-isotropic constraining of the
+\cite{ikeguchi-04a}, by semi-isotropic constraining of the
 barostat equation of motion and slight amending the thermostat
 equation of motion and the conserved quantity to:
 \begin{eqnarray}

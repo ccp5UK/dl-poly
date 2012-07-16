@@ -160,8 +160,8 @@ U(r_{ij}) = k \cdot U^{Electrostatics}(r_{ij}) \;
 \end{equation}
 where $q_{\ell}$ is the charge on an atom labelled $\ell$.
 It is worth noting that the Coulomb potential switches
-to the paricular model of Electrostatics opted in CONTROL.
-\item Shifted finitely extendible non-linear elastic (FENE) potential \cite{warner-72,bird-77,grest-86}:  ({\bf fene})
+to the particular model of Electrostatics opted in CONTROL.
+\item Shifted finitely extendible non-linear elastic (FENE) potential \cite{warner-72a,bird-77a,grest-86a}:  ({\bf fene})
 \begin{equation}
 U(r_{ij}) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
 -0.5~k~R_{o}^{2}~ln\left[1-\left(\frac{r_{ij}-\Delta}{R_{o}}\right)^{2}\right] & |r_{ij} - \Delta| < R_{o} \\
@@ -303,15 +303,15 @@ U(\theta_{jik}) = A~[1 + cos(m~\theta_{jik}-\delta)]
 \begin{equation}
 U(\theta_{jik}) = A~(\theta_{jik}-\theta_{0})~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o})
 \end{equation}
-\item Compass stretch-stretch \cite{sun-98}:  ({\bf stst})
+\item Compass stretch-stretch \cite{sun-98a}:  ({\bf stst})
 \begin{equation}
 U(\theta_{jik}) = A~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o})
 \end{equation}
-\item Compass stretch-bend \cite{sun-98}:  ({\bf stbe})
+\item Compass stretch-bend \cite{sun-98a}:  ({\bf stbe})
 \begin{equation}
 U(\theta_{jik}) = A~(\theta_{jik}-\theta_{0})~(r_{ij} - r_{ij}^{o})
 \end{equation}
-\item Compass all terms \cite{sun-98}:  ({\bf cmps})
+\item Compass all terms \cite{sun-98a}:  ({\bf cmps})
 \begin{equation}
 U(\theta_{jik}) = A~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o}) +
 (\theta_{jik}-\theta_{0})~[B~(r_{ij} - r_{ij}^{o})+C~(r_{ik} - r_{ik}^{o})]
@@ -418,9 +418,9 @@ words:
 \item Harmonic cosine:  ({\bf -hcs})
 \item Cosine:  ({\bf -cos})
 \item MM3 stretch-bend \cite{allinger-89a}:  ({\bf -msb})
-\item Compass stretch-stretch \cite{sun-98}:  ({\bf -sts})
-\item Compass stretch-bend \cite{sun-98}:  ({\bf -stb})
-\item Compass all terms \cite{sun-98}:  ({\bf -cmp})
+\item Compass stretch-stretch \cite{sun-98a}:  ({\bf -sts})
+\item Compass stretch-bend \cite{sun-98a}:  ({\bf -stb})
+\item Compass all terms \cite{sun-98a}:  ({\bf -cmp})
 \end{enumerate}
 
 In \D angular restraints\index{angular restraints} are handled by
@@ -851,7 +851,7 @@ the routine {\sc inversions\_forces}.
 \end{center}
 \end{figure}
 
-\index{potential!calcite} This potential \cite{rohl-03a,raiteri} is designed to
+\index{potential!calcite} This potential \cite{rohl-03a,raiteri-10a} is designed to
 help maintain the planar structure of the carbonate anion $[CO_{3}]^{2-}$ in a
 similar manner to the planar inversion potential described above.  However,
 it is {\em not} an angular potential.  It is dependent on the perpendicular
@@ -1038,7 +1038,7 @@ minimum) retain their original values after the shifting process.
 \begin{equation}
 U(r_{ij}) = E_{o}~[\{1-\exp(-k(r_{ij}-r_{o}))\}^{2}-1]
 \end{equation}
-\item Shifted Weeks-Chandler-Anderson (WCA) potential \cite{weeks-71}:  ({\bf wca})
+\item Shifted Weeks-Chandler-Anderson (WCA) potential \cite{weeks-71a}:  ({\bf wca})
 \begin{equation}
 U(r_{ij}) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
 4\epsilon\left[\left(\frac{\sigma}{r_{ij}-\Delta}\right)^{12}-\left(\frac{\sigma}{r_{ij}-\Delta}\right)^{6}\right]
@@ -1150,22 +1150,25 @@ Verlet\index{algorithm!Verlet} neighbour list (see above).
 The metal potentials in \D follow two similar but distinct formalisms.
 The first of these is the embedded atom model (EAM)
 \cite{baskes-84a,baskes-86a} and the second is the Finnis-Sinclair
-model (FS) \cite{finnis-84a}. Both are density dependent potentials
+model (FS) \cite{finnis-84a}.  Both are density dependent potentials
 derived from density functional theory (DFT) and describe the bonding
 of a metal atom ultimately in terms of the local electronic density.
 They are suitable for calculating the properties of metals
-\index{potential!metal} and metal alloys.
+\index{potential!metal} and metal alloys.  The extended EAM (EEAM)
+\cite{hepburn-08a,lau-07a} is a generalisation of the EAM formalism
+which can include both EAM and FS type of mixing rules (see below).
 
-For single component metals the two approaches are the same.  {\bf
-However}, they are subtly different in the way they are extended to
-handle alloys (see below). It follows that EAM and FS class potentials
+For single component metals the two main approaches, FS and EAM, are the same.
+{\bf However}, they are subtly different in the way they are extended to
+handle alloys (see below).  It follows that EAM and FS class potentials
 cannot be mixed in a single simulation.  Furthermore, even for FS
 class potentials possessing different analytical forms there is no
-agreed procedure for mixing the parameters.  The user is therefore
-strongly advised to be consistent in the choice of potential when
-modelling alloys.
+agreed procedure for mixing the parameters.  Mixing EAM and EEAM
+potentials is only possible if the EAM ones are generalised to EEAM
+form (see below).  The user is, therefore, strongly advised to be
+consistent in the choice of potential when modelling alloys.
 
-The general form of the EAM and FS potentials is \cite{friedel-52a}
+The general form of the EAM and FS types of potentials is \cite{friedel-52a}
 \begin{equation}
 U_{metal} = {1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N} V_{ij}(r_{ij}) +
 \sum_{i=1}^{N} F(\rho_{i})~~, \label{um}
@@ -1184,13 +1187,18 @@ interacting particles in the MD box.
 
 The types of metal potentials available in \D are as follows:
 \begin{enumerate}
-\item EAM potential:  ({\bf eam})
+\item EAM potential:  ({\bf eam})\index{potential!EAM}
 There are no explicit mathematical expressions for EAM potentials, so
 this potential type is read exclusively in the form of interpolation
 arrays from the TABEAM table file (as implemented in the {\sc
 metal\_table\_read} routine - Section \ref{tabeam-file}.)  The rules
 for combining the potentials from different metals to handle alloys
 are different from the FS class of potentials (see below).
+\item Extended EAM potential ({\bf eeam})\index{potential!EEAM}
+Similar to EAM above, the EEAM potential is given in the form of
+interpolation arrays from the TABEAM file, but the rules for combining
+the potentials from different metals are different from both EAM and FS
+classes (see below).
 \item Finnis-Sinclair potential \cite{finnis-84a}:  ({\bf fnsc})
 Finnis-Sinclair potential is explicitly analytical.  It has the following form:
 \begin{eqnarray}
@@ -1200,10 +1208,10 @@ F(\rho_{i}) &=& -A \sqrt{\rho_{i}}~~, \nonumber
 \end{eqnarray}
 with parameters: $c_{0}$, $c_{1}$, $c_{2}$, $c$, $A$, $d$, $\beta$,
 both $c$ and $d$ are cutoffs.  Since first being proposed a number of
-alternative analysical forms have been proposed, some of which are
-descibed below.  The rules for combining different metal potentials to
+alternative analytical forms have been proposed, some of which are
+described below.  The rules for combining different metal potentials to
 model alloys are different from the EAM potentials (see below).
-\item Extended Finnis-Sinclair potential \cite{dai-06}:  ({\bf exfs})
+\item Extended Finnis-Sinclair potential \cite{dai-06a}:  ({\bf exfs})
 It has the following form:
 \begin{eqnarray}
 V_{ij}(r_{ij}) &=& (r_{ij}-c)^{2}
@@ -1278,13 +1286,18 @@ The same as shown above.  However, it is worth noting that the
 generation of the force arrays from tabulated data (implemented
 in the {\sc metal\_table\_derivatives} routine) is done using a
 five point interpolation precedure.
+\item Extended EAM force \\
+The same as shown above.  However, it is worth noting that the
+generation of the force arrays from tabulated data (implemented
+in the {\sc metal\_table\_derivatives} routine) is done using a
+five point interpolation precedure.
 \item Finnis-Sinclair force
 \begin{eqnarray}
 -\frac{\partial U_{1}}{\partial \vek{r_{k}}} &=& \sum_{j=1,j \ne k}^{N} \left\{
 2 (r_{kj}-c) (c_{0}+c_{1}r_{kj}+c_{2}r_{kj}^{2}) +
 (r_{kj}-c)^{2} (c_{1}+2c_{2}r_{kj}) \right\} \frac{\vek{r_{kj}}}{r_{kj}} \nonumber \\
 -\frac{\partial U_{2}}{\partial \vek{r_{k}}} &=& -\sum_{j=1,j \ne k}^{N}
-{A \over 2} \left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+{A \over 2} \left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \left\{ 2(r_{kj}-d) + 3 \beta \frac{(r_{kj}-d)^{2}}{d} \right\} \frac{\vek{r_{kj}}}{r_{kj}}~~.
 \end{eqnarray}
 \item Extended Finnis-Sinclair force
@@ -1294,7 +1307,7 @@ five point interpolation precedure.
 & & \phantom{xxxxxxx} \left. (r_{kj}-c)^{2} (c_{1}+2c_{2}r_{kj}+3c_{3}r_{kj}^{2}+4c_{4}r_{kj}^{3}) \right\}
 \frac{\vek{r_{kj}}}{r_{kj}} \\
 -\frac{\partial U_{2}}{\partial \vek{r_{k}}} &=& -\sum_{j=1,j \ne k}^{N}
-{A \over 2} \left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+{A \over 2} \left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \left\{ 2(r_{kj}-d) + 4 B^{2} (r_{kj}-d)^{3}\right\} \frac{\vek{r_{kj}}}{r_{kj}}~~. \nonumber
 \end{eqnarray}
 \item Sutton-Chen force
@@ -1302,7 +1315,7 @@ five point interpolation precedure.
 -\frac{\partial U_{1}}{\partial \vek{r_{k}}} &=& -\sum_{j=1,j \ne k}^{N} n \epsilon
 \left( \frac{a}{r_{kj}} \right)^{n} \frac{\vek{r_{kj}}}{r_{kj}} \nonumber \\
 -\frac{\partial U_{2}}{\partial \vek{r_{k}}} &=& \sum_{j=1,j \ne k}^{N} \frac{m c \epsilon}{2}
-\left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+\left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \left( \frac{a}{r_{kj}} \right)^{m} \frac{\vek{r_{kj}}}{r_{kj}}~~.
 \end{eqnarray}
 \item Gupta force
@@ -1310,7 +1323,7 @@ five point interpolation precedure.
 -\frac{\partial U_{1}}{\partial \vek{r_{k}}} &=& -\sum_{j=1,j \ne k}^{N} \frac{A p}{r_{0}}
 \exp \left( -p \frac{r_{kj}-r_{0}}{r_{0}} \right) \frac{\vek{r_{kj}}}{r_{kj}} \nonumber \\
 -\frac{\partial U_{2}}{\partial \vek{r_{k}}} &=& \sum_{j=1,j \ne k}^{N} \frac{B q_{kj}}{r_{0}}
-\left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+\left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \exp \left( -2 q_{kj} \frac{r_{kj}-r_{0}}{r_{0}} \right) \frac{\vek{r_{kj}}}{r_{kj}}~~.
 \end{eqnarray}
 \end{enumerate}
@@ -1339,13 +1352,15 @@ which equates to:
 \begin{enumerate}
 \item EAM virial \\
 The same as above.
+\item Extended EAM virial \\
+The same as above.
 \item Finnis-Sinclair virial
 \begin{eqnarray}
 \Psi_{1} &=& {1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N}
 \left\{ 2 (r_{ij}-c) (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}) +
 (r_{ij}-c)^{2} (c_{1}+2c_{2}r_{ij}) \right\} r_{ij} \nonumber \\
 \Psi_{2} &=& {1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N}
-{A \over 2} \left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+{A \over 2} \left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \left\{ 2(r_{ij}-d) + 3 \beta \frac{(r_{ij}-d)^{2}}{d} \right\} r_{ij}a~~.
 \end{eqnarray}
 \item Extended Finnis-Sinclair virial
@@ -1354,7 +1369,7 @@ The same as above.
 \left\{ 2 (r_{ij}-c) (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}+c_{3}r_{ij}^{3}+c_{4}r_{ij}^{4}) + \right. \nonumber \\
 & & \phantom{xxxxxxxx} \left. (r_{ij}-c)^{2} (c_{1}+2c_{2}r_{ij}+3c_{3}r_{ij}^{2}+4c_{4}r_{ij}i^{3}) \right\} r_{ij} \\
 \Psi_{2} &=& {1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N}
-{A \over 2} \left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+{A \over 2} \left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \left\{ 2(r_{ij}-d) + 4 B^{2} (r_{ij}-d)^{3} \right\} r_{ij}a~~. \nonumber
 \end{eqnarray}
 \item Sutton-Chen virial
@@ -1368,7 +1383,7 @@ The same as above.
 \Psi_{1} &=& -{1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N}
 \frac{A p}{r_{0}} \exp \left( -p \frac{r_{ij}-r_{0}}{r_{0}} \right) r_{ij} \nonumber \\
 \Psi_{2} &=& {1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N} \frac{B q_{ij}}{r_{0}}
-\left( \sqrt{\rho_{k}} + \sqrt{\rho_{j}} \right)
+\left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \exp \left( -2 q_{ij} \frac{r_{ij}-r_{0}}{r_{0}} \right) r_{ij}~~.
 \end{eqnarray}
 \end{enumerate}
@@ -1397,6 +1412,8 @@ $\bar{\rho}$ is the {\em mean particle density}.  Evaluating the
 integral part of the above equation yields:
 \begin{enumerate}
 \item EAM density correction \\
+No long-ranged corrections apply beyond $r_{\rm met}$.
+\item Extended EAM density correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
 \item Finnis-Sinclair density correction \\
 No long-ranged corrections apply beyond cutoffs $c$ and $d$.
@@ -1436,6 +1453,8 @@ $\rho_{i}$ has already been corrected.  Evaluating the
 integral part of the above equations yields:
 \begin{enumerate}
 \item EAM energy correction \\
+No long-ranged corrections apply beyond $r_{\rm met}$.
+\item Extended EAM energy correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
 \item Finnis-Sinclair energy correction \\
 No long-ranged corrections apply beyond cutoffs $c$ and $d$.
@@ -1486,6 +1505,8 @@ be computed by the methods used in the short ranged potentials:
 Evaluating the integral part of the above equations yields:
 \begin{enumerate}
 \item EAM virial correction \\
+No long-ranged corrections apply beyond $r_{\rm met}$.
+\item Extended EAM virial correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
 \item Finnis-Sinclair virial correction \\
 No long-ranged corrections apply beyond cutoffs $c$ and $d$.
@@ -1566,20 +1587,29 @@ For the FS case \cite{sutton-91a} a different rule applies:
 so that atoms of type $A$ and $B$ contribute the same densities to
 each other, but not to atoms of the same type.
 
-Thus when specifying these potentials in the \D FIELD file for
-an alloy composed of $n$ different metal atom types both EAM and FS
-require the specification of $n(n+1)/2$ pair functions
-$V^{AB}_{ij}(r_{ij})$.  However, the EAM requires only $n$ density
-functions $\rho^{AA}_{ij}(r_{ij})$, whereas the FS class requires all
-the cross functions $\rho^{AB}_{ij}(r_{ij})$ or $n(n+1)/2$ in total.
-In addition to the $n(n+1)/2$ pair functions and $n$ density functions
-the EAM requires further specification of $n$ functional forms of the
-density dependence (i.e. the embedding function $F(\rho_{i})$ in (\ref{um})).
+It is worth noting that in the EEAM potential framework all densities
+can be different \cite{hepburn-08a,lau-07a}:
+\begin{equation}
+\rho^{AA}_{ij}(r_{ij}) \neq \rho^{BB}_{ij}(r_{ij}) \neq \rho^{AB}_{ij}(r_{ij}) \neq
+\rho^{BA}_{ij}(r_{ij})~~!
+\end{equation}
 
-For EAM potentials all the functions are supplied in tabular form via
-the table file TABEAM (see section \ref{tabeam-file}) to which \D is
-redirected by the FIELD file data.  The FS potentials are defined via
-the necessary parameters in the FIELD file.
+Thus when specifying these potentials in the \D FIELD file for an
+alloy composed of $n$ different metal atom types both the EAM types
+and FS types of potentials require the specification of $n(n+1)/2$
+pair functions $V^{AB}_{ij}(r_{ij})$.  However, the its only the simple
+EAM type together with all the FS types that require only $n$ density
+functions $\rho^{AA}_{ij}(r_{ij})$, whereas the EEAM class requires all
+the cross functions $\rho^{AB}_{ij}(r_{ij})$ possible or $n^2$ in total!
+In addition to the $n(n+1)/2$ pair functions and $n$ or $n^2$ density
+functions both the EAM and EEAM potentias require further specification
+of $n$ functional forms of the density dependence (i.e. the embedding
+function $F(\rho_{i})$ in (\ref{um})).
+
+For EAM and EEAM potentials all the functions are supplied in tabular
+form via the table file TABEAM (see section \ref{tabeam-file}) to which
+\D is redirected by the FIELD file data.  The FS potentials are defined
+via the necessary parameters in the FIELD file.
 
 \subsection{Tersoff Potential}
 \label{tersoff}
@@ -2020,7 +2050,7 @@ The force-shifted Coulomb potential can be elegantly extended to
 emulate long-range ordering by including distance depending damping
 function $erfc(\alpha~r_{ij})$ (identical to that seen in the
 real-space portion of the Ewald sum) and thus mirror the effective
-charge screening \cite{fennell-06} as shown below
+charge screening \cite{fennell-06a} as shown below
 \begin{eqnarray}
 U(r_{ij}) = {q_{i} q_{j} \over 4\pi\epsilon_{0}\epsilon} \left[
 \left\{ \frac{erfc(\alpha~r_{ij})}{r_{ij}} + \left(\frac{erfc(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}}+
@@ -2037,7 +2067,7 @@ with the force on an atom $j$ given by
 \end{eqnarray}
 with the force on atom $i$ the negative of this.
 
-It is worth noting that, as discussed in \cite{fennell-06} and
+It is worth noting that, as discussed in \cite{fennell-06a} and
 references therein, this is only an approximation of the Ewald
 sum and its accuracy and effectiveness become better when the
 cutoff is large ($>$ 10 preferably 12 \AA).
@@ -2159,7 +2189,7 @@ long-range ordering in a force-shifted manner by countering
 the reaction term and using a distance depending damping
 function $erfc(\alpha~r_{ij})$ (identical to that seen in
 the real-space portion of the Ewald sum) and thus mirror the
-effective charge screening \cite{fennell-06}:
+effective charge screening \cite{fennell-06a}:
 \begin{eqnarray}
 U(r_{ij}) = {q_{i} q_{j} \over 4\pi\epsilon_{0}\epsilon} \left[
 \left\{ \frac{erfc(\alpha~r_{ij})}{r_{ij}} + \left(\frac{erfc(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}}+
@@ -2178,7 +2208,7 @@ with the force on an atom $j$ given by
 \end{eqnarray}
 with the force on atom $i$ the negative of this.
 
-It is worth noting that, as discussed in \cite{fennell-06} and
+It is worth noting that, as discussed in \cite{fennell-06a} and
 references therein, this is only an approximation of the Ewald
 sum and its accuracy and effectiveness become better when the
 cutoff is large ($>$ 10 preferably 12 \AA).

@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -515,7 +515,12 @@ Subroutine warning(kode,a,b,c)
      Else If (kode == 480) Then
 
         Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)') &
-        '*** warning - "metal direct" option disabled as incompatible with EAM (TABEAM)!!! ***'
+        '*** warning - "metal direct" option disabled as incompatible with EAM potentials (TABEAM)!!! ***'
+
+     Else If (kode == 490) Then
+
+        Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)') &
+        '*** warning - "metal sqrtrho" option disabled as incompatible with FS type potentials (analytic forms)!!! ***'
 
      Else
 

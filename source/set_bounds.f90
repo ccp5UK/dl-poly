@@ -8,7 +8,7 @@ Subroutine set_bounds                                        &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2012
+! author    - i.t.todorov june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -47,7 +47,7 @@ Subroutine set_bounds                                        &
            mxtteth,mxteth,mxftet,                     &
            mxtbnd,mxbond,mxfbnd,mxtang,mxangl,mxfang, &
            mxtdih,mxdihd,mxfdih,mxtinv,mxinv,mxfinv,  &
-           mxrdf,mxgrid,mxvdw,rvdw,mxmet,rmet,        &
+           mxrdf,mxgrid,mxvdw,rvdw,mxmet,mxmed,rmet,  &
            mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp)
 
 ! scan CONFIG file data

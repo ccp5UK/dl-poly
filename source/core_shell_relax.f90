@@ -6,7 +6,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 ! gradient method
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith march 2011
+! author    - i.t.todorov & w.smith june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -82,9 +82,9 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
      relaxed=.false.
 
-! Minimum grad_pass = 10*rlx_tol
+! Minimum needed for a pass for this minimisation cycle
 
-     grad_pass = 10.0_wp*rlx_tol
+     grad_pass = Huge(1.0_wp)
 
 ! Avoid rdf calculation redundancy
 
@@ -148,7 +148,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
      pass(1)=pass(1)+1.0_wp
 
-! Minimum grad_pass = 10*rlx_tol
+! Minimum for passing
 
      grad_pass = Min(grad_pass,grad_tol)
 

@@ -6,7 +6,7 @@ Subroutine scan_field                                 &
            mxtteth,mxteth,mxftet,                     &
            mxtbnd,mxbond,mxfbnd,mxtang,mxangl,mxfang, &
            mxtdih,mxdihd,mxfdih,mxtinv,mxinv,mxfinv,  &
-           mxrdf,mxgrid,mxvdw,rvdw,mxmet,rmet,        &
+           mxrdf,mxgrid,mxvdw,rvdw,mxmet,mxmed,rmet,  &
            mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -15,7 +15,7 @@ Subroutine scan_field                                 &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith november 1994
-! amended   - i.t.todorov march 2012
+! amended   - i.t.todorov june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,7 +24,7 @@ Subroutine scan_field                                 &
   Use setup_module, Only : nfield,ntable
   Use parse_module, Only : get_line,get_word,lower_case,word_2_real
   Use vdw_module,   Only : lt_vdw
-  Use metal_module, Only : lt_met
+  Use metal_module, Only : tabmet
 
   Implicit None
 
@@ -54,7 +54,7 @@ Subroutine scan_field                                 &
                        numang,mtangl,mxtang,mxangl,iang,mxfang,                &
                        numdih,mtdihd,mxtdih,mxdihd,idih,mxfdih,                &
                        numinv,mtinv,mxtinv,mxinv,iinv,mxfinv,                  &
-                       mxrdf,itprdf,mxvdw,itpvdw,mxmet,itpmet,mxgrid,          &
+                       mxrdf,itprdf,mxvdw,itpvdw,mxmet,mxmed,itpmet,mxgrid,    &
                        mxter,itpter,mxtbp,itptbp,mxfbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
   Real( Kind = wp ) :: rvdw,rmet,rcter,rctbp,rcfbp,rct
@@ -130,6 +130,7 @@ Subroutine scan_field                                 &
   rvdw =0.0_wp
 
   mxmet=0
+  mxmed=0
   rmet =0.0_wp
 
   mxter=0
@@ -523,7 +524,7 @@ Subroutine scan_field                                 &
 
      Else If (word(1:3) == 'met') Then
 
-!        lt_met=.false. ! initialised in metal_module
+!        tabmet=0 ! initialised in metal_module
 
         Call get_word(record,word)
         mxmet=Nint(word_2_real(word))
@@ -540,7 +541,9 @@ Subroutine scan_field                                 &
            Call get_word(record,word)
            Call get_word(record,word)
            If      (word(1:3) ==  'eam') Then
-              lt_met=.true.
+              tabmet=1
+           Else If (word(1:4) == 'eeam') Then
+              tabmet=2
            Else If (word(1:4) == 'fnsc') Then
               Call get_word(record,word) ; Call get_word(record,word)
               Call get_word(record,word) ; Call get_word(record,word)
@@ -558,8 +561,15 @@ Subroutine scan_field                                 &
         End Do
 
         mxmet=Max(mxmet,(mxatyp*(mxatyp+1))/2)
+        If      (tabmet == 0) Then
+           mxmed=mxmet
+        Else If (tabmet == 1) Then
+           mxmed=mxatyp
+        Else If (tabmet == 2) Then
+           mxmed=mxatyp**2
+        End If
 
-        If (lt_met) Then
+        If (tabmet > 0) Then
            If (idnode == 0) Open(Unit=ntable, File='TABEAM')
 
            Call get_line(safe,ntable,record)
@@ -573,10 +583,11 @@ Subroutine scan_field                                 &
               If (.not.safe) Go To 40
               Call get_word(record,word)
               Call lower_case(word)
-              j=0
-              If (word(1:4) == 'embe') j=1
-              If (word(1:4) == 'pair') Call get_word(record,word)
-              Call get_word(record,word)
+              j=0 ! assume rmet is specified
+              If (word(1:4) == 'embe') j=1 ! no rmet is specified
+              If ((word(1:4) == 'dens' .and. tabmet == 2) .or. &
+                  word(1:4) == 'pair') Call get_word(record,word) ! skip over one species
+              Call get_word(record,word)                          ! skip over one species
 
               Call get_word(record,word)
               k=Nint(word_2_real(word))

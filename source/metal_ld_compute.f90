@@ -12,7 +12,8 @@ Subroutine metal_ld_compute         &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov may 2012
+! amended   - i.t.todorov june 2012
+! contrib   - r.davidchak june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,7 +21,7 @@ Subroutine metal_ld_compute         &
   Use comms_module,  Only : mxnode,gsum,gcheck
   Use setup_module
   Use config_module, Only : cell,natms,ltg,ltype,list,xxx,yyy,zzz
-  Use metal_module,  Only : ntpmet,ltpmet,fmet
+  Use metal_module,  Only : ls_met,ntpmet,ltpmet,fmet
 
   Implicit None
 
@@ -120,56 +121,77 @@ Subroutine metal_ld_compute         &
 
 ! check for unsafe densities (mind start was shifted)
 
-           If (rho(i) >= fmet(2,k0,1)+5.0_wp*fmet(4,k0,1) .and. rho(i) <= fmet(3,k0,1)) Then
+           If (.not.ls_met) Then ! fmet over rho grid
+              rhosqr = rho(i)
+           Else                  ! fmet over Sqrt(rho) grid
+              rhosqr = Sqrt(rho(i))
+           End If
+           If (rhosqr >= fmet(2,k0,1)+5.0_wp*fmet(4,k0,1)) Then
+              If (rhosqr <= fmet(3,k0,1)) Then
 
 ! interpolation parameters
 
-              rdr = 1.0_wp/fmet(4,k0,1)
-              rrr = rho(i) - fmet(2,k0,1)
-              l   = Min(Nint(rrr*rdr),Int(fmet(1,k0,1))-1)
-              If (l < 2) Then ! catch unsafe value
-                 Write(*,*) 'good density range problem: (LTG,RHO) ',ltg(i),rho(i)
-                 safe=.false.
-                 l=2
-              End If
-              ppp = rrr*rdr - Real(l,wp)
+                 rdr = 1.0_wp/fmet(4,k0,1)
+                 rrr = rhosqr - fmet(2,k0,1)
+                 l   = Min(Nint(rrr*rdr),Nint(fmet(1,k0,1))-1)
+                 If (l < 6) Then ! catch unsafe value
+                    Write(*,*) 'good density range problem: (LTG,RHO) ',ltg(i),rho(i)
+                    safe=.false.
+                    l=6
+                 End If
+                 ppp = rrr*rdr - Real(l,wp)
 
 ! calculate embedding energy using 3-point interpolation
 
-              fk0 = fmet(l-1,k0,1)
-              fk1 = fmet(l  ,k0,1)
-              fk2 = fmet(l+1,k0,1)
+                 fk0 = fmet(l-1,k0,1)
+                 fk1 = fmet(l  ,k0,1)
+                 fk2 = fmet(l+1,k0,1)
 
-              t1 = fk1 + ppp*(fk1 - fk0)
-              t2 = fk1 + ppp*(fk2 - fk1)
+                 t1 = fk1 + ppp*(fk1 - fk0)
+                 t2 = fk1 + ppp*(fk2 - fk1)
 
-              If (ppp < 0.0_wp) Then
-                 engden = engden + t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
-              Else
-                 engden = engden + t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
-              End If
+                 If (ppp < 0.0_wp) Then
+                    engden = engden + t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                 Else
+                    engden = engden + t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                 End If
 
 ! calculate derivative of embedding function wrt density
 ! using 3-point interpolation and store result in rho array
 
-              fk0 = fmet(l-1,k0,2)
-              fk1 = fmet(l  ,k0,2)
-              fk2 = fmet(l+1,k0,2)
+                 fk0 = fmet(l-1,k0,2)
+                 fk1 = fmet(l  ,k0,2)
+                 fk2 = fmet(l+1,k0,2)
 
-              t1 = fk1 + ppp*(fk1 - fk0)
-              t2 = fk1 + ppp*(fk2 - fk1)
+                 t1 = fk1 + ppp*(fk1 - fk0)
+                 t2 = fk1 + ppp*(fk2 - fk1)
 
-              If (ppp < 0.0_wp) Then
-                 rho(i) = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
-              Else
-                 rho(i) = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                 If (ppp < 0.0_wp) Then
+                    If (.not.ls_met) Then ! fmet over rho grid
+                       rho(i) = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                    Else                  ! fmet over Sqrt(rho) grid
+                       rho(i) = 0.5_wp*(t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp))/rhosqr
+                    End If
+                 Else
+                    If (.not.ls_met) Then ! fmet over rho grid
+                       rho(i) = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                    Else                  ! fmet over Sqrt(rho) grid
+                       rho(i) = 0.5_wp*(t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp))/rhosqr
+                    End If
+                 End If
+
+              Else ! RLD: assume that fmet(rho(i) > fmet(3,k0,1)) = fmet(rho(i) = fmet(3,k0,1))
+
+                l      = Nint(fmet(1,k0,1))
+
+                engden = engden + fmet(l,k0,1)
+
+                rho(i) = 0.0_wp
+
               End If
-
            Else
-
               Write(*,*) 'bad density range problem: (LTG,RHO) ',ltg(i),rho(i)
               safe=.false.
-
            End If
 
         End If

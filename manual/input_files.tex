@@ -401,7 +401,11 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf metal direct}                           \> enforces the direct calculation of metal interactions defined \\
 \>                                              \> by explicit potential forms, i.e. it will not work for metal \\
-\>                                              \> alloy systems using the EAM (TABEAM) \\
+\>                                              \> alloy systems using the EAM or EEAM (TABEAM) \\
+\>                                              \> \\
+\> {\bf metal sqrtrho}                          \> swiches the TABEAM default of reading embeding functions, \\
+\>                                              \> $F(\rho)$, as interpolated over densities, $\rho$, to as \\
+\>                                              \> interpolated over $\sqrt{\rho}$, i.e. $F~=~F(\sqrt{\rho})$\\
 \>                                              \> \\
 \> {\bf mindis} $f$                             \> set minimum distance allowed in variable timestep (control) \\
 \>                                              \> to $f$ \AA (default $f~=~0.03$ \AA) \\
@@ -414,7 +418,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> default $f~=~50$) or {\em energy} ($0~<~f~\le~0.01$, default \\
 \>                                              \> $f~=~0.005$) or {\em distance} (maximum absolute displacement in \\
 \>                                              \> \AA, $10^{-6}~\le~f~\le~0.1$, default $f~=~0.005$); the lowest {\em string} \\
-\>                                              \> CGM minimised configuration during equlibration is saved \\
+\>                                              \> CGM minimised configuration during equilibration is saved \\
 \>                                              \> in a file, CFGMIN which has the same format as CONFIG \\
 \>                                              \> \\
 \> {\bf msdtmp} $i~j$                           \> write MSDTMP file, containing particles' individual $\sqrt{MSD}$ \\
@@ -495,7 +499,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf reaction} (field)                       \> calculate electrostatic forces using reaction field\index{reaction field} electrostatics\index{potential!electrostatics} \\
 \>                                              \> \\
 \> {\bf reaction} (field) {\bf damp} $\alpha$   \> calculate electrostatic forces using reaction field\index{reaction field} electrostatics\index{potential!electrostatics} \\
-\>                                              \> with Fennell \cite{fennell-06} damping (Ewald-like convergence) \\
+\>                                              \> with Fennell \cite{fennell-06a} damping (Ewald-like convergence) \\
 \>                                              \> parameter $\alpha$ in \AA$^{-1}$ \\
 \>                                              \> \\
 \> {\bf regaus}s (every) $n$                    \> resample the instantaneous system momenta distribution \\
@@ -534,7 +538,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf shift}                                  \> calculate electrostatic forces using force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
 \>                                              \> \\
 \> {\bf shift damp} $\alpha$                    \> calculate electrostatic forces using force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
-\>                                              \> with Fennell \cite{fennell-06} damping (Ewald-like convergence) \\
+\>                                              \> with Fennell \cite{fennell-06a} damping (Ewald-like convergence) \\
 \>                                              \> parameter $\alpha$ in \AA$^{-1}$ \\
 \>                                              \> \\
 \> {\bf slab}                                   \> limits the number of processors in z-direction to 2 \\
@@ -657,7 +661,7 @@ frequency, it is only applied at timestep zero if
 ${\bf equilibration}~\ge~{\bf steps}$ (i.e. optimise structure at
 start only!).  This is equvalent to using the {\bf optim}ise
 directive.  In this way it can be used as a configuration
-optimiser at the beginning of the equlibration period or when
+optimiser at the beginning of the equilibration period or when
 a "dry run" ({\bf steps} $= 0$) is performed (i.e. equilibrate
 without any actual dynamics!).
 
@@ -818,9 +822,9 @@ at application time if the particle is found to be in a frozen
 state or the shell of an ion or part of a rigid body.  During
 application the center of mass momentum is re-zeroed to prevent
 any drifts.  The user must take care to have the impact
-initiated after any possible equlibration.  Otherwise, the
-system will be thermostated and the impact energy disipated
-during the equlibration.
+initiated after any possible equilibration.  Otherwise, the
+system will be thermostatted and the impact energy dissipated
+during the equilibration.
 
 \item The {\bf pseudo} option is intended to be used in highly
 non-equilibrium simulations when users are primarily interested in
@@ -980,7 +984,7 @@ total number of defects.
 \item The {\bf disp}lacements option will trigger dump of atom
 displacements based on a qualifying cutoff in a trajectory like
 manner.  Dsiplacemets of atoms from their original position at
-the end of equlibration (the start of statistics), $t~=0~$, is
+the end of equilibration (the start of statistics), $t~=0~$, is
 carried out at each timestep.
 
 \item The tolerance for relaxed shell model {\bf rlxtol}, is a last
@@ -1858,15 +1862,15 @@ $U(\theta) = A~[1+\cos(m~\theta-\delta)]$ \\
 $U(\theta) = A~(\theta-\theta_{0})~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o})$ \\
 {\bf -msb} &                     &     &              &            &            & \\
            &                     &     &              &            &            & \\
-{\bf mmsb} & Compass \cite{sun-98} & $A$ & $r_{ij}^{o}$ & $r_{jk}^{o}$ &        &
+{\bf mmsb} & Compass \cite{sun-98a} & $A$ & $r_{ij}^{o}$ & $r_{jk}^{o}$ &        &
 $U(\theta) = A~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o})$ \\
 {\bf -msb} & stretch-stretch     &     &              &            &            & \\
            &                     &     &              &            &            & \\
-{\bf mmsb} & Compass \cite{sun-98} & $A$ & $\theta_{0}$ & $r_{ij}^{o}$ &        &
+{\bf mmsb} & Compass \cite{sun-98a} & $A$ & $\theta_{0}$ & $r_{ij}^{o}$ &        &
 $U(\theta) = A~(\theta-\theta_{0})~(r_{ij} - r_{ij}^{o})$ \\
 {\bf -msb} & stretch-bend        &     &              &            &            & \\
            &                     &     &              &            &            & \\
-{\bf mmsb} & Compass \cite{sun-98} & $A$ & $B$       & $C$       & $\theta_{0}$ &
+{\bf mmsb} & Compass \cite{sun-98a} & $A$ & $B$       & $C$       & $\theta_{0}$ &
 $U(\theta) = A~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o}) + (\theta-\theta_{0}) \times $ \\
 {\bf -msb} & all terms           & $r_{ij}^{o}$ & $r_{jk}^{o}$ &   &            &
 $ [B~(r_{ij} - r_{ij}^{o})+C~(r_{ik} - r_{ik}^{o})] $ \\
@@ -2177,6 +2181,9 @@ key & potential type & \multicolumn{5}{c|}{Variables (1-5,6-9)}& functional form
 \hline
            &                 &         &         &         &     &          & \\
 {\bf eam}  & EAM             &         &         &         &     &          &
+tabulated potential \\
+           &                 &         &         &         &     &          & \\
+{\bf eeam} & EEAM            &         &         &         &     &          &
 tabulated potential \\
            &                 &         &         &         &     &          & \\
 {\bf fnsc} & Finnis-Sinclair & $c_{0}$ & $c_{1}$ & $c_{2}$ & $c$ & $A$      &
@@ -2660,19 +2667,28 @@ $Min(r_{\rm cut},{\tt cutpot})$ are discarded.
 \label{tabeam-file}
 
 The TABEAM file contains the tabulated potential functions (no explicit
-analytic form) describing the EAM\index{potential!EAM} metal
-interactions in the MD system.  This file is read by the subroutine
+analytic form) describing the EAM\index{potential!EAM} or EEAM\index{potential!EEAM}
+metal interactions in the MD system.  This file is read by the subroutine
 {\sc metal\_table\_read} (see Chapter \ref{source}).
 
 The EAM potential for an $n$ component metal alloy requires the
 specification of $n$ electron density functions (one for each atom type)
-and $n$ embedding functions (again one for each atom type) and
+and $n$ embedding functions (again one for each atom type), and
 $n(n+1)/2$ {\em cross} pair potential functions.  This makes $n(n+5)/2$
 functions in total.  {\bf Note} that the option of using EAM\index{potential!EAM}
 interactions must also be {\em explicitly} declared in the FIELD file
 so that for the $n$ component alloy there are $n(n+1)/2$ {\em cross} pair
 potential ({\bf eam}) keyword entries in FIELD (see above).  ({\bf Note}
 that all metal interactions must be of the same type!)
+
+The EEAM potential for an $n$ component metal alloy is specified similarly
+to the EAM potential, except that it requires the specification of $n^2$
+electron density functions (one for each non-commuting pair of atom types).
+This makes $3n(n+1)/2$ functions in total in TABEAM.  The option of using
+EEAM\index{potential!EEAM} interactions must also be {\em explicitly}
+declared in the FIELD file so that for the $n$ component alloy there are
+$n(n+1)/2$ {\em cross} pair potential ({\bf eeam}) keyword entries in FIELD
+despite that there must be $n^2$ pair density ({\bf eeam}) entries in TABEAM.
 
 \subsubsection{The TABEAM File Format}
 
@@ -2688,22 +2704,27 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 2} \\
 \> {\tt numpot} \> integer \> number of potential functions in file \\
 \end{tabbing}
+For an $n$ component alloy, {\tt numpot} = $n(n+5)/2$ for EAM potential
+and {\tt numpot} = $3n(n+1)/2$ for EEAM potential.
+
 The subsequent records define the $n(n+5)/2$ functions for an $n$
-component alloy - $n$ electron density functions (one for each atom type)
-- {\bf dens}ity keyword, $n$ embedding functions (again one for each atom
-type) - {\bf embe}ding keyword, and $n(n+1)/2$ {\em cross} pair potential
-functions - {\bf pair}s keyword.  The functions may appear in any random
-order in TABEAM as their identification is based on their unique keyword,
-defined first in the function's header record.  The header record is
+component alloy - $n$ electron density functions for the EAM potential
+form (one for each atom type) or $n^2$ for EEAM (one for each non-commuting
+pair of atoms types in EEAM) - {\bf dens}ity keyword, $n$ embedding functions
+(one for each atom type) - {\bf embe}ding keyword, and $n(n+1)/2$ {\em cross}
+pair potential functions - {\bf pair}s keyword.  The functions may appear in
+any random order in TABEAM as their identification is based on their unique
+keyword, defined first in the function's header record.  The header record is
 followed by predefined number of data records {\bf as a maximum of four data
 per record are read in} - allowing for incompletion of the very last record.
 
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf header record:}\\
-\> {\bf keyword} \> a4      \> type of EAM function: {\bf dens}, {\bf embe}d or {\bf pair} \\
+\> {\bf keyword} \> a4      \> type of EAM function: {\bf dens}ity, {\bf embe}d or {\bf pair} \\
 \> {\tt atom 1}  \> a8      \> first atom type \\
 \> {\tt atom 2}  \> a8      \> second atom type - only specified for {\bf pair} potential functions \\
+\>               \>         \> and for {\bf dens}ity functions in the case of the EEAM potential\\
 \> {\tt ngrid}   \> integer \> number of function data points to read in \\
 \> {\tt limit 1} \> real    \> lower interpolation limit in \AA~for {\bf dens} and {\bf pair} \\
 \>               \>         \> or in density units for {\bf embe}d \\
@@ -2722,8 +2743,14 @@ The tabled data are used to fill the internal arrays {\tt gmet},
 {\tt fmet} and {\tt vmet} respectively (see Section
 \ref{metal}).  The force arrays are generated from these (by the
 {\sc metal\_table\_derivatives} routine) using a five point
-interpolation precedure.  During simulation, interactions beyond
-distance $Min(r_{\rm cut},{\tt limit 2})$ are discarded, whereas
-interactions at distances shorter than {\tt limit 1} will cause the
-simulation to abort.  The simulation will also abort if any local
-density exceeds the limits for the embedding function.
+interpolation procedure.  During simulation, interactions beyond
+distance $Min(r_{\rm cut},{\tt limit~2})$ are discarded, whereas
+interactions at distances shorter than {\tt limit~1} will cause
+the simulation to abort.  For the purpose of extrapolating the
+embedding functions $F(\rho)$ beyond its {\tt limit~2} specified
+in the tabulated array, it is assumed that
+\begin{equation}
+F(\rho > {\tt limit~2}) = F(\rho = {\tt limit~2})~~.
+\end{equation}
+The simulation will however abort if any local density is less
+than the {\tt limit~1} for its corresponding embedding function.

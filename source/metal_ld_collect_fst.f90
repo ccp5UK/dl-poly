@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov may 2012
+! amended   - i.t.todorov june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -196,10 +196,10 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
 
               rdr = 1.0_wp/dmet(4,k0,1)
               rrr = Sqrt(rsq) - dmet(2,k0,1)
-              l   = Min(Nint(rrr*rdr),Int(dmet(1,k0,1))-1)
-              If (l < 2) Then ! catch unsafe value
+              l   = Min(Nint(rrr*rdr),Nint(dmet(1,k0,1))-1)
+              If (l < 6) Then ! catch unsafe value
                  safe=.false.
-                 l=2
+                 l=6
               End If
               ppp = rrr*rdr - Real(l,wp)
 

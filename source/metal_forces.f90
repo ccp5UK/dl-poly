@@ -8,14 +8,16 @@ Subroutine metal_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov may 2012
+! amended   - i.t.todorov june 2012
+! contrib   - r.davidchak june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module
+  Use site_module,   Only : ntpatm
   Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
-  Use metal_module,  Only : ld_met,lstmet,ltpmet,vmet,dmet,prmmet
+  Use metal_module,  Only : ld_met,tabmet,lstmet,ltpmet,vmet,dmet,prmmet
 
   Implicit None
 
@@ -30,7 +32,7 @@ Subroutine metal_forces &
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: rcsq
 
-  Integer           :: m,idi,ai,aj,jatm, &
+  Integer           :: m,idi,ai,ki,jatm,aj,kj, &
                        key,kmn,kmx,k0,keypot,k1,k2,l,ld
   Real( Kind = wp ) :: fix,fiy,fiz,fx,fy,fz,          &
                        rsq,rdr,rrr,ppd,eng,           &
@@ -85,6 +87,14 @@ Subroutine metal_forces &
      jatm=list(m,iatm)
      aj=ltype(jatm)
 
+    If      (tabmet == 1) Then ! EAM
+        ki=ai
+        kj=aj
+     Else If (tabmet == 2) Then ! EEAM
+        ki=(aj-1)*ntpatm+ai ! aj-ai
+        kj=(ai-1)*ntpatm+aj ! ai-aj
+     End If
+
      If (ai > aj) Then
         key=ai*(ai-1)/2 + aj
      Else
@@ -100,6 +110,7 @@ Subroutine metal_forces &
         eng   = 0.0_wp
         gamma1= 0.0_wp
         gamma2= 0.0_wp
+        gamma3= 0.0_wp
         gamma = 0.0_wp
 
 ! interatomic distance
@@ -309,10 +320,10 @@ Subroutine metal_forces &
 
                  rdr = 1.0_wp/vmet(4,k0,1)
                  rrr = Sqrt(rsq) - vmet(2,k0,1)
-                 l   = Min(Nint(rrr*rdr),Int(vmet(1,k0,1))-1)
-                 If (l < 2) Then ! catch unsafe value
+                 l   = Min(Nint(rrr*rdr),Nint(vmet(1,k0,1))-1)
+                 If (l < 6) Then ! catch unsafe value
                     safe=.false.
-                    l=2
+                    l=6
                  End If
                  ppp = rrr*rdr - Real(l,wp)
 
@@ -359,23 +370,23 @@ Subroutine metal_forces &
 
 ! contribution from first metal atom identity
 
-              If (Abs(dmet(1,aj,1)) > zero_plus) Then
-                 If (rsq <= dmet(3,aj,1)**2) Then
+              If (Abs(dmet(1,kj,1)) > zero_plus) Then
+                 If (rsq <= dmet(3,kj,1)**2) Then
 
 ! interpolation parameters
 
-                    rdr = 1.0_wp/dmet(4,aj,1)
-                    rrr = Sqrt(rsq) - dmet(2,aj,1)
-                    ld  = Min(Nint(rrr*rdr),Int(dmet(1,aj,1))-1)
-                    If (ld < 2) Then ! catch unsafe value: EAM
+                    rdr = 1.0_wp/dmet(4,kj,1)
+                    rrr = Sqrt(rsq) - dmet(2,kj,1)
+                    ld  = Min(Nint(rrr*rdr),Nint(dmet(1,kj,1))-1)
+                    If (ld < 6) Then ! catch unsafe value: EAM
                        safe=.false.
-                       ld=2
+                       ld=6
                     End If
                     ppd = rrr*rdr - Real(ld,wp)
 
-                    gk0 = dmet(ld-1,aj,2)
-                    gk1 = dmet(ld  ,aj,2)
-                    gk2 = dmet(ld+1,aj,2)
+                    gk0 = dmet(ld-1,kj,2)
+                    gk1 = dmet(ld  ,kj,2)
+                    gk2 = dmet(ld+1,kj,2)
 
                     t1 = gk1 + ppd*(gk1 - gk0)
                     t2 = gk1 + ppd*(gk2 - gk1)
@@ -391,27 +402,28 @@ Subroutine metal_forces &
 
 ! contribution from second metal atom identity
 
-              If (ai == aj) Then
+              If (ki == kj) Then
 
                  gamma3=gamma2
 
-              Else If (Abs(dmet(1,ai,1)) > zero_plus) Then
-                 If (rsq <= dmet(3,ai,1)**2) Then
+              Else If (Abs(dmet(1,ki,1)) > zero_plus) Then
+
+                 If (rsq <= dmet(3,ki,1)**2) Then
 
 ! interpolation parameters
 
-                    rdr = 1.0_wp/dmet(4,ai,1)
-                    rrr = Sqrt(rsq) - dmet(2,ai,1)
-                    ld  = Min(Nint(rrr*rdr),Int(dmet(1,ai,1))-1)
-                    If (ld < 2) Then ! catch unsafe value: EAM
+                    rdr = 1.0_wp/dmet(4,ki,1)
+                    rrr = Sqrt(rsq) - dmet(2,ki,1)
+                    ld  = Min(Nint(rrr*rdr),Nint(dmet(1,ki,1))-1)
+                    If (ld < 6) Then ! catch unsafe value: EAM
                        safe=.false.
-                       ld=2
+                       ld=6
                     End If
                     ppd = rrr*rdr - Real(ld,wp)
 
-                    gk0 = dmet(ld-1,ai,2)
-                    gk1 = dmet(ld  ,ai,2)
-                    gk2 = dmet(ld+1,ai,2)
+                    gk0 = dmet(ld-1,ki,2)
+                    gk1 = dmet(ld  ,ki,2)
+                    gk2 = dmet(ld+1,ki,2)
 
                     t1 = gk1 + ppd*(gk1 - gk0)
                     t2 = gk1 + ppd*(gk2 - gk1)
@@ -423,6 +435,7 @@ Subroutine metal_forces &
                     End If
 
                  End If
+
               End If
 
               gamma=(gamma1+(gamma2*rho(iatm)+gamma3*rho(jatm)))/rsq

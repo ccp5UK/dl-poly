@@ -1,6 +1,6 @@
-# Master makefile for DL_POLY_4.03 (serial version 2)
+# Master makefile for DL_POLY_4.04 (serial version 2)
 #
-# Author - I.T.Todorov march 2012
+# Author - I.T.Todorov june 2012
 #
 #
 # Define default settings
@@ -170,13 +170,16 @@ FILES_LFV = \
 
 all:
 	@echo
-	@echo "You MUST specify a target platform!"
+	@echo "You MUST specify or choose a permissive target platform!"
 	@echo
-	@echo "Please examine Makefile for permissible targets!"
+	@echo "The available, permissive targets are displayed below:"
 	@echo
-	@echo "If no target suits your system create your own"
-	@echo "using the generic target template provided in"
-	@echo "this Makefile at entry 'uknown_platform:'."
+	@echo "win || win-debug"
+	@echo
+	@echo "Please examine this Makefile's targets for details!"
+	@echo "If no target suits your system then create your own"
+	@echo "using the advice in generic target template provided"
+	@echo "in this Makefile under the entry 'uknown_platform:'."
 	@echo
 
 # Fetch MPI-SERIAL subroutines

@@ -11,7 +11,7 @@ Subroutine relocate_particles        &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov march 2012
+! amended   - i.t.todorov june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -50,9 +50,9 @@ Subroutine relocate_particles        &
   Real( Kind = wp ), Save :: cut
 
   Logical           :: safe(1:9)
-  Integer           :: i,nlimit
+  Integer           :: i,nlimit,ipx,ipy,ipz
   Real( Kind = wp ) :: big(1:3),celprp(1:10),rcell(1:9),det, &
-                       ipx,ipy,ipz,uuu,vvv,www
+                       uuu,vvv,www
 
   If (newjob) Then
      newjob = .false.

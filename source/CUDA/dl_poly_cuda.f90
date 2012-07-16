@@ -219,13 +219,22 @@ Program dl_poly
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  contributors:  i.j.bush               ****** O ****", &
-          "*************  version:  4.03.3     /      may 2012  ******* L ***", &
+          "**         **  contributors: i.j.bush & r.davidchak  ****** O ****", &
+          "*************  version:  4.04.01     /    june 2012  ******* L ***", &
           "*************  Execution on ", mxnode, "    node(s)  ******** Y **", &
           "******************************************************************"
 
      Write(nrite,'(1x,a,/)') &
           "$ ICHEC CUDA port by m.lysaght, p.nash, r.nestor & c.kartsaklis $"
+
+     Write(nrite,'(7(1x,a,/))') &
+          "******************************************************************", &
+          "****  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ****", &
+          "****  Please do cite `J. Mater. Chem.', 16, 1911-1918 (2006)  ****", &
+          "****  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ****", &
+          "****  when publishing research data obtained using DL_POLY_4  ****", &
+          "****  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ****", &
+          "******************************************************************"
   End If
 
 #ifdef COMPILE_CUDA
@@ -327,7 +336,7 @@ Program dl_poly
         Write(nrite,'(1x,a)') "*** ... ***"
      End If
 
-     Call scale_config(imcon,megatm)
+     Call scale_config(levcfg,imcon,megatm)
 
      Call gtime(timelp)
      If (idnode == 0) Then

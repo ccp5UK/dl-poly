@@ -14,7 +14,7 @@ Subroutine ewald_frozen_forces &
 !       ewald_check<-two_body_forces
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -439,9 +439,9 @@ Subroutine ewald_frozen_forces &
 
                  egamma=-(erfr-2.0_wp*chgprd*(alpha/sqrpi)*exp1)/rsq
 
-                 fx = egamma*xrr
-                 fy = egamma*yrr
-                 fz = egamma*zrr
+                 fx = egamma*xdf(k)
+                 fy = egamma*ydf(k)
+                 fz = egamma*zdf(k)
 
 ! calculate forces
 
@@ -498,12 +498,12 @@ Subroutine ewald_frozen_forces &
 
 ! calculate stress tensor
 
-                    strs1 = strs1 + xrr*fx
-                    strs2 = strs2 + xrr*fy
-                    strs3 = strs3 + xrr*fz
-                    strs5 = strs5 + yrr*fy
-                    strs6 = strs6 + yrr*fz
-                    strs9 = strs9 + zrr*fz
+                    strs1 = strs1 + xdf(k)*fx
+                    strs2 = strs2 + xdf(k)*fy
+                    strs3 = strs3 + xdf(k)*fz
+                    strs5 = strs5 + ydf(k)*fy
+                    strs6 = strs6 + ydf(k)*fz
+                    strs9 = strs9 + zdf(k)*fz
 
                  End If
               End If

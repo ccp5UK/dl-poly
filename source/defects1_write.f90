@@ -7,7 +7,7 @@ Subroutine defects1_write &
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov june 2012
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -157,6 +157,7 @@ Subroutine defects1_write &
 
            Open(Unit=ndefdt, File='DEFECTS1', Form='formatted')
 
+           l_tmp =.true.
            Do While (.true.)
 
               record=' '
@@ -654,8 +655,8 @@ Subroutine defects1_write &
         Call io_init( recsz )
         Call io_open( io_write, MPI_COMM_SELF, 'DEFECTS1', MPI_MODE_WRONLY, fh )
 
-        Write(record, Fmt='(a8,i10,2f12.6,i5,f7.3,a18,a1)') &
-           'timestep',nstep,tstep,time,imcon,rdef,Repeat(' ',18),lf
+        Write(record, Fmt='(a8,i10,2f20.6,i5,f7.3,a2,a1)') &
+           'timestep',nstep,tstep,time,imcon,rdef,Repeat(' ',2),lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
@@ -783,8 +784,8 @@ Subroutine defects1_write &
 
 ! Accumulate header
 
-        Write(record, Fmt='(a8,i10,2f12.6,i5,f7.3,a18,a1)') &
-           'timestep',nstep,tstep,time,imcon,rdef,Repeat(' ',18),lf
+        Write(record, Fmt='(a8,i10,2f20.6,i5,f7.3,a2,a1)') &
+           'timestep',nstep,tstep,time,imcon,rdef,Repeat(' ',2),lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
