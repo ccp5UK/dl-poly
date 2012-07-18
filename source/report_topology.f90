@@ -8,7 +8,7 @@ Subroutine report_topology               &
 ! dl_poly_4 subroutine for reporting FIELD topology
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2008
+! author    - i.t.todorov july 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -48,7 +48,7 @@ Subroutine report_topology               &
              iatm1,iatm2,iatm3,iatm4,     &
              ishls,nshels,frzshl,mgfrsh,  &
              mgcon,                       &
-             ipmf,jpmf,                   &
+             lpmf,ipmf,jpmf,              &
              mgrgd,                       &
              iteth,nteth,frztet,mgfrtt,   &
              ibond,nbonds,frzbnd,mgfrbn,  &
@@ -84,25 +84,26 @@ Subroutine report_topology               &
 
   nsite  = 0
   Do itmols=1,ntpmls
-
      frzshl=0
-     Do ishls=1,numteth(itmols)
+     Do ishls=1,numshl(itmols)
         nshels=nshels+1
 
-        iatm1=lstshl(nshels,1)
+        iatm1=lstshl(1,nshels)
 
         isite1 = nsite + iatm1
 
         If (frzsit(isite1) == 1) frzshl=frzshl+1
      End Do
 
-     Do ipmf=1,numpmf(itmols)
-        Do jpmf=1,mxtpmf(ipmf)
-           iatm1=lstpmf(jpmf,ipmf)
+     Do lpmf=1,numpmf(itmols) ! numpmf can only be 1 or 0, so the 'Do' loop is used as an 'If' condition
+        Do ipmf=1,2
+           Do jpmf=1,mxtpmf(ipmf)
+              iatm1=lstpmf(jpmf,ipmf)
 
-           isite1 = nsite + iatm1
+              isite1 = nsite + iatm1
 
-           If (frzsit(isite1) == 1) frzpmf='ALL'
+              If (frzsit(isite1) == 1) frzpmf='ALL'
+           End Do
         End Do
      End Do
 
@@ -169,6 +170,7 @@ Subroutine report_topology               &
         iatm1=lstinv(1,ninver)
         iatm2=lstinv(2,ninver)
         iatm3=lstinv(3,ninver)
+        iatm4=lstinv(4,ninver)
 
         isite1 = nsite + iatm1
         isite2 = nsite + iatm2
@@ -181,6 +183,7 @@ Subroutine report_topology               &
      mgcon=mgcon+nummols(itmols)*numcon(itmols)
      mgrgd=mgrgd+nummols(itmols)*numrgd(itmols)
 
+     mgfrsh=mgfrsh+nummols(itmols)*frzshl
      mgfrtt=mgfrtt+nummols(itmols)*frztet
      mgfrbn=mgfrbn+nummols(itmols)*frzbnd
      mgfran=mgfran+nummols(itmols)*frzang

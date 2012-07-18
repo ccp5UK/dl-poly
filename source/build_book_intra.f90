@@ -222,7 +222,7 @@ Subroutine build_book_intra              &
 ! Note: This is executed for only one given molecular
 !       type as only one PMF type per MD system is allowed.
 
-           Do lpmf=1,numpmf(itmols)  ! numpmf can only be 1 or 0, so the 'Do' loop is used as an 'If' condition
+           Do lpmf=1,numpmf(itmols) ! numpmf can only be 1 or 0, so the 'Do' loop is used as an 'If' condition
               Allocate (i1pmf(1:mxtpmf(1)),i1pmf0(1:mxtpmf(1)),i2pmf(1:mxtpmf(2)),i2pmf0(1:mxtpmf(2)), Stat=fail(1))
               If (fail(1) > 0) Then
                  Write(nrite,'(/,1x,a,i0)') 'build_book_intra PMF allocation failure, node: ', idnode
