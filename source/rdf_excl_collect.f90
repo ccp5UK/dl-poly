@@ -8,7 +8,7 @@ Subroutine rdf_excl_collect(iatm,rcut,rsqdf)
 ! Note: to be used as part of two_body_forces
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2012
+! author    - i.t.todorov july 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -80,7 +80,7 @@ Subroutine rdf_excl_collect(iatm,rcut,rsqdf)
 
               If (rsq < rcsq) Then
                  rrr=Sqrt(rsq)
-                 ll=Int(rrr*rdelr+0.999999_wp)
+                 ll=Max(1,Nint(rrr*rdelr)) ! shell on core explosion
 
 ! accumulate correlation
 

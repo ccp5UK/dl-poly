@@ -23,7 +23,7 @@ Subroutine nvt_l1_vv                               &
 ! (brownian dynamics, not symplectic due to the random forces)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov july 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -539,9 +539,9 @@ Subroutine nvt_l1_vv                               &
 
            tmp=t1/tstep
            p00=p0*tmp+qt0r*scr1+qt0l*scl1
-           p11=p1*tmp+qt1r*scr1+qt0l*scl1
-           p22=p2*tmp+qt2r*scr1+qt0l*scl1
-           p33=p3*tmp+qt3r*scr1+qt0l*scl1
+           p11=p1*tmp+qt1r*scr1+qt1l*scl1
+           p22=p2*tmp+qt2r*scr1+qt2l*scl1
+           p33=p3*tmp+qt3r*scr1+qt3l*scl1
 
 ! rotate RB quaternions - update q to full timestep & amend p
 ! and get new rotation matrix
@@ -554,9 +554,9 @@ Subroutine nvt_l1_vv                               &
 ! Full time fluctuations on quaternions - corrected
 
            p0=(p00-qt0r*scr1-qt0l*scl1)/tmp
-           p1=(p11-qt1r*scr1-qt0l*scl1)/tmp
-           p2=(p22-qt2r*scr1-qt0l*scl1)/tmp
-           p3=(p33-qt3r*scr1-qt0l*scl1)/tmp
+           p1=(p11-qt1r*scr1-qt1l*scl1)/tmp
+           p2=(p22-qt2r*scr1-qt2l*scl1)/tmp
+           p3=(p33-qt3r*scr1-qt3l*scl1)/tmp
 
 ! Full time fluctuations on half-kick momenta
 

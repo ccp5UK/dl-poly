@@ -14,7 +14,7 @@ Subroutine nvt_l1_lfv                          &
 ! - leapfrog verlet with Langevin thermostat (standard brownian dynamics)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov july 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -445,8 +445,8 @@ Subroutine nvt_l1_lfv                          &
         ozp=rgdozt(irgd)
         Do i=1,5
            opx=rgdrix(2,rgdtyp)*(trx+trxr + (rgdriy(1,rgdtyp)-rgdriz(1,rgdtyp))*oyp*ozp)
-           opy=rgdriy(2,rgdtyp)*(try+trxr + (rgdriz(1,rgdtyp)-rgdrix(1,rgdtyp))*ozp*oxp)
-           opz=rgdriz(2,rgdtyp)*(trz+trxr + (rgdrix(1,rgdtyp)-rgdriy(1,rgdtyp))*oxp*oyp)
+           opy=rgdriy(2,rgdtyp)*(try+tryr + (rgdriz(1,rgdtyp)-rgdrix(1,rgdtyp))*ozp*oxp)
+           opz=rgdriz(2,rgdtyp)*(trz+trzr + (rgdrix(1,rgdtyp)-rgdriy(1,rgdtyp))*oxp*oyp)
 
 ! improved angular velocity at time step n
 
