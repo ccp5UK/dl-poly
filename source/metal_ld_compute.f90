@@ -12,7 +12,7 @@ Subroutine metal_ld_compute         &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov june 2012
+! amended   - i.t.todorov july 2012
 ! contrib   - r.davidchak june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -134,7 +134,7 @@ Subroutine metal_ld_compute         &
                  rdr = 1.0_wp/fmet(4,k0,1)
                  rrr = rhosqr - fmet(2,k0,1)
                  l   = Min(Nint(rrr*rdr),Nint(fmet(1,k0,1))-1)
-                 If (l < 6) Then ! catch unsafe value
+                 If (l < 5) Then ! catch unsafe value
                     Write(*,*) 'good density range problem: (LTG,RHO) ',ltg(i),rho(i)
                     safe=.false.
                     l=6
@@ -152,6 +152,8 @@ Subroutine metal_ld_compute         &
 
                  If (ppp < 0.0_wp) Then
                     engden = engden + t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                 Else If (l == 5) Then
+                    engden = engden + t2
                  Else
                     engden = engden + t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
                  End If
@@ -171,6 +173,12 @@ Subroutine metal_ld_compute         &
                        rho(i) = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
                     Else                  ! fmet over Sqrt(rho) grid
                        rho(i) = 0.5_wp*(t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp))/rhosqr
+                    End If
+                 Else If (l == 5) Then
+                    If (.not.ls_met) Then ! fmet over rho grid
+                       rho(i) = t2
+                    Else                  ! fmet over Sqrt(rho) grid
+                       rho(i) = 0.5_wp*t2/rhosqr
                     End If
                  Else
                     If (.not.ls_met) Then ! fmet over rho grid

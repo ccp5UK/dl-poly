@@ -14,7 +14,7 @@ Subroutine read_field                      &
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov june 2012
-! contrib   - r.davidchak june 2012
+! contrib   - r.davidchak july 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1293,6 +1293,10 @@ Subroutine read_field                      &
                     prmang(3,nangle)=word_2_real(word)
                     Call get_word(record,word)
                     prmang(4,nangle)=word_2_real(word)
+                    Call get_word(record,word)
+                    prmang(5,nangle)=word_2_real(word)
+                    Call get_word(record,word)
+                    prmang(6,nangle)=word_2_real(word)
 
 ! test for frozen atom pairs
 

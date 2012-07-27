@@ -8,7 +8,7 @@ Subroutine metal_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov june 2012
+! amended   - i.t.todorov july 2012
 ! contrib   - r.davidchak june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -321,7 +321,7 @@ Subroutine metal_forces &
                  rdr = 1.0_wp/vmet(4,k0,1)
                  rrr = Sqrt(rsq) - vmet(2,k0,1)
                  l   = Min(Nint(rrr*rdr),Nint(vmet(1,k0,1))-1)
-                 If (l < 6) Then ! catch unsafe value
+                 If (l < 5) Then ! catch unsafe value
                     safe=.false.
                     l=6
                  End If
@@ -338,6 +338,8 @@ Subroutine metal_forces &
 
                  If (ppp < 0.0_wp) Then
                     gamma1 = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                 Else If (l == 5) Then
+                    gamma1 = t2
                  Else
                     gamma1 = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
                  End If
@@ -355,6 +357,8 @@ Subroutine metal_forces &
 
                     If (ppp < 0.0_wp) Then
                        eng = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                    Else If (l == 5) Then
+                       eng = t2
                     Else
                        eng = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
                     End If
@@ -378,7 +382,7 @@ Subroutine metal_forces &
                     rdr = 1.0_wp/dmet(4,kj,1)
                     rrr = Sqrt(rsq) - dmet(2,kj,1)
                     ld  = Min(Nint(rrr*rdr),Nint(dmet(1,kj,1))-1)
-                    If (ld < 6) Then ! catch unsafe value: EAM
+                    If (ld < 5) Then ! catch unsafe value: EAM
                        safe=.false.
                        ld=6
                     End If
@@ -393,6 +397,8 @@ Subroutine metal_forces &
 
                     If (ppd < 0.0_wp) Then
                        gamma2 = t1 + 0.5_wp*(t2-t1)*(ppd+1.0_wp)
+                    Else If (ld == 5) Then
+                       gamma2 = t2
                     Else
                        gamma2 = t2 + 0.5_wp*(t2-t1)*(ppd-1.0_wp)
                     End If
@@ -415,7 +421,7 @@ Subroutine metal_forces &
                     rdr = 1.0_wp/dmet(4,ki,1)
                     rrr = Sqrt(rsq) - dmet(2,ki,1)
                     ld  = Min(Nint(rrr*rdr),Nint(dmet(1,ki,1))-1)
-                    If (ld < 6) Then ! catch unsafe value: EAM
+                    If (ld < 5) Then ! catch unsafe value: EAM
                        safe=.false.
                        ld=6
                     End If
@@ -430,6 +436,8 @@ Subroutine metal_forces &
 
                     If (ppd < 0.0_wp) Then
                        gamma3 = t1 + 0.5_wp*(t2-t1)*(ppd+1.0_wp)
+                    Else If (ld == 5) Then
+                       gamma3 = t2
                     Else
                        gamma3 = t2 + 0.5_wp*(t2-t1)*(ppd-1.0_wp)
                     End If
@@ -453,6 +461,8 @@ Subroutine metal_forces &
 
                  If (ppp < 0.0_wp) Then
                     gamma2 = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                 Else If (l == 5) Then
+                    gamma2 = t2
                  Else
                     gamma2 = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
                  End If

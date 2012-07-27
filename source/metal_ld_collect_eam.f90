@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov june 2012
+! amended   - i.t.todorov july 2012
 ! contrib   - r.davidchak june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -63,7 +63,7 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
            rdr = 1.0_wp/dmet(4,kj,1)
            rrr = Sqrt(rsq) - dmet(2,kj,1)
            l   = Min(Nint(rrr*rdr),Nint(dmet(1,kj,1))-1)
-           If (l < 6) Then ! catch unsafe value
+           If (l < 5) Then ! catch unsafe value
               safe=.false.
               l=6
            End If
@@ -81,6 +81,8 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
            If (ppp < 0.0_wp) Then ! density is a positive function!
               density = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
               If (density < 0.0_wp) density = t1 ! for non-smooth descend to zero, or ascend from zero
+           Else If (l == 5) Then
+              density = t2
            Else
               density = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
               If (density < 0.0_wp) density = t2 ! for non-smooth descend to zero, or ascend from zero
@@ -103,7 +105,7 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
               rdr = 1.0_wp/dmet(4,ki,1)
               rrr = Sqrt(rsq) - dmet(2,ki,1)
               l   = Min(Nint(rrr*rdr),Nint(dmet(1,ki,1))-1)
-              If (l < 6) Then ! catch unsafe value
+              If (l < 5) Then ! catch unsafe value
                  safe=.false.
                  l=6
               End If
@@ -121,6 +123,8 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,rho,safe)
               If (ppp < 0.0_wp) Then ! density is a positive function!
                  density = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
                  If (density < 0.0_wp) density = t1 ! for non-smooth descend to zero, or ascend from zero
+              Else If (l == 5) Then
+                 density = t2
               Else
                  density = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
                  If (density < 0.0_wp) density = t2 ! for non-smooth descend to zero, or ascend from zero
