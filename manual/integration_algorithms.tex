@@ -1216,8 +1216,8 @@ as at the end the velocities are scaled by a factor of $\chi$.
 && ~~~~~~~~~~~~~~~~~~~~~~~~\left. 3 \frac{2 E_{kin}(t)}{f} \frac{1}{p_{mass}} + \frac{R_{p}(t)}{p_{mass}} \right] \nonumber \\
 \eta (t + {1 \over 4} \Delta t) &\leftarrow& \exp \left( -\chi_{p} \; {\Delta t \over 8} \right)  \;
 \eta (t + {1 \over 4} \Delta t) \nonumber \\
-\vek{v}(t) &\leftarrow& \exp \left[ -\eta (t + {1 \over 4} \Delta t) \;
-{\Delta t \over 2} \right] \; \vek{v}(t) \\
+\vek{v}(t) &\leftarrow& \exp \left[ -\left( 1 + \frac{3}{f} \right)
+\eta (t + {1 \over 4}\Delta t) \; {\Delta t \over 2} \right] \; \vek{v}(t) \\
 \eta (t + {1 \over 4} \Delta t) &\leftarrow& \exp \left( -\chi_{p} \; {\Delta t \over 8} \right)  \;
 \eta (t + {1 \over 4} \Delta t) \nonumber \\
 \eta (t + {1 \over 2} \Delta t) &\leftarrow& \eta (t + {1 \over 4} \Delta t) + {\Delta t \over 4} \;
@@ -1268,8 +1268,8 @@ have changed and change inside
 && ~~~~~~~~~~~~~~~~~~~~~~~~\left. 3 \frac{2 E_{kin}(t + \Delta t)}{f} \frac{1}{p_{mass}} + \frac{R_{p}(t)}{p_{mass}} \right] \nonumber \\
 \eta (t + {3 \over 4} \Delta t) &\leftarrow& \exp \left( -\chi_{p} \; {\Delta t \over 8} \right)  \;
 \eta (t + {3 \over 4} \Delta t) \nonumber \\
-\vek{v}(t + \Delta t) &\leftarrow& \exp \left[ -\eta (t + {3 \over 4} \Delta t) \;
-{\Delta t \over 2} \right] \; \vek{v}(t + \Delta t) \\
+\vek{v}(t + \Delta t) &\leftarrow& \exp \left[ -\left( 1 + \frac{3}{f} \right)
+\eta (t + {3 \over 4} \Delta t) \; {\Delta t \over 2} \right] \; \vek{v}(t + \Delta t) \\
 \eta (t + {3 \over 4} \Delta t) &\leftarrow& \exp \left( -\chi_{p} \; {\Delta t \over 8} \right)  \;
 \eta (t + {3 \over 4} \Delta t) \nonumber \\
 \eta (t + \Delta t) &\leftarrow& \eta (t + {3 \over 4} \Delta t) + {\Delta t \over 4} \;
@@ -2055,8 +2055,8 @@ are of the following sort
 \eta (t + {1 \over 4} \Delta t) &\leftarrow& \eta (t) + {\Delta t \over 4} \;
 \left[ 3 V(t) \frac{{\cal P}(t) - P_{\rm ext}}{p_{mass}} +
 3 \frac{2 E_{kin}(t)}{f} \frac{1}{p_{mass}} \right] \nonumber \\
-\vek{v}(t) &\leftarrow& \vek{v}(t) \; \exp \left[ -\left( 1 + \frac{3}{f} \right)
-\eta (t + {1 \over 4}\Delta t) \; {\Delta t \over 2} \right] \\
+\vek{v}(t) &\leftarrow& \exp \left[ -\left( 1 + \frac{3}{f} \right)
+\eta (t + {1 \over 4}\Delta t) \; {\Delta t \over 2} \right] \; \vek{v}(t) \\
 \vek{r}(t + \Delta t) &\leftarrow& \exp \left[ \eta (t + {1 \over 2} \Delta t) \; \Delta t \right] \;
 \vek{r}(t) + \Delta t \; \vek{v}(t + {1 \over 2} \Delta t) \nonumber
 \end{eqnarray}

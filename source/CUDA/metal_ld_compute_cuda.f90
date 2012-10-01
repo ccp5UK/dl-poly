@@ -54,7 +54,7 @@ Subroutine metal_ld_compute         &
   Use comms_module,  Only : mxnode,gsum,gcheck
   Use setup_module
   Use config_module, Only : cell,natms,ltg,ltype,list,xxx,yyy,zzz
-  Use metal_module,  Only : ls_met,ntpmet,ltpmet,fmet
+  Use metal_module,  Only : ld_met,ls_met,ntpmet,lstmet,ltpmet,vmet,dmet,fmet
 
 #ifdef COMPILE_CUDA
   Use dl_poly_cuda_module

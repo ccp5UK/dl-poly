@@ -447,6 +447,13 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 ! flag error if rad > cutoff
 
         If (rad > rcut) Then
+           Write(*,*) 'AB',xab,yab,zab
+           Write(*,*) 'BC',xbc,ybc,zbc,xac,yac,zac
+           Write(*,*) 'CD',xcd,ycd,zcd,xad,yad,zad
+           Write(*,*) 'A',xxx(ia),yyy(ia),zzz(ia)
+           Write(*,*) 'B',xxx(ib),yyy(ib),zzz(ib)
+           Write(*,*) 'C',xxx(ic),yyy(ic),zzz(ic)
+           Write(*,*) 'D',xxx(id),yyy(id),zzz(id)
            Write(*,*) i,ltg(ia),ltg(ib),ltg(ic),ltg(id),rcut,rad
            safe(2) = .false.
         End If
