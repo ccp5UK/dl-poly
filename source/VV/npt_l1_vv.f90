@@ -22,7 +22,7 @@ Subroutine npt_l1_vv                          &
 !            J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -180,7 +180,7 @@ Subroutine npt_l1_vv                          &
 
 ! Generate Langevin forces for particles and
 ! Langevin pseudo-tensor force for barostat piston
-! if not read from REVOLD.
+! if not read from REVOLD
 
      If (l_lan_s) Then
         Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
@@ -262,7 +262,7 @@ Subroutine npt_l1_vv                          &
      If (l_lan_s) Then
         l_lan_s = .false.
 
-        Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl)
+        Call rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx+fxl,fyy+fyl,fzz+fzl)
         vircom=-(strcom(1)+strcom(5)+strcom(9))
      End If
 
@@ -881,6 +881,7 @@ Subroutine npt_l1_vv                          &
 ! Langevin pseudo-tensor force for barostat piston
 
      Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
+     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
 
      fpl=0.0_wp
      tmp=-6.0_wp
@@ -927,8 +928,6 @@ Subroutine npt_l1_vv                          &
            vxx,vyy,vzz)
         End Do
      End If
-
-     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
 
 ! Get RB COM stress and virial
 

@@ -331,21 +331,23 @@ Contains
 
   End Subroutine kinstrest
 
-  Subroutine getcom(natms,weight,xxx,yyy,zzz,com)
+  Subroutine getcom(xxx,yyy,zzz,com)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 routine to calculate system centre of mass position
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2004
+! author    - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Use setup_module,  Only : zero_plus
+    Use config_module, Only : natms,lfrzn,weight
+
     Implicit None
 
-    Integer,                             Intent( In    ) :: natms
-    Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: weight,xxx,yyy,zzz
+    Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: xxx,yyy,zzz
     Real( Kind = wp ), Dimension( 1:3 ), Intent(   Out ) :: com
 
     Logical,           Save :: newjob = .true.
@@ -360,7 +362,7 @@ Contains
 
        totmas = 0.0_wp
        Do i=1,natms
-          totmas = totmas + weight(i)
+          If (lfrzn(i) == 0) totmas = totmas + weight(i)
        End Do
 
        If (mxnode > 1) Call gsum(totmas)
@@ -369,14 +371,15 @@ Contains
     com = 0.0_wp
 
     Do i=1,natms
-       com(1) = com(1) + weight(i)*xxx(i)
-       com(2) = com(2) + weight(i)*yyy(i)
-       com(3) = com(3) + weight(i)*zzz(i)
+       If (lfrzn(i) == 0) Then
+          com(1) = com(1) + weight(i)*xxx(i)
+          com(2) = com(2) + weight(i)*yyy(i)
+          com(3) = com(3) + weight(i)*zzz(i)
+       End If
     End Do
 
     If (mxnode > 1) Call gsum(com)
-
-    com = com/totmas
+    If (totmas >= zero_plus) com = com/totmas
 
   End Subroutine getcom
 
@@ -387,12 +390,12 @@ Contains
 ! dl_poly_4 routine to calculate system centre of mass momentum
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2008
+! author    - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use setup_module,        Only : mxatms
-    Use config_module,       Only : natms,lfrzn,weight
+    Use setup_module,  Only : mxatms,zero_plus
+    Use config_module, Only : natms,lfrzn,weight
 
     Implicit None
 
@@ -432,7 +435,7 @@ Contains
     End Do
 
     If (mxnode > 1) Call gsum(vom)
-    vom = vom/totmas
+    If (totmas >= zero_plus) vom = vom/totmas
 
   End Subroutine getvom
 
@@ -443,11 +446,11 @@ Contains
 ! dl_poly_4 routine to calculate system centre of mass momentum
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2008
+! author    - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use setup_module,        Only : mxatms,mxrgd
+    Use setup_module,        Only : mxatms,mxrgd,zero_plus
     Use config_module,       Only : nfree,lfrzn,lstfre,weight
     Use rigid_bodies_module, Only : ntrgd,rgdfrz,rgdwgt,listrgd,indrgd
 
@@ -524,7 +527,7 @@ Contains
     End Do
 
     If (mxnode > 1) Call gsum(vom)
-    vom = vom/totmas
+    If (totmas >= zero_plus) vom = vom/totmas
 
   End Subroutine getvom_rgd
 

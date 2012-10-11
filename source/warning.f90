@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2012
+! author    - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -247,7 +247,7 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
 
         Write(nrite,'(/,1x,a,i0,a,/,1x,a,/)')                             &
-        '*** warning - PMF unit', ia, ' weight is detected zero !!! ***', &
+        '*** warning - PMF unit ', ia, ' weight is detected zero !!! ***', &
         '*** member weights defaulted to atom type masses (or units) ***'
 
      Else If (kode == 240) Then
@@ -300,7 +300,7 @@ Subroutine warning(kode,a,b,c)
         ic = Nint(c)
 
         Write(nrite,'(/,1x,a,3(i0,a))')                           &
-        '*** warning - PMF unit', ia, ' and rigid body unit', ib, &
+        '*** warning - PMF unit ', ia, ' and rigid body unit ', ib, &
         ' on molecular species type ', ic, ' in illegal configuration !!! ***'
 
      Else If (kode == 301) Then
@@ -310,7 +310,7 @@ Subroutine warning(kode,a,b,c)
         ic = Nint(c)
 
         Write(nrite,'(/,1x,a,3(i0,a),/)')                                &
-        '*** warning - core-shell unit', ia, ' and constraint unit', ib, &
+        '*** warning - core-shell unit ', ia, ' and constraint unit ', ib, &
         ' on molecular species type ', ic, ' in illegal configuration !!! ***'
 
      Else If (kode == 302) Then
@@ -320,7 +320,7 @@ Subroutine warning(kode,a,b,c)
         ic = Nint(c)
 
         Write(nrite,'(/,1x,a,3(i0,a))')                                  &
-        '*** warning - core-shell unit', ia, ' and rigid body unit', ib, &
+        '*** warning - core-shell unit ', ia, ' and rigid body unit ', ib, &
         ' on molecular species type ', ic, ' in illegal configuration !!! ***'
 
      Else If (kode == 303) Then
@@ -330,7 +330,7 @@ Subroutine warning(kode,a,b,c)
         ic = Nint(c)
 
         Write(nrite,'(/,1x,a,3(i0,a),/)')                            &
-        '*** warning - core-shell unit', ia, ' and tether unit', ib, &
+        '*** warning - core-shell unit ', ia, ' and tether unit ', ib, &
         ' on molecular species type ', ic, ' in illegal configuration !!! ***'
 
      Else If (kode == 304) Then
@@ -340,7 +340,7 @@ Subroutine warning(kode,a,b,c)
         ic = Nint(c)
 
         Write(nrite,'(/,1x,a,3(i0,a))')                                  &
-        '*** warning - constraint unit', ia, ' and rigid body unit', ib, &
+        '*** warning - constraint unit ', ia, ' and rigid body unit ', ib, &
         ' on molecular species type ', ic, ' in illegal configuration !!! ***'
 
      Else If (kode == 305) Then
@@ -349,7 +349,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
 
         Write(nrite,'(/,1x,a,2(i0,a))')                                         &
-        '*** warning - rigid body unit', ia, ' on molecular species type ', ib, &
+        '*** warning - rigid body unit ', ia, ' on molecular species type ', ib, &
         ' forced to freeze !!! ***'
 
      Else If (kode == 306) Then
@@ -358,7 +358,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
 
         Write(nrite,'(/,1x,a,2(i0,a))')                                         &
-        '*** warning - constraint unit', ia, ' on molecular species type ', ib, &
+        '*** warning - constraint unit ', ia, ' on molecular species type ', ib, &
         ' forced to freeze !!! ***'
 
      Else If (kode == 307) Then
@@ -368,7 +368,7 @@ Subroutine warning(kode,a,b,c)
         ic = Nint(c)
 
         Write(nrite,'(/,1x,a,3(i0,a))')                                         &
-        '*** warning - rigid body unit', ia, ' on molecular species type ', ib, &
+        '*** warning - rigid body unit ', ia, ' on molecular species type ', ib, &
         ' set to have type ', ic, ' is problematic !!! ***'
 
      Else If (kode == 308) Then
@@ -378,8 +378,8 @@ Subroutine warning(kode,a,b,c)
         ic = Nint(c)
 
         Write(nrite,'(/,1x,a,3(i0,a))')                       &
-        '*** warning - site', ia, ' of constraint unit ', ib, &
-        ' on molecular species type', ic, ' is problematic !!! ***'
+        '*** warning - site ', ia, ' of constraint unit ', ib, &
+        ' on molecular species type ', ic, ' is problematic !!! ***'
 
      Else If (kode == 309) Then
 
@@ -388,7 +388,7 @@ Subroutine warning(kode,a,b,c)
         ic = Nint(c)
 
         Write(nrite,'(/,1x,a,3(i0,a))') &
-        '*** warning - site', ia, ' , member ', ib, ' of PMF unit', ic, ' is problematic !!! ***'
+        '*** warning - site ', ia, ' , member ', ib, ' of PMF unit ', ic, ' is problematic !!! ***'
 
      Else If (kode == 310) Then
 
@@ -423,7 +423,7 @@ Subroutine warning(kode,a,b,c)
      Else If (kode == 360) Then
 
         Write(nrite,'(/,1x,a,2(f12.7,a),3(/,1x,a),/)')                            &
-        '*** warning - minimisation tolerance', a, ' defaults to', b, ' !!! ***', &
+        '*** warning - minimisation tolerance ', a, ' defaults to ', b, ' !!! ***', &
         '*** force   : 1.0    <= tolerance <= 1000.00, default = 50.00 ***',      &
         '*** energy  : 0.0    <  tolerance <=    0.01, default = 0.005 ***',      &
         '*** distance: 1.0e-6 <= tolerance <=    0.10, default = 0.005 ***'
@@ -434,7 +434,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
 
         Write(nrite,'(/,1x,a,2(i0,a),2(/,1x,a),/)')                                      &
-        '*** warning - k-space evaluation interval', ia, ' defaults to', ib, ' !!! ***', &
+        '*** warning - k-space evaluation interval ', ia, ' defaults to ', ib, ' !!! ***', &
         '*** the interval must be a positive integer beteen 1 and 10 ***',               &
         '*** values > 10 default to 4, no value or 0 defaults to 1 ***'
 

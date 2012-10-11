@@ -7,7 +7,7 @@ Subroutine rigid_bodies_move(stride,oxx,oyy,ozz,txx,tyy,tzz,uxx,uyy,uzz,dist_tol
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 2006
-! adapted   - i.t.todorov september 2008
+! adapted   - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -43,9 +43,15 @@ Subroutine rigid_bodies_move(stride,oxx,oyy,ozz,txx,tyy,tzz,uxx,uyy,uzz,dist_tol
 
 ! translational motion
 
-                 x=stride*oxx(i)
-                 y=stride*oyy(i)
-                 z=stride*ozz(i)
+                 If (rgdfrz(0,rgdtyp) == 0) Then
+                    x=stride*oxx(i)
+                    y=stride*oyy(i)
+                    z=stride*ozz(i)
+                 Else
+                    x=0.0_wp
+                    y=0.0_wp
+                    z=0.0_wp
+                 End If
 
 ! calculate this RB's particle distance to the axis of rotation
 

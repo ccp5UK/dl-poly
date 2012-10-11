@@ -944,6 +944,7 @@ Subroutine deport_atomic_data(mdir,lbook)
                  Call tag_legend(safe1,newatm,jshels,legshl,mxfshl)
               Else
                  safe=.false.
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many core-shell units on node, ", idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kshels,legshl,mxfshl)
@@ -984,6 +985,7 @@ Subroutine deport_atomic_data(mdir,lbook)
                  Call tag_legend(safe1,newatm,jconst,legcon,mxfcon)
               Else
                  safe=.false.
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many constraint units on node, ", idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kconst,legcon,mxfcon)
@@ -1039,6 +1041,7 @@ Subroutine deport_atomic_data(mdir,lbook)
                  Call tag_legend(safe1,newatm,jpmf,legpmf,mxfpmf)
               Else
                  safe=.false.
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many PMF units on node, ", idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kpmf,legpmf,mxfpmf)
@@ -1164,6 +1167,7 @@ Subroutine deport_atomic_data(mdir,lbook)
                  kmove=kmove+3
               Else
                  safe=.false.
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many rigid body units on node, ", idnode, " !!! ***"
               End If
            Else
               If (lrgd(2) == 0) Then  ! Unduplication: Details have already been sent -
@@ -1207,6 +1211,7 @@ Subroutine deport_atomic_data(mdir,lbook)
                  Call tag_legend(safe1,newatm,jteths,legtet,mxftet)
               Else
                  safe=.false.
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many tether units on node, ", idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kteths,legtet,mxftet)
@@ -1247,6 +1252,7 @@ Subroutine deport_atomic_data(mdir,lbook)
                  Call tag_legend(safe1,newatm,jbonds,legbnd,mxfbnd)
               Else
                  safe=.false.
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many bond units on node, ", idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kbonds,legbnd,mxfbnd)
@@ -1290,6 +1296,7 @@ Subroutine deport_atomic_data(mdir,lbook)
                  Call tag_legend(safe1,newatm,jangle,legang,mxfang)
               Else
                  safe=.false.
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many angle units on node, ", idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kangle,legang,mxfang)
@@ -1336,6 +1343,7 @@ Subroutine deport_atomic_data(mdir,lbook)
                  Call tag_legend(safe1,newatm,jdihed,legdih,mxfdih)
               Else
                  safe=.false.
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many dihedral units on node, ", idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kdihed,legdih,mxfdih)
@@ -1382,6 +1390,7 @@ Subroutine deport_atomic_data(mdir,lbook)
                  Call tag_legend(safe1,newatm,jinver,leginv,mxfinv)
               Else
                  safe=.false.
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many inversion units on node, ", idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kinver,leginv,mxfinv)
@@ -1389,7 +1398,7 @@ Subroutine deport_atomic_data(mdir,lbook)
         End Do
         kmove=kmove+1
 
-! redefine bond counters
+! redefine intra counters
 
         ntshl =jshels
 

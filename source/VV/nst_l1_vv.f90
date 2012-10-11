@@ -29,7 +29,7 @@ Subroutine nst_l1_vv                          &
 ! reference2: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -279,7 +279,7 @@ Subroutine nst_l1_vv                          &
      If (l_lan_s) Then
         l_lan_s = .false.
 
-        Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl)
+        Call rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx+fxl,fyy+fyl,fzz+fzl)
         vircom=-(strcom(1)+strcom(5)+strcom(9))
      End If
 
@@ -960,7 +960,7 @@ Subroutine nst_l1_vv                          &
 
 ! Get RB COM stress and virial
 
-     Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
+     Call rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx+fxl,fyy+fyl,fzz+fzl)
      vircom=-(strcom(1)+strcom(5)+strcom(9))
 
 ! update velocity of RBs

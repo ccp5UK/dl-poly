@@ -197,7 +197,7 @@ Subroutine npt_h0_vv                                       &
 
 ! calculate system centre of mass
 
-     Call getcom(natms,weight,xxx,yyy,zzz,com)
+     Call getcom(xxx,yyy,zzz,com)
 
 100  Continue
 

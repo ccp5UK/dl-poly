@@ -669,6 +669,19 @@
 
      If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxx,fyy,fzz)
 
+! Get RB COM stress and virial at restart only
+
+     If (newjob) Then
+        If (megrgd > 0) Then
+           If (l_lan .and. (.not.l_lan_s)) Then
+              Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl)
+           Else
+              Call rigid_bodies_str_ss(strcom)
+           End If
+           vircom=-(strcom(1)+strcom(5)+strcom(9))
+        End If
+     End If
+
 ! Calculate physical quantities and print at the very start
 
      If (nstep == 0) Then
@@ -1311,21 +1324,10 @@
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 
+! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
+
      If (newjob) Then
         newjob = .false.
-
-! Get RB COM stress and virial at restart
-
-        If (megrgd > 0) Then
-           If (l_lan .and. (.not.l_lan_s)) Then
-              Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl)
-           Else
-              Call rigid_bodies_str_ss(strcom)
-           End If
-           vircom=-(strcom(1)+strcom(5)+strcom(9))
-        End If
-
-! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
 
         If (ltraj .and. keyres /= 1) Call trajectory_write &
            (imcon,keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)

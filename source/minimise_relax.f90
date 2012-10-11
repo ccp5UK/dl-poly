@@ -13,7 +13,7 @@ Subroutine minimise_relax &
 !       keymin=2 : absolute displacement
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith june 2012
+! author    - i.t.todorov & w.smith october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -463,7 +463,10 @@ Subroutine minimise_relax &
 
 ! setup new quaternions
 
-     If (l_mov) Call q_setup()
+     If (l_mov) Then
+        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xxx,yyy,zzz)
+        Call q_setup()
+     End If
 
   End If
 

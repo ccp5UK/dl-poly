@@ -13,7 +13,7 @@ Subroutine read_field                      &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2012
+! author    - i.t.todorov october 2012
 ! contrib   - r.davidchak july 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -868,7 +868,7 @@ Subroutine read_field                      &
                        End Do
                        Do jrgd=1,lrgd
                           rgdwgt(0,nrigid)=rgdwgt(0,nrigid) + &
-                                           Real(rgdfrz(jrgd,nrigid)-1,wp)*rgdwgt(jrgd,nrigid)
+                                           Real(1-rgdfrz(jrgd,nrigid),wp)*rgdwgt(jrgd,nrigid)
                        End Do
                        rgdwg1(0,nrigid)=Sum(rgdwg1(1:lrgd,nrigid))
                     Else

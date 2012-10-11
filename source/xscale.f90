@@ -63,7 +63,7 @@ Subroutine xscale(imcon,m_rgd,keyens,tstep,eta)
 
 ! hoover npt/nst
 
-        Call getcom(natms,weight,xin,yin,zin,com)
+        Call getcom(xin,yin,zin,com)
 
         If (keyens == 22) Then
 
@@ -251,7 +251,7 @@ Subroutine xscale(imcon,m_rgd,keyens,tstep,eta)
 
 ! hoover npt/nst
 
-        Call getcom(natms,weight,xin,yin,zin,com)
+        Call getcom(xin,yin,zin,com)
 
         If (keyens == 22) Then
 

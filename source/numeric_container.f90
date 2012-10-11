@@ -1431,7 +1431,7 @@ Subroutine jacobi(n,aaa,vvv)
                     If (v_d_mid < 0.0_wp) omg=-omg
                  End If
                  s=omg/Sqrt(2.0_wp*(1.0_wp+Sqrt(1.0_wp-omg**2)))
-                 s_s=s*s ; c_c=1.0_wp-s_s ; c=sqrt(c_c) ; s_c=s*c
+                 s_s=s*s ; c_c=1.0_wp-s_s ; c=Sqrt(c_c) ; s_c=s*c
 
                  Do k=1,n
                     If      (k <= j) Then

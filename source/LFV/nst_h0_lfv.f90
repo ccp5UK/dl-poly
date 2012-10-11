@@ -220,7 +220,7 @@ Subroutine nst_h0_lfv                                  &
 
 ! get com
 
-  Call getcom(natms,weight,xxx,yyy,zzz,com)
+  Call getcom(xxx,yyy,zzz,com)
 
 100 Continue
 

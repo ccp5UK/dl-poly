@@ -97,7 +97,7 @@ Subroutine scale_temperature(imcon,sigma,degtra,degrot,degfre)
 
 ! calculate centre of mass position
 
-  Call getcom(natms,weight,xxx,yyy,zzz,com)
+  Call getcom(xxx,yyy,zzz,com)
 
 ! zero angular momentum about centre of mass - non-periodic system
 

@@ -5,7 +5,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 ! dl_poly_4 subroutine for constructing RBs' totational inertia tesnors
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2011
+! author    - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -263,7 +263,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 
 ! rotational inertia tensor of group type
 
-        weight=rgdwg1(jrgd,irgd)
+        weight=rgdwgt(jrgd,irgd)
 
         rgdrix(1,irgd) = rgdrix(1,irgd) + weight*(rgdy(jrgd,irgd)**2+rgdz(jrgd,irgd)**2)
         rgdriy(1,irgd) = rgdriy(1,irgd) + weight*(rgdz(jrgd,irgd)**2+rgdx(jrgd,irgd)**2)
