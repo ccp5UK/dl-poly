@@ -133,7 +133,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 ! M = D(diagonal(d,d,d)) +/- R(rest) = d*1 +/- R.  The diagonaliser
 ! C does not care about d*1 & the +/- as C^-1*M*C == d*1 +/- C^-1*R*C
 
-              weight=rgdwgt(jrgd,rgdtyp)
+              weight=Real(1-rgdfrz(jrgd,rgdtyp),wp)*rgdwgt(jrgd,rgdtyp)
 
               rotinr(1,1)=rotinr(1,1)+weight*gxx(krgd)**2
               rotinr(2,1)=rotinr(2,1)+weight*gxx(krgd)*gyy(krgd)
@@ -263,7 +263,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 
 ! rotational inertia tensor of group type
 
-        weight=rgdwgt(jrgd,irgd)
+        weight=Real(1-rgdfrz(jrgd,irgd),wp)*rgdwgt(jrgd,irgd)
 
         rgdrix(1,irgd) = rgdrix(1,irgd) + weight*(rgdy(jrgd,irgd)**2+rgdz(jrgd,irgd)**2)
         rgdriy(1,irgd) = rgdriy(1,irgd) + weight*(rgdz(jrgd,irgd)**2+rgdx(jrgd,irgd)**2)

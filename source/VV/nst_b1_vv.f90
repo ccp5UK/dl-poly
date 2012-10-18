@@ -171,7 +171,7 @@ Subroutine nst_b1_vv                          &
      mxiter=1
      If (megcon > 0 .or.  megpmf > 0) Then
         mxkit=1
-        mxiter=mxiter+6
+        mxiter=mxiter+12
      End If
      If (megcon > 0 .and. megpmf > 0) mxkit=mxshak
 

@@ -16,7 +16,7 @@ Subroutine pass_shared_units &
 !                       (2) relocate_particles if mxnode>1 and meg_u>0
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -40,12 +40,12 @@ Subroutine pass_shared_units &
   Logical, Save :: oldjob = .false.
 
   Logical :: safe,ok
-  Integer :: fail,i,j,k,l,m,n,k0,l_me,l_out,l_in,jdnode,kdnode,local_index
+  Integer :: fail,i,j,k,l,m,n_k,n_nt,k0,l_me,l_out,l_in,jdnode,kdnode,local_index
 
-  Integer, Dimension( : ), Allocatable :: i0,listme,lstout,listin
+  Integer, Dimension( : ), Allocatable :: i0,j0,listme,lstout,listin
 
   fail=0
-  Allocate (i0(1:b_u),listme(1:mxatms),lstout(1:mxatms),listin(1:mxatms), Stat=fail)
+  Allocate (i0(1:b_u),j0(1:b_u),listme(1:mxatms),lstout(1:mxatms),listin(1:mxatms), Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'pass_shared_units allocation failure, node: ', idnode
      Call error(0)
@@ -91,69 +91,120 @@ Subroutine pass_shared_units &
 ! define members-per-unit limit
 
      If (b_l == -1) Then
-        n=list_u(-1,k) ! This can vary but is >= 2 and <= mxlrgd
+        n_k=list_u(-1,k) ! This can vary but is >= 2 and <= mxlrgd
      Else
-        n=b_u          ! This is 2 for core-shell and constraint units
+        n_k=b_u          ! This is 2 for core-shell and constraint units
      End If
 
 ! get domain only local indices of unit members
 
      i0=0
-     Do i=1,n
+     Do i=1,n_k
         i0(i)=local_index(list_u(i,k),nlast,lsi,lsa)
         If (i0(i) > natms) i0(i)=0
      End Do
 
-     If (All(i0(1:n) == 0) .and. (.not.ok)) Then
+     If (All(i0(1:n_k) == 0) .and. (.not.ok)) Then
 
-! If the whole unit has moved to another node - compress list_u and leg_u
+20      Continue
+
+! If the whole unit has moved out of this node - compress list_u and leg_u
 
         If      (k  < nt_u) Then
-           Do i=1,n
-              j=local_index(list_u(i,nt_u),natms,lsi,lsa)
-              If (j > 0) Then         ! For all particles in list_u(1:n,nt_u),
-                 m=leg_u(0,j)         ! if present on this node, repoint unit
-                 Do l=1,m             ! 'nt_u' to 'k' in their leg_u array
-                    If (leg_u(l,j) == nt_u) leg_u(l,j) = k
-                 End Do
-              End If
-           End Do
 
-           list_u(:,k)=list_u(:,nt_u) ! Copy list content from 'nt_u' to 'k'
-           list_u(:,nt_u)=0           ! Remove list content in 'nt_u'
+! define members-per-unit limit
 
-           If (b_l == -1) Then        ! RB handling of q., rgdv.. & rgdo..
-              q0(k)=q0(nt_u)
-              q1(k)=q1(nt_u)
-              q2(k)=q2(nt_u)
-              q3(k)=q3(nt_u)
-
-              rgdvxx(k)=rgdvxx(nt_u)
-              rgdvyy(k)=rgdvyy(nt_u)
-              rgdvzz(k)=rgdvzz(nt_u)
-
-              rgdoxx(k)=rgdoxx(nt_u)
-              rgdoyy(k)=rgdoyy(nt_u)
-              rgdozz(k)=rgdozz(nt_u)
-
-              q0(nt_u)=0.0_wp
-              q1(nt_u)=0.0_wp
-              q2(nt_u)=0.0_wp
-              q3(nt_u)=0.0_wp
-
-              rgdvxx(nt_u)=0.0_wp
-              rgdvyy(nt_u)=0.0_wp
-              rgdvzz(nt_u)=0.0_wp
-
-              rgdoxx(nt_u)=0.0_wp
-              rgdoyy(nt_u)=0.0_wp
-              rgdozz(nt_u)=0.0_wp
+           If (b_l == -1) Then
+              n_nt=list_u(-1,nt_u) ! This can vary but is >= 2 and <= mxlrgd
+           Else
+              n_nt=b_u             ! This is 2 for core-shell and constraint units
            End If
 
-           nt_u=nt_u-1                ! Reduce 'nt_u' pointer
+! get domain only local indices of unit members
+
+           j0=0
+           Do i=1,n_nt
+              j0(i)=local_index(list_u(i,nt_u),nlast,lsi,lsa)
+              If (j0(i) > natms) j0(i)=0
+           End Do
+
+           If (Any(j0(1:n_nt) > 0)) Then  ! Do repointing
+
+              Do i=1,n_nt
+                 j=j0(i)
+                 If (j > 0) Then    ! For all particles in list_u(1:n_nt,nt_u),
+                    m=leg_u(0,j)    ! if present on this node, repoint unit
+                    Do l=1,m        ! 'nt_u' to 'k' in their leg_u array
+                       If (leg_u(l,j) == nt_u) leg_u(l,j) = k
+                    End Do
+                 End If
+              End Do
+
+              list_u(:,k)=list_u(:,nt_u) ! Copy list content from 'nt_u' to 'k'
+
+              If (b_l == -1) Then        ! RB handling of q., rgdv.. & rgdo..
+                 q0(k)=q0(nt_u)
+                 q1(k)=q1(nt_u)
+                 q2(k)=q2(nt_u)
+                 q3(k)=q3(nt_u)
+
+                 rgdvxx(k)=rgdvxx(nt_u)
+                 rgdvyy(k)=rgdvyy(nt_u)
+                 rgdvzz(k)=rgdvzz(nt_u)
+
+                 rgdoxx(k)=rgdoxx(nt_u)
+                 rgdoyy(k)=rgdoyy(nt_u)
+                 rgdozz(k)=rgdozz(nt_u)
+              End If
+
+              list_u(:,nt_u)=0           ! Remove list content in 'nt_u'
+
+              If (b_l == -1) Then        ! RB handling of q., rgdv.. & rgdo..
+                 q0(nt_u)=0.0_wp
+                 q1(nt_u)=0.0_wp
+                 q2(nt_u)=0.0_wp
+                 q3(nt_u)=0.0_wp
+
+                 rgdvxx(nt_u)=0.0_wp
+                 rgdvyy(nt_u)=0.0_wp
+                 rgdvzz(nt_u)=0.0_wp
+
+                 rgdoxx(nt_u)=0.0_wp
+                 rgdoyy(nt_u)=0.0_wp
+                 rgdozz(nt_u)=0.0_wp
+              End If
+
+              nt_u=nt_u-1                ! Reduce 'nt_u' pointer
+
+           Else
+
+              list_u(:,nt_u)=0           ! Remove list content in 'nt_u'
+
+              If (b_l == -1) Then        ! RB handling of q., rgdv.. & rgdo..
+                 q0(nt_u)=0.0_wp
+                 q1(nt_u)=0.0_wp
+                 q2(nt_u)=0.0_wp
+                 q3(nt_u)=0.0_wp
+
+                 rgdvxx(nt_u)=0.0_wp
+                 rgdvyy(nt_u)=0.0_wp
+                 rgdvzz(nt_u)=0.0_wp
+
+                 rgdoxx(nt_u)=0.0_wp
+                 rgdoyy(nt_u)=0.0_wp
+                 rgdozz(nt_u)=0.0_wp
+              End If
+
+              nt_u=nt_u-1                ! Reduce 'nt_u' pointer
+
+              Go To 20
+
+           End If
 
            Go To 10                   ! Go back and check it all again for the new list content in 'k'
+
         Else If (k == nt_u) Then
+
            list_u(:,nt_u)=0           ! Remove list content in 'k=nt_u'
 
            If (b_l == -1) Then        ! RB handling of q., rgdv.. & rgdo.. @ 'k=nt_u'
@@ -172,9 +223,10 @@ Subroutine pass_shared_units &
            End If
 
            nt_u=nt_u-1                ! Reduce 'nt_u' pointer
+
         End If
 
-     Else If (Any(i0(1:n) /= 0) .and. Any(i0(1:n) == 0)) Then
+     Else If (Any(i0(1:n_k) /= 0) .and. Any(i0(1:n_k) == 0)) Then
 
 ! The unit is partly shared between domains
 
@@ -188,7 +240,7 @@ Subroutine pass_shared_units &
 
 ! Construct list of bonded atoms crossing domains
 
-           Do i=1,n
+           Do i=1,n_k
               If (i0(i) > 0) Then
                  l_me=l_me+1
                  listme(l_me)=list_u(i,k)
@@ -310,7 +362,7 @@ Subroutine pass_shared_units &
 
   If (.not.oldjob) oldjob = .true.
 
-  Deallocate (i0,listme,lstout,listin, Stat=fail)
+  Deallocate (i0,j0,listme,lstout,listin, Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'pass_shared_units deallocation failure, node: ', idnode
      Call error(0)

@@ -130,7 +130,7 @@ Subroutine nvt_h1_lfv                          &
 
 ! set number of constraint+pmf shake iterations and general iteration cycles
 
-     mxiter=5
+     mxiter=2
      If (megcon > 0 .or.  megpmf > 0) Then
         mxkit=1
         mxiter=mxiter+1

@@ -157,7 +157,7 @@ Subroutine rigid_bodies_str_ss(strcom)
 ! tensor
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2008
+! author    - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -165,7 +165,8 @@ Subroutine rigid_bodies_str_ss(strcom)
   Use comms_module,        Only : idnode,mxnode,gsum
   Use setup_module,        Only : nrite,mxtrgd,mxrgd,mxlrgd
   Use config_module,       Only : cell,natms,lfrzn,xxx,yyy,zzz,fxx,fyy,fzz
-  Use rigid_bodies_module, Only : ntrgd,rgdimc,rgdfrz,listrgd,indrgd
+  Use rigid_bodies_module, Only : ntrgd,rgdimc,rgdfrz,listrgd,indrgd, &
+                                  rgdxxx,rgdyyy,rgdzzz
 
   Implicit None
 
@@ -194,9 +195,13 @@ Subroutine rigid_bodies_str_ss(strcom)
         Do jrgd=1,lrgd
            krgd=krgd+1
 
-           gxx(krgd) = xxx(indrgd(jrgd,irgd)) - xxx(indrgd(1,irgd))
-           gyy(krgd) = yyy(indrgd(jrgd,irgd)) - yyy(indrgd(1,irgd))
-           gzz(krgd) = zzz(indrgd(jrgd,irgd)) - zzz(indrgd(1,irgd))
+           i=indrgd(jrgd,irgd) ! local index of particle/site
+
+! COM distances
+
+           gxx(krgd)=xxx(i)-rgdxxx(irgd)
+           gyy(krgd)=yyy(i)-rgdyyy(irgd)
+           gzz(krgd)=zzz(i)-rgdzzz(irgd)
         End Do
      End If
   End Do
@@ -272,7 +277,7 @@ Subroutine rigid_bodies_str__s(strcom,fxx,fyy,fzz)
 ! tensor
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2011
+! author    - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -280,7 +285,8 @@ Subroutine rigid_bodies_str__s(strcom,fxx,fyy,fzz)
   Use comms_module,        Only : idnode,mxnode,gsum
   Use setup_module,        Only : nrite,mxatms,mxtrgd,mxrgd,mxlrgd
   Use config_module,       Only : cell,natms,lfrzn,xxx,yyy,zzz
-  Use rigid_bodies_module, Only : ntrgd,rgdimc,rgdfrz,listrgd,indrgd
+  Use rigid_bodies_module, Only : ntrgd,rgdimc,rgdfrz,listrgd,indrgd, &
+                                  rgdxxx,rgdyyy,rgdzzz
 
   Implicit None
 
@@ -310,9 +316,13 @@ Subroutine rigid_bodies_str__s(strcom,fxx,fyy,fzz)
         Do jrgd=1,lrgd
            krgd=krgd+1
 
-           gxx(krgd) = xxx(indrgd(jrgd,irgd)) - xxx(indrgd(1,irgd))
-           gyy(krgd) = yyy(indrgd(jrgd,irgd)) - yyy(indrgd(1,irgd))
-           gzz(krgd) = zzz(indrgd(jrgd,irgd)) - zzz(indrgd(1,irgd))
+           i=indrgd(jrgd,irgd) ! local index of particle/site
+
+! COM distances
+
+           gxx(krgd)=xxx(i)-rgdxxx(irgd)
+           gyy(krgd)=yyy(i)-rgdyyy(irgd)
+           gzz(krgd)=zzz(i)-rgdzzz(irgd)
         End Do
      End If
   End Do
