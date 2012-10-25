@@ -105,7 +105,6 @@ Subroutine pass_shared_units &
      End Do
 
      If (All(i0(1:n_k) == 0) .and. (.not.ok)) Then
-
 20      Continue
 
 ! If the whole unit has moved out of this node - compress list_u and leg_u
@@ -128,7 +127,7 @@ Subroutine pass_shared_units &
               If (j0(i) > natms) j0(i)=0
            End Do
 
-           If (Any(j0(1:n_nt) > 0)) Then  ! Do repointing
+           If (Any(j0(1:n_nt) > 0)) Then ! Do repointing
 
               Do i=1,n_nt
                  j=j0(i)
@@ -197,11 +196,11 @@ Subroutine pass_shared_units &
 
               nt_u=nt_u-1                ! Reduce 'nt_u' pointer
 
-              Go To 20
+              Go To 20 ! Go back and check again for the new list contents in 'nt_u'
 
            End If
 
-           Go To 10                   ! Go back and check it all again for the new list content in 'k'
+           Go To 10    ! Go back and check it all again for the new list contents in 'k'
 
         Else If (k == nt_u) Then
 

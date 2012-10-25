@@ -223,7 +223,7 @@ author    - w.smith 2011
 
             // sort clusters in ascending order
 
-            AML.ShellSort(cfg.natms,lok,key);
+            AML.ShellSort0(cfg.natms,lok,key);
 
             // construct contiguous configuration
 

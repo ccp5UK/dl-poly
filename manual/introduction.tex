@@ -4,14 +4,14 @@ DL\_POLY \cite{smith-96a} is a package of subroutines, programs and
 data files, designed to facilitate molecular dynamics simulations of
 macromolecules, polymers, ionic systems and solutions on a
 distributed memory parallel computer. It is available in two forms:
-DL\_POLY\_Classic (written by Bill Smith \& Tim Forester) and \D (written
+\C (written by Bill Smith \& Tim Forester, \WEC\index{WWW}) and \D (written
 by Ilian Todorov \& Bill Smith) \cite{todorov-04a,todorov-06a}.  Both versions
 were originally written on behalf of CCP5\index{CCP5}, the UK's
 Collaborative Computational Project on Molecular Simulation, which
 has been in existence since 1980 (\cite{smith-87a}, \WEB\index{WWW}).
 
 The two forms of DL\_POLY differ primarily in their method of
-exploiting parallelism.  DL\_POLY\_Classic uses a Replicated Data (RD)
+exploiting parallelism.  \C uses a Replicated Data (RD)
 strategy \cite{smith-91a,smith-93a,smith-94a,smith-94b} which
 works well simulations of up to 30,000 atoms on up to 100 processors.
 \D is based on the Domain Decomposition (DD) strategy
@@ -19,9 +19,9 @@ works well simulations of up to 30,000 atoms on up to 100 processors.
 and is best suited for large molecular simulations from $10^{3}$
 to $10^{9}$ atoms on large processor counts.  The two packages
 are reasonably compatible, so that it is possible to scale up from
-a DL\_POLY\_Classic to a \D simulation with little effort.  It should
+a \C to a \D simulation with little effort.  It should
 be apparent from these comments that \D is not intended as a
-replacement for DL\_POLY\_Classic.
+replacement for \C.
 
 Users are reminded that we are interested in hearing what other
 features could be usefully incorporated.  We obviously have ideas
@@ -109,7 +109,7 @@ efficient load balancing on a parallel computer.
 \index{Java GUI}
 
 The \D Graphical User Interface (GUI) is the same one that also comes with
-DL\_POLY\_Classic, which is written in the Java\textregistered programming
+\C, which is written in the Java\textregistered programming
 language from Sun\textregistered Microsystems.  A major advantage
 of this is the free availability of the Java programming environment
 from Sun\textregistered, and also its portability across platforms.
@@ -163,7 +163,7 @@ The following MD algorithms\index{algorithm} are available:
 \item Martyna, Tuckerman and Klein (MTK)\index{ensemble!Martyna-Tuckerman-Klein N$\sigma$T} constant T,$\mat{\sigma}$ algorithm \cite{martyna-96a}.
 \end{enumerate}
 
-\subsection{DL\_POLY\_Classic features incompatible or unavalable in \D\index{dlpoly2}}
+\subsection{\C features incompatible or unavalable in \D\index{dlpoly2}}
 
 \begin{itemize}
 \item Force field
@@ -293,7 +293,7 @@ cases users must correct for that in there).
 
 \subsection{Units}\label{units}
 
-Internally all DL\_POLY subroutines and functions assume the use of the
+Internally all \D subroutines and functions assume the use of the
 following defined {\em molecular units}\index{units!DL\_POLY}:
 \begin{itemize}
 \item The unit of time ($t_{o}$) is $1 \times 10^{-12}$ seconds (i.e. picoseconds)
@@ -388,7 +388,7 @@ Chapter \ref{source}.
 
 This sub-directory stores all the utility subroutines, functions and
 programs in \D, together with examples of data.  Some of the various
-routines in this sub-directory are documented in the DL\_POLY\_Classic
+routines in this sub-directory are documented in the \C
 User Manual.  Users who devise their own utilities are advised
 to store them in the {\em utility} sub-directory.
 
@@ -447,13 +447,12 @@ by direct FTP\index{FTP}(see below).
 \subsection{The {\em java} Sub-directory}
 \index{Java GUI}
 
-The \D Java Graphical User Interface (GUI)\index{Graphical User
-Interface} is based on the Java language developed by Sun.  The
-Java source code for this GUI is to be found in this sub-directory.
-The source is complete and sufficient to create a working GUI,
-provided the user has installed the Java Development Kit, (1.3 or
-above) which is available free from Sun at
-\href{http://java.sun.com/}{http://java.sun.com/}\index{WWW}.
+The \D Java Graphical User Interface (GUI)\index{GUI} is based on
+the Java language developed by Sun.  The Java source code for this
+GUI is to be found in this sub-directory.  The source is complete
+and sufficient to create a working GUI, provided the user has installed
+the Java Development Kit, (1.4 or above) which is available free
+from Sun at \href{http://java.sun.com/}{http://java.sun.com/}\index{WWW}.
 The GUI, once compiled, may be executed on any machine where Java
 is installed \cite{smith-gui}.
 

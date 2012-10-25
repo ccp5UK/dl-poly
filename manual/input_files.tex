@@ -1308,9 +1308,12 @@ X\=XXXXXXX\=XXXXXX\=XXXXXX\kill
 \end{tabbing}
 
 \noindent {\bf Note} that on {\bf record i} only the atom name is
-strictly mandatory, any other items are not read by \D but may be
-added to aid alternative uses of the file, for example the \D
-Graphical User Interface\index{Graphical User Interface}\cite{smith-gui}.
+strictly mandatory, any other items are not read by \C but may be
+added to aid alternative uses of the file, for example alike DL\_POLY
+GUI\index{GUI} \cite{smith-gui}, \C assume that the atoms' indices
+are in a sequentially ascending order starting form 1.  However, \D
+needs the index or the {\bf no ind}ex option needs to be specified in
+the CONTROL file!
 
 \begin{table}[htbp]
 \begin{centering}
@@ -2223,7 +2226,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> atmnam 2     \> a8   \> second atom type \\
 \end{tabbing}
 
-By default in DL\_POLY\_Classic and \D every {\bf vdw} and {\bf met}
+By default in \C and \D every {\bf vdw} and {\bf met}
 potential specifies an RDF pair.  If the control option
 {\bf rdf {\em f}} is specified in the CONTROL file then all pairs
 defined in {\bf vdw} and/or {\bf met} potentials sections will
@@ -2234,10 +2237,10 @@ potentials with zero contributions or (ii) to use {\bf rdf {\em n}}
 option - which not only provides a neater way for specification of
 RDF pairs but also better memory efficiency since \D will not
 allocate (additional) potential arrays for fictitious interactions
-that will not be used.  (This option is not available in DL\_POLY\_Classic.)
+that will not be used.  (This option is not available in \C.)
 
 {\bf Note} that {\bf rdf} and {\bf vdw/met} are not complementary -
-i.e. if the former is used in FILED none of the pairs defined by the
+i.e. if the former is used in FIELD none of the pairs defined by the
 latter will be considered for RDF calculations.
 
 The selected RDFs are calculated in the {\sc rdf\_collect} and {\sc rdf\_excl\_collect}

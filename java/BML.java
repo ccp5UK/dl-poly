@@ -1,24 +1,24 @@
 public abstract class BML {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI basic methods library
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-         
+
 *********************************************************************
          */
-    
+
     static boolean testWord(String word) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2001
-         
+
 *********************************************************************
          */
         boolean b=true;
@@ -31,17 +31,17 @@ author    - w.smith 2001
     static int countWords(String text) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-         
+
 *********************************************************************
          */
         int n=0;
         boolean gap=true;
-        
+
         for (int i=0;i<text.length();i++) {
             if((text.charAt(i) != ' ') && (text.charAt(i) != ',')) {
                 if(gap) {
@@ -58,15 +58,15 @@ author    - w.smith 2000
     static String giveWord(String text, int n) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-         
+
 *********************************************************************
          */
-        
+
         int k=0,a=0,b=0,c=0;
         String word="";
         char u;
@@ -92,12 +92,12 @@ author    - w.smith 2000
     static int giveInteger(String text, int n) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-         
+
 *********************************************************************
          */
         char u;
@@ -124,12 +124,12 @@ author    - w.smith 2000
     static double giveDouble(String text, int n) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-         
+
 *********************************************************************
          */
         int k=0,a=0,b=0,c=0;
@@ -157,18 +157,18 @@ author    - w.smith 2000
         }
         return d;
     }
-    
+
     // Format a double into a fixed length string
-    
+
     static String fmt(double a, int n) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-         
+
 *********************************************************************
          */
         String f="00000000000000000000";
@@ -197,18 +197,18 @@ author    - w.smith 2000
             return s.substring(0,n);
         }
     }
-    
+
     // Format an int into a fixed length string
-    
+
     static String fmt(int j, int n) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-         
+
 *********************************************************************
          */
         String f="                    ";
@@ -216,36 +216,36 @@ author    - w.smith 2000
         int k=Math.min(n,t.length());
         return  (f.substring(0,n-k)+t.substring(0,k));
     }
-    
+
     // Format a string in a specified number of characters
-    
+
     static String fmt(String a, int n) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-         
+
 *********************************************************************
          */
         String pad = "                    ";
         String word = a+pad;
         return word.substring(0,n);
     }
-    
+
     // Minimum of three real numbers
-    
+
     static double min(double a, double b, double c) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-         
+
 *********************************************************************
          */
         double z=a;
@@ -253,18 +253,18 @@ author    - w.smith 2000
         z=Math.min(z,c);
         return z;
     }
-    
+
     // Maximum of three real numbers
-    
+
     static double max(double a, double b, double c) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-         
+
 *********************************************************************
          */
         double z=a;
@@ -272,18 +272,18 @@ author    - w.smith 2000
         z=Math.max(z,c);
         return z;
     }
-    
+
     // Nearest integer function
-    
+
     static int nint(double a) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2001
-         
+
 *********************************************************************
          */
         int k=(int)a;
@@ -295,18 +295,18 @@ author    - w.smith 2001
         }
         return k;
     }
-    
+
     // Sign of number
-    
+
     static double sign(double a) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2001
-         
+
 *********************************************************************
          */
         if(a>0.0)
@@ -315,23 +315,23 @@ author    - w.smith 2001
             return -1.0;
         return 0.0;
     }
-    
+
     // calculate a normalised difference vector
-    
+
     static double[] ndxyz(int i,int j,double xyz[][]) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine to calculate normalised xyz difference vector
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2002
-         
+
 *********************************************************************
          */
         double rrr;
         double uuu[]=new double[3];
-        
+
         uuu[0]=xyz[0][i]-xyz[0][j];
         uuu[1]=xyz[1][i]-xyz[1][j];
         uuu[2]=xyz[2][i]-xyz[2][j];
@@ -339,52 +339,52 @@ author    - w.smith 2002
         uuu[0]*=rrr;
         uuu[1]*=rrr;
         uuu[2]*=rrr;
-        
+
         return uuu;
     }
-    
+
     // normalise a vector
-    
+
     static void vnorm(double vvv[]) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2002
-         
+
 *********************************************************************
          */
         double rrr;
-        
+
         rrr=1.0/Math.sqrt(vvv[0]*vvv[0]+vvv[1]*vvv[1]+vvv[2]*vvv[2]);
         vvv[0]*=rrr;
         vvv[1]*=rrr;
         vvv[2]*=rrr;
-        
+
     }
-    
+
     // vector cross product
-    
+
     static double[] cross(double uuu[],double vvv[]) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine vector cross product
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2002
-         
+
 *********************************************************************
          */
-        
+
         double www[]=new double[3];
-        
+
         www[0]=uuu[1]*vvv[2]-uuu[2]*vvv[1];
         www[1]=uuu[2]*vvv[0]-uuu[0]*vvv[2];
         www[2]=uuu[0]*vvv[1]-uuu[1]*vvv[0];
-        
+
         return www;
     }
 }

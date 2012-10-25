@@ -6,9 +6,8 @@ simulation.  This section outlines the paths to follow when trying
 to construct files for such systems.  The description of the \D
 force field in Chapter \ref{force-field} is essential reading.  The
 various utility routines mentioned in this section are described in
-greater detail in the DL\_POLY\_Classic User Manual.  Many of these
-have been incorporated into the \D Graphical User
-Interface\index{Graphical User Interface} \cite{smith-gui} and may
+greater detail in the \C User Manual.  Many of these have been
+incorporated into the DL\_POLY GUI\index{GUI} \cite{smith-gui} and may
 be conveniently used from there.
 
 \subsection {Inorganic Materials}
@@ -47,51 +46,86 @@ This method is not recommended for amorphous systems.
 
 \subsection{Macromolecules}
 
-Simulations of proteins are best tackled using the package
-DLPROTEIN \cite{dlprotein}\index{DLPROTEIN} which is an adaptation
-of DL\_POLY specific to protein modelling.  However, you may
-simulate proteins and other macromolecules with \D if you wish.
-This is described below.
+To set up force fields for macromolecules, or indeed any covalent
+molecules, it is best to use \F ~- \WEF\index{WWW}.  It is a program
+application tool developed to facilitate the construction of force
+field models for biological molecules and other molecules with complex
+geometries.  For instance proteins, carbohydrates, polymers and
+networked molecules such as graphenes and organic cages.  {\bf Although
+created to assist \D, \F is a separate program suite that requires
+separate registration!}
 
-If you select a {\em protein} structure from a SEQNET file (e.g.
-from the Brookhaven database), use the utility {\sc proseq} to
-generate the file CONFIG.  This will then function as input for
-\D.  Some caution is required here however, as the protein
-structure may not be fully determined and atoms may be missing
-from the CONFIG file.
+The primary functions of \F are as follows:
+\begin{enumerate}
+\item {\bf Force field model converter:} \F converts the user’s atom
+models, supplied in PDB file format, into input files that are
+recognisable and ready to run with \C and \D programs with minimum
+user’s intervention.  This basically involves the conversion of the
+user’s atomic configuration in simple xyz coordinates into identifiable
+atom types base on a particular user-selectable potential schemes and
+then automatically generate the DL\_POLY configuration file (CONFIG),
+the force field file (FIELD) and a generic control file (CONTROL).
+\item {\bf Force field editor:} \F allows the user to edit or modify
+parameters of a particular force field scheme in order to produce a
+customised scheme that is specific to a particular simulation model.
+In addition, the standard force field model framework can also be easily
+modified.  For instance, introduction of pseudo points and rigid body
+implementation to an otherwise standard potential scheme such as CHARMM
+or AMBER, etc.
+\item {\bf Force field library repertoire:} \F contains a range of
+popular potential schemes (see below), all described in a single \F
+format that are also easily recognisable by the user for maintenance
+purposes.  Users can easily expand the existing library to include
+other new molecules.
+\end{enumerate}
 
-If you have the ``edit.out'' file produced by AMBER\index{AMBER}
-for your molecule use this as the CONNECT\_DAT input file for the
-utility {\sc ambforce}.  {\sc ambforce} will produce the \D FIELD
-and CONFIG files for your molecule.
+\subsubsection*{Force Field Schemes}
 
-If you do not have the ``edit.out'' file things are a little more
-tricky, particularly in coming up with appropriate partial charges
-for atomic sites.  However, there are a series of utilities that
-will at least produce the CONNECT\_DAT file for use with {\sc
-ambforce}.  We now outline these utilities and the order in which
-they should be used.
+The available force field schemes are as follows:
 
-If you have a structure from the Cambridge Structural database
-(CSDB) then use the utility {\sc fraccon} to take fractional
-coordinate data and produce a CONNECT\_DAT and ``ambforce.dat''
-file for use with {\sc ambforce}.  Note that you will need to
-modify {\sc fraccon} to get the AMBER\index{AMBER} names correct
-for sites in your molecule.  The version of {\sc fraccon} supplied
-with \D is specific to the valinomycin molecule.
+CHARMM - proteins, ethers, some lipids and carbohydrates.
 
-If you require an all atom force field and the database file does
-not contain hydrogen positions then use the utility {\sc fracfill}
-in place of {\sc fraccon}.  {\sc fraccon} produces an output file
-HFILL which should then be used as input for the utility {\sc
-hfill}.  The {\sc hfill} utility fills out the structure with the
-missing hydrogens.  (Note that you may need to know what the
-atomic charges are in some systems, for example the AMBER charges
-from the literature.)
+AMBER - proteins and Glycam for carbohydrates.
 
-Note: with minor modifications the utilities {\sc fracfill} and {\sc
-fraccon} can be used on structures from databases other than the
-Cambridge structural database.
+OPLSAA - proteins
+
+DREIDING - General force field for covalent molecules.
+
+PCFF - Polyorganics and other covalent molecules.
+
+\subsubsection*{Model Construction}
+
+\F does not have feature to construct molecular models.  This can be
+achieved by either using DL\_POLY GUI\index{GUI} \cite{smith-gui} or any
+other standard molecular building packages.  The output files must be
+converted into the PDB format.  In the case of proteins, these structures
+are usually obtained from data banks such as PDB.  These ‘{\em raw} PBD’
+files must first be preprocessed by the user before they are in a
+‘{\em readable} format’ for \F.  To ensure this, it is advisable that
+users take into consideration the following steps:
+\begin{enumerate}
+\item Decide on inclusion/exclusion of and if necessary manually delete
+molecular residues that involve multiple occupancies in crystalline structures.
+\item Usually, hydrogen atoms are not assigned in the raw PDB file.
+The molecules must therefore be pre-filled with hydrogen atoms (protonated)
+by using any standard packages available.  The user must ensure that proper
+care is taken of terminal residues which must also be appropriately terminated.
+\item Decide on the various charge states of some amino acids, such as
+histidine (HIS), lysine (LYS), glutamic acid (GLU), etc., by adding or
+deleting the appropriate hydrogen atoms.  Force field schemes such as CHARMM
+will have different three-letter notations for amino acids of different charge
+states, \F will automatically identify these differences and assign the
+appropriate potential parameters accordingly.
+\item For cysteine (CYS) molecules with disulphide bonds, thiolate hydrogen
+atoms must be removed.  \F will automatically define disulphide bonds between
+the molecules, provided the S-S distance is within a ‘sensible’ value.
+\item \F does not solvate the molecules and it is the user's responsibility
+to add water by using any standard package available (for example the
+DL\_POLY GUI\index{GUI} \cite{smith-gui}).
+\end{enumerate}
+
+Fore more details or further information, please consult the \F manual and
+website \\ \WEF\index{WWW}.
 
 \subsection{Adding Solvent to a Structure}
 
@@ -123,7 +157,6 @@ package to help with this, but the list is far from exhaustive. In
 time, we hope to have many more.  Our users are invited to submit
 code to the \D {\em public} library to help with this.
 
-The utilities available are described in the DL\_POLY\_Classic User
+The utilities available are described in the \C User
 Manual.  Users should also be aware that many of these utilities are
-incorporated into the DL\_POLY Graphical User
-Interface\index{Graphical User Interface} \cite{smith-gui}.
+incorporated into the DL\_POLY GUI\index{GUI} \cite{smith-gui}.

@@ -11,8 +11,7 @@
 ! STFC Daresbury Laboratory.
 
 Subroutine metal_forces_helper &
-          (iatm,xdf,ydf,zdf,rsqdf,rho,keypot,engmet,virmet,stress,safe)
-
+          (iatm,xdf,ydf,zdf,rsqdf,rho,engmet,virmet,stress,safe)
 
   Use kinds_f90
   Use setup_module
@@ -22,7 +21,7 @@ Subroutine metal_forces_helper &
 
   Implicit None
 
-  Integer,                                  Intent( In    ) :: iatm,keypot
+  Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: rho
   Real( Kind = wp ),                        Intent(   Out ) :: engmet,virmet
@@ -30,6 +29,7 @@ Subroutine metal_forces_helper &
   Logical,                                  Intent( InOut ) :: safe
 
   Integer           :: m,idi,ai,ki,jatm,aj,kj,key,k0,l,ld
+  Integer           :: keypot
   Real( Kind = wp ) :: fix,fiy,fiz,fx,fy,fz,          &
                        rsq,rdr,rrr,ppp,ppd,eng,       &
                        gk0,gk1,gk2,vk0,vk1,vk2,t1,t2, &

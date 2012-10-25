@@ -3,12 +3,12 @@ import java.io.*;
 public class Molecule extends Basic {
         /*
 *********************************************************************
-         
+
 dl_poly/java class to define a molecule
-         
+
 copyright - daresbury laboratory
 author    - w.smith may 2006
-         
+
 *********************************************************************
          */
     public int natm,nbnd,nang,ndih,ninv;
@@ -19,19 +19,19 @@ author    - w.smith may 2006
     public int[][] ibnd,iang,idih,invr,link;
     public double[][] xyz;
     private Config cfg;
-    
+
     Molecule(Config home,int ibeg,int itot,String molnam) {
         /*
 *********************************************************************
-         
+
 dl_poly/java constructor to define Molecule object from a CONFIG list
-         
+
 copyright - daresbury laboratory
 author    - w.smith june 2001
-         
+
 *********************************************************************
          */
-        
+
 	super();
 	cfg=home;
         int i=0;
@@ -55,25 +55,25 @@ author    - w.smith june 2001
         bonds();
         angles();
     }
-    
+
     void bonds() {
         /*
 **********************************************************************
-         
+
 dl_poly/java utility to assign bonds in a molecule
 based on a bond distance criterion
-         
+
 copyright daresbury laboratory
 author w. smith  september 2001
-         
+
 **********************************************************************
          */
-        
+
         int last,m1,m2,j,kkk,kbnd,ncl;
         double det,ff,xd,yd,zd,ssx,ssy,ssz,xss,yss,zss,rsq,bndfac;
-        
+
         // initial values
-        
+
         ncl=12;
         xd=0.0;
         yd=0.0;
@@ -89,23 +89,23 @@ author w. smith  september 2001
         bndfac=1.0+bondpc/100.0;
         ibnd=new int[2][kbnd];
         link=new int[ncl][natm];
-        
+
         // zero list array
-        
+
         list=new int[natm];
         for(int i=0;i<natm;i++)
             list[i]=0;
-        
+
         // determine bonds in molecule
-        
+
         nbnd=0;
         last=natm;
         m1=natm/2;
         m2=(natm-1)/2;
-        
+
         for(int m=1;m<=m1;m++) {
             if(m>m2)last=m1;
-            
+
             for(int i=0;i<last;i++) {
                 j=i+m;
                 if(j>=natm)j=j-natm;
@@ -160,28 +160,28 @@ author w. smith  september 2001
         }
         //println("Number of possible pair bonds found: "+BML.fmt(nbnd,6));
     }
-    
+
     void angles() {
         /*
 **********************************************************************
-         
+
 dl_poly/java utility to assign bonds, valence angles,
 dihedrals and inversion angles
-         
+
 copyright daresbury laboratory
 author w. smith  sepetember 2001
-         
+
 **********************************************************************
          */
-        
+
         int kang,kdih,kinv,jj,kk;
-        
+
         // determine valence angles in system
-        
+
         nang=0;
         kang=natm;
         iang=new int[3][kang];
-        
+
         for(int i=0;i<natm;i++) {
             for(int j=1;j<list[i];j++) {
                 for(int k=0;k<j;k++) {
@@ -203,14 +203,14 @@ author w. smith  sepetember 2001
             }
         }
         //println("Number of possible valence angles found: "+BML.fmt(nang,6));
-        
+
         // determine dihedral angles in system
-        
+
         ndih=0;
         kdih=natm;
         mid=new int[kdih];
         idih=new int[4][kdih];
-        
+
         for(int i=0;i<nbnd;i++) {
             jj=ibnd[0][i];
             kk=ibnd[1][i];
@@ -247,9 +247,9 @@ author w. smith  sepetember 2001
             }
         }
         //println("Number of possible dihedral angles found: "+BML.fmt(ndih,6));
-        
+
         // determine inversion angles in system
-        
+
         ninv=0;
         kinv=natm;
         invr=new int[4][kinv];

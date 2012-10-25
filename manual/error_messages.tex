@@ -118,7 +118,7 @@ Put a correct number at the "ewald precision" directive in the CONTROL file and 
 \subsubsection*{\underline{Message 10}: error - too many molecule types specified}
 
 This should never happen!  This indicates an erroneous FIELD file
-or corrupted \D executable.  Unlike DL\_POLY\_Classic, \D does not have a
+or corrupted \D executable.  Unlike \C, \D does not have a
 set limit on the number of kinds of molecules it can handle in any
 simulation (this is not the same as the number of molecules).
 
@@ -317,7 +317,7 @@ Use the Ewald sum option.  (It's better anyway.)
 
 \noindent \underline{\em Action}:
 
-Consider using DL\_POLY\_Classic instead.
+Consider using \C instead.
 
 \subsubsection*{\underline{Message 28}: error - wrongly indexed atom entries found in CONFIG file}
 
@@ -385,8 +385,7 @@ real space cutoff ({\tt rcut}) (CONTROL).
 \noindent \underline{\em Action}:
 
 Increase cutoff in CONTROL or decrease the constraint bondlength
-in FIELD and resubmit.  For small system consider using
-DL\_POLY\_Classic.
+in FIELD and resubmit.  For small system consider using \C.
 
 \subsubsection*{\underline{Message 35}: error - coincidence of particles in chemical bond unit}
 
@@ -1391,11 +1390,11 @@ Correct the erroneous part in FIELD and resubmit.
 The use of link cells in \D implies the use of appropriate
 boundary conditions.  This error results if the user specifies
 octahedral or dodecahedral boundary conditions, which are only
-available in DL\_POLY\_Classic.
+available in \C.
 
 \noindent \underline{\em Action}:
 
-Correct your boundary condition or consider using DL\_POLY\_Classic.
+Correct your boundary condition or consider using \C.
 
 \subsubsection*{\underline{Message 305}: error - too few link cells per dimension for many-body and tersoff forces subroutines.}
 
@@ -2137,7 +2136,7 @@ other.  Increase accuracy when generating a supercell.
 
 \noindent \underline{\em Action}:
 
-Correct your boundary condition or consider using DL\_POLY\_Classic.
+Correct your boundary condition or consider using \C.
 
 \subsubsection*{\underline{Message 515}: error - rattle algorithm (constraints\_rattle) failed to converge}
 
@@ -2384,7 +2383,7 @@ Correct the erroneous part in FIELD and resubmit.
 \subsubsection*{\underline{Message 630}: error - too many rigid body units specified}
 
 This should never happen!  This indicates an erroneous FIELD file
-or corrupted \D executable.  Unlike DL\_POLY\_Classic \D does not have a
+or corrupted \D executable.  Unlike \C, \D does not have a
 set limit on the number of rigid body types it can handle in any
 simulation (this is not the same as the total number of RBs in the
 system or per domain).

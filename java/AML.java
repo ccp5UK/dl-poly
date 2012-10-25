@@ -3,30 +3,30 @@ import java.io.*;
 public abstract class AML {
     /*
 *********************************************************************
-     
+
 main dl_poly/java GUI application methods library
-     
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-     
+
 *********************************************************************
-     */    
+     */
     static double[] invert(double a[]) {
         /*
 ***********************************************************************
-         
+
 dl_poly subroutine to invert a 3 * 3 matrix using cofactors
-         
+
 copyright - daresbury laboratory
 author    - w. smith december 2000
-         
+
 ***********************************************************************
          */
         double b[]=new double[9];
         double d,r;
-        
+
         // calculate adjoint matrix
-        
+
         b[0]=a[4]*a[8]-a[5]*a[7];
         b[1]=a[2]*a[7]-a[1]*a[8];
         b[2]=a[1]*a[5]-a[2]*a[4];
@@ -36,15 +36,15 @@ author    - w. smith december 2000
         b[6]=a[3]*a[7]-a[4]*a[6];
         b[7]=a[1]*a[6]-a[0]*a[7];
         b[8]=a[0]*a[4]-a[1]*a[3];
-        
+
         // calculate determinant
-        
+
         d=a[0]*b[0]+a[3]*b[1]+a[6]*b[2];
         r=0.0;
         if(Math.abs(d) > 0.0)r=1.0/d;
-        
+
         // complete inverse matrix
-        
+
         b[0]=r*b[0];
         b[1]=r*b[1];
         b[2]=r*b[2];
@@ -54,20 +54,20 @@ author    - w. smith december 2000
         b[6]=r*b[6];
         b[7]=r*b[7];
         b[8]=r*b[8];
-        
+
         return b;
     }
-    
+
     static int atmnum(String atnam) {
         /*
 *********************************************************************
-         
+
 dl_poly/java routine to determine the atomic number given
 the corresponding atomic symbol
-         
+
 copyright - daresbury laboratory
 author    - w.smith october 2000
-         
+
 *********************************************************************
          */
         int atnum=0;
@@ -194,42 +194,42 @@ author    - w.smith october 2000
         else if(atnam.indexOf("Zr") == 0) atnum=40;
         return atnum;
     }
-    
+
     static double[] dcell(double aaa[]){
         /*
 ***********************************************************************
-         
+
 dl_poly/java method to calculate the dimensional properties
 of a simulation cell specified by the input matrix aaa.
 the results are returned in the array bbb, with :
-         
+
 bbb(0 to 2) - lengths of cell vectors
 bbb(3 to 5) - cosines of cell angles
 bbb(6 to 8) - perpendicular cell widths
 bbb(9)     - cell volume
-         
+
 copyright - daresbury laboratory
 author    - w. smith october 2000
-         
+
 ***********************************************************************
          */
         double axb1,axb2,axb3,bxc1,bxc2,bxc3,cxa1,cxa2,cxa3;
         double bbb[]=new double[10];
-	
+
         // calculate lengths of cell vectors
-        
+
         bbb[0]=Math.sqrt(aaa[0]*aaa[0]+aaa[1]*aaa[1]+aaa[2]*aaa[2]);
         bbb[1]=Math.sqrt(aaa[3]*aaa[3]+aaa[4]*aaa[4]+aaa[5]*aaa[5]);
         bbb[2]=Math.sqrt(aaa[6]*aaa[6]+aaa[7]*aaa[7]+aaa[8]*aaa[8]);
-        
+
         // calculate cosines of cell angles
-        
+
         bbb[3]=(aaa[0]*aaa[3]+aaa[1]*aaa[4]+aaa[2]*aaa[5])/(bbb[0]*bbb[1]);
         bbb[4]=(aaa[0]*aaa[6]+aaa[1]*aaa[7]+aaa[2]*aaa[8])/(bbb[0]*bbb[2]);
         bbb[5]=(aaa[3]*aaa[6]+aaa[4]*aaa[7]+aaa[5]*aaa[8])/(bbb[1]*bbb[2]);
-        
+
         // calculate vector products of cell vectors
-        
+
         axb1=aaa[1]*aaa[5]-aaa[2]*aaa[4];
         axb2=aaa[2]*aaa[3]-aaa[0]*aaa[5];
         axb3=aaa[0]*aaa[4]-aaa[1]*aaa[3];
@@ -239,35 +239,35 @@ author    - w. smith october 2000
         cxa1=aaa[7]*aaa[2]-aaa[1]*aaa[8];
         cxa2=aaa[0]*aaa[8]-aaa[2]*aaa[6];
         cxa3=aaa[1]*aaa[6]-aaa[0]*aaa[7];
-        
+
         // calculate volume of cell
-        
+
         bbb[9]=Math.abs(aaa[0]*bxc1+aaa[1]*bxc2+aaa[2]*bxc3);
-        
+
         // calculate cell perpendicular widths
-        
+
         bbb[6]=bbb[9]/Math.sqrt(bxc1*bxc1+bxc2*bxc2+bxc3*bxc3);
         bbb[7]=bbb[9]/Math.sqrt(cxa1*cxa1+cxa2*cxa2+cxa3*cxa3);
         bbb[8]=bbb[9]/Math.sqrt(axb1*axb1+axb2*axb2+axb3*axb3);
-	
+
 	return bbb;
     }
-    
+
     static void rotate(boolean op,double uuu[],double vvv[],double rot[]) {
         /*
 *********************************************************************
-         
+
 dl_poly routine to transform a vector from the local (molecule-
 fixed) frame of reference (uuu[0],[1],[2]) to the global frame of
 reference (vvv[0],[1],[2]) and vice-versa using the rotation matrix
 defined by the matrix equation uuu = (Rot) vvv.
-         
+
 copyright - daresbury laboratory
 author    - w.smith november 2000
-         
+
 note: if op=true  converts global to local
 if op=false converts local to global
-         
+
 *********************************************************************
          */
         if(op) {
@@ -281,30 +281,30 @@ if op=false converts local to global
             vvv[2]=uuu[0]*rot[6]+uuu[1]*rot[7]+uuu[2]*rot[8];
         }
     }
-    
+
     static void euler(double alp,double bet,double gam,double rot[]) {
         /*
 *********************************************************************
-         
+
 dl_poly routine to construct a rotation matrix as defined by the
 Z-(-)Y'-Z'' euler angle convention and the equation r'=Rr, where
 r' is a vector in a molecular frame, r the corresponding vector
 in the laboratory frame and R is the rotation matrix
-         
+
 copyright - daresbury laboratory
 author    - w. smith november 2000
-         
+
 *********************************************************************
          */
         double ca,cb,cg,sa,sb,sg;
-        
+
         ca=Math.cos(alp);
         cb=Math.cos(bet);
         cg=Math.cos(gam);
         sa=Math.sin(alp);
         sb=Math.sin(bet);
         sg=Math.sin(gam);
-        
+
         rot[0]= ca*cb*cg-sa*sg;
         rot[1]=-ca*cb*sg-sa*cg;
         rot[2]= ca*sb;
@@ -315,23 +315,23 @@ author    - w. smith november 2000
         rot[7]= sb*sg;
         rot[8]= cb;
     }
-    
+
     static void spline(int npnts,double xx[],double yy[],double zz[],
     double aa[],double dd[],double gg[]) {
         /*
 ***********************************************************************
-         
+
 dl_poly/java utility for spline fit of discrete function
-         
+
 copyright - daresbury laboratory
 author    - w.smith january 2001
-         
+
 ***********************************************************************
          */
-        
+
         int n1=npnts-1;
         int n2=npnts-2;
-        
+
         gg[0]=0.0;
         dd[0]=xx[1]-xx[0];
         for(int i=1;i<n1;i++) {
@@ -356,17 +356,17 @@ author    - w.smith january 2001
             gg[n1-i]=gg[n1-i]-aa[n1-i]*gg[npnts-i];
         }
     }
-    
+
     static void whatAtoms(String fname) {
         /*
 *********************************************************************
-         
+
 dl_poly/java method to determine what atom types are present
 in a CONFIG or REVCON file
-         
+
 copyright - daresbury laboratory
 author    - w.smith february 2001
-         
+
 *********************************************************************
          */
         int nunq=0,nua=10;
@@ -375,12 +375,12 @@ author    - w.smith february 2001
         String[] name;
         int[] num;
         boolean lunq;
-        
+
         num=new int[nua];
         name=new String[nua];
-        
+
         // open the CONFIG file
-        
+
         try {
             LineNumberReader lnr = new LineNumberReader(new FileReader(fname));
             Basic.println("Reading file: "+fname);
@@ -394,9 +394,9 @@ author    - w.smith february 2001
                 record = lnr.readLine();
                 record = lnr.readLine();
             }
-            
+
             // read configuration
-            
+
             int i=0;
             int k=levcfg+2;
             while((record=lnr.readLine()) != null) {
@@ -409,7 +409,7 @@ author    - w.smith february 2001
                             num[j]++;
                         }
                     }
-                    
+
                     if(lunq) {
                         if(nunq==nua) {
                             nua*=2;
@@ -445,31 +445,31 @@ author    - w.smith february 2001
             Basic.println("Total number of atoms:"+BML.fmt(tot,8));
         }
     }
-    
+
     static void whatAtoms(Config cfg) {
         /*
 *********************************************************************
-         
+
 dl_poly/java method to determine what atom types are present
 in a configuration loaded into the GUI
-         
+
 copyright - daresbury laboratory
 author    - w.smith august 2011
-         
+
 *********************************************************************
          */
         int nunq=0,nua=10;
         String[] name;
         int[] num;
         boolean lunq;
-        
+
         num=new int[nua];
         name=new String[nua];
-        
+
         // scan the configuration
-        
+
 	for(int i=0;i<cfg.natms;i++) {
-	    
+
 	    lunq=true;
 	    for(int j=0;j<nunq;j++) {
 		if(cfg.atoms[i].zsym.equals(name[j])) {
@@ -477,7 +477,7 @@ author    - w.smith august 2011
 		    num[j]++;
 		}
 	    }
-            
+
 	    if(lunq) {
 		if(nunq==nua) {
 		    nua*=2;
@@ -504,64 +504,64 @@ author    - w.smith august 2011
             Basic.println("Total number of atoms:"+BML.fmt(tot,8));
         }
     }
-    
+
     static int Jacobi(int n,double a[][],double v[][]) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine for diagonalisation of real symmetric
 matices by Jacobi method
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-         
+
 *********************************************************************
          */
         int i,j,k,status;
         double tes,scl,rho,tem,v1,v2,v3,omg,u,c,s;
         boolean pas;
-        
+
         tes=0;
         scl=0;
         status=0;
         rho=1e-8;
-        
+
         // rescale matrix for optimal accuracy
-        
+
         for (i=0;i<n;i++) {
             if (Math.abs(a[i][i])>scl) scl=Math.abs(a[i][i]);
         }
-        
+
         for (i=0;i<n;i++) {
             for (j=0;j<=i;j++) {
                 a[i][j]=a[i][j]/scl;
             }
         }
-        
+
         // Set initial value of moving tolerance
-        
+
         for (i=1;i<n;i++) {
             for (j=0;j<i;j++) {
                 tes=tes+2*a[i][j]*a[i][j];
             }
         }
-        
+
         tes=Math.sqrt(tes);
-        
+
         // Jacobi diagonalisation
-        
+
         while (tes>rho) {
             tes=tes/n;
             if (tes<rho) tes=rho;
-            
+
             pas=true;
-            
+
             while (pas) {
                 pas=false;
-                
+
                 for (i=1;i<n;i++) {
                     for (j=0;j<i;j++)
-                        
+
                         if (Math.abs(a[i][j])>=tes) {
                             pas=true;
                             v1=a[j][j];
@@ -603,10 +603,10 @@ author    - w.smith 2000
                 }
             }
         }
-        
-        
+
+
         //	rescale matrix
-        
+
         for (i=0;i<n;i++) {
             for (j=0;j<=i;j++) {
                 a[i][j]=scl*a[i][j];
@@ -614,22 +614,22 @@ author    - w.smith 2000
         }
         return status;
     }
-    
+
     static void ShellSort(int n,int lst[], double aaa[]) {
         /*
 **********************************************************************
-         
+
 dl_poly/java routine to sort list of real numbers into ascending order
 using the shell method
-         
+
 copyright - daresbury laboratory
 author    - w.smith november 2000
-         
+
 **********************************************************************
          */
         int i,j,k,l,m;
         double tmp;
-        
+
         m=n;
         while (m > 0) {
             m=m/2;
@@ -652,39 +652,39 @@ author    - w.smith november 2000
             }
         }
     }
-    
+
     static int gaussfit(int npnts,double ccc[],double eee[],double x[],
     double y[],double z[],double g1[],double g2[],double g3[]) {
         /*
 ***********************************************************************
-         
+
 routine to fit a lennard jones potential with a sum of gaussians
 author k. singer
-         
+
 java version january 2001 author w.smith
-         
+
 ***********************************************************************
          */
-        
+
         double varm,d1,d2,d3,dr1,dr2,dr3,a11,a12,a22,a21,a31,a32,a33,a13;
         double a23,b1,b2,b3,r,rr,det,absd,var;
         double c1=0.0,c2=0.0,c3=0.0;
         int k0,k,l,m,i;
         double[] ddd;
-        
+
         k0=15;
         varm=1.0e+25;
         ddd=new double[3];
-        
+
         // set initial guesses for exponents
-        
+
         ddd[0]=0.443;
         ddd[1]=1.544;
         ddd[2]=8.502;
         eee[0]=0.003889;
         eee[1]=0.003889;
         eee[2]=0.007779;
-        
+
         if(npnts<6) {
             eee[0]=0.0;
             ddd[0]=0.0;
@@ -694,31 +694,31 @@ java version january 2001 author w.smith
             Basic.println("Error - too few data points for gaussian fit");
             return -1;
         }
-        
+
         // adjustment of first exponent
-        
+
         for(k=0;k<k0;k++) {
             d1=ddd[0]+(k-7)*eee[0];
-            
+
             // adjustment of second exponent
-            
+
             for(l=0;l<15;l++) {
                 d2=ddd[1]+(l-7)*eee[1];
-                
+
                 // adjustment of third exponent
-                
+
                 for(m=0;m<15;m++) {
-                    
+
                     d3=ddd[2]+(m-7)*eee[2];
-                    
+
                     // store current exponents
-                    
+
                     dr1=d1;
                     dr2=d2;
                     dr3=d3;
-                    
+
                     // initialise least squares parameters
-                    
+
                     a11=0.0;
                     a12=0.0;
                     a22=0.0;
@@ -731,9 +731,9 @@ java version january 2001 author w.smith
                     b1=0.0;
                     b2=0.0;
                     b3=0.0;
-                    
+
                     // calculate least squares parameters
-                    
+
                     if(k0<0) {
                         for(i=0;i<npnts;i++) {
                             r=x[i];
@@ -770,7 +770,7 @@ java version january 2001 author w.smith
                     absd=Math.abs(det);
                     if(absd>2.e-20) {
                         // calculate coefficients
-                        
+
                         if(k0<0) {
                             c2=b2*a33-b3*a23;
                             c3=b3*a22-b2*a23;
@@ -783,9 +783,9 @@ java version january 2001 author w.smith
                         c1=c1/det;
                         c2=c2/det;
                         c3=c3/det;
-                        
+
                         // construct approximating potential array
-                        
+
                         var=0.0;
                         if(k0<0) {
                             for(i=0;i<npnts;i++) {
@@ -799,9 +799,9 @@ java version january 2001 author w.smith
                                 var=var+x[i]*Math.pow((y[i]-z[i]),2);
                             }
                         }
-                        
+
                         // update potential parameters
-                        
+
                         if(var<=varm) {
                             varm=var;
                             ccc[0]=c1;
@@ -818,28 +818,28 @@ java version january 2001 author w.smith
             }
             ddd[0]=eee[0];
         }
-        
+
         // print out best parameters
-        
+
         Basic.println("Best coefficients: "+BML.fmt(ccc[0],12)+BML.fmt(ccc[1],12)+BML.fmt(ccc[2],12));
         Basic.println("Best exponents   : "+BML.fmt(eee[0],12)+BML.fmt(eee[1],12)+BML.fmt(eee[2],12));
         return 0;
     }
-    
-    static void ShellSort(int n,int lst[], int iii[]) {
+
+    static void ShellSort0(int n,int lst[], int iii[]) {
         /*
 *********************************************************************
-         
+
 dl_poly/java routine to sort list of integers into ascending order
 using the shell method
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-         
+
 *********************************************************************
          */
         int i,j,k,l,m;
-        
+
         m=n;
         while (m > 0) {
             m=m/2;
@@ -859,21 +859,58 @@ author    - w.smith 2000
             }
         }
     }
+
+    static void ShellSort1(int n, int lst[], int iii[]) {
+        /*
+         *********************************************************************
+         *
+         * dl_poly/java routine to sort list of integers into ascending order
+         * using the shell method
+         *
+         * copyright - daresbury laboratory author - w.smith 2000
+         *
+         *********************************************************************
+         */
+        int i, j, k, l, m;
+
+        m = n;
+        while (m > 0) {
+            m = m / 2;
+            for (j = 0; j < n - m; j++) {
+                i = j;
+                while (i >= 0) {
+                    l = i + m;
+                    if (iii[l] < iii[i]) {
+                        k = lst[i];
+                        lst[i] = lst[l];
+                        lst[l] = k;
+			k = iii[i];
+			iii[i] = iii[l];
+			iii[l] = k;
+                        i = i - m;
+                    } else {
+                        i = -1;
+                    }
+                }
+            }
+        }
+    }
+
     static double ArcTan2(double x,double y) {
         /*
 *********************************************************************
-         
+
 stars routine
 author - w.smith 2002
-         
+
 calculate the arctangent with quadrant correction
-         
+
 *********************************************************************
 */
         double t,ax,ay;
         ax=Math.abs(x);
         ay=Math.abs(y);
-        
+
         if(ax+ay < 2e-10) {
             t=0;
         }

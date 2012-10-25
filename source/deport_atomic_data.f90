@@ -9,7 +9,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov march 2012
+! amended   - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -156,7 +156,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 
 ! Initialise RB data set for preventing duplication
 
-  lrgd(1:ntrgd)=0
+  lrgd(-1:ntrgd)=0
 
 ! LOOP OVER ALL PARTICLES ON THIS NODE
 
@@ -1050,6 +1050,10 @@ Subroutine deport_atomic_data(mdir,lbook)
         kmove=kmove+1
 
 ! unpack RB details
+
+! Initialise RB data set for preventing duplication
+
+        lrgd(-1:mxlrgd)=0
 
 !        legrgd(:,newatm) = 0
 !        Do While (buffer(kmove+1) > 0.0_wp .and. safe)

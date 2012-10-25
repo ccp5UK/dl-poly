@@ -352,7 +352,7 @@ author    - w.smith 2003
                 zvrt[i]=-(int)(scale*home.config.pbc.vrt[1][i]);
             }
         }
-        AML.ShellSort(home.config.natms,lst,zpos);
+        AML.ShellSort0(home.config.natms,lst,zpos);
     }
 
     void restore() {

@@ -6,14 +6,14 @@ DL_POLY_4.04
 The source is in fully self-contained free formatted FORTRAN90+MPI2
 code (specifically FORTRAN90 + TR15581 + MPI1 + MPI-I/O only).  The
 available NetCDF functionality makes the extended code dependent upon
-it.  The non-extended code complies with the NAGWare f95 and FORCHECK
-f90 standards with exception of the FORTRAN2003 feature TR15581, which
-is very rarely unavailable in the nowadays FORTRAN95 compilers.
+it.  The non-extended code complies with the NAGWare and FORCHECK F90
+standards with exception of the FORTRAN2003 feature TR15581, which is
+very rarely unavailable in the nowadays FORTRAN90/95 compilers.
 
 This version supports ALL features that are available in the
 standard DL_POLY_Classic version with the exceptions of:
-  (1) RIDGID BODIES linked by constraint bonds (CB) or
-      potential of mean field (PMF) constraints.
+  (1) Rigid bodies (RBs) linked via constraint bonds (CBs) or
+      potential of mean field constraints (PMFs).
   (2) Truncated octahedral (imcon = 4), Rhombic Dodecahedral
       (imcon = 5) and Hexagonal Prism (imcon = 7) periodic boundary
       conventions.
@@ -93,7 +93,7 @@ dependent.  Usually, LFV is slightly faster than VV when CB/PMF/RB
 are present in the system.  The relative performance between the LVF
 and VV integration (per timestep) is observed to vary in the limits
 *** [LFV(t)-VV(t)]/VV(t) = -5:+5% ***.  However, the VV algorithms
-treat CB/PMF/RB entities in more precise (symplectic) manner than
+treat CB/PMF/RB entities in a more precise (symplectic) manner than
 the LFV ones and thus not only have better numerical stability but
 also produce more accurate dynamics.
 
@@ -102,58 +102,71 @@ Makefiles:
 From within the `source' directory the user may compile the code by
 selecting the appropriate Makefile from the `build' directory:
 
-"cp ../build/Makefile_MPI Makefile"  (for parallel execution MPI is needed)
+"cp ../build/Makefile_MPI Makefile"
 
-or
+- intended for parallel execution on multi-processor platforms (an MPI
+implementation is needed), or
 
-"cp ../build/Makefile_SRLx Makefile" (for serial execution - no MPI needed)
+"cp ../build/Makefile_SRLx Makefile"
+
+- intended for serial execution (no MPI required).
 
 Note that in `comms_module.f90' it is crucial that line 13 reads as:
-`Use mpi_module'     for serial compilation and
-`Use mpi'            for parallel compilation (which is the default)
+`Use mpi_module'    - for serial compilation or as
+`Use mpi'           - for parallel compilation (which is the default).
 
-If the parallel OS environment, you are compiling on, is not fully F90
-compatible then the `Use mpi' entry in `comms_module.f90' will be
-interpreted as erroneous.  This is easily overcome by commenting out
-`Use mpi' and uncommenting "Include 'mpif.h'" just after `Implicit None'.
+If the parallel OS environment, one is compiling on, is not fully F90
+compatible then the `Use mpi' entry in the `comms_module.f90' file may
+be interpreted as erroneous.  This is easily overcome by commenting out
+the `Use mpi' line and uncommenting the "Include 'mpif.h'" one situated
+immediatly after the `Implicit None' line.
 
 If there is an `entry' in the Makefile for the particular combination
-of architecture, compiler & MPI library, then the user may
+of architecture, compiler & MPI implementation, then the user may
 instantiate the compilation by:
 
 "make `entry'"
 
-If there is not a suitable entry, the user should advise with a
-computer scientist or the administrator of the particular machine.
+Usually the one named `hpc' is suitable for the majority of platforms.
+To find out the keywords for all available entries within the Makefile
+issue:
+
+"make"
+
+and then examine the file for any of the keywords reported.  If there
+is not a suitable entry then the user should advise with a computer
+scientist or the administrator of the particular machine.
 
 The necessary components for the source compilation are:
-  (1) a FORTRAN90 compliant compiler (if the full PATH to it is not
-      passed to the DEFAULT ENVIRONMENT PATH, then it MUST be
+  (1) a FORTRAN90 + TR15581 compliant compiler (if the full PATH to it
+      is not passed to the DEFAULT ENVIRONMENT PATH, then it MUST be
       explicitly supplied in the Makefile)
-  (2) MPI2 (or MPI1 + MPI-I/O) libraries COMPILED for the architecture
-      and the targeted compiler (if the full PATH to these is not
-      passed to the DEFAULT ENVIRONMENT PATH, then it MUST be
-      explicitly supplied in the Makefile)
+  (2) an MPI2 (or MPI1 + MPI-I/O) implementation, COMPILED for the
+      architecture/OS and the targeted compiler (if the full PATH to
+      these is not passed to the DEFAULT ENVIRONMENT PATH, then it MUST
+      be explicitly supplied in the Makefile)
   (3) a MAKE command (Makefile interpreter in the system SHELL)
+where (2) is not necessary for compilation in SERIAL mode!
 
-Note that (2) is not necessary for compilation in SERIAL mode!
+Note that for the TR15581 compliance, gfortran requires a gcc version
+4.2.0 or above!
 
-By default, if compilation is successful, an executable (build) will
+By default, if a compilation is successful, an executable (build) will
 be placed in "../execute" directory (at the same level as the
-directory where the code is compiled).  Should it not exist one will
-be created automatically.  The build can then be moved, renamed, etc.
-and used as the user wishes.  However, when executed, the program will
-look for input files in the directory of execution!
+directory where the code is compiled).  Should "../execute" not exist
+then it will be created automatically.  The build can then be moved,
+renamed, etc. and used as the user wishes.  However, when executed, the
+program will look for input files in the directory of execution!
 
 Serial Compilation on Windows:
 ------------------------------
 The best way to get around it is to install cygwin on the system
-(http://www.cygwin.com/) to emulate a UNIX/Linux like environment and
-then use the "make" command.  During cygwin installation make sure that
-make and gfortran are included in the install.  A potential problem
-for Windows based FORTRAN compilers, you may encounter, is that the
-compiler may not pick symbolic links.  To resolve this, you will
-have to use hard linking in the Makefile.
+(http://www.cygwin.com/) to emulate a UNIX/Linux like environment
+and then use the "make" command.  During cygwin installation make sure
+that the make and gfortran components are opted for in the install.
+A potential problem for Windows based FORTRAN compilers, one may
+encounter, is that the compiler may not pick symbolic links.  This can
+be resolved by substituting the soft links with hard in the Makefile.
 
 Compiling with NetCDF functionality:
 ------------------------------------
@@ -163,7 +176,7 @@ attempting compilation:
 "netcdf_modul~.o -> netcdf_module.o"
 
 Note that suitable entry may need to be created within the Makefile
-so that it matches the particular combination of architecture,
+so that it matches the particular combination of architecture/OS,
 compiler, MPI library & netCDF library.
 
 Contacts at STFC Daresbury Laboratory:

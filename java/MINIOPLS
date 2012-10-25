@@ -26,7 +26,7 @@ C_32N2     14.02709     0.118     3.800     0.200   CH2 on N in second. amide
 C_32N3     14.02709     0.118     3.800     0.285   CH2 on N in tertiary amide
 C_31N2     13.01912     0.080     3.800     0.200   CH on N in second. amide
 C_31N3     13.01912     0.080     3.800     0.285   CH on N in tertiary amide
-C_33CON    15.03506     0.160     3.910     0.000   CH3 on CO in amide 
+C_33CON    15.03506     0.160     3.910     0.000   CH3 on CO in amide
 C_21O      13.01912     0.115     3.800     0.500   CH in formic acid
 C_20O      12.01115     0.105     3.750     0.500   C in CO in acid/amide
 C_33A      15.03506     0.207     3.775     0.265   CH3 methanol
@@ -37,7 +37,7 @@ N_32       14.00670     0.170     3.250    -0.850   N primary amide
 N_31       14.00670     0.170     3.250    -0.570   N secondary amide
 N_30       14.00670     0.170     3.250    -0.570   N tertiary amide
 O_3A       15.99940     0.170     3.070    -0.700   O alcohol oxygen
-O_2C       15.99940     0.210     2.960    -0.500   O carbonyl 
+O_2C       15.99940     0.210     2.960    -0.500   O carbonyl
 OW         15.99940     0.154876  3.1536    0.000   O in TiPS 4P
 H_A         1.00797     0.000     0.000     0.435   H alcohol hydrogen
 H_N1        1.00797     0.000     0.000     0.425   H on N in primary amide
@@ -65,22 +65,22 @@ C_        C_3       C_        124.2   112.0
 C_        C_2       C_        124.2   124.0
 C_        C_R       C_        124.2   120.0
 C_        C_2       O_        124.2   120.0   assumed
-H_        N_3       H_        124.2   119.8   assumed 
-O_3       C_R       C_R       124.2   120.0   assumed 
-C_2       N_3       H_        124.2   119.8   assumed 
-C_3       N_3       H_        124.2   118.3   assumed 
-C_2       O_3       H_        124.2   119.8   assumed 
+H_        N_3       H_        124.2   119.8   assumed
+O_3       C_R       C_R       124.2   120.0   assumed
+C_2       N_3       H_        124.2   119.8   assumed
+C_3       N_3       H_        124.2   118.3   assumed
+C_2       O_3       H_        124.2   119.8   assumed
 C_3       O_3       H_A       124.2   108.5
-C_R       O_3       H_A       124.2   108.5   assumed 
+C_R       O_3       H_A       124.2   108.5   assumed
 C_3       C_3       O_3       124.2   108.0
-C_3       C_3       N_3       124.2   108.0   assumed 
-C_2       C_3       N_3       124.2   108.0   assumed 
-C_2       N_3       C_3       124.2   121.9   assumed 
-C_3       C_20O     N_3       124.2   116.6   assumed 
-C_3       C_20O     O_3       124.2   116.6   assumed 
-O_2       C_20O     N_3       124.2   122.9   assumed 
-O_2       C_20O     O_3       124.2   122.9   assumed 
-C_3       C_20O     O_2       124.2   120.5   assumed 
+C_3       C_3       N_3       124.2   108.0   assumed
+C_2       C_3       N_3       124.2   108.0   assumed
+C_2       N_3       C_3       124.2   121.9   assumed
+C_3       C_20O     N_3       124.2   116.6   assumed
+C_3       C_20O     O_3       124.2   116.6   assumed
+O_2       C_20O     N_3       124.2   122.9   assumed
+O_2       C_20O     O_3       124.2   122.9   assumed
+C_3       C_20O     O_2       124.2   120.5   assumed
 DIHEDRALS   47 V(a)=V0+1/2V1(1+cos(a))+1/2V2(1-cos(2a))+1/2V3(1+cos(3a))
 C_32      C_32      C_32      C_32            0.0     1.411    -0.271     3.145       0.0   n-alkanes
 C_332     C_32      C_32      C_32            0.0     1.411    -0.271     3.145       0.0   n-alkane-end

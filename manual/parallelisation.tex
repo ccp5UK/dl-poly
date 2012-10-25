@@ -56,7 +56,7 @@ They often contain ionic species, which usually require Ewald
 summation\index{Ewald!summation} methods \cite{allen-89a,smith-92b},
 and {\em intra}-molecular interactions in addition to
 {\em inter}-molecular forces.  Intramolecular interactions are
-handled in the same way as in DL\_POLY\_Classic, where each processor
+handled in the same way as in \C, where each processor
 is allocated a subset of intramolecular bonds to deal with.  The
 allocation in this case is based on the atoms present in the
 processor's domain.  The SHAKE\index{algorithm!SHAKE} and
@@ -70,7 +70,7 @@ SHAKE (RATTLE\_VV1) cycle (RATTLE\_VV2 updates the velocities),
 so that all relevant processors may incorporate this update into
 its own iterations.  In the case of the DD strategy the SHAKE
 (RATTLE) algorithm is simpler than for the Replicated Data method
-of DL\_POLY\_Classic, where global updates of the atom positions
+of \C, where global updates of the atom positions
 (merging and splicing) are required \cite{smith-93b}.  The
 absence of the merge requirement means that the DD tailored
 SHAKE and RATTLE are less communications dependent and thus more
@@ -318,7 +318,7 @@ and sterss, which must be obtained as a global sum of the
 contributing terms calculated on all nodes.
 
 The DD strategy does not require a global summation of the forces,
-unlike the Replicated Data method used in DL\_POLY\_Classic, which
+unlike the Replicated Data method used in \C, which
 limits communication overheads and provides smooth parallelisation
 to large processor counts.
 

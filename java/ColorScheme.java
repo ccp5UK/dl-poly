@@ -3,28 +3,28 @@ import java.awt.*;
 public class ColorScheme {
         /*
 **********************************************************************
-         
+
 dl_poly/java class to define GUI colour scheme
-         
+
 copyright - daresbury laboratory
 author    - w. smith december 2000
-         
+
 **********************************************************************
          */
     public Color back,fore,scrn,butn,scrf,butf;
-    
+
     public ColorScheme(String scheme) {
         /*
 *********************************************************************
-         
+
 dl_poly/java GUI routine
-         
+
 copyright - daresbury laboratory
 author    - w.smith 2000
-         
+
 *********************************************************************
          */
-        
+
         if(scheme.equals("picasso")) {
             back=new Color(80,80,220);
             fore=new Color(255,255,255);
@@ -67,7 +67,7 @@ author    - w.smith 2000
         }
         else {
             // Picasso as default
-            
+
             back=new Color(80,80,220);
             fore=new Color(0,0,0);
             scrn=new Color(205,205,245);
