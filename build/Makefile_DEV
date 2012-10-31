@@ -1,6 +1,6 @@
 # Master makefile for DL_POLY_4.04 (developer version)
 #
-# Author - I.T.Todorov june 2012
+# Author - I.T.Todorov october 2012
 #
 #
 # Define default settings
@@ -475,8 +475,7 @@ coul_rfp_forces.o: comms_module.o config_module.o kinds_f90.o setup_module.o
 defects1_module.o: kinds_f90.o setup_module.o
 defects1_write.o: comms_module.o config_module.o defects1_module.o \
 	io_module.o kinds_f90.o parse_module.o setup_module.o site_module.o
-defects_link_cells.o: comms_module.o domains_module.o kinds_f90.o \
-	setup_module.o
+defects_link_cells.o: domains_module.o kinds_f90.o setup_module.o
 defects_module.o: kinds_f90.o setup_module.o
 defects_reference_export.o: comms_module.o domains_module.o kinds_f90.o \
 	setup_module.o
@@ -517,13 +516,19 @@ domains_module.o: comms_module.o kinds_f90.o
 error.o: comms_module.o setup_module.o
 ewald_excl_forces.o: config_module.o ewald_module.o kinds_f90.o \
 	setup_module.o
+ewald_excl_force~.o: config_module.o ewald_module.o kinds_f90.o \
+	setup_module.o
 ewald_frozen_forces.o: comms_module.o config_module.o ewald_module.o \
 	kinds_f90.o setup_module.o
+ewald_frozen_force~.o: comms_module.o config_module.o domains_module.o \
+	ewald_module.o kinds_f90.o setup_module.o
 ewald_module.o: config_module.o kinds_f90.o setup_module.o
 ewald_real_forces.o: comms_module.o config_module.o kinds_f90.o \
 	setup_module.o
 ewald_spme_forces.o: comms_module.o config_module.o domains_module.o \
 	ewald_module.o kinds_f90.o parallel_fft.o setup_module.o
+ewald_spme_force~.o: comms_module.o config_module.o domains_module.o \
+	ewald_module.o kinds_f90.o setup_module.o
 exchange_grid.o: comms_module.o domains_module.o kinds_f90.o setup_module.o
 export_atomic_data.o: comms_module.o config_module.o domains_module.o \
 	kinds_f90.o setup_module.o
@@ -536,7 +541,7 @@ external_field_module.o: kinds_f90.o setup_module.o
 four_body_forces.o: comms_module.o config_module.o domains_module.o \
 	four_body_module.o kinds_f90.o setup_module.o
 four_body_module.o: kinds_f90.o setup_module.o
-gpfa_module.o: kinds_f90.o
+gpfa_module.o: gpfa_module.o kinds_f90.o
 impact.o: comms_module.o config_module.o core_shell_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o
 intra_coul.o: kinds_f90.o setup_module.o
@@ -551,10 +556,15 @@ langevin_forces.o: comms_module.o config_module.o kinds_f90.o setup_module.o \
 langevin_module.o: kinds_f90.o setup_module.o
 link_cell_pairs.o: comms_module.o config_module.o development_module.o \
 	domains_module.o kinds_f90.o setup_module.o
-metal_forces.o: config_module.o kinds_f90.o metal_module.o setup_module.o
+link_cell_pair~.o: comms_module.o config_module.o development_module.o \
+	domains_module.o kinds_f90.o setup_module.o
+link_cell~pairs.o: comms_module.o config_module.o development_module.o \
+	domains_module.o kinds_f90.o setup_module.o
+metal_forces.o: config_module.o kinds_f90.o metal_module.o setup_module.o \
+	site_module.o
 metal_generate.o: kinds_f90.o metal_module.o setup_module.o site_module.o
 metal_ld_collect_eam.o: config_module.o kinds_f90.o metal_module.o \
-	setup_module.o
+	setup_module.o site_module.o
 metal_ld_collect_fst.o: config_module.o kinds_f90.o metal_module.o \
 	setup_module.o
 metal_ld_compute.o: comms_module.o config_module.o kinds_f90.o metal_module.o \
@@ -574,6 +584,7 @@ minimise_relax.o: comms_module.o config_module.o kinds_f90.o \
 	minimise_module.o rigid_bodies_module.o setup_module.o
 msd_write.o: comms_module.o config_module.o io_module.o kinds_f90.o \
 	parse_module.o setup_module.o site_module.o statistics_module.o
+netcdf_module.o: kinds_f90.o
 netcdf_modul~.o: kinds_f90.o
 npt_b0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
 	setup_module.o site_module.o
@@ -807,14 +818,15 @@ scale_temperature.o: comms_module.o config_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o setup_module.o
 scan_config.o: comms_module.o io_module.o kinds_f90.o parse_module.o \
 	setup_module.o
-scan_control.o: comms_module.o kinds_f90.o msd_module.o parse_module.o \
-	setup_module.o
+scan_control.o: comms_module.o development_module.o kinds_f90.o msd_module.o \
+	parse_module.o setup_module.o
 scan_control_io.o: comms_module.o config_module.o io_module.o kinds_f90.o \
 	parse_module.o setup_module.o
 scan_field.o: comms_module.o kinds_f90.o metal_module.o parse_module.o \
-	setup_module.o vdw_module.o
-set_bounds.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
-	msd_module.o setup_module.o
+	setup_module.o tersoff_module.o vdw_module.o
+set_bounds.o: comms_module.o config_module.o development_module.o \
+	domains_module.o kinds_f90.o msd_module.o setup_module.o \
+	tersoff_module.o
 set_halo_particles.o: comms_module.o config_module.o domains_module.o \
 	kinds_f90.o rigid_bodies_module.o setup_module.o site_module.o
 set_temperature.o: comms_module.o config_module.o core_shell_module.o \
@@ -832,6 +844,8 @@ system_expand.o: angles_module.o bonds_module.o comms_module.o \
 	config_module.o constraints_module.o core_shell_module.o \
 	dihedrals_module.o inversions_module.o io_module.o kinds_f90.o \
 	parse_module.o rigid_bodies_module.o setup_module.o site_module.o
+system_expan~.o: comms_module.o config_module.o io_module.o kinds_f90.o \
+	parse_module.o setup_module.o site_module.o
 system_init.o: comms_module.o config_module.o development_module.o \
 	kinds_f90.o langevin_module.o metal_module.o setup_module.o \
 	site_module.o statistics_module.o vdw_module.o
@@ -852,11 +866,12 @@ trajectory_write.o: comms_module.o config_module.o io_module.o kinds_f90.o \
 	parse_module.o setup_module.o statistics_module.o
 two_body_forces.o: comms_module.o config_module.o ewald_module.o kinds_f90.o \
 	metal_module.o setup_module.o statistics_module.o vdw_module.o
+two_body_force~.o: comms_module.o config_module.o ewald_module.o kinds_f90.o \
+	metal_module.o setup_module.o statistics_module.o vdw_module.o
 update_shared_units.o: comms_module.o domains_module.o kinds_f90.o \
 	setup_module.o
 vdw_direct_fs_generate.o: kinds_f90.o setup_module.o vdw_module.o
-vdw_forces.o: comms_module.o config_module.o kinds_f90.o setup_module.o \
-	vdw_module.o
+vdw_forces.o: config_module.o kinds_f90.o setup_module.o vdw_module.o
 vdw_generate.o: kinds_f90.o setup_module.o vdw_module.o
 vdw_lrc.o: comms_module.o config_module.o kinds_f90.o setup_module.o \
 	site_module.o vdw_module.o

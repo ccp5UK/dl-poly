@@ -90,7 +90,7 @@ Subroutine ewald_frozen_forces &
   End Do
 
   If (mxnode > 1) Call gsum(allfrz)
-  If (allfrz /= megfrz) Call error(90)
+  If (allfrz /= megfrz) Call error(0)
 
   Call invert(cell,rcell,det)
 

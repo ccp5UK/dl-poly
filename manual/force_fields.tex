@@ -1611,21 +1611,24 @@ form via the table file TABEAM (see section \ref{tabeam-file}) to which
 \D is redirected by the FIELD file data.  The FS potentials are defined
 via the necessary parameters in the FIELD file.
 
-\subsection{Tersoff Potential}
+\subsection{Tersoff Potentials}
 \label{tersoff}
 
-The Tersoff\index{potential!Tersoff} \cite{tersoff-89a} potential
-has been developed to be used in multi-component covalent systems by
-an effective coupling of two-body and higher many-body correlations
-into one model.  The central idea is that in real systems, the
-strength of each bond depends on the local environment, i.e. an atom
-with many neighbors forms weaker bonds than an atom with few
-neighbors.  Effectively, it is a pair potential the strength of
-which depends on the environment.  It has 11 atomic and 2 bi-atomic
-parameters.  The energy is modelled as a sum of pair-like
-interactions, where, however the coefficient of the attractive term
-in the pair-like potential (which plays the role of a bond order)
-depends on the local environment giving a many-body potential.
+The Tersoff\index{potential!Tersoff} \cite{tersoff-89a} potential is
+is a bond-order potential, developed to be used in multi-component
+covalent systems by an effective coupling of two-body and higher
+many-body correlations into one model.  The central idea is that in
+real systems, the strength of each bond depends on the local
+environment, i.e. an atom with many neighbors forms weaker bonds
+than an atom with few neighbors.  Effectively, it is a pair potential
+the strength of which depends on the environment.  At the present there
+are two versions of this potential available in \D: {\bf ters} and
+{\bf hiks}.  In these particular implementations {\bf ters} has 11
+atomic and 2 bi-atomic parameters whereas {\bf hiks} \cite{kumagai-07a}
+has 16 atomic parameters.  The energy is modelled as a sum of pair-like
+interactions, where the coefficient of the attractive term in the
+pair-like potential (which plays the role of a bond order) depends on
+the local environment giving a many-body potential.
 
 The form of the Tersoff potential is:  ({\bf ters})
 \begin{equation}
@@ -1639,42 +1642,69 @@ f_{A}(r_{ij}) = B_{ij}~\exp(- b_{ij}~r_{ij})
 \end{equation}
 and $f_{C}$ is a smooth cutoff function with parameters $R$ and $S$
 so chosen that to include the first-neighbor shell:
+\begin{itemize}
+\item {\bf ters}:
 \begin{equation}
-f_{C}(r_{ij}) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+f_{C}(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
 1 & r_{ij} < R_{ij} \\
 \frac{1}{2} + \frac{1}{2} \cos \left[\pi~\frac{r_{ij}-R_{ij}}{S_{ij}-R_{ij}}\right]
-& R_{ij} < r_{ij} < S_{ij}~~. \\
+& R_{ij} < r_{ij} < S_{ij} \\
 0 & r_{ij} > S_{ij}
 \end{array} \right.
 \end{equation}
+\item {\bf hiks} - here $f_{C}$ is modified to a have continuous second-order
+differential:
+\begin{equation}
+f_{C}(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
+1 & r_{ij} < R_{ij} \\
+\frac{1}{2} + \frac{9}{16} \cos \left[\pi~\frac{r_{ij}-R_{ij}}{S_{ij}-R_{ij}}\right]
+- \frac{1}{16} \cos \left[3 \pi~\frac{r_{ij}-R_{ij}}{S_{ij}-R_{ij}}\right]
+& R_{ij} < r_{ij} < S_{ij} \\
+0 & r_{ij} > S_{ij}~~.
+\end{array} \right.
+\end{equation}
+\end{itemize}
 $\gamma_{ij}$ expresses a dependence that can accentuate or diminish
 the attractive force relative to the repulsive force, according to
-the local environment, such that
+the local environment, such that:
+\begin{itemize}
+\item {\bf ters}:
 \begin{eqnarray}
 \gamma_{ij} &=& \chi_{ij}~(1 + {\beta_{i}}^{\eta_{i}}~{\cal{L}}_{ij}^{\eta_{i}})^{-\frac{1}{2\eta_{i}}} \nonumber \\
 {\cal{L}}_{ij} &=& \sum_{k \neq i,j} f_{C}(r_{ik})~\omega_{ik}~g(\theta_{ijk}) \\
-g(\theta_{ijk}) &=& 1 + \frac{c_{i}^{2}}{d_{i}^{2}} - \frac{c_{i}^{2}}{d_{i}^{2} + (h_{i} - \cos\theta_{ijk})^{2}}~~, \nonumber
+g(\theta_{ijk}) &=& 1 + \frac{c_{i}^{2}}{d_{i}^{2}} - \frac{c_{i}^{2}}{d_{i}^{2} + (h_{i} - \cos\theta_{ijk})^{2}} \nonumber
 \end{eqnarray}
+\item {\bf hiks}:
+\begin{eqnarray}
+\gamma_{ij} &=& (1 + {\cal{L}}_{ij}^{\eta_{i}})^{-\delta_{i}} \nonumber \\
+{\cal{L}}_{ij} &=& \sum_{k \neq i,j} f_{C}(r_{ik})~g(\theta_{ijk})~
+\overbrace{\exp \left[\alpha_{i} (r_{ij}-r_{ik})^{\beta_{i}}\right]}^{\omega_{ik}} \nonumber \\
+g(\theta_{ijk}) &=& c_{1i} + {g}_{o}(\theta_{ijk})~{g}_{a}(\theta_{ijk}) \\
+{g}_{o}(\theta_{ijk}) &=& \frac{c_{2i}~(h_{i} - \cos\theta_{ijk})^{2}}
+{c_{3i} + (h_{i} - \cos\theta_{ijk})^{2}} \nonumber \\
+{g}_{a}(\theta_{ijk}) &=& 1 + {c_{4i}~\exp \left[-c_{5i}~(h_{i} - \cos\theta_{ijk})^{2}\right]}~~, \nonumber
+\end{eqnarray}
+\end{itemize}
 where the term ${\cal{L}}_{ij}$ defines the effective coordination
 number of atom $i$ i.e. the number of nearest neighbors, taking into
 account the relative distance of the two neighbors, $i$ and $k$,
 $r_{ij}-r_{ik}$, and the bond angle, $\theta_{ijk}$, between them
 with respect to the central atom $i$.  The function $g(\theta)$ has
-a minimum for $h_{i}=\cos(\theta_{ijk})$, the parameter $d_{i}$
-determines how sharp the dependence on angle is, and $c_{i}$
-expresses the strength of the angular effect.  Further mixed
-parameters are defined as:
+a minimum for $h_{i}=\cos(\theta_{ijk})$, the parameter $d_{i}$ in
+{\bf ters} and $c_{3i}$ in {\bf hiks} determines how sharp the dependence
+on angle is, whereas the rest express the strength of the angular effect.
+Further mixed parameters are defined as:
 \begin{eqnarray}
 a_{ij} = (a_{i} + a_{j})/2&,&~b_{ij} = (b_{i} + b_{j})/2 \nonumber \\
 A_{ij} = (A_{i} A_{j})^{1/2}&,&~B_{ij} = (B_{i} B_{j})^{1/2} \\
 R_{ij} = (R_{i} R_{j})^{1/2}&,&~S_{ij} = (S_{i} S_{j})^{1/2}~~.
 \nonumber
 \end{eqnarray}
-Singly subscripted parameters (11), such as $a_{i}$ and $\eta_{i}$,
+Singly subscripted parameters, such as $a_{i}$ and $\eta_{i}$,
 depend only on the type of atom.
 
-The chemistry between different atom types is locked in the two
-sets bi-atomic parameters $\chi_{ij}$ and $\omega_{ij}$:
+For {\bf ters} the chemistry between different atom types is locked in
+the two sets bi-atomic parameters $\chi_{ij}$ and $\omega_{ij}$:
 \begin{eqnarray}
 \chi_{ii}~=~1&,&~\chi_{ij}~=~\chi_{ji} \nonumber \\
 \omega_{ii}~=~1&,&~\omega_{ij}~=~\omega_{ji}~~,
@@ -1684,11 +1714,7 @@ types.  The $\chi$ parameter is used to strengthen or weaken the
 heteropolar bonds, relative to the value obtained by simple
 interpolation.  The $\omega$ parameter is used to permit greater
 flexibility when dealing with more drastically different types of
-atoms.  In \D a third, additional parameter, $\lambda_{ij}$ is
-also available.  It only takes the values of 0 (as if not specified)
-and 1 (any other value apart from 0) and can be used to remove the
-pure two body part of a specific tersoff cross interaction from
-the system and so leave out only the pure angular one.
+atoms.
 
 The force on an atom $\ell$ derived from this potential is
 formally calculated with the formula:
@@ -1722,6 +1748,8 @@ f_{A}(r_{ij}) \frac{\partial}{\partial r_{ij}} f_{C}(r_{ij}) \right\} \times \no
 \delta_{i \ell} \frac{r_{\ell j}^{\alpha}}{r_{\ell j}} \right\}~~,
 \end{eqnarray}
 and from the third (angular) term:
+\begin{itemize}
+\item {\bf ters}:
 \begin{eqnarray}
 f_{C}(r_{ij}) f_{A}(r_{ij}) \frac{\partial}{\partial r_{\ell}^{\alpha}} \gamma_{ij}&=&
 f_{C}(r_{ij}) f_{A}(r_{ij})~\chi_{ij}~~\times ~~~~~~~~~~~~~~~~~~~~~~~~~~ \nonumber \\
@@ -1740,13 +1768,48 @@ on the index of the particle participating in the interaction:
 \begin{eqnarray}
 \ell~=~i~&:&~\frac{\partial}{\partial r_{i}^{\alpha}} {\cal{L}}_{ij} = \sum_{k \neq i,j} \omega_{ik}
 \left[ g(\theta_{ijk}) \frac{\partial}{\partial r_{i}^{\alpha}} f_{C}(r_{ik}) +
-f_{C}(r_{ik}) \frac{\partial}{\partial r_{i}^{\alpha}} g(\theta_{ijk}) \right]~~~~~~\\
+f_{C}(r_{ik}) \frac{\partial}{\partial r_{i}^{\alpha}} g(\theta_{ijk}) \right] \nonumber \\
 \ell~=~j~&:&~\frac{\partial}{\partial r_{j}^{\alpha}} {\cal{L}}_{ij} = \sum_{k \neq i,j} \omega_{ik}
 ~f_{C}(r_{ik}) \frac{\partial}{\partial r_{j}^{\alpha}} g(\theta_{ijk}) \\
 \ell~\neq~i,j~&:&~\frac{\partial}{\partial r_{\ell}^{\alpha}} {\cal{L}}_{ij} = \omega_{i \ell}
 \left[ g(\theta_{ij \ell}) \frac{\partial}{\partial r_{\ell}^{\alpha}} f_{C}(r_{i \ell}) +
-f_{C}(r_{i \ell}) \frac{\partial}{\partial r_{\ell}^{\alpha}} g(\theta_{ij \ell}) \right]~~.
+f_{C}(r_{i \ell}) \frac{\partial}{\partial r_{\ell}^{\alpha}} g(\theta_{ij \ell}) \right]~~, \nonumber
 \end{eqnarray}
+\item {\bf hiks}:
+\begin{eqnarray}
+f_{C}(r_{ij}) f_{A}(r_{ij}) \frac{\partial}{\partial r_{\ell}^{\alpha}} \gamma_{ij}&=&
+f_{C}(r_{ij}) f_{A}(r_{ij})~\times ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \nonumber \\
+& & \left(-\delta_{i}~\eta_{i}\right) \left( 1 + {\cal{L}}_{ij}^{\eta_{i}}\right)^{-\delta_{i} - 1}
+{\cal{L}}_{ij}^{\eta_{i}-1} \frac{\partial}{\partial r_{\ell}^{\alpha}} {\cal{L}}_{ij}~~,
+\end{eqnarray}
+where
+\begin{equation}
+\frac{\partial}{\partial r_{\ell}^{\alpha}} {\cal{L}}_{ij} =
+\frac{\partial}{\partial r_{\ell}^{\alpha}} \sum_{k \neq i,j}
+\omega_{ik}~f_{C}(r_{ik})~g(\theta_{ijk})~~.  \nonumber
+\end{equation}
+Bearing in mind that:
+\begin{equation}
+\frac{\partial}{\partial r_{\ell}^{\alpha}} \omega_{ik} =
+\alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}-1}~\omega_{ik}~(\delta_{lj}-\delta_{lk})
+\end{equation}
+the angular term then has three different contributions depending
+on the index of the particle participating in the interaction:
+\begin{eqnarray}
+\ell~=~i~&:&~\frac{\partial}{\partial r_{i}^{\alpha}} {\cal{L}}_{ij} = \sum_{k \neq i,j} \omega_{ik}
+\left[ g(\theta_{ijk}) \frac{\partial}{\partial r_{i}^{\alpha}} f_{C}(r_{ik}) +
+f_{C}(r_{ik}) \frac{\partial}{\partial r_{i}^{\alpha}} g(\theta_{ijk}) \right] \nonumber \\
+\ell~=~j~&:&~\frac{\partial}{\partial r_{j}^{\alpha}} {\cal{L}}_{ij} = \sum_{k \neq i,j} \omega_{ik}
+~f_{C}(r_{ik}) \left( \alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}-1} g(\theta_{ijk}) +
+\frac{\partial}{\partial r_{j}^{\alpha}} g(\theta_{ijk})\right) \nonumber \\
+\ell~\neq~i,j~&:&~\frac{\partial}{\partial r_{\ell}^{\alpha}} {\cal{L}}_{ij} = \omega_{i \ell}
+\left[ g(\theta_{ij \ell}) \frac{\partial}{\partial r_{\ell}^{\alpha}} f_{C}(r_{i \ell}) +
+f_{C}(r_{i \ell}) \frac{\partial}{\partial r_{\ell}^{\alpha}} g(\theta_{ij \ell}) \right. \\
+& & \phantom{xxxxxxxxxxxxxxxxxxxxxxxxx}
+\left. -\alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}-1} g(\theta_{ij \ell}) f_{C}(r_{i \ell})\right]~~. \nonumber
+\end{eqnarray}
+\end{itemize}
+
 The derivative of $g(\theta_{ijk})$ is worked out in the following
 manner:
 \begin{equation}
@@ -1770,9 +1833,13 @@ where
 
 The contribution to be added to the atomic virial can be derived
 as
+\begin{equation}
+{\cal W} \; = \; 3V \frac{\partial E_{\tt tersoff}}{\partial V} =
+\frac{3~V}{2} \sum_{i} \sum_{j \neq i} \frac{\partial U_{ij}}{\partial V} \phantom{xxxxxxxxxxxxxxxxxxxxxxxxxxxxx}
+\end{equation}
+\begin{itemize}
+\item {\bf ters}:
 \begin{eqnarray}
-{\cal W} &=& 3V \frac{\partial E_{\tt tersoff}}{\partial V} =
-\frac{3~V}{2} \sum_{i} \sum_{j \neq i} \frac{\partial U_{ij}}{\partial V} \\
 {\cal W} &=& \frac{1}{2} \sum_{i} \sum_{j \neq i} \left\{ \left[
 \frac{\partial}{\partial r_{ij}} f_{C}(r_{ij}) f_{R}(r_{ij}) -
 \gamma_{ij} \frac{\partial}{\partial r_{ij}} f_{C}(r_{ij}) f_{A}(r_{ij}) \right] r_{ij} - \phantom{xxxxxxxxxxxxxxx} \right. \nonumber \\
@@ -1780,9 +1847,22 @@ as
 \left( 1 + {\beta_{i}}^{\eta_{i}}~{\cal{L}}_{ij}^{\eta_{i}} \right)^{-\frac{1}{2 \eta_{i}} - 1}
 {\beta_{i}}^{\eta_{i}}~{\cal{L}}_{ij}^{\eta_{i}-1} \times \\
 & & \phantom{xxxxxxxx} \left. \sum_{k \neq i,j} \omega_{ik}~g(\theta_{ijk}) \left[
-\frac{\partial}{\partial r_{ik}} f_{C}(r_{ik}) \right] r_{ik} \right\} ~~.
+\frac{\partial}{\partial r_{ik}} f_{C}(r_{ik}) \right] r_{ik} \right\}~~,
 \nonumber
 \end{eqnarray}
+\item {\bf hiks}:
+\begin{eqnarray}
+{\cal W} &=& \frac{1}{2} \sum_{i} \sum_{j \neq i} \left\{ \left[
+\frac{\partial}{\partial r_{ij}} f_{C}(r_{ij}) f_{R}(r_{ij}) -
+\gamma_{ij} \frac{\partial}{\partial r_{ij}} f_{C}(r_{ij}) f_{A}(r_{ij}) \right] r_{ij} - \phantom{xxxxxxxxxxxxxxx} \right. \nonumber \\
+& & \phantom{xxxxxxxx} \left(-\delta_{i}~\eta_{i}\right) f_{C}(r_{ij}) f_{A}(r_{ij})~\chi_{ij}
+\left( 1 + {\cal{L}}_{ij}^{\eta_{i}} \right)^{-\delta_{i} - 1} {\cal{L}}_{ij}^{\eta_{i}-1} \times \\
+& & \phantom{xxxxxxxx} \left. \sum_{k \neq i,j} \omega_{ik}~g(\theta_{ijk}) \left[
+\frac{\partial}{\partial r_{ik}} f_{C}(r_{ik})
+- \alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}-1}f_{C}(r_{ik}) \right] r_{ik} \right\}~~.
+\nonumber
+\end{eqnarray}
+\end{itemize}
 
 The contribution to be added to the atomic stress
 tensor\index{stress tensor} is given by

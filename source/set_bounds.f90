@@ -8,7 +8,7 @@ Subroutine set_bounds                                        &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2012
+! author    - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -18,6 +18,7 @@ Subroutine set_bounds                                        &
   Use domains_module,     Only : map_domains,nprx,npry,nprz
   Use config_module,      Only : cfgname,imc_n,cell,volm
   Use msd_module
+  Use tersoff_module,     Only : potter
   Use development_module, Only : l_trm
 
   Implicit None
@@ -287,8 +288,11 @@ Subroutine set_bounds                                        &
 
 ! maximum number of parameters for tersoff potentials
 
-  mxpter = 14
-
+  If      (potter == 1) Then
+     mxpter = 11
+  Else If (potter == 2) Then
+     mxpter = 16
+  End If
 
 
 ! maximum number of three-body potentials

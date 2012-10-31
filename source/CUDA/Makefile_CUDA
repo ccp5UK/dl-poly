@@ -1,6 +1,6 @@
-# Master makefile for DL_POLY_4.03 (CUDA+OpenMP version)
+# Master makefile for DL_POLY_4.04 (CUDA+OpenMP version)
 #
-# Author - I.T.Todorov march 2012
+# Author - I.T.Todorov october 2012
 #
 # Define default settings
 #=====================================================================
@@ -19,9 +19,10 @@ TYPE=master
 FC=undefined
 LD=undefined
 
-CUDA_HOME=/usr/local/cuda
-CUDA_SDK=/usr/local/cuda/NVIDIA_GPU_Computing_SDK/C
-MPI_HOME=/opt/openmpi/1.4.3/intel
+#CUDA_HOME=/usr/local/cuda
+#CUDA_SDK=/usr/local/Cluster-Apps/cuda/4.0/NVIDIA_GPU_Computing_SDK
+CUDA_SDK=/usr/local/Cluster-Apps/cuda/4.0/NVIDIA_GPU_Computing_SDK/C
+#MPI_HOME=/opt/openmpi/1.4.3/intel
 
 # Preprocessor defines for CUDA compilation
 PREPROC_DEFINES=-DCOMPILE_CUDA
@@ -272,7 +273,7 @@ clean_cuda:
 
 # Generic target template
 #=====================================================================
-uknown_platform:
+unknown_platform:
 	$(MAKE) LD="path to FORTRAN90 Linker-loaDer" \
 	LDFLAGS="appropriate flags for LD (MPI libraries)" \
 	FC="path to FORTRAN90 compiler" \
@@ -337,6 +338,28 @@ fermi-intel:
 	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
+# For Fermi:
+fermi-intel-2: CUDA_PORT_DEFINES = -D CFG_COMPUTE_MAJOR=2 -D CFG_COMPUTE_MINOR=0
+fermi-intel-2:
+	$(MAKE) \
+	NVCC="nvcc -c ${CUDA_PORT_DEFINES}" \
+	NVCCFLAGS="-gencode -arch compute_20 -code sm_20 -Xcompiler \"-fopenmp -O3 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
+	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -I${MPI_HOME}/include" \
+	LD="mpif90 -o" LDFLAGS="-O3 -openmp -Wl,-rpath,${CUDA_HOME}/lib64 -L${CUDA_HOME}/lib64 -lcudart" \
+	FC="mpif90 -c" FCFLAGS="-O3 -openmp -fpp ${PREPROC_DEFINES}" \
+	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
+	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
+
+fermi-intel-darwin: CUDA_PORT_DEFINES = -D CFG_COMPUTE_MAJOR=2 -D CFG_COMPUTE_MINOR=0
+fermi-intel-darwin:
+	$(MAKE) \
+	NVCC="nvcc -c ${CUDA_PORT_DEFINES}" \
+	NVCCFLAGS="-arch compute_20 -code sm_20 -Xcompiler \"-fopenmp -O3 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
+	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/" \
+	LD="mpif90 -o" LDFLAGS="-O3 -openmp -Wl,-rpath,${CUDA_HOME}/lib64 -L${CUDA_HOME}/lib64 -lcudart" \
+	FC="mpif90 -c" FCFLAGS="-O3 -openmp -fpp ${PREPROC_DEFINES}" \
+	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
+	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 fermi-gnu: CUDA_PORT_DEFINES = -D CFG_COMPUTE_MAJOR=1 -D CFG_COMPUTE_MINOR=3
 fermi-gnu:
 	$(MAKE) \

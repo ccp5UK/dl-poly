@@ -15,16 +15,17 @@ Subroutine scan_field                                 &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith november 1994
-! amended   - i.t.todorov june 2012
+! amended   - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module, Only : idnode,mxnode,gcheck
-  Use setup_module, Only : nfield,ntable
-  Use parse_module, Only : get_line,get_word,lower_case,word_2_real
-  Use vdw_module,   Only : lt_vdw
-  Use metal_module, Only : tabmet
+  Use comms_module,   Only : idnode,mxnode,gcheck
+  Use setup_module,   Only : nfield,ntable
+  Use parse_module,   Only : get_line,get_word,lower_case,word_2_real
+  Use vdw_module,     Only : lt_vdw
+  Use metal_module,   Only : tabmet
+  Use tersoff_module, Only : potter
 
   Implicit None
 
@@ -616,8 +617,16 @@ Subroutine scan_field                                 &
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
               Call get_line(safe,nfield,record)
               If (.not.safe) Go To 30
+              Call lower_case(record)
               Call get_word(record,word)
            End Do
+
+           Call get_word(record,word)
+           If      (word(1:4) == 'ters') Then
+              potter=1
+           Else If (word(1:4) == 'kihs') Then
+              potter=2
+           End If
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -628,16 +637,27 @@ Subroutine scan_field                                 &
 
            rct=word_2_real(word)
            rcter=Max(rcter,rct)
+
+           If (potter == 2) Then
+              word(1:1)='#'
+              Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                 Call get_line(safe,nfield,record)
+                 If (.not.safe) Go To 30
+                 Call get_word(record,word)
+              End Do
+           End If
         End Do
 
-        Do itpter=1,(mxter*(mxter+1)) / 2
-           word(1:1)='#'
-           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record)
-              If (.not.safe) Go To 30
-              Call get_word(record,word)
+        If (potter == 1) Then
+           Do itpter=1,(mxter*(mxter+1))/2
+              word(1:1)='#'
+              Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                 Call get_line(safe,nfield,record)
+                 If (.not.safe) Go To 30
+                 Call get_word(record,word)
+              End Do
            End Do
-        End Do
+        End If
 
         mxter=Max(mxter,(mxatyp*(mxatyp+1))/2)
 

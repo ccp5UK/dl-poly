@@ -2432,6 +2432,10 @@ Subroutine read_field                      &
               parpot(13)=word_2_real(word)      ! c5_i
               Call get_word(record,word)
               parpot(14)=word_2_real(word)      ! h_i
+              Call get_word(record,word)
+              parpot(15)=word_2_real(word)      ! alpha_i
+              Call get_word(record,word)
+              parpot(16)=word_2_real(word)      ! beta_i
 
               If (idnode == 0 .and. l_top) Then
   Write(nrite,"(1x,i10,5x,a8,3x,a4,1x,10(1p,e13.4))") itpter,atom0,keyword,(parpot(j),j=1,5)
@@ -2482,63 +2486,67 @@ Subroutine read_field                      &
 ! test tersoff potentials mix-up and cutoff conditions
 
         If (ntpter > 0) Then
-           If (.not.lter_safe) Call error(90)
+           If (.not.lter_safe) Call error(90) ! Now potter holds keypot globally
            If (rcter < 1.0e-6_wp) Call error(79)
            If (rcut < 2.0_wp*rcter) Call error(102)
         End If
 
-! start processing cross atom potential parameters
-
-        If (idnode == 0) Then
-  Write(nrite,"(/,1x,'number of tersoff cross terms            ',i10)") (ntpter*(ntpter+1))/2
-           If (l_top) &
-  Write(nrite,"(/,7x,'pair',5x,'atom 1',2x,'atom 2',14x,'parameters',/)")
-        End If
-
-        Do icross=1,(ntpter*(ntpter+1))/2
-
-           word(1:1)='#'
-           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record)
-              If (.not.safe) Go To 2000
-              Call get_word(record,word)
-           End Do
-
-           atom1=word(1:8)
-           Call get_word(record,word)
-           atom2=word(1:8)
-
-           Call get_word(record,word)
-           parpot(1)=word_2_real(word,1.0_wp)   ! chi_ij for type ters or alpha_ij for type kihs
-           Call get_word(record,word)
-           parpot(2)=word_2_real(word,1.0_wp)   ! omega_ij or alpha_ij for type kihs beta_ij
-
-           katom1=0
-           katom2=0
-
-           Do jtpatm=1,ntpatm
-              If (atom1 == unqatm(jtpatm)) katom1=jtpatm
-              If (atom2 == unqatm(jtpatm)) katom2=jtpatm
-           End Do
-
-           If (katom1 == 0 .or. katom2 == 0) Call error(74)
-
-           ka1=Max(lstter(katom1),lstter(katom2))
-           ka2=Min(lstter(katom1),lstter(katom2))
-
-           keyter=(ka1*(ka1-1))/2+ka2
-
-           prmter2(keyter,1)=parpot(1)
-           prmter2(keyter,2)=parpot(2)
-
-           If (idnode == 0 .and. l_top) &
-  Write(nrite,"(1x,i10,5x,2a8,1x,2f15.6)") icross,atom1,atom2,(parpot(j),j=1,2)
-
-        End Do
-
 ! generate tersoff interpolation arrays
 
         If (ntpter > 0) Call tersoff_generate(rcter)
+
+! start processing cross atom potential parameters
+
+        If (keypot == 1) Then
+
+           If (idnode == 0) Then
+  Write(nrite,"(/,1x,'number of tersoff cross terms            ',i10)") (ntpter*(ntpter+1))/2
+              If (l_top) &
+  Write(nrite,"(/,7x,'pair',5x,'atom 1',2x,'atom 2',14x,'parameters',/)")
+           End If
+
+           Do icross=1,(ntpter*(ntpter+1))/2
+
+              word(1:1)='#'
+              Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                 Call get_line(safe,nfield,record)
+                 If (.not.safe) Go To 2000
+                 Call get_word(record,word)
+              End Do
+
+              atom1=word(1:8)
+              Call get_word(record,word)
+              atom2=word(1:8)
+
+              Call get_word(record,word)
+              parpot(1)=word_2_real(word,1.0_wp) ! chi_ij
+              Call get_word(record,word)
+              parpot(2)=word_2_real(word,1.0_wp) ! omega_ij
+
+              katom1=0
+              katom2=0
+
+              Do jtpatm=1,ntpatm
+                 If (atom1 == unqatm(jtpatm)) katom1=jtpatm
+                 If (atom2 == unqatm(jtpatm)) katom2=jtpatm
+              End Do
+
+              If (katom1 == 0 .or. katom2 == 0) Call error(74)
+
+              ka1=Max(lstter(katom1),lstter(katom2))
+              ka2=Min(lstter(katom1),lstter(katom2))
+
+              keyter=(ka1*(ka1-1))/2+ka2
+
+              prmter2(keyter,1)=parpot(1)
+              prmter2(keyter,2)=parpot(2)
+
+              If (idnode == 0 .and. l_top) &
+  Write(nrite,"(1x,i10,5x,2a8,1x,2f15.6)") icross,atom1,atom2,(parpot(j),j=1,2)
+
+           End Do
+
+        End If
 
 ! read in the three-body potential energy parameters
 

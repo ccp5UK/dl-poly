@@ -407,7 +407,7 @@ perpendicular to the (y,z) plane) to the major and secondary
 short-range cutoffs specified for the system:
 \begin{eqnarray}
 M_{x} &=& {\tt Nint} \left[ \frac{W_{x}/P_{x}}{\tt cutoff} \right] \nonumber \\
-W_{x} &=& {\tt MD~box~width~\perp~plane}(y,z) \\ \label{link-cell}
+W_{x} &=& {\tt MD~box~width~\perp~plane}(y,z) \label{link-cell} \\
 P_{x} &=& \#({\tt nodes})_{x{\tt -direction}}~~, \nonumber
 \end{eqnarray}
 where $x$, $y$ and $z$ represent the directions along the MD cell
@@ -452,7 +452,7 @@ communication intensive parts of \D in an MD timestep.
 \begin{description}
 \item[(a)] Domain hallo re-construction in {\sc set\_halo\_particles},
 {\sc metal\_ld\_set\_halo} and \\ {\sc defects\_reference\_set\_halo} -
-${\cal O}\left({\cal N}/P~;~{\cal N}/R)\right)$
+${\cal O}\left({\cal N}/P~;~{\cal N}/R\right)$
 \item[(b)] Verlet neighbourlist construction by link-cells in
 {\sc link\_cell\_pairs} - ${\cal O}\left({\cal N}/P~;~0\right)$,
 may take up to 40\% of the time per timestep
@@ -470,8 +470,8 @@ ${\cal O}\left({\cal N}~;~(P/{\cal N})^{1/3}\right)$
 and {\sc pmf\_shake\_vv}, {\sc pmf\_rattle\_vv}, {\sc pmf\_shake\_lfv} -
 ${\cal O}\left({\cal N}~;~(P/{\cal N})^{1/3}\right)$
 \end{description}
-where ${\cal N}$ is the number of particles, $P~=~P_{x}+P_{y}+P_{z}$ the
-total number of domains in the MD cell and the rest of the quantities
+where ${\cal N}$ is the number of particles, $P~=~P_{x} \cdot P_{y} \cdot P_{z}$
+the total number of domains in the MD cell and the rest of the quantities
 are as defined in equations (\ref{link-cell}-\ref{R-factor}).
 
 Performance may also affected by the fluctuations in the inter-node

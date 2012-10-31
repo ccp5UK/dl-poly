@@ -6,7 +6,7 @@ Module tersoff_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2012
+! author    - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -14,7 +14,8 @@ Module tersoff_module
 
   Implicit None
 
-  Integer,                        Save :: ntpter = 0
+  Integer,                        Save :: ntpter = 0, &
+                                          potter = 0
 
 
   Logical,           Allocatable, Save :: lfrter(:)
@@ -41,13 +42,13 @@ Contains
 
     fail = 0
 
-    Allocate (lfrter(1:Merge(mxsite,0,mxter > 0)), Stat = fail(1))
-    Allocate (lstter(1:mxter),                     Stat = fail(2))
-    Allocate (ltpter(1:mxter),                     Stat = fail(3))
-    Allocate (prmter(1:mxpter,1:mxter),            Stat = fail(4))
-    Allocate (prmter2(1:nprter,1:2),               Stat = fail(5))
-    Allocate (vmbp(1:mxgrid,1:nprter,1:3),         Stat = fail(6))
-    Allocate (gmbp(1:mxgrid,1:nprter,1:3),         Stat = fail(7))
+    Allocate (lfrter(1:Merge(mxsite,0,mxter > 0)),    Stat = fail(1))
+    Allocate (lstter(1:mxter),                        Stat = fail(2))
+    Allocate (ltpter(1:mxter),                        Stat = fail(3))
+    Allocate (prmter(1:mxpter,1:mxter),               Stat = fail(4))
+    If (potter == 1) Allocate (prmter2(1:nprter,1:2), Stat = fail(5))
+    Allocate (vmbp(1:mxgrid,1:nprter,1:3),            Stat = fail(6))
+    Allocate (gmbp(1:mxgrid,1:nprter,1:3),            Stat = fail(7))
 
     If (Any(fail > 0)) Call error(1027)
 
@@ -57,7 +58,7 @@ Contains
     ltpter = 0
 
     prmter  = 0.0_wp
-    prmter2 = 0.0_wp
+    If (potter == 1) prmter2 = 0.0_wp
     vmbp    = 0.0_wp
     gmbp    = 0.0_wp
 

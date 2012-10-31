@@ -16,7 +16,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith  october 2004
-! amended   - i.t.todorov june 2012
+! amended   - i.t.todorov october 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -36,7 +36,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
 
   Logical,           Save :: newjob = .true.
-  Integer,           Save :: idx,idy,idz,keypot
+  Integer,           Save :: idx,idy,idz
   Real( Kind = wp ), Save :: sidex,sidey,sidez,rdr
 
 ! flag for undefined potentials NOT NEEDED HERE YET
@@ -101,16 +101,6 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 ! Get reciprocal of interpolation interval
 
      rdr=Real(mxgrid-4,wp)/rcter
-
-! check on mixing tersoff types
-
-     keypot=0
-     Do i=1,ntpter
-        keypot=ltpter(i)
-        If (i > 1) Then
-           If (keypot /= ltpter(i-1)) Call error(90)
-        End If
-     End Do
   End If
 
   fail=0
@@ -120,7 +110,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Allocate (ert(1:mxlist),eat(1:mxlist),grt(1:mxlist),gat(1:mxlist),     Stat=fail(4))
   Allocate (scr(1:mxlist),gcr(1:mxlist),                                 Stat=fail(5))
   Allocate (cst(1:mxlist),gam(1:mxlist),gvr(1:mxlist),                   Stat=fail(6))
-  If (keypot == 2) Allocate (rkj(1:mxlist),wkj(1:mxlist),                Stat=fail(7))
+  If (potter == 2) Allocate (rkj(1:mxlist),wkj(1:mxlist),                Stat=fail(7))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'tersoff_forces allocation failure, node: ', idnode
      Call error(0)
@@ -511,13 +501,13 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
 ! Get parameters for iatm
 
-                    If      (keypot == 1) Then ! TERS
+                    If      (potter == 1) Then ! TERS
                        bi=prmter(7, iter)
                        ei=prmter(8, iter)
                        ci=prmter(9, iter)
                        di=prmter(10,iter)
                        hi=prmter(11,iter)
-                    Else If (keypot == 2) Then ! KIHS
+                    Else If (potter == 2) Then ! KIHS
                        ei =prmter(7, iter)
                        di =prmter(8, iter)
                        c1i=prmter(9, iter)
@@ -565,7 +555,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
                                 gam(kk)=0.0_wp
                                 gvr(kk)=0.0_wp
                              End Do
-                             If (keypot == 2) Then ! KIHS
+                             If (potter == 2) Then ! KIHS
                                 Do kk=1,limit
                                    rkj(kk)=0.0_wp
                                    wkj(kk)=0.0_wp
@@ -606,7 +596,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
               If (Abs(cost) > 1.0_wp) cost=Sign(1.0_wp,cost)
               cst(kk) = cost
 
-              If      (keypot == 1) Then ! TERS
+              If      (potter == 1) Then ! TERS
                  gtheta= 1.0_wp + (ci/di)**2 - ci**2 / (di**2 + (hi-cost)**2)
                  eterm = eterm + gtheta*prmter2(ikter,2)*scr(kk) ! L_{ij}
                  vterm = vterm + gtheta*prmter2(ikter,2)*gcr(kk)*rtf(kk)
@@ -614,9 +604,9 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
                  gam(kk) = gtheta
                  gvr(kk) = 2.0_wp * ci**2 * (hi-cost) / (di**2 + (hi-cost)**2)**2 ! d(gtheta)/sint*d(theta)
-              Else If (keypot == 2) Then ! KIHS
-                 ak =prmter2(1,ikter)
-                 bk =prmter2(2,ikter)
+              Else If (potter == 2) Then ! KIHS
+                 ak =prmter(15,iter)
+                 bk =prmter(16,iter)
 
                  xkj=xtf(jj)*rtf(jj)-xtf(kk)*rtf(kk)
                  ykj=ytf(jj)*rtf(jj)-ytf(kk)*rtf(kk)
@@ -649,7 +639,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 ! calculate contribution to energy, virial, two-body stress and forces
 ! (all associated with the head atom)
 
-  If      (keypot == 1) Then ! TERS
+  If      (potter == 1) Then ! TERS
      gam_ij=1.0_wp
      gamma=0.0_wp
      If (flag3) Then
@@ -657,12 +647,12 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
         gamma  = eat(jj) * ei * eterm**(ei-1.0_wp) * &
                  di * (1.0_wp+eterm**ei)**(-di-1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
      End If
-  Else If (keypot == 2) Then ! KIHS
-     gam_ij=prmter2(ijter,1)
+  Else If (potter == 2) Then ! KIHS
+     gam_ij=prmter2(iter,1)
      gamma=0.0_wp
      If (flag3) Then
-        gam_ij = prmter2(ijter,1)*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei) ! gamma_{ij}
-        gamma  = eat(jj) * prmter2(ijter,1) * bi*(bi*eterm)**(ei-1.0_wp) * &
+        gam_ij = prmter2(iter,1)*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei) ! gamma_{ij}
+        gamma  = eat(jj) * prmter2(iter,1) * bi*(bi*eterm)**(ei-1.0_wp) * &
               0.5_wp*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei - 1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
      End If
   End If
@@ -722,12 +712,12 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
            If (lfrzn(iatm)*lfrzn(jatm)*lfrzn(katm) == 0) Then
 
-              If      (keypot == 1) Then ! TERS
+              If      (potter == 1) Then ! TERS
                  gam_j = 0.5_wp*gamma*prmter2(ikter,2)*scr(kk)*gvr(kk) ! term in d/dr_k L_{ij} no derivative of Fc
                  gam_k = 0.5_wp*gamma*prmter2(ikter,2)*gcr(kk)*gam(kk) ! term in d/dr_k L_{ij} no derivative of gamma
-              Else If (keypot == 2) Then ! KIHS
-                 ak =prmter2(1,ikter)
-                 bk =prmter2(2,ikter)
+              Else If (potter == 2) Then ! KIHS
+                 ak =prmter2(1,iter)
+                 bk =prmter2(2,iter)
 
 ! Counteract the double counting with the 0.5_wp factor
 
@@ -836,7 +826,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Deallocate (ert,eat,grt,gat,          Stat=fail(4))
   Deallocate (scr,gcr,                  Stat=fail(5))
   Deallocate (cst,gam,gvr,              Stat=fail(6))
-  If (keypot == 2) Deallocate (rkj,wkj, Stat=fail(7))
+  If (potter == 2) Deallocate (rkj,wkj, Stat=fail(7))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'tersoff_forces deallocation failure, node: ', idnode
      Call error(0)

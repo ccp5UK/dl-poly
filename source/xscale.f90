@@ -12,7 +12,7 @@ Subroutine xscale(imcon,m_rgd,keyens,tstep,eta)
   Use kinds_f90
   Use comms_module,        Only : idnode
   Use setup_module
-  Use config_module,       Only : cell,natms,nlast,nfree,lstfre,lsi,lsa,weight
+  Use config_module,       Only : cell,natms,nlast,nfree,lstfre,lsi,lsa
   Use statistics_module,   Only : xin,yin,zin
   Use rigid_bodies_module, Only : ntrgd,listrgd,indrgd,lshmv_rgd,lishp_rgd,lashp_rgd
   Use kinetic_module,      Only : getcom
