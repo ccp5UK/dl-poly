@@ -7,7 +7,7 @@ Subroutine core_shell_quench(safe,temp)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1999
-! amended   - i.t.todorov october 2010
+! amended   - i.t.todorov november 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,8 +22,13 @@ Subroutine core_shell_quench(safe,temp)
   Logical,           Intent(   Out ) :: safe
   Real( Kind = wp ), Intent( In    ) :: temp
 
+  Logical,          :: safek
   Integer           :: ia,ib,k,local_index
   Real( Kind = wp ) :: dvx,dvy,dvz,pke,rmu,scl,tke,tmx,tmy,tmz
+
+! Initialise safe flag
+
+  safe=.true
 
 ! gather velocities of shared particles
 
@@ -50,8 +55,8 @@ Subroutine core_shell_quench(safe,temp)
 
         tke=rmu*(dvx*dvx+dvy*dvy+dvz*dvz)
 
-        safe = .not.( tke > pke .and. (tke-pke)/pke > 1.0e-3_wp )
-        If (.not.safe) Then
+        safek = .not.( tke > pke .and. (tke-pke)/pke > 1.0e-3_wp )
+        If (.not.safek) Then
            scl=Sqrt(pke/tke)
 
            tmx=weight(ia)*vxx(ia)+weight(ib)*vxx(ib)
@@ -73,6 +78,8 @@ Subroutine core_shell_quench(safe,temp)
               vyy(ib)=tmy/(weight(ia)+weight(ib))+scl*rmu*dvy/weight(ib)
               vzz(ib)=tmz/(weight(ia)+weight(ib))+scl*rmu*dvz/weight(ib)
            End If
+
+           safe=.false.
         End If
      End If
   End Do
