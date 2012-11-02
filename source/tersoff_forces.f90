@@ -16,7 +16,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith  october 2004
-! amended   - i.t.todorov october 2012
+! amended   - i.t.todorov november 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -77,6 +77,19 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Real( Kind = wp ), Dimension( : ), Allocatable :: ert,eat,grt,gat
   Real( Kind = wp ), Dimension( : ), Allocatable :: scr,gcr,gam,gvr,cst,rkj,wkj
 
+  fail=0
+  Allocate (link(1:mxatms),listin(1:mxatms),lct(1:mxcell),lst(1:mxcell), Stat=fail(1))
+  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
+  Allocate (xtf(1:mxlist),ytf(1:mxlist),ztf(1:mxlist),rtf(1:mxlist),     Stat=fail(3))
+  Allocate (ert(1:mxlist),eat(1:mxlist),grt(1:mxlist),gat(1:mxlist),     Stat=fail(4))
+  Allocate (scr(1:mxlist),gcr(1:mxlist),                                 Stat=fail(5))
+  Allocate (cst(1:mxlist),gam(1:mxlist),gvr(1:mxlist),                   Stat=fail(6))
+  If (potter == 2) Allocate (rkj(1:mxlist),wkj(1:mxlist),                Stat=fail(7))
+  If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'tersoff_forces allocation failure, node: ', idnode
+     Call error(0)
+  End If
+
 
   If (newjob) Then
      newjob = .false.
@@ -101,19 +114,6 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 ! Get reciprocal of interpolation interval
 
      rdr=Real(mxgrid-4,wp)/rcter
-  End If
-
-  fail=0
-  Allocate (link(1:mxatms),listin(1:mxatms),lct(1:mxcell),lst(1:mxcell), Stat=fail(1))
-  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
-  Allocate (xtf(1:mxlist),ytf(1:mxlist),ztf(1:mxlist),rtf(1:mxlist),     Stat=fail(3))
-  Allocate (ert(1:mxlist),eat(1:mxlist),grt(1:mxlist),gat(1:mxlist),     Stat=fail(4))
-  Allocate (scr(1:mxlist),gcr(1:mxlist),                                 Stat=fail(5))
-  Allocate (cst(1:mxlist),gam(1:mxlist),gvr(1:mxlist),                   Stat=fail(6))
-  If (potter == 2) Allocate (rkj(1:mxlist),wkj(1:mxlist),                Stat=fail(7))
-  If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'tersoff_forces allocation failure, node: ', idnode
-     Call error(0)
   End If
 
 ! Get the dimensional properties of the MD cell
@@ -516,6 +516,8 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
                        c4i=prmter(12,iter)
                        c5i=prmter(13,iter)
                        hi =prmter(14,iter)
+                       ak =prmter(15,iter)
+                       bk =prmter(16,iter)
                     End If
 
 ! bond-angle detection
@@ -605,9 +607,6 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
                  gam(kk) = gtheta
                  gvr(kk) = 2.0_wp * ci**2 * (hi-cost) / (di**2 + (hi-cost)**2)**2 ! d(gtheta)/sint*d(theta)
               Else If (potter == 2) Then ! KIHS
-                 ak =prmter(15,iter)
-                 bk =prmter(16,iter)
-
                  xkj=xtf(jj)*rtf(jj)-xtf(kk)*rtf(kk)
                  ykj=ytf(jj)*rtf(jj)-ytf(kk)*rtf(kk)
                  zkj=ztf(jj)*rtf(jj)-ztf(kk)*rtf(kk)
@@ -640,20 +639,20 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 ! (all associated with the head atom)
 
   If      (potter == 1) Then ! TERS
-     gam_ij=1.0_wp
-     gamma=0.0_wp
-     If (flag3) Then
-        gam_ij = (1.0_wp+eterm**ei)**(-di) ! gamma_{ij}
-        gamma  = eat(jj) * ei * eterm**(ei-1.0_wp) * &
-                 di * (1.0_wp+eterm**ei)**(-di-1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
-     End If
-  Else If (potter == 2) Then ! KIHS
      gam_ij=prmter2(iter,1)
      gamma=0.0_wp
      If (flag3) Then
         gam_ij = prmter2(iter,1)*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei) ! gamma_{ij}
         gamma  = eat(jj) * prmter2(iter,1) * bi*(bi*eterm)**(ei-1.0_wp) * &
               0.5_wp*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei - 1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
+     End If
+  Else If (potter == 2) Then ! KIHS
+     gam_ij=1.0_wp
+     gamma=0.0_wp
+     If (flag3) Then
+        gam_ij = (1.0_wp+eterm**ei)**(-di) ! gamma_{ij}
+        gamma  = eat(jj) * ei * eterm**(ei-1.0_wp) * &
+                 di * (1.0_wp+eterm**ei)**(-di-1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
      End If
   End If
 
@@ -712,15 +711,12 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
            If (lfrzn(iatm)*lfrzn(jatm)*lfrzn(katm) == 0) Then
 
+! Counteract the double counting with the 0.5_wp factor
+
               If      (potter == 1) Then ! TERS
                  gam_j = 0.5_wp*gamma*prmter2(ikter,2)*scr(kk)*gvr(kk) ! term in d/dr_k L_{ij} no derivative of Fc
                  gam_k = 0.5_wp*gamma*prmter2(ikter,2)*gcr(kk)*gam(kk) ! term in d/dr_k L_{ij} no derivative of gamma
               Else If (potter == 2) Then ! KIHS
-                 ak =prmter2(1,iter)
-                 bk =prmter2(2,iter)
-
-! Counteract the double counting with the 0.5_wp factor
-
                  gam_j = 0.5_wp*gamma*scr(kk)*wkj(kk)*gvr(kk) ! term in d/dr_k L_{ij} no derivative of Fc*wkj
                  gam_k = 0.5_wp*gamma*gam(kk)*wkj(kk)*(gcr(kk) - scr(kk)*ak*bk*rkj(kk)**(bk-1))
               End If
