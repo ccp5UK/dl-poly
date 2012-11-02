@@ -22,13 +22,13 @@ Subroutine core_shell_quench(safe,temp)
   Logical,           Intent(   Out ) :: safe
   Real( Kind = wp ), Intent( In    ) :: temp
 
-  Logical,          :: safek
+  Logical           :: safek
   Integer           :: ia,ib,k,local_index
   Real( Kind = wp ) :: dvx,dvy,dvz,pke,rmu,scl,tke,tmx,tmy,tmz
 
 ! Initialise safe flag
 
-  safe=.true
+  safe=.true.
 
 ! gather velocities of shared particles
 
