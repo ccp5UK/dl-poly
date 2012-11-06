@@ -44,7 +44,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
   Real( Kind = wp ), Allocatable, Save :: oxt(:),oyt(:),ozt(:)
 
   fail=0
-  Allocate (lstopt(1:2,1:mxshl),lst_sh(1:mxatms),       Stat=fail(1))
+  Allocate (lstopt(1:2,1:mxshl),lst_sh(1:mxatms),      Stat=fail(1))
   Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'core_shell_relax allocation failure, node: ', idnode

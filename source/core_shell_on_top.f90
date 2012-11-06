@@ -40,7 +40,7 @@ Subroutine core_shell_on_top()
      ib=local_index(listshl(2,i),nlast,lsi,lsa) ! This is a shell
 
 ! For every shell in the domain get the coordinates of its
-! coresponding core (which must be in the domain+hello
+! corresponding core (which must be in the domain+hello
 ! area by construction, if not go to a controlled termination)
 
      If (ib > 0 .and. ib <= natms .and. ia > 0) Then

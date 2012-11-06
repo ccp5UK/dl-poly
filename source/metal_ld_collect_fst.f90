@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov june 2012
+! amended   - i.t.todorov november 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -214,6 +214,8 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
 
               If (ppp < 0.0_wp) Then
                  density = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+              Else If (l == 5) Then
+                 density = t2
               Else
                  density = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
               End If
