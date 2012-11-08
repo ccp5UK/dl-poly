@@ -6,13 +6,13 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 ! gradient method
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith june 2012
+! author    - i.t.todorov & w.smith november 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gsum
-  Use setup_module,      Only : nrite,mxatms,mxshl,engunit
+  Use setup_module,      Only : nrite,mxatms,mxatdm,mxshl,engunit
   Use config_module,     Only : natms,nlast,lsi,lsa, &
                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use core_shell_module
@@ -107,7 +107,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
 ! Load shell forces on cores (cores don't move during the shell relaxation)
 
-  fxt=0.0_wp ; fyt=0.0_wp ; fzt=0.0_wp
+  fxt(1:mxshl)=0.0_wp ; fyt(1:mxshl)=0.0_wp ; fzt(1:mxshl)=0.0_wp
   jshl=0
   Do i=1,ntshl
      ia=local_index(listshl(1,i),nlast,lsi,lsa)
@@ -257,7 +257,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
 ! Load original shell forces on their cores in DD representation
 
-  fxt=0.0_wp ; fyt=0.0_wp ; fzt=0.0_wp
+  fxt(1:mxatdm)=0.0_wp ; fyt(1:mxatdm)=0.0_wp ; fzt(1:mxatdm)=0.0_wp
   jshl=0
   Do i=1,ntshl
      ia=lstopt(1,i)
