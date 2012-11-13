@@ -317,9 +317,11 @@ Subroutine metal_forces &
 ! truncation of potential
 
            If (Abs(vmet(1,k0,1)) > zero_plus) Then
-              If (rsq <= vmet(3,k0,1)**2) Then
 
 ! interpolation parameters
+
+              If (rsq <= vmet(3,k0,1)**2) .or. & ! Next covers the FST density!
+                  (keypot /= 0 .and. rsq <= dmet(3,k0,1)**2) Then
 
                  rdr = 1.0_wp/vmet(4,k0,1)
                  rrr = Sqrt(rsq) - vmet(2,k0,1)
@@ -330,7 +332,11 @@ Subroutine metal_forces &
                  End If
                  ppp = rrr*rdr - Real(l,wp)
 
+              End If
+
 ! calculate pair forces using 3-point interpolation
+
+              If (rsq <= vmet(3,k0,1)**2) Then
 
                  gk0 = vmet(l-1,k0,2)
                  gk1 = vmet(l  ,k0,2)
@@ -369,6 +375,7 @@ Subroutine metal_forces &
                  End If
 
               End If
+
            End If
 
 ! calculate embedding forces using 3-point interpolation
@@ -453,7 +460,7 @@ Subroutine metal_forces &
 
            Else ! FST, interpolation parameters are the same for all force arrays
 
-              If (rsq <= dmet(3,k0,1)**2) Then
+              If (rsq <= dmet(3,k0,1)**2) Then ! interpolation parameters covered abovbe
 
                  gk0 = dmet(l-1,k0,2)
                  gk1 = dmet(l  ,k0,2)
