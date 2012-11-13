@@ -7,7 +7,7 @@ Subroutine vdw_generate(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov march 2012
+! amended   - i.t.todorov november 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -19,7 +19,7 @@ Subroutine vdw_generate(rvdw)
 
   Real( Kind = wp ), Intent( In    ) :: rvdw
 
-  Integer           :: i,ivdw
+  Integer           :: i,ivdw,keypot
   Real( Kind = wp ) :: dlrpot,r,r0,r0rn,r0rm,r_6,sor6, &
                        rho,a,b,c,d,e0,k,n,m,sig,eps,   &
                        alpha,beta,t1,t2,t3
@@ -36,7 +36,8 @@ Subroutine vdw_generate(rvdw)
 
   Do ivdw=1,ntpvdw
 
-     If (ltpvdw(ivdw) == 1) Then
+     keypot=ltpvdw(ivdw)
+     If      (keypot == 1) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
 
@@ -52,7 +53,7 @@ Subroutine vdw_generate(rvdw)
            gvdw(i,ivdw)=6.0_wp*r_6*(2.0_wp*a*r_6-b)
         End Do
 
-     Else If (ltpvdw(ivdw) == 2) Then
+     Else If (keypot == 2) Then
 
 ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
@@ -68,7 +69,7 @@ Subroutine vdw_generate(rvdw)
            gvdw(i,ivdw)=24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)
         End Do
 
-     Else If (ltpvdw(ivdw) == 3) Then
+     Else If (keypot == 3) Then
 
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
@@ -89,7 +90,7 @@ Subroutine vdw_generate(rvdw)
            gvdw(i,ivdw)=e0*m*n*(r0rn-r0rm)*b
         End Do
 
-     Else If (ltpvdw(ivdw) == 4) Then
+     Else If (keypot == 4) Then
 
 ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
@@ -116,7 +117,7 @@ Subroutine vdw_generate(rvdw)
            gvdw(i,ivdw)=t1*b+6.0_wp*t2
         End Do
 
-     Else If (ltpvdw(ivdw) == 5) Then
+     Else If (keypot == 5) Then
 
 ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
@@ -137,7 +138,7 @@ Subroutine vdw_generate(rvdw)
            gvdw(i,ivdw)=t1*r*b+6.0_wp*t2+8.0_wp*t3
         End Do
 
-     Else If (ltpvdw(ivdw) == 6) Then
+     Else If (keypot == 6) Then
 
 ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
@@ -154,7 +155,7 @@ Subroutine vdw_generate(rvdw)
            gvdw(i,ivdw)=12.0_wp*t1+10.0_wp*t2
         End Do
 
-     Else If (ltpvdw(ivdw) == 7) Then
+     Else If (keypot == 7) Then
 
 ! shifted and force corrected n-m potential (w.smith) ::
 
@@ -185,7 +186,7 @@ Subroutine vdw_generate(rvdw)
                                 -r/rvdw*((beta/c)**n-(beta/c)**m) )*b
         End Do
 
-     Else If (ltpvdw(ivdw) == 8) Then
+     Else If (keypot == 8) Then
 
 ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
 
@@ -202,7 +203,7 @@ Subroutine vdw_generate(rvdw)
            gvdw(i,ivdw)=-2.0_wp*r*e0*k*(1.0_wp-t1)*t1
         End Do
 
-     Else If (ltpvdw(ivdw) == 9) Then
+     Else If (keypot == 9) Then
 
 ! Weeks-Chandler-Anderson (shifted & truncated Lenard-Jones) (i.t.todorov)
 ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps

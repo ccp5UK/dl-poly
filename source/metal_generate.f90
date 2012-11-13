@@ -7,7 +7,7 @@ Subroutine metal_generate(rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 2006
-! amended   - i.t.todorov may 2012
+! amended   - i.t.todorov november 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,7 +20,7 @@ Subroutine metal_generate(rmet)
 
   Real( Kind = wp ), Intent( In    ) :: rmet
 
-  Integer           :: i,imet,kmet,katom1,katom2,pmet,qmet
+  Integer           :: i,imet,kmet,keypot,katom1,katom2,pmet,qmet
   Real( Kind = wp ) :: dlrpot,rrr, eps,sig,nnn,mmm, &
                        cc0,cc1,cc2,cc3,cc4,         &
                        aaa,bbb,ccc,ddd,ppp,qqq,     &
@@ -28,7 +28,7 @@ Subroutine metal_generate(rmet)
 
 ! define grid resolution for potential arrays
 
-  dlrpot=rmet/Real(mxgrid-4,wp)
+  dlrpot=rmet/Real(mxgrid-1,wp)
 
 ! construct arrays for metal potentials
 
@@ -40,13 +40,14 @@ Subroutine metal_generate(rmet)
 ! calculate potentials for defined interactions
 
         imet=lstmet(kmet)
-        If (ltpmet(imet) > 0) Then
+        keypot=ltpmet(imet)
+        If (keypot > 0) Then
 
 ! store array specification parameters
 
            vmet(1,imet,1)=Real(mxgrid,wp)
-           vmet(2,imet,1)=0.0_wp                 ! l_int(min) >= 1
-           vmet(3,imet,1)=dlrpot*Real(mxgrid,wp) ! =rmet=rcut
+           vmet(2,imet,1)=0.0_wp          ! l_int(min) >= 1
+           vmet(3,imet,1)=rmet            ! rmet=rcut
            vmet(4,imet,1)=dlrpot
 
            Do i=1,4
@@ -55,7 +56,7 @@ Subroutine metal_generate(rmet)
               dmet(i,imet,2)=0.0_wp
            End Do
 
-           If      (ltpmet(imet) == 1) Then
+           If      (keypot == 1) Then
 
 ! finnis-sinclair potentials
 
@@ -96,7 +97,7 @@ Subroutine metal_generate(rmet)
                  dmet(2,imet,2)=prmmet(5,qmet)**2
               End If
 
-           Else If (ltpmet(imet) == 2) Then
+           Else If (keypot == 2) Then
 
 ! extended finnis-sinclair potentials
 
@@ -139,7 +140,7 @@ Subroutine metal_generate(rmet)
                  dmet(2,imet,2)=prmmet(7,qmet)**2
               End If
 
-           Else If (ltpmet(imet) == 3) Then
+           Else If (keypot == 3) Then
 
 ! sutton-chen potentials
 
@@ -167,7 +168,7 @@ Subroutine metal_generate(rmet)
               End If
 
 
-           Else If (ltpmet(imet) == 4) Then
+           Else If (keypot == 4) Then
 
 ! gupta potentials
 

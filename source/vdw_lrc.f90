@@ -7,7 +7,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester may 1993
-! amended   - i.t.todorov february 2011
+! amended   - i.t.todorov november 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,7 +24,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
   Real( Kind = wp ), Intent( In    ) :: rvdw
   Real( Kind = wp ), Intent(   Out ) :: elrc,virlrc
 
-  Integer           :: fail,i,j,k,ivdw
+  Integer           :: fail,i,j,k,ivdw,keypot
   Real( Kind = wp ) :: twopi,a,b,c,d,e0,n,m,r0,r,eps,sig, &
                        eadd,padd,denprd,plrc
 
@@ -71,14 +71,15 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
            ivdw = ivdw + 1
            k = lstvdw(ivdw)
 
-           If (ltpvdw(k) == 0) Then
+           keypot=ltpvdw(k)
+           If (keypot == 0) Then
 
 ! tabulated energy and pressure lrc
 
               eadd = prmvdw(1,k)
               padd =-prmvdw(2,k)
 
-           Else If (ltpvdw(k) == 1) Then
+           Else If (keypot == 1) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
 
@@ -89,7 +90,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
               eadd = a/(9.0_wp*r**9) - b/(3.0_wp*r**3)
               padd = 12.0_wp*a/(9.0_wp*r**9)- 6.0_wp*b/(3.0_wp*r**3)
 
-           Else If (ltpvdw(k) == 2) Then
+           Else If (keypot == 2) Then
 
 ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
@@ -100,7 +101,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
               eadd = 4.0_wp*eps*(sig**12/(9.0_wp*r**9) - sig**6/(3.0_wp*r**3))
               padd = 4.0_wp*eps*(12.0_wp*sig**12/(9.0_wp*r**9) - 2.0_wp*sig**6/(r**3))
 
-           Else If (ltpvdw(k) == 3) Then
+           Else If (keypot == 3) Then
 
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
@@ -113,7 +114,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
               eadd = e0/(n-m)*( m*r0**n/((n-3.0_wp)*r**(n-3.0_wp)) - n*r0**m/((m-3.0_wp)*r**(m-3.0_wp)) )
               padd = e0/(n-m)*n*m*( r0**n/((n-3.0_wp)*r**(n-3.0_wp)) - r0**m/((m-3.0_wp)*r**(m-3.0_wp)) )
 
-           Else If (ltpvdw(k) == 4) Then
+           Else If (keypot == 4) Then
 
 ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
@@ -123,7 +124,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
               eadd = -c/(3.0_wp*r**3)
               padd = -2.0_wp*c/(r**3)
 
-           Else If (ltpvdw(k) == 5) Then
+           Else If (keypot == 5) Then
 
 ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
@@ -134,7 +135,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
               eadd = -c/(3.0_wp*r**3) - d/(5.0_wp*r**5)
               padd = -2.0_wp*c/(r**3) - 8.0_wp*d/(5.0_wp*r**5)
 
-           Else If (ltpvdw(k) == 6) Then
+           Else If (keypot == 6) Then
 
 ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 

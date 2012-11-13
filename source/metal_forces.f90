@@ -8,7 +8,7 @@ Subroutine metal_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov july 2012
+! amended   - i.t.todorov november 2012
 ! contrib   - r.davidchak june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -102,6 +102,18 @@ Subroutine metal_forces &
      End If
 
      k0=lstmet(key)
+
+     If (ld_met) Then
+        k1=Max(ai,aj)
+        k2=Min(ai,aj)
+
+        kmx=k1*(k1-1)/2
+        kmn=k2*(k2-1)/2
+
+        k1=lstmet(kmx)
+        k2=lstmet(kmn)
+     End If
+
      keypot=ltpmet(k0)
      If (keypot >= 0) Then ! this is a valid metal interaction
 
@@ -122,15 +134,6 @@ Subroutine metal_forces &
 ! truncation of potential
 
            If (rsq <= rcsq) Then
-
-              k1=Max(ai,aj)
-              k2=Min(ai,aj)
-
-              kmx=k1*(k1-1)/2+k2
-              kmn=k2*(k2-1)/2+k1
-
-              k1=lstmet(kmx)
-              k2=lstmet(kmn)
 
 ! interpolation parameters
 

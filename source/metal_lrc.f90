@@ -7,7 +7,7 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov august 2006
+! amended   - i.t.todorov november 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -25,7 +25,7 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent(   Out ) :: elrcm,vlrcm
 
   Logical, Save     :: newjob = .true.
-  Integer           :: i,j,k0,k1,k2,kmet
+  Integer           :: i,j,k0,k1,k2,kmet,keypot
 
   Real( Kind = wp ) :: twopi,forpi,elrc0,elrc1,elrc2,elrcsum,vlrc0,vlrc1,vlrc2, &
                        eps,sig,nnn,mmm,ccc, aaa,rr0,ppp,zet,qqq,eee
@@ -57,7 +57,8 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
            kmet = kmet + 1
            k0 = lstmet(kmet)
 
-           If      (ltpmet(k0) == 3) Then
+           keypot=ltpmet(k0)
+           If      (keypot == 3) Then
 
 ! sutton-chen potentials
 
@@ -104,7 +105,7 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
                  vlrcm(j)=vlrcm(j)+twopi*dens(i)*vlrc2
               End If
 
-           Else If (ltpmet(k0) == 4) Then
+           Else If (keypot == 4) Then
 
 ! gupta potentials
 

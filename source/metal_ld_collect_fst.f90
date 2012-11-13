@@ -28,7 +28,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
 
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: rcsq
-  Integer           :: m,ai,aj,jatm,key,kmn,kmx,k0,k1,k2,l
+  Integer           :: m,ai,aj,jatm,key,kmn,kmx,k0,k1,k2,keypot,l
   Real( Kind = wp ) :: rsq,rdr,rrr,vk0,vk1,vk2,       &
                        t1,t2,density,eps,sig,nnn,mmm, &
                        cc0,cc1,cc2,cc3,cc4,           &
@@ -66,8 +66,8 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
         k1=Max(ai,aj)
         k2=Min(ai,aj)
 
-        kmx=k1*(k1-1)/2+k2
-        kmn=k2*(k2-1)/2+k1
+        kmx=k1*(k1-1)/2
+        kmn=k2*(k2-1)/2
 
         k1=lstmet(kmx)
         k2=lstmet(kmn)
@@ -79,7 +79,8 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
 
 ! validity of analytic potential
 
-     If (ltpmet(k0) > 0) Then
+     keypot=ltpmet(k0)
+     If (keypot > 0) Then
 
 ! Abs(dmet(1,k0,1)) > zero_plus, as potentials are analytic
 
@@ -91,7 +92,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
 
               rrr=Sqrt(rsq)
 
-              If      (ltpmet(k0) == 1) Then
+              If      (keypot == 1) Then
 
 ! finnis-sinclair potentials
 
@@ -115,7 +116,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
                     t2=prmmet(5,k2)**2
                  End If
 
-              Else If (ltpmet(k0) == 2) Then
+              Else If (keypot == 2) Then
 
 ! extended finnis-sinclair potentials
 
@@ -141,7 +142,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
                     t2=prmmet(7,k2)**2
                  End If
 
-              Else If (ltpmet(k0) == 3) Then
+              Else If (keypot == 3) Then
 
 ! sutton-chen potentials
 
@@ -160,7 +161,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
                     t2=(prmmet(1,k2)*prmmet(5,k2))**2
                  End If
 
-              Else If (ltpmet(k0) == 4) Then
+              Else If (keypot == 4) Then
 
 ! gupta potentials
 
@@ -197,7 +198,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
               rdr = 1.0_wp/dmet(4,k0,1)
               rrr = Sqrt(rsq) - dmet(2,k0,1)
               l   = Min(Nint(rrr*rdr),Nint(dmet(1,k0,1))-1)
-              If (l < 6) Then ! catch unsafe value
+              If (l < 5) Then ! catch unsafe value
                  safe=.false.
                  l=6
               End If
