@@ -11,6 +11,12 @@ PORT STATUS
 GPU assisted computation is only available to the following subset
 of the DL_POLY_4 features/functionality/routines:
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+WARNING!!: THE CUDA COMPILED CODE DOES NOT WORK FOR METAL CALCULATIONS  !
+IN VERSION 4.04!! PLEASE USE MPI-ONLY VERSION FOR METAL CALCULATIONS    !
+THIS IS A TEMPORARY BUG AND WILL BE FIXED IN THE NEXT RELEASE!          !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 * link_cell_pairs - building the Verlet Neighbour List using Link
                     Cells
 * metal_ld_compute - provided metal interactions are non-EAM
@@ -36,16 +42,17 @@ so that libraries and include files can be found by the compilers.
 
 COMPILATION INFORMATION
 =======================
-The code is known to compile with either of CUDA SDK 2.3/3.1 and for
-compute capabilities 1.3 and 2.0.  If OpenMP is used, a GCC and
-FORTRAN90 compiler that support OpenMP are required to build the
-sources.
+The code is known to compile with either of CUDA SDK 2.3/3.1/4.0/4.1
+and for compute capabilities 1.3 and 2.0. Most recently (17/10/12),
+the code has been compiled and tested on the Kepler K20 with compute
+capability 3.5. If OpenMP is used, a GCC and FORTRAN90 compiler that
+support OpenMP are required to build the sources.
 
 If single precision is desired, as soon as the FORTRAN90 sources'
 precision has been modified in kinds_f90.f90, change
 CFG_DOUBLE_PRECISION to 0 in dl_poly_cu.h and recompile.
 
-Depending on the compute capability of the GPU (1.3 and 2.0 are
+Depending on the compute capability of the GPU (1.3, 2.0 and 3.5 are
 supported currently), the CFG_COMPUTE_{MAJOR, MINOR} constants have
 to be set accordingly in the Makefile.
 

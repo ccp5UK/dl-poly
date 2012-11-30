@@ -159,14 +159,14 @@ extern "C" __host__ int dl_poly_cuda_offload_ewald_spme_forces_cccharge() {
 }
 
 extern "C" __host__ int dl_poly_cuda_offload_spme_forces() {
-  if (offload_spme_forces)
-    return (sTRUE);
+//  if (offload_spme_forces)
+//    return (sTRUE);
   return (sFALSE);
 }
 
 extern "C" __host__ int dl_poly_cuda_offload_bspgen() {
-  if (offload_bspgen)
-    return (sTRUE);
+//  if (offload_bspgen)
+//    return (sTRUE);
   return (sFALSE);
 }
 

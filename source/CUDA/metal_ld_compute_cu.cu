@@ -129,7 +129,7 @@ extern "C" void metal_ld_compute_cuda_initialise
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mVMET, sHD.mMXGRID*sHD.mMXMET*2*sizeof(real)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mDMET, sHD.mMXGRID*sHD.mMXMET*2*sizeof(real)));
 
-  CUDA_SAFE_CALL(cudaMalloc(&sCD.mRHO_JATM_ACCU, sCD.mNATMS*sHD.mMXLIST*sizeof(real)));
+  CUDA_SAFE_CALL(cudaMalloc(&sCD.mRHO_JATM_ACCU, sCD.mNATMS*(sHD.mMXLIST)*sizeof(real)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mRHO_IATM_ACCU, sCD.mNATMS*sizeof(real)));
   CUDA_SAFE_CALL(cudaMalloc(&sCD.mRHO, CFG_K2_THREADBLOCKS*sCD.mMXATMS*sizeof(real)));
 
@@ -137,7 +137,7 @@ extern "C" void metal_ld_compute_cuda_initialise
   if (!sHasKeypotBeenComputed) {
     int lKEYPOT = 0;
     for (int lL=1 ; lL<=sHD.mNTPMET ; lL++) {
-      lKEYPOT = aLTPMET[lL-1];
+      lKEYPOT = aLTPMET[lL-2];
       if (lL>1) {
         if (lKEYPOT != aLTPMET[(lL-2)]) {
           int lError = 92;
@@ -161,7 +161,7 @@ extern "C" void metal_ld_compute_cuda_initialise
     sHD.mFreeList = 0;
     sCD.mLIST = (int*) link_cell_pairs_cuda_get_list();
   } else {
-    CUDA_SAFE_CALL(cudaMalloc((void**)&sCD.mLIST, (512+sHD.mMXATDM*(1+sHD.mMXLIST))*sizeof(int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&sCD.mLIST, (512+sHD.mMXATDM*(1+2+sHD.mMXLIST))*sizeof(int)));
     sHD.mFreeList = 1;
   }
 
@@ -191,7 +191,7 @@ extern "C" void metal_ld_compute_cuda_initialise
     link_cell_pairs_cuda_push_lists(1);
     sHD.mIsListAlreadyOnline = 1;
   } else {
-    CUDA_SAFE_CALL(cudaMemcpy(sCD.mLIST, aLIST, sHD.mMXATDM*(1+sHD.mMXLIST)*sizeof(int),
+    CUDA_SAFE_CALL(cudaMemcpy(sCD.mLIST, aLIST, sHD.mMXATDM*(1+2+sHD.mMXLIST)*sizeof(int),
                               cudaMemcpyHostToDevice));
     sHD.mIsListAlreadyOnline = 1;
   }
@@ -231,7 +231,7 @@ __device__ void obtain_iatm_specific(int aIATM, T_& aXXX_I, T_& aYYY_I, T_& aZZZ
     aZZZ_I = CONSTANT_DATA.mZZZ[aIATM-1];
   }
   __syncthreads();
-  aLIMIT = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 0, aIATM);
+  aLIMIT = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0+2, aIATM);
   aAI    = CONSTANT_DATA.mLTYPE[aIATM-1];
 }
 
@@ -284,23 +284,31 @@ template<typename T_> __device__ T_* dmet(int aX, int aY, int aZ)
                                CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX, aY, aZ));
 }
 
-template<typename T_> __device__ T_ metal_forces_calc_gamma(T_ aPPx, T_ aT1, T_ aT2)
+template<typename T_> __device__ T_ metal_forces_calc_gamma(T_ aPPx, T_ aT1, T_ aT2, int lL)
 {
   T_ lSelect_T1T2 = (aPPx < (T_)0) ? aT1 : aT2;
   T_ lPlusMinus1  = (aPPx < (T_)0) ? ((T_) 1) : ((T_) -1);
   T_ lGamma = madd(lSelect_T1T2, ((T_)0.5), mul(add(aT2,-aT1),add(aPPx, lPlusMinus1)));
+//mlysaght
+  if (lL == 5) {
+     lGamma = aT2;
+  } 
   return (lGamma);
 }
 
 template<typename T_>
 __device__ T_ metal_forces_calc_gamma(T_ *aBase, int aX, int aY, int aZ, T_ aPPx)
 {
-  T_ lGVK0 = *dev_f3d_address<T_,0>(aBase, 1,1,1, CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX+3, aY, aZ);
-  T_ lGVK1 = *dev_f3d_address<T_,0>(aBase, 1,1,1, CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX+4, aY, aZ);
-  T_ lGVK2 = *dev_f3d_address<T_,0>(aBase, 1,1,1, CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX+5, aY, aZ);
+//mlysaght
+  T_ lGVK0 = *dev_f3d_address<T_,0>(aBase, 1,1,1, CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX-1, aY, aZ);
+  T_ lGVK1 = *dev_f3d_address<T_,0>(aBase, 1,1,1, CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX, aY, aZ);
+  T_ lGVK2 = *dev_f3d_address<T_,0>(aBase, 1,1,1, CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX+1, aY, aZ);
+//  T_ lGVK0 = *dev_f3d_address<T_,0>(aBase, 1,1,1, CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX+3, aY, aZ);
+//  T_ lGVK1 = *dev_f3d_address<T_,0>(aBase, 1,1,1, CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX+4, aY, aZ);
+//  T_ lGVK2 = *dev_f3d_address<T_,0>(aBase, 1,1,1, CONSTANT_DATA.mMXGRID, CONSTANT_DATA.mMXMET, aX+5, aY, aZ);
   T_ lT1   = madd(lGVK1, aPPx, (lGVK1 - lGVK0));
   T_ lT2   = madd(lGVK1, aPPx, (lGVK2 - lGVK1));
-  return(metal_forces_calc_gamma(aPPx, lT1, lT2));
+  return(metal_forces_calc_gamma(aPPx, lT1, lT2, aX));
 }
 
 
@@ -352,7 +360,7 @@ __global__ void metal_ld_compute_cuda_k1(int aI)
     }
 
     for (int lJ=1+threadIdx.x ; lJ<=lLIMIT ; lJ+=BX_) {
-      int lJATM = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), lJ, lIATM);
+      int lJATM = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), lJ+2, lIATM);
       int lAJ;
 
       lAJ = CONSTANT_DATA.mLTYPE[lJATM - 1];
@@ -382,14 +390,26 @@ __global__ void metal_ld_compute_cuda_k1(int aI)
 
 #if (CFG_LSTLTPMET_FETCH_FROM_CONSTANT_MEMORY)
           T_  lDMET_2_K0_1 = CONSTANT_DATA.mDMET_1234_K0_1[lK0-1][2-1];
+//mlysaght
+          T_  lDMET_1_K0_1 = CONSTANT_DATA.mDMET_1234_K0_1[lK0-1][1-1];
           T_  lRDR         = CONSTANT_DATA.mDMET_1234_K0_1[lK0-1][4-1];
 #else
+//mlysaght
+          T_  lDMET_1_K0_1 = *dmet<T_>(1,lK0,1);
           T_  lDMET_2_K0_1 = *dmet<T_>(2,lK0,1);
           T_  lDMET_4_K0_1 = *dmet<T_>(4,lK0,1);
           T_ lRDR         = ((T_) 1) / lDMET_4_K0_1;
 #endif
           T_ lRRR         = sqrt(lRSQ) - lDMET_2_K0_1;
-          int lL          = nint(lRRR*lRDR);
+
+//          int lL          = nint(lRRR*lRDR);
+//mlysaght
+          int lL          = min(nint(lRRR*lRDR),nint(lDMET_1_K0_1-1));
+          if (lL < 5) {
+//             aSAFE = .false.;
+             lL = 6;
+          }
+//end mlysaght
           T_ lPPP         = mul(lRRR,lRDR) - (T_)lL;
           T_ lDENSITY     = metal_forces_calc_gamma_dmet(lL, lK0, 1, lPPP);
 
@@ -441,13 +461,13 @@ __global__ void metal_ld_compute_cuda_k2(int aI)
     lIATM_Bounds.y = (blockIdx.y + 1)*(CONSTANT_DATA.mNATMS / gridDim.y);
 
   for (int lIATM=lIATM_Bounds.x ; lIATM<lIATM_Bounds.y ; lIATM++) {
-    int lLIMIT = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), 0, lIATM);
+    int lLIMIT = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 0+2, lIATM);
 
     if (lLIMIT<=0)
       continue;
 
     for (int lJ=1+threadIdx.x ; lJ<=lLIMIT ; lJ+=BX_) {
-      int lJATM = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1), lJ, lIATM);
+      int lJATM = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), lJ+2, lIATM);
       if (lJATM<=CONSTANT_DATA.mNATMS) {
         lRHO[lJATM-1] +=
           *F2D_ADDRESS(CONSTANT_DATA.mRHO_JATM_ACCU, 1, 1, CONSTANT_DATA.mMXLIST, lJ, lIATM);
@@ -477,7 +497,6 @@ __global__ void metal_ld_compute_cuda_k3b(int aI)
 extern "C" void metal_ld_compute_cuda_invoke()
 {
   cudaError_t lLastError;
-
   start_timing_metal_ld_compute_cuda_k0();
   metal_ld_compute_cuda_k0<real,64><<<dim3(1,8*30,1), 64>>>(1);
   CUDA_SAFE_CALL(cudaThreadSynchronize());
