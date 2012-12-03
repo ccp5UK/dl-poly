@@ -97,7 +97,7 @@ Subroutine metal_ld_compute         &
         Call metal_ld_collect_fst(i,rsqdf,rho,safe,rmet)
      End If
   End Do
-
+  
 ! Check safety for densities
 
   If (keypot == 0) Then

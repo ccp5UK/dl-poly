@@ -112,11 +112,11 @@ Subroutine metal_ld_compute         &
 ! In particular, only tabulated calculations are available in metal_ld_compute
 ! The CUDA acceleration is not called if direct calculation is required
   If (dl_poly_cuda_offload_metal_ld_compute() .and. ld_met .eqv. .false.) Then !*CHANGE == to .eqv.
-     Call metal_ld_compute_cuda_initialise(&
-          0,mxatms,natms,mxgrid,ntpmet,mxmet,mxatdm,mxlist,&
-          xxx,yyy,zzz,list,ltype,ltpmet,lstmet,vmet,dmet,cell,rho)
-     Call metal_ld_compute_cuda_invoke()
-     Call metal_ld_compute_cuda_finalise()
+!     Call metal_ld_compute_cuda_initialise(&
+!          0,mxatms,natms,mxgrid,ntpmet,mxmet,mxatdm,mxlist,&
+!          xxx,yyy,zzz,list,ltype,ltpmet,lstmet,vmet,dmet,cell,rho)
+!     Call metal_ld_compute_cuda_invoke()
+!     Call metal_ld_compute_cuda_finalise()
   Else
 #endif
 
@@ -192,7 +192,7 @@ Subroutine metal_ld_compute         &
                  rdr = 1.0_wp/fmet(4,k0,1)
                  rrr = rhosqr - fmet(2,k0,1)
                  l   = Min(Nint(rrr*rdr),Nint(fmet(1,k0,1))-1)
-                 If (l < 6) Then ! catch unsafe value
+                 If (l < 5) Then ! catch unsafe value
                     Write(*,*) 'good density range problem: (LTG,RHO) ',ltg(i),rho(i)
                     safe=.false.
                     l=6
@@ -210,6 +210,8 @@ Subroutine metal_ld_compute         &
 
                  If (ppp < 0.0_wp) Then
                     engden = engden + t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                 Else If (l == 5) Then
+                    engden = engden + t2
                  Else
                     engden = engden + t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
                  End If
@@ -229,6 +231,12 @@ Subroutine metal_ld_compute         &
                        rho(i) = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
                     Else                  ! fmet over Sqrt(rho) grid
                        rho(i) = 0.5_wp*(t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp))/rhosqr
+                    End If
+                 Else If (l == 5) Then
+                    If (.not.ls_met) Then ! fmet over rho grid
+                       rho(i) = t2
+                    Else                  ! fmet over Sqrt(rho) grid
+                       rho(i) = 0.5_wp*t2/rhosqr
                     End If
                  Else
                     If (.not.ls_met) Then ! fmet over rho grid
