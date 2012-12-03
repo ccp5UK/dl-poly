@@ -110,9 +110,9 @@ Subroutine pseudo_vv                                      &
         ssz=wthpse*celprp(3)/celprp(9)
 
 ! 1. Get the boundary thermostat thicknesses in fractional coordinates
-! 2. sx,sy,sz are intervaled as [-0.5,+0.5) {as by construction are (0,+0.25]}
+! 2. sx,sy,sz are intervalled as [-0.5,+0.5) {as by construction are (0,+0.25]}
 ! 3. Outline the edge beyond which a particle belongs to the thermostat
-!    0.5*thiknesses[MD box] - thickness[boundary thermostat]
+!    0.5*thicknesses[MD box] - thickness[boundary thermostat]
 
         sx=rcell(1)*ssx+rcell(4)*ssy+rcell(7)*ssz ; sx=sx-Anint(sx) ; sx=0.5_wp-sx
         sy=rcell(2)*ssx+rcell(5)*ssy+rcell(8)*ssz ; sy=sy-Anint(sy) ; sy=0.5_wp-sy
@@ -410,7 +410,7 @@ Subroutine pseudo_vv                                      &
         If (tkin <= zero_plus) tkin = 1.0_wp
         If (mxnode > 1) Call gsum(mxdr)
 
-! Scale to target tempearture and apply thermostat
+! Scale to target temperature and apply thermostat
 
         scale = Sqrt(mxdr * boltz * tmppse / tkin)
 

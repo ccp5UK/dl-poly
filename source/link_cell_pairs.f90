@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov december 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -298,67 +298,106 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! Get cell coordinates accordingly
 
      If (xxt(i) > -half_plus) Then
-        ix = Int(xdc*(xxt(i)+0.5_wp)) + jx
+        dispx=xdc*(xxt(i)+0.5_wp)
+        ix = Int(dispx) + jx
      Else
-        ix =-Int(xdc*Abs(xxt(i)+0.5_wp)) + jx - 1
+        dispx=xdc*Abs(xxt(i)+0.5_wp)
+        ix =-Int(dispx) + jx - 1
      End If
      If (yyt(i) > -half_plus) Then
-        iy = Int(ydc*(yyt(i)+0.5_wp)) + jy
+        dispy=ydc*(yyt(i)+0.5_wp)
+        iy = Int(dispy) + jy
      Else
-        iy =-Int(ydc*Abs(yyt(i)+0.5_wp)) + jy - 1
+        dispy=ydc*Abs(yyt(i)+0.5_wp)
+        iy =-Int(dispy) + jy - 1
      End If
      If (zzt(i) > -half_plus) Then
-        iz = Int(zdc*(zzt(i)+0.5_wp)) + jz
+        dispz=zdc*(zzt(i)+0.5_wp)
+        iz = Int(dispz) + jz
      Else
-        iz =-Int(zdc*Abs(zzt(i)+0.5_wp)) + jz - 1
+        dispz=zdc*Abs(zzt(i)+0.5_wp)
+        iz =-Int(dispz) + jz - 1
      End If
+
+! Exclude all any negative bound residual halo
+
+     If (ix >= nlx0s .and. iy >= nly0s .and. iz >= nlz0s) Then
 
 ! Correction for halo particles (natms+1,nlast) of this domain
 ! (idnode) but due to some tiny numerical inaccuracy kicked into
 ! the domain only link-cell space
 
-     lx0=(ix == nlx0e+1)
-     lx1=(ix == nlx1s-1)
-     ly0=(iy == nly0e+1)
-     ly1=(iy == nly1s-1)
-     lz0=(iz == nlz0e+1)
-     lz1=(iz == nlz1s-1)
-     If ( (lx0 .or. lx1) .and. &
-          (ly0 .or. ly1) .and. &
-          (lz0 .or. lz1) ) Then ! 8 corners of the domain's cube in RS
-        If      (lx0) Then
-           ix=nlx0e
-        Else If (lx1) Then
-           ix=nlx1s
-        Else If (ly0) Then
-           iy=nly0e
-        Else If (ly1) Then
-           iy=nly1s
-        Else If (lz0) Then
-           iz=nlz0e
-        Else If (lz1) Then
-           iz=nlz1s
+        lx0=(ix == nlx0e+1)
+        lx1=(ix == nlx1s-1)
+        ly0=(iy == nly0e+1)
+        ly1=(iy == nly1s-1)
+        lz0=(iz == nlz0e+1)
+        lz1=(iz == nlz1s-1)
+        If ( (lx0 .or. lx1) .and. &
+             (ly0 .or. ly1) .and. &
+             (lz0 .or. lz1) ) Then ! 8 corners of the domain's cube in RS
+           If      (lx0 .or. lx1) Then
+              If      (lx0 ) Then
+                 ix=nlx0e
+              Else If (lx1) Then
+                 ix=nlx1s
+              End If
+              If (xxt(i) > -half_plus) Then
+                 dispx = dispx + Real(jx-ix,wp)
+              Else
+                 dispx = dispx - Real(jx-ix-1,wp)
+              End If
+           Else If (ly0 .or. ly1) Then
+              If      (ly0 ) Then
+                 iy=nly0e
+              Else If (ly1) Then
+                 iy=nly1s
+              End If
+              If (yyt(i) > -half_plus) Then
+                 dispy = dispy + Real(jy-iy,wp)
+              Else
+                 dispy = dispy - Real(jy-iy-1,wp)
+              End If
+           Else If (lz0 .or. lz1) Then
+              If      (lz0 ) Then
+                 iz=nlz0e
+              Else If (lz1) Then
+                 iz=nlz1s
+              End If
+              If (zzt(i) > -half_plus) Then
+                 dispz = dispz + Real(jz-iz,wp)
+              Else
+                 dispz = dispz - Real(jz-iz-1,wp)
+              End If
+           End If
         End If
-     End If
 
-! Check for residual halo
+! Check for positive bound residual halo
 
-     lx0=(ix < nlx0s)
-     lx1=(ix > nlx1e)
-     ly0=(iy < nly0s)
-     ly1=(iy > nly1e)
-     lz0=(iz < nlz0s)
-     lz1=(iz > nlz1e)
-     If ( .not. &
-          (lx0 .or. lx1 .or. &
-           ly0 .or. ly1 .or. &
-           lz0 .or. lz1) ) Then
+        lx0=(ix < nlx0s)
+        lx1=(ix > nlx1e)
+        ly0=(iy < nly0s)
+        ly1=(iy > nly1e)
+        lz0=(iz < nlz0s)
+        lz1=(iz > nlz1e)
+        If ( .not. &
+             (lx0 .or. lx1 .or. &
+              ly0 .or. ly1 .or. &
+              lz0 .or. lz1) ) Then
 
 ! Hypercube function transformation (counting starts from one
 ! rather than zero /map_domains/ and 2*nlp more link-cells per
 ! dimension are accounted /coming from the halo/)
 
-        icell = 1 + ix + (nlx + 2*nlp)*(iy + (nly + 2*nlp)*iz)
+           icell = 1 + ix + (nlx + 2*nlp)*(iy + (nly + 2*nlp)*iz)
+
+        Else
+
+! Put possible residual halo in cell=0
+
+           icell = 0
+
+        End If
 
      Else
 

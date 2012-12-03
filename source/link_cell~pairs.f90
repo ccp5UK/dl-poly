@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov december 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -182,12 +182,6 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   End Do
 !  Write(*,*) 'NLP',nlp,nsbcll,nlx,nly,nlz
 
-! Get the total number of link-cells in MD cell per direction
-
-  xdc=Real(nlx*nprx,wp)
-  ydc=Real(nly*npry,wp)
-  zdc=Real(nlz*nprz,wp)
-
 ! Calculate the displacements from the origin of the MD cell
 ! to the bottom left corner of the left-most halo link-cell
 
@@ -196,9 +190,9 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! Third term (nlp/nl./npr.) = move to the bottom left corner of the
 ! left-most link-cell (the one in the halo)
 
-  dispx=0.5_wp-Real(idx,wp)*r_nprx+Real(nlp,wp)/Real(xdc,wp)
-  dispy=0.5_wp-Real(idy,wp)*r_npry+Real(nlp,wp)/Real(ydc,wp)
-  dispz=0.5_wp-Real(idz,wp)*r_nprz+Real(nlp,wp)/Real(zdc,wp)
+  dispx=0.5_wp-r_nprx*(Real(idx,wp)-Real(nlp,wp)/Real(nlx,wp))
+  dispy=0.5_wp-r_npry*(Real(idy,wp)-Real(nlp,wp)/Real(nly,wp))
+  dispz=0.5_wp-r_nprz*(Real(idz,wp)-Real(nlp,wp)/Real(nlz,wp))
 
 ! Get the inverse cell matrix
 
@@ -212,6 +206,12 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
      yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+dispy
      zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+dispz
   End Do
+
+! Get the total number of link-cells in MD cell per direction
+
+  xdc=Real(nlx*nprx,wp)
+  ydc=Real(nly*npry,wp)
+  zdc=Real(nlz*nprz,wp)
 
 !***************************************************************
 ! Note(1): Due to numerical inaccuracy it is possible that some
@@ -300,24 +300,27 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! Get cell coordinates accordingly
 
      If (xxt(i) > -zero_plus) Then
-        ix = Int(xdc*xxt(i))
+        dispx=xdc*xxt(i)
+        ix = Int(dispx)
      Else
         ix =-1
      End If
      If (yyt(i) > -zero_plus) Then
-        iy = Int(ydc*yyt(i))
+        dispy=ydc*yyt(i)
+        iy = Int(dispy)
      Else
         iy =-1
      End If
      If (zzt(i) > -zero_plus) Then
-        iz = Int(zdc*zzt(i))
+        dispz=zdc*zzt(i)
+        iz = Int(dispz)
      Else
         iz =-1
      End If
 
 ! Exclude all any negative bound residual halo
 
-     If (ix >= 0 .and. iy >= 0 .and. iz >=0) Then
+     If (ix >= nlx0s .and. iy >= nly0s .and. iz >= nlz0s) Then
 
 ! Correction for halo particles (natms+1,nlast) of this domain
 ! (idnode) but due to some tiny numerical inaccuracy kicked into
@@ -332,27 +335,42 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
         If ( (lx0 .or. lx1) .and. &
              (ly0 .or. ly1) .and. &
              (lz0 .or. lz1) ) Then ! 8 corners of the domain's cube in RS
-           If      (lx0) Then
-              ix=nlx0e
-           Else If (lx1) Then
-              ix=nlx1s
-           Else If (ly0) Then
-              iy=nly0e
-           Else If (ly1) Then
-              iy=nly1s
-           Else If (lz0) Then
-              iz=nlz0e
-           Else If (lz1) Then
-              iz=nlz1s
+           If      (lx0 .or. lx1) Then
+              If      (lx0 ) Then
+                 ix=nlx0e
+              Else If (lx1) Then
+                 ix=nlx1s
+              End If
+              dispx = dispx - Real(ix,wp)
+           Else If (ly0 .or. ly1) Then
+              If      (ly0 ) Then
+                 iy=nly0e
+              Else If (ly1) Then
+                 iy=nly1s
+              End If
+              dispy = dispy - Real(iy,wp)
+           Else If (lz0 .or. lz1) Then
+              If      (lz0 ) Then
+                 iz=nlz0e
+              Else If (lz1) Then
+                 iz=nlz1s
+              End If
+              dispz = dispz - Real(iz,wp)
            End If
         End If
 
 ! Check for positive bound residual halo
 
+        lx0=(ix < nlx0s)
         lx1=(ix > nlx1e)
+        ly0=(iy < nly0s)
         ly1=(iy > nly1e)
+        lz0=(iz < nlz0s)
         lz1=(iz > nlz1e)
-        If (.not.(lx1 .or. ly1 .or. lz1)) Then
+        If ( .not. &
+             (lx0 .or. lx1 .or. &
+              ly0 .or. ly1 .or. &
+              lz0 .or. lz1) ) Then
 
 ! Hypercube function transformation (counting starts from one
 ! rather than zero /map_domains/ and 2*nlp more link-cells per

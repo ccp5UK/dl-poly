@@ -449,7 +449,7 @@ Subroutine nvt_a0_vv                                 &
      If (tkin <= zero_plus) tkin = 1.0_wp
      If (mxnode > 1) Call gsum(mxdr)
 
-! Scale to target tempearture and apply thermostat
+! Scale to target temperature and apply thermostat
 
      scale = Sqrt(mxdr * boltz * temp / tkin)
      tmp = Sqrt(1.0_wp-soft**2)*scale

@@ -1081,7 +1081,7 @@ Subroutine pbcshift(imcon,cell,natms,xxx,yyy,zzz)
 ! dl_poly_4 subroutine for calculating the minimum image of atoms within
 ! a specified MD cell in accordance with the domain decomposition
 ! boundary convention for fractional coordinates: every coordinate must
-! be intervaled as [-0.5,+0.5)
+! be intervalled as [-0.5,+0.5)
 !
 ! Note: in all cases the centre of the MD cell is at (0,0,0)
 !
