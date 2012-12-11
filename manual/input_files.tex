@@ -2454,8 +2454,17 @@ The presence of an external field is flagged by the directive: \\
 \\
 \noindent The following line in the FIELD file must contain another
 directive indicating what type of field is to be applied, followed
-by the field parameters. The variables pertaining to each field
-potential are described in Table \ref{external-field-table}.
+by the field parameters in the following manner:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> field key     \> a4      \> external field key, see Table \ref{external-field-table} \\
+\> variable 1    \> real    \> potential parameter, see Table \ref{external-field-table} \\
+\> variable 2    \> real    \> potential parameter, see Table \ref{external-field-table} \\
+\> variable 3    \> real    \> potential parameter, see Table \ref{external-field-table} \\
+\> variable 4    \> real    \> potential parameter, see Table \ref{external-field-table} \\
+\end{tabbing}
+The variables pertaining to each field potential are described
+in Table \ref{external-field-table}.
 
 {\bf Note:} only one type of field can be applied at a time.
 

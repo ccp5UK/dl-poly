@@ -195,7 +195,7 @@ Subroutine nvt_h0_lfv                                  &
 
   Do iter=1,mxiter
 
-! update velocity and position using Nose-Hoover thermostating
+! update velocity and position using Nose-Hoover thermostatting
 
      Do i=1,natms
         If (weight(i) > 1.0e-6_wp) Then

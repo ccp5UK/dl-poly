@@ -130,7 +130,7 @@ Subroutine pseudo_lfv                                     &
         Do i=1,natms
 
 ! For all particles on this domain get how far they are
-! from the edges of the MD box box
+! from the origin of the MD box
 
            ssx=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i) ; ssx=Abs(ssx-Anint(ssx))
            ssy=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i) ; ssy=Abs(ssy-Anint(ssy))
@@ -270,7 +270,7 @@ Subroutine pseudo_lfv                                     &
      Do i=1,natms
 
 ! For all particles on this domain get how far they are
-! from the edges of the MD box box
+! from the edges of the MD box
 
         ssx=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i) ; ssx=Abs(ssx-Anint(ssx))
         ssy=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i) ; ssy=Abs(ssy-Anint(ssy))
@@ -395,7 +395,7 @@ Subroutine pseudo_lfv                                     &
      End If
      rtp = Sum(tpr)
 
-! Velocity scaling cycle - thermostating.  k = local, ntp = global
+! Velocity scaling cycle - thermostatting.  k = local, ntp = global
 ! number of particles within thermostat layers
 
      If (keypse == 0 .or. keypse == 1)  Then ! Apply LANGEVIN temperature scaling

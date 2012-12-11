@@ -396,7 +396,7 @@ kepler:
 	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
- 
+
 
 
 # Default code

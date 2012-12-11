@@ -598,7 +598,7 @@ Subroutine nst_l1_lfv                          &
 
   Do iter=1,mxiter
 
-! update velocity and position using Langevin thermostating
+! update velocity and position using Langevin thermostatting
 ! and barostating in leapfrog verlet scheme - FPs
 ! sclv and sclf are symmetric!!!
 

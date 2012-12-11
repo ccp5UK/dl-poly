@@ -471,7 +471,7 @@ Subroutine nvt_g1_lfv                          &
 
   Do iter=1,mxiter
 
-! update velocity and position using Nose-Hoover thermostating - FPs
+! update velocity and position using Nose-Hoover thermostatting - FPs
 
      Do j=1,nfree
         i=lstfre(j)

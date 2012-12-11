@@ -407,6 +407,7 @@ Subroutine read_control                                &
            l_trm  = .true.
         Else
            If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% OPTION ABORTED DUE TO ZERO VOLUME !!! %%%"
+           l_trm  = .true.
         End If
 
      Else If (word(1:5) == 'l_tim') Then
@@ -418,6 +419,11 @@ Subroutine read_control                                &
 
         l_tor = .true.
         If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% Turn off production of REVCON & REVIVE !!! %%%"
+
+     Else If (word(1:5) == 'l_trm') Then
+
+        l_trm = .true.
+        If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% Terminate gracefully before initialisation !!! %%%"
 
      Else If (word(1:5) == 'l_dis') Then
 

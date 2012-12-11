@@ -246,7 +246,7 @@ Subroutine metal_forces_helper &
               If (ppp < 0.0_wp) Then
                  gamma2 = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
               Else If (l == 5) Then
-                 gamma2 = t2   
+                 gamma2 = t2
               Else
                  gamma2 = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
               End If

@@ -268,7 +268,7 @@ Subroutine npt_h0_lfv                                  &
 
   Do iter=1,mxiter
 
-! update velocity and position using Nose-Hoover thermostating
+! update velocity and position using Nose-Hoover thermostatting
 ! and barostating in leapfrog verlet scheme
 
      Do i=1,natms

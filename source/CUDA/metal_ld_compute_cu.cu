@@ -292,7 +292,7 @@ template<typename T_> __device__ T_ metal_forces_calc_gamma(T_ aPPx, T_ aT1, T_ 
 //mlysaght
   if (lL == 5) {
      lGamma = aT2;
-  } 
+  }
   return (lGamma);
 }
 

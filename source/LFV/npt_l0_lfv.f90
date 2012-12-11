@@ -274,7 +274,7 @@ Subroutine npt_l0_lfv                                  &
 
   Do iter=1,mxiter
 
-! update velocity and position using Langevin thermostating
+! update velocity and position using Langevin thermostatting
 ! and barostating in leapfrog verlet scheme
 
      tmp  = 1.0_wp/(1.0_wp+0.5_wp*(chi+(1.0_wp+factor)*chip2)*tstep)
