@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2012
+! author    - i.t.todorov december 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,14 +26,7 @@ Subroutine warning(kode,a,b,c)
 
      Write(nrite,'(/,1x,a,i6)') 'warning issued ',kode
 
-     If      (kode ==   1) Then
-
-        ia=Nint(a)
-
-        Write(nrite,'(/,1x,a,i0,a,/)') &
-        '*** warning - node ', ia, ' mapped on vacuum (no particles) !!! ***'
-
-     Else If (kode ==   2) Then
+     If      (kode ==   2) Then
 
         ia=Nint(a)
         ib=Nint(b)
@@ -62,9 +55,9 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2(i0,a),2(/,a),a,/)')                         &
+        Write(nrite,'(/,1x,a,2(i0,a),/,1x,a,a,/,1x,a)')                    &
         '*** warning - maximum length of linked cell list: ', ia,          &
-        ' is less thanmaximum length of particle exclusion list: ',        &
+        ' + 1 is less than maximum length of particle exclusion list: ',   &
         ib, ' !!! ***',                                                    &
         '*** this may be due to using too short a cutoff in CONTROL ',     &
         'and/or a badly defined intramolecular topology in FIELD !!! ***', &

@@ -199,7 +199,7 @@ Program dl_poly
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
           "**         **  contributors: i.j.bush & r.davidchak  ****** O ****", &
-          "*************  version:  4.04    /    november 2012  ******* L ***", &
+          "*************  version:  4.04.1   /   december 2012  ******* L ***", &
           "*************  Execution on ", mxnode, "    node(s)  ******** Y **", &
           "******************************************************************"
 
@@ -450,7 +450,7 @@ Program dl_poly
   j=0
   If (natms == 0) Then
      j=1
-     Call warning(1,Real(idnode,wp),0.0_wp,0.0_wp)
+     Write(nrite,'(/,1x,a,i0,a,/)') '*** warning - node ', idnode, ' mapped on vacuum (no particles) !!! ***'
   End If
   If (mxnode > 1) Call gsum(j)
   If (j > 0) Call warning(2,Real(j,wp),Real(mxnode,wp),0.0_wp)

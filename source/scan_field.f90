@@ -15,7 +15,7 @@ Subroutine scan_field                                 &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith november 1994
-! amended   - i.t.todorov november 2012
+! amended   - i.t.todorov december 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -44,7 +44,7 @@ Subroutine scan_field                                 &
   Character( Len = 8   ) :: name
 
   Logical           :: l_n_e,check,safe
-  Integer           :: mxtmls,itmols,nummols,numsit,isite,ksite,nrept,         &
+  Integer           :: mxtmls,itmols,nummols,numsit,mxnmst,isite,ksite,nrept,  &
                        mxsite,mxatyp,megatm,i,j,k,nfld,mxexcl,                 &
                        numshl,mtshl,mxtshl,mxshl,ishls,mxfshl,                 &
                        numcon,mtcons,mxtcon,mxcons,icon,mxfcon,                &
@@ -65,6 +65,7 @@ Subroutine scan_field                                 &
   nummols=0
 
   numsit=0
+  mxnmst=0
   mxsite=0
   mxatyp=0
   megatm=0
@@ -207,6 +208,7 @@ Subroutine scan_field                                 &
 
                  Call get_word(record,word)
                  numsit=Nint(word_2_real(word))
+                 mxnmst=Max(1,numsit)
                  megatm=megatm+numsit*nummols
                  mxsite=mxsite+numsit
 
@@ -772,7 +774,7 @@ Subroutine scan_field                                 &
      mxt(i)=Min(1,mxf(i))
   End Do
   Call shellsort(9,mxf)
-  mxexcl=(mxf(9)+Sum(mxf)/Max(1,Sum(mxt)))*(Min(1,mxshl)+1)+1
+  mxexcl = Min( mxnmst , (Sum(mxf)/Max(1,Sum(mxt)))*(Min(1,mxshl)+1) + 1 )
 
 ! (vdw,met) = rdf scanning
 

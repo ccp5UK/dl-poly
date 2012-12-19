@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2012
+! author    - i.t.todorov december 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1741,8 +1741,8 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         tmp = Abs(word_2_real(word))
-        If (tmp >= Min(0.3_wp,rcut/3.0_wp) .and. tmp <= Min(1.2_wp,rcut/2.0_wp)) Then
-           rdef = tmp
+        If (tmp >= Min(0.3_wp,rcut/3.0_wp) .and. tmp <= Min(3.5_wp,rcut/2.0_wp)) Then
+           rdef = tmp ! 3.43 Angs is the Cs VDW radius - largest possible
         Else
            Call warning(310,tmp,rdef,0.0_wp)
         End If

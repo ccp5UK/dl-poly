@@ -8,7 +8,7 @@ Subroutine set_bounds                                        &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2012
+! author    - i.t.todorov december 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -451,7 +451,7 @@ Subroutine set_bounds                                        &
   End If
   mxlist = Min(mxlist,megatm-1) ! mxexcl
 
-  If (mxlist < mxexcl) Then
+  If (mxlist+1 < mxexcl) Then
      Call warning(6,Real(mxlist,wp),Real(mxexcl,wp),0.0_wp)
      mxlist=mxexcl
   End If
