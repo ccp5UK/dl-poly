@@ -453,7 +453,7 @@ Subroutine set_bounds                                        &
 
   If (mxlist+1 < mxexcl) Then
      Call warning(6,Real(mxlist,wp),Real(mxexcl,wp),0.0_wp)
-     mxlist=mxexcl
+     mxlist=mxexcl-1
   End If
 
 ! get link-cell volume

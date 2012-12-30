@@ -759,7 +759,7 @@ Subroutine scan_field                                 &
   mxf(6)=mxfbnd
 
   mxangl=Max(mxangl,mxnode*mtangl)
-  If (mxangl > 0) mxfang=mxfang+(mxb*(mxb+1))/2
+  If (mxangl > 0) mxfang=mxfang+(mxb+1)**2/2
   mxf(7)=mxfang
 
   mxdihd=Max(mxdihd,mxnode*mtdihd)
@@ -771,10 +771,10 @@ Subroutine scan_field                                 &
   mxf(9)=mxfinv
 
   Do i=1,9
-     mxt(i)=Min(1,mxf(i))
+     mxt(i)=Min(1,mxf(i)-1)
   End Do
   Call shellsort(9,mxf)
-  mxexcl = Min( mxnmst , (Sum(mxf)/Max(1,Sum(mxt)))*(Min(1,mxshl)+1) + 1 )
+  mxexcl = Min( mxnmst , Max( mxfrgd , Sum(mxf)/Max(1,Sum(mxt)) ) * (Min(1,mxshl)+1) + 1 )
 
 ! (vdw,met) = rdf scanning
 
