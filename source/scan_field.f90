@@ -208,7 +208,7 @@ Subroutine scan_field                                 &
 
                  Call get_word(record,word)
                  numsit=Nint(word_2_real(word))
-                 mxnmst=Max(1,numsit)
+                 mxnmst=Max(mxnmst,numsit)
                  megatm=megatm+numsit*nummols
                  mxsite=mxsite+numsit
 

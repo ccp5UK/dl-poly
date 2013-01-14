@@ -284,7 +284,7 @@ Subroutine defects1_write &
 
      If ( j == 1 .and. (lfrzn(i) /= 0 .or. Any(unqshl(1:ntpshl) == atmnam(i))) ) j=0
 
-! Assume that every considered particles (1) is an interstitial and
+! Assume that every considered particles (1) is an interstitial
 ! and (2) does not occupy a site yet
 
      If (j == 1) Then

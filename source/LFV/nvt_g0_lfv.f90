@@ -11,10 +11,10 @@ Subroutine nvt_g0_lfv                                       &
 ! a Nose-Hoover thermostat chained to a Langevin thermostat
 !
 ! reference1: B. Leimkuhler, E. Noorizadeh, F. Theil
-!             J. Stat. Phys. (2009) 135: 261–277
+!             J. Stat. Phys. (2009) 135: 261-277
 !
 ! reference2: A. Samoletov, M.A.J. Chaplain, C.P. Dettmann
-!             J. Stat. Phys. (2007) 128, 1321–1336
+!             J. Stat. Phys. (2007) 128, 1321-1336
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov january 2012

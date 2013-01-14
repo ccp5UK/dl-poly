@@ -7,13 +7,13 @@ so-ever!
 
 Shell commands within this source directory:
 ============================================
-build – use this to rebuild the GUI on your computer, but only of you
+build - use this to rebuild the GUI on your computer, but only of you
         have the Java SDK installed on your computer
-gui   – script to run the program from within this directory
-rmc   – script to remove the class files, once the GUI.jar file has
+gui   - script to run the program from within this directory
+rmc   - script to remove the class files, once the GUI.jar file has
         been built (by using the "build" script for example)
 
-Note that the GUI.jar file is supposed to be universally exportable –
+Note that the GUI.jar file is supposed to be universally exportable -
 it does not have to be inside the DL_POLY_4 directory to have most of
 the functionality working.  However, to run any locally stored test
 cases, it is necessary to be in the default DL_POLY_4 directory

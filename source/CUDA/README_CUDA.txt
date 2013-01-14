@@ -124,7 +124,7 @@ MVAPICH2 environment variable, MV2_CPU_MAPPING):
 export OMP_NUM_THREADS=4
 export MV2_CPU_MAPPING="0,2,4,6:1,3,5,7"
 ./cleanup ; mpiexec -n 2 ./DLPOLY.Z.cu
-….
+...
 Bound MPI process 0 (pid=14409; affined to CPU(s)  0 2 4 6; 4 OpenMP thread(s)) to device 0@stoney52
 Bound MPI process 1 (pid=14410; affined to CPU(s)  1 3 5 7; 4 OpenMP thread(s)) to device 1@stoney52
 
@@ -135,7 +135,7 @@ MVAPICH2 environment variable MV2_CPU_MAPPING):
 export OMP_NUM_THREADS=4
 export MV2_CPU_MAPPING="0,2:4,6:1,3:5,7"
 ./cleanup ; mpiexec -n 4 -npernode 2 ./DLPOLY.Z.cu
-….
+...
 Bound MPI process 0 (pid=14627; affined to CPU(s)  0 2 4 6; 4 OpenMP thread(s)) to device 0@stoney52 Bound MPI process 1 (pid=14628; affined to CPU(s)  1 3 5 7; 4 OpenMP thread(s)) to device 1@stoney52
 Bound MPI process 2 (pid=8581; affined to CPU(s)  0 2 4 6; 4 OpenMP thread(s)) to device 0@stoney51
 Bound MPI process 3 (pid=8582; affined to CPU(s)  1 3 5 7; 4 OpenMP thread(s)) to device 1@stoney51
