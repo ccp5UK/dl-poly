@@ -24,8 +24,8 @@ Module domains_module
   Public  :: map_domains
   Private
 
-  ! Size of array for factorization. It allows for the first max_factor-1 prime numbers in the
-  ! factorization, so 10 allows for the factors 2, 3, 5, 7, 11, 13, 17, 19, 23
+! Size of array for factorization. It allows for the first max_factor-1 prime numbers in the
+! factorization, so 10 allows for the factors 2, 3, 5, 7, 11, 13, 17, 19, 23
 
   Integer, Parameter :: max_factor = 10
 
@@ -90,7 +90,7 @@ Contains
 
     Else ! mxnode > 1
 
-! Impose imcon driven limits on decompostion
+! Impose imcon driven limits on decomposition
 
        limx = Merge( Huge( 1 ), 2, imcon /= 0 )
        limy = Merge( Huge( 1 ), 2, imcon /= 0 )

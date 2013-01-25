@@ -1281,7 +1281,17 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 \noindent {\bf Note} that {\bf record 2} may contain more information
 apart from the mandatory as listed above.  If the file has been
 produced by \D then it also contains other items intended to help
-possible parallel I/O reading.
+possible parallel I/O reading. Also, it is worth mentioning that the
+periodic boundary conditions (PBC), as specified in Table \ref{imcon}
+and described in detail in Appendix \ref{boundary-conditions}, refer
+generally to a {\bf triclinic type of super-cell}, for which there
+are {\bf no symmetry assumptions!  Records 3, 4 and 5} contain the
+Cartesian components of the super-cell's lattice vectors in \AA.
+\D can only tract triclinic type of super-cells as the only types
+of super-cell shapes that are commensurate with the domain decomposition
+(DD) parallelisation strategy of it.  However, this is not restriction
+for the replicated data parallelisation \C adopts and thus \D can also
+accept truncated octahedral and rhombic dodecahedral periodic boundaries.
 
 Subsequent records consists of blocks of between 2 and 4 records
 depending on the value of the {\tt levcfg} variable.  Each block
@@ -1294,9 +1304,9 @@ X\=XXXXXXX\=XXXXXX\=XXXXXX\kill
 \> {\tt atmnam}  \> a8      \> atom name \\
 \> {\tt index}   \> integer \> atom index \\
 {\bf record ii} \\
-\> {\tt xxx}     \> real    \> x coordinate \\
-\> {\tt yyy}     \> real    \> y coordinate \\
-\> {\tt zzz}     \> real    \> z coordinate \\
+\> {\tt xxx}     \> real    \> x coordinate in \AA \\
+\> {\tt yyy}     \> real    \> y coordinate in \AA \\
+\> {\tt zzz}     \> real    \> z coordinate in \AA \\
 {\bf record iii} \>         \> included only if {\tt levcfg} $>0$ \\
 \> {\tt vxx}     \> real    \> x component of velocity \\
 \> {\tt vyy}     \> real    \> y component of velocity \\
@@ -1313,7 +1323,13 @@ added to aid alternative uses of the file, for example alike DL\_POLY
 GUI\index{GUI} \cite{smith-gui}, \C assume that the atoms' indices
 are in a sequentially ascending order starting form 1.  However, \D
 needs the index or the {\bf no ind}ex option needs to be specified in
-the CONTROL file!
+the CONTROL file!  It is worth mentioning that \D (as well as \C)
+assumes that the origin of Cartesian system with respect to which
+the particle positions are specified is the middle of MD cell.  Also,
+as both the cell vectors and the particles' positions are specified
+in \\AA, there is a {\bf fine connection} between them!  This would
+not be the case if the particles' positions were kept in reduced space
+with fractional coordinates.
 
 \begin{table}[htbp]
 \begin{centering}

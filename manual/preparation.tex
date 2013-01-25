@@ -57,11 +57,11 @@ separate registration!}
 
 The primary functions of \F are as follows:
 \begin{enumerate}
-\item {\bf Force field model converter:} \F converts the user's atom
+\item {\bf Force field model converter:} \F converts the user’s atom
 models, supplied in PDB file format, into input files that are
 recognisable and ready to run with \C and \D programs with minimum
-user's intervention.  This basically involves the conversion of the
-user's atomic configuration in simple xyz coordinates into identifiable
+user’s intervention.  This basically involves the conversion of the
+user’s atomic configuration in simple xyz coordinates into identifiable
 atom types base on a particular user-selectable potential schemes and
 then automatically generate the DL\_POLY configuration file (CONFIG),
 the force field file (FIELD) and a generic control file (CONTROL).
@@ -99,9 +99,9 @@ PCFF - Polyorganics and other covalent molecules.
 achieved by either using DL\_POLY GUI\index{GUI} \cite{smith-gui} or any
 other standard molecular building packages.  The output files must be
 converted into the PDB format.  In the case of proteins, these structures
-are usually obtained from data banks such as PDB.  These '{\em raw} PBD'
+are usually obtained from data banks such as PDB.  These ‘{\em raw} PBD’
 files must first be preprocessed by the user before they are in a
-'{\em readable} format' for \F.  To ensure this, it is advisable that
+‘{\em readable} format’ for \F.  To ensure this, it is advisable that
 users take into consideration the following steps:
 \begin{enumerate}
 \item Decide on inclusion/exclusion of and if necessary manually delete
@@ -118,7 +118,7 @@ states, \F will automatically identify these differences and assign the
 appropriate potential parameters accordingly.
 \item For cysteine (CYS) molecules with disulphide bonds, thiolate hydrogen
 atoms must be removed.  \F will automatically define disulphide bonds between
-the molecules, provided the S-S distance is within a 'sensible' value.
+the molecules, provided the S-S distance is within a ‘sensible’ value.
 \item \F does not solvate the molecules and it is the user's responsibility
 to add water by using any standard package available (for example the
 DL\_POLY GUI\index{GUI} \cite{smith-gui}).

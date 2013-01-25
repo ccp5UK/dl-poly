@@ -156,7 +156,7 @@ Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
 STFC Daresbury Laboratory \\
 Daresbury, Warrington WA4 4AD \\
 Cheshire, England, United Kingdom}
-\date{\bf Version 4.04.1,~~December 2012}
+\date{\bf Version 4.04.2,~~January 2013}
 \clearpage
 \end{titlepage}
 
@@ -227,6 +227,61 @@ Cheshire, England, United Kingdom}
 %pagestyle
 \pagenumbering{arabic} \setcounter{page}{1}
 \rhead{Section \thesection}
+\setcounter{chapter}{-1}
+
+\chapter{Quick Word / INSTALL \& RUN}
+\vskip 0ex
+{\bf For the experienced and quick minded this is a very brief resume
+of how to INSTALL \& RUN \D (which is no excuse for skipping the
+Introduction, Chapter~\ref{introduction}!).  For the rest of us it
+sketches out how to start running \D jobs and where one should look
+to obtain more detailed information if need be.}
+
+If you have followed the procedure for obtaining and downloading the
+\D package (see Obtaining~the~Source~Code, Section~\ref{source}),
+have successfully unpacked it and are ready to compile the source code,
+then jump to the Makefiles section of the \D~README Appendix~\ref{readme}
+or alternatively view the {\sc README.txt} in {\em source}) and follow
+the instructions within.
+
+If you have compiled successfully then a freshly date-stamped file,
+named DLPOLY.Z (or DLPOLY.Z.cu if you successfully followed the
+instructions within {\em source}/{\em CUDA}/{\tt README\_CUDA.txt})
+should appear in the listing of the {\em execute} subdirectory (the
+'{\tt ls -haltr}' command issued on a Linux/Unix-like shell within
+{\em execute} will place the executable in the last row of the list).
+If {\bf unsuccessful} then you should read the Compiling~and~Running~\D
+Section~\ref{compilation}.
+
+To run the code you first need to place the necessary input files
+within {\em execute}.  TEST cases containing suitable input files,
+as well as examples of output files, can be obtained at the \D FTP
+site, \FTP.  Examine the contents of {\em data}/{\tt README.txt} and
+{\em bench}/{\tt README.txt} for more information.  To run the serial
+version you simply issue the command {\tt DLPOLY.Z} (or {\tt DLPOLY.Z.cu})
+within the {\em execute} subdirectory.  If you have compiled a parallel
+version and are running it on a parallel machine, then naturally you
+will need to familiarise yourself with the local procedures of how to
+run jobs on that machine.  In general though, running a parallel job
+will usually require that you issue a necessary run command (e.g.
+{\tt mpirun -n 8 DLPOLY.Z}) or submit a job script from within {\em execute}.
+
+If you need to know more then search the manual and examine sections of
+interests.  You may also wish to visit DL\_POLY project web-page \WEB
+and examine the useful links within (FAQ, User Forum, etc.).
+
+If you are looking to gain more in depth experience, then regular training
+workshops are available.  To find about upcoming workshops, subscribe to
+our mail list by following instructions in Section~\ref{other}.
+
+If you need one-to-one training, wish to collaborate scientifically and/or
+would like to become a contributor/developer then get in touch with me,
+Dr. I.T. Todorov, by email to
+{\href{mailto:ilian.todorov@stfc.ac.uk}{ilian.todorov@stfc.ac.uk}}.
+
+Best of luck!
+\setcounter{equation}{0}
+\newpage
 
 \chapter{Introduction}
 \label{introduction}

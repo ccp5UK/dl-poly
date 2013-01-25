@@ -15,7 +15,7 @@ Subroutine scan_field                                 &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith november 1994
-! amended   - i.t.todorov december 2012
+! amended   - i.t.todorov january 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -594,7 +594,7 @@ Subroutine scan_field                                 &
 
               Call get_word(record,word)
               k=Nint(word_2_real(word))
-              mxgrid=Max(mxgrid,k)
+              mxgrid=Max(mxgrid,k+4)
 
               Call get_word(record,word)
               Call get_word(record,word)
