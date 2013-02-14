@@ -1,6 +1,6 @@
-# Master makefile for DL_POLY_4.04 (parallel version)
+# Master makefile for DL_POLY_4.05 (parallel version)
 #
-# Author - I.T.Todorov june 2012
+# Author - I.T.Todorov February 2013
 #
 #
 # Define default settings
@@ -142,7 +142,7 @@ FILES_VV = \
 	nvt_l1_vv.f90 nvt_a1_vv.f90 nvt_b1_vv.f90 nvt_h1_vv.f90 nvt_g1_vv.f90 \
 	npt_l1_vv.f90 npt_b1_vv.f90 npt_h1_vv.f90 npt_m1_vv.f90 \
 	nst_l1_vv.f90 nst_b1_vv.f90 nst_h1_vv.f90 nst_m1_vv.f90 \
-	md_vv.f90
+	w_at_start_vv.f90 w_integrate_vv.f90 w_md_vv.f90
 
 # Define LeapFrog Verlet files
 #=====================================================================
@@ -158,7 +158,7 @@ FILES_LFV = \
 	nvt_l1_lfv.f90 nvt_a1_lfv.f90 nvt_b1_lfv.f90 nvt_h1_lfv.f90 nvt_g1_lfv.f90 \
 	npt_l1_lfv.f90 npt_b1_lfv.f90 npt_h1_lfv.f90 npt_m1_lfv.f90 \
 	nst_l1_lfv.f90 nst_b1_lfv.f90 nst_h1_lfv.f90 nst_m1_lfv.f90 \
-	md_lfv.f90
+	w_at_start_lfv.f90 w_integrate_lfv.f90 w_md_lfv.f90
 
 # Examine targets manually
 #=====================================================================

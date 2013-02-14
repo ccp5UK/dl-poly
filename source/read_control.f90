@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2012
+! author    - i.t.todorov february 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -35,6 +35,7 @@ Subroutine read_control                                &
   Use parse_module
   Use vdw_module,      Only : ld_vdw,ls_vdw
   Use metal_module,    Only : ld_met,ls_met,tabmet
+  Use msd_module,      Only : l_msd
   Use defects1_module, Only : l_dfx
 
   Use development_module
@@ -1721,7 +1722,7 @@ Subroutine read_control                                &
            & /,1x,'trajectory file info key    ',3x,i10)") nstraj,istraj,keytrj
 
         If (keytrj > 3) Call error(517)
-        If (keytrj == 3) Write(nrite,'(2(/,1x,a))')                     &
+        If (keytrj == 3 .and. idnode == 0) Write(nrite,'(2(/,1x,a))')   &
            '%%% warning - trajectory file info key == 3 generates %%%', &
            '%%% HISTORY in an unindexed and consize manner !!! %%%'
 
@@ -2071,7 +2072,6 @@ Subroutine read_control                                &
 ! report replay history
 
   If (.not.lsim) Then
-     lprdf=lrdf; lpzdn=lzdn ! Force printing
      If (idnode == 0) Then
         Write(nrite,"(/,1x,'*** HISTORY will be replayed (no actual simulation) ***', &
                     & /,1x,'*** and structural properties will be recalculated  ***')")
@@ -2079,7 +2079,7 @@ Subroutine read_control                                &
 
 ! abort if there's no structural property to recalculate
 
-     If (.not.(lrdf .or. lzdn .or. ldef .or. lrsd)) Call error(580)
+     If (.not.(lrdf .or. lzdn .or. ldef .or. l_msd .or. lrsd)) Call error(580)
 
      If (keyres /= 0) Then
         keyres=0 ! Force clean restart

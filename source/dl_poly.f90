@@ -135,9 +135,7 @@ Program dl_poly
                        relaxed_shl = .true.,    &
                        relaxed_min = .true.
 
-! 'isw' is used for vv stage control
-
-  Integer           :: i,j,isw,levcfg,imcon,nstfce,        &
+  Integer           :: i,j,levcfg,imcon,nstfce,            &
                        nx,ny,nz,imd,tmd,                   &
                        keyres,nstrun,nsteql,               &
                        keymin,nstmin,nstgaus,nstscal,      &
@@ -157,26 +155,26 @@ Program dl_poly
 ! elrc,virlrc - vdw energy and virial are scalars and in vdw_module
 ! elrcm,vlrcm - metal energy and virial are array-like and in metal_module
 
-  Real( Kind = wp ) :: timelp,timjob,timcls,tstep,time,tmst,tmsth, &
-                       alpha,epsq,fmax,                            &
-                       rcut,rvdw,rmet,rbin,rcter,rctbp,rcfbp,      &
-                       width,mndis,mxdis,mxstp,wthpse,tmppse,      &
-                       rlx_tol,min_tol,tolnce,quattol,rdef,rrsd,   &
-                       emd,vmx,vmy,vmz,temp,sigma,                 &
-                       press,strext(1:9),ten,                      &
-                       taut,chi,soft,gama,taup,tai,                &
-                       chit,eta(1:9),chip,cint,consv,              &
-                       strtot(1:9),virtot,                         &
-                       strkin(1:9),engke,strknf(1:9),strknt(1:9),  &
-                       engrot,strcom(1:9),vircom,                  &
-                       engcpe,vircpe,engsrp,virsrp,                &
-                       engter,virter,engtbp,virtbp,engfbp,virfbp,  &
-                       engshl,shlke,virshl,                        &
-                       strcon(1:9),vircon,strpmf(1:9),virpmf,      &
-                       stress(1:9),engtet,virtet,                  &
-                       engbnd,virbnd,engang,virang,                &
-                       engdih,virdih,enginv,virinv,                &
-                       engfld,virfld,                              &
+  Real( Kind = wp ) :: timelp,timjob,timcls,tstep,time,tmst,      &
+                       alpha,epsq,fmax,                           &
+                       rcut,rvdw,rmet,rbin,rcter,rctbp,rcfbp,     &
+                       width,mndis,mxdis,mxstp,wthpse,tmppse,     &
+                       rlx_tol,min_tol,tolnce,quattol,rdef,rrsd,  &
+                       emd,vmx,vmy,vmz,temp,sigma,                &
+                       press,strext(1:9),ten,                     &
+                       taut,chi,soft,gama,taup,tai,               &
+                       chit,eta(1:9),chip,cint,consv,             &
+                       strtot(1:9),virtot,                        &
+                       strkin(1:9),engke,strknf(1:9),strknt(1:9), &
+                       engrot,strcom(1:9),vircom,                 &
+                       engcpe,vircpe,engsrp,virsrp,               &
+                       engter,virter,engtbp,virtbp,engfbp,virfbp, &
+                       engshl,shlke,virshl,                       &
+                       strcon(1:9),vircon,strpmf(1:9),virpmf,     &
+                       stress(1:9),engtet,virtet,                 &
+                       engbnd,virbnd,engang,virang,               &
+                       engdih,virdih,enginv,virinv,               &
+                       engfld,virfld,                             &
                        stptmp,stpprs,stpvol,stpcfg,stpeng,stpeth,stpvir
 
 ! SET UP COMMUNICATIONS & CLOCKING
@@ -199,7 +197,7 @@ Program dl_poly
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
           "**         **  contributors: i.j.bush & r.davidchak  ****** O ****", &
-          "*************  version:  4.04.2    /   january 2012  ******* L ***", &
+          "*************  version:  4.05.01  /   february 2013  ******* L ***", &
           "*************  Execution on ", mxnode, "    node(s)  ******** Y **", &
           "******************************************************************"
 
@@ -517,8 +515,8 @@ Program dl_poly
 ! start-up time when forces are not recalculated
 
   Call gtime(timelp)
-  If (idnode == 0) Write(nrite,'(/,/,/,1x, &
-     & "time elapsed since job start: ", f12.3, " sec",/)') timelp
+  If (idnode == 0) &
+     Write(nrite,'(/,/,/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -527,12 +525,12 @@ Program dl_poly
 
   If (lsim) Then
      If (l_vv) Then
-        Call md_vv()
+        Call w_md_vv()
      Else
-        Call md_lfv()
+        Call w_md_lfv()
      End If
   Else
-     Call replay_history()
+     Call w_replay_history()
   End If
 
 
@@ -606,20 +604,69 @@ Program dl_poly
   If (mxnode > 1) Call gsync()
   Call exit_comms()
 
-! Create interfaces to md_step in either Verlet flavour
+! Create wrappers for the MD cycle in VV, LFV and replay history
 
 Contains
 
-  Subroutine md_vv()
-    Include 'md_vv.f90'
-  End Subroutine md_vv
+  Subroutine w_impact_option()
+    Include 'w_impact_option.f90'
+  End Subroutine w_impact_option
 
-  Subroutine md_lfv()
-    Include 'md_lfv.f90'
-  End Subroutine md_lfv
+  Subroutine w_calculate_forces()
+    Include 'w_calculate_forces.f90'
+  End Subroutine w_calculate_forces
 
-  Subroutine replay_history()
-    Include 'replay_history.f90'
-  End Subroutine replay_history
+  Subroutine w_refresh_mappings()
+    Include 'w_refresh_mappings.f90'
+  End Subroutine w_refresh_mappings
+
+  Subroutine w_at_start_vv()
+    Include 'w_at_start_vv.f90'
+  End Subroutine w_at_start_vv
+
+  Subroutine w_integrate_vv(isw)
+    Integer, Intent( In    ) :: isw ! used for vv stage control
+
+    Include 'w_integrate_vv.f90'
+  End Subroutine w_integrate_vv
+
+  Subroutine w_at_start_lfv()
+    Include 'w_at_start_vv.f90'
+  End Subroutine w_at_start_lfv
+
+  Subroutine w_integrate_lfv()
+    Include 'w_integrate_lfv.f90'
+  End Subroutine w_integrate_lfv
+
+  Subroutine w_kinetic_options()
+    Include 'w_kinetic_options.f90'
+  End Subroutine w_kinetic_options
+
+  Subroutine w_statistics_report()
+    Include 'w_statistics_report.f90'
+  End Subroutine w_statistics_report
+
+  Subroutine w_write_options()
+    Include 'w_write_options.f90'
+  End Subroutine w_write_options
+
+  Subroutine w_refresh_output()
+    Include 'w_refresh_output.f90'
+  End Subroutine w_refresh_output
+
+  Subroutine w_md_vv()
+    Include 'w_md_vv.f90'
+  End Subroutine w_md_vv
+
+  Subroutine w_md_lfv()
+    Include 'w_md_lfv.f90'
+  End Subroutine w_md_lfv
+
+  Subroutine w_replay_history()
+    Real( Kind = wp ) :: tmsh  ! tmst replacement
+    Integer           :: nstph ! nstep replacement
+
+    Include 'w_replay_history.f90'
+  End Subroutine w_replay_history
 
 End Program dl_poly

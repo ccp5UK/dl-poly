@@ -876,7 +876,6 @@ Subroutine read_field                      &
                        rgdwg1(0:lrgd,nrigid)=rgdwgt(0:lrgd,nrigid)
                     End If
 
-
 ! print RB
 
                     If (idnode == 0 .and. l_top) Then

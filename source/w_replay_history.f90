@@ -1,19 +1,28 @@
-!!!!!!!!!!!!!!!!!!!!!  REPLAY HISTORY INCLUSION MODULE  !!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORY INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
+
+! Report work
 
   If (idnode == 0) &
      Write(nrite,"(/,/,1x,'*** HISTORY is replayed for recalculation of structural properties ***')")
 
-! MSD option cancelled
+! Stay safe
 
-  If (l_msd) Then
-     l_msd=.false.
-     If (idnode == 0) Write(nrite,"(/,1x,'*** MSDTMP file option canceled ***')")
+  If (ltraj) Then
+     ltraj = .false.
+
+     If (idnode == 0) &
+     Write(nrite,"(/,/,1x,'*** warning - aborting printing into HISTORY while reading it ***')")
   End If
+
+! Make sure of no equilibration
+
+  nsteql = 0
+  leql   = .false.
 
 ! Make sure RDFs are complete (no exclusion lists)
 
-  lbook=.false.
+  lbook = .false.
 
 ! nullify forces
 
@@ -32,21 +41,43 @@
   nsdef = 0
   isdef = 1
 
+! MSDTMP option for every entry in HISTORY
+
+  nstmsd = 0
+  istmsd = 1
+
+! displacement detection for every entry in HISTORY
+
+  nsrsd = 0
+  isrsd = 1
+
 ! rdf and z-density detection for every entry in HISTORY
+! impose printing if calculation exists
 
-  nsteql = 0
-  leql   = .false.
-  nstrdf = 1
-  nstzdn = 1
+  lprdf=lrdf ; nstrdf = 1
+  lpzdn=lzdn ; nstzdn = 1
 
-  isw = 0 ! trajectory points counter
+! Calculate kinetic tensor and energy at restart
+
+  If (megrgd > 0) Then
+     Call kinstresf(vxx,vyy,vzz,strknf)
+     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt)
+
+     strkin=strknf+strknt
+  Else
+     Call kinstress(vxx,vyy,vzz,strkin)
+  End If
+  engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+
+  nstph = 0 ! trajectory points counter
   Do While ( .true. )
      Call read_history(l_str,megatm,levcfg,imcon,nstep,tstep,time)
 
      If (newjob) Then
         newjob = .false.
+
         tmst=time
-        tmsth=0.0_wp ! tmst substitute
+        tmsh=0.0_wp ! tmst substitute
      End If
 
      If (nstep >= 0) Then
@@ -55,14 +86,14 @@
 
         Call set_halo_particles(imcon,rcut,keyfce,lbook)
 
-        isw=isw+1
+        nstph=nstph+1
 
-! Accumulate RDFs if needed (nstep->isw)
+! Accumulate RDFs if needed (nstep->nstph)
 
         If (lrdf) Call two_body_forces            &
            (imcon,rcut,rvdw,rmet,keyens,          &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
-           lrdf,nstrdf,leql,nsteql,isw,           &
+           lrdf,nstrdf,leql,nsteql,nstph,         &
            elrc,virlrc,elrcm,vlrcm,               &
            engcpe,vircpe,engsrp,virsrp,stress)
 
@@ -78,40 +109,24 @@
               strkin=strknf+strknt
 
               engrot=getknr(rgdoxx,rgdoyy,rgdozz)
+              If (levcfg == 2) Then
+                 Call rigid_bodies_str_ss(strcom)
+                 vircom=-(strcom(1)+strcom(5)+strcom(9))
+              End If
            Else
               Call kinstress(vxx,vyy,vzz,strkin)
            End If
            engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
-        Else
-           If (megrgd > 0) Then
-              rgdvxx(1:ntrgd) = 0.0_wp
-              rgdvyy(1:ntrgd) = 0.0_wp
-              rgdvzz(1:ntrgd) = 0.0_wp
-
-              rgdoxx(1:ntrgd) = 0.0_wp
-              rgdoyy(1:ntrgd) = 0.0_wp
-              rgdozz(1:ntrgd) = 0.0_wp
-
-              strknt = 0.0_wp
-              engrot = 0.0_wp
-           End If
-           vxx(1:natms) = 0.0_wp
-           vyy(1:natms) = 0.0_wp
-           vzz(1:natms) = 0.0_wp
-
-           strknf = 0.0_wp
-           strkin = 0.0_wp
-           engke = 0.0_wp
         End If
 
 ! Calculate physical quantities and collect statistics,
-! accumulate z-density if needed (nstep->isw,tmst->tmsth)
+! accumulate z-density if needed (nstep->nstph,tmst->tmsh)
 
         Call statistics_collect              &
            (leql,nsteql,lzdn,nstzdn,         &
            keyres,keyens,iso,intsta,imcon,   &
            degfre,degshl,degrot,             &
-           isw,tstep,time,tmsth,             &
+           nstph,tstep,time,tmsh,            &
            engcpe,vircpe,engsrp,virsrp,      &
            engter,virter,                    &
            engtbp,virtbp,engfbp,virfbp,      &
@@ -125,26 +140,25 @@
            stpeng,stpvir,stpcfg,stpeth,      &
            stptmp,stpprs,stpvol)
 
-! Write defects data
+! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
-        If (ldef) Call defects_write &
-           (imcon,rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time)
+        Call w_write_options()
 
 ! Complete time check
 
         Call gtime(timelp)
         If (idnode == 0) Then
-           Write(nrite,"(1x,'HISTORY step',i10,' (',i10,' entry) processed')") nstep,isw
+           Write(nrite,"(1x,'HISTORY step',i10,' (',i10,' entry) processed')") nstep,nstph
            Write(nrite,'(1x,"time elapsed since job start: ", f12.3, " sec")') timelp
         End If
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minunte intervals
 
         i=20
-        If ( Mod(isw,i) == 0 .or.                                 &
+        If ( Mod(nstph,i) == 0 .or.                               &
              (timelp > Real(i*60,wp) .and.                        &
               timelp-Real( ((Int(timelp)/(i*60)) * i*60) , wp ) < &
-              timelp/Real( isw , wp) ) ) Then
+              timelp/Real( nstph , wp) ) ) Then
 
            If (idnode == 0) Then
               Inquire(File='OUTPUT', Exist=l_out, Position=c_out)
@@ -185,7 +199,7 @@
 
 ! step counter is data counter now, so statistics_result is triggered
 
-  nstep=isw
+  nstep=nstph
 
 
-!!!!!!!!!!!!!!!!!!!!!  REPLAY HISTORY INCLUSION MODULE  !!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORY INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
