@@ -477,7 +477,7 @@ Subroutine read_config &
   nlast=natms
 
 ! First check: Does the number of atoms in the system (MD cell) derived by
-! topology description (FIELD) match the crystalographic (CONFIG) one?
+! topology description (FIELD) match the crystallographic (CONFIG) one?
 ! Check number of atoms in system (CONFIG = FIELD)
 
   totatm=natms

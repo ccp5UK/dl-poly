@@ -29,6 +29,11 @@
            stpeng,stpvir,stpcfg,stpeth,      &
            stptmp,stpprs,stpvol)
 
+! VV forces evaluation report for 0th or weird restart
+
+        If (l_vv .and. levcfg == 1 .and. idnode == 0) &
+           Write(nrite,'(1x,a,/)') "forces evaluated at (re)start for VV integration..."
+
 ! line-printer output every nstbpo steps
 
         If (lines == 0 .or. Mod(nstep,nstbpo) == 0) Then
@@ -58,16 +63,13 @@
               Write(nrite,"(1x,130('-'))")
            End If
 
-           If (nstep == 0) Then ! Print start-up time
-              Write(nrite,'(/,/,/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
-           Else ! Exclude t=0 reporting
-              lines=lines+1
-           End If
+           If (nstep /= 0) lines=lines+1
+
         End If
 
 ! Report end of equilibration period
 
-        If (ltscal .and. nstep == nsteql) Then
+        If (ltscal .and. nstep > 0 .and. nstep == nsteql) Then
            ltscal=.false.
            If (idnode == 0) Write(nrite,"(/,/,1x,                         &
               & 'switching off temperature scaling at step ',i0,/,/,/,1x, &

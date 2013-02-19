@@ -1,4 +1,4 @@
-Subroutine scale_config(levcfg,imcon,megatm)
+Subroutine scale_config(imcon,megatm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,17 +6,17 @@ Subroutine scale_config(levcfg,imcon,megatm)
 ! from CONFIG to new lattice parameters and saving it in CFGSCL
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2012
+! author    - i.t.todorov february 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use config_module, Only : cell,natms,xxx,yyy,zzz
-  Use development_module
+  Use config_module,      Only : cell,natms,xxx,yyy,zzz
+  Use development_module, Only : lvcfscl,cels
 
   Implicit None
 
-  Integer, Intent( In    ) :: levcfg,imcon,megatm
+  Integer, Intent( In    ) :: imcon,megatm
 
   Character ( Len = 6 ) :: name
   Integer               :: i,nstep
@@ -54,7 +54,7 @@ Subroutine scale_config(levcfg,imcon,megatm)
   time   = 0.0_wp   ! time is not relevant
 
   rcell = cell ; cell = cels
-  Call write_config(name,levcfg,imcon,megatm,nstep,tstep,time)
+  Call write_config(name,lvcfscl,imcon,megatm,nstep,tstep,time)
   cell = rcell
 
 End Subroutine scale_config

@@ -1,5 +1,5 @@
 Subroutine dihedrals_14_check &
-           (l_str,ntpmls,nummols,numang,keyang,lstang,numdih,lstdih,prmdih)
+           (l_str,l_top,ntpmls,nummols,numang,keyang,lstang,numdih,lstdih,prmdih)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -8,21 +8,26 @@ Subroutine dihedrals_14_check &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1999
-! amended   - i.t.todorov march 2012
+! amended   - i.t.todorov february 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
+  Use comms_module, Only : mxnode,gcheck
   Use setup_module, Only : mxtmls,mxtang,mxtdih,mxpdih
 
-  Logical,           Intent( In    ) :: l_str
+  Logical,           Intent( In    ) :: l_str,l_top
   Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls),numang(1:mxtmls), &
                                         keyang(1:mxtang),lstang(1:3,1:mxtang),     &
                                         numdih(1:mxtmls),lstdih(1:4,1:mxtdih)
   Real( Kind = wp ), Intent( InOut ) :: prmdih(1:mxpdih,1:mxtdih)
 
+  Logical :: l_print,l_reset
   Integer :: kangle,kdihed,itmols,imols,langle,ldihed,mdihed, &
              iang,jang,idih,jdih,kdih,ldih
+
+  l_print = (l_str.and.l_top)
+  l_reset = .false.
 
 ! Initialise angle and dihedral interaction counters
 
@@ -55,7 +60,9 @@ Subroutine dihedrals_14_check &
 
                     prmdih(4,ldihed+kdihed)=0.0_wp
                     prmdih(5,ldihed+kdihed)=0.0_wp
-                    If (l_str) Call warning(20,Real(itmols,wp),Real(idih,wp),Real(jdih,wp))
+
+                    l_reset = .true.
+                    If (l_print) Call warning(20,Real(itmols,wp),Real(idih,wp),Real(jdih,wp))
 
                  End If
 
@@ -81,7 +88,9 @@ Subroutine dihedrals_14_check &
 
                  prmdih(4,mdihed+kdihed)=0.0_wp
                  prmdih(5,mdihed+kdihed)=0.0_wp
-                 If (l_str) Call warning(20,Real(itmols,wp),Real(kdih,wp),Real(ldih,wp))
+
+                 l_reset = .true.
+                 If (l_print) Call warning(20,Real(itmols,wp),Real(kdih,wp),Real(ldih,wp))
 
               End If
 
@@ -97,5 +106,10 @@ Subroutine dihedrals_14_check &
     kdihed=kdihed+numdih(itmols)
 
   End Do
+
+  If (l_str) Then
+     If (mxnode > 1) Call gcheck(l_reset)
+     If (l_reset) Call warning(22,0.0_wp,0.0_wp,0.0_wp)
+  End If
 
 End Subroutine dihedrals_14_check

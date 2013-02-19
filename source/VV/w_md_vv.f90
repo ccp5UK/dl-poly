@@ -23,6 +23,8 @@
            newjob = .false.
 
            If (keyres /= 1) Call w_write_options()
+
+           If (nstep == 0 .and. nstep == nstrun) Go To 1000
         End If
      End If
 
@@ -89,6 +91,8 @@
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 
+1000 Continue ! Escape forces evaluation at t=0 when nstep=nstrun=0 and newjob=.false.
+
 ! Refresh output
 
      Call w_refresh_output()
@@ -97,16 +101,9 @@
 
      Call gtime(timelp)
 
-! Change levcfg after restart if forces and stress are
-! (re)calculated and print start-up time
+! Change levcfg appropriately
 
-     If (levcfg == 1) Then
-        levcfg=2
-        If (idnode == 0 .and. lines /= 0) Then
-           Write(nrite,'(/,1x,a)') "full force evaluation at restart..."
-           Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
-        End If
-     End If
+     If (levcfg == 1) levcfg=2
 
   End Do
 

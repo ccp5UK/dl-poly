@@ -13,7 +13,7 @@ Subroutine read_field                      &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2012
+! author    - i.t.todorov february 2013
 ! contrib   - r.davidchak july 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1011,7 +1011,7 @@ Subroutine read_field                      &
                        js(1)=lsttet(j)
 
                        If (js(1) == is(1)) Then
-                          If (l_str) Call warning(410,Real(i,wp),Real(j,wp),0.0_wp)
+                          If (l_str .and. l_top) Call warning(410,Real(i,wp),Real(j,wp),0.0_wp)
 !                          Call error(620)
                        End If
                     End Do
@@ -1172,7 +1172,7 @@ Subroutine read_field                      &
                        js(2)=Max(lstbnd(1,j),lstbnd(2,j))
 
                        If (js(1) == is(1) .and. js(2) == is(2)) Then
-                          If (l_str) Call warning(420,Real(i,wp),Real(j,wp),0.0_wp)
+                          If (l_str .and. l_top) Call warning(420,Real(i,wp),Real(j,wp),0.0_wp)
 !                          Call error(620)
                        End If
                     End Do
@@ -1353,7 +1353,7 @@ Subroutine read_field                      &
 
                        If (js(1) == is(1) .and. js(2) == is(2) .and. &
                            js(3) == is(3)) Then
-                          If (l_str) Call warning(430,Real(i,wp),Real(j,wp),0.0_wp)
+                          If (l_str .and. l_top) Call warning(430,Real(i,wp),Real(j,wp),0.0_wp)
 !                          Call error(620)
                        End If
                     End Do
@@ -1507,7 +1507,7 @@ Subroutine read_field                      &
                             js(3) == is(3) .and. js(4) == is(4)) .or. &
                            (js(1) == is(4) .and. js(2) == is(3) .and. &
                             js(3) == is(2) .and. js(4) == is(1))) Then
-                          If (l_str) Call warning(440,Real(i,wp),Real(j,wp),0.0_wp)
+                          If (l_str .and. l_top) Call warning(440,Real(i,wp),Real(j,wp),0.0_wp)
 !                          Call error(620)
                        End If
                     End Do
@@ -1645,7 +1645,7 @@ Subroutine read_field                      &
 
                        If (js(1) == is(1) .and. js(2) == is(2) .and. &
                            js(3) == is(3) .and. js(4) == is(4)) Then
-                          If (l_str) Call warning(450,Real(i,wp),Real(j,wp),0.0_wp)
+                          If (l_str .and. l_top) Call warning(450,Real(i,wp),Real(j,wp),0.0_wp)
 !                          Call error(620)
                        End If
                     End Do
@@ -2923,7 +2923,7 @@ Subroutine read_field                      &
 ! check and resolve any conflicting 14 dihedral specifications
 
         Call dihedrals_14_check &
-           (l_str,ntpmls,nummols,numang,keyang,lstang,numdih,lstdih,prmdih)
+           (l_str,l_top,ntpmls,nummols,numang,keyang,lstang,numdih,lstdih,prmdih)
 
 ! test for existence/appliance of any two-body or tersoff interactions!!!
 

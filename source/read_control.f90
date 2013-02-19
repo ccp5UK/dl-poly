@@ -370,17 +370,39 @@ Subroutine read_control                                &
         l_rin = .true.
         If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% REVOLD reading in ASCII opted !!! %%%"
 
-     Else If (word(1:5) == 'l_his') Then
+     Else If (word(1:6) == 'origin') Then
 
-        l_his = .true.
-        l_trm = .true.
-        If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% generate HISTORY after reading input & terminate !!! %%%"
+        l_org = .true.
+        l_trm  = .true.
+
+        If (idnode == 0) Write(nrite,"(3(/,1x,a))")                                                   &
+           "%%% translate CONFIG along a vector into CFGORG after reading input & terminate !!! %%%", &
+           "%%% vector and config level as follows: %%%"
+
+        Call get_word(record,word)
+        xorg = word_2_real(word)
+        Call get_word(record,word)
+        yorg = word_2_real(word)
+        Call get_word(record,word)
+        zorg = word_2_real(word)
+
+        Call get_word(record,word)
+        lvcforg = Min( Int(Abs(word_2_real(word,0.0_wp))) , levcfg)
+
+        If (idnode == 0) Then
+           Write(nrite,"(1x,a4)") '%%% '
+           Write(nrite,"(1x,a4,3f10.3)") '%%% ',xorg,yorg,zorg
+           Write(nrite,"(1x,a,i0)") '%%% CFGORG level ', lvcforg
+        End If
 
      Else If (word(1:6) == 'l_scl') Then
 
         If (idnode == 0) Write(nrite,"(2(/,1x,a))")                                 &
            "%%% rescale CONFIG to CFGSCL, after reading input & terminate !!! %%%", &
-           "%%% new cell vectors to rescale to: (read in a CONFIG-like manner) %%%"
+           "%%% config level and new cell vectors to rescale to (read in a CONFIG-like manner): %%%"
+
+        Call get_word(record,word)
+        lvcfscl = Min( Int(Abs(word_2_real(word,0.0_wp))) , levcfg)
 
         itmp=0
         Do i=1,3
@@ -396,6 +418,7 @@ Subroutine read_control                                &
 
         If (idnode == 0) Then
            Write(nrite,"(1x,a4)") '%%% '
+           Write(nrite,"(1x,a,i0)") '%%% CFGSCL level ', lvcforg
            Write(nrite,"(1x,a4,3f20.10)") '%%% ',cels(1:3)
            Write(nrite,"(1x,a4,3f20.10)") '%%% ',cels(4:6)
            Write(nrite,"(1x,a4,3f20.10)") '%%% ',cels(7:9)
@@ -410,6 +433,12 @@ Subroutine read_control                                &
            If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% OPTION ABORTED DUE TO ZERO VOLUME !!! %%%"
            l_trm  = .true.
         End If
+
+     Else If (word(1:5) == 'l_his') Then
+
+        l_his = .true.
+        l_trm = .true.
+        If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% generate HISTORY after reading input & terminate !!! %%%"
 
      Else If (word(1:5) == 'l_tim') Then
 

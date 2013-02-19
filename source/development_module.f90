@@ -5,7 +5,7 @@ Module development_module
 ! dl_poly_4 development module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2012
+! author    - i.t.todorov february 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,16 +17,24 @@ Module development_module
   Logical, Save :: l_eng  = .false. ! OUTPUT inclusion of an extra last line with E_tot
   Logical, Save :: l_rout = .false. ! REVIVE writing in ASCII (default is binary)
   Logical, Save :: l_rin  = .false. ! REVOLD reading in ASCII (default is binary)
-  Logical, Save :: l_his  = .false. ! HISTORY generation after reading with termination
+  Logical, Save :: l_org  = .false. ! translate CONFIG along a vector to CFGORG
   Logical, Save :: l_scl  = .false. ! CONFIG rescaling to CFGSCL after reading with termination
+  Logical, Save :: l_his  = .false. ! HISTORY generation after reading with termination
   Logical, Save :: l_trm  = .false. ! termination flag
   Logical, Save :: l_tim  = .false. ! detailed timing
   Logical, Save :: l_tor  = .false. ! no production of REVCON & REVIVE
   Logical, Save :: l_dis  = .false. ! check on minimum separation distance between VNL pairs at re/start
 
+
+  Integer, Save           :: lvcforg = -1                                ! CFGORG levcfg
+  Real( Kind = wp ), Save :: xorg = 0.0_wp, yorg = 0.0_wp, zorg = 0.0_wp ! reorigin vector
+
+  Integer, Save           :: lvcfscl = -1       ! CFGSCL levcfg
   Real( Kind = wp ), Save :: cels(1:9) = 0.0_wp ! CFGSCL lattice parameters
-  Real( Kind = wp ), Save :: t_zero
+
   Real( Kind = wp ), Save :: r_dis = 0.5_wp ! l_dis default check condition
+
+  Real( Kind = wp ), Save :: t_zero
 
 Contains
 

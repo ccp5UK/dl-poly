@@ -31,7 +31,7 @@ Program dl_poly
 ! dl_poly_4 is based on dl_poly_3 by i.t.todorov & w.smith.
 !
 ! copyright - daresbury laboratory
-! authors   - i.t.todorov & w.smith 2012
+! authors   - i.t.todorov & w.smith 2013
 ! contributors: i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -295,6 +295,27 @@ Program dl_poly
   Call check_config &
            (levcfg,imcon,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
+! l_org: translate CONFIG into CFGORG and exit gracefully
+
+  If (l_org) Then
+     Call gtime(timelp)
+     If (idnode == 0) Then
+        Write(nrite,'(/,/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
+        Write(nrite,'(1x,a)') "*** Translating the MD system along a vector (CONFIG to CFGORG) ***"
+        Write(nrite,'(1x,a)') "*** ... ***"
+        Write(nrite,'(1x,a)') "*** ... ***"
+     End If
+
+     Call origin_config(imcon,megatm)
+
+     Call gtime(timelp)
+     If (idnode == 0) Then
+        Write(nrite,'(1x,a)') "*** ... ***"
+        Write(nrite,'(1x,a)') "*** ALL DONE ***"
+        Write(nrite,'(1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
+     End If
+  End If
+
 ! l_scl: rescale CONFIG to CFGSCL and exit gracefully
 
   If (l_scl) Then
@@ -306,7 +327,7 @@ Program dl_poly
         Write(nrite,'(1x,a)') "*** ... ***"
      End If
 
-     Call scale_config(levcfg,imcon,megatm)
+     Call scale_config(imcon,megatm)
 
      Call gtime(timelp)
      If (idnode == 0) Then

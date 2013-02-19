@@ -1,0 +1,47 @@
+Subroutine origin_config(imcon,megatm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for translating the origin of the MD box as
+! defined in CONFIG by the (xorg,yorg,zorg) vector and saving it in
+! CFGORG
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov february 2013
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+  Use config_module,      Only : cell,natms,xxx,yyy,zzz
+  Use development_module, Only : lvcforg,xorg,yorg,zorg
+
+  Implicit None
+
+  Integer, Intent( In    ) :: imcon,megatm
+
+  Character ( Len = 6 ) :: name
+  Integer               :: i,nstep
+  Real( Kind = wp )     :: rcell(1:9),det,uuu,vvv,www,tstep,time
+
+! Translate
+
+  Do i=1,natms
+     xxx(i)=xxx(i)+xorg
+     yyy(i)=yyy(i)+yorg
+     zzz(i)=zzz(i)+zorg
+  End Do
+
+! Restore periodic boundaries
+
+  Call pbcshift(imcon,cell,natms,xxx,yyy,zzz)
+
+! Write REVCON
+
+  name   = 'CFGORG' ! file name
+  nstep  = 0        ! no steps done
+  tstep  = 0.0_wp   ! no step exists
+  time   = 0.0_wp   ! time is not relevant
+
+  Call write_config(name,lvcforg,imcon,megatm,nstep,tstep,time)
+
+End Subroutine origin_config

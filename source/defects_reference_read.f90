@@ -364,7 +364,7 @@ Subroutine defects_reference_read &
 
            If (idnode == 0) Close(Unit=nrefdt)
 
-! Check for inconsistences in REFERENCE
+! Check for inconsistencies in REFERENCE
 
            If (mxnode > 1) Call gmax(j)
            If (j /= megref) Call error(553)

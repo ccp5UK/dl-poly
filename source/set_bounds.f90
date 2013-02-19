@@ -8,7 +8,7 @@ Subroutine set_bounds                                        &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2012
+! author    - i.t.todorov february 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,7 +30,8 @@ Subroutine set_bounds                                        &
 
   Logical           :: lter,ltbp,lfbp
   Integer           :: ilx,ily,ilz,qlx,qly,qlz,megatm
-  Real( Kind = wp ) :: ats,celprp(1:10),cut,dens0,dens,dvar, &
+  Real( Kind = wp ) :: ats,celprp(1:10),cut,                 &
+                       dens0,dens,dvar,fdens,                &
                        test,vcell,rcter,rctbp,rcfbp,         &
                        sidex,sidey,sidez,xhi,yhi,zhi
 
@@ -437,18 +438,22 @@ Subroutine set_bounds                                        &
   Call read_config &
            (megatm,levcfg,imcon,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens)
 
+! Create f(dvar,dens0,dens)
+
+  If (mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
+     fdens = (dvar**1.7_wp) * (0.65_wp*dens0 + 0.35_wp*dens)
+  Else
+     fdens = (dvar**1.7_wp) * (0.35_wp*dens0 + 0.65_wp*dens)
+  End If
+
 ! density variation affects the link-cell arrays' dimension
 ! more than domains(+halo) arrays' dimensions, in case of
 ! events of extreme collapse in atomic systems (aggregation)
 
 ! mxlist is the maximum length of link-cell list (dens * 4/3 pi rcut^3)
-! + 75% extra tolerance (f(dens0,dens) * 7.5/3 pi rcut^3)
+! + 75% extra tolerance - i.e f(dens0,dens)*(7.5/3)*pi*rcut^3
 
-  If (mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
-     mxlist = Nint( (dvar**1.7_wp) * (0.65_wp*dens0+0.35_wp*dens)*2.5_wp*pi*rcut**3)
-  Else
-     mxlist = Nint( (dvar**1.7_wp) * (0.35_wp*dens0+0.65_wp*dens)*2.5_wp*pi*rcut**3)
-  End If
+  mxlist = Nint(fdens*2.5_wp*pi*rcut**3)
   mxlist = Min(mxlist,megatm-1) ! mxexcl
 
   If (mxlist+1 < mxexcl) Then
@@ -460,10 +465,10 @@ Subroutine set_bounds                                        &
 
   vcell = volm / (Real(ilx*ily*ilz,wp) * Real(mxnode,wp))
 
-! get averaged link-cell particle number, boosted by densvar
+! get averaged link-cell particle number, boosted by fdens
 ! + 25% extra tolerance
 
-  test = (dvar**1.7_wp) * dens*vcell * 1.25_wp
+  test = fdens*vcell * 1.25_wp
 
 ! set dimension of working coordinate arrays
 

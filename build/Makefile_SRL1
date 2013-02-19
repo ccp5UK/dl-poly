@@ -50,7 +50,7 @@ OBJ_ALL = \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
-	check_config.o scale_config.o write_config.o \
+	check_config.o origin_config.o scale_config.o write_config.o \
 	trajectory_write.o system_expand.o \
 	rigid_bodies_tags.o rigid_bodies_coms.o rigid_bodies_widths.o \
 	rigid_bodies_setup.o \
