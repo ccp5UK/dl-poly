@@ -2205,7 +2205,7 @@ describing the position, orientation and inertia of a
 rigid body\index{rigid body}, and the rigid body\index{rigid body}
 equations of motion\footnote{An alternative approach is to define
 ``basic'' and ``secondary'' particles.  The basic particles are the
-minimun number needed to define a local body axis system.  The
+minimum number needed to define a local body axis system.  The
 remaining particle positions are expressed in terms of the COM and
 the basic particles. Ordinary bond constraints\index{constraints!bond}
 can then be applied to the basic particles provided the forces
@@ -2225,20 +2225,34 @@ as the location of its centre of mass $\vek{R}$:
 where $\vek{r}_{j}$ is the position vector of atom $j$.  The rigid body
 translational velocity $\vek{V}$ is defined by:
 \begin{equation}
-\vek{V} = {1 \over M}\sum_{j=1}^{N_{sites}} m_{j} \vek{v}_{j}~~,
+\vek{V} = {1 \over M}\sum_{j=1}^{N_{sites}} m_{j} \vek{v}_{j}
 \end{equation}
-where $\vek{v}_{j}$ is the velocity of atom $j$.
-The net translational force acting on the rigid body unit is the vector sum
-of the forces acting on the atoms of the body:
+and its angular momentum\index{angular momentum} $\vek{J}$ can then be
+defined by the expression:
 \begin{equation}
-\vek{F} = \sum_{j=1}^{N_{sites}} \vek{f}_{j}~~, \label{netforce}
+\vek{J} = \sum_{j=1}^{N_{sites}} m_{j} \left( \vek{d}_{j} \times \left[ \vek{v}_{j} - \vek{V} \right] \right)~~,
+\end{equation}
+where $\vek{v}_{j}$ is the velocity of atom $j$ and $\vek{d}_{j}$ is
+the displacement vector of the atom $j$ from the COM, is given by:
+\begin{equation}
+\vek{d}_{j}=\vek{r}_{j}-\vek{R}~~.
+\end{equation}
+The net translational force $\vek{F}$ acting on the rigid body unit is
+the vector sum of the forces acting on the atoms of the body:
+\begin{equation}
+\vek{F} = \sum_{j=1}^{N_{sites}} \vek{f}_{j} \label{netforce}
+\end{equation}
+and the torque vector $\vek{\tau}$ acting on the body in the
+universal frame of reference is given by:
+\begin{equation}
+\vek{\tau} = \sum_{j=1}^{N_{sites}} \vek{d}_{j} \times \vek{f}_{j}~~,\label{nettorque}
 \end{equation}
 where $\vek{f}_{j}$ is the force on a rigid unit site.
 
 A rigid body\index{rigid body} also has associated with it a
-rotational inertia matrix \mat{I}, whose components are given by:
+rotational inertia matrix $\mat{I}$, whose components are given by:
 \begin{equation}
-I_{\alpha\beta}=\sum_{j=1}^{N_{sites}} m_{j} (d_{j}^{2}
+I^{\alpha\beta}=\sum_{j=1}^{N_{sites}} m_{j} (d_{j}^{2}
 \delta_{\alpha \beta}-d_{j}^{\alpha} r_{j}^{\beta})~~,
 \end{equation}
 and COM stress and virial respectively written down as:
@@ -2250,6 +2264,12 @@ where $\vek{d}_{j}$ is the displacement vector of the atom $j$ from the
 COM, and is given by:
 \begin{equation}
 \vek{d}_{j}=\vek{r}_{j}-\vek{R}~~.
+\end{equation}
+
+The rigid body angular velocity $\vek{\omega}$ is the scalar product of
+the moment of inertia, $\mat{I}$, inverse and the angular momentum, $\vek{J}$,:
+\begin{equation}
+\vek{\omega} =  \mat{I}^{-1} \cdot \vek{J}~~.
 \end{equation}
 
 It is common practice in the treatment of rigid body motion to define
@@ -2291,29 +2311,15 @@ those describing the motion of a single atom, except that the force is
 the total force acting on the rigid body i.e. $\vek{F}$ in equation
 (\ref{netforce}) and the mass is the total mass of the rigid body unit
 i.e. $M$ in equation (\ref{netmass}).  These equations can be integrated
-by the standard Verlet LFV or VV algorithms described in the previous
+by the standard Verlet (LFV or VV) algorithms described in the previous
 sections.  Thus we need only consider the rotational motion here.
 
 The rotational equation of motion for a rigid body\index{equations of
-motion!rigid body} is:
+motion!rigid body} relates the torque to the change in angular momentum:
 \begin{equation}
-\vek{\tau} = {d \over dt}\vek{J} ={d \over dt}\left(\mat{I} \cdot \vek{\omega}\right)~~,\label{torquemotion}
+\vek{\tau} = {d \over dt}\vek{J} ={d \over dt}\left(\mat{I} \cdot \vek{\omega}\right)~~.\label{torquemotion}
 \end{equation}
-in which $\vek{J}$ is the angular momentum\index{angular momentum} of
-the rigid body defined by the expression:
-\begin{equation}
-\vek{J} = \sum_{j=1}^{N_{sites}} m_{j} \vek{d}_{j} \times \vek{v}_{j}~~,
-\end{equation}
-and $\vek{\omega}$ is the angular velocity\index{angular velocity}.
-
-The vector $\vek{\tau}$ is the torque acting on the body in the
-universal frame and is given by:
-\begin{equation}
-\vek{\tau} = \sum_{j=1}^{N_{sites}} \vek{d}_{j} \times \vek{f}_{j}~~.
-\end{equation}
-
-The rotational equations of motion for rigid bodies in a theromostat can
-be written as:
+In a thermostat it can be written as:
 \begin{equation}
 \dot{\vek{J}_{i}} = \vek{\tau}_{i} - \vek{\omega}_{i} \times \vek{J}_{i} + \frac{\chi}{q_{mass}} \vek{J}_{i}~~,
 \end{equation}
@@ -2346,7 +2352,7 @@ q_3 & -q_2 & ~q_1 & ~q_0}
 \pmatrix{0 \cr \hat{\omega}_{x} \cr \hat{\omega}_{y} \cr \hat{\omega}_{z}}~~.
 \end{equation}
 
-Rotational motion in \D is handled by two different methods.  For LFV implementation,
+Rotational motion in \D is handled by two different methods.  For the LFV implementation,
 the Fincham Implicit Quaternion Algorithm (FIQA) is used\index{algorithm!FIQA}
 \cite{fincham-92a}.  The VV implementation uses the NOSQUISH\index{algorithm!NOSQUISH}
 algorithm of Miller {\em et al.} \cite{miller-02a}.  The implementation of FIQA is

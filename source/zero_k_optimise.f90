@@ -191,7 +191,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot)
 
            End If
 
-! take component of the angualr velocity in direction of
+! take component of the angular velocity in direction of
 ! the angular acceleration (torque./RI.)
 
            trx=trx*rgdrix(2,rgdtyp)

@@ -370,7 +370,7 @@ Subroutine read_control                                &
         l_rin = .true.
         If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% REVOLD reading in ASCII opted !!! %%%"
 
-     Else If (word(1:6) == 'origin') Then
+     Else If (word(1:5) == 'l_org') Then
 
         l_org = .true.
         l_trm  = .true.
@@ -395,7 +395,7 @@ Subroutine read_control                                &
            Write(nrite,"(1x,a,i0)") '%%% CFGORG level ', lvcforg
         End If
 
-     Else If (word(1:6) == 'l_scl') Then
+     Else If (word(1:5) == 'l_scl') Then
 
         If (idnode == 0) Write(nrite,"(2(/,1x,a))")                                 &
            "%%% rescale CONFIG to CFGSCL, after reading input & terminate !!! %%%", &

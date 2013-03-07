@@ -1,4 +1,4 @@
-!!!!!!!!!!!!!!!!!!!!!!  w_AT_START_LFV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_LFV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
 ! Calculate kinetic stress tensor and energy at t=0 for reporting
@@ -20,4 +20,4 @@
   If (levcfg == 1) levcfg=2
 
 
-!!!!!!!!!!!!!!!!!!!!!!  w_AT_START_LFV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_LFV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
