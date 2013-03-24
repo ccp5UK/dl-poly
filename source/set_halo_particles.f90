@@ -6,7 +6,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
 ! neighbouring domains/nodes
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov may 2012
+! amended   - i.t.todorov march 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -33,13 +33,6 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
                        xdc,ydc,zdc,cwx,cwy,cwz,ecwx,ecwy,ecwz
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
-
-  fail=0
-  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'set_halo_particles allocation failure, node: ', idnode
-     Call error(0)
-  End If
 
   If (newjob) Then
      newjob = .false.
@@ -101,11 +94,12 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
   ecwy=Nearest( (-0.5_wp+ecwy)+Real(idy,wp)*r_npry , +1.0_wp)+zero_plus
   ecwz=Nearest( (-0.5_wp+ecwz)+Real(idz,wp)*r_nprz , +1.0_wp)+zero_plus
 
-! Distance from the + edge of this domain
+! Distance from the + edge of this domain with a possible
+! extension strip for the one liked cell per domain scenario
 
-  cwx=Nearest( (-0.5_wp-cwx)+Real(idx+1,wp)*r_nprx , -1.0_wp)-zero_plus
-  cwy=Nearest( (-0.5_wp-cwy)+Real(idy+1,wp)*r_npry , -1.0_wp)-zero_plus
-  cwz=Nearest( (-0.5_wp-cwz)+Real(idz+1,wp)*r_nprz , -1.0_wp)-zero_plus
+  cwx=Nearest( (-0.5_wp-cwx)+Real(idx+1,wp)*r_nprx , -1.0_wp)-zero_plus-Merge( cwx*1.0e-10_wp , 0.0_wp , nlx == 1 )
+  cwy=Nearest( (-0.5_wp-cwy)+Real(idy+1,wp)*r_npry , -1.0_wp)-zero_plus-Merge( cwy*1.0e-10_wp , 0.0_wp , nly == 1 )
+  cwz=Nearest( (-0.5_wp-cwz)+Real(idz+1,wp)*r_nprz , -1.0_wp)-zero_plus-Merge( cwz*1.0e-10_wp , 0.0_wp , nlz == 1 )
 
 ! Get the inverse cell matrix
 
@@ -117,6 +111,14 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
 
   nlast=natms                 ! No halo exists yet
   If (oldjob) ixyz(1:nlast)=0 ! Initialise halo indicator
+
+  fail=0
+  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'set_halo_particles allocation failure, node: ', idnode
+     Call error(0)
+  End If
+
   Do i=1,nlast
      xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
      yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
@@ -132,31 +134,28 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
      If (zzt(i) >=  cwz) ixyz(i)=ixyz(i)+200
   End Do
 
+  Deallocate (xxt,yyt,zzt, Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'set_halo_particles deallocation failure, node: ', idnode
+     Call error(0)
+  End If
+
 ! exchange atom data in -/+ x directions
 
-  Call export_atomic_data(-1,xxt,yyt,zzt)
-  Call export_atomic_data( 1,xxt,yyt,zzt)
+  Call export_atomic_data(-1)
+  Call export_atomic_data( 1)
 
 ! exchange atom data in -/+ y directions
 
-  Call export_atomic_data(-2,xxt,yyt,zzt)
-  Call export_atomic_data( 2,xxt,yyt,zzt)
+  Call export_atomic_data(-2)
+  Call export_atomic_data( 2)
 
 ! exchange atom data in -/+ z directions
 
-  Call export_atomic_data(-3,xxt,yyt,zzt)
-  Call export_atomic_data( 3,xxt,yyt,zzt)
+  Call export_atomic_data(-3)
+  Call export_atomic_data( 3)
 
-! Convert MD cell centered atomic positions (of the halo only)
-! from reduced space coordinates to Cartesian coordinates
-
-  Do i=natms+1,nlast
-     xxx(i)=cell(1)*xxt(i)+cell(4)*yyt(i)+cell(7)*zzt(i)
-     yyy(i)=cell(2)*xxt(i)+cell(5)*yyt(i)+cell(8)*zzt(i)
-     zzz(i)=cell(3)*xxt(i)+cell(6)*yyt(i)+cell(9)*zzt(i)
-  End Do
-
-! assign incoming atom properties
+! assign incoming atom properties (of the halo only)
 
   Do i=natms+1,nlast
      ltype(i)=typsit(lsite(i))
@@ -208,12 +207,6 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
   If (oldjob .and. m_rgd > 0) Then
      Call rigid_bodies_tags()
      Call rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
-  End If
-
-  Deallocate (xxt,yyt,zzt, Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'set_halo_particles deallocation failure, node: ', idnode
-     Call error(0)
   End If
 
 End Subroutine set_halo_particles

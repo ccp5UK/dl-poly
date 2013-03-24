@@ -1334,7 +1334,7 @@ Subroutine jacobi(n,aaa,vvv)
 ! Variable rho sets absolute tolerance on convergence
 ! Variable test is a moving tolerance that diminishes on each pass
 ! until true convergence test<rho
-! A ZERO matrices are accepted and returned
+! ZERO matrices are accepted and returned
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov july 2008

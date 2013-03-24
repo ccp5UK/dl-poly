@@ -1,4 +1,4 @@
-Subroutine export_atomic_data(mdir,xxt,yyt,zzt)
+Subroutine export_atomic_data(mdir)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,7 +6,7 @@ Subroutine export_atomic_data(mdir,xxt,yyt,zzt)
 ! for halo formation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov march 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -14,16 +14,16 @@ Subroutine export_atomic_data(mdir,xxt,yyt,zzt)
   Use comms_module
   Use setup_module
   Use domains_module
-  Use config_module, Only : nlast,ltg,lsite,ixyz
+  Use config_module, Only : nlast,ltg,lsite,ixyz,cell,xxx,yyy,zzz
 
   Implicit None
 
   Integer,           Intent( In    ) :: mdir
-  Real( Kind = wp ), Intent( InOut ) :: xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms)
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez
   Integer           :: fail,i,j,iblock,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
                        jdnode,kdnode,imove,jmove,itmp
+  Real( Kind = wp ) :: uuu,vvv,www
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
@@ -152,15 +152,13 @@ Subroutine export_atomic_data(mdir,xxt,yyt,zzt)
 
 ! pack positions and apply possible wrap-around corrections for the receiver
 
-              buffer(imove+1)=xxt(i)
-              If (lsx) buffer(imove+1)=buffer(imove+1)+1.0_wp
-              If (lex) buffer(imove+1)=buffer(imove+1)-1.0_wp
-              buffer(imove+2)=yyt(i)
-              If (lsy) buffer(imove+2)=buffer(imove+2)+1.0_wp
-              If (ley) buffer(imove+2)=buffer(imove+2)-1.0_wp
-              buffer(imove+3)=zzt(i)
-              If (lsz) buffer(imove+3)=buffer(imove+3)+1.0_wp
-              If (lez) buffer(imove+3)=buffer(imove+3)-1.0_wp
+              uuu=0.0_wp ; If (lsx) uuu=+1.0_wp ; If (lex) uuu=-1.0_wp
+              vvv=0.0_wp ; If (lsy) vvv=+1.0_wp ; If (ley) vvv=-1.0_wp
+              www=0.0_wp ; If (lsz) www=+1.0_wp ; If (lez) www=-1.0_wp
+
+              buffer(imove+1)=xxx(i)+cell(1)*uuu+cell(4)*vvv+cell(7)*www
+              buffer(imove+2)=yyy(i)+cell(2)*uuu+cell(5)*vvv+cell(8)*www
+              buffer(imove+3)=zzz(i)+cell(3)*uuu+cell(6)*vvv+cell(9)*www
 
 ! pack config indexing, site and remaining halo indexing arrays
 
@@ -238,9 +236,9 @@ Subroutine export_atomic_data(mdir,xxt,yyt,zzt)
 
 ! unpack positions
 
-     xxt(nlast)=buffer(j+1)
-     yyt(nlast)=buffer(j+2)
-     zzt(nlast)=buffer(j+3)
+     xxx(nlast)=buffer(j+1)
+     yyy(nlast)=buffer(j+2)
+     zzz(nlast)=buffer(j+3)
 
 ! unpack config indexing, site and halo indexing arrays
 

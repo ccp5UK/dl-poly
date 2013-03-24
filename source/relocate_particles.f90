@@ -11,12 +11,12 @@ Subroutine relocate_particles        &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov june 2012
+! amended   - i.t.todorov march 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,       Only : mxnode,gsum,gmax,gcheck
+  Use comms_module,       Only : idnode,mxnode,gsum,gmax,gcheck
   Use setup_module
   Use domains_module
 
@@ -50,9 +50,10 @@ Subroutine relocate_particles        &
   Real( Kind = wp ), Save :: cut
 
   Logical           :: safe(1:9)
-  Integer           :: i,nlimit,ipx,ipy,ipz
-  Real( Kind = wp ) :: big(1:3),celprp(1:10),rcell(1:9),det, &
-                       uuu,vvv,www
+  Integer           :: fail,i,nlimit,ipx,ipy,ipz
+  Real( Kind = wp ) :: big(1:3),celprp(1:10),rcell(1:9),det
+
+  Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
   If (newjob) Then
      newjob = .false.
@@ -100,6 +101,7 @@ Subroutine relocate_particles        &
         cell(9)=Max(2.0_wp*big(3)+cut,3.0_wp*cut,cell(9))
 
      End If
+
   End If
 
 ! Get the dimensional properties of the MD cell
@@ -120,54 +122,64 @@ Subroutine relocate_particles        &
 ! since last call to relocate as we don't test this!!!
 
      ixyz(1:natms)=0 ! Initialise move (former halo) indicator
-     Do i=1,natms
-        uuu=xxx(i)
-        vvv=yyy(i)
-        www=zzz(i)
 
-        xxx(i)=rcell(1)*uuu+rcell(4)*vvv+rcell(7)*www
-        yyy(i)=rcell(2)*uuu+rcell(5)*vvv+rcell(8)*www
-        zzz(i)=rcell(3)*uuu+rcell(6)*vvv+rcell(9)*www
+     fail=0
+     Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail)
+     If (fail > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'relocate_particles allocation failure, node: ', idnode
+        Call error(0)
+     End If
+
+     Do i=1,natms
+        xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
+        yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
+        zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
 
 ! assign domain coordinates (call for errors)
 
-        ipx=Int((xxx(i)+0.5_wp)*nprx_r)
-        ipy=Int((yyy(i)+0.5_wp)*npry_r)
-        ipz=Int((zzz(i)+0.5_wp)*nprz_r)
+        ipx=Int((xxt(i)+0.5_wp)*nprx_r)
+        ipy=Int((yyt(i)+0.5_wp)*npry_r)
+        ipz=Int((zzt(i)+0.5_wp)*nprz_r)
 
         If (idx == 0) Then
-           If (xxx(i) < -half_plus) ixyz(i)=ixyz(i)+1
+           If (xxt(i) < -half_plus) ixyz(i)=ixyz(i)+1
         Else
            If (ipx < idx) ixyz(i)=ixyz(i)+1
         End If
         If (idx == nprx-1) Then
-           If (xxx(i) >= half_minus) ixyz(i)=ixyz(i)+2
+           If (xxt(i) >= half_minus) ixyz(i)=ixyz(i)+2
         Else
            If (ipx > idx) ixyz(i)=ixyz(i)+2
         End If
 
         If (idy == 0) Then
-           If (yyy(i) < -half_plus) ixyz(i)=ixyz(i)+10
+           If (yyt(i) < -half_plus) ixyz(i)=ixyz(i)+10
         Else
            If (ipy < idy) ixyz(i)=ixyz(i)+10
         End If
         If (idy == npry-1) Then
-           If (yyy(i) >= half_minus) ixyz(i)=ixyz(i)+20
+           If (yyt(i) >= half_minus) ixyz(i)=ixyz(i)+20
         Else
            If (ipy > idy) ixyz(i)=ixyz(i)+20
         End If
 
         If (idz == 0) Then
-           If (zzz(i) < -half_plus) ixyz(i)=ixyz(i)+100
+           If (zzt(i) < -half_plus) ixyz(i)=ixyz(i)+100
         Else
            If (ipz < idz) ixyz(i)=ixyz(i)+100
         End If
         If (idz == nprz-1) Then
-           If (zzz(i) >= half_minus) ixyz(i)=ixyz(i)+200
+           If (zzt(i) >= half_minus) ixyz(i)=ixyz(i)+200
         Else
            If (ipz > idz) ixyz(i)=ixyz(i)+200
         End If
      End Do
+
+     Deallocate (xxt,yyt,zzt, Stat=fail)
+     If (fail > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'relocate_particles deallocation failure, node: ', idnode
+        Call error(0)
+     End If
 
 ! exchange atom data in -/+ x directions
 
@@ -190,18 +202,9 @@ Subroutine relocate_particles        &
      nlimit=natms ; Call gsum(nlimit)
      If ((.not.safe(1)) .or. nlimit /= megatm) Call error(58)
 
-! restore atomic coordinates to real coordinates
-! and reassign atom properties
+! reassign atom properties
 
      Do i=1,natms
-        uuu=xxx(i)
-        vvv=yyy(i)
-        www=zzz(i)
-
-        xxx(i)=cell(1)*uuu+cell(4)*vvv+cell(7)*www
-        yyy(i)=cell(2)*uuu+cell(5)*vvv+cell(8)*www
-        zzz(i)=cell(3)*uuu+cell(6)*vvv+cell(9)*www
-
         atmnam(i)=sitnam(lsite(i))
         ltype(i)=typsit(lsite(i))
         chge(i)=chgsit(lsite(i))

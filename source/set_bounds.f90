@@ -8,7 +8,7 @@ Subroutine set_bounds                                        &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2013
+! author    - i.t.todorov march 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -37,7 +37,7 @@ Subroutine set_bounds                                        &
 
 ! define zero+ and half+/- (setup_module)
 
-  zero_plus  = Nearest( 0.0_wp ,  1.0_wp)
+  zero_plus  = Nearest( 0.0_wp , +1.0_wp)
   half_plus  = Nearest( 0.5_wp , +1.0_wp)
   half_minus = Nearest( 0.5_wp , -1.0_wp)
 
@@ -442,6 +442,8 @@ Subroutine set_bounds                                        &
 
   If (mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
      fdens = (dvar**1.7_wp) * (0.65_wp*dens0 + 0.35_wp*dens)
+  Else If (Min(ilx,ily,ilz) == 1) Then
+     fdens = (dvar**1.7_wp) * (0.50_wp*dens0 + 0.50_wp*dens)
   Else
      fdens = (dvar**1.7_wp) * (0.35_wp*dens0 + 0.65_wp*dens)
   End If

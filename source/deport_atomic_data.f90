@@ -9,7 +9,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov october 2012
+! amended   - i.t.todorov march 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -59,6 +59,7 @@ Subroutine deport_atomic_data(mdir,lbook)
                        jrigid,krigid,jteths,kteths,            &
                        jbonds,kbonds,jangle,kangle,            &
                        jdihed,kdihed,jinver,kinver
+  Real( Kind = wp ) :: uuu,vvv,www
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
   Integer,           Dimension( : ), Allocatable :: i1pmf,i2pmf
@@ -284,17 +285,15 @@ Subroutine deport_atomic_data(mdir,lbook)
 
         If (imove+18 <= iblock) Then
 
-! pack positions and apply possible wrap-around corrections for receiver
+! pack positions and apply possible wrap-around corrections for the receiver
 
-           buffer(imove+1)=xxx(i)
-           If (lsx) buffer(imove+1)=buffer(imove+1)+1.0_wp
-           If (lex) buffer(imove+1)=buffer(imove+1)-1.0_wp
-           buffer(imove+2)=yyy(i)
-           If (lsy) buffer(imove+2)=buffer(imove+2)+1.0_wp
-           If (ley) buffer(imove+2)=buffer(imove+2)-1.0_wp
-           buffer(imove+3)=zzz(i)
-           If (lsz) buffer(imove+3)=buffer(imove+3)+1.0_wp
-           If (lez) buffer(imove+3)=buffer(imove+3)-1.0_wp
+           uuu=0.0_wp ; If (lsx) uuu=+1.0_wp ; If (lex) uuu=-1.0_wp
+           vvv=0.0_wp ; If (lsy) vvv=+1.0_wp ; If (ley) vvv=-1.0_wp
+           www=0.0_wp ; If (lsz) www=+1.0_wp ; If (lez) www=-1.0_wp
+
+           buffer(imove+1)=xxx(i)+cell(1)*uuu+cell(4)*vvv+cell(7)*www
+           buffer(imove+2)=yyy(i)+cell(2)*uuu+cell(5)*vvv+cell(8)*www
+           buffer(imove+3)=zzz(i)+cell(3)*uuu+cell(6)*vvv+cell(9)*www
 
 ! pack velocities
 
