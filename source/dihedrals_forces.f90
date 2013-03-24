@@ -10,17 +10,18 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1992
-! amended   - i.t.todorov march 2012
+! amended   - i.t.todorov march 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,     Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,     Only : nrite,mxdihd,pi,r4pie0,zero_plus
-  Use config_module,    Only : cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
-                               chge,xxx,yyy,zzz,fxx,fyy,fzz
-  Use dihedrals_module, Only : ntdihd,keydih,listdih,prmdih
-  Use vdw_module,       Only : ntpvdw
+  Use comms_module,      Only : idnode,mxnode,gsync,gsum,gcheck
+  Use setup_module,      Only : nrite,mxdihd,pi,r4pie0,zero_plus
+  Use config_module,     Only : cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
+                                chge,xxx,yyy,zzz,fxx,fyy,fzz
+  Use dihedrals_module,  Only : lx_dih,ntdihd,keydih,listdih,prmdih
+
+  Use vdw_module,        Only : ntpvdw
 
   Implicit None
 
@@ -36,10 +37,11 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: twopi,rtwopi
 
-  Logical                 :: safe(1:3)
-  Integer                 :: fail(1:4),i,j,ia,ib,ic,id,kk,ai,aj,local_index
+  Logical                 :: safe(1:3),csa,csd
+  Integer                 :: fail(1:5),i,j,ia,ib,ic,id,kk,ai,aj, &
+                             ia0,id0,local_index
   Real( Kind = wp )       :: xab,yab,zab, xac,yac,zac,                 &
-                             xad,yad,zad,rad,rad2,                     &
+                             xad,yad,zad,rad(0:3),rad2(0:3),           &
                              xbc,ybc,zbc,rrbc,                         &
                              xcd,ycd,zcd,                              &
                              fax,fay,faz, fb1x,fb1y,fb1z,              &
@@ -53,17 +55,19 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
                              engc14,virc14,engs14,virs14,              &
                              strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:5)
 
-  Logical,           Allocatable :: lunsafe(:)
+  Logical,           Allocatable :: lunsafe(:),lad(:,:)
   Integer,           Allocatable :: lstopt(:,:)
   Real( Kind = wp ), Allocatable :: xdab(:),ydab(:),zdab(:)
   Real( Kind = wp ), Allocatable :: xdbc(:),ydbc(:),zdbc(:)
   Real( Kind = wp ), Allocatable :: xdcd(:),ydcd(:),zdcd(:)
+  Real( Kind = wp ), Allocatable :: xdad(:,:),ydad(:,:),zdad(:,:)
 
   fail=0
-  Allocate (lunsafe(1:mxdihd),lstopt(0:4,1:mxdihd),       Stat=fail(1))
-  Allocate (xdab(1:mxdihd),ydab(1:mxdihd),zdab(1:mxdihd), Stat=fail(2))
-  Allocate (xdbc(1:mxdihd),ydbc(1:mxdihd),zdbc(1:mxdihd), Stat=fail(3))
-  Allocate (xdcd(1:mxdihd),ydcd(1:mxdihd),zdcd(1:mxdihd), Stat=fail(4))
+  Allocate (lunsafe(1:mxdihd),lstopt(0:6,1:mxdihd),lad(1:3,1:mxdihd), Stat=fail(1))
+  Allocate (xdab(1:mxdihd),ydab(1:mxdihd),zdab(1:mxdihd),             Stat=fail(2))
+  Allocate (xdbc(1:mxdihd),ydbc(1:mxdihd),zdbc(1:mxdihd),             Stat=fail(3))
+  Allocate (xdcd(1:mxdihd),ydcd(1:mxdihd),zdcd(1:mxdihd),             Stat=fail(4))
+  Allocate (xdad(1:3,1:mxdihd),ydad(1:3,1:mxdihd),zdad(1:3,1:mxdihd), Stat=fail(5))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'dihedrals_forces allocation failure, node: ', idnode
      Call error(0)
@@ -90,20 +94,45 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
      ib=local_index(listdih(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
      ic=local_index(listdih(3,i),nlast,lsi,lsa) ; lstopt(3,i)=ic
      id=local_index(listdih(4,i),nlast,lsi,lsa) ; lstopt(4,i)=id
+     If (lx_dih) Then
+        ia0=local_index(listdih(5,i),nlast,lsi,lsa) ; lstopt(5,i)=ia0
+        id0=local_index(listdih(6,i),nlast,lsi,lsa) ; lstopt(6,i)=id0
+     End If
 
      lstopt(0,i)=0
-     If (ia > 0 .and. ib > 0 .and. ic > 0 .and. id > 0) Then !Tag
-        If (lfrzn(ia)*lfrzn(ib)*lfrzn(ic)*lfrzn(id) == 0) Then
-           If (ia <= natms .or. ib <= natms .or. ic <= natms .or. id <= natms) Then
-              lstopt(0,i)=1
-            End If
+     If (lx_dih) Then
+        If (ia > 0 .and. ib > 0 .and. ic > 0 .and. id > 0 .and. &
+            ia0 > 0 .and. id0 > 0) Then !Tag
+           If (lfrzn(ia)*lfrzn(ib)*lfrzn(ic)*lfrzn(id) == 0) Then
+              If (ia <= natms .or. ib <= natms .or. ic <= natms .or. id <= natms .or. &
+                  ia0 <= natms .or. id0 <= natms) Then
+                 lstopt(0,i)=1
+              End If
+           End If
+        Else                            ! Detect uncompressed unit
+           If ( ((ia > 0  .and. ia <= natms)  .or.   &
+                 (ib > 0  .and. ib <= natms)  .or.   &
+                 (ic > 0  .and. ic <= natms)  .or.   &
+                 (id > 0  .and. id <= natms)  .or.   &
+                 (ia0 > 0 .and. ia0 <= natms) .or.   &
+                 (id0 > 0 .and. id0 <= natms)) .and. &
+                (ia == 0 .or. ib == 0 .or. ic == 0 .or. id == 0 .or. &
+                 ia0 == 0 .or. id0 == 0) ) lunsafe(i)=.true.
         End If
-     Else                                                    ! Detect uncompressed unit
-        If ( ((ia > 0 .and. ia <= natms) .or.   &
-              (ib > 0 .and. ib <= natms) .or.   &
-              (ic > 0 .and. ic <= natms) .or.   &
-              (id > 0 .and. id <= natms)) .and. &
-             (ia == 0 .or. ib == 0 .or. ic == 0 .or. id == 0) ) lunsafe(i)=.true.
+     Else
+        If (ia > 0 .and. ib > 0 .and. ic > 0 .and. id > 0) Then !Tag
+           If (lfrzn(ia)*lfrzn(ib)*lfrzn(ic)*lfrzn(id) == 0) Then
+              If (ia <= natms .or. ib <= natms .or. ic <= natms .or. id <= natms) Then
+                 lstopt(0,i)=1
+               End If
+           End If
+        Else                                                    ! Detect uncompressed unit
+           If ( ((ia > 0 .and. ia <= natms) .or.   &
+                 (ib > 0 .and. ib <= natms) .or.   &
+                 (ic > 0 .and. ic <= natms) .or.   &
+                 (id > 0 .and. id <= natms)) .and. &
+                (ia == 0 .or. ib == 0 .or. ic == 0 .or. id == 0) ) lunsafe(i)=.true.
+        End If
      End If
 
 ! define components of bond vectors
@@ -120,6 +149,41 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
         xdcd(i)=xxx(ic)-xxx(id)
         ydcd(i)=yyy(ic)-yyy(id)
         zdcd(i)=zzz(ic)-zzz(id)
+
+        If (lx_dih) Then
+           csa=(listdih(1,i) /= listdih(5,i))
+           csd=(listdih(4,i) /= listdih(6,i))
+
+           lad(:,i)=.false.
+           If (csa .or. csd) Then
+              If (csa .and. csd) Then
+                 lad(1,i)=.true.
+                 xdad(1,i)=xxx(ia0)-xxx(id)
+                 ydad(1,i)=yyy(ia0)-yyy(id)
+                 zdad(1,i)=zzz(ia0)-zzz(id)
+
+                 lad(2,i)=.true.
+                 xdad(2,i)=xxx(ia)-xxx(id0)
+                 ydad(2,i)=yyy(ia)-yyy(id0)
+                 zdad(2,i)=zzz(ia)-zzz(id0)
+
+                 lad(3,i)=.true.
+                 xdad(3,i)=xxx(ia0)-xxx(id0)
+                 ydad(3,i)=yyy(ia0)-yyy(id0)
+                 zdad(3,i)=zzz(ia0)-zzz(id0)
+              Else If (csa) Then
+                 lad(1,i)=.true.
+                 xdad(1,i)=xxx(ia0)-xxx(id)
+                 ydad(1,i)=yyy(ia0)-yyy(id)
+                 zdad(1,i)=zzz(ia0)-zzz(id)
+              Else If (csd) Then
+                 lad(2,i)=.true.
+                 xdad(2,i)=xxx(ia)-xxx(id0)
+                 ydad(2,i)=yyy(ia)-yyy(id0)
+                 zdad(2,i)=zzz(ia)-zzz(id0)
+              End If
+           End If
+        End If
 !     Else ! (DEBUG)
 !        xdab(i)=0.0_wp
 !        ydab(i)=0.0_wp
@@ -132,6 +196,13 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 !        xdcd(i)=0.0_wp
 !        ydcd(i)=0.0_wp
 !        zdcd(i)=0.0_wp
+!
+!        If (lx_dih) Then
+!           lad(i,:)=.false.
+!           xdad(i,:)=0.0_wp
+!           ydad(i,:)=0.0_wp
+!           zdad(i,:)=0.0_wp
+!        End If
      End If
   End Do
 
@@ -163,6 +234,11 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
   Call images(imcon,cell,ntdihd,xdab,ydab,zdab)
   Call images(imcon,cell,ntdihd,xdbc,ydbc,zdbc)
   Call images(imcon,cell,ntdihd,xdcd,ydcd,zdcd)
+  If (lx_dih) Then
+     If (Any(lad(1,1:ntdihd))) Call images(imcon,cell,ntdihd,xdad(1,1:ntdihd),ydad(1,1:ntdihd),zdad(1,1:ntdihd))
+     If (Any(lad(2,1:ntdihd))) Call images(imcon,cell,ntdihd,xdad(2,1:ntdihd),ydad(2,1:ntdihd),zdad(2,1:ntdihd))
+     If (Any(lad(3,1:ntdihd))) Call images(imcon,cell,ntdihd,xdad(3,1:ntdihd),ydad(3,1:ntdihd),zdad(3,1:ntdihd))
+  End If
 
 ! initialise stress tensor accumulators
 
@@ -441,12 +517,29 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
         yad=yac+ycd
         zad=zac+zcd
 
-        rad2  = xad**2+yad**2+zad**2
-        rad   = Sqrt(rad2)
+        rad2=0.0_wp ; rad=0.0_wp
+
+        rad2(0)=xad**2+yad**2+zad**2
+        rad(0) =Sqrt(rad2(0))
+
+        If (lx_dih) Then
+           If (lad(1,i)) Then
+              rad2(1) = xdad(1,i)**2+ydad(1,i)**2+zdad(1,i)**2
+              rad(1)  = Sqrt(rad2(1))
+           End If
+           If (lad(2,i)) Then
+              rad2(2) = xdad(2,i)**2+ydad(2,i)**2+zdad(2,i)**2
+              rad(2)  = Sqrt(rad2(2))
+           End If
+           If (lad(3,i)) Then
+              rad2(3) = xdad(3,i)**2+ydad(3,i)**2+zdad(3,i)**2
+              rad(3)  = Sqrt(rad2(3))
+           End If
+        End If
 
 ! flag error if rad > cutoff
 
-        If (rad > rcut) Then
+        If (Any(rad > rcut)) Then
            Write(*,*) 'AB',xab,yab,zab
            Write(*,*) 'BC',xbc,ybc,zbc,xac,yac,zac
            Write(*,*) 'CD',xcd,ycd,zcd,xad,yad,zad
@@ -454,7 +547,16 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
            Write(*,*) 'B',xxx(ib),yyy(ib),zzz(ib)
            Write(*,*) 'C',xxx(ic),yyy(ic),zzz(ic)
            Write(*,*) 'D',xxx(id),yyy(id),zzz(id)
-           Write(*,*) i,ltg(ia),ltg(ib),ltg(ic),ltg(id),rcut,rad
+           If (lx_dih) Then
+              If (lad(1,i)) Write(*,*) 'A0',xxx(ia0),yyy(ia0),zzz(ia0)
+              If (lad(2,i)) Write(*,*) 'D0',xxx(id0),yyy(id0),zzz(id0)
+           End If
+           Write(*,*) i,ltg(ia),ltg(ib),ltg(ic),ltg(id),rcut,rad(0)
+           If (lx_dih) Then
+              If (lad(1,i)) Write(*,*) i,ltg(ia0),ltg(id),rad(1)
+              If (lad(2,i)) Write(*,*) i,ltg(ia),ltg(id0),rad(2)
+              If (lad(3,i)) Write(*,*) i,ltg(ia0),ltg(id0),rad(3)
+           End If
            safe(2) = .false.
         End If
 
@@ -468,7 +570,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
         chgprd=scale*chge(ia)*chge(id)*r4pie0/epsq
         If (Abs(chgprd) > zero_plus .and. keyfce > 0) Then
 
-           Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad,rad2,coul,fcoul,safe(3))
+           Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(0),rad2(0),coul,fcoul,safe(3))
 
            fx = fcoul*xad
            fy = fcoul*yad
@@ -479,7 +581,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 ! correction to electrostatic energy and virial
 
               engc14 = engc14 + coul
-              virc14 = virc14 - fcoul*rad2
+              virc14 = virc14 - fcoul*rad2(0)
 
 ! calculate stress tensor
 
@@ -506,6 +608,135 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 
         End If
 
+        If (lx_dih) Then
+           If (lad(1,i)) Then
+              chgprd=scale*chge(ia0)*chge(id)*r4pie0/epsq
+              If (Abs(chgprd) > zero_plus .and. keyfce > 0) Then
+
+                 Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(1),rad2(1),coul,fcoul,safe(3))
+
+                 fx = fcoul*xdad(1,i)
+                 fy = fcoul*ydad(1,i)
+                 fz = fcoul*zdad(1,i)
+
+                 If (ia0 <= natms) Then
+
+! correction to electrostatic energy and virial
+
+                    engc14 = engc14 + coul
+                    virc14 = virc14 - fcoul*rad2(1)
+
+! calculate stress tensor
+
+                    strs1 = strs1 + xdad(1,i)*fx
+                    strs2 = strs2 + xdad(1,i)*fy
+                    strs3 = strs3 + xdad(1,i)*fz
+                    strs5 = strs5 + ydad(1,i)*fy
+                    strs6 = strs6 + ydad(1,i)*fz
+                    strs9 = strs9 + zdad(1,i)*fz
+
+                    fxx(ia0) = fxx(ia0) + fx
+                    fyy(ia0) = fyy(ia0) + fy
+                    fzz(ia0) = fzz(ia0) + fz
+
+                 End If
+
+                 If (id <= natms) Then
+
+                    fxx(id) = fxx(id) - fx
+                    fyy(id) = fyy(id) - fy
+                    fzz(id) = fzz(id) - fz
+
+                 End If
+
+              End If
+           End If
+
+           If (lad(2,i)) Then
+              chgprd=scale*chge(ia)*chge(id0)*r4pie0/epsq
+              If (Abs(chgprd) > zero_plus .and. keyfce > 0) Then
+
+                 Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(2),rad2(2),coul,fcoul,safe(3))
+
+                 fx = fcoul*xdad(2,i)
+                 fy = fcoul*ydad(2,i)
+                 fz = fcoul*zdad(2,i)
+
+                 If (ia <= natms) Then
+
+! correction to electrostatic energy and virial
+
+                    engc14 = engc14 + coul
+                    virc14 = virc14 - fcoul*rad2(2)
+
+! calculate stress tensor
+
+                    strs1 = strs1 + xdad(2,i)*fx
+                    strs2 = strs2 + xdad(2,i)*fy
+                    strs3 = strs3 + xdad(2,i)*fz
+                    strs5 = strs5 + ydad(2,i)*fy
+                    strs6 = strs6 + ydad(2,i)*fz
+                    strs9 = strs9 + zdad(2,i)*fz
+
+                    fxx(ia) = fxx(ia) + fx
+                    fyy(ia) = fyy(ia) + fy
+                    fzz(ia) = fzz(ia) + fz
+
+                 End If
+
+                 If (id0 <= natms) Then
+
+                    fxx(id0) = fxx(id0) - fx
+                    fyy(id0) = fyy(id0) - fy
+                    fzz(id0) = fzz(id0) - fz
+
+                 End If
+              End If
+           End If
+
+           If (lad(3,i)) Then
+              chgprd=scale*chge(ia0)*chge(id0)*r4pie0/epsq
+              If (Abs(chgprd) > zero_plus .and. keyfce > 0) Then
+
+                 Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(3),rad2(3),coul,fcoul,safe(3))
+
+                 fx = fcoul*xdad(3,i)
+                 fy = fcoul*ydad(3,i)
+                 fz = fcoul*zdad(3,i)
+
+                 If (ia0 <= natms) Then
+
+! correction to electrostatic energy and virial
+
+                    engc14 = engc14 + coul
+                    virc14 = virc14 - fcoul*rad2(3)
+
+! calculate stress tensor
+
+                    strs1 = strs1 + xdad(3,i)*fx
+                    strs2 = strs2 + xdad(3,i)*fy
+                    strs3 = strs3 + xdad(3,i)*fz
+                    strs5 = strs5 + ydad(3,i)*fy
+                    strs6 = strs6 + ydad(3,i)*fz
+                    strs9 = strs9 + zdad(3,i)*fz
+
+                    fxx(ia0) = fxx(ia0) + fx
+                    fyy(ia0) = fyy(ia0) + fy
+                    fzz(ia0) = fzz(ia0) + fz
+
+                 End If
+
+                 If (id0 <= natms) Then
+
+                    fxx(id0) = fxx(id0) - fx
+                    fyy(id0) = fyy(id0) - fy
+                    fzz(id0) = fzz(id0) - fz
+
+                 End If
+              End If
+           End If
+        End If
+
 ! 1-4 short-range (vdw) interactions: adjust by weighting factor
 ! assumes 1-4 interactions are in the exclude list and Rad < rvdw
 
@@ -517,7 +748,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
            ai=ltype(ia)
            aj=ltype(id)
 
-           Call dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
+           Call dihedrals_14_vdw(rvdw,ai,aj,rad(0),rad2(0),eng,gamma)
 
            gamma = scale*gamma
            eng   = scale*eng
@@ -531,7 +762,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 ! add scaled 1-4 short-range potential energy and virial
 
               engs14=engs14+eng
-              virs14=virs14-gamma*rad2
+              virs14=virs14-gamma*rad2(0)
 
 ! calculate stress tensor
 
@@ -554,6 +785,140 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
               fyy(id) = fyy(id) - fy
               fzz(id) = fzz(id) - fz
 
+           End If
+
+           If (lx_dih) Then
+              If (lad(1,i)) Then
+                 ai=ltype(ia0)
+                 aj=ltype(id)
+
+                 Call dihedrals_14_vdw(rvdw,ai,aj,rad(1),rad2(1),eng,gamma)
+
+                 gamma = scale*gamma
+                 eng   = scale*eng
+
+                 fx = gamma*xdad(1,i)
+                 fy = gamma*ydad(1,i)
+                 fz = gamma*zdad(1,i)
+
+                 If (ia0 <= natms) Then
+
+! add scaled 1-4 short-range potential energy and virial
+
+                    engs14=engs14+eng
+                    virs14=virs14-gamma*rad2(1)
+
+! calculate stress tensor
+
+                    strs1 = strs1 + xdad(1,i)*fx
+                    strs2 = strs2 + xdad(1,i)*fy
+                    strs3 = strs3 + xdad(1,i)*fz
+                    strs5 = strs5 + ydad(1,i)*fy
+                    strs6 = strs6 + ydad(1,i)*fz
+                    strs9 = strs9 + zdad(1,i)*fz
+
+                    fxx(ia0) = fxx(ia0) + fx
+                    fyy(ia0) = fyy(ia0) + fy
+                    fzz(ia0) = fzz(ia0) + fz
+
+                 End If
+
+                 If (id <= natms) Then
+
+                    fxx(id) = fxx(id) - fx
+                    fyy(id) = fyy(id) - fy
+                    fzz(id) = fzz(id) - fz
+
+                 End If
+              End If
+
+              If (lad(2,i)) Then
+                 ai=ltype(ia)
+                 aj=ltype(id0)
+
+                 Call dihedrals_14_vdw(rvdw,ai,aj,rad(2),rad2(2),eng,gamma)
+
+                 gamma = scale*gamma
+                 eng   = scale*eng
+
+                 fx = gamma*xdad(2,i)
+                 fy = gamma*ydad(2,i)
+                 fz = gamma*zdad(2,i)
+
+                 If (ia <= natms) Then
+
+! add scaled 1-4 short-range potential energy and virial
+
+                    engs14=engs14+eng
+                    virs14=virs14-gamma*rad2(2)
+
+! calculate stress tensor
+
+                    strs1 = strs1 + xdad(2,i)*fx
+                    strs2 = strs2 + xdad(2,i)*fy
+                    strs3 = strs3 + xdad(2,i)*fz
+                    strs5 = strs5 + ydad(2,i)*fy
+                    strs6 = strs6 + ydad(2,i)*fz
+                    strs9 = strs9 + zdad(2,i)*fz
+
+                    fxx(ia) = fxx(ia) + fx
+                    fyy(ia) = fyy(ia) + fy
+                    fzz(ia) = fzz(ia) + fz
+
+                 End If
+
+                 If (id0 <= natms) Then
+
+                    fxx(id0) = fxx(id0) - fx
+                    fyy(id0) = fyy(id0) - fy
+                    fzz(id0) = fzz(id0) - fz
+
+                 End If
+              End If
+
+              If (lad(3,i)) Then
+                 ai=ltype(ia0)
+                 aj=ltype(id0)
+
+                 Call dihedrals_14_vdw(rvdw,ai,aj,rad(3),rad2(3),eng,gamma)
+
+                 gamma = scale*gamma
+                 eng   = scale*eng
+
+                 fx = gamma*xdad(3,i)
+                 fy = gamma*ydad(3,i)
+                 fz = gamma*zdad(3,i)
+
+                 If (ia0 <= natms) Then
+
+! add scaled 1-4 short-range potential energy and virial
+
+                    engs14=engs14+eng
+                    virs14=virs14-gamma*rad2(3)
+
+! calculate stress tensor
+
+                    strs1 = strs1 + xdad(3,i)*fx
+                    strs2 = strs2 + xdad(3,i)*fy
+                    strs3 = strs3 + xdad(3,i)*fz
+                    strs5 = strs5 + ydad(3,i)*fy
+                    strs6 = strs6 + ydad(3,i)*fz
+                    strs9 = strs9 + zdad(3,i)*fz
+
+                    fxx(ia0) = fxx(ia0) + fx
+                    fyy(ia0) = fyy(ia0) + fy
+                    fzz(ia0) = fzz(ia0) + fz
+
+                 End If
+
+                 If (id0 <= natms) Then
+
+                    fxx(id0) = fxx(id0) - fx
+                    fyy(id0) = fyy(id0) - fy
+                    fzz(id0) = fzz(id0) - fz
+
+                 End If
+              End If
            End If
 
         End If
@@ -605,10 +970,11 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
   If (.not.safe(2)) Call error(445)
   If (.not.safe(3)) Call error(446)
 
-  Deallocate (lunsafe,lstopt, Stat=fail(1))
-  Deallocate (xdab,ydab,zdab, Stat=fail(2))
-  Deallocate (xdbc,ydbc,zdbc, Stat=fail(3))
-  Deallocate (xdcd,ydcd,zdcd, Stat=fail(4))
+  Deallocate (lunsafe,lstopt,lad, Stat=fail(1))
+  Deallocate (xdab,ydab,zdab,     Stat=fail(2))
+  Deallocate (xdbc,ydbc,zdbc,     Stat=fail(3))
+  Deallocate (xdcd,ydcd,zdcd,     Stat=fail(4))
+  Deallocate (xdad,ydad,zdad,     Stat=fail(5))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'dihedrals_forces deallocation failure, node: ', idnode
      Call error(0)

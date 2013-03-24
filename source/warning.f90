@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2013
+! author    - i.t.todorov march 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -298,7 +298,46 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,3(i0,a))')                             &
         '*** warning - PMF unit ', ia, ' and rigid body unit ', ib, &
-        ' on molecular species type ', ic, ' in illegal configuration !!! ***'
+        ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
+
+     Else If (kode == 297) Then
+
+        ia = Nint(a)
+        ib = Nint(b)
+        ic = Nint(c)
+
+        Write(nrite,'(/,1x,a,3(i0,a),/)')                             &
+        '*** warning - core-shell unit ', ia, ' and angle unit ', ib, &
+        ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
+     Else If (kode == 298) Then
+
+        ia = Nint(a)
+        ib = Nint(b)
+        ic = Nint(c)
+
+        Write(nrite,'(/,1x,a,3(i0,a),/)')                                &
+        '*** warning - core-shell unit ', ia, ' and dihedral unit ', ib, &
+        ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
+
+     Else If (kode == 299) Then
+
+        ia = Nint(a)
+        ib = Nint(b)
+        ic = Nint(c)
+
+        Write(nrite,'(/,1x,a,3(i0,a),/)')                                 &
+        '*** warning - core-shell unit ', ia, ' and inversion unit ', ib, &
+        ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
+
+     Else If (kode == 300) Then
+
+        ia = Nint(a)
+        ib = Nint(b)
+        ic = Nint(c)
+
+        Write(nrite,'(/,1x,a,3(i0,a),/)')                           &
+        '*** warning - core-shell unit ', ia, ' and PMF unit ', ib, &
+        ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
      Else If (kode == 301) Then
 
@@ -308,7 +347,7 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,3(i0,a),/)')                                  &
         '*** warning - core-shell unit ', ia, ' and constraint unit ', ib, &
-        ' on molecular species type ', ic, ' in illegal configuration !!! ***'
+        ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
      Else If (kode == 302) Then
 
@@ -318,7 +357,7 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,3(i0,a))')                                    &
         '*** warning - core-shell unit ', ia, ' and rigid body unit ', ib, &
-        ' on molecular species type ', ic, ' in illegal configuration !!! ***'
+        ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
      Else If (kode == 303) Then
 
@@ -328,7 +367,7 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,3(i0,a),/)')                              &
         '*** warning - core-shell unit ', ia, ' and tether unit ', ib, &
-        ' on molecular species type ', ic, ' in illegal configuration !!! ***'
+        ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
      Else If (kode == 304) Then
 
@@ -338,7 +377,7 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,3(i0,a))')                                    &
         '*** warning - constraint unit ', ia, ' and rigid body unit ', ib, &
-        ' on molecular species type ', ic, ' in illegal configuration !!! ***'
+        ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
      Else If (kode == 305) Then
 

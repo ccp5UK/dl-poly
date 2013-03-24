@@ -12,7 +12,7 @@ Subroutine build_book_intra              &
 ! torsion angles, and inversion angles
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov march 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -58,7 +58,7 @@ Subroutine build_book_intra              &
   Integer :: fail(1:2),i,j,isite,itmols,imols,   &
              nsatm,neatm,nlapm,local_index,      &
              iat0,jat0,kat0,lat0,                &
-             iatm,jatm,katm,latm,                &
+             iatm,jatm,katm,latm,matm,natm,      &
              jshels,kshels,lshels,mshels,        &
              jconst,kconst,lconst,lpmf,          &
              jrigid,krigid,lrigid,mrigid,irigid, &
@@ -396,6 +396,10 @@ Subroutine build_book_intra              &
               jatm=lstdih(2,ldihed+kdihed)+isite
               katm=lstdih(3,ldihed+kdihed)+isite
               latm=lstdih(4,ldihed+kdihed)+isite
+              If (lx_dih) Then
+                 matm=lstdih(5,ldihed+kdihed)+isite
+                 natm=lstdih(6,ldihed+kdihed)+isite
+              End If
 
               iat0=local_index(iatm,nlast,lsi,lsa)
               jat0=local_index(jatm,nlast,lsi,lsa)
@@ -415,6 +419,10 @@ Subroutine build_book_intra              &
                     listdih(2,jdihed)=jatm
                     listdih(3,jdihed)=katm
                     listdih(4,jdihed)=latm
+                    If (lx_dih) Then
+                       listdih(5,jdihed)=matm
+                       listdih(6,jdihed)=natm
+                    End If
 
                     If (iat0 > 0) Call tag_legend(safe(1),iat0,jdihed,legdih,mxfdih)
                     If (jat0 > 0) Call tag_legend(safe(1),jat0,jdihed,legdih,mxfdih)
@@ -874,6 +882,10 @@ Subroutine build_book_intra              &
               jatm=lstdih(2,ldihed+kdihed)+isite
               katm=lstdih(3,ldihed+kdihed)+isite
               latm=lstdih(4,ldihed+kdihed)+isite
+              If (lx_dih) Then
+                 matm=lstdih(5,ldihed+kdihed)+isite
+                 natm=lstdih(6,ldihed+kdihed)+isite
+              End If
 
               If ( Any(iwrk(1:mshels) == iatm) .or. &
                    Any(iwrk(1:mshels) == jatm) .or. &
@@ -886,6 +898,10 @@ Subroutine build_book_intra              &
                     listdih(2,jdihed)=jatm
                     listdih(3,jdihed)=katm
                     listdih(4,jdihed)=latm
+                    If (lx_dih) Then
+                       listdih(5,jdihed)=matm
+                       listdih(6,jdihed)=natm
+                    End If
                  Else
                     safe(9)=.false.
                  End If
@@ -1132,6 +1148,8 @@ Subroutine build_book_intra              &
 ! for bookkeeping and exclusion of core-shell units
 
   ntshl2 =jshels
+
+  If (lx_dih) ntdihd=ntdihd1 ! extend the dihedrals' set
 
 400 Continue
 

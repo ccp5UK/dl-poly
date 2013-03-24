@@ -34,7 +34,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 
   Use bonds_module,        Only : ntbond,listbnd,legbnd
   Use angles_module,       Only : ntangl,listang,legang
-  Use dihedrals_module,    Only : ntdihd,listdih,legdih
+  Use dihedrals_module,    Only : ntdihd,listdih,legdih,lx_dih
   Use inversions_module,   Only : ntinv,listinv,leginv
 
   Use statistics_module
@@ -54,7 +54,7 @@ Subroutine deport_atomic_data(mdir,lbook)
   Integer           :: fail(1:3),iblock,jdnode,kdnode,         &
                        imove,jmove,kmove,keep,                 &
                        i,j,k,l,jj,kk,jxyz,ix,iy,iz,kx,ky,kz,   &
-                       newatm,iatm,jatm,katm,latm,             &
+                       newatm,iatm,jatm,katm,latm,matm,natm,   &
                        jshels,kshels,jconst,kconst,jpmf,kpmf,  &
                        jrigid,krigid,jteths,kteths,            &
                        jbonds,kbonds,jangle,kangle,            &
@@ -687,17 +687,32 @@ Subroutine deport_atomic_data(mdir,lbook)
 
            jj=1
            Do While (legdih(jj,i) > 0 .and. safe)
-              If (imove+5 <= iblock) Then
-                 kk=legdih(jj,i)
+              If (lx_dih) Then ! Carry over 6 members
+                 If (imove+7 <= iblock) Then
+                    kk=legdih(jj,i)
 
-                 Do k=0,4
-                    imove=imove+1
-                    buffer(imove)=Real(listdih(k,kk),wp)
-                 End Do
+                    Do k=0,6
+                       imove=imove+1
+                       buffer(imove)=Real(listdih(k,kk),wp)
+                    End Do
 
-                 jj=jj+1
-              Else
-                 safe=.false.
+                    jj=jj+1
+                 Else
+                    safe=.false.
+                 End If
+              Else ! back up to carry over the default of 4 members
+                 If (imove+5 <= iblock) Then
+                    kk=legdih(jj,i)
+
+                    Do k=0,4
+                       imove=imove+1
+                       buffer(imove)=Real(listdih(k,kk),wp)
+                    End Do
+
+                    jj=jj+1
+                 Else
+                    safe=.false.
+                 End If
               End If
            End Do
            If (imove+1 <= iblock .and. safe) Then
@@ -1316,7 +1331,13 @@ Subroutine deport_atomic_data(mdir,lbook)
            jatm=Nint(buffer(kmove+3))
            katm=Nint(buffer(kmove+4))
            latm=Nint(buffer(kmove+5))
-           kmove=kmove+5
+           If (lx_dih) Then
+              matm=Nint(buffer(kmove+6))
+              natm=Nint(buffer(kmove+7))
+              kmove=kmove+7
+           Else
+              kmove=kmove+5
+           End If
 
 ! check if dihedral already specified
 
@@ -1342,6 +1363,10 @@ Subroutine deport_atomic_data(mdir,lbook)
                  listdih(2,jdihed)=jatm
                  listdih(3,jdihed)=katm
                  listdih(4,jdihed)=latm
+                 If (lx_dih) Then
+                    listdih(5,jdihed)=matm
+                    listdih(6,jdihed)=natm
+                 End If
 
                  Call tag_legend(safe1,newatm,jdihed,legdih,mxfdih)
               Else

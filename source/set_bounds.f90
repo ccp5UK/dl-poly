@@ -512,7 +512,7 @@ Subroutine set_bounds                                        &
                    (mxtpmf(1)+mxtpmf(2)+2)*mxpmf            + &
                    (mxlrgd+19)*Max(mxtrgd,mxrgd)            + &
                    2*mxteth + 3*mxbond + 4*mxangl           + &
-                   5*mxdihd + 5*mxinv))                     / &
+                   7*mxdihd + 5*mxinv))                     / &
                   (Min(ilx,ily,ilz)*Max(Nint(rcut),1))      , &
                 (Merge( 2, 1, mxnode > 1)*11*mxatms)        / &
                  Min(qlx,qly,qlz)                           , &

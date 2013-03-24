@@ -284,7 +284,7 @@ Program dl_poly
   Call read_field                          &
            (imcon,l_n_v,l_str,l_top,       &
            rcut,rvdw,rmet,width,keyfce,    &
-           lbook,lexcl,keyshl,             &
+           lecx,lbook,lexcl,keyshl,        &
            rcter,rctbp,rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &

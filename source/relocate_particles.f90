@@ -34,7 +34,7 @@ Subroutine relocate_particles        &
 
   Use bonds_module,        Only : ntbond,listbnd,legbnd
   Use angles_module,       Only : ntangl,listang,legang
-  Use dihedrals_module,    Only : ntdihd,listdih,legdih
+  Use dihedrals_module,    Only : ntdihd,listdih,legdih,ub_dih
   Use inversions_module,   Only : ntinv, listinv,leginv
 
   Implicit None
@@ -216,7 +216,7 @@ Subroutine relocate_particles        &
      If (lbook) Then
         safe=.true. ! Initialise safety flag
 
-! Change nlast and refresh gtl or record global atom indices for local sorting
+! Change nlast and refresh record global atom indices for local sorting
 ! since particles may have been relocated across domains as the
 ! the old halo is invalid and a new one is not set yet.  This allows for
 ! local_index search over natms in pmf_units_set and compress_book_intra.
@@ -224,15 +224,11 @@ Subroutine relocate_particles        &
 ! domain only indices are caught by the condition (1 >= index <= natms)!!!
 
         nlast=natms
-        If (gtl_b > 0) Then
-           Call get_gtl(lbook)
-        Else
-           Do i=1,nlast
-              lsi(i)=i
-              lsa(i)=ltg(i)
-           End Do
-           Call shellsort2(nlast,lsi,lsa)
-        End If
+        Do i=1,nlast
+           lsi(i)=i
+           lsa(i)=ltg(i)
+        End Do
+        Call shellsort2(nlast,lsi,lsa)
 
 ! Check safety of working arrays for all active bookkeeping arrays
 
@@ -280,7 +276,7 @@ Subroutine relocate_particles        &
         If (megang > 0) Call compress_book_intra &
            (mxangl,ntangl,Ubound(listang,Dim=1),listang,mxfang,legang)
         If (megdih > 0) Call compress_book_intra &
-           (mxdihd,ntdihd,Ubound(listdih,Dim=1),listdih,mxfdih,legdih)
+           (mxdihd,ntdihd,ub_dih,listdih,mxfdih,legdih)
         If (meginv > 0) Call compress_book_intra &
            (mxinv,ntinv,  Ubound(listinv,Dim=1),listinv,mxfinv,leginv)
 

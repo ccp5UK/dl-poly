@@ -25,8 +25,6 @@
 ! Subroutine shellsort2 - sorts an integer array in ascending order,
 !                         keeping the original ranking of the array
 !
-! Subroutine get_gtl - refreshes the Global To Local array
-!
 ! Function local_index - finds the local atom number given the global
 !                        atom number
 !
@@ -567,64 +565,6 @@ Subroutine shellsort2(n,rank,list)
 
 End Subroutine shellsort2
 
-Subroutine get_gtl(lbook)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine refreshing the Global To Local array
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov october 2006
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use config_module, Only : natms,nlast,ltg,gtl_b,gtl
-
-  Implicit None
-
-  Logical, Intent( In    ) :: lbook
-
-  Logical, Save :: newjob = .true.
-  Integer       :: i,j
-
-  If (nlast > natms) Then
-
-! set_halo_particles call
-
-     If (lbook) Then
-        j=natms+1 ! Shorten globalisation and no initialisation
-     Else
-        gtl=0     ! Initialise
-     End If
-
-! But for the very first call: allocate, initialise and do full globalisation
-
-     If (newjob) Then
-        newjob = .false.
-
-        Allocate (gtl(1:gtl_b), Stat = i)
-        If (i > 0) Call error(0)
-
-        gtl=0 ; j=1
-     End If
-
-  Else
-
-! relocate_particles call
-
-     gtl=0 ! Initialise
-     j=1   ! Do full globalisation (from the very first local index)
-
-  End If
-
-! Globalise
-
-  Do i=j,nlast
-     If (gtl(ltg(i)) == 0) gtl(ltg(i))=i
-  End Do
-
-End Subroutine get_gtl
-
 Function local_index(global_index,search_limit,rank,list)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -643,21 +583,12 @@ Function local_index(global_index,search_limit,rank,list)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use config_module, Only : gtl_b,gtl
-
   Implicit None
 
   Integer,                   Intent( In    ) :: global_index,search_limit
   Integer, Dimension( 1:* ), Intent( In    ) :: rank,list
 
   Integer local_index,point,lower_bound,upper_bound,down
-
-! Get it from the gtl array if possible
-
-  If (gtl_b > 0) Then
-     local_index=gtl(global_index)
-     Return
-  End If
 
 ! Initialise
 

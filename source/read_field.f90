@@ -1,7 +1,7 @@
 Subroutine read_field                      &
            (imcon,l_n_v,l_str,l_top,       &
            rcut,rvdw,rmet,width,keyfce,    &
-           lbook,lexcl,keyshl,             &
+           lecx,lbook,lexcl,keyshl,        &
            rcter,rctbp,rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &
@@ -13,7 +13,7 @@ Subroutine read_field                      &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2013
+! author    - i.t.todorov march 2013
 ! contrib   - r.davidchak july 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -32,7 +32,7 @@ Subroutine read_field                      &
 ! Fuch's correction of charge non-neutral systems
 ! Global_To_Local variables
 
-  Use config_module, Only : sumchg,gtl_b
+  Use config_module, Only : sumchg
 
 ! INTERACTION MODULES
 
@@ -72,6 +72,7 @@ Subroutine read_field                      &
   Integer,           Intent( In    ) :: imcon
   Integer,           Intent( InOut ) :: keyfce
   Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width
+  Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
   Real( Kind = wp ), Intent(   Out ) :: rcter,rctbp,rcfbp
@@ -1723,6 +1724,8 @@ Subroutine read_field                      &
                  Call error(476)
               End If
            End If
+        Else If (lecx) Then ! previously selected option for accounting for
+           lecx = .false.   ! extended coulombic exclusion is abandoned
         End If
 
 ! Check for charges in the system
@@ -1748,38 +1751,52 @@ Subroutine read_field                      &
 
         If (Abs(sumchg) > 1.0e-6_wp .and. idnode == 0) Call warning(5,sumchg,0.0_wp,0.0_wp)
 
-! test for constrained, RBed and tethered shells in core-shell units
-
         If (megshl > 0) Then
            nsite =0
            nshels=0
            nconst=0
            nrigid=0
            nteth =0
+! bonds are allowed
+           nangle=0
+           ndihed=0
+           ninver=0
+
            Do itmols=1,ntpmls
               Do ishls=1,numshl(itmols)
                  nshels=nshels+1
-                 iatm1=lstshl(2,nshels)
+                 ia=lstshl(1,nshels) ! core
+                 ja=lstshl(2,nshels) ! shell
 
-                 dofsit(nsite+iatm1)=-3.0_wp ! shells have no DoF
+! shells have no DoF, even if they are moved dynamically
+! their DoFs don't contribute towards any dynamical properties
+
+                 dofsit(nsite+ja)=-3.0_wp
+
+! test for constrained, RBed and tethered shells
 
                  Do icnst=1,numcon(itmols)
                     nconst=nconst+1
-                    iatm2=lstcon(1,nconst)
-                    iatm3=lstcon(2,nconst)
 
-                    If (iatm2 == iatm1 .or. iatm3 == iatm1) Then
+                    If (Any(lstcon(1:2,nconst) == ja)) Then
                        Call warning(301,Real(ishls,wp),Real(icnst,wp),Real(itmols,wp))
                        Call error(99)
                     End If
                  End Do
                  If (ishls /= numshl(itmols)) nconst=nconst-numcon(itmols)
 
+                 Do i=1,numpmf(itmols)
+                    If (Any(lstpmf(1:mxtpmf(1),1) == ja) .or. Any(lstpmf(1:mxtpmf(2),2) == ja)) Then
+                       Call warning(300,Real(ishls,wp),Real(i,wp),Real(itmols,wp))
+                       Call error(99)
+                    End If
+                 End Do
+
                  Do irgd=1,numrgd(itmols)
                     nrigid=nrigid+1
 
                     lrgd=lstrgd(0,nrigid)
-                    If (Any(lstrgd(1:lrgd,nrigid) == iatm1)) Then
+                    If (Any(lstrgd(1:lrgd,nrigid) == ja)) Then
                        Call warning(302,Real(ishls,wp),Real(irgd,wp),Real(itmols,wp))
                        Call error(99)
                     End If
@@ -1788,18 +1805,86 @@ Subroutine read_field                      &
 
                  Do iteth=1,numteth(itmols)
                     nteth=nteth+1
-                    iatm4=lsttet(nteth)
 
-                    If (iatm4 == iatm1) Then
+                    If (lsttet(nteth) == ja) Then
                        Call warning(303,Real(ishls,wp),Real(iteth,wp),Real(itmols,wp))
                        Call error(99)
                     End If
                  End Do
                  If (ishls /= numshl(itmols)) nteth=nteth-numteth(itmols)
-              End Do
 
+! test for core-shell units fully overlapped on angles, dihedrals and inversions
+
+                 Do iang=1,numang(itmols)
+                    nangle=nangle+1
+
+                    If (Any(lstang(1:3,nangle) == ia) .and. Any(lstang(1:3,nangle) == ja)) Then
+                       Call warning(297,Real(ishls,wp),Real(iang,wp),Real(itmols,wp))
+                       Call error(99)
+                    End If
+                 End Do
+                 If (ishls /= numshl(itmols)) nangle=nangle-numang(itmols)
+
+                 Do idih=1,numdih(itmols)
+                    ndihed=ndihed+1
+
+                    If (Any(lstdih(1:4,ndihed) == ia) .and. Any(lstdih(1:4,ndihed) == ja)) Then
+                       Call warning(298,Real(ishls,wp),Real(idih,wp),Real(itmols,wp))
+                       Call error(99)
+                    End If
+
+! core-shell up the 1 and 4 members
+
+                    If (lecx) Then ! lx_dih=.false. is the default in dihedrals_module
+                       If (lstdih(1,ndihed) == ia) Then
+                          lx_dih=.true.
+                          lstdih(5,ndihed)=ja
+                       End If
+                       If (lstdih(1,ndihed) == ja) Then
+                          lx_dih=.true.
+                          lstdih(5,ndihed)=ia
+                       End If
+
+                       If (lstdih(4,ndihed) == ia) Then
+                          lx_dih=.true.
+                          lstdih(6,ndihed)=ja
+                       End If
+                       If (lstdih(4,ndihed) == ja) Then
+                          lx_dih=.true.
+                          lstdih(6,ndihed)=ia
+                       End If
+                    End If
+                 End Do
+                 If (ishls /= numshl(itmols)) ndihed=ndihed-numdih(itmols)
+
+                 Do iinv=1,numinv(itmols)
+                    ninver=ninver+1
+
+                    If (Any(lstinv(1:4,ninver) == ia) .and. Any(lstinv(1:4,ninver) == ja)) Then
+                       Call warning(299,Real(ishls,wp),Real(iinv,wp),Real(itmols,wp))
+                       Call error(99)
+                    End If
+                 End Do
+                 If (ishls /= numshl(itmols)) ninver=ninver-numinv(itmols)
+              End Do
               nsite=nsite+numsit(itmols)
            End Do
+
+! if core-shelling up has occurred to 1 or/and 4 members then
+! default the unshelled cores of 1 or/and 4 to the corresponding 5 & 6
+
+           If (lx_dih) Then
+              ub_dih=6 ! track more, 4 is the default in dihedrals_module
+              ndihed=0 ! initialise unshelled units
+              Do itmols=1,ntpmls
+                 Do idih=1,numdih(itmols)
+                    ndihed=ndihed+1
+
+                    If (lstdih(5,ndihed) == 0) lstdih(5,ndihed)=lstdih(1,ndihed)
+                    If (lstdih(6,ndihed) == 0) lstdih(6,ndihed)=lstdih(4,ndihed)
+                 End Do
+              End Do
+           End If
         End If
 
 ! RB particulars
@@ -2923,24 +3008,12 @@ Subroutine read_field                      &
 ! check and resolve any conflicting 14 dihedral specifications
 
         Call dihedrals_14_check &
-           (l_str,l_top,ntpmls,nummols,numang,keyang,lstang,numdih,lstdih,prmdih)
+           (l_str,l_top,lx_dih,ntpmls,nummols,numang,keyang,lstang,numdih,lstdih,prmdih)
 
 ! test for existence/appliance of any two-body or tersoff interactions!!!
 
         If ( keyfce == 0 .and. ntpvdw == 0 .and. &
              ntpmet == 0 .and. ntpter == 0 ) Call error(145)
-
-! check for use of fast Global_To_Local search for special systems
-!
-!        If (megatm <= 50000000 .and.               &
-!            (Int(megatm*1,ip)+Int(megfrz*1,ip)   + &
-!             Int(megshl*2,ip)+Int(megcon*2,ip)   + &
-!             Int(megpmf*(mxtpmf(1)+mxtpmf(2)),ip)+ &
-!             Int(megrgd*mxlrgd,ip)+                &
-!             Int(megtet*1,ip)+                     &
-!             Int(megbnd*2,ip)+Int(megang*3,ip)   + &
-!             Int(megdih*4,ip)+Int(meginv*4,ip))  / &
-!            Int(megatm,ip) > Int(2,ip)) gtl_b=megatm
 
 ! EXIT IF ALL IS OK
 

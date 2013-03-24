@@ -1,5 +1,5 @@
 Subroutine dihedrals_14_check &
-           (l_str,l_top,ntpmls,nummols,numang,keyang,lstang,numdih,lstdih,prmdih)
+           (l_str,l_top,lx_dih,ntpmls,nummols,numang,keyang,lstang,numdih,lstdih,prmdih)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -8,7 +8,7 @@ Subroutine dihedrals_14_check &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1999
-! amended   - i.t.todorov february 2013
+! amended   - i.t.todorov march 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -16,7 +16,7 @@ Subroutine dihedrals_14_check &
   Use comms_module, Only : mxnode,gcheck
   Use setup_module, Only : mxtmls,mxtang,mxtdih,mxpdih
 
-  Logical,           Intent( In    ) :: l_str,l_top
+  Logical,           Intent( In    ) :: l_str,l_top,lx_dih
   Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls),numang(1:mxtmls), &
                                         keyang(1:mxtang),lstang(1:3,1:mxtang),     &
                                         numdih(1:mxtmls),lstdih(1:4,1:mxtdih)
@@ -24,7 +24,7 @@ Subroutine dihedrals_14_check &
 
   Logical :: l_print,l_reset
   Integer :: kangle,kdihed,itmols,imols,langle,ldihed,mdihed, &
-             iang,jang,idih,jdih,kdih,ldih
+             iang,jang,idih,jdih,kdih,ldih,mdih,ndih,odih,pdih
 
   l_print = (l_str.and.l_top)
   l_reset = .false.
@@ -57,13 +57,11 @@ Subroutine dihedrals_14_check &
                  jdih=lstdih(4,ldihed+kdihed)
 
                  If (Min(iang,jang) == Min(idih,jdih) .and. Max(iang,jang) == Max(idih,jdih)) Then
-
                     prmdih(4,ldihed+kdihed)=0.0_wp
                     prmdih(5,ldihed+kdihed)=0.0_wp
 
                     l_reset = .true.
                     If (l_print) Call warning(20,Real(itmols,wp),Real(idih,wp),Real(jdih,wp))
-
                  End If
 
               End Do
@@ -78,20 +76,37 @@ Subroutine dihedrals_14_check &
 
            idih=lstdih(1,ldihed+kdihed)
            jdih=lstdih(4,ldihed+kdihed)
+           If (lx_dih) Then
+              mdih=lstdih(5,ldihed+kdihed)
+              ndih=lstdih(6,ldihed+kdihed)
+           End If
 
            Do mdihed=ldihed+1,numdih(itmols)
 
               kdih=lstdih(1,mdihed+kdihed)
               ldih=lstdih(4,mdihed+kdihed)
+              If (lx_dih) Then
+                 odih=lstdih(5,mdihed+kdihed)
+                 pdih=lstdih(6,mdihed+kdihed)
+              End If
 
-              If (Min(kdih,ldih) == Min(idih,jdih) .and. Max(kdih,ldih) == Max(idih,jdih)) Then
+              If (lx_dih) Then
+                 If (Min(kdih,ldih,odih,pdih) == Min(idih,jdih,mdih,ndih) .and. &
+                     Max(kdih,ldih,odih,pdih) == Max(idih,jdih,mdih,ndih)) Then
+                    prmdih(4,mdihed+kdihed)=0.0_wp
+                    prmdih(5,mdihed+kdihed)=0.0_wp
 
-                 prmdih(4,mdihed+kdihed)=0.0_wp
-                 prmdih(5,mdihed+kdihed)=0.0_wp
+                    l_reset = .true.
+                    If (l_print) Call warning(20,Real(itmols,wp),Real(kdih,wp),Real(ldih,wp))
+                 End If
+              Else
+                 If (Min(kdih,ldih) == Min(idih,jdih) .and. Max(kdih,ldih) == Max(idih,jdih)) Then
+                    prmdih(4,mdihed+kdihed)=0.0_wp
+                    prmdih(5,mdihed+kdihed)=0.0_wp
 
-                 l_reset = .true.
-                 If (l_print) Call warning(20,Real(itmols,wp),Real(kdih,wp),Real(ldih,wp))
-
+                    l_reset = .true.
+                    If (l_print) Call warning(20,Real(itmols,wp),Real(kdih,wp),Real(ldih,wp))
+                 End If
               End If
 
            End Do

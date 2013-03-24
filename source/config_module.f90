@@ -5,7 +5,7 @@ Module config_module
 ! dl_poly_4 module declaring global configuration variables and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2011
+! author    - i.t.todorov march 2013
 ! contrib   - i.j.bush march 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -20,8 +20,7 @@ Module config_module
   Integer,               Save :: natms = 0 , &
                                  nlast = 0 , &
                                  nfree = 0 , &
-                                 imc_n =-1 , &
-                                 gtl_b = 0
+                                 imc_n =-1
 
   Real( Kind = wp ),     Save :: cell(1:9) = 0.0_wp , &
                                  volm      = 0.0_wp , &
@@ -35,7 +34,7 @@ Module config_module
   Integer,              Allocatable, Save :: lsi(:),lsa(:),ltg(:)
   Integer,              Allocatable, Save :: lexatm(:,:)
   Integer,              Allocatable, Save :: ixyz(:),list(:,:)
-  Integer,              Allocatable, Save :: lstfre(:),gtl(:)
+  Integer,              Allocatable, Save :: lstfre(:)
 
   Real( Kind = wp ),    Allocatable, Save :: weight(:),chge(:)
   Real( Kind = wp ),    Allocatable, Save :: xxx(:),yyy(:),zzz(:)

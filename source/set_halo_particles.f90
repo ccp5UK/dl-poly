@@ -165,33 +165,29 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
      lfree(i)=fresit(lsite(i))
   End Do
 
-! Refresh gtl or record global atom indices for local+halo sorting
+! Record global atom indices for local+halo sorting
 ! and sort multiple entries
 
-  If (gtl_b > 0) Then
-     Call get_gtl(lbook)
-  Else
-     Do i=1,nlast
-        lsi(i)=i
-        lsa(i)=ltg(i)
-     End Do
-     Call shellsort2(nlast,lsi,lsa)
+  Do i=1,nlast
+     lsi(i)=i
+     lsa(i)=ltg(i)
+  End Do
+  Call shellsort2(nlast,lsi,lsa)
 
-     Do i=1,nlast-1
-        j=1
-        Do While ((i+j) <= nlast)
-           If (lsa(i) == lsa(i+j)) Then
-              ia=Min(lsi(i),lsi(i+j))
-              ib=Max(lsi(i),lsi(i+j))
-              lsi(i)=ia
-              lsi(i+j)=ib
-              j=j+1
-           Else
-              Exit
-           End If
-        End Do
+  Do i=1,nlast-1
+     j=1
+     Do While ((i+j) <= nlast)
+        If (lsa(i) == lsa(i+j)) Then
+           ia=Min(lsi(i),lsi(i+j))
+           ib=Max(lsi(i),lsi(i+j))
+           lsi(i)=ia
+           lsi(i+j)=ib
+           j=j+1
+        Else
+           Exit
+        End If
      End Do
-  End If
+  End Do
 
   nfree=0
   Do i=1,natms

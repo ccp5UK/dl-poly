@@ -209,7 +209,7 @@ Subroutine scan_field                                 &
                  Call get_word(record,word)
                  numsit=Nint(word_2_real(word))
                  mxnmst=Max(mxnmst,numsit)
-                 megatm=megatm+numsit*nummols
+                 megatm=megatm+nummols*numsit
                  mxsite=mxsite+numsit
 
                  ksite=0
@@ -368,7 +368,7 @@ Subroutine scan_field                                 &
                  numteth=Nint(word_2_real(word))
                  mtteth=Max(mtteth,numteth)
                  mxtteth=mxtteth+numteth
-                 mxteth=mxteth+numteth*nummols
+                 mxteth=mxteth+nummols*numteth
 
                  Do iteth=1,numteth
                     word(1:1)='#'

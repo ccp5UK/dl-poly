@@ -6,7 +6,7 @@ Module dihedrals_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov march 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -15,9 +15,11 @@ Module dihedrals_module
   Implicit None
 
   Integer,                        Save :: ntdihd  = 0 , &
-                                          ntdihd1 = 0
+                                          ntdihd1 = 0 , &
+                                          ub_dih  = 4 ! the default number of
+                                                      ! particles to track
 
-
+  Logical,                        Save :: lx_dih
   Integer,           Allocatable, Save :: numdih(:),keydih(:)
   Integer,           Allocatable, Save :: lstdih(:,:),listdih(:,:),legdih(:,:)
 
@@ -39,8 +41,8 @@ Contains
 
     Allocate (numdih(1:mxtmls),          Stat = fail(1))
     Allocate (keydih(1:mxtdih),          Stat = fail(2))
-    Allocate (lstdih(1:4,1:mxtdih),      Stat = fail(3))
-    Allocate (listdih(0:4,1:mxdihd),     Stat = fail(4))
+    Allocate (lstdih(1:6,1:mxtdih),      Stat = fail(3))
+    Allocate (listdih(0:6,1:mxdihd),     Stat = fail(4))
     Allocate (legdih(0:mxfdih,1:mxatdm), Stat = fail(5))
     Allocate (prmdih(1:mxpdih,1:mxtdih), Stat = fail(6))
 
