@@ -18,7 +18,7 @@ Subroutine pseudo_lfv                                     &
 !           as well as shells.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2011
+! author    - i.t.todorov may 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -166,7 +166,7 @@ Subroutine pseudo_lfv                                     &
      End If
 
      If (ntp == 0) Return
-     If (chit < 1.0e-6_wp) Return ! Avoid thermostat overheating
+     If (chit < 1.0e-6_wp .or. keypse > 1) Return ! Avoid thermostat overheating
 
 ! Allocate random force array of length j
 
@@ -398,7 +398,7 @@ Subroutine pseudo_lfv                                     &
 ! Velocity scaling cycle - thermostatting.  k = local, ntp = global
 ! number of particles within thermostat layers
 
-     If (keypse == 0 .or. keypse == 1)  Then ! Apply LANGEVIN temperature scaling
+     If (keypse < 3)  Then ! Apply LANGEVIN temperature scaling
 
 ! Allocate random velocities array of length k
 
@@ -656,10 +656,6 @@ Subroutine pseudo_lfv                                     &
               i=lstfre(j)
 
               If (qn(i) == 1) Then
-                 vxx(i) = vxx(i)
-                 vyy(i) = vyy(i)
-                 vzz(i) = vzz(i)
-
                  tkin  = tkin  + weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
                  vdotf = vdotf + vxx(i)*fxx(i)+vyy(i)*fyy(i)+vzz(i)*fzz(i)
               End If
@@ -865,10 +861,6 @@ Subroutine pseudo_lfv                                     &
 
            Do i=1,natms
               If (qn(i) == 1) Then
-                 vxx(i) = vxx(i)
-                 vyy(i) = vyy(i)
-                 vzz(i) = vzz(i)
-
                  tkin   = tkin  + weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
                  vdotf  = vdotf + vxx(i)*fxx(i)+vyy(i)*fyy(i)+vzz(i)*fzz(i)
               End If
@@ -903,7 +895,7 @@ Subroutine pseudo_lfv                                     &
 
      End If
 
-     If (keypse == 0 .or. keypse == 2) Then ! Apply DIRECT temperature scaling
+     If (keypse == 0 .or. keypse == 3) Then ! Apply DIRECT temperature scaling
 
 ! Targeted energy
 

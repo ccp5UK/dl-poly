@@ -1,10 +1,10 @@
-Subroutine read_field                      &
-           (imcon,l_n_v,l_str,l_top,       &
-           rcut,rvdw,rmet,width,keyfce,    &
-           lecx,lbook,lexcl,keyshl,        &
-           rcter,rctbp,rcfbp,              &
-           atmfre,atmfrz,megatm,megfrz,    &
-           megshl,megcon,megpmf,megrgd,    &
+Subroutine read_field                     &
+           (imcon,l_n_v,l_str,l_top,      &
+           rcut,rvdw,rmet,width,keyfce,   &
+           lecx,lbook,lexcl,keyshl,       &
+           rcter,rctbp,rcfbp,             &
+           atmfre,atmfrz,megatm,megfrz,   &
+           megshl,megcon,megpmf,megrgd,   &
            megtet,megbnd,megang,megdih,meginv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -13,7 +13,7 @@ Subroutine read_field                      &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2013
+! author    - i.t.todorov may 2013
 ! contrib   - r.davidchak july 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -57,6 +57,8 @@ Subroutine read_field                      &
   Use four_body_module
 
   Use external_field_module
+
+  Use kinetic_module, Only : l_vom
 
 ! STATISTICS MODULE
 
@@ -2938,6 +2940,15 @@ Subroutine read_field                      &
            keyfld=6
         Else If (keyword == 'zbnd') Then
            keyfld=7
+        Else If (keyword == 'zpis') Then
+           keyfld=8
+           If (l_vom) Then
+              If (idnode == 0) Write(nrite,"(3(/,1x,a))")                                     &
+                 '"no vom" option auto-switched on - COM momentum removal will be abandoned', &
+                 '*** warning - this may lead to a build up of the COM momentum and ***',     &
+                 '***           a manifestation of the "flying ice-cube" effect !!! ***'
+              l_vom=.false. ! exclude COM momentum rescaling by default
+           End If
         Else
 
            If (idnode == 0) Write(nrite,'(/,1x,a)') keyword
@@ -2968,12 +2979,14 @@ Subroutine read_field                      &
            End Do
         Else If (keyfld == 2 .or. keyfld == 6 .or. keyfld == 7) Then
            prmfld(1) = prmfld(1)*engunit
+        Else If (keyfld == 8) Then
+           prmfld(3) = prmfld(3)/prsunt ! piston pressure in k-atm
         End If
 
         If (idnode == 0) Then
-           If (keyfld == 2 .and. (imcon /= 1 .and. imcon /= 2)) &
+           If ((keyfld == 2 .or. keyfld == 8) .and. (imcon /= 1 .and. imcon /= 2)) &
   Write(nrite,"(/,1x,a)") '*** warning - external field only applicable for imcon=1,2 (orthorhombic geometry)!!!'
-             If (keyfld == 3 .and. imcon /= 6) &
+           If (keyfld == 3 .and. imcon /= 6) &
   Write(nrite,"(/,/,1x,a)") '*** warning - external field only applicable for imcon=6 (SLAB geometry)!!!'
         End If
 

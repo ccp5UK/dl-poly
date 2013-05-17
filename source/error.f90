@@ -6,7 +6,7 @@ Subroutine error(kode)
 ! controlled termination of the program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov march 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -669,6 +669,10 @@ Subroutine error(kode)
      Else If (kode ==  454) Then
 
         Write(nrite,'(/,1x,a)') 'error - undefined external field'
+
+     Else If (kode ==  456) Then
+
+        Write(nrite,'(/,1x,a)') 'error - external field zpis-ton is applied to a layer with at least one frozen particle'
 
      Else If (kode ==  461) Then
 

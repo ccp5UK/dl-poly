@@ -1790,6 +1790,14 @@ Alternatively, you may consider defining the required potential in
 the code yourself.  Amendments to subroutines {\sc read\_field}
 and {\sc external\_field\_apply} will be required.
 
+\subsubsection*{\underline{Message 456}: error - external field zpis-ton is applied to a layer with at least one frozen particle}
+
+For a layer to emulate a piston no particle constituting it must be frozen.
+
+\noindent \underline{\em Action}:
+
+Locate the offending site(s) in the FIELD file and unfreeze the particles.
+
 \subsubsection*{\underline{Message 461}: error - undefined metal potential}
 
 A form of metal potential has been requested which \D does not

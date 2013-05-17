@@ -7,12 +7,12 @@ Subroutine external_field_apply(imcon,keyshl,tstep,engfld,virfld)
 ! Note: Only one field at a time is allowed
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2012
+! author    - i.t.todorov may 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,  Only : idnode
+  Use comms_module,  Only : idnode,mxnode,gcheck,gsum
   Use setup_module,  Only : pi,nrite,mxshl,mxatms
   Use config_module, Only : cell,natms,nfree,nlast,lsi,lsa,ltg, &
                             lfrzn,lstfre,weight,chge,           &
@@ -27,10 +27,13 @@ Subroutine external_field_apply(imcon,keyshl,tstep,engfld,virfld)
   Real( Kind = wp ), Intent( In    ) :: tstep ! for oscilating fields
   Real( Kind = wp ), Intent(   Out ) :: engfld,virfld
 
+  Logical,     Save :: newjob = .true.
+
+  Logical           :: safe
   Integer           :: i,j,ia,ib,fail(1:2),local_index, &
                        irgd,jrgd,lrgd,rgdtyp,megrgd
   Real( Kind = wp ) :: gamma,rrr,rz,zdif,vxt,vyt,vzt,tmp, &
-                       x(1:1),y(1:1),z(1:1)
+                       x(1:1),y(1:1),z(1:1),celprp(10)
 
   Integer,           Allocatable :: lstopt(:,:),list(:)
   Real( Kind = wp ), Allocatable :: oxt(:),oyt(:),ozt(:)
@@ -305,6 +308,47 @@ Subroutine external_field_apply(imcon,keyshl,tstep,engfld,virfld)
            fzz(i)=fzz(i) + gamma
            engfld=engfld - gamma*zdif/2.0_wp
         End If
+     End Do
+
+  Else If (keyfld == 8) Then
+
+! zpist - piston wall pushing down along the Z=axb direction
+! prmfld(1) is the first atom of the layer of molecules (membrane) to be pushed
+! prmfld(2) is the last atom of the layer of molecules (membrane) to be pushed
+! prmfld(3) is the pressure applied to the layer of molecules (membrane) in the
+! -Z=-axb direction - i.e. top to bottom.  The layer plane is defined as _|_ axb
+
+     If (newjob) Then
+        newjob=.false.
+
+        safe=.true.
+        Do i=1,natms
+           If ((ltg(i) >= ia .and. ltg(i) <= ib) .and. lfrzn(i) > 0) safe=.false.
+        End Do
+
+        If (mxnode > 1) Call gcheck(safe)
+        If (.not.safe) Call error(456)
+     End If
+
+     ia = Nint(prmfld(1))
+     ib = Nint(prmfld(2))
+
+     tmp=0.0_wp ! average force per atom of the piston
+     Do i=1,natms
+        If ((ltg(i) >= ia .and. ltg(i) <= ib)) Then
+           vxx(i) = 0.0_wp ; fxx(i) = 0.0_wp
+           vyy(i) = 0.0_wp ; fyy(i) = 0.0_wp
+           vzz(i) = 0.0_wp ; tmp=tmp+fzz(i)
+        End If
+     End Do
+     If (mxnode > 1) Call gsum(tmp)
+     tmp=tmp/Real(ib-ia+1) ! solid wall behaviour is ensured
+
+     Call dcell(cell,celprp)
+     tmp=tmp-prmfld(3)*(celprp(10)/celprp(9))
+
+     Do i=1,natms
+        If ((ltg(i) >= ia .and. ltg(i) <= ib)) fzz(i)=tmp
      End Do
 
 !  Else If (keyfld == 8) Then

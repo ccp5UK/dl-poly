@@ -18,7 +18,7 @@ Module kinetic_module
 ! Subroutine cap_forces - limits the absolute magnitude of forces
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2007
+! author    - i.t.todorov may 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,6 +26,11 @@ Module kinetic_module
   Use comms_module, Only : mxnode,gsum
 
   Implicit None
+
+! Remove COM motion default and COM velocity components
+
+  Logical,           Save :: l_vom = .true.
+  Real( Kind = wp ), Save :: vox = 0.0_wp , voy = 0.0_wp , voz = 0.0_wp
 
   Public :: getkin,getknf,getknt,getknr,   &
             kinstress,kinstresf,kinstrest, &

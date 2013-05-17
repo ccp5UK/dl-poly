@@ -460,7 +460,7 @@ Subroutine metal_forces &
 
            Else ! FST, interpolation parameters are the same for all force arrays
 
-              If (rsq <= dmet(3,k0,1)**2) Then ! interpolation parameters covered abovbe
+              If (rsq <= dmet(3,k0,1)**2) Then ! interpolation parameters covered above
 
                  gk0 = dmet(l-1,k0,2)
                  gk1 = dmet(l  ,k0,2)

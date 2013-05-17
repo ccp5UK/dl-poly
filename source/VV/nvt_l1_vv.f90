@@ -23,7 +23,7 @@ Subroutine nvt_l1_vv                               &
 ! (brownian dynamics, not symplectic due to the random forces)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2012
+! author    - i.t.todorov may 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -273,11 +273,11 @@ Subroutine nvt_l1_vv                               &
 
 ! Create complex scalers
 
-     scr = Sqrt(tstep/t1)*(t1-t2)
+     scr = (t1-t2)/Sqrt(t2)
      scl = Sqrt(tstep-(t1**2)/t2)
      scv = Sqrt(t2)
 
-     scr1 = (t1-t2)/(Sqrt(t1)*chi)
+     scr1 = (t1-t2)/Sqrt(t2*tstep)/chi
      scl1 = Sqrt(1.0_wp-(t1**2)/(t2*tstep))/chi
      scv1 = Sqrt(t2/tstep)
 

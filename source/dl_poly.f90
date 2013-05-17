@@ -125,8 +125,8 @@ Program dl_poly
 ! general flags
 
   Logical           :: l_vv,l_n_e,l_n_r,l_n_v,  &
-                       l_ind,l_str,l_top,l_exp, &
-                       lecx,lfcap,lzero,        &
+                       l_ind,l_str,l_top,       &
+                       l_exp,lecx,lfcap,lzero,  &
                        lmin,ltgaus,ltscal,      &
                        lvar,leql,lpse,lsim,     &
                        lrdf,lprdf,lzdn,lpzdn,   &
@@ -197,7 +197,7 @@ Program dl_poly
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
           "**         **  contributors: i.j.bush & r.davidchak  ****** O ****", &
-          "*************  version:  4.05.02    /    march 2013  ******* L ***", &
+          "*************  version:  4.05.04     /     may 2013  ******* L ***", &
           "*************  Execution on ", mxnode, "    node(s)  ******** Y **", &
           "******************************************************************"
 
@@ -281,13 +281,13 @@ Program dl_poly
 
 ! READ SIMULATION FORCE FIELD
 
-  Call read_field                          &
-           (imcon,l_n_v,l_str,l_top,       &
-           rcut,rvdw,rmet,width,keyfce,    &
-           lecx,lbook,lexcl,keyshl,        &
-           rcter,rctbp,rcfbp,              &
-           atmfre,atmfrz,megatm,megfrz,    &
-           megshl,megcon,megpmf,megrgd,    &
+  Call read_field                         &
+           (imcon,l_n_v,l_str,l_top,      &
+           rcut,rvdw,rmet,width,keyfce,   &
+           lecx,lbook,lexcl,keyshl,       &
+           rcter,rctbp,rcfbp,             &
+           atmfre,atmfrz,megatm,megfrz,   &
+           megshl,megcon,megpmf,megrgd,   &
            megtet,megbnd,megang,megdih,meginv)
 
 ! CHECK MD CONFIGURATION

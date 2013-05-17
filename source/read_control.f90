@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2013
+! author    - i.t.todorov may 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -38,6 +38,8 @@ Subroutine read_control                                &
   Use msd_module,      Only : l_msd
   Use defects1_module, Only : l_dfx
 
+  Use kinetic_module,  Only : l_vom
+
   Use development_module
 
   Implicit None
@@ -49,7 +51,8 @@ Subroutine read_control                                &
   Real( Kind = wp ),      Intent( InOut ) :: alpha
 
   Logical,                Intent(   Out ) :: l_exp,lecx,             &
-                                             lfcap,l_top,lzero,lmin, &
+                                             lfcap,l_top,            &
+                                             lzero,lmin,             &
                                              ltgaus,ltscal,          &
                                              lvar,leql,lpse,lsim,    &
                                              lrdf,lprdf,lzdn,lpzdn,  &
@@ -222,6 +225,10 @@ Subroutine read_control                                &
 ! default switch for printing topology
 
   l_top = .true.
+
+! default switch for removing COM momentum for ensembles
+!
+!  l_vom = .true. ! initialised in kinetic_module
 
 ! defaults for: force key = no electrostatics,
 ! specified force field = not yet, relative dielectric constant = 1
@@ -759,8 +766,11 @@ Subroutine read_control                                &
         If      (word(1:4) == 'lang'  ) Then
            keypse = 1
            Call get_word(record,word)
-        Else If (word(1:6) == 'direct') Then
+        Else If (word(1:5) == 'gauss') Then
            keypse = 2
+        Else If (word(1:6) == 'direct') Then
+           Call get_word(record,word)
+           keypse = 3
            Call get_word(record,word)
         End If
 
@@ -776,6 +786,8 @@ Subroutine read_control                                &
               Else If (keypse == 1) Then
                       Write(nrite,'(1x,a)') "thermostat control: Langevin temperature scaling"
               Else If (keypse == 2) Then
+                      Write(nrite,'(1x,a)') "thermostat control: gaussian temperature scaling"
+              Else If (keypse == 3) Then
                       Write(nrite,'(1x,a)') "thermostat control: direct temperature scaling"
               End If
               Write(nrite,"(1x,'thermostat thickness (Ang)',8x,1p,e12.4)") tmp
@@ -1589,6 +1601,10 @@ Subroutine read_control                                &
 
            l_top = .false.
 
+        Else If (word1(1:3) == 'vom' ) Then
+
+           l_vom = .false.
+
         Else If (word1(1:4) == 'link') Then ! NON-TRANSFERABLE OPTION FROM DL_POLY_2
 
            Call warning(38,0.0_wp,0.0_wp,0.0_wp)
@@ -2031,6 +2047,15 @@ Subroutine read_control                                &
      If (idnode == 0) &
         Write(nrite,"(/,1x,'fixed simulation timestep (ps)   ',1x,1p,e12.4)") tstep
 
+  End If
+
+! report no vom option
+
+  If (.not.l_vom) Then
+     If (idnode == 0) Write(nrite,"(3(/,1x,a))")                                 &
+        'no vom option on - COM momentum removal will be abandoned',             &
+        '*** warning - this may lead to a build up of the COM momentum and ***', &
+        '***           a manifestation of the "flying ice-cube" effect !!! ***'
   End If
 
 ! report rdf

@@ -19,7 +19,7 @@ Subroutine dihedrals_14_check &
   Logical,           Intent( In    ) :: l_str,l_top,lx_dih
   Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls),numang(1:mxtmls), &
                                         keyang(1:mxtang),lstang(1:3,1:mxtang),     &
-                                        numdih(1:mxtmls),lstdih(1:4,1:mxtdih)
+                                        numdih(1:mxtmls),lstdih(1:6,1:mxtdih)
   Real( Kind = wp ), Intent( InOut ) :: prmdih(1:mxpdih,1:mxtdih)
 
   Logical :: l_print,l_reset

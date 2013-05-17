@@ -7,14 +7,14 @@ Subroutine external_field_correct(imcon)
 ! Note: Only one field at a time is allowed
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov may 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use config_module, Only : cell,natms,nfree,    &
-                            lfrzn,lstfre,weight, &
-                            zzz,vxx
+  Use config_module, Only : cell,natms,nfree,ltg, &
+                            lfrzn,lstfre,weight,  &
+                            xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
   Use external_field_module
 
@@ -22,9 +22,9 @@ Subroutine external_field_correct(imcon)
 
   Integer,           Intent( In    ) :: imcon
 
-  Integer           :: i,j, irgd,jrgd,lrgd,rgdtyp,megrgd
+  Integer           :: i,j,ia,ib, irgd,jrgd,lrgd,rgdtyp,megrgd
   Real( Kind = wp ) :: rz,vxt,tmp, &
-                       x(1:1),y(1:1),z(1:1)
+                       x(1:1),y(1:1),z(1:1),celprp(10)
 
 ! Recover megrgd
 
@@ -84,6 +84,35 @@ Subroutine external_field_correct(imcon)
         End Do
 
      End If
+
+  Else If (keyfld == 8) Then
+
+! zpist - piston wall pushing down along the Z=axb direction
+! prmfld(1) is the first atom of the layer of molecules (membrane) to be pushed
+! prmfld(2) is the last atom of the layer of molecules (membrane) to be pushed
+! prmfld(3) is the pressure applied to the layer of molecules (membrane) in the
+! -Z=-axb direction - i.e. top to bottom.  The layer plane is defined as _|_ axb
+
+     ia = Nint(prmfld(1))
+     ib = Nint(prmfld(2))
+
+     tmp=0.0_wp ! average force per atom of the piston
+     Do i=1,natms
+        If ((ltg(i) >= ia .and. ltg(i) <= ib)) Then
+           vxx(i) = 0.0_wp ; fxx(i) = 0.0_wp
+           vyy(i) = 0.0_wp ; fyy(i) = 0.0_wp
+           vzz(i) = 0.0_wp ; tmp=tmp+fzz(i)
+        End If
+     End Do
+     If (mxnode > 1) Call gsum(tmp)
+     tmp=tmp/Real(ib-ia+1) ! solid wall behaviour is ensured
+
+     Call dcell(cell,celprp)
+     tmp=tmp-prmfld(3)*(celprp(10)/celprp(9))
+
+     Do i=1,natms
+        If ((ltg(i) >= ia .and. ltg(i) <= ib)) fzz(i)=tmp
+     End Do
 
   End If
 
