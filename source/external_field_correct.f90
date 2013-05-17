@@ -12,6 +12,7 @@ Subroutine external_field_correct(imcon)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
+  Use comms_module,  Only : mxnode,gsum
   Use config_module, Only : cell,natms,nfree,ltg, &
                             lfrzn,lstfre,weight,  &
                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
