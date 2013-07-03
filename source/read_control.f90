@@ -1,9 +1,9 @@
 Subroutine read_control                                &
-           (levcfg,l_vv,l_str,l_n_e,l_n_r,l_n_v,       &
+           (levcfg,l_vv,l_str,l_n_e,l_n_v,             &
            rcut,rvdw,rbin,nstfce,alpha,width,          &
            l_exp,lecx,lfcap,l_top,lzero,lmin,          &
            ltgaus,ltscal,lvar,leql,lpse,               &
-           lsim,lrdf,lprdf,lzdn,lpzdn,                 &
+           lsim,lfce,lrdf,lprdf,lzdn,lpzdn,            &
            ltraj,ldef,lrsd,                            &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
            temp,press,strext,keyres,                   &
@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2013
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -44,34 +44,35 @@ Subroutine read_control                                &
 
   Implicit None
 
-  Logical,                Intent( In    ) :: l_vv,l_str,l_n_e,l_n_r,l_n_v
+  Logical,                Intent( In    ) :: l_vv,l_str,l_n_e,l_n_v
   Integer,                Intent( In    ) :: levcfg
   Integer,                Intent( InOut ) :: nstfce
   Real( Kind = wp ),      Intent( In    ) :: rcut,rvdw,rbin,width
   Real( Kind = wp ),      Intent( InOut ) :: alpha
 
-  Logical,                Intent(   Out ) :: l_exp,lecx,             &
-                                             lfcap,l_top,            &
-                                             lzero,lmin,             &
-                                             ltgaus,ltscal,          &
-                                             lvar,leql,lpse,lsim,    &
-                                             lrdf,lprdf,lzdn,lpzdn,  &
+  Logical,                Intent(   Out ) :: l_exp,lecx,            &
+                                             lfcap,l_top,           &
+                                             lzero,lmin,            &
+                                             ltgaus,ltscal,         &
+                                             lvar,leql,lpse,        &
+                                             lsim,lfce,             &
+                                             lrdf,lprdf,lzdn,lpzdn, &
                                              ltraj,ldef,lrsd
 
 
-  Integer,                Intent(   Out ) :: nx,ny,nz,imd,tmd,       &
-                                             keyres,nstrun,nsteql,   &
-                                             keymin,nstmin,          &
-                                             nstgaus,nstscal,        &
-                                             keyens,iso,             &
-                                             keypse,nstbpo,          &
-                                             intsta,keyfce,          &
-                                             mxshak,mxquat,          &
-                                             nstrdf,nstzdn,          &
-                                             nstmsd,istmsd,          &
-                                             nstraj,istraj,keytrj,   &
-                                             nsdef,isdef,            &
-                                             nsrsd,isrsd,            &
+  Integer,                Intent(   Out ) :: nx,ny,nz,imd,tmd,     &
+                                             keyres,nstrun,nsteql, &
+                                             keymin,nstmin,        &
+                                             nstgaus,nstscal,      &
+                                             keyens,iso,           &
+                                             keypse,nstbpo,        &
+                                             intsta,keyfce,        &
+                                             mxshak,mxquat,        &
+                                             nstrdf,nstzdn,        &
+                                             nstmsd,istmsd,        &
+                                             nstraj,istraj,keytrj, &
+                                             nsdef,isdef,          &
+                                             nsrsd,isrsd,          &
                                              ndump
 
   Real( Kind = wp ),      Intent(   Out ) :: emd,vmx,vmy,vmz,         &
@@ -85,9 +86,9 @@ Subroutine read_control                                &
                                              rdef,rrsd,timjob,timcls
 
 
-  Logical                                 :: limp,lens,lforc,        &
-                                             lpres,lstrext,          &
-                                             lstep,ltemp,safe,       &
+  Logical                                 :: limp,lens,lforc,  &
+                                             lpres,lstrext,    &
+                                             lstep,ltemp,safe, &
                                              l_timjob,l_timcls
 
   Character( Len = 200 )                  :: record
@@ -253,9 +254,10 @@ Subroutine read_control                                &
 
   rlx_tol = 1.0_wp
 
-! proceed normal simulation = don't replay history
+! proceed normal simulation
 
-  lsim = .true.
+  lsim = .true.   ! don't replay history
+  lfce = .false.  ! don't recalculate forces based on history positions
 
 ! default switch for calculation of rdfs, default number of steps
 ! when to be collected and default switch for printing them
@@ -359,8 +361,13 @@ Subroutine read_control                                &
 
      Else If (word(1:5) == 'l_scr') Then
 
-        l_scr = .true.
+!        l_scr = .true. ! done in scan_development
         If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% OUTPUT redirected to the default output (screen) !!! %%%"
+
+     Else If (word(1:6) == 'l_fast') Then
+
+!        l_fast = .true. ! done in scan_development
+        If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% speed up by avoiding global safety checks !!! %%%"
 
      Else If (word(1:5) == 'l_eng') Then
 
@@ -449,7 +456,7 @@ Subroutine read_control                                &
 
      Else If (word(1:5) == 'l_tim') Then
 
-        l_tim = .true.
+!        l_tim = .true.  ! done in scan_development
         If (idnode == 0) Write(nrite,"(/,1x,a)") "%%% generate detailed timing !!! %%%"
 
      Else If (word(1:5) == 'l_tor') Then
@@ -768,8 +775,8 @@ Subroutine read_control                                &
            Call get_word(record,word)
         Else If (word(1:5) == 'gauss') Then
            keypse = 2
-        Else If (word(1:6) == 'direct') Then
            Call get_word(record,word)
+        Else If (word(1:6) == 'direct') Then
            keypse = 3
            Call get_word(record,word)
         End If
@@ -1660,6 +1667,9 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'replay') Then
 
         lsim = .false.
+        Call get_word(record,word)
+        If (word(1:4) == 'hist') Call get_word(record,word)
+        If (word(1:5) == 'force') lfce=.true.
 
 ! read binsize option
 
@@ -2077,13 +2087,13 @@ Subroutine read_control                                &
         If (idnode == 0) Write(nrite,"(1x,'no rdf printing requested')")
      End If
 
-     If (l_n_r) Then
+     If (mxrdf == 0) Then
         If (idnode == 0) Write(nrite,"(1x,'no rdf pairs specified in FIELD')")
      Else
         If (idnode == 0) Write(nrite,"(1x,'rdf pairs specified in FIELD')")
      End If
 
-     If ((.not.lrdf) .or. l_n_r) Then
+     If ((.not.lrdf) .or. mxrdf == 0) Then
         If (idnode == 0) Write(nrite,"(1x,'rdf routines not to be activated')")
         lrdf=.false.
         lprdf=.false.
@@ -2126,14 +2136,21 @@ Subroutine read_control                                &
 ! report replay history
 
   If (.not.lsim) Then
-     If (idnode == 0) Then
-        Write(nrite,"(/,1x,'*** HISTORY will be replayed (no actual simulation) ***', &
-                    & /,1x,'*** and structural properties will be recalculated  ***')")
-     End If
+     If (lfce) Then
+        If (idnode == 0) Then
+           Write(nrite,"(/,1x,'*** HISTORF will be replayed with full force recalculation ***', &
+                       & /,1x,'*** There is no actual dynamics/integration!!! ***')")
+        End If
+     Else
+        If (idnode == 0) Then
+           Write(nrite,"(/,1x,'*** HISTORY will be replayed (no actual simulation) ***', &
+                       & /,1x,'*** with structural properties will be recalculated ***')")
+        End If
 
 ! abort if there's no structural property to recalculate
 
-     If (.not.(lrdf .or. lzdn .or. ldef .or. l_msd .or. lrsd)) Call error(580)
+        If (.not.(lrdf .or. lzdn .or. ldef .or. l_msd .or. lrsd)) Call error(580)
+     End If
 
      If (keyres /= 0) Then
         keyres=0 ! Force clean restart

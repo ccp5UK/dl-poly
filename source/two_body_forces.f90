@@ -27,7 +27,7 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -60,7 +60,7 @@ Subroutine two_body_forces                        &
   Real( Kind = wp ), Save :: factor_nz = 0.0_wp
 
   Logical           :: safe = .true., l_do_rdf
-  Integer           :: fail(1:2),i,j,k,limit
+  Integer           :: fail,i,j,k,limit
   Real( Kind = wp ) :: engcpe_rc,vircpe_rc,engcpe_rl,vircpe_rl, &
                        engcpe_ex,vircpe_ex,engcpe_fr,vircpe_fr, &
                        engcpe_nz,vircpe_nz,                     &
@@ -68,12 +68,10 @@ Subroutine two_body_forces                        &
                        engvdw,virvdw,engacc,viracc,tmp,buffer(0:14)
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: xdf,ydf,zdf,rsqdf
-  Real( Kind = wp ), Dimension( : ), Allocatable :: rho
 
   fail=0
-  Allocate (xdf(1:mxlist),ydf(1:mxlist),zdf(1:mxlist),rsqdf(1:mxlist), Stat=fail(1))
-  If (ntpmet > 0) Allocate (rho(1:mxatms),                             Stat=fail(2))
-  If (Any(fail > 0)) Then
+  Allocate (xdf(1:mxlist),ydf(1:mxlist),zdf(1:mxlist),rsqdf(1:mxlist), Stat=fail)
+  If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'two_body_forces allocation failure, node: ', idnode
      Call error(0)
   End If
@@ -136,7 +134,7 @@ Subroutine two_body_forces                        &
      Call metal_ld_compute          &
            (imcon,rmet,elrcm,vlrcm, &
            xdf,ydf,zdf,rsqdf,       &
-           rho,engden,virden,stress)
+           engden,virden,stress)
 
   End If
 
@@ -176,7 +174,7 @@ Subroutine two_body_forces                        &
 
      If (ntpmet > 0) Then
         Call metal_forces &
-       (i,rmet,xdf,ydf,zdf,rsqdf,rho,engacc,viracc,stress,safe)
+       (i,rmet,xdf,ydf,zdf,rsqdf,engacc,viracc,stress,safe)
 
         engmet=engmet+engacc
         virmet=virmet+viracc
@@ -320,9 +318,8 @@ Subroutine two_body_forces                        &
 
   If (l_do_rdf) numrdf = numrdf + 1
 
-  Deallocate (xdf,ydf,zdf,rsqdf,   Stat=fail(1))
-  If (ntpmet > 0) Deallocate (rho, Stat=fail(2))
-  If (Any(fail > 0)) Then
+  Deallocate (xdf,ydf,zdf,rsqdf,   Stat=fail)
+  If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'two_body_forces deallocation failure, node: ', idnode
      Call error(0)
   End If

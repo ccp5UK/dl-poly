@@ -7,17 +7,17 @@ Subroutine metal_table_derivatives(ityp,buffer,v2d,vvv)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2006
-! amended   - i.t.todorov february 2012
+! amended   - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module, Only : zero_plus,mxgrid,mxbuff
+  Use setup_module, Only : zero_plus,mxgrid
 
   Implicit None
 
   Integer,           Intent( In    ) :: ityp,v2d
-  Real( Kind = wp ), Intent( In    ) :: buffer(1:mxbuff)
+  Real( Kind = wp ), Intent( In    ) :: buffer(1:mxgrid)
   Real( Kind = wp ), Intent( InOut ) :: vvv(1:mxgrid,1:v2d,1:2)
 
   Integer           :: i,v_end,i_start,i_end

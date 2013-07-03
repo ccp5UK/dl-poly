@@ -6,22 +6,22 @@ Subroutine rigid_bodies_stress(strcom,ggx,ggy,ggz)
 ! tensor
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2011
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : mxnode,gsum
-  Use setup_module,        Only : mxtrgd,mxrgd,mxlrgd
+  Use setup_module,        Only : mxrgd,mxlrgd
   Use config_module,       Only : natms,lfrzn,fxx,fyy,fzz
   Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd
 
   Implicit None
 
   Real( Kind = wp ), Intent(   Out ) :: strcom(1:9)
-  Real( Kind = wp ), Intent( In    ) :: ggx(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-                                        ggy(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-                                        ggz(1:mxlrgd*Max(mxrgd,mxtrgd))
+  Real( Kind = wp ), Intent( In    ) :: ggx(1:mxlrgd*mxrgd), &
+                                        ggy(1:mxlrgd*mxrgd), &
+                                        ggz(1:mxlrgd*mxrgd)
 
   Integer :: i,irgd,jrgd,krgd,lrgd,rgdtyp
 
@@ -81,22 +81,22 @@ Subroutine rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx,fyy,fzz)
 ! tensor
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2008
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : mxnode,gsum
-  Use setup_module,        Only : mxatms,mxtrgd,mxrgd,mxlrgd
+  Use setup_module,        Only : mxatms,mxrgd,mxlrgd
   Use config_module,       Only : natms,lfrzn
   Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd
 
   Implicit None
 
   Real( Kind = wp ), Intent(   Out ) :: strcom(1:9)
-  Real( Kind = wp ), Intent( In    ) :: ggx(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-                                        ggy(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-                                        ggz(1:mxlrgd*Max(mxrgd,mxtrgd))
+  Real( Kind = wp ), Intent( In    ) :: ggx(1:mxlrgd*mxrgd), &
+                                        ggy(1:mxlrgd*mxrgd), &
+                                        ggz(1:mxlrgd*mxrgd)
   Real( Kind = wp ), Intent( In    ) :: fxx(1:mxatms),fyy(1:mxatms),fzz(1:mxatms)
 
   Integer :: i,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -157,13 +157,13 @@ Subroutine rigid_bodies_str_ss(strcom)
 ! tensor
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2012
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : idnode,mxnode,gsum
-  Use setup_module,        Only : nrite,mxtrgd,mxrgd,mxlrgd
+  Use setup_module,        Only : nrite,mxrgd,mxlrgd
   Use config_module,       Only : cell,natms,lfrzn,xxx,yyy,zzz,fxx,fyy,fzz
   Use rigid_bodies_module, Only : ntrgd,rgdimc,rgdfrz,listrgd,indrgd, &
                                   rgdxxx,rgdyyy,rgdzzz
@@ -177,8 +177,7 @@ Subroutine rigid_bodies_str_ss(strcom)
   Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
 
   fail = 0
-  Allocate (gxx(1:mxlrgd*Max(mxrgd,mxtrgd)),gyy(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-            gzz(1:mxlrgd*Max(mxrgd,mxtrgd)), Stat = fail)
+  Allocate (gxx(1:mxlrgd*mxrgd),gyy(1:mxlrgd*mxrgd),gzz(1:mxlrgd*mxrgd), Stat = fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_stress allocation failure, node: ', idnode
      Call error(0)
@@ -277,13 +276,13 @@ Subroutine rigid_bodies_str__s(strcom,fxx,fyy,fzz)
 ! tensor
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2012
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : idnode,mxnode,gsum
-  Use setup_module,        Only : nrite,mxatms,mxtrgd,mxrgd,mxlrgd
+  Use setup_module,        Only : nrite,mxatms,mxrgd,mxlrgd
   Use config_module,       Only : cell,natms,lfrzn,xxx,yyy,zzz
   Use rigid_bodies_module, Only : ntrgd,rgdimc,rgdfrz,listrgd,indrgd, &
                                   rgdxxx,rgdyyy,rgdzzz
@@ -298,8 +297,7 @@ Subroutine rigid_bodies_str__s(strcom,fxx,fyy,fzz)
   Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
 
   fail = 0
-  Allocate (gxx(1:mxlrgd*Max(mxrgd,mxtrgd)),gyy(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-            gzz(1:mxlrgd*Max(mxrgd,mxtrgd)), Stat = fail)
+  Allocate (gxx(1:mxlrgd*mxrgd),gyy(1:mxlrgd*mxrgd),gzz(1:mxlrgd*mxrgd), Stat = fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_stress allocation failure, node: ', idnode
      Call error(0)

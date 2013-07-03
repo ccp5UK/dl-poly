@@ -6,7 +6,7 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
 ! initial structure of a molecule defined by constraints
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2011
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -119,7 +119,7 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
 ! global verification of convergence
 
      safe=(esig < tolnce)
-     If (mxnode > 1) Call gcheck(safe)
+     If (mxnode > 1) Call gcheck(safe,"enforce")
 
 ! bypass next section and terminate iteration if all tolerances ok
 

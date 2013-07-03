@@ -11,7 +11,7 @@ Subroutine relocate_particles        &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov march 2013
+! amended   - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -108,7 +108,7 @@ Subroutine relocate_particles        &
 
   Call dcell(cell,celprp)
 
-! Only when we use more than one CPU we need real relocation
+! Only when we have more than one domain we need real relocation
 
   If (mxnode > 1) Then
 
@@ -198,7 +198,7 @@ Subroutine relocate_particles        &
 
 ! check system for loss of atoms
 
-     safe(1)=(All(ixyz(1:natms) == 0)) ; Call gcheck(safe(1))
+     safe(1)=(All(ixyz(1:natms) == 0)) ; Call gcheck(safe(1),"enforce")
      nlimit=natms ; Call gsum(nlimit)
      If ((.not.safe(1)) .or. nlimit /= megatm) Call error(58)
 

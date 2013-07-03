@@ -22,7 +22,7 @@ Subroutine npt_l1_vv                          &
 !            J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2012
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -118,8 +118,8 @@ Subroutine npt_l1_vv                          &
      End If
      Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail( 6))
   End If
-  Allocate (ggx(1:mxlrgd*Max(mxrgd,mxtrgd)),ggy(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-            ggz(1:mxlrgd*Max(mxrgd,mxtrgd)),                      Stat=fail( 7))
+  Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), &
+                                                                  Stat=fail( 7))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail( 8))
   Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail( 9))
   Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(10))

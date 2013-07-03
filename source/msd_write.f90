@@ -6,7 +6,7 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2011
+! author    - i.t.todorov june 2013
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -97,7 +97,7 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
      lexist=.true.
      If (keyres == 1) Then
         If (idnode == 0) Inquire(File=fname, Exist=lexist)
-        If (mxnode > 1) Call gcheck(lexist)
+        If (mxnode > 1) Call gcheck(lexist,"enforce")
      Else
         lexist=.false.
      End If
@@ -183,7 +183,7 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
 
         End If
 
-        If (mxnode > 1) Call gcheck(safe)
+        If (mxnode > 1) Call gcheck(safe,"enforce")
         If (.not.safe) Then
            lexist=.false.
 

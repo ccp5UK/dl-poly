@@ -6,13 +6,13 @@ Subroutine export_atomic_data(mdir)
 ! for halo formation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2013
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module
+  Use setup_module,  Only : nrite,mxatms,mxbfxp
   Use domains_module
   Use config_module, Only : nlast,ltg,lsite,ixyz,cell,xxx,yyy,zzz
 
@@ -21,14 +21,19 @@ Subroutine export_atomic_data(mdir)
   Integer,           Intent( In    ) :: mdir
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez
-  Integer           :: fail,i,j,iblock,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
+  Integer           :: fail,iadd,limit,iblock,          &
+                       i,j,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
                        jdnode,kdnode,imove,jmove,itmp
   Real( Kind = wp ) :: uuu,vvv,www
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
-  fail=0
-  Allocate (buffer(1:mxbuff), Stat=fail)
+! Number of transported quantities per particle
+
+  iadd=6
+
+  fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
+  Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'export_atomic_data allocation failure, node: ', idnode
      Call error(0)
@@ -36,11 +41,7 @@ Subroutine export_atomic_data(mdir)
 
 ! Set buffer limit (half for outgoing data - half for incoming)
 
-  If (mxnode > 1) Then
-     iblock=mxbuff/2
-  Else
-     iblock=mxbuff
-  End If
+  iblock=limit/Merge(2,1,mxnode > 1)
 
 ! DIRECTION SETTINGS INITIALISATION
 
@@ -166,7 +167,7 @@ Subroutine export_atomic_data(mdir)
               buffer(imove+5)=Real(lsite(i),wp)
               buffer(imove+6)=Real(ixyz(i)-jxyz,wp)
 
-              imove=imove+6
+              imove=imove+iadd
 
            Else
 
@@ -184,13 +185,9 @@ Subroutine export_atomic_data(mdir)
 
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe) Then
-     If (mxnode > 1) Then
-        itmp=2*imove
-     Else
-        itmp=imove
-     End If
+     itmp=Merge(2,1,mxnode > 1)*imove
      If (mxnode > 1) Call gmax(itmp)
-     Call warning(150,Real(itmp,wp),Real(mxbuff,wp),0.0_wp)
+     Call warning(150,Real(itmp,wp),Real(limit,wp),0.0_wp)
      Call error(54)
   End If
 
@@ -206,10 +203,10 @@ Subroutine export_atomic_data(mdir)
 
 ! Check for array bound overflow (can arrays cope with incoming data)
 
-  safe=((nlast+jmove/6) <= mxatms)
+  safe=((nlast+jmove/iadd) <= mxatms)
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe) Then
-     itmp=nlast+jmove/6
+     itmp=nlast+jmove/iadd
      If (mxnode > 1) Call gmax(itmp)
      Call warning(160,Real(itmp,wp),Real(mxatms,wp),0.0_wp)
      Call error(56)
@@ -225,13 +222,8 @@ Subroutine export_atomic_data(mdir)
 
 ! load transferred data
 
-  If (mxnode > 1) Then
-     j=iblock
-  Else
-     j=0
-  End If
-
-  Do i=1,jmove/6
+  j=Merge(iblock,0,mxnode > 1)
+  Do i=1,jmove/iadd
      nlast=nlast+1
 
 ! unpack positions
@@ -246,7 +238,7 @@ Subroutine export_atomic_data(mdir)
      lsite(nlast)=Nint(buffer(j+5))
      ixyz(nlast) =Nint(buffer(j+6))
 
-     j=j+6
+     j=j+iadd
   End Do
 
   Deallocate (buffer, Stat=fail)

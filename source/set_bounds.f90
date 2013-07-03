@@ -1,5 +1,5 @@
-Subroutine set_bounds                                        &
-           (levcfg,imcon,l_vv,l_str,l_n_e,l_n_r,l_n_v,l_ind, &
+Subroutine set_bounds                                  &
+           (levcfg,imcon,l_vv,l_str,l_n_e,l_n_v,l_ind, &
            rcut,rvdw,rmet,rbin,nstfce,alpha,width)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -8,7 +8,7 @@ Subroutine set_bounds                                        &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2013
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,16 +23,18 @@ Subroutine set_bounds                                        &
 
   Implicit None
 
-  Logical,           Intent(   Out ) :: l_vv,l_str,l_n_e,l_n_r,l_n_v,l_ind
+  Logical,           Intent(   Out ) :: l_vv,l_str,l_n_e,l_n_v,l_ind
   Integer,           Intent(   Out ) :: levcfg,imcon,nstfce
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
   Real( Kind = wp ), Intent(   Out ) :: rcut
 
-  Logical           :: lter,ltbp,lfbp
-  Integer           :: ilx,ily,ilz,qlx,qly,qlz,megatm
-  Real( Kind = wp ) :: ats,celprp(1:10),cut,                 &
-                       dens0,dens,dvar,fdens,                &
-                       test,vcell,rcter,rctbp,rcfbp,         &
+  Logical           :: l_n_r,lzdn,lter,ltbp,lfbp,lext
+  Integer           :: ilx,ily,ilz,qlx,qly,qlz,megatm, &
+                       mtshl,mtcons,mtrgd,mtteth,      &
+                       mtbond,mtangl,mtdihd,mtinv
+  Real( Kind = wp ) :: ats,celprp(1:10),cut,         &
+                       dens0,dens,dvar,fdens,        &
+                       test,vcell,rcter,rctbp,rcfbp, &
                        sidex,sidey,sidez,xhi,yhi,zhi
 
 ! define zero+ and half+/- (setup_module)
@@ -45,14 +47,18 @@ Subroutine set_bounds                                        &
 
   Call scan_field                                     &
            (l_n_e,mxsite,mxatyp,megatm,mxtmls,mxexcl, &
-           mxtshl,mxshl,mxfshl,mxtcon,mxcons,mxfcon,  &
+           mtshl,mxtshl,mxshl,mxfshl,                 &
+           mtcons,mxtcon,mxcons,mxfcon,               &
            mxtpmf,mxpmf,mxfpmf,                       &
-           mxtrgd,mxrgd,mxlrgd,mxfrgd,                &
-           mxtteth,mxteth,mxftet,                     &
-           mxtbnd,mxbond,mxfbnd,mxtang,mxangl,mxfang, &
-           mxtdih,mxdihd,mxfdih,mxtinv,mxinv,mxfinv,  &
-           mxrdf,mxgrid,mxvdw,rvdw,mxmet,mxmed,rmet,  &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp)
+           mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,          &
+           mtteth,mxtteth,mxteth,mxftet,              &
+           mtbond,mxtbnd,mxbond,mxfbnd,               &
+           mtangl,mxtang,mxangl,mxfang,               &
+           mtdihd,mxtdih,mxdihd,mxfdih,               &
+           mtinv,mxtinv,mxinv,mxfinv,                 &
+           mxrdf,mxgrid,mxvdw,rvdw,                   &
+           mxmet,mxmed,mxmds,rmet,                    &
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext)
 
 ! scan CONFIG file data
 
@@ -68,7 +74,7 @@ Subroutine set_bounds                                        &
   Call scan_control                                  &
            (mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter, &
            imcon,imc_n,cell,xhi,yhi,zhi,             &
-           l_str,l_vv,l_n_e,l_n_r,l_n_v,l_ind,       &
+           l_str,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,  &
            dvar,rcut,rbin,mxstak,                    &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
@@ -132,38 +138,22 @@ Subroutine set_bounds                                        &
 
 
 
-!!! SITE PARAMETERS !!!
-
-! maximum number of different sites in system
-
-  mxsite = Max(1,mxsite)
-
-! set maximum number of unique atom types
-
-  mxatyp = Max(1,mxatyp)
-
-! maximum number of molecule types
-
-  mxtmls = Max(1,mxtmls)
-
-! maximum number of excluded atoms per atom
-
-  mxexcl = Max(1,mxexcl)
-
-
-
 !!! INTRA-LIKE POTENTIAL PARAMETERS !!!
 
 ! maximum number of core-shell units per node
 
-  If (mxshl > 0 .and. mxnode > 1) &
+  If (mxshl > 0 .and. mxnode > 1) Then
+     mxshl = Max(mxshl,mxnode*mtshl)
      mxshl = (3*(Nint((dvar**1.7_wp)*Real(mxshl,wp))+mxnode-1))/mxnode
+  End If
 
 
 ! maximum number of constraints per node
 
-  If (mxcons > 0 .and. mxnode > 1) &
+  If (mxcons > 0 .and. mxnode > 1) Then
+     mxcons = Max(mxcons,mxnode*mtcons)
      mxcons = (3*(Nint((dvar**1.7_wp)*Real(mxcons,wp))+mxnode-1))/mxnode
+  End If
 
 
 ! maximum number of PMF constraints per MD cell - mxpmf
@@ -173,74 +163,88 @@ Subroutine set_bounds                                        &
 
 ! maximum number of RBs per node
 
-  If (mxrgd > 0 .and. mxnode > 1) &
+  If (mxrgd > 0 .and. mxnode > 1) Then
+     mxrgd = Max(mxrgd,mxnode*mtrgd)
      mxrgd = (3*(Nint((dvar**1.7_wp)*Real(mxrgd,wp))+mxnode-1))/mxnode
-
+  End If
 
 
 ! dimension of shared atoms arrays for core-shell, constraint and RB units
 ! Max=Max#(members-per-unit)*Max#(units-per-domain)/2
 ! and maximum number of neighbouring domains/nodes in 3D DD (3^3 - 1)
 
-  mxlshp = Max((2*mxshl)/2,(2*mxcons)/2,(mxlrgd*mxrgd)/2)
-  mxproc = 26
-
-! nothing is to be shared on one node
-
-  If (mxnode == 1) Then
+  If (mxnode > 1) Then
+     mxlshp = Max((2*mxshl)/2,(2*mxcons)/2,(mxlrgd*mxrgd)/2)
+     mxproc = 26
+  Else ! nothing is to be shared on one node
      mxlshp = 0
      mxproc = 0
   End If
 
 
-! maximum number of tethered atoms per node
+! maximum number of tethered atoms per node and tether potential parameters
 
-  If (mxteth > 0 .and. mxnode > 1) &
-     mxteth = (3*(Nint((dvar**1.7_wp)*Real(mxteth,wp))+mxnode-1))/mxnode
-
-! maximum number of parameters for tethers
-
-  mxpteth = 3
-
-
-! maximum number of chemical bonds per node
-
-  If (mxbond > 0 .and. mxnode > 1) &
-     mxbond = (3*(Nint((dvar**1.7_wp)*Real(mxbond,wp))+mxnode-1))/mxnode
-
-! maximum number of parameters for bond potentials
-
-  mxpbnd = 4
+  If (mxteth > 0) Then
+     If (mxnode > 1) Then
+        mxteth = Max(mxteth,mxnode*mtteth)
+        mxteth = (3*(Nint((dvar**1.7_wp)*Real(mxteth,wp))+mxnode-1))/mxnode
+     End If
+     mxpteth = 3
+  Else
+     mxpteth = 0
+  End If
 
 
-! maximum number of bond angles per node
+! maximum number of chemical bonds per node and bond potential parameters
 
-  If (mxangl > 0 .and. mxnode > 1) &
-     mxangl = (3*(Nint((dvar**1.7_wp)*Real(mxangl,wp))+mxnode-1))/mxnode
-
-! maximum number of parameters for angular potentials
-
-  mxpang = 6
-
-
-! maximum number of torsion angles per node
-
-  If (mxdihd > 0 .and. mxnode > 1) &
-     mxdihd = (3*(Nint((dvar**1.7_wp)*Real(mxdihd,wp))+mxnode-1))/mxnode
-
-! maximum number of parameters for dihedral (torsional) potentials
-
-  mxpdih = 7
+  If (mxbond > 0) Then
+     If (mxnode > 1) Then
+        mxbond = Max(mxbond,mxnode*mtbond)
+        mxbond = (3*(Nint((dvar**1.7_wp)*Real(mxbond,wp))+mxnode-1))/mxnode
+     End If
+     mxpbnd = 4
+  Else
+     mxpbnd = 0
+  End If
 
 
-! maximum number of inversion potentials per node
+! maximum number of bond angles per node and angular potential parameters
 
-  If (mxinv > 0 .and. mxnode > 1) &
-     mxinv = (3*(Nint((dvar**1.7_wp)*Real(mxinv,wp))+mxnode-1))/mxnode
+  If (mxangl > 0) Then
+     If (mxnode > 1) Then
+        mxangl = Max(mxangl,mxnode*mtangl)
+        mxangl = (3*(Nint((dvar**1.7_wp)*Real(mxangl,wp))+mxnode-1))/mxnode
+     End If
+     mxpang = 6
+  Else
+     mxpang = 0
+  End If
 
-! maximum number of parameters for inversion potentials
 
-  mxpinv = 3
+! maximum number of torsion angles per node and dihedral potential parameters
+
+  If (mxdihd > 0) Then
+     If (mxnode > 1) Then
+        mxdihd = Max(mxdihd,mxnode*mtdihd)
+        mxdihd = (3*(Nint((dvar**1.7_wp)*Real(mxdihd,wp))+mxnode-1))/mxnode
+     End If
+     mxpdih = 7
+  Else
+     mxpdih = 0
+  End If
+
+
+! maximum number of inversions per node and inversion potential parameters
+
+  If (mxinv > 0) Then
+     If (mxnode > 1) Then
+        mxinv = Max(mxinv,mxnode*mtinv)
+        mxinv = (3*(Nint((dvar**1.7_wp)*Real(mxinv,wp))+mxnode-1))/mxnode
+     End If
+     mxpinv = 3
+  Else
+     mxpinv = 0
+  End If
 
 
 
@@ -251,90 +255,98 @@ Subroutine set_bounds                                        &
   mxgrid = Max(mxgrid,1000,Int(rcut/0.01_wp+0.5_wp)+4)
 
 
-
 ! maximum number of rdf potentials (mxrdf = mxrdf)
 ! mxgrdf - maximum dimension of rdf and z-density arrays
 
-  mxgrdf = Nint(rcut/rbin)
-
-
-
-! maximum number of vdw potentials
-
-  If (mxvdw > 0) mxvdw = mxvdw+1
-
-! maximum number of parameters for vdw potentials
-
-  mxpvdw = 5
-
-
-
-! maximum number of metal potentials
-
-  If (mxmet > 0) mxmet = mxmet+1
-
-! maximum number of parameters for metal potentials
-
-  mxpmet = 9
-
-
-
-! maximum number of tersoff potentials (mxter = mxter)
-
-  If (mxter == 0) Then
-     lter = .false.
+  If ((.not. l_n_r) .or. lzdn) Then
+     If (((.not.l_n_r) .and. mxrdf == 0) .and. (mxvdw > 0 .or. mxmet > 0)) &
+        mxrdf = Max(mxvdw,mxmet) ! (vdw,met) == rdf scanning
+     mxgrdf = Nint(rcut/rbin)
   Else
+     mxgrdf = 0 ! RDF and Z-density function MUST NOT get called!!!
+  End If
+
+
+! maximum number of vdw potentials and parameters
+
+  If (mxvdw > 0) Then
+     mxvdw = mxvdw+1
+     mxpvdw = 5
+  Else
+     mxpvdw = 0
+  End If
+
+
+! maximum number of metal potentials and parameters
+
+  If (mxmet > 0) Then
+     mxmet = mxmet+1
+     mxpmet = 9
+  Else
+     mxpmet = 0
+  End If
+
+
+! maximum number of tersoff potentials (mxter = mxter) and parameters
+
+  If (mxter > 0) Then
      lter = .true.
-  End If
 
-! maximum number of parameters for tersoff potentials
-
-  If      (potter == 1) Then
-     mxpter = 11
-  Else If (potter == 2) Then
-     mxpter = 16
-  End If
-
-
-! maximum number of three-body potentials
-
-  If (mxtbp == 0) Then
-     ltbp   = .false.
-     mx2tbp = 0
+     If      (potter == 1) Then
+        mxpter = 11
+     Else If (potter == 2) Then
+        mxpter = 16
+     End If
   Else
+     lter = .false.
+
+     mxpter = 0
+  End If
+
+
+! maximum number of three-body potentials and parameters
+
+  If (mxtbp > 0) Then
      ltbp   = .true.
      mx2tbp = (mxatyp*(mxatyp+1))/2
      mxtbp  = mx2tbp*mxatyp
      If (rctbp < 1.0e-6_wp) rctbp=0.5_wp*rcut
+
+     mxptbp = 5
+  Else
+     ltbp   = .false.
+     mx2tbp = 0
+     mxtbp  = 0
+
+     mxptbp = 0
   End If
 
-! maximum number of three-body potential parameters
 
-  mxptbp = 5
+! maximum number of four-body potentials and parameters
 
-
-
-! maximum number of four-body potentials
-
-  If (mxfbp == 0) Then
-     lfbp   = .false.
-     mx3fbp = 0
-  Else
+  If (mxfbp > 0) Then
      lfbp   = .true.
      mx3fbp = (mxatyp*(mxatyp+1)*(mxatyp+2))/6
      mxfbp  = mx3fbp*mxatyp
      If (rcfbp < 1.0e-6_wp) rcfbp=0.5_wp*rcut
+
+     mxpfbp = 3
+  Else
+     lfbp   = .false.
+     mx3fbp = 0
+     mxfbp  = 0
+
+     mxpfbp = 0
   End If
-
-! maximum number of four-body potential parameters
-
-  mxpfbp = 3
-
 
 
 ! maximum number of external field parameters
 
-  mxpfld = 5
+  If (lext) Then
+     mxpfld = 5
+  Else
+     mxpfld = 0
+  End If
 
 
 
@@ -500,27 +512,32 @@ Subroutine set_bounds                                        &
 
 ! maximum dimension of principal transfer buffer
 
-! deport_atomic_data & export_atomic_data (and ewald_spme_force~,
+! deport_atomic_data & export_atomic_data (and
 ! and defects_reference_export & metal_ld_export.f90 if used)
 ! are supposed to be the most MPI/buffer consuming routines
 
-! REMOVE 0*(...) in mxbuff estimation (penultimate line) if using ewald_spme_force~
+! deporting total per atom
 
-  mxbuff = Max( (Merge( 2, 0, mxnode > 1)                   * &
-                  ((18+12+mxexcl+6+mxstak)*mxatdm           + &
-                   3*mxshl + 3*mxcons                       + &
-                   (mxtpmf(1)+mxtpmf(2)+2)*mxpmf            + &
-                   (mxlrgd+19)*Max(mxtrgd,mxrgd)            + &
-                   2*mxteth + 3*mxbond + 4*mxangl           + &
-                   7*mxdihd + 5*mxinv))                     / &
-                  (Min(ilx,ily,ilz)*Max(Nint(rcut),1))      , &
-                (Merge( 2, 1, mxnode > 1)*11*mxatms)        / &
-                 Min(qlx,qly,qlz)                           , &
-                2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
-                0*(2*kmaxa*kmaxb*kmaxc+10)                  , &
-                mxnstk*mxstak , mxgrid , mxgrdf , mxtrgd*mxlrgd , 10000 )
+  dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
+  dens0 = dens0/Max(rcut/0.2_wp,1.0_wp)
+  mxbfdp = Merge( 2, 0, mxnode > 1) * Nint( Real(                          &
+          mxatdm*(18+12+mxexcl + Merge(2*6+mxstak, 0, l_msd))           + &
+          4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
+          3*mxteth+4*mxbond+5*mxangl+8*mxdihd+6*mxinv,wp) * dens0)
 
+! exporting single per atom
 
+  dens  = Real(((qlx+2)*(qly+2)*(qlz+2))/Min(qlx,qly,qlz)+2,wp) / Real(qlx*qly*qlz,wp)
+  mxbfxp = Merge( 2, 1, mxnode > 1) * Nint(Real(mxatdm,wp) * dens)
+
+! shared units single per atom
+
+  dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) - 1.0_wp
+  dens0 = dens0/Max(rcut/2.0_wp,1.0_wp)
+  mxbfsh = Merge( 1, 0, mxnode > 1) * Nint(Real(Max(2*mxshl,2*mxcons,mxlrgd*mxrgd),wp) * dens0)
+
+  mxbuff = Max( mxbfdp , 13*mxbfxp , 4*mxbfsh , 2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
+                mxnstk*mxstak , mxgrid , mxgrdf , mxlrgd*Max(mxrgd,mxtrgd), mxtrgd*(4+3*mxlrgd), 10000 )
 
 ! reset (increase) link-cell maximum (mxcell)
 ! if tersoff or three- or four-body potentials exist

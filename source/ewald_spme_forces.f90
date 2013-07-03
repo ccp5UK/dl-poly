@@ -307,7 +307,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 !           ll=izz(i)-l+2
 !
 !! If a particle's B-spline is entering this domain (originating from its
-!! possitive halo), i.e. <= i.t, and not just to start exiting it, i.e. >= i.b
+!! positive halo), i.e. <= i.t, and not just to start exiting it, i.e. >= i.b
 !! In the limit of one domain in the MD cell (npr.=1, id.=0) i.t=kmax. and i.b=1
 !
 !           If (ll >= izb .and. ll <= izt) Then

@@ -1,7 +1,7 @@
 Subroutine scan_control                              &
            (mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter, &
            imcon,imc_n,cell,xhi,yhi,zhi,             &
-           l_str,l_vv,l_n_e,l_n_r,l_n_v,l_ind,       &
+           l_str,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,  &
            dvar,rcut,rbin,mxstak,                    &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
@@ -10,7 +10,7 @@ Subroutine scan_control                              &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2012
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,7 +24,7 @@ Subroutine scan_control                              &
   Implicit None
 
   Logical,           Intent( InOut ) :: l_n_e
-  Logical,           Intent(   Out ) :: l_str,l_vv,l_n_r,l_n_v,l_ind
+  Logical,           Intent(   Out ) :: l_str,l_vv,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,imcon
   Integer,           Intent(   Out ) :: imc_n,mxstak, &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
@@ -118,7 +118,7 @@ Subroutine scan_control                              &
 ! Open the simulation input file
 
   If (idnode == 0) Inquire(File='CONTROL', Exist=safe)
-  If (mxnode > 1) Call gcheck(safe)
+  If (mxnode > 1) Call gcheck(safe,"enforce")
   If (.not.safe) Then
      Go To 10
   Else
@@ -289,6 +289,19 @@ Subroutine scan_control                              &
         If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
         If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
         If (word(1:8) == 'leapfrog') l_vv=.false.
+
+! read rdf calculation option
+
+     Else If (word(1:3) == 'rdf') Then
+
+        lrdf = .true.
+        l_n_r = .not.lrdf
+
+! read z-density profile option
+
+     Else If (word(1:4) == 'zden') Then
+
+        lzdn = .true.
 
 ! read finish
 

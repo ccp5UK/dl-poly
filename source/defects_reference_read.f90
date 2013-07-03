@@ -6,7 +6,7 @@ Subroutine defects_reference_read &
 ! dl_poly_4 subroutine for reading particles data from REFERENCE file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -71,7 +71,7 @@ Subroutine defects_reference_read &
 
   lexist=.true. ; megref=0
   If (idnode == 0) Inquire(File=fname, Exist=lexist)
-  If (mxnode > 1) Call gcheck(lexist)
+  If (mxnode > 1) Call gcheck(lexist,"enforce")
   If (.not.lexist) Then
      If (nstep > 1) Then ! That is a problem.  Abort, we must have restarted
         Call error(551)
@@ -154,8 +154,8 @@ Subroutine defects_reference_read &
      End If
      If (mxnode > 1) Then
         Call gsync()
-        Call gcheck(safe)
-        Call gcheck(fast)
+        Call gcheck(safe,"enforce")
+        Call gcheck(fast,"enforce")
      End If
      If (.not.safe) Go To 100
 
@@ -347,8 +347,8 @@ Subroutine defects_reference_read &
 ! checks
 
         If (mxnode > 1) Then
-            Call gcheck(safe)
-            Call gcheck(loop)
+            Call gcheck(safe,"enforce")
+            Call gcheck(loop,"enforce")
         End If
         If (.not.safe) Go To 100 ! catch error
         If (loop) Then
@@ -432,7 +432,7 @@ Subroutine defects_reference_read &
 
 ! Check if all is dispatched fine
 
-           If (mxnode > 1) Call gcheck(safe)
+           If (mxnode > 1) Call gcheck(safe,"enforce")
            If (.not.safe) Call error(556)
 
 ! Nullify dispatch counter

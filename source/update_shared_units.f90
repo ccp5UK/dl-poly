@@ -7,10 +7,10 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz)
 ! between nodes
 !
 ! Note: This subroutine is only called when there is sharing.
-!       In case of mxnode=1 there is no sharing.
+!       In case of mxnode=1 there is no sharing by construction.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2008
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,11 +27,17 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz)
   Real( Kind = wp ), Intent( InOut ) :: qxx(1:mxatms),qyy(1:mxatms),qzz(1:mxatms)
 
   Logical :: safe(1:2)
-  Integer :: fail,lim,iadd,i,j,k,j0,k0,jdnode,kdnode,m,n,local_index
+  Integer :: fail,iadd,limit,iblock, &
+             i,j,k,j0,k0,jdnode,kdnode,m,n,local_index
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
-  fail=0
-  Allocate (buffer(1:mxbuff), Stat=fail)
+
+! Number of transported quantities per particle
+
+  iadd=4
+
+  fail=0 ; limit=iadd*mxbfsh ! limit=2*iblock*iadd
+  Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'update_shared_units allocation failure, node: ', idnode
      Call error(0)
@@ -39,11 +45,7 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz)
 
 ! Set buffer limit (half for outgoing data - half for incoming)
 
-  lim=mxbuff/2
-
-! Number of transported quantities per particle
-
-  iadd=4
+  iblock=limit/2
 
 ! Set logical flag for array overflow
 
@@ -69,7 +71,7 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz)
 
 ! If no out of bound so far then carry on
 
-           If (i+iadd <= lim) Then
+           If (i+iadd <= iblock) Then
               m=local_index(lishp(j),nlast,lsi,lsa)
               If (m > natms) m=0
 
@@ -119,7 +121,7 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz)
 ! I'm to receive data for n/iadd particles (n array elements from buffer(i+1))
 
         Do j=1,n/iadd
-           If (i+iadd <= mxbuff) Then
+           If (i+iadd <= limit) Then
               m=local_index(Nint(buffer(i+1)),nlast,lsi,lsa)
 
 ! m should always be > natms (halo particles have local index > natms)
@@ -169,10 +171,10 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii)
 ! of shared core-shell, constraint and RB units between nodes
 !
 ! Note: This subroutine is only called when there is sharing.
-!       In case of mxnode=1 there is no sharing.
+!       In case of mxnode=1 there is no sharing by construction.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -188,11 +190,17 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii)
   Integer, Intent( InOut ) :: iii(1:mxatms)
 
   Logical :: safe(1:2)
-  Integer :: fail,lim,iadd,i,j,k,j0,k0,jdnode,kdnode,m,n,local_index
+  Integer :: fail,iadd,limit,iblock, &
+             i,j,k,j0,k0,jdnode,kdnode,m,n,local_index
 
   Integer, Dimension( : ), Allocatable :: ibuffer
-  fail=0
-  Allocate (ibuffer(1:mxbuff), Stat=fail)
+
+! Number of transported quantities per particle
+
+  iadd=2
+
+  fail=0 ; limit=iadd*mxbfsh ! limit=2*iblock*iadd
+  Allocate (ibuffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'update_shared_units_int allocation failure, node: ', idnode
      Call error(0)
@@ -200,11 +208,7 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii)
 
 ! Set ibuffer limit (half for outgoing data - half for incoming)
 
-  lim=mxbuff/2
-
-! Number of transported quantities per particle
-
-  iadd=2
+  iblock=limit/2
 
 ! Set logical flag for array overflow
 
@@ -230,7 +234,7 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii)
 
 ! If no out of bound so far then carry on
 
-           If (i+iadd <= lim) Then
+           If (i+iadd <= iblock) Then
               m=local_index(lishp(j),nlast,lsi,lsa)
               If (m > natms) m=0
 
@@ -278,7 +282,7 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii)
 ! I'm to receive data for n/iadd particles (n array elements from ibuffer(i+1))
 
         Do j=1,n/iadd
-           If (i+iadd <= mxbuff) Then
+           If (i+iadd <= limit) Then
               m=local_index(ibuffer(i+1),nlast,lsi,lsa)
 
 ! m should always be > natms (halo particles have local index > natms)
@@ -326,10 +330,10 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr)
 ! of shared core-shell, constraint and RB units between nodes
 !
 ! Note: This subroutine is only called when there is sharing.
-!       In case of mxnode=1 there is no sharing.
+!       In case of mxnode=1 there is no sharing by construction.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -346,11 +350,17 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr)
   Real( Kind = wp ), Intent( InOut ) :: rrr(1:mxatms)
 
   Logical :: safe(1:2)
-  Integer :: fail,lim,iadd,i,j,k,j0,k0,jdnode,kdnode,m,n,local_index
+  Integer :: fail,iadd,limit,iblock, &
+             i,j,k,j0,k0,jdnode,kdnode,m,n,local_index
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
-  fail=0
-  Allocate (buffer(1:mxbuff), Stat=fail)
+
+! Number of transported quantities per particle
+
+  iadd=2
+
+  fail=0 ; limit=iadd*mxbfsh ! limit=2*iblock*iadd
+  Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'update_shared_units_rwp allocation failure, node: ', idnode
      Call error(0)
@@ -358,11 +368,7 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr)
 
 ! Set buffer limit (half for outgoing data - half for incoming)
 
-  lim=mxbuff/2
-
-! Number of transported quantities per particle
-
-  iadd=2
+  iblock=limit/2
 
 ! Set logical flag for array overflow
 
@@ -388,7 +394,7 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr)
 
 ! If no out of bound so far then carry on
 
-           If (i+iadd <= lim) Then
+           If (i+iadd <= iblock) Then
               m=local_index(lishp(j),nlast,lsi,lsa)
               If (m > natms) m=0
 
@@ -436,7 +442,7 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr)
 ! I'm to receive data for n/iadd particles (n array elements from buffer(i+1))
 
         Do j=1,n/iadd
-           If (i+iadd <= mxbuff) Then
+           If (i+iadd <= limit) Then
               m=local_index(Nint(buffer(i+1)),nlast,lsi,lsa)
 
 ! m should always be > natms (halo particles have local index > natms)

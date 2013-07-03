@@ -7,9 +7,8 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 ! by Essmann et al. J. Chem. Phys. 103 (1995) 8577
 !
 ! Note: (fourier) reciprocal space terms by global fft sumation;
-!       (0) REMOVE the zero from 0*(...) in mxbuff estimation at the
-!           end of routine set_bounds!!!  It is crucial to have large
-!           enough mxbuff!!!
+!       (0) It is crucial to have large enough "limit", at least >=
+!           kmaxa*kmaxb*kmaxc size needed for the Reshape operation!!!
 !       (1) Dcft3, a FFT function, is needed.  It can be found in the
 !           standard ESSL library (add -lessl in LDFLAGS in Makefile).
 !       (2) ewald_spme_force~.f90 is not dependent on exchange_grid.f90
@@ -19,7 +18,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - i.j.bush january 2002
-! amended   - i.t.todorov june 2007
+! amended   - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -42,7 +41,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
                                    ixtm0_r,iytm0_r,iztm0_r, &
                                    kmaxa_r,kmaxb_r,kmaxc_r,engsic
 
-  Integer              :: fail(1:4), i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt, inc2,inc3
+  Integer              :: fail(1:4),limit, i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt, inc2,inc3
 
   Real( Kind = wp )    :: det,rcell(1:9),celprp(1:10),ralph,rvolm,scale,   &
                           rcpcut,rcpct2,strs(1:9),eng,akv,tmp,bb1,bb2,bb3, &
@@ -69,8 +68,8 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   Real( Kind = wp ),    Dimension( :,:,: ), Allocatable, Save :: qqc
   Complex( Kind = wp ), Dimension( :,:,: ), Allocatable, Save :: qqq
 
-  fail=0
-  Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),buffer(1:mxbuff),           Stat = fail(1))
+  fail=0 ; limit=Max(mxbuff,kmaxa*kmaxb*kmaxc) ! Try 3*kmaxa*kmaxb*kmaxc
+  Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),buffer(1:limit),            Stat = fail(1))
   Allocate (ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms),it(1:mxatms),               Stat = fail(2))
   Allocate (bsdx(1:mxspl,1:mxatms),bsdy(1:mxspl,1:mxatms),bsdz(1:mxspl,1:mxatms), Stat = fail(3))
   Allocate (bspx(1:mxspl,1:mxatms),bspy(1:mxspl,1:mxatms),bspz(1:mxspl,1:mxatms), Stat = fail(4))
@@ -259,7 +258,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 !           ll=izz(i)-l+2
 !
 !! If a particle's B-spline is entering this domain (originating from its
-!! possitive halo), i.e. <= i.t, and not just to start exiting it, i.e. >= i.b
+!! positive halo), i.e. <= i.t, and not just to start exiting it, i.e. >= i.b
 !! In the limit of one domain in the MD cell (npr.=1, id.=0) i.t=kmax. and i.b=1
 !
 !           If (ll >= izb .and. ll <= izt) Then
@@ -336,7 +335,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   inc2=kmaxa
   inc3=kmaxa*kmaxb
 
-  Call Dcft3(qqq,inc2,inc3,qqq,inc2,inc3,kmaxa,kmaxb,kmaxc,-1,1.0_wp,buffer,mxbuff)
+  Call Dcft3(qqq,inc2,inc3,qqq,inc2,inc3,kmaxa,kmaxb,kmaxc,-1,1.0_wp,buffer,limit)
 
 ! set reciprocal space cutoff
 
@@ -411,7 +410,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      End Do
   End Do
 
-  Call Dcft3(qqq,inc2,inc3,qqq,inc2,inc3,kmaxa,kmaxb,kmaxc,1,1.0_wp,buffer,mxbuff)
+  Call Dcft3(qqq,inc2,inc3,qqq,inc2,inc3,kmaxa,kmaxb,kmaxc,1,1.0_wp,buffer,limit)
 
 ! complete strs
 

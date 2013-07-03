@@ -18,14 +18,13 @@ Subroutine pseudo_lfv                                     &
 !           as well as shells.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2013
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gsum
-  Use setup_module,       Only : boltz,nrite,mxatms,mxshl, &
-                                 mxtrgd,mxrgd,mxlrgd,zero_plus
+  Use setup_module,       Only : boltz,nrite,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
   Use site_module,        Only : dofsit,ntpshl,unqshl
   Use config_module
   Use rigid_bodies_module
@@ -143,27 +142,20 @@ Subroutine pseudo_lfv                                     &
            End If
         End Do
         tpn(idnode) = j
-        If (mxnode > 1) Then
-           Do i=0,mxnode-1
-              If (i /= idnode) tpn(i) = 0
-           End Do
-           Call gsum(tpn)
-        End If
-        ntp = Sum(tpn)
      Else ! rebuild tpn
         j = 0
         Do i=1,natms
            If (qn(i) == 1) j = j + 1
         End Do
         tpn(idnode) = j
-        If (mxnode > 1) Then
-           Do i=0,mxnode-1
-              If (i /= idnode) tpn(i) = 0
-           End Do
-           Call gsum(tpn)
-        End If
-        ntp = Sum(tpn)
      End If
+     If (mxnode > 1) Then
+        Do i=0,mxnode-1
+           If (i /= idnode) tpn(i) = 0
+        End Do
+        Call gsum(tpn)
+     End If
+     ntp = Sum(tpn)
 
      If (ntp == 0) Return
      If (chit < 1.0e-6_wp .or. keypse > 1) Return ! Avoid thermostat overheating
@@ -249,7 +241,7 @@ Subroutine pseudo_lfv                                     &
 ! 1. Get the boundary thermostat thicknesses in fractional coordinates
 ! 2. sx,sy,sz are intervalled as [-0.5,+0.5) {as by construction are (0,+0.25]}
 ! 3. Outline the edge beyond which a particle belongs to the thermostat
-!    0.5*thiknesses[MD box] - thickness[boundary thermostat]
+!    0.5*thicknesses[MD box] - thickness[boundary thermostat]
 
         sx=rcell(1)*ssx+rcell(4)*ssy+rcell(7)*ssz ; sx=sx-Anint(sx) ; sx=0.5_wp-sx
         sy=rcell(2)*ssx+rcell(5)*ssy+rcell(8)*ssz ; sy=sy-Anint(sy) ; sy=0.5_wp-sy
@@ -679,10 +671,9 @@ Subroutine pseudo_lfv                                     &
 ! RBs
 
            If (rtp > 0) Then
-              Allocate (ggx(1:mxlrgd*Max(mxrgd,mxtrgd)),ggy(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-                        ggz(1:mxlrgd*Max(mxrgd,mxtrgd)),                 Stat=fail(1))
-              Allocate (rgdfxx(1:mxrgd),rgdfyy(1:mxrgd),rgdfzz(1:mxrgd), Stat=fail(2))
-              Allocate (rgdtxx(1:mxrgd),rgdtyy(1:mxrgd),rgdtzz(1:mxrgd), Stat=fail(3))
+              Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), Stat=fail(1))
+              Allocate (rgdfxx(1:mxrgd),rgdfyy(1:mxrgd),rgdfzz(1:mxrgd),             Stat=fail(2))
+              Allocate (rgdtxx(1:mxrgd),rgdtyy(1:mxrgd),rgdtzz(1:mxrgd),             Stat=fail(3))
               If (Any(fail > 0)) Then
                  Write(nrite,'(/,1x,a,i0)') 'pseudo (RB) allocation failure, node: ', idnode
                  Call error(0)

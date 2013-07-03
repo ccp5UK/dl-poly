@@ -1,4 +1,4 @@
-Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
+Subroutine metal_ld_collect_fst(iatm,rsqdf,safe,rmet)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -9,20 +9,19 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,rho,safe,rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov november 2012
+! amended   - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module
   Use config_module, Only : natms,ltype,list
-  Use metal_module,  Only : ld_met,lstmet,ltpmet,dmet,prmmet
+  Use metal_module,  Only : ld_met,lstmet,ltpmet,dmet,prmmet,rho
 
   Implicit None
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rsqdf
-  Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: rho
   Logical,                                  Intent( InOut ) :: safe
   Real( Kind = wp ),                        Intent( In    ) :: rmet
 

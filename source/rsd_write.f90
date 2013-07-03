@@ -6,7 +6,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2012
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -90,7 +90,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
      lexist=.true.
      If (keyres == 1) Then
         If (idnode == 0) Inquire(File='RSDDAT', Exist=lexist)
-        If (mxnode > 1) Call gcheck(lexist)
+        If (mxnode > 1) Call gcheck(lexist,"enforce")
      Else
         lexist=.false.
      End If
@@ -172,7 +172,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
         End If
 
-        If (mxnode > 1) Call gcheck(safe)
+        If (mxnode > 1) Call gcheck(safe,"enforce")
         If (.not.safe) Then
            lexist=.false.
 

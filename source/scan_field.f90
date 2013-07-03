@@ -1,13 +1,17 @@
 Subroutine scan_field                                 &
            (l_n_e,mxsite,mxatyp,megatm,mxtmls,mxexcl, &
-           mxtshl,mxshl,mxfshl,mxtcon,mxcons,mxfcon,  &
+           mtshl,mxtshl,mxshl,mxfshl,                 &
+           mtcons,mxtcon,mxcons,mxfcon,               &
            mxtpmf,mxpmf,mxfpmf,                       &
-           mxtrgd,mxrgd,mxlrgd,mxfrgd,                &
-           mxtteth,mxteth,mxftet,                     &
-           mxtbnd,mxbond,mxfbnd,mxtang,mxangl,mxfang, &
-           mxtdih,mxdihd,mxfdih,mxtinv,mxinv,mxfinv,  &
-           mxrdf,mxgrid,mxvdw,rvdw,mxmet,mxmed,rmet,  &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp)
+           mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,          &
+           mtteth,mxtteth,mxteth,mxftet,              &
+           mtbond,mxtbnd,mxbond,mxfbnd,               &
+           mtangl,mxtang,mxangl,mxfang,               &
+           mtdihd,mxtdih,mxdihd,mxfdih,               &
+           mtinv,mxtinv,mxinv,mxfinv,                 &
+           mxrdf,mxgrid,mxvdw,rvdw,                   &
+           mxmet,mxmed,mxmds,rmet,                    &
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -15,7 +19,8 @@ Subroutine scan_field                                 &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith november 1994
-! amended   - i.t.todorov january 2013
+! amended   - i.t.todorov june 2013
+! contrib   - b.palmer (2band) may 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -43,9 +48,9 @@ Subroutine scan_field                                 &
   Character( Len = 40  ) :: word
   Character( Len = 8   ) :: name
 
-  Logical           :: l_n_e,check,safe
+  Logical           :: l_n_e,check,safe,lext
   Integer           :: mxtmls,itmols,nummols,numsit,mxnmst,isite,ksite,nrept,  &
-                       mxsite,mxatyp,megatm,i,j,k,nfld,mxexcl,                 &
+                       mxsite,mxatyp,megatm,i,j,k,mxexcl,                      &
                        numshl,mtshl,mxtshl,mxshl,ishls,mxfshl,                 &
                        numcon,mtcons,mxtcon,mxcons,icon,mxfcon,                &
                        mxtpmf(1:2),mxpmf,ipmf,jpmf,mxfpmf,                     &
@@ -55,7 +60,8 @@ Subroutine scan_field                                 &
                        numang,mtangl,mxtang,mxangl,iang,mxfang,                &
                        numdih,mtdihd,mxtdih,mxdihd,idih,mxfdih,                &
                        numinv,mtinv,mxtinv,mxinv,iinv,mxfinv,                  &
-                       mxrdf,itprdf,mxvdw,itpvdw,mxmet,mxmed,itpmet,mxgrid,    &
+                       mxrdf,itprdf,mxvdw,itpvdw,                              &
+                       mxmet,mxmed,mxmds,itpmet,mxgrid,                        &
                        mxter,itpter,mxtbp,itptbp,mxfbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
   Real( Kind = wp ) :: rvdw,rmet,rcter,rctbp,rcfbp,rct
@@ -75,54 +81,54 @@ Subroutine scan_field                                 &
   mtshl =0
   mxshl =0
   mxtshl=0
-  mxfshl=1
+  mxfshl=0
 
   numcon=0
   mtcons=0
   mxcons=0
   mxtcon=0
-  mxfcon=1
+  mxfcon=0
 
   mxpmf =0
   mxtpmf=0
-  mxfpmf=1
+  mxfpmf=0
 
   numrgd=0
   mtrgd =0
   mxrgd =0
   mxtrgd=0
   mxlrgd=0
-  mxfrgd=1
+  mxfrgd=0
 
   numteth=0
   mtteth =0
   mxteth =0
   mxtteth=0
-  mxftet =1
+  mxftet =0
 
   numbonds=0
   mtbond=0
   mxbond=0
   mxtbnd=0
-  mxfbnd=1
+  mxfbnd=0
 
   numang=0
   mtangl=0
   mxangl=0
   mxtang=0
-  mxfang=1
+  mxfang=0
 
   numdih=0
   mtdihd=0
   mxdihd=0
   mxtdih=0
-  mxfdih=1
+  mxfdih=0
 
   numinv=0
   mtinv =0
   mxinv =0
   mxtinv=0
-  mxfinv=1
+  mxfinv=0
 
   mxrdf =0
 
@@ -133,6 +139,7 @@ Subroutine scan_field                                 &
 
   mxmet=0
   mxmed=0
+  mxmds=0
   rmet =0.0_wp
 
   mxter=0
@@ -146,6 +153,8 @@ Subroutine scan_field                                 &
 
   mxexcl=0
 
+  lext=.false.
+
 ! Set safe flag
 
   safe=.true.
@@ -153,7 +162,7 @@ Subroutine scan_field                                 &
 ! Open the interactions input file
 
   If (idnode == 0) Inquire(File='FIELD', Exist=safe)
-  If (mxnode > 1) Call gcheck(safe)
+  If (mxnode > 1) Call gcheck(safe,"enforce")
   If (.not.safe) Then
      Go To 20
   Else
@@ -477,7 +486,7 @@ Subroutine scan_field                                 &
             End Do
         End Do
 
-        mxrdf=Max(mxrdf,(mxatyp*(mxatyp+1))/2)
+        If (mxrdf > 0) mxrdf=Max(mxrdf,(mxatyp*(mxatyp+1))/2)
 
      Else If (word(1:3) == 'vdw') Then
 
@@ -504,30 +513,32 @@ Subroutine scan_field                                 &
            If (word(1:3) == 'tab') lt_vdw=.true.
         End Do
 
-        mxvdw=Max(mxvdw,(mxatyp*(mxatyp+1))/2)
+        If (mxvdw > 0) Then
+           mxvdw=Max(mxvdw,(mxatyp*(mxatyp+1))/2)
 
-        If (lt_vdw) Then
-           If (idnode == 0) Open(Unit=ntable, File='TABLE')
+           If (lt_vdw) Then
+              If (idnode == 0) Open(Unit=ntable, File='TABLE')
 
-           Call get_line(safe,ntable,record)
-           If (.not.safe) Go To 40
+              Call get_line(safe,ntable,record)
+              If (.not.safe) Go To 40
 
-           Call get_line(safe,ntable,record)
-           If (.not.safe) Go To 40
-           Call get_word(record,word)
+              Call get_line(safe,ntable,record)
+              If (.not.safe) Go To 40
+              Call get_word(record,word)
 
-           Call get_word(record,word)
-           rvdw=Max(rvdw,word_2_real(word))
+              Call get_word(record,word)
+              rvdw=Max(rvdw,word_2_real(word))
 
-           Call get_word(record,word)
-           mxgrid=Nint(word_2_real(word))
+              Call get_word(record,word)
+              mxgrid=Nint(word_2_real(word))
 
-           If (idnode == 0) Close(Unit=ntable)
+              If (idnode == 0) Close(Unit=ntable)
+           End If
         End If
 
      Else If (word(1:3) == 'met') Then
 
-!        tabmet=0 ! initialised in metal_module
+!        tabmet=-1 ! initialised in metal_module
 
         Call get_word(record,word)
         mxmet=Nint(word_2_real(word))
@@ -543,10 +554,15 @@ Subroutine scan_field                                 &
 
            Call get_word(record,word)
            Call get_word(record,word)
+           tabmet=0 ! for FST metal potentials
            If      (word(1:3) ==  'eam') Then
               tabmet=1
            Else If (word(1:4) == 'eeam') Then
               tabmet=2
+           Else If (word(1:4) == '2bea') Then
+              tabmet=3
+           Else If (word(1:4) == '2bee') Then
+              tabmet=4
            Else If (word(1:4) == 'fnsc') Then
               Call get_word(record,word) ; Call get_word(record,word)
               Call get_word(record,word) ; Call get_word(record,word)
@@ -563,50 +579,61 @@ Subroutine scan_field                                 &
            End If
         End Do
 
-        mxmet=Max(mxmet,(mxatyp*(mxatyp+1))/2)
-        If      (tabmet == 0) Then
-           mxmed=mxmet
-        Else If (tabmet == 1) Then
-           mxmed=mxatyp
-        Else If (tabmet == 2) Then
-           mxmed=mxatyp**2
-        End If
+        If (mxmet > 0) Then
+           mxmet=Max(mxmet,(mxatyp*(mxatyp+1))/2)
 
-        If (tabmet > 0) Then
-           If (idnode == 0) Open(Unit=ntable, File='TABEAM')
+           If      (tabmet == 0) Then
+              mxmed=mxmet
+           Else If (tabmet == 1) Then
+              mxmed=mxatyp
+           Else If (tabmet == 2) Then
+              mxmed=mxatyp**2
+           Else If (tabmet == 3) Then
+              mxmed=mxatyp
+              mxmds=mxatyp*(mxatyp+1)/2
+           Else If (tabmet == 4) Then
+              mxmed=mxatyp**2
+              mxmds=mxatyp**2
+           End If
 
-           Call get_line(safe,ntable,record)
-           If (.not.safe) Go To 40
-           Call get_line(safe,ntable,record)
-           If (.not.safe) Go To 40
-           Call get_word(record,word)
+           If (tabmet > 0) Then
+              If (idnode == 0) Open(Unit=ntable, File='TABEAM')
 
-           Do i=1,Nint(word_2_real(word))
+              Call get_line(safe,ntable,record)
+              If (.not.safe) Go To 40
               Call get_line(safe,ntable,record)
               If (.not.safe) Go To 40
               Call get_word(record,word)
-              Call lower_case(word)
-              j=0 ! assume rmet is specified
-              If (word(1:4) == 'embe') j=1 ! no rmet is specified
-              If ((word(1:4) == 'dens' .and. tabmet == 2) .or. &
-                  word(1:4) == 'pair') Call get_word(record,word) ! skip over one species
-              Call get_word(record,word)                          ! skip over one species
 
-              Call get_word(record,word)
-              k=Nint(word_2_real(word))
-              mxgrid=Max(mxgrid,k+4)
-
-              Call get_word(record,word)
-              Call get_word(record,word)
-              If (j == 0) rmet=Max(rmet,word_2_real(word))
-
-              Do j=1,(k+3)/4
+              Do i=1,Nint(word_2_real(word))
                  Call get_line(safe,ntable,record)
                  If (.not.safe) Go To 40
-              End Do
-           End Do
+                 Call get_word(record,word)
+                 Call lower_case(word)
+                 j=0 ! assume rmet is specified
+                 If (word(1:4) == 'embe' .or. & ! 2-band embedding functionals
+                     word(1:4) == 'demb' .or. word(1:4) == 'semb') j=1 ! no rmet is specified
+                 If ((word(1:4) == 'dens' .and. tabmet == 2) .or. & ! EEAM
+                     (word(2:4) == 'den' .and. (tabmet == 3 .or. tabmet == 4)) .or. & ! sden & dden for 2B extensions
+                     word(1:4) == 'pair') Call get_word(record,word) ! skip over one species
+                 Call get_word(record,word)                          ! skip over one species
 
-           If (idnode == 0) Close(Unit=ntable)
+                 Call get_word(record,word)
+                 k=Nint(word_2_real(word))
+                 mxgrid=Max(mxgrid,k+4)
+
+                 Call get_word(record,word)
+                 Call get_word(record,word)
+                 If (j == 0) rmet=Max(rmet,word_2_real(word))
+
+                 Do j=1,(k+3)/4
+                    Call get_line(safe,ntable,record)
+                    If (.not.safe) Go To 40
+                 End Do
+              End Do
+
+              If (idnode == 0) Close(Unit=ntable)
+           End If
         End If
 
      Else If (word(1:7) == 'tersoff') Then
@@ -650,18 +677,20 @@ Subroutine scan_field                                 &
            End If
         End Do
 
-        If (potter == 1) Then
-           Do itpter=1,(mxter*(mxter+1))/2
-              word(1:1)='#'
-              Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                 Call get_line(safe,nfield,record)
-                 If (.not.safe) Go To 30
-                 Call get_word(record,word)
+        If (mxter > 0) Then
+           If (potter == 1) Then
+              Do itpter=1,(mxter*(mxter+1))/2
+                 word(1:1)='#'
+                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                    Call get_line(safe,nfield,record)
+                    If (.not.safe) Go To 30
+                    Call get_word(record,word)
+                 End Do
               End Do
-           End Do
-        End If
+           End If
 
-        mxter=Max(mxter,(mxatyp*(mxatyp+1))/2)
+           mxter=Max(mxter,(mxatyp*(mxatyp+1))/2)
+        End If
 
      Else If (word(1:3) == 'tbp') Then
 
@@ -707,11 +736,7 @@ Subroutine scan_field                                 &
 
      Else If (word(1:6) == 'extern') Then
 
-        Call get_word(record,word)
-        nfld=0
-
-        If (word(1:1) /= '#' .and. word(1:1) /= ' ') nfld=Nint(word_2_real(word))
-        If (nfld <= 0) nfld=5
+        lext=.true.
 
         word(1:1)='#'
         Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -731,54 +756,41 @@ Subroutine scan_field                                 &
 10 Continue
   If (idnode == 0) Close(Unit=nfield)
 
-! Estimate per-node maxima and define legend arrays length,
-! where length is length+1 for the final zero used used as
-! end of read in deport_particles
+! Define legend arrays lengths.  If length > 0 then
+! length=Max(length)+1 for the violation excess element
 
-  mxshl=Max(mxshl,mxnode*mtshl)
-  If (mxshl >  0) mxfshl=mxfshl+1
+  If (mxshl >  0) mxfshl=1+1 ! One shell per core
   mxf(1)=mxfshl
 
-  mxcons=Max(mxcons,mxnode*mtcons)
-  If (mxcons > 0) mxfcon=mxfcon+mxb
+  If (mxcons > 0) mxfcon=mxb+1
   mxf(2)=mxfcon
 
-  If (mxpmf  > 0) mxfpmf=mxfpmf+1 ! PMFs are global
+  If (mxpmf  > 0) mxfpmf=1+1 ! PMFs are global
   mxf(3)=mxfpmf
 
-  mxrgd=Max(mxrgd,mxnode*mtrgd)
-  If (mxrgd  > 0) mxfrgd=mxfrgd+1
+  If (mxrgd  > 0) mxfrgd=1+1 ! One RB per particle
   mxf(4)=mxlrgd
 
-  mxteth=Max(mxteth,mxnode*mtteth)
-  If (mxteth > 0) mxftet=mxftet+1
+  If (mxteth > 0) mxftet=1+1 ! One tether per particle
   mxf(5)=mxftet
 
-  mxbond=Max(mxbond,mxnode*mtbond)
-  If (mxbond > 0) mxfbnd=mxfbnd+(mxb*(mxb+1))
+  If (mxbond > 0) mxfbnd=(mxb*(mxb+1))+1
   mxf(6)=mxfbnd
 
-  mxangl=Max(mxangl,mxnode*mtangl)
-  If (mxangl > 0) mxfang=mxfang+(mxb+1)**2/2
+  If (mxangl > 0) mxfang=(mxb+1)**2/2+1
   mxf(7)=mxfang
 
-  mxdihd=Max(mxdihd,mxnode*mtdihd)
-  If (mxdihd > 0) mxfdih=mxfdih+((mxb-1)*mxb*(mxb+1))/2
+  If (mxdihd > 0) mxfdih=((mxb-1)*mxb*(mxb+1))/2+1
   mxf(8)=mxfdih
 
-  mxinv=Max(mxinv,mxnode*mtinv)
-  If (mxinv  > 0) mxfinv=mxfinv+(mxb*(mxb+1))/4
+  If (mxinv  > 0) mxfinv=(mxb*(mxb+1))/4+1
   mxf(9)=mxfinv
 
   Do i=1,9
-     mxt(i)=Min(1,mxf(i)-1)
+     mxt(i)=Min(1,mxf(i))
   End Do
-  Call shellsort(9,mxf)
-  mxexcl = Min( mxnmst , Max( mxfrgd , Sum(mxf)/Max(1,Sum(mxt)) ) * (Min(1,mxshl)+1) + 1 )
-
-! (vdw,met) = rdf scanning
-
-  If (mxrdf == 0 .and. (mxvdw > 0 .or. mxmet > 0)) mxrdf = Max(mxvdw,mxmet)
+  mxexcl = Min( mxnmst , Max( mxfrgd , Sum(mxf)/Max(1,Sum(mxt)) ) * (Min(1,mxshl)+1) )
+  If (mxexcl > 0) mxexcl=mxexcl+1 ! violation excess element
 
   Return
 

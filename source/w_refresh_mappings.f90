@@ -15,7 +15,7 @@
 
 ! Exchange atomic data in border regions
 
-        Call set_halo_particles(imcon,rcut,keyfce,lbook)
+        Call set_halo_particles(imcon,rcut,keyfce)
 
 
 !!!!!!!!!!!!!!!!!!  W_REFRESH_MAPPINGS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

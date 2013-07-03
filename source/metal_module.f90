@@ -6,7 +6,7 @@ Module metal_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2012
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -15,10 +15,11 @@ Module metal_module
   Implicit None
 
   Logical,                        save :: ld_met = .false., &
-                                          ls_met = .false.
+                                          ls_met = .false., &
+                                          l2bmet = .false.
 
   Integer,                        Save :: ntpmet = 0 , &
-                                          tabmet = 0
+                                          tabmet = -1
 
 
   Integer,           Allocatable, Save :: lstmet(:),ltpmet(:)
@@ -29,7 +30,12 @@ Module metal_module
 
 ! Possible tabulated calculation arrays
 
-  Real( Kind = wp ), Allocatable, Save :: vmet(:,:,:),dmet(:,:,:),fmet(:,:,:)
+  Real( Kind = wp ), Allocatable, Save :: vmet(:,:,:), dmet(:,:,:),dmes(:,:,:), &
+                                          fmet(:,:,:),fmes(:,:,:)
+
+! Atomic density [reused as embedding derivative(s)] helper array(s)
+
+  Real( Kind = wp ), Dimension( : ), Allocatable :: rho,rhs
 
   Public :: allocate_metal_arrays, &
             allocate_metal_table_arrays
@@ -38,19 +44,22 @@ Contains
 
   Subroutine allocate_metal_arrays()
 
-    Use setup_module, Only : mxmet,mxpmet,mxatyp
+    Use setup_module, Only : mxmet,mxpmet,mxatms,mxatyp
 
-    Implicit None
+    Integer, Dimension( 1:7 ) :: fail
 
-    Integer, Dimension( 1:5 ) :: fail
+    If (tabmet == 3 .or. tabmet == 4) l2bmet=.true.
 
     fail = 0
 
-    Allocate (lstmet(1:mxmet),            Stat = fail(1))
-    Allocate (ltpmet(1:mxmet),            Stat = fail(2))
-    Allocate (prmmet(1:mxpmet,1:mxmet),   Stat = fail(3))
-    Allocate (elrcm(0:mxatyp),            Stat = fail(4))
-    Allocate (vlrcm(0:mxatyp),            Stat = fail(5))
+    Allocate (lstmet(1:mxmet),                  Stat = fail(1))
+    Allocate (ltpmet(1:mxmet),                  Stat = fail(2))
+    Allocate (prmmet(1:mxpmet,1:mxmet),         Stat = fail(3))
+    Allocate (rho(1:Merge(mxatms,0,mxmet > 0)), Stat = fail(4))
+    If (l2bmet) & ! the new S-band density
+    Allocate (rhs(1:Merge(mxatms,0,mxmet > 0)), Stat = fail(5))
+    Allocate (elrcm(0:mxatyp),                  Stat = fail(6))
+    Allocate (vlrcm(0:mxatyp),                  Stat = fail(7))
 
     If (Any(fail > 0)) Call error(1023)
 
@@ -59,6 +68,8 @@ Contains
 
     prmmet = 0.0_wp
 
+! rho and rhs get initialised in metal_ld_compute!!!
+
     elrcm  = 0.0_wp
     vlrcm  = 0.0_wp
 
@@ -66,23 +77,31 @@ Contains
 
   Subroutine allocate_metal_table_arrays()
 
-    Use setup_module, Only : mxmet,mxmed,mxatyp,mxgrid
+    Use setup_module, Only : mxmet,mxmed,mxmds,mxatyp,mxgrid
 
     Implicit None
 
-    Integer, Dimension( 1:3 ) :: fail
+    Integer, Dimension( 1:5 ) :: fail
 
     fail = 0
 
-    Allocate (vmet(1:mxgrid,1:mxmet, 1:2), Stat = fail(1))
-    Allocate (dmet(1:mxgrid,1:mxmed, 1:2), Stat = fail(2))
-    Allocate (fmet(1:mxgrid,1:mxatyp,1:2), Stat = fail(3))
+    Allocate (vmet(1:mxgrid,1:mxmet, 1:2),    Stat = fail(1))
+    Allocate (dmet(1:mxgrid,1:mxmed, 1:2),    Stat = fail(2))
+    Allocate (fmet(1:mxgrid,1:mxatyp,1:2),    Stat = fail(3))
+    If (tabmet == 3 .or. tabmet == 4) Then ! the new S-band density and embedding
+       Allocate (dmes(1:mxgrid,1:mxmds, 1:2), Stat = fail(4))
+       Allocate (fmes(1:mxgrid,1:mxatyp,1:2), Stat = fail(5))
+    End If
 
     If (Any(fail > 0)) Call error(1069)
 
     vmet = 0.0_wp
     dmet = 0.0_wp
     fmet = 0.0_wp
+    If (tabmet == 3 .or. tabmet == 4) Then ! the new S-band density and embedding
+      dmes = 0.0_wp
+      fmes = 0.0_wp
+    End If
 
   End Subroutine allocate_metal_table_arrays
 

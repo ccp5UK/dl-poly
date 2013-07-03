@@ -3,7 +3,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 routine to prevent bookkeeping arrays from expanding
-! when execution is on many nodes, mxnode>0, (shells, constraints, PMFs
+! when execution is on many nodes, mxnode>1, (shells, constraints, PMFs
 ! and RBs are dealt differently pass_shared_units and pmf_units_set)
 !
 ! Note: This routine is to be only called from relocate_particles

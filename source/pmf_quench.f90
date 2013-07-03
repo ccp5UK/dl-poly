@@ -5,7 +5,7 @@ Subroutine pmf_quench(imcon,mxshak,tolnce)
 ! dl_poly_4 subroutine for applying PMF constraint quench
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -134,7 +134,7 @@ Subroutine pmf_quench(imcon,mxshak,tolnce)
 ! global verification of convergence
 
      safe=(esig < tolnce)
-     If (mxnode > 1) Call gcheck(safe)
+     If (mxnode > 1) Call gcheck(safe,"enforce")
 
 ! bypass next section and terminate iteration if all tolerances ok
 

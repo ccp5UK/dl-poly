@@ -21,7 +21,7 @@ Subroutine origin_config(imcon,megatm)
 
   Character ( Len = 6 ) :: name
   Integer               :: i,nstep
-  Real( Kind = wp )     :: rcell(1:9),det,uuu,vvv,www,tstep,time
+  Real( Kind = wp )     :: tstep,time
 
 ! Translate
 

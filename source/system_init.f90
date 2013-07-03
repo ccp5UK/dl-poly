@@ -10,7 +10,7 @@ Subroutine system_init                                       &
 ! initial thermodynamic and structural accumulators
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -120,7 +120,7 @@ Subroutine system_init                                       &
 
      l_tmp=.true.
      If (idnode == 0) Inquire(File='REVOLD', Exist=l_tmp)
-     If (mxnode > 1) Call gcheck(l_tmp)
+     If (mxnode > 1) Call gcheck(l_tmp,"enforce")
      If (.not.l_tmp) Call error(519)
 
 ! Check REVOLD restart compatibility: rcut,rbin,megatm

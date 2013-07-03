@@ -5,7 +5,7 @@ Module comms_module
 ! dl_poly_4 module for global communication routines and functions
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2011
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -16,6 +16,10 @@ Module comms_module
 
 !  Include 'mpif.h'  ! Needed instead "Use mpi" for some machines
 !  Include 'mpiof.h' ! Needed for ScaliMPI
+
+! l_fast is controlled via gsync and affects gcheck - global safety checks
+
+  Logical, Private, Save :: l_fast = .false.
 
   Integer, Save :: wp_mpi = 0 , &
                    idnode = 0 , &
@@ -154,18 +158,22 @@ Contains
 
   End Subroutine abort_comms
 
-  Subroutine gsync()
+  Subroutine gsync(lfast)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 barrier/synchronization routine
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2004
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Implicit None
+
+    Logical, Optional :: lfast
+
+    If (Present(lfast)) l_fast = lfast
 
     If (mxnode == 1) Return
 
@@ -173,25 +181,32 @@ Contains
 
   End Subroutine gsync
 
-  Subroutine gcheck_vector(aaa)
+  Subroutine gcheck_vector(aaa,enforce)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 global summation subroutine - boolean vector version
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2004
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Implicit None
 
-    Logical, Dimension( : ), Intent( InOut ) :: aaa
+    Logical, Dimension( : ), Intent( InOut )           :: aaa
+    Character( Len = *),     Intent( In    ), Optional :: enforce
 
     Integer                                  :: n_l,n_u,n_s,fail
     Logical, Dimension( : ), Allocatable     :: bbb
 
-    If (mxnode == 1) Return
+    If (mxnode == 1) Then
+       Return
+    Else
+       If (.not.Present(enforce)) Then
+          If (l_fast) Return
+       End If
+    End If
 
     n_l = Lbound(aaa, Dim = 1)
     n_u = Ubound(aaa, Dim = 1)
@@ -211,24 +226,31 @@ Contains
 
   End Subroutine gcheck_vector
 
-  Subroutine gcheck_scalar(aaa)
+  Subroutine gcheck_scalar(aaa,enforce)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 global summation subroutine - boolean scalar version
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2004
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Implicit None
 
-    Logical, Intent( InOut ) :: aaa
+    Logical,             Intent( InOut )           :: aaa
+    Character( Len = *), Intent( In    ), Optional :: enforce
 
-    Logical                  :: bbb
+    Logical :: bbb
 
-    If (mxnode == 1) Return
+    If (mxnode == 1) Then
+       Return
+    Else
+       If (.not.Present(enforce)) Then
+          If (l_fast) Return
+       End If
+    End If
 
     Call MPI_ALLREDUCE(aaa,bbb,1,MPI_LOGICAL,MPI_LAND,dlp_comm_world,ierr)
 

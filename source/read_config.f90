@@ -7,7 +7,7 @@ Subroutine read_config &
 ! particle density
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -197,8 +197,8 @@ Subroutine read_config &
      End If
      If (mxnode > 1) Then
         Call gsync()
-        Call gcheck(safe)
-        Call gcheck(fast)
+        Call gcheck(safe,"enforce")
+        Call gcheck(fast,"enforce")
      End If
      If (.not.safe) Go To 50
 

@@ -7,13 +7,13 @@ Subroutine rigid_bodies_split_torque(imcon,gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 2006
-! adapted   - i.t.todorov october 2010
+! adapted   - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode
-  Use setup_module,       Only : nrite,mxatms,mxtrgd,mxrgd,mxlrgd
+  Use setup_module,       Only : nrite,mxatms,mxrgd,mxlrgd
   Use config_module,      Only : cell,xxx,yyy,zzz
   Use rigid_bodies_module
 
@@ -30,8 +30,7 @@ Subroutine rigid_bodies_split_torque(imcon,gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
   Real( Kind = wp ), Allocatable :: ggx(:),ggy(:),ggz(:)
 
   fail = 0
-  Allocate (ggx(1:mxlrgd*Max(mxrgd,mxtrgd)),ggy(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-            ggz(1:mxlrgd*Max(mxrgd,mxtrgd)),                                Stat = fail)
+  Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), Stat = fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_split_torque allocation failure, node: ', idnode
      Call error(0)

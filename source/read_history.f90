@@ -5,7 +5,7 @@ Subroutine read_history(l_str,megatm,levcfg,imcon,nstep,tstep,time)
 ! dl_poly_4 subroutine for reading the trajectory data file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -95,7 +95,7 @@ Subroutine read_history(l_str,megatm,levcfg,imcon,nstep,tstep,time)
 
         lexist=.true.
         If (idnode == 0) Inquire(File=fname, Exist=lexist)
-        If (mxnode > 1) Call gcheck(lexist)
+        If (mxnode > 1) Call gcheck(lexist,"enforce")
         If (.not.lexist) Go To 400
 
 ! Open HISTORY
@@ -169,7 +169,7 @@ Subroutine read_history(l_str,megatm,levcfg,imcon,nstep,tstep,time)
 
         lexist=.true.
         If (idnode == 0) Inquire(File=fname, Exist=lexist)
-        If (mxnode > 1) Call gcheck(lexist)
+        If (mxnode > 1) Call gcheck(lexist,"enforce")
         If (.not.lexist) Go To 400
 
 ! fast and rec are irrelevant for netCDF (initialised at declaration)
@@ -384,7 +384,7 @@ Subroutine read_history(l_str,megatm,levcfg,imcon,nstep,tstep,time)
                                 vxx(natms)=bxx(i)
                                 vyy(natms)=byy(i)
                                 vzz(natms)=bzz(i)
-                                If (levcfg > 0) Then
+                                If (levcfg > 1) Then
                                    fxx(natms)=cxx(i)
                                    fyy(natms)=cyy(i)
                                    fzz(natms)=czz(i)

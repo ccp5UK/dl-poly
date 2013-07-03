@@ -9,13 +9,13 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot)
 ! integration of equations of motion
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : idnode
-  Use setup_module,        Only : mxtrgd,mxrgd,mxlrgd,nrite
+  Use setup_module,        Only : mxrgd,mxlrgd,nrite
   Use config_module,       Only : cell,natms,nfree,lfrzn,lstfre,weight, &
                                   xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
@@ -44,8 +44,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot)
   If (megrgd > 0) Then
 
      fail=0
-     Allocate (ggx(1:mxlrgd*Max(mxrgd,mxtrgd)),ggy(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-               ggz(1:mxlrgd*Max(mxrgd,mxtrgd)), Stat=fail)
+     Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), Stat=fail)
      If (fail > 0) Then
         Write(nrite,'(/,1x,a,i0)') 'zero_k_optimise allocation failure, node: ', idnode
         Call error(0)

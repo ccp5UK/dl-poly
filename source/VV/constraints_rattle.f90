@@ -12,7 +12,7 @@ Subroutine constraints_rattle         &
 !       VV applicable ONLY
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2011
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -118,7 +118,7 @@ Subroutine constraints_rattle         &
 ! global verification of convergence
 
      safe=(esig < tolnce)
-     If (mxnode > 1) Call gcheck(safe)
+     If (mxnode > 1) Call gcheck(safe,"enforce")
 
 ! bypass next section and terminate iteration if all tolerances ok
 

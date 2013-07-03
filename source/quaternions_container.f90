@@ -18,7 +18,7 @@ Subroutine q_setup()
 ! dl_poly_4 subroutine for setting up RBs' quaternions
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -38,8 +38,7 @@ Subroutine q_setup()
   Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
 
   fail = 0
-  Allocate (gxx(1:mxlrgd*Max(mxrgd,mxtrgd)),gyy(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-            gzz(1:mxlrgd*Max(mxrgd,mxtrgd)), Stat = fail)
+  Allocate (gxx(1:mxlrgd*mxrgd),gyy(1:mxlrgd*mxrgd),gzz(1:mxlrgd*mxrgd), Stat = fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'q_setup allocation failure, node: ', idnode
      Call error(0)

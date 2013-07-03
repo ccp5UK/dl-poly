@@ -17,7 +17,7 @@
 ! and get RB COM stress and virial at restart.  If levcfg<2
 ! forces are calculated at (re)start
 
-  If (levcfg == 1) Then
+  If (levcfg == 2) Then
      If (megrgd > 0) Then
         If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxx,fyy,fzz)
 

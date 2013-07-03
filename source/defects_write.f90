@@ -7,7 +7,7 @@ Subroutine defects_write &
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2012
+! author    - i.t.todorov june 2013
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -130,7 +130,7 @@ Subroutine defects_write &
      lexist=.true.
      If (keyres == 1) Then
         If (idnode == 0) Inquire(File='DEFECTS', Exist=lexist)
-        If (mxnode > 1) Call gcheck(lexist)
+        If (mxnode > 1) Call gcheck(lexist,"enforce")
      Else
         lexist=.false.
      End If
@@ -212,7 +212,7 @@ Subroutine defects_write &
 
         End If
 
-        If (mxnode > 1) Call gcheck(safe)
+        If (mxnode > 1) Call gcheck(safe,"enforce")
         If (.not.safe) Then
            lexist=.false.
 

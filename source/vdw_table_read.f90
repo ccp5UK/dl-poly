@@ -7,13 +7,13 @@ Subroutine vdw_table_read(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1994
-! amended   - i.t.todorov january 2011
+! amended   - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module, Only : ntable,nrite,mxgrid,mxbuff,engunit
+  Use setup_module, Only : ntable,nrite,mxgrid,engunit
   Use site_module,  Only : ntpatm,unqatm
   Use vdw_module,   Only : ntpvdw,lstvdw,ltpvdw,prmvdw,gvdw,vvdw
   Use parse_module, Only : get_line,get_word,word_2_real
@@ -32,7 +32,7 @@ Subroutine vdw_table_read(rvdw)
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
   fail=0
-  Allocate (buffer(1:mxbuff), Stat=fail)
+  Allocate (buffer(1:mxgrid), Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'vdw_table_read allocation failure, node: ', idnode
      Call error(0)
@@ -135,8 +135,8 @@ Subroutine vdw_table_read(rvdw)
 
 ! check array dimensions
 
-        If (ngrid > mxbuff) Then
-           Call warning(270,Real(ngrid,wp),Real(mxbuff,wp),0.0_wp)
+        If (ngrid > mxgrid) Then
+           Call warning(270,Real(ngrid,wp),Real(mxgrid,wp),0.0_wp)
            Call error(48)
         End If
 

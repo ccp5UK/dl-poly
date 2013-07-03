@@ -5,7 +5,7 @@ Subroutine scan_control_io()
 ! dl_poly_4 subroutine for scanning the I/O options in the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2011
+! author    - i.t.todorov june 2013
 ! amended   - i.j.bush october 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -56,7 +56,7 @@ Subroutine scan_control_io()
 ! Open the simulation input file
 
   If (idnode == 0) Inquire(File='CONTROL', Exist=safe)
-  If (mxnode > 1) Call gcheck(safe)
+  If (mxnode > 1) Call gcheck(safe,"enforce")
   If (.not.safe) Then
      Go To 10
   Else

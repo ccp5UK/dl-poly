@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2012
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -694,7 +694,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
      r_dis=Sqrt(r_dis)
 
      If (mxnode > 1) Then
-         Call gcheck(safe)
+         Call gcheck(safe,"enforce")
          Call gsum(det)
      End If
 

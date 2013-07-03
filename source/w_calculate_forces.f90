@@ -17,7 +17,7 @@
 
 ! Exchange atomic data in border regions
 
-        Call set_halo_particles(imcon,rcut,keyfce,lbook)
+        Call set_halo_particles(imcon,rcut,keyfce)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -33,7 +33,7 @@
 
 ! Calculate pair-like forces (metal,vdw,electrostatic) and add lrc
 
-     If (.not.(mxmet == 0 .and. keyfce == 0 .and. l_n_v .and. l_n_r)) &
+     If (.not.(mxmet == 0 .and. keyfce == 0 .and. l_n_v .and. mxrdf == 0)) &
         Call two_body_forces                      &
            (imcon,rcut,rvdw,rmet,keyens,          &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
@@ -107,7 +107,7 @@
 
 ! Minimisation option and Relaxed shell model optimisation
 
-     If (lmin .or. keyshl == 2) Then
+     If (lsim .and. (lmin .or. keyshl == 2)) Then
         stpcfg = engcpe + engsrp + engter + engtbp + engfbp + &
                  engshl + engtet + engfld +                   &
                  engbnd + engang + engdih + enginv
@@ -142,7 +142,7 @@
 
 ! Exchange atomic data in border regions
 
-           Call set_halo_particles(imcon,rcut,keyfce,lbook)
+           Call set_halo_particles(imcon,rcut,keyfce)
 
            Go To 100
 

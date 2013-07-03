@@ -18,14 +18,13 @@ Subroutine pseudo_vv                                      &
 !           as well as shells.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2013
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gsum
-  Use setup_module,       Only : boltz,nrite,mxatms,mxshl, &
-                                 mxtrgd,mxrgd,mxlrgd,zero_plus
+  Use setup_module,       Only : boltz,nrite,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
   Use site_module,        Only : dofsit,ntpshl,unqshl
   Use config_module
   Use rigid_bodies_module
@@ -609,10 +608,9 @@ Subroutine pseudo_vv                                      &
 ! RBs
 
            If (rtp > 0) Then
-              Allocate (ggx(1:mxlrgd*Max(mxrgd,mxtrgd)),ggy(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-                        ggz(1:mxlrgd*Max(mxrgd,mxtrgd)),                 Stat=fail(1))
-              Allocate (rgdfxx(1:mxrgd),rgdfyy(1:mxrgd),rgdfzz(1:mxrgd), Stat=fail(2))
-              Allocate (rgdtxx(1:mxrgd),rgdtyy(1:mxrgd),rgdtzz(1:mxrgd), Stat=fail(3))
+              Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), Stat=fail(1))
+              Allocate (rgdfxx(1:mxrgd),rgdfyy(1:mxrgd),rgdfzz(1:mxrgd),             Stat=fail(2))
+              Allocate (rgdtxx(1:mxrgd),rgdtyy(1:mxrgd),rgdtzz(1:mxrgd),             Stat=fail(3))
               If (Any(fail > 0)) Then
                  Write(nrite,'(/,1x,a,i0)') 'pseudo (RB) allocation failure, node: ', idnode
                  Call error(0)

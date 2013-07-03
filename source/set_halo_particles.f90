@@ -1,4 +1,4 @@
-Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
+Subroutine set_halo_particles(imcon,rcut,keyfce)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -20,7 +20,6 @@ Subroutine set_halo_particles(imcon,rcut,keyfce,lbook)
 
   Implicit None
 
-  Logical,           Intent( In    ) :: lbook
   Integer,           Intent( In    ) :: imcon,keyfce
   Real( Kind = wp ), Intent( In    ) :: rcut
 

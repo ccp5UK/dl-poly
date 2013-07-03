@@ -8,7 +8,7 @@ Subroutine dihedrals_14_check &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1999
-! amended   - i.t.todorov march 2013
+! amended   - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -123,7 +123,7 @@ Subroutine dihedrals_14_check &
   End Do
 
   If (l_str) Then
-     If (mxnode > 1) Call gcheck(l_reset)
+     If (mxnode > 1) Call gcheck(l_reset,"enforce")
      If (l_reset) Call warning(22,0.0_wp,0.0_wp,0.0_wp)
   End If
 

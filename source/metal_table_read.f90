@@ -7,16 +7,17 @@ Subroutine metal_table_read(l_top)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2006
-! amended   - i.t.todorov june 2012
-! contrib   - r.davidchak june 2012
+! amended   - i.t.todorov june 2013
+! contrib   - r.davidchak (eeam) june 2012
+! contrib   - b.palmer (2band) may 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module, Only : idnode,mxnode,gsum
-  Use setup_module, Only : ntable,nrite,mxgrid,mxbuff,engunit
+  Use setup_module, Only : ntable,nrite,mxgrid,engunit
   Use site_module,  Only : ntpatm,unqatm
-  Use metal_module, Only : ntpmet,tabmet,lstmet,vmet,dmet,fmet
+  Use metal_module, Only : ntpmet,tabmet,lstmet,vmet,dmet,dmes,fmet,fmes
   Use parse_module, Only : get_line,get_word,lower_case,word_2_real
 
   Implicit None
@@ -29,19 +30,28 @@ Subroutine metal_table_read(l_top)
   Character( Len = 4   ) :: keyword
   Character( Len = 8   ) :: atom1,atom2
   Integer                :: fail(1:2),i,j,k,ipot,numpot,ktype,ngrid, &
-                            cp,cd,ce,katom1,katom2,keymet,k0,jtpatm
+                            cp,cd,cds,ce,ces,katom1,katom2,keymet,k0,jtpatm
   Real( Kind = wp )      :: start,finish
 
-  Integer,           Dimension( : ), Allocatable :: cpair,cdens,cembed
+  Integer,           Dimension( : ), Allocatable :: cpair, cdens,cdnss, &
+                                                    cembed,cembds
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
   fail=0
-  If      (tabmet == 1) Then                          ! EAM
-     Allocate (cpair(1:(ntpmet*(ntpmet+1))/2),cdens(1:ntpmet),   cembed(1:ntpmet), Stat=fail(1))
-  Else If (tabmet == 2) Then                          ! EEAM
-     Allocate (cpair(1:(ntpmet*(ntpmet+1))/2),cdens(1:ntpmet**2),cembed(1:ntpmet), Stat=fail(1))
+  If      (tabmet == 1) Then ! EAM
+     Allocate (cpair(1:(ntpmet*(ntpmet+1))/2),cdens(1:ntpmet),                              &
+                                              cembed(1:ntpmet),                  Stat=fail(1))
+  Else If (tabmet == 2) Then ! EEAM
+     Allocate (cpair(1:(ntpmet*(ntpmet+1))/2),cdens(1:ntpmet**2),                           &
+                                              cembed(1:ntpmet),                  Stat=fail(1))
+  Else If (tabmet == 3) Then ! 2BEAM
+     Allocate (cpair(1:(ntpmet*(ntpmet+1))/2),cdens(1:ntpmet),cdnss(1:ntpmet*(ntpmet+1)/2), &
+                                              cembed(1:ntpmet),cembds(1:ntpmet), Stat=fail(1))
+  Else If (tabmet == 4) Then ! 2BEEAM
+     Allocate (cpair(1:(ntpmet*(ntpmet+1))/2),cdens(1:ntpmet**2),cdnss(1:ntpmet**2), &
+                                              cembed(1:ntpmet),cembds(1:ntpmet), Stat=fail(1))
   End If
-  Allocate (buffer(1:mxbuff),                                                      Stat=fail(2))
+  Allocate (buffer(1:mxgrid),                                                    Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'metal_table_read allocation failure, node: ', idnode
      Call error(0)
@@ -49,6 +59,10 @@ Subroutine metal_table_read(l_top)
   cpair=0 ; cp=0
   cdens=0 ; cd=0
   cembed=0 ; ce=0
+  If (tabmet == 3 .or. tabmet == 4) Then
+    cdnss=0 ; cds=0
+    cembds=0 ; ces=0
+  End If
 
   If (idnode == 0) Open(Unit=ntable, File='TABEAM')
 
@@ -77,10 +91,14 @@ Subroutine metal_table_read(l_top)
      Call lower_case(keyword)
      If      (keyword == 'pair') Then
           ktype = 1
-     Else If (keyword == 'dens') Then
+     Else If (keyword == 'dens' .or. keyword == 'dden') Then
           ktype = 2
-     Else If (keyword == 'embe') Then
+     Else If (keyword == 'embe' .or. keyword == 'demb') Then
           ktype = 3
+     Else If (keyword == 'sden') Then
+          ktype = 4
+     Else If (keyword == 'semb') Then
+          ktype = 5
      Else
           Call error(151)
      End If
@@ -88,7 +106,9 @@ Subroutine metal_table_read(l_top)
 ! identify atom types
 
      Call get_word(record,atom1)
-     If (ktype == 1 .or. (ktype == 2 .and. tabmet == 2)) Then
+     If (ktype == 1 .or.                                        & ! pair
+         (ktype == 2 .and. (tabmet == 2 .or. tabmet == 4)) .or. & ! den for EEAM and dden for 2BEEAM
+         (ktype == 4 .and. (tabmet == 3 .or. tabmet == 4))) Then  ! sden for 2B(EAM and EEAM)
         Call get_word(record,atom2)
      Else
         atom2 = atom1
@@ -132,8 +152,8 @@ Subroutine metal_table_read(l_top)
 
 ! check array dimensions
 
-     If (ngrid+4 > mxbuff) Then
-        Call warning(270,Real(ngrid+4,wp),Real(mxbuff,wp),0.0_wp)
+     If (ngrid+4 > mxgrid) Then
+        Call warning(270,Real(ngrid+4,wp),Real(mxgrid,wp),0.0_wp)
         Call error(48)
      End If
 
@@ -162,6 +182,10 @@ Subroutine metal_table_read(l_top)
      If       (ktype == 1) Then
 
 ! pair potential terms
+
+! Set indices
+
+!        k0=lstmet(keymet)
 
         cp=cp+1
         If (Any(cpair(1:cp-1) == k0)) Then
@@ -197,10 +221,14 @@ Subroutine metal_table_read(l_top)
      Else If (ktype == 2) Then
 
 ! density function terms
+! s-density density function terms for EAM & EEAM
+! d-density density function terms for 2B(EAM & EEAM)
 
-        If      (tabmet == 1) Then ! EAM
+! Set indices
+
+        If      (tabmet == 1 .or. tabmet == 3) Then ! EAM
            k0=katom1
-        Else If (tabmet == 2) Then ! EEAM
+        Else If (tabmet == 2 .or. tabmet == 4) Then ! EEAM
            k0=(katom1-1)*ntpatm+katom2
         End If
 
@@ -241,32 +269,126 @@ Subroutine metal_table_read(l_top)
 
      Else If (ktype == 3) Then
 
-! embedding function arrays
+! embedding function terms
+! s-density embedding function terms for EAM & EEAM
+! d-density embedding function terms for 2B(EAM & EEAM)
+
+! Set indices
+
+        k0=katom1
 
         ce=ce+1
-        If (Any(cembed(1:ce-1) == katom1)) Then
+        If (Any(cembed(1:ce-1) == k0)) Then
            Call error(511)
         Else
-           cembed(ce)=katom1
+           cembed(ce)=k0
         End If
 
-        fmet(1,katom1,1)=buffer(1)
-        fmet(2,katom1,1)=buffer(2)
-        fmet(3,katom1,1)=buffer(3)
-        fmet(4,katom1,1)=buffer(4)
+        fmet(1,k0,1)=buffer(1)
+        fmet(2,k0,1)=buffer(2)
+        fmet(3,k0,1)=buffer(3)
+        fmet(4,k0,1)=buffer(4)
 
         Do i=5,mxgrid
            If (i-4 > ngrid) Then
-             fmet(i,katom1,1)=0.0_wp
+             fmet(i,k0,1)=0.0_wp
            Else
              buffer(i)=buffer(i)*engunit
-             fmet(i,katom1,1)=buffer(i)
+             fmet(i,k0,1)=buffer(i)
            End If
         End Do
 
 ! calculate derivative of embedding function
 
-        Call metal_table_derivatives(katom1,buffer,Size(fmet,2),fmet)
+        Call metal_table_derivatives(k0,buffer,Size(fmet,2),fmet)
+
+     Else If (ktype == 4) Then
+
+! s-density function terms
+
+! The 2BM formalism for alloys allows for a mixed s-band density: rho_{atom1,atom2} /= 0
+! (and in general for the EEAM it may be non-symmetric: rho_{atom1,atom2} may be /= rho_{atom2,atom2})
+! Some 2BM models rho_{atom1,atom1}=rho_{atom2,atom2}==0 with rho_{atom1,atom2} /= 0
+! whereas others choose not to have mixed s-band densities.
+
+! Set indices
+
+        If (tabmet == 3) Then ! 2BMEAM
+!           k0=lstmet(keymet)
+        Else If (tabmet == 4) Then ! 2BMEEAM
+           k0=(katom1-1)*ntpatm+katom2
+        End If
+
+        cds=cds+1
+        If (Any(cdnss(1:cds-1) == k0)) Then
+           Call error(510)
+        Else
+           cdnss(cds)=k0
+        End If
+
+        dmes(1,k0,1)=buffer(1)
+        dmes(2,k0,1)=buffer(2)
+        dmes(3,k0,1)=buffer(3)
+        dmes(4,k0,1)=buffer(4)
+
+        If (buffer(1) > 5) Then
+
+           Do i=5,mxgrid
+              If (i-4 > ngrid) Then
+                 dmes(i,k0,1)=0.0_wp
+              Else
+                 dmes(i,k0,1)=buffer(i)
+              End If
+           End Do
+! calculate derivative of density function
+
+           Call metal_table_derivatives(k0,buffer,Size(dmes,2),dmes)
+
+! adapt derivatives for use in interpolation
+
+           dmes(1,k0,2)=0.0_wp
+           dmes(2,k0,2)=0.0_wp
+           dmes(3,k0,2)=0.0_wp
+           dmes(4,k0,2)=0.0_wp
+
+           Do i=5,ngrid+4
+              dmes(i,k0,2)=-(Real(i,wp)*buffer(4)+buffer(2))*dmes(i,k0,2)
+           End Do
+
+        End If
+
+     Else If (ktype == 5) Then
+
+! s-embedding function terms
+
+! Set index
+
+        k0=katom1
+
+        ces=ces+1
+        If (Any(cembds(1:ces-1) == k0)) Then
+           Call error(511)
+        Else
+           cembds(ces)=k0
+        End If
+
+        fmes(1,k0,1)=buffer(1)
+        fmes(2,k0,1)=buffer(2)
+        fmes(3,k0,1)=buffer(3)
+        fmes(4,k0,1)=buffer(4)
+
+        Do i=5,mxgrid
+           If (i-4 > ngrid) Then
+             fmes(i,k0,1)=0.0_wp
+           Else
+             buffer(i)=buffer(i)*engunit
+             fmes(i,k0,1)=buffer(i)
+           End If
+        End Do
+
+! calculate derivative of embedding function
+
+        Call metal_table_derivatives(k0,buffer,Size(fmes,2),fmes)
 
      End If
 
@@ -275,8 +397,12 @@ Subroutine metal_table_read(l_top)
   If (idnode == 0) Close(Unit=ntable)
   If (idnode == 0 .and. l_top) Write(nrite,'(/,1x,a)') 'potential tables read from TABEAM file'
 
-  Deallocate (cpair,cdens,cembed, Stat=fail(1))
-  Deallocate (buffer,             Stat=fail(2))
+  If      (tabmet == 1 .or. tabmet == 2) Then ! EAM & EEAM
+     Deallocate (cpair,cdens,cembed,              Stat=fail(1))
+  Else If (tabmet == 3 .or. tabmet == 4) Then ! 2B(EAM & EEAM)
+     Deallocate (cpair,cdens,cdnss,cembed,cembds, Stat=fail(1))
+  End If
+  Deallocate (buffer,                             Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'metal_table_read deallocation failure, node: ', idnode
      Call error(0)

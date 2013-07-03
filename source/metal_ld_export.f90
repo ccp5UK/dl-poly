@@ -1,4 +1,4 @@
-Subroutine metal_ld_export(mdir,mlast,rho)
+Subroutine metal_ld_export(mdir,mlast)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,30 +6,41 @@ Subroutine metal_ld_export(mdir,mlast,rho)
 ! regions for halo formation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module,  Only : nrite,mxatms,mxbuff
+  Use setup_module,  Only : nrite,mxatms,mxbfxp
   Use domains_module
   Use config_module, Only : ixyz
+  Use metal_module,  Only : tabmet,rho,rhs
 
   Implicit None
 
   Integer,           Intent( In    ) :: mdir
   Integer,           Intent( InOut ) :: mlast
-  Real( Kind = wp ), Intent( InOut ) :: rho(1:mxatms)
 
-  Logical           :: safe
-  Integer           :: fail,i,j,iblock,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
+  Logical           :: safe,lrhs
+  Integer           :: fail,iadd,limit,iblock,          &
+                       i,j,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
                        jdnode,kdnode,imove,jmove,itmp
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
-  fail=0
-  Allocate (buffer(1:mxbuff), Stat=fail)
+! Number of transported quantities per particle
+
+  If (.not.(tabmet == 3 .or. tabmet == 4)) Then
+     lrhs=.false.
+     iadd=2
+  Else
+     lrhs=.true.
+     iadd=3
+  End If
+
+  fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
+  Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'metal_ld_export allocation failure, node: ', idnode
      Call error(0)
@@ -37,11 +48,7 @@ Subroutine metal_ld_export(mdir,mlast,rho)
 
 ! Set buffer limit (half for outgoing data - half for incoming)
 
-  If (mxnode > 1) Then
-     iblock=mxbuff/2
-  Else
-     iblock=mxbuff
-  End If
+  iblock=limit/Merge(2,1,mxnode > 1)
 
 ! DIRECTION SETTINGS INITIALISATION
 
@@ -139,14 +146,20 @@ Subroutine metal_ld_export(mdir,mlast,rho)
 
 ! If safe to proceed
 
-           If ((imove+2) <= iblock) Then
+           If ((imove+iadd) <= iblock) Then
 
 ! pack particle density and halo indexing
 
-              buffer(imove+1)=rho(i)
-              buffer(imove+2)=Real(ixyz(i)-jxyz,wp)
+              If (.not.lrhs) Then
+                 buffer(imove+1)=rho(i)
+                 buffer(imove+2)=Real(ixyz(i)-jxyz,wp)
+              Else
+                 buffer(imove+1)=rho(i)
+                 buffer(imove+2)=rhs(i)
+                 buffer(imove+3)=Real(ixyz(i)-jxyz,wp)
+              End If
 
-              imove=imove+2
+              imove=imove+iadd
 
            Else
 
@@ -164,13 +177,9 @@ Subroutine metal_ld_export(mdir,mlast,rho)
 
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe) Then
-     If (mxnode > 1) Then
-        itmp=2*imove
-     Else
-        itmp=imove
-     End If
+     itmp=Merge(2,1,mxnode > 1)*imove
      If (mxnode > 1) Call gmax(itmp)
-     Call warning(170,Real(itmp,wp),Real(mxbuff,wp),0.0_wp)
+     Call warning(170,Real(itmp,wp),Real(limit,wp),0.0_wp)
      Call error(38)
   End If
 
@@ -186,10 +195,10 @@ Subroutine metal_ld_export(mdir,mlast,rho)
 
 ! Check for array bound overflow (can arrays cope with incoming data)
 
-  safe=((mlast+jmove/2) <= mxatms)
+  safe=((mlast+jmove/iadd) <= mxatms)
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe) Then
-     itmp=mlast+jmove/5
+     itmp=mlast+jmove/iadd
      If (mxnode > 1) Call gmax(itmp)
      Call warning(180,Real(itmp,wp),Real(mxatms,wp),0.0_wp)
      Call error(39)
@@ -205,21 +214,22 @@ Subroutine metal_ld_export(mdir,mlast,rho)
 
 ! load transferred data
 
-  If (mxnode > 1) Then
-     j=iblock
-  Else
-     j=0
-  End If
-
-  Do i=1,jmove/2
+  j=Merge(iblock,0,mxnode > 1)
+  Do i=1,jmove/iadd
      mlast=mlast+1
 
 ! unpack particle density and remaining halo indexing
 
-     rho(mlast) =buffer(j+1)
-     ixyz(mlast)=Nint(buffer(j+2))
+     If (.not.lrhs) Then
+        rho(mlast) =buffer(j+1)
+        ixyz(mlast)=Nint(buffer(j+2))
+     Else
+        rho(mlast) =buffer(j+1)
+        rhs(mlast) =buffer(j+2)
+        ixyz(mlast)=Nint(buffer(j+3))
+     End If
 
-     j=j+2
+     j=j+iadd
   End Do
 
   Deallocate (buffer, Stat=fail)

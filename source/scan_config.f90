@@ -5,7 +5,7 @@ Subroutine scan_config(megatm,imc_n,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
 ! dl_poly_4 subroutine for raw scanning the contents of configuration file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2010
+! author    - i.t.todorov june 2013
 ! contrib   - i.j.bush april 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -132,8 +132,8 @@ Subroutine scan_config(megatm,imc_n,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
      End If
      If (mxnode > 1) Then
         Call gsync()
-        Call gcheck(safe)
-        Call gcheck(fast)
+        Call gcheck(safe,"enforce")
+        Call gcheck(fast,"enforce")
      End If
      If (.not.safe) Go To 50
 
@@ -294,7 +294,7 @@ Subroutine scan_config(megatm,imc_n,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
 40      Continue ! catch EoF
         If (mxnode > 1) Then
            Call gsync()
-           Call gcheck(safe)
+           Call gcheck(safe,"enforce")
         End If
         If (.not.safe) Go To 50
 

@@ -1,10 +1,10 @@
-Subroutine read_field                     &
-           (imcon,l_n_v,l_str,l_top,      &
-           rcut,rvdw,rmet,width,keyfce,   &
-           lecx,lbook,lexcl,keyshl,       &
-           rcter,rctbp,rcfbp,             &
-           atmfre,atmfrz,megatm,megfrz,   &
-           megshl,megcon,megpmf,megrgd,   &
+Subroutine read_field                   &
+           (imcon,l_n_v,l_str,l_top,    &
+           rcut,rvdw,rmet,width,keyfce, &
+           lecx,lbook,lexcl,keyshl,     &
+           rcter,rctbp,rcfbp,           &
+           atmfre,atmfrz,megatm,megfrz, &
+           megshl,megcon,megpmf,megrgd, &
            megtet,megbnd,megang,megdih,meginv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -13,8 +13,9 @@ Subroutine read_field                     &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2013
-! contrib   - r.davidchak july 2012
+! author    - i.t.todorov june 2013
+! contrib   - r.davidchak (eeam) july 2012
+! contrib   - b.palmer (2band) may 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -2283,6 +2284,12 @@ Subroutine read_field                     &
            Else If (keyword(1:4) == 'eeam' ) Then
               keypot=0 ! tabmet=2 set in scan_field
               lmet_safe=(tabmet == 2)
+           Else If (keyword(1:4) == '2bea' ) Then
+              keypot=0 ! tabmet=3 set in scan_field
+              lmet_safe=(tabmet == 3)
+           Else If (keyword(1:4) == '2bee' ) Then
+              keypot=0 ! tabmet=4 set in scan_field
+              lmet_safe=(tabmet == 4)
            Else If (keyword(1:4) == 'fnsc') Then
               keypot=1
            Else If (keyword(1:4) == 'exfs') Then
@@ -2385,7 +2392,7 @@ Subroutine read_field                     &
            If (ntpmet < ntab) Then
               Call warning(120,0.0_wp,0.0_wp,0.0_wp)
 
-              If (ntpmet > mxmet) Call error(80)
+              If (ntpmet > mxmet) Call error(71)
 
 ! put undefined potentials outside range
 
@@ -2996,9 +3003,9 @@ Subroutine read_field                     &
 
         If (idnode == 0) Close(Unit=nfield)
 
-! Precautions: (vdw,met) = rdf scanning
+! Precautions: (vdw,met) may have lead to rdf scanning (mxrdf > 0), see set_bounds
 
-        If (ntprdf == 0 .and. (ntpvdw > 0 .or. ntpmet > 0)) Then
+        If (ntprdf == 0 .and. mxrdf > 0) Then
            Do ia=1,ntpatm
               Do ja=ia,ntpatm
                  keyrdf=(ja*(ja-1))/2+ia

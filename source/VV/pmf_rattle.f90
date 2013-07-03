@@ -12,7 +12,7 @@ Subroutine pmf_rattle            &
 !       VV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -136,7 +136,7 @@ Subroutine pmf_rattle            &
 ! global verification of convergence
 
      safe=(esig < tolnce)
-     If (mxnode > 1) Call gcheck(safe)
+     If (mxnode > 1) Call gcheck(safe,"enforce")
 
 ! bypass next section and terminate iteration if all tolerances ok
 

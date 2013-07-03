@@ -84,7 +84,7 @@
 
 ! Exchange atomic data in border regions
 
-        Call set_halo_particles(imcon,rcut,keyfce,lbook)
+        Call set_halo_particles(imcon,rcut,keyfce)
 
         nstph=nstph+1
 
@@ -122,22 +122,22 @@
 ! Calculate physical quantities and collect statistics,
 ! accumulate z-density if needed (nstep->nstph,tmst->tmsh)
 
-        Call statistics_collect              &
-           (leql,nsteql,lzdn,nstzdn,         &
-           keyres,keyens,iso,intsta,imcon,   &
-           degfre,degshl,degrot,             &
-           nstph,tstep,time,tmsh,            &
-           engcpe,vircpe,engsrp,virsrp,      &
-           engter,virter,                    &
-           engtbp,virtbp,engfbp,virfbp,      &
-           engshl,virshl,shlke,              &
-           vircon,virpmf,                    &
-           engtet,virtet,engfld,virfld,      &
-           engbnd,virbnd,engang,virang,      &
-           engdih,virdih,enginv,virinv,      &
-           engke,engrot,consv,vircom,        &
-           strtot,press,strext,              &
-           stpeng,stpvir,stpcfg,stpeth,      &
+        Call statistics_collect            &
+           (leql,nsteql,lzdn,nstzdn,       &
+           keyres,keyens,iso,intsta,imcon, &
+           degfre,degshl,degrot,           &
+           nstph,tstep,time,tmsh,          &
+           engcpe,vircpe,engsrp,virsrp,    &
+           engter,virter,                  &
+           engtbp,virtbp,engfbp,virfbp,    &
+           engshl,virshl,shlke,            &
+           vircon,virpmf,                  &
+           engtet,virtet,engfld,virfld,    &
+           engbnd,virbnd,engang,virang,    &
+           engdih,virdih,enginv,virinv,    &
+           engke,engrot,consv,vircom,      &
+           strtot,press,strext,            &
+           stpeng,stpvir,stpcfg,stpeth,    &
            stptmp,stpprs,stpvol)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT

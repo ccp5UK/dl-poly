@@ -8,7 +8,7 @@ Subroutine rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
 ! (even those in the halo of the domain)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2008
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,8 +30,7 @@ Subroutine rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
   Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
 
   fail = 0
-  Allocate (gxx(1:mxlrgd*Max(mxrgd,mxtrgd)),gyy(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-            gzz(1:mxlrgd*Max(mxrgd,mxtrgd)), Stat = fail)
+  Allocate (gxx(1:mxlrgd*mxrgd),gyy(1:mxlrgd*mxrgd),gzz(1:mxlrgd*mxrgd), Stat = fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_coms allocation failure, node: ', idnode
      Call error(0)

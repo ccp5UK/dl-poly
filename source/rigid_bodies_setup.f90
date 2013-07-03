@@ -5,7 +5,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 ! dl_poly_4 subroutine for constructing RBs' totational inertia tesnors
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2012
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,7 +23,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
   Integer(Kind=ip),  Intent( InOut ) :: degtra,degrot
 
   Logical           :: safe,pass1,pass2
-  Integer           :: fail(1:3),imcon,irgd,jrgd,krgd,lrgd,rgdtyp, &
+  Integer           :: fail(1:2),imcon,irgd,jrgd,krgd,lrgd,rgdtyp, &
                        i,ill,i1,i2,i3, nsite,itmols,nrigid,frzrgd, &
                        ifrz, rotrgd,trargd,iatm1,isite1,ntmp
   Real( Kind = wp ) :: rcut,tmp,weight,                            &
@@ -34,11 +34,9 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
   Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
   Real( Kind = wp ), Allocatable :: buffer(:)
 
-  fail = 0
-  Allocate (allrgd(1:mxtrgd),fstrgd(1:mxrgd), Stat = fail(1))
-  Allocate (gxx(1:mxlrgd*Max(mxrgd,mxtrgd)),gyy(1:mxlrgd*Max(mxrgd,mxtrgd)), &
-            gzz(1:mxlrgd*Max(mxrgd,mxtrgd)),  Stat = fail(2))
-  Allocate (buffer(1:mxbuff),                 Stat = fail(3))
+  fail = 0 ; ntmp = mxlrgd*Max(mxrgd,mxtrgd)
+  Allocate (allrgd(1:mxtrgd),fstrgd(1:mxrgd),      Stat = fail(1))
+  Allocate (gxx(1:ntmp),gyy(1:ntmp), gzz(1:ntmp),  Stat = fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_setup allocation failure, node: ', idnode
      Call error(0)
@@ -179,6 +177,12 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 ! of the original representative via global summation.
 
   If (mxnode > 1) Then
+     Allocate (buffer(1:mxtrgd*(4+3*mxlrgd)), Stat = fail(1))
+     If (fail(1) > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_setup allocation failure 1, node: ', idnode
+        Call error(0)
+     End If
+
      krgd=0
      Do irgd=1,mxtrgd
         lrgd=lstrgd(0,irgd)
@@ -240,11 +244,16 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
            krgd=krgd+3
         End Do
      End Do
+
+     Deallocate (buffer, Stat = fail(1))
+     If (fail(1) > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_setup deallocation failure 1, node: ', idnode
+        Call error(0)
+     End If
   End If
 
   Deallocate (allrgd,fstrgd, Stat = fail(1))
   Deallocate (gxx,gyy,gzz,   Stat = fail(2))
-  Deallocate (buffer,        Stat = fail(3))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_setup deallocation failure, node: ', idnode
      Call error(0)
@@ -508,7 +517,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 
   Allocate (lstsit(0:mxlrgd*mxtrgd), Stat = fail(1))
   If (fail(1) > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_setup allocation failure 1, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_setup allocation failure 2, node: ', idnode
      Call error(0)
   End If
   lstsit=0
@@ -621,7 +630,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 
   Deallocate (lstsit, Stat = fail(1))
   If (fail(1) > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_setup deallocation failure 1, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_setup deallocation failure 2, node: ', idnode
      Call error(0)
   End If
 

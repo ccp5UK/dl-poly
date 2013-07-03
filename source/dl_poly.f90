@@ -124,15 +124,15 @@ Program dl_poly
 
 ! general flags
 
-  Logical           :: l_vv,l_n_e,l_n_r,l_n_v,  &
-                       l_ind,l_str,l_top,       &
-                       l_exp,lecx,lfcap,lzero,  &
-                       lmin,ltgaus,ltscal,      &
-                       lvar,leql,lpse,lsim,     &
-                       lrdf,lprdf,lzdn,lpzdn,   &
-                       ltraj,ldef,lrsd,         &
-                       safe,lbook,lexcl,        &
-                       relaxed_shl = .true.,    &
+  Logical           :: l_vv,l_n_e,l_n_v,         &
+                       l_ind,l_str,l_top,        &
+                       l_exp,lecx,lfcap,lzero,   &
+                       lmin,ltgaus,ltscal,       &
+                       lvar,leql,lpse,lsim,lfce, &
+                       lrdf,lprdf,lzdn,lpzdn,    &
+                       ltraj,ldef,lrsd,          &
+                       safe,lbook,lexcl,         &
+                       relaxed_shl = .true.,     &
                        relaxed_min = .true.
 
   Integer           :: i,j,levcfg,imcon,nstfce,            &
@@ -190,15 +190,17 @@ Program dl_poly
   If (idnode == 0) Then
      If (.not.l_scr) Open(Unit=nrite, File='OUTPUT', Status='replace')
 
-     Write(nrite,'(7(1x,a,/),1x,a,i12,a,/,(1x,a,/))')                           &
+     Write(nrite,'(6(1x,a,/),1x,a,i12,a,/,4(1x,a,/))')                          &
           "******************************************************************", &
           "*************  stfc/ccp5  program  library  package  ** D ********", &
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  contributors: i.j.bush & r.davidchak  ****** O ****", &
-          "*************  version:  4.05.04     /     may 2013  ******* L ***", &
-          "*************  Execution on ", mxnode, "    node(s)  ******** Y **", &
+          "**         **  version:  4.05.05    /     july 2013  ****** O ****", &
+          "*************  execution on ", mxnode, "    node(s)  ******* L ***", &
+          "*************  contributors' list:                   ******** Y **", &
+          "*************  ------------------------------------  *************", &
+          "*************  i.j.bush & r.davidchak                *************", &
           "******************************************************************"
 
      Write(nrite,'(7(1x,a,/))') &
@@ -218,8 +220,8 @@ Program dl_poly
 ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
 ! (setup_module and domains_module)
 
-  Call set_bounds                                            &
-           (levcfg,imcon,l_vv,l_str,l_n_e,l_n_r,l_n_v,l_ind, &
+  Call set_bounds                                      &
+           (levcfg,imcon,l_vv,l_str,l_n_e,l_n_v,l_ind, &
            rcut,rvdw,rmet,rbin,nstfce,alpha,width)
 
 ! ALLOCATE SITE & CONFIG ARRAYS
@@ -260,11 +262,11 @@ Program dl_poly
 ! READ SIMULATION CONTROL PARAMETERS
 
   Call read_control                                    &
-           (levcfg,l_vv,l_str,l_n_e,l_n_r,l_n_v,       &
+           (levcfg,l_vv,l_str,l_n_e,l_n_v,             &
            rcut,rvdw,rbin,nstfce,alpha,width,          &
            l_exp,lecx,lfcap,l_top,lzero,lmin,          &
            ltgaus,ltscal,lvar,leql,lpse,               &
-           lsim,lrdf,lprdf,lzdn,lpzdn,                 &
+           lsim,lfce,lrdf,lprdf,lzdn,lpzdn,            &
            ltraj,ldef,lrsd,                            &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
            temp,press,strext,keyres,                   &
@@ -281,13 +283,13 @@ Program dl_poly
 
 ! READ SIMULATION FORCE FIELD
 
-  Call read_field                         &
-           (imcon,l_n_v,l_str,l_top,      &
-           rcut,rvdw,rmet,width,keyfce,   &
-           lecx,lbook,lexcl,keyshl,       &
-           rcter,rctbp,rcfbp,             &
-           atmfre,atmfrz,megatm,megfrz,   &
-           megshl,megcon,megpmf,megrgd,   &
+  Call read_field                       &
+           (imcon,l_n_v,l_str,l_top,    &
+           rcut,rvdw,rmet,width,keyfce, &
+           lecx,lbook,lexcl,keyshl,     &
+           rcter,rctbp,rcfbp,           &
+           atmfre,atmfrz,megatm,megfrz, &
+           megshl,megcon,megpmf,megrgd, &
            megtet,megbnd,megang,megdih,meginv)
 
 ! CHECK MD CONFIGURATION
@@ -386,7 +388,7 @@ Program dl_poly
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-  Call set_halo_particles(imcon,rcut,keyfce,lbook)
+  Call set_halo_particles(imcon,rcut,keyfce)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -539,6 +541,9 @@ Program dl_poly
   If (idnode == 0) &
      Write(nrite,'(/,/,/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
 
+! Now you can run fast boy
+
+  If (l_fast) Call gsync(l_fast)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -684,6 +689,7 @@ Contains
   End Subroutine w_md_lfv
 
   Subroutine w_replay_history()
+    Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh  ! tmst replacement
     Integer           :: nstph ! nstep replacement
 

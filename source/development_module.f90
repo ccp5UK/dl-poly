@@ -5,7 +5,7 @@ Module development_module
 ! dl_poly_4 development module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2013
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -14,6 +14,7 @@ Module development_module
   Implicit None
 
   Logical, Save :: l_scr  = .false. ! OUTPUT redirection to the default output (screen)
+  Logical, Save :: l_fast = .false. ! avoid global safety checks (no elegant parallel failures)
   Logical, Save :: l_eng  = .false. ! OUTPUT inclusion of an extra last line with E_tot
   Logical, Save :: l_rout = .false. ! REVIVE writing in ASCII (default is binary)
   Logical, Save :: l_rin  = .false. ! REVOLD reading in ASCII (default is binary)
@@ -46,7 +47,7 @@ Contains
 ! control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2009
+! author    - i.t.todorov june 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -67,7 +68,7 @@ Contains
 ! Open the simulation input file
 
     If (idnode == 0) Inquire(File='CONTROL', Exist=safe)
-    If (mxnode > 1) Call gcheck(safe)
+    If (mxnode > 1) Call gcheck(safe,"enforce")
     If (.not.safe) Then
        Return
     Else
@@ -91,6 +92,10 @@ Contains
        If      (word(1:5) == 'l_scr') Then
 
           l_scr = .true.
+
+       Else If (word(1:6) == 'l_fast') Then
+
+          l_fast=.true.
 
        Else If (word(1:5) == 'l_tim') Then
 
