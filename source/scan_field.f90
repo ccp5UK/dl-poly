@@ -172,7 +172,7 @@ Subroutine scan_field                                 &
   Call get_line(safe,nfield,record)
   If (.not.safe) Go To 30
 
-  Do While (.true.)
+  Do
 
      word(1:1)='#'
      Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -198,7 +198,7 @@ Subroutine scan_field                                 &
               Call get_word(record,word)
            End Do
 
-           Do While (.true.)
+           Do
 
               word(1:1)='#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')

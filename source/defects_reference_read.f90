@@ -6,7 +6,7 @@ Subroutine defects_reference_read &
 ! dl_poly_4 subroutine for reading particles data from REFERENCE file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -37,8 +37,8 @@ Subroutine defects_reference_read &
                             lexist,fast,safe,loop,match
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word,fname
-  Integer                :: fail(1:2),megref,i,j,lvcfgr,imconr,      &
-                            indatm,idm,ipx,ipy,ipz,read_buffer_size, &
+  Integer                :: fail(1:2),megref,i,j,lvcfgr,imconr, &
+                            indatm,idm,ipx,ipy,ipz,             &
                             itmols,isite,nsite,msite,fsite,ifrz,nrept
   Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz,cell_vecs(1:3,1:3)
 
@@ -472,9 +472,8 @@ Subroutine defects_reference_read &
         top_skip = Int(1,MPI_OFFSET_KIND) ! This is now the frame = 1
      End If
 
-     read_buffer_size = mxatms
-     Call defects_reference_read_parallel                                 &
-           (lvcfgr, imconr, celr, l_ind, l_str, megref, read_buffer_size, &
+     Call defects_reference_read_parallel               &
+           (lvcfgr, imconr, celr, l_ind, l_str, megref, &
             fast, fh, top_skip, nrefs, namr, indr, xr, yr, zr)
 
 ! Close REFERENCE

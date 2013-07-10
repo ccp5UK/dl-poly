@@ -17,6 +17,7 @@ Module external_field_module
 
   Integer,                        Save :: keyfld = 0
 
+  Real( Kind = wp ),              Save :: mass = 0.0_wp
 
   Real( Kind = wp ), Allocatable, Save :: prmfld(:)
 

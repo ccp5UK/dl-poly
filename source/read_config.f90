@@ -7,7 +7,7 @@ Subroutine read_config &
 ! particle density
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -40,10 +40,10 @@ Subroutine read_config &
                             l_his = .false. , &
                             l_xtr = .false. , &
                             fast
-  Integer                :: fail(1:4),i,j,idm,icell,ncells,   &
-                            mxatms,indatm,nattot,totatm,      &
-                            ipx,ipy,ipz,nlx,nly,nlz,          &
-                            ix,iy,iz,jx,jy,jz,read_buffer_size
+  Integer                :: fail(1:4),i,j,idm,icell,ncells, &
+                            mxatms,indatm,nattot,totatm,    &
+                            ipx,ipy,ipz,nlx,nly,nlz,        &
+                            ix,iy,iz,jx,jy,jz,
   Real( Kind = wp )      :: celprp(1:10),rcell(1:9),celh(1:9),det, &
                             volm,vcell,                            &
                             sxx,syy,szz,xdc,ydc,zdc,               &
@@ -455,9 +455,8 @@ Subroutine read_config &
         top_skip = Int(1,MPI_OFFSET_KIND) ! This is now the frame = 1
      End If
 
-     read_buffer_size = mxatms
-     Call read_config_parallel                                     &
-           (levcfg, imcon, l_ind, l_str, megatm, read_buffer_size, &
+     Call read_config_parallel                   &
+           (levcfg, imcon, l_ind, l_str, megatm, &
             l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi)
 
 ! Close CONFIG

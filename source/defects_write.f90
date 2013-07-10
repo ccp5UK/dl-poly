@@ -159,7 +159,7 @@ Subroutine defects_write &
            Open(Unit=ndefdt, File='DEFECTS', Form='formatted')
 
            l_tmp =.true.
-           Do While (.true.)
+           Do
 
               record=' '
               If (l_tmp) Then

@@ -412,7 +412,7 @@ Function match(n,ind_top,list)
   ind_old = 1
   ind_now = 1
 
-  Do While ( .true. )
+  Do
      If      (n == list(ind_now)) Then
         match=.true.
         Return

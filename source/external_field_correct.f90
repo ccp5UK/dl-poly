@@ -7,7 +7,7 @@ Subroutine external_field_correct(imcon)
 ! Note: Only one field at a time is allowed
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2013
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,8 +24,8 @@ Subroutine external_field_correct(imcon)
   Integer,           Intent( In    ) :: imcon
 
   Integer           :: i,j,ia,ib, irgd,jrgd,lrgd,rgdtyp,megrgd
-  Real( Kind = wp ) :: rz,vxt,tmp, &
-                       x(1:1),y(1:1),z(1:1),celprp(10)
+  Real( Kind = wp ) :: rz,vxt,tmp,rtmp(1:2), &
+                       x(1:1),y(1:1),z(1:1)
 
 ! Recover megrgd
 
@@ -35,7 +35,7 @@ Subroutine external_field_correct(imcon)
 
 ! continuous shear of walls : 2D periodic box (imcon=6)
 
-     If (imcon /= 6) Go To 10
+     If (imcon /= 6) Return
 
 ! shear rate=prmfld(1) angstrom per ps for non-frozen
 ! and non-weightless atoms at Abs(z) > prmfld(2)
@@ -88,35 +88,37 @@ Subroutine external_field_correct(imcon)
 
   Else If (keyfld == 8) Then
 
-! zpist - piston wall pushing down along the Z=axb direction
+! xpist - piston wall pushing down along the X=bxc direction
 ! prmfld(1) is the first atom of the layer of molecules (membrane) to be pushed
 ! prmfld(2) is the last atom of the layer of molecules (membrane) to be pushed
 ! prmfld(3) is the pressure applied to the layer of molecules (membrane) in the
-! -Z=-axb direction - i.e. top to bottom.  The layer plane is defined as _|_ axb
+! +X=bxc direction - i.e. left to right.  The layer plane is defined as _|_ bxc
+
+     If (imcon /= 1 .and. imcon /= 2) Return
 
      ia = Nint(prmfld(1))
      ib = Nint(prmfld(2))
 
-     tmp=0.0_wp ! average force per atom of the piston
+     rtmp=0.0_wp ! average velocity and force per atom in x direction of the piston
      Do i=1,natms
-        If ((ltg(i) >= ia .and. ltg(i) <= ib)) Then
-           vxx(i) = 0.0_wp ; fxx(i) = 0.0_wp
-           vyy(i) = 0.0_wp ; fyy(i) = 0.0_wp
-           vzz(i) = 0.0_wp ; tmp=tmp+fzz(i)
+        If (ltg(i) >= ia .and. ltg(i) <= ib) Then
+           rtmp(1)=rtmp(1)+vxx(i) ; rtmp(2)=rtmp(2)+fxx(i)
+           vyy(i) = 0.0_wp        ; fyy(i) = 0.0_wp
+           vzz(i) = 0.0_wp        ; fzz(i) = 0.0_wp
         End If
      End Do
-     If (mxnode > 1) Call gsum(tmp)
-     tmp=tmp/Real(ib-ia+1) ! solid wall behaviour is ensured
+     If (mxnode > 1) Call gsum(rtmp) ! net velocity and force to ensure solid wall behaviour
 
-     Call dcell(cell,celprp)
-     tmp=tmp-prmfld(3)*(celprp(10)/celprp(9))
+     rtmp(1)=rtmp(1)/Real(ib-ia+1)     ! averaged velocity per particle
+     rtmp(2)=(rtmp(2)+prmfld(3))/mass  ! averaged acceleration of the slab
 
      Do i=1,natms
-        If ((ltg(i) >= ia .and. ltg(i) <= ib)) fzz(i)=tmp
+        If (ltg(i) >= ia .and. ltg(i) <= ib) Then
+           vxx(i)=rtmp(1)
+           fxx(i)=rtmp(2)*weight(i) ! force per particle
+        End If
      End Do
 
   End If
-
-10 Continue
 
 End Subroutine external_field_correct

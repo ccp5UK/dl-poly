@@ -1,57 +1,29 @@
-!!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORY INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORF INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
 ! Report work
 
-  If (idnode == 0) &
-     Write(nrite,"(/,/,1x,'*** HISTORY is replayed for recalculation of structural properties ***')")
+  If (idnode == 0) Write(nrite,"(/,3(/,1x,a))") &
+     '*** HISTORF is replayed in full as statics (no dynamics)!!! ***', &
+     '*** Big frame differences as particle move distance within HISTROF ***', &
+     '*** and w.r.t. CONFIG at start may lead failures in parallel !!! ***'
 
-! Stay safe
-
-  If (ltraj) Then
-     ltraj = .false.
-
-     If (idnode == 0) &
-     Write(nrite,"(/,/,1x,'*** warning - aborting printing into HISTORY while reading it ***')")
-  End If
-
-! Make sure of no equilibration
-
-  nsteql = 0
-  leql   = .false.
-
-! Make sure RDFs are complete (no exclusion lists)
-
-  lbook = .false.
-
-! nullify forces
-
-  fxx = 0.0_wp
-  fyy = 0.0_wp
-  fzz = 0.0_wp
-
-! nullify all two-body force switches = just do rdf calculation
-
-  keyfce = 0
-  ntpvdw = 0
-  ntpmet = 0
-
-! defect detection for every entry in HISTORY
+! defect detection for every entry in HISTORF
 
   nsdef = 0
   isdef = 1
 
-! MSDTMP option for every entry in HISTORY
+! MSDTMP option for every entry in HISTORF
 
   nstmsd = 0
   istmsd = 1
 
-! displacement detection for every entry in HISTORY
+! displacement detection for every entry in HISTORF
 
   nsrsd = 0
   isrsd = 1
 
-! rdf and z-density detection for every entry in HISTORY
+! rdf and z-density detection for every entry in HISTORF
 ! impose printing if calculation exists
 
   lprdf=lrdf ; nstrdf = 1
@@ -70,16 +42,16 @@
   engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
   nstpe = nstep
-  nstph = 0 ! trajectory points counter
+  nstph = 0 ! HISTORF trajectory points counter
   Do
 10 Continue
 
-! Read a frame
+! Make a move
 
-     Call read_history(l_str,"HISTORY",megatm,levcfg,imcon,nstep,tstep,time)
+     Call read_history(l_str,"HOSTORF",megatm,levcfg,imcon,nstep,tstep,time)
 
-     If (newjob) Then
-        newjob = .false.
+     If (newjb) Then
+        newjb = .false.
 
         tmst=time
         tmsh=0.0_wp ! tmst substitute
@@ -90,22 +62,21 @@
 
         If (nstep <= nstpe) Go To 10 ! Deal with restarts
 
-! Exchange atomic data in border regions
+! Refresh mappings
 
-        Call set_halo_particles(imcon,rcut,keyfce)
+        Call w_refresh_mappings()
 
-! Accumulate RDFs if needed (nstep->nstph)
+! Evaluate forces, newjob must always be true for vircom evaluation
 
-        If (lrdf) Call two_body_forces            &
-           (imcon,rcut,rvdw,rmet,keyens,          &
-           alpha,epsq,keyfce,nstfce,lbook,megfrz, &
-           lrdf,nstrdf,leql,nsteql,nstph,         &
-           elrc,virlrc,elrcm,vlrcm,               &
-           engcpe,vircpe,engsrp,virsrp,stress)
+        Call w_calculate_forces()
+
+! Evaluate kinetics
+
+        If (levcfg > 0 .and. levcfg < 3) Then
+           If (lzero .and. nstep <= nsteql) Call zero_k_optimise(strkin,strknf,strknt,engke,engrot)
 
 ! Calculate kinetic stress and energy if available
 
-        If (levcfg > 0 .and. levcfg < 3) Then
            If (megrgd > 0) Then
               Call rigid_bodies_quench(imcon)
 
@@ -115,15 +86,23 @@
               strkin=strknf+strknt
 
               engrot=getknr(rgdoxx,rgdoyy,rgdozz)
-              If (levcfg == 2) Then
-                 Call rigid_bodies_str_ss(strcom)
-                 vircom=-(strcom(1)+strcom(5)+strcom(9))
-              End If
            Else
               Call kinstress(vxx,vyy,vzz,strkin)
            End If
            engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+
+! Apply kinetic options
+
+           Call w_kinetic_options()
         End If
+
+! Get complete stress tensor
+
+        strtot = strcon + strpmf + stress + strkin + strcom
+
+! Get core-shell kinetic energy for adiabatic shell model
+
+        If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(shlke)
 
 ! Calculate physical quantities and collect statistics,
 ! accumulate z-density if needed (nstep->nstph,tmst->tmsh)
@@ -146,17 +125,44 @@
            stpeng,stpvir,stpcfg,stpeth,    &
            stptmp,stpprs,stpvol)
 
+! line-printer output
+! Update cpu time
+
+        Call gtime(timelp)
+
+        If (idnode == 0) Then
+           If (Mod(lines,npage) == 0) Write(nrite,"(1x,130('-'),/,/,    &
+              & 5x,'step',5x,'eng_tot',4x,'temp_tot',5x,'eng_cfg',      &
+              & 5x,'eng_src',5x,'eng_cou',5x,'eng_bnd',5x,'eng_ang',    &
+              & 5x,'eng_dih',5x,'eng_tet',/,1x,'time(ps)',5x,' eng_pv', &
+              & 4x,'temp_rot',5x,'vir_cfg',5x,'vir_src',5x,'vir_cou',   &
+              & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet',/,  &
+              & 1x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',   &
+              & 5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',           &
+              & 5x,'vir_pmf',7x,'press',/,/,1x,130('-'))")
+
+           Write(nrite,"(1x,i8,1p,9e12.4,/,0p,f9.5,1p,9e12.4,           &
+                & /,1x,0p,f8.1,1p,9e12.4)") nstep,(stpval(i),i=1,9),    &
+                time,(stpval(i),i=10,18),timelp,(stpval(i),i=19,27)
+
+           Write(nrite,"(/,2x,'rolling',1p,9e12.4,/,1x,'averages',      &
+                & 1p,9e12.4,/,9x,9e12.4)") (ravval(i),i=1,27)
+
+           Write(nrite,"(1x,130('-'))")
+        End If
+
+        If (nstph /= 0) lines=lines+1
+
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
         Call w_write_options()
 
-! Complete time check
+! Save restart data in event of system crash
 
-        Call gtime(timelp)
-        If (idnode == 0) Then
-           Write(nrite,"(1x,'HISTORY step',i10,' (',i10,' entry) processed')") nstep,nstph
-           Write(nrite,'(1x,"time elapsed since job start: ", f12.3, " sec")') timelp
-        End If
+        If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.l_tor)) &
+           Call system_revive                                       &
+           (imcon,rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
+           chit,cint,chip,eta,strcon,strpmf,stress)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minunte intervals
 
@@ -172,7 +178,6 @@
               Call lower_case(c_out)
               If (l_out .and. c_out(1:6) == 'append') Then
                  Close(Unit=nrite)
-
                  Open(Unit=nrite, File='OUTPUT', Position='append')
               End If
            End If
@@ -207,4 +212,4 @@
   nstep=nstph
 
 
-!!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORY INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORF INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

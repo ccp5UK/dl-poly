@@ -1,11 +1,11 @@
-Subroutine read_history(l_str,megatm,levcfg,imcon,nstep,tstep,time)
+Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for reading the trajectory data file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -31,18 +31,19 @@ Subroutine read_history(l_str,megatm,levcfg,imcon,nstep,tstep,time)
 
   Implicit None
 
-  Integer,           Intent( In    ) :: megatm
-  Logical,           Intent( In    ) :: l_str
-  Integer,           Intent( InOut ) :: levcfg,imcon,nstep
-  Real( Kind = wp ), Intent( InOut ) :: tstep,time
+  Character( Len = * ), Intent( In    ) :: fname
+  Logical,              Intent( In    ) :: l_str
+  Integer,              Intent( In    ) :: megatm
 
-  Character( Len = 40 ), Save :: fname  = 'HISTORY'
+  Integer,              Intent( InOut ) :: levcfg,imcon,nstep
+  Real( Kind = wp ),    Intent( InOut ) :: tstep,time
+
+
   Logical,               Save :: newjob = .true.  , &
                                  l_ind  = .true.  , &
                                  l_his  = .true.  , &
                                  l_xtr  = .false. , &
                                  fast   = .true.
-  Integer,               Save :: read_buffer_size
   Integer(Kind=ip),      Save :: rec  = 0_ip , &
                                  frm  = 0_ip , &
                                  frm1 = 0_ip
@@ -75,19 +76,11 @@ Subroutine read_history(l_str,megatm,levcfg,imcon,nstep,tstep,time)
 
      Call io_get_parameters( user_method_read = io_read )
 
-! Define read buffer size
-
-     read_buffer_size = mxatms
-
 ! ASCII read
 
      If (io_read /= IO_READ_NETCDF) Then
 
-! Define filename
-
-        fname = 'HISTORY'
-
-! Define the dafault record size
+! Define the default record size
 
         recsz = 73
 
@@ -160,10 +153,6 @@ Subroutine read_history(l_str,megatm,levcfg,imcon,nstep,tstep,time)
         End If
 
      Else ! netCDF read
-
-! Define filename
-
-        fname = 'HISTORY.nc'
 
 ! Does HISTORY exist
 
@@ -474,8 +463,8 @@ Subroutine read_history(l_str,megatm,levcfg,imcon,nstep,tstep,time)
      Call get_word(record,word); cell(8)=word_2_real(word)
      Call get_word(record,word); cell(9)=word_2_real(word)
 
-     Call read_config_parallel &
-           (levcfg, imcon, l_ind, l_str, megatm, read_buffer_size, &
+     Call read_config_parallel                   &
+           (levcfg, imcon, l_ind, l_str, megatm, &
             l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi)
 
      If (fast) Then
@@ -515,8 +504,8 @@ Subroutine read_history(l_str,megatm,levcfg,imcon,nstep,tstep,time)
      Call io_nc_get_var( 'cell'           , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
      cell = Reshape( cell_vecs, (/ Size( cell ) /) )
 
-     Call read_config_parallel &
-           (levcfg, imcon, l_ind, l_str, megatm, read_buffer_size, &
+     Call read_config_parallel                   &
+           (levcfg, imcon, l_ind, l_str, megatm, &
             l_his, l_xtr, fast, fh, Int( i, Kind( top_skip ) ), xhi, yhi, zhi)
 
      If (frm1 == frm) Go To 200

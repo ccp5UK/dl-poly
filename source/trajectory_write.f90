@@ -156,7 +156,7 @@ Subroutine trajectory_write &
 
               Open(Unit=nhist, File=fname, Form='formatted')
 
-              Do While (.true.)
+              Do
 
                  record(1:recsz)=' '
 
@@ -1006,7 +1006,7 @@ Subroutine trajectory_write &
 
               Open(Unit=nhist, File=fname, Form='formatted')
 
-              Do While (.true.)
+              Do
 
                  record(1:recsz)=' '
 

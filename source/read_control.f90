@@ -346,7 +346,7 @@ Subroutine read_control                                &
 
 ! read and process directives from CONTROL file
 
-  Do While (.true.)
+  Do
 
      Call get_line(safe,nread,record)
      If (.not.safe) Go To 1000
@@ -1609,6 +1609,11 @@ Subroutine read_control                                &
            l_top = .false.
 
         Else If (word1(1:3) == 'vom' ) Then
+
+           If (idnode == 0) Write(nrite,"(3(/,1x,a))")                                     &
+              '"no vom" option auto-switched on - COM momentum removal will be abandoned', &
+              '*** warning - this may lead to a build up of the COM momentum and ***',     &
+              '***           a manifestation of the "flying ice-cube" effect !!! ***'
 
            l_vom = .false.
 

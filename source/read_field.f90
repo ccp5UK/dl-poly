@@ -1,7 +1,8 @@
 Subroutine read_field                   &
            (imcon,l_n_v,l_str,l_top,    &
-           rcut,rvdw,rmet,width,keyfce, &
-           lecx,lbook,lexcl,keyshl,     &
+           rcut,rvdw,rmet,width,        &
+           keyens,keyfce,keyshl,        &
+           lecx,lbook,lexcl,            &
            rcter,rctbp,rcfbp,           &
            atmfre,atmfrz,megatm,megfrz, &
            megshl,megcon,megpmf,megrgd, &
@@ -33,7 +34,7 @@ Subroutine read_field                   &
 ! Fuch's correction of charge non-neutral systems
 ! Global_To_Local variables
 
-  Use config_module, Only : sumchg
+  Use config_module, Only : cell,sumchg
 
 ! INTERACTION MODULES
 
@@ -72,7 +73,7 @@ Subroutine read_field                   &
   Implicit None
 
   Logical,           Intent( In    ) :: l_n_v,l_str,l_top
-  Integer,           Intent( In    ) :: imcon
+  Integer,           Intent( In    ) :: imcon,keyens
   Integer,           Intent( InOut ) :: keyfce
   Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width
   Logical,           Intent( InOut ) :: lecx
@@ -197,7 +198,7 @@ Subroutine read_field                   &
 
 ! read and process directives from field file
 
-  Do While (.true.)
+  Do
      word(1:1)='#'
      Do While (word(1:1) == '#' .or. word(1:1) == ' ')
         Call get_line(safe,nfield,record)
@@ -307,7 +308,7 @@ Subroutine read_field                   &
 
 ! read molecular data
 
-           Do While (.true.)
+           Do
               word(1:1)='#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                  Call get_line(safe,nfield,record)
@@ -2947,7 +2948,7 @@ Subroutine read_field                   &
            keyfld=6
         Else If (keyword == 'zbnd') Then
            keyfld=7
-        Else If (keyword == 'zpis') Then
+        Else If (keyword == 'xpis') Then
            keyfld=8
            If (l_vom) Then
               If (idnode == 0) Write(nrite,"(3(/,1x,a))")                                     &
@@ -2987,15 +2988,18 @@ Subroutine read_field                   &
         Else If (keyfld == 2 .or. keyfld == 6 .or. keyfld == 7) Then
            prmfld(1) = prmfld(1)*engunit
         Else If (keyfld == 8) Then
-           prmfld(3) = prmfld(3)/prsunt ! piston pressure in k-atm
+           prmfld(3) = prmfld(3)/prsunt ! piston pressure specified in k-atm
+           prmfld(3) = prmfld(3)*cell(5)*cell(9) ! convert to force
         End If
 
         If (idnode == 0) Then
            If ((keyfld == 2 .or. keyfld == 8) .and. (imcon /= 1 .and. imcon /= 2)) &
-  Write(nrite,"(/,1x,a)") '*** warning - external field only applicable for imcon=1,2 (orthorhombic geometry)!!!'
+  Write(nrite,"(/,1x,a)") '*** warning - external field is ignored as only applicable for imcon=1,2 (orthorhombic geometry)!!!'
            If (keyfld == 3 .and. imcon /= 6) &
-  Write(nrite,"(/,/,1x,a)") '*** warning - external field only applicable for imcon=6 (SLAB geometry)!!!'
+  Write(nrite,"(/,/,1x,a)") '*** warning - external field is ignored as only applicable for imcon=6 (SLAB geometry)!!!'
         End If
+
+        If (keyfld == 8 .and. keyens /= 0) Call error(7)
 
 ! close force field file
 

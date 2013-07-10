@@ -958,7 +958,7 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
 
 ! read and process directives from field file
 
-     Do While (.true.)
+     Do
         record=' '
         Read(Unit=nfield, Fmt='(a)', End=10) record
         Call tabs_2_blanks(record) ; Call strip_blanks(record)

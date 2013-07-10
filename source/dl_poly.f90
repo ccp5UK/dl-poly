@@ -285,8 +285,9 @@ Program dl_poly
 
   Call read_field                       &
            (imcon,l_n_v,l_str,l_top,    &
-           rcut,rvdw,rmet,width,keyfce, &
-           lecx,lbook,lexcl,keyshl,     &
+           rcut,rvdw,rmet,width,        &
+           keyens,keyfce,keyshl,        &
+           lecx,lbook,lexcl,            &
            rcter,rctbp,rcfbp,           &
            atmfre,atmfrz,megatm,megfrz, &
            megshl,megcon,megpmf,megrgd, &
@@ -556,7 +557,11 @@ Program dl_poly
         Call w_md_lfv()
      End If
   Else
-     Call w_replay_history()
+     If (lfce) Then
+        Call w_replay_historf()
+     Else
+        Call w_replay_history()
+     End If
   End If
 
 
@@ -690,10 +695,18 @@ Contains
 
   Subroutine w_replay_history()
     Logical,     Save :: newjb = .true.
-    Real( Kind = wp ) :: tmsh  ! tmst replacement
-    Integer           :: nstph ! nstep replacement
+    Real( Kind = wp ) :: tmsh        ! tmst replacement
+    Integer           :: nstpe,nstph ! nstep replacements
 
     Include 'w_replay_history.f90'
   End Subroutine w_replay_history
+
+  Subroutine w_replay_historf()
+    Logical,     Save :: newjb = .true.
+    Real( Kind = wp ) :: tmsh        ! tmst replacement
+    Integer           :: nstpe,nstph ! nstep replacements
+
+    Include 'w_replay_historf.f90'
+  End Subroutine w_replay_historf
 
 End Program dl_poly

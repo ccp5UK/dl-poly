@@ -1,5 +1,5 @@
-Subroutine read_config_parallel                                    &
-           (levcfg, imcon, l_ind, l_str, megatm, read_buffer_size, &
+Subroutine read_config_parallel                  &
+           (levcfg, imcon, l_ind, l_str, megatm, &
             l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -7,7 +7,7 @@ Subroutine read_config_parallel                                    &
 ! dl_poly_4 subroutine for reading in the CONFIG data file in parallel
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush & i.t.todorov march 2012
+! author    - i.j.bush & i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,7 +24,7 @@ Subroutine read_config_parallel                                    &
   Implicit None
 
   Logical,                           Intent( In    ) :: l_ind,l_str,l_his,fast,l_xtr
-  Integer,                           Intent( In    ) :: levcfg,imcon,megatm,read_buffer_size,fh
+  Integer,                           Intent( In    ) :: levcfg,imcon,megatm,fh
   Integer( Kind = MPI_OFFSET_KIND ), Intent( In    ) :: top_skip
   Real( Kind = wp ),                 Intent(   Out ) :: xhi,yhi,zhi
 
@@ -91,8 +91,8 @@ Subroutine read_config_parallel                                    &
 ! required to make checking at the end of reading much easier and clearer
 
   Allocate(first_at(0:n_read_procs_use),orig_first_at(0:n_read_procs_use), Stat=fail(1))
-  Allocate(chbuf(1:read_buffer_size),iwrk(1:read_buffer_size),             Stat=fail(2))
-  Allocate(scatter_buffer(1:wp_vals_per_at,1:read_buffer_size),            Stat=fail(3))
+  Allocate(chbuf(1:batsz),iwrk(1:batsz),                                   Stat=fail(2))
+  Allocate(scatter_buffer(1:wp_vals_per_at,1:batsz),                       Stat=fail(3))
   If (Any(fail(1:3) > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'read_config_parallel allocation failure 1, node: ', idnode
      Call error(0)
@@ -146,17 +146,17 @@ Subroutine read_config_parallel                                    &
 ! Allocate record buffer, reading buffers, scatter buffers and indexing arrays
 
      If (io_read /= IO_READ_NETCDF) Then
-        Allocate(rec_buff(1:recsz,1:batsz),                                                           Stat=fail(1))
+        Allocate(rec_buff(1:recsz,1:batsz),                                  Stat=fail(1))
      Else
-        Allocate(rec_buff(1:Len( chbuf_read ),1:read_buffer_size),                                    Stat=fail(1))
+        Allocate(rec_buff(1:Len( chbuf_read ),1:batsz),                      Stat=fail(1))
      End If
-     Allocate(chbuf_read(1:read_buffer_size),iwrk_read(1:read_buffer_size),                           Stat=fail(2))
-     Allocate(axx_read(1:read_buffer_size),ayy_read(1:read_buffer_size),azz_read(1:read_buffer_size), Stat=fail(3))
-     Allocate(bxx_read(1:read_buffer_size),byy_read(1:read_buffer_size),bzz_read(1:read_buffer_size), Stat=fail(4))
-     Allocate(cxx_read(1:read_buffer_size),cyy_read(1:read_buffer_size),czz_read(1:read_buffer_size), Stat=fail(5))
-     Allocate(scatter_buffer_read(1:wp_vals_per_at,1:read_buffer_size),                               Stat=fail(6))
-     Allocate(chbuf_scat(1:read_buffer_size),iwrk_scat(1:read_buffer_size),                           Stat=fail(7))
-     Allocate(n_held(0:mxnode-1),where_buff(0:mxnode-1),owner_read(1:read_buffer_size),               Stat=fail(8))
+     Allocate(chbuf_read(1:batsz),iwrk_read(1:batsz),                        Stat=fail(2))
+     Allocate(axx_read(1:batsz),ayy_read(1:batsz),azz_read(1:batsz),         Stat=fail(3))
+     Allocate(bxx_read(1:batsz),byy_read(1:batsz),bzz_read(1:batsz),         Stat=fail(4))
+     Allocate(cxx_read(1:batsz),cyy_read(1:batsz),czz_read(1:batsz),         Stat=fail(5))
+     Allocate(scatter_buffer_read(1:wp_vals_per_at,1:batsz),                 Stat=fail(6))
+     Allocate(chbuf_scat(1:batsz),iwrk_scat(1:batsz),                        Stat=fail(7))
+     Allocate(n_held(0:mxnode-1),where_buff(0:mxnode-1),owner_read(1:batsz), Stat=fail(8))
      If (Any(fail(1:8) > 0)) Then
         Write(nrite,'(/,1x,a,i0)') 'read_config_parallel allocation failure 2, node: ', idnode
         Call error(0)
@@ -198,7 +198,7 @@ Subroutine read_config_parallel                                    &
 ! Read in transmission arrays
 
      Readers_only: If (do_read .and. indatm == 0) Then
-        to_read = Min(read_buffer_size,orig_first_at(my_read_proc_num+1)-first_at(my_read_proc_num))
+        to_read = Min(batsz,orig_first_at(my_read_proc_num+1)-first_at(my_read_proc_num))
 
         No_netCDF: If (io_read /= IO_READ_NETCDF) Then
 
@@ -437,9 +437,9 @@ Subroutine read_config_parallel                                    &
      End If
 
 ! Circulate configuration data to all nodes when transmission arrays are filled up
-! Check against megatm since at low processors counts (i.e. 1) read_buffer_size can be > megatm
+! Check against megatm since at low processors counts (i.e. 1) batsz can be > megatm
 
-     Reorganize_buffer: If (indatm == read_buffer_size .or. (indatm > 0 .and. k == megatm)) Then
+     Reorganize_buffer: If (indatm == batsz .or. (indatm > 0 .and. k == megatm)) Then
 
         Extent_2: If (.not.l_xtr) Then
 

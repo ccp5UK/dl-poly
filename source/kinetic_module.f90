@@ -12,29 +12,30 @@ Module kinetic_module
 ! Subroutine kinstresf - calculates the kinetic stress of free particles
 ! Subroutine kinstrest - calculates the kinetic stress of RBs (t, no r)
 ! Subroutine getcom - calculates the centre of mass position
+! Subroutine chvom - changes the behaviour of getvom
 ! Subroutine getvom - calculates the centre of mass momentum
 ! Subroutine freeze_atoms - quenches forces and velocities on 'frozen'
 !                           atoms
 ! Subroutine cap_forces - limits the absolute magnitude of forces
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2012
+! author    - i.t.todorov july 2013
 !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!s!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module, Only : mxnode,gsum
 
   Implicit None
 
-! Remove COM motion default and COM velocity components
+! Remove COM motion defaults
 
-  Logical,           Save :: l_vom = .true.
-  Real( Kind = wp ), Save :: vox = 0.0_wp , voy = 0.0_wp , voz = 0.0_wp
+  Logical,          Save :: l_vom = .true.
+  Logical, Private, Save :: lvom  = .true.
 
   Public :: getkin,getknf,getknt,getknr,   &
             kinstress,kinstresf,kinstrest, &
-            getcom,getvom,freeze_atoms,cap_forces
+            getcom,getvom,chvom,freeze_atoms,cap_forces
 
   Interface getvom
      Module Procedure getvom
@@ -388,6 +389,29 @@ Contains
 
   End Subroutine getcom
 
+  Subroutine chvom(flag)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine to change behaviour for COM momentum removal
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov july 2013
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Implicit None
+
+    Logical :: flag
+
+    If (flag) Then
+       lvom=.true.  ! Remove COM momentum
+    Else
+       lvom=.false. ! Don't
+    End If
+
+  End Subroutine chvom
+
   Subroutine getvom(vom,vxx,vyy,vzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -395,7 +419,7 @@ Contains
 ! dl_poly_4 routine to calculate system centre of mass momentum
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2012
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -429,6 +453,8 @@ Contains
 
     vom = 0.0_wp
 
+    If (.not.lvom) Return
+
 ! For all unfrozen, free particles
 
     Do i=1,natms
@@ -451,7 +477,7 @@ Contains
 ! dl_poly_4 routine to calculate system centre of mass momentum
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2012
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -502,6 +528,8 @@ Contains
     End If
 
     vom = 0.0_wp
+
+    If (.not.lvom) Return
 
 ! For all unfrozen, free particles
 

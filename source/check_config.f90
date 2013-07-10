@@ -242,7 +242,7 @@ Contains
     If ( fail /= 0 ) Go To 100
 
     ! No check on mpi error as all is pointless because
-    ! of the way mpi error handlers are usuall dealt with
+    ! of the way mpi error handlers are usually dealt with
 !
 !    all_n_loc = 0
 !    all_n_loc( idnode ) = n_loc

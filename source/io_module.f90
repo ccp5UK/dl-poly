@@ -478,7 +478,7 @@ Contains
     !                         default
     ! USER_BUFFER_SIZE_WRITE: The maximum number of records that will be written to disk in
     !                         any 1 write transaction
-    ! USER_BUFFER_SIZE_READ : The maximum number of records that will be written to disk in
+    ! USER_BUFFER_SIZE_READ : The maximum number of records that will be read from disk in
     !                         any 1 read transaction
     ! USER_LINE_FEED        : The Character to use as a line feed character
     ! USER_ERROR_CHECK      : If true perform error checking across all the processors ( the default ).

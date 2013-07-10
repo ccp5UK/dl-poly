@@ -125,7 +125,7 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
 
            Open(Unit=nhist, File=fname, Form='formatted')
 
-           Do While (.true.)
+           Do
 
               record=' '
 

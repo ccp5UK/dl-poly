@@ -6,7 +6,7 @@ Subroutine error(kode)
 ! controlled termination of the program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2013
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -45,6 +45,10 @@ Subroutine error(kode)
      Else If (kode ==    6) Then
 
         Write(nrite,'(/,1x,a)') 'error - energy unit not specified'
+
+     Else If (kode ==    7) Then
+
+        Write(nrite,'(/,1x,a)') 'error - selected external field incompatible with selected enssemble (NVE only!!!)'
 
      Else If (kode ==    8) Then
 

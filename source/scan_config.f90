@@ -5,7 +5,7 @@ Subroutine scan_config(megatm,imc_n,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
 ! dl_poly_4 subroutine for raw scanning the contents of configuration file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov july 2013
 ! contrib   - i.j.bush april 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -43,9 +43,8 @@ Subroutine scan_config(megatm,imc_n,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
 
 ! Some parameters and variables needed by io_module interfaces
 
-  Integer                           :: read_buffer_size_default = 2000
   Integer                           :: recsz = 73 ! default record size
-  Integer                           :: fh, io_read, read_buffer_size
+  Integer                           :: fh, io_read
   Integer( Kind = MPI_OFFSET_KIND ) :: top_skip
 
 
@@ -341,9 +340,8 @@ Subroutine scan_config(megatm,imc_n,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
            top_skip = Int(1,MPI_OFFSET_KIND) ! This is now the frame = 1
         End If
 
-        read_buffer_size = read_buffer_size_default ! NO CHOICE HERE
-        Call read_config_parallel                                  &
-           (levcfg, imcon, l_ind, l_str, megatm, read_buffer_size, &
+        Call read_config_parallel                &
+           (levcfg, imcon, l_ind, l_str, megatm, &
             l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi)
 
 ! Close CONFIG

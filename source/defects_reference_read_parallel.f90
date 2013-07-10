@@ -1,5 +1,5 @@
-Subroutine defects_reference_read_parallel                                &
-           (lvcfgr, imconr, celr, l_ind, l_str, megref, read_buffer_size, &
+Subroutine defects_reference_read_parallel              &
+           (lvcfgr, imconr, celr, l_ind, l_str, megref, &
             fast, fh, top_skip, nrefs, namr, indr, xr, yr, zr)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -8,7 +8,7 @@ Subroutine defects_reference_read_parallel                                &
 ! in parallel
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush & i.t.todorov march 2012
+! author    - i.j.bush & i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,7 +23,7 @@ Subroutine defects_reference_read_parallel                                &
   Implicit None
 
   Logical,                           Intent( In    ) :: l_ind,l_str,fast
-  Integer,                           Intent( In    ) :: lvcfgr,imconr,megref,read_buffer_size,fh
+  Integer,                           Intent( In    ) :: lvcfgr,imconr,megref,fh
   Integer( Kind = MPI_OFFSET_KIND ), Intent( In    ) :: top_skip
   Real( Kind = wp ),                 Intent( In    ) :: celr(1:9)
   Character( Len = 8 ),              Intent(   Out ) :: namr(1:mxatms)
@@ -85,8 +85,8 @@ Subroutine defects_reference_read_parallel                                &
 ! required to make checking at the end of reading much easier and clearer
 
   Allocate(first_at(0:n_read_procs_use),orig_first_at(0:n_read_procs_use), Stat=fail(1))
-  Allocate(chbuf(1:read_buffer_size),iwrk(1:read_buffer_size),             Stat=fail(2))
-  Allocate(scatter_buffer(1:wp_vals_per_at,1:read_buffer_size),            Stat=fail(3))
+  Allocate(chbuf(1:batsz),iwrk(1:batsz),                                   Stat=fail(2))
+  Allocate(scatter_buffer(1:wp_vals_per_at,1:batsz),                       Stat=fail(3))
   If (Any(fail(1:3) > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'defects_reference_read_parallel allocation failure 1, node: ', idnode
      Call error(0)
@@ -139,15 +139,15 @@ Subroutine defects_reference_read_parallel                                &
 ! Allocate record buffer, reading buffers, scatter buffers and indexing arrays
 
      If (io_read /= IO_READ_NETCDF) Then
-        Allocate(rec_buff(1:recsz,1:batsz),                                                           Stat=fail(1))
+        Allocate(rec_buff(1:recsz,1:batsz),                                  Stat=fail(1))
      Else
-        Allocate(rec_buff(1:Len( chbuf_read ),1:read_buffer_size),                                    Stat=fail(1))
+        Allocate(rec_buff(1:Len( chbuf_read ),1:batsz),                      Stat=fail(1))
      End If
-     Allocate(chbuf_read(1:read_buffer_size),iwrk_read(1:read_buffer_size),                           Stat=fail(2))
-     Allocate(axx_read(1:read_buffer_size),ayy_read(1:read_buffer_size),azz_read(1:read_buffer_size), Stat=fail(3))
-     Allocate(scatter_buffer_read(1:wp_vals_per_at,1:read_buffer_size),                               Stat=fail(4))
-     Allocate(chbuf_scat(1:read_buffer_size),iwrk_scat(1:read_buffer_size),                           Stat=fail(5))
-     Allocate(n_held(0:mxnode-1),where_buff(0:mxnode-1),owner_read(1:read_buffer_size),               Stat=fail(6))
+     Allocate(chbuf_read(1:batsz),iwrk_read(1:batsz),                        Stat=fail(2))
+     Allocate(axx_read(1:batsz),ayy_read(1:batsz),azz_read(1:batsz),         Stat=fail(3))
+     Allocate(scatter_buffer_read(1:wp_vals_per_at,1:batsz),                 Stat=fail(4))
+     Allocate(chbuf_scat(1:batsz),iwrk_scat(1:batsz),                        Stat=fail(5))
+     Allocate(n_held(0:mxnode-1),where_buff(0:mxnode-1),owner_read(1:batsz), Stat=fail(6))
      If (Any(fail(1:6) > 0)) Then
         Write(nrite,'(/,1x,a,i0)') 'defects_reference_read_parallel allocation failure 2, node: ', idnode
         Call error(0)
@@ -183,7 +183,7 @@ Subroutine defects_reference_read_parallel                                &
 ! Read in transmission arrays
 
      Readers_only: If (do_read .and. indatm == 0) Then
-        to_read = Min(read_buffer_size,orig_first_at(my_read_proc_num+1)-first_at(my_read_proc_num))
+        to_read = Min(batsz,orig_first_at(my_read_proc_num+1)-first_at(my_read_proc_num))
 
         No_netCDF: If (io_read /= IO_READ_NETCDF) Then
 
@@ -368,9 +368,9 @@ Subroutine defects_reference_read_parallel                                &
      End If
 
 ! Circulate configuration data to all nodes when transmission arrays are filled up
-! Check against megref since at low processors counts (i.e. 1) read_buffer_size can be > megref
+! Check against megref since at low processors counts (i.e. 1) batsz can be > megref
 
-     Reorganize_buffer: If (indatm == read_buffer_size .or. (indatm > 0 .and. k == megref)) Then
+     Reorganize_buffer: If (indatm == batsz .or. (indatm > 0 .and. k == megref)) Then
 
         Do which_read_proc = 0 , n_read_procs_use-1
            If (orig_first_at(which_read_proc) >= megref) Exit ! for non-reading readers

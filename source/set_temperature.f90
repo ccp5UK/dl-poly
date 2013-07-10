@@ -12,7 +12,7 @@ Subroutine set_temperature            &
 ! dl_poly_4 subroutine for setting the initial system temperature
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov july 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -25,7 +25,7 @@ Subroutine set_temperature            &
                                  atmnam,weight,vxx,vyy,vzz
   Use rigid_bodies_module
   Use core_shell_module,  Only : ntshl,listshl,lshmv_shl,lishp_shl,lashp_shl
-  Use kinetic_module,     Only : getvom,getknr
+  Use kinetic_module,     Only : l_vom,getknr,chvom,getvom
 
   Implicit None
 
@@ -78,7 +78,11 @@ Subroutine set_temperature            &
 
 ! 3 lost for fixing COM translation
 
-  com=Int(3,ip)
+  If (l_vom) Then
+     com=Int(3,ip)
+  Else
+     com=Int(0,ip)
+  End If
 
 ! 3 lost for fixing angular momentum about origin
 ! (non-periodic systems only)
@@ -515,52 +519,57 @@ Subroutine set_temperature            &
 
   End If
 
+  If (l_vom) Then
+
 ! remove centre of mass motion
 
-  If (megrgd > 0) Then
-     Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz)
+     If (megrgd > 0) Then
+        Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz)
 
-     Do j=1,nfree
-        i=lstfre(j)
+        Do j=1,nfree
+           i=lstfre(j)
 
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           vxx(i) = vxx(i) - vom(1)
-           vyy(i) = vyy(i) - vom(2)
-           vzz(i) = vzz(i) - vom(3)
-        End If
-     End Do
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
+              vxx(i) = vxx(i) - vom(1)
+              vyy(i) = vyy(i) - vom(2)
+              vzz(i) = vzz(i) - vom(3)
+           End If
+        End Do
 
-     Do irgd=1,ntrgd
-        rgdtyp=listrgd(0,irgd)
+        Do irgd=1,ntrgd
+           rgdtyp=listrgd(0,irgd)
 
-        If (rgdfrz(0,rgdtyp) == 0) Then
-           rgdvxx(irgd) = rgdvxx(irgd) - vom(1)
-           rgdvyy(irgd) = rgdvyy(irgd) - vom(2)
-           rgdvzz(irgd) = rgdvzz(irgd) - vom(3)
+           If (rgdfrz(0,rgdtyp) == 0) Then
+              rgdvxx(irgd) = rgdvxx(irgd) - vom(1)
+              rgdvyy(irgd) = rgdvyy(irgd) - vom(2)
+              rgdvzz(irgd) = rgdvzz(irgd) - vom(3)
 
-           lrgd=listrgd(-1,irgd)
-           Do jrgd=1,lrgd
-              i=indrgd(jrgd,irgd) ! local index of particle/site
+              lrgd=listrgd(-1,irgd)
+              Do jrgd=1,lrgd
+                 i=indrgd(jrgd,irgd) ! local index of particle/site
 
-              If (i <= natms) Then
-                 vxx(i) = vxx(i) - vom(1)
-                 vyy(i) = vyy(i) - vom(2)
-                 vzz(i) = vzz(i) - vom(3)
-              End If
-           End Do
-        End If
-     End Do
-  Else
-     Call getvom(vom,vxx,vyy,vzz)
+                 If (i <= natms) Then
+                    vxx(i) = vxx(i) - vom(1)
+                    vyy(i) = vyy(i) - vom(2)
+                    vzz(i) = vzz(i) - vom(3)
+                 End If
+              End Do
+           End If
+        End Do
+     Else
+        Call getvom(vom,vxx,vyy,vzz)
 
-     Do i=1,natms
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           vxx(i) = vxx(i) - vom(1)
-           vyy(i) = vyy(i) - vom(2)
-           vzz(i) = vzz(i) - vom(3)
-        End If
-     End Do
-  End If
+        Do i=1,natms
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
+              vxx(i) = vxx(i) - vom(1)
+              vyy(i) = vyy(i) - vom(2)
+              vzz(i) = vzz(i) - vom(3)
+           End If
+        End Do
+     End If
+  Else                 ! make getvom always return 0, which is not good for
+     Call chvom(l_vom) ! standard MD as the flying ice-cub effect may happen
+  End If               ! and/or T(MD) is loses its microscopic meaning!
 
 ! Initialise engrot and if RBs exist calculate it
 
