@@ -31,7 +31,7 @@ Program dl_poly
 ! dl_poly_4 is based on dl_poly_3 by i.t.todorov & w.smith.
 !
 ! copyright - daresbury laboratory
-! authors   - i.t.todorov & w.smith 2012
+! authors   - i.t.todorov & w.smith 2013
 ! contributors: i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -46,7 +46,6 @@ Program dl_poly
 ! Distributed under the same license that the original, unmodified,
 ! DL_POLY_4 is. You should have received these sources from the
 ! STFC Daresbury Laboratory.
-
 
 
 ! SETUP MODULES
@@ -140,20 +139,18 @@ Program dl_poly
 
 ! general flags
 
-  Logical           :: l_vv,l_n_e,l_n_r,l_n_v,  &
-                       l_ind,l_str,l_top,l_exp, &
-                       lecx,lfcap,lzero,        &
-                       lmin,ltgaus,ltscal,      &
-                       lvar,leql,lpse,lsim,     &
-                       lrdf,lprdf,lzdn,lpzdn,   &
-                       ltraj,ldef,lrsd,         &
-                       safe,lbook,lexcl,        &
-                       relaxed_shl = .true.,    &
+  Logical           :: l_vv,l_n_e,l_n_v,         &
+                       l_ind,l_str,l_top,        &
+                       l_exp,lecx,lfcap,lzero,   &
+                       lmin,ltgaus,ltscal,       &
+                       lvar,leql,lpse,lsim,lfce, &
+                       lrdf,lprdf,lzdn,lpzdn,    &
+                       ltraj,ldef,lrsd,          &
+                       safe,lbook,lexcl,         &
+                       relaxed_shl = .true.,     &
                        relaxed_min = .true.
 
-! 'isw' is used for vv stage control
-
-  Integer           :: i,j,isw,levcfg,imcon,nstfce,        &
+  Integer           :: i,j,levcfg,imcon,nstfce,            &
                        nx,ny,nz,imd,tmd,                   &
                        keyres,nstrun,nsteql,               &
                        keymin,nstmin,nstgaus,nstscal,      &
@@ -170,29 +167,29 @@ Program dl_poly
 
   Integer(Kind=ip)  :: degfre,degshl,degtra,degrot
 
+! elrc,virlrc - vdw energy and virial are scalars and in vdw_module
 ! elrcm,vlrcm - metal energy and virial are array-like and in metal_module
 
-  Real( Kind = wp ) :: timelp,timjob,timcls,tstep,time,tmst,tmsth, &
-                       alpha,epsq,fmax,                            &
-                       rcut,rvdw,rmet,rbin,rcter,rctbp,rcfbp,      &
-                       width,mndis,mxdis,mxstp,wthpse,tmppse,      &
-                       rlx_tol,min_tol,tolnce,quattol,rdef,rrsd,   &
-                       emd,vmx,vmy,vmz,temp,sigma,                 &
-                       press,strext(1:9),ten,                      &
-                       taut,chi,soft,gama,taup,tai,                &
-                       chit,eta(1:9),chip,cint,consv,              &
-                       strtot(1:9),virtot,                         &
-!                       elrc,virlrc,             &
-                       strkin(1:9),engke,strknf(1:9),strknt(1:9),  &
-                       engrot,strcom(1:9),vircom,                  &
-                       engcpe,vircpe,engsrp,virsrp,                &
-                       engter,virter,engtbp,virtbp,engfbp,virfbp,  &
-                       engshl,shlke,virshl,                        &
-                       strcon(1:9),vircon,strpmf(1:9),virpmf,      &
-                       stress(1:9),engtet,virtet,                  &
-                       engbnd,virbnd,engang,virang,                &
-                       engdih,virdih,enginv,virinv,                &
-                       engfld,virfld,                              &
+  Real( Kind = wp ) :: timelp,timjob,timcls,tstep,time,tmst,      &
+                       alpha,epsq,fmax,                           &
+                       rcut,rvdw,rmet,rbin,rcter,rctbp,rcfbp,     &
+                       width,mndis,mxdis,mxstp,wthpse,tmppse,     &
+                       rlx_tol,min_tol,tolnce,quattol,rdef,rrsd,  &
+                       emd,vmx,vmy,vmz,temp,sigma,                &
+                       press,strext(1:9),ten,                     &
+                       taut,chi,soft,gama,taup,tai,               &
+                       chit,eta(1:9),chip,cint,consv,             &
+                       strtot(1:9),virtot,                        &
+                       strkin(1:9),engke,strknf(1:9),strknt(1:9), &
+                       engrot,strcom(1:9),vircom,                 &
+                       engcpe,vircpe,engsrp,virsrp,               &
+                       engter,virter,engtbp,virtbp,engfbp,virfbp, &
+                       engshl,shlke,virshl,                       &
+                       strcon(1:9),vircon,strpmf(1:9),virpmf,     &
+                       stress(1:9),engtet,virtet,                 &
+                       engbnd,virbnd,engang,virang,               &
+                       engdih,virdih,enginv,virinv,               &
+                       engfld,virfld,                             &
                        stptmp,stpprs,stpvol,stpcfg,stpeng,stpeth,stpvir
 
 ! SET UP COMMUNICATIONS & CLOCKING
@@ -213,15 +210,17 @@ Program dl_poly
   If (idnode == 0) Then
      If (.not.l_scr) Open(Unit=nrite, File='OUTPUT', Status='replace')
 
-     Write(nrite,'(7(1x,a,/),1x,a,i12,a,/,(1x,a,/))')                           &
+     Write(nrite,'(6(1x,a,/),1x,a,i12,a,/,4(1x,a,/))')                          &
           "******************************************************************", &
           "*************  stfc/ccp5  program  library  package  ** D ********", &
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  contributors: i.j.bush & r.davidchak  ****** O ****", &
-          "*************  version:  4.04.2    /   january 2013  ******* L ***", &
-          "*************  Execution on ", mxnode, "    node(s)  ******** Y **", &
+          "**         **  version:  4.05       /     july 2013  ****** O ****", &
+          "*************  execution on ", mxnode, "    node(s)  ******* L ***", &
+          "*************  contributors' list:                   ******** Y **", &
+          "*************  ------------------------------------  *************", &
+          "*************  i.j.bush & r.davidchak                *************", &
           "******************************************************************"
 
      Write(nrite,'(1x,a,/)') &
@@ -248,8 +247,8 @@ Program dl_poly
 ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
 ! (setup_module and domains_module)
 
-  Call set_bounds                                            &
-           (levcfg,imcon,l_vv,l_str,l_n_e,l_n_r,l_n_v,l_ind, &
+  Call set_bounds                                      &
+           (levcfg,imcon,l_vv,l_str,l_n_e,l_n_v,l_ind, &
            rcut,rvdw,rmet,rbin,nstfce,alpha,width)
 
 ! ALLOCATE SITE & CONFIG ARRAYS
@@ -290,11 +289,11 @@ Program dl_poly
 ! READ SIMULATION CONTROL PARAMETERS
 
   Call read_control                                    &
-           (levcfg,l_vv,l_str,l_n_e,l_n_r,l_n_v,       &
+           (levcfg,l_vv,l_str,l_n_e,l_n_v,             &
            rcut,rvdw,rbin,nstfce,alpha,width,          &
            l_exp,lecx,lfcap,l_top,lzero,lmin,          &
            ltgaus,ltscal,lvar,leql,lpse,               &
-           lsim,lrdf,lprdf,lzdn,lpzdn,                 &
+           lsim,lfce,lrdf,lprdf,lzdn,lpzdn,            &
            ltraj,ldef,lrsd,                            &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
            temp,press,strext,keyres,                   &
@@ -311,19 +310,41 @@ Program dl_poly
 
 ! READ SIMULATION FORCE FIELD
 
-  Call read_field                          &
-           (imcon,l_n_v,l_str,l_top,       &
-           rcut,rvdw,rmet,width,keyfce,    &
-           lbook,lexcl,keyshl,             &
-           rcter,rctbp,rcfbp,              &
-           atmfre,atmfrz,megatm,megfrz,    &
-           megshl,megcon,megpmf,megrgd,    &
+  Call read_field                       &
+           (imcon,l_n_v,l_str,l_top,    &
+           rcut,rvdw,rmet,width,        &
+           keyens,keyfce,keyshl,        &
+           lecx,lbook,lexcl,            &
+           rcter,rctbp,rcfbp,           &
+           atmfre,atmfrz,megatm,megfrz, &
+           megshl,megcon,megpmf,megrgd, &
            megtet,megbnd,megang,megdih,meginv)
 
 ! CHECK MD CONFIGURATION
 
   Call check_config &
            (levcfg,imcon,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
+
+! l_org: translate CONFIG into CFGORG and exit gracefully
+
+  If (l_org) Then
+     Call gtime(timelp)
+     If (idnode == 0) Then
+        Write(nrite,'(/,/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
+        Write(nrite,'(1x,a)') "*** Translating the MD system along a vector (CONFIG to CFGORG) ***"
+        Write(nrite,'(1x,a)') "*** ... ***"
+        Write(nrite,'(1x,a)') "*** ... ***"
+     End If
+
+     Call origin_config(imcon,megatm)
+
+     Call gtime(timelp)
+     If (idnode == 0) Then
+        Write(nrite,'(1x,a)') "*** ... ***"
+        Write(nrite,'(1x,a)') "*** ALL DONE ***"
+        Write(nrite,'(1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
+     End If
+  End If
 
 ! l_scl: rescale CONFIG to CFGSCL and exit gracefully
 
@@ -336,7 +357,7 @@ Program dl_poly
         Write(nrite,'(1x,a)') "*** ... ***"
      End If
 
-     Call scale_config(levcfg,imcon,megatm)
+     Call scale_config(imcon,megatm)
 
      Call gtime(timelp)
      If (idnode == 0) Then
@@ -380,7 +401,7 @@ Program dl_poly
 ! EXIT gracefully
 
   If (l_trm) Then
-     Write(nrite,'(1x,a)') "*** Exiting gracefully ***"
+     If (idnode == 0) Write(nrite,'(1x,a)') "*** Exiting gracefully ***"
      Go To 10
   End If
 
@@ -395,7 +416,7 @@ Program dl_poly
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-  Call set_halo_particles(imcon,rcut,keyfce,lbook)
+  Call set_halo_particles(imcon,rcut,keyfce)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -478,7 +499,7 @@ Program dl_poly
   j=0
   If (natms == 0) Then
      j=1
-     Call warning(1,Real(idnode,wp),0.0_wp,0.0_wp)
+     Write(nrite,'(/,1x,a,i0,a,/)') '*** warning - node ', idnode, ' mapped on vacuum (no particles) !!! ***'
   End If
   If (mxnode > 1) Call gsum(j)
   If (j > 0) Call warning(2,Real(j,wp),Real(mxnode,wp),0.0_wp)
@@ -545,8 +566,30 @@ Program dl_poly
 ! start-up time when forces are not recalculated
 
   Call gtime(timelp)
-  If (idnode == 0) Write(nrite,'(/,/,/,1x, &
-     & "time elapsed since job start: ", f12.3, " sec",/)') timelp
+  If (idnode == 0) &
+     Write(nrite,'(/,/,/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
+
+! Now you can run fast boy
+
+  If (l_fast) Call gsync(l_fast)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+  If (lsim) Then
+     If (l_vv) Then
+        Call w_md_vv()
+     Else
+        Call w_md_lfv()
+     End If
+  Else
+     If (lfce) Then
+        Call w_replay_historf()
+     Else
+        Call w_replay_history()
+     End If
+  End If
 
 #ifdef COMPILE_CUDA
 ! cuda: do the second stage of the cuda initialisations now that the
@@ -555,21 +598,6 @@ Program dl_poly
 ! Check for unimplemented functionality in CUDA port
   Call dl_poly_cuda_check_offload_conditions(keyfce, imcon)
 #endif
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-  If (lsim) Then
-     If (l_vv) Then
-        Call md_vv()
-     Else
-        Call md_lfv()
-     End If
-  Else
-     Call replay_history()
-  End If
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -608,12 +636,12 @@ Program dl_poly
            (imcon,rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
            chit,cint,chip,eta,strcon,strpmf,stress)
 
-! Produce summary of simulation
-
 #ifdef COMPILE_CUDA
 ! CK: This is probably a good place to finalise the cuda stuff:
   Call dl_poly_cuda_finalise()
 #endif
+
+! Produce summary of simulation
 
   Call statistics_result                &
            (rcut,lrdf,lprdf,lzdn,lpzdn, &
@@ -650,20 +678,78 @@ Program dl_poly
   If (mxnode > 1) Call gsync()
   Call exit_comms()
 
-! Create interfaces to md_step in either Verlet flavour
+! Create wrappers for the MD cycle in VV, LFV and replay history
 
 Contains
 
-  Subroutine md_vv()
-    Include 'md_vv.f90'
-  End Subroutine md_vv
+  Subroutine w_impact_option()
+    Include 'w_impact_option.f90'
+  End Subroutine w_impact_option
 
-  Subroutine md_lfv()
-    Include 'md_lfv.f90'
-  End Subroutine md_lfv
+  Subroutine w_calculate_forces()
+    Include 'w_calculate_forces.f90'
+  End Subroutine w_calculate_forces
 
-  Subroutine replay_history()
-    Include 'replay_history.f90'
-  End Subroutine replay_history
+  Subroutine w_refresh_mappings()
+    Include 'w_refresh_mappings.f90'
+  End Subroutine w_refresh_mappings
+
+  Subroutine w_at_start_vv()
+    Include 'w_at_start_vv.f90'
+  End Subroutine w_at_start_vv
+
+  Subroutine w_integrate_vv(isw)
+    Integer, Intent( In    ) :: isw ! used for vv stage control
+
+    Include 'w_integrate_vv.f90'
+  End Subroutine w_integrate_vv
+
+  Subroutine w_at_start_lfv()
+    Include 'w_at_start_lfv.f90'
+  End Subroutine w_at_start_lfv
+
+  Subroutine w_integrate_lfv()
+    Include 'w_integrate_lfv.f90'
+  End Subroutine w_integrate_lfv
+
+  Subroutine w_kinetic_options()
+    Include 'w_kinetic_options.f90'
+  End Subroutine w_kinetic_options
+
+  Subroutine w_statistics_report()
+    Include 'w_statistics_report.f90'
+  End Subroutine w_statistics_report
+
+  Subroutine w_write_options()
+    Include 'w_write_options.f90'
+  End Subroutine w_write_options
+
+  Subroutine w_refresh_output()
+    Include 'w_refresh_output.f90'
+  End Subroutine w_refresh_output
+
+  Subroutine w_md_vv()
+    Include 'w_md_vv.f90'
+  End Subroutine w_md_vv
+
+  Subroutine w_md_lfv()
+    Include 'w_md_lfv.f90'
+  End Subroutine w_md_lfv
+
+  Subroutine w_replay_history()
+    Logical,     Save :: newjb = .true.
+    Real( Kind = wp ) :: tmsh        ! tmst replacement
+    Integer           :: nstpe,nstph ! nstep replacements
+
+    Include 'w_replay_history.f90'
+  End Subroutine w_replay_history
+
+  Subroutine w_replay_historf()
+    Logical,     Save :: newjb = .true.
+    Real( Kind = wp ) :: tmsh        ! tmst replacement
+    Integer           :: nstpe,nstph ! nstep replacements
+
+    Include 'w_replay_historf.f90'
+  End Subroutine w_replay_historf
 
 End Program dl_poly

@@ -11,7 +11,7 @@
 ! STFC Daresbury Laboratory.
 
 Subroutine two_body_forces_cuda_helper(&
-     iatmb,iters,keyfce,rho,safe,&
+     iatmb,iters,keyfce,safe,&
      imcon,rcut,rvdw,alpha,epsq,stress,&
      engmet,virmet,engvdw,virvdw,engcpe_rl,vircpe_rl)
   Use kinds_f90
@@ -24,7 +24,6 @@ Subroutine two_body_forces_cuda_helper(&
   Implicit None
   Integer,           Intent(In   ) :: iatmb,iters,imcon,keyfce
   Real( Kind = wp ), Intent(In   ) :: rcut,rvdw,alpha,epsq
-  Real( Kind = wp),  Dimension(1:mxatms), Intent(In) :: rho
   Real( Kind = wp ), Intent(InOut) :: engmet,virmet,engvdw,virvdw,engcpe_rl,vircpe_rl
   Real( Kind = wp ), Dimension( 1:9 ),&
                      Intent(InOut) :: stress
@@ -111,7 +110,7 @@ Subroutine two_body_forces_cuda_helper(&
 
      If (ntpmet > 0) Then
         Call metal_forces_helper(&
-             i,xdf,ydf,zdf,rsqdf,rho,keypot,&
+             i,xdf,ydf,zdf,rsqdf,keypot,&
              engmetloc,virmetloc,stressloc,safe)
      End If
 
@@ -228,7 +227,7 @@ Subroutine two_body_forces                        &
   Real( Kind = wp ), Save :: factor_nz = 0.0_wp
 
   Logical           :: safe = .true., l_do_rdf
-  Integer           :: fail(1:2),i,j,k,limit
+  Integer           :: fail,i,j,k,limit
   Real( Kind = wp ) :: engcpe_rc,vircpe_rc,engcpe_rl,vircpe_rl, &
                        engcpe_ex,vircpe_ex,engcpe_fr,vircpe_fr, &
                        engcpe_nz,vircpe_nz,                     &
@@ -236,7 +235,6 @@ Subroutine two_body_forces                        &
                        engvdw,virvdw,engacc,viracc,tmp,buffer(0:14)
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: xdf,ydf,zdf,rsqdf
-  Real( Kind = wp ), Dimension( : ), Allocatable :: rho
 
 #ifdef COMPILE_CUDA
 ! CUDA-specific; vdw_forces code moved here to support the initialiser:
@@ -253,9 +251,8 @@ Subroutine two_body_forces                        &
 #endif
 
   fail=0
-  Allocate (xdf(1:mxlist),ydf(1:mxlist),zdf(1:mxlist),rsqdf(1:mxlist), Stat=fail(1))
-  If (ntpmet > 0) Allocate (rho(1:mxatms),                             Stat=fail(2))
-  If (Any(fail > 0)) Then
+  Allocate (xdf(1:mxlist),ydf(1:mxlist),zdf(1:mxlist),rsqdf(1:mxlist), Stat=fail)
+  If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'two_body_forces allocation failure, node: ', idnode
      Call error(0)
   End If
@@ -344,10 +341,10 @@ Subroutine two_body_forces                        &
      If (keyens >= 20) Call metal_lrc(imcon,rmet,elrcm,vlrcm)
 
 ! calculate local density in metals
-     Call metal_ld_compute             &
+     Call metal_ld_compute         &
           (imcon,rmet,elrcm,vlrcm, &
-          xdf,ydf,zdf,rsqdf,              &
-          rho,engden,virden,stress)
+          xdf,ydf,zdf,rsqdf,       &
+          engden,virden,stress)
   End If
 
 ! calculate coulombic forces, Ewald sum - fourier contribution
@@ -366,7 +363,7 @@ Subroutine two_body_forces                        &
           cuda_ilo, natms,&
           mxlist,mxatms,mxatdm,mxmet,ntpmet,ntpvdw,keyfce,imcon,&
           cell,xxx,yyy,zzz,list,ltype,             &
-          ltpmet,lstmet,vmet,dmet,rho,             &
+          ltpmet,lstmet,vmet,dmet,                 &
           mxgrid, mxvdw, ltpvdw, lstvdw, ls_vdw_c, &
           vvdw, gvdw, rvdw, ltg,                   &
           chge, rcut, alpha, epsq)
@@ -410,7 +407,7 @@ Subroutine two_body_forces                        &
 
      If (ntpmet > 0) Then
         Call metal_forces &
-       (i,rmet,xdf,ydf,zdf,rsqdf,rho,engacc,viracc,stress,safe)
+       (i,rmet,xdf,ydf,zdf,rsqdf,engacc,viracc,stress,safe)
 
         engmet=engmet+engacc
         virmet=virmet+viracc
@@ -573,9 +570,8 @@ Subroutine two_body_forces                        &
 
       If (l_do_rdf) numrdf = numrdf+1
 
-      Deallocate (xdf,ydf,zdf,rsqdf,   Stat=fail(1))
-      If (ntpmet > 0) Deallocate (rho, Stat=fail(2))
-      If (Any(fail > 0)) Then
+      Deallocate (xdf,ydf,zdf,rsqdf,   Stat=fail)
+      If (fail > 0) Then
          Write(nrite,'(/,1x,a,i0)') 'two_body forces deallocation failure, node: ', idnode
          Call error(0)
       End If

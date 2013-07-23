@@ -43,7 +43,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 \> {\tt imcon}   \> integer \> periodic boundary key (see Table \ref{imcon}) in last frame \\
 \> {\tt megatm}  \> integer \> number of atoms in simulation cell in last frame \\
 \> {\tt frame}   \> integer \> number configuration frames in file \\
-\> {\tt records} \> integer \> number of records in file \\
+\> {\tt records} \> integer \> number of records in file
 \end{tabbing}
 
 For timesteps greater than {\tt nstraj} the HISTORY file is
@@ -71,7 +71,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 {\bf record iv} \\
 \> {\tt cell(7)}  \> real    \> x component of $c$ cell vector \\
 \> {\tt cell(8)}  \> real    \> y component of $c$ cell vector \\
-\> {\tt cell(9)}  \> real    \> z component of $c$ cell vector \\
+\> {\tt cell(9)}  \> real    \> z component of $c$ cell vector
 \end{tabbing}
 This is followed by the configuration for the current timestep. i.e.
 for each atom in the system the following data are included:
@@ -94,7 +94,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 {\bf record d} only for {\tt keytrj} $>$ 1 \\
 \> {\tt fxx}    \> real    \> x component of force \\
 \> {\tt fyy}    \> real    \> y component of force \\
-\> {\tt fzz}    \> real    \> z component of force \\
+\> {\tt fzz}    \> real    \> z component of force
 \end{tabbing}
 Thus the data for each atom is a minimum of two records and a maximum
 of 4.
@@ -125,7 +125,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 {\bf record 2} \\
 \> {\tt megatm}  \> integer \> number of atoms in simulation cell in last frame \\
 \> {\tt frame}   \> integer \> number configuration frames in file \\
-\> {\tt records} \> integer \> number of records in file \\
+\> {\tt records} \> integer \> number of records in file
 \end{tabbing}
 
 For timesteps greater than {\tt nstmsd} the MSDTMP file is
@@ -139,7 +139,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 \> {\tt nstep}    \> integer \> the current time-step \\
 \> {\tt megatm}   \> integer \> number of atoms in simulation cell (again) \\
 \> {\tt tstep}    \> real    \> integration timestep (ps) \\
-\> {\tt time}     \> real    \> elapsed simulation time (ps) \\
+\> {\tt time}     \> real    \> elapsed simulation time (ps)
 \end{tabbing}
 This is followed by the configuration for the current timestep. i.e.
 for each atom in the system the following data are included:
@@ -149,7 +149,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 \> {\tt atmnam}           \> a8      \> atomic label \\
 \> {\tt iatm}             \> integer \> atom index \\
 \> $\sqrt{{\tt MSD}(t)}$  \> real    \> square root of the atomic mean square displacements (in \AA) \\
-\> T$_{mean}$             \> real    \> atomic mean temperature (in Kelvin) \\
+\> T$_{mean}$             \> real    \> atomic mean temperature (in Kelvin)
 \end{tabbing}
 
 \subsection{The DEFECTS File}
@@ -178,7 +178,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 {\bf record 2} \\
 \> {\tt rdef}    \> real    \> site-interstitial cutoff (\AA) in last frame \\
 \> {\tt frame}   \> integer \> number configuration frames in file \\
-\> {\tt records} \> integer \> number of records in file \\
+\> {\tt records} \> integer \> number of records in file
 \end{tabbing}
 
 For timesteps greater than {\tt nsdef} the DEFECTS file is
@@ -212,7 +212,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 {\bf record v} \\
 \> {\tt cell(7)}       \> real    \> x component of $c$ cell vector \\
 \> {\tt cell(8)}       \> real    \> y component of $c$ cell vector \\
-\> {\tt cell(9)}       \> real    \> z component of $c$ cell vector \\
+\> {\tt cell(9)}       \> real    \> z component of $c$ cell vector
 \end{tabbing}
 This is followed by the {\tt ni} interstitials for the current
 timestep, as each interstitial has the following data lines:
@@ -224,7 +224,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 {\bf record b} \\
 \> {\tt xxx}    \> real    \> x coordinate \\
 \> {\tt yyy}    \> real    \> y coordinate \\
-\> {\tt zzz}    \> real    \> z coordinate \\
+\> {\tt zzz}    \> real    \> z coordinate
 \end{tabbing}
 This is followed by the {\tt nv} vacancies for the current
 timestep, as each vacancy has the following data lines:
@@ -236,7 +236,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 {\bf record b} \\
 \> {\tt xxx}    \> real    \> x coordinate from REFERENCE \\
 \> {\tt yyy}    \> real    \> y coordinate from REFERENCE \\
-\> {\tt zzz}    \> real    \> z coordinate from REFERENCE \\
+\> {\tt zzz}    \> real    \> z coordinate from REFERENCE
 \end{tabbing}
 
 \subsection{The RSDDAT File}
@@ -265,7 +265,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 {\bf record 2} \\
 \> {\tt rdef}    \> real    \> displacement qualifying cutoff (\AA) in last frame \\
 \> {\tt frame}   \> integer \> number configuration frames in file \\
-\> {\tt records} \> integer \> number of records in file \\
+\> {\tt records} \> integer \> number of records in file
 \end{tabbing}
 
 For timesteps greater than {\tt nsrsd} the RSDDAT file is
@@ -295,7 +295,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 {\bf record v} \\
 \> {\tt cell(7)}       \> real    \> x component of $c$ cell vector \\
 \> {\tt cell(8)}       \> real    \> y component of $c$ cell vector \\
-\> {\tt cell(9)}       \> real    \> z component of $c$ cell vector \\
+\> {\tt cell(9)}       \> real    \> z component of $c$ cell vector
 \end{tabbing}
 This is followed by the {\tt nrsd} displacements for the current
 timestep, as each atom has the following data lines:
@@ -308,7 +308,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 {\bf record b} \\
 \> {\tt xxx}    \> real    \> x coordinate \\
 \> {\tt yyy}    \> real    \> y coordinate \\
-\> {\tt zzz}    \> real    \> z coordinate \\
+\> {\tt zzz}    \> real    \> z coordinate
 \end{tabbing}
 
 \subsection{The CFGMIN File}
@@ -437,7 +437,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 \> {\tt beta }     \> angle between $c$ and $a$ cell vectors (in degrees) \\
 \> {\tt gamma }    \> angle between $a$ and $b$ cell vectors (in degrees) \\
 \> {\tt vir\_pmf}  \> PMF constraint\index{constraints!PMF} contribution to the virial \\
-\> {\tt press}     \> pressure (in kilo-atmospheres) \\
+\> {\tt press}     \> pressure (in kilo-atmospheres)
 \end{tabbing}
 
 \noindent {\bf Note:} The total internal energy of the system
@@ -580,7 +580,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 \> {\tt cfgname} \> a72     \> configuration name \\
 {\bf record 2} \\
 \> {\tt ntprdf}  \> integer \> number of different RDF pairs tabulated in file \\
-\> {\tt mxgrdf}  \> integer \> number of grid points for each RDF pair\\
+\> {\tt mxgrdf}  \> integer \> number of grid points for each RDF pair
 \end{tabbing}
 There follow the data for each individual RDF, i.e. {\tt ntprdf}
 times.  The data supplied are as follows:
@@ -591,8 +591,9 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 \> {\tt atname 2} \> a8   \> second atom name \\
 {\bf following records} ({\em mxgrdf} records) \\
 \> {\tt radius}   \> real \> interatomic distance (\AA) \\
-\> {\tt g(r)}     \> real \> RDF at given radius \\
+\> {\tt g(r)}     \> real \> RDF at given radius
 \end{tabbing}
+
 Note the RDFDAT file is optional and appears when the {\bf print
 rdf} option is specified in the CONTROL file.
 
@@ -607,7 +608,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 \> {\tt cfgname} \> a72    \> configuration name \\
 {\bf record 2} \\
 \> {\tt ntpatm}  \> integer \> number of unique atom types profiled in file \\
-\> {\tt mxgrdf}  \> integer \> number of grid points in the Z-density function \\
+\> {\tt mxgrdf}  \> integer \> number of grid points in the Z-density function\
 \end{tabbing}
 There follow the data for each individual Z-density function, i.e.
 {\tt ntpatm} times. The data supplied are as follows:
@@ -617,8 +618,9 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 \> {\tt atname}  \> a8      \> unique atom name \\
 {\bf following records} ({\em mxgrdf} records) \\
 \> {\tt z}       \> real    \> distance in z direction (\AA) \\
-\> $\rho(z)$     \> real    \> Z-density at given height {\tt z} \\
+\> $\rho(z)$     \> real    \> Z-density at given height {\tt z}
 \end{tabbing}
+
 Note the ZDNDAT file is optional and appears when the {\bf print
 rdf} option is specified in the CONTROL file.
 
@@ -634,7 +636,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 {\bf record 1} \\
 \> {\tt cfgname} \> a72 \> configuration name \\
 {\bf record 2} \\
-\> {\tt string}  \> a8   \> energy units \\
+\> {\tt string}  \> a8   \> energy units
 \end{tabbing}
 
 {\bf Data records}\\ Subsequent lines contain the instantaneous
@@ -712,5 +714,5 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt cell(3)} \> real   \> z component of $a$ cell vector \\
 \> {\tt cell(4)} \> real   \> x component of $b$ cell vector \\
 \> {\tt ...} \> real \> ... \\
-\> {\tt cell(9)} \> real   \> z component of $c$ cell vector \\
+\> {\tt cell(9)} \> real   \> z component of $c$ cell vector
 \end{tabbing}

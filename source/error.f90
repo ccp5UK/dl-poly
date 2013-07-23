@@ -48,7 +48,7 @@ Subroutine error(kode)
 
      Else If (kode ==    7) Then
 
-        Write(nrite,'(/,1x,a)') 'error - selected external field incompatible with selected enssemble (NVE only!!!)'
+        Write(nrite,'(/,1x,a)') 'error - selected external field incompatible with selected ensemble (NVE only!!!)'
 
      Else If (kode ==    8) Then
 
@@ -676,7 +676,7 @@ Subroutine error(kode)
 
      Else If (kode ==  456) Then
 
-        Write(nrite,'(/,1x,a)') 'error - external field zpis-ton is applied to a layer with at least one frozen particle'
+        Write(nrite,'(/,1x,a)') 'error - external field xpis-ton is applied to a layer with at least one frozen particle'
 
      Else If (kode ==  461) Then
 

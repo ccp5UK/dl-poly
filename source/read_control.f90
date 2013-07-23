@@ -165,8 +165,8 @@ Subroutine read_control                                &
   leql   = .true.
 
 ! switch for pseudo thermostat (not applied), type of scaling
-! (default 0 where 0 - Langevin+direct, 1 - Langevin and 2 - direct) and
-! minimum width of the thermostatted boundaries in Angs
+! (default 0 where 0 - Langevin+direct, 1 - Langevin, 2 - gauss, 3 - direct )
+! and minimum width of the thermostatted boundaries in Angs
 ! minimum temperature of the thermostat
 
   lpse   = .false.
@@ -256,8 +256,8 @@ Subroutine read_control                                &
 
 ! proceed normal simulation
 
-  lsim = .true.   ! don't replay history
-  lfce = .false.  ! don't recalculate forces based on history positions
+  lsim = .true.  ! don't replay history
+  lfce = .false. ! don't recalculate forces based on history positions
 
 ! default switch for calculation of rdfs, default number of steps
 ! when to be collected and default switch for printing them

@@ -192,7 +192,7 @@ read\_control \\
 vdw\_generate vdw\_table\_read vdw\_direct\_fs\_generate \\
 metal\_generate metal\_table\_read metal\_table\_derivatives \\
 tersoff\_generate dihedrals\_14\_check read\_field \\
-check\_config scale\_config write\_config \\
+check\_config origin\_config scale\_config write\_config \\
 trajectory\_write system\_expand \\
 rigid\_bodies\_tags rigid\_bodies\_coms rigid\_bodies\_widths \\
 rigid\_bodies\_setup \\
@@ -240,6 +240,11 @@ xscale core\_shell\_kinetic regauss\_temperature \\
 z\_density\_collect statistics\_collect \\
 system\_revive \\
 rdf\_compute z\_density\_compute statistics\_result \\
+\\
+w\_impact\_option w\_write\_options w\_calculate\_forces w\_refresh\_mappings \\
+w\_kinetic\_options w\_statistics\_report w\_refresh\_output \\
+w\_replay\_history w\_replay\_historf \\
+\\
 dl\_poly}
 
 \item {\bf VV specific} files in the {\em source/VV} directory::
@@ -258,7 +263,7 @@ nve\_1\_vv  nvt\_e1\_vv \\
 nvt\_l1\_vv nvt\_a1\_vv nvt\_b1\_vv nvt\_h1\_vv nvt\_g1\_vv \\
 npt\_l1\_vv npt\_b1\_vv npt\_h1\_vv npt\_m1\_vv \\
 nst\_l1\_vv nst\_b1\_vv nst\_h1\_vv nst\_m1\_vv \\
-md\_vv}
+w\_at\_start\_vv w\_integrate\_vv  w\_md\_vv}
 
 \item {\bf LFV specific} files in the {\em source/LFV} directory::
 
@@ -272,7 +277,7 @@ nst\_l0\_lfv nst\_b0\_lfv nst\_h0\_lfv nst\_m0\_lfv \\
 nvt\_l1\_lfv nvt\_a1\_lfv nvt\_b1\_lfv nvt\_h1\_lfv nvt\_g1\_lfv \\\
 npt\_l1\_lfv npt\_b1\_lfv npt\_h1\_lfv npt\_m1\_lfv \\
 nst\_l1\_lfv nst\_b1\_lfv nst\_h1\_lfv nst\_m1\_lfv \\
-md\_lfv}
+w\_at\_start\_lfv w\_integrate\_lfv  w\_md\_lfv}
 
 \item {\bf SERIAL specific} files in the {\em source/SERIAL} directory::
 
@@ -284,13 +289,11 @@ as possible.  The further down the list the file, the more dependent
 it is on the files listed above it.  The same hierarchal order is
 followed in the makefiles (see Appendix \ref{makefiles}).
 
-It is worth noting that the files {\sc replay\_history.f90 md\_vv.f90 md\_lfv mpif.h}
-are in fact inclusion files rather than strict FORTRAN90 \index{FORTRAN90}
-type of files.  Should this prove to be a problem and a compiler cannot handle
-this, then they can be incorporated directly in the routines
-where they are used, i.e. {\sc replay\_history.f90 md\_vv.f90 md\_lfv}
-in {\sc dl\_poly.f90} and {\sc  mpif.h} in {\sc comms\_module.f90},
-and then compilation should be attempted.
+It is worth noting that the all {\sc w\_*.f90} files in {\em source} and
+{\em source/*V} are in fact inclusion files that are wrapped as routines
+within {\sc dl\_poly}.  This wrapping up of functional calls is done to
+shorten the length of the code by reusing general functional sequences
+where possible.
 
 \subsection{Module Files}
 

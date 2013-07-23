@@ -401,7 +401,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf metal direct}                           \> enforces the direct calculation of metal interactions defined \\
 \>                                              \> by explicit potential forms, i.e. it will not work for metal \\
-\>                                              \> alloy systems using the EAM or EEAM (TABEAM) \\
+\>                                              \> alloy systems using the EAM, EEAM, 2BEAM or 2BEEAM (TABEAM) \\
 \>                                              \> \\
 \> {\bf metal sqrtrho}                          \> swiches the TABEAM default of reading embedding functions, \\
 \>                                              \> $F(\rho)$, as interpolated over densities, $\rho$, to as \\
@@ -464,6 +464,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf no vdw}                                 \> ignore short range (non-bonded)\index{potential!non-bonded} interactions in simulation \\
 \>                                              \> \\
+\> {\bf no vom}                                 \> ignore Centre of Mass momentum removal during the simulation \\
+\>                                              \> \\
 \> {\bf optim}ise {\em string} $f$              \> minimise the system configuration at start during equilibration \\
 \>                                              \> using conjugate gradient method (CGM) with respect to the \\
 \>                                              \> criterion, {\em string}, and tolerance, $f$, where the criterion can only \\
@@ -483,9 +485,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf print zden}                             \> print Z-density profile \\
 \>                                              \> \\
 \> {\bf pseudo} {\em string} $f_{1}~f_{2}$      \> attach a pseudo thermal bath with a thermostat of type \\
-\>                                              \> {\em string}, where string can only be {\em langevin} or {\em direct} \\
-\>                                              \> (if neither is specified both are applied in order \\
-\>                                              \> {\em langevin$\rightarrow$direct}), $f_{1}$ is the thickness of the thermostat \\
+\>                                              \> {\em string}, where string can only be {\em langevin}, {\em gauss} or {\em direct} \\
+\>                                              \> (if none is specified then {\em langevin$\rightarrow$direct} are applied \\
+\>                                              \> successively), $f_{1}$ is the thickness of the thermostat \\
 \>                                              \> layers, attached on the inside of the MD cell boundaries, \\
 \>                                              \> in units of \AA~~(default $f{1}~=~2$ \AA), $f_{2}$ is the \\
 \>                                              \> thermostat temperature in Kelvin ($f{2}~\ge~1$), which \\
@@ -506,9 +508,13 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> every $n$ steps during equilibration \\
 \>                                              \> (with respect to the last equilibration step) \\
 \>                                              \> \\
-\> {\bf replay}                                 \> abort simulation and replay HISTORY to recalculate structural \\
+\> {\bf replay} (history)                       \> abort simulation and replay HISTORY to recalculate structural \\
 \>                                              \> properties such as RDFs, z-density profiles, defects and \\
 \>                                              \> displacements trajectories (execution halts if no property is specified) \\
+\>                                              \> \\
+\> {\bf replay} (history) {\bf force}           \> abort simulation and replay the HISTORF file (a HISTORY copy) with full \\
+\>                                              \> force evaluation driven by FIELD (different from the one used for the \\
+\>                                              \> HISTORF generation) \\
 \>                                              \> \\
 \> {\bf restart}                                \> restart job from end point of previous run \\
 \>                                              \> (i.e. continue current simulation, REVOLD required) \\
@@ -586,7 +592,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> every $f$ timesteps (default $f~=~1$) \\
 \>                                              \> \\
 \> {\bf zero}                                   \> perform zero temperature MD run (reset target system \\
-\>                                              \> temperature $10$ Kelvin) \\
+\>                                              \> temperature $10$ Kelvin)
 \end{tabbing}
 
 \noindent {\bf Note} that in some cases additional keywords, shown in
@@ -622,7 +628,7 @@ exclusive} alternatives) are {\bf mandatory}:
 It is compulsory in all circumstances as all \D algorithms are
 directly or indirectly dependent on it.}
 \item {\bf temp} or {\bf zero}: specifying the system temperature
-(not mutually exclusive but if {\bf temp} has to preceed
+(not mutually exclusive but if {\bf temp} has to proceed
 {\bf zero} in CONTROL if {\bf zero} is needed.  {\bf Use only one
 instance of these in CONTROL!}  If a "dry run" is performed (see
 below) these can be omitted.
@@ -707,7 +713,7 @@ simulation system size.
 
 \item The starting options for a simulation are governed by the
 keyword {\bf restart}.  If this is {\bf not} specified in the
-control file, the simulation will start as new.  When specifed, it
+control file, the simulation will start as new.  When specified, it
 will continue a previous simulation ({\bf restart}) provided all
 needed restart files are in place and not corrupted.  If they are
 not in place or are found corrupted, it will start a new simulation
@@ -832,9 +838,9 @@ the structural changes in the core of the simulated system as the
 the MD cell boundaries of the system are coupled to a thermal bath.
 
 The thermal bath can be used with two types of temperature scaling
-algorithms - {\bf(i)} Langevin (stochastic thermostat) and {\bf(ii)}
-Direct (direct thermostat).  If no type is specified then the
-Langevin temperature control algorithm is applied first followed the
+algorithms - {\bf(i)} Langevin (stochastic thermostat), {\bf(i)} Gauss
+and {\bf(iii)} Direct (direct thermostat).  If no type is specified then
+the Langevin temperature control algorithm is applied first followed the
 Direct one.  The user is also required to specify the width of the
 pseudo thermostat, $f_{1}$ (in \AA), which must be larger than 2~\AA~
 and less than or equal to a quarter of minimum width of the MD cell.
@@ -899,6 +905,14 @@ infinite-like environment surrounding the MD cell.  The thermostat
 width matters as the more violent the events on the inside of the MD
 cell, the bigger width may be needed in order to ensure safe
 dissipation of the excess kinetic energy.
+
+\item {\bf pseudo Gauss}
+
+\begin{itemize}
+\item Rescale the kinetic energy of the thermostat bath so that
+particles within have Gaussian distributed kinetic energy with
+respect to the target temperature.
+\end{itemize}
 
 \item {\bf pseudo direct}
 
@@ -1081,8 +1095,8 @@ avoid simulations crash (by controlled termination) is to use the
 {\bf densvar} $f$ option.  In the {\sc set\_bounds} subroutine \D
 makes assumptions at the beginning of the simulation and corrects
 the lengths of bonded-like interaction lists arrays ({\tt mxshl,
-mxcons, mxteth, mxbond, mxangl, mxdihd, mxinv}) as well as the
-lengths of link-cell ({\tt mxlist}) and domain ({\tt mxatms})
+mxcons, mxrgd, mxteth, mxbond, mxangl, mxdihd, mxinv}) as well as the
+lengths of link-cell ({\tt mxlist}) and domain ({\tt mxatms, mxatdm})
 lists arrays when the option is activated with $f > 0$.  Greater
 values of $f$ will correspond to allocation bigger global arrays
 and larger memory consumption by \D during the simulation.
@@ -1201,6 +1215,27 @@ results in an unacceptable memory overhead.
 \end{itemize}
 \end{enumerate}
 
+\item The {\bf no vom} option will trigger a default bypass of
+the {\sc getvom} routine which will return zero and thus no COM
+removal will happen.  {\bf Note that this will lead to COM momentum
+accumulation for many though not all ensembles!}.  Such accumulation
+will propagate to the generation of flow in the MD cell and ultimately
+suppress the thermal motion of the particles in the system, leading to
+the so called "frozen ice cube effect"!
+
+\item The {\bf replay force} option will attempt to open a renamed
+HISTORY as HISTORF and instead following any integration scheme specified
+in CONTROL read the positions as integration outcomes and proceed with
+the usual MD cycle.  There are a couple of restrictions that may lead to
+failures of this feature's application.
+\begin{itemize}
+\item The CONFIG file at (re)start must be the same as the frame
+in HOSTORF that CONTROL (REVOLD) attempts to (re)start from.
+
+\item If any itwo HISTROF consecutive frames are too far apart in
+time from each other then domain information reallocation follow-up
+may break when the feature is used in parallel.
+\end{itemize}
 \end{enumerate}
 
 \noindent Users are advised to study the example CONTROL files
@@ -1275,9 +1310,8 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 5}   \>         \> omitted if {\tt imcon} = 0 \\
 \> {\tt cell(7)} \> real    \> x component of $c$ cell vector \\
 \> {\tt cell(8)} \> real    \> y component of $c$ cell vector \\
-\> {\tt cell(9)} \> real    \> z component of $c$ cell vector \\
+\> {\tt cell(9)} \> real    \> z component of $c$ cell vector
 \end{tabbing}
-
 \noindent {\bf Note} that {\bf record 2} may contain more information
 apart from the mandatory as listed above.  If the file has been
 produced by \D then it also contains other items intended to help
@@ -1315,9 +1349,8 @@ X\=XXXXXXX\=XXXXXX\=XXXXXX\kill
 {\bf record iv}  \>         \> included only if {\tt levcfg} $>1$ \\
 \> {\tt fxx}     \> real    \> x component of force \\
 \> {\tt fyy}     \> real    \> y component of force \\
-\> {\tt fzz}     \> real    \> z component of force \\
+\> {\tt fzz}     \> real    \> z component of force
 \end{tabbing}
-
 \noindent {\bf Note} that on {\bf record i} only the atom name is
 strictly mandatory, any other items are not read by \C but may be
 added to aid alternative uses of the file, for example alike DL\_POLY
@@ -1489,9 +1522,8 @@ X\=XXXXXXXXXX\=XXXXX\=\kill
 {\bf record 1} \\
 \> header      \> a100 \> field file header \\
 {\bf record 2}\\
-\> {\bf units} \> a40  \> Unit of energy used for input and output \\
+\> {\bf units} \> a40  \> Unit of energy used for input and output
 \end{tabbing}
-
 \noindent The energy units on the {\bf units} directive are
 described by additional keywords\index{units!energy}:
 \begin{description}
@@ -1562,7 +1594,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt weight} \> real    \> atomic site mass \\
 \> {\tt chge}   \> real    \> atomic site charge \\
 \> {\tt nrept}  \> integer \> repeat counter \\
-\> {\tt ifrz}   \> integer \> `frozen' atom (if {\tt ifrz}$~>~0$) \\
+\> {\tt ifrz}   \> integer \> `frozen' atom (if {\tt ifrz}$~>~0$)
 \end{tabbing}
 The integer {\tt nrept} need not be specified if the atom/site is
 not frozen (in which case a value of 1 is assumed.)  A number
@@ -1579,7 +1611,7 @@ subsequent {\em n} records contains:
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> index 1 ($i$) \> integer \> site index of core \\
 \> index 2 ($j$) \> integer \> site index of shell \\
-\> spring  ($k$) \> real    \> force constant of core-shell spring \\
+\> spring  ($k$) \> real    \> force constant of core-shell spring
 \end{tabbing}
 The spring potential is
 \begin{equation}
@@ -1608,7 +1640,7 @@ Each of the following {\em n} records contains:
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> index 1    \> integer \> first atomic site index \\
 \> index 2    \> integer \> second atomic site index \\
-\> bondlength \> real    \> constraint bond\index{constraints!bond} length \\
+\> bondlength \> real    \> constraint bond\index{constraints!bond} length
 \end{tabbing}
 This directive (and associated data records) need not be specified
 if the molecule contains no constraint
@@ -1625,7 +1657,7 @@ where {\em n1} is the number of sites in the first unit.  The subsequent
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> index      \> integer \> atomic site index \\
-\> weight     \> real    \> site weighting \\
+\> weight     \> real    \> site weighting
 \end{tabbing}
 \item {\bf pmf unit {\em n2}} \\
 where {\em n2} is the number of sites in the second unit.  The subsequent
@@ -1633,7 +1665,7 @@ where {\em n2} is the number of sites in the second unit.  The subsequent
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> index      \> integer \> atomic site index \\
-\> weight     \> real    \> site weighting \\
+\> weight     \> real    \> site weighting
 \end{tabbing}
 \end{enumerate}
 This directive (and associated data records) need not be specified
@@ -1672,7 +1704,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> site 2 \> integer \> second site atomic index \\
 \> site 3 \> integer \> third site atomic index \\
 \> .. \> .. \> {\em etc.} \\
-\> site m \> integer \> m'th site atomic index \\
+\> site m \> integer \> m'th site atomic index
 \end{tabbing}
 Up to 15 sites can be specified on the first record.  Additional records
 can be used if necessary.  Up to 16 sites are specified per record thereafter.
@@ -1690,7 +1722,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> tether key    \> a4      \> potential key, see Table \ref{tether-table} \\
 \> index 1 ($i$) \> integer \> atomic site index \\
 \> variable 1    \> real    \> potential parameter, see Table \ref{tether-table} \\
-\> variable 2    \> real    \> potential parameter, see Table \ref{tether-table} \\
+\> variable 2    \> real    \> potential parameter, see Table \ref{tether-table}
 \end{tabbing}
 The meaning of these variables is given in Table
 \ref{tether-table}.
@@ -1740,7 +1772,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> variable 1    \> real    \> potential parameter, see Table \ref{bond-table} \\
 \> variable 2    \> real    \> potential parameter, see Table \ref{bond-table} \\
 \> variable 3    \> real    \> potential parameter, see Table \ref{bond-table} \\
-\> variable 4    \> real    \> potential parameter, see Table \ref{bond-table} \\
+\> variable 4    \> real    \> potential parameter, see Table \ref{bond-table}
 \end{tabbing}
 The meaning of these variables is given in Table \ref{bond-table}.
 
@@ -1826,7 +1858,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> variable 1    \> real    \> potential parameter, see Table \ref{angle-table} \\
 \> variable 2    \> real    \> potential parameter, see Table \ref{angle-table} \\
 \> variable 3    \> real    \> potential parameter, see Table \ref{angle-table} \\
-\> variable 4    \> real    \> potential parameter, see Table \ref{angle-table} \\
+\> variable 4    \> real    \> potential parameter, see Table \ref{angle-table}
 \end{tabbing}
 The meaning of these variables is given in Table
 \ref{angle-table}.
@@ -1926,7 +1958,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> variable 4    \> real    \> 1-4 electrostatic interaction scale factor \\
 \> variable 5    \> real    \> 1-4 van der Waals\index{potential!van der Waals} interaction scale factor \\
 \> variable 6    \> real    \> fourth potential parameter, see Table \ref{dihedral-table} \\
-\> variable 7    \> real    \> fifth potential parameter, see Table \ref{dihedral-table} \\
+\> variable 7    \> real    \> fifth potential parameter, see Table \ref{dihedral-table}
 \end{tabbing}
 The meaning of the variables 1-3,6-7 is given in Table
 \ref{dihedral-table}.  The variables 4 and 5 specify the scaling
@@ -2002,7 +2034,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> index 4 ($l$) \> integer \> fourth atomic site index \\
 \> variable 1    \> real    \> potential parameter, see Table \ref{inversion-table} \\
 \> variable 2    \> real    \> potential parameter, see Table \ref{inversion-table} \\
-\> variable 3    \> real    \> potential parameter, see Table \ref{inversion-table} \\
+\> variable 3    \> real    \> potential parameter, see Table \ref{inversion-table}
 \end{tabbing}
 The meaning of the variables 1-2 is given in Table
 \ref{inversion-table}.
@@ -2090,7 +2122,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> variable 2   \> real \> potential parameter, see Table \ref{vdw-table} \\
 \> variable 3   \> real \> potential parameter, see Table \ref{vdw-table} \\
 \> variable 4   \> real \> potential parameter, see Table \ref{vdw-table} \\
-\> variable 5   \> real \> potential parameter, see Table \ref{vdw-table} \\
+\> variable 5   \> real \> potential parameter, see Table \ref{vdw-table}
 \end{tabbing}
 The variables pertaining to each potential are described in Table
 \ref{vdw-table}.
@@ -2186,7 +2218,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> variable 6   \> real \> potential parameter, see Table \ref{metal-table} \\
 \> variable 7   \> real \> potential parameter, see Table \ref{metal-table} \\
 \> variable 8   \> real \> potential parameter, see Table \ref{metal-table} \\
-\> variable 9   \> real \> potential parameter, see Table \ref{metal-table} \\
+\> variable 9   \> real \> potential parameter, see Table \ref{metal-table}
 \end{tabbing}
 The variables pertaining to each potential are described in Table
 \ref{metal-table}.
@@ -2204,6 +2236,12 @@ key & potential type & \multicolumn{5}{c|}{Variables (1-5,6-9)}& functional form
 tabulated potential \\
            &                 &         &         &         &     &          & \\
 {\bf eeam} & EEAM            &         &         &         &     &          &
+tabulated potential \\
+           &                 &         &         &         &     &          & \\
+{\bf 2bea} & 2BEAM           &         &         &         &     &          &
+tabulated potential \\
+           &                 &         &         &         &     &          & \\
+{\bf 2bee} & 2BEEAM          &         &         &         &     &          &
 tabulated potential \\
            &                 &         &         &         &     &          & \\
 {\bf fnsc} & Finnis-Sinclair & $c_{0}$ & $c_{1}$ & $c_{2}$ & $c$ & $A$      &
@@ -2240,7 +2278,7 @@ in the following manner:
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> atmnam 1     \> a8   \> first atom type \\
-\> atmnam 2     \> a8   \> second atom type \\
+\> atmnam 2     \> a8   \> second atom type
 \end{tabbing}
 
 By default in \C and \D every {\bf vdw} and {\bf met}
@@ -2316,7 +2354,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> ... \> ... \> ... \\
 \> ... \> ... \> ... \\
 {\bf cross term $n(n+1)/2$ : record $2n+n(n+1)/2$} \\
-\> ... \> ... \> ... \\
+\> ... \> ... \> ...
 \end{tabbing}
 The variables pertaining to each potential are described in Table
 \ref{tersoff-table}.
@@ -2363,7 +2401,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> variable 2     \> real \> potential parameter, see Table \ref{tbp-table} \\
 \> variable 3     \> real \> potential parameter, see Table \ref{tbp-table} \\
 \> variable 4     \> real \> potential parameter, see Table \ref{tbp-table} \\
-\> variable 5     \> real \> cutoff range for this potential (\AA) \\
+\> variable 5     \> real \> cutoff range for this potential (\AA)
 \end{tabbing}
 The variables pertaining to each potential are described in Table
 \ref{tbp-table}.
@@ -2426,7 +2464,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> key            \> a4   \> potential key, see Table \ref{fbp-table} \\
 \> variable 1     \> real \> potential parameter, see Table \ref{fbp-table} \\
 \> variable 2     \> real \> potential parameter, see Table \ref{fbp-table} \\
-\> variable 3     \> real \> cutoff range for this potential (\AA) \\
+\> variable 3     \> real \> cutoff range for this potential (\AA)
 \end{tabbing}
 The variables pertaining to each potential are described in Table
 \ref{fbp-table}.
@@ -2478,7 +2516,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> variable 1    \> real    \> potential parameter, see Table \ref{external-field-table} \\
 \> variable 2    \> real    \> potential parameter, see Table \ref{external-field-table} \\
 \> variable 3    \> real    \> potential parameter, see Table \ref{external-field-table} \\
-\> variable 4    \> real    \> potential parameter, see Table \ref{external-field-table} \\
+\> variable 4    \> real    \> potential parameter, see Table \ref{external-field-table}
 \end{tabbing}
 The variables pertaining to each field potential are described
 in Table \ref{external-field-table}.
@@ -2502,7 +2540,7 @@ key & potential type & \multicolumn{4}{c|}{Variables (1-4)} & functional form\da
 $\vek{F} = q \; \vek{E}$ \\
            &                     &         &         &         &               & \\
 {\bf oshr} & Oscillating Shear   & $A$     & $n$     &         &               &
-$\vek{F}_x = A \; \cos(2 n\pi~z/L_{z})$ \\
+$\vek{F}_x = A \; \cos(2 n\pi . z/L_{z})$ \\
            &                     &         &         &         &               & \\
 {\bf shrx} & Continuous Shear    & $A$     & $z_{0}$ &         &               &
 $\vek{v}_x = \frac{A}{2} \frac{|z|}{z}~:~|z|~>~z_{0}$ \\
@@ -2517,7 +2555,11 @@ $\vek{F} = q \; (\vek{v} \times \vek{H})$ \\
 $\vek{F} = A \; (R_{0} - r)^{-n}~:~r > R_{\rm cut}$ \\
            &                     &       &           &         &               & \\
 {\bf zbnd} & Repulsive Wall      & $A$   & $z_{0}$   & $p$     &               &
-$\vek{F} = A \; (z_{0} - z) ~:~p \; z > p \; z_{0}$ \\
+$\vek{F} = A \; (z_{0} - z) ~:~p . z > p . z_{0}$ \\
+           &                     &       &           &         &               & \\
+{\bf xpis} & X-Piston & $i^{global}_{index}$ & $j^{global}_{index}$ & $P$ (k-atm) & &
+$\vek{F}_{x} = \frac{\textrm{$P$} . \vek{\textrm{Area}}(\perp\textrm{X-}dir)}
+{\left[\sum_{k=i}^{j}m_{k}\right] \textrm{/} m_{k}}~:~\forall~k=i,..,j $ \\
            &                     &       &           &         &               & \\
 \hline
 \end{tabular}
@@ -2605,9 +2647,9 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 11}: \\
 \> {\tt stress} \>  atomic stress (9) \\
 {\bf record 12}: (Optional) \\
-\> {\tt rdf}    \> RDF array ({\tt mxgrdf}$\times${\tt mxrdf})\\
+\> {\tt rdf}    \> RDF array ({\tt mxgrdf}$\times${\tt mxrdf}) \\
 {\bf record 13}: (Optional) \\
-\> {\tt zdens}  \> Z-density array ({\tt mxgrdf}$\times${\tt mxatyp})\\
+\> {\tt zdens}  \> Z-density array ({\tt mxgrdf}$\times${\tt mxatyp})
 \end{tabbing}
 
 \subsubsection{Further Comments}
@@ -2647,8 +2689,9 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 2} \\
 \> {\tt delpot} \> real    \> mesh resolution in \AA~(${\tt delpot} = \frac{\tt cutpot}{{\tt ngrid}-4}$) \\
 \> {\tt cutpot} \> real    \> cutoff used to define tables in \AA \\
-\> {\tt ngrid}  \> integer \> number of grid points in tables \\
+\> {\tt ngrid}  \> integer \> number of grid points in tables
 \end{tabbing}
+
 The subsequent records define each tabulated potential in turn,
 {in the order indicated by the specification in the FIELD file}.
 Each potential is defined by a header record and a set of data
@@ -2668,7 +2711,7 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 \> {\tt data 1} \> real \> data item 1 \\
 \> {\tt data 2} \> real \> data item 2 \\
 \> {\tt data 3} \> real \> data item 3 \\
-\> {\tt data 4} \> real \> data item 4 \\
+\> {\tt data 4} \> real \> data item 4
 \end{tabbing}
 
 \subsubsection{Further Comments}
@@ -2700,25 +2743,6 @@ analytic form) describing the EAM\index{potential!EAM} or EEAM\index{potential!E
 metal interactions in the MD system.  This file is read by the subroutine
 {\sc metal\_table\_read} (see Chapter \ref{source}).
 
-The EAM potential for an $n$ component metal alloy requires the
-specification of $n$ electron density functions (one for each atom type)
-and $n$ embedding functions (again one for each atom type), and
-$n(n+1)/2$ {\em cross} pair potential functions.  This makes $n(n+5)/2$
-functions in total.  {\bf Note} that the option of using EAM\index{potential!EAM}
-interactions must also be {\em explicitly} declared in the FIELD file
-so that for the $n$ component alloy there are $n(n+1)/2$ {\em cross} pair
-potential ({\bf eam}) keyword entries in FIELD (see above).  ({\bf Note}
-that all metal interactions must be of the same type!)
-
-The EEAM potential for an $n$ component metal alloy is specified similarly
-to the EAM potential, except that it requires the specification of $n^2$
-electron density functions (one for each non-commuting pair of atom types).
-This makes $3n(n+1)/2$ functions in total in TABEAM.  The option of using
-EEAM\index{potential!EEAM} interactions must also be {\em explicitly}
-declared in the FIELD file so that for the $n$ component alloy there are
-$n(n+1)/2$ {\em cross} pair potential ({\bf eeam}) keyword entries in FIELD
-despite that there must be $n^2$ pair density ({\bf eeam}) entries in TABEAM.
-
 \subsubsection{The TABEAM File Format}
 
 The file is free-formatted but blank and commented lines are not
@@ -2731,46 +2755,76 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 1} \\
 \> {\tt header} \> a100    \> file header\\
 {\bf record 2} \\
-\> {\tt numpot} \> integer \> number of potential functions in file \\
+\> {\tt numpot} \> integer \> number of potential functions in file
 \end{tabbing}
-For an $n$ component alloy, {\tt numpot} = $n(n+5)/2$ for EAM potential
-and {\tt numpot} = $3n(n+1)/2$ for EEAM potential.
 
-The subsequent records define the $n(n+5)/2$ functions for an $n$
-component alloy - $n$ electron density functions for the EAM potential
-form (one for each atom type) or $n^2$ for EEAM (one for each non-commuting
-pair of atoms types in EEAM) - {\bf dens}ity keyword, $n$ embedding functions
-(one for each atom type) - {\bf embe}ding keyword, and $n(n+1)/2$ {\em cross}
-pair potential functions - {\bf pair}s keyword.  The functions may appear in
-any random order in TABEAM as their identification is based on their unique
-keyword, defined first in the function's header record.  The header record is
-followed by predefined number of data records {\bf as a maximum of four data
-per record are read in} - allowing for incompletion of the very last record.
+For an $n$ component alloy, {\tt numpot} is
+\begin{itemize}
+\item $n(n+5)/2$ for the EAM potential $or$
+\item $3n(n+1)/2$ for the EEAM potential $or$
+\item $n(n+4)$ for the 2BEAM potential $or$
+\item $5n(n+1)/2$ for the 2BEEAM potential.
+\end{itemize}
+
+The subsequent records for an $n$ component alloy define $n(n+1)/2$
+{\em cross} pair potential functions - {\bf pair}s keyword and
+\begin{itemize}
+\item EAM: $n$ embedding functions (one for each atom type) - {\bf embe}dding keyword,
+$n$ electron density functions (one for each atom type) - {\bf dens}ity keyword;
+\item EEAM: $n$ embedding functions (one for each atom type) and
+$n^{2}$ for the EEAM potential (one for each non-commuting pair of atoms types);
+\item 2BEAM: $n$ $s$-band embedding functions (one for each atom type)
+- {\bf semb}edding keyword,
+$n(n+1)/2$ $s$-band density functions (one for each {\em cross}-pair of atoms types)
+- {\bf sden}sity keyword,
+$n$ $d$-band embedding functions (one for each atom type)
+- {\bf demb}edding or {\bf embe}edding keyword, and
+$n$ $d$-band density functions (one for each atom types)
+- {\bf dden}sity or {\bf dens}ity keyword;
+\item 2BEEAM: $n$ $s$-band embedding functions (one for each atom type)
+- {\bf semb}edding keyword,
+$n^{2}$ $s$-band density functions (one for each non-commuting pair of atoms types)
+- {\bf sden}sity keyword,
+$n$ $d$-band embedding functions (one for each atom type)
+- {\bf demb}edding or {\bf embe}edding keyword, and
+$n^{2}$ $d$-band density functions (one for each non-commuting pair of atoms types)
+- {\bf dden}sity or {\bf dens}ity keyword.
+\end{itemize}
+
+The functions may appear in any random order in TABEAM as their identification
+is based on their unique keyword, defined first in the function's header record.
+The header record is followed by predefined number of data records {\bf as a maximum
+of four data per record are read in} - allowing for incompletion of the very last record.
 
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf header record:}\\
-\> {\bf keyword} \> a4      \> type of EAM function: {\bf dens}ity, {\bf embe}d or {\bf pair} \\
+\> {\bf keyword} \> a4      \> type of EAM function: {\bf pair}, {\bf embe}d or {\bf dens}ity, with \\
+\>               \>         \> 2B extension alternatives for the $s$-band - [{\bf semb}ed and {\bf sden}sity] \\
+\>               \>         \> and $d$-band - {\bf demb}ed = {\bf embe}d and {\bf dden}sity = {\bf dens}ity \\
 \> {\tt atom 1}  \> a8      \> first atom type \\
-\> {\tt atom 2}  \> a8      \> second atom type - only specified for {\bf pair} potential functions \\
-\>               \>         \> and for {\bf dens}ity functions in the case of the EEAM potential\\
+\> {\tt atom 2}  \> a8      \> second atom type - only specified for {\bf pair} potential functions and \\
+\>               \>         \> for the ($i$) {\bf dens}ity functions in the EEAM potential case $or$ \\
+\>               \>         \> ($ii$) {\bf sden}sity functions in the 2BEAM potential case $or$ \\
+\>               \>         \> ($iii$) {\bf sden} and {\bf dden} functions in the 2BEEAM potential case \\
 \> {\tt ngrid}   \> integer \> number of function data points to read in \\
-\> {\tt limit 1} \> real    \> lower interpolation limit in \AA~for {\bf dens} and {\bf pair} \\
-\>               \>         \> or in density units for {\bf embe}d \\
-\> {\tt limit 2} \> real    \> upper interpolation limit in \AA~for {\bf dens} and {\bf pair} \\
-\>               \>         \> or in density units for {\bf embe}d \\
+\> {\tt limit 1} \> real    \> lower interpolation limit in \AA~for {\bf dens/sden/dden} and {\bf pair} \\
+\>               \>         \> or in density units for {\bf embe/semb/demb} \\
+\> {\tt limit 2} \> real    \> upper interpolation limit in \AA~for {\bf dens/sden/dden} and {\bf pair} \\
+\>               \>         \> or in density units for {\bf embe/semb/demb} \\
 {\bf function data records:} ({\em number of data records} $=$ {\tt Int}(({\tt ngrid}+3)/4)) \\
 \> {\tt data 1}  \> real    \> data item 1 \\
 \> {\tt data 2}  \> real    \> data item 2 \\
 \> {\tt data 3}  \> real    \> data item 3 \\
-\> {\tt data 4}  \> real    \> data item 4 \\
+\> {\tt data 4}  \> real    \> data item 4
 \end{tabbing}
 
 \subsubsection{Further Comments}
 
-The tabled data are used to fill the internal arrays {\tt gmet},
-{\tt fmet} and {\tt vmet} respectively (see Section
-\ref{metal}).  The force arrays are generated from these (by the
+The tabled data are used to fill the internal arrays {\tt vmet},
+{\tt dmet} and {\tt fmet}, and optionally {\tt dmes} and {\tt fmes}
+for the 2B extensions of EAM and EEAM (see Section \ref{metal}).
+The force arrays are generated from these (by the
 {\sc metal\_table\_derivatives} routine) using a five point
 interpolation procedure.  During simulation, interactions beyond
 distance $Min(r_{\rm cut},{\tt limit~2})$ are discarded, whereas
@@ -2783,3 +2837,13 @@ F(\rho > {\tt limit~2}) = F(\rho = {\tt limit~2})~~.
 \end{equation}
 The simulation will however abort if any local density is less
 than the {\tt limit~1} for its corresponding embedding function.
+
+It is worth noting that in the 2BEAM and 2BEEAM the $s$-band contribution
+is usually only for the alloy component, so that local concentrations of
+a single element revert to the standard EAM or EEAM!  In such case, the
+densities functions must be zeroed in the \D TABEAM file.  A convenient
+way to do this, for example, will be data record of the type:
+\begin{verbatim}
+SDEN Atom1 Atom1 1 0 1
+0
+\end{verbatim}

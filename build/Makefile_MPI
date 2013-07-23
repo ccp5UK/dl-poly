@@ -39,7 +39,7 @@ OBJ_MOD = \
 	external_field_module.o langevin_module.o minimise_module.o \
 	ewald_module.o msd_module.o statistics_module.o \
 	\
-	kinetic_module.o gpfa_module.o parallel_fft.o \
+	kinetic_module.o gpfa_module.o parallel_fft.o
 
 OBJ_ALL = \
 	warning.o error.o scan_control_io.o \

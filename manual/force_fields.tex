@@ -21,20 +21,20 @@ be written as:
 \begin{eqnarray}
 U(\vek{r}_{1},\vek{r}_{2},\ldots,\vek{r}_{N})&=&
       \sum_{i_{shel}=1}^{N_{shel}} U_{shel}(i_{shel},\vek{r}_{core},\vek{r}_{shell}) \nonumber \\
-& & + \sum_{i_{teth}=1}^{N_{teth}} U_{teth}(i_{teth},\vek{r}_{i}({\cal t}=t),\vek{r}_{i}({\cal t}=0) \nonumber \\
+& & + \sum_{i_{teth}=1}^{N_{teth}} U_{teth}(i_{teth},\vek{r}_{i}^{{\bf t}=t},\vek{r}_{i}^{{\bf t}=0}) \nonumber \\
 & & + \sum_{i_{bond}=1}^{N_{bond}} U_{bond}(i_{bond},\vek{r}_{a},\vek{r}_{b}) \nonumber \\
 & & + \sum_{i_{angl}=1}^{N_{angl}} U_{angl}(i_{angl},\vek{r}_{a},\vek{r}_{b},\vek{r}_{c}) \nonumber \\
 & & + \sum_{i_{dihd}=1}^{N_{dihd}} U_{dihd}(i_{dihd},\vek{r}_{a},\vek{r}_{b},\vek{r}_{c},\vek{r}_{d}) \nonumber \\
 & & + \sum_{i_{inv}=1}^{N_{inv}} U_{inv}(i_{inv},\vek{r}_{a},\vek{r}_{b},\vek{r}_{c},\vek{r}_{d}) \nonumber \\
-& & + \sum_{i=1}^{N-1}\sum_{j>i}^{N} U_{2\_body}^{(metal)}(i,j,|\vek{r}_{i}-\vek{r}_{j}|) \\
+& & + \sum_{i=1}^{N-1}\sum_{j>i}^{N} U_{2\textrm{-}body}^{(metal,vdw,electostatics)}(i,j,|\vek{r}_{i}-\vek{r}_{j}|) \\
 & & + \sum_{i=1}^{N}\sum_{j{\ne}i}^{N}\sum_{k{\ne}j}^{N} U_{tersoff}(i,j,k,\vek{r}_{i},\vek{r}_{j},\vek{r}_{k}) \nonumber \\
-& & + \sum_{i=1}^{N-2}\sum_{j>i}^{N-1}\sum_{k>j}^{N} U_{3\_body}(i,j,k,\vek{r}_{i},\vek{r}_{j},\vek{r}_{k}) \nonumber \\
-& & + \sum_{i=1}^{N-3}\sum_{j>i}^{N-2}\sum_{k>j}^{N-1}\sum_{n>k}^{N} U_{4\_body}(i,j,k,n,\vek{r}_{i},\vek{r}_{j},\vek{r}_{k},\vek{r}_{n}) \nonumber \\
+& & + \sum_{i=1}^{N-2}\sum_{j>i}^{N-1}\sum_{k>j}^{N} U_{3\textrm{-}body}(i,j,k,\vek{r}_{i},\vek{r}_{j},\vek{r}_{k}) \nonumber \\
+& & + \sum_{i=1}^{N-3}\sum_{j>i}^{N-2}\sum_{k>j}^{N-1}\sum_{n>k}^{N} U_{4\textrm{-}body}(i,j,k,n,\vek{r}_{i},\vek{r}_{j},\vek{r}_{k},\vek{r}_{n}) \nonumber \\
 & & + \sum_{i=1}^{N}U_{extn}(i,\vek{r}_{i},\vek{v}_{i})~~,\nonumber
 \end{eqnarray}
 where
-$U_{shel},~U_{teth},~U_{bond},~U_{angl},~U_{dihd},~U_{inv},~U_{pair},
-~U_{tersoff},~U_{3\_body}$ and $U_{4\_body}$ are empirical interaction
+$U_{shel},~U_{teth},~U_{bond},~U_{angl},~U_{dihd},~U_{inv},~U^{(metal)}_{2\textrm{-}body},
+~U_{tersoff},~U_{3\textrm{-}body}$ and $U_{4\textrm{-}body}$ are empirical interaction
 functions representing
 ion core-shell polarisation\index{polarisation!shell model},
 tethered particles\index{potential!tether},
@@ -1185,6 +1185,22 @@ $V_{ij}(r_{ij})$ is a pair potential incorporating repulsive
 electrostatic and overlap interactions.  $N$ is the number of
 interacting particles in the MD box.
 
+In \D EAM and thus EEAM can be further generalised to include two-band
+(2B) densities \cite{ackland-03a,ollson-05a}, for $s$- and $d$-bands,
+\begin{equation}
+F(\rho_{i})=F^{s}(\rho^{s}_{i})+F^{d}(\rho^{d}_{i})+~~, \label{2b}
+\end{equation}
+where
+\begin{equation}
+\rho^{q}_{i} = \sum_{j=1, j \ne i}^{N} \rho^{q}_{ij}(r_{ij})~,~~q=s,d~~, \label{2umd}
+\end{equation}
+instead of just the one, $s$, as in (\ref{um}) and (\ref{umd}).
+These will be referred in the following text as 2BEAM and 2BEEAM.
+Mixing 2BEAM and EAM and alternatively 2BEEAM and EEAM potentials
+is only possible if the single band ones are generalised to 2B forms.
+The user is, again, reminded to be consistent in the choice of
+potential when modelling alloys.
+
 The types of metal potentials available in \D are as follows:
 \begin{enumerate}
 \item EAM potential:  ({\bf eam})\index{potential!EAM}
@@ -1194,11 +1210,20 @@ arrays from the TABEAM table file (as implemented in the {\sc
 metal\_table\_read} routine - Section \ref{tabeam-file}.)  The rules
 for combining the potentials from different metals to handle alloys
 are different from the FS class of potentials (see below).
-\item Extended EAM potential ({\bf eeam})\index{potential!EEAM}
-Similar to EAM above, the EEAM potential is given in the form of
-interpolation arrays from the TABEAM file, but the rules for combining
-the potentials from different metals are different from both EAM and FS
-classes (see below).
+\item EEAM potential ({\bf eeam})\index{potential!EEAM}
+Similar to EAM above, it is given in the form of interpolation arrays
+from the TABEAM file, but the rules for combining the potentials from
+different metals are different from both EAM and FS classes (see below).
+\item 2BEAM potential ({\bf 2beam})\index{potential!2BEAM}
+Similar to EEAM for the $s$ density terms and to EAM for the $d$ ones.
+It is and given in the form of interpolation arrays from the TABEAM file,
+but the rules for combining the potentials from different metals are
+different from both EAM, EEAM and FS classes (see below).
+\item 2BEEAM potential ({\bf 2beeam})\index{potential!2BEAM}
+Similar to EEAM for both $s$ and $d$ density terms. It is and given in
+the form of interpolation arrays from the TABEAM file, but the rules for
+combining the potentials from different metals are
+different from both EAM, EEAM, 2BEAM and FS classes (see below).
 \item Finnis-Sinclair potential \cite{finnis-84a}:  ({\bf fnsc})
 Finnis-Sinclair potential is explicitly analytical.  It has the following form:
 \begin{eqnarray}
@@ -1230,7 +1255,9 @@ V_{ij}(r_{ij}) &=& \epsilon \left( \frac{a}{r_{ij}} \right)^{n} \nonumber \\
 \rho_{ij}(r_{ij}) &=& \left( \frac{a}{r_{ij}} \right)^{m} \\
 F(\rho_{i}) &=& -c \epsilon \sqrt{\rho_{i}}~~, \nonumber
 \end{eqnarray}
-with parameters: $\epsilon$, $a$, $n$, $m$, $c$.
+with parameters: $\epsilon$, $a$, $n$, $m$, $c$.  {\bf Note} that
+the parameter $c$ for the mixed potential in multi-component allys
+is irrelevant as outlined in \cite{sutton-91a}!
 \item Gupta potential \cite{cleri-93a}:  ({\bf gupt})
 The Gupta potential is another analytical potential in the FS
 class.  It has the form:
@@ -1285,12 +1312,17 @@ a sum of pair forces:
 The same as shown above.  However, it is worth noting that the
 generation of the force arrays from tabulated data (implemented
 in the {\sc metal\_table\_derivatives} routine) is done using a
-five point interpolation precedure.
-\item Extended EAM force \\
-The same as shown above.  However, it is worth noting that the
-generation of the force arrays from tabulated data (implemented
-in the {\sc metal\_table\_derivatives} routine) is done using a
-five point interpolation precedure.
+five point interpolation procedure.
+\item EEAM force \\
+Information the same as that for EAM.
+\item 2BEAM force \\
+Information the same as that for EAM.  However, as there is
+a second embedding contribution from the extra band complexity:
+$U_{2}=U^{s}_{2}+U^{d}_{2}$~!
+\item 2BEEAM force \\
+Information the same as that for EAM.  However, as there is
+a second embedding contribution from the extra band complexity:
+$U_{2}=U^{s}_{2}+U^{d}_{2}$~!
 \item Finnis-Sinclair force
 \begin{eqnarray}
 -\frac{\partial U_{1}}{\partial \vek{r_{k}}} &=& \sum_{j=1,j \ne k}^{N} \left\{
@@ -1352,8 +1384,14 @@ which equates to:
 \begin{enumerate}
 \item EAM virial \\
 The same as above.
-\item Extended EAM virial \\
+\item EEAM virial \\
 The same as above.
+\item 2BEAM virial \\
+The same as above but with a second embedding contribution from the extra band complexity:
+$\Psi_{2}=\Psi^{s}_{2}+\Psi^{d}_{2}$~!
+\item 2BEEAM virial \\
+The same as above but with a second embedding contribution from the extra band complexity:
+$\Psi_{2}=\Psi^{s}_{2}+\Psi^{d}_{2}$~!
 \item Finnis-Sinclair virial
 \begin{eqnarray}
 \Psi_{1} &=& {1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N}
@@ -1413,7 +1451,11 @@ integral part of the above equation yields:
 \begin{enumerate}
 \item EAM density correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
-\item Extended EAM density correction \\
+\item EEAM density correction \\
+No long-ranged corrections apply beyond $r_{\rm met}$.
+\item 2BEAM density correction \\
+No long-ranged corrections apply beyond $r_{\rm met}$.
+\item 2BEAM density correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
 \item Finnis-Sinclair density correction \\
 No long-ranged corrections apply beyond cutoffs $c$ and $d$.
@@ -1454,7 +1496,11 @@ integral part of the above equations yields:
 \begin{enumerate}
 \item EAM energy correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
-\item Extended EAM energy correction \\
+\item EEAM energy correction \\
+No long-ranged corrections apply beyond $r_{\rm met}$.
+\item 2BEAM energy correction \\
+No long-ranged corrections apply beyond $r_{\rm met}$.
+\item 2BEEAM energy correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
 \item Finnis-Sinclair energy correction \\
 No long-ranged corrections apply beyond cutoffs $c$ and $d$.
@@ -1506,7 +1552,11 @@ Evaluating the integral part of the above equations yields:
 \begin{enumerate}
 \item EAM virial correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
-\item Extended EAM virial correction \\
+\item EEAM virial correction \\
+No long-ranged corrections apply beyond $r_{\rm met}$.
+\item 2BEAM virial correction \\
+No long-ranged corrections apply beyond $r_{\rm met}$.
+\item 2BEEAM virial correction \\
 No long-ranged corrections apply beyond $r_{\rm met}$.
 \item Finnis-Sinclair virial correction \\
 No long-ranged corrections apply beyond cutoffs $c$ and $d$.
@@ -1569,9 +1619,10 @@ turns out that
 V^{BA}_{ij}(r_{ij})=V^{BA}_{ij}(r_{ij})~~,
 \end{equation}
 though the mixing rules are different in each case ({\bf beware!}).
-
-With regard to density, in the EAM case it is required that
-\cite{johnson-89a}:
+This has the following implications to densities of mixtures
+for different potential frameworks:
+\begin{itemize}
+\item EAM case - it is required that \cite{johnson-89a}:
 \begin{eqnarray}
 \rho^{AB}_{ij}(r_{ij})&=&\rho^{BB}_{ij}(r_{ij}) \nonumber \\
 \rho^{BA}_{ij}(r_{ij})&=&\rho^{AA}_{ij}(r_{ij})~~,
@@ -1579,37 +1630,68 @@ With regard to density, in the EAM case it is required that
 which means that an atom of type $A$ contributes the same density to
 the environment of an atom of type $B$ as it does to an atom of type
 $A$, and {\em vice versa}.
-
-For the FS case \cite{sutton-91a} a different rule applies:
+\item EEAM case - all densities can be different \cite{hepburn-08a,lau-07a}:
+\begin{equation}
+\rho^{AA}_{ij}(r_{ij}) \neq \rho^{BB}_{ij}(r_{ij}) \neq \rho^{AB}_{ij}(r_{ij}) \neq
+\rho^{BA}_{ij}(r_{ij})~~!
+\end{equation}
+\item 2BEAM case - similarly to the EAM case it is required that:
+\begin{eqnarray}
+{\rho^{d}_{ij}}^{AB}(r_{ij})&=&{\rho^{d}_{ij}}^{BB}(r_{ij}) \nonumber \\
+{\rho^{d}_{ij}}^{BA}(r_{ij})&=&{\rho^{d}_{ij}}^{AA}(r_{ij})~~,
+\end{eqnarray}
+for the $d$-band densities, whereas for the $s$-band ones:
+\begin{equation}
+{\rho^{s}_{ij}}^{BA}(r_{ij}) = {\rho^{s}_{ij}}^{AB}(r_{ij})~~,
+\end{equation}
+which means that an atom of type $A$ contributes the same $s$ density to
+the environment of an atom of type $B$ as an atom of type $B$ to an
+environment of an atom of type $A$.  However, in general:
+\begin{equation}
+{\rho^{s}_{ij}}^{AA}(r_{ij}) \neq {\rho^{s}_{ij}}^{BB}(r_{ij}) \neq {\rho^{s}_{ij}}^{AB}(r_{ij})~~. \\
+\end{equation}
+\item 2BEEAM case - similarly to the EEAM case all $s$ and $d$
+densities can be different:
+\begin{eqnarray}
+{\rho^{s}_{ij}}^{AA}(r_{ij}) \neq {\rho^{s}_{ij}}^{BB}(r_{ij}) \neq
+{\rho^{s}_{ij}}^{AB}(r_{ij}) \neq {\rho^{s}_{ij}}^{BA}(r_{ij}) \nonumber \\
+{\rho^{d}_{ij}}^{AA}(r_{ij}) \neq {\rho^{d}_{ij}}^{BB}(r_{ij}) \neq
+{\rho^{d}_{ij}}^{AB}(r_{ij}) \neq {\rho^{d}_{ij}}^{BA}(r_{ij}) ~~.
+\end{eqnarray}
+\item FS case - here a different rule applies \cite{sutton-91a}:
 \begin{equation}
 \rho^{AB}_{ij}(r_{ij})=(\rho^{AA}_{ij}(r_{ij})~\rho^{BB}_{ij}(r_{ij}))^{1/2}
 \end{equation}
 so that atoms of type $A$ and $B$ contribute the same densities to
 each other, but not to atoms of the same type.
+\end{itemize}
 
-It is worth noting that in the EEAM potential framework all densities
-can be different \cite{hepburn-08a,lau-07a}:
-\begin{equation}
-\rho^{AA}_{ij}(r_{ij}) \neq \rho^{BB}_{ij}(r_{ij}) \neq \rho^{AB}_{ij}(r_{ij}) \neq
-\rho^{BA}_{ij}(r_{ij})~~!
-\end{equation}
-
-Thus when specifying these potentials in the \D FIELD file for an
+The above rules have the following consequences to the
+specifications of these potentials in the \D FIELD file for an
 alloy composed of $n$ different metal atom types both the EAM types
 and FS types of potentials require the specification of $n(n+1)/2$
 pair functions $V^{AB}_{ij}(r_{ij})$.  However, the its only the simple
 EAM type together with all the FS types that require only $n$ density
 functions $\rho^{AA}_{ij}(r_{ij})$, whereas the EEAM class requires all
-the cross functions $\rho^{AB}_{ij}(r_{ij})$ possible or $n^2$ in total!
-In addition to the $n(n+1)/2$ pair functions and $n$ or $n^2$ density
-functions both the EAM and EEAM potentias require further specification
+the cross functions $\rho^{AB}_{ij}(r_{ij})$ possible or $n^{2}$ in total!
+In addition to the $n(n+1)/2$ pair functions and $n$ or $n^{2}$ density
+functions both the EAM and EEAM potentials require further specification
 of $n$ functional forms of the density dependence (i.e. the embedding
-function $F(\rho_{i})$ in (\ref{um})).
+function $F(\rho_{i})$ in (\ref{um})).  The matter is further complicated
+when the 2BEAM type of potential is used with the extra specification of
+$n$ embedding functions and $n(n+1)/2$ density functions for the $s$-band.
+Similarly, in the 2BEEAM an extra $n$ embedding functions and $n^{2}$
+density functions for the $s$-band are required.
 
-For EAM and EEAM potentials all the functions are supplied in tabular
-form via the table file TABEAM (see section \ref{tabeam-file}) to which
-\D is redirected by the FIELD file data.  The FS potentials are defined
-via the necessary parameters in the FIELD file.
+It is worth noting that in the 2BEAM and 2BEEAM the $s$-band contribution
+is usually only for the alloy component, so that local concentrations of
+a single element revert to the standard EAM or EEAM!  In such case, the
+densities functions must be zeroed in the \D TABEAM file.
+
+For EAM, EEAM, 2BEAM and 2BEEAM potentials all the functions are supplied
+in tabular form via the table file TABEAM (see section \ref{tabeam-file})
+to which \D is redirected by the FIELD file data.  The FS potentials are
+defined via the necessary parameters in the FIELD file.
 
 \subsection{Tersoff Potentials}
 \label{tersoff}
@@ -2670,19 +2752,37 @@ available include:
 \end {equation}
 \item Containing sphere:  ({\bf sphr})
 \begin{equation}
-\vek{F}=A(R_{0}-r)^{-n}~~~~~: r>R_{\rm cut}
+\vek{F}=A~(R_{0}-r)^{-n}~~~~~: r>R_{\rm cut}
 \end{equation}
 \item Repulsive wall:  ({\bf zbnd})
 \begin{equation}
-\vek{F}=A(z_{o}-z)~~~~~: z>z_{o}~~.
+\vek{F}_{z}=A~(z_{o}-z)~~~~~: p . z > p . z_{o}
+\end{equation}
+\item X-Piston:  ({\bf xpis})
+\begin{equation}
+\vek{F}_{x} = \frac{m_{k}}{\sum_{k=i}^{j}m_{k}}
+P . \vek{\textrm{Area}}(\perp\textrm{X-}direction)~~~~~: \forall~k=i,..,j~~.
 \end{equation}
 \end{enumerate}
 It is recommended that the use of an external field should be
 accompanied by a thermostat\index{thermostat} (this does not apply
 to examples 6 and 7, since these are conservative fields).  The
-``Oscillating shear'' field should be used with orthorhombic cell
-geometry (imcon=1,2) and ``Continuous shear'' field with slab cell
-geometry (imcon=6).  The user is advised to be careful with units!
+``Oscillating shear'' and ``X-piston'' fields may only be used with
+orthorhombic cell geometry (imcon=1,2) and ``Continuous shear'' field
+with slab cell geometry (imcon=6).
+
+In the case of the ``X-piston'' field it is strongly advised that the
+number of piston particles is chosen to be very small in comparison
+with the rest of the system ($< 5\%$) and that the piston contains
+its own set of whole molecules (i.e. there are no molecules partially
+mapped on the piston), which do not include any core-shell, CB, PMF
+or RB units!  The field releases the system's centre of mass to move
+unconstrained and gain momentum.  This makes any temperature control
+options control the full kinetic energy of the system and thus the
+only ensemble valid under this conditions and possible within \D at
+the present is the micro-canonical (NVE)!
+
+The user is advised to be careful with the parameters' units!
 
 In \D external field forces\index{potential!external field} are
 handled by the routines {\sc external\_field\_apply} and

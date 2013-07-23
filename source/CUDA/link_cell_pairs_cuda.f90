@@ -1105,8 +1105,8 @@ Call start_timing_link_cell_pairs()
      r_dis=Sqrt(r_dis)
 
      If (mxnode > 1) Then
-         Call gcheck(safe)
-         Call gsum(det)
+         Call gcheck(safe,"enforce")
+         Call gsum(det,"enforce")
      End If
 
      If ((.not.safe) .and. idnode == 0) Write(nrite,'(/,1x,a,i0,2a)') &

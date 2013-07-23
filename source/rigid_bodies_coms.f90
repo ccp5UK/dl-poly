@@ -14,7 +14,7 @@ Subroutine rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
 
   Use kinds_f90
   Use comms_module,        Only : idnode
-  Use setup_module,        Only : nrite,mxatms,mxtrgd,mxrgd,mxlrgd
+  Use setup_module,        Only : nrite,mxatms,mxrgd,mxlrgd
   Use config_module,       Only : cell
   Use rigid_bodies_module, Only : ntrgd,listrgd,indrgd,rgdwg1
 

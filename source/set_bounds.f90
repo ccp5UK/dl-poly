@@ -343,7 +343,7 @@ Subroutine set_bounds                                  &
 ! maximum number of external field parameters
 
   If (lext) Then
-     mxpfld = 5
+     mxpfld = 4
   Else
      mxpfld = 0
   End If

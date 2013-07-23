@@ -1,6 +1,6 @@
 # Master makefile for DL_POLY_4.05 (developer version)
 #
-# Author - I.T.Todorov February 2013
+# Author - I.T.Todorov July 2013
 #
 #
 # Define default settings
@@ -39,7 +39,7 @@ OBJ_MOD = \
 	external_field_module.o langevin_module.o minimise_module.o \
 	ewald_module.o msd_module.o statistics_module.o \
 	\
-	kinetic_module.o gpfa_module.o parallel_fft.o \
+	kinetic_module.o gpfa_module.o parallel_fft.o
 
 OBJ_ALL = \
 	warning.o error.o scan_control_io.o \
@@ -449,6 +449,12 @@ constraints_pseudo_bonds.o: comms_module.o config_module.o \
 	constraints_module.o kinds_f90.o setup_module.o
 constraints_quench.o: comms_module.o config_module.o constraints_module.o \
 	kinds_f90.o setup_module.o
+constraints_rattle.o: comms_module.o config_module.o constraints_module.o \
+	kinds_f90.o setup_module.o
+constraints_shake_lfv.o: comms_module.o config_module.o constraints_module.o \
+	kinds_f90.o setup_module.o
+constraints_shake_vv.o: comms_module.o config_module.o constraints_module.o \
+	kinds_f90.o setup_module.o
 constraints_tags.o: comms_module.o config_module.o constraints_module.o \
 	kinds_f90.o setup_module.o
 core_shell_forces.o: comms_module.o config_module.o core_shell_module.o \
@@ -492,7 +498,7 @@ deport_atomic_data.o: angles_module.o bonds_module.o comms_module.o \
 	statistics_module.o tethers_module.o
 development_module.o: comms_module.o kinds_f90.o parse_module.o \
 	setup_module.o
-dihedrals_14_check.o: kinds_f90.o setup_module.o
+dihedrals_14_check.o: comms_module.o kinds_f90.o setup_module.o
 dihedrals_14_vdw.o: kinds_f90.o setup_module.o vdw_module.o
 dihedrals_forces.o: comms_module.o config_module.o dihedrals_module.o \
 	kinds_f90.o setup_module.o vdw_module.o
@@ -504,11 +510,11 @@ dl_poly.o: angles_module.o bonds_module.o comms_module.o config_module.o \
 	langevin_module.o metal_module.o msd_module.o parse_module.o \
 	pmf_module.o rigid_bodies_module.o setup_module.o site_module.o \
 	statistics_module.o tersoff_module.o tethers_module.o \
-	three_body_module.o vdw_module.o w_at_start_vv.f90 \
+	three_body_module.o vdw_module.o w_at_start_lfv.f90 w_at_start_vv.f90 \
 	w_calculate_forces.f90 w_impact_option.f90 w_integrate_lfv.f90 \
 	w_integrate_vv.f90 w_kinetic_options.f90 w_md_lfv.f90 w_md_vv.f90 \
-	w_refresh_mappings.f90 w_refresh_output.f90 w_replay_history.f90 \
-	w_statistics_report.f90 w_write_options.f90
+	w_refresh_mappings.f90 w_refresh_output.f90 w_replay_historf.f90 \
+	w_replay_history.f90 w_statistics_report.f90 w_write_options.f90
 domains_module.o: comms_module.o kinds_f90.o
 error.o: comms_module.o setup_module.o
 ewald_excl_forces.o: config_module.o ewald_module.o kinds_f90.o \
@@ -528,13 +534,13 @@ export_atomic_data.o: comms_module.o config_module.o domains_module.o \
 external_field_apply.o: comms_module.o config_module.o core_shell_module.o \
 	external_field_module.o kinds_f90.o rigid_bodies_module.o \
 	setup_module.o
-external_field_correct.o: config_module.o external_field_module.o kinds_f90.o \
-	rigid_bodies_module.o
+external_field_correct.o: comms_module.o config_module.o \
+	external_field_module.o kinds_f90.o rigid_bodies_module.o
 external_field_module.o: kinds_f90.o setup_module.o
 four_body_forces.o: comms_module.o config_module.o domains_module.o \
 	four_body_module.o kinds_f90.o setup_module.o
 four_body_module.o: kinds_f90.o setup_module.o
-gpfa_module.o: gpfa_module.o kinds_f90.o
+gpfa_module.o: kinds_f90.o
 impact.o: comms_module.o config_module.o core_shell_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o
 intra_coul.o: kinds_f90.o setup_module.o
@@ -563,9 +569,8 @@ metal_ld_collect_fst.o: config_module.o kinds_f90.o metal_module.o \
 metal_ld_compute.o: comms_module.o config_module.o kinds_f90.o metal_module.o \
 	setup_module.o
 metal_ld_export.o: comms_module.o config_module.o domains_module.o \
-	kinds_f90.o setup_module.o
-metal_ld_set_halo.o: comms_module.o config_module.o kinds_f90.o \
-	setup_module.o
+	kinds_f90.o metal_module.o setup_module.o
+metal_ld_set_halo.o: comms_module.o config_module.o
 metal_lrc.o: comms_module.o config_module.o kinds_f90.o metal_module.o \
 	setup_module.o site_module.o
 metal_module.o: kinds_f90.o setup_module.o
@@ -579,14 +584,154 @@ msd_write.o: comms_module.o config_module.o io_module.o kinds_f90.o \
 	parse_module.o setup_module.o site_module.o statistics_module.o
 netcdf_module.o: kinds_f90.o
 netcdf_modul~.o: kinds_f90.o
-numeric_container.o: comms_module.o config_module.o kinds_f90.o \
+npt_b0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+npt_b0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+npt_b1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+npt_b1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+npt_h0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+npt_h0_scl.o: config_module.o kinds_f90.o setup_module.o
+npt_h0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+npt_h1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+npt_h1_scl.o: config_module.o kinds_f90.o rigid_bodies_module.o \
 	setup_module.o
+npt_h1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+npt_l0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	langevin_module.o setup_module.o site_module.o
+npt_l0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	langevin_module.o setup_module.o site_module.o
+npt_l1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o langevin_module.o rigid_bodies_module.o \
+	setup_module.o site_module.o
+npt_l1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o langevin_module.o rigid_bodies_module.o \
+	setup_module.o site_module.o
+npt_m0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+npt_m0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+npt_m1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+npt_m1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+nst_b0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nst_b0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nst_b1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+nst_b1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+nst_h0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nst_h0_scl.o: config_module.o kinds_f90.o kinetic_module.o setup_module.o
+nst_h0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nst_h1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+nst_h1_scl.o: config_module.o kinds_f90.o kinetic_module.o \
+	rigid_bodies_module.o setup_module.o
+nst_h1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+nst_l0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	langevin_module.o setup_module.o site_module.o
+nst_l0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	langevin_module.o setup_module.o site_module.o
+nst_l1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o langevin_module.o rigid_bodies_module.o \
+	setup_module.o site_module.o
+nst_l1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o langevin_module.o rigid_bodies_module.o \
+	setup_module.o site_module.o
+nst_m0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nst_m0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nst_m1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+nst_m1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+numeric_container.o: comms_module.o kinds_f90.o setup_module.o
+nve_0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nve_0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nve_1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+nve_1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+nvt_a0_lfv.o: comms_module.o config_module.o core_shell_module.o kinds_f90.o \
+	kinetic_module.o setup_module.o site_module.o
+nvt_a0_vv.o: comms_module.o config_module.o core_shell_module.o kinds_f90.o \
+	kinetic_module.o setup_module.o site_module.o
+nvt_a1_lfv.o: comms_module.o config_module.o core_shell_module.o \
+	domains_module.o kinds_f90.o kinetic_module.o rigid_bodies_module.o \
+	setup_module.o site_module.o
+nvt_a1_vv.o: comms_module.o config_module.o core_shell_module.o \
+	domains_module.o kinds_f90.o kinetic_module.o rigid_bodies_module.o \
+	setup_module.o site_module.o
+nvt_b0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
 nvt_b0_scl.o: config_module.o kinds_f90.o kinetic_module.o setup_module.o
+nvt_b0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nvt_b1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
 nvt_b1_scl.o: config_module.o kinds_f90.o kinetic_module.o \
 	rigid_bodies_module.o setup_module.o
+nvt_b1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+nvt_e0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
 nvt_e0_scl.o: comms_module.o config_module.o kinds_f90.o setup_module.o
+nvt_e0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nvt_e1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
 nvt_e1_scl.o: comms_module.o config_module.o kinds_f90.o \
 	rigid_bodies_module.o setup_module.o
+nvt_e1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+nvt_g0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	langevin_module.o setup_module.o site_module.o
+nvt_g0_scl.o: config_module.o kinds_f90.o kinetic_module.o setup_module.o
+nvt_g0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	langevin_module.o setup_module.o site_module.o
+nvt_g1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o langevin_module.o rigid_bodies_module.o \
+	setup_module.o site_module.o
+nvt_g1_scl.o: config_module.o kinds_f90.o kinetic_module.o \
+	rigid_bodies_module.o setup_module.o
+nvt_g1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o langevin_module.o rigid_bodies_module.o \
+	setup_module.o site_module.o
+nvt_h0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nvt_h0_scl.o: config_module.o kinds_f90.o kinetic_module.o setup_module.o
+nvt_h0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nvt_h1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+nvt_h1_scl.o: config_module.o kinds_f90.o kinetic_module.o \
+	rigid_bodies_module.o setup_module.o
+nvt_h1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+nvt_l0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nvt_l0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
+	setup_module.o site_module.o
+nvt_l1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+nvt_l1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+origin_config.o: config_module.o development_module.o kinds_f90.o
 parallel_fft.o: comms_module.o gpfa_module.o kinds_f90.o setup_module.o
 parse_module.o: comms_module.o kinds_f90.o setup_module.o
 pass_shared_units.o: comms_module.o config_module.o domains_module.o \
@@ -598,10 +743,20 @@ pmf_pseudo_bonds.o: comms_module.o config_module.o kinds_f90.o pmf_module.o \
 	setup_module.o
 pmf_quench.o: comms_module.o config_module.o kinds_f90.o pmf_module.o \
 	setup_module.o
+pmf_rattle.o: comms_module.o config_module.o kinds_f90.o pmf_module.o \
+	setup_module.o
+pmf_shake_lfv.o: comms_module.o config_module.o kinds_f90.o pmf_module.o \
+	setup_module.o
+pmf_shake_vv.o: comms_module.o config_module.o kinds_f90.o pmf_module.o \
+	setup_module.o
 pmf_tags.o: config_module.o kinds_f90.o pmf_module.o setup_module.o
 pmf_units_set.o: comms_module.o config_module.o pmf_module.o setup_module.o
 pmf_vcoms.o: comms_module.o config_module.o kinds_f90.o pmf_module.o \
 	setup_module.o
+pseudo_lfv.o: comms_module.o config_module.o core_shell_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+pseudo_vv.o: comms_module.o config_module.o core_shell_module.o kinds_f90.o \
+	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
 quaternions_container.o: comms_module.o config_module.o kinds_f90.o \
 	rigid_bodies_module.o setup_module.o
 rdf_collect.o: config_module.o kinds_f90.o setup_module.o site_module.o \
@@ -615,13 +770,14 @@ read_config.o: comms_module.o config_module.o domains_module.o io_module.o \
 read_config_parallel.o: comms_module.o config_module.o domains_module.o \
 	io_module.o kinds_f90.o parse_module.o setup_module.o
 read_control.o: comms_module.o config_module.o defects1_module.o \
-	development_module.o kinds_f90.o langevin_module.o metal_module.o \
-	msd_module.o parse_module.o setup_module.o vdw_module.o
+	development_module.o kinds_f90.o kinetic_module.o langevin_module.o \
+	metal_module.o msd_module.o parse_module.o setup_module.o \
+	vdw_module.o
 read_field.o: angles_module.o bonds_module.o comms_module.o config_module.o \
 	constraints_module.o core_shell_module.o dihedrals_module.o \
 	external_field_module.o four_body_module.o inversions_module.o \
-	kinds_f90.o metal_module.o parse_module.o pmf_module.o \
-	rigid_bodies_module.o setup_module.o site_module.o \
+	kinds_f90.o kinetic_module.o metal_module.o parse_module.o \
+	pmf_module.o rigid_bodies_module.o setup_module.o site_module.o \
 	statistics_module.o tersoff_module.o tethers_module.o \
 	three_body_module.o vdw_module.o
 read_history.o: comms_module.o config_module.o domains_module.o io_module.o \

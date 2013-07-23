@@ -37,6 +37,11 @@ Subroutine metal_ld_compute         &
            xdf,ydf,zdf,rsqdf,       &
            rho,engden,virden,stress)
 
+Subroutine metal_ld_compute         &
+           (imcon,rmet,elrcm,vlrcm, &
+           xdf,ydf,zdf,rsqdf,       &
+           engden,virden,stress)
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for calculating local density in metals using
@@ -46,7 +51,9 @@ Subroutine metal_ld_compute         &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov july 2012
+! amended   - i.t.todorov june 2013
+! contrib   - r.davidchak (eeam) june 2012
+! contrib   - b.palmer (2band) may 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -54,7 +61,8 @@ Subroutine metal_ld_compute         &
   Use comms_module,  Only : mxnode,gsum,gcheck
   Use setup_module
   Use config_module, Only : cell,natms,ltg,ltype,list,xxx,yyy,zzz
-  Use metal_module,  Only : ld_met,ls_met,ntpmet,lstmet,ltpmet,vmet,dmet,fmet
+  Use metal_module,  Only : ls_met,l2bmet,ntpmet,ltpmet, &
+                            fmet,fmes,rho,rhs
 
 #ifdef COMPILE_CUDA
   Use dl_poly_cuda_module
@@ -66,7 +74,6 @@ Subroutine metal_ld_compute         &
   Real( Kind = wp ),                        Intent( In    ) :: rmet
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent( In    ) :: elrcm,vlrcm
   Real( Kind = wp ), Dimension( 1:mxlist ), Intent( InOut ) :: xdf,ydf,zdf,rsqdf
-  Real( Kind = wp ), Dimension( 1:mxatms ), Intent(   Out ) :: rho
   Real( Kind = wp ),                        Intent(   Out ) :: engden,virden
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
@@ -74,12 +81,42 @@ Subroutine metal_ld_compute         &
   Integer, Save     :: keypot
 
   Logical           :: safe = .true.
-  Integer           :: i,limit,j,k,l,k0
+  Integer           :: limit,i,j,k,l,k0
   Real( Kind = wp ) :: rhosqr,rdr,rrr,ppp,fk0,fk1,fk2,t1,t2
 
 #ifdef COMPILE_CUDA
   Call start_timing_metal_ld_compute()
 #endif
+
+
+! check on mixing metal types
+
+  If (newjob) Then
+     newjob = .false.
+
+     keypot=0
+     Do i=1,ntpmet
+        keypot=ltpmet(i)
+        If (i > 1) Then
+           If (keypot /= ltpmet(i-1)) Call error(92)
+        End If
+     End Do
+  End If
+
+! initialise energy and virial accumulators
+
+  engden=0.0_wp
+  virden=0.0_wp
+
+! initialise density array
+
+  rho=0.0_wp
+  If (l2bmet) rhs = 0.0_wp
+
+! All calls below act on rho (rhs)
+
+! calculate local atomic density
+! outer loop over atoms
 
 ! check on mixing metal types
 
@@ -146,9 +183,9 @@ Subroutine metal_ld_compute         &
 ! calculate contributions to local density
 
      If (keypot == 0) Then ! EAM contributions
-        Call metal_ld_collect_eam(i,rsqdf,rho,safe)
+        Call metal_ld_collect_eam(i,rsqdf,safe)
      Else                  ! FST contributions
-        Call metal_ld_collect_fst(i,rsqdf,rho,safe,rmet)
+        Call metal_ld_collect_fst(i,rsqdf,safe,rmet)
      End If
   End Do
 
@@ -172,6 +209,8 @@ Subroutine metal_ld_compute         &
 ! potential function index
 
         k0=ltype(i)
+
+! Now start traditional s-band (EAM & EEAM) or d-band for 2B(EAM & EEAM)
 
 ! validity of potential
 
@@ -217,7 +256,7 @@ Subroutine metal_ld_compute         &
                  End If
 
 ! calculate derivative of embedding function wrt density
-! using 3-point interpolation and store result in rho array
+! using 3-point interpolation and STORE/OVERWRITE result in rho array
 
                  fk0 = fmet(l-1,k0,2)
                  fk1 = fmet(l  ,k0,2)
@@ -258,6 +297,101 @@ Subroutine metal_ld_compute         &
            Else
               Write(*,*) 'bad density range problem: (LTG,RHO) ',ltg(i),rho(i)
               safe=.false.
+           End If
+
+        End If
+
+! Now if we have 2B(EAM & EEAM) then do s-band too
+
+        If (l2bmet) Then
+
+! validity of potential
+
+           If (Abs(fmes(1,k0,1)) > zero_plus) Then
+
+! check for unsafe densities (mind start was shifted)
+
+              If (.not.ls_met) Then ! fmes over rhs grid
+                 rhosqr = rhs(i)
+              Else                  ! fmes over Sqrt(rhs) grid
+                 rhosqr = Sqrt(rhs(i))
+              End If
+              If (rhosqr >= fmes(2,k0,1)+5.0_wp*fmes(4,k0,1)) Then
+                 If (rhosqr <= fmes(3,k0,1)) Then
+
+! interpolation parameters
+
+                    rdr = 1.0_wp/fmes(4,k0,1)
+                    rrr = rhosqr - fmes(2,k0,1)
+                    l   = Min(Nint(rrr*rdr),Nint(fmes(1,k0,1))-1)
+                    If (l < 5) Then ! catch unsafe value
+                       Write(*,*) 'good density range problem: (LTG,RHS) ',ltg(i),rhs(i)
+                       safe=.false.
+                       l=6
+                    End If
+                    ppp = rrr*rdr - Real(l,wp)
+
+! calculate embedding energy using 3-point interpolation
+
+                    fk0 = fmes(l-1,k0,1)
+                    fk1 = fmes(l  ,k0,1)
+                    fk2 = fmes(l+1,k0,1)
+
+                    t1 = fk1 + ppp*(fk1 - fk0)
+                    t2 = fk1 + ppp*(fk2 - fk1)
+
+                    If (ppp < 0.0_wp) Then
+                       engden = engden + t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                    Else If (l == 5) Then
+                       engden = engden + t2
+                    Else
+                       engden = engden + t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                    End If
+
+! calculate derivative of embedding function wrt density
+! using 3-point interpolation and STORE/OVERWRITE result in rhs array
+
+                    fk0 = fmes(l-1,k0,2)
+                    fk1 = fmes(l  ,k0,2)
+                    fk2 = fmes(l+1,k0,2)
+
+                    t1 = fk1 + ppp*(fk1 - fk0)
+                    t2 = fk1 + ppp*(fk2 - fk1)
+
+                    If (ppp < 0.0_wp) Then
+                       If (.not.ls_met) Then ! fmes over rhs grid
+                          rhs(i) = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                       Else                  ! fmes over Sqrt(rhs) grid
+                          rhs(i) = 0.5_wp*(t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp))/rhosqr
+                       End If
+                    Else If (l == 5) Then
+                       If (.not.ls_met) Then ! fmes over rhs grid
+                          rhs(i) = t2
+                       Else                  ! fmes over Sqrt(rhs) grid
+                          rhs(i) = 0.5_wp*t2/rhosqr
+                       End If
+                    Else
+                       If (.not.ls_met) Then ! fmes over rhs grid
+                          rhs(i) = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                       Else                  ! fmes over Sqrt(rhs) grid
+                          rhs(i) = 0.5_wp*(t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp))/rhosqr
+                       End If
+                    End If
+
+                 Else ! RLD: assume that fmes(rhs(i) > fmes(3,k0,1)) = fmes(rhs(i) = fmes(3,k0,1))
+
+                   l      = Nint(fmes(1,k0,1))
+
+                   engden = engden + fmes(l,k0,1)
+
+                   rhs(i) = rhs(i) + 0.0_wp
+
+                 End If
+              Else
+                 Write(*,*) 'bad density range problem: (LTG,RHS) ',ltg(i),rhs(i)
+                 safe=.false.
+              End If
+
            End If
 
         End If
@@ -308,9 +442,10 @@ Subroutine metal_ld_compute         &
 
 ! obtain atomic densities for outer border regions
 
-  Call metal_ld_set_halo(rho)
+  Call metal_ld_set_halo()
 
 #ifdef COMPILE_CUDA
   Call stop_timing_metal_ld_compute()
 #endif
+
 End Subroutine metal_ld_compute

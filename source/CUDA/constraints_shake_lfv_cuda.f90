@@ -122,7 +122,7 @@ Subroutine constraints_shake_lfv        &
         Call constraints_shake_cuda_invoke_th(esigmax)
 
         safe=(esigmax < tolnce)
-        If (mxnode > 1) Call gcheck(safe)
+        If (mxnode > 1) Call gcheck(safe,"enforce")
 
         If (.not.safe) Then
            Call constraints_shake_cuda_invoke_bh()
@@ -189,7 +189,7 @@ Subroutine constraints_shake_lfv        &
 ! global verification of convergence
 
      safe=(Maxval(esig(1:ntcons)) < tolnce)
-     If (mxnode > 1) Call gcheck(safe)
+     If (mxnode > 1) Call gcheck(safe,"enforce")
 
 ! bypass next section and terminate iteration if all tolerances ok
 

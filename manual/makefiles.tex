@@ -1,9 +1,9 @@
 \label{makefiles}
 {\sc \bf \underline{Makefile\_DEV}}
 \begin{verbatim}
-# Master makefile for DL_POLY_4.04 (developer version)
+# Master makefile for DL_POLY_4.05 (developer version)
 #
-# Author - I.T.Todorov october 2012
+# Author - I.T.Todorov July 2013
 #
 #
 # Define default settings
@@ -42,7 +42,7 @@ OBJ_MOD = \
 	external_field_module.o langevin_module.o minimise_module.o \
 	ewald_module.o msd_module.o statistics_module.o \
 	\
-	kinetic_module.o gpfa_module.o parallel_fft.o \
+	kinetic_module.o gpfa_module.o parallel_fft.o
 
 OBJ_ALL = \
 	warning.o error.o scan_control_io.o \
@@ -53,7 +53,7 @@ OBJ_ALL = \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
-	check_config.o scale_config.o write_config.o \
+	check_config.o origin_config.o scale_config.o write_config.o \
 	trajectory_write.o system_expand.o \
 	rigid_bodies_tags.o rigid_bodies_coms.o rigid_bodies_widths.o \
 	rigid_bodies_setup.o \
@@ -145,7 +145,7 @@ FILES_VV = \
 	nvt_l1_vv.f90 nvt_a1_vv.f90 nvt_b1_vv.f90 nvt_h1_vv.f90 nvt_g1_vv.f90 \
 	npt_l1_vv.f90 npt_b1_vv.f90 npt_h1_vv.f90 npt_m1_vv.f90 \
 	nst_l1_vv.f90 nst_b1_vv.f90 nst_h1_vv.f90 nst_m1_vv.f90 \
-	md_vv.f90
+	w_at_start_vv.f90 w_integrate_vv.f90 w_md_vv.f90
 
 # Define LeapFrog Verlet files
 #=====================================================================
@@ -161,7 +161,7 @@ FILES_LFV = \
 	nvt_l1_lfv.f90 nvt_a1_lfv.f90 nvt_b1_lfv.f90 nvt_h1_lfv.f90 nvt_g1_lfv.f90 \
 	npt_l1_lfv.f90 npt_b1_lfv.f90 npt_h1_lfv.f90 npt_m1_lfv.f90 \
 	nst_l1_lfv.f90 nst_b1_lfv.f90 nst_h1_lfv.f90 nst_m1_lfv.f90 \
-	md_lfv.f90
+	w_at_start_lfv.f90 w_integrate_lfv.f90 w_md_lfv.f90
 
 # Examine targets manually
 #=====================================================================
@@ -501,7 +501,7 @@ deport_atomic_data.o: angles_module.o bonds_module.o comms_module.o \
 	statistics_module.o tethers_module.o
 development_module.o: comms_module.o kinds_f90.o parse_module.o \
 	setup_module.o
-dihedrals_14_check.o: kinds_f90.o setup_module.o
+dihedrals_14_check.o: comms_module.o kinds_f90.o setup_module.o
 dihedrals_14_vdw.o: kinds_f90.o setup_module.o vdw_module.o
 dihedrals_forces.o: comms_module.o config_module.o dihedrals_module.o \
 	kinds_f90.o setup_module.o vdw_module.o
@@ -513,18 +513,17 @@ dl_poly.o: angles_module.o bonds_module.o comms_module.o config_module.o \
 	langevin_module.o metal_module.o msd_module.o parse_module.o \
 	pmf_module.o rigid_bodies_module.o setup_module.o site_module.o \
 	statistics_module.o tersoff_module.o tethers_module.o \
-	three_body_module.o vdw_module.o md_lfv.f90 md_vv.f90 \
-	replay_history.f90
+	three_body_module.o vdw_module.o w_at_start_lfv.f90 w_at_start_vv.f90 \
+	w_calculate_forces.f90 w_impact_option.f90 w_integrate_lfv.f90 \
+	w_integrate_vv.f90 w_kinetic_options.f90 w_md_lfv.f90 w_md_vv.f90 \
+	w_refresh_mappings.f90 w_refresh_output.f90 w_replay_historf.f90 \
+	w_replay_history.f90 w_statistics_report.f90 w_write_options.f90
 domains_module.o: comms_module.o kinds_f90.o
 error.o: comms_module.o setup_module.o
 ewald_excl_forces.o: config_module.o ewald_module.o kinds_f90.o \
 	setup_module.o
-ewald_excl_force~.o: config_module.o ewald_module.o kinds_f90.o \
-	setup_module.o
 ewald_frozen_forces.o: comms_module.o config_module.o ewald_module.o \
 	kinds_f90.o setup_module.o
-ewald_frozen_force~.o: comms_module.o config_module.o domains_module.o \
-	ewald_module.o kinds_f90.o setup_module.o
 ewald_module.o: config_module.o kinds_f90.o setup_module.o
 ewald_real_forces.o: comms_module.o config_module.o kinds_f90.o \
 	setup_module.o
@@ -538,13 +537,13 @@ export_atomic_data.o: comms_module.o config_module.o domains_module.o \
 external_field_apply.o: comms_module.o config_module.o core_shell_module.o \
 	external_field_module.o kinds_f90.o rigid_bodies_module.o \
 	setup_module.o
-external_field_correct.o: config_module.o external_field_module.o kinds_f90.o \
-	rigid_bodies_module.o
+external_field_correct.o: comms_module.o config_module.o \
+	external_field_module.o kinds_f90.o rigid_bodies_module.o
 external_field_module.o: kinds_f90.o setup_module.o
 four_body_forces.o: comms_module.o config_module.o domains_module.o \
 	four_body_module.o kinds_f90.o setup_module.o
 four_body_module.o: kinds_f90.o setup_module.o
-gpfa_module.o: gpfa_module.o kinds_f90.o
+gpfa_module.o: kinds_f90.o
 impact.o: comms_module.o config_module.o core_shell_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o
 intra_coul.o: kinds_f90.o setup_module.o
@@ -573,9 +572,8 @@ metal_ld_collect_fst.o: config_module.o kinds_f90.o metal_module.o \
 metal_ld_compute.o: comms_module.o config_module.o kinds_f90.o metal_module.o \
 	setup_module.o
 metal_ld_export.o: comms_module.o config_module.o domains_module.o \
-	kinds_f90.o setup_module.o
-metal_ld_set_halo.o: comms_module.o config_module.o kinds_f90.o \
-	setup_module.o
+	kinds_f90.o metal_module.o setup_module.o
+metal_ld_set_halo.o: comms_module.o config_module.o
 metal_lrc.o: comms_module.o config_module.o kinds_f90.o metal_module.o \
 	setup_module.o site_module.o
 metal_module.o: kinds_f90.o setup_module.o
@@ -663,8 +661,7 @@ nst_m1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
 nst_m1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
-numeric_container.o: comms_module.o config_module.o kinds_f90.o \
-	setup_module.o
+numeric_container.o: comms_module.o kinds_f90.o setup_module.o
 nve_0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
 	setup_module.o site_module.o
 nve_0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
@@ -737,6 +734,7 @@ nvt_l1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
 nvt_l1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+origin_config.o: config_module.o development_module.o kinds_f90.o
 parallel_fft.o: comms_module.o gpfa_module.o kinds_f90.o setup_module.o
 parse_module.o: comms_module.o kinds_f90.o setup_module.o
 pass_shared_units.o: comms_module.o config_module.o domains_module.o \
@@ -775,13 +773,14 @@ read_config.o: comms_module.o config_module.o domains_module.o io_module.o \
 read_config_parallel.o: comms_module.o config_module.o domains_module.o \
 	io_module.o kinds_f90.o parse_module.o setup_module.o
 read_control.o: comms_module.o config_module.o defects1_module.o \
-	development_module.o kinds_f90.o langevin_module.o metal_module.o \
-	parse_module.o setup_module.o vdw_module.o
+	development_module.o kinds_f90.o kinetic_module.o langevin_module.o \
+	metal_module.o msd_module.o parse_module.o setup_module.o \
+	vdw_module.o
 read_field.o: angles_module.o bonds_module.o comms_module.o config_module.o \
 	constraints_module.o core_shell_module.o dihedrals_module.o \
 	external_field_module.o four_body_module.o inversions_module.o \
-	kinds_f90.o metal_module.o parse_module.o pmf_module.o \
-	rigid_bodies_module.o setup_module.o site_module.o \
+	kinds_f90.o kinetic_module.o metal_module.o parse_module.o \
+	pmf_module.o rigid_bodies_module.o setup_module.o site_module.o \
 	statistics_module.o tersoff_module.o tethers_module.o \
 	three_body_module.o vdw_module.o
 read_history.o: comms_module.o config_module.o domains_module.o io_module.o \
@@ -869,8 +868,6 @@ trajectory_write.o: comms_module.o config_module.o io_module.o kinds_f90.o \
 	parse_module.o setup_module.o statistics_module.o
 two_body_forces.o: comms_module.o config_module.o ewald_module.o kinds_f90.o \
 	metal_module.o setup_module.o statistics_module.o vdw_module.o
-two_body_force~.o: comms_module.o config_module.o ewald_module.o kinds_f90.o \
-	metal_module.o setup_module.o statistics_module.o vdw_module.o
 update_shared_units.o: comms_module.o domains_module.o kinds_f90.o \
 	setup_module.o
 vdw_direct_fs_generate.o: kinds_f90.o setup_module.o vdw_module.o
@@ -896,9 +893,9 @@ zero_k_optimise.o: comms_module.o config_module.o kinds_f90.o \
 \clearpage
 {\sc \bf \underline{Makefile\_MPI}}
 \begin{verbatim}
-# Master makefile for DL_POLY_4.04 (parallel version)
+# Master makefile for DL_POLY_4.05 (parallel version)
 #
-# Author - I.T.Todorov june 2012
+# Author - I.T.Todorov February 2013
 #
 #
 # Define default settings
@@ -937,7 +934,7 @@ OBJ_MOD = \
 	external_field_module.o langevin_module.o minimise_module.o \
 	ewald_module.o msd_module.o statistics_module.o \
 	\
-	kinetic_module.o gpfa_module.o parallel_fft.o \
+	kinetic_module.o gpfa_module.o parallel_fft.o
 
 OBJ_ALL = \
 	warning.o error.o scan_control_io.o \
@@ -948,7 +945,7 @@ OBJ_ALL = \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
-	check_config.o scale_config.o write_config.o \
+	check_config.o origin_config.o scale_config.o write_config.o \
 	trajectory_write.o system_expand.o \
 	rigid_bodies_tags.o rigid_bodies_coms.o rigid_bodies_widths.o \
 	rigid_bodies_setup.o \
@@ -1040,7 +1037,7 @@ FILES_VV = \
 	nvt_l1_vv.f90 nvt_a1_vv.f90 nvt_b1_vv.f90 nvt_h1_vv.f90 nvt_g1_vv.f90 \
 	npt_l1_vv.f90 npt_b1_vv.f90 npt_h1_vv.f90 npt_m1_vv.f90 \
 	nst_l1_vv.f90 nst_b1_vv.f90 nst_h1_vv.f90 nst_m1_vv.f90 \
-	md_vv.f90
+	w_at_start_vv.f90 w_integrate_vv.f90 w_md_vv.f90
 
 # Define LeapFrog Verlet files
 #=====================================================================
@@ -1056,7 +1053,7 @@ FILES_LFV = \
 	nvt_l1_lfv.f90 nvt_a1_lfv.f90 nvt_b1_lfv.f90 nvt_h1_lfv.f90 nvt_g1_lfv.f90 \
 	npt_l1_lfv.f90 npt_b1_lfv.f90 npt_h1_lfv.f90 npt_m1_lfv.f90 \
 	nst_l1_lfv.f90 nst_b1_lfv.f90 nst_h1_lfv.f90 nst_m1_lfv.f90 \
-	md_lfv.f90
+	w_at_start_lfv.f90 w_integrate_lfv.f90 w_md_lfv.f90
 
 # Examine targets manually
 #=====================================================================
@@ -1327,9 +1324,9 @@ $(OBJ_ALL): $(OBJ_MOD)
 \clearpage
 {\sc \bf \underline{Makefile\_SRL1}}
 \begin{verbatim}
-# Master makefile for DL_POLY_4.04 (serial version 1)
+# Master makefile for DL_POLY_4.05 (serial version 1)
 #
-# Author - I.T.Todorov june 2012
+# Author - I.T.Todorov February 2013
 #
 #
 # Define default settings
@@ -1379,7 +1376,7 @@ OBJ_ALL = \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
-	check_config.o scale_config.o write_config.o \
+	check_config.o origin_config.o scale_config.o write_config.o \
 	trajectory_write.o system_expand.o \
 	rigid_bodies_tags.o rigid_bodies_coms.o rigid_bodies_widths.o \
 	rigid_bodies_setup.o \
@@ -1476,7 +1473,7 @@ FILES_VV = \
 	nvt_l1_vv.f90 nvt_a1_vv.f90 nvt_b1_vv.f90 nvt_h1_vv.f90 nvt_g1_vv.f90 \
 	npt_l1_vv.f90 npt_b1_vv.f90 npt_h1_vv.f90 npt_m1_vv.f90 \
 	nst_l1_vv.f90 nst_b1_vv.f90 nst_h1_vv.f90 nst_m1_vv.f90 \
-	md_vv.f90
+	w_at_start_vv.f90 w_integrate_vv.f90 w_md_vv.f90
 
 # Define LeapFrog Verlet files
 #=====================================================================
@@ -1492,7 +1489,7 @@ FILES_LFV = \
 	nvt_l1_lfv.f90 nvt_a1_lfv.f90 nvt_b1_lfv.f90 nvt_h1_lfv.f90 nvt_g1_lfv.f90 \
 	npt_l1_lfv.f90 npt_b1_lfv.f90 npt_h1_lfv.f90 npt_m1_lfv.f90 \
 	nst_l1_lfv.f90 nst_b1_lfv.f90 nst_h1_lfv.f90 nst_m1_lfv.f90 \
-	md_lfv.f90
+	w_at_start_lfv.f90 w_integrate_lfv.f90 w_md_lfv.f90
 
 # Examine targets manually
 #=====================================================================
@@ -1627,9 +1624,9 @@ $(OBJ_ALL): $(OBJ_MOD)
 \clearpage
 {\sc \bf \underline{Makefile\_SRL2}}
 \begin{verbatim}
-# Master makefile for DL_POLY_4.04 (serial version 2)
+# Master makefile for DL_POLY_4.05 (serial version 2)
 #
-# Author - I.T.Todorov june 2012
+# Author - I.T.Todorov February 2013
 #
 #
 # Define default settings
@@ -1668,7 +1665,7 @@ OBJ_MOD = \
 	external_field_module.o langevin_module.o minimise_module.o \
 	ewald_module.o msd_module.o statistics_module.o \
 	\
-	kinetic_module.o gpfa_module.o parallel_fft.o \
+	kinetic_module.o gpfa_module.o parallel_fft.o
 
 OBJ_ALL = \
 	warning.o error.o scan_control_io.o \
@@ -1679,7 +1676,7 @@ OBJ_ALL = \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
-	check_config.o scale_config.o write_config.o \
+	check_config.o origin_config.o scale_config.o write_config.o \
 	trajectory_write.o system_expand.o \
 	rigid_bodies_tags.o rigid_bodies_coms.o rigid_bodies_widths.o \
 	rigid_bodies_setup.o \
@@ -1776,7 +1773,7 @@ FILES_VV = \
 	nvt_l1_vv.f90 nvt_a1_vv.f90 nvt_b1_vv.f90 nvt_h1_vv.f90 nvt_g1_vv.f90 \
 	npt_l1_vv.f90 npt_b1_vv.f90 npt_h1_vv.f90 npt_m1_vv.f90 \
 	nst_l1_vv.f90 nst_b1_vv.f90 nst_h1_vv.f90 nst_m1_vv.f90 \
-	md_vv.f90
+	w_at_start_vv.f90 w_integrate_vv.f90 w_md_vv.f90
 
 # Define LeapFrog Verlet files
 #=====================================================================
@@ -1792,7 +1789,7 @@ FILES_LFV = \
 	nvt_l1_lfv.f90 nvt_a1_lfv.f90 nvt_b1_lfv.f90 nvt_h1_lfv.f90 nvt_g1_lfv.f90 \
 	npt_l1_lfv.f90 npt_b1_lfv.f90 npt_h1_lfv.f90 npt_m1_lfv.f90 \
 	nst_l1_lfv.f90 nst_b1_lfv.f90 nst_h1_lfv.f90 nst_m1_lfv.f90 \
-	md_lfv.f90
+	w_at_start_lfv.f90 w_integrate_lfv.f90 w_md_lfv.f90
 
 # Examine targets manually
 #=====================================================================

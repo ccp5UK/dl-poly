@@ -1,6 +1,6 @@
-# Master makefile for DL_POLY_4.03 (CUDA+OpenMP version)
+# Master makefile for DL_POLY_4.05 (CUDA+OpenMP version)
 #
-# Author - I.T.Todorov march 2012
+# Author - I.T.Todorov july 2013
 #
 # Define default settings
 #=====================================================================
@@ -46,7 +46,7 @@ OBJ_MOD = \
 	external_field_module.o langevin_module.o minimise_module.o \
 	ewald_module.o msd_module.o statistics_module.o \
 	\
-	kinetic_module.o gpfa_module.o parallel_fft.o \
+	kinetic_module.o gpfa_module.o parallel_fft.o
 
 OBJ_MOD += $(OBJ_CUDA_MOD)
 
@@ -77,10 +77,10 @@ OBJ_ALL = \
 	scan_field.o read_config_parallel.o scan_config.o scan_control.o read_config.o \
 	set_bounds.o \
 	read_control.o \
-	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o\
+	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
-	check_config.o scale_config.o write_config.o \
+	check_config.o origin_config.o scale_config.o write_config.o \
 	trajectory_write.o system_expand.o \
 	rigid_bodies_tags.o rigid_bodies_coms.o rigid_bodies_widths.o \
 	rigid_bodies_setup.o \
@@ -103,16 +103,19 @@ OBJ_ALL = \
 	impact.o core_shell_on_top.o \
 	deport_atomic_data.o pmf_units_set.o compress_book_intra.o \
 	relocate_particles.o \
+	\
 	metal_ld_collect_eam.o metal_ld_collect_fst.o \
 	metal_ld_export.o metal_ld_set_halo.o \
+	\
 	exchange_grid.o \
+	\
 	coul_dddp_forces.o coul_cp_forces.o coul_fscp_forces.o \
 	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o ewald_excl_forces.o \
 	ewald_frozen_forces.o \
 	tersoff_forces.o three_body_forces.o four_body_forces.o \
 	core_shell_forces.o tethers_forces.o \
 	intra_coul.o bonds_forces.o angles_forces.o \
-	dihedrals_14_vdw.o dihedrals_forces.o inversions_forces.o \
+	inversions_forces.o dihedrals_14_vdw.o dihedrals_forces.o \
 	external_field_apply.o external_field_correct.o \
 	langevin_forces.o \
 	constraints_pseudo_bonds.o pmf_pseudo_bonds.o \
@@ -149,7 +152,7 @@ OBJ_ALL = \
 	\
 	z_density_collect.o statistics_collect.o \
 	system_revive.o \
-	rdf_compute.o z_density_compute.o statistics_result.o \
+	rdf_compute.o z_density_compute.o statistics_result.o
 
 OBJ_ALL += $(OBJ_CUDA_F90) $(OBJ_CUDA_CC) $(OBJ_CUDA_CU)
 
@@ -190,7 +193,7 @@ FILES_VV = \
 	nvt_l1_vv.f90 nvt_a1_vv.f90 nvt_b1_vv.f90 nvt_h1_vv.f90 nvt_g1_vv.f90 \
 	npt_l1_vv.f90 npt_b1_vv.f90 npt_h1_vv.f90 npt_m1_vv.f90 \
 	nst_l1_vv.f90 nst_b1_vv.f90 nst_h1_vv.f90 nst_m1_vv.f90 \
-	md_vv.f90
+	w_at_start_vv.f90 w_integrate_vv.f90 w_md_vv.f90
 
 # Define LeapFrog Verlet files
 #=====================================================================
@@ -206,7 +209,7 @@ FILES_LFV = \
 	nvt_l1_lfv.f90 nvt_a1_lfv.f90 nvt_b1_lfv.f90 nvt_h1_lfv.f90 nvt_g1_lfv.f90 \
 	npt_l1_lfv.f90 npt_b1_lfv.f90 npt_h1_lfv.f90 npt_m1_lfv.f90 \
 	nst_l1_lfv.f90 nst_b1_lfv.f90 nst_h1_lfv.f90 nst_m1_lfv.f90 \
-	md_lfv.f90
+	w_at_start_lfv.f90 w_integrate_lfv.f90 w_md_lfv.f90
 
 # Examine targets manually
 #=====================================================================
