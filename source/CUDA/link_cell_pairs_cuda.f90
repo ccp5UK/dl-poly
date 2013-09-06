@@ -1106,7 +1106,8 @@ Call start_timing_link_cell_pairs()
 
      If (mxnode > 1) Then
          Call gcheck(safe,"enforce")
-         Call gsum(det,"enforce")
+         !Call gsum(det,"enforce")!Modified by BBG: Changed as follows.
+         Call gsum(det)
      End If
 
      If ((.not.safe) .and. idnode == 0) Write(nrite,'(/,1x,a,i0,2a)') &

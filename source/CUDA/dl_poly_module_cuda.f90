@@ -174,10 +174,10 @@ Interface
 
 
    ! two_body_forces
-   Subroutine two_body_forces_cuda_initialise                          &
-              (cuda_ilo,natms,mxlist,mxatms,mxatdm,mxmet,              &
-              ntpmet,ntpvdw,keyfce,imcon,                              &
-              cell,xxx,yyy,zzz,list,ltype,ltpmet,lstmet,vmet,dmet,rho, &
+   Subroutine two_body_forces_cuda_initialise                      &
+              (cuda_ilo,natms,mxlist,mxatms,mxatdm,mxmet,          &
+              ntpmet,ntpvdw,keyfce,imcon,                          &
+              cell,xxx,yyy,zzz,list,ltype,ltpmet,lstmet,vmet,dmet, &
               mxgrid, mxvdw, ltpvdw, lstvdw, ls_vdw, vvdw, gvdw, rvdw, ltg,    &
               chge, rcut, alpha, epsq) bind(c)
      Use kinds_f90

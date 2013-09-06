@@ -17,7 +17,7 @@
 #include <assert.h>
 #include <list>
 #include <cuda.h>
-#include <cutil.h>
+#include "cutil.h"
 
 /* Some notes:
  * (1) As access to both local & shared position data is required by

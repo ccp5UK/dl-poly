@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <sched.h>
 #include <cuda.h>
-#include <cutil.h>
+#include "cutil.h"
 
 #ifdef _OPENMP
 #include <omp.h>

@@ -35,11 +35,6 @@ End Subroutine metal_ld_compute_get_keypot
 Subroutine metal_ld_compute         &
            (imcon,rmet,elrcm,vlrcm, &
            xdf,ydf,zdf,rsqdf,       &
-           rho,engden,virden,stress)
-
-Subroutine metal_ld_compute         &
-           (imcon,rmet,elrcm,vlrcm, &
-           xdf,ydf,zdf,rsqdf,       &
            engden,virden,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -62,7 +57,9 @@ Subroutine metal_ld_compute         &
   Use setup_module
   Use config_module, Only : cell,natms,ltg,ltype,list,xxx,yyy,zzz
   Use metal_module,  Only : ls_met,l2bmet,ntpmet,ltpmet, &
-                            fmet,fmes,rho,rhs
+                            fmet,fmes,rho,rhs, ld_met, lstmet, vmet, dmet
+                            !fmet,fmes,rho,rhs !Modified by BBG: Changed as
+                            !above
 
 #ifdef COMPILE_CUDA
   Use dl_poly_cuda_module
@@ -148,12 +145,14 @@ Subroutine metal_ld_compute         &
 ! The CUDA port implements the features of dl_poly_3 - a subset of those found in dl_poly_4
 ! In particular, only tabulated calculations are available in metal_ld_compute
 ! The CUDA acceleration is not called if direct calculation is required
-  If (dl_poly_cuda_offload_metal_ld_compute() .and. ld_met .eqv. .false.) Then !*CHANGE == to .eqv.
-!     Call metal_ld_compute_cuda_initialise(&
-!          0,mxatms,natms,mxgrid,ntpmet,mxmet,mxatdm,mxlist,&
-!          xxx,yyy,zzz,list,ltype,ltpmet,lstmet,vmet,dmet,cell,rho)
-!     Call metal_ld_compute_cuda_invoke()
-!     Call metal_ld_compute_cuda_finalise()
+  !If (dl_poly_cuda_offload_metal_ld_compute() .and. ld_met .eqv. .false.) Then !*CHANGE == to .eqv. !Modified by BBG: Line is changed as follows.
+  If (dl_poly_cuda_offload_metal_ld_compute() .eqv. .true. .and. ld_met .eqv. .false.) Then !*CHANGE == to .eqv.
+     Call metal_ld_compute_cuda_initialise(& 
+          0,mxatms,natms,mxgrid,ntpmet,mxmet,mxatdm,mxlist,&
+          xxx,yyy,zzz,list,ltype,ltpmet,lstmet,vmet,dmet,cell,rho)
+     Call metal_ld_compute_cuda_invoke()
+     Call metal_ld_compute_cuda_finalise()
+     !Modified by BBG: Above 5 lines are uncommented.
   Else
 #endif
 

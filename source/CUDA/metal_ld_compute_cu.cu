@@ -15,7 +15,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <cuda.h>
-#include <cutil.h>
+#include "cutil.h"
 
 #include "dl_poly_common_cu.cu"
 

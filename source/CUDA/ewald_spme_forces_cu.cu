@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <list>
 #include <cuda.h>
-#include <cutil.h>
+#include "cutil.h"
 #include <cufft.h>
 
 #include "dl_poly_common_cu.cu"
@@ -747,7 +747,8 @@ extern "C" void ewald_spme_forces_cuda_ccarray_initialise
       sCD_CCARRAY.mBLOCK_XYZ.x*sCD_CCARRAY.mBLOCK_XYZ.y*sCD_CCARRAY.mBLOCK_XYZ.z;
 
   int lK1_Grid_Dims_X = dl_poly_cuda_getenv("dlpolycuda_ewald_spme_forces_ccarray_k1_grid_dims_x",
-                                            CFG_CCARRAY_K1_GRID_DIMS_Y);
+                                            CFG_CCARRAY_K1_GRID_DIMS_X);
+                                            //CFG_CCARRAY_K1_GRID_DIMS_Y); //Above line is updated by Maria
   int lK1_Grid_Dims_Y = dl_poly_cuda_getenv("dlpolycuda_ewald_spme_forces_ccarray_k1_grid_dims_y",
                                             CFG_CCARRAY_K1_GRID_DIMS_Y);
 

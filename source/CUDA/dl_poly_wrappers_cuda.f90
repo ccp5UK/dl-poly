@@ -166,8 +166,6 @@ Subroutine wrapper_f_ewald_spme_forces_ccarray_final_reduction &
 End Subroutine wrapper_f_ewald_spme_forces_ccarray_final_reduction
 
 Function wrapper_f_local_index(global_index,search_limit,rank,list) bind(c)
-  Use config_module, Only : gtl_b,gtl
-
   Implicit None
 
   Integer,                   Intent( In    ) :: global_index,search_limit

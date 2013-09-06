@@ -392,7 +392,7 @@ kepler: CUDA_PORT_DEFINES = -D CFG_COMPUTE_MAJOR=3 -D CFG_COMPUTE_MINOR=5
 kepler:
 	$(MAKE) \
 	NVCC="nvcc -c ${CUDA_PORT_DEFINES}" \
-	NVCCFLAGS="-gencode -arch compute_35 -code sm_35 -Xcompiler \"-fopenmp -O3 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
+	NVCCFLAGS="-gencode arch=compute_35,code=sm_35 -Xcompiler \"-fopenmp -O3 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
 	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/C/common/inc/ -I${MPI_HOME}/include" \
 	LD="mpif90 -o" LDFLAGS="-O3 -openmp -Wl,-rpath,${CUDA_HOME}/lib64 -L${CUDA_HOME}/lib64 -lcudart" \
 	FC="mpif90 -c" FCFLAGS="-O3 -openmp -fpp ${PREPROC_DEFINES}" \
