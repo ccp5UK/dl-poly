@@ -8,7 +8,7 @@ Subroutine vdw_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov march 2012
+! amended   - i.t.todorov september 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -129,7 +129,7 @@ Subroutine vdw_forces &
               If (ls_vdw) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma + afs(k)/rrr
+                 gamma = gamma - afs(k)/rrr
               End If
 
            Else If (ityp == 2) Then
@@ -148,7 +148,7 @@ Subroutine vdw_forces &
               If (ls_vdw) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma + afs(k)/rrr
+                 gamma = gamma - afs(k)/rrr
               End If
 
            Else If (ityp == 3) Then
@@ -172,7 +172,7 @@ Subroutine vdw_forces &
               If (ls_vdw) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma + afs(k)/rrr
+                 gamma = gamma - afs(k)/rrr
               End If
 
            Else If (ityp == 4) Then
@@ -202,7 +202,7 @@ Subroutine vdw_forces &
               If (ls_vdw) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma + afs(k)/rrr
+                 gamma = gamma - afs(k)/rrr
               End If
 
            Else If (ityp == 5) Then
@@ -226,7 +226,7 @@ Subroutine vdw_forces &
               If (ls_vdw) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma + afs(k)/rrr
+                 gamma = gamma - afs(k)/rrr
               End If
 
            Else If (ityp == 6) Then
@@ -246,7 +246,7 @@ Subroutine vdw_forces &
               If (ls_vdw) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma + afs(k)/rrr
+                 gamma = gamma - afs(k)/rrr
               End If
 
            Else If (ityp == 7) Then
@@ -293,7 +293,7 @@ Subroutine vdw_forces &
               If (ls_vdw) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma + afs(k)/rrr
+                 gamma = gamma - afs(k)/rrr
               End If
 
            Else If (ityp == 9) Then
@@ -315,7 +315,7 @@ Subroutine vdw_forces &
                  If (ls_vdw) Then ! force-shifting
                     If (jatm <= natms .or. idi < ltg(jatm)) &
                     eng   = eng + afs(k)*rrr + bfs(k)
-                    gamma = gamma + afs(k)/rrr
+                    gamma = gamma - afs(k)/rrr
                  End If
               End If
 
@@ -335,7 +335,7 @@ Subroutine vdw_forces &
                  t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
                  eng = t1 + (t2-t1)*ppp*0.5_wp
-                 If (ls_vdw) eng = eng - gvdw(mxgrid,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgrid,k) ! force-shifting
+                 If (ls_vdw) eng = eng + gvdw(mxgrid,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgrid,k) ! force-shifting
               End If
 
 ! calculate forces using 3-point interpolation
@@ -368,7 +368,7 @@ Subroutine vdw_forces &
               t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
               eng = t1 + (t2-t1)*ppp*0.5_wp
-              If (ls_vdw) eng = eng - gvdw(mxgrid,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgrid,k) ! force-shifting
+              If (ls_vdw) eng = eng + gvdw(mxgrid,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgrid,k) ! force-shifting
            End If
 
 ! calculate forces using 3-point interpolation

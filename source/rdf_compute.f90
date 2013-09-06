@@ -82,14 +82,14 @@ Subroutine rdf_compute(rcut)
                  Do i=1,mxgrdf
                     If (zero .and. i < (mxgrdf-3)) zero=(rdf(i+2,kk) <= 0.0_wp)
 
+                    gofr= rdf(i,kk)/factor
+                    sum = sum + gofr*dens(ib)
+
                     rrr = (Real(i,wp)-0.5_wp)*delr
-                    dvol= 4.0_wp*pi*(delr*rrr*rrr+(delr**3)/12.0_wp)
+                    dvol= 4.0_wp*pi*delr*(rrr**2+delr*2/12.0_wp)
+                    gofr= gofr/dvol
 
-                    gofr= rdf(i,kk)/(factor*dvol)
-
-                    sum = sum + gofr*dvol*dens(ib)
-
-! null it if < 1.0e-6_wp
+! zero it if < 1.0e-6_wp
 
                     If (gofr < 1.0e-6_wp) Then
                        gofr1 = 0.0_wp

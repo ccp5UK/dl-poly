@@ -65,3 +65,5 @@ TEST 41 - Calcite nano-particles (600) in TIP3P water (6,904 molecules) (23,712 
 TEST 42 - Calcite nano-particles (4,800) in TIP3P water (55,232 molecules) (189,696 ions)
 TEST 43 - Iron/Carbon alloy with EEAM potentials (36,803 particles)
 TEST 44 - Iron/Carbon alloy with EEAM potentials (294,424 particles)
+TEST 45 - Iron/Chromium alloy with 2BEAM potentials (32,000 particles)
+TEST 46 - Iron/Chromium alloy with 2BEAM potentials (356,000 particles)
