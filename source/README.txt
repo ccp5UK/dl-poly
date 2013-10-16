@@ -117,7 +117,7 @@ If the parallel OS environment, one is compiling on, is not fully F90
 compatible then the `Use mpi' entry in the `comms_module.f90' file may
 be interpreted as erroneous.  This is easily overcome by commenting out
 the `Use mpi' line and uncommenting the "Include 'mpif.h'" one situated
-immediatly after the `Implicit None' line.
+immediately after the `Implicit None' line.
 
 If there is an `entry' in the Makefile for the particular combination
 of architecture, compiler & MPI implementation, then the user may
@@ -156,15 +156,17 @@ then it will be created automatically.  The build can then be moved,
 renamed, etc. and used as the user wishes.  However, when executed, the
 program will look for input files in the directory of execution!
 
-Serial Compilation on Windows:
-------------------------------
+Compilation on Windows:
+-----------------------
 The best way to get around it is to install cygwin on the system
 (http://www.cygwin.com/) to emulate a UNIX/Linux like environment
 and then use the "make" command.  During cygwin installation make sure
-that the make and gfortran components are opted for in the install.
+that the "make" and "gfortran" components are opted for in the install.
 A potential problem for Windows based FORTRAN compilers, one may
 encounter, is that the compiler may not pick symbolic links.  This can
 be resolved by substituting the soft links with hard in the Makefile.
+For parallel compilation all "openMP" components must be opted for
+during the cygwin install!!!
 
 Compiling with NetCDF functionality:
 ------------------------------------

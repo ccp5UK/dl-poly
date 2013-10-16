@@ -7,7 +7,7 @@ Subroutine vdw_generate(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov november 2012
+! amended   - i.t.todorov october 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,8 +20,8 @@ Subroutine vdw_generate(rvdw)
   Real( Kind = wp ), Intent( In    ) :: rvdw
 
   Integer           :: i,ivdw,keypot
-  Real( Kind = wp ) :: dlrpot,r,r0,r0rn,r0rm,r_6,sor6, &
-                       rho,a,b,c,d,e0,k,n,m,sig,eps,   &
+  Real( Kind = wp ) :: dlrpot,r,r0,r0rn,r0rm,r_6,sor6,  &
+                       rho,a,b,c,d,e0,k,n,m,rc,sig,eps, &
                        alpha,beta,t1,t2,t3
 
 ! allocate arrays for tabulating
@@ -163,27 +163,29 @@ Subroutine vdw_generate(rvdw)
         n =prmvdw(2,ivdw)
         m =prmvdw(3,ivdw)
         r0=prmvdw(4,ivdw)
+        rc=prmvdw(5,ivdw) ; If (rc < 1.0e-6_wp) rc=rvdw
 
         If (n <= m) Call error(470)
 
         b=1.0_wp/(n-m)
-        c = rvdw/r0 ; If (c < 1.0_wp) Call error(468)
+        c = rc/r0 ; If (c < 1.0_wp) Call error(468)
 
-        beta = c*( (c**(m+1.0_wp)-1.0_wp) / (c**(n+1.0_wp)-1.0_wp))**b
-        alpha= -(n-m) / ( m*(beta**n)*(1.0_wp+(n/c-n-1.0_wp)/c**n) &
-                         -n*(beta**m)*(1.0_wp+(m/c-m-1.0_wp)/c**m) )
+        beta = c*( (c**(m+1.0_wp)-1.0_wp) / (c**(n+1.0_wp)-1.0_wp) )**b
+        alpha= -(n-m) / (  m*(beta**n)*(1.0_wp+(n/c-n-1.0_wp)/c**n) &
+                          -n*(beta**m)*(1.0_wp+(m/c-m-1.0_wp)/c**m) )
         e0 = e0*alpha
 
         Do i=1,mxgrid
            r=Real(i,wp)*dlrpot
+           If (r <= rc) Then
+              a=r0/r
 
-           a=r0/r
-
-           vvdw(i,ivdw)=e0*( m*(beta**n)*(a**n-(1.0_wp/c)**n) &
-                            -n*(beta**m)*(a**m-(1.0_wp/c)**m) &
-                            +n*m*((r/rvdw-1.0_wp)*((beta/c)**n-(beta/c)**m)) )*b
-           gvdw(i,ivdw)=e0*m*n*( (beta**n)*a**n-(beta**m)*a**m &
-                                -r/rvdw*((beta/c)**n-(beta/c)**m) )*b
+              vvdw(i,ivdw)=e0*(  m*(beta**n)*(a**n-(1.0_wp/c)**n) &
+                                -n*(beta**m)*(a**m-(1.0_wp/c)**m) &
+                                +n*m*((r/rc-1.0_wp)*((beta/c)**n-(beta/c)**m)) )*b
+              gvdw(i,ivdw)=e0*m*n*( (beta**n)*a**n-(beta**m)*a**m &
+                                    -r/rc*((beta/c)**n-(beta/c)**m) )*b
+           End If ! The else condition is satisfied by the vdw_module initialisation
         End Do
 
      Else If (keypot == 8) Then

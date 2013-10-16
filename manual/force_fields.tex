@@ -2808,7 +2808,7 @@ potential, the reference position of a frozen site is scaled with
 the cell vectors in constant pressure simulations.  In the case of
 frozen rigid bodies, their ``centre of mass'' is scaled with
 the cell vectors in constant pressure simulations and the positions
-of their constituent sites are thenmoved accordingly.
+of their constituent sites are then moved accordingly.
 
 In \D the frozen atom option is handled by the subroutine {\sc freeze\_atoms}.
 
@@ -2820,9 +2820,29 @@ due to the action of the resolved forces on sites/atoms constituting it.
 These contribute towards the total system stress and pressure.
 
 As seen in Section \ref{shell-model} core-shell units\index{polarisation!shell model}
-are dealth with (i) kinetically by the adiabatic shell model or (ii)
-staticly by the dynamic shell model.  Both contribute to the total
+are dealt with (i) kinetically by the adiabatic shell model or (ii)
+statically by the dynamic shell model.  Both contribute to the total
 system stress (pressure) but in different manner.  The former does
-it via the kinetic stress (energy) and atomic sterss (potential
-energy) due to the core-shell spring.  The latter via atomic sterss (potential
+it via the kinetic stress (energy) and atomic stress (potential
+energy) due to the core-shell spring.  The latter via atomic stress (potential
 energy) due to the shells move to minimised configuration.
+
+\section{Tabulation and interpolation in the treatment of intermolecular interactions}
+
+By default \D tabulates in memory most of the intermolecular interactions
+keeping values of the potential and the negative of its first derivative
+times the distance (or virial) over an equidistant grid.  This is done
+for reasons of speed as due to the large variety of potential forms, some
+could be quite expensive to evaluate if run unoptimised.  The memory
+tabulation could be overridden for non-tabulated interactions upon user
+specified options such as {\bf metal direct} for metal interactions and
+{\bf vdw direct} for van der Waals interactions.
+
+When energy and force are calculated for tabulated interactions a 3-point
+interpolation scheme of our own is used to interpolate the value for the
+requested distance.
+
+A 5-point interpolation is used for finding the numerical derivatives of
+(2B)(E)EAM type potentials which are supplied in TABEAM by the user.  For
+this a Lagrange formula is used, which can be found in any textbook on
+numerical methods.

@@ -10,7 +10,7 @@ Subroutine nvt_l0_lfv                                           &
 ! (standard brownian dynamics)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov october 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,7 +20,7 @@ Subroutine nvt_l0_lfv                                           &
   Use site_module,    Only : ntpshl,unqshl
   Use config_module,  Only : natms,atmnam,weight, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use kinetic_module, Only : kinstress
+  Use kinetic_module, Only : getvom,kinstress
 
   Implicit None
 
@@ -42,7 +42,7 @@ Subroutine nvt_l0_lfv                                           &
   Integer                 :: fail(1:10),kit,i
   Real( Kind = wp )       :: rstep
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
-                             sclv,sclf
+                             vom(1:3),sclv,sclf
 
 
   Logical,           Allocatable :: lstitr(:)
@@ -314,6 +314,26 @@ Subroutine nvt_l0_lfv                                           &
      vxt(i) = 0.5_wp*(vxx(i)+vxt(i))
      vyt(i) = 0.5_wp*(vyy(i)+vyt(i))
      vzt(i) = 0.5_wp*(vzz(i)+vzt(i))
+  End Do
+
+! remove system centre of mass velocity
+
+  Call getvom(vom,vxx,vyy,vzz)
+  Do i=1,natms
+     If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
+        vxx(i)=vxx(i)-vom(1)
+        vyy(i)=vyy(i)-vom(2)
+        vzz(i)=vzz(i)-vom(3)
+     End If
+  End Do
+
+  Call getvom(vom,vxt,vyt,vzt)
+  Do i=1,natms
+     If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
+        vxt(i)=vxt(i)-vom(1)
+        vyt(i)=vyt(i)-vom(2)
+        vzt(i)=vzt(i)-vom(3)
+     End If
   End Do
 
 ! update kinetic energy and stress at full step

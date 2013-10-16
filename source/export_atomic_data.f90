@@ -6,7 +6,7 @@ Subroutine export_atomic_data(mdir)
 ! for halo formation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov october 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -167,13 +167,12 @@ Subroutine export_atomic_data(mdir)
               buffer(imove+5)=Real(lsite(i),wp)
               buffer(imove+6)=Real(ixyz(i)-jxyz,wp)
 
-              imove=imove+iadd
-
            Else
 
               safe=.false.
 
            End If
+           imove=imove+iadd
 
         End If
 

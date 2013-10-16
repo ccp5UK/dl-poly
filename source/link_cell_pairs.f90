@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov september 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -39,7 +39,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
                        ix,iy,iz,ic, ix1,ix2,iy1,iy2,iz1,iz2, &
                        jx,jy,jz,jc
 
-  Real( Kind = wp ) :: rsq,det,rcell(1:9),celprp(1:10), &
+  Real( Kind = wp ) :: rsq,det,rcell(1:9),celprp(1:10), x,y,z, &
                        dispx,dispy,dispz, xdc,ydc,zdc,nlr2
 
   Logical,           Dimension( : ), Allocatable :: nir
@@ -183,19 +183,6 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   End Do
 !  Write(*,*) 'NLP',nlp,nsbcll,nlx,nly,nlz
 
-! Get the inverse cell matrix
-
-  Call invert(cell,rcell,det)
-
-! Convert atomic positions (ALL - halo included) from centred
-! Cartesian coordinates to reduced space coordinates
-
-  Do i=1,nlast
-     xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-     yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-     zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
-  End Do
-
 ! Get the total number of link-cells in MD cell per direction
 
   xdc=Real(nlx*nprx,wp)
@@ -261,13 +248,24 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
   lct_count = 0
 
+! Get the inverse cell matrix
+
+  Call invert(cell,rcell,det)
+
   Do i=1,natms
+
+! Convert atomic positions from MD cell centred
+! Cartesian coordinates to reduced space coordinates
+
+     x=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
+     y=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
+     z=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
 
 ! Get cell coordinates accordingly
 
-     ix = Int(xdc*(xxt(i)+0.5_wp)) + jx
-     iy = Int(ydc*(yyt(i)+0.5_wp)) + jy
-     iz = Int(zdc*(zzt(i)+0.5_wp)) + jz
+     ix = Int(xdc*(x+0.5_wp)) + jx
+     iy = Int(ydc*(y+0.5_wp)) + jy
+     iz = Int(zdc*(z+0.5_wp)) + jz
 
 ! Correction for domain (idnode) only particles (1,natms) but due to
 ! some tiny numerical inaccuracy kicked into its halo link-cell space
@@ -295,27 +293,34 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   End Do
   Do i=natms+1,nlast
 
+! Convert atomic positions from MD cell centred
+! Cartesian coordinates to reduced space coordinates
+
+     x=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
+     y=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
+     z=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+
 ! Get cell coordinates accordingly
 
-     If (xxt(i) > -half_plus) Then
-        dispx=xdc*(xxt(i)+0.5_wp)
+     If (x > -half_plus) Then
+        dispx=xdc*(x+0.5_wp)
         ix = Int(dispx) + jx
      Else
-        dispx=xdc*Abs(xxt(i)+0.5_wp)
+        dispx=xdc*Abs(x+0.5_wp)
         ix =-Int(dispx) + jx - 1
      End If
-     If (yyt(i) > -half_plus) Then
-        dispy=ydc*(yyt(i)+0.5_wp)
+     If (y > -half_plus) Then
+        dispy=ydc*(y+0.5_wp)
         iy = Int(dispy) + jy
      Else
-        dispy=ydc*Abs(yyt(i)+0.5_wp)
+        dispy=ydc*Abs(y+0.5_wp)
         iy =-Int(dispy) + jy - 1
      End If
-     If (zzt(i) > -half_plus) Then
-        dispz=zdc*(zzt(i)+0.5_wp)
+     If (z > -half_plus) Then
+        dispz=zdc*(z+0.5_wp)
         iz = Int(dispz) + jz
      Else
-        dispz=zdc*Abs(zzt(i)+0.5_wp)
+        dispz=zdc*Abs(z+0.5_wp)
         iz =-Int(dispz) + jz - 1
      End If
 
@@ -342,33 +347,33 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
               Else If (lx1) Then
                  ix=nlx1s
               End If
-              If (xxt(i) > -half_plus) Then
-                 dispx = dispx + Real(jx-ix,wp)
-              Else
-                 dispx = dispx - Real(jx-ix-1,wp)
-              End If
+!              If (x > -half_plus) Then
+!                 dispx = dispx + Real(jx-ix,wp)
+!              Else
+!                 dispx = dispx - Real(jx-ix-1,wp)
+!              End If
            Else If (ly0 .or. ly1) Then
               If      (ly0 ) Then
                  iy=nly0e
               Else If (ly1) Then
                  iy=nly1s
               End If
-              If (yyt(i) > -half_plus) Then
-                 dispy = dispy + Real(jy-iy,wp)
-              Else
-                 dispy = dispy - Real(jy-iy-1,wp)
-              End If
+!              If (y > -half_plus) Then
+!                 dispy = dispy + Real(jy-iy,wp)
+!              Else
+!                 dispy = dispy - Real(jy-iy-1,wp)
+!              End If
            Else If (lz0 .or. lz1) Then
               If      (lz0 ) Then
                  iz=nlz0e
               Else If (lz1) Then
                  iz=nlz1s
               End If
-              If (zzt(i) > -half_plus) Then
-                 dispz = dispz + Real(jz-iz,wp)
-              Else
-                 dispz = dispz - Real(jz-iz-1,wp)
-              End If
+!              If (z > -half_plus) Then
+!                 dispz = dispz + Real(jz-iz,wp)
+!              Else
+!                 dispz = dispz - Real(jz-iz-1,wp)
+!              End If
            End If
         End If
 
@@ -428,7 +433,17 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
   lct_where = lct_start
   Do i=1,nlast
-     at_list( lct_where( which_cell( i ) ) ) = i
+!     at_list( lct_where( which_cell( i ) ) ) = i
+! create a reordered coordinates arrays in the
+! same manner to speeds up performance later
+
+     j = lct_where( which_cell( i ) )
+     at_list( j ) = i
+
+     xxt(j) = xxx(i)
+     yyt(j) = yyy(i)
+     zzt(j) = zzz(i)
+
      lct_where( which_cell( i ) ) = lct_where( which_cell( i ) ) + 1
   End Do
 
@@ -595,8 +610,10 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
                                 j=at_list(jj)
 
 ! check cutoff criterion (all atom pairs MUST BE within the cutoff)
+!                                rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
+! use reordered coordinate list in order to get "ordered" rather than "random" access
 
-                                rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
+                                rsq=(xxt(jj)-xxx(i))**2+(yyt(jj)-yyy(i))**2+(zzt(jj)-zzz(i))**2
                                 If (rsq <= rcsq) Then
 
 ! check for overfloat and add an entry

@@ -8,7 +8,7 @@ Subroutine vdw_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov september 2013
+! amended   - i.t.todorov october 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -28,11 +28,11 @@ Subroutine vdw_forces &
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: dlrpot,rdr,rcsq
 
-  Integer           :: m,idi,ai,aj,jatm,key,k,l,ityp
+  Integer           :: mm,idi,ai,aj,jatm,key,k,l,ityp
   Real( Kind = wp ) :: rsq,rrr,ppp,gamma,eng,          &
                        r0,r0rn,r0rm,r_6,sor6,          &
                        rho,a,b,c,d,e0,kk,              &
-                       n,mm,sig,eps,alpha,beta,        &
+                       n,m,rc,sig,eps,alpha,beta,      &
                        fix,fiy,fiz,fx,fy,fz,           &
                        gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3, &
                        strs1,strs2,strs3,strs5,strs6,strs9
@@ -78,11 +78,11 @@ Subroutine vdw_forces &
   fiy=fyy(iatm)
   fiz=fzz(iatm)
 
-  Do m=1,list(0,iatm)
+  Do mm=1,list(0,iatm)
 
 ! atomic and potential function indices
 
-     jatm=list(m,iatm)
+     jatm=list(mm,iatm)
      aj=ltype(jatm)
 
      If (ai > aj) Then
@@ -95,7 +95,7 @@ Subroutine vdw_forces &
 
 ! interatomic distance
 
-     rsq = rsqdf(m)
+     rsq = rsqdf(mm)
 
 ! validity and truncation of potential
 
@@ -153,21 +153,21 @@ Subroutine vdw_forces &
 
            Else If (ityp == 3) Then
 
-! n-m potential :: u={e0/(n-mm)}*[mm*(r0/r)^n-n*(d/r)^c]
+! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
               e0=prmvdw(1,k)
               n =prmvdw(2,k)
-              mm=prmvdw(3,k)
+              m =prmvdw(3,k)
               r0=prmvdw(4,k)
 
               a=r0/rrr
-              b=1.0_wp/(n-mm)
+              b=1.0_wp/(n-m)
               r0rn=a**n
-              r0rm=a**mm
+              r0rm=a**m
 
               If (jatm <= natms .or. idi < ltg(jatm)) &
-              eng   = e0*(mm*r0rn-n*r0rm)*b
-              gamma = e0*mm*n*(r0rn-r0rm)*b/rsq
+              eng   = e0*(m*r0rn-n*r0rm)*b
+              gamma = e0*m*n*(r0rn-r0rm)*b/rsq
 
               If (ls_vdw) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
@@ -255,26 +255,30 @@ Subroutine vdw_forces &
 
               e0=prmvdw(1,k)
               n =prmvdw(2,k)
-              mm=prmvdw(3,k)
+              m =prmvdw(3,k)
               r0=prmvdw(4,k)
+              rc=prmvdw(5,k) ; If (rc < 1.0e-6_wp) rc=rvdw
 
-              If (n <= mm) Call error(470)
+              If (n <= m) Call error(470)
 
-              a=r0/rrr
-              b=1.0_wp/(n-mm)
-              c=rvdw/r0 ; If (c < 1.0_wp) Call error(468)
+              b=1.0_wp/(n-m)
+              c=rc/r0 ; If (c < 1.0_wp) Call error(468)
 
-              beta = c*( (c**(mm+1.0_wp)-1.0_wp) / (c**(n+1.0_wp)-1.0_wp) )**b
-              alpha= -(n-mm) / ( mm*(beta**n)*(1.0_wp+(n/c-n-1.0_wp)/c**n) &
-                                -n*(beta**mm)*(1.0_wp+(mm/c-mm-1.0_wp)/c**mm) )
+              beta = c*( (c**(m+1.0_wp)-1.0_wp) / (c**(n+1.0_wp)-1.0_wp) )**b
+              alpha= -(n-m) / (  m*(beta**n)*(1.0_wp+(n/c-n-1.0_wp)/c**n) &
+                                -n*(beta**m)*(1.0_wp+(m/c-m-1.0_wp)/c**m) )
               e0 = e0*alpha
 
-              If (jatm <= natms .or. idi < ltg(jatm))           &
-              eng   = e0*( mm*(beta**n)*(a**n-(1.0_wp/c)**n)    &
-                           -n*(beta**mm)*(a**mm-(1.0_wp/c)**mm) &
-                           +n*mm*((rrr/rvdw-1.0_wp)*((beta/c)**n-(beta/c)**mm)) )*b
-              gamma = e0*mm*n*( (beta**n)*a**n-(beta**mm)*a**mm &
-                               -rrr/rvdw*((beta/c)**n-(beta/c)**mm) )*b/rsq
+              If (rrr <= rc) Then
+                 a=r0/rrr
+
+                 If (jatm <= natms .or. idi < ltg(jatm))           &
+                    eng   = e0*(  m*(beta**n)*(a**n-(1.0_wp/c)**n) &
+                                 -n*(beta**m)*(a**m-(1.0_wp/c)**m) &
+                                 +n*m*((rrr/rc-1.0_wp)*((beta/c)**n-(beta/c)**m)) )*b
+                 gamma = e0*m*n*( (beta**n)*a**n-(beta**m)*a**m &
+                                  -rrr/rc*((beta/c)**n-(beta/c)**m) )*b/rsq
+              End If
 
            Else If (ityp == 8) Then
 
@@ -387,9 +391,9 @@ Subroutine vdw_forces &
 
 ! calculate forces
 
-        fx = gamma*xdf(m)
-        fy = gamma*ydf(m)
-        fz = gamma*zdf(m)
+        fx = gamma*xdf(mm)
+        fy = gamma*ydf(mm)
+        fz = gamma*zdf(mm)
 
         fix=fix+fx
         fiy=fiy+fy
@@ -415,12 +419,12 @@ Subroutine vdw_forces &
 
 ! add stress tensor
 
-           strs1 = strs1 + xdf(m)*fx
-           strs2 = strs2 + xdf(m)*fy
-           strs3 = strs3 + xdf(m)*fz
-           strs5 = strs5 + ydf(m)*fy
-           strs6 = strs6 + ydf(m)*fz
-           strs9 = strs9 + zdf(m)*fz
+           strs1 = strs1 + xdf(mm)*fx
+           strs2 = strs2 + xdf(mm)*fy
+           strs3 = strs3 + xdf(mm)*fz
+           strs5 = strs5 + ydf(mm)*fy
+           strs6 = strs6 + ydf(mm)*fz
+           strs9 = strs9 + zdf(mm)*fz
 
         End If
 

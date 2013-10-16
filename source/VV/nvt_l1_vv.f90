@@ -23,7 +23,7 @@ Subroutine nvt_l1_vv                               &
 ! (brownian dynamics, not symplectic due to the random forces)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov october 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -36,7 +36,7 @@ Subroutine nvt_l1_vv                               &
                                  lsi,lsa,lstfre,atmnam,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
-  Use kinetic_module,     Only : getknr,kinstresf,kinstrest
+  Use kinetic_module,     Only : getvom,getknr,kinstresf,kinstrest
 
   Implicit None
 
@@ -63,7 +63,7 @@ Subroutine nvt_l1_vv                               &
   Integer                 :: fail(1:14),matms,i,j,i1,i2, &
                              irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp )       :: hstep,rstep
-  Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
+  Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,vom(1:3), &
                              t0,t1,t2,scr,scl,scv,scr1,scl1,scv1
   Real( Kind = wp )       :: x(1:1),y(1:1),z(1:1),rot(1:9), &
                              opx,opy,opz,fmx,fmy,fmz,       &
@@ -899,6 +899,41 @@ Subroutine nvt_l1_vv                               &
               End If
            End Do
 
+        End If
+     End Do
+
+! remove system centre of mass velocity
+
+     Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz)
+
+     Do j=1,nfree
+        i=lstfre(j)
+
+        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
+           vxx(i) = vxx(i) - vom(1)
+           vyy(i) = vyy(i) - vom(2)
+           vzz(i) = vzz(i) - vom(3)
+        End If
+     End Do
+
+     Do irgd=1,ntrgd
+        rgdtyp=listrgd(0,irgd)
+
+        If (rgdfrz(0,rgdtyp) == 0) Then
+           rgdvxx(irgd) = rgdvxx(irgd) - vom(1)
+           rgdvyy(irgd) = rgdvyy(irgd) - vom(2)
+           rgdvzz(irgd) = rgdvzz(irgd) - vom(3)
+
+           lrgd=listrgd(-1,irgd)
+           Do jrgd=1,lrgd
+              i=indrgd(jrgd,irgd) ! local index of particle/site
+
+              If (i <= natms) Then
+                 vxx(i) = vxx(i) - vom(1)
+                 vyy(i) = vyy(i) - vom(2)
+                 vzz(i) = vzz(i) - vom(3)
+              End If
+           End Do
         End If
      End Do
 

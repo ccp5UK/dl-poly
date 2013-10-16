@@ -8,7 +8,7 @@ Subroutine set_bounds                                  &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov october 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -528,7 +528,7 @@ Subroutine set_bounds                                  &
 ! exporting single per atom
 
   dens  = Real(((qlx+2)*(qly+2)*(qlz+2))/Min(qlx,qly,qlz)+2,wp) / Real(qlx*qly*qlz,wp)
-  mxbfxp = Merge( 2, 1, mxnode > 1) * Nint(Real(mxatdm,wp) * dens)
+  mxbfxp = 2 * Nint(Real(mxatdm,wp) * dens)
 
 ! shared units single per atom
 

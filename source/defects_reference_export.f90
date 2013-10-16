@@ -9,7 +9,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
 ! onto this node (idnode)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov october 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -181,13 +181,12 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
               buffer(imove+12)=Real(Ichar(namr(i)(8:8)),wp)
               buffer(imove+13)=Real(ixyz(i)-jxyz,wp)
 
-              imove=imove+iadd
-
            Else
 
               safe=.false.
 
            End If
+           imove=imove+iadd
 
         End If
 

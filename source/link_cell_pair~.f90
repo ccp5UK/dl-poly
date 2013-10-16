@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov september 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,14 +30,14 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1,match
 
-  Integer           :: fail(1:2),l_end,m_end, &
+  Integer           :: fail,l_end,m_end,      &
                        icell,ncells,ipass,    &
                        kk,ll, ibig,i,ii,j,jj, &
                        nlx,nly,nlz,           &
                        ix,iy,iz,ic,           &
                        jx,jy,jz,jc
 
-  Real( Kind = wp ) :: rsq,det,rcell(1:9),celprp(1:10), &
+  Real( Kind = wp ) :: rsq,det,rcell(1:9),celprp(1:10), x,y,z, &
                        dispx,dispy,dispz, xdc,ydc,zdc
 
 ! Number of neighbouring cells to look around for single counting
@@ -56,12 +56,10 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   niz = (/ 0, 0,  0, 0, 0,   1, 1, 1,  1, 1, 1,  1, 1, 1 /)
 
   Integer,           Dimension( : ), Allocatable :: link,lct
-  Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
   fail=0
-  Allocate (link(1:mxatms),lct(0:mxcell),              Stat=fail(1))
-  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail(2))
-  If (Any(fail > 0)) Then
+  Allocate (link(1:mxatms),lct(0:mxcell),              Stat=fail)
+  If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'link_cell_pairs allocation failure, node: ', idnode
      Call error(0)
   End If
@@ -112,19 +110,6 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
      Call error(392)
   End If
 
-! Get the inverse cell matrix
-
-  Call invert(cell,rcell,det)
-
-! Convert atomic positions (ALL - halo included) from centred
-! Cartesian coordinates to reduced space coordinates
-
-  Do i=1,nlast
-     xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-     yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-     zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
-  End Do
-
 ! Get the total number of link-cells in MD cell per direction
 
   xdc=Real(nlx*nprx,wp)
@@ -169,29 +154,40 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
      lct(icell)=0
   End Do
 
+! Get the inverse cell matrix
+
+  Call invert(cell,rcell,det)
+
   Do i=nlast,natms+1,-1 !!! BACKWARDS ORDER IS ESSENTIAL !!!
+
+! Convert atomic positions from MD cell centred
+! Cartesian coordinates to reduced space coordinates
+
+     x=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
+     y=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
+     z=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
 
 ! Get cell coordinates accordingly
 
-     If (xxt(i) > -half_plus) Then
-        dispx=xdc*(xxt(i)+0.5_wp)
+     If (x > -half_plus) Then
+        dispx=xdc*(x+0.5_wp)
         ix = Int(dispx) + jx
      Else
-        dispx=xdc*Abs(xxt(i)+0.5_wp)
+        dispx=xdc*Abs(x+0.5_wp)
         ix =-Int(dispx) + jx - 1
      End If
-     If (yyt(i) > -half_plus) Then
-        dispy=ydc*(yyt(i)+0.5_wp)
+     If (y > -half_plus) Then
+        dispy=ydc*(y+0.5_wp)
         iy = Int(dispy) + jy
      Else
-        dispy=ydc*Abs(yyt(i)+0.5_wp)
+        dispy=ydc*Abs(y+0.5_wp)
         iy =-Int(dispy) + jy - 1
      End If
-     If (zzt(i) > -half_plus) Then
-        dispz=zdc*(zzt(i)+0.5_wp)
+     If (z > -half_plus) Then
+        dispz=zdc*(z+0.5_wp)
         iz = Int(dispz) + jz
      Else
-        dispz=zdc*Abs(zzt(i)+0.5_wp)
+        dispz=zdc*Abs(z+0.5_wp)
         iz =-Int(dispz) + jz - 1
      End If
 
@@ -215,33 +211,33 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
               Else If (lx1) Then
                  ix=nlx+1
               End If
-              If (xxt(i) > -half_plus) Then
-                 dispx = dispx + Real(jx-ix,wp)
-              Else
-                 dispx = dispx - Real(jx-ix-1,wp)
-              End If
+!              If (x > -half_plus) Then
+!                 dispx = dispx + Real(jx-ix,wp)
+!              Else
+!                 dispx = dispx - Real(jx-ix-1,wp)
+!              End If
            Else If (ly0 .or. ly1) Then
               If      (ly0 ) Then
                  iy=0
               Else If (ly1) Then
                  iy=nly+1
               End If
-              If (yyt(i) > -half_plus) Then
-                 dispy = dispy + Real(jy-iy,wp)
-              Else
-                 dispy = dispy - Real(jy-iy-1,wp)
-              End If
+!              If (y > -half_plus) Then
+!                 dispy = dispy + Real(jy-iy,wp)
+!              Else
+!                 dispy = dispy - Real(jy-iy-1,wp)
+!              End If
            Else If (lz0 .or. lz1) Then
               If      (lz0 ) Then
                  iz=0
               Else If (lz1) Then
                  iz=nlz+1
               End If
-              If (zzt(i) > -half_plus) Then
-                 dispz = dispz + Real(jz-iz,wp)
-              Else
-                 dispz = dispz - Real(jz-iz-1,wp)
-              End If
+!              If (z > -half_plus) Then
+!                 dispz = dispz + Real(jz-iz,wp)
+!              Else
+!                 dispz = dispz - Real(jz-iz-1,wp)
+!              End If
            End If
         End If
 
@@ -295,9 +291,9 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
 ! Get cell coordinates accordingly
 
-     ix = Int(xdc*(xxt(i)+0.5_wp)) + jx
-     iy = Int(ydc*(yyt(i)+0.5_wp)) + jy
-     iz = Int(zdc*(zzt(i)+0.5_wp)) + jz
+     ix = Int(xdc*(x+0.5_wp)) + jx
+     iy = Int(ydc*(y+0.5_wp)) + jy
+     iz = Int(zdc*(z+0.5_wp)) + jz
 
 ! Correction for domain (idnode) only particles (1,natms) but due to
 ! some tiny numerical inaccuracy kicked into its halo link-cell space
@@ -593,9 +589,8 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
      End Do
   End If
 
-  Deallocate (link,lct,    Stat=fail(1))
-  Deallocate (xxt,yyt,zzt, Stat=fail(2))
-  If (Any(fail > 0)) Then
+  Deallocate (link,lct, Stat=fail)
+  If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'link_cell_pairs deallocation failure, node: ', idnode
      Call error(0)
   End If

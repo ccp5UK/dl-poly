@@ -211,6 +211,10 @@ Subroutine metal_ld_compute         &
 
         End If
 
+! Atomic density (rho & rhs) are overwritten here in order
+! to be reused as embedding derivative(s) helper array(s)
+! i.e. hold d_fmet/d_rho for later usage in metal_forces
+
 ! Now if we have 2B(EAM & EEAM) then do s-band too
 
         If (l2bmet) Then

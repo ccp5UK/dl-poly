@@ -9,7 +9,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov june 2013
+! amended   - i.t.todorov october 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -325,73 +325,68 @@ Subroutine deport_atomic_data(mdir,lbook)
            buffer(imove+17)=yto(i)
            buffer(imove+18)=zto(i)
 
-           imove=imove+18
-
         Else
 
            safe=.false.
 
         End If
+        imove=imove+18
 
 ! pack Langevin force arrays
 
-        If (l_lan .and. safe) Then
+        If (l_lan) Then
            If (imove+3 <= iblock) Then
               buffer(imove+1)=fxl(i)
               buffer(imove+2)=fyl(i)
               buffer(imove+3)=fzl(i)
-
-              imove=imove+3
            Else
               safe=.false.
            End If
+           imove=imove+3
         End If
 
 ! pack minimisation arrays
 
-        If (l_x .and. safe) Then
+        If (l_x) Then
            If (imove+3 <= iblock) Then
               buffer(imove+1)=oxx(i)
               buffer(imove+2)=oyy(i)
               buffer(imove+3)=ozz(i)
-
-              imove=imove+3
            Else
               safe=.false.
            End If
+           imove=imove+3
         End If
 
 ! pack frozen-frozen k-space SPME force arrays
 
-        If (lf_cp .and. safe) Then
+        If (lf_cp) Then
            If (imove+3 <= iblock) Then
               buffer(imove+1)=ffx(i)
               buffer(imove+2)=ffy(i)
               buffer(imove+3)=ffz(i)
-
-              imove=imove+3
            Else
               safe=.false.
            End If
+           imove=imove+3
         End If
 
 ! pack k-space SPME force arrays
 
-        If (l_cp .and. safe) Then
+        If (l_cp) Then
            If (imove+3 <= iblock) Then
               buffer(imove+1)=fcx(i)
               buffer(imove+2)=fcy(i)
               buffer(imove+3)=fcz(i)
-
-              imove=imove+3
            Else
               safe=.false.
            End If
+           imove=imove+3
         End If
 
 ! pack MSD arrays
 
-        If (l_msd .and. safe) Then
+        If (l_msd) Then
            If (imove+2*(6+mxstak) <= iblock) Then
               jj=27+2*i
               buffer(imove+ 1)=stpvl0(jj-1)
@@ -411,16 +406,15 @@ Subroutine deport_atomic_data(mdir,lbook)
                  buffer(imove+12+l-1)=stkval(kk,jj-1)
                  buffer(imove+12+l  )=stkval(kk,jj  )
               End Do
-
-              imove=imove+2*(6+mxstak)
            Else
               safe=.false.
            End If
+           imove=imove+2*(6+mxstak)
         End If
 
 ! If intra-molecular entities exist in the system
 
-        If (lbook .and. safe) Then
+        If (lbook) Then
 
 ! pack the exclusion list
 
@@ -429,14 +423,16 @@ Subroutine deport_atomic_data(mdir,lbook)
               imove=imove+1
               buffer(imove)=Real(kk,wp)
            Else
+              imove=imove+1
               safe=.false.
            End If
-           If (imove+kk <= iblock .and. safe) Then
+           If (imove+kk <= iblock) Then
               Do k=1,kk
                  imove=imove+1
                  buffer(imove)=Real(lexatm(k,i),wp)
               End Do
            Else
+              imove=imove+kk
               safe=.false.
            End If
 
@@ -446,7 +442,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 ! pack core-shell details
 
            jj=legshl(0,i)
-           If (jj > 0 .and. safe) Then
+           If (jj > 0) Then
               Do ll=1,jj
                  If (imove+3 <= iblock) Then
                     kk=legshl(ll,i)
@@ -456,22 +452,23 @@ Subroutine deport_atomic_data(mdir,lbook)
                        buffer(imove)=Real(listshl(k,kk),wp)
                     End Do
                  Else
+                    imove=imove+3
                     safe=.false.
-                    Exit
                  End If
               End Do
            End If
-           If (imove+1 <= iblock .and. safe) Then
+           If (imove+1 <= iblock) Then
               imove=imove+1
               buffer(imove)=0.0_wp
            Else
+              imove=imove+1
               safe=.false.
            End If
 
 ! pack constraint details
 
            jj=legcon(0,i)
-           If (jj > 0 .and. safe) Then
+           If (jj > 0) Then
               Do ll=1,jj
                  If (imove+3 <= iblock) Then
                     kk=legcon(ll,i)
@@ -481,22 +478,23 @@ Subroutine deport_atomic_data(mdir,lbook)
                        buffer(imove)=Real(listcon(k,kk),wp)
                     End Do
                  Else
+                    imove=imove+3
                     safe=.false.
-                    Exit
                  End If
               End Do
            End If
-           If (imove+1 <= iblock .and. safe) Then
+           If (imove+1 <= iblock) Then
               imove=imove+1
               buffer(imove)=0.0_wp
            Else
+              imove=imove+1
               safe=.false.
            End If
 
 ! pack PMF details
 
            jj=legpmf(0,i)
-           If (jj > 0 .and. safe) Then
+           If (jj > 0) Then
               Do ll=1,jj
                  If (imove+mxtpmf(1)+mxtpmf(2)+2 <= iblock) Then
                     kk=legpmf(ll,i)
@@ -511,22 +509,23 @@ Subroutine deport_atomic_data(mdir,lbook)
                        buffer(imove)=Real(listpmf(k,2,kk),wp)
                     End Do
                  Else
+                    imove=imove+mxtpmf(1)+mxtpmf(2)+2
                     safe=.false.
-                    Exit
                  End If
               End Do
            End If
-           If (imove+1 <= iblock .and. safe) Then
+           If (imove+1 <= iblock) Then
               imove=imove+1
               buffer(imove)=0.0_wp
            Else
+              imove=imove+1
               safe=.false.
            End If
 
 ! pack RB details
 
 !           jj=legrgd(0,i)
-!           If (jj > 0 .and. safe) Then
+!           If (jj > 0) Then
 !              l=12
 !              Do ll=1,jj
 !                 If (imove+mxlrgd+l <= iblock) Then
@@ -553,20 +552,21 @@ Subroutine deport_atomic_data(mdir,lbook)
 !                    buffer(imove+3)=rgdozz(kk)
 !                    imove=imove+3
 !                 Else
+!                    imove=imove+mxlrgd+l
 !                    safe=.false.
-!                    Exit
 !                 End If
 !              End Do
 !           End If
-!           If (imove+1 <= iblock .and. safe) Then
+!           If (imove+1 <= iblock) Then
 !              imove=imove+1
 !              buffer(imove)=0.0_wp
 !           Else
+!              imove=imove+1
 !              safe=.false.
 !           End If
 
            jj=legrgd(0,i)
-           If (jj > 0 .and. safe) Then
+           If (jj > 0) Then
               l=12
               Do ll=1,jj
                  If (imove+mxlrgd+l <= iblock) Then
@@ -604,22 +604,23 @@ Subroutine deport_atomic_data(mdir,lbook)
                        lrgd(kk)=1
                     End If
                  Else
+                    imove=imove+mxlrgd+l
                     safe=.false.
-                    Exit
                  End If
               End Do
            End If
-           If (imove+1 <= iblock .and. safe) Then
+           If (imove+1 <= iblock) Then
               imove=imove+1
               buffer(imove)=0.0_wp
            Else
+              imove=imove+1
               safe=.false.
            End If
 
 ! pack tether details
 
            jj=legtet(0,i)
-           If (jj > 0 .and. safe) Then
+           If (jj > 0) Then
               Do ll=1,jj
                  If (imove+2 <= iblock) Then
                     kk=legtet(ll,i)
@@ -629,22 +630,23 @@ Subroutine deport_atomic_data(mdir,lbook)
                        buffer(imove)=Real(listtet(k,kk),wp)
                     End Do
                  Else
+                    imove=imove+2
                     safe=.false.
-                    Exit
                  End If
               End Do
            End If
-           If (imove+1 <= iblock .and. safe) Then
+           If (imove+1 <= iblock) Then
               imove=imove+1
               buffer(imove)=0.0_wp
            Else
+              imove=imove+1
               safe=.false.
            End If
 
 ! pack bond details
 
            jj=legbnd(0,i)
-           If (jj > 0 .and. safe) Then
+           If (jj > 0) Then
               Do ll=1,jj
                  If (imove+3 <= iblock) Then
                     kk=legbnd(ll,i)
@@ -654,22 +656,23 @@ Subroutine deport_atomic_data(mdir,lbook)
                        buffer(imove)=Real(listbnd(k,kk),wp)
                     End Do
                  Else
+                    imove=imove+3
                     safe=.false.
-                    Exit
                  End If
               End Do
            End If
-           If (imove+1 <= iblock .and. safe) Then
+           If (imove+1 <= iblock) Then
               imove=imove+1
               buffer(imove)=0.0_wp
            Else
+              imove=imove+1
               safe=.false.
            End If
 
 ! pack valence angle details
 
            jj=legang(0,i)
-           If (jj > 0 .and. safe) Then
+           If (jj > 0) Then
               Do ll=1,jj
                  If (imove+4 <= iblock) Then
                     kk=legang(ll,i)
@@ -679,25 +682,26 @@ Subroutine deport_atomic_data(mdir,lbook)
                        buffer(imove)=Real(listang(k,kk),wp)
                     End Do
                  Else
+                    imove=imove+4
                     safe=.false.
-                    Exit
                  End If
               End Do
            End If
-           If (imove+1 <= iblock .and. safe) Then
+           If (imove+1 <= iblock) Then
               imove=imove+1
               buffer(imove)=0.0_wp
            Else
+              imove=imove+1
               safe=.false.
            End If
 
 ! pack dihedral angle details
 
            jj=legdih(0,i)
-           If (jj > 0 .and. safe) Then
+           If (jj > 0) Then
               If (.not.lx_dih) Then ! dihedrals only have 4 members
                  l=4
-              Else                  ! dihedrals have 4+2 traked members
+              Else                  ! dihedrals have 4+2 tracked members
                  l=6
               End If
               Do ll=1,jj
@@ -709,22 +713,23 @@ Subroutine deport_atomic_data(mdir,lbook)
                        buffer(imove)=Real(listdih(k,kk),wp)
                     End Do
                  Else
+                    imove=imove+5
                     safe=.false.
-                    Exit
                  End If
               End Do
            End If
-           If (imove+1 <= iblock .and. safe) Then
+           If (imove+1 <= iblock) Then
               imove=imove+1
               buffer(imove)=0.0_wp
            Else
+              imove=imove+1
               safe=.false.
            End If
 
 ! pack inversion angle details
 
            jj=leginv(0,i)
-           If (jj > 0 .and. safe) Then
+           If (jj > 0) Then
               Do ll=1,jj
                  If (imove+5 <= iblock) Then
                     kk=leginv(ll,i)
@@ -734,15 +739,16 @@ Subroutine deport_atomic_data(mdir,lbook)
                        buffer(imove)=Real(listinv(k,kk),wp)
                     End Do
                  Else
+                    imove=imove+5
                     safe=.false.
-                    Exit
                  End If
               End Do
            End If
-           If (imove+1 <= iblock .and. safe) Then
+           If (imove+1 <= iblock) Then
               imove=imove+1
               buffer(imove)=0.0_wp
            Else
+              imove=imove+1
               safe=.false.
            End If
 

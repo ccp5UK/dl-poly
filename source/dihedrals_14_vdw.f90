@@ -6,7 +6,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 ! adjust by weighting factor
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov march 2012
+! amended   - i.t.todorov october 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,10 +24,10 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
   Real( Kind = wp ), Save :: dlrpot,rdr
 
   Integer           :: key,k,l,ityp
-  Real( Kind = wp ) :: rsq,rrr,ppp,            &
-                       r0,r0rn,r0rm,r_6,sor6,  &
-                       rho,a,b,c,d,e0,kk,      &
-                       n,m,sig,eps,alpha,beta, &
+  Real( Kind = wp ) :: rsq,rrr,ppp,               &
+                       r0,r0rn,r0rm,r_6,sor6,     &
+                       rho,a,b,c,d,e0,kk,         &
+                       n,m,rc,sig,eps,alpha,beta, &
                        gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3
 
   If (newjob) Then
@@ -198,23 +198,27 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
            n =prmvdw(2,k)
            m =prmvdw(3,k)
            r0=prmvdw(4,k)
+           rc=prmvdw(5,k) ; If (rc < 1.0e-6_wp) rc=rvdw
 
            If (n <= m) Call error(470)
 
-           a=r0/rrr
            b=1.0_wp/(n-m)
-           c=rvdw/r0 ; If (c < 1.0_wp) Call error(468)
+           c=rc/r0 ; If (c < 1.0_wp) Call error(468)
 
            beta = c*( (c**(m+1.0_wp)-1.0_wp) / (c**(n+1.0_wp)-1.0_wp) )**b
-           alpha= -(n-m) / ( m*(beta**n)*(1.0_wp+(n/c-n-1.0_wp)/c**n) &
+           alpha= -(n-m) / (  m*(beta**n)*(1.0_wp+(n/c-n-1.0_wp)/c**n) &
                              -n*(beta**m)*(1.0_wp+(m/c-m-1.0_wp)/c**m) )
            e0 = e0*alpha
 
-           eng   = e0*( m*(beta**n)*(a**n-(1.0_wp/c)**n)  &
-                        -n*(beta**m)*(a**m-(1.0_wp/c)**m) &
-                        +n*m*((rrr/rvdw-1.0_wp)*((beta/c)**n-(beta/c)**m)) )*b
-           gamma = e0*m*n*( (beta**n)*a**n-(beta**m)*a**m &
-                            -rrr/rvdw*((beta/c)**n-(beta/c)**m) )*b/rsq
+           If (rrr <= rc) Then
+              a=r0/rrr
+
+              eng   = e0*(  m*(beta**n)*(a**n-(1.0_wp/c)**n) &
+                           -n*(beta**m)*(a**m-(1.0_wp/c)**m) &
+                           +n*m*((rrr/rc-1.0_wp)*((beta/c)**n-(beta/c)**m)) )*b
+              gamma = e0*m*n*( (beta**n)*a**n-(beta**m)*a**m &
+                               -rrr/rc*((beta/c)**n-(beta/c)**m) )*b/rsq
+           End If
 
         Else If (ityp == 8) Then
 

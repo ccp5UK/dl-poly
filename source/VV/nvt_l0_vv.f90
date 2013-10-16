@@ -18,7 +18,7 @@ Subroutine nvt_l0_vv                                                &
 ! (brownian dynamics, not symplectic due to the random forces)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2013
+! author    - i.t.todorov october 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -28,7 +28,7 @@ Subroutine nvt_l0_vv                                                &
   Use site_module,    Only : ntpshl,unqshl
   Use config_module,  Only : natms,atmnam,weight, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use kinetic_module, Only : kinstress
+  Use kinetic_module, Only : getvom,kinstress
 
   Implicit None
 
@@ -50,7 +50,7 @@ Subroutine nvt_l0_vv                                                &
   Integer,           Save :: mxkit,kit
   Integer                 :: fail(1:9),i
   Real( Kind = wp )       :: hstep,rstep
-  Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
+  Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,vom(1:3), &
                              t0,t1,t2,scr,scl,scv,scr1,scl1,scv1
 
 
@@ -403,6 +403,18 @@ Subroutine nvt_l0_vv                                                &
            vxx,vyy,vzz)
         End Do
      End If
+
+! remove system centre of mass velocity
+
+     Call getvom(vom,vxx,vyy,vzz)
+
+     Do i=1,natms
+        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
+           vxx(i)=vxx(i)-vom(1)
+           vyy(i)=vyy(i)-vom(2)
+           vzz(i)=vzz(i)-vom(3)
+        End If
+     End Do
 
 ! update kinetic energy and stress
 

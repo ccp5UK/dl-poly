@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2012
+! author    - i.t.todorov september 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -38,8 +38,8 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
                        ix,iy,iz,ic, ix1,ix2,iy1,iy2,iz1,iz2, &
                        jx,jy,jz,jc
 
-  Real( Kind = wp ) :: rsq,det,rcell(1:9),celprp(1:10), &
-                       dispx,dispy,dispz, xdc,ydc,zdc,nlr2
+  Real( Kind = wp ) :: rsq,det,rcell(1:9),celprp(1:10),x,y,z, &
+                       x1,y1,z1,dispx,dispy,dispz, xdc,ydc,zdc,nlr2
 
   Logical,           Dimension( : ), Allocatable :: nir
   Integer,           Dimension( : ), Allocatable :: nix,niy,niz,         &
@@ -190,22 +190,9 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! Third term (nlp/nl./npr.) = move to the bottom left corner of the
 ! left-most link-cell (the one in the halo)
 
-  dispx=0.5_wp-r_nprx*(Real(idx,wp)-Real(nlp,wp)/Real(nlx,wp))
-  dispy=0.5_wp-r_npry*(Real(idy,wp)-Real(nlp,wp)/Real(nly,wp))
-  dispz=0.5_wp-r_nprz*(Real(idz,wp)-Real(nlp,wp)/Real(nlz,wp))
-
-! Get the inverse cell matrix
-
-  Call invert(cell,rcell,det)
-
-! Convert atomic positions (ALL - halo included) from centred
-! Cartesian coordinates to reduced space coordinates
-
-  Do i=1,nlast
-     xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+dispx
-     yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+dispy
-     zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+dispz
-  End Do
+  x1=0.5_wp-r_nprx*(Real(idx,wp)-Real(nlp,wp)/Real(nlx,wp))
+  y1=0.5_wp-r_npry*(Real(idy,wp)-Real(nlp,wp)/Real(nly,wp))
+  z1=0.5_wp-r_nprz*(Real(idz,wp)-Real(nlp,wp)/Real(nlz,wp))
 
 ! Get the total number of link-cells in MD cell per direction
 
@@ -263,13 +250,24 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
   lct_count = 0
 
+! Get the inverse cell matrix
+
+  Call invert(cell,rcell,det)
+
   Do i=1,natms
+
+! Convert atomic positions from MD cell centred
+! Cartesian coordinates to reduced space coordinates
+
+     x=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+x1
+     y=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+y1
+     z=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+z1
 
 ! Get cell coordinates accordingly
 
-     ix = Int(xdc*xxt(i))
-     iy = Int(ydc*yyt(i))
-     iz = Int(zdc*zzt(i))
+     ix = Int(xdc*x)
+     iy = Int(ydc*y)
+     iz = Int(zdc*z)
 
 ! Correction for domain (idnode) only particles (1,natms) but due to
 ! some tiny numerical inaccuracy kicked into its halo link-cell space
@@ -296,6 +294,13 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
   End Do
   Do i=natms+1,nlast
+
+! Convert atomic positions from MD cell centred
+! Cartesian coordinates to reduced space coordinates
+
+     x=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+x1
+     y=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+y1
+     z=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+z1
 
 ! Get cell coordinates accordingly
 
@@ -341,21 +346,21 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
               Else If (lx1) Then
                  ix=nlx1s
               End If
-              dispx = dispx - Real(ix,wp)
+!              dispx = dispx - Real(ix,wp)
            Else If (ly0 .or. ly1) Then
               If      (ly0 ) Then
                  iy=nly0e
               Else If (ly1) Then
                  iy=nly1s
               End If
-              dispy = dispy - Real(iy,wp)
+!              dispy = dispy - Real(iy,wp)
            Else If (lz0 .or. lz1) Then
               If      (lz0 ) Then
                  iz=nlz0e
               Else If (lz1) Then
                  iz=nlz1s
               End If
-              dispz = dispz - Real(iz,wp)
+!              dispz = dispz - Real(iz,wp)
            End If
         End If
 
@@ -415,7 +420,17 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
   lct_where = lct_start
   Do i=1,nlast
-     at_list( lct_where( which_cell( i ) ) ) = i
+!     at_list( lct_where( which_cell( i ) ) ) = i
+! create a reordered coordinates arrays in the
+! same manner to speeds up performance later
+
+     j = lct_where( which_cell( i ) )
+     at_list( j ) = i
+
+     xxt(j) = xxx(i)
+     yyt(j) = yyy(i)
+     zzt(j) = zzz(i)
+
      lct_where( which_cell( i ) ) = lct_where( which_cell( i ) ) + 1
   End Do
 
@@ -582,8 +597,10 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
                                 j=at_list(jj)
 
 ! check cutoff criterion (all atom pairs MUST BE within the cutoff)
+!                                rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
+! use reordered coordinate list in order to get "ordered" rather than "random" access
 
-                                rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
+                                rsq=(xxt(jj)-xxx(i))**2+(yyt(jj)-yyy(i))**2+(zzt(jj)-zzz(i))**2
                                 If (rsq <= rcsq) Then
 
 ! check for overfloat and add an entry
