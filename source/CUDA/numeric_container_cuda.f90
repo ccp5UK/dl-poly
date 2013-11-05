@@ -39,9 +39,9 @@
 !
 ! Subroutine pbcshift - calculates the minimum image of atoms within
 !                       a specified MD cell in accordance with the DD
-!                       boundary convetion
+!                       boundary convention
 !
-! Subroutine jacobi - diagonalises real symmetric matices by the
+! Subroutine jacobi - diagonalises real symmetric matrices by the
 !                     Jacobi method
 !
 ! Subroutine mat_mul - calculates product of two 3x3 matrices written
@@ -480,7 +480,7 @@ Function match(n,ind_top,list)
   ind_old = 1
   ind_now = 1
 
-  Do While ( .true. )
+  Do
      If      (n == list(ind_now)) Then
         match=.true.
         Return
@@ -651,21 +651,12 @@ Function local_index(global_index,search_limit,rank,list)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use config_module, Only : gtl_b,gtl
-
   Implicit None
 
   Integer,                   Intent( In    ) :: global_index,search_limit
   Integer, Dimension( 1:* ), Intent( In    ) :: rank,list
 
   Integer local_index,point,lower_bound,upper_bound,down
-
-! Get it from the gtl array if possible
-
-  If (gtl_b > 0) Then
-     local_index=gtl(global_index)
-     Return
-  End If
 
 ! Initialise
 
@@ -743,7 +734,7 @@ Subroutine dcell(aaa,bbb)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine to calculate the dimensional properies of a
+! dl_poly_4 subroutine to calculate the dimensional properties of a
 ! simulation cell specified by the input 3x3 matrix aaa (cell vectors in
 ! rows, the matrix is in the form of one dimensional reading
 ! (row1,row2,row3).
@@ -1382,10 +1373,10 @@ Subroutine jacobi(n,aaa,vvv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! Diagonalisation of real square symmetric matices by the Jacobi method:
+! Diagonalisation of real square symmetric matrices by the Jacobi method:
 ! a sequence of Jacobi rotations
 !
-! Users must ensure the symmetry of the input martix
+! Users must ensure the symmetry of the input matrix
 !
 ! input parameters: n   - matrix dimension
 !                   aaa - the matrix to be diagonalised
@@ -1397,7 +1388,7 @@ Subroutine jacobi(n,aaa,vvv)
 ! Variable rho sets absolute tolerance on convergence
 ! Variable test is a moving tolerance that diminishes on each pass
 ! until true convergence test<rho
-! A ZERO matrices are accepted and returned
+! ZERO matrices are accepted and returned
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov july 2008
@@ -1420,7 +1411,7 @@ Subroutine jacobi(n,aaa,vvv)
 !  l=0 ! Iteration counter
 
 ! Rescale (lower triangle) matrix for optimal accuracy
-! by the largest by magnitude diagonal elenment
+! by the largest by magnitude diagonal element
 
   scale=0.0_wp
   Do i=1,n
@@ -1475,7 +1466,7 @@ Subroutine jacobi(n,aaa,vvv)
      Do While (pass)
         pass=.false.
 
-! Loop arround the strictly lower triangle matrix
+! Loop around the strictly lower triangle matrix
 
         Do i=2,n
            Do j=1,i-1
@@ -1494,7 +1485,7 @@ Subroutine jacobi(n,aaa,vvv)
                     If (v_d_mid < 0.0_wp) omg=-omg
                  End If
                  s=omg/Sqrt(2.0_wp*(1.0_wp+Sqrt(1.0_wp-omg**2)))
-                 s_s=s*s ; c_c=1.0_wp-s_s ; c=sqrt(c_c) ; s_c=s*c
+                 s_s=s*s ; c_c=1.0_wp-s_s ; c=Sqrt(c_c) ; s_c=s*c
 
                  Do k=1,n
                     If      (k <= j) Then

@@ -674,7 +674,7 @@ Subroutine dcell(aaa,bbb)
 ! The results are returned in the array bbb, with:
 !
 ! bbb(1 to 3) - lengths of cell vectors: a(x,y,z) , b(x,y,z) , c(x,y,z)
-! bbb(4 to 6) - cosines of cell angles: gamma(a,c) , alpha(b,c) , beta(a,c)
+! bbb(4 to 6) - cosines of cell angles: gamma(a,b) , beta(a,c) , alpha(b,c)
 ! bbb(7 to 9) - perpendicular cell widths : wx(y,z) , wy(x,z) , wz(x,y)
 ! bbb(10)     - cell volume
 !

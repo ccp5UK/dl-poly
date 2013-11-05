@@ -23,8 +23,8 @@ Subroutine nvt_l1_lfv                          &
   Use setup_module
   Use domains_module,     Only : map
   Use site_module,        Only : ntpshl,unqshl
-  Use config_module,      Only : cell,natms,nlast,nfree,       &
-                                 lsi,lsa,lstfre,atmnam,weight, &
+  Use config_module,      Only : cell,natms,nlast,nfree,             &
+                                 lsi,lsa,lfrzn,lstfre,atmnam,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
   Use kinetic_module,     Only : getvom,getknr,kinstresf,kinstrest

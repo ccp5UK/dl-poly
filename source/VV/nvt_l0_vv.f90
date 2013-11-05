@@ -26,7 +26,7 @@ Subroutine nvt_l0_vv                                                &
   Use comms_module,   Only : idnode,mxnode,gmax
   Use setup_module
   Use site_module,    Only : ntpshl,unqshl
-  Use config_module,  Only : natms,atmnam,weight, &
+  Use config_module,  Only : natms,lfrzn,atmnam,weight, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use kinetic_module, Only : getvom,kinstress
 

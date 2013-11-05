@@ -6,7 +6,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
 ! neighbouring domains/nodes
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov march 2013
+! amended   - i.t.todorov november 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,11 +27,9 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
   Real( Kind = wp ), Save :: cut
 
   Logical           :: oldjob
-  Integer           :: fail,nlx,nly,nlz,i,j,ia,ib
-  Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9), &
+  Integer           :: nlx,nly,nlz,i,j,ia,ib
+  Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9),x,y,z, &
                        xdc,ydc,zdc,cwx,cwy,cwz,ecwx,ecwy,ecwz
-
-  Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
   If (newjob) Then
      newjob = .false.
@@ -111,33 +109,20 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
   nlast=natms                 ! No halo exists yet
   If (oldjob) ixyz(1:nlast)=0 ! Initialise halo indicator
 
-  fail=0
-  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'set_halo_particles allocation failure, node: ', idnode
-     Call error(0)
-  End If
-
   Do i=1,nlast
-     xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-     yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-     zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+     x=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
+     y=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
+     z=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
 
-     If (xxt(i) <= ecwx) ixyz(i)=ixyz(i)+1
-     If (xxt(i) >=  cwx) ixyz(i)=ixyz(i)+2
+     If (x <= ecwx) ixyz(i)=ixyz(i)+1
+     If (x >=  cwx) ixyz(i)=ixyz(i)+2
 
-     If (yyt(i) <= ecwy) ixyz(i)=ixyz(i)+10
-     If (yyt(i) >=  cwy) ixyz(i)=ixyz(i)+20
+     If (y <= ecwy) ixyz(i)=ixyz(i)+10
+     If (y >=  cwy) ixyz(i)=ixyz(i)+20
 
-     If (zzt(i) <= ecwz) ixyz(i)=ixyz(i)+100
-     If (zzt(i) >=  cwz) ixyz(i)=ixyz(i)+200
+     If (z <= ecwz) ixyz(i)=ixyz(i)+100
+     If (z >=  cwz) ixyz(i)=ixyz(i)+200
   End Do
-
-  Deallocate (xxt,yyt,zzt, Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'set_halo_particles deallocation failure, node: ', idnode
-     Call error(0)
-  End If
 
 ! exchange atom data in -/+ x directions
 
@@ -196,7 +181,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
      End If
   End Do
 
-! Retag RBs when called again after the very first time
+! Re-tag RBs when called again after the very first time
 ! when it's done in rigid_bodies_setup <- build_book_intra
 
   If (oldjob .and. m_rgd > 0) Then

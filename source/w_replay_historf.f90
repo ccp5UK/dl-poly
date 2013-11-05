@@ -48,7 +48,7 @@
 
 ! Make a move
 
-     Call read_history(l_str,"HOSTORF",megatm,levcfg,imcon,nstep,tstep,time)
+     Call read_history(l_str,"HISTORF",megatm,levcfg,imcon,nstep,tstep,time)
 
      If (newjb) Then
         newjb = .false.
