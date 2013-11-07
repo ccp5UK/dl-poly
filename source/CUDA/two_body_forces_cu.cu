@@ -1155,12 +1155,15 @@ template<typename T_, unsigned int B_, int METFORCES_, int ISKEYPOTZERO_, int VD
 inline void two_body_forces_cuda_k1_imcon_switch(dim3 aK1_GridDims, int aSharedMemorySize, int aUnroll,
                                                  int aIATM_Begin, T_ *aOUT, T_ *aOUT_Red, int aStripeSizeInItems) {
 
-#if (CFG_COMPUTE_MAJOR >= 2)
-  char lKernelMangledName[256];
-  sprintf(lKernelMangledName, CFG_K1_CPP_MAGLED_NAME_FORMATTER,
-          sizeof(T_)==8 ? 'd' : 'f', B_, sHD.mIMCON, METFORCES_, ISKEYPOTZERO_, VDWFORCES_, KEYFCE_);
-  CUDA_SAFE_CALL(cudaFuncSetCacheConfig(lKernelMangledName, cudaFuncCachePreferL1));
-#endif
+//commented by BBG - 23/01/2013
+//#if (CFG_COMPUTE_MAJOR >= 2)
+  //char lKernelMangledName[256];
+  //sprintf(lKernelMangledName, CFG_K1_CPP_MAGLED_NAME_FORMATTER,
+  //        sizeof(T_)==8 ? 'd' : 'f', B_, sHD.mIMCON, METFORCES_, ISKEYPOTZERO_, VDWFORCES_, KEYFCE_);
+  //CUDA_SAFE_CALL(cudaFuncSetCacheConfig(lKernelMangledName, cudaFuncCachePreferL1));
+  //CUDA_SAFE_CALL(cudaFuncSetCacheConfig(two_body_forces_cuda_k1<float, B_, METFORCES_, ISKEYPOTZERO_, VDWFORCES_, KEYFCE_>, cudaFuncCachePreferL1));
+//<typename T_, unsigned int BX_, int IMCON_, int METFORCES_, int ISKEYPOTZERO_, int VDWFORCES_, int KEYFCE_>
+//#endif
 
 #define INVOKE_IMCON(IMCON)\
   two_body_forces_cuda_k1<real, B_, IMCON, METFORCES_, ISKEYPOTZERO_, VDWFORCES_, KEYFCE_>\

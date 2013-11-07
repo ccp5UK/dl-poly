@@ -310,7 +310,7 @@ tesla-intel:
 	$(MAKE) \
 	NVCC="nvcc -c ${CUDA_PORT_DEFINES}" \
 	NVCCFLAGS="-arch compute_13 -code sm_13 -Xcompiler \"-fopenmp -O3 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
-	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -I${MPI_HOME}/include" \
+	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -ICUDA -I${MPI_HOME}/include" \
 	LD="mpif90 -o" LDFLAGS="-O3 -openmp -Wl,-rpath,${CUDA_HOME}/lib64 -L${CUDA_HOME}/lib64 -lcudart" \
 	FC="mpif90 -c" FCFLAGS="-O3 -openmp -fpp ${PREPROC_DEFINES}" \
 	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
@@ -322,7 +322,7 @@ tesla-intel-jit:
 	$(MAKE) \
 	NVCC="/opt/cuda/bin/nvcc -c ${CUDA_PORT_DEFINES}" \
 	NVCCFLAGS="-gencode arch=compute_20,code=sm_20 -Xcompiler \"-fopenmp -O3 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
-	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -I${MPI_HOME}" \
+	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -ICUDA -I${MPI_HOME}" \
 	LD="mpif90 -o" LDFLAGS="-O3 -openmp -Wl,-rpath,${CUDA_HOME}/lib64 -L${CUDA_HOME}/lib64 -lcudart -lstdc++ -lmpi_cxx" \
 	FC="mpif90 -c" FCFLAGS="-O3 -openmp -cpp ${PREPROC_DEFINES}" \
 	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
@@ -333,7 +333,7 @@ tesla-gnu:
 	$(MAKE) \
 	NVCC="nvcc -c ${CUDA_PORT_DEFINES}" \
 	NVCCFLAGS=" -arch compute_13 -code sm_13 -Xcompiler \"-fopenmp -O3 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
-	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -I${MPI_HOME}/include" \
+	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -ICUDA -I${MPI_HOME}/include" \
 	LD="mpif90 -o" LDFLAGS="-O3 -fopenmp -Wl,-rpath,${CUDA_HOME}/lib64 -L${CUDA_HOME}/lib64 -lcudart" \
 	FC="mpif90 -c" FCFLAGS="-O3 -fopenmp -cpp ${PREPROC_DEFINES}" \
 	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
@@ -345,7 +345,7 @@ tesla-gnu-jit:
 	$(MAKE) \
 	NVCC="/opt/cuda/bin/nvcc -c ${CUDA_PORT_DEFINES}" \
 	NVCCFLAGS="-gencode arch=compute_20,code=sm_20 -Xcompiler \"-fopenmp -O3 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
-	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -I${MPI_HOME}" \
+	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -ICUDA -I${MPI_HOME}" \
 	LD="mpif90 -o" LDFLAGS="-O3 -fopenmp -Wl,-rpath,${CUDA_HOME}/lib64 -L${CUDA_HOME}/lib64 -lcudart -lstdc++ -lmpi_cxx" \
 	FC="mpif90 -c" FCFLAGS="-O3 -fopenmp -cpp ${PREPROC_DEFINES}" \
 	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
@@ -357,7 +357,7 @@ fermi-intel:
 	$(MAKE) \
 	NVCC="nvcc -c ${CUDA_PORT_DEFINES}" \
 	NVCCFLAGS="-arch compute_20 -code sm_20 -Xcompiler \"-fopenmp -O3 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
-	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -I${MPI_HOME}/include" \
+	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -ICUDA -I${MPI_HOME}/include" \
 	LD="mpif90 -o" LDFLAGS="-O3 -openmp -Wl,-rpath,${CUDA_HOME}/lib64 -L${CUDA_HOME}/lib64 -lcudart" \
 	FC="mpif90 -c" FCFLAGS="-O3 -openmp -fpp ${PREPROC_DEFINES}" \
 	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
@@ -369,7 +369,7 @@ fermi-intel-debug:
 	$(MAKE) \
 	NVCC="nvcc -c ${CUDA_PORT_DEFINES}" \
 	NVCCFLAGS="-g -G -arch compute_20 -code sm_20 -Xcompiler \"-fopenmp -O0 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
-	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -I${MPI_HOME}/include" \
+	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -ICUDA -I${MPI_HOME}/include" \
 	LD="mpif90 -o" LDFLAGS="-g -O0 -openmp -Wl,-rpath,${CUDA_HOME}/lib64 -L${CUDA_HOME}/lib64 -lcudart" \
 	FC="mpif90 -c" FCFLAGS="-g -O0 -openmp -fpp ${PREPROC_DEFINES}" \
 	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-g -O0 ${PREPROC_DEFINES}" \
@@ -381,7 +381,7 @@ fermi-gnu:
 	$(MAKE) \
 	NVCC="nvcc -c ${CUDA_PORT_DEFINES}" \
 	NVCCFLAGS=" -arch compute_20 -code sm_20 -Xcompiler \"-fopenmp -O3 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
-	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -I${MPI_HOME}/include" \
+	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/common/inc/ -ICUDA -I${MPI_HOME}/include" \
 	LD="mpif90 -o" LDFLAGS="-O3 -fopenmp -Wl,-rpath,${CUDA_HOME}/lib64 -L${CUDA_HOME}/lib64 -lcudart" \
 	FC="mpif90 -c" FCFLAGS="-O3 -fopenmp -cpp ${PREPROC_DEFINES}" \
 	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
@@ -391,12 +391,12 @@ fermi-gnu:
 kepler: CUDA_PORT_DEFINES = -D CFG_COMPUTE_MAJOR=3 -D CFG_COMPUTE_MINOR=5
 kepler:
 	$(MAKE) \
-	NVCC="nvcc -c ${CUDA_PORT_DEFINES}" \
+	NVCC="nvcc -c -g ${CUDA_PORT_DEFINES}" \
 	NVCCFLAGS="-gencode arch=compute_35,code=sm_35 -Xcompiler \"-fopenmp -O3 -msse3 ${CUDA_PORT_DEFINES} ${PREPROC_DEFINES}\"" \
-	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/C/common/inc/ -I${MPI_HOME}/include" \
+	NVCCHEADERS="-I${CUDA_HOME}/include/ -I${CUDA_SDK}/C/common/inc/ -ICUDA -I${MPI_HOME}/include" \
 	LD="mpif90 -o" LDFLAGS="-O3 -openmp -Wl,-rpath,${CUDA_HOME}/lib64 -L${CUDA_HOME}/lib64 -lcudart" \
-	FC="mpif90 -c" FCFLAGS="-O3 -openmp -fpp ${PREPROC_DEFINES}" \
-	CXX="mpicxx -c ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
+	FC="mpif90 -c -g" FCFLAGS="-O3 -openmp -fpp ${PREPROC_DEFINES}" \
+	CXX="mpicxx -c -g ${CUDA_PORT_DEFINES}" CXXFLAGS="-O3 ${PREPROC_DEFINES}" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 

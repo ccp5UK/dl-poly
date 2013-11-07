@@ -57,7 +57,7 @@ template<typename T_> struct complex {
 must be set to 1.3 or greater in Makefile"
 #endif
 
-#define CFG_OVERLAP_WITH_HOST        0
+#define CFG_OVERLAP_WITH_HOST        1//Modified by BBG: 1 to enable Overlapping
 
 /* For testing purposes only -- forces those who include dl_poly_cuda_common.cu
  * to use macros/functions that do not guarantee multiply-add separation.
@@ -69,7 +69,9 @@ must be set to 1.3 or greater in Makefile"
 
 /* GPU Architecture Specification
  */
-#define CFG_GRID_DIMENSION_MAX_SIZE                ((64*1024)-1)
+//Modified by BBG: Below is increased for some test cases.
+//#define CFG_GRID_DIMENSION_MAX_SIZE                ((64*1024)-1)
+#define CFG_GRID_DIMENSION_MAX_SIZE                ((1024*1024)-1)
 #define CFG_SHARED_MEMORY_COMPILER_HEADROOM        (128)
 #define CFG_SHARED_MEMORY_SIZE                     ((16*1024) - CFG_SHARED_MEMORY_COMPILER_HEADROOM)
 #define CFG_WARP_SIZE                              32

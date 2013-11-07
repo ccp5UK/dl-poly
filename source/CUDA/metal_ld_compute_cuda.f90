@@ -85,7 +85,6 @@ Subroutine metal_ld_compute         &
   Call start_timing_metal_ld_compute()
 #endif
 
-
 ! check on mixing metal types
 
   If (newjob) Then
@@ -115,32 +114,6 @@ Subroutine metal_ld_compute         &
 ! calculate local atomic density
 ! outer loop over atoms
 
-! check on mixing metal types
-
-  If (newjob) Then
-     newjob=.false.
-
-     keypot=0
-     Do i=1,ntpmet
-        keypot=ltpmet(i)
-        If (i > 1) Then
-           If (keypot /= ltpmet(i-1)) Call error(92)
-        End If
-     End Do
-  End If
-
-! initialise energy and virial accumulators
-
-  engden=0.0_wp
-  virden=0.0_wp
-
-! initialise density array
-
-  rho=0.0_wp
-
-! calculate local atomic density
-! outer loop over atoms
-
 #ifdef COMPILE_CUDA
 ! The CUDA port implements the features of dl_poly_3 - a subset of those found in dl_poly_4
 ! In particular, only tabulated calculations are available in metal_ld_compute
@@ -152,7 +125,7 @@ Subroutine metal_ld_compute         &
           xxx,yyy,zzz,list,ltype,ltpmet,lstmet,vmet,dmet,cell,rho)
      Call metal_ld_compute_cuda_invoke()
      Call metal_ld_compute_cuda_finalise()
-     !Modified by BBG: Above 5 lines are uncommented.
+     !Modified by BBG: Above 5 lines were uncommented.
   Else
 #endif
 
@@ -160,7 +133,7 @@ Subroutine metal_ld_compute         &
      limit=list(0,i) ! Get list limit
 
 ! calculate interatomic distances
-
+!PART 1 - P1
      Do k=1,limit
         j=list(k,i)
 
@@ -170,17 +143,17 @@ Subroutine metal_ld_compute         &
      End Do
 
 ! periodic boundary conditions
-
+!PART 2 - P2
      Call images(imcon,cell,limit,xdf,ydf,zdf)
 
 ! square of distances
-
+!PART 3 - P3
      Do k=1,limit
         rsqdf(k) = xdf(k)**2+ydf(k)**2+zdf(k)**2
      End Do
 
 ! calculate contributions to local density
-
+!PART 4 - P4
      If (keypot == 0) Then ! EAM contributions
         Call metal_ld_collect_eam(i,rsqdf,safe)
      Else                  ! FST contributions

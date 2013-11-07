@@ -1,4 +1,4 @@
-DL_POLY_4.02 CUDA+OpenMP PORT - an ICHEC-STFC Collaboration
+DL_POLY_4.05.1 CUDA+OpenMP PORT - an ICHEC-STFC Collaboration
 ===========================================================
 
 Developed by Michael Lysaght, Peter Nash, Ruairi Nestor and
@@ -11,11 +11,12 @@ PORT STATUS
 GPU assisted computation is only available to the following subset
 of the DL_POLY_4 features/functionality/routines:
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-WARNING!!: THE CUDA COMPILED CODE DOES NOT WORK FOR METAL CALCULATIONS  !
-IN VERSION 4.04!! PLEASE USE MPI-ONLY VERSION FOR METAL CALCULATIONS    !
-THIS IS A TEMPORARY BUG AND WILL BE FIXED IN THE NEXT RELEASE!          !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+WARNING!!: THE CUDA COMPILED CODE DOES NOT WORK FOR METAL, TWO BODY FORCES!
+AND CONSTRAINTS SHAKE CALCULATIONS, IN VERSION 4.05.1!! PLEASE USE        !
+MPI-ONLY VERSION FOR THESE CALCULATIONS. THIS IS A TEMPORARY BUG AND WILL !
+BE FIXED IN THE NEXT RELEASE					          !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 * link_cell_pairs - building the Verlet Neighbour List using Link
                     Cells

@@ -18,7 +18,8 @@ Subroutine two_body_forces_cuda_helper(&
   Use config_module, Only : cell,list,xxx,yyy,zzz,ltype,ltg,chge,fxx,fyy,fzz
   Use setup_module,  Only : mxatms,mxgrid,nrite
   Use vdw_module
-  Use metal_module
+  Use metal_module,      Only : rho, ntpmet,ltpmet,lstmet,vmet,dmet
+  !Use metal_module,  Only : rho, ntpmet, ltpmet   
   Use comms_module,  Only : idnode
 
   Implicit None
@@ -197,7 +198,7 @@ Subroutine two_body_forces                        &
                                 ltg,fxx,fyy,fzz,ltype,chge
   Use ewald_module
   Use vdw_module,        Only : ntpvdw, prmvdw
-  Use metal_module,      Only : ntpmet,ltpmet,lstmet,vmet,dmet
+  Use metal_module,      Only : rho, ntpmet,ltpmet,lstmet,vmet,dmet
   Use statistics_module, Only : numrdf
 
 #ifdef COMPILE_CUDA
@@ -309,12 +310,12 @@ Subroutine two_body_forces                        &
   Call link_cell_pairs(imcon,rcut,lbook,megfrz)
 
 #ifdef COMPILE_CUDA
-  If (dl_poly_cuda_offload_tbforces() .and. &
-      dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable() &
-      .and. dl_poly_cuda_offload_link_cell_pairs_re()) Then
+  If (dl_poly_cuda_offload_tbforces() .and. dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable() .and. dl_poly_cuda_offload_link_cell_pairs_re()) Then
      cuda_ilo = 1;
+        !print *, "aIsListOnline=1"
   Else
      cuda_ilo = 0;
+        !print *, "aIsListOnline=0"
   End If
 #endif
 
@@ -363,7 +364,7 @@ Subroutine two_body_forces                        &
           cuda_ilo, natms,&
           mxlist,mxatms,mxatdm,mxmet,ntpmet,ntpvdw,keyfce,imcon,&
           cell,xxx,yyy,zzz,list,ltype,             &
-          ltpmet,lstmet,vmet,dmet,                 &
+          ltpmet,lstmet,vmet,dmet, rho,                 &
           mxgrid, mxvdw, ltpvdw, lstvdw, ls_vdw_c, &
           vvdw, gvdw, rvdw, ltg,                   &
           chge, rcut, alpha, epsq)

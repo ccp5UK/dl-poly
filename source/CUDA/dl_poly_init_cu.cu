@@ -57,21 +57,19 @@ extern "C" __host__ void dl_poly_cuda_allocate_pinned_default(
   CUDA_SAFE_CALL(cudaHostAlloc(aAddrOfPointer, (*aN)*(*aUnitSize), 0));
 }
 
-
-
 // Perform some checks at initialisation to decide what's offloaded
 // to the device (to trap unimplemented functionality):
-
-static bool offload_link_cell_pairs   = false;
-static bool offload_link_cell_pairs_re = false;
+//Modified by BBG: Some of the kernels were disabled in version 4.05.1. These will be fixed.
+static bool offload_link_cell_pairs   = true;
+static bool offload_link_cell_pairs_re = true;
 static bool offload_tbforces          = false;
 static bool offload_constraints_shake = false;
 static bool offload_metal_ld_compute  = false;
-static bool offload_ewald_spme_forces = false;
-static bool offload_spme_forces       = false;
-static bool offload_bspgen            = false;
-static bool offload_ewald_spme_forces_ccarray  = false;
-static bool offload_ewald_spme_forces_cccharge = false;
+static bool offload_ewald_spme_forces = true;
+static bool offload_spme_forces       = true;
+static bool offload_bspgen            = true;
+static bool offload_ewald_spme_forces_ccarray  = true;
+static bool offload_ewald_spme_forces_cccharge = true;
 
 extern "C" void dl_poly_cuda_offload_set(bool offload_link_cell_pairs_f90,
                                          bool offload_link_cell_pairs_re_f90,
@@ -85,7 +83,7 @@ extern "C" void dl_poly_cuda_offload_set(bool offload_link_cell_pairs_f90,
                                          bool offload_ewald_spme_forces_cccharge_f90)
 {
   // The offload_cuda array comes from the f90 subroutine
-  // dl_poly_cuda_check_offload_conditions()
+  //dl_poly_cuda_check_offload_conditions()
   offload_link_cell_pairs            = offload_link_cell_pairs_f90;
   offload_link_cell_pairs_re         = offload_link_cell_pairs_re_f90;
   offload_tbforces                   = offload_tbforces_f90;
@@ -159,14 +157,14 @@ extern "C" __host__ int dl_poly_cuda_offload_ewald_spme_forces_cccharge() {
 }
 
 extern "C" __host__ int dl_poly_cuda_offload_spme_forces() {
-//  if (offload_spme_forces)
-//    return (sTRUE);
+  if (offload_spme_forces)//Modified by BBG: Uncommented.
+    return (sTRUE);//Modified by BBG: Uncommented.
   return (sFALSE);
 }
 
 extern "C" __host__ int dl_poly_cuda_offload_bspgen() {
-//  if (offload_bspgen)
-//    return (sTRUE);
+  if (offload_bspgen)//Modified by BBG: Uncommented.
+    return (sTRUE);//Modified by BBG: Uncommented.
   return (sFALSE);
 }
 

@@ -282,8 +282,9 @@ Subroutine link_cell_pairs_remove_exclusions_helper(&
   Integer             :: l_end, m_end
   Logical             :: match
 
-
-!$OMP PARALLEL DO PRIVATE(i,ii,kk,ll,jj)
+!Modified by BBG: Private Data List is updated
+!!!!!Old!$OMP PARALLEL DO PRIVATE(i,ii,kk,ll,jj)
+!$OMP PARALLEL DO PRIVATE(i, l_end, m_end, ii, kk, j, jj)
   Do i=ibegin,iend
      l_end=list(0,i)
      m_end=l_end
@@ -839,13 +840,16 @@ Call start_timing_link_cell_pairs()
 ! 20100218/ck: when needed to finalise, mind if lbook==.true. as the list
 !   will be stil lneeded for the exclusions part.
 
-     If (dl_poly_cuda_offload_tbforces().eqv..false. .and. lbook .eqv. .false.) Then
+     If (lbook==.false.) Then
+        If (dl_poly_cuda_offload_tbforces() .eqv. .false.) Then
+     !If (dl_poly_cuda_offload_tbforces().eqv..false. .and. lbook .eqv. .false.) Then
         Call link_cell_pairs_cuda_finalise()
 ! malysaght250112: dl_poly_cuda_offload_link_cell_pairs_re() should be set to false
 ! for the moment.
      Else If (dl_poly_cuda_offload_link_cell_pairs_re() .eqv. .false.) Then
         Call link_cell_pairs_cuda_finalise()
      End If
+    End If
 
 ! 20100226/ck: uncomment this to study the effect of sorted atom lists
 !   to the CUDA kernels of two_body_forces.
@@ -1164,7 +1168,7 @@ Call start_timing_link_cell_pairs()
 !the moment, dl_poly_cuda_offload_link_cell_pairs_re() should be set to .false.
 !When set to false, the remove_exclusions is invoked on the host. This will
 !be changed so that _remove_exclusions is invoked on the device as previously.
-
+!BBG18102013: link_cell_pairs_cuda_invoke_remove_exclusions is corrected. 
 #ifdef COMPILE_CUDA
      Call start_timing_link_cell_pairs_cuda_remove_excluded()
      If (dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable() .and. &

@@ -174,12 +174,14 @@ Interface
 
 
    ! two_body_forces
-   Subroutine two_body_forces_cuda_initialise                      &
-              (cuda_ilo,natms,mxlist,mxatms,mxatdm,mxmet,          &
-              ntpmet,ntpvdw,keyfce,imcon,                          &
-              cell,xxx,yyy,zzz,list,ltype,ltpmet,lstmet,vmet,dmet, &
+   Subroutine two_body_forces_cuda_initialise                          &
+              (cuda_ilo,natms,mxlist,mxatms,mxatdm,mxmet,              &
+              ntpmet,ntpvdw,keyfce,imcon,                              &
+              cell,xxx,yyy,zzz,list,ltype,ltpmet,lstmet,vmet,dmet,rho, &
               mxgrid, mxvdw, ltpvdw, lstvdw, ls_vdw, vvdw, gvdw, rvdw, ltg,    &
               chge, rcut, alpha, epsq) bind(c)
+              !!Modified by BBG: Third line from above is changed. Rho is
+              !removed. 
      Use kinds_f90
      Use iso_c_binding
 
@@ -1012,16 +1014,16 @@ Contains
     Integer               :: keypot
     Integer, Intent( In ) :: keyfce, imcon
 
-    Logical( c_bool ) :: offload_link_cell_pairs    = .true., &
-                         offload_link_cell_pairs_re = .false., &
-                         offload_tbforces           = .true., &
-                         offload_constraints_shake  = .true., &
-                         offload_metal_ld_compute   = .true., &
-                         offload_ewald_spme_forces  = .true., &
-                         offload_spme_forces        = .true., &
-                         offload_bspgen             = .true., &
-                         offload_ewald_spme_forces_ccarray  = .true., &
-                         offload_ewald_spme_forces_cccharge = .true.
+    Logical( c_bool ) :: offload_link_cell_pairs    = .true., & !Modified by BBG: Original true. 
+                         offload_link_cell_pairs_re = .true., & !Modified by BBG: Original false.
+                         offload_tbforces           = .false., & !Modified by BBG: Original true.
+                         offload_constraints_shake  = .false., & !Modified by BBG: Original true.
+                         offload_metal_ld_compute   = .false., & !Modified by BBG: Original true.
+                         offload_ewald_spme_forces  = .true., & !Modified by BBG: Original true.
+                         offload_spme_forces        = .true., & !Modified by BBG: Original true.
+                         offload_bspgen             = .true., & !Modified by BBG: Original true.
+                         offload_ewald_spme_forces_ccarray  = .true., & !Modified by BBG: Original true.
+                         offload_ewald_spme_forces_cccharge = .true. !Modified by BBG: Original true.
 
     Write(nrite,*)
 

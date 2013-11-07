@@ -939,7 +939,6 @@ void link_cell_pairs_cuda_invoke_remove_exclusions(int aI) {
    */
   extern __shared__ int shared[];
 
-
   for (int lI=aI+blockIdx.y ; lI<=CONSTANT_DATA.mNATMS ; lI+= GY_) {
     int lII = *F2D_ADDRESS(CONSTANT_DATA.mLEXATM, 0, 1, (CONSTANT_DATA.mMXEXCL+1), 0, lI);
     if (lII<=0)
@@ -948,23 +947,24 @@ void link_cell_pairs_cuda_invoke_remove_exclusions(int aI) {
     /* Cache the excluded ones:
      */
     for (int lU=1+threadIdx.x ; lU<=lII ; lU+=BX_) {
-      shared[1+512+lU-1] = *F2D_ADDRESS(CONSTANT_DATA.mLEXATM, 0, 1, (CONSTANT_DATA.mMXEXCL+1), lU, lI);
-    }
-
-    if (threadIdx.x==0) {
-      shared[0] = 0; // reset the counter
+      //shared[1+512+lU-1] = *F2D_ADDRESS(CONSTANT_DATA.mLEXATM, 0, 1, (CONSTANT_DATA.mMXEXCL+1), lU, lI);
+      shared[1+512+1+lU-1] = *F2D_ADDRESS(CONSTANT_DATA.mLEXATM, 0, 1, (CONSTANT_DATA.mMXEXCL+1), lU, lI);
+      //Modified by BBG: Above is modified. A new place for the new counter is added.	
     }
 
     if (BX_>32) __syncthreads();
 //malysaght240112
-    int lLL=*F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 2, lI);
+    int lL_END=*F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 2, lI);
     // note : Filling in list(-1,i)
-    *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 1, lI)=lLL;
-
-
+    *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), 1, lI)=lL_END;
 //end_malysaght240112
 
-    for (int lKK=1+threadIdx.x ; lKK<=lLL ; lKK+=BX_) {
+    if (threadIdx.x==0) {
+      shared[0] = 0; // reset the counter for the beginning
+      shared[513] = lL_END+1; //Modified by BBG: Reset the counter for the beginning
+    }
+
+    for (int lKK=1+threadIdx.x ; lKK<=lL_END ; lKK+=BX_) {
 //malysaght240112
       int lJATM = *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), lKK+2, lI);
 //end_malysaght240112
@@ -981,9 +981,9 @@ void link_cell_pairs_cuda_invoke_remove_exclusions(int aI) {
        * the search.
        * Check if we do indeed have to enter the loop.
        */
-      if (shared[1+512+lII-1]>=lJJ) {
+      if (shared[1+512+1+lII-1]>=lJJ) {//Modified by BBG: Shared array with new dimensions
 	      for (int lU=1 ; lU<=lII ; lU++) {
-	        int lLEXATM = shared[1+512+lU-1];
+	        int lLEXATM = shared[1+512+1+lU-1];
 
 	  /* It triggers better predicaion logic to include the second test
 	   * here than leaving it outside. The second OR test signals early
@@ -998,24 +998,27 @@ void link_cell_pairs_cuda_invoke_remove_exclusions(int aI) {
           }
         }
       }
-
-      if (!lMatched) {
-      	shared[atomicAdd(&shared[0], 1)+1] = lJATM;
+      if(lMatched==1){//Modified by BBG: If atom in the exclusion list, add it from the end
+	shared[atomicSub(&shared[513],1)-1]=lJATM;
+      }	
+      else{//Modified by BBG: If atom is not in the exclusion list, add it from the beginning
+	shared[atomicAdd(&shared[0],1)+1]=lJATM;
       }
-    }
+
+    }//End of lKK
 
     if (BX_>32) __syncthreads();
     /* If the list length has changed, write the new list back:
      */
-    if (shared[0]<lLL) {
-      for (int lU=threadIdx.x ; lU<=shared[0] ; lU+=BX_) {
+    if (shared[0]<lL_END) {//Modified by BBG: Whole elements of array are required
+      for (int lU=threadIdx.x ; lU<=lL_END ; lU+=BX_) {
 //malysaght240112
         *F2D_ADDRESS(CONSTANT_DATA.mLIST, 0, 1, (CONSTANT_DATA.mMXLIST+1+2), lU+2, lI)= shared[lU];
 //end_malysaght240112
       }
     }
-  }
-}
+  }//End of lI
+}//End of the Kernel
 
 
 extern "C" void link_cell_pairs_cuda_invoke_remove_exclusions() {
@@ -1041,6 +1044,7 @@ extern "C" void link_cell_pairs_cuda_invoke_remove_exclusions() {
 
     if (sHD.mPercentageOffloadedToTheDevice!=0.0) {
       link_cell_pairs_cuda_invoke_remove_exclusions
+          //<1024,1><<<dim3(1,1024,1),dim3(1,1,1),(1+512+sCD.mMXEXCL)*sizeof(int)>>>(lIATM_DevBegin);
           <900,64><<<dim3(1,900,1),dim3(64,1,1),(1+512+sCD.mMXEXCL)*sizeof(int)>>>(lIATM_DevBegin);
     }
 
