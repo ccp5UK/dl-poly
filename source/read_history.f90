@@ -1,11 +1,11 @@
-Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time)
+Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time,exout)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for reading the trajectory data file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov november 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -37,7 +37,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time)
 
   Integer,              Intent( InOut ) :: levcfg,imcon,nstep
   Real( Kind = wp ),    Intent( InOut ) :: tstep,time
-
+  Integer,              Intent(   Out ) :: exout
 
   Logical,               Save :: newjob = .true.  , &
                                  l_ind  = .true.  , &
@@ -309,8 +309,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time)
                  If (.not.safe) Go To 300 !Call error(25)
 
 ! Ensure all atoms are in prescribed simulation cell (DD bound) and broadcast them
-
-                 Call pbcshift(imcon,cell,indatm,axx,ayy,azz)
+!
+!                 Call pbcshift(imcon,cell,indatm,axx,ayy,azz)
 
                  If (mxnode > 1) Then
                     Call MPI_BCAST(chbuf,indatm*8,MPI_CHARACTER,0,dlp_comm_world,ierr)
@@ -340,25 +340,32 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time)
 ! Assign atoms to correct domains
 
                  Do i=1,indatm
-
                     sxx=rcell(1)*axx(i)+rcell(4)*ayy(i)+rcell(7)*azz(i)
                     syy=rcell(2)*axx(i)+rcell(5)*ayy(i)+rcell(8)*azz(i)
                     szz=rcell(3)*axx(i)+rcell(6)*ayy(i)+rcell(9)*azz(i)
+
+! sxx,syy,szz are in [-0.5,0.5) interval and values as 0.4(9) may pose a problem
 
                     sxx=sxx-Anint(sxx) ; If (sxx >= half_minus) sxx=-sxx
                     syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
                     szz=szz-Anint(szz) ; If (szz >= half_minus) szz=-szz
 
-! sxx,syy,szz are in [-0.5,0.5) interval and values as 0.4(9) may pose a problem
+! fold back coordinates
 
-                    ipx=Int((sxx+0.5_wp)*nprx_r) ; If (ipx == nprx) ipx=ipx-1
-                    ipy=Int((syy+0.5_wp)*npry_r) ; If (ipy == npry) ipy=ipy-1
-                    ipz=Int((szz+0.5_wp)*nprz_r) ; If (ipz == nprz) ipz=ipz-1
+                    axx(i)=cell(1)*sxx+cell(4)*syy+cell(7)*szz
+                    ayy(i)=cell(2)*sxx+cell(5)*syy+cell(8)*szz
+                    azz(i)=cell(3)*sxx+cell(6)*syy+cell(9)*szz
+
+! assign domain coordinates (call for errors)
+
+                    ipx=Int((sxx+0.5_wp)*nprx_r)
+                    ipy=Int((syy+0.5_wp)*npry_r)
+                    ipz=Int((szz+0.5_wp)*nprz_r)
 
                     idm=ipx+nprx*(ipy+npry*ipz)
-                    If (idm < 0 .or. idm > (mxnode-1)) Call error(513)
-
-                    If (idm == idnode) Then
+                    If      (idm < 0 .or. idm > (mxnode-1)) Then
+                       Call error(513)
+                    Else If (idm == idnode)                 Then
                        natms=natms+1
 
                        If (natms < mxatms) Then
@@ -388,7 +395,6 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time)
                           safe=.false.
                        End If
                     End If
-
                  End Do
 
 ! Check if all is dispatched fine
@@ -533,14 +539,16 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time)
   End Do
   Call shellsort2(natms,lsi,lsa)
 
+  exout = 0 ! more to read indicator
+
   Return
 
 ! Normal exit from HISTORY file read
 
 200 Continue
 
-  If (idnode == 0) Write(nrite,"(/,1x,a)") 'HISTORY end of file reached'
-  nstep = -1 ! It's an indicator of the end of reading.  It must be changed to ZERO later.
+  If (idnode == 0) Write(nrite,"(1x,a)") 'HISTORY end of file reached'
+  exout = 1 ! It's an indicator of the end of reading.
   If (io_read == IO_READ_MASTER) Then
      If (imcon == 0) Close(Unit=nconf)
      Deallocate (chbuf,       Stat=fail(1))
@@ -565,7 +573,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time)
 300 Continue
 
   If (idnode == 0) Write(nrite,"(/,1x,a)") 'HISTORY data mishmash detected'
-  nstep = -2 ! It's an indicator of the end of reading.  It must be changed to ZERO later.
+  exout = -1 ! It's an indicator of the end of reading.
   If (io_read == IO_READ_MASTER) Then
      If (imcon == 0) Close(Unit=nconf)
      Deallocate (chbuf,       Stat=fail(1))

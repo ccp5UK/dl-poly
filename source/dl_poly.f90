@@ -697,6 +697,7 @@ Contains
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer           :: nstpe,nstph ! nstep replacements
+    Integer           :: exout       ! exit indicator for reading
 
     Include 'w_replay_history.f90'
   End Subroutine w_replay_history
@@ -705,6 +706,7 @@ Contains
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer           :: nstpe,nstph ! nstep replacements
+    Integer           :: exout       ! exit indicator for reading
 
     Include 'w_replay_historf.f90'
   End Subroutine w_replay_historf

@@ -18,8 +18,7 @@ Subroutine two_body_forces_cuda_helper(&
   Use config_module, Only : cell,list,xxx,yyy,zzz,ltype,ltg,chge,fxx,fyy,fzz
   Use setup_module,  Only : mxatms,mxgrid,nrite
   Use vdw_module
-  Use metal_module,      Only : rho, ntpmet,ltpmet,lstmet,vmet,dmet
-  !Use metal_module,  Only : rho, ntpmet, ltpmet   
+  Use metal_module,  Only : rho, ntpmet,ltpmet,lstmet,vmet,dmet
   Use comms_module,  Only : idnode
 
   Implicit None

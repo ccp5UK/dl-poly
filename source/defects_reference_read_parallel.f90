@@ -8,7 +8,7 @@ Subroutine defects_reference_read_parallel              &
 ! in parallel
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush & i.t.todorov july 2013
+! author    - i.j.bush & i.t.todorov november 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -303,15 +303,20 @@ Subroutine defects_reference_read_parallel              &
 
         End If No_netCDF
 
+! Ensure all atoms are in prescribed simulation cell (DD bound) and broadcast them
+!
+!        Call pbcshift(imconr,celr,to_read,axx_read,ayy_read,azz_read)
+
 ! Assign atoms positions in fractional coordinates to the correct domains
 ! (DD bounding)
 
-        Call pbcshift(imconr,celr,to_read,axx_read,ayy_read,azz_read)
         n_held=0
         Do i=1,to_read
            sxx=rcell(1)*axx_read(i)+rcell(4)*ayy_read(i)+rcell(7)*azz_read(i)
            syy=rcell(2)*axx_read(i)+rcell(5)*ayy_read(i)+rcell(8)*azz_read(i)
            szz=rcell(3)*axx_read(i)+rcell(6)*ayy_read(i)+rcell(9)*azz_read(i)
+
+! sxx,syy,szz are in [-0.5,0.5) interval and values as 0.4(9) may pose a problem
 
            sxx=sxx-Anint(sxx) ; If (sxx >= half_minus) sxx=-sxx
            syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
@@ -321,19 +326,14 @@ Subroutine defects_reference_read_parallel              &
            ayy_read(i)=syy
            azz_read(i)=szz
 
-! sxx,syy,szz are in [-0.5,0.5) interval and values as 0.4(9) may pose a problem
+! assign domain coordinates (call for errors)
 
            ipx=Int((sxx+0.5_wp)*nprx_r)
            ipy=Int((syy+0.5_wp)*npry_r)
            ipz=Int((szz+0.5_wp)*nprz_r)
 
-! check for errors
-
-           If (ipx == nprx .or. ipy == npry .or. ipz == nprz) Call error(555)
-
-! assign domain
-
            idm=ipx+nprx*(ipy+npry*ipz)
+           If (idm < 0 .or. idm > (mxnode-1)) Call error(555)
            owner_read(i) = idm
            n_held(idm) = n_held(idm)+1
         End Do

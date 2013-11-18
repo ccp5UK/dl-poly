@@ -7,7 +7,7 @@ Subroutine read_config &
 ! particle density
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov november 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -312,8 +312,8 @@ Subroutine read_config &
            If (.not.safe) Go To 50
 
 ! Ensure all atoms are in prescribed simulation cell (DD bound) and broadcast them
-
-           Call pbcshift(imcon,cell,indatm,axx,ayy,azz)
+!
+!           Call pbcshift(imcon,cell,indatm,axx,ayy,azz)
 
            If (mxnode > 1) Then
               Call MPI_BCAST(chbuf,indatm*8,MPI_CHARACTER,0,dlp_comm_world,ierr)
@@ -361,13 +361,10 @@ Subroutine read_config &
               ipy=Int((syy+0.5_wp)*npry_r)
               ipz=Int((szz+0.5_wp)*nprz_r)
 
-! check for errors
-
-              If (ipx == nprx .or. ipy == npry .or. ipz == nprz) Call error(513)
-! assign domain
-
               idm=ipx+nprx*(ipy+npry*ipz)
-              If (idm == idnode) Then
+              If      (idm < 0 .or. idm > (mxnode-1)) Then
+                 Call error(513)
+              Else If (idm == idnode)                 Then
                  natms=natms+1
 
                  If (natms < mxatms) Then
@@ -475,9 +472,8 @@ Subroutine read_config &
 
   nlast=natms
 
-! First check: Does the number of atoms in the system (MD cell) derived by
+! Check if the number of atoms in the system (MD cell) derived by
 ! topology description (FIELD) match the crystallographic (CONFIG) one?
-! Check number of atoms in system (CONFIG = FIELD)
 
   totatm=natms
   If (mxnode > 1) Call gsum(totatm)

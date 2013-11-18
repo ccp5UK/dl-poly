@@ -7,7 +7,7 @@ Subroutine read_config_parallel                  &
 ! dl_poly_4 subroutine for reading in the CONFIG data file in parallel
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush & i.t.todorov july 2013
+! author    - i.j.bush & i.t.todorov november 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -344,8 +344,8 @@ Subroutine read_config_parallel                  &
         If (.not.l_xtr) Then
 
 ! Ensure all atoms are in prescribed simulation cell (DD bound)
-
-           Call pbcshift(imcon,cell,to_read,axx_read,ayy_read,azz_read)
+!
+!           Call pbcshift(imcon,cell,to_read,axx_read,ayy_read,azz_read)
 
            n_held=0
            Do i=1,to_read
@@ -371,13 +371,8 @@ Subroutine read_config_parallel                  &
               ipy=Int((syy+0.5_wp)*npry_r)
               ipz=Int((szz+0.5_wp)*nprz_r)
 
-! check for errors
-
-              If (ipx == nprx .or. ipy == npry .or. ipz == nprz) Call error(513)
-
-! assign domain
-
               idm=ipx+nprx*(ipy+npry*ipz)
+              If (idm < 0 .or. idm > (mxnode-1)) Call error(513)
               owner_read(i) = idm
               n_held(idm) = n_held(idm)+1
            End Do

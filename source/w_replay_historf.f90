@@ -48,7 +48,7 @@
 
 ! Make a move
 
-     Call read_history(l_str,"HISTORF",megatm,levcfg,imcon,nstep,tstep,time)
+     Call read_history(l_str,"HISTORF",megatm,levcfg,imcon,nstep,tstep,time,exout)
 
      If (newjb) Then
         newjb = .false.
@@ -57,10 +57,15 @@
         tmsh=0.0_wp ! tmst substitute
      End If
 
-     If (nstep >= 0) Then
+     If (nstep >= 0 .and. exout >= 0) Then
         nstph=nstph+1
 
-        If (nstep <= nstpe) Go To 10 ! Deal with restarts
+        If (nstep < nstpe) Go To 10 ! Deal with restarts
+
+! CHECK MD CONFIGURATION
+
+        Call check_config &
+           (levcfg,imcon,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
 ! Refresh mappings
 
@@ -183,6 +188,8 @@
            End If
 
         End If
+
+        If (exout /= 0) Exit
      Else
         Exit
      End If
@@ -190,7 +197,7 @@
 
 ! If reading HISTORY finished awkwardly
 
-  If (nstep == -2) Then
+  If (exout < 0) Then
      Do i=1,natms
         xxx(i)=xin(i)
         yyy(i)=yin(i)

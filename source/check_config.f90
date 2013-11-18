@@ -9,7 +9,7 @@ Subroutine check_config &
 ! data (positions+) to the topology (sites+), i.e. CONFIG to FIELD
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov november 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -25,22 +25,25 @@ Subroutine check_config &
   Integer, Intent( In    ) :: levcfg,keyens,iso,keyfce,keyres,megatm
   Integer, Intent( InOut ) :: imcon
 
-  Logical                :: safe
-  Integer                :: fail,k,l,m, &
-                            indatm,nattot,mol_sit,loc_ind
-  Real( Kind = wp )      :: rcell(1:9),det
+  Logical, Save     :: newjob = .true.
+  Logical           :: safe
+  Integer           :: fail,i,k,l,m, &
+                       indatm,totatm,mol_sit,loc_ind
+  Real( Kind = wp ) :: rcell(1:9),det
 
   Integer, Allocatable :: iwrk(:)
 
   fail=0
-  Allocate (iwrk(1:mxatms), Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'check_config allocation failure, node: ', idnode
-     Call error(0)
+  If (l_str) Then
+     Allocate (iwrk(1:mxatms), Stat=fail)
+     If (fail > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'check_config allocation failure, node: ', idnode
+        Call error(0)
+    End If
   End If
 
 
-  If (idnode == 0) Then
+  If (idnode == 0 .and. newjob) Then
      Write(nrite,"(/,1x,'configuration file name: ',/,/,10x,a)") cfgname
      Write(nrite,"(/,/,1x,'selected image convention',6x,i10)") imcon
   End If
@@ -83,7 +86,7 @@ Subroutine check_config &
 
 ! Specify molecular dynamics simulation cell
 
-  If (idnode == 0) Then
+  If (idnode == 0 .and. newjob) Then
      Write(nrite,"(/,/,1x,'simulation cell vectors'/)")
      Write(nrite,"(3f20.10)") cell
      Write(nrite,"(/,/,1x,'system volume     ',2x,1p,g22.12)") det
@@ -101,7 +104,7 @@ Subroutine check_config &
 
 ! Global atom counter
 
-  nattot=0
+  totatm=0
 
 ! Local atom counter
 
@@ -122,11 +125,11 @@ Subroutine check_config &
 
 ! Increase global atom counter
 
-           nattot=nattot+1
+           totatm=totatm+1
 
-! If a local atom has a global index nattot
+! If a local atom has a global index totatm
 
-           If (lsa(indatm) == nattot) Then
+           If (lsa(indatm) == totatm) Then
 
 ! Get the local index. mol_sit+m is the global site
 
@@ -152,7 +155,7 @@ Subroutine check_config &
 
 ! Print global indices for a later check on ordering (mixed indexing)
 
-              If (l_str) iwrk(indatm) = nattot ! Populate
+              If (l_str) iwrk(indatm) = totatm ! Populate
 
 ! Increase local atom counter
 
@@ -182,13 +185,17 @@ Subroutine check_config &
      Call all_inds_present( iwrk, indatm, megatm, safe )
      If (mxnode > 1) Call gcheck(safe)
      If (.not.safe) Call error(28)
+
+     Deallocate (iwrk, Stat=fail)
+     If (fail > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'check_config deallocation failure, node: ', idnode
+        Call error(0)
+     End If
   End If
 
-  Deallocate (iwrk, Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'check_config deallocation failure, node: ', idnode
-     Call error(0)
-  End If
+! For subsequent checks
+
+  If (newjob) newjob=.false.
 
 Contains
 
