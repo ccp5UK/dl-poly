@@ -216,7 +216,7 @@ Program dl_poly
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  version:  4.05.1  /   september 2013  ****** O ****", &
+          "**         **  version:  4.05.2   /   november 2013  ****** O ****", &
           "*************  execution on ", mxnode, "    node(s)  ******* L ***", &
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
@@ -740,6 +740,7 @@ Contains
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer           :: nstpe,nstph ! nstep replacements
+    Integer           :: exout       ! exit indicator for reading
 
     Include 'w_replay_history.f90'
   End Subroutine w_replay_history
@@ -748,6 +749,7 @@ Contains
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer           :: nstpe,nstph ! nstep replacements
+    Integer           :: exout       ! exit indicator for reading
 
     Include 'w_replay_historf.f90'
   End Subroutine w_replay_historf

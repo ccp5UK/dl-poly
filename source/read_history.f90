@@ -547,8 +547,31 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time,exout)
 
 200 Continue
 
-  If (idnode == 0) Write(nrite,"(1x,a)") 'HISTORY end of file reached'
+! To prevent users from the danger of changing the order of calls
+! in dl_poly set 'nlast' to the innocent 'natms'
+
+  nlast=natms
+
+! Does the number of atoms in the system (MD cell) derived by
+! topology description (FIELD) match the crystallographic (CONFIG) one?
+! Check number of atoms in system (CONFIG = FIELD)
+
+  totatm=natms
+  If (mxnode > 1) Call gsum(totatm)
+  If (totatm /= megatm) Call error(58)
+
+! Record global atom indices for local sorting (config_module)
+
+  Do i=1,natms
+     lsi(i)=i
+     lsa(i)=ltg(i)
+  End Do
+  Call shellsort2(natms,lsi,lsa)
+
   exout = 1 ! It's an indicator of the end of reading.
+
+  If (idnode == 0) Write(nrite,"(1x,a)") 'HISTORY end of file reached'
+
   If (io_read == IO_READ_MASTER) Then
      If (imcon == 0) Close(Unit=nconf)
      Deallocate (chbuf,       Stat=fail(1))
@@ -564,7 +587,6 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time,exout)
      Call io_close( fh )
      Call io_finalize
   End If
-
 
   Return
 
@@ -595,6 +617,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time,exout)
 ! HISTORY not found
 
 400 Continue
+
   Call error(585)
 
 End Subroutine read_history
