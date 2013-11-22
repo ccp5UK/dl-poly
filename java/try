@@ -1,1 +1,2 @@
-java -jar GUI.jar
+SCRIPTPATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
+java -jar $SCRIPTPATH/GUI.jar

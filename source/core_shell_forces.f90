@@ -6,7 +6,7 @@ Subroutine core_shell_forces(imcon,engshl,virshl,stress)
 ! and force terms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov november 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -132,7 +132,7 @@ Subroutine core_shell_forces(imcon,engshl,virshl,stress)
 ! calculate scalar constant terms using spring potential function
 ! and the parameters in array prmshl
 
-        gamma=prmshl(kk)
+        gamma=prmshl(1,kk)+0.5_wp*prmshl(2,kk)*rabsq
         omega=0.5_wp*gamma*rabsq
 
 ! calculate forces

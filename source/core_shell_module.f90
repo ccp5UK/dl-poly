@@ -27,7 +27,7 @@ Module core_shell_module
   Integer,           Allocatable, Save :: lstshl(:,:),listshl(:,:),legshl(:,:)
   Integer,           Allocatable, Save :: lishp_shl(:),lashp_shl(:)
 
-  Real( Kind = wp ), Allocatable, Save :: prmshl(:)
+  Real( Kind = wp ), Allocatable, Save :: prmshl(:,:)
 
   Public :: allocate_core_shell_arrays , deallocate_core_shell_arrays
 
@@ -48,7 +48,7 @@ Contains
     Allocate (listshl(0:2,1:mxshl),                    Stat = fail(3))
     Allocate (legshl(0:mxfshl,1:mxatdm),               Stat = fail(4))
     Allocate (lishp_shl(1:mxlshp),lashp_shl(1:mxproc), Stat = fail(5))
-    Allocate (prmshl(1:mxtshl),                        Stat = fail(6))
+    Allocate (prmshl(1:2,1:mxtshl),                    Stat = fail(6))
 
     If (Any(fail > 0)) Call error(1005)
 

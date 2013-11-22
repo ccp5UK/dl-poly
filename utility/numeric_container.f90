@@ -584,7 +584,7 @@ Subroutine dcell(aaa,bbb)
 ! The results are returned in the array bbb, with:
 !
 ! bbb(1 to 3) - lengths of cell vectors: a(x,y,z) , b(x,y,z) , c(x,y,z)
-! bbb(4 to 6) - cosines of cell angles: gamma(a,c) , alpha(b,c) , beta(a,c)
+! bbb(4 to 6) - cosines of cell angles: gamma(a,b) , beta(a,c) , alpha(b,c)
 ! bbb(7 to 9) - perpendicular cell widths : wx(y,z) , wy(x,z) , wz(x,y)
 ! bbb(10)     - cell volume
 !
@@ -938,7 +938,7 @@ Subroutine pbcshift(imcon,cell,natms,xxx,yyy,zzz)
 ! dl_poly_4 subroutine for calculating the minimum image of atoms within
 ! a specified MD cell in accordance with the domain decomposition
 ! boundary convention for fractional coordinates: every coordinate must
-! be intervaled as [-0.5,+0.5)
+! be intervalled as [-0.5,+0.5)
 !
 ! Note: in all cases the centre of the MD cell is at (0,0,0)
 !
@@ -1212,7 +1212,7 @@ Subroutine jacobi(n,aaa,vvv)
 ! Variable rho sets absolute tolerance on convergence
 ! Variable test is a moving tolerance that diminishes on each pass
 ! until true convergence test<rho
-! A ZERO matrices are accepted and returned
+! ZERO matrices are accepted and returned
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov july 2008
@@ -1267,7 +1267,7 @@ Subroutine jacobi(n,aaa,vvv)
   End Do
   test=Sqrt(2.0_wp*test)
 
-! Initialize eigenvectors
+! Initialise eigenvectors
 
   vvv=0.0_wp
   Do i=1,n
@@ -1313,7 +1313,7 @@ Subroutine jacobi(n,aaa,vvv)
                     If (v_d_mid < 0.0_wp) omg=-omg
                  End If
                  s=omg/Sqrt(2.0_wp*(1.0_wp+Sqrt(1.0_wp-omg**2)))
-                 s_s=s*s ; c_c=1.0_wp-s_s ; c=sqrt(c_c) ; s_c=s*c
+                 s_s=s*s ; c_c=1.0_wp-s_s ; c=Sqrt(c_c) ; s_c=s*c
 
                  Do k=1,n
                     If      (k <= j) Then

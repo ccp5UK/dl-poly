@@ -189,7 +189,7 @@ potential\index{potential!chemical bond} is obtained using the general
 formula:
 \begin{equation}
 \vek{f}_{j} = -\frac{1}{{r}_{ij}} \left[ \frac{\partial }{\partial
-r_{ij}}U(r_{ij})\right] \vek{r}_{ij}~~.
+r_{ij}}U(r_{ij})\right] \vek{r}_{ij}~~. \label{bondf}
 \end{equation}
 The force $\vek{f}_{i}$ acting on atom $i$ is the negative of this.
 
@@ -202,7 +202,7 @@ with only {\em one} such contribution from each bond\index{potential!chemical bo
 The contribution to be added to the atomic stress
 tensor\index{stress tensor} is given by
 \begin{equation}
-\sigma^{\alpha \beta} = r_{ij}^{\alpha} f_{j}^{\beta}~~,
+\sigma^{\alpha \beta} = r_{ij}^{\alpha} f_{j}^{\beta}~~, \label{bonds}
 \end{equation}
 where $\alpha$ and $\beta$ indicate the $x,y,z$ components.  The
 atomic stress tensor\index{stress tensor} derived in this way is
@@ -2625,21 +2625,34 @@ hereafter called the core-shell unit.  The core and shell carry
 different electric charges, the sum of which equals the charge on
 the original atom.  There is no electrostatic interaction (i.e.
 self interaction) between the core and shell of the same atom.
-Non-coulombic interactions arise from the shell alone.  The effect
-of an electric field is to separate the core and shell, giving
-rise to a {\em polarisation} dipole.  The condition of static
-equilibrium gives the polarisability as:
+Non-coulombic interactions arise from the shell alone.
+
+The core-shell interaction is described by a harmonic spring
+potential of the form:
+\begin{equation}
+U_{spring}(r_{ij})=\frac{1}{2}k_{2} r_{ij}^{2}~~,
+\end{equation}
+However, sometimes an anharmonic spring is used, described by a
+quartic form:
+\begin{equation}
+U_{spring}(r_{ij})=\frac{1}{2}k_{2} r_{ij}^{2}+\frac{1}{4}k_{4} r_{ij}^{4}.
+\end{equation}
+Normally, in practice, $k_{2}$ is much larger than $k_{4}$.
+
+The effect of an electric field is to separate the core and shell,
+giving rise to a {\em polarisation} dipole.  The condition of
+static equilibrium gives the polarisability as:
 \begin{equation}
 \alpha = (2q_{s}^{2}-q_{c}^{2})/k~~,
 \end{equation}
 where $q_{s}$ and $q_{c}$ are the shell and core charges and $k$ is
 the force constant of the harmonic spring.
 
-The calculation of the virial and stress tensor\index{stress
+The calculation of the forces, virial and stress tensor\index{stress
 tensor} in this model is based on that for a diatomic molecule
-with charged atoms.  The electrostatic and short ranged forces are
-calculated as described above.  The forces of the harmonic springs
-are calculated as described for intramolecular harmonic bonds.
+with charged atoms.  The part coming from the spring potential is
+similar in spirit as for chemical bonds, (\ref{bondf} - \ref{bonds}),
+while the electrostatics is as described in the above section.
 The relationship between the kinetic energy and the temperature is
 different however, as the core-shell unit is permitted only three
 translational degrees of freedom, and the degrees of freedom

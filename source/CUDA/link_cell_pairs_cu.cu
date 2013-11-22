@@ -949,7 +949,7 @@ void link_cell_pairs_cuda_invoke_remove_exclusions(int aI) {
     for (int lU=1+threadIdx.x ; lU<=lII ; lU+=BX_) {
       //shared[1+512+lU-1] = *F2D_ADDRESS(CONSTANT_DATA.mLEXATM, 0, 1, (CONSTANT_DATA.mMXEXCL+1), lU, lI);
       shared[1+512+1+lU-1] = *F2D_ADDRESS(CONSTANT_DATA.mLEXATM, 0, 1, (CONSTANT_DATA.mMXEXCL+1), lU, lI);
-      //Modified by BBG: Above is modified. A new place for the new counter is added.	
+      //Modified by BBG: Above is modified. A new place for the new counter is added.
     }
 
     if (BX_>32) __syncthreads();
@@ -1000,7 +1000,7 @@ void link_cell_pairs_cuda_invoke_remove_exclusions(int aI) {
       }
       if(lMatched==1){//Modified by BBG: If atom in the exclusion list, add it from the end
 	shared[atomicSub(&shared[513],1)-1]=lJATM;
-      }	
+      }
       else{//Modified by BBG: If atom is not in the exclusion list, add it from the beginning
 	shared[atomicAdd(&shared[0],1)+1]=lJATM;
       }

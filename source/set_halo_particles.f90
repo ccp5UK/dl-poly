@@ -11,7 +11,6 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,        Only : idnode
   Use setup_module
   Use domains_module
   Use site_module

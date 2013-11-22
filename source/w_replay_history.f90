@@ -78,8 +78,8 @@
 
      Call read_history(l_str,"HISTORY",megatm,levcfg,imcon,nstep,tstep,time,exout)
 
-     If (newjob) Then
-        newjob = .false.
+     If (newjb) Then
+        newjb = .false.
 
         tmst=time
         tmsh=0.0_wp ! tmst substitute

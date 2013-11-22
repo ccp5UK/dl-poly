@@ -1635,15 +1635,16 @@ subsequent {\em n} records contains:
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> index 1 ($i$) \> integer \> site index of core \\
 \> index 2 ($j$) \> integer \> site index of shell \\
-\> spring  ($k$) \> real    \> force constant of core-shell spring
+\> $k_{2}$       \> real    \> force constant of core-shell spring \\
+\> $k_{4}$)      \> real    \> quartic (anharmonic) force constant of spring
 \end{tabbing}
 The spring potential is
 \begin{equation}
-U(r)~=~{1 \over 2}~k~r_{ij}^{2}~~,
+U(r)=\frac{1}{2}k_{2} r_{ij}^{2}+\frac{1}{4}k_{4} r_{ij}^{4}~~,
 \end{equation}
-with the force constant $k$ entered in units of {\tt
-engunit}$\times$\AA$^{-2}$, where {\tt engunit} is the energy unit
-specified in the {\bf units} directive.
+with the force constant $k_{2}$ entered in units of {\tt engunit}$\times$\AA$^{-2}$
+and $k_{4}$ in {\tt engunit}~\AA$^{-4}$, where usually $k_{2} >> k_{4}$.
+The {\tt engunit} is the energy unit specified in the {\bf units} directive.
 
 {\bf Note} that the atomic site indices referred to above are
 indices arising from numbering each atom in the molecule from 1 to
@@ -1653,6 +1654,15 @@ descriptions of this molecule, including the {\bf constraints},
 {\bf pmf}, {\bf rigid}, {\bf teth}, {\bf bonds}, {\bf angles},
 {\bf dihedrals} and {\bf inversions} entries described below.
 \D will itself construct the global indices for all atoms in the systems.
+
+{\bf Note} that \D determines which shell model to use by scanning
+shell weights provided the FIELD file (see Section \ref{shell-model}).
+If all shells have zero weight the \D will choose the relaxed shell
+model.  If no shell has zero weight then \D will choose the dynamical
+one.  In case when some shells are massless and some are not \D will
+terminate execution controllably and provide information about the
+error and possible possible choices of action in the OUTPUT file
+(see Section \ref{output-file}).
 
 This directive (and associated data records) need not be specified if
 the molecule contains no core-shell units.

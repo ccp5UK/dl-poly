@@ -1168,7 +1168,7 @@ Call start_timing_link_cell_pairs()
 !the moment, dl_poly_cuda_offload_link_cell_pairs_re() should be set to .false.
 !When set to false, the remove_exclusions is invoked on the host. This will
 !be changed so that _remove_exclusions is invoked on the device as previously.
-!BBG18102013: link_cell_pairs_cuda_invoke_remove_exclusions is corrected. 
+!BBG18102013: link_cell_pairs_cuda_invoke_remove_exclusions is corrected.
 #ifdef COMPILE_CUDA
      Call start_timing_link_cell_pairs_cuda_remove_excluded()
      If (dl_poly_cuda_offload_link_cell_pairs() .and. dl_poly_cuda_is_cuda_capable() .and. &

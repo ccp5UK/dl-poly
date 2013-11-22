@@ -181,7 +181,7 @@ Interface
               mxgrid, mxvdw, ltpvdw, lstvdw, ls_vdw, vvdw, gvdw, rvdw, ltg,    &
               chge, rcut, alpha, epsq) bind(c)
               !!Modified by BBG: Third line from above is changed. Rho is
-              !removed. 
+              !removed.
      Use kinds_f90
      Use iso_c_binding
 
@@ -1014,7 +1014,7 @@ Contains
     Integer               :: keypot
     Integer, Intent( In ) :: keyfce, imcon
 
-    Logical( c_bool ) :: offload_link_cell_pairs    = .true., & !Modified by BBG: Original true. 
+    Logical( c_bool ) :: offload_link_cell_pairs    = .true., & !Modified by BBG: Original true.
                          offload_link_cell_pairs_re = .true., & !Modified by BBG: Original false.
                          offload_tbforces           = .false., & !Modified by BBG: Original true.
                          offload_constraints_shake  = .false., & !Modified by BBG: Original true.

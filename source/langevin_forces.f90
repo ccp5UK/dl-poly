@@ -18,8 +18,7 @@ Subroutine langevin_forces(temp,tstep,chi,fxr,fyr,fzr)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,      Only : idnode
-  Use setup_module,      Only : nrite,boltz,mxatms,zero_plus
+  Use setup_module,      Only : boltz,mxatms
   Use site_module,       Only : ntpshl,unqshl
   Use config_module,     Only : natms,lfrzn,atmnam,weight
 

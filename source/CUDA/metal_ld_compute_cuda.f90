@@ -120,7 +120,7 @@ Subroutine metal_ld_compute         &
 ! The CUDA acceleration is not called if direct calculation is required
   !If (dl_poly_cuda_offload_metal_ld_compute() .and. ld_met .eqv. .false.) Then !*CHANGE == to .eqv. !Modified by BBG: Line is changed as follows.
   If (dl_poly_cuda_offload_metal_ld_compute() .eqv. .true. .and. ld_met .eqv. .false.) Then !*CHANGE == to .eqv.
-     Call metal_ld_compute_cuda_initialise(& 
+     Call metal_ld_compute_cuda_initialise(&
           0,mxatms,natms,mxgrid,ntpmet,mxmet,mxatdm,mxlist,&
           xxx,yyy,zzz,list,ltype,ltpmet,lstmet,vmet,dmet,cell,rho)
      Call metal_ld_compute_cuda_invoke()

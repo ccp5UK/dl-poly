@@ -3,6 +3,16 @@ c*********************************************************************
 c
 c     dl_poly utility to solvate a large molecule in any solvent
 c
+c     1. A file containing your protein in CONFIG format
+c     2. A file containing the solvent in CONFIG format.
+c        It is assumed that you have simulated the solvent file to
+c        equilibrate the system and that the system is big enough to
+c        accommodate the protein. In other words, the final simulation
+c        box will be the size of your solvent box. It is also assumed
+c        the box is cubic.
+c     3. Run the solvate program and answer a few simple questions.
+c        The final solvated molecule is written in the CFGSOL file.
+c
 c     copyright daresbury laboratory
 c     author w. smith sep 2002
 c

@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov november 2013
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -467,7 +467,10 @@ Subroutine read_field                   &
                     lstshl(2,nshels)=iatm2
 
                     Call get_word(record,word)
-                    prmshl(nshels)=word_2_real(word)
+                    prmshl(1,nshels)=word_2_real(word)
+
+                    Call get_word(record,word)
+                    prmshl(2,nshels)=word_2_real(word)
 
 ! test for frozen core-shell unit
 
@@ -476,11 +479,11 @@ Subroutine read_field                   &
 
                     If (idnode == 0 .and. l_top) Then
                        If (frzsit(isite1)*frzsit(isite2) /= 0) Then
-  Write(nrite,"(4x,a8,3i10,2i10,f15.6)") &
-       '*frozen*',ishls,lstshl(1,nshels),lstshl(2,nshels),prmshl(nshels)
+  Write(nrite,"(4x,a8,3i10,2i10,2f15.6)") &
+       '*frozen*',ishls,lstshl(1,nshels),lstshl(2,nshels),prmshl(1,nshels),prmshl(2,nshels)
                        Else
   Write(nrite,"(12x,3i10,f15.6)") &
-                   ishls,lstshl(1,nshels),lstshl(2,nshels),prmshl(nshels)
+                   ishls,lstshl(1,nshels),lstshl(2,nshels),prmshl(1,nshels),prmshl(2,nshels)
                        End If
                     End If
 
@@ -508,8 +511,8 @@ Subroutine read_field                   &
 
 ! convert energy units to internal units
 
-                    prmshl(nshels)=prmshl(nshels)*engunit
-                    smax=Max(smax,prmshl(nshels))
+                    prmshl(1:2,nshels)=prmshl(1:2,nshels)*engunit
+                    smax=Max(smax,prmshl(1,nshels)+0.5_wp*prmshl(2,nshels))
                  End Do
 
 ! Check for mixed or multiple core-shell entries
