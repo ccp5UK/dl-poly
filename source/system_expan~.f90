@@ -6,6 +6,7 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
 ! replication of its contents along the MD cell lattice vectors,
 ! creating a new matching pair of topology-interaction (FIELD) and
 ! crystallographic (CONFIG) files, preserving FIELD's template intact
+! ONLY for systems WITHOUT INTRA-LIKE interactions (topology-unbound)
 !
 ! supported image conditions: 1,2,3, 6(nz==1)
 !
@@ -56,7 +57,7 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
 
   Character( Len = 200 ) :: record,record1
   Character( Len = 40  ) :: word,fcfg,ffld
-  Integer                :: fail(1:4),nall,setspc,i,k,l,m,ix,iy,iz, &
+  Integer                :: fail(1:4),nall,setspc,i,itmols,l,m,ix,iy,iz, &
                             indatm,nattot,idm,loc_ind,index,at_scaled
   Integer(Kind=ip)       :: offset,rec
   Real( Kind = wp )      :: fx,fy,fz, x,y,z, t ,celprp(1:10),   &
@@ -302,10 +303,10 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
 
   at_scaled = 0
 
-  Do k=1,ntpmls
-     setspc=nummols(k)*numsit(k)
-     Do l=1,nummols(k)
-        Do m=1,numsit(k)
+  Do itmols=1,ntpmls
+     setspc=nummols(itmols)*numsit(itmols)
+     Do l=1,nummols(itmols)
+        Do m=1,numsit(itmols)
 
 ! Increase global atom counter in CONFIG(old)
 
@@ -454,7 +455,7 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
            End If
 
         End Do
-        offset = offset + Int(2,ip)*Int(numsit(k),ip)
+        offset = offset + Int(2,ip)*Int(numsit(itmols),ip)
      End Do
      offset = offset + Int(2,ip)*Int(nall-1,ip)*Int(setspc,ip)
   End Do

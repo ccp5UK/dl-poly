@@ -1245,7 +1245,12 @@ removal will happen.  {\bf Note that this will lead to COM momentum
 accumulation for many though not all ensembles!}.  Such accumulation
 will propagate to the generation of flow in the MD cell and ultimately
 suppress the thermal motion of the particles in the system, leading to
-the so called "frozen ice cube effect"!
+the so called "frozen ice cube effect"!  It is worth nothing that this
+option must be turned on for the correct application of stochastic
+dynamics via the langevin temperature control (NVT Langevin)!  If
+the option is not applied then the dynamics will lead to peculiar
+thermalisation of different atomic species to mass- and system
+size-dependent temperatures.
 
 \item The {\bf replay force} option will attempt to open a renamed
 HISTORY as HISTORF and instead following any integration scheme specified

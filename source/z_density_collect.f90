@@ -5,7 +5,7 @@ Subroutine z_density_collect()
 ! dl_poly_4 subroutine for accumulating statistic for z-density profile
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2008
+! author    - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,6 +24,8 @@ Subroutine z_density_collect()
 
   numzdn=numzdn+1
 
+! apply truncation of potential
+
 ! length of cell in z direction
 
   zlen=Abs(cell(3))+Abs(cell(6))+Abs(cell(9))
@@ -41,12 +43,7 @@ Subroutine z_density_collect()
   Do i=1,natms
      k=ltype(i)
      If (numtyp(k) > zero_plus) Then
-
-! apply truncation of potential
-
-        l=Int((zzz(i)+zleno2)*rdelr + 1.0_wp)
-        l=Max(1,l)
-        l=Min(mxgrdf,l)
+        l=Min(1+Int((zzz(i)+zleno2)*rdelr),mxgrdf)
 
 ! accumulate statistic
 

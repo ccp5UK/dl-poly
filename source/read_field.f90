@@ -443,7 +443,7 @@ Subroutine read_field                   &
                  If (idnode == 0 .and. l_top) Then
   Write(nrite,"(/,/,1x,'number of core-shell units',5x,i10)") ntmp
   Write(nrite,"(/,1x,'core-shell details:', &
-       & /,/,18x,'unit',5x,'index',5x,'index',6x,'parameter',/)")
+       & /,/,18x,'unit',5x,'index',5x,'index',13x,'parameters',/)")
                  End If
 
                  Do ishls=1,numshl(itmols)
@@ -479,10 +479,10 @@ Subroutine read_field                   &
 
                     If (idnode == 0 .and. l_top) Then
                        If (frzsit(isite1)*frzsit(isite2) /= 0) Then
-  Write(nrite,"(4x,a8,3i10,2i10,2f15.6)") &
+  Write(nrite,"(4x,a8,3i10,2f15.6)") &
        '*frozen*',ishls,lstshl(1,nshels),lstshl(2,nshels),prmshl(1,nshels),prmshl(2,nshels)
                        Else
-  Write(nrite,"(12x,3i10,f15.6)") &
+  Write(nrite,"(12x,3i10,2f15.6)") &
                    ishls,lstshl(1,nshels),lstshl(2,nshels),prmshl(1,nshels),prmshl(2,nshels)
                        End If
                     End If

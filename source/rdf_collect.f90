@@ -9,7 +9,7 @@ Subroutine rdf_collect(iatm,rcut,rsqdf)
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester march 1994
-! amended   - i.t.todorov july 2012
+! amended   - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -77,7 +77,7 @@ Subroutine rdf_collect(iatm,rcut,rsqdf)
 
               If (rsq < rcsq) Then
                  rrr=Sqrt(rsq)
-                 ll=Max(1,Nint(rrr*rdelr)) ! Let particles pass through
+                 ll=Min(1+Int(rrr*rdelr),mxgrdf)
 
 ! accumulate correlation
 

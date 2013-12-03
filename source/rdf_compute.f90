@@ -86,7 +86,7 @@ Subroutine rdf_compute(rcut)
                     sum = sum + gofr*dens(ib)
 
                     rrr = (Real(i,wp)-0.5_wp)*delr
-                    dvol= 4.0_wp*pi*delr*(rrr**2+delr*2/12.0_wp)
+                    dvol= 4.0_wp*pi*delr*(rrr**2+delr**2/12.0_wp)
                     gofr= gofr/dvol
 
 ! zero it if < 1.0e-6_wp

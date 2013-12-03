@@ -664,6 +664,16 @@ where $\vek{R}(t)$ are the Langevin random forces as defined in equation (\ref{l
 \end{equation}
 \end{enumerate}
 
+{\bf Note} that by the nature of the ensemble the centre of mass will
+not be stationary although the ensemble average warrants its proximity
+to the its original position, i.e. the COM momentum accumulation ensemble
+average will tend towards zero.  By default this accumulation is removed
+and thus the correct application of stochastic dynamics the user is
+advised to use in the {\bf no vom} option in the CONTROL file (see
+Section~\ref{control-file}).  If the option is not applied then the
+dynamics will lead to peculiar thermalisation of different atomic
+species to mass- and system size-dependent temperatures.
+
 The VV and LFV flavours of the Langevin thermostat are implemented in
 the \D routines {\sc nvt\_l0\_vv} and {\sc nvt\_l0\_lfv} respectively.
 The routines {\sc nvt\_l1\_vv} and {\sc nvt\_l1\_lfv} implement the

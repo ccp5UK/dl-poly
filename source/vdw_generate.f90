@@ -7,7 +7,7 @@ Subroutine vdw_generate(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov october 2013
+! amended   - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,7 +22,7 @@ Subroutine vdw_generate(rvdw)
   Integer           :: i,ivdw,keypot
   Real( Kind = wp ) :: dlrpot,r,r0,r0rn,r0rm,r_6,sor6,  &
                        rho,a,b,c,d,e0,k,n,m,rc,sig,eps, &
-                       alpha,beta,t1,t2,t3
+                       alpha,beta,t1,t2,t3,t
 
 ! allocate arrays for tabulating
 
@@ -53,6 +53,11 @@ Subroutine vdw_generate(rvdw)
            gvdw(i,ivdw)=6.0_wp*r_6*(2.0_wp*a*r_6-b)
         End Do
 
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=(a/b)**(1.0_wp/6.0_wp)
+           sigeps(2,ivdw)=b**2/(4.0_wp*a)
+        End If
+
      Else If (keypot == 2) Then
 
 ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
@@ -68,6 +73,11 @@ Subroutine vdw_generate(rvdw)
            vvdw(i,ivdw)=4.0_wp*eps*sor6*(sor6-1.0_wp)
            gvdw(i,ivdw)=24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)
         End Do
+
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=sig
+           sigeps(2,ivdw)=eps
+        End If
 
      Else If (keypot == 3) Then
 
@@ -90,6 +100,11 @@ Subroutine vdw_generate(rvdw)
            gvdw(i,ivdw)=e0*m*n*(r0rn-r0rm)*b
         End Do
 
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=r0*(n/m)**(1.0_wp/(m-n))
+           sigeps(2,ivdw)=e0
+        End If
+
      Else If (keypot == 4) Then
 
 ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
@@ -106,6 +121,13 @@ Subroutine vdw_generate(rvdw)
            End If
         End If
 
+! Sigma-epsilon initialisation
+
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=-1.0_wp
+           sigeps(2,ivdw)= 0.0_wp
+        End If
+
         Do i=1,mxgrid
            r=Real(i,wp)*dlrpot
 
@@ -115,6 +137,22 @@ Subroutine vdw_generate(rvdw)
 
            vvdw(i,ivdw)=t1+t2
            gvdw(i,ivdw)=t1*b+6.0_wp*t2
+
+! Sigma-epsilon search
+
+           If ((.not.ls_vdw) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
+              If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+                 If (Sign(1.0_wp,vvdw(i-1,ivdw)) == -Sign(1.0_wp,vvdw(i,ivdw))) &
+                    sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+              Else                                           ! find epsilon
+                 If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
+                       vvdw(i-1,ivdw) <= vvdw(i  ,ivdw)) .and. &
+                      (vvdw(i-2,ivdw) /= vvdw(i-1,ivdw) .or.   &
+                       vvdw(i-2,ivdw) /= vvdw(i  ,ivdw) .or.   &
+                       vvdw(i-1,ivdw) /= vvdw(i  ,ivdw)) )     &
+                    sigeps(2,ivdw)=-vvdw(i-1,ivdw)
+              End If
+           End If
         End Do
 
      Else If (keypot == 5) Then
@@ -127,6 +165,13 @@ Subroutine vdw_generate(rvdw)
         c  =prmvdw(4,ivdw)
         d  =prmvdw(5,ivdw)
 
+! Sigma-epsilon initialisation
+
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=-1.0_wp
+           sigeps(2,ivdw)= 0.0_wp
+        End If
+
         Do i=1,mxgrid
            r=Real(i,wp)*dlrpot
 
@@ -136,6 +181,22 @@ Subroutine vdw_generate(rvdw)
 
            vvdw(i,ivdw)=t1+t2+t3
            gvdw(i,ivdw)=t1*r*b+6.0_wp*t2+8.0_wp*t3
+
+! Sigma-epsilon search
+
+           If ((.not.ls_vdw) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
+              If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+                 If (Sign(1.0_wp,vvdw(i-1,ivdw)) == -Sign(1.0_wp,vvdw(i,ivdw))) &
+                    sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+              Else                                           ! find epsilon
+                 If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
+                       vvdw(i-1,ivdw) <= vvdw(i  ,ivdw)) .and. &
+                      (vvdw(i-2,ivdw) /= vvdw(i-1,ivdw) .or.   &
+                       vvdw(i-2,ivdw) /= vvdw(i  ,ivdw) .or.   &
+                       vvdw(i-1,ivdw) /= vvdw(i  ,ivdw)) )     &
+                    sigeps(2,ivdw)=-vvdw(i-1,ivdw)
+              End If
+           End If
         End Do
 
      Else If (keypot == 6) Then
@@ -155,6 +216,11 @@ Subroutine vdw_generate(rvdw)
            gvdw(i,ivdw)=12.0_wp*t1+10.0_wp*t2
         End Do
 
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=Sqrt(a/b)
+           sigeps(2,ivdw)=((b/6.0_wp)**6)*((5.0_wp/a)**5)
+        End If
+
      Else If (keypot == 7) Then
 
 ! shifted and force corrected n-m potential (w.smith) ::
@@ -166,6 +232,11 @@ Subroutine vdw_generate(rvdw)
         rc=prmvdw(5,ivdw) ; If (rc < 1.0e-6_wp) rc=rvdw
 
         If (n <= m) Call error(470)
+
+! Sigma-epsilon initialisation
+
+        sigeps(1,ivdw)=-1.0_wp
+        sigeps(2,ivdw)= 0.0_wp
 
         b=1.0_wp/(n-m)
         c = rc/r0 ; If (c < 1.0_wp) Call error(468)
@@ -185,6 +256,22 @@ Subroutine vdw_generate(rvdw)
                                 +n*m*((r/rc-1.0_wp)*((beta/c)**n-(beta/c)**m)) )*b
               gvdw(i,ivdw)=e0*m*n*( (beta**n)*a**n-(beta**m)*a**m &
                                     -r/rc*((beta/c)**n-(beta/c)**m) )*b
+
+! Sigma-epsilon search
+
+              If (i > 20) Then ! Assumes some safety against numeric black holes!!!
+                 If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+                    If (Sign(1.0_wp,vvdw(i-1,ivdw)) == -Sign(1.0_wp,vvdw(i,ivdw))) &
+                       sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+                 Else                                           ! find epsilon
+                    If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
+                          vvdw(i-1,ivdw) <= vvdw(i  ,ivdw)) .and. &
+                         (vvdw(i-2,ivdw) /= vvdw(i-1,ivdw) .or.   &
+                          vvdw(i-2,ivdw) /= vvdw(i  ,ivdw) .or.   &
+                          vvdw(i-1,ivdw) /= vvdw(i  ,ivdw)) )     &
+                       sigeps(2,ivdw)=-vvdw(i-1,ivdw)
+                 End If
+              End If
            End If ! The else condition is satisfied by the vdw_module initialisation
         End Do
 
@@ -205,6 +292,11 @@ Subroutine vdw_generate(rvdw)
            gvdw(i,ivdw)=-2.0_wp*r*e0*k*(1.0_wp-t1)*t1
         End Do
 
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=r0-log(2.0_wp)/k
+           sigeps(2,ivdw)=e0
+        End If
+
      Else If (keypot == 9) Then
 
 ! Weeks-Chandler-Anderson (shifted & truncated Lenard-Jones) (i.t.todorov)
@@ -214,6 +306,13 @@ Subroutine vdw_generate(rvdw)
         sig=prmvdw(2,ivdw)
         d  =prmvdw(3,ivdw)
 
+! Sigma-epsilon initialisation
+
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=-1.0_wp
+           sigeps(2,ivdw)= 0.0_wp
+        End If
+
         Do i=1,mxgrid
            r=Real(i,wp)*dlrpot
 
@@ -222,6 +321,22 @@ Subroutine vdw_generate(rvdw)
 
               vvdw(i,ivdw)=4.0_wp*eps*sor6*(sor6-1.0_wp)+eps
               gvdw(i,ivdw)=24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)*r/(r-d)
+
+! Sigma-epsilon search
+
+              If ((.not.ls_vdw) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
+                 If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+                    If (Sign(1.0_wp,vvdw(i-1,ivdw)) == -Sign(1.0_wp,vvdw(i,ivdw))) &
+                       sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+                 Else                                           ! find epsilon
+                    If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
+                          vvdw(i-1,ivdw) <= vvdw(i  ,ivdw)) .and. &
+                         (vvdw(i-2,ivdw) /= vvdw(i-1,ivdw) .or.   &
+                          vvdw(i-2,ivdw) /= vvdw(i  ,ivdw) .or.   &
+                          vvdw(i-1,ivdw) /= vvdw(i  ,ivdw)) )     &
+                       sigeps(2,ivdw)=-vvdw(i-1,ivdw)
+                 End If
+              End If
            End If
         End Do
 
@@ -229,6 +344,31 @@ Subroutine vdw_generate(rvdw)
 
         If (.not.lt_vdw) Call error(150)
 
+     End If
+
+     If (ls_vdw) Then
+
+        sigeps(1,ivdw)=-1.0_wp
+        sigeps(2,ivdw)= 0.0_wp
+
+        Do i=1,mxgrid
+           t  = vvdw(i  ,ivdw) + gvdw(mxgrid,ivdw)*(Real(i  ,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgrid,ivdw)
+           t1 = vvdw(i-1,ivdw) + gvdw(mxgrid,ivdw)*(Real(i-1,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgrid,ivdw)
+
+! Sigma-epsilon search
+
+           If (i > 20) Then ! Assumes some safety against numeric black holes!!!
+              If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+                 If (Sign(1.0_wp,t1) == -Sign(1.0_wp,t1)) &
+                    sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+              Else                                           ! find epsilon
+                 t2 = vvdw(i-2,ivdw) + gvdw(mxgrid,ivdw)*(Real(i-2,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgrid,ivdw)
+                 If ( (t2 >= t1 .and. t1 <= t) .and.         &
+                      (t2 /= t1 .or. t2 /= t .or. t1 /= t) ) &
+                    sigeps(2,ivdw)=-t1
+              End If
+           End If
+        End Do
      End If
 
   End Do

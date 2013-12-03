@@ -5,7 +5,7 @@ Module vdw_module
 ! dl_poly_4 module declaring global vdw interaction variables and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov november 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,7 +22,7 @@ Module vdw_module
 
   Integer,           Allocatable, Save :: lstvdw(:),ltpvdw(:)
 
-  Real( Kind = wp ), Allocatable, Save :: prmvdw(:,:)
+  Real( Kind = wp ), Allocatable, Save :: prmvdw(:,:),sigeps(:,:)
 
   Real( Kind = wp ),              Save :: elrc   = 0.0_wp, &
                                           virlrc = 0.0_wp
@@ -46,13 +46,14 @@ Contains
 
     Implicit None
 
-    Integer, Dimension( 1:3 ) :: fail
+    Integer, Dimension( 1:4 ) :: fail
 
     fail = 0
 
     Allocate (lstvdw(1:mxvdw),          Stat = fail(1))
     Allocate (ltpvdw(1:mxvdw),          Stat = fail(2))
     Allocate (prmvdw(1:mxpvdw,1:mxvdw), Stat = fail(3))
+    Allocate (sigeps(1:mxpvdw,1:mxvdw), Stat = fail(4))
 
     If (Any(fail > 0)) Call error(1022)
 
@@ -60,6 +61,7 @@ Contains
     ltpvdw = 0
 
     prmvdw = 0.0_wp
+    sigeps = 0.0_wp
 
   End Subroutine allocate_vdw_arrays
 

@@ -144,6 +144,10 @@ Program nfold
 
         type_in=type_in-10
      End If
+     If (type_in == 3) Then
+        Write(*,'(1x,3a)') 'NFOLD expects bounding box lattice vectors for XYZ format!!!'
+        Write(*,*)
+     End If
   End If
   Write(*,*)
 
@@ -258,6 +262,7 @@ Program nfold
      cel0=0.0_wp
      celh=0.0_wp
 
+     Write(*,*)
      Write(*,'(1x,a)') 'Hexagonal to orthorhombic cell transformation will take priority!!!'
      Write(*,'(1x,a)') 'V(orthorhombic) = 2*V(hexagonal) and particle count will double!!!'
      Write(*,*)
@@ -317,6 +322,7 @@ Program nfold
         cel0=0.0_wp
         celh=0.0_wp
 
+        Write(*,*)
         Write(*,'(1x,a)') 'Hexagonal to orthorhombic cell transformation will take priority!!!'
         Write(*,'(1x,a)') 'V(orthorhombic) = 2*V(hexagonal) and particle count will double!!!'
         Write(*,*)
@@ -381,6 +387,7 @@ Program nfold
         cel0=0.0_wp
         celh=0.0_wp
 
+        Write(*,*)
         Write(*,'(1x,a)') 'Hexagonal to orthorhombic cell transformation will take priority!!!'
         Write(*,'(1x,a)') 'V(orthorhombic) = 2*V(hexagonal) and particle count will double!!!'
         Write(*,*)
@@ -870,6 +877,11 @@ Program nfold
      Write(*,'(1x,a,i15,f8.3)') 'SIZE & MAXIMIM CUTOFF RADIUS:',natms,0.5_wp*Min(Real(nx,wp)*wx,Real(ny,wp)*wy,Real(nz,wp)*wz)
      Write(*,*)
 
+  End If
+
+  If (type_out == 3) Then
+     Write(*,'(1x,3a)') 'NFOLD produces a bounding box lattice vectors for XYZ format!!!'
+     Write(*,*)
   End If
 
 ! Time up
