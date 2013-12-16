@@ -72,10 +72,10 @@ Contains
 
     If (Any(fail > 0)) Call error(1042)
 
-    numrgd   = 0
-    lstrgd   = 0
-    listrgd  = 0
-    legrgd   = 0
+    numrgd  = 0
+    lstrgd  = 0
+    listrgd = 0
+    legrgd  = 0
 
     lishp_rgd = 0 ; lashp_rgd = 0
 

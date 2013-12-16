@@ -20,7 +20,7 @@ Subroutine npt_b1_lfv                          &
 ! = 0.007372 dl_poly units
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -451,7 +451,7 @@ Subroutine npt_b1_lfv                          &
 ! Berendsen barostat and thermostat are not coupled
 ! calculate system pressure (vircon and virpmf are assumed zero!!!)
 
-  pr = (2.0_wp*engke-virtot-vircon-virpmf-vircom) / (3.0_wp*volm)
+  pr = (2.0_wp*engke-virtot-vircom) / (3.0_wp*volm)
 
 ! estimate barostat control variable chip
 

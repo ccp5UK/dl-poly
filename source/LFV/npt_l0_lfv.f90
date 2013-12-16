@@ -18,7 +18,7 @@ Subroutine npt_l0_lfv                                  &
 !            J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2012
+! author    - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -262,10 +262,9 @@ Subroutine npt_l0_lfv                                  &
   fex=Exp(-tstep*tai)
 
 ! propagate chip set and couple
-! (vircon,virpmf,chip2 are zero!!!)
+! (vircon,virpmf are zero)
 ! augment vir to include the random force on the barostat
 
-  chip2=0.0_wp
   chip1 = chip*fex + tstep*( (2.0_wp*(1.0_wp+factor)*engke-virtot) + &
                             3.0_wp*fpl(1) - 3.0_wp*press*vzero )/pmass
   chip2 = 0.5_wp*(chip+chip1)

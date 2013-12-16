@@ -30,7 +30,7 @@ Subroutine npt_h1_lfv                          &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith february 2009
-! amended   - i.t.todorov july 2013
+! amended   - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -530,13 +530,13 @@ Subroutine npt_h1_lfv                          &
   engrot=getknr(rgdoxo,rgdoyo,rgdozo)
 
 ! propagate chit and chip sets and couple
-! (vircon,virpmf,chit2,chip2 are zero!!!)
+! (vircon,virpmf are zero whilst chit2,chip2 are estimated in first approximation!!!)
 
-  chit2=0.0_wp
-  chip2=0.0_wp
+  chit2 = chit
+  chip2 = chip
 
-  chit1 = chit + tstep*(-ceng)/qmass
-  chip1 = chip + tstep*((2.0_wp*engke-virtot-vircom) - 3.0_wp*press*vzero)/pmass
+  chit1 = chit + tstep*(2.0_wp*(engke+engrot)+pmass*chip2**2-ceng)/qmass
+  chip1 = chip*Exp(-tstep*chit2) + tstep*( (2.0_wp*engke-virtot-vircom) - 3.0_wp*press*vzero )/pmass
 
   chit2 = 0.5_wp*(chit+chit1)
   chip2 = 0.5_wp*(chip+chip1)

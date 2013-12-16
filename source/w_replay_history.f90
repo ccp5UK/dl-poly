@@ -20,10 +20,6 @@
   nsteql = 0
   leql   = .false.
 
-! Make sure RDFs are complete (no exclusion lists)
-
-  lbook = .false.
-
 ! nullify forces
 
   fxx = 0.0_wp
@@ -95,15 +91,31 @@
         Call check_config &
            (levcfg,imcon,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
-! Exchange atomic data in border regions
+! get xto/xin sorted
+
+! SET domain borders and link-cells as default for new jobs
+! exchange atomic data and positions in border regions
 
         Call set_halo_particles(imcon,rcut,keyfce)
 
+! For any intra-like interaction, construct book keeping arrays and
+! exclusion arrays for overlapped two-body inter-like interactions
+
+        If (lbook) Then
+           Call build_book_intra              &
+           (lsim,megatm,megfrz,atmfre,atmfrz, &
+           megshl,megcon,megpmf,              &
+           megrgd,degrot,degtra,              &
+           megtet,megbnd,megang,megdih,meginv)
+           If (lexcl) Call build_excl_intra(lecx)
+        End If
+
 ! Accumulate RDFs if needed (nstep->nstph)
+! Make sure RDFs are complete (lbook=.false. - no exclusion lists)
 
         If (lrdf) Call two_body_forces            &
            (imcon,rcut,rvdw,rmet,keyens,          &
-           alpha,epsq,keyfce,nstfce,lbook,megfrz, &
+           alpha,epsq,keyfce,nstfce,.false.,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstph,         &
            elrc,virlrc,elrcm,vlrcm,               &
            engcpe,vircpe,engsrp,virsrp,stress)
@@ -163,7 +175,7 @@
            Write(nrite,'(1x,"time elapsed since job start: ", f12.3, " sec")') timelp
         End If
 
-! Close and Open OUTPUT at about 'i'th print-out or 'i' minunte intervals
+! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
         i=20
         If ( Mod(nstph,i) == 0 .or.                               &

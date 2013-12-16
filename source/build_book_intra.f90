@@ -1,18 +1,18 @@
-Subroutine build_book_intra              &
-           (megatm,megfrz,atmfre,atmfrz, &
-           megshl,megcon,megpmf,         &
-           megrgd,degrot,degtra,         &
+Subroutine build_book_intra                   &
+           (lsim,megatm,megfrz,atmfre,atmfrz, &
+           megshl,megcon,megpmf,              &
+           megrgd,degrot,degtra,              &
            megtet,megbnd,megang,megdih,meginv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for initialising global bookkeeping of intra-like
-! interactions: core-shell, bond constraints, PMF constraints, RBs,
-! tethered atoms, chemical bonds, valence angles, torsion and improper
-! torsion angles, and inversion angles
+! dl_poly_4 subroutine for setting up the domain distributed bookkeeping
+! of intra-like interactions: core-shell, bond constraints, PMF
+! constraints, RBs, tethered atoms, chemical bonds, valence angles,
+! torsion and improper torsion angles, and inversion angles
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2013
+! author    - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,7 +27,7 @@ Subroutine build_book_intra              &
 
 ! CONFIG MODULE
 
-  Use config_module, Only : natms,nlast,lsi,lsa
+  Use config_module, Only : natms,nlast,lsi,lsa,xxx,yyy,zzz
 
 ! INTERACTION MODULES
 
@@ -47,6 +47,8 @@ Subroutine build_book_intra              &
 
   Implicit None
 
+  Logical,           Intent( In    ) :: lsim
+
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
                                         megshl,megpmf,        &
                                         megtet,megbnd,megang, &
@@ -54,8 +56,11 @@ Subroutine build_book_intra              &
   Integer,           Intent( InOut ) :: megfrz,megcon,megrgd
   Integer(Kind=ip),  Intent( InOut ) :: degrot,degtra
 
+  Logical, Save :: newjob = .true.
+
   Logical :: safe(1:11),go
-  Integer :: fail(1:2),i,j,isite,itmols,imols,   &
+  Integer :: fail(1:2),imcon,                    &
+             i,j,isite,itmols,imols,             &
              nsatm,neatm,nlapm,local_index,      &
              iat0,jat0,kat0,lat0,                &
              iatm,jatm,katm,latm,matm,natm,      &
@@ -67,6 +72,7 @@ Subroutine build_book_intra              &
              jangle,kangle,langle,               &
              jdihed,kdihed,ldihed,               &
              jinver,kinver,linver
+  Real(Kind = wp) :: rcut
 
   Integer, Dimension( : ), Allocatable :: iwrk,irgd,irgd0, &
                                           i1pmf,i1pmf0,i2pmf,i2pmf0
@@ -1436,30 +1442,51 @@ Subroutine build_book_intra              &
      Call error(0)
   End If
 
+  If (newjob) Then
+
+     newjob=.false.
+
 ! Set RB particulars and quaternions
 
-  If (m_rgd > 0) Call rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
+     If (m_rgd > 0) Call rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 
-  Call report_topology                   &
+     Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
            megtet,megbnd,megang,megdih,meginv)
 
-! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS since no longer needed
+  Else
 
-  Call deallocate_core_shell_arrays()
+! Recover/localise imcon and rcut
 
-  Call deallocate_constraints_arrays()
-  Call deallocate_pmf_arrays()
+     imcon=rgdimc
+     rcut=rgdrct
 
-  Call deallocate_rigid_bodies_arrays()
+! Tag RBs, find their COMs and check their widths to rcut (system cutoff)
 
-  Call deallocate_tethers_arrays()
+     Call rigid_bodies_tags()
+     Call rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
+     Call rigid_bodies_widths(imcon,rcut)
 
-  Call deallocate_bonds_arrays()
-  Call deallocate_angles_arrays()
-  Call deallocate_dihedrals_arrays()
-  Call deallocate_inversions_arrays()
+  End If
+
+! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
+
+  If (lsim) Then
+     Call deallocate_core_shell_arrays()
+
+     Call deallocate_constraints_arrays()
+     Call deallocate_pmf_arrays()
+
+     Call deallocate_rigid_bodies_arrays()
+
+     Call deallocate_tethers_arrays()
+
+     Call deallocate_bonds_arrays()
+     Call deallocate_angles_arrays()
+     Call deallocate_dihedrals_arrays()
+     Call deallocate_inversions_arrays()
+  End If
 
 ! Update shared core-shell, constraint and RB units
 ! (pmf data updated by construction)

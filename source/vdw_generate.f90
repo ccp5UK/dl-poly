@@ -142,7 +142,7 @@ Subroutine vdw_generate(rvdw)
 
            If ((.not.ls_vdw) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
               If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                 If (Sign(1.0_wp,vvdw(i-1,ivdw)) == -Sign(1.0_wp,vvdw(i,ivdw))) &
+                 If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
                     sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
               Else                                           ! find epsilon
                  If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
@@ -186,7 +186,7 @@ Subroutine vdw_generate(rvdw)
 
            If ((.not.ls_vdw) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
               If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                 If (Sign(1.0_wp,vvdw(i-1,ivdw)) == -Sign(1.0_wp,vvdw(i,ivdw))) &
+                 If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
                     sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
               Else                                           ! find epsilon
                  If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
@@ -261,7 +261,7 @@ Subroutine vdw_generate(rvdw)
 
               If (i > 20) Then ! Assumes some safety against numeric black holes!!!
                  If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                    If (Sign(1.0_wp,vvdw(i-1,ivdw)) == -Sign(1.0_wp,vvdw(i,ivdw))) &
+                    If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
                        sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
                  Else                                           ! find epsilon
                     If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
@@ -326,7 +326,7 @@ Subroutine vdw_generate(rvdw)
 
               If ((.not.ls_vdw) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
                  If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                    If (Sign(1.0_wp,vvdw(i-1,ivdw)) == -Sign(1.0_wp,vvdw(i,ivdw))) &
+                    If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
                        sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
                  Else                                           ! find epsilon
                     If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
@@ -359,7 +359,7 @@ Subroutine vdw_generate(rvdw)
 
            If (i > 20) Then ! Assumes some safety against numeric black holes!!!
               If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                 If (Sign(1.0_wp,t1) == -Sign(1.0_wp,t1)) &
+                 If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
                     sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
               Else                                           ! find epsilon
                  t2 = vvdw(i-2,ivdw) + gvdw(mxgrid,ivdw)*(Real(i-2,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgrid,ivdw)

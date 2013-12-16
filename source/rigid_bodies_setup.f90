@@ -61,8 +61,8 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 ! Find as many as possible different groups of RB units on this domain
 ! and qualify a representative by the oldest copy of the very first one
 
-  allrgd=0         ! Initialise presence counter (un-encountered yet)
-  fstrgd=megatm+1  ! Initialise order of presence (outside particle range)
+  allrgd=0        ! Initialise presence counter (un-encountered yet)
+  fstrgd=megatm+1 ! Initialise order of presence (outside particle range)
   Do irgd=1,ntrgd
      rgdtyp=listrgd(0,irgd)
 

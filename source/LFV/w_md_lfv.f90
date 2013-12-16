@@ -47,6 +47,10 @@
 
         Call w_integrate_lfv()
 
+! Scale t=0 reference positions
+
+        Call xscale(imcon,m_rgd,keyens,tstep,eta)
+
 ! Refresh mappings
 
         Call w_refresh_mappings()

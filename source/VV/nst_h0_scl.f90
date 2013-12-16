@@ -22,7 +22,7 @@ Subroutine nst_h0_scl &
 ! reference: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov december 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -96,7 +96,6 @@ Subroutine nst_h0_scl &
   If (iso == 0) Then
      eta=eta + hstep*(strcon+stress+strkin + factor*uni - (press*uni+strext)*volm)/pmass
   Else
-     eta=0.0_wp
      If      (iso == 2) Then
         eta(1)=eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + factor - (press+strext(1)-ten/h_z)*volm)/pmass
         eta(5)=eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + factor - (press+strext(5)-ten/h_z)*volm)/pmass
@@ -168,7 +167,6 @@ Subroutine nst_h0_scl &
   If (iso == 0) Then
      eta=eta + hstep*(strcon+stress+strkin + factor*uni - (press*uni+strext)*volm)/pmass
   Else
-     eta=0.0_wp
      If      (iso == 2) Then
         eta(1)=eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + factor - (press+strext(1)-ten/h_z)*volm)/pmass
         eta(5)=eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + factor - (press+strext(5)-ten/h_z)*volm)/pmass

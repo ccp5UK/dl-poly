@@ -395,10 +395,10 @@ Program dl_poly
 ! exclusion arrays for overlapped two-body inter-like interactions
 
   If (lbook) Then
-     Call build_book_intra               &
-           (megatm,megfrz,atmfre,atmfrz, &
-           megshl,megcon,megpmf,         &
-           megrgd,degrot,degtra,         &
+     Call build_book_intra                    &
+           (lsim,megatm,megfrz,atmfre,atmfrz, &
+           megshl,megcon,megpmf,              &
+           megrgd,degrot,degtra,              &
            megtet,megbnd,megang,megdih,meginv)
      If (lexcl) Call build_excl_intra(lecx)
   Else
@@ -407,21 +407,23 @@ Program dl_poly
            megshl,megcon,megpmf,megrgd,  &
            megtet,megbnd,megang,megdih,meginv)
 
-! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS since no longer needed
+! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
-     Call deallocate_core_shell_arrays()
+     If (lsim) Then
+        Call deallocate_core_shell_arrays()
 
-     Call deallocate_constraints_arrays()
-     Call deallocate_pmf_arrays()
+        Call deallocate_constraints_arrays()
+        Call deallocate_pmf_arrays()
 
-     Call deallocate_rigid_bodies_arrays()
+        Call deallocate_rigid_bodies_arrays()
 
-     Call deallocate_tethers_arrays()
+        Call deallocate_tethers_arrays()
 
-     Call deallocate_bonds_arrays()
-     Call deallocate_angles_arrays()
-     Call deallocate_dihedrals_arrays()
-     Call deallocate_inversions_arrays()
+        Call deallocate_bonds_arrays()
+        Call deallocate_angles_arrays()
+        Call deallocate_dihedrals_arrays()
+        Call deallocate_inversions_arrays()
+     End If
   End If
 
 ! SET initial system temperature

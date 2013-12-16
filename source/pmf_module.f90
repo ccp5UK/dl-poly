@@ -47,11 +47,11 @@ Contains
 
     If (Any(fail > 0)) Call error(1036)
 
-    numpmf   = 0
-    pmffrz   = 0
-    lstpmf   = 0
-    listpmf  = 0
-    legpmf   = 0
+    numpmf  = 0
+    pmffrz  = 0
+    lstpmf  = 0
+    listpmf = 0
+    legpmf  = 0
 
     pmfwgt = 0.0_wp
     pmfwg1 = 0.0_wp

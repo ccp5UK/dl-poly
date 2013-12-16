@@ -5,7 +5,7 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
 ! dl_poly_4 subroutine for setting impact on a particle
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2010
+! author    - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,7 +17,7 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
   Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd, &
                                   rgdvxx,rgdvyy,rgdvzz
   Use core_shell_module,   Only : ntshl,listshl
-  Use kinetic_module,      Only : getvom
+  Use kinetic_module,      Only : getvom,l_vom,chvom
 
   Implicit None
 
@@ -47,10 +47,11 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe) Call error(610)
 
-  If (megrgd > 0) Then
+  Call chvom(.true.) ! Enable COM momentum removal
 
 ! remove centre of mass motion
 
+  If (megrgd > 0) Then
      Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz)
 
      Do j=1,nfree
@@ -83,11 +84,7 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
            End Do
         End If
      End Do
-
   Else
-
-! remove centre of mass motion
-
      Call getvom(vom,vxx,vyy,vzz)
 
      Do i=1,natms
@@ -97,7 +94,8 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
            vzz(i) = vzz(i) - vom(3)
         End If
      End Do
-
   End If
+
+  Call chvom(l_vom) ! default to specification
 
 End Subroutine impact

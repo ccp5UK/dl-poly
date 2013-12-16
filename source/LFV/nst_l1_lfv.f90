@@ -30,7 +30,7 @@ Subroutine nst_l1_lfv                          &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2009
-! amended   - i.t.todorov july 2013
+! amended   - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -176,10 +176,16 @@ Subroutine nst_l1_lfv                          &
         dens0(i) = dens(i)
      End Do
 
+! Sort eta and eta1 for iso>=1
 ! Initialise and get h_z for iso>1
 
      h_z=0
-     If (iso > 1) Then
+     If      (iso == 1) Then
+        eta(1:8) = 0.0_wp ; eta1(1:8) = 0.0_wp
+     Else If (iso >  1) Then
+        eta(2:4) = 0.0_wp ; eta1(2:4) = 0.0_wp
+        eta(6:8) = 0.0_wp ; eta1(6:8) = 0.0_wp
+
         Call dcell(cell,celprp)
         h_z=celprp(9)
      End If
@@ -562,11 +568,8 @@ Subroutine nst_l1_lfv                          &
   engrot=getknr(rgdoxo,rgdoyo,rgdozo)
 
 ! propagate eta set and couple
-! (strcon,strpmf,eta2 are zero!!!)
+! (strcon,strpmf are zero!!!)
 ! augment str to include the random stress on the barostat
-
-  eta2 =0.0_wp
-  chip3=0.0_wp
 
 ! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
 
@@ -574,16 +577,15 @@ Subroutine nst_l1_lfv                          &
      eta1=(eta + tstep*( strcom+stress+strkin + fpl + fac*uni1 - &
                          (press*uni1+strext)*volm )/pmass)*Exp(-tstep*tai)
   Else
-     eta1=0.0_wp
      If      (iso == 2) Then
         eta1(1)=(eta(1) + tstep*( strcom(1)+stress(1)+strkin(1) + fpl(1) + fac - &
-                                  (press+strext(1)-ten/h_z)*volm )/pmass)*Exp(-tstep*tai)
+                                  (press+strext(1)-ten/h_z)*volm)/pmass)*Exp(-tstep*tai)
         eta1(5)=(eta(5) + tstep*( strcom(5)+stress(5)+strkin(5) + fpl(5) + fac - &
-                                  (press+strext(5)-ten/h_z)*volm )/pmass)*Exp(-tstep*tai)
+                                  (press+strext(5)-ten/h_z)*volm)/pmass)*Exp(-tstep*tai)
      Else If (iso == 3) Then
-        eta1(1)=(0.5_wp*(eta(1)+eta(5)) + tstep*( 0.5_wp*                        &
-                 (strcom(1)+stress(1)+strkin(1)+strcom(5)+stress(5)+strkin(5)) + &
-                 0.5_wp*(fpl(1)+fpl(5)) + fac                                  - &
+        eta1(1)=(0.5_wp*(eta(1)+eta(5)) + tstep*( 0.5_wp*                          &
+                 (strcom(1)+stress(1)+strkin(1) + strcom(5)+stress(5)+strkin(5)) + &
+                 0.5_wp*(fpl(1)+fpl(5)) + fac                                    - &
                  (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm )/pmass)*Exp(-tstep*tai)
         eta1(5)=eta1(1)
      End If

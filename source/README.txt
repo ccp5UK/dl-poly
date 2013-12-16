@@ -10,11 +10,12 @@ very rarely unavailable in the nowadays FORTRAN90/95 compilers.
 
 This version supports ALL features that are available in the
 standard DL_POLY_Classic version with the exceptions of:
-  (1) Rigid bodies (RBs) linked via constraint bonds (CBs) or
-      potential of mean field constraints (PMFs).
+  (1) Rigid bodies (RBs) linked via (i) constraint bonds (CBs) or
+      (ii) potential of mean field constraints (PMFs).
   (2) Truncated octahedral (imcon = 4), Rhombic Dodecahedral
       (imcon = 5) and Hexagonal Prism (imcon = 7) periodic boundary
-      conventions.
+      MD cell conventions (PBC).  Note that the last one is easily
+      convertible to orthorhombic (imcon = 2), see utility/nfold.f90.
   (3) Classic Ewald and Hautman-Klein Ewald Coulomb evaluations.
   (4) Temperature Accelerated Dynamics, Hyper-Dynamics and
       solvation energies.

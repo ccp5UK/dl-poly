@@ -24,7 +24,7 @@ Subroutine nst_b0_vv                                       &
 ! reference: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -130,10 +130,17 @@ Subroutine nst_b0_vv                                       &
         dens0(i) = dens(i)
      End Do
 
+! Sort eta for iso>=1
 ! Initialise and get h_z for iso>1
 
      h_z=0
-     If (iso > 1) Then
+     If      (iso == 1) Then
+        eta(1) = 1.0_wp ; eta(2:4) = 0.0_wp
+        eta(5) = 1.0_wp ; eta(1:8) = 0.0_wp
+     Else If (iso >  1) Then
+        eta(2:4) = 0.0_wp
+        eta(6:8) = 0.0_wp
+
         Call dcell(cell,celprp)
         h_z=celprp(9)
      End If
@@ -221,11 +228,7 @@ Subroutine nst_b0_vv                                       &
         If (iso == 0) Then
            eta=uni + tstep*beta*(strcon+strpmf+stress+strkin-(press*uni+strext)*volm)/(taup*volm)
         Else
-           eta=0.0_wp
-           If      (iso == 1) Then
-              eta(1)=1.0_wp
-              eta(5)=1.0_wp
-           Else If (iso == 2) Then
+           If      (iso == 2) Then
               eta(1)=1.0_wp + tstep*beta*(strcon(1)+strpmf(1)+stress(1)+strkin(1)-(press+strext(1)-ten/h_z)*volm)/(taup*volm)
               eta(5)=1.0_wp + tstep*beta*(strcon(5)+strpmf(5)+stress(5)+strkin(5)-(press+strext(5)-ten/h_z)*volm)/(taup*volm)
            Else If (iso == 3) Then

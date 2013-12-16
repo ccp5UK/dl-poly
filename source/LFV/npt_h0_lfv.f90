@@ -25,7 +25,7 @@ Subroutine npt_h0_lfv                                  &
 !             Mol. Phys., 1996, Vol. 87 (5), p. 1117
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2012
+! author    - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -253,13 +253,13 @@ Subroutine npt_h0_lfv                                  &
   engke=getkin(uxt,uyt,uzt)
 
 ! propagate chit and chip sets and couple
-! (vircon,virpmf,chit2,chip2 are zero!!!)
+! (vircon,virpmf are zero whilst chit2,chip2 are estimated in first approximation!!!)
 
-  chit2=0.0_wp
-  chip2=0.0_wp
+  chit2 = chit
+  chip2 = chip
 
-  chit1 = chit + tstep*(-ceng)/qmass
-  chip1 = chip + tstep*((2.0_wp*engke-virtot) - 3.0_wp*press*vzero)/pmass
+  chit1 = chit + tstep*(2.0_wp*engke+pmass*chip2**2-ceng)/qmass
+  chip1 = chip*Exp(-tstep*chit2) + tstep*( (2.0_wp*engke-virtot) - 3.0_wp*press*vzero )/pmass
 
   chit2 = 0.5_wp*(chit+chit1)
   chip2 = 0.5_wp*(chip+chip1)

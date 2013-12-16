@@ -6,7 +6,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
 ! neighbouring domains/nodes
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov november 2013
+! amended   - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -15,7 +15,6 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
   Use domains_module
   Use site_module
   Use config_module
-  Use rigid_bodies_module, Only : m_rgd,rgdxxx,rgdyyy,rgdzzz
 
   Implicit None
 
@@ -25,14 +24,12 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: cut
 
-  Logical           :: oldjob
   Integer           :: nlx,nly,nlz,i,j,ia,ib
   Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9),x,y,z, &
                        xdc,ydc,zdc,cwx,cwy,cwz,ecwx,ecwy,ecwz
 
   If (newjob) Then
      newjob = .false.
-     oldjob = .false.
 
 ! image conditions not compliant with DD and link-cell
 
@@ -41,8 +38,6 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
 ! Define cut
 
      cut=rcut+1.0e-6_wp
-  Else
-     oldjob = .true.
   End If
 
 ! Get the dimensional properties of the MD cell
@@ -105,9 +100,8 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
 ! Cartesian coordinates to reduced space ones
 ! Populate the halo indicator array
 
-  nlast=natms                 ! No halo exists yet
-  If (oldjob) ixyz(1:nlast)=0 ! Initialise halo indicator
-
+  nlast=natms     ! No halo exists yet
+  ixyz(1:nlast)=0 ! Initialise halo indicator
   Do i=1,nlast
      x=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
      y=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
@@ -179,13 +173,5 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
         lstfre(nfree)=i
      End If
   End Do
-
-! Re-tag RBs when called again after the very first time
-! when it's done in rigid_bodies_setup <- build_book_intra
-
-  If (oldjob .and. m_rgd > 0) Then
-     Call rigid_bodies_tags()
-     Call rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
-  End If
 
 End Subroutine set_halo_particles

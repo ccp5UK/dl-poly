@@ -7,7 +7,7 @@ Subroutine read_config_parallel                  &
 ! dl_poly_4 subroutine for reading in the CONFIG data file in parallel
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush & i.t.todorov november 2013
+! author    - i.j.bush & i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -38,6 +38,7 @@ Subroutine read_config_parallel                  &
                             recs_per_at,recs_per_proc,      &
                             wp_vals_per_at,n_loc,           &
                             to_read,which_read_proc,this_base_proc
+  Integer( Kind = ip )   :: n_sk,n_ii,n_jj
   Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz
 
 ! Some parameters and variables needed by io_module interfaces
@@ -131,9 +132,26 @@ Subroutine read_config_parallel                  &
               top_skip-Int(1,MPI_OFFSET_KIND)
 
      If (.not.fast) Then
-        forma=' '
-        Write(forma,'( "(", i0, "/)" )') Int(n_skip,ip)
-        Read(Unit=nconf, Fmt=forma, End=100)
+        n_sk=Int(n_skip,ip)
+        n_jj=73*batsz ! Assuming average max line length of 73
+        If (n_sk > n_jj) Then
+           Do n_ii=1_ip,n_sk/n_jj
+              forma=' '
+              Write(forma,'( "(", i0, "/)" )') n_jj
+              Read(Unit=nconf, Fmt=forma, End=100)
+           End Do
+           n_ii=Mod(Int(n_skip,ip),n_jj)
+           If (n_ii > 0_ip) Then
+              forma=' '
+              Write(forma,'( "(", i0, "/)" )') n_ii
+              Read(Unit=nconf, Fmt=forma, End=100)
+           End If
+        Else
+           forma=' '
+           Write(forma,'( "(", i0, "/)" )') n_sk
+           Read(Unit=nconf, Fmt=forma, End=100)
+        End If
+
         recsz=200
         forma=' '
         Write(forma,'( "(", i0, "a1)" )') recsz
@@ -538,9 +556,25 @@ Dispatch:     Do i=1,n_loc
      If (do_read .and. (.not.fast)) Then
         n_skip = Int(recs_per_at,MPI_OFFSET_KIND) * Int(megatm-first_at(my_read_proc_num),MPI_OFFSET_KIND)
 
-        forma=' '
-        Write(forma,'( "(", i0, "/)" )') Int(n_skip,ip)
-        Read(Unit=nconf, Fmt=forma, End=100)
+        n_sk=Int(n_skip,ip)
+        n_jj=73*batsz ! Assuming average max line length of 73
+        If (n_sk > n_jj) Then
+           Do n_ii=1_ip,n_sk/n_jj
+              forma=' '
+              Write(forma,'( "(", i0, "/)" )') n_jj
+              Read(Unit=nconf, Fmt=forma, End=100)
+           End Do
+           n_ii=Mod(Int(n_skip,ip),n_jj)
+           If (n_ii > 0_ip) Then
+              forma=' '
+              Write(forma,'( "(", i0, "/)" )') n_ii
+              Read(Unit=nconf, Fmt=forma, End=100)
+           End If
+        Else
+           forma=' '
+           Write(forma,'( "(", i0, "/)" )') n_sk
+           Read(Unit=nconf, Fmt=forma, End=100)
+        End If
      End If
 
   Else

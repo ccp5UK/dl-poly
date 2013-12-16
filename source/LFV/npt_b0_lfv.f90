@@ -16,7 +16,7 @@ Subroutine npt_b0_lfv                                  &
 ! = 0.007372 dl_poly units
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -206,7 +206,7 @@ Subroutine npt_b0_lfv                                  &
 ! Berendsen barostat and thermostat are not coupled
 ! calculate system pressure (vircon and virpmf are assumed zero!!!)
 
-  pr = (2.0_wp*engke-virtot-vircon-virpmf) / (3.0_wp*volm)
+  pr = (2.0_wp*engke-virtot) / (3.0_wp*volm)
 
 ! pressure control variable
 

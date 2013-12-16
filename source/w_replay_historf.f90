@@ -67,9 +67,24 @@
         Call check_config &
            (levcfg,imcon,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
-! Refresh mappings
+! get xto/xin sorted
 
-        Call w_refresh_mappings()
+! SET domain borders and link-cells as default for new jobs
+! exchange atomic data and positions in border regions
+
+        Call set_halo_particles(imcon,rcut,keyfce)
+
+! For any intra-like interaction, construct book keeping arrays and
+! exclusion arrays for overlapped two-body inter-like interactions
+
+        If (lbook) Then
+           Call build_book_intra              &
+           (lsim,megatm,megfrz,atmfre,atmfrz, &
+           megshl,megcon,megpmf,              &
+           megrgd,degrot,degtra,              &
+           megtet,megbnd,megang,megdih,meginv)
+           If (lexcl) Call build_excl_intra(lecx)
+        End If
 
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
@@ -169,7 +184,7 @@
            (imcon,rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
            chit,cint,chip,eta,strcon,strpmf,stress)
 
-! Close and Open OUTPUT at about 'i'th print-out or 'i' minunte intervals
+! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
         i=20
         If ( Mod(nstph,i) == 0 .or.                               &

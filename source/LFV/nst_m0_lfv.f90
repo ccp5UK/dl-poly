@@ -25,7 +25,7 @@ Subroutine nst_m0_lfv                                  &
 ! reference2: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -135,10 +135,16 @@ Subroutine nst_m0_lfv                                  &
         dens0(i) = dens(i)
      End Do
 
+! Sort eta and eta1 for iso>=1
 ! Initialise and get h_z for iso>1
 
      h_z=0
-     If (iso > 1) Then
+     If      (iso == 1) Then
+        eta(1:8) = 0.0_wp ; eta1(1:8) = 0.0_wp
+     Else If (iso >  1) Then
+        eta(2:4) = 0.0_wp ; eta1(2:4) = 0.0_wp
+        eta(6:8) = 0.0_wp ; eta1(6:8) = 0.0_wp
+
         Call dcell(cell,celprp)
         h_z=celprp(9)
      End If
@@ -272,30 +278,31 @@ Subroutine nst_m0_lfv                                  &
   fac=2.0_wp*engke/Real(degfre,wp)
 
 ! propagate chit and eta sets and couple
-! (strcon,strpmf,chit2,eta2 are zero!!!)
+! (strcon,strpmf are zero whilst chit2,eta2,chip0 are estimated in first approximation!!!)
 
-  chit2=0.0_wp
-  eta2 =0.0_wp
-  chip0=0.0_wp
-  chip3=0.0_wp
+  chit2 = chit
+  eta2 = eta
+  chip0 = Sqrt( eta2(1)**2 + 2*eta2(2)**2 + 2*eta2(3)**2 + eta2(5)**2 + 2*eta2(6)**2 + eta2(9)**2 )
 
 ! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
 
-  chit1 = chit + tstep*(-ceng)/qmass
+  chit1 = chit + tstep*(2.0_wp*engke+pmass*chip0**2-ceng)/qmass
   If (iso == 0) Then
-     eta1=eta + tstep*(stress+strkin + fac*uni - (press*uni+strext)*volm)/pmass
+     eta1=(eta + tstep*( stress+strkin + fac*uni - &
+                         (press*uni+strext)*volm)/pmass)*Exp(-tstep*chit2)
   Else
-     eta1=0.0_wp
      If      (iso == 2) Then
-        eta1(1)=eta(1) + tstep*(stress(1)+strkin(1) + fac - (press+strext(1)-ten/h_z)*volm)/pmass
-        eta1(5)=eta(5) + tstep*(stress(5)+strkin(5) + fac - (press+strext(5)-ten/h_z)*volm)/pmass
+        eta1(1)=(eta(1) + tstep*( stress(1)+strkin(1) + fac - &
+                                  (press+strext(1)-ten/h_z)*volm )/pmass)*Exp(-tstep*chit2)
+        eta1(5)=(eta(5) + tstep*( stress(5)+strkin(5) + fac - &
+                                  (press+strext(5)-ten/h_z)*volm )/pmass)*Exp(-tstep*chit2)
      Else If (iso == 3) Then
-        eta1(1)=0.5_wp*(eta(1)+eta(5)) + tstep*( 0.5_wp*          &
-                (stress(1)+strkin(1)+stress(5)+strkin(5)) + fac - &
-                (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm )/pmass
+        eta1(1)=(0.5_wp*(eta(1)+eta(5)) + tstep*( 0.5_wp*            &
+                 (stress(1)+strkin(1) + stress(5)+strkin(5)) + fac - &
+                 (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm )/pmass)*Exp(-tstep*chit2)
         eta1(5)=eta1(1)
      End If
-     eta1(9)=eta(9) + tstep*(stress(9)+strkin(9) + fac - (press+strext(9))*volm)/pmass
+     eta1(9)=(eta(9) + tstep*( stress(9)+strkin(9) + fac - (press+strext(9))*volm )/pmass)*Exp(-tstep*chit2)
   End If
 
   chit2 = 0.5_wp*(chit+chit1)

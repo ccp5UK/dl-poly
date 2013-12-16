@@ -29,7 +29,7 @@ Subroutine nst_m1_vv                              &
 ! reference2: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -158,10 +158,16 @@ Subroutine nst_m1_vv                              &
         dens0(i) = dens(i)
      End Do
 
+! Sort eta for iso>=1
 ! Initialise and get h_z for iso>1
 
      h_z=0
-     If (iso > 1) Then
+     If      (iso == 1) Then
+        eta(1:8) = 0.0_wp
+     Else If (iso >  1) Then
+        eta(2:4) = 0.0_wp
+        eta(6:8) = 0.0_wp
+
         Call dcell(cell,celprp)
         h_z=celprp(9)
      End If

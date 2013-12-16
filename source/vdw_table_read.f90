@@ -237,7 +237,7 @@ Subroutine vdw_table_read(rvdw)
 
            If ((.not.ls_vdw) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
               If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                 If (Sign(1.0_wp,vvdw(i-1,ivdw)) == -Sign(1.0_wp,vvdw(i,ivdw))) &
+                 If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
                     sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
               Else                                           ! find epsilon
                  If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
