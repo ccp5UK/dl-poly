@@ -510,6 +510,18 @@ Subroutine error(kode)
 
         Write(nrite,'(/,1x,a)') 'error - unknown EAM keyword in TABEAM'
 
+     Else If (kode ==  160) Then
+
+        Write(nrite,'(/,1x,a)') 'error - undefined direction passed to statistics_connect_spread'
+
+     Else If (kode ==  162) Then
+
+        Write(nrite,'(/,1x,a)') 'error - statistics_connect_spread outgoing transfer buffer exceeded'
+
+     Else If (kode ==  164) Then
+
+        Write(nrite,'(/,1x,a)') 'error - statistics_connect_spread incoming transfer buffer exceeded'
+
      Else If (kode ==  170) Then
 
         Write(nrite,'(/,1x,a)') 'error - too many variables for statistics array'
@@ -1196,6 +1208,14 @@ Subroutine error(kode)
      Else If (kode == 1059) Then
 
         Write(nrite,'(/,1x,a)') 'error - unknown write level given to sorted I/O'
+
+     Else If (kode == 1060) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in statistics_module -> allocate_statitics_connect_arrays'
+
+     Else If (kode == 1061) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in statistics_module -> deallocate_statitics_connect_arrays'
 
      Else If (kode == 1063) Then
 

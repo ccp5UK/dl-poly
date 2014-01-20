@@ -85,6 +85,8 @@ Subroutine build_book_intra                   &
      Call error(0)
   End If
 
+  If (.not.(newjob .or. lsim)) Call init_intra()
+
 ! Initialise safety flags
 
   safe=.true.
@@ -194,8 +196,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many core-shell type neigbours !!! ***",                 &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", legshl(0,iat0),               &
-  "***           but maximum length allowed: ", mxfshl,                       &
+  "***           requiring a list length of: ", mxfshl-1+legshl(mxfshl,iat0), &
+  "***           but maximum length allowed: ", mxfshl-1,                     &
   "***           for particle (global ID #): ", iatm,                         &
   "***           on mol. site (local  ID #): ", lstshl(1,lshels+kshels),      &
   "***           of unit      (local  ID #): ", lshels,                       &
@@ -208,8 +210,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many core-shell type neigbours !!! ***",                 &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", legshl(0,jat0),               &
-  "***           but maximum length allowed: ", mxfshl,                       &
+  "***           requiring a list length of: ", mxfshl-1+legshl(mxfshl,jat0), &
+  "***           but maximum length allowed: ", mxfshl-1,                     &
   "***           for particle (global ID #): ", jatm,                         &
   "***           on mol. site (local  ID #): ", lstshl(2,lshels+kshels),      &
   "***           of unit      (local  ID #): ", lshels,                       &
@@ -246,8 +248,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many constraint type neigbours !!! ***",                 &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", legcon(0,iat0),               &
-  "***           but maximum length allowed: ", mxfcon,                       &
+  "***           requiring a list length of: ", mxfcon-1+legcon(mxfcon,iat0), &
+  "***           but maximum length allowed: ", mxfcon-1,                     &
   "***           for particle (global ID #): ", iatm,                         &
   "***           on mol. site (local  ID #): ", lstcon(1,lconst+kconst),      &
   "***           of unit      (local  ID #): ", lconst,                       &
@@ -260,8 +262,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many constraint type neigbours !!! ***",                 &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", legcon(0,jat0),               &
-  "***           but maximum length allowed: ", mxfcon,                       &
+  "***           requiring a list length of: ", mxfcon-1+legcon(mxfcon,jat0), &
+  "***           but maximum length allowed: ", mxfcon-1,                     &
   "***           for particle (global ID #): ", jatm,                         &
   "***           on mol. site (local  ID #): ", lstcon(2,lconst+kconst),      &
   "***           of unit      (local  ID #): ", lconst,                       &
@@ -318,15 +320,15 @@ Subroutine build_book_intra                   &
                        listpmf(i,1,ntpmf)=i1pmf(i)
                        If (i1pmf0(i) > 0) Then
                           Call tag_legend(safe(1),i1pmf0(i),ntpmf,legpmf,mxfpmf)
-                          If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many PMF type neigbours !!! ***",                           &
-  "***           on node      (MPI  rank #): ", idnode,                          &
-  "***           requiring a list length of: ", legpmf(0,i1pmf0(i)),             &
-  "***           but maximum length allowed: ", mxfpmf,                          &
-  "***           on mol. site (local  ID #): ", lstpmf(i,1),                     &
-  "***           for particle (global ID #): ", i1pmf(i),                        &
-  "***           of PMF unit  (1 or 2 only): ", 1,                               &
-  "***           in molecule  (local  ID #): ", imols,                           &
+                          If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))')   &
+  "*** warning - too many PMF type neigbours !!! ***",                             &
+  "***           on node      (MPI  rank #): ", idnode,                            &
+  "***           requiring a list length of: ", mxfpmf-1+legpmf(mxfpmf,i1pmf0(i)), &
+  "***           but maximum length allowed: ", mxfpmf-1,                          &
+  "***           on mol. site (local  ID #): ", lstpmf(i,1),                       &
+  "***           for particle (global ID #): ", i1pmf(i),                          &
+  "***           of PMF unit  (1 or 2 only): ", 1,                                 &
+  "***           in molecule  (local  ID #): ", imols,                             &
   "***           of type      (       ID #): ", itmols
                        End If
                     End Do
@@ -336,15 +338,15 @@ Subroutine build_book_intra                   &
                        listpmf(i,2,ntpmf)=i2pmf(i)
                        If (i2pmf0(i) > 0) Then
                           Call tag_legend(safe(1),i2pmf0(i),ntpmf,legpmf,mxfpmf)
-                          If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many PMF type neigbours !!! ***",                           &
-  "***           on node      (MPI  rank #): ", idnode,                          &
-  "***           requiring a list length of: ", legpmf(0,i2pmf0(i)),             &
-  "***           but maximum length allowed: ", mxfpmf,                          &
-  "***           for particle (global ID #): ", i2pmf(i),                        &
-  "***           on mol. site (local  ID #): ", lstpmf(i,2),                     &
-  "***           of PMF unit  (1 or 2 only): ", 2,                               &
-  "***           in molecule  (local  ID #): ", imols,                           &
+                          If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))')   &
+  "*** warning - too many PMF type neigbours !!! ***",                             &
+  "***           on node      (MPI  rank #): ", idnode,                            &
+  "***           requiring a list length of: ", mxfpmf-1+legpmf(mxfpmf,i2pmf0(i)), &
+  "***           but maximum length allowed: ", mxfpmf-1,                          &
+  "***           for particle (global ID #): ", i2pmf(i),                          &
+  "***           on mol. site (local  ID #): ", lstpmf(i,2),                       &
+  "***           of PMF unit  (1 or 2 only): ", 2,                                 &
+  "***           in molecule  (local  ID #): ", imols,                             &
   "***           of type      (       ID #): ", itmols
                        End If
                     End Do
@@ -383,15 +385,15 @@ Subroutine build_book_intra                   &
                        listrgd(irigid,jrigid)=irgd(irigid)
                        If (irgd0(irigid) > 0) Then
                           Call tag_legend(safe(1),irgd0(irigid),jrigid,legrgd,mxfrgd)
-                          If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many PMF type neigbours !!! ***",                           &
-  "***           on node      (MPI  rank #): ", idnode,                          &
-  "***           requiring a list length of: ", legrgd(0,irgd0(irigid)),         &
-  "***           but maximum length allowed: ", mxfrgd,                          &
-  "***           for particle (global ID #): ", irgd(irigid),                    &
-  "***           on mol. site (local  ID #): ", lstrgd(irigid,lrigid+krigid),    &
-  "***           of unit      (local  ID #): ", lrigid,                          &
-  "***           in molecule  (local  ID #): ", imols,                           &
+                          If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))')       &
+  "*** warning - too many PMF type neigbours !!! ***",                                 &
+  "***           on node      (MPI  rank #): ", idnode,                                &
+  "***           requiring a list length of: ", mxfrgd-1+legrgd(mxfrgd,irgd0(irigid)), &
+  "***           but maximum length allowed: ", mxfrgd-1,                              &
+  "***           for particle (global ID #): ", irgd(irigid),                          &
+  "***           on mol. site (local  ID #): ", lstrgd(irigid,lrigid+krigid),          &
+  "***           of unit      (local  ID #): ", lrigid,                                &
+  "***           in molecule  (local  ID #): ", imols,                                 &
   "***           of type      (       ID #): ", itmols
                        End If
                     End Do
@@ -415,15 +417,15 @@ Subroutine build_book_intra                   &
                     listtet(1,jteths)=iatm
 
                     Call tag_legend(safe(1),iat0,jteths,legtet,mxftet)
-                    If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many tether type neigbours !!! ***",                  &
-  "***           on node      (MPI  rank #): ", idnode,                    &
-  "***           requiring a list length of: ", legtet(0,iat0),            &
-  "***           but maximum length allowed: ", mxftet,                    &
-  "***           for particle (global ID #): ", iatm,                      &
-  "***           on mol. site (local  ID #): ", lsttet(lteths+kteths),     &
-  "***           of unit      (local  ID #): ", lteths,                    &
-  "***           in molecule  (local  ID #): ", imols,                     &
+                    If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))')    &
+  "*** warning - too many tether type neigbours !!! ***",                     &
+  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           requiring a list length of: ", mxftet-1+legtet(mxftet,iat0), &
+  "***           but maximum length allowed: ", mxftet-1,                     &
+  "***           for particle (global ID #): ", iatm,                         &
+  "***           on mol. site (local  ID #): ", lsttet(lteths+kteths),        &
+  "***           of unit      (local  ID #): ", lteths,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
   "***           of type      (       ID #): ", itmols
                  Else
                     safe(6)=.false.
@@ -455,8 +457,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many bond type neigbours !!! ***",                       &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", legbnd(0,iat0),               &
-  "***           but maximum length allowed: ", mxfbnd,                       &
+  "***           requiring a list length of: ", mxfbnd-1+legbnd(mxfbnd,iat0), &
+  "***           but maximum length allowed: ", mxfbnd-1,                     &
   "***           for particle (global ID #): ", iatm,                         &
   "***           on mol. site (local  ID #): ", lstbnd(1,lbonds+kbonds),      &
   "***           of unit      (local  ID #): ", lbonds,                       &
@@ -469,8 +471,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many bond type neigbours !!! ***",                       &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", legbnd(0,jat0),               &
-  "***           but maximum length allowed: ", mxfbnd,                       &
+  "***           requiring a list length of: ", mxfbnd-1+legbnd(mxfbnd,jat0), &
+  "***           but maximum length allowed: ", mxfbnd-1,                     &
   "***           for particle (global ID #): ", jatm,                         &
   "***           on mol. site (local  ID #): ", lstbnd(2,lbonds+kbonds),      &
   "***           of unit      (local  ID #): ", lbonds,                       &
@@ -512,8 +514,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many angle type neigbours !!! ***",                      &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", legang(0,iat0),               &
-  "***           but maximum length allowed: ", mxfang,                       &
+  "***           requiring a list length of: ", mxfang-1+legang(mxfang,iat0), &
+  "***           but maximum length allowed: ", mxfang-1,                     &
   "***           for particle (global ID #): ", iatm,                         &
   "***           on mol. site (local  ID #): ", lstang(1,langle+kangle),      &
   "***           of unit      (local  ID #): ", langle,                       &
@@ -526,8 +528,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many angle type neigbours !!! ***",                      &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", legang(0,jat0),               &
-  "***           but maximum length allowed: ", mxfang,                       &
+  "***           requiring a list length of: ", mxfang-1+legang(mxfang,jat0), &
+  "***           but maximum length allowed: ", mxfang-1,                     &
   "***           for particle (global ID #): ", jatm,                         &
   "***           on mol. site (local  ID #): ", lstang(2,langle+kangle),      &
   "***           of unit      (local  ID #): ", langle,                       &
@@ -540,8 +542,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many angle type neigbours !!! ***",                      &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", legang(0,kat0),               &
-  "***           but maximum length allowed: ", mxfang,                       &
+  "***           requiring a list length of: ", mxfang-1+legang(mxfang,kat0), &
+  "***           but maximum length allowed: ", mxfang-1,                     &
   "***           for particle (global ID #): ", katm,                         &
   "***           on mol. site (local  ID #): ", lstang(3,langle+kangle),      &
   "***           of unit      (local  ID #): ", langle,                       &
@@ -594,8 +596,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many dihedral type neigbours !!! ***",                   &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", legdih(0,iat0),               &
-  "***           but maximum length allowed: ", mxfdih,                       &
+  "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,iat0), &
+  "***           but maximum length allowed: ", mxfdih-1,                     &
   "***           for particle (global ID #): ", iatm,                         &
   "***           on mol. site (local  ID #): ", lstdih(1,ldihed+kdihed),      &
   "***           of unit      (local  ID #): ", ldihed,                       &
@@ -608,8 +610,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many dihedral type neigbours !!! ***",                   &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", legdih(0,jat0),               &
-  "***           but maximum length allowed: ", mxfdih,                       &
+  "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,jat0), &
+  "***           but maximum length allowed: ", mxfdih-1,                     &
   "***           for particle (global ID #): ", jatm,                         &
   "***           on mol. site (local  ID #): ", lstdih(2,ldihed+kdihed),      &
   "***           of unit      (local  ID #): ", ldihed,                       &
@@ -622,8 +624,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many dihedral type neigbours !!! ***",                   &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", legdih(0,kat0),               &
-  "***           but maximum length allowed: ", mxfdih,                       &
+  "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,kat0), &
+  "***           but maximum length allowed: ", mxfdih-1,                     &
   "***           for particle (global ID #): ", katm,                         &
   "***           on mol. site (local  ID #): ", lstdih(3,ldihed+kdihed),      &
   "***           of unit      (local  ID #): ", ldihed,                       &
@@ -636,8 +638,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many dihedral type neigbours !!! ***",                   &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", legdih(0,lat0),               &
-  "***           but maximum length allowed: ", mxfdih,                       &
+  "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,lat0), &
+  "***           but maximum length allowed: ", mxfdih-1,                     &
   "***           for particle (global ID #): ", latm,                         &
   "***           on mol. site (local  ID #): ", lstdih(4,ldihed+kdihed),      &
   "***           of unit      (local  ID #): ", ldihed,                       &
@@ -682,8 +684,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many inversion type neigbours !!! ***",                  &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", leginv(0,iat0),               &
-  "***           but maximum length allowed: ", mxfinv,                       &
+  "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,iat0), &
+  "***           but maximum length allowed: ", mxfinv-1,                     &
   "***           for particle (global ID #): ", iatm,                         &
   "***           on mol. site (local  ID #): ", lstinv(1,linver+kinver),      &
   "***           of unit      (local  ID #): ", linver,                       &
@@ -696,8 +698,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many inversion type neigbours !!! ***",                  &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", leginv(0,jat0),               &
-  "***           but maximum length allowed: ", mxfinv,                       &
+  "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,jat0), &
+  "***           but maximum length allowed: ", mxfinv-1,                     &
   "***           for particle (global ID #): ", jatm,                         &
   "***           on mol. site (local  ID #): ", lstinv(2,linver+kinver),      &
   "***           of unit      (local  ID #): ", linver,                       &
@@ -710,8 +712,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many inversion type neigbours !!! ***",                  &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", leginv(0,kat0),               &
-  "***           but maximum length allowed: ", mxfinv,                       &
+  "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,kat0), &
+  "***           but maximum length allowed: ", mxfinv-1,                     &
   "***           for particle (global ID #): ", katm,                         &
   "***           on mol. site (local  ID #): ", lstinv(3,linver+kinver),      &
   "***           of unit      (local  ID #): ", linver,                       &
@@ -724,8 +726,8 @@ Subroutine build_book_intra                   &
                        If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
   "*** warning - too many inversion type neigbours !!! ***",                  &
   "***           on node      (MPI  rank #): ", idnode,                       &
-  "***           requiring a list length of: ", leginv(0,lat0),               &
-  "***           but maximum length allowed: ", mxfinv,                       &
+  "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,lat0), &
+  "***           but maximum length allowed: ", mxfinv-1,                     &
   "***           for particle (global ID #): ", latm,                         &
   "***           on mol. site (local  ID #): ", lstinv(4,linver+kinver),      &
   "***           of unit      (local  ID #): ", linver,                       &
@@ -1455,6 +1457,24 @@ Subroutine build_book_intra                   &
            megshl,megcon,megpmf,megrgd,  &
            megtet,megbnd,megang,megdih,meginv)
 
+! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
+
+     If (lsim) Then
+        Call deallocate_core_shell_arrays()
+
+        Call deallocate_constraints_arrays()
+        Call deallocate_pmf_arrays()
+
+        Call deallocate_rigid_bodies_arrays()
+
+        Call deallocate_tethers_arrays()
+
+        Call deallocate_bonds_arrays()
+        Call deallocate_angles_arrays()
+        Call deallocate_dihedrals_arrays()
+        Call deallocate_inversions_arrays()
+     End If
+
   Else
 
 ! Recover/localise imcon and rcut
@@ -1468,24 +1488,6 @@ Subroutine build_book_intra                   &
      Call rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
      Call rigid_bodies_widths(imcon,rcut)
 
-  End If
-
-! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
-
-  If (lsim) Then
-     Call deallocate_core_shell_arrays()
-
-     Call deallocate_constraints_arrays()
-     Call deallocate_pmf_arrays()
-
-     Call deallocate_rigid_bodies_arrays()
-
-     Call deallocate_tethers_arrays()
-
-     Call deallocate_bonds_arrays()
-     Call deallocate_angles_arrays()
-     Call deallocate_dihedrals_arrays()
-     Call deallocate_inversions_arrays()
   End If
 
 ! Update shared core-shell, constraint and RB units

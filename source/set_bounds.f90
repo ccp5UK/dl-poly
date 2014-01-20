@@ -8,7 +8,7 @@ Subroutine set_bounds                                  &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2013
+! author    - i.t.todorov january 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -512,8 +512,8 @@ Subroutine set_bounds                                  &
 
 ! maximum dimension of principal transfer buffer
 
-! deport_atomic_data & export_atomic_data (and
-! and defects_reference_export & metal_ld_export.f90 if used)
+! deport_atomic_data & export_atomic_data (+ metal_ld_export.f90
+! defects_reference_export & statistics_connect_deport if used)
 ! are supposed to be the most MPI/buffer consuming routines
 
 ! deporting total per atom
@@ -525,10 +525,16 @@ Subroutine set_bounds                                  &
           4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
           3*mxteth+4*mxbond+5*mxangl+8*mxdihd+6*mxinv,wp) * dens0)
 
+! statistics connect deporting total per atom
+
+  dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
+  dens0 = dens0/Max(rcut/0.2_wp,1.0_wp)
+  mxbfss = Merge( 2, 0, mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*6+mxstak, 0, l_msd)),wp) * dens0)
+
 ! exporting single per atom
 
   dens  = Real(((qlx+2)*(qly+2)*(qlz+2))/Min(qlx,qly,qlz)+2,wp) / Real(qlx*qly*qlz,wp)
-  mxbfxp = 2 * Nint(Real(mxatdm,wp) * dens)
+  mxbfxp = 2 * 6 * Nint(Real(mxatdm,wp) * dens)
 
 ! shared units single per atom
 

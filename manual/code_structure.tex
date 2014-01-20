@@ -143,8 +143,9 @@ This module globalises a CONTROL variable.
 \item {\bf statistics module}:: {\sc statistics\_module}
 
 This module defines all variables and arrays needed for the
-statistical accountancy of a simulation in \D.  It depends on {\sc
-kinds\_f90} and its allocation method on {\sc setup\_module}.
+statistical accountancy of a simulation in \D.  It depends on
+{\sc kinds\_f90} and its allocation methods on {\sc setup\_module}
+and {\sc comms\_module}.
 
 \item {\bf kinetic module}:: {\sc kinetic\_module}
 
@@ -196,8 +197,8 @@ check\_config origin\_config scale\_config write\_config \\
 trajectory\_write system\_expand \\
 rigid\_bodies\_tags rigid\_bodies\_coms rigid\_bodies\_widths \\
 rigid\_bodies\_setup \\
-tag\_legend report\_topology pass\_shared\_units build\_book\_intra \\
-build\_excl\_intra \\
+init\_intra tag\_legend report\_topology pass\_shared\_units \\
+build\_book\_intra build\_excl\_intra \\
 scale\_temperature update\_shared\_units \\
 core\_shell\_quench constraints\_tags constraints\_quench \\
 pmf\_coms pmf\_tags pmf\_vcoms pmf\_quench \\
@@ -238,6 +239,7 @@ nvt\_e0\_scl nvt\_e1\_scl nvt\_b0\_scl nvt\_b1\_scl \\
 xscale core\_shell\_kinetic regauss\_temperature \\
 \\
 z\_density\_collect statistics\_collect \\
+statistics\_connect\_set statistics\_connect\_spread statistics\_connect\_frames \\
 system\_revive \\
 rdf\_compute z\_density\_compute statistics\_result \\
 \\

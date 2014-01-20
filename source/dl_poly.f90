@@ -155,7 +155,8 @@ Program dl_poly
 ! elrc,virlrc - vdw energy and virial are scalars and in vdw_module
 ! elrcm,vlrcm - metal energy and virial are array-like and in metal_module
 
-  Real( Kind = wp ) :: timelp,timjob,timcls,tstep,time,tmst,      &
+  Real( Kind = wp ) :: tsths,                                     &
+                       timelp,timjob,timcls,tstep,time,tmst,      &
                        alpha,epsq,fmax,                           &
                        rcut,rvdw,rmet,rbin,rcter,rctbp,rcfbp,     &
                        width,mndis,mxdis,mxstp,wthpse,tmppse,     &
@@ -196,7 +197,7 @@ Program dl_poly
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  version:  4.05.2   /   november 2013  ****** O ****", &
+          "**         **  version:  4.05.2    /   january 2014  ****** O ****", &
           "*************  execution on ", mxnode, "    node(s)  ******* L ***", &
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
@@ -605,6 +606,8 @@ Program dl_poly
            chit,cint,chip,eta,strcon,strpmf,stress)
 
 ! Produce summary of simulation
+
+  If (.not.lsim) tstep=tsths ! tstep for 'replay history'
 
   Call statistics_result                &
            (rcut,lrdf,lprdf,lzdn,lpzdn, &

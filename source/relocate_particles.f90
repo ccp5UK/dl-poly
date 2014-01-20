@@ -11,7 +11,7 @@ Subroutine relocate_particles        &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov june 2013
+! amended   - i.t.todorov december 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -50,10 +50,8 @@ Subroutine relocate_particles        &
   Real( Kind = wp ), Save :: cut
 
   Logical           :: safe(1:9)
-  Integer           :: fail,i,nlimit,ipx,ipy,ipz
-  Real( Kind = wp ) :: big(1:3),celprp(1:10),rcell(1:9),det
-
-  Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
+  Integer           :: i,nlimit,ipx,ipy,ipz
+  Real( Kind = wp ) :: big(1:3),det,celprp(1:10),rcell(1:9),x,y,z
 
   If (newjob) Then
      newjob = .false.
@@ -122,64 +120,50 @@ Subroutine relocate_particles        &
 ! since last call to relocate as we don't test this!!!
 
      ixyz(1:natms)=0 ! Initialise move (former halo) indicator
-
-     fail=0
-     Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail)
-     If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'relocate_particles allocation failure, node: ', idnode
-        Call error(0)
-     End If
-
      Do i=1,natms
-        xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-        yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-        zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+        x=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
+        y=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
+        z=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
 
 ! assign domain coordinates (call for errors)
 
-        ipx=Int((xxt(i)+0.5_wp)*nprx_r)
-        ipy=Int((yyt(i)+0.5_wp)*npry_r)
-        ipz=Int((zzt(i)+0.5_wp)*nprz_r)
+        ipx=Int((x+0.5_wp)*nprx_r)
+        ipy=Int((y+0.5_wp)*npry_r)
+        ipz=Int((z+0.5_wp)*nprz_r)
 
         If (idx == 0) Then
-           If (xxt(i) < -half_plus) ixyz(i)=ixyz(i)+1
+           If (x < -half_plus) ixyz(i)=ixyz(i)+1
         Else
            If (ipx < idx) ixyz(i)=ixyz(i)+1
         End If
         If (idx == nprx-1) Then
-           If (xxt(i) >= half_minus) ixyz(i)=ixyz(i)+2
+           If (x >= half_minus) ixyz(i)=ixyz(i)+2
         Else
            If (ipx > idx) ixyz(i)=ixyz(i)+2
         End If
 
         If (idy == 0) Then
-           If (yyt(i) < -half_plus) ixyz(i)=ixyz(i)+10
+           If (y < -half_plus) ixyz(i)=ixyz(i)+10
         Else
            If (ipy < idy) ixyz(i)=ixyz(i)+10
         End If
         If (idy == npry-1) Then
-           If (yyt(i) >= half_minus) ixyz(i)=ixyz(i)+20
+           If (y >= half_minus) ixyz(i)=ixyz(i)+20
         Else
            If (ipy > idy) ixyz(i)=ixyz(i)+20
         End If
 
         If (idz == 0) Then
-           If (zzt(i) < -half_plus) ixyz(i)=ixyz(i)+100
+           If (z < -half_plus) ixyz(i)=ixyz(i)+100
         Else
            If (ipz < idz) ixyz(i)=ixyz(i)+100
         End If
         If (idz == nprz-1) Then
-           If (zzt(i) >= half_minus) ixyz(i)=ixyz(i)+200
+           If (z >= half_minus) ixyz(i)=ixyz(i)+200
         Else
            If (ipz > idz) ixyz(i)=ixyz(i)+200
         End If
      End Do
-
-     Deallocate (xxt,yyt,zzt, Stat=fail)
-     If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'relocate_particles deallocation failure, node: ', idnode
-        Call error(0)
-     End If
 
 ! exchange atom data in -/+ x directions
 

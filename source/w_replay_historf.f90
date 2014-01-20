@@ -44,7 +44,9 @@
   nstpe = nstep
   nstph = 0 ! HISTORF trajectory points counter
   Do
-10 Continue
+     Call allocate_statistics_connect_arrays()
+10   Continue
+     If (nstep >= nstpe) Call statistics_connect_set(imcon,rcut)
 
 ! Make a move
 
@@ -67,7 +69,10 @@
         Call check_config &
            (levcfg,imcon,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
-! get xto/xin sorted
+! get xto/xin/msdtmp arrays sorted
+
+        Call statistics_connect_frames()
+        Call deallocate_statistics_connect_arrays()
 
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
@@ -125,13 +130,16 @@
         If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(shlke)
 
 ! Calculate physical quantities and collect statistics,
-! accumulate z-density if needed (nstep->nstph,tmst->tmsh)
+! accumulate z-density if needed
+! (nstep->nstph,tstep->tsths,tmst->tmsh)
+
+        tsths=Max(tstep ,(time-tmsh) / Real(Merge( nstph-1, 1, nstph > 2), wp))
 
         Call statistics_collect            &
            (leql,nsteql,lzdn,nstzdn,       &
            keyres,keyens,iso,intsta,imcon, &
            degfre,degshl,degrot,           &
-           nstph,tstep,time,tmsh,          &
+           nstph,tsths,time,tmsh,          &
            engcpe,vircpe,engsrp,virsrp,    &
            engter,virter,                  &
            engtbp,virtbp,engfbp,virfbp,    &

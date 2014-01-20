@@ -417,9 +417,9 @@ This should never happen!
 {\em Action}:
 
 Consider using {\tt densvar} option in CONTROL for extremely
-non-equilibrium simulations.  Alternatively, increase {\tt mxbuff}
-in {\sc set\_bounds} recompile and resubmit.  Send the problem to
-us if this is persistent.
+non-equilibrium simulations.  Alternatively, increase {\tt mxbfxp}
+parameter in {\sc set\_bounds} recompile and resubmit.  Send the
+problem to us if this is persistent.
 
 Correct the erroneous entry in FIELD and resubmit.
 
@@ -470,8 +470,8 @@ usually when the potential in use do not hold the system stable.
 \noindent \underline{\em Action}:
 
 Consider using {\tt densvar} option in CONTROL for extremely
-non-equilibrium simulations.  Alternatively, increase {\tt mxbuff}
-in {\sc set\_bounds} recompile and resubmit.
+non-equilibrium simulations.  Alternatively, increase {\tt mxbfdp}
+parameter in {\sc set\_bounds} recompile and resubmit.
 
 \subsubsection*{\underline{Message 44}: error - deport\_atomic\_data incoming transfer buffer exceeded}
 
@@ -515,8 +515,8 @@ Send the problem to us.
 
 \noindent \underline{\em Action}:
 
-Standard user response.  Increase {\tt mxbuff} in {\sc
-set\_bounds} recompile and resubmit.
+Standard user response.  Increase {\tt mxgrid} parameters
+in {\sc set\_bounds} recompile and resubmit.
 
 \subsubsection*{\underline{Message 49}: error - frozen shell (core-shell) unit specified}
 
@@ -583,8 +583,8 @@ usually when the potential in use do not hold the system stable.
 \noindent \underline{\em Action}:
 
 Consider using {\tt densvar} option in CONTROL for extremely
-non-equilibrium simulations.  Alternatively, increase {\tt mxbuff}
-in {\sc set\_bounds} recompile and resubmit.
+non-equilibrium simulations.  Alternatively, increase {\tt mxbfxp}
+parameter in {\sc set\_bounds} recompile and resubmit.
 
 \subsubsection*{\underline{Message 55}: error - end of CONFIG file encountered}
 
@@ -1197,7 +1197,7 @@ The transfer buffer has been exceeded.
 
 \noindent \underline{\em Action}:
 
-Consider increasing parameter {\tt mxbuff} in {\sc set\_bounds},
+Consider increasing parameter {\tt mxbfsh} in {\sc set\_bounds},
 recompile and resubmit.  Contact \D authors if the problem
 persists.
 
@@ -1338,6 +1338,30 @@ of a form known to the program.  If the requested potential form
 is unknown, termination of the program results. The most probable
 cause of this is the incorrect choice of the potential keyword in
 the FIELD file.
+
+\subsubsection*{\underline{Message 160}: error - undefined direction passed to statistics\_connect\_spread}
+
+This should never happen!
+
+\subsubsection*{\underline{Message 162}: error - statistics\_connect\_spread outgoing transfer buffer exceeded}
+
+The transfer buffer has been exceeded.
+
+\noindent \underline{\em Action}:
+
+Consider using {\tt densvar} option in CONTROL for extremely
+non-equilibrium simulations.  Alternatively, increase {\tt mxbfss}
+parameters in {\sc set\_bounds} recompile and resubmit.
+
+\subsubsection*{\underline{Message 164}: error - statistics\_connect\_spread incoming transfer buffer exceeded}
+
+The transfer buffer has been exceeded.
+
+\noindent \underline{\em Action}:
+
+Consider using {\tt densvar} option in CONTROL for extremely
+non-equilibrium simulations.  Alternatively, increase {\tt mxbfss}
+parameters in {\sc set\_bounds} recompile and resubmit.
 
 \subsubsection*{\underline{Message 170}: error - too many variables for statistics array }
 
@@ -2903,13 +2927,24 @@ This should never happen!
 
 Contact authors if the problem persists.
 
-\subsubsection*{\underline{Message 1061}: error - allocation failure in vdw\_module $->$ allocate\_vdw\_table\_arrays}
+\subsubsection*{\underline{Message 1060}: error - allocation failure in statistics\_module -> allocate\_statitics\_connect\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+\subsubsection*{\underline{Message 1061}: error - allocation failure in statistics\_module -> deallocate\_statitics\_connect\_arrays}
 
 \noindent \underline{\em Action}:
 
 See Message 1001
 
-\subsubsection*{\underline{Message 1063}: error - allocation failure in vdw\_module $->$ allocate\_vdw\_direct\_fs\_arrays}
+\subsubsection*{\underline{Message 1063}: error - allocation failure in vdw\_module $->$ allocate\_vdw\_table\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1066}: error - allocation failure in vdw\_module $->$ allocate\_vdw\_direct\_fs\_arrays}
 
 \noindent \underline{\em Action}:
 

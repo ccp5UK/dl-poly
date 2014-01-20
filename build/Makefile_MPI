@@ -1,6 +1,6 @@
 # Master makefile for DL_POLY_4.05 (parallel version)
 #
-# Author - I.T.Todorov February 2013
+# Author - I.T.Todorov January 2014
 #
 #
 # Define default settings
@@ -54,8 +54,8 @@ OBJ_ALL = \
 	trajectory_write.o system_expand.o \
 	rigid_bodies_tags.o rigid_bodies_coms.o rigid_bodies_widths.o \
 	rigid_bodies_setup.o \
-	tag_legend.o report_topology.o pass_shared_units.o build_book_intra.o \
-	build_excl_intra.o \
+	init_intra.o tag_legend.o report_topology.o pass_shared_units.o \
+	build_book_intra.o build_excl_intra.o \
 	scale_temperature.o update_shared_units.o \
 	core_shell_quench.o constraints_tags.o constraints_quench.o \
 	pmf_coms.o pmf_tags.o pmf_vcoms.o pmf_quench.o \
@@ -121,6 +121,7 @@ OBJ_ALL = \
 	xscale.o core_shell_kinetic.o regauss_temperature.o \
 	\
 	z_density_collect.o statistics_collect.o \
+	statistics_connect_set.o statistics_connect_spread.o statistics_connect_frames.o \
 	system_revive.o \
 	rdf_compute.o z_density_compute.o statistics_result.o \
 	dl_poly.o
