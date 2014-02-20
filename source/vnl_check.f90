@@ -12,7 +12,7 @@ Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
 
   Use kinds_f90
   Use comms_module,   Only : idnode,mxnode,gmax
-  Use setup_module,   Only : nrite,mxatdm
+  Use setup_module,   Only : nrite,mxspl,mxatdm
   Use domains_module, Only : r_nprx,r_npry,r_nprz
   Use config_module,  Only : cell,natms,xxx,yyy,zzz
   Use vnl_module
@@ -26,7 +26,7 @@ Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
 
   Logical,     Save :: newjob=.true.
   Integer           :: fail,ilx,ily,ilz
-  Real( Kind = wp ) :: max_disp,cut,celprp(1:10)
+  Real( Kind = wp ) :: max_disp,cut,test,celprp(1:10)
 
   Real( Kind = wp ), Allocatable :: x(:),y(:),z(:)
 
@@ -93,11 +93,12 @@ Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
      ily=Int(r_npry*celprp(8)/cut)
      ilz=Int(r_nprz*celprp(9)/cut)
 
+     test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0) ! 2% (w/ SPME) or 4% (w/o SPME)
      cut=Min(r_nprx*celprp(7),r_npry*celprp(8),r_nprz*celprp(9))-1.0e-6_wp
      If (ilx*ily*ilz == 0) Then
         If (cut < rcut) Then
   If (idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
-  Call error(307)
+           Call error(307)
         Else ! rpad is defined & in 'no strict' mode
            If (cut < rlnk) Then
               If (l_str) Then
@@ -105,9 +106,9 @@ Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
   Call error(307)
               Else
                  If (cut >= rcut) Then ! Re-set rpad with some slack
-                    rpad = Min( 0.95_wp * (cut - rcut) , 0.05_wp * rcut)
+                    rpad = Min( 0.95_wp * (cut - rcut) , test * rcut)
                     rpad = Int( 100.0_wp * rpad ) / 100.0_wp
-                    If (rpad < 0.2_wp) rpad = 0.0_wp ! Don't bother
+                    If (rpad < 0.05_wp) rpad = 0.0_wp ! Don't bother
                     rlnk = rcut + rpad
                     l_vnl=.true.
                  End If
@@ -116,17 +117,17 @@ Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
         End If
      Else ! push the limits when up for update in a 'no strict' regime
         If (l_vnl .and. (.not.l_str)) Then ! Try to re-set rpad with some slack
-           If (Int(Real(Min(ilx,ily,ilz),wp)/1.11_wp) > 4) Then
-              cut = 0.075_wp * rcut
+           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) > 4) Then
+              cut = test * rcut
            Else
-              cut = Min( 0.075_wp * rcut ,                                   &
-                         0.850_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
-                                            r_npry * celprp(8) / Real(ily,wp) , &
-                                            r_nprz * celprp(9) / Real(ilz,wp) ) &
-                                      - rcut - 1.0e-6_wp ) )
+              cut = Min( test * rcut,                                          &
+                         0.85_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
+                                           r_npry * celprp(8) / Real(ily,wp) , &
+                                           r_nprz * celprp(9) / Real(ilz,wp) ) &
+                                     - rcut - 1.0e-6_wp ) )
            End If
            cut = Int( 100.0_wp * cut ) / 100.0_wp
-           If (cut > 0.2_wp .and. Abs(cut-rpad) > 0.005_wp) Then
+           If ((.not(cut < 0.05_wp) .and. Abs(cut-rpad) > 0.005_wp) Then
   If (idnode == 0) Write(nrite,'(/,1x,2(a,f5.2),a,/)') 'cutoff padding reset from ', rpad, ' Angs to ', cut, ' Angs'
               rpad = cut
               rlnk = rcut + rpad

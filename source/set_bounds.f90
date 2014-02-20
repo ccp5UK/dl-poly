@@ -384,6 +384,7 @@ Subroutine set_bounds                                       &
 
   If (idnode == 0) Write(nrite,'(/,1x,a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
 
+  test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0) ! 2% (w/ SPME) or 4% (w/o SPME)
   cut=Min(r_nprx*celprp(7),r_npry*celprp(8),r_nprz*celprp(9))-1.0e-6_wp
   If (ilx*ily*ilz == 0) Then
      If (l_trm) Then ! we are prepared to exit gracefully(-:
@@ -397,9 +398,9 @@ Subroutine set_bounds                                       &
            Call error(307)
         Else ! rpad is defined & in 'no strict' mode
            If (rpad > zero_plus .and. (.not.l_str)) Then ! Re-set rpad with some slack
-              rpad = Min( 0.95_wp * (cut - rcut) , 0.05_wp * rcut)
+              rpad = Min( 0.95_wp * (cut - rcut) , test * rcut)
               rpad = Int( 100.0_wp * rpad ) / 100.0_wp
-              If (rpad < 0.2_wp) rpad = 0.0_wp ! Don't bother
+              If (rpad < 0.05_wp) rpad = 0.0_wp ! Don't bother
               Go To 10
            Else
               If (idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
@@ -410,24 +411,24 @@ Subroutine set_bounds                                       &
   Else ! push the limits when real dynamics exists & in 'no strict' mode
      If (lsim .and. (.not.l_str)) Then
         If (rpad <= zero_plus) Then ! When rpad undefined give it some value
-           If (Int(Real(Min(ilx,ily,ilz),wp)/1.11_wp) > 4) Then
-              rpad = 0.075_wp * rcut
+           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) > 4) Then
+              rpad = test * rcut
               rpad = Int( 100.0_wp * rpad ) / 100.0_wp
-              If (rpad < 0.2_wp) rpad = 0.0_wp ! Don't bother
+              If (rpad < 0.05_wp) rpad = 0.0_wp ! Don't bother
               Go To 10
            Else
-              rpad = Min( 0.075_wp * rcut ,                                      &
-                          0.850_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
-                                             r_npry * celprp(8) / Real(ily,wp) , &
-                                             r_nprz * celprp(9) / Real(ilz,wp) ) &
-                                       - rcut - 1.0e-6_wp ) )
+              rpad = Min( test * rcut,                                          &
+                          0.85_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
+                                            r_npry * celprp(8) / Real(ily,wp) , &
+                                            r_nprz * celprp(9) / Real(ilz,wp) ) &
+                                      - rcut - 1.0e-6_wp ) )
            End If
            rpad = Int( 100.0_wp * rpad ) / 100.0_wp
-           If (rpad < 0.2_wp) rpad = 0.0_wp ! Don't bother
-           rlnk = rcut + rpad               ! and correct rlnk respectively
+           If (rpad < 0.05_wp) rpad = 0.0_wp ! Don't bother
+           rlnk = rcut + rpad                ! and correct rlnk respectively
         Else                        ! Otherwise, set reasonable lower limit
-           If (rpad < 0.2_wp) rpad = 0.0_wp ! Don't bother
-           rlnk = rcut + rpad               ! and correct rlnk respectively
+           If (rpad < 0.05_wp) rpad = 0.0_wp ! Don't bother
+           rlnk = rcut + rpad                ! and correct rlnk respectively
         End If
      End If
   End If

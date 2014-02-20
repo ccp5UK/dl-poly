@@ -476,7 +476,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> in a file, CFGMIN which has the same format as CONFIG \\
 \>                                              \> \\
 \> {\bf pad}ding $f$  ($\equiv$ {\bf rpad} $f$) \> set optional padding to the major cutoff, \\
-\>                                              \> $r_{\rm cut}$, to $f$ \AA~ ($0.2~\ge~f$, default $f~=~0$) \\
+\>                                              \> $r_{\rm cut}$, to $f$ \AA~ ($0.05~\ge~f$, default $f~=~0$) \\
 \>                                              \> \\
 \> {\bf pres}sure $f$                           \> set required system pressure to $f$ katms \\
 \>                                              \> (target pressure for constant pressure\index{units!pressure} ensembles) \\
@@ -536,7 +536,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> (default $f~=~1$ in D~\AA~~ps$^{-2}$) \\
 \>                                              \> \\
 \> {\bf rpad} $f$  ($\equiv$ {\bf pad}ding $f$) \> set optional padding to the major cutoff, \\
-\>                                              \> $r_{\rm cut}$, to $f$ \AA~ ($0.2~\ge~f$, default $f~=~0$) \\
+\>                                              \> $r_{\rm cut}$, to $f$ \AA~ ($0.05~\ge~f$, default $f~=~0$) \\
 \>                                              \> \\
 \> {\bf rvdw} (cutoff) $f$                      \> set required short-ranged interactions cutoff to $f$ \AA \\
 \>                                              \> \\
@@ -1283,14 +1283,14 @@ timestpe.  The VNL conditaional update is check at the end of each tiemstep
 and triggered only when the most travelled particle has moved a distance
 larger than $r_{\rm pad}/2$.  It is worth noting that padding is at expense
 of extra memory but if used wisely it could improve time to solution from
-5\% to 150\% depending on force-field complexity.  If it is too large or too
-small (that is why the $\ge~0.2$~\AA limit) it will lead to performace
+10\% to 100\% depending on force-field complexity.  If it is too large or too
+small (that is why the $\ge~0.05$~\AA limit) it will lead to performace
 degradation.  It is recomended that $r_{\rm pad}$ is set up at a value of
-$\approx~2~\div~10\%$ of the cutoff, $r_{\rm cut}$, as long as the major
+$\approx~1~\div~5\%$ of the cutoff, $r_{\rm cut}$, as long as the major
 link-cell algorithm has link-cell distribution not wiorse than
 $4~\otimes~4~\otimes~4$ per domain.  For such setups, in practice, one
 may expect speedups (in time to solution) of the order of $10~\div~30\%$
-for force-fields involving the Ewald summation methodology and $30~\div~70\%$
+for force-fields involving the Ewald summation methodology and $60~\div~100\%$
 for force-fields without electrostatics evaluations involving the Ewald
 summation methodology.
 \end{enumerate}
