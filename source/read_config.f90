@@ -7,13 +7,13 @@ Subroutine read_config &
 ! particle density
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2013
+! author    - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module,   Only : nconf,nrite,half_minus
+  Use setup_module,   Only : nconf,nrite,mxatms,half_minus
   Use config_module,  Only : imc_n,cell,allocate_config_arrays_read, &
                              natms,nlast,atmnam,lsi,lsa,ltg, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
@@ -40,9 +40,10 @@ Subroutine read_config &
                             l_his = .false. , &
                             l_xtr = .false. , &
                             fast
-  Integer                :: fail(1:4),i,j,idm,icell,ncells, &
-                            mxatms,indatm,nattot,totatm,    &
-                            ipx,ipy,ipz,nlx,nly,nlz,        &
+  Integer                :: fail(1:4),i,j,idm,max_fail,min_fail, &
+                            icell,ncells,                        &
+                            indatm,nattot,totatm,                &
+                            ipx,ipy,ipz,nlx,nly,nlz,             &
                             ix,iy,iz,jx,jy,jz
   Real( Kind = wp )      :: celprp(1:10),rcell(1:9),celh(1:9),det, &
                             volm,vcell,                            &
@@ -70,7 +71,7 @@ Subroutine read_config &
   If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
 ! Real space cutoff shortened by 50% but not < 1 Angstrom
-!(=rcut_def in scan_control)
+!(or ==rcut_def in scan_control)
 
   cut=Max(0.5_wp*rcut,1.0_wp)+1.0e-6_wp
 
@@ -402,8 +403,23 @@ Subroutine read_config &
 
 ! Check if all is dispatched fine
 
-           If (mxnode > 1) Call gcheck(safe)
-           If (.not.safe) Call error(45)
+           max_fail=natms
+           min_fail=natms
+           If (mxnode > 1) Then
+              Call gcheck(safe)
+              Call gmax(max_fail)
+              Call gmin(min_fail)
+           End If
+           If (.not.safe) Then
+              If (idnode == 0) Then
+  Write(nrite,'(/,1x,a,i0)')  '*** warning - next error due to maximum number of atoms per domain set to : ', mxatms
+  Write(nrite,'(1x,2(a,i0))') '***           but maximum & minumum numbers of atoms per domain asked for : ', &
+       max_fail, ' & ', min_fail
+  Write(nrite,'(1x,a,i0)')    '***           estimated denvar value for passing this stage safely is : ', &
+       Nint((dvar*(Real(max_fail,wp)/Real(mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
+              End If
+              Call error(45)
+           End If
 
 ! Nullify dispatch counter
 
@@ -452,8 +468,8 @@ Subroutine read_config &
         top_skip = Int(1,MPI_OFFSET_KIND) ! This is now the frame = 1
      End If
 
-     Call read_config_parallel                   &
-           (levcfg, imcon, l_ind, l_str, megatm, &
+     Call read_config_parallel                  &
+           (levcfg, dvar, l_ind, l_str, megatm, &
             l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi)
 
 ! Close CONFIG

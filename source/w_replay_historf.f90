@@ -46,11 +46,11 @@
   Do
      Call allocate_statistics_connect_arrays()
 10   Continue
-     If (nstep >= nstpe) Call statistics_connect_set(imcon,rcut)
+     If (nstep >= nstpe) Call statistics_connect_set(imcon,rlnk)
 
 ! Make a move
 
-     Call read_history(l_str,"HISTORF",megatm,levcfg,imcon,nstep,tstep,time,exout)
+     Call read_history(l_str,"HISTORF",megatm,levcfg,imcon,dvar,nstep,tstep,time,exout)
 
      If (newjb) Then
         newjb = .false.
@@ -77,7 +77,7 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-        Call set_halo_particles(imcon,rcut,keyfce)
+        Call set_halo_particles(imcon,rlnk,keyfce)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions

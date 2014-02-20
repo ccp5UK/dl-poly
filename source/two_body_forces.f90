@@ -1,5 +1,5 @@
 Subroutine two_body_forces                        &
-           (imcon,rcut,rvdw,rmet,keyens,          &
+           (imcon,rcut,rlnk,rvdw,rmet,keyens,     &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &
@@ -27,7 +27,7 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -35,6 +35,7 @@ Subroutine two_body_forces                        &
   Use comms_module,      Only : idnode,mxnode,gsum
   Use setup_module
   Use config_module,     Only : cell,volm,sumchg,natms,list,xxx,yyy,zzz
+  Use vnl_module,        Only : l_vnl
   Use ewald_module
   Use vdw_module,        Only : ntpvdw
   Use metal_module,      Only : ntpmet
@@ -47,7 +48,7 @@ Subroutine two_body_forces                        &
                                                                keyfce,nstfce, &
                                                                megfrz,nstrdf, &
                                                                nsteql,nstep
-  Real( Kind = wp ),                        Intent( In    ) :: rcut,rvdw,rmet,&
+  Real( Kind = wp ),                        Intent( In    ) :: rcut,rlnk,rvdw,rmet, &
                                                                alpha,epsq
   Real( Kind = wp ),                        Intent( In    ) :: elrc,virlrc
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent( InOut ) :: elrcm,vlrcm
@@ -121,7 +122,7 @@ Subroutine two_body_forces                        &
 
 ! Set up non-bonded interaction (verlet) list using link cells
 
-  Call link_cell_pairs(imcon,rcut,lbook,megfrz)
+  If (l_vnl) Call link_cell_pairs(imcon,rlnk,lbook,megfrz)
 
   If (ntpmet > 0) Then
 

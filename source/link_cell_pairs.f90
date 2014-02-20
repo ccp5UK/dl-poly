@@ -1,4 +1,4 @@
-Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
+Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,7 +6,8 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2013
+! author    - i.t.todorov february 2014
+! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -14,7 +15,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Use comms_module,       Only : idnode,mxnode,gcheck,gmax,gsum
   Use setup_module
   Use domains_module,     Only : idx,idy,idz, nprx,npry,nprz, &
-                                 nprx_r,npry_r,nprz_r
+                                 r_nprx,r_npry,r_nprz
   Use config_module,      Only : cell,natms,nlast,ltg,lfrzn, &
                                  xxx,yyy,zzz,lexatm,list
   Use development_module, Only : l_dis,r_dis
@@ -23,10 +24,7 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 
   Logical,            Intent( In    ) :: lbook
   Integer,            Intent( In    ) :: imcon,megfrz
-  Real( Kind = wp ) , Intent( In    ) :: rcut
-
-  Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: cut,rcsq
+  Real( Kind = wp ) , Intent( In    ) :: rlnk
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1,match
 
@@ -39,8 +37,8 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
                        ix,iy,iz,ic, ix1,ix2,iy1,iy2,iz1,iz2, &
                        jx,jy,jz,jc
 
-  Real( Kind = wp ) :: rsq,det,rcell(1:9),celprp(1:10), x,y,z, &
-                       dispx,dispy,dispz, xdc,ydc,zdc,nlr2
+  Real( Kind = wp ) :: cut,rcsq,rsq,det,rcell(1:9),celprp(1:10), &
+                       x,y,z, dispx,dispy,dispz, xdc,ydc,zdc, nlr2
 
   Logical,           Dimension( : ), Allocatable :: nir
   Integer,           Dimension( : ), Allocatable :: nix,niy,niz,         &
@@ -49,18 +47,9 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
 
-  If (newjob) Then
-     newjob = .false.
-
 ! image conditions not compliant with DD and link-cell
 
-     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
-
-! Real space cutoff and squared r.s.c.
-
-     cut=rcut+1.0e-6_wp
-     rcsq=rcut**2
-  End If
+  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
 ! Get the dimensional properties of the MD cell
 
@@ -69,16 +58,21 @@ Subroutine link_cell_pairs(imcon,rcut,lbook,megfrz)
 ! halt program if potential cutoff exceeds the minimum half-cell width
 
   det=Min(celprp(7),celprp(8),celprp(9))
-  If (rcut > det/2.0_wp) Then
-     Call warning(3,rcut,det/2.0_wp,0.0_wp)
+  If (rlnk > det/2.0_wp) Then
+     Call warning(3,rlnk,det/2.0_wp,0.0_wp)
      Call error(95)
   End If
 
+! Real space cutoff and squared r.s.c.
+
+  cut=rlnk+1.0e-6_wp
+  rcsq=rlnk**2
+
 ! Calculate the number of link-cells per domain in every direction
 
-  dispx=celprp(7)/(cut*nprx_r)
-  dispy=celprp(8)/(cut*npry_r)
-  dispz=celprp(9)/(cut*nprz_r)
+  dispx=r_nprx*celprp(7)/cut
+  dispy=r_npry*celprp(8)/cut
+  dispz=r_nprz*celprp(9)/cut
 
   nlx=Int(dispx)
   nly=Int(dispy)

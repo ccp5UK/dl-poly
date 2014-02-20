@@ -1,5 +1,5 @@
-Subroutine defects_reference_read_parallel              &
-           (lvcfgr, imconr, celr, l_ind, l_str, megref, &
+Subroutine defects_reference_read_parallel      &
+           (lvcfgr, celr, l_ind, l_str, megref, &
             fast, fh, top_skip, nrefs, namr, indr, xr, yr, zr)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -8,7 +8,7 @@ Subroutine defects_reference_read_parallel              &
 ! in parallel
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush & i.t.todorov december 2013
+! author    - i.j.bush & i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,7 +23,7 @@ Subroutine defects_reference_read_parallel              &
   Implicit None
 
   Logical,                           Intent( In    ) :: l_ind,l_str,fast
-  Integer,                           Intent( In    ) :: lvcfgr,imconr,megref,fh
+  Integer,                           Intent( In    ) :: lvcfgr,megref,fh
   Integer( Kind = MPI_OFFSET_KIND ), Intent( In    ) :: top_skip
   Real( Kind = wp ),                 Intent( In    ) :: celr(1:9)
   Character( Len = 8 ),              Intent(   Out ) :: namr(1:mxatms)
@@ -321,12 +321,8 @@ Subroutine defects_reference_read_parallel              &
 
         End If No_netCDF
 
-! Ensure all atoms are in prescribed simulation cell (DD bound) and broadcast them
-!
-!        Call pbcshift(imconr,celr,to_read,axx_read,ayy_read,azz_read)
-
 ! Assign atoms positions in fractional coordinates to the correct domains
-! (DD bounding)
+! (DD bounding) and broadcast them
 
         n_held=0
         Do i=1,to_read

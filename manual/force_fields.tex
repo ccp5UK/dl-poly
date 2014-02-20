@@ -2776,6 +2776,33 @@ available include:
 \vek{F}_{x} = \frac{m_{k}}{\sum_{k=i}^{j}m_{k}}
 P . \vek{\textrm{Area}}(\perp\textrm{X-}direction)~~~~~: \forall~k=i,..,j~~.
 \end{equation}
+\item Harmonic restraint zone in z-direction: ({\bf zres})
+\begin{equation}
+\vek{F}_{z} = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+A~(z_{com}-z_{max}) & z_{com} > z_{max} \\
+A~(z_{min}-z_{com}) & z_{com} < z_{min}~~,
+\end{array} \right.
+\end{equation}
+where $z_{com}$ is the chosen molecule centre of mass.
+\item Harmonic restraint zone in z-direction - (pull out): ({\bf zrs-})
+\begin{equation}
+\vek{F}_{z} = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+A~(z-z_{max}) & z \ge (z_{max}+z_{min})/2 \\
+A~(z_{min}-z) & z < (z_{max}+z_{min})/2
+\end{array} \right.
+\end{equation}
+\item Harmonic restraint zone in z-direction + (pull in): ({\bf zrs+})
+\begin{equation}
+\vek{F}_{z} = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+A~(z-z_{max}) & z > z_{max} \\
+A~(z_{min}-z) & z < z_{min}
+\end{array} \right.
+\end{equation}
+\item Oscillating electric field:  ({\bf osel})
+\begin{equation}
+\vek{F_{i}} = \vek{F_{i}} + q_{i} . \vek{E} . \sin(2 \pi \omega t)~,
+\end {equation}
+where $t$ is the simulated time.
 \end{enumerate}
 It is recommended that the use of an external field should be
 accompanied by a thermostat\index{thermostat} (this does not apply

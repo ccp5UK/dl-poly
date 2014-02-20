@@ -1,15 +1,15 @@
-Subroutine metal_ld_set_halo()
+Subroutine refresh_halo_positions()
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 routine to arrange exchange of density data between
-! neighbouring domains/nodes
+! dl_poly_4 routine to refresh the halo positioning data between
+! neighbouring domains/nodes when VNL is skipped
 !
 ! Note: all depends on the ixyz halo array set in set_halo, this assumes
 !       that (i) rmet=rcut! as well as (ii) all the error checks in there
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov february 2014
+! author    - i.t.todorov & i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,7 +27,7 @@ Subroutine metal_ld_set_halo()
   fail = 0
   Allocate (ixyz0(1:mxatms), Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_ld_set_halo allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'refresh_halo_ppositions allocation failure, node: ', idnode
      Call error(0)
   End If
   ixyz0(1:nlast) = ixyz(1:nlast)
@@ -38,29 +38,27 @@ Subroutine metal_ld_set_halo()
 
 ! exchange atom data in -/+ x directions
 
-  Call metal_ld_export(-1,mlast,ixyz0)
-  Call metal_ld_export( 1,mlast,ixyz0)
+  Call export_atomic_positions(-1,mlast,ixyz0)
+  Call export_atomic_positions( 1,mlast,ixyz0)
 
 ! exchange atom data in -/+ y directions
 
-  Call metal_ld_export(-2,mlast,ixyz0)
-  Call metal_ld_export( 2,mlast,ixyz0)
+  Call export_atomic_positions(-2,mlast,ixyz0)
+  Call export_atomic_positions( 2,mlast,ixyz0)
 
 ! exchange atom data in -/+ z directions
 
-  Call metal_ld_export(-3,mlast,ixyz0)
-  Call metal_ld_export( 3,mlast,ixyz0)
-
-! check atom totals after data transfer
+  Call export_atomic_positions(-3,mlast,ixyz0)
+  Call export_atomic_positions( 3,mlast,ixyz0)
 
   safe=(mlast == nlast)
   If (mxnode > 1) Call gcheck(safe)
-  If (.not.safe) Call error(96)
+  If (.not.safe) Call error(138)
 
   Deallocate (ixyz0, Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_ld_set_halo deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'referesh_halo_positions deallocation failure, node: ', idnode
      Call error(0)
   End If
 
-End Subroutine metal_ld_set_halo
+End Subroutine refresh_halo_positions

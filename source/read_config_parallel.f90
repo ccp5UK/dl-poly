@@ -1,5 +1,5 @@
-Subroutine read_config_parallel                  &
-           (levcfg, imcon, l_ind, l_str, megatm, &
+Subroutine read_config_parallel                 &
+           (levcfg, dvar, l_ind, l_str, megatm, &
             l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -7,13 +7,13 @@ Subroutine read_config_parallel                  &
 ! dl_poly_4 subroutine for reading in the CONFIG data file in parallel
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush & i.t.todorov december 2013
+! author    - i.j.bush & i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module,   Only : nrite, nconf, half_minus
+  Use setup_module,   Only : nrite, nconf, mxatms, half_minus
   Use domains_module, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
   Use config_module,  Only : cell,natms,atmnam,ltg, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
@@ -24,19 +24,20 @@ Subroutine read_config_parallel                  &
   Implicit None
 
   Logical,                           Intent( In    ) :: l_ind,l_str,l_his,fast,l_xtr
-  Integer,                           Intent( In    ) :: levcfg,imcon,megatm,fh
+  Integer,                           Intent( In    ) :: levcfg,megatm,fh
   Integer( Kind = MPI_OFFSET_KIND ), Intent( In    ) :: top_skip
+  Real( Kind = wp ),                 Intent( In    ) :: dvar
   Real( Kind = wp ),                 Intent(   Out ) :: xhi,yhi,zhi
 
   Logical                :: safe,do_read
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word,forma
-  Integer                :: fail(1:8),i,j,k,                &
-                            idm,ipx,ipy,ipz,indatm,         &
-                            n_read_procs_use,per_read_proc, &
-                            my_read_proc_num,ats_per_proc,  &
-                            recs_per_at,recs_per_proc,      &
-                            wp_vals_per_at,n_loc,           &
+  Integer                :: fail(1:8),i,j,k,max_fail,min_fail, &
+                            idm,ipx,ipy,ipz,indatm,            &
+                            n_read_procs_use,per_read_proc,    &
+                            my_read_proc_num,ats_per_proc,     &
+                            recs_per_at,recs_per_proc,         &
+                            wp_vals_per_at,n_loc,              &
                             to_read,which_read_proc,this_base_proc
   Integer( Kind = ip )   :: n_sk,n_ii,n_jj
   Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz
@@ -363,8 +364,6 @@ Subroutine read_config_parallel                  &
 
 ! Ensure all atoms are in prescribed simulation cell (DD bound)
 !
-!           Call pbcshift(imcon,cell,to_read,axx_read,ayy_read,azz_read)
-
            n_held=0
            Do i=1,to_read
               sxx=rcell(1)*axx_read(i)+rcell(4)*ayy_read(i)+rcell(7)*azz_read(i)
@@ -427,7 +426,7 @@ Subroutine read_config_parallel                  &
               End If
            End Do
 
-! If only detecting box dimensions for imcon == 0 or 6
+! If only detecting box dimensions for imcon == 0 or 6 or imc_n == 6
 
         Else
 
@@ -484,52 +483,66 @@ Subroutine read_config_parallel                  &
 
 ! Assign atoms to correct domains
 
-Dispatch:     Do i=1,n_loc
+              Do i=1,n_loc
                  natms=natms+1
 
 ! Check safety by the upper bound of: atmnam,ltg,xxx,yyy,zzz &
 ! possibly vxx,vyy,vzz & possibly fxx,fyy,fzz as guided by xxx
 
-                 If (natms > Size( xxx )) Then
+                 If (natms <= mxatms) Then
+                    atmnam(natms)=chbuf(i)
+                    ltg(natms)=iwrk(i)
+
+                    xxx(natms)=scatter_buffer(1,i)
+                    yyy(natms)=scatter_buffer(2,i)
+                    zzz(natms)=scatter_buffer(3,i)
+
+                    If (levcfg /=3 ) Then
+                       If (levcfg > 0) Then
+                          vxx(natms)=scatter_buffer(4,i)
+                          vyy(natms)=scatter_buffer(5,i)
+                          vzz(natms)=scatter_buffer(6,i)
+                       Else
+                          vxx(natms)=0.0_wp
+                          vyy(natms)=0.0_wp
+                          vzz(natms)=0.0_wp
+                       End If
+
+                       If (levcfg > 1) Then
+                          fxx(natms)=scatter_buffer(7,i)
+                          fyy(natms)=scatter_buffer(8,i)
+                          fzz(natms)=scatter_buffer(9,i)
+                       Else
+                          fxx(natms)=0.0_wp
+                          fyy(natms)=0.0_wp
+                          fzz(natms)=0.0_wp
+                       End If
+                    End If
+                  Else
                     safe=.false.
-                    Exit Dispatch
                  End If
-
-                 atmnam(natms)=chbuf(i)
-                 ltg(natms)=iwrk(i)
-
-                 xxx(natms)=scatter_buffer(1,i)
-                 yyy(natms)=scatter_buffer(2,i)
-                 zzz(natms)=scatter_buffer(3,i)
-
-                 If (levcfg /=3 ) Then
-                    If (levcfg > 0) Then
-                       vxx(natms)=scatter_buffer(4,i)
-                       vyy(natms)=scatter_buffer(5,i)
-                       vzz(natms)=scatter_buffer(6,i)
-                    Else
-                       vxx(natms)=0.0_wp
-                       vyy(natms)=0.0_wp
-                       vzz(natms)=0.0_wp
-                    End If
-
-                    If (levcfg > 1) Then
-                       fxx(natms)=scatter_buffer(7,i)
-                       fyy(natms)=scatter_buffer(8,i)
-                       fzz(natms)=scatter_buffer(9,i)
-                    Else
-                       fxx(natms)=0.0_wp
-                       fyy(natms)=0.0_wp
-                       fzz(natms)=0.0_wp
-                    End If
-                 End If
-              End Do Dispatch
+              End Do
            End Do
 
 ! Check if all is dispatched fine
 
-           If (mxnode > 1) Call gcheck(safe)
-           If (.not.safe) Call error(45)
+           max_fail=natms
+           min_fail=natms
+           If (mxnode > 1) Then
+              Call gcheck(safe)
+              Call gmax(max_fail)
+              Call gmin(min_fail)
+           End If
+           If (.not.safe) Then
+              If (idnode == 0) Then
+  Write(nrite,'(/,1x,a,i0)')  '*** warning - next error due to maximum number of atoms per domain set to : ', mxatms
+  Write(nrite,'(1x,2(a,i0))') '***           but maximum & minumum numbers of atoms per domain asked for : ', &
+       max_fail, ' & ', min_fail
+  Write(nrite,'(1x,a,i0)')    '***           estimated denvar value for passing this stage safely is : ', &
+       Nint((dvar*(Real(max_fail,wp)/Real(mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
+              End If
+              Call error(45)
+           End If
 
         End If Extent_2
 
@@ -541,7 +554,7 @@ Dispatch:     Do i=1,n_loc
 
   End Do
 
-! If only detecting box dimensions for imcon == 0 or 6
+! If only detecting box dimensions for imcon == 0 or 6 or imc_n == 6
 
   If (l_xtr) Then
      Call gmax(xhi)

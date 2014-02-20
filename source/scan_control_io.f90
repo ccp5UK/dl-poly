@@ -5,7 +5,7 @@ Subroutine scan_control_io()
 ! dl_poly_4 subroutine for scanning the I/O options in the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov february 2014
 ! amended   - i.j.bush october 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -13,7 +13,6 @@ Subroutine scan_control_io()
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gcheck
   Use setup_module,  Only : nread,nrite
-  Use config_module, Only : imc_n
   Use parse_module,  Only : get_line,get_word,lower_case,strip_blanks,word_2_real
   Use io_module,     Only : io_set_parameters,        &
                             io_get_parameters,        &
@@ -77,18 +76,9 @@ Subroutine scan_control_io()
      Call lower_case(record)
      Call get_word(record,word)
 
-! read slab option
-! limiting DD slicing in z direction to 2 for load balancing purposes
-! this is really a pre-scan in order to get the MD box dimensions
-! when scan_config before the option is read again in scan_control
-
-     If      (word(1:4) == 'slab') Then
-
-        imc_n=6
-
 ! io options
 
-     Else If (word(1:2) == 'io' ) Then
+     If      (word(1:2) == 'io' ) Then
 
         Call get_word( record, word )
 

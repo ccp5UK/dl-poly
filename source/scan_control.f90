@@ -1,8 +1,8 @@
-Subroutine scan_control                              &
-           (mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter, &
-           imcon,imc_n,cell,xhi,yhi,zhi,             &
-           l_str,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,  &
-           dvar,rcut,rbin,mxstak,                    &
+Subroutine scan_control                                  &
+           (mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter,     &
+           imcon,imc_n,cell,xhi,yhi,zhi,                 &
+           l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind, &
+           rcut,rpad,rbin,mxstak,                        &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -10,7 +10,8 @@ Subroutine scan_control                              &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov february 2013
+! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,15 +25,15 @@ Subroutine scan_control                              &
   Implicit None
 
   Logical,           Intent( InOut ) :: l_n_e
-  Logical,           Intent(   Out ) :: l_str,l_vv,l_n_r,lzdn,l_n_v,l_ind
+  Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,imcon
-  Integer,           Intent(   Out ) :: imc_n,mxstak, &
-                                        nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
+  Integer,           Intent( InOut ) :: imc_n
+  Integer,           Intent(   Out ) :: mxstak,nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: rvdw,rmet,cell(1:9)
-  Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rbin,alpha
+  Real( Kind = wp ), Intent(   Out ) :: rcut,rpad,rbin,alpha
 
-  Logical                :: carry,safe,lrcut,lrvdw,lrmet, &
+  Logical                :: carry,safe,lrcut,lrpad,lrvdw,lrmet, &
                             lelec,lrdf,lvdw,lmet,l_n_m,lter,l_exp
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
@@ -48,13 +49,13 @@ Subroutine scan_control                              &
 
   l_ind=.true.
 
-! density variation parameter default
-
-  dvar = 1.0_wp
-
 ! strict flag
 
   l_str = .true.
+
+! replay history option (real dynamics = no replay)
+
+  lsim = .true. ! don't replay history
 
 ! slab option default
 
@@ -86,6 +87,9 @@ Subroutine scan_control                              &
 
   lrcut = .false.
   rcut  = 0.0_wp
+
+  lrpad = .false.
+  rpad  = 0.0_wp
 
   rbin1 = 0.05_wp
   rbin  = rbin1
@@ -145,22 +149,23 @@ Subroutine scan_control                              &
 
         If (imcon /= 0 .and. imcon /= 6) imc_n=6
 
-! read density variation option
-
-     Else If (word(1:7) == 'densvar') Then
-
-        Call get_word(record,word)
-        dvar = word_2_real(word)
-        dvar = 1.0_wp + Abs(dvar)/100.0_wp
-
 ! read real space cut off
 
      Else If (word(1:3) == 'cut' .or. word(1:4) == 'rcut') Then
 
         lrcut = .true.
         Call get_word(record,word)
-        rcut = word_2_real(word)
+        rcut = Abs(word_2_real(word))
         lrcut = (rcut > zero_plus) ! if zero or nothing is entered
+
+! read real space cut off
+
+     Else If (word(1:3) == 'pad' .or. word(1:4) == 'rpad') Then
+
+        lrpad = .true.
+        Call get_word(record,word)
+        rpad = Abs(word_2_real(word))
+        lrpad = (rpad > zero_plus) ! if zero or nothing is entered
 
 ! read vdw cutoff
 
@@ -172,7 +177,7 @@ Subroutine scan_control                              &
         If (rvdw > 1.0e-6_wp) Then
            rvdw = Min(rvdw,word_2_real(word))
         Else
-           rvdw = word_2_real(word)
+           rvdw = Abs(word_2_real(word))
         End If
         lrvdw = (rvdw > zero_plus) ! if zero or nothing is entered
 
@@ -183,12 +188,18 @@ Subroutine scan_control                              &
         Call get_word(record,word)
         rbin = Abs(word_2_real(word))
 
+! read replay history option
+
+     Else If (word(1:6) == 'replay') Then
+
+        lsim = .false.
+
 ! read number of timesteps
 
      Else If (word(1:5) == 'steps') Then
 
         Call get_word(record,word)
-        nstrun = Nint(word_2_real(word))
+        nstrun = Nint(Abs(word_2_real(word)))
 
 ! read expansion option
 
@@ -203,7 +214,7 @@ Subroutine scan_control                              &
         Call get_word(record,word)
         If (word(1:4) == 'size') Call get_word(record,word)
 
-        mxstak = Nint(word_2_real(word))
+        mxstak = Nint(Abs(word_2_real(word)))
 
 ! read MSD option
 
@@ -404,8 +415,8 @@ Subroutine scan_control                              &
               Call dcell(cell,celprp)
 
               Call get_word(record,word)
-              eps = word_2_real(word)
-              eps = Max(Min(Abs(eps),0.5_wp),1.0e-20_wp)
+              eps = Abs(word_2_real(word))
+              eps = Max(Min(eps,0.5_wp),1.0e-20_wp)
 
               Call get_word(record,word)
               mxspl = Abs(Nint(word_2_real(word)))
@@ -428,7 +439,7 @@ Subroutine scan_control                              &
            Else
 
               If (word(1:3) == 'sum') Call get_word(record,word)
-              alpha = word_2_real(word)
+              alpha = Abs(word_2_real(word))
 
               Call get_word(record,word)
               kmaxa1 = itmp*Nint(Abs(word_2_real(word)))
@@ -591,9 +602,11 @@ Subroutine scan_control                              &
 
   If (idnode == 0) Close(Unit=nread)
 
-! When expanding and not running the small system prepare to exit gracefully
+! When not having dynamics or prepared to terminate
+! expanding and not running the small system prepare to exit gracefully
 
   l_trm = (l_exp .and. nstrun == 0)
+  If (((.not.lsim) .or. l_trm) .and. lrpad) rpad=0.0_wp
 
   Return
 

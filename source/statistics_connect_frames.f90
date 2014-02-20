@@ -11,10 +11,9 @@ Subroutine statistics_connect_frames()
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds_f90
   Use comms_module,  Only : mxnode,idnode,gsum
   Use setup_module,  Only : nrite,mxstak
-  Use config_module, Only : natms,ixyz,lsi,lsa,ltg
+  Use config_module, Only : natms,ixyz,lsa
 
   Use statistics_module
 

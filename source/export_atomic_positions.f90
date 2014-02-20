@@ -1,15 +1,12 @@
-Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
+Subroutine export_atomic_positions(mdir,mlast,ixyz0)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 routine to export atomic REFERENCE data in domain boundary
-! regions for halo formation
-!
-! all particle coordinates are in reduced space with origin localised
-! onto this node (idnode)
+! dl_poly_4 routine to export atomic positions in domain boundary regions
+! for halo refresh
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! amended   - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,30 +14,30 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
   Use comms_module
   Use setup_module,  Only : nrite,mxatms,mxbfxp
   Use domains_module
+  Use config_module, Only : cell,xxx,yyy,zzz
 
   Implicit None
 
-  Integer,              Intent( In    ) :: mdir
-  Integer,              Intent( InOut ) :: ixyz(1:mxatms),nlrefs
-  Character( Len = 8 ), Intent( InOut ) :: namr(1:mxatms)
-  Integer,              Intent( InOut ) :: indr(1:mxatms)
-  Real( Kind = wp ),    Intent( InOut ) :: xr(1:mxatms),yr(1:mxatms),zr(1:mxatms)
+  Integer,           Intent( In    ) :: mdir
+  Integer,           Intent( InOut ) :: mlast,ixyz0(1:mxatms)
+
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez
   Integer           :: fail,iadd,limit,iblock,          &
                        i,j,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
                        jdnode,kdnode,imove,jmove,itmp
+  Real( Kind = wp ) :: uuu,vvv,www,xadd,yadd,zadd
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
 ! Number of transported quantities per particle
 
-  iadd=13
+  iadd=3
 
   fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_reference_export allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'export_atomic_positions allocation failure, node: ', idnode
      Call error(0)
   End If
 
@@ -112,8 +109,18 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
      jdnode = map(6)
      kdnode = map(5)
   Else
-     Call error(557)
+     Call error(46)
   End If
+
+! Calculate PBC shift vector due to possible wrap around
+
+  uuu=0.0_wp ; If (lsx) uuu=+1.0_wp ; If (lex) uuu=-1.0_wp
+  vvv=0.0_wp ; If (lsy) vvv=+1.0_wp ; If (ley) vvv=-1.0_wp
+  www=0.0_wp ; If (lsz) www=+1.0_wp ; If (lez) www=-1.0_wp
+
+  xadd = cell(1)*uuu+cell(4)*vvv+cell(7)*www
+  yadd = cell(2)*uuu+cell(5)*vvv+cell(8)*www
+  zadd = cell(3)*uuu+cell(6)*vvv+cell(9)*www
 
 ! Initialise counters for length of sending and receiving buffers
 ! imove and jmove are the actual number of particles to get haloed
@@ -127,17 +134,17 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
 
 ! LOOP OVER ALL PARTICLES ON THIS NODE
 
-  Do i=1,nlrefs
+  Do i=1,mlast
 
 ! If the particle is within the remaining 'inverted halo' of this domain
 
-     If (ixyz(i) > 0) Then
+     If (ixyz0(i) > 0) Then
 
 ! Get the necessary halo indices
 
-        ix=Mod(ixyz(i),10)           ! [0,1,2,3=1+2]
-        iy=Mod(ixyz(i)-ix,100)       ! [0,10,20,30=10+20]
-        iz=Mod(ixyz(i)-(ix+iy),1000) ! [0,100,200,300=100+200]
+        ix=Mod(ixyz0(i),10)           ! [0,1,2,3=1+2]
+        iy=Mod(ixyz0(i)-ix,100)       ! [0,10,20,30=10+20]
+        iz=Mod(ixyz0(i)-(ix+iy),1000) ! [0,100,200,300=100+200]
 
 ! Filter the halo index for the selected direction
 
@@ -156,30 +163,11 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
 
            If ((imove+iadd) <= iblock) Then
 
-! pack positions and apply possible wrap-around corrections for receiver
+! pack positions and apply possible PBC shift for the receiver
 
-              buffer(imove+ 1)=xr(i)
-              If (lsx) buffer(imove+1)=buffer(imove+1)+1.0_wp
-              If (lex) buffer(imove+1)=buffer(imove+1)-1.0_wp
-              buffer(imove+ 2)=yr(i)
-              If (lsy) buffer(imove+2)=buffer(imove+2)+1.0_wp
-              If (ley) buffer(imove+2)=buffer(imove+2)-1.0_wp
-              buffer(imove+ 3)=zr(i)
-              If (lsz) buffer(imove+3)=buffer(imove+3)+1.0_wp
-              If (lez) buffer(imove+3)=buffer(imove+3)-1.0_wp
-
-! pack config indexing, site name and remaining halo indexing arrays
-
-              buffer(imove+ 4)=Real(indr(i),wp)
-              buffer(imove+ 5)=Real(Ichar(namr(i)(1:1)),wp)
-              buffer(imove+ 6)=Real(Ichar(namr(i)(2:2)),wp)
-              buffer(imove+ 7)=Real(Ichar(namr(i)(3:3)),wp)
-              buffer(imove+ 8)=Real(Ichar(namr(i)(4:4)),wp)
-              buffer(imove+ 9)=Real(Ichar(namr(i)(5:5)),wp)
-              buffer(imove+10)=Real(Ichar(namr(i)(6:6)),wp)
-              buffer(imove+11)=Real(Ichar(namr(i)(7:7)),wp)
-              buffer(imove+12)=Real(Ichar(namr(i)(8:8)),wp)
-              buffer(imove+13)=Real(ixyz(i)-jxyz,wp)
+              buffer(imove+1)=xxx(i)+xadd
+              buffer(imove+2)=yyy(i)+yadd
+              buffer(imove+3)=zzz(i)+zadd
 
            Else
 
@@ -201,14 +189,14 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
      itmp=Merge(2,1,mxnode > 1)*imove
      If (mxnode > 1) Call gmax(itmp)
      Call warning(150,Real(itmp,wp),Real(limit,wp),0.0_wp)
-     Call error(558)
+     Call error(54)
   End If
 
 ! exchange information on buffer sizes
 
   If (mxnode > 1) Then
-     Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,DefExport_tag,dlp_comm_world,request,ierr)
-     Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,DefExport_tag,dlp_comm_world,ierr)
+     Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Export_tag,dlp_comm_world,request,ierr)
+     Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,Export_tag,dlp_comm_world,ierr)
      Call MPI_WAIT(request,status,ierr)
   Else
      jmove=imove
@@ -216,20 +204,20 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
 
 ! Check for array bound overflow (can arrays cope with incoming data)
 
-  safe=((nlrefs+jmove/iadd) <= mxatms)
+  safe=((mlast+jmove/iadd) <= mxatms)
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe) Then
-     itmp=nlrefs+jmove/iadd
+     itmp=mlast+jmove/iadd
      If (mxnode > 1) Call gmax(itmp)
      Call warning(160,Real(itmp,wp),Real(mxatms,wp),0.0_wp)
-     Call error(559)
+     Call error(56)
   End If
 
 ! exchange buffers between nodes (this is a MUST)
 
   If (mxnode > 1) Then
-     Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,DefExport_tag,dlp_comm_world,request,ierr)
-     Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,DefExport_tag,dlp_comm_world,ierr)
+     Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Export_tag,dlp_comm_world,request,ierr)
+     Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Export_tag,dlp_comm_world,ierr)
      Call MPI_WAIT(request,status,ierr)
   End If
 
@@ -237,34 +225,21 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
 
   j=Merge(iblock,0,mxnode > 1)
   Do i=1,jmove/iadd
-     nlrefs=nlrefs+1
+     mlast=mlast+1
 
 ! unpack positions
 
-     xr(nlrefs)=buffer(j+1)
-     yr(nlrefs)=buffer(j+2)
-     zr(nlrefs)=buffer(j+3)
-
-! unpack config indexing, site name halo indexing arrays
-
-     indr(nlrefs)=Nint(buffer(j+4))
-     namr(nlrefs)(1:1)=Char(Nint(buffer(j+ 5)))
-     namr(nlrefs)(2:2)=Char(Nint(buffer(j+ 6)))
-     namr(nlrefs)(3:3)=Char(Nint(buffer(j+ 7)))
-     namr(nlrefs)(4:4)=Char(Nint(buffer(j+ 8)))
-     namr(nlrefs)(5:5)=Char(Nint(buffer(j+ 9)))
-     namr(nlrefs)(6:6)=Char(Nint(buffer(j+10)))
-     namr(nlrefs)(7:7)=Char(Nint(buffer(j+11)))
-     namr(nlrefs)(8:8)=Char(Nint(buffer(j+12)))
-     ixyz(nlrefs)=Nint(buffer(j+13))
+     xxx(mlast)=buffer(j+1)
+     yyy(mlast)=buffer(j+2)
+     zzz(mlast)=buffer(j+3)
 
      j=j+iadd
   End Do
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_reference_export deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'export_atomic_positions deallocation failure, node: ', idnode
      Call error(0)
   End If
 
-End Subroutine defects_reference_export
+End Subroutine export_atomic_positions

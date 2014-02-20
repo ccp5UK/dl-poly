@@ -27,7 +27,7 @@ Subroutine check_config &
 
   Logical, Save     :: newjob = .true.
   Logical           :: safe
-  Integer           :: fail,i,k,l,m, &
+  Integer           :: fail,k,l,m, &
                        indatm,totatm,mol_sit,loc_ind
   Real( Kind = wp ) :: rcell(1:9),det
 

@@ -12,7 +12,7 @@ Subroutine build_book_intra                   &
 ! torsion and improper torsion angles, and inversion angles
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2013
+! author    - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -62,7 +62,7 @@ Subroutine build_book_intra                   &
   Integer :: fail(1:2),imcon,                    &
              i,j,isite,itmols,imols,             &
              nsatm,neatm,nlapm,local_index,      &
-             iat0,jat0,kat0,lat0,                &
+             iat0,jat0,kat0,lat0,mat0,nat0,      &
              iatm,jatm,katm,latm,matm,natm,      &
              jshels,kshels,lshels,mshels,        &
              jconst,kconst,lconst,lpmf,          &
@@ -572,13 +572,28 @@ Subroutine build_book_intra                   &
               jat0=local_index(jatm,nlast,lsi,lsa)
               kat0=local_index(katm,nlast,lsi,lsa)
               lat0=local_index(latm,nlast,lsi,lsa)
+              If (lx_dih) Then
+                 mat0=local_index(matm,nlast,lsi,lsa)
+                 nat0=local_index(natm,nlast,lsi,lsa)
+              Else
+                 mat0=0
+                 nat0=0
+              End If
 
               If (iat0 > natms) iat0=0
               If (jat0 > natms) jat0=0
               If (kat0 > natms) kat0=0
               If (lat0 > natms) lat0=0
+              If (lx_dih) Then
+                 If (mat0 > natms) mat0=0
+                 If (nat0 > natms) nat0=0
+              Else
+                 mat0=0
+                 nat0=0
+              End If
 
-              If (iat0 > 0 .or. jat0 > 0 .or. kat0 > 0 .or. lat0 > 0) Then
+              If (iat0 > 0 .or. jat0 > 0 .or. kat0 > 0 .or. lat0 > 0 .or. & ! lx_dih=.false.
+                  mat0 > 0 .or. nat0 > 0) Then                              ! lx_dix=.true.
                  jdihed=jdihed+1
                  If (jdihed <= mxdihd) Then
                     listdih(0,jdihed)=ldihed+kdihed
@@ -641,6 +656,34 @@ Subroutine build_book_intra                   &
   "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,lat0), &
   "***           but maximum length allowed: ", mxfdih-1,                     &
   "***           for particle (global ID #): ", latm,                         &
+  "***           on mol. site (local  ID #): ", lstdih(4,ldihed+kdihed),      &
+  "***           of unit      (local  ID #): ", ldihed,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (mat0 > 0) Then
+                       Call tag_legend(safe(1),mat0,jdihed,legdih,mxfdih)
+                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
+  "*** warning - too many dihedral type neigbours !!! ***",                   &
+  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,mat0), &
+  "***           but maximum length allowed: ", mxfdih-1,                     &
+  "***           for particle (global ID #): ", matm,                         &
+  "***           on mol. site (local  ID #): ", lstdih(4,ldihed+kdihed),      &
+  "***           of unit      (local  ID #): ", ldihed,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (nat0 > 0) Then
+                       Call tag_legend(safe(1),nat0,jdihed,legdih,mxfdih)
+                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
+  "*** warning - too many dihedral type neigbours !!! ***",                   &
+  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,nat0), &
+  "***           but maximum length allowed: ", mxfdih-1,                     &
+  "***           for particle (global ID #): ", natm,                         &
   "***           on mol. site (local  ID #): ", lstdih(4,ldihed+kdihed),      &
   "***           of unit      (local  ID #): ", ldihed,                       &
   "***           in molecule  (local  ID #): ", imols,                        &
@@ -879,11 +922,22 @@ Subroutine build_book_intra                   &
      jatm=listdih(2,i)
      katm=listdih(3,i)
      latm=listdih(4,i)
+     If (lx_dih) Then
+        matm=listdih(5,i)
+        natm=listdih(6,i)
+     End If
 
      iat0=local_index(iatm,nlast,lsi,lsa)
      jat0=local_index(jatm,nlast,lsi,lsa)
      kat0=local_index(katm,nlast,lsi,lsa)
      lat0=local_index(latm,nlast,lsi,lsa)
+     If (lx_dih) Then
+        mat0=local_index(matm,nlast,lsi,lsa)
+        nat0=local_index(natm,nlast,lsi,lsa)
+     Else
+        mat0=0
+        nat0=0
+     End If
 
      If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
         mshels=mshels+1
@@ -899,9 +953,20 @@ Subroutine build_book_intra                   &
         mshels=mshels+1
         iwrk(mshels)=katm
      End If
+
      If (lat0 > natms .and. (.not.Any(iwrk(1:mshels) == latm))) Then
         mshels=mshels+1
         iwrk(mshels)=latm
+     End If
+
+     If (mat0 > natms .and. (.not.Any(iwrk(1:mshels) == matm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=matm
+     End If
+
+     If (nat0 > natms .and. (.not.Any(iwrk(1:mshels) == natm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=natm
      End If
   End Do
   Do i=1,ntinv
@@ -1151,15 +1216,19 @@ Subroutine build_book_intra                   &
               jatm=lstdih(2,ldihed+kdihed)+isite
               katm=lstdih(3,ldihed+kdihed)+isite
               latm=lstdih(4,ldihed+kdihed)+isite
-              If (lx_dih) Then
-                 matm=lstdih(5,ldihed+kdihed)+isite
-                 natm=lstdih(6,ldihed+kdihed)+isite
-              End If
 
-              If ( Any(iwrk(1:mshels) == iatm) .or. &
-                   Any(iwrk(1:mshels) == jatm) .or. &
-                   Any(iwrk(1:mshels) == katm) .or. &
+              If ( Any(iwrk(1:mshels) == iatm) .or.    &
+                   Any(iwrk(1:mshels) == jatm) .or.    &
+                   Any(iwrk(1:mshels) == katm) .or.    &
                    Any(iwrk(1:mshels) == latm) ) Then
+
+                 If (lx_dih) Then
+                    matm=lstdih(5,ldihed+kdihed)+isite
+                    natm=lstdih(6,ldihed+kdihed)+isite
+                    If ( .not.(Any(iwrk(1:mshels) == jatm) .or. &
+                               Any(iwrk(1:mshels) == katm)) ) Exit
+                 End If
+
                  jdihed=jdihed+1
                  If (jdihed <= mxdihd) Then
                     listdih(0,jdihed)=ldihed+kdihed
@@ -1305,6 +1374,10 @@ Subroutine build_book_intra                   &
      jatm=listdih(2,i)
      katm=listdih(3,i)
      latm=listdih(4,i)
+     If (lx_dih) Then
+        matm=listdih(5,i)
+        natm=listdih(6,i)
+     End If
 
      If (.not.Any(iwrk(1:mshels) == iatm)) Then
         mshels=mshels+1
@@ -1324,6 +1397,18 @@ Subroutine build_book_intra                   &
      If (.not.Any(iwrk(1:mshels) == latm)) Then
         mshels=mshels+1
         iwrk(mshels)=latm
+     End If
+
+     If (lx_dih) Then
+        If (.not.Any(iwrk(1:mshels) == matm)) Then
+           mshels=mshels+1
+           iwrk(mshels)=matm
+        End If
+
+        If (.not.Any(iwrk(1:mshels) == natm)) Then
+           mshels=mshels+1
+           iwrk(mshels)=natm
+        End If
      End If
   End Do
   Do i=ntinv+1,ntinv1
@@ -1418,7 +1503,7 @@ Subroutine build_book_intra                   &
 
   ntshl2 =jshels
 
-  If (lx_dih) ntdihd=ntdihd1 ! extend the dihedrals' set
+!  If (lx_dih) ntdihd=ntdihd1 ! extend the dihedrals' set
 
 400 Continue
 

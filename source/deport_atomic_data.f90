@@ -9,7 +9,8 @@ Subroutine deport_atomic_data(mdir,lbook)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov october 2013
+! amended   - i.t.todorov february 2014
+! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -59,7 +60,7 @@ Subroutine deport_atomic_data(mdir,lbook)
                        jrigid,krigid,jteths,kteths,             &
                        jbonds,kbonds,jangle,kangle,             &
                        jdihed,kdihed,jinver,kinver
-  Real( Kind = wp ) :: uuu,vvv,www
+  Real( Kind = wp ) :: uuu,vvv,www,xadd,yadd,zadd
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
   Integer,           Dimension( : ), Allocatable :: i1pmf,i2pmf
@@ -137,6 +138,16 @@ Subroutine deport_atomic_data(mdir,lbook)
   Else
      Call error(42)
   End If
+
+! Calculate PBC shift vector due to possible wrap around
+
+  uuu=0.0_wp ; If (lsx) uuu=+1.0_wp ; If (lex) uuu=-1.0_wp
+  vvv=0.0_wp ; If (lsy) vvv=+1.0_wp ; If (ley) vvv=-1.0_wp
+  www=0.0_wp ; If (lsz) www=+1.0_wp ; If (lez) www=-1.0_wp
+
+  xadd = cell(1)*uuu+cell(4)*vvv+cell(7)*www
+  yadd = cell(2)*uuu+cell(5)*vvv+cell(8)*www
+  zadd = cell(3)*uuu+cell(6)*vvv+cell(9)*www
 
 ! Initialise counters for length of sending and receiving buffers
 ! buffer(1) and buffer(iblock+1) contain the actual number of
@@ -285,15 +296,11 @@ Subroutine deport_atomic_data(mdir,lbook)
 
         If (imove+18 <= iblock) Then
 
-! pack positions and apply possible wrap-around corrections for the receiver
+! pack positions and apply possible PBC shift for the receiver
 
-           uuu=0.0_wp ; If (lsx) uuu=+1.0_wp ; If (lex) uuu=-1.0_wp
-           vvv=0.0_wp ; If (lsy) vvv=+1.0_wp ; If (ley) vvv=-1.0_wp
-           www=0.0_wp ; If (lsz) www=+1.0_wp ; If (lez) www=-1.0_wp
-
-           buffer(imove+1)=xxx(i)+cell(1)*uuu+cell(4)*vvv+cell(7)*www
-           buffer(imove+2)=yyy(i)+cell(2)*uuu+cell(5)*vvv+cell(8)*www
-           buffer(imove+3)=zzz(i)+cell(3)*uuu+cell(6)*vvv+cell(9)*www
+           buffer(imove+1)=xxx(i)+xadd
+           buffer(imove+2)=yyy(i)+yadd
+           buffer(imove+3)=zzz(i)+zadd
 
 ! pack velocities
 
@@ -713,7 +720,7 @@ Subroutine deport_atomic_data(mdir,lbook)
                        buffer(imove)=Real(listdih(k,kk),wp)
                     End Do
                  Else
-                    imove=imove+5
+                    imove=imove+l+1
                     safe=.false.
                  End If
               End Do

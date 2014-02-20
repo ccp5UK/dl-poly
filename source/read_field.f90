@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2013
+! author    - i.t.todorov february 2014
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -1881,7 +1881,6 @@ Subroutine read_field                   &
 ! default the unshelled cores of 1 or/and 4 to the corresponding 5 & 6
 
            If (lx_dih) Then
-              ub_dih=6 ! track more, 4 is the default in dihedrals_module
               ndihed=0 ! initialise unshelled units
               Do itmols=1,ntpmls
                  Do idih=1,numdih(itmols)
@@ -2960,6 +2959,12 @@ Subroutine read_field                   &
                  '***           a manifestation of the "flying ice-cube" effect !!! ***'
               l_vom=.false. ! exclude COM momentum rescaling by default
            End If
+        Else If (keyword == 'zres') Then
+           keyfld=9
+        Else If (keyword == 'zrs-') Then
+           keyfld=10
+        Else If (keyword == 'zrs+') Then
+           keyfld=11
         Else
 
            If (idnode == 0) Write(nrite,'(/,1x,a)') keyword
@@ -2982,7 +2987,7 @@ Subroutine read_field                   &
 
 ! convert to internal units
 
-        If (keyfld == 1 .or. keyfld == 4 .or. keyfld == 5) Then
+        If      (keyfld == 1 .or. keyfld == 4 .or. keyfld == 5) Then
            If (.not.lunits) Call error(6)
 
            Do i=1,3
@@ -2993,6 +2998,8 @@ Subroutine read_field                   &
         Else If (keyfld == 8) Then
            prmfld(3) = prmfld(3)/prsunt ! piston pressure specified in k-atm
            prmfld(3) = prmfld(3)*cell(5)*cell(9) ! convert to force
+        Else If (keyfld == 9 .or. keyfld == 10 .or. keyfld == 11) Then
+           prmfld(3) = prmfld(3)*engunit
         End If
 
         If (idnode == 0) Then

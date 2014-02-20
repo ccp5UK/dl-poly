@@ -30,7 +30,7 @@ Subroutine statistics_connect_spread(mdir)
   Logical           :: safe,stay,move
   Integer           :: fail,iblock,jdnode,kdnode,               &
                        imove,jmove,kmove,keep,send,             &
-                       i,j,k,l,jj,kk,ll,jxyz,ix,iy,iz,kx,ky,kz, &
+                       i,j,l,jj,kk,jxyz,ix,iy,iz,kx,ky,kz, &
                        newatm
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer

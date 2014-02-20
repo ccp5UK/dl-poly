@@ -20,9 +20,6 @@ Module statistics_module
                                           ntprdf = 0 , &
                                           natms0 = 0
 
-  Real( Kind = wp ),              Save :: pass(1:5) = 0.0_wp
-
-
   Integer,           Allocatable, Save :: lstrdf(:)
 
   Real( Kind = wp ), Allocatable, Save :: xin(:),yin(:),zin(:)
@@ -41,7 +38,8 @@ Module statistics_module
   Real( Kind = wp ), Allocatable, Save :: stpval0(:),stpvl00(:),sumval0(:),ssqval0(:)
   Real( Kind = wp ), Allocatable, Save :: zumval0(:),ravval0(:),stkval0(:,:)
 
-  Public :: allocate_statistics_arrays, allocate_statistics_connect_arrays
+  Public :: allocate_statistics_arrays, allocate_statistics_connect_arrays, &
+            deallocate_statistics_connect_arrays
 
 Contains
 
@@ -79,7 +77,7 @@ Contains
   Subroutine allocate_statistics_connect_arrays()
 
     Use comms_module, Only : mxnode
-    Use setup_module, Only : mxatdm,mxnstk,mxstak
+    Use setup_module, Only : mxatdm,mxstak
 
     Implicit None
 
@@ -103,7 +101,6 @@ Contains
   Subroutine deallocate_statistics_connect_arrays()
 
     Use comms_module, Only : mxnode
-    Use setup_module, Only : mxatdm,mxnstk,mxstak
 
     Implicit None
 

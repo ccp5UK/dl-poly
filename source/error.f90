@@ -494,6 +494,10 @@ Subroutine error(kode)
 
         Write(nrite,'(/,1x,a)') 'error - inversion angle unit diameter > rcut (the system cutoff)'
 
+     Else If (kode ==  138) Then
+
+        Write(nrite,'(/,1x,a)') 'error - incorrect atom totals/density assignments in refresh_halo_positions'
+
      Else If (kode ==  141) Then
 
         Write(nrite,'(/,1x,a)') 'error - duplicate metal potential specified'

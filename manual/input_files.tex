@@ -228,7 +228,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf coul}omb                                \> calculate electrostatic forces using direct Coulomb sum\index{direct Coulomb sum}\index{potential!electrostatics} \\
 \>                                              \> \\
-\> {\bf cut}off $f$                             \> set required long-ranged interactions\index{potential!electrostatics} cutoff, $r_{\rm cut}$, to $f$ \AA~ \\
+\> {\bf cut}off $f$ ($\equiv$ {\bf rcut} $f$)   \> set required long-ranged interactions\index{potential!electrostatics} cutoff, $r_{\rm cut}$, to $f$ \AA~ \\
 \>                                              \> \\
 \> {\bf defe}cts $i~j~f$                        \> write defects trajectory file, DEFECTS, with controls: \\
 \>                                              \> $i~=$ start timestep for dumping defects configurations \\
@@ -475,6 +475,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> $f~=~0.005$); the CGM minimised configuration is saved \\
 \>                                              \> in a file, CFGMIN which has the same format as CONFIG \\
 \>                                              \> \\
+\> {\bf pad}ding $f$  ($\equiv$ {\bf rpad} $f$) \> set optional padding to the major cutoff, \\
+\>                                              \> $r_{\rm cut}$, to $f$ \AA~ ($0.2~\ge~f$, default $f~=~0$) \\
+\>                                              \> \\
 \> {\bf pres}sure $f$                           \> set required system pressure to $f$ katms \\
 \>                                              \> (target pressure for constant pressure\index{units!pressure} ensembles) \\
 \>                                              \> \\
@@ -527,8 +530,13 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> system temperature (i.e. begin a new simulation from \\
 \>                                              \> older run with temperature reset, REVOLD is not used) \\
 \>                                              \> \\
+\> {\bf rcut} $f$  ($\equiv$ {\bf cut}off $f$)  \> set required long-ranged interactions\index{potential!electrostatics} cutoff, $r_{\rm cut}$, to $f$ \AA~ \\
+\>                                              \> \\
 \> {\bf rlxtol} $f$                             \> set tolerance for relaxed shell model to $f$ \\
 \>                                              \> (default $f~=~1$ in D~\AA~~ps$^{-2}$) \\
+\>                                              \> \\
+\> {\bf rpad} $f$  ($\equiv$ {\bf pad}ding $f$) \> set optional padding to the major cutoff, \\
+\>                                              \> $r_{\rm cut}$, to $f$ \AA~ ($0.2~\ge~f$, default $f~=~0$) \\
 \>                                              \> \\
 \> {\bf rvdw} (cutoff) $f$                      \> set required short-ranged interactions cutoff to $f$ \AA \\
 \>                                              \> \\
@@ -648,8 +656,8 @@ directives.
 \item A number of the directives (or their {\bf mutually
 exclusive} alternatives) are {\bf mandatory}:
 \begin{enumerate}
-\item {\bf cut}: specifying the short range forces cutoff.  {\bf
-It is compulsory in all circumstances as all \D algorithms are
+\item {\bf rcut} ($\equiv$ {\bf cut}): specifying the short range forces cutoff.
+{\bf It is compulsory in all circumstances as all \D algorithms are
 directly or indirectly dependent on it.}
 \item {\bf temp} or {\bf zero}: specifying the system temperature
 (not mutually exclusive but if {\bf temp} has to proceed
@@ -668,9 +676,9 @@ mutually exclusive from one another.  {\bf If none is specified
 then none is applied!}
 \end{enumerate}
 
-\item Some directives are optional.  If not specified \D will take
-default values if necessary.  (The defaults are specified above in
-the list of directives.)  However fail-safe \D is, not always will
+\item Some directives are optional.  If not specified \D may give
+default values if necessary.  (Some but not all defaults are specified
+above in the list of directives.)  However fail-safe \D is, not always will
 it assume a default value for certain parameters.  To enable \D to
 be even more liberal in the fail-safe features, users are recommended
 to use {\bf no strict} option.
@@ -1265,6 +1273,26 @@ in HOSTORF that CONTROL (REVOLD) attempts to (re)start from.
 time from each other then domain information reallocation follow-up
 may break when the feature is used in parallel.
 \end{itemize}
+
+\item The {\bf rpad} ($\equiv$ {\bf pad}) option will add extra distance,
+$r_{\rm pad}$, if larger than $0.2$~\AA to the major cutoff, $r_{\rm cut}$,
+to construct a larger link-cell width, $r_{\rm lnk}=r_{\rm cut}+r_{\rm pad}$,
+which will trigger a construction of a larger Verlet neighbour list (VNL)
+while at the same time facilitate its conditional update, rather at every
+timestpe.  The VNL conditaional update is check at the end of each tiemstep
+and triggered only when the most travelled particle has moved a distance
+larger than $r_{\rm pad}/2$.  It is worth noting that padding is at expense
+of extra memory but if used wisely it could improve time to solution from
+5\% to 150\% depending on force-field complexity.  If it is too large or too
+small (that is why the $\ge~0.2$~\AA limit) it will lead to performace
+degradation.  It is recomended that $r_{\rm pad}$ is set up at a value of
+$\approx~2~\div~10\%$ of the cutoff, $r_{\rm cut}$, as long as the major
+link-cell algorithm has link-cell distribution not wiorse than
+$4~\otimes~4~\otimes~4$ per domain.  For such setups, in practice, one
+may expect speedups (in time to solution) of the order of $10~\div~30\%$
+for force-fields involving the Ewald summation methodology and $30~\div~70\%$
+for force-fields without electrostatics evaluations involving the Ewald
+summation methodology.
 \end{enumerate}
 
 \noindent Users are advised to study the example CONTROL files
@@ -2555,56 +2583,99 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> variable 1    \> real    \> potential parameter, see Table \ref{external-field-table} \\
 \> variable 2    \> real    \> potential parameter, see Table \ref{external-field-table} \\
 \> variable 3    \> real    \> potential parameter, see Table \ref{external-field-table} \\
-\> variable 4    \> real    \> potential parameter, see Table \ref{external-field-table}
+\> variable 4    \> real    \> potential parameter, see Table \ref{external-field-table} \\
+\> variable 5    \> real    \> potential parameter, see Table \ref{external-field-table}
 \end{tabbing}
 The variables pertaining to each field potential are described
 in Table \ref{external-field-table}.
 
 {\bf Note:} only one type of field can be applied at a time.
 
-{\bf Note} that external force parameters are read in terms of
-the specified energy units and the general DL\_POLY units so
-that the two sides of the equation defining the field are balanced.
-
 \begin{table}[htbp]
 \begin{centering}
 \caption{\label{external-field-table} External Fields}
 \vskip 1ex
-\begin{tabular}{|l|l|c|c|c|c|l|}
+\begin{tabular}{|l|l|c|c|c|c|c|l|}
 \hline
-key & potential type & \multicolumn{4}{c|}{Variables (1-4)} & functional form\dag \\
+key & potential type & \multicolumn{5}{c|}{Variables (1-5)} & functional form \\
 \hline
-           &                     &         &         &         &               & \\
-{\bf elec} & Electric Field      & $E_{x}$ & $E_{y}$ & $E_{z}$ &               &
+           &                     &         &         &         &         &               & \\
+{\bf elec} & Electric Field      & $E_{x}$ & $E_{y}$ & $E_{z}$ &         &               &
 $\vek{F} = q \; \vek{E}$ \\
-           &                     &         &         &         &               & \\
-{\bf oshr} & Oscillating Shear   & $A$     & $n$     &         &               &
+           &                     &         &         &         &         &               & \\
+{\bf oshr} & Oscillating Shear   & $A$     & $n$     &         &         &               &
 $\vek{F}_x = A \; \cos(2 n\pi . z/L_{z})$ \\
-           &                     &         &         &         &               & \\
-{\bf shrx} & Continuous Shear    & $A$     & $z_{0}$ &         &               &
+           &                     &         &         &         &         &               & \\
+{\bf shrx} & Continuous Shear    & $A$     & $z_{0}$ &         &         &               &
 $\vek{v}_x = \frac{A}{2} \frac{|z|}{z}~:~|z|~>~z_{0}$ \\
-           &                     &         &         &         &               & \\
-{\bf grav} & Gravitational Field & $G_{x}$ & $G_{y}$ & $G_{z}$ &               &
+           &                     &         &         &         &         &               & \\
+{\bf grav} & Gravitational Field & $G_{x}$ & $G_{y}$ & $G_{z}$ &         &               &
 $\vek{F} = m \; \vek{G}$ \\
-           &                     &         &         &         &               & \\
-{\bf magn} & Magnetic Field      & $H_{x}$ & $H_{y}$ & $H_{z}$ &               &
+           &                     &         &         &         &         &               & \\
+{\bf magn} & Magnetic Field      & $H_{x}$ & $H_{y}$ & $H_{z}$ &         &               &
 $\vek{F} = q \; (\vek{v} \times \vek{H})$ \\
-           &                     &       &           &         &               & \\
-{\bf sphr} & Containing Sphere   & $A$   & $R_{0}$   & $n$     & $R_{\rm cut}$ &
+           &                     &       &           &         &         &               & \\
+{\bf sphr} & Containing Sphere   & $A$   & $R_{0}$   & $n$     & $R_{\rm cut}$ &         &
 $\vek{F} = A \; (R_{0} - r)^{-n}~:~r > R_{\rm cut}$ \\
-           &                     &       &           &         &               & \\
-{\bf zbnd} & Repulsive Wall      & $A$   & $z_{0}$   & $p$     &               &
+           &                     &       &           &         &         &               & \\
+{\bf zbnd} & Repulsive Wall      & $A$   & $z_{0}$   & $p$     &         &               &
 $\vek{F} = A \; (z_{0} - z) ~:~p . z > p . z_{0}$ \\
-           &                     &       &           &         &               & \\
-{\bf xpis} & X-Piston & $i^{global}_{index}$ & $j^{global}_{index}$ & $P$ (k-atm) & &
+           &                     &       &           &         &         &               & \\
+{\bf xpis} & X-Piston & $i^{glob}_{ind}$ & $j^{glob}_{ind}$ & $P^{in}_{k-atm}$ & &       &
 $\vek{F}_{x} = \frac{\textrm{$P$} . \vek{\textrm{Area}}(\perp\textrm{X-}dir)}
-{\left[\sum_{k=i}^{j}m_{k}\right] \textrm{/} m_{k}}~:~\forall~k=i,..,j $ \\
-           &                     &       &           &         &               & \\
+{\left[\sum_{k=i}^{j}m_{k}\right] \textrm{/} m_{k}} : \forall~k=i,..,j $ \\
+           &                     &       &           &         &         &               & \\
+{\bf zres} & Molecule in HR Zone & $i^{glob}_{ind}$ & $j^{glob}_{ind}$ & $k$ & $z_{mn}$ & $z_{mx}$ &
+$
+\vek{F}_{z} = \left\{ \begin{array} {l@{~:~}l}
+A(z_{cm}-z_{mx}) & z_{cm} > z_{mx} \\
+A(z_{mn}-z_{cm}) & z_{cm} < z_{mn}
+\end{array} \right.
+$ \\
+           &                     &       &           &         &         &               & \\
+{\bf zrs-} & HR Zone (pull out)  & $i^{glob}_{ind}$ & $j^{glob}_{ind}$ & $k$ & $z_{mn}$ & $z_{mx}$ &
+$
+\vek{F}_{z} = \left\{ \begin{array} {l@{~:~}l}
+A(z-z_{mx}) & z \ge \frac{z_{mx}+z_{mn}}{2} \\
+A(z_{mn}-z) & z < \frac{z_{mx}+z_{mn}}{2}
+\end{array} \right.
+$ \\
+           &                     &       &           &         &         &               & \\
+{\bf zrs+} & HR Zone (pull in)   & $i^{glob}_{ind}$ & $j^{glob}_{ind}$ & $k$ & $z_{mn}$ & $z_{mx}$ &
+$
+\vek{F}_{z} = \left\{ \begin{array} {l@{~:~}l}
+A(z-z_{mx}) & z > z_{mx} \\
+A(z_{mn}-z) & z < z_{mn}
+\end{array} \right.
+$ \\
+           &                     &       &           &         &         &               & \\
+{\bf osel} & Osc. Electric Field & $E_{x}$ & $E_{y}$ & $E_{z}$ & $\omega$ &              &
+$\vek{F} = q \; \vek{E} \; \sin(2 \pi \omega t)$ \\
+           &                     &       &           &         &         &               & \\
 \hline
 \end{tabular}
 \vskip 1ex
 \end{centering}
 \end{table}
+
+{\bf Note} that external force parameters are read in terms of
+the specified energy units and the general DL\_POLY units so
+that the two sides of the equation defining the field are balanced.
+For example, the magnetic field units, $\vek{H} = (H_{1},H_{2},H_{3})$,
+in the DL\_POLY FIELD scope will follow from the interaction definition
+as seen in Table \ref{external-field-table}:
+\begin{eqnarray}
+\vek{F} &=& q \; (\vek{v} \times \vek{H})~~~~~~{\tt therefore}, \nonumber \\
+\left[H\right] &=& \frac{\left[F\right]}{\left[q\right]~\left[V\right]} = \frac{\left[m\right]~\left[a\right]}{\left[q\right]~\left[V\right]} \nonumber \\
+\left[H\right] &=& \frac{\tt Dalton~\AA/ps^{2}}{\tt proton~\AA/ps} = \frac{\tt Dalton}{\tt proton~ps} \\
+\left[H\right] &=& 1.037837512 \times 10^{4}~{\tt Tesla}~~. \nonumber
+\end{eqnarray}
+Thus to apply a magnetic field of 1~Tesla along the $y$ axis,
+one could specify in FILED the following:
+\begin{verbatim}
+external
+magnetic 0  1/1.037837512e04   0
+\end{verbatim}
 
 \subsubsection{Closing the FIELD File}
 
@@ -2759,8 +2830,9 @@ It should be noted that the number of grid points in the TABLE file
 should not be less than the number of grid points \D is expecting.
 (This number is given by the parameter {\tt mxgrid} calculated in
 the {\sc setup\_module} file - see Section \ref{interpolation} and
-\ref{parameters}.)  \D will re-interpolate the tables if {\tt
-ngrid}$>${\tt mxgrid}, but will abort if {\tt ngrid}$<${\tt mxgrid}.
+\ref{parameters}.)  \D will re-interpolate the tables if
+${\tt delpot} = \frac{\tt cutpot}{{\tt ngrid}-4}~<~{\tt dlrvdw} = \frac{\tt rvdw}{{\tt mxgrid}-4}$
+(usually when ${\tt ngrid}>{\tt mxgrid}$), but will abort if ${\tt delpot}>{\tt dlrvdw}$.
 
 The potential and force tables are used to fill the internal
 arrays {\tt vvdw} and {\tt gvdw} respectively (see Section

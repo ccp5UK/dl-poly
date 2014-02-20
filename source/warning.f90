@@ -177,7 +177,7 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,2a,2(f8.5,a),/,1x,a,/)')                &
         '*** warning - control distances for variable timestep: ', &
-        'Dmin = ', a, ' (Ang) and Dmax = ', b, ' (Ang) ***',       &
+        'Dmin = ', a, ' (Angs) and Dmax = ', b, ' (Angs) ***',       &
         '*** do not comply with safty condition: Dmax > 2.5 Dmin > 0 !!! ***'
 
      Else If (kode == 150) Then
@@ -428,9 +428,9 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode == 310) Then
 
-        Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                                                                 &
-        '*** warning - control distance for defect look-up MUST be in the interval [Min(0.3,rcut/3);Min(1.2,rcut/2)] Ang !!! ***', &
-        '*** defects distance condition will default from ', a, ' to ', b, ' Ang !!! ***'
+        Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                                                               &
+     '*** warning - control distance for defect look-up MUST be in the interval [Min(0.3,rcut/3);Min(1.2,rcut/2)] Angs !!! ***', &
+     '*** defects distance condition will default from ', a, ' to ', b, ' Angs !!! ***'
 
      Else If (kode == 320) Then
 
@@ -545,8 +545,8 @@ Subroutine warning(kode,a,b,c)
      Else If (kode == 470) Then
 
         Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                                  &
-        '*** warning - control distance for diplacement qualification MUST be >= 0.25 Ang !!! ***', &
-        '*** displacements distance condition will default from ', a, ' to ', b, ' Ang !!! ***'
+        '*** warning - control distance for diplacement qualification MUST be >= 0.25 Angs !!! ***', &
+        '*** displacements distance condition will default from ', a, ' to ', b, ' Angs !!! ***'
 
      Else If (kode == 480) Then
 

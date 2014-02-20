@@ -14,7 +14,7 @@ Module metal_module
 
   Implicit None
 
-  Logical,                        save :: ld_met = .false., &
+  Logical,                        Save :: ld_met = .false., &
                                           ls_met = .false., &
                                           l2bmet = .false.
 
@@ -35,7 +35,7 @@ Module metal_module
 
 ! Atomic density [reused as embedding derivative(s)] helper array(s)
 
-  Real( Kind = wp ), Dimension( : ), Allocatable :: rho,rhs
+  Real( Kind = wp ), Dimension( : ), Allocatable, Save :: rho,rhs
 
   Public :: allocate_metal_arrays, &
             allocate_metal_table_arrays

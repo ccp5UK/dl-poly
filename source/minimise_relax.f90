@@ -13,7 +13,7 @@ Subroutine minimise_relax &
 !       keymin=2 : absolute displacement
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith october 2012
+! author    - i.t.todorov & w.smith february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -46,7 +46,7 @@ Subroutine minimise_relax &
 ! Optimisation iteration and convergence limits
 
   Integer, Parameter      :: mxpass = 1000
-  Real( Kind = wp ), Save :: min_pass,pass(1:5)
+  Real( Kind = wp ), Save :: min_pass
 
   Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
 
@@ -94,14 +94,12 @@ Subroutine minimise_relax &
 
      eng_min = 0.0_wp
 
-! Passage accumulators
-! pass(1) - cycles counter
-! pass(2) - access counter
-! pass(3) - average cycles
-! pass(4) - minimum cycles
-! pass(5) - maximum cycles
-
-     pass = 0
+! Passage accumulators are zeroed in minimise_module
+! passmin(1) - cycles counter
+! passmin(2) - access counter
+! passmin(3) - average cycles
+! passmin(4) - minimum cycles
+! passmin(5) - maximum cycles
 
 ! total number of active particles (excluding frozen sites and massless shells)
 
@@ -241,7 +239,7 @@ Subroutine minimise_relax &
 
 ! Increment main passage counter
 
-     pass(1)=pass(1)+1.0_wp
+     passmin(1)=passmin(1)+1.0_wp
 
 ! min_pass = Min(min_pass,._tol)
 
@@ -257,13 +255,13 @@ Subroutine minimise_relax &
 ! allow for ten-fold boost in iteration cycle length
 ! for the very first MD step
 
-     If (Nint(pass(2)) == 0) Then
-        If (Nint(pass(1)) >= 10*mxpass) Then
+     If (Nint(passmin(2)) == 0) Then
+        If (Nint(passmin(1)) >= 10*mxpass) Then
            Call warning(330,min_tol,min_pass,0.0_wp)
            Call error(474)
         End If
      Else
-        If (Nint(pass(1)) >= mxpass) Then
+        If (Nint(passmin(1)) >= mxpass) Then
            Call warning(330,min_tol,min_pass,0.0_wp)
            Call error(474)
         End If
@@ -398,7 +396,7 @@ Subroutine minimise_relax &
 
   If (keymin == 2) relaxed=(dist_tol < min_tol)
 
-  i=Nint(pass(1))
+  i=Nint(passmin(1))
   If (l_str .and. idnode == 0) Then
      Write(nrite,'(1x,i23,1p,4e18.8)') i-1,eng/engunit,grad_tol,eng_tol,dist_tol
      If (Mod(i,25) == 0) Then
@@ -416,7 +414,7 @@ Subroutine minimise_relax &
 
 ! Final/Only printout
 
-     i=Nint(pass(1))
+     i=Nint(passmin(1))
      If (idnode == 0) Then
         If (.not.l_str) Then
            Write(nrite, Fmt=*)
@@ -431,16 +429,16 @@ Subroutine minimise_relax &
 
 ! Collect passage statistics
 
-     pass(3)=pass(2)*pass(3)
-     pass(2)=pass(2)+1.0_wp
-     pass(3)=pass(3)/pass(2)+pass(1)/pass(2)
-     pass(4)=Min(pass(1),pass(4))
-     pass(5)=Max(pass(1),pass(5))
+     passmin(3)=passmin(2)*passmin(3)
+     passmin(2)=passmin(2)+1.0_wp
+     passmin(3)=passmin(3)/passmin(2)+passmin(1)/passmin(2)
+     passmin(4)=Min(passmin(1),passmin(4))
+     passmin(5)=Max(passmin(1),passmin(5))
 
 ! Rewind keyopt and main passage counter
 
      keyopt =0
-     pass(1)=0.0_wp
+     passmin(1)=0.0_wp
 
 ! Resume rdf calculations
 

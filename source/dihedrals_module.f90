@@ -6,7 +6,7 @@ Module dihedrals_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2013
+! author    - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -15,11 +15,10 @@ Module dihedrals_module
   Implicit None
 
   Integer,                        Save :: ntdihd  = 0 , &
-                                          ntdihd1 = 0 , &
-                                          ub_dih  = 4 ! the default number of
-                                                      ! particles to track
+                                          ntdihd1 = 0
 
-  Logical,                        Save :: lx_dih
+  Logical,                        Save :: lx_dih=.false. ! dihedrals with core-shell
+
   Integer,           Allocatable, Save :: numdih(:),keydih(:)
   Integer,           Allocatable, Save :: lstdih(:,:),listdih(:,:),legdih(:,:)
 

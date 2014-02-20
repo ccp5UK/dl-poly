@@ -5,27 +5,43 @@
 ! set shells on top of their cores preventatively
 
      If (megshl > 0 .and. keyshl == 2 .and. nstep == 0 .and. nsteql > 0) Then
+
         Call core_shell_on_top()
+
+! Check VNL conditioning
+
+        Call vnl_check(l_str,imcon,rcut,rpad,rlnk)
+
+        If (l_vnl) Then
 
 ! Relocate atoms to new domains and restore bonding description
 
-        Call relocate_particles      &
-           (imcon,rcut,lbook,megatm, &
+           Call relocate_particles   &
+           (imcon,rlnk,lbook,megatm, &
            megshl,m_con,megpmf,      &
            m_rgd,megtet,             &
            megbnd,megang,megdih,meginv)
 
 ! Exchange atomic data in border regions
 
-        Call set_halo_particles(imcon,rcut,keyfce)
+           Call set_halo_particles(imcon,rlnk,keyfce)
 
 ! Re-tag RBs when called again after the very first time
 ! when it's done in rigid_bodies_setup <- build_book_intra
 
-        If (m_rgd > 0) Then
-           Call rigid_bodies_tags()
-           Call rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
+           If (m_rgd > 0) Then
+              Call rigid_bodies_tags()
+              Call rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
+           End If
+
+        Else
+
+! Exchange atomic positions in border regions
+
+           Call refresh_halo_positions()
+
         End If
+
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -43,7 +59,7 @@
 
      If (.not.(mxmet == 0 .and. keyfce == 0 .and. l_n_v .and. mxrdf == 0)) &
         Call two_body_forces                      &
-           (imcon,rcut,rvdw,rmet,keyens,          &
+           (imcon,rcut,rlnk,rvdw,rmet,keyens,     &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &
@@ -89,7 +105,7 @@
 
 ! Apply external field
 
-     If (keyfld > 0) Call external_field_apply(imcon,keyshl,tstep,engfld,virfld)
+     If (keyfld > 0) Call external_field_apply(imcon,keyshl,time,engfld,virfld)
 
 ! Apply pseudo thermostat - force cycle (0)
 

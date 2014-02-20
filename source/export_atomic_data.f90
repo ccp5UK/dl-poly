@@ -6,7 +6,8 @@ Subroutine export_atomic_data(mdir)
 ! for halo formation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2013
+! amended   - i.t.todorov february 2014
+! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,7 +25,7 @@ Subroutine export_atomic_data(mdir)
   Integer           :: fail,iadd,limit,iblock,          &
                        i,j,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
                        jdnode,kdnode,imove,jmove,itmp
-  Real( Kind = wp ) :: uuu,vvv,www
+  Real( Kind = wp ) :: uuu,vvv,www,xadd,yadd,zadd
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
@@ -110,6 +111,16 @@ Subroutine export_atomic_data(mdir)
      Call error(46)
   End If
 
+! Calculate PBC shift vector due to possible wrap around
+
+  uuu=0.0_wp ; If (lsx) uuu=+1.0_wp ; If (lex) uuu=-1.0_wp
+  vvv=0.0_wp ; If (lsy) vvv=+1.0_wp ; If (ley) vvv=-1.0_wp
+  www=0.0_wp ; If (lsz) www=+1.0_wp ; If (lez) www=-1.0_wp
+
+  xadd = cell(1)*uuu+cell(4)*vvv+cell(7)*www
+  yadd = cell(2)*uuu+cell(5)*vvv+cell(8)*www
+  zadd = cell(3)*uuu+cell(6)*vvv+cell(9)*www
+
 ! Initialise counters for length of sending and receiving buffers
 ! imove and jmove are the actual number of particles to get haloed
 
@@ -149,17 +160,13 @@ Subroutine export_atomic_data(mdir)
 
 ! If safe to proceed
 
-           If ((imove+6) <= iblock) Then
+           If ((imove+iadd) <= iblock) Then
 
-! pack positions and apply possible wrap-around corrections for the receiver
+! pack positions and apply possible PBC shift for the receiver
 
-              uuu=0.0_wp ; If (lsx) uuu=+1.0_wp ; If (lex) uuu=-1.0_wp
-              vvv=0.0_wp ; If (lsy) vvv=+1.0_wp ; If (ley) vvv=-1.0_wp
-              www=0.0_wp ; If (lsz) www=+1.0_wp ; If (lez) www=-1.0_wp
-
-              buffer(imove+1)=xxx(i)+cell(1)*uuu+cell(4)*vvv+cell(7)*www
-              buffer(imove+2)=yyy(i)+cell(2)*uuu+cell(5)*vvv+cell(8)*www
-              buffer(imove+3)=zzz(i)+cell(3)*uuu+cell(6)*vvv+cell(9)*www
+              buffer(imove+1)=xxx(i)+xadd
+              buffer(imove+2)=yyy(i)+yadd
+              buffer(imove+3)=zzz(i)+zadd
 
 ! pack config indexing, site and remaining halo indexing arrays
 

@@ -82,6 +82,14 @@ The configuration module defines all configuration related arrays
 also develops an allocation method that is dependent on
 {\sc setup\_module}.
 
+\item {\bf vnl module}:: {\sc vnl\_module}
+
+The Verlet neighbour list (VNL) module defines all VNL related
+control variables and arrays needed for the VNL conditional
+update functionality, and is dependent on {\sc kinds\_f90} only.
+However, it is assisted by a {\sc vnl\_check} routine that is
+dependent on more modules.
+
 \item {\bf defects module}:: {\sc defects\_module}
 
 The defects module defines all defects and configuration related
@@ -168,7 +176,8 @@ as follows:
 kinds\_f90 comms\_module setup\_module \\
 parse\_module development\_module io\_module \\
 domains\_module \\
-site\_module config\_module defects\_module \\
+site\_module config\_module vnl\_module \
+defects\_module defects1\_module \\
 vdw\_module metal\_module tersoff\_module \\
 three\_body\_module four\_body\_module \\
 core\_shell\_module \\
@@ -187,7 +196,8 @@ kinetic\_module gpfa\_module parallel\_fft}
 {\sc
 warning error scan\_control\_io \\
 numeric\_container spme\_container quaternions\_container \\
-scan\_field read\_config\_parallel scan\_config scan\_control read\_config \\
+scan\_field scan\_control\_pre \\
+read\_config\_parallel scan\_config scan\_control read\_config \\
 set\_bounds \\
 read\_control \\
 vdw\_generate vdw\_table\_read vdw\_direct\_fs\_generate \\
@@ -204,8 +214,9 @@ core\_shell\_quench constraints\_tags constraints\_quench \\
 pmf\_coms pmf\_tags pmf\_vcoms pmf\_quench \\
 rigid\_bodies\_quench \\
 set\_temperature \\
-vdw\_lrcmetal\_lrc system\_init \\
+vdw\_lrc metal\_lrc system\_init vnl\_check \\
 export\_atomic\_data set\_halo\_particles \\
+export\_atomic\_positions refresh\_halo\_positions \\
 rigid\_bodies\_stress \\
 read\_history \\
 defects\_reference\_read defects\_reference\_read\_parallel \\
@@ -459,11 +470,16 @@ X\=XXXXXXXX\=XXXXXXXXXXXXX\=\kill
 \> {\tt mxlist}      \> {\em variable}     \> max number of atoms in the verlet list on a node \\
 \> {\tt mxcell}      \> {\em variable}     \> max number of link cells per node \\
 \> {\tt mxatms}      \> {\em variable}     \> max number of local+halo atoms per node \\
-\> {\tt mxatms}      \> {\em variable}     \> max number of local atoms per node \\
+\> {\tt mxatdm}      \> {\em variable}     \> max number of local atoms per node \\
+\> {\tt mxbfdp}      \> {\em variable}     \> max dimension of the transfer buffer for deport functions \\
+\> {\tt mxbfss}      \> {\em variable}     \> max dimension of the transfer buffer for statistics functions \\
+\> {\tt mxbfxp}      \> {\em variable}     \> max dimension of the transfer buffer for export functions \\
+\> {\tt mxbfsh}      \> {\em variable}     \> max dimension of the transfer buffer for shared units functions \\
 \> {\tt mxbuff}      \> {\em variable}     \> max dimension of the principle transfer buffer \\
 \>                   \>                    \> \\
-\> {\tt zero\_plus}  \> {\em variable}     \> the machime representation of $+0$ at working precision \\
-\> {\tt half\_minus} \> {\em variable}     \> the machime representation of $+0.5$ at working precision \\
+\> {\tt zero\_plus}  \> {\em variable}     \> the machine representation of $+0$ at working precision \\
+\> {\tt half\_plus}  \> {\em variable}     \> the machine representation of $+0.5\uparrow$ at working precision \\
+\> {\tt half\_minus} \> {\em variable}     \> the machine representation of $+0.5\downarrow$ at working precision \\
 \>                   \>                    \> \\
 \> {\tt engunit}     \> {\em variable}     \> the system energy unit \\
 \end{tabbing}

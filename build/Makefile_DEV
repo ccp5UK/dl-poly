@@ -1,6 +1,6 @@
-# Master makefile for DL_POLY_4.05 (developer version)
+# Master makefile for DL_POLY_4.06 (parallel version)
 #
-# Author - I.T.Todorov January 2014
+# Author - I.T.Todorov March 2014
 #
 #
 # Define default settings
@@ -27,7 +27,8 @@ OBJ_MOD = \
 	kinds_f90.o comms_module.o setup_module.o \
 	parse_module.o development_module.o netcdf_modul~.o io_module.o \
 	domains_module.o \
-	site_module.o config_module.o defects_module.o defects1_module.o \
+	site_module.o config_module.o vnl_module.o \
+	defects_module.o defects1_module.o \
 	vdw_module.o metal_module.o tersoff_module.o \
 	three_body_module.o four_body_module.o \
 	core_shell_module.o \
@@ -44,7 +45,8 @@ OBJ_MOD = \
 OBJ_ALL = \
 	warning.o error.o scan_control_io.o \
 	numeric_container.o spme_container.o quaternions_container.o \
-	scan_field.o read_config_parallel.o scan_config.o scan_control.o read_config.o \
+	scan_field.o scan_control_pre.o \
+	read_config_parallel.o scan_config.o scan_control.o read_config.o \
 	set_bounds.o \
 	read_control.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
@@ -61,8 +63,9 @@ OBJ_ALL = \
 	pmf_coms.o pmf_tags.o pmf_vcoms.o pmf_quench.o \
 	rigid_bodies_quench.o \
 	set_temperature.o \
-	vdw_lrc.o metal_lrc.o system_init.o \
+	vdw_lrc.o metal_lrc.o system_init.o vnl_check.o \
 	export_atomic_data.o set_halo_particles.o \
+	export_atomic_positions.o refresh_halo_positions.o \
 	rigid_bodies_stress.o \
 	read_history.o \
 	defects_reference_read.o defects_reference_read_parallel.o \
@@ -232,6 +235,12 @@ uknown_platform:
 hpc:
 	$(MAKE) LD="mpif90 -o" LDFLAGS="-O3" \
 	FC="mpif90 -c" FCFLAGS="-O3" \
+	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
+
+#================== Cambridge HPC - debug ============================
+hpcd:
+	$(MAKE) LD="mpif90 -o" LDFLAGS="-O0 -g -C" \
+	FC="mpif90 -c" FCFLAGS="-O0 -g -C" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== Beowulf Linux ifort + mpich ======================
@@ -468,7 +477,7 @@ core_shell_on_top.o: comms_module.o config_module.o core_shell_module.o \
 core_shell_quench.o: comms_module.o config_module.o core_shell_module.o \
 	kinds_f90.o setup_module.o
 core_shell_relax.o: comms_module.o config_module.o core_shell_module.o \
-	kinds_f90.o kinetic_module.o setup_module.o statistics_module.o
+	kinds_f90.o kinetic_module.o setup_module.o
 coul_cp_forces.o: config_module.o kinds_f90.o setup_module.o
 coul_dddp_forces.o: config_module.o kinds_f90.o setup_module.o
 coul_fscp_forces.o: comms_module.o config_module.o kinds_f90.o setup_module.o
@@ -511,11 +520,12 @@ dl_poly.o: angles_module.o bonds_module.o comms_module.o config_module.o \
 	langevin_module.o metal_module.o msd_module.o parse_module.o \
 	pmf_module.o rigid_bodies_module.o setup_module.o site_module.o \
 	statistics_module.o tersoff_module.o tethers_module.o \
-	three_body_module.o vdw_module.o w_at_start_lfv.f90 w_at_start_vv.f90 \
-	w_calculate_forces.f90 w_impact_option.f90 w_integrate_lfv.f90 \
-	w_integrate_vv.f90 w_kinetic_options.f90 w_md_lfv.f90 w_md_vv.f90 \
-	w_refresh_mappings.f90 w_refresh_output.f90 w_replay_historf.f90 \
-	w_replay_history.f90 w_statistics_report.f90 w_write_options.f90
+	three_body_module.o vdw_module.o vnl_module.o w_at_start_lfv.f90 \
+	w_at_start_vv.f90 w_calculate_forces.f90 w_impact_option.f90 \
+	w_integrate_lfv.f90 w_integrate_vv.f90 w_kinetic_options.f90 \
+	w_md_lfv.f90 w_md_vv.f90 w_refresh_mappings.f90 w_refresh_output.f90 \
+	w_replay_historf.f90 w_replay_history.f90 w_statistics_report.f90 \
+	w_write_options.f90
 domains_module.o: comms_module.o kinds_f90.o
 error.o: comms_module.o setup_module.o
 ewald_excl_forces.o: config_module.o ewald_module.o kinds_f90.o \
@@ -532,16 +542,18 @@ ewald_spme_force~.o: comms_module.o config_module.o domains_module.o \
 exchange_grid.o: comms_module.o domains_module.o kinds_f90.o setup_module.o
 export_atomic_data.o: comms_module.o config_module.o domains_module.o \
 	kinds_f90.o setup_module.o
+export_atomic_positions.o: comms_module.o config_module.o domains_module.o \
+	kinds_f90.o setup_module.o
 external_field_apply.o: comms_module.o config_module.o core_shell_module.o \
-	external_field_module.o kinds_f90.o rigid_bodies_module.o \
-	setup_module.o
+	external_field_module.o kinds_f90.o kinetic_module.o \
+	rigid_bodies_module.o setup_module.o
 external_field_correct.o: comms_module.o config_module.o \
 	external_field_module.o kinds_f90.o rigid_bodies_module.o
 external_field_module.o: kinds_f90.o setup_module.o
 four_body_forces.o: comms_module.o config_module.o domains_module.o \
 	four_body_module.o kinds_f90.o setup_module.o
 four_body_module.o: kinds_f90.o setup_module.o
-gpfa_module.o: gpfa_module.o kinds_f90.o
+gpfa_module.o: kinds_f90.o
 impact.o: comms_module.o config_module.o core_shell_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o
 init_intra.o: angles_module.o bonds_module.o comms_module.o config_module.o \
@@ -572,9 +584,9 @@ metal_ld_collect_fst.o: config_module.o kinds_f90.o metal_module.o \
 	setup_module.o
 metal_ld_compute.o: comms_module.o config_module.o kinds_f90.o metal_module.o \
 	setup_module.o
-metal_ld_export.o: comms_module.o config_module.o domains_module.o \
-	kinds_f90.o metal_module.o setup_module.o
-metal_ld_set_halo.o: comms_module.o config_module.o
+metal_ld_export.o: comms_module.o domains_module.o kinds_f90.o metal_module.o \
+	setup_module.o
+metal_ld_set_halo.o: comms_module.o config_module.o setup_module.o
 metal_lrc.o: comms_module.o config_module.o kinds_f90.o metal_module.o \
 	setup_module.o site_module.o
 metal_module.o: kinds_f90.o setup_module.o
@@ -786,6 +798,7 @@ read_field.o: angles_module.o bonds_module.o comms_module.o config_module.o \
 	three_body_module.o vdw_module.o
 read_history.o: comms_module.o config_module.o domains_module.o io_module.o \
 	kinds_f90.o parse_module.o setup_module.o site_module.o
+refresh_halo_positions.o: comms_module.o config_module.o setup_module.o
 regauss_temperature.o: comms_module.o config_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o setup_module.o
 relocate_particles.o: angles_module.o bonds_module.o comms_module.o \
@@ -823,13 +836,14 @@ scan_config.o: comms_module.o io_module.o kinds_f90.o parse_module.o \
 	setup_module.o
 scan_control.o: comms_module.o development_module.o kinds_f90.o msd_module.o \
 	parse_module.o setup_module.o
-scan_control_io.o: comms_module.o config_module.o io_module.o kinds_f90.o \
-	parse_module.o setup_module.o
+scan_control_io.o: comms_module.o io_module.o kinds_f90.o parse_module.o \
+	setup_module.o
+scan_control_pre.o: comms_module.o kinds_f90.o parse_module.o setup_module.o
 scan_field.o: comms_module.o kinds_f90.o metal_module.o parse_module.o \
 	setup_module.o tersoff_module.o vdw_module.o
 set_bounds.o: comms_module.o config_module.o development_module.o \
 	domains_module.o kinds_f90.o msd_module.o setup_module.o \
-	tersoff_module.o
+	tersoff_module.o vnl_module.o
 set_halo_particles.o: config_module.o domains_module.o kinds_f90.o \
 	setup_module.o site_module.o
 set_temperature.o: comms_module.o config_module.o core_shell_module.o \
@@ -840,15 +854,16 @@ site_module.o: kinds_f90.o setup_module.o
 spme_container.o: comms_module.o kinds_f90.o setup_module.o
 statistics_collect.o: comms_module.o config_module.o kinds_f90.o msd_module.o \
 	setup_module.o site_module.o statistics_module.o
-statistics_connect_frames.o: comms_module.o config_module.o kinds_f90.o \
-	msd_module.o setup_module.o statistics_module.o
+statistics_connect_frames.o: comms_module.o config_module.o msd_module.o \
+	setup_module.o statistics_module.o
 statistics_connect_set.o: comms_module.o config_module.o domains_module.o \
 	kinds_f90.o msd_module.o setup_module.o statistics_module.o
 statistics_connect_spread.o: comms_module.o config_module.o domains_module.o \
 	kinds_f90.o msd_module.o setup_module.o statistics_module.o
 statistics_module.o: comms_module.o kinds_f90.o setup_module.o
-statistics_result.o: comms_module.o config_module.o kinds_f90.o msd_module.o \
-	setup_module.o site_module.o statistics_module.o
+statistics_result.o: comms_module.o config_module.o core_shell_module.o \
+	kinds_f90.o minimise_module.o msd_module.o setup_module.o \
+	site_module.o statistics_module.o vnl_module.o
 system_expand.o: angles_module.o bonds_module.o comms_module.o \
 	config_module.o constraints_module.o core_shell_module.o \
 	dihedrals_module.o inversions_module.o io_module.o kinds_f90.o \
@@ -874,7 +889,8 @@ three_body_module.o: kinds_f90.o setup_module.o
 trajectory_write.o: comms_module.o config_module.o io_module.o kinds_f90.o \
 	parse_module.o setup_module.o statistics_module.o
 two_body_forces.o: comms_module.o config_module.o ewald_module.o kinds_f90.o \
-	metal_module.o setup_module.o statistics_module.o vdw_module.o
+	metal_module.o setup_module.o statistics_module.o vdw_module.o \
+	vnl_module.o
 update_shared_units.o: comms_module.o domains_module.o kinds_f90.o \
 	setup_module.o
 vdw_direct_fs_generate.o: kinds_f90.o setup_module.o vdw_module.o
@@ -885,11 +901,14 @@ vdw_lrc.o: comms_module.o config_module.o kinds_f90.o setup_module.o \
 vdw_module.o: kinds_f90.o setup_module.o
 vdw_table_read.o: comms_module.o kinds_f90.o parse_module.o setup_module.o \
 	site_module.o vdw_module.o
+vnl_check.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	setup_module.o vnl_module.o
+vnl_module.o: kinds_f90.o
 warning.o: comms_module.o kinds_f90.o setup_module.o
 write_config.o: comms_module.o config_module.o io_module.o kinds_f90.o \
 	setup_module.o
 xscale.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
-	rigid_bodies_module.o setup_module.o statistics_module.o
+	rigid_bodies_module.o setup_module.o statistics_module.o vnl_module.o
 z_density_collect.o: config_module.o kinds_f90.o setup_module.o site_module.o \
 	statistics_module.o
 z_density_compute.o: comms_module.o config_module.o kinds_f90.o \

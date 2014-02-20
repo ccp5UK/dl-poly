@@ -1,11 +1,11 @@
-Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time,exout)
+Subroutine read_history(l_str,fname,megatm,levcfg,imcon,dvar,nstep,tstep,time,exout)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for reading the trajectory data file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2013
+! author    - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -36,6 +36,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time,exout)
   Integer,              Intent( In    ) :: megatm
 
   Integer,              Intent( InOut ) :: levcfg,imcon,nstep
+  Real( Kind = wp ),    Intent( In    ) :: dvar
   Real( Kind = wp ),    Intent( InOut ) :: tstep,time
   Integer,              Intent(   Out ) :: exout
 
@@ -308,9 +309,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time,exout)
                  If (mxnode > 1) Call gcheck(safe)
                  If (.not.safe) Go To 300 !Call error(25)
 
-! Ensure all atoms are in prescribed simulation cell (DD bound) and broadcast them
-!
-!                 Call pbcshift(imcon,cell,indatm,axx,ayy,azz)
+! Briadcaste all atoms
 
                  If (mxnode > 1) Then
                     Call MPI_BCAST(chbuf,indatm*8,MPI_CHARACTER,0,dlp_comm_world,ierr)
@@ -337,7 +336,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time,exout)
                     End If
                  End If
 
-! Assign atoms to correct domains
+! Assign atoms to correct domains (DD bound)
 
                  Do i=1,indatm
                     sxx=rcell(1)*axx(i)+rcell(4)*ayy(i)+rcell(7)*azz(i)
@@ -469,8 +468,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time,exout)
      Call get_word(record,word); cell(8)=word_2_real(word)
      Call get_word(record,word); cell(9)=word_2_real(word)
 
-     Call read_config_parallel                   &
-           (levcfg, imcon, l_ind, l_str, megatm, &
+     Call read_config_parallel                  &
+           (levcfg, dvar, l_ind, l_str, megatm, &
             l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi)
 
      If (fast) Then
@@ -510,8 +509,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,nstep,tstep,time,exout)
      Call io_nc_get_var( 'cell'           , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
      cell = Reshape( cell_vecs, (/ Size( cell ) /) )
 
-     Call read_config_parallel                   &
-           (levcfg, imcon, l_ind, l_str, megatm, &
+     Call read_config_parallel                  &
+           (levcfg, dvar, l_ind, l_str, megatm, &
             l_his, l_xtr, fast, fh, Int( i, Kind( top_skip ) ), xhi, yhi, zhi)
 
      If (frm1 == frm) Go To 200

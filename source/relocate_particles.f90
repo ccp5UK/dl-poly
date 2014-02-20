@@ -1,5 +1,5 @@
 Subroutine relocate_particles        &
-           (imcon,rcut,lbook,megatm, &
+           (imcon,rlnk,lbook,megatm, &
            megshl,m_con,megpmf,      &
            m_rgd,megtet,             &
            megbnd,megang,megdih,meginv)
@@ -16,7 +16,7 @@ Subroutine relocate_particles        &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,       Only : idnode,mxnode,gsum,gmax,gcheck
+  Use comms_module,       Only : mxnode,gsum,gmax,gcheck
   Use setup_module
   Use domains_module
 
@@ -34,7 +34,7 @@ Subroutine relocate_particles        &
 
   Use bonds_module,        Only : ntbond,listbnd,legbnd
   Use angles_module,       Only : ntangl,listang,legang
-  Use dihedrals_module,    Only : ntdihd,listdih,legdih,ub_dih
+  Use dihedrals_module,    Only : ntdihd,listdih,legdih
   Use inversions_module,   Only : ntinv, listinv,leginv
 
   Implicit None
@@ -44,7 +44,7 @@ Subroutine relocate_particles        &
                                         megshl,m_con,megpmf, &
                                         m_rgd,megtet,        &
                                         megbnd,megang,megdih,meginv
-  Real( Kind = wp ), Intent( In    ) :: rcut
+  Real( Kind = wp ), Intent( In    ) :: rlnk
 
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: cut
@@ -62,7 +62,7 @@ Subroutine relocate_particles        &
 
 ! Define cut
 
-     cut=rcut+1.0e-6_wp
+     cut=rlnk+1.0e-6_wp
   End If
 
 ! rescale mock cell vectors for non-periodic system
@@ -116,7 +116,7 @@ Subroutine relocate_particles        &
 ! Cartesian coordinates to reduced space ones.
 ! Populate the move (former halo) indicator array.
 ! Here we assume no particle has moved more than
-! a link-cell width (> rcut) in any direction
+! a link-cell width (> rlnk) in any direction
 ! since last call to relocate as we don't test this!!!
 
      ixyz(1:natms)=0 ! Initialise move (former halo) indicator
@@ -260,7 +260,7 @@ Subroutine relocate_particles        &
         If (megang > 0) Call compress_book_intra &
            (mxangl,ntangl,Ubound(listang,Dim=1),listang,mxfang,legang)
         If (megdih > 0) Call compress_book_intra &
-           (mxdihd,ntdihd,ub_dih,listdih,mxfdih,legdih)
+           (mxdihd,ntdihd,Ubound(listdih,Dim=1),listdih,mxfdih,legdih)
         If (meginv > 0) Call compress_book_intra &
            (mxinv,ntinv,  Ubound(listinv,Dim=1),listinv,mxfinv,leginv)
 
@@ -276,6 +276,6 @@ Subroutine relocate_particles        &
 
 ! Halt program if potential cutoff exceeds cell width
 
-  If (rcut > Min(celprp(7),celprp(8),celprp(9))/2.0_wp) Call error(95)
+  If (rlnk > Min(celprp(7),celprp(8),celprp(9))/2.0_wp) Call error(95)
 
 End Subroutine relocate_particles

@@ -80,7 +80,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 
            If (ls_vdw) Then ! force-shifting
               eng   = eng + afs(k)*rrr + bfs(k)
-              gamma = gamma + afs(k)/rrr
+              gamma = gamma - afs(k)/rrr
            End If
 
         Else If (ityp == 2) Then
@@ -97,7 +97,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 
            If (ls_vdw) Then ! force-shifting
               eng   = eng + afs(k)*rrr + bfs(k)
-              gamma = gamma + afs(k)/rrr
+              gamma = gamma - afs(k)/rrr
            End If
 
         Else If (ityp == 3) Then
@@ -119,7 +119,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 
            If (ls_vdw) Then ! force-shifting
               eng   = eng + afs(k)*rrr + bfs(k)
-              gamma = gamma + afs(k)/rrr
+              gamma = gamma - afs(k)/rrr
            End If
 
         Else If (ityp == 4) Then
@@ -147,7 +147,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 
            If (ls_vdw) Then ! force-shifting
               eng   = eng + afs(k)*rrr + bfs(k)
-              gamma = gamma + afs(k)/rrr
+              gamma = gamma - afs(k)/rrr
            End If
 
         Else If (ityp == 5) Then
@@ -169,7 +169,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 
            If (ls_vdw) Then ! force-shifting
               eng   = eng + afs(k)*rrr + bfs(k)
-              gamma = gamma + afs(k)/rrr
+              gamma = gamma - afs(k)/rrr
            End If
 
         Else If (ityp == 6) Then
@@ -187,7 +187,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 
            If (ls_vdw) Then ! force-shifting
               eng   = eng + afs(k)*rrr + bfs(k)
-              gamma = gamma + afs(k)/rrr
+              gamma = gamma - afs(k)/rrr
            End If
 
         Else If (ityp == 7) Then
@@ -235,7 +235,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 
            If (ls_vdw) Then ! force-shifting
               eng   = eng + afs(k)*rrr + bfs(k)
-              gamma = gamma + afs(k)/rrr
+              gamma = gamma - afs(k)/rrr
            End If
 
         Else If (ityp == 9) Then
@@ -255,7 +255,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 
               If (ls_vdw) Then ! force-shifting
                  eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma + afs(k)/rrr
+                 gamma = gamma - afs(k)/rrr
               End If
            End If
 
@@ -274,7 +274,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
            eng = t1 + (t2-t1)*ppp*0.5_wp
-           If (ls_vdw) eng = eng - gvdw(mxgrid,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgrid,k) ! force-shifting
+           If (ls_vdw) eng = eng + gvdw(mxgrid,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgrid,k) ! force-shifting
 
 ! calculate forces using 3-point interpolation
 
@@ -305,7 +305,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
         t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
         eng = t1 + (t2-t1)*ppp*0.5_wp
-        If (ls_vdw) eng = eng - gvdw(mxgrid,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgrid,k) ! force-shifting
+        If (ls_vdw) eng = eng + gvdw(mxgrid,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgrid,k) ! force-shifting
 
 ! calculate forces using 3-point interpolation
 

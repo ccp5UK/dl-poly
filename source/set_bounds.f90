@@ -1,6 +1,6 @@
-Subroutine set_bounds                                  &
-           (levcfg,imcon,l_vv,l_str,l_n_e,l_n_v,l_ind, &
-           rcut,rvdw,rmet,rbin,nstfce,alpha,width)
+Subroutine set_bounds                                       &
+           (levcfg,imcon,lsim,l_vv,l_str,l_n_e,l_n_v,l_ind, &
+           dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -8,34 +8,35 @@ Subroutine set_bounds                                  &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2014
+! author    - i.t.todorov february 2014
+! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode
   Use setup_module
-  Use domains_module,     Only : map_domains,nprx,npry,nprz
-  Use config_module,      Only : cfgname,imc_n,cell,volm
+  Use domains_module,     Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
+  Use config_module,      Only : cfgname,cell,volm
+  Use vnl_module,         Only : llvnl ! Depends on lsim, rpad & l_str
   Use msd_module
   Use tersoff_module,     Only : potter
   Use development_module, Only : l_trm
 
   Implicit None
 
-  Logical,           Intent(   Out ) :: l_vv,l_str,l_n_e,l_n_v,l_ind
+  Logical,           Intent(   Out ) :: lsim,l_vv,l_str,l_n_e,l_n_v,l_ind
   Integer,           Intent(   Out ) :: levcfg,imcon,nstfce
+  Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rpad,rlnk
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
-  Real( Kind = wp ), Intent(   Out ) :: rcut
 
   Logical           :: l_n_r,lzdn,lter,ltbp,lfbp,lext
-  Integer           :: ilx,ily,ilz,qlx,qly,qlz,megatm, &
-                       mtshl,mtcons,mtrgd,mtteth,      &
-                       mtbond,mtangl,mtdihd,mtinv
+  Integer           :: megatm,imc_n,ilx,ily,ilz,qlx,qly,qlz, &
+                       mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
   Real( Kind = wp ) :: ats,celprp(1:10),cut,         &
-                       dens0,dens,dvar,fdens,        &
+                       dens0,dens,fdens,             &
                        test,vcell,rcter,rctbp,rcfbp, &
-                       sidex,sidey,sidez,xhi,yhi,zhi
+                       xhi,yhi,zhi
 
 ! define zero+ and half+/- (setup_module)
 
@@ -60,9 +61,13 @@ Subroutine set_bounds                                  &
            mxmet,mxmed,mxmds,rmet,                    &
            mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext)
 
+! Get imc_r & dvar
+
+  Call scan_control_pre(imc_n,dvar)
+
 ! scan CONFIG file data
 
-  Call scan_config(megatm,imc_n,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
+  Call scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
 
 ! halt execution for unsupported image conditions in DD
 ! checks for some inherited from DL_POLY_2 are though kept
@@ -71,11 +76,11 @@ Subroutine set_bounds                                  &
 
 ! scan CONTROL file data
 
-  Call scan_control                                  &
-           (mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter, &
-           imcon,imc_n,cell,xhi,yhi,zhi,             &
-           l_str,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,  &
-           dvar,rcut,rbin,mxstak,                    &
+  Call scan_control                                      &
+           (mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter,     &
+           imcon,imc_n,cell,xhi,yhi,zhi,                 &
+           l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind, &
+           rcut,rpad,rbin,mxstak,                        &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
@@ -343,7 +348,7 @@ Subroutine set_bounds                                  &
 ! maximum number of external field parameters
 
   If (lext) Then
-     mxpfld = 4
+     mxpfld = 5
   Else
      mxpfld = 0
   End If
@@ -359,36 +364,74 @@ Subroutine set_bounds                                  &
 
 
 
-10 Continue ! possible rcut redefinition if l_trm=.true.
+10 Continue ! possible rcut redefinition...
+
+! Define link-cell cutoff (minimum width)
+
+  rlnk = rcut + rpad
 
 ! define cut
 
-  cut=rcut+1.0e-6_wp
+  cut=rlnk+1.0e-6_wp
 
 ! calculate link cell dimensions per node
 
-  sidex=1.0_wp/Real(nprx,wp)
-  sidey=1.0_wp/Real(npry,wp)
-  sidez=1.0_wp/Real(nprz,wp)
+  ilx=Int(r_nprx*celprp(7)/cut)
+  ily=Int(r_npry*celprp(8)/cut)
+  ilz=Int(r_nprz*celprp(9)/cut)
 
-  ilx=Int(sidex*celprp(7)/cut)
-  ily=Int(sidey*celprp(8)/cut)
-  ilz=Int(sidez*celprp(9)/cut)
-
-! print link cell algorithm and check for violations
+! print link cell algorithm and check for violations or...
 
   If (idnode == 0) Write(nrite,'(/,1x,a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
 
+  cut=Min(r_nprx*celprp(7),r_npry*celprp(8),r_nprz*celprp(9))-1.0e-6_wp
   If (ilx*ily*ilz == 0) Then
-     If (.not.l_trm) Then
-        Call error(307)
-     Else ! we are prepared to exit gracefully(-:
-        rcut=Min(sidex*celprp(7),sidey*celprp(8),sidez*celprp(9))-1.0e-6_wp
+     If (l_trm) Then ! we are prepared to exit gracefully(-:
+        rcut = cut   ! - rpad (was zeroed in scan_control)
         If (idnode == 0) Write(nrite,'(/,1x,a)') &
            "*** warning - real space cutoff reset has occured, early run termination is due !!! ***"
         Go To 10
+     Else
+        If (cut < rcut) Then
+           If (idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
+           Call error(307)
+        Else ! rpad is defined & in 'no strict' mode
+           If (rpad > zero_plus .and. (.not.l_str)) Then ! Re-set rpad with some slack
+              rpad = Min( 0.95_wp * (cut - rcut) , 0.05_wp * rcut)
+              rpad = Int( 100.0_wp * rpad ) / 100.0_wp
+              If (rpad < 0.2_wp) rpad = 0.0_wp ! Don't bother
+              Go To 10
+           Else
+              If (idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
+              Call error(307)
+           End If
+        End If
+     End If
+  Else ! push the limits when real dynamics exists & in 'no strict' mode
+     If (lsim .and. (.not.l_str)) Then
+        If (rpad <= zero_plus) Then ! When rpad undefined give it some value
+           If (Int(Real(Min(ilx,ily,ilz),wp)/1.11_wp) > 4) Then
+              rpad = 0.075_wp * rcut
+              rpad = Int( 100.0_wp * rpad ) / 100.0_wp
+              If (rpad < 0.2_wp) rpad = 0.0_wp ! Don't bother
+              Go To 10
+           Else
+              rpad = Min( 0.075_wp * rcut ,                                      &
+                          0.850_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
+                                             r_npry * celprp(8) / Real(ily,wp) , &
+                                             r_nprz * celprp(9) / Real(ilz,wp) ) &
+                                       - rcut - 1.0e-6_wp ) )
+           End If
+           rpad = Int( 100.0_wp * rpad ) / 100.0_wp
+           If (rpad < 0.2_wp) rpad = 0.0_wp ! Don't bother
+           rlnk = rcut + rpad               ! and correct rlnk respectively
+        Else                        ! Otherwise, set reasonable lower limit
+           If (rpad < 0.2_wp) rpad = 0.0_wp ! Don't bother
+           rlnk = rcut + rpad               ! and correct rlnk respectively
+        End If
      End If
   End If
+  llvnl = (rpad > zero_plus) ! Detect conditional VNL updating at start
 
   If (ilx < 4 .or. ily < 4 .or. ilz < 4) Call warning(100,0.0_wp,0.0_wp,0.0_wp)
 
@@ -464,10 +507,10 @@ Subroutine set_bounds                                  &
 ! more than domains(+halo) arrays' dimensions, in case of
 ! events of extreme collapse in atomic systems (aggregation)
 
-! mxlist is the maximum length of link-cell list (dens * 4/3 pi rcut^3)
-! + 75% extra tolerance - i.e f(dens0,dens)*(7.5/3)*pi*rcut^3
+! mxlist is the maximum length of link-cell list (dens * 4/3 pi rlnk^3)
+! + 75% extra tolerance - i.e f(dens0,dens)*(7.5/3)*pi*rlnk^3
 
-  mxlist = Nint(fdens*2.5_wp*pi*rcut**3)
+  mxlist = Nint(fdens*2.5_wp*pi*rlnk**3)
   mxlist = Min(mxlist,megatm-1) ! mxexcl
 
   If (mxlist+1 < mxexcl) Then
@@ -519,7 +562,7 @@ Subroutine set_bounds                                  &
 ! deporting total per atom
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
-  dens0 = dens0/Max(rcut/0.2_wp,1.0_wp)
+  dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
   mxbfdp = Merge( 2, 0, mxnode > 1) * Nint( Real(                          &
           mxatdm*(18+12+mxexcl + Merge(2*6+mxstak, 0, l_msd))           + &
           4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
@@ -528,7 +571,7 @@ Subroutine set_bounds                                  &
 ! statistics connect deporting total per atom
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
-  dens0 = dens0/Max(rcut/0.2_wp,1.0_wp)
+  dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
   mxbfss = Merge( 2, 0, mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*6+mxstak, 0, l_msd)),wp) * dens0)
 
 ! exporting single per atom
@@ -539,7 +582,7 @@ Subroutine set_bounds                                  &
 ! shared units single per atom
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) - 1.0_wp
-  dens0 = dens0/Max(rcut/2.0_wp,1.0_wp)
+  dens0 = dens0/Max(rlnk/2.0_wp,1.0_wp)
   mxbfsh = Merge( 1, 0, mxnode > 1) * Nint(Real(Max(2*mxshl,2*mxcons,mxlrgd*mxrgd),wp) * dens0)
 
   mxbuff = Max( mxbfdp , 13*mxbfxp , 4*mxbfsh , 2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
@@ -549,13 +592,14 @@ Subroutine set_bounds                                  &
 ! if tersoff or three- or four-body potentials exist
 
   If (lter .or. ltbp .or. lfbp) Then
+     cut=rcut+1.0e-6_wp ! reduce cut
      If (lter) cut = Min(cut,rcter+1.0e-6_wp)
      If (ltbp) cut = Min(cut,rctbp+1.0e-6_wp)
      If (lfbp) cut = Min(cut,rcfbp+1.0e-6_wp)
 
-     ilx=Int(sidex*celprp(7)/cut)
-     ily=Int(sidey*celprp(8)/cut)
-     ilz=Int(sidez*celprp(9)/cut)
+     ilx=Int(r_nprx*celprp(7)/cut)
+     ily=Int(r_npry*celprp(8)/cut)
+     ilz=Int(r_nprz*celprp(9)/cut)
 
      If (idnode == 0) Write(nrite,'(/,1x,a,3i6)') "link-cell decomposition 2 (x,y,z): ",ilx,ily,ilz
 

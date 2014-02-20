@@ -17,15 +17,14 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 !           are not needed.
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush january 2002
-! amended   - i.t.todorov june 2013
+! author    - i.t.todorov & w.smith & i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,   Only : idnode,mxnode,gsum
   Use setup_module
-  Use domains_module, Only : nprx,npry,nprz
+  Use domains_module, Only : nprx,npry,nprz,idx,idy,idz
   Use config_module,  Only : cell,volm,natms,nlast,chge,xxx,yyy,zzz
   Use ewald_module
 
@@ -36,7 +35,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
 
   Logical,           Save :: newjob = .true.
-  Integer,           Save :: idx,idy,idz, ixb,iyb,izb, ixt,iyt,izt
+  Integer,           Save :: ixb,iyb,izb, ixt,iyt,izt
   Real( Kind = wp ), Save :: twopi,ixbm1_r,iybm1_r,izbm1_r, &
                                    ixtm0_r,iytm0_r,iztm0_r, &
                                    kmaxa_r,kmaxb_r,kmaxc_r,engsic
@@ -185,6 +184,11 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 ! [n,0)u[1,2), where -1 <= n < 0.  Only the positive halo is needed by
 ! the B-splines since they distribute/spread charge density in
 ! negative direction with length the length of the spline.
+!
+! The story has become more complicated with cutoff padding and the
+! conditional updates of the VNL and thus the halo as now a domain
+! (1:natms) particle can enter the halo and vice versa.  So DD
+! bounding is unsafe!!!
 
   Call invert(cell,rcell,det)
   If (Abs(det) < 1.0e-6_wp) Call error(120)
@@ -194,36 +198,40 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      tyy(i)=kmaxb_r*(rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+0.5_wp)
      tzz(i)=kmaxc_r*(rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+0.5_wp)
 
+! THIS IS NOW UNSAFE
 ! Get in DD bounds in kmax grid space in case tiny inaccuracies created edge effects
-
-     If (i <= natms) Then
-        If      (txx(i) < ixbm1_r) Then
-           txx(i)=ixbm1_r
-        Else If (txx(i) > ixtm0_r) Then
-           txx(i)=ixtm0_r
-        End If
-
-        If      (tyy(i) < iybm1_r) Then
-           tyy(i)=iybm1_r
-        Else If (tyy(i) > iytm0_r) Then
-           tyy(i)=iytm0_r
-        End If
-
-        If      (tzz(i) < izbm1_r) Then
-           tzz(i)=izbm1_r
-        Else If (tzz(i) > iztm0_r) Then
-           tzz(i)=iztm0_r
-        End If
-     End If
+!
+!     If (i <= natms) Then
+!        If      (txx(i) < ixbm1_r) Then
+!           txx(i)=ixbm1_r
+!        Else If (txx(i) > ixtm0_r) Then
+!           txx(i)=ixtm0_r
+!        End If
+!
+!        If      (tyy(i) < iybm1_r) Then
+!           tyy(i)=iybm1_r
+!        Else If (tyy(i) > iytm0_r) Then
+!           tyy(i)=iytm0_r
+!        End If
+!
+!        If      (tzz(i) < izbm1_r) Then
+!           tzz(i)=izbm1_r
+!        Else If (tzz(i) > iztm0_r) Then
+!           tzz(i)=iztm0_r
+!        End If
+!     End If
 
      ixx(i)=Int(txx(i))
      iyy(i)=Int(tyy(i))
      izz(i)=Int(tzz(i))
 
 ! Detect if a particle is charged and in the MD cell or in its positive halo
-! (t(i) >= 0) as the B-splines are negative directionally by propagation
+! (t(i) >= -zero_plus) as the B-splines are negative directionally by propagation
 
-     If (tzz(i) >= 0.0_wp .and. tyy(i) >= 0.0_wp .and. txx(i) >= 0.0_wp .and. Abs(chge(i)) > zero_plus) Then
+     If (tzz(i) >= -zero_plus .and. &
+         tyy(i) >= -zero_plus .and. &
+         txx(i) >= -zero_plus .and. &
+         Abs(chge(i)) > zero_plus) Then
         it(i)=1
      Else
         it(i)=0

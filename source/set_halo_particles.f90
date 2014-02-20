@@ -1,4 +1,4 @@
-Subroutine set_halo_particles(imcon,rcut,keyfce)
+Subroutine set_halo_particles(imcon,rlnk,keyfce)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,7 +6,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
 ! neighbouring domains/nodes
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov december 2013
+! author    - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -19,7 +19,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
   Implicit None
 
   Integer,           Intent( In    ) :: imcon,keyfce
-  Real( Kind = wp ), Intent( In    ) :: rcut
+  Real( Kind = wp ), Intent( In    ) :: rlnk
 
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: cut
@@ -37,7 +37,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
 
 ! Define cut
 
-     cut=rcut+1.0e-6_wp
+     cut=rlnk+1.0e-6_wp
   End If
 
 ! Get the dimensional properties of the MD cell
@@ -86,7 +86,7 @@ Subroutine set_halo_particles(imcon,rcut,keyfce)
   ecwz=Nearest( (-0.5_wp+ecwz)+Real(idz,wp)*r_nprz , +1.0_wp)+zero_plus
 
 ! Distance from the + edge of this domain with a possible
-! extension strip for the one liked cell per domain scenario
+! extension strip for the one linked cell per domain scenario
 
   cwx=Nearest( (-0.5_wp-cwx)+Real(idx+1,wp)*r_nprx , -1.0_wp)-zero_plus-Merge( cwx*1.0e-10_wp , 0.0_wp , nlx == 1 )
   cwy=Nearest( (-0.5_wp-cwy)+Real(idy+1,wp)*r_npry , -1.0_wp)-zero_plus-Merge( cwy*1.0e-10_wp , 0.0_wp , nly == 1 )

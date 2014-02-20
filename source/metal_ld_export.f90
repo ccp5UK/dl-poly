@@ -1,4 +1,4 @@
-Subroutine metal_ld_export(mdir,mlast)
+Subroutine metal_ld_export(mdir,mlast,ixyz0)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,7 +6,7 @@ Subroutine metal_ld_export(mdir,mlast)
 ! regions for halo formation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2013
+! author    - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -14,13 +14,12 @@ Subroutine metal_ld_export(mdir,mlast)
   Use comms_module
   Use setup_module,  Only : nrite,mxatms,mxbfxp
   Use domains_module
-  Use config_module, Only : ixyz
   Use metal_module,  Only : tabmet,rho,rhs
 
   Implicit None
 
   Integer,           Intent( In    ) :: mdir
-  Integer,           Intent( InOut ) :: mlast
+  Integer,           Intent( InOut ) :: mlast,ixyz0(1:mxatms)
 
   Logical           :: safe,lrhs
   Integer           :: fail,iadd,limit,iblock,          &
@@ -123,13 +122,13 @@ Subroutine metal_ld_export(mdir,mlast)
 
 ! If the particle is within the remaining 'inverted halo' of this domain
 
-     If (ixyz(i) > 0) Then
+     If (ixyz0(i) > 0) Then
 
 ! Get the necessary halo indices
 
-        ix=Mod(ixyz(i),10)           ! [0,1,2,3=1+2]
-        iy=Mod(ixyz(i)-ix,100)       ! [0,10,20,30=10+20]
-        iz=Mod(ixyz(i)-(ix+iy),1000) ! [0,100,200,300=100+200]
+        ix=Mod(ixyz0(i),10)           ! [0,1,2,3=1+2]
+        iy=Mod(ixyz0(i)-ix,100)       ! [0,10,20,30=10+20]
+        iz=Mod(ixyz0(i)-(ix+iy),1000) ! [0,100,200,300=100+200]
 
 ! Filter the halo index for the selected direction
 
@@ -152,11 +151,11 @@ Subroutine metal_ld_export(mdir,mlast)
 
               If (.not.lrhs) Then
                  buffer(imove+1)=rho(i)
-                 buffer(imove+2)=Real(ixyz(i)-jxyz,wp)
+                 buffer(imove+2)=Real(ixyz0(i)-jxyz,wp)
               Else
                  buffer(imove+1)=rho(i)
                  buffer(imove+2)=rhs(i)
-                 buffer(imove+3)=Real(ixyz(i)-jxyz,wp)
+                 buffer(imove+3)=Real(ixyz0(i)-jxyz,wp)
               End If
 
            Else
@@ -221,11 +220,11 @@ Subroutine metal_ld_export(mdir,mlast)
 
      If (.not.lrhs) Then
         rho(mlast) =buffer(j+1)
-        ixyz(mlast)=Nint(buffer(j+2))
+        ixyz0(mlast)=Nint(buffer(j+2))
      Else
         rho(mlast) =buffer(j+1)
         rhs(mlast) =buffer(j+2)
-        ixyz(mlast)=Nint(buffer(j+3))
+        ixyz0(mlast)=Nint(buffer(j+3))
      End If
 
      j=j+iadd

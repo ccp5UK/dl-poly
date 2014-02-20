@@ -5,7 +5,7 @@ Module mpi_module
 ! dl_poly_4 module for faking MPI calls needed for serial compilation
 !
 ! NOTE: The MPI-I/O interfaces are only valid for a single
-!       datarep='native' ASCII steram and thus can only deal with
+!       datarep='native' ASCII stream and thus can only deal with
 !       one type per one file at a time (a serious restriction) !!!
 !
 ! copyright - daresbury laboratory

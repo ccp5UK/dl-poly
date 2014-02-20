@@ -99,7 +99,7 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
   Real( Kind = wp ), Dimension( : ), Allocatable :: real_no, inv_no
 
   fail=0
-  Allocate (real_no(1:nospl),inv_no(1:nospl), Stat=fail )
+  Allocate (real_no(1:nospl),inv_no(1:nospl), Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'bspgen allocation failure, node: ', idnode
      Call error(0)
@@ -192,7 +192,7 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
      bspz(1,i)=bspz(1,i)*riz0*km1_rr
   End Do
 
-  Deallocate (real_no,inv_no, Stat=fail )
+  Deallocate (real_no,inv_no, Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'bspgen allocation failure, node: ', idnode
      Call error(0)

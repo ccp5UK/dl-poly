@@ -7,13 +7,13 @@ Subroutine statistics_connect_set(imcon,rcut)
 ! between replayed frames of history
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2014
+! author    - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module, Only : mxnode
-  Use setup_module, only : nrite,mxatdm,mxstak,zero_plus
+  Use setup_module, only : mxatdm,mxstak,zero_plus
   Use domains_module
   Use config_module
   Use statistics_module
@@ -27,7 +27,7 @@ Subroutine statistics_connect_set(imcon,rcut)
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: cut
 
-  Integer           :: nlx,nly,nlz,i,i0,j,j0,kk
+  Integer           :: nlx,nly,nlz,i,i0,kk
   Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9),x,y,z, &
                        xdc,ydc,zdc,cwx,cwy,cwz,ecwx,ecwy,ecwz
 
@@ -72,7 +72,7 @@ Subroutine statistics_connect_set(imcon,rcut)
      ecwz=Nearest( (-0.5_wp+cwz)+Real(idz,wp)*r_nprz , +1.0_wp)+zero_plus
 
 ! Distance from the + edge of this domain with a possible
-! extension strip for the one liked cell per domain scenario
+! extension strip for the one linked cell per domain scenario
 
      cwx=Nearest( (-0.5_wp-cwx)+Real(idx+1,wp)*r_nprx , -1.0_wp)-zero_plus-Merge( cwx*1.0e-10_wp , 0.0_wp , nlx == 1 )
      cwy=Nearest( (-0.5_wp-cwy)+Real(idy+1,wp)*r_npry , -1.0_wp)-zero_plus-Merge( cwy*1.0e-10_wp , 0.0_wp , nly == 1 )

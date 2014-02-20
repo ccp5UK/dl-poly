@@ -1,6 +1,6 @@
 Subroutine read_control                                &
            (levcfg,l_vv,l_str,l_n_e,l_n_v,             &
-           rcut,rvdw,rbin,nstfce,alpha,width,          &
+           rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
            l_exp,lecx,lfcap,l_top,lzero,lmin,          &
            ltgaus,ltscal,lvar,leql,lpse,               &
            lsim,lfce,lrdf,lprdf,lzdn,lpzdn,            &
@@ -23,7 +23,8 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov february 2014
+! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -44,18 +45,17 @@ Subroutine read_control                                &
 
   Implicit None
 
-  Logical,                Intent( In    ) :: l_vv,l_str,l_n_e,l_n_v
+  Logical,                Intent( In    ) :: lsim,l_vv,l_str,l_n_e,l_n_v
   Integer,                Intent( In    ) :: levcfg
   Integer,                Intent( InOut ) :: nstfce
-  Real( Kind = wp ),      Intent( In    ) :: rcut,rvdw,rbin,width
+  Real( Kind = wp ),      Intent( In    ) :: rcut,rpad,rvdw,rbin,width
   Real( Kind = wp ),      Intent( InOut ) :: alpha
 
   Logical,                Intent(   Out ) :: l_exp,lecx,            &
                                              lfcap,l_top,           &
                                              lzero,lmin,            &
                                              ltgaus,ltscal,         &
-                                             lvar,leql,lpse,        &
-                                             lsim,lfce,             &
+                                             lvar,leql,lpse,lfce,   &
                                              lrdf,lprdf,lzdn,lpzdn, &
                                              ltraj,ldef,lrsd
 
@@ -96,7 +96,7 @@ Subroutine read_control                                &
 
   Integer                                 :: i,j,itmp
 
-  Real( Kind = wp )                       :: rcell(1:9),rcut1,rvdw1,tmp
+  Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp
 
 
 ! initialise system control variables and their logical switches
@@ -256,7 +256,6 @@ Subroutine read_control                                &
 
 ! proceed normal simulation
 
-  lsim = .true.  ! don't replay history
   lfce = .false. ! don't recalculate forces based on history positions
 
 ! default switch for calculation of rdfs, default number of steps
@@ -323,9 +322,10 @@ Subroutine read_control                                &
   timjob = 0.0_wp ; l_timjob=.false.
   timcls = 0.0_wp ; l_timcls=.false.
 
-! cutoff and vdw cutoff defaults
+! major cutoff, padding and vdw cutoff defaults
 
   rcut1 = 0.0_wp
+  rpad1 = 0.0_wp
   rvdw1 = 0.0_wp
 
 ! open the simulation control file
@@ -797,7 +797,7 @@ Subroutine read_control                                &
               Else If (keypse == 3) Then
                       Write(nrite,'(1x,a)') "thermostat control: direct temperature scaling"
               End If
-              Write(nrite,"(1x,'thermostat thickness (Ang)',8x,1p,e12.4)") tmp
+              Write(nrite,"(1x,'thermostat thickness (Angs) ',6x,1p,e12.4)") tmp
            End If
 
            If (width/4.0_wp > tmp .and. tmp >= wthpse) Then
@@ -1421,7 +1421,6 @@ Subroutine read_control                                &
 
         If (idnode == 0) Write(nrite,"(/,1x,'density variation allowance (%)',3x,1p,e12.4)") tmp
 
-
 ! read real space cutoff
 
      Else If (word(1:3) == 'cut' .or. word(1:4) == 'rcut') Then
@@ -1430,7 +1429,16 @@ Subroutine read_control                                &
         Call get_word(record,word)
         rcut1 = Abs(word_2_real(word))
 
-        If (idnode == 0) Write(nrite,"(/,1x,'real space cutoff (Ang)     ',6x,1p,e12.4)") rcut1
+        If (idnode == 0) Write(nrite,"(/,1x,'real space cutoff (Angs)    ',6x,1p,e12.4)") rcut1
+
+! read real space cutoff padding
+
+     Else If (word(1:3) == 'pad' .or. word(1:4) == 'rpad') Then
+
+
+        Call get_word(record,word)
+        rpad1 = Abs(word_2_real(word))
+        If (idnode == 0) Write(nrite,"(/,1x,'cutoff padding (Angs)       ',6x,1p,e12.4)") rpad1
 
 ! read vdw cutoff (short-range potentials)
 
@@ -1440,7 +1448,7 @@ Subroutine read_control                                &
         If (word(1:3) == 'cut') Call get_word(record,word)
         rvdw1 = Abs(word_2_real(word))
 
-        If (idnode == 0) Write(nrite,"(/,1x,'vdw cutoff (Ang)',18x,1p,e12.4)") rvdw1
+        If (idnode == 0) Write(nrite,"(/,1x,'vdw cutoff (Angs) ',16x,1p,e12.4)") rvdw1
 
 ! read Ewald sum parameters
 
@@ -1584,7 +1592,7 @@ Subroutine read_control                                &
         tmp = Abs(word_2_real(word))
         If (tmp > zero_plus) fmax=tmp
         If (idnode == 0) Write(nrite,"(/,1x,'force capping on (during equilibration)', &
-           & /,1x,'force capping limit (kT/Ang)',6x,1p,e12.4)") fmax
+           & /,1x,'force capping limit (kT/Angs)',6x,1p,e12.4)") fmax
 
 ! read 'no vdw', 'no elec' and 'no ind' options
 
@@ -1671,7 +1679,7 @@ Subroutine read_control                                &
 
      Else If (word(1:6) == 'replay') Then
 
-        lsim = .false.
+!        lsim = .false. ! done in scan_control
         Call get_word(record,word)
         If (word(1:4) == 'hist') Call get_word(record,word)
         If (word(1:5) == 'force') lfce=.true.
@@ -1811,7 +1819,7 @@ Subroutine read_control                                &
         If (idnode == 0) Write(nrite, "(/,1x,'defects file option on    ', &
            & /,1x,'defects file start        ',5x,i10,                     &
            & /,1x,'defects file interval     ',5x,i10,                     &
-           & /,1x,'defects distance condition (Ang)',2x,1p,e12.4)") nsdef,isdef,rdef
+           & /,1x,'defects distance condition (Angs) ',1p,e12.4)") nsdef,isdef,rdef
 
 ! REFERENCE1 forcing
 
@@ -1846,7 +1854,7 @@ Subroutine read_control                                &
         If (idnode == 0) Write(nrite, "(/,1x,'displacements file option on', &
            & /,1x,'DISPDAT file start        ',5x,i10,                       &
            & /,1x,'DISPDAT file interval     ',5x,i10,                       &
-           & /,1x,'DISPDAT distance condition (Ang)',2x,1p,e12.4)") nsrsd,isrsd,rrsd
+           & /,1x,'DISPDAT distance condition (Angs)' ,1p,e12.4)") nsrsd,isrsd,rrsd
 
 ! read DL_POLY_2 multiple timestep option (compatibility)
 ! as DL_POLY_4 infrequent k-space SPME evaluation option
@@ -1993,7 +2001,7 @@ Subroutine read_control                                &
 
   If ((mxcons > 0 .or. mxpmf > 0) .and. idnode == 0) Then
      Write(nrite,"(/,1x,'iterations for shake/rattle ',3x,i10)") mxshak
-     Write(nrite,"(1x,'tolerance for shake/rattle (Ang)',2x,1p,e12.4)") tolnce
+     Write(nrite,"(1x,'tolerance for shake/rattle (Angs) ',1p,e12.4)") tolnce
   End If
 
 ! report electrostatics
@@ -2015,11 +2023,17 @@ Subroutine read_control                                &
      End If
   End If
 
-! report if rcut reset (measures taken in scan_config -
+! report if rcut is reset (measures taken in scan_config -
 ! rcut is the maximum cutoff needed in the system)
 
   If (Abs(rcut-rcut1) > 1.0e-6_wp .and. idnode == 0) &
-     Write(nrite,"(/,1x,'real space cutoff reset to (Ang)',2x,1p,e12.4)") rcut
+     Write(nrite,"(/,1x,'real space cutoff reset to (Angs) ',1p,e12.4)") rcut
+
+! report if rpad is reset (measures taken in scan_config & set_bounds -
+! rpad is the cutoff padding needed the conditional VNL update)
+
+  If (Abs(rpad-rpad1) > 1.0e-6_wp .and. idnode == 0) &
+     Write(nrite,"(/,1x,'cutoff padding reset to (Angs)  ',2x,1p,e12.4)") rpad
 
 ! report vdw
 
@@ -2028,7 +2042,7 @@ Subroutine read_control                                &
 ! report if rvdw is reset (measures taken in scan_config)
 
   If ((.not.l_n_v) .and. Abs(rvdw-rvdw1) > 1.0e-6_wp .and. idnode == 0) &
-     Write(nrite,"(/,1x,'vdw cutoff reset to (Ang) ',8x,1p,e12.4)") rvdw
+     Write(nrite,"(/,1x,'vdw cutoff reset to (Angs)',8x,1p,e12.4)") rvdw
 
 ! report timestep
 
@@ -2038,10 +2052,10 @@ Subroutine read_control                                &
         If (idnode == 0) Then
            Write(nrite,"(/,1x,'variable simulation timestep (ps)',1x,1p,e12.4)") tstep
 
-           Write(nrite,"(/,1x,a,2(/,1x,a,7x,1p,e12.4))") &
+           Write(nrite,"(/,1x,a,2(/,1x,a,5x,1p,e12.4))") &
            "controls for variable timestep",             &
-           "minimum distance Dmin (Ang)",mndis,          &
-           "maximum distance Dmax (Ang)",mxdis
+           "minimum distance Dmin (Angs) ",mndis,          &
+           "maximum distance Dmax (Angs) ",mxdis
         End If
         If (mxstp > zero_plus) Then
            If (idnode == 0) Write(nrite,"(1x,a,7x,1p,e12.4)") &

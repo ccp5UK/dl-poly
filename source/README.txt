@@ -1,4 +1,4 @@
-DL_POLY_4.05
+DL_POLY_4.06
 ============
 
 The source is in fully self-contained free formatted FORTRAN90+MPI2

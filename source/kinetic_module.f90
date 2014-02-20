@@ -33,9 +33,10 @@ Module kinetic_module
   Logical,          Save :: l_vom = .true.
   Logical, Private, Save :: lvom  = .true.
 
-  Public :: getkin,getknf,getknt,getknr,   &
-            kinstress,kinstresf,kinstrest, &
-            getcom,getvom,chvom,freeze_atoms,cap_forces
+  Public :: getkin,getknf,getknt,getknr,    &
+            kinstress,kinstresf,kinstrest,  &
+            getcom,getcom_mol,getvom,chvom, &
+            freeze_atoms,cap_forces
 
   Interface getvom
      Module Procedure getvom
@@ -388,6 +389,83 @@ Contains
     If (totmas >= zero_plus) com = com/totmas
 
   End Subroutine getcom
+
+  Subroutine getcom_mol(imcon,istart,ifinish,cmm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine to calculate a molecule's mass and CoM
+!
+! istart  - the global index of the first atom of the molecule
+! ifinish - the global index of the last atom of the molecule
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov february 2014
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Use comms_module,  Only : idnode
+    Use setup_module,  Only : nrite,zero_plus
+    Use config_module, Only : cell,natms,ltg,lfrzn,xxx,yyy,zzz,weight
+
+    Implicit None
+    Integer,           Intent( In    ) :: imcon,istart,ifinish
+
+    Real( Kind = wp ), Intent(   Out ) :: cmm(0:3)
+
+    Integer           :: fail,i,j,k
+
+    Real( Kind = wp ), Allocatable :: mol(:,:)
+
+    fail = 0
+    Allocate (mol(1:(ifinish-istart+1),0:3), Stat = fail)
+    If (fail > 0) Then
+       Write(nrite,'(/,1x,a,i0)') 'getcom_mol allocation failure, node: ', idnode
+       Call error(0)
+    End If
+
+! Initialise
+
+    cmm  = 0.0_wp
+
+    mol = 0.0_wp
+    Do i=1,natms
+       j=ltg(i)
+       If (j >= istart .and. j <= ifinish) Then
+          k=j-istart+1
+
+          mol(k,0) = weight(i)*Real(lfrzn(i)-1,wp)
+          mol(k,1) = xxx(i)
+          mol(k,2) = yyy(i)
+          mol(k,3) = zzz(i)
+       End If
+    End Do
+
+    If (mxnode > 1) Call gsum(mol)
+
+    mol(:,1) = xxx(:)-xxx(1)
+    mol(:,2) = yyy(:)-yyy(1)
+    mol(:,3) = zzz(:)-zzz(1)
+
+    k=ifinish-istart+1
+    Call images(imcon,cell,k,mol(:,1),mol(:,2),mol(:,3))
+    Do i=1,ifinish-istart+1
+       cmm(0) = cmm(0) + mol(i,0)
+       cmm(1) = cmm(1) + mol(i,0)*mol(i,1)
+       cmm(2) = cmm(2) + mol(i,0)*mol(i,2)
+       cmm(3) = cmm(3) + mol(i,0)*mol(i,3)
+    End Do
+
+    If (cmm(0) >= zero_plus) cmm(1:3) = cmm(1:3) / cmm(0)
+
+    fail = 0
+    Deallocate (mol, Stat = fail)
+    If (fail > 0) Then
+       Write(nrite,'(/,1x,a,i0)') 'getcom_mol deallocation failure, node: ', idnode
+       Call error(0)
+    End If
+
+  End Subroutine getcom_mol
 
   Subroutine chvom(flag)
 

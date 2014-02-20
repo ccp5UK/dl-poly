@@ -6,18 +6,17 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 ! gradient method
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith november 2012
+! author    - i.t.todorov & w.smith february 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,      Only : idnode,mxnode,gsum
-  Use setup_module,      Only : nrite,mxatms,mxatdm,mxshl,engunit
-  Use config_module,     Only : natms,nlast,lsi,lsa, &
-                                xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use comms_module,   Only : idnode,mxnode,gsum
+  Use setup_module,   Only : nrite,mxatms,mxatdm,mxshl,engunit
+  Use config_module,  Only : natms,nlast,lsi,lsa, &
+                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use core_shell_module
-  Use statistics_module, Only : pass
-  Use kinetic_module,    Only : freeze_atoms
+  Use kinetic_module, Only : freeze_atoms
 
   Implicit None
 
@@ -58,12 +57,12 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
      keyopt = 0
 
-! Passage accumulators are zeroed in statistics_module
-! pass(1) - cycles counter
-! pass(2) - access counter
-! pass(3) - average cycles
-! pass(4) - minimum cycles
-! pass(5) - maximum cycles
+! Passage accumulators are zeroed in core_shell_module
+! passshl(1) - cycles counter
+! passshl(2) - access counter
+! passshl(3) - average cycles
+! passshl(4) - minimum cycles
+! passshl(5) - maximum cycles
 
      Allocate (oxt(1:mxshl),oyt(1:mxshl),ozt(1:mxshl), Stat=fail(1))
      If (fail(1) > 0) Then
@@ -146,7 +145,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
 ! Increment main passage counter
 
-     pass(1)=pass(1)+1.0_wp
+     passshl(1)=passshl(1)+1.0_wp
 
 ! Minimum for passing
 
@@ -156,13 +155,13 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 ! allow for ten-fold boost in iteration cycle length
 ! for the very first MD step
 
-     If (Nint(pass(2)) == 0) Then
-        If (Nint(pass(1)) >= 10*mxpass) Then
+     If (Nint(passshl(2)) == 0) Then
+        If (Nint(passshl(1)) >= 10*mxpass) Then
            Call warning(330,rlx_tol,grad_pass,0.0_wp)
            Call error(474)
         End If
      Else
-        If (Nint(pass(1)) >= mxpass) Then
+        If (Nint(passshl(1)) >= mxpass) Then
            Call warning(330,rlx_tol,grad_pass,0.0_wp)
            Call error(474)
         End If
@@ -285,7 +284,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
      End If
   End Do
 
-  i=Nint(pass(1))
+  i=Nint(passshl(1))
   If (l_str .and. idnode == 0) Then
      Write(nrite,'(1x,i34,4x,1p,2e18.8)') i-1,stpcfg/engunit,grad_tol
      If (Mod(i,25) == 0) Then
@@ -302,7 +301,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
 ! Final printout
 
-     i=Nint(pass(1))
+     i=Nint(passshl(1))
      If (l_str .and. idnode == 0) Then
         Write(nrite,'(1x,i34,4x,1p,2e18.8)') i,stpcfg/engunit,grad_tol
         Write(nrite, Fmt=*)
@@ -311,16 +310,16 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
 ! Collect passage statistics
 
-     pass(3)=pass(2)*pass(3)
-     pass(2)=pass(2)+1.0_wp
-     pass(3)=pass(3)/pass(2)+pass(1)/pass(2)
-     pass(4)=Min(pass(1),pass(4))
-     pass(5)=Max(pass(1),pass(5))
+     passshl(3)=passshl(2)*passshl(3)
+     passshl(2)=passshl(2)+1.0_wp
+     passshl(3)=passshl(3)/passshl(2)+passshl(1)/passshl(2)
+     passshl(4)=Min(passshl(1),passshl(4))
+     passshl(5)=Max(passshl(1),passshl(5))
 
 ! Rewind keyopt and main passage counter
 
      keyopt =0
-     pass(1)=0.0_wp
+     passshl(1)=0.0_wp
 
 ! Resume rdf calculations
 

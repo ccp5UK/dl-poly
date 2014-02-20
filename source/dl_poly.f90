@@ -53,6 +53,10 @@ Program dl_poly
   Use site_module
   Use config_module
 
+! VNL  module
+
+  Use vnl_module
+
 ! INTERACTION MODULES
 
   Use core_shell_module
@@ -157,8 +161,9 @@ Program dl_poly
 
   Real( Kind = wp ) :: tsths,                                     &
                        timelp,timjob,timcls,tstep,time,tmst,      &
+                       dvar,rcut,rpad,rlnk,                       &
+                       rvdw,rmet,rbin,rcter,rctbp,rcfbp,          &
                        alpha,epsq,fmax,                           &
-                       rcut,rvdw,rmet,rbin,rcter,rctbp,rcfbp,     &
                        width,mndis,mxdis,mxstp,wthpse,tmppse,     &
                        rlx_tol,min_tol,tolnce,quattol,rdef,rrsd,  &
                        emd,vmx,vmy,vmz,temp,sigma,                &
@@ -197,7 +202,7 @@ Program dl_poly
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  version:  4.05.2    /   january 2014  ****** O ****", &
+          "**         **  version:  4.06     /   february 2014  ****** O ****", &
           "*************  execution on ", mxnode, "    node(s)  ******* L ***", &
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
@@ -221,9 +226,9 @@ Program dl_poly
 ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
 ! (setup_module and domains_module)
 
-  Call set_bounds                                      &
-           (levcfg,imcon,l_vv,l_str,l_n_e,l_n_v,l_ind, &
-           rcut,rvdw,rmet,rbin,nstfce,alpha,width)
+  Call set_bounds                                           &
+           (levcfg,imcon,lsim,l_vv,l_str,l_n_e,l_n_v,l_ind, &
+           dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width)
 
 ! ALLOCATE SITE & CONFIG ARRAYS
 
@@ -264,7 +269,7 @@ Program dl_poly
 
   Call read_control                                    &
            (levcfg,l_vv,l_str,l_n_e,l_n_v,             &
-           rcut,rvdw,rbin,nstfce,alpha,width,          &
+           rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
            l_exp,lecx,lfcap,l_top,lzero,lmin,          &
            ltgaus,ltscal,lvar,leql,lpse,               &
            lsim,lfce,lrdf,lprdf,lzdn,lpzdn,            &
@@ -545,9 +550,10 @@ Program dl_poly
   If (idnode == 0) &
      Write(nrite,'(/,/,/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
 
-! Now you can run fast boy
+! Now you can run fast, boy
 
   If (l_fast) Call gsync(l_fast)
+  Call vnl_check(l_str,imcon,rcut,rpad,rlnk)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -609,9 +615,9 @@ Program dl_poly
 
   If (.not.lsim) tstep=tsths ! tstep for 'replay history'
 
-  Call statistics_result                &
-           (rcut,lrdf,lprdf,lzdn,lpzdn, &
-           nstrun,keyens,keyshl,iso,    &
+  Call statistics_result                     &
+           (rcut,lmin,lrdf,lprdf,lzdn,lpzdn, &
+           nstrun,keyens,keyshl,iso,         &
            press,strext,nstep,tstep,time,tmst)
 
 10 Continue

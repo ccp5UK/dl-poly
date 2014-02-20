@@ -6,7 +6,7 @@ Subroutine defects_reference_read &
 ! dl_poly_4 subroutine for reading particles data from REFERENCE file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2013
+! author    - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -476,8 +476,8 @@ Subroutine defects_reference_read &
         top_skip = Int(1,MPI_OFFSET_KIND) ! This is now the frame = 1
      End If
 
-     Call defects_reference_read_parallel               &
-           (lvcfgr, imconr, celr, l_ind, l_str, megref, &
+     Call defects_reference_read_parallel       &
+           (lvcfgr, celr, l_ind, l_str, megref, &
             fast, fh, top_skip, nrefs, namr, indr, xr, yr, zr)
 
 ! Close REFERENCE

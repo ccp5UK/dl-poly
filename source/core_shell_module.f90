@@ -6,7 +6,7 @@ Module core_shell_module
 ! and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2010
+! author    - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,8 +20,8 @@ Module core_shell_module
                                           ntshl1 = 0 , &
                                           ntshl2 = 0
 
-  Real( Kind = wp ),              Save :: smax = 0.0_wp
-
+  Real( Kind = wp ),              Save :: smax = 0.0_wp, &
+                                          passshl(1:5) = 0.0_wp
 
   Integer,           Allocatable, Save :: numshl(:)
   Integer,           Allocatable, Save :: lstshl(:,:),listshl(:,:),legshl(:,:)

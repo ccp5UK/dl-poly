@@ -1,6 +1,6 @@
-Subroutine statistics_result            &
-           (rcut,lrdf,lprdf,lzdn,lpzdn, &
-           nstrun,keyens,keyshl,iso,    &
+Subroutine statistics_result                 &
+           (rcut,lmin,lrdf,lprdf,lzdn,lpzdn, &
+           nstrun,keyens,keyshl,iso,         &
            press,strext,nstep,tstep,time,tmst)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -9,7 +9,7 @@ Subroutine statistics_result            &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith december 1992
-! amended   - i.t.todorov august 2011
+! amended   - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -18,12 +18,15 @@ Subroutine statistics_result            &
   Use setup_module
   Use site_module,       Only : ntpatm,unqatm,numtyp,dens
   Use config_module,     Only : cell,volm
+  Use vnl_module,        Only : llvnl,skipvnl
+  Use core_shell_module, Only : passshl
+  Use minimise_module,   Only : passmin
   Use statistics_module
   Use msd_module
 
   Implicit None
 
-  Logical,           Intent( In    ) :: lrdf,lprdf,lzdn,lpzdn
+  Logical,           Intent( In    ) :: lmin,lrdf,lprdf,lzdn,lpzdn
   Integer,           Intent( In    ) :: nstrun,keyens,keyshl,iso,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,press,strext(1:9),tstep,time,tmst
 
@@ -31,12 +34,26 @@ Subroutine statistics_result            &
   Integer           :: i,j,iadd
   Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty
 
+! VNL skipping statistics
+
+  If (llvnl .and. idnode == 0) Write(nrite,"(//,        &
+     & ' VNL skipping statistics: average skips', f7.2, &
+     & ' minimum skips ', i5, ' maximum skips ', i5)")  &
+     skipvnl(3),Nint(skipvnl(4)),Nint(skipvnl(5))
+
+! minimisation convergence statistics
+
+  If (lmin .and. idnode == 0) Write(nrite,"(//,          &
+     & ' minimisation statistics: average cycles', f7.2, &
+     & ' minimum cycles ', i5, ' maximum cycles ', i5)") &
+     passmin(3),Nint(passmin(4)),Nint(passmin(5))
+
 ! shell relaxation convergence statistics
 
   If (keyshl == 2 .and. idnode == 0) Write(nrite,"(//,       &
      & ' shell relaxation statistics: average cycles', f7.2, &
      & ' minimum cycles ', i5, ' maximum cycles ', i5)")     &
-     pass(3),Nint(pass(4)),Nint(pass(5))
+     passshl(3),Nint(passshl(4)),Nint(passshl(5))
 
 ! Get elapsed time
 

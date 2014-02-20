@@ -1,6 +1,6 @@
-# Master makefile for DL_POLY_4.05 (serial version 1)
+# Master makefile for DL_POLY_4.06 (serial version 1)
 #
-# Author - I.T.Todorov January 2014
+# Author - I.T.Todorov March 2014
 #
 #
 # Define default settings
@@ -27,7 +27,8 @@ OBJ_MOD = \
 	kinds_f90.o mpi_module.o comms_module.o setup_module.o \
 	parse_module.o development_module.o netcdf_modul~.o io_module.o \
 	domains_module.o \
-	site_module.o config_module.o defects_module.o defects1_module.o \
+	site_module.o config_module.o vnl_module.o \
+	defects_module.o defects1_module.o \
 	vdw_module.o metal_module.o tersoff_module.o \
 	three_body_module.o four_body_module.o \
 	core_shell_module.o \
@@ -44,7 +45,8 @@ OBJ_MOD = \
 OBJ_ALL = \
 	warning.o error.o scan_control_io.o \
 	numeric_container.o spme_container.o quaternions_container.o \
-	scan_field.o read_config_parallel.o scan_config.o scan_control.o read_config.o \
+	scan_field.o scan_control_pre.o \
+	read_config_parallel.o scan_config.o scan_control.o read_config.o \
 	set_bounds.o \
 	read_control.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
@@ -61,8 +63,9 @@ OBJ_ALL = \
 	pmf_coms.o pmf_tags.o pmf_vcoms.o pmf_quench.o \
 	rigid_bodies_quench.o \
 	set_temperature.o \
-	vdw_lrc.o metal_lrc.o system_init.o \
+	vdw_lrc.o metal_lrc.o system_init.o vnl_check.o \
 	export_atomic_data.o set_halo_particles.o \
+	export_atomic_positions.o refresh_halo_positions.o \
 	rigid_bodies_stress.o \
 	read_history.o \
 	defects_reference_read.o defects_reference_read_parallel.o \
