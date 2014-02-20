@@ -2965,6 +2965,8 @@ Subroutine read_field                   &
            keyfld=10
         Else If (keyword == 'zrs+') Then
            keyfld=11
+        Else If (keyword == 'osel') Then
+           keyfld=12
         Else
 
            If (idnode == 0) Write(nrite,'(/,1x,a)') keyword
@@ -2987,19 +2989,31 @@ Subroutine read_field                   &
 
 ! convert to internal units
 
-        If      (keyfld == 1 .or. keyfld == 4 .or. keyfld == 5) Then
+        If      (keyfld == 1 .or. keyfld == 4 .or. keyfld == 5 .or. keyfld == 12) Then
+
            If (.not.lunits) Call error(6)
 
            Do i=1,3
               prmfld(i) = prmfld(i)*engunit
            End Do
+
         Else If (keyfld == 2 .or. keyfld == 6 .or. keyfld == 7) Then
+
+           If (.not.lunits) Call error(6)
+
            prmfld(1) = prmfld(1)*engunit
+
         Else If (keyfld == 8) Then
+
            prmfld(3) = prmfld(3)/prsunt ! piston pressure specified in k-atm
            prmfld(3) = prmfld(3)*cell(5)*cell(9) ! convert to force
+
         Else If (keyfld == 9 .or. keyfld == 10 .or. keyfld == 11) Then
+
+           If (.not.lunits) Call error(6)
+
            prmfld(3) = prmfld(3)*engunit
+
         End If
 
         If (idnode == 0) Then

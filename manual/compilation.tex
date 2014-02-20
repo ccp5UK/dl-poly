@@ -8,7 +8,7 @@ your next task will be to compile it.  To aid compilation three
 general makefiles have been provided in the sub-directory {\em
 build}.  These are ``Makefile\_MPI'' - for compiling a parallel
 version of \D, and ``Makefile\_SRL1'' and ``Makefile\_SRL2'' - for
-compiling a serial versions (see Appendix \ref{makefiles}).  After
+compiling a serial versions (see Appendix~\ref{makefiles}).  After
 choosing what the default compilation is to be, the appropriate
 makefile is to be copied as ``Makefile'' in the sub-directory {\em
 source}.  The general \D makefile will build an executable with the
@@ -110,24 +110,24 @@ To run the \D executable (DLPOLY.Z) you will initially require
 three to six input data files, which you must
 create in the {\em execute} sub-directory, (or whichever
 sub-directory you keep the executable program).  The first of
-these is the CONTROL file (Section \ref{control-file}), which
+these is the CONTROL file (Section~\ref{control-file}), which
 indicates to \D what kind of simulation you want to run, how
 much data you want to gather and for how long you want the job
 to run.  The second file you need is the CONFIG file
-(Section \ref{config-file}).  This contains the atom
+(Section~\ref{config-file}).  This contains the atom
 positions and, depending on how the file was created (e.g. whether
 this is a configuration created from `scratch' or the end point of
 another run), the velocities and forces also.  The third file
-required is the FIELD file (Section \ref{field-file}), which
+required is the FIELD file (Section~\ref{field-file}), which
 specifies the nature of the intermolecular interactions, the
 molecular topology and the atomic properties, such as charge and
 mass.  Sometimes you may require a fourth file: TABLE (Section
 \ref{table-file}), which contains short ranged potential and force
 arrays for functional forms not available within \D (usually because
 they are too complex e.g. spline potentials) and/or a fifth file
-TABEAM (Section \ref{tabeam-file}), which contains metal potential
+TABEAM (Section~\ref{tabeam-file}), which contains metal potential
 arrays for non-analytic or too complex functional forms and/or a
-sixth file: REFERENCE (Section \ref{reference-file}), which is
+sixth file: REFERENCE (Section~\ref{reference-file}), which is
 similar to the CONFIG file and contains the "perfect" crystalline
 structure of the system.
 
@@ -137,14 +137,14 @@ select} macro found in the {\em execute} sub-directory.
 
 A successful run of \D will generate several data files, which
 appear in the {\em execute} sub-directory.  The most obvious one
-is the file OUTPUT (Section \ref{output-file}), which provides an
+is the file OUTPUT (Section~\ref{output-file}), which provides an
 effective summary of the job run: the input information; starting
 configuration; instantaneous and rolling-averaged thermodynamic
 data; minimisation information, final configurations;
 radial distribution functions (RDFs); Z-density profiles
 and job timing data.  The OUTPUT file is human readable.  Also
 present will be the restart files REVIVE (Section
-\ref{revive-file}) and REVCON (Section \ref{revcon-file}).  REVIVE
+\ref{revive-file}) and REVCON (Section~\ref{revcon-file}).  REVIVE
 contains the accumulated data for a number of thermodynamic
 quantities and RDFs, and is intended to be used as the input file
 for a following run.  It is {\em not} human readable.  The REVCON
@@ -191,7 +191,7 @@ redirecting the output using the "$>$" symbol, for instance:
 
 It is also worth noting that the use of large batch and buffer
 numbers can speed up enormously the performance of the parallel I/O,
-for example putting in CONTROL (see Section \ref{control-file}):
+for example putting in CONTROL (see Section~\ref{control-file}):
 \begin{verbatim}
 io read mpiio         128 10000000 1000000
 io write mpiio        512 10000000 1000000
@@ -215,7 +215,7 @@ input data are your responsibility, but \D will usually give
 diagnostic messages to help you sort out the trouble.  Running out
 of job time is common and provided you have correctly specified
 the job time variables (using the {\bf close time} and {\bf job
-time} directives - see Section \ref{control-file}) in the CONTROL
+time} directives - see Section~\ref{control-file}) in the CONTROL
 file, \D will stop in a controlled manner, allowing you to restart
 the job as if it had not been interrupted.
 
@@ -225,7 +225,7 @@ require the original CONTROL file ({\em augment it to include the}
 of the new targeted MD run}), the FIELD (and TABLE and/or TABEAM)
 file, and a CONFIG file, which is the exact copy of the REVCON file
 created by the previous job.  You will also require a new file:
-REVOLD (Section \ref{revold-file}), which is an exact copy of the
+REVOLD (Section~\ref{revold-file}), which is an exact copy of the
 previous REVIVE file.  If you attempt to restart \D without this
 additional file available, the job will most probably fail.
 {\bf Note} that \D will append new data to the existing STATIS and
@@ -308,11 +308,11 @@ This method combines the two as minimisation is invoked by
 user-defined intervals of (usually low temperature) dynamics, in a
 cycle of minimisation - dynamics - minimisation etc., which is
 intended to help the structure relax from overstrained conditions
-(see Section \ref{control-file}).  When using the programmed
-minimisation \D writes (and rewrites) the file CFGMIN \ref{cfgminfile},
+(see Section~\ref{control-file}).  When using the programmed
+minimisation \D writes (and rewrites) the file CFGMIN~\ref{cfgminfile},
 which represents the lowest energy structure found during the
 programmed minimisation.  CFGMIN is written in CONFIG file format
-(see section \ref{config-file}) and can be used in place of the
+(see section~\ref{config-file}) and can be used in place of the
 original CONFIG file.
 \end{enumerate}
 
@@ -377,7 +377,7 @@ for the purpose of identifying a true crystal structure.
 \subsection{Simulation Efficiency and Performance}
 
 Although the \D underlining parallelisation strategy (DD and
-link-cells, see Section \ref{parallelisation}) is extremely
+link-cells, see Section~\ref{parallelisation}) is extremely
 efficient, it cannot always provide linear parallelisation speed
 gain with increasing processor count for a fixed size system.
 Nevertheless, it will always provide speedup of the simulation (i.e.
@@ -435,7 +435,7 @@ R = \frac{M_{x} \cdot M_{y} \cdot M_{z}}{(M_{x}+2)
 \end{equation}
 is close to or drops below one.  In such cases there are three
 strategies for improving the situation that can be used singly or in
-combination.  As obvious from equation (\ref{link-cell}) these are:
+combination.  As obvious from equation~(\ref{link-cell}) these are:
 {\bf (i)} decrease the number of nodes used in parallel, {\bf (ii)}
 decrease the cutoff and {\bf (iii)} increase system size.  It is
 crucial to note that increased parallelisation efficiency remains
@@ -472,7 +472,7 @@ ${\cal O}\left({\cal N}~;~(P/{\cal N})^{1/3}\right)$
 \end{description}
 where ${\cal N}$ is the number of particles, $P~=~P_{x} \cdot P_{y} \cdot P_{z}$
 the total number of domains in the MD cell and the rest of the quantities
-are as defined in equations (\ref{link-cell}-\ref{R-factor}).
+are as defined in equations~(\ref{link-cell}-\ref{R-factor}).
 
 Performance may also affected by the fluctuations in the inter-node
 communication, due to unavoidable communication traffic when a

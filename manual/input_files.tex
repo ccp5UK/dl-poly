@@ -581,7 +581,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf traj}ectory $i~j~k$                     \> write HISTORY file with controls: \\
 \>                                              \> $i~=$ start timestep for dumping configurations (default $i~=~0$) \\
 \>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$) \\
-\>                                              \> $k~=$ data level (default $k~=~0$, see Table \ref{keytrj}) \\
+\>                                              \> $k~=$ data level (default $k~=~0$, see Table~\ref{keytrj}) \\
 \>                                              \> \\
 \> {\bf timestep} $f$                           \> set timestep to $f$ ps \\
 \>                                              \> \\
@@ -751,7 +751,7 @@ needed restart files are in place and not corrupted.  If they are
 not in place or are found corrupted, it will start a new simulation
 without initial temperature scaling of the previous configuration
 ({\bf restart noscale}).  Internally these options are handled by
-the integer variable {\tt keyres}, which is explained in Table \ref{keyres}.
+the integer variable {\tt keyres}, which is explained in Table~\ref{keyres}.
 
 \begin{table}[htbp]
 \begin{centering}
@@ -792,7 +792,7 @@ the integer variable {\tt keyres}, which is explained in Table \ref{keyres}.
 are mutually exclusive, though none is mandatory (the default is
 the NVE ensemble\index{ensemble!NVE}).  These options are handled
 internally by the integer variable {\tt keyens}.  The meaning of
-this variable is explained in Table \ref{keyens}.  The {\bf nst}
+this variable is explained in Table~\ref{keyens}.  The {\bf nst}
 keyword is also used in the N$\sigma$T ensembles extension to
 NP$_{n}$AT and NP$_{n}\gamma$T ones.  {\bf Note} that
 these semi-isotropic ensembles are only correct for infinite
@@ -975,15 +975,15 @@ The algorithms are developed in the \D routines {\sc pseudo\_vv} and
 {\sc pseudo\_lfv} respectively.
 
 \item The {\bf defe}cts option will trigger reading of REFERENCE
-(see Section \ref{reference-file}), which defines a reference MD
+(see Section~\ref{reference-file}), which defines a reference MD
 cell with particles' positions defining the crystalline lattice
 sites.  If REFERENCE is not found the simulation will either \\
 {\bf ( i)} halt if the simulation has been restarted, i.e. is a
 continuation of an old one - the {\bf restart} option is used in
-CONTROL and the REVOLD (see Section \ref{revold-file}) file has
+CONTROL and the REVOLD (see Section~\ref{revold-file}) file has
 been provided. \\
 or \\
-{\bf (ii)} recover using CONFIG (see Section \ref{config-file})
+{\bf (ii)} recover using CONFIG (see Section~\ref{config-file})
 if it is a new simulation run, i.e {\bf restart} option is not
 used in CONTROL or REVOLD has not been provided.
 
@@ -1051,7 +1051,7 @@ SPME\index{Ewald!SPME}\index{potential!electrostatics} coulombic evaluation.
 {\bf ewald/spme sum/precision}\index{Ewald!summation},
 {\bf reaction}, {\bf coul}, {\bf shift}, {\bf dist}, {\bf no elec}
 are handled internally by the integer variable {\tt keyfce}.
-See Table \ref{keyfce} for an explanation of this variable.
+See Table~\ref{keyfce} for an explanation of this variable.
 {\bf Note} that all these options with the exception of the last,
 {\bf no elec}, are mutually exclusive.
 
@@ -1353,8 +1353,8 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 1} \\
 \> {\tt header}  \> a72     \> title line \\
 {\bf record 2} \\
-\> {\tt levcfg}  \> integer \> CONFIG file key.  See Table \ref{levcfg} for permitted values \\
-\> {\tt imcon}   \> integer \> Periodic boundary key. See Table \ref{imcon} for permitted values \\
+\> {\tt levcfg}  \> integer \> CONFIG file key.  See Table~\ref{levcfg} for permitted values \\
+\> {\tt imcon}   \> integer \> Periodic boundary key. See Table~\ref{imcon} for permitted values \\
 \> {\tt megatm}  \> integer \> Optinal, total number of particles (crystalographic entities) \\
 {\bf record 3}   \>         \> omitted if {\tt imcon} = 0 \\
 \> {\tt cell(1)} \> real    \> x component of $a$ cell vector \\
@@ -1373,8 +1373,8 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 apart from the mandatory as listed above.  If the file has been
 produced by \D then it also contains other items intended to help
 possible parallel I/O reading. Also, it is worth mentioning that the
-periodic boundary conditions (PBC), as specified in Table \ref{imcon}
-and described in detail in Appendix \ref{boundary-conditions}, refer
+periodic boundary conditions (PBC), as specified in Table~\ref{imcon}
+and described in detail in Appendix~\ref{boundary-conditions}, refer
 generally to a {\bf triclinic type of super-cell}, for which there
 are {\bf no symmetry assumptions!  Records 3, 4 and 5} contain the
 Cartesian components of the super-cell's lattice vectors in \AA.
@@ -1462,7 +1462,7 @@ with fractional coordinates.
 \subsubsection{Further Comments on the CONFIG File}
 
 The CONFIG file has the same format as the output file REVCON
-(Section \ref{revcon-file}).  When restarting from a previous run
+(Section~\ref{revcon-file}).  When restarting from a previous run
 of \D (i.e. using the {\bf restart}, {\bf restart noscale} or {\bf
 restart scale} directives in the CONTROL file - above), the CONFIG
 file must be replaced by the REVCON file, which is renamed as the
@@ -1689,13 +1689,13 @@ descriptions of this molecule, including the {\bf constraints},
 \D will itself construct the global indices for all atoms in the systems.
 
 {\bf Note} that \D determines which shell model to use by scanning
-shell weights provided the FIELD file (see Section \ref{shell-model}).
+shell weights provided the FIELD file (see Section~\ref{shell-model}).
 If all shells have zero weight the \D will choose the relaxed shell
 model.  If no shell has zero weight then \D will choose the dynamical
 one.  In case when some shells are massless and some are not \D will
 terminate execution controllably and provide information about the
 error and possible possible choices of action in the OUTPUT file
-(see Section \ref{output-file}).
+(see Section~\ref{output-file}).
 
 This directive (and associated data records) need not be specified if
 the molecule contains no core-shell units.
@@ -1786,10 +1786,10 @@ is followed {\em n} records specifying the tehered sites in the
 molecule:
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
-\> tether key    \> a4      \> potential key, see Table \ref{tether-table} \\
+\> tether key    \> a4      \> potential key, see Table~\ref{tether-table} \\
 \> index 1 ($i$) \> integer \> atomic site index \\
-\> variable 1    \> real    \> potential parameter, see Table \ref{tether-table} \\
-\> variable 2    \> real    \> potential parameter, see Table \ref{tether-table}
+\> variable 1    \> real    \> potential parameter, see Table~\ref{tether-table} \\
+\> variable 2    \> real    \> potential parameter, see Table~\ref{tether-table}
 \end{tabbing}
 The meaning of these variables is given in Table
 \ref{tether-table}.
@@ -1833,15 +1833,15 @@ where {\em n} is the number of flexible chemical bonds in the
 molecule.  Each of the subsequent {\em n} records contains:
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
-\> bond key      \> a4      \> potential key, see Table \ref{bond-table} \\
+\> bond key      \> a4      \> potential key, see Table~\ref{bond-table} \\
 \> index 1 ($i$) \> integer \> first atomic site index in bond \\
 \> index 2 ($j$) \> integer \> second atomic site index in bond \\
-\> variable 1    \> real    \> potential parameter, see Table \ref{bond-table} \\
-\> variable 2    \> real    \> potential parameter, see Table \ref{bond-table} \\
-\> variable 3    \> real    \> potential parameter, see Table \ref{bond-table} \\
-\> variable 4    \> real    \> potential parameter, see Table \ref{bond-table}
+\> variable 1    \> real    \> potential parameter, see Table~\ref{bond-table} \\
+\> variable 2    \> real    \> potential parameter, see Table~\ref{bond-table} \\
+\> variable 3    \> real    \> potential parameter, see Table~\ref{bond-table} \\
+\> variable 4    \> real    \> potential parameter, see Table~\ref{bond-table}
 \end{tabbing}
-The meaning of these variables is given in Table \ref{bond-table}.
+The meaning of these variables is given in Table~\ref{bond-table}.
 
 This directive (and associated data records) need not be specified
 if the molecule contains no flexible chemical bonds.  See the note
@@ -1905,7 +1905,7 @@ if it is not specified in the FIELD file.
 
 {\bf Note:} Bond potentials\index{potential!bond} with a dash (-) as
 the first character of the keyword, do not contribute to the {\em
-excluded atoms list} (see Section \ref{force-field}).  In this case
+excluded atoms list} (see Section~\ref{force-field}).  In this case
 \D will also calculate the non-bonded\index{potential!non-bonded}
 pair potentials between the described atoms, unless these are
 deactivated by another potential specification.
@@ -1918,14 +1918,14 @@ angle\index{potential!valence angle} bonds in the molecule.  Each
 of the {\em n} records following contains:
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
-\> angle key     \> a4      \> potential key, see Table \ref{angle-table} \\
+\> angle key     \> a4      \> potential key, see Table~\ref{angle-table} \\
 \> index 1 ($i$) \> integer \> first atomic site index \\
 \> index 2 ($j$) \> integer \> second atomic site index (central site) \\
 \> index 3 ($k$) \> integer \> third atomic site index \\
-\> variable 1    \> real    \> potential parameter, see Table \ref{angle-table} \\
-\> variable 2    \> real    \> potential parameter, see Table \ref{angle-table} \\
-\> variable 3    \> real    \> potential parameter, see Table \ref{angle-table} \\
-\> variable 4    \> real    \> potential parameter, see Table \ref{angle-table}
+\> variable 1    \> real    \> potential parameter, see Table~\ref{angle-table} \\
+\> variable 2    \> real    \> potential parameter, see Table~\ref{angle-table} \\
+\> variable 3    \> real    \> potential parameter, see Table~\ref{angle-table} \\
+\> variable 4    \> real    \> potential parameter, see Table~\ref{angle-table}
 \end{tabbing}
 The meaning of these variables is given in Table
 \ref{angle-table}.
@@ -2014,18 +2014,18 @@ where {\em n} is the number of dihedral interactions present in
 the molecule.  Each of the following {\em n} records contains:
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
-\> dihedral key  \> a4      \> potential key, see Table \ref{dihedral-table} \\
+\> dihedral key  \> a4      \> potential key, see Table~\ref{dihedral-table} \\
 \> index 1 ($i$) \> integer \> first atomic site index \\
 \> index 2 ($j$) \> integer \> second atomic site index (central site) \\
 \> index 3 ($k$) \> integer \> third atomic site index \\
 \> index 4 ($l$) \> integer \> fourth atomic site index \\
-\> variable 1    \> real    \> first potential parameter, see Table \ref{dihedral-table} \\
-\> variable 2    \> real    \> second potential parameter, see Table \ref{dihedral-table} \\
-\> variable 3    \> real    \> third potential parameter, see Table \ref{dihedral-table} \\
+\> variable 1    \> real    \> first potential parameter, see Table~\ref{dihedral-table} \\
+\> variable 2    \> real    \> second potential parameter, see Table~\ref{dihedral-table} \\
+\> variable 3    \> real    \> third potential parameter, see Table~\ref{dihedral-table} \\
 \> variable 4    \> real    \> 1-4 electrostatic interaction scale factor \\
 \> variable 5    \> real    \> 1-4 van der Waals\index{potential!van der Waals} interaction scale factor \\
-\> variable 6    \> real    \> fourth potential parameter, see Table \ref{dihedral-table} \\
-\> variable 7    \> real    \> fifth potential parameter, see Table \ref{dihedral-table}
+\> variable 6    \> real    \> fourth potential parameter, see Table~\ref{dihedral-table} \\
+\> variable 7    \> real    \> fifth potential parameter, see Table~\ref{dihedral-table}
 \end{tabbing}
 The meaning of the variables 1-3,6-7 is given in Table
 \ref{dihedral-table}.  The variables 4 and 5 specify the scaling
@@ -2094,14 +2094,14 @@ where {\em n} is the number of inversion interactions present in
 the molecule.  Each of the following {\em n} records contains:
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
-\> inversion key \> a4      \> potential key, see Table \ref{inversion-table} \\
+\> inversion key \> a4      \> potential key, see Table~\ref{inversion-table} \\
 \> index 1 ($i$) \> integer \> first atomic site index (central site) \\
 \> index 2 ($j$) \> integer \> second atomic site index \\
 \> index 3 ($k$) \> integer \> third atomic site index \\
 \> index 4 ($l$) \> integer \> fourth atomic site index \\
-\> variable 1    \> real    \> potential parameter, see Table \ref{inversion-table} \\
-\> variable 2    \> real    \> potential parameter, see Table \ref{inversion-table} \\
-\> variable 3    \> real    \> potential parameter, see Table \ref{inversion-table}
+\> variable 1    \> real    \> potential parameter, see Table~\ref{inversion-table} \\
+\> variable 2    \> real    \> potential parameter, see Table~\ref{inversion-table} \\
+\> variable 3    \> real    \> potential parameter, see Table~\ref{inversion-table}
 \end{tabbing}
 The meaning of the variables 1-2 is given in Table
 \ref{inversion-table}.
@@ -2144,7 +2144,7 @@ $U(u)= Au^{2}+Bu^{4}$ \\
 \vskip 1ex
 \end{table}
 {\bf Note} that the calcite potential is not dependent on an angle $\phi$,
-but on a {\em displacement} $u$.  See section \ref{calcite} for details.
+but on a {\em displacement} $u$.  See Section~\ref{calcite} for details.
 
 \item {\bf finish} \\
 This directive is entered to signal to \D that the entry of the
@@ -2184,12 +2184,12 @@ potential in the following manner:
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> atmnam 1     \> a8   \> first atom type \\
 \> atmnam 2     \> a8   \> second atom type \\
-\> key          \> a4   \> potential key, see Table \ref{vdw-table} \\
-\> variable 1   \> real \> potential parameter, see Table \ref{vdw-table} \\
-\> variable 2   \> real \> potential parameter, see Table \ref{vdw-table} \\
-\> variable 3   \> real \> potential parameter, see Table \ref{vdw-table} \\
-\> variable 4   \> real \> potential parameter, see Table \ref{vdw-table} \\
-\> variable 5   \> real \> potential parameter, see Table \ref{vdw-table}
+\> key          \> a4   \> potential key, see Table~\ref{vdw-table} \\
+\> variable 1   \> real \> potential parameter, see Table~\ref{vdw-table} \\
+\> variable 2   \> real \> potential parameter, see Table~\ref{vdw-table} \\
+\> variable 3   \> real \> potential parameter, see Table~\ref{vdw-table} \\
+\> variable 4   \> real \> potential parameter, see Table~\ref{vdw-table} \\
+\> variable 5   \> real \> potential parameter, see Table~\ref{vdw-table}
 \end{tabbing}
 The variables pertaining to each potential are described in Table
 \ref{vdw-table}.
@@ -2256,7 +2256,7 @@ $U(r) = 0 : r_{ij} \ge 2^{1 \over 6}~\sigma + \Delta$ \\
 \end{centering}
 $^{\dagger}$ Note: in this formula the terms $\alpha$,
 $\beta$ and $\gamma$ are compound expressions involving the
-variables $E_{o},n,m,r_{0}$ and $r_{c}$.  See Section \ref{vdw}
+variables $E_{o},n,m,r_{0}$ and $r_{c}$.  See Section~\ref{vdw}
 for further details.
 
 $^{\ddagger}$ Note: $r_{c}$ defaults to the general van der Waals
@@ -2276,16 +2276,16 @@ potential in the following manner:
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> atmnam 1     \> a8   \> first atom type \\
 \> atmnam 2     \> a8   \> second atom type \\
-\> key          \> a4   \> potential key, see Table \ref{metal-table} \\
-\> variable 1   \> real \> potential parameter, see Table \ref{metal-table} \\
-\> variable 2   \> real \> potential parameter, see Table \ref{metal-table} \\
-\> variable 3   \> real \> potential parameter, see Table \ref{metal-table} \\
-\> variable 4   \> real \> potential parameter, see Table \ref{metal-table} \\
-\> variable 5   \> real \> potential parameter, see Table \ref{metal-table} \\
-\> variable 6   \> real \> potential parameter, see Table \ref{metal-table} \\
-\> variable 7   \> real \> potential parameter, see Table \ref{metal-table} \\
-\> variable 8   \> real \> potential parameter, see Table \ref{metal-table} \\
-\> variable 9   \> real \> potential parameter, see Table \ref{metal-table}
+\> key          \> a4   \> potential key, see Table~\ref{metal-table} \\
+\> variable 1   \> real \> potential parameter, see Table~\ref{metal-table} \\
+\> variable 2   \> real \> potential parameter, see Table~\ref{metal-table} \\
+\> variable 3   \> real \> potential parameter, see Table~\ref{metal-table} \\
+\> variable 4   \> real \> potential parameter, see Table~\ref{metal-table} \\
+\> variable 5   \> real \> potential parameter, see Table~\ref{metal-table} \\
+\> variable 6   \> real \> potential parameter, see Table~\ref{metal-table} \\
+\> variable 7   \> real \> potential parameter, see Table~\ref{metal-table} \\
+\> variable 8   \> real \> potential parameter, see Table~\ref{metal-table} \\
+\> variable 9   \> real \> potential parameter, see Table~\ref{metal-table}
 \end{tabbing}
 The variables pertaining to each potential are described in Table
 \ref{metal-table}.
@@ -2393,19 +2393,19 @@ cross atom type parameters in the following manner:
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 {\bf potential 1 : record 1} \\
 \> atmnam       \> a8   \> atom type \\
-\> key          \> a4   \> potential key, see Table \ref{tersoff-table} \\
-\> variable 1   \> real \> potential parameter, see Table \ref{tersoff-table} \\
-\> variable 2   \> real \> potential parameter, see Table \ref{tersoff-table} \\
-\> variable 3   \> real \> potential parameter, see Table \ref{tersoff-table} \\
-\> variable 4   \> real \> potential parameter, see Table \ref{tersoff-table} \\
-\> variable 5   \> real \> cutoff range for this potential (\AA) \ref{tersoff-table} \\
+\> key          \> a4   \> potential key, see Table~\ref{tersoff-table} \\
+\> variable 1   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 2   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 3   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 4   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 5   \> real \> cutoff range for this potential (\AA) \\
 {\bf potential 1 : record 2} \\
-\> variable 6   \> real \> potential parameter, see Table \ref{tersoff-table} \\
-\> variable 7   \> real \> potential parameter, see Table \ref{tersoff-table} \\
-\> variable 8   \> real \> potential parameter, see Table \ref{tersoff-table} \\
-\> variable 9   \> real \> potential parameter, see Table \ref{tersoff-table} \\
-\> variable 10  \> real \> potential parameter, see Table \ref{tersoff-table} \\
-\> variable 11  \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> variable 6   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 7   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 8   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 9   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 10  \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 11  \> real \> potential parameter, see Table~\ref{tersoff-table} \\
 \> ... \> ... \> ... \\
 \> ... \> ... \> ... \\
 {\bf potential $n$ : record $2n-1$} \\
@@ -2415,9 +2415,9 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 {\bf cross term $1$ : record $2n+1$} \\
 \> atmnam 1     \> a8   \> first atom type \\
 \> atmnam 2     \> a8   \> second atom type \\
-\> variable a   \> real \> potential parameter, see Table \ref{tersoff-table} \\
-\> variable b   \> real \> potential parameter, see Table \ref{tersoff-table} \\
-\> variable c   \> real \> potential parameter, see Table \ref{tersoff-table} \\
+\> variable a   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable b   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable c   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
 \> ... \> ... \> ... \\
 \> ... \> ... \> ... \\
 {\bf cross term $n(n+1)/2$ : record $2n+n(n+1)/2$} \\
@@ -2463,11 +2463,11 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> atmnam 1 ($i$) \> a8   \> first atom type \\
 \> atmnam 2 ($j$) \> a8   \> second (central) atom type \\
 \> atmnam 3 ($k$) \> a8   \> third atom type \\
-\> key            \> a4   \> potential key, see Table \ref{tbp-table} \\
-\> variable 1     \> real \> potential parameter, see Table \ref{tbp-table} \\
-\> variable 2     \> real \> potential parameter, see Table \ref{tbp-table} \\
-\> variable 3     \> real \> potential parameter, see Table \ref{tbp-table} \\
-\> variable 4     \> real \> potential parameter, see Table \ref{tbp-table} \\
+\> key            \> a4   \> potential key, see Table~\ref{tbp-table} \\
+\> variable 1     \> real \> potential parameter, see Table~\ref{tbp-table} \\
+\> variable 2     \> real \> potential parameter, see Table~\ref{tbp-table} \\
+\> variable 3     \> real \> potential parameter, see Table~\ref{tbp-table} \\
+\> variable 4     \> real \> potential parameter, see Table~\ref{tbp-table} \\
 \> variable 5     \> real \> cutoff range for this potential (\AA)
 \end{tabbing}
 The variables pertaining to each potential are described in Table
@@ -2528,9 +2528,9 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> atmnam 2 ($j$) \> a8   \> second atom type \\
 \> atmnam 3 ($k$) \> a8   \> third atom type \\
 \> atmnam 4 ($l$) \> a8   \> fourth atom type \\
-\> key            \> a4   \> potential key, see Table \ref{fbp-table} \\
-\> variable 1     \> real \> potential parameter, see Table \ref{fbp-table} \\
-\> variable 2     \> real \> potential parameter, see Table \ref{fbp-table} \\
+\> key            \> a4   \> potential key, see Table~\ref{fbp-table} \\
+\> variable 1     \> real \> potential parameter, see Table~\ref{fbp-table} \\
+\> variable 2     \> real \> potential parameter, see Table~\ref{fbp-table} \\
 \> variable 3     \> real \> cutoff range for this potential (\AA)
 \end{tabbing}
 The variables pertaining to each potential are described in Table
@@ -2579,15 +2579,15 @@ directive indicating what type of field is to be applied, followed
 by the field parameters in the following manner:
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
-\> field key     \> a4      \> external field key, see Table \ref{external-field-table} \\
-\> variable 1    \> real    \> potential parameter, see Table \ref{external-field-table} \\
-\> variable 2    \> real    \> potential parameter, see Table \ref{external-field-table} \\
-\> variable 3    \> real    \> potential parameter, see Table \ref{external-field-table} \\
-\> variable 4    \> real    \> potential parameter, see Table \ref{external-field-table} \\
-\> variable 5    \> real    \> potential parameter, see Table \ref{external-field-table}
+\> field key     \> a4      \> external field key, see Table~\ref{external-field-table} \\
+\> variable 1    \> real    \> potential parameter, see Table~\ref{external-field-table} \\
+\> variable 2    \> real    \> potential parameter, see Table~\ref{external-field-table} \\
+\> variable 3    \> real    \> potential parameter, see Table~\ref{external-field-table} \\
+\> variable 4    \> real    \> potential parameter, see Table~\ref{external-field-table} \\
+\> variable 5    \> real    \> potential parameter, see Table~\ref{external-field-table}
 \end{tabbing}
 The variables pertaining to each field potential are described
-in Table \ref{external-field-table}.
+in Table~\ref{external-field-table}.
 
 {\bf Note:} only one type of field can be applied at a time.
 
@@ -2649,7 +2649,7 @@ A(z_{mn}-z) & z < z_{mn}
 \end{array} \right.
 $ \\
            &                     &       &           &         &         &               & \\
-{\bf osel} & Osc. Electric Field & $E_{x}$ & $E_{y}$ & $E_{z}$ & $\omega$ &              &
+{\bf osel} & Osc. Electric Field & $E_{x}$ & $E_{y}$ & $E_{z}$ & $\omega^{in}_{ps^{-1}}$ & &
 $\vek{F} = q \; \vek{E} \; \sin(2 \pi \omega t)$ \\
            &                     &       &           &         &         &               & \\
 \hline
@@ -2663,11 +2663,11 @@ the specified energy units and the general DL\_POLY units so
 that the two sides of the equation defining the field are balanced.
 For example, the magnetic field units, $\vek{H} = (H_{1},H_{2},H_{3})$,
 in the DL\_POLY FIELD scope will follow from the interaction definition
-as seen in Table \ref{external-field-table}:
+as seen in Table~\ref{external-field-table}:
 \begin{eqnarray}
 \vek{F} &=& q \; (\vek{v} \times \vek{H})~~~~~~{\tt therefore}, \nonumber \\
 \left[H\right] &=& \frac{\left[F\right]}{\left[q\right]~\left[V\right]} = \frac{\left[m\right]~\left[a\right]}{\left[q\right]~\left[V\right]} \nonumber \\
-\left[H\right] &=& \frac{\tt Dalton~\AA/ps^{2}}{\tt proton~\AA/ps} = \frac{\tt Dalton}{\tt proton~ps} \\
+\left[H\right] &=& \frac{\tt Dalton~\AA/ps^{2}}{\tt proton~\AA/ps} = \frac{\tt Dalton}{\tt proton~ps} \\ \label{external-field-units}
 \left[H\right] &=& 1.037837512 \times 10^{4}~{\tt Tesla}~~. \nonumber
 \end{eqnarray}
 Thus to apply a magnetic field of 1~Tesla along the $y$ axis,
@@ -2690,11 +2690,11 @@ this directive \D will abort.
 \label{reference-file}
 
 The REFERENCE has the same format and structure as CONFIG
-(see Section \ref{config-file}) file with the exception that
+(see Section~\ref{config-file}) file with the exception that
 ${\tt imcon}~{\bf MUST~BE} \ne 0$.  REFERENCE may contain
 more or less particles than CONFIG does and may have
-particles whith identities that are not defined in FIELD
-(see Section \ref{field-file}).  The positions of these
+particles with identities that are not defined in FIELD
+(see Section~\ref{field-file}).  The positions of these
 particles are used to define the crystalline lattice sites
 to whitch the particles in CONFIG compare during simulation
 when the defect detection option, {\bf defe}cts, is used.
@@ -2708,7 +2708,7 @@ not required if the current job is not a continuation of a
 previous run (i.e. if the {\bf restart} directive is not present
 in the CONTROL file - see above).  The file is unformatted and
 therefore not human readable.  \D normally produces the file
-REVIVE (see Section \ref{revive-file}) at the end of a job which
+REVIVE (see Section~\ref{revive-file}) at the end of a job which
 contains the statistics data.  REVIVE should be copied to REVOLD
 before a continuation run commences.  This may be done by the {\sl
 copy} macro supplied in the {\em execute} sub-directory of \D.
@@ -2783,7 +2783,7 @@ The option of using tabulated\index{potential!tabulated}
 potentials is specified in the FIELD file (see above).  The
 specific potentials that are to be tabulated are indicated by the
 use of the {\bf tab} keyword on the record defining the short
-range potential (see Table \ref{vdw-table}).
+range potential (see Table~\ref{vdw-table}).
 
 \subsubsection{The TABLE File Format}
 
@@ -2829,7 +2829,7 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 It should be noted that the number of grid points in the TABLE file
 should not be less than the number of grid points \D is expecting.
 (This number is given by the parameter {\tt mxgrid} calculated in
-the {\sc setup\_module} file - see Section \ref{interpolation} and
+the {\sc setup\_module} file - see Section~\ref{interpolation} and
 \ref{parameters}.)  \D will re-interpolate the tables if
 ${\tt delpot} = \frac{\tt cutpot}{{\tt ngrid}-4}~<~{\tt dlrvdw} = \frac{\tt rvdw}{{\tt mxgrid}-4}$
 (usually when ${\tt ngrid}>{\tt mxgrid}$), but will abort if ${\tt delpot}>{\tt dlrvdw}$.
@@ -2852,7 +2852,7 @@ $Min(r_{\rm cut},{\tt cutpot})$ are discarded.
 The TABEAM file contains the tabulated potential functions (no explicit
 analytic form) describing the EAM\index{potential!EAM} or EEAM\index{potential!EEAM}
 metal interactions in the MD system.  This file is read by the subroutine
-{\sc metal\_table\_read} (see Chapter \ref{source}).
+{\sc metal\_table\_read} (see Chapter~\ref{source}).
 
 \subsubsection{The TABEAM File Format}
 
@@ -2934,7 +2934,7 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 
 The tabled data are used to fill the internal arrays {\tt vmet},
 {\tt dmet} and {\tt fmet}, and optionally {\tt dmes} and {\tt fmes}
-for the 2B extensions of EAM and EEAM (see Section \ref{metal}).
+for the 2B extensions of EAM and EEAM (see Section~\ref{metal}).
 The force arrays are generated from these (by the
 {\sc metal\_table\_derivatives} routine) using a five point
 interpolation procedure.  During simulation, interactions beyond

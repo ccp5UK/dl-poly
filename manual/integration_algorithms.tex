@@ -112,8 +112,8 @@ zero net momentum (which we impose) and $p$ is zero for periodic
 or three for non-periodic systems, where it accounts for fixing
 angular momentum about origin (which we impose).
 
-In the case of rigid bodies\index{rigid body} (see Section \ref{rigid})
-the first part of equation (\ref{freedom})
+In the case of rigid bodies\index{rigid body} (see Section~\ref{rigid})
+the first part of equation~(\ref{freedom})
 \begin{equation}
 f\prime = 3{\cal N} - 3{\cal N}_{frozen}
 \end{equation}
@@ -304,9 +304,9 @@ LFV\index{algorithm!Verlet} algorithm, assuming an absence of
 rigid bonds\index{constraints!bond} (constraint forces).  (This is
 stage 1 of the SHAKE algorithm.)
 \item The deviation in each bondlength is used to calculate the
-corresponding constraint force (\ref{g12}) that (retrospectively)
+corresponding constraint force, equation~(\ref{g12}), that (retrospectively)
 `corrects' the bond length.
-\item After the correction (\ref{g12}) has been applied to all
+\item After the correction, equation~(\ref{g12}), has been applied to all
 bonds, every bondlength is checked.  If the largest deviation found
 exceeds the desired tolerance, the correction calculation is
 repeated.
@@ -324,9 +324,9 @@ VV\index{algorithm!Verlet} algorithm, assuming an absence of
 rigid bonds\index{constraints!bond} (constraint forces).  (This is
 stage 1 of the RATTLE\_VV1 algorithm.)
 \item The deviation in each bondlength is used to calculate the
-corresponding constraint force (\ref{g121}) that (retrospectively)
+corresponding constraint force, equation~(\ref{g121}), that (retrospectively)
 `corrects' the bond length.
-\item After the correction (\ref{g121}) has been applied to all
+\item After the correction, equation~(\ref{g121}), has been applied to all
 bonds, every bondlength is checked.  If the largest deviation found
 exceeds the desired tolerance, the correction calculation is
 repeated.
@@ -343,8 +343,8 @@ of the RATTLE\_VV2 algorithm.)
 \item The deviation of $\vek{d}_{ij} \cdot (\vek{v}_{j}-\vek{d}_{i})$
 in each bond is used to calculate the corresponding constraint
 force that (retrospectively) `corrects' the bond velocities.
-\item After the correction (\ref{b12}) has been applied to all bonds,
-every bond velocity is checked against the above condition.  If the
+\item After the correction, equation~(\ref{b12}), has been applied to all
+bonds, every bond velocity is checked against the above condition.  If the
 largest deviation found exceeds the desired tolerance, the correction
 calculation is repeated.
 \item Steps (b) and (c) are repeated until all bonds satisfy the
@@ -454,7 +454,7 @@ the kinetic temperature constraint $\chi$ can be found as follows:
 \left\{ \frac{\vek{f}_{i}(t)}{m_{i}} - \chi (t) \; \vek{v}_{i}(t) \right\} = 0 \label{Evans} \\
 \chi (t) &=& \frac {\sum_{i} \vek{v}_{i}(t) \cdot \vek{f}_{i}(t)} {\sum_{i} m_{i} \vek{v}_{i}^{2}(t)}~~, \nonumber
 \end{eqnarray}
-where $\cal T$ is the instantaneous temperature defined in equation (\ref {tinst}).
+where $\cal T$ is the instantaneous temperature defined in equation~(\ref{tinst}).
 
 The VV implementation of the Evans algorithm is straight forward.
 The conventional VV1 and VV2 steps are carried out as before
@@ -622,7 +622,7 @@ with
 \end{equation}
 and $\vek{R}_{k}$ vectors of independent standard Gaussian random
 numbers of zero mean and unit variance, ${\tt Gauss}(0,1)$, -
-easily related to the Langevin random forces as defined in equation (\ref{langevin}).
+easily related to the Langevin random forces as defined in equation~(\ref{langevin}).
 \item RATTLE\_VV1
 \item FF:
 \begin{equation}
@@ -655,7 +655,7 @@ The LFV implementation of the Langevin thermostat is straightforward:
 \vek{r}(t + \Delta t) &\leftarrow& \vek{r}(t) + \Delta t \;
 \vek{v}(t + {1 \over 2} \Delta t)~~, \nonumber
 \end{eqnarray}
-where $\vek{R}(t)$ are the Langevin random forces as defined in equation (\ref{langevin}).
+where $\vek{R}(t)$ are the Langevin random forces as defined in equation~(\ref{langevin}).
 \item SHAKE
 \item Full step velocity:
 \begin{equation}
@@ -804,7 +804,7 @@ where
 \end{equation}
 is the target thermostat energy (depending on the external
 temperature and the system total degrees of freedom, $f$ -
-equation (\ref{freedom})) and $\tau_{T}$ a specified time constant
+equation~(\ref{freedom})) and $\tau_{T}$ a specified time constant
 for temperature fluctuations (normally in the range [0.5, 2] ps).
 
 The VV implementation of the Berendsen algorithm is straight forward.
@@ -1006,7 +1006,7 @@ in which the thermostat friction, $\chi$, has its own Brownian dynamics:
 \end{equation}
 governed by the Langevin friction $\gamma$ (positive, in units of ps$^{-1}$),
 where $\omega(t)$ is the standard Brownian motion (Wiener process - {\tt Gauss}(0,1)),
-$\sigma$ is the target thermostat energy, as in equation (\ref{sigma}).
+$\sigma$ is the target thermostat energy, as in equation~(\ref{sigma}).
 \begin{equation}
 q_{mass} = 2~\sigma~\tau_{T}^{2}
 \end{equation}
@@ -1014,7 +1014,7 @@ is the thermostat mass, which depends on a specified time constant
 $\tau_{T}$ (for temperature fluctuations normally in the range [0.5,
 2] ps).
 
-It is worth noting that equation (\ref{Ornstein-Uhlenbeck}) similar
+It is worth noting that equation~(\ref{Ornstein-Uhlenbeck}) similar
 to the Ornstein-Uhlenbeck equation:
 \begin{equation}
 {d \chi \over dt} = -\frac{\alpha\sigma^{2}}{2}\chi + \sigma {d \omega \over dt}~~,
@@ -1188,8 +1188,8 @@ p_{mass} &=& \frac{(f+3)~k_{B}~T_{\rm ext}}{(2 \pi~\chi_{p})^{2}} \nonumber \\
 where $\chi$ and $\chi_{p}$ are the user defined {\em constants}
 (positive, in units of ps$^{-1}$), specifying the thermostat and
 barostat friction parameters, $R(t)$ is the Langevin stochastic force
-(see equation (\ref{langevin})), ${\cal P}$ the instantaneous pressure
-(equation (\ref{prs_inst})) and $R_{p}$ is the stochastic (Langevin)
+(see equation~(\ref{langevin})), ${\cal P}$ the instantaneous pressure
+(equation~(\ref{prs_inst})) and $R_{p}$ is the stochastic (Langevin)
 pressure variable
 \begin{equation}
 \left< R_{p}(t)~R_{p}(t^\prime)\right> = 2~\chi_{p}~p_{mass}~k_{B}T~\delta(t-t^\prime)~~,
@@ -1384,7 +1384,7 @@ p_{mass} &=& \frac{(f+3)}{3}~\frac{k_{B}~T_{\rm ext}}{(2 \pi~\chi_{P})^{2}} \non
 \frac{d}{dt}\mat{H}(t) &=& \mat{\eta}(t) \cdot \mat{H}(t) \nonumber \\
 \frac{d}{dt} V(t) &=& {\tt Tr} [\mat{\eta}(t)]~V(t)~~. \nonumber
 \end{eqnarray}
-where $\mat{\sigma}$ is the stress tensor (equation (\ref{str_inst}))
+where $\mat{\sigma}$ is the stress tensor (equation~(\ref{str_inst}))
 and $\mat{1}$ is the identity matrix.
 
 The conserved quantity these generate is:
@@ -1490,7 +1490,7 @@ step
 \begin{equation}
 {d{\cal P}(t) \over dt} = {{P_{\rm ext} - {\cal P}(t)} \over \tau_{P}}~~,
 \end{equation}
-where ${\cal P}$ is the instantaneous pressure (equation (\ref{prs_inst}))
+where ${\cal P}$ is the instantaneous pressure (equation~(\ref{prs_inst}))
 and $\tau_{P}$ is the barostat relaxation time constant.
 
 \vskip 2ex
@@ -1615,7 +1615,7 @@ variations is straightforward.  A tensor \mat{\eta} is defined as
 \mat{\eta}(t) = \mat{1} - {\beta \Delta t \over \tau_{P}}
 (P_{\rm ext}~\mat{1} - \mat{\sigma}(t) / V(t))~~,
 \end{equation}
-where where $\mat{\sigma}$ is the stress tensor (equation (\ref{str_inst}))
+where where $\mat{\sigma}$ is the stress tensor (equation~(\ref{str_inst}))
 and $\mat{1}$ is the identity matrix.  Then new cell vectors
 and volume are given by
 \begin{eqnarray}
@@ -1659,7 +1659,7 @@ barostat equation of motion to:
 where $\gamma_{\rm ext}$ is the user defined external surface tension
 and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantaneous hight of the
 MD box (or MD box volume over area).  One defines the instantaneous surface
-tension as given in equation (\ref{gamma}).  The case $\gamma_{\rm ext}=0$
+tension as given in equation~(\ref{gamma}).  The case $\gamma_{\rm ext}=0$
 generates the NPT anisotropic ensemble for the orthorhombic cell
 (imcon=2 in CONFIG, see Appendix~\ref{boundary-conditions}).  This
 can be considered as an "orthorhombic" constraint on the N$\sigma$T ensemble.
@@ -1705,10 +1705,10 @@ p_{mass} &=& (f+3)~k_{B}~T_{\rm ext}~\tau_{P}^{2} \nonumber \\
 where $\eta$ is the barostat friction coefficient, $\vek{R}_{0}(t)$
 the system centre of mass at time $t$, $q_{mass}$ the thermostat mass,
 $\tau_{T}$ a specified time constant for temperature fluctuations,
-$\sigma$ the target thermostat energy (equation (\ref{sigma})),
+$\sigma$ the target thermostat energy (equation~(\ref{sigma})),
 $p_{mass}$ the barostat mass, $\tau_{P}$ a specified time constant
 for pressure fluctuations, ${\cal P}$ the instantaneous pressure\index{units!pressure}
-(equation (\ref{prs_inst})) and $V$ the system volume.  \mat{H} is the
+(equation~(\ref{prs_inst})) and $V$ the system volume.  \mat{H} is the
 cell matrix whose columns are the three cell vectors $\vek{a}, \vek{b}, \vek{c}$.
 
 The conserved quantity is, to within a constant, the Gibbs free energy
@@ -1907,7 +1907,7 @@ p_{mass} &=& \frac{(f+3)}{3}~k_{B}~T_{\rm ext}~\tau_{P}^{2} \nonumber \\
 \frac{d}{dt}\mat{H}(t) &=& \mat{\eta}(t) \cdot \mat{H}(t) \nonumber \\
 \frac{d}{dt} V(t) &=& {\tt Tr} [\mat{\eta}(t)]~V(t)~~, \nonumber
 \end{eqnarray}
-where $\mat{\sigma}$ is the stress tensor (equation (\ref{str_inst})) and
+where $\mat{\sigma}$ is the stress tensor (equation~(\ref{str_inst})) and
 $\mat{1}$ is the identity matrix.  The VV and LFV algorithmic equations
 are, therefore, written in the same fashion as above with slight
 modifications in (i) the equations for the thermostat and barostat
@@ -1995,7 +1995,7 @@ equation of motion and the conserved quantity to:
 where $\gamma_{\rm ext}$ is the user defined external surface tension
 and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantaneous hight of the
 MD box (or MD box volume over area).  One defines the instantaneous surface
-tension as given in equation (\ref{gamma}).  The case $\gamma_{\rm ext}=0$
+tension as given in equation~(\ref{gamma}).  The case $\gamma_{\rm ext}=0$
 generates the NPT anisotropic ensemble for the orthorhombic cell
 (imcon=2 in CONFIG, see Appendix~\ref{boundary-conditions}).  This
 can be considered as an "orthorhombic" constraint on the N$\sigma$T ensemble.
@@ -2026,7 +2026,7 @@ and anisotropic cell fluctuations in which the equations of motion are
 only slightly augmented with respect to those for the coupled
 Nos\'e-Hoover thermostat\index{thermostat!Nos\'{e}-Hoover} and
 barostat\index{barostat!Nos\'{e}-Hoover}.  Compare the isotropic cell
-changes case, equations (\ref{npth}), to
+changes case, equations~(\ref{npth}), to
 \begin{eqnarray}
 \frac{d}{dt} \vek{r}(t) &=& \vek{v}(t) + \eta (t) \; \vek{r}(t) \nonumber \\
 \frac{d}{dt} \vek{v}(t) &=& \frac{\vek{f}(t)}{m} - \left[ \chi(t) +
@@ -2040,7 +2040,7 @@ p_{mass} &=& (f+3)~k_{B}~T_{\rm ext}~\tau_{P}^{2} \nonumber \\
 \frac{d}{dt}\mat{H}(t) &=& \eta (t) \; \mat{H}(t) \nonumber \\
 \frac{d}{dt} V(t) &=& [3 \eta (t)]~V(t)~~, \nonumber
 \end{eqnarray}
-and the anisotropic cell change case, equations (\ref{nsth}), to
+and the anisotropic cell change case, equations~(\ref{nsth}), to
 \begin{eqnarray}
 \frac{d}{dt} \vek{r}(t) &=& \vek{v}(t) + \mat{\eta}(t) \cdot  \vek{r}(t) \nonumber \\
 \frac{d}{dt} \vek{v}(t) &=& \frac{\vek{f}(t)}{m} - \left[ \chi(t)~\mat{1} +
@@ -2148,7 +2148,7 @@ equation of motion and the conserved quantity to:
 where $\gamma_{\rm ext}$ is the user defined external surface tension
 and $h_{z}(t) = V(t) / A_{xy}(t)$ is the instantaneous hight of the
 MD box (or MD box volume over area).  One defines the instantaneous surface
-tension as given in equation (\ref{gamma}).  The case $\gamma_{\rm ext}=0$
+tension as given in equation~(\ref{gamma}).  The case $\gamma_{\rm ext}=0$
 generates the NPT anisotropic ensemble for the orthorhombic cell
 (imcon=2 in CONFIG, see Appendix~\ref{boundary-conditions}).  This
 can be considered as an "orthorhombic" constraint on the N$\sigma$T ensemble.
@@ -2320,7 +2320,7 @@ The equations of translational motion of a rigid body are the same as
 those describing the motion of a single atom, except that the force is
 the total force acting on the rigid body i.e. $\vek{F}$ in equation
 (\ref{netforce}) and the mass is the total mass of the rigid body unit
-i.e. $M$ in equation (\ref{netmass}).  These equations can be integrated
+i.e. $M$ in equation~(\ref{netmass}).  These equations can be integrated
 by the standard Verlet (LFV or VV) algorithms described in the previous
 sections.  Thus we need only consider the rotational motion here.
 
@@ -2349,7 +2349,7 @@ The vectors $\hat{\vek{\tau}}$ and $\hat{\vek{\omega}}$ are the torque and
 angular velocity acting on the body transformed to the local body frame.
 Integration of $\hat{\vek{\omega}}$ is complicated by the fact that as the
 rigid body rotates, so does the local reference frame.  So it is necessary
-to integrate equations (\ref{euler}) simultaneously with an integration of
+to integrate equations~(\ref{euler}) simultaneously with an integration of
 the quaternions describing the orientation of the rigid body.  The equation
 describing this is:
 \begin{equation}
@@ -2449,7 +2449,7 @@ and the angular velocity $\zeta_{k}$ is defined as:
 \begin{equation}
 \zeta_{k}={1 \over 4 I_{k}}\vek{p}^{T} P_{k}~\vek{q}~~.
 \end{equation}
-Equations (\ref{ns1}) to (\ref{ns2}) represent the heart of the NOSQUISH algorithm
+Equations~(\ref{ns1}-\ref{ns2}) represent the heart of the NOSQUISH algorithm
 and are repeatedly applied (10 times in \D).  The final result is the quaternion
 updated to the full timestep value i.e. $\vek{q}(t+\Delta t)$.  These equations
 form part of the first stage of the VV algorithm (VV1).
@@ -2463,14 +2463,14 @@ quaternion momenta to a full timestep:
 \subsection{Thermostats and Barostats coupling to the Rigid Body Equations of Motion}
 
 In the presence of rigid bodies in the atomic system the system's instantaneous pressure,
-equation (\ref{prs_inst}):
+equation~(\ref{prs_inst}):
 \begin{equation}
 {\cal P}(t) = \frac{\left[ 2 E_{kin}(t) -
 {\cal W}_{\rm atomic}(t) - {\cal W}_{\rm COM}(t) -
 {\cal W}_{\rm constrain}(t - \Delta t) -
 {\cal W}_{\rm PMF}(t - \Delta t) \right]} {3 V(t)}
 \end{equation}
-and stress, equation (\ref{str_inst}):
+and stress, equation~(\ref{str_inst}):
 \begin{equation}
 \mat{\sigma}(t) = \mat{\sigma}_{kin}(t) +
 \mat{\sigma}_{\rm atomic}(t) + \mat{\sigma}_{\rm COM}(t) +
@@ -2498,8 +2498,8 @@ p_{mass}(f) &\rightarrow& p_{mass}(F - f^{RB {\bf (rot)}}) = p_{mass}(f + f^{RB 
 \eta(f) &\rightarrow& ~~~~~\eta(F - f^{RB {\bf (rot)}}) = ~~~~~~\eta(f + f^{RB {\bf (tra)}}) \nonumber \\
 \mat{\eta}(f) &\rightarrow& ~~~~~\mat{\eta}(F - f^{RB {\bf (rot)}}) = ~~~~~~\mat{\eta}(f + f^{RB {\bf (tra)}})~~, \nonumber
 \end{eqnarray}
-where $f$ refers to the degrees of freedom in the system (see equation (\ref{freedom})),
-$\sigma$ is the system target energy (see equation (\ref{sigma})), ${\cal H}$ is the
+where $f$ refers to the degrees of freedom in the system (see equation~(\ref{freedom})),
+$\sigma$ is the system target energy (see equation~(\ref{sigma})), ${\cal H}$ is the
 conserved quantity of the ensemble (if there is such defined), $E_{kin}$ (!includes
 RB COM kinetic energy too) and $E_{rot}$ are respectively the kinetic and rotational
 energies of the system, $p_{mass}$ is the barostat mass, and $\eta$ and $\mat{\eta}$
@@ -2509,7 +2509,7 @@ There are two slight technicalities with the Evans and Andersen ensembles that a
 worth mentioning.
 
 Since both the translational and rotational velocities contribute towards temperature,
-equation (\ref{Evans}), showing the derivation of the thermostat friction in the Evans
+equation~(\ref{Evans}), showing the derivation of the thermostat friction in the Evans
 ensemble by imposing a Gaussian constraint on the system's instantaneous temperature,
 changes to:
 \begin{eqnarray}

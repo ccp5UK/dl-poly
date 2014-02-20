@@ -9,7 +9,7 @@ simulation..
 
 As a guide\index{Ewald!optimisation} to beginners \D will calculate
 reasonable parameters if the {\bf ewald~precision} directive is used
-in the CONTROL file (see Section \ref{control-file}).  A relative
+in the CONTROL file (see Section~\ref{control-file}).  A relative
 error (see below) of 10$^{-6}$ is normally sufficient so the
 directive
 
@@ -49,7 +49,7 @@ coulombic energy ($U$) and virial ($\cal W$) in a short simulation.
 Adherence to the relationship $U=-{\cal W}$, shows the extent to
 which the Ewald sum\index{Ewald!summation} is correctly converged.
 These variables can be found under the columns headed {\tt eng\_cou}
-and {\tt vir\_cou} in the OUTPUT file (see Section \ref{output-file}).
+and {\tt vir\_cou} in the OUTPUT file (see Section~\ref{output-file}).
 
 The remainder of this section explains the meanings of these
 parameters and how they can be chosen.  The Ewald
@@ -89,7 +89,7 @@ more sophisticated approximation:
 \begin{equation}
 {\rm erfc}(x) \approx 0.56 \; \exp(-x^{2})/x
 \end{equation}
-to solve recursively for $\alpha$, using equation \ref{relerr} to give
+to solve recursively for $\alpha$, using equation~\ref{relerr} to give
 the first guess.
 
 The relative error in the reciprocal space term is approximately

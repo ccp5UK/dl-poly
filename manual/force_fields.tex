@@ -94,7 +94,7 @@ readers should understand that \D does recognize molecular
 entities, defined through constraint bonds\index{constraints!bond}
 and rigid bodies.  In the case of rigid bodies, the atomic forces
 are resolved into molecular forces and torques.  These matters are
-discussed in greater detail in Sections \ref{shake-rattle} and \ref{rigid}.
+discussed in greater detail in Sections~\ref{shake-rattle} and \ref{rigid}.
 
 \section{The Intramolecular Potential Functions}
 
@@ -169,7 +169,7 @@ U(r_{ij}) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
 \end{equation}
 The FENE potential is used to maintain the distance between
 connected beads and to prevent chains from crossing each other. It
-is used in combination with the WCA (\ref{wca}) potential to create
+is used in combination with the WCA, equation~(\ref{wca}), potential to create
 a potential well for the flexible bonds of a molecule, that
 maintains the topology of the molecule.  This implementation allows
 for a radius shift of up to half a $R_{o}$ ($|\Delta| \le
@@ -618,7 +618,7 @@ field}.  Such interactions are permissible in \D and are described
 in the section on pair potentials below.  \D also permits scaling
 of the 1-4 van der Waals\index{potential!van der Waals} and Coulomb
 \index{potential!electrostatics} interactions by a numerical
-factor (see Table \ref{dihedral-table}).  {\bf Note} that scaling
+factor (see Table~\ref{dihedral-table}).  {\bf Note} that scaling
 is abandoned when the 1-4 members are also 1-3 members in a valence
 angle\index{potential!valence angle} intercation (1-4 checks are
 performed in {\sc dihedrals\_14\_check} routine).  1-4 interactions
@@ -856,7 +856,7 @@ help maintain the planar structure of the carbonate anion $[CO_{3}]^{2-}$ in a
 similar manner to the planar inversion potential described above.  However,
 it is {\em not} an angular potential.  It is dependent on the perpendicular
 displacement ($u$) of an atom $a$ from a plane defined by three other atoms
-$b$, $c$, and $d$ (see Figure \ref{calcfig}) and has the form:
+$b$, $c$, and $d$ (see Figure~\ref{calcfig}) and has the form:
 \begin{equation}
 U_{abcd}(u)=Au^{2}+Bu^{4}~~, \label{calcite1}
 \end{equation}
@@ -873,7 +873,7 @@ vectors by
 \vek{r}_{bd}&=&\vek{r}_{ad}-\vek{r}_{ab}~~.
 \end{eqnarray}
 In what follows it is convenient to define the vector product appearing in
-both the numerator and denominator of equation (\ref{calcite2}) as the vector
+both the numerator and denominator of equation~(\ref{calcite2}) as the vector
 $\vek{w}_{cd}$ {\em vis.}
 \begin{equation}
 \vek{w}_{cd}=\vek{r}_{bc}\times\vek{r}_{bd}~~.
@@ -1048,7 +1048,7 @@ U(r_{ij}) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
 The WCA potential is the Lennard-Jones potential truncated at the
 position of the minimum and shifted to eliminate discontinuity
 (includes the effect of excluded volume).  It is usually used in
-combination with the FENE (\ref{FENE}) bond potential.  This
+combination with the FENE, equation~(\ref{FENE}), bond potential.  This
 implementation allows for a radius shift of up to half a $\sigma$
 ($|\Delta| \le 0.5~\sigma$) with a default of zero
 ($\Delta_{default} = 0$).
@@ -1081,7 +1081,7 @@ calculating the potential energy and atomic forces very general, and
 enables the use of user defined pair potential functions.  \D also
 allows the user to read in the interpolation arrays directly from a
 file (implemented in the {\sc vdw\_table\_read} routine) and the
-TABLE file (Section \ref{table-file}). This is particularly useful
+TABLE file (Section~\ref{table-file}). This is particularly useful
 if the pair potential function has no simple analytical description
 (e.g. spline potentials).
 
@@ -1194,7 +1194,7 @@ where
 \begin{equation}
 \rho^{q}_{i} = \sum_{j=1, j \ne i}^{N} \rho^{q}_{ij}(r_{ij})~,~~q=s,d~~, \label{2umd}
 \end{equation}
-instead of just the one, $s$, as in (\ref{um}) and (\ref{umd}).
+instead of just the one, $s$, as in equations~(\ref{um}) and (\ref{umd}).
 These will be referred in the following text as 2BEAM and 2BEEAM.
 Mixing 2BEAM and EAM and alternatively 2BEEAM and EEAM potentials
 is only possible if the single band ones are generalised to 2B forms.
@@ -1207,7 +1207,7 @@ The types of metal potentials available in \D are as follows:
 There are no explicit mathematical expressions for EAM potentials, so
 this potential type is read exclusively in the form of interpolation
 arrays from the TABEAM table file (as implemented in the {\sc
-metal\_table\_read} routine - Section \ref{tabeam-file}.)  The rules
+metal\_table\_read} routine - Section~\ref{tabeam-file}.)  The rules
 for combining the potentials from different metals to handle alloys
 are different from the FS class of potentials (see below).
 \item EEAM potential ({\bf eeam})\index{potential!EEAM}
@@ -1285,7 +1285,7 @@ potential is calculated in the standard way:
 \begin{equation}
 \vek{f}_{k}^{tot} = -\vek{\nabla}_{k} U_{metal}~~.
 \end{equation}
-We rewrite the EAM/FS potential, (\ref{um}), as
+We rewrite the EAM/FS potential, equation~(\ref{um}), as
 \begin{eqnarray}
 U_{metal} &=& U_{1} + U_{2} \nonumber \\
 U_{1} &=& {1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N} V_{ij}(r_{ij}) \\
@@ -1601,7 +1601,7 @@ is handled by {\sc metal\_table\_read} and {\sc metal\_table\_derivatives}.
 
 The distinction to be made between EAM and FS potentials with regard to
 alloys concerns the mixing rules for unlike interactions.  Starting with
-equations (\ref{um}) and (\ref{umd}), it is clear that we require mixing
+equations~(\ref{um}) and (\ref{umd}), it is clear that we require mixing
 rules for terms $V_{ij}(r_{ij})$ and $\rho_{ij}(r_{ij})$ when atoms $i$
 and $j$ are of different kinds.  Thus two different metals $A$ and $B$ we
 can distinguish 4 possible variants of each:
@@ -1677,7 +1677,7 @@ the cross functions $\rho^{AB}_{ij}(r_{ij})$ possible or $n^{2}$ in total!
 In addition to the $n(n+1)/2$ pair functions and $n$ or $n^{2}$ density
 functions both the EAM and EEAM potentials require further specification
 of $n$ functional forms of the density dependence (i.e. the embedding
-function $F(\rho_{i})$ in (\ref{um})).  The matter is further complicated
+function $F(\rho_{i})$ in equation~(\ref{um})).  The matter is further complicated
 when the 2BEAM type of potential is used with the extra specification of
 $n$ embedding functions and $n(n+1)/2$ density functions for the $s$-band.
 Similarly, in the 2BEEAM an extra $n$ embedding functions and $n^{2}$
@@ -1689,7 +1689,7 @@ a single element revert to the standard EAM or EEAM!  In such case, the
 densities functions must be zeroed in the \D TABEAM file.
 
 For EAM, EEAM, 2BEAM and 2BEEAM potentials all the functions are supplied
-in tabular form via the table file TABEAM (see section \ref{tabeam-file})
+in tabular form via the table file TABEAM (see section~\ref{tabeam-file})
 to which \D is redirected by the FIELD file data.  The FS potentials are
 defined via the necessary parameters in the FIELD file.
 
@@ -1956,8 +1956,8 @@ stress tensor\index{stress tensor} is symmetric.
 
 Interpolation arrays, {\tt vter} and {\tt gter} (set up in
 {\sc tersoff\_generate}) - similar to those in van der Waals
-interactions \ref{vdw}, are used in the calculation of the Tersoff
-forces, virial and stress.
+interactions (Section~\ref{vdw}), are used in the calculation
+of the Tersoff forces, virial and stress.
 
 The Tersoff\index{potential!Tersoff} potentials are very short
 ranged, typically of order $3$~\AA.  This property, plus the fact
@@ -2100,7 +2100,7 @@ routine {\sc four\_body\_forces}.
 electrostatic potentials\index{potential!electrostatics}\footnote{Unlike the
 other elements of the force field, the electrostatic forces are
 NOT specified in the input FIELD file, but by setting appropriate
-directives in the CONTROL file. See Section \ref{control-file}.}.
+directives in the CONTROL file. See Section~\ref{control-file}.}.
 These are as follows:
 \begin{enumerate}
 \item Direct Coulomb sum
@@ -2495,7 +2495,7 @@ In practice the convergence of the Ewald sum is controlled by
 three variables: the real space cutoff $r_{\rm cut}$; the convergence
 parameter $\alpha$ and the largest reciprocal space vector
 $\vek{k}_{max}$ used in the reciprocal space sum.  These are
-discussed more fully in Section \ref{ewald-precision}.  \D can
+discussed more fully in Section~\ref{ewald-precision}.  \D can
 provide estimates if requested (see CONTROL file description
 \ref{control-file}).
 
@@ -2651,13 +2651,13 @@ constant of the harmonic spring.
 The calculation of the forces, virial and stress tensor\index{stress
 tensor} in this model is based on that for a diatomic molecule
 with charged atoms.  The part coming from the spring potential is
-similar in spirit as for chemical bonds, (\ref{bondf} - \ref{bonds}),
+similar in spirit as for chemical bonds, equations~(\ref{bondf}-\ref{bonds}),
 while the electrostatics is as described in the above section.
 The relationship between the kinetic energy and the temperature is
 different however, as the core-shell unit is permitted only three
 translational degrees of freedom, and the degrees of freedom
 corresponding to rotation and vibration of the unit are discounted
-as if the kinetic energy of these is regarded as zero (\ref{freedom}).
+as if the kinetic energy of these is regarded as zero (equation~\ref{freedom}).
 
 \subsection{Dynamical (Adiabatic Shells)}
 \index{polarisation!shell model}
@@ -2728,13 +2728,13 @@ Either shell model\index{polarisation!shell model} can be used in
 conjunction with the methods for long-ranged forces described above.
 
 {\bf Note} that \D determines which shell model to use by scanning
-shell weights provided the FIELD file (see Section \ref{field-file}).
+shell weights provided the FIELD file (see Section~\ref{field-file}).
 If all shells have zero weight the \D will choose the relaxed shell
 model.  If no shell has zero weight then \D will choose the dynamical
 one.  In case when some shells are massless and some are not \D will
 terminate execution controllably and provide information about the
 error and possible possible choices of action in the OUTPUT file
-(see Section \ref{output-file}).
+(see Section~\ref{output-file}).
 
 \section{External Fields}
 \label{external-field}
@@ -2822,7 +2822,9 @@ options control the full kinetic energy of the system and thus the
 only ensemble valid under this conditions and possible within \D at
 the present is the micro-canonical (NVE)!
 
-The user is advised to be careful with the parameters' units!
+The user is advised to be careful with the parameters' units!  For more
+insight, do examine Table~\ref{external-field-table} and the example at
+equation~(\ref{external-field-units}) in Section~\ref{field-file}.
 
 In \D external field forces\index{potential!external field} are
 handled by the routines {\sc external\_field\_apply} and
@@ -2852,14 +2854,14 @@ of their constituent sites are then moved accordingly.
 
 In \D the frozen atom option is handled by the subroutine {\sc freeze\_atoms}.
 
-The rigid body dynamics (see Section \ref{rigid}) is resolved by
+The rigid body dynamics (see Section~\ref{rigid}) is resolved by
 solving the Eulerian equations of rotational motion\index{equations of motion!Euler}.
 However, their statics includes calculation of the individual
 contributions of each RB's centre of mass stress and virial
 due to the action of the resolved forces on sites/atoms constituting it.
 These contribute towards the total system stress and pressure.
 
-As seen in Section \ref{shell-model} core-shell units\index{polarisation!shell model}
+As seen in Section~\ref{shell-model} core-shell units\index{polarisation!shell model}
 are dealt with (i) kinetically by the adiabatic shell model or (ii)
 statically by the dynamic shell model.  Both contribute to the total
 system stress (pressure) but in different manner.  The former does

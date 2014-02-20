@@ -255,7 +255,7 @@ are generated in the following routines: {\sc vdw\_generate},
 
 For systems with periodic boundary conditions \D employs the Ewald
 Sum\index{Ewald!summation} to calculate the coulombic interactions
-(see Section \ref{SPME}).  It should be noted that \D uses only the
+(see Section~\ref{SPME}).  It should be noted that \D uses only the
 Smoothed Particle Mesh (SPME) form of the Ewald sum.
 
 Calculation of the real space component in \D employs the
@@ -265,7 +265,7 @@ ranged (implemented in {\sc ewald\_real\_forces} routine).
 
 The reciprocal space component is calculated using Fast Fourier
 Transform (FFT) scheme of the SMPE method \cite{essmann-95a,bush-06a} as
-discussed in Section \ref{SPME}.  The parallelisation of this scheme is
+discussed in Section~\ref{SPME}.  The parallelisation of this scheme is
 entirely handled within the \D by the 3D FFT routine {\sc parallel\_fft},
 (using {\sc gpfa\_module}) which is known as the Daresbury advanced
 Fourier Transform, due to I.J. Bush \cite{bush-00a}.  This routine
@@ -282,7 +282,7 @@ Other routines required to calculate the Ewald sum include {\sc ewald\_module}, 
 
 \subsection{Metal Potentials}
 
-The simulation of metals (\ref{metal}) by \D makes use of density
+The simulation of metals (Section~\ref{metal}) by \D makes use of density
 dependent potentials.  The dependence on the atomic density presents
 no difficulty however, as this class of potentials can be resolved
 into pair contributions.  This permits the use of the distributed
