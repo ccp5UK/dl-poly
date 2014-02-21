@@ -59,7 +59,7 @@ yourself to add new features.
 
 An example CONTROL file appears below.  The directives and
 keywords appearing are described in the following section.  The
-exapmle lists all possible and not mutually excluding directives
+example lists all possible and not mutually excluding directives
 in a particular order.  Although this order is not mandatory, it
 is highly recommended.
 
@@ -112,7 +112,8 @@ temperature           300.0 Kelvin
 pressure              0.001 k-atmospheres
 
 # SYSTEM CUTOFFS AND ELECTROSTATICS
-cutoff                 10.0 Angstroms
+rcut                   10.0 Angstroms
+rpad                    0.2 Angstroms
 rvdw                    8.0 Angstroms
 exclude
 epsilon                 1.0
@@ -397,7 +398,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf job time} $f$                           \> set job time to $f$ seconds \\
 \>                                              \> \\
 \> {\bf maxdis} $f$                             \> set maximum distance allowed in variable timestep (control) \\
-\>                                              \> to $f$ \AA (default $f~=~0.10$ \AA) \\
+\>                                              \> to $f$ \AA~(default $f~=~0.10$ \AA) \\
 \>                                              \> \\
 \> {\bf metal direct}                           \> enforces the direct calculation of metal interactions defined \\
 \>                                              \> by explicit potential forms, i.e. it will not work for metal \\
@@ -408,7 +409,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> interpolated over $\sqrt{\rho}$, i.e. $F~=~F(\sqrt{\rho})$\\
 \>                                              \> \\
 \> {\bf mindis} $f$                             \> set minimum distance allowed in variable timestep (control) \\
-\>                                              \> to $f$ \AA (default $f~=~0.03$ \AA) \\
+\>                                              \> to $f$ \AA~(default $f~=~0.03$ \AA) \\
 \>                                              \> \\
 \> {\bf minim}ise {\em string} $n$ $f$          \> minimise the instantaneous system configuration every \\
 \>                                              \> $n$ steps during equilibration (with respect to the last \\
@@ -456,8 +457,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> (topology), on IO when {\bf io} {\em mpiio/direct sorted} is selected, etc., \\
 \>                                              \> {\bf (ii)} abort display of warnings, non-leading to error messages \\
 \>                                              \> and of iteration cycles in minimisation/relaxation routines, \\
-\>                                              \> {\bf (iii)} assume safe defaults for the general simulation cutoff, \\
-\>                                              \> temperature, pressure and job times \\
+\>                                              \> {\bf (iii)} assume safe defaults for the general simulation cutoff \\
+\>                                              \> and its padding, temperature, pressure and job times \\
 \>                                              \> \\
 \> {\bf no top}ology                            \> skip detailed topology reporting during read of FIELD in OUTPUT \\
 \>                                              \> (no FIELD replication), useful for large bio-chemcal simulations \\
@@ -476,7 +477,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> in a file, CFGMIN which has the same format as CONFIG \\
 \>                                              \> \\
 \> {\bf pad}ding $f$  ($\equiv$ {\bf rpad} $f$) \> set optional padding to the major cutoff, \\
-\>                                              \> $r_{\rm cut}$, to $f$ \AA~ ($0.05~\ge~f$, default $f~=~0$) \\
+\>                                              \> $r_{\rm cut}$, to $f$ \AA~ ($f \ge {\rm Min}[0.05,0.5\%.r_{\rm cut}]$, default $f~=~0$) \\
 \>                                              \> \\
 \> {\bf pres}sure $f$                           \> set required system pressure to $f$ katms \\
 \>                                              \> (target pressure for constant pressure\index{units!pressure} ensembles) \\
@@ -536,7 +537,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> (default $f~=~1$ in D~\AA~~ps$^{-2}$) \\
 \>                                              \> \\
 \> {\bf rpad} $f$  ($\equiv$ {\bf pad}ding $f$) \> set optional padding to the major cutoff, \\
-\>                                              \> $r_{\rm cut}$, to $f$ \AA~ ($0.05~\ge~f$, default $f~=~0$) \\
+\>                                              \> $r_{\rm cut}$, to $f$ \AA~ ($f \ge {\rm Min}[0.05,0.5\%.r_{\rm cut}]$, default $f~=~0$) \\
 \>                                              \> \\
 \> {\bf rvdw} (cutoff) $f$                      \> set required short-ranged interactions cutoff to $f$ \AA \\
 \>                                              \> \\
@@ -1275,24 +1276,27 @@ may break when the feature is used in parallel.
 \end{itemize}
 
 \item The {\bf rpad} ($\equiv$ {\bf pad}) option will add extra distance,
-$r_{\rm pad}$, if larger than $0.2$~\AA to the major cutoff, $r_{\rm cut}$,
-to construct a larger link-cell width, $r_{\rm lnk}=r_{\rm cut}+r_{\rm pad}$,
-which will trigger a construction of a larger Verlet neighbour list (VNL)
-while at the same time facilitate its conditional update, rather at every
-timestpe.  The VNL conditaional update is check at the end of each tiemstep
-and triggered only when the most travelled particle has moved a distance
-larger than $r_{\rm pad}/2$.  It is worth noting that padding is at expense
-of extra memory but if used wisely it could improve time to solution from
-10\% to 100\% depending on force-field complexity.  If it is too large or too
-small (that is why the $\ge~0.05$~\AA limit) it will lead to performace
-degradation.  It is recomended that $r_{\rm pad}$ is set up at a value of
-$\approx~1~\div~5\%$ of the cutoff, $r_{\rm cut}$, as long as the major
-link-cell algorithm has link-cell distribution not wiorse than
-$4~\otimes~4~\otimes~4$ per domain.  For such setups, in practice, one
-may expect speedups (in time to solution) of the order of $10~\div~30\%$
-for force-fields involving the Ewald summation methodology and $60~\div~100\%$
-for force-fields without electrostatics evaluations involving the Ewald
-summation methodology.
+$r_{\rm pad}$, if larger than $f \ge {\rm Min}[0.05,0.5\%.r_{\rm cut}]$~\AA,
+to the major cutoff, $r_{\rm cut}$, to construct a larger link-cell width,
+$r_{\rm lnk}=r_{\rm cut}+r_{\rm pad}$, which will trigger a construction of
+a larger Verlet neighbour list (VNL) while at the same time facilitate its
+conditional update, rather at every timestpe.  The VNL conditaional update
+is check at the end of each tiemstep and triggered only when the most
+travelled particle has moved a distance larger than $r_{\rm pad}/2$.  It is
+worth noting that padding is at expense of extra memory but if used wisely
+it could improve time to solution from 10\% to 100\% depending on force-field
+complexity.  If it is too large or too small (that is why the
+$f \ge {\rm Min}[0.05,0.5\%.r_{\rm cut}]$~\AA~limit) it will lead to
+performace degradation.  It is recomended that $r_{\rm pad}$ is set up at a
+value of $\approx 1 \div 5\%$ of the cutoff, $r_{\rm cut}$, as long as the
+major link-cell algorithm uses a link-cell decomposition that not worse than
+$4 \otimes 4 \otimes 4$ per domain.  For such setups, in practice, one
+may expect average compute speedups \footnote{I.e. I/O effects are excluded
+from comparison with a default simualtion and comparisons are carried over
+a few hundreds of timesteps.  This is usually accounting for over $90\%$ of
+the time tosolution.} of the order of $10 \div 30\%$ for force-fields
+involving the Ewald summation methodology and $60 \div 100\%$ for force-fields
+without electrostatics evaluations involving the Ewald summation methodology.
 \end{enumerate}
 
 \noindent Users are advised to study the example CONTROL files

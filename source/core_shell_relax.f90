@@ -63,6 +63,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 ! passshl(3) - average cycles
 ! passshl(4) - minimum cycles
 ! passshl(5) - maximum cycles
+     passshl(4) = Huge(1) ! min register
 
      Allocate (oxt(1:mxshl),oyt(1:mxshl),ozt(1:mxshl), Stat=fail(1))
      If (fail(1) > 0) Then

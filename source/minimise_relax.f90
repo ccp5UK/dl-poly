@@ -100,6 +100,7 @@ Subroutine minimise_relax &
 ! passmin(3) - average cycles
 ! passmin(4) - minimum cycles
 ! passmin(5) - maximum cycles
+     passmin(4) = Huge(1) ! min register
 
 ! total number of active particles (excluding frozen sites and massless shells)
 

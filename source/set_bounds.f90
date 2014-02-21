@@ -400,7 +400,7 @@ Subroutine set_bounds                                       &
            If (rpad > zero_plus .and. (.not.l_str)) Then ! Re-set rpad with some slack
               rpad = Min( 0.95_wp * (cut - rcut) , test * rcut)
               rpad = Int( 100.0_wp * rpad ) / 100.0_wp
-              If (rpad < 0.05_wp) rpad = 0.0_wp ! Don't bother
+              If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
               Go To 10
            Else
               If (idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
@@ -414,7 +414,7 @@ Subroutine set_bounds                                       &
            If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 4) Then
               rpad = test * rcut
               rpad = Int( 100.0_wp * rpad ) / 100.0_wp
-              If (rpad < 0.05_wp) rpad = 0.0_wp ! Don't bother
+              If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
               Go To 10
            Else
               rpad = 0.85_wp * Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
@@ -423,10 +423,10 @@ Subroutine set_bounds                                       &
                               - rcut - 1.0e-6_wp
            End If
            rpad = Int( 100.0_wp * rpad ) / 100.0_wp
-           If (rpad < 0.05_wp) rpad = 0.0_wp ! Don't bother
+              If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
            rlnk = rcut + rpad                ! and correct rlnk respectively
         Else                        ! Otherwise, set reasonable lower limit
-           If (rpad < 0.05_wp) rpad = 0.0_wp ! Don't bother
+              If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
            rlnk = rcut + rpad                ! and correct rlnk respectively
         End If
      End If

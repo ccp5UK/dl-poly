@@ -1608,7 +1608,7 @@ Subroutine read_control                                &
 
         Else If (word1(1:3) == 'str' ) Then
 
-           If (idnode == 0) Write(nrite,"(/,1x,a)") "no strict option on (avoids printing unessential warnings in OUTPUT)"
+           If (idnode == 0) Write(nrite,"(/,1x,a)") "no strict option on (avoids printing inessential warnings in OUTPUT)"
 
         Else If (word1(1:3) == 'top' ) Then
 

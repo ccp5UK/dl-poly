@@ -51,6 +51,7 @@ Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
 !
 !     l_vnl = .true.
 !     skipvnl = 0.0_wp
+     skipvnl(4) = Huge(1) ! min register
 
   Else ! Checks
 
@@ -108,7 +109,7 @@ Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
                  If (cut >= rcut) Then ! Re-set rpad with some slack
                     rpad = Min( 0.95_wp * (cut - rcut) , test * rcut)
                     rpad = Int( 100.0_wp * rpad ) / 100.0_wp
-                    If (rpad < 0.05_wp) rpad = 0.0_wp ! Don't bother
+                    If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
                     rlnk = rcut + rpad
                     l_vnl=.true.
                  End If
@@ -126,7 +127,7 @@ Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
                              - rcut - 1.0e-6_wp
            End If
            cut = Int( 100.0_wp * cut ) / 100.0_wp
-           If ((.not.(cut < 0.05_wp)) .and. Abs(cut-rpad) > 0.005_wp) Then
+           If ((.not.(cut < Min(0.05_wp,0.005_wp*rcut))) .and. Abs(cut-rpad) > 0.005_wp) Then ! Do bother
   If (idnode == 0) Write(nrite,'(/,1x,2(a,f5.2),a,/)') 'cutoff padding reset from ', rpad, ' Angs to ', cut, ' Angs'
               rpad = cut
               rlnk = rcut + rpad
