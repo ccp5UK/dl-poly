@@ -117,17 +117,16 @@ Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
         End If
      Else ! push the limits when up for update in a 'no strict' regime
         If (l_vnl .and. (.not.l_str)) Then ! Try to re-set rpad with some slack
-           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) > 4) Then
+           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 4) Then
               cut = test * rcut
            Else
-              cut = Min( test * rcut,                                          &
-                         0.85_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
-                                           r_npry * celprp(8) / Real(ily,wp) , &
-                                           r_nprz * celprp(9) / Real(ilz,wp) ) &
-                                     - rcut - 1.0e-6_wp ) )
+              rpad = 0.85_wp * Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
+                                     r_npry * celprp(8) / Real(ily,wp) , &
+                                     r_nprz * celprp(9) / Real(ilz,wp) ) &
+                             - rcut - 1.0e-6_wp
            End If
            cut = Int( 100.0_wp * cut ) / 100.0_wp
-           If ((.not(cut < 0.05_wp) .and. Abs(cut-rpad) > 0.005_wp) Then
+           If ((.not.(cut < 0.05_wp)) .and. Abs(cut-rpad) > 0.005_wp) Then
   If (idnode == 0) Write(nrite,'(/,1x,2(a,f5.2),a,/)') 'cutoff padding reset from ', rpad, ' Angs to ', cut, ' Angs'
               rpad = cut
               rlnk = rcut + rpad

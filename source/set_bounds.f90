@@ -411,17 +411,16 @@ Subroutine set_bounds                                       &
   Else ! push the limits when real dynamics exists & in 'no strict' mode
      If (lsim .and. (.not.l_str)) Then
         If (rpad <= zero_plus) Then ! When rpad undefined give it some value
-           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) > 4) Then
+           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 4) Then
               rpad = test * rcut
               rpad = Int( 100.0_wp * rpad ) / 100.0_wp
               If (rpad < 0.05_wp) rpad = 0.0_wp ! Don't bother
               Go To 10
            Else
-              rpad = Min( test * rcut,                                          &
-                          0.85_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
-                                            r_npry * celprp(8) / Real(ily,wp) , &
-                                            r_nprz * celprp(9) / Real(ilz,wp) ) &
-                                      - rcut - 1.0e-6_wp ) )
+              rpad = 0.85_wp * Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
+                                     r_npry * celprp(8) / Real(ily,wp) , &
+                                     r_nprz * celprp(9) / Real(ilz,wp) ) &
+                              - rcut - 1.0e-6_wp
            End If
            rpad = Int( 100.0_wp * rpad ) / 100.0_wp
            If (rpad < 0.05_wp) rpad = 0.0_wp ! Don't bother
