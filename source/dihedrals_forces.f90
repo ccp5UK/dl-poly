@@ -10,7 +10,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1992
-! amended   - i.t.todorov march 2013
+! amended   - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -38,8 +38,8 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
   Real( Kind = wp ), Save :: twopi,rtwopi
 
   Logical                 :: safe(1:3),csa,csd
-  Integer                 :: fail(1:5),i,j,ia,ib,ic,id,kk,ai,aj, &
-                             ia0,id0,local_index
+  Integer                 :: fail(1:5),i,j,ia,ib,ic,id,kk,keyd, &
+                             ai,aj,ia0,id0,local_index
   Real( Kind = wp )       :: xab,yab,zab, xac,yac,zac,                 &
                              xad,yad,zad,rad(0:3),rad2(0:3),           &
                              xbc,ybc,zbc,rrbc,                         &
@@ -332,10 +332,11 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 ! selection of potential energy function type
 
         kk=listdih(0,i)
+        keyd=keydih(kk)
 
 ! calculate potential energy and scalar force term
 
-        If      (keydih(kk) == 1) Then
+        If      (keyd == 1) Then
 
 ! torsion dihedral potential
 
@@ -348,7 +349,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
            pterm=a*(1.0_wp+Cos(term))
            gamma=-a*m*Sin(term)*rsint * rpb1*rpc1
 
-        Else If (keydih(kk) == 2) Then
+        Else If (keyd == 2) Then
 
 ! harmonic improper dihedral
 
@@ -362,7 +363,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
            pterm=0.5_wp*term*dtheta
            gamma=term*rsint * rpb1*rpc1
 
-        Else If (keydih(kk) == 3) Then
+        Else If (keyd == 3) Then
 
 ! harmonic cosine dihedral (note sint is cancelled)
 
@@ -375,7 +376,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
            pterm=0.5_wp*term*dtheta
            gamma=-term * rpb1*rpc1
 
-        Else If (keydih(kk) == 4) Then
+        Else If (keyd == 4) Then
 
 ! 3-term cosine dihedral
 
@@ -390,7 +391,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
                           2.0_wp*a2*Sin(2.0_wp*theta) + &
                           3.0_wp*a3*Sin(3.0_wp*theta) )*rsint * rpb1*rpc1
 
-        Else If (keydih(kk) == 5) Then
+        Else If (keyd == 5) Then
 
 ! ryckaert-bellemans potential
 !
@@ -406,7 +407,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
            gamma=a*( 1.462_wp       + 3.156_wp*m   - 1.104_wp*m**2 - &
                      12.624_wp*m**3 - 18.94_wp*m**4 ) * rpb1*rpc1
 
-        Else If (keydih(kk) == 6) Then
+        Else If (keyd == 6) Then
 
 ! fluorinated ryckaert-bellemans potential
 ! reference: Rice at al., JCP 104, p. 2101 (1996)
@@ -422,7 +423,7 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
            gamma=( a*(2.78_wp       + 7.12_wp*m   + 4.92_wp*m**2 - &
                       28.52_wp*m**3 - 64.2_wp*m**4) + term*rsint ) * rpb1*rpc1
 
-        Else If (keydih(kk) == 7) Then
+        Else If (keyd == 7) Then
 
 ! opls cosine dihedral
 

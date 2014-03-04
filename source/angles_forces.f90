@@ -6,7 +6,7 @@ Subroutine angles_forces(imcon,engang,virang,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov july 2011
+! amended   - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,7 +30,7 @@ Subroutine angles_forces(imcon,engang,virang,stress)
                        fxa,fxc,fya, fyc,fza,fzc,                   &
                        k,k2,k3,k4,theta0,dtheta,dthpi,dth0pi,dth,  &
                        rho,rho1,rho2,switch,a,b,c,delta,m,dr1,dr2, &
-                       pterm,vterm,gamma,gamsa,gamsc,              &
+                       gr,rm,tmp,pterm,gamma,gamsa,gamsc,vterm,    &
                        strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:2)
 
   Logical,           Allocatable :: lunsafe(:)
@@ -187,13 +187,13 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            theta0=prmang(2,kk)
            dtheta=theta-theta0
 
-           pterm=k*dtheta
+           tmp   =k*dtheta
 
-           gamma=pterm*rsint
-           pterm=pterm*0.5_wp*dtheta
-           vterm=0.0_wp
+           pterm=tmp*0.5_wp*dtheta
+           gamma=tmp*rsint
            gamsa=0.0_wp
            gamsc=0.0_wp
+           vterm=0.0_wp
 
         Else If (keya == 2) Then
 
@@ -205,11 +205,11 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            k3    =prmang(3,kk)
            k4    =prmang(4,kk)
 
-           gamma=dtheta*(k2+k3*dtheta+k4*dtheta**2)*rsint
            pterm=0.5_wp*k2*dtheta**2+(k3/3.0_wp)*dtheta**3+0.25*k4*dtheta**4
-           vterm=0.0_wp
+           gamma=dtheta*(k2+k3*dtheta+k4*dtheta**2)*rsint
            gamsa=0.0_wp
            gamsc=0.0_wp
+           vterm=0.0_wp
 
         Else If (keya == 3) Then
 
@@ -221,13 +221,13 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            rho   =prmang(3,kk)
            switch=-(rab**8+rbc**8)/rho**8
 
-           pterm=k*dtheta*Exp(switch)
+           tmp   =k*dtheta*Exp(switch)
 
-           gamma=pterm*rsint
-           pterm=pterm*0.5_wp*dtheta
-           vterm=pterm*8.0_wp*switch
+           pterm=tmp*0.5_wp*dtheta
+           gamma=tmp*rsint
            gamsa=pterm*8.0_wp*rab**7/rho**8
            gamsc=pterm*8.0_wp*rbc**7/rho**8
+           vterm=pterm*8.0_wp*switch
 
         Else If (keya == 4) Then
 
@@ -240,13 +240,13 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            rho2  =prmang(4,kk)
            switch=-(rab/rho1+rbc/rho2)
 
-           pterm=k*dtheta*Exp(switch)
+           tmp   =k*dtheta*Exp(switch)
 
-           gamma=pterm*rsint
-           pterm=pterm*0.5_wp*dtheta
-           vterm=pterm*switch
+           pterm=tmp*0.5_wp*dtheta
+           gamma=tmp*rsint
            gamsa=pterm/rho1
            gamsc=pterm/rho2
+           vterm=pterm*switch
 
         Else If (keya == 5) Then
 
@@ -261,13 +261,13 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            rho2  =prmang(4,kk)
            switch=-(rab/rho1+rbc/rho2)
 
-           pterm=(k*dth/(2.0_wp*dth0pi**2)) * Exp(switch)
+           tmp   =(k*dth/(2.0_wp*dth0pi**2)) * Exp(switch)
 
-           gamma=pterm*dthpi*rsint
-           pterm=pterm*0.25_wp*dth
-           vterm=pterm*switch
+           pterm=tmp*0.25_wp*dth
+           gamma=tmp*dthpi*rsint
            gamsa=pterm/rho1
            gamsc=pterm/rho2
+           vterm=pterm*switch
 
         Else If (keya == 6) Then
 
@@ -282,16 +282,15 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            rho   =prmang(4,kk)
            switch=-(rab**8+rbc**8)/rho**8
 
-           pterm=k*dtheta*Exp(switch)
+           tmp   =k*dtheta*Exp(switch)
 
-           gamma=pterm * (theta**(a-1.0_wp) * (dthpi+dth0pi) *                               &
+           pterm=tmp * dtheta * (theta**a * (dthpi+dth0pi)**2 + 0.5_wp*a * pi**(a-1.0_wp) * dth0pi**3)
+           gamma=tmp * (theta**(a-1.0_wp) * (dthpi+dth0pi) *                                 &
                  ((a+4.0_wp)*theta**2 - 2.0_wp*pi*(a+2.0_wp)*theta - a*theta0*(dth0pi-pi)) + &
                  a*pi**(a-1.0_wp) * dth0pi**3) * rsint
-
-           pterm=pterm * dtheta * (theta**a * (dthpi+dth0pi)**2 + 0.5_wp*a * pi**(a-1.0_wp) * dth0pi**3)
-           vterm=pterm*8.0_wp*switch
            gamsa=pterm*8.0_wp*rab**7/rho**8
            gamsc=pterm*8.0_wp*rbc**7/rho**8
+           vterm=pterm*8.0_wp*switch
 
         Else If (keya == 7) Then
 
@@ -301,13 +300,13 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            theta0=prmang(2,kk)
            dtheta=Cos(theta)-Cos(theta0)
 
-           pterm=k*dtheta
+           tmp   =k*dtheta
 
-           gamma=-pterm
-           pterm=pterm*0.5_wp*dtheta
-           vterm=0.0_wp
+           pterm=tmp*0.5_wp*dtheta
+           gamma=-tmp
            gamsa=0.0_wp
            gamsc=0.0_wp
+           vterm=0.0_wp
 
         Else If (keya == 8) Then
 
@@ -318,11 +317,11 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            m    =prmang(3,kk)
            a    =m*theta-delta
 
-           gamma=-k*m*Sin(a)*rsint
            pterm=k*(1.0_wp+Cos(a))
-           vterm=0.0_wp
+           gamma=-k*m*Sin(a)*rsint
            gamsa=0.0_wp
            gamsc=0.0_wp
+           vterm=0.0_wp
 
         Else If (keya == 9) Then
 
@@ -336,10 +335,10 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            rho2  =prmang(4,kk)
            dr2   =rbc-rho2
 
-           pterm=a*dr1*dr2
+           tmp   =a*dr1*dr2
 
-           gamma=pterm*rsint
-           pterm=pterm*dtheta
+           pterm=tmp*dtheta
+           gamma=tmp*rsint
            gamsa=-pterm/dr1
            gamsc=-pterm/dr2
            vterm=-(gamsa*rab+gamsc*rbc)
@@ -355,7 +354,6 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            dr2   =rbc-rho2
 
            pterm=a*dr1*dr2
-
            gamma=0.0_wp
            gamsa=-a*dr2
            gamsc=-a*dr1
@@ -371,10 +369,10 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            rho1  =prmang(3,kk)
            dr1   =rab-rho1
 
-           pterm=a*dr1
+           tmp   =a*dr1
 
-           gamma=pterm*rsint
-           pterm=pterm*dtheta
+           pterm=tmp*dtheta
+           gamma=tmp*rsint
            gamsa=-a*dtheta
            gamsc=0.0_wp
            vterm=-gamsa*rab
@@ -393,25 +391,61 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            rho2  =prmang(6,kk)
            dr2   =rbc-rho2
 
-           m=b*dr1+c*dr2
+           tmp   =b*dr1+c*dr2
 
-           pterm=a*dr1*dr2 + dtheta*m
-
-           gamma=m*rsint
+           pterm=a*dr1*dr2 + dtheta*tmp
+           gamma=tmp*rsint
            gamsa=-a*dr2-b*dtheta
            gamsc=-a*dr1-c*dtheta
            vterm=-(gamsa*rab+gamsc*rbc)
+
+        Else If (keya == 13) Then
+
+! AMOEBA potential
+
+           k     =prmang(1,kk)
+           theta0=prmang(2,kk)
+           dtheta=theta-theta0
+
+           pterm=k*dtheta**2 * (1.0_wp-1.4e-2_wp*dtheta+5.60e-5_wp*dtheta**2 - &
+                                7.0e-7_wp*dtheta**3+2.20e-8_wp*dtheta**4)
+           gamma=k*dtheta    * (2.0_wp-4.2e-2_wp*dtheta+2.24e-4_wp*dtheta**2 - &
+                                3.5e-6_wp*dtheta**3+1.32e-7_wp*dtheta**4)*rsint
+           gamsa=0.0_wp
+           gamsc=0.0_wp
+           vterm=0.0_wp
+
+        Else If (keya == 14) Then
+
+! KKY potential
+
+           k     =prmang(1,kk)
+           theta0=prmang(2,kk)
+           dtheta=theta-theta0
+           gr    =prmang(3,kk)
+           rm    =prmang(4,kk)
+           dr1   =rab-rm
+           rho1  =Exp(-0.5_wp*gr*dr1)
+           dr2   =rbc-rm
+           rho2  =Exp(-0.5_wp*gr*dr2)
+           rho   =rho1*rho2
+
+           pterm=k*(Cos(2.0_wp*dtheta)-1.0_wp)*rho
+           gamma=-k*2.0_wp*Sin(2.0_wp*dtheta)/sint
+           gamsa=-0.5_wp*gr*pterm
+           gamsc=gamsa
+           vterm=-gamsa*(rab+rbc)
 
         Else
 
 ! undefined potential
 
            safe=.false.
-           gamma=0.0_wp
            pterm=0.0_wp
-           vterm=0.0_wp
+           gamma=0.0_wp
            gamsa=0.0_wp
            gamsc=0.0_wp
+           vterm=0.0_wp
 
         End If
 

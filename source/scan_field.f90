@@ -19,7 +19,7 @@ Subroutine scan_field                                 &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith november 1994
-! amended   - i.t.todorov june 2013
+! amended   - i.t.todorov march 2014
 ! contrib   - b.palmer (2band) may 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -64,7 +64,7 @@ Subroutine scan_field                                 &
                        mxmet,mxmed,mxmds,itpmet,mxgrid,                        &
                        mxter,itpter,mxtbp,itptbp,mxfbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
-  Real( Kind = wp ) :: rvdw,rmet,rcter,rctbp,rcfbp,rct
+  Real( Kind = wp ) :: rvdw,rmet,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
 
   l_n_e=.true.
 
@@ -510,7 +510,25 @@ Subroutine scan_field                                 &
 
            Call get_word(record,word)
            Call get_word(record,word)
-           If (word(1:3) == 'tab') lt_vdw=.true.
+
+           If      (word(1:3) == 'tab') Then
+              lt_vdw=.true.
+           Else If (word(1:3) == 'snm') Then
+              Call get_word(record,word)
+              Call get_word(record,word)
+              Call get_word(record,word)
+              Call get_word(record,word)
+              rvdw=Max(rvdw,word_2_real(word))
+           Else If (word(1:3) == 'wca') Then
+              Call get_word(record,word)
+              Call get_word(record,word) ; tmp1=word_2_real(word)
+              Call get_word(record,word) ; tmp2=word_2_real(word)
+              tmp=tmp2+tmp1*2.0_wp**(1.0_wp/6.0_wp)
+              rvdw=Max(rvdw,tmp)
+           Else If (word(1:3) == 'dpd') Then
+              Call get_word(record,word)
+              rvdw=Max(rvdw,word_2_real(word))
+           End If
         End Do
 
         If (mxvdw > 0) Then

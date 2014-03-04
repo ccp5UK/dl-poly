@@ -144,8 +144,8 @@ intermolecular forces, are obtained by the {\sc read\_field} routine,
 which reads the FIELD file.  The {\sc system\_init} routine is
 called next to initialise various simulation arrays and variables
 intact with the data so far and detects if the job is a restart of
-previous simulation run.  If so it reads the REVOLD (Section
-\ref{revold-file}) to supply some arrays and variables with the
+previous simulation run.  If so it reads the REVOLD (Section~\ref{revold-file})
+to supply some arrays and variables with the
 necessary values as saved from the previous job.  The domain halo is
 constructed strait after by the routine {\sc set\_halo\_particles}.
 After gathering all these data, bookkeeping and exclusion arrays are
@@ -205,12 +205,12 @@ distributions may be calculated however, by using the routines
 Similarly, Z-density distribution may be calculated by using the
 routines {\sc z\_density\_collect} and {\sc z\_density\_compute}.
 Ordinary thermodynamic quantities are calculated by the routine
-{\sc statistics\_collect}, which also writes the STATIS file (Section
-\ref{statis-file}).  Routine {\sc trajectory\_write} writes the
+{\sc statistics\_collect}, which also writes the STATIS file
+(Section~\ref{statis-file}).  Routine {\sc trajectory\_write} writes the
 HISTORY (Section~\ref{history-file}) file for later (postmortem)
-analysis.  Routine {\sc defects\_write} writes the DEFECTS (Section
-\ref{defects-file}) file for later (postmortem) analysis.  Routine
-{\sc msd\_write} writes the MSDTMP (Section~\ref{msdtmp-file})
+analysis.  Routine {\sc defects\_write} writes the DEFECTS
+(Section~\ref{defects-file}) file for later (postmortem) analysis.
+Routine {\sc msd\_write} writes the MSDTMP (Section~\ref{msdtmp-file})
 file for later (postmortem) analysis.  Routine {\sc rsd\_write}
 writes the RSDDAT (Section~\ref{rsddat-file}) file for later
 (postmortem) analysis.

@@ -8,7 +8,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith july 1992
-! amended   - i.t.todorov march 2011
+! amended   - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -290,6 +290,19 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
               omega=0.0_wp
               gamma=0.0_wp
            End If
+
+        Else If (keyb == 10) Then
+
+! AMOEBA potential
+
+           k =prmbnd(1,kk)
+           r0=prmbnd(2,kk)
+           dr=rab-r0
+
+           term=k*dr*(1.0_wp-2.55_wp*dr*(1.0_wp-(7.0_wp/12.0_wp)*dr))
+
+           omega=term*dr
+           gamma=(4.0_wp*term+k*dr*(-2.0_wp+2.55_wp*dr))/rab
 
         Else
 

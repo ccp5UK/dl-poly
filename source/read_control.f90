@@ -34,7 +34,7 @@ Subroutine read_control                                &
   Use config_module,   Only : sysname
   Use langevin_module, Only : l_lan,l_gst,langevin_allocate_arrays
   Use parse_module
-  Use vdw_module,      Only : ld_vdw,ls_vdw
+  Use vdw_module,      Only : ld_vdw,ls_vdw,mxtvdw
   Use metal_module,    Only : ld_met,ls_met,tabmet
   Use msd_module,      Only : l_msd
   Use defects1_module, Only : l_dfx
@@ -108,10 +108,12 @@ Subroutine read_control                                &
   ny    = 1
   nz    = 1
 
-! defaults for direct evaluation and force-shifting of VDW interactions
+! defaults for direct evaluation, force-shifting of VDW interactions
+! and type of mixing for undefined cross interaction of certain type
 !
 ! ld_vdw = .false. ! (initialised in vdw_module)
 ! ls_vdw = .false. ! (initialised in vdw_module)
+  mxtvdw = 0       ! (initialised in vdw_module)
 !
 ! defaults for direct evaluation of metal interactions
 !
@@ -490,6 +492,70 @@ Subroutine read_control                                &
            ld_vdw = .true.
            If (idnode == 0) Write(nrite,"(/,1x,a)") "vdw direct option on"
 
+        Else If (word1(1:6) == 'mixing') Then
+
+! mixing type keywords
+
+           If (idnode == 0) Write(nrite,"(3(/,1x,a))") "vdw cross terms mixing opted (for undefined mixed potentials)", &
+                                                       "mixing is limited to potentials of the same type only",         &
+                                                       "mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)"
+
+           Call get_word(record,word2)
+
+           If      (word2(1:4) == 'lore') Then
+
+              mxtvdw = 1
+              If (idnode == 0) Write(nrite,"(1x,a)") &
+  "type of mixing selected - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2"
+
+           Else If (word2(1:4) == 'fend') Then
+
+              mxtvdw = 2
+              If (idnode == 0) Write(nrite,"(1x,a)") &
+"type of mixing selected - Fender-Halsey :: e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2"
+
+           Else If (word2(1:4) == 'hoge') Then
+
+              mxtvdw = 3
+              If (idnode == 0) Write(nrite,"(1x,a)") &
+"type of mixing selected - Hogervorst (good hope) :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)"
+
+           Else If (word2(1:4) == 'halg') Then
+
+              mxtvdw = 4
+              If (idnode == 0) Write(nrite,"(1x,a)") &
+"type of mixing selected - Halgren HHG :: e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)"
+
+           Else If (word2(1:4) == 'wald') Then
+
+              mxtvdw = 5
+              If (idnode == 0) Write(nrite,"(1x,a)") &
+"type of mixing selected - Waldman–Hagler :: e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ; s_ij=[(s_i^6+s_j^6)/2]^(1/6)"
+
+           Else If (word2(1:4) == 'tang') Then
+
+              mxtvdw = 6
+              If (idnode == 0) Write(nrite,"(1x,a,/,1x,a)") &
+"type of mixing selected - Tang-Toennies :: e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13 ;", &
+"                                           s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)"
+
+           Else If (word2(1:4) == 'func') Then
+
+              mxtvdw = 7
+              If (idnode == 0) Write(nrite,"(1x,a,a,/,1x,a)")                &
+"type of mixing selected - Functional :: e_ij=3 * (e_i*e_j)^(1/2) * ",       &
+"(s_i*s_j)^3 / SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))} ;", &
+"                                        s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}"
+
+           Else
+
+              Call strip_blanks(record)
+              If (idnode == 0) Write(nrite,"(/,/,4a)") &
+                 word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),word2(1:Len_Trim(word2)+1),record
+              Call error(3)
+
+           End If
+
         Else If (word1(1:5) == 'shift') Then
 
 ! force-shifting option
@@ -599,10 +665,11 @@ Subroutine read_control                                &
         seed(1)=Nint(Abs(word_2_real(word)))
         Call get_word(record,word)
         seed(2)=Nint(Abs(word_2_real(word)))
+        Call get_word(record,word)
+        seed(3)=Nint(Abs(word_2_real(word)))
 
-        If (idnode == 0) Write(nrite,"(/,1x,'radomisation seeds supplied', &
-           & /,1x,'particle (index)',15x,i10,                              &
-           & /,1x,'(seed1,seed2)',15x,'(',i5,',',i5,')')") seed
+        If (idnode == 0) &
+           Write(nrite,"(/,1x,'radomisation seeds supplied',/,1x,'(seed1,seed2,seed3)  ',10x,3i5)") seed
 
 ! read temperature
 

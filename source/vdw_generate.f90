@@ -7,7 +7,7 @@ Subroutine vdw_generate(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov december 2013
+! amended   - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -340,13 +340,59 @@ Subroutine vdw_generate(rvdw)
            End If
         End Do
 
+     Else If (keypot == 10) Then
+
+! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
+
+        a =prmvdw(1,ivdw)
+        rc=prmvdw(2,ivdw)
+
+        Do i=1,mxgrid
+           r=Real(i,wp)*dlrpot
+
+           If (r < rc) Then
+              t2=r/rc
+              t1=0.5_wp*a*r*(1.0_wp-t2)
+
+              vvdw(i,ivdw)=t1*(1.0_wp-t2)
+              gvdw(i,ivdw)=t1*(3.0_wp*t2-1.0_wp)
+           End If
+        End Do
+
+        sigeps(1,ivdw)=rc
+        sigeps(2,ivdw)=a
+
+     Else If (keypot == 11) Then
+
+! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
+
+        eps=prmvdw(1,ivdw)
+        sig=prmvdw(2,ivdw)
+
+        Do i=1,mxgrid
+           r=Real(i,wp)*dlrpot
+
+           rho=sig/r
+           t1=1.0_wp/(0.07_wp+rho)
+           t2=1.0_wp/(0.12_wp+rho**7)
+           t3=eps*(1.07_wp/t1**7)
+
+           vvdw(i,ivdw)=t3*((1.12_wp/t2)-2.0_wp)
+           gvdw(i,ivdw)=-7.0_wp*t3*rho*(((1.12_wp/t2)-2.0_wp)/t1 + (1.12_wp/t2**2)*rho**6)
+        End Do
+
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=sig/(0.44_wp)**(1.0_wp/7.0_wp)
+           sigeps(2,ivdw)=eps
+        End If
+
      Else
 
         If (.not.lt_vdw) Call error(150)
 
      End If
 
-     If (ls_vdw) Then
+     If (ls_vdw .and. keypot /= 10) Then ! for all but DPD as it is not allowed to be shifted by construction
 
         sigeps(1,ivdw)=-1.0_wp
         sigeps(2,ivdw)= 0.0_wp

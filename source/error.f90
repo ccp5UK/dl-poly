@@ -6,7 +6,7 @@ Subroutine error(kode)
 ! controlled termination of the program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -518,7 +518,7 @@ Subroutine error(kode)
 
         Write(nrite,'(/,1x,a)') 'error - undefined direction passed to statistics_connect_spread'
 
-     Else If (kode ==  162) Then
+     Else If (kode ==  163) Then
 
         Write(nrite,'(/,1x,a)') 'error - statistics_connect_spread outgoing transfer buffer exceeded'
 
@@ -1215,11 +1215,11 @@ Subroutine error(kode)
 
      Else If (kode == 1060) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in statistics_module -> allocate_statitics_connect_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in statistics_module -> allocate_statitics_connect'
 
      Else If (kode == 1061) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in statistics_module -> deallocate_statitics_connect_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in statistics_module -> deallocate_statitics_connect'
 
      Else If (kode == 1063) Then
 

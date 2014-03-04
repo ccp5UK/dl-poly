@@ -6,7 +6,7 @@ Module statistics_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2014
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -38,8 +38,8 @@ Module statistics_module
   Real( Kind = wp ), Allocatable, Save :: stpval0(:),stpvl00(:),sumval0(:),ssqval0(:)
   Real( Kind = wp ), Allocatable, Save :: zumval0(:),ravval0(:),stkval0(:,:)
 
-  Public :: allocate_statistics_arrays, allocate_statistics_connect_arrays, &
-            deallocate_statistics_connect_arrays
+  Public :: allocate_statistics_arrays, allocate_statistics_connect, &
+            deallocate_statistics_connect
 
 Contains
 
@@ -74,7 +74,7 @@ Contains
 
   End Subroutine allocate_statistics_arrays
 
-  Subroutine allocate_statistics_connect_arrays()
+  Subroutine allocate_statistics_connect()
 
     Use comms_module, Only : mxnode
     Use setup_module, Only : mxatdm,mxstak
@@ -96,9 +96,9 @@ Contains
        If (Any(fail > 0)) Call error(1060)
     End If
 
-  End Subroutine allocate_statistics_connect_arrays
+  End Subroutine allocate_statistics_connect
 
-  Subroutine deallocate_statistics_connect_arrays()
+  Subroutine deallocate_statistics_connect()
 
     Use comms_module, Only : mxnode
 
@@ -119,6 +119,6 @@ Contains
        If (Any(fail > 0)) Call error(1061)
     End If
 
-  End Subroutine deallocate_statistics_connect_arrays
+  End Subroutine deallocate_statistics_connect
 
 End Module statistics_module

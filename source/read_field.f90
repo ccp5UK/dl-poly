@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov march 2014
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -25,6 +25,7 @@ Subroutine read_field                   &
   Use kinds_f90
   Use comms_module, Only : idnode
   Use setup_module
+  Use vdw_module,   Only : mxtvdw
 
 ! SITE MODULE
 
@@ -102,9 +103,9 @@ Subroutine read_field                   &
                             itprdf,keyrdf,itpvdw,keyvdw,itpmet,keymet,           &
                             itpter,keyter,icross,                                &
                             itbp,itptbp,keytbp,ktbp,                             &
-                            ifbp,itpfbp,keyfbp,ka1,ka2,ka3,kfbp,nfld
-  Real( Kind = wp )      :: weight,charge,pmf_tmp(1:2),parpot(1:30),tmp
-
+                            ifbp,itpfbp,keyfbp,ka1,ka2,ka3,kfbp,nfld,itmp
+  Real( Kind = wp )      :: weight,charge,pmf_tmp(1:2),parpot(1:30),tmp,         &
+                            sig(0:2),eps(0:2),del(0:2)
 
 
 ! Initialise number of unique atom and shell types and of different types of molecules
@@ -1272,6 +1273,14 @@ Subroutine read_field                   &
                        keyang(nangle)=12
                     Else If (keyword == '-cmp') Then
                        keyang(nangle)=-12
+                    Else If (keyword == 'amoe') Then
+                       keyang(nangle)=13
+                    Else If (keyword == '-amo') Then
+                       keyang(nangle)=-13
+                    Else If (keyword == 'kky' ) Then
+                       keyang(nangle)=14
+                    Else If (keyword == '-kky') Then
+                       keyang(nangle)=-14
                     Else
 
                        If (idnode == 0) Write(nrite,'(/,1x,a)') keyword
@@ -2134,12 +2143,14 @@ Subroutine read_field                   &
               keypot=6
            Else If (keyword == 'snm' ) Then
               keypot=7
-           Else If (keyword == 'hcnm') Then
-              keypot=7
            Else If (keyword == 'mors') Then
               keypot=8
            Else If (keyword == 'wca' ) Then
               keypot=9
+           Else If (keyword == 'dpd' ) Then
+              keypot=10
+           Else If (keyword == 'amoe') Then
+              keypot=11
            Else
 
               If (idnode == 0) Write(nrite,'(/,1x,a)') keyword
@@ -2217,7 +2228,7 @@ Subroutine read_field                   &
 
 ! test for unspecified atom-atom potentials
 
-           ntab =(ntpatm*(ntpatm+1))/2
+           ntab=(ntpatm*(ntpatm+1))/2
            If (ntpvdw < ntab) Then
               Call warning(120,0.0_wp,0.0_wp,0.0_wp)
 
@@ -2232,6 +2243,225 @@ Subroutine read_field                   &
               Do i=ntpvdw+1,ntab
                  ltpvdw(i) = -1
               End Do
+
+! If the user opted for possible vdw potential mixing
+
+              If (mxtvdw > 0) Then
+
+                 If (idnode == 0 .and. l_top) &
+  Write(nrite,"(/,1x,a)") "vdw potential mixing under testing..."
+
+! Detect if there are qualifying candidates
+
+                 nsite=0 ! number of new cross pair potentials
+                 Do i=1,ntpatm
+                    isite=(i*(i-1))/2+i
+                    If (lstvdw(isite) <= ntpvdw) Then ! if it exists
+                       ia=ltpvdw(lstvdw(isite))
+                       Do j=i+1,ntpatm
+                          jsite=(j*(j-1))/2+j
+                          If (lstvdw(jsite) <= ntpvdw) Then ! if it exists
+                             ja=ltpvdw(lstvdw(jsite))
+                             If (ia == ja .and.             & ! only if of the same type
+                                 (ia == 1 .or. ia == 2 .or. & ! and the type is allowed mixing
+                                  ia == 9 .or. ia == 10 .or. ia == 11)) Then
+                                ksite=isite+j-i
+                                If (lstvdw(ksite) > ntpvdw) Then ! if it does not exist - no overriding
+                                   nsite=nsite+1
+                                   lstvdw(ksite)=-1 ! set a temporary qualifier flag
+                                End If
+                             End If
+                          End If
+                       End Do
+                    End If
+                 End Do
+
+! Qualification has happened
+
+                 If (nsite > 0) Then
+
+                    If (idnode == 0 .and. l_top) &
+  Write(nrite,"(/,1x,a,/)") "vdw potential mixing underway..."
+
+! As the range of defined potentials must extend
+! put undefined potentials outside the new range
+
+                    Do i=1,ntab
+                       If (lstvdw(i) == ntpvdw+1) lstvdw(i) = lstvdw(i) + nsite
+                    End Do
+
+! Apply mixing
+
+                    Do i=1,ntpatm
+                       isite=(i*(i-1))/2+i
+                       ia=lstvdw(isite)
+                       keypot=ltpvdw(ia)
+                       Do j=i+1,ntpatm
+                          jsite=(j*(j-1))/2+j
+                          ja=lstvdw(jsite)
+                          ksite=isite+j-i
+                          If (lstvdw(ksite) == -1) Then ! filter for action
+                             ntpvdw = ntpvdw + 1        ! extend range
+                             lstvdw(ksite)=ntpvdw       ! connect
+                             ltpvdw(ntpvdw)=keypot
+
+! Get mixing in LJ's style characteristic energy(EPSILON) & distance(SIGMA) terms
+
+                             eps = 0.0_wp ; sig = 0.0_wp ; del = 0.0_wp
+                             If      (keypot == 1)  Then ! 12-6
+                                keyword='12-6'
+
+                                eps(1)=prmvdw(2,ia)**2/(4.0_wp*prmvdw(1,ia))
+                                sig(1)=(prmvdw(1,ia)/prmvdw(2,ia))**(1.0_wp/6.0_wp)
+
+                                eps(2)=prmvdw(2,ja)**2/(4.0_wp*prmvdw(1,ja))
+                                sig(2)=(prmvdw(1,ja)/prmvdw(2,ja))**(1.0_wp/6.0_wp)
+                             Else If (keypot == 2  .or. &
+                                      keypot == 10 .or. &
+                                      keypot == 11) Then ! LJ, DPD, AMOEBA 14-7
+                                If (keypot == 2 ) keyword='lj  '
+                                If (keypot == 10) keyword='dpd '
+                                If (keypot == 11) keyword='amoe'
+
+                                eps(1)=prmvdw(1,ia)
+                                sig(1)=prmvdw(2,ia)
+
+                                eps(2)=prmvdw(1,ja)
+                                sig(2)=prmvdw(2,ja)
+                             Else If (keypot == 9)  Then ! WCA
+                                keyword='wca '
+
+                                eps(1)=prmvdw(1,ia)
+                                sig(1)=prmvdw(2,ia)
+                                del(1)=prmvdw(3,ia)
+
+                                eps(2)=prmvdw(1,ja)
+                                sig(2)=prmvdw(2,ja)
+                                del(2)=prmvdw(3,ja)
+                             End If
+
+                             If      (mxtvdw == 1) Then
+
+! Lorentz–Berthelot: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2
+
+                                eps(0) = Sqrt(eps(1)*eps(2))
+
+                                sig(0) = 0.5_wp*(sig(1)+sig(2))
+
+                                If (Any(del > zero_plus)) &
+                                del(0) = 0.5_wp*(del(1)+del(2))
+
+                             Else If (mxtvdw == 2) Then
+
+! Fender-Halsey : e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2
+
+                                eps(0) = 2.0_wp*eps(1)*eps(2) / (eps(1)+eps(2))
+
+                                sig(0) = 0.5_wp*(sig(1)+sig(2))
+
+                                If (Any(del > zero_plus)) &
+                                del(0) = 0.5_wp*(del(1)+del(2))
+
+                             Else If (mxtvdw == 3) Then
+
+! Hogervorst good hope : e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)
+
+                                eps(0) = Sqrt(eps(1)*eps(2))
+
+                                sig(0) = Sqrt(sig(1)*sig(2))
+
+                                If (Any(del > zero_plus)) &
+                                del(0) = Sqrt(del(1)*del(2))
+
+                             Else If (mxtvdw == 4) Then
+
+! Halgren HHG: e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)
+
+                                eps(0) = 4.0_wp*eps(1)*eps(2) / (Sqrt(eps(1))+Sqrt(eps(2)))**2
+
+                                sig(0) = (sig(1)**3+sig(2)**3) / (sig(1)**2+sig(2)**2)
+
+                                If (Any(del > zero_plus)) &
+                                del(0) = (del(1)**3+del(2)**3) / (del(1)**2+del(2)**2)
+
+                             Else If (mxtvdw == 5) Then
+
+! Waldman–Hagler : e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ; s_ij=[(s_i^6+s_j^6)/2]^(1/6)
+
+                                tmp    = 0.5_wp*(sig(1)**6+sig(2)**6)
+
+                                eps(0) = Sqrt(eps(1)*eps(2)) * ((sig(1)*sig(2))**3) / tmp
+
+                                sig(0) = tmp**(1.0_wp/6.0_wp)
+
+                                If (Any(del > zero_plus)) &
+                                del(0) = (0.5_wp*(del(1)**6+del(2)**6))**(1.0_wp/6.0_wp)
+
+                             Else If (mxtvdw == 6) Then
+
+! Tang-Toennies : e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13 ;
+!                 s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)
+
+                                tmp    = (eps(1)*sig(1)**6) * (eps(2)*sig(2)**6)
+
+                                eps(0) = tmp / ( ((eps(1)*sig(1)**12)**(1.0_wp/13.0_wp) +             &
+                                                  (eps(2)*sig(2)**12)**(1.0_wp/13.0_wp)) * 0.5_wp )**13
+
+                                sig(0) = (Sqrt(tmp)/eps(0))**(1.0_wp/6.0_wp)
+
+                                If (Any(del > zero_plus)) &
+                                del(0) = ((sig(0)-sig(2))*del(1) + (sig(1)-sig(0))*del(2)) / (sig(1)-sig(2))
+
+                             Else If (mxtvdw == 7) Then
+
+! Functional : e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(6/(6-2L))} ;
+!              s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}
+
+                                Do itmp=0,2
+                                   tmp = (sig(1)**3+sig(2)**3)**2 / (4*(sig(1)*sig(2))**itmp)
+
+                                   eps(0) = eps(0) + 1.0 / tmp**(Real(6,wp)/Real(6-2*itmp,wp))
+
+                                   sig(0) = tmp**(Real(1,wp)/Real(6-2*itmp,wp))
+                                End Do
+                                eps(0)=eps(0) * 3.0_wp * Sqrt(eps(1)*eps(2)) * (sig(1)*sig(2))**3
+                                sig(0)=sig(0)/3.0_wp
+
+                                If (Any(del > zero_plus)) &
+                                del(0) = ((sig(0)-sig(2))*del(1) + (sig(1)-sig(0))*del(2)) / (sig(1)-sig(2))
+
+                             End If
+
+! Recover and/or paste in the parameter array
+
+                             If      (keypot == 1)  Then ! 12-6
+                                prmvdw(1,ntpvdw)=4.0_wp*eps(0)*(sig(0)**12)
+                                prmvdw(2,ntpvdw)=4.0_wp*eps(0)*(sig(0)**6)
+                             Else If (keypot == 2  .or. &
+                                      keypot == 10 .or. &
+                                      keypot == 11) Then ! LJ, DPD, AMOEBA 14-7
+                                prmvdw(1,ntpvdw)=eps(0)
+                                prmvdw(2,ntpvdw)=sig(0)
+                             Else If (keypot == 9)  Then ! WCA
+                                prmvdw(1,ntpvdw)=eps(0)
+                                prmvdw(2,ntpvdw)=sig(0)
+                                prmvdw(3,ntpvdw)=del(0)
+                             End If
+
+                             If (idnode == 0 .and. l_top) &
+  Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,10f20.6)") ntpvdw,unqatm(i),unqatm(j),keyword,(parpot(itmp),itmp=1,mxpvdw)
+
+                          End If
+                       End Do
+                    End Do
+
+                 Else
+
+                    If (idnode == 0 .and. l_top) &
+  Write(nrite,"(/,1x,a)") "vdw potential mixing unsuccessful"
+
+                 End If
+              End If
            End If
 
 ! generate vdw force arrays

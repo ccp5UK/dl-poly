@@ -12,7 +12,7 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1994
-! amended   - i.t.todorov june 2008
+! amended   - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -206,43 +206,49 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
            iz=Int(zdc*(zzt(i)-1.0_wp))
         End If
 
+! The story has become more complicated with cutoff padding and the
+! conditional updates of the VNL and thus the halo as now a domain
+! (1:natms) particle can enter the halo and vice versa.  So LC
+! bounding is unsafe!!!
+!
 ! Correction for particles (1,natms) belonging to this domain
 ! (idnode) but due to some tiny numerical inaccuracy kicked into
 ! the halo link-cell space and vice-versa particles from the
 ! halo (natms+1,nlast) kicked into the domain link-cell space
+!
+!        If (i <= natms) Then
+!           If (ix < 2)     ix=2
+!           If (ix > nbx+1) ix=nbx+1
+!
+!           If (iy < 2)     iy=2
+!           If (iy > nby+1) iy=nby+1
+!
+!           If (iz < 2)     iz=2
+!           If (iz > nbz+1) iz=nbz+1
+!        Else
+!           lx0=(ix == 2)
+!           lx1=(ix == nbx)
+!           ly0=(iy == 2)
+!           ly1=(iy == nby)
+!           lz0=(iz == 2)
+!           lz1=(iz == nbz)
+!           If ((lx0 .or. lx1) .and. (ly0 .or. ly1) .and. (lz0 .or. lz1)) Then
+!              If      (lx0) Then
+!                 ix=1
+!              Else If (lx1) Then
+!                 ix=nbx+1
+!              Else If (ly0) Then
+!                 iy=1
+!              Else If (ly1) Then
+!                 iy=nby+1
+!              Else If (lz0) Then
+!                 iz=1
+!              Else If (lz1) Then
+!                 iz=nbz+1
+!              End If
+!           End If
+!        End If
 
-        If (i <= natms) Then
-           If (ix < 2)     ix=2
-           If (ix > nbx+1) ix=nbx+1
-
-           If (iy < 2)     iy=2
-           If (iy > nby+1) iy=nby+1
-
-           If (iz < 2)     iz=2
-           If (iz > nbz+1) iz=nbz+1
-        Else
-           lx0=(ix == 2)
-           lx1=(ix == nbx)
-           ly0=(iy == 2)
-           ly1=(iy == nby)
-           lz0=(iz == 2)
-           lz1=(iz == nbz)
-           If ((lx0 .or. lx1) .and. (ly0 .or. ly1) .and. (lz0 .or. lz1)) Then
-              If      (lx0) Then
-                 ix=1
-              Else If (lx1) Then
-                 ix=nbx+1
-              Else If (ly0) Then
-                 iy=1
-              Else If (ly1) Then
-                 iy=nby+1
-              Else If (lz0) Then
-                 iz=1
-              Else If (lz1) Then
-                 iz=nbz+1
-              End If
-           End If
-        End If
 
 ! Only for particles onto the domain and in the double link-cell
 ! width layer around it. Discard the rest(-:
@@ -379,11 +385,11 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
                        If (jk > limit) jk=jk-limit
 
 ! index of the second secondary atom
-! (definetelty different form the first one)
+! (definitely different form the first one)
 
                        ic=listin(jk)
 
-! if neither of the secondary atoms coinsides with the head one
+! if neither of the secondary atoms coincides with the head one
 
                        If (ia /= ib .and. ic /= ib) Then
 
@@ -675,7 +681,7 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
 
 ! (BACK - SECOND SHIFT TO LEFT)
 
-                      End IF
+                      End If
                    End If
                 End If
              End If

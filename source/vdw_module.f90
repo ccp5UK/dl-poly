@@ -5,7 +5,7 @@ Module vdw_module
 ! dl_poly_4 module declaring global vdw interaction variables and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2013
+! author    - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -13,11 +13,12 @@ Module vdw_module
 
   Implicit None
 
-  Logical,                        save :: lt_vdw = .false., &
-                                          ld_vdw = .false., &
-                                          ls_vdw = .false.
+  Logical,                        save :: lt_vdw = .false., & ! TABLE is present
+                                          ld_vdw = .false., & ! direct calculation
+                                          ls_vdw = .false.    ! force-shifting is to apply
 
-  Integer,                        Save :: ntpvdw = 0
+  Integer,                        Save :: ntpvdw = 0, &       ! number of 2 body interactions
+                                          mxtvdw = 0          ! type of mixing
 
 
   Integer,           Allocatable, Save :: lstvdw(:),ltpvdw(:)

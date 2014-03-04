@@ -82,6 +82,10 @@ no topology
 no electostatics
 no vdw
 
+# APPLY MIXING TO ALLOWED & AVAILABLE VDW CROSS INTERACTIONS
+# Lorentz–Berthelot || Fender-Halsey || Hogervorst (good hope) || Halgren HHG || Tang-Toennies
+vdw mixing Lorentz
+
 # DIRECT CALCULATION OF VDW/METAL INTERACTIONS INSTEAD OF
 # EVALUATION BY SPLINING OVER TABULATED VALUES IN MEMORY
 vdw direct
@@ -92,7 +96,7 @@ metal direct
 vdw shift
 
 # RANDOM NUMBER GENERATOR SEEDING
-seed 100 200
+seed 100 200 300
 
 # I/O READ: METHOD, READER COUNT, BATCH & BUFFER SIZES
 io read  mpiio        2 2000000 20000
@@ -105,26 +109,26 @@ slab
 
 # RESTART OPTIONS
 restart noscale
-dump                   1000 steps
+dump                 1000     steps
 
 # SYSTEM TARGET TEMPERATURE AND PRESSURE
-temperature           300.0 Kelvin
-pressure              0.001 k-atmospheres
+temperature           300.0   Kelvin
+pressure                0.001 k-atmospheres
 
 # SYSTEM CUTOFFS AND ELECTROSTATICS
-rcut                   10.0 Angstroms
-rpad                    0.2 Angstroms
-rvdw                    8.0 Angstroms
+rcut                   10.0  Angstroms
+rpad                    0.02 Angstroms
+rvdw                    8.0  Angstroms
 exclude
 epsilon                 1.0
-ewald precision         1.0e-6
-ewald evaluate            4
+ewald precision         1.0e-5
+ewald evaluate          4
 
 # RELAXED SHELL MODEL TOLERANCE
 rlxtol                  1.0 force
 
 # CONSTRANTS ITERATION LENGTH and TOLERANCE
-mxshak                  250 cycles
+mxshak                250 cycles
 shake                   1.0e-4
 
 # INTEGRATION FLAVOUR, ENSEMBLE AND PSEUDO THERMOSTAT
@@ -133,54 +137,54 @@ ensemble nst hoover 0.5 0.5
 pseudo langevin   2.0 150.0
 
 # INTEGRATION TIMESTEP
-variable timestep     0.001 pico-seconds
-mindis                 0.03 Angstroms
-maxdis                 0.10 Angstroms
-mxstep                0.005 pico-seconds
+variable timestep       0.001 pico-seconds
+mindis                  0.03  Angstroms
+maxdis                  0.10  Angstroms
+mxstep                  0.005 pico-seconds
 
 # SUMULATION & EQUILIBRATION LENGTH
-steps                 10000 steps
-equilibration          1000 steps
+steps               10000 steps
+equilibration        1000 steps
 
 # EQUILIBRATION DIRECTIVES
 zero
-cap                    2000 kT/Angstrom
-scale                     5 steps
-regauss                   3 steps
+cap                  2000 kT/Angstrom
+scale                   5 steps
+regauss                 3 steps
 minimise force      20  1.0
 optimise energy         0.001
 
 # STATISTICS
 collect
-stack                    50 deep
-stats                    10 steps
+stack                  50 deep
+stats                  10 steps
 
 # OUTPUT
-print                     2 steps
+print                   2 steps
 
 # HISTORY
 replay
-trajectory          20 30 0
+trajectory        20 30 0
 
 # DEFECTS TRAJECTORY - DEFECTS
-defects          40 15 0.75
+defects           40 15 0.75
 
 # DISPLACEMENTS TRAJECTORY - RSDDAT
-displacements    70 10 0.25
+displacements     70 10 0.25
 
 # MSDTMP
-msdtmp                1000 100
+msdtmp           1000 100
 
 # RDF & Z-DENSITY
-binsize                0.05 Angstroms
-rdf                       7 steps
+binsize                 0.05 Angstroms
+rdf                     7    steps
 print rdf
-zden                      7 steps
+zden                    7    steps
 print zden
 
 # EXECUTION TIME
-job time               1000 seconds
-close time               10 seconds
+job time             1000 seconds
+close time             10 seconds
 
 # FINISH
 finish
@@ -400,11 +404,11 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf maxdis} $f$                             \> set maximum distance allowed in variable timestep (control) \\
 \>                                              \> to $f$ \AA~(default $f~=~0.10$ \AA) \\
 \>                                              \> \\
-\> {\bf metal direct}                           \> enforces the direct calculation of metal interactions defined \\
+\> {\bf metal direct}                           \> enforce the direct calculation of metal interactions defined \\
 \>                                              \> by explicit potential forms, i.e. it will not work for metal \\
 \>                                              \> alloy systems using the EAM, EEAM, 2BEAM or 2BEEAM (TABEAM) \\
 \>                                              \> \\
-\> {\bf metal sqrtrho}                          \> swiches the TABEAM default of reading embedding functions, \\
+\> {\bf metal sqrtrho}                          \> swich the TABEAM default of reading embedding functions, \\
 \>                                              \> $F(\rho)$, as interpolated over densities, $\rho$, to as \\
 \>                                              \> interpolated over $\sqrt{\rho}$, i.e. $F~=~F(\sqrt{\rho})$\\
 \>                                              \> \\
@@ -545,7 +549,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> (with respect to the last equilibration step, \\
 \>                                              \> (atomic velocities are scaled collectively) \\
 \>                                              \> \\
-\> {\bf seed} $n_{1}~n_{2}$                     \> seed control to the random number generator used in the \\
+\> {\bf seed} $n_{1}~n_{2}~n_{3}$               \> seed control to the random number generator used in the \\
 \>                                              \> generation of gaussian distributions and stochastic processes \\
 \>                                              \> \\
 \> {\bf shake} (tolerance) $f$                  \> set shake/rattle tolerance to $f$ (default $f~=~10^{-6}$) \\
@@ -592,7 +596,24 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> defined by explicit potential forms, i.e. it will not work for \\
 \>                                              \> systems using tabulated potentials (TABLE) \\
 \>                                              \> \\
-\> {\bf vdw shift}                              \> applies a force-shifting procedure to all van der Waals \\
+\> {\bf vdw mix}  {\em rule}                    \> apply the mixing {\em rule} to all specified analytical, \\
+\>                                              \> single-species van der Waals potential interactions \\
+\>                                              \> to generate cross-species interactions when: \\
+\>                                              \> \phantom{x} (i)~~~the latter has not already been specified; \\
+\>                                              \> \phantom{x} (ii)~~single species potentials are available \\
+\>                                              \> \phantom{x} ~~~~~~(specified) and of the same type; and \\
+\>                                              \> \phantom{x} (iii)~their type is allowed to mix, i.e. of \\
+\>                                              \> \phantom{x} ~~~~~~12-6 or LJ or DPD or AMOE or WCA type. \\
+\>                                              \> The available mixing {\bf \em rule}s are as follows: \\
+\>                                              \> \phantom{x} {\em lore}ntz for the Lorentz-Berthelot type of mixing \\
+\>                                              \> \phantom{x} {\em fend}er for the Fender-Halsey type of mixing \\
+\>                                              \> \phantom{x} {\em hoge}rvorst for the Hogervorst (good hope) type of mixing \\
+\>                                              \> \phantom{x} {\em halg}ren for the Halgren HHG type of mixing \\
+\>                                              \> \phantom{x} {\em tang} for the Tang-Toennies type of mixing \\
+\>                                              \> \phantom{x} {\em func}tional for the Functional type of mixing \\
+\>                                              \> The mixing formulae can be found in Section~\ref{vdw} \\
+\>                                              \> \\
+\> {\bf vdw shift}                              \> apply a force-shifting procedure to all van der Waals \\
 \>                                              \> potentials (except the shifted-force n-m potential) so \\
 \>                                              \> that the VDW interactions' energy and force contributions \\
 \>                                              \> fall to zero smoothly for distances approaching $r_{\rm cut}$ \\
@@ -606,25 +627,25 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> *** SPECIAL OPTIONS ***                      \> *** SPECIAL OPTIONS *** \\
 \>                                              \> \\
-\> {\bf l\_scr}                                 \> redirects OUTPUT file's contents to the OS's \\
+\> {\bf l\_scr}                                 \> redirect OUTPUT file's contents to the OS's \\
 \>                                              \> default output channel (screen, interactive) \\
 \>                                              \> \\
-\> {\bf l\_fast}                                \> abandons global safety checks, which gives more speed \\
+\> {\bf l\_fast}                                \> abandon global safety checks, which gives more speed \\
 \>                                              \> to simulations run at too few link cells per domain \\
 \>                                              \> regimes by abandoning global safety checks, however, \\
 \>                                              \> in case of parallel failures no controlled manner \\
 \>                                              \> termination will happen (OS's feedback dependence!!!) \\
 \>                                              \> \\
-\> {\bf l\_rout}                                \> writes REVIVE in ASCII (default is binary) \\
+\> {\bf l\_rout}                                \> write REVIVE in ASCII (default is binary) \\
 \>                                              \> \\
-\> {\bf l\_rin}                                 \> reads REVOLD in ASCII (default is binary) \\
+\> {\bf l\_rin}                                 \> read REVOLD in ASCII (default is binary) \\
 \>                                              \> \\
-\> {\bf l\_his}                                 \> generates a one frame HISTORY from CONFIG \\
-\>                                              \> and terminates straight after \\
+\> {\bf l\_his}                                 \> generate a one frame HISTORY from CONFIG \\
+\>                                              \> and terminate straight after \\
 \>                                              \> \\
-\> {\bf l\_tor}                                 \> abandons the production of REVIVE and REVCON \\
+\> {\bf l\_tor}                                 \> abandon the production of REVIVE and REVCON \\
 \>                                              \> \\
-\> {\bf l\_dis}                                 \> checks and reports on the minimum separation distance \\
+\> {\bf l\_dis}                                 \> check and report on the minimum separation distance \\
 \>                                              \> between all Verlet neighbour list pairs at re/start
 \end{tabbing}
 
@@ -1107,15 +1128,14 @@ der Waals potentials set by {\bf rvdw}.  If not specified its value
 defaults to $r_{\rm cut}$.
 \end{enumerate}
 
-\item Constraint algorithms in \D, SHAKE/RATTLE (see Section
-\ref{shake-rattle}), use default iteration precision of 10$^{-6}$
-and limit of iteration cycles of 250.  Users may experience that
-during optimisation of a new built system containing constraints
-simulation may fail prematurely since a constraint algorithm failed
-to converge.  In such cases directives {\bf mxshak} (to increase)
-and {\bf shake} (to decrease) may be used to decrease the strain in
-the system and stablise the simulation numerics until equilibration
-is achieved.
+\item Constraint algorithms in \D, SHAKE/RATTLE (see Section~\ref{shake-rattle}),
+use default iteration precision of 10$^{-6}$ and limit of iteration
+cycles of 250.  Users may experience that during optimisation of a
+new built system containing constraints simulation may fail
+prematurely since a constraint algorithm failed to converge.
+In such cases directives {\bf mxshak} (to increase) and {\bf shake}
+(to decrease) may be used to decrease the strain in the system
+and stablise the simulation numerics until equilibration is achieved.
 
 \item \D's DD strategy assumes that the local (per domain/node or
 link cell) density of various system entities (i.e. atoms, bonds,
@@ -1673,7 +1693,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> index 1 ($i$) \> integer \> site index of core \\
 \> index 2 ($j$) \> integer \> site index of shell \\
 \> $k_{2}$       \> real    \> force constant of core-shell spring \\
-\> $k_{4}$)      \> real    \> quartic (anharmonic) force constant of spring
+\> $k_{4}$       \> real    \> quartic (anharmonic) force constant of spring
 \end{tabbing}
 The spring potential is
 \begin{equation}
@@ -1817,7 +1837,7 @@ $ U(r) = \frac{1}{2}~k~(r_{i}-r_{i}^{t=0})^{2}$ \\
 
             &            &         &         &         & \\
 {\bf rhrm}  & Restraint  & $k$     & $r_{c}$ &         &
-$U(r) = \frac{1}{2}~k~(r_{i}-r_{i}^{t=0})^{2}~:~|r_{i}-r_{i}^{t=0}| \le r_{c}$ \\
+$U(r) = \frac{1}{2}~k~(r_{i}-r_{i}^{t=0})^{2}~~~~~~~~~~~~~~~~~~~:~|r_{i}-r_{i}^{t=0}| \le r_{c}$ \\
             &            &         &         &         &
 $U(r) = \frac{1}{2}~k~r_{c}^{2}+k~r_{c}(|r_{i}-r_{i}^{t=0}|-r_{c})~:~|r_{i}-r_{i}^{t=0}|>r_{c}$ \\
             &            &         &         &         & \\
@@ -1878,7 +1898,7 @@ $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r_{ij}} \right)^{12} - \left( \fr
 {\bf -lj}   &                    &            &          &          &       & \\
             &                    &            &          &          &       & \\
 {\bf rhrm}  & Restraint          & $k$        & $r_{0}$  & $r_{c}$  &       &
-$U(r) = \frac{1}{2}~k~(r_{ij}-r_{0})^{2}~:~|r_{ij}-r_{0}| \le r_{c}$ \\
+$U(r) = \frac{1}{2}~k~(r_{ij}-r_{0})^{2}~~~~~~~~~~~~~~~~~~~:~|r_{ij}-r_{0}| \le r_{c}$ \\
 {\bf -rhm}  &                    &            &          &          &       &
 $U(r) = \frac{1}{2}~k~r_{c}^{2}+k~r_{c}(|r_{ij}-r_{0}|-r_{c})~:~|r_{ij}-r_{0}|>r_{c}$ \\
             &                    &            &          &          &       & \\
@@ -1895,10 +1915,14 @@ $U(r) = A~\exp\left(-\frac{r_{ij}}{\rho}\right)-\frac{C}{r_{ij}^{6}}$ \\
 $U(r) = k \cdot U^{Electrostatics}(r_{ij}) \; \left(= \frac{k}{4\pi\epsilon_{0}\epsilon}\frac{q_{i}q_{j}}{r_{ij}}\right)$ \\
 {\bf -cul}  &                    &            &          &          &       & \\
             &                    &            &          &          &       & \\
-{\bf fene}  & Shifted$^{*}$ FENE & $k$        & $R_{o}$  & $\Delta$ & &
-$U(r) = -0.5~k~R_{o}~ln\left[1-\left(\frac{r_{ij}-\Delta}{R_{o}^{2}}\right)^{2}\right] : r_{ij} < R_{o} + \Delta$ \\
-{\bf -fne}  &                    &            &          &          &       &
-$U(r) = \infty : r_{ij} \ge R_{o} + \Delta$ \\
+{\bf fene}  & Shifted$^{*}$ FENE & $k$        & $R_{o}$  & $\Delta$ &       &
+$U(r) = -0.5~k~R_{o}~ln\left[1-\left(\frac{r_{ij}-\Delta}{R_{o}^{2}}\right)^{2}\right]~:~r_{ij} < R_{o} + \Delta$ \\
+{\bf -fne}  & \cite{warner-72a,bird-77a,grest-86a} & &   &          &       &
+$U(r) = \infty~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~:~r_{ij} \ge R_{o} + \Delta$ \\
+            &                    &            &          &          &       & \\
+{\bf amoe}  & AMOEBA \cite{ponder-10a} & $k$  & $r_{o}$  &          &       &
+$U(r) = k~\delta^{2}\left[1-2.55~\delta+(7/12)~2.55~\delta^{2}\right]~;~\delta~ = r-r_{o}$ \\
+{\bf -amo}  & FF bond            &            &          &          &       & \\
             &                    &            &          &          &       & \\
 \hline
 \end{tabular}
@@ -1994,9 +2018,19 @@ $U(\theta) = A~(\theta-\theta_{0})~(r_{ij} - r_{ij}^{o})$ \\
 {\bf -stb} & stretch-bend        &     &              &            &            & \\
            &                     &     &              &            &            & \\
 {\bf cmps} & Compass \cite{sun-98a} & $A$ & $B$       & $C$       & $\theta_{0}$ &
-$U(\theta) = A~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o}) + (\theta-\theta_{0}) \times $ \\
+$U(\theta) = A~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o}) + (\theta-\theta_{0}) \times$ \\
 {\bf -cmp} & all terms           & $r_{ij}^{o}$ & $r_{jk}^{o}$ &   &            &
-$ [B~(r_{ij} - r_{ij}^{o})+C~(r_{ik} - r_{ik}^{o})] $ \\
+$ [B~(r_{ij} - r_{ij}^{o})+C~(r_{ik} - r_{ik}^{o})]$ \\
+           &                     &     &              &            &            & \\
+{\bf amoe} & AMOEBA \cite{ponder-10a} & $k$ & $\theta_{0}$ &       &            &
+$U(\theta) = k~\Delta^{2}[1 - 1.4 \cdot 10^{-2}\Delta + 5.6 \cdot 10^{-5}\Delta^{2}$ \\
+{\bf -amo} & FF angle            &     &              &            &            &
+$- 7.0 \cdot 10^{-7}\Delta^{3}+2.2 \cdot 10^{-8}\Delta^{4})]~;~\Delta = \theta-\theta_{0}$ \\
+           &                     &     &              &            &            & \\
+{\bf kky}  & KKY \cite{ponder-10a} & $f_{k}$ & $\theta_{0}$ & $g_{r}$ & $r_{o}$ &
+$U(\theta) = f_{k}~\sin\left[2(\theta-\theta_{0})\right] \cdot \sqrt{K_{ij} \cdot K_{ik}}~;$ \\
+{\bf -kky} &                     &     &              &            &            &
+$K_{ij} = 1/\exp\left[g_{r}(r_{ij}-r_{o})\right]$ \\
            &                     &     &              &            &            & \\
 \hline
 \end{tabular}
@@ -2006,8 +2040,8 @@ $ [B~(r_{ij} - r_{ij}^{o})+C~(r_{ik} - r_{ik}^{o})] $ \\
 
 {\bf Note:} valence angle\index{potential!valence angle}
 potentials with a dash (-) as the first character of the keyword,
-do not contribute to the {\em excluded atoms list} (see Section
-\ref{force-field}).  In this case \D will calculate the
+do not contribute to the {\em excluded atoms list} (see
+Section~\ref{force-field}).  In this case \D will calculate the
 non-bonded\index{potential!non-bonded} pair potentials between the
 described atoms.
 \vskip 1ex
@@ -2219,7 +2253,7 @@ $U(r) = \left( \frac{A}{r^{12}} \right) - \left( \frac{B}{r^{6}} \right)$ \\
 {\bf lj}   & Lennard-Jones             & $\epsilon$ & $\sigma$ &          &         &                      &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r}\right)^{6} \right]$ \\
            &                           &            &          &          &         &                      & \\
-{\bf nm}   & n-m                       & $E_{o}$    & $n$      & $m$      & $r_{0}$ &                      &
+{\bf nm}   & n-m \cite{clarke-86a}     & $E_{o}$    & $n$      & $m$      & $r_{0}$ &                      &
 $U(r) = \frac{E_{o}}{(n-m)} \left[ m \left( \frac{r_{o}}{r} \right)^{n}
 -n \left( \frac{r_{o}}{r} \right)^{m} \right]$ \\
            &                           &            &          &          &         &                      & \\
@@ -2248,11 +2282,20 @@ $+ \frac{nm\alpha E_{o}}{(n-m)} \left( \frac{r-\gamma r_{o}}
 {\bf mors} & Morse                     & $E_{0}$    & $r_{0}$  & $k$      &         &                      &
 $U(r) = E_{0}[\{1-\exp(-k(r-r_{0}))\}^{2}-1]$ \\
            &                           &            &          &          &         &                      & \\
-{\bf wca}  & Shifted$^{*}$ Weeks-      & $\epsilon$ & $\sigma$ & $\Delta$ &         &                      &
+{\bf wca}  & Shifted$^{*}$ \cite{weeks-71a} Weeks- & $\epsilon$ & $\sigma^{\ddagger}$ & $\Delta$ & &       &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r-\Delta} \right)^{12} -
 \left( \frac{\sigma}{r-\Delta}\right)^{6} \right] + \epsilon : r_{ij} < 2^{1 \over 6}~\sigma + \Delta$ \\
-           & Chandler-Anderson         &            &          &          &         &                      &
-$U(r) = 0 : r_{ij} \ge 2^{1 \over 6}~\sigma + \Delta$ \\
+           & Chandler-Anderson &   &          &          &         &                      &
+$U(r) = 0~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~: r_{ij} \ge 2^{1 \over 6}~\sigma + \Delta$ \\
+           &                           &            &          &          &         &                      & \\
+{\bf dpd}  & Standard DPD \cite{groot-71a} & $A$    & $r_{c}$$^{\ddagger}$ &        &         &                      &
+$U(r) = \frac{A}{2}~r_{c}~\left(1-\frac{r}{r_{c}}\right)^{2}~:~r < r_{c}$ \\
+           & (Groot-Warren)             &           &          &          &         &                      &
+$U(r) = 0~~~~~~~~~~~~~~~~~~~:~r \ge r_{c}$ \\
+           &                           &            &          &          &         &                      & \\
+{\bf amoe} & AMOEBA \cite{ponder-10a} & $\epsilon$ & $r_{o}$   &          &         &                      &
+$U(r) = \epsilon\left(\frac{1.07}{{(r_{ij}/r_{o})+0.07}^{\vphantom{7}}}\right)^{7}\left(\frac{1.12}{{(r_{ij}/r_{o})^{7}+0.12}^{\vphantom{7}}}-2\right)$ \\
+           & FF 14-7 pair              &            &          &          &         &                      & \\
            &                           &            &          &          &         &                      & \\
 \hline
 \end{tabular}
@@ -2263,9 +2306,14 @@ $\beta$ and $\gamma$ are compound expressions involving the
 variables $E_{o},n,m,r_{0}$ and $r_{c}$.  See Section~\ref{vdw}
 for further details.
 
-$^{\ddagger}$ Note: $r_{c}$ defaults to the general van der Waals
-cutoff ({\tt rvdw} or {\tt rcut}) if it is set to zero or not
-specified in the FIELD file.
+$^{\ddagger}$ Note: All local potential cutoffs, $r_{c}$, default
+to the general van der Waals cutoff, {\tt rvdw}, or the general
+domain decomposition cutoff, {\tt rcut}, if unspecified or set to
+zero in the FIELD file!  Similarly, if the specified value of
+{\tt rvdw} (and/or {\tt rcut}) in CONTROL is found shorter than any of
+$r_{c}$ (including the WCA equivalent $2^{1 \over 6}~\sigma + \Delta$)
+values specified in FIELD then {\tt rvdw} (and/or {\tt rcut}) will
+be reset by \D to the largest of all values!
 
 $^{*}$ Note: $\Delta$ defaults to zero if $|\Delta| > 0.5~\sigma$ or
 it is not specified in the FIELD file.
@@ -2316,23 +2364,23 @@ tabulated potential \\
 tabulated potential \\
            &                 &         &         &         &     &          & \\
 {\bf fnsc} & Finnis-Sinclair & $c_{0}$ & $c_{1}$ & $c_{2}$ & $c$ & $A$      &
-$U_{i}(r) = {1 \over 2} \sum\limits_{j \ne i} (r_{ij}-c)^{2} (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}) - A \sqrt{\rho_{i}}$ \\
+$U_{i}(r) = {1 \over 2} \sum\limits_{j \ne i} (r_{ij}-c)^{2} (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}) - A \sqrt{\rho_{i}}~;$ \\
            &                 &  $d$    & $\beta$ &         &     &          &
 $\rho_{i} = \sum\limits_{j\ne i} \left[(r_{ij}-d)^{2} + \beta \frac{(r_{ij}-d)^{3}}{d}\right]$ \\
            &                 &         &         &         &     &          & \\
 {\bf exfs} & Extended        & $c_{0}$ & $c_{1}$ & $c_{2}$ &$c_{3}$&$c_{4}$ &
 $U_{i}(r) = {1 \over 2} \sum\limits_{j \ne i} (r_{ij}-c)^{2} (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}+c_{3}r_{ij}^{3}+c_{4}r_{ij}^{4})$ \\
            & Finnis-Sinclair &  $c$    & $A$     & $d$     & $B$ &          &
-$- A \sqrt{\rho_{i}} ~~,~~ \rho_{i} = \sum\limits_{j\ne i} \left[(r_{ij}-d)^{2} + B^{2} (r_{ij}-d)^{4}\right]$ \\
+$- A \sqrt{\rho_{i}}~~~;~~~\rho_{i} = \sum\limits_{j\ne i} \left[(r_{ij}-d)^{2} + B^{2} (r_{ij}-d)^{4}\right]$ \\
            &                 &         &         &         &     &          & \\
 {\bf stch} & Sutton-Chen     & $\epsilon$ & $a$  & $n$     & $m$ & $c$      &
 $U_{i}(r) = \epsilon \left[ {1 \over 2} \sum\limits_{j \ne i} \left(
-\frac{a}{r_{ij}} \right)^{n} - c \sqrt{\rho_{i}} \right]$ \\
+\frac{a}{r_{ij}} \right)^{n} - c \sqrt{\rho_{i}} \right]~;$ \\
            &                 &         &         &         &     &          &
 $\rho_{i} = \sum\limits_{j\ne i} \left(\frac{a}{r_{ij}}\right )^{m}$ \\
            &                 &         &         &         &     &          & \\
 {\bf gupt} & Gupta           & $A$     & $r_{0}$ & $p$     & $B$ & $q_{ij}$ &
-$U_{i}(r) = {1 \over 2} \sum\limits_{j \ne i} A \exp \left(-p \frac{r_{ij}-r_{0}}{r_{0}}\right) - B \sqrt{\rho_{i}}$ \\
+$U_{i}(r) = {1 \over 2} \sum\limits_{j \ne i} A \exp \left(-p \frac{r_{ij}-r_{0}}{r_{0}}\right) - B \sqrt{\rho_{i}}~;$ \\
            &                 &         &         &         &     &          &
 $\rho_{i} = \sum\limits_{j\ne i} \exp \left(-2 q_{ij} \frac{r_{ij}-r_{0}}{r_{0}}\right)$ \\
            &                 &         &         &         &     &          & \\
@@ -2720,13 +2768,12 @@ copy} macro supplied in the {\em execute} sub-directory of \D.
 \subsubsection{Format}
 
 The REVOLD file is unformatted.  All variables appearing are
-written in native working precision (see Section
-\ref{ewald-precision}) real representation. Nominally, integer
-quantities (e.g. the timestep number {\tt nstep}) are represented
-by the nearest real number.  The contents are as follows (the
-dimensions of array variables are given in brackets, in terms of
-parameters from the {\sc setup\_module} file - see Section
-\ref{parameters}).
+written in native working precision (see Section~\ref{ewald-precision})
+real representation. Nominally, integer quantities (e.g. the
+timestep number {\tt nstep}) are represented by the nearest
+real number.  The contents are as follows (the dimensions of
+array variables are given in brackets, in terms of parameters
+from the {\sc setup\_module} file - see Section~\ref{parameters}).
 
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
@@ -2839,9 +2886,8 @@ ${\tt delpot} = \frac{\tt cutpot}{{\tt ngrid}-4}~<~{\tt dlrvdw} = \frac{\tt rvdw
 (usually when ${\tt ngrid}>{\tt mxgrid}$), but will abort if ${\tt delpot}>{\tt dlrvdw}$.
 
 The potential and force tables are used to fill the internal
-arrays {\tt vvdw} and {\tt gvdw} respectively (see Section
-\ref{vdw}).  The contents of force arrays are derived from the
-potential via the formula:
+arrays {\tt vvdw} and {\tt gvdw} respectively (see Section~\ref{vdw}).
+The contents of force arrays are derived from the potential via the formula:
 \begin{equation}
 G(r)=-r\frac{\partial}{\partial r}U(r)~~.
 \end{equation}

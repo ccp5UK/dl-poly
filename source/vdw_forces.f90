@@ -8,7 +8,7 @@ Subroutine vdw_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov october 2013
+! amended   - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -321,6 +321,44 @@ Subroutine vdw_forces &
                     eng   = eng + afs(k)*rrr + bfs(k)
                     gamma = gamma - afs(k)/rrr
                  End If
+              End If
+
+           Else If (ityp == 10) Then
+
+! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
+
+              a =prmvdw(1,k)
+              rc=prmvdw(2,k)
+
+              If (rrr < rc) Then ! Else leave them zeros
+                 t2=rrr/rc
+                 t1=0.5_wp*a*rrr*(1.0_wp-t2)
+
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 eng   = t1*(1.0_wp-t2)
+                 gamma = t1*(3.0_wp*t2-1.0_wp)/rsq
+              End If
+
+           Else If (ityp == 11) Then
+
+! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
+
+              eps=prmvdw(1,k)
+              sig=prmvdw(2,k)
+
+              rho=sig/rrr
+              t1=1.0_wp/(0.07_wp+rho)
+              t2=1.0_wp/(0.12_wp+rho**7)
+              t3=eps*(1.07_wp/t1**7)
+
+              If (jatm <= natms .or. idi < ltg(jatm)) &
+              eng   = t3*((1.12_wp/t2)-2.0_wp)
+              gamma =-7.0_wp*t3*rho*(((1.12_wp/t2)-2.0_wp)/t1 + (1.12_wp/t2**2)*rho**6)/rsq
+
+              If (ls_vdw) Then ! force-shifting
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 eng   = eng + afs(k)*rrr + bfs(k)
+                 gamma = gamma - afs(k)/rrr
               End If
 
            Else If (Abs(vvdw(1,k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)

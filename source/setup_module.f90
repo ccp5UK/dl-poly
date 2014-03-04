@@ -7,7 +7,7 @@ Module setup_module
 ! set @ execution time
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2014
+! author    - i.t.todorov february 2014
 !
 ! Note(1): The following internal units apply everywhere
 !
@@ -113,8 +113,8 @@ Module setup_module
 
 ! Random seeding
 
-  Integer, Save :: seed(1:2) = 0
   Logical, Save :: lseed     = .false.
+  Integer, Save :: seed(1:3) = 0
 
 ! GLOBAL PARAMETERS FOR ARRAYS' BOUNDS LIMITS (set_bounds)
 

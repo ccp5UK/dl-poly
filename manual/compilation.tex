@@ -121,8 +121,8 @@ another run), the velocities and forces also.  The third file
 required is the FIELD file (Section~\ref{field-file}), which
 specifies the nature of the intermolecular interactions, the
 molecular topology and the atomic properties, such as charge and
-mass.  Sometimes you may require a fourth file: TABLE (Section
-\ref{table-file}), which contains short ranged potential and force
+mass.  Sometimes you may require a fourth file: TABLE (Section~\ref{table-file}),
+which contains short ranged potential and force
 arrays for functional forms not available within \D (usually because
 they are too complex e.g. spline potentials) and/or a fifth file
 TABEAM (Section~\ref{tabeam-file}), which contains metal potential
@@ -143,24 +143,23 @@ configuration; instantaneous and rolling-averaged thermodynamic
 data; minimisation information, final configurations;
 radial distribution functions (RDFs); Z-density profiles
 and job timing data.  The OUTPUT file is human readable.  Also
-present will be the restart files REVIVE (Section
-\ref{revive-file}) and REVCON (Section~\ref{revcon-file}).  REVIVE
+present will be the restart files REVIVE (Section~\ref{revive-file})
+and REVCON (Section~\ref{revcon-file}).  REVIVE
 contains the accumulated data for a number of thermodynamic
 quantities and RDFs, and is intended to be used as the input file
 for a following run.  It is {\em not} human readable.  The REVCON
 file contains the {\em restart configuration} i.e. the final
 positions, velocities and forces of the atoms when the run ended
-and is human readable.  The STATIS file (Section
-\ref{statis-file}) contains a catalogue of instantaneous values of
-thermodynamic and other variables, in a form suitable for temporal
-or statistical analysis.  Finally, the HISTORY file (Section
-\ref{history-file}) provides a time ordered sequence of
-configurations to facilitate further analysis of the atomic
-motions.  By default this file is formatted (human readable) but
-with little effort from the user it can be generated unformatted.
-You may move these output files back into the {\em data}
-sub-directory using the {\sl store} macro found in the {\em
-execute} sub-directory.
+and is human readable.  The STATIS file (Section~\ref{statis-file})
+contains a catalogue of instantaneous values of thermodynamic and
+other variables, in a form suitable for temporal or statistical
+analysis.  Finally, the HISTORY file (Section~\ref{history-file})
+provides a time ordered sequence of configurations to facilitate
+further analysis of the atomic motions.  By default this file is
+formatted (human readable) but with little effort from the user
+it can be generated unformatted.  You may move these output files
+back into the {\em data} sub-directory using the {\sl store} macro
+found in the {\em execute} sub-directory.
 
 Lastly, \D may also create the files RDFDAT, ZDNDAT, MSDTMP, RSDDAT,
 and DEFECTS containing the RDF, Z-density, individual means square

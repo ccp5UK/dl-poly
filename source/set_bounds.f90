@@ -563,8 +563,8 @@ Subroutine set_bounds                                       &
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
-  mxbfdp = Merge( 2, 0, mxnode > 1) * Nint( Real(                          &
-          mxatdm*(18+12+mxexcl + Merge(2*6+mxstak, 0, l_msd))           + &
+  mxbfdp = Merge( 2, 0, mxnode > 1) * Nint( Real(                         &
+          mxatdm*(18+12+mxexcl + Merge(2*(6+mxstak), 0, l_msd))         + &
           4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
           3*mxteth+4*mxbond+5*mxangl+8*mxdihd+6*mxinv,wp) * dens0)
 
@@ -572,7 +572,7 @@ Subroutine set_bounds                                       &
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
-  mxbfss = Merge( 2, 0, mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*6+mxstak, 0, l_msd)),wp) * dens0)
+  mxbfss = Merge( 2, 0, mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*(6+mxstak), 0, l_msd)),wp) * dens0)
 
 ! exporting single per atom
 

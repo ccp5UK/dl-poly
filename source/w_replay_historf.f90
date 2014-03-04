@@ -44,7 +44,7 @@
   nstpe = nstep
   nstph = 0 ! HISTORF trajectory points counter
   Do
-     Call allocate_statistics_connect_arrays()
+     Call allocate_statistics_connect()
 10   Continue
      If (nstep >= nstpe) Call statistics_connect_set(imcon,rlnk)
 
@@ -72,7 +72,7 @@
 ! get xto/xin/msdtmp arrays sorted
 
         Call statistics_connect_frames()
-        Call deallocate_statistics_connect_arrays()
+        Call deallocate_statistics_connect()
 
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions

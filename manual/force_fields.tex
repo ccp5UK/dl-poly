@@ -77,8 +77,8 @@ two-body terms arise from van der Waals\index{potential!van der
 Waals} interactions (regarded as short-ranged) and electrostatic
 interactions (coulombic, also regarded as
 long-ranged)\index{potential!electrostatics}.  Long-ranged forces
-require special techniques to evaluate accurately (see Section
-\ref{coulomb}).  The metal\index{potential!metal} terms are
+require special techniques to evaluate accurately (see Section~\ref{coulomb}).
+The metal\index{potential!metal} terms are
 many-body interactions which are functionally presented in an expansion of
 many two-body contributions augmented by a function of the local density,
 which again is derived from the two-body spatial distribution
@@ -174,6 +174,10 @@ a potential well for the flexible bonds of a molecule, that
 maintains the topology of the molecule.  This implementation allows
 for a radius shift of up to half a $R_{o}$ ($|\Delta| \le
 0.5~R_{o}$) with a default of zero ($\Delta_{default} = 0$).
+\item AMOEBA force-field bond potential \cite{ponder-10a}:  ({\bf amoe})
+\begin{equation}
+U(r_{ij}) = k~(r_{ij}-r_{o})^{2}\left[1-2.55~(r_{ij}-r_{o})+(7/12)~2.55~(r_{ij}-r_{o})^{2}\right]
+\end{equation}
 \end{enumerate}
 In these formulae $r_{ij}$ is the distance between atoms labelled
 $i$ and $j$:
@@ -236,6 +240,7 @@ different key words:
 \item Buckingham potential:  ({\bf -bck})
 \item Coulomb potential:  ({\bf -cul})
 \item FENE potential:  ({\bf -fne})
+\item AMOEBA force-field bond potential \cite{ponder-10a}:  ({\bf -amo})
 \end{enumerate}
 
 In \D distance restraints\index{distance restraints} are handled
@@ -292,12 +297,12 @@ U(\theta_{jik})&=& k~(\theta_{jik}-\theta_{0})^{2}~
 \end{eqnarray}
 \item Harmonic cosine:  ({\bf hcos})
 \begin{equation}
-U(\theta_{jik}) = {k\over 2}(cos(\theta_{jik})
--cos(\theta_{0}))^{2}
+U(\theta_{jik}) = {k\over 2}(\cos(\theta_{jik})
+-\cos(\theta_{0}))^{2}
 \end{equation}
 \item Cosine:  ({\bf cos})
 \begin{equation}
-U(\theta_{jik}) = A~[1 + cos(m~\theta_{jik}-\delta)]
+U(\theta_{jik}) = A~[1 + \cos(m~\theta_{jik}-\delta)]
 \end{equation}
 \item MM3 stretch-bend \cite{allinger-89a}:  ({\bf mmsb})
 \begin{equation}
@@ -316,6 +321,16 @@ U(\theta_{jik}) = A~(\theta_{jik}-\theta_{0})~(r_{ij} - r_{ij}^{o})
 U(\theta_{jik}) = A~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o}) +
 (\theta_{jik}-\theta_{0})~[B~(r_{ij} - r_{ij}^{o})+C~(r_{ik} - r_{ik}^{o})]
 \end{equation}
+\item AMOEBA force-field angle \cite{ponder-10a}:  ({\bf amoe})
+\begin{eqnarray}
+U(\theta_{jik}) = k~(\theta_{jik}-\theta_{0})^{2}[1 &-& 1.4 \cdot 10^{-2}(\theta_{jik}-\theta_{0})^{~}+5.6 \cdot 10^{-5}(\theta_{jik}-\theta_{0})^{2} \nonumber \\
+&-& 7.0 \cdot 10^{-7}(\theta_{jik}-\theta_{0})^{3}+2.2 \cdot 10^{-8}(\theta_{jik}-\theta_{0})^{4}]
+\end{eqnarray}
+\item KKY \cite{kumagai-94a}:  ({\bf kky})
+\begin{eqnarray}
+U(\theta_{jik}) &=& f_{k}~\sin\left[2(\theta_{jik}-\theta_{0})\right] \cdot \sqrt{K_{ij} \cdot K_{ik}} \nonumber \\
+K_{ij} &=& \frac{1}{\exp\left[g_{r}(r_{ij}-r_{o})\right]}
+\end{eqnarray}
 \end{enumerate}
 In these formulae $\theta_{jik}$ is the angle between bond vectors
 $\vek{r}_{ij}$ and $\vek{r}_{ik}$:
@@ -421,6 +436,8 @@ words:
 \item Compass stretch-stretch \cite{sun-98a}:  ({\bf -sts})
 \item Compass stretch-bend \cite{sun-98a}:  ({\bf -stb})
 \item Compass all terms \cite{sun-98a}:  ({\bf -cmp})
+\item AMOEBA force-field angle \cite{ponder-10a}:  ({\bf -amo})
+\item KKY \cite{kumagai-94a}:  ({\bf -kky})
 \end{enumerate}
 
 In \D angular restraints\index{angular restraints} are handled by
@@ -770,7 +787,7 @@ f_{\ell}^{\alpha} &=&
 \left\{\frac{1}{\sin(\phi_{ijkn})}\right\}
 \frac{\partial}{\partial \phi_{ijkn}}U(\phi_{ijkn})\times \\
 & &
-\left\{-(\delta_{\ell j}-\delta_{\ell i})\frac{cos(\phi_{ijkn})}
+\left\{-(\delta_{\ell j}-\delta_{\ell i})\frac{\cos(\phi_{ijkn})}
 {r_{ij}^{2}}r_{ij}^{\alpha} +\frac{1}{r_{ij}w_{kn}}\left [
 (\delta_{\ell j}-\delta_{\ell i})
 \{(\vek{r}_{ij}\cdot\vek{\hat{u}}_{kn})\hat{u}_{kn}^{\alpha}+
@@ -1052,23 +1069,36 @@ combination with the FENE, equation~(\ref{FENE}), bond potential.  This
 implementation allows for a radius shift of up to half a $\sigma$
 ($|\Delta| \le 0.5~\sigma$) with a default of zero
 ($\Delta_{default} = 0$).
+\item Standard DPD potential:  ({\bf dpd})
+\begin{equation}
+U(r_{ij}) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+\frac{A}{2}~r_{c}~\left(1-\frac{r_{ij}}{r_{c}}\right)^{2} & r_{ij} < r_{c} \\
+0 & r_{ij} \ge r_{c} \end{array} \right.
+\end{equation}
+It takes the Groot-Warren \cite{groot-71a} form giving a soft and purely repulsive interaction.
+\item AMOEBA force-field 14-7 pair potential \cite{ponder-10a}:  ({\bf amoe})
+\begin{equation}
+U(r_{ij}) = \epsilon\left(\frac{1.07}{(r_{ij}/r_{o})+0.07}\right)^{7}\left(\frac{1.12}{(r_{ij}/r_{o})^{7}+0.12}-2\right)
+\end{equation}
 \item Tabulation:  ({\bf tab}).  The potential is defined
 numerically only.
 \end{enumerate}
 
 The parameters defining these potentials are supplied to \D at run
-time (see the description of the FIELD file in Section
-\ref{field-file}).  Each atom type in the system is specified by a
-unique eight-character label defined by the user.  The pair
-potential is then defined internally by the combination of two
-atom labels.
+time (see the description of the FIELD file in Section~\ref{field-file}).
+Each atom type in the system is specified by a unique eight-character
+label defined by the user.  The pair potential is then defined internally
+by the combination of two atom labels.
 
 As well as the numerical parameters defining the potentials, \D
-must also be provided with a cutoff radius $r_{\rm vdw}$, which sets a
-range limit on the computation of the interaction.  Together with
-the parameters, the cutoff is used by the subroutine {\sc
-vdw\_generate} to construct an interpolation array {\tt vvdw} for
-the potential function over the range 0 to $r_{\rm vdw}$~.  A second
+should also be provided with a cutoff radius, $r_{\rm vdw}$, which
+sets a range limit on the computation of the interactions.  It is
+worth noting that some interaction come with a hard-wired cutoff in
+their parameter sets!  Thus any provided cutoff radius, $r_{\rm vdw}$,
+will be reset if it is not equal or larger that the largest of these all.
+Together with the parameters, the cutoff is used by the subroutine
+{\sc vdw\_generate} to construct an interpolation array {\tt vvdw} for
+the potential function over the range 0 to $r_{\rm vdw}$.  A second
 array {\tt gvdw} is also calculated, which is related to the
 potential via the formula:
 \begin{equation}
@@ -1138,6 +1168,46 @@ where the same approximations are applied.
 
 {\bf Note} that these formulae are based on the assumption that the
 system is reasonably isotropic beyond the cutoff.
+
+\D allows a short cut for mixing some of the explicitly specified
+pair interactions for single species of the same type so that
+cross-species interactions are generated if unspecified.  This is
+only possible for the {\bf 12-6, lj, dpd, amoeba, \& wca} types.
+The mixing is derived from the Lennard-Jones style characteristic
+paramteres for energy ($\epsilon$) and distance ($\sigma$ or $r_{0}$)
+terms.  The available types of mixing within \D are borrowed from
+\cite{al-matar-04a}. The rules' names and formulae are as follows:
+\begin{enumerate}
+\item Lorentz-Berthelot
+\begin{equation}
+\epsilon_{ij} = \sqrt{\epsilon_{i}~\epsilon_{j}}~~;~~\sigma_{ij} = \frac{\sigma_{i}+\sigma_{j}}{2}
+\end{equation}
+\item Fender-Halsey
+\begin{equation}
+\epsilon_{ij} = 2 \frac{\epsilon_{i}~\epsilon_{j}}{\epsilon_{i}+\epsilon_{j}}~~;~~\sigma_{ij} = \frac{\sigma_{i}+\sigma_{j}}{2}
+\end{equation}
+\item Hogervorst (good hope)
+\begin{equation}
+\epsilon_{ij} = \sqrt{\epsilon_{i}~\epsilon_{j}}~~;~~\sigma_{ij} = \sqrt{\sigma_{i}~\sigma_{j}}
+\end{equation}
+\item Halgren HHG
+\begin{equation}
+\epsilon_{ij} = 2 \sqrt{\epsilon_{i}~\epsilon_{j}} \frac{(\sigma_{i}~\sigma_{j})^{3}}{\sigma_{i}^{6}+\sigma_{j}^{6}}~~;~~\sigma_{ij} = \left(\frac{\sigma_{i}^{6}+\sigma_{j}^{6}}{2}\right)^{\frac{1}{6}}
+\end{equation}
+\item Tang-Toennies
+\begin{equation}
+\epsilon_{ij} \sigma_{ij}^{6} = \sqrt{\epsilon_{i} \sigma_{i}^{6}~\epsilon_{j} \sigma_{j}^{6}}~~;~~\epsilon_{ij} \sigma_{ij}^{12}=\left[\frac{\left(\epsilon_{i} \sigma_{i}^{12}\right)^{13}+\left(\epsilon_{j} \sigma_{j}^{12}\right)^{13}}{2}\right]^{13}
+\end{equation}
+\item Functional
+\begin{equation}
+\epsilon_{ij} = \frac{3~\sqrt{\epsilon_{i}~\epsilon_{j}}~(\sigma_{i}~\sigma_{j})^{3}}
+{\sum\limits_{L=0}^{2}{\left[\frac{\left(\sigma_{i}^{3}+\sigma_{j}^{3}\right)^{2}}{4~(\sigma_{i}~\sigma_{i})^{L}}\right]^{\frac{6}{6-2L}}}}~~;~~\sigma_{ij}=\frac{1}{3}\sum\limits_{L=0}^{2}{\left[\frac{\left(\sigma_{i}^{3}+\sigma_{j}^{3}\right)^{2}}{4~(\sigma_{i}~\sigma_{i})^{L}}\right]^{\frac{1}{6-2L}}}
+\end{equation}
+\end{enumerate}
+It is woth noting that the $i$ and $j$ symbols in the equations
+for mixing denote atom types (species) and the indices for the
+same species interaction parameters are contracted to a single
+species index for simplicity.
 
 In \D the short ranged forces are calculated by the subroutine
 {\sc vdw\_forces}.  The long-ranged corrections are calculated by
@@ -2407,8 +2477,8 @@ cloud of opposite charge centred on the ion.  The combined
 assembly of point ions and Gaussian\index{constraints!Gaussian}
 charges becomes the {\em Real Space} part of the Ewald
 sum\index{Ewald!summation}, which is now short ranged and
-treatable by the methods described above (Section
-\ref{force-field})\footnote{Strictly speaking, the real space sum
+treatable by the methods described above
+(Section~\ref{force-field})\footnote{Strictly speaking, the real space sum
 ranges over all periodic images of the simulation cell, but in the
 \D implementation, the parameters are chosen to restrict the sum
 to the simulation cell and its nearest neighbours i.e. the {\em
@@ -2428,7 +2498,7 @@ real space and one in reciprocal space; and the self energy
 correction.
 
 For molecular systems, as opposed to systems comprised simply of
-point ions, additional modifications {\sc ewald\_excl\_forces} are
+point ions, additional modifications \\ \noindent {\sc ewald\_excl\_forces} are
 necessary to correct for the excluded (intra-molecular) coulombic
 interactions. In the real space sum these are simply omitted.  In
 reciprocal space however, the effects of individual
@@ -2516,11 +2586,11 @@ when the range of $\vek{k}$ vectors is large.  The method
 (briefly) is as follows (for full details see \cite{essmann-95a}):
 
 \begin{enumerate}
-\item Interpolation of the $exp(-i~\vek{k}\cdot\vek{r}_{j})$ terms
+\item Interpolation of the $\exp(-i~\vek{k}\cdot\vek{r}_{j})$ terms
 (given here for one dimension):
 \begin{equation}
-exp(2\pi i~u_{j} k/L) \approx b(k) \sum_{\ell=-\infty}^{\infty}
-M_{n}(u_{j}-\ell)~exp(2\pi i~k\ell/K)~~,
+\exp(2\pi i~u_{j} k/L) \approx b(k) \sum_{\ell=-\infty}^{\infty}
+M_{n}(u_{j}-\ell)~\exp(2\pi i~k\ell/K)~~,
 \end{equation}
 in which $k$ is the integer index of the $\vek{k}$ vector in a
 principal direction, $K$ is the total number of grid points in the
@@ -2531,8 +2601,8 @@ $K$, which limits the formally infinite sum over $\ell$.  The
 coefficients $M_{n}(u)$ are B-splines of order $n$ and the factor
 $b(k)$ is a constant computable from the formula:
 \begin{equation}
-b(k) = exp(2\pi i~(n-1)k/K) \left[ \sum_{\ell=0}^{n-2}
-M_{n}(\ell+1)~exp(2\pi i~k\ell/K) \right]^{-1}~.
+b(k) = \exp(2\pi i~(n-1)k/K) \left[ \sum_{\ell=0}^{n-2}
+M_{n}(\ell+1)~\exp(2\pi i~k\ell/K) \right]^{-1}~.
 \end{equation}
 \item Approximation of the structure factor $S(\vek{k})$:
 \begin{equation}
@@ -2827,7 +2897,7 @@ insight, do examine Table~\ref{external-field-table} and the example at
 equation~(\ref{external-field-units}) in Section~\ref{field-file}.
 
 In \D external field forces\index{potential!external field} are
-handled by the routines {\sc external\_field\_apply} and
+handled by the routines {\sc external\_field\_apply} and \\ \noindent
 {\sc external\_field\_correct}.
 
 \section{Treatment of Frozen Atoms, Rigid Body and Core-Shell Units}

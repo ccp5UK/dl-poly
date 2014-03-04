@@ -8,7 +8,7 @@ Subroutine statistics_connect_spread(mdir)
 ! NOTE: When executing on one node we need not get here at all!
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2014
+! author    - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -317,11 +317,6 @@ Subroutine statistics_connect_spread(mdir)
         kmove=kmove+2*(6+mxstak)
      End If
   End Do
-
-! check error flags
-
-  Call gcheck(safe)
-  If (.not.safe) Call error(113)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then

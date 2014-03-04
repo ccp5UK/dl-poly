@@ -1,10 +1,12 @@
 !!!!!!!!!!!!!!!!!!!!!!!! THIS IS NUMERIC_CONTAINER !!!!!!!!!!!!!!!!!!!!!
 !
-! Function uni - generates a random number
+! Function uni - two seeded random number generator
 !
 ! Subroutine box_mueller - generates gaussian random numbers of unit
 !                          variance (with zero mean and standard
 !                          variation of 1)
+!
+! Function sarurnd - three seeded random number generator based on SARU
 !
 ! Subroutine gauss_old - constructs velocity arrays with a gaussian
 !                        distribution of unit variance (zero mean) by
@@ -196,10 +198,12 @@ Subroutine box_mueller(gauss1,gauss2)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 2008
+! amended   - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
+  Use setup_module, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
 
   Implicit None
 
@@ -219,7 +223,7 @@ Subroutine box_mueller(gauss1,gauss2)
 
 ! generate uniform random numbers on [-1, 1)
 
-  Do While (ran0 >= 1.0_wp)
+  Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
      ran1=2.0_wp*uni()-1.0_wp
      ran2=2.0_wp*uni()-1.0_wp
      ran0=ran1**2+ran2**2
@@ -232,6 +236,87 @@ Subroutine box_mueller(gauss1,gauss2)
   gauss2=ran0*ran2
 
 End Subroutine box_mueller
+
+Function sarurnd(seeda, seedb, seedc)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine random number generator based on the saru random
+! number generator of Steve Worley with three integer seeds
+! Ref: Ccomp. Phys. Coms. 184 (2013) 1119-1128)
+!
+! copyright - daresbury laboratory
+! author    - m.a.seaton may 2013
+! amended   - i.t.todorov february 2014
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+  Use setup_module, Only : lseed,seed
+
+  Implicit None
+
+  Integer,     Intent( In    ) :: seeda,  seedb,  seedc
+
+  Integer                      :: seed1,  seed2,  seed3,  &
+                                  seed1a, seed2a, seed3a, &
+                                  state, wstate, v, u32
+  Real( Kind = wp )            :: statepart1, statepart2, sarurnd
+
+  Real( Kind = wp ), Parameter :: rtwo32 = (2.0_wp)**(-32)
+
+! Apply possible shifting - usually (0,0,0)
+
+  If (.not.lseed) Then
+     seed1 = seeda
+     seed2 = seedb
+     seed3 = seedc
+  Else
+     seed1 = seeda + seed(1)
+     seed2 = seedb + seed(2)
+     seed3 = seedc + seed(3)
+  End If
+
+! apply premixing to seeds
+
+  seed3a = Ieor(seed3, Ieor(Ishft(seed1, 7), Ishft(seed2, -6)))
+  seed2a = seed2 + Ieor(Ishft(seed1, -4), Ishft(seed3a, -15))
+  seed1a = Ieor(seed1, Ishft(seed2a, 9) + Ishft(seed3a, 8))
+  seed3a = Ieor(seed3a, -1523160243 * Ieor(Ishft(seed2a, -11), Ishft(seed1a, 1)))
+  seed2a = seed2a + 1925059961 * Ieor(Ishft(seed1a, 4), Ishft(seed3a, -16))
+  seed1a = Ieor(seed1a, 1060677357 * Ieor(Ishft(seed3a, -5), Ishft(seed2a, -22)))
+  seed2a = seed2a + seed1a * seed3a
+  seed1a = seed1a + Ieor(seed3a, Ishft (seed2a, -2))
+  seed2a = Ieor(seed2a, Ishft(seed2a, -17))
+
+! convert seeds to state values
+
+  state = 2044649123 * Ieor(seed1a, Ishft(seed1, -14))
+  wstate = Ieor((state+seed2a), Ishft(state, -8))
+  state = state + wstate * Ieor(wstate, -572549131)
+  wstate = -1412720905 + Ishft(wstate, -1)
+
+! advance LCG state by 1
+
+  state = 1273716057 * state + 637592055
+
+! advance Weyl state by 1
+
+  wstate = wstate - 2146840245 + Iand(Ishft(wstate, -31), -628647203)
+
+! calculate 32-bit pseudo-random number
+
+  v = Ieor(state, Ishft(state, -26)) + wstate
+  u32 = Ieor(v, Ishft(v, -20)) * 1767372199
+
+! convert to real (double-precision) number between 0 and 1
+
+  statepart1 = Real(u32, Kind=wp) * rtwo32 + (0.5_wp+0.5_wp*rtwo32)
+  statepart2 = Real(state, Kind=wp) * rtwo32 * rtwo32
+  If (state < 0) statepart2 = statepart2 + 0.5_dp * rtwo32
+  sarurnd = statepart1 + statepart2
+
+End Function sarurnd
 
 Subroutine gauss_old(natms,vxx,vyy,vzz)
 

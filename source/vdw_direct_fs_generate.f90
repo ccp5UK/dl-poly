@@ -6,7 +6,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
 ! direct vdw evaluation
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov november 2012
+! amended   - i.t.todorov february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -163,6 +163,29 @@ Subroutine vdw_direct_fs_generate(rvdw)
 
         afs(ivdw) = (24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)/(rvdw-d))*rvdw
         bfs(ivdw) =-(4.0_wp*eps*sor6*(sor6-1.0_wp)+eps) - afs(ivdw)
+        afs(ivdw) = afs(ivdw)/rvdw
+
+     Else If (keypot == 10) Then ! all zeroed in vdw_module
+
+! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
+
+!       afs(ivdw) = 0.0_wp !initialised in vdw_module
+!       bfs(ivdw) = 0.0_wp !initialised in vdw_module
+
+     Else If (keypot == 11) Then
+
+! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
+
+        eps=prmvdw(1,ivdw)
+        sig=prmvdw(2,ivdw)
+
+        rho=sig/rvdw
+        t1=1.0_wp/(0.07_wp+rho)
+        t2=1.0_wp/(0.12_wp+rho**7)
+        t3=eps*(1.07_wp/t1**7)
+
+        afs(ivdw) =-7.0_wp*t3*rho*(((1.12_wp/t2)-2.0_wp)/t1 + (1.12_wp/t2**2)*rho**6)
+        bfs(ivdw) =-t3*((1.12_wp/t2)-2.0_wp) - afs(ivdw)
         afs(ivdw) = afs(ivdw)/rvdw
 
      Else
