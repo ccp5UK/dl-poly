@@ -2,7 +2,7 @@ Subroutine nvt_a1_vv                               &
            (isw,lvar,mndis,mxdis,mxstp,temp,tstep, &
            keyshl,taut,soft,                       &
            strkin,strknf,strknt,engke,engrot,      &
-           imcon,mxshak,tolnce,                    &
+           nstep,imcon,mxshak,tolnce,              &
            megcon,strcon,vircon,                   &
            megpmf,strpmf,virpmf,                   &
            strcom,vircom)
@@ -21,7 +21,7 @@ Subroutine nvt_a1_vv                               &
 !  particles' momenta of a particle subset on each domain)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,8 +30,8 @@ Subroutine nvt_a1_vv                               &
   Use setup_module
   Use domains_module,     Only : map
   Use site_module,        Only : dofsit,ntpshl,unqshl
-  Use config_module,      Only : cell,natms,nlast,nfree,lsite,      &
-                                 lsi,lsa,lfrzn,lfree,lstfre,atmnam, &
+  Use config_module,      Only : cell,natms,nlast,nfree,lsite,          &
+                                 lsi,lsa,ltg,lfrzn,lfree,lstfre,atmnam, &
                                  weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
   Use core_shell_module,  Only : ntshl,listshl,lshmv_shl,lishp_shl,lashp_shl
@@ -47,7 +47,7 @@ Subroutine nvt_a1_vv                               &
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: nstep,imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
@@ -62,7 +62,7 @@ Subroutine nvt_a1_vv                               &
   Integer                 :: fail(1:17),i,j,k,ntp,  &
                              stp,i1,i2,local_index, &
                              matms,rtp,irgd,jrgd,krgd,lrgd,rgdtyp
-  Real( Kind = wp )       :: hstep,rstep,uni
+  Real( Kind = wp )       :: hstep,rstep,sarurnd
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
                              scale,tkin,vom(1:3)
   Real( Kind = wp )       :: x(1:1),y(1:1),z(1:1),rot(1:9), &
@@ -750,10 +750,6 @@ Subroutine nvt_a1_vv                               &
 
 ! Andersen Thermostat
 !
-! Here we become node-dependent (using of uni and gauss) - i.e.
-! pseudo-randomness depends on the DD mapping which depends on
-! the number of nodes and system size
-!
 ! qualify non-shell, non-frozen free particles (n) for a random kick
 ! qualify RBs (r) by them and derive related shells (s)
 
@@ -765,10 +761,10 @@ Subroutine nvt_a1_vv                               &
      qr(1:ntrgd)     = 0 ! unqualified RB
 
      j = 0
-     tmp = tstep/taut
+     scale = tstep/taut
      Do i=1,natms
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. (.not.Any(unqshl(1:ntpshl) == atmnam(i)))) Then
-           If (uni() <= tmp) Then
+           If (sarurnd(ltg(i),0,nstep) <= scale) Then
               j = j + 1
               qn(i) = 1
            End If
@@ -784,40 +780,6 @@ Subroutine nvt_a1_vv                               &
      ntp = Sum(tpn)
 
      If (ntp == 0) Go To 200
-
-! tps(idnode) number of thermostatted core-shell units on this node (idnode)
-! stp - grand total of core-shell units to thermostat
-
-     j = 0
-     If (keyshl == 1) Then
-        If (lshmv_shl) Then ! refresh the q array for shared core-shell units
-           qn(natms+1:nlast) = 0
-           Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn)
-        End If
-
-        If (ntshl > 0) Then
-           Do k=1,ntshl
-              i1=local_index(listshl(1,k),matms,lsi,lsa)
-              i2=local_index(listshl(2,k),matms,lsi,lsa)
-
-              If (qn(i1) == 1 .and. i2 > 0 .and. i2 <= natms) Then
-                 j = j + 1
-
-                 qs(0,k)=1
-                 qs(1,k)=i1
-                 qs(2,k)=i2
-              End If
-           End Do
-        End If
-     End If
-     tps(idnode) = j
-     If (mxnode > 1) Then
-        Do i=0,mxnode-1
-           If (i /= idnode) tps(i) = 0
-        End Do
-        Call gsum(tps)
-     End If
-     stp = Sum(tps)
 
      j = 0 ! no qualified good RB (one qualified RB is enough to trigger all)
      Do i=1,matms
@@ -887,27 +849,26 @@ Subroutine nvt_a1_vv                               &
      End If
      rtp = Sum(tpr)
 
-! Get gaussian distribution (unit variance)
-
-     Call gauss(tpn(idnode)+k,xxt,yyt,zzt)
+! Get gaussian distribution
 
      tkin = 0.0_wp
      mxdr = 0.0_wp
-     j = 0
      Do i=1,natms
         If (qn(i) == 1 .and. lfree(i) == 0) Then
            If (dofsit(lsite(i)) > zero_plus) mxdr = mxdr + dofsit(lsite(i))
 
-           j = j + 1
+! Get gaussian distribution (unit variance)
+
+           Call box_mueller_saru3(ltg(i),nstep,xxt(i),yyt(i),zzt(i))
 
 ! Get scaler to target variance/Sqrt(weight)
 
            tmp = 1.0_wp/Sqrt(weight(i))
-           xxt(j) = xxt(j)*tmp
-           yyt(j) = yyt(j)*tmp
-           zzt(j) = zzt(j)*tmp
+           xxt(i) = xxt(i)*tmp
+           yyt(i) = yyt(i)*tmp
+           zzt(i) = zzt(i)*tmp
 
-           tkin = tkin + weight(i)*(xxt(j)**2+yyt(j)**2+zzt(j)**2)
+           tkin = tkin + weight(i)*(xxt(i)**2+yyt(i)**2+zzt(i)**2)
         End If
      End Do
 
@@ -928,24 +889,38 @@ Subroutine nvt_a1_vv                               &
               i2=indrgd(2,irgd) ! particle to bare the random RB angular momentum
 
               If (rgdfrz(0,rgdtyp) == 0 .and. i1 <= natms) Then
-                 j = j + 1
+
+! Get gaussian distribution (unit variance)
+
+                 Call box_mueller_saru3(ltg(i1),nstep,xxt(i1),yyt(i1),zzt(i1))
+
+! Get scaler to target variance/Sqrt(weight)
 
                  tmp = 1.0_wp/Sqrt(rgdwgt(0,rgdtyp))
-                 vxx(i1) = xxt(j)*tmp
-                 vyy(i1) = yyt(j)*tmp
-                 vzz(i1) = zzt(j)*tmp
 
-                 tkin = tkin + rgdwgt(0,rgdtyp)*(vxx(i1)**2+vyy(i1)**2+vzz(i1)**2)
+                 xxt(i1) = xxt(i1)*tmp
+                 yyt(i1) = yyt(i1)*tmp
+                 zzt(i1) = zzt(i1)*tmp
+
+                 tkin = tkin + rgdwgt(0,rgdtyp)*(xxt(i1)**2+yyt(i1)**2+zzt(i1)**2)
+
               End If
 
               If (i2 <= natms) Then
-                 j = j + 1
 
-                 vxx(i2) = xxt(j)*Sqrt(rgdrix(2,rgdtyp))
-                 vyy(i2) = yyt(j)*Sqrt(rgdriy(2,rgdtyp))
-                 vzz(i2) = zzt(j)*Sqrt(rgdriz(2,rgdtyp))
+! Get gaussian distribution (unit variance)
 
-                 tkin = tkin + (rgdrix(1,rgdtyp)*vxx(i2)**2+rgdriy(1,rgdtyp)*vyy(i2)**2+rgdriz(1,rgdtyp)*vzz(i2)**2)
+                 Call box_mueller_saru3(ltg(i2),nstep,xxt(i2),yyt(i2),zzt(i2))
+
+! Get scaler to target variance/Sqrt(weight) -
+! 3 different reciprocal moments of inertia
+
+                 xxt(i2) = xxt(i2)*Sqrt(rgdrix(2,rgdtyp))
+                 yyt(i2) = yyt(i2)*Sqrt(rgdriy(2,rgdtyp))
+                 zzt(i2) = zzt(i2)*Sqrt(rgdriz(2,rgdtyp))
+
+                 tkin = tkin + (rgdrix(1,rgdtyp)*xxt(i2)**2+rgdriy(1,rgdtyp)*yyt(i2)**2+rgdriz(1,rgdtyp)*zzt(i2)**2)
+
               End If
            End If
         End Do
@@ -963,16 +938,14 @@ Subroutine nvt_a1_vv                               &
      j = 0
      Do i=1,natms
         If (qn(i) == 1 .and. lfree(i) == 0) Then
-           j = j + 1
-
            If (soft <= zero_plus) Then ! New target velocity
-              vxx(i) = xxt(j)*scale
-              vyy(i) = yyt(j)*scale
-              vzz(i) = zzt(j)*scale
+              vxx(i) = xxt(i)*scale
+              vyy(i) = yyt(i)*scale
+              vzz(i) = zzt(i)*scale
            Else ! Softened velocity (mixture between old & new)
-              vxx(i) = soft*vxx(i) + tmp*xxt(j)
-              vyy(i) = soft*vyy(i) + tmp*yyt(j)
-              vzz(i) = soft*vzz(i) + tmp*zzt(j)
+              vxx(i) = soft*vxx(i) + tmp*xxt(i)
+              vyy(i) = soft*vyy(i) + tmp*yyt(i)
+              vzz(i) = soft*vzz(i) + tmp*zzt(i)
            End If
         End If
      End Do
@@ -981,7 +954,7 @@ Subroutine nvt_a1_vv                               &
 
 ! Update shared RBs' velocities
 
-        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,vxx,vyy,vzz)
+        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xxt,yyt,zzt)
 
 ! calculate new RBs' COM and angular velocities
 
@@ -994,31 +967,24 @@ Subroutine nvt_a1_vv                               &
 
               If (rgdfrz(0,rgdtyp) == 0) Then
                  If (soft <= zero_plus) Then ! New target velocity
-                    rgdvxx(irgd) = vxx(i1)*scale
-                    rgdvyy(irgd) = vyy(i1)*scale
-                    rgdvzz(irgd) = vzz(i1)*scale
+                    rgdvxx(irgd) = xxt(i1)*scale
+                    rgdvyy(irgd) = yyt(i1)*scale
+                    rgdvzz(irgd) = zzt(i1)*scale
                  Else ! Softened velocity (mixture between old & new)
-                    rgdvxx(irgd) = soft*rgdvxx(irgd) + tmp*vxx(i1)
-                    rgdvyy(irgd) = soft*rgdvyy(irgd) + tmp*vyy(i1)
-                    rgdvzz(irgd) = soft*rgdvzz(irgd) + tmp*vzz(i1)
+                    rgdvxx(irgd) = soft*rgdvxx(irgd) + tmp*xxt(i1)
+                    rgdvyy(irgd) = soft*rgdvyy(irgd) + tmp*yyt(i1)
+                    rgdvzz(irgd) = soft*rgdvzz(irgd) + tmp*zzt(i1)
                  End If
               End If
 
               If (soft <= zero_plus) Then ! New target velocity
-                 rgdoxx(irgd) = vxx(i2)*scale
-                 rgdoyy(irgd) = vyy(i2)*scale
-                 rgdozz(irgd) = vzz(i2)*scale
+                 rgdoxx(irgd) = xxt(i2)*scale
+                 rgdoyy(irgd) = yyt(i2)*scale
+                 rgdozz(irgd) = zzt(i2)*scale
               Else ! Softened velocity (mixture between old & new)
-                 rgdoxx(irgd) = soft*rgdoxx(irgd) + tmp*vxx(i2)
-                 rgdoyy(irgd) = soft*rgdoyy(irgd) + tmp*vyy(i2)
-                 rgdozz(irgd) = soft*rgdozz(irgd) + tmp*vzz(i2)
-              End If
-              If (i2 <= natms) Then
-                 If (lfrzn(i2) > 0 .or. weight(i) < 1.0e-6_wp) Then
-                    vxx(i2) = 0.0_wp
-                    vyy(i2) = 0.0_wp
-                    vzz(i2) = 0.0_wp
-                 End If
+                 rgdoxx(irgd) = soft*rgdoxx(irgd) + tmp*xxt(i2)
+                 rgdoyy(irgd) = soft*rgdoyy(irgd) + tmp*yyt(i2)
+                 rgdozz(irgd) = soft*rgdozz(irgd) + tmp*zzt(i2)
               End If
 
 ! get new rotation matrix
@@ -1055,17 +1021,48 @@ Subroutine nvt_a1_vv                               &
         End Do
      End If
 
+! tps(idnode) number of thermostatted core-shell units on this node (idnode)
+! stp - grand total of core-shell units to thermostat
+
+     j = 0
+     If (keyshl == 1) Then
+        If (lshmv_shl) Then ! refresh the q array for shared core-shell units
+           qn(natms+1:nlast) = 0
+           Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn)
+        End If
+
+        If (ntshl > 0) Then
+           Do k=1,ntshl
+              i1=local_index(listshl(1,k),matms,lsi,lsa)
+              i2=local_index(listshl(2,k),matms,lsi,lsa)
+
+              If (qn(i1) == 1 .and. i2 > 0 .and. i2 <= natms) Then
+                 j = j + 1
+
+                 qs(0,k)=1
+                 qs(1,k)=i1
+                 qs(2,k)=i2
+              End If
+           End Do
+        End If
+     End If
+     tps(idnode) = j
+     If (mxnode > 1) Then
+        Do i=0,mxnode-1
+           If (i /= idnode) tps(i) = 0
+        End Do
+        Call gsum(tps)
+     End If
+     stp = Sum(tps)
+
 ! Thermalise the shells on hit cores
 
      If (stp > 0) Then
         If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz)
 
         If (tps(idnode) > 0) Then
-           j = 0
            Do k=1,ntshl
               If (qs(0,k) == 1) Then
-                 j = j + 1
-
                  i1=qs(1,k)
                  i2=qs(2,k)
 

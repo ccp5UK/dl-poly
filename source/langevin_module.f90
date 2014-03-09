@@ -3,11 +3,11 @@ Module langevin_module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 module declaring:
-!           1) Langevin npt and nst ensembles switches & arrays
+!           1) Langevin npt, nst and nvt_lfv ensembles switches & arrays
 !           2) gentle stochastic ensembles switch & Gaussian random number
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2011
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -16,9 +16,7 @@ Module langevin_module
   Implicit None
 
   Logical,                        Save :: l_lan    = .false., &
-                                          l_lan_s  = .true. , &
-                                          l_gst    = .false., &
-                                          l_gst_s  = .true.
+                                          l_gst    = .false.
 
   Real( Kind = wp ),              Save :: fpl(1:9) = 0.0_wp, &
                                           r_0      = 0.0_wp

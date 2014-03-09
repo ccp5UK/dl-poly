@@ -1,6 +1,6 @@
 Subroutine nst_l0_vv                                       &
            (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           nstep,imcon,mxshak,tolnce,megcon,strcon,vircon, &
            megpmf,strpmf,virpmf,                           &
            iso,degfre,sigma,chi,consv,                     &
            press,strext,ten,tai,chip,eta,stress,           &
@@ -25,7 +25,7 @@ Subroutine nst_l0_vv                                       &
 ! reference2: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -35,7 +35,7 @@ Subroutine nst_l0_vv                                       &
   Use site_module,     Only : ntpatm,dens,ntpshl,unqshl
   Use config_module,   Only : cell,volm,natms,lfrzn,atmnam,weight, &
                               xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use langevin_module, Only : l_lan_s,fxl,fyl,fzl,fpl
+  Use langevin_module, Only : fxl,fyl,fzl,fpl
   Use kinetic_module,  Only : getvom,getkin,kinstress
 
   Implicit None
@@ -46,7 +46,7 @@ Subroutine nst_l0_vv                                       &
   Real( Kind = wp ), Intent( InOut ) :: tstep
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: nstep,imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon,strpmf(1:9),virpmf
@@ -65,10 +65,10 @@ Subroutine nst_l0_vv                                       &
   Logical,           Save :: newjob = .true.
   Logical                 :: safe,lv_up,lv_dn
   Integer,           Save :: mxiter,mxkit,kit
-  Integer                 :: fail(1:9),iter,i,j
+  Integer                 :: fail(1:9),iter,i
   Real( Kind = wp ), Save :: volm0,elrc0,virlrc0,h_z
   Real( Kind = wp ), Save :: temp,pmass
-  Real( Kind = wp )       :: hstep,qstep,rstep,uni
+  Real( Kind = wp )       :: hstep,qstep,rstep
   Real( Kind = wp )       :: eta0(1:9),engke0
   Real( Kind = wp )       :: cell0(1:9),vzero,celprp(1:10)
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),str1(1:9),mxdr,tmp, &
@@ -172,26 +172,13 @@ Subroutine nst_l0_vv                                       &
 
 ! Generate Langevin forces for particles and
 ! Langevin tensor force for barostat piston
-! if not read from REVOLD
 
-     If (l_lan_s) Then
-        Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
-
-        Do j=1,6
-           fpl(j)=-6.0_wp
-           Do i=1,12
-              fpl(j)=fpl(j)+uni()
-           End Do
-        End Do
-        If (mxnode > 1) Then
-           Call gsum(fpl(1:6))
-           fpl(1:6)=fpl(1:6)/Sqrt(Real(mxnode,wp))
-        End If
-        tmp=Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)
-        fpl(1:6)=fpl(1:6)*tmp
-        fpl(9)=fpl(4)                                 ! Distribute independent
-        fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
-     End If
+     fpl=0.0_wp
+     Call box_mueller_saru6(Int(degfre/3_ip),nstep-1,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
+     tmp=Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)
+     fpl(1:6)=fpl(1:6)*tmp
+     fpl(9)=fpl(4)                                 ! Distribute independent
+     fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
   End If
 
   If (megcon > 0 .or. megpmf > 0) Then
@@ -530,18 +517,10 @@ Subroutine nst_l0_vv                                       &
 ! Generate Langevin forces for particles and
 ! Langevin tensor force for barostat piston
 
-     Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
+     Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
 
-     Do j=1,6
-        fpl(j)=-6.0_wp
-        Do i=1,12
-           fpl(j)=fpl(j)+uni()
-        End Do
-     End Do
-     If (mxnode > 1) Then
-        Call gsum(fpl(1:6))
-        fpl(1:6)=fpl(1:6)/Sqrt(Real(mxnode,wp))
-     End If
+     fpl=0.0_wp
+     Call box_mueller_saru6(Int(degfre/3_ip),nstep,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
      tmp=Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)
      fpl(1:6)=fpl(1:6)*tmp
      fpl(9)=fpl(4)                                 ! Distribute independent

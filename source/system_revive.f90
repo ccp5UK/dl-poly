@@ -9,15 +9,15 @@ Subroutine system_revive                                            &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith december 1992
-! amended   - i.t.todorov january 2012
+! amended   - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use config_module, Only : natms,ltg
-  Use langevin_module
+  Use config_module,   Only : natms,ltg
+  Use langevin_module, Only : l_lan
   Use statistics_module
   Use development_module
 
@@ -216,86 +216,20 @@ Subroutine system_revive                                            &
 
   If (mxnode > 1) Call gsync()
 
-! Write Langevin arrays if needed
+! Write timestep for Langevin ensembles
 
   If (l_lan) Then
      If (idnode == 0) Then
-        jatms=natms
-
-        Do i=1,natms
-           iwrk(i)=ltg(i)
-
-           axx(i)=fxl(i)
-           ayy(i)=fyl(i)
-           azz(i)=fzl(i)
-        End Do
-
-        ready=.true.
-        Do jdnode=0,mxnode-1
-           If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Revive_tag,dlp_comm_world,ierr)
-
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-
-              Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-
-              Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-              Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-              Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-           End If
-
-           If (l_rout) Then
-              Do i=1,jatms
-                 Write(Unit=nrest, Fmt=forma, Advance='No') &
-                      Real(iwrk(i),wp),axx(i),ayy(i),azz(i)
-              End Do
-           Else
-              Do i=1,jatms
-                 Write(Unit=nrest) Real(iwrk(i),wp),axx(i),ayy(i),azz(i)
-              End Do
-           End If
-        End Do
-
-     Else
-
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,Revive_tag,dlp_comm_world,status,ierr)
-
-        Call MPI_SEND(natms,1,MPI_INTEGER,0,Revive_tag,dlp_comm_world,ierr)
-
-        Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Revive_tag,dlp_comm_world,ierr)
-
-        Call MPI_SEND(fxl,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-        Call MPI_SEND(fyl,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-        Call MPI_SEND(fzl,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-
-     End If
-
-     If (mxnode > 1) Call gsync()
-     If (idnode == 0) Then
         If (l_rout) Then
-           Write(Unit=nrest, Fmt=forma, Advance='No') fpl(1:9)
+           Write(Unit=nrest, Fmt=forma, Advance='No') tstep
         Else
-           Write(Unit=nrest) fpl(1:9)
+           Write(Unit=nrest) tstep
         End If
      End If
   End If
 
   If (mxnode > 1) Call gsync()
-
-! Write Langevin process gaussian variable if needed
-
-  If (l_gst) Then
-     If (idnode == 0) Then
-        If (l_rout) Then
-           Write(Unit=nrest, Fmt=forma, Advance='No') r_0
-        Else
-           Write(Unit=nrest) r_0
-        End If
-     End If
-  End If
-
   If (idnode == 0) Close(Unit=nrest)
-  If (mxnode > 1) Call gsync()
 
 ! divide rdf data between nodes
 

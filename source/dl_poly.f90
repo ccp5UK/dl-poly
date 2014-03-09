@@ -206,7 +206,7 @@ Program dl_poly
           "*************  execution on ", mxnode, "    node(s)  ******* L ***", &
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
-          "*************  i.j.bush & r.davidchak                *************", &
+          "*************  i.j.bush, r.davidchak & m.a.seaton    *************", &
           "******************************************************************"
 
      Write(nrite,'(7(1x,a,/))') &
@@ -386,10 +386,10 @@ Program dl_poly
 
 ! READ REVOLD (thermodynamic and structural data from restart file)
 
-  Call system_init                                           &
-           (levcfg,imcon,rcut,rvdw,rbin,rmet,                &
-           lrdf,lzdn,keyres,megatm,                          &
-           time,tmst,nstep,chit,cint,chip,eta,virtot,stress, &
+  Call system_init                                                 &
+           (levcfg,imcon,rcut,rvdw,rbin,rmet,                      &
+           lrdf,lzdn,keyres,megatm,                                &
+           time,tmst,nstep,tstep,chit,cint,chip,eta,virtot,stress, &
            vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm)
 
 ! SET domain borders and link-cells as default for new jobs

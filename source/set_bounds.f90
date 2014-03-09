@@ -232,6 +232,7 @@ Subroutine set_bounds                                       &
      If (mxnode > 1) Then
         mxdihd = Max(mxdihd,mxnode*mtdihd)
         mxdihd = (3*(Nint((dvar**1.7_wp)*Real(mxdihd,wp))+mxnode-1))/mxnode
+        mxdihd = mxdihd + (mxdihd+4)/5 ! allow for 25% higher density
      End If
      mxpdih = 7
   Else
@@ -240,11 +241,13 @@ Subroutine set_bounds                                       &
 
 
 ! maximum number of inversions per node and inversion potential parameters
+! allow for 20% higher density
 
   If (mxinv > 0) Then
      If (mxnode > 1) Then
         mxinv = Max(mxinv,mxnode*mtinv)
         mxinv = (3*(Nint((dvar**1.7_wp)*Real(mxinv,wp))+mxnode-1))/mxnode
+        mxinv = mxinv + (mxinv+4)/5 ! allow for 25% higher density
      End If
      mxpinv = 3
   Else

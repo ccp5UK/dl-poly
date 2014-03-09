@@ -2,7 +2,7 @@ Subroutine nvt_l1_vv                               &
            (isw,lvar,mndis,mxdis,mxstp,temp,tstep, &
            chi,                                    &
            strkin,strknf,strknt,engke,engrot,      &
-           imcon,mxshak,tolnce,                    &
+           nstep,imcon,mxshak,tolnce,              &
            megcon,strcon,vircon,                   &
            megpmf,strpmf,virpmf,                   &
            strcom,vircom)
@@ -23,7 +23,7 @@ Subroutine nvt_l1_vv                               &
 ! (brownian dynamics, not symplectic due to the random forces)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -48,7 +48,7 @@ Subroutine nvt_l1_vv                               &
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: nstep,imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
@@ -241,8 +241,8 @@ Subroutine nvt_l1_vv                               &
         Call error(0)
      End If
 
-     Call langevin_forces(temp,tstep,chi,fxr,fyr,fzr)
-     Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
+     Call langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
+     Call langevin_forces(-nstep,temp,tstep,chi,fxl,fyl,fzl)
      If (lshmv_rgd) Then
         Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxr,fyr,fzr)
         Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)

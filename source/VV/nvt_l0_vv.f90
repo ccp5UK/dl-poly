@@ -1,6 +1,6 @@
 Subroutine nvt_l0_vv                                                &
            (isw,lvar,mndis,mxdis,mxstp,temp,tstep,chi,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,                &
+           nstep,imcon,mxshak,tolnce,megcon,strcon,vircon,          &
            megpmf,strpmf,virpmf)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -18,7 +18,7 @@ Subroutine nvt_l0_vv                                                &
 ! (brownian dynamics, not symplectic due to the random forces)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -39,7 +39,7 @@ Subroutine nvt_l0_vv                                                &
   Real( Kind = wp ), Intent( InOut ) :: tstep
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: nstep,imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon,strpmf(1:9),virpmf
@@ -149,8 +149,8 @@ Subroutine nvt_l0_vv                                                &
         Call error(0)
      End If
 
-     Call langevin_forces(temp,tstep,chi,fxr,fyr,fzr)
-     Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
+     Call langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
+     Call langevin_forces(-nstep,temp,tstep,chi,fxl,fyl,fzl)
 
 100  Continue
 

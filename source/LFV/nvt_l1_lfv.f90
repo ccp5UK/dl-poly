@@ -1,10 +1,10 @@
-Subroutine nvt_l1_lfv                          &
-           (lvar,mndis,mxdis,mxstp,temp,tstep, &
-           chi,                                &
-           strkin,strknf,strknt,engke,engrot,  &
-           imcon,mxshak,tolnce,mxquat,quattol, &
-           megcon,strcon,vircon,               &
-           megpmf,strpmf,virpmf,               &
+Subroutine nvt_l1_lfv                                &
+           (lvar,mndis,mxdis,mxstp,temp,tstep,       &
+           chi,                                      &
+           strkin,strknf,strknt,engke,engrot,        &
+           nstep,imcon,mxshak,tolnce,mxquat,quattol, &
+           megcon,strcon,vircon,                     &
+           megpmf,strpmf,virpmf,                     &
            strcom,vircom)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -14,7 +14,7 @@ Subroutine nvt_l1_lfv                          &
 ! - leapfrog verlet with Langevin thermostat (standard brownian dynamics)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,6 +26,7 @@ Subroutine nvt_l1_lfv                          &
   Use config_module,      Only : cell,natms,nlast,nfree,             &
                                  lsi,lsa,lfrzn,lstfre,atmnam,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use langevin_module,    Only : fxl,fyl,fzl
   Use rigid_bodies_module
   Use kinetic_module,     Only : getvom,getknr,kinstresf,kinstrest
 
@@ -38,7 +39,7 @@ Subroutine nvt_l1_lfv                          &
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
 
-  Integer,           Intent( In    ) :: imcon,mxshak,mxquat
+  Integer,           Intent( In    ) :: nstep,imcon,mxshak,mxquat
   Real( Kind = wp ), Intent( In    ) :: tolnce,quattol
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
@@ -50,7 +51,7 @@ Subroutine nvt_l1_lfv                          &
                              unsafe = .false.
   Logical                 :: safe,lv_up,lv_dn
   Integer,           Save :: mxkit
-  Integer                 :: fail(1:15),matms,kit,i,j,i1,i2, &
+  Integer                 :: fail(1:14),matms,kit,i,j,i1,i2, &
                              irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp )       :: hstep,rstep
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
@@ -75,7 +76,6 @@ Subroutine nvt_l1_lfv                          &
   Real( Kind = wp ), Allocatable :: xxt(:),yyt(:),zzt(:)
   Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
   Real( Kind = wp ), Allocatable :: fxt(:),fyt(:),fzt(:)
-  Real( Kind = wp ), Allocatable :: fxr(:),fyr(:),fzr(:)
 
   Real( Kind = wp ), Allocatable :: ggx(:),ggy(:),ggz(:)
   Real( Kind = wp ), Allocatable :: q0t(:),q1t(:),q2t(:),q3t(:)
@@ -101,11 +101,10 @@ Subroutine nvt_l1_lfv                          &
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail( 8))
   Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail( 9))
   Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(10))
-  Allocate (fxr(1:mxatms),fyr(1:mxatms),fzr(1:mxatms),            Stat=fail(11))
-  Allocate (q0t(1:mxrgd),q1t(1:mxrgd),q2t(1:mxrgd),q3t(1:mxrgd),  Stat=fail(12))
-  Allocate (rgdxxt(1:mxrgd),rgdyyt(1:mxrgd),rgdzzt(1:mxrgd),      Stat=fail(13))
-  Allocate (rgdvxt(1:mxrgd),rgdvyt(1:mxrgd),rgdvzt(1:mxrgd),      Stat=fail(14))
-  Allocate (rgdoxt(1:mxrgd),rgdoyt(1:mxrgd),rgdozt(1:mxrgd),      Stat=fail(15))
+  Allocate (q0t(1:mxrgd),q1t(1:mxrgd),q2t(1:mxrgd),q3t(1:mxrgd),  Stat=fail(11))
+  Allocate (rgdxxt(1:mxrgd),rgdyyt(1:mxrgd),rgdzzt(1:mxrgd),      Stat=fail(12))
+  Allocate (rgdvxt(1:mxrgd),rgdvyt(1:mxrgd),rgdvzt(1:mxrgd),      Stat=fail(13))
+  Allocate (rgdoxt(1:mxrgd),rgdoyt(1:mxrgd),rgdozt(1:mxrgd),      Stat=fail(14))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'nvt_l1 allocation failure, node: ', idnode
      Call error(0)
@@ -179,11 +178,6 @@ Subroutine nvt_l1_lfv                          &
   lv_up = .false.
   lv_dn = .false.
 
-! Get RB COM stress and virial
-
-  Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
-  vircom=-(strcom(1)+strcom(5)+strcom(9))
-
 ! leapfrog verlet algorithm (starts with velocities at half step)!!!
 
 ! store initial values
@@ -221,10 +215,15 @@ Subroutine nvt_l1_lfv                          &
      rgdozt(irgd) = rgdozz(irgd)
   End Do
 
-  Call langevin_forces(temp,tstep,chi,fxr,fyr,fzr)
-  If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxr,fyr,fzr)
+  Call langevin_forces(nstep-1,temp,tstep,chi,fxl,fyl,fzl)
+  If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
 
 100 Continue
+
+! Get RB COM stress and virial
+
+  Call rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx+fxl,fyy+fyl,fzz+fzl)
+  vircom=-(strcom(1)+strcom(5)+strcom(9))
 
 ! constraint virial and stress tensor
 
@@ -255,9 +254,9 @@ Subroutine nvt_l1_lfv                          &
 
      If (weight(i) > 1.0e-6_wp) Then
         tmp=sclf/weight(i)
-        vxx(i)=vxt(i)*sclv+tmp*(fxt(i)+fxr(i))
-        vyy(i)=vyt(i)*sclv+tmp*(fyt(i)+fyr(i))
-        vzz(i)=vzt(i)*sclv+tmp*(fzt(i)+fzr(i))
+        vxx(i)=vxt(i)*sclv+tmp*(fxt(i)+fxl(i))
+        vyy(i)=vyt(i)*sclv+tmp*(fyt(i)+fyl(i))
+        vzz(i)=vzt(i)*sclv+tmp*(fzt(i)+fzl(i))
 
         xxx(i)=xxt(i)+tstep*vxx(i)
         yyy(i)=yyt(i)+tstep*vyy(i)
@@ -383,18 +382,18 @@ Subroutine nvt_l1_lfv                          &
               fmy=fmy+fyt(i)
               fmz=fmz+fzt(i)
 
-              fmxr=fmxr+fxr(i)
-              fmyr=fmyr+fyr(i)
-              fmzr=fmzr+fzr(i)
+              fmxr=fmxr+fxl(i)
+              fmyr=fmyr+fyl(i)
+              fmzr=fmzr+fzl(i)
            End If
 
            tqx=tqx+ggy(krgd)*fzt(i)-ggz(krgd)*fyt(i)
            tqy=tqy+ggz(krgd)*fxt(i)-ggx(krgd)*fzt(i)
            tqz=tqz+ggx(krgd)*fyt(i)-ggy(krgd)*fxt(i)
 
-           tqxr=tqxr+ggy(krgd)*fzr(i)-ggz(krgd)*fyr(i)
-           tqyr=tqyr+ggz(krgd)*fxr(i)-ggx(krgd)*fzr(i)
-           tqzr=tqzr+ggx(krgd)*fyr(i)-ggy(krgd)*fxr(i)
+           tqxr=tqxr+ggy(krgd)*fzl(i)-ggz(krgd)*fyl(i)
+           tqyr=tqyr+ggz(krgd)*fxl(i)-ggx(krgd)*fzl(i)
+           tqzr=tqzr+ggx(krgd)*fyl(i)-ggy(krgd)*fxl(i)
         End Do
 
 ! If the RB has 2+ frozen particles (ill=1) the net torque
@@ -596,9 +595,9 @@ Subroutine nvt_l1_lfv                          &
 ! scale Langevin random forces
 
         Do i=1,matms
-           fxr(i)=fxr(i)*tmp
-           fyr(i)=fyr(i)*tmp
-           fzr(i)=fzr(i)*tmp
+           fxl(i)=fxl(i)*tmp
+           fyl(i)=fyl(i)*tmp
+           fzl(i)=fzl(i)*tmp
         End Do
 
 ! restore initial conditions
@@ -734,11 +733,10 @@ Subroutine nvt_l1_lfv                          &
   Deallocate (xxt,yyt,zzt,          Stat=fail( 8))
   Deallocate (vxt,vyt,vzt,          Stat=fail( 9))
   Deallocate (fxt,fyt,fzt,          Stat=fail(10))
-  Deallocate (fxr,fyr,fzr,          Stat=fail(11))
-  Deallocate (q0t,q1t,q2t,q3t,      Stat=fail(12))
-  Deallocate (rgdxxt,rgdyyt,rgdzzt, Stat=fail(13))
-  Deallocate (rgdvxt,rgdvyt,rgdvzt, Stat=fail(14))
-  Deallocate (rgdoxt,rgdoyt,rgdozt, Stat=fail(15))
+  Deallocate (q0t,q1t,q2t,q3t,      Stat=fail(11))
+  Deallocate (rgdxxt,rgdyyt,rgdzzt, Stat=fail(12))
+  Deallocate (rgdvxt,rgdvyt,rgdvzt, Stat=fail(13))
+  Deallocate (rgdoxt,rgdoyt,rgdozt, Stat=fail(14))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'nvt_l1 deallocation failure, node: ', idnode
      Call error(0)

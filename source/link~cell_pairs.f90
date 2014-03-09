@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov february 2014
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -452,9 +452,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
   safe=.true.
 
 ! primary loop over domain subcells
-! loop over the domain's cells only
 
-  ipass=1
   Do iz=nlz0e+1,nlz1s-1
      iz1=iz-nlz0e
      iz2=iz-nlz1s
@@ -465,336 +463,195 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
            ix1=ix-nlx0e
            ix2=ix-nlx1s
 
+! loop over the domain's cells only (ipass=1) and
+! over the domain's border cells only (ipass=2)
+
+           Do ipass=1,2
+
+              If ( (ipass == 1) .or.                  &
+                   (ix1 >=  1 .and. ix1 <=  nlp) .or. &
+                   (ix2 <= -1 .and. ix2 >= -nlp) .or. &
+                   (iy1 >=  1 .and. iy1 <=  nlp) .or. &
+                   (iy2 <= -1 .and. iy2 >= -nlp) .or. &
+                   (iz1 >=  1 .and. iz1 <=  nlp) .or. &
+                   (iz2 <= -1 .and. iz2 >= -nlp) ) Then
+
 ! index of the primary cell
 
-           ic=1+ix+(nlx+2*nlp)*(iy+(nly+2*nlp)*iz)
+                 ic=1+ix+(nlx+2*nlp)*(iy+(nly+2*nlp)*iz)
 
 ! loop over the primary cell contents
 
-           Do ii=lct_start(ic),lct_start(ic+1)-1
-              i=at_list(ii) ! get the particle index, by construction [1,natms]
+                 Do ii=lct_start(ic),lct_start(ic+1)-1
 
-! secondary loop over neighbouring cells
-! ipass == 1 - non-negative non-repeatable semi-ball
+! get the particle index
 
-              Do kk=ipass,nsbcll
+                    i=at_list(ii) ! by construction [1,natms]
 
-! be on domain + possible positive halo cells only - ipass==1
+! secondary loop over neighbouring cells, when ipass=2
+! exclude self-self (i.e. domain - kk=1)
 
-                 jx=ix+nix(kk)
-                 jy=iy+niy(kk)
-                 jz=iz+niz(kk)
+                    Do kk=ipass,nsbcll
+
+                       If (ipass == 1) Then ! non-negative non-repeatable semi-ball
+                          jx=ix+nix(kk)
+                          jy=iy+niy(kk)
+                          jz=iz+niz(kk)
+                       Else ! If (ipass = 2) Then ! negative non-repeatable semi-ball
+                          jx=ix-nix(kk)
+                          jy=iy-niy(kk)
+                          jz=iz-niz(kk)
+                       End If
+
+! be on domain + possible positive halo cells only - ipass=1
+! be on halo cells only - ipass=2
+
+                       If ( (ipass == 1) .or.                     &
+                            (jx <= nlx0e) .or. (jx >= nlx1s) .or. &
+                            (jy <= nly0e) .or. (jy >= nly1s) .or. &
+                            (jz <= nlz0e) .or. (jz >= nlz1s) ) Then
 
 ! index of the secondary cell
 
-                 jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)
+                          jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)
 
 ! get the secondary list's starting particle index
 
-                 If (jc /= ic) Then
+                          If (jc /= ic) Then
 
 ! if the secondary cell is different from the primary cell
 ! get the head of chain of the secondary cell
 
-                    j_start=lct_start(jc)
+                             j_start=lct_start(jc)
 
-                 Else ! only when ipass==1
+                          Else ! only when ipass=1
 
 ! if the secondary cell is same as the primary cell
 ! get the next in line from the primary cell running index
 
-                    j_start=ii+1
+                             j_start=ii+1
 
-                 End If
+                          End If
 
 ! bypass on real space cutoff check for safe cells when
 ! atom pairs' distances are guaranteed to be within the cutoff
 
-                 If (nir(kk)) Then
+                          If (nir(kk)) Then
 
 ! check for overfloat
 
-                    ll=list(0,i)+lct_start(jc+1)-j_start
-                    If (ll <= mxlist) Then
+                             ll=list(0,i)+lct_start(jc+1)-j_start
+                             If (ll <= mxlist) Then
 
 ! loop over the secondary cell contents
 
-                       Do jj=j_start,lct_start(jc+1)-1
+                                Do jj=j_start,lct_start(jc+1)-1
 
 ! get the particle index
 
-                          j=at_list(jj)
+                                   j=at_list(jj)
 
 ! add an entry
-                          ll=list(0,i)+1
-                          list(ll,i)=j
-                          list(0,i)=ll
+                                   ll=list(0,i)+1
+                                   list(ll,i)=j
+                                   list(0,i)=ll
 
 ! end of loop over the secondary cell contents
 
-                       End Do
+                                End Do
 
 ! overfloat is to occur
 
-                    Else
+                             Else
 
 ! loop over the secondary cell contents
 
-                       Do jj=j_start,lct_start(jc+1)-1
+                                Do jj=j_start,lct_start(jc+1)-1
 
 ! get the particle index
 
-                          j=at_list(jj)
+                                   j=at_list(jj)
 
 ! check for overfloat and add an entry
 
-                          ll=list(0,i)+1
-                          If (ll <= mxlist) Then
-                             list(ll,i)=j
-                          Else
-                             ibig=Max(ibig,ll)
-                             safe=.false.
-                          End If
-                          list(0,i)=ll
+                                   ll=list(0,i)+1
+                                   If (ll <= mxlist) Then
+                                      list(ll,i)=j
+                                   Else
+                                      ibig=Max(ibig,ll)
+                                      safe=.false.
+                                   End If
+                                   list(0,i)=ll
 
 ! end of loop over the secondary cell contents
 
-                       End Do
-
-                    End If
-
-! no bypass on real space cutoff check for safe cells when
-! atom pairs' distances are not guaranteed to be within the cutoff
-! distances in real space are needed for checking the cutoff criterion
-
-                 Else
-
-! loop over the secondary cell contents
-
-                    Do jj=j_start,lct_start(jc+1)-1
-
-! get the particle index
-
-                       j=at_list(jj)
-
-! check cutoff criterion (all atom pairs MUST BE within the cutoff)
-!                       rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
-! use reordered coordinate list in order to get "ordered" rather than "random" access
-
-                       rsq=(xxt(jj)-xxx(i))**2+(yyt(jj)-yyy(i))**2+(zzt(jj)-zzz(i))**2
-                       If (rsq <= rcsq) Then
-
-! check for overfloat and add an entry
-
-                          ll=list(0,i)+1
-                          If (ll <= mxlist) Then
-                             list(ll,i)=j
-                          Else
-                             safe=.false.
-                             ibig=Max(ibig,ll)
-                          End If
-                          list(0,i)=ll
-
-! end of cutoff criterion check
-
-                       End If
-
-! end of loop over the secondary cell contents
-
-                    End Do
-
-! end of bypass on real space cutoff check for safe cells
-
-                 End If
-
-! secondary loop over neighbouring cells
-
-              End Do
-
-! end of loop over the primary cell contents
-
-           End Do
-
-! end of loops over ix,iy,iz
-
-        End Do
-     End Do
-  End Do
-
-! secondary loop over domain's border subcells only
-
-  ipass=2
-  Do iz=nlz0e+1,nlz1s-1
-     iz1=iz-nlz0e
-     iz2=iz-nlz1s
-     Do iy=nly0e+1,nly1s-1
-        iy1=iy-nly0e
-        iy2=iy-nly1s
-        Do ix=nlx0e+1,nlx1s-1
-           ix1=ix-nlx0e
-           ix2=ix-nlx1s
-
-! loop over the domain's border cells only - ipass==2
-
-           If ( (ix1 >=  1 .and. ix1 <=  nlp) .or. &
-                (ix2 <= -1 .and. ix2 >= -nlp) .or. &
-                (iy1 >=  1 .and. iy1 <=  nlp) .or. &
-                (iy2 <= -1 .and. iy2 >= -nlp) .or. &
-                (iz1 >=  1 .and. iz1 <=  nlp) .or. &
-                (iz2 <= -1 .and. iz2 >= -nlp) ) Then
-
-! index of the primary cell
-
-              ic=1+ix+(nlx+2*nlp)*(iy+(nly+2*nlp)*iz)
-
-! loop over the primary cell contents
-
-              Do ii=lct_start(ic),lct_start(ic+1)-1
-
-                 i=at_list(ii) ! get the particle index, by construction [1,natms]
-
-! secondary loop over neighbouring cells,
-! when ipass==2 exclude self-self (i.e. domain - kk=1)
-
-                 Do kk=ipass,nsbcll
-
-! describe a negative non-repeatable semi-ball - ipass==2
-
-                    jx=ix-nix(kk)
-                    jy=iy-niy(kk)
-                    jz=iz-niz(kk)
-
-! be on halo cells only - ipass==2
-
-                    If ( (jx <= nlx0e) .or. (jx >= nlx1s) .or. &
-                         (jy <= nly0e) .or. (jy >= nly1s) .or. &
-                         (jz <= nlz0e) .or. (jz >= nlz1s) ) Then
-
-! index of the secondary cell
-
-                       jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)
-
-! get the secondary list's starting particle index as
-! ipass==2 the secondary cell is always different from the
-! primary cell get the head of chain of the secondary cell
-
-                       If (jc /= ic) j_start=lct_start(jc)
-
-! bypass on real space cutoff check for safe cells when
-! atom pairs' distances are guaranteed to be within the cutoff
-
-                       If (nir(kk)) Then
-
-! check for overfloat
-
-                          ll=list(0,i)+lct_start(jc+1)-j_start
-                          If (ll <= mxlist) Then
-
-! loop over the secondary cell contents
-
-                             Do jj=j_start,lct_start(jc+1)-1
-
-! get the particle index
-
-                                j=at_list(jj)
-
-! add an entry
-                                ll=list(0,i)+1
-                                list(ll,i)=j
-                                list(0,i)=ll
-
-! end of loop over the secondary cell contents
-
-                             End Do
-
-! overfloat is to occur
-
-                          Else
-
-! loop over the secondary cell contents
-
-                             Do jj=j_start,lct_start(jc+1)-1
-
-! get the particle index
-
-                                j=at_list(jj)
-
-! check for overfloat and add an entry
-
-                                ll=list(0,i)+1
-                                If (ll <= mxlist) Then
-                                   list(ll,i)=j
-                                Else
-                                   ibig=Max(ibig,ll)
-                                   safe=.false.
-                                End If
-                                list(0,i)=ll
-
-! end of loop over the secondary cell contents
-
-                             End Do
-
-                          End If
-
-! no bypass on real space cutoff check for safe cells when
-! atom pairs' distances are not guaranteed to be within the cutoff
-! distances in real space are needed for checking the cutoff criterion
-
-                       Else
-
-! loop over the secondary cell contents
-
-                          Do jj=j_start,lct_start(jc+1)-1
-
-! get the particle index
-
-                             j=at_list(jj)
-
-! check cutoff criterion (all atom pairs MUST BE within the cutoff)
-!                             rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
-! use reordered coordinate list in order to get "ordered" rather than "random" access
-
-                             rsq=(xxt(jj)-xxx(i))**2+(yyt(jj)-yyy(i))**2+(zzt(jj)-zzz(i))**2
-                             If (rsq <= rcsq) Then
-
-! check for overfloat and add an entry
-
-                                ll=list(0,i)+1
-                                If (ll <= mxlist) Then
-                                   list(ll,i)=j
-                                Else
-                                   safe=.false.
-                                   ibig=Max(ibig,ll)
-                                End If
-                                list(0,i)=ll
-
-! end of cutoff criterion check
+                                End Do
 
                              End If
 
+! no bypass on real space cutoff check for safe cells when
+! atom pairs' distances are not guaranteed to be within the cutoff
+! distances in real space are needed for checking the cutoff criterion
+
+                          Else
+
+! loop over the secondary cell contents
+
+                             Do jj=j_start,lct_start(jc+1)-1
+
+! get the particle index
+
+                                j=at_list(jj)
+
+! check cutoff criterion (all atom pairs MUST BE within the cutoff)
+!                                rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
+! use reordered coordinate list in order to get "ordered" rather than "random" access
+
+                                rsq=(xxt(jj)-xxx(i))**2+(yyt(jj)-yyy(i))**2+(zzt(jj)-zzz(i))**2
+                                If (rsq <= rcsq) Then
+
+! check for overfloat and add an entry
+
+                                   ll=list(0,i)+1
+                                   If (ll <= mxlist) Then
+                                      list(ll,i)=j
+                                   Else
+                                      safe=.false.
+                                      ibig=Max(ibig,ll)
+                                   End If
+                                   list(0,i)=ll
+
+! end of cutoff criterion check
+
+                                End If
+
 ! end of loop over the secondary cell contents
 
-                          End Do
+                             End Do
 
 ! end of bypass on real space cutoff check for safe cells
 
-                       End If
+                          End If
 
 ! end of inner if-block on cells and borders
 
-                    End If
+                       End If
 
 ! secondary loop over neighbouring cells
 
-                 End Do
+                    End Do
 
 ! end of loop over the primary cell contents
 
-              End Do
+                 End Do
 
 ! end of outer if-block on domain or halo
 
-           End If
+              End If
+
+! end of loop over passes
+
+           End Do
 
 ! end of loops over ix,iy,iz
 

@@ -1,7 +1,7 @@
-Subroutine nvt_a0_vv                                 &
-           (isw,lvar,mndis,mxdis,mxstp,temp,tstep,   &
-           keyshl,taut,soft,strkin,engke,            &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
+Subroutine nvt_a0_vv                                       &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep,         &
+           keyshl,taut,soft,strkin,engke,                  &
+           nstep,imcon,mxshak,tolnce,megcon,strcon,vircon, &
            megpmf,strpmf,virpmf)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -17,7 +17,7 @@ Subroutine nvt_a0_vv                                 &
 !  particles' momenta of a particle subset on each domain)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -25,7 +25,7 @@ Subroutine nvt_a0_vv                                 &
   Use comms_module,      Only : idnode,mxnode,gsum,gmax
   Use setup_module
   Use site_module,       Only : dofsit,ntpshl,unqshl
-  Use config_module,     Only : natms,nlast,lsite,lsi,lsa,lfrzn,atmnam, &
+  Use config_module,     Only : natms,nlast,lsite,lsi,lsa,ltg,lfrzn,atmnam, &
                                 weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use core_shell_module, Only : ntshl,listshl,lshmv_shl,lishp_shl,lashp_shl
   Use kinetic_module,    Only : getvom,kinstress
@@ -39,7 +39,7 @@ Subroutine nvt_a0_vv                                 &
   Real( Kind = wp ), Intent( InOut ) :: tstep
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: nstep,imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon,strpmf(1:9),virpmf
@@ -51,7 +51,7 @@ Subroutine nvt_a0_vv                                 &
   Integer                 :: fail(1:11),i,j,k,ntp,  &
                              stp,i1,i2,local_index, &
                              matms
-  Real( Kind = wp )       :: hstep,rstep,uni
+  Real( Kind = wp )       :: hstep,rstep,sarurnd
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
                              scale,tkin,vom(1:3)
 
@@ -353,10 +353,6 @@ Subroutine nvt_a0_vv                                 &
 
 ! Andersen Thermostat
 !
-! Here we become node-dependent (using of uni and gauss) - i.e.
-! pseudo-randomness depends on the DD mapping which depends on
-! the number of nodes and system size
-!
 ! qualify non-shell, non-frozen particles (n) for a random kick
 ! derive related shells (s)
 
@@ -367,12 +363,29 @@ Subroutine nvt_a0_vv                                 &
      qs(0:2,1:ntshl) = 0 ! unqualified core-shell unit with a local shell
 
      j = 0
-     tmp = tstep/taut
+     tkin = 0.0_wp
+     mxdr = 0.0_wp
+     scale = tstep/taut
      Do i=1,natms
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. (.not.Any(unqshl(1:ntpshl) == atmnam(i)))) Then
-           If (uni() <= tmp) Then
+           If (sarurnd(ltg(i),0,nstep) <= scale) Then
               j = j + 1
               qn(i) = 1
+
+              If (dofsit(lsite(i)) > zero_plus) mxdr = mxdr + dofsit(lsite(i))
+
+! Get gaussian distribution (unit variance)
+
+              Call box_mueller_saru3(ltg(i),nstep,xxt(i),yyt(i),zzt(i))
+
+! Get scaler to target variance/Sqrt(weight)
+
+              tmp = 1.0_wp/Sqrt(weight(i))
+              xxt(i) = xxt(i)*tmp
+              yyt(i) = yyt(i)*tmp
+              zzt(i) = zzt(i)*tmp
+
+              tkin = tkin + weight(i)*(xxt(i)**2+yyt(i)**2+zzt(i)**2)
            End If
         End If
      End Do
@@ -386,6 +399,29 @@ Subroutine nvt_a0_vv                                 &
      ntp = Sum(tpn)
 
      If (ntp == 0) Go To 200
+
+     If (mxnode > 1) Call gsum(tkin)
+     If (tkin <= zero_plus) tkin = 1.0_wp
+     If (mxnode > 1) Call gsum(mxdr)
+
+! Scale to target temperature and apply thermostat
+
+     scale = Sqrt(mxdr * boltz * temp / tkin)
+     tmp = Sqrt(1.0_wp-soft**2)*scale
+
+     Do i=1,natms
+        If (qn(i) == 1) Then
+           If (soft <= zero_plus) Then ! New target velocity
+              vxx(i) = xxt(i)*scale
+              vyy(i) = yyt(i)*scale
+              vzz(i) = zzt(i)*scale
+           Else ! Softened velocity (mixture between old & new)
+              vxx(i) = soft*vxx(i) + tmp*xxt(i)
+              vyy(i) = soft*vyy(i) + tmp*yyt(i)
+              vzz(i) = soft*vzz(i) + tmp*zzt(i)
+           End If
+        End If
+     End Do
 
 ! tps(idnode) number of thermostatted core-shell units on this node (idnode)
 ! stp - grand total of core-shell units to thermostat
@@ -421,67 +457,14 @@ Subroutine nvt_a0_vv                                 &
      End If
      stp = Sum(tps)
 
-! Get gaussian distribution (unit variance)
-
-     Call gauss(tpn(idnode),xxt,yyt,zzt)
-
-     tkin = 0.0_wp
-     mxdr = 0.0_wp
-     j = 0
-     Do i=1,natms
-        If (qn(i) == 1) Then
-           If (dofsit(lsite(i)) > zero_plus) mxdr = mxdr + dofsit(lsite(i))
-
-           j = j + 1
-
-! Get scaler to target variance/Sqrt(weight)
-
-           tmp = 1.0_wp/Sqrt(weight(i))
-           xxt(j) = xxt(j)*tmp
-           yyt(j) = yyt(j)*tmp
-           zzt(j) = zzt(j)*tmp
-
-           tkin = tkin + weight(i)*(xxt(j)**2+yyt(j)**2+zzt(j)**2)
-        End If
-     End Do
-
-     If (mxnode > 1) Call gsum(tkin)
-     If (tkin <= zero_plus) tkin = 1.0_wp
-     If (mxnode > 1) Call gsum(mxdr)
-
-! Scale to target temperature and apply thermostat
-
-     scale = Sqrt(mxdr * boltz * temp / tkin)
-     tmp = Sqrt(1.0_wp-soft**2)*scale
-
-     j = 0
-     Do i=1,natms
-        If (qn(i) == 1) Then
-           j = j + 1
-
-           If (soft <= zero_plus) Then ! New target velocity
-              vxx(i) = xxt(j)*scale
-              vyy(i) = yyt(j)*scale
-              vzz(i) = zzt(j)*scale
-           Else ! Softened velocity (mixture between old & new)
-              vxx(i) = soft*vxx(i) + tmp*xxt(j)
-              vyy(i) = soft*vyy(i) + tmp*yyt(j)
-              vzz(i) = soft*vzz(i) + tmp*zzt(j)
-           End If
-        End If
-     End Do
-
 ! Thermalise the shells on hit cores
 
      If (stp > 0) Then
         If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz)
 
         If (tps(idnode) > 0) Then
-           j = 0
            Do k=1,ntshl
               If (qs(0,k) == 1) Then
-                 j = j + 1
-
                  i1=qs(1,k)
                  i2=qs(2,k)
 

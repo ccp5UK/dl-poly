@@ -2,19 +2,23 @@
 !
 ! Function uni - two seeded random number generator
 !
-! Subroutine box_mueller - generates gaussian random numbers of unit
-!                          variance (with zero mean and standard
-!                          variation of 1)
-!
 ! Function sarurnd - three seeded random number generator based on SARU
 !
-! Subroutine gauss_old - constructs velocity arrays with a gaussian
-!                        distribution of unit variance (zero mean) by
-!                        an approximation of the Central Limit Theorem
+! Subroutine box_mueller_saru - generates gaussian random numbers of unit
+!                               variance (with zero mean and standard
+!                               variation of 1)
 !
-! Subroutine gauss - constructs velocity arrays with a gaussian
-!                    distribution of unit variance (zero mean) using
-!                    the box-mueller method
+! Subroutine box_mueller_uni - generates gaussian random numbers of unit
+!                              variance (with zero mean and standard
+!                              variation of 1)
+!
+! Subroutine gauss_1 - constructs velocity arrays with a gaussian
+!                      distribution of unit variance (zero mean) by
+!                      an approximation of the Central Limit Theorem
+!
+! Subroutine gauss_2 - constructs velocity arrays with a gaussian
+!                      distribution of unit variance (zero mean) using
+!                      the box-mueller method
 !
 ! Subroutine erfcgen - generates interpolation tables for erfc and its
 !                      derivative
@@ -56,8 +60,11 @@ Function uni()
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 random number generator based on the universal random number
-! generator of marsaglia, zaman and tsang
-! (stats and prob. lett. 8 (1990) 35-39.)
+! generator of marsaglia, zaman and tsang.
+!
+! Ref: stats. and prob. lett. 8 (1990) 35-39.)
+!
+! Note: It returns in [0,1)
 !
 ! This random number generator originally appeared in "Toward a
 ! Universal Random Number Generator" by George Marsaglia, Arif Zaman and
@@ -183,67 +190,16 @@ Function uni()
 
 End Function uni
 
-Subroutine box_mueller(gauss1,gauss2)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine using the box-mueller method for generating
-! gaussian random numbers of unit variance (with zero mean and standard
-! variation of 1).  Otherwise, an approximation of the Central Limit
-! Theorem must be used: G = (1/A)*[Sum_i=1,N(Ri) - AN/2]*(12/N)^(1/2),
-! where A is the number of outcomes from the random throw Ri and N is
-! the number of tries.
-!
-! dependent on uni
-!
-! copyright - daresbury laboratory
-! author    - w.smith may 2008
-! amended   - i.t.todorov february 2014
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use kinds_f90
-  Use setup_module, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
-
-  Implicit None
-
-  Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2
-
-  Logical           :: newjob = .true.
-  Real( Kind = wp ) :: uni,ran0,ran1,ran2
-
-! make sure uni is initialised
-
-  If (newjob) Then
-     newjob = .false.
-     ran0=uni()
-  End If
-
-  ran0=1.0_wp
-
-! generate uniform random numbers on [-1, 1)
-
-  Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*uni()-1.0_wp
-     ran2=2.0_wp*uni()-1.0_wp
-     ran0=ran1**2+ran2**2
-  End Do
-
-! calculate gaussian random numbers
-
-  ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
-  gauss1=ran0*ran1
-  gauss2=ran0*ran2
-
-End Subroutine box_mueller
-
 Function sarurnd(seeda, seedb, seedc)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 routine random number generator based on the saru random
-! number generator of Steve Worley with three integer seeds
-! Ref: Ccomp. Phys. Coms. 184 (2013) 1119-1128)
+! number generator of Steve Worley with three integer seeds.
+!
+! Ref: Comp. Phys. Comms. 184 (2013) 1119-1128
+!
+! Note: It returns in [0,1)
 !
 ! copyright - daresbury laboratory
 ! author    - m.a.seaton may 2013
@@ -318,7 +274,250 @@ Function sarurnd(seeda, seedb, seedc)
 
 End Function sarurnd
 
-Subroutine gauss_old(natms,vxx,vyy,vzz)
+Subroutine box_mueller_saru1(i,j,gauss1)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine using the box-mueller method for generating 3
+! gaussian random numbers of unit variance (with zero mean and standard
+! variation of 1).
+!
+! dependent on sarurnd
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov march 2014
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+  Use setup_module, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
+
+  Implicit None
+
+  Integer,           Intent( In    )           :: i,j
+  Real( Kind = wp ), Intent(   Out )           :: gauss1
+
+  Integer           :: k
+  Real( Kind = wp ) :: sarurnd,ran0,ran1,ran2
+
+! Initialise counter
+
+  k=1
+
+! generate uniform random numbers on [-1, 1)
+
+  ran0=1.0_wp
+  Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
+     ran1=2.0_wp*sarurnd(i,k  ,j)-1.0_wp
+     ran2=2.0_wp*sarurnd(i,k+1,j)-1.0_wp
+     ran0=ran1**2+ran2**2
+     k=k+2
+  End Do
+
+! calculate gaussian random numbers 1 & 2
+
+  ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
+                       gauss1=ran0*ran1
+
+End Subroutine box_mueller_saru1
+
+Subroutine box_mueller_saru3(i,j,gauss1,gauss2,gauss3)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine using the box-mueller method for generating 3
+! gaussian random numbers of unit variance (with zero mean and standard
+! variation of 1).
+!
+! dependent on sarurnd
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov march 2014
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+  Use setup_module, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
+
+  Implicit None
+
+  Integer,           Intent( In    )           :: i,j
+  Real( Kind = wp ), Intent(   Out )           :: gauss1,gauss2,gauss3
+
+  Integer           :: k
+  Real( Kind = wp ) :: sarurnd,ran0,ran1,ran2
+
+! Initialise counter
+
+  k=1
+
+! generate uniform random numbers on [-1, 1)
+
+  ran0=1.0_wp
+  Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
+     ran1=2.0_wp*sarurnd(i,k  ,j)-1.0_wp
+     ran2=2.0_wp*sarurnd(i,k+1,j)-1.0_wp
+     ran0=ran1**2+ran2**2
+     k=k+2
+  End Do
+
+! calculate gaussian random numbers 1 & 2
+
+  ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
+  gauss1=ran0*ran1
+  gauss2=ran0*ran2
+
+! generate uniform random numbers on [-1, 1)
+
+  ran0=1.0_wp
+  Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
+     ran1=2.0_wp*sarurnd(i,k  ,j)-1.0_wp
+     ran2=2.0_wp*sarurnd(i,k+1,j)-1.0_wp
+     ran0=ran1**2+ran2**2
+     k=k+2
+  End Do
+
+! calculate gaussian random number 3 & 4
+
+  ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
+  gauss3=ran0*ran1
+
+End Subroutine box_mueller_saru3
+
+Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine using the box-mueller method for generating 3
+! gaussian random numbers of unit variance (with zero mean and standard
+! variation of 1).
+!
+! dependent on sarurnd
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov march 2014
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+  Use setup_module, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
+
+  Implicit None
+
+  Integer,           Intent( In    )           :: i,j
+  Real( Kind = wp ), Intent(   Out )           :: gauss1,gauss2,gauss3, &
+                                                  gauss4,gauss5,gauss6
+
+  Integer           :: k
+  Real( Kind = wp ) :: sarurnd,ran0,ran1,ran2
+
+! Initialise counter
+
+  k=1
+
+! generate uniform random numbers on [-1, 1)
+
+  ran0=1.0_wp
+  Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
+     ran1=2.0_wp*sarurnd(i,k  ,j)-1.0_wp
+     ran2=2.0_wp*sarurnd(i,k+1,j)-1.0_wp
+     ran0=ran1**2+ran2**2
+     k=k+2
+  End Do
+
+! calculate gaussian random numbers 1 & 2
+
+  ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
+  gauss1=ran0*ran1
+  gauss2=ran0*ran2
+
+! generate uniform random numbers on [-1, 1)
+
+  ran0=1.0_wp
+  Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
+     ran1=2.0_wp*sarurnd(i,k  ,j)-1.0_wp
+     ran2=2.0_wp*sarurnd(i,k+1,j)-1.0_wp
+     ran0=ran1**2+ran2**2
+     k=k+2
+  End Do
+
+! calculate gaussian random number 3 & 4
+
+  ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
+  gauss3=ran0*ran1
+  gauss4=ran0*ran2
+
+! generate uniform random numbers on [-1, 1)
+
+  ran0=1.0_wp
+  Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
+     ran1=2.0_wp*sarurnd(i,k  ,j)-1.0_wp
+     ran2=2.0_wp*sarurnd(i,k+1,j)-1.0_wp
+     ran0=ran1**2+ran2**2
+     k=k+2
+  End Do
+
+! calculate gaussian random number 5 & 6
+  ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
+  gauss5=ran0*ran1
+  gauss6=ran0*ran2
+
+End Subroutine box_mueller_saru6
+
+Subroutine box_mueller_uni(gauss1,gauss2)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine using the box-mueller method for generating
+! gaussian random numbers of unit variance (with zero mean and standard
+! variation of 1).  Otherwise, an approximation of the Central Limit
+! Theorem must be used: G = (1/A)*[Sum_i=1,N(Ri) - AN/2]*(12/N)^(1/2),
+! where A is the number of outcomes from the random throw Ri and N is
+! the number of tries.
+!
+! dependent on uni
+!
+! copyright - daresbury laboratory
+! author    - w.smith may 2008
+! amended   - i.t.todorov february 2014
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+  Use setup_module, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
+
+  Implicit None
+
+  Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2
+
+  Logical           :: newjob = .true.
+  Real( Kind = wp ) :: uni,ran0,ran1,ran2
+
+! make sure uni is initialised
+
+  If (newjob) Then
+     newjob = .false.
+     ran0=uni()
+  End If
+
+! generate uniform random numbers on [-1, 1)
+
+  ran0=1.0_wp
+  Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
+     ran1=2.0_wp*uni()-1.0_wp
+     ran2=2.0_wp*uni()-1.0_wp
+     ran0=ran1**2+ran2**2
+  End Do
+
+! calculate gaussian random numbers
+
+  ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
+  gauss1=ran0*ran1
+  gauss2=ran0*ran2
+
+End Subroutine box_mueller_uni
+
+Subroutine gauss_1(natms,vxx,vyy,vzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -378,9 +577,9 @@ Subroutine gauss_old(natms,vxx,vyy,vzz)
      vzz(i)=rrr*(a1+rr2*(a3+rr2*(a5+rr2*(a7+rr2*a9))))
   End Do
 
-End Subroutine gauss_old
+End Subroutine gauss_1
 
-Subroutine gauss(natms,vxx,vyy,vzz)
+Subroutine gauss_2(natms,vxx,vyy,vzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -404,20 +603,20 @@ Subroutine gauss(natms,vxx,vyy,vzz)
   Do i=1,(natms+1)/2
      j=natms+1-i
 
-     Call box_mueller(gauss1,gauss2)
+     Call box_mueller_uni(gauss1,gauss2)
      vxx(i)=gauss1
      vxx(j)=gauss2
 
-     Call box_mueller(gauss1,gauss2)
+     Call box_mueller_uni(gauss1,gauss2)
      vyy(i)=gauss1
      vyy(j)=gauss2
 
-     Call box_mueller(gauss1,gauss2)
+     Call box_mueller_uni(gauss1,gauss2)
      vzz(i)=gauss1
      vzz(j)=gauss2
   End Do
 
-End Subroutine gauss
+End Subroutine gauss_2
 
 Subroutine erfcgen(rcut,alpha,mxgrid,erc,fer)
 

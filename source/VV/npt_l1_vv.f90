@@ -4,7 +4,7 @@ Subroutine npt_l1_vv                          &
            degrot,press,tai,chip,eta,         &
            virtot,elrc,virlrc,                &
            strkin,strknf,strknt,engke,engrot, &
-           imcon,mxshak,tolnce,               &
+           nstep,imcon,mxshak,tolnce,         &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom)
@@ -22,7 +22,7 @@ Subroutine npt_l1_vv                          &
 !            J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -35,7 +35,7 @@ Subroutine npt_l1_vv                          &
                                  lsi,lsa,lfrzn,lstfre,atmnam,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
-  Use langevin_module,    Only : l_lan_s,fxl,fyl,fzl,fpl
+  Use langevin_module,    Only : fxl,fyl,fzl,fpl
   Use kinetic_module,     Only : getvom,getknf,getknt,getknr, &
                                  kinstresf,kinstrest
 
@@ -54,7 +54,7 @@ Subroutine npt_l1_vv                          &
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: nstep,imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
@@ -70,7 +70,7 @@ Subroutine npt_l1_vv                          &
                              irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp ), Save :: cell0(1:9),volm0,elrc0,virlrc0
   Real( Kind = wp ), Save :: temp,pmass
-  Real( Kind = wp )       :: hstep,qstep,rstep,uni
+  Real( Kind = wp )       :: hstep,qstep,rstep
   Real( Kind = wp )       :: chip0,engke0,engrot0,engknf,engknt
   Real( Kind = wp )       :: czero(1:9),vzero
   Real( Kind = wp )       :: xt,yt,zt,vir,vir1,str(1:9),mxdr,tmp, &
@@ -178,27 +178,12 @@ Subroutine npt_l1_vv                          &
 
      unsafe=(Any(map == idnode))
 
-! Generate Langevin forces for particles and
-! Langevin pseudo-tensor force for barostat piston
-! if not read from REVOLD
+! Langevin forces for particles are now generated in w_calculate_forces
+! Generate Langevin pseudo-tensor force for barostat piston
 
-     If (l_lan_s) Then
-        Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
-
-        fpl=0.0_wp
-        tmp=-6.0_wp
-        Do i=1,12
-           tmp=tmp+uni()
-        End Do
-        If (mxnode > 1) Then
-           Call gsum(tmp)
-           tmp=tmp/Sqrt(Real(mxnode,wp))
-        End If
-        tmp=tmp*Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)/3.0_wp
-     Else
-        tmp=(fpl(1)+fpl(5)+fpl(9))/3.0_wp
-        fpl=0.0_wp
-     End If
+     fpl=0.0_wp
+     Call box_mueller_saru1(Int(degfre/3_ip),nstep-1,tmp)
+     tmp=tmp*Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)/3.0_wp
      fpl(1)=tmp
      fpl(5)=tmp
      fpl(9)=tmp
@@ -255,17 +240,11 @@ Subroutine npt_l1_vv                          &
 
   If (isw == 0) Then
 
+! Globalise Langevin random forces for shared RBs
+
      If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
 
-! Get strcom & vircom when starting afresh
-
-     If (l_lan_s) Then
-        l_lan_s = .false.
-
-        Call rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx+fxl,fyy+fyl,fzz+fzl)
-        vircom=-(strcom(1)+strcom(5)+strcom(9))
-     End If
-
+! Get strcom & vircom when starting afresh now done in w_calculate_forces
 ! store initial values
 
      Do i=1,matms
@@ -880,18 +859,11 @@ Subroutine npt_l1_vv                          &
 ! Generate Langevin forces for particles and
 ! Langevin pseudo-tensor force for barostat piston
 
-     Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
+     Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
      If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
 
      fpl=0.0_wp
-     tmp=-6.0_wp
-     Do i=1,12
-        tmp=tmp+uni()
-     End Do
-     If (mxnode > 1) Then
-        Call gsum(tmp)
-        tmp=tmp/Sqrt(Real(mxnode,wp))
-     End If
+     Call box_mueller_saru1(Int(degfre/3_ip),nstep,tmp)
      tmp=tmp*Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)/3.0_wp
      fpl(1)=tmp
      fpl(5)=tmp

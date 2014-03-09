@@ -12,7 +12,7 @@ Subroutine constraints_shake_vv        &
 !       VV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -92,21 +92,19 @@ Subroutine constraints_shake_vv        &
 
      Call images(imcon,cell,ntcons,dxt,dyt,dzt)
 
-! calculate maximum error in bondlength
+! calculate maximum error in bondlength and
+! do a global verification of convergence
 
      Do k=1,ntcons
         If (lstopt(0,k) == 0) Then
            dt2(k) =dxt(k)**2+dyt(k)**2+dzt(k)**2 - prmcon(listcon(0,k))**2
-           esig(k)=0.5_wp*Abs(dt2(k))/prmcon(listcon(0,k))
+           esig(k)=0.5_wp*Abs(dt2(k))
+           safe=(safe .and. (esig(k) < tolnce*prmcon(listcon(0,k))))
         Else
-          dt2(k) =0.0_wp
-          esig(k)=0.0_wp
+           dt2(k) =0.0_wp
+           esig(k)=0.0_wp
         End If
      End Do
-
-! global verification of convergence
-
-     safe=(Maxval(esig(1:ntcons)) < tolnce)
      If (mxnode > 1) Call gcheck(safe,"enforce")
 
 ! bypass next section and terminate iteration if all tolerances ok
@@ -205,13 +203,13 @@ Subroutine constraints_shake_vv        &
      Do i=0,mxnode-1
         If (idnode == i) Then
            Do k=1,ntcons
-              If (esig(k) >= tolnce)                                          &
-                 Write(nrite,'(/,1x,3(a,i10),a,/,a,f8.2,a,1p,e12.4,a)')       &
-                      '*** warning - global constraint number', listcon(0,k), &
-                      ' , with particle numbers:', listcon(1,k),              &
-                      ' &', listcon(2,k), ' ,', ' converges to a length of ', &
-                      Sqrt(dt2(k)+prmcon(listcon(0,k))**2),                   &
-                      ' Angstroms with a factor', esig(k),                    &
+              If (esig(k) >= tolnce*prmcon(listcon(0,k)))                       &
+                 Write(nrite,'(/,1x,3(a,i10),a,/,a,f8.2,a,1p,e12.4,a)')         &
+                      '*** warning - global constraint number', listcon(0,k),   &
+                      ' , with particle numbers:', listcon(1,k),                &
+                      ' &', listcon(2,k), ' ,', ' converges to a length of ',   &
+                      Sqrt(dt2(k)+prmcon(listcon(0,k))**2),                     &
+                      ' Angstroms with a factor', esig(k)/prmcon(listcon(0,k)), &
                       ' ,contributes towards next error !!! ***'
            End Do
         End If

@@ -113,11 +113,11 @@
         If (l_vv) Then
            Call pseudo_vv                               &
            (0,keyshl,keyens,keypse,wthpse,tmppse,tstep, &
-           strkin,strknf,strknt,engke,engrot)
+           nstep,strkin,strknf,strknt,engke,engrot)
         Else
            Call pseudo_lfv                              &
            (0,keyshl,keyens,keypse,wthpse,tmppse,tstep, &
-           strkin,strknf,strknt,engke,engrot)
+           nstep,strkin,strknf,strknt,engke,engrot)
         End If
      End If
 
@@ -163,13 +163,15 @@
         End If
      End If
 
-! Get RB COM stress and virial at restart only
+! Get RB COM stress and virial at restart only - also available at w_at_start_vv for levcfg==2
 
      If (newjob) Then
         If (megrgd > 0) Then
-           If (l_lan .and. (.not.l_lan_s)) Then ! Only meaningful for l_vv
+           If (l_lan) Then
+              Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
+              If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
               Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl)
-           Else                                 ! Covers both VV and LFV
+           Else
               Call rigid_bodies_str_ss(strcom)
            End If
            vircom=-(strcom(1)+strcom(5)+strcom(9))

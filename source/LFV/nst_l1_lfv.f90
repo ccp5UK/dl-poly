@@ -1,12 +1,12 @@
-Subroutine nst_l1_lfv                          &
-           (lvar,mndis,mxdis,mxstp,tstep,      &
-           iso,degfre,sigma,chi,consv,         &
-           degrot,press,tai,chip,eta,          &
-           stress,strext,ten,elrc,virlrc,      &
-           strkin,strknf,strknt,engke,engrot,  &
-           imcon,mxshak,tolnce,mxquat,quattol, &
-           megcon,strcon,vircon,               &
-           megpmf,strpmf,virpmf,               &
+Subroutine nst_l1_lfv                                &
+           (lvar,mndis,mxdis,mxstp,tstep,            &
+           iso,degfre,sigma,chi,consv,               &
+           degrot,press,tai,chip,eta,                &
+           stress,strext,ten,elrc,virlrc,            &
+           strkin,strknf,strknt,engke,engrot,        &
+           nstep,imcon,mxshak,tolnce,mxquat,quattol, &
+           megcon,strcon,vircon,                     &
+           megpmf,strpmf,virpmf,                     &
            strcom,vircom)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -30,7 +30,7 @@ Subroutine nst_l1_lfv                          &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2009
-! amended   - i.t.todorov december 2013
+! amended   - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -61,7 +61,7 @@ Subroutine nst_l1_lfv                          &
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
 
-  Integer,           Intent( In    ) :: imcon,mxshak,mxquat
+  Integer,           Intent( In    ) :: nstep,imcon,mxshak,mxquat
   Real( Kind = wp ), Intent( In    ) :: tolnce,quattol
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
@@ -77,7 +77,7 @@ Subroutine nst_l1_lfv                          &
                              irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp ), Save :: volm0,elrc0,virlrc0,h_z
   Real( Kind = wp ), Save :: temp,pmass,rf
-  Real( Kind = wp )       :: hstep,rstep,fac,uni
+  Real( Kind = wp )       :: hstep,rstep,fac
   Real( Kind = wp )       :: eta1(1:9),eta2(1:9),chip3
   Real( Kind = wp )       :: cell0(1:9),celprp(1:10)
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
@@ -264,11 +264,6 @@ Subroutine nst_l1_lfv                          &
   lv_up = .false.
   lv_dn = .false.
 
-! Get RB COM stress and virial
-
-  Call rigid_bodies_stress(strcom,ggx,ggy,ggz)
-  vircom=-(strcom(1)+strcom(5)+strcom(9))
-
 ! leapfrog verlet algorithm (starts with velocities at half step)!!!
 
 ! store initial values
@@ -309,19 +304,11 @@ Subroutine nst_l1_lfv                          &
 ! Generate Langevin forces for particles and
 ! Langevin tensor force for barostat piston
 
-  Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
+  Call langevin_forces(nstep-1,temp,tstep,chi,fxl,fyl,fzl)
   If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
 
-  Do j=1,6
-     fpl(j)=-6.0_wp
-     Do i=1,12
-        fpl(j)=fpl(j)+uni()
-     End Do
-  End Do
-  If (mxnode > 1) Then
-     Call gsum(fpl(1:6))
-     fpl(1:6)=fpl(1:6)/Sqrt(Real(mxnode,wp))
-  End If
+  fpl=0.0_wp
+  Call box_mueller_saru6(Int(degfre/3_ip),nstep-1,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
   tmp=Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)
   fpl(1:6)=fpl(1:6)*tmp
   fpl(9)=fpl(4)                                 ! Distribute independent
@@ -332,6 +319,11 @@ Subroutine nst_l1_lfv                          &
   cell0=cell
 
 100 Continue
+
+! Get RB COM stress and virial
+
+  Call rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx+fxl,fyy+fyl,fzz+fzl)
+  vircom=-(strcom(1)+strcom(5)+strcom(9))
 
 ! constraint virial and stress tensor
 

@@ -325,7 +325,15 @@ to temperature (in Kelvin).
 pressure\index{units!pressure} is in units of katms
 (kilo-atmospheres) at all times.  The unit of energy is either
 DL\_POLY units specified above, or in other units specified by the
-user at run time.  The default is DL\_POLY units.
+user at run time (see Section~\ref{field-file}).  The default is the
+DL\_POLY unit.
+
+Externally, \D accepts information in its own specific formatting
+as described in Section~\ref{input-files}.  Irrespective of formatting
+rules, all values provided to define input entities are read in
+DL\_POLY units (except otherwise specified as in the case of energy
+units) or their composite mixture representing the corresponding
+entity physically, i.e. velocities' components are in \AA ngsroms/picosecond.
 
 \subsection{Error Messages}
 

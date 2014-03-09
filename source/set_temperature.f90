@@ -12,7 +12,7 @@ Subroutine set_temperature            &
 ! dl_poly_4 subroutine for setting the initial system temperature
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,8 +20,8 @@ Subroutine set_temperature            &
   Use comms_module,       Only : idnode,mxnode,gsum
   Use setup_module
   Use site_module,        Only : dofsit,ntpshl,unqshl
-  Use config_module,      Only : natms,nlast,nfree,lsite,    &
-                                 lsi,lsa,lfrzn,lfree,lstfre, &
+  Use config_module,      Only : natms,nlast,nfree,lsite,        &
+                                 lsi,lsa,ltg,lfrzn,lfree,lstfre, &
                                  atmnam,weight,vxx,vyy,vzz
   Use rigid_bodies_module
   Use core_shell_module,  Only : ntshl,listshl,lshmv_shl,lishp_shl,lashp_shl
@@ -45,7 +45,7 @@ Subroutine set_temperature            &
   Real( Kind = wp ), Intent(   Out ) :: sigma,engrot
 
   Logical           :: no_min_0,safe
-  Integer           :: fail(1:3),i,j,k,ntp,   &
+  Integer           :: fail(1:2),i,j,k,ntp,   &
                        stp,i1,i2,local_index, &
                        irgd,jrgd,lrgd,rgdtyp
   Integer(Kind=ip)  :: com,con,frz,meg,non
@@ -53,9 +53,8 @@ Subroutine set_temperature            &
                        x(1:1),y(1:1),z(1:1),rot(1:9), &
                        vpx,vpy,vpz
 
-  Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
 
-  ! q. index arrays and tp. sum arrays
+! q. index arrays and tp. sum arrays
 
   Integer,           Allocatable :: qn(:),tpn(:)
   Integer,           Allocatable :: qs(:,:),tps(:)
@@ -142,9 +141,8 @@ Subroutine set_temperature            &
 
   If (keyres == 0) Then
 
-     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail(1))
-     Allocate (qn(1:mxatms),tpn(0:mxnode-1),              Stat=fail(2))
-     Allocate (qs(0:2,1:mxshl),tps(0:mxnode-1),           Stat=fail(3))
+     Allocate (qn(1:mxatms),tpn(0:mxnode-1),    Stat=fail(1))
+     Allocate (qs(0:2,1:mxshl),tps(0:mxnode-1), Stat=fail(2))
      If (Any(fail > 0)) Then
         Write(nrite,'(/,1x,a,i0)') 'set_temperature allocation failure, node: ', idnode
         Call error(0)
@@ -243,7 +241,7 @@ Subroutine set_temperature            &
 
 ! generate starting velocities
 
-        Call gauss(tpn(idnode)+k,vxt,vyt,vzt)
+        Do i=1,natms
 
 ! frozen and massless atoms are either motionless
 ! (with no actual DoF - relaxed shells, frozen sites)
@@ -253,17 +251,15 @@ Subroutine set_temperature            &
 ! (adiabatic shells, constraints, PMFs and RBs are
 ! to be sorted out later by quenching)
 
-        j = 0
-        Do i=1,natms
            If (qn(i) == 1 .and. lfree(i) == 0) Then
-              j = j + 1
+              Call box_mueller_saru3(ltg(i),0,vxx(i),vyy(i),vzz(i))
 
 ! Get scaler to target variance/Sqrt(weight)
 
               tmp = 1.0_wp/Sqrt(weight(i))
-              vxx(i) = vxt(j)*tmp
-              vyy(i) = vyt(j)*tmp
-              vzz(i) = vzt(j)*tmp
+              vxx(i) = vxx(i)*tmp
+              vyy(i) = vyy(i)*tmp
+              vzz(i) = vzz(i)*tmp
            End If
         End Do
 
@@ -278,25 +274,25 @@ Subroutine set_temperature            &
               i2=indrgd(2,irgd) ! particle to bare the random RB angular momentum
 
               If (rgdfrz(0,rgdtyp) == 0 .and. i1 <= natms) Then
-                 j = j + 1
+                 Call box_mueller_saru3(ltg(i1),0,vxx(i1),vyy(i1),vzz(i1))
 
 ! Get scaler to target variance/Sqrt(weight)
 
                  tmp = 1.0_wp/Sqrt(rgdwgt(0,rgdtyp))
-                 vxx(i1) = vxt(j)*tmp
-                 vyy(i1) = vyt(j)*tmp
-                 vzz(i1) = vzt(j)*tmp
+                 vxx(i1) = vxx(i1)*tmp
+                 vyy(i1) = vyy(i1)*tmp
+                 vzz(i1) = vzz(i1)*tmp
               End If
 
               If (i2 <= natms) Then
-                 j = j + 1
+                 Call box_mueller_saru3(ltg(i2),0,vxx(i2),vyy(i2),vzz(i2))
 
 ! Get scaler to target variance/Sqrt(weight) -
 ! 3 different reciprocal moments of inertia
 
-                 vxx(i2) = vxt(j)*Sqrt(rgdrix(2,rgdtyp))
-                 vyy(i2) = vyt(j)*Sqrt(rgdriy(2,rgdtyp))
-                 vzz(i2) = vzt(j)*Sqrt(rgdriz(2,rgdtyp))
+                 vxx(i2) = vxx(i2)*Sqrt(rgdrix(2,rgdtyp))
+                 vyy(i2) = vyy(i2)*Sqrt(rgdriy(2,rgdtyp))
+                 vzz(i2) = vzz(i2)*Sqrt(rgdriz(2,rgdtyp))
               End If
            End If
         End Do
@@ -371,7 +367,7 @@ Subroutine set_temperature            &
 
 ! generate starting velocities
 
-        Call gauss(tpn(idnode),vxt,vyt,vzt)
+        Do i=1,natms
 
 ! frozen and massless atoms are either motionless
 ! (with no actual DoF - relaxed shells, frozen sites)
@@ -379,17 +375,15 @@ Subroutine set_temperature            &
 ! (adiabatic shells, constraints, PMFs are
 ! to be sorted out later by quenching)
 
-        j = 0
-        Do i=1,natms
            If (qn(i) == 1) Then
-              j = j + 1
+              Call box_mueller_saru3(ltg(i),0,vxx(i),vyy(i),vzz(i))
 
 ! Get scaler to target variance/Sqrt(weight)
 
               tmp = 1.0_wp/Sqrt(weight(i))
-              vxx(i) = vxt(j)*tmp
-              vyy(i) = vyt(j)*tmp
-              vzz(i) = vzt(j)*tmp
+              vxx(i) = vxx(i)*tmp
+              vyy(i) = vyy(i)*tmp
+              vzz(i) = vzz(i)*tmp
            End If
         End Do
 
@@ -403,11 +397,8 @@ Subroutine set_temperature            &
         End If
 
         If (tps(idnode) > 0) Then
-           j = 0
            Do k=1,ntshl
               If (qs(0,k) == 1) Then
-                 j = j + 1
-
                  i1=qs(1,k)
                  i2=qs(2,k)
 
@@ -419,9 +410,8 @@ Subroutine set_temperature            &
         End If
      End If
 
-     Deallocate (vxt,vyt,vzt, Stat=fail(1))
-     Deallocate (qn,tpn,      Stat=fail(2))
-     Deallocate (qs,tps,      Stat=fail(3))
+     Deallocate (qn,tpn, Stat=fail(1))
+     Deallocate (qs,tps, Stat=fail(2))
      If (Any(fail > 0)) Then
         Write(nrite,'(/,1x,a,i0)') 'set_temperature deallocation failure, node: ', idnode
         Call error(0)

@@ -1,6 +1,6 @@
 Subroutine nvt_l0_lfv                                           &
            (lvar,mndis,mxdis,mxstp,temp,tstep,chi,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,            &
+           nstep,imcon,mxshak,tolnce,megcon,strcon,vircon,      &
            megpmf,strpmf,virpmf)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -10,17 +10,18 @@ Subroutine nvt_l0_lfv                                           &
 ! (standard brownian dynamics)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,   Only : idnode,mxnode,gmax
+  Use comms_module,    Only : idnode,mxnode,gmax
   Use setup_module
-  Use site_module,    Only : ntpshl,unqshl
-  Use config_module,  Only : natms,lfrzn,atmnam,weight, &
-                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use kinetic_module, Only : getvom,kinstress
+  Use site_module,     Only : ntpshl,unqshl
+  Use config_module,   Only : natms,lfrzn,atmnam,weight, &
+                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use langevin_module, Only : fxl,fyl,fzl
+  Use kinetic_module,  Only : getvom,kinstress
 
   Implicit None
 
@@ -30,7 +31,7 @@ Subroutine nvt_l0_lfv                                           &
   Real( Kind = wp ), Intent( InOut ) :: tstep
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: nstep,imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon,strpmf(1:9),virpmf
@@ -39,7 +40,7 @@ Subroutine nvt_l0_lfv                                           &
   Logical,           Save :: newjob = .true.
   Logical                 :: safe,lv_up,lv_dn
   Integer,           Save :: mxkit
-  Integer                 :: fail(1:10),kit,i
+  Integer                 :: fail(1:9),kit,i
   Real( Kind = wp )       :: rstep
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
                              vom(1:3),sclv,sclf
@@ -56,7 +57,6 @@ Subroutine nvt_l0_lfv                                           &
   Real( Kind = wp ), Allocatable :: xxt(:),yyt(:),zzt(:)
   Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
   Real( Kind = wp ), Allocatable :: fxt(:),fyt(:),fzt(:)
-  Real( Kind = wp ), Allocatable :: fxr(:),fyr(:),fzr(:)
 
   fail=0
   If (megcon > 0 .or. megpmf > 0) Then
@@ -74,7 +74,6 @@ Subroutine nvt_l0_lfv                                           &
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail( 7))
   Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail( 8))
   Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail( 9))
-  Allocate (fxr(1:mxatms),fyr(1:mxatms),fzr(1:mxatms),            Stat=fail(10))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'nvt_l0 allocation failure, node: ', idnode
      Call error(0)
@@ -130,7 +129,7 @@ Subroutine nvt_l0_lfv                                           &
 
 ! Set afresh Langevin random forces
 
-  Call langevin_forces(temp,tstep,chi,fxr,fyr,fzr)
+  Call langevin_forces(nstep-1,temp,tstep,chi,fxl,fyl,fzl)
 
 100 Continue
 
@@ -156,9 +155,9 @@ Subroutine nvt_l0_lfv                                           &
   Do i=1,natms
      If (weight(i) > 1.0e-6_wp) Then
         tmp=sclf/weight(i)
-        vxx(i)=vxt(i)*sclv+tmp*(fxt(i)+fxr(i))
-        vyy(i)=vyt(i)*sclv+tmp*(fyt(i)+fyr(i))
-        vzz(i)=vzt(i)*sclv+tmp*(fzt(i)+fzr(i))
+        vxx(i)=vxt(i)*sclv+tmp*(fxt(i)+fxl(i))
+        vyy(i)=vyt(i)*sclv+tmp*(fyt(i)+fyl(i))
+        vzz(i)=vzt(i)*sclv+tmp*(fzt(i)+fzl(i))
 
         xxx(i)=xxt(i)+tstep*vxx(i)
         yyy(i)=yyt(i)+tstep*vyy(i)
@@ -297,9 +296,9 @@ Subroutine nvt_l0_lfv                                           &
 ! scale Langevin random forces
 
         Do i=1,natms
-           fxr(i)=fxr(i)*tmp
-           fyr(i)=fyr(i)*tmp
-           fzr(i)=fzr(i)*tmp
+           fxl(i)=fxl(i)*tmp
+           fyl(i)=fyl(i)*tmp
+           fzl(i)=fzl(i)*tmp
         End Do
 
 ! restart lfv
@@ -356,7 +355,6 @@ Subroutine nvt_l0_lfv                                           &
   Deallocate (xxt,yyt,zzt,         Stat=fail( 7))
   Deallocate (vxt,vyt,vzt,         Stat=fail( 8))
   Deallocate (fxt,fyt,fzt,         Stat=fail( 9))
-  Deallocate (fxr,fyr,fzr,         Stat=fail(10))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'nvt_l0 deallocation failure, node: ', idnode
      Call error(0)

@@ -30,17 +30,17 @@
 
               Call nvt_l0_vv                                        &
            (isw,lvar,mndis,mxdis,mxstp,temp,tstep,chi,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,                &
+           nstep,imcon,mxshak,tolnce,megcon,strcon,vircon,          &
            megpmf,strpmf,virpmf)
 
            Else If (keyens == 11) Then
 
 ! Andersen thermostat (Stochastic Dynamics)
 
-              Call nvt_a0_vv                         &
-           (isw,lvar,mndis,mxdis,mxstp,temp,tstep,   &
-           keyshl,taut,soft,strkin,engke,            &
-           imcon,mxshak,tolnce,megcon,strcon,vircon, &
+              Call nvt_a0_vv                               &
+           (isw,lvar,mndis,mxdis,mxstp,temp,tstep,         &
+           keyshl,taut,soft,strkin,engke,                  &
+           nstep,imcon,mxshak,tolnce,megcon,strcon,vircon, &
            megpmf,strpmf,virpmf)
 
            Else If (keyens == 12) Then
@@ -69,9 +69,9 @@
 
               Call nvt_g0_vv                                    &
            (isw,lvar,mndis,mxdis,mxstp,temp,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,            &
+           nstep,imcon,mxshak,tolnce,megcon,strcon,vircon,      &
            megpmf,strpmf,virpmf,                                &
-           sigma,taut,gama,chit,cint,consv)
+           degfre,sigma,taut,gama,chit,cint,consv)
 
            Else If (keyens == 20) Then
 
@@ -79,7 +79,7 @@
 
               Call npt_l0_vv                               &
            (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           nstep,imcon,mxshak,tolnce,megcon,strcon,vircon, &
            megpmf,strpmf,virpmf,                           &
            degfre,sigma,chi,consv,                         &
            press,tai,chip,eta,virtot,                      &
@@ -127,7 +127,7 @@
 
               Call nst_l0_vv                               &
            (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           nstep,imcon,mxshak,tolnce,megcon,strcon,vircon, &
            megpmf,strpmf,virpmf,                           &
            iso,degfre,sigma,chi,consv,                     &
            press,strext,ten,tai,chip,eta,stress,           &
@@ -210,7 +210,7 @@
            (isw,lvar,mndis,mxdis,mxstp,temp,tstep, &
            chi,                                    &
            strkin,strknf,strknt,engke,engrot,      &
-           imcon,mxshak,tolnce,                    &
+           nstep,imcon,mxshak,tolnce,              &
            megcon,strcon,vircon,                   &
            megpmf,strpmf,virpmf,                   &
            strcom,vircom)
@@ -223,7 +223,7 @@
            (isw,lvar,mndis,mxdis,mxstp,temp,tstep, &
            keyshl,taut,soft,                       &
            strkin,strknf,strknt,engke,engrot,      &
-           imcon,mxshak,tolnce,                    &
+           nstep,imcon,mxshak,tolnce,              &
            megcon,strcon,vircon,                   &
            megpmf,strpmf,virpmf,                   &
            strcom,vircom)
@@ -260,9 +260,9 @@
 
               Call nvt_g1_vv                       &
            (isw,lvar,mndis,mxdis,mxstp,temp,tstep, &
-           sigma,taut,gama,chit,cint,consv,        &
+           degfre,sigma,taut,gama,chit,cint,consv, &
            strkin,strknf,strknt,engke,engrot,      &
-           imcon,mxshak,tolnce,                    &
+           nstep,imcon,mxshak,tolnce,              &
            megcon,strcon,vircon,                   &
            megpmf,strpmf,virpmf,                   &
            strcom,vircom)
@@ -277,7 +277,7 @@
            degrot,press,tai,chip,eta,         &
            virtot,elrc,virlrc,                &
            strkin,strknf,strknt,engke,engrot, &
-           imcon,mxshak,tolnce,               &
+           nstep,imcon,mxshak,tolnce,         &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom)
@@ -337,7 +337,7 @@
            degrot,press,tai,chip,eta,         &
            stress,strext,ten,elrc,virlrc,     &
            strkin,strknf,strknt,engke,engrot, &
-           imcon,mxshak,tolnce,               &
+           nstep,imcon,mxshak,tolnce,         &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom)

@@ -11,11 +11,11 @@
            If (l_vv) Then
               Call pseudo_vv                            &
            (1,keyshl,keyens,keypse,wthpse,tmppse,tstep, &
-           strkin,strknf,strknt,engke,engrot)
+           nstep,strkin,strknf,strknt,engke,engrot)
            Else
               Call pseudo_lfv                           &
            (1,keyshl,keyens,keypse,wthpse,tmppse,tstep, &
-           strkin,strknf,strknt,engke,engrot)
+           nstep,strkin,strknf,strknt,engke,engrot)
            End If
         End If
 

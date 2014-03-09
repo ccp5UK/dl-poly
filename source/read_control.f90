@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov march 2014
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1028,6 +1028,7 @@ Subroutine read_control                                &
            Else If (word(1:4) == 'lang') Then
 
               keyens = 10
+              If (.not.l_vv) l_lan = .true.
 
               Call get_word(record,word)
               chi = Abs(word_2_real(word))
@@ -1130,8 +1131,6 @@ Subroutine read_control                                &
 
               If (lens) Call error(414)
               lens=.true.
-
-              Call langevin_allocate_arrays()
 
            Else If (word(1:3) == 'ber') Then
 
@@ -1262,8 +1261,6 @@ Subroutine read_control                                &
 
               If (lens) Call error(414)
               lens=.true.
-
-              Call langevin_allocate_arrays()
 
            Else If (word(1:3) == 'ber') Then
 
@@ -1478,6 +1475,10 @@ Subroutine read_control                                &
            Call error(436)
 
         End If
+
+! For Langevin ensembles that require arrays
+
+        If (l_lan) Call langevin_allocate_arrays()
 
 ! read density variation option
 

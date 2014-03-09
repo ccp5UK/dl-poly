@@ -1,6 +1,6 @@
 Subroutine pseudo_vv                                      &
            (isw,keyshl,keyens,keypse,wthpse,tmppse,tstep, &
-           strkin,strknf,strknt,engke,engrot)
+           nstep,strkin,strknf,strknt,engke,engrot)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -11,14 +11,13 @@ Subroutine pseudo_vv                                      &
 !
 ! Note: (1) This algorithm breaks true ensembles!!!
 ! Additionally, for Langevin temperature control (keypse=1):
-!       (2) Pseudo-randomness of forces is lost - depends on DD!!!
-!       (3) Random forces do not contribute to the stress and virial
+!       (2) Random forces do not contribute to the stress and virial
 !           of the system (but are picked up in the pressure).
-!       (4) Random forces do not apply to frozen and massless particles
-!           as well as shells.
+!       (3) Random forces do not apply to frozen and massless particles
+!           as well as to shells.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -33,7 +32,7 @@ Subroutine pseudo_vv                                      &
 
   Implicit None
 
-  Integer,           Intent( In    ) :: isw,keyshl,keyens,keypse
+  Integer,           Intent( In    ) :: isw,keyshl,keyens,keypse,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,wthpse,tmppse
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
@@ -159,39 +158,37 @@ Subroutine pseudo_vv                                      &
 ! Allocate random force array of length j
 
      j=tpn(idnode)
-     Allocate (xxt(1:j),yyt(1:j),zzt(1:j), Stat=fail(1))
+     Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
         Write(nrite,'(/,1x,a,i0)') 'pseudo (forces) allocation failure, node: ', idnode
         Call error(0)
      End If
 
-! Here we become node-dependent (using of uni and gauss) - i.e.
-! pseudo-randomness depends on the DD mapping which depends on
-! the number of nodes and system size
-!
-! Get gaussian distribution (unit variance)
-
-     Call gauss(j,xxt,yyt,zzt)
-
+! Get gaussian distribution
 ! Get scaler to target variance*Sqrt(weight)
 
      scale = Sqrt(2.0_wp * chit * boltz * tmppse / tstep)
 
      vom = 0.0_wp
-     j = 0
      Do i=1,natms
         If (qn(i) == 1) Then
-           j = j + 1
+
+! Get gaussian distribution (unit variance)
+
+           Call box_mueller_saru3(ltg(i),nstep,xxt(i),yyt(i),zzt(i))
+
+! Get scaler to target variance*Sqrt(weight)
 
            tmp = scale*Sqrt(weight(i))
 
-           xxt(j) = xxt(j)*tmp
-           yyt(j) = yyt(j)*tmp
-           zzt(j) = zzt(j)*tmp
+           xxt(i) = xxt(i)*tmp
+           yyt(i) = yyt(i)*tmp
+           zzt(i) = zzt(i)*tmp
 
-           vom(1) = vom(1) + xxt(j)
-           vom(2) = vom(2) + yyt(j)
-           vom(3) = vom(3) + zzt(j)
+           vom(1) = vom(1) + xxt(i)
+           vom(2) = vom(2) + yyt(i)
+           vom(3) = vom(3) + zzt(i)
+
         End If
      End Do
      If (mxnode > 1) Call gsum(vom)
@@ -199,14 +196,11 @@ Subroutine pseudo_vv                                      &
 
 ! Add random force and remove thermostat COM force
 
-     j = 0
      Do i=1,natms
         If (qn(i) == 1) Then
-           j = j + 1
-
-           fxx(i) = fxx(i) + xxt(j) - vom(1)
-           fyy(i) = fyy(i) + yyt(j) - vom(2)
-           fzz(i) = fzz(i) + zzt(j) - vom(3)
+           fxx(i) = fxx(i) + xxt(i) - vom(1)
+           fyy(i) = fyy(i) + yyt(i) - vom(2)
+           fzz(i) = fzz(i) + zzt(i) - vom(3)
         End If
      End Do
 
@@ -221,40 +215,6 @@ Subroutine pseudo_vv                                      &
   Else
 
      If (ntp == 0) Return
-
-! tps(idnode) number of thermostatted core-shell units on this node (idnode)
-! stp - grand total of core-shell units to thermostat
-
-     j = 0
-     If (keyshl == 1) Then
-        If (lshmv_shl) Then ! refresh the q array for shared core-shell units
-           qn(natms+1:nlast) = 0
-           Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn)
-        End If
-
-        If (ntshl > 0) Then
-           Do k=1,ntshl
-              i1=local_index(listshl(1,k),matms,lsi,lsa)
-              i2=local_index(listshl(2,k),matms,lsi,lsa)
-
-              If (qn(i1) == 1 .and. i2 > 0 .and. i2 <= natms) Then
-                 j = j + 1
-
-                 qs(0,k)=1
-                 qs(1,k)=i1
-                 qs(2,k)=i2
-              End If
-           End Do
-        End If
-     End If
-     tps(idnode) = j
-     If (mxnode > 1) Then
-        Do i=0,mxnode-1
-           If (i /= idnode) tps(i) = 0
-        End Do
-        Call gsum(tps)
-     End If
-     stp = Sum(tps)
 
      j = 0 ! no qualified good RB (one qualified RB is enough to trigger all)
      Do i=1,matms
@@ -324,6 +284,40 @@ Subroutine pseudo_vv                                      &
      End If
      rtp = Sum(tpr)
 
+! tps(idnode) number of thermostatted core-shell units on this node (idnode)
+! stp - grand total of core-shell units to thermostat
+
+     j = 0
+     If (keyshl == 1) Then
+        If (lshmv_shl) Then ! refresh the q array for shared core-shell units
+           qn(natms+1:nlast) = 0
+           Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn)
+        End If
+
+        If (ntshl > 0) Then
+           Do k=1,ntshl
+              i1=local_index(listshl(1,k),matms,lsi,lsa)
+              i2=local_index(listshl(2,k),matms,lsi,lsa)
+
+              If (qn(i1) == 1 .and. i2 > 0 .and. i2 <= natms) Then
+                 j = j + 1
+
+                 qs(0,k)=1
+                 qs(1,k)=i1
+                 qs(2,k)=i2
+              End If
+           End Do
+        End If
+     End If
+     tps(idnode) = j
+     If (mxnode > 1) Then
+        Do i=0,mxnode-1
+           If (i /= idnode) tps(i) = 0
+        End Do
+        Call gsum(tps)
+     End If
+     stp = Sum(tps)
+
 ! Velocity scaling cycle - thermostatting.  k = local, ntp = global
 ! number of particles within thermostat layers
 
@@ -331,7 +325,7 @@ Subroutine pseudo_vv                                      &
 
 ! Allocate random velocities array of length k
 
-        Allocate (xxt(1:tpn(idnode)+k),yyt(1:tpn(idnode)+k),zzt(1:tpn(idnode)+k), Stat=fail(1))
+        Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail(1))
         If (fail(1) > 0) Then
            Write(nrite,'(/,1x,a,i0)') 'pseudo (velocities) allocation failure, node: ', idnode
            Call error(0)
@@ -341,27 +335,27 @@ Subroutine pseudo_vv                                      &
 ! pseudo-randomness depends on the DD mapping which depends on
 ! the number of nodes and system size
 !
-! Get gaussian distribution (unit variance)
-
-        Call gauss(tpn(idnode)+k,xxt,yyt,zzt)
+! Get gaussian distribution
 
         tkin = 0.0_wp
         mxdr = 0.0_wp
-        j = 0
         Do i=1,natms
            If (qn(i) == 1 .and. lfree(i) == 0) Then
               If (dofsit(lsite(i)) > zero_plus) mxdr = mxdr + dofsit(lsite(i))
 
-              j = j + 1
+! Get gaussian distribution (unit variance)
+
+              Call box_mueller_saru3(ltg(i),nstep,xxt(i),yyt(i),zzt(i))
 
 ! Get scaler to target variance/Sqrt(weight)
 
               tmp = 1.0_wp/Sqrt(weight(i))
-              xxt(j) = xxt(j)*tmp
-              yyt(j) = yyt(j)*tmp
-              zzt(j) = zzt(j)*tmp
 
-              tkin = tkin + weight(i)*(xxt(j)**2+yyt(j)**2+zzt(j)**2)
+              xxt(i) = xxt(i)*tmp
+              yyt(i) = yyt(i)*tmp
+              zzt(i) = zzt(i)*tmp
+
+              tkin = tkin + weight(i)*(xxt(i)**2+yyt(i)**2+zzt(i)**2)
            End If
         End Do
 
@@ -382,24 +376,38 @@ Subroutine pseudo_vv                                      &
                  i2=indrgd(2,irgd) ! particle to bare the random RB angular momentum
 
                  If (rgdfrz(0,rgdtyp) == 0 .and. i1 <= natms) Then
-                    j = j + 1
+
+! Get gaussian distribution (unit variance)
+
+                    Call box_mueller_saru3(ltg(i1),nstep,xxt(i1),yyt(i1),zzt(i1))
+
+! Get scaler to target variance/Sqrt(weight)
 
                     tmp = 1.0_wp/Sqrt(rgdwgt(0,rgdtyp))
-                    vxx(i1) = xxt(j)*tmp
-                    vyy(i1) = yyt(j)*tmp
-                    vzz(i1) = zzt(j)*tmp
 
-                    tkin = tkin + rgdwgt(0,rgdtyp)*(vxx(i1)**2+vyy(i1)**2+vzz(i1)**2)
+                    xxt(i1) = xxt(i1)*tmp
+                    yyt(i1) = yyt(i1)*tmp
+                    zzt(i1) = zzt(i1)*tmp
+
+                    tkin = tkin + rgdwgt(0,rgdtyp)*(xxt(i1)**2+yyt(i1)**2+zzt(i1)**2)
+
                  End If
 
                  If (i2 <= natms) Then
-                    j = j + 1
 
-                    vxx(i2) = xxt(j)*Sqrt(rgdrix(2,rgdtyp))
-                    vyy(i2) = yyt(j)*Sqrt(rgdriy(2,rgdtyp))
-                    vzz(i2) = zzt(j)*Sqrt(rgdriz(2,rgdtyp))
+! Get gaussian distribution (unit variance)
 
-                    tkin = tkin + (rgdrix(1,rgdtyp)*vxx(i2)**2+rgdriy(1,rgdtyp)*vyy(i2)**2+rgdriz(1,rgdtyp)*vzz(i2)**2)
+                    Call box_mueller_saru3(ltg(i2),nstep,xxt(i2),yyt(i2),zzt(i2))
+
+! Get scaler to target variance/Sqrt(weight) -
+! 3 different reciprocal moments of inertia
+
+                    xxt(i2) = xxt(i2)*Sqrt(rgdrix(2,rgdtyp))
+                    yyt(i2) = yyt(i2)*Sqrt(rgdriy(2,rgdtyp))
+                    zzt(i2) = zzt(i2)*Sqrt(rgdriz(2,rgdtyp))
+
+                    tkin = tkin + (rgdrix(1,rgdtyp)*xxt(i2)**2+rgdriy(1,rgdtyp)*yyt(i2)**2+rgdriz(1,rgdtyp)*zzt(i2)**2)
+
                  End If
               End If
            End Do
@@ -416,12 +424,9 @@ Subroutine pseudo_vv                                      &
 ! Scale velocity within the thermostat layer to the gaussian velocities
 ! scaled with the variance for the target temperature
 
-        j = 0
         Do i=1,natms
            If (qn(i) == 1 .and. lfree(i) == 0) Then
-              j = j + 1
-
-              tmp = scale * Sqrt( (xxt(j)**2+yyt(j)**2+zzt(j)**2) / &
+              tmp = scale * Sqrt( (xxt(i)**2+yyt(i)**2+zzt(i)**2) / &
                                   (vxx(i)**2+vyy(i)**2+vzz(i)**2) )
 
               vxx(i) = vxx(i)*tmp
@@ -430,19 +435,11 @@ Subroutine pseudo_vv                                      &
            End If
         End Do
 
-! Deallocate gaussian random velocities array
-
-        Deallocate (xxt,yyt,zzt, Stat=fail(1))
-        If (fail(1) > 0) Then
-           Write(nrite,'(/,1x,a,i0)') 'pseudo (velocities) deallocation failure, node: ', idnode
-           Call error(0)
-        End If
-
         If (rtp > 0) Then
 
 ! Update shared RBs' velocities
 
-           If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,vxx,vyy,vzz)
+           If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xxt,yyt,zzt)
 
 ! calculate new RBs' COM and angular velocities
 
@@ -454,29 +451,22 @@ Subroutine pseudo_vv                                      &
                  i2=indrgd(2,irgd) ! particle to bare the random RB angular momentum
 
                  If (rgdfrz(0,rgdtyp) == 0) Then
-                    tmp = scale * Sqrt( (vxx(i1)**2+vyy(i1)**2+vzz(i1)**2) / &
+                    tmp = scale * Sqrt( (xxt(i1)**2+yyt(i1)**2+zzt(i1)**2) / &
                                         (rgdvxx(irgd)**2+rgdvyy(irgd)**2+rgdvzz(irgd)**2) )
                     rgdvxx(irgd) = rgdvxx(irgd)*tmp
                     rgdvyy(irgd) = rgdvyy(irgd)*tmp
                     rgdvzz(irgd) = rgdvzz(irgd)*tmp
                  End If
 
-                 tmp = scale * Sqrt( (rgdrix(1,rgdtyp)*vxx(i2)**2+      &
-                                      rgdriy(1,rgdtyp)*vyy(i2)**2+      &
-                                      rgdriz(1,rgdtyp)*vzz(i2)**2) /    &
+                 tmp = scale * Sqrt( (rgdrix(1,rgdtyp)*xxt(i2)**2+      &
+                                      rgdriy(1,rgdtyp)*yyt(i2)**2+      &
+                                      rgdriz(1,rgdtyp)*zzt(i2)**2) /    &
                                      (rgdrix(1,rgdtyp)*rgdoxx(irgd)**2+ &
                                       rgdriy(1,rgdtyp)*rgdoyy(irgd)**2+ &
                                       rgdriz(1,rgdtyp)*rgdozz(irgd)**2) )
                  rgdoxx(irgd) = rgdoxx(irgd)*tmp
                  rgdoyy(irgd) = rgdoyy(irgd)*tmp
                  rgdozz(irgd) = rgdozz(irgd)*tmp
-                 If (i2 <= natms) Then
-                    If (lfrzn(i2) > 0 .or. weight(i) < 1.0e-6_wp) Then
-                       vxx(i2) = 0.0_wp
-                       vyy(i2) = 0.0_wp
-                       vzz(i2) = 0.0_wp
-                    End If
-                 End If
 
 ! get new rotation matrix
 
@@ -511,6 +501,14 @@ Subroutine pseudo_vv                                      &
               End If
            End Do
 
+        End If
+
+! Deallocate gaussian random velocities array
+
+        Deallocate (xxt,yyt,zzt, Stat=fail(1))
+        If (fail(1) > 0) Then
+           Write(nrite,'(/,1x,a,i0)') 'pseudo (velocities) deallocation failure, node: ', idnode
+           Call error(0)
         End If
 
 ! Thermalise the shells on hit cores
@@ -589,21 +587,6 @@ Subroutine pseudo_vv                                      &
                  vdotf = vdotf + vxx(i)*fxx(i)+vyy(i)*fyy(i)+vzz(i)*fzz(i)
               End If
            End Do
-
-! Shells
-
-           If (stp > 0) Then
-              If (tps(idnode) > 0) Then
-                 Do k=1,ntshl
-                    If (qs(0,k) == 1) Then
-                       i2=qs(2,k)
-
-                       tkin  = tkin  + weight(i2)*(vxx(i2)**2+vyy(i2)**2+vzz(i2)**2)
-                       vdotf = vdotf + vxx(i2)*fxx(i2)+vyy(i2)*fyy(i2)+vzz(i2)*fzz(i2)
-                    End If
-                 End Do
-              End If
-           End If
 
 ! RBs
 
@@ -753,6 +736,21 @@ Subroutine pseudo_vv                                      &
               End If
            End If
 
+! Shells
+
+           If (stp > 0) Then
+              If (tps(idnode) > 0) Then
+                 Do k=1,ntshl
+                    If (qs(0,k) == 1) Then
+                       i2=qs(2,k)
+
+                       tkin  = tkin  + weight(i2)*(vxx(i2)**2+vyy(i2)**2+vzz(i2)**2)
+                       vdotf = vdotf + vxx(i2)*fxx(i2)+vyy(i2)*fyy(i2)+vzz(i2)*fzz(i2)
+                    End If
+                 End Do
+              End If
+           End If
+
            If (mxnode > 1) Then
               buffer(1) = tkin
               buffer(2) = vdotf
@@ -862,7 +860,9 @@ Subroutine pseudo_vv                                      &
                     rgdvxx(irgd) = rgdvxx(irgd)*tmp
                     rgdvyy(irgd) = rgdvyy(irgd)*tmp
                     rgdvzz(irgd) = rgdvzz(irgd)*tmp
-                 Else If (rgdfrz(0,rgdtyp) >  1) Then
+                 Else If (rgdfrz(0,rgdtyp) == 1) Then
+                    mxdr = 2.0_wp
+                 Else If (rgdfrz(0,rgdtyp) > 1) Then
                     mxdr = 1.0_wp
                  End If
 
@@ -915,11 +915,8 @@ Subroutine pseudo_vv                                      &
            If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz)
 
            If (tps(idnode) > 0) Then
-              j = 0
               Do k=1,ntshl
                  If (qs(0,k) == 1) Then
-                    j = j + 1
-
                     i1=qs(1,k)
                     i2=qs(2,k)
 

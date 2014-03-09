@@ -1,10 +1,10 @@
-Subroutine nvt_g1_lfv                          &
-           (lvar,mndis,mxdis,mxstp,temp,tstep, &
-           sigma,taut,gama,chit,cint,consv,    &
-           strkin,strknf,strknt,engke,engrot,  &
-           imcon,mxshak,tolnce,mxquat,quattol, &
-           megcon,strcon,vircon,               &
-           megpmf,strpmf,virpmf,               &
+Subroutine nvt_g1_lfv                                &
+           (lvar,mndis,mxdis,mxstp,temp,tstep,       &
+           degfre,sigma,taut,gama,chit,cint,consv,   &
+           strkin,strknf,strknt,engke,engrot,        &
+           nstep,imcon,mxshak,tolnce,mxquat,quattol, &
+           megcon,strcon,vircon,                     &
+           megpmf,strpmf,virpmf,                     &
            strcom,vircom)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -21,7 +21,7 @@ Subroutine nvt_g1_lfv                          &
 !             J. Stat. Phys. (2007) 128, 1321-1336
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -41,6 +41,7 @@ Subroutine nvt_g1_lfv                          &
 
 
   Logical,           Intent( In    ) :: lvar
+  Integer(Kind=ip),  Intent( In    ) :: degfre
   Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp, &
                                         temp,sigma,taut,gama
   Real( Kind = wp ), Intent( InOut ) :: chit,cint
@@ -49,7 +50,7 @@ Subroutine nvt_g1_lfv                          &
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
 
-  Integer,           Intent( In    ) :: imcon,mxshak,mxquat
+  Integer,           Intent( In    ) :: nstep,imcon,mxshak,mxquat
   Real( Kind = wp ), Intent( In    ) :: tolnce,quattol
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
@@ -64,7 +65,7 @@ Subroutine nvt_g1_lfv                          &
   Integer                 :: fail(1:18),matms,iter,kit,i,j,i1,i2, &
                              irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp ), Save :: qmass,ceng
-  Real( Kind = wp )       :: hstep,rstep,uni
+  Real( Kind = wp )       :: hstep,rstep
   Real( Kind = wp )       :: chit1,chit2,engkf,engkt
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,fex
   Real( Kind = wp )       :: x(1:1),y(1:1),z(1:1),rot(1:9), &
@@ -172,14 +173,7 @@ Subroutine nvt_g1_lfv                          &
 ! generate a Gaussian random number for use in the
 ! Langevin process on the thermostat friction
 
-  r_0=-6.0_wp
-  Do i=1,12
-     r_0=r_0+uni()
-  End Do
-  If (mxnode > 1) Then
-     Call gsum(r_0)
-     r_0=r_0/Sqrt(Real(mxnode,wp))
-  End If
+  Call box_mueller_saru1(Int(degfre/3_ip),nstep-1,r_0)
 
 ! Get the RB particles vectors wrt the RB's COM
 

@@ -1,8 +1,8 @@
 Subroutine nvt_g0_lfv                                       &
            (lvar,mndis,mxdis,mxstp,temp,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,        &
+           nstep,imcon,mxshak,tolnce,megcon,strcon,vircon,  &
            megpmf,strpmf,virpmf,                            &
-           sigma,taut,gama,chit,cint,consv)
+           degfre,sigma,taut,gama,chit,cint,consv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -17,7 +17,7 @@ Subroutine nvt_g0_lfv                                       &
 !             J. Stat. Phys. (2007) 128, 1321-1336
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2012
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -37,11 +37,12 @@ Subroutine nvt_g0_lfv                                       &
   Real( Kind = wp ), Intent( InOut ) :: tstep
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: nstep,imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon,strpmf(1:9),virpmf
 
+  Integer(Kind=ip),  Intent( In    ) :: degfre
   Real( Kind = wp ), Intent( In    ) :: sigma,taut,gama
   Real( Kind = wp ), Intent( InOut ) :: chit,cint
   Real( Kind = wp ), Intent(   Out ) :: consv
@@ -52,7 +53,7 @@ Subroutine nvt_g0_lfv                                       &
   Integer,           Save :: mxiter,mxkit
   Integer                 :: fail(1:9),iter,kit,i
   Real( Kind = wp ), Save :: qmass,ceng
-  Real( Kind = wp )       :: hstep,rstep,uni
+  Real( Kind = wp )       :: hstep,rstep
   Real( Kind = wp )       :: chit1,chit2
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,fex
 
@@ -126,14 +127,7 @@ Subroutine nvt_g0_lfv                                       &
 ! generate a Gaussian random number for use in the
 ! Langevin process on the thermostat friction
 
-  r_0=-6.0_wp
-  Do i=1,12
-     r_0=r_0+uni()
-  End Do
-  If (mxnode > 1) Then
-     Call gsum(r_0)
-     r_0=r_0/Sqrt(Real(mxnode,wp))
-  End If
+  Call box_mueller_saru1(Int(degfre/3_ip),nstep-1,r_0)
 
 ! timestep derivatives
 

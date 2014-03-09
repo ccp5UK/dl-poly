@@ -1,6 +1,6 @@
 Subroutine npt_l0_vv                                       &
            (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
+           nstep,imcon,mxshak,tolnce,megcon,strcon,vircon, &
            megpmf,strpmf,virpmf,                           &
            degfre,sigma,chi,consv,                         &
            press,tai,chip,eta,virtot,                      &
@@ -18,7 +18,7 @@ Subroutine npt_l0_vv                                       &
 !            J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -28,7 +28,7 @@ Subroutine npt_l0_vv                                       &
   Use site_module,     Only : ntpatm,dens,ntpshl,unqshl
   Use config_module,   Only : cell,volm,natms,lfrzn,atmnam,weight, &
                               xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use langevin_module, Only : l_lan_s,fxl,fyl,fzl,fpl
+  Use langevin_module, Only : fxl,fyl,fzl,fpl
   Use kinetic_module,  Only : getvom,getkin,kinstress
 
   Implicit None
@@ -39,7 +39,7 @@ Subroutine npt_l0_vv                                       &
   Real( Kind = wp ), Intent( InOut ) :: tstep
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: nstep,imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon,strpmf(1:9),virpmf
@@ -60,7 +60,7 @@ Subroutine npt_l0_vv                                       &
   Integer                 :: fail(1:9),iter,i
   Real( Kind = wp ), Save :: cell0(1:9),volm0,elrc0,virlrc0
   Real( Kind = wp ), Save :: temp,pmass
-  Real( Kind = wp )       :: hstep,qstep,rstep,uni
+  Real( Kind = wp )       :: hstep,qstep,rstep
   Real( Kind = wp )       :: chip0,engke0
   Real( Kind = wp )       :: vzero
   Real( Kind = wp )       :: xt,yt,zt,vir,vir1,str(1:9),mxdr,tmp, &
@@ -144,27 +144,12 @@ Subroutine npt_l0_vv                                       &
      End If
      If (megcon > 0 .and. megpmf > 0) mxkit=mxshak
 
-! Generate Langevin forces for particles and
-! Langevin pseudo-tensor force for barostat piston
-! if not read from REVOLD
+! Langevin forces for particles are now generated in w_calculate_forces
+! Generate Langevin pseudo-tensor force for barostat piston
 
-     If (l_lan_s) Then
-        Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
-
-        fpl=0.0_wp
-        tmp=-6.0_wp
-        Do i=1,12
-           tmp=tmp+uni()
-        End Do
-        If (mxnode > 1) Then
-           Call gsum(tmp)
-           tmp=tmp/Sqrt(Real(mxnode,wp))
-        End If
-        tmp=tmp*Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)/3.0_wp
-     Else
-        tmp=(fpl(1)+fpl(5)+fpl(9))/3.0_wp
-        fpl=0.0_wp
-     End If
+     fpl=0.0_wp
+     Call box_mueller_saru1(Int(degfre/3_ip),nstep-1,tmp)
+     tmp=tmp*Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)/3.0_wp
      fpl(1)=tmp
      fpl(5)=tmp
      fpl(9)=tmp
@@ -494,17 +479,10 @@ Subroutine npt_l0_vv                                       &
 ! Generate Langevin forces for particles and
 ! Langevin pseudo-tensor force for barostat piston
 
-     Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
+     Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
 
      fpl=0.0_wp
-     tmp=-6.0_wp
-     Do i=1,12
-        tmp=tmp+uni()
-     End Do
-     If (mxnode > 1) Then
-        Call gsum(tmp)
-        tmp=tmp/Sqrt(Real(mxnode,wp))
-     End If
+     Call box_mueller_saru1(Int(degfre/3_ip),nstep,tmp)
      tmp=tmp*Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)/3.0_wp
      fpl(1)=tmp
      fpl(5)=tmp

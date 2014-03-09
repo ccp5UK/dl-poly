@@ -21,7 +21,9 @@
      If (megrgd > 0) Then
         If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxx,fyy,fzz)
 
-        If (l_lan .and. (.not.l_lan_s)) Then
+        If (l_lan) Then
+           Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
+           If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
            Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl)
         Else
            Call rigid_bodies_str_ss(strcom)

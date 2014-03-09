@@ -4,7 +4,7 @@ Subroutine nst_l1_vv                          &
            degrot,press,tai,chip,eta,         &
            stress,strext,ten,elrc,virlrc,     &
            strkin,strknf,strknt,engke,engrot, &
-           imcon,mxshak,tolnce,               &
+           nstep,imcon,mxshak,tolnce,         &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom)
@@ -29,7 +29,7 @@ Subroutine nst_l1_vv                          &
 ! reference2: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -42,7 +42,7 @@ Subroutine nst_l1_vv                          &
                                  lsi,lsa,lfrzn,lstfre,atmnam,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
-  Use langevin_module,    Only : l_lan_s,fxl,fyl,fzl,fpl
+  Use langevin_module,    Only : fxl,fyl,fzl,fpl
   Use kinetic_module,     Only : getvom,getknf,getknt,getknr, &
                                  kinstresf,kinstrest
 
@@ -62,7 +62,7 @@ Subroutine nst_l1_vv                          &
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: nstep,imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
@@ -77,7 +77,7 @@ Subroutine nst_l1_vv                          &
                              irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp ), Save :: volm0,elrc0,virlrc0,h_z
   Real( Kind = wp ), Save :: pmass,temp
-  Real( Kind = wp )       :: hstep,qstep,rstep,uni
+  Real( Kind = wp )       :: hstep,qstep,rstep
   Real( Kind = wp )       :: eta0(1:9),engke0,engrot0,engknf,engknt
   Real( Kind = wp )       :: cell0(1:9),vzero,celprp(1:10)
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),str1(1:9),mxdr,tmp, &
@@ -205,26 +205,13 @@ Subroutine nst_l1_vv                          &
 
 ! Generate Langevin forces for particles and
 ! Langevin tensor force for barostat piston
-! if not read from REVOLD
 
-     If (l_lan_s) Then
-        Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
-
-        Do j=1,6
-           fpl(j)=-6.0_wp
-           Do i=1,12
-              fpl(j)=fpl(j)+uni()
-           End Do
-        End Do
-        If (mxnode > 1) Then
-           Call gsum(fpl(1:6))
-           fpl(1:6)=fpl(1:6)/Sqrt(Real(mxnode,wp))
-        End If
-        tmp=Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)
-        fpl(1:6)=fpl(1:6)*tmp
-        fpl(9)=fpl(4)                                 ! Distribute independent
-        fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
-     End If
+     fpl=0.0_wp
+     Call box_mueller_saru6(Int(degfre/3_ip),nstep-1,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
+     tmp=Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)
+     fpl(1:6)=fpl(1:6)*tmp
+     fpl(9)=fpl(4)                                 ! Distribute independent
+     fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
   End If
 
 ! set matms
@@ -278,17 +265,11 @@ Subroutine nst_l1_vv                          &
 
   If (isw == 0) Then
 
+! Globalise Langevin random forces for shared RBs
+
      If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
 
-! Get strcom & vircom when starting afresh
-
-     If (l_lan_s) Then
-        l_lan_s = .false.
-
-        Call rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx+fxl,fyy+fyl,fzz+fzl)
-        vircom=-(strcom(1)+strcom(5)+strcom(9))
-     End If
-
+! Get strcom & vircom when starting afresh now done in w_calculate_forces
 ! store initial values
 
      Do i=1,matms
@@ -914,19 +895,11 @@ Subroutine nst_l1_vv                          &
 ! Generate Langevin forces for particles and
 ! Langevin tensor force for barostat piston
 
-     Call langevin_forces(temp,tstep,chi,fxl,fyl,fzl)
+     Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
      If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
 
-     Do j=1,6
-        fpl(j)=-6.0_wp
-        Do i=1,12
-           fpl(j)=fpl(j)+uni()
-        End Do
-     End Do
-     If (mxnode > 1) Then
-        Call gsum(fpl(1:6))
-        fpl(1:6)=fpl(1:6)/Sqrt(Real(mxnode,wp))
-     End If
+     fpl=0.0_wp
+     Call box_mueller_saru6(Int(degfre/3_ip),nstep,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
      tmp=Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)
      fpl(1:6)=fpl(1:6)*tmp
      fpl(9)=fpl(4)                                 ! Distribute independent

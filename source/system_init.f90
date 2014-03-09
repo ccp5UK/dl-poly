@@ -1,7 +1,7 @@
-Subroutine system_init                                       &
-           (levcfg,imcon,rcut,rvdw,rbin,rmet,                &
-           lrdf,lzdn,keyres,megatm,                          &
-           time,tmst,nstep,chit,cint,chip,eta,virtot,stress, &
+Subroutine system_init                                             &
+           (levcfg,imcon,rcut,rvdw,rbin,rmet,                      &
+           lrdf,lzdn,keyres,megatm,                                &
+           time,tmst,nstep,tstep,chit,cint,chip,eta,virtot,stress, &
            vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -10,18 +10,18 @@ Subroutine system_init                                       &
 ! initial thermodynamic and structural accumulators
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use site_module,   Only : ntpatm,numtyp,dens
-  Use config_module, Only : volm,natms,ltg,ltype,xxx,yyy,zzz
-  Use langevin_module
-  Use vdw_module,    Only : ls_vdw,ntpvdw
-  Use metal_module,  Only : ntpmet
+  Use site_module,     Only : ntpatm,numtyp,dens
+  Use config_module,   Only : volm,natms,ltg,ltype,xxx,yyy,zzz
+  Use langevin_module, Only : l_lan
+  Use vdw_module,      Only : ls_vdw,ntpvdw
+  Use metal_module,    Only : ntpmet
 
   Use statistics_module
   Use development_module
@@ -34,6 +34,7 @@ Subroutine system_init                                       &
   Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rbin,rmet
 
   Integer,           Intent(   Out ) :: nstep
+  Real( Kind = wp ), Intent( Inout ) :: tstep
   Real( Kind = wp ), Intent(   Out ) :: time,tmst,chit,cint,chip,eta(1:9),     &
                                         virtot,stress(1:9),vircon,strcon(1:9), &
                                         virpmf,strpmf(1:9),elrc,virlrc,        &
@@ -325,96 +326,27 @@ Subroutine system_init                                       &
         Go To 50
      End If
 
-! Read Langevin arrays if needed
+! Read timestep for Langevin ensembles if found
 
      If (l_lan) Then
-
-        i_tmp=0 ! Error accumulator: keyio is still zero otherwise we cannot get here
-
-        Do k=1,megatm
-           xyz(0:3)=0.0_wp
-
-           If (idnode == 0) Then
-              If (l_rin) Then
-                 Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) &
-                     xyz(0),xyz(1),xyz(2),xyz(3)
-              Else
-                 Read(Unit=nrest, IOStat=keyio) &
-                     xyz(0),xyz(1),xyz(2),xyz(3)
-              End If
-           End If
-           If (keyio /= 0) i_tmp=1
-
-           If (mxnode > 1) Call MPI_BCAST(xyz(0:3), 4, wp_mpi, 0, dlp_comm_world, ierr)
-           gidx=Nint(xyz(0))
-
-! assign random particle forces to the corresponding domains
-
-           Do i=1,natms
-              If (ltg(i) == gidx) Then
-                 fxl(i)=xyz(1)
-                 fyl(i)=xyz(2)
-                 fzl(i)=xyz(3)
-              End If
-           End Do
-        End Do
-        If (idnode == 0) Then
-           If (l_rin) Then
-              Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) fpl(1:9)
-           Else
-              Read(Unit=nrest, IOStat=keyio) fpl(1:9)
-           End If
-        End If
-        If (keyio /= 0) i_tmp=1
-        If (mxnode > 1) Call MPI_BCAST(fpl(1:9), 9, wp_mpi, 0, dlp_comm_world, ierr)
-
-! If anything is wrong
-
-        If (mxnode > 1) Call MPI_BCAST(i_tmp, 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
-        If (i_tmp /= 0) Then
-           If (idnode == 0) Then
-              Call warning(190,0.0_wp,0.0_wp,0.0_wp)
-              Close(Unit=nrest)
-           End If
-           l_lan_s=.true.
-           Go To 50
-        Else
-           l_lan_s=.false.
-        End If
-
-     End If
-
-! Read Langevin process gaussian variable if needed
-
-     If (l_gst) Then
-
         i_tmp=0 ! Error accumulator: keyio is still zero otherwise we cannot get here
 
         If (idnode == 0) Then
            If (l_rin) Then
-              Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) r_0
+              Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) tstep
            Else
-              Read(Unit=nrest, IOStat=keyio) r_0
+              Read(Unit=nrest, IOStat=keyio) tstep
            End If
+           If (keyio == 0) i_tmp=1
         End If
-        If (keyio /= 0) i_tmp=1
-
-        If (mxnode > 1) Call MPI_BCAST(r_0, 1, wp_mpi, 0, dlp_comm_world, ierr)
 
 ! If anything is wrong
 
-        If (mxnode > 1) Call MPI_BCAST(i_tmp, 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
-        If (i_tmp /= 0) Then
-           If (idnode == 0) Then
-              Call warning(190,0.0_wp,0.0_wp,0.0_wp)
-              Close(Unit=nrest)
-           End If
-           l_gst_s=.true.
-           Go To 50
-        Else
-           l_gst_s=.false.
-        End If
+        If (mxnode > 1) Then
+           Call MPI_BCAST(i_tmp, 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
 
+           If (i_tmp == 0) Call MPI_BCAST(tstep, 1, wp_mpi, 0, dlp_comm_world, ierr)
+        End If
      End If
 
      If (idnode == 0) Close(Unit=nrest)

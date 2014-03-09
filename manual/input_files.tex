@@ -1381,17 +1381,17 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 \> {\tt imcon}   \> integer \> Periodic boundary key. See Table~\ref{imcon} for permitted values \\
 \> {\tt megatm}  \> integer \> Optinal, total number of particles (crystalographic entities) \\
 {\bf record 3}   \>         \> omitted if {\tt imcon} = 0 \\
-\> {\tt cell(1)} \> real    \> x component of $a$ cell vector \\
-\> {\tt cell(2)} \> real    \> y component of $a$ cell vector \\
-\> {\tt cell(3)} \> real    \> z component of $a$ cell vector \\
+\> {\tt cell(1)} \> real    \> x component of the $a$ cell vector in \AA \\
+\> {\tt cell(2)} \> real    \> y component of the $a$ cell vector in \AA \\
+\> {\tt cell(3)} \> real    \> z component of the $a$ cell vector in \AA \\
 {\bf record 4}   \>         \> omitted if {\tt imcon} = 0 \\
-\> {\tt cell(4)} \> real    \> x component of $b$ cell vector \\
-\> {\tt cell(5)} \> real    \> y component of $b$ cell vector \\
-\> {\tt cell(6)} \> real    \> z component of $b$ cell vector \\
+\> {\tt cell(4)} \> real    \> x component of the $b$ cell vector in \AA \\
+\> {\tt cell(5)} \> real    \> y component of the $b$ cell vector in \AA \\
+\> {\tt cell(6)} \> real    \> z component of the $b$ cell vector in \AA \\
 {\bf record 5}   \>         \> omitted if {\tt imcon} = 0 \\
-\> {\tt cell(7)} \> real    \> x component of $c$ cell vector \\
-\> {\tt cell(8)} \> real    \> y component of $c$ cell vector \\
-\> {\tt cell(9)} \> real    \> z component of $c$ cell vector
+\> {\tt cell(7)} \> real    \> x component of the $c$ cell vector in \AA \\
+\> {\tt cell(8)} \> real    \> y component of the $c$ cell vector in \AA \\
+\> {\tt cell(9)} \> real    \> z component of the $c$ cell vector in \AA
 \end{tabbing}
 \noindent {\bf Note} that {\bf record 2} may contain more information
 apart from the mandatory as listed above.  If the file has been
@@ -1442,9 +1442,11 @@ the CONTROL file!  It is worth mentioning that \D (as well as \C)
 assumes that the origin of Cartesian system with respect to which
 the particle positions are specified is the middle of MD cell.  Also,
 as both the cell vectors and the particles' positions are specified
-in \\AA, there is a {\bf fine connection} between them!  This would
+in \AA, there is a {\bf fine connection} between them!  This would
 not be the case if the particles' positions were kept in reduced space
-with fractional coordinates.
+with fractional coordinates.  Last but not least, it is worth pointing
+out that composite entities, such as velocities and forces, have their
+units expressed as composites of the DL\_POLY units as shown in Section~\ref{units}.
 
 \begin{table}[htbp]
 \begin{centering}
@@ -2723,7 +2725,7 @@ as seen in Table~\ref{external-field-table}:
 \left[H\right] &=& 1.037837512 \times 10^{4}~{\tt Tesla}~~. \nonumber
 \end{eqnarray}
 Thus to apply a magnetic field of 1~Tesla along the $y$ axis,
-one could specify in FILED the following:
+one could specify in FIELD the following:
 \begin{verbatim}
 external
 magnetic 0  1/1.037837512e04   0
