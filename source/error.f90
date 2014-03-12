@@ -11,8 +11,8 @@ Subroutine error(kode)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use comms_module, Only : idnode,abort_comms
-  Use setup_module, Only : nrite,nhist,nread,nconf,nrest,nfield, &
-                           ntable,nrefdt,ndefdt
+  Use setup_module, Only : nread,nconf,nfield,ntable,nrefdt,nrite, &
+                           nstats,nrest,nhist,ndefdt,nrdfdt,nzdndt,nrsddt
 
   Implicit None
 
@@ -121,6 +121,10 @@ Subroutine error(kode)
      Else If (kode ==   26) Then
 
         Write(nrite,'(/,1x,a)') 'error - neutral group option now redundant'
+
+     Else If (kode ==   27) Then
+
+        Write(nrite,'(/,1x,a)') "error - unit's member indexed outside molecule's site range"
 
      Else If (kode ==   28) Then
 
@@ -1245,15 +1249,19 @@ Subroutine error(kode)
 
 ! close all I/O channels
 
-     Close(nrite)
-     Close(nhist)
      Close(nread)
      Close(nconf)
-     Close(nrest)
      Close(nfield)
      Close(ntable)
      Close(nrefdt)
+     Close(nrite)
+     Close(nstats)
+     Close(nrest)
+     Close(nhist)
      Close(ndefdt)
+     Close(nrdfdt)
+     Close(nzdndt)
+     Close(nrsddt)
 
   End If
 

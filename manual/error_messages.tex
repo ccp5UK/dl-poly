@@ -317,13 +317,15 @@ using a serial reading and continue working with it.
 
 Use the Ewald sum option.  (It's better anyway.)
 
-\subsubsection*{\underline{Message 27}: error - rigid body option now redundant}
+\subsubsection*{\underline{Message 27}: error - unit's member indexed outside molecule's site range}
 
-\D does not have a rigid body option.
+An intra-molecular or intra-molecular alike interaction (topological)
+unit has member/site which is given a number outside the scope of
+the molecule it is part of.
 
 \noindent \underline{\em Action}:
 
-Consider using \C instead.
+Find the erroneous entry in FIELD, correct it and try running \D again.
 
 \subsubsection*{\underline{Message 28}: error - wrongly indexed atom entries found in CONFIG file}
 

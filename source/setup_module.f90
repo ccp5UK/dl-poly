@@ -86,7 +86,7 @@ Module setup_module
 
   Integer, Parameter :: nstats = 21
 
-! acummulators restart dump file
+! accumulators restart dump file
 
   Integer, Parameter :: nrest  = 22
 

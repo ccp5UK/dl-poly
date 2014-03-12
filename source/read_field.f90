@@ -473,10 +473,10 @@ Subroutine read_field                   &
                     Call get_word(record,word)
                     prmshl(2,nshels)=word_2_real(word)
 
-! test for frozen core-shell unit
-
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
+
+! test for frozen core-shell unit and print unit
 
                     If (idnode == 0 .and. l_top) Then
                        If (frzsit(isite1)*frzsit(isite2) /= 0) Then
@@ -487,6 +487,10 @@ Subroutine read_field                   &
                    ishls,lstshl(1,nshels),lstshl(2,nshels),prmshl(1,nshels),prmshl(2,nshels)
                        End If
                     End If
+
+! catch unidentified entry
+
+                    If (Any(lstshl(1:2,nshels) < 1) .or. Any(lstshl(1:2,nshels) > numsit(itmols))) Call error(27)
 
 ! abort if a shell is frozen
 
@@ -579,8 +583,6 @@ Subroutine read_field                   &
                     Call get_word(record,word)
                     prmcon(nconst)=word_2_real(word)
 
-! test for frozen atom pairs
-
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
 
@@ -607,6 +609,8 @@ Subroutine read_field                   &
                        Call error(646)
                     End If
 
+! test for frozen atoms and print unit
+
                     If (idnode == 0 .and. l_top) Then
                        If (frzsit(isite1)*frzsit(isite2) /= 0) Then
   Write(nrite,"(4x,a8,3i10,f15.6)") &
@@ -616,6 +620,10 @@ Subroutine read_field                   &
                   icnst,lstcon(1,nconst),lstcon(2,nconst),prmcon(nconst)
                        End If
                     End If
+
+! catch unidentified entry
+
+                    If (Any(lstcon(1:2,nconst) < 1) .or. Any(lstcon(1:2,nconst) > numsit(itmols))) Call error(27)
 
 ! test for mistyped constraint bond unit
 
@@ -758,6 +766,11 @@ Subroutine read_field                   &
                     End Do
                  End If
 
+! catch unidentified entry
+
+                 If ( (Any(lstpmf(1:mxtpmf(1),1) < 1) .or. Any(lstpmf(1:mxtpmf(1),1) > numsit(itmols))) .or. &
+                      (Any(lstpmf(1:mxtpmf(2),2) < 1) .or. Any(lstpmf(1:mxtpmf(2),2) > numsit(itmols))) ) Call error(27)
+
 ! PMF reciprocal total unit masses
 
                  Do ipmf=1,2
@@ -885,7 +898,7 @@ Subroutine read_field                   &
                        rgdwg1(0:lrgd,nrigid)=rgdwgt(0:lrgd,nrigid)
                     End If
 
-! print RB
+! print RB unit
 
                     If (idnode == 0 .and. l_top) Then
                        If (rgdfrz(0,nrigid) /= 0) Then
@@ -899,6 +912,10 @@ Subroutine read_field                   &
 ! test for weightless RB
 
                        If (rgdwg1(0,nrigid) < 1.0e-6_wp) Call error(634)
+
+! catch unidentified entry
+
+                       If (Any(lstrgd(1:lrgd,nrigid) < 1) .or. Any(lstrgd(1:lrgd,nrigid) > numsit(itmols))) Call error(27)
 
 ! test for frozen RB
 !
@@ -991,9 +1008,9 @@ Subroutine read_field                   &
                     Call get_word(record,word)
                     prmtet(3,nteth)=word_2_real(word)
 
-! test for frozen atom
-
                     isite1 = nsite - numsit(itmols) + iatm1
+
+! test for frozen atom and print unit
 
                     If (idnode == 0 .and. l_top) Then
                        If (frzsit(isite1) /= 0) Then
@@ -1004,6 +1021,10 @@ Subroutine read_field                   &
                   iteth,keyword,lsttet(nteth),(prmtet(ja,nteth),ja=1,mxpteth)
                        End If
                     End If
+
+! catch unidentified entry
+
+                    If (lsttet(nteth) < 1 .or. lsttet(nteth) > numsit(itmols)) Call error(27)
 
 ! convert energy units to internal units
 
@@ -1132,10 +1153,10 @@ Subroutine read_field                   &
                           prmbnd(3,nbonds)=Sign(1.0_wp,prmbnd(3,nbonds))*prmbnd(2,nbonds)/2.0_wp
                     End If
 
-! test for frozen atom pairs
-
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
+
+! test for frozen atoms and print unit
 
                     If (idnode == 0 .and. l_top) Then
                        If (frzsit(isite1)*frzsit(isite2) /= 0) Then
@@ -1146,6 +1167,10 @@ Subroutine read_field                   &
                   ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds),(prmbnd(ja,nbonds),ja=1,mxpbnd)
                        End If
                     End If
+
+! catch unidentified entry
+
+                    If (Any(lstbnd(1:2,nbonds) < 1) .or. Any(lstbnd(1:2,nbonds) > numsit(itmols))) Call error(27)
 
 ! test for mistyped chemical bond unit
 
@@ -1314,11 +1339,11 @@ Subroutine read_field                   &
                     Call get_word(record,word)
                     prmang(6,nangle)=word_2_real(word)
 
-! test for frozen atom pairs
-
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
                     isite3 = nsite - numsit(itmols) + iatm3
+
+! test for frozen atoms and print unit
 
                     If (idnode == 0 .and. l_top) Then
                        If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) /= 0) Then
@@ -1329,6 +1354,10 @@ Subroutine read_field                   &
                   iang,keyword,(lstang(ia,nangle),ia=1,3),(prmang(ja,nangle),ja=1,mxpang)
                        End If
                     End If
+
+! catch unidentified entry
+
+                    If (Any(lstang(1:3,nangle) < 1) .or. Any(lstang(1:3,nangle) > numsit(itmols))) Call error(27)
 
 ! test for mistyped bond angle unit
 
@@ -1466,12 +1495,12 @@ Subroutine read_field                   &
                     Call get_word(record,word)
                     prmdih(7,ndihed)=word_2_real(word)
 
-! test for frozen atom pairs
-
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
                     isite3 = nsite - numsit(itmols) + iatm3
                     isite4 = nsite - numsit(itmols) + iatm4
+
+! test for frozen atoms and print unit
 
                     If (idnode == 0 .and. l_top) Then
                        If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
@@ -1482,6 +1511,10 @@ Subroutine read_field                   &
                   idih,keyword,(lstdih(ia,ndihed),ia=1,4),(prmdih(ja,ndihed),ja=1,mxpdih)
                        End If
                     End If
+
+! catch unidentified entry
+
+                    If (Any(lstdih(1:4,ndihed) < 1) .or. Any(lstdih(1:4,ndihed) > numsit(itmols))) Call error(27)
 
 ! test for mistyped dihedral unit
 
@@ -1608,12 +1641,12 @@ Subroutine read_field                   &
                     Call get_word(record,word)
                     prminv(3,ninver)=word_2_real(word)
 
-! test for frozen atom pairs
-
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
                     isite3 = nsite - numsit(itmols) + iatm3
                     isite4 = nsite - numsit(itmols) + iatm4
+
+! test for frozen atoms and print unit
 
                     If (idnode == 0 .and. l_top) Then
                        If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
@@ -1624,6 +1657,10 @@ Subroutine read_field                   &
                   iinv,keyword,(lstinv(ia,ninver),ia=1,4),(prminv(ja,ninver),ja=1,mxpinv)
                        End If
                     End If
+
+! catch unidentified entry
+
+                    If (Any(lstinv(1:4,ninver) < 1) .or. Any(lstinv(1:4,ninver) > numsit(itmols))) Call error(27)
 
 ! test for mistyped inversion unit
 
