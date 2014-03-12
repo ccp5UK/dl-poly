@@ -95,6 +95,7 @@ Subroutine constraints_shake_vv        &
 ! calculate maximum error in bondlength and
 ! do a global verification of convergence
 
+     safe=.true.
      Do k=1,ntcons
         If (lstopt(0,k) == 0) Then
            dt2(k) =dxt(k)**2+dyt(k)**2+dzt(k)**2 - prmcon(listcon(0,k))**2

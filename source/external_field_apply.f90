@@ -7,7 +7,7 @@ Subroutine external_field_apply(imcon,keyshl,time,engfld,virfld)
 ! Note: Only one field at a time is allowed
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -321,6 +321,9 @@ Subroutine external_field_apply(imcon,keyshl,time,engfld,virfld)
 
      If (imcon /= 1 .and. imcon /= 2) Return
 
+     ia = Nint(prmfld(1))
+     ib = Nint(prmfld(2))
+
      If (newjob) Then
         newjob=.false.
 
@@ -340,9 +343,6 @@ Subroutine external_field_apply(imcon,keyshl,time,engfld,virfld)
         End If
         If (.not.safe) Call error(456)
      End If
-
-     ia = Nint(prmfld(1))
-     ib = Nint(prmfld(2))
 
      rtmp=0.0_wp ! average velocity and force per atom in x direction of the piston
      Do i=1,natms
