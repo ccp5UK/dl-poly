@@ -1,4 +1,4 @@
-Subroutine ewald_frozen_forces &
+Subroutine ewald_frzn_forces &
            (imcon,rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -90,7 +90,7 @@ Subroutine ewald_frozen_forces &
   fail=0
   Allocate (l_ind(1:mxatdm),nz_fr(0:mxnode), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'ewald_frozen_forces allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces allocation failure, node: ', idnode
      Call error(0)
   End If
 
@@ -123,7 +123,7 @@ Subroutine ewald_frozen_forces &
 
      Allocate (cfr(1:nzfr),xfr(1:nzfr),yfr(1:nzfr),zfr(1:nzfr), Stat=fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'ewald_frozen_forces allocation failure 1, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces allocation failure 1, node: ', idnode
         Call error(0)
      End If
 
@@ -377,7 +377,7 @@ Subroutine ewald_frozen_forces &
 
      Deallocate (cfr,xfr,yfr,zfr, Stat=fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'ewald_frozen_forces deallocation failure 1, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces deallocation failure 1, node: ', idnode
         Call error(0)
      End If
 
@@ -388,7 +388,7 @@ Subroutine ewald_frozen_forces &
 
      Allocate (xdf(1:mxlist),ydf(1:mxlist),zdf(1:mxlist),rsqdf(1:mxlist), Stat=fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'ewald_frozen_forces allocation failure 2, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces allocation failure 2, node: ', idnode
         Call error(0)
      End If
 
@@ -514,7 +514,7 @@ Subroutine ewald_frozen_forces &
 
      Deallocate (xdf,ydf,zdf,rsqdf, Stat=fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'ewald_frozen_forces deallocation failure 2, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces deallocation failure 2, node: ', idnode
         Call error(0)
      End If
 
@@ -568,8 +568,8 @@ Subroutine ewald_frozen_forces &
 
   Deallocate (l_ind,nz_fr, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'ewald_frozen_forces deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces deallocation failure, node: ', idnode
      Call error(0)
   End If
 
-End Subroutine ewald_frozen_forces
+End Subroutine ewald_frzn_forces

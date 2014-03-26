@@ -8,13 +8,12 @@ Subroutine rdf_excl_collect(iatm,rcut,rsqdf)
 ! Note: to be used as part of two_body_forces
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module,      Only : mxlist,mxgrdf,zero_plus
-  Use site_module,       Only : numtyp
   Use config_module,     Only : natms,ltg,ltype,list
   Use statistics_module, Only : ntprdf,lstrdf,rdf
 
@@ -40,59 +39,52 @@ Subroutine rdf_excl_collect(iatm,rcut,rsqdf)
      rdelr= Real(mxgrdf,wp)/rcut
   End If
 
-! global identity of iatm
+! global identity and type of iatm
 
   idi=ltg(iatm)
-
-! set up atom iatm type and exclude it if absent crystallographically
-
   ai=ltype(iatm)
-
-  If (numtyp(ai) > zero_plus) Then
 
 ! Get list limit
 
-     limit=list(-1,iatm)-list(0,iatm)
+  limit=list(-1,iatm)-list(0,iatm)
 
 ! start of primary loop for rdf accumulation
 
-     Do m=1,limit
+  Do m=1,limit
 
 ! atomic and type indices
 
-        jatm=list(list(0,iatm)+m,iatm)
-        aj=ltype(jatm)
+     jatm=list(list(0,iatm)+m,iatm)
+     aj=ltype(jatm)
 
-        If (numtyp(aj) > zero_plus .and. jatm <= natms .or. idi < ltg(jatm)) Then
+     If (jatm <= natms .or. idi < ltg(jatm)) Then
 
 ! rdf function indices
 
-           keyrdf=(Max(ai,aj)*(Max(ai,aj)-1))/2+Min(ai,aj)
-           kk=lstrdf(keyrdf)
+        keyrdf=(Max(ai,aj)*(Max(ai,aj)-1))/2+Min(ai,aj)
+        kk=lstrdf(keyrdf)
 
 ! only for valid interactions specified for a look up
 
-           If (kk > 0 .and. kk <= ntprdf) Then
+        If (kk > 0 .and. kk <= ntprdf) Then
 
 ! apply truncation of potential
 
-              rsq=rsqdf(m)
+           rsq=rsqdf(m)
 
-              If (rsq < rcsq) Then
-                 rrr=Sqrt(rsq)
-                 ll=Min(1+Int(rrr*rdelr),mxgrdf)
+           If (rsq < rcsq) Then
+              rrr=Sqrt(rsq)
+              ll=Min(1+Int(rrr*rdelr),mxgrdf)
 
 ! accumulate correlation
 
-                 rdf(ll,kk) = rdf(ll,kk) + 1.0_wp
-              End If
-
+              rdf(ll,kk) = rdf(ll,kk) + 1.0_wp
            End If
 
         End If
 
-     End Do
+     End If
 
-  End If
+  End Do
 
 End Subroutine rdf_excl_collect

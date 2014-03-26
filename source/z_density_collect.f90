@@ -5,13 +5,12 @@ Subroutine z_density_collect()
 ! dl_poly_4 subroutine for accumulating statistic for z-density profile
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module,      Only : mxgrdf,zero_plus
-  Use site_module,       Only : numtyp
   Use config_module,     Only : cell,natms,ltype,zzz
   Use statistics_module, Only : numzdn,zdens
 
@@ -23,8 +22,6 @@ Subroutine z_density_collect()
 ! accumulator
 
   numzdn=numzdn+1
-
-! apply truncation of potential
 
 ! length of cell in z direction
 
@@ -38,17 +35,14 @@ Subroutine z_density_collect()
 
   rdelr=Real(mxgrdf,wp)/zlen
 
-! set up atom iatm type and exclude it if absent crystallographically
+! set up atom iatm type and accumulate statistic
 
   Do i=1,natms
      k=ltype(i)
-     If (numtyp(k) > zero_plus) Then
-        l=Min(1+Int((zzz(i)+zleno2)*rdelr),mxgrdf)
 
-! accumulate statistic
+     l=Min(1+Int((zzz(i)+zleno2)*rdelr),mxgrdf)
 
-        zdens(l,k)=zdens(l,k) + 1.0_wp
-     End If
+     zdens(l,k)=zdens(l,k) + 1.0_wp
   End Do
 
 End Subroutine z_density_collect

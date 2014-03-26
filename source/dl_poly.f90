@@ -128,23 +128,25 @@ Program dl_poly
 
 ! general flags
 
-  Logical           :: l_vv,l_n_e,l_n_v,         &
-                       l_ind,l_str,l_top,        &
-                       l_exp,lecx,lfcap,lzero,   &
-                       lmin,ltgaus,ltscal,       &
-                       lvar,leql,lpse,lsim,lfce, &
-                       lrdf,lprdf,lzdn,lpzdn,    &
-                       ltraj,ldef,lrsd,          &
-                       safe,lbook,lexcl,         &
-                       relaxed_shl = .true.,     &
+  Logical           :: ltmp,l_vv,l_n_e,l_n_v,       &
+                       l_ind,l_str,l_top,           &
+                       l_exp,lecx,lfcap,lzero,      &
+                       lmin,ltgaus,ltscal,          &
+                       lvar,leql,lpse,lsim,lfce,    &
+                       lpana,lrdf,lprdf,lzdn,lpzdn, &
+                       ltraj,ldef,lrsd,             &
+                       safe,lbook,lexcl,            &
+                       relaxed_shl = .true.,        &
                        relaxed_min = .true.
 
-  Integer           :: i,j,levcfg,imcon,nstfce,            &
+  Integer           :: i,j,isw,levcfg,imcon,nstfce,        &
                        nx,ny,nz,imd,tmd,                   &
                        keyres,nstrun,nsteql,               &
                        keymin,nstmin,nstgaus,nstscal,      &
                        keyens,iso,intsta,keypse,nstbpo,    &
-                       keyfce,mxshak,mxquat,nstrdf,nstzdn, &
+                       keyfce,mxshak,mxquat,               &
+                       nstbnd,nstang,nstdih,nstinv,        &
+                       nstrdf,nstzdn,                      &
                        nstmsd,istmsd,nstraj,istraj,keytrj, &
                        nsdef,isdef,nsrsd,isrsd,            &
                        ndump,nstep,keyshl,                 &
@@ -202,11 +204,12 @@ Program dl_poly
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  version:  4.06      /     march 2014  ****** O ****", &
+          "**         **  version:  4.06      /     april 2014  ****** O ****", &
           "*************  execution on ", mxnode, "    node(s)  ******* L ***", &
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
-          "*************  i.j.bush, r.davidchak & m.a.seaton    *************", &
+          "*************  i.j.bush, r.davidchak,                *************", &
+          "*************  m.a.seaton, a.v.brukhno               *************", &
           "******************************************************************"
 
      Write(nrite,'(7(1x,a,/))') &
@@ -272,7 +275,7 @@ Program dl_poly
            rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
            l_exp,lecx,lfcap,l_top,lzero,lmin,          &
            ltgaus,ltscal,lvar,leql,lpse,               &
-           lsim,lfce,lrdf,lprdf,lzdn,lpzdn,            &
+           lsim,lfce,lpana,lrdf,lprdf,lzdn,lpzdn,      &
            ltraj,ldef,lrsd,                            &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
            temp,press,strext,keyres,                   &
@@ -282,7 +285,7 @@ Program dl_poly
            keypse,wthpse,tmppse,                       &
            fmax,nstbpo,intsta,keyfce,epsq,             &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
-           nstrdf,nstzdn,                              &
+           nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstmsd,istmsd,nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
            ndump,timjob,timcls)

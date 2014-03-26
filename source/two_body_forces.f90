@@ -27,7 +27,7 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -39,6 +39,7 @@ Subroutine two_body_forces                        &
   Use ewald_module
   Use vdw_module,        Only : ntpvdw
   Use metal_module,      Only : ntpmet
+  Use kim_module
   Use statistics_module, Only : numrdf
 
   Implicit None
@@ -66,7 +67,8 @@ Subroutine two_body_forces                        &
                        engcpe_ex,vircpe_ex,engcpe_fr,vircpe_fr, &
                        engcpe_nz,vircpe_nz,                     &
                        engden,virden,engmet,virmet,             &
-                       engvdw,virvdw,engacc,viracc,tmp,buffer(0:14)
+                       engvdw,virvdw,engkim,virkim,             &
+                       engacc,viracc,tmp,buffer(0:14)
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: xdf,ydf,zdf,rsqdf
 
@@ -142,6 +144,17 @@ Subroutine two_body_forces                        &
 ! calculate coulombic forces, Ewald sum - fourier contribution
 
   If (keyfce == 2 .and. l_fce) Call ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
+
+! Calculate all contributions from KIM
+
+  If (l_kim) Then
+     Call kim_setup()
+     Call kim_forces(engkim,virkim,stress)
+     Call kim_cleanup()
+  Else
+     engkim = 0.0_wp
+     virkim = 0.0_wp
+  End If
 
 ! outer loop over atoms
 
@@ -316,8 +329,51 @@ Subroutine two_body_forces                        &
   End If
 
 ! counter for rdf statistics outside loop structures
+! and frozen-frozen rdf completeness
 
-  If (l_do_rdf) numrdf = numrdf + 1
+  If (l_do_rdf) Then
+     If (megfrz /= 0) Then
+
+! outer loop over atoms
+
+        Do i=1,natms
+
+! Get list limit
+
+           limit=list(-2,i)-list(-1,i)
+           If (limit > 0) Then
+
+! calculate interatomic distances
+
+              Do k=1,limit
+                 j=list(list(0,i)+k,i)
+
+                 xdf(k)=xxx(i)-xxx(j)
+                 ydf(k)=yyy(i)-yyy(j)
+                 zdf(k)=zzz(i)-zzz(j)
+              End Do
+
+! periodic boundary conditions
+
+              Call images(imcon,cell,limit,xdf,ydf,zdf)
+
+! square of distances
+
+              Do k=1,limit
+                 rsqdf(k)=xdf(k)**2+ydf(k)**2+zdf(k)**2
+              End Do
+
+! accumulate radial distribution functions
+
+              Call rdf_frzn_collect(i,rcut,rsqdf)
+           End If
+
+        End Do
+
+     End If
+
+     numrdf = numrdf + 1
+  End If
 
   Deallocate (xdf,ydf,zdf,rsqdf,   Stat=fail)
   If (fail > 0) Then
@@ -332,7 +388,7 @@ Subroutine two_body_forces                        &
 
 ! frozen pairs corrections to coulombic forces
 
-        If (megfrz /= 0) Call ewald_frozen_forces &
+        If (megfrz /= 0) Call ewald_frzn_forces &
            (imcon,rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
 
      Else
@@ -411,11 +467,11 @@ Subroutine two_body_forces                        &
   stress(5) = stress(5) + tmp
   stress(9) = stress(9) + tmp
 
-! Globalise short-range & metal interactions with
+! Globalise short-range, KIM and metal interactions with
 ! their long-range corrections contributions: srp
 
-  engsrp = (engden + engmet + elrcm(0)) + (engvdw + elrc)
-  virsrp = (virden + virmet + vlrcm(0)) + (virvdw + virlrc)
+  engsrp = engkim + (engden + engmet + elrcm(0)) + (engvdw + elrc)
+  virsrp = virkim + (virden + virmet + vlrcm(0)) + (virvdw + virlrc)
 
 ! Add long-range corrections to diagonal terms of stress tensor (per node)
 

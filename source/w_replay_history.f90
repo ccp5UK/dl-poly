@@ -47,8 +47,17 @@
   nsrsd = 0
   isrsd = 1
 
-! rdf and z-density detection for every entry in HISTORY
-! impose printing if calculation exists
+! intramolecular PDF analysis for every entry in HISTORF
+! enforce printing and collection if the calculation exists
+
+  lpana=(mxgana > 0)
+  nstbnd = 1
+  nstang = 1
+  nstdih = 1
+  nstinv = 1
+
+! rdf and z-density detection for every entry in HISTORF
+! enforce printing and collection if the calculation exists
 
   lprdf=lrdf ; nstrdf = 1
   lpzdn=lzdn ; nstzdn = 1
@@ -124,6 +133,36 @@
            lrdf,nstrdf,leql,nsteql,nstph,         &
            elrc,virlrc,elrcm,vlrcm,               &
            engcpe,vircpe,engsrp,virsrp,stress)
+
+! Calculate bond forces
+
+        If (megbnd > 0 .and. mxgbnd > 0) Then
+           isw = 0
+           Call bonds_forces(isw,imcon,engbnd,virbnd,stress, &
+                       rcut,keyfce,alpha,epsq,engcpe,vircpe)
+        End If
+
+! Calculate valence angle forces
+
+        If (megang > 0 .and. mxgang > 0) Then
+           isw = 0
+           Call angles_forces(isw,imcon,engang,virang,stress)
+        End If
+
+! Calculate dihedral forces
+
+        If (megdih > 0 .and. mxgdih > 0) Then
+           isw = 0
+           Call dihedrals_forces(isw,imcon,engdih,virdih,stress, &
+           rcut,rvdw,keyfce,alpha,epsq,engcpe,vircpe,engsrp,virsrp)
+        End If
+
+! Calculate inversion forces
+
+        If (meginv > 0 .and. mxginv > 0) Then
+           isw = 0
+           Call inversions_forces(isw,imcon,enginv,virinv,stress)
+        End If
 
 ! Calculate kinetic stress and energy if available
 

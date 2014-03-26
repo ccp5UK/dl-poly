@@ -6,7 +6,7 @@ Subroutine pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf)
 ! springs for use with the conjugate gradient method (minimise_relax.f90)
 !
 ! copyright - daresbury laboratory
-! author    - w.smith and i.t.todorov august 2011
+! author    - w.smith & i.t.todorov august 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -3,7 +3,7 @@ Subroutine read_control                                &
            rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
            l_exp,lecx,lfcap,l_top,lzero,lmin,          &
            ltgaus,ltscal,lvar,leql,lpse,               &
-           lsim,lfce,lrdf,lprdf,lzdn,lpzdn,            &
+           lsim,lfce,lpana,lrdf,lprdf,lzdn,lpzdn,      &
            ltraj,ldef,lrsd,                            &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
            temp,press,strext,keyres,                   &
@@ -13,7 +13,7 @@ Subroutine read_control                                &
            keypse,wthpse,tmppse,                       &
            fmax,nstbpo,intsta,keyfce,epsq,             &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
-           nstrdf,nstzdn,                              &
+           nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstmsd,istmsd,nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
            ndump,timjob,timcls)
@@ -25,6 +25,7 @@ Subroutine read_control                                &
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov march 2014
 ! contrib   - i.j.bush february 2014
+! contrib   - a.v.brukhno march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -34,6 +35,7 @@ Subroutine read_control                                &
   Use config_module,   Only : sysname
   Use langevin_module, Only : l_lan,l_gst,langevin_allocate_arrays
   Use parse_module
+  Use bonds_module,    Only : rcbnd
   Use vdw_module,      Only : ld_vdw,ls_vdw,mxtvdw
   Use metal_module,    Only : ld_met,ls_met,tabmet
   Use msd_module,      Only : l_msd
@@ -56,6 +58,7 @@ Subroutine read_control                                &
                                              lzero,lmin,            &
                                              ltgaus,ltscal,         &
                                              lvar,leql,lpse,lfce,   &
+                                             lpana,                 &
                                              lrdf,lprdf,lzdn,lpzdn, &
                                              ltraj,ldef,lrsd
 
@@ -68,6 +71,8 @@ Subroutine read_control                                &
                                              keypse,nstbpo,        &
                                              intsta,keyfce,        &
                                              mxshak,mxquat,        &
+                                             nstbnd,nstang,        &
+                                             nstdih,nstinv,        &
                                              nstrdf,nstzdn,        &
                                              nstmsd,istmsd,        &
                                              nstraj,istraj,keytrj, &
@@ -92,11 +97,12 @@ Subroutine read_control                                &
                                              l_timjob,l_timcls
 
   Character( Len = 200 )                  :: record
-  Character( Len = 40  )                  :: word,word1,word2
+  Character( Len = 40  )                  :: word,word1,word2,akey
 
-  Integer                                 :: i,j,itmp
+  Integer                                 :: i,j,k,itmp,nstana,grdana,grdbnd,grdang, &
+                                             grddih,grdinv,nstall
 
-  Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp
+  Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,rcb_d,rcana
 
 
 ! initialise system control variables and their logical switches
@@ -259,6 +265,15 @@ Subroutine read_control                                &
 ! proceed normal simulation
 
   lfce = .false. ! don't recalculate forces based on history positions
+
+! default switches for calculation and printing of bonded analysis
+
+  nstana = 0
+  nstbnd = 0
+  nstang = 0
+  nstdih = 0
+  nstinv = 0
+  lpana  = .false.
 
 ! default switch for calculation of rdfs, default number of steps
 ! when to be collected and default switch for printing them
@@ -1760,6 +1775,56 @@ Subroutine read_control                                &
         tmp = Abs(word_2_real(word))
         If (Abs(rbin-tmp) > 1.0e-6_wp) Call warning(340,tmp,rcut/4.0_wp,rbin)
 
+! read analysis (bonded distributions calculation) option
+
+     Else If (word(1:3) == 'ana') Then
+
+        Call get_word(record,word1)
+        akey = word1(1:3)
+
+        If (akey /= 'all' .and. akey /= 'bon' .and. akey /= 'ang' .and. &
+            akey /= 'dih' .and. akey /= 'inv') Then
+           Call strip_blanks(record)
+           If (idnode == 0) Write(nrite,"(/,/,3a)") word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+           Call error(3)
+        End If
+
+        Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+        i=Abs(Nint(word_2_real(word))) ! frequency
+
+        Call get_word(record,word)
+        If (word(1:5) == 'nbins' .or. word(1:5) == 'ngrid' .or. word(1:4) == 'grid') Call get_word(record,word)
+        j=Abs(Nint(word_2_real(word))) ! grid size
+
+        If      (akey == 'all') Then
+           If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
+           tmp=Abs(Nint(word_2_real(word))) ! bond length
+
+           nstana=Max(nstana,i)
+           grdana=j
+           rcana=tmp
+        Else If (akey == 'bon') Then
+           If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
+           tmp=Abs(Nint(word_2_real(word))) ! bond length
+
+           nstbnd=Max(nstbnd,i)
+           grdbnd=j
+           rcb_d=tmp
+        Else If (akey == 'ang') Then
+           nstang=Max(nstang,i)
+           grdang=j
+        Else If (akey == 'dih') Then
+           nstdih=Max(nstdih,i)
+           grddih=j
+        Else If (akey == 'inv') Then
+           nstinv=Max(nstinv,i)
+           grdinv=j
+        End If
+        nstall=Min(nstana,nstbnd,nstang,nstdih,nstinv)
+
 ! read rdf calculation option
 
      Else If (word(1:3) == 'rdf') Then
@@ -2154,6 +2219,92 @@ Subroutine read_control                                &
         '*** warning - this may lead to a build up of the COM momentum and ***', &
         '***           a manifestation of the "flying ice-cube" effect !!! ***'
   End If
+
+! report bonded analysis options
+
+  If (lpana .or. mxgana > 0) Then
+     If (mxgana == 0) Then
+        If (idnode == 0) Write(nrite,"(/,1x,a)") 'no bonded distribution analysis collection requested'
+     Else
+        If (mxgana == mxgbnd .and. mxgana == mxgang .and. &
+            mxgana == mxgdih .and. mxgana == mxginv) Then
+           If (idnode == 0) &
+              Write(nrite,"(/,1x,a)") 'full bonded distribution analysis collection requested (all=bnd/ang/dih/inv):'
+        Else
+           If (idnode == 0) Write(nrite,"(/,1x,a)") 'bonded didtribution analysis collection requested for:'
+        End If
+
+        If (mxgbnd > 0) Then
+           If (nstbnd == 0) Then
+              nstbnd=Max(1,nstall)
+              i = 1
+           Else
+              i = 0
+           End If
+           j=Merge(1, 0, grdbnd /= mxgbnd)
+           k=Merge(1, 0, Abs(rcbnd-rcb_d) > 1.0e-3_wp)
+           If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a,f5.3,a)") &
+              'bonds      - collection every ',nstbnd,' step(s); ngrid = ',mxgbnd,'points; cutoff = ',rcbnd, 'Angs'
+           If (i+j+k > 1 .and. idnode == 0) Write(nrite,"(/,1x,3(a,i10))") &
+              'bonds      - reset values at  ',     i,'                  ',     j,'                 ',    k
+        End If
+
+        If (mxgang > 0) Then
+           If (nstang == 0) Then
+              nstang=Max(1,nstall)
+              i = 1
+           Else
+              i = 0
+           End If
+           j=Merge(1, 0, grdang /= mxgang)
+           If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a,f5.3,a)") &
+              'angles     - collection every ',nstang,' step(s); ngrid = ',mxgang,'points'
+           If (i+j > 1 .and. idnode == 0) Write(nrite,"(/,1x,2(a,i10))") &
+              'angles     - reset values at  ',     i,'                  ',     j
+        End If
+
+        If (mxgdih > 0) Then
+           If (nstdih == 0) Then
+              nstdih=Max(1,nstall)
+              i = 1
+           Else
+              i = 0
+           End If
+           j=Merge(1, 0, grddih /= mxgdih)
+           If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a,f5.3,a)") &
+              'dihedrals  - collection every ',nstdih,' step(s); ngrid = ',mxgdih,'points'
+           If (i+j > 1 .and. idnode == 0) Write(nrite,"(/,1x,2(a,i10))") &
+              'dihedrals  - reset values at  ',     i,'                  ',     j
+        End If
+
+        If (mxginv > 0) Then
+           If (nstinv == 0) Then
+              nstinv=Max(1,nstall)
+              i = 1
+           Else
+              i = 0
+           End If
+           j=Merge(1, 0, grdinv /= mxginv)
+           If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a,f5.3,a)") &
+              'inversions - collection every ',nstinv,' step(s); ngrid = ',mxginv,'points'
+           If (i+j > 1 .and. idnode == 0) Write(nrite,"(/,1x,2(a,i10))") &
+              'inversions - reset values at  ',     i,'                  ',     j
+        End If
+     End If
+
+     If (lpana) Then
+        If (idnode == 0) Write(nrite,"(1x,a)") 'bonded distribution analysis printing requested'
+     Else
+        If (idnode == 0) Write(nrite,"(1x,a)") 'no bonded distribution analysis printing requested'
+     End If
+  End If
+
+! For safety make them /= 0
+
+  nstbnd=Max(1,nstbnd)
+  nstang=Max(1,nstang)
+  nstdih=Max(1,nstdih)
+  nstinv=Max(1,nstinv)
 
 ! report rdf
 

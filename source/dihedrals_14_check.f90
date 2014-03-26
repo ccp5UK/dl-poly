@@ -26,7 +26,7 @@ Subroutine dihedrals_14_check &
   Integer :: kangle,kdihed,itmols,imols,langle,ldihed,mdihed, &
              iang,jang,idih,jdih,kdih,ldih,mdih,ndih,odih,pdih
 
-  l_print = (l_str.and.l_top)
+  l_print = (l_str .and. l_top)
   l_reset = .false.
 
 ! Initialise angle and dihedral interaction counters

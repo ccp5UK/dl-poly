@@ -6,7 +6,7 @@ Subroutine constraints_pseudo_bonds(lstopt,dxx,dyy,dzz,gxx,gyy,gzz,engcon)
 ! springs for use with the conjugate gradient method (minimise_relax.f90)
 !
 ! copyright - daresbury laboratory
-! author    - w.smith and i.t.todorov november 2011
+! author    - w.smith & i.t.todorov november 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

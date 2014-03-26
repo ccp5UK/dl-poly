@@ -83,12 +83,12 @@ OBJ_ALL = \
 	exchange_grid.o ewald_spme_forces.o \
 	metal_forces.o vdw_forces.o ewald_real_forces.o \
 	coul_dddp_forces.o coul_cp_forces.o coul_fscp_forces.o \
-	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o ewald_excl_forces.o \
-	ewald_frozen_forces.o two_body_forces.o \
+	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o rdf_frzn_collect.o \
+	ewald_excl_forces.o ewald_frzn_forces.o two_body_forces.o \
 	tersoff_forces.o three_body_forces.o four_body_forces.o \
 	core_shell_forces.o tethers_forces.o \
 	intra_coul.o bonds_forces.o angles_forces.o \
-	inversions_forces.o dihedrals_14_vdw.o dihedrals_forces.o \
+	dihedrals_14_vdw.o dihedrals_forces.o inversions_forces.o \
 	external_field_apply.o external_field_correct.o \
 	langevin_forces.o \
 	constraints_pseudo_bonds.o pmf_pseudo_bonds.o \

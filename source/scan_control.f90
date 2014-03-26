@@ -1,8 +1,9 @@
-Subroutine scan_control                                  &
-           (mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter,     &
-           imcon,imc_n,cell,xhi,yhi,zhi,                 &
-           l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind, &
-           rcut,rpad,rbin,mxstak,                        &
+Subroutine scan_control                                    &
+           (rcbnd,mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter, &
+           imcon,imc_n,cell,xhi,yhi,zhi,                   &
+           mxgana,mxgbnd,mxgang,mxgdih,mxginv,             &
+           l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
+           rcut,rpad,rbin,mxstak,                          &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -10,8 +11,9 @@ Subroutine scan_control                                  &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2013
+! author    - i.t.todorov march 2014
 ! contrib   - i.j.bush february 2014
+! contrib   - a.v.brukhno march 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -21,6 +23,8 @@ Subroutine scan_control                                  &
   Use parse_module,       Only : get_line,get_word,lower_case,word_2_real
   Use msd_module
   Use development_module, Only : l_trm
+  Use kim_module,         Only : l_kim,rkim
+
 
   Implicit None
 
@@ -28,22 +32,23 @@ Subroutine scan_control                                  &
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,imcon
   Integer,           Intent( InOut ) :: imc_n
-  Integer,           Intent(   Out ) :: mxstak,nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
+  Integer,           Intent(   Out ) :: mxgana,mxgbnd,mxgang,mxgdih,mxginv, &
+                                        mxstak,nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
-  Real( Kind = wp ), Intent( InOut ) :: rvdw,rmet,cell(1:9)
+  Real( Kind = wp ), Intent( InOut ) :: rvdw,rmet,rcbnd,cell(1:9)
   Real( Kind = wp ), Intent(   Out ) :: rcut,rpad,rbin,alpha
 
-  Logical                :: carry,safe,lrcut,lrpad,lrvdw,lrmet, &
-                            lelec,lrdf,lvdw,lmet,l_n_m,lter,l_exp
+  Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
+                            lrcut,lrpad,lrvdw,lrmet,lelec,lrdf,lvdw,lmet,l_n_m,lter,l_exp
   Character( Len = 200 ) :: record
-  Character( Len = 40  ) :: word
+  Character( Len = 40  ) :: word,akey
   Integer                :: itmp,nstrun
-  Real( Kind = wp )      :: celprp(1:10),cut,eps,fac,tol,tol1,rbin1
+  Real( Kind = wp )      :: celprp(1:10),cut,eps,fac,tol,tol1
 
-! default spline for SPME and minimum real space cutoff
-
-  Integer,           Parameter :: mxspl_def = 8
-  Real( Kind = wp ), Parameter :: rcut_def  = 1.0_wp
+  Integer,           Parameter :: mxspl_def = 8           ! default spline for SPME
+  Real( Kind = wp ), Parameter :: rcut_def  = 1.0_wp  , & ! minimum real space cutoff
+                                  rbin_def  = 0.05_wp , & ! default bin size
+                                  rcbnd_def = 2.0_wp      ! minimum bond length for bond analysis
 
 ! default reading indices options
 
@@ -64,6 +69,14 @@ Subroutine scan_control                                  &
 ! integration flavour - velocity verlet assumed
 
   l_vv = .true.
+
+! default switches for intramolecular analysis grids
+
+  la_ana = .false. ; mxgana = 0
+  la_bnd = .false. ; mxgbnd = 0
+  la_ang = .false. ; mxgang = 0
+  la_dih = .false. ; mxgdih = 0
+  la_inv = .false. ; mxginv = 0
 
 ! electrostatics and no elctrostatics, rdf and no rdf, vdw and no vdw,
 ! metal and no metal, tersoff and no tersoff interactions,
@@ -91,8 +104,7 @@ Subroutine scan_control                                  &
   lrpad = .false.
   rpad  = 0.0_wp
 
-  rbin1 = 0.05_wp
-  rbin  = rbin1
+  rbin  = rbin_def
 
 ! Frequency of the SPME k-space evaluation
 
@@ -301,6 +313,64 @@ Subroutine scan_control                                  &
         If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
         If (word(1:8) == 'leapfrog') l_vv=.false.
 
+! read analysis (bonded distributions calculation) option
+
+     Else If (word(1:3) == 'ana') Then
+
+        la_ana = .true.
+
+        Call get_word(record,word)
+        akey = word(1:3)
+
+        Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+
+        Call get_word(record,word)
+        If (word(1:5) == 'nbins' .or. word(1:5) == 'ngrid' .or. word(1:4) == 'grid') Call get_word(record,word)
+
+        If      (akey == 'all') Then
+           la_bnd = .true.
+           la_ang = .true.
+           la_dih = .true.
+           la_inv = .true.
+
+           mxgana = Abs(Nint(word_2_real(word)))
+           mxgbnd = mxgana
+           mxgang = mxgana
+           mxgdih = mxgana
+           mxginv = mxgana
+
+           Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
+           If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
+           rcbnd=Max(rcbnd,word_2_real(word,0.0_wp))
+        Else If (akey == 'bon') Then
+           la_bnd = .true.
+
+           mxgbnd = Max(mxgbnd,Abs(Nint(word_2_real(word))))
+           mxgana = Max(mxgana,mxgbnd)
+
+           Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
+           If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
+           rcbnd=Max(rcbnd,word_2_real(word,0.0_wp))
+        Else If (akey == 'ang') Then
+           la_ang = .true.
+
+           mxgang = Max(mxgang,Abs(Nint(word_2_real(word))))
+           mxgana = Max(mxgana,mxgang)
+        Else If (akey == 'dih') Then
+           la_dih = .true.
+
+           mxgdih = Max(mxgdih,Abs(Nint(word_2_real(word))))
+           mxgana = Max(mxgana,mxgdih)
+        Else If (akey == 'inv') Then
+           la_inv = .true.
+
+           mxginv = Max(mxginv,Abs(Nint(word_2_real(word))))
+           mxgana = Max(mxgana,mxginv)
+        End If
+
 ! read rdf calculation option
 
      Else If (word(1:3) == 'rdf') Then
@@ -323,6 +393,23 @@ Subroutine scan_control                                  &
      End If
 
   End Do
+
+! in case of bonded interactions analysis
+
+  If (la_ana) Then
+     If (mxgana == 0) mxgana = -1 ! switch indicator for set_bounds
+
+! mxgana by construction (above) equals the largest grid
+! deal with overloaded grid sizes
+
+     If (la_bnd) Then
+        mxgbnd = mxgana
+        rcbnd=Max(rcbnd,rcbnd_def)
+     End If
+     If (la_ang) mxgang = mxgana
+     If (la_dih) mxgdih = mxgana
+     If (la_inv) mxginv = mxgana
+  End If
 
 ! Sort electrostatics
 
@@ -347,7 +434,7 @@ Subroutine scan_control                                  &
 
 ! Sort rcut as the maximum of all valid cutoffs
 
-  rcut=Max(rcut,rvdw,rmet,2.0_wp*rcter+1.0e-6_wp)
+  rcut=Max(rcut,rvdw,rmet,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
 
   If (idnode == 0) Rewind(nread)
 
@@ -513,9 +600,9 @@ Subroutine scan_control                                  &
               rvdw=0.0_wp
               rmet=0.0_wp
               If (.not.l_str) Then
-                 rcut=2.0_wp*rcter+1.0e-6_wp
+                 rcut=2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp
               Else
-                 rcut=Max(rcut,2.0_wp*rcter+1.0e-6_wp)
+                 rcut=Max(rcut,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
               End If
            End If
 
@@ -532,20 +619,20 @@ Subroutine scan_control                                  &
 ! Reset rcut to something sensible if sensible is an option
 
            If ( ((.not.lrcut) .or. (.not.l_str)) .and. &
-                (lrvdw .or. lrmet .or. lter) ) Then
+                (lrvdw .or. lrmet .or. lter .or. l_kim) ) Then
               lrcut=.true.
-              rcut=Max(rvdw,rmet,2.0_wp*rcter+1.0e-6_wp)
+              rcut=Max(rvdw,rmet,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
            End If
 
 ! Reset rvdw and rmet when only tersoff potentials are opted for and
 ! possibly reset rcut to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
 
-           If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r) Then
+           If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r .and. (.not.l_kim)) Then
               rvdw=0.0_wp
               rmet=0.0_wp
               If (.not.l_str) Then
                  lrcut=.true.
-                 rcut=2.0_wp*rcter+1.0e-6_wp
+                 rcut=2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp
               End If
            End If
 
@@ -557,7 +644,7 @@ Subroutine scan_control                                  &
 
            cut=rcut+1.0e-6_wp
 
-! fix cell vectors for image conditions with discontinuties
+! fix cell vectors for image conditions with discontinuities
 
            If (imcon == 0) Then
 
@@ -592,7 +679,7 @@ Subroutine scan_control                                  &
 
 ! Sort rbin as now rcut is already pinned down
 
-        If (rbin < 1.0e-05_wp .or. rbin > rcut/4.0_wp) rbin = Min(rbin1,rcut/4.0_wp)
+        If (rbin < 1.0e-05_wp .or. rbin > rcut/4.0_wp) rbin = Min(rbin_def,rcut/4.0_wp)
 
         carry=.false.
 

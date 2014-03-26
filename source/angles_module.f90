@@ -6,13 +6,16 @@ Module angles_module
 ! and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2004
+! author    - i.t.todorov march 2014
+! contrib   - a.v.brukhno march 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
 
   Implicit None
+
+  Logical,                        Save :: lt_ang = .false. ! no tabulated potentials opted
 
   Integer,                        Save :: ntangl  = 0 , &
                                           ntangl1 = 0
@@ -23,17 +26,28 @@ Module angles_module
 
   Real( Kind = wp ), Allocatable, Save :: prmang(:,:)
 
-  Public :: allocate_angles_arrays , deallocate_angles_arrays
+! Possible tabulated calculation arrays
+
+  Integer,           Allocatable, Save :: ltpang(:)
+  Real( Kind = wp ), Allocatable, Save :: vang(:,:),gang(:,:)
+
+! Possible distribution arrays
+
+  Integer,           Allocatable, Save :: ldfang(:),typang(:,:)
+  Real( Kind = wp ), Allocatable, Save :: dstang(:,:)
+
+  Public :: allocate_angles_arrays , deallocate_angles_arrays , &
+            allocate_angl_pot_arrays , allocate_angl_dst_arrays
 
 Contains
 
   Subroutine allocate_angles_arrays()
 
-    Use setup_module, Only : mxtmls,mxtang,mxangl,mxfang,mxpang,mxatdm
+    Use setup_module, Only : mxtmls,mxtang,mxangl,mxfang,mxpang,mxgang,mxatdm
 
     Implicit None
 
-    Integer, Dimension( 1:6 ) :: fail
+    Integer, Dimension( 1:8 ) :: fail
 
     fail = 0
 
@@ -43,6 +57,10 @@ Contains
     Allocate (listang(0:3,1:mxangl),     Stat = fail(4))
     Allocate (legang(0:mxfang,1:mxatdm), Stat = fail(5))
     Allocate (prmang(1:mxpang,1:mxtang), Stat = fail(6))
+    If (lt_ang) &
+    Allocate (ltpang(0:mxtang),          Stat = fail(7))
+    If (mxgang > 0) &
+    Allocate (ldfang(0:mxtang),          Stat = fail(8))
 
     If (Any(fail > 0)) Call error(1013)
 
@@ -53,6 +71,12 @@ Contains
     legang  = 0
 
     prmang  = 0.0_wp
+
+    If (lt_ang) &
+    ltpang  = 0
+
+    If (mxgang > 0) &
+    ldfang  = 0
 
   End Subroutine allocate_angles_arrays
 
@@ -69,5 +93,44 @@ Contains
     If (fail > 0) Call error(1028)
 
   End Subroutine deallocate_angles_arrays
+
+  Subroutine allocate_angl_pot_arrays()
+
+    Use setup_module, Only : mxgrid
+
+    Implicit None
+
+    Integer :: fail(1:2)
+
+    fail = 0
+
+    Allocate (vang(0:mxgrid,1:ltpang(0)), Stat = fail(1))
+    Allocate (gang(0:mxgrid,1:ltpang(0)), Stat = fail(2))
+
+    If (Any(fail > 0)) Call error(1074)
+
+    vang = 0.0_wp
+    gang = 0.0_wp
+
+  End Subroutine allocate_angl_pot_arrays
+
+  Subroutine allocate_angl_dst_arrays()
+
+    Use setup_module, Only : mxgang
+
+    Implicit None
+
+    Integer :: fail
+
+    fail = 0
+
+    Allocate (typang(-1:3,1:ldfang(0)),dstang(0:mxgang,1:ldfang(0)), Stat = fail)
+
+    If (fail > 0) Call error(1075)
+
+    typang = 0
+    dstang = 0.0_wp
+
+  End Subroutine allocate_angl_dst_arrays
 
 End Module angles_module

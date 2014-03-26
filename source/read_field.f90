@@ -17,6 +17,7 @@ Subroutine read_field                   &
 ! author    - i.t.todorov march 2014
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
+! contrib   - a.v.brukhno and i.t.todorov march 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -91,22 +92,30 @@ Subroutine read_field                   &
                             lshl_one,lshl_all,lpmf,lmet_safe,lter_safe
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
-  Character( Len = 4   ) :: keyword
+  Character( Len = 32  ) :: iddihd,idinvr
+  Character( Len = 24  ) :: idangl
+  Character( Len = 16  ) :: idbond
   Character( Len = 8   ) :: atom0,atom1,atom2,atom3
-  Integer                :: itmols,isite,jsite,ksite,msite,nsite,                &
-                            isite1,isite2,isite3,isite4,is(1:4),js(1:4),         &
-                            irept,nrept,ifrz,ntmp,i,j,ia,ja,jtpatm,ntab,keypot,  &
-                            iatm1,iatm2,iatm3,iatm4,katom0,katom1,katom2,katom3, &
-                            ishls,nshels,icnst,nconst,frzcon,ipmf,jpmf,kpmf,     &
-                            nrigid,irgd,jrgd,krgd,lrgd,frzrgd,iteth,nteth,       &
-                            ibond,nbonds,iang,nangle,idih,ndihed,iinv,ninver,    &
-                            itprdf,keyrdf,itpvdw,keyvdw,itpmet,keymet,           &
-                            itpter,keyter,icross,                                &
-                            itbp,itptbp,keytbp,ktbp,                             &
+  Character( Len = 4   ) :: keyword
+  Integer                :: fail(1:4),itmols,isite,jsite,ksite,msite,nsite,     &
+                            isite1,isite2,isite3,isite4,is(0:4),js(0:4),        &
+                            irept,nrept,ifrz,ntmp,i,j,ia,ja,jtpatm,ntab,keypot, &
+                            iatm1,iatm2,iatm3,iatm4,                            &
+                            katom0,katom1,katom2,katom3,katom4,                 &
+                            ishls,nshels,icnst,nconst,frzcon,ipmf,jpmf,kpmf,    &
+                            nrigid,irgd,jrgd,krgd,lrgd,frzrgd,iteth,nteth,      &
+                            ibond,nbonds,ntpbnd,iang,nangle,ntpang,             &
+                            idih,ndihed,ntpdih,iinv,ninver,ntpinv,              &
+                            itprdf,keyrdf,itpvdw,keyvdw,itpmet,keymet,          &
+                            itpter,keyter,icross,                               &
+                            itbp,itptbp,keytbp,ktbp,                            &
                             ifbp,itpfbp,keyfbp,ka1,ka2,ka3,kfbp,nfld,itmp
-  Real( Kind = wp )      :: weight,charge,pmf_tmp(1:2),parpot(1:30),tmp,         &
+  Real( Kind = wp )      :: weight,charge,pmf_tmp(1:2),parpot(1:30),tmp,        &
                             sig(0:2),eps(0:2),del(0:2)
 
+  Character( Len = 32 ), Allocatable :: dihd_name(:),invr_name(:)
+  Character( Len = 24 ), Allocatable :: angl_name(:)
+  Character( Len = 16 ), Allocatable :: bond_name(:)
 
 ! Initialise number of unique atom and shell types and of different types of molecules
 
@@ -139,6 +148,29 @@ Subroutine read_field                   &
   nangle = 0
   ndihed = 0
   ninver = 0
+
+! Initialise number of selected intramolecular TPs
+
+  ntpbnd = 0 ! number of unique intramolecular TPs - TABBND
+  ntpang = 0 ! number of unique intramolecular TPs - TABANG
+  ntpdih = 0 ! number of unique intramolecular TPs - TABDIH
+  ntpinv = 0 ! number of unique intramolecular TPs - TABINV
+
+! allocate and initialise auxiliary identity arrays
+
+  fail = 0
+  If (lt_bnd .or. mxgbnd > 0) Allocate (bond_name(1:mxtbnd), Stat=fail(1))
+  If (lt_ang .or. mxgang > 0) Allocate (angl_name(1:mxtang), Stat=fail(2))
+  If (lt_dih .or. mxgdih > 0) Allocate (dihd_name(1:mxtdih), Stat=fail(3))
+  If (lt_inv .or. mxginv > 0) Allocate (invr_name(1:mxtinv), Stat=fail(4))
+  If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'read_field allocation failure, node: ', idnode
+     Call error(0)
+  End If
+  If (lt_bnd) bond_name = ' '
+  If (lt_ang) angl_name = ' '
+  If (lt_dih) dihd_name = ' '
+  If (lt_inv) invr_name = ' '
 
 ! Initialise total number of particles(shells are particles in MD),
 ! frozen particles, shells, constraints, PMFs, RBs,
@@ -1035,14 +1067,16 @@ Subroutine read_field                   &
 ! Check for multiple tether entries
 
                  Do i=nteth-numteth(itmols)+1,nteth
+                    is(0)=keytet(i)
                     is(1)=lsttet(i)
 
                     Do j=i+1,nteth
+                       js(0)=keytet(j)
                        js(1)=lsttet(j)
 
                        If (js(1) == is(1)) Then
                           If (l_str .and. l_top) Call warning(410,Real(i,wp),Real(j,wp),0.0_wp)
-!                          Call error(620)
+                          If (is(0) == js(0)) Call error(620)
                        End If
                     End Do
                  End Do
@@ -1085,7 +1119,11 @@ Subroutine read_field                   &
 
                     If (keyword(1:1) /= '-') lexcl=.true.
 
-                    If      (keyword == 'harm') Then
+                    If      (keyword == 'tab' ) Then
+                       keybnd(nbonds)=20
+                    Else If (keyword == '-tab') Then
+                       keybnd(nbonds)=-20
+                    Else If (keyword == 'harm') Then
                        keybnd(nbonds)=1
                     Else If (keyword == '-hrm') Then
                        keybnd(nbonds)=-1
@@ -1138,34 +1176,97 @@ Subroutine read_field                   &
                     lstbnd(1,nbonds)=iatm1
                     lstbnd(2,nbonds)=iatm2
 
-                    Call get_word(record,word)
-                    prmbnd(1,nbonds)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmbnd(2,nbonds)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmbnd(3,nbonds)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmbnd(4,nbonds)=word_2_real(word)
-
-                    If (Abs(keybnd(nbonds)) == 9) Then
-                       prmbnd(2,nbonds)=Abs(prmbnd(2,nbonds))
-                       If (Abs(prmbnd(3,nbonds)) > prmbnd(2,nbonds)/2.0_wp) &
-                          prmbnd(3,nbonds)=Sign(1.0_wp,prmbnd(3,nbonds))*prmbnd(2,nbonds)/2.0_wp
-                    End If
-
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
 
+                    If (Abs(keybnd(nbonds)) /= 20) Then
+
+                       Call get_word(record,word)
+                       prmbnd(1,nbonds)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmbnd(2,nbonds)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmbnd(3,nbonds)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmbnd(4,nbonds)=word_2_real(word)
+
+                       If (Abs(keybnd(nbonds)) == 9) Then
+                          prmbnd(2,nbonds)=Abs(prmbnd(2,nbonds))
+                          If (Abs(prmbnd(3,nbonds)) > prmbnd(2,nbonds)/2.0_wp) &
+                             prmbnd(3,nbonds)=Sign(1.0_wp,prmbnd(3,nbonds))*prmbnd(2,nbonds)/2.0_wp
+                       End If
+
 ! test for frozen atoms and print unit
 
-                    If (idnode == 0 .and. l_top) Then
-                       If (frzsit(isite1)*frzsit(isite2) /= 0) Then
+                       If (idnode == 0 .and. l_top) Then
+                          If (frzsit(isite1)*frzsit(isite2) /= 0) Then
   Write(nrite,"(4x,a8,i10,a8,2i10,2x,10f15.6)") &
        '*frozen*',ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds),(prmbnd(ja,nbonds),ja=1,mxpbnd)
-                       Else
+                          Else
   Write(nrite,"(12x,i10,a8,2i10,2x,10f15.6)") &
                   ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds),(prmbnd(ja,nbonds),ja=1,mxpbnd)
+                          End If
                        End If
+
+! convert energy units to internal units
+
+                       prmbnd(1,nbonds)=prmbnd(1,nbonds)*engunit
+
+                       If (Abs(keybnd(nbonds)) == 3) Then
+                          prmbnd(2,nbonds)=prmbnd(2,nbonds)*engunit
+                       End If
+
+                       If (Abs(keybnd(nbonds)) == 6) Then
+                          prmbnd(3,nbonds)=prmbnd(3,nbonds)*engunit
+                          prmbnd(4,nbonds)=prmbnd(4,nbonds)*engunit
+                       End If
+
+                       If (Abs(keybnd(nbonds)) == 7) Then
+                          prmbnd(3,nbonds)=prmbnd(3,nbonds)*engunit
+                       End If
+
+                    Else ! TABBND to read
+
+! Construct unique name for the tabulated bond
+
+                       Do jsite=1,ntpatm
+                          If (sitnam(isite1) == unqatm(jsite)) katom1=jsite
+                          If (sitnam(isite2) == unqatm(jsite)) katom2=jsite
+                       End Do
+
+                       If (katom1 <= katom2) Then
+                          idbond = sitnam(iatm1)//sitnam(iatm2)
+                       Else
+                          idbond = sitnam(iatm2)//sitnam(iatm1)
+                       End If
+
+! ntpbnd total number of unique table potentials to read from TABBND
+
+                       Do i=1,ntpbnd
+                          If (bond_name(i) == idbond) Then
+                             ltpbnd(nbonds)=i ! Re-point from zero to type
+                             Exit
+                          End If
+                       End Do
+
+                       If (ltpbnd(nbonds) == 0) Then
+                          ntpbnd=ntpbnd+1
+                          bond_name(ntpbnd)=idbond
+
+                          ltpbnd(0)=ntpbnd      ! NUTBP
+                          ltpbnd(nbonds)=ntpbnd ! Re-point from zero to type
+                       End If
+
+                       If (idnode == 0 .and. l_top) Then
+                          If (frzsit(isite1)*frzsit(isite2) /= 0) Then
+  Write(nrite,"(4x,a8,i10,a8,2i10,2x,a9)") &
+       '*frozen*',ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds),"tabulated"
+                          Else
+  Write(nrite,"(12x,i10,a8,2i10,2x,a9)") &
+                  ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds),"tabulated"
+                          End If
+                       End If
+
                     End If
 
 ! catch unidentified entry
@@ -1175,39 +1276,23 @@ Subroutine read_field                   &
 ! test for mistyped chemical bond unit
 
                     If (iatm1 == iatm2) Call error(33)
-
-! convert energy units to internal units
-
-                    prmbnd(1,nbonds)=prmbnd(1,nbonds)*engunit
-
-                    If (Abs(keybnd(nbonds)) == 3) Then
-                       prmbnd(2,nbonds)=prmbnd(2,nbonds)*engunit
-                    End If
-
-                    If (Abs(keybnd(nbonds)) == 6) Then
-                       prmbnd(3,nbonds)=prmbnd(3,nbonds)*engunit
-                       prmbnd(4,nbonds)=prmbnd(4,nbonds)*engunit
-                    End If
-
-                    If (Abs(keybnd(nbonds)) == 7) Then
-                       prmbnd(3,nbonds)=prmbnd(3,nbonds)*engunit
-                    End If
-
                  End Do
 
 ! Check for multiple chemical bond entries
 
                  Do i=nbonds-numbonds(itmols)+1,nbonds
+                    is(0)=keybnd(i)
                     is(1)=Min(lstbnd(1,i),lstbnd(2,i))
                     is(2)=Max(lstbnd(1,i),lstbnd(2,i))
 
                     Do j=i+1,nbonds
+                       js(0)=keybnd(j)
                        js(1)=Min(lstbnd(1,j),lstbnd(2,j))
                        js(2)=Max(lstbnd(1,j),lstbnd(2,j))
 
                        If (js(1) == is(1) .and. js(2) == is(2)) Then
                           If (l_str .and. l_top) Call warning(420,Real(i,wp),Real(j,wp),0.0_wp)
-!                          Call error(620)
+                          If (is(0) == js(0)) Call error(620)
                        End If
                     End Do
                  End Do
@@ -1250,7 +1335,11 @@ Subroutine read_field                   &
 
                     If (keyword(1:1) /= '-') lexcl=.true.
 
-                    If      (keyword == 'harm') Then
+                    If      (keyword == 'tab' ) Then
+                       keyang(nangle)=20
+                    Else If (keyword == '-tab') Then
+                       keyang(nangle)=-20
+                    Else If (keyword == 'harm') Then
                        keyang(nangle)=1
                     Else If (keyword == '-hrm') Then
                        keyang(nangle)=-1
@@ -1326,33 +1415,101 @@ Subroutine read_field                   &
                     lstang(2,nangle)=iatm2
                     lstang(3,nangle)=iatm3
 
-                    Call get_word(record,word)
-                    prmang(1,nangle)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmang(2,nangle)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmang(3,nangle)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmang(4,nangle)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmang(5,nangle)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmang(6,nangle)=word_2_real(word)
-
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
                     isite3 = nsite - numsit(itmols) + iatm3
 
+                    If (Abs(keyang(nangle)) /= 20) Then
+
+                       Call get_word(record,word)
+                       prmang(1,nangle)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmang(2,nangle)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmang(3,nangle)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmang(4,nangle)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmang(5,nangle)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmang(6,nangle)=word_2_real(word)
+
 ! test for frozen atoms and print unit
 
-                    If (idnode == 0 .and. l_top) Then
-                       If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) /= 0) Then
+                       If (idnode == 0 .and. l_top) Then
+                          If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) /= 0) Then
   Write(nrite,"(4x,a8,i10,a8,3i10,10f15.6)") &
        '*frozen*',iang,keyword,(lstang(ia,nangle),ia=1,3),(prmang(ja,nangle),ja=1,mxpang)
-                       Else
+                          Else
   Write(nrite,"(12x,i10,a8,3i10,10f15.6)") &
                   iang,keyword,(lstang(ia,nangle),ia=1,3),(prmang(ja,nangle),ja=1,mxpang)
+                          End If
                        End If
+
+! convert energies to internal units
+
+                       prmang(1,nangle) = prmang(1,nangle)*engunit
+
+                       If      (Abs(keyang(nangle)) == 2) Then
+                          prmang(3,nangle) = prmang(3,nangle)*engunit
+                          prmang(4,nangle) = prmang(4,nangle)*engunit
+                       Else If (Abs(keyang(nangle)) == 12) Then
+                          prmang(2,nangle) = prmang(2,nangle)*engunit
+                          prmang(3,nangle) = prmang(3,nangle)*engunit
+                       End If
+
+! convert angles to radians
+
+                       If      (Abs(keyang(nangle)) == 12) Then
+                          prmang(4,nangle) = prmang(4,nangle)*(pi/180.0_wp)
+                       Else If (Abs(keyang(nangle)) /= 10) Then
+                          prmang(2,nangle) = prmang(2,nangle)*(pi/180.0_wp)
+                       End If
+
+                    Else ! TABANG to read
+
+! Construct unique name for the tabulated angle
+
+                       Do jsite=1,ntpatm
+                          If (sitnam(isite1) == unqatm(jsite)) katom1=jsite
+                          If (sitnam(isite3) == unqatm(jsite)) katom3=jsite
+                       End Do
+
+                       If (katom1 <= katom3) Then
+                          idangl = sitnam(iatm1)//sitnam(iatm2)//sitnam(iatm3)
+                       Else
+                          idangl = sitnam(iatm3)//sitnam(iatm2)//sitnam(iatm1)
+                       End If
+
+! ntpang total number of unique table potentials to read from TABANG
+
+                       Do i=1,ntpang
+                          If (angl_name(i) == idangl) Then
+                             ltpang(nangle)=i ! Re-point from zero to type
+                             Exit
+                          End If
+                       End Do
+
+                       If (ltpang(nangle) == 0) Then
+                          ntpang=ntpang+1
+                          angl_name(ntpang)=idangl
+
+                          ltpang(0)=ntpang      ! NUTAP
+                          ltpang(nangle)=ntpang ! Re-point from zero to type
+                       End If
+
+! test for frozen atoms and print unit
+
+                       If (idnode == 0 .and. l_top) Then
+                          If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) /= 0) Then
+  Write(nrite,"(4x,a8,i10,a8,3i10,2x,a9)") &
+       '*frozen*',iang,keyword,(lstang(ia,nangle),ia=1,3),"tabulated"
+                          Else
+  Write(nrite,"(12x,i10,a8,3i10,2x,a9)") &
+                  iang,keyword,(lstang(ia,nangle),ia=1,3),"tabulated"
+                          End If
+                       End If
+
                     End If
 
 ! catch unidentified entry
@@ -1362,37 +1519,18 @@ Subroutine read_field                   &
 ! test for mistyped bond angle unit
 
                     If (iatm1 == iatm2 .or. iatm1 == iatm3 .or. iatm2 == iatm3) Call error(66)
-
-! convert energies to internal units
-
-                    prmang(1,nangle) = prmang(1,nangle)*engunit
-
-                    If      (Abs(keyang(nangle)) == 2) Then
-                       prmang(3,nangle) = prmang(3,nangle)*engunit
-                       prmang(4,nangle) = prmang(4,nangle)*engunit
-                    Else If (Abs(keyang(nangle)) == 12) Then
-                       prmang(2,nangle) = prmang(2,nangle)*engunit
-                       prmang(3,nangle) = prmang(3,nangle)*engunit
-                    End If
-
-! convert angles to radians
-
-                    If      (Abs(keyang(nangle)) == 12) Then
-                       prmang(4,nangle) = prmang(4,nangle)*(pi/180.0_wp)
-                    Else If (Abs(keyang(nangle)) /= 10) Then
-                       prmang(2,nangle) = prmang(2,nangle)*(pi/180.0_wp)
-                    End If
-
                  End Do
 
 ! Check for multiple bond angle entries
 
                  Do i=nangle-numang(itmols)+1,nangle
+                    is(0)=keyang(i)
                     is(1)=Min(lstang(1,i),lstang(3,i))
                     is(2)=lstang(2,i)
                     is(3)=Max(lstang(1,i),lstang(3,i))
 
                     Do j=i+1,nangle
+                       js(0)=keyang(j)
                        js(1)=Min(lstang(1,j),lstang(3,j))
                        js(2)=lstang(2,j)
                        js(3)=Max(lstang(1,j),lstang(3,j))
@@ -1400,7 +1538,7 @@ Subroutine read_field                   &
                        If (js(1) == is(1) .and. js(2) == is(2) .and. &
                            js(3) == is(3)) Then
                           If (l_str .and. l_top) Call warning(430,Real(i,wp),Real(j,wp),0.0_wp)
-!                          Call error(620)
+                          If (is(0) == js(0)) Call error(620)
                        End If
                     End Do
                  End Do
@@ -1442,8 +1580,9 @@ Subroutine read_field                   &
 
                     Call lower_case(word)
                     keyword=word(1:4)
-
-                    If      (keyword == 'cos' ) Then
+                    If      (keyword == 'tab' ) Then
+                       keydih(ndihed)=20
+                    Else If (keyword == 'cos' ) Then
                        keydih(ndihed)=1
                     Else If (keyword == 'harm') Then
                        keydih(ndihed)=2
@@ -1480,36 +1619,100 @@ Subroutine read_field                   &
                     lstdih(3,ndihed)=iatm3
                     lstdih(4,ndihed)=iatm4
 
-                    Call get_word(record,word)
-                    prmdih(1,ndihed)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmdih(2,ndihed)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmdih(3,ndihed)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmdih(4,ndihed)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmdih(5,ndihed)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmdih(6,ndihed)=word_2_real(word)
-                    Call get_word(record,word)
-                    prmdih(7,ndihed)=word_2_real(word)
-
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
                     isite3 = nsite - numsit(itmols) + iatm3
                     isite4 = nsite - numsit(itmols) + iatm4
 
+                    If (keydih(ndihed) /= 20) Then
+
+                       Call get_word(record,word)
+                       prmdih(1,ndihed)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmdih(2,ndihed)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmdih(3,ndihed)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmdih(4,ndihed)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmdih(5,ndihed)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmdih(6,ndihed)=word_2_real(word)
+                       Call get_word(record,word)
+                       prmdih(7,ndihed)=word_2_real(word)
+
 ! test for frozen atoms and print unit
 
-                    If (idnode == 0 .and. l_top) Then
-                       If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
+                       If (idnode == 0 .and. l_top) Then
+                          If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
   Write(nrite,"(4x,a8,i10,a8,4i10,10f15.6)") &
        '*frozen*',idih,keyword,(lstdih(ia,ndihed),ia=1,4),(prmdih(ja,ndihed),ja=1,mxpdih)
-                       Else
+                          Else
   Write(nrite,"(12x,i10,a8,4i10,10f15.6)") &
                   idih,keyword,(lstdih(ia,ndihed),ia=1,4),(prmdih(ja,ndihed),ja=1,mxpdih)
+                          End If
                        End If
+
+! convert energies to internal units and angles to radians
+
+                       prmdih(1,ndihed)=prmdih(1,ndihed)*engunit
+
+                       If (keydih(ndihed) == 4) Then
+                          prmdih(2,ndihed)=prmdih(2,ndihed)*engunit
+                          prmdih(3,ndihed)=prmdih(3,ndihed)*engunit
+                       Else If (keydih(ndihed) == 7) Then
+                          prmdih(2,ndihed)=prmdih(2,ndihed)*engunit
+                          prmdih(3,ndihed)=prmdih(3,ndihed)*engunit
+                          prmdih(6,ndihed)=prmdih(6,ndihed)*engunit
+                          prmdih(7,ndihed)=prmdih(7,ndihed)*(pi/180.0_wp)
+                       Else
+                          prmdih(2,ndihed)=prmdih(2,ndihed)*(pi/180.0_wp)
+                       End If
+
+                    Else ! TABDIH to read
+
+! Construct unique name for the tabulated dihedral
+
+                       Do jsite=1,ntpatm
+                          If (sitnam(isite1) == unqatm(jsite)) katom1=jsite
+                          If (sitnam(isite4) == unqatm(jsite)) katom4=jsite
+                       End Do
+
+                       If (katom1 <= katom4) Then
+                          iddihd = sitnam(iatm1)//sitnam(iatm2)//sitnam(iatm3)//sitnam(iatm4)
+                       Else
+                          iddihd = sitnam(iatm4)//sitnam(iatm3)//sitnam(iatm2)//sitnam(iatm1)
+                       End If
+
+! ntpdih total number of unique table potentials to read from TABDIH
+
+                       Do i=1,ntpdih
+                          If (dihd_name(i) == iddihd) Then
+                             ltpdih(ndihed)=i ! Re-point from zero to type
+                             Exit
+                          End If
+                       End Do
+
+                       If (ltpdih(ndihed) == 0) Then
+                          ntpdih=ntpdih+1
+                          dihd_name(ntpdih)=iddihd
+
+                          ltpdih(0)=ntpdih      ! NUTDP
+                          ltpdih(ndihed)=ntpdih ! Re-point from zero to type
+                       End If
+
+! test for frozen atoms and print unit
+
+                       If (idnode == 0 .and. l_top) Then
+                          If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
+  Write(nrite,"(4x,a8,i10,a8,4i10,2x,a9)") &
+       '*frozen*',idih,keyword,(lstdih(ia,ndihed),ia=1,4),"tabulated"
+                          Else
+  Write(nrite,"(12x,i10,a8,4i10,2x,a9)") &
+                  idih,keyword,(lstdih(ia,ndihed),ia=1,4),"tabulated"
+                          End If
+                       End If
+
                     End If
 
 ! catch unidentified entry
@@ -1521,33 +1724,19 @@ Subroutine read_field                   &
                     If ( iatm1 == iatm2 .or. iatm1 == iatm3 .or. &
                          iatm2 == iatm3 .or. iatm1 == iatm4 .or. &
                          iatm2 == iatm4 .or. iatm3 == iatm4 ) Call error(67)
-
-! convert energies to internal units and angles to radians
-
-                    prmdih(1,ndihed)=prmdih(1,ndihed)*engunit
-
-                    If (keydih(ndihed) == 4) Then
-                       prmdih(2,ndihed)=prmdih(2,ndihed)*engunit
-                       prmdih(3,ndihed)=prmdih(3,ndihed)*engunit
-                    Else If (keydih(ndihed) == 7) Then
-                       prmdih(2,ndihed)=prmdih(2,ndihed)*engunit
-                       prmdih(3,ndihed)=prmdih(3,ndihed)*engunit
-                       prmdih(6,ndihed)=prmdih(6,ndihed)*engunit
-                       prmdih(7,ndihed)=prmdih(7,ndihed)*(pi/180.0_wp)
-                    Else
-                       prmdih(2,ndihed)=prmdih(2,ndihed)*(pi/180.0_wp)
-                    End If
                  End Do
 
 ! Check for multiple dihedral angle entries
 
                  Do i=ndihed-numdih(itmols)+1,ndihed
+                    is(0)=keydih(i)
                     is(1)=lstdih(1,i)
                     is(2)=lstdih(2,i)
                     is(3)=lstdih(3,i)
                     is(4)=lstdih(4,i)
 
                     Do j=i+1,ndihed
+                       js(0)=keydih(j)
                        js(1)=lstdih(1,j)
                        js(2)=lstdih(2,j)
                        js(3)=lstdih(3,j)
@@ -1558,7 +1747,7 @@ Subroutine read_field                   &
                            (js(1) == is(4) .and. js(2) == is(3) .and. &
                             js(3) == is(2) .and. js(4) == is(1))) Then
                           If (l_str .and. l_top) Call warning(440,Real(i,wp),Real(j,wp),0.0_wp)
-!                          Call error(620)
+                          If (is(0) == js(0)) Call error(620)
                        End If
                     End Do
                  End Do
@@ -1601,7 +1790,9 @@ Subroutine read_field                   &
                     Call lower_case(word)
                     keyword=word(1:4)
 
-                    If      (keyword == 'harm') Then
+                    If      (keyword == 'tab' ) Then
+                       keyinv(ninver)=20
+                    Else If (keyword == 'harm') Then
                        keyinv(ninver)=1
                     Else If (keyword == 'hcos') Then
                        keyinv(ninver)=2
@@ -1634,28 +1825,103 @@ Subroutine read_field                   &
                     lstinv(3,ninver)=iatm3
                     lstinv(4,ninver)=iatm4
 
-                    Call get_word(record,word)
-                    prminv(1,ninver)=word_2_real(word)
-                    Call get_word(record,word)
-                    prminv(2,ninver)=word_2_real(word)
-                    Call get_word(record,word)
-                    prminv(3,ninver)=word_2_real(word)
-
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
                     isite3 = nsite - numsit(itmols) + iatm3
                     isite4 = nsite - numsit(itmols) + iatm4
 
+                    If (keyinv(ninver) /= 20) Then
+
+                       Call get_word(record,word)
+                       prminv(1,ninver)=word_2_real(word)
+                       Call get_word(record,word)
+                       prminv(2,ninver)=word_2_real(word)
+                       Call get_word(record,word)
+                       prminv(3,ninver)=word_2_real(word)
+
 ! test for frozen atoms and print unit
 
-                    If (idnode == 0 .and. l_top) Then
-                       If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
+                       If (idnode == 0 .and. l_top) Then
+                          If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
   Write(nrite,"(4x,a8,i10,a8,4i10,10f15.6)") &
        '*frozen*',iinv,keyword,(lstinv(ia,ninver),ia=1,4),(prminv(ja,ninver),ja=1,mxpinv)
-                       Else
+                          Else
   Write(nrite,"(12x,i10,a8,4i10,10f15.6)") &
                   iinv,keyword,(lstinv(ia,ninver),ia=1,4),(prminv(ja,ninver),ja=1,mxpinv)
+                          End If
                        End If
+
+! convert energies to internal units and angles to radians
+
+                       prminv(1,ninver)=prminv(1,ninver)*engunit
+
+                       If (keyinv(ninver) == 5) Then
+                          prminv(2,ninver)=prminv(2,ninver)*engunit
+                       Else
+                          prminv(2,ninver)=prminv(2,ninver)*(pi/180.0_wp)
+                          If (keyinv(ninver) == 2) &
+                             prminv(2,ninver)=Cos(prminv(2,ninver))
+                       End If
+
+                    Else ! TABINV to read
+
+! Construct unique name for the tabulated inversions
+
+                       Do jsite=1,ntpatm
+                          If (sitnam(isite2) == unqatm(jsite)) katom2=jsite
+                          If (sitnam(isite3) == unqatm(jsite)) katom3=jsite
+                          If (sitnam(isite4) == unqatm(jsite)) katom4=jsite
+                       End Do
+
+                       If      (Min(katom2,katom3,katom4) == katom2) Then
+                          If (katom3 <= katom4) Then
+                             idinvr = sitnam(iatm1)//sitnam(iatm2)//sitnam(iatm3)//sitnam(iatm4)
+                          Else
+                             idinvr = sitnam(iatm1)//sitnam(iatm2)//sitnam(iatm4)//sitnam(iatm3)
+                          End If
+                       Else If (Min(katom2,katom3,katom4) == katom3) Then
+                          If (katom2 <= katom4) Then
+                             idinvr = sitnam(iatm1)//sitnam(iatm3)//sitnam(iatm2)//sitnam(iatm4)
+                          Else
+                             idinvr = sitnam(iatm1)//sitnam(iatm3)//sitnam(iatm4)//sitnam(iatm2)
+                          End If
+                       Else
+                          If (katom2 <= katom3) Then
+                             idinvr = sitnam(iatm1)//sitnam(iatm4)//sitnam(iatm2)//sitnam(iatm3)
+                          Else
+                             idinvr = sitnam(iatm1)//sitnam(iatm4)//sitnam(iatm3)//sitnam(iatm2)
+                          End If
+                       End If
+
+! ntpinv total number of unique table potentials to read from TABINV
+
+                       Do i=1,ntpinv
+                          If (invr_name(i) == idinvr) Then
+                             ltpinv(ninver)=i ! Re-point from zero to type
+                             Exit
+                          End If
+                       End Do
+
+                       If (ltpinv(ninver) == 0) Then
+                          ntpinv=ntpinv+1
+                          invr_name(ntpinv)=idinvr
+
+                          ltpinv(0)=ntpinv      ! NUTIP
+                          ltpinv(ninver)=ntpinv ! Re-point from zero to type
+                       End If
+
+! test for frozen atoms and print unit
+
+                       If (idnode == 0 .and. l_top) Then
+                          If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
+  Write(nrite,"(4x,a8,i10,a8,4i10,2x,a9)") &
+       '*frozen*',iinv,keyword,(lstinv(ia,ninver),ia=1,4),"tabulated"
+                          Else
+  Write(nrite,"(12x,i10,a8,4i10,2x,a9)") &
+                  iinv,keyword,(lstinv(ia,ninver),ia=1,4),"tabulated"
+                          End If
+                       End If
+
                     End If
 
 ! catch unidentified entry
@@ -1667,23 +1933,12 @@ Subroutine read_field                   &
                     If ( iatm1 == iatm2 .or. iatm1 == iatm3 .or. &
                          iatm2 == iatm3 .or. iatm1 == iatm4 .or. &
                          iatm2 == iatm4 .or. iatm3 == iatm4 ) Call error(68)
-
-! convert energies to internal units and angles to radians
-
-                    prminv(1,ninver)=prminv(1,ninver)*engunit
-
-                    If (keyinv(ninver) == 5) Then
-                       prminv(2,ninver)=prminv(2,ninver)*engunit
-                    Else
-                       prminv(2,ninver)=prminv(2,ninver)*(pi/180.0_wp)
-                       If (keyinv(ninver) == 2) &
-                          prminv(2,ninver)=Cos(prminv(2,ninver))
-                    End If
                  End Do
 
 ! Check for multiple inversion angle entries
 
                  Do i=ninver-numinv(itmols)+1,ninver
+                    is(0)=keyinv(i)
                     is(1)=lstinv(1,i)
                     is(2)=lstinv(2,i)
                     is(3)=lstinv(3,i)
@@ -1691,6 +1946,7 @@ Subroutine read_field                   &
                     Call shellsort(3,is(2:4))
 
                     Do j=i+1,ninver
+                       js(0)=keyinv(j)
                        js(1)=lstinv(1,j)
                        js(2)=lstinv(2,j)
                        js(3)=lstinv(3,j)
@@ -1700,7 +1956,7 @@ Subroutine read_field                   &
                        If (js(1) == is(1) .and. js(2) == is(2) .and. &
                            js(3) == is(3) .and. js(4) == is(4)) Then
                           If (l_str .and. l_top) Call warning(450,Real(i,wp),Real(j,wp),0.0_wp)
-!                          Call error(620)
+                          If (is(0) == js(0)) Call error(620)
                        End If
                     End Do
                  End Do
@@ -1753,6 +2009,470 @@ Subroutine read_field                   &
         If (idnode == 0) Then
   Write(nrite,"(/,/,1x,'total number of molecules',6x,i10)") Sum(nummols(1:ntpmls))
   Write(nrite,"(/,1x,'total number of sites',10x,i10)") nsite
+        End If
+
+! Deal with intarmolecular potential tables:
+! read & generate intramolecular potential & virial arrays
+
+        If (lt_bnd) Call bonds_table_read(bond_name,rcut)
+        If (lt_ang) Call angles_table_read(angl_name)
+        If (lt_dih) Call dihedrals_table_read(dihd_name)
+        If (lt_inv) Call inversions_table_read(invr_name)
+
+! if some intramolecular PDFs analysis is opted for
+
+        If (mxgana > 0) Then
+
+! Reinitialise number of unique intramolecular PDFs
+
+           ntpbnd = 0 ! for bonds
+           ntpang = 0 ! for angles
+           ntpdih = 0 ! for dihedrals
+           ntpinv = 0 ! for inversions
+
+! if needed reinitialise auxiliary identity arrays
+
+           If (mxgbnd > 0) bond_name = ' '
+           If (mxgang > 0) angl_name = ' '
+           If (mxgdih > 0) dihd_name = ' '
+           If (mxginv > 0) invr_name = ' '
+
+           nsite =0
+           nbonds=0
+           nangle=0
+           ndihed=0
+           ninver=0
+           Do itmols=1,ntpmls
+              Do ibond=1,numbonds(itmols)*Merge(1,0,mxgbnd > 0)
+                 nbonds=nbonds+1
+
+                 iatm1=lstbnd(1,nbonds)
+                 iatm2=lstbnd(2,nbonds)
+
+                 isite1 = nsite + iatm1
+                 isite2 = nsite + iatm2
+
+! Construct unique name for the bond
+
+                 Do jsite=1,ntpatm
+                    If (sitnam(isite1) == unqatm(jsite)) katom1=jsite
+                    If (sitnam(isite2) == unqatm(jsite)) katom2=jsite
+                 End Do
+
+                 If (katom1 <= katom2) Then
+                    idbond = sitnam(iatm1)//sitnam(iatm2)
+                 Else
+                    idbond = sitnam(iatm2)//sitnam(iatm1)
+                 End If
+
+! ntpbnd total number of unique BPDFs
+
+                 Do i=1,ntpbnd
+                    If (bond_name(i) == idbond) Then
+                       ldfbnd(nbonds)=i ! Re-point from zero to type
+                       Exit
+                    End If
+                 End Do
+
+                 If (ldfbnd(nbonds) == 0) Then
+                    ntpbnd=ntpbnd+1
+
+                    bond_name(ntpbnd)=idbond
+                    ldfbnd(0)=ntpbnd      ! NUTBPDF
+                    ldfbnd(nbonds)=ntpbnd ! Re-point from zero to type
+                 End If
+              End Do
+
+              Do iang=1,numang(itmols)*Merge(1,0,mxgang > 0)
+                 nangle=nangle+1
+
+                 iatm1=lstang(1,nangle)
+                 iatm2=lstang(2,nangle)
+                 iatm3=lstang(3,nangle)
+
+                 isite1 = nsite + iatm1
+                 isite2 = nsite + iatm2
+                 isite3 = nsite + iatm3
+
+! Construct unique name for the angle
+
+                 Do jsite=1,ntpatm
+                    If (sitnam(isite1) == unqatm(jsite)) katom1=jsite
+                    If (sitnam(isite3) == unqatm(jsite)) katom3=jsite
+                 End Do
+
+                 If (katom1 <= katom3) Then
+                    idangl = sitnam(iatm1)//sitnam(iatm2)//sitnam(iatm3)
+                 Else
+                    idangl = sitnam(iatm3)//sitnam(iatm2)//sitnam(iatm1)
+                 End If
+
+! ntpang total number of unique APDFs
+
+                 Do i=1,ntpang
+                    If (angl_name(i) == idangl) Then
+                       ldfang(nangle)=i ! Re-point from zero to type
+                       Exit
+                    End If
+                 End Do
+
+                 If (ldfang(nangle) == 0) Then
+                    ntpang=ntpang+1
+                    angl_name(ntpang)=idangl
+
+                    ldfang(0)=ntpang      ! NUTAPDF
+                    ldfang(nangle)=ntpang ! Re-point from zero to type
+                 End If
+              End Do
+
+              Do idih=1,numdih(itmols)*Merge(1,0,mxgdih > 0)
+                 ndihed=ndihed+1
+
+                 iatm1=lstdih(1,ndihed)
+                 iatm2=lstdih(2,ndihed)
+                 iatm3=lstdih(3,ndihed)
+                 iatm4=lstdih(4,ndihed)
+
+                 isite1 = nsite + iatm1
+                 isite2 = nsite + iatm2
+                 isite3 = nsite + iatm3
+                 isite4 = nsite + iatm4
+
+! Construct unique name for the dihedral
+
+                 Do jsite=1,ntpatm
+                    If (sitnam(isite1) == unqatm(jsite)) katom1=jsite
+                    If (sitnam(isite4) == unqatm(jsite)) katom4=jsite
+                 End Do
+
+                 If (katom1 <= katom4) Then
+                    iddihd = sitnam(iatm1)//sitnam(iatm2)//sitnam(iatm3)//sitnam(iatm4)
+                 Else
+                    iddihd = sitnam(iatm4)//sitnam(iatm3)//sitnam(iatm2)//sitnam(iatm1)
+                 End If
+
+! ntpdih total number of unique DPDFs
+
+                 Do i=1,ntpdih
+                    If (dihd_name(i) == iddihd) Then
+                       ldfdih(ndihed)=i ! Re-point from zero to type
+                       Exit
+                    End If
+                 End Do
+
+                 If (ldfdih(ndihed) == 0) Then
+                    ntpdih=ntpdih+1
+                    dihd_name(ntpdih)=iddihd
+
+                    ldfdih(0)=ntpdih      ! NUTDPDF
+                    ldfdih(ndihed)=ntpdih ! Re-point from zero to type
+                 End If
+              End Do
+
+              Do iinv=1,numinv(itmols)*Merge(1,0,mxginv > 0)
+                 ninver=ninver+1
+
+                 If (keyinv(ninver) /= 5) Cycle ! avoid the calcite OoP potential
+
+                 iatm1=lstinv(1,ninver)
+                 iatm2=lstinv(2,ninver)
+                 iatm3=lstinv(3,ninver)
+                 iatm4=lstinv(4,ninver)
+
+                 isite1 = nsite + iatm1
+                 isite2 = nsite + iatm2
+                 isite3 = nsite + iatm3
+                 isite4 = nsite + iatm4
+
+! Construct unique name for the tabulated inversions
+
+                 Do jsite=1,ntpatm
+                    If (sitnam(isite2) == unqatm(jsite)) katom2=jsite
+                    If (sitnam(isite3) == unqatm(jsite)) katom3=jsite
+                    If (sitnam(isite4) == unqatm(jsite)) katom4=jsite
+                 End Do
+
+                 If      (Min(katom2,katom3,katom4) == katom2) Then
+                    If (katom3 <= katom4) Then
+                       idinvr = sitnam(iatm1)//sitnam(iatm2)//sitnam(iatm3)//sitnam(iatm4)
+                    Else
+                       idinvr = sitnam(iatm1)//sitnam(iatm2)//sitnam(iatm4)//sitnam(iatm3)
+                    End If
+                 Else If (Min(katom2,katom3,katom4) == katom3) Then
+                    If (katom2 <= katom4) Then
+                       idinvr = sitnam(iatm1)//sitnam(iatm3)//sitnam(iatm2)//sitnam(iatm4)
+                    Else
+                       idinvr = sitnam(iatm1)//sitnam(iatm3)//sitnam(iatm4)//sitnam(iatm2)
+                    End If
+                 Else
+                    If (katom2 <= katom3) Then
+                       idinvr = sitnam(iatm1)//sitnam(iatm4)//sitnam(iatm2)//sitnam(iatm3)
+                    Else
+                       idinvr = sitnam(iatm1)//sitnam(iatm4)//sitnam(iatm3)//sitnam(iatm2)
+                    End If
+                 End If
+
+! ntpinv total number of unique IPDFs
+
+                 Do i=1,ntpinv
+                    If (invr_name(i) == idinvr) Then
+                       ldfinv(ninver)=i ! Re-point from zero to type
+                       Exit
+                    End If
+                 End Do
+
+                 If (ldfinv(ninver) == 0) Then
+                    ntpinv=ntpinv+1
+                    invr_name(ntpinv)=idinvr
+
+                    ldfinv(0)=ntpinv      ! NUTIPDFs
+                    ldfinv(ninver)=ntpinv ! Re-point from zero to type
+                 End If
+              End Do
+
+              nsite=nsite+numsit(itmols)
+           End Do
+
+! allocate PDFs arrays and record species and presence(frozen and non-frozen)
+
+           If (mxgbnd > 0) Then
+              Call allocate_bond_dst_arrays()
+
+!             typbnd = 0 ! initialised in bonds_module
+              ntpbnd = 0 ! Reinitialise number of unique intramolecular PDFs
+              Do i=1,nbonds
+                 iatm1=lstbnd(1,nbonds)
+                 iatm2=lstbnd(2,nbonds)
+
+                 isite1 = nsite + iatm1
+                 isite2 = nsite + iatm2
+
+                 j=ldfbnd(nbonds)
+                 If (j > ntpbnd) Then
+                    ntpbnd=ntpbnd+1
+
+                    Do jsite=1,ntpatm
+                       If (sitnam(isite1) == unqatm(jsite)) katom1=jsite
+                       If (sitnam(isite2) == unqatm(jsite)) katom2=jsite
+                    End Do
+
+                    If (katom1 <= katom2) Then
+                       typbnd(1,ntpbnd)=katom1
+                       typbnd(2,ntpbnd)=katom2
+                    Else
+                       typbnd(1,ntpbnd)=katom2
+                       typbnd(2,ntpbnd)=katom1
+                    End If
+
+                    If (frzsit(isite1)*frzsit(isite2) == 0) Then
+                       typbnd(0,ntpbnd)=typbnd(0,ntpbnd)+1
+                    Else
+                       typbnd(-1,ntpbnd)=typbnd(-1,ntpbnd)+1
+                    End If
+                 Else If (j > 0) Then
+                    If (frzsit(isite1)*frzsit(isite2) == 0) Then
+                       typbnd(0,j)=typbnd(0,j)+1
+                    Else
+                       typbnd(-1,j)=typbnd(-1,j)+1
+                    End If
+                 End If
+              End Do
+           End If
+
+           If (mxgang > 0) Then
+              Call allocate_angl_dst_arrays()
+
+!             typang = 0 ! initialised in angles_module
+              ntpang = 0 ! Reinitialise number of unique intramolecular PDFs
+              Do i=1,nangle
+                 iatm1=lstang(1,nangle)
+                 iatm2=lstang(2,nangle)
+                 iatm3=lstang(3,nangle)
+
+                 isite1 = nsite + iatm1
+                 isite2 = nsite + iatm2
+                 isite3 = nsite + iatm3
+
+                 j=ldfang(nangle)
+                 If (j > ntpang) Then
+                    ntpang=ntpang+1
+
+! Construct unique name for the angle
+
+                    Do jsite=1,ntpatm
+                       If (sitnam(isite1) == unqatm(jsite)) katom1=jsite
+                       If (sitnam(isite2) == unqatm(jsite)) katom2=jsite
+                       If (sitnam(isite3) == unqatm(jsite)) katom3=jsite
+                    End Do
+
+                    typang(2,ntpang)=katom2
+                    If (katom1 <= katom3) Then
+                       typang(1,ntpang)=katom1
+                       typang(3,ntpang)=katom3
+                    Else
+                       typang(1,ntpang)=katom3
+                       typang(3,ntpang)=katom1
+                    End If
+
+                    If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) == 0) Then
+                       typang(0,ntpang)=typang(0,ntpang)+1
+                    Else
+                       typang(-1,ntpang)=typang(-1,ntpang)+1
+                    End If
+                 Else If (j > 0) Then
+                    If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) == 0) Then
+                       typang(0,j)=typang(0,j)+1
+                    Else
+                       typang(-1,j)=typang(-1,j)+1
+                    End If
+                 End If
+              End Do
+           End If
+
+           If (mxgdih > 0) Then
+              Call allocate_dihd_dst_arrays()
+
+!             typdih = 0 ! initialised in dihedrals_module
+              ntpdih = 0 ! Reinitialise number of unique intramolecular PDFs
+              Do i=1,ndihed
+                 iatm1=lstdih(1,ndihed)
+                 iatm2=lstdih(2,ndihed)
+                 iatm3=lstdih(3,ndihed)
+                 iatm4=lstdih(4,ndihed)
+
+                 isite1 = nsite + iatm1
+                 isite2 = nsite + iatm2
+                 isite3 = nsite + iatm3
+                 isite4 = nsite + iatm4
+
+                 j=ldfdih(ndihed)
+                 If (j > ntpdih) Then
+                    ntpdih=ntpdih+1
+
+! Construct unique name for the dihedral
+
+                    Do jsite=1,ntpatm
+                       If (sitnam(isite1) == unqatm(jsite)) katom1=jsite
+                       If (sitnam(isite2) == unqatm(jsite)) katom2=jsite
+                       If (sitnam(isite3) == unqatm(jsite)) katom3=jsite
+                       If (sitnam(isite4) == unqatm(jsite)) katom4=jsite
+                    End Do
+
+                    If (katom1 <= katom4) Then
+                       typdih(1,ntpdih)=katom1
+                       typdih(2,ntpdih)=katom2
+                       typdih(3,ntpdih)=katom3
+                       typdih(4,ntpdih)=katom4
+                    Else
+                       typdih(1,ntpdih)=katom4
+                       typdih(2,ntpdih)=katom3
+                       typdih(3,ntpdih)=katom2
+                       typdih(4,ntpdih)=katom1
+                    End If
+
+                    If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
+                       typdih(0,ntpdih)=typdih(0,ntpdih)+1
+                    Else
+                       typdih(-1,ntpdih)=typdih(-1,ntpdih)+1
+                    End If
+                 Else If (j > 0) Then
+                    If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
+                       typdih(0,j)=typdih(0,j)+1
+                    Else
+                       typdih(-1,j)=typdih(-1,j)+1
+                    End If
+                 End If
+              End Do
+           End If
+
+           If (mxginv > 0) Then
+              Call allocate_invr_dst_arrays()
+
+!             typinv = 0 ! initialised in inversions_module
+              ntpinv = 0 ! Reinitialise number of unique intramolecular PDFs
+              Do i=1,ninver
+                 iatm1=lstinv(1,ninver)
+                 iatm2=lstinv(2,ninver)
+                 iatm3=lstinv(3,ninver)
+                 iatm4=lstinv(4,ninver)
+
+                 isite1 = nsite + iatm1
+                 isite2 = nsite + iatm2
+                 isite3 = nsite + iatm3
+                 isite4 = nsite + iatm4
+
+                 j=ldfinv(ninver)
+                 If (j > ntpinv) Then
+                    ntpinv=ntpinv+1
+
+! Construct unique name for the tabulated inversions
+
+                    Do jsite=1,ntpatm
+                       If (sitnam(isite1) == unqatm(jsite)) katom1=jsite
+                       If (sitnam(isite2) == unqatm(jsite)) katom2=jsite
+                       If (sitnam(isite3) == unqatm(jsite)) katom3=jsite
+                       If (sitnam(isite4) == unqatm(jsite)) katom4=jsite
+                    End Do
+
+                    typinv(1,ntpinv)=katom1
+                    If      (Min(katom2,katom3,katom4) == katom2) Then
+                       If (katom3 <= katom4) Then
+                          typinv(2,ntpinv)=katom2
+                          typinv(3,ntpinv)=katom3
+                          typinv(4,ntpinv)=katom4
+                       Else
+                          typinv(2,ntpinv)=katom2
+                          typinv(3,ntpinv)=katom4
+                          typinv(4,ntpinv)=katom3
+                       End If
+                    Else If (Min(katom2,katom3,katom4) == katom3) Then
+                       If (katom2 <= katom4) Then
+                          typinv(2,ntpinv)=katom3
+                          typinv(3,ntpinv)=katom2
+                          typinv(4,ntpinv)=katom4
+                       Else
+                          typinv(2,ntpinv)=katom3
+                          typinv(3,ntpinv)=katom4
+                          typinv(4,ntpinv)=katom2
+                       End If
+                    Else
+                       If (katom2 <= katom3) Then
+                          typinv(2,ntpinv)=katom4
+                          typinv(3,ntpinv)=katom2
+                          typinv(4,ntpinv)=katom3
+                       Else
+                          typinv(2,ntpinv)=katom4
+                          typinv(3,ntpinv)=katom3
+                          typinv(4,ntpinv)=katom2
+                       End If
+                    End If
+
+                    If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
+                       typinv(0,ntpinv)=typinv(0,ntpinv)+1
+                    Else
+                       typinv(-1,ntpinv)=typinv(-1,ntpinv)+1
+                    End If
+                 Else If (j > 0) Then
+                    If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
+                       typinv(0,j)=typinv(0,j)+1
+                    Else
+                       typinv(-1,j)=typinv(-1,j)+1
+                    End If
+                 End If
+              End Do
+           End If
+
+        End If
+
+! Deallocate possibly allocated auxiliary intramolecular TPs/PDFs arrays
+
+        If (lt_bnd .or. mxgbnd > 0) Deallocate (bond_name, Stat=fail(1))
+        If (lt_ang .or. mxgang > 0) Deallocate (angl_name, Stat=fail(2))
+        If (lt_dih .or. mxgdih > 0) Deallocate (dihd_name, Stat=fail(3))
+        If (lt_inv .or. mxginv > 0) Deallocate (invr_name, Stat=fail(4))
+        If (Any(fail > 0)) Then
+           Write(nrite,'(/,1x,a,i0)') 'read_field deallocation failure, node: ', idnode
+           Call error(0)
         End If
 
 ! just finished with molecular data
@@ -3183,6 +3903,15 @@ Subroutine read_field                   &
            If (rcfbp < 1.0e-6_wp) Call error(453)
            If (rcut < 2.0_wp*rcfbp) Call error(472)
         End If
+
+! read kim interaction data
+
+     Else If (word(1:3) == 'kim') Then
+
+        Call get_word(record,word)
+
+        If (idnode == 0) &
+  Write(nrite,"(/,/,1x,'KIM interaction model specified: ',a)") word
 
 ! read external field data
 

@@ -1,15 +1,14 @@
-Subroutine rdf_collect(iatm,rcut,rsqdf)
+Subroutine rdf_frzn_collect(iatm,rcut,rsqdf)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for accumulating statistic for radial
-! distribution functions
+! distribution functions of frozen pairs
 !
 ! Note: to be used as part of two_body_forces
 !
 ! copyright - daresbury laboratory
-! author    - t.forester march 1994
-! amended   - i.t.todorov march 2014
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,7 +26,7 @@ Subroutine rdf_collect(iatm,rcut,rsqdf)
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: rcsq,rdelr
 
-  Integer                 :: idi,jatm,ai,aj,keyrdf,kk,ll,m
+  Integer                 :: limit,idi,jatm,ai,aj,keyrdf,kk,ll,m
   Real( Kind = wp )       :: rrr,rsq
 
 
@@ -40,18 +39,22 @@ Subroutine rdf_collect(iatm,rcut,rsqdf)
      rdelr= Real(mxgrdf,wp)/rcut
   End If
 
-! global identity and type f iatm
+! global identity and type of iatm
 
   idi=ltg(iatm)
   ai=ltype(iatm)
 
+! Get list limit
+
+  limit=list(-2,iatm)-list(-1,iatm)
+
 ! start of primary loop for rdf accumulation
 
-  Do m=1,list(0,iatm)
+  Do m=1,limit
 
 ! atomic and type indices
 
-     jatm=list(m,iatm)
+     jatm=list(list(-1,iatm)+m,iatm)
      aj=ltype(jatm)
 
      If (jatm <= natms .or. idi < ltg(jatm)) Then
@@ -84,4 +87,4 @@ Subroutine rdf_collect(iatm,rcut,rsqdf)
 
   End Do
 
-End Subroutine rdf_collect
+End Subroutine rdf_frzn_collect

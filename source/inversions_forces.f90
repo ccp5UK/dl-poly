@@ -1,30 +1,35 @@
-Subroutine inversions_forces(imcon,enginv,virinv,stress)
+Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for calculating inversion energy and force terms
 !
+! isw = 0 - collect statistics
+! isw = 1 - calculate forces
+! isw = 2 - do both
+!
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1996
-! amended   - i.t.todorov august 2011
+! amended   - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,      Only : mxinv,nrite
+  Use setup_module,      Only : nrite,mxinv,mxginv,pi
   Use config_module,     Only : cell,natms,nlast,lsi,lsa,lfrzn, &
                                 xxx,yyy,zzz,fxx,fyy,fzz
-  Use inversions_module, Only : ntinv,keyinv,listinv,prminv
+  Use inversions_module, Only : ntinv,keyinv,listinv,prminv, &
+                                ltpinv,vinv,ginv,ldfinv,dstinv
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: imcon
+  Integer,                             Intent( In    ) :: isw,imcon
   Real( Kind = wp ),                   Intent(   Out ) :: enginv,virinv
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
 
   Logical           :: safe
-  Integer           :: fail(1:4),i,j,ia,ib,ic,id,kk,local_index
+  Integer           :: fail(1:4),i,j,l,ia,ib,ic,id,kk,keyi,local_index
   Real( Kind = wp ) :: xab,yab,zab,rab2,rrab, xac,yac,zac,rac2,rrac,   &
                        xad,yad,zad,rad2,rrad, rbc,rcd,rdb,             &
                        ubx,uby,ubz,ubn,rub, vbx,vby,vbz,vbn,rvb,wwb,   &
@@ -35,6 +40,7 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
                        thb,thc,thd,  k,th0,cos0,a,b,m,                 &
                        uuu,uu2,uun,uux,uuy,uuz,                        &
                        pterm,vterm,gamma,gamb,gamc,gamd,               &
+                       rdelth,rdr,ppp,vk,vk1,vk2,t1,t2,                &
                        fax,fay,faz, fbx,fby,fbz,                       &
                        fcx,fcy,fcz, fdx,fdy,fdz,                       &
                        strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:2)
@@ -93,8 +99,9 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
 ! select potential energy function type
 
         kk=listinv(0,i)
+        keyi=keyinv(kk)
 
-        If (keyinv(kk) == 5) Then
+        If (keyi == 5) Then
            xdac(i)=xxx(ic)-xxx(ib)
            ydac(i)=yyy(ic)-yyy(ib)
            zdac(i)=zzz(ic)-zzz(ib)
@@ -145,33 +152,35 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
      Call error(134)
   End If
 
-! Initialise safety flag
-
-  safe=.true.
-
 ! periodic boundary condition
 
   Call images(imcon,cell,ntinv,xdab,ydab,zdab)
   Call images(imcon,cell,ntinv,xdac,ydac,zdac)
   Call images(imcon,cell,ntinv,xdad,ydad,zdad)
 
-! zero inversion energy accumulator
+  If (Mod(isw,3) > 0) Then
 
-  enginv=0.0_wp
-  virinv=0.0_wp
+! Initialise safety flag
 
-! flag for undefined potential
-
-  safe=.true.
+     safe=.true.
 
 ! initialise stress tensor accumulators
 
-  strs1=0.0_wp
-  strs2=0.0_wp
-  strs3=0.0_wp
-  strs5=0.0_wp
-  strs6=0.0_wp
-  strs9=0.0_wp
+     strs1=0.0_wp
+     strs2=0.0_wp
+     strs3=0.0_wp
+     strs5=0.0_wp
+     strs6=0.0_wp
+     strs9=0.0_wp
+
+! zero inversion energy accumulator
+
+     enginv=0.0_wp
+     virinv=0.0_wp
+
+  End If
+
+  If (Mod(isw,2) == 0) rdelth = Real(mxginv,wp)/pi
 
 ! loop over all specified inversions
 
@@ -208,8 +217,9 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
 ! select potential energy function type
 
         kk=listinv(0,i)
+        keyi=keyinv(kk)
 
-        If (keyinv(kk) == 5) Then
+        If (keyi == 5) Then
 
 ! calculate vector normal to plane
 
@@ -295,11 +305,30 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
            cosc=wwc*rrac ; If (Abs(cosc) > 1.0_wp) cosc=Sign(1.0_wp,cosb)
            cosd=wwd*rrad ; If (Abs(cosd) > 1.0_wp) cosd=Sign(1.0_wp,cosb)
 
+! accumulate the histogram (distribution)
+
+           If (Mod(isw,2) == 0 .and. ib <= natms) Then
+              j = ldfinv(kk)
+
+              thb=Acos(cosb)
+              l = Min(1+Int(thb*rdelth),mxginv)
+              dstinv(l,j) = dstinv(l,j) + 1.0_wp
+
+              thc=Acos(cosc)
+              l = Min(1+Int(thc*rdelth),mxginv)
+              dstinv(l,j) = dstinv(l,j) + 1.0_wp
+
+              thd=Acos(cosd)
+              l = Min(1+Int(thd*rdelth),mxginv)
+              dstinv(l,j) = dstinv(l,j) + 1.0_wp
+           End If
+
         End If
+        If (isw == 0) Cycle
 
 ! calculate potential energy and scalar force term
 
-        If      (keyinv(kk) == 1) Then
+        If      (keyi == 1) Then
 
 ! harmonic inversion potential
 
@@ -320,7 +349,7 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
            gamd=0.0_wp
            If (Abs(thd) > 1.0e-10_wp) gamd=2.0_wp*k*(thd-th0)/Sin(thd)
 
-        Else If (keyinv(kk) == 2) Then
+        Else If (keyi == 2) Then
 
 ! harmonic cosine inversion potential
 
@@ -334,7 +363,7 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
            gamc=-2.0_wp*k*(cosc-cos0)
            gamd=-2.0_wp*k*(cosd-cos0)
 
-        Else If (keyinv(kk) == 3) Then
+        Else If (keyi == 3) Then
 
 ! planar inversion potentials
 
@@ -347,7 +376,7 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
            gamc=a/3.0_wp
            gamd=a/3.0_wp
 
-        Else If (keyinv(kk) == 4) Then
+        Else If (keyi == 4) Then
 
 ! extended planar inversion potentials
 
@@ -369,7 +398,7 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
            gamd=0.0_wp
            If (Abs(thd) > 1.0e-10_wp) gamd=k*Sin(m*thd-th0)/Sin(thd)
 
-        Else If (keyinv(kk) == 5) Then
+        Else If (keyi == 5) Then
 
 ! planar calcite potential
 
@@ -385,6 +414,85 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
            gamb=0.0_wp
            gamc=0.0_wp
            gamd=0.0_wp
+
+        Else If (keyi == 20) Then
+
+! TABINV potential
+
+           pterm=0.0_wp
+
+           j = ltpinv(kk)
+           rdr = ginv(0,j) ! 1.0_wp/delpot (in rad^-1)
+
+           thb=Acos(cosb)
+           thc=Acos(cosc)
+           thd=Acos(cosd)
+
+           l   = Int(thb*rdr)
+           ppp = thb*rdr - Real(l,wp)
+
+           vk  = Merge(vinv(l,j), 0.0_wp, l > 0)
+           vk1 = vinv(l+1,j)
+           vk2 = vinv(l+2,j)
+
+           t1 = vk  + (vk1 - vk)*ppp
+           t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+
+           pterm = pterm + t1 + (t2-t1)*ppp*0.5_wp
+
+           vk  = Merge(ginv(l,j), 0.0_wp, l > 0)
+           vk1 = ginv(l+1,j)
+           vk2 = ginv(l+2,j)
+
+           t1 = vk  + (vk1 - vk)*ppp
+           t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+
+           gamb = -t1 + (t2-t1)*ppp*0.5_wp
+
+           l   = Int(thc*rdr)
+           ppp = thc*rdr - Real(l,wp)
+
+           vk  = Merge(vinv(l,j), 0.0_wp, l > 0)
+           vk1 = vinv(l+1,j)
+           vk2 = vinv(l+2,j)
+
+           t1 = vk  + (vk1 - vk)*ppp
+           t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+
+           pterm = pterm + t1 + (t2-t1)*ppp*0.5_wp
+
+           vk  = Merge(ginv(l,j), 0.0_wp, l > 0)
+           vk1 = ginv(l+1,j)
+           vk2 = ginv(l+2,j)
+
+           t1 = vk  + (vk1 - vk)*ppp
+           t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+
+           gamc = -t1 + (t2-t1)*ppp*0.5_wp
+
+           l   = Int(thd*rdr)
+           ppp = thd*rdr - Real(l,wp)
+
+           vk  = Merge(vinv(l,j), 0.0_wp, l > 0)
+           vk1 = vinv(l+1,j)
+           vk2 = vinv(l+2,j)
+
+           t1 = vk  + (vk1 - vk)*ppp
+           t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+
+           pterm = pterm + t1 + (t2-t1)*ppp*0.5_wp
+
+           vk  = Merge(ginv(l,j), 0.0_wp, l > 0)
+           vk1 = ginv(l+1,j)
+           vk2 = ginv(l+2,j)
+
+           t1 = vk  + (vk1 - vk)*ppp
+           t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+
+           gamd = -t1 + (t2-t1)*ppp*0.5_wp
+
+           vterm=0.0_wp
+           gamma=0.0_wp
 
         Else
 
@@ -575,31 +683,35 @@ Subroutine inversions_forces(imcon,enginv,virinv,stress)
      End If
   End Do
 
+  If (Mod(isw,3) > 0) Then
+
 ! complete stress tensor
 
-  stress(1) = stress(1) + strs1
-  stress(2) = stress(2) + strs2
-  stress(3) = stress(3) + strs3
-  stress(4) = stress(4) + strs2
-  stress(5) = stress(5) + strs5
-  stress(6) = stress(6) + strs6
-  stress(7) = stress(7) + strs3
-  stress(8) = stress(8) + strs6
-  stress(9) = stress(9) + strs9
+     stress(1) = stress(1) + strs1
+     stress(2) = stress(2) + strs2
+     stress(3) = stress(3) + strs3
+     stress(4) = stress(4) + strs2
+     stress(5) = stress(5) + strs5
+     stress(6) = stress(6) + strs6
+     stress(7) = stress(7) + strs3
+     stress(8) = stress(8) + strs6
+     stress(9) = stress(9) + strs9
 
 ! check for undefined potentials
 
-  If (mxnode > 1) Call gcheck(safe)
-  If (.not.safe) Call error(449)
+     If (mxnode > 1) Call gcheck(safe)
+     If (.not.safe) Call error(449)
 
 ! global sum of inversion potential and virial
 
-  If (mxnode > 1) Then
-     buffer(1)=enginv
-     buffer(2)=virinv
-     Call gsum(buffer(1:2))
-     enginv=buffer(1)
-     virinv=buffer(2)
+     If (mxnode > 1) Then
+        buffer(1)=enginv
+        buffer(2)=virinv
+        Call gsum(buffer(1:2))
+        enginv=buffer(1)
+        virinv=buffer(2)
+     End If
+
   End If
 
   Deallocate (lunsafe,lstopt, Stat=fail(1))

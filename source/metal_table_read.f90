@@ -135,8 +135,8 @@ Subroutine metal_table_read(l_top)
 
      If (katom1 == 0 .or. katom2 == 0) Then
         If (idnode == 0 .and. l_top) &
-           Write(nrite,'(a)') '****',atom1,'***',atom2,'****'
-        Call  error(81)
+           Write(nrite,'(a)') '****',atom1,'***',atom2,'**** entry in TABEAM'
+        Call error(81)
      End If
 
 ! store working parameters

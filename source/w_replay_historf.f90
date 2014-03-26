@@ -23,8 +23,17 @@
   nsrsd = 0
   isrsd = 1
 
+! intramolecular PDF analysis for every entry in HISTORF
+! enforce printing and collection if the calculation exists
+
+  lpana=(mxgana > 0)
+  nstbnd = 1
+  nstang = 1
+  nstdih = 1
+  nstinv = 1
+
 ! rdf and z-density detection for every entry in HISTORF
-! impose printing if calculation exists
+! enforce printing and collection if the calculation exists
 
   lprdf=lrdf ; nstrdf = 1
   lpzdn=lzdn ; nstzdn = 1

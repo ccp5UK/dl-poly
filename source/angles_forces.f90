@@ -1,33 +1,40 @@
-Subroutine angles_forces(imcon,engang,virang,stress)
+Subroutine angles_forces(isw,imcon,engang,virang,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for calculating bond angle energy and force terms
 !
+! isw = 0 - collect statistics
+! isw = 1 - calculate forces
+! isw = 2 - do both
+!
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
 ! amended   - i.t.todorov march 2014
+! contrib   - a.v.brukhno and i.t.todorov march 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,  Only : mxangl,nrite,pi
+  Use setup_module,  Only : mxangl,mxgang,nrite,pi
   Use config_module, Only : cell,natms,nlast,lsi,lsa,lfrzn, &
                             xxx,yyy,zzz,fxx,fyy,fzz
-  Use angles_module, Only : ntangl,keyang,listang,prmang
+  Use angles_module, Only : ntangl,keyang,listang,prmang, &
+                            ltpang,vang,gang,ldfang,dstang
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: imcon
+  Integer,                             Intent( In    ) :: isw,imcon
   Real( Kind = wp ),                   Intent(   Out ) :: engang,virang
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
 
   Logical           :: safe
-  Integer           :: fail(1:3),i,j,ia,ib,ic,keya,kk,local_index
+  Integer           :: fail(1:3),i,j,l,ia,ib,ic,keya,kk,local_index
   Real( Kind = wp ) :: xab,yab,zab,rab,rrab, xbc,ybc,zbc,rbc,rrbc, &
                        theta,cost,sint,rsint,                      &
                        fxa,fxc,fya, fyc,fza,fzc,                   &
+                       rdelth,rdr,ppp,vk,vk1,vk2,t1,t2,            &
                        k,k2,k3,k4,theta0,dtheta,dthpi,dth0pi,dth,  &
                        rho,rho1,rho2,switch,a,b,c,delta,m,dr1,dr2, &
                        gr,rm,tmp,pterm,gamma,gamsa,gamsc,vterm,    &
@@ -118,23 +125,29 @@ Subroutine angles_forces(imcon,engang,virang,stress)
   Call images(imcon,cell,ntangl,xdab,ydab,zdab)
   Call images(imcon,cell,ntangl,xdbc,ydbc,zdbc)
 
+  If (Mod(isw,3) > 0) Then
+
 ! Initialise safety flag
 
-  safe=.true.
+     safe=.true.
 
 ! initialise stress tensor accumulators
 
-  strs1=0.0_wp
-  strs2=0.0_wp
-  strs3=0.0_wp
-  strs5=0.0_wp
-  strs6=0.0_wp
-  strs9=0.0_wp
+     strs1=0.0_wp
+     strs2=0.0_wp
+     strs3=0.0_wp
+     strs5=0.0_wp
+     strs6=0.0_wp
+     strs9=0.0_wp
 
 ! zero angle energy accumulator
 
-  engang=0.0_wp
-  virang=0.0_wp
+     engang=0.0_wp
+     virang=0.0_wp
+
+  End If
+
+  If (Mod(isw,2) == 0) rdelth = Real(mxgang,wp)/pi
 
 ! loop over all specified angle potentials
 
@@ -165,10 +178,6 @@ Subroutine angles_forces(imcon,engang,virang,stress)
         ybc=ydbc(i)*rrbc
         zbc=zdbc(i)*rrbc
 
-! index of potential function parameters
-
-        kk=listang(0,i)
-
 ! determine bond angle and calculate potential energy
 
         cost=(xab*xbc+yab*ybc+zab*zbc)
@@ -177,7 +186,20 @@ Subroutine angles_forces(imcon,engang,virang,stress)
         sint=Max(1.0e-10_wp,Sqrt(1.0_wp-cost**2))
         rsint=1.0_wp/sint
 
+! index of potential function parameters
+
+        kk=listang(0,i)
         keya = Abs(keyang(kk))
+
+! accumulate the histogram (distribution)
+
+        If (Mod(isw,2) == 0 .and. ib <= natms) Then
+           j = ldfang(kk)
+           l = Min(1+Int(theta*rdelth),mxgang)
+
+           dstang(l,j) = dstang(l,j) + 1.0_wp
+        End If
+        If (isw == 0) Cycle
 
         If      (keya == 1) Then
 
@@ -436,6 +458,38 @@ Subroutine angles_forces(imcon,engang,virang,stress)
            gamsc=gamsa
            vterm=-gamsa*(rab+rbc)
 
+        Else If (keya == 20) Then
+
+! TABANG potential
+
+           j = ltpang(kk)
+           rdr = gang(0,j) ! 1.0_wp/delpot (in rad^-1)
+
+           l   = Int(theta*rdr)
+           ppp = theta*rdr - Real(l,wp)
+
+           vk  = Merge(vang(l,j), 0.0_wp, l > 0)
+           vk1 = vang(l+1,j)
+           vk2 = vang(l+2,j)
+
+           t1 = vk  + (vk1 - vk)*ppp
+           t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+
+           pterm = t1 + (t2-t1)*ppp*0.5_wp
+
+           vk  = Merge(gang(l,j), 0.0_wp, l > 0)
+           vk1 = gang(l+1,j)
+           vk2 = gang(l+2,j)
+
+           t1 = vk  + (vk1 - vk)*ppp
+           t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+
+           gamma =-(t1 + (t2-t1)*ppp*0.5_wp)*rsint
+
+           vterm=0.0_wp
+           gamsa=0.0_wp
+           gamsc=0.0_wp
+
         Else
 
 ! undefined potential
@@ -500,32 +554,36 @@ Subroutine angles_forces(imcon,engang,virang,stress)
      End If
   End Do
 
-! check for undefined potentials
-
-  If (mxnode > 1) Call gcheck(safe)
-  If (.not.safe) Call error(440)
+  If (Mod(isw,3) > 0) Then
 
 ! global sum of angular potential and virial
 
-  If (mxnode > 1) Then
-     buffer(1)=engang
-     buffer(2)=virang
-     Call gsum(buffer(1:2))
-     engang=buffer(1)
-     virang=buffer(2)
-  End If
+     If (mxnode > 1) Then
+        buffer(1)=engang
+        buffer(2)=virang
+        Call gsum(buffer(1:2))
+        engang=buffer(1)
+        virang=buffer(2)
+     End If
 
 ! complete stress tensor
 
-  stress(1) = stress(1) + strs1
-  stress(2) = stress(2) + strs2
-  stress(3) = stress(3) + strs3
-  stress(4) = stress(4) + strs2
-  stress(5) = stress(5) + strs5
-  stress(6) = stress(6) + strs6
-  stress(7) = stress(7) + strs3
-  stress(8) = stress(8) + strs6
-  stress(9) = stress(9) + strs9
+     stress(1) = stress(1) + strs1
+     stress(2) = stress(2) + strs2
+     stress(3) = stress(3) + strs3
+     stress(4) = stress(4) + strs2
+     stress(5) = stress(5) + strs5
+     stress(6) = stress(6) + strs6
+     stress(7) = stress(7) + strs3
+     stress(8) = stress(8) + strs6
+     stress(9) = stress(9) + strs9
+
+! check for undefined potentials
+
+     If (mxnode > 1) Call gcheck(safe)
+     If (.not.safe) Call error(440)
+
+  End If
 
   Deallocate (lunsafe,lstopt, Stat=fail(1))
   Deallocate (xdab,ydab,zdab, Stat=fail(2))

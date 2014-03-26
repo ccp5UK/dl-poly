@@ -104,7 +104,7 @@ Subroutine error(kode)
 
      Else If (kode ==   22) Then
 
-        Write(nrite,'(/,1x,a)') 'error - unsuitable radial increment in TABLE file'
+        Write(nrite,'(/,1x,a)') 'error - unsuitable radial increment in TABLE||TABBND||TABANG||TABDIH||TABINV file'
 
      Else If (kode ==   23) Then
 
@@ -112,7 +112,7 @@ Subroutine error(kode)
 
      Else If (kode ==   24) Then
 
-        Write(nrite,'(/,1x,a)') 'error - end of file encountered in TABLE or TABEAM file'
+        Write(nrite,'(/,1x,a)') 'error - end of file encountered in TABLE||TABEAM||TABBND||TABANG||TABDIH||TABINV file'
 
      Else If (kode ==   25) Then
 
@@ -200,7 +200,7 @@ Subroutine error(kode)
 
      Else If (kode ==   48) Then
 
-        Write(nrite,'(/,1x,a)') 'error - transfer buffer too small in vdw_table_read or metal_table_read'
+        Write(nrite,'(/,1x,a)') 'error - transfer buffer too small in *_table_read'
 
      Else If (kode ==   49) Then
 
@@ -336,11 +336,11 @@ Subroutine error(kode)
 
      Else If (kode ==   83) Then
 
-        Write(nrite,'(/,1x,a)') 'error - too many three-body potentials specified'
+        Write(nrite,'(/,1x,a)') 'error - too many three-body/angles potentials specified'
 
      Else If (kode ==   84) Then
 
-        Write(nrite,'(/,1x,a)') 'error - unidentified atom in three-body potential list'
+        Write(nrite,'(/,1x,a)') 'error - unidentified atom in three-body/angles potential list'
 
      Else If (kode ==   85) Then
 
@@ -360,7 +360,7 @@ Subroutine error(kode)
 
      Else If (kode ==   89) Then
 
-        Write(nrite,'(/,1x,a)') 'error - too many four-body potentials specified'
+        Write(nrite,'(/,1x,a)') 'error - too many four-body/dihedrals/inversions potentials specified'
 
      Else If (kode ==   90) Then
 
@@ -368,7 +368,7 @@ Subroutine error(kode)
 
      Else If (kode ==   91) Then
 
-        Write(nrite,'(/,1x,a)') 'error - unidentified atom in four-body potential list'
+        Write(nrite,'(/,1x,a)') 'error - unidentified atom in four-body/dihedrals/iversions potential list'
 
      Else If (kode ==   92) Then
 
@@ -533,6 +533,10 @@ Subroutine error(kode)
      Else If (kode ==  170) Then
 
         Write(nrite,'(/,1x,a)') 'error - too many variables for statistics array'
+
+     Else If (kode ==  172) Then
+
+        Write(nrite,'(/,1x,a)') 'error - duplicate intra-molecular entries specified in TABBND||TABANG||TABDIH||TABINV'
 
      Else If (kode ==  200) Then
 
@@ -808,7 +812,7 @@ Subroutine error(kode)
 
      Else If (kode ==  504) Then
 
-        Write(nrite,'(/,1x,a)') 'error - cutoff too large for TABLE file'
+        Write(nrite,'(/,1x,a)') 'error - cutoff too large for TABLE||TABBND file'
 
      Else If (kode ==  505) Then
 
@@ -1000,6 +1004,10 @@ Subroutine error(kode)
      Else If (kode ==  655) Then
 
         Write(nrite,'(/,1x,a)') 'error - FENE bond breaking failure'
+
+     Else If (kode ==  660) Then
+
+        Write(nrite,'(/,1x,a)') 'error - TABBND or PDF bond breaking failure'
 
      Else If (kode == 1000) Then
 
@@ -1240,6 +1248,38 @@ Subroutine error(kode)
      Else If (kode == 1070) Then
 
         Write(nrite,'(/,1x,a)') 'error - allocation failure in ewald_module -> ewald_allocate_kfrz_arrays'
+
+     Else If (kode == 1072) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in bonds_module -> allocate_bond_pot_arrays'
+
+     Else If (kode == 1073) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in bonds_module -> allocate_bond_dst_arrays'
+
+     Else If (kode == 1074) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in angles_module -> allocate_angl_pot_arrays'
+
+     Else If (kode == 1075) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in angles_module -> allocate_angl_dst_arrays'
+
+     Else If (kode == 1076) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in dihedrals_module -> allocate_dihd_pot_arrays'
+
+     Else If (kode == 1077) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in dihedrals_module -> allocate_dihd_dst_arrays'
+
+     Else If (kode == 1078) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in inversion_module -> allocate_invr_pot_arrays'
+
+     Else If (kode == 1079) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in inversion_module -> allocate_invr_dst_arrays'
 
      Else
 

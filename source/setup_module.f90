@@ -7,7 +7,7 @@ Module setup_module
 ! set @ execution time
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov march 2014
 !
 ! Note(1): The following internal units apply everywhere
 !
@@ -110,6 +110,11 @@ Module setup_module
 
   Integer, Parameter :: nrsddt = 27
 
+! intramolecular PDF file channels numbers
+
+  Integer, Parameter :: npdfdt = 28, &
+                        npdgdt = 29
+
 
 ! Random seeding
 
@@ -118,18 +123,21 @@ Module setup_module
 
 ! GLOBAL PARAMETERS FOR ARRAYS' BOUNDS LIMITS (set_bounds)
 
-  Integer, Save ::                                           &
-    mxsite,mxatyp,mxtmls,mxexcl,                             &
-    mxspl,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1,            &
-    mxtshl,mxshl,mxfshl,mxtcon,mxcons,mxfcon,mxlshp,mxproc,  &
-    mxtpmf(1:2),mxpmf,mxfpmf,mxtrgd,mxrgd,mxlrgd,mxfrgd,     &
-    mxtteth,mxteth,mxftet,mxpteth,                           &
-    mxtbnd,mxbond,mxfbnd,mxpbnd,mxtang,mxangl,mxfang,mxpang, &
-    mxtdih,mxdihd,mxfdih,mxpdih,mxtinv,mxinv,mxfinv,mxpinv,  &
-    mxgrid,mxrdf,mxgrdf,mxvdw,mxpvdw,                        &
-    mxmet,mxmed,mxmds,mxpmet,mxter,mxpter,                   &
-    mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,mxpfld,          &
-    mxstak,mxnstk,mxlist,mxcell,mxatms,mxatdm,               &
+  Integer, Save ::                                          &
+    mxsite,mxatyp,mxtmls,mxexcl,                            &
+    mxspl,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1,           &
+    mxtshl,mxshl,mxfshl,mxtcon,mxcons,mxfcon,mxlshp,mxproc, &
+    mxtpmf(1:2),mxpmf,mxfpmf,mxtrgd,mxrgd,mxlrgd,mxfrgd,    &
+    mxtteth,mxteth,mxftet,mxpteth,                          &
+    mxtbnd, mxbond,mxfbnd,mxpbnd,                           &
+    mxtang, mxangl,mxfang,mxpang,                           &
+    mxtdih, mxdihd,mxfdih,mxpdih,                           &
+    mxtinv, mxinv, mxfinv,mxpinv,                           &
+    mxgrid,mxrdf,mxgrdf,mxvdw,mxpvdw,                       &
+    mxgana,mxgbnd,mxgang,mxgdih,mxginv,                     &
+    mxmet,mxmed,mxmds,mxpmet,mxter,mxpter,                  &
+    mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,mxpfld,         &
+    mxstak,mxnstk,mxlist,mxcell,mxatms,mxatdm,              &
     mxbfdp,mxbfss,mxbfxp,mxbfsh,mxbuff
 
 ! zero+ and half+/- :: defined in set_bounds

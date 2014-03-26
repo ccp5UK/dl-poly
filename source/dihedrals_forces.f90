@@ -1,9 +1,13 @@
-Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
+Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
            rcut,rvdw,keyfce,alpha,epsq,engcpe,vircpe,engsrp,virsrp)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for calculating dihedral energy and force terms
+!
+! isw = 0 - collect statistics
+! isw = 1 - calculate forces
+! isw = 2 - do both
 !
 ! Note: scale factors for reduces electrostatic and vdw 1-4 interactions
 !       assumes 1-4 interactions are in the exclude list
@@ -11,21 +15,23 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1992
 ! amended   - i.t.todorov march 2014
+! contrib   - a.v.brukhno and i.t.todorov march 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,      Only : nrite,mxdihd,pi,r4pie0,zero_plus
+  Use setup_module,      Only : nrite,mxdihd,mxgdih,pi,r4pie0,zero_plus
   Use config_module,     Only : cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
                                 chge,xxx,yyy,zzz,fxx,fyy,fzz
-  Use dihedrals_module,  Only : lx_dih,ntdihd,keydih,listdih,prmdih
+  Use dihedrals_module,  Only : lx_dih,ntdihd,keydih,listdih,prmdih, &
+                                ltpdih,vdih,gdih,ldfdih,dstdih
 
   Use vdw_module,        Only : ntpvdw
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: imcon
+  Integer,                             Intent( In    ) :: isw,imcon
   Real( Kind = wp ),                   Intent(   Out ) :: engdih,virdih
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
   Real( Kind = wp ),                   Intent( In    ) :: rcut,rvdw, &
@@ -34,11 +40,8 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
   Real( Kind = wp ),                   Intent( InOut ) :: engcpe,vircpe, &
                                                           engsrp,virsrp
 
-  Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: twopi,rtwopi
-
   Logical                 :: safe(1:3),csa,csd
-  Integer                 :: fail(1:5),i,j,ia,ib,ic,id,kk,keyd, &
+  Integer                 :: fail(1:5),i,j,l,ia,ib,ic,id,kk,keyd, &
                              ai,aj,ia0,id0,local_index
   Real( Kind = wp )       :: xab,yab,zab, xac,yac,zac,                 &
                              xad,yad,zad,rad(0:3),rad2(0:3),           &
@@ -47,6 +50,8 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
                              fax,fay,faz, fb1x,fb1y,fb1z,              &
                              fcx,fcy,fcz, fd1x,fd1y,fd1z,              &
                              fx,fy,fz,                                 &
+                             twopi,rtwopi,rdelth,                      &
+                             rdr,ppp,vk,vk1,vk2,t1,t2,                 &
                              pbx,pby,pbz,pb2,rpb1,rpb2,                &
                              pcx,pcy,pcz,pc2,rpc1,rpc2,                &
                              pbpc,cost,sint,rsint,theta,theta0,dtheta, &
@@ -73,15 +78,6 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
      Call error(0)
   End If
 
-
-  If (newjob) Then
-     newjob = .false.
-
-! Define constants
-
-     twopi = 2.0_wp*pi
-     rtwopi= 1.0_wp/twopi
-  End If
 
 ! calculate atom separation vectors
 
@@ -225,41 +221,53 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
      Call error(132)
   End If
 
-! Initialise safety flags
-
-  safe=.true.
-
 ! periodic boundary condition
 
   Call images(imcon,cell,ntdihd,xdab,ydab,zdab)
   Call images(imcon,cell,ntdihd,xdbc,ydbc,zdbc)
   Call images(imcon,cell,ntdihd,xdcd,ydcd,zdcd)
-  If (lx_dih) Then
-     If (Any(lad(1,1:ntdihd))) Call images(imcon,cell,ntdihd,xdad(1,1:ntdihd),ydad(1,1:ntdihd),zdad(1,1:ntdihd))
-     If (Any(lad(2,1:ntdihd))) Call images(imcon,cell,ntdihd,xdad(2,1:ntdihd),ydad(2,1:ntdihd),zdad(2,1:ntdihd))
-     If (Any(lad(3,1:ntdihd))) Call images(imcon,cell,ntdihd,xdad(3,1:ntdihd),ydad(3,1:ntdihd),zdad(3,1:ntdihd))
-  End If
+
+  If (Mod(isw,3) > 0) Then
+
+     If (lx_dih) Then
+        If (Any(lad(1,1:ntdihd))) Call images(imcon,cell,ntdihd,xdad(1,1:ntdihd),ydad(1,1:ntdihd),zdad(1,1:ntdihd))
+        If (Any(lad(2,1:ntdihd))) Call images(imcon,cell,ntdihd,xdad(2,1:ntdihd),ydad(2,1:ntdihd),zdad(2,1:ntdihd))
+        If (Any(lad(3,1:ntdihd))) Call images(imcon,cell,ntdihd,xdad(3,1:ntdihd),ydad(3,1:ntdihd),zdad(3,1:ntdihd))
+     End If
+
+! Initialise safety flags
+
+     safe=.true.
 
 ! initialise stress tensor accumulators
 
-  strs1=0.0_wp
-  strs2=0.0_wp
-  strs3=0.0_wp
-  strs5=0.0_wp
-  strs6=0.0_wp
-  strs9=0.0_wp
+     strs1=0.0_wp
+     strs2=0.0_wp
+     strs3=0.0_wp
+     strs5=0.0_wp
+     strs6=0.0_wp
+     strs9=0.0_wp
 
 ! zero dihedral energy accumulator
 
-  engdih=0.0_wp
-  virdih=0.0_wp
+     engdih=0.0_wp
+     virdih=0.0_wp
 
 ! zero scaled 1-4 electrostatic and short-range potential accumulators
 
-  engc14=0.0_wp
-  virc14=0.0_wp
-  engs14=0.0_wp
-  virs14=0.0_wp
+     engc14=0.0_wp
+     virc14=0.0_wp
+     engs14=0.0_wp
+     virs14=0.0_wp
+
+  End If
+
+! Define constants
+
+  twopi = 2.0_wp*pi
+  rtwopi= 1.0_wp/twopi
+
+  If (Mod(isw,2) == 0) rdelth = Real(mxgdih,wp)*rtwopi
 
 ! loop over all specified dihedrals
 
@@ -272,6 +280,13 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
         ib=lstopt(2,i)
         ic=lstopt(3,i)
         id=lstopt(4,i)
+
+! indices of 1-4 shelled dihedral atoms
+
+        If (lx_dih) Then
+           ia0=lstopt(5,i)
+           id0=lstopt(6,i)
+        End If
 
 ! define components of bond vectors
 
@@ -333,6 +348,16 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
 
         kk=listdih(0,i)
         keyd=keydih(kk)
+
+! accumulate the histogram (distribution)
+
+        If (Mod(isw,2) == 0 .and. ia <= natms) Then
+           j = ldfdih(kk)
+           l = Min(1+Int((theta+pi)*rdelth),mxgdih)
+
+           dstdih(l,j) = dstdih(l,j) + 1.0_wp
+        End If
+        If (isw == 0) Cycle
 
 ! calculate potential energy and scalar force term
 
@@ -440,6 +465,34 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
            gamma=-0.5_wp*(       a1*Sin(dtheta) -               &
                           2.0_wp*a2*Sin(2.0_wp*dtheta)  + &
                           3.0_wp*a3*Sin(3.0_wp*dtheta))*rsint * rpb1*rpc1
+
+        Else If (keyd == 20) Then
+
+! TABDIH potential
+
+           j = ltpdih(kk)
+           rdr = gdih(0,j) ! 1.0_wp/delpot (in rad^-1)
+
+           l   = Int((theta+pi)*rdr)         ! theta (-pi,+pi) is shifted
+           ppp = (theta+pi)*rdr - Real(l,wp) ! by +pi so l is [1,ngrid]
+
+           vk  = Merge(vdih(l,j), 0.0_wp, l > 0)
+           vk1 = vdih(l+1,j)
+           vk2 = vdih(l+2,j)
+
+           t1 = vk  + (vk1 - vk)*ppp
+           t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+
+           pterm = t1 + (t2-t1)*ppp*0.5_wp
+
+           vk  = Merge(gdih(l,j), 0.0_wp, l > 0)
+           vk1 = gdih(l+1,j)
+           vk2 = gdih(l+2,j)
+
+           t1 = vk  + (vk1 - vk)*ppp
+           t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+
+           gamma =-(t1 + (t2-t1)*ppp*0.5_wp)*rsint * rpb1*rpc1
 
         Else
 
@@ -927,49 +980,51 @@ Subroutine dihedrals_forces(imcon,engdih,virdih,stress, &
      End If
   End Do
 
+  If (Mod(isw,3) > 0) Then
+
 ! sum contributions to potentials
 
-  If (mxnode > 1) Then
+     If (mxnode > 1) Then
+        buffer(1) = engdih
+        buffer(2) = engc14
+        buffer(3) = virc14
+        buffer(4) = engs14
+        buffer(5) = virs14
 
-     buffer(1) = engdih
-     buffer(2) = engc14
-     buffer(3) = virc14
-     buffer(4) = engs14
-     buffer(5) = virs14
+        Call gsum(buffer(1:5))
 
-     Call gsum(buffer(1:5))
+        engdih = buffer(1)
+        engc14 = buffer(2)
+        virc14 = buffer(3)
+        engs14 = buffer(4)
+        virs14 = buffer(5)
+     End If
 
-     engdih = buffer(1)
-     engc14 = buffer(2)
-     virc14 = buffer(3)
-     engs14 = buffer(4)
-     virs14 = buffer(5)
-
-  End If
-
-  engcpe = engcpe + engc14
-  vircpe = vircpe + virc14
-  engsrp = engsrp + engs14
-  virsrp = virsrp + virs14
+     engcpe = engcpe + engc14
+     vircpe = vircpe + virc14
+     engsrp = engsrp + engs14
+     virsrp = virsrp + virs14
 
 ! complete stress tensor
 
-  stress(1) = stress(1) + strs1
-  stress(2) = stress(2) + strs2
-  stress(3) = stress(3) + strs3
-  stress(4) = stress(4) + strs2
-  stress(5) = stress(5) + strs5
-  stress(6) = stress(6) + strs6
-  stress(7) = stress(7) + strs3
-  stress(8) = stress(8) + strs6
-  stress(9) = stress(9) + strs9
+     stress(1) = stress(1) + strs1
+     stress(2) = stress(2) + strs2
+     stress(3) = stress(3) + strs3
+     stress(4) = stress(4) + strs2
+     stress(5) = stress(5) + strs5
+     stress(6) = stress(6) + strs6
+     stress(7) = stress(7) + strs3
+     stress(8) = stress(8) + strs6
+     stress(9) = stress(9) + strs9
 
 ! check safety to continue
 
-  If (mxnode > 1) Call gcheck(safe)
-  If (.not.safe(1)) Call error(448)
-  If (.not.safe(2)) Call error(445)
-  If (.not.safe(3)) Call error(446)
+     If (mxnode > 1) Call gcheck(safe)
+     If (.not.safe(1)) Call error(448)
+     If (.not.safe(2)) Call error(445)
+     If (.not.safe(3)) Call error(446)
+
+  End If
 
   Deallocate (lunsafe,lstopt,lad, Stat=fail(1))
   Deallocate (xdab,ydab,zdab,     Stat=fail(2))

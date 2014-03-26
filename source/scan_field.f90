@@ -5,7 +5,7 @@ Subroutine scan_field                                 &
            mxtpmf,mxpmf,mxfpmf,                       &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,          &
            mtteth,mxtteth,mxteth,mxftet,              &
-           mtbond,mxtbnd,mxbond,mxfbnd,               &
+           mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,         &
            mtangl,mxtang,mxangl,mxfang,               &
            mtdihd,mxtdih,mxdihd,mxfdih,               &
            mtinv,mxtinv,mxinv,mxfinv,                 &
@@ -21,16 +21,22 @@ Subroutine scan_field                                 &
 ! author    - w.smith november 1994
 ! amended   - i.t.todorov march 2014
 ! contrib   - b.palmer (2band) may 2013
+! contrib   - a.v.brukhno march 2014 (itramolecular TPs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,   Only : idnode,mxnode,gcheck
-  Use setup_module,   Only : nfield,ntable
-  Use parse_module,   Only : get_line,get_word,lower_case,word_2_real
-  Use vdw_module,     Only : lt_vdw
-  Use metal_module,   Only : tabmet
-  Use tersoff_module, Only : potter
+  Use comms_module,      Only : idnode,mxnode,gcheck
+  Use setup_module,      Only : nfield,ntable
+  Use parse_module,      Only : get_line,get_word,lower_case,word_2_real
+  Use bonds_module,      Only : lt_bnd
+  Use angles_module,     Only : lt_ang
+  Use dihedrals_module,  Only : lt_dih
+  Use inversions_module, Only : lt_inv
+  Use vdw_module,        Only : lt_vdw
+  Use metal_module,      Only : tabmet
+  Use tersoff_module,    Only : potter
+  Use kim_module,        Only : l_kim,rkim,kim_cutoff
 
   Implicit None
 
@@ -64,7 +70,7 @@ Subroutine scan_field                                 &
                        mxmet,mxmed,mxmds,itpmet,mxgrid,                        &
                        mxter,itpter,mxtbp,itptbp,mxfbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
-  Real( Kind = wp ) :: rvdw,rmet,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
+  Real( Kind = wp ) :: rcbnd,rvdw,rmet,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
 
   l_n_e=.true.
 
@@ -111,6 +117,7 @@ Subroutine scan_field                                 &
   mxbond=0
   mxtbnd=0
   mxfbnd=0
+  rcbnd =0.0_wp
 
   numang=0
   mtangl=0
@@ -390,6 +397,8 @@ Subroutine scan_field                                 &
 
               Else If (word(1:5) == 'bonds') Then
 
+!                 lt_bnd=.false. ! initialised in bonds_module.f90
+
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
                  numbonds=Nint(word_2_real(word))
@@ -404,9 +413,35 @@ Subroutine scan_field                                 &
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
+
+                    If (word(1:3) == 'tab' .or. word(1:4)=='-tab' ) lt_bnd=.true.
                  End Do
 
+                 If (lt_bnd) Then
+                    If (idnode == 0) Open(Unit=ntable, File='TABBND')
+
+                    Call get_line(safe,ntable,record)
+                    If (.not.safe) Go To 40
+
+                    Call get_line(safe,ntable,record)
+                    If (.not.safe) Go To 40
+
+                    i = Index(record,'#')      ! replace hash as it may occur in
+                    If (i > 0) record(i:i)=' ' ! TABBND if it's in .xvg format
+
+                    Call get_word(record,word)
+                    rcbnd=Max(rcbnd,word_2_real(word))
+
+                    Call get_word(record,word)
+                    k=Nint(word_2_real(word))
+                    mxgrid=Max(mxgrid,k+4)
+
+                    If (idnode == 0) Close(Unit=ntable)
+                 End If
+
               Else If (word(1:6) == 'angles') Then
+
+!                 lt_ang=.false. ! initialised in angles_module.f90
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
@@ -422,9 +457,32 @@ Subroutine scan_field                                 &
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
+
+                    If (word(1:3) == 'tab' .or. word(1:4)=='-tab' ) lt_ang=.true.
                  End Do
 
+                 If (lt_ang) Then
+                    If (idnode == 0) Open(Unit=ntable, File='TABANG')
+
+                    Call get_line(safe,ntable,record)
+                    If (.not.safe) Go To 40
+
+                    Call get_line(safe,ntable,record)
+                    If (.not.safe) Go To 40
+
+                    i = Index(record,'#')      ! replace hash as it may occur in
+                    If (i > 0) record(i:i)=' ' ! TABANG if it's in .xvg format
+
+                    Call get_word(record,word) ! no need for cutoff in angles (max is always 180 degrees)
+                    k=Nint(word_2_real(word))
+                    mxgrid=Max(mxgrid,k+4)
+
+                    If (idnode == 0) Close(Unit=ntable)
+                 End If
+
               Else If (word(1:6) == 'dihedr') Then
+
+!                 lt_dih=.false. ! initialised in dihedrals_module.f90
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
@@ -440,9 +498,32 @@ Subroutine scan_field                                 &
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
+
+                    If (word(1:3) == 'tab' .or. word(1:4)=='-tab' ) lt_dih=.true.
                  End Do
 
+                 If (lt_dih) Then
+                    If (idnode == 0) Open(Unit=ntable, File='TABDIH')
+
+                    Call get_line(safe,ntable,record)
+                    If (.not.safe) Go To 40
+
+                    Call get_line(safe,ntable,record)
+                    If (.not.safe) Go To 40
+
+                    i = Index(record,'#')      ! replace hash as it may occur in
+                    If (i > 0) record(i:i)=' ' ! TABDIH if it's in .xvg format
+
+                    Call get_word(record,word) ! no need for cutoff in angles (max is always 180 degrees)
+                    k=Nint(word_2_real(word))
+                    mxgrid=Max(mxgrid,k+4)
+
+                    If (idnode == 0) Close(Unit=ntable)
+                 End If
+
               Else If (word(1:6) == 'invers') Then
+
+!                 lt_dih=.false. ! initialised in dihedrals_module.f90
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
@@ -458,7 +539,28 @@ Subroutine scan_field                                 &
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
+
+                    If (word(1:3) == 'tab' .or. word(1:4)=='-tab' ) lt_inv=.true.
                  End Do
+
+                 If (lt_inv) Then
+                    If (idnode == 0) Open(Unit=ntable, File='TABINV')
+
+                    Call get_line(safe,ntable,record)
+                    If (.not.safe) Go To 40
+
+                    Call get_line(safe,ntable,record)
+                    If (.not.safe) Go To 40
+
+                    i = Index(record,'#')      ! replace hash as it may occur in
+                    If (i > 0) record(i:i)=' ' ! TABINV if it's in .xvg format
+
+                    Call get_word(record,word) ! no need for cutoff in angles (max is always 180 degrees)
+                    k=Nint(word_2_real(word))
+                    mxgrid=Max(mxgrid,k+4)
+
+                    If (idnode == 0) Close(Unit=ntable)
+                 End If
 
               Else If (word(1:6) == 'finish') Then
 
@@ -548,7 +650,8 @@ Subroutine scan_field                                 &
               rvdw=Max(rvdw,word_2_real(word))
 
               Call get_word(record,word)
-              mxgrid=Nint(word_2_real(word))
+              k=Nint(word_2_real(word))
+              mxgrid=Max(mxgrid,k)
 
               If (idnode == 0) Close(Unit=ntable)
            End If
@@ -751,6 +854,13 @@ Subroutine scan_field                                 &
            rct=word_2_real(word)
            rcfbp=Max(rcfbp,rct)
         End Do
+
+     Else If (word(1:7) == 'kim') Then
+
+        Call get_word(record,word)
+        l_kim=.true.
+
+        Call kim_cutoff(word,rkim) ! get cutoff
 
      Else If (word(1:6) == 'extern') Then
 

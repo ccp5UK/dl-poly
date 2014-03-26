@@ -122,8 +122,8 @@ Subroutine vdw_table_read(rvdw)
         End Do
 
         If (katom1 == 0 .or. katom2 == 0) Then
-           If (idnode == 0) Write(nrite,'(a)') '****',atom1,'***',atom2,'****'
-           Call  error(81)
+           If (idnode == 0) Write(nrite,'(a)') '****',atom1,'***',atom2,'**** entry in TABLE'
+           Call error(81)
         End If
 
         keyvdw=(Max(katom1,katom2)*(Max(katom1,katom2)-1))/2 + Min(katom1,katom2)
@@ -215,8 +215,8 @@ Subroutine vdw_table_read(rvdw)
   End Do
 
   If (idnode == 0) Then
-      Close(Unit=ntable)
-      Write(nrite,'(/,1x,a)') 'potential tables read from TABLE file'
+     Close(Unit=ntable)
+     Write(nrite,'(/,1x,a)') 'potential tables read from TABLE file'
   End If
 
 ! convert to internal units

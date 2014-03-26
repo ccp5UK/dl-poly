@@ -1,4 +1,4 @@
-Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
+Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
                        rcut,keyfce,alpha,epsq,engcpe,vircpe)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -6,35 +6,42 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 ! dl_poly_4 subroutine for calculating chemical bond energy and force
 ! terms
 !
+! isw = 0 - collect statistics
+! isw = 1 - calculate forces
+! isw = 2 - do both
+!
 ! copyright - daresbury laboratory
 ! author    - w.smith july 1992
 ! amended   - i.t.todorov march 2014
+! contrib   - a.v.brukhno and i.t.todorov march 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,  Only : nrite,mxbond,r4pie0,zero_plus,engunit
+  Use setup_module,  Only : nrite,mxbond,mxgbnd,r4pie0,zero_plus,engunit
   Use config_module, Only : cell,natms,nlast,lsi,lsa,lfrzn, &
                             chge,xxx,yyy,zzz,fxx,fyy,fzz
-  Use bonds_module,  Only : ntbond,keybnd,listbnd,prmbnd
+  Use bonds_module,  Only : ntbond,keybnd,listbnd,prmbnd, &
+                            ltpbnd,vbnd,gbnd,rcbnd,ldfbnd,dstbnd
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: imcon
+  Integer,                             Intent( In    ) :: isw,imcon
   Real( Kind = wp ),                   Intent(   Out ) :: engbnd,virbnd
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
   Real( Kind = wp ),                   Intent( In    ) :: rcut,alpha,epsq
   Integer,                             Intent( In    ) :: keyfce
   Real( Kind = wp ),                   Intent( InOut ) :: engcpe,vircpe
 
-  Logical           :: safe(1:2)
-  Integer           :: fail(1:2),i,j,ia,ib,keyb,kk,local_index
-  Real( Kind = wp ) :: rab,rab2,fx,fy,fz,gamma,omega, &
-                       term,term1,term2,eps,sig,      &
-                       k,k2,k3,k4,r0,dr,dra,dr2,      &
-                       e0,rc,a,b,c,rho,delta,chgprd,  &
-                       engc12,virc12,buffer(1:4),     &
+  Logical           :: safe(1:3)
+  Integer           :: fail(1:2),i,j,l,ia,ib,keyb,kk,local_index
+  Real( Kind = wp ) :: rab,rab2,fx,fy,fz,gamma,omega,  &
+                       term,term1,term2,eps,sig,       &
+                       k,k2,k3,k4,r0,dr,dra,dr2,       &
+                       e0,rc,a,b,c,rho,delta,chgprd,   &
+                       rdelr,rdr,ppp,vk,vk1,vk2,t1,t2, &
+                       engc12,virc12,buffer(1:4),      &
                        strs1,strs2,strs3,strs5,strs6,strs9
 
   Logical,           Allocatable :: lunsafe(:)
@@ -48,6 +55,7 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
      Write(nrite,'(/,1x,a,i0)') 'bond_forces allocation failure, node: ', idnode
      Call error(0)
   End If
+
 
 ! calculate atom separation vectors
 
@@ -112,24 +120,30 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 
   safe=.true.
 
+  If (Mod(isw,3) > 0) Then
+
 ! initialise stress tensor accumulators
 
-  strs1=0.0_wp
-  strs2=0.0_wp
-  strs3=0.0_wp
-  strs5=0.0_wp
-  strs6=0.0_wp
-  strs9=0.0_wp
+     strs1=0.0_wp
+     strs2=0.0_wp
+     strs3=0.0_wp
+     strs5=0.0_wp
+     strs6=0.0_wp
+     strs9=0.0_wp
 
 ! zero bond energy and virial accumulators
 
-  engbnd=0.0_wp
-  virbnd=0.0_wp
+     engbnd=0.0_wp
+     virbnd=0.0_wp
 
 ! zero scaled 1-2 electrostatic potential accumulators
 
-  engc12=0.0_wp
-  virc12=0.0_wp
+     engc12=0.0_wp
+     virc12=0.0_wp
+
+  End If
+
+  If (Mod(isw,2) == 0) rdelr = Real(mxgbnd,wp)/rcbnd
 
 ! loop over all specified chemical bond potentials
 
@@ -149,8 +163,19 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
 ! index of potential function parameters
 
         kk=listbnd(0,i)
-
         keyb = Abs(keybnd(kk))
+
+! accumulate the histogram (distribution)
+
+        If (Mod(isw,2) == 0 .and. ia <= natms) Then
+           j = ldfbnd(kk)
+           l = Min(1+Int(rab*rdelr),mxgbnd)
+
+           dstbnd(l,j) = dstbnd(l,j) + 1.0_wp
+
+           If (rab > rcbnd) safe(3)=.false. ! catch bondbreaking
+        End If
+        If (isw == 0) Cycle
 
 ! calculate scalar constant terms
 
@@ -304,6 +329,40 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
            omega=term*dr
            gamma=(4.0_wp*term+k*dr*(-2.0_wp+2.55_wp*dr))/rab
 
+        Else If (keyb == 20) Then
+
+! TABBND potential
+
+           j = ltpbnd(kk)
+           If (rab <= vbnd(0,j)) Then ! rab <= cutpot
+              rdr = gbnd(0,j) ! 1.0_wp/delpot
+
+              l   = Int(rab*rdr)
+              ppp = rab*rdr - Real(l,wp)
+
+              vk  = Merge(vbnd(l,j), 0.0_wp, l > 0)
+              vk1 = vbnd(l+1,j)
+              vk2 = vbnd(l+2,j)
+
+              t1 = vk  + (vk1 - vk)*ppp
+              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+
+              omega = t1 + (t2-t1)*ppp*0.5_wp
+
+              vk  = Merge(gbnd(l,j), 0.0_wp, l > 0)
+              vk1 = gbnd(l+1,j)
+              vk2 = gbnd(l+2,j)
+
+              t1 = vk  + (vk1 - vk)*ppp
+              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+
+              gamma = (t1 + (t2-t1)*ppp*0.5_wp)/rab
+           Else ! bond braking
+              safe(3)=.false.
+              omega=0.0_wp
+              gamma=0.0_wp
+           End If
+
         Else
 
 ! undefined potential
@@ -353,43 +412,48 @@ Subroutine bonds_forces(imcon,engbnd,virbnd,stress, &
      End If
   End Do
 
+  If (Mod(isw,3) > 0) Then
+
 ! sum contributions to potential and virial
 
-  If (mxnode > 1) Then
-     buffer(1)=engbnd
-     buffer(2)=virbnd
-     buffer(3)=engc12
-     buffer(4)=virc12
-     Call gsum(buffer(1:4))
-     engbnd=buffer(1)
-     virbnd=buffer(2)
-     engc12=buffer(3)
-     virc12=buffer(4)
-  End If
+     If (mxnode > 1) Then
+        buffer(1)=engbnd
+        buffer(2)=virbnd
+        buffer(3)=engc12
+        buffer(4)=virc12
+        Call gsum(buffer(1:4))
+        engbnd=buffer(1)
+        virbnd=buffer(2)
+        engc12=buffer(3)
+        virc12=buffer(4)
+     End If
 
-  engbnd=engbnd - engc12
-  virbnd=virbnd - virc12
+     engbnd=engbnd - engc12
+     virbnd=virbnd - virc12
 
-  engcpe = engcpe + engc12
-  vircpe = vircpe + virc12
+     engcpe = engcpe + engc12
+     vircpe = vircpe + virc12
 
 ! complete stress tensor
 
-  stress(1) = stress(1) + strs1
-  stress(2) = stress(2) + strs2
-  stress(3) = stress(3) + strs3
-  stress(4) = stress(4) + strs2
-  stress(5) = stress(5) + strs5
-  stress(6) = stress(6) + strs6
-  stress(7) = stress(7) + strs3
-  stress(8) = stress(8) + strs6
-  stress(9) = stress(9) + strs9
+     stress(1) = stress(1) + strs1
+     stress(2) = stress(2) + strs2
+     stress(3) = stress(3) + strs3
+     stress(4) = stress(4) + strs2
+     stress(5) = stress(5) + strs5
+     stress(6) = stress(6) + strs6
+     stress(7) = stress(7) + strs3
+     stress(8) = stress(8) + strs6
+     stress(9) = stress(9) + strs9
 
-! check for undefined potentials
+  End If
+
+! check for undefined potentials + extras
 
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe(1)) Call error(444)
   If (.not.safe(2)) Call error(655)
+  If (.not.safe(3)) Call error(660)
 
   Deallocate (lunsafe,lstopt, Stat=fail(1))
   Deallocate (xdab,ydab,zdab, Stat=fail(2))

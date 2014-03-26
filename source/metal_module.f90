@@ -6,7 +6,7 @@ Module metal_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -14,12 +14,12 @@ Module metal_module
 
   Implicit None
 
-  Logical,                        Save :: ld_met = .false., &
-                                          ls_met = .false., &
-                                          l2bmet = .false.
+  Logical,                        Save :: ld_met = .false., & ! no direct calculations are opted
+                                          ls_met = .false., & ! no embedding over Sqrt(rho) but over rho
+                                          l2bmet = .false.    ! no 2B(EAM or EEAM)
 
-  Integer,                        Save :: ntpmet = 0 , &
-                                          tabmet = -1
+  Integer,                        Save :: ntpmet = 0 , & ! number of different metal interactions
+                                          tabmet = -1    ! undefined, 0 - no TABEAM, 1 - EAM, 2 - EEAM, 3- 2BEAM, 4 - 2BEEAM
 
 
   Integer,           Allocatable, Save :: lstmet(:),ltpmet(:)

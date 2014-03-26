@@ -248,16 +248,20 @@ The molecule contains more atom/site entries that it declares in the beginning.
 
 Recreate or correct the erroneous entries in the FIELD file and try again.
 
-\subsubsection*{\underline{Message 22}: error - unsuitable radial increment in TABLE file}
+\subsubsection*{\underline{Message 22}: error - unsuitable radial increment in TABLE||TABBND||TABANG||TABDIH||TABINV file}
 
-This arises when the tabulated
-potentials\index{potential!tabulated} presented in the TABLE file
-have an increment that is greater than that used to define the
-other potentials in the simulation.  Ideally the increment should
-be $r_{\rm cut}/({\tt mxgrid}-4)$, where $r_{\rm cut}$ is the
-potential cutoff for the short range potentials and {\tt mxgrid}
-is the parameter defining the length of the interpolation arrays.
-An increment less than this is permissible however.
+This arises when the tabulated van der Waals potentials\index{potential!tabulated}
+presented in the TABLE file have an increment that is greater
+than that used to define the other potentials in the simulation.
+Ideally, the increment should be $r_{\rm cut}/({\tt mxgrid}-4)$,
+where $r_{\rm cut}$ is the largest potential cutoff of all supplied
+,for the short range potentials and the domain decomposition link
+cell size, and {\tt mxgrid} is the parameter defining the length
+of the interpolation arrays.  An increment less than this is
+permissible however.  The same argument holds for the tabulated
+intramolecular interactions that are possibly supplied via the
+TABBND, TABANG, TABDIH and TABINV files.  All should have grids
+sized less than the generic {\tt mxgrid$-4$}.
 
 \noindent \underline{\em Action}:
 
@@ -280,11 +284,11 @@ file to make sure all the tabulated
 potentials\index{potential!tabulated} are present in the order the
 FIELD file indicates.
 
-\subsubsection*{\underline{Message 24}: error - end of file encountered in TABLE or TABEAM file}
+\subsubsection*{\underline{Message 24}: error - end of file encountered in TABLE||TABEAM||TABBND||TABANG||TABDIH||TABINV file}
 
-This means the TABLE or TABEAM file is incomplete in some way: either by
-having too few potentials included, or the number of data points
-is incorrect.
+This means the TABLE||TABEAM||TABBND||TABANG||TABDIH||TABINV file
+is incomplete in some way: either by having too few potentials
+included, or the number of data points is incorrect.
 
 \noindent \underline{\em Action}:
 
@@ -513,11 +517,11 @@ This should never happen!
 
 Send the problem to us.
 
-\subsubsection*{\underline{Message 48}: error - transfer buffer too small in vdw\_table\_read or metal\_table\_read}
+\subsubsection*{\underline{Message 48}: error - transfer buffer too small in *\_table\_read}
 
 \noindent \underline{\em Action}:
 
-Standard user response.  Increase {\tt mxgrid} parameters
+Standard user response.  Increase {\tt mxgrid} parameter
 in {\sc set\_bounds} recompile and resubmit.
 
 \subsubsection*{\underline{Message 49}: error - frozen shell (core-shell) unit specified}
@@ -860,11 +864,11 @@ Report to authors.
 \subsubsection*{\underline{Message 81}: error - unidentified atom in pair potential list}
 
 This shows that \D has encountered and erroneous entry for vdw or
-metal potentials in FIELD.
+metal potentials in FIELD or cited TABle file.
 
 \noindent \underline{\em Action}:
 
-Correct FIELD and resubmit.
+Correct FIELD and/or cited TABle file.
 
 \subsubsection*{\underline{Message 82}: error - calculated pair potential index too large}
 
@@ -878,7 +882,7 @@ of the program results.
 
 Report to authors.
 
-\subsubsection*{\underline{Message 83}: error - too many three-body potentials specified}
+\subsubsection*{\underline{Message 83}: error - too many three-body/angles potentials specified}
 
 This should never happen!
 
@@ -886,10 +890,10 @@ This should never happen!
 
 Report to authors.
 
-\subsubsection*{\underline{Message 84}: error - unidentified atom in three-body potential list}
+\subsubsection*{\underline{Message 84}: error - unidentified atom in three-body/angles potential list}
 
-This shows that \D has encountered and erroneous entry at tbp
-definition in FIELD.
+This shows that \D has encountered and erroneous entry at three-body or angles
+definitions in FIELD.
 
 \noindent \underline{\em Action}:
 
@@ -947,7 +951,7 @@ increase its legend bound value, {\tt mxf}interaction, at the end of
 {\sc scan\_field}, recompile and resubmit.  If the error persists
 contact authors.
 
-\subsubsection*{\underline{Message 89}: error - too many four-body potentials specified}
+\subsubsection*{\underline{Message 89}: error - too many four-body/dihedrals/inversions potentials specified}
 
 This should never happen!
 
@@ -955,17 +959,25 @@ This should never happen!
 
 Report to authors.
 
-\subsubsection*{\underline{Message 91}: error - unidentified atom in four-body potential list}
+\subsubsection*{\underline{Message 90}: error - specified tersoff potentials have different types'}
 
-The specification of a four-body\index{potential!four-body}
-potential in the FIELD file has referenced an atom type that is
-unknown.
+This is not allowed!  Only one general type of tersoff potential is allowed in FIELD as there are no mixing rules between different tersoff potentials!
 
 \noindent \underline{\em Action}:
 
-Locate the errant atom type in the four-body potential definition
-in the FIELD file and correct.  Make sure this atom type is
-specified by an {\tt atoms} directive earlier in the file.
+Correct your model representation in FIELD and try again.
+
+\subsubsection*{\underline{Message 91}: error - unidentified atom in four-body/dihedrals/inversions potential list}
+
+The specification of a four-body\index{potential!four-body} or
+dihedrals or inversions potential in the FIELD file has referenced
+an atom type that is unknown.
+
+\noindent \underline{\em Action}:
+
+Locate the errant atom type in the four-body/dihedrals/inversions
+potential definition in the FIELD file and correct.  Make sure this
+atom type is specified by an {\tt atoms} directive earlier in the file.
 
 \subsubsection*{\underline{Message 92}: error - specified metal potentials have different types}
 
@@ -1373,11 +1385,19 @@ Consider using {\tt densvar} option in CONTROL for extremely
 non-equilibrium simulations.  Alternatively, increase {\tt mxbfss}
 parameters in {\sc set\_bounds} recompile and resubmit.
 
-\subsubsection*{\underline{Message 170}: error - too many variables for statistics array }
+\subsubsection*{\underline{Message 170}: error - too many variables for statistics array}
 
 This error means the statistics arrays appearing in subroutine
 {\sc statistics\_collect} are too small.  This should never
 happen!
+
+\noindent \underline{\em Action}:
+
+Contact \D authors.
+
+\subsubsection*{\underline{Message 172}: error - duplicate intra-molecular entries specified in TABBND||TABANG||TABDIH||TABINV}
+
+A duplicate entry has been encountered in the intramolecular table file.
 
 \noindent \underline{\em Action}:
 
@@ -1644,7 +1664,7 @@ necessary to specify the real space cutoff {\tt rcut}.
 Place the {\bf cut} directive {\em before} the {\bf ewald
 precision} directive in the CONTROL file and rerun.
 
-\subsubsection*{\underline{Message 436}: error - unrecognised ensemble }
+\subsubsection*{\underline{Message 436}: error - unrecognised ensemble}
 
 An unknown ensemble option has been specified in the CONTROL file.
 
@@ -2085,15 +2105,17 @@ repetition of a site is allowed in a PMF unit.
 
 Correct the erroneous entries in FIELD.
 
-\subsubsection*{\underline{Message 504}: error - cutoff too large for TABLE file}
+\subsubsection*{\underline{Message 504}: error - cutoff too large for TABLE||TABBND file}
 
-The requested cutoff exceeds the information in the TABLE file.
+The requested cutoff exceeds the information in the TABLE file or
+the TABBND cutoff is larger than half the system cutoff {\tt rcut}.
 
 \noindent \underline{\em Action}:
 
-Reduce the value of the vdw cutoff ({\tt rvdw}) in the CONTROL
-file or reconstruct the TABLE file.
-
+In the case when this is received while reading TABLE, reduce
+the value of the vdw cutoff ({\tt rvdw}) in the CONTROL file or
+reconstruct the TABLE file.  In the case when this is received
+while reading TABBND then specify a larger {\tt rcut} in CONTROL.
 
 \subsubsection*{\underline{Message 505}: error - EAM metal densities or pair crossfunctions out of range}
 
@@ -2567,6 +2589,17 @@ A FENE type bond was broken.
 
 Examine FIELD for erroneous directives, if any, correct and resubmit.
 
+\subsubsection*{\underline{Message 660}: error - TABBND or PDF bond breaking failure}
+
+A bond with potential defined in TABBND or for which intramolecular
+potential distribution is collected has exceeded its bondleghth limit.
+
+\noindent \underline{\em Action}:
+
+If there is a TABBND present, reconstruct TABBND with potentials defined
+over larger cutoff and try again.  If bonds PDF are collected, increase
+their cutoff value in CONTROL.
+
 \subsubsection*{\underline{Message 1000}: error - working precision mismatch between FORTRAN90 and MPI implementation}
 
 \D has failed to match the available modes of MPI precision for real
@@ -2967,6 +3000,54 @@ See Message 1001
 See Message 1001
 
 \subsubsection*{\underline{Message 1070}: error - allocation failure in ewald\_module $->$ ewald\_allocate\_kfrz\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1072}: error - allocation failure in bonds\_module -> allocate\_bond\_pot\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1073}: error - allocation failure in bonds\_module -> allocate\_bond\_dst\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1074}: error - allocation failure in angles\_module -> allocate\_angl\_pot\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1075}: error - allocation failure in angles\_module -> allocate\_angl\_dst\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1076}: error - allocation failure in dihedrals\_module -> allocate\_dihd\_pot\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1077}: error - allocation failure in dihedrals\_module -> allocate\_dihd\_dst\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1078}: error - allocation failure in inversions\_module -> allocate\_invr\_pot\_arrays}
+
+\noindent \underline{\em Action}:
+
+See Message 1001
+
+\subsubsection*{\underline{Message 1078}: error - allocation failure in inversions\_module -> allocate\_invr\_dst\_arrays}
 
 \noindent \underline{\em Action}:
 

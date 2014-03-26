@@ -8,7 +8,7 @@ Subroutine set_bounds                                       &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov march 2014
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -20,6 +20,7 @@ Subroutine set_bounds                                       &
   Use config_module,      Only : cfgname,cell,volm
   Use vnl_module,         Only : llvnl ! Depends on lsim, rpad & l_str
   Use msd_module
+  Use bonds_module,       Only : rcbnd
   Use tersoff_module,     Only : potter
   Use development_module, Only : l_trm
 
@@ -33,9 +34,10 @@ Subroutine set_bounds                                       &
   Logical           :: l_n_r,lzdn,lter,ltbp,lfbp,lext
   Integer           :: megatm,imc_n,ilx,ily,ilz,qlx,qly,qlz, &
                        mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
-  Real( Kind = wp ) :: ats,celprp(1:10),cut,         &
-                       dens0,dens,fdens,             &
-                       test,vcell,rcter,rctbp,rcfbp, &
+  Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
+                       dens0,dens,fdens,        &
+                       test,vcell,              &
+                       rcter,rctbp,rcfbp,       &
                        xhi,yhi,zhi
 
 ! define zero+ and half+/- (setup_module)
@@ -53,7 +55,7 @@ Subroutine set_bounds                                       &
            mxtpmf,mxpmf,mxfpmf,                       &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,          &
            mtteth,mxtteth,mxteth,mxftet,              &
-           mtbond,mxtbnd,mxbond,mxfbnd,               &
+           mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,         &
            mtangl,mxtang,mxangl,mxfang,               &
            mtdihd,mxtdih,mxdihd,mxfdih,               &
            mtinv,mxtinv,mxinv,mxfinv,                 &
@@ -76,11 +78,12 @@ Subroutine set_bounds                                       &
 
 ! scan CONTROL file data
 
-  Call scan_control                                      &
-           (mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter,     &
-           imcon,imc_n,cell,xhi,yhi,zhi,                 &
-           l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind, &
-           rcut,rpad,rbin,mxstak,                        &
+  Call scan_control                                        &
+           (rcbnd,mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter, &
+           imcon,imc_n,cell,xhi,yhi,zhi,                   &
+           mxgana,mxgbnd,mxgang,mxgdih,mxginv,             &
+           l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
+           rcut,rpad,rbin,mxstak,                          &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
@@ -256,11 +259,23 @@ Subroutine set_bounds                                       &
 
 
 
-!!! INTER-LIKE POTENTIAL PARAMETERS !!!
+!!! GRIDDING PARAMETERS !!!
 
 ! maximum number of grid points in potentials arrays
 
   mxgrid = Max(mxgrid,1000,Int(rcut/0.01_wp+0.5_wp)+4)
+
+
+! Set grids for opted intramolecular distribution analysis if unset
+! SO THEY ARE SWITCHES FOR EXISTENCE TOO
+
+  If (mxgana == -1) Then
+     mxgana = mxgrid-4 ! New style
+     If (mxgbnd == -1) mxgbnd = mxgana
+     If (mxgang == -1) mxgang = mxgana
+     If (mxgdih == -1) mxgdih = mxgana
+     If (mxginv == -1) mxginv = mxgana
+  End If
 
 
 ! maximum number of rdf potentials (mxrdf = mxrdf)
@@ -274,6 +289,9 @@ Subroutine set_bounds                                       &
      mxgrdf = 0 ! RDF and Z-density function MUST NOT get called!!!
   End If
 
+
+
+!!! INTER-LIKE POTENTIAL PARAMETERS !!!
 
 ! maximum number of vdw potentials and parameters
 
