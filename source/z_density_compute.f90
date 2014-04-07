@@ -12,11 +12,11 @@ Subroutine z_density_compute()
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,      Only : idnode,mxnode,gsum
-  Use setup_module,      Only : mxgrdf,nrite,nzdndt,zero_plus
-  Use site_module,       Only : ntpatm,unqatm
-  Use config_module,     Only : cfgname,cell,volm
-  Use statistics_module, Only : numzdn,zdens
+  Use comms_module,  Only : idnode,mxnode,gsum
+  Use setup_module,  Only : mxgrdf,nrite,nzdndt,zero_plus
+  Use site_module,   Only : ntpatm,unqatm
+  Use config_module, Only : cfgname,cell,volm
+  Use z_density_module
 
   Implicit None
 
@@ -24,7 +24,7 @@ Subroutine z_density_compute()
   Real( Kind = wp ) :: zlen,delr,dvolz,factor,rho,rho1,rrr,sum,sum1
 
   If (idnode == 0) Write(nrite,"(/,/,12X,'Z DENSITY PROFILES',/,/, &
-     & 'calculated using ',i10,' configurations')") numzdn
+     & 'calculated using ',i10,' configurations')") ncfzdn
 
 ! open Z density file and write headers
 
@@ -48,8 +48,8 @@ Subroutine z_density_compute()
 
 ! normalisation factor
 
-  numzdn=Max(numzdn,1)
-  factor=1.0_wp/(Real(numzdn,wp)*dvolz)
+  ncfzdn=Max(ncfzdn,1)
+  factor=1.0_wp/(Real(ncfzdn,wp)*dvolz)
 
 ! for every species
 

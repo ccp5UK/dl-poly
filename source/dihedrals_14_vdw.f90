@@ -6,12 +6,12 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 ! adjust by weighting factor
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov february 2014
+! amended   - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module, Only : mxgrid,zero_plus
+  Use setup_module, Only : mxgvdw,zero_plus
   Use vdw_module
 
   Implicit None
@@ -35,7 +35,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 
 ! define grid resolution for potential arrays and interpolation spacing
 
-     dlrpot = rvdw/Real(mxgrid-4,wp)
+     dlrpot = rvdw/Real(mxgvdw-4,wp)
      rdr    = 1.0_wp/dlrpot
   End If
 
@@ -294,7 +294,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
               gamma = gamma - afs(k)/rrr
            End If
 
-        Else If (Abs(vvdw(1,k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
+        Else If (Abs(vvdw(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
 
            l   = Int(rrr*rdr)
            ppp = rrr*rdr - Real(l,wp)
@@ -309,7 +309,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
            eng = t1 + (t2-t1)*ppp*0.5_wp
-           If (ls_vdw) eng = eng + gvdw(mxgrid,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgrid,k) ! force-shifting
+           If (ls_vdw) eng = eng + gvdw(mxgvdw-4,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgvdw-4,k) ! force-shifting
 
 ! calculate forces using 3-point interpolation
 
@@ -321,11 +321,11 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
            t2 = gk1 + (gk2 - gk1)*(ppp - 1.0_wp)
 
            gamma = (t1 + (t2-t1)*ppp*0.5_wp)/rsq
-           If (ls_vdw) gamma = gamma - gvdw(mxgrid,k)/(rrr*rvdw) ! force-shifting
+           If (ls_vdw) gamma = gamma - gvdw(mxgvdw-4,k)/(rrr*rvdw) ! force-shifting
 
         End If
 
-     Else If (Abs(vvdw(1,k)) > zero_plus) Then ! no direct = fully tabulated calculation
+     Else If (Abs(vvdw(0,k)) > zero_plus) Then ! no direct = fully tabulated calculation
 
         l   = Int(rrr*rdr)
         ppp = rrr*rdr - Real(l,wp)
@@ -340,7 +340,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
         t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
         eng = t1 + (t2-t1)*ppp*0.5_wp
-        If (ls_vdw) eng = eng + gvdw(mxgrid,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgrid,k) ! force-shifting
+        If (ls_vdw) eng = eng + gvdw(mxgvdw-4,k)*(rrr/rvdw-1.0_wp) - vvdw(mxgvdw-4,k) ! force-shifting
 
 ! calculate forces using 3-point interpolation
 
@@ -352,7 +352,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
         t2 = gk1 + (gk2 - gk1)*(ppp - 1.0_wp)
 
         gamma = (t1 + (t2-t1)*ppp*0.5_wp)/rsq
-        If (ls_vdw) gamma = gamma - gvdw(mxgrid,k)/(rrr*rvdw) ! force-shifting
+        If (ls_vdw) gamma = gamma - gvdw(mxgvdw-4,k)/(rrr*rvdw) ! force-shifting
 
      End If
 

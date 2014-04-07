@@ -19,7 +19,8 @@ Module dihedrals_module
                                           lx_dih=.false.     ! dihedrals with core-shell
 
   Integer,                        Save :: ntdihd  = 0 , &
-                                          ntdihd1 = 0
+                                          ntdihd1 = 0 , &
+                                          ncfdih  = 0
 
 
   Integer,           Allocatable, Save :: numdih(:),keydih(:)
@@ -44,7 +45,7 @@ Contains
 
   Subroutine allocate_dihedrals_arrays()
 
-    Use setup_module, Only : mxtmls,mxtdih,mxdihd,mxfdih,mxpdih,mxgdih,mxatdm
+    Use setup_module, Only : mxtmls,mxtdih,mxdihd,mxfdih,mxpdih,mxgdih1,mxatdm
 
     Implicit None
 
@@ -60,7 +61,7 @@ Contains
     Allocate (prmdih(1:mxpdih,1:mxtdih), Stat = fail(6))
     If (lt_dih) &
     Allocate (ltpdih(0:mxtdih),          Stat = fail(7))
-    If (mxgdih > 0) &
+    If (mxgdih1 > 0) &
     Allocate (ldfdih(0:mxtdih),          Stat = fail(8))
 
 
@@ -77,7 +78,7 @@ Contains
     If (lt_dih) &
     ltpdih  = 0
 
-    If (mxgdih > 0) &
+    If (mxgdih1 > 0) &
     ldfdih  = 0
 
   End Subroutine allocate_dihedrals_arrays
@@ -98,7 +99,7 @@ Contains
 
   Subroutine allocate_dihd_pot_arrays()
 
-    Use setup_module, Only : mxgrid
+    Use setup_module, Only : mxgdih
 
     Implicit None
 
@@ -106,8 +107,8 @@ Contains
 
     fail = 0
 
-    Allocate (vdih(0:mxgrid,1:ltpdih(0)), Stat = fail(1))
-    Allocate (gdih(0:mxgrid,1:ltpdih(0)), Stat = fail(2))
+    Allocate (vdih(-1:mxgdih,1:ltpdih(0)), Stat = fail(1))
+    Allocate (gdih(-1:mxgdih,1:ltpdih(0)), Stat = fail(2))
 
     If (Any(fail > 0)) Call error(1076)
 
@@ -118,7 +119,7 @@ Contains
 
   Subroutine allocate_dihd_dst_arrays()
 
-    Use setup_module, Only : mxgdih
+    Use setup_module, Only : mxgdih1
 
     Implicit None
 
@@ -126,7 +127,7 @@ Contains
 
     fail = 0
 
-    Allocate (typdih(-1:4,1:ldfdih(0)),dstdih(0:mxgdih,1:ldfdih(0)), Stat = fail)
+    Allocate (typdih(-1:4,1:ldfdih(0)),dstdih(1:mxgdih1,1:ldfdih(0)), Stat = fail)
 
     If (fail > 0) Call error(1077)
 

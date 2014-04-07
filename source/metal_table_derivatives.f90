@@ -7,18 +7,18 @@ Subroutine metal_table_derivatives(ityp,buffer,v2d,vvv)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2006
-! amended   - i.t.todorov june 2013
+! amended   - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module, Only : zero_plus,mxgrid
+  Use setup_module, Only : zero_plus,mxgmet
 
   Implicit None
 
   Integer,           Intent( In    ) :: ityp,v2d
-  Real( Kind = wp ), Intent( In    ) :: buffer(1:mxgrid)
-  Real( Kind = wp ), Intent( InOut ) :: vvv(1:mxgrid,1:v2d,1:2)
+  Real( Kind = wp ), Intent( In    ) :: buffer(1:mxgmet)
+  Real( Kind = wp ), Intent( InOut ) :: vvv(1:mxgmet,1:v2d,1:2)
 
   Integer           :: i,v_end,i_start,i_end
   Real( Kind = wp ) :: delmet,aa0,aa1,aa2,aa3,aa4, &
@@ -85,7 +85,7 @@ Subroutine metal_table_derivatives(ityp,buffer,v2d,vvv)
 
 ! set derivatives to zero beyond end point of function
 
-  Do i=v_end+3,mxgrid
+  Do i=v_end+3,mxgmet
      vvv(i,ityp,2)=0.0_wp
   End Do
 

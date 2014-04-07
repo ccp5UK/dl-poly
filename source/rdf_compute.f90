@@ -12,11 +12,12 @@ Subroutine rdf_compute(rcut)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,      Only : idnode,mxnode,gsum
-  Use setup_module,      Only : mxgrdf,nrite,nrdfdt,pi,zero_plus
-  Use site_module,       Only : ntpatm,unqatm,dens
-  Use config_module,     Only : cfgname,volm
-  Use statistics_module, Only : numrdf,ntprdf,lstrdf,rdf
+  Use comms_module,  Only : idnode,mxnode,gsum
+  Use setup_module,  Only : mxgrdf,nrite,nrdfdt,pi,zero_plus
+  Use site_module,   Only : ntpatm,unqatm,dens
+  Use config_module, Only : cfgname,volm
+  Use rdf_module
+
 
   Implicit None
 
@@ -27,7 +28,7 @@ Subroutine rdf_compute(rcut)
   Real( Kind = wp ) :: delr,dvol,factor,gofr,gofr1,rrr,sum,sum1
 
   If (idnode == 0) Write(nrite,"(/,/,12X,'RADIAL DISTRIBUTION FUNCTIONS',/,/, &
-     & 'calculated using ',i10,' configurations')") numrdf
+     & 'calculated using ',i10,' configurations')") ncfrdf
 
 ! open RDF file and Write headers
 
@@ -64,7 +65,7 @@ Subroutine rdf_compute(rcut)
 
 ! normalisation factor
 
-           factor=volm*dens(ia)*dens(ib)*Real(numrdf,wp)
+           factor=volm*dens(ia)*dens(ib)*Real(ncfrdf,wp)
            If (ia == ib) factor=factor*0.5_wp ! *(1.0_wp-1.0_wp/numtyp(ia))
 
 ! running integration of rdf

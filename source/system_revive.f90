@@ -16,9 +16,14 @@ Subroutine system_revive                                            &
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use config_module,   Only : natms,ltg
-  Use langevin_module, Only : l_lan
+  Use config_module,     Only : natms,ltg
   Use statistics_module
+  Use rdf_module,        Only : ncfrdf,rdf
+  Use z_density_module,  Only : ncfzdn,zdens
+  Use bonds_module,      Only : ldfbnd,ncfbnd,dstbnd
+  Use angles_module,     Only : ldfang,ncfang,dstang
+  Use dihedrals_module,  Only : ldfdih,ncfdih,dstdih
+  Use inversions_module, Only : ldfinv,ncfinv,dstinv
   Use development_module
 
   Implicit None
@@ -29,13 +34,12 @@ Subroutine system_revive                                            &
                                         chit,cint,chip,eta(1:9),   &
                                         strcon(1:9),strpmf(1:9),stress(1:9)
 
-  Logical              , Save :: newjob = .true.
-  Character( Len = 40 ), Save :: forma  = ' '
+  Logical               :: ready
+  Character( Len = 6 )  :: name
+  Character( Len = 40 ) :: forma  = ' '
 
-  Logical              :: ready
-  Character( Len = 6 ) :: name
-
-  Integer              :: fail(1:3),i,levcfg,jdnode,jatms,nsum
+  Integer               :: fail(1:3),i,j,levcfg,jdnode,jatms,nsum
+  Real( Kind = wp )     :: r_mxnode
 
   Integer,           Dimension( : ), Allocatable :: iwrk
   Real( Kind = wp ), Dimension( : ), Allocatable :: axx,ayy,azz
@@ -51,20 +55,19 @@ Subroutine system_revive                                            &
   End If
 
 
-  If (newjob .and. l_rout) Then
-     newjob = .false.
-
 ! Define format for REVIVE printing in ASCII
 
+  If (l_rout) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
+     j = Max(mxstak*mxnstk,mxgrdf*mxrdf,(mxgana+1)*Max(mxtbnd,mxtang,mxtdih,mxtinv))
 
-     Write(forma ,10) Max(mxgrdf*mxrdf,mxstak*mxnstk)/4+1,i+9,i
+     Write(forma ,10) j/4+1,i+9,i
 10   Format('(1p,',i0,'(/,4e',i0,'.',i0,'E3))')
   End If
 
   If (mxnode > 1) Then
 
-! globally sum rdf information before saving
+! globally sum RDF information before saving
 
      If (lrdf) Then
 
@@ -78,11 +81,11 @@ Subroutine system_revive                                            &
         End Do
      End If
 
-! globally sum zden information before saving
+! globally sum z-density information before saving
 
      If (lzdn) Then
 
-! maximum rdfs that can be summed in each step
+! maximum zdens that can be summed in each step
 
         nsum = mxbuff/mxgrdf
         If (nsum == 0) Call error(200)
@@ -91,6 +94,63 @@ Subroutine system_revive                                            &
            Call gsum(zdens(:,i:Min(i+nsum-1,mxatyp)))
         End Do
      End If
+
+! globally sum bonds' distributions information before saving
+
+     If (mxgbnd > 0) Then
+
+! maximum dstbnd that can be summed in each step
+
+        nsum = mxbuff/(mxgbnd+1)
+        If (nsum == 0) Call error(200)
+
+        Do i=1,ldfbnd(0),nsum
+           Call gsum(dstbnd(:,i:Min(i+nsum-1,ldfbnd(0))))
+        End Do
+     End If
+
+! globally sum angles' distributions information before saving
+
+     If (mxgang > 0) Then
+
+! maximum dstang that can be summed in each step
+
+        nsum = mxbuff/(mxgang+1)
+        If (nsum == 0) Call error(200)
+
+        Do i=1,ldfang(0),nsum
+           Call gsum(dstang(:,i:Min(i+nsum-1,ldfang(0))))
+        End Do
+     End If
+
+! globally sum dihedrals' distributions information before saving
+
+     If (mxgdih > 0) Then
+
+! maximum dstdih that can be summed in each step
+
+        nsum = mxbuff/(mxgdih+1)
+        If (nsum == 0) Call error(200)
+
+        Do i=1,ldfdih(0),nsum
+           Call gsum(dstdih(:,i:Min(i+nsum-1,ldfdih(0))))
+        End Do
+     End If
+
+! globally sum inversions' distributions information before saving
+
+     If (mxginv > 0) Then
+
+! maximum dstinv that can be summed in each step
+
+        nsum = mxbuff/(mxginv+1)
+        If (nsum == 0) Call error(200)
+
+        Do i=1,ldfinv(0),nsum
+           Call gsum(dstinv(:,i:Min(i+nsum-1,ldfinv(0))))
+        End Do
+     End If
+
   End If
 
 ! Write REVCON
@@ -110,9 +170,8 @@ Subroutine system_revive                                            &
         Open(Unit=nrest, File='REVIVE', Form='formatted', Status='replace')
 
         Write(Unit=nrest, Fmt=forma, Advance='No') rcut,rbin,Real(megatm,wp)
-        Write(Unit=nrest, Fmt=forma, Advance='No')           &
-             Real(nstep,wp),Real(numacc,wp),Real(numrdf,wp), &
-             Real(numzdn,wp),time,tmst,chit,chip,cint
+        Write(Unit=nrest, Fmt=forma, Advance='No') &
+             Real(nstep,wp),tstep,time,tmst,Real(numacc,wp),chit,chip,cint
         Write(Unit=nrest, Fmt=forma, Advance='No') eta
         Write(Unit=nrest, Fmt=forma, Advance='No') stpval
         Write(Unit=nrest, Fmt=forma, Advance='No') stpvl0
@@ -125,14 +184,19 @@ Subroutine system_revive                                            &
         Write(Unit=nrest, Fmt=forma, Advance='No') strpmf
         Write(Unit=nrest, Fmt=forma, Advance='No') stress
 
-        If (lrdf) Write(Unit=nrest, Fmt=forma, Advance='No') rdf
-        If (lzdn) Write(Unit=nrest, Fmt=forma, Advance='No') zdens
+        If (lrdf) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfrdf,wp),rdf
+        If (lzdn) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfzdn,wp),zdens
+
+        If (mxgbnd > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfbnd,wp),dstbnd
+        If (mxgang > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfang,wp),dstang
+        If (mxgdih > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfdih,wp),dstdih
+        If (mxginv > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfinv,wp),dstinv
      Else
         Open(Unit=nrest, File='REVIVE', Form='unformatted', Status='replace')
 
         Write(Unit=nrest) rcut,rbin,Real(megatm,wp)
-        Write(Unit=nrest) Real(nstep,wp),Real(numacc,wp),Real(numrdf,wp), &
-                          Real(numzdn,wp),time,tmst,chit,chip,cint
+        Write(Unit=nrest) &
+             Real(nstep,wp),tstep,time,tmst,Real(numacc,wp),chit,chip,cint
         Write(Unit=nrest) eta
         Write(Unit=nrest) stpval
         Write(Unit=nrest) stpvl0
@@ -145,8 +209,13 @@ Subroutine system_revive                                            &
         Write(Unit=nrest) strpmf
         Write(Unit=nrest) stress
 
-        If (lrdf) Write(Unit=nrest) rdf
-        If (lzdn) Write(Unit=nrest) zdens
+        If (lrdf) Write(Unit=nrest) Real(ncfrdf,wp),rdf
+        If (lzdn) Write(Unit=nrest) Real(ncfzdn,wp),zdens
+
+        If (mxgbnd > 0) Write(Unit=nrest) Real(ncfbnd,wp),dstbnd
+        If (mxgang > 0) Write(Unit=nrest) Real(ncfang,wp),dstang
+        If (mxgdih > 0) Write(Unit=nrest) Real(ncfdih,wp),dstdih
+        If (mxginv > 0) Write(Unit=nrest) Real(ncfinv,wp),dstinv
      End If
 
 ! Write initial position and final displacement data to REVIVE
@@ -215,29 +284,35 @@ Subroutine system_revive                                            &
   End If
 
   If (mxnode > 1) Call gsync()
-
-! Write timestep for Langevin ensembles
-
-  If (l_lan) Then
-     If (idnode == 0) Then
-        If (l_rout) Then
-           Write(Unit=nrest, Fmt=forma, Advance='No') tstep
-        Else
-           Write(Unit=nrest) tstep
-        End If
-     End If
-  End If
-
-  If (mxnode > 1) Call gsync()
   If (idnode == 0) Close(Unit=nrest)
 
-! divide rdf data between nodes
+  If (mxnode > 1) Then
+     r_mxnode=1.0_wp/Real(mxnode,wp)
 
-  If (lrdf) rdf = rdf / Real(mxnode,wp)
+! globally divide rdf data between nodes
 
-! divide zdensity data between nodes
+     If (lrdf) rdf = rdf * r_mxnode
 
-  If (lzdn) zdens = zdens / Real(mxnode,wp)
+! globally divide z-density data between nodes
+
+     If (lzdn) zdens = zdens * r_mxnode
+
+! globally divide bonds' distributions data between nodes
+
+     If (mxgbnd > 0) dstbnd = dstbnd * r_mxnode
+
+! globally divide angles' distributions data between nodes
+
+     If (mxgang > 0) dstang = dstang * r_mxnode
+
+! globally divide dihedrals' distributions data between nodes
+
+     If (mxgdih > 0) dstdih = dstdih * r_mxnode
+
+! globally divide inversions' distributions data between nodes
+
+     If (mxginv > 0) dstinv = dstinv * r_mxnode
+  End If
 
   Deallocate (iwrk,        Stat=fail(1))
   Deallocate (axx,ayy,azz, Stat=fail(2))

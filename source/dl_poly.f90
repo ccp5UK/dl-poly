@@ -81,8 +81,10 @@ Program dl_poly
 
   Use external_field_module
 
-! STATISTICS MODULE
+! STATISTICS MODULES
 
+  Use rdf_module
+  Use z_density_module
   Use statistics_module
 
 ! PARSE MODULE

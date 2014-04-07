@@ -5,12 +5,12 @@ Subroutine scan_field                                 &
            mxtpmf,mxpmf,mxfpmf,                       &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,          &
            mtteth,mxtteth,mxteth,mxftet,              &
-           mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,         &
-           mtangl,mxtang,mxangl,mxfang,               &
-           mtdihd,mxtdih,mxdihd,mxfdih,               &
-           mtinv,mxtinv,mxinv,mxfinv,                 &
-           mxrdf,mxgrid,mxvdw,rvdw,                   &
-           mxmet,mxmed,mxmds,rmet,                    &
+           mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,mxgbnd,  &
+           mtangl,mxtang,mxangl,mxfang,mxgang,        &
+           mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,        &
+           mtinv,mxtinv,mxinv,mxfinv,mxginv,          &
+           mxrdf,mxvdw,rvdw,mxgvdw,                   &
+           mxmet,mxmed,mxmds,rmet,mxgmet,             &
            mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -19,7 +19,7 @@ Subroutine scan_field                                 &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith november 1994
-! amended   - i.t.todorov march 2014
+! amended   - i.t.todorov april 2014
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno march 2014 (itramolecular TPs)
 !
@@ -62,12 +62,12 @@ Subroutine scan_field                                 &
                        mxtpmf(1:2),mxpmf,ipmf,jpmf,mxfpmf,                     &
                        numrgd,mtrgd,mxtrgd,mxlrgd,mxrgd,irgd,jrgd,lrgd,mxfrgd, &
                        numteth,mtteth,mxtteth,mxteth,iteth,mxftet,             &
-                       numbonds,mtbond,mxtbnd,mxbond,ibonds,mxfbnd,            &
-                       numang,mtangl,mxtang,mxangl,iang,mxfang,                &
-                       numdih,mtdihd,mxtdih,mxdihd,idih,mxfdih,                &
-                       numinv,mtinv,mxtinv,mxinv,iinv,mxfinv,                  &
-                       mxrdf,itprdf,mxvdw,itpvdw,                              &
-                       mxmet,mxmed,mxmds,itpmet,mxgrid,                        &
+                       numbonds,mtbond,mxtbnd,mxbond,ibonds,mxfbnd,mxgbnd,     &
+                       numang,mtangl,mxtang,mxangl,iang,mxfang,mxgang,         &
+                       numdih,mtdihd,mxtdih,mxdihd,idih,mxfdih,mxgdih,         &
+                       numinv,mtinv,mxtinv,mxinv,iinv,mxfinv,mxginv,           &
+                       mxrdf,itprdf,mxvdw,itpvdw,mxgvdw,                       &
+                       mxmet,mxmed,mxmds,itpmet,mxgmet,                        &
                        mxter,itpter,mxtbp,itptbp,mxfbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
   Real( Kind = wp ) :: rcbnd,rvdw,rmet,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
@@ -118,36 +118,40 @@ Subroutine scan_field                                 &
   mxtbnd=0
   mxfbnd=0
   rcbnd =0.0_wp
+  mxgbnd=-2
 
   numang=0
   mtangl=0
   mxangl=0
   mxtang=0
   mxfang=0
+  mxgang=-2
 
   numdih=0
   mtdihd=0
   mxdihd=0
   mxtdih=0
   mxfdih=0
+  mxgdih=-2
 
   numinv=0
   mtinv =0
   mxinv =0
   mxtinv=0
   mxfinv=0
+  mxginv=-2
 
   mxrdf =0
 
-  mxgrid=0
+  mxvdw =0
+  rvdw  =0.0_wp
+  mxgvdw=0
 
-  mxvdw=0
-  rvdw =0.0_wp
-
-  mxmet=0
-  mxmed=0
-  mxmds=0
-  rmet =0.0_wp
+  mxmet =0
+  mxmed =0
+  mxmds =0
+  rmet  =0.0_wp
+  mxgmet=0
 
   mxter=0
   rcter=0.0_wp
@@ -434,7 +438,7 @@ Subroutine scan_field                                 &
 
                     Call get_word(record,word)
                     k=Nint(word_2_real(word))
-                    mxgrid=Max(mxgrid,k+4)
+                    mxgbnd=Max(mxgbnd,k+4)
 
                     If (idnode == 0) Close(Unit=ntable)
                  End If
@@ -475,7 +479,7 @@ Subroutine scan_field                                 &
 
                     Call get_word(record,word) ! no need for cutoff in angles (max is always 180 degrees)
                     k=Nint(word_2_real(word))
-                    mxgrid=Max(mxgrid,k+4)
+                    mxgang=Max(mxgang,k+4)
 
                     If (idnode == 0) Close(Unit=ntable)
                  End If
@@ -516,7 +520,7 @@ Subroutine scan_field                                 &
 
                     Call get_word(record,word) ! no need for cutoff in angles (max is always 180 degrees)
                     k=Nint(word_2_real(word))
-                    mxgrid=Max(mxgrid,k+4)
+                    mxgdih=Max(mxgdih,k+4)
 
                     If (idnode == 0) Close(Unit=ntable)
                  End If
@@ -557,7 +561,7 @@ Subroutine scan_field                                 &
 
                     Call get_word(record,word) ! no need for cutoff in angles (max is always 180 degrees)
                     k=Nint(word_2_real(word))
-                    mxgrid=Max(mxgrid,k+4)
+                    mxginv=Max(mxginv,k+4)
 
                     If (idnode == 0) Close(Unit=ntable)
                  End If
@@ -651,7 +655,7 @@ Subroutine scan_field                                 &
 
               Call get_word(record,word)
               k=Nint(word_2_real(word))
-              mxgrid=Max(mxgrid,k)
+              mxgvdw=Max(mxgvdw,k)
 
               If (idnode == 0) Close(Unit=ntable)
            End If
@@ -741,7 +745,7 @@ Subroutine scan_field                                 &
 
                  Call get_word(record,word)
                  k=Nint(word_2_real(word))
-                 mxgrid=Max(mxgrid,k+4)
+                 mxgmet=Max(mxgmet,k+4)
 
                  Call get_word(record,word)
                  Call get_word(record,word)

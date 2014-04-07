@@ -6,7 +6,7 @@ Module inversions_module
 ! and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,7 +17,8 @@ Module inversions_module
   Logical,                        Save :: lt_inv=.false. ! no tabulated potentials opted
 
   Integer,                        Save :: ntinv  = 0 , &
-                                          ntinv1 = 0
+                                          ntinv1 = 0 , &
+                                          ncfinv = 0
 
 
   Integer,           Allocatable, Save :: numinv(:),keyinv(:)
@@ -42,7 +43,7 @@ Contains
 
   Subroutine allocate_inversions_arrays()
 
-    Use setup_module, Only : mxtmls,mxtinv,mxinv,mxfinv,mxpinv,mxginv,mxatdm
+    Use setup_module, Only : mxtmls,mxtinv,mxinv,mxfinv,mxpinv,mxginv1,mxatdm
 
     Implicit None
 
@@ -58,7 +59,7 @@ Contains
     Allocate (prminv(1:mxpinv,1:mxtinv), Stat = fail(6))
     If (lt_inv) &
     Allocate (ltpinv(0:mxtinv),          Stat = fail(7))
-    If (mxginv > 0) &
+    If (mxginv1 > 0) &
     Allocate (ldfinv(0:mxtinv),          Stat = fail(8))
 
     If (Any(fail > 0)) Call error(1021)
@@ -74,7 +75,7 @@ Contains
     If (lt_inv) &
     ltpinv  = 0
 
-    If (mxginv > 0) &
+    If (mxginv1 > 0) &
     ldfinv  = 0
 
   End Subroutine allocate_inversions_arrays
@@ -95,7 +96,7 @@ Contains
 
   Subroutine allocate_invr_pot_arrays()
 
-    Use setup_module, Only : mxgrid
+    Use setup_module, Only : mxginv
 
     Implicit None
 
@@ -103,8 +104,8 @@ Contains
 
     fail = 0
 
-    Allocate (vinv(0:mxgrid,1:ltpinv(0)), Stat = fail(1))
-    Allocate (ginv(0:mxgrid,1:ltpinv(0)), Stat = fail(2))
+    Allocate (vinv(-1:mxginv,1:ltpinv(0)), Stat = fail(1))
+    Allocate (ginv(-1:mxginv,1:ltpinv(0)), Stat = fail(2))
 
     If (Any(fail > 0)) Call error(1078)
 
@@ -115,7 +116,7 @@ Contains
 
   Subroutine allocate_invr_dst_arrays()
 
-    Use setup_module, Only : mxginv
+    Use setup_module, Only : mxginv1
 
     Implicit None
 
@@ -123,7 +124,7 @@ Contains
 
     fail = 0
 
-    Allocate (typinv(-11:4,1:ldfinv(0)),dstinv(0:mxginv,1:ldfinv(0)), Stat = fail)
+    Allocate (typinv(-1:4,1:ldfinv(0)),dstinv(1:mxginv1,1:ldfinv(0)), Stat = fail)
 
     If (fail > 0) Call error(1079)
 

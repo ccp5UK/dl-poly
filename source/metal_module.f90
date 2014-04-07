@@ -6,7 +6,7 @@ Module metal_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -77,7 +77,7 @@ Contains
 
   Subroutine allocate_metal_table_arrays()
 
-    Use setup_module, Only : mxmet,mxmed,mxmds,mxatyp,mxgrid
+    Use setup_module, Only : mxmet,mxmed,mxmds,mxatyp,mxgmet
 
     Implicit None
 
@@ -85,12 +85,12 @@ Contains
 
     fail = 0
 
-    Allocate (vmet(1:mxgrid,1:mxmet, 1:2),    Stat = fail(1))
-    Allocate (dmet(1:mxgrid,1:mxmed, 1:2),    Stat = fail(2))
-    Allocate (fmet(1:mxgrid,1:mxatyp,1:2),    Stat = fail(3))
+    Allocate (vmet(1:mxgmet,1:mxmet, 1:2),    Stat = fail(1))
+    Allocate (dmet(1:mxgmet,1:mxmed, 1:2),    Stat = fail(2))
+    Allocate (fmet(1:mxgmet,1:mxatyp,1:2),    Stat = fail(3))
     If (tabmet == 3 .or. tabmet == 4) Then ! the new S-band density and embedding
-       Allocate (dmes(1:mxgrid,1:mxmds, 1:2), Stat = fail(4))
-       Allocate (fmes(1:mxgrid,1:mxatyp,1:2), Stat = fail(5))
+       Allocate (dmes(1:mxgmet,1:mxmds, 1:2), Stat = fail(4))
+       Allocate (fmes(1:mxgmet,1:mxatyp,1:2), Stat = fail(5))
     End If
 
     If (Any(fail > 0)) Call error(1069)

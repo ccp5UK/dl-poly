@@ -7,13 +7,14 @@ Subroutine vdw_table_read(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1994
-! amended   - i.t.todorov december 2013
+! amended   - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module, Only : ntable,nrite,mxgrid,engunit
+  Use setup_module, Only : delr_max,ntable,nrite, &
+                           mxgvdw,zero_plus,engunit
   Use site_module,  Only : ntpatm,unqatm
   Use vdw_module,   Only : ntpvdw,ls_vdw,lstvdw,ltpvdw,prmvdw,gvdw,vvdw,sigeps
   Use parse_module, Only : get_line,get_word,word_2_real
@@ -27,18 +28,10 @@ Subroutine vdw_table_read(rvdw)
   Character( Len = 40  ) :: word
   Character( Len = 8   ) :: atom1,atom2
   Integer                :: fail,ngrid,katom1,katom2,ivdw,jtpatm,keyvdw,i,j,l
-  Real( Kind = wp )      :: delpot,cutpot,dlrpot,rdr,rrr,ppp,vk,vk1,vk2,t,t1,t2
+  Real( Kind = wp )      :: delpot,cutpot,rdr,rrr,ppp,vk,vk1,vk2,t,t1,t2
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
-  fail=0
-  Allocate (buffer(1:mxgrid), Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'vdw_table_read allocation failure, node: ', idnode
-     Call error(0)
-  End If
-
-  remake=.false.
 
   If (idnode == 0) Open(Unit=ntable, File='TABLE')
 
@@ -61,34 +54,49 @@ Subroutine vdw_table_read(rvdw)
   Call get_word(record,word)
   ngrid = Nint(word_2_real(word))
 
-  dlrpot=rvdw/Real(mxgrid-4,wp)
+! check grid spacing
 
   safe=.false.
-  If (Abs(delpot-dlrpot) <= 1.0e-8_wp) Then
+  If (Abs(delpot-delr_max) <= 1.0e-8_wp) Then
      safe=.true.
-     delpot=dlrpot
+     delpot=delr_max
   End If
-  If ( (delpot > dlrpot .and. (.not.safe)) .or. &
-       (ngrid-4 /= Nint(cutpot/delpot)) ) Then
+  If (delpot > delr_max .and. (.not.safe)) Then
      If (idnode == 0) Then
-        Write(nrite,"(/,                                          &
-           & 'expected (minimum) radial increment : ',1p,e15.7,/, &
-           & 'TABLE file         radial increment : ',1p,e15.7)") &
-           dlrpot, delpot
         Write(nrite,"(/,                                             &
-           & 'expected (minimum) number of grid points : ',0p,i10,/, &
-           & 'TABLE file stated  number of grid points : ',0p,i10,/, &
-           & 'TABLE file derived number of grid points : ',0p,i10)") &
-           mxgrid, ngrid, Nint(cutpot/delpot)+4
+             & ' expected (maximum) radial increment : ',1p,e15.7,/, &
+             & ' TABLE  file actual radial increment : ',1p,e15.7)") &
+             delr_max, delpot
+        Write(nrite,"(/,                                                &
+             & ' expected (minimum) number of grid points : ',0p,i10,/, &
+             & ' TABLE  file actual number of grid points : ',0p,i10)") &
+             mxgvdw, ngrid
      End If
      Call error(22)
   End If
   safe=.true.
 
-  If (cutpot < rvdw) Call error(504)
-  If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
+  remake=.false.
+  If (Abs(1.0_wp-(delpot/delr_max)) > 1.0e-8_wp) Then
      remake=.true.
-     If (idnode == 0) Write(nrite,"(/,' TABLE arrays resized for mxgrid = ',i10)") mxgrid
+     rdr=1.0_wp/delpot
+     If (idnode == 0) Write(nrite,"(/,' TABLE arrays resized for mxgrid = ',i10)") mxgvdw-4
+  End If
+
+! compare grids dimensions
+
+  If (ngrid < mxgvdw-4) Then
+     Call warning(270,Real(ngrid,wp),Real(mxgvdw-4,wp),0.0_wp)
+     Call error(48)
+  End If
+
+  If (cutpot < rvdw) Call error(504)
+
+  fail=0
+  Allocate (buffer(0:ngrid+4), Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'vdw_table_read allocation failure, node: ', idnode
+     Call error(0)
   End If
 
 ! read potential arrays for all pairs
@@ -133,13 +141,6 @@ Subroutine vdw_table_read(rvdw)
 
         If (lstvdw(keyvdw) /= ivdw) Call error(23)
 
-! check array dimensions
-
-        If (ngrid > mxgrid) Then
-           Call warning(270,Real(ngrid,wp),Real(mxgrid,wp),0.0_wp)
-           Call error(48)
-        End If
-
 ! read in potential arrays
 
         Do i=1,(ngrid+3)/4
@@ -155,10 +156,15 @@ Subroutine vdw_table_read(rvdw)
 ! reconstruct arrays using 3pt interpolation
 
         If (remake) Then
-           rdr=1.0_wp/delpot
-           Do i=1,mxgrid
-              rrr = Real(i,wp)*dlrpot
+           Do i=1,mxgvdw-2
+              rrr = Real(i,wp)*delr_max
               l   = Int(rrr*rdr)
+
+! linear extrapolation for the grid point just beyond the cutoff
+
+              If (l+2 > ngrid) Then
+                 buffer(l+2) = 2.0_wp*buffer(l+1)-buffer(l)
+              End If
 
               ppp=rrr*rdr-Real(l,wp)
               vk  = buffer(l)
@@ -170,10 +176,19 @@ Subroutine vdw_table_read(rvdw)
               vvdw(i,ivdw) = t1 + (t2-t1)*ppp*0.5_wp
            End Do
         Else
-           Do i=1,mxgrid
+           Do i=1,mxgvdw-4
               vvdw(i,ivdw) = buffer(i)
            End Do
+
+! linear extrapolation for the grid points just beyond the cutoff
+
+           vvdw(mxgvdw-3,ivdw) = 2.0_wp*vvdw(mxgvdw-4,ivdw) - vvdw(mxgvdw-5,ivdw)
+           vvdw(mxgvdw-2,ivdw) = 2.0_wp*vvdw(mxgvdw-3,ivdw) - vvdw(mxgvdw-4,ivdw)
         End If
+
+! linear extrapolation for the grid point at 0
+
+        vvdw(0,ivdw) = 2.0_wp*buffer(1)-buffer(2)
 
 ! read in force arrays
 
@@ -190,9 +205,15 @@ Subroutine vdw_table_read(rvdw)
 ! reconstruct arrays using 3pt interpolation
 
         If (remake) Then
-           Do i=1,mxgrid
-              rrr = Real(i,wp)*dlrpot
+           Do i=1,mxgvdw-2
+              rrr = Real(i,wp)*delr_max
               l   = Int(rrr*rdr)
+
+! linear extrapolation for the grid point just beyond the cutoff
+
+              If (l+2 > ngrid) Then
+                 buffer(l+2) = 2.0_wp*buffer(l+1)-buffer(l)
+              End If
 
               ppp=rrr*rdr-Real(l,wp)
               vk  = buffer(l)
@@ -205,10 +226,23 @@ Subroutine vdw_table_read(rvdw)
               gvdw(i,ivdw) = t1 + (t2-t1)*ppp*0.5_wp
            End Do
         Else
-           Do i=1,mxgrid
+           Do i=1,mxgvdw-4
               gvdw(i,ivdw) = buffer(i)
            End Do
+
+! linear extrapolation for the grid points just beyond the cutoff
+
+           gvdw(mxgvdw-3,ivdw) = 2.0_wp*gvdw(mxgvdw-4,ivdw) - gvdw(mxgvdw-5,ivdw)
+           gvdw(mxgvdw-2,ivdw) = 2.0_wp*gvdw(mxgvdw-3,ivdw) - gvdw(mxgvdw-4,ivdw)
         End If
+
+! linear extrapolation for the grid point at 0
+
+        gvdw(0,ivdw) = (2.0_wp*buffer(1)-0.5_wp*buffer(2))*rdr
+
+! We must distinguish that something has been defined
+
+        If (Abs(vvdw(0,ivdw)) <= zero_plus) vvdw(0,ivdw) = Sign(Tiny(vvdw(0,ivdw)),vvdw(0,ivdw))
 
      End If
 
@@ -221,24 +255,24 @@ Subroutine vdw_table_read(rvdw)
 
 ! convert to internal units
 
-  Do l=1,ntpvdw
-     If (ltpvdw(l) == 0) Then
+  Do ivdw=1,ntpvdw
+     If (ltpvdw(ivdw) == 0) Then
 
 ! Sigma-epsilon initialisation
 
         sigeps(1,ivdw)=-1.0_wp
         sigeps(2,ivdw)= 0.0_wp
 
-        Do i=1,mxgrid
-           vvdw(i,l)=vvdw(i,l)*engunit
-           gvdw(i,l)=gvdw(i,l)*engunit
+        Do i=0,mxgvdw
+           vvdw(i,ivdw)=vvdw(i,ivdw)*engunit
+           gvdw(i,ivdw)=gvdw(i,ivdw)*engunit
 
 ! Sigma-epsilon search
 
            If ((.not.ls_vdw) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
               If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
                  If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
-                    sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+                    sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*delr_max
               Else                                           ! find epsilon
                  If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
                        vvdw(i-1,ivdw) <= vvdw(i  ,ivdw)) .and. &
@@ -253,8 +287,8 @@ Subroutine vdw_table_read(rvdw)
   End Do
 
   If (ls_vdw) Then
-     Do l=1,ntpvdw
-        If (ltpvdw(l) == 0) Then
+     Do ivdw=1,ntpvdw
+        If (ltpvdw(ivdw) == 0) Then
 
 ! Sigma-epsilon initialisation
 
@@ -263,27 +297,27 @@ Subroutine vdw_table_read(rvdw)
 
 ! Sigma-epsilon search
 
-           Do i=1,mxgrid
+           Do i=1,mxgvdw-4
               If (i > 20) Then ! Assumes some safety against numeric black holes!!!
-                 t  = gvdw(mxgrid,ivdw)*(Real(i  ,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgrid,ivdw)
-                 t1 = gvdw(mxgrid,ivdw)*(Real(i-1,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgrid,ivdw)
-
-                 vk  = vvdw(i  ,ivdw) + t
-                 vk1 = vvdw(i-1,ivdw) + t1
-
+                 t  = vvdw(i  ,ivdw) + gvdw(mxgvdw-4,ivdw) * &
+                      (Real(i  ,wp)*delr_max/rvdw-1.0_wp) - vvdw(mxgvdw-4,ivdw)
+                 t1 = vvdw(i-1,ivdw) + gvdw(mxgvdw-4,ivdw) * &
+                      (Real(i-1,wp)*delr_max/rvdw-1.0_wp) - vvdw(mxgvdw-4,ivdw)
                  If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                    If (Sign(1.0_wp,vk1) == -Sign(1.0_wp,vk)) &
-                          sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+                    If (Nint(Sign(1.0_wp,t1)) == -Nint(Sign(1.0_wp,t))) &
+                       sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*delr_max
                  Else                                           ! find epsilon
-                    t2 = gvdw(mxgrid,ivdw)*(Real(i-2,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgrid,ivdw)
-                    vk2 = vvdw(i-2,ivdw) + ppp
+                    t2 = vvdw(i-2,ivdw) + gvdw(mxgvdw-4,ivdw) * &
+                         (Real(i-2,wp)*delr_max/rvdw-1.0_wp) - vvdw(mxgvdw-4,ivdw)
 
-                    If ( (vk2 >= vk1 .and. vk1 <= vk) .and.           &
-                         (vk2 /= vk1 .or. vk2 /= vk .or. vk1 /= vk) ) &
-                       sigeps(2,ivdw)=-vk1
+                    If ( (t2 >= t1 .and. t1 <= t) .and.         &
+                         (t2 /= t1 .or. t2 /= t .or. t1 /= t) ) &
+                       sigeps(2,ivdw)=-t1
                  End If
               End If
            End Do
+           vvdw(mxgvdw-3,ivdw) = 0.0_wp ; vvdw(mxgvdw-2,ivdw) = 0.0_wp
+           gvdw(mxgvdw-3,ivdw) = 0.0_wp ; gvdw(mxgvdw-2,ivdw) = 0.0_wp
         End If
      End Do
   End If

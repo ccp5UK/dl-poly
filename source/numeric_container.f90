@@ -618,7 +618,7 @@ Subroutine gauss_2(natms,vxx,vyy,vzz)
 
 End Subroutine gauss_2
 
-Subroutine erfcgen(rcut,alpha,mxgrid,erc,fer)
+Subroutine erfcgen(rcut,alpha,mxgele,erc,fer)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -627,7 +627,7 @@ Subroutine erfcgen(rcut,alpha,mxgrid,erc,fer)
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester december 1994
-! amended   - i.t.todorov august 2004
+! amended   - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -643,18 +643,18 @@ Subroutine erfcgen(rcut,alpha,mxgrid,erc,fer)
   Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
   Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
 
-  Integer,                                  Intent( In    ) :: mxgrid
+  Integer,                                  Intent( In    ) :: mxgele
   Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha
-  Real( Kind = wp ), Dimension( 1:mxgrid ), Intent(   Out ) :: erc,fer
+  Real( Kind = wp ), Dimension( 1:mxgele ), Intent(   Out ) :: erc,fer
 
   Integer           :: i
   Real( Kind = wp ) :: drewd,exp1,rrr,rsq,tt
 
 ! look-up tables for real space part of ewald sum
 
-  drewd = rcut/Real(mxgrid-4,wp)
+  drewd = rcut/Real(mxgele-4,wp)
 
-  Do i=1,mxgrid
+  Do i=1,mxgele
      rrr = Real(i,wp)*drewd
      rsq = rrr*rrr
 

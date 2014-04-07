@@ -540,7 +540,7 @@ Subroutine error(kode)
 
      Else If (kode ==  200) Then
 
-        Write(nrite,'(/,1x,a)') 'error - rdf/z-density buffer array too small in system_revive'
+        Write(nrite,'(/,1x,a)') 'error - rdf||z-density||dstbnd||dstang||dstdih||dstinv buffer array too small in system_revive'
 
      Else If (kode ==  210) Then
 
@@ -812,7 +812,7 @@ Subroutine error(kode)
 
      Else If (kode ==  504) Then
 
-        Write(nrite,'(/,1x,a)') 'error - cutoff too large for TABLE||TABBND file'
+        Write(nrite,'(/,1x,a)') 'error - cutoff too large for TABLE file'
 
      Else If (kode ==  505) Then
 

@@ -64,9 +64,9 @@ Subroutine read_field                   &
 
   Use kinetic_module, Only : l_vom
 
-! STATISTICS MODULE
+! RDF MODULE
 
-  Use statistics_module ! for rdf
+  Use rdf_module
 
 ! PARSE MODULE
 
@@ -2014,7 +2014,7 @@ Subroutine read_field                   &
 ! Deal with intarmolecular potential tables:
 ! read & generate intramolecular potential & virial arrays
 
-        If (lt_bnd) Call bonds_table_read(bond_name,rcut)
+        If (lt_bnd) Call bonds_table_read(bond_name)
         If (lt_ang) Call angles_table_read(angl_name)
         If (lt_dih) Call dihedrals_table_read(dihd_name)
         If (lt_inv) Call inversions_table_read(invr_name)

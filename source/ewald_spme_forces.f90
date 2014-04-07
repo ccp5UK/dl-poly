@@ -9,7 +9,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 ! Note: (fourier) reciprocal space terms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith & i.j.bush february 2014
+! author    - i.t.todorov & w.smith & i.j.bush march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,9 +29,9 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
   Logical,           Save :: newjob = .true.
   Integer,           Save :: ixb,iyb,izb, ixt,iyt,izt
-  Real( Kind = wp ), Save :: twopi,ixbm1_r,iybm1_r,izbm1_r, &
-                                   ixtm0_r,iytm0_r,iztm0_r, &
-                                   kmaxa_r,kmaxb_r,kmaxc_r,engsic
+  Real( Kind = wp ), Save :: ixbm1_r,iybm1_r,izbm1_r, &
+                             ixtm0_r,iytm0_r,iztm0_r, &
+                             kmaxa_r,kmaxb_r,kmaxc_r,engsic
 
   Integer              :: fail(1:4), i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt
 
@@ -46,10 +46,17 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   Real( Kind = wp )    :: &
      uni(1:9) = (/ 1.0_wp,0.0_wp,0.0_wp, 0.0_wp,1.0_wp,0.0_wp, 0.0_wp,0.0_wp,1.0_wp /)
 
+! blocking factors for splines and fft
+
+  Integer, Save :: block_x
+  Integer, Save :: block_y
+  Integer, Save :: block_z
+
 ! B-spline coefficients
 
-  Complex( Kind = wp ), Dimension( : ),   Allocatable, Save :: bscx,bscy,bscz
-  Complex( Kind = wp ), Dimension( : ),   Allocatable, Save :: ww1,ww2,ww3
+  Complex( Kind = wp ), Dimension( : ),   Allocatable, Save :: bscx_local,bscy_local,bscz_local
+  Complex( Kind = wp ), Dimension( : ),   Allocatable       :: bscx,bscy,bscz
+  Complex( Kind = wp ), Dimension( : ),   Allocatable       :: ww1,ww2,ww3
 
   Real( Kind = wp ),    Dimension( : ),   Allocatable       :: csp
   Real( Kind = wp ),    Dimension( : ),   Allocatable       :: txx,tyy,tzz
@@ -57,17 +64,11 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   Real( Kind = wp ),    Dimension( :,: ), Allocatable       :: bsdx,bsdy,bsdz
   Real( Kind = wp ),    Dimension( :,: ), Allocatable       :: bspx,bspy,bspz
 
-! ijb context for parallel fft
+! context for parallel fft
 
   Integer, Save :: context
 
-! ijb blocking factors for fft
-
-  Integer, Save :: block_x
-  Integer, Save :: block_y
-  Integer, Save :: block_z
-
-! ijb indexing arrays for x, y and z as used in parallel fft
+! indexing arrays for x, y and z as used in parallel fft
 
   Integer, Dimension( : ), Allocatable, Save :: index_x
   Integer, Dimension( : ), Allocatable, Save :: index_y
@@ -77,7 +78,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
   Real( Kind = wp ) :: qqc_tmp
 
-! ijb temporary workspace for parallel fft
+! temporary workspace for parallel fft
 
   Complex( Kind = wp ), Dimension( :, :, : ), Allocatable, Save :: qqq_local
   Complex( Kind = wp ), Dimension( :, :, : ), Allocatable, Save :: pfft_work
@@ -86,22 +87,17 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
   Integer :: j_local, k_local, l_local
 
-  fail=0
-  Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),                            Stat = fail(1))
-  Allocate (ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms),it(1:mxatms),               Stat = fail(2))
-  Allocate (bsdx(1:mxspl,1:mxatms),bsdy(1:mxspl,1:mxatms),bsdz(1:mxspl,1:mxatms), Stat = fail(3))
-  Allocate (bspx(1:mxspl,1:mxatms),bspy(1:mxspl,1:mxatms),bspz(1:mxspl,1:mxatms), Stat = fail(4))
-  If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'ewald_spme_forces allocation failure, node: ', idnode
-     Call error(0)
-  End If
 
+  fail=0
   If (newjob) Then
      newjob = .false.
 
-! derivative of pi
+!!! BEGIN DD SPME VARIABLES
+! domain local block limits of kmax space
 
-     twopi=2.0_wp*pi
+     block_x = kmaxa / nprx
+     block_y = kmaxb / npry
+     block_z = kmaxc / nprz
 
 ! 3D charge array construction (bottom and top) indices
 
@@ -125,18 +121,10 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      kmaxb_r=Real(kmaxb,wp)
      kmaxc_r=Real(kmaxc,wp)
 
-! calculate self-interaction correction (per node)
+!!! END DD SPME VARIABLES
 
-     engsic=0.0_wp
-     Do i=1,natms
-        engsic=engsic+chge(i)**2
-     End Do
-
-     If (mxnode > 1) Call gsum(engsic)
-
-     engsic=-r4pie0/epsq * alpha*engsic/sqrpi / Real(mxnode,wp)
-
-! allocate the complex exponential arrays (NOT deallocated manually)
+!!! BEGIN CARDINAL B-SPLINES SET-UP
+! allocate the complex exponential arrays
 
      Allocate (ww1(1:kmaxa),ww2(1:kmaxb),ww3(1:kmaxc), Stat = fail(1))
      If (fail(1) > 0) Then
@@ -148,18 +136,61 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
      Call spl_cexp(kmaxa,kmaxb,kmaxc,ww1,ww2,ww3)
 
-! ijb set up the parallel fft and useful related quantities
+! allocate the global B-spline coefficients and the helper array
 
-     block_x = kmaxa / nprx
-     block_y = kmaxb / npry
-     block_z = kmaxc / nprz
+     Allocate (bscx(1:kmaxa),bscy(1:kmaxb),bscz(1:kmaxc), Stat = fail(1))
+     Allocate (csp(1:mxspl),                              Stat = fail(2))
+     If (Any(fail > 0)) Then
+        Write(nrite,'(/,1x,a,i0)') 'bsc and cse arrays allocation failure, node: ', idnode
+        Call error(0)
+     End If
+
+! calculate the global B-spline coefficients
+
+     Call bspcoe(mxspl,kmaxa,kmaxb,kmaxc,csp,bscx,bscy,bscz,ww1,ww2,ww3)
+
+! deallocate the helper array and complex exponential arrays
+
+     Deallocate (csp,         Stat = fail(1))
+     Deallocate (ww1,ww2,ww3, Stat = fail(2))
+     If (Any(fail > 0)) Then
+        Write(nrite,'(/,1x,a,i0)') 'cse and ww arrays deallocation failure, node: ', idnode
+        Call error(0)
+     End If
+
+! allocate the distributed B-spline coefficients
+
+     Allocate (bscx_local(1:block_x),bscy_local(1:block_y),bscz_local(1:block_z), Stat = fail(1))
+     If (fail(1) > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'bsc._local arrays allocation failure, node: ', idnode
+        Call error(0)
+     End If
+
+! Distribute B-spline coefficients
+
+     bscx_local(1:block_x) = bscx(ixb:ixt)
+     bscy_local(1:block_y) = bscy(iyb:iyt)
+     bscz_local(1:block_z) = bscz(izb:izt)
+
+! deallocate the global B-spline coefficients
+
+     Deallocate (bscx,bscy,bscz, Stat = fail(1))
+     If (fail(1) > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'bsc. arrays deallocation failure, node: ', idnode
+        Call error(0)
+     End If
+
+!!! END CARDINAL B-SPLINES SET-UP
+
+!!! BEGIN DAFT SET-UP
+! set up the parallel fft and useful related quantities
 
      Call initialize_fft( 3, (/ kmaxa, kmaxb, kmaxc /), &
          (/ nprx, npry, nprz /), (/ idx, idy, idz /),   &
          (/ block_x, block_y, block_z /),               &
          dlp_comm_world, context )
 
-! ijb set up the indexing arrays for each dimension (NOT deallocated manually)
+! set up the indexing arrays for each dimension (NOT deallocated manually)
 
      Allocate ( index_x( 1:block_x ), Stat = fail(1) )
      Allocate ( index_y( 1:block_y ), Stat = fail(2) )
@@ -173,7 +204,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      Call pfft_indices( kmaxb, block_y, idy, npry, index_y )
      Call pfft_indices( kmaxc, block_z, idz, nprz, index_z )
 
-! ijb workspace arrays for DaFT
+! workspace arrays for DaFT
 
      Allocate ( qqq_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(1) )
      Allocate ( qqc_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(2) )
@@ -184,22 +215,25 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
         Call error(0)
      End If
 
-! calculate B-spline coefficients
+!!! END DAFT SET-UP
 
-     Allocate (bscx(1:kmaxa),bscy(1:kmaxb),bscz(1:kmaxc), Stat = fail(1))
-     Allocate (csp(1:mxspl),                              Stat = fail(2))
-     If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'bsc and cse arrays allocation failure, node: ', idnode
-        Call error(0)
-     End If
+! calculate self-interaction correction (per node)
 
-     Call bspcoe(mxspl,kmaxa,kmaxb,kmaxc,csp,bscx,bscy,bscz,ww1,ww2,ww3)
+     engsic=0.0_wp
+     Do i=1,natms
+        engsic=engsic+chge(i)**2
+     End Do
+     If (mxnode > 1) Call gsum(engsic)
+     engsic=-r4pie0/epsq * alpha*engsic/sqrpi / Real(mxnode,wp)
+  End If
 
-     Deallocate (csp, Stat = fail(1))
-     If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'cse array deallocation failure, node: ', idnode
-        Call error(0)
-     End If
+  Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),                            Stat = fail(1))
+  Allocate (ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms),it(1:mxatms),               Stat = fail(2))
+  Allocate (bsdx(1:mxspl,1:mxatms),bsdy(1:mxspl,1:mxatms),bsdz(1:mxspl,1:mxatms), Stat = fail(3))
+  Allocate (bspx(1:mxspl,1:mxatms),bspy(1:mxspl,1:mxatms),bspz(1:mxspl,1:mxatms), Stat = fail(4))
+  If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'ewald_spme_forces allocation failure, node: ', idnode
+     Call error(0)
   End If
 
 ! initialise coulombic potential energy and virial
@@ -239,28 +273,28 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      tyy(i)=kmaxb_r*(rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+0.5_wp)
      tzz(i)=kmaxc_r*(rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+0.5_wp)
 
-! THIS IS NOW UNSAFE
 ! Get in DD bounds in kmax grid space in case tiny inaccuracies created edge effects
-!
-!     If (i <= natms) Then
-!        If      (txx(i) < ixbm1_r) Then
-!           txx(i)=ixbm1_r
-!        Else If (txx(i) > ixtm0_r) Then
-!           txx(i)=ixtm0_r
-!        End If
-!
-!        If      (tyy(i) < iybm1_r) Then
-!           tyy(i)=iybm1_r
-!        Else If (tyy(i) > iytm0_r) Then
-!           tyy(i)=iytm0_r
-!        End If
-!
-!        If      (tzz(i) < izbm1_r) Then
-!           tzz(i)=izbm1_r
-!        Else If (tzz(i) > iztm0_r) Then
-!           tzz(i)=iztm0_r
-!        End If
-!     End If
+! llvnl = .not.(mxspl1 == mxspm) is not needed from  vnl_module
+
+     If ((mxspl1 == mxspl) .and. i <= natms) Then
+        If      (txx(i) < ixbm1_r) Then
+           txx(i)=ixbm1_r
+        Else If (txx(i) > ixtm0_r) Then
+           txx(i)=ixtm0_r
+        End If
+
+        If      (tyy(i) < iybm1_r) Then
+           tyy(i)=iybm1_r
+        Else If (tyy(i) > iytm0_r) Then
+           tyy(i)=iytm0_r
+        End If
+
+        If      (tzz(i) < izbm1_r) Then
+           tzz(i)=izbm1_r
+        Else If (tzz(i) > iztm0_r) Then
+           tzz(i)=iztm0_r
+        End If
+     End If
 
      ixx(i)=Int(txx(i))
      iyy(i)=Int(tyy(i))
@@ -290,12 +324,12 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   End If
 
 ! zero 3D charge array
-! ijb DaFT version - only need set local bit to zero
+! DaFT version - only need set local bit to zero
 
   qqc_local = 0.0_wp
 
 ! construct 3D charge array
-! ijb DaFT version - use array that holds only the local data
+! DaFT version - use array that holds only the local data
 
   Do i=1,nlast
 
@@ -790,46 +824,46 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   strs = 0.0_wp
 
 ! calculate convolution of charge array with gaussian function
-! ijb DaFT Version - only loop over the local stuff
+! DaFT Version - only loop over the local stuff
 
   Do l_local=1,block_z
      l=index_z(l_local)
 
      ll=l-1
-     If (l > kmaxc/2) ll=l-kmaxc-1
+     If (l > kmaxc/2) ll=ll-kmaxc
      tmp=twopi*Real(ll,wp)
 
      rkx1=tmp*rcell(3)
      rky1=tmp*rcell(6)
      rkz1=tmp*rcell(9)
 
-     bb3=Real( bscz(l)*Conjg(bscz(l)),wp )
+     bb3=Real( bscz_local(l_local)*Conjg(bscz_local(l_local)),wp )
 
      Do k_local=1,block_y
         k=index_y(k_local)
 
         kk=k-1
-        If (k > kmaxb/2) kk=k-kmaxb-1
+        If (k > kmaxb/2) kk=kk-kmaxb
         tmp=twopi*Real(kk,wp)
 
         rkx2=rkx1+tmp*rcell(2)
         rky2=rky1+tmp*rcell(5)
         rkz2=rkz1+tmp*rcell(8)
 
-        bb2=bb3*Real( bscy(k)*Conjg(bscy(k)),wp )
+        bb2=bb3*Real( bscy_local(k_local)*Conjg(bscy_local(k_local)),wp )
 
         Do j_local=1,block_x
            j=index_x(j_local)
 
            jj=j-1
-           If (j > kmaxa/2) jj=j-kmaxa-1
+           If (j > kmaxa/2) jj=jj-kmaxa
            tmp=twopi*Real(jj,wp)
 
            rkx3=rkx2+tmp*rcell(1)
            rky3=rky2+tmp*rcell(4)
            rkz3=rkz2+tmp*rcell(7)
 
-           bb1=bb2*Real( bscx(j)*Conjg(bscx(j)),wp )
+           bb1=bb2*Real( bscx_local(j_local)*Conjg(bscx_local(j_local)),wp )
 
            rksq=rkx3*rkx3+rky3*rky3+rkz3*rkz3
 
@@ -860,7 +894,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   strs(7) = strs(3)
   strs(8) = strs(6)
 
-! ijb as only looped over local stuff, we need to gsum strs
+! as only looped over local stuff, we need to gsum strs
 
   If (mxnode > 1) Call gsum(strs)
 
@@ -883,7 +917,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      End Do
   End Do
 
-! ijb as only looped over local stuff, we need to gsum the eng
+! as only looped over local stuff, we need to gsum the eng
 
   If (mxnode > 1) Call gsum(eng)
 
@@ -1021,6 +1055,7 @@ Contains
                    jj=ixx(i)-j+2
 
                    qsum=qqc_domain(jj,kk,ll)
+
                    bdxj=qsum*bdxk*bsdx(j,i)
                    bdyj=qsum*bdyk*bspx(j,i)
                    bdzj=qsum*bdzk*bspx(j,i)

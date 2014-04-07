@@ -32,15 +32,15 @@ Subroutine two_body_forces                        &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,      Only : idnode,mxnode,gsum
+  Use comms_module,  Only : idnode,mxnode,gsum
   Use setup_module
-  Use config_module,     Only : cell,volm,sumchg,natms,list,xxx,yyy,zzz
-  Use vnl_module,        Only : l_vnl
+  Use config_module, Only : cell,volm,sumchg,natms,list,xxx,yyy,zzz
+  Use vnl_module,    Only : l_vnl
   Use ewald_module
-  Use vdw_module,        Only : ntpvdw
-  Use metal_module,      Only : ntpmet
+  Use vdw_module,    Only : ntpvdw
+  Use metal_module,  Only : ntpmet
   Use kim_module
-  Use statistics_module, Only : numrdf
+  Use rdf_module,    Only : ncfrdf
 
   Implicit None
 
@@ -372,7 +372,7 @@ Subroutine two_body_forces                        &
 
      End If
 
-     numrdf = numrdf + 1
+     ncfrdf = ncfrdf + 1
   End If
 
   Deallocate (xdf,ydf,zdf,rsqdf,   Stat=fail)

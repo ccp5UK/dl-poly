@@ -1,4 +1,4 @@
-Subroutine bonds_table_read(bond_name,rcut)
+Subroutine bonds_table_read(bond_name)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,21 +6,21 @@ Subroutine bonds_table_read(bond_name,rcut)
 ! from TABBND file (for bond potentials & forces only)
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov march 2014
+! author    - a.v.brukhno & i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module, Only : ntable,nrite,mxtbnd,mxgrid,engunit
+  Use setup_module, Only : delr_max,ntable,nrite, &
+                           mxtbnd,mxgbnd,zero_plus,engunit
   Use site_module,  Only : ntpatm,unqatm
   Use bonds_module
   Use parse_module, Only : get_line,get_word,word_2_real
 
   Implicit None
 
-  Character( Len = 16 ), Intent( In    ) :: bond_name(:)
-  Real( Kind = wp ),     Intent( In    ) :: rcut
+  Character( Len = 16 ), Intent( In    ) :: bond_name(1:mxtbnd)
 
   Logical                :: safe,remake
   Character( Len = 200 ) :: record
@@ -29,21 +29,11 @@ Subroutine bonds_table_read(bond_name,rcut)
   Character( Len = 8   ) :: atom1,atom2
 
   Integer                :: fail(1:2),ngrid,rtbnd,itbnd,jtbnd,katom1,katom2,jtpatm,i,l
-  Real( Kind = wp )      :: cutpot,delpot,dlrpot,rdr,rrr,ppp,vk,vk1,vk2,t1,t2
+  Real( Kind = wp )      :: cutpot,delpot,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
 
   Integer,                           Allocatable :: read_type(:)
   Real( Kind = wp ), Dimension( : ), Allocatable :: bufpot(:),bufvir(:)
 
-  fail=0
-  Allocate (read_type(1:ltpbnd(0)),            Stat=fail(1))
-  Allocate (bufpot(0:mxgrid),bufvir(0:mxgrid), Stat=fail(2))
-  If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'error - bonds_table_read allocation failure, node: ', idnode
-     Call error(0)
-  End If
-  Call allocate_bond_pot_arrays()
-
-  remake=.false.
 
   If (idnode == 0) Open(Unit=ntable, File='TABBND')
 
@@ -63,45 +53,56 @@ Subroutine bonds_table_read(bond_name,rcut)
   Call get_word(record,word)
   cutpot = word_2_real(word)
 
-  If(2.0_wp*cutpot > rcut) Call error(504)
-
   Call get_word(record,word)
   ngrid = Nint(word_2_real(word))
 
-! check array dimensions
-
-  If (ngrid > mxgrid-4) Then
-     Call warning(270,Real(ngrid,wp),Real(mxgrid-4,wp),0.0_wp)
-     Call error(48)
-  End If
-
   delpot = cutpot/Real(ngrid,wp)
-  dlrpot = cutpot/Real(mxgrid-4,wp)
+
+! check grid spacing
 
   safe = .false.
-  If( Abs(delpot-dlrpot) < 1.0e-8_wp ) Then
+  If( Abs(delpot-delr_max) < 1.0e-8_wp ) Then
      safe   = .true.
-     delpot = dlrpot
+     delpot = delr_max
   End If
-  If (delpot > dlrpot .and. (.not.safe)) Then
+  If (delpot > delr_max .and. (.not.safe)) Then
      If (idnode == 0) Then
-        Write(nrite,"(/,                                          &
-           & 'expected (minimum) radial increment : ',1p,e15.7,/, &
-           & 'TABBND file        radial increment : ',1p,e15.7)") &
-           dlrpot, delpot
         Write(nrite,"(/,                                             &
-           & 'expected (minimum) number of grid points : ',0p,i10,/, &
-           & 'TABBND file actual number of grid points : ',0p,i10)") &
-           mxgrid-4, ngrid
+             & ' expected (maximum) radial increment : ',1p,e15.7,/, &
+             & ' TABBND file actual radial increment : ',1p,e15.7)") &
+             delr_max, delpot
+        Write(nrite,"(/,                                                &
+             & ' expected (minimum) number of grid points : ',0p,i10,/, &
+             & ' TABBND file actual number of grid points : ',0p,i10)") &
+             mxgbnd-4, ngrid
      End If
+
      Call error(22)
   End If
   safe=.true.
 
-  If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
+  remake=.false.
+  If (Abs(1.0_wp-(delpot/delr_max)) > 1.0e-8_wp) Then
      remake=.true.
-     If (idnode == 0) Write(nrite,"(/,' TABBND arrays resized for mxgrid = ',i10)") mxgrid-4
+     rdr=1.0_wp/delpot
+     If (idnode == 0) Write(nrite,"(/,' TABBND arrays resized for mxgrid = ',i10)") mxgbnd-4
   End If
+
+! compare grids dimensions
+
+  If (ngrid < mxgbnd-4) Then
+     Call warning(270,Real(ngrid,wp),Real(mxgbnd-4,wp),0.0_wp)
+     Call error(48)
+  End If
+
+  fail=0
+  Allocate (read_type(1:ltpbnd(0)),              Stat=fail(1))
+  Allocate (bufpot(0:ngrid+4),bufvir(0:ngrid+4), Stat=fail(2))
+  If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'error - bonds_table_read allocation failure, node: ', idnode
+     Call error(0)
+  End If
+  Call allocate_bond_pot_arrays()
 
   read_type=0 ! initialise read_type
   Do rtbnd=1,ltpbnd(0)
@@ -163,7 +164,62 @@ Subroutine bonds_table_read(bond_name,rcut)
 
 ! read in potential & force arrays
 
-     Do i=1,ngrid
+     Do i=0,2
+        bufpot(0) = 0.0_wp
+        bufvir(0) = 0.0_wp
+     End Do
+
+! read in the zero and/or first & second data elements (potential & virial)
+
+     If (idnode == 0) Then
+        Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
+
+        If (rrr > zero_plus) Then ! no zero element data => extrapolate to zero
+           If (Abs((rrr-delpot)/delpot) > 1.0e-8_wp) Then
+              safe=.false.
+              If (idnode == 0) Write(nrite,"(/,                      &
+                 & ' TABBND stated  radial increment : ',1p,e15.7,/, &
+                 & ' TABBND read-in radial increment : ',1p,e15.7)") &
+                 delpot,rrr
+           End If
+
+           bufpot(1) = bufp0
+           bufvir(1) = bufv0
+
+           Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
+
+           bufpot(2) = bufp0
+           bufvir(2) = bufv0
+
+! linear extrapolation for the grid point at 0
+
+           bufpot(0) = 2.0_wp*bufpot(1)-bufpot(2)
+           bufvir(0) = (2.0_wp*bufvir(1)-0.5_wp*bufvir(2))*rdr
+        Else ! zero element data found => read in the first element for checking delr
+           bufpot(0) = bufp0
+           bufvir(0) = bufv0 ! virial/distance - finite force!
+
+           Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
+
+           If (Abs((rrr-delpot)/delpot) > 1.0e-8_wp) Then
+              safe=.false.
+              If (idnode == 0) Write(nrite,"(/,                      &
+                 & ' TABBND stated  radial increment : ',1p,e15.7,/, &
+                 & ' TABBND read-in radial increment : ',1p,e15.7)") &
+                 delpot,rrr
+           End If
+
+           bufpot(1) = bufp0
+           bufvir(1) = bufv0
+
+           Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
+
+           bufpot(2) = bufp0
+           bufvir(2) = bufv0
+        End If
+     End If
+
+     Do i=3,ngrid
         If (idnode == 0) Then
            Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufpot(i),bufvir(i)
         Else
@@ -172,24 +228,25 @@ Subroutine bonds_table_read(bond_name,rcut)
         End If
      End Do
 
-! just in case, linear interpolation for distance ~> 0 (missing in the TABLE)
-
-     bufpot(0) = 2.0_wp*bufpot(1)-bufpot(2)
-     bufvir(0) = 2.0_wp*bufvir(1)-bufvir(2)
-
      If (mxnode > 1) Then
         Call MPI_BCAST(bufpot(0:ngrid), ngrid, wp_mpi, 0, dlp_comm_world, ierr)
         Call MPI_BCAST(bufvir(0:ngrid), ngrid, wp_mpi, 0, dlp_comm_world, ierr)
-     Endif
+     End If
 
 ! reconstruct arrays using 3pt interpolation
 
      If (remake) Then
-        rdr=1.0_wp/delpot
-        Do i=1,mxgrid-4
-           rrr = Real(i,wp)*dlrpot
+        Do i=1,mxgbnd-2
+           rrr = Real(i,wp)*delr_max
            l   = Int(rrr*rdr)
            ppp = rrr*rdr-Real(l,wp)
+
+! linear extrapolation for the grid point just beyond the cutoff
+
+           If (l+2 > ngrid) Then
+              bufpot(l+2) = 2.0_wp*bufpot(l+1)-bufpot(l)
+              bufvir(l+2) = 2.0_wp*bufvir(l+1)-bufvir(l)
+           End If
 
            vk  = bufpot(l)
            vk1 = bufpot(l+1)
@@ -209,22 +266,41 @@ Subroutine bonds_table_read(bond_name,rcut)
            gbnd(i,jtbnd) = t1 + (t2-t1)*ppp*0.5_wp
            gbnd(i,jtbnd) = gbnd(i,jtbnd)*engunit ! convert to internal units
         End Do
-        vbnd(0,jtbnd) = cutpot
-        gbnd(0,jtbnd) = 1.0_wp/dlrpot
+
+        vbnd(-1,jtbnd) = cutpot
+        gbnd(-1,jtbnd) = 1.0_wp/delr_max
      Else
-        Do i=1,ngrid
+        Do i=1,mxgbnd-4
            vbnd(i,jtbnd) = bufpot(i)*engunit ! convert to internal units
            gbnd(i,jtbnd) = bufvir(i)*engunit ! convert to internal units
         End Do
-        vbnd(0,jtbnd) = cutpot
-        gbnd(0,jtbnd) = 1.0_wp/delpot
+
+! linear extrapolation for the grid points just beyond the cutoff
+
+        vbnd(mxgbnd-3,jtbnd) = 2.0_wp*vbnd(mxgbnd-4,jtbnd) - vbnd(mxgbnd-5,jtbnd)
+        vbnd(mxgbnd-2,jtbnd) = 2.0_wp*vbnd(mxgbnd-3,jtbnd) - vbnd(mxgbnd-4,jtbnd)
+        gbnd(mxgbnd-3,jtbnd) = 2.0_wp*gbnd(mxgbnd-4,jtbnd) - gbnd(mxgbnd-5,jtbnd)
+        gbnd(mxgbnd-2,jtbnd) = 2.0_wp*gbnd(mxgbnd-3,jtbnd) - gbnd(mxgbnd-4,jtbnd)
+
+        vbnd(-1,jtbnd) = cutpot
+        gbnd(-1,jtbnd) = 1.0_wp/delpot
      End If
+
+! grid point at 0
+
+     vbnd(0,jtbnd) = bufpot(0)
+     gbnd(0,jtbnd) = bufvir(0)
   End Do
 
   If (idnode == 0) Then
      Close(Unit=ntable)
      Write(nrite,'(/,1x,a)') 'potential tables read from TABBND file'
   End If
+
+! Break if not safe
+
+  If (mxnode > 1) Call gcheck(safe)
+  If (.not.safe) Call error(22)
 
   Deallocate (read_type,     Stat=fail(1))
   Deallocate (bufpot,bufvir, Stat=fail(2))

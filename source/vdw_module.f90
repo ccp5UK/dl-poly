@@ -5,7 +5,7 @@ Module vdw_module
 ! dl_poly_4 module declaring global vdw interaction variables and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -68,7 +68,7 @@ Contains
 
   Subroutine allocate_vdw_table_arrays()
 
-    Use setup_module, Only : mxvdw,mxgrid
+    Use setup_module, Only : mxvdw,mxgvdw
 
     Implicit None
 
@@ -76,8 +76,8 @@ Contains
 
     fail = 0
 
-    Allocate (vvdw(1:mxgrid,1:mxvdw),   Stat = fail(1))
-    Allocate (gvdw(1:mxgrid,1:mxvdw),   Stat = fail(2))
+    Allocate (vvdw(0:mxgvdw,1:mxvdw),   Stat = fail(1))
+    Allocate (gvdw(0:mxgvdw,1:mxvdw),   Stat = fail(2))
 
     If (Any(fail > 0)) Call error(1063)
 

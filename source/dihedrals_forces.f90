@@ -21,11 +21,11 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
 
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,      Only : nrite,mxdihd,mxgdih,pi,r4pie0,zero_plus
+  Use setup_module,      Only : nrite,mxdihd,mxgdih1,pi,twopi,rtwopi,r4pie0,zero_plus
   Use config_module,     Only : cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
                                 chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use dihedrals_module,  Only : lx_dih,ntdihd,keydih,listdih,prmdih, &
-                                ltpdih,vdih,gdih,ldfdih,dstdih
+                                ltpdih,vdih,gdih,ncfdih,ldfdih,dstdih
 
   Use vdw_module,        Only : ntpvdw
 
@@ -50,8 +50,7 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
                              fax,fay,faz, fb1x,fb1y,fb1z,              &
                              fcx,fcy,fcz, fd1x,fd1y,fd1z,              &
                              fx,fy,fz,                                 &
-                             twopi,rtwopi,rdelth,                      &
-                             rdr,ppp,vk,vk1,vk2,t1,t2,                 &
+                             rdelth,rdr,ppp,vk,vk1,vk2,t1,t2,          &
                              pbx,pby,pbz,pb2,rpb1,rpb2,                &
                              pcx,pcy,pcz,pc2,rpc1,rpc2,                &
                              pbpc,cost,sint,rsint,theta,theta0,dtheta, &
@@ -239,15 +238,6 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
 
      safe=.true.
 
-! initialise stress tensor accumulators
-
-     strs1=0.0_wp
-     strs2=0.0_wp
-     strs3=0.0_wp
-     strs5=0.0_wp
-     strs6=0.0_wp
-     strs9=0.0_wp
-
 ! zero dihedral energy accumulator
 
      engdih=0.0_wp
@@ -260,14 +250,23 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
      engs14=0.0_wp
      virs14=0.0_wp
 
+! initialise stress tensor accumulators
+
+     strs1=0.0_wp
+     strs2=0.0_wp
+     strs3=0.0_wp
+     strs5=0.0_wp
+     strs6=0.0_wp
+     strs9=0.0_wp
+
   End If
 
-! Define constants
+! Recover bin size and increment counter
 
-  twopi = 2.0_wp*pi
-  rtwopi= 1.0_wp/twopi
-
-  If (Mod(isw,2) == 0) rdelth = Real(mxgdih,wp)*rtwopi
+  If (Mod(isw,2) == 0) Then
+     rdelth = Real(mxgdih1,wp)*rtwopi
+     ncfdih = ncfdih + 1
+  End If
 
 ! loop over all specified dihedrals
 
@@ -353,7 +352,7 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
 
         If (Mod(isw,2) == 0 .and. ia <= natms) Then
            j = ldfdih(kk)
-           l = Min(1+Int((theta+pi)*rdelth),mxgdih)
+           l = Min(1+Int((theta+pi)*rdelth),mxgdih1)
 
            dstdih(l,j) = dstdih(l,j) + 1.0_wp
         End If
@@ -471,12 +470,12 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
 ! TABDIH potential
 
            j = ltpdih(kk)
-           rdr = gdih(0,j) ! 1.0_wp/delpot (in rad^-1)
+           rdr = gdih(-1,j) ! 1.0_wp/delpot (in rad^-1)
 
            l   = Int((theta+pi)*rdr)         ! theta (-pi,+pi) is shifted
            ppp = (theta+pi)*rdr - Real(l,wp) ! by +pi so l is [1,ngrid]
 
-           vk  = Merge(vdih(l,j), 0.0_wp, l > 0)
+           vk  = vdih(l,j)
            vk1 = vdih(l+1,j)
            vk2 = vdih(l+2,j)
 
@@ -485,7 +484,7 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
 
            pterm = t1 + (t2-t1)*ppp*0.5_wp
 
-           vk  = Merge(gdih(l,j), 0.0_wp, l > 0)
+           vk  = gdih(l,j)
            vk1 = gdih(l+1,j)
            vk2 = gdih(l+2,j)
 

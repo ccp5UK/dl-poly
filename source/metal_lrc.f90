@@ -27,12 +27,9 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
   Logical, Save     :: newjob = .true.
   Integer           :: i,j,k0,k1,k2,kmet,keypot
 
-  Real( Kind = wp ) :: twopi,forpi,elrc0,elrc1,elrc2,elrcsum,vlrc0,vlrc1,vlrc2, &
+  Real( Kind = wp ) :: elrc0,elrc1,elrc2,elrcsum,vlrc0,vlrc1,vlrc2, &
                        eps,sig,nnn,mmm,ccc, aaa,rr0,ppp,zet,qqq,eee
-! PI derivatives
 
-  twopi = 2.0_wp*pi
-  forpi = 4.0_wp*pi
 
 ! long-range corrections to energy, pressure and density
 
@@ -84,7 +81,7 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
 
               If (i == j) Then
                  elrc1=sig**3*(sig/rmet)**(mmm-3.0_wp)/(mmm-3.0_wp)*(eps*ccc)**2
-                 elrcm(i)=elrcm(i)+forpi*dens(i)*elrc1
+                 elrcm(i)=elrcm(i)+fourpi*dens(i)*elrc1
                  elrcsum=elrcsum+twopi*volm*dens(i)**2*elrc1
 
                  vlrc1=mmm*sig**3*(sig/rmet)**(mmm-3.0_wp)/(mmm-3.0_wp)*(eps*ccc)**2
@@ -95,8 +92,8 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
 
                  elrc1=sig**3*(sig/rmet)**(mmm-3.0_wp)/(mmm-3.0_wp)*(prmmet(1,k1)*prmmet(5,k1))**2
                  elrc2=sig**3*(sig/rmet)**(mmm-3.0_wp)/(mmm-3.0_wp)*(prmmet(1,k2)*prmmet(5,k2))**2
-                 elrcm(i)=elrcm(i)+forpi*dens(j)*elrc1
-                 elrcm(j)=elrcm(j)+forpi*dens(i)*elrc2
+                 elrcm(i)=elrcm(i)+fourpi*dens(j)*elrc1
+                 elrcm(j)=elrcm(j)+fourpi*dens(i)*elrc2
                  elrcsum=elrcsum+twopi*volm*dens(i)*dens(j)*(elrc1+elrc2)
 
                  vlrc1=mmm*sig**3*(sig/rmet)**(mmm-3.0_wp)/(mmm-3.0_wp)*(prmmet(1,k1)*prmmet(5,k1))**2
@@ -134,7 +131,7 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
 
               If (i == j) Then
                  elrc1=(rmet**2+2.0_wp*rmet*(0.5_wp*rr0/qqq)+2.0_wp*(0.5_wp*rr0/qqq)**2)*(0.5_wp*rr0/qqq)*eee*zet**2
-                 elrcm(i)=elrcm(i)+forpi*dens(i)*elrc1
+                 elrcm(i)=elrcm(i)+fourpi*dens(i)*elrc1
                  elrcsum=elrcsum+twopi*volm*dens(i)**2*elrc1
 
                  vlrc1=(rmet**3+3.0_wp*rmet**2*(0.5_wp*rr0/qqq)+6.0_wp*rmet*(0.5_wp*rr0/qqq)**2+(0.5_wp*rr0/qqq)**3)*eee*zet**2
@@ -142,8 +139,8 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
               Else
                  elrc1=(rmet**2+2.0_wp*rmet*(0.5_wp*rr0/qqq)+2.0_wp*(0.5_wp*rr0/qqq)**2)*(0.5_wp*rr0/qqq)*eee*zet**2
                  elrc2=(rmet**2+2.0_wp*rmet*(0.5_wp*rr0/qqq)+2.0_wp*(0.5_wp*rr0/qqq)**2)*(0.5_wp*rr0/qqq)*eee*zet**2
-                 elrcm(i)=elrcm(i)+forpi*dens(j)*elrc1
-                 elrcm(j)=elrcm(j)+forpi*dens(i)*elrc2
+                 elrcm(i)=elrcm(i)+fourpi*dens(j)*elrc1
+                 elrcm(j)=elrcm(j)+fourpi*dens(i)*elrc2
                  elrcsum=elrcsum+twopi*volm*dens(i)*dens(j)*(elrc1+elrc2)
 
                  vlrc1=(rmet**3+3.0_wp*rmet**2*(0.5_wp*rr0/qqq)+6.0_wp*rmet*(0.5_wp*rr0/qqq)**2+(0.5_wp*rr0/qqq)**3)*eee*zet**2

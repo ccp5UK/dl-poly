@@ -7,7 +7,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 ! by Essmann et al. J. Chem. Phys. 103 (1995) 8577
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,9 +26,9 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
   Logical,           Save :: newjob = .true.
   Integer,           Save :: idx,idy,idz, ixb,iyb,izb, ixt,iyt,izt
-  Real( Kind = wp ), Save :: twopi,ixbm1_r,iybm1_r,izbm1_r, &
-                                   ixtm0_r,iytm0_r,iztm0_r, &
-                                   kmaxa_r,kmaxb_r,kmaxc_r,engsic
+  Real( Kind = wp ), Save :: ixbm1_r,iybm1_r,izbm1_r, &
+                             ixtm0_r,iytm0_r,iztm0_r, &
+                             kmaxa_r,kmaxb_r,kmaxc_r,engsic
 
   Integer              :: fail(1:4), i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt
 
@@ -57,23 +57,12 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   Real( Kind = wp ),    Dimension( :,:,: ), Allocatable, Save :: qqc
   Complex( Kind = wp ), Dimension( :,:,: ), Allocatable, Save :: qqq
 
-  fail=0
-  Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),                            Stat = fail(1))
-  Allocate (ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms),it(1:mxatms),               Stat = fail(2))
-  Allocate (bsdx(1:mxspl,1:mxatms),bsdy(1:mxspl,1:mxatms),bsdz(1:mxspl,1:mxatms), Stat = fail(3))
-  Allocate (bspx(1:mxspl,1:mxatms),bspy(1:mxspl,1:mxatms),bspz(1:mxspl,1:mxatms), Stat = fail(4))
-  If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'ewald_spme_forces allocation failure, node: ', idnode
-     Call error(0)
-  End If
 
+  fail=0
   If (newjob) Then
      newjob=.false.
 
-! derivative of pi
-
-     twopi=2.0_wp*pi
-
+!!! BEGIN DD SPME VARIABLES
 ! 3D charge array construction (bottom and top) indices
 
      ixb=idx*(kmaxa/nprx)+1
@@ -96,24 +85,10 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      kmaxb_r=Real(kmaxb,wp)
      kmaxc_r=Real(kmaxc,wp)
 
-! calculate self-interaction correction (per node)
+!!! END DD SPME VARIABLES
 
-     engsic=0.0_wp
-     Do i=1,natms
-        engsic=engsic+chge(i)**2
-     End Do
-
-     engsic=-r4pie0/epsq * alpha*engsic/sqrpi
-
-! allocate the global charge arrays (NOT deallocated manually)
-
-     Allocate (qqc(1:kmaxa,1:kmaxb,1:kmaxc),qqq(1:kmaxa,1:kmaxb,1:kmaxc), Stat = fail(1))
-     If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'qqq,qqc workspace arrays allocation failure, node: ', idnode
-        Call error(0)
-     End If
-
-! allocate the complex exponential arrays (NOT deallocated manually)
+!!! BEGIN CARDINAL B-SPLINES SET-UP
+! allocate the complex exponential arrays
 
      Allocate (ww1(1:kmaxa),ww2(1:kmaxb),ww3(1:kmaxc), Stat = fail(1))
      If (fail(1) > 0) Then
@@ -125,7 +100,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
      Call spl_cexp(kmaxa,kmaxb,kmaxc,ww1,ww2,ww3)
 
-! calculate B-spline coefficients
+! allocate the global B-spline coefficients and the helper array
 
      Allocate (bscx(1:kmaxa),bscy(1:kmaxb),bscz(1:kmaxc), Stat = fail(1))
      Allocate (csp(1:mxspl),                              Stat = fail(2))
@@ -134,13 +109,45 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
         Call error(0)
      End If
 
+! calculate the global B-spline coefficients
+
      Call bspcoe(mxspl,kmaxa,kmaxb,kmaxc,csp,bscx,bscy,bscz,ww1,ww2,ww3)
 
-     Deallocate (csp, Stat = fail(1))
+! deallocate the helper array
+
+     Deallocate (csp,         Stat = fail(1))
      If (fail(1) > 0) Then
         Write(nrite,'(/,1x,a,i0)') 'cse array deallocation failure, node: ', idnode
         Call error(0)
      End If
+
+!!! END CARDINAL B-SPLINES SET-UP
+
+! allocate the global charge arrays (NOT deallocated manually)
+
+     Allocate (qqc(1:kmaxa,1:kmaxb,1:kmaxc),qqq(1:kmaxa,1:kmaxb,1:kmaxc), Stat = fail(1))
+     If (fail(1) > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'qqq,qqc workspace arrays allocation failure, node: ', idnode
+        Call error(0)
+     End If
+
+! calculate self-interaction correction (per node)
+
+     engsic=0.0_wp
+     Do i=1,natms
+        engsic=engsic+chge(i)**2
+     End Do
+
+     engsic=-r4pie0/epsq * alpha*engsic/sqrpi
+  End If
+
+  Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),                            Stat = fail(1))
+  Allocate (ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms),it(1:mxatms),               Stat = fail(2))
+  Allocate (bsdx(1:mxspl,1:mxatms),bsdy(1:mxspl,1:mxatms),bsdz(1:mxspl,1:mxatms), Stat = fail(3))
+  Allocate (bspx(1:mxspl,1:mxatms),bspy(1:mxspl,1:mxatms),bspz(1:mxspl,1:mxatms), Stat = fail(4))
+  If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'ewald_spme_forces allocation failure, node: ', idnode
+     Call error(0)
   End If
 
 ! initialise coulombic potential energy and virial
@@ -180,28 +187,27 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      tyy(i)=kmaxb_r*(rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+0.5_wp)
      tzz(i)=kmaxc_r*(rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+0.5_wp)
 
-! THIS IS NOW UNSAFE
-! Get in DD bounds in kmax grid space in case tiny inaccuracies created edge effects
-!
-!     If (i <= natms) Then
-!        If      (txx(i) < ixbm1_r) Then
-!           txx(i)=ixbm1_r
-!        Else If (txx(i) > ixtm0_r) Then
-!           txx(i)=ixtm0_r
-!        End If
-!
-!        If      (tyy(i) < iybm1_r) Then
-!           tyy(i)=iybm1_r
-!        Else If (tyy(i) > iytm0_r) Then
-!           tyy(i)=iytm0_r
-!        End If
-!
-!        If      (tzz(i) < izbm1_r) Then
-!           tzz(i)=izbm1_r
-!        Else If (tzz(i) > iztm0_r) Then
-!           tzz(i)=iztm0_r
-!        End If
-!     End If
+! llvnl = .not.(mxspl1 == mxspm) is not needed from  vnl_module
+
+     If ((mxspl1 == mxspl) .and. i <= natms) Then
+        If      (txx(i) < ixbm1_r) Then
+           txx(i)=ixbm1_r
+        Else If (txx(i) > ixtm0_r) Then
+           txx(i)=ixtm0_r
+        End If
+
+        If      (tyy(i) < iybm1_r) Then
+           tyy(i)=iybm1_r
+        Else If (tyy(i) > iytm0_r) Then
+           tyy(i)=iytm0_r
+        End If
+
+        If      (tzz(i) < izbm1_r) Then
+           tzz(i)=izbm1_r
+        Else If (tzz(i) > iztm0_r) Then
+           tzz(i)=iztm0_r
+        End If
+     End If
 
      ixx(i)=Int(txx(i))
      iyy(i)=Int(tyy(i))
@@ -330,7 +336,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   Do l=1,kmaxc
 
      ll=l-1
-     If (l > kmaxc/2) ll=l-kmaxc-1
+     If (l > kmaxc/2) ll=ll-kmaxc
      tmp=twopi*Real(ll,wp)
 
      rkx1=tmp*rcell(3)
@@ -342,7 +348,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      Do k=1,kmaxb
 
         kk=k-1
-        If (k > kmaxb/2) kk=k-kmaxb-1
+        If (k > kmaxb/2) kk=kk-kmaxb
         tmp=twopi*Real(kk,wp)
 
         rkx2=rkx1+tmp*rcell(2)
@@ -354,7 +360,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
         Do j=1,kmaxa
 
            jj=j-1
-           If (j > kmaxa/2) jj=j-kmaxa-1
+           If (j > kmaxa/2) jj=jj-kmaxa
            tmp=twopi*Real(jj,wp)
 
            rkx3=rkx2+tmp*rcell(1)

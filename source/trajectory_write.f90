@@ -1407,7 +1407,7 @@ Subroutine trajectory_write &
 
         rec=rec+Int(4,ip)+Int(megatm,ip)
 
-     EndIf
+     End If
 
      Deallocate (chbuf,iwrk,  Stat=fail(1))
      Deallocate (axx,ayy,azz, Stat=fail(2))

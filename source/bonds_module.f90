@@ -7,7 +7,7 @@ Module bonds_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov march 2014
-! contrib   - a.v.brukhno march 2014 (itramolecular TPs & PDFs)
+! contrib   - a.v.brukhno april 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -19,7 +19,7 @@ Module bonds_module
 
   Integer,                        Save :: ntbond  = 0 , &
                                           ntbond1 = 0 , &
-                                          numbnd  = 0
+                                          ncfbnd  = 0
 
   Real( Kind = wp ),              Save :: rcbnd = 0.0_wp
 
@@ -46,7 +46,7 @@ Contains
 
   Subroutine allocate_bonds_arrays()
 
-    Use setup_module, Only : mxtmls,mxtbnd,mxbond,mxfbnd,mxpbnd,mxgbnd,mxatdm
+    Use setup_module, Only : mxtmls,mxtbnd,mxbond,mxfbnd,mxpbnd,mxgbnd1,mxatdm
 
     Implicit None
 
@@ -62,7 +62,7 @@ Contains
     Allocate (prmbnd(1:mxpbnd,1:mxtbnd), Stat = fail(6))
     If (lt_bnd) &
     Allocate (ltpbnd(0:mxtbnd),          Stat = fail(7))
-    If (mxgbnd > 0) &
+    If (mxgbnd1 > 0) &
     Allocate (ldfbnd(0:mxtbnd),          Stat = fail(8))
 
     If (Any(fail > 0)) Call error(1014)
@@ -78,7 +78,7 @@ Contains
     If (lt_bnd) &
     ltpbnd   = 0
 
-    If (mxgbnd > 0) &
+    If (mxgbnd1 > 0) &
     ldfbnd   = 0
 
   End Subroutine allocate_bonds_arrays
@@ -99,7 +99,7 @@ Contains
 
   Subroutine allocate_bond_pot_arrays()
 
-    Use setup_module, Only : mxgrid
+    Use setup_module, Only : mxgbnd
 
     Implicit None
 
@@ -107,8 +107,8 @@ Contains
 
     fail = 0
 
-    Allocate (vbnd(0:mxgrid,1:ltpbnd(0)), Stat = fail(1))
-    Allocate (gbnd(0:mxgrid,1:ltpbnd(0)), Stat = fail(2))
+    Allocate (vbnd(-1:mxgbnd,1:ltpbnd(0)), Stat = fail(1))
+    Allocate (gbnd(-1:mxgbnd,1:ltpbnd(0)), Stat = fail(2))
 
     If (Any(fail > 0)) Call error(1072)
 
@@ -119,7 +119,7 @@ Contains
 
   Subroutine allocate_bond_dst_arrays()
 
-    Use setup_module, Only : mxgbnd
+    Use setup_module, Only : mxgbnd1
 
     Implicit None
 
@@ -127,7 +127,7 @@ Contains
 
     fail = 0
 
-    Allocate (typbnd(-1:2,1:ldfbnd(0)),dstbnd(0:mxgbnd,1:ldfbnd(0)), Stat = fail)
+    Allocate (typbnd(-1:2,1:ldfbnd(0)),dstbnd(1:mxgbnd1,1:ldfbnd(0)), Stat = fail)
 
     If (fail > 0) Call error(1073)
 

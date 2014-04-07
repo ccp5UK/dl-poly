@@ -7,12 +7,12 @@ Subroutine vdw_generate(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov february 2014
+! amended   - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module, Only : mxgrid,zero_plus
+  Use setup_module, Only : mxgvdw,zero_plus
   Use vdw_module
 
   Implicit None
@@ -30,7 +30,7 @@ Subroutine vdw_generate(rvdw)
 
 ! define grid resolution for potential arrays
 
-  dlrpot=rvdw/Real(mxgrid-4,wp)
+  dlrpot=rvdw/Real(mxgvdw-4,wp)
 
 ! construct arrays for all types of vdw potential
 
@@ -44,7 +44,7 @@ Subroutine vdw_generate(rvdw)
         a=prmvdw(1,ivdw)
         b=prmvdw(2,ivdw)
 
-        Do i=1,mxgrid
+        Do i=1,mxgvdw
            r=Real(i,wp)*dlrpot
 
            r_6=r**(-6)
@@ -52,6 +52,8 @@ Subroutine vdw_generate(rvdw)
            vvdw(i,ivdw)=r_6*(a*r_6-b)
            gvdw(i,ivdw)=6.0_wp*r_6*(2.0_wp*a*r_6-b)
         End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
 
         If (.not.ls_vdw) Then
            sigeps(1,ivdw)=(a/b)**(1.0_wp/6.0_wp)
@@ -65,7 +67,7 @@ Subroutine vdw_generate(rvdw)
         eps=prmvdw(1,ivdw)
         sig=prmvdw(2,ivdw)
 
-        Do i=1,mxgrid
+        Do i=1,mxgvdw
            r=Real(i,wp)*dlrpot
 
            sor6=(sig/r)**6
@@ -73,6 +75,8 @@ Subroutine vdw_generate(rvdw)
            vvdw(i,ivdw)=4.0_wp*eps*sor6*(sor6-1.0_wp)
            gvdw(i,ivdw)=24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)
         End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
 
         If (.not.ls_vdw) Then
            sigeps(1,ivdw)=sig
@@ -88,7 +92,7 @@ Subroutine vdw_generate(rvdw)
         m =prmvdw(3,ivdw)
         r0=prmvdw(4,ivdw)
 
-        Do i=1,mxgrid
+        Do i=1,mxgvdw
            r=Real(i,wp)*dlrpot
 
            a=r0/r
@@ -99,6 +103,8 @@ Subroutine vdw_generate(rvdw)
            vvdw(i,ivdw)=e0*(m*r0rn-n*r0rm)*b
            gvdw(i,ivdw)=e0*m*n*(r0rn-r0rm)*b
         End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
 
         If (.not.ls_vdw) Then
            sigeps(1,ivdw)=r0*(n/m)**(1.0_wp/(m-n))
@@ -128,7 +134,7 @@ Subroutine vdw_generate(rvdw)
            sigeps(2,ivdw)= 0.0_wp
         End If
 
-        Do i=1,mxgrid
+        Do i=1,mxgvdw
            r=Real(i,wp)*dlrpot
 
            b=r/rho
@@ -154,6 +160,8 @@ Subroutine vdw_generate(rvdw)
               End If
            End If
         End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
 
      Else If (keypot == 5) Then
 
@@ -172,7 +180,7 @@ Subroutine vdw_generate(rvdw)
            sigeps(2,ivdw)= 0.0_wp
         End If
 
-        Do i=1,mxgrid
+        Do i=1,mxgvdw
            r=Real(i,wp)*dlrpot
 
            t1=a*Exp(b*(sig-r))
@@ -198,6 +206,8 @@ Subroutine vdw_generate(rvdw)
               End If
            End If
         End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
 
      Else If (keypot == 6) Then
 
@@ -206,7 +216,7 @@ Subroutine vdw_generate(rvdw)
         a=prmvdw(1,ivdw)
         b=prmvdw(2,ivdw)
 
-        Do i=1,mxgrid
+        Do i=1,mxgvdw
            r=Real(i,wp)*dlrpot
 
            t1=a/r**12
@@ -220,6 +230,8 @@ Subroutine vdw_generate(rvdw)
            sigeps(1,ivdw)=Sqrt(a/b)
            sigeps(2,ivdw)=((b/6.0_wp)**6)*((5.0_wp/a)**5)
         End If
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
 
      Else If (keypot == 7) Then
 
@@ -246,7 +258,7 @@ Subroutine vdw_generate(rvdw)
                           -n*(beta**m)*(1.0_wp+(m/c-m-1.0_wp)/c**m) )
         e0 = e0*alpha
 
-        Do i=1,mxgrid
+        Do i=1,mxgvdw
            r=Real(i,wp)*dlrpot
            If (r <= rc) Then
               a=r0/r
@@ -274,6 +286,8 @@ Subroutine vdw_generate(rvdw)
               End If
            End If ! The else condition is satisfied by the vdw_module initialisation
         End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
 
      Else If (keypot == 8) Then
 
@@ -283,7 +297,7 @@ Subroutine vdw_generate(rvdw)
         r0=prmvdw(2,ivdw)
         k=prmvdw(3,ivdw)
 
-        Do i=1,mxgrid
+        Do i=0,mxgvdw
            r=Real(i,wp)*dlrpot
 
            t1=Exp(-k*(r-r0))
@@ -291,6 +305,8 @@ Subroutine vdw_generate(rvdw)
            vvdw(i,ivdw)=e0*((1.0_wp-t1)**2-1.0_wp)
            gvdw(i,ivdw)=-2.0_wp*r*e0*k*(1.0_wp-t1)*t1
         End Do
+        t1=Exp(+k*r0)
+        gvdw(0,ivdw)=-2.0_wp*e0*k*(1.0_wp-t1)*t1
 
         If (.not.ls_vdw) Then
            sigeps(1,ivdw)=r0-log(2.0_wp)/k
@@ -313,7 +329,7 @@ Subroutine vdw_generate(rvdw)
            sigeps(2,ivdw)= 0.0_wp
         End If
 
-        Do i=1,mxgrid
+        Do i=1,mxgvdw
            r=Real(i,wp)*dlrpot
 
            If (r < prmvdw(4,ivdw) .or. Abs(r-d) < 1.0e-10_wp) Then ! Else leave them zeros
@@ -339,25 +355,28 @@ Subroutine vdw_generate(rvdw)
               End If
            End If
         End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
 
      Else If (keypot == 10) Then
 
-! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
+! DPD potential - Groot-Warren (standard) :: u=(1/2).a.rc.(1-r/rc)^2
 
         a =prmvdw(1,ivdw)
         rc=prmvdw(2,ivdw)
 
-        Do i=1,mxgrid
+        Do i=0,mxgvdw
            r=Real(i,wp)*dlrpot
 
            If (r < rc) Then
-              t2=r/rc
-              t1=0.5_wp*a*r*(1.0_wp-t2)
+              t1=0.5_wp*a*rc
+              t2=1.0_wp-r/rc
 
-              vvdw(i,ivdw)=t1*(1.0_wp-t2)
-              gvdw(i,ivdw)=t1*(3.0_wp*t2-1.0_wp)
+              vvdw(i,ivdw)=t1*t2**2
+              gvdw(i,ivdw)=a*t2*r
            End If
         End Do
+        gvdw(0,ivdw)=a
 
         sigeps(1,ivdw)=rc
         sigeps(2,ivdw)=a
@@ -369,7 +388,7 @@ Subroutine vdw_generate(rvdw)
         eps=prmvdw(1,ivdw)
         sig=prmvdw(2,ivdw)
 
-        Do i=1,mxgrid
+        Do i=1,mxgvdw
            r=Real(i,wp)*dlrpot
 
            rho=sig/r
@@ -380,6 +399,8 @@ Subroutine vdw_generate(rvdw)
            vvdw(i,ivdw)=t3*((1.12_wp/t2)-2.0_wp)
            gvdw(i,ivdw)=-7.0_wp*t3*rho*(((1.12_wp/t2)-2.0_wp)/t1 + (1.12_wp/t2**2)*rho**6)
         End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
 
         If (.not.ls_vdw) Then
            sigeps(1,ivdw)=sig/(0.44_wp)**(1.0_wp/7.0_wp)
@@ -392,23 +413,23 @@ Subroutine vdw_generate(rvdw)
 
      End If
 
-     If (ls_vdw .and. keypot /= 10) Then ! for all but DPD as it is not allowed to be shifted by construction
+     If (ls_vdw .and. (keypot /= 7 .and. keypot /= 10)) Then ! no shifting to shifted n-m and DPD
 
         sigeps(1,ivdw)=-1.0_wp
         sigeps(2,ivdw)= 0.0_wp
 
-        Do i=1,mxgrid
-           t  = vvdw(i  ,ivdw) + gvdw(mxgrid,ivdw)*(Real(i  ,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgrid,ivdw)
-           t1 = vvdw(i-1,ivdw) + gvdw(mxgrid,ivdw)*(Real(i-1,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgrid,ivdw)
+        Do i=1,mxgvdw-4
+           t  = vvdw(i  ,ivdw) + gvdw(mxgvdw-4,ivdw)*(Real(i  ,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgvdw-4,ivdw)
+           t1 = vvdw(i-1,ivdw) + gvdw(mxgvdw-4,ivdw)*(Real(i-1,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgvdw-4,ivdw)
 
 ! Sigma-epsilon search
 
            If (i > 20) Then ! Assumes some safety against numeric black holes!!!
               If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                 If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
+                 If (Nint(Sign(1.0_wp,t1)) == -Nint(Sign(1.0_wp,t))) &
                     sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
               Else                                           ! find epsilon
-                 t2 = vvdw(i-2,ivdw) + gvdw(mxgrid,ivdw)*(Real(i-2,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgrid,ivdw)
+                 t2 = vvdw(i-2,ivdw) + gvdw(mxgvdw-4,ivdw)*(Real(i-2,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgvdw-4,ivdw)
                  If ( (t2 >= t1 .and. t1 <= t) .and.         &
                       (t2 /= t1 .or. t2 /= t .or. t1 /= t) ) &
                     sigeps(2,ivdw)=-t1
@@ -416,6 +437,10 @@ Subroutine vdw_generate(rvdw)
            End If
         End Do
      End If
+
+! Needed to distinguish that something has been defined
+
+     If (Abs(vvdw(0,ivdw)) <= zero_plus) vvdw(0,ivdw) = Sign(Tiny(vvdw(0,ivdw)),vvdw(0,ivdw))
 
   End Do
 

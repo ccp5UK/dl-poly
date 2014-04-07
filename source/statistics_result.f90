@@ -9,7 +9,7 @@ Subroutine statistics_result                 &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith december 1992
-! amended   - i.t.todorov february 2014
+! amended   - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -21,6 +21,8 @@ Subroutine statistics_result                 &
   Use vnl_module,        Only : llvnl,skipvnl
   Use core_shell_module, Only : passshl
   Use minimise_module,   Only : passmin
+  Use rdf_module,        Only : ncfrdf
+  Use z_density_module,  Only : ncfzdn
   Use statistics_module
   Use msd_module
 
@@ -243,11 +245,11 @@ Subroutine statistics_result                 &
 
 ! calculate and print radial distribution functions
 
-  If (lrdf .and. lprdf .and. numrdf > 0) Call rdf_compute(rcut)
+  If (lrdf .and. lprdf .and. ncfrdf > 0) Call rdf_compute(rcut)
 
 ! calculate and print z-density profile
 
-  If (lzdn .and. lpzdn .and. numzdn > 0) Call z_density_compute()
+  If (lzdn .and. lpzdn .and. ncfzdn > 0) Call z_density_compute()
 
 20 Continue
 

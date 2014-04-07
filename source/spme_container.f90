@@ -213,7 +213,7 @@ Subroutine spl_cexp(ndiv1,ndiv2,ndiv3,ww1,ww2,ww3)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module, Only : pi
+  Use setup_module, Only : twopi
 
   Implicit None
 
@@ -221,9 +221,7 @@ Subroutine spl_cexp(ndiv1,ndiv2,ndiv3,ww1,ww2,ww3)
   Complex( Kind = wp ), Intent(   Out ) :: ww1(1:ndiv1),ww2(1:ndiv2),ww3(1:ndiv3)
 
   Integer           :: i
-  Real( Kind = wp ) :: arg,twopi
-
-  twopi = 2.0_wp*pi
+  Real( Kind = wp ) :: arg
 
 ! initialise complex exponential factors
 

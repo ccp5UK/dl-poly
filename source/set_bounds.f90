@@ -8,7 +8,7 @@ Subroutine set_bounds                                       &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov april 2014
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -31,7 +31,7 @@ Subroutine set_bounds                                       &
   Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rpad,rlnk
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
 
-  Logical           :: l_n_r,lzdn,lter,ltbp,lfbp,lext
+  Logical           :: l_n_r,lzdn,lext
   Integer           :: megatm,imc_n,ilx,ily,ilz,qlx,qly,qlz, &
                        mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
   Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
@@ -55,12 +55,12 @@ Subroutine set_bounds                                       &
            mxtpmf,mxpmf,mxfpmf,                       &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,          &
            mtteth,mxtteth,mxteth,mxftet,              &
-           mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,         &
-           mtangl,mxtang,mxangl,mxfang,               &
-           mtdihd,mxtdih,mxdihd,mxfdih,               &
-           mtinv,mxtinv,mxinv,mxfinv,                 &
-           mxrdf,mxgrid,mxvdw,rvdw,                   &
-           mxmet,mxmed,mxmds,rmet,                    &
+           mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,mxgbnd,  &
+           mtangl,mxtang,mxangl,mxfang,mxgang,        &
+           mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,        &
+           mtinv,mxtinv,mxinv,mxfinv,mxginv,          &
+           mxrdf,mxvdw,rvdw,mxgvdw,                   &
+           mxmet,mxmed,mxmds,rmet,mxgmet,             &
            mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext)
 
 ! Get imc_r & dvar
@@ -81,7 +81,7 @@ Subroutine set_bounds                                       &
   Call scan_control                                        &
            (rcbnd,mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter, &
            imcon,imc_n,cell,xhi,yhi,zhi,                   &
-           mxgana,mxgbnd,mxgang,mxgdih,mxginv,             &
+           mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
@@ -261,22 +261,40 @@ Subroutine set_bounds                                       &
 
 !!! GRIDDING PARAMETERS !!!
 
-! maximum number of grid points in potentials arrays
-
-  mxgrid = Max(mxgrid,1000,Int(rcut/0.01_wp+0.5_wp)+4)
-
-
 ! Set grids for opted intramolecular distribution analysis if unset
 ! SO THEY ARE SWITCHES FOR EXISTENCE TOO
 
   If (mxgana == -1) Then
-     mxgana = mxgrid-4 ! New style
-     If (mxgbnd == -1) mxgbnd = mxgana
-     If (mxgang == -1) mxgang = mxgana
-     If (mxgdih == -1) mxgdih = mxgana
-     If (mxginv == -1) mxginv = mxgana
+     mxgana = mxgrid
+     If (mxgbnd1 == -1) Then
+        If (mxgbnd > 0 ) Then
+           mxgbnd1 = mxgbnd-4
+        Else
+           mxgbnd1 = Nint(rcbnd/delr_max)
+        End If
+     End If
+     If (mxgang1 == -1) Then
+        If (mxgang > 0 ) Then
+           mxgang1 = mxgang-4
+        Else
+           mxgang1 = Nint(180.0_wp/delth_max)
+        End If
+     End If
+     If (mxgdih1 == -1) Then
+        If (mxgdih > 0 ) Then
+           mxgdih1 = mxgdih-4
+        Else
+           mxgdih1 = Nint(360.0_wp/delth_max)
+        End If
+     End If
+     If (mxginv1 == -1) Then
+        If (mxginv > 0 ) Then
+           mxginv1 = mxginv-4
+        Else
+           mxgdih1 = Nint(180.0_wp/delth_max)
+        End If
+     End If
   End If
-
 
 ! maximum number of rdf potentials (mxrdf = mxrdf)
 ! mxgrdf - maximum dimension of rdf and z-density arrays
@@ -288,6 +306,40 @@ Subroutine set_bounds                                       &
   Else
      mxgrdf = 0 ! RDF and Z-density function MUST NOT get called!!!
   End If
+
+! maximum of all maximum numbers of grid points for all grids - used for mxbuff
+
+  mxgrid = Max(mxgana,mxgvdw,mxgmet,mxgrdf,1004,Nint(rcut/delr_max)+4)
+
+! grids setting and overrides
+
+! maximum number of grid points for bonds
+
+  mxgbnd = Merge(mxgbnd,Max(1004,Nint(rcbnd/delr_max)+4),mxgbnd > 0)
+
+! maximum number of grid points for angles
+
+  mxgang = Merge(mxgang,Max(1004,Nint(180/delth_max)+4),mxgang > 0)
+
+! maximum number of grid points for dihedrals
+
+  mxgdih = Merge(mxgdih,Max(1004,Nint(360/delth_max)+4),mxgdih > 0)
+
+! maximum number of grid points for inversions
+
+  mxginv = Merge(mxginv,Max(1004,Nint(180/delth_max)+4),mxginv > 0)
+
+! maximum number of grid points for electrostatics
+
+  mxgele = Merge(-1,Max(1004,Nint(rcut/delr_max)+4),l_n_e)
+
+! maximum number of grid points for vdw interactions - overwritten
+
+  mxgvdw = Merge(-1,Max(1004,Nint(rvdw/delr_max)+4),l_n_v)
+
+! maximum number of grid points for tersoff interaction arrays
+
+  mxgter = Merge(-1,Max(1004,Nint(rcter/delr_max)+4),mxter <= 0)
 
 
 
@@ -316,16 +368,12 @@ Subroutine set_bounds                                       &
 ! maximum number of tersoff potentials (mxter = mxter) and parameters
 
   If (mxter > 0) Then
-     lter = .true.
-
      If      (potter == 1) Then
         mxpter = 11
      Else If (potter == 2) Then
         mxpter = 16
      End If
   Else
-     lter = .false.
-
      mxpter = 0
   End If
 
@@ -333,14 +381,12 @@ Subroutine set_bounds                                       &
 ! maximum number of three-body potentials and parameters
 
   If (mxtbp > 0) Then
-     ltbp   = .true.
      mx2tbp = (mxatyp*(mxatyp+1))/2
      mxtbp  = mx2tbp*mxatyp
      If (rctbp < 1.0e-6_wp) rctbp=0.5_wp*rcut
 
      mxptbp = 5
   Else
-     ltbp   = .false.
      mx2tbp = 0
      mxtbp  = 0
 
@@ -351,14 +397,12 @@ Subroutine set_bounds                                       &
 ! maximum number of four-body potentials and parameters
 
   If (mxfbp > 0) Then
-     lfbp   = .true.
      mx3fbp = (mxatyp*(mxatyp+1)*(mxatyp+2))/6
      mxfbp  = mx3fbp*mxatyp
      If (rcfbp < 1.0e-6_wp) rcfbp=0.5_wp*rcut
 
      mxpfbp = 3
   Else
-     lfbp   = .false.
      mx3fbp = 0
      mxfbp  = 0
 
@@ -499,9 +543,15 @@ Subroutine set_bounds                                       &
 
 ! Calculate and check ql.
 
-     qlx = Min(ilx , kmaxa/(mxspl*nprx))
-     qly = Min(ily , kmaxb/(mxspl*npry))
-     qlz = Min(ilz , kmaxc/(mxspl*nprz))
+     If (.not.llvnl) Then
+        mxspl1=mxspl
+     Else
+        mxspl1=mxspl+Nint(0.5+(rpad*Real(mxspl,wp))/rcut)
+     End If
+
+     qlx = Min(ilx , kmaxa/(mxspl1*nprx))
+     qly = Min(ily , kmaxb/(mxspl1*npry))
+     qlz = Min(ilz , kmaxc/(mxspl1*nprz))
 
      If (qlx*qly*qlz == 0) Call error(308)
 
@@ -612,11 +662,11 @@ Subroutine set_bounds                                       &
 ! reset (increase) link-cell maximum (mxcell)
 ! if tersoff or three- or four-body potentials exist
 
-  If (lter .or. ltbp .or. lfbp) Then
+  If (mxter > 0 .or. mxtbp > 0 .or. mxfbp > 0) Then
      cut=rcut+1.0e-6_wp ! reduce cut
-     If (lter) cut = Min(cut,rcter+1.0e-6_wp)
-     If (ltbp) cut = Min(cut,rctbp+1.0e-6_wp)
-     If (lfbp) cut = Min(cut,rcfbp+1.0e-6_wp)
+     If (mxter > 0) cut = Min(cut,rcter+1.0e-6_wp)
+     If (mxtbp > 0) cut = Min(cut,rctbp+1.0e-6_wp)
+     If (mxfbp > 0) cut = Min(cut,rcfbp+1.0e-6_wp)
 
      ilx=Int(r_nprx*celprp(7)/cut)
      ily=Int(r_npry*celprp(8)/cut)

@@ -7,7 +7,7 @@ Subroutine metal_table_read(l_top)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2006
-! amended   - i.t.todorov june 2013
+! amended   - i.t.todorov april 2014
 ! contrib   - r.davidchak (eeam) june 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -15,7 +15,7 @@ Subroutine metal_table_read(l_top)
 
   Use kinds_f90
   Use comms_module, Only : idnode,mxnode,gsum
-  Use setup_module, Only : ntable,nrite,mxgrid,engunit
+  Use setup_module, Only : ntable,nrite,mxgmet,engunit
   Use site_module,  Only : ntpatm,unqatm
   Use metal_module, Only : ntpmet,tabmet,lstmet,vmet,dmet,dmes,fmet,fmes
   Use parse_module, Only : get_line,get_word,lower_case,word_2_real
@@ -51,7 +51,7 @@ Subroutine metal_table_read(l_top)
      Allocate (cpair(1:(ntpmet*(ntpmet+1))/2),cdens(1:ntpmet**2),cdnss(1:ntpmet**2), &
                                               cembed(1:ntpmet),cembds(1:ntpmet), Stat=fail(1))
   End If
-  Allocate (buffer(1:mxgrid),                                                    Stat=fail(2))
+  Allocate (buffer(1:mxgmet),                                                    Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'metal_table_read allocation failure, node: ', idnode
      Call error(0)
@@ -152,8 +152,8 @@ Subroutine metal_table_read(l_top)
 
 ! check array dimensions
 
-     If (ngrid+4 > mxgrid) Then
-        Call warning(270,Real(ngrid+4,wp),Real(mxgrid,wp),0.0_wp)
+     If (ngrid+4 > mxgmet) Then
+        Call warning(270,Real(ngrid+4,wp),Real(mxgmet,wp),0.0_wp)
         Call error(48)
      End If
 
@@ -199,7 +199,7 @@ Subroutine metal_table_read(l_top)
         vmet(3,k0,1)=buffer(3)
         vmet(4,k0,1)=buffer(4)
 
-        Do i=5,mxgrid
+        Do i=5,mxgmet
            If (i-4 > ngrid) Then
              vmet(i,k0,1)=0.0_wp
            Else
@@ -244,7 +244,7 @@ Subroutine metal_table_read(l_top)
         dmet(3,k0,1)=buffer(3)
         dmet(4,k0,1)=buffer(4)
 
-        Do i=5,mxgrid
+        Do i=5,mxgmet
            If (i-4 > ngrid) Then
              dmet(i,k0,1)=0.0_wp
            Else
@@ -289,7 +289,7 @@ Subroutine metal_table_read(l_top)
         fmet(3,k0,1)=buffer(3)
         fmet(4,k0,1)=buffer(4)
 
-        Do i=5,mxgrid
+        Do i=5,mxgmet
            If (i-4 > ngrid) Then
              fmet(i,k0,1)=0.0_wp
            Else
@@ -333,7 +333,7 @@ Subroutine metal_table_read(l_top)
 
         If (buffer(1) > 5) Then
 
-           Do i=5,mxgrid
+           Do i=5,mxgmet
               If (i-4 > ngrid) Then
                  dmes(i,k0,1)=0.0_wp
               Else
@@ -377,7 +377,7 @@ Subroutine metal_table_read(l_top)
         fmes(3,k0,1)=buffer(3)
         fmes(4,k0,1)=buffer(4)
 
-        Do i=5,mxgrid
+        Do i=5,mxgmet
            If (i-4 > ngrid) Then
              fmes(i,k0,1)=0.0_wp
            Else

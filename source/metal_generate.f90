@@ -7,12 +7,12 @@ Subroutine metal_generate(rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 2006
-! amended   - i.t.todorov november 2012
+! amended   - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module, Only : mxgrid
+  Use setup_module, Only : mxgmet
   Use site_module,  Only : ntpatm
   Use metal_module, Only : lstmet,ltpmet,prmmet,dmet,vmet
 
@@ -28,7 +28,7 @@ Subroutine metal_generate(rmet)
 
 ! define grid resolution for potential arrays
 
-  dlrpot=rmet/Real(mxgrid-1,wp)
+  dlrpot=rmet/Real(mxgmet-1,wp)
 
 ! construct arrays for metal potentials
 
@@ -45,7 +45,7 @@ Subroutine metal_generate(rmet)
 
 ! store array specification parameters
 
-           vmet(1,imet,1)=Real(mxgrid,wp)
+           vmet(1,imet,1)=Real(mxgmet,wp)
            vmet(2,imet,1)=0.0_wp          ! l_int(min) >= 1
            vmet(3,imet,1)=rmet            ! rmet=rcut
            vmet(4,imet,1)=dlrpot
@@ -72,7 +72,7 @@ Subroutine metal_generate(rmet)
               vmet(3,imet,1:2)=cut1
               dmet(3,imet,1)=cut2
 
-              Do i=5,mxgrid
+              Do i=5,mxgmet
                  rrr=Real(i,wp)*dlrpot
 
                  If (rrr <= cut1) Then
@@ -115,7 +115,7 @@ Subroutine metal_generate(rmet)
               vmet(3,imet,1:2)=cut1
               dmet(3,imet,1)=cut2
 
-              Do i=5,mxgrid
+              Do i=5,mxgmet
                  rrr=Real(i,wp)*dlrpot
 
                  If (rrr <= cut1) Then
@@ -149,7 +149,7 @@ Subroutine metal_generate(rmet)
               nnn=Nint(prmmet(3,imet))
               mmm=Nint(prmmet(4,imet))
 
-              Do i=5,mxgrid
+              Do i=5,mxgmet
                  rrr=Real(i,wp)*dlrpot
                  vmet(i,imet,1)=eps*(sig/rrr)**nnn
                  vmet(i,imet,2)=Real(nnn,wp)*eps*(sig/rrr)**nnn
@@ -177,7 +177,7 @@ Subroutine metal_generate(rmet)
               ppp=prmmet(3,imet)
               qqq=prmmet(5,imet)
 
-              Do i=5,mxgrid
+              Do i=5,mxgmet
                  rrr=Real(i,wp)*dlrpot
 
                  cut1=(rrr-rr0)/rr0

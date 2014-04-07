@@ -30,7 +30,8 @@ OBJ_MOD = \
 	site_module.o config_module.o vnl_module.o \
 	defects_module.o defects1_module.o \
 	vdw_module.o metal_module.o tersoff_module.o \
-	three_body_module.o four_body_module.o \
+	three_body_module.o four_body_module.o kim_modul~.o \
+	rdf_module.o z_density_module.o \
 	core_shell_module.o \
 	constraints_module.o pmf_module.o \
 	rigid_bodies_module.o \
@@ -49,6 +50,8 @@ OBJ_ALL = \
 	read_config_parallel.o scan_config.o scan_control.o read_config.o \
 	set_bounds.o \
 	read_control.o \
+	bonds_table_read.o angles_table_read.o \
+	dihedrals_table_read.o inversions_table_read.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
@@ -88,7 +91,7 @@ OBJ_ALL = \
 	tersoff_forces.o three_body_forces.o four_body_forces.o \
 	core_shell_forces.o tethers_forces.o \
 	intra_coul.o bonds_forces.o angles_forces.o \
-	inversions_forces.o dihedrals_14_vdw.o dihedrals_forces.o \
+	dihedrals_14_vdw.o dihedrals_forces.o inversions_forces.o \
 	external_field_apply.o external_field_correct.o \
 	langevin_forces.o \
 	constraints_pseudo_bonds.o pmf_pseudo_bonds.o \
@@ -126,7 +129,9 @@ OBJ_ALL = \
 	z_density_collect.o statistics_collect.o \
 	statistics_connect_set.o statistics_connect_spread.o statistics_connect_frames.o \
 	system_revive.o \
-	rdf_compute.o z_density_compute.o statistics_result.o \
+	rdf_compute.o z_density_compute.o \
+	bonds_compute.o \
+	statistics_result.o \
 	dl_poly.o
 
 # Define Velocity Verlet files
@@ -175,11 +180,11 @@ all:
 	@echo
 	@echo "hpc || lake || newton || dirac || franklin ||"
 	@echo "hpcx || hpcx-debug || BGL || BGP ||"
-	@echo "hector || hector-pgi-debug ||"
-	@echo "hector-gnu || hector-gnu-debug ||"
-	@echo "hector-cray || hector-cray-debug ||"
-	@echo "hector-pathscale || hector-pathscale-debug ||"
-	@echo "hector-X2 || hector-X2-debug"
+	@echo "archer || archer-pgi-debug ||"
+	@echo "archer-gnu || archer-gnu-debug ||"
+	@echo "archer-cray || archer-cray-debug ||"
+	@echo "archer-pathscale || archer-pathscale-debug ||"
+	@echo "archer-X2 || archer-X2-debug"
 	@echo
 	@echo "Please examine this Makefile's targets for details!"
 	@echo "If no target suits your system then create your own"
@@ -310,7 +315,7 @@ BGP:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pgi compilers (default) ===============
-hector:
+archer:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3" \
 	FC="ftn -c" \
@@ -318,7 +323,7 @@ hector:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pgi compilers - DEBUG =================
-hector-pgi-debug:
+archer-pgi-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O0 -W -Wall -pedantic -std=f2003 -g -fbounds-check \
 	         -fbacktrace -finit-real=nan -finit-integer=999999" \
@@ -328,7 +333,7 @@ hector-pgi-debug:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 gnu compilers =========================
-hector-gnu:
+archer-gnu:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -Wall -pedantic -g" \
 	FC="ftn -c" \
@@ -336,7 +341,7 @@ hector-gnu:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 gnu compilers - DEBUG =================
-hector-gnu-debug:
+archer-gnu-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
 	         -finit-integer=-9999 -finit-real=nan -std=f2003 \
@@ -348,7 +353,7 @@ hector-gnu-debug:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 cray compilers ========================
-hector-cray:
+archer-cray:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -en" \
 	FC="ftn -c" \
@@ -356,7 +361,7 @@ hector-cray:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 cray compilers - DEBUG ================
-hector-cray-debug:
+archer-cray-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -en -G2" \
 	FC="ftn -c" \
@@ -365,7 +370,7 @@ hector-cray-debug:
 
 
 #================== CRAY XT3/6 pathscale compilers ===================
-hector-pathscale:
+archer-pathscale:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-byteswapio -O3" \
 	FC="ftn -c" \
@@ -373,7 +378,7 @@ hector-pathscale:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pathscale compilers - DEBUG ===========
-hector-pathscale-debug:
+archer-pathscale-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-byteswapio -O0 -g -ffortran-bounds-check" \
 	FC="ftn -c" \
@@ -381,7 +386,7 @@ hector-pathscale-debug:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY X2 ==========================================
-hector-X2:
+archer-X2:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -Ofp3 -Ocache2 -rm " \
 	FC="ftn -c" \
@@ -389,7 +394,7 @@ hector-X2:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY X2 - DEBUG ==================================
-hector-X2-debug:
+archer-X2-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-G0 -O0 -rm " \
 	FC="ftn -c" \

@@ -10,12 +10,12 @@ Subroutine tersoff_generate(rcter)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith  october 2004
-! amended   - i.t.todorov january 2012
+! amended   - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module,   Only : pi,mxgrid
+  Use setup_module,   Only : pi,mxgter
   Use tersoff_module, Only : ntpter,lstter,ltpter,prmter,gmbp,vmbp
 
   Implicit None
@@ -27,7 +27,7 @@ Subroutine tersoff_generate(rcter)
 
 ! define grid resolution for potential arrays
 
-  dlrpot=rcter/Real(mxgrid-4,wp)
+  dlrpot=rcter/Real(mxgter-4,wp)
 
 ! construct arrays for all types of tersoff potential
 
@@ -55,7 +55,7 @@ Subroutine tersoff_generate(rcter)
 
 ! calculate screening generic function
 
-           Do i=2,mxgrid
+           Do i=2,mxgter
               rrr=Real(i,wp)*dlrpot
 
               If      (rrr <= rij) Then
@@ -85,7 +85,7 @@ Subroutine tersoff_generate(rcter)
 
 ! calculate screening repulsion & attraction functions
 
-           Do i=2,mxgrid
+           Do i=2,mxgter
               rrr=Real(i,wp)*dlrpot
 
 ! repulsion

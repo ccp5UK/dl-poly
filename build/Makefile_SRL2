@@ -30,7 +30,8 @@ OBJ_MOD = \
 	site_module.o config_module.o vnl_module.o \
 	defects_module.o defects1_module.o \
 	vdw_module.o metal_module.o tersoff_module.o \
-	three_body_module.o four_body_module.o \
+	three_body_module.o four_body_module.o kim_modul~.o \
+	rdf_module.o z_density_module.o \
 	core_shell_module.o \
 	constraints_module.o pmf_module.o \
 	rigid_bodies_module.o \
@@ -49,6 +50,8 @@ OBJ_ALL = \
 	read_config_parallel.o scan_config.o scan_control.o read_config.o \
 	set_bounds.o \
 	read_control.o \
+	bonds_table_read.o angles_table_read.o \
+	dihedrals_table_read.o inversions_table_read.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
@@ -126,7 +129,9 @@ OBJ_ALL = \
 	z_density_collect.o statistics_collect.o \
 	statistics_connect_set.o statistics_connect_spread.o statistics_connect_frames.o \
 	system_revive.o \
-	rdf_compute.o z_density_compute.o statistics_result.o \
+	rdf_compute.o z_density_compute.o \
+	bonds_compute.o \
+	statistics_result.o \
 	dl_poly.o
 
 # Define MPI-SERIAL files

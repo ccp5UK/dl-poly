@@ -7,7 +7,7 @@ Module setup_module
 ! set @ execution time
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov april 2014
 !
 ! Note(1): The following internal units apply everywhere
 !
@@ -30,15 +30,18 @@ Module setup_module
 
 
 ! FIXED PARAMETERS
-! standard pi values
+! standard pi related values
 
-  Real( Kind = wp ), Parameter ::    pi = 3.1415926535897932e0_wp
-  Real( Kind = wp ), Parameter :: sqrpi = 1.7724538509055160e0_wp
+  Real( Kind = wp ), Parameter ::    pi  = 2.0_wp*Asin(1.0_wp)
+  Real( Kind = wp ), Parameter :: twopi  = 4.0_wp*Asin(1.0_wp)
+  Real( Kind = wp ), Parameter :: fourpi = 8.0_wp*Asin(1.0_wp)
+  Real( Kind = wp ), Parameter :: sqrpi  = Sqrt(pi)
+  Real( Kind = wp ), Parameter :: rtwopi = 1.0_wp/twopi
 
 ! standard square roots
 
-  Real( Kind = wp ), Parameter :: rt2 = 1.4142135662373095e0_wp
-  Real( Kind = wp ), Parameter :: rt3 = 1.7320508075688772e0_wp
+  Real( Kind = wp ), Parameter :: rt2 = Sqrt(2.0_wp)
+  Real( Kind = wp ), Parameter :: rt3 = Sqrt(3.0_wp)
 
 ! conversion factor for coulombic terms in internal units, i.e.
 ! { unit(charge)^2 / [4*pi*eps0*unit(length)] } / unit(energy)
@@ -56,6 +59,11 @@ Module setup_module
 ! conversion factor for surface tension from internal units to dyn/cm
 
   Real( Kind = wp ), Parameter :: tenunt = 1.660540200_wp
+
+! Maximum bin sizes for distance and angle grids
+
+  Real( Kind = wp ), Parameter :: delr_max  = 0.01_wp ! Angstroms
+  Real( Kind = wp ), Parameter :: delth_max = 0.18_wp ! degrees
 
 ! I/O CHANNELS :: STERR = 0 , STINP = 5 , STOUT = 6 , STERR+STOUT = *
 ! main input channel
@@ -125,18 +133,21 @@ Module setup_module
 
   Integer, Save ::                                          &
     mxsite,mxatyp,mxtmls,mxexcl,                            &
-    mxspl,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1,           &
+    mxspl,mxspl1,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1,    &
     mxtshl,mxshl,mxfshl,mxtcon,mxcons,mxfcon,mxlshp,mxproc, &
     mxtpmf(1:2),mxpmf,mxfpmf,mxtrgd,mxrgd,mxlrgd,mxfrgd,    &
     mxtteth,mxteth,mxftet,mxpteth,                          &
-    mxtbnd, mxbond,mxfbnd,mxpbnd,                           &
-    mxtang, mxangl,mxfang,mxpang,                           &
-    mxtdih, mxdihd,mxfdih,mxpdih,                           &
-    mxtinv, mxinv, mxfinv,mxpinv,                           &
-    mxgrid,mxrdf,mxgrdf,mxvdw,mxpvdw,                       &
-    mxgana,mxgbnd,mxgang,mxgdih,mxginv,                     &
-    mxmet,mxmed,mxmds,mxpmet,mxter,mxpter,                  &
-    mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,mxpfld,         &
+    mxtbnd, mxbond,mxfbnd,mxpbnd,mxgbnd,                    &
+    mxtang, mxangl,mxfang,mxpang,mxgang,                    &
+    mxtdih, mxdihd,mxfdih,mxpdih,mxgdih,                    &
+    mxtinv, mxinv, mxfinv,mxpinv,mxginv,                    &
+    mxrdf,mxgrdf,mxgrid,mxgele,                             &
+    mxvdw,mxpvdw,mxgvdw,                                    &
+    mxmet,mxmed,mxmds,mxpmet,mxgmet,                        &
+    mxter,mxpter,mxgter,                                    &
+    mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,                 &
+    mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,                &
+    mxpfld,                                                 &
     mxstak,mxnstk,mxlist,mxcell,mxatms,mxatdm,              &
     mxbfdp,mxbfss,mxbfxp,mxbfsh,mxbuff
 

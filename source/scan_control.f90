@@ -1,7 +1,7 @@
 Subroutine scan_control                                    &
            (rcbnd,mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter, &
            imcon,imc_n,cell,xhi,yhi,zhi,                   &
-           mxgana,mxgbnd,mxgang,mxgdih,mxginv,             &
+           mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
@@ -11,7 +11,7 @@ Subroutine scan_control                                    &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov april 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014 (itramolecular TPs & PDFs)
 !
@@ -32,7 +32,7 @@ Subroutine scan_control                                    &
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,imcon
   Integer,           Intent( InOut ) :: imc_n
-  Integer,           Intent(   Out ) :: mxgana,mxgbnd,mxgang,mxgdih,mxginv, &
+  Integer,           Intent(   Out ) :: mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1, &
                                         mxstak,nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: rvdw,rmet,rcbnd,cell(1:9)
@@ -72,11 +72,11 @@ Subroutine scan_control                                    &
 
 ! default switches for intramolecular analysis grids
 
-  la_ana = .false. ; mxgana = 0
-  la_bnd = .false. ; mxgbnd = 0
-  la_ang = .false. ; mxgang = 0
-  la_dih = .false. ; mxgdih = 0
-  la_inv = .false. ; mxginv = 0
+  la_ana = .false. ; mxgana  = 0
+  la_bnd = .false. ; mxgbnd1 = 0
+  la_ang = .false. ; mxgang1 = 0
+  la_dih = .false. ; mxgdih1 = 0
+  la_inv = .false. ; mxginv1 = 0
 
 ! electrostatics and no elctrostatics, rdf and no rdf, vdw and no vdw,
 ! metal and no metal, tersoff and no tersoff interactions,
@@ -337,10 +337,10 @@ Subroutine scan_control                                    &
            la_inv = .true.
 
            mxgana = Abs(Nint(word_2_real(word)))
-           mxgbnd = mxgana
-           mxgang = mxgana
-           mxgdih = mxgana
-           mxginv = mxgana
+           mxgbnd1 = mxgana
+           mxgang1 = mxgana
+           mxgdih1 = mxgana
+           mxginv1 = mxgana
 
            Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
@@ -348,8 +348,8 @@ Subroutine scan_control                                    &
         Else If (akey == 'bon') Then
            la_bnd = .true.
 
-           mxgbnd = Max(mxgbnd,Abs(Nint(word_2_real(word))))
-           mxgana = Max(mxgana,mxgbnd)
+           mxgbnd1 = Max(mxgbnd1,Abs(Nint(word_2_real(word))))
+           mxgana  = Max(mxgana,mxgbnd1)
 
            Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
@@ -357,18 +357,18 @@ Subroutine scan_control                                    &
         Else If (akey == 'ang') Then
            la_ang = .true.
 
-           mxgang = Max(mxgang,Abs(Nint(word_2_real(word))))
-           mxgana = Max(mxgana,mxgang)
+           mxgang1 = Max(mxgang1,Abs(Nint(word_2_real(word))))
+           mxgana  = Max(mxgana,mxgang1)
         Else If (akey == 'dih') Then
            la_dih = .true.
 
-           mxgdih = Max(mxgdih,Abs(Nint(word_2_real(word))))
-           mxgana = Max(mxgana,mxgdih)
+           mxgdih1 = Max(mxgdih1,Abs(Nint(word_2_real(word))))
+           mxgana  = Max(mxgana,mxgdih1)
         Else If (akey == 'inv') Then
            la_inv = .true.
 
-           mxginv = Max(mxginv,Abs(Nint(word_2_real(word))))
-           mxgana = Max(mxgana,mxginv)
+           mxginv1 = Max(mxginv1,Abs(Nint(word_2_real(word))))
+           mxgana  = Max(mxgana,mxginv1)
         End If
 
 ! read rdf calculation option
@@ -403,12 +403,12 @@ Subroutine scan_control                                    &
 ! deal with overloaded grid sizes
 
      If (la_bnd) Then
-        mxgbnd = mxgana
+        mxgbnd1 = mxgana
         rcbnd=Max(rcbnd,rcbnd_def)
      End If
-     If (la_ang) mxgang = mxgana
-     If (la_dih) mxgdih = mxgana
-     If (la_inv) mxginv = mxgana
+     If (la_ang) mxgang1 = mxgana
+     If (la_dih) mxgdih1 = mxgana
+     If (la_inv) mxginv1 = mxgana
   End If
 
 ! Sort electrostatics
@@ -434,7 +434,7 @@ Subroutine scan_control                                    &
 
 ! Sort rcut as the maximum of all valid cutoffs
 
-  rcut=Max(rcut,rvdw,rmet,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
+  rcut=Max(rcut,rcbnd,rvdw,rmet,rkim,2.0_wp*rcter+1.0e-6_wp)
 
   If (idnode == 0) Rewind(nread)
 
@@ -600,9 +600,9 @@ Subroutine scan_control                                    &
               rvdw=0.0_wp
               rmet=0.0_wp
               If (.not.l_str) Then
-                 rcut=2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp
+                 rcut=Max(rcbnd,2.0_wp*rcter)+1.0e-6_wp
               Else
-                 rcut=Max(rcut,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
+                 rcut=Max(rcut,rcbnd,2.0_wp*rcter+1.0e-6_wp)
               End If
            End If
 
@@ -621,7 +621,7 @@ Subroutine scan_control                                    &
            If ( ((.not.lrcut) .or. (.not.l_str)) .and. &
                 (lrvdw .or. lrmet .or. lter .or. l_kim) ) Then
               lrcut=.true.
-              rcut=Max(rvdw,rmet,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
+              rcut=Max(rcbnd,rvdw,rmet,rkim,2.0_wp*rcter+1.0e-6_wp)
            End If
 
 ! Reset rvdw and rmet when only tersoff potentials are opted for and
@@ -632,7 +632,7 @@ Subroutine scan_control                                    &
               rmet=0.0_wp
               If (.not.l_str) Then
                  lrcut=.true.
-                 rcut=2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp
+                 rcut=Max(rcbnd,2.0_wp*rcter)+1.0e-6_wp
               End If
            End If
 

@@ -25,7 +25,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
   Real( Kind = wp ), Intent(   Out ) :: elrc,virlrc
 
   Integer           :: fail,i,j,k,ivdw,keypot
-  Real( Kind = wp ) :: twopi,a,b,c,d,e0,n,m,r0,r,eps,sig, &
+  Real( Kind = wp ) :: a,b,c,d,e0,n,m,r0,r,eps,sig, &
                        eadd,padd,denprd,plrc
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: numfrz
@@ -52,10 +52,6 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
      If (lfrzn(i) /= 0) numfrz(k)=numfrz(k)+1.0_wp
   End Do
   If (mxnode > 1) Call gsum(numfrz(1:ntpatm))
-
-! twopi factor
-
-  twopi = 2.0_wp*pi
 
 ! Evaluate only for 3D periodic systems
 

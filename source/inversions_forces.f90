@@ -16,11 +16,11 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,      Only : nrite,mxinv,mxginv,pi
+  Use setup_module,      Only : nrite,mxinv,mxginv1,pi
   Use config_module,     Only : cell,natms,nlast,lsi,lsa,lfrzn, &
                                 xxx,yyy,zzz,fxx,fyy,fzz
   Use inversions_module, Only : ntinv,keyinv,listinv,prminv, &
-                                ltpinv,vinv,ginv,ldfinv,dstinv
+                                ltpinv,vinv,ginv,ncfinv,ldfinv,dstinv
 
   Implicit None
 
@@ -164,6 +164,11 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 
      safe=.true.
 
+! zero inversion energy accumulator
+
+     enginv=0.0_wp
+     virinv=0.0_wp
+
 ! initialise stress tensor accumulators
 
      strs1=0.0_wp
@@ -173,14 +178,14 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
      strs6=0.0_wp
      strs9=0.0_wp
 
-! zero inversion energy accumulator
-
-     enginv=0.0_wp
-     virinv=0.0_wp
-
   End If
 
-  If (Mod(isw,2) == 0) rdelth = Real(mxginv,wp)/pi
+! Recover bin size and increment counter
+
+  If (Mod(isw,2) == 0) Then
+     rdelth = Real(mxginv1,wp)/pi
+     ncfinv = ncfinv + 1
+  End If
 
 ! loop over all specified inversions
 
@@ -311,16 +316,16 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
               j = ldfinv(kk)
 
               thb=Acos(cosb)
-              l = Min(1+Int(thb*rdelth),mxginv)
-              dstinv(l,j) = dstinv(l,j) + 1.0_wp
+              l = Min(1+Int(thb*rdelth),mxginv1)
+              dstinv(l,j) = dstinv(l,j) + 1.0_wp/3.0_wp
 
               thc=Acos(cosc)
-              l = Min(1+Int(thc*rdelth),mxginv)
-              dstinv(l,j) = dstinv(l,j) + 1.0_wp
+              l = Min(1+Int(thc*rdelth),mxginv1)
+              dstinv(l,j) = dstinv(l,j) + 1.0_wp/3.0_wp
 
               thd=Acos(cosd)
-              l = Min(1+Int(thd*rdelth),mxginv)
-              dstinv(l,j) = dstinv(l,j) + 1.0_wp
+              l = Min(1+Int(thd*rdelth),mxginv1)
+              dstinv(l,j) = dstinv(l,j) + 1.0_wp/3.0_wp
            End If
 
         End If
@@ -422,7 +427,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
            pterm=0.0_wp
 
            j = ltpinv(kk)
-           rdr = ginv(0,j) ! 1.0_wp/delpot (in rad^-1)
+           rdr = ginv(-1,j) ! 1.0_wp/delpot (in rad^-1)
 
            thb=Acos(cosb)
            thc=Acos(cosc)
@@ -431,7 +436,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
            l   = Int(thb*rdr)
            ppp = thb*rdr - Real(l,wp)
 
-           vk  = Merge(vinv(l,j), 0.0_wp, l > 0)
+           vk  = vinv(l,j)
            vk1 = vinv(l+1,j)
            vk2 = vinv(l+2,j)
 
@@ -440,7 +445,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 
            pterm = pterm + t1 + (t2-t1)*ppp*0.5_wp
 
-           vk  = Merge(ginv(l,j), 0.0_wp, l > 0)
+           vk  = ginv(l,j) ; If (l == 0) vk = vk*thb
            vk1 = ginv(l+1,j)
            vk2 = ginv(l+2,j)
 
@@ -452,7 +457,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
            l   = Int(thc*rdr)
            ppp = thc*rdr - Real(l,wp)
 
-           vk  = Merge(vinv(l,j), 0.0_wp, l > 0)
+           vk  = vinv(l,j)
            vk1 = vinv(l+1,j)
            vk2 = vinv(l+2,j)
 
@@ -461,7 +466,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 
            pterm = pterm + t1 + (t2-t1)*ppp*0.5_wp
 
-           vk  = Merge(ginv(l,j), 0.0_wp, l > 0)
+           vk  = ginv(l,j) ; If (l == 0) vk = vk*thc
            vk1 = ginv(l+1,j)
            vk2 = ginv(l+2,j)
 
@@ -482,7 +487,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 
            pterm = pterm + t1 + (t2-t1)*ppp*0.5_wp
 
-           vk  = Merge(ginv(l,j), 0.0_wp, l > 0)
+           vk  = ginv(l,j) ; If (l == 0) vk = vk*thd
            vk1 = ginv(l+1,j)
            vk2 = ginv(l+2,j)
 

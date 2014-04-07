@@ -6,7 +6,7 @@ Subroutine set_halo_particles(imcon,rlnk,keyfce)
 ! neighbouring domains/nodes
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -66,20 +66,20 @@ Subroutine set_halo_particles(imcon,rlnk,keyfce)
 ! used in the halo transport in NEGATIVE DIRECTIONS ONLY!!!
 
   If (keyfce == 2) Then
-     ecwx=Real(kmaxa,wp)/Real(mxspl,wp)
-     ecwy=Real(kmaxb,wp)/Real(mxspl,wp)
-     ecwz=Real(kmaxc,wp)/Real(mxspl,wp)
+     ecwx=Real(mxspl1,wp)/Real(kmaxa,wp)
+     ecwy=Real(mxspl1,wp)/Real(kmaxb,wp)
+     ecwz=Real(mxspl1,wp)/Real(kmaxc,wp)
 
-     ecwx=Min(cwx,ecwx)
-     ecwy=Min(cwy,ecwy)
-     ecwz=Min(cwz,ecwz)
+     ecwx=Max(cwx,ecwx)
+     ecwy=Max(cwy,ecwy)
+     ecwz=Max(cwz,ecwz)
   Else
      ecwx=cwx
      ecwy=cwy
      ecwz=cwz
   End If
 
-! Distance from the - edge of this domain
+! Distance from the - edge of this domain (larger positive halo)
 
   ecwx=Nearest( (-0.5_wp+ecwx)+Real(idx,wp)*r_nprx , +1.0_wp)+zero_plus
   ecwy=Nearest( (-0.5_wp+ecwy)+Real(idy,wp)*r_npry , +1.0_wp)+zero_plus

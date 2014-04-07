@@ -16,7 +16,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith  october 2004
-! amended   - i.t.todorov november 2012
+! amended   - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -113,7 +113,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
 ! Get reciprocal of interpolation interval
 
-     rdr=Real(mxgrid-4,wp)/rcter
+     rdr=Real(mxgter-4,wp)/rcter
   End If
 
 ! Get the dimensional properties of the MD cell

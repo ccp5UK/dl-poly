@@ -12,7 +12,7 @@ Subroutine z_density_collect()
   Use kinds_f90
   Use setup_module,      Only : mxgrdf,zero_plus
   Use config_module,     Only : cell,natms,ltype,zzz
-  Use statistics_module, Only : numzdn,zdens
+  Use z_density_module
 
   Implicit None
 
@@ -21,7 +21,7 @@ Subroutine z_density_collect()
 
 ! accumulator
 
-  numzdn=numzdn+1
+  ncfzdn=ncfzdn+1
 
 ! length of cell in z direction
 

@@ -19,11 +19,11 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,  Only : nrite,mxbond,mxgbnd,r4pie0,zero_plus,engunit
+  Use setup_module,  Only : nrite,mxbond,mxgbnd1,r4pie0,zero_plus,engunit
   Use config_module, Only : cell,natms,nlast,lsi,lsa,lfrzn, &
                             chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use bonds_module,  Only : ntbond,keybnd,listbnd,prmbnd, &
-                            ltpbnd,vbnd,gbnd,rcbnd,ldfbnd,dstbnd
+                            ltpbnd,vbnd,gbnd,ncfbnd,rcbnd,ldfbnd,dstbnd
 
   Implicit None
 
@@ -122,15 +122,6 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 
   If (Mod(isw,3) > 0) Then
 
-! initialise stress tensor accumulators
-
-     strs1=0.0_wp
-     strs2=0.0_wp
-     strs3=0.0_wp
-     strs5=0.0_wp
-     strs6=0.0_wp
-     strs9=0.0_wp
-
 ! zero bond energy and virial accumulators
 
      engbnd=0.0_wp
@@ -141,9 +132,23 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
      engc12=0.0_wp
      virc12=0.0_wp
 
+! initialise stress tensor accumulators
+
+     strs1=0.0_wp
+     strs2=0.0_wp
+     strs3=0.0_wp
+     strs5=0.0_wp
+     strs6=0.0_wp
+     strs9=0.0_wp
+
   End If
 
-  If (Mod(isw,2) == 0) rdelr = Real(mxgbnd,wp)/rcbnd
+! Recover bin size and increment counter
+
+  If (Mod(isw,2) == 0) Then
+     rdelr  = Real(mxgbnd1,wp)/rcbnd
+     ncfbnd = ncfbnd + 1
+  End If
 
 ! loop over all specified chemical bond potentials
 
@@ -169,7 +174,7 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 
         If (Mod(isw,2) == 0 .and. ia <= natms) Then
            j = ldfbnd(kk)
-           l = Min(1+Int(rab*rdelr),mxgbnd)
+           l = Min(1+Int(rab*rdelr),mxgbnd1)
 
            dstbnd(l,j) = dstbnd(l,j) + 1.0_wp
 
@@ -334,13 +339,13 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 ! TABBND potential
 
            j = ltpbnd(kk)
-           If (rab <= vbnd(0,j)) Then ! rab <= cutpot
-              rdr = gbnd(0,j) ! 1.0_wp/delpot
+           If (rab <= vbnd(-1,j)) Then ! rab <= cutpot
+              rdr = gbnd(-1,j) ! 1.0_wp/delpot
 
               l   = Int(rab*rdr)
               ppp = rab*rdr - Real(l,wp)
 
-              vk  = Merge(vbnd(l,j), 0.0_wp, l > 0)
+              vk  = vbnd(l,j)
               vk1 = vbnd(l+1,j)
               vk2 = vbnd(l+2,j)
 
@@ -349,7 +354,7 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 
               omega = t1 + (t2-t1)*ppp*0.5_wp
 
-              vk  = Merge(gbnd(l,j), 0.0_wp, l > 0)
+              vk  = gbnd(l,j) ; If (l == 0) vk = vk*rab
               vk1 = gbnd(l+1,j)
               vk2 = gbnd(l+2,j)
 

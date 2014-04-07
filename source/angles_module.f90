@@ -6,7 +6,7 @@ Module angles_module
 ! and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov april 2014
 ! contrib   - a.v.brukhno march 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -18,7 +18,8 @@ Module angles_module
   Logical,                        Save :: lt_ang = .false. ! no tabulated potentials opted
 
   Integer,                        Save :: ntangl  = 0 , &
-                                          ntangl1 = 0
+                                          ntangl1 = 0 , &
+                                          ncfang  = 0
 
 
   Integer,           Allocatable, Save :: numang(:),keyang(:)
@@ -43,7 +44,7 @@ Contains
 
   Subroutine allocate_angles_arrays()
 
-    Use setup_module, Only : mxtmls,mxtang,mxangl,mxfang,mxpang,mxgang,mxatdm
+    Use setup_module, Only : mxtmls,mxtang,mxangl,mxfang,mxpang,mxgang1,mxatdm
 
     Implicit None
 
@@ -59,7 +60,7 @@ Contains
     Allocate (prmang(1:mxpang,1:mxtang), Stat = fail(6))
     If (lt_ang) &
     Allocate (ltpang(0:mxtang),          Stat = fail(7))
-    If (mxgang > 0) &
+    If (mxgang1 > 0) &
     Allocate (ldfang(0:mxtang),          Stat = fail(8))
 
     If (Any(fail > 0)) Call error(1013)
@@ -75,7 +76,7 @@ Contains
     If (lt_ang) &
     ltpang  = 0
 
-    If (mxgang > 0) &
+    If (mxgang1 > 0) &
     ldfang  = 0
 
   End Subroutine allocate_angles_arrays
@@ -96,7 +97,7 @@ Contains
 
   Subroutine allocate_angl_pot_arrays()
 
-    Use setup_module, Only : mxgrid
+    Use setup_module, Only : mxgang
 
     Implicit None
 
@@ -104,8 +105,8 @@ Contains
 
     fail = 0
 
-    Allocate (vang(0:mxgrid,1:ltpang(0)), Stat = fail(1))
-    Allocate (gang(0:mxgrid,1:ltpang(0)), Stat = fail(2))
+    Allocate (vang(-1:mxgang,1:ltpang(0)), Stat = fail(1))
+    Allocate (gang(-1:mxgang,1:ltpang(0)), Stat = fail(2))
 
     If (Any(fail > 0)) Call error(1074)
 
@@ -116,7 +117,7 @@ Contains
 
   Subroutine allocate_angl_dst_arrays()
 
-    Use setup_module, Only : mxgang
+    Use setup_module, Only : mxgang1
 
     Implicit None
 
@@ -124,7 +125,7 @@ Contains
 
     fail = 0
 
-    Allocate (typang(-1:3,1:ldfang(0)),dstang(0:mxgang,1:ldfang(0)), Stat = fail)
+    Allocate (typang(-1:3,1:ldfang(0)),dstang(1:mxgang1,1:ldfang(0)), Stat = fail)
 
     If (fail > 0) Call error(1075)
 

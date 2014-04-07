@@ -17,11 +17,11 @@ Subroutine angles_forces(isw,imcon,engang,virang,stress)
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,  Only : mxangl,mxgang,nrite,pi
+  Use setup_module,  Only : mxangl,mxgang1,nrite,pi
   Use config_module, Only : cell,natms,nlast,lsi,lsa,lfrzn, &
                             xxx,yyy,zzz,fxx,fyy,fzz
   Use angles_module, Only : ntangl,keyang,listang,prmang, &
-                            ltpang,vang,gang,ldfang,dstang
+                            ltpang,vang,gang,ncfang,ldfang,dstang
 
   Implicit None
 
@@ -131,6 +131,11 @@ Subroutine angles_forces(isw,imcon,engang,virang,stress)
 
      safe=.true.
 
+! zero angle energy accumulator
+
+     engang=0.0_wp
+     virang=0.0_wp
+
 ! initialise stress tensor accumulators
 
      strs1=0.0_wp
@@ -140,14 +145,14 @@ Subroutine angles_forces(isw,imcon,engang,virang,stress)
      strs6=0.0_wp
      strs9=0.0_wp
 
-! zero angle energy accumulator
-
-     engang=0.0_wp
-     virang=0.0_wp
-
   End If
 
-  If (Mod(isw,2) == 0) rdelth = Real(mxgang,wp)/pi
+! Recover bin size and increment counter
+
+  If (Mod(isw,2) == 0) Then
+     rdelth = Real(mxgang1,wp)/pi
+     ncfang = ncfang + 1
+  End If
 
 ! loop over all specified angle potentials
 
@@ -195,7 +200,7 @@ Subroutine angles_forces(isw,imcon,engang,virang,stress)
 
         If (Mod(isw,2) == 0 .and. ib <= natms) Then
            j = ldfang(kk)
-           l = Min(1+Int(theta*rdelth),mxgang)
+           l = Min(1+Int(theta*rdelth),mxgang1)
 
            dstang(l,j) = dstang(l,j) + 1.0_wp
         End If
@@ -463,12 +468,12 @@ Subroutine angles_forces(isw,imcon,engang,virang,stress)
 ! TABANG potential
 
            j = ltpang(kk)
-           rdr = gang(0,j) ! 1.0_wp/delpot (in rad^-1)
+           rdr = gang(-1,j) ! 1.0_wp/delpot (in rad^-1)
 
            l   = Int(theta*rdr)
            ppp = theta*rdr - Real(l,wp)
 
-           vk  = Merge(vang(l,j), 0.0_wp, l > 0)
+           vk  = vang(l,j)
            vk1 = vang(l+1,j)
            vk2 = vang(l+2,j)
 
@@ -477,7 +482,7 @@ Subroutine angles_forces(isw,imcon,engang,virang,stress)
 
            pterm = t1 + (t2-t1)*ppp*0.5_wp
 
-           vk  = Merge(gang(l,j), 0.0_wp, l > 0)
+           vk  = gang(l,j) ; If (l == 0) vk = vk*theta
            vk1 = gang(l+1,j)
            vk2 = gang(l+2,j)
 

@@ -6,43 +6,34 @@ Subroutine dihedrals_table_read(dihd_name)
 ! from TABDIH file (for dihedral potentials & forces only)
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov march 2014
+! author    - a.v.brukhno & i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module, Only : pi,ntable,nrite,mxtdih,mxgrid,engunit
+  Use setup_module, Only : pi,delth_max,ntable,nrite, &
+                           mxtdih,mxgdih,zero_plus,engunit
   Use site_module,  Only : ntpatm,unqatm
   Use dihedrals_module
   Use parse_module, Only : get_line,get_word,word_2_real
 
   Implicit None
 
-  Character( Len = 32 ), Intent( In    ) :: dihd_name(:)
+  Character( Len = 32 ), Intent( In    ) :: dihd_name(1:mxtdih)
 
-  Logical                :: safe,remake
+  Logical                :: safe,remake,zero
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
   Character( Len = 32 )  :: iddihd
   Character( Len = 8   ) :: atom1,atom2,atom3,atom4
 
   Integer                :: fail(1:2),ngrid,rtdih,itdih,jtdih,katom1,katom2,katom3,katom4,jtpatm,i,l
-  Real( Kind = wp )      :: delpot,dlrpot,rad2dgr,dgr2rad,rdr,rrr,ppp,vk,vk1,vk2,t1,t2
+  Real( Kind = wp )      :: delpot,rad2dgr,dgr2rad,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
 
   Integer,                           Allocatable :: read_type(:)
   Real( Kind = wp ), Dimension( : ), Allocatable :: bufpot(:),bufvir(:)
 
-  fail=0
-  Allocate (read_type(1:ltpdih(0)),            Stat=fail(1))
-  Allocate (bufpot(0:mxgrid),bufvir(0:mxgrid), Stat=fail(2))
-  If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'error - dihedrals_table_read allocation failure, node: ', idnode
-     Call error(0)
-  End If
-  Call allocate_dihd_pot_arrays()
-
-  remake=.false.
 
   If (idnode == 0) Open(Unit=ntable, File='TABDIH')
 
@@ -51,58 +42,67 @@ Subroutine dihedrals_table_read(dihd_name)
   Call get_line(safe,ntable,record)
   If (.not.safe) Go To 100
 
+! read mesh resolution not needed for dihedral angle dependent
+! potentials/forces as delpot=360/ngrid running from -180 to 180
+
   Call get_line(safe,ntable,record)
   If (.not.safe) Go To 100
 
   i = Index(record,'#')      ! replace hash as it may occur in
   If (i > 0) record(i:i)=' ' ! TABDIH if it's in .xvg format
 
-! read mesh resolution not needed for dihedral angle dependent
-! potentials/forces as delpot=360/ngrid running from -180 to 180
-
-  rad2dgr= 180.0_wp/pi
-  dgr2rad= pi/180.0_wp
-
-  Call get_line(safe,ntable,record)
-  If (.not.safe) Go To 100
-
   Call get_word(record,word)
   ngrid = Nint(word_2_real(word))
 
-! check array dimensions
-
-  If (ngrid > mxgrid-4) Then
-     Call warning(270,Real(ngrid,wp),Real(mxgrid-4,wp),0.0_wp)
-     Call error(48)
-  End If
-
   delpot = 360.0_wp/Real(ngrid,wp)
-  dlrpot = 360.0_wp/Real(mxgrid-4,wp)
+
+! check grid spacing
 
   safe = .false.
-  If( Abs(delpot-dlrpot) < 1.0e-8_wp ) Then
+  If( Abs(delpot-delth_max) < 1.0e-8_wp ) Then
      safe   = .true.
-     delpot = dlrpot
+     delpot = delth_max
   End If
-  If (delpot > dlrpot .and. (.not.safe)) Then
+  If (delpot > delth_max .and. (.not.safe)) Then
      If (idnode == 0) Then
-        Write(nrite,"(/,                                          &
-           & 'expected (minimum) angular increment : ',1p,e15.7,/, &
-           & 'TABDIH file        angular increment : ',1p,e15.7)") &
-           dlrpot, delpot
-        Write(nrite,"(/,                                             &
-           & 'expected (minimum) number of grid points : ',0p,i10,/, &
-           & 'TABDIH file actual number of grid points : ',0p,i10)") &
-           mxgrid-4, ngrid
+        Write(nrite,"(/,                                              &
+             & ' expected (maximum) angular increment : ',1p,e15.7,/, &
+             & ' TABDIH file actual angular increment : ',1p,e15.7)") &
+             delth_max, delpot
+        Write(nrite,"(/,                                                &
+             & ' expected (minimum) number of grid points : ',0p,i10,/, &
+             & ' TABDIH file actual number of grid points : ',0p,i10)") &
+             mxgdih-4, ngrid
      End If
      Call error(22)
   End If
   safe=.true.
 
-  If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
+  remake=.false.
+  If (Abs(1.0_wp-(delpot/delth_max)) > 1.0e-8_wp) Then
      remake=.true.
-     If (idnode == 0) Write(nrite,"(/,' TABDIH arrays resized for mxgrid = ',i10)") mxgrid-4
+     rdr=1.0_wp/delpot
+     If (idnode == 0) Write(nrite,"(/,' TABDIH arrays resized for mxgrid = ',i10)") mxgdih-4
   End If
+
+! compare grids dimensions
+
+  If (ngrid < mxgdih-4) Then
+     Call warning(270,Real(ngrid,wp),Real(mxgdih-4,wp),0.0_wp)
+     Call error(48)
+  End If
+
+  rad2dgr= 180.0_wp/pi
+  dgr2rad= pi/180.0_wp
+
+  fail=0
+  Allocate (read_type(1:ltpdih(0)),              Stat=fail(1))
+  Allocate (bufpot(0:ngrid+4),bufvir(0:ngrid+4), Stat=fail(2))
+  If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'error - dihedrals_table_read allocation failure, node: ', idnode
+     Call error(0)
+  End If
+  Call allocate_dihd_pot_arrays()
 
   read_type=0 ! initialise read_type
   Do rtdih=1,ltpdih(0)
@@ -170,7 +170,69 @@ Subroutine dihedrals_table_read(dihd_name)
 
 ! read in potential & force arrays
 
-     Do i=1,ngrid
+     Do i=0,2
+        bufpot(0) = 0.0_wp
+        bufvir(0) = 0.0_wp
+     End Do
+
+! read in the zero and/or first & second data elements (potential & virial)
+
+     zero=.false.
+     If (idnode == 0) Then
+        Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
+
+        If (rrr > zero_plus) Then ! no zero element data => extrapolate to zero
+           If (Abs((rrr-delpot)/delpot) > 1.0e-8_wp) Then
+              safe=.false.
+              If (idnode == 0) Write(nrite,"(/,                       &
+                 & ' TABDIH stated  angular increment : ',1p,e15.7,/, &
+                 & ' TABDIH read-in angular increment : ',1p,e15.7)") &
+                 delpot,rrr
+           End If
+
+           bufpot(1) = bufp0
+           bufvir(1) = bufv0
+
+           Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
+
+           bufpot(2) = bufp0
+           bufvir(2) = bufv0
+        Else ! zero element data found => read in the first element for checking delr
+           zero=.true.
+           bufpot(0) = bufp0
+           bufvir(0) = bufv0
+
+           Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
+
+           If (Abs((rrr-delpot)/delpot) > 1.0e-8_wp) Then
+              safe=.false.
+              If (idnode == 0) Write(nrite,"(/,                       &
+                 & ' TABDIH stated  angular increment : ',1p,e15.7,/, &
+                 & ' TABDIH read-in angular increment : ',1p,e15.7)") &
+                 delpot,rrr
+           End If
+
+           bufpot(1) = bufp0
+           bufvir(1) = bufv0
+
+           Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
+
+           bufpot(2) = bufp0
+           bufvir(2) = bufv0
+        End If
+     End If
+
+! linear extrapolation for distance close to 0 -
+! midpoint for a periodic function
+
+     If (.not.zero) Then
+        bufpot(0) = 0.5_wp*(bufpot(1)-bufpot(ngrid))
+        bufvir(0) = 0.5_wp*(bufvir(1)-bufvir(ngrid))
+     End If
+
+! read in potential & force arrays
+
+     Do i=3,ngrid
         If (idnode == 0) Then
            Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufpot(i),bufvir(i)
         Else
@@ -179,24 +241,25 @@ Subroutine dihedrals_table_read(dihd_name)
         End If
      End Do
 
-! just in case, linear interpolation for for angle -180 (missing in the TABDIH)
-
-     bufpot(0) = 2.0_wp*bufpot(1)-bufpot(2)
-     bufvir(0) = 2.0_wp*bufvir(1)-bufvir(2)
-
      If (mxnode > 1) Then
         Call MPI_BCAST(bufpot(0:ngrid), ngrid, wp_mpi, 0, dlp_comm_world, ierr)
         Call MPI_BCAST(bufvir(0:ngrid), ngrid, wp_mpi, 0, dlp_comm_world, ierr)
-     Endif
+     End If
 
 ! reconstruct arrays using 3pt interpolation
 
      If (remake) Then
-        rdr=1.0_wp/delpot
-        Do i=1,mxgrid-4
-           rrr = Real(i,wp)*dlrpot
+        Do i=0,mxgdih-2
+           rrr = Real(i,wp)*delth_max
            l   = Int(rrr*rdr)
            ppp = rrr*rdr-Real(l,wp)
+
+! cyclic grid
+
+           If (l+2 > ngrid) Then
+              bufpot(l+2) = bufpot(Mod(l+2,ngrid+1))
+              bufvir(l+2) = bufvir(Mod(l+2,ngrid+1))
+           End If
 
            vk  = bufpot(l)
            vk1 = bufpot(l+1)
@@ -216,13 +279,22 @@ Subroutine dihedrals_table_read(dihd_name)
            gdih(i,jtdih) = t1 + (t2-t1)*ppp*0.5_wp
            gdih(i,jtdih) = gdih(i,jtdih)*engunit*rad2dgr ! convert to internal units
         End Do
-        gdih(0,jtdih) = rad2dgr/dlrpot
+
+        gdih(-1,jtdih) = rad2dgr/delth_max
      Else
-        Do i=1,ngrid
+        Do i=0,mxgdih-4
            vdih(i,jtdih) = bufpot(i)*engunit ! convert to internal units
            gdih(i,jtdih) = bufvir(i)*engunit*rad2dgr ! convert to internal units
         End Do
-        gdih(0,jtdih) = rad2dgr/delpot
+
+! cyclic grid
+
+        vdih(mxgdih-3,jtdih) = vdih(0,jtdih)
+        vdih(mxgdih-2,jtdih) = vdih(1,jtdih)
+        gdih(mxgdih-3,jtdih) = gdih(0,jtdih)
+        gdih(mxgdih-2,jtdih) = gdih(1,jtdih)
+
+        gdih(-1,jtdih) = rad2dgr/delpot
      End If
   End Do
 
@@ -230,6 +302,11 @@ Subroutine dihedrals_table_read(dihd_name)
      Close(Unit=ntable)
      Write(nrite,'(/,1x,a)') 'potential tables read from TABDIH file'
   End If
+
+! Break if not safe
+
+  If (mxnode > 1) Call gcheck(safe)
+  If (.not.safe) Call error(22)
 
   Deallocate (read_type,     Stat=fail(1))
   Deallocate (bufpot,bufvir, Stat=fail(2))
