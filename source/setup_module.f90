@@ -32,16 +32,16 @@ Module setup_module
 ! FIXED PARAMETERS
 ! standard pi related values
 
-  Real( Kind = wp ), Parameter ::    pi  = 2.0_wp*Asin(1.0_wp)
-  Real( Kind = wp ), Parameter :: twopi  = 4.0_wp*Asin(1.0_wp)
-  Real( Kind = wp ), Parameter :: fourpi = 8.0_wp*Asin(1.0_wp)
-  Real( Kind = wp ), Parameter :: sqrpi  = Sqrt(pi)
-  Real( Kind = wp ), Parameter :: rtwopi = 1.0_wp/twopi
+  Real( Kind = wp ), Parameter ::    pi  =  3.14159265358979312e0_wp ! 2.0_wp*Asin(1.0_wp)
+  Real( Kind = wp ), Parameter :: twopi  =  6.28318530717958623e0_wp ! 4.0_wp*Asin(1.0_wp)
+  Real( Kind = wp ), Parameter :: fourpi = 12.56637061435917246e0_wp ! 8.0_wp*Asin(1.0_wp)
+  Real( Kind = wp ), Parameter :: sqrpi  =  1.77245385090551588e0_wp ! Sqrt(pi)
+  Real( Kind = wp ), Parameter :: rtwopi =  0.15915494309189535e0_wp ! 1.0_wp/twopi
 
 ! standard square roots
 
-  Real( Kind = wp ), Parameter :: rt2 = Sqrt(2.0_wp)
-  Real( Kind = wp ), Parameter :: rt3 = Sqrt(3.0_wp)
+  Real( Kind = wp ), Parameter :: rt2    =  1.41421356237309515e0_wp ! Sqrt(2.0_wp)
+  Real( Kind = wp ), Parameter :: rt3    =  1.73205080756887719e0_wp ! Sqrt(3.0_wp)
 
 ! conversion factor for coulombic terms in internal units, i.e.
 ! { unit(charge)^2 / [4*pi*eps0*unit(length)] } / unit(energy)

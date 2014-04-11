@@ -13,7 +13,7 @@ Subroutine rdf_compute(rcut)
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
-  Use setup_module,  Only : mxgrdf,nrite,nrdfdt,pi,zero_plus
+  Use setup_module,  Only : mxgrdf,nrite,nrdfdt,pi
   Use site_module,   Only : ntpatm,unqatm,dens
   Use config_module, Only : cfgname,volm
   Use rdf_module

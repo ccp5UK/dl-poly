@@ -10,7 +10,7 @@ Subroutine z_density_collect()
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module,      Only : mxgrdf,zero_plus
+  Use setup_module,      Only : mxgrdf
   Use config_module,     Only : cell,natms,ltype,zzz
   Use z_density_module
 

@@ -268,11 +268,11 @@ Subroutine read_control                                &
 
 ! default switches for calculation and printing of bonded analysis
 
-  nstana = 0
-  nstbnd = 0
-  nstang = 0
-  nstdih = 0
-  nstinv = 0
+  nstall = 1 ; nstana = 0
+  nstbnd = 0 ; grdbnd = 0 ; rcb_d  = 0.0_wp
+  nstang = 0 ; grdang = 0
+  nstdih = 0 ; grddih = 0
+  nstinv = 0 ; grdinv = 0
   lpana  = .false.
 
 ! default switch for calculation of rdfs, default number of steps
@@ -1823,7 +1823,7 @@ Subroutine read_control                                &
            nstinv=Max(nstinv,i)
            grdinv=j
         End If
-        nstall=Min(nstana,nstbnd,nstang,nstdih,nstinv)
+        nstall=Max(1,Min(nstana,nstbnd,nstang,nstdih,nstinv))
 
 ! read rdf calculation option
 
@@ -2226,67 +2226,67 @@ Subroutine read_control                                &
      If (mxgana == 0) Then
         If (idnode == 0) Write(nrite,"(/,1x,a)") 'no bonded distribution analysis collection requested'
      Else
-        If (mxgana == mxgbnd .and. mxgana == mxgang .and. &
-            mxgana == mxgdih .and. mxgana == mxginv) Then
+        If (mxgbnd1 > 0 .and. mxgang1 > 0 .and. &
+            mxgdih1 > 0 .and. mxginv1 > 0) Then
            If (idnode == 0) &
               Write(nrite,"(/,1x,a)") 'full bonded distribution analysis collection requested (all=bnd/ang/dih/inv):'
         Else
            If (idnode == 0) Write(nrite,"(/,1x,a)") 'bonded didtribution analysis collection requested for:'
         End If
 
-        If (mxgbnd > 0) Then
+        If (mxgbnd1 > 0) Then
            If (nstbnd == 0) Then
               nstbnd=Max(1,nstall)
               i = 1
            Else
               i = 0
            End If
-           j=Merge(1, 0, grdbnd /= mxgbnd)
+           j=Merge(1, 0, grdbnd /= mxgbnd1)
            k=Merge(1, 0, Abs(rcbnd-rcb_d) > 1.0e-3_wp)
            If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a,f5.3,a)") &
-              'bonds      - collection every ',nstbnd,' step(s); ngrid = ',mxgbnd,'points; cutoff = ',rcbnd, 'Angs'
+              'bonds      - collection every ',nstbnd,' step(s); ngrid = ',mxgbnd1,'points; cutoff = ',rcbnd, 'Angs'
            If (i+j+k > 1 .and. idnode == 0) Write(nrite,"(/,1x,3(a,i10))") &
               'bonds      - reset values at  ',     i,'                  ',     j,'                 ',    k
         End If
 
-        If (mxgang > 0) Then
+        If (mxgang1 > 0) Then
            If (nstang == 0) Then
               nstang=Max(1,nstall)
               i = 1
            Else
               i = 0
            End If
-           j=Merge(1, 0, grdang /= mxgang)
+           j=Merge(1, 0, grdang /= mxgang1)
            If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a,f5.3,a)") &
-              'angles     - collection every ',nstang,' step(s); ngrid = ',mxgang,'points'
+              'angles     - collection every ',nstang,' step(s); ngrid = ',mxgang1,'points'
            If (i+j > 1 .and. idnode == 0) Write(nrite,"(/,1x,2(a,i10))") &
               'angles     - reset values at  ',     i,'                  ',     j
         End If
 
-        If (mxgdih > 0) Then
+        If (mxgdih1 > 0) Then
            If (nstdih == 0) Then
               nstdih=Max(1,nstall)
               i = 1
            Else
               i = 0
            End If
-           j=Merge(1, 0, grddih /= mxgdih)
+           j=Merge(1, 0, grddih /= mxgdih1)
            If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a,f5.3,a)") &
-              'dihedrals  - collection every ',nstdih,' step(s); ngrid = ',mxgdih,'points'
+              'dihedrals  - collection every ',nstdih,' step(s); ngrid = ',mxgdih1,'points'
            If (i+j > 1 .and. idnode == 0) Write(nrite,"(/,1x,2(a,i10))") &
               'dihedrals  - reset values at  ',     i,'                  ',     j
         End If
 
-        If (mxginv > 0) Then
+        If (mxginv1 > 0) Then
            If (nstinv == 0) Then
               nstinv=Max(1,nstall)
               i = 1
            Else
               i = 0
            End If
-           j=Merge(1, 0, grdinv /= mxginv)
+           j=Merge(1, 0, grdinv /= mxginv1)
            If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a,f5.3,a)") &
-              'inversions - collection every ',nstinv,' step(s); ngrid = ',mxginv,'points'
+              'inversions - collection every ',nstinv,' step(s); ngrid = ',mxginv1,'points'
            If (i+j > 1 .and. idnode == 0) Write(nrite,"(/,1x,2(a,i10))") &
               'inversions - reset values at  ',     i,'                  ',     j
         End If

@@ -546,7 +546,7 @@ Subroutine set_bounds                                       &
      If (.not.llvnl) Then
         mxspl1=mxspl
      Else
-        mxspl1=mxspl+Nint(0.5+(rpad*Real(mxspl,wp))/rcut)
+        mxspl1=mxspl+Nint(0.5_wp+(rpad*Real(mxspl,wp))/rcut)
      End If
 
      qlx = Min(ilx , kmaxa/(mxspl1*nprx))
