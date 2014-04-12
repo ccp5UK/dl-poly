@@ -13,7 +13,7 @@ Subroutine scan_control_pre(imc_n,dvar)
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gcheck
   Use setup_module,  Only : nread
-  Use parse_module,  Only : get_line,get_word,lower_case,strip_blanks,word_2_real
+  Use parse_module,  Only : get_line,get_word,lower_case,word_2_real
   Implicit None
 
   Integer,           Intent(   Out ) :: imc_n

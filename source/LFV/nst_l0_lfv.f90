@@ -31,7 +31,7 @@ Subroutine nst_l0_lfv                                      &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,    Only : idnode,mxnode,gsum,gmax
+  Use comms_module,    Only : idnode,mxnode,gmax
   Use setup_module
   Use site_module,     Only : ntpatm,dens,ntpshl,unqshl
   Use config_module,   Only : cell,volm,natms,lfrzn,atmnam,weight, &

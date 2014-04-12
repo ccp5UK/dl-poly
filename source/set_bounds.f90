@@ -265,7 +265,6 @@ Subroutine set_bounds                                       &
 ! SO THEY ARE SWITCHES FOR EXISTENCE TOO
 
   If (mxgana == -1) Then
-     mxgana = mxgrid
      If (mxgbnd1 == -1) Then
         If (mxgbnd > 0 ) Then
            mxgbnd1 = mxgbnd-4
@@ -294,7 +293,9 @@ Subroutine set_bounds                                       &
            mxgdih1 = Nint(180.0_wp/delth_max)
         End If
      End If
+     mxgana = Max(mxgbnd1,mxgang1,mxgdih1,mxginv1)
   End If
+  mxtana = 0
 
 ! maximum number of rdf potentials (mxrdf = mxrdf)
 ! mxgrdf - maximum dimension of rdf and z-density arrays

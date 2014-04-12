@@ -9,7 +9,7 @@ Subroutine system_revive                                            &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith december 1992
-! amended   - i.t.todorov march 2014
+! amended   - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -59,7 +59,7 @@ Subroutine system_revive                                            &
 
   If (l_rout) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
-     j = Max(mxstak*mxnstk,mxgrdf*mxrdf,(mxgana+1)*Max(mxtbnd,mxtang,mxtdih,mxtinv))
+     j = Max(mxstak*mxnstk,mxgrdf*mxrdf,mxgana*mxtana)
 
      Write(forma ,10) j/4+1,i+9,i
 10   Format('(1p,',i0,'(/,4e',i0,'.',i0,'E3))')
@@ -97,11 +97,11 @@ Subroutine system_revive                                            &
 
 ! globally sum bonds' distributions information before saving
 
-     If (mxgbnd > 0) Then
+     If (mxgbnd1 > 0) Then
 
 ! maximum dstbnd that can be summed in each step
 
-        nsum = mxbuff/(mxgbnd+1)
+        nsum = mxbuff/(mxgbnd1+1)
         If (nsum == 0) Call error(200)
 
         Do i=1,ldfbnd(0),nsum
@@ -111,11 +111,11 @@ Subroutine system_revive                                            &
 
 ! globally sum angles' distributions information before saving
 
-     If (mxgang > 0) Then
+     If (mxgang1 > 0) Then
 
 ! maximum dstang that can be summed in each step
 
-        nsum = mxbuff/(mxgang+1)
+        nsum = mxbuff/(mxgang1+1)
         If (nsum == 0) Call error(200)
 
         Do i=1,ldfang(0),nsum
@@ -125,11 +125,11 @@ Subroutine system_revive                                            &
 
 ! globally sum dihedrals' distributions information before saving
 
-     If (mxgdih > 0) Then
+     If (mxgdih1 > 0) Then
 
 ! maximum dstdih that can be summed in each step
 
-        nsum = mxbuff/(mxgdih+1)
+        nsum = mxbuff/(mxgdih1+1)
         If (nsum == 0) Call error(200)
 
         Do i=1,ldfdih(0),nsum
@@ -139,11 +139,11 @@ Subroutine system_revive                                            &
 
 ! globally sum inversions' distributions information before saving
 
-     If (mxginv > 0) Then
+     If (mxginv1 > 0) Then
 
 ! maximum dstinv that can be summed in each step
 
-        nsum = mxbuff/(mxginv+1)
+        nsum = mxbuff/(mxginv1+1)
         If (nsum == 0) Call error(200)
 
         Do i=1,ldfinv(0),nsum
@@ -187,10 +187,10 @@ Subroutine system_revive                                            &
         If (lrdf) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfrdf,wp),rdf
         If (lzdn) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfzdn,wp),zdens
 
-        If (mxgbnd > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfbnd,wp),dstbnd
-        If (mxgang > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfang,wp),dstang
-        If (mxgdih > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfdih,wp),dstdih
-        If (mxginv > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfinv,wp),dstinv
+        If (mxgbnd1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfbnd,wp),dstbnd
+        If (mxgang1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfang,wp),dstang
+        If (mxgdih1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfdih,wp),dstdih
+        If (mxginv1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfinv,wp),dstinv
      Else
         Open(Unit=nrest, File='REVIVE', Form='unformatted', Status='replace')
 
@@ -212,10 +212,10 @@ Subroutine system_revive                                            &
         If (lrdf) Write(Unit=nrest) Real(ncfrdf,wp),rdf
         If (lzdn) Write(Unit=nrest) Real(ncfzdn,wp),zdens
 
-        If (mxgbnd > 0) Write(Unit=nrest) Real(ncfbnd,wp),dstbnd
-        If (mxgang > 0) Write(Unit=nrest) Real(ncfang,wp),dstang
-        If (mxgdih > 0) Write(Unit=nrest) Real(ncfdih,wp),dstdih
-        If (mxginv > 0) Write(Unit=nrest) Real(ncfinv,wp),dstinv
+        If (mxgbnd1 > 0) Write(Unit=nrest) Real(ncfbnd,wp),dstbnd
+        If (mxgang1 > 0) Write(Unit=nrest) Real(ncfang,wp),dstang
+        If (mxgdih1 > 0) Write(Unit=nrest) Real(ncfdih,wp),dstdih
+        If (mxginv1 > 0) Write(Unit=nrest) Real(ncfinv,wp),dstinv
      End If
 
 ! Write initial position and final displacement data to REVIVE
@@ -299,19 +299,19 @@ Subroutine system_revive                                            &
 
 ! globally divide bonds' distributions data between nodes
 
-     If (mxgbnd > 0) dstbnd = dstbnd * r_mxnode
+     If (mxgbnd1 > 0) dstbnd = dstbnd * r_mxnode
 
 ! globally divide angles' distributions data between nodes
 
-     If (mxgang > 0) dstang = dstang * r_mxnode
+     If (mxgang1 > 0) dstang = dstang * r_mxnode
 
 ! globally divide dihedrals' distributions data between nodes
 
-     If (mxgdih > 0) dstdih = dstdih * r_mxnode
+     If (mxgdih1 > 0) dstdih = dstdih * r_mxnode
 
 ! globally divide inversions' distributions data between nodes
 
-     If (mxginv > 0) dstinv = dstinv * r_mxnode
+     If (mxginv1 > 0) dstinv = dstinv * r_mxnode
   End If
 
   Deallocate (iwrk,        Stat=fail(1))

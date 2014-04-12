@@ -9,7 +9,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 ! Note: (fourier) reciprocal space terms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith & i.j.bush march 2014
+! author    - i.t.todorov & w.smith & i.j.bush april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -54,8 +54,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
 ! B-spline coefficients
 
-  Complex( Kind = wp ), Dimension( : ),   Allocatable, Save :: bscx_local,bscy_local,bscz_local
-  Complex( Kind = wp ), Dimension( : ),   Allocatable       :: bscx,bscy,bscz
+  Complex( Kind = wp ), Dimension( : ),   Allocatable, Save :: bscx,bscy,bscz
   Complex( Kind = wp ), Dimension( : ),   Allocatable       :: ww1,ww2,ww3
 
   Real( Kind = wp ),    Dimension( : ),   Allocatable       :: csp
@@ -93,12 +92,6 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      newjob = .false.
 
 !!! BEGIN DD SPME VARIABLES
-! domain local block limits of kmax space
-
-     block_x = kmaxa / nprx
-     block_y = kmaxb / npry
-     block_z = kmaxc / nprz
-
 ! 3D charge array construction (bottom and top) indices
 
      ixb=idx*(kmaxa/nprx)+1
@@ -158,31 +151,15 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
         Call error(0)
      End If
 
-! allocate the distributed B-spline coefficients
-
-     Allocate (bscx_local(1:block_x),bscy_local(1:block_y),bscz_local(1:block_z), Stat = fail(1))
-     If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'bsc._local arrays allocation failure, node: ', idnode
-        Call error(0)
-     End If
-
-! Distribute B-spline coefficients
-
-     bscx_local(1:block_x) = bscx(ixb:ixt)
-     bscy_local(1:block_y) = bscy(iyb:iyt)
-     bscz_local(1:block_z) = bscz(izb:izt)
-
-! deallocate the global B-spline coefficients
-
-     Deallocate (bscx,bscy,bscz, Stat = fail(1))
-     If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'bsc. arrays deallocation failure, node: ', idnode
-        Call error(0)
-     End If
-
 !!! END CARDINAL B-SPLINES SET-UP
 
 !!! BEGIN DAFT SET-UP
+! domain local block limits of kmax space
+
+     block_x = kmaxa / nprx
+     block_y = kmaxb / npry
+     block_z = kmaxc / nprz
+
 ! set up the parallel fft and useful related quantities
 
      Call initialize_fft( 3, (/ kmaxa, kmaxb, kmaxc /), &
@@ -837,7 +814,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      rky1=tmp*rcell(6)
      rkz1=tmp*rcell(9)
 
-     bb3=Real( bscz_local(l_local)*Conjg(bscz_local(l_local)),wp )
+     bb3=Real( bscz(l)*Conjg(bscz(l)),wp )
 
      Do k_local=1,block_y
         k=index_y(k_local)
@@ -850,7 +827,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
         rky2=rky1+tmp*rcell(5)
         rkz2=rkz1+tmp*rcell(8)
 
-        bb2=bb3*Real( bscy_local(k_local)*Conjg(bscy_local(k_local)),wp )
+        bb2=bb3*Real( bscy(k)*Conjg(bscy(k)),wp )
 
         Do j_local=1,block_x
            j=index_x(j_local)
@@ -863,7 +840,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
            rky3=rky2+tmp*rcell(4)
            rkz3=rkz2+tmp*rcell(7)
 
-           bb1=bb2*Real( bscx_local(j_local)*Conjg(bscx_local(j_local)),wp )
+           bb1=bb2*Real( bscx(j)*Conjg(bscx(j)),wp )
 
            rksq=rkx3*rkx3+rky3*rky3+rkz3*rkz3
 

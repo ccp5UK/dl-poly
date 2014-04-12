@@ -22,7 +22,7 @@ Subroutine nvt_g0_lfv                                       &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,    Only : idnode,mxnode,gmax,gsum
+  Use comms_module,    Only : idnode,mxnode,gmax
   Use setup_module
   Use site_module,     Only : ntpshl,unqshl
   Use config_module,   Only : natms,atmnam,weight, &

@@ -11,7 +11,7 @@ Subroutine angles_forces(isw,imcon,engang,virang,stress)
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
 ! amended   - i.t.todorov march 2014
-! contrib   - a.v.brukhno and i.t.todorov march 2014 (itramolecular TPs & PDFs)
+! contrib   - a.v.brukhno and i.t.todorov april 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -149,7 +149,7 @@ Subroutine angles_forces(isw,imcon,engang,virang,stress)
 
 ! Recover bin size and increment counter
 
-  If (Mod(isw,2) == 0) Then
+  If (Mod(isw,3) == 0) Then
      rdelth = Real(mxgang1,wp)/pi
      ncfang = ncfang + 1
   End If
@@ -198,7 +198,7 @@ Subroutine angles_forces(isw,imcon,engang,virang,stress)
 
 ! accumulate the histogram (distribution)
 
-        If (Mod(isw,2) == 0 .and. ib <= natms) Then
+        If (Mod(isw,3) == 0 .and. ib <= natms) Then
            j = ldfang(kk)
            l = Min(1+Int(theta*rdelth),mxgang1)
 

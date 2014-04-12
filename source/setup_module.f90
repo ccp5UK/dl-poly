@@ -145,7 +145,7 @@ Module setup_module
     mxvdw,mxpvdw,mxgvdw,                                    &
     mxmet,mxmed,mxmds,mxpmet,mxgmet,                        &
     mxter,mxpter,mxgter,                                    &
-    mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,                 &
+    mxtana,mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,          &
     mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,                &
     mxpfld,                                                 &
     mxstak,mxnstk,mxlist,mxcell,mxatms,mxatdm,              &

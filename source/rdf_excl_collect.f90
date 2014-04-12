@@ -13,7 +13,7 @@ Subroutine rdf_excl_collect(iatm,rcut,rsqdf)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module,  Only : mxlist,mxgrdf,zero_plus
+  Use setup_module,  Only : mxlist,mxgrdf
   Use config_module, Only : natms,ltg,ltype,list
   Use rdf_module
 

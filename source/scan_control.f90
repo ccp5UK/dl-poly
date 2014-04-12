@@ -13,7 +13,7 @@ Subroutine scan_control                                    &
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov april 2014
 ! contrib   - i.j.bush february 2014
-! contrib   - a.v.brukhno march 2014 (itramolecular TPs & PDFs)
+! contrib   - a.v.brukhno and i.t.todorov april 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -337,10 +337,10 @@ Subroutine scan_control                                    &
            la_inv = .true.
 
            mxgana = Abs(Nint(word_2_real(word)))
-           mxgbnd1 = mxgana
-           mxgang1 = mxgana
-           mxgdih1 = mxgana
-           mxginv1 = mxgana
+           mxgbnd1 = Max(mxgbnd1,mxgana)
+           mxgang1 = Max(mxgang1,mxgana)
+           mxgdih1 = Max(mxgdih1,mxgana)
+           mxginv1 = Max(mxginv1,mxgana)
 
            Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
@@ -349,7 +349,6 @@ Subroutine scan_control                                    &
            la_bnd = .true.
 
            mxgbnd1 = Max(mxgbnd1,Abs(Nint(word_2_real(word))))
-           mxgana  = Max(mxgana,mxgbnd1)
 
            Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
@@ -358,17 +357,14 @@ Subroutine scan_control                                    &
            la_ang = .true.
 
            mxgang1 = Max(mxgang1,Abs(Nint(word_2_real(word))))
-           mxgana  = Max(mxgana,mxgang1)
         Else If (akey == 'dih') Then
            la_dih = .true.
 
            mxgdih1 = Max(mxgdih1,Abs(Nint(word_2_real(word))))
-           mxgana  = Max(mxgana,mxgdih1)
         Else If (akey == 'inv') Then
            la_inv = .true.
 
            mxginv1 = Max(mxginv1,Abs(Nint(word_2_real(word))))
-           mxgana  = Max(mxgana,mxginv1)
         End If
 
 ! read rdf calculation option
@@ -397,18 +393,20 @@ Subroutine scan_control                                    &
 ! in case of bonded interactions analysis
 
   If (la_ana) Then
+     mxgana=Max(mxgbnd1,mxgang1,mxgdih1,mxginv1)
+
      If (mxgana == 0) mxgana = -1 ! switch indicator for set_bounds
 
 ! mxgana by construction (above) equals the largest grid
 ! deal with overloaded grid sizes
 
      If (la_bnd) Then
-        mxgbnd1 = mxgana
+        If (mxgbnd1 == 0) mxgbnd1 = mxgana
         rcbnd=Max(rcbnd,rcbnd_def)
      End If
-     If (la_ang) mxgang1 = mxgana
-     If (la_dih) mxgdih1 = mxgana
-     If (la_inv) mxginv1 = mxgana
+     If (la_ang .and. mxgang1 == 0) mxgang1 = mxgana
+     If (la_dih .and. mxgdih1 == 0) mxgdih1 = mxgana
+     If (la_inv .and. mxginv1 == 0) mxginv1 = mxgana
   End If
 
 ! Sort electrostatics

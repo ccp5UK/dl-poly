@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov april 2014
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno and i.t.todorov march 2014 (itramolecular TPs & PDFs)
@@ -2462,6 +2462,7 @@ Subroutine read_field                   &
               End Do
            End If
 
+           mxtana = Max(ntpbnd,ntpang,ntpdih,ntpinv)
         End If
 
 ! Deallocate possibly allocated auxiliary intramolecular TPs/PDFs arrays

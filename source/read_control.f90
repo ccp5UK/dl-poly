@@ -102,7 +102,7 @@ Subroutine read_control                                &
   Integer                                 :: i,j,k,itmp,nstana,grdana,grdbnd,grdang, &
                                              grddih,grdinv,nstall
 
-  Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,rcb_d,rcana
+  Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,rcb_d
 
 
 ! initialise system control variables and their logical switches
@@ -268,7 +268,7 @@ Subroutine read_control                                &
 
 ! default switches for calculation and printing of bonded analysis
 
-  nstall = 1 ; nstana = 0
+  nstall = 1 ; nstana = 0 ; grdana = 0
   nstbnd = 0 ; grdbnd = 0 ; rcb_d  = 0.0_wp
   nstang = 0 ; grdang = 0
   nstdih = 0 ; grddih = 0
@@ -1804,15 +1804,15 @@ Subroutine read_control                                &
            tmp=Abs(Nint(word_2_real(word))) ! bond length
 
            nstana=Max(nstana,i)
-           grdana=j
-           rcana=tmp
+           grdana=Max(grdana,j)
+           rcb_d =Max(rcb_d,tmp)
         Else If (akey == 'bon') Then
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
            tmp=Abs(Nint(word_2_real(word))) ! bond length
 
            nstbnd=Max(nstbnd,i)
            grdbnd=j
-           rcb_d=tmp
+           rcb_d =Max(rcb_d,tmp)
         Else If (akey == 'ang') Then
            nstang=Max(nstang,i)
            grdang=j
@@ -1824,6 +1824,7 @@ Subroutine read_control                                &
            grdinv=j
         End If
         nstall=Max(1,Min(nstana,nstbnd,nstang,nstdih,nstinv))
+        grdana=Max(grdana,grdbnd,grdang,grddih,grdinv)
 
 ! read rdf calculation option
 

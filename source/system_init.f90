@@ -10,7 +10,7 @@ Subroutine system_init                                             &
 ! initial thermodynamic and structural accumulators
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -57,7 +57,7 @@ Subroutine system_init                                             &
 
   If (l_rin) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
-     j = Max(mxstak*mxnstk,mxgrdf*mxrdf,(mxgana+1)*Max(mxtbnd,mxtang,mxtdih,mxtinv))
+     j = Max(mxstak*mxnstk,mxgrdf*mxrdf,mxgana*mxtana)
 
      Write(forma ,10) j/4+1,i+9,i
 10   Format('(1p,',i0,'(/,4e',i0,'.',i0,'E3))')
@@ -117,22 +117,22 @@ Subroutine system_init                                             &
            zdens =0.0_wp
         End If
 
-        If (mxgbnd > 0) Then
+        If (mxgbnd1 > 0) Then
            ncfbnd=0
            dstbnd=0.0_wp
         End If
 
-        If (mxgang > 0) Then
+        If (mxgang1 > 0) Then
            ncfang=0
            dstang=0.0_wp
         End If
 
-        If (mxgdih > 0) Then
+        If (mxgdih1 > 0) Then
            ncfdih=0
            dstdih=0.0_wp
         End If
 
-        If (mxginv > 0) Then
+        If (mxginv1 > 0) Then
            ncfinv=0
            dstinv=0.0_wp
         End If
@@ -189,10 +189,10 @@ Subroutine system_init                                             &
            If (lrdf) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfrdf,rdf
            If (lzdn) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfzdn,zdens
 
-           If (mxgbnd > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfbnd,dstbnd
-           If (mxgang > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfang,dstang
-           If (mxgdih > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfdih,dstdih
-           If (mxginv > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfinv,dstinv
+           If (mxgbnd1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfbnd,dstbnd
+           If (mxgang1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfang,dstang
+           If (mxgdih1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfdih,dstdih
+           If (mxginv1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfinv,dstinv
         Else
            Read(Unit=nrest, IOStat=keyio, End=100) &
                dnstep,dtstep,time,tmst,dnumacc,chit,chip,cint
@@ -211,10 +211,10 @@ Subroutine system_init                                             &
            If (lrdf) Read(Unit=nrest, IOStat=keyio, End=100) dncfrdf,rdf
            If (lzdn) Read(Unit=nrest, IOStat=keyio, End=100) dncfzdn,zdens
 
-           If (mxgbnd > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfbnd,dstbnd
-           If (mxgang > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfang,dstang
-           If (mxgdih > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfdih,dstdih
-           If (mxginv > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfinv,dstinv
+           If (mxgbnd1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfbnd,dstbnd
+           If (mxgang1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfang,dstang
+           If (mxgdih1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfdih,dstdih
+           If (mxginv1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfinv,dstinv
         End If
 
         nstep =Nint(dnstep)
@@ -224,10 +224,10 @@ Subroutine system_init                                             &
         If (lrdf) ncfrdf=Nint(dncfrdf)
         If (lzdn) ncfzdn=Nint(dncfzdn)
 
-        If (mxgbnd > 0) ncfbnd=Nint(dncfbnd)
-        If (mxgang > 0) ncfang=Nint(dncfang)
-        If (mxgdih > 0) ncfdih=Nint(dncfdih)
-        If (mxginv > 0) ncfinv=Nint(dncfinv)
+        If (mxgbnd1 > 0) ncfbnd=Nint(dncfbnd)
+        If (mxgang1 > 0) ncfang=Nint(dncfang)
+        If (mxgdih1 > 0) ncfdih=Nint(dncfdih)
+        If (mxginv1 > 0) ncfinv=Nint(dncfinv)
 
 ! calculate virtot = virtot-vircon-virpmf
 
@@ -308,10 +308,10 @@ Subroutine system_init                                             &
 
 ! bonds table - broadcast and normalise
 
-        If (mxgbnd > 0) Then
-           Call MPI_BCAST(ncfbnd,                  1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+        If (mxgbnd1 > 0) Then
+           Call MPI_BCAST(ncfbnd,                    1, MPI_INTEGER, 0, dlp_comm_world, ierr)
            Do k=1,ldfbnd(0)
-              Call MPI_BCAST(dstbnd(0:mxgbnd,k), mxgbnd+1, wp_mpi, 0, dlp_comm_world, ierr)
+              Call MPI_BCAST(dstbnd(0:mxgbnd1,k), mxgbnd1+1, wp_mpi, 0, dlp_comm_world, ierr)
 
               dstbnd(:,k) = dstbnd(:,k) * r_mxnode
            End Do
@@ -319,10 +319,10 @@ Subroutine system_init                                             &
 
 ! angles table - broadcast and normalise
 
-        If (mxgang > 0) Then
-           Call MPI_BCAST(ncfang,                  1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+        If (mxgang1 > 0) Then
+           Call MPI_BCAST(ncfang,                    1, MPI_INTEGER, 0, dlp_comm_world, ierr)
            Do k=1,ldfang(0)
-              Call MPI_BCAST(dstang(0:mxgang,k), mxgang+1, wp_mpi, 0, dlp_comm_world, ierr)
+              Call MPI_BCAST(dstang(0:mxgang1,k), mxgang1+1, wp_mpi, 0, dlp_comm_world, ierr)
 
               dstang(:,k) = dstang(:,k) * r_mxnode
            End Do
@@ -330,10 +330,10 @@ Subroutine system_init                                             &
 
 ! dihedrals table - broadcast and normalise
 
-        If (mxgdih > 0) Then
-           Call MPI_BCAST(ncfdih,                  1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+        If (mxgdih1 > 0) Then
+           Call MPI_BCAST(ncfdih,                    1, MPI_INTEGER, 0, dlp_comm_world, ierr)
            Do k=1,ldfdih(0)
-              Call MPI_BCAST(dstdih(0:mxgdih,k), mxgdih+1, wp_mpi, 0, dlp_comm_world, ierr)
+              Call MPI_BCAST(dstdih(0:mxgdih1,k), mxgdih1+1, wp_mpi, 0, dlp_comm_world, ierr)
 
               dstdih(:,k) = dstdih(:,k) * r_mxnode
            End Do
@@ -341,10 +341,10 @@ Subroutine system_init                                             &
 
 ! inversions table - broadcast and normalise
 
-        If (mxginv > 0) Then
-           Call MPI_BCAST(ncfinv,                  1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+        If (mxginv1 > 0) Then
+           Call MPI_BCAST(ncfinv,                    1, MPI_INTEGER, 0, dlp_comm_world, ierr)
            Do k=1,ldfinv(0)
-              Call MPI_BCAST(dstinv(0:mxginv,k), mxginv+1, wp_mpi, 0, dlp_comm_world, ierr)
+              Call MPI_BCAST(dstinv(0:mxginv1,k), mxginv1+1, wp_mpi, 0, dlp_comm_world, ierr)
 
               dstinv(:,k) = dstinv(:,k) * r_mxnode
            End Do

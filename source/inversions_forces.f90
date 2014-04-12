@@ -10,7 +10,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1996
-! amended   - i.t.todorov march 2014
+! amended   - i.t.todorov april 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -182,7 +182,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 
 ! Recover bin size and increment counter
 
-  If (Mod(isw,2) == 0) Then
+  If (Mod(isw,3) == 0) Then
      rdelth = Real(mxginv1,wp)/pi
      ncfinv = ncfinv + 1
   End If
@@ -312,7 +312,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 
 ! accumulate the histogram (distribution)
 
-           If (Mod(isw,2) == 0 .and. ib <= natms) Then
+           If (Mod(isw,3) == 0 .and. ib <= natms) Then
               j = ldfinv(kk)
 
               thb=Acos(cosb)

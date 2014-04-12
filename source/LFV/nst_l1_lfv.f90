@@ -35,7 +35,7 @@ Subroutine nst_l1_lfv                                &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,       Only : idnode,mxnode,gsum,gmax,gcheck
+  Use comms_module,       Only : idnode,mxnode,gmax,gcheck
   Use setup_module
   Use domains_module,     Only : map
   Use site_module,        Only : ntpatm,dens,ntpshl,unqshl
