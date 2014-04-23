@@ -88,7 +88,7 @@
 ! Calculate bond forces
 
      If (megbnd > 0) Then
-        ltmp = (mxgbnd > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstbnd) == 0)
+        ltmp = (mxgbnd1 > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstbnd) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
         Call bonds_forces(isw,imcon,engbnd,virbnd,stress, &
@@ -98,7 +98,7 @@
 ! Calculate valence angle forces
 
      If (megang > 0) Then
-        ltmp = (mxgang > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstang) == 0)
+        ltmp = (mxgang1 > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstang) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
         Call angles_forces(isw,imcon,engang,virang,stress)
@@ -107,7 +107,7 @@
 ! Calculate dihedral forces
 
      If (megdih > 0) Then
-        ltmp = (mxgdih > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstdih) == 0)
+        ltmp = (mxgdih1 > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstdih) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
         Call dihedrals_forces(isw,imcon,engdih,virdih,stress, &
@@ -117,7 +117,7 @@
 ! Calculate inversion forces
 
      If (meginv > 0) Then
-        ltmp = (mxginv > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstinv) == 0)
+        ltmp = (mxginv1 > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstinv) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
         Call inversions_forces(isw,imcon,enginv,virinv,stress)

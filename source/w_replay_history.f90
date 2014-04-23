@@ -136,7 +136,7 @@
 
 ! Calculate bond forces
 
-        If (megbnd > 0 .and. mxgbnd > 0) Then
+        If (megbnd > 0 .and. mxgbnd1 > 0) Then
            isw = 0
            Call bonds_forces(isw,imcon,engbnd,virbnd,stress, &
                        rcut,keyfce,alpha,epsq,engcpe,vircpe)
@@ -144,14 +144,14 @@
 
 ! Calculate valence angle forces
 
-        If (megang > 0 .and. mxgang > 0) Then
+        If (megang > 0 .and. mxgang1 > 0) Then
            isw = 0
            Call angles_forces(isw,imcon,engang,virang,stress)
         End If
 
 ! Calculate dihedral forces
 
-        If (megdih > 0 .and. mxgdih > 0) Then
+        If (megdih > 0 .and. mxgdih1 > 0) Then
            isw = 0
            Call dihedrals_forces(isw,imcon,engdih,virdih,stress, &
            rcut,rvdw,keyfce,alpha,epsq,engcpe,vircpe,engsrp,virsrp)
@@ -159,7 +159,7 @@
 
 ! Calculate inversion forces
 
-        If (meginv > 0 .and. mxginv > 0) Then
+        If (meginv > 0 .and. mxginv1 > 0) Then
            isw = 0
            Call inversions_forces(isw,imcon,enginv,virinv,stress)
         End If

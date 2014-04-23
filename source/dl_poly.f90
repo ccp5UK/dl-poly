@@ -266,8 +266,10 @@ Program dl_poly
 
   Call allocate_external_field_arrays()
 
-! ALLOCATE STATISTICS ARRAYS
+! ALLOCATE RDF, Z-DENSITY and STATISTICS ARRAYS
 
+  Call allocate_rdf_arrays()
+  Call allocate_z_density_arrays()
   Call allocate_statistics_arrays()
 
 ! READ SIMULATION CONTROL PARAMETERS

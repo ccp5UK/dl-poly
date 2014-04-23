@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2013
+! author    - i.t.todorov april 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -486,16 +486,16 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2i0,a,/)') &
-        '*** warning - core-shell unit mix-up or duplicate specification (', ia, ib, ' ) !!! ***'
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
+        '*** warning - core-shell unit mix-up or duplicate specification (', ia,',', ib, ') !!! ***'
 
      Else If (kode == 400) Then
 
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,i0,a,/)') &
-        '*** warning - constraint or rigid body duplicate specification (', ia, ib, ' ) !!! ***'
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
+        '*** warning - constraint or rigid body duplicate specification (', ia,',', ib, ') !!! ***'
 
      Else If (kode == 410) Then
 
@@ -503,39 +503,39 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
 
         Write(nrite,'(/,1x,a,i0,a,/)') &
-        '*** warning - tethered atom duplicate specification (', ia, ib, ' ) !!! ***'
+        '*** warning - tethered atom duplicate specification (', ia,',', ib, ') !!! ***'
 
      Else If (kode == 420) Then
 
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2i0,a,/)') &
-        '*** warning - chemical bond duplicate specification (', ia, ib, ' ) !!! ***'
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
+        '*** warning - chemical bond duplicate specification (', ia,',', ib, ') !!! ***'
 
      Else If (kode == 430) Then
 
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2i0,a,/)') &
-        '*** warning - bond angle duplicate specification (', ia, ib, ' ) !!! ***'
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
+        '*** warning - bond angle duplicate specification (', ia,',', ib, ') !!! ***'
 
      Else If (kode == 440) Then
 
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2i0,a,/)') &
-        '*** warning - dihedral angle duplicate specification (', ia, ib, ' ) !!! ***'
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
+        '*** warning - dihedral angle duplicate specification (', ia,',', ib, ') !!! ***'
 
      Else If (kode == 450) Then
 
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(/,1x,a,2i0,a,/)') &
-        '*** warning - inversion angle duplicate specification (', ia, ib, ' ) !!! ***'
+        Write(nrite,'(/,1x,a,2(i0,a),/)') &
+        '*** warning - inversion angle duplicate specification (', ia,',', ib, ') !!! ***'
 
      Else If (kode == 460) Then
 

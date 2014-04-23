@@ -1747,7 +1747,7 @@ Subroutine read_field                   &
                            (js(1) == is(4) .and. js(2) == is(3) .and. &
                             js(3) == is(2) .and. js(4) == is(1))) Then
                           If (l_str .and. l_top) Call warning(440,Real(i,wp),Real(j,wp),0.0_wp)
-                          If (is(0) == js(0)) Call error(620)
+!                          If (is(0) == js(0)) Call error(620)
                        End If
                     End Do
                  End Do
