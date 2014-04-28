@@ -320,15 +320,15 @@ Subroutine set_bounds                                       &
 
 ! maximum number of grid points for angles
 
-  mxgang = Merge(mxgang,Max(1004,Nint(180/delth_max)+4),mxgang > 0)
+  mxgang = Merge(mxgang,Max(1004,Nint(180.0_wp/delth_max)+4),mxgang > 0)
 
 ! maximum number of grid points for dihedrals
 
-  mxgdih = Merge(mxgdih,Max(1004,Nint(360/delth_max)+4),mxgdih > 0)
+  mxgdih = Merge(mxgdih,Max(1004,Nint(360.0_wp/delth_max)+4),mxgdih > 0)
 
 ! maximum number of grid points for inversions
 
-  mxginv = Merge(mxginv,Max(1004,Nint(180/delth_max)+4),mxginv > 0)
+  mxginv = Merge(mxginv,Max(1004,Nint(180.0_wp/delth_max)+4),mxginv > 0)
 
 ! maximum number of grid points for electrostatics
 
@@ -338,9 +338,17 @@ Subroutine set_bounds                                       &
 
   mxgvdw = Merge(-1,Max(1004,Nint(rvdw/delr_max)+4),l_n_v)
 
+! maximum number of grid points for metal interactions
+
+  mxgmet = Max(mxgmet,1004,Nint(rmet/delr_max)+4)
+
 ! maximum number of grid points for tersoff interaction arrays
 
   mxgter = Merge(-1,Max(1004,Nint(rcter/delr_max)+4),mxter <= 0)
+
+! maximum of all maximum numbers of grid points for all grids - used for mxbuff
+
+  mxgrid = Max(mxgrid,mxgbnd,mxgang,mxgdih,mxginv,mxgele,mxgvdw,mxgmet,mxgter)
 
 
 
