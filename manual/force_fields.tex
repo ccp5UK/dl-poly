@@ -2513,7 +2513,7 @@ and the more usual complementary error function $erfc$ found in
 the real space sum, should be noted.
 
 The same considerations and modifications {\sc
-ewald\_frozen\_forces} are taken into account for frozen atoms,
+ewald\_frzn\_forces} are taken into account for frozen atoms,
 which mutual coulombic interaction must be excluded.
 
 The total electrostatic energy is given by the following formula.
@@ -2669,7 +2669,7 @@ that respect the domain decomposition concept) which calculate the
 \item {\sc ewald\_real\_forces}, which calculates the real space contributions (corrected)
 \item {\sc ewald\_excl\_forces}, which calculates the reciprocal space corrections
 due to the coulombic exclusions in intramolecular interactions
-\item {\sc ewald\_frozen\_forces}, which calculates the reciprocal space corrections
+\item {\sc ewald\_frzn\_forces}, which calculates the reciprocal space corrections
 due to the exclusion interactions between frozen atoms
 \item {\sc two\_body\_forces}, in which all of the above
 subroutines are called sequentially and also the Fuchs correction

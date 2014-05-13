@@ -13,7 +13,7 @@ Subroutine minimise_relax &
 !       keymin=2 : absolute displacement
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith february 2012
+! author    - i.t.todorov & w.smith may 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,6 +24,7 @@ Subroutine minimise_relax &
                                   lsi,lsa,lfrzn,lfree,lstfre, &
                                   weight,xxx,yyy,zzz,fxx,fyy,fzz
   Use rigid_bodies_module, Only : lshmv_rgd,lishp_rgd,lashp_rgd
+  Use parse_module,        Only : strip_blanks,lower_case
   Use minimise_module
 
   Implicit None
@@ -42,6 +43,11 @@ Subroutine minimise_relax &
   Real( Kind = wp ),    Save :: total,grad_tol,eng_tol,dist_tol,step,           &
                                 eng_0,eng_min,engcon,engpmf,eng,eng0,eng1,eng2, &
                                 grad,grad0,grad1,grad2,onorm,sgn,stride,gamma
+
+! OUTPUT existence
+
+  Logical               :: l_out
+  Character( Len = 10 ) :: c_out
 
 ! Optimisation iteration and convergence limits
 
@@ -397,6 +403,8 @@ Subroutine minimise_relax &
 
   If (keymin == 2) relaxed=(dist_tol < min_tol)
 
+! Fit headers in and Close and Open OUTPUT at every 25th print-out
+
   i=Nint(passmin(1))
   If (l_str .and. idnode == 0) Then
      Write(nrite,'(1x,i23,1p,4e18.8)') i-1,eng/engunit,grad_tol,eng_tol,dist_tol
@@ -405,6 +413,16 @@ Subroutine minimise_relax &
         Write(nrite,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,9x,a,1p,e12.4)') &
              'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol
         Write(nrite,"(1x,130('-'))")
+
+        If (idnode == 0) Then
+           Inquire(File='OUTPUT', Exist=l_out, Position=c_out)
+           Call strip_blanks(c_out)
+           Call lower_case(c_out)
+           If (l_out .and. c_out(1:6) == 'append') Then
+              Close(Unit=nrite)
+              Open(Unit=nrite, File='OUTPUT', Position='append')
+           End If
+        End If
      End If
   End If
 

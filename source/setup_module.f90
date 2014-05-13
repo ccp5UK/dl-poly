@@ -141,10 +141,10 @@ Module setup_module
     mxtang, mxangl,mxfang,mxpang,mxgang,                    &
     mxtdih, mxdihd,mxfdih,mxpdih,mxgdih,                    &
     mxtinv, mxinv, mxfinv,mxpinv,mxginv,                    &
-    mxrdf,mxgrdf,mxgrid,mxgele,                             &
+    mxrdf,mxgrdf,mxgele,                                    &
     mxvdw,mxpvdw,mxgvdw,                                    &
     mxmet,mxmed,mxmds,mxpmet,mxgmet,                        &
-    mxter,mxpter,mxgter,                                    &
+    mxter,mxpter,mxgter,mxgrid,                             &
     mxtana,mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,          &
     mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,                &
     mxpfld,                                                 &

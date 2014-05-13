@@ -1289,19 +1289,19 @@ Subroutine error(kode)
 
 ! close all I/O channels
 
-     Close(nread)
-     Close(nconf)
-     Close(nfield)
-     Close(ntable)
-     Close(nrefdt)
-     Close(nrite)
-     Close(nstats)
-     Close(nrest)
-     Close(nhist)
-     Close(ndefdt)
-     Close(nrdfdt)
-     Close(nzdndt)
-     Close(nrsddt)
+     Close(Unit=nread)
+     Close(Unit=nconf)
+     Close(Unit=nfield)
+     Close(Unit=ntable)
+     Close(Unit=nrefdt)
+     Close(Unit=nrite)
+     Close(Unit=nstats)
+     Close(Unit=nrest)
+     Close(Unit=nhist)
+     Close(Unit=ndefdt)
+     Close(Unit=nrdfdt)
+     Close(Unit=nzdndt)
+     Close(Unit=nrsddt)
 
   End If
 

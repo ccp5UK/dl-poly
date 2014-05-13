@@ -6,7 +6,7 @@ Subroutine bonds_table_read(bond_name)
 ! from TABBND file (for bond potentials & forces only)
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov april 2014
+! author    - a.v.brukhno & i.t.todorov may 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,7 +29,7 @@ Subroutine bonds_table_read(bond_name)
   Character( Len = 8   ) :: atom1,atom2
 
   Integer                :: fail(1:2),ngrid,rtbnd,itbnd,jtbnd,katom1,katom2,jtpatm,i,l
-  Real( Kind = wp )      :: cutpot,delpot,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
+  Real( Kind = wp )      :: cutpot,delpot,dlrpot,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
 
   Integer,                           Allocatable :: read_type(:)
   Real( Kind = wp ), Dimension( : ), Allocatable :: bufpot(:),bufvir(:)
@@ -58,12 +58,14 @@ Subroutine bonds_table_read(bond_name)
 
   delpot = cutpot/Real(ngrid,wp)
 
+  dlrpot = rcbnd/Real(mxgbnd-4,wp)
+
 ! check grid spacing
 
   safe = .false.
-  If( Abs(delpot-delr_max) < 1.0e-8_wp ) Then
+  If( Abs(delpot-dlrpot) < 1.0e-8_wp ) Then
      safe   = .true.
-     delpot = delr_max
+     delpot = dlrpot
   End If
   If (delpot > delr_max .and. (.not.safe)) Then
      If (idnode == 0) Then
@@ -82,7 +84,7 @@ Subroutine bonds_table_read(bond_name)
   safe=.true.
 
   remake=.false.
-  If (Abs(1.0_wp-(delpot/delr_max)) > 1.0e-8_wp) Then
+  If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
      remake=.true.
      rdr=1.0_wp/delpot
      If (idnode == 0) Write(nrite,"(/,' TABBND arrays resized for mxgrid = ',i10)") mxgbnd-4
@@ -96,8 +98,8 @@ Subroutine bonds_table_read(bond_name)
   End If
 
   fail=0
-  Allocate (read_type(1:ltpbnd(0)),              Stat=fail(1))
-  Allocate (bufpot(0:ngrid+4),bufvir(0:ngrid+4), Stat=fail(2))
+  Allocate (read_type(1:ltpbnd(0)),          Stat=fail(1))
+  Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'error - bonds_table_read allocation failure, node: ', idnode
      Call error(0)
@@ -236,21 +238,27 @@ Subroutine bonds_table_read(bond_name)
 ! reconstruct arrays using 3pt interpolation
 
      If (remake) Then
-        Do i=1,mxgbnd-2
-           rrr = Real(i,wp)*delr_max
+        Do i=1,mxgbnd-3
+           rrr = Real(i,wp)*dlrpot
            l   = Int(rrr*rdr)
            ppp = rrr*rdr-Real(l,wp)
 
-! linear extrapolation for the grid point just beyond the cutoff
+           vk  = bufpot(l)
+
+! linear extrapolation for the grid points just beyond the cutoff
 
            If (l+2 > ngrid) Then
-              bufpot(l+2) = 2.0_wp*bufpot(l+1)-bufpot(l)
-              bufvir(l+2) = 2.0_wp*bufvir(l+1)-bufvir(l)
+              If (l+1 > ngrid) Then
+                 vk1 = 2.0_wp*bufpot(l)-bufpot(l-1)
+                 vk2 = 2.0_wp*vk1-bufpot(l)
+              Else
+                 vk1 = bufpot(l+1)
+                 vk2 = 2.0_wp*bufpot(l+1)-bufpot(l)
+              End If
+           Else
+              vk1 = bufpot(l+1)
+              vk2 = bufpot(l+2)
            End If
-
-           vk  = bufpot(l)
-           vk1 = bufpot(l+1)
-           vk2 = bufpot(l+2)
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -258,8 +266,21 @@ Subroutine bonds_table_read(bond_name)
            vbnd(i,jtbnd) = vbnd(i,jtbnd)*engunit ! convert to internal units
 
            vk  = bufvir(l)
-           vk1 = bufvir(l+1)
-           vk2 = bufvir(l+2)
+
+! linear extrapolation for the grid points just beyond the cutoff
+
+           If (l+2 > ngrid) Then
+              If (l+1 > ngrid) Then
+                 vk1 = 2.0_wp*bufvir(l)-bufvir(l-1)
+                 vk2 = 2.0_wp*vk1-bufvir(l)
+              Else
+                 vk1 = bufpot(l+1)
+                 vk2 = 2.0_wp*bufvir(l+1)-bufvir(l)
+              End If
+           Else
+              vk1 = bufvir(l+1)
+              vk2 = bufvir(l+2)
+           End If
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -268,28 +289,29 @@ Subroutine bonds_table_read(bond_name)
         End Do
 
         vbnd(-1,jtbnd) = cutpot
-        gbnd(-1,jtbnd) = 1.0_wp/delr_max
+        gbnd(-1,jtbnd) = 1.0_wp/delpot
      Else
         Do i=1,mxgbnd-4
            vbnd(i,jtbnd) = bufpot(i)*engunit ! convert to internal units
            gbnd(i,jtbnd) = bufvir(i)*engunit ! convert to internal units
         End Do
 
-! linear extrapolation for the grid points just beyond the cutoff
+! linear extrapolation for the grid point just beyond the cutoff
 
         vbnd(mxgbnd-3,jtbnd) = 2.0_wp*vbnd(mxgbnd-4,jtbnd) - vbnd(mxgbnd-5,jtbnd)
-        vbnd(mxgbnd-2,jtbnd) = 2.0_wp*vbnd(mxgbnd-3,jtbnd) - vbnd(mxgbnd-4,jtbnd)
         gbnd(mxgbnd-3,jtbnd) = 2.0_wp*gbnd(mxgbnd-4,jtbnd) - gbnd(mxgbnd-5,jtbnd)
-        gbnd(mxgbnd-2,jtbnd) = 2.0_wp*gbnd(mxgbnd-3,jtbnd) - gbnd(mxgbnd-4,jtbnd)
 
         vbnd(-1,jtbnd) = cutpot
         gbnd(-1,jtbnd) = 1.0_wp/delpot
      End If
 
-! grid point at 0
+! grid point at 0 and linear extrapolation for the grid point at mxgbnd-2
 
      vbnd(0,jtbnd) = bufpot(0)
      gbnd(0,jtbnd) = bufvir(0)
+
+     vbnd(mxgbnd-2,jtbnd) = 2.0_wp*vbnd(mxgbnd-3,jtbnd) - vbnd(mxgbnd-4,jtbnd)
+     gbnd(mxgbnd-2,jtbnd) = 2.0_wp*gbnd(mxgbnd-3,jtbnd) - gbnd(mxgbnd-4,jtbnd)
   End Do
 
   If (idnode == 0) Then

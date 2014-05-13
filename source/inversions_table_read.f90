@@ -6,7 +6,7 @@ Subroutine inversions_table_read(invr_name)
 ! from TABINV file (for inversion potentials & forces only)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2014
+! author    - i.t.todorov may 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,7 +29,7 @@ Subroutine inversions_table_read(invr_name)
   Character( Len = 8   ) :: atom1,atom2,atom3,atom4
 
   Integer                :: fail(1:2),ngrid,rtinv,itinv,jtinv,katom1,katom2,katom3,katom4,jtpatm,i,l
-  Real( Kind = wp )      :: delpot,rad2dgr,dgr2rad,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
+  Real( Kind = wp )      :: delpot,dlrpot,rad2dgr,dgr2rad,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
 
   Integer,                           Allocatable :: read_type(:)
   Real( Kind = wp ), Dimension( : ), Allocatable :: bufpot(:),bufvir(:)
@@ -56,12 +56,14 @@ Subroutine inversions_table_read(invr_name)
 
   delpot = 180.0_wp/Real(ngrid,wp)
 
+  dlrpot = 180.0_wp/Real(mxginv-4,wp)
+
 ! check grid spacing
 
   safe = .false.
-  If( Abs(delpot-delth_max) < 1.0e-8_wp ) Then
+  If( Abs(delpot-dlrpot) < 1.0e-8_wp ) Then
      safe   = .true.
-     delpot = delth_max
+     delpot = dlrpot
   End If
   If (delpot > delth_max .and. (.not.safe)) Then
      If (idnode == 0) Then
@@ -79,7 +81,7 @@ Subroutine inversions_table_read(invr_name)
   safe=.true.
 
   remake=.false.
-  If (Abs(1.0_wp-(delpot/delth_max)) > 1.0e-8_wp) Then
+  If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
      remake=.true.
      rdr=1.0_wp/delpot
      If (idnode == 0) Write(nrite,"(/,' TABINV arrays resized for mxgrid = ',i10)") mxginv-4
@@ -96,8 +98,8 @@ Subroutine inversions_table_read(invr_name)
   dgr2rad= pi/180.0_wp
 
   fail=0
-  Allocate (read_type(1:ltpinv(0)),              Stat=fail(1))
-  Allocate (bufpot(0:ngrid+4),bufvir(0:ngrid+4), Stat=fail(2))
+  Allocate (read_type(1:ltpinv(0)),          Stat=fail(1))
+  Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'error - inversions_table_read allocation failure, node: ', idnode
      Call error(0)
@@ -260,21 +262,27 @@ Subroutine inversions_table_read(invr_name)
 ! reconstruct arrays using 3pt interpolation
 
      If (remake) Then
-        Do i=1,mxginv-2
-           rrr = Real(i,wp)*delth_max
+        Do i=1,mxginv-3
+           rrr = Real(i,wp)*dlrpot
            l   = Int(rrr*rdr)
            ppp = rrr*rdr-Real(l,wp)
 
-! linear extrapolation for the grid point just beyond the cutoff
+           vk  = bufpot(l)
+
+! linear extrapolation for the grid points just beyond the cutoff
 
            If (l+2 > ngrid) Then
-              bufpot(l+2) = 2.0_wp*bufpot(l+1)-bufpot(l)
-              bufvir(l+2) = 2.0_wp*bufvir(l+1)-bufvir(l)
+              If (l+1 > ngrid) Then
+                 vk1 = 2.0_wp*bufpot(l)-bufpot(l-1)
+                 vk2 = 2.0_wp*vk1-bufpot(l)
+              Else
+                 vk1 = bufpot(l+1)
+                 vk2 = 2.0_wp*bufpot(l+1)-bufpot(l)
+              End If
+           Else
+              vk1 = bufpot(l+1)
+              vk2 = bufpot(l+2)
            End If
-
-           vk  = bufpot(l)
-           vk1 = bufpot(l+1)
-           vk2 = bufpot(l+2)
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -282,8 +290,21 @@ Subroutine inversions_table_read(invr_name)
            vinv(i,jtinv) = vinv(i,jtinv)*engunit ! convert to internal units
 
            vk  = bufvir(l)
-           vk1 = bufvir(l+1)
-           vk2 = bufvir(l+2)
+
+! linear extrapolation for the grid points just beyond the cutoff
+
+           If (l+2 > ngrid) Then
+              If (l+1 > ngrid) Then
+                 vk1 = 2.0_wp*bufvir(l)-bufvir(l-1)
+                 vk2 = 2.0_wp*vk1-bufvir(l)
+              Else
+                 vk1 = bufvir(l+1)
+                 vk2 = 2.0_wp*bufvir(l+1)-bufvir(l)
+              End If
+           Else
+              vk1 = bufvir(l+1)
+              vk2 = bufvir(l+2)
+           End If
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -291,27 +312,29 @@ Subroutine inversions_table_read(invr_name)
            ginv(i,jtinv) = ginv(i,jtinv)*engunit*rad2dgr ! convert to internal units
         End Do
 
-        ginv(-1,jtinv) = rad2dgr/delth_max
+        ginv(-1,jtinv) = rad2dgr/dlrpot
      Else
         Do i=1,mxginv-4
            vinv(i,jtinv) = bufpot(i)*engunit ! convert to internal units
            ginv(i,jtinv) = bufvir(i)*engunit*rad2dgr ! convert to internal units
         End Do
 
-! linear extrapolation for the grid points just beyond the cutoff
+! linear extrapolation for the grid point just beyond the cutoff
 
         vinv(mxginv-3,jtinv) = 2.0_wp*vinv(mxginv-4,jtinv) - vinv(mxginv-5,jtinv)
-        vinv(mxginv-2,jtinv) = 2.0_wp*vinv(mxginv-3,jtinv) - vinv(mxginv-4,jtinv)
         ginv(mxginv-3,jtinv) = 2.0_wp*ginv(mxginv-4,jtinv) - ginv(mxginv-5,jtinv)
-        ginv(mxginv-2,jtinv) = 2.0_wp*ginv(mxginv-3,jtinv) - ginv(mxginv-4,jtinv)
 
         ginv(-1,jtinv) = rad2dgr/delpot
      End If
 
-! grid point at 0
+! grid point at 0 and linear extrapolation for the grid point at mxginv-2
+
 
      vinv(0,jtinv) = bufpot(0)
      ginv(0,jtinv) = bufvir(0)
+
+     vinv(mxginv-2,jtinv) = 2.0_wp*vinv(mxginv-3,jtinv) - vinv(mxginv-4,jtinv)
+     ginv(mxginv-2,jtinv) = 2.0_wp*ginv(mxginv-3,jtinv) - ginv(mxginv-4,jtinv)
   End Do
 
   If (idnode == 0) Then

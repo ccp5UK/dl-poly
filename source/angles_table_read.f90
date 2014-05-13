@@ -6,7 +6,7 @@ Subroutine angles_table_read(angl_name)
 ! from TABANG file (for angle potentials & forces only)
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov april 2014
+! author    - a.v.brukhno & i.t.todorov may 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,7 +29,7 @@ Subroutine angles_table_read(angl_name)
   Character( Len = 8   ) :: atom1,atom2,atom3
 
   Integer                :: fail(1:2),ngrid,rtang,itang,jtang,katom1,katom2,katom3,jtpatm,i,l
-  Real( Kind = wp )      :: delpot,rad2dgr,dgr2rad,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
+  Real( Kind = wp )      :: delpot,dlrpot,rad2dgr,dgr2rad,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
 
   Integer,                           Allocatable :: read_type(:)
   Real( Kind = wp ), Dimension( : ), Allocatable :: bufpot(:),bufvir(:)
@@ -56,12 +56,14 @@ Subroutine angles_table_read(angl_name)
 
   delpot = 180.0_wp/Real(ngrid,wp)
 
+  dlrpot = 180.0_wp/Real(mxgang-4,wp)
+
 ! check grid spacing
 
   safe = .false.
-  If( Abs(delpot-delth_max) < 1.0e-8_wp ) Then
+  If( Abs(delpot-dlrpot) < 1.0e-8_wp ) Then
      safe   = .true.
-     delpot = delth_max
+     delpot = dlrpot
   End If
   If (delpot > delth_max .and. (.not.safe)) Then
      If (idnode == 0) Then
@@ -80,7 +82,7 @@ Subroutine angles_table_read(angl_name)
   safe=.true.
 
   remake=.false.
-  If (Abs(1.0_wp-(delpot/delth_max)) > 1.0e-8_wp) Then
+  If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
      remake=.true.
      rdr=1.0_wp/delpot
      If (idnode == 0) Write(nrite,"(/,' TABANG arrays resized for mxgrid = ',i10)") mxgang-4
@@ -97,8 +99,8 @@ Subroutine angles_table_read(angl_name)
   dgr2rad= pi/180.0_wp
 
   fail=0
-  Allocate (read_type(1:ltpang(0)),              Stat=fail(1))
-  Allocate (bufpot(0:ngrid+4),bufvir(0:ngrid+4), Stat=fail(2))
+  Allocate (read_type(1:ltpang(0)),          Stat=fail(1))
+  Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'error - angles_table_read allocation failure, node: ', idnode
      Call error(0)
@@ -240,21 +242,27 @@ Subroutine angles_table_read(angl_name)
 ! reconstruct arrays using 3pt interpolation
 
      If (remake) Then
-        Do i=1,mxgang-2
-           rrr = Real(i,wp)*delth_max
+        Do i=1,mxgang-3
+           rrr = Real(i,wp)*dlrpot
            l   = Int(rrr*rdr)
            ppp = rrr*rdr-Real(l,wp)
 
-! linear extrapolation for the grid point just beyond the cutoff
+           vk  = bufpot(l)
+
+! linear extrapolation for the grid points just beyond the cutoff
 
            If (l+2 > ngrid) Then
-              bufpot(l+2) = 2.0_wp*bufpot(l+1)-bufpot(l)
-              bufvir(l+2) = 2.0_wp*bufvir(l+1)-bufvir(l)
+              If (l+1 > ngrid) Then
+                 vk1 = 2.0_wp*bufpot(l)-bufpot(l-1)
+                 vk2 = 2.0_wp*vk1-bufpot(l)
+              Else
+                 vk1 = bufpot(l+1)
+                 vk2 = 2.0_wp*bufpot(l+1)-bufpot(l)
+              End If
+           Else
+              vk1 = bufpot(l+1)
+              vk2 = bufpot(l+2)
            End If
-
-           vk  = bufpot(l)
-           vk1 = bufpot(l+1)
-           vk2 = bufpot(l+2)
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -262,8 +270,21 @@ Subroutine angles_table_read(angl_name)
            vang(i,jtang) = vang(i,jtang)*engunit ! convert to internal units
 
            vk  = bufvir(l)
-           vk1 = bufvir(l+1)
-           vk2 = bufvir(l+2)
+
+! linear extrapolation for the grid points just beyond the cutoff
+
+           If (l+2 > ngrid) Then
+              If (l+1 > ngrid) Then
+                 vk1 = 2.0_wp*bufvir(l)-bufvir(l-1)
+                 vk2 = 2.0_wp*vk1-bufvir(l)
+              Else
+                 vk1 = bufvir(l+1)
+                 vk2 = 2.0_wp*bufvir(l+1)-bufvir(l)
+              End If
+           Else
+              vk1 = bufvir(l+1)
+              vk2 = bufvir(l+2)
+           End If
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -271,27 +292,28 @@ Subroutine angles_table_read(angl_name)
            gang(i,jtang) = gang(i,jtang)*engunit*rad2dgr ! convert to internal units
         End Do
 
-        gang(-1,jtang) = rad2dgr/delth_max
+        gang(-1,jtang) = rad2dgr/dlrpot
      Else
         Do i=1,mxgang-4
            vang(i,jtang) = bufpot(i)*engunit         ! convert to internal units
            gang(i,jtang) = bufvir(i)*engunit*rad2dgr ! convert to internal units
         End Do
 
-! linear extrapolation for the grid points just beyond the cutoff
+! linear extrapolation for the grid point just beyond the cutoff
 
         vang(mxgang-3,jtang) = 2.0_wp*vang(mxgang-4,jtang) - vang(mxgang-5,jtang)
-        vang(mxgang-2,jtang) = 2.0_wp*vang(mxgang-3,jtang) - vang(mxgang-4,jtang)
         gang(mxgang-3,jtang) = 2.0_wp*gang(mxgang-4,jtang) - gang(mxgang-5,jtang)
-        gang(mxgang-2,jtang) = 2.0_wp*gang(mxgang-3,jtang) - gang(mxgang-4,jtang)
 
         gang(-1,jtang) = rad2dgr/delpot
      End If
 
-! grid point at 0
+! grid point at 0 and linear extrapolation for the grid point at mxgang-2
 
      vang(0,jtang) = bufpot(0)
      gang(0,jtang) = bufvir(0)
+
+     vang(mxgang-2,jtang) = 2.0_wp*vang(mxgang-3,jtang) - vang(mxgang-4,jtang)
+     gang(mxgang-2,jtang) = 2.0_wp*gang(mxgang-3,jtang) - gang(mxgang-4,jtang)
   End Do
 
   If (idnode == 0) Then

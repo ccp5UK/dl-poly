@@ -106,15 +106,15 @@ arrays needed for the calculation of the particular interaction in
 the \D scope.  They depend on {\sc kinds\_f90}.  Their allocation
 methods depend on {\sc setup\_module}.
 
-\item {\bf {\em intra}-molecular and site-related interactions
-modules}:: {\sc core\_shell\_module \\ constraints\_module pmf\_module
-rigid\_bodies\_module tethers\_module \\ bonds\_module angles\_module dihedrals\_module
-inversions\_module}
+\item {\bf {\em intra}-molecular interactions and site-related
+modules}:: {\sc rdf\_module z\_density\_module \\ core\_shell\_module
+constraints\_module pmf\_module rigid\_bodies\_module \\ tethers\_module
+bonds\_module angles\_module dihedrals\_module inversions\_module}
 
-These modules define all variables and potential arrays needed for
-the calculation of the particular interaction in the \D scope.
-They depend on {\sc kinds\_f90}.  Their allocation methods depend
-on {\sc setup\_module}.
+These modules define all variables and potential or statistical
+grid arrays needed for the calculation of the particular interaction
+or distribution function in the \D scope.  They all depend on {\sc kinds\_f90}
+with allocation methods depending on {\sc setup\_module}.
 
 \item {\bf external field module}:: {\sc external\_field\_module}
 
@@ -180,6 +180,7 @@ site\_module config\_module vnl\_module \
 defects\_module defects1\_module \\
 vdw\_module metal\_module tersoff\_module \\
 three\_body\_module four\_body\_module \\
+rdf\_module z\_density\_module \\
 core\_shell\_module \\
 constraints\_module pmf\_module \\
 rigid\_bodies\_module \\
@@ -234,8 +235,8 @@ metal\_ld\_compute \\
 exchange\_grid ewald\_spme\_forces \\
 metal\_forces vdw\_forces ewald\_real\_forces \\
 coul\_dddp\_forces coul\_cp\_forces coul\_fscp\_forces \\
-coul\_rfp\_forces rdf\_collect rdf\_excl\_collect ewald\_excl\_forces \\
-ewald\_frozen\_forces two\_body\_forces \\
+coul\_rfp\_forces rdf\_collect rdf\_excl\_collect rdf\_frzn\_collect \\
+ewald\_excl\_forces \\ ewald\_frzn\_forces two\_body\_forces \\
 tersoff\_forces three\_body\_forces four\_body\_forces \\
 core\_shell\_forces tethers\_forces \\
 intra\_coul bonds\_forces angles\_forces \\
@@ -375,111 +376,135 @@ which serve as ``parameters'' for global array bounds, set in {\sc
 set\_bounds}). A brief account of these is given below:
 
 \begin{tabbing}
-X\=XXXXXXXX\=XXXXXXXXXXXXX\=\kill
-\> {\bf parameter}   \> {\bf value}        \> {\bf function} \\
-\>                   \>                    \> \\
-\> {\tt pi}          \> 3.1415926535897932 \> $\pi$ constant \\
-\> {\tt sqrpi}       \> 1.7724538509055160 \> $\sqrt[2]{\pi}$ constant \\
-\> {\tt rt2}         \> 1.4142135662373095 \> $\sqrt[2]{2}$ constant \\
-\> {\tt rt3}         \> 1.7320508075688772 \> $\sqrt[2]{3}$ constant \\
-\> {\tt r4pie0}      \> 138935.4835        \> electrostatics conversion factor to internal units, i.e. $\frac{1}{4 \pi \epsilon_{o}}$ \\
-\> {\tt boltz}       \> 0.831451115        \> Boltzmann constant in internal units \\
-\> {\tt prsunt}      \> 0.163882576        \> conversion factor for pressure from internal units to katms \\
-\>                   \>                    \> \\
-\> {\tt nread}       \> 5                  \> main input channel \\
-\> {\tt nconf}       \> 11                 \> configuration file input channel \\
-\> {\tt nfield}      \> 12                 \> force field input channel \\
-\> {\tt ntable}      \> 13                 \> tabulated potentials file input channel \\
-\> {\tt nrefdt}      \> 14                 \> reference configuration input channel \\
-\> {\tt nrite}       \> 6                  \> main output channel \\
-\> {\tt nstats}      \> 21                 \> statistical data file output channel \\
-\> {\tt nrest}       \> 22                 \> output channel accumulators restart dump file \\
-\> {\tt nhist}       \> 23                 \> trajectory history file channel \\
-\> {\tt ndefdt}      \> 24                 \> output channel for defects data file \\
-\> {\tt nrdfdt}      \> 25                 \> output channel for RDF data \\
-\> {\tt nzdfdt}      \> 26                 \> output channel for Z-density data file \\
-\>                   \>                    \> \\
-\> {\tt seed(1:3)}   \> {\em variable}     \> pair of seeds for the random number generator \\
-\> {\tt lseed}       \> {\em variable}     \> logical swich on/off indicator for seeding \\
-\>                   \>                    \> \\
-\> {\tt mxsite}      \> {\em variable}     \> max number of molecular sites \\
-\> {\tt mxatyp}      \> {\em variable}     \> max number of unique atomic types \\
-\> {\tt mxtmls}      \> {\em variable}     \> max number of unique molecule types \\
-\> {\tt mxexcl}      \> {\em variable}     \> max number of excluded interactions per atom \\
-\> {\tt mxspl}       \> {\em variable}     \> SPME FFT B-spline order \\
-\> {\tt kmaxa}       \> {\em variable}     \> SPME FFT amended array dimension (a direction) \\
-\> {\tt kmaxb}       \> {\em variable}     \> SPME FFT amended array dimension (b direction) \\
-\> {\tt kmaxc}       \> {\em variable}     \> SPME FFT amended array dimension (c direction) \\
-\> {\tt kmaxa1}      \> {\em variable}     \> SPME FFT original array dimension (a direction) \\
-\> {\tt kmaxb1}      \> {\em variable}     \> SPME FFT original array dimension (b direction) \\
-\> {\tt kmaxc1}      \> {\em variable}     \> SPME FFT original array dimension (c direction) \\
-\> {\tt mxtshl}      \> {\em variable}     \> max number of specified core-shell unit types in system \\
-\> {\tt mxshl}       \> {\em variable}     \> max number of core-shell units per node \\
-\> {\tt mxfshl}      \> {\em variable}     \> max number of related core-shell units (1+1) \\
-\> {\tt mxtcon}      \> {\em variable}     \> max number of specified bond constraints in system \\
-\> {\tt mxcons}      \> {\em variable}     \> max number of constraint bonds per a node \\
-\> {\tt mxfcon}      \> {\em variable}     \> max number of related constraint units (6+1) \\
-\> {\tt mxlshp}      \> {\em variable}     \> max number of shared particles per node \\
-\>                   \>                    \> ${\tt Max} (2~\frac{\tt mxshl}{2},2~\frac{\tt mxcons}{2},\frac{{\tt mxlrgd}~*~{\tt mxrgd}}{2})$ \\
-\> {\tt mxproc}      \> {\em variable}     \> number of neighbour nodes in DD hypercube (26) \\
-\> {\tt mxtpmf(1:2)} \> {\em variable}     \> max number of specified particles in a PMF unit (1:2) \\
-\> {\tt mxpmf}       \> {\em variable}     \> max number of PMF constraints per a node \\
-\> {\tt mxfpmf}      \> {\em variable}     \> max number of related PMF units (1+1) \\
-\> {\tt mxtrgd}      \> {\em variable}     \> max number of types RB units \\
-\> {\tt mxrgd}       \> {\em variable}     \> max number of RB units per node \\
-\> {\tt mxlrgd}      \> {\em variable}     \> max number of constituent particles of an RB unit \\
-\> {\tt mxfrgd}      \> {\em variable}     \> max number of related RB units (1+1) \\
-\> {\tt mxtteth}     \> {\em variable}     \> max number of specified tethered potentials in system \\
-\> {\tt mxteth}      \> {\em variable}     \> max number of tethered atoms per node \\
-\> {\tt mxftet}      \> {\em variable}     \> max number of related tether units (1+1) \\
-\> {\tt mxpteth}     \> {\em variable}     \> max number of parameters for tethered potentials (3) \\
-\> {\tt mxtbnd}      \> {\em variable}     \> max number of specified chemical bond potentials in system \\
-\> {\tt mxbond}      \> {\em variable}     \> max number of chemical bonds per node \\
-\> {\tt mxfbnd}      \> {\em variable}     \> max number of related chemical bonds (1+(6*(6+1))/2) \\
-\> {\tt mxpbnd}      \> {\em variable}     \> max number of parameters for chemical bond potentials (4) \\
-\> {\tt mxtang}      \> {\em variable}     \> max number of specified bond angle potentials in system \\
-\> {\tt mxangl}      \> {\em variable}     \> max number of bond angles per node \\
-\> {\tt mxfang}      \> {\em variable}     \> max number of related bond angles (1+(6*(6+1))/2) \\
-\> {\tt mxpang}      \> {\em variable}     \> max number of parameters for bond angle potentials (6) \\
-\> {\tt mxtdih}      \> {\em variable}     \> max number of specified dihedral angle potentials in system \\
-\> {\tt mxdihd}      \> {\em variable}     \> max number of dihedral angles per node \\
-\> {\tt mxfdih}      \> {\em variable}     \> max number of related dihedral angles (1+((6-2)6*(6+1))/2) \\
-\> {\tt mxpdih}      \> {\em variable}     \> max number of parameters for dihedral angle potentials (7) \\
-\> {\tt mxtinv}      \> {\em variable}     \> max number of specified inversion angle potentials in system \\
-\> {\tt mxinv}       \> {\em variable}     \> max number of inversion angles per node \\
-\> {\tt mxfinv}      \> {\em variable}     \> max number of related inversion angles (1+(6*(6+1))/4) \\
-\> {\tt mxpinv}      \> {\em variable}     \> max number of parameters for inversion angle potentials (3) \\
-\> {\tt mxgrid}      \> {\em variable}     \> max number of grid points in potential arrays \\
-\> {\tt mxrdf }      \> {\em variable}     \> max number of pairwise RDF in system \\
-\> {\tt mxgrdf}      \> {\em variable}     \> number of grid points for RDF and Z-density \\
-\> {\tt mxvdw}       \> {\em variable}     \> max number of van der Waals potentials in system \\
-\> {\tt mxpvdw}      \> {\em variable}     \> max number of van der Waals potential parameters (5) \\
-\> {\tt mxmet}       \> {\em variable}     \> max number of metal potentials in system \\
-\> {\tt mxpmet}      \> {\em variable}     \> max number of metal potential parameters (9) \\
-\> {\tt mxter}       \> {\em variable}     \> max number of Tersoff potentials in system \\
-\> {\tt mxpter}      \> {\em variable}     \> max number of Tersoff potential parameters (11) \\
-\> {\tt mxtbp}       \> {\em variable}     \> max number of three-body potentials in system \\
-\> {\tt mx2tbp}      \> {\em variable}     \> array dimension of three-body potential parameters \\
-\> {\tt mxptbp}      \> {\em variable}     \> max number of three-body potential parameters (5) \\
-\> {\tt mxfbp}       \> {\em variable}     \> max number of four-body potentials in system \\
-\> {\tt mx2fbp}      \> {\em variable}     \> array dimension of four-body potential parameters \\
-\> {\tt mxpfbp}      \> {\em variable}     \> max number of four-body potential parameters (3) \\
-\> {\tt mxpfld}      \> {\em variable}     \> max number of external field parameters (5) \\
-\> {\tt mxstak}      \> {\em variable}     \> dimension of stack arrays for rolling averages \\
-\> {\tt mxnstk}      \> {\em variable}     \> max number of stacked variables \\
-\> {\tt mxlist}      \> {\em variable}     \> max number of atoms in the verlet list on a node \\
-\> {\tt mxcell}      \> {\em variable}     \> max number of link cells per node \\
-\> {\tt mxatms}      \> {\em variable}     \> max number of local+halo atoms per node \\
-\> {\tt mxatdm}      \> {\em variable}     \> max number of local atoms per node \\
-\> {\tt mxbfdp}      \> {\em variable}     \> max dimension of the transfer buffer for deport functions \\
-\> {\tt mxbfss}      \> {\em variable}     \> max dimension of the transfer buffer for statistics functions \\
-\> {\tt mxbfxp}      \> {\em variable}     \> max dimension of the transfer buffer for export functions \\
-\> {\tt mxbfsh}      \> {\em variable}     \> max dimension of the transfer buffer for shared units functions \\
-\> {\tt mxbuff}      \> {\em variable}     \> max dimension of the principle transfer buffer \\
-\>                   \>                    \> \\
-\> {\tt zero\_plus}  \> {\em variable}     \> the machine representation of $+0$ at working precision \\
-\> {\tt half\_plus}  \> {\em variable}     \> the machine representation of $+0.5\uparrow$ at working precision \\
-\> {\tt half\_minus} \> {\em variable}     \> the machine representation of $+0.5\downarrow$ at working precision \\
-\>                   \>                    \> \\
-\> {\tt engunit}     \> {\em variable}     \> the system energy unit \\
+X\=XXXXXXXXX\=XXXXXXXXXXXXXX\=\kill
+\> {\bf parameter}   \> {\bf value}          \> {\bf function} \\
+\>                   \>                      \> \\
+\> {\tt pi}          \> 3.14159265358979312  \> $\pi$ constant \\
+\> {\tt twopi}       \> 6.28318530717958623  \> $2 \pi$ constant \\
+\> {\tt fourpi}      \> 12.56637061435917246 \> $4 \pi$ constant \\
+\> {\tt sqrpi}       \> 1.772453850905588    \> $\sqrt[2]{\pi}$ constant \\
+\> {\tt rtwopi}      \> 0.15915494309189535  \> $\frac{1}{2 \pi}$ constant \\
+\> {\tt rt2}         \> 1.41421356237309515  \> $\sqrt[2]{2}$ constant \\
+\> {\tt rt3}         \> 1.73205080756887719  \> $\sqrt[2]{3}$ constant \\
+\> {\tt r4pie0}      \> 138935.4835          \> electrostatics conversion factor to internal units, i.e. $\frac{1}{4 \pi \epsilon_{o}}$ \\
+\> {\tt boltz}       \> 0.831451115          \> Boltzmann constant in internal units \\
+\> {\tt prsunt}      \> 0.163882576          \> conversion factor for pressure from internal units to katms \\
+\>                   \>                      \> \\
+\> {\tt nread}       \> 5                    \> main input channel \\
+\> {\tt nconf}       \> 11                   \> configuration file input channel \\
+\> {\tt nfield}      \> 12                   \> force field input channel \\
+\> {\tt ntable}      \> 13                   \> tabulated potentials file input channel \\
+\> {\tt nrefdt}      \> 14                   \> reference configuration input channel \\
+\> {\tt nrite}       \> 6                    \> main output channel \\
+\> {\tt nstats}      \> 21                   \> statistical data file output channel \\
+\> {\tt nrest}       \> 22                   \> output channel accumulators restart dump file \\
+\> {\tt nhist}       \> 23                   \> trajectory history file channel \\
+\> {\tt ndefdt}      \> 24                   \> output channel for defects data file \\
+\> {\tt nrdfdt}      \> 25                   \> output channel for RDF data \\
+\> {\tt nzdfdt}      \> 26                   \> output channel for Z-density data file \\
+\> {\tt nrsddt}      \> 27                   \> output channel for displacements data files \\
+\> {\tt npdfdt}      \> 28                   \> output channel for raw PDF files \\
+\> {\tt ngdfdt}      \> 29                   \> output channel for normalised RDF data files \\
+\>                   \>                      \> \\
+\> {\tt seed(1:3)}   \> {\em variable}       \> pair of seeds for the random number generator \\
+\> {\tt lseed}       \> {\em variable}       \> logical swich on/off indicator for seeding \\
+\>                   \>                      \> \\
+\> {\tt mxsite}      \> {\em variable}       \> max number of molecular sites \\
+\> {\tt mxatyp}      \> {\em variable}       \> max number of unique atomic types \\
+\> {\tt mxtmls}      \> {\em variable}       \> max number of unique molecule types \\
+\> {\tt mxexcl}      \> {\em variable}       \> max number of excluded interactions per atom \\
+\> {\tt mxspl}       \> {\em variable}       \> SPME FFT B-spline order \\
+\> {\tt mxspl1}      \> {\em variable}       \> SPME FFT B-spline possible extension when $r_{\rm pad}>0$ \\
+\> {\tt kmaxa}       \> {\em variable}       \> SPME FFT amended array dimension (a direction) \\
+\> {\tt kmaxb}       \> {\em variable}       \> SPME FFT amended array dimension (b direction) \\
+\> {\tt kmaxc}       \> {\em variable}       \> SPME FFT amended array dimension (c direction) \\
+\> {\tt kmaxa1}      \> {\em variable}       \> SPME FFT original array dimension (a direction) \\
+\> {\tt kmaxb1}      \> {\em variable}       \> SPME FFT original array dimension (b direction) \\
+\> {\tt kmaxc1}      \> {\em variable}       \> SPME FFT original array dimension (c direction) \\
+\> {\tt mxtshl}      \> {\em variable}       \> max number of specified core-shell unit types in system \\
+\> {\tt mxshl}       \> {\em variable}       \> max number of core-shell units per node \\
+\> {\tt mxfshl}      \> {\em variable}       \> max number of related core-shell units (1+1) \\
+\> {\tt mxtcon}      \> {\em variable}       \> max number of specified bond constraints in system \\
+\> {\tt mxcons}      \> {\em variable}       \> max number of constraint bonds per a node \\
+\> {\tt mxfcon}      \> {\em variable}       \> max number of related constraint units (6+1) \\
+\> {\tt mxlshp}      \> {\em variable}       \> max number of shared particles per node \\
+\>                   \>                      \> ${\tt Max} (2~\frac{\tt mxshl}{2},2~\frac{\tt mxcons}{2},\frac{{\tt mxlrgd}~*~{\tt mxrgd}}{2})$ \\
+\> {\tt mxproc}      \> {\em variable}       \> number of neighbour nodes in DD hypercube (26) \\
+\> {\tt mxtpmf(1:2)} \> {\em variable}       \> max number of specified particles in a PMF unit (1:2) \\
+\> {\tt mxpmf}       \> {\em variable}       \> max number of PMF constraints per a node \\
+\> {\tt mxfpmf}      \> {\em variable}       \> max number of related PMF units (1+1) \\
+\> {\tt mxtrgd}      \> {\em variable}       \> max number of types RB units \\
+\> {\tt mxrgd}       \> {\em variable}       \> max number of RB units per node \\
+\> {\tt mxlrgd}      \> {\em variable}       \> max number of constituent particles of an RB unit \\
+\> {\tt mxfrgd}      \> {\em variable}       \> max number of related RB units (1+1) \\
+\> {\tt mxtteth}     \> {\em variable}       \> max number of specified tethered potentials in system \\
+\> {\tt mxteth}      \> {\em variable}       \> max number of tethered atoms per node \\
+\> {\tt mxftet}      \> {\em variable}       \> max number of related tether units (1+1) \\
+\> {\tt mxpteth}     \> {\em variable}       \> max number of parameters for tethered potentials (3) \\
+\> {\tt mxtbnd}      \> {\em variable}       \> max number of specified chemical bond potentials in system \\
+\> {\tt mxbond}      \> {\em variable}       \> max number of chemical bonds per node \\
+\> {\tt mxfbnd}      \> {\em variable}       \> max number of related chemical bonds (1+(6*(6+1))/2) \\
+\> {\tt mxpbnd}      \> {\em variable}       \> max number of parameters for chemical bond potentials (4) \\
+\> {\tt mxgbnd}      \> {\em variable}       \> max number of grid points in chemical bond pot. arrays ($> 1004$) \\
+\> {\tt mxtang}      \> {\em variable}       \> max number of specified bond angle potentials in system \\
+\> {\tt mxangl}      \> {\em variable}       \> max number of bond angles per node \\
+\> {\tt mxfang}      \> {\em variable}       \> max number of related bond angles (1+(6*(6+1))/2) \\
+\> {\tt mxpang}      \> {\em variable}       \> max number of parameters for bond angle potentials (6) \\
+\> {\tt mxgang}      \> {\em variable}       \> max number of grid points in bond angle pot. arrays ($> 1004$) \\
+\> {\tt mxtdih}      \> {\em variable}       \> max number of specified dihedral angle potentials in system \\
+\> {\tt mxdihd}      \> {\em variable}       \> max number of dihedral angles per node \\
+\> {\tt mxfdih}      \> {\em variable}       \> max number of related dihedral angles (1+((6-2)6*(6+1))/2) \\
+\> {\tt mxpdih}      \> {\em variable}       \> max number of parameters for dihedral angle potentials (7) \\
+\> {\tt mxgdih}      \> {\em variable}       \> max number of grid points in dihedral angle pot. arrays ($> 1004$) \\
+\> {\tt mxtinv}      \> {\em variable}       \> max number of specified inversion angle potentials in system \\
+\> {\tt mxinv}       \> {\em variable}       \> max number of inversion angles per node \\
+\> {\tt mxfinv}      \> {\em variable}       \> max number of related inversion angles (1+(6*(6+1))/4) \\
+\> {\tt mxpinv}      \> {\em variable}       \> max number of parameters for inversion angle potentials (3) \\
+\> {\tt mxginv}      \> {\em variable}       \> max number of grid points in inversion angle pot. arrays ($> 1004$) \\
+\> {\tt mxrdf }      \> {\em variable}       \> max number of pairwise RDF in system \\
+\> {\tt mxgrdf}      \> {\em variable}       \> number of grid points for RDF and Z-density arrays ($> 1004$)\\
+\> {\tt mxgele}      \> {\em variable}       \> max number of grid points for ewald exclusion potential arrays \\
+
+\> {\tt mxvdw}       \> {\em variable}       \> max number of van der Waals potentials in system \\
+\> {\tt mxpvdw}      \> {\em variable}       \> max number of van der Waals potential parameters (5) \\
+\> {\tt mxgvdw}      \> {\em variable}       \> max number of grid points in vdw potential arrays ($> 1004$) \\
+\> {\tt mxmet}       \> {\em variable}       \> max number of metal potentials in system \\
+\> {\tt mxmed}       \> {\em variable}       \> max number of metal density potentials in system \\
+\> {\tt mxmds}       \> {\em variable}       \> max number of metal extra density potentials in system \\
+\> {\tt mxpmet}      \> {\em variable}       \> max number of metal potential parameters (9) \\
+\> {\tt mxgmet}      \> {\em variable}       \> max number of grid points in metal potential arrays ($> 1004$)\\
+\> {\tt mxter}       \> {\em variable}       \> max number of Tersoff potentials in system \\
+\> {\tt mxpter}      \> {\em variable}       \> max number of Tersoff potential parameters (11) \\
+\> {\tt mxgter}      \> {\em variable}       \> max number of grid points in tersoff potential arrays ($> 1004$)\\
+\> {\tt mxgrid}      \> {\em variable}       \> max number of grid points in potential arrays ($> 1004$)\\
+\> {\tt mxtana}      \> {\em variable}       \> max number of PDFs per type \\
+\> {\tt mxgana}      \> {\em variable}       \> max number of grid points for PDFs arrays \\
+\> {\tt mxgbnd}      \> {\em variable}       \> max number of grid points for chemical bonds PDFs \\
+\> {\tt mxgang}      \> {\em variable}       \> max number of grid points for bond angles PDFs \\
+\> {\tt mxgdih}      \> {\em variable}       \> max number of grid points for dihedral angles PDFs \\
+\> {\tt mxginv}      \> {\em variable}       \> max number of grid points for inversion angles PDFs \\
+\> {\tt mxtbp}       \> {\em variable}       \> max number of three-body potentials in system \\
+\> {\tt mx2tbp}      \> {\em variable}       \> array dimension of three-body potential parameters \\
+\> {\tt mxptbp}      \> {\em variable}       \> max number of three-body potential parameters (5) \\
+\> {\tt mxfbp}       \> {\em variable}       \> max number of four-body potentials in system \\
+\> {\tt mx2fbp}      \> {\em variable}       \> array dimension of four-body potential parameters \\
+\> {\tt mxpfbp}      \> {\em variable}       \> max number of four-body potential parameters (3) \\
+\> {\tt mxpfld}      \> {\em variable}       \> max number of external field parameters (5) \\
+\> {\tt mxstak}      \> {\em variable}       \> dimension of stack arrays for rolling averages \\
+\> {\tt mxnstk}      \> {\em variable}       \> max number of stacked variables \\
+\> {\tt mxlist}      \> {\em variable}       \> max number of atoms in the Verlet list on a node \\
+\> {\tt mxcell}      \> {\em variable}       \> max number of link cells per node \\
+\> {\tt mxatms}      \> {\em variable}       \> max number of local+halo atoms per node \\
+\> {\tt mxatdm}      \> {\em variable}       \> max number of local atoms per node \\
+\> {\tt mxbfdp}      \> {\em variable}       \> max dimension of the transfer buffer for deport functions \\
+\> {\tt mxbfss}      \> {\em variable}       \> max dimension of the transfer buffer for statistics functions \\
+\> {\tt mxbfxp}      \> {\em variable}       \> max dimension of the transfer buffer for export functions \\
+\> {\tt mxbfsh}      \> {\em variable}       \> max dimension of the transfer buffer for shared units functions \\
+\> {\tt mxbuff}      \> {\em variable}       \> max dimension of the principle transfer buffer \\
+\>                   \>                      \> \\
+\> {\tt zero\_plus}  \> {\em variable}       \> the machine representation of $+0$ at working precision \\
+\> {\tt half\_plus}  \> {\em variable}       \> the machine representation of $+0.5\uparrow$ at working precision \\
+\> {\tt half\_minus} \> {\em variable}       \> the machine representation of $+0.5\downarrow$ at working precision \\
+\>                   \>                      \> \\
+\> {\tt engunit}     \> {\em variable}       \> the system energy unit \\
 \end{tabbing}

@@ -172,7 +172,7 @@ calculate specific contributions by different interactions.  For example;
 forces (Section~\ref{vdw}), {\sc metal\_lrc}, {\sc metal\_ld\_compute} and
 {\sc metal\_forces} for the metal interactions \index{potential!metal}
 (Section~\ref{metal}), and {\sc ewald\_spme\_forces}, {\sc ewald\_real\_forces},
-{\sc ewald\_frozen\_forces} and {\sc ewald\_excl\_forces} for the
+{\sc ewald\_frzn\_forces} and {\sc ewald\_excl\_forces} for the
 Coulombic forces (Section~\ref{coulomb}).
 
 Higher order intermolecular\index{potential!intermolecular}, site
@@ -201,7 +201,8 @@ routines listed and described in Chapter~\ref{integration-algorithms}.
 As mentioned elsewhere, \D does not contain many routines for
 computing system properties during a simulation.  Radial
 distributions may be calculated however, by using the routines
-{\sc rdf\_collect}, {\sc rdf\_excl\_collect} and {\sc rdf\_compute}.
+{\sc rdf\_collect}, {\sc rdf\_excl\_collect},
+{\sc rdf\_frzn\_collect} a and {\sc rdf\_compute}.
 Similarly, Z-density distribution may be calculated by using the
 routines {\sc z\_density\_collect} and {\sc z\_density\_compute}.
 Ordinary thermodynamic quantities are calculated by the routine

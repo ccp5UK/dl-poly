@@ -518,8 +518,8 @@ Subroutine scan_field                                 &
                     i = Index(record,'#')      ! replace hash as it may occur in
                     If (i > 0) record(i:i)=' ' ! TABDIH if it's in .xvg format
 
-                    Call get_word(record,word) ! no need for cutoff in angles (max is always 180 degrees)
-                    k=Nint(word_2_real(word))
+                    Call get_word(record,word) ! no need for cutoff in angles (max is always 360 degrees
+                    k=Nint(word_2_real(word))  ! from -180 to 180)
                     mxgdih=Max(mxgdih,k+4)
 
                     If (idnode == 0) Close(Unit=ntable)

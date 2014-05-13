@@ -6,7 +6,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 ! gradient method
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith february 2012
+! author    - i.t.todorov & w.smith may 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -15,8 +15,9 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
   Use setup_module,   Only : nrite,mxatms,mxatdm,mxshl,engunit
   Use config_module,  Only : natms,nlast,lsi,lsa, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use core_shell_module
+  Use parse_module,   Only : strip_blanks,lower_case
   Use kinetic_module, Only : freeze_atoms
+  Use core_shell_module
 
   Implicit None
 
@@ -31,6 +32,11 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
   Real( Kind = wp ), Save :: grad_tol,step,eng,eng0,eng1,eng2, &
                              grad,grad0,grad1,grad2,onorm,sgn, &
                              stride,gamma,fff(0:3)
+
+! OUTPUT existence
+
+  Logical               :: l_out
+  Character( Len = 10 ) :: c_out
 
 ! Optimisation iteration and convergence limits
 
@@ -285,6 +291,8 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
      End If
   End Do
 
+! Fit headers in and Close and Open OUTPUT at every 25th print-out
+
   i=Nint(passshl(1))
   If (l_str .and. idnode == 0) Then
      Write(nrite,'(1x,i34,4x,1p,2e18.8)') i-1,stpcfg/engunit,grad_tol
@@ -293,6 +301,16 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
         Write(nrite,'(1x,a,6x,a,10x,a,11x,a,9x,a,1p,e12.4)') &
              'Relaxing shells to cores:','pass','eng_tot','grad_tol','tol=', rlx_tol
         Write(nrite,"(1x,130('-'))")
+
+        If (idnode == 0) Then
+           Inquire(File='OUTPUT', Exist=l_out, Position=c_out)
+           Call strip_blanks(c_out)
+           Call lower_case(c_out)
+           If (l_out .and. c_out(1:6) == 'append') Then
+              Close(Unit=nrite)
+              Open(Unit=nrite, File='OUTPUT', Position='append')
+           End If
+        End If
      End If
   End If
 

@@ -2419,7 +2419,8 @@ that will not be used.  (This option is not available in \C.)
 i.e. if the former is used in FIELD none of the pairs defined by the
 latter will be considered for RDF calculations.
 
-The selected RDFs are calculated in the {\sc rdf\_collect} and {\sc rdf\_excl\_collect}
+The selected RDFs are calculated in the {\sc rdf\_collect},
+{\sc rdf\_excl\_collect}, {\sc rdf\_frzn\_collect} and {\sc rdf\_compute}
 by collecting distance information from all two-body pairs as encountered
 in the Verlet neighbour list created in the {\sc link\_cell\_pairs}
 routine within the {\sc two\_body\_forces} routine.  In the
@@ -2439,9 +2440,13 @@ RDF pairs containing type(s) of particles that fall in this list will
 be polluted.  However, there are many ways to overcome such effects.
 
 \item {\bf tersoff {\em n}} \\
-where {\em n} is the number of specified Tersoff potentials.  It
-is followed by $2n$ records specifying $n$ particular Tersoff
-single atom type parameters and $n(n+1)/2$ records specifying
+where {\em n} is the number of specified Tersoff potentials.  There
+are two types of Tersoff potential forms that cannot be mixed (used
+simultaneously).  They are shorthanded as {\bf ters} and {\bf hiks}
+atomkeys.
+\begin{itemize}
+\item {\bf ters} atomkey expects $2n$ records specifying $n$ particular
+Tersoff single atom type parameters and $n(n+1)/2$ records specifying
 cross atom type parameters in the following manner:
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
@@ -2477,6 +2482,41 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 {\bf cross term $n(n+1)/2$ : record $2n+n(n+1)/2$} \\
 \> ... \> ... \> ...
 \end{tabbing}
+
+\item {\bf hiks} atomkey expects $3n$ records specifying $n$ particular
+Tersoff single atom type parameters in the following manner:
+
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+{\bf potential 1 : record 1} \\
+\> atmnam       \> a8   \> atom type \\
+\> key          \> a4   \> potential key, see Table~\ref{tersoff-table} \\
+\> variable 1   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 2   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 3   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 4   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 5   \> real \> cutoff range for this potential (\AA) \\
+{\bf potential 1 : record 2} \\
+\> variable 6   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 7   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 8   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 9   \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 10  \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 11  \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+{\bf potential 1 : record 3} \\
+\> variable 12  \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 13  \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 14  \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 15  \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> variable 16  \> real \> potential parameter, see Table~\ref{tersoff-table} \\
+\> ... \> ... \> ... \\
+\> ... \> ... \> ... \\
+{\bf potential $n$ : record $2n-1$} \\
+\> ... \> ... \> ... \\
+{\bf potential $n$ : record $2n$} \\
+\> ... \> ... \> ...
+\end{tabbing}
+\end{itemize}
 The variables pertaining to each potential are described in Table
 \ref{tersoff-table}.
 
@@ -2490,17 +2530,20 @@ distance is in \AA.
 \vskip 1ex
 \begin{tabular}{|l|l|c|c|c|c|c|c|c|}
 \hline
-key & potential type & \multicolumn{6}{c|}{Variables (1-5,6-11,a-c)} & functional form \\
+key & potential type & \multicolumn{6}{c|}{Variables (1-5,6-11,a-c\^12-16)} & functional form \\
 \hline
            &          &        &          &        &     &     &     & \\
 {\bf ters} & Tersoff  & $A$    & $a$      & $B$    & $b$ & $R$ &     &
-Potential form \\
-           & (single) & $S$    & $\beta$  & $\eta$ & $c$ & $d$ & $h$ &
-as shown in \\
-           &          &        &          &        &     &     &     &
-Section \\
+Potential forms \\
+           & (single) & $S$    & $\beta$  & $\eta$ & $c$ & $d$ & $h$ & \\
+           &          &        &          &        &     &     &     & \\
            & (cross)  & $\chi$ & $\omega$ & $\delta$ &   &     &     &
-\ref{tersoff} \\
+as shown in \\
+           &          &        &          &        &     &     &     & \\
+{\bf hiks} & HIKS     & $A$    & $a$      & $B$    & $b$ & $R$ &     & \\
+           &          & $S$ & $\eta$ & $\delta$ & $c_{1}$ & $c_{2}$ & $c_{3}$ &
+Section \ref{tersoff} \\
+           &          & $c_{4}$    & $c_{5}$  & $h$ & $\alpha$ & $\beta$ & & \\
            &          &        &          &        &     &     &     & \\
 \hline
 \end{tabular}

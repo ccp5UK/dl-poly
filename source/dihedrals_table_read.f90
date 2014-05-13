@@ -6,7 +6,7 @@ Subroutine dihedrals_table_read(dihd_name)
 ! from TABDIH file (for dihedral potentials & forces only)
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov april 2014
+! author    - a.v.brukhno & i.t.todorov may 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,7 +29,7 @@ Subroutine dihedrals_table_read(dihd_name)
   Character( Len = 8   ) :: atom1,atom2,atom3,atom4
 
   Integer                :: fail(1:2),ngrid,rtdih,itdih,jtdih,katom1,katom2,katom3,katom4,jtpatm,i,l
-  Real( Kind = wp )      :: delpot,rad2dgr,dgr2rad,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
+  Real( Kind = wp )      :: delpot,dlrpot,rad2dgr,dgr2rad,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
 
   Integer,                           Allocatable :: read_type(:)
   Real( Kind = wp ), Dimension( : ), Allocatable :: bufpot(:),bufvir(:)
@@ -56,12 +56,14 @@ Subroutine dihedrals_table_read(dihd_name)
 
   delpot = 360.0_wp/Real(ngrid,wp)
 
+  dlrpot = 360.0_wp/Real(mxgdih-4,wp)
+
 ! check grid spacing
 
   safe = .false.
-  If( Abs(delpot-delth_max) < 1.0e-8_wp ) Then
+  If( Abs(delpot-dlrpot) < 1.0e-8_wp ) Then
      safe   = .true.
-     delpot = delth_max
+     delpot = dlrpot
   End If
   If (delpot > delth_max .and. (.not.safe)) Then
      If (idnode == 0) Then
@@ -79,7 +81,7 @@ Subroutine dihedrals_table_read(dihd_name)
   safe=.true.
 
   remake=.false.
-  If (Abs(1.0_wp-(delpot/delth_max)) > 1.0e-8_wp) Then
+  If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
      remake=.true.
      rdr=1.0_wp/delpot
      If (idnode == 0) Write(nrite,"(/,' TABDIH arrays resized for mxgrid = ',i10)") mxgdih-4
@@ -96,8 +98,8 @@ Subroutine dihedrals_table_read(dihd_name)
   dgr2rad= pi/180.0_wp
 
   fail=0
-  Allocate (read_type(1:ltpdih(0)),              Stat=fail(1))
-  Allocate (bufpot(0:ngrid+4),bufvir(0:ngrid+4), Stat=fail(2))
+  Allocate (read_type(1:ltpdih(0)),          Stat=fail(1))
+  Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'error - dihedrals_table_read allocation failure, node: ', idnode
      Call error(0)
@@ -256,23 +258,44 @@ Subroutine dihedrals_table_read(dihd_name)
 
 ! cyclic grid
 
-           If (l+2 > ngrid) Then
-              bufpot(l+2) = bufpot(Mod(l+2,ngrid+1))
-              bufvir(l+2) = bufvir(Mod(l+2,ngrid+1))
+           If (l  <= ngrid) Then
+              vk  = bufpot(l)
+           Else
+              vk  = bufpot(Mod(l,ngrid+1))
            End If
-
-           vk  = bufpot(l)
-           vk1 = bufpot(l+1)
-           vk2 = bufpot(l+2)
+           If (l+1 <= ngrid) Then
+              vk1 = bufpot(l+1)
+           Else
+              vk1 = bufpot(Mod(l+1,ngrid+1))
+           End If
+           If (l+2 <= ngrid) Then
+              vk2 = bufpot(l+2)
+           Else
+              vk2 = bufpot(Mod(l+2,ngrid+1))
+           End If
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
            vdih(i,jtdih) = t1 + (t2-t1)*ppp*0.5_wp
            vdih(i,jtdih) = vdih(i,jtdih)*engunit ! convert to internal units
 
-           vk  = bufvir(l)
-           vk1 = bufvir(l+1)
-           vk2 = bufvir(l+2)
+! cyclic grid
+
+           If (l  <= ngrid) Then
+              vk  = bufvir(l)
+           Else
+              vk  = bufvir(Mod(l,ngrid+1))
+           End If
+           If (l+1 <= ngrid) Then
+              vk1 = bufvir(l+1)
+           Else
+              vk1 = bufvir(Mod(l+1,ngrid+1))
+           End If
+           If (l+2 <= ngrid) Then
+              vk2 = bufvir(l+2)
+           Else
+              vk2 = bufvir(Mod(l+2,ngrid+1))
+           End If
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -280,7 +303,7 @@ Subroutine dihedrals_table_read(dihd_name)
            gdih(i,jtdih) = gdih(i,jtdih)*engunit*rad2dgr ! convert to internal units
         End Do
 
-        gdih(-1,jtdih) = rad2dgr/delth_max
+        gdih(-1,jtdih) = rad2dgr/dlrpot
      Else
         Do i=0,mxgdih-4
            vdih(i,jtdih) = bufpot(i)*engunit ! convert to internal units

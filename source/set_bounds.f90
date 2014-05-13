@@ -316,19 +316,19 @@ Subroutine set_bounds                                       &
 
 ! maximum number of grid points for bonds
 
-  mxgbnd = Merge(mxgbnd,Max(1004,Nint(rcbnd/delr_max)+4),mxgbnd > 0)
+  mxgbnd = Merge(mxgbnd,Max(1004,Nint(rcbnd/delr_max)+4),mxgbnd < 0)
 
 ! maximum number of grid points for angles
 
-  mxgang = Merge(mxgang,Max(1004,Nint(180.0_wp/delth_max)+4),mxgang > 0)
+  mxgang = Merge(mxgang,Max(1004,Nint(180.0_wp/delth_max)+4),mxgang < 0)
 
 ! maximum number of grid points for dihedrals
 
-  mxgdih = Merge(mxgdih,Max(1004,Nint(360.0_wp/delth_max)+4),mxgdih > 0)
+  mxgdih = Merge(mxgdih,Max(1004,Nint(360.0_wp/delth_max)+4),mxgdih < 0)
 
 ! maximum number of grid points for inversions
 
-  mxginv = Merge(mxginv,Max(1004,Nint(180.0_wp/delth_max)+4),mxginv > 0)
+  mxginv = Merge(mxginv,Max(1004,Nint(180.0_wp/delth_max)+4),mxginv < 0)
 
 ! maximum number of grid points for electrostatics
 
