@@ -149,28 +149,37 @@ Subroutine read_field                   &
   ndihed = 0
   ninver = 0
 
-! Initialise number of selected intramolecular TPs
-
-  ntpbnd = 0 ! number of unique intramolecular TPs - TABBND
-  ntpang = 0 ! number of unique intramolecular TPs - TABANG
-  ntpdih = 0 ! number of unique intramolecular TPs - TABDIH
-  ntpinv = 0 ! number of unique intramolecular TPs - TABINV
-
-! allocate and initialise auxiliary identity arrays
+! Allocate auxiliary identity arrays for intramolecular TPs and PDFs
 
   fail = 0
-  If (lt_bnd .or. mxgbnd > 0) Allocate (bond_name(1:mxtbnd), Stat=fail(1))
-  If (lt_ang .or. mxgang > 0) Allocate (angl_name(1:mxtang), Stat=fail(2))
-  If (lt_dih .or. mxgdih > 0) Allocate (dihd_name(1:mxtdih), Stat=fail(3))
-  If (lt_inv .or. mxginv > 0) Allocate (invr_name(1:mxtinv), Stat=fail(4))
+  If (lt_bnd .or. mxgbnd1 > 0) Allocate (bond_name(1:mxtbnd), Stat=fail(1))
+  If (lt_ang .or. mxgang1 > 0) Allocate (angl_name(1:mxtang), Stat=fail(2))
+  If (lt_dih .or. mxgdih1 > 0) Allocate (dihd_name(1:mxtdih), Stat=fail(3))
+  If (lt_inv .or. mxginv1 > 0) Allocate (invr_name(1:mxtinv), Stat=fail(4))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'read_field allocation failure, node: ', idnode
      Call error(0)
   End If
-  If (lt_bnd) bond_name = ' '
-  If (lt_ang) angl_name = ' '
-  If (lt_dih) dihd_name = ' '
-  If (lt_inv) invr_name = ' '
+
+! Initialise number of selected unique intramolecular TPs
+! and corresponding identity arrays
+
+  If (lt_bnd) Then
+     ntpbnd = 0 ! TABBND
+     bond_name = ' '
+  End If
+  If (lt_ang) Then
+     ntpang = 0 ! TABANG
+     angl_name = ' '
+  End If
+  If (lt_dih) Then
+     ntpdih = 0 ! TABDIH
+     dihd_name = ' '
+  End If
+  If (lt_inv) Then
+     ntpinv = 0 ! TABINV
+     invr_name = ' '
+  End If
 
 ! Initialise total number of particles(shells are particles in MD),
 ! frozen particles, shells, constraints, PMFs, RBs,
@@ -2019,23 +2028,29 @@ Subroutine read_field                   &
         If (lt_dih) Call dihedrals_table_read(dihd_name)
         If (lt_inv) Call inversions_table_read(invr_name)
 
-! if some intramolecular PDFs analysis is opted for
+! If some intramolecular PDFs analysis is opted for
 
         If (mxgana > 0) Then
 
-! Reinitialise number of unique intramolecular PDFs
+! Only for the requested types of PDFs (re)initialise:
+! number of unique intramolecular PDFs and auxiliary identity arrays
 
-           ntpbnd = 0 ! for bonds
-           ntpang = 0 ! for angles
-           ntpdih = 0 ! for dihedrals
-           ntpinv = 0 ! for inversions
-
-! if needed reinitialise auxiliary identity arrays
-
-           If (mxgbnd > 0) bond_name = ' '
-           If (mxgang > 0) angl_name = ' '
-           If (mxgdih > 0) dihd_name = ' '
-           If (mxginv > 0) invr_name = ' '
+           If (mxgbnd1 > 0) Then
+              ntpbnd = 0 ! for bonds
+              bond_name = ' '
+           End If
+           If (mxgang1 > 0) Then
+              ntpang = 0 ! for angles
+              angl_name = ' '
+           End If
+           If (mxgdih1 > 0) Then
+              ntpdih = 0 ! for dihedrals
+              dihd_name = ' '
+           End If
+           If (mxginv1 > 0) Then
+              ntpinv = 0 ! for inversions
+              invr_name = ' '
+           End If
 
            nsite =0
            nbonds=0
@@ -2043,7 +2058,7 @@ Subroutine read_field                   &
            ndihed=0
            ninver=0
            Do itmols=1,ntpmls
-              Do ibond=1,numbonds(itmols)*Merge(1,0,mxgbnd > 0)
+              Do ibond=1,numbonds(itmols)*Merge(1,0,mxgbnd1 > 0)
                  nbonds=nbonds+1
 
                  iatm1=lstbnd(1,nbonds)
@@ -2083,7 +2098,7 @@ Subroutine read_field                   &
                  End If
               End Do
 
-              Do iang=1,numang(itmols)*Merge(1,0,mxgang > 0)
+              Do iang=1,numang(itmols)*Merge(1,0,mxgang1 > 0)
                  nangle=nangle+1
 
                  iatm1=lstang(1,nangle)
@@ -2125,7 +2140,7 @@ Subroutine read_field                   &
                  End If
               End Do
 
-              Do idih=1,numdih(itmols)*Merge(1,0,mxgdih > 0)
+              Do idih=1,numdih(itmols)*Merge(1,0,mxgdih1 > 0)
                  ndihed=ndihed+1
 
                  iatm1=lstdih(1,ndihed)
@@ -2169,7 +2184,7 @@ Subroutine read_field                   &
                  End If
               End Do
 
-              Do iinv=1,numinv(itmols)*Merge(1,0,mxginv > 0)
+              Do iinv=1,numinv(itmols)*Merge(1,0,mxginv1 > 0)
                  ninver=ninver+1
 
                  If (keyinv(ninver) /= 5) Cycle ! avoid the calcite OoP potential
@@ -2233,22 +2248,52 @@ Subroutine read_field                   &
               nsite=nsite+numsit(itmols)
            End Do
 
-! allocate PDFs arrays and record species and presence(frozen and non-frozen)
+! Only for the requested types of PDFs (re)initialise number of unique intramolecular PDFs
+! and allocate PDFs arrays and record species and presence(frozen and non-frozen)
 
-           If (mxgbnd > 0) Then
-              Call allocate_bond_dst_arrays()
-
+           If (mxgbnd1 > 0) Then
+              ntpbnd = 0 ! for bonds
+              Call allocate_bond_dst_arrays() ! as it depends on ldfbnd(0)
 !             typbnd = 0 ! initialised in bonds_module
-              ntpbnd = 0 ! Reinitialise number of unique intramolecular PDFs
-              Do i=1,nbonds
+           End If
+           If (mxgang1 > 0) Then
+              ntpang = 0 ! for angles
+              Call allocate_angl_dst_arrays() ! as it depends on ldfang(0)
+!             typang = 0 ! initialised in angles_module
+           End If
+           If (mxgdih1 > 0) Then
+              ntpdih = 0 ! for dihedrals
+              Call allocate_dihd_dst_arrays() ! as it depends on ldfdih(0)
+!             typdih = 0 ! initialised in dihedrals_module
+           End If
+           If (mxginv1 > 0) Then
+              ntpinv = 0 ! for inversions
+              Call allocate_invr_dst_arrays() ! as it depends on ldfinv(0)
+!             typinv = 0 ! initialised in inversions_module
+           End If
+
+           nsite =0
+           nbonds=0
+           nangle=0
+           ndihed=0
+           ninver=0
+           Do itmols=1,ntpmls
+              Do ibond=1,numbonds(itmols)*Merge(1,0,mxgbnd1 > 0)
+                 nbonds=nbonds+1
+
                  iatm1=lstbnd(1,nbonds)
                  iatm2=lstbnd(2,nbonds)
 
                  isite1 = nsite + iatm1
                  isite2 = nsite + iatm2
 
+! ntpbnd total number of unique BPDFs
+
                  j=ldfbnd(nbonds)
                  If (j > ntpbnd) Then
+
+! record species and presence(frozen and non-frozen)
+
                     ntpbnd=ntpbnd+1
 
                     Do jsite=1,ntpatm
@@ -2269,22 +2314,23 @@ Subroutine read_field                   &
                     Else
                        typbnd(-1,ntpbnd)=typbnd(-1,ntpbnd)+1
                     End If
+
                  Else If (j > 0) Then
+
+! accumulate the existing type and presence(frozen and non-frozen)
+
                     If (frzsit(isite1)*frzsit(isite2) == 0) Then
                        typbnd(0,j)=typbnd(0,j)+1
                     Else
                        typbnd(-1,j)=typbnd(-1,j)+1
                     End If
+
                  End If
               End Do
-           End If
 
-           If (mxgang > 0) Then
-              Call allocate_angl_dst_arrays()
+              Do iang=1,numang(itmols)*Merge(1,0,mxgang1 > 0)
+                 nangle=nangle+1
 
-!             typang = 0 ! initialised in angles_module
-              ntpang = 0 ! Reinitialise number of unique intramolecular PDFs
-              Do i=1,nangle
                  iatm1=lstang(1,nangle)
                  iatm2=lstang(2,nangle)
                  iatm3=lstang(3,nangle)
@@ -2295,9 +2341,10 @@ Subroutine read_field                   &
 
                  j=ldfang(nangle)
                  If (j > ntpang) Then
-                    ntpang=ntpang+1
 
-! Construct unique name for the angle
+! record species and presence(frozen and non-frozen)
+
+                    ntpang=ntpang+1
 
                     Do jsite=1,ntpatm
                        If (sitnam(isite1) == unqatm(jsite)) katom1=jsite
@@ -2319,22 +2366,23 @@ Subroutine read_field                   &
                     Else
                        typang(-1,ntpang)=typang(-1,ntpang)+1
                     End If
+
                  Else If (j > 0) Then
+
+! accumulate the existing type and presence(frozen and non-frozen)
+
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) == 0) Then
                        typang(0,j)=typang(0,j)+1
                     Else
                        typang(-1,j)=typang(-1,j)+1
                     End If
+
                  End If
               End Do
-           End If
 
-           If (mxgdih > 0) Then
-              Call allocate_dihd_dst_arrays()
+              Do idih=1,numdih(itmols)*Merge(1,0,mxgdih1 > 0)
+                 ndihed=ndihed+1
 
-!             typdih = 0 ! initialised in dihedrals_module
-              ntpdih = 0 ! Reinitialise number of unique intramolecular PDFs
-              Do i=1,ndihed
                  iatm1=lstdih(1,ndihed)
                  iatm2=lstdih(2,ndihed)
                  iatm3=lstdih(3,ndihed)
@@ -2347,9 +2395,10 @@ Subroutine read_field                   &
 
                  j=ldfdih(ndihed)
                  If (j > ntpdih) Then
-                    ntpdih=ntpdih+1
 
-! Construct unique name for the dihedral
+! record species and presence(frozen and non-frozen)
+
+                    ntpdih=ntpdih+1
 
                     Do jsite=1,ntpatm
                        If (sitnam(isite1) == unqatm(jsite)) katom1=jsite
@@ -2375,7 +2424,11 @@ Subroutine read_field                   &
                     Else
                        typdih(-1,ntpdih)=typdih(-1,ntpdih)+1
                     End If
+
                  Else If (j > 0) Then
+
+! accumulate the existing type and presence(frozen and non-frozen)
+
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
                        typdih(0,j)=typdih(0,j)+1
                     Else
@@ -2383,14 +2436,12 @@ Subroutine read_field                   &
                     End If
                  End If
               End Do
-           End If
 
-           If (mxginv > 0) Then
-              Call allocate_invr_dst_arrays()
+              Do iinv=1,numinv(itmols)*Merge(1,0,mxginv1 > 0)
+                 ninver=ninver+1
 
-!             typinv = 0 ! initialised in inversions_module
-              ntpinv = 0 ! Reinitialise number of unique intramolecular PDFs
-              Do i=1,ninver
+                 If (keyinv(ninver) /= 5) Cycle ! avoid the calcite OoP potential
+
                  iatm1=lstinv(1,ninver)
                  iatm2=lstinv(2,ninver)
                  iatm3=lstinv(3,ninver)
@@ -2403,9 +2454,10 @@ Subroutine read_field                   &
 
                  j=ldfinv(ninver)
                  If (j > ntpinv) Then
-                    ntpinv=ntpinv+1
 
-! Construct unique name for the tabulated inversions
+! record species and presence(frozen and non-frozen)
+
+                    ntpinv=ntpinv+1
 
                     Do jsite=1,ntpatm
                        If (sitnam(isite1) == unqatm(jsite)) katom1=jsite
@@ -2452,7 +2504,11 @@ Subroutine read_field                   &
                     Else
                        typinv(-1,ntpinv)=typinv(-1,ntpinv)+1
                     End If
+
                  Else If (j > 0) Then
+
+! accumulate the existing type and presence(frozen and non-frozen)
+
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
                        typinv(0,j)=typinv(0,j)+1
                     Else
@@ -2460,17 +2516,22 @@ Subroutine read_field                   &
                     End If
                  End If
               End Do
-           End If
 
-           mxtana = Max(ntpbnd,ntpang,ntpdih,ntpinv)
+              nsite=nsite+numsit(itmols)
+           End Do
+
+           mxtana = Max(ntpbnd*Merge(1,0,mxgbnd1 > 0), &
+                        ntpang*Merge(1,0,mxgang1 > 0), &
+                        ntpdih*Merge(1,0,mxgdih1 > 0), &
+                        ntpinv*Merge(1,0,mxginv1 > 0))
         End If
 
 ! Deallocate possibly allocated auxiliary intramolecular TPs/PDFs arrays
 
-        If (lt_bnd .or. mxgbnd > 0) Deallocate (bond_name, Stat=fail(1))
-        If (lt_ang .or. mxgang > 0) Deallocate (angl_name, Stat=fail(2))
-        If (lt_dih .or. mxgdih > 0) Deallocate (dihd_name, Stat=fail(3))
-        If (lt_inv .or. mxginv > 0) Deallocate (invr_name, Stat=fail(4))
+        If (lt_bnd .or. mxgbnd1 > 0) Deallocate (bond_name, Stat=fail(1))
+        If (lt_ang .or. mxgang1 > 0) Deallocate (angl_name, Stat=fail(2))
+        If (lt_dih .or. mxgdih1 > 0) Deallocate (dihd_name, Stat=fail(3))
+        If (lt_inv .or. mxginv1 > 0) Deallocate (invr_name, Stat=fail(4))
         If (Any(fail > 0)) Then
            Write(nrite,'(/,1x,a,i0)') 'read_field deallocation failure, node: ', idnode
            Call error(0)

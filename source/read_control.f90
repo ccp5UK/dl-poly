@@ -2244,8 +2244,8 @@ Subroutine read_control                                &
            End If
            j=Merge(1, 0, grdbnd /= mxgbnd1)
            k=Merge(1, 0, Abs(rcbnd-rcb_d) > 1.0e-3_wp)
-           If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a,f5.3,a)") &
-              'bonds      - collection every ',nstbnd,' step(s); ngrid = ',mxgbnd1,'points; cutoff = ',rcbnd, 'Angs'
+           If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a,f7.2,a)") &
+              'bonds      - collection every ',nstbnd,' step(s); ngrid = ',mxgbnd1,' points; cutoff = ',rcbnd, ' Angs'
            If (i+j+k > 1 .and. idnode == 0) Write(nrite,"(/,1x,3(a,i10))") &
               'bonds      - reset values at  ',     i,'                  ',     j,'                 ',    k
         End If
@@ -2258,8 +2258,8 @@ Subroutine read_control                                &
               i = 0
            End If
            j=Merge(1, 0, grdang /= mxgang1)
-           If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a,f5.3,a)") &
-              'angles     - collection every ',nstang,' step(s); ngrid = ',mxgang1,'points'
+           If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a)") &
+              'angles     - collection every ',nstang,' step(s); ngrid = ',mxgang1,' points'
            If (i+j > 1 .and. idnode == 0) Write(nrite,"(/,1x,2(a,i10))") &
               'angles     - reset values at  ',     i,'                  ',     j
         End If
@@ -2272,8 +2272,8 @@ Subroutine read_control                                &
               i = 0
            End If
            j=Merge(1, 0, grddih /= mxgdih1)
-           If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a,f5.3,a)") &
-              'dihedrals  - collection every ',nstdih,' step(s); ngrid = ',mxgdih1,'points'
+           If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a)") &
+              'dihedrals  - collection every ',nstdih,' step(s); ngrid = ',mxgdih1,' points'
            If (i+j > 1 .and. idnode == 0) Write(nrite,"(/,1x,2(a,i10))") &
               'dihedrals  - reset values at  ',     i,'                  ',     j
         End If
@@ -2286,17 +2286,17 @@ Subroutine read_control                                &
               i = 0
            End If
            j=Merge(1, 0, grdinv /= mxginv1)
-           If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a,f5.3,a)") &
-              'inversions - collection every ',nstinv,' step(s); ngrid = ',mxginv1,'points'
+           If (idnode == 0) Write(nrite,"(/,1x,2(a,i10),a)") &
+              'inversions - collection every ',nstinv,' step(s); ngrid = ',mxginv1,' points'
            If (i+j > 1 .and. idnode == 0) Write(nrite,"(/,1x,2(a,i10))") &
               'inversions - reset values at  ',     i,'                  ',     j
         End If
      End If
 
      If (lpana) Then
-        If (idnode == 0) Write(nrite,"(1x,a)") 'bonded distribution analysis printing requested'
+        If (idnode == 0) Write(nrite,"(/,1x,a)") 'bonded distribution analysis printing requested'
      Else
-        If (idnode == 0) Write(nrite,"(1x,a)") 'no bonded distribution analysis printing requested'
+        If (idnode == 0) Write(nrite,"(/,1x,a)") 'no bonded distribution analysis printing requested'
      End If
   End If
 
