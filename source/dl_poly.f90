@@ -200,7 +200,7 @@ Program dl_poly
   If (idnode == 0) Then
      If (.not.l_scr) Open(Unit=nrite, File='OUTPUT', Status='replace')
 
-     Write(nrite,'(6(1x,a,/),1x,a,i12,a,/,4(1x,a,/))')                          &
+     Write(nrite,'(6(1x,a,/),1x,a,i12,a,/,5(1x,a,/))')                          &
           "******************************************************************", &
           "*************  stfc/ccp5  program  library  package  ** D ********", &
           "*************  daresbury laboratory general purpose  *** L *******", &

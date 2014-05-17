@@ -1332,7 +1332,7 @@ is irrelevant as outlined in \cite{sutton-91a}!
 The Gupta potential is another analytical potential in the FS
 class.  It has the form:
 \begin{eqnarray}
-V_{ij}(r_{ij}) &=& A \exp \left(-p \frac{r_{ij}-r_{0}}{r_{0}}\right) \nonumber \\
+V_{ij}(r_{ij}) &=& 2 A \exp \left(-p \frac{r_{ij}-r_{0}}{r_{0}}\right) \nonumber \\
 \rho_{ij}(r_{ij}) &=& \exp \left(-2 q_{ij} \frac{r_{ij}-r_{0}}{r_{0}}\right) \\
 F(\rho_{i}) &=& -B \sqrt{\rho_{i}}~~, \nonumber
 \end{eqnarray}
@@ -1422,7 +1422,7 @@ $U_{2}=U^{s}_{2}+U^{d}_{2}$~!
 \end{eqnarray}
 \item Gupta force
 \begin{eqnarray}
--\frac{\partial U_{1}}{\partial \vek{r_{k}}} &=& -\sum_{j=1,j \ne k}^{N} \frac{A p}{r_{0}}
+-\frac{\partial U_{1}}{\partial \vek{r_{k}}} &=& -\sum_{j=1,j \ne k}^{N} \frac{2 A p}{r_{0}}
 \exp \left( -p \frac{r_{kj}-r_{0}}{r_{0}} \right) \frac{\vek{r_{kj}}}{r_{kj}} \nonumber \\
 -\frac{\partial U_{2}}{\partial \vek{r_{k}}} &=& \sum_{j=1,j \ne k}^{N} \frac{B q_{kj}}{r_{0}}
 \left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
@@ -1488,7 +1488,7 @@ $\Psi_{2}=\Psi^{s}_{2}+\Psi^{d}_{2}$~!
 \end{eqnarray}
 \item Gupta virial
 \begin{eqnarray}
-\Psi_{1} &=& -{1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N}
+\Psi_{1} &=& -\sum_{i=1}^{N} \sum_{j \ne i}^{N}
 \frac{A p}{r_{0}} \exp \left( -p \frac{r_{ij}-r_{0}}{r_{0}} \right) r_{ij} \nonumber \\
 \Psi_{2} &=& {1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N} \frac{B q_{ij}}{r_{0}}
 \left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
@@ -1585,7 +1585,7 @@ No long-ranged corrections apply beyond cutoffs $c$ and $d$.
 \end{eqnarray}
 \item Gupta energy correction
 \begin{eqnarray}
-\delta U_{1} &=& \frac{2 \pi N \bar{\rho} A r_{0}}{p}
+\delta U_{1} &=& \frac{4 \pi N \bar{\rho} A r_{0}}{p}
 \left[ r_{\rm met}^{2} + 2 r_{\rm met} \left(\frac{r_{0}}{p}\right) +
 2 \left(\frac{r_{0}}{p}\right)^{2} \right] \times \nonumber \\
 & & \exp \left( -p \frac{r_{\rm met}-r_{0}}{r_{0}}\right) \nonumber \\
@@ -1641,7 +1641,7 @@ No long-ranged corrections apply beyond cutoffs $c$ and $d$.
 \end{eqnarray}
 \item Gupta virial correction
 \begin{eqnarray}
-\delta \Psi_{1} &=& -\frac{p}{r_{0}} \frac{2 \pi N \bar{\rho} A r_{0}}{p}
+\delta \Psi_{1} &=& -\frac{p}{r_{0}} \frac{4 \pi N \bar{\rho} A r_{0}}{p}
 \left[ r_{\rm met}^{3} + 3 r_{\rm met}^{2} \left(\frac{r_{0}}{p}\right) +
 6 r_{\rm met} \left(\frac{r_{0}}{p}\right)^{2} + 6 \left(\frac{r_{0}}{p}\right)^{3} \right] \times \nonumber \\
 & & \exp \left( -p \frac{r_{\rm met}-r_{0}}{r_{0}}\right) \nonumber \\
@@ -1775,8 +1775,8 @@ environment, i.e. an atom with many neighbors forms weaker bonds
 than an atom with few neighbors.  Effectively, it is a pair potential
 the strength of which depends on the environment.  At the present there
 are two versions of this potential available in \D: {\bf ters} and
-{\bf hiks}.  In these particular implementations {\bf ters} has 11
-atomic and 2 bi-atomic parameters whereas {\bf hiks} \cite{kumagai-07a}
+{\bf kihs}.  In these particular implementations {\bf ters} has 11
+atomic and 2 bi-atomic parameters whereas {\bf kihs} \cite{kumagai-07a}
 has 16 atomic parameters.  The energy is modelled as a sum of pair-like
 interactions, where the coefficient of the attractive term in the
 pair-like potential (which plays the role of a bond order) depends on
@@ -1804,7 +1804,7 @@ f_{C}(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
 0 & r_{ij} > S_{ij}
 \end{array} \right.
 \end{equation}
-\item {\bf hiks} - here $f_{C}$ is modified to a have continuous second-order
+\item {\bf kihs} - here $f_{C}$ is modified to a have continuous second-order
 differential:
 \begin{equation}
 f_{C}(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
@@ -1826,7 +1826,7 @@ the local environment, such that:
 {\cal{L}}_{ij} &=& \sum_{k \neq i,j} f_{C}(r_{ik})~\omega_{ik}~g(\theta_{ijk}) \\
 g(\theta_{ijk}) &=& 1 + \frac{c_{i}^{2}}{d_{i}^{2}} - \frac{c_{i}^{2}}{d_{i}^{2} + (h_{i} - \cos\theta_{ijk})^{2}} \nonumber
 \end{eqnarray}
-\item {\bf hiks}:
+\item {\bf kihs}:
 \begin{eqnarray}
 \gamma_{ij} &=& (1 + {\cal{L}}_{ij}^{\eta_{i}})^{-\delta_{i}} \nonumber \\
 {\cal{L}}_{ij} &=& \sum_{k \neq i,j} f_{C}(r_{ik})~g(\theta_{ijk})~
@@ -1843,7 +1843,7 @@ account the relative distance of the two neighbors, $i$ and $k$,
 $r_{ij}-r_{ik}$, and the bond angle, $\theta_{ijk}$, between them
 with respect to the central atom $i$.  The function $g(\theta)$ has
 a minimum for $h_{i}=\cos(\theta_{ijk})$, the parameter $d_{i}$ in
-{\bf ters} and $c_{3i}$ in {\bf hiks} determines how sharp the dependence
+{\bf ters} and $c_{3i}$ in {\bf kihs} determines how sharp the dependence
 on angle is, whereas the rest express the strength of the angular effect.
 Further mixed parameters are defined as:
 \begin{eqnarray}
@@ -1927,7 +1927,7 @@ f_{C}(r_{ik}) \frac{\partial}{\partial r_{i}^{\alpha}} g(\theta_{ijk}) \right] \
 \left[ g(\theta_{ij \ell}) \frac{\partial}{\partial r_{\ell}^{\alpha}} f_{C}(r_{i \ell}) +
 f_{C}(r_{i \ell}) \frac{\partial}{\partial r_{\ell}^{\alpha}} g(\theta_{ij \ell}) \right]~~, \nonumber
 \end{eqnarray}
-\item {\bf hiks}:
+\item {\bf kihs}:
 \begin{eqnarray}
 f_{C}(r_{ij}) f_{A}(r_{ij}) \frac{\partial}{\partial r_{\ell}^{\alpha}} \gamma_{ij}&=&
 f_{C}(r_{ij}) f_{A}(r_{ij})~\times ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \nonumber \\

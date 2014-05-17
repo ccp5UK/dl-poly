@@ -2310,9 +2310,9 @@ Subroutine read_field                   &
                     End If
 
                     If (frzsit(isite1)*frzsit(isite2) == 0) Then
-                       typbnd(0,ntpbnd)=typbnd(0,ntpbnd)+1
+                       typbnd(0,ntpbnd)=typbnd(0,ntpbnd)+nummols(itmols)
                     Else
-                       typbnd(-1,ntpbnd)=typbnd(-1,ntpbnd)+1
+                       typbnd(-1,ntpbnd)=typbnd(-1,ntpbnd)+nummols(itmols)
                     End If
 
                  Else If (j > 0) Then
@@ -2320,9 +2320,9 @@ Subroutine read_field                   &
 ! accumulate the existing type and presence(frozen and non-frozen)
 
                     If (frzsit(isite1)*frzsit(isite2) == 0) Then
-                       typbnd(0,j)=typbnd(0,j)+1
+                       typbnd(0,j)=typbnd(0,j)+nummols(itmols)
                     Else
-                       typbnd(-1,j)=typbnd(-1,j)+1
+                       typbnd(-1,j)=typbnd(-1,j)+nummols(itmols)
                     End If
 
                  End If
@@ -2362,9 +2362,9 @@ Subroutine read_field                   &
                     End If
 
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) == 0) Then
-                       typang(0,ntpang)=typang(0,ntpang)+1
+                       typang(0,ntpang)=typang(0,ntpang)+nummols(itmols)
                     Else
-                       typang(-1,ntpang)=typang(-1,ntpang)+1
+                       typang(-1,ntpang)=typang(-1,ntpang)+nummols(itmols)
                     End If
 
                  Else If (j > 0) Then
@@ -2372,9 +2372,9 @@ Subroutine read_field                   &
 ! accumulate the existing type and presence(frozen and non-frozen)
 
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) == 0) Then
-                       typang(0,j)=typang(0,j)+1
+                       typang(0,j)=typang(0,j)+nummols(itmols)
                     Else
-                       typang(-1,j)=typang(-1,j)+1
+                       typang(-1,j)=typang(-1,j)+nummols(itmols)
                     End If
 
                  End If
@@ -2420,9 +2420,9 @@ Subroutine read_field                   &
                     End If
 
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
-                       typdih(0,ntpdih)=typdih(0,ntpdih)+1
+                       typdih(0,ntpdih)=typdih(0,ntpdih)+nummols(itmols)
                     Else
-                       typdih(-1,ntpdih)=typdih(-1,ntpdih)+1
+                       typdih(-1,ntpdih)=typdih(-1,ntpdih)+nummols(itmols)
                     End If
 
                  Else If (j > 0) Then
@@ -2430,9 +2430,9 @@ Subroutine read_field                   &
 ! accumulate the existing type and presence(frozen and non-frozen)
 
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
-                       typdih(0,j)=typdih(0,j)+1
+                       typdih(0,j)=typdih(0,j)+nummols(itmols)
                     Else
-                       typdih(-1,j)=typdih(-1,j)+1
+                       typdih(-1,j)=typdih(-1,j)+nummols(itmols)
                     End If
                  End If
               End Do
@@ -2500,9 +2500,9 @@ Subroutine read_field                   &
                     End If
 
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
-                       typinv(0,ntpinv)=typinv(0,ntpinv)+1
+                       typinv(0,ntpinv)=typinv(0,ntpinv)+nummols(itmols)
                     Else
-                       typinv(-1,ntpinv)=typinv(-1,ntpinv)+1
+                       typinv(-1,ntpinv)=typinv(-1,ntpinv)+nummols(itmols)
                     End If
 
                  Else If (j > 0) Then
@@ -2510,9 +2510,9 @@ Subroutine read_field                   &
 ! accumulate the existing type and presence(frozen and non-frozen)
 
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
-                       typinv(0,j)=typinv(0,j)+1
+                       typinv(0,j)=typinv(0,j)+nummols(itmols)
                     Else
-                       typinv(-1,j)=typinv(-1,j)+1
+                       typinv(-1,j)=typinv(-1,j)+nummols(itmols)
                     End If
                  End If
               End Do

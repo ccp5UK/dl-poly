@@ -2232,7 +2232,7 @@ Subroutine read_control                                &
            If (idnode == 0) &
               Write(nrite,"(/,1x,a)") 'full bonded distribution analysis collection requested (all=bnd/ang/dih/inv):'
         Else
-           If (idnode == 0) Write(nrite,"(/,1x,a)") 'bonded didtribution analysis collection requested for:'
+           If (idnode == 0) Write(nrite,"(/,1x,a)") 'bonded distribution analysis collection requested for:'
         End If
 
         If (mxgbnd1 > 0) Then
