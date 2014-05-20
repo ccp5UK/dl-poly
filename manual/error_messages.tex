@@ -2542,7 +2542,7 @@ if any, correct and resubmit.
 
 \subsubsection*{\underline{Message 648}:error - quaternion setup failed}
 
-This error indicates that the routine {\sc rigid\_bodies\_setup} has failed
+This error indicates that the routine {\sc q\_setup} has failed
 in reproducing all the atomic positions in rigid units from the centre of mass
 and quaternion vectors it has calculated.
 
@@ -2553,7 +2553,7 @@ description of a rigid unit type from the {\em first} occurrence of
 such a unit in the CONFIG file.  The error most likely occurs
 because subsequent occurrences were not sufficiently similar
 to this reference structure.  If the problem persists increase
-the value of {\tt tol} in {\sc rigid\_bodies\_setup} and recompile.
+the value of {\tt tol} in {\sc q\_setup} and recompile.
 If problems still persist double the value of {\tt dettest} in
 {\sc rigid\_bodies\_setup} and recompile.  If you still
 encounter problems contact the authors.

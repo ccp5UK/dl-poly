@@ -2382,7 +2382,7 @@ $U_{i}(r) = \epsilon \left[ {1 \over 2} \sum\limits_{j \ne i} \left(
 $\rho_{i} = \sum\limits_{j\ne i} \left(\frac{a}{r_{ij}}\right )^{m}$ \\
            &                 &         &         &         &     &          & \\
 {\bf gupt} & Gupta           & $A$     & $r_{0}$ & $p$     & $B$ & $q_{ij}$ &
-$U_{i}(r) = {1 \over 2} \sum\limits_{j \ne i} A \exp \left(-p \frac{r_{ij}-r_{0}}{r_{0}}\right) - B \sqrt{\rho_{i}}~;$ \\
+$U_{i}(r) = \sum\limits_{j \ne i} A \exp \left(-p \frac{r_{ij}-r_{0}}{r_{0}}\right) - B \sqrt{\rho_{i}}~;$ \\
            &                 &         &         &         &     &          &
 $\rho_{i} = \sum\limits_{j\ne i} \exp \left(-2 q_{ij} \frac{r_{ij}-r_{0}}{r_{0}}\right)$ \\
            &                 &         &         &         &     &          & \\
@@ -2442,12 +2442,12 @@ be polluted.  However, there are many ways to overcome such effects.
 \item {\bf tersoff {\em n}} \\
 where {\em n} is the number of specified Tersoff potentials.  There
 are two types of Tersoff potential forms that cannot be mixed (used
-simultaneously).  They are shorthanded as {\bf ters} and {\bf hiks}
+simultaneously).  They are shorthanded as {\bf ters} and {\bf kihs}
 atomkeys.
 \begin{itemize}
 \item {\bf ters} atomkey expects $2n$ records specifying $n$ particular
-Tersoff single atom type parameters and $n(n+1)/2$ records specifying
-cross atom type parameters in the following manner:
+Tersoff single atom type parameter sets and $n(n+1)/2$ records specifying
+cross atom type parameter sets in the following manner:
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 {\bf potential 1 : record 1} \\
@@ -2483,8 +2483,8 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> ... \> ... \> ...
 \end{tabbing}
 
-\item {\bf hiks} atomkey expects $3n$ records specifying $n$ particular
-Tersoff single atom type parameters in the following manner:
+\item {\bf kihs} atomkey expects $3n$ records specifying $n$ particular
+Tersoff single atom type parameter sets in the following manner:
 
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
@@ -2540,7 +2540,7 @@ Potential forms \\
            & (cross)  & $\chi$ & $\omega$ & $\delta$ &   &     &     &
 as shown in \\
            &          &        &          &        &     &     &     & \\
-{\bf hiks} & HIKS     & $A$    & $a$      & $B$    & $b$ & $R$ &     & \\
+{\bf kihs} & KIHS     & $A$    & $a$      & $B$    & $b$ & $R$ &     & \\
            &          & $S$ & $\eta$ & $\delta$ & $c_{1}$ & $c_{2}$ & $c_{3}$ &
 Section \ref{tersoff} \\
            &          & $c_{4}$    & $c_{5}$  & $h$ & $\alpha$ & $\beta$ & & \\
