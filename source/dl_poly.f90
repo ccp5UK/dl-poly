@@ -625,7 +625,7 @@ Program dl_poly
   Call statistics_result                     &
            (rcut,lmin,lrdf,lprdf,lzdn,lpzdn, &
            nstrun,keyens,keyshl,iso,         &
-           press,strext,nstep,tstep,time,tmst)
+           press,strext,nstep,tstep,time,tmst,temp)
 
 10 Continue
 

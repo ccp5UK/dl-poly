@@ -1,4 +1,4 @@
-Subroutine bonds_compute()
+Subroutine bonds_compute(temp)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -12,7 +12,7 @@ Subroutine bonds_compute()
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
-  Use setup_module,  Only : pi,nrite,ntable,npdfdt,mxgbnd1,engunit,zero_plus
+  Use setup_module,  Only : pi,nrite,ntable,npdfdt,mxgbnd1,engunit,boltz,zero_plus
   Use site_module,   Only : unqatm
   Use config_module, Only : cfgname
   Use bonds_module
@@ -22,7 +22,7 @@ Subroutine bonds_compute()
   Logical            :: zero
   Integer            :: fail,i,j,ig,kk,ll
   Real( Kind = wp )  :: kT2engo,delr,rdlr,factor,factor1, &
-                        rrr,dvol,gofr,sum,gofr1,sum1,fed,dfed,tmp
+                        rrr,dvol,gofr,sum,gofr1,sum1,fed0,fed,dfed,dfed0,tmp,temp
 
   Real( Kind = wp ), Allocatable :: dstdbnd(:,:),pmf(:),vir(:)
 
@@ -33,9 +33,9 @@ Subroutine bonds_compute()
      Call error(0)
   End If
 
-! conversion: internal units -> in/out units (kJ/mol, kcal/mol, eV etc) - kT2engu = boltz*temp
+! conversion: internal units -> in/out units (kJ/mol, kcal/mol, eV etc)
 
-  kT2engo = 1.0_wp/engunit
+  kT2engo = boltz*temp/engunit
 
 ! grid interval for pdf tables
 
@@ -55,7 +55,7 @@ Subroutine bonds_compute()
 
 ! normalisation factor
 
-  factor = Real(kk,wp)/Real(ll*ncfbnd,wp)
+  factor = 1.0_wp/Real(ncfbnd,wp)
 
   If (idnode == 0) Then
      Write(nrite,'(/,/,12x,a)') 'BOND PDFs'
@@ -92,6 +92,10 @@ Subroutine bonds_compute()
 
         If (mxnode > 1) Call gsum(dstbnd(1:mxgbnd1,i))
 
+! factor in degeneracy (first, gofr is normalized to unity)
+
+        factor1=factor/Real(typbnd(0,i),wp)
+
 ! running integration of pdf
 
         sum=0.0_wp
@@ -102,31 +106,28 @@ Subroutine bonds_compute()
         Do ig=1,mxgbnd1
            If (zero .and. ig < (mxgbnd1-3)) zero=(dstbnd(ig+2,i) <= 0.0_wp)
 
-! factor in degeneracy (first, gofr is normalized to unity)
-
-           factor1=factor/Real(typbnd(0,i),wp)
-
            gofr= dstbnd(ig,i)*factor1
            sum = sum + gofr
 
-! null it if < 1.0e-6_wp
+! null it if < 1.0e-4_wp
 
-           If (gofr < 1.0e-6_wp) Then
+           If (gofr < 1.0e-4_wp) Then
               gofr1 = 0.0_wp
            Else
               gofr1 = gofr
            End If
 
-           If (sum < 1.0e-6_wp) Then
+           If (sum < 1.0e-4_wp) Then
               sum1 = 0.0_wp
            Else
               sum1 = sum
            End If
 
+! now gofr is normalized by the volume element (as to go to unity at infinity in gases and liquids)
+
            rrr = (Real(ig,wp)-0.5_wp)*delr
            dvol= 4.0_wp*pi*delr*(rrr*rrr+delr*delr/12.0_wp)
-
-! now gofr is normalized by the volume element (as to go to unity at infinity in gases and liquids)
+!           dvol= delr*(rrr*rrr+delr*delr/12.0_wp)*3.0_wp/(rcbnd**3)
 
            gofr= gofr*rdlr/dvol
 
@@ -137,7 +138,7 @@ Subroutine bonds_compute()
               Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,gofr*dvol,gofr
            End If
 
-           dstdbnd(ig,i) = gofr ! PDFs density
+           dstdbnd(ig,i) = gofr1*rdlr/dvol ! PDFs density
         End Do
      Else
         dstdbnd(:,i) = 0 ! PDFs density
@@ -153,20 +154,7 @@ Subroutine bonds_compute()
      Write(ntable,'(a)') '# '//cfgname
      Write(ntable,'(a,f11.5,2i10,a,e15.7)') &
           '# ',delr,mxgbnd1,kk,' conversion factor: kT -> energy units =',kT2engo
-
-     Open(Unit=npdfdt, File='PDFBND', Status='replace')
-     Write(npdfdt,'(a)') '# '//cfgname
-     Write(npdfdt,'(a,2(i10,1x),f5.2,1x,i10)') '# types, grid, cutoff, frames: ',kk,mxgbnd1,rcbnd,ncfbnd
-     Write(npdfdt,'(a)') '#'
-     Write(npdfdt,'(a,f8.5)') '# r(Angs)  P_bond(r)  P_bond(r)/r^2   @   dr_bin = ',delr
-     Write(npdfdt,'(a)') '#'
   End If
-
-!  Allocate (pmf(0:mxgbnd1+2),vir(0:mxgbnd1+2), Stat = fail)
-!  If (fail > 0) Then
-!     Write(nrite,'(/,1x,a,i0)') 'bonds_compute - allocation failure 2, node: ', idnode
-!     Call error(0)
-!  End If
 
 ! loop over all valid PDFs
 
@@ -180,13 +168,21 @@ Subroutine bonds_compute()
 
 ! Smoothen and get derivatives
 
+        fed0  = 0.0_wp
+        dfed0 = 10.0_wp
+        dfed  = 10.0_wp
+
         Do ig=1,mxgbnd1
            tmp = Real(ig,wp)-0.5_wp
            rrr = tmp*delr
-           dvol= 4.0_wp*pi*delr*(rrr*rrr+delr*delr/12.0_wp)
 
            If (dstdbnd(ig,i) > zero_plus) Then
-              fed = -Log(dstdbnd(ig,i))
+              fed = -Log(dstdbnd(ig,i))-fed0
+              If (fed0 <= zero_plus ) then 
+                 fed0 = fed
+                 fed  = 0.0_wp
+              Endif
+
               If (ig < mxgbnd1-1) Then
                  If (dstdbnd(ig+1,i) <= zero_plus .and. dstdbnd(ig+2,i) > zero_plus) &
                     dstdbnd(ig+1,i) = 0.5_wp*(dstdbnd(ig,i)+dstdbnd(ig+2,i))
@@ -196,58 +192,47 @@ Subroutine bonds_compute()
            End If
 
            If (ig == 1) Then
-              If (fed < 0.0_wp .and. dstdbnd(ig+1,i) > zero_plus) Then
-                 dfed = (Log(dstdbnd(ig+1,i))-fed)
+              If (dstdbnd(ig,i) > zero_plus .and. dstdbnd(ig+1,i) > zero_plus) Then
+                 dfed = Log(dstdbnd(ig+1,i))-Log(dstdbnd(ig,i))
+              Else If (dfed > 0.0_wp) Then
+                 dfed = dfed0
               Else
-                 dfed = 0.0_wp
+                 dfed =-dfed0
               End If
            Else If (ig == mxgbnd1) Then
-              If (fed < 0.0_wp .and. dstdbnd(ig-1,i) > zero_plus) Then
-                 dfed = (Log(dstdbnd(ig-1,i))-fed)
+              If (dstdbnd(ig,i) > zero_plus .and. dstdbnd(ig-1,i) > zero_plus) Then
+                 dfed = Log(dstdbnd(ig,i))-Log(dstdbnd(ig-1,i))
+              Else If (dfed > 0.0_wp) Then
+                 dfed = dfed0
               Else
-                 dfed = 0.0_wp
+                 dfed =-dfed0
               End If
            Else If (dstdbnd(ig-1,i) > zero_plus) Then
               If (dstdbnd(ig+1,i) > zero_plus) Then
                  dfed = 0.5_wp*(Log(dstdbnd(ig+1,i))-Log(dstdbnd(ig-1,i)))
               Else
-                 dfed =-0.5_wp*Log(dstdbnd(ig-1,i))
+                 dfed = 0.5_wp*Log(dstdbnd(ig-1,i))
               End If
            Else If (dstdbnd(ig+1,i) > zero_plus) Then
-              dfed = 0.5_wp*Log(dstdbnd(ig+1,i))
+              dfed =-0.5_wp*Log(dstdbnd(ig+1,i))
+           Else If (dfed > 0.0_wp) Then
+              dfed = dfed0
            Else
-              dfed = 0.0_wp
+              dfed =-dfed0
            End If
 
 ! print
 
-           Write(ntable,"(f11.5,1p,2e14.6)") rrr,fed*kT2engo,dfed*kT2engo*tmp
-           Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,dstdbnd(ig,i)*dvol,dstdbnd(ig,i)
-!           pmf(ig) = fed  ! no engunit associated
-!           vir(ig) = dfed ! no engunit & distance/bin associated
+! DEBUG: print out PMF:s in kT units
+!           Write(ntable,"(f11.5,1p,2e14.6)") rrr,fed,dfed*tmp
+           If (idnode == 0) Write(ntable,"(f11.5,1p,2e14.6)") rrr, &
+                                                              fed*kT2engo,dfed*kT2engo*tmp
         End Do
-
-! Retouch if needed to resample
-! resampling can be done via 3pt interpolation
-!
-!        pmf(0)        = 2.0_wp*pmf(1)-pmf(2)
-!        vir(0)        = 2.0_wp*vir(1)-vir(2)
-!        pmf(mxgbnd1+1) = 2.0_wp*pmf(mxgbnd1)-pmf(mxgbnd1-1)
-!        vir(mxgbnd1+1) = 2.0_wp*vir(mxgbnd1)-vir(mxgbnd1-1)
-!        pmf(mxgbnd1+2) = 2.0_wp*pmf(mxgbnd1+1)-pmf(mxgbnd1)
-!        vir(mxgbnd1+2) = 2.0_wp*vir(mxgbnd1+1)-vir(mxgbnd1)
      End If
   End Do
 
-!  Deallocate (pmf,vir, Stat = fail)
-!  If (fail > 0) Then
-!     Write(nrite,'(/,1x,a,i0)') 'bonds_compute - deallocation failure 2, node: ', idnode
-!     Call error(0)
-!  End If
-
   If (idnode == 0) Then
      Close(Unit=ntable)
-     Close(Unit=npdfdt)
   End If
 
   Deallocate (dstdbnd, Stat = fail)

@@ -1,7 +1,7 @@
 Subroutine statistics_result                 &
            (rcut,lmin,lrdf,lprdf,lzdn,lpzdn, &
            nstrun,keyens,keyshl,iso,         &
-           press,strext,nstep,tstep,time,tmst)
+           press,strext,nstep,tstep,time,tmst,temp)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -21,6 +21,9 @@ Subroutine statistics_result                 &
   Use vnl_module,        Only : llvnl,skipvnl
   Use core_shell_module, Only : passshl
   Use minimise_module,   Only : passmin
+  Use bonds_module,      Only : ncfbnd
+  Use angles_module,     Only : ncfang
+  Use dihedrals_module,  Only : ncfdih
   Use rdf_module,        Only : ncfrdf
   Use z_density_module,  Only : ncfzdn
   Use statistics_module
@@ -34,7 +37,7 @@ Subroutine statistics_result                 &
 
   Logical           :: check
   Integer           :: i,j,iadd
-  Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty
+  Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,temp,h_z,tx,ty
 
 ! VNL skipping statistics
 
@@ -250,6 +253,10 @@ Subroutine statistics_result                 &
 ! calculate and print z-density profile
 
   If (lzdn .and. lpzdn .and. ncfzdn > 0) Call z_density_compute()
+
+  If (mxgbnd1 > 0 .and. ncfbnd > 0) Call bonds_compute(temp)
+  If (mxgang1 > 0 .and. ncfang > 0) Call angles_compute(temp)
+  If (mxgdih1 > 0 .and. ncfdih > 0) Call dihedrals_compute(temp)
 
 20 Continue
 
