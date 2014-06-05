@@ -13,7 +13,7 @@ Subroutine external_field_apply(imcon,keyshl,time,engfld,virfld)
 
   Use kinds_f90
   Use comms_module,   Only : idnode,mxnode,gcheck,gsum
-  Use setup_module,   Only : pi,nrite,mxshl,mxatms
+  Use setup_module,   Only : twopi,nrite,mxshl,mxatms
   Use config_module,  Only : cell,natms,nfree,nlast,lsi,lsa,ltg, &
                              lfrzn,lstfre,weight,chge,           &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
@@ -66,7 +66,7 @@ Subroutine external_field_apply(imcon,keyshl,time,engfld,virfld)
 
      If (imcon /= 1 .and. imcon /= 2) Return
 
-     rz=2.0_wp*pi/cell(9)
+     rz=twopi/cell(9)
 
      Do i=1,natms
         If (lfrzn(i) == 0) fxx(i)=fxx(i) + prmfld(1)*Cos(prmfld(2)*zzz(i)*rz)
@@ -456,7 +456,7 @@ Subroutine external_field_apply(imcon,keyshl,time,engfld,virfld)
 ! extension to oscillating electric field: prmfld(1-3) are field components
 ! prmfld(4) is the oscillating frequency defined in ps^-1!
 
-     tmp=Sin(time*prmfld(4)*2.0_wp*pi)
+     tmp=Sin(time*prmfld(4)*twopi)
      Do i=1,natms
         If (lfrzn(i) == 0) Then
            fxx(i)=fxx(i) + chge(i)*prmfld(1)*tmp

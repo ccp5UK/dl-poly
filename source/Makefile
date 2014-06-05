@@ -130,7 +130,7 @@ OBJ_ALL = \
 	statistics_connect_set.o statistics_connect_spread.o statistics_connect_frames.o \
 	system_revive.o \
 	rdf_compute.o z_density_compute.o \
-	bonds_compute.o angles_compute.o dihedrals_compute.o \
+	bonds_compute.o angles_compute.o dihedrals_compute.o inversions_compute.o \
 	statistics_result.o \
 	dl_poly.o
 
@@ -180,11 +180,11 @@ all:
 	@echo
 	@echo "hpc || lake || newton || dirac || franklin ||"
 	@echo "hpcx || hpcx-debug || BGL || BGP ||"
-	@echo "archer || archer-pgi-debug ||"
-	@echo "archer-gnu || archer-gnu-debug ||"
-	@echo "archer-cray || archer-cray-debug ||"
-	@echo "archer-pathscale || archer-pathscale-debug ||"
-	@echo "archer-X2 || archer-X2-debug"
+	@echo "hector || hector-pgi-debug ||"
+	@echo "hector-gnu || hector-gnu-debug ||"
+	@echo "hector-cray || hector-cray-debug ||"
+	@echo "hector-pathscale || hector-pathscale-debug ||"
+	@echo "hector-X2 || hector-X2-debug"
 	@echo
 	@echo "Please examine this Makefile's targets for details!"
 	@echo "If no target suits your system then create your own"
@@ -315,7 +315,7 @@ BGP:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pgi compilers (default) ===============
-archer:
+hector:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3" \
 	FC="ftn -c" \
@@ -323,7 +323,7 @@ archer:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pgi compilers - DEBUG =================
-archer-pgi-debug:
+hector-pgi-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O0 -W -Wall -pedantic -std=f2003 -g -fbounds-check \
 	         -fbacktrace -finit-real=nan -finit-integer=999999" \
@@ -333,7 +333,7 @@ archer-pgi-debug:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 gnu compilers =========================
-archer-gnu:
+hector-gnu:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -Wall -pedantic -g" \
 	FC="ftn -c" \
@@ -341,19 +341,19 @@ archer-gnu:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 gnu compilers - DEBUG =================
-archer-gnu-debug:
-	$(MAKE) LD="ftn -o" \
+hector-gnu-debug:
+	$(MAKE) LD="mpif90 -o" \
 	LDFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
 	         -finit-integer=-9999 -finit-real=nan -std=f2003 \
 	         -pedantic -ffpe-trap=invalid,zero,overflow -fdump-core" \
-	FC="ftn -c" \
+	FC="mpif90 -c" \
 	FCFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
 	         -finit-integer=-9999 -finit-real=nan -std=f2003 \
 	         -pedantic -ffpe-trap=invalid,zero,overflow -fdump-core" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 cray compilers ========================
-archer-cray:
+hector-cray:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -en" \
 	FC="ftn -c" \
@@ -361,7 +361,7 @@ archer-cray:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 cray compilers - DEBUG ================
-archer-cray-debug:
+hector-cray-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -en -G2" \
 	FC="ftn -c" \
@@ -370,7 +370,7 @@ archer-cray-debug:
 
 
 #================== CRAY XT3/6 pathscale compilers ===================
-archer-pathscale:
+hector-pathscale:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-byteswapio -O3" \
 	FC="ftn -c" \
@@ -378,7 +378,7 @@ archer-pathscale:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pathscale compilers - DEBUG ===========
-archer-pathscale-debug:
+hector-pathscale-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-byteswapio -O0 -g -ffortran-bounds-check" \
 	FC="ftn -c" \
@@ -386,7 +386,7 @@ archer-pathscale-debug:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY X2 ==========================================
-archer-X2:
+hector-X2:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -Ofp3 -Ocache2 -rm " \
 	FC="ftn -c" \
@@ -394,7 +394,7 @@ archer-X2:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY X2 - DEBUG ==================================
-archer-X2-debug:
+hector-X2-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-G0 -O0 -rm " \
 	FC="ftn -c" \

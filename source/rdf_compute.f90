@@ -13,7 +13,7 @@ Subroutine rdf_compute(rcut)
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
-  Use setup_module,  Only : mxgrdf,nrite,nrdfdt,pi
+  Use setup_module,  Only : mxgrdf,nrite,nrdfdt,fourpi
   Use site_module,   Only : ntpatm,unqatm,dens
   Use config_module, Only : cfgname,volm
   Use rdf_module
@@ -82,7 +82,7 @@ Subroutine rdf_compute(rcut)
               sum = sum + gofr*dens(ib)
 
               rrr = (Real(i,wp)-0.5_wp)*delr
-              dvol= 4.0_wp*pi*delr*(rrr**2+delr**2/12.0_wp)
+              dvol= fourpi*delr*(rrr**2+delr**2/12.0_wp)
               gofr= gofr/dvol
 
 ! zero it if < 1.0e-6_wp

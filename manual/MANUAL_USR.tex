@@ -39,6 +39,7 @@
 % General Packages
 \usepackage{fix-cm,array,tabularx,multicol,dcolumn,makeidx,ifthen,enumitem}
 % times - for TNR fonts
+\usepackage[normalem]{ulem}
 
 % General Language
 \usepackage[english]{babel}
@@ -85,7 +86,8 @@ pdfauthor={I.T. Todorov},
 pdfsubject={Guide to the DL-POLY-4 Package},
 pdfcreator={I.T. Todorov},
 pdfkeywords={General Purpose Molecular Dynamics (MD) Software;
-Domain Decomposition (DD), Liked Cells (LC);
+Domain Decomposition (DD), Sub-Celled Liked Cells (LC);
+Conditional Verlet Neighbourlist Building;
 Symplectic Integration, Velocity Verlet (VV), Leapfrog Verlet (LFV),
 Ensembles: NVE; NVEk - Evans; NVT - VV-Langevin Impuls \& LFV-Langevin,
 Andersen, Berendsen, Nose-Hoover, NPT - Langevin, Berendesen,
@@ -101,9 +103,11 @@ FIQA (LFV) \& NOSQUISH (VV) integration schemes;
 Long-ranged Coulomb Interactions by Parallelised Smoothed
 Particle Mesh Ewald (SPME) using Memory Distributed 3D FFT (DaFT),
 Damped Force-shifted Coulomb, Ion Polarisation by Dynamical
-(Adiabatic Shells) or Relaxed (Massless Shells) Shell Models;
+(Adiabatic Shells) or Relaxed (Massless Shells) Shell Models via
+harmonic + quartic + breathing shell potential;
 Zero Temperature \& Conjugate Gradient Method (CGM) Minimisers;
 Temperature rescaling, Boundary Pseudo Thermostats, Defect Detection Tool;
+Coarse-Grained Analysis \& Dynamics, Lennard-Jones mixing rules;
 Optimised Parallel (ASCII \& netCDF Amber) I/O (includes MPI-I/O),
 Verifiable \& User Extendible Source Code in Self-Contained \& Portable,
 Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
@@ -158,7 +162,7 @@ Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
 STFC Daresbury Laboratory \\
 Daresbury, Warrington WA4 4AD \\
 Cheshire, England, United Kingdom}
-\date{\bf Version 4.06~~--~~March 2014}
+\date{\bf Version 4.06~~--~~June 2014}
 \clearpage
 \end{titlepage}
 
@@ -316,6 +320,16 @@ This chapter describes the integration algorithms coded into \D.
 \newpage
 
 \input integration_algorithms.tex
+
+\chapter{Coarse Graining Functionality}
+\label{coarse-graining}
+\vskip 12ex
+\section*{Scope of Chapter}
+This chapter describes the coarse-graining functionality available in \D.
+\setcounter{equation}{0}
+\newpage
+
+\input coarse_graining.tex
 
 \chapter{Construction and Execution}
 \label{conex}

@@ -1,7 +1,7 @@
-Subroutine statistics_result                 &
-           (rcut,lmin,lrdf,lprdf,lzdn,lpzdn, &
-           nstrun,keyens,keyshl,iso,         &
-           press,strext,nstep,tstep,time,tmst,temp)
+Subroutine statistics_result                       &
+           (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn, &
+           nstrun,keyens,keyshl,iso,               &
+           temp,press,strext,nstep,tstep,time,tmst)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -9,7 +9,7 @@ Subroutine statistics_result                 &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith december 1992
-! amended   - i.t.todorov march 2014
+! amended   - i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,6 +24,7 @@ Subroutine statistics_result                 &
   Use bonds_module,      Only : ncfbnd
   Use angles_module,     Only : ncfang
   Use dihedrals_module,  Only : ncfdih
+  Use inversions_module, Only : ncfinv
   Use rdf_module,        Only : ncfrdf
   Use z_density_module,  Only : ncfzdn
   Use statistics_module
@@ -31,13 +32,13 @@ Subroutine statistics_result                 &
 
   Implicit None
 
-  Logical,           Intent( In    ) :: lmin,lrdf,lprdf,lzdn,lpzdn
+  Logical,           Intent( In    ) :: lmin,lpana,lrdf,lprdf,lzdn,lpzdn
   Integer,           Intent( In    ) :: nstrun,keyens,keyshl,iso,nstep
-  Real( Kind = wp ), Intent( In    ) :: rcut,press,strext(1:9),tstep,time,tmst
+  Real( Kind = wp ), Intent( In    ) :: rcut,temp,press,strext(1:9),tstep,time,tmst
 
   Logical           :: check
   Integer           :: i,j,iadd
-  Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,temp,h_z,tx,ty
+  Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty
 
 ! VNL skipping statistics
 
@@ -254,9 +255,14 @@ Subroutine statistics_result                 &
 
   If (lzdn .and. lpzdn .and. ncfzdn > 0) Call z_density_compute()
 
-  If (mxgbnd1 > 0 .and. ncfbnd > 0) Call bonds_compute(temp)
-  If (mxgang1 > 0 .and. ncfang > 0) Call angles_compute(temp)
-  If (mxgdih1 > 0 .and. ncfdih > 0) Call dihedrals_compute(temp)
+! Calculate and print PDFs
+
+  If (lpana) Then
+     If (mxgbnd1 > 0 .and. ncfbnd > 0) Call bonds_compute(temp)
+     If (mxgang1 > 0 .and. ncfang > 0) Call angles_compute(temp)
+     If (mxgdih1 > 0 .and. ncfdih > 0) Call dihedrals_compute(temp)
+     If (mxginv1 > 0 .and. ncfinv > 0) Call inversions_compute(temp)
+  End If
 
 20 Continue
 

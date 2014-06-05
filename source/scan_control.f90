@@ -11,7 +11,7 @@ Subroutine scan_control                                    &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2014
+! author    - i.t.todorov june 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno and i.t.todorov april 2014 (itramolecular TPs & PDFs)
 !
@@ -393,20 +393,27 @@ Subroutine scan_control                                    &
 ! in case of bonded interactions analysis
 
   If (la_ana) Then
-     mxgana=Max(mxgbnd1,mxgang1,mxgdih1,mxginv1)
+     If (mxgana > 0) Then
+        mxgbnd1 = Max(mxgbnd1,mxgana)
+        mxgang1 = Max(mxgang1,mxgana)
+        mxgdih1 = Max(mxgdih1,mxgana)
+        mxginv1 = Max(mxginv1,mxgana)
+     End If
 
-     If (mxgana == 0) mxgana = -1 ! switch indicator for set_bounds
-
-! mxgana by construction (above) equals the largest grid
-! deal with overloaded grid sizes
+! switch indicators for set_bounds
 
      If (la_bnd) Then
-        If (mxgbnd1 == 0) mxgbnd1 = mxgana
+        If (mxgbnd1 == 0) mxgbnd1 = -1
         rcbnd=Max(rcbnd,rcbnd_def)
      End If
-     If (la_ang .and. mxgang1 == 0) mxgang1 = mxgana
-     If (la_dih .and. mxgdih1 == 0) mxgdih1 = mxgana
-     If (la_inv .and. mxginv1 == 0) mxginv1 = mxgana
+     If (la_ang .and. mxgang1 == 0) mxgang1 = -1
+     If (la_dih .and. mxgdih1 == 0) mxgdih1 = -1
+     If (la_inv .and. mxginv1 == 0) mxginv1 = -1
+
+! mxgana by construction equals the largest possible grid
+! or 1 (positive) as an indicator for analysis
+
+     mxgana=Max(1,mxgbnd1,mxgang1,mxgdih1,mxginv1)
   End If
 
 ! Sort electrostatics

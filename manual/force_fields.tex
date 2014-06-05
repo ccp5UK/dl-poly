@@ -105,6 +105,7 @@ The derivations of the atomic forces, virial and stress tensor are
 also outlined.
 
 \subsection{Bond Potentials}\index{potential!chemical bond}
+\label{bond-potentials}
 
 \begin{figure}[htbp]
 \begin{center}
@@ -2678,6 +2679,8 @@ needed.
 \end{enumerate}
 
 \section{Polarisation Shell Models}
+\index{polarisation!shell models}
+\label{shell-models}
 
 An atom or ion is polarisable\index{polarisation} if it develops a
 dipole moment when placed in an electric field.  It is commonly
@@ -2729,9 +2732,7 @@ translational degrees of freedom, and the degrees of freedom
 corresponding to rotation and vibration of the unit are discounted
 as if the kinetic energy of these is regarded as zero (equation~\ref{freedom}).
 
-\subsection{Dynamical (Adiabatic Shells)}
-\index{polarisation!shell model}
-\label{shell-model}
+\subsection{Dynamical (Adiabatic Shells) Shell Model}
 
 The dynamical shell model is a method of incorporating
 polarisability into a molecular dynamics simulation.
@@ -2768,7 +2769,7 @@ is, then, a safe choice to assign a shell mass, $x~m$, so that
 $\nu_{\tt core-shell} \geq 3~\nu_{\tt rigid-ion}$.  The user must
 make sure to assign the corect mass, $(1-x)~m$, to the core!)
 
-\subsection{Relaxed (Massless Shells)}
+\subsection{Relaxed (Massless Shells) Model}
 
 The relaxed shell model is presented in \cite{lindan-93a}, where
 shells have no mass and as such their motion is not governed
@@ -2787,14 +2788,48 @@ conjugate-gradients technique \cite{shewchuk-94a} in an adaptation
 as shown in \cite{lindan-93a}.  Each time step a few iterations
 (10$\div$30) are needed to achieve convergence to zero net force.
 
-In \D the shell forces are handled by the routine
-{\sc core\_shell\_forces}.  In case of the adiabatic shell model
-the kinetic energy is calculated by {\sc core\_shell\_kinetic} and
-temperature scaling applied by routine {\sc core\_shell\_quench}.
+\subsection{Breathing Shell Extension}
+
+While for low-symmetry structures, the conventional, dipolar rigid
+shell model (RSM) 'Gale77' is sufficient to absorb most of the
+effects of partial covalency/ionic polarisation, for some high-symmetry
+systems, a breathing shell model (BSM) 'Schroeder 1966' is used as
+a refinement to represent the contribution of higher-order charge
+deformations (of oxide species).  This is done by the inclusion of
+non-central ion interaction to account for a finite ion shell radius,
+$r_{i}^{o}$, which is allowed to deform isotropically under its environment.
+However, all short-range repulsion potentials, i.e. {\bf vdw}, a BSM ion
+interacts by with its environment, must act upon the radius of the ion,
+$U=U(r_{i}-r_{i}^{o})$, rather than the nuclear position, $U=U(r_{i})$!
+A further constraining potential is then added to represent the self-energy
+of the ion's breathing shell.  This most commonly uses the same shape as
+the one of the harmonic bond, see Section~\ref{bond-potentials}:
+\begin{equation}
+U(r_{ij}) = \frac{1}{2} k (r_{ij}^{BSM}-r_{ij}^{o})^{2}~~,
+\end{equation}
+where $i$ and $j$ are the intramolecular index of the ion's core and
+shell respectively.  Hence, to employ the BSM, the user needs to
+specify an extra bonded interaction for each BSM'ed core-shell pair in
+the relevant {\bf bonds} sections in the FIELD file for all molecules
+that contain BSM ions.  It is worth noting that the BSM energy and virial
+are thus part of the bonds' energy and virial and their calculation as
+part of the bonds forces routine {\sc bonds\_forces}.
+
+The most significant consequence of the introduction of the BSM is that,
+by coupling the repulsive interactions via common shell radii, it creates
+a many-body effect that is able to reproduce the Cauchy violation
+($C_{44} \ne C_{12}$) for rock salt structured materials.
+
+\subsection{Further Notes}
+
+In \D the core-shell forces of the rigid shell model are handled
+by the routine {\sc core\_shell\_forces}.  In case of the adiabatic
+shell model the kinetic energy is calculated by {\sc core\_shell\_kinetic}
+and temperature scaling applied by routine {\sc core\_shell\_quench}.
 In case of the relaxed shell model shell are relaxed to zero force
 by {\sc core\_shell\_relaxed}.
 
-Either shell model\index{polarisation!shell model} can be used in
+All shell models\index{polarisation!shell model} can be used in
 conjunction with the methods for long-ranged forces described above.
 
 {\bf Note} that \D determines which shell model to use by scanning

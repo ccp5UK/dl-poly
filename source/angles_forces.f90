@@ -17,7 +17,7 @@ Subroutine angles_forces(isw,imcon,engang,virang,stress)
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,  Only : mxangl,mxgang1,nrite,pi
+  Use setup_module,  Only : mxangl,mxgang1,nrite,pi,twopi
   Use config_module, Only : cell,natms,nlast,lsi,lsa,lfrzn, &
                             xxx,yyy,zzz,fxx,fyy,fzz
   Use angles_module, Only : ntangl,keyang,listang,prmang, &
@@ -313,7 +313,7 @@ Subroutine angles_forces(isw,imcon,engang,virang,stress)
 
            pterm=tmp * dtheta * (theta**a * (dthpi+dth0pi)**2 + 0.5_wp*a * pi**(a-1.0_wp) * dth0pi**3)
            gamma=tmp * (theta**(a-1.0_wp) * (dthpi+dth0pi) *                                 &
-                 ((a+4.0_wp)*theta**2 - 2.0_wp*pi*(a+2.0_wp)*theta - a*theta0*(dth0pi-pi)) + &
+                 ((a+4.0_wp)*theta**2 - twopi*(a+2.0_wp)*theta - a*theta0*(dth0pi-pi)) + &
                  a*pi**(a-1.0_wp) * dth0pi**3) * rsint
            gamsa=pterm*8.0_wp*rab**7/rho**8
            gamsc=pterm*8.0_wp*rbc**7/rho**8

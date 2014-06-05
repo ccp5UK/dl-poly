@@ -8,7 +8,7 @@ Subroutine set_bounds                                       &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2014
+! author    - i.t.todorov june 2014
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -264,30 +264,30 @@ Subroutine set_bounds                                       &
 ! Set grids for opted intramolecular distribution analysis if unset
 ! SO THEY ARE SWITCHES FOR EXISTENCE TOO
 
-  If (mxgana == -1) Then
+  If (mxgana > 0) Then
      If (mxgbnd1 == -1) Then
-        If (mxgbnd > 0 ) Then
+        If (mxgbnd > 0) Then
            mxgbnd1 = mxgbnd-4
         Else
            mxgbnd1 = Nint(rcbnd/delr_max)
         End If
      End If
      If (mxgang1 == -1) Then
-        If (mxgang > 0 ) Then
+        If (mxgang > 0) Then
            mxgang1 = mxgang-4
         Else
            mxgang1 = Nint(180.0_wp/delth_max)
         End If
      End If
      If (mxgdih1 == -1) Then
-        If (mxgdih > 0 ) Then
+        If (mxgdih > 0) Then
            mxgdih1 = mxgdih-4
         Else
            mxgdih1 = Nint(360.0_wp/delth_max)
         End If
      End If
      If (mxginv1 == -1) Then
-        If (mxginv > 0 ) Then
+        If (mxginv > 0) Then
            mxginv1 = mxginv-4
         Else
            mxgdih1 = Nint(180.0_wp/delth_max)
@@ -295,7 +295,7 @@ Subroutine set_bounds                                       &
      End If
      mxgana = Max(mxgbnd1,mxgang1,mxgdih1,mxginv1)
   End If
-  mxtana = 0
+  mxtana = 0 ! initialise for buffer size purposes, set in read_field
 
 ! maximum number of rdf potentials (mxrdf = mxrdf)
 ! mxgrdf - maximum dimension of rdf and z-density arrays

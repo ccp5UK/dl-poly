@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov june 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 !
@@ -926,7 +926,7 @@ Subroutine read_control                                &
 
         If (word2(1:5) == 'minim') Then
            Call get_word(record,word)
-           nstmin = Abs(Nint(word_2_real(word)))
+           nstmin = Abs(Nint(word_2_real(word,0.0_wp)))
         End If
 
         Call get_word(record,word)
@@ -980,7 +980,7 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
-        nstgaus = Abs(Nint(word_2_real(word)))
+        nstgaus = Abs(Nint(word_2_real(word,0.0_wp)))
 
         ltgaus =.true.
         If (idnode == 0) Write(nrite,"(/,1x,'regauss temperature on (during equilibration)', &
@@ -993,7 +993,7 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
-        nstscal = Abs(Nint(word_2_real(word)))
+        nstscal = Abs(Nint(word_2_real(word,0.0_wp)))
 
         ltscal =.true.
         If (idnode == 0) Write(nrite,"(/,1x,'temperature scaling on (during equilibration)', &
@@ -1793,11 +1793,15 @@ Subroutine read_control                                &
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-        i=Abs(Nint(word_2_real(word))) ! frequency
+        i=Abs(Nint(word_2_real(word,0.0_wp))) ! frequency
 
         Call get_word(record,word)
-        If (word(1:5) == 'nbins' .or. word(1:5) == 'ngrid' .or. word(1:4) == 'grid') Call get_word(record,word)
-        j=Abs(Nint(word_2_real(word))) ! grid size
+        If (word(1:5) == 'nbins' .or. word(1:5) == 'ngrid' .or. word(1:4) == 'grid') Then
+           Call get_word(record,word)
+           j=Abs(Nint(word_2_real(word))) ! grid size
+        Else
+           j=0
+        End If
 
         If      (akey == 'all') Then
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
@@ -1836,7 +1840,7 @@ Subroutine read_control                                &
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-        nstrdf = Max(Abs(Nint(word_2_real(word))),1)
+        nstrdf = Abs(Nint(word_2_real(word,1.0_wp)))
 
 ! read z-density profile option
 
@@ -1848,7 +1852,7 @@ Subroutine read_control                                &
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-        nstzdn = Max(Abs(Nint(word_2_real(word))),1)
+        nstzdn = Abs(Nint(word_2_real(word,1.0_wp)))
 
 ! read print options
 
@@ -1856,14 +1860,15 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
 
-        If      (word(1:3) == 'rdf') Then
+        If      (word(1:3) == 'ana' ) Then
+           lpana = .true.
+        Else If (word(1:3) == 'rdf' ) Then
            lprdf = .true.
         Else If (word(1:4) == 'zden') Then
            lpzdn = .true.
         Else
            If (word(1:5) == 'every') Call get_word(record,word)
-           nstbpo = Nint(word_2_real(word))
-           nstbpo = Max(nstbpo,1)
+           nstbpo = Abs(Nint(word_2_real(word,1.0_wp)))
            If (idnode == 0) Write(nrite,"(/,1x,'data printing interval (steps)',1x,i10)") nstbpo
         End If
 
@@ -2103,8 +2108,9 @@ Subroutine read_control                                &
 !!! FIXES !!!
 ! fix on step-dependent options
 
-  If (nstscal == 0) nstscal = nsteql+1
+  If (nstmin  == 0) nstmin  = nsteql+1
   If (nstgaus == 0) nstgaus = nsteql+1
+  If (nstscal == 0) nstscal = nsteql+1
 
 !!! REPORTS !!!
 ! report restart
@@ -2235,9 +2241,11 @@ Subroutine read_control                                &
            If (idnode == 0) Write(nrite,"(/,1x,a)") 'bonded distribution analysis collection requested for:'
         End If
 
+        If (nstana == 0) nstana = nstall
+
         If (mxgbnd1 > 0) Then
-           If (nstbnd == 0) Then
-              nstbnd=Max(1,nstall)
+           If (nstbnd == 0 .or. nstbnd > nstana) Then
+              nstbnd=nstana
               i = 1
            Else
               i = 0
@@ -2251,8 +2259,8 @@ Subroutine read_control                                &
         End If
 
         If (mxgang1 > 0) Then
-           If (nstang == 0) Then
-              nstang=Max(1,nstall)
+           If (nstang == 0 .or. nstang > nstana) Then
+              nstang=nstana
               i = 1
            Else
               i = 0
@@ -2265,8 +2273,8 @@ Subroutine read_control                                &
         End If
 
         If (mxgdih1 > 0) Then
-           If (nstdih == 0) Then
-              nstdih=Max(1,nstall)
+           If (nstdih == 0 .or. nstdih > nstana) Then
+              nstdih=nstana
               i = 1
            Else
               i = 0
@@ -2279,8 +2287,8 @@ Subroutine read_control                                &
         End If
 
         If (mxginv1 > 0) Then
-           If (nstinv == 0) Then
-              nstinv=Max(1,nstall)
+           If (nstinv == 0 .or. nstinv > nstana) Then
+              nstinv=nstana
               i = 1
            Else
               i = 0

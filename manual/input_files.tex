@@ -219,7 +219,32 @@ The directives available are as follows:
 
 \begin{tabbing}
 X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
-\> {\bf directive:}                             \> {\bf meaning:} \\
+\> \uuline{{\bf directive:}}                    \> \phantom{xxxxxxxxxxxxxxxxx} \uuline{{\bf meaning:}} \\
+\>                                              \> \\
+\> {\bf ana}lyse {\bf all} (sampling) (every) $f$ {\bf nbins} $n$ {\bf rmax} $r$
+                                                \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect all intramolecular PDFs \\
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins and bonds cutoff of $r$ \AA~(default r~=~2~\AA). \\
+\>                                              \> \\
+\> {\bf ana}lyse {\bf bon}ds (sampling) (every) $f$ {\bf nbins} $n$ {\bf rmax} $r$
+                                                \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect bonds PDFs \\
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins in the range $(0:r]$ (default r~=~2~\AA). \\
+\>                                              \> \\
+\> {\bf ana}lyse {\bf ang}les (sampling) (every) $f$ {\bf nbins} $n$
+                                                \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect angles PDFs \\
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins in the range $(0:180]$ (degrees). \\
+\>                                              \> \\
+\> {\bf ana}lyse {\bf dih}edrals (sampling) (every) $f$ {\bf nbins} $n$
+                                                \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect dihedrals PDFs \\
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\ 
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins in the range $(-180:180]$ (degrees). \\
+\>                                              \> \\
+\> {\bf ana}lyse {\bf inv}ersions (sampling) (every) $f$ {\bf nbins} $n$
+                                                \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect inversions PDFs \\
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\ 
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins in the range $(0:180]$ (degrees). \\
 \>                                              \> \\
 \> {\bf binsize} $f$                            \> set the bin size for radial and z-density distribution functions to \\
 \>                                              \> $f$ \AA~ (if $10^{-5}$~\AA~$\le~f~\le~r_{\rm cut}/4$ or undefined, $f$ defaults to $0.05$ \AA) \\
@@ -309,18 +334,21 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> and barostat\index{barostat} relaxation times in ps and set required \\
 \>                                              \> simulation (target/external) surface tension to $\gamma$ dyn/cm \\
 \>                                              \> \\
-\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf tens} $\gamma$ {\bf semi} \> \phantom{xxx} select the same NP$_{n}\gamma$T ensemble as above but with \\
-\>                                                                   \> \phantom{xxx} the "semi-anisotropic constraint" so that the\\
-\>                                                                   \> \phantom{xxx} MD cell changes isotropically in the $(x,y)$ plane \\
+\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf tens} $\gamma$ {\bf semi}
+                                                \> \phantom{xxx} select the same NP$_{n}\gamma$T ensemble as above but with \\
+\>                                              \> \phantom{xxx} the "semi-anisotropic constraint" so that the\\
+\>                                              \> \phantom{xxx} MD cell changes isotropically in the $(x,y)$ plane \\
 \>                                              \> \\
-\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf orth}orhombic             \> \phantom{xxx} select the NPT anisotropic ensemble for the orthorhombic\\
-\>                                                                   \> \phantom{xxx} MD cell ("orthorhombic constraint" - equivalent to the \\
-\>                                                                   \> \phantom{xxx} NP$_{n}\gamma$T ensemble when $\gamma=0$: NP$_{n}\gamma=0$T ) \\
+\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf orth}orhombic
+                                                \> \phantom{xxx} select the NPT anisotropic ensemble for the orthorhombic\\
+\>                                              \> \phantom{xxx} MD cell ("orthorhombic constraint" - equivalent to the \\
+\>                                              \> \phantom{xxx} NP$_{n}\gamma$T ensemble when $\gamma=0$: NP$_{n}\gamma=0$T ) \\
 \>                                              \> \\
-\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf orth semi}                \> \phantom{xxx} select the same NP$_{n}\gamma=0$T ensemble as above but with the \\
-\>                                                                   \> \phantom{xxx} "semi-anisotropic constraint" so that the MD cell changes \\
-\>                                                                   \> \phantom{xxx} isotropically in the $(x,y)$ plane ("semi-orthorhombic \\
-\>                                                                   \> \phantom{xxx} constraint" - equivalent to the NP$_{n}\gamma=0$T semi ensemble) \\
+\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf orth semi}
+                                                \> \phantom{xxx} select the same NP$_{n}\gamma=0$T ensemble as above but with the \\
+\>                                              \> \phantom{xxx} "semi-anisotropic constraint" so that the MD cell changes \\
+\>                                              \> \phantom{xxx} isotropically in the $(x,y)$ plane ("semi-orthorhombic \\
+\>                                              \> \phantom{xxx} constraint" - equivalent to the NP$_{n}\gamma=0$T semi ensemble) \\
 \>                                              \> \\
 \> {\bf eps}ilon (constant) $f$                 \> set relative dielectric constant to $f$ (default $f~=~1.0$) \\
 \>                                              \> \\
@@ -487,6 +515,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> (target pressure for constant pressure\index{units!pressure} ensembles) \\
 \>                                              \> \\
 \> {\bf print} (every) $n$                      \> print system data every $n$ timesteps \\
+\>                                              \> \\
+\> {\bf print ana}lysis                         \> print analysed PDFs in OUTPUT and corresponding files *DAT PMF*. \\
 \>                                              \> \\
 \> {\bf print rdf}                              \> print radial distribution functions \\
 \>                                              \> \\
@@ -892,7 +922,7 @@ the structural changes in the core of the simulated system as the
 the MD cell boundaries of the system are coupled to a thermal bath.
 
 The thermal bath can be used with two types of temperature scaling
-algorithms - {\bf(i)} Langevin (stochastic thermostat), {\bf(i)} Gauss
+algorithms - {\bf(i)} Langevin (stochastic thermostat), {\bf(ii)} Gauss
 and {\bf(iii)} Direct (direct thermostat).  If no type is specified then
 the Langevin temperature control algorithm is applied first followed the
 Direct one.  The user is also required to specify the width of the

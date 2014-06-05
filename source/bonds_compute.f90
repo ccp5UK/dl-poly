@@ -6,25 +6,27 @@ Subroutine bonds_compute(temp)
 ! from accumulated data
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov march 2014
+! author    - a.v.brukhno & i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
-  Use setup_module,  Only : pi,nrite,ntable,npdfdt,mxgbnd1,engunit,boltz,zero_plus
+  Use setup_module,  Only : fourpi,nrite,npdfdt,npdgdt,mxgbnd1,engunit,boltz,zero_plus
   Use site_module,   Only : unqatm
   Use config_module, Only : cfgname
   Use bonds_module
 
   Implicit None
 
-  Logical            :: zero
-  Integer            :: fail,i,j,ig,kk,ll
-  Real( Kind = wp )  :: kT2engo,delr,rdlr,factor,factor1, &
-                        rrr,dvol,gofr,sum,gofr1,sum1,fed0,fed,dfed,dfed0,tmp,temp
+  Integer, Intent( In    ) :: temp
 
-  Real( Kind = wp ), Allocatable :: dstdbnd(:,:),pmf(:),vir(:)
+  Logical           :: zero
+  Integer           :: fail,i,j,ig,kk,ll
+  Real( Kind = wp ) :: kT2engo,delr,rdlr,factor,factor1, &
+                       rrr,dvol,pdfbnd,sum,pdfbnd1,sum1,fed0,fed,dfed,dfed0,tmp
+
+  Real( Kind = wp ), Allocatable :: dstdbnd(:,:)
 
   fail = 0
   Allocate (dstdbnd(0:mxgbnd1,1:ldfbnd(0)), Stat = fail)
@@ -58,8 +60,8 @@ Subroutine bonds_compute(temp)
   factor = 1.0_wp/Real(ncfbnd,wp)
 
   If (idnode == 0) Then
-     Write(nrite,'(/,/,12x,a)') 'BOND PDFs'
-     Write(nrite,'(/,1x,a,2(i10,1x),f5.2,1x,i10)') 'types, grid, cutoff, frames: ',kk,mxgbnd1,rcbnd,ncfbnd
+     Write(nrite,'(/,/,12x,a)') 'BONDS PDFs'
+     Write(nrite,'(/,1x,a,2(i10,1x),f5.2,1x,i10)') '# types, bins, cutoff, frames: ',kk,mxgbnd1,rcbnd,ncfbnd
   End If
 
 ! open RDF file and write headers
@@ -67,9 +69,9 @@ Subroutine bonds_compute(temp)
   If (idnode == 0) Then
      Open(Unit=npdfdt, File='BNDDAT', Status='replace')
      Write(npdfdt,'(a)') '# '//cfgname
-     Write(npdfdt,'(a,2(i10,1x),f5.2,1x,i10)') '# types, grid, cutoff, frames: ',kk,mxgbnd1,rcbnd,ncfbnd
+     Write(npdfdt,'(a,2(i10,1x),f5.2,1x,i10)') '# types, bins, cutoff, frames: ',kk,mxgbnd1,rcbnd,ncfbnd
      Write(npdfdt,'(a)') '#'
-     Write(npdfdt,'(a,f8.5)') '# r(Angs)  P_bond(r)  P_bond(r)/r^2   @   dr_bin = ',delr
+     Write(npdfdt,'(a,f8.5)') '# r(Angstroms)  P_bond(r)  P_bond(r)/r^2   @   dr_bin = ',delr
      Write(npdfdt,'(a)') '#'
   End If
 
@@ -81,8 +83,9 @@ Subroutine bonds_compute(temp)
         j=j+1
 
         If (idnode == 0) Then
-           Write(nrite,'(/,a,2(a8,1x),2(i10,1x))') 'Pb(r) : ',unqatm(typbnd(1,i)),unqatm(typbnd(2,i)),j,typbnd(0,i)
-           Write(nrite,'(/,8x,a,6x,a,9x,a,/)') 'r','P(r)','Sum_P(r)'
+           Write(nrite,'(/,1x,a,2(a8,1x),2(i10,1x))')  'id, type, totals: ', &
+                unqatm(typbnd(1,i)),unqatm(typbnd(2,i)),j,typbnd(0,i)
+           Write(nrite,'(/,1x,a,f8.5,/)') 'r(Angstroms)  P_bond(r)  Sum_P_bond(r)   @   dr_bin = ',delr
 
            Write(npdfdt,'(/,a,2(a8,1x),2(i10,1x))') '# id, type, totals: ', &
                 unqatm(typbnd(1,i)),unqatm(typbnd(2,i)),j,typbnd(0,i)
@@ -92,7 +95,7 @@ Subroutine bonds_compute(temp)
 
         If (mxnode > 1) Call gsum(dstbnd(1:mxgbnd1,i))
 
-! factor in degeneracy (first, gofr is normalized to unity)
+! factor in degeneracy (first, pdfbnd is normalised to unity)
 
         factor1=factor/Real(typbnd(0,i),wp)
 
@@ -106,15 +109,15 @@ Subroutine bonds_compute(temp)
         Do ig=1,mxgbnd1
            If (zero .and. ig < (mxgbnd1-3)) zero=(dstbnd(ig+2,i) <= 0.0_wp)
 
-           gofr= dstbnd(ig,i)*factor1
-           sum = sum + gofr
+           pdfbnd= dstbnd(ig,i)*factor1
+           sum = sum + pdfbnd
 
 ! null it if < 1.0e-4_wp
 
-           If (gofr < 1.0e-4_wp) Then
-              gofr1 = 0.0_wp
+           If (pdfbnd < 1.0e-4_wp) Then
+              pdfbnd1 = 0.0_wp
            Else
-              gofr1 = gofr
+              pdfbnd1 = pdfbnd
            End If
 
            If (sum < 1.0e-4_wp) Then
@@ -123,22 +126,21 @@ Subroutine bonds_compute(temp)
               sum1 = sum
            End If
 
-! now gofr is normalized by the volume element (as to go to unity at infinity in gases and liquids)
-
            rrr = (Real(ig,wp)-0.5_wp)*delr
-           dvol= 4.0_wp*pi*delr*(rrr*rrr+delr*delr/12.0_wp)
-!           dvol= delr*(rrr*rrr+delr*delr/12.0_wp)*3.0_wp/(rcbnd**3)
+           dvol= fourpi*delr*(rrr*rrr+delr*delr/12.0_wp)
 
-           gofr= gofr*rdlr/dvol
+! now pdfbnd is normalised by the volume element (as to go to unity at infinity in gases and liquids)
+
+           pdfbnd= pdfbnd*rdlr/dvol
 
 ! print out information
 
            If (idnode == 0) Then
-              If (.not.zero) Write(nrite,"(f11.5,1p,2e14.6)") rrr,gofr1,sum1
-              Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,gofr*dvol,gofr
+              If (.not.zero) Write(nrite,"(f11.5,1p,2e14.6)") rrr,pdfbnd1,sum1
+              Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,pdfbnd*dvol,pdfbnd
            End If
 
-           dstdbnd(ig,i) = gofr1*rdlr/dvol ! PDFs density
+           dstdbnd(ig,i) = pdfbnd ! PDFs density
         End Do
      Else
         dstdbnd(:,i) = 0 ! PDFs density
@@ -150,10 +152,9 @@ Subroutine bonds_compute(temp)
 ! open PDF files and write headers
 
   If (idnode == 0) Then
-     Open(Unit=ntable, File='PMFBND', Status='replace')
-     Write(ntable,'(a)') '# '//cfgname
-     Write(ntable,'(a,f11.5,2i10,a,e15.7)') &
-          '# ',delr,mxgbnd1,kk,' conversion factor: kT -> energy units =',kT2engo
+     Open(Unit=npdgdt, File='PMFBND', Status='replace')
+     Write(npdgdt,'(a)') '# '//cfgname
+     Write(npdgdt,'(a,f11.5,2i10,a,e15.7)') '# ',delr,mxgbnd1,kk,' conversion factor: kT -> energy units =',kT2engo
   End If
 
 ! loop over all valid PDFs
@@ -163,8 +164,8 @@ Subroutine bonds_compute(temp)
      If (typbnd(0,i) > 0) Then
         j=j+1
 
-        If (idnode == 0) Write(ntable,'(/,a,2(a8,1x),2(i10,1x))') &
-           '# id, type, degeneracy: ',unqatm(typbnd(1,i)),unqatm(typbnd(2,i)),j,typbnd(0,i)
+        If (idnode == 0) Write(npdgdt,'(/,a,2(a8,1x),2(i10,1x))') '# id, type, degeneracy: ', &
+           unqatm(typbnd(1,i)),unqatm(typbnd(2,i)),j,typbnd(0,i)
 
 ! Smoothen and get derivatives
 
@@ -178,10 +179,10 @@ Subroutine bonds_compute(temp)
 
            If (dstdbnd(ig,i) > zero_plus) Then
               fed = -Log(dstdbnd(ig,i))-fed0
-              If (fed0 <= zero_plus ) then 
+              If (fed0 <= zero_plus ) Then
                  fed0 = fed
                  fed  = 0.0_wp
-              Endif
+              End If
 
               If (ig < mxgbnd1-1) Then
                  If (dstdbnd(ig+1,i) <= zero_plus .and. dstdbnd(ig+2,i) > zero_plus) &
@@ -191,17 +192,17 @@ Subroutine bonds_compute(temp)
               fed = 0.0_wp
            End If
 
-           If (ig == 1) Then
-              If (dstdbnd(ig,i) > zero_plus .and. dstdbnd(ig+1,i) > zero_plus) Then
-                 dfed = Log(dstdbnd(ig+1,i))-Log(dstdbnd(ig,i))
+           If      (ig == 1) Then
+              If      (dstdbnd(ig,i) > zero_plus .and. dstdbnd(ig+1,i) > zero_plus) Then
+                 dfed = Log(dstdbnd(ig+1,i)/dstdbnd(ig,i))
               Else If (dfed > 0.0_wp) Then
                  dfed = dfed0
               Else
                  dfed =-dfed0
               End If
            Else If (ig == mxgbnd1) Then
-              If (dstdbnd(ig,i) > zero_plus .and. dstdbnd(ig-1,i) > zero_plus) Then
-                 dfed = Log(dstdbnd(ig,i))-Log(dstdbnd(ig-1,i))
+              If      (dstdbnd(ig,i) > zero_plus .and. dstdbnd(ig-1,i) > zero_plus) Then
+                 dfed = Log(dstdbnd(ig,i)/dstdbnd(ig-1,i))
               Else If (dfed > 0.0_wp) Then
                  dfed = dfed0
               Else
@@ -209,7 +210,7 @@ Subroutine bonds_compute(temp)
               End If
            Else If (dstdbnd(ig-1,i) > zero_plus) Then
               If (dstdbnd(ig+1,i) > zero_plus) Then
-                 dfed = 0.5_wp*(Log(dstdbnd(ig+1,i))-Log(dstdbnd(ig-1,i)))
+                 dfed = 0.5_wp*(Log(dstdbnd(ig+1,i)/dstdbnd(ig-1,i)))
               Else
                  dfed = 0.5_wp*Log(dstdbnd(ig-1,i))
               End If
@@ -221,19 +222,14 @@ Subroutine bonds_compute(temp)
               dfed =-dfed0
            End If
 
-! print
-
-! DEBUG: print out PMF:s in kT units
-!           Write(ntable,"(f11.5,1p,2e14.6)") rrr,fed,dfed*tmp
-           If (idnode == 0) Write(ntable,"(f11.5,1p,2e14.6)") rrr, &
-                                                              fed*kT2engo,dfed*kT2engo*tmp
+! Print
+           If (idnode == 0) &
+              Write(npdgdt,"(f11.5,1p,2e14.6)") rrr,fed*kT2engo,dfed*kT2engo*tmp
         End Do
      End If
   End Do
 
-  If (idnode == 0) Then
-     Close(Unit=ntable)
-  End If
+  If (idnode == 0) Close(Unit=npdgdt)
 
   Deallocate (dstdbnd, Stat = fail)
   If (fail > 0) Then

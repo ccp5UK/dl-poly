@@ -525,7 +525,7 @@ Subroutine read_field                   &
        '*frozen*',ishls,lstshl(1,nshels),lstshl(2,nshels),prmshl(1,nshels),prmshl(2,nshels)
                        Else
   Write(nrite,"(12x,3i10,2f15.6)") &
-                   ishls,lstshl(1,nshels),lstshl(2,nshels),prmshl(1,nshels),prmshl(2,nshels)
+                  ishls,lstshl(1,nshels),lstshl(2,nshels),prmshl(1,nshels),prmshl(2,nshels)
                        End If
                     End If
 
@@ -1689,13 +1689,13 @@ Subroutine read_field                   &
                           If (sitnam(isite4) == unqatm(jsite)) katom4=jsite
                        End Do
 
-                       If (katom1 == katom4) Then
+                       If      (katom1 == katom4) Then
                           If (katom2 <= katom3) Then
                              iddihd = sitnam(iatm1)//sitnam(iatm2)//sitnam(iatm3)//sitnam(iatm4)
                           Else
                              iddihd = sitnam(iatm1)//sitnam(iatm3)//sitnam(iatm2)//sitnam(iatm4)
                           End If
-                       Else If (katom1 < katom4) Then
+                       Else If (katom1 <  katom4) Then
                           iddihd = sitnam(iatm1)//sitnam(iatm2)//sitnam(iatm3)//sitnam(iatm4)
                        Else
                           iddihd = sitnam(iatm4)//sitnam(iatm3)//sitnam(iatm2)//sitnam(iatm1)
@@ -2170,13 +2170,13 @@ Subroutine read_field                   &
                     If (sitnam(isite4) == unqatm(jsite)) katom4=jsite
                  End Do
 
-                 If (katom1 == katom4) Then
+                 If      (katom1 == katom4) Then
                     If (katom2 <= katom3) Then
                        iddihd = sitnam(iatm1)//sitnam(iatm2)//sitnam(iatm3)//sitnam(iatm4)
                     Else
                        iddihd = sitnam(iatm1)//sitnam(iatm3)//sitnam(iatm2)//sitnam(iatm4)
                     End If
-                 Else If (katom1 < katom4) Then
+                 Else If (katom1 <  katom4) Then
                     iddihd = sitnam(iatm1)//sitnam(iatm2)//sitnam(iatm3)//sitnam(iatm4)
                  Else
                     iddihd = sitnam(iatm4)//sitnam(iatm3)//sitnam(iatm2)//sitnam(iatm1)
@@ -2423,7 +2423,7 @@ Subroutine read_field                   &
                        If (sitnam(isite4) == unqatm(jsite)) katom4=jsite
                     End Do
 
-                    If (katom1 == katom4) Then
+                    If      (katom1 == katom4) Then
                        typdih(1,ntpdih)=katom1
                        typdih(4,ntpdih)=katom4
                        If (katom2 <= katom3) Then
@@ -2433,7 +2433,7 @@ Subroutine read_field                   &
                           typdih(2,ntpdih)=katom3
                           typdih(3,ntpdih)=katom2
                        End If
-                    Else If (katom1 < katom4) Then
+                    Else If (katom1 <  katom4) Then
                        typdih(1,ntpdih)=katom1
                        typdih(2,ntpdih)=katom2
                        typdih(3,ntpdih)=katom3

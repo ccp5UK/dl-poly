@@ -130,7 +130,7 @@ OBJ_ALL = \
 	statistics_connect_set.o statistics_connect_spread.o statistics_connect_frames.o \
 	system_revive.o \
 	rdf_compute.o z_density_compute.o \
-	bonds_compute.o \
+	bonds_compute.o angles_compute.o dihedrals_compute.o inversions_compute.o \
 	statistics_result.o \
 	dl_poly.o
 

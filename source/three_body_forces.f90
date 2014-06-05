@@ -582,7 +582,7 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
      pterm=k0*dtheta*Exp(switch)
 
      gamma=pterm * (theta**(a-1.0_wp) * (dthpi+dth0pi) *                               &
-           ((a+4.0_wp)*theta**2 - 2.0_wp*pi*(a+2.0_wp)*theta - a*theta0*(dth0pi-pi)) + &
+           ((a+4.0_wp)*theta**2 - twopi*(a+2.0_wp)*theta - a*theta0*(dth0pi-pi)) + &
            a*pi**(a-1.0_wp) * dth0pi**3) * rsint
 
      pterm=pterm * dtheta * (theta**a * (dthpi+dth0pi)**2 + 0.5_wp*a * pi**(a-1.0_wp) * dth0pi**3)
