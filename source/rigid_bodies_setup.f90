@@ -2,10 +2,10 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for constructing RBs' totational inertia tesnors
+! dl_poly_4 subroutine for constructing RBs' rotational inertia tesnors
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -261,239 +261,240 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 
   Do irgd=1,mxtrgd
      lrgd=lstrgd(0,irgd)
-
-     Do jrgd=1,lrgd
+     If (rgdfrz(0,irgd) < lrgd) Then ! If not fully frozen
+        Do jrgd=1,lrgd
 
 ! Impose rounding
 
-        If (Abs(rgdx(jrgd,irgd)) < 1.0e-8_wp) rgdx(jrgd,irgd)=0.0_wp
-        If (Abs(rgdy(jrgd,irgd)) < 1.0e-8_wp) rgdy(jrgd,irgd)=0.0_wp
-        If (Abs(rgdz(jrgd,irgd)) < 1.0e-8_wp) rgdz(jrgd,irgd)=0.0_wp
+           If (Abs(rgdx(jrgd,irgd)) < 1.0e-8_wp) rgdx(jrgd,irgd)=0.0_wp
+           If (Abs(rgdy(jrgd,irgd)) < 1.0e-8_wp) rgdy(jrgd,irgd)=0.0_wp
+           If (Abs(rgdz(jrgd,irgd)) < 1.0e-8_wp) rgdz(jrgd,irgd)=0.0_wp
 
 ! rotational inertia tensor of group type
 
-        weight=Real(1-rgdfrz(jrgd,irgd),wp)*rgdwgt(jrgd,irgd)
+           weight=Real(1-rgdfrz(jrgd,irgd),wp)*rgdwgt(jrgd,irgd)
 
-        rgdrix(1,irgd) = rgdrix(1,irgd) + weight*(rgdy(jrgd,irgd)**2+rgdz(jrgd,irgd)**2)
-        rgdriy(1,irgd) = rgdriy(1,irgd) + weight*(rgdz(jrgd,irgd)**2+rgdx(jrgd,irgd)**2)
-        rgdriz(1,irgd) = rgdriz(1,irgd) + weight*(rgdx(jrgd,irgd)**2+rgdy(jrgd,irgd)**2)
+           rgdrix(1,irgd) = rgdrix(1,irgd) + weight*(rgdy(jrgd,irgd)**2+rgdz(jrgd,irgd)**2)
+           rgdriy(1,irgd) = rgdriy(1,irgd) + weight*(rgdz(jrgd,irgd)**2+rgdx(jrgd,irgd)**2)
+           rgdriz(1,irgd) = rgdriz(1,irgd) + weight*(rgdx(jrgd,irgd)**2+rgdy(jrgd,irgd)**2)
 
-     End Do
+        End Do
 
 ! set axis system such that: Ixx >= Iyy >= Izz
 
-     rotxyz=Max(rgdrix(1,irgd),rgdriy(1,irgd),rgdriz(1,irgd))
+        rotxyz=Max(rgdrix(1,irgd),rgdriy(1,irgd),rgdriz(1,irgd))
 
-     If (rotxyz >= rgdrix(1,irgd)) Then
-        If (rotxyz <= rgdriy(1,irgd)) Then
+        If (rotxyz >= rgdrix(1,irgd)) Then
+           If (rotxyz <= rgdriy(1,irgd)) Then
+              Do jrgd=1,lrgd
+                 tmp=rgdx(jrgd,irgd)
+                 rgdx(jrgd,irgd)=rgdy(jrgd,irgd)
+                 rgdy(jrgd,irgd)=-tmp
+              End Do
+              rgdriy(1,irgd)=rgdrix(1,irgd)
+              rgdrix(1,irgd)=rotxyz
+           Else If (rotxyz <= rgdriz(1,irgd)) Then
+              Do jrgd=1,lrgd
+                 tmp=rgdx(jrgd,irgd)
+                 rgdx(jrgd,irgd)=rgdz(jrgd,irgd)
+                 rgdz(jrgd,irgd)=-tmp
+              End Do
+              rgdriz(1,irgd)=rgdrix(1,irgd)
+              rgdrix(1,irgd)=rotxyz
+           End If
+        End If
+
+        If (rgdriz(1,irgd) > rgdriy(1,irgd)) Then
            Do jrgd=1,lrgd
-              tmp=rgdx(jrgd,irgd)
-              rgdx(jrgd,irgd)=rgdy(jrgd,irgd)
-              rgdy(jrgd,irgd)=-tmp
-           End Do
-           rgdriy(1,irgd)=rgdrix(1,irgd)
-           rgdrix(1,irgd)=rotxyz
-        Else If (rotxyz <= rgdriz(1,irgd)) Then
-           Do jrgd=1,lrgd
-              tmp=rgdx(jrgd,irgd)
-              rgdx(jrgd,irgd)=rgdz(jrgd,irgd)
+              tmp=rgdy(jrgd,irgd)
+              rgdy(jrgd,irgd)=rgdz(jrgd,irgd)
               rgdz(jrgd,irgd)=-tmp
            End Do
-           rgdriz(1,irgd)=rgdrix(1,irgd)
-           rgdrix(1,irgd)=rotxyz
+           tmp=rgdriz(1,irgd)
+           rgdriz(1,irgd)=rgdriy(1,irgd)
+           rgdriy(1,irgd)=tmp
         End If
-     End If
 
-     If (rgdriz(1,irgd) > rgdriy(1,irgd)) Then
-        Do jrgd=1,lrgd
-           tmp=rgdy(jrgd,irgd)
-           rgdy(jrgd,irgd)=rgdz(jrgd,irgd)
-           rgdz(jrgd,irgd)=-tmp
-        End Do
-        tmp=rgdriz(1,irgd)
-        rgdriz(1,irgd)=rgdriy(1,irgd)
-        rgdriy(1,irgd)=tmp
-     End If
-
-     rotall=rgdrix(1,irgd)+rgdriy(1,irgd)+rgdriz(1,irgd)
-     If (rotall <= 1.0e-5_wp) rotall=1.0_wp
+        rotall=rgdrix(1,irgd)+rgdriy(1,irgd)+rgdriz(1,irgd)
+        If (rotall <= 1.0e-5_wp) rotall=1.0_wp
 
 ! test for type of unit (point/linear/bulk RB == ill=2/1/0)
 ! and get reciprocal of RI in RB unit internal frame of axis
 
-     ill=0
-     If (rgdrix(1,irgd)/rotall < 1.0e-5_wp) Then
-        ill=ill+1
-     Else
-        rgdrix(2,irgd)=1.0_wp/rgdrix(1,irgd)
-     End If
-     If (rgdriy(1,irgd)/rotall < 1.0e-5_wp) Then
-        ill=ill+1
-     Else
-        rgdriy(2,irgd)=1.0_wp/rgdriy(1,irgd)
-     End If
-     If (rgdriz(1,irgd)/rotall < 1.0e-5_wp) Then
-        ill=ill+1
-     Else
-        rgdriz(2,irgd)=1.0_wp/rgdriz(1,irgd)
-     End If
+        ill=0
+        If (rgdrix(1,irgd)/rotall < 1.0e-5_wp) Then
+           ill=ill+1
+        Else
+           rgdrix(2,irgd)=1.0_wp/rgdrix(1,irgd)
+        End If
+        If (rgdriy(1,irgd)/rotall < 1.0e-5_wp) Then
+           ill=ill+1
+        Else
+           rgdriy(2,irgd)=1.0_wp/rgdriy(1,irgd)
+        End If
+        If (rgdriz(1,irgd)/rotall < 1.0e-5_wp) Then
+           ill=ill+1
+        Else
+           rgdriz(2,irgd)=1.0_wp/rgdriz(1,irgd)
+        End If
 
-     rgdind(0,irgd)=ill
+        rgdind(0,irgd)=ill
 
-     If (ill > 1) Then
+        If (ill > 1) Then
 
 ! point molecules and one particle RBs are not allowed by default!
 ! also, partly frozen RBs with only massless unfrozen particles are
 ! caught in read_field!!!
 
-        safe=.false.
-        Exit
+           safe=.false.
+           Exit
 
-     Else If (ill == 1) Then
+        Else If (ill == 1) Then
 
-        If      (rgdfrz(0,irgd) == 0) Then
+           If      (rgdfrz(0,irgd) == 0) Then
 
 ! linear unfrozen molecule
 
-           rgdind(1,irgd)=1
-           rgdind(2,irgd)=2
+              rgdind(1,irgd)=1
+              rgdind(2,irgd)=2
 
-        Else If (rgdfrz(0,irgd) >  1) Then
+           Else If (rgdfrz(0,irgd) >  1) Then
 
 ! RB with 2+ frozen sites in line (not possible for 1 frozen site only)
 
-           i=0
-           Do jrgd=1,lrgd
-              If (rgdfrz(jrgd,irgd) == 1) Then
-                 i=i+1
-                 rgdind(i,irgd)=jrgd
-                 If (i == 3) Exit
-              End If
-           End Do
-
-        End If
-
-        If (rgdind(3,irgd) == 0) rgdind(3,irgd)=rgdind(1,irgd)
-
-        i1=rgdind(1,irgd)
-        i2=rgdind(2,irgd)
-
-        aa(1)=rgdx(i1,irgd)-rgdx(i2,irgd)
-        aa(4)=rgdy(i1,irgd)-rgdy(i2,irgd)
-        aa(7)=rgdz(i1,irgd)-rgdz(i2,irgd)
-        rsq=Sqrt(aa(1)**2+aa(4)**2+aa(7)**2)
-
-        If      (Abs(aa(7)/rsq) > 0.5_wp) Then
-           rsq=Sqrt(aa(4)**2+aa(7)**2)
-           aa(2)= 0.0_wp
-           aa(5)= aa(7)/rsq
-           aa(8)=-aa(4)/rsq
-        Else If (Abs(aa(4)/rsq) > 0.5_wp) Then
-           rsq=Sqrt(aa(4)**2+aa(1)**2)
-           aa(2)=-aa(4)/rsq
-           aa(5)= aa(1)/rsq
-           aa(8)= 0.0_wp
-        Else If (Abs(aa(1)/rsq) > 0.5_wp) Then
-           rsq=Sqrt(aa(1)**2+aa(7)**2)
-           aa(2)=-aa(7)/rsq
-           aa(5)= 0.0_wp
-           aa(8)= aa(1)/rsq
-        End If
-
-        aa(3)=aa(4)*aa(8)-aa(7)*aa(5)
-        aa(6)=aa(7)*aa(2)-aa(1)*aa(8)
-        aa(9)=aa(1)*aa(5)-aa(4)*aa(2)
-
-        Call invert(aa,bb,det)
-
-! Check aa validity
-
-        If (rgdfrz(0,irgd) /= 1 .and. Abs(det) < 1.0e-5_wp) Then
-           safe=.false.
-           Exit
-        End If
-
-! Store tensor
-
-        Do i=1,9
-          rgdaxs(i,irgd)=bb(i)
-        End Do
-
-     Else If (ill == 0) Then
-
-! (1) non-linear molecule or (2) RB with 3+ frozen sites
-! as at least 3 not in line (as if all were)
-
-        If (rgdfrz(0,irgd) > 1) Then
-           rgdind(0,irgd)=4
-           rgdind(1,irgd)=1
-           rgdind(2,irgd)=1
-           rgdind(3,irgd)=1
-        Else
-           i1=1
-           i2=1
-           i3=1
-
-           pass1=.true.
-           dettest=1.0e-1_wp
-
-           Do While (pass1 .and. i2 < lrgd-1)
-
-              i2=i2+1
-              i3=i2
-              pass2=.true.
-
-              Do While (pass2 .and. i3 < lrgd)
-
-                 i3=i3+1
-
-                 aa(1)=rgdx(i1,irgd)-rgdx(i2,irgd)
-                 aa(4)=rgdy(i1,irgd)-rgdy(i2,irgd)
-                 aa(7)=rgdz(i1,irgd)-rgdz(i2,irgd)
-
-                 aa(2)=rgdx(i1,irgd)-rgdx(i3,irgd)
-                 aa(5)=rgdy(i1,irgd)-rgdy(i3,irgd)
-                 aa(8)=rgdz(i1,irgd)-rgdz(i3,irgd)
-
-                 aa(3)=aa(4)*aa(8)-aa(7)*aa(5)
-                 aa(6)=aa(7)*aa(2)-aa(1)*aa(8)
-                 aa(9)=aa(1)*aa(5)-aa(4)*aa(2)
-
-! invert matrix
-
-                 Call invert(aa,bb,det)
-
-! check on size of determinant - to see if the 3 sites are
-! too close to being linear for safety.
-
-                 pass2=(Abs(det) < dettest)
-
+              i=0
+              Do jrgd=1,lrgd
+                 If (rgdfrz(jrgd,irgd) == 1) Then
+                    i=i+1
+                    rgdind(i,irgd)=jrgd
+                    If (i == 3) Exit
+                 End If
               End Do
 
-              pass1=(Abs(det) < dettest)
+           End If
 
-           End Do
+           If (rgdind(3,irgd) == 0) rgdind(3,irgd)=rgdind(1,irgd)
+
+           i1=rgdind(1,irgd)
+           i2=rgdind(2,irgd)
+
+           aa(1)=rgdx(i1,irgd)-rgdx(i2,irgd)
+           aa(4)=rgdy(i1,irgd)-rgdy(i2,irgd)
+           aa(7)=rgdz(i1,irgd)-rgdz(i2,irgd)
+           rsq=Sqrt(aa(1)**2+aa(4)**2+aa(7)**2)
+
+           If      (Abs(aa(7)/rsq) > 0.5_wp) Then
+              rsq=Sqrt(aa(4)**2+aa(7)**2)
+              aa(2)= 0.0_wp
+              aa(5)= aa(7)/rsq
+              aa(8)=-aa(4)/rsq
+           Else If (Abs(aa(4)/rsq) > 0.5_wp) Then
+              rsq=Sqrt(aa(4)**2+aa(1)**2)
+              aa(2)=-aa(4)/rsq
+              aa(5)= aa(1)/rsq
+              aa(8)= 0.0_wp
+           Else If (Abs(aa(1)/rsq) > 0.5_wp) Then
+              rsq=Sqrt(aa(1)**2+aa(7)**2)
+              aa(2)=-aa(7)/rsq
+              aa(5)= 0.0_wp
+              aa(8)= aa(1)/rsq
+           End If
+
+           aa(3)=aa(4)*aa(8)-aa(7)*aa(5)
+           aa(6)=aa(7)*aa(2)-aa(1)*aa(8)
+           aa(9)=aa(1)*aa(5)-aa(4)*aa(2)
+
+           Call invert(aa,bb,det)
 
 ! Check aa validity
 
-           If (Abs(det) < dettest) Then
+           If (rgdfrz(0,irgd) /= 1 .and. Abs(det) < 1.0e-5_wp) Then
               safe=.false.
               Exit
            End If
 
-! store indices used
-
-           rgdind(1,irgd)=i1
-           rgdind(2,irgd)=i2
-           rgdind(3,irgd)=i3
-
-! store coefficients
+! Store tensor
 
            Do i=1,9
              rgdaxs(i,irgd)=bb(i)
            End Do
-        End If
 
+        Else If (ill == 0) Then
+
+! (1) non-linear molecule or (2) RB with 3+ frozen sites
+! as at least 3 not in line (as if all were)
+
+           If (rgdfrz(0,irgd) > 1) Then
+              rgdind(0,irgd)=4
+              rgdind(1,irgd)=1
+              rgdind(2,irgd)=1
+              rgdind(3,irgd)=1
+           Else
+              i1=1
+              i2=1
+              i3=1
+
+              pass1=.true.
+              dettest=1.0e-1_wp
+
+              Do While (pass1 .and. i2 < lrgd-1)
+
+                 i2=i2+1
+                 i3=i2
+                 pass2=.true.
+
+                 Do While (pass2 .and. i3 < lrgd)
+
+                    i3=i3+1
+
+                    aa(1)=rgdx(i1,irgd)-rgdx(i2,irgd)
+                    aa(4)=rgdy(i1,irgd)-rgdy(i2,irgd)
+                    aa(7)=rgdz(i1,irgd)-rgdz(i2,irgd)
+
+                    aa(2)=rgdx(i1,irgd)-rgdx(i3,irgd)
+                    aa(5)=rgdy(i1,irgd)-rgdy(i3,irgd)
+                    aa(8)=rgdz(i1,irgd)-rgdz(i3,irgd)
+
+                    aa(3)=aa(4)*aa(8)-aa(7)*aa(5)
+                    aa(6)=aa(7)*aa(2)-aa(1)*aa(8)
+                    aa(9)=aa(1)*aa(5)-aa(4)*aa(2)
+
+! invert matrix
+
+                    Call invert(aa,bb,det)
+
+! check on size of determinant - to see if the 3 sites are
+! too close to being linear for safety.
+
+                    pass2=(Abs(det) < dettest)
+
+                 End Do
+
+                 pass1=(Abs(det) < dettest)
+
+              End Do
+
+! Check aa validity
+
+              If (Abs(det) < dettest) Then
+                 safe=.false.
+                 Exit
+              End If
+
+! store indices used
+
+              rgdind(1,irgd)=i1
+              rgdind(2,irgd)=i2
+              rgdind(3,irgd)=i3
+
+! store coefficients
+
+              Do i=1,9
+                rgdaxs(i,irgd)=bb(i)
+              End Do
+           End If
+
+        End If
      End If
   End Do
 
@@ -584,10 +585,21 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 ! As if fully frozen RBs - must get fully frozen then
 
            rgdind(0,nrigid)=5
+           rgdind(1,rgdtyp)=1
+           rgdind(2,rgdtyp)=1
+           rgdind(3,rgdtyp)=1
 
            rgdfrz(0,nrigid)=lrgd
            rgdwgt(0,nrigid)=0.0_wp
            rgdwg1(0,nrigid)=Real(lrgd,wp)
+
+           rgdx(:,nrigid)=0.0_wp
+           rgdy(:,nrigid)=0.0_wp
+           rgdz(:,nrigid)=0.0_wp
+
+           rgdrix(:,nrigid)=0.0_wp
+           rgdriy(:,nrigid)=0.0_wp
+           rgdriz(:,nrigid)=0.0_wp
 
            Call warning(305,Real(irgd,wp),Real(itmols,wp),0.0_wp)
 
@@ -646,7 +658,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
         If (numrgd(itmols) == 0) Write(nrite,"(/,2x,'no rigid bodies specified')")
 
         Do i=1,numrgd(itmols)
-           If (Mod(nrigid,10) == 0) Then
+           If (Mod(nrigid,5) == 0) Then
  Write(nrite,"(/,1x,' type :: members :: frozen status :: unfrozen mass :: translational DoF :: rotational DoF')")
  Write(nrite,"(  1x,'               rotational inertia:        x                   y                   z      ')")
            End If
@@ -681,10 +693,12 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 
  Write(nrite,"(/,i5,2x,i6,9x,i6,9x,f13.6,8x,i6,14x,i6)") nrigid,lrgd,ifrz,rgdwgt(0,nrigid),trargd,rotrgd
  Write(nrite,"(30x,3f20.10)") rgdrix(1,nrigid),rgdriy(1,nrigid),rgdriz(1,nrigid)
+           If (lrgd > ifrz) Then
  Write(nrite,"(  1x,'         member  ::   coordinates:        x                   y                   z      ')")
-           Do jrgd=1,lrgd
+              Do jrgd=1,lrgd
  Write(nrite,"(7x,i6,17x,3f20.10)") jrgd,rgdx(jrgd,nrigid),rgdy(jrgd,nrigid),rgdz(jrgd,nrigid)
-           End Do
+              End Do
+           End If
         End Do
      End Do
   End If

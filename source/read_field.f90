@@ -976,13 +976,14 @@ Subroutine read_field                   &
 
                  Do irgd=nrigid-numrgd(itmols)+1,nrigid
                     lrgd=lstrgd(0,irgd)
-
                     Do jrgd=irgd+1,nrigid
                        krgd=lstrgd(0,jrgd)
-                       If ((Any(lstrgd(1:krgd,jrgd) == lstrgd(1:lrgd,irgd)))) Then
-                           Call warning(400,Real(irgd,wp),Real(jrgd,wp),0.0_wp)
-                           Call error(620)
-                       End If
+                       Do jsite=1,krgd
+                          If ((Any(lstrgd(1:lrgd,irgd) == jsite))) Then
+                              Call warning(400,Real(irgd,wp),Real(jrgd,wp),0.0_wp)
+                              Call error(620)
+                          End If
+                       End Do
                     End Do
                  End Do
 

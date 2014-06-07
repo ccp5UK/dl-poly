@@ -539,7 +539,7 @@ Subroutine read_config_parallel                 &
   Write(nrite,'(1x,2(a,i0))') '***           but maximum & minumum numbers of atoms per domain asked for : ', &
        max_fail, ' & ', min_fail
   Write(nrite,'(1x,a,i0)')    '***           estimated denvar value for passing this stage safely is : ', &
-       Nint((dvar*(Real(max_fail,wp)/Real(mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
+       Nint((dvar*(Real(max_fail,wp)/Real(mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp + 0.5_wp)
               End If
               Call error(45)
            End If

@@ -1745,13 +1745,14 @@ descriptions of this molecule, including the {\bf constraints},
 \D will itself construct the global indices for all atoms in the systems.
 
 {\bf Note} that \D determines which shell model to use by scanning
-shell weights provided the FIELD file (see Section~\ref{shell-model}).
+shells' weights provided the FIELD file (see Section~\ref{shell-models}).
 If all shells have zero weight the \D will choose the relaxed shell
 model.  If no shell has zero weight then \D will choose the dynamical
 one.  In case when some shells are massless and some are not \D will
 terminate execution controllably and provide information about the
 error and possible possible choices of action in the OUTPUT file
-(see Section~\ref{output-file}).
+(see Section~\ref{output-file}).  Shell models' extensions are dealt
+according to the user specifications in the FILED files.
 
 This directive (and associated data records) need not be specified if
 the molecule contains no core-shell units.

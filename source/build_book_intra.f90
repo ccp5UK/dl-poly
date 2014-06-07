@@ -1,7 +1,8 @@
-Subroutine build_book_intra                   &
-           (lsim,megatm,megfrz,atmfre,atmfrz, &
-           megshl,megcon,megpmf,              &
-           megrgd,degrot,degtra,              &
+Subroutine build_book_intra             &
+           (lsim,dvar,                  &
+           megatm,megfrz,atmfre,atmfrz, &
+           megshl,megcon,megpmf,        &
+           megrgd,degrot,degtra,        &
            megtet,megbnd,megang,megdih,meginv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -12,7 +13,7 @@ Subroutine build_book_intra                   &
 ! torsion and improper torsion angles, and inversion angles
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -48,6 +49,7 @@ Subroutine build_book_intra                   &
   Implicit None
 
   Logical,           Intent( In    ) :: lsim
+  Real(Kind = wp),   Intent( in    ) :: dvar
 
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
                                         megshl,megpmf,        &
@@ -59,19 +61,19 @@ Subroutine build_book_intra                   &
   Logical, Save :: newjob = .true.
 
   Logical :: safe(1:11),go
-  Integer :: fail(1:2),imcon,                    &
-             i,j,isite,itmols,imols,             &
-             nsatm,neatm,nlapm,local_index,      &
-             iat0,jat0,kat0,lat0,mat0,nat0,      &
-             iatm,jatm,katm,latm,matm,natm,      &
-             jshels,kshels,lshels,mshels,        &
-             jconst,kconst,lconst,lpmf,          &
-             jrigid,krigid,lrigid,mrigid,irigid, &
-             jteths,kteths,lteths,               &
-             jbonds,kbonds,lbonds,               &
-             jangle,kangle,langle,               &
-             jdihed,kdihed,ldihed,               &
-             jinver,kinver,linver
+  Integer :: fail(1:2),imcon,                       &
+             i,j,isite,itmols,imols,                &
+             nsatm,neatm,nlapm,local_index,         &
+             iat0,jat0,kat0,lat0,mat0,nat0,         &
+             iatm,jatm,katm,latm,matm,natm,         &
+             ishels,jshels,kshels,lshels,mshels,    &
+             iconst,jconst,kconst,lconst,ipmf,lpmf, &
+             irigid,jrigid,krigid,lrigid,mrigid,    &
+             iteths,jteths,kteths,lteths,           &
+             ibonds,jbonds,kbonds,lbonds,           &
+             iangle,jangle,kangle,langle,           &
+             idihed,jdihed,kdihed,ldihed,           &
+             iinver,jinver,kinver,linver
   Real(Kind = wp) :: rcut
 
   Integer, Dimension( : ), Allocatable :: iwrk,irgd,irgd0, &
@@ -95,35 +97,47 @@ Subroutine build_book_intra                   &
 
   isite=0
 
+! "i" stands for excess number of intra-like units
+!
 ! "j" stands for running index of intra-like unit
 !
 ! "k" stands for last index of intra-like unit
 !     on last molecule of previous molecule type
 
+  ishels=0
   jshels=0
   kshels=0
 
+  iconst=0
   jconst=0
   kconst=0
 
 ! No 'jpmf' and 'kpmf' needed since PMF is defined on one and only one
 ! molecular type and therefore 'ntpmf' is enough and is used locally as 'jpmf'
 
+  ipmf  =0
+
+  irigid=0
   jrigid=0
   krigid=0
 
+  iteths=0
   jteths=0
   kteths=0
 
+  ibonds=0
   jbonds=0
   kbonds=0
 
+  iangle=0
   jangle=0
   kangle=0
 
+  idihed=0
   jdihed=0
   kdihed=0
 
+  iinver=0
   jinver=0
   kinver=0
 
@@ -219,6 +233,7 @@ Subroutine build_book_intra                   &
   "***           of type      (       ID #): ", itmols
                     End If
                  Else
+                    ishels=ishels+1
                     safe(2)=.false.
                  End If
               End If
@@ -271,6 +286,7 @@ Subroutine build_book_intra                   &
   "***           of type      (       ID #): ", itmols
                     End If
                  Else
+                    iconst=iconst+1
                     safe(3)=.false.
                  End If
               End If
@@ -353,6 +369,7 @@ Subroutine build_book_intra                   &
                     If (Any(i2pmf0 > 0)) listpmf(0,2,ntpmf)=listpmf(0,2,ntpmf)+2
 
                  Else
+                    ipmf=ipmf+1
                     safe(4)=.false.
                  End If
               End If
@@ -398,6 +415,7 @@ Subroutine build_book_intra                   &
                        End If
                     End Do
                  Else
+                    irigid=irigid+1
                     safe(5)=.false.
                  End If
               End If
@@ -428,6 +446,7 @@ Subroutine build_book_intra                   &
   "***           in molecule  (local  ID #): ", imols,                        &
   "***           of type      (       ID #): ", itmols
                  Else
+                    iteths=iteths+1
                     safe(6)=.false.
                  End If
               End If
@@ -480,6 +499,7 @@ Subroutine build_book_intra                   &
   "***           of type      (       ID #): ", itmols
                     End If
                  Else
+                    ibonds=ibonds+1
                     safe(7)=.false.
                  End If
               End If
@@ -551,6 +571,7 @@ Subroutine build_book_intra                   &
   "***           of type      (       ID #): ", itmols
                     End If
                  Else
+                    iangle=iangle+1
                     safe(8)=.false.
                  End If
               End If
@@ -690,6 +711,7 @@ Subroutine build_book_intra                   &
   "***           of type      (       ID #): ", itmols
                     End If
                  Else
+                    idihed=idihed+1
                     safe(9)=.false.
                  End If
               End If
@@ -778,6 +800,7 @@ Subroutine build_book_intra                   &
   "***           of type      (       ID #): ", itmols
                     End If
                  Else
+                    iinver=iinver+1
                     safe(10)=.false.
                  End If
               End If
@@ -1511,6 +1534,11 @@ Subroutine build_book_intra                   &
 
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe( 1)) Call error( 88)
+  If (Any(.not.safe) .and. idnode == 0) Write(nrite,'(1x,a,i0)')                                       &
+     '*** warning - estimated denvar value for passing this stage safely is : ',                       &
+       Nint(dvar * 100.0_wp*Real(Max(ishels/Max(1,mxshl) , iconst/Max(1,mxcons), ipmf/Max(1,mxpmf)   , &
+                                     irigid/Max(1,mxrgd) , iteths/Max(1,mxteth), ibonds/Max(1,mxbond), &
+                                     iangle/Max(1,mxangl), idihed/Max(1,mxdihd), iinver/Max(1,mxinv)),wp)+0.5_wp)
   If (.not.safe( 2)) Call error( 59)
   If (.not.safe( 3)) Call error( 41)
   If (.not.safe( 4)) Call error(488)

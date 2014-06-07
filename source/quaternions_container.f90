@@ -18,12 +18,12 @@ Subroutine q_setup()
 ! dl_poly_4 subroutine for setting up RBs' quaternions
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,       Only : idnode,mxnode,gmax
+  Use comms_module,       Only : idnode,mxnode,gmax,gsum
   Use setup_module
   Use config_module,      Only : cell,xxx,yyy,zzz
   Use rigid_bodies_module
@@ -31,7 +31,7 @@ Subroutine q_setup()
   Implicit None
 
   Integer           :: fail,imcon,irgd,jrgd,krgd,lrgd,rgdtyp, &
-                       ill,i1,i2,i3
+                       ill,i1,i2,i3,itmp
   Real( Kind = wp ) :: rot(1:9),aa(1:9),rsq,tol, &
                        aq,bq,cq,dq,eq,fq,gq,hq,rnorm, x,y,z
 
@@ -205,6 +205,7 @@ Subroutine q_setup()
   tol=1.0e-2_wp
   rsq=0.0_wp
   krgd=0
+  ill=0
   Do irgd=1,ntrgd
      rgdtyp=listrgd(0,irgd)
 
@@ -213,15 +214,32 @@ Subroutine q_setup()
      lrgd=listrgd(-1,irgd)
      If (rgdfrz(0,rgdtyp) < lrgd) Then ! Keep consistent with above
 
+        itmp=0
         Do jrgd=1,lrgd
            krgd=krgd+1
 
-           rsq=Max(rsq,gxx(krgd)**2+gyy(krgd)**2+gzz(krgd)**2)
+           rnorm=gxx(krgd)**2+gyy(krgd)**2+gzz(krgd)**2
+
+           If (rnorm > tol) Then
+              itmp=1
+              Write(nrite,'(/,1x,a,3i7,0p,2f7.3)')                                                            &
+                   '*** warning - q_setup failure for RB local_id member, on node, with norm > tolerance : ', &
+                   irgd,jrgd,idnode,rnorm,tol
+           End If
+
+           rsq=Max(rsq,rnorm)
         End Do
+        If (itmp == 1) ill=ill+1
+
      End If
   End Do
   If (mxnode > 1) Call gmax(rsq)
-  If (rsq > tol) Call error(648)
+  If (rsq > tol) Then
+     If (mxnode > 1) Call gsum(ill)
+     If (idnode == 0) Write(nrite,'(/,1x,a,i7,2f7.3)') &
+        '*** warning - q_setup failure for RBs total, with Max(norm) > tolerance : ', ill,rsq,tol
+     Call error(648)
+  End If
 
   Deallocate (gxx,gyy,gzz, Stat = fail)
   If (fail > 0) Then

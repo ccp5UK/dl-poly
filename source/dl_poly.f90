@@ -235,6 +235,12 @@ Program dl_poly
            (levcfg,imcon,lsim,l_vv,l_str,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width)
 
+  Call gtime(timelp)
+  If (idnode == 0) Then
+     Write(nrite,'(/,1x,a)') "*** pre-scanning stage (set_bounds) DONE ***"
+     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
+  End If
+
 ! ALLOCATE SITE & CONFIG ARRAYS
 
   Call allocate_site_arrays()
@@ -310,6 +316,12 @@ Program dl_poly
 
   Call check_config &
            (levcfg,imcon,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
+
+  Call gtime(timelp)
+  If (idnode == 0) Then
+     Write(nrite,'(/,1x,a)') "*** all reading and connectivity checks DONE ***"
+     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
+  End If
 
 ! l_org: translate CONFIG into CFGORG and exit gracefully
 
@@ -404,14 +416,21 @@ Program dl_poly
 
   Call set_halo_particles(imcon,rcut,keyfce)
 
+  Call gtime(timelp)
+  If (idnode == 0) Then
+     Write(nrite,'(/,1x,a)') "*** initialisation and haloing DONE ***"
+     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
+  End If
+
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
 
   If (lbook) Then
-     Call build_book_intra                    &
-           (lsim,megatm,megfrz,atmfre,atmfrz, &
-           megshl,megcon,megpmf,              &
-           megrgd,degrot,degtra,              &
+     Call build_book_intra              &
+           (lsim,dvar,                  &
+           megatm,megfrz,atmfre,atmfrz, &
+           megshl,megcon,megpmf,        &
+           megrgd,degrot,degtra,        &
            megtet,megbnd,megang,megdih,meginv)
      If (lexcl) Call build_excl_intra(lecx)
   Else
@@ -439,6 +458,12 @@ Program dl_poly
      End If
   End If
 
+  Call gtime(timelp)
+  If (idnode == 0) Then
+     Write(nrite,'(/,1x,a)') "*** bookkeeping DONE ***"
+     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
+  End If
+
 ! SET initial system temperature
 
   Call set_temperature                &
@@ -449,6 +474,12 @@ Program dl_poly
            megshl,megcon,megpmf,      &
            megrgd,degtra,degrot,      &
            degfre,degshl,sigma,engrot)
+
+  Call gtime(timelp)
+  If (idnode == 0) Then
+     Write(nrite,'(/,1x,a)') "*** temperature setting DONE ***"
+     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
+  End If
 
 ! Frozen atoms option
 
