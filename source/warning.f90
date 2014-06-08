@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2013
+! author    - i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -67,7 +67,7 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,f12.6,a,/,1x,a,/)')                    &
         '*** warning - system cutoff is ', a, ' Angstroms !!! ***', &
-        '*** Fennell damping is not recommended for cutoffs shorther than 12 Angstroms !!! ***'
+        '*** Fennell damping is not recommended for cutoffs shorther than 10-12 Angstroms !!! ***'
 
      Else If (kode ==   8) Then
 

@@ -359,7 +359,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> $n~<~1$ or undefined defaults to $n~=~1$, $n~>~10$ defaults to $n~=~4$) \\
 \>                                              \> \\
 \> {\bf ewald precision} $f$                    \> calculate electrostatic forces using Ewald sum\index{Ewald!SPME}\index{potential!electrostatics} with \\
-\>                                              \> automatic parameter optimisation \\
+\>                                              \> automatic parameter optimisation for precission $f$ \\
 \>                                              \> ($10^{-20}~\le~f~\le~0.5$, default $f~=~10^{-20}$) \\
 \>                                              \> \\
 \> {\bf ewald} (sum) $\alpha~k_{1}~k_{2}~k_{3}$ \> calculate electrostatic forces using Ewald sum\index{Ewald!SPME}\index{potential!electrostatics} with \\
@@ -542,6 +542,11 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> with Fennell \cite{fennell-06a} damping (Ewald-like convergence) \\
 \>                                              \> parameter $\alpha$ in \AA$^{-1}$ \\
 \>                                              \> \\
+\> {\bf reaction} (field) {\bf precision} $f$   \> calculate electrostatic forces using reaction field\index{reaction field} electrostatics\index{potential!electrostatics} \\
+\>                                              \> with Fennell \cite{fennell-06a} damping (Ewald-like convergence) \\
+\>                                              \> derived by automatic parameter optimisation for precision $f$ \\
+\>                                              \> as for Ewald summation ($10^{-20}~\le~f~\le~0.5$, default $f~=~10^{-20}$) \\
+\>                                              \> \\
 \> {\bf regaus}s (every) $n$                    \> resample the instantaneous system momenta distribution \\
 \>                                              \> every $n$ steps during equilibration \\
 \>                                              \> (with respect to the last equilibration step) \\
@@ -589,6 +594,11 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf shift damp} $\alpha$                    \> calculate electrostatic forces using force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
 \>                                              \> with Fennell \cite{fennell-06a} damping (Ewald-like convergence) \\
 \>                                              \> parameter $\alpha$ in \AA$^{-1}$ \\
+\>                                              \> \\
+\> {\bf shift precision} $f$                    \> calculate electrostatic forces using force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
+\>                                              \> with Fennell \cite{fennell-06a} damping (Ewald-like convergence) \\
+\>                                              \> derived by automatic parameter optimisation for precision $f$ \\
+\>                                              \> as for Ewald summation ($10^{-20}~\le~f~\le~0.5$, default $f~=~10^{-20}$) \\
 \>                                              \> \\
 \> {\bf slab}                                   \> limits the number of processors in z-direction to 2 \\
 \>                                              \> for slab simulations \\

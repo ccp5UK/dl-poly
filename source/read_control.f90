@@ -102,7 +102,7 @@ Subroutine read_control                                &
   Integer                                 :: i,j,k,itmp,nstana,grdana,grdbnd,grdang, &
                                              grddih,grdinv,nstall
 
-  Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,rcb_d
+  Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,eps,tol,rcb_d
 
 
 ! initialise system control variables and their logical switches
@@ -1610,11 +1610,18 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
 
-        If (word(1:4) == 'damp') Then
+        If      (word(1:4) == 'damp') Then
            Call get_word(record,word)
            alpha = Abs(word_2_real(word))
-
-           If (idnode == 0) Write(nrite,"(1x,'Damping parameter (A^-1)',10x,1p,e12.4)") alpha
+           If (idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1)',10x,1p,e12.4)") alpha
+        Else If (word(1:9) == 'precision') Then
+           Call get_word(record,word)
+           eps = Abs(word_2_real(word))
+           If (idnode == 0) Write(nrite,"(1x,'precision parameter     ',10x,1p,e12.4)") eps
+           eps = Max(Min(eps,0.5_wp),1.0e-20_wp)
+           tol = Sqrt(Abs(Log(eps*rcut)))
+           alpha = Sqrt(Abs(Log(eps*rcut*tol)))/rcut
+           If (idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1) derived',2x,1p,e12.4)") alpha
         End If
         If (alpha > zero_plus) Then
            If (idnode == 0) Write(nrite,"(1x,'Fennell damping applied')")
@@ -1634,11 +1641,18 @@ Subroutine read_control                                &
         If (word(1:5) == 'field') Call get_word(record,word)
         Call get_word(record,word)
 
-        If (word(1:4) == 'damp') Then
+        If      (word(1:4) == 'damp') Then
            Call get_word(record,word)
            alpha = Abs(word_2_real(word))
-
-           If (idnode == 0) Write(nrite,"(1x,'Damping parameter (A^-1)',10x,1p,e12.4)") alpha
+           If (idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1)',10x,1p,e12.4)") alpha
+        Else If (word(1:9) == 'precision') Then
+           Call get_word(record,word)
+           eps = Abs(word_2_real(word))
+           If (idnode == 0) Write(nrite,"(1x,'precision parameter     ',10x,1p,e12.4)") eps
+           eps = Max(Min(eps,0.5_wp),1.0e-20_wp)
+           tol = Sqrt(Abs(Log(eps*rcut)))
+           alpha = Sqrt(Abs(Log(eps*rcut*tol)))/rcut
+           If (idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1) derived',2x,1p,e12.4)") alpha
         End If
         If (alpha > zero_plus) Then
            If (idnode == 0) Write(nrite,"(1x,'Fennell damping applied')")
