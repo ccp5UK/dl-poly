@@ -19,7 +19,7 @@ Subroutine dihedrals_compute(temp)
 
   Implicit None
 
-  Integer, Intent( In    ) :: temp
+  Real( Kind = wp ), Intent( In    ) :: temp
 
   Logical           :: zero
   Integer           :: fail,i,j,ig,kk,ll
