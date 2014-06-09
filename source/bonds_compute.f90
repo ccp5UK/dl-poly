@@ -71,7 +71,7 @@ Subroutine bonds_compute(temp)
      Write(npdfdt,'(a)') '# '//cfgname
      Write(npdfdt,'(a,2(i10,1x),f5.2,1x,i10)') '# types, bins, cutoff, frames: ',kk,mxgbnd1,rcbnd,ncfbnd
      Write(npdfdt,'(a)') '#'
-     Write(npdfdt,'(a,f8.5)') '# r(Angstroms)  P_bond(r)  P_bond(r)/r^2   @   dr_bin = ',delr
+     Write(npdfdt,'(a,f8.5)') '# r(Angstroms)  Pn_bond(r)  Pn_bond(r)/r^2   @   dr_bin = ',delr
      Write(npdfdt,'(a)') '#'
   End If
 
@@ -131,16 +131,21 @@ Subroutine bonds_compute(temp)
 
 ! now pdfbnd is normalised by the volume element (as to go to unity at infinity in gases and liquids)
 
-           pdfbnd= pdfbnd*rdlr/dvol
+           pdfbnd= pdfbnd*rdlr
 
 ! print out information
 
            If (idnode == 0) Then
               If (.not.zero) Write(nrite,"(f11.5,1p,2e14.6)") rrr,pdfbnd1,sum1
-              Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,pdfbnd*dvol,pdfbnd
+              Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,pdfbnd,pdfbnd/dvol
            End If
 
-           dstdbnd(ig,i) = pdfbnd ! PDFs density
+! We use the non-normalised tail-truncated PDF version,
+! pdf...1 (not pdf...) in order to exclude the nearly-zero
+! pdf... noise in PMF, otherwise the PMF = -ln(PDF)
+! would have poorly-defined noisy "borders/walls"
+
+           dstdbnd(ig,i) = pdfbnd1*rdlr/dvol ! PDFs density
         End Do
      Else
         dstdbnd(:,i) = 0 ! PDFs density

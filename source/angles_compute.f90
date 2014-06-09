@@ -76,7 +76,7 @@ Subroutine angles_compute(temp)
      Write(npdfdt,'(a)') '# '//cfgname
      Write(npdfdt,'(a,4(1x,i10))') '# types, bins, cutoff, frames:',kk,mxgang1,180,ncfang
      Write(npdfdt,'(a)') '#'
-     Write(npdfdt,'(a,f8.5)') '# Theta(degrees)  P_ang(Theta)  P_ang(Theta)/Sin(Theta)   @   dTheta_bin = ',delth*rad2dgr
+     Write(npdfdt,'(a,f8.5)') '# Theta(degrees)  Pn_ang(Theta)  Pn_ang(Theta)/Sin(Theta)   @   dTheta_bin = ',delth*rad2dgr
      Write(npdfdt,'(a)') '#'
   End If
 
@@ -133,22 +133,30 @@ Subroutine angles_compute(temp)
 
            theta = (Real(ig,wp)-0.5_wp)*delth
 
+! Jacobian rsint = 1.0_wp/sinth must only be used for the PMF calculations below,
+! which require renormalising: dstdang(ig,i) = pdfang1*rsint
+
            sinth = Max(1.0e-10_wp,Sin(theta))
            rsint = 1.0_wp/sinth
 
 ! now pdfang is normalised by the volume element (as to go to unity at infinity in gases and liquids)
 
-           pdfang = pdfang*rdlth*rsint
+           pdfang = pdfang*rdlth
 
 ! print out information
 
            theta  = theta*rad2dgr
            If (idnode == 0) Then
               If (.not.zero) Write(nrite,"(f11.5,1p,2e14.6)") theta,pdfang1,sum1
-              Write(npdfdt,"(f11.5,1p,2e14.6)") theta,pdfang/rdlth,pdfang
+              Write(npdfdt,"(f11.5,1p,2e14.6)") theta,pdfang,pdfang*rsint
            End If
 
-           dstdang(ig,i) = pdfang ! PDFs density
+! We use the non-normalised tail-truncated PDF version,
+! pdf...1 (not pdf...) in order to exclude the nearly-zero
+! pdf... noise in PMF, otherwise the PMF = -ln(PDF/sinth)
+! would have poorly-defined noisy "borders/walls"
+
+           dstdang(ig,i) = pdfang1*rsint ! PDFs density
         End Do
      Else
         dstdang(:,i) = 0 ! PDFs density

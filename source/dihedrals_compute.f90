@@ -76,7 +76,7 @@ Subroutine dihedrals_compute(temp)
      Write(npdfdt,'(a)') '# '//cfgname
      Write(npdfdt,'(a,4(1x,i10))') '# types, bins, cutoff, frames:',kk,mxgdih1,360,ncfdih
      Write(npdfdt,'(a)') '#'
-     Write(npdfdt,'(a,f8.5)') '# Theta(degrees)  P_dih(Theta)   @   dTheta_bin = ',delth*rad2dgr
+     Write(npdfdt,'(a,f8.5)') '# Theta(degrees)  Pn_dih(Theta)   @   dTheta_bin = ',delth*rad2dgr
      Write(npdfdt,'(a)') '#'
   End If
 
@@ -145,7 +145,12 @@ Subroutine dihedrals_compute(temp)
               Write(npdfdt,"(f11.5,1p,e14.6)") theta,pdfdih
            End If
 
-           dstddih(ig,i) = pdfdih ! PDFs density
+! We use the non-normalised tail-truncated PDF version,
+! pdf...1 (not pdf...) in order to exclude the nearly-zero
+! pdf... noise in PMF, otherwise the PMF = -ln(PDF)
+! would have poorly-defined noisy "borders/walls"
+
+           dstddih(ig,i) = pdfdih1 ! PDFs density
         End Do
      Else
         dstddih(:,i) = 0 ! PDFs density

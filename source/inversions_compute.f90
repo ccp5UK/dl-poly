@@ -76,7 +76,7 @@ Subroutine inversions_compute(temp)
      Write(npdfdt,'(a)') '# '//cfgname
      Write(npdfdt,'(a,4(1x,i10))') '# types, bins, cutoff, frames:',kk,mxginv1,180,ncfinv
      Write(npdfdt,'(a)') '#'
-     Write(npdfdt,'(a,f8.5)') '# Theta(degrees)  P_inv(Theta)   @   dTheta_bin = ',delth*rad2dgr
+     Write(npdfdt,'(a,f8.5)') '# Theta(degrees)  Pn_inv(Theta)   @   dTheta_bin = ',delth*rad2dgr
      Write(npdfdt,'(a)') '#'
   End If
 
@@ -145,7 +145,12 @@ Subroutine inversions_compute(temp)
               Write(npdfdt,"(f11.5,1p,e14.6)") theta,pdfinv
            End If
 
-           dstdinv(ig,i) = pdfinv ! PDFs density
+! We use the non-normalised tail-truncated PDF version,
+! pdf...1 (not pdf...) in order to exclude the nearly-zero
+! pdf... noise in PMF, otherwise the PMF = -ln(PDF)
+! would have poorly-defined noisy "borders/walls"
+
+           dstdinv(ig,i) = pdfinv1 ! PDFs density
         End Do
      Else
         dstdinv(:,i) = 0 ! PDFs density
