@@ -116,10 +116,11 @@
 ! exclusion arrays for overlapped two-body inter-like interactions
 
         If (lbook) Then
-           Call build_book_intra              &
-           (lsim,megatm,megfrz,atmfre,atmfrz, &
-           megshl,megcon,megpmf,              &
-           megrgd,degrot,degtra,              &
+           Call build_book_intra        &
+           (lsim,dvar,                  &
+           megatm,megfrz,atmfre,atmfrz, &
+           megshl,megcon,megpmf,        &
+           megrgd,degrot,degtra,        &
            megtet,megbnd,megang,megdih,meginv)
            If (lexcl) Call build_excl_intra(lecx)
         End If

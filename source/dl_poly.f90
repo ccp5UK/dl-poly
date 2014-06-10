@@ -653,9 +653,9 @@ Program dl_poly
 
   If (.not.lsim) tstep=tsths ! tstep for 'replay history'
 
-  Call statistics_result                     &
-           (rcut,lmin,lrdf,lprdf,lzdn,lpzdn, &
-           nstrun,keyens,keyshl,iso,         &
+  Call statistics_result                           &
+           (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn, &
+           nstrun,keyens,keyshl,iso,               &
            temp,press,strext,nstep,tstep,time,tmst)
 
 10 Continue
