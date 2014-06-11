@@ -117,15 +117,15 @@ Subroutine inversions_compute(temp)
            pdfinv = dstinv(ig,i)*factor1
            sum = sum + pdfinv
 
-! null it if < 1.0e-4_wp
+! null it if < 1.0e-5_wp
 
-           If (pdfinv < 1.0e-4_wp) Then
+           If (pdfinv < 1.0e-5_wp) Then
               pdfinv1 = 0.0_wp
            Else
               pdfinv1 = pdfinv
            End If
 
-           If (sum < 1.0e-4_wp) Then
+           If (sum < 1.0e-5_wp) Then
               sum1 = 0.0_wp
            Else
               sum1 = sum

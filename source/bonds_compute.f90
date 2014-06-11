@@ -112,15 +112,15 @@ Subroutine bonds_compute(temp)
            pdfbnd= dstbnd(ig,i)*factor1
            sum = sum + pdfbnd
 
-! null it if < 1.0e-4_wp
+! null it if < 1.0e-5_wp
 
-           If (pdfbnd < 1.0e-4_wp) Then
+           If (pdfbnd < 1.0e-5_wp) Then
               pdfbnd1 = 0.0_wp
            Else
               pdfbnd1 = pdfbnd
            End If
 
-           If (sum < 1.0e-4_wp) Then
+           If (sum < 1.0e-5_wp) Then
               sum1 = 0.0_wp
            Else
               sum1 = sum
@@ -131,13 +131,13 @@ Subroutine bonds_compute(temp)
 
 ! now pdfbnd is normalised by the volume element (as to go to unity at infinity in gases and liquids)
 
-           pdfbnd= pdfbnd*rdlr
+!           pdfbnd= pdfbnd*rdlr
 
 ! print out information
 
            If (idnode == 0) Then
               If (.not.zero) Write(nrite,"(f11.5,1p,2e14.6)") rrr,pdfbnd1,sum1
-              Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,pdfbnd,pdfbnd/dvol
+              Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,pdfbnd*rdlr,pdfbnd/dvol
            End If
 
 ! We use the non-normalised tail-truncated PDF version,
@@ -145,7 +145,7 @@ Subroutine bonds_compute(temp)
 ! pdf... noise in PMF, otherwise the PMF = -ln(PDF)
 ! would have poorly-defined noisy "borders/walls"
 
-           dstdbnd(ig,i) = pdfbnd1*rdlr/dvol ! PDFs density
+           dstdbnd(ig,i) = pdfbnd1/dvol ! PDFs density
         End Do
      Else
         dstdbnd(:,i) = 0 ! PDFs density
@@ -175,8 +175,8 @@ Subroutine bonds_compute(temp)
 ! Smoothen and get derivatives
 
         fed0  = 0.0_wp
-        dfed0 = 10.0_wp
-        dfed  = 10.0_wp
+        dfed0 = 1000.0_wp
+        dfed  = 1000.0_wp
 
         Do ig=1,mxgbnd1
            tmp = Real(ig,wp)-0.5_wp
@@ -201,17 +201,17 @@ Subroutine bonds_compute(temp)
               If      (dstdbnd(ig,i) > zero_plus .and. dstdbnd(ig+1,i) > zero_plus) Then
                  dfed = Log(dstdbnd(ig+1,i)/dstdbnd(ig,i))
               Else If (dfed > 0.0_wp) Then
-                 dfed = dfed0
+                 dfed = dfed0/tmp
               Else
-                 dfed =-dfed0
+                 dfed =-dfed0/tmp
               End If
            Else If (ig == mxgbnd1) Then
               If      (dstdbnd(ig,i) > zero_plus .and. dstdbnd(ig-1,i) > zero_plus) Then
                  dfed = Log(dstdbnd(ig,i)/dstdbnd(ig-1,i))
               Else If (dfed > 0.0_wp) Then
-                 dfed = dfed0
+                 dfed = dfed0/tmp
               Else
-                 dfed =-dfed0
+                 dfed =-dfed0/tmp
               End If
            Else If (dstdbnd(ig-1,i) > zero_plus) Then
               If (dstdbnd(ig+1,i) > zero_plus) Then
@@ -222,9 +222,9 @@ Subroutine bonds_compute(temp)
            Else If (dstdbnd(ig+1,i) > zero_plus) Then
               dfed =-0.5_wp*Log(dstdbnd(ig+1,i))
            Else If (dfed > 0.0_wp) Then
-              dfed = dfed0
+              dfed = dfed0/tmp
            Else
-              dfed =-dfed0
+              dfed =-dfed0/tmp
            End If
 
 ! Print

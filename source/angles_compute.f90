@@ -117,15 +117,15 @@ Subroutine angles_compute(temp)
            pdfang = dstang(ig,i)*factor1
            sum = sum + pdfang
 
-! null it if < 1.0e-4_wp
+! null it if < 1.0e-5_wp
 
-           If (pdfang < 1.0e-4_wp) Then
+           If (pdfang < 1.0e-5_wp) Then
               pdfang1 = 0.0_wp
            Else
               pdfang1 = pdfang
            End If
 
-           If (sum < 1.0e-4_wp) Then
+           If (sum < 1.0e-5_wp) Then
               sum1 = 0.0_wp
            Else
               sum1 = sum
