@@ -202,8 +202,7 @@ Function sarurnd(seeda, seedb, seedc)
 ! Note: It returns in [0,1)
 !
 ! copyright - daresbury laboratory
-! author    - m.a.seaton may 2013
-! amended   - i.t.todorov february 2014
+! author    - i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -212,64 +211,160 @@ Function sarurnd(seeda, seedb, seedc)
 
   Implicit None
 
-  Integer,     Intent( In    ) :: seeda,  seedb,  seedc
+  Integer, Intent( In    ) :: seeda,  seedb,  seedc
 
-  Integer                      :: seed1,  seed2,  seed3,  &
-                                  seed1a, seed2a, seed3a, &
-                                  state, wstate, v, u32
-  Real( Kind = wp )            :: statepart1, statepart2, sarurnd
+  Integer( Kind = ip ) :: seed1,  seed2,  seed3, &
+                          state, wstate, v, u32, itmp
+  Real( Kind = wp )    :: statepart1, statepart2, tmp, sarurnd
 
-  Real( Kind = wp ), Parameter :: rtwo32 = (2.0_wp)**(-32)
+  Integer( Kind = ip ), Parameter :: two32  = 2_ip**32
+  Real( Kind = wp ),    Parameter :: two32r = 2.0_wp**32, &
+                                     rtwo32 = (2.0_wp)**(-32)
 
 ! Apply possible shifting - usually (0,0,0)
 
   If (.not.lseed) Then
-     seed1 = seeda
-     seed2 = seedb
-     seed3 = seedc
+     seed1 = Int(seeda,Kind=ip)
+     seed2 = Int(seedb,Kind=ip)
+     seed3 = Int(seedc,Kind=ip)
   Else
-     seed1 = seeda + seed(1)
-     seed2 = seedb + seed(2)
-     seed3 = seedc + seed(3)
+     seed1 = Int(seeda,Kind=ip) + Int(seed(1),Kind=ip)
+     seed2 = Int(seedb,Kind=ip) + Int(seed(2),Kind=ip)
+     seed3 = Int(seedc,Kind=ip) + Int(seed(3),Kind=ip)
   End If
+
+! Wrap up
+
+  seed1 = Mod(seed1, two32) ; If (seed1 < 0) seed1 = seed1 + two32
+  seed2 = Mod(seed2, two32) ; If (seed2 < 0) seed2 = seed2 + two32
+  seed3 = Mod(seed3, two32) ; If (seed3 < 0) seed3 = seed3 + two32
 
 ! apply premixing to seeds
 
-  seed3a = Ieor(seed3, Ieor(Ishft(seed1, 7), Ishft(seed2, -6)))
-  seed2a = seed2 + Ieor(Ishft(seed1, -4), Ishft(seed3a, -15))
-  seed1a = Ieor(seed1, Ishft(seed2a, 9) + Ishft(seed3a, 8))
-  seed3a = Ieor(seed3a, -1523160243 * Ieor(Ishft(seed2a, -11), Ishft(seed1a, 1)))
-  seed2a = seed2a + 1925059961 * Ieor(Ishft(seed1a, 4), Ishft(seed3a, -16))
-  seed1a = Ieor(seed1a, 1060677357 * Ieor(Ishft(seed3a, -5), Ishft(seed2a, -22)))
-  seed2a = seed2a + seed1a * seed3a
-  seed1a = seed1a + Ieor(seed3a, Ishft (seed2a, -2))
-  seed2a = Ieor(seed2a, Ishft(seed2a, -17))
+! seed3 ^= (seed1<<7)^(seed2>>6);
+
+  seed3 = Ieor(seed3, Ieor(Ishft(seed1, 7_ip), Ishft(seed2, -6_ip)))
+  seed3 = Mod(seed3, two32)
+
+! seed2 += (seed1>>4)^(seed3>>15);
+
+  itmp  = Ieor(Ishft(seed1, -4_ip), Ishft(seed3, -15_ip))
+  seed2 = seed2 + itmp
+  seed2 = Mod(seed2, two32)
+
+! seed1 ^= (seed2<<9)+(seed3<<8);
+
+  seed1 = Ieor(seed1, Ishft(seed2, 9_ip) + Ishft(seed3, 8_ip))
+  seed1 = Mod(seed1, two32)
+
+! seed3 ^= 0xA5366B4D*((seed2>>11) ^ (seed1<<1));
+
+  itmp  = Ieor(Ishft(seed2, -11_ip), Ishft(seed1, 1_ip))
+  tmp   = 2771807053_wp * Real(itmp, Kind=wp)
+  itmp  = Int(Mod(tmp, two32r), Kind=ip)
+  seed3 = Ieor(seed3, itmp)
+  seed3 = Mod(seed3, two32)
+
+! seed2 += 0x72BE1579*((seed1<<4) ^ (seed3>>16));
+
+  itmp  = Ieor(Ishft(seed1, 4_ip), Ishft(seed3, -16_ip))
+  tmp   = 1925059961_wp * Real(itmp, Kind=wp)
+  itmp  = Int(Mod(tmp, two32r), Kind=ip)
+  seed2 = seed2 + itmp
+  seed2 = Mod(seed2, two32)
+
+! seed1 ^= 0X3F38A6ED*((seed3>>5) ^ (((signed int)seed2)>>22));
+
+  itmp  = Ieor(Ishft(seed3, -5_ip), Ishft(Int(Int(seed2), Kind=ip), -22_ip))
+  tmp   = 1060677357_wp * Real(itmp, Kind=wp)
+  itmp  = Int(Mod(tmp, two32r), Kind=ip)
+  If (itmp < 0) itmp = itmp + two32
+  seed1 = Ieor(seed1, itmp)
+  seed1 = Mod(seed1, two32)
+
+! seed2 += seed1*seed3;
+
+  tmp   = Real(seed1, Kind=wp) * Real(seed3, Kind=wp)
+  itmp  = Int(Mod(tmp, two32r), Kind=ip)
+  seed2 = seed2 + itmp
+  seed2 = Mod(seed2, two32)
+
+! seed1 += seed3 ^ (seed2>>2);
+
+  seed1 = seed1 + Ieor(seed3, Ishft (seed2, -2_ip))
+  seed1 = Mod(seed1, two32)
+
+! seed2 ^= ((signed int)seed2)>>17;
+
+  seed2 = Ieor(seed2, Ishft(Int(Int(seed2), Kind=ip), -17_ip))
+  If (seed2 < 0) seed2 = seed2 + two32
 
 ! convert seeds to state values
 
-  state = 2044649123 * Ieor(seed1a, Ishft(seed1, -14))
-  wstate = Ieor((state+seed2a), Ishft(state, -8))
-  state = state + wstate * Ieor(wstate, -572549131)
-  wstate = -1412720905 + Ishft(wstate, -1)
+! state = 0x79dedea3*(seed1^(((signed int)seed1)>>14));
+
+  itmp  = Ieor(seed1, Ishft(Int(Int(seed1), Kind=ip), -14_ip))
+  tmp   = 2044649123_wp * Real(itmp, Kind=wp)
+  state = Int(Mod(tmp, two32r), Kind=ip)
+  If (state < 0) state = state + two32
+
+! wstate = (state + seed2) ^ (((signed int)state)>>8);
+
+  wstate = Ieor((state+seed2), Ishft(Int(Int(state), Kind=ip), -8_ip))
+  wstate = Mod(wstate, two32) ; If (wstate < 0) wstate = wstate + two32
+
+! state = state + (wstate*(wstate^0xdddf97f5));
+
+  itmp  = Ieor(wstate, 3722418165_ip)
+  tmp   = Real(wstate, Kind=wp) * Real(itmp, Kind=wp)
+  itmp  = Int(Mod(tmp, two32r), Kind=ip)
+  state = state + itmp
+  state = Mod(state, two32)
+
+! wstate = 0xABCB96F7 + (wstate>>1);
+
+  wstate = 2882246391_ip + Ishft(wstate, -1_wp)
+  wstate = Mod(wstate, two32)
 
 ! advance LCG state by 1
+! state = 0x4beb5d59*state + 0x2600e1f7; // LCG
 
-  state = 1273716057 * state + 637592055
+  tmp   = 1273716057_wp * Real(state, Kind=wp)
+  itmp  = Int(Mod(tmp, two32r), Kind=ip)
+  state = itmp + 637592055_ip
+  state = Mod(state, two32)
 
-! advance Weyl state by 1
+! advance Weyl state by 1, for oWeylOffset=0x8009d14b & oWeylPeriod=0xda879add
+! wstate = wstate + oWeylOffset + ((((signed int)wstate)>>31)&oWeylPeriod); // OWS
 
-  wstate = wstate - 2146840245 + Iand(Ishft(wstate, -31), -628647203)
+  wstate = wstate + 2148127051_ip + Iand(Ishft(Int(Int(wstate),Kind=ip), -31_ip), 3666320093_ip)
+  wstate = Mod(wstate, two32)
 
 ! calculate 32-bit pseudo-random number
 
-  v = Ieor(state, Ishft(state, -26)) + wstate
-  u32 = Ieor(v, Ishft(v, -20)) * 1767372199
+! v = (state ^ (state>>26))+wstate;
+
+  v = Ieor(state, Ishft(state, -26_ip)) + wstate
+  v = Mod(v, two32)
+
+! u32 = (v^(v>>20))*0x6957f5a7;
+
+  itmp = Ieor(v, Ishft(v, -20_ip))
+  tmp  = Real(itmp, Kind=wp) * 1767372199_wp
+  u32  = Int(Mod(tmp, two32r), Kind=ip)
 
 ! convert to real (double-precision) number between 0 and 1
 
-  statepart1 = Real(u32, Kind=wp) * rtwo32 + (0.5_wp+0.5_wp*rtwo32)
-  statepart2 = Real(state, Kind=wp) * rtwo32 * rtwo32
-  If (state < 0) statepart2 = statepart2 + 0.5_dp * rtwo32
+! statep1 = ((signed int)u32)*TWO_N32+(0.5+0.5*TWO_N32);
+
+  statepart1 = Real(Int(Int(u32),Kind=ip), Kind=wp) * rtwo32 + (0.5_wp+0.5_wp*rtwo32)
+
+! statep2 = state*(TWO_N32*TWO_N32);
+
+  statepart2 = Real(state, Kind=wp) * rtwo32**2
+
+! sarurand=statep1+statep2
+
   sarurnd = statepart1 + statepart2
 
 End Function sarurnd
@@ -285,7 +380,7 @@ Subroutine box_mueller_saru1(i,j,gauss1)
 ! dependent on sarurnd
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -302,14 +397,14 @@ Subroutine box_mueller_saru1(i,j,gauss1)
 
 ! Initialise counter
 
-  k=1
+  k=0
 
 ! generate uniform random numbers on [-1, 1)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*sarurnd(i,k  ,j)-1.0_wp
-     ran2=2.0_wp*sarurnd(i,k+1,j)-1.0_wp
+     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
      ran0=ran1**2+ran2**2
      k=k+2
   End Do
@@ -332,7 +427,7 @@ Subroutine box_mueller_saru3(i,j,gauss1,gauss2,gauss3)
 ! dependent on sarurnd
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -349,14 +444,14 @@ Subroutine box_mueller_saru3(i,j,gauss1,gauss2,gauss3)
 
 ! Initialise counter
 
-  k=1
+  k=0
 
 ! generate uniform random numbers on [-1, 1)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*sarurnd(i,k  ,j)-1.0_wp
-     ran2=2.0_wp*sarurnd(i,k+1,j)-1.0_wp
+     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
      ran0=ran1**2+ran2**2
      k=k+2
   End Do
@@ -371,8 +466,8 @@ Subroutine box_mueller_saru3(i,j,gauss1,gauss2,gauss3)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*sarurnd(i,k  ,j)-1.0_wp
-     ran2=2.0_wp*sarurnd(i,k+1,j)-1.0_wp
+     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
      ran0=ran1**2+ran2**2
      k=k+2
   End Do
@@ -395,7 +490,7 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 ! dependent on sarurnd
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -413,14 +508,14 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 
 ! Initialise counter
 
-  k=1
+  k=0
 
 ! generate uniform random numbers on [-1, 1)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*sarurnd(i,k  ,j)-1.0_wp
-     ran2=2.0_wp*sarurnd(i,k+1,j)-1.0_wp
+     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
      ran0=ran1**2+ran2**2
      k=k+2
   End Do
@@ -435,8 +530,8 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*sarurnd(i,k  ,j)-1.0_wp
-     ran2=2.0_wp*sarurnd(i,k+1,j)-1.0_wp
+     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
      ran0=ran1**2+ran2**2
      k=k+2
   End Do
@@ -451,8 +546,8 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*sarurnd(i,k  ,j)-1.0_wp
-     ran2=2.0_wp*sarurnd(i,k+1,j)-1.0_wp
+     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
      ran0=ran1**2+ran2**2
      k=k+2
   End Do

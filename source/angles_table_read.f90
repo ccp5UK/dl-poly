@@ -6,7 +6,7 @@ Subroutine angles_table_read(angl_name)
 ! from TABANG file (for angle potentials & forces only)
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov may 2014
+! author    - a.v.brukhno & i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -31,8 +31,8 @@ Subroutine angles_table_read(angl_name)
   Integer                :: fail(1:2),ngrid,rtang,itang,jtang,katom1,katom2,katom3,jtpatm,i,l
   Real( Kind = wp )      :: delpot,dlrpot,rad2dgr,dgr2rad,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
 
-  Integer,                           Allocatable :: read_type(:)
-  Real( Kind = wp ), Dimension( : ), Allocatable :: bufpot(:),bufvir(:)
+  Integer,           Allocatable :: read_type(:)
+  Real( Kind = wp ), Allocatable :: bufpot(:),bufvir(:)
 
 
   If (idnode == 0) Open(Unit=ntable, File='TABANG')
@@ -200,7 +200,7 @@ Subroutine angles_table_read(angl_name)
 ! linear extrapolation for distance close to 0
 
            bufpot(0) = 2.0_wp*bufpot(1)-bufpot(2)
-           bufvir(0) = (2.0_wp*bufvir(1)-0.5_wp*bufvir(2))*rdr
+           bufvir(0) = (2.0_wp*bufvir(1)-0.5_wp*bufvir(2))/dlrpot
         Else ! zero element data found => read in the first element for checking delr
            bufpot(0) = bufp0
            bufvir(0) = bufv0 ! virial/angle - finite force!

@@ -17,7 +17,7 @@ Subroutine set_bounds                                       &
   Use comms_module,       Only : idnode,mxnode
   Use setup_module
   Use domains_module,     Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
-  Use config_module,      Only : cfgname,cell,volm
+  Use config_module,      Only : imc_n,cfgname,cell,volm
   Use vnl_module,         Only : llvnl ! Depends on lsim, rpad & l_str
   Use msd_module
   Use bonds_module,       Only : rcbnd
@@ -32,7 +32,7 @@ Subroutine set_bounds                                       &
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
 
   Logical           :: l_n_r,lzdn,lext
-  Integer           :: megatm,imc_n,ilx,ily,ilz,qlx,qly,qlz, &
+  Integer           :: megatm,ilx,ily,ilz,qlx,qly,qlz, &
                        mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
   Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
                        dens0,dens,fdens,        &
@@ -63,7 +63,7 @@ Subroutine set_bounds                                       &
            mxmet,mxmed,mxmds,rmet,mxgmet,             &
            mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext)
 
-! Get imc_r & dvar
+! Get imc_r & set dvar
 
   Call scan_control_pre(imc_n,dvar)
 

@@ -7,7 +7,7 @@ Subroutine rigid_bodies_split_torque(imcon,gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 2006
-! adapted   - i.t.todorov july 2013
+! adapted   - i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -143,9 +143,8 @@ Subroutine rigid_bodies_split_torque(imcon,gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
         Do jrgd=1,lrgd
            krgd=krgd+1
 
+           i=indrgd(jrgd,irgd) ! local index of particle/site
            If (rgdfrz(jrgd,rgdtyp) == 0) Then ! Apply restrictions
-              i=indrgd(jrgd,irgd) ! local index of particle/site
-
               txx(i)=ggy(krgd)*tqz-tqy*ggz(krgd)
               tyy(i)=ggz(krgd)*tqx-tqz*ggx(krgd)
               tzz(i)=ggx(krgd)*tqy-tqx*ggy(krgd)

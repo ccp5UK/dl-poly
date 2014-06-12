@@ -16,7 +16,7 @@ Subroutine scan_control_pre(imc_n,dvar)
   Use parse_module,  Only : get_line,get_word,lower_case,word_2_real
   Implicit None
 
-  Integer,           Intent(   Out ) :: imc_n
+  Integer,           Intent( InOut ) :: imc_n
   Real( Kind = wp ), Intent(   Out ) :: dvar
 
   Logical                :: carry,safe

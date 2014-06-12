@@ -31,8 +31,8 @@ Subroutine dihedrals_table_read(dihd_name)
   Integer                :: fail(1:2),ngrid,rtdih,itdih,jtdih,katom1,katom2,katom3,katom4,jtpatm,i,l
   Real( Kind = wp )      :: delpot,dlrpot,rad2dgr,dgr2rad,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
 
-  Integer,                           Allocatable :: read_type(:)
-  Real( Kind = wp ), Dimension( : ), Allocatable :: bufpot(:),bufvir(:)
+  Integer,           Allocatable :: read_type(:)
+  Real( Kind = wp ), Allocatable :: bufpot(:),bufvir(:)
 
 
   If (idnode == 0) Open(Unit=ntable, File='TABDIH')

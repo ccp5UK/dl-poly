@@ -27,7 +27,7 @@ Subroutine npt_l1_vv                          &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,       Only : idnode,mxnode,gsum,gmax
+  Use comms_module,       Only : idnode,mxnode,gmax
   Use setup_module
   Use domains_module,     Only : map
   Use site_module,        Only : ntpatm,dens,ntpshl,unqshl

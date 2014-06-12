@@ -7,7 +7,7 @@ Subroutine vdw_table_read(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1994
-! amended   - i.t.todorov may 2014
+! amended   - i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -155,6 +155,10 @@ Subroutine vdw_table_read(rvdw)
         End Do
         If (mxnode > 1) Call MPI_BCAST(buffer(1:ngrid), ngrid, wp_mpi, 0, dlp_comm_world, ierr)
 
+! linear extrapolation for the grid point at 0
+
+        vvdw(0,ivdw) = 2.0_wp*buffer(1)-buffer(2)
+
 ! reconstruct arrays using 3pt interpolation
 
         If (remake) Then
@@ -194,9 +198,8 @@ Subroutine vdw_table_read(rvdw)
            vvdw(mxgvdw-3,ivdw) = 2.0_wp*vvdw(mxgvdw-4,ivdw) - vvdw(mxgvdw-5,ivdw)
         End If
 
-! linear extrapolation for the grid points at 0 and at mxgvdw-2
+! linear extrapolation for the grid point at mxgvdw-2
 
-        vvdw(0,ivdw) = 2.0_wp*buffer(1)-buffer(2)
         vvdw(mxgvdw-2,ivdw) = 2.0_wp*vvdw(mxgvdw-3,ivdw) - vvdw(mxgvdw-4,ivdw)
 
 ! read in force arrays
@@ -210,6 +213,10 @@ Subroutine vdw_table_read(rvdw)
            End If
         End Do
         If (mxnode > 1) Call MPI_BCAST(buffer(1:ngrid), ngrid, wp_mpi, 0, dlp_comm_world, ierr)
+
+! linear extrapolation for the grid points at 0 just beyond the cutoff
+
+        gvdw(0,ivdw) = (2.0_wp*buffer(1)-0.5_wp*buffer(2))/delpot
 
 ! reconstruct arrays using 3pt interpolation
 
@@ -251,9 +258,8 @@ Subroutine vdw_table_read(rvdw)
            gvdw(mxgvdw-3,ivdw) = 2.0_wp*gvdw(mxgvdw-4,ivdw) - gvdw(mxgvdw-5,ivdw)
         End If
 
-! linear extrapolation for the grid points at 0 and at mxgvdw-2
+! linear extrapolation for the grid point at mxgvdw-2
 
-        gvdw(0,ivdw) = (2.0_wp*buffer(1)-0.5_wp*buffer(2))*rdr
         gvdw(mxgvdw-2,ivdw) = 2.0_wp*gvdw(mxgvdw-3,ivdw) - gvdw(mxgvdw-4,ivdw)
 
 ! We must distinguish that something has been defined

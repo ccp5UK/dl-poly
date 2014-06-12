@@ -71,7 +71,7 @@ Subroutine bonds_compute(temp)
      Write(npdfdt,'(a)') '# '//cfgname
      Write(npdfdt,'(a,2(i10,1x),f5.2,1x,i10)') '# types, bins, cutoff, frames: ',kk,mxgbnd1,rcbnd,ncfbnd
      Write(npdfdt,'(a)') '#'
-     Write(npdfdt,'(a,f8.5)') '# r(Angstroms)  Pn_bond(r)  Pn_bond(r)/r^2   @   dr_bin = ',delr
+     Write(npdfdt,'(a,f8.5)') '# r(Angstroms)  Pn_bond(r)  PDF_bond(r)   @   dr_bin = ',delr
      Write(npdfdt,'(a)') '#'
   End If
 
@@ -131,13 +131,13 @@ Subroutine bonds_compute(temp)
 
 ! now pdfbnd is normalised by the volume element (as to go to unity at infinity in gases and liquids)
 
-!           pdfbnd= pdfbnd*rdlr
+           pdfbnd= pdfbnd*rdlr
 
 ! print out information
 
            If (idnode == 0) Then
               If (.not.zero) Write(nrite,"(f11.5,1p,2e14.6)") rrr,pdfbnd1,sum1
-              Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,pdfbnd*rdlr,pdfbnd/dvol
+              Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,pdfbnd,pdfbnd/rdlr/dvol
            End If
 
 ! We use the non-normalised tail-truncated PDF version,
