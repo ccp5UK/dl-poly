@@ -39,7 +39,7 @@ Subroutine system_init                                             &
   Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rbin,rmet
 
   Integer,           Intent(   Out ) :: nstep
-  Real( Kind = wp ), Intent( Inout ) :: tstep
+  Real( Kind = wp ), Intent( InOut ) :: tstep
   Real( Kind = wp ), Intent(   Out ) :: time,tmst,chit,cint,chip,eta(1:9),     &
                                         virtot,stress(1:9),vircon,strcon(1:9), &
                                         virpmf,strpmf(1:9),elrc,virlrc,        &

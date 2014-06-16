@@ -34,7 +34,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
                        ix,iy,iz,ic,           &
                        jx,jy,jz,jc
 
-  Real( Kind = wp ) :: cut,rcsq,rsq,det,rcell(1:9),celprp(1:10), &,
+  Real( Kind = wp ) :: cut,rcsq,rsq,det,rcell(1:9),celprp(1:10), &
                        x,y,z, dispx,dispy,dispz, xdc,ydc,zdc
 
 ! Number of neighbouring cells to look around for single counting
@@ -198,6 +198,9 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
         ly1=(iy == nly)
         lz0=(iz == 1)
         lz1=(iz == nlz)
+        If ( (lx0 .or. lx1) .and. &
+             (ly0 .or. ly1) .and. &
+             (lz0 .or. lz1) ) Then ! 8 corners of the domain's cube in RS
            If      (lx0 .or. lx1) Then
               If      (lx0 ) Then
                  ix=0

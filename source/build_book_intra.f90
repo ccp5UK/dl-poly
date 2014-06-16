@@ -49,7 +49,7 @@ Subroutine build_book_intra             &
   Implicit None
 
   Logical,           Intent( In    ) :: lsim
-  Real(Kind = wp),   Intent( in    ) :: dvar
+  Real(Kind = wp),   Intent( In    ) :: dvar
 
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
                                         megshl,megpmf,        &
