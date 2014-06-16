@@ -179,6 +179,7 @@ for a radius shift of up to half a $R_{o}$ ($|\Delta| \le
 \begin{equation}
 U(r_{ij}) = k~(r_{ij}-r_{o})^{2}\left[1-2.55~(r_{ij}-r_{o})+(7/12)~2.55~(r_{ij}-r_{o})^{2}\right]
 \end{equation}
+\item Tabulated potential:  ({\bf tab}).  The potential is defined numerically in TABBND (see Section~\ref{bonded-tables} and Section~\ref{intra-tables}).
 \end{enumerate}
 In these formulae $r_{ij}$ is the distance between atoms labelled
 $i$ and $j$:
@@ -242,6 +243,7 @@ different key words:
 \item Coulomb potential:  ({\bf -cul})
 \item FENE potential:  ({\bf -fne})
 \item AMOEBA force-field bond potential \cite{ponder-10a}:  ({\bf -amo})
+\item Tabulated potential:  ({\bf -tab}).  The potential is defined numerically in TABBND (see Section~\ref{bonded-tables} and Section~\ref{intra-tables}).
 \end{enumerate}
 
 In \D distance restraints\index{distance restraints} are handled
@@ -332,6 +334,7 @@ U(\theta_{jik}) = k~(\theta_{jik}-\theta_{0})^{2}[1 &-& 1.4 \cdot 10^{-2}(\theta
 U(\theta_{jik}) &=& f_{k}~\sin\left[2(\theta_{jik}-\theta_{0})\right] \cdot \sqrt{K_{ij} \cdot K_{ik}} \nonumber \\
 K_{ij} &=& \frac{1}{\exp\left[g_{r}(r_{ij}-r_{o})\right]}
 \end{eqnarray}
+\item Tabulated potential:  ({\bf tab}).  The potential is defined numerically in TABANG (see Section~\ref{bonded-tables} and Section~\ref{intra-tables}).
 \end{enumerate}
 In these formulae $\theta_{jik}$ is the angle between bond vectors
 $\vek{r}_{ij}$ and $\vek{r}_{ik}$:
@@ -439,6 +442,7 @@ words:
 \item Compass all terms \cite{sun-98a}:  ({\bf -cmp})
 \item AMOEBA force-field angle \cite{ponder-10a}:  ({\bf -amo})
 \item KKY \cite{kumagai-94a}:  ({\bf -kky})
+\item Tabulated potential:  ({\bf -tab}).  The potential is defined numerically in TABANG (see Section~\ref{bonded-tables} and Section~\ref{intra-tables}).
 \end{enumerate}
 
 In \D angular restraints\index{angular restraints} are handled by
@@ -492,6 +496,7 @@ U(\phi) = A~\{~a+b~\cos(\phi)+c~\cos^{2}(\phi)+d~\cos^{3}(\phi)+e~\cos^{4}(\phi)
 \begin{equation}
 U(\phi)=A_{0}+\frac{1}{2} \left\{ A_{1}~(1+\cos(\phi))+A_{2}~(1-\cos(2\phi))+A_{3}~(1+\cos(3\phi)) \right\}
 \end{equation}
+\item Tabulated potential:  ({\bf tab}).  The potential is defined numerically in TABDIH (see Section~\ref{bonded-tables} and Section~\ref{intra-tables}).
 \end{enumerate}
 In these formulae $\phi_{ijkn}$ is the dihedral angle defined by
 \begin{equation}
@@ -730,6 +735,7 @@ U(\phi_{ijkn}) = A~\left[ 1 - \cos(\phi_{ijkn}) \right]
 \begin{equation}
 U(\phi_{ijkn}) = {k \over 2}~\left[ 1 - \cos(m~\phi_{ijkn} - \phi_{0}) \right]
 \end{equation}
+\item Tabulated potential:  ({\bf tab}).  The potential is defined numerically in TABINV (see Section~\ref{bonded-tables} and Section~\ref{intra-tables}).
 \end{enumerate}
 In these formulae $\phi_{ijkn}$ is the
 inversion\index{potential!inversion} angle defined by

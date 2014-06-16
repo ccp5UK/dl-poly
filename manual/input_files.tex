@@ -2913,8 +2913,8 @@ The TABLE file provides an alternative way of reading in the short
 range potentials - in tabular form.  This is particularly useful if
 an analytical form of the potential does not exist or is too
 complicated to specify in the {\sc vdw\_generate} subroutine. The
-table file is read by the subroutine {\sc vdw\_table\_read} (see Chapter
-\ref{source}).
+table file is read by the subroutine {\sc vdw\_table\_read} (see
+Chapter~\ref{source}).
 
 The option of using tabulated\index{potential!tabulated}
 potentials is specified in the FIELD file (see above).  The
@@ -2932,7 +2932,7 @@ allowed.
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 1} \\
-\> {\tt header} \> a100    \> file header\\
+\> {\tt header} \> a100    \> file header \\
 {\bf record 2} \\
 \> {\tt delpot} \> real    \> mesh resolution in \AA~(${\tt delpot} = \frac{\tt cutpot}{{\tt ngrid}-4}$) \\
 \> {\tt cutpot} \> real    \> cutoff used to define tables in \AA \\
@@ -2946,7 +2946,7 @@ records with the potential and force tables.
 
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
-{\bf header record:}\\
+{\bf header record:} \\
 \> {\tt atom 1} \> a8   \> first atom type \\
 \> {\tt atom 2} \> a8   \> second atom type \\
 {\bf potential data records:} ({\em number of data records} $=$ {\tt Int}(({\tt ngrid}+3)/4)) \\
@@ -2965,11 +2965,11 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 
 It should be noted that the number of grid points in the TABLE file
 should not be less than the number of grid points \D is expecting.
-(This number is given by the parameter {\tt mxgrid} calculated in
+(This number is given by the parameter {\tt mxgvdw} calculated in
 the {\sc setup\_module} file - see Section~\ref{interpolation} and
 \ref{parameters}.)  \D will re-interpolate the tables if
-${\tt delpot} = \frac{\tt cutpot}{{\tt ngrid}-4}~<~{\tt dlrvdw} = \frac{\tt rvdw}{{\tt mxgrid}-4}$
-(usually when ${\tt ngrid}>{\tt mxgrid}$), but will abort if ${\tt delpot}>{\tt dlrvdw}$.
+${\tt delpot} = \frac{\tt cutpot}{{\tt ngrid}-4}~<~{\tt dlrvdw} = \frac{\tt rvdw}{{\tt mxgvdw}-4}$
+(usually when ${\tt ngrid}>{\tt mxgvdw}$), but will abort if ${\tt delpot}>{\tt dlrvdw}$.
 
 The potential and force tables are used to fill the internal
 arrays {\tt vvdw} and {\tt gvdw} respectively (see Section~\ref{vdw}).
@@ -2979,8 +2979,7 @@ G(r)=-r\frac{\partial}{\partial r}U(r)~~.
 \end{equation}
 {\bf Note}, this is {\em not} the same as the true force.
 
-During simulation, interactions beyond distance
-$Min(r_{\rm cut},{\tt cutpot})$ are discarded.
+During simulation, interactions beyond distance ${\tt cutpot})$ are discarded.
 
 \subsection{The TABEAM File}
 \label{tabeam-file}
@@ -3000,7 +2999,7 @@ allowed.
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 1} \\
-\> {\tt header} \> a100    \> file header\\
+\> {\tt header} \> a100    \> file header \\
 {\bf record 2} \\
 \> {\tt numpot} \> integer \> number of potential functions in file
 \end{tabbing}
@@ -3045,7 +3044,7 @@ of four data per record are read in} - allowing for incompletion of the very las
 
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
-{\bf header record:}\\
+{\bf header record:} \\
 \> {\bf keyword} \> a4      \> type of EAM function: {\bf pair}, {\bf embe}d or {\bf dens}ity, with \\
 \>               \>         \> 2B extension alternatives for the $s$-band - [{\bf semb}ed and {\bf sden}sity] \\
 \>               \>         \> and $d$-band - {\bf demb}ed = {\bf embe}d and {\bf dden}sity = {\bf dens}ity \\
@@ -3094,3 +3093,77 @@ way to do this, for example, will be data record of the type:
 SDEN Atom1 Atom1 1 0 1
 0
 \end{verbatim}
+
+\subsection{The TABBND, TABANG, TABDIH \& TABINV Files}
+\label{intra-tables}
+
+\D allows the specification of tabulated data for intramolecular
+interactions:
+\begin{itemize}
+\item TABBND - for chemical bonds potentials - distance dependent
+\item TABANG - for bond angles potentials - angle dependent
+\item TABDIH - for dihedrals (torsional) potentials - angle dependent
+\item TABINV - for inversions potentials - angle dependent.
+\end{itemize}
+
+The files have the same formatting rules with examples shown in
+Section~\ref{bonded-tables}.
+
+\subsubsection{Definitions of Variables}
+
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXX\=\kill
+{\bf record 1} \\
+\> {\tt header}    \> a100    \> file header \\
+{\bf record 2} \\
+\> {\tt \#}        \> a1      \> a hash (\#) symbol \\
+\> {\tt \# cutpot} \> real    \> cutoff in \AA~- {\bf only expected in TABBND} as the \\
+\>                 \>         \> cutoff ranges are known for TABANG, TABDIH \& TABINV \\
+\> {\tt \# ngrid}  \> integer \> number of grid points in table for all potentials
+\end{tabbing}
+
+The subsequent records define each tabulated potential in turn,
+{in the order indicated by the specification in the FIELD file}.
+Each potential is defined by a header record and a set of data
+records with the potential and force tables.
+
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXX\=\kill
+{\bf empty record:} \\
+\> {\tt \#}        \> a1   \> a hash (\#) symbol \\
+{\bf id record:} \\
+\> {\tt \#}        \> a1   \> a hash (\#) symbol \\
+\> {\tt atom 1}    \> a8   \> first atom type \\
+\> {\tt atom 2}    \> a8   \> second atom type \\
+\> {\tt atom 3}    \> a8   \> third atom type - only required for TABANG \\
+\> {\tt atom 4}    \> a8   \> forth atom type - only required for TABDIH \& TABINV \\
+{\bf interaction data records 0/1--ngrid:} \\
+\> {\tt \#}        \> a1   \> a hash (\#) symbol \\
+\> {\tt abscissa}  \> real \> consecutive value over the full cutoff/range in \\
+\>                 \>      \> \AA~for TABBND and degrees for TABANG, TABDIH \& TABINV \\
+\> {\tt potential} \> real \> potential at the abscissa grid point in {\bf units} as specified in FILED \\
+\> {\tt force}     \> real \> complementary force (virial for TABBND) value
+\end{tabbing}
+
+\subsubsection{Further Comments}
+
+It should be noted that the number of grid points in the table files
+should not be less than the number of grid points \D is expecting.
+For more information the reader is advised to examine {\sc setup\_module}
+and inspect the {\tt mxg}\textrm{\textit{\textbf{int}}} variables, where
+\textrm{\textit{\textbf{int}}} refers to {\tt bnd} for bonds, {\tt ang}
+for angles, {\tt dih} for dihedrals and {\tt inv} for inversions.
+
+The potential and force tables are used to fill the internal arrays
+{\tt v}\textrm{\textit{\textbf{int}}} and {\tt g}\textrm{\textit{\textbf{int}}}
+for the respective \textrm{\textit{\textbf{int}}}rmolecular potential
+(see Chapter~\ref{force-field}).
+
+The contents of force arrays for TABBND are derived from the potential
+via the formula:
+\begin{equation}
+G(r)=-r\frac{\partial}{\partial r}U(r)~~.
+\end{equation}
+{\bf Note}, this is {\em not} the same as the true force.  During simulation,
+interactions beyond distance ${\tt cutpot})$ will bring the run to a controlled
+termination.

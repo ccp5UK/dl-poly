@@ -492,7 +492,7 @@ Subroutine read_control                                &
         r_dis = Min( r_dis , word_2_real(word,0.1_wp) )
         If (idnode == 0) Write(nrite,"(2(/,1x,a),1p,e12.4)")                            &
            "%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%", &
-           "%%% separation criterion (Angsroms) %%% ", r_dis
+           "%%% separation criterion (Angstroms) %%% ", r_dis
 
 ! read VDW options
 
@@ -2368,7 +2368,7 @@ Subroutine read_control                                &
         If (idnode == 0) Then
            Write(nrite,"(/,1x,'z-density profiles requested')")
            Write(nrite,"(  1x,'z-density collection interval',2x,i10)") nstzdn
-           Write(nrite,"(  1x,'z-density binsize (Angsroms)',6x,1p,e12.4)") rbin
+           Write(nrite,"(  1x,'z-density binsize (Angstroms)',5x,1p,e12.4)") rbin
         End If
      Else
         If (idnode == 0) Write(nrite,"(/,1x,'no z-density profiles requested')")
