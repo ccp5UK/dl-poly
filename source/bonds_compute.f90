@@ -175,8 +175,8 @@ Subroutine bonds_compute(temp)
 ! Smoothen and get derivatives
 
         fed0  = 0.0_wp
-        dfed0 = 1000.0_wp
-        dfed  = 1000.0_wp
+        dfed0 = 10.0_wp
+        dfed  = 10.0_wp
 
         Do ig=1,mxgbnd1
            tmp = Real(ig,wp)-0.5_wp
@@ -201,17 +201,17 @@ Subroutine bonds_compute(temp)
               If      (dstdbnd(ig,i) > zero_plus .and. dstdbnd(ig+1,i) > zero_plus) Then
                  dfed = Log(dstdbnd(ig+1,i)/dstdbnd(ig,i))
               Else If (dfed > 0.0_wp) Then
-                 dfed = dfed0/tmp
+                 dfed = dfed0
               Else
-                 dfed =-dfed0/tmp
+                 dfed =-dfed0
               End If
            Else If (ig == mxgbnd1) Then
               If      (dstdbnd(ig,i) > zero_plus .and. dstdbnd(ig-1,i) > zero_plus) Then
                  dfed = Log(dstdbnd(ig,i)/dstdbnd(ig-1,i))
               Else If (dfed > 0.0_wp) Then
-                 dfed = dfed0/tmp
+                 dfed = dfed0
               Else
-                 dfed =-dfed0/tmp
+                 dfed =-dfed0
               End If
            Else If (dstdbnd(ig-1,i) > zero_plus) Then
               If (dstdbnd(ig+1,i) > zero_plus) Then
@@ -222,9 +222,9 @@ Subroutine bonds_compute(temp)
            Else If (dstdbnd(ig+1,i) > zero_plus) Then
               dfed =-0.5_wp*Log(dstdbnd(ig+1,i))
            Else If (dfed > 0.0_wp) Then
-              dfed = dfed0/tmp
+              dfed = dfed0
            Else
-              dfed =-dfed0/tmp
+              dfed =-dfed0
            End If
 
 ! Print

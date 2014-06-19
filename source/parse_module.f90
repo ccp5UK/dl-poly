@@ -320,13 +320,13 @@ Contains
     Implicit None
 
     Character( Len = * ), Intent( In    )           :: word
-    Real( kind = wp ),    Intent( In    ), Optional :: def
+    Real( Kind = wp ),    Intent( In    ), Optional :: def
     Logical,              Intent( In    ), Optional :: report
 
     Character( Len = 40 ) :: forma
     Logical               :: l_report = .true.
     Integer               :: word_end,slash_position
-    Real( kind = wp )     :: word_2_real,denominator
+    Real( Kind = wp )     :: word_2_real,denominator
 
     If (Present(report)) l_report = report
 

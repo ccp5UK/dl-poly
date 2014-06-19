@@ -1689,7 +1689,7 @@ Subroutine read_control                                &
         tmp = Abs(word_2_real(word))
         If (tmp > zero_plus) fmax=tmp
         If (idnode == 0) Write(nrite,"(/,1x,'force capping on (during equilibration)', &
-           & /,1x,'force capping limit (kT/Angs)',6x,1p,e12.4)") fmax
+           & /,1x,'force capping limit (kT/Angs)',5x,1p,e12.4)") fmax
 
 ! read 'no vdw', 'no elec' and 'no ind' options
 
@@ -1705,7 +1705,8 @@ Subroutine read_control                                &
 
         Else If (word1(1:3) == 'str' ) Then
 
-           If (idnode == 0) Write(nrite,"(/,1x,a)") "no strict option on (avoids printing inessential warnings in OUTPUT)"
+           If (idnode == 0) Write(nrite,"(/,1x,a)") &
+              "no strict option on (avoids printing inessential warnings in OUTPUT and triggers some defaults!!!)"
 
         Else If (word1(1:3) == 'top' ) Then
 

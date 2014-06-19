@@ -21,13 +21,13 @@ Subroutine xscale(imcon,m_rgd,keyens,tstep,eta)
   Implicit None
 
   Integer,           Intent( In    ) :: imcon,m_rgd,keyens
-  Real( kind = wp ), Intent( In    ) :: tstep,eta(1:9)
+  Real( Kind = wp ), Intent( In    ) :: tstep,eta(1:9)
 
   Integer           :: fail,i,j,irgd,jrgd,lrgd
-  Real( kind = wp ) :: a1,a2,a3,a5,a6,a9,b1,b2,b3,b5,b6,b9,scale, &
+  Real( Kind = wp ) :: a1,a2,a3,a5,a6,a9,b1,b2,b3,b5,b6,b9,scale, &
                        xa,ya,za,x,y,z,com(1:3)
 
-  Real( kind = wp ), Allocatable :: rgdxin(:),rgdyin(:),rgdzin(:)
+  Real( Kind = wp ), Allocatable :: rgdxin(:),rgdyin(:),rgdzin(:)
 
 
   If (m_rgd == 0) Then

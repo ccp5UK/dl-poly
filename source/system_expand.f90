@@ -86,7 +86,7 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
   Character( Len = recsz )          :: record2, record3
   Character                         :: lf
 
-  Integer( kind = MPI_OFFSET_KIND ) :: top_skip
+  Integer( Kind = MPI_OFFSET_KIND ) :: top_skip
 
   Real( Kind = wp ), Dimension( : ),     Allocatable :: f1,f2,f3, &
                                                         f4,f5,f6, &

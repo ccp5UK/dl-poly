@@ -110,7 +110,7 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
 ! the MPI-I/O records are numbered from 0 (not 1)
 ! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
 !   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
-!   both declared as: Integer(kind = MPI_OFFSET_KIND)
+!   both declared as: Integer(Kind = MPI_OFFSET_KIND)
 
 ! UNSORTED MPI-I/O or Parallel Direct Access FORTRAN
 

@@ -28,7 +28,7 @@ Subroutine rdf_compute(rcut)
   Real( Kind = wp ) :: delr,dvol,factor,gofr,gofr1,rrr,sum,sum1
 
   If (idnode == 0) Write(nrite,"(/,/,12X,'RADIAL DISTRIBUTION FUNCTIONS',/,/, &
-     & 'calculated using ',i10,' configurations')") ncfrdf
+     & ' calculated using ',i10,' configurations')") ncfrdf
 
 ! open RDF file and Write headers
 
@@ -55,7 +55,7 @@ Subroutine rdf_compute(rcut)
 
         If (kk > 0 .and. kk <= ntprdf) Then
            If (idnode == 0) Then
-              Write(nrite,"(/,'g(r)  :',2a8,/,/,8x,'r',6x,'g(r)',9x,'n(r)',/)") unqatm(ia),unqatm(ib)
+              Write(nrite,"(/,' g(r)  :',2(1x,a8),/,/,8x,'r',6x,'g(r)',9x,'n(r)',/)") unqatm(ia),unqatm(ib)
               Write(nrdfdt,'(2a8)') unqatm(ia),unqatm(ib)
            End If
 

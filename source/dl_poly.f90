@@ -414,7 +414,7 @@ Program dl_poly
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-  Call set_halo_particles(imcon,rcut,keyfce)
+  Call set_halo_particles(imcon,rlnk,keyfce)
 
   Call gtime(timelp)
   If (idnode == 0) Then

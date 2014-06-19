@@ -6,7 +6,7 @@ Subroutine set_halo_particles(imcon,rlnk,keyfce)
 ! neighbouring domains/nodes
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -70,9 +70,11 @@ Subroutine set_halo_particles(imcon,rlnk,keyfce)
      ecwy=Real(mxspl1,wp)/Real(kmaxb,wp)
      ecwz=Real(mxspl1,wp)/Real(kmaxc,wp)
 
-     ecwx=Max(cwx,ecwx)
-     ecwy=Max(cwy,ecwy)
-     ecwz=Max(cwz,ecwz)
+! I.e. take the smaller width in reduced space!!!
+
+     ecwx=Min(cwx,ecwx)
+     ecwy=Min(cwy,ecwy)
+     ecwz=Min(cwz,ecwz)
   Else
      ecwx=cwx
      ecwy=cwy
