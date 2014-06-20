@@ -25,10 +25,8 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
 
   Logical,           Save :: newjob = .true.
-  Integer,           Save :: idx,idy,idz, ixb,iyb,izb, ixt,iyt,izt
-  Real( Kind = wp ), Save :: ixbm1_r,iybm1_r,izbm1_r, &
-                             ixtm0_r,iytm0_r,iztm0_r, &
-                             kmaxa_r,kmaxb_r,kmaxc_r,engsic
+  Integer,           Save :: ixb,iyb,izb, ixt,iyt,izt
+  Real( Kind = wp ), Save :: kmaxa_r,kmaxb_r,kmaxc_r,engsic
 
   Integer              :: fail(1:4), i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt
 
@@ -71,13 +69,6 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      iyt=(idy+1)*(kmaxb/npry)
      izb=idz*(kmaxc/nprz)+1
      izt=(idz+1)*(kmaxc/nprz)
-
-     ixbm1_r=Real(ixb-1,wp)
-     ixtm0_r=Nearest( Real(ixt,wp) , -1.0_wp )
-     iybm1_r=Real(iyb-1,wp)
-     iytm0_r=Nearest( Real(iyt,wp) , -1.0_wp )
-     izbm1_r=Real(izb-1,wp)
-     iztm0_r=Nearest( Real(izt,wp) , -1.0_wp )
 
 ! Real values of kmax vectors
 
@@ -177,7 +168,8 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 ! The story has become more complicated with cutoff padding and the
 ! conditional updates of the VNL and thus the halo as now a domain
 ! (1:natms) particle can enter the halo and vice versa.  So DD
-! bounding is unsafe!!!
+! bounding is unsafe!!!  However, it doesn't matter when the 3D
+! charge density matrix is global as is the case here!
 
   Call invert(cell,rcell,det)
   If (Abs(det) < 1.0e-6_wp) Call error(120)
@@ -186,28 +178,6 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      txx(i)=kmaxa_r*(rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+0.5_wp)
      tyy(i)=kmaxb_r*(rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+0.5_wp)
      tzz(i)=kmaxc_r*(rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+0.5_wp)
-
-! llvnl = .not.(mxspl1 == mxspm) is not needed from  vnl_module
-
-     If ((mxspl1 == mxspl) .and. i <= natms) Then
-        If      (txx(i) < ixbm1_r) Then
-           txx(i)=ixbm1_r
-        Else If (txx(i) > ixtm0_r) Then
-           txx(i)=ixtm0_r
-        End If
-
-        If      (tyy(i) < iybm1_r) Then
-           tyy(i)=iybm1_r
-        Else If (tyy(i) > iytm0_r) Then
-           tyy(i)=iytm0_r
-        End If
-
-        If      (tzz(i) < izbm1_r) Then
-           tzz(i)=izbm1_r
-        Else If (tzz(i) > iztm0_r) Then
-           tzz(i)=iztm0_r
-        End If
-     End If
 
      ixx(i)=Int(txx(i))
      iyy(i)=Int(tyy(i))
@@ -453,14 +423,11 @@ Contains
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith october 1998
-! amended   - i.t.todorov october 2004
+! amended   - i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use kinds_f90
-    Use setup_module
-    Use config_module, Only : natms,chge,fxx,fyy,fzz
-    Use ewald_module
+    Use config_module, Only : fxx,fyy,fzz
 
     Implicit None
 

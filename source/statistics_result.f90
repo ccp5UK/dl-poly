@@ -42,23 +42,23 @@ Subroutine statistics_result                       &
 
 ! VNL skipping statistics
 
-  If (llvnl .and. idnode == 0) Write(nrite,"(//,        &
-     & ' VNL skipping statistics: average skips', f7.2, &
-     & ' minimum skips ', i5, ' maximum skips ', i5)")  &
-     skipvnl(3),Nint(skipvnl(4)),Nint(skipvnl(5))
+  If (llvnl .and. idnode == 0) Write(nrite,"(//,            &
+     & ' VNL skipping run statistics: average skips', f7.2, &
+     & ' minimum skips ', i5, ' maximum skips ', i5)")      &
+     skipvnl(3),Nint(Merge(skipvnl(4),skipvnl(5),skipvnl(4)<skipvnl(5))),Nint(skipvnl(5))
 
 ! minimisation convergence statistics
 
-  If (lmin .and. idnode == 0) Write(nrite,"(//,          &
-     & ' minimisation statistics: average cycles', f7.2, &
-     & ' minimum cycles ', i5, ' maximum cycles ', i5)") &
+  If (lmin .and. idnode == 0) Write(nrite,"(//,              &
+     & ' minimisation run statistics: average cycles', f7.2, &
+     & ' minimum cycles ', i5, ' maximum cycles ', i5)")     &
      passmin(3),Nint(passmin(4)),Nint(passmin(5))
 
 ! shell relaxation convergence statistics
 
-  If (keyshl == 2 .and. idnode == 0) Write(nrite,"(//,       &
-     & ' shell relaxation statistics: average cycles', f7.2, &
-     & ' minimum cycles ', i5, ' maximum cycles ', i5)")     &
+  If (keyshl == 2 .and. idnode == 0) Write(nrite,"(//,           &
+     & ' shell relaxation run statistics: average cycles', f7.2, &
+     & ' minimum cycles ', i5, ' maximum cycles ', i5)")         &
      passshl(3),Nint(passshl(4)),Nint(passshl(5))
 
 ! Get elapsed time

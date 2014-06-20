@@ -1,0 +1,272 @@
+\section{Using \D for preparing and simulating coarse-grain models}
+\label{cg-intro}
+
+One can use \D for preparing and running simulations of
+(systematically) coarse-grained (CG) models by either
+{\bf (i)} employing potentials of mean force (PMF); or
+{\bf (ii)} using iteratively optimised effective force-fields
+(FF).  These can be obtained by using \D as MD engine within
+the framework of VOTCA package -
+\href{http://www.votca.org/}{http://www.votca.org/}\index{WWW}.
+
+Systematic coarse-graining (SCG) of an atomistic system
+usually implies the application of methodological mapping
+procedure for recovery of the average configurational
+(often termed physical) and/or topological (often termed
+chemical/force-field) related properties of the original
+model system onto a new model system with significantly
+reduced degrees of freedom.  Integrating out degrees of
+freedom ultimately leads to loss of information.  However,
+when this is done consistently and selectively so that
+the important for the modeller information (intrinsic
+information pertaining to interactions within the model
+system that governs its behaviour towards phenomena of interest)
+and properties are retained, then the much reduced
+phase-space of the new model system allows for expansion to
+large length-scales as well as reaching rapidly times-scales
+for investigating microscopic phenomena by using the well-known
+classical MD machinery for the new CG particles.
+
+A SCG mapping in the configuration space can be carried out
+by using {\bf (i)} the DL\_CGMAP utility -
+\href{http://www.ccp5.ac.uk/software/DL\_CGMAP/}{http://www.ccp5.ac.uk/software/DL\_CGMAP/}\index{WWW},
+or {\bf (ii)}  VOTCA tools -
+\href{http://www.votca.org/}{http://www.votca.org/}\index{WWW}.
+For more details about the mapping procedures, the user is
+advised to consult with the manuals of these tools.
+
+The mapping leads to the generation of an effective CG
+force-field in terms of effective interaction potentials
+between the CG particles, which are often tabulated numerically.
+
+This section aims at describing how to use \D for two SCG tasks:
+
+\begin{itemize}
+\item Post-simulation analysis of the bonded mean-force
+interactions, based on the calculation of the corresponding
+intramolecular distributions.
+\item Preparation and use of the tabulated potentials for the
+intramolecular (bonded) interactions.
+\end{itemize}
+
+\noindent {\bf Note:} Although these steps are also
+applicable to atomistic systems, below we shall assume
+that the CG mapping has been done and the following data
+files have been generated for the CG mapped system:
+CONFIG, FIELD and, alternatively, HISTORY.
+
+\section{Intramolecular Potential Distribution Function (PDF) Analysis}
+\label{IPDF-analysis}
+
+The analysis can be performed on the fly or on an already
+existing trajectory (by invoking the {\bf replay history})
+options, see Section~\ref{control-file}).
+To trigger the PDF collection and subsequent analysis for
+any combination of intarmolecular interactions; such as
+bonds, angles, dihedrals and inversions; some additional
+directives must be supplied in the CONTROL file as
+demonstrated in the example below.
+
+\begin{verbatim}
+TITLE: EXAMPLE OF DL_POLY_4 PDF ANALYSIS DIRECTIVES SNIPPET
+
+#DIRECTIVES TO INVOKE INTRAMOLECULAR PDF ANALYSIS BY TYPE
+analyse  bonds       sample every 100  nbins 300  rmax 6.0
+analyse  angles      sample every 100  nbins 314  # [ 0 : pi]
+analyse  diherals    sample every 100  nbins 628  # [-pi: pi]
+analyse  inversions  sample every 100  nbins 628  # [ 0 : pi]
+
+#DIRECTIVES TO INVOKE INTRAMOLECULAR PDF ANALYSIS FOR ALL TYPES
+analyse  all         sample every 100  nbins 300  rmax 6.0
+
+#DIRECTIVES TO INVOKE INTRAMOLECULAR PDF ANALYSIS PRINTING
+print analysis
+\end{verbatim}
+
+The {\bf analyse} directive acts in a similar manner to
+that of the {\bf rdf} directive outlining {\bf (i)} the
+frequency of sampling (in steps/frames) and {\bf (ii)} the
+number of bins over the cutoff interval/size of the
+specified interaction.  It is only for chemical bonds
+that this cutoff needs specifying as for the rest of
+the possible intramolecular interactions these are known
+{\em a priory} by definition.  If no cutoff is supplied
+for bonds then it defaults to 2~\AA.  It is worth noting
+that the number of bins per PDF must be larger than
+$N = {\tt Nint} \left[ \frac{\tt size~of~PDF~interval}{\tt minimum~bin~size} \right]$
+or otherwise it will default to ${\tt Max}(N,{\tt grid})$, where
+{\tt grid} is the grid size of the corresponding intramolecular
+interaction if a potential of it is defined in a tabulated
+form or otherwise $0$.  The minimum bin size for distance
+dependent interactions is 0.01~\AA~and $\pi/1000$ for angle
+dependent interactions.  When {\bf analysis all} is used in
+conjunction with the specific directives then it will
+trigger the analysis on all PDFs as well as enforce on the
+specifically targeted for analysis PDFs {\bf (i)} its
+collection interval only when it is smaller than and
+{\bf (ii)} its grid size only when it is larger than
+the corresponding entities of the targeted for analysis
+PDFs.  In the case of bonds it will also enforce the
+{\bf rmax} grid size only when larger than the one
+specified in the {\bf analysis bonds} directive.
+
+While statistics is collected for all opted PDFs, printing
+it will only occur when opted for by the {\bf print analysis}
+directive.  The result of it is the creation of two data files
+for each of the targeted distributions: BNDDAT \& PMFBND -
+for bonds, ANGDAT \& PMFANG - for angles, DIHDAT \& PMFDIH -
+for dihedrals and INVDAT \& PMFINV - for inversions.
+
+Partial examples of the *DAT files for bonds and angles PDFs
+are given below.
+
+\begin{verbatim}
+[user@host]$ more BNDDAT
+# TITLE: Hexane FA OPLSAA -> CG mapped with 3 beads (A-B-A)
+# types, bins, cutoff, frames: 1       300      2192    3.000     12
+#
+# r(Angstroms)  Pn_bond(r)  PDF_bond(r)   @   dr_bin  =  0.02000
+#
+# id, type, totals: A       B            30
+    0.01000  0.000000E+00  0.000000E+00
+    0.03000  0.000000E+00  0.000000E+00
+    0.05000  0.000000E+00  0.000000E+00
+    0.07000  0.000000E+00  0.000000E+00
+...
+
+[user@host]$ more ANGDAT
+# TITLE: Hexane FA OPLSAA -> CG mapped with 3 beads (A-B-A)
+# types, bins, cutoff, frames: 1       314      2192    180     24
+#
+# Theta(degrees)  Pn_ang(Theta)  Pn_ang(Theta)/Sin(Theta)   @   dTheta_bin =  0.57325
+#
+# id, type, totals:  A       B       A                1         50
+    0.28662  0.000000E+00  0.000000E+00
+    0.85987  0.000000E+00  0.000000E+00
+    1.43312  0.000000E+00  0.000000E+00
+    2.00637  0.000000E+00  0.000000E+00
+...
+\end{verbatim}
+
+One can see that all the header lines are commented out due
+to starting with the hash symbol {\bf \#}.  Nonetheless, the
+header contains some useful information about the sampling
+procedure and the distributions.  The title is, as usual,
+placed in the first line, followed by a line with the four
+most important descriptors -- the numbers of unique {\em types}
+(of bonds, angles, dihedrals or inversions) analysed, the
+numbers of {\em bins} in the (histogram-like) grid, the
+{\em cutoff} interval (absolute size) over which the
+distributions are sampled, and the number of sampled
+{\em frames} the PDF data is derived upon.  An empty line
+follows after which a line specifies what is printed as
+data further on below and gives the grid bin size.  Again,
+after an empty line there is a line containing the unique
+unit {\em id} specification in terms of the participating
+atom names, the {\em type} counter for the unique types, and
+the {\em totals}, which is the number of tracked units of
+this type in the model system this analysis is carried out on.
+
+In all PDFs *DAT files the first column contains the abscissa
+bin-centered distance or angle values), the second column
+is the distribution normalized so that it can be directly
+used for the PMF calculation, whereas the third column is
+the original histogram normalised to unity.
+
+The OUTPUT file will also reprint copies of the first and
+third columns of all PDFs *DAT files, plus a column
+accumulating the normalised sum for each histogram.
+
+In addition to the PDFs *DAT, \D also calculates the
+potentials of mean force, which are stored in the PMF*
+files.  They can be directly used as numerically defined
+force-field (tables) upon renaming: PMFBND~$\to$~TABBND,
+PMFANG~$\to$~TABANG, PMFDIH~$\to$~TABDIH and PMFINV~$\to$~TABINV.
+{\bf The user is, however, strongly advised to check
+the quality of the obtained tabulated force-field before
+using those as input for a CG simulation.}
+
+\section{Setting up Tabulated Intramolecular Force-Fields}
+\label{bonded-tables}
+
+As mentioned above, for a coarse-grained simulation the
+effective potentials must be provided in a tabulated form.
+For non-bonded (short-range) interactions the TABLE file
+must be prepared as described in Section~\ref{table-file}.
+However, the tabulated data format for intramolecular
+interactions (chemical bonds, bond angles, dihedral and
+inversion angles) differs from that of the TABLE file and
+assumes three columns: abscissa (distance in \AA~or angle
+in degrees), and then potential and virial or force data
+(virial for distance dependent interactions - i.e. TABBND,
+and force for angular dependent interactions - i.e. TABANG,
+TABDIH or TABINV).  Shown below are examples of a TABBND
+and a TABANG files.
+
+\begin{verbatim}
+[user@host]$ more TABBND
+# TITLE: Hexane FA OPLSAA -> CG mapped with 3 beads (A-B-A)
+# 10 1000
+#
+# A B
+ 1.00000e-02  -9.0906600e+02   1.3954000e+00
+ 2.00000e-02  -9.1046200e+02   2.7908000e+00
+ 3.00000e-02  -9.1185700e+02   4.1862000e+00
+ 4.00000e-02  -9.1325300e+02   5.5816000e+00
+...
+
+[user@host]$ more TABANG
+# TITLE: Hexane FA OPLSAA -> CG mapped with 3 beads (A-B-A)
+# 1000
+#
+# A B A
+ 1.80000e-01   8.8720627e+01   6.9119576e-01
+ 3.60000e-01   8.8596227e+01   6.9119227e-01
+ 5.40000e-01   8.8471827e+01   6.9118704e-01
+ 7.20002e-01   8.8347327e+01   6.9118180e-01
+...
+\end{verbatim}
+
+The tables for bonds, angles, dihedrals and inversions
+are named TABBND, TABANG, TABDIH and TABINV correspondingly.
+The format of these files is fixed in terms of the line
+(record) order.  In particular, the initial two header
+lines must contain a title and a record with the grid
+specification, as all following blocks of tabulated data
+must be preceded by an empty line and a one-line header
+record containing the (white-space delimited) names
+of the atoms making up the given intermolecular interaction
+unit.  All the header lines preceding the tabulated data
+are commented out, which eases plotting of the data when
+using [Xm]Grace software.
+
+In the TABBND file the second line specifies first the
+``bond cutoff'' (the maximum abscissa value $\le r_{\rm cut}$ in \AA)
+before the number of grid bins.  Unlike in the TABLE file,
+the bin size should not be specified as it is calculated
+based on the provided two numbers.  {\bf Note} that all
+potential and virial data are assumed to be provided in
+the energy units as specified by the user in the FIELD
+file (see Section~\ref{field-file}) with the abscissa units
+of \AA~(distance).
+
+In the TABANG, TABDIH and TABINV files the second line
+specifies only the number of grid bins, while the angle
+ranges covered by the data are assumed as $0 < {\rm TABANG \& TABINV} \le 180$
+and  $-180 < {\rm TABDIH} \le 180$.  {\bf Note} that all
+potential and virial data are assumed to be provided in
+the energy units as specified by the user in the FIELD
+file (see Section~\ref{field-file}) with the abscissa units
+of {\em degrees} (angle), which are internally converted
+to and then handled by \D in {\em radians}.
+
+Finally, in order to instruct \D to use tabulated
+intramolecular interactions from these files the user
+has to specify in the FIELD file for the particular
+intramolecular interaction potential (type and id) that
+it is tabulated by using the keyword {\bf tab} or {\bf -tab}
+(the latter is only valid for bonds and angles) in a similar
+manner to how all other interaction types are specified
+(see Section~\ref{field-file}).  The dash symbol (-) in
+front of the keyword {\bf tab} is interpreted in the
+same manner as in Table~\ref{bond-table} and Table~\ref{angle-table}.

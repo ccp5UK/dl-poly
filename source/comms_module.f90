@@ -50,7 +50,7 @@ Module comms_module
                         DefWrite_tag  = 2211, &
                         RsdWrite_tag  = 2222, &
                         Spread_tag    = 2233, &
-                        SPMExg_tag    = 2244
+                        ExchgGrid_tag = 2244
 
   Public :: init_comms, exit_comms, abort_comms, &
             gsync, gcheck, gsum, gmax, gtime

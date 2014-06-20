@@ -131,24 +131,24 @@ Module setup_module
 
 ! GLOBAL PARAMETERS FOR ARRAYS' BOUNDS LIMITS (set_bounds)
 
-  Integer, Save ::                                          &
-    mxsite,mxatyp,mxtmls,mxexcl,                            &
-    mxspl,mxspl1,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1,    &
-    mxtshl,mxshl,mxfshl,mxtcon,mxcons,mxfcon,mxlshp,mxproc, &
-    mxtpmf(1:2),mxpmf,mxfpmf,mxtrgd,mxrgd,mxlrgd,mxfrgd,    &
-    mxtteth,mxteth,mxftet,mxpteth,                          &
-    mxtbnd, mxbond,mxfbnd,mxpbnd,mxgbnd,                    &
-    mxtang, mxangl,mxfang,mxpang,mxgang,                    &
-    mxtdih, mxdihd,mxfdih,mxpdih,mxgdih,                    &
-    mxtinv, mxinv, mxfinv,mxpinv,mxginv,                    &
-    mxrdf,mxgrdf,mxgele,                                    &
-    mxvdw,mxpvdw,mxgvdw,                                    &
-    mxmet,mxmed,mxmds,mxpmet,mxgmet,                        &
-    mxter,mxpter,mxgter,mxgrid,                             &
-    mxtana,mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,          &
-    mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,                &
-    mxpfld,                                                 &
-    mxstak,mxnstk,mxlist,mxcell,mxatms,mxatdm,              &
+  Integer, Save ::                                              &
+    mxsite,mxatyp,mxtmls,mxexcl,                                &
+    mxspl,mxspl1,mxspl2,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1, &
+    mxtshl,mxshl,mxfshl,mxtcon,mxcons,mxfcon,mxlshp,mxproc,     &
+    mxtpmf(1:2),mxpmf,mxfpmf,mxtrgd,mxrgd,mxlrgd,mxfrgd,        &
+    mxtteth,mxteth,mxftet,mxpteth,                              &
+    mxtbnd, mxbond,mxfbnd,mxpbnd,mxgbnd,                        &
+    mxtang, mxangl,mxfang,mxpang,mxgang,                        &
+    mxtdih, mxdihd,mxfdih,mxpdih,mxgdih,                        &
+    mxtinv, mxinv, mxfinv,mxpinv,mxginv,                        &
+    mxrdf,mxgrdf,mxgele,                                        &
+    mxvdw,mxpvdw,mxgvdw,                                        &
+    mxmet,mxmed,mxmds,mxpmet,mxgmet,                            &
+    mxter,mxpter,mxgter,mxgrid,                                 &
+    mxtana,mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,              &
+    mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,                    &
+    mxpfld,                                                     &
+    mxstak,mxnstk,mxlist,mxcell,mxatms,mxatdm,                  &
     mxbfdp,mxbfss,mxbfxp,mxbfsh,mxbuff
 
 ! zero+ and half+/- :: defined in set_bounds
