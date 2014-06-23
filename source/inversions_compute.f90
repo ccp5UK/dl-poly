@@ -47,7 +47,7 @@ Subroutine inversions_compute(temp)
 ! grid interval for pdf tables
 
   delth = pi/Real(mxginv1,wp)
-  rdlth = Real(mxginv1,wp)/360.0_wp
+  rdlth = Real(mxginv1,wp)/180.0_wp
 
 ! loop over all valid PDFs to get valid totals
 
