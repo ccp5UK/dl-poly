@@ -1705,8 +1705,14 @@ Subroutine read_control                                &
 
         Else If (word1(1:3) == 'str' ) Then
 
-           If (idnode == 0) Write(nrite,"(/,1x,a)") &
-              "no strict option on (avoids printing inessential warnings in OUTPUT and triggers some defaults!!!)"
+           If (idnode == 0) Write(nrite,"(8(/,1x,a))") "no strict option on" ,                                             &
+              "*** Warning *** It skips printing inessential information in OUTPUT such as many warnings, FIELD",          &
+              "*** wArning *** digested information and full iteration cycles information from CGM based routines!",       &
+              "*** waRning *** However, it also assumes some, deemed safe, defaults for some specified as well as",        &
+              "*** warNing *** unspecified by the user options, that may or may not be needed for the simulation to run!", &
+              "*** warnIng *** The defaults are deemed to deliver safer passage as well as optimal performance without",   &
+              "*** warniNg *** sacrificing on accuracy!  While it may, by chance, help to pass previously failing runs",   &
+              "*** warninG *** it may as well lead to a run failure without warnings!  Beware, avoid usage if uncertain!"
 
         Else If (word1(1:3) == 'top' ) Then
 

@@ -9,12 +9,12 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 ! Note: (fourier) reciprocal space terms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith & i.j.bush april 2014
+! author    - i.t.todorov & w.smith & i.j.bush june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,   Only : idnode,mxnode,gsum,dlp_comm_world
+  Use comms_module,   Only : idnode,mxnode,gcheck,gsum,dlp_comm_world
   Use setup_module
   Use domains_module, Only : nprx,npry,nprz,idx,idy,idz
   Use config_module,  Only : cell,volm,natms,nlast,chge,xxx,yyy,zzz
@@ -33,6 +33,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
                              ixtm0_r,iytm0_r,iztm0_r, &
                              kmaxa_r,kmaxb_r,kmaxc_r,engsic
 
+  Logical              :: llspl=.true.
   Integer              :: fail(1:4), i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt
 
   Real( Kind = wp )    :: det,rcell(1:9),celprp(1:10),ralph,rvolm,scale,   &
@@ -250,27 +251,12 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      tyy(i)=kmaxb_r*(rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+0.5_wp)
      tzz(i)=kmaxc_r*(rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+0.5_wp)
 
-! Get in DD bounds in kmax grid space in case tiny inaccuracies created edge effects
-! llvnl = .not.(mxspl1 == mxspm) is not needed from  vnl_module
+! If not DD bound in kmax grid space when .not.llvnl = (mxspl1 == mxspl)
 
-     If ((mxspl1 == mxspl) .and. i <= natms) Then
-        If      (txx(i) < ixbm1_r) Then
-           txx(i)=ixbm1_r
-        Else If (txx(i) > ixtm0_r) Then
-           txx(i)=ixtm0_r
-        End If
-
-        If      (tyy(i) < iybm1_r) Then
-           tyy(i)=iybm1_r
-        Else If (tyy(i) > iytm0_r) Then
-           tyy(i)=iytm0_r
-        End If
-
-        If      (tzz(i) < izbm1_r) Then
-           tzz(i)=izbm1_r
-        Else If (tzz(i) > iztm0_r) Then
-           tzz(i)=iztm0_r
-        End If
+     If (mxspl1 == mxspl .and. i <= natms) Then
+        If (txx(i) < ixbm1_r .or. txx(i) > ixtm0_r .or. &
+            tyy(i) < iybm1_r .or. tyy(i) > iytm0_r .or. &
+            tzz(i) < izbm1_r .or. tzz(i) > iztm0_r) llspl=.false.
      End If
 
      ixx(i)=Int(txx(i))
@@ -289,6 +275,14 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
         it(i)=0
      End If
   End Do
+
+! Check for breakage of llspl when .not.llvnl = (mxspl1 == mxspl)
+
+  mxspl2=mxspl1
+  If (mxspl1 == mxspl) Then
+     If (mxnode > 1) Call gcheck(llspl)
+     If (.not.llspl) mxspl2=mxspl+1
+  End If
 
 ! construct B-splines for atoms
 
@@ -945,16 +939,11 @@ Contains
 !       and therefore there is no need for periodic images (!!)
 !
 ! copyright - daresbury laboratory
-! author    - w.smith october 1998
-! amended   - i.t.todorov october 2004
+! author    - w.smith & i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!    Use kinds_f90
-    Use comms_module,  Only : idnode,mxnode,gsum
-!    Use setup_module
-    Use config_module, Only : natms,chge,fxx,fyy,fzz
-!    Use ewald_module
+    Use config_module, Only : fxx,fyy,fzz
 
     Implicit None
 
@@ -968,8 +957,8 @@ Contains
     Logical,           Save :: newjob = .true.
     Real( Kind = wp ), Save :: kmaxa_r,kmaxb_r,kmaxc_r
 
-    Integer           :: fail, i,j,k,l, jj,kk,ll, ixdb,iydb,izdb
-    Real( Kind = wp ) :: tmp,facx,facy,facz,fff(0:3),fx,fy,fz,fix,fiy,fiz,qsum, &
+    Integer           :: fail, i,j,k,l, jj,kk,ll, ixdb,ixdt,iydb,iydt,izdb,izdt
+    Real( Kind = wp ) :: delspl,tmp,facx,facy,facz,fff(0:3),fx,fy,fz,fix,fiy,fiz,qsum, &
                          bdxl,bdyl,bdzl,bdxk,bdyk,bdzk,bdxj,bdyj,bdzj
 
     Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: qqc_domain
@@ -984,18 +973,26 @@ Contains
        kmaxc_r=Real(kmaxc,wp)
     End If
 
-    ixdb = ixb - mxspl
-    iydb = iyb - mxspl
-    izdb = izb - mxspl
+! Define extended ranges for the domain = local + halo slice and allocate
+
+    ixdb = ixb - mxspl2
+    iydb = iyb - mxspl2
+    izdb = izb - mxspl2
+
+    delspl = mxspl2 - mxspl
+
+    ixdt = ixt + delspl
+    iydt = iyt + delspl
+    izdt = izt + delspl
 
     fail=0
-    Allocate (qqc_domain( ixdb:ixt, iydb:iyt, izdb:izt ), Stat=fail)
+    Allocate (qqc_domain( ixdb:ixdt, iydb:iydt, izdb:izdt ), Stat=fail)
     If (fail > 0) Then
        Write(nrite,'(/,1x,a,i0)') 'spme_for_domain allocation failure, node: ', idnode
     End If
 
-    Call exchange_grid( ixb, ixt, iyb, iyt, izb, izt,           &
-                      ixdb, iydb, izdb, qqc_local, qqc_domain )
+    Call exchange_grid( ixb , ixt , iyb , iyt , izb , izt , qqc_local , &
+                        ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain  )
 
     tmp=-2.0_wp*scale
     facx=tmp*kmaxa_r
@@ -1124,10 +1121,12 @@ Subroutine adjust_kmax( kmax, P )
   Integer, Intent( InOut ) :: kmax
   Integer, Intent( In    ) :: P
 
-  ! First make sure kmax is a multiple of P, and is at least as big as the input value
+! First make sure kmax is a multiple of P, and is at least as big as the input value
+
   If ( Mod( kmax, P ) /= 0 ) kmax = ( kmax / P + 1 ) * P
 
-  ! Now check it has suitable factors
+! Now check it has suitable factors
+
   Do While ( .not. pfft_length_ok( kmax / P ) )
      kmax = kmax + P
   End Do
