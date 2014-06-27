@@ -249,7 +249,7 @@ Subroutine statistics_result                       &
 
 ! calculate and print radial distribution functions
 
-  If (lrdf .and. lprdf .and. ncfrdf > 0) Call rdf_compute(rcut)
+  If (lrdf .and. lprdf .and. ncfrdf > 0) Call rdf_compute(rcut,temp)
 
 ! calculate and print z-density profile
 

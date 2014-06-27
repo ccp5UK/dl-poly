@@ -26,7 +26,8 @@ Subroutine read_field                   &
   Use kinds_f90
   Use comms_module, Only : idnode
   Use setup_module
-  Use vdw_module,   Only : mxtvdw
+!  Use vdw_module,   Only : mxtvdw
+! Thereis another instance of "Use vdw_module" below
 
 ! SITE MODULE
 
