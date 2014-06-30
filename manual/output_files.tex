@@ -597,18 +597,18 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 {\bf Note 1.} The RDFDAT file is optional and appears when the {\bf print
 rdf} option is specified in the CONTROL file.
 
-{\bf Note 2.} Along with the RDFDAT file, two other files are created 
+{\bf Note 2.} Along with the RDFDAT file, two other files are created
 whenever the {\bf print rdf} directive is invoked: RDFPMF~\&~RDFTAB,
-both containing the data for potentials of mean force and the corresponding 
-virials calculated based on the obtained RDF:s, i.e. PMF $\sim -\ln({\rm RDF})$ 
-(in the energy units specified in the FIELD file). These files have 
-a simple three column format, the same as that used for *PMF files in 
-the case of bonded units, see Section~\ref{IPDF-analysis}. The purpose 
-of these files is to provide the user with means of setting up a PMF-based 
-force-field, for example in the case of initial coarse-graining of 
-an atomistic system. In particular, one can convert the RDFTAB file 
-into a correctly formatted TABLE file (Section~\ref{table-file}) 
-by using the utility called {\tt pmf2tab.f} (subject to compilation; 
+both containing the data for potentials of mean force and the corresponding
+virials calculated based on the obtained RDF:s, i.e. PMF $\sim -\ln({\rm RDF})$
+(in the energy units specified in the FIELD file). These files have
+a simple three column format, the same as that used for *PMF files in
+the case of bonded units, see Section~\ref{IPDF-analysis}. The purpose
+of these files is to provide the user with means of setting up a PMF-based
+force-field, for example in the case of initial coarse-graining of
+an atomistic system. In particular, one can convert the RDFTAB file
+into a correctly formatted TABLE file (Section~\ref{table-file})
+by using the utility called {\tt pmf2tab.f} (subject to compilation;
 found in \D directory {\tt utility}) as follows,
 
 {\tt [user@host]\$ pmf2tab.exe < RDFTAB}
@@ -645,6 +645,59 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 
 {\bf Note} The ZDNDAT file is optional and appears when the {\bf print
 rdf} option is specified in the CONTROL file.
+
+\subsection{The \textrm{\textit{\textbf{INT}}}DAT,
+\textrm{\textit{\textbf{INT}}}PMF \& \textrm{\textit{\textbf{INT}}}TAB Files}
+\label{bonded-files}
+
+These files, where \textrm{\textit{\textbf{INT}}} is referring to
+\textrm{\textit{\textbf{INT}}}ramolecular interactions or RDF, have
+very similar formatting rules with some examples shown in
+Section~\ref{IPDF-analysis}.  Refer to Section~\ref{IPDF-analysis} for
+their meaning and usage in coarse grained model systems.
+
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXX\=\kill
+{\bf record 1} \\
+\> {\tt title}     \> a100    \> file header title \\
+{\bf record 2} \\
+\> {\tt header}    \> a100    \> file information header \\
+{\bf record 3} \\
+\> {\tt \# info}   \> a30     \> information to follow string \\
+\> {\tt bins}   \> integer \> number of bins for all PDFs \\
+\> {\tt cutoff} \> real    \> cutoff in \AA~for bonds and RDFs or degrees \\
+\>                 \>         \> for angular intramolecular interactions \\
+\> {\tt types}  \> integer \> number of unique types of these interactions \\
+{\bf record 4} \\
+\> {\tt \#}        \> a1      \> a hash (\#) symbol \\
+{\bf record 5} \\
+\> {\tt \# info 1} \> a100    \> information to follow string \\
+{\bf record 6} \\
+\> {\tt \#}        \> a1      \> a hash (\#) symbol
+\end{tabbing}
+
+The subsequent records define each PDF/RDF potential in turn,
+{in the order indicated by the specification in the FIELD file}.
+Each potential is defined by a header record and a set of data
+records with the potential-like and force-like tables.
+
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXX\=\kill
+{\bf empty record:} \\
+{\bf id record:} \\
+\> {\tt \# info}   \> a25     \> information to follow string \\
+\> {\tt atom 1}    \> a8      \> first atom type \\
+\> {\tt atom 2}    \> a8      \> second atom type \\
+\> {\tt atom 3}    \> a8      \> third atom type - only available in ANG* files \\
+\> {\tt atom 4}    \> a8      \> forth atom type - only available in DIH* \& INV* files \\
+\> {\tt index}     \> integer \> unique index of PDF in file \\
+\> {\tt instances} \> integer \> instances of this unique type of PDF \\
+{\bf interaction data records 1--bins:} \\
+\> {\tt abscissa}  \> real \> consecutive value over the full cutoff/range in \\
+\>                 \>      \> \AA~for TABBND and degrees for TABANG, TABDIH \& TABINV \\
+\> {\tt potential} \> real \> potential at the abscissa grid point in {\bf units} as specified in FIELD \\
+\> {\tt force}     \> real \> complementary force (virial for TABBND) value
+\end{tabbing}
 
 \subsection{The STATIS File}
 \label{statis-file}

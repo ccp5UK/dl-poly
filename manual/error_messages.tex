@@ -248,7 +248,7 @@ The molecule contains more atom/site entries that it declares in the beginning.
 
 Recreate or correct the erroneous entries in the FIELD file and try again.
 
-\subsubsection*{\underline{Message 22}: error - unsuitable radial increment in TABLE||TABBND||TABANG||TABDIH||TABINV file}
+\subsubsection*{\underline{Message 22}: error - unsuitable radial increment in TABLE\textbar\textbar TABBND\textbar\textbar TABANG\textbar\textbar TABDIH\textbar\textbar TABINV file}
 
 This arises when the tabulated van der Waals potentials\index{potential!tabulated}
 presented in the TABLE file have an increment that is greater
@@ -284,9 +284,9 @@ file to make sure all the tabulated
 potentials\index{potential!tabulated} are present in the order the
 FIELD file indicates.
 
-\subsubsection*{\underline{Message 24}: error - end of file encountered in TABLE||TABEAM||TABBND||TABANG||TABDIH||TABINV file}
+\subsubsection*{\underline{Message 24}: error - end of file encountered in TABLE\textbar\textbar TABBND\textbar\textbar TABANG\textbar\textbar TABDIH\textbar\textbar TABINV file}
 
-This means the TABLE||TABEAM||TABBND||TABANG||TABDIH||TABINV file
+This means the TABLE\textbar\textbar TABBND\textbar\textbar TABANG\textbar\textbar TABDIH\textbar\textbar TABINV file
 is incomplete in some way: either by having too few potentials
 included, or the number of data points is incorrect.
 
@@ -1275,46 +1275,53 @@ Supply a valid CONTROL file before you start a simulation
 \subsubsection*{\underline{Message 128}: error - chemical bond unit separation $>$ rcut (the system cutoff)}
 
 This could only happen if FIELD and CONFIG do not match each other
-or if CONFIG is ill defined.
+or if the instantaneous configuration is ill defined because of
+generation of large forces on bonded particles.  This may be due
+to having a badly defined force-field and/or starting form a configuration
+which is too much away from equilibrium.
 
 \noindent \underline{\em Action}:
 
-Regenerate CONFIG (and FIELD) and resubmit.
+Regenerate CONFIG (and FIELD) and resubmit.  Try topology verification
+by using {\tt nfold 1 1 1} in CONTROL.  Try using options as {\tt scale},
+{\tt cap}, {\tt zero} and {\tt optimise}.  Try using smaller SHAKE tolerance
+if constraints are present in the system.  You may as well try using the
+{\tt variable timestep} option.
 
 \subsubsection*{\underline{Message 130}: error - bond angle unit diameter $>$ rcut (the system cutoff)}
 
-This could only happen if FIELD and CONFIG do not match each other
-or if CONFIG is ill defined.
+See Message 128.
 
 \noindent \underline{\em Action}:
 
-Regenerate CONFIG (and FIELD) and resubmit.
+See Message 128.
 
 \subsubsection*{\underline{Message 132}: error - dihedral angle unit diameter $>$ rcut (the system cutoff)}
 
-This could only happen if FIELD and CONFIG do not match each other
-or if CONFIG is ill defined.
+See Message 128.
 
 \noindent \underline{\em Action}:
 
-Regenerate CONFIG (and FIELD) and resubmit.
+See Message 128.
 
 \subsubsection*{\underline{Message 134}: error - inversion angle unit diameter $>$ rcut (the system cutoff)}
 
-This could only happen if FIELD and CONFIG do not match each other
-or if CONFIG is ill defined.
+See Message 128.
 
 \noindent \underline{\em Action}:
 
-Regenerate CONFIG (and FIELD) and resubmit.
+See Message 128.
 
 \subsubsection*{\underline{Message 138}: error - incorrect atom totals in refresh\_halo\_positions}
 
-This should never happen!
+This should never happen although, sometimes, it could due
+to ill defined force field and/or and/or starting form a
+configuration which is too much away from equilibrium.
 
 \noindent \underline{\em Action}:
 
-Big trouble.  Report to authors.
+Try using the {\tt variable timestep} option and/or running in serial
+to determine if particles gain too much speed and leave domains.  See Message 128.
 
 \subsubsection*{\underline{Message 141}: error - duplicate metal potential specified}
 
@@ -1395,7 +1402,7 @@ happen!
 
 Contact \D authors.
 
-\subsubsection*{\underline{Message 172}: error - duplicate intra-molecular entries specified in TABBND||TABANG||TABDIH||TABINV}
+\subsubsection*{\underline{Message 172}: error - duplicate intra-molecular entries specified in TABBND\textbar\textbar TABANG\textbar\textbar TABDIH\textbar\textbar TABINV}
 
 A duplicate entry has been encountered in the intramolecular table file.
 
@@ -2105,7 +2112,7 @@ repetition of a site is allowed in a PMF unit.
 
 Correct the erroneous entries in FIELD.
 
-\subsubsection*{\underline{Message 504}: error - cutoff too large for TABLE||TABBND file}
+\subsubsection*{\underline{Message 504}: error - cutoff too large for TABLE\textbar\textbar TABBND file}
 
 The requested cutoff exceeds the information in the TABLE file or
 the TABBND cutoff is larger than half the system cutoff {\tt rcut}.

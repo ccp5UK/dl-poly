@@ -238,12 +238,12 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf ana}lyse {\bf dih}edrals (sampling) (every) $f$ {\bf nbins} $n$
                                                 \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect dihedrals PDFs \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\ 
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\
 \>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins in the range $(-180:180]$ (degrees). \\
 \>                                              \> \\
 \> {\bf ana}lyse {\bf inv}ersions (sampling) (every) $f$ {\bf nbins} $n$
                                                 \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect inversions PDFs \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\ 
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\
 \>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins in the range $(0:180]$ (degrees). \\
 \>                                              \> \\
 \> {\bf binsize} $f$                            \> set the bin size for radial and z-density distribution functions to \\
@@ -2906,14 +2906,6 @@ the above parameters or include more or less such.  Therefore a
 different versions of \D may render any existing REVOLD file
 unreadable by the code.
 
-\subsection{The TAB* Files for Intramolecular Interactions}
-\label{tab-files}
-In order to set up a (possibly coarse-grained) molecular system 
-with user-defined tabulated potential and force data, the user 
-should refer to Sections~\ref{cg-intro} and~\ref{bonded-tables}. 
-Below only the TAB* files for {\em non-bonded} interations are 
-described. 
-
 \subsection{The TABLE File}
 \label{table-file}
 
@@ -2987,7 +2979,7 @@ G(r)=-r\frac{\partial}{\partial r}U(r)~~.
 \end{equation}
 {\bf Note}, this is {\em not} the same as the true force.
 
-During simulation, interactions beyond distance ${\tt cutpot})$ are discarded.
+During simulation, interactions beyond distance ${\tt cutpot}$ are discarded.
 
 \subsection{The TABEAM File}
 \label{tabeam-file}
@@ -3115,7 +3107,8 @@ interactions:
 \end{itemize}
 
 The files have the same formatting rules with examples shown in
-Section~\ref{bonded-tables}.
+Section~\ref{bonded-tables}.  Refer to Section~\ref{cg-intro} for
+their derivation and usage in coarse grained model systems.
 
 \subsubsection{Definitions of Variables}
 
@@ -3125,9 +3118,11 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 \> {\tt header}    \> a100    \> file header \\
 {\bf record 2} \\
 \> {\tt \#}        \> a1      \> a hash (\#) symbol \\
-\> {\tt \# cutpot} \> real    \> cutoff in \AA~- {\bf only expected in TABBND} as the \\
+\> {\tt cutpot}    \> real    \> cutoff in \AA~- {\bf only expected in TABBND} as the \\
 \>                 \>         \> cutoff ranges are known for TABANG, TABDIH \& TABINV \\
-\> {\tt \# ngrid}  \> integer \> number of grid points in table for all potentials
+\> {\tt ngrid}     \> integer \> number of grid points in table for all potentials \\
+{\bf record 3} \\
+\> {\tt \#}        \> a1      \> a hash (\#) symbol
 \end{tabbing}
 
 The subsequent records define each tabulated potential in turn,
@@ -3138,7 +3133,6 @@ records with the potential and force tables.
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf empty record:} \\
-\> {\tt \#}        \> a1   \> a hash (\#) symbol \\
 {\bf id record:} \\
 \> {\tt \#}        \> a1   \> a hash (\#) symbol \\
 \> {\tt atom 1}    \> a8   \> first atom type \\
@@ -3146,10 +3140,9 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 \> {\tt atom 3}    \> a8   \> third atom type - only required for TABANG \\
 \> {\tt atom 4}    \> a8   \> forth atom type - only required for TABDIH \& TABINV \\
 {\bf interaction data records 0/1--ngrid:} \\
-\> {\tt \#}        \> a1   \> a hash (\#) symbol \\
 \> {\tt abscissa}  \> real \> consecutive value over the full cutoff/range in \\
 \>                 \>      \> \AA~for TABBND and degrees for TABANG, TABDIH \& TABINV \\
-\> {\tt potential} \> real \> potential at the abscissa grid point in {\bf units} as specified in FILED \\
+\> {\tt potential} \> real \> potential at the abscissa grid point in {\bf units} as specified in FIELD \\
 \> {\tt force}     \> real \> complementary force (virial for TABBND) value
 \end{tabbing}
 
@@ -3173,5 +3166,5 @@ via the formula:
 G(r)=-r\frac{\partial}{\partial r}U(r)~~.
 \end{equation}
 {\bf Note}, this is {\em not} the same as the true force.  During simulation,
-interactions beyond distance ${\tt cutpot})$ will bring the run to a controlled
+interactions beyond distance ${\tt cutpot}$ will bring the run to a controlled
 termination.

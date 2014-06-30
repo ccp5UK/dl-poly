@@ -656,7 +656,7 @@ Program dl_poly
   Call statistics_result                           &
            (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn, &
            nstrun,keyens,keyshl,iso,               &
-           temp,press,strext,nstep,tstep,time,tmst)
+           press,strext,nstep,tstep,time,tmst)
 
 10 Continue
 

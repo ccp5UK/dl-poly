@@ -1,7 +1,7 @@
 Subroutine statistics_result                       &
            (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn, &
            nstrun,keyens,keyshl,iso,               &
-           temp,press,strext,nstep,tstep,time,tmst)
+           press,strext,nstep,tstep,time,tmst)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -34,11 +34,11 @@ Subroutine statistics_result                       &
 
   Logical,           Intent( In    ) :: lmin,lpana,lrdf,lprdf,lzdn,lpzdn
   Integer,           Intent( In    ) :: nstrun,keyens,keyshl,iso,nstep
-  Real( Kind = wp ), Intent( In    ) :: rcut,temp,press,strext(1:9),tstep,time,tmst
+  Real( Kind = wp ), Intent( In    ) :: rcut,press,strext(1:9),tstep,time,tmst
 
   Logical           :: check
   Integer           :: i,j,iadd
-  Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty
+  Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty,temp
 
 ! VNL skipping statistics
 
@@ -244,8 +244,11 @@ Subroutine statistics_result                       &
      If (numtyp(i) > zero_plus) dens(i)=dens(i)*(volm/avvol)
   End Do
 
+! volm and cell become the averaged ones, as is the local temp
+
   volm = avvol
   cell = avcel
+  temp = sumval(2)
 
 ! calculate and print radial distribution functions
 

@@ -64,7 +64,6 @@ Module setup_module
 
   Real( Kind = wp ), Parameter :: delr_max  = 0.01_wp ! Angstroms
   Real( Kind = wp ), Parameter :: delth_max = 1.00_wp ! degrees
-!  Real( Kind = wp ), Parameter :: delth_max = 0.18_wp ! degrees
 
 ! I/O CHANNELS :: STERR = 0 , STINP = 5 , STOUT = 6 , STERR+STOUT = *
 ! main input channel

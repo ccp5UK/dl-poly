@@ -12,7 +12,8 @@ Subroutine inversions_compute(temp)
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
-  Use setup_module,  Only : pi,nrite,npdfdt,npdgdt,mxginv,mxginv1,engunit,boltz,zero_plus
+  Use setup_module,  Only : pi,boltz,nrite,npdfdt,npdgdt, &
+                            mxginv,mxginv1,engunit,zero_plus
   Use site_module,   Only : unqatm
   Use config_module, Only : cfgname
   Use inversions_module
@@ -24,32 +25,16 @@ Subroutine inversions_compute(temp)
   Logical           :: zero
   Integer           :: fail,i,j,ig,kk,ll,ngrid
   Real( Kind = wp ) :: kT2engo,delth,rdlth,dgrid,factor,factor1,rad2dgr,dgr2rad, &
-                       theta,pdfinv,sum,pdfinv1,sum1,fed0,fed,dfed,dfed0,tmp, &
-                       fed1,fed2,dfed1,dfed2,coef,t1,t2
+                       theta,pdfinv,sum,pdfinv1,sum1,                            &
+                       fed0,fed,dfed,dfed0,tmp,fed1,fed2,dfed1,dfed2,coef,t1,t2
 
   Real( Kind = wp ), Allocatable :: dstdinv(:,:)
   Real( Kind = wp ), Allocatable :: pmf(:),vir(:)
 
   fail = 0
-  Allocate (dstdinv(0:mxginv1,1:ldfinv(0)), Stat = fail)
+  Allocate (dstdinv(0:mxginv1,1:ldfinv(0)),pmf(0:mxginv1+2),vit(0:mxginv1+2), Stat = fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'inversions_compute - allocation failure, node: ', idnode
-     Call error(0)
-  End If
-
-  ngrid = Max(1000,mxginv-4)
-
-  fail = 0
-  Allocate (pmf(0:ngrid), Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,2(a,i0))') 'inversions_compute.f90 - allocation failure for pmf(0:',ngrid,'), node: ', idnode
-     Call error(0)
-  End If
-
-  fail = 0
-  Allocate (vir(0:ngrid), Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,2(a,i0))') 'inversions_compute.f90 - allocation failure for vir(0:',ngrid,'), node: ', idnode
      Call error(0)
   End If
 
@@ -67,8 +52,9 @@ Subroutine inversions_compute(temp)
   delth = pi/Real(mxginv1,wp)
   rdlth = Real(mxginv1,wp)/180.0_wp
 
-! resampling grid interval for pmf tables
+! resampling grid and grid interval for pmf tables
 
+  ngrid = Max(1000,mxginv-4)
   dgrid = pi/Real(ngrid,wp)
 
 ! loop over all valid PDFs to get valid totals
@@ -88,8 +74,8 @@ Subroutine inversions_compute(temp)
 
   If (idnode == 0) Then
      Write(nrite,'(/,/,12x,a)') 'INVERSIONS : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)'
-     Write(nrite,'(/,1x,a,i10,1x,f8.3,3(1x,i10))') &
-            'bins, cutoff, frames, types:',mxginv1,180.0_wp,ncfinv,kk,ll
+     Write(nrite,'(/,1x,a,5(1x,i10))') &
+            '# bins, cutoff, frames, types: ',mxginv1,180,ncfinv,kk,ll
   End If
 
 ! open RDF file and write headers
@@ -98,7 +84,7 @@ Subroutine inversions_compute(temp)
      Open(Unit=npdfdt, File='INVDAT', Status='replace')
      Write(npdfdt,'(a)') '# '//cfgname
      Write(npdfdt,'(a)') '# INVERSIONS: Probability Density Functions (PDF) := histogram(bin)/hist_sum(bins)/dTheta_bin'
-     Write(npdfdt,'(a,4(1x,i10))') '# bins, cutoff, frames, types:',mxginv1,180,ncfinv,kk
+     Write(npdfdt,'(a,4(1x,i10))') '# bins, cutoff, frames, types: ',mxginv1,180,ncfinv,kk
      Write(npdfdt,'(a)') '#'
      Write(npdfdt,'(a,f8.5)') '# Theta(degrees)  PDF_norm(Theta)   @   dTheta_bin = ',delth*rad2dgr
      Write(npdfdt,'(a)') '#'
@@ -276,23 +262,23 @@ Subroutine inversions_compute(temp)
            If (idnode == 0) Write(npdgdt,"(f11.5,1p,2e14.6)") theta*rad2dgr,fed*kT2engo,dfed*kT2engo*dgr2rad/delth
         End Do
 
-        pmf(0)    = 2.0_wp*pmf(1)-pmf(2)
-        vir(0)    = 2.0_wp*vir(1)-vir(2)
-        pmf(ig)   = 2.0_wp*fed-pmf(ig-2)
-        vir(ig)   = 2.0_wp*dfed-vir(ig-2)
-        pmf(ig+1) = 2.0_wp*pmf(ig)-pmf(ig-1)
-        vir(ig+1) = 2.0_wp*vir(ig)-vir(ig-1)
-        
-!       resample using 3pt interpolation
-        
-        Do ig=1,ngrid
+! Define edges
 
+        pmf(0)         = 2.0_wp*pmf(1)        -pmf(2)
+        vir(0)         = 2.0_wp*vir(1)        -vir(2)
+        pmf(mxginv1+1) = 2.0_wp*pmf(mxginv1)  -pmf(mxginv1-1)
+        vir(mxginv1+1) = 2.0_wp*vir(mxginv1)  -vir(mxginv1-1)
+        pmf(mxginv1+2) = 2.0_wp*pmf(mxginv1+1)-pmf(mxginv1)
+        vir(mxginv1+2) = 2.0_wp*vir(mxginv1+1)-vir(mxginv1)
+
+! resample using 3pt interpolation
+
+        Do ig=1,ngrid
            theta = Real(ig,wp)*dgrid
            ll = Int(theta/delth)
 
-           if( ll > mxginv1 ) go to 113
-
 ! +0.5_wp due to half-a-bin shift in the original data
+
            coef = theta/delth-Real(ll,wp)+0.5_wp
 
            fed0 = pmf(ll)
@@ -315,10 +301,6 @@ Subroutine inversions_compute(temp)
 
            Write(npdfdt,"(f11.5,1p,2e14.6)") theta*rad2dgr,fed*kT2engo,dfed*kT2engo*dgr2rad/delth
         End Do
-
-113     if( ig < ngrid+1 ) write(nrite,*) &
-             'inversions_compute():: PMF cut at theta(max) = ',theta*rad2dgr,' ',ig,' ',ll,' ',i
-
      End If
   End Do
 

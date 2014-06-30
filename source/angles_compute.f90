@@ -12,7 +12,8 @@ Subroutine angles_compute(temp)
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
-  Use setup_module,  Only : pi,nrite,npdfdt,npdgdt,mxgang,mxgang1,engunit,boltz,zero_plus
+  Use setup_module,  Only : pi,boltz,nrite,npdfdt,npdgdt, &
+                            mxgang,mxgang1,engunit,zero_plus
   Use site_module,   Only : unqatm
   Use config_module, Only : cfgname
   Use angles_module
@@ -24,32 +25,16 @@ Subroutine angles_compute(temp)
   Logical           :: zero
   Integer           :: fail,i,j,ig,kk,ll,ngrid
   Real( Kind = wp ) :: kT2engo,delth,rdlth,dgrid,factor,factor1,rad2dgr,dgr2rad, &
-                       theta,sinth,rsint,pdfang,sum,pdfang1,sum1,fed0,fed,dfed,dfed0,tmp, &
-                       fed1,fed2,dfed1,dfed2,coef,t1,t2
+                       theta,sinth,rsint,pdfang,sum,pdfang1,sum1,                &
+                       fed0,fed,dfed,dfed0,tmp,fed1,fed2,dfed1,dfed2,coef,t1,t2
 
   Real( Kind = wp ), Allocatable :: dstdang(:,:)
   Real( Kind = wp ), Allocatable :: pmf(:),vir(:)
 
   fail = 0
-  Allocate (dstdang(0:mxgang1,1:ldfang(0)), Stat = fail)
+  Allocate (dstdang(0:mxgang1,1:ldfang(0)),pmf(0:mxgang1+2),vir(0:mxgang1+2), Stat = fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'angles_compute - allocation failure, node: ', idnode
-     Call error(0)
-  End If
-
-  ngrid = Max(1000,mxgang-4)
-
-  fail = 0
-  Allocate (pmf(0:ngrid), Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,2(a,i0))') 'angles_compute.f90 - allocation failure for pmf(0:',ngrid,'), node: ', idnode
-     Call error(0)
-  End If
-
-  fail = 0
-  Allocate (vir(0:ngrid), Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,2(a,i0))') 'angles_compute.f90 - allocation failure for vir(0:',ngrid,'), node: ', idnode
      Call error(0)
   End If
 
@@ -67,8 +52,9 @@ Subroutine angles_compute(temp)
   delth = pi/Real(mxgang1,wp)
   rdlth = Real(mxgang1,wp)/180.0_wp
 
-! resampling grid interval for pmf tables
+! resampling grid and grid interval for pmf tables
 
+  ngrid = Max(1000,mxgang-4)
   dgrid = pi/Real(ngrid,wp)
 
 ! loop over all valid PDFs to get valid totals
@@ -88,8 +74,8 @@ Subroutine angles_compute(temp)
 
   If (idnode == 0) Then
      Write(nrite,'(/,/,12x,a)') 'ANGLES : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)'
-     Write(nrite,'(/,1x,a,i10,1x,f8.3,3(1x,i10))') &
-           'bins, cutoff, frames, types:',mxgang1,180.0_wp,ncfang,kk,ll
+     Write(nrite,'(/,1x,a,5(1x,i10))') &
+           '# bins, cutoff, frames, types: ',mxgang1,180,ncfang,kk,ll
   End If
 
 ! open RDF file and write headers
@@ -98,9 +84,9 @@ Subroutine angles_compute(temp)
      Open(Unit=npdfdt, File='ANGDAT', Status='replace')
      Write(npdfdt,'(a)') '# '//cfgname
      Write(npdfdt,'(a)') '# ANGLES: Probability Density Functions (PDF) := histogram(bin)/hist_sum(bins)/dTheta_bin'
-     Write(npdfdt,'(a,4(1x,i10))') '# bins, cutoff, frames, types:',mxgang1,180,ncfang,kk
+     Write(npdfdt,'(a,4(1x,i10))') '# bins, cutoff, frames, types: ',mxgang1,180,ncfang,kk
      Write(npdfdt,'(a)') '#'
-     Write(npdfdt,'(a,f8.5)') '# Theta(degrees)  PDF_norm(Theta)  PDF_norm(Theta)/sin(Theta)   @   dTheta_bin = ',delth*rad2dgr
+     Write(npdfdt,'(a,f8.5)') '# Theta(degrees)  PDF_norm(Theta)  PDF_norm(Theta)/Sin(Theta)   @   dTheta_bin = ',delth*rad2dgr
      Write(npdfdt,'(a)') '#'
   End If
 
@@ -114,7 +100,7 @@ Subroutine angles_compute(temp)
         If (idnode == 0) Then
            Write(nrite,'(/,1x,a,3(a8,1x),2(i10,1x))') 'type, index, instances: ', &
                 unqatm(typang(1,i)),unqatm(typang(2,i)),unqatm(typang(3,i)),j,typang(0,i)
-           Write(nrite,'(/,1x,a,f8.5,/)') & 
+           Write(nrite,'(/,1x,a,f8.5,/)') &
                 'Theta(degrees)  PDF_ang(Theta)  Sum_PDF_ang(Theta)   @   dTheta_bin = ',delth*rad2dgr
 
            Write(npdfdt,'(/,a,3(a8,1x),2(i10,1x))') '# type, index, instances: ', &
@@ -195,13 +181,13 @@ Subroutine angles_compute(temp)
   If (idnode == 0) Then
      Open(Unit=npdgdt, File='ANGPMF', Status='replace')
      Write(npdgdt,'(a)') '# '//cfgname
-     Write(npdgdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',mxgang1,delth*mxgang1*rad2dgr,delth*rad2dgr,kk, &
-          '   conversion factor(kT -> energy units) =',kT2engo
+     Write(npdgdt,'(a,2i6,f12.5,i10,a,e15.7)') '# ',mxgang1,180,delth*rad2dgr,kk, &
+          '   conversion factor(kT -> energy units) = ', kT2engo
 
      Open(Unit=npdfdt, File='ANGTAB', Status='replace')
      Write(npdfdt,'(a)') '# '//cfgname
-     Write(npdfdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',ngrid,dgrid*ngrid*rad2dgr,dgrid*rad2dgr,kk, &
-          '   conversion factor(kT -> energy units) =',kT2engo
+     Write(npdfdt,'(a,2i6,f12.5,i10,a,e15.7)') '# ',ngrid,180,dgrid*rad2dgr,kk, &
+          '   conversion factor(kT -> energy units) = ', kT2engo
   End If
 
 ! loop over all valid PDFs
@@ -279,27 +265,28 @@ Subroutine angles_compute(temp)
            vir(ig) = dfed
 
 ! Print
+
            If (idnode == 0) &
               Write(npdgdt,"(f11.5,1p,2e14.6)") theta*rad2dgr,fed*kT2engo,dfed*kT2engo*dgr2rad/delth
         End Do
 
-        pmf(0)    = 2.0_wp*pmf(1)-pmf(2)
-        vir(0)    = 2.0_wp*vir(1)-vir(2)
-        pmf(ig)   = 2.0_wp*fed-pmf(ig-2)
-        vir(ig)   = 2.0_wp*dfed-vir(ig-2)
-        pmf(ig+1) = 2.0_wp*pmf(ig)-pmf(ig-1)
-        vir(ig+1) = 2.0_wp*vir(ig)-vir(ig-1)
-        
-!       resample using 3pt interpolation
-        
-        Do ig=1,ngrid
+! Define edges
 
+        pmf(0)         = 2.0_wp*pmf(1)        -pmf(2)
+        vir(0)         = 2.0_wp*vir(1)        -vir(2)
+        pmf(mxgang1+1) = 2.0_wp*pmf(mxgang1)  -pmf(mxgang1-1)
+        vir(mxgang1+1) = 2.0_wp*vir(mxgang1)  -vir(mxgang1-1)
+        pmf(mxgang1+2) = 2.0_wp*pmf(mxgang1+1)-pmf(mxgang1)
+        vir(mxgang1+2) = 2.0_wp*vir(mxgang1+1)-vir(mxgang1)
+
+! resample using 3pt interpolation
+
+        Do ig=1,ngrid
            theta = Real(ig,wp)*dgrid
            ll = Int(theta/delth)
 
-           if( ll > mxgang1 ) go to 113
-
 ! +0.5_wp due to half-a-bin shift in the original data
+
            coef = theta/delth-Real(ll,wp)+0.5_wp
 
            fed0 = pmf(ll)
@@ -322,10 +309,6 @@ Subroutine angles_compute(temp)
 
            Write(npdfdt,"(f11.5,1p,2e14.6)") theta*rad2dgr,fed*kT2engo,dfed*kT2engo*dgr2rad/delth
         End Do
-
-113     if( ig < ngrid+1 ) write(nrite,*) &
-             'angles_compute():: PMF cut at theta(max) = ',theta*rad2dgr,' ',ig,' ',ll,' ',i
-
      End If
   End Do
 
