@@ -2,7 +2,7 @@
 c*********************************************************************
 c     
 c     dl_poly program to create a tabulated force-field file in DL_POLY format - TABLE
-c     by converting a *PMF or *TAB data file (e.g. BNDPMF/BNDTAB, ANGPMF/ANGTAB etc.)
+c     by converting RDFPMF or RDFTAB data file (in text format; commented lines starting with '#')
 c     
 c     copyright daresbury laboratory 2014
 c     author    Andrey Brukhno, June 2014
