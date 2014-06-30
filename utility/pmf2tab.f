@@ -1,8 +1,17 @@
        PROGRAM PMFtoTABLE
-c c c  
-c c c  The program creates a tabulated force-field file in DL_POLY format - TABLE
-c c c  by converting a *PMF or *TAB data file (e.g. BNDPMF/BNDTAB, ANGPMF/ANGTAB etc.)
-c c c  
+c*********************************************************************
+c     
+c     dl_poly program to create a tabulated force-field file in DL_POLY format - TABLE
+c     by converting a *PMF or *TAB data file (e.g. BNDPMF/BNDTAB, ANGPMF/ANGTAB etc.)
+c     
+c     copyright daresbury laboratory 2014
+c     author    Andrey Brukhno, June 2014
+c
+c     compilation: f77 -o pmf2tab.exe pmf2tab.f
+c     usage: pmf2tab.exe < RDFTAB
+c     
+c*********************************************************************
+c     
        implicit double precision (a-h,o-z)
 c
        PARAMETER( finp=21,fout=31,Mgrid=20000,Msets=100 )
@@ -13,14 +22,7 @@ c
        character*80 title,header
        character    fname*6,ch2*2
 c c c  
-!       write(*,*)
-!     * 'The name of force-field file (*PMF/*TAB) to convert [6 chars]:'
-!       read(*,*) fname
-c
-!       open(unit=finp,file=fname,ERR=13)
-c c c  
 c c c  using standard input stream (terminal=stdin)
-c c c  read stdin from a file by supplying the file name preceded by "<"
 c c c  
        iflag = 0
        read(*,'(a2,a80)',ERR=13,END=13) ch2,title
@@ -71,21 +73,7 @@ c
 
          Do i=1,ngrd
            r = float(i)*delta
-
            read(*,*,ERR=113,END=113) rrr,u(i),f(i)
-c
-!         if(u(i).gt.1.d4) then
-!            u(i)=1.d4
-!         endif
-!         if(u(i).lt.-1.d4) then
-!            u(i)=-1.d4
-!         endif
-!         if(f(i).gt.1.d4) then
-!            f(i)=1.d4
-!         endif
-!         if(f(i).lt.-1.d4) then
-!            f(i)=-1.d4
-!         endif
          EndDo
 c
          write(fout,'(a16)') header
