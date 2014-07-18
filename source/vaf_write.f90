@@ -13,9 +13,9 @@ Subroutine vaf_write(lvafav,keyres,leql,nsteql,nstep,tstep)
   Use kinds_f90
   Use comms_module,     Only : idnode,mxnode,gcheck
   Use setup_module,     Only : mxatyp,nvafdt,zero_plus
-  Use site_module,      Only : ntpatm,unqatm,numtypnf
+  Use site_module,      Only : unqatm,numtypnf
   Use config_module,    Only : cfgname
-  Use greenkubo_module, Only : isvaf,nsvaf,vafcount,vafstep,vaftime,vaf
+  Use greenkubo_module, Only : isvaf,nsvaf,vafcount,vaftime,vaf
 
   Implicit None
 
