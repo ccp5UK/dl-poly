@@ -1,4 +1,4 @@
-Subroutine vaf_write(lvafav,keyres,leql,nsteql,nstep,tstep)
+Subroutine vaf_write(lvafav,keyres,nstep,tstep)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -15,22 +15,22 @@ Subroutine vaf_write(lvafav,keyres,leql,nsteql,nstep,tstep)
   Use setup_module,     Only : mxatyp,nvafdt,zero_plus
   Use site_module,      Only : unqatm,numtypnf
   Use config_module,    Only : cfgname
-  Use greenkubo_module, Only : isvaf,nsvaf,vafcount,vaftime,vaf
+  Use greenkubo_module, Only : isvaf,nsvaf,vaftsts,vafcount,vaftime,vaf
 
   Implicit None
 
-  Logical,           Intent( In    ) :: lvafav,leql
-  Integer,           Intent( In    ) :: keyres,nsteql,nstep
+  Logical,           Intent( In    ) :: lvafav
+  Integer,           Intent( In    ) :: keyres,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep
 
   Logical,     Save :: newjob = .true.
 
   Logical           :: lexist
-  Integer           :: i,j,step0
+  Integer           :: i,j
   Real( Kind = wp ) :: factor,gvaf,ovaf,time0,timei,numt
 
-  step0=Merge(nsteql,0,leql)
-  If (.not.(nstep >= step0+nsvaf .and. Mod(nstep-step0-nsvaf,isvaf) == 0)) Return
+  If (vaftsts < 0) Return
+  If (.not.(nstep >= vaftsts+nsvaf .and. Mod(nstep-vaftsts-nsvaf,isvaf) == 0)) Return
 
   If (newjob) Then
      newjob = .false.

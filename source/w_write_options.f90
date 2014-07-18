@@ -12,7 +12,7 @@
         If (lrsd) Call rsd_write &
            (imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
         If (vafsamp > 0) Call vaf_write &
-           (lvafav,keyres,leql,nsteql,nstep,tstep)
+           (lvafav,keyres,nstep,tstep)
 
 
 !!!!!!!!!!!!!!!!!!!!!  W_WRITE_OPTIONS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

@@ -225,7 +225,7 @@
            (imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
         If (levcfg > 0 .and. levcfg < 3) Then
            If (vafsamp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
-           (lvafav,keyres,leql,nsteql,nstph,tsths)
+           (lvafav,keyres,nstph,tsths)
         End If
 
 ! Complete time check

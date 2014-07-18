@@ -7,14 +7,16 @@ Subroutine vaf_collect(lvafav,leql,nsteql,nstep,time)
 !
 ! copyright - daresbury laboratory
 ! author    - m.a.seaton june 2014
+! amended   - i.t.todorov july 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,  Only : idnode,mxnode,gsum
-  Use setup_module,  Only : nrite,mxatyp,mxbuff
-  Use config_module, Only : natms,ltype,lfrzn,vxx,vyy,vzz
-  Use greenkubo_module
+  Use comms_module,     Only : idnode,mxnode,gsum
+  Use setup_module,     Only : nrite,mxatyp,mxbuff
+  Use config_module,    Only : natms,ltype,lfrzn,vxx,vyy,vzz
+  Use greenkubo_module, Only : isvaf,nsvaf,vaftsts,vafsamp,vafcount, &
+                               vafstep,vxi,vyi,vzi,vafdata,vaftime,vaf
 
   Implicit None
 
@@ -22,7 +24,7 @@ Subroutine vaf_collect(lvafav,leql,nsteql,nstep,time)
   Integer,           Intent( In    ) :: nsteql,nstep
   Real( Kind = wp ), Intent( In    ) :: time
 
-  Integer                        :: fail,step0,i,j,k,l,nsum
+  Integer                        :: fail,i,j,k,l,nsum
 
   Real( Kind = wp ), Allocatable :: vafcoll(:)
 
@@ -33,12 +35,15 @@ Subroutine vaf_collect(lvafav,leql,nsteql,nstep,time)
      Call error(0)
   End If
 
+! set VAF timestep start
+
+  If (vaftsts < 0) vaftsts=Merge(nsteql,nstep,leql)
+
 ! set reference velocities only for first sampling passes
 
-  step0=Merge(nsteql,0,leql)
-  If (nstep <= step0+(vafsamp-1)*isvaf) Then
+  If (nstep <= vaftsts+(vafsamp-1)*isvaf) Then
      Do j=1,vafsamp
-        If (nstep == (step0+(j-1)*isvaf)) Then
+        If (nstep == (vaftsts+(j-1)*isvaf)) Then
            vxi(1:natms,j) = vxx(1:natms)
            vyi(1:natms,j) = vyy(1:natms)
            vzi(1:natms,j) = vzz(1:natms)

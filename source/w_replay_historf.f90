@@ -204,7 +204,7 @@
         If (lrsd) Call rsd_write &
            (imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
         If (vafsamp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
-           (lvafav,keyres,leql,nsteql,nstph,tsths)
+           (lvafav,keyres,nstph,tsths)
 
 ! Save restart data in event of system crash
 

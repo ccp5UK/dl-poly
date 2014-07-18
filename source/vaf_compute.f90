@@ -7,6 +7,7 @@ Subroutine vaf_compute(lvafav,tstep)
 !
 ! copyright - daresbury laboratory
 ! author    - m.a.seaton june 2014
+! amended   - i.t.todorov july 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
