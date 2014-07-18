@@ -1,8 +1,9 @@
 \section{The OUTPUT Files}
 \label{output-files}
 
-\D produces up to ten output files: HISTORY, DEFECTS, MSDTMP,
-CFGMIN, OUTPUT, REVCON, REVIVE, RDFDAT, ZDNDAT and STATIS.
+\D produces up to 20 kinds of output files.  Some of these
+are HISTORY, DEFECTS, MSDTMP, CFGMIN, OUTPUT, REVCON,
+REVIVE, RDFDAT, ZDNDAT, VDFDAT\_* and STATIS.
 These respectively contain: an incremental dump file of all
 atomic coordinates, velocities and forces; an incremental
 dump file of atomic coordinates of defected particles
@@ -12,7 +13,9 @@ temperature; a dump file of all atomic coordinates of a
 minimised structure; an incremental summary file of the
 simulation; a restart (final) configuration file; a restart
 (final) statistics accumulators file; a radial distribution
-data file; Z-density data file and a statistical history file.
+function data file; Z-density distribution data file;
+velocity autocorrelation function data files (one file
+for each species) and a statistical history file.
 
 \subsection{The HISTORY File}
 \label{history-file}
@@ -521,7 +524,7 @@ RDFDAT file (below).
 
 \subsubsection{Z-density Profile}
 
-If both calculation and printing of Z-density profiles has been
+If both calculation and printing of Z-density profiles have been
 requested (by selecting directives {\bf zden} and {\bf print zden}
 in the CONTROL file Z-density profiles are printed out as the last
 part of the OUTPUT file.  This is written by the subroutine {\sc
@@ -535,6 +538,23 @@ mean number density.  $n(z)$ is the running integral from $-L/2$ to
 $z$ of $({\rm xy~cell~area}) \times \rho(s)~ds$.
 Note that a readable version of these data is provided by the
 ZDNDAT file (below).
+
+\subsubsection{Velocity Autocorrelation Functions}
+
+If both calculation and printing of velocity autocorrelation functions
+have been requested (by selecting directives {\bf vaf} and {\bf print vaf}
+in the CONTROL file the velocity autocorrelation function for the system
+(either time-averaged or the last complete sample) is printed out as the
+last part of the OUTPUT file.  This is written by the subroutine
+{\sc vaf\_compute}.  First the details of the calculations are stated:
+either the number of samples used to give a time-averaged profile
+or the number of the last completed sample with its starting time.
+The absolute value of the velocity autocorrelation function for the system
+at $t=0$, $C(0)$, is then stated. Then $t$ and $Z(t)$ are given in tabular form.
+$Z(t)=C(t)/C(0)$ is the value of the velocity autocorrelation function,
+$C(t)=\langle \vek{v}_{i}(0) \cdot  \vek{v}_{i}(t) \rangle$,
+scaled by $C(0) \equiv 3k_B T/m$.  Note that a readable version of these data
+for individual species is provided by the VAFDAT files (below).
 
 \subsection{The REVCON File}
 \label{revcon-file}
@@ -572,7 +592,7 @@ described in Section~\ref{revold-file}.
 \subsection{The RDFDAT File}
 \label{rdf-file}
 
-This is a formatted file containing {em Radial Distribution
+This is a formatted file containing {\em Radial Distribution
 Function} (RDF) data.  Its contents are as follows:
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
@@ -643,8 +663,36 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 \> $\rho(z)$     \> real    \> Z-density at given height {\tt z}
 \end{tabbing}
 
-{\bf Note} The ZDNDAT file is optional and appears when the {\bf print
+{\bf Note} the ZDNDAT file is optional and appears when the {\bf print
 rdf} option is specified in the CONTROL file.
+
+\subsection{The VAFDAT Files}
+\label{vaf-files}
+
+These are formatted files containing {\em Velocity Autocorrelation Function} (VAF) data. 
+An individual file is created for each atomic species, i.e. {\tt VAFDAT}\_{\em atname}. Their 
+contents are as follows:
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
+{\bf record} \\
+\> {\tt cfgname} \> a72    \> configuration name \\
+\end{tabbing}
+There follow the data for the VAF, either a single time-averaged profile or 
+successive profiles separated by two blank lines. The data supplied are as follows:
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
+{\bf first record} \\
+\> {\tt atname}    \> a8      \> atom name \\
+\> {\tt binvaf}    \> integer \> number of data points in VAF profile, {\em excluding} $t=0$ \\
+\> {\tt vaforigin} \> real    \> absolute value of VAF at $t=0$ ($C(0) \equiv 3k_B T/m$) \\
+\> {\tt vaftime0}  \> real    \> simulation time (ps) at beginning of (last) VAF profile ($t=0$) \\
+{\bf following records} ({\em binvaf}+1 records) \\
+\> {\tt t}         \> real    \> time (ps) \\
+\> $Z(t)$          \> real    \> scaled velocity autocorrelation function ($C(t)/C(0)$) at given time {\tt t}
+\end{tabbing}
+
+{\bf Note} the VAFDAT files are optional and appear when the {\bf print
+vaf} option is specified in the CONTROL file.
 
 \subsection{The \textrm{\textit{\textbf{INT}}}DAT,
 \textrm{\textit{\textbf{INT}}}PMF \& \textrm{\textit{\textbf{INT}}}TAB Files}

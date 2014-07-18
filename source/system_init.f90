@@ -10,26 +10,29 @@ Subroutine system_init                                             &
 ! initial thermodynamic and structural accumulators
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2014
+! author    - i.t.todorov july 2014
+! contrib   - m.a.seaton june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use site_module,       Only : ntpatm,numtyp,dens
-  Use config_module,     Only : volm,natms,ltg,ltype,xxx,yyy,zzz
+  Use site_module,        Only : ntpatm,numtyp,numtypnf,dens
+  Use config_module,      Only : volm,natms,ltg,ltype,lfrzn,xxx,yyy,zzz
   Use statistics_module
-  Use rdf_module,        Only : ncfrdf,rdf
-  Use z_density_module,  Only : ncfzdn,zdens
-  Use bonds_module,      Only : ldfbnd,ncfbnd,dstbnd
-  Use angles_module,     Only : ldfang,ncfang,dstang
-  Use dihedrals_module,  Only : ldfdih,ncfdih,dstdih
-  Use inversions_module, Only : ldfinv,ncfinv,dstinv
-  Use vdw_module,        Only : ls_vdw,ntpvdw
-  Use metal_module,      Only : ntpmet
+  Use rdf_module,         Only : ncfrdf,rdf
+  Use z_density_module,   Only : ncfzdn,zdens
+  Use bonds_module,       Only : ldfbnd,ncfbnd,dstbnd
+  Use angles_module,      Only : ldfang,ncfang,dstang
+  Use dihedrals_module,   Only : ldfdih,ncfdih,dstdih
+  Use inversions_module,  Only : ldfinv,ncfinv,dstinv
+  Use vdw_module,         Only : ls_vdw,ntpvdw
+  Use metal_module,       Only : ntpmet
+  Use greenkubo_module,   Only : nsvaf,vafsamp,vafcount,vafstep, &
+                                 vxi,vyi,vzi,vafdata,vaf,vaftime
 
-  Use development_module
+  Use development_module, Only : l_rin
 
   Implicit None
 
@@ -48,9 +51,9 @@ Subroutine system_init                                             &
   Character( Len = 40 ) :: forma  = ' '
 
   Logical               :: l_tmp
-  Integer               :: i,j,k,keyio,i_tmp,gidx
+  Integer               :: i,j,k,l,keyio,i_tmp,gidx
   Real( Kind = wp )     :: dnstep,dtstep,dnumacc,dncfrdf,dncfzdn, &
-                           dncfbnd,dncfang,dncfdih,dncfinv,r_mxnode,xyz(0:6)
+                           dncfbnd,dncfang,dncfdih,dncfinv,r_mxnode,xyz(0:6),dvafstep(1:vafsamp)
 
 
 ! Define format for REVOLD reading in ASCII
@@ -115,6 +118,14 @@ Subroutine system_init                                             &
         If (lzdn) Then
            ncfzdn=0
            zdens =0.0_wp
+        End If
+
+        If (vafsamp > 0) Then
+           vafcount=0.0_wp
+           vafstep =0
+           vafdata =0.0_wp
+           vaf     =0.0_wp
+           vaftime =0.0_wp
         End If
 
         If (mxgbnd1 > 0) Then
@@ -188,6 +199,13 @@ Subroutine system_init                                             &
 
            If (lrdf) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfrdf,rdf
            If (lzdn) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfzdn,zdens
+           If (vafsamp > 0) Then
+             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) vafcount
+             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dvafstep
+             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) vafdata
+             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) vaf
+             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) vaftime
+           End If
 
            If (mxgbnd1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfbnd,dstbnd
            If (mxgang1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfang,dstang
@@ -210,6 +228,13 @@ Subroutine system_init                                             &
 
            If (lrdf) Read(Unit=nrest, IOStat=keyio, End=100) dncfrdf,rdf
            If (lzdn) Read(Unit=nrest, IOStat=keyio, End=100) dncfzdn,zdens
+           If (vafsamp > 0) Then
+             Read(Unit=nrest, IOStat=keyio, End=100) vafcount
+             Read(Unit=nrest, IOStat=keyio, End=100) dvafstep
+             Read(Unit=nrest, IOStat=keyio, End=100) vafdata
+             Read(Unit=nrest, IOStat=keyio, End=100) vaf
+             Read(Unit=nrest, IOStat=keyio, End=100) vaftime
+           End If
 
            If (mxgbnd1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfbnd,dstbnd
            If (mxgang1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfang,dstang
@@ -223,6 +248,7 @@ Subroutine system_init                                             &
 
         If (lrdf) ncfrdf=Nint(dncfrdf)
         If (lzdn) ncfzdn=Nint(dncfzdn)
+        If (vafsamp > 0) vafstep=Nint(dvafstep)
 
         If (mxgbnd1 > 0) ncfbnd=Nint(dncfbnd)
         If (mxgang1 > 0) ncfang=Nint(dncfang)
@@ -303,6 +329,21 @@ Subroutine system_init                                             &
               Call MPI_BCAST(zdens(1:mxgrdf,k), mxgrdf, wp_mpi, 0, dlp_comm_world, ierr)
 
               zdens(:,k) = zdens(:,k) * r_mxnode
+           End Do
+        End If
+
+! vafdata table - broadcast and normalise
+
+        If (vafsamp > 0) Then
+           Do j=1,vafsamp
+              l=(j-1)*(mxatyp+1)
+              Do k=1,mxatyp+1
+                 Call MPI_BCAST(vafdata(0:nsvaf,l+k), nsvaf+1, wp_mpi, 0, dlp_comm_world, ierr)
+
+! avoid normalising timing information
+
+                 If (k /= mxatyp+1) vafdata(:,k) = vafdata(:,k) * r_mxnode
+              End Do
            End Do
         End If
 
@@ -417,6 +458,56 @@ Subroutine system_init                                             &
         Go To 50
      End If
 
+! Read velocities for VAF calculations if needed
+
+     If (vafsamp > 0) Then
+
+       i_tmp=0
+
+       Do j=1,vafsamp
+         Do k=1,megatm
+            xyz=0.0_wp
+
+            If (idnode == 0) Then
+               If (l_rin) Then
+                  Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) &
+                      xyz(0),xyz(1),xyz(2),xyz(3)
+               Else
+                  Read(Unit=nrest, IOStat=keyio) &
+                      xyz(0),xyz(1),xyz(2),xyz(3)
+               End If
+            End If
+            If (keyio /= 0) i_tmp=1
+
+            If (mxnode > 1) Call MPI_BCAST(xyz(0:3), 4, wp_mpi, 0, dlp_comm_world, ierr)
+            gidx=Nint(xyz(0))
+
+! assign particle velocities to the corresponding domains
+
+            Do i=1,natms
+               If (ltg(i) == gidx) Then
+                  vxi(i,j)=xyz(1)
+                  vyi(i,j)=xyz(2)
+                  vzi(i,j)=xyz(3)
+               End If
+            End Do
+         End Do
+       End Do
+
+! If 'restart' is impossible go to 'restart noscale' and reinitialise
+
+       If (mxnode > 1) Call MPI_BCAST(i_tmp, 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+       If (i_tmp /= 0) Then
+          If (idnode == 0) Then
+             Call warning(190,0.0_wp,0.0_wp,0.0_wp)
+             Close(Unit=nrest)
+          End If
+          keyres=3
+          Go To 50
+       End If
+
+     End If
+
      If (idnode == 0) Close(Unit=nrest)
 
   Else
@@ -430,16 +521,20 @@ Subroutine system_init                                             &
 
 ! number densities needed for long-range corrections
 
-! evaluate species populations in system
+! evaluate species populations in system (separate totals for non-frozen atoms)
 
   Do i=1,natms
      k = ltype(i)
      numtyp(k) = numtyp(k)+1.0_wp
+     If (lfrzn(i) == 0) numtypnf(k) = numtypnf(k)+1.0_wp
   End Do
 
 ! global number densities
 
-  If (mxnode > 1) Call gsum(numtyp(1:ntpatm))
+  If (mxnode > 1) Then
+    Call gsum(numtyp(1:ntpatm))
+    Call gsum(numtypnf(1:ntpatm))
+  End If
 
 ! number densities
 

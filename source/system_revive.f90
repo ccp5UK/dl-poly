@@ -9,22 +9,26 @@ Subroutine system_revive                                            &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith december 1992
-! amended   - i.t.todorov april 2014
-!
+! amended   - i.t.todorov july 2014
+! contrib   - m.a.seaton june 2014
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use config_module,     Only : natms,ltg
+  Use config_module,      Only : natms,ltg
   Use statistics_module
-  Use rdf_module,        Only : ncfrdf,rdf
-  Use z_density_module,  Only : ncfzdn,zdens
-  Use bonds_module,      Only : ldfbnd,ncfbnd,dstbnd
-  Use angles_module,     Only : ldfang,ncfang,dstang
-  Use dihedrals_module,  Only : ldfdih,ncfdih,dstdih
-  Use inversions_module, Only : ldfinv,ncfinv,dstinv
-  Use development_module
+  Use rdf_module,         Only : ncfrdf,rdf
+  Use z_density_module,   Only : ncfzdn,zdens
+  Use bonds_module,       Only : ldfbnd,ncfbnd,dstbnd
+  Use angles_module,      Only : ldfang,ncfang,dstang
+  Use dihedrals_module,   Only : ldfdih,ncfdih,dstdih
+  Use inversions_module,  Only : ldfinv,ncfinv,dstinv
+  Use greenkubo_module,   Only : nsvaf,vafsamp,vafcount,vafstep, &
+                                 vxi,vyi,vzi,vafdata,vaf,vaftime
+
+  Use development_module, Only : l_rout
 
   Implicit None
 
@@ -38,7 +42,7 @@ Subroutine system_revive                                            &
   Character( Len = 6 )  :: name
   Character( Len = 40 ) :: forma  = ' '
 
-  Integer               :: fail(1:3),i,j,levcfg,jdnode,jatms,nsum
+  Integer               :: fail(1:3),i,j,l,levcfg,jdnode,jatms,nsum
   Real( Kind = wp )     :: r_mxnode
 
   Integer,           Dimension( : ), Allocatable :: iwrk
@@ -79,6 +83,7 @@ Subroutine system_revive                                            &
         Do i=1,mxrdf,nsum
            Call gsum(rdf(:,i:Min(i+nsum-1,mxrdf)))
         End Do
+
      End If
 
 ! globally sum z-density information before saving
@@ -93,6 +98,25 @@ Subroutine system_revive                                            &
         Do i=1,mxatyp,nsum
            Call gsum(zdens(:,i:Min(i+nsum-1,mxatyp)))
         End Do
+
+     End If
+
+! globally sum vafdata information before saving
+
+     If (vafsamp > 0) Then
+
+! maximum vafdata that can be summed in each step
+
+        nsum = mxbuff/(nsvaf+1)
+        If (nsum == 0) Call error(200)
+
+        Do j=1,vafsamp
+           l=(j-1)*(mxatyp+1) ! avoid summing up timing information
+           Do i=1,mxatyp,nsum
+              Call gsum(vafdata(:,l+i:l+Min(i+nsum-1,mxatyp)))
+           End Do
+        End Do
+
      End If
 
 ! globally sum bonds' distributions information before saving
@@ -107,6 +131,7 @@ Subroutine system_revive                                            &
         Do i=1,ldfbnd(0),nsum
            Call gsum(dstbnd(:,i:Min(i+nsum-1,ldfbnd(0))))
         End Do
+
      End If
 
 ! globally sum angles' distributions information before saving
@@ -121,6 +146,7 @@ Subroutine system_revive                                            &
         Do i=1,ldfang(0),nsum
            Call gsum(dstang(:,i:Min(i+nsum-1,ldfang(0))))
         End Do
+
      End If
 
 ! globally sum dihedrals' distributions information before saving
@@ -135,6 +161,7 @@ Subroutine system_revive                                            &
         Do i=1,ldfdih(0),nsum
            Call gsum(dstdih(:,i:Min(i+nsum-1,ldfdih(0))))
         End Do
+
      End If
 
 ! globally sum inversions' distributions information before saving
@@ -149,6 +176,7 @@ Subroutine system_revive                                            &
         Do i=1,ldfinv(0),nsum
            Call gsum(dstinv(:,i:Min(i+nsum-1,ldfinv(0))))
         End Do
+
      End If
 
   End If
@@ -186,6 +214,13 @@ Subroutine system_revive                                            &
 
         If (lrdf) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfrdf,wp),rdf
         If (lzdn) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfzdn,wp),zdens
+        If (vafsamp > 0) Then
+          Write(Unit=nrest, Fmt=forma, Advance='No') vafcount
+          Write(Unit=nrest, Fmt=forma, Advance='No') Real(vafstep,wp)
+          Write(Unit=nrest, Fmt=forma, Advance='No') vafdata
+          Write(Unit=nrest, Fmt=forma, Advance='No') vaf
+          Write(Unit=nrest, Fmt=forma, Advance='No') vaftime
+        End If
 
         If (mxgbnd1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfbnd,wp),dstbnd
         If (mxgang1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfang,wp),dstang
@@ -211,6 +246,13 @@ Subroutine system_revive                                            &
 
         If (lrdf) Write(Unit=nrest) Real(ncfrdf,wp),rdf
         If (lzdn) Write(Unit=nrest) Real(ncfzdn,wp),zdens
+        If (vafsamp > 0) Then
+          Write(Unit=nrest) vafcount
+          Write(Unit=nrest) Real(vafstep,wp)
+          Write(Unit=nrest) vafdata
+          Write(Unit=nrest) vaf
+          Write(Unit=nrest) vaftime
+        End If
 
         If (mxgbnd1 > 0) Write(Unit=nrest) Real(ncfbnd,wp),dstbnd
         If (mxgang1 > 0) Write(Unit=nrest) Real(ncfang,wp),dstang
@@ -252,7 +294,6 @@ Subroutine system_revive                                            &
            Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
         End If
 
-
         If (l_rout) Then
            Do i=1,jatms
               Write(Unit=nrest, Fmt=forma, Advance='No') &
@@ -280,6 +321,69 @@ Subroutine system_revive                                            &
      Call MPI_SEND(xto,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
      Call MPI_SEND(yto,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
      Call MPI_SEND(zto,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
+
+  End If
+
+! Write initial velocities for VAF calculations if needed
+
+  If (vafsamp > 0) Then
+
+    If (idnode == 0) Then
+
+       jatms=natms
+       Do j=1,vafsamp
+         Do i=1,natms
+            iwrk(i)=ltg(i)
+            axx(i)=vxi(i,j)
+            ayy(i)=vyi(i,j)
+            azz(i)=vzi(i,j)
+         End Do
+
+         ready=.true.
+         Do jdnode=0,mxnode-1
+            If (jdnode > 0) Then
+               Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Revive_tag,dlp_comm_world,ierr)
+
+               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+
+               Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+
+               Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+               Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+               Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+            End If
+
+
+            If (l_rout) Then
+               Do i=1,jatms
+                  Write(Unit=nrest, Fmt=forma, Advance='No') &
+                       Real(iwrk(i),wp),axx(i),ayy(i),azz(i)
+               End Do
+            Else
+               Do i=1,jatms
+                  Write(Unit=nrest) Real(iwrk(i),wp),axx(i),ayy(i),azz(i)
+               End Do
+            End If
+         End Do
+       End Do
+
+    Else
+
+       Do j=1,vafsamp
+         Call MPI_RECV(ready,1,MPI_LOGICAL,0,Revive_tag,dlp_comm_world,status,ierr)
+
+         Call MPI_SEND(natms,1,MPI_INTEGER,0,Revive_tag,dlp_comm_world,ierr)
+
+         Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Revive_tag,dlp_comm_world,ierr)
+
+         Call MPI_SEND(vxi(1,j),natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
+         Call MPI_SEND(vyi(1,j),natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
+         Call MPI_SEND(vzi(1,j),natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
+       End Do
+
+    End If
+
+    If (mxnode > 1) Call gsync()
 
   End If
 

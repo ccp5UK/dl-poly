@@ -3,7 +3,7 @@
 \begin{verbatim}
 # Master makefile for DL_POLY_4.06 (parallel version)
 #
-# Author - I.T.Todorov March 2014
+# Author - I.T.Todorov June 2014
 #
 #
 # Define default settings
@@ -33,7 +33,8 @@ OBJ_MOD = \
 	site_module.o config_module.o vnl_module.o \
 	defects_module.o defects1_module.o \
 	vdw_module.o metal_module.o tersoff_module.o \
-	three_body_module.o four_body_module.o \
+	three_body_module.o four_body_module.o kim_modul~.o \
+	rdf_module.o z_density_module.o \
 	core_shell_module.o \
 	constraints_module.o pmf_module.o \
 	rigid_bodies_module.o \
@@ -41,7 +42,7 @@ OBJ_MOD = \
 	bonds_module.o angles_module.o dihedrals_module.o inversions_module.o \
 	\
 	external_field_module.o langevin_module.o minimise_module.o \
-	ewald_module.o msd_module.o statistics_module.o \
+	ewald_module.o msd_module.o statistics_module.o greenkubo_module.o \
 	\
 	kinetic_module.o gpfa_module.o parallel_fft.o
 
@@ -52,6 +53,8 @@ OBJ_ALL = \
 	read_config_parallel.o scan_config.o scan_control.o read_config.o \
 	set_bounds.o \
 	read_control.o \
+	bonds_table_read.o angles_table_read.o \
+	dihedrals_table_read.o inversions_table_read.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
@@ -75,7 +78,7 @@ OBJ_ALL = \
 	defects_reference_write.o \
 	defects_reference_export.o defects_reference_set_halo.o \
 	defects_link_cells.o defects1_write.o defects_write.o \
-	msd_write.o rsd_write.o \
+	msd_write.o rsd_write.o vaf_write.o \
 	impact.o core_shell_on_top.o \
 	deport_atomic_data.o pmf_units_set.o compress_book_intra.o \
 	relocate_particles.o \
@@ -86,17 +89,17 @@ OBJ_ALL = \
 	exchange_grid.o ewald_spme_forces.o \
 	metal_forces.o vdw_forces.o ewald_real_forces.o \
 	coul_dddp_forces.o coul_cp_forces.o coul_fscp_forces.o \
-	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o ewald_excl_forces.o \
-	ewald_frozen_forces.o two_body_forces.o \
+	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o rdf_frzn_collect.o \
+	ewald_excl_forces.o ewald_frzn_forces.o two_body_forces.o \
 	tersoff_forces.o three_body_forces.o four_body_forces.o \
 	core_shell_forces.o tethers_forces.o \
 	intra_coul.o bonds_forces.o angles_forces.o \
-	inversions_forces.o dihedrals_14_vdw.o dihedrals_forces.o \
+	dihedrals_14_vdw.o dihedrals_forces.o inversions_forces.o \
 	external_field_apply.o external_field_correct.o \
 	langevin_forces.o \
 	constraints_pseudo_bonds.o pmf_pseudo_bonds.o \
 	rigid_bodies_split_torque.o rigid_bodies_move.o minimise_relax.o \
-	core_shell_relax.o zero_k_optimise.o \
+	core_shell_relax.o zero_k_optimise.o vaf_collect.o \
 	nvt_e0_scl.o nvt_e1_scl.o nvt_b0_scl.o nvt_b1_scl.o \
 	\
 	pseudo_vv.o \
@@ -129,7 +132,9 @@ OBJ_ALL = \
 	z_density_collect.o statistics_collect.o \
 	statistics_connect_set.o statistics_connect_spread.o statistics_connect_frames.o \
 	system_revive.o \
-	rdf_compute.o z_density_compute.o statistics_result.o \
+	rdf_compute.o z_density_compute.o vaf_compute.o \
+	bonds_compute.o angles_compute.o dihedrals_compute.o inversions_compute.o \
+	statistics_result.o \
 	dl_poly.o
 
 # Define Velocity Verlet files
@@ -178,11 +183,11 @@ all:
 	@echo
 	@echo "hpc || lake || newton || dirac || franklin ||"
 	@echo "hpcx || hpcx-debug || BGL || BGP ||"
-	@echo "hector || hector-pgi-debug ||"
-	@echo "hector-gnu || hector-gnu-debug ||"
-	@echo "hector-cray || hector-cray-debug ||"
-	@echo "hector-pathscale || hector-pathscale-debug ||"
-	@echo "hector-X2 || hector-X2-debug"
+	@echo "archer || archer-pgi-debug ||"
+	@echo "archer-gnu || archer-gnu-debug ||"
+	@echo "archer-cray || archer-cray-debug ||"
+	@echo "archer-pathscale || archer-pathscale-debug ||"
+	@echo "archer-X2 || archer-X2-debug"
 	@echo
 	@echo "Please examine this Makefile's targets for details!"
 	@echo "If no target suits your system then create your own"
@@ -313,7 +318,7 @@ BGP:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pgi compilers (default) ===============
-hector:
+archer:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3" \
 	FC="ftn -c" \
@@ -321,7 +326,7 @@ hector:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pgi compilers - DEBUG =================
-hector-pgi-debug:
+archer-pgi-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O0 -W -Wall -pedantic -std=f2003 -g -fbounds-check \
 	         -fbacktrace -finit-real=nan -finit-integer=999999" \
@@ -331,7 +336,7 @@ hector-pgi-debug:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 gnu compilers =========================
-hector-gnu:
+archer-gnu:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -Wall -pedantic -g" \
 	FC="ftn -c" \
@@ -339,7 +344,7 @@ hector-gnu:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 gnu compilers - DEBUG =================
-hector-gnu-debug:
+archer-gnu-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
 	         -finit-integer=-9999 -finit-real=nan -std=f2003 \
@@ -351,7 +356,7 @@ hector-gnu-debug:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 cray compilers ========================
-hector-cray:
+archer-cray:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -en" \
 	FC="ftn -c" \
@@ -359,7 +364,7 @@ hector-cray:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 cray compilers - DEBUG ================
-hector-cray-debug:
+archer-cray-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -en -G2" \
 	FC="ftn -c" \
@@ -368,7 +373,7 @@ hector-cray-debug:
 
 
 #================== CRAY XT3/6 pathscale compilers ===================
-hector-pathscale:
+archer-pathscale:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-byteswapio -O3" \
 	FC="ftn -c" \
@@ -376,7 +381,7 @@ hector-pathscale:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pathscale compilers - DEBUG ===========
-hector-pathscale-debug:
+archer-pathscale-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-byteswapio -O0 -g -ffortran-bounds-check" \
 	FC="ftn -c" \
@@ -384,7 +389,7 @@ hector-pathscale-debug:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY X2 ==========================================
-hector-X2:
+archer-X2:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -Ofp3 -Ocache2 -rm " \
 	FC="ftn -c" \
@@ -392,7 +397,7 @@ hector-X2:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY X2 - DEBUG ==================================
-hector-X2-debug:
+archer-X2-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-G0 -O0 -rm " \
 	FC="ftn -c" \
@@ -437,12 +442,20 @@ check:
 # Declare dependencies
 #=====================================================================
 
+angles_compute.o: angles_module.o comms_module.o config_module.o kinds_f90.o \
+	setup_module.o site_module.o
 angles_forces.o: angles_module.o comms_module.o config_module.o kinds_f90.o \
 	setup_module.o
 angles_module.o: kinds_f90.o setup_module.o
+angles_table_read.o: angles_module.o comms_module.o kinds_f90.o \
+	parse_module.o setup_module.o site_module.o
+bonds_compute.o: bonds_module.o comms_module.o config_module.o kinds_f90.o \
+	setup_module.o site_module.o
 bonds_forces.o: bonds_module.o comms_module.o config_module.o kinds_f90.o \
 	setup_module.o
 bonds_module.o: kinds_f90.o setup_module.o
+bonds_table_read.o: bonds_module.o comms_module.o kinds_f90.o parse_module.o \
+	setup_module.o site_module.o
 build_book_intra.o: angles_module.o bonds_module.o comms_module.o \
 	config_module.o constraints_module.o core_shell_module.o \
 	dihedrals_module.o inversions_module.o pmf_module.o \
@@ -480,7 +493,7 @@ core_shell_on_top.o: comms_module.o config_module.o core_shell_module.o \
 core_shell_quench.o: comms_module.o config_module.o core_shell_module.o \
 	kinds_f90.o setup_module.o
 core_shell_relax.o: comms_module.o config_module.o core_shell_module.o \
-	kinds_f90.o kinetic_module.o setup_module.o
+	kinds_f90.o kinetic_module.o parse_module.o setup_module.o
 coul_cp_forces.o: config_module.o kinds_f90.o setup_module.o
 coul_dddp_forces.o: config_module.o kinds_f90.o setup_module.o
 coul_fscp_forces.o: comms_module.o config_module.o kinds_f90.o setup_module.o
@@ -505,7 +518,7 @@ defects_write.o: comms_module.o config_module.o defects1_module.o \
 	setup_module.o site_module.o
 deport_atomic_data.o: angles_module.o bonds_module.o comms_module.o \
 	config_module.o constraints_module.o core_shell_module.o \
-	dihedrals_module.o domains_module.o ewald_module.o \
+	dihedrals_module.o domains_module.o ewald_module.o greenkubo_module.o \
 	inversions_module.o kinds_f90.o langevin_module.o minimise_module.o \
 	msd_module.o pmf_module.o rigid_bodies_module.o setup_module.o \
 	statistics_module.o tethers_module.o
@@ -513,27 +526,31 @@ development_module.o: comms_module.o kinds_f90.o parse_module.o \
 	setup_module.o
 dihedrals_14_check.o: comms_module.o kinds_f90.o setup_module.o
 dihedrals_14_vdw.o: kinds_f90.o setup_module.o vdw_module.o
+dihedrals_compute.o: comms_module.o config_module.o dihedrals_module.o \
+	kinds_f90.o setup_module.o site_module.o
 dihedrals_forces.o: comms_module.o config_module.o dihedrals_module.o \
 	kinds_f90.o setup_module.o vdw_module.o
 dihedrals_module.o: kinds_f90.o setup_module.o
+dihedrals_table_read.o: comms_module.o dihedrals_module.o kinds_f90.o \
+	parse_module.o setup_module.o site_module.o
 dl_poly.o: angles_module.o bonds_module.o comms_module.o config_module.o \
 	constraints_module.o core_shell_module.o development_module.o \
 	dihedrals_module.o external_field_module.o four_body_module.o \
-	inversions_module.o io_module.o kinds_f90.o kinetic_module.o \
-	langevin_module.o metal_module.o msd_module.o parse_module.o \
-	pmf_module.o rigid_bodies_module.o setup_module.o site_module.o \
-	statistics_module.o tersoff_module.o tethers_module.o \
-	three_body_module.o vdw_module.o vnl_module.o w_at_start_lfv.f90 \
-	w_at_start_vv.f90 w_calculate_forces.f90 w_impact_option.f90 \
-	w_integrate_lfv.f90 w_integrate_vv.f90 w_kinetic_options.f90 \
-	w_md_lfv.f90 w_md_vv.f90 w_refresh_mappings.f90 w_refresh_output.f90 \
-	w_replay_historf.f90 w_replay_history.f90 w_statistics_report.f90 \
-	w_write_options.f90
+	greenkubo_module.o inversions_module.o io_module.o kinds_f90.o \
+	kinetic_module.o langevin_module.o metal_module.o msd_module.o \
+	parse_module.o pmf_module.o rdf_module.o rigid_bodies_module.o \
+	setup_module.o site_module.o statistics_module.o tersoff_module.o \
+	tethers_module.o three_body_module.o vdw_module.o vnl_module.o \
+	z_density_module.o w_at_start_lfv.f90 w_at_start_vv.f90 \
+	w_calculate_forces.f90 w_impact_option.f90 w_integrate_lfv.f90 \
+	w_integrate_vv.f90 w_kinetic_options.f90 w_md_lfv.f90 w_md_vv.f90 \
+	w_refresh_mappings.f90 w_refresh_output.f90 w_replay_historf.f90 \
+	w_replay_history.f90 w_statistics_report.f90 w_write_options.f90
 domains_module.o: comms_module.o kinds_f90.o
 error.o: comms_module.o setup_module.o
 ewald_excl_forces.o: config_module.o ewald_module.o kinds_f90.o \
 	setup_module.o
-ewald_frozen_forces.o: comms_module.o config_module.o ewald_module.o \
+ewald_frzn_forces.o: comms_module.o config_module.o ewald_module.o \
 	kinds_f90.o setup_module.o
 ewald_module.o: config_module.o kinds_f90.o setup_module.o
 ewald_real_forces.o: comms_module.o config_module.o kinds_f90.o \
@@ -557,6 +574,7 @@ four_body_forces.o: comms_module.o config_module.o domains_module.o \
 	four_body_module.o kinds_f90.o setup_module.o
 four_body_module.o: kinds_f90.o setup_module.o
 gpfa_module.o: kinds_f90.o
+greenkubo_module.o: kinds_f90.o setup_module.o
 impact.o: comms_module.o config_module.o core_shell_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o
 init_intra.o: angles_module.o bonds_module.o comms_module.o config_module.o \
@@ -564,10 +582,15 @@ init_intra.o: angles_module.o bonds_module.o comms_module.o config_module.o \
 	inversions_module.o kinds_f90.o pmf_module.o rigid_bodies_module.o \
 	setup_module.o tethers_module.o
 intra_coul.o: kinds_f90.o setup_module.o
+inversions_compute.o: comms_module.o config_module.o inversions_module.o \
+	kinds_f90.o setup_module.o site_module.o
 inversions_forces.o: comms_module.o config_module.o inversions_module.o \
 	kinds_f90.o setup_module.o
 inversions_module.o: kinds_f90.o setup_module.o
+inversions_table_read.o: comms_module.o inversions_module.o kinds_f90.o \
+	parse_module.o setup_module.o site_module.o
 io_module.o: comms_module.o kinds_f90.o netcdf_modul~.o
+kim_modul~.o: comms_module.o kinds_f90.o setup_module.o
 kinetic_module.o: comms_module.o config_module.o kinds_f90.o \
 	rigid_bodies_module.o setup_module.o
 langevin_forces.o: config_module.o kinds_f90.o setup_module.o site_module.o
@@ -577,6 +600,8 @@ link_cell_pairs.o: comms_module.o config_module.o development_module.o \
 link_cell_pair~.o: comms_module.o config_module.o development_module.o \
 	domains_module.o kinds_f90.o setup_module.o
 link_cell~pairs.o: comms_module.o config_module.o development_module.o \
+	domains_module.o kinds_f90.o setup_module.o
+link~cell_pairs.o: comms_module.o config_module.o development_module.o \
 	domains_module.o kinds_f90.o setup_module.o
 metal_forces.o: config_module.o kinds_f90.o metal_module.o setup_module.o \
 	site_module.o
@@ -598,7 +623,7 @@ metal_table_read.o: comms_module.o kinds_f90.o metal_module.o parse_module.o \
 	setup_module.o site_module.o
 minimise_module.o: kinds_f90.o setup_module.o
 minimise_relax.o: comms_module.o config_module.o kinds_f90.o \
-	minimise_module.o rigid_bodies_module.o setup_module.o
+	minimise_module.o parse_module.o rigid_bodies_module.o setup_module.o
 msd_write.o: comms_module.o config_module.o io_module.o kinds_f90.o \
 	parse_module.o setup_module.o site_module.o statistics_module.o
 netcdf_module.o: kinds_f90.o
@@ -743,11 +768,12 @@ nvt_h1_scl.o: config_module.o kinds_f90.o kinetic_module.o \
 nvt_h1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
 nvt_l0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
-	setup_module.o site_module.o
+	langevin_module.o setup_module.o site_module.o
 nvt_l0_vv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
 	setup_module.o site_module.o
 nvt_l1_lfv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
-	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
+	kinetic_module.o langevin_module.o rigid_bodies_module.o \
+	setup_module.o site_module.o
 nvt_l1_vv.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
 origin_config.o: config_module.o development_module.o kinds_f90.o
@@ -778,27 +804,27 @@ pseudo_vv.o: comms_module.o config_module.o core_shell_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o setup_module.o site_module.o
 quaternions_container.o: comms_module.o config_module.o kinds_f90.o \
 	rigid_bodies_module.o setup_module.o
-rdf_collect.o: config_module.o kinds_f90.o setup_module.o site_module.o \
-	statistics_module.o
-rdf_compute.o: comms_module.o config_module.o kinds_f90.o setup_module.o \
-	site_module.o statistics_module.o
-rdf_excl_collect.o: config_module.o kinds_f90.o setup_module.o site_module.o \
-	statistics_module.o
+rdf_collect.o: config_module.o kinds_f90.o rdf_module.o setup_module.o
+rdf_compute.o: comms_module.o config_module.o kinds_f90.o rdf_module.o \
+	setup_module.o site_module.o
+rdf_excl_collect.o: config_module.o kinds_f90.o rdf_module.o setup_module.o
+rdf_frzn_collect.o: config_module.o kinds_f90.o rdf_module.o setup_module.o
+rdf_module.o: kinds_f90.o setup_module.o
 read_config.o: comms_module.o config_module.o domains_module.o io_module.o \
 	kinds_f90.o parse_module.o setup_module.o
 read_config_parallel.o: comms_module.o config_module.o domains_module.o \
 	io_module.o kinds_f90.o parse_module.o setup_module.o
-read_control.o: comms_module.o config_module.o defects1_module.o \
-	development_module.o kinds_f90.o kinetic_module.o langevin_module.o \
-	metal_module.o msd_module.o parse_module.o setup_module.o \
-	vdw_module.o
+read_control.o: bonds_module.o comms_module.o config_module.o \
+	defects1_module.o development_module.o greenkubo_module.o kinds_f90.o \
+	kinetic_module.o langevin_module.o metal_module.o msd_module.o \
+	parse_module.o setup_module.o vdw_module.o
 read_field.o: angles_module.o bonds_module.o comms_module.o config_module.o \
 	constraints_module.o core_shell_module.o dihedrals_module.o \
 	external_field_module.o four_body_module.o inversions_module.o \
 	kinds_f90.o kinetic_module.o metal_module.o parse_module.o \
-	pmf_module.o rigid_bodies_module.o setup_module.o site_module.o \
-	statistics_module.o tersoff_module.o tethers_module.o \
-	three_body_module.o vdw_module.o
+	pmf_module.o rdf_module.o rigid_bodies_module.o setup_module.o \
+	site_module.o tersoff_module.o tethers_module.o three_body_module.o \
+	vdw_module.o
 read_history.o: comms_module.o config_module.o domains_module.o io_module.o \
 	kinds_f90.o parse_module.o setup_module.o site_module.o
 refresh_halo_positions.o: comms_module.o config_module.o setup_module.o
@@ -837,16 +863,18 @@ scale_temperature.o: comms_module.o config_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o setup_module.o
 scan_config.o: comms_module.o io_module.o kinds_f90.o parse_module.o \
 	setup_module.o
-scan_control.o: comms_module.o development_module.o kinds_f90.o msd_module.o \
-	parse_module.o setup_module.o
+scan_control.o: comms_module.o development_module.o greenkubo_module.o \
+	kim_modul~.o kinds_f90.o msd_module.o parse_module.o setup_module.o
 scan_control_io.o: comms_module.o io_module.o kinds_f90.o parse_module.o \
 	setup_module.o
 scan_control_pre.o: comms_module.o kinds_f90.o parse_module.o setup_module.o
-scan_field.o: comms_module.o kinds_f90.o metal_module.o parse_module.o \
-	setup_module.o tersoff_module.o vdw_module.o
-set_bounds.o: comms_module.o config_module.o development_module.o \
-	domains_module.o kinds_f90.o msd_module.o setup_module.o \
-	tersoff_module.o vnl_module.o
+scan_field.o: angles_module.o bonds_module.o comms_module.o \
+	dihedrals_module.o inversions_module.o kim_modul~.o kinds_f90.o \
+	metal_module.o parse_module.o setup_module.o tersoff_module.o \
+	vdw_module.o
+set_bounds.o: bonds_module.o comms_module.o config_module.o \
+	development_module.o domains_module.o greenkubo_module.o kinds_f90.o \
+	msd_module.o setup_module.o tersoff_module.o vnl_module.o
 set_halo_particles.o: config_module.o domains_module.o kinds_f90.o \
 	setup_module.o site_module.o
 set_temperature.o: comms_module.o config_module.o core_shell_module.o \
@@ -864,20 +892,26 @@ statistics_connect_set.o: comms_module.o config_module.o domains_module.o \
 statistics_connect_spread.o: comms_module.o config_module.o domains_module.o \
 	kinds_f90.o msd_module.o setup_module.o statistics_module.o
 statistics_module.o: comms_module.o kinds_f90.o setup_module.o
-statistics_result.o: comms_module.o config_module.o core_shell_module.o \
-	kinds_f90.o minimise_module.o msd_module.o setup_module.o \
-	site_module.o statistics_module.o vnl_module.o
+statistics_result.o: angles_module.o bonds_module.o comms_module.o \
+	config_module.o core_shell_module.o dihedrals_module.o \
+	greenkubo_module.o inversions_module.o kinds_f90.o minimise_module.o \
+	msd_module.o rdf_module.o setup_module.o site_module.o \
+	statistics_module.o vnl_module.o z_density_module.o
 system_expand.o: angles_module.o bonds_module.o comms_module.o \
 	config_module.o constraints_module.o core_shell_module.o \
 	dihedrals_module.o inversions_module.o io_module.o kinds_f90.o \
 	parse_module.o rigid_bodies_module.o setup_module.o site_module.o
 system_expan~.o: comms_module.o config_module.o io_module.o kinds_f90.o \
 	parse_module.o setup_module.o site_module.o
-system_init.o: comms_module.o config_module.o development_module.o \
-	kinds_f90.o langevin_module.o metal_module.o setup_module.o \
-	site_module.o statistics_module.o vdw_module.o
-system_revive.o: comms_module.o config_module.o development_module.o \
-	kinds_f90.o langevin_module.o setup_module.o statistics_module.o
+system_init.o: angles_module.o bonds_module.o comms_module.o config_module.o \
+	development_module.o dihedrals_module.o greenkubo_module.o \
+	inversions_module.o kinds_f90.o metal_module.o rdf_module.o \
+	setup_module.o site_module.o statistics_module.o vdw_module.o \
+	z_density_module.o
+system_revive.o: angles_module.o bonds_module.o comms_module.o \
+	config_module.o development_module.o dihedrals_module.o \
+	greenkubo_module.o inversions_module.o kinds_f90.o rdf_module.o \
+	setup_module.o statistics_module.o z_density_module.o
 tag_legend.o: setup_module.o
 tersoff_forces.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
 	setup_module.o tersoff_module.o
@@ -891,11 +925,17 @@ three_body_forces.o: comms_module.o config_module.o domains_module.o \
 three_body_module.o: kinds_f90.o setup_module.o
 trajectory_write.o: comms_module.o config_module.o io_module.o kinds_f90.o \
 	parse_module.o setup_module.o statistics_module.o
-two_body_forces.o: comms_module.o config_module.o ewald_module.o kinds_f90.o \
-	metal_module.o setup_module.o statistics_module.o vdw_module.o \
+two_body_forces.o: comms_module.o config_module.o ewald_module.o kim_modul~.o \
+	kinds_f90.o metal_module.o rdf_module.o setup_module.o vdw_module.o \
 	vnl_module.o
 update_shared_units.o: comms_module.o domains_module.o kinds_f90.o \
 	setup_module.o
+vaf_collect.o: comms_module.o config_module.o greenkubo_module.o kinds_f90.o \
+	setup_module.o
+vaf_compute.o: comms_module.o config_module.o greenkubo_module.o kinds_f90.o \
+	setup_module.o site_module.o
+vaf_write.o: comms_module.o config_module.o greenkubo_module.o kinds_f90.o \
+	setup_module.o site_module.o
 vdw_direct_fs_generate.o: kinds_f90.o setup_module.o vdw_module.o
 vdw_forces.o: config_module.o kinds_f90.o setup_module.o vdw_module.o
 vdw_generate.o: kinds_f90.o setup_module.o vdw_module.o
@@ -912,10 +952,11 @@ write_config.o: comms_module.o config_module.o io_module.o kinds_f90.o \
 	setup_module.o
 xscale.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
 	rigid_bodies_module.o setup_module.o statistics_module.o vnl_module.o
-z_density_collect.o: config_module.o kinds_f90.o setup_module.o site_module.o \
-	statistics_module.o
+z_density_collect.o: config_module.o kinds_f90.o setup_module.o \
+	z_density_module.o
 z_density_compute.o: comms_module.o config_module.o kinds_f90.o \
-	setup_module.o site_module.o statistics_module.o
+	setup_module.o site_module.o z_density_module.o
+z_density_module.o: kinds_f90.o setup_module.o
 zero_k_optimise.o: comms_module.o config_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o setup_module.o
 \end{verbatim}
@@ -924,7 +965,7 @@ zero_k_optimise.o: comms_module.o config_module.o kinds_f90.o \
 \begin{verbatim}
 # Master makefile for DL_POLY_4.06 (parallel version)
 #
-# Author - I.T.Todorov March 2014
+# Author - I.T.Todorov June 2014
 #
 #
 # Define default settings
@@ -954,7 +995,8 @@ OBJ_MOD = \
 	site_module.o config_module.o vnl_module.o \
 	defects_module.o defects1_module.o \
 	vdw_module.o metal_module.o tersoff_module.o \
-	three_body_module.o four_body_module.o \
+	three_body_module.o four_body_module.o kim_modul~.o \
+	rdf_module.o z_density_module.o \
 	core_shell_module.o \
 	constraints_module.o pmf_module.o \
 	rigid_bodies_module.o \
@@ -962,7 +1004,7 @@ OBJ_MOD = \
 	bonds_module.o angles_module.o dihedrals_module.o inversions_module.o \
 	\
 	external_field_module.o langevin_module.o minimise_module.o \
-	ewald_module.o msd_module.o statistics_module.o \
+	ewald_module.o msd_module.o statistics_module.o greenkubo_module.o \
 	\
 	kinetic_module.o gpfa_module.o parallel_fft.o
 
@@ -973,6 +1015,8 @@ OBJ_ALL = \
 	read_config_parallel.o scan_config.o scan_control.o read_config.o \
 	set_bounds.o \
 	read_control.o \
+	bonds_table_read.o angles_table_read.o \
+	dihedrals_table_read.o inversions_table_read.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
@@ -996,7 +1040,7 @@ OBJ_ALL = \
 	defects_reference_write.o \
 	defects_reference_export.o defects_reference_set_halo.o \
 	defects_link_cells.o defects1_write.o defects_write.o \
-	msd_write.o rsd_write.o \
+	msd_write.o rsd_write.o vaf_write.o \
 	impact.o core_shell_on_top.o \
 	deport_atomic_data.o pmf_units_set.o compress_book_intra.o \
 	relocate_particles.o \
@@ -1007,17 +1051,17 @@ OBJ_ALL = \
 	exchange_grid.o ewald_spme_forces.o \
 	metal_forces.o vdw_forces.o ewald_real_forces.o \
 	coul_dddp_forces.o coul_cp_forces.o coul_fscp_forces.o \
-	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o ewald_excl_forces.o \
-	ewald_frozen_forces.o two_body_forces.o \
+	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o rdf_frzn_collect.o \
+	ewald_excl_forces.o ewald_frzn_forces.o two_body_forces.o \
 	tersoff_forces.o three_body_forces.o four_body_forces.o \
 	core_shell_forces.o tethers_forces.o \
 	intra_coul.o bonds_forces.o angles_forces.o \
-	inversions_forces.o dihedrals_14_vdw.o dihedrals_forces.o \
+	dihedrals_14_vdw.o dihedrals_forces.o inversions_forces.o \
 	external_field_apply.o external_field_correct.o \
 	langevin_forces.o \
 	constraints_pseudo_bonds.o pmf_pseudo_bonds.o \
 	rigid_bodies_split_torque.o rigid_bodies_move.o minimise_relax.o \
-	core_shell_relax.o zero_k_optimise.o \
+	core_shell_relax.o zero_k_optimise.o vaf_collect.o \
 	nvt_e0_scl.o nvt_e1_scl.o nvt_b0_scl.o nvt_b1_scl.o \
 	\
 	pseudo_vv.o \
@@ -1050,7 +1094,9 @@ OBJ_ALL = \
 	z_density_collect.o statistics_collect.o \
 	statistics_connect_set.o statistics_connect_spread.o statistics_connect_frames.o \
 	system_revive.o \
-	rdf_compute.o z_density_compute.o statistics_result.o \
+	rdf_compute.o z_density_compute.o vaf_compute.o \
+	bonds_compute.o angles_compute.o dihedrals_compute.o inversions_compute.o \
+	statistics_result.o \
 	dl_poly.o
 
 # Define Velocity Verlet files
@@ -1099,11 +1145,11 @@ all:
 	@echo
 	@echo "hpc || lake || newton || dirac || franklin ||"
 	@echo "hpcx || hpcx-debug || BGL || BGP ||"
-	@echo "hector || hector-pgi-debug ||"
-	@echo "hector-gnu || hector-gnu-debug ||"
-	@echo "hector-cray || hector-cray-debug ||"
-	@echo "hector-pathscale || hector-pathscale-debug ||"
-	@echo "hector-X2 || hector-X2-debug"
+	@echo "archer || archer-pgi-debug ||"
+	@echo "archer-gnu || archer-gnu-debug ||"
+	@echo "archer-cray || archer-cray-debug ||"
+	@echo "archer-pathscale || archer-pathscale-debug ||"
+	@echo "archer-X2 || archer-X2-debug"
 	@echo
 	@echo "Please examine this Makefile's targets for details!"
 	@echo "If no target suits your system then create your own"
@@ -1234,7 +1280,7 @@ BGP:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pgi compilers (default) ===============
-hector:
+archer:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3" \
 	FC="ftn -c" \
@@ -1242,7 +1288,7 @@ hector:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pgi compilers - DEBUG =================
-hector-pgi-debug:
+archer-pgi-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O0 -W -Wall -pedantic -std=f2003 -g -fbounds-check \
 	         -fbacktrace -finit-real=nan -finit-integer=999999" \
@@ -1252,7 +1298,7 @@ hector-pgi-debug:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 gnu compilers =========================
-hector-gnu:
+archer-gnu:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -Wall -pedantic -g" \
 	FC="ftn -c" \
@@ -1260,7 +1306,7 @@ hector-gnu:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 gnu compilers - DEBUG =================
-hector-gnu-debug:
+archer-gnu-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
 	         -finit-integer=-9999 -finit-real=nan -std=f2003 \
@@ -1272,7 +1318,7 @@ hector-gnu-debug:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 cray compilers ========================
-hector-cray:
+archer-cray:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -en" \
 	FC="ftn -c" \
@@ -1280,7 +1326,7 @@ hector-cray:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 cray compilers - DEBUG ================
-hector-cray-debug:
+archer-cray-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -en -G2" \
 	FC="ftn -c" \
@@ -1289,7 +1335,7 @@ hector-cray-debug:
 
 
 #================== CRAY XT3/6 pathscale compilers ===================
-hector-pathscale:
+archer-pathscale:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-byteswapio -O3" \
 	FC="ftn -c" \
@@ -1297,7 +1343,7 @@ hector-pathscale:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 pathscale compilers - DEBUG ===========
-hector-pathscale-debug:
+archer-pathscale-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-byteswapio -O0 -g -ffortran-bounds-check" \
 	FC="ftn -c" \
@@ -1305,7 +1351,7 @@ hector-pathscale-debug:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY X2 ==========================================
-hector-X2:
+archer-X2:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -Ofp3 -Ocache2 -rm " \
 	FC="ftn -c" \
@@ -1313,7 +1359,7 @@ hector-X2:
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY X2 - DEBUG ==================================
-hector-X2-debug:
+archer-X2-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-G0 -O0 -rm " \
 	FC="ftn -c" \
@@ -1365,7 +1411,7 @@ $(OBJ_ALL): $(OBJ_MOD)
 \begin{verbatim}
 # Master makefile for DL_POLY_4.06 (serial version 1)
 #
-# Author - I.T.Todorov March 2014
+# Author - I.T.Todorov June 2014
 #
 #
 # Define default settings
@@ -1395,7 +1441,8 @@ OBJ_MOD = \
 	site_module.o config_module.o vnl_module.o \
 	defects_module.o defects1_module.o \
 	vdw_module.o metal_module.o tersoff_module.o \
-	three_body_module.o four_body_module.o \
+	three_body_module.o four_body_module.o kim_modul~.o \
+	rdf_module.o z_density_module.o \
 	core_shell_module.o \
 	constraints_module.o pmf_module.o \
 	rigid_bodies_module.o \
@@ -1403,7 +1450,7 @@ OBJ_MOD = \
 	bonds_module.o angles_module.o dihedrals_module.o inversions_module.o \
 	\
 	external_field_module.o langevin_module.o minimise_module.o \
-	ewald_module.o msd_module.o statistics_module.o \
+	ewald_module.o msd_module.o statistics_module.o greenkubo_module.o \
 	\
 	kinetic_module.o
 
@@ -1414,6 +1461,8 @@ OBJ_ALL = \
 	read_config_parallel.o scan_config.o scan_control.o read_config.o \
 	set_bounds.o \
 	read_control.o \
+	bonds_table_read.o angles_table_read.o \
+	dihedrals_table_read.o inversions_table_read.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
@@ -1437,7 +1486,7 @@ OBJ_ALL = \
 	defects_reference_write.o \
 	defects_reference_export.o defects_reference_set_halo.o \
 	defects_link_cells.o defects1_write.o defects_write.o \
-	msd_write.o rsd_write.o \
+	msd_write.o rsd_write.o vaf_write.o \
 	impact.o core_shell_on_top.o \
 	deport_atomic_data.o pmf_units_set.o compress_book_intra.o \
 	relocate_particles.o \
@@ -1448,17 +1497,17 @@ OBJ_ALL = \
 	ewald_spme_forc~s.o \
 	metal_forces.o vdw_forces.o ewald_real_forces.o \
 	coul_dddp_forces.o coul_cp_forces.o coul_fscp_forces.o \
-	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o ewald_excl_forces.o \
-	ewald_frozen_forces.o two_body_forces.o \
+	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o rdf_frzn_collect.o \
+	ewald_excl_forces.o ewald_frzn_forces.o two_body_forces.o \
 	tersoff_forces.o three_body_forces.o four_body_forces.o \
 	core_shell_forces.o tethers_forces.o \
 	intra_coul.o bonds_forces.o angles_forces.o \
-	inversions_forces.o dihedrals_14_vdw.o dihedrals_forces.o \
+	dihedrals_14_vdw.o dihedrals_forces.o inversions_forces.o \
 	external_field_apply.o external_field_correct.o \
 	langevin_forces.o \
 	constraints_pseudo_bonds.o pmf_pseudo_bonds.o \
 	rigid_bodies_split_torque.o rigid_bodies_move.o minimise_relax.o \
-	core_shell_relax.o zero_k_optimise.o \
+	core_shell_relax.o zero_k_optimise.o vaf_collect.o \
 	nvt_e0_scl.o nvt_e1_scl.o nvt_b0_scl.o nvt_b1_scl.o \
 	\
 	pseudo_vv.o \
@@ -1491,7 +1540,9 @@ OBJ_ALL = \
 	z_density_collect.o statistics_collect.o \
 	statistics_connect_set.o statistics_connect_spread.o statistics_connect_frames.o \
 	system_revive.o \
-	rdf_compute.o z_density_compute.o statistics_result.o \
+	rdf_compute.o z_density_compute.o vaf_compute.o \
+	bonds_compute.o angles_compute.o dihedrals_compute.o inversions_compute.o \
+	statistics_result.o \
 	dl_poly.o
 
 # Define MPI-SERIAL files
@@ -1669,7 +1720,7 @@ $(OBJ_ALL): $(OBJ_MOD)
 \begin{verbatim}
 # Master makefile for DL_POLY_4.06 (serial version 2)
 #
-# Author - I.T.Todorov March 2014
+# Author - I.T.Todorov June 2014
 #
 #
 # Define default settings
@@ -1699,7 +1750,8 @@ OBJ_MOD = \
 	site_module.o config_module.o vnl_module.o \
 	defects_module.o defects1_module.o \
 	vdw_module.o metal_module.o tersoff_module.o \
-	three_body_module.o four_body_module.o \
+	three_body_module.o four_body_module.o kim_modul~.o \
+	rdf_module.o z_density_module.o \
 	core_shell_module.o \
 	constraints_module.o pmf_module.o \
 	rigid_bodies_module.o \
@@ -1707,7 +1759,7 @@ OBJ_MOD = \
 	bonds_module.o angles_module.o dihedrals_module.o inversions_module.o \
 	\
 	external_field_module.o langevin_module.o minimise_module.o \
-	ewald_module.o msd_module.o statistics_module.o \
+	ewald_module.o msd_module.o statistics_module.o greenkubo_module.o \
 	\
 	kinetic_module.o gpfa_module.o parallel_fft.o
 
@@ -1718,6 +1770,8 @@ OBJ_ALL = \
 	read_config_parallel.o scan_config.o scan_control.o read_config.o \
 	set_bounds.o \
 	read_control.o \
+	bonds_table_read.o angles_table_read.o \
+	dihedrals_table_read.o inversions_table_read.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
@@ -1741,7 +1795,7 @@ OBJ_ALL = \
 	defects_reference_write.o \
 	defects_reference_export.o defects_reference_set_halo.o \
 	defects_link_cells.o defects1_write.o defects_write.o \
-	msd_write.o rsd_write.o \
+	msd_write.o rsd_write.o vaf_write.o \
 	impact.o core_shell_on_top.o \
 	deport_atomic_data.o pmf_units_set.o compress_book_intra.o \
 	relocate_particles.o \
@@ -1752,17 +1806,17 @@ OBJ_ALL = \
 	exchange_grid.o ewald_spme_forces.o \
 	metal_forces.o vdw_forces.o ewald_real_forces.o \
 	coul_dddp_forces.o coul_cp_forces.o coul_fscp_forces.o \
-	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o ewald_excl_forces.o \
-	ewald_frozen_forces.o two_body_forces.o \
+	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o rdf_frzn_collect.o \
+	ewald_excl_forces.o ewald_frzn_forces.o two_body_forces.o \
 	tersoff_forces.o three_body_forces.o four_body_forces.o \
 	core_shell_forces.o tethers_forces.o \
 	intra_coul.o bonds_forces.o angles_forces.o \
-	inversions_forces.o dihedrals_14_vdw.o dihedrals_forces.o \
+	dihedrals_14_vdw.o dihedrals_forces.o inversions_forces.o \
 	external_field_apply.o external_field_correct.o \
 	langevin_forces.o \
 	constraints_pseudo_bonds.o pmf_pseudo_bonds.o \
 	rigid_bodies_split_torque.o rigid_bodies_move.o minimise_relax.o \
-	core_shell_relax.o zero_k_optimise.o \
+	core_shell_relax.o zero_k_optimise.o vaf_collect.o \
 	nvt_e0_scl.o nvt_e1_scl.o nvt_b0_scl.o nvt_b1_scl.o \
 	\
 	pseudo_vv.o \
@@ -1795,7 +1849,9 @@ OBJ_ALL = \
 	z_density_collect.o statistics_collect.o \
 	statistics_connect_set.o statistics_connect_spread.o statistics_connect_frames.o \
 	system_revive.o \
-	rdf_compute.o z_density_compute.o statistics_result.o \
+	rdf_compute.o z_density_compute.o vaf_compute.o \
+	bonds_compute.o angles_compute.o dihedrals_compute.o inversions_compute.o \
+	statistics_result.o \
 	dl_poly.o
 
 # Define MPI-SERIAL files

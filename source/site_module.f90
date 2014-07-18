@@ -6,6 +6,7 @@ Module site_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov july 2008
+! contrib   - m.a.seaton june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -25,7 +26,7 @@ Module site_module
   Integer,               Allocatable, Save :: typsit(:),frzsit(:),fresit(:)
 
   Real( Kind = wp ),     Allocatable, Save :: wgtsit(:),chgsit(:),dofsit(:)
-  Real( Kind = wp ),     Allocatable, Save :: numtyp(:),dens(:)
+  Real( Kind = wp ),     Allocatable, Save :: numtyp(:),numtypnf(:),dens(:)
 
   Public :: allocate_site_arrays
 
@@ -46,7 +47,7 @@ Contains
     Allocate (nummols(1:mxtmls),numsit(1:mxtmls),numfrz(1:mxtmls), Stat = fail(3))
     Allocate (typsit(1:mxsite),frzsit(1:mxsite),fresit(1:mxsite),  Stat = fail(4))
     Allocate (wgtsit(1:mxsite),chgsit(1:mxsite),dofsit(1:mxsite),  Stat = fail(5))
-    Allocate (numtyp(1:mxatyp),dens(1:mxatyp),                     Stat = fail(6))
+    Allocate (numtyp(1:mxatyp),numtypnf(1:mxatyp),dens(1:mxatyp),  Stat = fail(6))
 
     If (Any(fail > 0)) Call error(1026)
 
@@ -57,7 +58,7 @@ Contains
     typsit  = 0 ; frzsit = 0 ; fresit = 0
 
     wgtsit = 0.0_wp ; chgsit = 0.0_wp ; dofsit = 0.0_wp
-    numtyp = 0.0_wp ; dens = 0.0_wp
+    numtyp = 0.0_wp ; numtypnf = 0.0_wp ; dens = 0.0_wp
 
   End Subroutine allocate_site_arrays
 

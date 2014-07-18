@@ -2768,12 +2768,12 @@ leakage of kinetic energy into the core-shell units, but this
 should should not amount to more than a few percent of the total
 kinetic energy.  To determine safe shell masses in practice,
 first a rigid ion simulation is performed in order to gather the
-velocity autocorrelation functions, VAC, of the ions of interest
-to polarise.  Then each VAC is fast fourier tranformed to find
+velocity autocorrelation functions, VAF, of the ions of interest
+to polarise.  Each VAF is then Fast Fourier transformed to find
 their highest frequency of interaction, $\nu_{\tt rigid-ion}$.  It
 is, then, a safe choice to assign a shell mass, $x~m$, so that
 $\nu_{\tt core-shell} \geq 3~\nu_{\tt rigid-ion}$.  The user must
-make sure to assign the corect mass, $(1-x)~m$, to the core!)
+make sure to assign the correct mass, $(1-x)~m$, to the core!)
 
 \subsection{Relaxed (Massless Shells) Model}
 
@@ -2972,7 +2972,7 @@ contributions of each RB's centre of mass stress and virial
 due to the action of the resolved forces on sites/atoms constituting it.
 These contribute towards the total system stress and pressure.
 
-As seen in Section~\ref{shell-model} core-shell units\index{polarisation!shell model}
+As seen in Section~\ref{shell-models} core-shell units\index{polarisation!shell model}
 are dealt with (i) kinetically by the adiabatic shell model or (ii)
 statically by the dynamic shell model.  Both contribute to the total
 system stress (pressure) but in different manner.  The former does

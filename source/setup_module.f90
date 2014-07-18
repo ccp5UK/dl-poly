@@ -7,7 +7,7 @@ Module setup_module
 ! set @ execution time
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2014
+! author    - i.t.todorov july 2014
 !
 ! Note(1): The following internal units apply everywhere
 !
@@ -122,6 +122,10 @@ Module setup_module
 
   Integer, Parameter :: npdfdt = 28, &
                         npdgdt = 29
+
+! vaf file channel number
+
+  Integer, Parameter :: nvafdt = 30
 
 
 ! Random seeding

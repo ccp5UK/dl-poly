@@ -39,7 +39,7 @@ OBJ_MOD = \
 	bonds_module.o angles_module.o dihedrals_module.o inversions_module.o \
 	\
 	external_field_module.o langevin_module.o minimise_module.o \
-	ewald_module.o msd_module.o statistics_module.o \
+	ewald_module.o msd_module.o statistics_module.o greenkubo_module.o \
 	\
 	kinetic_module.o gpfa_module.o parallel_fft.o
 
@@ -75,7 +75,7 @@ OBJ_ALL = \
 	defects_reference_write.o \
 	defects_reference_export.o defects_reference_set_halo.o \
 	defects_link_cells.o defects1_write.o defects_write.o \
-	msd_write.o rsd_write.o \
+	msd_write.o rsd_write.o vaf_write.o \
 	impact.o core_shell_on_top.o \
 	deport_atomic_data.o pmf_units_set.o compress_book_intra.o \
 	relocate_particles.o \
@@ -96,7 +96,7 @@ OBJ_ALL = \
 	langevin_forces.o \
 	constraints_pseudo_bonds.o pmf_pseudo_bonds.o \
 	rigid_bodies_split_torque.o rigid_bodies_move.o minimise_relax.o \
-	core_shell_relax.o zero_k_optimise.o \
+	core_shell_relax.o zero_k_optimise.o vaf_collect.o \
 	nvt_e0_scl.o nvt_e1_scl.o nvt_b0_scl.o nvt_b1_scl.o \
 	\
 	pseudo_vv.o \
@@ -129,7 +129,7 @@ OBJ_ALL = \
 	z_density_collect.o statistics_collect.o \
 	statistics_connect_set.o statistics_connect_spread.o statistics_connect_frames.o \
 	system_revive.o \
-	rdf_compute.o z_density_compute.o \
+	rdf_compute.o z_density_compute.o vaf_compute.o \
 	bonds_compute.o angles_compute.o dihedrals_compute.o inversions_compute.o \
 	statistics_result.o \
 	dl_poly.o

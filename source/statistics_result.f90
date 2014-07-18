@@ -1,6 +1,6 @@
 Subroutine statistics_result                       &
            (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn, &
-           nstrun,keyens,keyshl,iso,               &
+           lvafav,lpvaf,nstrun,keyens,keyshl,iso,  &
            press,strext,nstep,tstep,time,tmst)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -8,15 +8,15 @@ Subroutine statistics_result                       &
 ! dl_poly_4 subroutine for writing simulation summary
 !
 ! copyright - daresbury laboratory
-! author    - w.smith december 1992
-! amended   - i.t.todorov june 2014
+! author    - w.smith & i.t.todorov july 2014
+! contrib   - m.a.seaton june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,      Only : idnode,gtime
   Use setup_module
-  Use site_module,       Only : ntpatm,unqatm,numtyp,dens
+  Use site_module,       Only : ntpatm,unqatm,numtypnf,dens
   Use config_module,     Only : cell,volm
   Use vnl_module,        Only : llvnl,skipvnl
   Use core_shell_module, Only : passshl
@@ -29,10 +29,11 @@ Subroutine statistics_result                       &
   Use z_density_module,  Only : ncfzdn
   Use statistics_module
   Use msd_module
+  Use greenkubo_module,  Only : vafsamp,vafcount
 
   Implicit None
 
-  Logical,           Intent( In    ) :: lmin,lpana,lrdf,lprdf,lzdn,lpzdn
+  Logical,           Intent( In    ) :: lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf
   Integer,           Intent( In    ) :: nstrun,keyens,keyshl,iso,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,press,strext(1:9),tstep,time,tmst
 
@@ -147,13 +148,15 @@ Subroutine statistics_result                       &
   End If
 
   Do i=1,ntpatm
-     If (numtyp(i) > zero_plus) Then
+     If (numtypnf(i) > zero_plus) Then
         dc = 10.0_wp * (ravval(iadd+i)-sumval(iadd+i)) / &
              (3.0_wp*Real(numacc-Min(mxnstk,numacc-1),wp)*tstep)
         If (dc < 1.0e-10_wp) dc = 0.0_wp
 
         srmsd = Sqrt(ravval(iadd+i))
         If (idnode == 0) Write(nrite,'(12x,a8,1p,2(7x,e13.4))') unqatm(i),dc,srmsd
+     Else
+        If (idnode == 0) Write(nrite,'(12x,a8,1p,2(7x,e13.4))') unqatm(i),0.0_wp,0.0_wp
      End If
   End Do
 
@@ -241,7 +244,7 @@ Subroutine statistics_result                       &
 ! scale densities for average volume and average volume and cell
 
   Do i=1,ntpatm
-     If (numtyp(i) > zero_plus) dens(i)=dens(i)*(volm/avvol)
+     dens(i)=dens(i)*(volm/avvol)
   End Do
 
 ! volm and cell become the averaged ones, as is the local temp
@@ -257,6 +260,10 @@ Subroutine statistics_result                       &
 ! calculate and print z-density profile
 
   If (lzdn .and. lpzdn .and. ncfzdn > 0) Call z_density_compute()
+
+! calculate and print velocity autocorrelation function
+
+  If (vafsamp > 0 .and. lpvaf .and. vafcount > zero_plus) Call vaf_compute(lvafav,tstep)
 
 ! Calculate and print PDFs
 

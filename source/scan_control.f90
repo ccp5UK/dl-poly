@@ -11,9 +11,10 @@ Subroutine scan_control                                    &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2014
+! author    - i.t.todorov july 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno and i.t.todorov april 2014 (itramolecular TPs & PDFs)
+! contrib   - m.a.seaton june 2014 (VAF)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,7 +25,7 @@ Subroutine scan_control                                    &
   Use msd_module
   Use development_module, Only : l_trm
   Use kim_module,         Only : l_kim,rkim
-
+  Use greenkubo_module,   Only : isvaf,nsvaf,vafsamp
 
   Implicit None
 
@@ -78,9 +79,9 @@ Subroutine scan_control                                    &
   la_dih = .false. ; mxgdih1 = 0
   la_inv = .false. ; mxginv1 = 0
 
-! electrostatics and no elctrostatics, rdf and no rdf, vdw and no vdw,
+! electrostatics and no electrostatics, rdf and no rdf, vdw and no vdw,
 ! metal and no metal, tersoff and no tersoff interactions,
-! real and binsize defaults
+! cutoff and padding, and binsize defaults
 
   lelec = .false.
 ! l_n_e is now first determined in scan_field l_n_e = (.false.)
@@ -233,6 +234,24 @@ Subroutine scan_control                                    &
      Else If (word(1:6) == 'msdtmp') Then
 
         l_msd = .true.
+
+! read VAF option and sample frequency and binsize - defaults in greenkubo_module
+
+     Else If (word(1:3) == 'vaf') Then
+
+        Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+        isvaf = Abs(Nint(word_2_real(word,0.0_wp)))
+        If (isvaf == 0) isvaf=50
+
+        If (word(1:3) == 'bin' .or. word(1:5) == 'size') Call get_word(record,word)
+        If (word(1:3) == 'bin' .or. word(1:5) == 'size') Call get_word(record,word)
+        nsvaf = Abs(Nint(word_2_real(word,0.0_wp)))
+
+        If (nsvaf == 0) nsvaf=Merge(2*isvaf,100,isvaf >= 100)
+        vafsamp = Ceiling(Real(nsvaf,wp)/Real(isvaf,wp))
 
 ! read DL_POLY_2 multiple timestep option (compatibility)
 ! as DL_POLY_4 infrequent k-space SPME evaluation option

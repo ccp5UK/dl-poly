@@ -8,8 +8,9 @@ Subroutine set_bounds                                       &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2014
+! author    - i.t.todorov july 2014
 ! contrib   - i.j.bush february 2014
+! contrib   - m.a.seaton june 2014 (VAF)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,6 +24,7 @@ Subroutine set_bounds                                       &
   Use bonds_module,       Only : rcbnd
   Use tersoff_module,     Only : potter
   Use development_module, Only : l_trm
+  Use greenkubo_module,   Only : vafsamp
 
   Implicit None
 
@@ -555,7 +557,7 @@ Subroutine set_bounds                                       &
      If (.not.llvnl) Then
         mxspl1=mxspl
      Else
-        mxspl1=mxspl+Nint(0.5_wp+(rpad*Real(mxspl,wp))/rcut)
+        mxspl1=mxspl+Ceiling((rpad*Real(mxspl,wp))/rcut)
      End If
 
      qlx = Min(ilx , kmaxa/(mxspl1*nprx))
@@ -643,9 +645,9 @@ Subroutine set_bounds                                       &
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
-  mxbfdp = Merge( 2, 0, mxnode > 1) * Nint( Real(                         &
-          mxatdm*(18+12+mxexcl + Merge(2*(6+mxstak), 0, l_msd))         + &
-          4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
+  mxbfdp = Merge( 2, 0, mxnode > 1) * Nint( Real(                             &
+          mxatdm*(18+12+mxexcl + Merge(2*(6+mxstak), 0, l_msd)) + 3*vafsamp + &
+          4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd     + &
           3*mxteth+4*mxbond+5*mxangl+8*mxdihd+6*mxinv,wp) * dens0)
 
 ! statistics connect deporting total per atom

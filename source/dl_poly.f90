@@ -86,6 +86,7 @@ Program dl_poly
   Use rdf_module
   Use z_density_module
   Use statistics_module
+  Use greenkubo_module
 
 ! PARSE MODULE
 
@@ -136,6 +137,7 @@ Program dl_poly
                        lmin,ltgaus,ltscal,          &
                        lvar,leql,lpse,lsim,lfce,    &
                        lpana,lrdf,lprdf,lzdn,lpzdn, &
+                       lvafav,lpvaf,                &
                        ltraj,ldef,lrsd,             &
                        safe,lbook,lexcl,            &
                        relaxed_shl = .true.,        &
@@ -206,7 +208,7 @@ Program dl_poly
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  version:  4.06      /      june 2014  ****** O ****", &
+          "**         **  version:  4.06      /      july 2014  ****** O ****", &
           "*************  execution on ", mxnode, "    node(s)  ******* L ***", &
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
@@ -272,11 +274,12 @@ Program dl_poly
 
   Call allocate_external_field_arrays()
 
-! ALLOCATE RDF, Z-DENSITY and STATISTICS ARRAYS
+! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
 
   Call allocate_rdf_arrays()
   Call allocate_z_density_arrays()
   Call allocate_statistics_arrays()
+  Call allocate_greenkubo_arrays()
 
 ! READ SIMULATION CONTROL PARAMETERS
 
@@ -286,7 +289,7 @@ Program dl_poly
            l_exp,lecx,lfcap,l_top,lzero,lmin,          &
            ltgaus,ltscal,lvar,leql,lpse,               &
            lsim,lfce,lpana,lrdf,lprdf,lzdn,lpzdn,      &
-           ltraj,ldef,lrsd,                            &
+           lvafav,lpvaf,ltraj,ldef,lrsd,               &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
            temp,press,strext,keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
@@ -655,7 +658,7 @@ Program dl_poly
 
   Call statistics_result                           &
            (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn, &
-           nstrun,keyens,keyshl,iso,               &
+           lvafav,lpvaf,nstrun,keyens,keyshl,iso,  &
            press,strext,nstep,tstep,time,tmst)
 
 10 Continue

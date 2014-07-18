@@ -1,7 +1,7 @@
 !!!!!!!!!!!!!!!!!!!!!  W_WRITE_OPTIONS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
-! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
+! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
         If (ltraj) Call trajectory_write &
            (imcon,keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
@@ -11,6 +11,8 @@
            (keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
         If (lrsd) Call rsd_write &
            (imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
+        If (vafsamp > 0) Call vaf_write &
+           (lvafav,keyres,leql,nsteql,nstep,tstep)
 
 
 !!!!!!!!!!!!!!!!!!!!!  W_WRITE_OPTIONS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

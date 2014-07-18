@@ -25,7 +25,7 @@ copied into the subdirectory containing the relevant source code. In
 most cases this will be the {\em source} subdirectory.
 
 \item The chosen makefile is executed with an appropriate keyword
-(Section~\ref{compilation}) which selects for specific platforms.
+(Section~\ref{compilation}) which is selected for specific platforms.
 For \D compilation in parallel mode (a FORTRAN90 compiler
 and an MPI implementation for the specific machine architecture are
 required) in many cases the user (sometimes with help from the
@@ -69,14 +69,14 @@ are insufficient for a long simulation when, for example, the system
 volume changes markedly during the simulation or when a system is
 artificially constructed to have a non-uniform density. Usually,
 simply restarting the program will cure the problem, but sometimes,
-especially when the local atom density is a way higher than the
-global one or there is a sort of clustering in the system undergoes
+especially when the local atom density is somewhat higher than the
+global one or the system undergoes some form of clustering 
 and the distribution of bonded-like interactions is far from uniform,
 it may be necessary to amend the array sizes in accordance with the
-error message obtained.  A way to trigger lengthening of the density
+error message obtained.  To trigger lengthening of the density
 dependent global arrays the user may use the {\bf densvar} option in
 the CONTROL (Section~\ref{control-file}) file.  However, lengthening
-these array will require a larger amount of memory resources from the
+these arrays will require a larger amount of memory from the
 execution machine for the simulation, which it may not be able to
 provide.  See Section~\ref{file-structure} for more insight on the
 \D source code structure.
@@ -95,14 +95,14 @@ implementing the VV and LFV depending on which integrator has been
 specified for the simulation. These routines contain major routines
 required to perform the simulation, control the normal ``molecular
 dynamics cycle'' and monitor the {\em cpu} and {\em memory} usage.
-They also bring about a controlled termination of the program; if
+They also bring about a controlled termination of the program if
 the {\em cpu} usage approaches the allotted job time within a
 pre-set closure time and/or if the {\em memory} usage approaches the
 allocated limit for density dependent arrays.   Users are
-recommended to study the forementioned root drives as a model for
+recommended to study the aforementioned root directories as a model for
 other implementations of the package they may wish to construct. The
 dependencies and calling hierarchies of all the \D subroutines can
-be found in the Section~\ref{file-structure}.
+be found in Section~\ref{file-structure}.
 
 Should additional functionality be added to \D by the user, the
 {\sc set\_bounds} routine (and its support subroutines) may need
@@ -127,32 +127,32 @@ platform resources are made available to the specific simulation
 job.  This is done by the \D routine {\sc map\_domains} in
 {\sc domains\_module} that attempts to allocate and map the
 resources (nodes in parallel) in compliance with the DD
-strategy\index{parallelisation}.  {\sc map\_domains}, is called
+strategy\index{parallelisation}.  {\sc map\_domains} is called
 within the routine {\sc set\_bounds}, which also sets the necessary
 limits for various simulation array sizes and all global
 variables as declared in {\sc setup\_module} to convenient values
-based on rough scan through the CONFIG, CONTROL, FIELD and optionally
+based on a rough scan through the CONFIG, CONTROL, FIELD and optionally
 TABLE and TABEAM (Section~\ref{input-files}) files.  The routine also
 calls the {\sc read\_config} routine to obtain atomic positions and
-optionally velocities and forces the CONFIG file.  After allocation
+optionally velocities and forces from the CONFIG file.  After allocation
 of all necessary simulation arrays and variables (with compulsory
-initialisation to "zero" value), the job control information is
+initialisation to ``zero'' value), the job control information is
 required; this is obtained by the routine {\sc read\_control}, which
 reads the CONTROL file.  The description of the system to be
-simulated: the types of atoms and molecules present and the
-intermolecular forces, are obtained by the {\sc read\_field} routine,
+simulated -- the types of atoms and molecules present and the
+intermolecular forces -- are obtained by the {\sc read\_field} routine,
 which reads the FIELD file.  The {\sc system\_init} routine is
 called next to initialise various simulation arrays and variables
-intact with the data so far and detects if the job is a restart of
+with the data available so far and detects if the job is a restart of
 previous simulation run.  If so it reads the REVOLD (Section~\ref{revold-file})
 to supply some arrays and variables with the
 necessary values as saved from the previous job.  The domain halo is
-constructed strait after by the routine {\sc set\_halo\_particles}.
+constructed immediately afterwards by the routine {\sc set\_halo\_particles}.
 After gathering all these data, bookkeeping and exclusion arrays are
 created for the intramolecular and site related interactions
-(core\_shell, constraint and tether units) by {\sc build\_book\_intra}
+(core-shell, constraint and tether units) by the {\sc build\_book\_intra}
 and {\sc build\_excl\_intra} routines.  Lastly, the thermodynamic
-properties of the system are checked and set intact by the
+properties of the system are checked and set by the
 {\sc set\_temperature} routine (which also generates the initial
 velocities if required to do so).
 
@@ -160,12 +160,12 @@ The calculation of the pair-like forces is carried out in the
 {\sc two\_body\_forces} routine and represents the main part of any
 simulation.  For calculation of the two-body contributions to the
 atomic forces, the Verlet neighbour list\index{Verlet neighbour list}
-is constructed by {\sc link\_cell\_pairs} routine using link-cell
-lists.  Special measures are taken so that the lsit excludes: (i)
-pairs of atoms that are both in {\em frozen state} as well as (ii)
+is constructed by the {\sc link\_cell\_pairs} routine using link-cell
+lists.  Special measures are taken so that the list excludes: (i)
+pairs of atoms that are both in a {\em frozen state} as well as (ii)
 pairs in which one of the atoms has the other in its
-{\em exclusion list}.  The last is build by {\sc build\_excl\_intra}
-where the specification of bonded-like interactions in the FIELD file
+{\em exclusion list}.  The last is built by {\sc build\_excl\_intra}
+where the specifications of bond-like interactions in the FIELD file
 are processed.  Various other subroutines are then called to
 calculate specific contributions by different interactions.  For example;
 {\sc vdw\_forces} for the short-range (van der Waals\index{potential!van der Waals})
@@ -175,17 +175,17 @@ forces (Section~\ref{vdw}), {\sc metal\_lrc}, {\sc metal\_ld\_compute} and
 {\sc ewald\_frzn\_forces} and {\sc ewald\_excl\_forces} for the
 Coulombic forces (Section~\ref{coulomb}).
 
-Higher order intermolecular\index{potential!intermolecular}, site
-related and intramolecular\index{potential!intramolecular} forces
-require the routines; \\
+Higher order intermolecular\index{potential!intermolecular}, site-related 
+and intramolecular\index{potential!intramolecular} forces
+require the routines \\
 {\sc tersoff\_forces}, {\sc three\_body\_forces},
 {\sc four\_body\_forces}, \\
 {\sc core\_shell\_forces} or {\sc core\_shell\_relax},
 {\sc tethers\_forces}, \\
 {\sc bonds\_forces}, {\sc angles\_forces}, {\sc dihedrals\_forces}
 and {\sc inversions\_forces}.  \\
-The routines; \\
-{\sc external\_field\_apply} and {\sc external\_field\_correct},
+The routines \\
+{\sc external\_field\_apply} and {\sc external\_field\_correct}
 are required if the simulated system has an external force field
 (e.g. electrostatic field) operating.
 
@@ -193,7 +193,7 @@ To help with equilibration simulations, routines such as
 {\sc cap\_forces}, {\sc zero\_k\_optimise} and {\sc minimise\_relax}
 are sometimes required to reduce the magnitude of badly
 equilibrated forces and to steer the MD system towards an
-equlibrium state.
+equilibrium state.
 
 Integration of the equations of motion is handled by one of the
 routines listed and described in Chapter~\ref{integration-algorithms}.
@@ -203,8 +203,10 @@ computing system properties during a simulation.  Radial
 distributions may be calculated however, by using the routines
 {\sc rdf\_collect}, {\sc rdf\_excl\_collect},
 {\sc rdf\_frzn\_collect} a and {\sc rdf\_compute}.
-Similarly, Z-density distribution may be calculated by using the
-routines {\sc z\_density\_collect} and {\sc z\_density\_compute}.
+Similarly, Z-density distributions may be calculated by using the
+routines {\sc z\_density\_collect} and {\sc z\_density\_compute}, 
+while velocity autocorrelation functions may be calculated using 
+the routines {\sc vaf\_collect} and {\sc vaf\_compute}. 
 Ordinary thermodynamic quantities are calculated by the routine
 {\sc statistics\_collect}, which also writes the STATIS file
 (Section~\ref{statis-file}).  Routine {\sc trajectory\_write} writes the

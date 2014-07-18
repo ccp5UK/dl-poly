@@ -145,6 +145,8 @@
 
         tsths=Max(tstep ,(time-tmsh) / Real(Merge( nstph-1, 1, nstph > 2), wp))
 
+        Call vaf_collect(lvafav,leql,nsteql,nstph-1,time)
+
         Call statistics_collect            &
            (leql,nsteql,lzdn,nstzdn,       &
            keyres,keyens,iso,intsta,imcon, &
@@ -191,9 +193,18 @@
 
         If (nstph /= 0) lines=lines+1
 
-! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
+! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
-        Call w_write_options()
+        If (ltraj) Call trajectory_write &
+           (imcon,keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
+        If (ldef) Call defects_write &
+           (imcon,rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time)
+        If (l_msd) Call msd_write &
+           (keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
+        If (lrsd) Call rsd_write &
+           (imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
+        If (vafsamp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
+           (lvafav,keyres,leql,nsteql,nstph,tsths)
 
 ! Save restart data in event of system crash
 
@@ -250,6 +261,7 @@
 ! step counter is data counter now, so statistics_result is triggered
 
   nstep=nstph
+  tstep=tsths
 
 
 !!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORF INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

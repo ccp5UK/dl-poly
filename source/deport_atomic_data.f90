@@ -8,9 +8,9 @@ Subroutine deport_atomic_data(mdir,lbook)
 ! NOTE: When executing on one node we need not get here at all!
 !
 ! copyright - daresbury laboratory
-! author    - w.smith august 1998
-! amended   - i.t.todorov february 2014
+! author    - w.smith & i.t.todorov july 2014
 ! contrib   - i.j.bush february 2014
+! contrib   - m.a.seaton june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -44,6 +44,7 @@ Subroutine deport_atomic_data(mdir,lbook)
   Use minimise_module,     Only : l_x,oxx,oyy,ozz
   Use ewald_module
   Use msd_module
+  Use greenkubo_module,    Only : vxi,vyi,vzi,vafsamp
 
   Implicit None
 
@@ -251,6 +252,12 @@ Subroutine deport_atomic_data(mdir,lbook)
            fcz(keep)=fcz(i)
         End If
 
+        If (vafsamp > 0) Then
+           vxi(keep,1:vafsamp)=vxi(i,1:vafsamp)
+           vyi(keep,1:vafsamp)=vyi(i,1:vafsamp)
+           vzi(keep,1:vafsamp)=vzi(i,1:vafsamp)
+        End If
+
         If (l_msd) Then
            jj=27+2*i
            j =27+2*keep
@@ -389,6 +396,22 @@ Subroutine deport_atomic_data(mdir,lbook)
               safe=.false.
            End If
            imove=imove+3
+        End If
+
+! pack initial velocities for VAF calculations
+
+        If (vafsamp > 0) Then
+           If (imove+3 <= iblock) Then
+              Do k=1,vafsamp
+                buffer(imove+1)=vxi(i,k)
+                buffer(imove+2)=vyi(i,k)
+                buffer(imove+3)=vzi(i,k)
+
+                imove=imove+3
+              End Do
+           Else
+              safe=.false.
+           End If
         End If
 
 ! pack MSD arrays
@@ -879,6 +902,18 @@ Subroutine deport_atomic_data(mdir,lbook)
         fcz(newatm)=buffer(kmove+3)
 
         kmove=kmove+3
+     End If
+
+! unpack initial velocities for VAF calculations
+
+     If (vafsamp > 0) Then
+        Do k=1,vafsamp
+          vxi(newatm,k)=buffer(kmove+1)
+          vyi(newatm,k)=buffer(kmove+2)
+          vzi(newatm,k)=buffer(kmove+3)
+
+          kmove=kmove+3
+        End Do
      End If
 
 ! unpack MSD arrays

@@ -23,8 +23,8 @@ Subroutine z_density_compute()
   Integer           :: j,k
   Real( Kind = wp ) :: zlen,delr,dvolz,factor,rho,rho1,rrr,sum,sum1
 
-  If (idnode == 0) Write(nrite,"(/,/,12X,'Z DENSITY PROFILES',/,/, &
-     & 'calculated using ',i10,' configurations')") ncfzdn
+  If (idnode == 0) Write(nrite,"(/,/,12x,'Z DENSITY PROFILES',/,/, &
+     & 'calculated using ',i8,' configurations')") ncfzdn
 
 ! open Z density file and write headers
 

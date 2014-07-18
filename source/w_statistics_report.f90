@@ -76,5 +76,9 @@
               & 130('-'))") nstep
         End If
 
+! Calculate green-kubo properties
+
+        If (vafsamp > 0) Call vaf_collect(lvafav,leql,nsteql,nstep,time)
+
 
 !!!!!!!!!!!!!!!!!  W_STATISTICS_REPORT INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

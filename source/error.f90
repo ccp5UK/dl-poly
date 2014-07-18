@@ -1281,6 +1281,10 @@ Subroutine error(kode)
 
         Write(nrite,'(/,1x,a)') 'error - allocation failure in inversion_module -> allocate_invr_dst_arrays'
 
+     Else If (kode == 1080) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in greenkubo_module -> allocate_greenkubo_arrays'
+
      Else
 
         Write(nrite,'(/,1x,a)') 'error - unnamed error found'

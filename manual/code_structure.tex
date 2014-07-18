@@ -155,6 +155,12 @@ statistical accountancy of a simulation in \D.  It depends on
 {\sc kinds\_f90} and its allocation methods on {\sc setup\_module}
 and {\sc comms\_module}.
 
+\item {\bf greenkubo module}:: {\sc greenkubo\_module}
+
+This module defines all variables and arrays needed for calculation
+of Green-Kubo relations during a simulation in \D.  It depends on
+{\sc kinds\_f90} and its allocation methods on {\sc setup\_module}.
+
 \item {\bf kinetic module}:: {\sc kinetic\_module}
 
 The kinetic module contains a collection of routines for the
@@ -188,7 +194,7 @@ tethers\_module \\
 bonds\_module angles\_module dihedrals\_module inversions\_module \\
 \\
 external\_field\_module langevin\_module minimise\_module \\
-ewald\_module msd\_module statistics\_module \\
+ewald\_module msd\_module statistics\_module greenkubo\_module \\
 \\
 kinetic\_module gpfa\_module parallel\_fft}
 
@@ -224,7 +230,7 @@ defects\_reference\_read defects\_reference\_read\_parallel \\
 defects\_reference\_write \\
 defects\_reference\_export defects\_reference\_set\_halo \\
 defects\_link\_cells defects1\_write defects\_write \\
-msd\_write rsd\_write \\
+msd\_write rsd\_write vaf\_write \\
 impact core\_shell\_on\_top \\
 deport\_atomic\_data pmf\_units\_set compress\_book\_intra \\
 relocate\_particles \\
@@ -245,7 +251,7 @@ external\_field\_apply external\_field\_correct \\
 langevin\_forces \\
 constraints\_pseudo\_bonds pmf\_pseudo\_bonds \\
 rigid\_bodies\_split\_torque rigid\_bodies\_move minimise\_relax \\
-core\_shell\_relax zero\_k\_optimise \\
+core\_shell\_relax zero\_k\_optimise vaf\_collect \\
 nvt\_e0\_scl nvt\_e1\_scl nvt\_b0\_scl nvt\_b1\_scl \\
 \\
 xscale core\_shell\_kinetic regauss\_temperature \\
@@ -253,7 +259,9 @@ xscale core\_shell\_kinetic regauss\_temperature \\
 z\_density\_collect statistics\_collect \\
 statistics\_connect\_set statistics\_connect\_spread statistics\_connect\_frames \\
 system\_revive \\
-rdf\_compute z\_density\_compute statistics\_result \\
+rdf\_compute z\_density\_compute vaf\_compute \\
+bonds\_compute angles\_compute dihedrals\_compute inversions\_compute \\
+statistics\_result \\
 \\
 w\_impact\_option w\_write\_options w\_calculate\_forces w\_refresh\_mappings \\
 w\_kinetic\_options w\_statistics\_report w\_refresh\_output \\

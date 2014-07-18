@@ -495,6 +495,10 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf no top}ology                            \> skip detailed topology reporting during read of FIELD in OUTPUT \\
 \>                                              \> (no FIELD replication), useful for large bio-chemcal simulations \\
 \>                                              \> \\
+\> {\bf no vafav}eraging                        \> ignore time-averaging of velocity autocorrelation functions (VAFs), \\
+\>                                              \> report all calculated VAF profiles for individual species to VAFDAT \\
+\>                                              \> files and final profile (for all species) in OUTPUT \\
+\>                                              \> \\
 \> {\bf no vdw}                                 \> ignore short range (non-bonded)\index{potential!non-bonded} interactions in simulation \\
 \>                                              \> \\
 \> {\bf no vom}                                 \> ignore Centre of Mass momentum removal during the simulation \\
@@ -516,9 +520,11 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf print} (every) $n$                      \> print system data every $n$ timesteps \\
 \>                                              \> \\
-\> {\bf print ana}lysis                         \> print analysed PDFs in OUTPUT and corresponding files *DAT PMF*. \\
+\> {\bf print ana}lysis                         \> print analysed PDFs in OUTPUT and corresponding files *DAT PMF* \\
 \>                                              \> \\
 \> {\bf print rdf}                              \> print radial distribution functions \\
+\>                                              \> \\
+\> {\bf print vaf}                              \> print velocity autocorrelation functions \\
 \>                                              \> \\
 \> {\bf print zden}                             \> print Z-density profile \\
 \>                                              \> \\
@@ -627,6 +633,11 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> $i~=$ start timestep for dumping configurations (default $i~=~0$) \\
 \>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$) \\
 \>                                              \> $k~=$ data level (default $k~=~0$, see Table~\ref{keytrj}) \\
+\>                                              \> \\
+\> {\bf vaf} (sampling) (every) $i$ (bin) (size) $n$ \> \phantom{xxxx} calculate and collect velocity autocorrelation function profiles \\
+\>                                                   \> \phantom{xxxx} every $i$ timesteps (default $i~=~50$) with a bin size set to $n$ \\
+\>                                                   \> \phantom{xxxx} timesteps (default $n~=~2i$, if $i~/ge~100$, or $n~=~100$ otherwise) \\
+\>                                              \> \\
 \>                                              \> \\
 \> {\bf timestep} $f$                           \> set timestep to $f$ ps \\
 \>                                              \> \\
@@ -1201,6 +1212,16 @@ with an array allocation failure message.
 equilibration period.  If the directive {\bf collect} is used,
 equilibration data will be incorporated into the overall statistics.
 
+\item The {\bf vaf} directive switches on velocity autocorrelation
+function (VAF) calculations for individual atomic species in \D
+after equilibration or immediately at start if the directive {\bf collect}
+is used.  It controls how often VAF profiles are started what the size
+of each profile (in timesteps).  Overlapping profiles are possible and
+require more memory to store them (and initial velocities) while they
+are being calculated.  By default \D will report time-averaged VAF profiles.
+This can be overridden using the {\bf no~vafav}eraging directive, which
+will instead report individual `instantaneous' VAF profiles.
+
 \item {\bf io {\em action} [{\em options}]} controls how I/O is performed
 by \D.  The options can help the performance of I/O
 operations within \D for potentially large files during the run.
@@ -1328,9 +1349,9 @@ the usual MD cycle.  There are a couple of restrictions that may lead to
 failures of this feature's application.
 \begin{itemize}
 \item The CONFIG file at (re)start must be the same as the frame
-in HOSTORF that CONTROL (REVOLD) attempts to (re)start from.
+in HISTORF that CONTROL (REVOLD) attempts to (re)start from.
 
-\item If any itwo HISTROF consecutive frames are too far apart in
+\item If any two HISTROF consecutive frames are too far apart in
 time from each other then domain information reallocation follow-up
 may break when the feature is used in parallel.
 \end{itemize}
@@ -2896,13 +2917,15 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 12}: (Optional) \\
 \> {\tt rdf}    \> RDF array ({\tt mxgrdf}$\times${\tt mxrdf}) \\
 {\bf record 13}: (Optional) \\
-\> {\tt zdens}  \> Z-density array ({\tt mxgrdf}$\times${\tt mxatyp})
+\> {\tt zdens}  \> Z-density array ({\tt mxgrdf}$\times${\tt mxatyp}) \\
+{\bf record 14}: (Optional) \\
+\> {\tt vaf}    \> VAF arrays (sizes dependent on sampling frequency and VAF bin size)
 \end{tabbing}
 
 \subsubsection{Further Comments}
 
 Note that different versions of \D may have a different order of
-the above parameters or include more or less such.  Therefore a
+the above parameters or include more or less such.  Therefore
 different versions of \D may render any existing REVOLD file
 unreadable by the code.
 

@@ -22,15 +22,14 @@ Subroutine statistics_collect              &
 ! molecular dynamics simulation and computing the rolling averages
 !
 ! copyright - daresbury laboratory
-! author    - w.smith august 1992
-! amended   - i.t.todorov august 2011
+! author    - w.smith & i.t.todorov july 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,   Only : idnode,mxnode,gsum
   Use setup_module
-  Use site_module,    Only : ntpatm,numtyp
+  Use site_module,    Only : ntpatm,numtypnf
   Use config_module,  Only : cfgname,cell,volm,natms,ltype, &
                              xxx,yyy,zzz,vxx,vyy,vzz
   Use statistics_module
@@ -241,7 +240,11 @@ Subroutine statistics_collect              &
   End If
 
   Do k=1,ntpatm
-     If (numtyp(k) > zero_plus) stpval(iadd+k)=amsd(k)/Max(numtyp(k),1.0_wp)
+     If (numtypnf(k) > zero_plus) Then
+        stpval(iadd+k)=amsd(k)/numtypnf(k)
+     Else
+        stpval(iadd+k)=0.0_wp
+     End If
   End Do
 
   iadd = iadd + ntpatm

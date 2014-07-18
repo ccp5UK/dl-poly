@@ -32,7 +32,7 @@ Subroutine inversions_compute(temp)
   Real( Kind = wp ), Allocatable :: pmf(:),vir(:)
 
   fail = 0
-  Allocate (dstdinv(0:mxginv1,1:ldfinv(0)),pmf(0:mxginv1+2),vit(0:mxginv1+2), Stat = fail)
+  Allocate (dstdinv(0:mxginv1,1:ldfinv(0)),pmf(0:mxginv1+2),vir(0:mxginv1+2), Stat = fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'inversions_compute - allocation failure, node: ', idnode
      Call error(0)

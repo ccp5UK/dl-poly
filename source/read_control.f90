@@ -4,7 +4,7 @@ Subroutine read_control                                &
            l_exp,lecx,lfcap,l_top,lzero,lmin,          &
            ltgaus,ltscal,lvar,leql,lpse,               &
            lsim,lfce,lpana,lrdf,lprdf,lzdn,lpzdn,      &
-           ltraj,ldef,lrsd,                            &
+           lvafav,lpvaf,ltraj,ldef,lrsd,               &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
            temp,press,strext,keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
@@ -23,9 +23,10 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2014
+! author    - i.t.todorov july 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
+! contrib   - m.a.seaton june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -40,6 +41,7 @@ Subroutine read_control                                &
   Use metal_module,    Only : ld_met,ls_met,tabmet
   Use msd_module,      Only : l_msd
   Use defects1_module, Only : l_dfx
+  Use greenkubo_module
 
   Use kinetic_module,  Only : l_vom
 
@@ -60,6 +62,7 @@ Subroutine read_control                                &
                                              lvar,leql,lpse,lfce,   &
                                              lpana,                 &
                                              lrdf,lprdf,lzdn,lpzdn, &
+                                             lvafav,lpvaf,          &
                                              ltraj,ldef,lrsd
 
 
@@ -288,6 +291,12 @@ Subroutine read_control                                &
   lzdn   = .false.
   nstzdn = 1
   lpzdn  = .false.
+
+! default switches for calculation of velocity autocorrelation functions:
+! time-averaging and printing
+
+  lvafav = .true.
+  lpvaf  = .false.
 
 ! default for data printing interval
 
@@ -1691,7 +1700,7 @@ Subroutine read_control                                &
         If (idnode == 0) Write(nrite,"(/,1x,'force capping on (during equilibration)', &
            & /,1x,'force capping limit (kT/Angs)',5x,1p,e12.4)") fmax
 
-! read 'no vdw', 'no elec' and 'no ind' options
+! read 'no vdw', 'no elec', 'no ind' and 'no vafav' options
 
      Else If (word(1:2) == 'no') Then
 
@@ -1719,6 +1728,10 @@ Subroutine read_control                                &
            If (idnode == 0) Write(nrite,"(/,1x,a)") "no topology option on (avoids printing extended FIELD topology in OUTPUT)"
 
            l_top = .false.
+
+        Else If (word1(1:5) == 'vafav') Then
+
+           lvafav = .false.
 
         Else If (word1(1:3) == 'vom' ) Then
 
@@ -1875,6 +1888,25 @@ Subroutine read_control                                &
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         nstzdn = Abs(Nint(word_2_real(word,1.0_wp)))
 
+! read vaf calculation option dealt with in scan_control<-set_bounds
+
+     Else If (word(1:3) == 'vaf') Then
+
+! read thermal conductivity calculation option
+!
+!     Else If (word(1:5) == 'therm') Then
+!
+!        ltcond = .true.
+!
+!        Call get_word(record,word)
+!        If (word(1:4) == 'cond' .or. word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:4) == 'over') &
+!           Call get_word(record,word)
+!        If (word(1:4) == 'cond' .or. word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:4) == 'over') &
+!           Call get_word(record,word)
+!        If (word(1:4) == 'cond' .or. word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:4) == 'over') &
+!           Call get_word(record,word)
+!        nsttcond = Max(Abs(Nint(word_2_real(word))),1)
+
 ! read print options
 
      Else If (word(1:5) == 'print') Then
@@ -1887,6 +1919,8 @@ Subroutine read_control                                &
            lprdf = .true.
         Else If (word(1:4) == 'zden') Then
            lpzdn = .true.
+        Else If (word(1:3) == 'vaf') Then
+           lpvaf = .true.
         Else
            If (word(1:5) == 'every') Call get_word(record,word)
            nstbpo = Abs(Nint(word_2_real(word,1.0_wp)))
@@ -2392,6 +2426,41 @@ Subroutine read_control                                &
         lpzdn=.false.
      End If
   End If
+
+! report vaf
+
+  If (vafsamp > 0 .or. lpvaf) Then
+     If (vafsamp > 0) Then
+        If (idnode == 0) Then
+           Write(nrite,"(/,1x,'vaf profiles requested')")
+           Write(nrite,"(  1x,'vaf collection frequency',7x,i10)") isvaf
+           Write(nrite,"(  1x,'vaf collection binsize  ',7x,i10)") nsvaf
+        End If
+     Else
+        If (idnode == 0) Write(nrite,"(/,1x,'no vaf collection requested')")
+     End If
+
+     If (lpvaf) Then
+        If (idnode == 0) Write(nrite,"(1x,'vaf printing requested')")
+     Else
+        If (idnode == 0) Write(nrite,"(1x,'no vaf printing requested')")
+     End If
+
+     If (lvafav) Then
+        If (idnode == 0) Write(nrite,"(1x,'time-averaged vaf profile')")
+     Else
+        If (idnode == 0) Write(nrite,"(1x,'instantaneous vaf profiles')")
+     End If
+  End If
+
+! report thermal conductivity
+
+!  If (ltcond) Then
+!    If (idnode == 0) Then
+!      Write(nrite,"(/,1x,'thermal conductivities requested')")
+!      Write(nrite,"(  1x,'heat current collection binsize',8x,i10)") nsttcond
+!    End If
+!  End If
 
 ! report data dumping interval and job times
 
