@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2014
+! author    - i.t.todorov july 2014
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno and i.t.todorov march 2014 (itramolecular TPs & PDFs)
@@ -978,7 +978,7 @@ Subroutine read_field                   &
                     Do jrgd=irgd+1,nrigid
                        krgd=lstrgd(0,jrgd)
                        Do jsite=1,krgd
-                          If ((Any(lstrgd(1:lrgd,irgd) == jsite))) Then
+                          If (Any(lstrgd(1:lrgd,irgd) == lstrgd(jsite,jrgd))) Then
                               Call warning(400,Real(irgd,wp),Real(jrgd,wp),0.0_wp)
                               Call error(620)
                           End If

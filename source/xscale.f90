@@ -276,7 +276,7 @@ Subroutine xscale(imcon,m_rgd,keyens,tstep,eta)
 
         End If
 
-    End If
+     End If
 
   Else ! RBs exist
 

@@ -957,8 +957,8 @@ Contains
     Logical,           Save :: newjob = .true.
     Real( Kind = wp ), Save :: kmaxa_r,kmaxb_r,kmaxc_r
 
-    Integer           :: fail, i,j,k,l, jj,kk,ll, ixdb,ixdt,iydb,iydt,izdb,izdt
-    Real( Kind = wp ) :: delspl,tmp,facx,facy,facz,fff(0:3),fx,fy,fz,fix,fiy,fiz,qsum, &
+    Integer           :: delspl, ixdb,ixdt,iydb,iydt,izdb,izdt, fail, i,j,k,l, jj,kk,ll
+    Real( Kind = wp ) :: tmp,facx,facy,facz,fff(0:3),fx,fy,fz,fix,fiy,fiz,qsum, &
                          bdxl,bdyl,bdzl,bdxk,bdyk,bdzk,bdxj,bdyj,bdzj
 
     Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: qqc_domain

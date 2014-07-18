@@ -11,7 +11,7 @@ Subroutine system_revive                                            &
 ! author    - w.smith december 1992
 ! amended   - i.t.todorov july 2014
 ! contrib   - m.a.seaton june 2014
-!!
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
