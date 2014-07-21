@@ -246,6 +246,7 @@ Subroutine scan_control                                    &
         isvaf = Abs(Nint(word_2_real(word,0.0_wp)))
         If (isvaf == 0) isvaf=50
 
+        Call get_word(record,word)
         If (word(1:3) == 'bin' .or. word(1:5) == 'size') Call get_word(record,word)
         If (word(1:3) == 'bin' .or. word(1:5) == 'size') Call get_word(record,word)
         nsvaf = Abs(Nint(word_2_real(word,0.0_wp)))
