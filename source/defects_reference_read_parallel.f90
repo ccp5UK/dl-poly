@@ -85,9 +85,9 @@ Subroutine defects_reference_read_parallel      &
 ! Note: make 'first_at' and 'orig_first_at' 1 element bigger than strictly
 ! required to make checking at the end of reading much easier and clearer
 
-  Allocate(first_at(0:n_read_procs_use),orig_first_at(0:n_read_procs_use), Stat=fail(1))
-  Allocate(chbuf(1:batsz),iwrk(1:batsz),                                   Stat=fail(2))
-  Allocate(scatter_buffer(1:wp_vals_per_at,1:batsz),                       Stat=fail(3))
+  Allocate (first_at(0:n_read_procs_use),orig_first_at(0:n_read_procs_use), Stat=fail(1))
+  Allocate (chbuf(1:batsz),iwrk(1:batsz),                                   Stat=fail(2))
+  Allocate (scatter_buffer(1:wp_vals_per_at,1:batsz),                       Stat=fail(3))
   If (Any(fail(1:3) > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'defects_reference_read_parallel allocation failure 1, node: ', idnode
      Call error(0)
@@ -157,15 +157,15 @@ Subroutine defects_reference_read_parallel      &
 ! Allocate record buffer, reading buffers, scatter buffers and indexing arrays
 
      If (io_read /= IO_READ_NETCDF) Then
-        Allocate(rec_buff(1:recsz,1:batsz),                                  Stat=fail(1))
+        Allocate (rec_buff(1:recsz,1:batsz),                                  Stat=fail(1))
      Else
-        Allocate(rec_buff(1:Len( chbuf_read ),1:batsz),                      Stat=fail(1))
+        Allocate (rec_buff(1:Len( chbuf_read ),1:batsz),                      Stat=fail(1))
      End If
-     Allocate(chbuf_read(1:batsz),iwrk_read(1:batsz),                        Stat=fail(2))
-     Allocate(axx_read(1:batsz),ayy_read(1:batsz),azz_read(1:batsz),         Stat=fail(3))
-     Allocate(scatter_buffer_read(1:wp_vals_per_at,1:batsz),                 Stat=fail(4))
-     Allocate(chbuf_scat(1:batsz),iwrk_scat(1:batsz),                        Stat=fail(5))
-     Allocate(n_held(0:mxnode-1),where_buff(0:mxnode-1),owner_read(1:batsz), Stat=fail(6))
+     Allocate (chbuf_read(1:batsz),iwrk_read(1:batsz),                        Stat=fail(2))
+     Allocate (axx_read(1:batsz),ayy_read(1:batsz),azz_read(1:batsz),         Stat=fail(3))
+     Allocate (scatter_buffer_read(1:wp_vals_per_at,1:batsz),                 Stat=fail(4))
+     Allocate (chbuf_scat(1:batsz),iwrk_scat(1:batsz),                        Stat=fail(5))
+     Allocate (n_held(0:mxnode-1),where_buff(0:mxnode-1),owner_read(1:batsz), Stat=fail(6))
      If (Any(fail(1:6) > 0)) Then
         Write(nrite,'(/,1x,a,i0)') 'defects_reference_read_parallel allocation failure 2, node: ', idnode
         Call error(0)
@@ -177,9 +177,9 @@ Subroutine defects_reference_read_parallel      &
 ! Therefore for arrays that are used by the mpi_scatterv calls
 ! below allocate them to zero size if they are not used on this core
 
-     Allocate(scatter_buffer_read(1:0,1:0),   Stat=fail(1))
-     Allocate(chbuf_scat(1:0),iwrk_scat(1:0), Stat=fail(2))
-     Allocate(n_held(0:-1),where_buff(0:-1),  Stat=fail(3))
+     Allocate (scatter_buffer_read(1:0,1:0),   Stat=fail(1))
+     Allocate (chbuf_scat(1:0),iwrk_scat(1:0), Stat=fail(2))
+     Allocate (n_held(0:-1),where_buff(0:-1),  Stat=fail(3))
      If (Any(fail(1:3) > 0)) Then
         Write(nrite,'(/,1x,a,i0)') 'defects_reference_read_parallel allocation failure 3, node: ', idnode
         Call error(0)
@@ -464,10 +464,10 @@ Dispatch:  Do i=1,n_loc
   If (.not.safe) Call error(58)
 
   If (do_read) Then
-     Deallocate(rec_buff,                   Stat=fail(1))
-     Deallocate(chbuf_read,iwrk_read,       Stat=fail(2))
-     Deallocate(axx_read,ayy_read,azz_read, Stat=fail(3))
-     Deallocate(owner_read,                 Stat=fail(4))
+     Deallocate (rec_buff,                   Stat=fail(1))
+     Deallocate (chbuf_read,iwrk_read,       Stat=fail(2))
+     Deallocate (axx_read,ayy_read,azz_read, Stat=fail(3))
+     Deallocate (owner_read,                 Stat=fail(4))
      If (Any(fail(1:4) > 0)) Then
         Write(nrite,'(/,1x,a,i0)') 'defects_reference_read_parallel deallocation failure 2, node: ', idnode
         Call error(0)

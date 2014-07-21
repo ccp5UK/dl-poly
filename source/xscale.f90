@@ -5,7 +5,7 @@ Subroutine xscale(imcon,m_rgd,keyens,tstep,eta)
 ! dl_poly_4 routine to scale initial positions with change in box shape
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov july 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -280,20 +280,18 @@ Subroutine xscale(imcon,m_rgd,keyens,tstep,eta)
 
   Else ! RBs exist
 
-     If (keyens >= 20) Then
-        fail = 0
-        Allocate (rgdxin(1:mxrgd),rgdyin(1:mxrgd),rgdzin(1:mxrgd), Stat = fail)
-        If (fail > 0) Then
-           Write(nrite,'(/,1x,a,i0)') 'xscale allocation failure, node: ', idnode
-           Call error(0)
-        End If
+     fail = 0
+     Allocate (rgdxin(1:mxrgd),rgdyin(1:mxrgd),rgdzin(1:mxrgd), Stat = fail)
+     If (fail > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'xscale allocation failure, node: ', idnode
+        Call error(0)
+     End If
 
 ! Halo initial RB members positions across onto neighbouring domains
 ! to get initial COMs
 
-        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xin,yin,zin)
-        Call rigid_bodies_coms(imcon,xin,yin,zin,rgdxin,rgdyin,rgdzin)
-     End If
+     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xin,yin,zin)
+     Call rigid_bodies_coms(imcon,xin,yin,zin,rgdxin,rgdyin,rgdzin)
 
      If (keyens == 21 .or. keyens == 31) Then
 
@@ -571,10 +569,8 @@ Subroutine xscale(imcon,m_rgd,keyens,tstep,eta)
 ! Halo initial RB members positions across onto neighbouring domains
 ! to get initial COMs
 
-        If (keyens >= 20) Then
-           If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xbg,ybg,zbg)
-           Call rigid_bodies_coms(imcon,xbg,ybg,zbg,rgdxin,rgdyin,rgdzin)
-        End If
+        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xbg,ybg,zbg)
+        Call rigid_bodies_coms(imcon,xbg,ybg,zbg,rgdxin,rgdyin,rgdzin)
 
         If (keyens == 21 .or. keyens == 31) Then
 
@@ -849,12 +845,10 @@ Subroutine xscale(imcon,m_rgd,keyens,tstep,eta)
 
      End If
 
-     If (keyens >= 20) Then
-        Deallocate (rgdxin,rgdyin,rgdzin, Stat = fail)
-        If (fail > 0) Then
-           Write(nrite,'(/,1x,a,i0)') 'xscale deallocation failure, node: ', idnode
-           Call error(0)
-        End If
+     Deallocate (rgdxin,rgdyin,rgdzin, Stat = fail)
+     If (fail > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'xscale deallocation failure, node: ', idnode
+        Call error(0)
      End If
 
   End If

@@ -306,8 +306,8 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
         Call io_finalize
      End If
 
-     Allocate( atmnam_scaled( 1:natms * nall ), ltg_scaled( 1:natms * nall ), Stat = fail(1) )
-     Allocate( x_scaled( 1:natms * nall ), y_scaled( 1:natms * nall ), z_scaled( 1:natms * nall ), &
+     Allocate ( atmnam_scaled( 1:natms * nall ), ltg_scaled( 1:natms * nall ), Stat = fail(1) )
+     Allocate ( x_scaled( 1:natms * nall ), y_scaled( 1:natms * nall ), z_scaled( 1:natms * nall ), &
                Stat = fail(2) )
      If (Any(fail > 0)) Then
         Write(nrite,'(/,1x,a,i0)') 'system_expand allocation failure 0, node: ', idnode
@@ -983,8 +983,8 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
      Call io_close( fh )
      Call io_finalize
 
-     Deallocate( atmnam_scaled, ltg_scaled,    Stat = fail(1) )
-     Deallocate( x_scaled, y_scaled, z_scaled, Stat = fail(2) )
+     Deallocate ( atmnam_scaled, ltg_scaled,    Stat = fail(1) )
+     Deallocate ( x_scaled, y_scaled, z_scaled, Stat = fail(2) )
      If (Any(fail > 0)) Then
         Write(nrite,'(/,1x,a,i0)') 'system_expand deallocation failure 0, node: ', idnode
         Call error(0)

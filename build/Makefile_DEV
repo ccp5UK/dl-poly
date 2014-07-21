@@ -345,11 +345,11 @@ archer-gnu-debug:
 	$(MAKE) LD="ftn -o" \
 	LDFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
 	         -finit-integer=-9999 -finit-real=nan -std=f2003 \
-	         -pedantic -ffpe-trap=invalid,zero,overflow -fdump-core" \
+	         -ffpe-trap=invalid,zero,overflow -fdump-core" \
 	FC="ftn -c" \
 	FCFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
 	         -finit-integer=-9999 -finit-real=nan -std=f2003 \
-	         -pedantic -ffpe-trap=invalid,zero,overflow -fdump-core" \
+	         -ffpe-trap=invalid,zero,overflow -fdump-core" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== CRAY XT3/6 cray compilers ========================

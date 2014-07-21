@@ -245,7 +245,7 @@ Contains
     ! way things can be correct. will need all the local totals so
     ! gather and sum locally rather than just a global sum as
     ! saves a comm.
-    Allocate( all_n_loc( 0:nproc - 1 ), Stat = fail )
+    Allocate ( all_n_loc( 0:nproc - 1 ), Stat = fail )
     If ( fail /= 0 ) Go To 100
 
     ! No check on mpi error as all is pointless because
@@ -261,7 +261,7 @@ Contains
     If ( .not. all_present ) Return
 
     ! Work out the first index on each proc
-    Allocate( loc_start( 0:nproc - 1 ), Stat = fail )
+    Allocate ( loc_start( 0:nproc - 1 ), Stat = fail )
     If ( fail /= 0 ) Go To 100
 
     loc_start( 0 ) = 1
@@ -270,7 +270,7 @@ Contains
     End Do
 
     ! Array to work with local indices
-    Allocate( local_ind( 1:n_loc ), Stat = fail )
+    Allocate ( local_ind( 1:n_loc ), Stat = fail )
     If ( fail /= 0 ) Go To 100
 
     local_ind = ind( 1:n_loc )
@@ -279,7 +279,7 @@ Contains
     Call shellsort( n_loc, local_ind )
 
     ! Work out how much data to send to each processor
-    Allocate( to_send( 0:nproc - 1 ), Stat = fail )
+    Allocate ( to_send( 0:nproc - 1 ), Stat = fail )
     If ( fail /= 0 ) Go To 100
 
     to_send = 0
@@ -292,7 +292,7 @@ Contains
     End Do
 
     ! How much node i sends to me is how much I recv
-    Allocate( to_recv( 0:nproc - 1 ), Stat = fail )
+    Allocate ( to_recv( 0:nproc - 1 ), Stat = fail )
     If ( fail /= 0 ) Go To 100
 
     Call MPI_ALLTOALL( to_send, 1, MPI_INTEGER, &
@@ -300,10 +300,10 @@ Contains
                        dlp_comm_world, ierr )
 
     ! Work out the displacements in the sending and receiving arrays
-    Allocate( displs_send( 0:nproc - 1 ), Stat = fail )
+    Allocate ( displs_send( 0:nproc - 1 ), Stat = fail )
     If ( fail /= 0 ) Go To 100
 
-    Allocate( displs_recv( 0:nproc - 1 ), Stat = fail )
+    Allocate ( displs_recv( 0:nproc - 1 ), Stat = fail )
     If ( fail /= 0 ) Go To 100
 
     displs_send( 0 ) = 0
@@ -317,7 +317,7 @@ Contains
     End Do
 
     ! Put the index on the proc that should own it
-    Allocate( reorg_ind( 1:n_loc ), Stat = fail )
+    Allocate ( reorg_ind( 1:n_loc ), Stat = fail )
     If ( fail /= 0 ) Go To 100
 
     Call MPI_ALLTOALLV( local_ind, to_send, displs_send, MPI_INTEGER, &
@@ -347,21 +347,21 @@ Contains
     loc_present = all_present
     Call MPI_ALLREDUCE( loc_present, all_present, 1, MPI_LOGICAL, MPI_LAND, dlp_comm_world, ierr )
 
-    Deallocate( reorg_ind   , Stat = fail )
+    Deallocate ( reorg_ind   , Stat = fail )
     If ( fail /= 0 ) Go To 100
-    Deallocate( displs_recv , Stat = fail )
+    Deallocate ( displs_recv , Stat = fail )
     If ( fail /= 0 ) Go To 100
-    Deallocate( displs_send , Stat = fail )
+    Deallocate ( displs_send , Stat = fail )
     If ( fail /= 0 ) Go To 100
-    Deallocate( to_recv     , Stat = fail )
+    Deallocate ( to_recv     , Stat = fail )
     If ( fail /= 0 ) Go To 100
-    Deallocate( to_send     , Stat = fail )
+    Deallocate ( to_send     , Stat = fail )
     If ( fail /= 0 ) Go To 100
-    Deallocate( local_ind   , Stat = fail )
+    Deallocate ( local_ind   , Stat = fail )
     If ( fail /= 0 ) Go To 100
-    Deallocate( loc_start   , Stat = fail )
+    Deallocate ( loc_start   , Stat = fail )
     If ( fail /= 0 ) Go To 100
-    Deallocate( all_n_loc   , Stat = fail )
+    Deallocate ( all_n_loc   , Stat = fail )
     If ( fail /= 0 ) Go To 100
 
     Return
