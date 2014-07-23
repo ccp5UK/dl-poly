@@ -1016,15 +1016,6 @@ Subroutine npt_h1_vv                          &
         End If
      End Do
 
-! construct a 'mock' scaling tensor
-
-     Do i=2,8
-        eta(i)=0.0_wp
-     End Do
-     eta(1)=chip
-     eta(5)=chip
-     eta(9)=chip
-
 ! update kinetic energy and stress
 
      Call kinstresf(vxx,vyy,vzz,strknf)
@@ -1034,6 +1025,15 @@ Subroutine npt_h1_vv                          &
      engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
   End If
+
+! construct a 'mock' scaling tensor for xscale
+
+  Do i=2,8
+     eta(i)=0.0_wp
+  End Do
+  eta(1)=chip
+  eta(5)=chip
+  eta(9)=chip
 
   If (megcon > 0 .or. megpmf > 0) Then
      Deallocate (lstitr,            Stat=fail( 1))

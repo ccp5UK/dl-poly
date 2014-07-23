@@ -381,7 +381,7 @@ Subroutine npt_b0_vv                                       &
         dens(i)=dens0(i)*tmp
      End Do
 
-! construct a 'mock' scaling tensor
+! construct a 'mock' scaling tensor for xscale
 
      Do i=2,8
         eta(i)=0.0_wp

@@ -847,18 +847,18 @@ Contains
        Return
     End If
 
-    Allocate( local_data( 1:size_local, 1:n_atoms ), Stat = error )
+    Allocate ( local_data( 1:size_local, 1:n_atoms ), Stat = error )
     If ( .not. ok( error == 0, base_comm ) ) Then
        error = IO_ALLOCATION_ERROR
        Return
     End If
     ! MPI only knows about Character( Len = 1 ) so will put the names in such an array
-    Allocate( local_name( 1:Len( atom_name ), 1:n_atoms ), Stat = error )
+    Allocate ( local_name( 1:Len( atom_name ), 1:n_atoms ), Stat = error )
     If ( .not. ok( error == 0, base_comm ) ) Then
        error = IO_ALLOCATION_ERROR
        Return
     End If
-    Allocate( local_global_indices( 1:n_atoms ), Stat = error )
+    Allocate ( local_global_indices( 1:n_atoms ), Stat = error )
     If ( .not. ok( error == 0, base_comm ) ) Then
        error = IO_ALLOCATION_ERROR
        Return
@@ -869,9 +869,9 @@ Contains
     ! dummy argument is allocatable.  Here this is not the case hence allocate
     ! to size zero on procs that will not need the array.
     If ( do_io ) Then
-       Allocate( n_reorg( 0:actual_io_procs - 1 ), Stat = error )
+       Allocate ( n_reorg( 0:actual_io_procs - 1 ), Stat = error )
     Else
-       Allocate( n_reorg( 0:-1 ), Stat = error )
+       Allocate ( n_reorg( 0:-1 ), Stat = error )
     End If
     If ( .not. ok( error == 0, base_comm ) ) Then
        error = IO_ALLOCATION_ERROR
@@ -879,7 +879,7 @@ Contains
     End If
 
     ! Rank the atoms on this proc
-    Allocate( global_index_rank( 1:n_atoms ), Stat = error )
+    Allocate ( global_index_rank( 1:n_atoms ), Stat = error )
     If ( .not. ok( error == 0, base_comm ) ) Then
        error = IO_ALLOCATION_ERROR
        Return
@@ -894,7 +894,7 @@ Contains
          global_indices, rx, ry, rz, vx, vy, vz, fx, fy, fz, weight, charge, rsd, atom_name, &
          local_global_indices, local_data, local_name )
 
-    Deallocate( global_index_rank , Stat = error )
+    Deallocate ( global_index_rank , Stat = error )
     If ( .not. ok( error == 0, base_comm ) ) Then
        error = IO_DEALLOCATION_ERROR
        Return
@@ -999,9 +999,9 @@ Contains
        ! size only occurs on the I/O processor, as that is where it is needed,
        ! but to keep to the standard alloc to zero on the other procs
        If ( do_io ) Then
-          Allocate( gathered_global_indices( 1:this_batch_size ), Stat = error )
+          Allocate ( gathered_global_indices( 1:this_batch_size ), Stat = error )
        Else
-          Allocate( gathered_global_indices( 0:-1 ), Stat = error )
+          Allocate ( gathered_global_indices( 0:-1 ), Stat = error )
        End If
        If ( .not. ok( error == 0, base_comm ) ) Then
           error = IO_ALLOCATION_ERROR
@@ -1009,10 +1009,10 @@ Contains
        End If
 
        If ( do_io ) Then
-          Allocate( gathered_data( 1:Size( local_data, Dim = 1 ), 1:this_batch_size ), &
+          Allocate ( gathered_data( 1:Size( local_data, Dim = 1 ), 1:this_batch_size ), &
                Stat = error )
        Else
-          Allocate( gathered_data( 1:Size( local_data, Dim = 1 ), 0:-1 ), Stat = error )
+          Allocate ( gathered_data( 1:Size( local_data, Dim = 1 ), 0:-1 ), Stat = error )
        End If
        If ( .not. ok( error == 0, base_comm ) ) Then
           error = IO_ALLOCATION_ERROR
@@ -1020,10 +1020,10 @@ Contains
        End If
 
        If ( do_io ) Then
-          Allocate( gathered_name( 1:Size( local_name, Dim = 1 ), 1:this_batch_size ), &
+          Allocate ( gathered_name( 1:Size( local_name, Dim = 1 ), 1:this_batch_size ), &
                Stat = error )
        Else
-          Allocate( gathered_name( 1:Size( local_name, Dim = 1 ), 0:-1 ), Stat = error )
+          Allocate ( gathered_name( 1:Size( local_name, Dim = 1 ), 0:-1 ), Stat = error )
        End If
        If ( .not. ok( error == 0, base_comm ) ) Then
           error = IO_ALLOCATION_ERROR
@@ -1056,11 +1056,11 @@ Contains
 
              ! Now allocate the data for use after the global sort
              n_me = n_reorg( me_in_io )
-             Allocate( sorted_indices( 1:n_me ), Stat = error )
+             Allocate ( sorted_indices( 1:n_me ), Stat = error )
              If ( ok( error == 0, io_comm ) ) Then
-                Allocate( sorted_data( 1:size_local, 1:n_me ), Stat = error )
+                Allocate ( sorted_data( 1:size_local, 1:n_me ), Stat = error )
                 If ( ok( error == 0, io_comm ) ) Then
-                   Allocate( sorted_name( 1:Len( atom_name ), 1:n_me ), Stat = error )
+                   Allocate ( sorted_name( 1:Len( atom_name ), 1:n_me ), Stat = error )
                    If ( ok( error == 0, io_comm ) ) Then
                       ! And sort the data across the I/O processors
                       Call global_sort( io_comm, &
@@ -1074,17 +1074,17 @@ Contains
                               n_me, sorted_indices, sorted_data, sorted_name, error )
                       End If
 
-                      Deallocate( sorted_name , Stat = error )
+                      Deallocate ( sorted_name , Stat = error )
                       If ( .not. ok( error == 0, io_comm ) ) Then
                          error = IO_DEALLOCATION_ERROR
                          Exit
                       End If
-                      Deallocate( sorted_data , Stat = error )
+                      Deallocate ( sorted_data , Stat = error )
                       If ( .not. ok( error == 0, io_comm ) ) Then
                          error = IO_DEALLOCATION_ERROR
                          Exit
                       End If
-                      Deallocate( sorted_indices , Stat = error )
+                      Deallocate ( sorted_indices , Stat = error )
                       If ( .not. ok( error == 0, io_comm ) ) Then
                          error = IO_DEALLOCATION_ERROR
                          Exit
@@ -1109,17 +1109,17 @@ Contains
 
        End If IO_PROCS_ONLY
 
-       Deallocate( gathered_name , Stat = error )
+       Deallocate ( gathered_name , Stat = error )
        If ( .not. ok( error == 0, base_comm ) ) Then
           error = IO_DEALLOCATION_ERROR
           Return
        End If
-       Deallocate( gathered_data , Stat = error )
+       Deallocate ( gathered_data , Stat = error )
               If ( .not. ok( error == 0, base_comm ) ) Then
           error = IO_DEALLOCATION_ERROR
           Return
        End If
-       Deallocate( gathered_global_indices , Stat = error )
+       Deallocate ( gathered_global_indices , Stat = error )
        If ( .not. ok( error == 0, base_comm ) ) Then
           error = IO_DEALLOCATION_ERROR
           Return
@@ -1141,17 +1141,17 @@ Contains
        Return
     End If
 
-    Deallocate( local_global_indices , Stat = error )
+    Deallocate ( local_global_indices , Stat = error )
     If ( .not. ok( error == 0, base_comm ) ) Then
        error = IO_DEALLOCATION_ERROR
        Return
     End If
-    Deallocate( local_name , Stat = error )
+    Deallocate ( local_name , Stat = error )
     If ( .not. ok( error == 0, base_comm ) ) Then
        error = IO_DEALLOCATION_ERROR
        Return
     End If
-    Deallocate( local_data , Stat = error )
+    Deallocate ( local_data , Stat = error )
     If ( .not. ok( error == 0, base_comm ) ) Then
        error = IO_DEALLOCATION_ERROR
        Return
@@ -1303,7 +1303,7 @@ Contains
 
       If ( n < 1 ) Return
 
-      Allocate( work( 1:n ), Stat = error )
+      Allocate ( work( 1:n ), Stat = error )
       If ( error /= 0 ) Then
          error = IO_ALLOCATION_ERROR
          Return
@@ -1356,7 +1356,7 @@ Contains
          rank_array( work( i ) ) = i
       End Do
 
-      Deallocate( work , Stat = error )
+      Deallocate ( work , Stat = error )
       If ( error /= 0 ) Then
          error = IO_DEALLOCATION_ERROR
          Return
@@ -1419,13 +1419,13 @@ Contains
       Call MPI_COMM_SIZE( io_gather_comm, n_procs_gather, ierr )
       Call MPI_COMM_RANK( io_gather_comm, me_in_gather  , ierr )
 
-      Allocate( n_to_gather( 0:n_procs_gather - 1 ), Stat = error )
+      Allocate ( n_to_gather( 0:n_procs_gather - 1 ), Stat = error )
       If ( error /= 0 ) Then
          error = IO_ALLOCATION_ERROR
          Return
       End If
 
-      Allocate( displs_for_gather( 0:n_procs_gather - 1 ), Stat = error )
+      Allocate ( displs_for_gather( 0:n_procs_gather - 1 ), Stat = error )
       If ( error /= 0 ) Then
          error = IO_ALLOCATION_ERROR
          Return
@@ -1489,13 +1489,13 @@ Contains
 
       n_gathered = Sum( n_to_gather )
 
-      Deallocate( displs_for_gather , Stat = error )
+      Deallocate ( displs_for_gather , Stat = error )
       If ( error /= 0 ) Then
          error = IO_DEALLOCATION_ERROR
          Return
       End If
 
-      Deallocate( n_to_gather       , Stat = error )
+      Deallocate ( n_to_gather       , Stat = error )
       If ( error /= 0 ) Then
          error = IO_DEALLOCATION_ERROR
          Return
@@ -1533,7 +1533,7 @@ Contains
 
       If ( n /= 0 ) Then
 
-         Allocate( ranks( 1:n ), Stat = error )
+         Allocate ( ranks( 1:n ), Stat = error )
          If ( error /= 0 ) Then
             error = IO_ALLOCATION_ERROR
             Return
@@ -1545,7 +1545,7 @@ Contains
          End If
 
 !         global_indices( (/ ranks /) ) = global_indices( 1:n )
-         Allocate( gi( 1:n ), Stat = error )
+         Allocate ( gi( 1:n ), Stat = error )
          If ( error /= 0 ) Then
             error = IO_ALLOCATION_ERROR
             Return
@@ -1554,7 +1554,7 @@ Contains
             gi( ranks( i ) ) = global_indices( i )
          End Do
          global_indices = gi
-         Deallocate( gi , Stat = error )
+         Deallocate ( gi , Stat = error )
          If ( error /= 0 ) Then
             error = IO_DEALLOCATION_ERROR
             Return
@@ -1562,7 +1562,7 @@ Contains
 
 !         data( :, (/ ranks /) ) = data( :, 1:n )
          nd = Size( data, Dim = 1 )
-         Allocate( dt( 1:nd, 1:n ), Stat = error )
+         Allocate ( dt( 1:nd, 1:n ), Stat = error )
          If ( error /= 0 ) Then
             error = IO_ALLOCATION_ERROR
             Return
@@ -1571,7 +1571,7 @@ Contains
             dt( :, ranks( i ) ) = data( :, i )
          End Do
          data = dt
-         Deallocate( dt , Stat = error )
+         Deallocate ( dt , Stat = error )
          If ( error /= 0 ) Then
             error = IO_DEALLOCATION_ERROR
             Return
@@ -1579,7 +1579,7 @@ Contains
 
 !         name( :, (/ ranks /) ) = name( :, 1:n )
          nn = Size( name, Dim = 1 )
-         Allocate( nm( 1:nn, 1:n ), Stat = error )
+         Allocate ( nm( 1:nn, 1:n ), Stat = error )
          If ( error /= 0 ) Then
             error = IO_ALLOCATION_ERROR
             Return
@@ -1588,13 +1588,13 @@ Contains
             nm( :, ranks( i ) ) = name( :, i )
          End Do
          name = nm
-         Deallocate( nm , Stat = error )
+         Deallocate ( nm , Stat = error )
          If ( error /= 0 ) Then
             error = IO_DEALLOCATION_ERROR
             Return
          End If
 
-         Deallocate( ranks , Stat = error )
+         Deallocate ( ranks , Stat = error )
          If ( error /= 0 ) Then
             error = IO_DEALLOCATION_ERROR
             Return
@@ -1695,7 +1695,7 @@ Contains
 
       ! Find the first atom on each proc - remember the atoms are being outputted
       ! in one big contiguous block of indices
-      Allocate( first_atom( 0:n_in_io_comm - 1 ), Stat = error )
+      Allocate ( first_atom( 0:n_in_io_comm - 1 ), Stat = error )
       If ( .not. ok( error == 0, io_comm ) ) Then
          error = IO_ALLOCATION_ERROR
          Return
@@ -1707,7 +1707,7 @@ Contains
 
       ! Now work out how much data this proc will send to each of the other
       ! processors
-      Allocate( to_send( 0:n_in_io_comm - 1 ), Stat = error )
+      Allocate ( to_send( 0:n_in_io_comm - 1 ), Stat = error )
       If ( .not. ok( error == 0, io_comm ) ) Then
          error = IO_ALLOCATION_ERROR
          Return
@@ -1724,7 +1724,7 @@ Contains
       End Do
 
       ! Displacements for sending in alltoallv later on
-      Allocate( displs_send( 0:n_in_io_comm - 1 ), Stat = error )
+      Allocate ( displs_send( 0:n_in_io_comm - 1 ), Stat = error )
       If ( .not. ok( error == 0, io_comm ) ) Then
          error = IO_ALLOCATION_ERROR
          Return
@@ -1735,7 +1735,7 @@ Contains
       End Do
 
       ! The amount to be received in the alltoallv later on is simply the amount sent
-      Allocate( to_recv( 0:n_in_io_comm - 1 ), Stat = error )
+      Allocate ( to_recv( 0:n_in_io_comm - 1 ), Stat = error )
       If ( .not. ok( error == 0, io_comm ) ) Then
          error = IO_ALLOCATION_ERROR
          Return
@@ -1743,7 +1743,7 @@ Contains
       Call MPI_ALLTOALL( to_send, 1, MPI_INTEGER, to_recv, 1, MPI_INTEGER, io_comm, ierr )
 
       ! And now the displacements for receiving
-      Allocate( displs_recv( 0:n_in_io_comm - 1 ), Stat = error )
+      Allocate ( displs_recv( 0:n_in_io_comm - 1 ), Stat = error )
       If ( .not. ok( error == 0, io_comm ) ) Then
          error = IO_ALLOCATION_ERROR
          Return
@@ -1766,31 +1766,31 @@ Contains
                           sorted_indices, to_recv, displs_recv, MPI_INTEGER, &
                           io_comm, ierr )
 
-      Deallocate( displs_recv , Stat = error )
+      Deallocate ( displs_recv , Stat = error )
       If ( .not. ok( error == 0, io_comm ) ) Then
          error = IO_DEALLOCATION_ERROR
          Return
       End If
 
-      Deallocate( to_recv     , Stat = error )
+      Deallocate ( to_recv     , Stat = error )
       If ( .not. ok( error == 0, io_comm ) ) Then
          error = IO_DEALLOCATION_ERROR
          Return
       End If
 
-      Deallocate( displs_send , Stat = error )
+      Deallocate ( displs_send , Stat = error )
       If ( .not. ok( error == 0, io_comm ) ) Then
          error = IO_DEALLOCATION_ERROR
          Return
       End If
 
-      Deallocate( to_send     , Stat = error )
+      Deallocate ( to_send     , Stat = error )
       If ( .not. ok( error == 0, io_comm ) ) Then
          error = IO_DEALLOCATION_ERROR
          Return
       End If
 
-      Deallocate( first_atom  , Stat = error )
+      Deallocate ( first_atom  , Stat = error )
       If ( .not. ok( error == 0, io_comm ) ) Then
          error = IO_DEALLOCATION_ERROR
          Return
@@ -1852,7 +1852,7 @@ Contains
 
          ! The io_buffer
          n_buff = Min( n, buffer_size_write )
-         Allocate( buffer( 1:rec_size, 1:n_buff ), Stat = error )
+         Allocate ( buffer( 1:rec_size, 1:n_buff ), Stat = error )
          If ( .not. ok( error == 0, io_comm ) ) Then
             error = IO_ALLOCATION_ERROR
             Return
@@ -1973,7 +1973,7 @@ Contains
             in_buffer = 0
          End If
 
-         Deallocate( buffer , Stat = error )
+         Deallocate ( buffer , Stat = error )
          If ( .not. ok( error == 0, io_comm ) ) Then
             error = IO_DEALLOCATION_ERROR
             Return
