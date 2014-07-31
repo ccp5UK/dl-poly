@@ -594,7 +594,7 @@ Program dl_poly
 ! Now you can run fast, boy
 
   If (l_fast) Call gsync(l_fast)
-  Call vnl_check(l_str,imcon,rcut,rpad,rlnk)
+  Call vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

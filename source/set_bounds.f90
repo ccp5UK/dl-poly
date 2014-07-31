@@ -475,7 +475,7 @@ Subroutine set_bounds                                       &
         Else ! rpad is defined & in 'no strict' mode
            If (rpad > zero_plus .and. (.not.l_str)) Then ! Re-set rpad with some slack
               rpad = Min( 0.95_wp * (cut - rcut) , test * rcut)
-              rpad = Int( 100.0_wp * rpad ) / 100.0_wp
+              rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
               If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
               Go To 10
            Else
@@ -489,7 +489,7 @@ Subroutine set_bounds                                       &
         If (rpad <= zero_plus) Then ! When rpad undefined give it some value
            If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 4) Then
               rpad = test * rcut
-              rpad = Int( 100.0_wp * rpad ) / 100.0_wp
+              rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
               If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
               Go To 10
            Else
@@ -498,7 +498,7 @@ Subroutine set_bounds                                       &
                                      r_nprz * celprp(9) / Real(ilz,wp) ) &
                               - rcut - 1.0e-6_wp
            End If
-           rpad = Int( 100.0_wp * rpad ) / 100.0_wp
+           rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
               If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
            rlnk = rcut + rpad                ! and correct rlnk respectively
         Else                        ! Otherwise, set reasonable lower limit

@@ -1,30 +1,31 @@
-Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
+Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 routine implementing the VNL conditional update checks
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov july 2014
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,   Only : idnode,mxnode,gmax
-  Use setup_module,   Only : nrite,mxspl,mxatdm
+  Use setup_module,   Only : nrite,mxspl,mxatms,mxatdm
   Use domains_module, Only : r_nprx,r_npry,r_nprz
-  Use config_module,  Only : cell,natms,xxx,yyy,zzz
+  Use config_module,  Only : cell,natms,nlast,xxx,yyy,zzz
   Use vnl_module
 
   Implicit None
 
   Logical,           Intent ( In    ) :: l_str
-  Integer,           Intent ( In    ) :: imcon
+  Integer,           Intent ( In    ) :: imcon,m_rgd
   Real( Kind = wp ), Intent ( In    ) :: rcut
   Real( Kind = wp ), Intent ( InOut ) :: rpad,rlnk
 
   Logical,     Save :: newjob=.true.
+  Integer,     Save :: mxsize,alist
   Integer           :: fail,ilx,ily,ilz
   Real( Kind = wp ) :: max_disp,cut,test,celprp(1:10)
 
@@ -36,16 +37,30 @@ Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
 
      newjob = .false.
 
+! In principle the upper bound of the tracking arrays should be 'mxatdm'.
+! However, when rigid bodies are present in the system (m_rgd > 0) calls
+! to update_shared_units and rigid_bodies_coms are made in xscale and
+! the upper bound should then be increased to 'mxatms'.  Similarly, the
+! the assignment range changes from 'natms' to 'nlast'
+
+     If (m_rgd == 0) Then
+        mxsize=mxatdm
+        alist =natms
+     Else
+        mxsize=mxatms
+        alist =nlast
+     End If
+
      fail = 0
-     Allocate (xbg(1:mxatdm),ybg(1:mxatdm),zbg(1:mxatdm), Stat = fail)
+     Allocate (xbg(1:mxsize),ybg(1:mxsize),zbg(1:mxsize), Stat = fail)
      If (fail > 0) Then
         Write(nrite,'(/,1x,a,i0)') 'vnl_check_0 allocation failure, node: ', idnode
         Call error(0)
      End If
 
-     xbg(1:natms)=xxx(1:natms)
-     ybg(1:natms)=yyy(1:natms)
-     zbg(1:natms)=zzz(1:natms)
+     xbg(1:alist)=xxx(1:alist)
+     ybg(1:alist)=yyy(1:alist)
+     zbg(1:alist)=zzz(1:alist)
 
 ! Initialised by construction in vnl_module
 !
@@ -108,7 +123,7 @@ Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
               Else
                  If (cut >= rcut) Then ! Re-set rpad with some slack
                     rpad = Min( 0.95_wp * (cut - rcut) , test * rcut)
-                    rpad = Int( 100.0_wp * rpad ) / 100.0_wp
+                    rpad = Real( Int( 100.0_wp * rpad , wp ) ) / 100.0_wp
                     If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
                     rlnk = rcut + rpad
                     l_vnl=.true.
@@ -121,12 +136,12 @@ Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
            If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 4) Then
               cut = test * rcut
            Else
-              rpad = 0.85_wp * Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
-                                     r_npry * celprp(8) / Real(ily,wp) , &
-                                     r_nprz * celprp(9) / Real(ilz,wp) ) &
-                             - rcut - 1.0e-6_wp
+              cut = 0.85_wp * Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
+                                    r_npry * celprp(8) / Real(ily,wp) , &
+                                    r_nprz * celprp(9) / Real(ilz,wp) ) &
+                            - rcut - 1.0e-6_wp
            End If
-           cut = Int( 100.0_wp * cut ) / 100.0_wp
+           cut = Real( Int( 100.0_wp * cut ) , wp ) / 100.0_wp
            If ((.not.(cut < Min(0.05_wp,0.005_wp*rcut))) .and. Abs(cut-rpad) > 0.005_wp) Then ! Do bother
   If (idnode == 0) Write(nrite,'(/,1x,2(a,f5.2),a,/)') 'cutoff padding reset from ', rpad, ' Angs to ', cut, ' Angs'
               rpad = cut
@@ -138,9 +153,9 @@ Subroutine vnl_check(l_str,imcon,rcut,rpad,rlnk)
      If (l_vnl) Then ! Reset
         skipvnl(1) = 0.0_wp
 
-        xbg(1:natms)=xxx(1:natms)
-        ybg(1:natms)=yyy(1:natms)
-        zbg(1:natms)=zzz(1:natms)
+        xbg(1:alist)=xxx(1:alist)
+        ybg(1:alist)=yyy(1:alist)
+        zbg(1:alist)=zzz(1:alist)
      Else ! Deal with skipping statistics
         skipvnl(1) = skipvnl(1) + 1.0_wp
 

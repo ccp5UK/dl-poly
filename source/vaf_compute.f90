@@ -15,7 +15,6 @@ Subroutine vaf_compute(lvafav,tstep)
   Use comms_module,     Only : idnode
   Use setup_module,     Only : nrite,mxatyp,zero_plus
   Use site_module,      Only : numtypnf
-  Use config_module,    Only : cfgname
   Use greenkubo_module, Only : nsvaf,vafcount,vafstep,vaftime,vaf
 
   Implicit None
