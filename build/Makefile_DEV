@@ -929,8 +929,8 @@ update_shared_units.o: comms_module.o domains_module.o kinds_f90.o \
 	setup_module.o
 vaf_collect.o: comms_module.o config_module.o greenkubo_module.o kinds_f90.o \
 	setup_module.o
-vaf_compute.o: comms_module.o config_module.o greenkubo_module.o kinds_f90.o \
-	setup_module.o site_module.o
+vaf_compute.o: comms_module.o greenkubo_module.o kinds_f90.o setup_module.o \
+	site_module.o
 vaf_write.o: comms_module.o config_module.o greenkubo_module.o kinds_f90.o \
 	setup_module.o site_module.o
 vdw_direct_fs_generate.o: kinds_f90.o setup_module.o vdw_module.o
