@@ -23,7 +23,7 @@ standard DL_POLY_Classic version with the exceptions of:
 No previous DL_POLY_3/4 feature is deprecated.  ALL NEW features are
 documented in the "DL_POLY_4 User Manual".
 
-Reference:
+Reference
 ---------
 Thank you for using the DL_POLY_4 package in your work.  Please,
 acknowledge our efforts by including the following reference when
@@ -63,6 +63,15 @@ Warnings:
       varies in the range -5:+5%.  This variation depends strongly on
       the system force-field complexity and very weakly on the system
       size.
+  (5) The `rpad' & `no strict' CONTROL options should be used with
+      care especially in conjunction with the `variable timestep`
+      option when iterative algorithms are present in the simulation.
+      Such may be driven by a combination of options such as:
+      `minimise', `ensemble npt', `ensemble nst' in the presence of
+      constraints (associated with the `tolerance' and `mxshake'
+      options) and/or core shells units (dealt by the relaxed shell
+      model and associated with the `rlxtol' option) in the model
+      system as defined in the FIELD file.
 
 Integration Defaults:
 ---------------------
@@ -96,19 +105,22 @@ treat CB/PMF/RB entities in a more precise (symplectic) manner than
 the LFV ones and thus not only have better numerical stability but
 also produce more accurate dynamics.
 
-Makefiles:
-----------
+Makefiles & compilation
+-----------------------
 From within the `source' directory the user may compile the code by
-selecting the appropriate Makefile from the `build' directory:
+selecting the appropriate Makefile from the `build' directory and
+copying it across by typing at the command line:
 
-"cp ../build/Makefile_MPI Makefile"
+   cp ../build/Makefile_MPI Makefile
 
 - intended for parallel execution on multi-processor platforms (an MPI
 implementation is needed), or
 
-"cp ../build/Makefile_SRLx Makefile"
+   cp ../build/Makefile_SRLx Makefile
 
-- intended for serial execution (no MPI required).
+- intended for serial execution (no MPI required)
+
+followed by <Enter>.
 
 Note that in `comms_module.f90' it is crucial that line 13 reads as:
 `Use mpi_module'    - for serial compilation or as
@@ -117,24 +129,27 @@ Note that in `comms_module.f90' it is crucial that line 13 reads as:
 If the parallel OS environment, one is compiling on, is not fully F90
 compatible then the `Use mpi' entry in the `comms_module.f90' file may
 be interpreted as erroneous.  This is easily overcome by commenting out
-the `Use mpi' line and uncommenting the "Include 'mpif.h'" one situated
+the `Use mpi' line and uncommenting the `Include 'mpif.h'' one situated
 immediately after the `Implicit None' line.
 
 If there is an `entry' in the Makefile for the particular combination
 of architecture, compiler & MPI implementation, then the user may
-instantiate the compilation by:
+instantiate the compilation by issuing at the command line:
 
-"make `entry'"
+   make `entry'
+
+and then pressing <Enter>.
 
 Usually the one named `hpc' is suitable for the majority of platforms.
 To find out the keywords for all available entries within the Makefile
 issue:
 
-"make"
+   make
 
-and then examine the file for any of the keywords reported.  If there
-is not a suitable entry then the user should advise with a computer
-scientist or the administrator of the particular machine.
+press <Enter> and then examine the Makefile entries corresponding to
+the keywords reported.  If there is not a suitable entry then you
+should seek advice from a computer scientist or the support staff of
+the particular machine (HPC service).
 
 The necessary components for the source compilation are:
   (1) a FORTRAN90 + TR15581 compliant compiler (if the full PATH to it
@@ -150,27 +165,29 @@ where (2) is not necessary for compilation in SERIAL mode!
 Note that for the TR15581 compliance, gfortran requires a gcc version
 4.2.0 or above!
 
-By default, if a compilation is successful, an executable (build) will
-be placed in "../execute" directory (at the same level as the
-directory where the code is compiled).  Should "../execute" not exist
-then it will be created automatically.  The build can then be moved,
-renamed, etc. and used as the user wishes.  However, when executed, the
-program will look for input files in the directory of execution!
+By default, if the compilation process is successful then an executable
+(build) will be placed in `../execute' directory (at the same level as
+the `source' directory where the code is compiled).  Should the
+`../execute' directory not exist then it will be created automatically
+by the Makefile script.  The build may then be moved, renamed, etc. and
+used as the user wishes.  However, when executed, the program will look
+for input files in the directory of execution!
 
-Compilation on Windows:
------------------------
+Compilation on Windows
+----------------------
 The best way to get around it is to install cygwin on the system
 (http://www.cygwin.com/) to emulate a UNIX/Linux like environment
-and then use the "make" command.  During cygwin installation make sure
-that the "make" and "gfortran" components are opted for in the install.
-A potential problem for Windows based FORTRAN compilers, one may
-encounter, is that the compiler may not pick symbolic links.  This can
-be resolved by substituting the soft links with hard in the Makefile.
-For parallel compilation all "openMP" components must be opted for
-during the cygwin install!!!
+and then use the "make" command.  During the cygwin installation please
+make sure that the "make" and "gfortran" components are specifically
+opted for components (as they may not be included as default ones) in
+the install.  A potential problem for Windows based FORTRAN compilers,
+one may encounter, is that the compiler may not pick symbolic links.
+This can be resolved by substituting the soft links with hard in the
+Makefile.  For parallel compilation all "openMPI" components must also
+be opted for during the cygwin install!!!
 
-Compiling with NetCDF functionality:
-------------------------------------
+Compiling with NetCDF functionality
+-----------------------------------
 The targeted Makefile needs the following substitution within before
 attempting compilation:
 
@@ -180,6 +197,6 @@ Note that suitable entry may need to be created within the Makefile
 so that it matches the particular combination of architecture/OS,
 compiler, MPI library & netCDF library.
 
-Contacts at STFC Daresbury Laboratory:
---------------------------------------
+Contacts at STFC Daresbury Laboratory
+-------------------------------------
 Dr. I.T. Todorov :: ilian.todorov@stfc.ac.uk
