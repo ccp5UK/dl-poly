@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2014
+! author    - i.t.todorov august 2014
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -103,9 +103,12 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
      det=nlr2/Real(nlx*nly*nlz,wp)
   End Do
   ncells=(nlx+2*nlp)*(nly+2*nlp)*(nlz+2*nlp)
-  nlp2=(1+(1+2*nlp)**3)/2                       ! semi-ball size
-  nlp3=nlx*nly*nlz                              ! domain size
-  nlp4=nlp3-(nlx-2*nlp)*(nly-2*nlp)*(nlz-2*nlp) ! border size
+  nlp2=(1+(1+2*nlp)**3)/2                            ! semi-ball size
+  nlp3=nlx*nly*nlz                                   ! domain size
+  nlp4=nlp3 -                                      & ! border size
+              Merge(nlx-2*nlp, 0, nlx-2*nlp > 0) * &
+              Merge(nly-2*nlp, 0, nly-2*nlp > 0) * &
+              Merge(nlz-2*nlp, 0, nlz-2*nlp > 0)
 
   fail=0
   Allocate (nix(1:nlp2),niy(1:nlp2),niz(1:nlp2),nir(1:nlp2),                 Stat=fail(1))

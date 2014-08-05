@@ -6,13 +6,13 @@ Subroutine angles_compute(temp)
 ! from accumulated data
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov june 2014
+! author    - a.v.brukhno & i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
-  Use setup_module,  Only : pi,boltz,nrite,npdfdt,npdgdt, &
+  Use setup_module,  Only : pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                             mxgang,mxgang1,engunit,zero_plus
   Use site_module,   Only : unqatm
   Use config_module, Only : cfgname
@@ -23,9 +23,9 @@ Subroutine angles_compute(temp)
   Real( Kind = wp ), Intent( In    ) :: temp
 
   Logical           :: zero
-  Integer           :: fail,i,j,ig,kk,ll,ngrid
-  Real( Kind = wp ) :: kT2engo,delth,rdlth,dgrid,factor,factor1,rad2dgr,dgr2rad, &
-                       theta,sinth,rsint,pdfang,sum,pdfang1,sum1,                &
+  Integer           :: fail,ngrid,i,j,ig,kk,ll
+  Real( Kind = wp ) :: kT2engo,rad2dgr,dgr2rad,delth,rdlth,dgrid,factor,pdfzero, &
+                       factor1,theta,sinth,rsint,pdfang,sum,pdfang1,sum1,        &
                        fed0,fed,dfed,dfed0,tmp,fed1,fed2,dfed1,dfed2,coef,t1,t2
 
   Real( Kind = wp ), Allocatable :: dstdang(:,:)
@@ -54,7 +54,7 @@ Subroutine angles_compute(temp)
 
 ! resampling grid and grid interval for pmf tables
 
-  ngrid = Max(1000,mxgang-4)
+  ngrid = Max(Nint(180.0_wp/delth_max),mxgang1,mxgang-4)
   dgrid = pi/Real(ngrid,wp)
 
 ! loop over all valid PDFs to get valid totals
@@ -71,6 +71,10 @@ Subroutine angles_compute(temp)
 ! normalisation factor
 
   factor = 1.0_wp/Real(ncfang,wp)
+
+! the lower bound to nullify the nearly-zero histogram (PDF) values
+
+  pdfzero = 1.0e-5_wp
 
   If (idnode == 0) Then
      Write(nrite,'(/,/,12x,a)') 'ANGLES : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)'
@@ -128,15 +132,15 @@ Subroutine angles_compute(temp)
            pdfang = dstang(ig,i)*factor1
            sum = sum + pdfang
 
-! null it if < 1.0e-5_wp
+! null it if < pdfzero
 
-           If (pdfang < 1.0e-5_wp) Then
+           If (pdfang < pdfzero) Then
               pdfang1 = 0.0_wp
            Else
               pdfang1 = pdfang
            End If
 
-           If (sum < 1.0e-5_wp) Then
+           If (sum < pdfzero) Then
               sum1 = 0.0_wp
            Else
               sum1 = sum
@@ -170,7 +174,7 @@ Subroutine angles_compute(temp)
            dstdang(ig,i) = pdfang1*rsint ! PDFs density
         End Do
      Else
-        dstdang(:,i) = 0 ! PDFs density
+        dstdang(:,i) = 0.0_wp ! PDFs density
      End If
   End Do
 
@@ -218,7 +222,7 @@ Subroutine angles_compute(temp)
 
            If (dstdang(ig,i) > zero_plus) Then
               fed = -Log(dstdang(ig,i))-fed0
-              If (fed0 <= zero_plus ) Then
+              If (fed0 <= zero_plus) Then
                  fed0 = fed
                  fed  = 0.0_wp
               End If
@@ -307,7 +311,8 @@ Subroutine angles_compute(temp)
 
            dfed = t1 + (t2-t1)*coef*0.5_wp
 
-           Write(npdfdt,"(f11.5,1p,2e14.6)") theta*rad2dgr,fed*kT2engo,dfed*kT2engo*dgr2rad/delth
+           If (idnode == 0) &
+              Write(npdfdt,"(f11.5,1p,2e14.6)") theta*rad2dgr,fed*kT2engo,dfed*kT2engo*dgr2rad/delth
         End Do
      End If
   End Do

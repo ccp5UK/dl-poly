@@ -1,29 +1,29 @@
        PROGRAM TABLEtoDATA
 c*********************************************************************
-c     
+c
 c     dl_poly program to convert a tabulated force-field file in DL_POLY format - TABLE
 c     into a three column text-data file VDWTAB (readable by [Xm]Grace and other plotters)
-c     
+c
 c     copyright daresbury laboratory 2014
 c     author    Andrey Brukhno, June 2014
 c
 c     compilation: f77 -o tab2dat.exe tab2dat.f
 c     usage: tab2dat.exe < TABLE
-c     
+c
 c*********************************************************************
-c     
+c
        implicit double precision (a-h,o-z)
 c
-       PARAMETER( finp=21,fout=31,Mgrid=20000,Msets=1000 )
+       PARAMETER( nfinp=21,nfout=31,Mgrid=20000,Msets=1000 )
 c
        double precision u(Mgrid),f(Mgrid)
        double precision rcut,delr,delta,r,rrr
        integer      iflag,i,k,n,ngrd,nset,nrgd4
        character*80 title,header
        character    fname*6,ch2*2
-c c c  
+c c c
 c c c  using standard input stream (terminal=stdin)
-c c c  
+c c c
        nset  = -1
        ngrd  = 0
        delr  = 0.0
@@ -65,10 +65,10 @@ c
 c
        iflag = -2
 c
-       open(unit=fout,file='VDWTAB',ERR=113)
+       open(unit=nfout,file='VDWTAB',ERR=113)
 c
-       write(fout,'(a2,a80)') '# ',title
-       write(fout,'(a2,2(f10.5,i10),a)')'# ',rcut,ngrd,delta,nset,
+       write(nfout,'(a2,a80)') '# ',title
+       write(nfout,'(a2,2(f10.5,i10),a)')'# ',rcut,ngrd,delta,nset,
      * '   (rcut, Ngrid, delr, Nsets)'
 c
        iflag = 1
@@ -91,17 +91,17 @@ c
 
          iflag = 1
 
-         write(fout,*)
-         write(fout,'(a2,a16)') '# ',header
+         write(nfout,*)
+         write(nfout,'(a2,a16)') '# ',header
 
          Do k=1,ngrd
            rrr = float(k)*delta
-           write(fout,'(f10.5,2e15.7)') rrr,u(k),f(k)
+           write(nfout,'(f10.5,2e15.7)') rrr,u(k),f(k)
          EndDo
 
        ENDDO
 c
-       close(fout)
+       close(nfout)
 c
  113   continue
 c

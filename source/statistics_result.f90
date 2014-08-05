@@ -8,7 +8,7 @@ Subroutine statistics_result                       &
 ! dl_poly_4 subroutine for writing simulation summary
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov july 2014
+! author    - w.smith & i.t.todorov august 2014
 ! contrib   - m.a.seaton june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -255,7 +255,7 @@ Subroutine statistics_result                       &
 
 ! calculate and print radial distribution functions
 
-  If (lrdf .and. lprdf .and. ncfrdf > 0) Call rdf_compute(rcut)
+  If (lrdf .and. lprdf .and. ncfrdf > 0) Call rdf_compute(rcut,temp)
 
 ! calculate and print z-density profile
 

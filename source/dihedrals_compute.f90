@@ -6,13 +6,13 @@ Subroutine dihedrals_compute(temp)
 ! from accumulated data
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov june 2014
+! author    - a.v.brukhno & i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
-  Use setup_module,  Only : pi,twopi,boltz,nrite,npdfdt,npdgdt, &
+  Use setup_module,  Only : pi,twopi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                             mxgdih,mxgdih1,engunit,zero_plus
   Use site_module,   Only : unqatm
   Use config_module, Only : cfgname
@@ -23,9 +23,9 @@ Subroutine dihedrals_compute(temp)
   Real( Kind = wp ), Intent( In    ) :: temp
 
   Logical           :: zero
-  Integer           :: fail,i,j,ig,kk,ll,ngrid
-  Real( Kind = wp ) :: kT2engo,delth,rdlth,dgrid,factor,factor1,rad2dgr,dgr2rad, &
-                       theta,pdfdih,sum,pdfdih1,sum1,                            &
+  Integer           :: fail,ngrid,i,j,ig,kk,ll
+  Real( Kind = wp ) :: kT2engo,rad2dgr,dgr2rad,delth,rdlth,dgrid,factor,pdfzero, &
+                       factor1,theta,pdfdih,sum,pdfdih1,sum1,                    &
                        fed0,fed,dfed,dfed0,tmp,fed1,fed2,dfed1,dfed2,coef,t1,t2
 
   Real( Kind = wp ), Allocatable :: dstddih(:,:)
@@ -54,7 +54,7 @@ Subroutine dihedrals_compute(temp)
 
 ! resampling grid and grid interval for pmf tables
 
-  ngrid = Max(1000,mxgdih-4)
+  ngrid = Max(Nint(360.0_wp/delth_max),mxgdih1,mxgdih-4)
   dgrid = twopi/Real(ngrid,wp)
 
 ! loop over all valid PDFs to get valid totals
@@ -71,6 +71,10 @@ Subroutine dihedrals_compute(temp)
 ! normalisation factor
 
   factor = 1.0_wp/Real(ncfdih,wp)
+
+! the lower bound to nullify the nearly-zero histogram (PDF) values
+
+  pdfzero = 1.0e-5_wp
 
   If (idnode == 0) Then
      Write(nrite,'(/,/,12x,a)') 'DIHEDRALS : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)'
@@ -127,15 +131,15 @@ Subroutine dihedrals_compute(temp)
            pdfdih = dstdih(ig,i)*factor1
            sum = sum + pdfdih
 
-! null it if < 1.0e-5_wp
+! null it if < pdfzero
 
-           If (pdfdih < 1.0e-5_wp) Then
+           If (pdfdih < pdfzero) Then
               pdfdih1 = 0.0_wp
            Else
               pdfdih1 = pdfdih
            End If
 
-           If (sum < 1.0e-5_wp) Then
+           If (sum < pdfzero) Then
               sum1 = 0.0_wp
            Else
               sum1 = sum
@@ -163,7 +167,7 @@ Subroutine dihedrals_compute(temp)
            dstddih(ig,i) = pdfdih1 ! PDFs density
         End Do
      Else
-        dstddih(:,i) = 0 ! PDFs density
+        dstddih(:,i) = 0.0_wp ! PDFs density
      End If
   End Do
 
@@ -211,7 +215,7 @@ Subroutine dihedrals_compute(temp)
 
            If (dstddih(ig,i) > zero_plus) Then
               fed = -Log(dstddih(ig,i))-fed0
-              If (fed0 <= zero_plus ) Then
+              If (fed0 <= zero_plus) Then
                  fed0 = fed
                  fed  = 0.0_wp
               End If
@@ -299,7 +303,8 @@ Subroutine dihedrals_compute(temp)
 
            dfed = t1 + (t2-t1)*coef*0.5_wp
 
-           Write(npdfdt,"(f11.5,1p,2e14.6)") (theta-pi)*rad2dgr,fed*kT2engo,dfed*kT2engo*dgr2rad/delth
+           If (idnode == 0) &
+              Write(npdfdt,"(f11.5,1p,2e14.6)") (theta-pi)*rad2dgr,fed*kT2engo,dfed*kT2engo*dgr2rad/delth
         End Do
      End If
   End Do

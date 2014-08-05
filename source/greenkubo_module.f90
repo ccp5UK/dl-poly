@@ -2,7 +2,7 @@ Module greenkubo_module
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 module declaring arrays for green-kubo relations 
+! dl_poly_4 module declaring arrays for green-kubo relations
 ! calculations to calculate transport properties
 !
 ! copyright - daresbury laboratory

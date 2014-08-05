@@ -7,7 +7,7 @@ Module setup_module
 ! set @ execution time
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2014
+! author    - i.t.todorov august 2014
 !
 ! Note(1): The following internal units apply everywhere
 !
@@ -63,7 +63,7 @@ Module setup_module
 ! Maximum bin sizes for distance and angle grids
 
   Real( Kind = wp ), Parameter :: delr_max  = 0.01_wp ! Angstroms
-  Real( Kind = wp ), Parameter :: delth_max = 1.00_wp ! degrees
+  Real( Kind = wp ), Parameter :: delth_max = 0.20_wp ! degrees
 
 ! I/O CHANNELS :: STERR = 0 , STINP = 5 , STOUT = 6 , STERR+STOUT = *
 ! main input channel

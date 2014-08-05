@@ -1,4 +1,4 @@
-Subroutine rdf_compute(rcut)
+Subroutine rdf_compute(rcut,temp)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,14 +6,15 @@ Subroutine rdf_compute(rcut)
 ! from accumulated data
 !
 ! copyright - daresbury laboratory
-! author    - t.forester march 1994
-! amended   - i.t.todorov march 2014
+! author    - t.forester & i.t.todorov august 2014
+! contrib   - a.v.brukhno august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
-  Use setup_module,  Only : mxgrdf,nrite,nrdfdt,fourpi
+  Use setup_module,  Only : fourpi,boltz,delr_max,nrite,nrdfdt,npdfdt,npdgdt, &
+                            mxgrdf,engunit,zero_plus
   Use site_module,   Only : ntpatm,unqatm,dens
   Use config_module, Only : cfgname,volm
   Use rdf_module
@@ -21,11 +22,37 @@ Subroutine rdf_compute(rcut)
 
   Implicit None
 
-  Real( Kind = wp ), Intent( In    ) :: rcut
+  Real( Kind = wp ), Intent( In    ) :: rcut,temp
 
   Logical           :: zero
-  Integer           :: i,ia,ib,kk
-  Real( Kind = wp ) :: delr,dvol,factor,gofr,gofr1,rrr,sum,sum1
+  Integer           :: fail,ngrid,i,ia,ib,kk,ig,ll
+  Real( Kind = wp ) :: kT2engo,delr,rdlr,dgrid,pdfzero,      &
+                       factor1,rrr,dvol,gofr,gofr1,sum,sum1, &
+                       fed0,fed,dfed,dfed0,tmp,fed1,fed2,dfed1,dfed2,coef,t1,t2
+
+  Real( Kind = wp ), Allocatable :: dstdrdf(:,:)
+  Real( Kind = wp ), Allocatable :: pmf(:),vir(:)
+
+  fail = 0
+  Allocate (dstdrdf(0:mxgrdf,1:ntprdf),pmf(0:mxgrdf+2),vir(0:mxgrdf+2), Stat = fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'rdf_compute - allocation failure, node: ', idnode
+     Call error(0)
+  End If
+
+! conversion: internal units -> in/out units (kJ/mol, kcal/mol, eV etc)
+
+  kT2engo = boltz*temp/engunit
+
+! grid interval for rdf tables
+
+  delr = rcut/Real(mxgrdf,wp)
+  rdlr = 1.0_wp/delr
+
+! resampling grid and grid interval for rdf tables
+
+  ngrid = Max(Nint(rcut/delr_max),mxgrdf)
+  dgrid = rcut/Real(ngrid,wp)
 
   If (idnode == 0) Write(nrite,"(/,/,12x,'RADIAL DISTRIBUTION FUNCTIONS',/,/, &
      & ' calculated using ',i8,' configurations')") ncfrdf
@@ -38,9 +65,9 @@ Subroutine rdf_compute(rcut)
      Write(nrdfdt,'(2i10)') ntprdf,mxgrdf
   End If
 
-! grid interval for rdf tables
+! the lower bound to nullify the nearly-zero histogram (PDF) values
 
-  delr=rcut/Real(mxgrdf,wp)
+  pdfzero = 1.0e-6_wp
 
 ! for all possible unique type-to-type pairs
 
@@ -65,8 +92,8 @@ Subroutine rdf_compute(rcut)
 
 ! normalisation factor
 
-           factor=volm*dens(ia)*dens(ib)*Real(ncfrdf,wp)
-           If (ia == ib) factor=factor*0.5_wp ! *(1.0_wp-1.0_wp/numtyp(ia))
+           factor1=volm*dens(ia)*dens(ib)*Real(ncfrdf,wp)
+           If (ia == ib) factor1=factor1*0.5_wp ! *(1.0_wp-1.0_wp/numtyp(ia))
 
 ! running integration of rdf
 
@@ -78,22 +105,22 @@ Subroutine rdf_compute(rcut)
            Do i=1,mxgrdf
               If (zero .and. i < (mxgrdf-3)) zero=(rdf(i+2,kk) <= 0.0_wp)
 
-              gofr= rdf(i,kk)/factor
+              gofr= rdf(i,kk)/factor1
               sum = sum + gofr*dens(ib)
 
               rrr = (Real(i,wp)-0.5_wp)*delr
               dvol= fourpi*delr*(rrr**2+delr**2/12.0_wp)
               gofr= gofr/dvol
 
-! zero it if < 1.0e-6_wp
+! zero it if < pdfzero
 
-              If (gofr < 1.0e-6_wp) Then
+              If (gofr < pdfzero) Then
                  gofr1 = 0.0_wp
               Else
                  gofr1 = gofr
               End If
 
-              If (sum < 1.0e-6_wp) Then
+              If (sum < pdfzero) Then
                  sum1 = 0.0_wp
               Else
                  sum1 = sum
@@ -105,12 +132,177 @@ Subroutine rdf_compute(rcut)
                  If (.not.zero) Write(nrite,"(f10.4,1p,2e14.6)") rrr,gofr1,sum1
                  Write(nrdfdt,"(1p,2e14.6)") rrr,gofr
               End If
+
+! We use the non-normalised tail-truncated RDF version,
+! rdf...1 (not pdf...) in order to exclude the nearly-zero
+! rdf... noise in PMF, otherwise the PMF = -ln(PDF)
+! would have poorly-defined noisy "borders/walls"
+
+              dstdrdf(i,kk) = gofr1 ! RDFs density
            End Do
+        Else
+           dstdrdf(:,kk) = 0 ! RDFs density
         End If
 
      End Do
   End Do
 
   If (idnode == 0) Close(Unit=nrdfdt)
+
+! open PDF files and write headers
+
+  If (idnode == 0) Then
+     Open(Unit=npdgdt, File='RDFPMF', Status='replace')
+     Write(npdgdt,'(a)') '# '//cfgname
+     Write(npdgdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',delr*mxgrdf,mxgrdf,delr,ntprdf, &
+          '   conversion factor(kT -> energy units) =',kT2engo
+
+     Open(Unit=npdfdt, File='RDFTAB', Status='replace')
+     Write(npdfdt,'(a)') '# '//cfgname
+     Write(npdfdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',dgrid*ngrid,ngrid,dgrid,ntprdf, &
+          '   conversion factor(kT -> energy units) =',kT2engo
+  End If
+
+! loop over all valid RDFs
+
+  Do ia=1,ntpatm
+     Do ib=ia,ntpatm
+
+! number of the interaction by its rdf key
+
+        kk=lstrdf(ib*(ib-1)/2+ia)
+
+! only for valid interactions specified for a look up
+
+        If (kk > 0 .and. kk <= ntprdf) Then
+           If (idnode == 0) Then
+              Write(npdgdt,'(/,a2,2a8)') '# ',unqatm(ia),unqatm(ib)
+              Write(npdfdt,'(/,a2,2a8)') '# ',unqatm(ia),unqatm(ib)
+           End If
+
+! Smoothen and get derivatives
+
+! RDFs -> 1 at long distances, so we do not shift the PMFs
+! but instead put a cap over those, -Log(pdfzero) - hence,
+! the upper bound for the PMF due to the zero RDF values
+
+           fed0  = -Log(pdfzero)
+           dfed0 = 10.0_wp
+           dfed  = 10.0_wp
+
+           Do ig=1,mxgrdf
+              tmp = Real(ig,wp)-0.5_wp
+              rrr = tmp*delr
+
+              If (dstdrdf(ig,kk) > zero_plus) Then
+                 fed = -Log(dstdrdf(ig,kk)+pdfzero) !-fed0
+                 If (fed0 <= zero_plus) Then
+                    fed0 = fed
+                    fed  = fed0
+!                    fed = 0.0_wp
+                 End If
+
+                 If (ig < mxgrdf-1) Then
+                    If (dstdrdf(ig+1,kk) <= zero_plus .and. dstdrdf(ig+2,kk) > zero_plus) &
+                       dstdrdf(ig+1,kk) = 0.5_wp*(dstdrdf(ig,kk)+dstdrdf(ig+2,kk))
+                 End If
+              Else
+                 fed = fed0
+!                 fed = 0.0_wp
+              End If
+
+              If      (ig == 1) Then
+                 If      (dstdrdf(ig,kk) > zero_plus .and. dstdrdf(ig+1,kk) > zero_plus) Then
+                    dfed = Log(dstdrdf(ig+1,kk)/dstdrdf(ig,kk))
+                 Else If (dfed > 0.0_wp) Then
+                    dfed = dfed0
+                 Else
+                    dfed =-dfed0
+                 End If
+              Else If (ig == mxgrdf) Then
+                 If      (dstdrdf(ig,kk) > zero_plus .and. dstdrdf(ig-1,kk) > zero_plus) Then
+                    dfed = Log(dstdrdf(ig,kk)/dstdrdf(ig-1,kk))
+                 Else If (dfed > 0.0_wp) Then
+                    dfed = dfed0
+                 Else
+                    dfed =-dfed0
+                 End If
+              Else If (dstdrdf(ig-1,kk) > zero_plus) Then
+                 If (dstdrdf(ig+1,kk) > zero_plus) Then
+                    dfed = 0.5_wp*(Log(dstdrdf(ig+1,kk)/dstdrdf(ig-1,kk)))
+                 Else
+                    dfed = 0.5_wp*Log(dstdrdf(ig-1,kk))
+                 End If
+              Else If (dstdrdf(ig+1,kk) > zero_plus) Then
+                 dfed =-0.5_wp*Log(dstdrdf(ig+1,kk))
+              Else If (dfed > 0.0_wp) Then
+                 dfed = dfed0
+              Else
+                 dfed =-dfed0
+              End If
+
+              pmf(ig) = fed
+              vir(ig) = dfed
+
+! Print
+
+              If (idnode == 0) &
+                   Write(npdgdt,"(f11.5,1p,2e14.6)") rrr,fed*kT2engo,dfed*kT2engo*tmp
+           End Do
+
+! Define edges
+
+           pmf(0)        = 2.0_wp*pmf(1)       -pmf(2)
+           vir(0)        = 2.0_wp*vir(1)       -vir(2)
+           pmf(mxgrdf+1) = 2.0_wp*pmf(mxgrdf)  -pmf(mxgrdf-1)
+           vir(mxgrdf+1) = 2.0_wp*vir(mxgrdf)  -vir(mxgrdf-1)
+           pmf(mxgrdf+2) = 2.0_wp*pmf(mxgrdf+1)-pmf(mxgrdf)
+           vir(mxgrdf+2) = 2.0_wp*vir(mxgrdf+1)-vir(mxgrdf)
+
+! resample using 3pt interpolation
+
+           Do ig=1,ngrid
+              rrr = Real(ig,wp)*dgrid
+              ll = Int(rrr/delr)
+
+! +0.5_wp due to half-a-bin shift in the original (bin-centered) grid
+
+              coef = rrr/delr-Real(ll,wp)+0.5_wp
+
+              fed0 = pmf(ll)
+              fed1 = pmf(ll+1)
+              fed2 = pmf(ll+2)
+
+              t1 = fed0 + (fed1 - fed0)*coef
+              t2 = fed1 + (fed2 - fed1)*(coef - 1.0_wp)
+
+              fed = t1 + (t2-t1)*coef*0.5_wp
+
+              dfed0 = vir(ll)
+              dfed1 = vir(ll+1)
+              dfed2 = vir(ll+2)
+
+              t1 = dfed0 + (dfed1 - dfed0)*coef
+              t2 = dfed1 + (dfed2 - dfed1)*(coef - 1.0_wp)
+
+              dfed = t1 + (t2-t1)*coef*0.5_wp
+
+              If (idnode == 0) &
+                 Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,fed*kT2engo,dfed*kT2engo*rrr/delr
+           End Do
+        End If
+     End Do
+  End Do
+
+  If (idnode == 0) Then
+     Close(Unit=npdgdt)
+     Close(Unit=npdfdt)
+  End If
+
+  Deallocate (dstdrdf,pmf,vir, Stat = fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'rdf_compute - deallocation failure, node: ', idnode
+     Call error(0)
+  End If
 
 End Subroutine rdf_compute
