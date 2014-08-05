@@ -614,19 +614,20 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 \> {\tt g(r)}     \> real \> RDF at given radius
 \end{tabbing}
 
-{\bf Note 1.} The RDFDAT file is optional and appears when the {\bf print
-rdf} option is specified in the CONTROL file.
+{\bf Note 1.} The RDFDAT file is optional and appears when the
+{\bf print rdf} option is specified in the CONTROL file.
 
-{\bf Note 2.} Along with the RDFDAT file, two other files are created
-whenever the {\bf print rdf} directive is invoked: RDFPMF~\&~RDFTAB,
-both containing the data for potentials of mean force and the corresponding
-virials calculated based on the obtained RDF:s, i.e. PMF $\sim -\ln({\rm RDF})$
-(in the energy units specified in the FIELD file). These files have
-a simple three column format, the same as that used for *PMF files in
-the case of bonded units, see Section~\ref{IPDF-analysis}. The purpose
-of these files is to provide the user with means of setting up a PMF-based
-force-field, for example in the case of initial coarse-graining of
-an atomistic system. In particular, one can convert the RDFTAB file
+{\bf Note 2.} Along with the RDFDAT file, two other files will
+be created whenever the {\bf print ana}lysis directive is invoked:
+RDFPMF~\&~RDFTAB, both containing the data for potentials of mean
+force and the corresponding virials calculated based on the obtained
+RDF:s, i.e. PMF $\sim -\ln({\rm RDF})$ (in the energy units specified
+in the FIELD file).  These files have a simple three column format,
+the same as that used for *PMF files in the case of bonded units,
+see Section~\ref{IPDF-analysis}.  The purpose of these files is to
+provide the user with means of setting up a PMF-based force-field,
+for example in the case of initial coarse-graining of
+an atomistic system.  In particular, one can convert the RDFTAB file
 into a correctly formatted TABLE file (Section~\ref{table-file})
 by using the utility called {\tt pmf2tab.f} (subject to compilation;
 found in \D directory {\tt utility}) as follows,
@@ -669,16 +670,17 @@ rdf} option is specified in the CONTROL file.
 \subsection{The VAFDAT Files}
 \label{vaf-files}
 
-These are formatted files containing {\em Velocity Autocorrelation Function} (VAF) data. 
-An individual file is created for each atomic species, i.e. {\tt VAFDAT}\_{\em atname}. Their 
-contents are as follows:
+These are formatted files containing {\em Velocity Autocorrelation
+Function} (VAF) data.  An individual file is created for each atomic
+species, i.e. {\tt VAFDAT}\_{\em atname}. Their contents are as follows:
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 {\bf record} \\
 \> {\tt cfgname} \> a72    \> configuration name \\
 \end{tabbing}
-There follow the data for the VAF, either a single time-averaged profile or 
-successive profiles separated by two blank lines. The data supplied are as follows:
+There follow the data for the VAF, either a single time-averaged
+profile or successive profiles separated by two blank lines.
+The data supplied are as follows:
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 {\bf first record} \\
@@ -688,11 +690,11 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 \> {\tt vaftime0}  \> real    \> simulation time (ps) at beginning of (last) VAF profile ($t=0$) \\
 {\bf following records} ({\em binvaf}+1 records) \\
 \> {\tt t}         \> real    \> time (ps) \\
-\> $Z(t)$          \> real    \> scaled velocity autocorrelation function ($C(t)/C(0)$) at given time {\tt t}
+\> $\tt Z(t)$      \> real    \> scaled velocity autocorrelation function ($C(t)/C(0)$) at given time $t$
 \end{tabbing}
 
-{\bf Note} the VAFDAT files are optional and appear when the {\bf print
-vaf} option is specified in the CONTROL file.
+{\bf Note} the VAFDAT files are optional and appear when the
+{\bf print vaf} option is specified in the CONTROL file.
 
 \subsection{The \textrm{\textit{\textbf{INT}}}DAT,
 \textrm{\textit{\textbf{INT}}}PMF \& \textrm{\textit{\textbf{INT}}}TAB Files}

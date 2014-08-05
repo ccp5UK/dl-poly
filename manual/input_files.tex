@@ -175,6 +175,18 @@ displacements     70 10 0.25
 # MSDTMP
 msdtmp           1000 100
 
+# INTRAMOLECULAR PDF ANALYSIS BY TYPE IF PRESENT
+analyse  bonds       sample every 100  nbins 250  rmax 5.0
+analyse  angles      sample every 100  nbins 360  # [ 0 : pi]
+analyse  diherals    sample every 100  nbins 720  # [-pi: pi]
+analyse  inversions  sample every 100  nbins 360  # [ 0 : pi]
+
+# INTRAMOLECULAR PDF ANALYSIS FOR ALL TYPES PRESENT
+analyse  all         sample every 100  nbins 1000  rmax 5.0
+
+# PRINT ANY DEFINED INTER-(RDF) & INTRA-(bonded)MOLECULAR PDF ANALYSIS
+print analysis
+
 # RDF & Z-DENSITY
 binsize                 0.05 Angstroms
 rdf                     7    steps
@@ -520,7 +532,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf print} (every) $n$                      \> print system data every $n$ timesteps \\
 \>                                              \> \\
-\> {\bf print ana}lysis                         \> print analysed PDFs in OUTPUT and corresponding files *DAT PMF* \\
+\> {\bf print ana}lysis                         \> print any opted for analysis inter- \& and intra-molecular PDFs \\
+\>                                              \> in OUTPUT as well as their corresponding files *DAT, *PMF, *TAB \\
 \>                                              \> \\
 \> {\bf print rdf}                              \> print radial distribution functions \\
 \>                                              \> \\

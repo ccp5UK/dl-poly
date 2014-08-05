@@ -68,16 +68,17 @@ in the example below.
 \begin{verbatim}
 TITLE: EXAMPLE OF DL_POLY_4 PDF ANALYSIS DIRECTIVES SNIPPET
 
-#DIRECTIVES TO INVOKE INTRAMOLECULAR PDF ANALYSIS BY TYPE
+# DIRECTIVES TO INVOKE INTRAMOLECULAR PDF ANALYSIS BY TYPE
 analyse  bonds       sample every 100  nbins 250  rmax 5.0
 analyse  angles      sample every 100  nbins 360  # [ 0 : pi]
 analyse  diherals    sample every 100  nbins 720  # [-pi: pi]
 analyse  inversions  sample every 100  nbins 360  # [ 0 : pi]
 
-#DIRECTIVES TO INVOKE INTRAMOLECULAR PDF ANALYSIS FOR ALL TYPES
+# DIRECTIVES TO INVOKE INTRAMOLECULAR PDF ANALYSIS FOR ALL TYPES
 analyse  all         sample every 100  nbins 1000  rmax 5.0
 
-#DIRECTIVES TO INVOKE INTRAMOLECULAR PDF ANALYSIS PRINTING
+# DIRECTIVES TO INVOKE PRINTING FOR ANY DEFINED
+# INTER-(RDF) & INTRA-(bonded)MOLECULAR PDF ANALYSIS
 print analysis
 \end{verbatim}
 
@@ -341,13 +342,14 @@ the user needs to replace those records with the fictitious ones
 use, when the actual TAB* files are ready).
 \item Run \D with the {\bf replay history}, {\bf rdf} and/or
 {\bf analysis} options invoked in the CONTROL file, which
-will result in creation of the targeted PDF data files (RDFDAT,
-BNDDAT, ANGDAT, DIHDAT, INVDAT) and the respective PMF files
-as described above. {\bf Note} that, if the {\bf print rdf}
-option is active, the RDFPMF and RDFTAB files will also be
-created, in the same manner and format as their intramolecular
-counterparts. The user can then convert the RDFTAB file into
-a correctly formatted TABLE file by using the utility called
+will result in creation of the targeted inter- and intra-molecular
+PDF data files (RDFDAT, BNDDAT, ANGDAT, DIHDAT, INVDAT) and the
+respective PMF files as described above.  {\bf Note} that only
+and only when the {\bf rdf} option is active then the RDFPMF and
+RDFTAB files will be produced, along with RDFDAT.  They are
+structured in the same manner and format as their
+intramolecular counterparts.  The user can then convert the RDFTAB
+file into a correctly formatted TABLE file by using the utility called
 {\tt pmf2tab.f} (subject to compilation; found in \D directory
 {\tt utility}) as follows.
 
