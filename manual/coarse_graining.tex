@@ -6,13 +6,13 @@ coarse-grained (CG) models by using tabulated effective force-fields
 (FF) derived from either {\bf (i)} potentials of mean force (PMF);
 or {\bf (ii)} iteratively optimised CG models.
 
-In outline, systematic coarse-graining (SCG) of an atomistic system usually
-implies the application of a methodological projection, or ``mapping'',
-procedure for recovery of the average configurational (often termed
-``physical'') and topological (often termed ``chemical'') force-field related
-properties of the original full-atom (FA) model system onto a new model
-system with significantly reduced degrees of freedom (DoF), whence referred
-to as ``coarse-grained''.  Integrating out degrees of freedom ultimately
+In outline, systematic coarse-graining (SCG) of an atomistic system
+implies the application of a geometrical projection, or ``mapping'',
+of the original system onto a considerably reduced set of degrees of freedom,
+whence referred to as a ``coarse-grained'' model.  The procedure is to recover
+the average configurational (often termed ``physical'') and topological
+(often termed ``chemical'') force-field related properties of the original
+full-atom (FA) model.  Integrating out degrees of freedom ultimately
 leads to loss of information.  However, if this is done selectively and
 consistently, the intrinsic information pertaining to the dominating
 interactions within the FA system (that govern its behaviour towards
@@ -78,7 +78,7 @@ analyse  inversions  sample every 100  nbins 360  # [ 0 : pi]
 analyse  all         sample every 100  nbins 1000  rmax 5.0
 
 # DIRECTIVES TO INVOKE PRINTING FOR ANY DEFINED
-# INTER-(RDF) & INTRA-(bonded)MOLECULAR PDF ANALYSIS
+# INTER- (RDF->VDW) & INTRA- (bonded) MOLECULAR PDF ANALYSIS
 print analysis
 \end{verbatim}
 
@@ -345,18 +345,18 @@ use, when the actual TAB* files are ready).
 will result in creation of the targeted inter- and intra-molecular
 PDF data files (RDFDAT, BNDDAT, ANGDAT, DIHDAT, INVDAT) and the
 respective PMF files as described above.  {\bf Note} that only
-and only when the {\bf rdf} option is active then the RDFPMF and
-RDFTAB files will be produced, along with RDFDAT.  They are
-structured in the same manner and format as their
-intramolecular counterparts.  The user can then convert the RDFTAB
-file into a correctly formatted TABLE file by using the utility called
-{\tt pmf2tab.f} (subject to compilation; found in \D directory
+if the {\bf analysis} and {\bf rdf} options are both active then 
+the VDWPMF and VDWTAB files (derived from RDF:s) will be produced, 
+along with RDFDAT.  They are structured in the same manner and format 
+as their intramolecular counterparts.  The user can then convert the 
+VDWTAB file into a correctly formatted TABLE file by using the utility 
+called {\tt pmf2tab.f} (subject to compilation; found in \D directory
 {\tt utility}) as follows.
 
-%{\tt [user@host]\$ pmf2tab.exe < RDFTAB}
+%{\tt [user@host]\$ pmf2tab.exe < VDWTAB}
 
 \begin{verbatim}
-[user@host]$ pmf2tab.exe < RDFTAB
+[user@host]$ pmf2tab.exe < VDWTAB
 \end{verbatim}
 
 \item Check the data for accuracy and amend the tabulated

@@ -269,7 +269,7 @@ Subroutine read_control                                &
 
   lfce = .false. ! don't recalculate forces based on history positions
 
-! default switches for calculation and printing of bonded analysis
+! default switches for calculation and printing of intramolecular analysis
 
   nstall = 1 ; nstana = 0 ; grdana = 0
   nstbnd = 0 ; grdbnd = 0 ; rcb_d  = 0.0_wp
@@ -1809,7 +1809,7 @@ Subroutine read_control                                &
         tmp = Abs(word_2_real(word))
         If (Abs(rbin-tmp) > 1.0e-6_wp) Call warning(340,tmp,rcut/4.0_wp,rbin)
 
-! read analysis (bonded distributions calculation) option
+! read analysis (intramolecular distributions calculation) option
 
      Else If (word(1:3) == 'ana') Then
 
@@ -2282,18 +2282,18 @@ Subroutine read_control                                &
         '***           a manifestation of the "flying ice-cube" effect !!! ***'
   End If
 
-! report bonded analysis options
+! report intramolecular analysis options
 
   If (lpana .or. mxgana > 0) Then
      If (mxgana == 0) Then
-        If (idnode == 0) Write(nrite,"(/,1x,a)") 'no bonded distribution analysis collection requested'
+        If (idnode == 0) Write(nrite,"(/,1x,a)") 'no intramolecuar distribution collection requested'
      Else
         If (mxgbnd1 > 0 .and. mxgang1 > 0 .and. &
             mxgdih1 > 0 .and. mxginv1 > 0) Then
            If (idnode == 0) &
-              Write(nrite,"(/,1x,a)") 'full bonded distribution analysis collection requested (all=bnd/ang/dih/inv):'
+              Write(nrite,"(/,1x,a)") 'full intramolecuar distribution collection requested (all=bnd/ang/dih/inv):'
         Else
-           If (idnode == 0) Write(nrite,"(/,1x,a)") 'bonded distribution analysis collection requested for:'
+           If (idnode == 0) Write(nrite,"(/,1x,a)") 'intramolecuar distribution collection requested for:'
         End If
 
         If (nstana == 0) nstana = nstall
@@ -2357,9 +2357,9 @@ Subroutine read_control                                &
      End If
 
      If (lpana) Then
-        If (idnode == 0) Write(nrite,"(/,1x,a)") 'potential distribution analysis printing requested'
+        If (idnode == 0) Write(nrite,"(/,1x,a)") 'intramolecular distribution analysis printing requested'
      Else
-        If (idnode == 0) Write(nrite,"(/,1x,a)") 'no potential distribution analysis printing requested'
+        If (idnode == 0) Write(nrite,"(/,1x,a)") 'no intramolecular distribution analysis printing requested'
      End If
   End If
 

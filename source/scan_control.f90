@@ -333,7 +333,7 @@ Subroutine scan_control                                    &
         If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
         If (word(1:8) == 'leapfrog') l_vv=.false.
 
-! read analysis (bonded distributions calculation) option
+! read analysis (intramolecular distribution calculation) option
 
      Else If (word(1:3) == 'ana') Then
 
@@ -410,7 +410,7 @@ Subroutine scan_control                                    &
 
   End Do
 
-! in case of bonded interactions analysis
+! in case of intramolecular distribution analysis
 
   If (la_ana) Then
      If (mxgana > 0) Then

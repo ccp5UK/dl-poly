@@ -159,12 +159,12 @@ Subroutine rdf_compute(lpana,rcut,temp)
 ! open PDF files and write headers
 
      If (idnode == 0) Then
-        Open(Unit=npdgdt, File='RDFPMF', Status='replace')
+        Open(Unit=npdgdt, File='VDWPMF', Status='replace')
         Write(npdgdt,'(a)') '# '//cfgname
         Write(npdgdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',delr*mxgrdf,mxgrdf,delr,ntprdf, &
              '   conversion factor(kT -> energy units) =',kT2engo
 
-        Open(Unit=npdfdt, File='RDFTAB', Status='replace')
+        Open(Unit=npdfdt, File='VDWTAB', Status='replace')
         Write(npdfdt,'(a)') '# '//cfgname
         Write(npdfdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',dgrid*ngrid,ngrid,dgrid,ntprdf, &
           '   conversion factor(kT -> energy units) =',kT2engo
