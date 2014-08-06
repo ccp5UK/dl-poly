@@ -8,7 +8,7 @@ Subroutine set_bounds                                       &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2014
+! author    - i.t.todorov august 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014 (VAF)
 !
@@ -322,15 +322,15 @@ Subroutine set_bounds                                       &
 
 ! maximum number of grid points for angles
 
-  mxgang = Merge(mxgang,Min(mxgang,Max(1004,Nint(180.0_wp/delth_max)+4)),mxgang < 0)
+  mxgang = Merge(mxgang,Min(mxgang,Max(Nint(180.0_wp/delth_max)+4)),mxgang < 0)
 
 ! maximum number of grid points for dihedrals
 
-  mxgdih = Merge(mxgdih,Min(mxgdih,Max(1004,Nint(360.0_wp/delth_max)+4)),mxgdih < 0)
+  mxgdih = Merge(mxgdih,Min(mxgdih,Max(Nint(360.0_wp/delth_max)+4)),mxgdih < 0)
 
 ! maximum number of grid points for inversions
 
-  mxginv = Merge(mxginv,Min(mxginv,Max(1004,Nint(180.0_wp/delth_max)+4)),mxginv < 0)
+  mxginv = Merge(mxginv,Min(mxginv,Max(Nint(180.0_wp/delth_max)+4)),mxginv < 0)
 
 ! maximum number of grid points for electrostatics
 

@@ -2357,9 +2357,9 @@ Subroutine read_control                                &
      End If
 
      If (lpana) Then
-        If (idnode == 0) Write(nrite,"(/,1x,a)") 'intramolecular distribution analysis printing requested'
+        If (idnode == 0) Write(nrite,"(/,1x,a)") 'probability distribution analysis printing requested'
      Else
-        If (idnode == 0) Write(nrite,"(/,1x,a)") 'no intramolecular distribution analysis printing requested'
+        If (idnode == 0) Write(nrite,"(/,1x,a)") 'no probability distribution analysis printing requested'
      End If
   End If
 
@@ -2387,7 +2387,7 @@ Subroutine read_control                                &
         If (idnode == 0) Write(nrite,"(1x,'rdf printing requested')")
      Else
         If (lpana) Then
-           If (idnode == 0) Write(nrite,"(1x,'rdf printing triggered due to a PDF analysis printing request')")
+           If (idnode == 0) Write(nrite,"(1x,'rdf printing triggered due to a PDA printing request')")
            lprdf=lpana
         Else
            If (idnode == 0) Write(nrite,"(1x,'no rdf printing requested')")

@@ -78,7 +78,7 @@ analyse  inversions  sample every 100  nbins 360  # [ 0 : pi]
 analyse  all         sample every 100  nbins 1000  rmax 5.0
 
 # DIRECTIVES TO INVOKE PRINTING FOR ANY DEFINED
-# INTER- (RDF->VDW) & INTRA- (bonded) MOLECULAR PDF ANALYSIS
+# INTER-(RDF->VDW) & INTRA-(bonded) MOLECULAR PDF ANALYSIS
 print analysis
 \end{verbatim}
 
@@ -345,13 +345,13 @@ use, when the actual TAB* files are ready).
 will result in creation of the targeted inter- and intra-molecular
 PDF data files (RDFDAT, BNDDAT, ANGDAT, DIHDAT, INVDAT) and the
 respective PMF files as described above.  {\bf Note} that only
-if the {\bf analysis} and {\bf rdf} options are both active then 
-the VDWPMF and VDWTAB files (derived from RDF:s) will be produced, 
-along with RDFDAT.  They are structured in the same manner and format 
-as their intramolecular counterparts.  The user can then convert the 
-VDWTAB file into a correctly formatted TABLE file by using the utility 
-called {\tt pmf2tab.f} (subject to compilation; found in \D directory
-{\tt utility}) as follows.
+and only when the {\bf rdf} and {\bf analysis} options are both
+active then the VDWPMF and VDWTAB files (derived from RDF:s) will
+be produced, along with RDFDAT.  They are structured in the same
+manner and format as their intramolecular counterparts.  The user
+can then convert the VDWTAB file into a correctly formatted TABLE
+file by using the utility called {\tt pmf2tab.f} (subject to
+compilation; found in \D directory {\tt utility}) as follows.
 
 %{\tt [user@host]\$ pmf2tab.exe < VDWTAB}
 

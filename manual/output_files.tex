@@ -619,7 +619,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 
 {\bf Note 2.} Along with the RDFDAT file, two other files will
 be created whenever the {\bf print ana}lysis directive is invoked:
-RDFPMF~\&~RDFTAB, both containing the data for potentials of mean
+VDWPMF~\&~VDWTAB, both containing the data for potentials of mean
 force and the corresponding virials calculated based on the obtained
 RDF:s, i.e. PMF $\sim -\ln({\rm RDF})$ (in the energy units specified
 in the FIELD file).  These files have a simple three column format,
@@ -627,15 +627,15 @@ the same as that used for *PMF files in the case of bonded units,
 see Section~\ref{IPDF-analysis}.  The purpose of these files is to
 provide the user with means of setting up a PMF-based force-field,
 for example in the case of initial coarse-graining of
-an atomistic system.  In particular, one can convert the RDFTAB file
+an atomistic system.  In particular, one can convert the VDWTAB file
 into a correctly formatted TABLE file (Section~\ref{table-file})
 by using the utility called {\tt pmf2tab.f} (subject to compilation;
 found in \D directory {\tt utility}) as follows,
 
-{\tt [user@host]\$ pmf2tab.exe < RDFTAB}
+{\tt [user@host]\$ pmf2tab.exe < VDWTAB}
 
 %\begin{verbatim}
-%[user@host]$ pmf2tab.exe < RDFTAB
+%[user@host]$ pmf2tab.exe < VDWTAB
 %\end{verbatim}
 
 see Section~\ref{cg-intro} for completeness.
@@ -700,11 +700,12 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 \textrm{\textit{\textbf{INT}}}PMF \& \textrm{\textit{\textbf{INT}}}TAB Files}
 \label{bonded-files}
 
-These files, where \textrm{\textit{\textbf{INT}}} is referring to
-\textrm{\textit{\textbf{INT}}}ramolecular interactions or RDF, have
-very similar formatting rules with some examples shown in
-Section~\ref{IPDF-analysis}.  Refer to Section~\ref{IPDF-analysis} for
-their meaning and usage in coarse grained model systems.
+These files, where \textrm{\textit{\textbf{INT}}} is referring
+to \textrm{\textit{\textbf{INT}}}ra-molecular interactions and
+\textrm{\textit{\textbf{VDW}}}(RDF derived inter-molecular),
+have very similar formatting rules with some examples shown in
+Section~\ref{IPDF-analysis}.  Refer to Section~\ref{IPDF-analysis}
+for their meaning and usage in coarse grained model systems.
 
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
@@ -726,8 +727,8 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 \> {\tt \#}        \> a1      \> a hash (\#) symbol
 \end{tabbing}
 
-The subsequent records define each PDF/RDF potential in turn,
-{in the order indicated by the specification in the FIELD file}.
+The subsequent records define each PDF potential in turn,
+in the order indicated by the specification in the FIELD file.
 Each potential is defined by a header record and a set of data
 records with the potential-like and force-like tables.
 
@@ -744,9 +745,9 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 \> {\tt instances} \> integer \> instances of this unique type of PDF \\
 {\bf interaction data records 1--bins:} \\
 \> {\tt abscissa}  \> real \> consecutive value over the full cutoff/range in \\
-\>                 \>      \> \AA~for TABBND and degrees for TABANG, TABDIH \& TABINV \\
+\>                 \>      \> \AA~for BNDTAB \& VDWTAB and degrees for ANGTAB, DIHTAB \& INVTAB \\
 \> {\tt potential} \> real \> potential at the abscissa grid point in {\bf units} as specified in FIELD \\
-\> {\tt force}     \> real \> complementary force (virial for TABBND) value
+\> {\tt force}     \> real \> complementary force (virial for BNDTAB \& VDWTAB) value
 \end{tabbing}
 
 \subsection{The STATIS File}
