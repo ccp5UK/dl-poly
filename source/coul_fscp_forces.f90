@@ -17,7 +17,7 @@ Subroutine coul_fscp_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester october 1995
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -67,14 +67,14 @@ Subroutine coul_fscp_forces &
 
 ! interpolation interval
 
-        drewd = rcut/Real(mxgrid-4,wp)
+        drewd = rcut/Real(mxgele-4,wp)
 
 ! reciprocal of interpolation interval
 
         rdrewd = 1.0_wp/drewd
 
         fail=0
-        Allocate (erc(1:mxgrid),fer(1:mxgrid), Stat=fail)
+        Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
         If (fail > 0) Then
            Write(nrite,'(/,1x,a,i0)') 'coul_fscp_forces allocation failure, idnode: ', idnode
            Call error(0)
@@ -82,12 +82,12 @@ Subroutine coul_fscp_forces &
 
 ! generate error function complement tables for ewald sum
 
-        Call erfcgen(rcut,alpha,mxgrid,erc,fer)
+        Call erfcgen(rcut,alpha,mxgele,erc,fer)
 
 ! set force and potential shifting parameters (screened terms)
 
-        aa =   fer(mxgrid-4)*rcut
-        bb = -(erc(mxgrid-4)+aa*rcut)
+        aa =   fer(mxgele-4)*rcut
+        bb = -(erc(mxgele-4)+aa*rcut)
 
      Else
 
@@ -165,7 +165,7 @@ Subroutine coul_fscp_forces &
 
 ! calculate forces using 3pt interpolation
 
-                 gk0 = fer(k)
+                 gk0 = fer(k) ; If (k == 0) gk0 = gk0*rrr
                  gk1 = fer(k+1)
                  gk2 = fer(k+2)
 

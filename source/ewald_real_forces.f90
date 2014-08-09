@@ -11,7 +11,7 @@ Subroutine ewald_real_forces                        &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -43,7 +43,7 @@ Subroutine ewald_real_forces                        &
      newjob = .false.
 
      fail=0
-     Allocate (erc(1:mxgrid),fer(1:mxgrid), Stat=fail)
+     Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
      If (fail > 0) Then
         Write(nrite,'(/,1x,a,i0)') 'ewald_real_forces allocation failure, node: ', idnode
         Call error(0)
@@ -55,7 +55,7 @@ Subroutine ewald_real_forces                        &
 
 ! interpolation interval
 
-     drewd = rcut/Real(mxgrid-4,wp)
+     drewd = rcut/Real(mxgele-4,wp)
 
 ! reciprocal of interpolation interval
 
@@ -63,7 +63,7 @@ Subroutine ewald_real_forces                        &
 
 ! generate error function complement tables for ewald sum
 
-     Call erfcgen(rcut,alpha,mxgrid,erc,fer)
+     Call erfcgen(rcut,alpha,mxgele,erc,fer)
   End If
 
 ! initialise potential energy and virial
@@ -129,7 +129,7 @@ Subroutine ewald_real_forces                        &
 
 ! calculate forces using 3pt interpolation
 
-              gk0 = fer(k)
+              gk0 = fer(k) ; If (k == 0) gk0 = gk0*rrr
               gk1 = fer(k+1)
               gk2 = fer(k+2)
 

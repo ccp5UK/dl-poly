@@ -722,7 +722,7 @@ Subroutine erfcgen(rcut,alpha,mxgele,erc,fer)
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester december 1994
-! amended   - i.t.todorov april 2014
+! amended   - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -740,7 +740,7 @@ Subroutine erfcgen(rcut,alpha,mxgele,erc,fer)
 
   Integer,                                  Intent( In    ) :: mxgele
   Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha
-  Real( Kind = wp ), Dimension( 1:mxgele ), Intent(   Out ) :: erc,fer
+  Real( Kind = wp ), Dimension( 0:mxgele ), Intent(   Out ) :: erc,fer
 
   Integer           :: i
   Real( Kind = wp ) :: drewd,exp1,rrr,rsq,tt
@@ -759,6 +759,12 @@ Subroutine erfcgen(rcut,alpha,mxgele,erc,fer)
      erc(i) = tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1/rrr
      fer(i) = (erc(i) + 2.0_wp*(alpha/sqrpi)*exp1)/rsq
   End Do
+
+! linear extrapolation for grid point 0 at distances close to 0
+! for derivative only
+
+  erc(0) = 1.0_wp
+  fer(0) = (2.0_wp*fer(1)-0.5_wp*fer(2))/drewd
 
 End Subroutine erfcgen
 

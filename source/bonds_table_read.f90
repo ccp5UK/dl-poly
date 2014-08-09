@@ -193,7 +193,7 @@ Subroutine bonds_table_read(bond_name)
            bufpot(2) = bufp0
            bufvir(2) = bufv0
 
-! linear extrapolation for the grid point at 0
+! linear extrapolation for grid point 0 at distances close to 0
 
            bufpot(0) = 2.0_wp*bufpot(1)-bufpot(2)
            bufvir(0) = (2.0_wp*bufvir(1)-0.5_wp*bufvir(2))/delpot

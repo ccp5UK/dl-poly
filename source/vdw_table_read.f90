@@ -155,7 +155,7 @@ Subroutine vdw_table_read(rvdw)
         End Do
         If (mxnode > 1) Call MPI_BCAST(buffer(1:ngrid), ngrid, wp_mpi, 0, dlp_comm_world, ierr)
 
-! linear extrapolation for the grid point at 0
+! linear extrapolation for grid point 0 at distances close to 0
 
         vvdw(0,ivdw) = 2.0_wp*buffer(1)-buffer(2)
 
@@ -214,7 +214,7 @@ Subroutine vdw_table_read(rvdw)
         End Do
         If (mxnode > 1) Call MPI_BCAST(buffer(1:ngrid), ngrid, wp_mpi, 0, dlp_comm_world, ierr)
 
-! linear extrapolation for the grid points at 0 just beyond the cutoff
+! linear extrapolation for grid point 0 at distances close to 0
 
         gvdw(0,ivdw) = (2.0_wp*buffer(1)-0.5_wp*buffer(2))/delpot
 

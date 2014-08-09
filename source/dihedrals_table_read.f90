@@ -224,7 +224,7 @@ Subroutine dihedrals_table_read(dihd_name)
         End If
      End If
 
-! linear extrapolation for distance close to 0 -
+! linear extrapolation for grid point 0 at distances close to 0 -
 ! midpoint for a periodic function
 
      If (.not.zero) Then
