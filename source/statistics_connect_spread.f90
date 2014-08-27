@@ -8,7 +8,7 @@ Subroutine statistics_connect_spread(mdir)
 ! NOTE: When executing on one node we need not get here at all!
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -28,10 +28,10 @@ Subroutine statistics_connect_spread(mdir)
   Integer, Intent( In    ) :: mdir
 
   Logical           :: safe,stay,move
-  Integer           :: fail,iblock,jdnode,kdnode,               &
-                       imove,jmove,kmove,keep,send,             &
-                       i,j,l,jj,kk,jxyz,ix,iy,iz,kx,ky,kz, &
-                       newatm
+  Integer           :: fail,iblock,jdnode,kdnode,   &
+                       imove,jmove,kmove,keep,send, &
+                       i,j,l,jj,kk,jxyz,kxyz,lxyz,  &
+                       ix,iy,iz,kx,ky,kz,newatm
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
@@ -52,42 +52,49 @@ Subroutine statistics_connect_spread(mdir)
 ! respect to the direction (mdir)
 ! k.   - direction selection factor
 ! jxyz - halo reduction factor
+! kxyz - corrected halo reduction factor particles haloing both +&- sides
 ! jdnode - destination (send to), knode - source (receive from)
 
   kx = 0 ; ky = 0 ; kz = 0
   If      (mdir == -1) Then ! Direction -x
      kx  = 1
      jxyz= 1
+     kxyz= 3
 
      jdnode = map(1)
      kdnode = map(2)
   Else If (mdir ==  1) Then ! Direction +x
      kx  = 1
      jxyz= 2
+     kxyz= 3
 
      jdnode = map(2)
      kdnode = map(1)
   Else If (mdir == -2) Then ! Direction -y
      ky  = 1
      jxyz= 10
+     kxyz= 30
 
      jdnode = map(3)
      kdnode = map(4)
   Else If (mdir ==  2) Then ! Direction +y
      ky  = 1
      jxyz= 20
+     kxyz= 30
 
      jdnode = map(4)
      kdnode = map(3)
   Else If (mdir == -3) Then ! Direction -z
      kz  = 1
      jxyz= 100
+     kxyz= 300
 
      jdnode = map(5)
      kdnode = map(6)
   Else If (mdir ==  3) Then ! Direction +z
      kz  = 1
      jxyz= 200
+     kxyz= 300
 
      jdnode = map(6)
      kdnode = map(5)
@@ -118,20 +125,26 @@ Subroutine statistics_connect_spread(mdir)
 
 ! particle designated directions
 
-     ix=Mod(ixyz(i),10)           ! [0,1,2]
-     iy=Mod(ixyz(i)-ix,100)       ! [0,10,20]
-     iz=Mod(ixyz(i)-(ix+iy),1000) ! [0,100,200]
+     ix=Mod(ixyz(i),10)           ! [0,1,2,3]
+     iy=Mod(ixyz(i)-ix,100)       ! [0,10,20,30]
+     iz=Mod(ixyz(i)-(ix+iy),1000) ! [0,100,200,300]
 
 ! Filter the move index for the selected direction
 
      j=ix*kx+iy*ky+iz*kz
 
 ! If the particle is scheduled to be copied in the selected
-! direction then indicate it (move) and reduce its move index
-! (ixyz) and decide on keeping it (stay)
+! direction then indicate it (move)
 
-     If (j == jxyz) Then
+     If (j == jxyz .or. (j > jxyz .and. Mod(j,3) == 0)) Then
         move=.true.
+
+! Use the corrected halo reduction factor when the particle is halo to both +&- sides
+
+        lxyz=ixyz(i)-Merge(jxyz,kxyz,j == jxyz)
+
+! reduce particle move index (ixyz) and decide on keeping it (stay)
+
         ixyz(i)=ixyz(i)-jxyz
      End If
      stay = (ixyz(i) /= 0)
@@ -185,7 +198,7 @@ Subroutine statistics_connect_spread(mdir)
 ! pack config indexing and move indexing arrays
 
            buffer(imove+1)=Real(ltg0(i),wp)
-           buffer(imove+2)=Real(ixyz(i),wp)
+           buffer(imove+2)=Real(lxyz,wp)
 
 ! pack initial positions
 

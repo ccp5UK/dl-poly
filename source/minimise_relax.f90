@@ -13,7 +13,7 @@ Subroutine minimise_relax &
 !       keymin=2 : absolute displacement
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith may 2014
+! author    - i.t.todorov & w.smith august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -100,13 +100,12 @@ Subroutine minimise_relax &
 
      eng_min = 0.0_wp
 
-! Passage accumulators are zeroed in minimise_module
+! Passage accumulators are initialised in minimise_module
 ! passmin(1) - cycles counter
 ! passmin(2) - access counter
 ! passmin(3) - average cycles
 ! passmin(4) - minimum cycles
 ! passmin(5) - maximum cycles
-     passmin(4) = Huge(1) ! min register
 
 ! total number of active particles (excluding frozen sites and massless shells)
 

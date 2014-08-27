@@ -1,6 +1,6 @@
-Subroutine pmf_shake_vv                &
-           (imcon,mxshak,tolnce,tstep, &
-           indpmf,pxx,pyy,pzz,         &
+Subroutine pmf_shake_vv                     &
+           (imcon,mxshak,tolnce,tstep,lcol, &
+           indpmf,pxx,pyy,pzz,              &
            xxx,yyy,zzz,strpmf,virpmf)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -12,7 +12,7 @@ Subroutine pmf_shake_vv                &
 !       VV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -25,7 +25,8 @@ Subroutine pmf_shake_vv                &
   Implicit None
 
   Integer,           Intent( In    ) :: imcon,mxshak
-  Real( Kind = wp ), Intent( In    ) :: tstep,tolnce
+  Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
+  Logical,           Intent( In    ) :: lcol
   Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
   Real( Kind = wp ), Intent( In    ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
   Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
@@ -152,9 +153,7 @@ Subroutine pmf_shake_vv                &
      End If
   End Do
 
-! error exit for non-convergence
-
-  If (.not.safe) Then
+  If (.not.safe) Then ! error exit for non-convergence
      Do k=0,mxnode-1
         If (idnode == k) Then
            Do ipmf=1,ntpmf
@@ -170,6 +169,24 @@ Subroutine pmf_shake_vv                &
         Call gsync()
      End Do
      Call error(498)
+  Else ! Collect per call and per step passage statistics
+     passpmf(1,1,1)=icyc-1
+     passpmf(3,1,1)=passpmf(2,1,1)*passpmf(3,1,1)
+     passpmf(2,1,1)=passpmf(2,1,1)+1
+     passpmf(3,1,1)=passpmf(3,1,1)/passpmf(2,1,1)+passpmf(1,1,1)/passpmf(2,1,1)
+     passpmf(4,1,1)=Min(passpmf(1,1,1),passpmf(4,1,1))
+     passpmf(5,1,1)=Max(passpmf(1,1,1),passpmf(5,1,1))
+
+     passpmf(1,2,1)=passpmf(1,2,1)+passpmf(1,1,1)
+     If (lcol) Then ! Collect
+        passpmf(3,2,1)=passpmf(2,2,1)*passpmf(3,2,1)
+        passpmf(2,2,1)=passpmf(2,2,1)+1
+        passpmf(3,2,1)=passpmf(3,2,1)/passpmf(2,2,1)+passpmf(1,2,1)/passpmf(2,2,1)
+        passpmf(4,2,1)=Min(passpmf(1,2,1),passpmf(4,2,1))
+        passpmf(5,2,1)=Max(passpmf(1,2,1),passpmf(5,2,1))
+        passpmf(1,2,1)=0.0_wp ! Reset
+     End If
+     passpmf(1,1,1)=0.0_wp ! Reset
   End If
 
 ! global sum of stress tensor

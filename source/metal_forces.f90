@@ -8,7 +8,7 @@ Subroutine metal_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov june 2013
+! amended   - i.t.todorov august 2014
 ! contrib   - r.davidchak (eeam) june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -33,7 +33,8 @@ Subroutine metal_forces &
   Real( Kind = wp ), Save :: rcsq
 
   Integer           :: m,idi,ai,ki,jatm,aj,kj, &
-                       key,kmn,kmx,k0,keypot,k1,k2,l,ld
+                       key,kmn,kmx,k0,keypot,  &
+                       k1,k2,l,ld
   Real( Kind = wp ) :: fix,fiy,fiz,fx,fy,fz,          &
                        rsq,rdr,rrr,ppd,eng,           &
                        gk0,gk1,gk2,vk0,vk1,vk2,t1,t2, &
@@ -222,18 +223,18 @@ Subroutine metal_forces &
 
                  eps=prmmet(1,k0)
                  sig=prmmet(2,k0)
-                 nnn=Nint(prmmet(3,k0))
-                 mmm=Nint(prmmet(4,k0))
+                 nnn=prmmet(3,k0)
+                 mmm=prmmet(4,k0)
 
 ! calculate pair forces and energies
 
-                 gamma1=Real(nnn,wp)*eps*(sig/rrr)**nnn
+                 gamma1=nnn*eps*(sig/rrr)**nnn
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                       eng = gamma1/Real(nnn,wp)
+                       eng = gamma1/nnn
 
 ! calculate density contributions
 
-                 gamma2=Real(mmm,wp)*(sig/rrr)**mmm
+                 gamma2=mmm*(sig/rrr)**mmm
 
                  If (ai == aj) Then
                     t1=(prmmet(1,k0)*prmmet(5,k0))**2
@@ -268,12 +269,38 @@ Subroutine metal_forces &
                  t1=prmmet(4,k0)**2
                  t2=t1
 
+              Else If (keypot == 5) Then
+
+! many-body perturbation component only potentials
+
+                 eps=prmmet(1,k0)
+                 sig=prmmet(2,k0)
+                 mmm=prmmet(3,k0)
+
+! no pair forces and energies
+
+!                gamma1=0.0_wp
+!                 If (jatm <= natms .or. idi < ltg(jatm)) &
+!                       eng = 0.0_wp
+
+! calculate density contributions
+
+                 gamma2=mmm*sig/(rrr**mmm)
+
+                 If (ai == aj) Then
+                    t1=prmmet(1,k0)**2
+                    t2=t1
+                 Else
+                    t1=prmmet(1,k1)**2
+                    t2=prmmet(1,k2)**2
+                 End If
+
               End If
 
               If (ai > aj) Then
-                 gamma = (gamma1-gamma2*(rho(iatm)*t1+rho(jatm)*t2))/rsq
+                 gamma = -gamma2*(rho(iatm)*t1+rho(jatm)*t2)/rsq
               Else
-                 gamma = (gamma1-gamma2*(rho(iatm)*t2+rho(jatm)*t1))/rsq
+                 gamma = -gamma2*(rho(iatm)*t2+rho(jatm)*t1)/rsq
               End If
 
               fx = gamma*xdf(m)

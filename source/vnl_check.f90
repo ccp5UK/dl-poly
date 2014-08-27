@@ -5,7 +5,7 @@ Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk)
 ! dl_poly_4 routine implementing the VNL conditional update checks
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2014
+! author    - i.t.todorov august 2014
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -62,11 +62,14 @@ Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk)
      ybg(1:alist)=yyy(1:alist)
      zbg(1:alist)=zzz(1:alist)
 
-! Initialised by construction in vnl_module
+! CVNL state and skippage accumulators are initialised in vnl_module
 !
-!     l_vnl = .true.
-!     skipvnl = 0.0_wp
-     skipvnl(4) = Huge(1) ! min register
+! l_vnl = .true.
+! skipvnl(1) - cycles counter
+! skipvnl(2) - access counter
+! skipvnl(3) - average cycles
+! skipvnl(4) - minimum cycles
+! skipvnl(5) - maximum cycles
 
   Else ! Checks
 
@@ -136,10 +139,10 @@ Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk)
            If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 4) Then
               cut = test * rcut
            Else
-              cut = 0.85_wp * Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
-                                    r_npry * celprp(8) / Real(ily,wp) , &
-                                    r_nprz * celprp(9) / Real(ilz,wp) ) &
-                            - rcut - 1.0e-6_wp
+              cut = Min( 0.85_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
+                                           r_npry * celprp(8) / Real(ily,wp) , &
+                                           r_nprz * celprp(9) / Real(ilz,wp) ) &
+                                     - rcut - 1.0e-6_wp ) , test * rcut )
            End If
            cut = Real( Int( 100.0_wp * cut ) , wp ) / 100.0_wp
            If ((.not.(cut < Min(0.05_wp,0.005_wp*rcut))) .and. Abs(cut-rpad) > 0.005_wp) Then ! Do bother
@@ -150,20 +153,30 @@ Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk)
         End If
      End If
 
-     If (l_vnl) Then ! Reset
-        skipvnl(1) = 0.0_wp
+     If (l_vnl) Then
 
-        xbg(1:alist)=xxx(1:alist)
-        ybg(1:alist)=yyy(1:alist)
-        zbg(1:alist)=zzz(1:alist)
-     Else ! Deal with skipping statistics
-        skipvnl(1) = skipvnl(1) + 1.0_wp
+! Deal with skipping statistics
 
         skipvnl(3)=skipvnl(2)*skipvnl(3)
         skipvnl(2)=skipvnl(2)+1.0_wp
         skipvnl(3)=skipvnl(3)/skipvnl(2)+skipvnl(1)/skipvnl(2)
         skipvnl(4)=Min(skipvnl(1),skipvnl(4))
         skipvnl(5)=Max(skipvnl(1),skipvnl(5))
+
+! Reset
+
+        skipvnl(1) = 0.0_wp
+
+        xbg(1:alist)=xxx(1:alist)
+        ybg(1:alist)=yyy(1:alist)
+        zbg(1:alist)=zzz(1:alist)
+
+     Else
+
+! Enjoy telephoning
+
+        skipvnl(1) = skipvnl(1) + 1.0_wp
+
      End If
 
   End If

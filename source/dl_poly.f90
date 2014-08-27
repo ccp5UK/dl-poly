@@ -208,7 +208,7 @@ Program dl_poly
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  version:  4.06      /      july 2014  ****** O ****", &
+          "**         **  version:  4.06      /    august 2014  ****** O ****", &
           "*************  execution on ", mxnode, "    node(s)  ******* L ***", &
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
@@ -656,9 +656,9 @@ Program dl_poly
 
   If (.not.lsim) tstep=tsths ! tstep for 'replay history'
 
-  Call statistics_result                           &
-           (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn, &
-           lvafav,lpvaf,nstrun,keyens,keyshl,iso,  &
+  Call statistics_result                                        &
+           (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
+           nstrun,keyens,keyshl,megcon,megpmf,iso,              &
            press,strext,nstep,tstep,time,tmst)
 
 10 Continue

@@ -493,10 +493,10 @@ Subroutine set_bounds                                       &
               If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
               Go To 10
            Else
-              rpad = 0.85_wp * Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
-                                     r_npry * celprp(8) / Real(ily,wp) , &
-                                     r_nprz * celprp(9) / Real(ilz,wp) ) &
-                              - rcut - 1.0e-6_wp
+              rpad = Min( 0.85_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
+                                            r_npry * celprp(8) / Real(ily,wp) , &
+                                            r_nprz * celprp(9) / Real(ilz,wp) ) &
+                                      - rcut - 1.0e-6_wp ) , test * rcut )
            End If
            rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
               If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
@@ -613,9 +613,11 @@ Subroutine set_bounds                                       &
 
   mxatms = Max(1 , Nint(test * Real((ilx+3)*(ily+3)*(ilz+3),wp)))
   If (mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
-    mxatms = Nint(Min(Real(mxatms,wp),Real(27.0_wp,wp)*Real(megatm,wp)))
+    mxatms = Nint(Min(Real(mxatms,wp),Real(27.00_wp,wp)*Real(megatm,wp)))
+!  Else If (Min(ilx,ily,ilz) == 1) Then
+!    mxatms = Nint(Min(Real(mxatms,wp),Real(20.25_wp,wp)*Real(megatm,wp)))
   Else
-    mxatms = Nint(Min(Real(mxatms,wp),Real(13.5_wp,wp)*Real(megatm,wp)))
+    mxatms = Nint(Min(Real(mxatms,wp),Real(13.50_wp,wp)*Real(megatm,wp)))
   End If
 
 ! maximum number of particles per domain (no halo)
@@ -658,6 +660,7 @@ Subroutine set_bounds                                       &
 
 ! exporting single per atom
 
+!  dens  = Real(((ilx+3)*(ily+3)*(ilz+3))/Min(ilx,ily,ilz)+3,wp) / Real(ilx*ily*ilz,wp)
   dens  = Real(((qlx+2)*(qly+2)*(qlz+2))/Min(qlx,qly,qlz)+2,wp) / Real(qlx*qly*qlz,wp)
   mxbfxp = 2 * 6 * Nint(Real(mxatdm,wp) * dens)
 

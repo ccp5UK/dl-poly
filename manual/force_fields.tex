@@ -1235,6 +1235,11 @@ They are suitable for calculating the properties of metals
 \cite{hepburn-08a,lau-07a} is a generalisation of the EAM formalism
 which can include both EAM and FS type of mixing rules (see below).
 
+It is worth noting that the same formalism applies to the many-body
+perturbation component of the actinide oxide potentials as in
+\cite{cooper-14a}.  Thus their many-body component description is
+included in this Section.
+
 For single component metals the two main approaches, FS and EAM, are the same.
 {\bf However}, they are subtly different in the way they are extended to
 handle alloys (see below).  It follows that EAM and FS class potentials
@@ -1344,6 +1349,16 @@ V_{ij}(r_{ij}) &=& 2 A \exp \left(-p \frac{r_{ij}-r_{0}}{r_{0}}\right) \nonumber
 F(\rho_{i}) &=& -B \sqrt{\rho_{i}}~~, \nonumber
 \end{eqnarray}
 with parameters: $A$, $r_{0}$, $p$, $B$, $q_{ij}$.
+\item Many body perturbation component potential \cite{cooper-14a}:  ({\bf mbpc})
+This component is another analytical potential in the FS class which
+two body part may be defined by a matching van der Waals potential in
+the vdw section of the FIELD file.  It has the form:
+\begin{eqnarray}
+V_{ij}(r_{ij}) &=& 0 \nonumber \\
+\rho_{ij}(r_{ij}) &=& \frac{a}{r_{ij}^{m}} \\
+F(\rho_{i}) &=& -\epsilon \sqrt{\rho_{i}}~~, \nonumber
+\end{eqnarray}
+with parameters: $\epsilon$, $a$ and $m$.
 \end{enumerate}
 
 All of these metal potentials can be decomposed into pair
@@ -1435,6 +1450,13 @@ $U_{2}=U^{s}_{2}+U^{d}_{2}$~!
 \left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \exp \left( -2 q_{kj} \frac{r_{kj}-r_{0}}{r_{0}} \right) \frac{\vek{r_{kj}}}{r_{kj}}~~.
 \end{eqnarray}
+\item Many body perturbation component potential force
+\begin{eqnarray}
+-\frac{\partial U_{1}}{\partial \vek{r_{k}}} &=& 0 \nonumber \\
+-\frac{\partial U_{2}}{\partial \vek{r_{k}}} &=& \sum_{j=1,j \ne k}^{N} \frac{m \epsilon}{2}
+\left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
+\frac{a}{r_{kj}^{m}} \frac{\vek{r_{kj}}}{r_{kj}}~~.
+\end{eqnarray}
 \end{enumerate}
 
 With the metal forces thus defined the contribution to be added to the
@@ -1501,6 +1523,12 @@ $\Psi_{2}=\Psi^{s}_{2}+\Psi^{d}_{2}$~!
 \left( {1 \over \sqrt{\rho_{k}}} + {1 \over \sqrt{\rho_{j}}} \right)
 \exp \left( -2 q_{ij} \frac{r_{ij}-r_{0}}{r_{0}} \right) r_{ij}~~.
 \end{eqnarray}
+\item Many body perturbation component virial
+\begin{eqnarray}
+\Psi_{1} &=& 0 \nonumber \\
+\Psi_{2} &=& {1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N} \frac{m \epsilon}{2} \left( \frac{\partial F(\rho_{i})}{\partial \rho_{i}} +
+\frac{\partial F(\rho_{j})}{\partial \rho_{j}} \right) \frac{a}{r_{ij}^{m}}~~.
+\end{eqnarray}
 \end{enumerate}
 
 The contribution to be added to the atomic stress tensor\index{stress tensor} is
@@ -1550,6 +1578,11 @@ No long-ranged corrections apply beyond cutoffs $c$ and $d$.
 2 \left(\frac{r_{0}}{q_{ij}}\right)^{2} \right]
 \exp \left( -2 q_{ij} \frac{r_{\rm met}-r_{0}}{r_{0}}\right)~~.
 \end{eqnarray}
+\item Many body perturbation component density correction
+\begin{eqnarray}
+\delta \rho_{i} = \frac{4 \pi \bar{\rho}}{(m-3)}
+\frac{a}{r_{\rm met}^{m-3}}~~.
+\end{eqnarray}
 \end{enumerate}
 The density correction is applied immediately after the local
 density is calculated.  The pair term correction is obtained by
@@ -1562,7 +1595,7 @@ U_{1}^{o} + \delta U_{1} \nonumber \\
 \delta U_{1} &=& 2 \pi N \bar{\rho} \int_{r_{\rm met}}^{\infty} V_{ij}(r) r^{2} dr \nonumber \\
 U_{2} &=& \sum_{i=1}^{N} F(\rho_{i}^{0} + \delta \rho_{i}) \\
 U_{2} &=& \sum_{i=1}^{N} F(\rho_{i}^{0}) +
-\sum_{i=1}^{N} \frac{\partial F(\rho_{i})_{0}}{\partial \rho_{i}} \delta \rho_{i}) =
+\sum_{i=1}^{N} \frac{\partial F(\rho_{i})_{0}}{\partial \rho_{i}} \delta \rho_{i} =
 U_{2}^{0} + \delta U_{2} \nonumber \\
 \delta U_{2} &=& 4 \pi \bar{\rho} \sum_{i=1}^{N} \frac{\partial F(\rho_{i})_{0}}{\partial \rho_{i}}
 \int_{r_{\rm met}}^{\infty} \rho_{ij}(r) r^{2} dr~~. \nonumber
@@ -1587,7 +1620,7 @@ No long-ranged corrections apply beyond cutoffs $c$ and $d$.
 \begin{eqnarray}
 \delta U_{1} &=& \frac{2 \pi N \bar{\rho} \epsilon a^{3}}{(n-3)}
 \left( \frac{a}{r_{\rm met}} \right)^{n-3} \nonumber \\
-\delta U_{2} &=& -\frac{4 \pi \bar{\rho} a^{3}}{(m-3)} \left( \frac{a}{r_{\rm met}} \right)^{n-3}
+\delta U_{2} &=& -\frac{4 \pi \bar{\rho} a^{3}}{(m-3)} \left( \frac{a}{r_{\rm met}} \right)^{m-3}
 \left< \frac{N c \epsilon}{2\sqrt{\rho_{i}^{0}}} \right>~~.
 \end{eqnarray}
 \item Gupta energy correction
@@ -1601,6 +1634,12 @@ No long-ranged corrections apply beyond cutoffs $c$ and $d$.
 2 \left(\frac{r_{0}}{q_{ij}}\right)^{2} \right] \times \\
 & & \exp \left( -2 q_{ij} \frac{r_{\rm met}-r_{0}}{r_{0}}\right)
 \left< \frac{N B}{2\sqrt{\rho_{i}^{0}}} \right>~~. \nonumber
+\end{eqnarray}
+\item Many body perturbation component energy correction
+\begin{eqnarray}
+\delta U_{1} &=& 0 \nonumber \\
+\delta U_{2} &=& -\frac{4 \pi \bar{\rho}}{(m-3)} \frac{a}{r_{\rm met}^{m-3}}
+\left< \frac{N \epsilon}{2\sqrt{\rho_{i}^{0}}} \right>~~.
 \end{eqnarray}
 \end{enumerate}
 To estimate the virial correction we assume the corrected local
@@ -1643,7 +1682,7 @@ No long-ranged corrections apply beyond cutoffs $c$ and $d$.
 \begin{eqnarray}
 \delta \Psi_{1} &=& -n \frac{2 \pi N \bar{\rho} \epsilon a^{3}}{(n-3)}
 \left( \frac{a}{r_{\rm met}} \right)^{n-3} \nonumber \\
-\delta \Psi_{2} &=& m \frac{4 \pi \bar{\rho} a^{3}}{(m-3)} \left( \frac{a}{r_{\rm met}} \right)^{n-3}
+\delta \Psi_{2} &=& m \frac{4 \pi \bar{\rho} a^{3}}{(m-3)} \left( \frac{a}{r_{\rm met}} \right)^{m-3}
 \left< \frac{N c \epsilon}{2\sqrt{\rho_{i}^{0}}} \right>~~.
 \end{eqnarray}
 \item Gupta virial correction
@@ -1657,6 +1696,12 @@ No long-ranged corrections apply beyond cutoffs $c$ and $d$.
 6 r_{\rm met} \left(\frac{r_{0}}{q_{ij}}\right)^{2} + 6 \left(\frac{r_{0}}{q_{ij}}\right)^{3} \right] \times \\
 & & \exp \left( -2 q_{ij} \frac{r_{\rm met}-r_{0}}{r_{0}}\right)
 \left< \frac{N B}{2\sqrt{\rho_{i}^{0}}} \right>~~. \nonumber
+\end{eqnarray}
+\item Many body perturbation component virial correction
+\begin{eqnarray}
+\delta \Psi_{1} &=& 0 \nonumber \\
+\delta \Psi_{2} &=& m \frac{4 \pi \bar{\rho}}{(m-3)} \frac{a}{r_{\rm met}^{m-3}}
+\left< \frac{N \epsilon}{2\sqrt{\rho_{i}^{0}}} \right>~~.
 \end{eqnarray}
 \end{enumerate}
 

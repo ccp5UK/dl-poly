@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,safe,rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov june 2013
+! amended   - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -147,8 +147,8 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,safe,rmet)
 
                  eps=prmmet(1,k0)
                  sig=prmmet(2,k0)
-                 nnn=Nint(prmmet(3,k0))
-                 mmm=Nint(prmmet(4,k0))
+                 nnn=prmmet(3,k0)
+                 mmm=prmmet(4,k0)
 
                  density=(sig/rrr)**mmm
 
@@ -173,6 +173,24 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,safe,rmet)
 
                  t1=prmmet(4,k0)**2
                  t2=t1
+
+              Else If (keypot == 5) Then
+
+! many-body perturbation component only potentials
+
+                 eps=prmmet(1,k0)
+                 sig=prmmet(2,k0)
+                 mmm=prmmet(3,k0)
+
+                 density=sig/rrr**mmm
+
+                 If (ai == aj) Then
+                    t1=prmmet(1,k0)**2
+                    t2=t1
+                 Else
+                    t1=prmmet(1,k1)**2
+                    t2=prmmet(1,k2)**2
+                 End If
 
               End If
 

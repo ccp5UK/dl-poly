@@ -19,7 +19,6 @@ Subroutine constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
                                  xxx,yyy,zzz
   Use constraints_module, Only : ntcons,listcon
 
-
   Implicit None
 
   Integer,           Intent( In    ) :: imcon
@@ -39,7 +38,6 @@ Subroutine constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
      Write(nrite,'(/,1x,a,i0)') 'constraints_tags allocation failure, node: ', idnode
      Call error(0)
   End If
-
 
 ! initialise listot array (shared constraint bond)
 

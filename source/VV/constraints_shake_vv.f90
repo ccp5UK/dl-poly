@@ -1,6 +1,6 @@
-Subroutine constraints_shake_vv        &
-           (imcon,mxshak,tolnce,tstep, &
-           lstopt,dxx,dyy,dzz,listot,  &
+Subroutine constraints_shake_vv             &
+           (imcon,mxshak,tolnce,tstep,lcol, &
+           lstopt,dxx,dyy,dzz,listot,       &
            xxx,yyy,zzz,strcon,vircon)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -12,7 +12,7 @@ Subroutine constraints_shake_vv        &
 !       VV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,6 +26,7 @@ Subroutine constraints_shake_vv        &
 
   Integer,           Intent( In    ) :: imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
+  Logical,           Intent( In    ) :: lcol
   Integer,           Intent( In    ) :: lstopt(0:2,1:mxcons)
   Real( Kind = wp ), Intent( In    ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
   Integer,           Intent( In    ) :: listot(1:mxatms)
@@ -198,9 +199,7 @@ Subroutine constraints_shake_vv        &
      End If
   End Do
 
-! error exit for non-convergence
-
-  If (.not.safe) Then
+  If (.not.safe) Then ! error exit for non-convergence
      Do i=0,mxnode-1
         If (idnode == i) Then
            Do k=1,ntcons
@@ -217,6 +216,24 @@ Subroutine constraints_shake_vv        &
         Call gsync()
      End Do
      Call error(105)
+  Else ! Collect per call and per step passage statistics
+     passcon(1,1,1)=icyc-1
+     passcon(3,1,1)=passcon(2,1,1)*passcon(3,1,1)
+     passcon(2,1,1)=passcon(2,1,1)+1
+     passcon(3,1,1)=passcon(3,1,1)/passcon(2,1,1)+passcon(1,1,1)/passcon(2,1,1)
+     passcon(4,1,1)=Min(passcon(1,1,1),passcon(4,1,1))
+     passcon(5,1,1)=Max(passcon(1,1,1),passcon(5,1,1))
+
+     passcon(1,2,1)=passcon(1,2,1)+passcon(1,1,1)
+     If (lcol) Then ! Collect
+        passcon(3,2,1)=passcon(2,2,1)*passcon(3,2,1)
+        passcon(2,2,1)=passcon(2,2,1)+1
+        passcon(3,2,1)=passcon(3,2,1)/passcon(2,2,1)+passcon(1,2,1)/passcon(2,2,1)
+        passcon(4,2,1)=Min(passcon(1,2,1),passcon(4,2,1))
+        passcon(5,2,1)=Max(passcon(1,2,1),passcon(5,2,1))
+        passcon(1,2,1)=0.0_wp ! Reset
+     End If
+     passcon(1,1,1)=0.0_wp ! Reset
   End If
 
 ! global sum of stress tensor

@@ -5,7 +5,7 @@ Module minimise_module
 ! dl_poly_4 module declaring minimisation routine arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -15,7 +15,13 @@ Module minimise_module
 
   Logical,                        Save :: l_x = .false.
 
-  Real( Kind = wp ),              Save :: passmin(1:5) = 0.0_wp
+  Real( Kind = wp ),              Save :: passmin(1:5) = (/ &
+                                          0.0_wp         ,  & ! cycles counter
+                                          0.0_wp         ,  & ! access counter
+                                          0.0_wp         ,  & ! average cycles
+                                          999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
+                                          0.0_wp /)           ! maximum cycles
+
 
   Real( Kind = wp ), Allocatable, Save :: oxx(:),oyy(:),ozz(:)
 

@@ -25,7 +25,7 @@ Subroutine nst_m0_vv                                       &
 ! reference2: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2013
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -63,7 +63,7 @@ Subroutine nst_m0_vv                                       &
 
 
   Logical,           Save :: newjob = .true.
-  Logical                 :: safe,lv_up,lv_dn
+  Logical                 :: safe,lcol,lv_up,lv_dn
   Integer,           Save :: mxiter,mxkit,kit
   Integer                 :: fail(1:9),iter,i
   Real( Kind = wp ), Save :: volm0,elrc0,virlrc0,h_z
@@ -327,13 +327,15 @@ Subroutine nst_m0_vv                                       &
            Do While ((.not.safe) .and. kit <= mxkit)
               kit=kit+1
 
+              lcol = (iter*kit == mxiter*mxkit)
+
               If (megcon > 0) Then
 
 ! apply constraint correction: vircon,strcon - constraint virial,stress
 
-                 Call constraints_shake_vv &
-           (imcon,mxshak,tolnce,tstep, &
-           lstopt,dxx,dyy,dzz,listot,  &
+                 Call constraints_shake_vv  &
+           (imcon,mxshak,tolnce,tstep,lcol, &
+           lstopt,dxx,dyy,dzz,listot,       &
            xxx,yyy,zzz,str,vir)
 
 ! constraint virial and stress tensor
@@ -348,9 +350,9 @@ Subroutine nst_m0_vv                                       &
 
 ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
-                 Call pmf_shake_vv     &
-           (imcon,mxshak,tolnce,tstep, &
-           indpmf,pxx,pyy,pzz,         &
+                 Call pmf_shake_vv          &
+           (imcon,mxshak,tolnce,tstep,lcol, &
+           indpmf,pxx,pyy,pzz,              &
            xxx,yyy,zzz,str,vir)
 
 ! PMF virial and stress tensor
@@ -516,20 +518,20 @@ Subroutine nst_m0_vv                                       &
      End Do
 
 ! RATTLE procedures
-! apply velocity corrections to constraints
+! apply velocity corrections to bond and PMF constraints
 
      If (megcon > 0 .or. megpmf > 0) Then
         Do i=1,kit
+           lcol = (i == kit)
+
            If (megcon > 0) Call constraints_rattle &
-           (mxshak,tolnce,tstep,      &
+           (mxshak,tolnce,tstep,lcol, &
            lstopt,dxx,dyy,dzz,listot, &
            vxx,vyy,vzz)
 
-! apply velocity corrections to PMFs
-
            If (megpmf > 0) Call pmf_rattle &
-           (mxshak,tolnce,tstep, &
-           indpmf,pxx,pyy,pzz,   &
+           (mxshak,tolnce,tstep,lcol, &
+           indpmf,pxx,pyy,pzz,        &
            vxx,vyy,vzz)
         End Do
      End If

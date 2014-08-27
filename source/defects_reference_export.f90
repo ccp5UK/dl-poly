@@ -9,7 +9,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
 ! onto this node (idnode)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -143,14 +143,9 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
 
         j=ix*kx+iy*ky+iz*kz
 
-! If the particle is halo to both +&- sides
-! use the corrected halo reduction factor
-
-        If (j > jxyz .and. Mod(j,3) == 0) jxyz=kxyz
-
 ! If the particle is within the correct halo for the selected direction
 
-        If (j == jxyz) Then
+        If (j == jxyz .or. (j > jxyz .and. Mod(j,3) == 0)) Then
 
 ! If safe to proceed
 
@@ -179,7 +174,10 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
               buffer(imove+10)=Real(Ichar(namr(i)(6:6)),wp)
               buffer(imove+11)=Real(Ichar(namr(i)(7:7)),wp)
               buffer(imove+12)=Real(Ichar(namr(i)(8:8)),wp)
-              buffer(imove+13)=Real(ixyz(i)-jxyz,wp)
+
+! Use the corrected halo reduction factor when the particle is halo to both +&- sides
+
+              buffer(imove+13)=Real(ixyz(i)-Merge(jxyz,kxyz,j == jxyz),wp)
 
            Else
 

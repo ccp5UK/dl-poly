@@ -28,7 +28,7 @@ Reference
 Thank you for using the DL_POLY_4 package in your work.  Please,
 acknowledge our efforts by including the following reference when
 publishing data obtained using DL_POLY_4: "I.T. Todorov, W. Smith,
-K. Trachenko & M.T. Dove, J. Mater. Chem., 16, 1611-1618 (2006)".
+K. Trachenko & M.T. Dove, J. Mater. Chem., 16 (20), 1911-1918 (2006)".
 
 Warnings:
 ---------

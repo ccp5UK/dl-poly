@@ -1,6 +1,6 @@
-Subroutine pmf_rattle            &
-           (mxshak,tolnce,tstep, &
-           indpmf,pxx,pyy,pzz,   &
+Subroutine pmf_rattle                 &
+           (mxshak,tolnce,tstep,lcol, &
+           indpmf,pxx,pyy,pzz,        &
            vxx,vyy,vzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -12,7 +12,7 @@ Subroutine pmf_rattle            &
 !       VV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -25,7 +25,8 @@ Subroutine pmf_rattle            &
   Implicit None
 
   Integer,           Intent( In    ) :: mxshak
-  Real( Kind = wp ), Intent( In    ) :: tstep,tolnce
+  Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
+  Logical,           Intent( In    ) :: lcol
   Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
   Real( Kind = wp ), Intent( In    ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
   Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
@@ -160,9 +161,27 @@ Subroutine pmf_rattle            &
      End If
   End Do
 
-! error exit for non-convergence
+  If (.not.safe) Then ! error exit for non-convergence
+     Call error(499)
+  Else ! Collect per call and per step passage statistics
+     passpmf(1,1,2)=icyc-1
+     passpmf(3,1,2)=passpmf(2,1,2)*passpmf(3,1,2)
+     passpmf(2,1,2)=passpmf(2,1,2)+1
+     passpmf(3,1,2)=passpmf(3,1,2)/passpmf(2,1,2)+passpmf(1,1,2)/passpmf(2,1,2)
+     passpmf(4,1,2)=Min(passpmf(1,1,2),passpmf(4,1,2))
+     passpmf(5,1,2)=Max(passpmf(1,1,2),passpmf(5,1,2))
 
-  If (.not.safe) Call error(499)
+     passpmf(1,2,1)=passpmf(1,2,1)+passpmf(1,1,1)
+     If (lcol) Then ! Collect
+        passpmf(3,2,2)=passpmf(2,2,2)*passpmf(3,2,2)
+        passpmf(2,2,2)=passpmf(2,2,2)+1
+        passpmf(3,2,2)=passpmf(3,2,2)/passpmf(2,2,2)+passpmf(1,2,2)/passpmf(2,2,2)
+        passpmf(4,2,2)=Min(passpmf(1,2,2),passpmf(4,2,2))
+        passpmf(5,2,2)=Max(passpmf(1,2,2),passpmf(5,2,2))
+        passpmf(1,2,2)=0.0_wp ! Reset
+     End If
+     passpmf(1,1,2)=0.0_wp ! Reset
+  End If
 
   Deallocate (vxt,vyt,vzt,    Stat=fail(1))
   Deallocate (pt,             Stat=fail(2))

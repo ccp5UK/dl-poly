@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2014
+! author    - i.t.todorov august 2014
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno and i.t.todorov march 2014 (itramolecular TPs & PDFs)
@@ -229,7 +229,7 @@ Subroutine read_field                   &
   If (idnode == 0) Then
      Open(Unit=nfield, File = 'FIELD', Status = 'old')
      Write(nrite,"(/,/,1x,'SYSTEM SPECIFICATION')")
-     If (.not.l_top) Write(nrite,"(/,1x,'detailed tiopology opted out')")
+     If (.not.l_top) Write(nrite,"(/,1x,'detailed topology opted out')")
   End If
 
 ! omit first line
@@ -3376,6 +3376,8 @@ Subroutine read_field                   &
               keypot=3
            Else If (keyword(1:4) == 'gupt') Then
               keypot=4
+           Else If (keyword(1:4) == 'mbpc') Then
+              keypot=5
            Else
 
               If (idnode == 0) Write(nrite,'(/,1x,a)') keyword

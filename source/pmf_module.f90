@@ -6,7 +6,7 @@ Module pmf_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2008
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,6 +17,17 @@ Module pmf_module
   Integer,                        Save :: ntpmf  = 0
 
   Real( Kind = wp ),              Save :: prmpmf = 0.0_wp
+  Real( Kind = wp ),              Save :: passpmq(1:5) = (/ & ! QUENCHING per call
+                                          0.0_wp         ,  & ! cycles counter
+                                          0.0_wp         ,  & ! access counter
+                                          0.0_wp         ,  & ! average cycles
+                                          999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
+                                          0.0_wp /)           ! maximum cycles
+  Real( Kind = wp ),              Save :: passpmf(1:5,1:2,1:2) = Reshape( (/ & ! dim::1-shake, dim:1:-per-call
+                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::1-shake, dim:2:-per-tst
+                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:1:-per-call
+                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:2:-per-tst
+                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp /) , (/5,2,2/) )
 
 
   Integer,           Allocatable, Save :: numpmf(:),pmffrz(:)

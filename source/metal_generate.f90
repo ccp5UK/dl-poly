@@ -7,7 +7,7 @@ Subroutine metal_generate(rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 2006
-! amended   - i.t.todorov april 2014
+! amended   - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,10 +20,12 @@ Subroutine metal_generate(rmet)
 
   Real( Kind = wp ), Intent( In    ) :: rmet
 
-  Integer           :: i,imet,kmet,keypot,katom1,katom2,pmet,qmet
-  Real( Kind = wp ) :: dlrpot,rrr, eps,sig,nnn,mmm, &
-                       cc0,cc1,cc2,cc3,cc4,         &
-                       aaa,bbb,ccc,ddd,ppp,qqq,     &
+  Integer           :: i,imet,kmet,keypot,katom1,katom2, &
+                       pmet,qmet
+  Real( Kind = wp ) :: dlrpot,rrr,              &
+                       eps,sig,nnn,mmm,         &
+                       cc0,cc1,cc2,cc3,cc4,     &
+                       aaa,bbb,ccc,ddd,ppp,qqq, &
                        bet,cut1,cut2,rr0
 
 ! define grid resolution for potential arrays
@@ -89,7 +91,7 @@ Subroutine metal_generate(rmet)
 
               If (katom1 == katom2) Then
                  dmet(1,imet,2)=prmmet(5,imet)**2
-                 dmet(2,imet,2)=prmmet(5,imet)**2
+                 dmet(2,imet,2)=dmet(1,imet,2)
               Else
                  pmet=lstmet((katom1*(katom1+1))/2)
                  qmet=lstmet((katom2*(katom2+1))/2)
@@ -132,7 +134,7 @@ Subroutine metal_generate(rmet)
 
               If (katom1 == katom2) Then
                  dmet(1,imet,2)=prmmet(7,imet)**2
-                 dmet(2,imet,2)=prmmet(7,imet)**2
+                 dmet(2,imet,2)=dmet(1,imet,2)
               Else
                  pmet=lstmet((katom1*(katom1+1))/2)
                  qmet=lstmet((katom2*(katom2+1))/2)
@@ -146,27 +148,26 @@ Subroutine metal_generate(rmet)
 
               eps=prmmet(1,imet)
               sig=prmmet(2,imet)
-              nnn=Nint(prmmet(3,imet))
-              mmm=Nint(prmmet(4,imet))
+              nnn=prmmet(3,imet)
+              mmm=prmmet(4,imet)
 
               Do i=5,mxgmet
                  rrr=Real(i,wp)*dlrpot
                  vmet(i,imet,1)=eps*(sig/rrr)**nnn
-                 vmet(i,imet,2)=Real(nnn,wp)*eps*(sig/rrr)**nnn
+                 vmet(i,imet,2)=nnn*eps*(sig/rrr)**nnn
                  dmet(i,imet,1)=(sig/rrr)**mmm
-                 dmet(i,imet,2)=Real(mmm,wp)*(sig/rrr)**mmm
+                 dmet(i,imet,2)=mmm*(sig/rrr)**mmm
               End Do
 
               If (katom1 == katom2) Then
                  dmet(1,imet,2)=(prmmet(1,imet)*prmmet(5,imet))**2
-                 dmet(2,imet,2)=(prmmet(1,imet)*prmmet(5,imet))**2
+                 dmet(2,imet,2)=dmet(1,imet,2)
               Else
                  pmet=lstmet((katom1*(katom1+1))/2)
                  qmet=lstmet((katom2*(katom2+1))/2)
                  dmet(1,imet,2)=(prmmet(1,pmet)*prmmet(5,pmet))**2
                  dmet(2,imet,2)=(prmmet(1,qmet)*prmmet(5,qmet))**2
               End If
-
 
            Else If (keypot == 4) Then
 
@@ -190,7 +191,34 @@ Subroutine metal_generate(rmet)
               End Do
 
               dmet(1,imet,2)=prmmet(4,imet)**2
-              dmet(2,imet,2)=prmmet(4,imet)**2
+              dmet(2,imet,2)=dmet(1,imet,2)
+
+           Else If (keypot == 5) Then
+
+! many-body perturbation component only potentials
+
+              eps=prmmet(1,imet)
+              sig=prmmet(2,imet)
+              mmm=prmmet(3,imet)
+
+              Do i=5,mxgmet
+                 rrr=Real(i,wp)*dlrpot
+!                 vmet(i,imet,1)=0.0_wp
+!                 vmet(i,imet,2)=0.0_wp
+                 nnn=sig/(rrr**mmm)
+                 dmet(i,imet,1)=nnn
+                 dmet(i,imet,2)=mmm*nnn
+              End Do
+
+              If (katom1 == katom2) Then
+                 dmet(1,imet,2)=prmmet(1,imet)**2
+                 dmet(2,imet,2)=dmet(1,imet,2)
+              Else
+                 pmet=lstmet((katom1*(katom1+1))/2)
+                 qmet=lstmet((katom2*(katom2+1))/2)
+                 dmet(1,imet,2)=prmmet(1,pmet)**2
+                 dmet(2,imet,2)=prmmet(1,qmet)**2
+              End If
 
            Else
 

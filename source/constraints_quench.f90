@@ -6,7 +6,7 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
 ! initial structure of a molecule defined by constraints
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -155,9 +155,17 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
      End If
   End Do
 
-! error exit if quenching fails
-
-  If (.not.safe) Call error(70)
+  If (.not.safe) Then ! error exit if quenching fails
+     Call error(70)
+  Else ! Collect per call passage statistics
+     passcnq(1)=icyc-1
+     passcnq(3)=passcnq(2)*passcnq(3)
+     passcnq(2)=passcnq(2)+1
+     passcnq(3)=passcnq(3)/passcnq(2)+passcnq(1)/passcnq(2)
+     passcnq(4)=Min(passcnq(1),passcnq(4))
+     passcnq(5)=Max(passcnq(1),passcnq(5))
+     passcnq(1)=0.0_wp ! Reset
+  End If
 
   Deallocate (lstitr,         Stat=fail(1))
   Deallocate (lstopt,listot,  Stat=fail(2))

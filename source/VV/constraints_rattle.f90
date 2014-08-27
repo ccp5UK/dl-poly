@@ -1,5 +1,5 @@
 Subroutine constraints_rattle         &
-           (mxshak,tolnce,tstep,      &
+           (mxshak,tolnce,tstep,lcol, &
            lstopt,dxx,dyy,dzz,listot, &
            vxx,vyy,vzz)
 
@@ -12,7 +12,7 @@ Subroutine constraints_rattle         &
 !       VV applicable ONLY
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,6 +26,7 @@ Subroutine constraints_rattle         &
 
   Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
+  Logical,           Intent( In    ) :: lcol
   Integer,           Intent( In    ) :: lstopt(0:2,1:mxcons)
   Real( Kind = wp ), Intent( In    ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
   Integer,           Intent( In    ) :: listot(1:mxatms)
@@ -150,9 +151,27 @@ Subroutine constraints_rattle         &
      End If
   End Do
 
-! error exit for non-convergence
+  If (.not.safe) Then ! error exit for non-convergence
+     Call error(515)
+  Else ! Collect per call and per step passage statistics
+     passcon(1,1,2)=icyc-1
+     passcon(3,1,2)=passcon(2,1,2)*passcon(3,1,2)
+     passcon(2,1,2)=passcon(2,1,2)+1
+     passcon(3,1,2)=passcon(3,1,2)/passcon(2,1,2)+passcon(1,1,2)/passcon(2,1,2)
+     passcon(4,1,2)=Min(passcon(1,1,2),passcon(4,1,2))
+     passcon(5,1,2)=Max(passcon(1,1,2),passcon(5,1,2))
 
-  If (.not.safe) Call error(515)
+     passcon(1,2,1)=passcon(1,2,1)+passcon(1,1,1)
+     If (lcol) Then ! Collect
+        passcon(3,2,2)=passcon(2,2,2)*passcon(3,2,2)
+        passcon(2,2,2)=passcon(2,2,2)+1
+        passcon(3,2,2)=passcon(3,2,2)/passcon(2,2,2)+passcon(1,2,2)/passcon(2,2,2)
+        passcon(4,2,2)=Min(passcon(1,2,2),passcon(4,2,2))
+        passcon(5,2,2)=Max(passcon(1,2,2),passcon(5,2,2))
+        passcon(1,2,2)=0.0_wp ! Reset
+     End If
+     passcon(1,1,2)=0.0_wp ! Reset
+  End If
 
   Deallocate (vxt,vyt,vzt, Stat=fail(1))
   Deallocate (dt,          Stat=fail(2))

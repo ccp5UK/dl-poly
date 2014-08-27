@@ -30,7 +30,6 @@ Subroutine rigid_bodies_tags()
      Call error(0)
   End If
 
-
 ! Loop over all local to this node RB units and save the indices of the members
 ! and their presence on the domain in total
 

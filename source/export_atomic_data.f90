@@ -6,7 +6,7 @@ Subroutine export_atomic_data(mdir)
 ! for halo formation
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov february 2014
+! amended   - i.t.todorov august 2014
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -149,14 +149,9 @@ Subroutine export_atomic_data(mdir)
 
         j=ix*kx+iy*ky+iz*kz
 
-! If the particle is halo to both +&- sides
-! use the corrected halo reduction factor
-
-        If (j > jxyz .and. Mod(j,3) == 0) jxyz=kxyz
-
 ! If the particle is within the correct halo for the selected direction
 
-        If (j == jxyz) Then
+        If (j == jxyz .or. (j > jxyz .and. Mod(j,3) == 0)) Then
 
 ! If safe to proceed
 
@@ -172,7 +167,10 @@ Subroutine export_atomic_data(mdir)
 
               buffer(imove+4)=Real(ltg(i),wp)
               buffer(imove+5)=Real(lsite(i),wp)
-              buffer(imove+6)=Real(ixyz(i)-jxyz,wp)
+
+! Use the corrected halo reduction factor when the particle is halo to both +&- sides
+
+              buffer(imove+6)=Real(ixyz(i)-Merge(jxyz,kxyz,j == jxyz),wp)
 
            Else
 

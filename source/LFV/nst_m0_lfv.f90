@@ -25,7 +25,7 @@ Subroutine nst_m0_lfv                                  &
 ! reference2: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2013
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -62,7 +62,7 @@ Subroutine nst_m0_lfv                                  &
 
 
   Logical,           Save :: newjob = .true.
-  Logical                 :: safe,lv_up,lv_dn
+  Logical                 :: safe,lcol,lv_up,lv_dn
   Integer,           Save :: mxiter,mxkit
   Integer                 :: fail(1:10),iter,kit,i
   Real( Kind = wp ), Save :: volm0,elrc0,virlrc0,h_z
@@ -359,13 +359,15 @@ Subroutine nst_m0_lfv                                  &
         Do While ((.not.safe) .and. kit <= mxkit)
            kit=kit+1
 
+           lcol = (iter*kit == mxiter*mxkit)
+
            If (megcon > 0) Then
 
 ! apply constraint correction: vircon,strcon - constraint virial,stress
 
-              Call constraints_shake_lfv &
-           (imcon,mxshak,tolnce,tstep, &
-           lstopt,dxx,dyy,dzz,listot,  &
+              Call constraints_shake_lfv    &
+           (imcon,mxshak,tolnce,tstep,lcol, &
+           lstopt,dxx,dyy,dzz,listot,       &
            xxx,yyy,zzz,str,vir)
 
 ! constraint virial and stress tensor
@@ -380,9 +382,9 @@ Subroutine nst_m0_lfv                                  &
 
 ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
-              Call pmf_shake_lfv       &
-           (imcon,mxshak,tolnce,tstep, &
-           indpmf,pxx,pyy,pzz,         &
+              Call pmf_shake_lfv            &
+           (imcon,mxshak,tolnce,tstep,lcol, &
+           indpmf,pxx,pyy,pzz,              &
            xxx,yyy,zzz,str,vir)
 
 ! PMF virial and stress tensor

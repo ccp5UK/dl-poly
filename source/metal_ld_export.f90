@@ -6,7 +6,7 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0)
 ! regions for halo formation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -134,14 +134,9 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0)
 
         j=ix*kx+iy*ky+iz*kz
 
-! If the particle is halo to both +&- sides
-! use the corrected halo reduction factor
-
-        If (j > jxyz .and. Mod(j,3) == 0) jxyz=kxyz
-
 ! If the particle is within the correct halo for the selected direction
 
-        If (j == jxyz) Then
+        If (j == jxyz .or. (j > jxyz .and. Mod(j,3) == 0)) Then
 
 ! If safe to proceed
 
@@ -151,11 +146,17 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0)
 
               If (.not.lrhs) Then
                  buffer(imove+1)=rho(i)
-                 buffer(imove+2)=Real(ixyz0(i)-jxyz,wp)
+
+! Use the corrected halo reduction factor when the particle is halo to both +&- sides
+
+                 buffer(imove+2)=Real(ixyz0(i)-Merge(jxyz,kxyz,j == jxyz),wp)
               Else
                  buffer(imove+1)=rho(i)
                  buffer(imove+2)=rhs(i)
-                 buffer(imove+3)=Real(ixyz0(i)-jxyz,wp)
+
+! Use the corrected halo reduction factor when the particle is halo to both +&- sides
+
+                 buffer(imove+3)=Real(ixyz0(i)-Merge(jxyz,kxyz,j == jxyz),wp)
               End If
 
            Else

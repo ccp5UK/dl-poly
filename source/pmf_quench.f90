@@ -5,7 +5,7 @@ Subroutine pmf_quench(imcon,mxshak,tolnce)
 ! dl_poly_4 subroutine for applying PMF constraint quench
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -158,9 +158,17 @@ Subroutine pmf_quench(imcon,mxshak,tolnce)
      End If
   End Do
 
-! error exit for non-convergence
-
-  If (.not.safe) Call error(497)
+  If (.not.safe) Then ! error exit if quenching fails
+     Call error(497)
+  Else ! Collect per call passage statistics
+     passpmq(1)=icyc-1
+     passpmq(3)=passpmq(2)*passpmq(3)
+     passpmq(2)=passpmq(2)+1
+     passpmq(3)=passpmq(3)/passpmq(2)+passpmq(1)/passpmq(2)
+     passpmq(4)=Min(passpmq(1),passpmq(4))
+     passpmq(5)=Max(passpmq(1),passpmq(5))
+     passpmq(1)=0.0_wp ! Reset
+  End If
 
   Deallocate (lstitr,         Stat=fail(1))
   Deallocate (indpmf,         Stat=fail(2))

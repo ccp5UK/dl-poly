@@ -7,7 +7,7 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov november 2012
+! amended   - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,7 +27,7 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
   Logical, Save     :: newjob = .true.
   Integer           :: i,j,k0,k1,k2,kmet,keypot
 
-  Real( Kind = wp ) :: elrc0,elrc1,elrc2,elrcsum,vlrc0,vlrc1,vlrc2, &
+  Real( Kind = wp ) :: elrc0,elrc1,elrc2,elrcsum,vlrc0,vlrc1,vlrc2, tmp, &
                        eps,sig,nnn,mmm,ccc, aaa,rr0,ppp,zet,qqq,eee
 
 
@@ -66,7 +66,7 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
               ccc=prmmet(5,k0)
 
               elrc0=eps*sig**3*(sig/rmet)**(nnn-3.0_wp)/(nnn-3.0_wp)
-              vlrc0=eps*nnn*sig**3*(sig/rmet)**(nnn-3.0_wp)/(nnn-3.0_wp)
+              vlrc0=nnn*elrc0
 
 ! Self-interaction accounted once, interaction between different species
 ! MUST be accounted twice!!
@@ -79,25 +79,26 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
               elrcm(0) = elrcm(0) + twopi*volm*dens(i)*dens(j)*elrc0
               vlrcm(0) = vlrcm(0) - twopi*volm*dens(i)*dens(j)*vlrc0
 
+              tmp=sig**3*(sig/rmet)**(mmm-3.0_wp)/(mmm-3.0_wp)
               If (i == j) Then
-                 elrc1=sig**3*(sig/rmet)**(mmm-3.0_wp)/(mmm-3.0_wp)*(eps*ccc)**2
+                 elrc1=tmp*(eps*ccc)**2
                  elrcm(i)=elrcm(i)+fourpi*dens(i)*elrc1
                  elrcsum=elrcsum+twopi*volm*dens(i)**2*elrc1
 
-                 vlrc1=mmm*sig**3*(sig/rmet)**(mmm-3.0_wp)/(mmm-3.0_wp)*(eps*ccc)**2
+                 vlrc1=mmm*elrc1
                  vlrcm(i)=vlrcm(i)+twopi*dens(i)*vlrc1
               Else
                  k1=lstmet((i*(i+1))/2)
                  k2=lstmet((j*(j+1))/2)
 
-                 elrc1=sig**3*(sig/rmet)**(mmm-3.0_wp)/(mmm-3.0_wp)*(prmmet(1,k1)*prmmet(5,k1))**2
-                 elrc2=sig**3*(sig/rmet)**(mmm-3.0_wp)/(mmm-3.0_wp)*(prmmet(1,k2)*prmmet(5,k2))**2
+                 elrc1=tmp*(prmmet(1,k1)*prmmet(5,k1))**2
+                 elrc2=tmp*(prmmet(1,k2)*prmmet(5,k2))**2
                  elrcm(i)=elrcm(i)+fourpi*dens(j)*elrc1
                  elrcm(j)=elrcm(j)+fourpi*dens(i)*elrc2
                  elrcsum=elrcsum+twopi*volm*dens(i)*dens(j)*(elrc1+elrc2)
 
-                 vlrc1=mmm*sig**3*(sig/rmet)**(mmm-3.0_wp)/(mmm-3.0_wp)*(prmmet(1,k1)*prmmet(5,k1))**2
-                 vlrc2=mmm*sig**3*(sig/rmet)**(mmm-3.0_wp)/(mmm-3.0_wp)*(prmmet(1,k2)*prmmet(5,k2))**2
+                 vlrc1=mmm*elrc1
+                 vlrc2=mmm*elrc2
                  vlrcm(i)=vlrcm(i)+twopi*dens(j)*vlrc1
                  vlrcm(j)=vlrcm(j)+twopi*dens(i)*vlrc2
               End If
@@ -114,7 +115,7 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
               eee=Exp(-ppp*(rmet-rr0)/rr0)
 
               elrc0=2.0_wp*aaa*(rr0/ppp)*(rmet**2+2.0_wp*rmet*(rr0/ppp)+2.0_wp*(rr0/ppp)**2)*eee
-              vlrc0=2.0_wp*aaa*(rmet**3+3.0_wp*rmet**2*(rr0/ppp)+6.0_wp*rmet*(rr0/ppp)**2+6.0_wp*(rr0/rmet)**3)*eee
+              vlrc0=2.0_wp*aaa*rmet**3*eee+3.0_wp*elrc0
 
 ! Self-interaction accounted once, interaction between different species
 ! MUST be accounted twice!!
@@ -138,13 +139,61 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
                  vlrcm(i)=vlrcm(i)+twopi*dens(i)*vlrc1
               Else
                  elrc1=(rmet**2+2.0_wp*rmet*(0.5_wp*rr0/qqq)+2.0_wp*(0.5_wp*rr0/qqq)**2)*(0.5_wp*rr0/qqq)*eee*zet**2
-                 elrc2=(rmet**2+2.0_wp*rmet*(0.5_wp*rr0/qqq)+2.0_wp*(0.5_wp*rr0/qqq)**2)*(0.5_wp*rr0/qqq)*eee*zet**2
+                 elrc2=elrc2
                  elrcm(i)=elrcm(i)+fourpi*dens(j)*elrc1
                  elrcm(j)=elrcm(j)+fourpi*dens(i)*elrc2
                  elrcsum=elrcsum+twopi*volm*dens(i)*dens(j)*(elrc1+elrc2)
 
                  vlrc1=(rmet**3+3.0_wp*rmet**2*(0.5_wp*rr0/qqq)+6.0_wp*rmet*(0.5_wp*rr0/qqq)**2+(0.5_wp*rr0/qqq)**3)*eee*zet**2
-                 vlrc2=(rmet**3+3.0_wp*rmet**2*(0.5_wp*rr0/qqq)+6.0_wp*rmet*(0.5_wp*rr0/qqq)**2+(0.5_wp*rr0/qqq)**3)*eee*zet**2
+                 vlrc2=vlrc1
+                 vlrcm(i)=vlrcm(i)+twopi*dens(j)*vlrc1
+                 vlrcm(j)=vlrcm(j)+twopi*dens(i)*vlrc2
+              End If
+
+           Else If (keypot == 5) Then
+
+! many-body perturbation component only potentials
+
+              eps=prmmet(1,k0)
+              sig=prmmet(2,k0)
+              mmm=prmmet(3,k0)
+
+! No pairwise contributions for mbpc potentials!!!
+
+!              elrc0=0.0_wp
+!              vlrc0=0.0_wp
+
+! Self-interaction accounted once, interaction between different species
+! MUST be accounted twice!!
+
+!              If (i /= j) Then
+!                 elrc0 = elrc0*2.0_wp
+!                 vlrc0 = vlrc0*2.0_wp
+!              End If
+
+!              elrcm(0) = elrcm(0) + twopi*volm*dens(i)*dens(j)*elrc0
+!              vlrcm(0) = vlrcm(0) - twopi*volm*dens(i)*dens(j)*vlrc0
+
+              tmp=sig/((mmm-3.0_wp)*rmet**(mmm-3.0_wp))
+              If (i == j) Then
+                 elrc1=tmp*eps**2
+                 elrcm(i)=elrcm(i)+fourpi*dens(i)*elrc1
+                 elrcsum=elrcsum+twopi*volm*dens(i)**2*elrc1
+
+                 vlrc1=mmm*elrc1
+                 vlrcm(i)=vlrcm(i)+twopi*dens(i)*vlrc1
+              Else
+                 k1=lstmet((i*(i+1))/2)
+                 k2=lstmet((j*(j+1))/2)
+
+                 elrc1=tmp*prmmet(1,k1)**2
+                 elrc2=tmp*prmmet(1,k2)**2
+                 elrcm(i)=elrcm(i)+fourpi*dens(j)*elrc1
+                 elrcm(j)=elrcm(j)+fourpi*dens(i)*elrc2
+                 elrcsum=elrcsum+twopi*volm*dens(i)*dens(j)*(elrc1+elrc2)
+
+                 vlrc1=mmm*elrc1
+                 vlrc2=mmm*elrc2
                  vlrcm(i)=vlrcm(i)+twopi*dens(j)*vlrc1
                  vlrcm(j)=vlrcm(j)+twopi*dens(i)*vlrc2
               End If

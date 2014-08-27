@@ -12,7 +12,7 @@ Subroutine nve_1_lfv                           &
 ! RBs, equations of motion in molecular dynamics - leapfrog verlet
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -45,7 +45,7 @@ Subroutine nve_1_lfv                           &
 
   Logical,           Save :: newjob = .true. , &
                              unsafe = .false.
-  Logical                 :: safe,lv_up,lv_dn
+  Logical                 :: safe,lcol,lv_up,lv_dn
   Integer,           Save :: mxkit
   Integer                 :: fail(1:14),matms,kit,i,j,i1,i2, &
                              irgd,jrgd,krgd,lrgd,rgdtyp
@@ -267,13 +267,15 @@ Subroutine nve_1_lfv                           &
      Do While ((.not.safe) .and. kit <= mxkit)
         kit=kit+1
 
+        lcol = (kit == mxkit)
+
         If (megcon > 0) Then
 
 ! apply constraint correction: vircon,strcon - constraint virial,stress
 
-           Call constraints_shake_lfv  &
-           (imcon,mxshak,tolnce,tstep, &
-           lstopt,dxx,dyy,dzz,listot,  &
+           Call constraints_shake_lfv       &
+           (imcon,mxshak,tolnce,tstep,lcol, &
+           lstopt,dxx,dyy,dzz,listot,       &
            xxx,yyy,zzz,str,vir)
 
 ! constraint virial and stress tensor
@@ -288,9 +290,9 @@ Subroutine nve_1_lfv                           &
 
 ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
-           Call pmf_shake_lfv          &
-           (imcon,mxshak,tolnce,tstep, &
-           indpmf,pxx,pyy,pzz,         &
+           Call pmf_shake_lfv               &
+           (imcon,mxshak,tolnce,tstep,lcol, &
+           indpmf,pxx,pyy,pzz,              &
            xxx,yyy,zzz,str,vir)
 
 ! PMF virial and stress tensor

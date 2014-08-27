@@ -6,7 +6,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 ! gradient method
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith may 2014
+! author    - i.t.todorov & w.smith august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -63,13 +63,12 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
      keyopt = 0
 
-! Passage accumulators are zeroed in core_shell_module
+! Passage accumulators are initialised in core_shell_module
 ! passshl(1) - cycles counter
 ! passshl(2) - access counter
 ! passshl(3) - average cycles
 ! passshl(4) - minimum cycles
 ! passshl(5) - maximum cycles
-     passshl(4) = Huge(1) ! min register
 
      Allocate (oxt(1:mxshl),oyt(1:mxshl),ozt(1:mxshl), Stat=fail(1))
      If (fail(1) > 0) Then

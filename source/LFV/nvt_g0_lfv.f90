@@ -17,7 +17,7 @@ Subroutine nvt_g0_lfv                                       &
 !             J. Stat. Phys. (2007) 128, 1321-1336
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov august 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -49,7 +49,7 @@ Subroutine nvt_g0_lfv                                       &
 
 
   Logical,           Save :: newjob = .true.
-  Logical                 :: safe,lv_up,lv_dn
+  Logical                 :: safe,lcol,lv_up,lv_dn
   Integer,           Save :: mxiter,mxkit
   Integer                 :: fail(1:9),iter,kit,i
   Real( Kind = wp ), Save :: qmass,ceng
@@ -246,13 +246,15 @@ Subroutine nvt_g0_lfv                                       &
         Do While ((.not.safe) .and. kit <= mxkit)
            kit=kit+1
 
+           lcol = (iter*kit == mxiter*mxkit)
+
            If (megcon > 0) Then
 
 ! apply constraint correction: vircon,strcon - constraint virial,stress
 
-              Call constraints_shake_lfv &
-           (imcon,mxshak,tolnce,tstep, &
-           lstopt,dxx,dyy,dzz,listot,  &
+              Call constraints_shake_lfv    &
+           (imcon,mxshak,tolnce,tstep,lcol, &
+           lstopt,dxx,dyy,dzz,listot,       &
            xxx,yyy,zzz,str,vir)
 
 ! constraint virial and stress tensor
@@ -267,9 +269,9 @@ Subroutine nvt_g0_lfv                                       &
 
 ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
-              Call pmf_shake_lfv       &
-           (imcon,mxshak,tolnce,tstep, &
-           indpmf,pxx,pyy,pzz,         &
+              Call pmf_shake_lfv            &
+           (imcon,mxshak,tolnce,tstep,lcol, &
+           indpmf,pxx,pyy,pzz,              &
            xxx,yyy,zzz,str,vir)
 
 ! PMF virial and stress tensor
