@@ -279,6 +279,10 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> $f~=$ site-interstitial cutoff (default $f~=~{\rm Min}\left[0.75,r_{\rm cut}/3\right]$~\AA, \\
 \>                                              \> ${\rm Min}\left[0.3,r_{\rm cut}/3\right]$~\AA~$\le~f~\le~{\rm Min}\left[3.5,r_{\rm cut}/2\right]$~\AA) \\
 \>                                              \> \\
+\> {\bf delr} $f$  ($\equiv$ {\bf rpad} $4f$)   \> \C Verlet shell strip cutoff option is iterpreted \\
+\>                                              \> by \D as the {\bf pad}ding ($\equiv$ {\bf rpad}) $4f$ option, so that \\
+\>                                              \> $r_{\rm pad}$ gets set to ${\rm Max}(r_{\rm pad},f_{\rm delr}/4)$ \\
+\>                                              \> \\
 \> {\bf densvar} $f$                            \> allow for local variation of $\approx f$ \% in the system density \\
 \>                                              \> of (i) particles and (ii) any present bonded-like entities (very \\
 \>                                              \> useful for extremely non-equilibrium simulations, default $f~=~0$) \\
@@ -471,7 +475,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> $i~=$ start timestep for dumping configurations (default $i~=~0$) \\
 \>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$) \\
 \>                                              \> \\
-\> {\bf mult}iple (timestep) $n$                \> act exactly the same as {\bf ewald evalu}ate (every) $n$ \\
+\> {\bf mult}iple (timestep) $n$                \> act exactly the same as {\bf ewald evalu}ate (every) $n$ option above \\
 \>                                              \> \\
 \> {\bf mxquat} $n$                             \> set FIQA iterations limit to $n$ (default $n~=~100$) \\
 \>                                              \> \\
@@ -589,13 +593,12 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> system temperature (i.e. begin a new simulation from \\
 \>                                              \> older run with temperature reset, REVOLD is not used) \\
 \>                                              \> \\
-\> {\bf rcut} $f$  ($\equiv$ {\bf cut}off $f$)  \> set required long-ranged interactions\index{potential!electrostatics} cutoff, $r_{\rm cut}$, to $f$ \AA~ \\
+\> {\bf rcut} $f$  ($\equiv$ {\bf cut}off $f$)  \> act exactly the same as the {\bf cut}off $f$ option above \\
 \>                                              \> \\
 \> {\bf rlxtol} $f$                             \> set tolerance for relaxed shell model to $f$ \\
 \>                                              \> (default $f~=~1$ in D~\AA~~ps$^{-2}$) \\
 \>                                              \> \\
-\> {\bf rpad} $f$  ($\equiv$ {\bf pad}ding $f$) \> set optional padding to the major cutoff, \\
-\>                                              \> $r_{\rm cut}$, to $f$ \AA~ ($f \ge {\rm Min}[0.05,0.5\%.r_{\rm cut}]$, default $f~=~0$) \\
+\> {\bf rpad} $f$  ($\equiv$ {\bf pad}ding $f$) \> act exactly the same as {\bf pad}ding $f$ option above \\
 \>                                              \> \\
 \> {\bf rvdw} (cutoff) $f$                      \> set required short-ranged interactions cutoff to $f$ \AA \\
 \>                                              \> \\

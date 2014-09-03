@@ -45,38 +45,36 @@ Subroutine statistics_result                                    &
 
 ! VNL skipping statistics
 
-  If (llvnl .and. idnode == 0) Write(nrite,"(//,             &
-     & ' VNL skipping run statistics: average skips ', f4.1, &
-     & ' minimum skips ', i3, ' maximum skips ', i3)")       &
+  If (llvnl .and. idnode == 0) Write(nrite,"(//,                            &
+     & ' VNL skipping run statistics - skips per timestep: average ', f5.2, &
+     & ' minimum ', i3, ' maximum ', i3)")                                  &
      skipvnl(3),Nint(Merge(skipvnl(4),skipvnl(5),skipvnl(4)<skipvnl(5))),Nint(skipvnl(5))
 
 ! minimisation convergence statistics
 
-  If (lmin .and. idnode == 0) Write(nrite,"(//,               &
-     & ' minimisation run statistics: average cycles ', f7.2, &
-     & ' minimum cycles ', i5, ' maximum cycles ', i5)")      &
-     passmin(3),Nint(passmin(4)),Nint(passmin(5))
+  If (lmin .and. idnode == 0) Write(nrite,"(//,                          &
+     & ' minimisation run statistics - cycles per call: average ', f7.2, &
+     & ' minimum ', i4, ' maximum ', i4)") passmin(3),Nint(passmin(4)),Nint(passmin(5))
 
 ! shell relaxation convergence statistics
 
-  If (keyshl == 2 .and. idnode == 0) Write(nrite,"(//,            &
-     & ' shell relaxation run statistics: average cycles ', f7.2, &
-     & ' minimum cycles ', i5, ' maximum cycles ', i5)")          &
-     passshl(3),Nint(passshl(4)),Nint(passshl(5))
+  If (keyshl == 2 .and. idnode == 0) Write(nrite,"(//,                           &
+     & ' shell relaxation run statistics - cycles per timestep: average ', f7.2, &
+     & ' minimum ', i4, ' maximum ', i4)") passshl(3),Nint(passshl(4)),Nint(passshl(5))
 
 ! bond constraints iterative cycles statistics
 
   If (megcon > 0) Then
      Call gmax(passcon(3:5,1,1)) ; Call gmax(passcon(3:5,2,1))
-     If (passcon(3,1,1) > 0.0_wp .and. idnode == 0) Write(nrite,"(//,                                 &
-        & ' constraints shake  run statistics per call/timestep: average cycles ', f5.2, ' / ', f5.2, &
-        & ' minimum cycles ', i3, ' / ', i3, ' maximum cycles ', i3, ' / ', i3)")                     &
+     If (passcon(3,1,1) > 0.0_wp .and. idnode == 0) Write(nrite,"(//,                                   &
+        & ' constraints shake  run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
+        & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                                     &
         passcon(3,1,1),passcon(3,2,1),Nint(passcon(4,1,1)),Nint(passcon(4,2,1)),Nint(passcon(5,1,1)),Nint(passcon(5,2,1))
 
      Call gmax(passcon(3:5,1,2)) ; Call gmax(passcon(3:5,2,2))
-     If (passcon(3,1,2) > 0.0_wp .and. idnode == 0) Write(nrite,"(                                    &
-        & ' constraints rattle run statistics per call/timestep: average cycles ', f5.2, ' / ', f5.2, &
-        & ' minimum cycles ', i3, ' / ', i3, ' maximum cycles ', i3, ' / ', i3)")                     &
+     If (passcon(3,1,2) > 0.0_wp .and. idnode == 0) Write(nrite,"(                                      &
+        & ' constraints rattle run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
+        & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                                     &
         passcon(3,1,2),passcon(3,2,2),Nint(passcon(4,1,2)),Nint(passcon(4,2,2)),Nint(passcon(5,1,2)),Nint(passcon(5,2,2))
   End If
 
@@ -84,15 +82,15 @@ Subroutine statistics_result                                    &
 
   If (megpmf > 0) Then
      Call gmax(passpmf(3:5,1,1)) ; Call gmax(passpmf(3:5,2,1))
-     If (passpmf(3,1,1) > 0.0_wp .and. idnode == 0) Write(nrite,"(//,                          &
-        & ' PMFs shake  run statistics per call/timestep: average cycles ', f5.2, ' / ', f5.2, &
-        & ' minimum cycles ', i3, ' / ', i3, ' maximum cycles ', i3, ' / ', i3)")              &
+     If (passpmf(3,1,1) > 0.0_wp .and. idnode == 0) Write(nrite,"(//,                            &
+        & ' PMFs shake  run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
+        & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                              &
         passpmf(3,1,1),passpmf(3,2,1),Nint(passpmf(4,1,1)),Nint(passpmf(4,2,1)),Nint(passpmf(5,1,1)),Nint(passpmf(5,2,1))
 
      Call gmax(passpmf(3:5,1,2)) ; Call gmax(passpmf(3:5,2,2))
-     If (passpmf(3,1,2) > 0.0_wp .and. idnode == 0) Write(nrite,"(                             &
-        & ' PMFs rattle run statistics per call/timestep: average cycles ', f5.2, ' / ', f5.2, &
-        & ' minimum cycles ', i3, ' / ', i3, ' maximum cycles ', i3, ' / ', i3)")              &
+     If (passpmf(3,1,2) > 0.0_wp .and. idnode == 0) Write(nrite,"(                               &
+        & ' PMFs rattle run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
+        & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                              &
         passpmf(3,1,2),passpmf(3,2,2),Nint(passpmf(4,1,2)),Nint(passpmf(4,2,2)),Nint(passpmf(5,1,2)),Nint(passpmf(5,2,2))
   End If
 

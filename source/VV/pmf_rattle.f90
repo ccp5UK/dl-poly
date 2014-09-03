@@ -171,7 +171,7 @@ Subroutine pmf_rattle                 &
      passpmf(4,1,2)=Min(passpmf(1,1,2),passpmf(4,1,2))
      passpmf(5,1,2)=Max(passpmf(1,1,2),passpmf(5,1,2))
 
-     passpmf(1,2,1)=passpmf(1,2,1)+passpmf(1,1,1)
+     passpmf(1,2,2)=passpmf(1,2,2)+passpmf(1,1,2)
      If (lcol) Then ! Collect
         passpmf(3,2,2)=passpmf(2,2,2)*passpmf(3,2,2)
         passpmf(2,2,2)=passpmf(2,2,2)+1

@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2014
+! author    - i.t.todorov september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -102,13 +102,15 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode ==  35) Then
 
-        Write(nrite,'(/,1x,a,/)') '*** warning - redundant directive delr ignored ***'
+        Write(nrite,'(2(/,1x,a),/)')                                                                     &
+        "*** warning - DL_POLY_2/Classic directive 'delr - Verlet shell strip cutoff' defaulted to ***", &
+        "*** DL_POLY_4 directive 'rpad - real space cutoff padding option' ; rpad=Max(rpad,delr/4) ***"
 
      Else If (kode ==  36) Then
 
-        Write(nrite,'(2(/,1x,a),/)')                                                &
-        "*** warning - DL_POLY_2 directive 'mult(iple timestep)' defaulted to ***", &
-        "*** DL_POLY_4 'infrequent k-space SPME evaluation' directive ***"
+        Write(nrite,'(2(/,1x,a),/)')                                                        &
+        "*** warning - DL_POLY_2/Classic directive 'mult(iple timestep)' defaulted to ***", &
+        "*** DL_POLY_4 directive 'infrequent k-space SPME evaluation' ***"
 
      Else If (kode ==  37) Then
 
@@ -177,7 +179,7 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,2a,2(f8.5,a),/,1x,a,/)')                &
         '*** warning - control distances for variable timestep: ', &
-        'Dmin = ', a, ' (Angs) and Dmax = ', b, ' (Angs) ***',       &
+        'Dmin = ', a, ' (Angs) and Dmax = ', b, ' (Angs) ***',     &
         '*** do not comply with safty condition: Dmax > 2.5 Dmin > 0 !!! ***'
 
      Else If (kode == 150) Then

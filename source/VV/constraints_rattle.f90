@@ -161,7 +161,7 @@ Subroutine constraints_rattle         &
      passcon(4,1,2)=Min(passcon(1,1,2),passcon(4,1,2))
      passcon(5,1,2)=Max(passcon(1,1,2),passcon(5,1,2))
 
-     passcon(1,2,1)=passcon(1,2,1)+passcon(1,1,1)
+     passcon(1,2,2)=passcon(1,2,2)+passcon(1,1,2)
      If (lcol) Then ! Collect
         passcon(3,2,2)=passcon(2,2,2)*passcon(3,2,2)
         passcon(2,2,2)=passcon(2,2,2)+1

@@ -11,7 +11,7 @@ Subroutine scan_control                                    &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2014
+! author    - i.t.todorov september 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno and i.t.todorov april 2014 (itramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
@@ -177,7 +177,7 @@ Subroutine scan_control                                    &
 
         lrpad = .true.
         Call get_word(record,word)
-        rpad = Abs(word_2_real(word))
+        rpad = Max(rpad,Abs(word_2_real(word)))
         lrpad = (rpad > zero_plus) ! if zero or nothing is entered
 
 ! read vdw cutoff
@@ -254,7 +254,17 @@ Subroutine scan_control                                    &
         If (nsvaf == 0) nsvaf=Merge(2*isvaf,100,isvaf >= 100)
         vafsamp = Ceiling(Real(nsvaf,wp)/Real(isvaf,wp))
 
-! read DL_POLY_2 multiple timestep option (compatibility)
+! read DL_POLY_2/Classic delr Verlet shell strip cutoff option (compatibility)
+! as DL_POLY_4 real space cutoff padding option
+
+     Else If (word(1:4) == 'delr') Then
+
+        lrpad = .true.
+        Call get_word(record,word)
+        rpad = Max(rpad,0.25_wp*Abs(word_2_real(word)))
+        lrpad = (rpad > zero_plus) ! if zero or nothing is entered
+
+! read DL_POLY_2/Classic multiple timestep option (compatibility)
 ! as DL_POLY_4 infrequent k-space SPME evaluation option
 
      Else If (word(1:4) == 'mult') Then

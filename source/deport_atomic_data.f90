@@ -8,7 +8,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 ! NOTE: When executing on one node we need not get here at all!
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov july 2014
+! author    - w.smith & i.t.todorov august 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014
 !
@@ -40,8 +40,10 @@ Subroutine deport_atomic_data(mdir,lbook)
 
   Use statistics_module
 
-  Use langevin_module,     Only : l_lan,fxl,fyl,fzl
+  Use vnl_module,          Only : llvnl,xbg,ybg,zbg
   Use minimise_module,     Only : l_x,oxx,oyy,ozz
+  Use langevin_module,     Only : l_lan,fxl,fyl,fzl
+
   Use ewald_module
   Use msd_module
   Use greenkubo_module,    Only : vxi,vyi,vzi,vafsamp
@@ -228,6 +230,12 @@ Subroutine deport_atomic_data(mdir,lbook)
         yto(keep)=yto(i)
         zto(keep)=zto(i)
 
+        If (llvnl) Then
+           xbg(keep)=xbg(i)
+           ybg(keep)=ybg(i)
+           zbg(keep)=zbg(i)
+        End If
+
         If (l_lan) Then
            fxl(keep)=fxl(i)
            fyl(keep)=fyl(i)
@@ -346,7 +354,20 @@ Subroutine deport_atomic_data(mdir,lbook)
         End If
         imove=imove+18
 
-! pack Langevin force arrays
+! pack conditional VNL positions arrays
+
+        If (llvnl) Then
+           If (imove+3 <= iblock) Then
+              buffer(imove+1)=xbg(i)
+              buffer(imove+2)=ybg(i)
+              buffer(imove+3)=zbg(i)
+           Else
+              safe=.false.
+           End If
+           imove=imove+3
+        End If
+
+! pack Langevin forces arrays
 
         If (l_lan) Then
            If (imove+3 <= iblock) Then
@@ -372,7 +393,7 @@ Subroutine deport_atomic_data(mdir,lbook)
            imove=imove+3
         End If
 
-! pack frozen-frozen k-space SPME force arrays
+! pack frozen-frozen k-space SPME forces arrays
 
         If (lf_cp) Then
            If (imove+3 <= iblock) Then
@@ -385,7 +406,7 @@ Subroutine deport_atomic_data(mdir,lbook)
            imove=imove+3
         End If
 
-! pack k-space SPME force arrays
+! pack k-space SPME forces arrays
 
         If (l_cp) Then
            If (imove+3 <= iblock) Then
@@ -864,7 +885,17 @@ Subroutine deport_atomic_data(mdir,lbook)
 
      kmove=kmove+18
 
-! unpack Langevin force arrays
+! unpack conditional VNL positions arrays
+
+     If (llvnl) Then
+        xbg(newatm)=buffer(kmove+1)
+        ybg(newatm)=buffer(kmove+2)
+        zbg(newatm)=buffer(kmove+3)
+
+        kmove=kmove+3
+     End If
+
+! unpack Langevin forces arrays
 
      If (l_lan) Then
         fxl(newatm)=buffer(kmove+1)
@@ -884,7 +915,7 @@ Subroutine deport_atomic_data(mdir,lbook)
         kmove=kmove+3
      End If
 
-! unpack frozen-frozen k-space SPME force arrays
+! unpack frozen-frozen k-space SPME forces arrays
 
      If (lf_cp) Then
         ffx(newatm)=buffer(kmove+1)
@@ -894,7 +925,7 @@ Subroutine deport_atomic_data(mdir,lbook)
         kmove=kmove+3
      End If
 
-! unpack k-space SPME force arrays
+! unpack k-space SPME forces arrays
 
      If (l_cp) Then
         fcx(newatm)=buffer(kmove+1)

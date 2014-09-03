@@ -24,7 +24,7 @@ Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk)
   Real( Kind = wp ), Intent ( In    ) :: rcut
   Real( Kind = wp ), Intent ( InOut ) :: rpad,rlnk
 
-  Logical,     Save :: newjob=.true.
+  Logical,     Save :: newjob=.true.,newstart=.true.
   Integer,     Save :: mxsize,alist
   Integer           :: fail,ilx,ily,ilz
   Real( Kind = wp ) :: max_disp,cut,test,celprp(1:10)
@@ -145,7 +145,7 @@ Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk)
                                      - rcut - 1.0e-6_wp ) , test * rcut )
            End If
            cut = Real( Int( 100.0_wp * cut ) , wp ) / 100.0_wp
-           If ((.not.(cut < Min(0.05_wp,0.005_wp*rcut))) .and. Abs(cut-rpad) > 0.005_wp) Then ! Do bother
+           If ((.not.(cut < Min(0.05_wp,0.005_wp*rcut))) .and. cut-rpad > 0.005_wp) Then ! Do bother
   If (idnode == 0) Write(nrite,'(/,1x,2(a,f5.2),a,/)') 'cutoff padding reset from ', rpad, ' Angs to ', cut, ' Angs'
               rpad = cut
               rlnk = rcut + rpad
@@ -160,7 +160,11 @@ Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk)
         skipvnl(3)=skipvnl(2)*skipvnl(3)
         skipvnl(2)=skipvnl(2)+1.0_wp
         skipvnl(3)=skipvnl(3)/skipvnl(2)+skipvnl(1)/skipvnl(2)
-        skipvnl(4)=Min(skipvnl(1),skipvnl(4))
+        If (.not.newstart) Then ! avoid first compulsory force evaluation
+           skipvnl(4)=Min(skipvnl(1),skipvnl(4))
+        Else
+           newstart=.false.
+        End If
         skipvnl(5)=Max(skipvnl(1),skipvnl(5))
 
 ! Reset
