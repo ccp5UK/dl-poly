@@ -271,7 +271,7 @@ Subroutine read_control                                &
 
 ! default switches for calculation and printing of intramolecular analysis
 
-  nstall = 1 ; nstana = 0 ; grdana = 0
+  nstana = 0 ; grdana = 0
   nstbnd = 0 ; grdbnd = 0 ; rcb_d  = 0.0_wp
   nstang = 0 ; grdang = 0
   nstdih = 0 ; grddih = 0
@@ -1860,7 +1860,6 @@ Subroutine read_control                                &
            nstinv=Max(nstinv,i)
            grdinv=j
         End If
-        nstall=Max(1,Min(nstana,nstbnd,nstang,nstdih,nstinv))
         grdana=Max(grdana,grdbnd,grdang,grddih,grdinv)
 
 ! read rdf calculation option
@@ -2296,11 +2295,16 @@ Subroutine read_control                                &
            If (idnode == 0) Write(nrite,"(/,1x,a)") 'intramolecuar distribution collection requested for:'
         End If
 
-        If (nstana == 0) nstana = nstall
+        i=Max(1,nstana,nstbnd,nstang,nstdih,nstinv)
+        nstall=Min(i , Merge(nstana , i , nstana > 0), &
+                       Merge(nstbnd , i , nstbnd > 0), &
+                       Merge(nstang , i , nstang > 0), &
+                       Merge(nstdih , i , nstdih > 0), &
+                       Merge(nstinv , i , nstinv > 0))
 
         If (mxgbnd1 > 0) Then
-           If (nstbnd == 0 .or. nstbnd > nstana) Then
-              nstbnd=nstana
+           If (nstbnd == 0 .or. (nstbnd > nstana .and. nstana > 0)) Then
+              nstbnd = Merge(nstana , nstall , nstana > 0)
               i = 1
            Else
               i = 0
@@ -2314,8 +2318,8 @@ Subroutine read_control                                &
         End If
 
         If (mxgang1 > 0) Then
-           If (nstang == 0 .or. nstang > nstana) Then
-              nstang=nstana
+           If (nstang == 0 .or. (nstang > nstana .and. nstana > 0)) Then
+              nstang = Merge(nstana , nstall , nstana > 0)
               i = 1
            Else
               i = 0
@@ -2328,8 +2332,8 @@ Subroutine read_control                                &
         End If
 
         If (mxgdih1 > 0) Then
-           If (nstdih == 0 .or. nstdih > nstana) Then
-              nstdih=nstana
+           If (nstdih == 0 .or. (nstdih > nstana .and. nstana > 0)) Then
+              nstdih = Merge(nstana , nstall , nstana > 0)
               i = 1
            Else
               i = 0
@@ -2342,8 +2346,8 @@ Subroutine read_control                                &
         End If
 
         If (mxginv1 > 0) Then
-           If (nstinv == 0 .or. nstinv > nstana) Then
-              nstinv=nstana
+           If (nstinv == 0 .or. (nstinv > nstana .and. nstana > 0)) Then
+              nstinv = Merge(nstana , nstall , nstana > 0)
               i = 1
            Else
               i = 0

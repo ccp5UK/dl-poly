@@ -37,7 +37,7 @@
 ! Subroutine dcell - calculates the dimensional properties of a
 !                    simulation cell
 !
-! Subroutine invert - calculates the invert of a 3x3 matrix using
+! Subroutine invert - calculates the inverse of a 3x3 matrix using
 !                     cofactors
 !
 ! Subroutine images - calculates the minimum image distance of
@@ -373,8 +373,8 @@ Subroutine box_mueller_saru1(i,j,gauss1)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 routine using the box-mueller method for generating 3
-! gaussian random numbers of unit variance (with zero mean and standard
+! dl_poly_4 routine using the box-mueller method for generating a
+! gaussian random number of unit variance (with zero mean and standard
 ! variation of 1).
 !
 ! dependent on sarurnd
@@ -483,7 +483,7 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 routine using the box-mueller method for generating 3
+! dl_poly_4 routine using the box-mueller method for generating 6
 ! gaussian random numbers of unit variance (with zero mean and standard
 ! variation of 1).
 !
