@@ -145,7 +145,7 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 
 ! Recover bin size and increment counter
 
-  If (Mod(isw,3) == 0) Then
+  If (Mod(isw,2) == 0) Then
      rdelr  = Real(mxgbnd1,wp)/rcbnd
      ncfbnd = ncfbnd + 1
   End If
@@ -172,7 +172,7 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 
 ! accumulate the histogram (distribution)
 
-        If (Mod(isw,3) == 0 .and. ia <= natms) Then
+        If (Mod(isw,2) == 0 .and. ia <= natms) Then
            j = ldfbnd(kk)
            l = Min(1+Int(rab*rdelr),mxgbnd1)
 

@@ -182,7 +182,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 
 ! Recover bin size and increment counter
 
-  If (Mod(isw,3) == 0) Then
+  If (Mod(isw,2) == 0) Then
      rdelth = Real(mxginv1,wp)/pi
      ncfinv = ncfinv + 1
   End If
@@ -312,7 +312,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 
 ! accumulate the histogram (distribution)
 
-           If (Mod(isw,3) == 0 .and. ib <= natms) Then
+           If (Mod(isw,2) == 0 .and. ib <= natms) Then
               j = ldfinv(kk)
 
               thb=Acos(cosb)

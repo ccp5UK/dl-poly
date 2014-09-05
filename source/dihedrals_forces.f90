@@ -263,7 +263,7 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
 
 ! Recover bin size and increment counter
 
-  If (Mod(isw,3) == 0) Then
+  If (Mod(isw,2) == 0) Then
      rdelth = Real(mxgdih1,wp)*rtwopi
      ncfdih = ncfdih + 1
   End If
@@ -350,7 +350,7 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
 
 ! accumulate the histogram (distribution)
 
-        If (Mod(isw,3) == 0 .and. ia <= natms) Then
+        If (Mod(isw,2) == 0 .and. ia <= natms) Then
            j = ldfdih(kk)
            l = Min(1+Int((theta+pi)*rdelth),mxgdih1)
 
