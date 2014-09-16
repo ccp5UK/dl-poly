@@ -10,7 +10,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1996
-! amended   - i.t.todorov april 2014
+! amended   - i.t.todorov september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

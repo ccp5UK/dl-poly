@@ -16,7 +16,8 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith  october 2004
-! amended   - i.t.todorov april 2014
+! amended   - i.t.todorov september 2014
+! amended   - k.galvin september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -49,14 +50,14 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
                        iatm,jatm,katm, iter,jter,kter, &
                        ijter,ikter,limit
 
-  Real( Kind = wp ) :: dispx,dispy,dispz, xdc,ydc,zdc,               &
-                       rcell(1:9),celprp(1:10),det,                  &
-                       sxij,syij,szij,                               &
-                       gk0,gk1,gk2,vk0,vk1,vk2,                      &
-                       t1,t2,ppp,bi,ei,ci,di,c1i,c2i,c3i,c4i,c5i,hi, &
-                       ak,bk,xkj,ykj,zkj,gtheta,cost,hmct2,c4exp,    &
-                       eterm,vterm,gterm,gamma,gam_ij,gam_j,gam_k,   &
-                       fxa,fya,fza, fxc,fyc,fzc,                     &
+  Real( Kind = wp ) :: dispx,dispy,dispz, xdc,ydc,zdc,                 &
+                       rcell(1:9),celprp(1:10),det,                    &
+                       sxij,syij,szij,                                 &
+                       gk0,gk1,gk2,vk0,vk1,vk2,                        &
+                       t1,t2,ppp,bi,ei,ci,di,c1i,c2i,c3i,c4i,c5i,hi,   &
+                       ak,bk,xkj,ykj,zkj,gtheta,cost,hmct2,c4exp,      &
+                       eterm,vterm,gterm,gamma,gam_ij,                 &
+                       gam_dg,gam_df,gam_dw, fxj,fyj,fzj, fxk,fyk,fzk, &
                        strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:2)
 
 ! Number of neighbouring cells to look around for counting tersoff
@@ -602,16 +603,12 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
                  gtheta= 1.0_wp + (ci/di)**2 - ci**2 / (di**2 + (hi-cost)**2)
                  eterm = eterm + gtheta*prmter2(ikter,2)*scr(kk) ! L_{ij}
                  vterm = vterm + gtheta*prmter2(ikter,2)*gcr(kk)*rtf(kk)
-! d/dr_i of L_{ij} - first part, i.e. no angular part so it is used in the virial
+! d/dr_k of L_{ij} - angular part as it is used in the virial
 
                  gam(kk) = gtheta
                  gvr(kk) = 2.0_wp * ci**2 * (hi-cost) / (di**2 + (hi-cost)**2)**2 ! d(gtheta)/sint*d(theta)
               Else If (potter == 2) Then ! KIHS
-                 xkj=xtf(jj)*rtf(jj)-xtf(kk)*rtf(kk)
-                 ykj=ytf(jj)*rtf(jj)-ytf(kk)*rtf(kk)
-                 zkj=ztf(jj)*rtf(jj)-ztf(kk)*rtf(kk)
-
-                 rkj(kk)=Sqrt(xkj**2+ykj**2+zkj**2)
+                 rkj(kk)=rtf(jj)-rtf(kk)
                  wkj(kk)=Exp(ak * rkj(kk)**bk)
 
                  hmct2=(hi-cost)**2
@@ -620,7 +617,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
                  gtheta= c1i + c2i*hmct2*(1.0_wp+c4exp)/(c3i+hmct2)
                  eterm = eterm + gtheta*wkj(kk)*scr(kk) ! L_{ij}
                  vterm = vterm + gtheta*wkj(kk)*(gcr(kk) - scr(kk)*ak*bk*rkj(kk)**(bk-1))*rtf(kk)
-! d/dr_k of L_{ij} - first part, i.e. no angular part so it is used in the virial
+! d/dr_k of L_{ij} - angular part as it is used in the virial
 
                  gam(kk) = gtheta
                  gvr(kk) = 2.0_wp * (c2i/(c3i+hmct2)) * (hi-cost) * & ! d(gtheta)/sint*d(theta)
@@ -711,60 +708,71 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
            If (lfrzn(iatm)*lfrzn(jatm)*lfrzn(katm) == 0) Then
 
-! Counteract the double counting with the 0.5_wp factor
-
-              If      (potter == 1) Then ! TERS
-                 gam_j = 0.5_wp*gamma*prmter2(ikter,2)*scr(kk)*gvr(kk) ! term in d/dr_k L_{ij} no derivative of Fc
-                 gam_k = 0.5_wp*gamma*prmter2(ikter,2)*gcr(kk)*gam(kk) ! term in d/dr_k L_{ij} no derivative of gamma
-              Else If (potter == 2) Then ! KIHS
-                 gam_j = 0.5_wp*gamma*scr(kk)*wkj(kk)*gvr(kk) ! term in d/dr_k L_{ij} no derivative of Fc*wkj
-                 gam_k = 0.5_wp*gamma*gam(kk)*wkj(kk)*(gcr(kk) - scr(kk)*ak*bk*rkj(kk)**(bk-1))
-              End If
-
 ! term in d/dr_k L_{ij} no derivative of gamma
 
               cost=cst(kk)
 
+! Counteract the double counting with the 0.5_wp factor
+
+              If      (potter == 1) Then ! TERS
+                 gam_dg = 0.5_wp*gamma*prmter2(ikter,2)*scr(kk)*gvr(kk)
+                 gam_df = 0.5_wp*gamma*prmter2(ikter,2)*gcr(kk)*gam(kk)
+
 ! calculate contribution to atomic forces
 
-              fxa = gam_j*(xtf(kk)-xtf(jj)*cost)/rtf(jj) ! contributions from k to i and j
-              fya = gam_j*(ytf(kk)-ytf(jj)*cost)/rtf(jj)
-              fza = gam_j*(ztf(kk)-ztf(jj)*cost)/rtf(jj)
+                 fxj = gam_dg*(xtf(kk)-xtf(jj)*cost)/rtf(jj) ! contributions to j
+                 fyj = gam_dg*(ytf(kk)-ytf(jj)*cost)/rtf(jj)
+                 fzj = gam_dg*(ztf(kk)-ztf(jj)*cost)/rtf(jj)
 
-              fxc = gam_j*(xtf(jj)-xtf(kk)*cost)/rtf(kk) - gam_k*xtf(kk) ! contributions from k to i only (via j)
-              fyc = gam_j*(ytf(jj)-ytf(kk)*cost)/rtf(kk) - gam_k*ytf(kk)
-              fzc = gam_j*(ztf(jj)-ztf(kk)*cost)/rtf(kk) - gam_k*ztf(kk)
+                 fxk = gam_dg*(xtf(jj)-xtf(kk)*cost)/rtf(kk) - gam_df*xtf(kk) ! contributions to k
+                 fyk = gam_dg*(ytf(jj)-ytf(kk)*cost)/rtf(kk) - gam_df*ytf(kk)
+                 fzk = gam_dg*(ztf(jj)-ztf(kk)*cost)/rtf(kk) - gam_df*ztf(kk)
+              Else If (potter == 2) Then ! KIHS
+                 gam_dg = 0.5_wp*gamma*scr(kk)*wkj(kk)*gvr(kk)
+                 gam_df = 0.5_wp*gamma*gam(kk)*wkj(kk)*gcr(kk)
+                 gam_dw = 0.5_wp*gamma*scr(kk)*gam(kk)*wkj(kk)*(ak*bk*rkj(kk)**(bk-1))
+
+! calculate contribution to atomic forces
+
+                 fxj = gam_dg*(xtf(kk)-xtf(jj)*cost)/rtf(jj) - gam_dw*xtf(jj) ! contributions to j
+                 fyj = gam_dg*(ytf(kk)-ytf(jj)*cost)/rtf(jj) - gam_dw*ytf(jj)
+                 fzj = gam_dg*(ztf(kk)-ztf(jj)*cost)/rtf(jj) - gam_dw*ztf(jj)
+
+                 fxk = gam_dg*(xtf(jj)-xtf(kk)*cost)/rtf(kk) - gam_df*xtf(kk) + gam_dw*xtf(kk)! contributions to k
+                 fyk = gam_dg*(ytf(jj)-ytf(kk)*cost)/rtf(kk) - gam_df*ytf(kk) + gam_dw*ytf(kk)
+                 fzk = gam_dg*(ztf(jj)-ztf(kk)*cost)/rtf(kk) - gam_df*ztf(kk) + gam_dw*ztf(kk)
+              End If
 
               If (iatm <= natms) Then
 
-                 fxx(iatm)=fxx(iatm)-(fxa+fxc)
-                 fyy(iatm)=fyy(iatm)-(fya+fyc)
-                 fzz(iatm)=fzz(iatm)-(fza+fzc)
+                 fxx(iatm)=fxx(iatm)-(fxj+fxk)
+                 fyy(iatm)=fyy(iatm)-(fyj+fyk)
+                 fzz(iatm)=fzz(iatm)-(fzj+fzk)
 
 ! calculate contribution to stress tensor (associated to the head atom)
 
-                 strs1 = strs1 + (fxa*xtf(jj)*rtf(jj) + fxc*xtf(kk)*rtf(kk))
-                 strs2 = strs2 + (fxa*ytf(jj)*rtf(jj) + fxc*ytf(kk)*rtf(kk))
-                 strs3 = strs3 + (fxa*ztf(jj)*rtf(jj) + fxc*ztf(kk)*rtf(kk))
-                 strs5 = strs5 + (fya*ytf(jj)*rtf(jj) + fyc*ytf(kk)*rtf(kk))
-                 strs6 = strs6 + (fya*ztf(jj)*rtf(jj) + fyc*ztf(kk)*rtf(kk))
-                 strs9 = strs9 + (fza*ztf(jj)*rtf(jj) + fzc*ztf(kk)*rtf(kk))
+                 strs1 = strs1 + (fxj*xtf(jj)*rtf(jj) + fxk*xtf(kk)*rtf(kk))
+                 strs2 = strs2 + (fxj*ytf(jj)*rtf(jj) + fxk*ytf(kk)*rtf(kk))
+                 strs3 = strs3 + (fxj*ztf(jj)*rtf(jj) + fxk*ztf(kk)*rtf(kk))
+                 strs5 = strs5 + (fyj*ytf(jj)*rtf(jj) + fyk*ytf(kk)*rtf(kk))
+                 strs6 = strs6 + (fyj*ztf(jj)*rtf(jj) + fyk*ztf(kk)*rtf(kk))
+                 strs9 = strs9 + (fzj*ztf(jj)*rtf(jj) + fzk*ztf(kk)*rtf(kk))
 
               End If
 
               If (jatm <= natms) Then
 
-                 fxx(jatm)=fxx(jatm)+fxa
-                 fyy(jatm)=fyy(jatm)+fya
-                 fzz(jatm)=fzz(jatm)+fza
+                 fxx(jatm)=fxx(jatm)+fxj
+                 fyy(jatm)=fyy(jatm)+fyj
+                 fzz(jatm)=fzz(jatm)+fzj
 
               End If
 
               If (katm <= natms) Then
 
-                 fxx(katm)=fxx(katm)+fxc
-                 fyy(katm)=fyy(katm)+fyc
-                 fzz(katm)=fzz(katm)+fzc
+                 fxx(katm)=fxx(katm)+fxk
+                 fyy(katm)=fyy(katm)+fyk
+                 fzz(katm)=fzz(katm)+fzk
 
               End If
 

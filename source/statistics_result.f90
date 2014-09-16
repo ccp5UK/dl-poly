@@ -8,7 +8,7 @@ Subroutine statistics_result                                    &
 ! dl_poly_4 subroutine for writing simulation summary
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov august 2014
+! author    - w.smith & i.t.todorov september 2014
 ! contrib   - m.a.seaton june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -148,20 +148,20 @@ Subroutine statistics_result                                    &
   If (idnode == 0) Then
      Write(nrite,"(1x,130('-'),                                         &
           &  /,/,1x,'   steps',5x,'eng_tot',4x,'temp_tot',5x,'eng_cfg', &
-          &  5x,'eng_src',5x,'eng_cou',5x,'eng_bnd',5x,'eng_ang',5x,    &
-          &  'eng_dih',5x,'eng_tet',/,1x,'time(ps)',5x,' eng_pv',4x,    &
+          &  10x,'eng_src',5x,'eng_cou',5x,'eng_bnd',5x,'eng_ang',5x,   &
+          &  'eng_dih',5x,'eng_tet',/,6x,'time(ps)',5x,' eng_pv',4x,    &
           &  'temp_rot',5x,'vir_cfg',5x,'vir_src',5x,'vir_cou',5x,      &
           &  'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet',/,        &
-          &  1x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',      &
+          &  6x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',      &
           &  5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',5x,'vir_pmf', &
           &  7x,'press',/,/,1x,130('-'))")
 
-     Write(nrite,'(1x,i8,1p,9e12.4,/,0p,f9.5,1p,9e12.4,/,1x,0p,f8.1,    &
+     Write(nrite,'(1x,i13,1p,9e12.4,/,0p,f14.5,1p,9e12.4,/,1x,0p,f13.1, &
           & 1p,9e12.4)') numacc,(sumval(i),i=1,9),tmp,                  &
                       (sumval(i),i=10,18),timelp,(sumval(i),i=19,27)
 
-     Write(nrite,"(/,1x,' r.m.s. ',1p,9e12.4,/,1x,'fluctn. ',1p,9e12.4, &
-          & /,9x,9e12.4)") (ssqval(i),i=1,27)
+     Write(nrite,"(/,6x,' r.m.s. ',1p,9e12.4,/,6x,'fluctn. ',1p,9e12.4, &
+          & /,14x,9e12.4)") (ssqval(i),i=1,27)
 
      Write(nrite,"(1x,130('-'))")
   End If

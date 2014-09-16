@@ -10,7 +10,7 @@ Subroutine angles_forces(isw,imcon,engang,virang,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov march 2014
+! amended   - i.t.todorov september 2014
 ! contrib   - a.v.brukhno and i.t.todorov april 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

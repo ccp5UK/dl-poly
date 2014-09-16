@@ -204,9 +204,29 @@ Simulation at 300~K and 0~atmosphere is maintained in an Evans NVT
 isokinetic ensemble.  These systems consist of 32,000 and 256,000
 particles respectively.
 
+\subsection{Test Case 47 and 48: Hexane melt, atomistic and coarsed grained}
+
+TEST47 contains a Hexane melt (1000 molecules) modelled by the OPLSAA
+force-field (FF).  TEST48 represents the same system, which is now CG-mapped
+by VOTCA, \href{http://www.votca.org/}{http://www.votca.org/}\index{WWW},
+or DL\_CGMAP \href{http://www.ccp5.ac.uk/projects/ccp5\_cg.shtml}{http://www.ccp5.ac.uk/projects/ccp5\_cg.shtml}\index{WWW}.
+
+This test case is to exemplify the Coarse-Graining (CG) procedure
+(see Chapter~\ref{coarse-graining}), including FA-to-CG mapping and
+obtaining the PMF data by means of Boltzmann Inversion \cite{reith-03a}.
+As a result, \D could be used for simulating a CG system with numerically
+defined, tabulated FFs, see TABBND, TABANG, TABDIH and TABINV files for
+intra-molecular potentials, and TABLE for inter-molecular (short-range, VDW)
+potentials.
+
+The test is one of the tutorial cases from VOTCA package \cite{ruhle-09a}.
+Therefore, the CONFIG, CONTROL and FIELD files are fully consistent
+with the corresponding setup files found in the tutorial directory
+``csg-tutorials/hexane'' of VOTCA.
+
 \section{Benchmark Cases}
 
-\D benchmark test cases are avaliable to download them from the CCP5 FTP
+\D benchmark test cases are available to download them from the CCP5 FTP
 server as follows:
 
 \begin{verbatim}

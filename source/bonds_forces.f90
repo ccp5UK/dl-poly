@@ -12,7 +12,7 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith july 1992
-! amended   - i.t.todorov march 2014
+! amended   - i.t.todorov september 2014
 ! contrib   - a.v.brukhno and i.t.todorov april 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

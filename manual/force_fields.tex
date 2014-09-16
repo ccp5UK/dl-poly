@@ -1016,7 +1016,7 @@ U(r_{ij}) =
 U(r_{ij}) = 4\epsilon\left[\left
 (\frac{\sigma}{r_{ij}}\right)^{12}-\left(\frac{\sigma}{r_{ij}}\right)^{6}\right]
 \end{equation}
-\item n-m potential \cite{clarke-86a}:  ({\bf nm})
+\item n-m potential \cite{mie-03a,clarke-86a}:  ({\bf nm})
 \begin{equation}
 U(r_{ij}) = \frac{E_{o}}{(n-m)}\left[m\left
 (\frac{r_{o}}{r_{ij}}\right)^{n}-n\left(\frac{r_{o}}{r_{ij}}\right)^{m}\right]
@@ -1036,7 +1036,7 @@ A~\exp[B(\sigma-r_{ij})]-\frac{C}{r_{ij}^{6}}-\frac{D}{r_{ij}^{8}}
 U(r_{ij}) =
 \left(\frac{A}{r_{ij}^{12}}\right)-\left(\frac{B}{r_{ij}^{10}}\right)
 \end{equation}
-\item Shifted force n-m potential \cite{clarke-86a}:  ({\bf snm})
+\item Shifted force n-m potential \cite{mie-03a,clarke-86a}:  ({\bf snm})
 \begin{eqnarray}
 U(r_{ij})&=&\frac{\alpha E_{o}}{(n-m)}\left [
 m\beta^{n}\left \{ \left (\frac{r_{o}}{r_{ij}}\right )^{n}-
@@ -1936,7 +1936,7 @@ summation is worked out as
  \gamma_{ij} \frac{\partial}{\partial r_{\ell}^{\alpha}} f_{C}(r_{ij}) f_{A}(r_{ij}) +
  f_{C}(r_{ij}) f_{A}(r_{ij}) \frac{\partial}{\partial r_{\ell}^{\alpha}} \gamma_{ij}~~,
 \end{equation}
-with the contributions from the first in the forms:
+with the contributions from the first two terms being:
 \begin{eqnarray}
 -\frac{\partial}{\partial r_{\ell}^{\alpha}} f_{C}(r_{ij}) f_{R}(r_{ij})&=&
 -\left\{ f_{C}(r_{ij}) \frac{\partial}{\partial r_{ij}} f_{R}(r_{ij}) +
@@ -1990,28 +1990,31 @@ where
 \begin{equation}
 \frac{\partial}{\partial r_{\ell}^{\alpha}} {\cal{L}}_{ij} =
 \frac{\partial}{\partial r_{\ell}^{\alpha}} \sum_{k \neq i,j}
-\omega_{ik}~f_{C}(r_{ik})~g(\theta_{ijk})~~.  \nonumber
+\omega_{ik}(r_{ij},r_{ik})~f_{C}(r_{ik})~g(\theta_{ijk})~~.  \nonumber
 \end{equation}
-Bearing in mind that:
+It is worth noting that the derivative of $\omega_{ik}$:
 \begin{equation}
 \frac{\partial}{\partial r_{\ell}^{\alpha}} \omega_{ik} =
-\alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}-1}~\omega_{ik}~(\delta_{lj}-\delta_{lk})
+\alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}-1}~\omega_{ik}~
+\left\{ (\delta_{\ell j}-\delta_{\ell i}) \frac{r_{ij}^{\alpha}}{r_{ij}}-
+(\delta_{\ell k}-\delta_{\ell i}) \frac{r_{ik}^{\alpha}}{r_{ik}} \right\}~~,
 \end{equation}
-the angular term then has three different contributions depending
-on the index of the particle participating in the interaction:
-\begin{eqnarray}
-\ell~=~i~&:&~\frac{\partial}{\partial r_{i}^{\alpha}} {\cal{L}}_{ij} = \sum_{k \neq i,j} \omega_{ik}
-\left[ g(\theta_{ijk}) \frac{\partial}{\partial r_{i}^{\alpha}} f_{C}(r_{ik}) +
-f_{C}(r_{ik}) \frac{\partial}{\partial r_{i}^{\alpha}} g(\theta_{ijk}) \right] \nonumber \\
-\ell~=~j~&:&~\frac{\partial}{\partial r_{j}^{\alpha}} {\cal{L}}_{ij} = \sum_{k \neq i,j} \omega_{ik}
-~f_{C}(r_{ik}) \left( \alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}-1} g(\theta_{ijk}) +
-\frac{\partial}{\partial r_{j}^{\alpha}} g(\theta_{ijk})\right) \nonumber \\
-\ell~\neq~i,j~&:&~\frac{\partial}{\partial r_{\ell}^{\alpha}} {\cal{L}}_{ij} = \omega_{i \ell}
-\left[ g(\theta_{ij \ell}) \frac{\partial}{\partial r_{\ell}^{\alpha}} f_{C}(r_{i \ell}) +
-f_{C}(r_{i \ell}) \frac{\partial}{\partial r_{\ell}^{\alpha}} g(\theta_{ij \ell}) \right. \\
-& & \phantom{xxxxxxxxxxxxxxxxxxxxxxxxx}
-\left. -\alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}-1} g(\theta_{ij \ell}) f_{C}(r_{i \ell})\right]~~. \nonumber
-\end{eqnarray}
+now has three different contributions depending on the index of the
+particle participating in the interaction!  Hence the angular term
+is more complicated and difficult to express than in the {\bf ters} case:
+%\begin{eqnarray}
+%\ell~=~i~&:&~\frac{\partial}{\partial r_{i}^{\alpha}} {\cal{L}}_{ij} = \sum_{k \neq i,j} \omega_{ik}
+%\left[ g(\theta_{ijk}) \frac{\partial}{\partial r_{i}^{\alpha}} f_{C}(r_{ik}) +
+%f_{C}(r_{ik}) \frac{\partial}{\partial r_{i}^{\alpha}} g(\theta_{ijk}) \right] \nonumber \\
+%\ell~=~j~&:&~\frac{\partial}{\partial r_{j}^{\alpha}} {\cal{L}}_{ij} = \sum_{k \neq i,j} \omega_{ik}
+%~f_{C}(r_{ik}) \left( \alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}-1} g(\theta_{ijk}) +
+%\frac{\partial}{\partial r_{j}^{\alpha}} g(\theta_{ijk})\right) \nonumber \\
+%\ell~\neq~i,j~&:&~\frac{\partial}{\partial r_{\ell}^{\alpha}} {\cal{L}}_{ij} = \omega_{i \ell}
+%\left[ g(\theta_{ij \ell}) \frac{\partial}{\partial r_{\ell}^{\alpha}} f_{C}(r_{i \ell}) +
+%f_{C}(r_{i \ell})~\times \right. \\
+%& & \phantom{xxxxxxxxxxxxxxxxx} \left. \times~\left( -\alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}-1} g(\theta_{ij \ell})
+%+ \frac{\partial}{\partial r_{\ell}^{\alpha}} g(\theta_{ij \ell}) \right) \right]~~. \nonumber
+%\end{eqnarray}
 \end{itemize}
 
 The derivative of $g(\theta_{ijk})$ is worked out in the following

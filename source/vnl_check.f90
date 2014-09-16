@@ -5,7 +5,7 @@ Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk)
 ! dl_poly_4 routine implementing the VNL conditional update checks
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov september 2014
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -136,7 +136,7 @@ Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk)
         End If
      Else ! push the limits when up for update in a 'no strict' regime
         If (l_vnl .and. (.not.l_str)) Then ! Try to re-set rpad with some slack
-           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 4) Then
+           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then
               cut = test * rcut
            Else
               cut = Min( 0.85_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &

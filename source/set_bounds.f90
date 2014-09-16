@@ -438,8 +438,6 @@ Subroutine set_bounds                                       &
 
   If (idnode == 0) Write(nrite,'(/,/,1x,a,3i6)') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
 
-
-
 10 Continue ! possible rcut redefinition...
 
 ! Define link-cell cutoff (minimum width)
@@ -449,6 +447,24 @@ Subroutine set_bounds                                       &
 ! define cut
 
   cut=rlnk+1.0e-6_wp
+
+! Provide advise on decomposition
+
+  qlx=Int(celprp(7)/cut)
+  qly=Int(celprp(8)/cut)
+  qlz=Int(celprp(9)/cut)
+
+  If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                      &
+     'cutoff driven limit on largest possible decomposition:', qlx*qly*qlz , &
+     ' nodes/domains (', qlx,',',qly,',',qlz,')'
+
+  qlx=qlx/2
+  qly=qly/2
+  qlz=qlz/2
+
+  If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                      &
+     'cutoff driven limit on largest balanced decomposition:', qlx*qly*qlz , &
+     ' nodes/domains (', qlx,',',qly,',',qlz,')'
 
 ! calculate link cell dimensions per node
 
@@ -487,7 +503,7 @@ Subroutine set_bounds                                       &
   Else ! push the limits when real dynamics exists & in 'no strict' mode
      If (lsim .and. (.not.l_str)) Then
         If (rpad <= zero_plus) Then ! When rpad undefined give it some value
-           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 4) Then
+           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then
               rpad = test * rcut
               rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
               If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
@@ -509,7 +525,7 @@ Subroutine set_bounds                                       &
   End If
   llvnl = (rpad > zero_plus) ! Detect conditional VNL updating at start
 
-  If (ilx < 4 .or. ily < 4 .or. ilz < 4) Call warning(100,0.0_wp,0.0_wp,0.0_wp)
+  If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call warning(100,0.0_wp,0.0_wp,0.0_wp)
 
 ! get total link cells per domain (boundary padding included)
 ! total link-cells per node/domain is ncells = (ilx+2)*(ily+2)*(ilz+2)

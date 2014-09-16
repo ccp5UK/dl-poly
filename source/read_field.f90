@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov september 2014
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno and i.t.todorov march 2014 (itramolecular TPs & PDFs)
@@ -3630,8 +3630,6 @@ Subroutine read_field                   &
 
            parpot(1)=parpot(1)*engunit
            parpot(3)=parpot(3)*engunit
-
-           If (keypot == 2) parpot(8)=0.5_wp/parpot(8) ! eta_i=1/(2delta_i)
 
            If (lstter(katom0) > 0) Call error(76)
 

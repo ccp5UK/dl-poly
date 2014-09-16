@@ -72,7 +72,7 @@ Subroutine tersoff_generate(rcter)
 
                     Else If (ltpter(katom1)*ltpter(katom2) == 4) Then
 
-! Murty's corection to screening function (vmbp)
+! Murty's correction to screening function (vmbp)
 ! M.V.R. Murty, H.A. Atwater, Phys. Rev. B 51 (1995) 4889-4993
 
                        vmbp(i,kpt,1)=0.5_wp+9.0_wp/16.0_wp*Cos(arg)-1.0_wp/16.0_wp*Cos(3.0_wp*arg)
