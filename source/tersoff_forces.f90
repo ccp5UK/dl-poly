@@ -616,7 +616,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
                  gtheta= c1i + c2i*hmct2*(1.0_wp+c4exp)/(c3i+hmct2)
                  eterm = eterm + gtheta*wkj(kk)*scr(kk) ! L_{ij}
-                 vterm = vterm + gtheta*wkj(kk)*(gcr(kk) - scr(kk)*ak*bk*rkj(kk)**(bk-1))*rtf(kk)
+                 vterm = vterm + gtheta*wkj(kk)*(gcr(kk)*rtf(kk) + scr(kk)*ak*bk*rkj(kk)**bk)
 ! d/dr_k of L_{ij} - angular part as it is used in the virial
 
                  gam(kk) = gtheta

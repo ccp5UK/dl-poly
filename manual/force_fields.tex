@@ -1309,8 +1309,14 @@ different from both EAM, EEAM, 2BEAM and FS classes (see below).
 \item Finnis-Sinclair potential \cite{finnis-84a}:  ({\bf fnsc})
 Finnis-Sinclair potential is explicitly analytical.  It has the following form:
 \begin{eqnarray}
-V_{ij}(r_{ij}) &=& (r_{ij}-c)^{2} (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}) \nonumber \\
-\rho_{ij}(r_{ij}) &=& (r_{ij}-d)^{2} + \beta \frac{(r_{ij}-d)^{3}}{d} \\
+V_{ij}(r_{ij}) &=& \left\{ \begin{array} {l@{\quad:\quad}l}
+(r_{ij}-c)^{2} (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}) & r_{ij} < c \\
+0 & r_{ij} > c
+\end{array} \right. \nonumber \\
+\rho_{ij}(r_{ij}) &=& \left\{ \begin{array} {l@{\quad:\quad}l}
+(r_{ij}-d)^{2} + \beta \displaystyle \frac{(r_{ij}-d)^{3}}{d} & r_{ij} < d \\
+0 & r_{ij} > d
+\end{array} \right. \\
 F(\rho_{i}) &=& -A \sqrt{\rho_{i}}~~, \nonumber
 \end{eqnarray}
 with parameters: $c_{0}$, $c_{1}$, $c_{2}$, $c$, $A$, $d$, $\beta$,
@@ -1321,9 +1327,14 @@ model alloys are different from the EAM potentials (see below).
 \item Extended Finnis-Sinclair potential \cite{dai-06a}:  ({\bf exfs})
 It has the following form:
 \begin{eqnarray}
-V_{ij}(r_{ij}) &=& (r_{ij}-c)^{2}
-(c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}+c_{3}r_{ij}^{3}+c_{4}r_{ij}^{4}) \nonumber \\
-\rho_{ij}(r_{ij}) &=& (r_{ij}-d)^{2} + B^{2} (r_{ij}-d)^{4} \\
+V_{ij}(r_{ij}) &=& \left\{ \begin{array} {l@{\quad:\quad}l}
+(r_{ij}-c)^{2} (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}+c_{3}r_{ij}^{3}+c_{4}r_{ij}^{4}) & r_{ij} < c \\
+0 & r_{ij} > c
+\end{array} \right. \nonumber \\
+\rho_{ij}(r_{ij}) &=& \left\{ \begin{array} {l@{\quad:\quad}l}
+(r_{ij}-d)^{2} + B^{2} (r_{ij}-d)^{4} & r_{ij} < d \\
+0 & r_{ij} > d
+\end{array} \right. \\
 F(\rho_{i}) &=& -A \sqrt{\rho_{i}}~~, \nonumber
 \end{eqnarray}
 with parameters: $c_{0}$, $c_{1}$, $c_{2}$, $c_{3}$, $c_{4}$, $c$, $A$, $d$, $B$,
@@ -1355,10 +1366,14 @@ two body part may be defined by a matching van der Waals potential in
 the vdw section of the FIELD file.  It has the form:
 \begin{eqnarray}
 V_{ij}(r_{ij}) &=& 0 \nonumber \\
-\rho_{ij}(r_{ij}) &=& \frac{a}{r_{ij}^{m}} \\
+\rho_{ij}(r_{ij}) &=& \left\{ \begin{array} {l@{\quad:\quad}l}
+0 & r_{ij} < c \\
+a/r_{ij}^{m} & c < r_{ij} < d \\
+0 & r_{ij} > d
+\end{array} \right. \\
 F(\rho_{i}) &=& -\epsilon \sqrt{\rho_{i}}~~, \nonumber
 \end{eqnarray}
-with parameters: $\epsilon$, $a$ and $m$.
+with parameters: $\epsilon$, $a$, $m$, both $c$ and $d$ are cutoffs.
 \end{enumerate}
 
 All of these metal potentials can be decomposed into pair
@@ -2064,9 +2079,8 @@ as
 \gamma_{ij} \frac{\partial}{\partial r_{ij}} f_{C}(r_{ij}) f_{A}(r_{ij}) \right] r_{ij} - \phantom{xxxxxxxxxxxxxxx} \right. \nonumber \\
 & & \phantom{xxxxxxxx} \left(-\delta_{i}~\eta_{i}\right) f_{C}(r_{ij}) f_{A}(r_{ij})~\chi_{ij}
 \left( 1 + {\cal{L}}_{ij}^{\eta_{i}} \right)^{-\delta_{i} - 1} {\cal{L}}_{ij}^{\eta_{i}-1} \times \\
-& & \phantom{xxxxxxxx} \left. \sum_{k \neq i,j} \omega_{ik}~g(\theta_{ijk}) \left[
-\frac{\partial}{\partial r_{ik}} f_{C}(r_{ik})
-- \alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}-1}f_{C}(r_{ik}) \right] r_{ik} \right\}~~.
+& & \phantom{xxxxxxxx} \left. \sum_{k \neq i,j} \omega_{ik} \left[r_{ik}~g(\theta_{ijk})\frac{\partial}{\partial r_{ik}} f_{C}(r_{ik}) +
+\alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}}f_{C}(r_{ik}) \right] \right\}~~.
 \nonumber
 \end{eqnarray}
 \end{itemize}

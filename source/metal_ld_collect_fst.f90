@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,safe,rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov august 2014
+! amended   - i.t.todorov september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -181,8 +181,13 @@ Subroutine metal_ld_collect_fst(iatm,rsqdf,safe,rmet)
                  eps=prmmet(1,k0)
                  sig=prmmet(2,k0)
                  mmm=prmmet(3,k0)
+                 ccc=prmmet(4,k0)
+                 ddd=prmmet(5,k0)
+                 cut1=ccc
+                 cut2=ddd
 
-                 density=sig/rrr**mmm
+                 density=0.0_wp
+                 If (rrr >= cut1 .and. rrr <= cut2) density=sig/rrr**mmm
 
                  If (ai == aj) Then
                     t1=prmmet(1,k0)**2

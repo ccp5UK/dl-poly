@@ -2455,14 +2455,15 @@ $- A \sqrt{\rho_{i}}~~~;~~~\rho_{i} = \sum\limits_{j\ne i} \left[(r_{ij}-d)^{2} 
            &                 &         &         &         &     &          & \\
 {\bf stch} & Sutton-Chen     & $\epsilon$ & $a$  & $n$     & $m$ & $c$      &
 $U_{i}(r) = \epsilon \left[ {1 \over 2} \sum\limits_{j \ne i} \left(
-\frac{a}{r_{ij}} \right)^{n} - c \sqrt{\rho_{i}} \right]~;$ \\
-           &                 &         &         &         &     &          &
-$\rho_{i} = \sum\limits_{j\ne i} \left(\frac{a}{r_{ij}}\right )^{m}$ \\
+\frac{a}{r_{ij}} \right)^{n} - c \sqrt{\rho_{i}} \right]~;~\rho_{i} = \sum\limits_{j\ne i} \left(\frac{a}{r_{ij}}\right)^{m}$ \\
            &                 &         &         &         &     &          & \\
 {\bf gupt} & Gupta           & $A$     & $r_{0}$ & $p$     & $B$ & $q_{ij}$ &
 $U_{i}(r) = \sum\limits_{j \ne i} A \exp \left(-p \frac{r_{ij}-r_{0}}{r_{0}}\right) - B \sqrt{\rho_{i}}~;$ \\
            &                 &         &         &         &     &          &
 $\rho_{i} = \sum\limits_{j\ne i} \exp \left(-2 q_{ij} \frac{r_{ij}-r_{0}}{r_{0}}\right)$ \\
+           &                 &         &         &         &     &          & \\
+{\bf mbpc} & MBPC            & $\epsilon$ & $a$  & $m$     & $c$ & $d$      &
+$U_{i}(r) = -\epsilon \sqrt{\rho_{i}}~;~\rho_{i} = \sum\limits_{j\ne i} a/r_{ij}^{m}$ \\
            &                 &         &         &         &     &          & \\
 \hline
 \end{tabular}
@@ -2843,13 +2844,47 @@ as seen in Table~\ref{external-field-table}:
 \vek{F} &=& q \; (\vek{v} \times \vek{H})~~~~~~{\tt therefore}, \nonumber \\
 \left[H\right] &=& \frac{\left[F\right]}{\left[q\right]~\left[v\right]} = \frac{\left[m\right]~\left[a\right]}{\left[q\right]~\left[v\right]} \nonumber \\
 \left[H\right] &=& \frac{\tt Dalton~\AA/ps^{2}}{\tt proton~\AA/ps} = \frac{\tt Dalton}{\tt proton~ps} \\ \label{external-field-units}
-\left[H\right] &=& 1.037837512 \times 10^{4}~{\tt Tesla}~~. \nonumber
+\left[H\right] &=& 1.037837512 \times 10^{4}~{\tt Tesla} \\
+H(DL\_POLY) &=& H(MKS)~1.037837512 \times 10^{4}~~. \nonumber
 \end{eqnarray}
 Thus to apply a magnetic field of 1~Tesla along the $y$ axis,
 one could specify in FIELD the following:
 \begin{verbatim}
+UNITS internal
+...
 external
 magnetic 0  1/1.037837512e04   0
+...
+\end{verbatim}
+when working in DL\_POLY internal units.  If we worked in {\em unit}
+units then
+\begin{eqnarray}
+H &\propto& Energy \nonumber \\
+Energy(DL\_POLY) &=& Energy(unit) ~ k_{unit \to DL\_POLY} \nonumber \\
+H(DL\_POLY) &=& H(MKS)~1.037837512 \times 10^{4} \\
+H(unit) &=& H(MKS)~\frac{1.037837512 \times 10^{4}}{k_{unit \to DL\_POLY}}~~, \nonumber
+\end{eqnarray}
+with the following conversion factors values:
+\begin{eqnarray}
+k_{eV \to DL\_POLY} &=& 9648.530821 \nonumber \\
+k_{kcal/mol \to DL\_POLY} &=& 418.4 \nonumber \\
+k_{kJ/mol \to DL\_POLY} &=& 100.0 \\
+k_{K/Boltz \to DL\_POLY} &=& 0.831451115 \nonumber \\
+k_{DL\_POLY \to DL\_POLY} &=& 1.0~~. \nonumber
+\end{eqnarray}
+Obviously, for $eV$ units
+\begin{eqnarray}
+H(unit) &=& H(MKS)~\frac{1.037837512 \times 10^{4}}{k_{unit \to DL\_POLY}} \nonumber \\
+k_{eV \to DL\_POLY} &=& 9648.530821 \\
+H(eV) &=& H(MKS)~1.07564305~~, \nonumber
+\end{eqnarray}
+the FIELD file should be amended to read:
+\begin{verbatim}
+UNITS eV
+...
+external
+magnetic 0  1/1.07564305   0
+...
 \end{verbatim}
 
 \subsubsection{Closing the FIELD File}

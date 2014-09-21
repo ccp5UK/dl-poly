@@ -7,7 +7,7 @@ Subroutine statistics_connect_frames()
 ! between replayed frames of history
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2014
+! author    - i.t.todorov september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -21,9 +21,10 @@ Subroutine statistics_connect_frames()
 
   Implicit None
 
-  Integer :: i,i0,j,j0,kk
+  Integer :: icyc,nres,i,i0,j,j0,kk
 
-  If (mxnode > 1) Then
+  icyc = 0 ; nres = 1
+  Do While (mxnode > 1 .and. (icyc < 4 .and. nres > 0))
      found = 0
 
 ! Search for matches
@@ -741,9 +742,12 @@ Subroutine statistics_connect_frames()
         End If
      End Do
 
-     Call gsum(natms0)
-     If (natms0 > 0 .and. idnode == 0) &
+     nres=natms0
+     Call gsum(nres)
+     If (nres > 0) icyc = icyc + 1
+  End Do
+
+  If (icyc == 3 .and. nres > 0 .and. idnode == 0) &
         Write(nrite,'(/,1x,a)') '*** warning - particles dynamics properties will be corrupted!!!'
-  End If
 
 End Subroutine statistics_connect_frames

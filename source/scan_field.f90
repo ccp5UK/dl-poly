@@ -701,6 +701,11 @@ Subroutine scan_field                                 &
               rmet=Max(rmet,word_2_real(word))
               Call get_word(record,word) ; Call get_word(record,word)
               rmet=Max(rmet,word_2_real(word))
+           Else If (word(1:4) == 'mbpc') Then
+              Call get_word(record,word) ; Call get_word(record,word)
+              Call get_word(record,word) ; Call get_word(record,word)
+              Call get_word(record,word)
+              rmet=Max(rmet,word_2_real(word))
            End If
         End Do
 

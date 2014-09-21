@@ -8,7 +8,7 @@ Subroutine metal_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov august 2014
+! amended   - i.t.todorov september 2014
 ! contrib   - r.davidchak (eeam) june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -276,6 +276,10 @@ Subroutine metal_forces &
                  eps=prmmet(1,k0)
                  sig=prmmet(2,k0)
                  mmm=prmmet(3,k0)
+                 ccc=prmmet(4,imet)
+                 ddd=prmmet(5,imet)
+                 cut1=ccc+4.0_wp*dlrpot
+                 cut2=ddd+4.0_wp*dlrpot
 
 ! no pair forces and energies
 
@@ -285,7 +289,8 @@ Subroutine metal_forces &
 
 ! calculate density contributions
 
-                 gamma2=mmm*sig/(rrr**mmm)
+                 If (rrr >= cut1 .and. rrr <= cut2) &
+                    gamma2=mmm*sig/(rrr**mmm)
 
                  If (ai == aj) Then
                     t1=prmmet(1,k0)**2
