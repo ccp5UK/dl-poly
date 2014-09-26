@@ -1,6 +1,6 @@
 Subroutine scan_control                                    &
            (rcbnd,mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter, &
-           imcon,imc_n,cell,xhi,yhi,zhi,                   &
+           mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
@@ -31,7 +31,7 @@ Subroutine scan_control                                    &
 
   Logical,           Intent( InOut ) :: l_n_e
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
-  Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,imcon
+  Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,mxrgd,imcon
   Integer,           Intent( InOut ) :: imc_n
   Integer,           Intent(   Out ) :: mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1, &
                                         mxstak,nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
@@ -635,9 +635,11 @@ Subroutine scan_control                                    &
               rvdw=0.0_wp
               rmet=0.0_wp
               If (.not.l_str) Then
-                 rcut=Max(rcbnd,2.0_wp*rcter)+1.0e-6_wp
-              Else
-                 rcut=Max(rcut,rcbnd,2.0_wp*rcter+1.0e-6_wp)
+                 If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
+                    rcut=Max(rcbnd,2.0_wp*rcter)+1.0e-6_wp
+                 Else
+                    rcut=Max(rcut,rcbnd,2.0_wp*rcter+1.0e-6_wp)
+                 End If
               End If
            End If
 
@@ -656,7 +658,11 @@ Subroutine scan_control                                    &
            If ( ((.not.lrcut) .or. (.not.l_str)) .and. &
                 (lrvdw .or. lrmet .or. lter .or. l_kim) ) Then
               lrcut=.true.
-              rcut=Max(rcbnd,rvdw,rmet,rkim,2.0_wp*rcter+1.0e-6_wp)
+              If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
+                 rcut=Max(rcbnd,rvdw,rmet,rkim,2.0_wp*rcter+1.0e-6_wp)
+              Else
+                 rcut=Max(rcut,rcbnd,rvdw,rmet,rkim,2.0_wp*rcter+1.0e-6_wp)
+              End If
            End If
 
 ! Reset rvdw and rmet when only tersoff potentials are opted for and
@@ -667,7 +673,11 @@ Subroutine scan_control                                    &
               rmet=0.0_wp
               If (.not.l_str) Then
                  lrcut=.true.
-                 rcut=Max(rcbnd,2.0_wp*rcter)+1.0e-6_wp
+                 If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
+                    rcut=Max(rcbnd,2.0_wp*rcter)+1.0e-6_wp
+                 Else
+                    rcut=Max(rcut,rcbnd,2.0_wp*rcter)+1.0e-6_wp
+                 End If
               End If
            End If
 

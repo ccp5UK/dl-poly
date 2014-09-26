@@ -18,7 +18,7 @@ Subroutine statistics_result                                    &
   Use setup_module
   Use site_module,        Only : ntpatm,unqatm,numtypnf,dens
   Use config_module,      Only : cell,volm
-  Use vnl_module,         Only : llvnl,skipvnl
+  Use vnl_module
   Use minimise_module,    Only : passmin
   Use core_shell_module,  Only : passshl
   Use constraints_module, Only : passcon
@@ -45,10 +45,20 @@ Subroutine statistics_result                                    &
 
 ! VNL skipping statistics
 
-  If (llvnl .and. idnode == 0) Write(nrite,"(//,                            &
-     & ' VNL skipping run statistics - skips per timestep: average ', f5.2, &
-     & ' minimum ', i3, ' maximum ', i3)")                                  &
-     skipvnl(3),Nint(Merge(skipvnl(4),skipvnl(5),skipvnl(4)<skipvnl(5))),Nint(skipvnl(5))
+  If (llvnl) Then
+     If (.not.l_vnl) Then ! Include the final skip in skipping statistics
+        skipvnl(3)=skipvnl(2)*skipvnl(3)
+        skipvnl(2)=skipvnl(2)+1.0_wp
+        skipvnl(3)=skipvnl(3)/skipvnl(2)+skipvnl(1)/skipvnl(2)
+        skipvnl(4)=Min(skipvnl(1),skipvnl(4))
+        skipvnl(5)=Max(skipvnl(1),skipvnl(5))
+     End If
+
+     If (idnode == 0) Write(nrite,"(//,                                        &
+        & ' VNL skipping run statistics - skips per timestep: average ', f5.2, &
+        & ' minimum ', i3, ' maximum ', i3)")                                  &
+        skipvnl(3),Nint(Merge(skipvnl(4),skipvnl(5),skipvnl(4)<skipvnl(5))),Nint(skipvnl(5))
+  End If
 
 ! minimisation convergence statistics
 

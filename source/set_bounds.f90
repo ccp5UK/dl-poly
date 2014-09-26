@@ -82,7 +82,7 @@ Subroutine set_bounds                                       &
 
   Call scan_control                                        &
            (rcbnd,mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter, &
-           imcon,imc_n,cell,xhi,yhi,zhi,                   &
+           mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
