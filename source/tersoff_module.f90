@@ -6,7 +6,7 @@ Module tersoff_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2014
+! author    - i.t.todorov september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -47,8 +47,8 @@ Contains
     Allocate (ltpter(1:mxter),                        Stat = fail(3))
     Allocate (prmter(1:mxpter,1:mxter),               Stat = fail(4))
     If (potter == 1) Allocate (prmter2(1:nprter,1:2), Stat = fail(5))
-    Allocate (vmbp(1:mxgter,1:nprter,1:3),            Stat = fail(6))
-    Allocate (gmbp(1:mxgter,1:nprter,1:3),            Stat = fail(7))
+    Allocate (vmbp(-1:mxgter,1:nprter,1:3),           Stat = fail(6))
+    Allocate (gmbp( 0:mxgter,1:nprter,1:3),           Stat = fail(7))
 
     If (Any(fail > 0)) Call error(1027)
 

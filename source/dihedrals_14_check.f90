@@ -8,7 +8,7 @@ Subroutine dihedrals_14_check &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1999
-! amended   - i.t.todorov june 2013
+! amended   - i.t.todorov september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,7 +22,7 @@ Subroutine dihedrals_14_check &
                                         numdih(1:mxtmls),lstdih(1:6,1:mxtdih)
   Real( Kind = wp ), Intent( InOut ) :: prmdih(1:mxpdih,1:mxtdih)
 
-  Logical :: l_print,l_reset
+  Logical :: l_print,l_reset,l_reset_l
   Integer :: kangle,kdihed,itmols,imols,langle,ldihed,mdihed, &
              iang,jang,idih,jdih,kdih,ldih,mdih,ndih,odih,pdih
 
@@ -90,39 +90,53 @@ Subroutine dihedrals_14_check &
                  pdih=lstdih(6,mdihed+kdihed)
               End If
 
+              l_reset_l=.false.
               If (lx_dih) Then
                  If (Min(kdih,ldih,odih,pdih) == Min(idih,jdih,mdih,ndih) .and. &
                      Max(kdih,ldih,odih,pdih) == Max(idih,jdih,mdih,ndih)) Then
-                    prmdih(4,mdihed+kdihed)=0.0_wp
-                    prmdih(5,mdihed+kdihed)=0.0_wp
+                    If (prmdih(4,ldihed+kdihed) > 1.0e-10_wp) Then
+                       prmdih(4,mdihed+kdihed) = 0.0_wp
+                       l_reset_l = .true.
+                    End If
 
-                    l_reset = .true.
-                    If (l_print) Call warning(20,Real(itmols,wp),Real(kdih,wp),Real(ldih,wp))
+                    If (prmdih(5,ldihed+kdihed) > 1.0e-10_wp) Then
+                       prmdih(5,mdihed+kdihed) = 0.0_wp
+                       l_reset_l = .true.
+                    End If
+
+                    If (l_reset_l .and. l_print) Call warning(20,Real(itmols,wp),Real(kdih,wp),Real(ldih,wp))
                  End If
               Else
                  If (Min(kdih,ldih) == Min(idih,jdih) .and. Max(kdih,ldih) == Max(idih,jdih)) Then
-                    prmdih(4,mdihed+kdihed)=0.0_wp
-                    prmdih(5,mdihed+kdihed)=0.0_wp
+                    If (prmdih(4,ldihed+kdihed) > 1.0e-10_wp) Then
+                       prmdih(4,mdihed+kdihed) = 0.0_wp
+                       l_reset_l = .true.
+                    End If
 
-                    l_reset = .true.
-                    If (l_print) Call warning(20,Real(itmols,wp),Real(kdih,wp),Real(ldih,wp))
+                    If (prmdih(5,ldihed+kdihed) > 1.0e-10_wp) Then
+                       prmdih(5,mdihed+kdihed) = 0.0_wp
+                       l_reset_l = .true.
+                    End If
+
+                    If (l_reset_l .and. l_print) Call warning(20,Real(itmols,wp),Real(kdih,wp),Real(ldih,wp))
                  End If
               End If
+              l_reset = (l_reset .or. l_reset_l)
 
            End Do
 
         End Do
 
-    End Do
+     End Do
 
 ! Update counters
 
-    kangle=kangle+numang(itmols)
-    kdihed=kdihed+numdih(itmols)
+     kangle=kangle+numang(itmols)
+     kdihed=kdihed+numdih(itmols)
 
   End Do
 
-  If (l_str) Then
+  If (.not.l_print) Then
      If (mxnode > 1) Call gcheck(l_reset,"enforce")
      If (l_reset) Call warning(22,0.0_wp,0.0_wp,0.0_wp)
   End If

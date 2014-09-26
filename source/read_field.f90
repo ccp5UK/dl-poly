@@ -32,7 +32,7 @@ Subroutine read_field                   &
   Use site_module
 
 ! CONFIG MODULE
-! Fuch's correction of charge non-neutral systems
+! Fuchs correction of charge non-neutral systems
 ! Global_To_Local variables
 
   Use config_module, Only : cell,sumchg
@@ -3552,7 +3552,7 @@ Subroutine read_field                   &
            Call get_word(record,word)
            parpot(4 )=word_2_real(word)      ! b_i
            Call get_word(record,word)
-           parpot(5 )=word_2_real(word)      ! R_i
+           parpot(5 )=Abs(word_2_real(word)) ! R_i
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -3561,7 +3561,7 @@ Subroutine read_field                   &
               Call get_word(record,word)
            End Do
 
-           parpot(6 )=word_2_real(word)      ! S_i
+           parpot(6 )=Abs(word_2_real(word))    ! S_i
            Call get_word(record,word)
 
            If      (keypot == 1) Then

@@ -67,3 +67,5 @@ TEST 43 - Iron/Carbon alloy with EEAM potentials (36,803 particles)
 TEST 44 - Iron/Carbon alloy with EEAM potentials (294,424 particles)
 TEST 45 - Iron/Chromium alloy with 2BEAM potentials (32,000 particles)
 TEST 46 - Iron/Chromium alloy with 2BEAM potentials (356,000 particles)
+TEST 47 - Hexane melt (1000 molecules) with FA and CG force fields
+TEST 48 - Methanol melt (1000 molecules) with FA and CG force fields

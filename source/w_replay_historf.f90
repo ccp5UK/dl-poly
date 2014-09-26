@@ -182,7 +182,7 @@
               & 5x,'vir_pmf',7x,'press',/,/,1x,130('-'))")
 
            Write(nrite,"(1x,i13,1p,9e12.4,/,0p,f14.5,1p,9e12.4,         &
-                & /,1x,0p,f13.1,1p,9e12.4)") nstep,(stpval(i),i=1,9),   &
+                & /,1x,0p,f13.3,1p,9e12.4)") nstep,(stpval(i),i=1,9),   &
                 time,(stpval(i),i=10,18),timelp,(stpval(i),i=19,27)
 
            Write(nrite,"(/,7x,'rolling',1p,9e12.4,/,6x,'averages',      &

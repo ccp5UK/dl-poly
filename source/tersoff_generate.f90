@@ -10,7 +10,7 @@ Subroutine tersoff_generate(rcter)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith  october 2004
-! amended   - i.t.todorov april 2014
+! amended   - i.t.todorov september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -51,11 +51,11 @@ Subroutine tersoff_generate(rcter)
 
 ! store potential cutoff
 
-           vmbp(1,kpt,1)=sij
+           vmbp(-1,kpt,1)=sij
 
 ! calculate screening generic function
 
-           Do i=2,mxgter
+           Do i=0,mxgter
               rrr=Real(i,wp)*dlrpot
 
               If      (rrr <= rij) Then
@@ -85,7 +85,7 @@ Subroutine tersoff_generate(rcter)
 
 ! calculate screening repulsion & attraction functions
 
-           Do i=2,mxgter
+           Do i=0,mxgter
               rrr=Real(i,wp)*dlrpot
 
 ! repulsion

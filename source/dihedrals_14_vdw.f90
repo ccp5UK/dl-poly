@@ -6,7 +6,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 ! adjust by weighting factor
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov april 2014
+! amended   - i.t.todorov september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -313,7 +313,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 
 ! calculate forces using 3-point interpolation
 
-           gk  = gvdw(l,k)
+           gk  = gvdw(l,k) ; If (l == 0) gk = gk*rrr
            gk1 = gvdw(l+1,k)
            gk2 = gvdw(l+2,k)
 
@@ -344,7 +344,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 
 ! calculate forces using 3-point interpolation
 
-        gk  = gvdw(l,k)
+        gk  = gvdw(l,k) ; If (l == 0) gk = gk*rrr
         gk1 = gvdw(l+1,k)
         gk2 = gvdw(l+2,k)
 

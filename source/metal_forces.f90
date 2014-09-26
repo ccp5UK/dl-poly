@@ -276,10 +276,10 @@ Subroutine metal_forces &
                  eps=prmmet(1,k0)
                  sig=prmmet(2,k0)
                  mmm=prmmet(3,k0)
-                 ccc=prmmet(4,imet)
-                 ddd=prmmet(5,imet)
-                 cut1=ccc+4.0_wp*dlrpot
-                 cut2=ddd+4.0_wp*dlrpot
+                 ccc=prmmet(4,k0)
+                 ddd=prmmet(5,k0)
+                 cut1=ccc
+                 cut2=ddd
 
 ! no pair forces and energies
 

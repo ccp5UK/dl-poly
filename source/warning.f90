@@ -153,8 +153,8 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode == 100) Then
 
-        Write(nrite,'(2(/,1x,a),/)')                                                       &
-        '*** warning - link cell algorithm has a link cell dimension that is < 3 !!! ***', &
+        Write(nrite,'(2(/,1x,a),/)')                                                               &
+        '*** warning - primary link cell algorithm has a link cell dimension that is < 3 !!! ***', &
         '*** DL_POLY_4 RUNNING IN LOW EFFICIENCY MODE !!! ***'
 
      Else If (kode == 110) Then

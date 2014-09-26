@@ -1466,9 +1466,11 @@ Correct your boundary condition or consider using \C.
 \subsubsection*{\underline{Message 305}: error - too few link cells per dimension for many-body and tersoff forces subroutines.}
 
 The link cells algorithms for many-body and tersoff forces in \D
-cannot work with less than 27 link cells.  Depending on the cell
-size and the chosen cut-off, \D may decide that this minimum
-cannot be achieved and terminate. This should never happen!
+cannot work with less than 3 (secondary) link cells per dimension.
+This depends on the cell size widths (as supplied in CONFIG) and the
+largest system cut-off (as specified in CONTROL although it may be
+drawn or overridden by cutoffs specified as part of some potentials'
+parameter sets in FIELD).
 
 \noindent \underline{\em Action}:
 

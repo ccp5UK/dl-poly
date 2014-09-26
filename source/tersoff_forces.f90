@@ -415,7 +415,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
 ! if pair is within cutoff
 
-                          If (rtf(jj) <= vmbp(1,ijter,1)) Then
+                          If (rtf(jj) <= vmbp(-1,ijter,1)) Then
 
 ! if pair is not frozen
 
@@ -540,7 +540,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
 ! if pair is within cutoff
 
-                          If (rtf(jj) <= vmbp(1,ijter,1)) Then
+                          If (rtf(jj) <= vmbp(-1,ijter,1)) Then
 
 ! triplet occurrence flag
 
@@ -585,7 +585,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
 ! if pair is within cutoff
 
-        If (rtf(kk) <= vmbp(1,ikter,1)) Then
+        If (rtf(kk) <= vmbp(-1,ikter,1)) Then
 
 ! only for not fully frozen triplets
 
@@ -702,7 +702,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
 ! if pair is within cutoff
 
-        If (rtf(kk) <= vmbp(1,ikter,1)) Then
+        If (rtf(kk) <= vmbp(-1,ikter,1)) Then
 
 ! only for not fully frozen triplets
 

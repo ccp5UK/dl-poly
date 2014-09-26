@@ -2015,21 +2015,8 @@ It is worth noting that the derivative of $\omega_{ik}$:
 (\delta_{\ell k}-\delta_{\ell i}) \frac{r_{ik}^{\alpha}}{r_{ik}} \right\}~~,
 \end{equation}
 now has three different contributions depending on the index of the
-particle participating in the interaction!  Hence the angular term
-is more complicated and difficult to express than in the {\bf ters} case:
-%\begin{eqnarray}
-%\ell~=~i~&:&~\frac{\partial}{\partial r_{i}^{\alpha}} {\cal{L}}_{ij} = \sum_{k \neq i,j} \omega_{ik}
-%\left[ g(\theta_{ijk}) \frac{\partial}{\partial r_{i}^{\alpha}} f_{C}(r_{ik}) +
-%f_{C}(r_{ik}) \frac{\partial}{\partial r_{i}^{\alpha}} g(\theta_{ijk}) \right] \nonumber \\
-%\ell~=~j~&:&~\frac{\partial}{\partial r_{j}^{\alpha}} {\cal{L}}_{ij} = \sum_{k \neq i,j} \omega_{ik}
-%~f_{C}(r_{ik}) \left( \alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}-1} g(\theta_{ijk}) +
-%\frac{\partial}{\partial r_{j}^{\alpha}} g(\theta_{ijk})\right) \nonumber \\
-%\ell~\neq~i,j~&:&~\frac{\partial}{\partial r_{\ell}^{\alpha}} {\cal{L}}_{ij} = \omega_{i \ell}
-%\left[ g(\theta_{ij \ell}) \frac{\partial}{\partial r_{\ell}^{\alpha}} f_{C}(r_{i \ell}) +
-%f_{C}(r_{i \ell})~\times \right. \\
-%& & \phantom{xxxxxxxxxxxxxxxxx} \left. \times~\left( -\alpha_{i}~\beta_{i}~(r_{ij}-r_{ik})^{\beta_{i}-1} g(\theta_{ij \ell})
-%+ \frac{\partial}{\partial r_{\ell}^{\alpha}} g(\theta_{ij \ell}) \right) \right]~~. \nonumber
-%\end{eqnarray}
+particle participating in the interaction!  Hence the angular term's
+derivative is more elaborate to express than the one in the {\bf ters} case.
 \end{itemize}
 
 The derivative of $g(\theta_{ijk})$ is worked out in the following
@@ -2055,10 +2042,11 @@ where
 
 The contribution to be added to the atomic virial can be derived
 as
-\begin{equation}
-{\cal W} \; = \; 3V \frac{\partial E_{\tt tersoff}}{\partial V} =
-\frac{3~V}{2} \sum_{i} \sum_{j \neq i} \frac{\partial U_{ij}}{\partial V} \phantom{xxxxxxxxxxxxxxxxxxxxxxxxxxxxx}
-\end{equation}
+\begin{eqnarray}
+{\cal W} & = & 3V \frac{\partial E_{\tt tersoff}}{\partial V} =
+\frac{3~V}{2} \sum_{i} \sum_{j \neq i} \frac{\partial U_{ij}}{\partial V} = \sum_{i} \vek{r_{i}} \cdot \vek{f_{i}} \\
+&=& \frac{1}{2}\sum_{i} \sum_{j \neq i} -\left( \vek{r_{ij}} \cdot \vek{f_{ij}} + \vek{r_{ik}} \cdot \vek{f_{ik}} \right) = \frac{1}{2}\sum_{i} \sum_{j \neq i} \left(\frac{\partial U_{ij}}{\partial r_{ij}} \cdot \vek{r_{ij}} + \frac{\partial U_{ik}}{\partial r_{ik}} \cdot \vek{r_{ik}}\right) \nonumber
+\end{eqnarray}
 \begin{itemize}
 \item {\bf ters}:
 \begin{eqnarray}
@@ -2599,7 +2587,7 @@ m}^{1-\delta_{\ell m}}} \right\} - \\
 & & \frac{1}{4\pi\epsilon_{0}\epsilon} \sum_{\ell\le m}^{F^{*}}
 q_{\ell}q_{m} \left\{ \delta_{\ell m} \frac{\alpha}{\sqrt{\pi}} +
 \frac{erf(\alpha r_{\ell m})}{r_{\ell m}^{1-\delta_{\ell m}}}
-\right\} - \frac{1}{4\pi\epsilon_{0}\epsilon} \frac{\pi}{V_{o} \alpha^{2}}
+\right\} - \frac{1}{4\pi\epsilon_{0}\epsilon} \frac{\pi}{2V_{o} \alpha^{2}}
 \left\{ \sum_{j}^{N} q_{j} \right\}^{2}~~, \nonumber
 \end{eqnarray}
 where $N$ is the number of ions in the system and $N^{*}$ the same
@@ -2925,11 +2913,11 @@ available include:
 \begin{enumerate}
 \item Electric field:  ({\bf elec})
 \begin{equation}
-\vek{F_{i}} = \vek{F_{i}} + q_{i} . \vek{E}
+\vek{F_{i}} = \vek{F_{i}} + q_{i} \cdot \vek{E}
 \end {equation}
 \item Oscillating shear:  ({\bf oshr})
 \begin{equation}
-\vek{F}_{x} =A \cos(2n \pi . z/L_{z})
+\vek{F}_{x} =A \cos(2n \pi \cdot z/L_{z})
 \end{equation}
 \item Continuous shear:  ({\bf shrx})
 \begin{equation}
@@ -2937,11 +2925,11 @@ available include:
 \end{equation}
 \item Gravitational field:  ({\bf grav})
 \begin{equation}
-\vek{F_{i}} = \vek{F_{i}} + m_{i} . \vek{G}
+\vek{F_{i}} = \vek{F_{i}} + m_{i} \cdot \vek{G}
 \end {equation}
 \item Magnetic field:  ({\bf magn})
 \begin{equation}
-\vek{F_{i}} = \vek{F_{i}} + q_{i} . (\vek{v_{i}} \times \vek{H})
+\vek{F_{i}} = \vek{F_{i}} + q_{i} \cdot (\vek{v_{i}} \times \vek{H})
 \end {equation}
 \item Containing sphere:  ({\bf sphr})
 \begin{equation}
@@ -2949,12 +2937,12 @@ available include:
 \end{equation}
 \item Repulsive wall:  ({\bf zbnd})
 \begin{equation}
-\vek{F}_{z}=A~(z_{o}-z)~~~~~: p . z > p . z_{o}
+\vek{F}_{z}=A~(z_{o}-z)~~~~~: p \cdot z > p \cdot z_{o}
 \end{equation}
 \item X-Piston:  ({\bf xpis})
 \begin{equation}
 \vek{F}_{x} = \frac{m_{k}}{\sum_{k=i}^{j}m_{k}}
-P . \vek{\textrm{Area}}(\perp\textrm{X-}direction)~~~~~: \forall~k=i,..,j~~.
+P \cdot \vek{\textrm{Area}}(\perp\textrm{X-}direction)~~~~~: \forall~k=i,..,j~~.
 \end{equation}
 \item Harmonic restraint zone in z-direction: ({\bf zres})
 \begin{equation}
@@ -2980,7 +2968,7 @@ A~(z_{min}-z) & z < z_{min}
 \end{equation}
 \item Oscillating electric field:  ({\bf osel})
 \begin{equation}
-\vek{F_{i}} = \vek{F_{i}} + q_{i} . \vek{E} . \sin(2 \pi \omega t)~,
+\vek{F_{i}} = \vek{F_{i}} + q_{i} \cdot \vek{E} \cdot \sin(2 \pi \omega t)~,
 \end {equation}
 where $t$ is the simulated time.
 \end{enumerate}
