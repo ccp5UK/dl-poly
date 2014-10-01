@@ -94,12 +94,12 @@ Subroutine dihedrals_14_check &
               If (lx_dih) Then
                  If (Min(kdih,ldih,odih,pdih) == Min(idih,jdih,mdih,ndih) .and. &
                      Max(kdih,ldih,odih,pdih) == Max(idih,jdih,mdih,ndih)) Then
-                    If (prmdih(4,ldihed+kdihed) > 1.0e-10_wp) Then
+                    If (prmdih(4,ldihed+kdihed)*prmdih(4,mdihed+kdihed) > 1.0e-10_wp) Then
                        prmdih(4,mdihed+kdihed) = 0.0_wp
                        l_reset_l = .true.
                     End If
 
-                    If (prmdih(5,ldihed+kdihed) > 1.0e-10_wp) Then
+                    If (prmdih(5,ldihed+kdihed)*prmdih(5,mdihed+kdihed) > 1.0e-10_wp) Then
                        prmdih(5,mdihed+kdihed) = 0.0_wp
                        l_reset_l = .true.
                     End If
@@ -108,12 +108,12 @@ Subroutine dihedrals_14_check &
                  End If
               Else
                  If (Min(kdih,ldih) == Min(idih,jdih) .and. Max(kdih,ldih) == Max(idih,jdih)) Then
-                    If (prmdih(4,ldihed+kdihed) > 1.0e-10_wp) Then
+                    If (prmdih(4,ldihed+kdihed)*prmdih(4,mdihed+kdihed) > 1.0e-10_wp) Then
                        prmdih(4,mdihed+kdihed) = 0.0_wp
                        l_reset_l = .true.
                     End If
 
-                    If (prmdih(5,ldihed+kdihed) > 1.0e-10_wp) Then
+                    If (prmdih(5,ldihed+kdihed)*prmdih(5,mdihed+kdihed) > 1.0e-10_wp) Then
                        prmdih(5,mdihed+kdihed) = 0.0_wp
                        l_reset_l = .true.
                     End If

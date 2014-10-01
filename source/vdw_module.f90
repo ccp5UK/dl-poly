@@ -5,7 +5,7 @@ Module vdw_module
 ! dl_poly_4 module declaring global vdw interaction variables and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2014
+! author    - i.t.todorov september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -54,7 +54,7 @@ Contains
     Allocate (lstvdw(1:mxvdw),          Stat = fail(1))
     Allocate (ltpvdw(1:mxvdw),          Stat = fail(2))
     Allocate (prmvdw(1:mxpvdw,1:mxvdw), Stat = fail(3))
-    Allocate (sigeps(1:mxpvdw,1:mxvdw), Stat = fail(4))
+    Allocate (sigeps(1:2,1:mxvdw),      Stat = fail(4))
 
     If (Any(fail > 0)) Call error(1022)
 

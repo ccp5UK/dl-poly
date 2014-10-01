@@ -2765,14 +2765,13 @@ Subroutine read_field                   &
 
                     Do irgd=1,numrgd(itmols)
                        nrigid=nrigid+1
-
                        lrgd=lstrgd(0,nrigid)
                        If (Any(lstrgd(1:lrgd,nrigid) == iatm1) .and. Any(lstrgd(1:lrgd,nrigid) == iatm2)) Then
                           Call warning(304,Real(icnst,wp),Real(irgd,wp),Real(itmols,wp))
-
                           Call error(97)
                        End If
                     End Do
+                    If (icnst /= numcon(itmols)) nrigid=nrigid-numrgd(itmols)
                  End Do
                  nsite=nsite+numsit(itmols)
               End Do
@@ -2800,6 +2799,7 @@ Subroutine read_field                   &
                                 Call error(93)
                              End If
                           End Do
+                          If (i /= numpmf(itmols) .and. ipmf /= 2) nrigid=nrigid-numrgd(itmols)
                        End Do
                     End Do
                  End Do
