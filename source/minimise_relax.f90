@@ -35,7 +35,7 @@ Subroutine minimise_relax &
                                         megpmf,megrgd,keymin
   Real( Kind = wp ), Intent( In    ) :: min_tol,tstep,stpcfg
 
-  Logical,              Save :: newjob  = .true. , l_rdf, l_mov
+  Logical,              Save :: newjob = .true. , l_rdf, l_mov
   Character( Len = 8 ), Save :: word
   Character( Len = 6 )       :: name
   Integer,              Save :: keyopt

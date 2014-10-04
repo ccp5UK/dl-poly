@@ -7,7 +7,7 @@ Subroutine rigid_bodies_split_torque(imcon,gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 2006
-! adapted   - i.t.todorov june 2014
+! adapted   - i.t.todorov september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -98,20 +98,24 @@ Subroutine rigid_bodies_split_torque(imcon,gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
 
 ! offload new forces on RB members
 
-        tmp=1.0_wp/Real(lrgd,wp)
-        fmx=fmx*tmp
-        fmy=fmy*tmp
-        fmz=fmz*tmp
+        If (rgdfrz(0,rgdtyp) == 0) Then
+           tmp=1.0_wp/Real(lrgd,wp)
+
+           fmx=fmx*tmp
+           fmy=fmy*tmp
+           fmz=fmz*tmp
+        Else
+           fmx=0.0_wp
+           fmy=0.0_wp
+           fmz=0.0_wp
+        End If
 
         Do jrgd=1,lrgd
            i=indrgd(jrgd,irgd) ! local index of particle/site
 
-           If (rgdfrz(0,rgdtyp) == 0) Then
-              gxx(i)=fmx
-              gyy(i)=fmy
-              gzz(i)=fmz
-           End If
-
+           gxx(i)=fmx
+           gyy(i)=fmy
+           gzz(i)=fmz
         End Do
 
 ! If the RB has 2+ frozen particles (ill=1) the net torque
@@ -238,6 +242,7 @@ Subroutine rigid_bodies_split_torque(imcon,gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
 
            txx(i)=0.0_wp ; tyy(i)=0.0_wp ; tzz(i)=0.0_wp
            uxx(i)=0.0_wp ; uyy(i)=0.0_wp ; uzz(i)=0.0_wp
+           gxx(i)=0.0_wp ; gyy(i)=0.0_wp ; gzz(i)=0.0_wp
         End Do
 
      End If

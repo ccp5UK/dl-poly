@@ -84,8 +84,8 @@ Subroutine rigid_bodies_move(stride,oxx,oyy,ozz,txx,tyy,tzz,uxx,uyy,uzz,dist_tol
                  zzz(i)=zzz(i)+z
 
                  dtol=Max(dtol,x**2+y**2+z**2)
-              End If
 
+              End If
            End If
         End Do
      End If
