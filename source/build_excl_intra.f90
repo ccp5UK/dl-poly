@@ -9,7 +9,7 @@ Subroutine build_excl_intra(lecx)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith february 1999
-! amended   - i.t.todorov august 2010
+! amended   - i.t.todorov october 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -160,90 +160,94 @@ Subroutine build_excl_intra(lecx)
 ! exclude sites on basis of dihedral angles
 
   Do i=1,ntdihd
-     ia=listdih(1,i)
-     ib=listdih(2,i)
-     ic=listdih(3,i)
-     id=listdih(4,i)
+     If (keydih(listdih(0,i)) > 0) Then
+        ia=listdih(1,i)
+        ib=listdih(2,i)
+        ic=listdih(3,i)
+        id=listdih(4,i)
 
-     ia0=local_index(ia,nlast,lsi,lsa)
-     ib0=local_index(ib,nlast,lsi,lsa)
-     ic0=local_index(ic,nlast,lsi,lsa)
-     id0=local_index(id,nlast,lsi,lsa)
+        ia0=local_index(ia,nlast,lsi,lsa)
+        ib0=local_index(ib,nlast,lsi,lsa)
+        ic0=local_index(ic,nlast,lsi,lsa)
+        id0=local_index(id,nlast,lsi,lsa)
 
-     If (ia0 > natms) ia0=0
-     If (ib0 > natms) ib0=0
-     If (ic0 > natms) ic0=0
-     If (id0 > natms) id0=0
+        If (ia0 > natms) ia0=0
+        If (ib0 > natms) ib0=0
+        If (ic0 > natms) ic0=0
+        If (id0 > natms) id0=0
 
 ! add atoms to exclusion list
 
-     If (ia0 > 0) Then ! ia : ib - ic - id interactions
-        Call add_exclusion(safe,ia0,ib,ibig,lexatm)
-        Call add_exclusion(safe,ia0,ic,ibig,lexatm)
-        Call add_exclusion(safe,ia0,id,ibig,lexatm)
-     End If
+        If (ia0 > 0) Then ! ia : ib - ic - id interactions
+           Call add_exclusion(safe,ia0,ib,ibig,lexatm)
+           Call add_exclusion(safe,ia0,ic,ibig,lexatm)
+           Call add_exclusion(safe,ia0,id,ibig,lexatm)
+        End If
 
-     If (ib0 > 0) Then ! ib : ia - ic - id interactions
-        Call add_exclusion(safe,ib0,ia,ibig,lexatm)
-        Call add_exclusion(safe,ib0,ic,ibig,lexatm)
-        Call add_exclusion(safe,ib0,id,ibig,lexatm)
-     End If
+        If (ib0 > 0) Then ! ib : ia - ic - id interactions
+           Call add_exclusion(safe,ib0,ia,ibig,lexatm)
+           Call add_exclusion(safe,ib0,ic,ibig,lexatm)
+           Call add_exclusion(safe,ib0,id,ibig,lexatm)
+        End If
 
-     If (ic0 > 0) Then ! ic : ia - ib - id interactions
-        Call add_exclusion(safe,ic0,ia,ibig,lexatm)
-        Call add_exclusion(safe,ic0,ib,ibig,lexatm)
-        Call add_exclusion(safe,ic0,id,ibig,lexatm)
-     End If
+        If (ic0 > 0) Then ! ic : ia - ib - id interactions
+           Call add_exclusion(safe,ic0,ia,ibig,lexatm)
+           Call add_exclusion(safe,ic0,ib,ibig,lexatm)
+           Call add_exclusion(safe,ic0,id,ibig,lexatm)
+        End If
 
-     If (id0 > 0) Then ! id : ia - ib - ic interactions
-        Call add_exclusion(safe,id0,ia,ibig,lexatm)
-        Call add_exclusion(safe,id0,ib,ibig,lexatm)
-        Call add_exclusion(safe,id0,ic,ibig,lexatm)
+        If (id0 > 0) Then ! id : ia - ib - ic interactions
+           Call add_exclusion(safe,id0,ia,ibig,lexatm)
+           Call add_exclusion(safe,id0,ib,ibig,lexatm)
+           Call add_exclusion(safe,id0,ic,ibig,lexatm)
+        End If
      End If
   End Do
 
 ! exclude sites on basis of inversion potentials
 
   Do i=1,ntinv
-     ia=listinv(1,i)
-     ib=listinv(2,i)
-     ic=listinv(3,i)
-     id=listinv(4,i)
+     If (keyinv(listinv(0,i)) > 0) Then
+        ia=listinv(1,i)
+        ib=listinv(2,i)
+        ic=listinv(3,i)
+        id=listinv(4,i)
 
-     ia0=local_index(ia,nlast,lsi,lsa)
-     ib0=local_index(ib,nlast,lsi,lsa)
-     ic0=local_index(ic,nlast,lsi,lsa)
-     id0=local_index(id,nlast,lsi,lsa)
+        ia0=local_index(ia,nlast,lsi,lsa)
+        ib0=local_index(ib,nlast,lsi,lsa)
+        ic0=local_index(ic,nlast,lsi,lsa)
+        id0=local_index(id,nlast,lsi,lsa)
 
-     If (ia0 > natms) ia0=0
-     If (ib0 > natms) ib0=0
-     If (ic0 > natms) ic0=0
-     If (id0 > natms) id0=0
+        If (ia0 > natms) ia0=0
+        If (ib0 > natms) ib0=0
+        If (ic0 > natms) ic0=0
+        If (id0 > natms) id0=0
 
 ! add atoms to exclusion list
 
-     If (ia0 > 0) Then ! ia : ib - ic - id interactions
-        Call add_exclusion(safe,ia0,ib,ibig,lexatm)
-        Call add_exclusion(safe,ia0,ic,ibig,lexatm)
-        Call add_exclusion(safe,ia0,id,ibig,lexatm)
-     End If
+        If (ia0 > 0) Then ! ia : ib - ic - id interactions
+           Call add_exclusion(safe,ia0,ib,ibig,lexatm)
+           Call add_exclusion(safe,ia0,ic,ibig,lexatm)
+           Call add_exclusion(safe,ia0,id,ibig,lexatm)
+        End If
 
-     If (ib0 > 0) Then ! ib : ia - ic - id interactions
-        Call add_exclusion(safe,ib0,ia,ibig,lexatm)
-        Call add_exclusion(safe,ib0,ic,ibig,lexatm)
-        Call add_exclusion(safe,ib0,id,ibig,lexatm)
-     End If
+        If (ib0 > 0) Then ! ib : ia - ic - id interactions
+           Call add_exclusion(safe,ib0,ia,ibig,lexatm)
+           Call add_exclusion(safe,ib0,ic,ibig,lexatm)
+           Call add_exclusion(safe,ib0,id,ibig,lexatm)
+        End If
 
-     If (ic0 > 0) Then ! ic : ia - ib - id interactions
-        Call add_exclusion(safe,ic0,ia,ibig,lexatm)
-        Call add_exclusion(safe,ic0,ib,ibig,lexatm)
-        Call add_exclusion(safe,ic0,id,ibig,lexatm)
-     End If
+        If (ic0 > 0) Then ! ic : ia - ib - id interactions
+           Call add_exclusion(safe,ic0,ia,ibig,lexatm)
+           Call add_exclusion(safe,ic0,ib,ibig,lexatm)
+           Call add_exclusion(safe,ic0,id,ibig,lexatm)
+        End If
 
-     If (id0 > 0) Then ! id : ia - ib - ic interactions
-        Call add_exclusion(safe,id0,ia,ibig,lexatm)
-        Call add_exclusion(safe,id0,ib,ibig,lexatm)
-        Call add_exclusion(safe,id0,ic,ibig,lexatm)
+        If (id0 > 0) Then ! id : ia - ib - ic interactions
+           Call add_exclusion(safe,id0,ia,ibig,lexatm)
+           Call add_exclusion(safe,id0,ib,ibig,lexatm)
+           Call add_exclusion(safe,id0,ic,ibig,lexatm)
+        End If
      End If
   End Do
 
@@ -647,494 +651,498 @@ Subroutine build_excl_intra(lecx)
 ! exclude sites on basis of dihedral angles to core-shell units
 
      Do kk=1,ntdihd1
-        ja=listdih(1,kk)
-        jb=listdih(2,kk)
-        jc=listdih(3,kk)
-        jd=listdih(4,kk)
+        If (keydih(listdih(0,kk)) > 0) Then
+           ja=listdih(1,kk)
+           jb=listdih(2,kk)
+           jc=listdih(3,kk)
+           jd=listdih(4,kk)
 
-        ja0=local_index(ja,nlast,lsi,lsa)
-        jb0=local_index(jb,nlast,lsi,lsa)
-        jc0=local_index(jc,nlast,lsi,lsa)
-        jd0=local_index(jd,nlast,lsi,lsa)
+           ja0=local_index(ja,nlast,lsi,lsa)
+           jb0=local_index(jb,nlast,lsi,lsa)
+           jc0=local_index(jc,nlast,lsi,lsa)
+           jd0=local_index(jd,nlast,lsi,lsa)
 
-        If (ja0 > natms) ja0=0
-        If (jb0 > natms) jb0=0
-        If (jc0 > natms) jc0=0
-        If (jd0 > natms) jd0=0
+           If (ja0 > natms) ja0=0
+           If (jb0 > natms) jb0=0
+           If (jc0 > natms) jc0=0
+           If (jd0 > natms) jd0=0
 
 ! Check for adjacent core or shell so that all possible, even between
 ! adjacent particles in any intra-unit, interactions are excluded
 
-        ka = 0 ; ka0 = 0
-        kb = 0 ; kb0 = 0
-        kc = 0 ; kc0 = 0
-        kd = 0 ; kd0 = 0
+           ka = 0 ; ka0 = 0
+           kb = 0 ; kb0 = 0
+           kc = 0 ; kc0 = 0
+           kd = 0 ; kd0 = 0
 
-        If (lecx) Then
-           Do j=1,ntshl2
-              If (listshl(1,j) == ja) Then
-                 ka=listshl(2,j)
-                 ka0=local_index(ka,nlast,lsi,lsa)
-                 If (ka0 > natms) ka0=0
-              Else If (listshl(2,j) == ja) Then
-                 ka=listshl(1,j)
-                 ka0=local_index(ka,nlast,lsi,lsa)
-                 If (ka0 > natms) ka0=0
+           If (lecx) Then
+              Do j=1,ntshl2
+                 If (listshl(1,j) == ja) Then
+                    ka=listshl(2,j)
+                    ka0=local_index(ka,nlast,lsi,lsa)
+                    If (ka0 > natms) ka0=0
+                 Else If (listshl(2,j) == ja) Then
+                    ka=listshl(1,j)
+                    ka0=local_index(ka,nlast,lsi,lsa)
+                    If (ka0 > natms) ka0=0
+                 End If
+
+                 If (listshl(1,j) == jb) Then
+                    kb=listshl(2,j)
+                    kb0=local_index(kb,nlast,lsi,lsa)
+                    If (kb0 > natms) kb0=0
+                 Else If (listshl(2,j) == jb) Then
+                    kb=listshl(1,j)
+                    kb0=local_index(kb,nlast,lsi,lsa)
+                    If (kb0 > natms) kb0=0
+                 End If
+
+                 If (listshl(1,j) == jc) Then
+                    kc=listshl(2,j)
+                    kc0=local_index(kc,nlast,lsi,lsa)
+                    If (kc0 > natms) kc0=0
+                 Else If (listshl(2,j) == jc) Then
+                    kc=listshl(1,j)
+                    kc0=local_index(kc,nlast,lsi,lsa)
+                    If (kc0 > natms) kc0=0
+                 End If
+
+                 If (listshl(1,j) == jd) Then
+                    kd=listshl(2,j)
+                    kd0=local_index(kd,nlast,lsi,lsa)
+                    If (kd0 > natms) kd0=0
+                 Else If (listshl(2,j) == jd) Then
+                    kd=listshl(1,j)
+                    kd0=local_index(kd,nlast,lsi,lsa)
+                    If (kd0 > natms) kd0=0
+                 End If
+              End Do
+           End If
+
+           If (ia == ja) Then
+              If (ib0 > 0) Then
+                 Call add_exclusion(safe,ib0,jb,ibig,lexatm)
+                 If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jc,ibig,lexatm)
+                 If (kc > 0) Call add_exclusion(safe,ib0,kc,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jd,ibig,lexatm)
+                 If (kd > 0) Call add_exclusion(safe,ib0,kd,ibig,lexatm)
               End If
 
-              If (listshl(1,j) == jb) Then
-                 kb=listshl(2,j)
-                 kb0=local_index(kb,nlast,lsi,lsa)
-                 If (kb0 > natms) kb0=0
-              Else If (listshl(2,j) == jb) Then
-                 kb=listshl(1,j)
-                 kb0=local_index(kb,nlast,lsi,lsa)
-                 If (kb0 > natms) kb0=0
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,lexatm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,lexatm)
+
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,lexatm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,lexatm)
+
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,lexatm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,lexatm)
+           End If
+
+           If (ia == jb) Then
+              If (ib0 > 0) Then
+                 Call add_exclusion(safe,ib0,ja,ibig,lexatm)
+                 If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jc,ibig,lexatm)
+                 If (kc > 0) Call add_exclusion(safe,ib0,kc,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jd,ibig,lexatm)
+                 If (kd > 0) Call add_exclusion(safe,ib0,kd,ibig,lexatm)
               End If
 
-              If (listshl(1,j) == jc) Then
-                 kc=listshl(2,j)
-                 kc0=local_index(kc,nlast,lsi,lsa)
-                 If (kc0 > natms) kc0=0
-              Else If (listshl(2,j) == jc) Then
-                 kc=listshl(1,j)
-                 kc0=local_index(kc,nlast,lsi,lsa)
-                 If (kc0 > natms) kc0=0
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,lexatm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,lexatm)
+
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,lexatm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,lexatm)
+
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,lexatm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,lexatm)
+           End If
+
+           If (ia == jc) Then
+              If (ib0 > 0) Then
+                 Call add_exclusion(safe,ib0,ja,ibig,lexatm)
+                 If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jb,ibig,lexatm)
+                 If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jd,ibig,lexatm)
+                 If (kd > 0) Call add_exclusion(safe,ib0,kd,ibig,lexatm)
               End If
 
-              If (listshl(1,j) == jd) Then
-                 kd=listshl(2,j)
-                 kd0=local_index(kd,nlast,lsi,lsa)
-                 If (kd0 > natms) kd0=0
-              Else If (listshl(2,j) == jd) Then
-                 kd=listshl(1,j)
-                 kd0=local_index(kd,nlast,lsi,lsa)
-                 If (kd0 > natms) kd0=0
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,lexatm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,lexatm)
+
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,lexatm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,lexatm)
+
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,lexatm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,lexatm)
+           End If
+
+           If (ia == jd) Then
+              If (ib0 > 0) Then
+                 Call add_exclusion(safe,ib0,ja,ibig,lexatm)
+                 If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jb,ibig,lexatm)
+                 If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jc,ibig,lexatm)
+                 If (kc > 0) Call add_exclusion(safe,ib0,kc,ibig,lexatm)
               End If
-           End Do
-        End If
 
-        If (ia == ja) Then
-           If (ib0 > 0) Then
-              Call add_exclusion(safe,ib0,jb,ibig,lexatm)
-              If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,lexatm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,lexatm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jc,ibig,lexatm)
-              If (kc > 0) Call add_exclusion(safe,ib0,kc,ibig,lexatm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,lexatm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jd,ibig,lexatm)
-              If (kd > 0) Call add_exclusion(safe,ib0,kd,ibig,lexatm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,lexatm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,lexatm)
            End If
 
-           If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,lexatm)
-           If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,lexatm)
+           If (ib == ja) Then
+              If (ia0 > 0) Then
+                 Call add_exclusion(safe,ia0,jb,ibig,lexatm)
+                 If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,lexatm)
 
-           If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,lexatm)
-           If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,lexatm)
+                 Call add_exclusion(safe,ia0,jc,ibig,lexatm)
+                 If (kc > 0) Call add_exclusion(safe,ia0,kc,ibig,lexatm)
 
-           If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,lexatm)
-           If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,lexatm)
-        End If
+                 Call add_exclusion(safe,ia0,jd,ibig,lexatm)
+                 If (kd > 0) Call add_exclusion(safe,ia0,kd,ibig,lexatm)
+              End If
 
-        If (ia == jb) Then
-           If (ib0 > 0) Then
-              Call add_exclusion(safe,ib0,ja,ibig,lexatm)
-              If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,lexatm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,lexatm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jc,ibig,lexatm)
-              If (kc > 0) Call add_exclusion(safe,ib0,kc,ibig,lexatm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,lexatm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jd,ibig,lexatm)
-              If (kd > 0) Call add_exclusion(safe,ib0,kd,ibig,lexatm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,lexatm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,lexatm)
            End If
 
-           If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,lexatm)
-           If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,lexatm)
+           If (ib == jb) Then
+              If (ia0 > 0) Then
+                 Call add_exclusion(safe,ia0,ja,ibig,lexatm)
+                 If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,lexatm)
 
-           If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,lexatm)
-           If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,lexatm)
+                 Call add_exclusion(safe,ia0,jc,ibig,lexatm)
+                 If (kc > 0) Call add_exclusion(safe,ia0,kc,ibig,lexatm)
 
-           If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,lexatm)
-           If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,lexatm)
-        End If
+                 Call add_exclusion(safe,ia0,jd,ibig,lexatm)
+                 If (kd > 0) Call add_exclusion(safe,ia0,kd,ibig,lexatm)
+              End If
 
-        If (ia == jc) Then
-           If (ib0 > 0) Then
-              Call add_exclusion(safe,ib0,ja,ibig,lexatm)
-              If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,lexatm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,lexatm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jb,ibig,lexatm)
-              If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,lexatm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,lexatm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jd,ibig,lexatm)
-              If (kd > 0) Call add_exclusion(safe,ib0,kd,ibig,lexatm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,lexatm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,lexatm)
            End If
 
-           If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,lexatm)
-           If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,lexatm)
+           If (ib == jc) Then
+              If (ia0 > 0) Then
+                 Call add_exclusion(safe,ia0,ja,ibig,lexatm)
+                 If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,lexatm)
 
-           If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,lexatm)
-           If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,lexatm)
+                 Call add_exclusion(safe,ia0,jb,ibig,lexatm)
+                 If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,lexatm)
 
-           If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,lexatm)
-           If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,lexatm)
-        End If
+                 Call add_exclusion(safe,ia0,jd,ibig,lexatm)
+                 If (kd > 0) Call add_exclusion(safe,ia0,kd,ibig,lexatm)
+              End If
 
-        If (ia == jd) Then
-           If (ib0 > 0) Then
-              Call add_exclusion(safe,ib0,ja,ibig,lexatm)
-              If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,lexatm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,lexatm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jb,ibig,lexatm)
-              If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,lexatm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,lexatm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jc,ibig,lexatm)
-              If (kc > 0) Call add_exclusion(safe,ib0,kc,ibig,lexatm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,lexatm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,lexatm)
            End If
 
-           If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,lexatm)
-           If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,lexatm)
+           If (ib == jd) Then
+              If (ia0 > 0) Then
+                 Call add_exclusion(safe,ia0,ja,ibig,lexatm)
+                 If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,lexatm)
 
-           If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,lexatm)
-           If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,lexatm)
+                 Call add_exclusion(safe,ia0,jb,ibig,lexatm)
+                 If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,lexatm)
 
-           If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,lexatm)
-           If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,lexatm)
-        End If
+                 Call add_exclusion(safe,ia0,jc,ibig,lexatm)
+                 If (kc > 0) Call add_exclusion(safe,ia0,kc,ibig,lexatm)
+              End If
 
-        If (ib == ja) Then
-           If (ia0 > 0) Then
-              Call add_exclusion(safe,ia0,jb,ibig,lexatm)
-              If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,lexatm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,lexatm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ia0,jc,ibig,lexatm)
-              If (kc > 0) Call add_exclusion(safe,ia0,kc,ibig,lexatm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,lexatm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ia0,jd,ibig,lexatm)
-              If (kd > 0) Call add_exclusion(safe,ia0,kd,ibig,lexatm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,lexatm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,lexatm)
            End If
-
-           If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,lexatm)
-           If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,lexatm)
-
-           If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,lexatm)
-           If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,lexatm)
-
-           If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,lexatm)
-           If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,lexatm)
-        End If
-
-        If (ib == jb) Then
-           If (ia0 > 0) Then
-              Call add_exclusion(safe,ia0,ja,ibig,lexatm)
-              If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,lexatm)
-
-              Call add_exclusion(safe,ia0,jc,ibig,lexatm)
-              If (kc > 0) Call add_exclusion(safe,ia0,kc,ibig,lexatm)
-
-              Call add_exclusion(safe,ia0,jd,ibig,lexatm)
-              If (kd > 0) Call add_exclusion(safe,ia0,kd,ibig,lexatm)
-           End If
-
-           If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,lexatm)
-           If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,lexatm)
-
-           If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,lexatm)
-           If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,lexatm)
-
-           If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,lexatm)
-           If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,lexatm)
-        End If
-
-        If (ib == jc) Then
-           If (ia0 > 0) Then
-              Call add_exclusion(safe,ia0,ja,ibig,lexatm)
-              If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,lexatm)
-
-              Call add_exclusion(safe,ia0,jb,ibig,lexatm)
-              If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,lexatm)
-
-              Call add_exclusion(safe,ia0,jd,ibig,lexatm)
-              If (kd > 0) Call add_exclusion(safe,ia0,kd,ibig,lexatm)
-           End If
-
-           If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,lexatm)
-           If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,lexatm)
-
-           If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,lexatm)
-           If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,lexatm)
-
-           If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,lexatm)
-           If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,lexatm)
-        End If
-
-        If (ib == jd) Then
-           If (ia0 > 0) Then
-              Call add_exclusion(safe,ia0,ja,ibig,lexatm)
-              If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,lexatm)
-
-              Call add_exclusion(safe,ia0,jb,ibig,lexatm)
-              If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,lexatm)
-
-              Call add_exclusion(safe,ia0,jc,ibig,lexatm)
-              If (kc > 0) Call add_exclusion(safe,ia0,kc,ibig,lexatm)
-           End If
-
-           If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,lexatm)
-           If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,lexatm)
-
-           If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,lexatm)
-           If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,lexatm)
-
-           If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,lexatm)
-           If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,lexatm)
         End If
      End Do
 
 ! exclude sites on basis of inversion angles to core-shell units
 
      Do kk=1,ntinv1
-        ja=listinv(1,kk)
-        jb=listinv(2,kk)
-        jc=listinv(3,kk)
-        jd=listinv(4,kk)
+        If (keyinv(listinv(0,kk)) > 0) Then
+           ja=listinv(1,kk)
+           jb=listinv(2,kk)
+           jc=listinv(3,kk)
+           jd=listinv(4,kk)
 
-        ja0=local_index(ja,nlast,lsi,lsa)
-        jb0=local_index(jb,nlast,lsi,lsa)
-        jc0=local_index(jc,nlast,lsi,lsa)
-        jd0=local_index(jd,nlast,lsi,lsa)
+           ja0=local_index(ja,nlast,lsi,lsa)
+           jb0=local_index(jb,nlast,lsi,lsa)
+           jc0=local_index(jc,nlast,lsi,lsa)
+           jd0=local_index(jd,nlast,lsi,lsa)
 
-        If (ja0 > natms) ja0=0
-        If (jb0 > natms) jb0=0
-        If (jc0 > natms) jc0=0
-        If (jd0 > natms) jd0=0
+           If (ja0 > natms) ja0=0
+           If (jb0 > natms) jb0=0
+           If (jc0 > natms) jc0=0
+           If (jd0 > natms) jd0=0
 
 ! Check for adjacent core or shell so that all possible, even between
 ! adjacent particles in any intra-unit, interactions are excluded
 
-        ka = 0 ; ka0 = 0
-        kb = 0 ; kb0 = 0
-        kc = 0 ; kc0 = 0
-        kd = 0 ; kd0 = 0
+           ka = 0 ; ka0 = 0
+           kb = 0 ; kb0 = 0
+           kc = 0 ; kc0 = 0
+           kd = 0 ; kd0 = 0
 
-        If (lecx) Then
-           Do j=1,ntshl2
-              If (listshl(1,j) == ja) Then
-                 ka=listshl(2,j)
-                 ka0=local_index(ka,nlast,lsi,lsa)
-                 If (ka0 > natms) ka0=0
-              Else If (listshl(2,j) == ja) Then
-                 ka=listshl(1,j)
-                 ka0=local_index(ka,nlast,lsi,lsa)
-                 If (ka0 > natms) ka0=0
+           If (lecx) Then
+              Do j=1,ntshl2
+                 If (listshl(1,j) == ja) Then
+                    ka=listshl(2,j)
+                    ka0=local_index(ka,nlast,lsi,lsa)
+                    If (ka0 > natms) ka0=0
+                 Else If (listshl(2,j) == ja) Then
+                    ka=listshl(1,j)
+                    ka0=local_index(ka,nlast,lsi,lsa)
+                    If (ka0 > natms) ka0=0
+                 End If
+
+                 If (listshl(1,j) == jb) Then
+                    kb=listshl(2,j)
+                    kb0=local_index(kb,nlast,lsi,lsa)
+                    If (kb0 > natms) kb0=0
+                 Else If (listshl(2,j) == jb) Then
+                    kb=listshl(1,j)
+                    kb0=local_index(kb,nlast,lsi,lsa)
+                    If (kb0 > natms) kb0=0
+                 End If
+
+                 If (listshl(1,j) == jc) Then
+                    kc=listshl(2,j)
+                    kc0=local_index(kc,nlast,lsi,lsa)
+                    If (kc0 > natms) kc0=0
+                 Else If (listshl(2,j) == jc) Then
+                    kc=listshl(1,j)
+                    kc0=local_index(kc,nlast,lsi,lsa)
+                    If (kc0 > natms) kc0=0
+                 End If
+
+                 If (listshl(1,j) == jd) Then
+                    kd=listshl(2,j)
+                    kd0=local_index(kd,nlast,lsi,lsa)
+                    If (kd0 > natms) kd0=0
+                 Else If (listshl(2,j) == jd) Then
+                    kd=listshl(1,j)
+                    kd0=local_index(kd,nlast,lsi,lsa)
+                    If (kd0 > natms) kd0=0
+                 End If
+              End Do
+           End If
+
+           If (ia == ja) Then
+              If (ib0 > 0) Then
+                 Call add_exclusion(safe,ib0,jb,ibig,lexatm)
+                 If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jc,ibig,lexatm)
+                 If (kc > 0) Call add_exclusion(safe,ib0,kc,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jd,ibig,lexatm)
+                 If (kd > 0) Call add_exclusion(safe,ib0,kd,ibig,lexatm)
               End If
 
-              If (listshl(1,j) == jb) Then
-                 kb=listshl(2,j)
-                 kb0=local_index(kb,nlast,lsi,lsa)
-                 If (kb0 > natms) kb0=0
-              Else If (listshl(2,j) == jb) Then
-                 kb=listshl(1,j)
-                 kb0=local_index(kb,nlast,lsi,lsa)
-                 If (kb0 > natms) kb0=0
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,lexatm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,lexatm)
+
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,lexatm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,lexatm)
+
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,lexatm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,lexatm)
+           End If
+
+           If (ia == jb) Then
+              If (ib0 > 0) Then
+                 Call add_exclusion(safe,ib0,ja,ibig,lexatm)
+                 If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jc,ibig,lexatm)
+                 If (kc > 0) Call add_exclusion(safe,ib0,kc,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jd,ibig,lexatm)
+                 If (kd > 0) Call add_exclusion(safe,ib0,kd,ibig,lexatm)
               End If
 
-              If (listshl(1,j) == jc) Then
-                 kc=listshl(2,j)
-                 kc0=local_index(kc,nlast,lsi,lsa)
-                 If (kc0 > natms) kc0=0
-              Else If (listshl(2,j) == jc) Then
-                 kc=listshl(1,j)
-                 kc0=local_index(kc,nlast,lsi,lsa)
-                 If (kc0 > natms) kc0=0
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,lexatm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,lexatm)
+
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,lexatm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,lexatm)
+
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,lexatm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,lexatm)
+           End If
+
+           If (ia == jc) Then
+              If (ib0 > 0) Then
+                 Call add_exclusion(safe,ib0,ja,ibig,lexatm)
+                 If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jb,ibig,lexatm)
+                 If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jd,ibig,lexatm)
+                 If (kd > 0) Call add_exclusion(safe,ib0,kd,ibig,lexatm)
               End If
 
-              If (listshl(1,j) == jd) Then
-                 kd=listshl(2,j)
-                 kd0=local_index(kd,nlast,lsi,lsa)
-                 If (kd0 > natms) kd0=0
-              Else If (listshl(2,j) == jd) Then
-                 kd=listshl(1,j)
-                 kd0=local_index(kd,nlast,lsi,lsa)
-                 If (kd0 > natms) kd0=0
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,lexatm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,lexatm)
+
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,lexatm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,lexatm)
+
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,lexatm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,lexatm)
+           End If
+
+           If (ia == jd) Then
+              If (ib0 > 0) Then
+                 Call add_exclusion(safe,ib0,ja,ibig,lexatm)
+                 If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jb,ibig,lexatm)
+                 If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,lexatm)
+
+                 Call add_exclusion(safe,ib0,jc,ibig,lexatm)
+                 If (kc > 0) Call add_exclusion(safe,ib0,kc,ibig,lexatm)
               End If
-           End Do
-        End If
 
-        If (ia == ja) Then
-           If (ib0 > 0) Then
-              Call add_exclusion(safe,ib0,jb,ibig,lexatm)
-              If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,lexatm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,lexatm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jc,ibig,lexatm)
-              If (kc > 0) Call add_exclusion(safe,ib0,kc,ibig,lexatm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,lexatm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jd,ibig,lexatm)
-              If (kd > 0) Call add_exclusion(safe,ib0,kd,ibig,lexatm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,lexatm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,lexatm)
            End If
 
-           If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,lexatm)
-           If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,lexatm)
+           If (ib == ja) Then
+              If (ia0 > 0) Then
+                 Call add_exclusion(safe,ia0,jb,ibig,lexatm)
+                 If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,lexatm)
 
-           If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,lexatm)
-           If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,lexatm)
+                 Call add_exclusion(safe,ia0,jc,ibig,lexatm)
+                 If (kc > 0) Call add_exclusion(safe,ia0,kc,ibig,lexatm)
 
-           If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,lexatm)
-           If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,lexatm)
-        End If
+                 Call add_exclusion(safe,ia0,jd,ibig,lexatm)
+                 If (kd > 0) Call add_exclusion(safe,ia0,kd,ibig,lexatm)
+              End If
 
-        If (ia == jb) Then
-           If (ib0 > 0) Then
-              Call add_exclusion(safe,ib0,ja,ibig,lexatm)
-              If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,lexatm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,lexatm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jc,ibig,lexatm)
-              If (kc > 0) Call add_exclusion(safe,ib0,kc,ibig,lexatm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,lexatm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jd,ibig,lexatm)
-              If (kd > 0) Call add_exclusion(safe,ib0,kd,ibig,lexatm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,lexatm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,lexatm)
            End If
 
-           If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,lexatm)
-           If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,lexatm)
+           If (ib == jb) Then
+              If (ia0 > 0) Then
+                 Call add_exclusion(safe,ia0,ja,ibig,lexatm)
+                 If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,lexatm)
 
-           If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,lexatm)
-           If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,lexatm)
+                 Call add_exclusion(safe,ia0,jc,ibig,lexatm)
+                 If (kc > 0) Call add_exclusion(safe,ia0,kc,ibig,lexatm)
 
-           If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,lexatm)
-           If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,lexatm)
-        End If
+                 Call add_exclusion(safe,ia0,jd,ibig,lexatm)
+                 If (kd > 0) Call add_exclusion(safe,ia0,kd,ibig,lexatm)
+              End If
 
-        If (ia == jc) Then
-           If (ib0 > 0) Then
-              Call add_exclusion(safe,ib0,ja,ibig,lexatm)
-              If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,lexatm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,lexatm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jb,ibig,lexatm)
-              If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,lexatm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,lexatm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jd,ibig,lexatm)
-              If (kd > 0) Call add_exclusion(safe,ib0,kd,ibig,lexatm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,lexatm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,lexatm)
            End If
 
-           If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,lexatm)
-           If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,lexatm)
+           If (ib == jc) Then
+              If (ia0 > 0) Then
+                 Call add_exclusion(safe,ia0,ja,ibig,lexatm)
+                 If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,lexatm)
 
-           If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,lexatm)
-           If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,lexatm)
+                 Call add_exclusion(safe,ia0,jb,ibig,lexatm)
+                 If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,lexatm)
 
-           If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,lexatm)
-           If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,lexatm)
-        End If
+                 Call add_exclusion(safe,ia0,jd,ibig,lexatm)
+                 If (kd > 0) Call add_exclusion(safe,ia0,kd,ibig,lexatm)
+              End If
 
-        If (ia == jd) Then
-           If (ib0 > 0) Then
-              Call add_exclusion(safe,ib0,ja,ibig,lexatm)
-              If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,lexatm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,lexatm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jb,ibig,lexatm)
-              If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,lexatm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,lexatm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ib0,jc,ibig,lexatm)
-              If (kc > 0) Call add_exclusion(safe,ib0,kc,ibig,lexatm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,lexatm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,lexatm)
            End If
 
-           If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,lexatm)
-           If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,lexatm)
+           If (ib == jd) Then
+              If (ia0 > 0) Then
+                 Call add_exclusion(safe,ia0,ja,ibig,lexatm)
+                 If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,lexatm)
 
-           If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,lexatm)
-           If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,lexatm)
+                 Call add_exclusion(safe,ia0,jb,ibig,lexatm)
+                 If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,lexatm)
 
-           If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,lexatm)
-           If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,lexatm)
-        End If
+                 Call add_exclusion(safe,ia0,jc,ibig,lexatm)
+                 If (kc > 0) Call add_exclusion(safe,ia0,kc,ibig,lexatm)
+              End If
 
-        If (ib == ja) Then
-           If (ia0 > 0) Then
-              Call add_exclusion(safe,ia0,jb,ibig,lexatm)
-              If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,lexatm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,lexatm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ia0,jc,ibig,lexatm)
-              If (kc > 0) Call add_exclusion(safe,ia0,kc,ibig,lexatm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,lexatm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,lexatm)
 
-              Call add_exclusion(safe,ia0,jd,ibig,lexatm)
-              If (kd > 0) Call add_exclusion(safe,ia0,kd,ibig,lexatm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,lexatm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,lexatm)
            End If
-
-           If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,lexatm)
-           If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,lexatm)
-
-           If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,lexatm)
-           If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,lexatm)
-
-           If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,lexatm)
-           If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,lexatm)
-        End If
-
-        If (ib == jb) Then
-           If (ia0 > 0) Then
-              Call add_exclusion(safe,ia0,ja,ibig,lexatm)
-              If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,lexatm)
-
-              Call add_exclusion(safe,ia0,jc,ibig,lexatm)
-              If (kc > 0) Call add_exclusion(safe,ia0,kc,ibig,lexatm)
-
-              Call add_exclusion(safe,ia0,jd,ibig,lexatm)
-              If (kd > 0) Call add_exclusion(safe,ia0,kd,ibig,lexatm)
-           End If
-
-           If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,lexatm)
-           If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,lexatm)
-
-           If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,lexatm)
-           If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,lexatm)
-
-           If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,lexatm)
-           If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,lexatm)
-        End If
-
-        If (ib == jc) Then
-           If (ia0 > 0) Then
-              Call add_exclusion(safe,ia0,ja,ibig,lexatm)
-              If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,lexatm)
-
-              Call add_exclusion(safe,ia0,jb,ibig,lexatm)
-              If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,lexatm)
-
-              Call add_exclusion(safe,ia0,jd,ibig,lexatm)
-              If (kd > 0) Call add_exclusion(safe,ia0,kd,ibig,lexatm)
-           End If
-
-           If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,lexatm)
-           If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,lexatm)
-
-           If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,lexatm)
-           If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,lexatm)
-
-           If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,lexatm)
-           If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,lexatm)
-        End If
-
-        If (ib == jd) Then
-           If (ia0 > 0) Then
-              Call add_exclusion(safe,ia0,ja,ibig,lexatm)
-              If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,lexatm)
-
-              Call add_exclusion(safe,ia0,jb,ibig,lexatm)
-              If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,lexatm)
-
-              Call add_exclusion(safe,ia0,jc,ibig,lexatm)
-              If (kc > 0) Call add_exclusion(safe,ia0,kc,ibig,lexatm)
-           End If
-
-           If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,lexatm)
-           If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,lexatm)
-
-           If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,lexatm)
-           If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,lexatm)
-
-           If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,lexatm)
-           If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,lexatm)
         End If
      End Do
   End Do

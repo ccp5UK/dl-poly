@@ -19,7 +19,7 @@ author    - w.smith 2000
     private static JTextField tebias,tvmin,target,block,black,tdelt;
     private static JTextField ttlow,track,tcatch,spring,opttol,nnebs;
     private static JTextField basin1,basin2;
-    private static JComboBox hypopt,tunits,optkey;
+    private static JComboBox<String> hypopt,tunits,optkey;
     private static JCheckBox tgoneb,tpath;
     private static JButton close;
 
@@ -58,7 +58,7 @@ author    - w.smith 2000
         // Hyperdynamics options
 
         fix(new JLabel("Hyperdynamics options:",JLabel.LEFT),grd,gbc,0,n,2,1);
-        hypopt = new JComboBox();
+        hypopt = new JComboBox<String>();
         hypopt.setForeground(art.scrf);
         hypopt.setBackground(art.scrn);
         hypopt.addItem("BPD");
@@ -72,7 +72,7 @@ author    - w.smith 2000
         // Energy units
 
         fix(new JLabel("Energy Units:",JLabel.LEFT),grd,gbc,0,n,2,1);
-        tunits = new JComboBox();
+        tunits = new JComboBox<String>();
         tunits.setForeground(art.scrf);
         tunits.setBackground(art.scrn);
         tunits.addItem("DL_POLY");
@@ -93,7 +93,7 @@ author    - w.smith 2000
         // Minimisation control option
 
         fix(new JLabel("Minimise Option:",JLabel.LEFT),grd,gbc,0,n,2,1);
-        optkey = new JComboBox();
+        optkey = new JComboBox<String>();
         optkey.setForeground(art.scrf);
         optkey.setBackground(art.scrn);
         optkey.addItem("Force");

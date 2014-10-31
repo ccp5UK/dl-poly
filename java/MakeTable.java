@@ -22,7 +22,7 @@ author    - w.smith 2001
     static int npnts,numtab,ngrid,keytab,keyfit,mxpnts;
     static JTextField atom1,atom2,gridp,cutoff,xval,yval,points;
     static JButton make,load,close,enter,clear;
-    static JComboBox units,fitopt,special;
+    static JComboBox<String> units,fitopt,special;
     static String[] header;
 
     // Define the Graphical User Interface
@@ -147,7 +147,7 @@ author    - w.smith 2001
 
         // Energy units required
 
-        units = new JComboBox();
+        units = new JComboBox<String>();
         units.setBackground(art.scrn);
         units.setForeground(art.scrf);
         units.addItem("DL_POLY");
@@ -164,7 +164,7 @@ author    - w.smith 2001
 
         // Energy units required
 
-        fitopt = new JComboBox();
+        fitopt = new JComboBox<String>();
         fitopt.setBackground(art.scrn);
         fitopt.setForeground(art.scrf);
         fitopt.addItem("SPLINE");
@@ -178,7 +178,7 @@ author    - w.smith 2001
 
         // Special potential functions
 
-        special = new JComboBox();
+        special = new JComboBox<String>();
         special.setBackground(art.scrn);
         special.setForeground(art.scrf);
         special.addItem("None");

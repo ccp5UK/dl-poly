@@ -16,7 +16,7 @@ author    - w.smith 2000
          */
     private static MakeControl home=null;
     private static SysVar job=null;
-    private static JComboBox ensemble,electro;
+    private static JComboBox<String> ensemble,electro;
     private static JTextField ttemp,tpress,ttstep,trcut,tdelr,trvdw,trprim,tepsq,ttaut,ttaup,tgamt;
     private static JButton close;
 
@@ -142,7 +142,7 @@ author    - w.smith 2000
         // Choice of ensemble
 
         fix(new JLabel("Ensemble.............",JLabel.LEFT),grd,gbc,0,n,1,1);
-        ensemble = new JComboBox();
+        ensemble = new JComboBox<String>();
         ensemble.setBackground(art.scrn);
         ensemble.setForeground(art.scrf);
         ensemble.addItem("NVE");
@@ -173,7 +173,7 @@ author    - w.smith 2000
         // Choice of electrostatics
 
         fix(new JLabel("Electrostatics.......",JLabel.LEFT),grd,gbc,0,n,1,1);
-        electro = new JComboBox();
+        electro = new JComboBox<String>();
         electro.setBackground(art.scrn);
         electro.setForeground(art.scrf);
         electro.addItem("NONE");

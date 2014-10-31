@@ -17,7 +17,7 @@ author    - w.smith 2001
     public static StatProp job;
     private static GUI home;
     private static String prop;
-    private static JComboBox property;
+    private static JComboBox<String> property;
     private static int npnts,keyprp,nstart;
     private static JTextField statis,start,selection;
     private static JButton run,close;
@@ -81,7 +81,7 @@ author    - w.smith 2001
         // Choice of ensemble
 
         fix(new JLabel(" Property:   ",JLabel.RIGHT),grd,gbc,0,n,1,1);
-        property = new JComboBox();
+        property = new JComboBox<String>();
         property.setBackground(art.scrn);
         property.setForeground(art.scrf);
         property.addItem("E-TOT");

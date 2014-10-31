@@ -6,7 +6,7 @@ Subroutine error(kode)
 ! controlled termination of the program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2014
+! author    - i.t.todorov october 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -380,7 +380,7 @@ Subroutine error(kode)
 
      Else If (kode ==   95) Then
 
-        Write(nrite,'(/,1x,a)') 'error - rcut > minimum of all half-cell widths'
+        Write(nrite,'(/,1x,a)') 'error - rcut (or rcut+rpad) > minimum of all half-cell widths'
 
      Else If (kode ==   96) Then
 

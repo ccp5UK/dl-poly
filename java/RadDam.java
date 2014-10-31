@@ -19,7 +19,7 @@ author    - w.smith 2000
     private static JTextField tdstart,tdintval,tdefcut,tatom,timpstp,tenergy,tvect1;
     private static JTextField tvect2,tvect3,tvarstp,tmindis,tmaxdis,tnstmsdtmp;
     private static JTextField timsdtmp,tthick,tptemp;
-    private static JComboBox pseudtyp;
+    private static JComboBox<String> pseudtyp;
     private static JButton close;
     private static JCheckBox bldefects,blvarstp,blmsdtmp,blpseudo;
 
@@ -158,7 +158,7 @@ author    - w.smith 2000
         blpseudo.setForeground(art.fore);
         blpseudo.setBackground(art.back);
         fix(blpseudo,grd,gbc,0,n++,2,1);
-        pseudtyp = new JComboBox();
+        pseudtyp = new JComboBox<String>();
         pseudtyp.setBackground(art.scrn);
         pseudtyp.setForeground(art.scrf);
         pseudtyp.addItem(" ");

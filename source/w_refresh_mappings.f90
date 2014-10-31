@@ -7,7 +7,7 @@
 
 ! Check VNL conditioning
 
-        Call vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk)
+        Call vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk,width)
 
         If (l_vnl) Then
 

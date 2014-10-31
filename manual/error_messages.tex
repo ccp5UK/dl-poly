@@ -997,16 +997,15 @@ specified for all relevan atom interactions in the file.
 
 Correct FIELD and resubmit.
 
-\subsubsection*{\underline{Message 95}: error - error - rcut~$>$~minimum of all half-cell widths}
+\subsubsection*{\underline{Message 95}: error - error - rcut or (rcut+rpad)~$>$~minimum of all half-cell widths}
 
-In order for the minimum image convention to work correctly within
-\D, it is necessary to ensure that the major cutoff applied to the
-pair interactions does not exceed half the perpendicular width of
-the simulation cell.  (The perpendicular width is the shortest
-distance between opposing cell faces.)  Termination results if
-this is detected. In NVE and NVT simulations this can only happen
-at the start of a simulation, but in NPT and N$\mat{\sigma}$T, it
-may occur at any time.
+In order for the minimum image convention to work correctly within \D,
+it is necessary to ensure that the major cutoff, plus its possible padding
+distance, applied to the pair interactions does not exceed half the
+perpendicular width of the simulation cell.  (The perpendicular width is the
+shortest distance between opposing cell faces.)  Termination results if this
+is detected.  In NVE and NVT simulations this can only happen at the start of
+a simulation, but in NPT and N$\mat{\sigma}$T, it may occur at any time.
 
 \noindent \underline{\em Action}:
 

@@ -8,7 +8,7 @@ Subroutine set_bounds                                       &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2014
+! author    - i.t.todorov october 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014 (VAF)
 !
@@ -122,9 +122,10 @@ Subroutine set_bounds                                       &
   End If
 
 ! calculate dimensional properties of simulation cell
-! (for use in link-cells) and volume
+! (for use in link-cells) and volume and define min cell width
 
   Call dcell(cell,celprp)
+  width=Min(celprp(7),celprp(8),celprp(9))
 
   volm = celprp(10)
 
@@ -133,7 +134,6 @@ Subroutine set_bounds                                       &
 ! check value of cutoff and reset if necessary
 
   If (imcon > 0) Then
-     width=Min(celprp(7),celprp(8),celprp(9))
      If (imcon == 4) width=rt3*cell(1)/2.0_wp
      If (imcon == 5) width=cell(1)
      If (imcon == 6) width=Min(celprp(7),celprp(8))
@@ -458,9 +458,9 @@ Subroutine set_bounds                                       &
      'cutoff driven limit on largest possible decomposition:', qlx*qly*qlz , &
      ' nodes/domains (', qlx,',',qly,',',qlz,')'
 
-  qlx=qlx/2
-  qly=qly/2
-  qlz=qlz/2
+  qlx=Max(1,qlx/2)
+  qly=Max(1,qly/2)
+  qlz=Max(1,qlz/2)
 
   If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                      &
      'cutoff driven limit on largest balanced decomposition:', qlx*qly*qlz , &
@@ -502,25 +502,27 @@ Subroutine set_bounds                                       &
      End If
   Else ! push the limits when real dynamics exists & in 'no strict' mode
      If (lsim .and. (.not.l_str)) Then
+        If (mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
+           rpad = 0.85_wp * (0.5_wp*width - rcut - 1.0e-6_wp)
+           rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
+        End If
+
         If (rpad <= zero_plus) Then ! When rpad undefined give it some value
-           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then
+           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then ! good non-exception
               rpad = test * rcut
               rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
               If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
               Go To 10
-           Else
+           Else ! not so good non-exception
               rpad = Min( 0.85_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
                                             r_npry * celprp(8) / Real(ily,wp) , &
                                             r_nprz * celprp(9) / Real(ilz,wp) ) &
                                       - rcut - 1.0e-6_wp ) , test * rcut )
            End If
-           rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
-              If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
-           rlnk = rcut + rpad                ! and correct rlnk respectively
-        Else                        ! Otherwise, set reasonable lower limit
-              If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
-           rlnk = rcut + rpad                ! and correct rlnk respectively
+           rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
         End If
+        If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
+        rlnk = rcut + rpad ! and correct rlnk respectively
      End If
   End If
   llvnl = (rpad > zero_plus) ! Detect conditional VNL updating at start

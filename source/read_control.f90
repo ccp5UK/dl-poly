@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2014
+! author    - i.t.todorov october 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -2054,6 +2054,9 @@ Subroutine read_control                                &
      Else If (word(1:4) == 'delr') Then
 
         Call warning(35,0.0_wp,0.0_wp,0.0_wp)
+        Call get_word(record,word)
+        rpad1 = 0.25_wp * Abs(word_2_real(word))
+        If (idnode == 0) Write(nrite,"(1x,'cutoff padding (Angs)       ',6x,1p,e12.4)") rpad1
 
 ! read DL_POLY_2/Classic multiple timestep option (compatibility)
 ! as DL_POLY_4 infrequent k-space SPME evaluation option

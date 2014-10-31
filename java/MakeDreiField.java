@@ -16,7 +16,7 @@ author    - w.smith 2000
      */
     public static MakeDreiField job;
     private static GUI home;
-    private static JComboBox bond,vdwt;
+    private static JComboBox<String> bond,vdwt;
     private static JButton make,load,close;
     private static JCheckBox charges;
     private static JLabel lab1,lab2,pad1,pad2,pad3;
@@ -79,7 +79,7 @@ author    - w.smith 2000
 
         lab1 = new JLabel("Bond type :",JLabel.LEFT);
         fix(lab1,grd,gbc,0,2,1,1);
-        bond = new JComboBox();
+        bond = new JComboBox<String>();
         bond.setBackground(art.scrn);
         bond.setForeground(art.scrf);
         bond.addItem("Harmonic");
@@ -91,7 +91,7 @@ author    - w.smith 2000
 
         lab2 = new JLabel("VDW type :",JLabel.LEFT);
         fix(lab2,grd,gbc,0,3,1,1);
-        vdwt = new JComboBox();
+        vdwt = new JComboBox<String>();
         vdwt.setBackground(art.scrn);
         vdwt.setForeground(art.scrf);
         vdwt.addItem("Len-Jones");

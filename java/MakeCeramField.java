@@ -17,7 +17,7 @@ author    - w.smith 2001
     public static MakeCeramField job;
     private static GUI home;
     private static String ffield;
-    private static JComboBox cpot;
+    private static JComboBox<String> cpot;
     private static JButton make,load,close;
     private static JCheckBox display,tetra;
     private static JLabel lab1,pad;
@@ -72,7 +72,7 @@ author    - w.smith 2001
 
         lab1 = new JLabel("Force field :",JLabel.LEFT);
         fix(lab1,grd,gbc,0,2,1,1);
-        cpot = new JComboBox();
+        cpot = new JComboBox<String>();
         cpot.setBackground(art.scrn);
         cpot.setForeground(art.scrf);
         cpot.addItem("LC_a");

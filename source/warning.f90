@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2014
+! author    - i.t.todorov october 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -36,8 +36,8 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode ==   3) Then
 
-        Write(nrite,'(/,1x,2(a,f12.6),a,/)') &
-        '*** warning - system cutoff is, ', a, ' , minimum half-cell width is, ', b, ' !!! ***'
+        Write(nrite,'(/,1x,3(a,f7.3),a,/)') &
+        '*** warning - system cutoff(+padding) is: ', a, ' , minimum half-cell width is: ', b, ' !!! ***'
 
      Else If (kode ==   4) Then
 

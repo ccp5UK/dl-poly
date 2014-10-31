@@ -7,7 +7,7 @@ Subroutine vdw_generate(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov april 2014
+! amended   - i.t.todorov september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -56,8 +56,10 @@ Subroutine vdw_generate(rvdw)
         gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
 
         If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=(a/b)**(1.0_wp/6.0_wp)
-           sigeps(2,ivdw)=b**2/(4.0_wp*a)
+           If (a*b > zero_plus) Then
+              sigeps(1,ivdw)=(a/b)**(1.0_wp/6.0_wp)
+              sigeps(2,ivdw)=b**2/(4.0_wp*a)
+           End If ! else leave undetermined
         End If
 
      Else If (keypot == 2) Then

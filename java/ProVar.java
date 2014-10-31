@@ -16,7 +16,7 @@ author    - w.smith 2000
          */
     private static MakeControl home;
     private static ProVar job;
-    private static JComboBox restopt,algorithm;
+    private static JComboBox<String> restopt,algorithm;
     private static JTextField tnstrun,tnsteql,tmult,tnstbpo,tnstack,tintsta,tewltol,tshktol,tqtntol;
     private static JTextField tjobtim,ttclose;
     private static JButton close;
@@ -55,7 +55,7 @@ author    - w.smith 2000
         // Restart option
 
         fix(new JLabel("Algorithm",JLabel.LEFT),grd,gbc,0,n,2,1);
-        algorithm = new JComboBox();
+        algorithm = new JComboBox<String>();
         algorithm.setBackground(art.scrn);
         algorithm.setForeground(art.scrf);
         algorithm.addItem("Leapfrog Verlet");
@@ -153,7 +153,7 @@ author    - w.smith 2000
         // Restart option
 
         fix(new JLabel("Restart option",JLabel.LEFT),grd,gbc,0,n,2,1);
-        restopt = new JComboBox();
+        restopt = new JComboBox<String>();
         restopt.setBackground(art.scrn);
         restopt.setForeground(art.scrf);
         restopt.addItem("NONE");

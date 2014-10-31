@@ -18,7 +18,7 @@ author    - w.smith 2000
     private static JTextField tstart,tintvl,tlambda,tnonlin;
     private static JTextField systema,systemb,tswtch;
     private static JCheckBox remass;
-    private static JComboBox solkey,mixkey;
+    private static JComboBox<String> solkey,mixkey;
     private static JButton close;
 
 
@@ -56,7 +56,7 @@ author    - w.smith 2000
         // Select solvation option
 
         fix(new JLabel("Choose solvation option:",JLabel.LEFT),grd,gbc,0,n,2,1);
-        solkey = new JComboBox();
+        solkey = new JComboBox<String>();
         solkey.setForeground(art.scrf);
         solkey.setBackground(art.scrn);
         solkey.addItem("Decompose");
@@ -100,7 +100,7 @@ author    - w.smith 2000
         // Mixing function selction
 
         fix(new JLabel("Free Energy Mixing Function:",JLabel.LEFT),grd,gbc,0,n,2,1);
-        mixkey = new JComboBox();
+        mixkey = new JComboBox<String>();
         mixkey.setForeground(art.scrf);
         mixkey.setBackground(art.scrn);
         mixkey.addItem("Linear");

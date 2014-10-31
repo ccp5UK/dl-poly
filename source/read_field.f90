@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2014
+! author    - i.t.todorov october 2014
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno and i.t.todorov march 2014 (itramolecular TPs & PDFs)
@@ -1168,6 +1168,10 @@ Subroutine read_field                   &
                        keybnd(nbonds)=9
                     Else If (keyword == '-fne') Then
                        keybnd(nbonds)=-9
+                    Else If (keyword == 'amoe') Then
+                       keybnd(nbonds)=10
+                    Else If (keyword == '-amo') Then
+                       keybnd(nbonds)=-10
                     Else
 
                        If (idnode == 0) Write(nrite,'(/,1x,a)') keyword
@@ -1591,20 +1595,36 @@ Subroutine read_field                   &
                     keyword=word(1:4)
                     If      (keyword == 'tab' ) Then
                        keydih(ndihed)=20
+                    Else If (keyword == '-tab') Then
+                       keydih(ndihed)=-20
                     Else If (keyword == 'cos' ) Then
                        keydih(ndihed)=1
+                    Else If (keyword == '-cos') Then
+                       keydih(ndihed)=-1
                     Else If (keyword == 'harm') Then
                        keydih(ndihed)=2
+                    Else If (keyword == '-hrm') Then
+                       keydih(ndihed)=-2
                     Else If (keyword == 'hcos') Then
                        keydih(ndihed)=3
+                    Else If (keyword == '-hcs') Then
+                       keydih(ndihed)=-3
                     Else If (keyword == 'cos3') Then
                        keydih(ndihed)=4
+                    Else If (keyword == '-cs3') Then
+                       keydih(ndihed)=-4
                     Else If (keyword == 'ryck') Then
                        keydih(ndihed)=5
+                    Else If (keyword == '-rck') Then
+                       keydih(ndihed)=-5
                     Else If (keyword == 'rbf' ) Then
                        keydih(ndihed)=6
+                    Else If (keyword == '-rbf') Then
+                       keydih(ndihed)=-6
                     Else If (keyword == 'opls') Then
                        keydih(ndihed)=7
+                    Else If (keyword == '-opl') Then
+                       keydih(ndihed)=-7
                     Else
 
                        If (idnode == 0) Write(nrite,'(/,1x,a)') keyword
@@ -1809,16 +1829,28 @@ Subroutine read_field                   &
 
                     If      (keyword == 'tab' ) Then
                        keyinv(ninver)=20
+                    Else If (keyword == '-tab') Then
+                       keyinv(ninver)=-20
                     Else If (keyword == 'harm') Then
                        keyinv(ninver)=1
+                    Else If (keyword == '-hrm') Then
+                       keyinv(ninver)=-1
                     Else If (keyword == 'hcos') Then
                        keyinv(ninver)=2
+                    Else If (keyword == '-hcs') Then
+                       keyinv(ninver)=-2
                     Else If (keyword == 'plan') Then
                        keyinv(ninver)=3
+                    Else If (keyword == '-pln') Then
+                       keyinv(ninver)=-3
                     Else If (keyword == 'xpln') Then
                        keyinv(ninver)=4
+                    Else If (keyword == '-xpl') Then
+                       keyinv(ninver)=-4
                     Else If (keyword == 'calc') Then
                        keyinv(ninver)=5
+                    Else If (keyword == '-clc') Then
+                       keyinv(ninver)=-5
                     Else
 
                        If (idnode == 0) Write(nrite,'(/,1x,a)') keyword

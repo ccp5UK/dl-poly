@@ -424,7 +424,7 @@ potentials, the electrostatic\index{potential!electrostatics} and
 van der Waals\index{potential!van der Waals} interactions between
 the pair of atoms are still evaluated when distance restraints are
 applied.  All the potential forms of the previous section are
-avaliable as angular restraints, although they have different key
+available as angular restraints, although they have different key
 words:
 
 \begin{enumerate}
@@ -689,6 +689,36 @@ are entered in \D in the order 1-2-3-4.
 In \D improper dihedral forces\index{potential!improper dihedral}
 are handled by the routine {\sc dihedrals\_forces}.
 
+\subsection{Torsional Restraints}
+
+In \D the torsional restraints, in which the dihedral angle as defined
+by a quadruplet of atoms, is maintained around some preset value $\phi_{0}$
+is handled as a special case of dihedral potential.
+As a consequence angle restraints may be applied only between atoms
+in the same molecule.  Unlike with application of the ``pure'' dihedral
+potentials, the electrostatic\index{potential!electrostatics} and
+van der Waals\index{potential!van der Waals} interactions between
+the pair of atoms are still evaluated when distance restraints are
+applied.  All the potential forms of the previous section are
+available as torsional restraints, although they have different key
+words:
+
+\begin{enumerate}
+\item Cosine potential:  ({\bf -cos})
+\item Harmonic:  ({\bf -hrm})
+\item Harmonic cosine:  ({\bf -hcs})
+\item Triple cosine:  ({\bf -cs3})
+\item Ryckaert-Bellemans \cite{ryckaert-75a} with fixed constants
+a-f: ({\bf -rck})
+\item Fluorinated Ryckaert-Bellemans \cite{schmidt-96a} with fixed
+constants a-h:  ({\bf -rbf})
+\item OPLS torsion potential:  ({\bf -opl})
+\item Tabulated potential:  ({\bf -tab}).  The potential is defined numerically in TABDIH (see Section~\ref{bonded-tables} and Section~\ref{intra-tables}).
+\end{enumerate}
+
+In \D torsional restraints\index{torsional restraints} are handled by
+the routine {\sc dihedrals\_forces}.
+
 \subsection{Inversion Angle Potentials}
 
 \begin{figure}[htbp]
@@ -927,6 +957,31 @@ and the stress tensor contribution $\sigma_{abcd}^{\alpha\beta}(u)$ by
 In \D the calcite\index{potential!calcite} forces are handled by the routine
 {\sc inversions\_forces}, which is a convenient {\em intramolecular} four-body
 force routine. However, it is manifestly {\em not} an inversion potential as such.
+
+\subsection{Inversional Restraints}
+
+In \D the inversional restraints, in which the inversion angle, as defined
+by a quadruplet of atoms, is maintained around some preset value $\phi_{0}$,
+is handled as a special case of  inversion potential.
+As a consequence angle restraints may be applied only between atoms
+in the same molecule.  Unlike with application of the ``pure'' dihedral
+potentials, the electrostatic\index{potential!electrostatics} and
+van der Waals\index{potential!van der Waals} interactions between
+the pair of atoms are still evaluated when distance restraints are
+applied.  All the potential forms of the previous section are
+available as torsional restraints, although they have different key
+words:
+
+\begin{enumerate}
+\item Harmonic:  ({\bf -hrm})
+\item Harmonic cosine:  ({\bf -hcs})
+\item Planar potential:  ({\bf -pln})
+\item Extended planar potential:  ({\bf -xpl})
+\item Tabulated potential:  ({\bf -tab}).  The potential is defined numerically in TABINV (see Section~\ref{bonded-tables} and Section~\ref{intra-tables}).
+\end{enumerate}
+
+In \D inversional restraints\index{inversional restraints} are handled by
+the routine {\sc inversions\_forces}.
 
 \subsection{Tethering Forces}
 
