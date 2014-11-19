@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2014
+! author    - i.t.todorov november 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -34,6 +34,7 @@ Subroutine read_control                                &
   Use comms_module,    Only : idnode
   Use setup_module
   Use config_module,   Only : sysname
+  Use dpd_module,      Only : l_dpd,gamdpd
   Use langevin_module, Only : l_lan,l_gst,langevin_allocate_arrays
   Use parse_module
   Use bonds_module,    Only : rcbnd
@@ -94,9 +95,9 @@ Subroutine read_control                                &
                                              rdef,rrsd,timjob,timcls
 
 
-  Logical                                 :: limp,lens,lforc,  &
-                                             lpres,lstrext,    &
-                                             lstep,ltemp,safe, &
+  Logical                                 :: limp,lvv,lens,lforc, &
+                                             lpres,lstrext,       &
+                                             lstep,ltemp,safe,    &
                                              l_timjob,l_timcls
 
   Character( Len = 200 )                  :: record
@@ -208,8 +209,9 @@ Subroutine read_control                                &
 
   lzero = .false.
 
-! default ensemble switch (not defined) and key
+! default integration type (VV), ensemble switch (not defined) and key
 
+  lvv    = .true.
   lens   = .false.
   keyens = 0
 
@@ -1012,6 +1014,14 @@ Subroutine read_control                                &
 
      Else If (word(1:8) == 'integrat') Then
 
+        Call get_word(record,word)
+        If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
+        If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
+        If (word(1:8) == 'leapfrog') lvv=.false.
+
+        If (l_dpd .and. (lvv .neqv. l_vv) .and. idnode == 0) Write(nrite,"(/,1x,a)") &
+           "*** warning - Leapfrog Verlet selected integration defaulted to Velocity Verlet for DPD thermostats!!!"
+
 ! read ensemble
 
      Else If (word(1:8) == 'ensemble') Then
@@ -1039,12 +1049,29 @@ Subroutine read_control                                &
 
            Call get_word(record,word)
 
-           If (word(1:5) == 'evans') Then
+           If      (word(1:5) == 'evans') Then
 
               keyens = 1
 
               If (idnode == 0) Write(nrite,"(1x,'Ensemble : NVT Evans (Isokinetic)', &
                  & /,1x,'Gaussian temperature constraints in use')")
+
+              If (lens) Call error(414)
+              lens=.true.
+
+           Else If (word(1:3) == 'dpd') Then
+
+              keyens = 0 ! equivalence to doing NVE with some extra fiddling
+
+              Call get_word(record,word)
+              gamdpd(0) = Abs(word_2_real(word,0.0_wp))
+
+              If (gamdpd(0) <= zero_plus) Then
+                 If (idnode == 0) Write(nrite,"(1x,'Ensemble : NVT dpd (Dissipative Particle Dynamics)')")
+              Else
+                 If (idnode == 0) Write(nrite,"(1x,'Ensemble : NVT dpd (Dissipative Particle Dynamics)', &
+                    & /,1x,'drag coefficient    (Dalton/ps)',3x,1p,e12.4)") gamdpd(0)
+              End If
 
               If (lens) Call error(414)
               lens=.true.
@@ -2245,27 +2272,33 @@ Subroutine read_control                                &
 
   If (lvar) Then
 
-     If (mxdis >= 2.5_wp*mndis .and. mndis > 0.0_wp) Then
+     If (l_dpd) Then
+        lvar=.false.
         If (idnode == 0) Then
-           Write(nrite,"(/,1x,'variable simulation timestep (ps)',1x,1p,e12.4)") tstep
-
-           Write(nrite,"(/,1x,a,2(/,1x,a,5x,1p,e12.4))") &
-           "controls for variable timestep",             &
-           "minimum distance Dmin (Angs) ",mndis,          &
-           "maximum distance Dmax (Angs) ",mxdis
-        End If
-        If (mxstp > zero_plus) Then
-           If (idnode == 0) Write(nrite,"(1x,a,7x,1p,e12.4)") &
-           "timestep ceiling mxstp (ps)",mxstp
-           tstep=Min(tstep,mxstp)
-        Else
-           mxstp=Huge(1.0_wp)
+           Write(nrite,'(/,1x,a)') "*** warning - variable timestep unavalable in DPD themostats, defaulting to:"
+           Write(nrite,"(/,1x,'fixed simulation timestep (ps)   ',1x,1p,e12.4)") tstep
         End If
      Else
+        If (mxdis >= 2.5_wp*mndis .and. mndis > 0.0_wp) Then
+           If (idnode == 0) Then
+              Write(nrite,"(/,1x,'variable simulation timestep (ps)',1x,1p,e12.4)") tstep
+              Write(nrite,"(/,1x,a,2(/,1x,a,5x,1p,e12.4))") &
+              "controls for variable timestep",             &
+              "minimum distance Dmin (Angs) ",mndis,        &
+              "maximum distance Dmax (Angs) ",mxdis
+           End If
 
-        Call warning(140,mndis,mxdis,0.0_wp)
-        Call error(518)
-
+           If (mxstp > zero_plus) Then
+              If (idnode == 0) Write(nrite,"(1x,a,7x,1p,e12.4)") &
+              "timestep ceiling mxstp (ps)",mxstp
+              tstep=Min(tstep,mxstp)
+           Else
+              mxstp=Huge(1.0_wp)
+           End If
+        Else
+           Call warning(140,mndis,mxdis,0.0_wp)
+           Call error(518)
+        End If
      End If
 
   Else If (lstep) Then

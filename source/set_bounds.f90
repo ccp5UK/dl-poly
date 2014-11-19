@@ -8,7 +8,7 @@ Subroutine set_bounds                                       &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2014
+! author    - i.t.todorov november 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014 (VAF)
 !
@@ -37,7 +37,7 @@ Subroutine set_bounds                                       &
   Integer           :: megatm,ilx,ily,ilz,qlx,qly,qlz, &
                        mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
   Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
-                       dens0,dens,fdens,        &
+                       dens0,dens,fdens,fdvar,  &
                        test,vcell,              &
                        rcter,rctbp,rcfbp,       &
                        xhi,yhi,zhi
@@ -147,6 +147,8 @@ Subroutine set_bounds                                       &
   End If
 
 
+  fdvar = dvar**1.7_wp
+
 
 !!! INTRA-LIKE POTENTIAL PARAMETERS !!!
 
@@ -154,7 +156,7 @@ Subroutine set_bounds                                       &
 
   If (mxshl > 0 .and. mxnode > 1) Then
      mxshl = Max(mxshl,mxnode*mtshl)
-     mxshl = (3*(Nint((dvar**1.7_wp)*Real(mxshl,wp))+mxnode-1))/mxnode
+     mxshl = (3*(Nint(fdvar*Real(mxshl,wp))+mxnode-1))/mxnode
   End If
 
 
@@ -162,7 +164,7 @@ Subroutine set_bounds                                       &
 
   If (mxcons > 0 .and. mxnode > 1) Then
      mxcons = Max(mxcons,mxnode*mtcons)
-     mxcons = (3*(Nint((dvar**1.7_wp)*Real(mxcons,wp))+mxnode-1))/mxnode
+     mxcons = (3*(Nint(fdvar*Real(mxcons,wp))+mxnode-1))/mxnode
   End If
 
 
@@ -175,7 +177,7 @@ Subroutine set_bounds                                       &
 
   If (mxrgd > 0 .and. mxnode > 1) Then
      mxrgd = Max(mxrgd,mxnode*mtrgd)
-     mxrgd = (3*(Nint((dvar**1.7_wp)*Real(mxrgd,wp))+mxnode-1))/mxnode
+     mxrgd = (3*(Nint(fdvar*Real(mxrgd,wp))+mxnode-1))/mxnode
   End If
 
 
@@ -197,7 +199,7 @@ Subroutine set_bounds                                       &
   If (mxteth > 0) Then
      If (mxnode > 1) Then
         mxteth = Max(mxteth,mxnode*mtteth)
-        mxteth = (3*(Nint((dvar**1.7_wp)*Real(mxteth,wp))+mxnode-1))/mxnode
+        mxteth = (3*(Nint(fdvar*Real(mxteth,wp))+mxnode-1))/mxnode
      End If
      mxpteth = 3
   Else
@@ -210,7 +212,7 @@ Subroutine set_bounds                                       &
   If (mxbond > 0) Then
      If (mxnode > 1) Then
         mxbond = Max(mxbond,mxnode*mtbond)
-        mxbond = (3*(Nint((dvar**1.7_wp)*Real(mxbond,wp))+mxnode-1))/mxnode
+        mxbond = (3*(Nint(fdvar*Real(mxbond,wp))+mxnode-1))/mxnode
      End If
      mxpbnd = 4
   Else
@@ -223,7 +225,7 @@ Subroutine set_bounds                                       &
   If (mxangl > 0) Then
      If (mxnode > 1) Then
         mxangl = Max(mxangl,mxnode*mtangl)
-        mxangl = (3*(Nint((dvar**1.7_wp)*Real(mxangl,wp))+mxnode-1))/mxnode
+        mxangl = (3*(Nint(fdvar*Real(mxangl,wp))+mxnode-1))/mxnode
      End If
      mxpang = 6
   Else
@@ -236,7 +238,7 @@ Subroutine set_bounds                                       &
   If (mxdihd > 0) Then
      If (mxnode > 1) Then
         mxdihd = Max(mxdihd,mxnode*mtdihd)
-        mxdihd = (3*(Nint((dvar**1.7_wp)*Real(mxdihd,wp))+mxnode-1))/mxnode
+        mxdihd = (3*(Nint(fdvar*Real(mxdihd,wp))+mxnode-1))/mxnode
         mxdihd = mxdihd + (mxdihd+4)/5 ! allow for 25% higher density
      End If
      mxpdih = 7
@@ -251,7 +253,7 @@ Subroutine set_bounds                                       &
   If (mxinv > 0) Then
      If (mxnode > 1) Then
         mxinv = Max(mxinv,mxnode*mtinv)
-        mxinv = (3*(Nint((dvar**1.7_wp)*Real(mxinv,wp))+mxnode-1))/mxnode
+        mxinv = (3*(Nint(fdvar*Real(mxinv,wp))+mxnode-1))/mxnode
         mxinv = mxinv + (mxinv+4)/5 ! allow for 25% higher density
      End If
      mxpinv = 3
@@ -536,7 +538,13 @@ Subroutine set_bounds                                       &
 ! allow for thermal expansion of unsettled systems
 ! total link-cells per node/domain is ncells = (ilx+4)*(ily+4)*(ilz+4)
 
-  mxcell = (ilx+4)*(ily+4)*(ilz+4)
+  If      (imcon == 0) Then
+     mxcell = Nint((fdvar**3) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
+  Else If (imcon == 6) Then
+     mxcell = Nint((fdvar**2) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
+  Else
+     mxcell = (ilx+4)*(ily+4)*(ilz+4)
+  End If
 
 
 
@@ -616,14 +624,14 @@ Subroutine set_bounds                                       &
   Call read_config &
            (megatm,levcfg,imcon,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens)
 
-! Create f(dvar,dens0,dens)
+! Create f(fdvar,dens0,dens)
 
   If (mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
-     fdens = (dvar**1.7_wp) * (0.65_wp*dens0 + 0.35_wp*dens)
+     fdens = fdvar * (0.65_wp*dens0 + 0.35_wp*dens)
   Else If (Min(ilx,ily,ilz) == 1) Then
-     fdens = (dvar**1.7_wp) * (0.50_wp*dens0 + 0.50_wp*dens)
+     fdens = fdvar * (0.50_wp*dens0 + 0.50_wp*dens)
   Else
-     fdens = (dvar**1.7_wp) * (0.35_wp*dens0 + 0.65_wp*dens)
+     fdens = fdvar * (0.35_wp*dens0 + 0.65_wp*dens)
   End If
 
 ! density variation affects the link-cell arrays' dimension
@@ -732,7 +740,13 @@ Subroutine set_bounds                                       &
 
      If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call error(305)
 
-     mxcell = Max(mxcell,(ilx+5)*(ily+5)*(ilz+5))
+     If      (imcon == 0) Then
+        mxcell = Max(mxcell,Nint((fdvar**3) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
+     Else If (imcon == 6) Then
+        mxcell = Max(mxcell,Nint((fdvar**2) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
+     Else
+        mxcell = Max(mxcell,(ilx+5)*(ily+5)*(ilz+5))
+     End If
   End If
 
 End Subroutine set_bounds

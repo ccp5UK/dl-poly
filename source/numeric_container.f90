@@ -389,8 +389,8 @@ Subroutine box_mueller_saru1(i,j,gauss1)
 
   Implicit None
 
-  Integer,           Intent( In    )           :: i,j
-  Real( Kind = wp ), Intent(   Out )           :: gauss1
+  Integer,           Intent( In    ) :: i,j
+  Real( Kind = wp ), Intent(   Out ) :: gauss1
 
   Integer           :: k
   Real( Kind = wp ) :: sarurnd,ran0,ran1,ran2
@@ -416,6 +416,67 @@ Subroutine box_mueller_saru1(i,j,gauss1)
 
 End Subroutine box_mueller_saru1
 
+Subroutine box_mueller_saru2(i,j,n,gauss1,l_str)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine for generating a gaussian random number of unit
+! variance (with zero mean and standard variation of 1) by using either
+! the box_mueller method or the simplest CLT approximation
+!
+! dependent on sarurnd
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov november 2014
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+  Use setup_module, Only : rt3,zero_plus ! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
+
+  Implicit None
+
+  Logical,           Intent( In    ), Optional :: l_str
+  Integer,           Intent( In    )           :: i,j,n
+  Real( Kind = wp ), Intent(   Out )           :: gauss1
+
+  Integer           :: k
+  Real( Kind = wp ) :: sarurnd,ran0,ran1,ran2
+
+! Initialise counter
+
+  k=n
+
+! Avoid overflow due to Box_Mueller rejection rate of sampling = (1-p/4) = 0.214
+
+  If (Huge(1)-k <= 50) k=-Huge(1)+49
+
+! CLT approximation
+
+  If (Present(l_str)) Then
+     If (.not.l_str) Then
+        ran0 = rt3*(2.0_wp*sarurnd(i,j,k)-1.0_wp)
+        Return
+     End If
+  End If
+
+! generate uniform random numbers on [-1, 1)
+
+  ran0=1.0_wp
+  Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
+     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
+     ran0=ran1**2+ran2**2
+     k=k+2
+  End Do
+
+! calculate gaussian random numbers 1 & 2
+
+  ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
+                       gauss1=ran0*ran1
+
+End Subroutine box_mueller_saru2
+
 Subroutine box_mueller_saru3(i,j,gauss1,gauss2,gauss3)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -436,8 +497,8 @@ Subroutine box_mueller_saru3(i,j,gauss1,gauss2,gauss3)
 
   Implicit None
 
-  Integer,           Intent( In    )           :: i,j
-  Real( Kind = wp ), Intent(   Out )           :: gauss1,gauss2,gauss3
+  Integer,           Intent( In    ) :: i,j
+  Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2,gauss3
 
   Integer           :: k
   Real( Kind = wp ) :: sarurnd,ran0,ran1,ran2
@@ -499,9 +560,9 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 
   Implicit None
 
-  Integer,           Intent( In    )           :: i,j
-  Real( Kind = wp ), Intent(   Out )           :: gauss1,gauss2,gauss3, &
-                                                  gauss4,gauss5,gauss6
+  Integer,           Intent( In    ) :: i,j
+  Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2,gauss3, &
+                                        gauss4,gauss5,gauss6
 
   Integer           :: k
   Real( Kind = wp ) :: sarurnd,ran0,ran1,ran2

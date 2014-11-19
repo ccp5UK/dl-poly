@@ -1,4 +1,4 @@
-Subroutine metal_ld_export(mdir,mlast,ixyz0)
+Subroutine dpd_v_export(mdir,mlast,ixyz0)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,7 +6,7 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0)
 ! regions for halo formation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -14,14 +14,14 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0)
   Use comms_module
   Use setup_module,  Only : nrite,mxatms,mxbfxp
   Use domains_module
-  Use metal_module,  Only : tabmet,rho,rhs
+  Use config_module, Only : vxx,vyy,vzz
 
   Implicit None
 
   Integer,           Intent( In    ) :: mdir
   Integer,           Intent( InOut ) :: mlast,ixyz0(1:mxatms)
 
-  Logical           :: safe,lrhs
+  Logical           :: safe
   Integer           :: fail,iadd,limit,iblock,          &
                        i,j,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
                        jdnode,kdnode,imove,jmove,itmp
@@ -30,18 +30,12 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0)
 
 ! Number of transported quantities per particle
 
-  If (.not.(tabmet == 3 .or. tabmet == 4)) Then
-     lrhs=.false.
-     iadd=2
-  Else
-     lrhs=.true.
-     iadd=3
-  End If
+  iadd=4
 
   fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_ld_export allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'dpd_v_export allocation failure, node: ', idnode
      Call error(0)
   End If
 
@@ -102,7 +96,7 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0)
      jdnode = map(6)
      kdnode = map(5)
   Else
-     Call error(47)
+     Call error(152)
   End If
 
 ! Initialise counters for length of sending and receiving buffers
@@ -142,22 +136,15 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0)
 
            If ((imove+iadd) <= iblock) Then
 
-! pack particle density and halo indexing
+! pack particle velocity and halo indexing
 
-              If (.not.lrhs) Then
-                 buffer(imove+1)=rho(i)
-
-! Use the corrected halo reduction factor when the particle is halo to both +&- sides
-
-                 buffer(imove+2)=Real(ixyz0(i)-Merge(jxyz,kxyz,j == jxyz),wp)
-              Else
-                 buffer(imove+1)=rho(i)
-                 buffer(imove+2)=rhs(i)
+              buffer(imove+1)=vxx(i)
+              buffer(imove+2)=vyy(i)
+              buffer(imove+3)=vzz(i)
 
 ! Use the corrected halo reduction factor when the particle is halo to both +&- sides
 
-                 buffer(imove+3)=Real(ixyz0(i)-Merge(jxyz,kxyz,j == jxyz),wp)
-              End If
+              buffer(imove+4)=Real(ixyz0(i)-Merge(jxyz,kxyz,j == jxyz),wp)
 
            Else
 
@@ -179,14 +166,14 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0)
      itmp=Merge(2,1,mxnode > 1)*imove
      If (mxnode > 1) Call gmax(itmp)
      Call warning(150,Real(itmp,wp),Real(limit,wp),0.0_wp)
-     Call error(38)
+     Call error(154)
   End If
 
 ! exchange information on buffer sizes
 
   If (mxnode > 1) Then
-     Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Metldexp_tag,dlp_comm_world,request,ierr)
-     Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,Metldexp_tag,dlp_comm_world,ierr)
+     Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Dpdvexp_tag,dlp_comm_world,request,ierr)
+     Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,Dpdvexp_tag,dlp_comm_world,ierr)
      Call MPI_WAIT(request,status,ierr)
   Else
      jmove=imove
@@ -200,14 +187,14 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0)
      itmp=mlast+jmove/iadd
      If (mxnode > 1) Call gmax(itmp)
      Call warning(160,Real(itmp,wp),Real(mxatms,wp),0.0_wp)
-     Call error(39)
+     Call error(156)
   End If
 
 ! exchange buffers between nodes (this is a MUST)
 
   If (mxnode > 1) Then
-     Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Metldexp_tag,dlp_comm_world,request,ierr)
-     Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Metldexp_tag,dlp_comm_world,ierr)
+     Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Dpdvexp_tag,dlp_comm_world,request,ierr)
+     Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Dpdvexp_tag,dlp_comm_world,ierr)
      Call MPI_WAIT(request,status,ierr)
   End If
 
@@ -217,24 +204,20 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0)
   Do i=1,jmove/iadd
      mlast=mlast+1
 
-! unpack particle density and remaining halo indexing
+! unpack particle velocity and remaining halo indexing
 
-     If (.not.lrhs) Then
-        rho(mlast) =buffer(j+1)
-        ixyz0(mlast)=Nint(buffer(j+2))
-     Else
-        rho(mlast) =buffer(j+1)
-        rhs(mlast) =buffer(j+2)
-        ixyz0(mlast)=Nint(buffer(j+3))
-     End If
+     vxx(mlast)=buffer(j+1)
+     vyy(mlast)=buffer(j+2)
+     vzz(mlast)=buffer(j+3)
+     ixyz0(mlast)=Nint(buffer(j+4))
 
      j=j+iadd
   End Do
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_ld_export deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'dpd_v_export deallocation failure, node: ', idnode
      Call error(0)
   End If
 
-End Subroutine metal_ld_export
+End Subroutine dpd_v_export

@@ -11,7 +11,7 @@ Subroutine scan_control                                    &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2014
+! author    - i.t.todorov november 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno and i.t.todorov april 2014 (itramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
@@ -22,6 +22,7 @@ Subroutine scan_control                                    &
   Use comms_module,       Only : idnode,mxnode,gcheck
   Use setup_module,       Only : nread,nrite,pi,zero_plus
   Use parse_module,       Only : get_line,get_word,lower_case,word_2_real
+  Use dpd_module,         Only : l_dpd
   Use msd_module
   Use development_module, Only : l_trm
   Use kim_module,         Only : l_kim,rkim
@@ -200,6 +201,16 @@ Subroutine scan_control                                    &
 
         Call get_word(record,word)
         rbin = Abs(word_2_real(word))
+
+! read dpd ensembles option
+
+     Else If (word(1:8) == 'ensemble') Then
+
+        Call get_word(record,word)
+        If (word(1:3) == 'nvt') Then
+           Call get_word(record,word)
+           If (word(1:3) == 'dpd') l_dpd = .true.
+        End If
 
 ! read replay history option
 
@@ -733,6 +744,10 @@ Subroutine scan_control                                    &
   End Do
 
   If (idnode == 0) Close(Unit=nread)
+
+! Enforce VV for DPD thermostat
+
+  If (l_dpd) l_vv = .true.
 
 ! When not having dynamics or prepared to terminate
 ! expanding and not running the small system prepare to exit gracefully

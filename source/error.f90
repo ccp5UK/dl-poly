@@ -6,7 +6,7 @@ Subroutine error(kode)
 ! controlled termination of the program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2014
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -160,11 +160,11 @@ Subroutine error(kode)
 
      Else If (kode ==   38) Then
 
-        Write(nrite,'(/,1x,a)') 'error - transfer array exceeded in metal_ld_export'
+        Write(nrite,'(/,1x,a)') 'error - outgoing transfer buffer size exceeded in metal_ld_export'
 
      Else If (kode ==   39) Then
 
-        Write(nrite,'(/,1x,a)') 'error - density array exceeded in metal_ld_export'
+        Write(nrite,'(/,1x,a)') 'error - incoming data transfer size exceeds limit in metal_ld_export'
 
      Else If (kode ==   40) Then
 
@@ -180,11 +180,11 @@ Subroutine error(kode)
 
      Else If (kode ==   43) Then
 
-        Write(nrite,'(/,1x,a)') 'error - deport_atomic_data outgoing transfer buffer exceeded'
+        Write(nrite,'(/,1x,a)') 'error - outgoing transfer buffer exceeded in deport_atomic_data'
 
      Else If (kode ==   44) Then
 
-        Write(nrite,'(/,1x,a)') 'error - deport_atomic_data incoming transfer buffer exceeded'
+        Write(nrite,'(/,1x,a)') 'error - incoming data transfer size exceeds limit in deport_atomic_data'
 
      Else If (kode ==   45) Then
 
@@ -224,7 +224,7 @@ Subroutine error(kode)
 
      Else If (kode ==   54) Then
 
-        Write(nrite,'(/,1x,a)') 'error - outgoing transfer buffer exceeded in export_atomic_data'
+        Write(nrite,'(/,1x,a)') 'error - outgoing transfer buffer size exceeded in export_atomic_data'
 
      Else If (kode ==   55) Then
 
@@ -232,7 +232,7 @@ Subroutine error(kode)
 
      Else If (kode ==   56) Then
 
-        Write(nrite,'(/,1x,a)') 'error - coordinate array exceeded in export_atomic_data'
+        Write(nrite,'(/,1x,a)') 'error - incoming data transfer size exceeds limit in export_atomic_data'
 
      Else If (kode ==   57) Then
 
@@ -518,17 +518,33 @@ Subroutine error(kode)
 
         Write(nrite,'(/,1x,a)') 'error - unknown EAM keyword in TABEAM'
 
+     Else If (kode ==  152) Then
+
+        Write(nrite,'(/,1x,a)') 'error - undefined direction passed to dpd_v_export'
+
+     Else If (kode ==  154) Then
+
+        Write(nrite,'(/,1x,a)') 'error - outgoing transfer buffer exceeded in dpd_v_export'
+
+     Else If (kode ==  156) Then
+
+        Write(nrite,'(/,1x,a)') 'error - incoming data transfer exceeds limit in dpd_v_export'
+
+     Else If (kode ==  158) Then
+
+        Write(nrite,'(/,1x,a)') 'error - undefined direction passed to dpd_v_export'
+
      Else If (kode ==  160) Then
 
         Write(nrite,'(/,1x,a)') 'error - undefined direction passed to statistics_connect_spread'
 
      Else If (kode ==  163) Then
 
-        Write(nrite,'(/,1x,a)') 'error - statistics_connect_spread outgoing transfer buffer exceeded'
+        Write(nrite,'(/,1x,a)') 'error - outgoing transfer buffer size exceeded in statistics_connect_spread'
 
      Else If (kode ==  164) Then
 
-        Write(nrite,'(/,1x,a)') 'error - statistics_connect_spread incoming transfer buffer exceeded'
+        Write(nrite,'(/,1x,a)') 'error - incoming data transfer size exceeds limit in statistics_connect_spread'
 
      Else If (kode ==  170) Then
 
@@ -842,6 +858,10 @@ Subroutine error(kode)
 
         Write(nrite,'(/,1x,a)') 'error - duplicate entry for an embedding function detected in TABEAM'
 
+     Else If (kode ==  512) Then
+
+        Write(nrite,'(/,1x,a)') 'error - non-definable vdw/dpd interactions detected in FIELD'
+
      Else If (kode ==  513) Then
 
         Write(nrite,'(/,1x,a)') 'error - particle assigned to non-existent domain in read_config'
@@ -918,7 +938,7 @@ Subroutine error(kode)
 
      Else If (kode ==  559) Then
 
-        Write(nrite,'(/,1x,a)') 'error - coordinate array exceeded in defects_reference_export'
+        Write(nrite,'(/,1x,a)') 'error - incoming data transfer size exceeds limit in defects_reference_export'
 
      Else If (kode ==  560) Then
 
@@ -1284,6 +1304,10 @@ Subroutine error(kode)
      Else If (kode == 1080) Then
 
         Write(nrite,'(/,1x,a)') 'error - allocation failure in greenkubo_module -> allocate_greenkubo_arrays'
+
+     Else If (kode == 1081) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in dpd_module -> allocate_dpd_arrays'
 
      Else
 

@@ -126,7 +126,7 @@ Subroutine rigid_bodies_quench(imcon)
         End Do
 
 ! If the RB has 2+ frozen particles (ill=1) the net angular momentum
-! must align along the axis of rotation keeping its magintude
+! must align along the axis of rotation keeping its magnitude
 
         If (rgdfrz(0,rgdtyp) > 1) Then
            i1=indrgd(rgdind(1,rgdtyp),irgd)
@@ -323,7 +323,7 @@ Subroutine rigid_bodies_q_ench(qr)
            End Do
 
 ! If the RB has 2+ frozen particles (ill=1) the net angular momentum
-! must align along the axis of rotation keeping its magintude
+! must align along the axis of rotation keeping its magnitude
 
            If (rgdfrz(0,rgdtyp) > 1) Then
               i1=indrgd(rgdind(1,rgdtyp),irgd)

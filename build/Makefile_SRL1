@@ -1,6 +1,6 @@
-# Master makefile for DL_POLY_4.06 (serial version 1)
+# Master makefile for DL_POLY_4.07 (serial version 1)
 #
-# Author - I.T.Todorov June 2014
+# Author - I.T.Todorov December 2014
 #
 #
 # Define default settings
@@ -29,7 +29,7 @@ OBJ_MOD = \
 	domains_module.o \
 	site_module.o config_module.o vnl_module.o \
 	defects_module.o defects1_module.o \
-	vdw_module.o metal_module.o tersoff_module.o \
+	dpd_modile.o vdw_module.o metal_module.o tersoff_module.o \
 	three_body_module.o four_body_module.o kim_modul~.o \
 	rdf_module.o z_density_module.o \
 	core_shell_module.o \
@@ -80,6 +80,7 @@ OBJ_ALL = \
 	deport_atomic_data.o pmf_units_set.o compress_book_intra.o \
 	relocate_particles.o \
 	link_cell_pairs.o \
+	dpd_v_export.o dpd_v_set_halo.o dpd_thermostat.o \
 	metal_ld_collect_eam.o metal_ld_collect_fst.o \
 	metal_ld_export.o metal_ld_set_halo.o \
 	metal_ld_compute.o \

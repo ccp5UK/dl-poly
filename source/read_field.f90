@@ -1,6 +1,6 @@
 Subroutine read_field                   &
            (imcon,l_n_v,l_str,l_top,    &
-           rcut,rvdw,rmet,width,        &
+           rcut,rvdw,rmet,width,temp,   &
            keyens,keyfce,keyshl,        &
            lecx,lbook,lexcl,            &
            rcter,rctbp,rcfbp,           &
@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2014
+! author    - i.t.todorov november 2014
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno and i.t.todorov march 2014 (itramolecular TPs & PDFs)
@@ -36,6 +36,10 @@ Subroutine read_field                   &
 ! Global_To_Local variables
 
   Use config_module, Only : cell,sumchg
+
+! DPD module
+
+  Use dpd_module,    Only : l_dpd,gamdpd,sigdpd
 
 ! INTERACTION MODULES
 
@@ -76,7 +80,7 @@ Subroutine read_field                   &
   Logical,           Intent( In    ) :: l_n_v,l_str,l_top
   Integer,           Intent( In    ) :: imcon,keyens
   Integer,           Intent( InOut ) :: keyfce
-  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width
+  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width,temp
   Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
@@ -88,7 +92,7 @@ Subroutine read_field                   &
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
                             l_shl,l_con,l_rgd,l_tet,l_bnd,l_ang,l_dih,l_inv, &
-                            lshl_one,lshl_all,lpmf,lmet_safe,lter_safe
+                            lshl_one,lshl_all,lpmf,lmet_safe,lter_safe,l_dpd_safe
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
   Character( Len = 32  ) :: iddihd,idinvr
@@ -3036,28 +3040,29 @@ Subroutine read_field                   &
            End If
 
            If (keypot == 0) Then
-              If (idnode == 0 .and. l_top) &
+              If (l_dpd) Then ! make sure gamdpd is read and reported for DPD
+                 Call get_word(record,word)
+                 parpot(1)=word_2_real(word)
+                 If (idnode == 0 .and. l_top) &
+  Write(nrite,"(1x,i10,5x,2a8,30x,a9,1x,10f20.6)") itpvdw,atom1,atom2,"tabulated",parpot(1)
+              Else
+                 If (idnode == 0 .and. l_top) &
   Write(nrite,"(1x,i10,5x,2a8,30x,a9)") itpvdw,atom1,atom2,"tabulated"
+              End If
            Else
-              Call get_word(record,word)
-              parpot(1)=word_2_real(word)
-              Call get_word(record,word)
-              parpot(2)=word_2_real(word)
-              Call get_word(record,word)
-              parpot(3)=word_2_real(word)
-              Call get_word(record,word)
-              parpot(4)=word_2_real(word)
-              Call get_word(record,word)
-              parpot(5)=word_2_real(word)
-
+              itmp=Merge(mxpvdw+1,mxpvdw,l_dpd)
+              Do i=1,itmp ! make sure gamdpd is read and reported for DPD
+                 Call get_word(record,word)
+                 parpot(i)=word_2_real(word)
+              End Do
               If (idnode == 0 .and. l_top) &
-  Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,10f20.6)") itpvdw,atom1,atom2,keyword,(parpot(j),j=1,mxpvdw)
+  Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,10f20.6)") itpvdw,atom1,atom2,keyword,(parpot(i),i=1,itmp)
 
 ! convert energies to internal unit
 
               parpot(1) = parpot(1)*engunit
 
-              If (keypot == 1) Then
+              If      (keypot == 1) Then
                  parpot(2)=parpot(2)*engunit
               Else If (keypot == 4) Then
                  parpot(3)=parpot(3)*engunit
@@ -3099,6 +3104,35 @@ Subroutine read_field                   &
            Do i=1,mxpvdw
               prmvdw(i,itpvdw)=parpot(i)
            End Do
+
+           If (l_dpd) Then ! store possible specification of DPD's gamma_ij
+              If      (keypot ==  0) Then
+                 gamdpd(keyvdw)=Abs(parpot(1))
+              Else If (keypot ==  1) Then
+                 gamdpd(keyvdw)=Abs(parpot(3))
+              Else If (keypot ==  2) Then
+                 gamdpd(keyvdw)=Abs(parpot(3))
+              Else If (keypot ==  3) Then
+                 gamdpd(keyvdw)=Abs(parpot(5))
+              Else If (keypot ==  4) Then
+                 gamdpd(keyvdw)=Abs(parpot(4))
+              Else If (keypot ==  5) Then
+                 gamdpd(keyvdw)=Abs(parpot(6))
+              Else If (keypot ==  6) Then
+                 gamdpd(keyvdw)=Abs(parpot(3))
+              Else If (keypot ==  7) Then
+                 gamdpd(keyvdw)=Abs(parpot(6))
+              Else If (keypot ==  8) Then
+                 gamdpd(keyvdw)=Abs(parpot(4))
+              Else If (keypot ==  9) Then
+                 gamdpd(keyvdw)=Abs(parpot(4))
+              Else If (keypot == 10) Then
+                 gamdpd(keyvdw)=Abs(parpot(3))
+              Else If (keypot == 11) Then
+                 gamdpd(keyvdw)=Abs(parpot(3))
+              End If
+              If (gamdpd(0) > zero_plus) gamdpd(keyvdw)=gamdpd(0) ! override
+           End If
         End Do
 
         If (ntpvdw > 0) Then
@@ -3121,15 +3155,45 @@ Subroutine read_field                   &
                  ltpvdw(i) = -1
               End Do
 
-! If the user opted for possible vdw potential mixing
+              If (l_dpd) Then
+                 If (All(gamdpd(1:mxvdw) <= zero_plus)) Then ! So gamdpd(0) <= zero_plus too
+                    l_dpd=.false.
+                    If (idnode == 0) & ! default to NVE
+  Write(nrite,"(1x,'Ensemble NVT dpd defaulting to NVE (Microcanonical) due to all drag coefficients equal to zero')")
+
+                 Else
+                    If (gamdpd(0) > zero_plus .and. idnode == 0) Write(nrite,"(/,1x,a)") &
+  "*** warning - all defined interactions have their drag coefficient overridden! ***"
+                    If (mxtvdw == 0) Then
+                       If (idnode == 0) Write(nrite,"(/,1x,a)") &
+  "vdw/dpd cross terms mixing (for undefined mixed potentials) may be required"
+
+                       If (gamdpd(0) > zero_plus .and. (.not.l_str)) Then
+                          mxtvdw = 1
+                          If (idnode == 0) Write(nrite,"(3(/,1x,a))")                        &
+  "type of mixing defaulted - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2", &
+  "mixing is limited to potentials of the same type only",                                   &
+  "mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)"
+                       End If
+                    End If
+                 End If
+              End If
+
+! If the user opted for possible vdw potential mixing or when required by DPD thermostat
 
               If (mxtvdw > 0) Then
 
-                 If (idnode == 0 .and. l_top) &
+                 If (idnode == 0 .and. (l_top .or. l_dpd)) Then
+                    If (l_dpd) Then
   Write(nrite,"(/,1x,a)") "vdw potential mixing under testing..."
+                    Else
+  Write(nrite,"(/,1x,a)") "dpd potential mixing under testing..."
+                    End If
+                 End If
 
 ! Detect if there are qualifying candidates
 
+                 l_dpd_safe=.true. ! safe flag for DPD thermostats
                  nsite=0 ! number of new cross pair potentials
                  Do i=1,ntpatm
                     isite=(i*(i-1))/2+i
@@ -3147,18 +3211,45 @@ Subroutine read_field                   &
                                    nsite=nsite+1
                                    lstvdw(ksite)=-1 ! set a temporary qualifier flag
                                 End If
+                             Else
+                                If (lstvdw(ksite) > ntpvdw) Then
+                                   If (l_dpd) Then
+                                      If (gamdpd(0) <= zero_plus) Then
+                                         If (l_str) Then
+                                            l_dpd_safe = .false. ! test for non-definable interactions
+                                            If (idnode == 0) &   ! in a DPD thermostating context
+  Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,a)") '*** warning - the interaction between bead types: ', &
+  unqatm(i), '&', unqatm(j), ' is unresolved and thus thermostating is ill defined in a DPD context!!! ***'
+                                         Else
+                                            If (idnode == 0) &   ! in a DPD thermostating context
+  Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,a)") '*** warning - the interaction between bead types: ', &
+  unqatm(i), '&', unqatm(j), ' is unresolved and thus thermostating is ill defined in a DPD context but may be OK in CG MD!!! ***'
+                                         End If
+                                      End If
+                                   Else
+                                      If (idnode == 0) &   ! mixing undefined
+  Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,a)") '*** warning - the interaction between atom types: ', &
+  unqatm(i), '&', unqatm(j), ' is unresolved and thus this cross-interaction will be left undefined!!! ***'
+                                   End If
+                                End If
                              End If
                           End If
                        End Do
                     End If
                  End Do
+                 If (.not.l_dpd_safe) Call error(512)
 
 ! Qualification has happened
 
                  If (nsite > 0) Then
 
-                    If (idnode == 0 .and. l_top) &
-  Write(nrite,"(/,1x,a,/)") "vdw potential mixing underway..."
+                    If (idnode == 0 .and. (l_top .or. l_dpd)) Then
+                       If (l_dpd) Then
+  Write(nrite,"(/,1x,a)") "vdw potential mixing underway..."
+                       Else
+  Write(nrite,"(/,1x,a)") "dpd potential mixing underway..."
+                       End If
+                    End If
 
 ! As the range of defined potentials must extend
 ! put undefined potentials outside the new range
@@ -3228,6 +3319,9 @@ Subroutine read_field                   &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*(del(1)+del(2))
 
+                                If (l_dpd) &
+                                gamdpd(ksite) = Sqrt(gamdpd(isite)*gamdpd(jsite))
+
                              Else If (mxtvdw == 2) Then
 
 ! Fender-Halsey : e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2
@@ -3238,6 +3332,11 @@ Subroutine read_field                   &
 
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*(del(1)+del(2))
+
+                                If (l_dpd) Then
+                                   If (gamdpd(isite)+gamdpd(jsite) > zero_plus) &
+                                gamdpd(ksite) = 2.0_wp*gamdpd(isite)*gamdpd(jsite) / (gamdpd(isite)+gamdpd(jsite))
+                                End If
 
                              Else If (mxtvdw == 3) Then
 
@@ -3250,6 +3349,9 @@ Subroutine read_field                   &
                                 If (Any(del > zero_plus)) &
                                 del(0) = Sqrt(del(1)*del(2))
 
+                                If (l_dpd) &
+                                gamdpd(ksite) = Sqrt(gamdpd(isite)*gamdpd(jsite))
+
                              Else If (mxtvdw == 4) Then
 
 ! Halgren HHG: e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)
@@ -3260,6 +3362,13 @@ Subroutine read_field                   &
 
                                 If (Any(del > zero_plus)) &
                                 del(0) = (del(1)**3+del(2)**3) / (del(1)**2+del(2)**2)
+
+                                If (l_dpd) Then
+                                   If (gamdpd(isite) >= zero_plus .and. gamdpd(jsite) >= zero_plus) Then
+                                      If (Sqrt(gamdpd(isite))+Sqrt(gamdpd(jsite)) > zero_plus) &
+                                gamdpd(ksite) = 4.0_wp*gamdpd(isite)*gamdpd(jsite) / (Sqrt(gamdpd(isite))+Sqrt(gamdpd(jsite)))**2
+                                   End If
+                                End If
 
                              Else If (mxtvdw == 5) Then
 
@@ -3274,6 +3383,9 @@ Subroutine read_field                   &
                                 If (Any(del > zero_plus)) &
                                 del(0) = (0.5_wp*(del(1)**6+del(2)**6))**(1.0_wp/6.0_wp)
 
+                                If (l_dpd) &
+                                gamdpd(ksite) = Sqrt(gamdpd(isite)*gamdpd(jsite)) * ((sig(1)*sig(2))**3) / tmp
+
                              Else If (mxtvdw == 6) Then
 
 ! Tang-Toennies : e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13 ;
@@ -3287,31 +3399,40 @@ Subroutine read_field                   &
                                 sig(0) = (Sqrt(tmp)/eps(0))**(1.0_wp/6.0_wp)
 
                                 If (Any(del > zero_plus)) &
-                                del(0) = ((sig(0)-sig(2))*del(1) + (sig(1)-sig(0))*del(2)) / (sig(1)-sig(2))
+                                del(0) = 0.5_wp*sig(0)*(del(1)/sig(1) + del(2)/sig(2))
+
+                                If (l_dpd) &
+                                gamdpd(ksite) = 0.5_wp*eps(0)*(gamdpd(isite)/eps(1) + gamdpd(jsite)/eps(2))
 
                              Else If (mxtvdw == 7) Then
 
 ! Functional : e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(6/(6-2L))} ;
 !              s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}
 
+                                eps(0) = 0.0_wp ; sig(0) = 0.0_wp
                                 Do itmp=0,2
-                                   tmp = (sig(1)**3+sig(2)**3)**2 / (4*(sig(1)*sig(2))**itmp)
+                                   tmp = (sig(1)**3+sig(2)**3)**2 / (4.0_wp*(sig(1)*sig(2))**itmp)
 
-                                   eps(0) = eps(0) + 1.0 / tmp**(Real(6,wp)/Real(6-2*itmp,wp))
+                                   eps(0) = eps(0) + tmp**(Real(6,wp)/Real(6-2*itmp,wp))
 
-                                   sig(0) = tmp**(Real(1,wp)/Real(6-2*itmp,wp))
+                                   sig(0) = sig(0) + tmp**(Real(1,wp)/Real(6-2*itmp,wp))
                                 End Do
-                                eps(0)=eps(0) * 3.0_wp * Sqrt(eps(1)*eps(2)) * (sig(1)*sig(2))**3
-                                sig(0)=sig(0)/3.0_wp
+                                tmp = 1.0_wp / eps(0)
+
+                                eps(0) = 3.0_wp * Sqrt(eps(1)*eps(2)) * (sig(1)*sig(2))**3 * tmp
+                                sig(0)=sig(0) / 3.0_wp
 
                                 If (Any(del > zero_plus)) &
-                                del(0) = ((sig(0)-sig(2))*del(1) + (sig(1)-sig(0))*del(2)) / (sig(1)-sig(2))
+                                del(0) = 0.5_wp*sig(0)*(del(1)/sig(1) + del(2)/sig(2))
+
+                                If (l_dpd) &
+                                gamdpd(ksite) = 0.5_wp*eps(0)*(gamdpd(isite)/eps(1) + gamdpd(jsite)/eps(2))
 
                              End If
 
-! Recover and/or paste in the parameter array
+! Recover and/or paste in the vdw parameter array
 
-                             If      (keypot == 1)  Then ! 12-6
+                             If      ( keypot == 1)  Then ! 12-6
                                 prmvdw(1,ntpvdw)=4.0_wp*eps(0)*(sig(0)**12)
                                 prmvdw(2,ntpvdw)=4.0_wp*eps(0)*(sig(0)**6)
                              Else If (keypot == 2  .or. &
@@ -3325,8 +3446,8 @@ Subroutine read_field                   &
                                 prmvdw(3,ntpvdw)=del(0)
                              End If
 
-                             If (idnode == 0 .and. l_top) &
-  Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,10f20.6)") ntpvdw,unqatm(i),unqatm(j),keyword,(parpot(itmp),itmp=1,mxpvdw)
+                             If (idnode == 0 .and. l_top) Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,10f20.6)") &
+                                ntpvdw,unqatm(i),unqatm(j),keyword,(parpot(itmp),itmp=1,Merge(mxpvdw+1,mxpvdw,l_dpd))
 
                           End If
                        End Do
@@ -3335,9 +3456,33 @@ Subroutine read_field                   &
                  Else
 
                     If (idnode == 0 .and. l_top) &
-  Write(nrite,"(/,1x,a)") "vdw potential mixing unsuccessful"
+  Write(nrite,"(/,1x,a)") "vdw potential mixing unsuccessful or abandoned"
 
                  End If
+
+              End If
+
+           End If
+
+           If (l_dpd) Then
+              If      (All(gamdpd(1:mxvdw) <= zero_plus)) Then
+
+                 l_dpd=.false.
+
+                 If (idnode == 0) & ! default to NVE
+  Write(nrite,"(1x,'Ensemble NVT dpd defaulting to NVE (Microcanonical) due to all drag coefficients equal to zero')")
+
+              Else If (Any(gamdpd(1:mxvdw) <= zero_plus)) Then ! in principle we should come up with the error before here
+
+                 If (idnode == 0) & ! interactions drag coefficients mishmash
+  Write(nrite,"(1x,a4)") '*** warning - there is a two-body interaction with a non-zero mutual drag coefficient!!! ***'
+
+                 sigdpd(1:mxvdw) = Sqrt(2.0_wp*boltz*temp*gamdpd(1:mxvdw)) ! define sigdpd
+
+              Else
+
+                 sigdpd(1:mxvdw) = Sqrt(2.0_wp*boltz*temp*gamdpd(1:mxvdw)) ! define sigdpd
+
               End If
            End If
 

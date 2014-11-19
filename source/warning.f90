@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2014
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -188,7 +188,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
 
         Write(nrite,'(/,1x,a,2(i0,a),/)') &
-        '*** warning - required export buffer array size ', ia, ' and actual: ', ib, ' !!! ***'
+        '*** warning - required export buffer size ', ia, ' and actual: ', ib, ' !!! ***'
 
      Else If (kode == 160) Then
 
@@ -196,23 +196,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
 
         Write(nrite,'(/,1x,a,2(i0,a),/)') &
-        '*** warning - required export array size ', ia, ' and actual: ', ib, ' !!! ***'
-
-     Else If (kode == 170) Then
-
-        ia = Nint(a)
-        ib = Nint(b)
-
-        Write(nrite,'(/,1x,a,2(i0,a),/)') &
-        '*** warning - required export density buffer array size ', ia, ' and actual: ', ib, ' !!! ***'
-
-     Else If (kode == 180) Then
-
-        ia = Nint(a)
-        ib = Nint(b)
-
-        Write(nrite,'(/,1x,a,2(i0,a),/)') &
-        '*** warning - required export density array size ', ia, ' and actual: ', ib, ' !!! ***'
+        '*** warning - required import array size ', ia, ' and actual: ', ib, ' !!! ***'
 
      Else If (kode == 190) Then
 
@@ -276,7 +260,7 @@ Subroutine warning(kode,a,b,c)
         ib = Nint(b)
 
         Write(nrite,'(/,1x,a,2(i0,a),/)') &
-        '*** warning - required buffer size is ', ia, ' and actual ', ib, ' !!! ***'
+        '*** warning - required reading buffer size is ', ia, ' and actual ', ib, ' !!! ***'
 
      Else If (kode == 280) Then
 

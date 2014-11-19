@@ -22,7 +22,7 @@ Subroutine statistics_collect              &
 ! molecular dynamics simulation and computing the rolling averages
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov july 2014
+! author    - w.smith & i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -32,6 +32,7 @@ Subroutine statistics_collect              &
   Use site_module,    Only : ntpatm,numtypnf
   Use config_module,  Only : cfgname,cell,volm,natms,ltype, &
                              xxx,yyy,zzz,vxx,vyy,vzz
+  Use dpd_module,     Only : virdpd
   Use statistics_module
   Use msd_module
 
@@ -133,11 +134,12 @@ Subroutine statistics_collect              &
   stptmp = 2.0_wp*(engke+engrot) / (boltz*Real(degfre,wp))
 
 ! system virial
-! Note: virfbp, virinv and virdih are allegedly always zero!!!
+! Note: originally, purely angle dependent interactipons have zero virial!!!
+! So, virfbp, virinv and virdih are allegedly always zero!  virdih has an exception!
 
   stpvir = vircpe + virsrp + virter + virtbp + virfbp + &
            virfld + virshl + vircon + virpmf + vircom + &
-           virtet + virbnd + virang + virdih + virinv
+           virtet + virbnd + virang + virdih + virinv + virdpd
 
 ! system volume
 

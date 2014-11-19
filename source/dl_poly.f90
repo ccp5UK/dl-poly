@@ -53,9 +53,13 @@ Program dl_poly
   Use site_module
   Use config_module
 
-! VNL  module
+! VNL module
 
   Use vnl_module
+
+! DPD module
+
+  Use dpd_module
 
 ! INTERACTION MODULES
 
@@ -208,7 +212,7 @@ Program dl_poly
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  version:  4.06.1   /  september 2014  ****** O ****", &
+          "**         **  version:  4.07    /    december 2014  ****** O ****", &
           "*************  execution on ", mxnode, "    node(s)  ******* L ***", &
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
@@ -243,10 +247,14 @@ Program dl_poly
      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
   End If
 
-! ALLOCATE SITE & CONFIG ARRAYS
+! ALLOCATE SITE & CONFIG
 
   Call allocate_site_arrays()
   Call allocate_config_arrays()
+
+! ALLOCATE DPD ARRAYS
+
+  Call allocate_dpd_arrays()
 
 ! ALLOCATE INTRA-LIKE INTERACTION ARRAYS
 
@@ -307,7 +315,7 @@ Program dl_poly
 
   Call read_field                       &
            (imcon,l_n_v,l_str,l_top,    &
-           rcut,rvdw,rmet,width,        &
+           rcut,rvdw,rmet,width,temp,   &
            keyens,keyfce,keyshl,        &
            lecx,lbook,lexcl,            &
            rcter,rctbp,rcfbp,           &

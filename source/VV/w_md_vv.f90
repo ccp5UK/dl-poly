@@ -32,6 +32,11 @@
 
      If (nstep >= 0 .and. nstep < nstrun .and. levcfg == 2) Then
 
+! Sharlow's DPD splitting for a VV DPD thermostat - stage before NVE, LFV->VV, no variable time-stepping
+! Velocity field change + generation of DPD virial & stress due to random and drag forces
+
+        If (l_dpd .and. keyens == 0) Call dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
+
 ! Increase step counter
 
         nstep=nstep+1

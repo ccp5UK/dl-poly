@@ -346,7 +346,7 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
 ! selection of potential energy function type
 
         kk=listdih(0,i)
-        keyd=keydih(kk)
+        keyd = Abs(keydih(kk))
 
 ! accumulate the histogram (distribution)
 

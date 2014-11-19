@@ -10,7 +10,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1996
-! amended   - i.t.todorov september 2014
+! amended   - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -99,7 +99,7 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 ! select potential energy function type
 
         kk=listinv(0,i)
-        keyi=keyinv(kk)
+        keyi = Abs(keyinv(kk))
 
         If (keyi == 5) Then
            xdac(i)=xxx(ic)-xxx(ib)

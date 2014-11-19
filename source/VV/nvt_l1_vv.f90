@@ -20,7 +20,7 @@ Subroutine nvt_l1_vv                               &
 !      January 2001, vol. 117 of NATO Science Series: Series III -
 !      Computer and System Sciences, pp. 34-47, IOS Press, Amsterdam
 !
-! (brownian dynamics, not symplectic due to the random forces)
+! (brownian dynamics is not symplectic due to the random forces)
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov august 2014

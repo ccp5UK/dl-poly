@@ -108,6 +108,8 @@
 ! Evaluate kinetics
 
         If (levcfg > 0 .and. levcfg < 3) Then
+           If (l_dpd .and. keyens == 0) Call dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
+
            If (lzero .and. nstep <= nsteql) Call zero_k_optimise(strkin,strknf,strknt,engke,engrot)
 
 ! Calculate kinetic stress and energy if available
@@ -133,7 +135,7 @@
 
 ! Get complete stress tensor
 
-        strtot = strcon + strpmf + stress + strkin + strcom
+        strtot = strcon + strpmf + stress + strkin + strcom + strdpd
 
 ! Get core-shell kinetic energy for adiabatic shell model
 

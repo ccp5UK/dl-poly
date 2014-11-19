@@ -3,7 +3,7 @@
 
 ! Get complete stress tensor
 
-        strtot = strcon + strpmf + stress + strkin + strcom
+        strtot = strcon + strpmf + stress + strkin + strcom + strdpd
 
 ! Get core-shell kinetic energy for adiabatic shell model
 

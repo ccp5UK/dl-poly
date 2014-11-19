@@ -5,7 +5,7 @@ Module vdw_module
 ! dl_poly_4 module declaring global vdw interaction variables and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2014
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -13,7 +13,7 @@ Module vdw_module
 
   Implicit None
 
-  Logical,                        save :: lt_vdw = .false., & ! no tabulated potentials are present
+  Logical,                        Save :: lt_vdw = .false., & ! no tabulated potentials are present
                                           ld_vdw = .false., & ! no direct calculations are opted
                                           ls_vdw = .false.    ! no force-shifting is opted
 
