@@ -56,7 +56,7 @@ Subroutine error(kode)
 
      Else If (kode ==   10) Then
 
-        Write(nrite,'(/,1x,a)') 'error - too many molecule types specified'
+        Write(nrite,'(/,1x,a)') 'error - too many molecular types specified'
 
      Else If (kode ==   11) Then
 
@@ -384,7 +384,7 @@ Subroutine error(kode)
 
      Else If (kode ==   96) Then
 
-        Write(nrite,'(/,1x,a)') 'error - incorrect atom totals/density assignments in metal_ld_set_halo'
+        Write(nrite,'(/,1x,a)') 'error - incorrect atom totals assignments in metal_ld_set_halo'
 
      Else If (kode ==   97) Then
 
@@ -448,7 +448,7 @@ Subroutine error(kode)
 
      Else If (kode ==  113) Then
 
-        Write(nrite,'(/,1x,a)') 'error - intramolecular bookkeeping arrays exceeded in deport_atomic_data'
+        Write(nrite,'(/,1x,a)') 'error - intra-molecular bookkeeping arrays exceeded in deport_atomic_data'
 
      Else If (kode ==  114) Then
 
@@ -500,7 +500,7 @@ Subroutine error(kode)
 
      Else If (kode ==  138) Then
 
-        Write(nrite,'(/,1x,a)') 'error - incorrect atom totals/density assignments in refresh_halo_positions'
+        Write(nrite,'(/,1x,a)') 'error - incorrect atom totals assignments in refresh_halo_positions'
 
      Else If (kode ==  141) Then
 
@@ -532,7 +532,7 @@ Subroutine error(kode)
 
      Else If (kode ==  158) Then
 
-        Write(nrite,'(/,1x,a)') 'error - undefined direction passed to dpd_v_export'
+        Write(nrite,'(/,1x,a)') 'error - incorrect atom totals assignments in dpd_v_set_halo'
 
      Else If (kode ==  160) Then
 

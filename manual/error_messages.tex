@@ -121,7 +121,7 @@ For example 10e-5 is accepted as a standard.
 
 Put a correct number at the "ewald precision" directive in the CONTROL file and resubmit.
 
-\subsubsection*{\underline{Message 10}: error - too many molecule types specified}
+\subsubsection*{\underline{Message 10}: error - too many molecular types specified}
 
 This should never happen!  This indicates an erroneous FIELD file
 or corrupted \D executable.  Unlike \C, \D does not have a
@@ -147,7 +147,7 @@ remove and resubmit.
 
 Once \D encounters the {\bf molecules} directive in the FIELD
 file, it assumes the following records will supply data describing
-the intramolecular force field\index{force field}.  It does not
+the intra-molecular force field\index{force field}.  It does not
 then expect to encounter directives not related to these data.
 This error message results if it encounters a unrelated directive.
 The most probable cause is incomplete specification of the data
@@ -179,9 +179,8 @@ FIELD file or/and \D executable are corrupted.
 
 \noindent \underline{\em Action}:
 
-Recompile the program or recreate the FIELD file.  If neither of
-these works, send the problem to us.
-
+Recompile the program and/or recreate the FIELD file afresh.
+If no combination of these works, send the problem to us.
 
 \subsubsection*{\underline{Message 15}: error - duplicate vdw potential specified}
 
@@ -205,12 +204,20 @@ to hear of other reasons!
 
 \noindent \underline{\em Action}:
 
-Recompile the program or recreate the FIELD file.  If neither of
-these works, send the problem to us.
+See action notes on message 14 above.
 
 \subsubsection*{\underline{Message 17}: error - strange exit from CONTROL file processing}
 
-See notes on message 16 above.
+This should never happen!  It simply means that \D has ceased
+processing the CONTROL data, but has not reached the end of the file
+or encountered a {\bf close} directive. Probable cause: corruption
+of the \D executable or of the FIELD file.  We would be interested
+to hear of other reasons!
+
+\noindent \underline{\em Action}:
+
+Recompile the program and/or recreate the CONTROL file afresh.
+If no combination of these works, send the problem to us.
 
 \subsubsection*{\underline{Message 18}: error - duplicate three-body potential specified}
 
@@ -237,8 +244,7 @@ FIELD file or/and \D executable are corrupted.
 
 \noindent \underline{\em Action}:
 
-Recompile the program or recreate the FIELD file.  If neither of
-these works, send the problem to us.
+See action notes on message 14 above.
 
 \subsubsection*{\underline{Message 21}: error - molecule contains more atoms/sites than declared}
 
@@ -259,7 +265,7 @@ where $r_{\rm cut}$ is the largest potential cutoff of all supplied
 cell size, and {\tt mxgrid} is the parameter defining the length
 of the interpolation arrays.  An increment less than this is
 permissible however.  The same argument holds for the tabulated
-intramolecular interactions that are possibly supplied via the
+intra-molecular interactions that are possibly supplied via the
 TABBND, TABANG, TABDIH and TABINV files.  All should have grids
 sized less than the generic {\tt mxgrid$-4$}.
 
@@ -353,8 +359,7 @@ FIELD file or/and \D executable are corrupted.
 
 {\em Action}:
 
-Recompile the program or recreate the FIELD file.  If neither of
-these works, send the problem to us.
+See action notes on message 14 above.
 
 \subsubsection*{\underline{Message 31}: error - too many chemical bonds per domain}
 
@@ -416,27 +421,24 @@ Correct the erroneous entry in FIELD and resubmit.
 
 Correct the erroneous part in FIELD and resubmit.
 
-\subsubsection*{\underline{Message 38}: error - transfer array exceeded in metal\_ld\_export}
+\subsubsection*{\underline{Message 38}: error - outgoing transfer buffer size exceeded in metal\_ld\_export}
 
-This should never happen!
+This should not usually happen!
 
-{\em Action}:
+\noindent \underline{\em Action}:
 
 Consider using {\tt densvar} option in CONTROL for extremely
 non-equilibrium simulations.  Alternatively, increase {\tt mxbfxp}
 parameter in {\sc set\_bounds} recompile and resubmit.  Send the
 problem to us if this is persistent.
 
-Correct the erroneous entry in FIELD and resubmit.
+\subsubsection*{\underline{Message 39}: error - incoming data transfer size exceeds limit in metal\_ld\_export}
 
-\subsubsection*{\underline{Message 39}: error - density array exceeded in metal\_ld\_export}
-
-This should never happen!
+See notes on message 38 above.
 
 \noindent \underline{\em Action}:
 
-You might consider using {\tt densvar} option in CONTROL.  Send
-the problem to us if this is persistent.
+See action notes on message 38 above.
 
 \subsubsection*{\underline{Message 40}: error - too many bond constraints specified}
 
@@ -444,8 +446,7 @@ This should never happen!
 
 \noindent \underline{\em Action}:
 
-Recompile the program or recreate the FIELD file.  If neither of
-these works, send the problem to us.
+See action notes on message 14 above.
 
 \subsubsection*{\underline{Message 41}: error - too many bond constraints per domain}
 
@@ -468,10 +469,10 @@ This should never happen!
 
 Send the problem to us.
 
-\subsubsection*{\underline{Message 43}: error - deport\_atomic\_data outgoing transfer buffer exceeded}
+\subsubsection*{\underline{Message 43}: error - outgoing transfer buffer size exceeded in deport\_atomic\_data}
 
 This may happen in extremely non-equilibrium simulations or
-usually when the potential in use do not hold the system stable.
+usually when the potentials in use do not hold the system stable.
 
 \noindent \underline{\em Action}:
 
@@ -479,11 +480,11 @@ Consider using {\tt densvar} option in CONTROL for extremely
 non-equilibrium simulations.  Alternatively, increase {\tt mxbfdp}
 parameter in {\sc set\_bounds} recompile and resubmit.
 
-\subsubsection*{\underline{Message 44}: error - deport\_atomic\_data incoming transfer buffer exceeded}
+\subsubsection*{\underline{Message 44}: error - incoming data transfer size exceeds limit in deport\_atomic\_data}
 
 \noindent \underline{\em Action}:
 
-See Message 43
+See action notes on message 43 above.
 
 \subsubsection*{\underline{Message 45}: error - too many atoms in CONFIG file or per domain}
 
@@ -535,7 +536,6 @@ core-shell units.
 Remove the frozen atom option from the FIELD file. Consider using
 a non-polarisable atom instead.
 
-
 \subsubsection*{\underline{Message 50}: error - too many bond angles specified}
 
 This should never happen!  This error most likely arises when the
@@ -543,8 +543,7 @@ FIELD file or/and \D executable are corrupted.
 
 \noindent \underline{\em Action}:
 
-Recompile the program or recreate the FIELD file.  If neither of
-these works, send the problem to us.
+See action notes on message 14 above.
 
 \subsubsection*{\underline{Message 51}: error - too many bond angles per domain}
 
@@ -581,16 +580,13 @@ missing {\bf finish} directive.
 
 Check CONTROL file, correct and resubmit.
 
-\subsubsection*{\underline{Message 54}: error - outgoing transfer buffer exceeded in export\_atomic\_data}
+\subsubsection*{\underline{Message 54}: error - outgoing transfer buffer size exceeded in export\_atomic\_data}
 
-This may happen in extremely non-equilibrium simulations or
-usually when the potential in use do not hold the system stable.
+See notes on message 38 above.
 
 \noindent \underline{\em Action}:
 
-Consider using {\tt densvar} option in CONTROL for extremely
-non-equilibrium simulations.  Alternatively, increase {\tt mxbfxp}
-parameter in {\sc set\_bounds} recompile and resubmit.
+See naction otes on message 38 above.
 
 \subsubsection*{\underline{Message 55}: error - end of CONFIG file encountered}
 
@@ -604,16 +600,13 @@ file being incompatible in some way with the CONFIG file.
 Check contents of CONFIG file.  If you are convinced it is
 correct, check the FIELD file for inconsistencies.
 
-\subsubsection*{\underline{Message 56}: error - atomic coordinate array exceeded in export\_atomic\_data}
+\subsubsection*{\underline{Message 56}: error - incoming data transfer size exceeds limit in export\_atomic\_data}
 
-This may happen in extremely non-equilibrium simulations or
-usually when the potential in use do not hold the system stable.
+See notes on message 38 above.
 
 \noindent \underline{\em Action}:
 
-Consider using {\tt densvar} option in CONTROL for extremely
-non-equilibrium simulations.  Alternatively, increase {\tt mxatms}
-in {\sc set\_bounds} recompile and resubmit.
+See action notes on message 38 above.
 
 \subsubsection*{\underline{Message 57}: error - too many core-shell units specified}
 
@@ -621,8 +614,7 @@ This should never happen!
 
 \noindent \underline{\em Action}:
 
-Recompile the program or recreate the FIELD file.  If neither of
-these works, send the problem to us.
+See action notes on message 14 above.
 
 \subsubsection*{\underline{Message 58}: error - number of atoms in system not conserved}
 
@@ -660,8 +652,7 @@ This should never happen!
 
 \noindent \underline{\em Action}:
 
-Recompile the program or recreate the FIELD file.  If neither of
-these works, send the problem to us.
+See action notes on message 14 above.
 
 \subsubsection*{\underline{Message 61}: error - too many dihedral angles per domain}
 
@@ -682,8 +673,7 @@ This should never happen!
 
 \noindent \underline{\em Action}:
 
-Recompile the program or recreate the FIELD file.  If neither of
-these works, send the problem to us.
+See action notes on message 14 above.
 
 \subsubsection*{\underline{Message 63}: error - too many tethered atoms per domain}
 
@@ -920,7 +910,7 @@ calculated index for any three-body\index{potential!three-body}
 potential in the system (i.e. as defined in the FIELD file).  If
 there are $m$ distinct types of atom in the system, the index can
 possibly range from $1$ to $(m^{2}*(m-1))/2$.  If the internally
-calculated index exceeds this number, this error report results.
+calculated index exceeds this number, this error reports results.
 
 \noindent \underline{\em Action}:
 
@@ -1014,7 +1004,7 @@ constant pressure calculations, use a cutoff that will accommodate
 the fluctuations in the simulation cell.  Study the fluctuations
 in the OUTPUT file to help you with this.
 
-\subsubsection*{\underline{Message 96}: error - incorrect atom totals in metal\_ld\_set\_halo}
+\subsubsection*{\underline{Message 96}: error - incorrect atom totals assignments in metal\_ld\_set\_halo}
 
 This should never happen!
 
@@ -1129,8 +1119,7 @@ FIELD or/and \D executable.
 
 \noindent \underline{\em Action}:
 
-Reconstruct FIELD, recompile afresh \D and resubmit.  If the
-problem persists get in touch with \D authors.
+See action notes on message 14 above.
 
 \subsubsection*{\underline{Message 108}: error - unidentified atom in rdf look up list}
 
@@ -1169,7 +1158,7 @@ a processor domain or its bordering neighbours.
 
 \noindent \underline{\em Action}:
 
-Probable cause: link cells too small. Use larger potential cutoff.
+Probable cause: link cells too small.  Use larger potential cutoff.
 Contact \D authors.
 
 \subsubsection*{\underline{Message 112}: error - only one *constraints* directive per molecule is allowed}
@@ -1180,7 +1169,7 @@ Contact \D authors.
 
 Correct the erroneous part in FIELD and resubmit.
 
-\subsubsection*{\underline{Message 113}: error - intramolecular bookkeeping arrays exceeded in deport\_atomic\_data}
+\subsubsection*{\underline{Message 113}: error - intra-molecular bookkeeping arrays exceeded in deport\_atomic\_data}
 
 One or more bookkeeping arrays for site-related interactions have
 been exceeded.
@@ -1289,29 +1278,29 @@ if constraints are present in the system.  You may as well try using the
 
 \subsubsection*{\underline{Message 130}: error - bond angle unit diameter $>$ rcut (the system cutoff)}
 
-See Message 128.
+See action notes on message 128 above.
 
 \noindent \underline{\em Action}:
 
-See Message 128.
+See action notes on message 128 above.
 
 \subsubsection*{\underline{Message 132}: error - dihedral angle unit diameter $>$ rcut (the system cutoff)}
 
-See Message 128.
+See notes on message 128 above.
 
 \noindent \underline{\em Action}:
 
-See Message 128.
+See action notes on message 128 above.
 
 \subsubsection*{\underline{Message 134}: error - inversion angle unit diameter $>$ rcut (the system cutoff)}
 
-See Message 128.
+See notes on message 128 above.
 
 \noindent \underline{\em Action}:
 
-See Message 128.
+See action notes on message 128 above.
 
-\subsubsection*{\underline{Message 138}: error - incorrect atom totals in refresh\_halo\_positions}
+\subsubsection*{\underline{Message 138}: error - incorrect atom totals assignments in refresh\_halo\_positions}
 
 This should never happen although, sometimes, it could due
 to ill defined force field and/or and/or starting form a
@@ -1320,7 +1309,7 @@ configuration which is too much away from equilibrium.
 \noindent \underline{\em Action}:
 
 Try using the {\tt variable timestep} option and/or running in serial
-to determine if particles gain too much speed and leave domains.  See Message 128.
+to determine if particles gain too much speed and leave domains.
 
 \subsubsection*{\underline{Message 141}: error - duplicate metal potential specified}
 
@@ -1363,15 +1352,52 @@ potential desired.
 \D checks when constructing the interpolation tables for the EAM metal
 potentials that the potential function requested is one which is
 of a form known to the program.  If the requested potential form
-is unknown, termination of the program results. The most probable
+is unknown, termination of the program results.  The most probable
 cause of this is the incorrect choice of the potential keyword in
 the FIELD file.
+
+\noindent \underline{\em Action}:
+
+Read the \D documentation and find the potential keyword for the
+potential desired.
+
+\subsubsection*{\underline{Message 152}: error - undefined direction passed to dpd\_v\_export}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Report to authors.
+
+\subsubsection*{\underline{Message 154}: error - outgoing transfer buffer size exceeded in dpd\_v\_export}
+
+See notes on message 38 above.
+
+\noindent \underline{\em Action}:
+
+See action notes on message 38 above.
+
+\subsubsection*{\underline{Message 156}: error - incoming data transfer size exceeds limit in dpd\_v\_export}
+
+See notes on message 38 above.
+
+\noindent \underline{\em Action}:
+
+See action notes on message 38 above.
+
+\subsubsection*{\underline{Message 158}: error - incorrect atom totals assignments in  dpd\_v\_set\_halo}
+
+This should never happen!
+
+\noindent \underline{\em Action}:
+
+Big trouble.  Report to authors.
 
 \subsubsection*{\underline{Message 160}: error - undefined direction passed to statistics\_connect\_spread}
 
 This should never happen!
 
-\subsubsection*{\underline{Message 163}: error - statistics\_connect\_spread outgoing transfer buffer exceeded}
+\subsubsection*{\underline{Message 163}: error - outgoing transfer buffer size exceeded in statistics\_connect\_spread}
 
 The transfer buffer has been exceeded.
 
@@ -1381,15 +1407,13 @@ Consider using {\tt densvar} option in CONTROL for extremely
 non-equilibrium simulations.  Alternatively, increase {\tt mxbfss}
 parameters in {\sc set\_bounds} recompile and resubmit.
 
-\subsubsection*{\underline{Message 164}: error - statistics\_connect\_spread incoming transfer buffer exceeded}
+\subsubsection*{\underline{Message 164}: error - incoming data transfer size exceeds limit in statistics\_connect\_spread}
 
-The transfer buffer has been exceeded.
+See notes on message 163 above.
 
 \noindent \underline{\em Action}:
 
-Consider using {\tt densvar} option in CONTROL for extremely
-non-equilibrium simulations.  Alternatively, increase {\tt mxbfss}
-parameters in {\sc set\_bounds} recompile and resubmit.
+See action notes on message 163 above.
 
 \subsubsection*{\underline{Message 170}: error - too many variables for statistics array}
 
@@ -1403,7 +1427,7 @@ Contact \D authors.
 
 \subsubsection*{\underline{Message 172}: error - duplicate intra-molecular entries specified in TABBND\textbar\textbar TABANG\textbar\textbar TABDIH\textbar\textbar TABINV}
 
-A duplicate entry has been encountered in the intramolecular table file.
+A duplicate entry has been encountered in the intra-molecular table file.
 
 \noindent \underline{\em Action}:
 
@@ -2007,7 +2031,7 @@ virial converges to a constant.  No such convergence is achieved.
 
 \noindent \underline{\em Action}:
 
-See Message 515.
+See action notes on message 515 below.
 
 \subsubsection*{\underline{Message 480}: error - PMF constraint length $>$ minimum of all half-cell widths}
 
@@ -2073,19 +2097,21 @@ Decrease the number of constraints on the PMFs.
 
 \noindent \underline{\em Action}:
 
-See Message 515
+See notes on message 515 below.
 
 \subsubsection*{\underline{Message 498}: error - shake algorithm (pmf\_shake) failed to converge}
 
 \noindent \underline{\em Action}:
 
-See Message 515
+See action notes on message 515 below.
 
 \subsubsection*{\underline{Message 499}: error - rattle algorithm (pmf\_rattle) failed to converge}
 
+See notes on message 515 below.
+
 \noindent \underline{\em Action}:
 
-See Message 515
+See action notes on message 515 below.
 
 \subsubsection*{\underline{Message 500}: error - PMF unit of zero length is not permitted}
 
@@ -2195,6 +2221,14 @@ in the TABEAM file.
 \noindent \underline{\em Action}:
 
 Remove all duplicate entries in the TABEAM file and resubmit.
+
+\subsubsection*{\underline{Message 512}: error - non-definable vdw/dpd interactions detected in FIELD}
+
+A VDW corss-interaction was uncpecified and recovering it by using a mixing rule proved impossible due to type difference of the single species potentials.
+
+\noindent \underline{\em Action}:
+
+Rethink your FIELD file interactions before restarting the job with a new compatible FIELD and possibly CONTROL file.
 
 \subsubsection*{\underline{Message 513}: error - particle assigned to non-existent domain in read\_config}
 
@@ -2341,33 +2375,43 @@ Supply a properly formatted REFERENCE configuartion.
 
 \subsubsection*{\underline{Message 555}: error - particle assigned to non-existent domain in defects\_read\_reference}
 
+See notes on message 513 above.
+
 \noindent \underline{\em Action}:
 
-See Message 513
+See action notes on message 513 above.
 
 \subsubsection*{\underline{Message 556}: error - too many atoms in REFERENCE file}
 
+See notes on message 45 above.
+
 \noindent \underline{\em Action}:
 
-See Message 45
+See action notes on message 45 above.
 
 \subsubsection*{\underline{Message 557}: error - undefined direction passed to defects\_reference\_export}
 
+See notes on message 42 above.
+
 \noindent \underline{\em Action}:
 
-See Message 42
+See action notes on message 42 above.
 
 \subsubsection*{\underline{Message 558}: error - outgoing transfer buffer exceeded in defects\_reference\_export}
 
-\noindent \underline{\em Action}:
-
-See Message 54
-
-\subsubsection*{\underline{Message 559}: error - coordinate array exceeded in defects\_reference\_export}
+See notes on message 38 above.
 
 \noindent \underline{\em Action}:
 
-See Message 56
+See action notes on message 38 above.
+
+\subsubsection*{\underline{Message 559}: error - incoming data transfer size exceeds limit in defects\_reference\_export}
+
+See notes on message 38 above.
+
+\noindent \underline{\em Action}:
+
+See action notes on message 38 above.
 
 \subsubsection*{\underline{Message 560}: error - rdef found to be $>$ half the shortest interatomic distance in REFERENCE}
 
@@ -2599,7 +2643,7 @@ Examine FIELD for erroneous directives, if any, correct and resubmit.
 
 \subsubsection*{\underline{Message 660}: error - TABBND or PDF bond breaking failure}
 
-A bond with potential defined in TABBND or for which intramolecular
+A bond with potential defined in TABBND or for which intra-molecular
 potential distribution is collected has exceeded its bondleghth limit.
 
 \noindent \underline{\em Action}:
@@ -2651,298 +2695,392 @@ this.
 
 \subsubsection*{\underline{Message 1003}: error - allocation failure in comms\_module $->$ gisum\_vector}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1004}: error - deallocation failure in comms\_module $->$ gisum\_vector}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1005}: error - allocation failure in comms\_module $->$ grsum\_vector}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1006}: error - deallocation failure in comms\_module $->$ grsum\_vector}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1007}: error - allocation failure in comms\_module $->$ gimax\_vector}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1008}: error - deallocation failure in comms\_module $->$ gimax\_vector}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1009}: error - allocation failure in comms\_module $->$ grmax\_vector}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1010}: error - deallocation failure in comms\_module $->$ grmax\_vector}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1011}: error - allocation failure in parse\_module $->$ get\_record}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1012}: error - deallocation failure in parse\_module $->$ get\_record}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1013}: error - allocation failure in angles\_module $->$ allocate\_angles\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1014}: error - allocation failure in bonds\_module $->$ allocate\_bonds\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1015}: error - allocation failure in core\_shell\_module $->$ \\
 \noindent allocate\_core\_shell\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1016}: error - allocation failure in statistics\_module $->$ allocate\_statitics\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1017}: error - allocation failure in tethers\_module $->$ allocate\_tethers\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1018}: error - allocation failure in constraints\_module $->$ \\
 \noindent allocate\_constraints\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1019}: error - allocation failure in external\_field\_module $->$ \\
 \noindent allocate\_external\_field\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1020}: error - allocation failure in dihedrals\_module $->$ allocate\_dihedrals\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1021}: error - allocation failure in inversions\_module $->$ allocate\_inversion\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1022}: error - allocation failure in vdw\_module $->$ allocate\_vdw\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1023}: error - allocation failure in metal\_module $->$ allocate\_metal\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1024}: error - allocation failure in three\_body\_module $->$ \\
 \noindent allocate\_three\_body\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1025}: error - allocation failure in config\_module $->$ allocate\_config\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1026}: error - allocation failure in site\_module $->$ allocate\_site\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1027}: error - allocation failure in tersoff\_module $->$ alocate\_tersoff\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1028}: error - deallocation failure in angles\_module $->$ deallocate\_angles\_arrays}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1029}: error - deallocation failure in bonds\_module $->$ deallocate\_bonds\_arrays}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1030}: error - deallocation failure in core\_shell\_module $->$ \\
 \noindent deallocate\_core\_shell\_arrays}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1031}: error - deallocation failure in tethers\_module $->$ \\
 \noindent deallocate\_tethers\_arrays}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1032}: error - deallocation failure in constraints\_module $->$ \\
 \noindent deallocate\_constraints\_arrays}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1033}: error - deallocation failure in dihedrals\_module $->$ \\
 \noindent deallocate\_dihedrals\_arrays}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1034}: error - deallocation failure in inversions\_module $->$ \\
 \noindent deallocate\_inversions\_arrays}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1035}: error - allocation failure in defects\_module $->$ allocate\_defects\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1036}: error - allocation failure in pmf\_module $->$ allocate\_pmf\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1037}: error - deallocation failure in pmf\_module $->$ deallocate\_pmf\_arrays}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1038}: error - allocation failure in minimise\_module $->$ allocate\_minimise\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1039}: error - deallocation failure in minimise\_module $->$ \\
 \noindent deallocate\_minimise\_arrays}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1040}: error - allocation failure in ewald\_module $->$ ewald\_allocate\_kall\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1041}: error - allocation failure in langevin\_module $->$ \\
 \noindent langevin\_allocate\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1042}: error - allocation failure in rigid\_bodies\_module $->$ \\
 \noindent allocate\_rigid\_bodies\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1043}: error - deallocation failure in rigid\_bodies\_module $->$ \\
 \noindent deallocate\_rigid\_bodies\_arrays}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1044}: error - allocation failure in comms\_module $->$ gimin\_vector}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1045}: error - deallocation failure in comms\_module $->$ gimin\_vector}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1046}: error - allocation failure in comms\_module $->$ grmin\_vector}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1047}: error - deallocation failure in comms\_module $->$ grmin\_vector}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1048}: error - error - allocation failure in comms\_module $->$ grsum\_matrix}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1049}: error - deallocation failure in comms\_module $->$ grsum\_matrix}
 
+See notes on message 1002 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1002
+See action notes on message 1002 above.
 
 \subsubsection*{\underline{Message 1050}: error - sorted I/O base communicator not set}
 
@@ -2980,89 +3118,128 @@ Contact authors if the problem persists.
 
 \subsubsection*{\underline{Message 1060}: error - allocation failure in statistics\_module -> allocate\_statitics\_connect}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
+
 \subsubsection*{\underline{Message 1061}: error - allocation failure in statistics\_module -> deallocate\_statitics\_connect}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1063}: error - allocation failure in vdw\_module $->$ allocate\_vdw\_table\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1066}: error - allocation failure in vdw\_module $->$ allocate\_vdw\_direct\_fs\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1069}: error - allocation failure in metal\_module $->$ allocate\_metal\_table\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1070}: error - allocation failure in ewald\_module $->$ ewald\_allocate\_kfrz\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1072}: error - allocation failure in bonds\_module -> allocate\_bond\_pot\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1073}: error - allocation failure in bonds\_module -> allocate\_bond\_dst\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1074}: error - allocation failure in angles\_module -> allocate\_angl\_pot\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1075}: error - allocation failure in angles\_module -> allocate\_angl\_dst\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1076}: error - allocation failure in dihedrals\_module -> allocate\_dihd\_pot\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1077}: error - allocation failure in dihedrals\_module -> allocate\_dihd\_dst\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1078}: error - allocation failure in inversions\_module -> allocate\_invr\_pot\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1079}: error - allocation failure in inversions\_module -> allocate\_invr\_dst\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
 
 \subsubsection*{\underline{Message 1080}: error - allocation failure in greenkubo\_module -> allocate\_greenkubo\_arrays}
 
+See notes on message 1001 above.
+
 \noindent \underline{\em Action}:
 
-See Message 1001
+See action notes on message 1001 above.
+
+\subsubsection*{\underline{Message 1081}: error - allocation failure in dpd\_module -> allocate\_dpd\_arrays}
+
+See notes on message 1001 above.
+
+\noindent \underline{\em Action}:
+
+See action notes on message 1001 above.
