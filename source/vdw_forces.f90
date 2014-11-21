@@ -1,5 +1,5 @@
 Subroutine vdw_forces &
-           (iatm,rvdw,xdf,ydf,zdf,rsqdf,engvdw,virvdw,stress)
+           (iatm,rvdw,xxt,yyt,zzt,rrt,engvdw,virvdw,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -8,7 +8,7 @@ Subroutine vdw_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov april 2014
+! amended   - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -21,15 +21,15 @@ Subroutine vdw_forces &
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: rvdw
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
   Real( Kind = wp ),                        Intent(   Out ) :: engvdw,virvdw
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
   Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: dlrpot,rdr,rcsq
+  Real( Kind = wp ), Save :: dlrpot,rdr
 
   Integer           :: mm,idi,ai,aj,jatm,key,k,l,ityp
-  Real( Kind = wp ) :: rsq,rrr,ppp,gamma,eng,          &
+  Real( Kind = wp ) :: rrr,rsq,ppp,gamma,eng,          &
                        r0,r0rn,r0rm,r_6,sor6,          &
                        rho,a,b,c,d,e0,kk,              &
                        n,m,rc,sig,eps,alpha,beta,      &
@@ -37,17 +37,13 @@ Subroutine vdw_forces &
                        gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3, &
                        strs1,strs2,strs3,strs5,strs6,strs9
 
+! define grid resolution for potential arrays and interpolation spacing
+
   If (newjob) Then
      newjob = .false.
 
-! define grid resolution for potential arrays and interpolation spacing
-
      dlrpot = rvdw/Real(mxgvdw-4,wp)
      rdr    = 1.0_wp/dlrpot
-
-! set cutoff condition
-
-     rcsq   = rvdw**2
   End If
 
 ! initialise potential energy and virial
@@ -95,21 +91,21 @@ Subroutine vdw_forces &
 
 ! interatomic distance
 
-     rsq = rsqdf(mm)
+     rrr = rrt(mm)
 
 ! validity and truncation of potential
 
      ityp=ltpvdw(k)
-     If (ityp >= 0 .and. rsq < rcsq) Then
+     If (ityp >= 0 .and. rrr < rvdw) Then
+
+! Squared distance
+
+        rsq = rrr**2
 
 ! Zero energy and force components
 
         eng   = 0.0_wp
         gamma = 0.0_wp
-
-! Get separation distance
-
-        rrr = Sqrt(rsq)
 
         If (ld_vdw) Then ! direct calculation
 
@@ -429,9 +425,9 @@ Subroutine vdw_forces &
 
 ! calculate forces
 
-        fx = gamma*xdf(mm)
-        fy = gamma*ydf(mm)
-        fz = gamma*zdf(mm)
+        fx = gamma*xxt(mm)
+        fy = gamma*yyt(mm)
+        fz = gamma*zzt(mm)
 
         fix=fix+fx
         fiy=fiy+fy
@@ -457,12 +453,12 @@ Subroutine vdw_forces &
 
 ! add stress tensor
 
-           strs1 = strs1 + xdf(mm)*fx
-           strs2 = strs2 + xdf(mm)*fy
-           strs3 = strs3 + xdf(mm)*fz
-           strs5 = strs5 + ydf(mm)*fy
-           strs6 = strs6 + ydf(mm)*fz
-           strs9 = strs9 + zdf(mm)*fz
+           strs1 = strs1 + xxt(mm)*fx
+           strs2 = strs2 + xxt(mm)*fy
+           strs3 = strs3 + xxt(mm)*fz
+           strs5 = strs5 + yyt(mm)*fy
+           strs6 = strs6 + yyt(mm)*fz
+           strs9 = strs9 + zzt(mm)*fz
 
         End If
 

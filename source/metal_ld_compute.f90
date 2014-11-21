@@ -1,6 +1,5 @@
 Subroutine metal_ld_compute         &
            (imcon,rmet,elrcm,vlrcm, &
-           xdf,ydf,zdf,rsqdf,       &
            engden,virden,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -12,14 +11,14 @@ Subroutine metal_ld_compute         &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov june 2013
+! amended   - i.t.todorov november 2014
 ! contrib   - r.davidchak (eeam) june 2012
 ! contrib   - b.palmer (2band) may 2013
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,  Only : mxnode,gsum,gcheck
+  Use comms_module,  Only : idnode,mxnode,gsum,gcheck
   Use setup_module
   Use config_module, Only : cell,natms,ltg,ltype,list,xxx,yyy,zzz
   Use metal_module,  Only : ls_met,l2bmet,ntpmet,ltpmet, &
@@ -30,7 +29,6 @@ Subroutine metal_ld_compute         &
   Integer,                                  Intent( In    ) :: imcon
   Real( Kind = wp ),                        Intent( In    ) :: rmet
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent( In    ) :: elrcm,vlrcm
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( InOut ) :: xdf,ydf,zdf,rsqdf
   Real( Kind = wp ),                        Intent(   Out ) :: engden,virden
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
@@ -38,9 +36,10 @@ Subroutine metal_ld_compute         &
   Integer, Save     :: keypot
 
   Logical           :: safe = .true.
-  Integer           :: limit,i,j,k,l,k0
+  Integer           :: fail,limit,i,j,k,l,k0
   Real( Kind = wp ) :: rhosqr,rdr,rrr,ppp,fk0,fk1,fk2,t1,t2
 
+  Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
 
 ! check on mixing metal types
 
@@ -71,6 +70,13 @@ Subroutine metal_ld_compute         &
 ! calculate local atomic density
 ! outer loop over atoms
 
+  fail=0
+  Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'metal_ld_compute allocation failure, node: ', idnode
+     Call error(0)
+  End If
+
   Do i=1,natms
      limit=list(0,i) ! Get list limit
 
@@ -79,29 +85,35 @@ Subroutine metal_ld_compute         &
      Do k=1,limit
         j=list(k,i)
 
-        xdf(k)=xxx(i)-xxx(j)
-        ydf(k)=yyy(i)-yyy(j)
-        zdf(k)=zzz(i)-zzz(j)
+        xxt(k)=xxx(i)-xxx(j)
+        yyt(k)=yyy(i)-yyy(j)
+        zzt(k)=zzz(i)-zzz(j)
      End Do
 
 ! periodic boundary conditions
 
-     Call images(imcon,cell,limit,xdf,ydf,zdf)
+     Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
      Do k=1,limit
-        rsqdf(k) = xdf(k)**2+ydf(k)**2+zdf(k)**2
+        rrt(k) = Sqrt(xxt(k)**2+yyt(k)**2+zzt(k)**2)
      End Do
 
 ! calculate contributions to local density
 
      If (keypot == 0) Then ! EAM contributions
-        Call metal_ld_collect_eam(i,rsqdf,safe)
+        Call metal_ld_collect_eam(i,rrt,safe)
      Else                  ! FST contributions
-        Call metal_ld_collect_fst(i,rsqdf,safe,rmet)
+        Call metal_ld_collect_fst(i,rmet,rrt,safe)
      End If
   End Do
+
+  Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'metal_ld_compute allocation failure, node: ', idnode
+     Call error(0)
+  End If
 
 ! Check safety for densities
 

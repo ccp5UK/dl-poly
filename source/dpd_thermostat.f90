@@ -26,27 +26,26 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
 
 
   Integer           :: fail(1:2),i,j,k,limit,idi,idj,ai,aj,key
-  Real( Kind = wp ) :: rcsq,trsq,hstep,fix,fiy,fiz,  &
-                       rsq,rrr,scrn,gauss,tmp,scl,   &
+  Real( Kind = wp ) :: rstsq,hstep,fix,fiy,fiz,       &
+                       rrr,scrn,gauss,tmp,scl,       &
                        rgamma,dgamma,gamma,fx,fy,fz, &
                        strs1,strs2,strs3,strs5,strs6,strs9
 
-  Real( Kind = wp ), Dimension( : ), Allocatable :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
   Real( Kind = wp ), Dimension( : ), Allocatable :: fdpdx,fdpdy,fdpdz
 
   fail=0
-  Allocate (xdf(1:mxlist),ydf(1:mxlist),zdf(1:mxlist),rsqdf(1:mxlist), Stat = fail(1))
-  Allocate (fdpdx(1:mxatdm),fdpdy(1:mxatdm),fdpdz(1:mxatdm),           Stat = fail(2))
+  Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat = fail(1))
+  Allocate (fdpdx(1:mxatdm),fdpdy(1:mxatdm),fdpdz(1:mxatdm),         Stat = fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'dpd_thermostat allocation failure, node: ', idnode
      Call error(0)
   End If
 
-! set cutoff condition snd tstep factors
+! set tstep factors
 
-  rcsq = rcut**2
   hstep= 0.5_wp*tstep
-  trsq = 1.0_wp/Sqrt(tstep)
+  rstsq = 1.0_wp/Sqrt(tstep)
 
 ! initialise DPD virial and stress contributions
 
@@ -78,19 +77,19 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
      Do k=1,limit
         j=list(k,i)
 
-        xdf(k)=xxx(i)-xxx(j)
-        ydf(k)=yyy(i)-yyy(j)
-        zdf(k)=zzz(i)-zzz(j)
+        xxt(k)=xxx(i)-xxx(j)
+        yyt(k)=yyy(i)-yyy(j)
+        zzt(k)=zzz(i)-zzz(j)
      End Do
 
 ! periodic boundary conditions
 
-     Call images(imcon,cell,limit,xdf,ydf,zdf)
+     Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
      Do k=1,limit
-        rsqdf(k)=xdf(k)**2+ydf(k)**2+zdf(k)**2
+        rrt(k)=Sqrt(xxt(k)**2+yyt(k)**2+zzt(k)**2)
      End Do
 
 ! initialise stress tensor accumulators
@@ -123,11 +122,11 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
 
 ! interatomic distance
 
-        rsq = rsqdf(k)
+        rrr = rrt(k)
 
 ! validity of thermalisation
 
-        If (rsq < rcsq .and. weight(j) > 1.0e-6_wp) Then
+        If (rrr < rcut .and. weight(j) > 1.0e-6_wp) Then
 
 ! secondary atomic type and global index
 
@@ -138,9 +137,8 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
 
            Call box_mueller_saru2(i,j,nstep,gauss,l_str)
 
-! Get separation distance and screening function
+! screening function
 
-           rrr = Sqrt(rsq)
            scrn = (rcut-rrr)/(rrr*rcut)
 
 ! Get mixing type function
@@ -153,18 +151,18 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
 
 ! Calculate force component
 
-           rgamma =  sigdpd(key) * scrn      * gauss * trsq
+           rgamma =  sigdpd(key) * scrn      * gauss * rstsq
 
            tmp    =  gamdpd(key) * (scrn**2)
-           dgamma = -tmp * ( xdf(k)*(vxx(i)-vxx(j)) + ydf(k)*(vyy(i)-vyy(j)) + zdf(k)*(vzz(i)-vzz(j)) )
+           dgamma = -tmp * ( xxt(k)*(vxx(i)-vxx(j)) + yyt(k)*(vyy(i)-vyy(j)) + zzt(k)*(vzz(i)-vzz(j)) )
 
            gamma=rgamma+dgamma
 
 ! calculate forces
 
-           fx = gamma*xdf(k)
-           fy = gamma*ydf(k)
-           fz = gamma*zdf(k)
+           fx = gamma*xxt(k)
+           fy = gamma*yyt(k)
+           fz = gamma*zzt(k)
 
            fix=fix+fx
            fiy=fiy+fy
@@ -182,16 +180,16 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
 
 ! add virial
 
-              virdpd = virdpd - gamma*rsq
+              virdpd = virdpd - gamma*rrr*rrr
 
 ! add stress tensor
 
-              strs1 = strs1 + xdf(k)*fx
-              strs2 = strs2 + xdf(k)*fy
-              strs3 = strs3 + xdf(k)*fz
-              strs5 = strs5 + ydf(k)*fy
-              strs6 = strs6 + ydf(k)*fz
-              strs9 = strs9 + zdf(k)*fz
+              strs1 = strs1 + xxt(k)*fx
+              strs2 = strs2 + xxt(k)*fy
+              strs3 = strs3 + xxt(k)*fz
+              strs5 = strs5 + yyt(k)*fy
+              strs6 = strs6 + yyt(k)*fz
+              strs9 = strs9 + zzt(k)*fz
 
            End If
 
@@ -261,19 +259,19 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
      Do k=1,limit
         j=list(k,i)
 
-        xdf(k)=xxx(i)-xxx(j)
-        ydf(k)=yyy(i)-yyy(j)
-        zdf(k)=zzz(i)-zzz(j)
+        xxt(k)=xxx(i)-xxx(j)
+        yyt(k)=yyy(i)-yyy(j)
+        zzt(k)=zzz(i)-zzz(j)
      End Do
 
 ! periodic boundary conditions
 
-     Call images(imcon,cell,limit,xdf,ydf,zdf)
+     Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
      Do k=1,limit
-        rsqdf(k)=xdf(k)**2+ydf(k)**2+zdf(k)**2
+        rrt(k)=Sqrt(xxt(k)**2+yyt(k)**2+zzt(k)**2)
      End Do
 
 ! initialise stress tensor accumulators
@@ -306,11 +304,11 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
 
 ! interatomic distance
 
-        rsq = rsqdf(k)
+        rrr = rrt(k)
 
 ! validity of thermalisation
 
-        If (rsq < rcsq .and. weight(j) > 1.0e-6_wp) Then
+        If (rrr < rcut .and. weight(j) > 1.0e-6_wp) Then
 
 ! secondary atomic type and global index
 
@@ -321,9 +319,8 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
 
            Call box_mueller_saru2(i,j,nstep,gauss,l_str)
 
-! Get separation distance and screening function
+! screening function
 
-           rrr = Sqrt(rsq)
            scrn = (rcut-rrr)/(rrr*rcut)
 
 ! Get mixing type function
@@ -336,19 +333,19 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
 
 ! Calculate force component
 
-           rgamma =  sigdpd(key) * scrn      * gauss * trsq
+           rgamma =  sigdpd(key) * scrn      * gauss * rstsq
 
            tmp    =  gamdpd(key) * (scrn**2)
            scl    =  tmp / (1.0_wp+tmp*tstep)
-           dgamma = -tmp * ( xdf(k)*(vxx(i)-vxx(j)) + ydf(k)*(vyy(i)-vyy(j)) + zdf(k)*(vzz(i)-vzz(j)) )
+           dgamma = -tmp * ( xxt(k)*(vxx(i)-vxx(j)) + yyt(k)*(vyy(i)-vyy(j)) + zzt(k)*(vzz(i)-vzz(j)) )
 
            gamma=rgamma + scl*(dgamma-rgamma)
 
 ! calculate forces
 
-           fx = gamma*xdf(k)
-           fy = gamma*ydf(k)
-           fz = gamma*zdf(k)
+           fx = gamma*xxt(k)
+           fy = gamma*yyt(k)
+           fz = gamma*zzt(k)
 
            fix=fix+fx
            fiy=fiy+fy
@@ -366,16 +363,16 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
 
 ! add virial
 
-              virdpd = virdpd - gamma*rsq
+              virdpd = virdpd - gamma*rrr*rrr
 
 ! add stress tensor
 
-              strs1 = strs1 + xdf(k)*fx
-              strs2 = strs2 + xdf(k)*fy
-              strs3 = strs3 + xdf(k)*fz
-              strs5 = strs5 + ydf(k)*fy
-              strs6 = strs6 + ydf(k)*fz
-              strs9 = strs9 + zdf(k)*fz
+              strs1 = strs1 + xxt(k)*fx
+              strs2 = strs2 + xxt(k)*fy
+              strs3 = strs3 + xxt(k)*fz
+              strs5 = strs5 + yyt(k)*fy
+              strs6 = strs6 + yyt(k)*fz
+              strs9 = strs9 + zzt(k)*fz
 
            End If
 
@@ -428,7 +425,7 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
 
   If (mxnode > 1) Call gsum(virdpd)
 
-  Deallocate (xdf,ydf,zdf,rsqdf, Stat = fail(1))
+  Deallocate (xxt,yyt,zzt,rrt,   Stat = fail(1))
   Deallocate (fdpdx,fdpdy,fdpdz, Stat = fail(2))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'dpd_thermostat deallocation failure, node: ', idnode

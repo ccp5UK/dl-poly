@@ -5,7 +5,7 @@ Subroutine pmf_quench(imcon,mxshak,tolnce)
 ! dl_poly_4 subroutine for applying PMF constraint quench
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -64,10 +64,10 @@ Subroutine pmf_quench(imcon,mxshak,tolnce)
 ! normalise PMF constraint vectors
 
   Do ipmf=1,ntpmf
-     dis=Sqrt(pxx(ipmf)**2+pyy(ipmf)**2+pzz(ipmf)**2)
-     pxx(ipmf)=pxx(ipmf)/dis
-     pyy(ipmf)=pyy(ipmf)/dis
-     pzz(ipmf)=pzz(ipmf)/dis
+     dis=1.0_wp/Sqrt(pxx(ipmf)**2+pyy(ipmf)**2+pzz(ipmf)**2)
+     pxx(ipmf)=pxx(ipmf)*dis
+     pyy(ipmf)=pyy(ipmf)*dis
+     pzz(ipmf)=pzz(ipmf)*dis
   End Do
 
 ! application of PMF constraint (rattle) algorithm
@@ -98,9 +98,9 @@ Subroutine pmf_quench(imcon,mxshak,tolnce)
 
 ! calculate constraint force parameter - gamma
 
-        gamma = ( pxx(ipmf)*(xpmf(1,ipmf)-xpmf(2,ipmf)) + &
-                  pyy(ipmf)*(ypmf(1,ipmf)-ypmf(2,ipmf)) + &
-                  pzz(ipmf)*(zpmf(1,ipmf)-zpmf(2,ipmf)) )
+        gamma = pxx(ipmf)*(xpmf(1,ipmf)-xpmf(2,ipmf)) + &
+                pyy(ipmf)*(ypmf(1,ipmf)-ypmf(2,ipmf)) + &
+                pzz(ipmf)*(zpmf(1,ipmf)-zpmf(2,ipmf))
 
         esig=Max(esig,0.5_wp*Abs(gamma))
 

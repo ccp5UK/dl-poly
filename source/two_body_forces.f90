@@ -27,7 +27,7 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -70,10 +70,10 @@ Subroutine two_body_forces                        &
                        engvdw,virvdw,engkim,virkim,             &
                        engacc,viracc,tmp,buffer(0:14)
 
-  Real( Kind = wp ), Dimension( : ), Allocatable :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
 
   fail=0
-  Allocate (xdf(1:mxlist),ydf(1:mxlist),zdf(1:mxlist),rsqdf(1:mxlist), Stat=fail)
+  Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'two_body_forces allocation failure, node: ', idnode
      Call error(0)
@@ -136,7 +136,6 @@ Subroutine two_body_forces                        &
 
      Call metal_ld_compute          &
            (imcon,rmet,elrcm,vlrcm, &
-           xdf,ydf,zdf,rsqdf,       &
            engden,virden,stress)
 
   End If
@@ -169,26 +168,26 @@ Subroutine two_body_forces                        &
      Do k=1,limit
         j=list(k,i)
 
-        xdf(k)=xxx(i)-xxx(j)
-        ydf(k)=yyy(i)-yyy(j)
-        zdf(k)=zzz(i)-zzz(j)
+        xxt(k)=xxx(i)-xxx(j)
+        yyt(k)=yyy(i)-yyy(j)
+        zzt(k)=zzz(i)-zzz(j)
      End Do
 
 ! periodic boundary conditions
 
-     Call images(imcon,cell,limit,xdf,ydf,zdf)
+     Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
      Do k=1,limit
-        rsqdf(k)=xdf(k)**2+ydf(k)**2+zdf(k)**2
+        rrt(k)=Sqrt(xxt(k)**2+yyt(k)**2+zzt(k)**2)
      End Do
 
 ! calculate metal forces and potential
 
      If (ntpmet > 0) Then
         Call metal_forces &
-       (i,rmet,xdf,ydf,zdf,rsqdf,engacc,viracc,stress,safe)
+       (i,rmet,xxt,yyt,zzt,rrt,engacc,viracc,stress,safe)
 
         engmet=engmet+engacc
         virmet=virmet+viracc
@@ -198,7 +197,7 @@ Subroutine two_body_forces                        &
 
      If (ntpvdw > 0) Then
         Call vdw_forces &
-       (i,rvdw,xdf,ydf,zdf,rsqdf,engacc,viracc,stress)
+       (i,rvdw,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
         engvdw=engvdw+engacc
         virvdw=virvdw+viracc
@@ -213,7 +212,7 @@ Subroutine two_body_forces                        &
 ! calculate coulombic forces, Ewald sum - real space contribution
 
         Call ewald_real_forces &
-       (i,rcut,alpha,epsq,xdf,ydf,zdf,rsqdf,engacc,viracc,stress)
+       (i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
         engcpe_rl=engcpe_rl+engacc
         vircpe_rl=vircpe_rl+viracc
@@ -223,7 +222,7 @@ Subroutine two_body_forces                        &
 ! distance dependant dielectric potential
 
         Call coul_dddp_forces &
-       (i,rcut,epsq,xdf,ydf,zdf,rsqdf,engacc,viracc,stress)
+       (i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
         engcpe_rl=engcpe_rl+engacc
         vircpe_rl=vircpe_rl+viracc
@@ -233,7 +232,7 @@ Subroutine two_body_forces                        &
 ! coulombic 1/r potential with no truncation or damping
 
         Call coul_cp_forces &
-       (i,rcut,epsq,xdf,ydf,zdf,rsqdf,engacc,viracc,stress)
+       (i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
         engcpe_rl=engcpe_rl+engacc
         vircpe_rl=vircpe_rl+viracc
@@ -243,7 +242,7 @@ Subroutine two_body_forces                        &
 ! force-shifted coulomb potentials
 
         Call coul_fscp_forces &
-       (i,rcut,alpha,epsq,xdf,ydf,zdf,rsqdf,engacc,viracc,stress)
+       (i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
         engcpe_rl=engcpe_rl+engacc
         vircpe_rl=vircpe_rl+viracc
@@ -253,7 +252,7 @@ Subroutine two_body_forces                        &
 ! reaction field potential
 
         Call coul_rfp_forces &
-       (i,rcut,alpha,epsq,xdf,ydf,zdf,rsqdf,engacc,viracc,stress)
+       (i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
         engcpe_rl=engcpe_rl+engacc
         vircpe_rl=vircpe_rl+viracc
@@ -262,7 +261,7 @@ Subroutine two_body_forces                        &
 
 ! accumulate radial distribution functions
 
-     If (l_do_rdf) Call rdf_collect(i,rcut,rsqdf)
+     If (l_do_rdf) Call rdf_collect(i,rcut,rrt)
 
   End Do
 
@@ -293,30 +292,30 @@ Subroutine two_body_forces                        &
            Do k=1,limit
               j=list(list(0,i)+k,i)
 
-              xdf(k)=xxx(i)-xxx(j)
-              ydf(k)=yyy(i)-yyy(j)
-              zdf(k)=zzz(i)-zzz(j)
+              xxt(k)=xxx(i)-xxx(j)
+              yyt(k)=yyy(i)-yyy(j)
+              zzt(k)=zzz(i)-zzz(j)
            End Do
 
 ! periodic boundary conditions
 
-           Call images(imcon,cell,limit,xdf,ydf,zdf)
+           Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
            Do k=1,limit
-              rsqdf(k)=xdf(k)**2+ydf(k)**2+zdf(k)**2
+              rrt(k)=Sqrt(xxt(k)**2+yyt(k)**2+zzt(k)**2)
            End Do
 
 ! accumulate radial distribution functions
 
-           If (l_do_rdf) Call rdf_excl_collect(i,rcut,rsqdf)
+           If (l_do_rdf) Call rdf_excl_collect(i,rcut,rrt)
 
 ! Ewald corrections
 
            If (keyfce == 2 .and. l_fce) Then
               Call ewald_excl_forces &
-           (i,rcut,alpha,epsq,xdf,ydf,zdf,rsqdf,engacc,viracc,stress)
+           (i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
               engcpe_ex=engcpe_ex+engacc
               vircpe_ex=vircpe_ex+viracc
@@ -348,24 +347,24 @@ Subroutine two_body_forces                        &
               Do k=1,limit
                  j=list(list(0,i)+k,i)
 
-                 xdf(k)=xxx(i)-xxx(j)
-                 ydf(k)=yyy(i)-yyy(j)
-                 zdf(k)=zzz(i)-zzz(j)
+                 xxt(k)=xxx(i)-xxx(j)
+                 yyt(k)=yyy(i)-yyy(j)
+                 zzt(k)=zzz(i)-zzz(j)
               End Do
 
 ! periodic boundary conditions
 
-              Call images(imcon,cell,limit,xdf,ydf,zdf)
+              Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
               Do k=1,limit
-                 rsqdf(k)=xdf(k)**2+ydf(k)**2+zdf(k)**2
+                 rrt(k)=Sqrt(xxt(k)**2+yyt(k)**2+zzt(k)**2)
               End Do
 
 ! accumulate radial distribution functions
 
-              Call rdf_frzn_collect(i,rcut,rsqdf)
+              Call rdf_frzn_collect(i,rcut,rrt)
            End If
 
         End Do
@@ -375,7 +374,7 @@ Subroutine two_body_forces                        &
      ncfrdf = ncfrdf + 1
   End If
 
-  Deallocate (xdf,ydf,zdf,rsqdf,   Stat=fail)
+  Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'two_body_forces deallocation failure, node: ', idnode
      Call error(0)

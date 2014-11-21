@@ -1,4 +1,4 @@
-Subroutine metal_ld_collect_eam(iatm,rsqdf,safe)
+Subroutine metal_ld_collect_eam(iatm,rrt,safe)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,safe)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov june 2013
+! amended   - i.t.todorov november 2014
 ! contrib   - r.davidchak (eeam) june 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -23,12 +23,12 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,safe)
 
   Implicit None
 
-  Integer,                                  Intent( In    )           :: iatm
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    )           :: rsqdf
-  Logical,                                  Intent( InOut )           :: safe
+  Integer,                                  Intent( In    ) :: iatm
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rrt
+  Logical,                                  Intent( InOut ) :: safe
 
   Integer           :: m,ai,ki,jatm,aj,kj,l,keymet,k0
-  Real( Kind = wp ) :: rsq,rdr,rrr,ppp,vk0,vk1,vk2,t1,t2,density
+  Real( Kind = wp ) :: rrr,rdr,rr1,ppp,vk0,vk1,vk2,t1,t2,density
 
 ! start of primary loop for density
 
@@ -51,25 +51,25 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,safe)
 
 ! interatomic distance
 
-     rsq=rsqdf(m)
+     rrr=rrt(m)
 
 ! Now start traditional s-band (EAM & EEAM) or d-band for 2B(EAM & EEAM)
 
 ! first metal atom density and validity and truncation of potential
 
      If (Abs(dmet(1,kj,1)) > zero_plus .and. Nint(dmet(1,kj,1)) > 5) Then
-        If (rsq <= dmet(3,kj,1)**2) Then
+        If (rrr <= dmet(3,kj,1)) Then
 
 ! interpolation parameters
 
            rdr = 1.0_wp/dmet(4,kj,1)
-           rrr = Sqrt(rsq) - dmet(2,kj,1)
-           l   = Min(Nint(rrr*rdr),Nint(dmet(1,kj,1))-1)
+           rr1 = rrr - dmet(2,kj,1)
+           l   = Min(Nint(rr1*rdr),Nint(dmet(1,kj,1))-1)
            If (l < 5) Then ! catch unsafe value
               safe=.false.
               l=6
            End If
-           ppp = rrr*rdr - Real(l,wp)
+           ppp = rr1*rdr - Real(l,wp)
 
 ! calculate density using 3-point interpolation
 
@@ -100,18 +100,18 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,safe)
 
      If (Abs(dmet(1,ki,1)) > zero_plus .and. Nint(dmet(1,ki,1)) > 5) Then
         If (ki /= kj .and. jatm <= natms) Then
-           If (rsq <= dmet(3,ki,1)**2) Then
+           If (rrr <= dmet(3,ki,1)) Then
 
 ! interpolation parameters
 
               rdr = 1.0_wp/dmet(4,ki,1)
-              rrr = Sqrt(rsq) - dmet(2,ki,1)
-              l   = Min(Nint(rrr*rdr),Nint(dmet(1,ki,1))-1)
+              rr1 = rrr - dmet(2,ki,1)
+              l   = Min(Nint(rr1*rdr),Nint(dmet(1,ki,1))-1)
               If (l < 5) Then ! catch unsafe value
                  safe=.false.
                  l=6
               End If
-              ppp = rrr*rdr - Real(l,wp)
+              ppp = rr1*rdr - Real(l,wp)
 
 ! calculate density using 3-point interpolation
 
@@ -152,18 +152,18 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,safe)
 ! first metal atom density and validity and truncation of potential
 
            If (Abs(dmes(1,k0,1)) > zero_plus .and. Nint(dmes(1,k0,1)) > 5) Then
-              If (rsq <= dmes(3,k0,1)**2) Then
+              If (rrr <= dmes(3,k0,1)) Then
 
 ! interpolation parameters
 
                  rdr = 1.0_wp/dmes(4,k0,1)
-                 rrr = Sqrt(rsq) - dmes(2,k0,1)
-                 l   = Min(Nint(rrr*rdr),Nint(dmes(1,k0,1))-1)
+                 rr1 = rrr - dmes(2,k0,1)
+                 l   = Min(Nint(rr1*rdr),Nint(dmes(1,k0,1))-1)
                  If (l < 5) Then ! catch unsafe value
                     safe=.false.
                     l=6
                  End If
-                 ppp = rrr*rdr - Real(l,wp)
+                 ppp = rr1*rdr - Real(l,wp)
 
 ! calculate density using 3-point interpolation
 
@@ -195,18 +195,18 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,safe)
 ! first metal atom density and validity and truncation of potential
 
            If (Abs(dmes(1,kj,1)) > zero_plus .and. Nint(dmes(1,kj,1)) > 5) Then
-              If (rsq <= dmes(3,kj,1)**2) Then
+              If (rrr <= dmes(3,kj,1)) Then
 
 ! interpolation parameters
 
                  rdr = 1.0_wp/dmes(4,kj,1)
-                 rrr = Sqrt(rsq) - dmes(2,kj,1)
-                 l   = Min(Nint(rrr*rdr),Nint(dmes(1,kj,1))-1)
+                 rr1 = rrr - dmes(2,kj,1)
+                 l   = Min(Nint(rr1*rdr),Nint(dmes(1,kj,1))-1)
                  If (l < 5) Then ! catch unsafe value
                     safe=.false.
                     l=6
                  End If
-                 ppp = rrr*rdr - Real(l,wp)
+                 ppp = rr1*rdr - Real(l,wp)
 
 ! calculate density using 3-point interpolation
 
@@ -237,18 +237,18 @@ Subroutine metal_ld_collect_eam(iatm,rsqdf,safe)
 
            If (Abs(dmes(1,ki,1)) > zero_plus .and. Nint(dmes(1,ki,1)) > 5) Then
               If (ki /= kj .and. jatm <= natms) Then
-                 If (rsq <= dmes(3,ki,1)**2) Then
+                 If (rrr <= dmes(3,ki,1)) Then
 
 ! interpolation parameters
 
                     rdr = 1.0_wp/dmes(4,ki,1)
-                    rrr = Sqrt(rsq) - dmes(2,ki,1)
-                    l   = Min(Nint(rrr*rdr),Nint(dmes(1,ki,1))-1)
+                    rr1 = rrr - dmes(2,ki,1)
+                    l   = Min(Nint(rr1*rdr),Nint(dmes(1,ki,1))-1)
                     If (l < 5) Then ! catch unsafe value
                        safe=.false.
                        l=6
                     End If
-                    ppp = rrr*rdr - Real(l,wp)
+                    ppp = rr1*rdr - Real(l,wp)
 
 ! calculate density using 3-point interpolation
 

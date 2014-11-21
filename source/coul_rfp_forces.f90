@@ -1,5 +1,5 @@
 Subroutine coul_rfp_forces &
-           (iatm,rcut,alpha,epsq,xdf,ydf,zdf,rsqdf,engcpe,vircpe,stress)
+           (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -16,7 +16,7 @@ Subroutine coul_rfp_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester february 1995
-! amended   - i.t.todorov august 2014
+! amended   - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,20 +29,21 @@ Subroutine coul_rfp_forces &
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
   Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
   Logical,           Save :: newjob = .true. , damp
-  Real( Kind = wp ), Save :: drewd  = 0.0_wp , &
-                             rdrewd = 0.0_wp , &
-                             rcsq   = 0.0_wp , &
-                             aa     = 0.0_wp , &
-                             bb     = 0.0_wp , &
-                             b0     = 0.0_wp , &
+  Real( Kind = wp ), Save :: b0     = 0.0_wp , &
                              rfld0  = 0.0_wp , &
                              rfld1  = 0.0_wp , &
-                             rfld2  = 0.0_wp
+                             rfld2  = 0.0_wp , &
+                             drewd  = 0.0_wp , &
+                             rdrewd = 0.0_wp , &
+                             aa     = 0.0_wp , &
+                             bb     = 0.0_wp , &
+                             rcsq   = 0.0_wp
+
 
   Integer           :: fail,k,idi,jatm,m
 
@@ -61,10 +62,6 @@ Subroutine coul_rfp_forces &
      Else
         damp = .false.
      End If
-
-! set cutoff condition for pair forces
-
-     rcsq = rcut**2
 
 ! reaction field terms
 
@@ -98,6 +95,10 @@ Subroutine coul_rfp_forces &
 
         aa =   fer(mxgele-4)*rcut
         bb = -(erc(mxgele-4)+aa*rcut)
+
+! Cutoff squared
+
+        rcsq = rcut**2
 
      End If
   End If
@@ -138,100 +139,97 @@ Subroutine coul_rfp_forces &
 
      Do m=1,list(0,iatm)
 
-! atomic index
+! atomic index and charge
 
         jatm=list(m,iatm)
         chgprd=chge(jatm)
 
-! ignore interaction if the charge is zero
+! interatomic distance
 
-        If (Abs(chgprd) > zero_plus) Then
+        rrr=rrt(m)
+
+! interaction validity and truncation of potential
+
+        If (Abs(chgprd) > zero_plus .and. rrr < rcut) Then
 
 ! charge product
 
            chgprd=chgprd*chgea
 
-! calculate interatomic distance
+! Squared distance
 
-           rsq=rsqdf(m)
-
-! apply truncation of potential
-
-           If (rsq < rcsq) Then
+           rsq=rrr**2
 
 ! calculate forces
 
-              rrr = Sqrt(rsq)
-              If (damp) Then
-                 k   = Int(rrr*rdrewd)
-                 ppp = rrr*rdrewd - Real(k,wp)
+           If (damp) Then
+              k   = Int(rrr*rdrewd)
+              ppp = rrr*rdrewd - Real(k,wp)
 
 ! calculate forces using 3pt interpolation
 
-                 gk0 = fer(k) ; If (k == 0) gk0 = gk0*rrr
-                 gk1 = fer(k+1)
-                 gk2 = fer(k+2)
+              gk0 = fer(k) ; If (k == 0) gk0 = gk0*rrr
+              gk1 = fer(k+1)
+              gk2 = fer(k+2)
 
-                 t1 = gk0 + (gk1 - gk0)*ppp
-                 t2 = gk1 + (gk2 - gk1)*(ppp - 1.0_wp)
+              t1 = gk0 + (gk1 - gk0)*ppp
+              t2 = gk1 + (gk2 - gk1)*(ppp - 1.0_wp)
 
-                 egamma = ((t1 + (t2-t1)*ppp*0.5_wp) - aa/rrr - rfld0)*chgprd
-              Else
-                 egamma=chgprd*(1.0_wp/rsq/rrr - rfld0)
-              End If
+              egamma = ((t1 + (t2-t1)*ppp*0.5_wp) - aa/rrr - rfld0)*chgprd
+           Else
+              egamma=chgprd*(1.0_wp/rsq/rrr - rfld0)
+           End If
 
-              fx = egamma*xdf(m)
-              fy = egamma*ydf(m)
-              fz = egamma*zdf(m)
+           fx = egamma*xxt(m)
+           fy = egamma*yyt(m)
+           fz = egamma*zzt(m)
 
-              fix=fix+fx
-              fiy=fiy+fy
-              fiz=fiz+fz
+           fix=fix+fx
+           fiy=fiy+fy
+           fiz=fiz+fz
 
-              If (jatm <= natms) Then
+           If (jatm <= natms) Then
 
-                 fxx(jatm)=fxx(jatm)-fx
-                 fyy(jatm)=fyy(jatm)-fy
-                 fzz(jatm)=fzz(jatm)-fz
+              fxx(jatm)=fxx(jatm)-fx
+              fyy(jatm)=fyy(jatm)-fy
+              fzz(jatm)=fzz(jatm)-fz
 
-              End If
+           End If
 
-              If (jatm <= natms .or. idi < ltg(jatm)) Then
+           If (jatm <= natms .or. idi < ltg(jatm)) Then
 
 ! calculate potential energy and virial
 
-                 If (damp) Then
+              If (damp) Then
 
 ! calculate interaction energy using 3-point interpolation
 
-                    vk0 = erc(k)
-                    vk1 = erc(k+1)
-                    vk2 = erc(k+2)
+                 vk0 = erc(k)
+                 vk1 = erc(k+1)
+                 vk2 = erc(k+2)
 
-                    t1 = vk0 + (vk1 - vk0)*ppp
-                    t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+                 t1 = vk0 + (vk1 - vk0)*ppp
+                 t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
-                    engcpe = engcpe + ((t1 + (t2-t1)*ppp*0.5_wp) + aa*rrr + bb + &
-                                       rfld2*(rsq-rcsq))*chgprd
+                 engcpe = engcpe + ((t1 + (t2-t1)*ppp*0.5_wp) + aa*rrr + bb + &
+                                    rfld2*(rsq-rcsq))*chgprd
 
-                 Else
+              Else
 
-                    engcpe = engcpe + chgprd*(1.0_wp/rrr + rfld2*rsq - rfld1)
+                 engcpe = engcpe + chgprd*(1.0_wp/rrr + rfld2*rsq - rfld1)
 
-                 End If
+              End If
 
-                 vircpe = vircpe - egamma*rsq
+              vircpe = vircpe - egamma*rsq
 
 ! calculate stress tensor
 
-                 strs1 = strs1 + xdf(m)*fx
-                 strs2 = strs2 + xdf(m)*fy
-                 strs3 = strs3 + xdf(m)*fz
-                 strs5 = strs5 + ydf(m)*fy
-                 strs6 = strs6 + ydf(m)*fz
-                 strs9 = strs9 + zdf(m)*fz
-
-              End If
+              strs1 = strs1 + xxt(m)*fx
+              strs2 = strs2 + xxt(m)*fy
+              strs3 = strs3 + xxt(m)*fz
+              strs5 = strs5 + yyt(m)*fy
+              strs6 = strs6 + yyt(m)*fz
+              strs9 = strs9 + zzt(m)*fz
 
            End If
 

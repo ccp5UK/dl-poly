@@ -6,7 +6,7 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
 ! initial structure of a molecule defined by constraints
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,18 +23,18 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
 
   Logical           :: safe
   Integer           :: fail(1:4),i,j,k,icyc
-  Real( Kind = wp ) :: amti,amtj,dlj,dli,esig,gamma,gammi,gammj
+  Real( Kind = wp ) :: dis,amti,amtj,dlj,dli,esig,gamma,gammi,gammj
 
   Logical,           Allocatable :: lstitr(:)
   Integer,           Allocatable :: lstopt(:,:),listot(:)
-  Real( Kind = wp ), Allocatable :: dxx(:),dyy(:),dzz(:),dt(:)
+  Real( Kind = wp ), Allocatable :: dxx(:),dyy(:),dzz(:)
   Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
 
   fail=0
-  Allocate (lstitr(1:mxatms),                                       Stat=fail(1))
-  Allocate (lstopt(0:2,1:mxcons),listot(1:mxatms),                  Stat=fail(2))
-  Allocate (dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons),dt(1:mxcons), Stat=fail(3))
-  Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),              Stat=fail(4))
+  Allocate (lstitr(1:mxatms),                          Stat=fail(1))
+  Allocate (lstopt(0:2,1:mxcons),listot(1:mxatms),     Stat=fail(2))
+  Allocate (dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons), Stat=fail(3))
+  Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail(4))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'constraints_quench allocation failure, node: ', idnode
      Call error(0)
@@ -49,6 +49,21 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
 
   lstitr(1:natms)=.false. ! initialise lstitr
   Call constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
+
+! normalise constraint vectors
+
+  Do k=1,ntcons
+     If (lstopt(0,k) == 0) Then
+        dis=1.0_wp/Sqrt(dxx(k)**2+dyy(k)**2+dzz(k)**2)
+        dxx(k)=dxx(k)*dis
+        dyy(k)=dyy(k)*dis
+        dzz(k)=dzz(k)*dis
+     Else ! DEBUG
+!        dxx(k)=0.0_wp
+!        dyy(k)=0.0_wp
+!        dzz(k)=0.0_wp
+     End If
+  End Do
 
 ! application of constraint (quench) algorithm
 ! Initialise number of cycles to zero and unsafe passage of the algorithm
@@ -86,17 +101,13 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
            If (lfrzn(i) /= 0) amti=0.0_wp
            If (lfrzn(j) /= 0) amtj=0.0_wp
 
-           If (icyc == 1) Then
-              dt(k) = Sqrt( dxx(k)**2 + dyy(k)**2 + dzz(k)**2 )
-           End If
-
 ! calculate constraint force parameter - gamma
 
-           gamma = (dxx(k)*(vxx(i)-vxx(j)) + dyy(k)*(vyy(i)-vyy(j)) + dzz(k)*(vzz(i)-vzz(j)))/dt(k)
+           gamma = dxx(k)*(vxx(i)-vxx(j)) + dyy(k)*(vyy(i)-vyy(j)) + dzz(k)*(vzz(i)-vzz(j))
 
-           esig=Max(esig,0.5_wp*tolnce*Abs(gamma)*dt(k)/prmcon(listcon(0,k)))
+           esig=Max(esig,0.5_wp*Abs(gamma))
 
-           gamma = gamma / ( (amti+amtj) * dt(k) )
+           gamma = gamma / (amti+amtj)
 
 ! improve approximate constraint velocity
 
@@ -167,10 +178,10 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
      passcnq(1)=0.0_wp ! Reset
   End If
 
-  Deallocate (lstitr,         Stat=fail(1))
-  Deallocate (lstopt,listot,  Stat=fail(2))
-  Deallocate (dxx,dyy,dzz,dt, Stat=fail(3))
-  Deallocate (vxt,vyt,vzt,    Stat=fail(4))
+  Deallocate (lstitr,        Stat=fail(1))
+  Deallocate (lstopt,listot, Stat=fail(2))
+  Deallocate (dxx,dyy,dzz,   Stat=fail(3))
+  Deallocate (vxt,vyt,vzt,   Stat=fail(4))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'constraints_quench deallocation failure, node: ', idnode
      Call error(0)

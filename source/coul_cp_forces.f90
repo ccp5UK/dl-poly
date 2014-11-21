@@ -1,5 +1,5 @@
 Subroutine coul_cp_forces &
-           (iatm,rcut,epsq,xdf,ydf,zdf,rsqdf,engcpe,vircpe,stress)
+           (iatm,rcut,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -8,7 +8,7 @@ Subroutine coul_cp_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester february 1993
-! amended   - i.t.todorov may 2011
+! amended   - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,27 +20,15 @@ Subroutine coul_cp_forces &
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: rcut,epsq
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
   Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
-  Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: rcsq
-
   Integer           :: idi,jatm,m
 
-  Real( Kind = wp ) :: chgea,chgprd,rsq,rrr,coul,fcoul, &
-                       fix,fiy,fiz,fx,fy,fz,            &
+  Real( Kind = wp ) :: chgea,chgprd,rrr,coul,fcoul, &
+                       fix,fiy,fiz,fx,fy,fz,        &
                        strs1,strs2,strs3,strs5,strs6,strs9
-
-
-! set cutoff condition for pair forces
-
-  If (newjob) Then
-     newjob = .false.
-
-     rcsq = rcut**2
-  End If
 
 ! initialise potential energy and virial
 
@@ -78,65 +66,58 @@ Subroutine coul_cp_forces &
 
      Do m=1,list(0,iatm)
 
-! atomic index
+! atomic index and charge
 
         jatm=list(m,iatm)
         chgprd=chge(jatm)
 
-! ignore interaction if the charge is zero
+! interatomic distance
 
-        If (Abs(chgprd) > zero_plus) Then
+        rrr=rrt(m)
+
+! interaction validity and truncation of potential
+
+        If (Abs(chgprd) > zero_plus .and. rrr < rcut) Then
 
 ! charge product
 
            chgprd=chgprd*chgea
 
-! calculate interatomic distance
-
-           rsq=rsqdf(m)
-
-! apply truncation of potential
-
-           If (rsq < rcsq) Then
-
 ! calculate forces
 
-              rrr = Sqrt(rsq)
-              coul = chgprd/rrr
-              fcoul = coul/rsq
+           coul = chgprd/rrr
+           fcoul = coul/rrr**2
 
-              fx = fcoul*xdf(m)
-              fy = fcoul*ydf(m)
-              fz = fcoul*zdf(m)
+           fx = fcoul*xxt(m)
+           fy = fcoul*yyt(m)
+           fz = fcoul*zzt(m)
 
-              fix=fix+fx
-              fiy=fiy+fy
-              fiz=fiz+fz
+           fix=fix+fx
+           fiy=fiy+fy
+           fiz=fiz+fz
 
-              If (jatm <= natms) Then
+           If (jatm <= natms) Then
 
-                 fxx(jatm)=fxx(jatm)-fx
-                 fyy(jatm)=fyy(jatm)-fy
-                 fzz(jatm)=fzz(jatm)-fz
+              fxx(jatm)=fxx(jatm)-fx
+              fyy(jatm)=fyy(jatm)-fy
+              fzz(jatm)=fzz(jatm)-fz
 
-              End If
+           End If
 
-              If (jatm <= natms .or. idi < ltg(jatm)) Then
+           If (jatm <= natms .or. idi < ltg(jatm)) Then
 
 ! calculate potential energy
 
-                 engcpe = engcpe + coul
+              engcpe = engcpe + coul
 
 ! calculate stress tensor
 
-                 strs1 = strs1 + xdf(m)*fx
-                 strs2 = strs2 + xdf(m)*fy
-                 strs3 = strs3 + xdf(m)*fz
-                 strs5 = strs5 + ydf(m)*fy
-                 strs6 = strs6 + ydf(m)*fz
-                 strs9 = strs9 + zdf(m)*fz
-
-              End If
+              strs1 = strs1 + xxt(m)*fx
+              strs2 = strs2 + xxt(m)*fy
+              strs3 = strs3 + xxt(m)*fz
+              strs5 = strs5 + yyt(m)*fy
+              strs6 = strs6 + yyt(m)*fz
+              strs9 = strs9 + zzt(m)*fz
 
            End If
 

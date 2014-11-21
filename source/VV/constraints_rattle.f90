@@ -12,7 +12,7 @@ Subroutine constraints_rattle         &
 !       VV applicable ONLY
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -28,29 +28,37 @@ Subroutine constraints_rattle         &
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
   Logical,           Intent( In    ) :: lcol
   Integer,           Intent( In    ) :: lstopt(0:2,1:mxcons)
-  Real( Kind = wp ), Intent( In    ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
+  Real( Kind = wp ), Intent( InOut ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
   Integer,           Intent( In    ) :: listot(1:mxatms)
   Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
 
   Logical           :: safe
-  Integer           :: fail(1:2),i,j,k,icyc
-  Real( Kind = wp ) :: amti,amtj,dli,dlj,esig,gamma,gammi,gammj
+  Integer           :: fail,i,j,k,icyc
+  Real( Kind = wp ) :: dis,amti,amtj,dli,dlj,esig,gamma,gammi,gammj
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: vxt,vyt,vzt
-  Real( Kind = wp ), Dimension( : ), Allocatable :: dt
 
   fail=0
-  Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail(1))
-  Allocate (dt(1:mxcons),                              Stat=fail(2))
-  If (Any(fail > 0)) Then
+  Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail)
+  If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'constraints_rattle allocation failure, node: ', idnode
      Call error(0)
   End If
 
+! normalise constraint vectors
 
-! initialise dt
-
-  dt(1:ntcons)=0.0_wp
+  Do k=1,ntcons
+     If (lstopt(0,k) == 0) Then
+        dis=1.0_wp/Sqrt(dxx(k)**2+dyy(k)**2+dzz(k)**2)
+        dxx(k)=dxx(k)*dis
+        dyy(k)=dyy(k)*dis
+        dzz(k)=dzz(k)*dis
+     Else ! DEBUG
+!        dxx(k)=0.0_wp
+!        dyy(k)=0.0_wp
+!        dzz(k)=0.0_wp
+     End If
+  End Do
 
 ! application of constraint (rattle) algorithm
 ! Initialise number of cycles to zero and unsafe passage of the algorithm
@@ -90,13 +98,11 @@ Subroutine constraints_rattle         &
 
 ! calculate constraint force parameter - gamma
 
-           If (icyc == 1) dt(k) = Sqrt( dxx(k)**2 + dyy(k)**2 + dzz(k)**2 )
+           gamma = dxx(k)*(vxx(i)-vxx(j)) + dyy(k)*(vyy(i)-vyy(j)) + dzz(k)*(vzz(i)-vzz(j))
 
-           gamma = ( dxx(k)*(vxx(i)-vxx(j)) + dyy(k)*(vyy(i)-vyy(j)) + dzz(k)*(vzz(i)-vzz(j)) ) / dt(k)
+           esig=Max(esig,0.5_wp*tstep*Abs(gamma))
 
-           esig=Max(esig,0.5_wp*tstep*Abs(gamma)*dt(k)/prmcon(listcon(0,k)))
-
-           gamma = gamma / ( (amti+amtj) * dt(k) )
+           gamma = gamma / (amti+amtj)
 
 ! improve approximate constraint velocity and force
 
@@ -173,9 +179,8 @@ Subroutine constraints_rattle         &
      passcon(1,1,2)=0.0_wp ! Reset
   End If
 
-  Deallocate (vxt,vyt,vzt, Stat=fail(1))
-  Deallocate (dt,          Stat=fail(2))
-  If (Any(fail > 0)) Then
+  Deallocate (vxt,vyt,vzt, Stat=fail)
+  If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'constraints_rattle deallocation failure, node: ', idnode
      Call error(0)
   End If
