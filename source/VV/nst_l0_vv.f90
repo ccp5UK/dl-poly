@@ -22,10 +22,10 @@ Subroutine nst_l0_vv                                       &
 !
 ! reference1: D. Quigley and M.I.J. Probert
 !             J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
-! reference2: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
+! reference2: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -63,7 +63,7 @@ Subroutine nst_l0_vv                                       &
 
 
   Logical,           Save :: newjob = .true.
-  Logical                 :: safe,lcol,lv_up,lv_dn
+  Logical                 :: safe,lcol,lfst,lv_up,lv_dn
   Integer,           Save :: mxiter,mxkit,kit
   Integer                 :: fail(1:9),iter,i
   Real( Kind = wp ), Save :: volm0,elrc0,virlrc0,h_z
@@ -544,16 +544,17 @@ Subroutine nst_l0_vv                                       &
 
      If (megcon > 0 .or. megpmf > 0) Then
         Do i=1,kit
+           lfst = (i == 1)
            lcol = (i == kit)
 
            If (megcon > 0) Call constraints_rattle &
-           (mxshak,tolnce,tstep,lcol, &
-           lstopt,dxx,dyy,dzz,listot, &
+           (mxshak,tolnce,tstep,lfst,lcol, &
+           lstopt,dxx,dyy,dzz,listot,      &
            vxx,vyy,vzz)
 
            If (megpmf > 0) Call pmf_rattle &
-           (mxshak,tolnce,tstep,lcol, &
-           indpmf,pxx,pyy,pzz,        &
+           (mxshak,tolnce,tstep,lfst,lcol, &
+           indpmf,pxx,pyy,pzz,             &
            vxx,vyy,vzz)
         End Do
      End If

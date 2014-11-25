@@ -22,8 +22,7 @@ Subroutine nst_l0_lfv                                      &
 !
 ! reference1: D. Quigley and M.I.J. Probert
 !             J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
-! reference2: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
-!
+! reference2: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov august 2014

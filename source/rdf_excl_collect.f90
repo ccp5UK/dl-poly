@@ -1,4 +1,4 @@
-Subroutine rdf_excl_collect(iatm,rcut,rsqdf)
+Subroutine rdf_excl_collect(iatm,rcut,rrt)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -8,7 +8,7 @@ Subroutine rdf_excl_collect(iatm,rcut,rsqdf)
 ! Note: to be used as part of two_body_forces
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,23 +22,14 @@ Subroutine rdf_excl_collect(iatm,rcut,rsqdf)
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: rcut
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rsqdf
-
-  Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: rcsq,rdelr
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rrt
 
   Integer                 :: limit,idi,jatm,ai,aj,keyrdf,kk,ll,m
-  Real( Kind = wp )       :: rrr,rsq
-
-
-  If (newjob) Then
-     newjob = .false.
+  Real( Kind = wp )       :: rdelr,rrr
 
 ! set cutoff condition for pair forces and grid interval for rdf tables
 
-     rcsq = rcut*rcut
-     rdelr= Real(mxgrdf,wp)/rcut
-  End If
+  rdelr= Real(mxgrdf,wp)/rcut
 
 ! global identity and type of iatm
 
@@ -71,10 +62,9 @@ Subroutine rdf_excl_collect(iatm,rcut,rsqdf)
 
 ! apply truncation of potential
 
-           rsq=rsqdf(m)
+           rrr=rrt(m)
 
-           If (rsq < rcsq) Then
-              rrr=Sqrt(rsq)
+           If (rrr < rcut) Then
               ll=Min(1+Int(rrr*rdelr),mxgrdf)
 
 ! accumulate correlation

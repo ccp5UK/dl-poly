@@ -147,8 +147,13 @@ Subroutine set_bounds                                       &
   End If
 
 
+! dvar function
+
   fdvar = dvar**1.7_wp
 
+! exclusion range push
+
+  mxexcl = Nint(fdvar * Real(mxexcl,wp))
 
 !!! INTRA-LIKE POTENTIAL PARAMETERS !!!
 
@@ -644,7 +649,7 @@ Subroutine set_bounds                                       &
   mxlist = Nint(fdens*2.5_wp*pi*rlnk**3)
   mxlist = Min(mxlist,megatm-1) ! mxexcl
 
-  If (mxlist+1 < mxexcl) Then
+  If (mxlist < mxexcl-1) Then
      Call warning(6,Real(mxlist,wp),Real(mxexcl,wp),0.0_wp)
      mxlist=mxexcl-1
   End If

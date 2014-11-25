@@ -25,7 +25,7 @@ Subroutine nst_b1_lfv                          &
 !                               or with orthorhombic constraints (ten=0.0_wp)
 ! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
 !
-! reference: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
+! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith february 2009

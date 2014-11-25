@@ -1,6 +1,6 @@
-Subroutine pmf_rattle                 &
-           (mxshak,tolnce,tstep,lcol, &
-           indpmf,pxx,pyy,pzz,        &
+Subroutine pmf_rattle                      &
+           (mxshak,tolnce,tstep,lfst,lcol, &
+           indpmf,pxx,pyy,pzz,             &
            vxx,vyy,vzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -26,7 +26,7 @@ Subroutine pmf_rattle                 &
 
   Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
-  Logical,           Intent( In    ) :: lcol
+  Logical,           Intent( In    ) :: lfst,lcol
   Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
   Real( Kind = wp ), Intent( InOut ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
   Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
@@ -62,14 +62,16 @@ Subroutine pmf_rattle                 &
      End Do
   End If
 
-! normalise PMF constraint vectors
+! normalise PMF constraint vectors on first pass outside
 
-  Do ipmf=1,ntpmf
-     dis=1.0_wp/Sqrt(pxx(ipmf)**2+pyy(ipmf)**2+pzz(ipmf)**2)
-     pxx(ipmf)=pxx(ipmf)*dis
-     pyy(ipmf)=pyy(ipmf)*dis
-     pzz(ipmf)=pzz(ipmf)*dis
-  End Do
+  If (lfst) Then
+     Do ipmf=1,ntpmf
+        dis=1.0_wp/Sqrt(pxx(ipmf)**2+pyy(ipmf)**2+pzz(ipmf)**2)
+        pxx(ipmf)=pxx(ipmf)*dis
+        pyy(ipmf)=pyy(ipmf)*dis
+        pzz(ipmf)=pzz(ipmf)*dis
+     End Do
+  End If
 
 ! application of PMF constraint (rattle) algorithm
 ! Initialise number of cycles to zero and unsafe passage of the algorithm

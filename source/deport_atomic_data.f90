@@ -8,7 +8,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 ! NOTE: When executing on one node we need not get here at all!
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov august 2014
+! author    - w.smith & i.t.todorov november 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014
 !
@@ -55,26 +55,28 @@ Subroutine deport_atomic_data(mdir,lbook)
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez, &
                        stay,safe1,check
-  Integer           :: fail(1:3),iblock,jdnode,kdnode,          &
-                       imove,jmove,kmove,keep,                  &
-                       i,j,k,l,jj,kk,ll,jxyz,ix,iy,iz,kx,ky,kz, &
-                       newatm,iatm,jatm,katm,latm,matm,natm,    &
-                       jshels,kshels,jconst,kconst,jpmf,kpmf,   &
-                       jrigid,krigid,jteths,kteths,             &
-                       jbonds,kbonds,jangle,kangle,             &
+  Integer           :: fail(1:3),iblock,jdnode,kdnode,        &
+                       imove,jmove,kmove,keep,                &
+                       i,j,k,l,ii,jj,kk,ll,                   &
+                       jxyz,ix,iy,iz,kx,ky,kz,                &
+                       newatm,iatm,jatm,katm,latm,matm,natm,  &
+                       jshels,kshels,jconst,kconst,jpmf,kpmf, &
+                       jrigid,krigid,jteths,kteths,           &
+                       jbonds,kbonds,jangle,kangle,           &
                        jdihed,kdihed,jinver,kinver
   Real( Kind = wp ) :: uuu,vvv,www,xadd,yadd,zadd
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
-  Integer,           Dimension( : ), Allocatable :: i1pmf,i2pmf
   Integer,           Dimension( : ), Allocatable :: lrgd
+  Integer,           Dimension( : ), Allocatable :: ind_on,ind_off
+  Integer,           Dimension( : ), Allocatable :: i1pmf,i2pmf
 
   fail=0
-  Allocate (buffer(1:mxbfdp),                      Stat=fail(1))
-  Allocate (i1pmf(1:mxtpmf(1)),i2pmf(1:mxtpmf(2)), Stat=fail(2))
-  Allocate (lrgd(-1:Max(mxlrgd,mxrgd)),            Stat=fail(3))
+  Allocate (buffer(1:mxbfdp),                   Stat=fail(1))
+  Allocate (lrgd(-1:Max(mxlrgd,mxrgd)),         Stat=fail(2))
+  Allocate (ind_on(0:mxatms),ind_off(0:mxatms), Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'deport_atomic_data allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'deport_atomic_data allocation failure 1, node: ', idnode
      Call error(0)
   End If
 
@@ -160,9 +162,9 @@ Subroutine deport_atomic_data(mdir,lbook)
   imove=1
   jmove=1
 
-! Initialise how many particles are to be kept
+! Initialise numbers of staying on and leaving off particles
 
-  keep=0
+  ind_on(0)=0 ; ind_off(0)=0
 
 ! Initialise array overflow flags
 
@@ -202,110 +204,17 @@ Subroutine deport_atomic_data(mdir,lbook)
         End If
      End If
 
-     If (stay) Then ! keep it
+     If (stay) Then ! staying, keep it
 
-        keep=keep+1
-
-        xxx(keep)=xxx(i)
-        yyy(keep)=yyy(i)
-        zzz(keep)=zzz(i)
-
-        vxx(keep)=vxx(i)
-        vyy(keep)=vyy(i)
-        vzz(keep)=vzz(i)
-
-        fxx(keep)=fxx(i)
-        fyy(keep)=fyy(i)
-        fzz(keep)=fzz(i)
-
-        ltg(keep)=ltg(i)
-        lsite(keep)=lsite(i)
-        ixyz(keep)=ixyz(i)
-
-        xin(keep)=xin(i)
-        yin(keep)=yin(i)
-        zin(keep)=zin(i)
-
-        xto(keep)=xto(i)
-        yto(keep)=yto(i)
-        zto(keep)=zto(i)
-
-        If (llvnl) Then
-           xbg(keep)=xbg(i)
-           ybg(keep)=ybg(i)
-           zbg(keep)=zbg(i)
-        End If
-
-        If (l_lan) Then
-           fxl(keep)=fxl(i)
-           fyl(keep)=fyl(i)
-           fzl(keep)=fzl(i)
-        End If
-
-        If (l_x) Then
-           oxx(keep)=oxx(i)
-           oyy(keep)=oyy(i)
-           ozz(keep)=ozz(i)
-        End If
-
-        If (lf_cp) Then
-           ffx(keep)=ffx(i)
-           ffy(keep)=ffy(i)
-           ffz(keep)=ffz(i)
-        End If
-
-        If (l_cp) Then
-           fcx(keep)=fcx(i)
-           fcy(keep)=fcy(i)
-           fcz(keep)=fcz(i)
-        End If
-
-        If (vafsamp > 0) Then
-           vxi(keep,1:vafsamp)=vxi(i,1:vafsamp)
-           vyi(keep,1:vafsamp)=vyi(i,1:vafsamp)
-           vzi(keep,1:vafsamp)=vzi(i,1:vafsamp)
-        End If
-
-        If (l_msd) Then
-           jj=27+2*i
-           j =27+2*keep
-           stpvl0(j-1)=stpvl0(jj-1)
-           stpvl0(j  )=stpvl0(jj  )
-           stpval(j-1)=stpval(jj-1)
-           stpval(j  )=stpval(jj  )
-           zumval(j-1)=zumval(jj-1)
-           zumval(j  )=zumval(jj  )
-           ravval(j-1)=ravval(jj-1)
-           ravval(j  )=ravval(jj  )
-           ssqval(j-1)=ssqval(jj-1)
-           ssqval(j  )=ssqval(jj  )
-           sumval(j-1)=sumval(jj-1)
-           sumval(j  )=sumval(jj  )
-           Do kk=1,mxstak
-              stkval(kk,j-1)=stkval(kk,jj-1)
-              stkval(kk,j  )=stkval(kk,jj  )
-           End Do
-        End If
-
-        If (lbook) Then
-           lexatm(:,keep)=lexatm(:,i)
-
-           legshl(:,keep)=legshl(:,i)
-
-           legcon(:,keep)=legcon(:,i)
-           legpmf(:,keep)=legpmf(:,i)
-
-           legrgd(:,keep)=legrgd(:,i)
-
-           legtet(:,keep)=legtet(:,i)
-
-           legbnd(:,keep)=legbnd(:,i)
-           legang(:,keep)=legang(:,i)
-           legdih(:,keep)=legdih(:,i)
-           leginv(:,keep)=leginv(:,i)
-        End If
+        ii = ind_on(0)+1
+        ind_on(0)  = ii
+        ind_on(ii) = i
 
      Else ! not staying = leaving, pack all
+
+        ii = ind_off(0)+1
+        ind_off(0)  = ii
+        ind_off(ii) = i
 
 ! If safe to proceed
 
@@ -813,6 +722,116 @@ Subroutine deport_atomic_data(mdir,lbook)
   Call gcheck(safe)
   If (.not.safe) Call error(43)
 
+! Restack arrays for leaving off particles with staying on ones
+! Thanks to Victor Gamayunov
+
+  k=ind_on(0)
+  l=ind_off(0)
+  Do ii=1,l
+     keep=ind_off(ii)
+     i   =ind_on(k-ii+1)
+
+     xxx(keep)=xxx(i)
+     yyy(keep)=yyy(i)
+     zzz(keep)=zzz(i)
+
+     vxx(keep)=vxx(i)
+     vyy(keep)=vyy(i)
+     vzz(keep)=vzz(i)
+
+     fxx(keep)=fxx(i)
+     fyy(keep)=fyy(i)
+     fzz(keep)=fzz(i)
+
+     ltg(keep)=ltg(i)
+     lsite(keep)=lsite(i)
+     ixyz(keep)=ixyz(i)
+
+     xin(keep)=xin(i)
+     yin(keep)=yin(i)
+     zin(keep)=zin(i)
+
+     xto(keep)=xto(i)
+     yto(keep)=yto(i)
+     zto(keep)=zto(i)
+
+     If (llvnl) Then
+        xbg(keep)=xbg(i)
+        ybg(keep)=ybg(i)
+        zbg(keep)=zbg(i)
+     End If
+
+     If (l_lan) Then
+        fxl(keep)=fxl(i)
+        fyl(keep)=fyl(i)
+        fzl(keep)=fzl(i)
+     End If
+
+     If (l_x) Then
+        oxx(keep)=oxx(i)
+        oyy(keep)=oyy(i)
+        ozz(keep)=ozz(i)
+     End If
+
+     If (lf_cp) Then
+        ffx(keep)=ffx(i)
+        ffy(keep)=ffy(i)
+        ffz(keep)=ffz(i)
+     End If
+
+     If (l_cp) Then
+        fcx(keep)=fcx(i)
+        fcy(keep)=fcy(i)
+        fcz(keep)=fcz(i)
+     End If
+
+     If (vafsamp > 0) Then
+        vxi(keep,1:vafsamp)=vxi(i,1:vafsamp)
+        vyi(keep,1:vafsamp)=vyi(i,1:vafsamp)
+        vzi(keep,1:vafsamp)=vzi(i,1:vafsamp)
+     End If
+
+     If (l_msd) Then
+        jj=27+2*i
+        j =27+2*keep
+        stpvl0(j-1)=stpvl0(jj-1)
+        stpvl0(j  )=stpvl0(jj  )
+        stpval(j-1)=stpval(jj-1)
+        stpval(j  )=stpval(jj  )
+        zumval(j-1)=zumval(jj-1)
+        zumval(j  )=zumval(jj  )
+        ravval(j-1)=ravval(jj-1)
+        ravval(j  )=ravval(jj  )
+        ssqval(j-1)=ssqval(jj-1)
+        ssqval(j  )=ssqval(jj  )
+        sumval(j-1)=sumval(jj-1)
+        sumval(j  )=sumval(jj  )
+        Do kk=1,mxstak
+           stkval(kk,j-1)=stkval(kk,jj-1)
+           stkval(kk,j  )=stkval(kk,jj  )
+        End Do
+     End If
+
+     If (lbook) Then
+        lexatm(:,keep)=lexatm(:,i)
+
+        legshl(:,keep)=legshl(:,i)
+
+        legcon(:,keep)=legcon(:,i)
+        legpmf(:,keep)=legpmf(:,i)
+
+        legrgd(:,keep)=legrgd(:,i)
+
+        legtet(:,keep)=legtet(:,i)
+
+        legbnd(:,keep)=legbnd(:,i)
+        legang(:,keep)=legang(:,i)
+        legdih(:,keep)=legdih(:,i)
+        leginv(:,keep)=leginv(:,i)
+     End If
+  End Do
+  keep=k ! How many particles are to be kept
+
 ! record of number of atoms for transfer
 
   buffer(1)=Real(natms-keep,wp)
@@ -841,6 +860,13 @@ Subroutine deport_atomic_data(mdir,lbook)
   safe=(natms <= mxatms)
   Call gcheck(safe)
   If (.not.safe) Call error(44)
+
+  Deallocate (ind_on,ind_off,                        Stat=fail(1))
+  Allocate   (i1pmf(1:mxtpmf(1)),i2pmf(1:mxtpmf(2)), Stat=fail(2))
+  If (Any(fail(1:2) > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'deport_atomic_data de/allocation failure, node: ', idnode
+     Call error(0)
+  End If
 
 ! load transferred data
 
@@ -1532,8 +1558,8 @@ Subroutine deport_atomic_data(mdir,lbook)
   If (.not.safe1) Call error(114)
 
   Deallocate (buffer,      Stat=fail(1))
-  Deallocate (i1pmf,i2pmf, Stat=fail(2))
-  Deallocate (lrgd,        Stat=fail(3))
+  Deallocate (lrgd,        Stat=fail(2))
+  Deallocate (i1pmf,i2pmf, Stat=fail(3))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'deport_atomic_data deallocation failure, node: ', idnode
      Call error(0)

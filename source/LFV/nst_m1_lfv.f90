@@ -26,7 +26,7 @@ Subroutine nst_m1_lfv                             &
 !
 ! reference1: Martyna, Tuckerman, Tobias, Klein
 !             Mol. Phys., 1996, Vol. 87 (5), p. 1117
-! reference2: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
+! reference2: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2009

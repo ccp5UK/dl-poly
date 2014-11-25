@@ -39,27 +39,19 @@ Subroutine ewald_frzn_forces &
   Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
   Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
 
-  Logical, Save     :: newjob = .true.
-
   Integer           :: fail,i,j,k,ii,jj,idi,nzfr,limit
-  Real( Kind = wp ) :: rcsq,det,rcell(1:9),xrr,yrr,zrr,rrr,rsq, &
-                       chgprd,erfr,egamma,exp1,tt,              &
-                       fx,fy,fz,xss,yss,zss,                    &
+  Real( Kind = wp ) :: det,rcell(1:9),xrr,yrr,zrr,rrr,rsq, &
+                       chgprd,erfr,egamma,exp1,tt,         &
+                       fx,fy,fz,xss,yss,zss,               &
                        strs1,strs2,strs3,strs5,strs6,strs9
 
   Integer,           Dimension( : ), Allocatable :: l_ind,nz_fr
   Real( Kind = wp ), Dimension( : ), Allocatable :: cfr,xfr,yfr,zfr
-  Real( Kind = wp ), Dimension( : ), Allocatable :: xdf,ydf,zdf,rsqdf
-
-  If (newjob) Then
-     newjob = .false.
+  Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
 
 ! image conditions not compliant with DD and link-cell
 
-     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
-
-     rcsq=rcut**2
-  End If
+  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
   If (.not.lf_fce) Then ! All's been done but needs copying
      Do i=1,natms
@@ -386,7 +378,7 @@ Subroutine ewald_frzn_forces &
 ! We resort to approximating N*(N-1)/2 interactions
 ! with the short-range one from the two body linked cell list
 
-     Allocate (xdf(1:mxlist),ydf(1:mxlist),zdf(1:mxlist),rsqdf(1:mxlist), Stat=fail)
+     Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
      If (fail > 0) Then
         Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces allocation failure 2, node: ', idnode
         Call error(0)
@@ -406,28 +398,28 @@ Subroutine ewald_frzn_forces &
            Do k=1,limit
               j=list(list(-1,i)+k,i)
 
-              xdf(k)=xxx(i)-xxx(j)
-              ydf(k)=yyy(i)-yyy(j)
-              zdf(k)=zzz(i)-zzz(j)
+              xxt(k)=xxx(i)-xxx(j)
+              yyt(k)=yyy(i)-yyy(j)
+              zzt(k)=zzz(i)-zzz(j)
            End Do
 
 ! periodic boundary conditions
 
-           Call images(imcon,cell,limit,xdf,ydf,zdf)
+           Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
            Do k=1,limit
-              rsqdf(k)=xdf(k)**2+ydf(k)**2+zdf(k)**2
+              rrt(k)=Sqrt(xxt(k)**2+yyt(k)**2+zzt(k)**2)
            End Do
 
            Do k=1,limit
               j=list(list(-1,i)+k,i)
 
-              rsq=rsqdf(k)
-              If (rsq < rcsq .and. Abs(chge(j)) > zero_plus) Then
-                 rrr=Sqrt(rsq)
+              rrr=rrt(k)
+              If (Abs(chge(j)) > zero_plus .and. rrr < rcut) Then
                  chgprd=chge(i)*chge(j)/epsq*r4pie0
+                 rsq=rrr**2
 
 ! calculate error function and derivative
 
@@ -439,9 +431,9 @@ Subroutine ewald_frzn_forces &
 
                  egamma=-(erfr-2.0_wp*chgprd*(alpha/sqrpi)*exp1)/rsq
 
-                 fx = egamma*xdf(k)
-                 fy = egamma*ydf(k)
-                 fz = egamma*zdf(k)
+                 fx = egamma*xxt(k)
+                 fy = egamma*yyt(k)
+                 fz = egamma*zzt(k)
 
 ! calculate forces
 
@@ -498,12 +490,12 @@ Subroutine ewald_frzn_forces &
 
 ! calculate stress tensor
 
-                    strs1 = strs1 + xdf(k)*fx
-                    strs2 = strs2 + xdf(k)*fy
-                    strs3 = strs3 + xdf(k)*fz
-                    strs5 = strs5 + ydf(k)*fy
-                    strs6 = strs6 + ydf(k)*fz
-                    strs9 = strs9 + zdf(k)*fz
+                    strs1 = strs1 + xxt(k)*fx
+                    strs2 = strs2 + xxt(k)*fy
+                    strs3 = strs3 + xxt(k)*fz
+                    strs5 = strs5 + yyt(k)*fy
+                    strs6 = strs6 + yyt(k)*fz
+                    strs9 = strs9 + zzt(k)*fz
 
                  End If
               End If
@@ -512,7 +504,7 @@ Subroutine ewald_frzn_forces &
         End If
      End Do
 
-     Deallocate (xdf,ydf,zdf,rsqdf, Stat=fail)
+     Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
      If (fail > 0) Then
         Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces deallocation failure 2, node: ', idnode
         Call error(0)

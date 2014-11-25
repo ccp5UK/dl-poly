@@ -1,6 +1,6 @@
-Subroutine constraints_rattle         &
-           (mxshak,tolnce,tstep,lcol, &
-           lstopt,dxx,dyy,dzz,listot, &
+Subroutine constraints_rattle              &
+           (mxshak,tolnce,tstep,lfst,lcol, &
+           lstopt,dxx,dyy,dzz,listot,      &
            vxx,vyy,vzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -26,7 +26,7 @@ Subroutine constraints_rattle         &
 
   Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
-  Logical,           Intent( In    ) :: lcol
+  Logical,           Intent( In    ) :: lfst,lcol
   Integer,           Intent( In    ) :: lstopt(0:2,1:mxcons)
   Real( Kind = wp ), Intent( InOut ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
   Integer,           Intent( In    ) :: listot(1:mxatms)
@@ -45,20 +45,22 @@ Subroutine constraints_rattle         &
      Call error(0)
   End If
 
-! normalise constraint vectors
+! normalise constraint vectors on first pass outside
 
-  Do k=1,ntcons
-     If (lstopt(0,k) == 0) Then
-        dis=1.0_wp/Sqrt(dxx(k)**2+dyy(k)**2+dzz(k)**2)
-        dxx(k)=dxx(k)*dis
-        dyy(k)=dyy(k)*dis
-        dzz(k)=dzz(k)*dis
-     Else ! DEBUG
-!        dxx(k)=0.0_wp
-!        dyy(k)=0.0_wp
-!        dzz(k)=0.0_wp
-     End If
-  End Do
+  If (lfst) Then
+     Do k=1,ntcons
+        If (lstopt(0,k) == 0) Then
+           dis=1.0_wp/Sqrt(dxx(k)**2+dyy(k)**2+dzz(k)**2)
+           dxx(k)=dxx(k)*dis
+           dyy(k)=dyy(k)*dis
+           dzz(k)=dzz(k)*dis
+        Else ! DEBUG
+!           dxx(k)=0.0_wp
+!           dyy(k)=0.0_wp
+!           dzz(k)=0.0_wp
+        End If
+     End Do
+  End If
 
 ! application of constraint (rattle) algorithm
 ! Initialise number of cycles to zero and unsafe passage of the algorithm

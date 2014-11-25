@@ -26,7 +26,7 @@ Subroutine nst_l1_lfv                                &
 !
 ! reference1: D. Quigley and M.I.J. Probert
 !             J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
-! reference2: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
+! reference2: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2009

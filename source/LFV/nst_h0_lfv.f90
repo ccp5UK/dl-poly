@@ -29,7 +29,7 @@ Subroutine nst_h0_lfv                                  &
 ! reference1: Melchionna, Ciccotti and Holian, Mol Phys 1993, 78, p533
 ! reference2: Martyna, Tuckerman, Tobias, Klein
 !             Mol. Phys., 1996, Vol. 87 (5), p. 1117
-! reference3: Mitsunori Ikeguchi, J Comp Chem 2004, 25, p529
+! reference3: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov august 2014

@@ -1,5 +1,5 @@
 Subroutine ewald_excl_forces &
-           (iatm,rcut,alpha,epsq,xdf,ydf,zdf,rsqdf,engcpe_ex,vircpe_ex,stress)
+           (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,9 +7,10 @@ Subroutine ewald_excl_forces &
 ! in a periodic system using ewald's method
 !
 ! Note: exclusion correction terms
+!       frozen pairs are ignored by default, they are not dealt with here
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2011
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,7 +23,7 @@ Subroutine ewald_excl_forces &
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xdf,ydf,zdf,rsqdf
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
   Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
@@ -37,20 +38,11 @@ Subroutine ewald_excl_forces &
   Real( Kind = wp ), Parameter :: r42  = 1.0_wp/42.0_wp
   Real( Kind = wp ), Parameter :: r216 = 1.0_wp/216.0_wp
 
-  Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: rcsq
-
   Integer           :: jatm,m,idi,limit
   Real( Kind = wp ) :: chgea,chgprd,rsq,rrr,alpr,alpr2, &
                        erfr,egamma,exp1,tt,             &
                        fix,fiy,fiz,fx,fy,fz,            &
                        strs1,strs2,strs3,strs5,strs6,strs9
-
-  If (newjob) Then
-     newjob = .false.
-
-     rcsq=rcut**2
-  End If
 
 ! initialise potential energy and virial
 
@@ -91,21 +83,29 @@ Subroutine ewald_excl_forces &
      limit=list(-1,iatm)-list(0,iatm)
      Do m=1,limit
 
-! atomic index,charge and interatomic distance
+! atomic index and charge
 
         jatm=list(list(0,iatm)+m,iatm)
         chgprd=chge(jatm)
-        rsq=rsqdf(m)
 
-! frozen pairs are ignored by default, they are not dealt with here
+! interatomic distance
 
-        If (Abs(chgprd) > zero_plus .and. rsq < rcsq) Then
+        rrr=rrt(m)
+
+! interaction validity and truncation of potential
+
+        If (Abs(chgprd) > zero_plus .and. rrr < rcut) Then
 
 ! charge product
 
            chgprd=chgprd*chgea
 
-           rrr  =Sqrt(rsq)
+! Squared distance
+
+           rsq=rrr**2
+
+! calculate forces
+
            alpr =rrr*alpha
            alpr2=alpr*alpr
 
@@ -137,9 +137,9 @@ Subroutine ewald_excl_forces &
 
 ! calculate forces
 
-           fx = egamma*xdf(m)
-           fy = egamma*ydf(m)
-           fz = egamma*zdf(m)
+           fx = egamma*xxt(m)
+           fy = egamma*yyt(m)
+           fz = egamma*zzt(m)
 
            fix=fix+fx
            fiy=fiy+fy
@@ -185,12 +185,12 @@ Subroutine ewald_excl_forces &
 
 ! add stress tensor
 
-              strs1 = strs1 + xdf(m)*fx
-              strs2 = strs2 + xdf(m)*fy
-              strs3 = strs3 + xdf(m)*fz
-              strs5 = strs5 + ydf(m)*fy
-              strs6 = strs6 + ydf(m)*fz
-              strs9 = strs9 + zdf(m)*fz
+              strs1 = strs1 + xxt(m)*fx
+              strs2 = strs2 + xxt(m)*fy
+              strs3 = strs3 + xxt(m)*fz
+              strs5 = strs5 + yyt(m)*fy
+              strs6 = strs6 + yyt(m)*fz
+              strs9 = strs9 + zzt(m)*fz
 
            End If
 

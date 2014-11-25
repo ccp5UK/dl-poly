@@ -177,7 +177,7 @@ Subroutine two_body_forces                        &
 
      Call images(imcon,cell,limit,xxt,yyt,zzt)
 
-! square of distances
+! distances, thanks to Alin Elena (one too many changes)
 
      Do k=1,limit
         rrt(k)=Sqrt(xxt(k)**2+yyt(k)**2+zzt(k)**2)

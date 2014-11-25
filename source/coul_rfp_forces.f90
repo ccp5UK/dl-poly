@@ -12,7 +12,7 @@ Subroutine coul_rfp_forces &
 ! standard Ewald summation.  This generalisation applies when alpha > 0.
 !
 ! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
-! R2: M Neumann, J Chem Phys, 82 (12), 5663, (1985)
+! R2: M. Neumann, J. Chem. Phys., 82 (12), 5663, (1985)
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester february 1995

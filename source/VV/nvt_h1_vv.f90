@@ -18,7 +18,7 @@ Subroutine nvt_h1_vv                          &
 !            Mol. Phys., 1996, Vol. 87 (5), p. 1117
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -55,7 +55,7 @@ Subroutine nvt_h1_vv                          &
 
   Logical,           Save :: newjob = .true. , &
                              unsafe = .false.
-  Logical                 :: safe,lcol,lv_up,lv_dn
+  Logical                 :: safe,lcol,lfst,lv_up,lv_dn
   Integer,           Save :: mxkit,kit
   Integer                 :: fail(1:14),matms,i,j,i1,i2, &
                              irgd,jrgd,krgd,lrgd,rgdtyp
@@ -625,16 +625,17 @@ Subroutine nvt_h1_vv                          &
 
      If (megcon > 0 .or. megpmf > 0) Then
         Do i=1,kit
+           lfst = (i == 1)
            lcol = (i == kit)
 
            If (megcon > 0) Call constraints_rattle &
-           (mxshak,tolnce,tstep,lcol, &
-           lstopt,dxx,dyy,dzz,listot, &
+           (mxshak,tolnce,tstep,lfst,lcol, &
+           lstopt,dxx,dyy,dzz,listot,      &
            vxx,vyy,vzz)
 
            If (megpmf > 0) Call pmf_rattle &
-           (mxshak,tolnce,tstep,lcol, &
-           indpmf,pxx,pyy,pzz,        &
+           (mxshak,tolnce,tstep,lfst,lcol, &
+           indpmf,pxx,pyy,pzz,             &
            vxx,vyy,vzz)
         End Do
      End If
