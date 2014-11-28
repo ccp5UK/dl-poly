@@ -16,7 +16,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith  october 2004
-! amended   - i.t.todorov september 2014
+! amended   - i.t.todorov november 2014
 ! amended   - k.galvin september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -24,7 +24,8 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Use kinds_f90
   Use comms_module,   Only : idnode,mxnode,gsum
   Use setup_module
-  Use domains_module, Only : nprx,npry,nprz
+  Use domains_module, Only : idx,idy,idz, nprx,npry,nprz, &
+                             r_nprx,r_npry,r_nprz
   Use config_module,  Only : cell,natms,nlast,lfrzn,ltype, &
                              xxx,yyy,zzz,fxx,fyy,fzz
   Use tersoff_module
@@ -35,10 +36,6 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Real( Kind = wp ),                   Intent( In    ) :: rcter
   Real( Kind = wp ),                   Intent(   Out ) :: engter,virter
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
-
-  Logical,           Save :: newjob = .true.
-  Integer,           Save :: idx,idy,idz
-  Real( Kind = wp ), Save :: sidex,sidey,sidez,rdr
 
 ! flag for undefined potentials NOT NEEDED HERE YET
   Logical           :: lx0,lx1,ly0,ly1,lz0,lz1,flag3 !,safe
@@ -51,7 +48,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
                        ijter,ikter,limit
 
   Real( Kind = wp ) :: dispx,dispy,dispz, xdc,ydc,zdc,                 &
-                       rcell(1:9),celprp(1:10),det,                    &
+                       rdr,rcell(1:9),celprp(1:10),det,                &
                        sxij,syij,szij,                                 &
                        gk0,gk1,gk2,vk0,vk1,vk2,                        &
                        t1,t2,ppp,bi,ei,ci,di,c1i,c2i,c3i,c4i,c5i,hi,   &
@@ -78,8 +75,37 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Real( Kind = wp ), Dimension( : ), Allocatable :: ert,eat,grt,gat
   Real( Kind = wp ), Dimension( : ), Allocatable :: scr,gcr,gam,gvr,cst,rkj,wkj
 
+
+! image conditions not compliant with DD and link-cell
+
+  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
+
+! Get reciprocal of interpolation interval
+
+  rdr=Real(mxgter-4,wp)/rcter
+
+! Get the dimensional properties of the MD cell
+
+  Call dcell(cell,celprp)
+
+! Calculate the number of link-cells per domain in every direction
+
+  nbx=Int(r_nprx*celprp(7)/(rcter+1.0e-6_wp))
+  nby=Int(r_npry*celprp(8)/(rcter+1.0e-6_wp))
+  nbz=Int(r_nprz*celprp(9)/(rcter+1.0e-6_wp))
+
+! check for link cell algorithm violations
+
+  If (nbx < 3 .or. nby < 3 .or. nbz < 3) Call error(305)
+
+  ncells=(nbx+4)*(nby+4)*(nbz+4)
+  If (ncells > mxcell) Then
+     Call warning(90,Real(ncells,wp),Real(mxcell,wp),3.0_wp)
+     mxcell = Nint(1.25_wp*Real(ncells,wp))
+  End If
+
   fail=0
-  Allocate (link(1:mxatms),listin(1:mxatms),lct(1:mxcell),lst(1:mxcell), Stat=fail(1))
+  Allocate (link(1:mxatms),listin(1:mxatms),lct(1:ncells),lst(1:ncells), Stat=fail(1))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
   Allocate (xtf(1:mxlist),ytf(1:mxlist),ztf(1:mxlist),rtf(1:mxlist),     Stat=fail(3))
   Allocate (ert(1:mxlist),eat(1:mxlist),grt(1:mxlist),gat(1:mxlist),     Stat=fail(4))
@@ -89,52 +115,6 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'tersoff_forces allocation failure, node: ', idnode
      Call error(0)
-  End If
-
-
-  If (newjob) Then
-     newjob = .false.
-
-! image conditions not compliant with DD and link-cell
-
-     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
-
-! Get this node's (domain's) coordinates
-
-     idz=idnode/(nprx*npry)
-     idy=idnode/nprx-idz*npry
-     idx=Mod(idnode,nprx)
-
-! Get the domains' dimensions in reduced space
-! (domains are geometrically equivalent)
-
-     sidex=1.0_wp/Real(nprx,wp)
-     sidey=1.0_wp/Real(npry,wp)
-     sidez=1.0_wp/Real(nprz,wp)
-
-! Get reciprocal of interpolation interval
-
-     rdr=Real(mxgter-4,wp)/rcter
-  End If
-
-! Get the dimensional properties of the MD cell
-
-  Call dcell(cell,celprp)
-
-! Calculate the number of link-cells per domain in every direction
-
-  nbx=Int(sidex*celprp(7)/(rcter+1.0e-6_wp))
-  nby=Int(sidey*celprp(8)/(rcter+1.0e-6_wp))
-  nbz=Int(sidez*celprp(9)/(rcter+1.0e-6_wp))
-
-! check for link cell algorithm violations
-
-  If (nbx < 3 .or. nby < 3 .or. nbz < 3) Call error(305)
-
-  ncells=(nbx+4)*(nby+4)*(nbz+4)
-  If (ncells > mxcell) Then
-     Call warning(90,Real(ncells,wp),Real(mxcell,wp),0.0_wp)
-     Call error(78)
   End If
 
 ! Calculate the displacements from the origin of the MD cell
@@ -150,9 +130,9 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 ! move to the bottom left corner of the left-most link-cell
 ! (the one that constructs the outer layer of the halo)
 
-  dispx=0.5_wp-sidex*(Real(idx,wp)-2.0_wp/Real(nbx,wp))
-  dispy=0.5_wp-sidey*(Real(idy,wp)-2.0_wp/Real(nby,wp))
-  dispz=0.5_wp-sidez*(Real(idz,wp)-2.0_wp/Real(nbz,wp))
+  dispx=0.5_wp-r_nprx*(Real(idx,wp)-2.0_wp/Real(nbx,wp))
+  dispy=0.5_wp-r_npry*(Real(idy,wp)-2.0_wp/Real(nby,wp))
+  dispz=0.5_wp-r_nprz*(Real(idz,wp)-2.0_wp/Real(nbz,wp))
 
 ! Get the inverse cell matrix
 
@@ -174,10 +154,8 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 ! Initialise link arrays
 
   link=0
-  Do i=1,ncells
-     lct(i)=0
-     lst(i)=0
-  End Do
+  lct=0
+  lst=0
 
 ! Get the total number of link-cells in MD cell per direction
 

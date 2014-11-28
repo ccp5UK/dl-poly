@@ -106,25 +106,5 @@
            engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
         End If
 
-! bond & PMF onstraint quenching iterative cycles statistics report
-
-        If (nstep == nsteql) Then
-           If (megcon > 0) Then
-              Call gmax(passcnq(3:5))
-              If (passcnq(3) > 0.0_wp .and. idnode == 0) Write(nrite,"(//,                            &
-                 & ' constraints quench run statistics per call: average cycles ', f5.2, ' / ', f5.2, &
-                 & ' minimum cycles ', i3, ' / ', i3, ' maximum cycles ', i3, ' / ', i3)")            &
-                 passcnq(3),passcnq(3),Nint(passcnq(4)),Nint(passcnq(4)),Nint(passcnq(5)),Nint(passcnq(5))
-           End If
-
-           If (megpmf > 0) Then
-              Call gmax(passpmq(3:5))
-              If (passpmq(3) > 0.0_wp .and. idnode == 0) Write(nrite,"(//,                     &
-                 & ' PMFs quench run statistics per call: average cycles ', f5.2, ' / ', f5.2, &
-                 & ' minimum cycles ', i3, ' / ', i3, ' maximum cycles ', i3, ' / ', i3)")     &
-                 passpmq(3),passpmq(3),Nint(passpmq(4)),Nint(passpmq(4)),Nint(passpmq(5)),Nint(passpmq(5))
-           End If
-        End If
-
 
 !!!!!!!!!!!!!!!!!!!  W_KINETIC_OPTIONS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

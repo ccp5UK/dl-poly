@@ -18,8 +18,7 @@ Subroutine scan_field                                 &
 ! dl_poly_4 subroutine for raw scanning the contents of the FIELD file
 !
 ! copyright - daresbury laboratory
-! author    - w.smith november 1994
-! amended   - i.t.todorov april 2014
+! author    - i.t.todorov and w.smith november 2014
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno march 2014 (itramolecular TPs)
 !
@@ -917,7 +916,7 @@ Subroutine scan_field                                 &
   If (mxangl > 0) mxfang=(mxb+1)**2/2+1
   mxf(7)=mxfang
 
-  If (mxdihd > 0) mxfdih=((mxb-1)*mxb*(mxb+1))/2+1
+  If (mxdihd > 0) mxfdih=((mxb-1)*mxb*(mxb+1))/2+2*mxb+1
   mxf(8)=mxfdih
 
   If (mxinv  > 0) mxfinv=(mxb*(mxb+1))/4+1

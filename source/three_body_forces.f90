@@ -12,14 +12,15 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1994
-! amended   - i.t.todorov march 2014
+! amended   - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,   Only : idnode,mxnode,gsum,gcheck
   Use setup_module
-  Use domains_module, Only : nprx,npry,nprz
+  Use domains_module, Only : idx,idy,idz, nprx,npry,nprz, &
+                             r_nprx,r_npry,r_nprz
   Use config_module,  Only : cell,natms,nlast,lfrzn,ltype, &
                              xxx,yyy,zzz,fxx,fyy,fzz
   Use three_body_module
@@ -30,10 +31,6 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
   Real( Kind = wp ),                   Intent( In    ) :: rctbp
   Real( Kind = wp ),                   Intent(   Out ) :: engtbp,virtbp
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
-
-  Logical,           Save :: newjob = .true.
-  Integer,           Save :: idx,idy,idz
-  Real( Kind = wp ), Save :: sidex,sidey,sidez
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
 
@@ -71,34 +68,10 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
   Integer,           Dimension( : ), Allocatable :: link,lct,lst,listin
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
-  fail=0
-  Allocate (link(1:mxatms),listin(1:mxatms),lct(1:mxcell),lst(1:mxcell), Stat=fail(1))
-  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
-  If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'three_body_forces allocation failure, node: ', idnode
-     Call error(0)
-  End If
-
-  If (newjob) Then
-     newjob = .false.
 
 ! image conditions not compliant with DD and link-cell
 
-     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
-
-! Get this node's (domain's) coordinates
-
-     idz=idnode/(nprx*npry)
-     idy=idnode/nprx-idz*npry
-     idx=Mod(idnode,nprx)
-
-! Get the domains' dimensions in reduced space
-! (domains are geometrically equivalent)
-
-     sidex=1.0_wp/Real(nprx,wp)
-     sidey=1.0_wp/Real(npry,wp)
-     sidez=1.0_wp/Real(nprz,wp)
-  End If
+  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
 ! Get the dimensional properties of the MD cell
 
@@ -106,9 +79,9 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
 
 ! Calculate the number of link-cells per domain in every direction
 
-  nbx=Int(sidex*celprp(7)/(rctbp+1.0e-6_wp))
-  nby=Int(sidey*celprp(8)/(rctbp+1.0e-6_wp))
-  nbz=Int(sidez*celprp(9)/(rctbp+1.0e-6_wp))
+  nbx=Int(r_nprx*celprp(7)/(rctbp+1.0e-6_wp))
+  nby=Int(r_npry*celprp(8)/(rctbp+1.0e-6_wp))
+  nbz=Int(r_nprz*celprp(9)/(rctbp+1.0e-6_wp))
 
 ! check for link cell algorithm violations
 
@@ -116,8 +89,16 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
 
   ncells=(nbx+4)*(nby+4)*(nbz+4)
   If (ncells > mxcell) Then
-     Call warning(90,Real(ncells,wp),Real(mxcell,wp),0.0_wp)
-     Call error(69)
+     Call warning(90,Real(ncells,wp),Real(mxcell,wp),1.0_wp)
+     mxcell = Nint(1.25_wp*Real(ncells,wp))
+  End If
+
+  fail=0
+  Allocate (link(1:mxatms),listin(1:mxatms),lct(1:ncells),lst(1:ncells), Stat=fail(1))
+  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
+  If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'three_body_forces allocation failure, node: ', idnode
+     Call error(0)
   End If
 
 ! Calculate the displacements from the origin of the MD cell
@@ -133,9 +114,9 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
 ! move to the bottom left corner of the left-most link-cell
 ! (the one that constructs the outer layer of the halo)
 
-  dispx=0.5_wp-sidex*(Real(idx,wp)-2.0_wp/Real(nbx,wp))
-  dispy=0.5_wp-sidey*(Real(idy,wp)-2.0_wp/Real(nby,wp))
-  dispz=0.5_wp-sidez*(Real(idz,wp)-2.0_wp/Real(nbz,wp))
+  dispx=0.5_wp-r_nprx*(Real(idx,wp)-2.0_wp/Real(nbx,wp))
+  dispy=0.5_wp-r_npry*(Real(idy,wp)-2.0_wp/Real(nby,wp))
+  dispz=0.5_wp-r_nprz*(Real(idz,wp)-2.0_wp/Real(nbz,wp))
 
 ! Get the inverse cell matrix
 
@@ -157,11 +138,8 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
 ! Initialise link arrays
 
   link=0
-
-  Do i=1,ncells
-     lct(i)=0
-     lst(i)=0
-  End Do
+  lct=0
+  lst=0
 
 ! Get the total number of link-cells in MD cell per direction
 

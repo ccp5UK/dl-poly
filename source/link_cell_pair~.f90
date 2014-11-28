@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -54,13 +54,6 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 
   Integer,           Dimension( : ), Allocatable :: link,lct
 
-  fail=0
-  Allocate (link(1:mxatms),lct(0:mxcell), Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'link_cell_pairs allocation failure, node: ', idnode
-     Call error(0)
-  End If
-
 
 ! image conditions not compliant with DD and link-cell
 
@@ -100,7 +93,14 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
   ncells=(nlx+2)*(nly+2)*(nlz+2)
   If (ncells > mxcell) Then
      Call warning(90,Real(ncells,wp),Real(mxcell,wp),0.0_wp)
-     Call error(392)
+     mxcell = Nint(1.25_wp*Real(ncells,wp))
+  End If
+
+  fail=0
+  Allocate (link(1:mxatms),lct(0:ncells), Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'link_cell_pairs allocation failure, node: ', idnode
+     Call error(0)
   End If
 
 ! Get the total number of link-cells in MD cell per direction

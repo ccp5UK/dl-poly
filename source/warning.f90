@@ -72,11 +72,11 @@ Subroutine warning(kode,a,b,c)
      Else If (kode ==   8) Then
 
         Write(nrite,'(/,1x,a,2(f8.3,a),/)') &
-        '*** warning - : detected maximum rigid body width: ', a, ' but system cutoff ', b, ' ***'
+        '*** warning - : detected maximum rigid body width: ', a, ' but system cutoff ', b, ' !!! ***'
 
      Else If (kode ==  10) Then
 
-        Write(nrite,'(/,1x,a,/)') '*** warning - no pair forces in use ***'
+        Write(nrite,'(/,1x,a,/)') '*** warning - no pair forces in use !!! ***'
 
      Else If (kode ==  20) Then
 
@@ -85,11 +85,11 @@ Subroutine warning(kode,a,b,c)
         ic = Nint(c)
 
         Write(nrite,'(/,1x,a,3(i0,a),/)') &
-        '*** warning - : 1..4 scale factors reset for molecule: ', ia, ' sites: ',ib, ' & ', ic, ' ***'
+        '*** warning - : 1..4 scale factors reset for molecule: ', ia, ' sites: ',ib, ' & ', ic, ' !!! ***'
 
      Else If (kode ==  22) Then
 
-        Write(nrite,'(/,1x,a,/)') '*** warning - : 1..4 scale factors reset for dihedrals in the system ***'
+        Write(nrite,'(/,1x,a,/)') '*** warning - : 1..4 scale factors reset for dihedrals in the system !!! ***'
 
      Else If (kode ==  30) Then
 
@@ -98,58 +98,76 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode ==  34) Then
 
-        Write(nrite,'(/,1x,a,/)') '*** warning - redundant directive prim(ary cutoff) ignored ***'
+        Write(nrite,'(/,1x,a,/)') '*** warning - redundant directive prim(ary cutoff) ignored !!! ***'
 
      Else If (kode ==  35) Then
 
         Write(nrite,'(2(/,1x,a),/)')                                                                     &
         "*** warning - DL_POLY_2/Classic directive 'delr - Verlet shell strip cutoff' defaulted to ***", &
-        "*** DL_POLY_4 directive 'rpad - real space cutoff padding option' ; rpad=Max(rpad,delr/4) ***"
+        "*** DL_POLY_4 directive 'rpad - real space cutoff padding option' ; rpad=Max(rpad,delr/4) !!! ***"
 
      Else If (kode ==  36) Then
 
         Write(nrite,'(2(/,1x,a),/)')                                                        &
         "*** warning - DL_POLY_2/Classic directive 'mult(iple timestep)' defaulted to ***", &
-        "*** DL_POLY_4 directive 'infrequent k-space SPME evaluation' ***"
+        "*** DL_POLY_4 directive 'infrequent k-space SPME evaluation' !!! ***"
 
      Else If (kode ==  37) Then
 
-        Write(nrite,'(/,1x,a,/)') '*** warning - redundant directive all pairs ignored ***'
+        Write(nrite,'(/,1x,a,/)') '*** warning - redundant directive all pairs ignored !!! ***'
 
      Else If (kode ==  38) Then
 
-        Write(nrite,'(/,1x,a,/)') '*** warning - redundant directive no link ignored ***'
+        Write(nrite,'(/,1x,a,/)') '*** warning - redundant directive no link ignored !!! ***'
 
      Else If (kode ==  40) Then
 
         Write(nrite,'(2(/,1x,a),f12.6,a,/)') &
-        '*** warning - radial cutoff reset ***', '*** new potential cutoff radius ', a, ' ***'
+        '*** warning - radial cutoff reset ***', '*** new potential cutoff radius ', a, ' !!! ***'
 
      Else If (kode ==  50) Then
 
         Write(nrite,'(2(/,1x,a),f12.6,a,/)') &
-        '*** warning - short-range cutoff reset ***', '*** new cutoff radius (rvdw) ', a, ' ***'
+        '*** warning - short-range cutoff reset ***', '*** new cutoff radius (rvdw) ', a, ' !!! ***'
 
      Else If (kode ==  60) Then
 
-        Write(nrite,'(/,1x,a,f12.6,a,/)') '*** warning - total system charge ', a,' ***'
+        Write(nrite,'(/,1x,a,f12.6,a,/)') '*** warning - total system charge ', a,' !!! ***'
 
      Else If (kode ==  70) Then
 
-        Write(nrite,'(/,1x,a,f12.6,a,/)') '*** warning - switching length reset to ', a,' ***'
+        Write(nrite,'(/,1x,a,f12.6,a,/)') '*** warning - switching length reset to ', a,' !!! ***'
 
      Else If (kode ==  80) Then
 
-        Write(nrite,'(/,1x,a,f12.6,a,/)') '*** warning - requested thermostat unavailable ***'
+        Write(nrite,'(/,1x,a,f12.6,a,/)') '*** warning - requested thermostat unavailable !!! ***'
 
      Else If (kode ==  90) Then
 
         ia=Nint(a)
         ib=Nint(b)
+        ic=Nint(c)
 
-        Write(nrite,'(2(/,1x,a),2(i0,a),/)')                  &
-        '*** warning - cannot activate link cell option ***', &
-        '*** more link-cells ', ia,' than allowed ', ib,' !!! ***'
+        If      (ic == 0) Then
+           Write(nrite,'(/,1x,a,2(i0,a),/,a,/)')                                                                             &
+           '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in link_cell_pairs !!! ***', &
+           '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
+        Else If (ic == 1) Then
+           Write(nrite,'(/,1x,a,2(i0,a),/,a,/)')                                                                               &
+           '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in three_body_forces !!! ***', &
+           '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
+        Else If (ic == 2) Then
+           Write(nrite,'(/,1x,a,2(i0,a),/,a,/)')                                                                              &
+           '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in four_body_forces !!! ***', &
+           '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
+        Else If (ic == 3) Then
+           Write(nrite,'(/,1x,a,2(i0,a),/,a,/)')                                                                            &
+           '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in tersoff_forces !!! ***', &
+           '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
+        Else
+           Write(nrite,'(/,1x,a,/)') &
+           '*** unspecified warning encountered !!! ***'
+        End If
 
      Else If (kode == 100) Then
 
@@ -169,17 +187,17 @@ Subroutine warning(kode,a,b,c)
      Else If (kode == 120) Then
 
         Write(nrite,'(/,1x,a,/)') &
-        '*** warning - unspecified atom-atom interactions set to zero ***'
+        '*** warning - unspecified atom-atom interactions set to zero !!! ***'
 
      Else If (kode == 130) Then
 
-        Write(nrite,'(/,1x,a,/)') '*** warning - no ensemble is specified ***'
+        Write(nrite,'(/,1x,a,/)') '*** warning - no ensemble is specified !!! ***'
 
      Else If (kode == 140) Then
 
         Write(nrite,'(/,1x,2a,2(f8.5,a),/,1x,a,/)')                &
         '*** warning - control distances for variable timestep: ', &
-        'Dmin = ', a, ' (Angs) and Dmax = ', b, ' (Angs) ***',     &
+        'Dmin = ', a, ' (Angs) and Dmax = ', b, ' (Angs) !!! ***',     &
         '*** do not comply with safty condition: Dmax > 2.5 Dmin > 0 !!! ***'
 
      Else If (kode == 150) Then
@@ -200,14 +218,14 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode == 190) Then
 
-        Write(nrite,'(2(/,1x,a),/)')                                             &
-        '*** warning - REVOLD format mishmash detected (restart requested) ***', &
-        '*** restart is abandoned and clean start is assumed ***'
+        Write(nrite,'(2(/,1x,a),/)')                                                 &
+        '*** warning - REVOLD format mishmash detected (restart requested) !!! ***', &
+        '*** restart is abandoned and clean start is assumed !!! ***'
 
      Else If (kode == 200) Then
 
-        Write(nrite,'(2(/,1x,a),/)')                        &
-        '*** warning - CONFIG contains positions only ***', &
+        Write(nrite,'(2(/,1x,a),/)')                            &
+        '*** warning - CONFIG contains positions only !!! ***', &
         '*** clean start is assumed !!! ***'
 
      Else If (kode == 210) Then
@@ -215,10 +233,10 @@ Subroutine warning(kode,a,b,c)
         ia = Nint(a)
         ib = Nint(b)
 
-        Write(nrite,'(3(/,1x,a),2(i0,a),/)')                        &
-        '*** warning - system under great constraint !!! ***',      &
-        '*** degrees of freedom <=  total number of particles ***', &
-        '*** ', ia, ' <= ', ib, ' ***'
+        Write(nrite,'(3(/,1x,a),2(i0,a),/)')                                  &
+        '*** warning - system under great constraint !!! ***',                &
+        '*** total degrees of freedom <=  total number of particles !!! ***', &
+        '*** ', ia, ' <= ', ib, ' !!! ***'
 
      Else If (kode == 220) Then
 
@@ -231,7 +249,7 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,i0,a,/,1x,a,/)')                              &
         '*** warning - PMF unit ', ia, ' weight is detected zero !!! ***', &
-        '*** member weights defaulted to atom type masses (or units) ***'
+        '*** member weights defaulted to atom type masses (or units) !!! ***'
 
      Else If (kode == 240) Then
 
@@ -433,9 +451,9 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(3(/,1x,a),2(f7.4,a),/,1x,a,f7.4,a,/)')                             &
         '*** warning - inconsistent binsize for spatial distribution functions !!! ***', &
-        '*** 1.0E-5 (Angstroms) <= binsize <= rcut/4 (Angstroms) ***',                   &
-        '*** 1.0E-5 (Angstroms) <= ', a, ' <= ', b, ' (Angstroms) ***',                  &
-        '*** binsize defaults to ', c, ' (Angstroms) ***'
+        '*** 1.0E-5 (Angstroms) <= binsize <= rcut/4 (Angstroms) !!! ***',               &
+        '*** 1.0E-5 (Angstroms) <= ', a, ' <= ', b, ' (Angstroms) !!! ***',              &
+        '*** binsize defaults to ', c, ' (Angstroms) !!! ***'
 
      Else If (kode == 350) Then
 
@@ -446,9 +464,9 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,2(f12.7,a),3(/,1x,a),/)')                              &
         '*** warning - minimisation tolerance ', a, ' defaults to ', b, ' !!! ***', &
-        '*** force   : 1.0    <= tolerance <= 1000.00, default = 50.00 ***',        &
-        '*** energy  : 0.0    <  tolerance <=    0.01, default = 0.005 ***',        &
-        '*** distance: 1.0e-6 <= tolerance <=    0.10, default = 0.005 ***'
+        '*** force   : 1.0    <= tolerance <= 1000.00, default = 50.00 !!! ***',    &
+        '*** energy  : 0.0    <  tolerance <=    0.01, default = 0.005 !!! ***',    &
+        '*** distance: 1.0e-6 <= tolerance <=    0.10, default = 0.005 !!! ***'
 
      Else If (kode == 370) Then
 
@@ -457,8 +475,8 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,2(i0,a),2(/,1x,a),/)')                                        &
         '*** warning - k-space evaluation interval ', ia, ' defaults to ', ib, ' !!! ***', &
-        '*** the interval must be a positive integer beteen 1 and 10 ***',                 &
-        '*** values > 10 default to 4, no value or 0 defaults to 1 ***'
+        '*** the interval must be a positive integer beteen 1 and 10 !!! ***',             &
+        '*** values > 10 default to 4, no value or 0 defaults to 1 !!! ***'
 
      Else If (kode == 380) Then
 
@@ -537,17 +555,17 @@ Subroutine warning(kode,a,b,c)
      Else If (kode == 480) Then
 
         Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)') &
-        '*** warning - "metal direct" option disabled as incompatible with EAM potentials (TABEAM)!!! ***'
+        '*** warning - "metal direct" option disabled as incompatible with EAM potentials (TABEAM) !!! ***'
 
      Else If (kode == 490) Then
 
         Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)') &
-        '*** warning - "metal sqrtrho" option disabled as incompatible with FS type potentials (analytic forms)!!! ***'
+        '*** warning - "metal sqrtrho" option disabled as incompatible with FS type potentials (analytic forms) !!! ***'
 
      Else
 
         Write(nrite,'(/,1x,a,/)') &
-        '*** unspecified warning encountered ***'
+        '*** unspecified warning encountered !!! ***'
 
      End If
 

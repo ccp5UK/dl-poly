@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov november 2014
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -86,7 +86,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
   ncells=(nlx+2)*(nly+2)*(nlz+2)
   If (ncells > mxcell) Then
      Call warning(90,Real(ncells,wp),Real(mxcell,wp),0.0_wp)
-     Call error(392)
+     mxcell = Nint(1.25_wp*Real(ncells,wp))
   End If
 
 ! subcelling and new link-cell parameters

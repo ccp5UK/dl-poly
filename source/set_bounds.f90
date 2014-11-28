@@ -151,8 +151,9 @@ Subroutine set_bounds                                       &
 
   fdvar = dvar**1.7_wp
 
-! exclusion range push
+! dvar push of mxfdih and mxexcl ranges as the usual suspects
 
+  mxfdih = Nint(fdvar * Real(mxfdih,wp))
   mxexcl = Nint(fdvar * Real(mxexcl,wp))
 
 !!! INTRA-LIKE POTENTIAL PARAMETERS !!!
@@ -543,12 +544,12 @@ Subroutine set_bounds                                       &
 ! allow for thermal expansion of unsettled systems
 ! total link-cells per node/domain is ncells = (ilx+4)*(ily+4)*(ilz+4)
 
-  If      (imcon == 0) Then
+  If      (imcon == 0                ) Then
+     mxcell = Nint((fdvar**4) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
+  Else If (imcon == 6 .or. imc_n == 6) Then
      mxcell = Nint((fdvar**3) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
-  Else If (imcon == 6) Then
-     mxcell = Nint((fdvar**2) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
   Else
-     mxcell = (ilx+4)*(ily+4)*(ilz+4)
+     mxcell = Nint((fdvar**2) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
   End If
 
 
@@ -745,12 +746,12 @@ Subroutine set_bounds                                       &
 
      If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call error(305)
 
-     If      (imcon == 0) Then
+     If      (imcon == 0                ) Then
+        mxcell = Max(mxcell,Nint((fdvar**4) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
+     Else If (imcon == 6 .or. imc_n == 6) Then
         mxcell = Max(mxcell,Nint((fdvar**3) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
-     Else If (imcon == 6) Then
-        mxcell = Max(mxcell,Nint((fdvar**2) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
      Else
-        mxcell = Max(mxcell,(ilx+5)*(ily+5)*(ilz+5))
+        mxcell = Max(mxcell,Nint((fdvar**2) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
      End If
   End If
 

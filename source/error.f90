@@ -282,10 +282,6 @@ Subroutine error(kode)
 
         Write(nrite,'(/,1x,a)') 'error - coincidence of particles in inversion unit'
 
-     Else If (kode ==   69) Then
-
-        Write(nrite,'(/,1x,a)') 'error - too many link cells required in three_body_forces'
-
      Else If (kode ==   70) Then
 
         Write(nrite,'(/,1x,a)') 'error - constraint_quench failure'
@@ -313,10 +309,6 @@ Subroutine error(kode)
      Else If (kode ==   77) Then
 
         Write(nrite,'(/,1x,a)') 'error - too many inversion angles per domain'
-
-     Else If (kode ==   78) Then
-
-        Write(nrite,'(/,1x,a)') 'error - too many link cells required in tersoff_forces'
 
      Else If (kode ==   79) Then
 
@@ -349,10 +341,6 @@ Subroutine error(kode)
      Else If (kode ==   86) Then
 
         Write(nrite,'(/,1x,a)') 'error - calculated three-body potential index too large'
-
-     Else If (kode ==   87) Then
-
-        Write(nrite,'(/,1x,a)') 'error - too many link cells required in four_body_forces'
 
      Else If (kode ==   88) Then
 
@@ -625,10 +613,6 @@ Subroutine error(kode)
      Else If (kode ==  390) Then
 
         Write(nrite,'(/,1x,a)') 'error - npt/nst ensemble requested in non-periodic system'
-
-     Else If (kode ==  392) Then
-
-        Write(nrite,'(/,1x,a)') 'error - too many link cells requested'
 
      Else If (kode ==  402) Then
 

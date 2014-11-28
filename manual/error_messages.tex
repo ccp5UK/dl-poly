@@ -736,19 +736,6 @@ FIELD file.
 
 Correct the erroneous entry in FIELD and resubmit.
 
-\subsubsection*{\underline{Message 69}: error - too many link cells required in three\_body\_forces}
-
-This should not happen!  The calculation of three-body
-forces\index{potential!three-body} in \D is handled by the link
-cell algorithm.  This error arises if the required number of link
-cells exceeds the permitted array dimension in the code.
-
-\noindent \underline{\em Action}:
-
-Consider using {\tt densvar} option in CONTROL for extremely
-non-equilibrium simulations.  Alternatively, increase {\tt mxcell}
-in {\sc set\_bounds} recompile and resubmit.
-
 \subsubsection*{\underline{Message 70}: error - constraint\_quench failure}
 
 When a simulation with bond constraints\index{constraints!bond} is
@@ -820,19 +807,6 @@ result if the condition is violated.
 Use {\bf densvar} option in CONTROL to increase {\tt mxinv}
 (alternatively, increase it by hand in {\sc set\_bounds} and
 recompile) and resubmit.
-
-\subsubsection*{\underline{Message 78}: error - too many link cells required in tersoff\_forces}
-
-This should not happen!  The calculation of Tersoff
-forces\index{potential!Tersoff} in \D is handled by the link cell
-algorithm.  This error arises if the required number of link cells
-exceeds the permitted array dimension in the code.
-
-\noindent \underline{\em Action}:
-
-Consider using {\tt densvar} option in CONTROL for extremely
-non-equilibrium simulations.  Alternatively, increase {\tt mxcell}
-in {\sc set\_bounds} recompile and resubmit.
 
 \subsubsection*{\underline{Message 79}: error - tersoff potential cutoff undefined}
 
@@ -915,19 +889,6 @@ calculated index exceeds this number, this error reports results.
 \noindent \underline{\em Action}:
 
 Report to authors.
-
-\subsubsection*{\underline{Message 87}: error - too many link cells required in four\_body\_forces}
-
-This should not happen!  The calculation of four-body
-forces\index{potential!four-body} in \D is handled by the link
-cell algorithm.  This error arises if the required number of link
-cells exceeds the permitted array dimension in the code.
-
-\noindent \underline{\em Action}:
-
-Consider using {\tt densvar} option in CONTROL for extremely
-non-equilibrium simulations.  Alternatively, increase {\tt mxcell}
-in {\sc set\_bounds} recompile and resubmit.
 
 \subsubsection*{\underline{Message 88}: error - legend array exceeded in build\_book\_intra}
 
@@ -1612,19 +1573,6 @@ algorithm cannot be applied.
 
 Either simulate the system with a periodic boundary, or use
 another ensemble.
-
-\subsubsection*{\underline{Message 392}: error - too many link cells requested}
-
-The number of link cells required for a given simulation exceeds
-the number allowed for by the \D arrays.  Probable cause:  your
-system has expanded unacceptably much to \D.  This may not be
-physically sensible!
-
-\noindent \underline{\em Action}:
-
-Consider using {\tt densvar} option in CONTROL for extremely
-non-equilibrium simulations.  Alternatively, increase {\tt mxcell}
-in {\sc set\_bounds} recompile and resubmit.
 
 \subsubsection*{\underline{Message 402}: error - van der waals not specified}
 

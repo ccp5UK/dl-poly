@@ -13,7 +13,7 @@ Subroutine build_book_intra             &
 ! torsion and improper torsion angles, and inversion angles
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2014
+! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -207,8 +207,9 @@ Subroutine build_book_intra             &
 
                     If (iat0 > 0) Then
                        Call tag_legend(safe(1),iat0,jshels,legshl,mxfshl)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many core-shell type neigbours !!! ***",                 &
+                       If (legshl(mxfshl,iat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many core-shell type neighbours !!! ***",                &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfshl-1+legshl(mxfshl,iat0), &
   "***           but maximum length allowed: ", mxfshl-1,                     &
@@ -221,8 +222,9 @@ Subroutine build_book_intra             &
 
                     If (jat0 > 0) Then
                        Call tag_legend(safe(1),jat0,jshels,legshl,mxfshl)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many core-shell type neigbours !!! ***",                 &
+                       If (legshl(mxfshl,jat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many core-shell type neighbours !!! ***",                &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfshl-1+legshl(mxfshl,jat0), &
   "***           but maximum length allowed: ", mxfshl-1,                     &
@@ -260,8 +262,9 @@ Subroutine build_book_intra             &
 
                     If (iat0 > 0) Then
                        Call tag_legend(safe(1),iat0,jconst,legcon,mxfcon)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many constraint type neigbours !!! ***",                 &
+                       If (legcon(mxfcon,iat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many constraint type neighbours !!! ***",                &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfcon-1+legcon(mxfcon,iat0), &
   "***           but maximum length allowed: ", mxfcon-1,                     &
@@ -274,8 +277,9 @@ Subroutine build_book_intra             &
 
                     If (jat0 > 0) Then
                        Call tag_legend(safe(1),jat0,jconst,legcon,mxfcon)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many constraint type neigbours !!! ***",                 &
+                       If (legcon(mxfcon,jat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many constraint type neighbours !!! ***",                &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfcon-1+legcon(mxfcon,jat0), &
   "***           but maximum length allowed: ", mxfcon-1,                     &
@@ -336,8 +340,9 @@ Subroutine build_book_intra             &
                        listpmf(i,1,ntpmf)=i1pmf(i)
                        If (i1pmf0(i) > 0) Then
                           Call tag_legend(safe(1),i1pmf0(i),ntpmf,legpmf,mxfpmf)
-                          If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))')   &
-  "*** warning - too many PMF type neigbours !!! ***",                             &
+                          If (legpmf(mxfpmf,i1pmf0(i)) > 0)                        &
+                             Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                  &
+  "*** warning - too many PMF type neighbours !!! ***",                            &
   "***           on node      (MPI  rank #): ", idnode,                            &
   "***           requiring a list length of: ", mxfpmf-1+legpmf(mxfpmf,i1pmf0(i)), &
   "***           but maximum length allowed: ", mxfpmf-1,                          &
@@ -354,8 +359,9 @@ Subroutine build_book_intra             &
                        listpmf(i,2,ntpmf)=i2pmf(i)
                        If (i2pmf0(i) > 0) Then
                           Call tag_legend(safe(1),i2pmf0(i),ntpmf,legpmf,mxfpmf)
-                          If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))')   &
-  "*** warning - too many PMF type neigbours !!! ***",                             &
+                          If (legpmf(mxfpmf,i2pmf0(i)) > 0)                        &
+                             Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                  &
+  "*** warning - too many PMF type neighbours !!! ***",                            &
   "***           on node      (MPI  rank #): ", idnode,                            &
   "***           requiring a list length of: ", mxfpmf-1+legpmf(mxfpmf,i2pmf0(i)), &
   "***           but maximum length allowed: ", mxfpmf-1,                          &
@@ -402,8 +408,9 @@ Subroutine build_book_intra             &
                        listrgd(irigid,jrigid)=irgd(irigid)
                        If (irgd0(irigid) > 0) Then
                           Call tag_legend(safe(1),irgd0(irigid),jrigid,legrgd,mxfrgd)
-                          If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))')       &
-  "*** warning - too many PMF type neigbours !!! ***",                                 &
+                          If (legrgd(mxfrgd,irgd0(irigid)) > 0)                        &
+                             Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                      &
+  "*** warning - too many RB type neighbours !!! ***",                                 &
   "***           on node      (MPI  rank #): ", idnode,                                &
   "***           requiring a list length of: ", mxfrgd-1+legrgd(mxfrgd,irgd0(irigid)), &
   "***           but maximum length allowed: ", mxfrgd-1,                              &
@@ -435,8 +442,9 @@ Subroutine build_book_intra             &
                     listtet(1,jteths)=iatm
 
                     Call tag_legend(safe(1),iat0,jteths,legtet,mxftet)
-                    If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))')    &
-  "*** warning - too many tether type neigbours !!! ***",                     &
+                    If (legtet(mxftet,iat0) > 0)                              &
+                       Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                   &
+  "*** warning - too many tether type neighbours !!! ***",                    &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxftet-1+legtet(mxftet,iat0), &
   "***           but maximum length allowed: ", mxftet-1,                     &
@@ -473,8 +481,9 @@ Subroutine build_book_intra             &
 
                     If (iat0 > 0) Then
                        Call tag_legend(safe(1),iat0,jbonds,legbnd,mxfbnd)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many bond type neigbours !!! ***",                       &
+                       If (legbnd(mxfbnd,iat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many bond type neighbours !!! ***",                      &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfbnd-1+legbnd(mxfbnd,iat0), &
   "***           but maximum length allowed: ", mxfbnd-1,                     &
@@ -487,8 +496,9 @@ Subroutine build_book_intra             &
 
                     If (jat0 > 0) Then
                        Call tag_legend(safe(1),jat0,jbonds,legbnd,mxfbnd)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many bond type neigbours !!! ***",                       &
+                       If (legbnd(mxfbnd,jat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many bond type neighbours !!! ***",                      &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfbnd-1+legbnd(mxfbnd,jat0), &
   "***           but maximum length allowed: ", mxfbnd-1,                     &
@@ -531,8 +541,9 @@ Subroutine build_book_intra             &
 
                     If (iat0 > 0) Then
                        Call tag_legend(safe(1),iat0,jangle,legang,mxfang)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many angle type neigbours !!! ***",                      &
+                       If (legang(mxfang,iat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many angle type neighbours !!! ***",                     &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfang-1+legang(mxfang,iat0), &
   "***           but maximum length allowed: ", mxfang-1,                     &
@@ -545,8 +556,9 @@ Subroutine build_book_intra             &
 
                     If (jat0 > 0) Then
                        Call tag_legend(safe(1),jat0,jangle,legang,mxfang)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many angle type neigbours !!! ***",                      &
+                       If (legang(mxfang,jat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many angle type neighbours !!! ***",                     &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfang-1+legang(mxfang,jat0), &
   "***           but maximum length allowed: ", mxfang-1,                     &
@@ -559,8 +571,9 @@ Subroutine build_book_intra             &
 
                     If (kat0 > 0) Then
                        Call tag_legend(safe(1),kat0,jangle,legang,mxfang)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many angle type neigbours !!! ***",                      &
+                       If (legang(mxfang,kat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many angle type neighbours !!! ***",                     &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfang-1+legang(mxfang,kat0), &
   "***           but maximum length allowed: ", mxfang-1,                     &
@@ -629,8 +642,9 @@ Subroutine build_book_intra             &
 
                     If (iat0 > 0) Then
                        Call tag_legend(safe(1),iat0,jdihed,legdih,mxfdih)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many dihedral type neigbours !!! ***",                   &
+                       If (legdih(mxfdih,iat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many dihedral type neighbours !!! ***",                  &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,iat0), &
   "***           but maximum length allowed: ", mxfdih-1,                     &
@@ -643,8 +657,9 @@ Subroutine build_book_intra             &
 
                     If (jat0 > 0) Then
                        Call tag_legend(safe(1),jat0,jdihed,legdih,mxfdih)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many dihedral type neigbours !!! ***",                   &
+                       If (legdih(mxfdih,jat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many dihedral type neighbours !!! ***",                  &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,jat0), &
   "***           but maximum length allowed: ", mxfdih-1,                     &
@@ -657,8 +672,9 @@ Subroutine build_book_intra             &
 
                     If (kat0 > 0) Then
                        Call tag_legend(safe(1),kat0,jdihed,legdih,mxfdih)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many dihedral type neigbours !!! ***",                   &
+                       If (legdih(mxfdih,kat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many dihedral type neighbours !!! ***",                  &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,kat0), &
   "***           but maximum length allowed: ", mxfdih-1,                     &
@@ -671,8 +687,9 @@ Subroutine build_book_intra             &
 
                     If (lat0 > 0) Then
                        Call tag_legend(safe(1),lat0,jdihed,legdih,mxfdih)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many dihedral type neigbours !!! ***",                   &
+                       If (legdih(mxfdih,lat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many dihedral type neighbours !!! ***",                  &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,lat0), &
   "***           but maximum length allowed: ", mxfdih-1,                     &
@@ -685,8 +702,9 @@ Subroutine build_book_intra             &
 
                     If (mat0 > 0) Then
                        Call tag_legend(safe(1),mat0,jdihed,legdih,mxfdih)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many dihedral type neigbours !!! ***",                   &
+                       If (legdih(mxfdih,mat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many dihedral type neighbours !!! ***",                  &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,mat0), &
   "***           but maximum length allowed: ", mxfdih-1,                     &
@@ -699,8 +717,9 @@ Subroutine build_book_intra             &
 
                     If (nat0 > 0) Then
                        Call tag_legend(safe(1),nat0,jdihed,legdih,mxfdih)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many dihedral type neigbours !!! ***",                   &
+                       If (legdih(mxfdih,nat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many dihedral type neighbours !!! ***",                  &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,nat0), &
   "***           but maximum length allowed: ", mxfdih-1,                     &
@@ -746,8 +765,9 @@ Subroutine build_book_intra             &
 
                     If (iat0 > 0) Then
                        Call tag_legend(safe(1),iat0,jinver,leginv,mxfinv)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many inversion type neigbours !!! ***",                  &
+                       If (leginv(mxfinv,iat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many inversion type neighbours !!! ***",                 &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,iat0), &
   "***           but maximum length allowed: ", mxfinv-1,                     &
@@ -760,8 +780,9 @@ Subroutine build_book_intra             &
 
                     If (jat0 > 0) Then
                        Call tag_legend(safe(1),jat0,jinver,leginv,mxfinv)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many inversion type neigbours !!! ***",                  &
+                       If (leginv(mxfinv,jat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many inversion type neighbours !!! ***",                 &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,jat0), &
   "***           but maximum length allowed: ", mxfinv-1,                     &
@@ -774,8 +795,9 @@ Subroutine build_book_intra             &
 
                     If (kat0 > 0) Then
                        Call tag_legend(safe(1),kat0,jinver,leginv,mxfinv)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many inversion type neigbours !!! ***",                  &
+                       If (leginv(mxfinv,kat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many inversion type neighbours !!! ***",                 &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,kat0), &
   "***           but maximum length allowed: ", mxfinv-1,                     &
@@ -788,8 +810,9 @@ Subroutine build_book_intra             &
 
                     If (lat0 > 0) Then
                        Call tag_legend(safe(1),lat0,jinver,leginv,mxfinv)
-                       If (.not.safe(1)) Write(nrite,'(/,1x,a,8(/,1x,a,i0))') &
-  "*** warning - too many inversion type neigbours !!! ***",                  &
+                       If (leginv(mxfinv,lat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many inversion type neighbours !!! ***",                 &
   "***           on node      (MPI  rank #): ", idnode,                       &
   "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,lat0), &
   "***           but maximum length allowed: ", mxfinv-1,                     &
