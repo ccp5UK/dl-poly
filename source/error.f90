@@ -282,6 +282,10 @@ Subroutine error(kode)
 
         Write(nrite,'(/,1x,a)') 'error - coincidence of particles in inversion unit'
 
+     Else If (kode ==   69) Then
+
+        Write(nrite,'(/,1x,a)') 'error - too many link cells required'
+
      Else If (kode ==   70) Then
 
         Write(nrite,'(/,1x,a)') 'error - constraint_quench failure'

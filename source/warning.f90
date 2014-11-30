@@ -149,19 +149,19 @@ Subroutine warning(kode,a,b,c)
         ic=Nint(c)
 
         If      (ic == 0) Then
-           Write(nrite,'(/,1x,a,2(i0,a),/,a,/)')                                                                             &
+           Write(nrite,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                             &
            '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in link_cell_pairs !!! ***', &
            '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
         Else If (ic == 1) Then
-           Write(nrite,'(/,1x,a,2(i0,a),/,a,/)')                                                                               &
+           Write(nrite,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                               &
            '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in three_body_forces !!! ***', &
            '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
         Else If (ic == 2) Then
-           Write(nrite,'(/,1x,a,2(i0,a),/,a,/)')                                                                              &
+           Write(nrite,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                              &
            '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in four_body_forces !!! ***', &
            '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
         Else If (ic == 3) Then
-           Write(nrite,'(/,1x,a,2(i0,a),/,a,/)')                                                                            &
+           Write(nrite,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                            &
            '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in tersoff_forces !!! ***', &
            '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
         Else

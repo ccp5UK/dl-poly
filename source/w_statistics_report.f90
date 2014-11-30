@@ -70,8 +70,6 @@
 ! Reports at end of equilibration period
 
         If (nstep == nsteql) Then
-           If (((ltscal .and. nstep > 0) .or. megcon > 0 .or. megpmf > 0) .and. idnode ==0) &
-              Write(nrite,*)
 
            If (ltscal .and. nstep > 0) Then
               ltscal=.false.
@@ -97,8 +95,8 @@
                  passpmq(3),passpmq(3),Nint(passpmq(4)),Nint(passpmq(4)),Nint(passpmq(5)),Nint(passpmq(5))
            End If
 
-           If (((ltscal .and. nstep > 0) .or. megcon > 0 .or. megpmf > 0) .and. idnode ==0) &
-              Write(nrite,"(/,/,1x,130('-'))")
+           If ((nstep > 0 .or. megcon > 0 .or. megpmf > 0) .and. idnode == 0) &
+              Write(nrite,"(/,1x,130('-'))")
         End If
 
 ! Calculate green-kubo properties

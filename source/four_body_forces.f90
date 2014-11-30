@@ -95,6 +95,7 @@ Subroutine four_body_forces(imcon,rcfbp,engfbp,virfbp,stress)
   If (ncells > mxcell) Then
      Call warning(90,Real(ncells,wp),Real(mxcell,wp),2.0_wp)
      mxcell = Nint(1.25_wp*Real(ncells,wp))
+     If (ncells > mxatms) Call error(69)
   End If
 
   fail=0

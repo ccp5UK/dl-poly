@@ -87,6 +87,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
   If (ncells > mxcell) Then
      Call warning(90,Real(ncells,wp),Real(mxcell,wp),0.0_wp)
      mxcell = Nint(1.25_wp*Real(ncells,wp))
+     If (ncells > mxatms) Call error(69)
   End If
 
 ! subcelling and new link-cell parameters

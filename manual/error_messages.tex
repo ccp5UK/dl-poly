@@ -736,6 +736,19 @@ FIELD file.
 
 Correct the erroneous entry in FIELD and resubmit.
 
+\subsubsection*{\underline{Message 69}: error - too many link cells required in three\_body\_forces}
+
+The number of link cells required for the build up of the Verlet neighbour list
+(as in link\_cell\_pairs) or the calculation of three- \& four-body as well tersoff
+forces (as in three\_body\_forces, four\_body\_forces, tersoff\_body\_forces)
+in the given model exceeds the number allowed for by the \D arrays.  Probable cause:
+your system has expanded unacceptably much to \D.  This may not be
+physically sensible!
+
+\noindent \underline{\em Action}:
+
+Consider using {\tt densvar} option in CONTROL for extremely non-equilibrium simulations.
+
 \subsubsection*{\underline{Message 70}: error - constraint\_quench failure}
 
 When a simulation with bond constraints\index{constraints!bond} is
