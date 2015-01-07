@@ -11,7 +11,7 @@ Subroutine metal_ld_compute         &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov november 2014
+! amended   - i.t.todorov december 2014
 ! contrib   - r.davidchak (eeam) june 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -21,8 +21,7 @@ Subroutine metal_ld_compute         &
   Use comms_module,  Only : idnode,mxnode,gsum,gcheck
   Use setup_module
   Use config_module, Only : cell,natms,ltg,ltype,list,xxx,yyy,zzz
-  Use metal_module,  Only : ls_met,l2bmet,ntpmet,ltpmet, &
-                            fmet,fmes,rho,rhs
+  Use metal_module,  Only : ls_met,l2bmet,fmet,fmes,rho,rhs
 
   Implicit None
 
@@ -32,7 +31,6 @@ Subroutine metal_ld_compute         &
   Real( Kind = wp ),                        Intent(   Out ) :: engden,virden
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
-  Logical, Save     :: newjob = .true.
   Integer, Save     :: keypot
 
   Logical           :: safe = .true.
@@ -41,19 +39,7 @@ Subroutine metal_ld_compute         &
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
 
-! check on mixing metal types
-
-  If (newjob) Then
-     newjob = .false.
-
-     keypot=0
-     Do i=1,ntpmet
-        keypot=ltpmet(i)
-        If (i > 1) Then
-           If (keypot /= ltpmet(i-1)) Call error(92)
-        End If
-     End Do
-  End If
+! check on mixing metal types done in read_field
 
 ! initialise energy and virial accumulators
 

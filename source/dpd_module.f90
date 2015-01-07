@@ -2,10 +2,10 @@ Module dpd_module
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 module declaring global dpd variables and arrays
+! dl_poly_4 module declaring global DPD variables and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -13,7 +13,7 @@ Module dpd_module
 
   Implicit None
 
-  Logical,           Save :: l_dpd = .false. ! no dpd
+  Integer,           Save :: keydpd = 0 ! no DPD
 
   Real( Kind = wp ), Save :: virdpd      = 0.0_wp , &
                              strdpd(1:9) = 0.0_wp
@@ -33,7 +33,7 @@ Contains
 
     Integer :: fail
 
-    If (.not.l_dpd) Return
+    If (keydpd == 0) Return
 
     fail = 0
 

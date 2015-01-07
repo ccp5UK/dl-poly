@@ -11,7 +11,7 @@ Subroutine scan_control                                    &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2015
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno and i.t.todorov april 2014 (itramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
@@ -22,10 +22,10 @@ Subroutine scan_control                                    &
   Use comms_module,       Only : idnode,mxnode,gcheck
   Use setup_module,       Only : nread,nrite,pi,zero_plus
   Use parse_module,       Only : get_line,get_word,lower_case,word_2_real
-  Use dpd_module,         Only : l_dpd
+  Use dpd_module,         Only : keydpd
   Use msd_module
   Use development_module, Only : l_trm
-  Use kim_module,         Only : l_kim,rkim
+  Use kim_module,         Only : kim,rkim
   Use greenkubo_module,   Only : isvaf,nsvaf,vafsamp
 
   Implicit None
@@ -209,7 +209,13 @@ Subroutine scan_control                                    &
         Call get_word(record,word)
         If (word(1:3) == 'nvt') Then
            Call get_word(record,word)
-           If (word(1:3) == 'dpd') l_dpd = .true.
+           If (word(1:3) == 'dpd') Then
+              If      (word(1:5) == 'dpds1') Then
+                 keydpd = 1
+              Else If (word(1:5) == 'dpds2') Then
+                 keydpd = 2
+              End If
+           End If
         End If
 
 ! read replay history option
@@ -667,7 +673,7 @@ Subroutine scan_control                                    &
 ! Reset rcut to something sensible if sensible is an option
 
            If ( ((.not.lrcut) .or. (.not.l_str)) .and. &
-                (lrvdw .or. lrmet .or. lter .or. l_kim) ) Then
+                (lrvdw .or. lrmet .or. lter .or. kim /= ' ') ) Then
               lrcut=.true.
               If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
                  rcut=Max(rcbnd,rvdw,rmet,rkim,2.0_wp*rcter+1.0e-6_wp)
@@ -679,7 +685,7 @@ Subroutine scan_control                                    &
 ! Reset rvdw and rmet when only tersoff potentials are opted for and
 ! possibly reset rcut to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
 
-           If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r .and. (.not.l_kim)) Then
+           If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r .and. kim == ' ') Then
               rvdw=0.0_wp
               rmet=0.0_wp
               If (.not.l_str) Then
@@ -747,7 +753,7 @@ Subroutine scan_control                                    &
 
 ! Enforce VV for DPD thermostat
 
-  If (l_dpd) l_vv = .true.
+  If (keydpd > 0) l_vv = .true.
 
 ! When not having dynamics or prepared to terminate
 ! expanding and not running the small system prepare to exit gracefully

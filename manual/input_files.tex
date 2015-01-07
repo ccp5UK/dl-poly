@@ -926,7 +926,7 @@ their model system.
 optimisation.  The target temperature of the simulation is reset to
 $10$ Kelvin and a crude energy minimiser:
 \begin{equation}
-\vek{v}_{i} \leftarrow \left\{ \begin{array} {l@{\qquad:\qquad}l}
+\vek{v}_{i} \leftarrow \left\{ \begin{array} {l@{\quad:\quad}l}
 0 & \vek{v}_{i} \cdot \vek{f}_{i} < 0 \\
 \vek{f}_{i} \; \frac{\vek{v}_{i}~\cdot~\vek{f}_{i}}
 {\vek{f}_{i}~\cdot~\vek{f}_{i}} & \vek{v}_{i} \cdot
@@ -2292,7 +2292,21 @@ three-body\index{potential!three-body} and {\bf fbp} -
 four-body\index{potential!four-body}.  Each of these types is
 specified by a specific {\bf keyword} as described bellow.
 
+When \D is cross-compiled with an openKIM functionality (see
+Section~\ref{kim}) it is possible to specify a complete model of
+inter-molecular interactions, {\bf kim}, by calling the openKIM
+model name provided it available in your local KIM library.
+
 \begin{enumerate}
+
+\item {\bf kim {\em model\_name}} \\
+where {\em model\_name} is the openKIM model identifier.
+
+{\bf Note} that although a KIM model fully describes a model
+system it is still possible to specify further, complementing
+intra- and inter-molecular interactions in the FIELD!  This
+is a viable option only when the model system is extended
+beyond what the specific KIM model is intended to describes.
 
 \item {\bf vdw {\em n}} \\
 where {\em n} is the number of pair potentials to be entered.  It
@@ -2462,13 +2476,20 @@ $U_{i}(r) = \sum\limits_{j \ne i} A \exp \left(-p \frac{r_{ij}-r_{0}}{r_{0}}\rig
            &                 &         &         &         &     &          &
 $\rho_{i} = \sum\limits_{j\ne i} \exp \left(-2 q_{ij} \frac{r_{ij}-r_{0}}{r_{0}}\right)$ \\
            &                 &         &         &         &     &          & \\
-{\bf mbpc} & MBPC            & $\epsilon$ & $a$  & $m$     & $c$ & $d$      &
-$U_{i}(r) = -\epsilon \sqrt{\rho_{i}}~;~\rho_{i} = \sum\limits_{j\ne i} a/r_{ij}^{m}$ \\
+{\bf mbpc} & MBPC$^{\dagger}$ & $\epsilon$ & $a$ & $m$     & $\alpha$ & $r_{\rm o}$ &
+$U_{i}(r) = -\epsilon \sqrt{\rho_{i}}~;~\rho_{i} = \sum\limits_{j\ne i} \left(\frac{a}{r_{ij}^{m}}\right) \frac{1}{2}\left[1+{\rm erf}\left(\alpha(r_{ij}-r_{\rm o})\right)\right]$ \\
            &                 &         &         &         &     &          & \\
 \hline
 \end{tabular}
 \vskip 1ex
 \end{centering}
+$^{\dagger}${\bf Note} that the parameters $\alpha$ and $r_{\rm o}$ must be the same for all
+defined potentials of this type.  \D will set $\alpha={\rm Max}(0,\alpha_{pq})$
+and $r_{\rm o}={\rm Max}(0,r_{{\rm o}\_pq})$ for all defined interactions of
+this type between species $p$ and $q$.  If after this any is left undefined,
+i.e. zero, the undefined entities will be set to their defaults: $\alpha=20$
+and $r_{\rm o}={\rm Min}(1.5,0.2~r_{\rm cut})$.
+\vskip 1ex
 \end{table}
 
 \item {\bf rdf {\em n}} \\

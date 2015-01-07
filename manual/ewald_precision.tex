@@ -77,7 +77,11 @@ space sum truncated at $r_{\rm cut}$ is given approximately
 by\index{Ewald!optimisation}
 \begin{equation}
 \epsilon \approx {\rm erfc}(\alpha~r_{\rm cut})/r_{\rm cut}
-\approx \exp[-(\alpha~r_{\rm cut})^{2}]/r_{\rm cut} \label{relerr}
+\approx \exp[-(\alpha~r_{\rm cut})^{2}]/r_{\rm cut}~~, \label{relerr}
+\end{equation}
+which reciprocally gives an estimate for $\alpha$ for a given $\epsilon$:
+\begin{equation}
+\alpha \approx \frac{\sqrt{|{\rm ln}(\epsilon~r_{\rm cut})|}}{r_{\rm cut}}~~.
 \end{equation}
 
 The recommended value for $\alpha$ is $3.2/r_{\rm cut}$ or greater

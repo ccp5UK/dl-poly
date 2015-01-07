@@ -8,7 +8,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 ! NOTE: When executing on one node we need not get here at all!
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov november 2014
+! author    - w.smith & i.t.todorov december 2014
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014
 !
@@ -92,7 +92,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 ! jxyz - halo reduction factor
 ! ls.  - wrap-around +1 in . direction (domain on the left MD cell border)
 ! le.  - wrap-around -1 in . direction (domain on the right MD cell border)
-! jdnode - destination (send to), knode - source (receive from)
+! jdnode - destination (send to), kdnode - source (receive from)
 
   kx = 0 ; ky = 0 ; kz = 0
   lsx = .false. ; lex = .false.
@@ -844,9 +844,9 @@ Subroutine deport_atomic_data(mdir,lbook)
 
 ! exchange buffers between nodes (this is a MUST)
 
-  Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Deport_tag,dlp_comm_world,request,ierr)
-  Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Deport_tag,dlp_comm_world,ierr)
-  Call MPI_WAIT(request,status,ierr)
+  If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Deport_tag,dlp_comm_world,request,ierr)
+  If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Deport_tag,dlp_comm_world,ierr)
+  If (jmove > 0) Call MPI_WAIT(request,status,ierr)
 
 ! check arrays can cope with incoming atom numbers
 

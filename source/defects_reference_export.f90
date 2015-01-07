@@ -9,7 +9,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
 ! onto this node (idnode)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -57,7 +57,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
 ! kxyz - corrected halo reduction factor particles haloing both +&- sides
 ! ls.  - wrap-around +1 in . direction (domain on the left MD cell border)
 ! le.  - wrap-around -1 in . direction (domain on the right MD cell border)
-! jdnode - destination (send to), knode - source (receive from)
+! jdnode - destination (send to), kdnode - source (receive from)
 
   kx = 0 ; ky = 0 ; kz = 0
   lsx = .false. ; lex = .false.
@@ -226,9 +226,9 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr)
 ! exchange buffers between nodes (this is a MUST)
 
   If (mxnode > 1) Then
-     Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,DefExport_tag,dlp_comm_world,request,ierr)
-     Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,DefExport_tag,dlp_comm_world,ierr)
-     Call MPI_WAIT(request,status,ierr)
+     If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,DefExport_tag,dlp_comm_world,request,ierr)
+     If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,DefExport_tag,dlp_comm_world,ierr)
+     If (jmove > 0) Call MPI_WAIT(request,status,ierr)
   End If
 
 ! load transferred data

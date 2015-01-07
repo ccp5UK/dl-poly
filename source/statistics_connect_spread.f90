@@ -53,7 +53,7 @@ Subroutine statistics_connect_spread(mdir)
 ! k.   - direction selection factor
 ! jxyz - halo reduction factor
 ! kxyz - corrected halo reduction factor particles haloing both +&- sides
-! jdnode - destination (send to), knode - source (receive from)
+! jdnode - destination (send to), kdnode - source (receive from)
 
   kx = 0 ; ky = 0 ; kz = 0
   If      (mdir == -1) Then ! Direction -x

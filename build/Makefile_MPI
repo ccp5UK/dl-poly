@@ -53,7 +53,7 @@ OBJ_ALL = \
 	bonds_table_read.o angles_table_read.o \
 	dihedrals_table_read.o inversions_table_read.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
-	metal_generate.o metal_table_read.o metal_table_derivatives.o \
+	metal_generate_erf.o metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
 	check_config.o origin_config.o scale_config.o write_config.o \
 	trajectory_write.o system_expand.o \

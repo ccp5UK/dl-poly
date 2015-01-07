@@ -6,7 +6,7 @@ Subroutine error(kode)
 ! controlled termination of the program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -500,7 +500,7 @@ Subroutine error(kode)
 
      Else If (kode ==  145) Then
 
-        Write(nrite,'(/,1x,a)') 'error - no two-body like forces specified'
+        Write(nrite,'(/,1x,a)') 'error - no two-body like interactions specified'
 
      Else If (kode ==  150) Then
 
@@ -1296,6 +1296,10 @@ Subroutine error(kode)
      Else If (kode == 1081) Then
 
         Write(nrite,'(/,1x,a)') 'error - allocation failure in dpd_module -> allocate_dpd_arrays'
+
+     Else If (kode == 1082) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in metal_module -> allocate_metal_erf_arrays'
 
      Else
 

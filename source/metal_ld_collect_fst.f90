@@ -9,14 +9,14 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov september 2014
+! amended   - i.t.todorov december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module
   Use config_module, Only : natms,ltype,list
-  Use metal_module,  Only : ld_met,lstmet,ltpmet,dmet,prmmet,rho
+  Use metal_module,  Only : ld_met,lstmet,ltpmet,prmmet,dmet,merf,rho
 
   Implicit None
 
@@ -165,13 +165,35 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
               eps=prmmet(1,k0)
               sig=prmmet(2,k0)
               mmm=prmmet(3,k0)
-              ccc=prmmet(4,k0)
-              ddd=prmmet(5,k0)
-              cut1=ccc
-              cut2=ddd
 
-              density=0.0_wp
-              If (rrr >= cut1 .and. rrr <= cut2) density=sig/rrr**mmm
+! interpolation parameters
+
+              rdr = 1.0_wp/merf(4)
+              rr1 = rrr - merf(2)
+              l   = Min(Nint(rr1*rdr),Nint(merf(1))-1)
+              If (l < 5) Then ! catch unsafe value
+                 safe=.false.
+                 l=6
+              End If
+              ppp = rr1*rdr - Real(l,wp)
+
+! calculate density using 3-point interpolation
+
+              vk0 = merf(l-1)
+              vk1 = merf(l  )
+              vk2 = merf(l+1)
+
+              t1 = vk1 + ppp*(vk1 - vk0)
+              t2 = vk1 + ppp*(vk2 - vk1)
+
+              If (ppp < 0.0_wp) Then
+                 density = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+              Else If (l == 5) Then
+                 density = t2
+              Else
+                 density = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+              End If
+              density=density*sig/rrr**mmm
 
               If (ai == aj) Then
                  t1=prmmet(1,k0)**2

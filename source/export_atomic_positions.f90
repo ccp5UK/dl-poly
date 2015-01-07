@@ -6,7 +6,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0)
 ! for halo refresh
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov august 2014
+! amended   - i.t.todorov december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -204,9 +204,9 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0)
 ! exchange buffers between nodes (this is a MUST)
 
   If (mxnode > 1) Then
-     Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Export_tag,dlp_comm_world,request,ierr)
-     Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Export_tag,dlp_comm_world,ierr)
-     Call MPI_WAIT(request,status,ierr)
+     If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Export_tag,dlp_comm_world,request,ierr)
+     If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Export_tag,dlp_comm_world,ierr)
+     If (jmove > 0) Call MPI_WAIT(request,status,ierr)
   End If
 
 ! load transferred data

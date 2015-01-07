@@ -748,6 +748,6 @@ Subroutine statistics_connect_frames()
   End Do
 
   If (icyc == 3 .and. nres > 0 .and. idnode == 0) &
-        Write(nrite,'(/,1x,a)') '*** warning - particles dynamics properties will be corrupted!!!'
+        Write(nrite,'(/,1x,a)') '*** warning - particles dynamics properties will be corrupted!!! ***'
 
 End Subroutine statistics_connect_frames

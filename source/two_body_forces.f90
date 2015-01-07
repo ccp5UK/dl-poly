@@ -27,7 +27,7 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -68,7 +68,7 @@ Subroutine two_body_forces                        &
                        engcpe_nz,vircpe_nz,                     &
                        engden,virden,engmet,virmet,             &
                        engvdw,virvdw,engkim,virkim,             &
-                       engacc,viracc,tmp,buffer(0:14)
+                       engacc,viracc,tmp,buffer(0:16)
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
 
@@ -90,6 +90,10 @@ Subroutine two_body_forces                        &
   If (keyfce == 2) Call ewald_check(keyens,megfrz,nsteql,nstfce,nstep)
 
 ! initialise energy and virial accumulators
+
+  engkim = 0.0_wp
+  virkim = 0.0_wp
+
 
   engden    = 0.0_wp
   virden    = 0.0_wp
@@ -126,6 +130,14 @@ Subroutine two_body_forces                        &
 
   If (l_vnl) Call link_cell_pairs(imcon,rlnk,lbook,megfrz)
 
+! Calculate all contributions from KIM
+
+  If (kim /= ' ') Then
+     Call kim_setup(kim)
+     Call kim_forces(engkim,virkim,stress)
+     Call kim_cleanup()
+  End If
+
   If (ntpmet > 0) Then
 
 ! Reset metal long-range corrections (constant pressure/stress only)
@@ -143,17 +155,6 @@ Subroutine two_body_forces                        &
 ! calculate coulombic forces, Ewald sum - fourier contribution
 
   If (keyfce == 2 .and. l_fce) Call ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
-
-! Calculate all contributions from KIM
-
-  If (l_kim) Then
-     Call kim_setup()
-     Call kim_forces(engkim,virkim,stress)
-     Call kim_cleanup()
-  Else
-     engkim = 0.0_wp
-     virkim = 0.0_wp
-  End If
 
 ! outer loop over atoms
 
@@ -416,38 +417,42 @@ Subroutine two_body_forces                        &
 
   If (mxnode > 1) Then
      buffer( 0) = tmp
-     buffer( 1) = engden
-     buffer( 2) = virden
-     buffer( 3) = engmet
-     buffer( 4) = virmet
-     buffer( 5) = engvdw
-     buffer( 6) = virvdw
-     buffer( 7) = engcpe_rc
-     buffer( 8) = vircpe_rc
-     buffer( 9) = engcpe_rl
-     buffer(10) = vircpe_rl
-     buffer(11) = engcpe_ex
-     buffer(12) = vircpe_ex
-     buffer(13) = engcpe_fr
-     buffer(14) = vircpe_fr
+     buffer( 1) = engkim
+     buffer( 2) = virkim
+     buffer( 3) = engden
+     buffer( 4) = virden
+     buffer( 5) = engmet
+     buffer( 6) = virmet
+     buffer( 7) = engvdw
+     buffer( 8) = virvdw
+     buffer( 9) = engcpe_rc
+     buffer(10) = vircpe_rc
+     buffer(11) = engcpe_rl
+     buffer(12) = vircpe_rl
+     buffer(13) = engcpe_ex
+     buffer(14) = vircpe_ex
+     buffer(15) = engcpe_fr
+     buffer(16) = vircpe_fr
 
      Call gsum(buffer(0:14))
 
      tmp       = buffer( 0)
-     engden    = buffer( 1)
-     virden    = buffer( 2)
-     engmet    = buffer( 3)
-     virmet    = buffer( 4)
-     engvdw    = buffer( 5)
-     virvdw    = buffer( 6)
-     engcpe_rc = buffer( 7)
-     vircpe_rc = buffer( 8)
-     engcpe_rl = buffer( 9)
-     vircpe_rl = buffer(10)
-     engcpe_ex = buffer(11)
-     vircpe_ex = buffer(12)
-     engcpe_fr = buffer(13)
-     vircpe_fr = buffer(14)
+     engkim    = buffer( 1)
+     virkim    = buffer( 2)
+     engden    = buffer( 3)
+     virden    = buffer( 4)
+     engmet    = buffer( 5)
+     virmet    = buffer( 6)
+     engvdw    = buffer( 7)
+     virvdw    = buffer( 8)
+     engcpe_rc = buffer( 9)
+     vircpe_rc = buffer(10)
+     engcpe_rl = buffer(11)
+     vircpe_rl = buffer(12)
+     engcpe_ex = buffer(13)
+     vircpe_ex = buffer(14)
+     engcpe_fr = buffer(15)
+     vircpe_fr = buffer(16)
   End If
 
   safe=(tmp < 0.5_wp)

@@ -292,26 +292,26 @@ Subroutine write_config(name,levcfg,imcon,megatm,nstep,tstep,time)
         ready=.true.
         Do jdnode=0,mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Revive_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,WriteConf_tag,dlp_comm_world,ierr)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
 
-                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
 
                  If (levcfg > 0) Then
-                    Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                    Call MPI_RECV(byy,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                    Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+                    Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                    Call MPI_RECV(byy,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                    Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
 
                     If (levcfg > 1) Then
-                       Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                       Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                       Call MPI_RECV(czz,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+                       Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                       Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                       Call MPI_RECV(czz,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
                     End If
                  End If
               End If
@@ -361,26 +361,26 @@ Subroutine write_config(name,levcfg,imcon,megatm,nstep,tstep,time)
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,Revive_tag,dlp_comm_world,status,ierr)
+        Call MPI_RECV(ready,1,MPI_LOGICAL,0,WriteConf_tag,dlp_comm_world,status,ierr)
 
-        Call MPI_SEND(natms,1,MPI_INTEGER,0,Revive_tag,dlp_comm_world,ierr)
+        Call MPI_SEND(natms,1,MPI_INTEGER,0,WriteConf_tag,dlp_comm_world,ierr)
         If (natms > 0) Then
-           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Revive_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Revive_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,WriteConf_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,WriteConf_tag,dlp_comm_world,ierr)
 
-           Call MPI_SEND(xxx,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(yyy,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(zzz,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(xxx,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(yyy,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(zzz,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
 
            If (levcfg > 0) Then
-              Call MPI_SEND(vxx,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-              Call MPI_SEND(vyy,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-              Call MPI_SEND(vzz,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(vxx,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(vyy,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(vzz,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
 
               If (levcfg > 1) Then
-                 Call MPI_SEND(fxx,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-                 Call MPI_SEND(fyy,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-                 Call MPI_SEND(fzz,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
+                 Call MPI_SEND(fxx,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
+                 Call MPI_SEND(fyy,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
+                 Call MPI_SEND(fzz,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
               End If
            End If
         End If
@@ -588,26 +588,26 @@ Subroutine write_config(name,levcfg,imcon,megatm,nstep,tstep,time)
         ready=.true.
         Do jdnode=0,mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Revive_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,WriteConf_tag,dlp_comm_world,ierr)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
 
-                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
 
                  If (levcfg > 0) Then
-                    Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                    Call MPI_RECV(byy,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                    Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+                    Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                    Call MPI_RECV(byy,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                    Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
 
                     If (levcfg > 1) Then
-                       Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                       Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
-                       Call MPI_RECV(czz,jatms,wp_mpi,jdnode,Revive_tag,dlp_comm_world,status,ierr)
+                       Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                       Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
+                       Call MPI_RECV(czz,jatms,wp_mpi,jdnode,WriteConf_tag,dlp_comm_world,status,ierr)
                     End If
                  End If
               End If
@@ -635,26 +635,26 @@ Subroutine write_config(name,levcfg,imcon,megatm,nstep,tstep,time)
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,Revive_tag,dlp_comm_world,status,ierr)
+        Call MPI_RECV(ready,1,MPI_LOGICAL,0,WriteConf_tag,dlp_comm_world,status,ierr)
 
-        Call MPI_SEND(natms,1,MPI_INTEGER,0,Revive_tag,dlp_comm_world,ierr)
+        Call MPI_SEND(natms,1,MPI_INTEGER,0,WriteConf_tag,dlp_comm_world,ierr)
         If (natms > 0) Then
-           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Revive_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Revive_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,WriteConf_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,WriteConf_tag,dlp_comm_world,ierr)
 
-           Call MPI_SEND(xxx,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(yyy,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(zzz,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(xxx,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(yyy,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(zzz,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
 
            If (levcfg > 0) Then
-              Call MPI_SEND(vxx,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-              Call MPI_SEND(vyy,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-              Call MPI_SEND(vzz,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(vxx,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(vyy,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(vzz,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
 
               If (levcfg > 1) Then
-                 Call MPI_SEND(fxx,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-                 Call MPI_SEND(fyy,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
-                 Call MPI_SEND(fzz,natms,wp_mpi,0,Revive_tag,dlp_comm_world,ierr)
+                 Call MPI_SEND(fxx,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
+                 Call MPI_SEND(fyy,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
+                 Call MPI_SEND(fzz,natms,wp_mpi,0,WriteConf_tag,dlp_comm_world,ierr)
               End If
            End If
         End If

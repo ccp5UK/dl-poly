@@ -8,7 +8,7 @@ Subroutine metal_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov november 2014
+! amended   - i.t.todorov december 2014
 ! contrib   - r.davidchak (eeam) june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -18,7 +18,7 @@ Subroutine metal_forces &
   Use site_module,   Only : ntpatm
   Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
   Use metal_module,  Only : ld_met,l2bmet,tabmet,lstmet,ltpmet, &
-                            vmet,dmet,dmes,prmmet,rho,rhs
+                            vmet,dmet,dmes,prmmet,rho,rhs,merf,mfer
 
   Implicit None
 
@@ -32,15 +32,16 @@ Subroutine metal_forces &
   Integer           :: m,idi,ai,ki,jatm,aj,kj, &
                        key,kmn,kmx,k0,keypot,  &
                        k1,k2,l,ld
-  Real( Kind = wp ) :: fix,fiy,fiz,fx,fy,fz,          &
-                       rrr,rsq,rdr,rr1,ppd,eng,       &
-                       gk0,gk1,gk2,vk0,vk1,vk2,t1,t2, &
-                       eps,sig,nnn,mmm,               &
-                       cc0,cc1,cc2,cc3,cc4,           &
-                       aaa,bbb,ccc,ddd,ppp,qqq,       &
-                       bet,cut1,cut2,rr0,             &
-                       gamma,gamma1,                  &
-                       gamma2,gamma3,gamm2s,gamm3s,   &
+  Real( Kind = wp ) :: fix,fiy,fiz,fx,fy,fz,        &
+                       rrr,rsq,rdr,rr1,ppd,eng,     &
+                       gk0,gk1,gk2,vk0,vk1,vk2,     &
+                       t1,t2,t3,t4,gam1,gam2,       &
+                       eps,sig,nnn,mmm,             &
+                       cc0,cc1,cc2,cc3,cc4,         &
+                       aaa,bbb,ccc,ddd,ppp,qqq,     &
+                       bet,cut1,cut2,rr0,           &
+                       gamma,gamma1,                &
+                       gamma2,gamma3,gamm2s,gamm3s, &
                        strs1,strs2,strs3,strs5,strs6,strs9
 
 ! initialise potential energy and virial
@@ -265,10 +266,6 @@ Subroutine metal_forces &
               eps=prmmet(1,k0)
               sig=prmmet(2,k0)
               mmm=prmmet(3,k0)
-              ccc=prmmet(4,k0)
-              ddd=prmmet(5,k0)
-              cut1=ccc
-              cut2=ddd
 
 ! no pair forces and energies
 
@@ -278,8 +275,45 @@ Subroutine metal_forces &
 
 ! calculate density contributions
 
-              If (rrr >= cut1 .and. rrr <= cut2) &
-                 gamma2=mmm*sig/(rrr**mmm)
+! interpolation parameters
+
+              rdr = 1.0_wp/merf(4)
+              rr1 = rrr - merf(2)
+              l   = Min(Nint(rr1*rdr),Nint(merf(1))-1)
+              If (l < 5) Then ! catch unsafe value
+                 safe=.false.
+                 l=6
+              End If
+              ppp = rr1*rdr - Real(l,wp)
+
+! calculate density using 3-point interpolation
+
+              vk0 = merf(l-1)
+              vk1 = merf(l  )
+              vk2 = merf(l+1)
+
+              t1 = vk1 + ppp*(vk1 - vk0)
+              t2 = vk1 + ppp*(vk2 - vk1)
+
+              gk0 = mfer(l-1)
+              gk1 = mfer(l  )
+              gk2 = mfer(l+1)
+
+              t3 = gk1 + ppp*(gk1 - gk0)
+              t4 = gk1 + ppp*(gk2 - gk1)
+
+              If (ppp < 0.0_wp) Then
+                 gam1 = t1 + 0.5_wp*(t2-t1)*(ppp+1.0_wp)
+                 gam2 = t3 + 0.5_wp*(t4-t3)*(ppp+1.0_wp)
+              Else If (l == 5) Then
+                 gam1 = t2
+                 gam2 = t4
+              Else
+                 gam1 = t2 + 0.5_wp*(t2-t1)*(ppp-1.0_wp)
+                 gam2 = t4 + 0.5_wp*(t4-t3)*(ppp-1.0_wp)
+              End If
+
+              gamma2=(sig/rrr**mmm)*(mmm*gam1-rrr*gam2)
 
               If (ai == aj) Then
                  t1=prmmet(1,k0)**2
@@ -377,7 +411,7 @@ Subroutine metal_forces &
 
 ! calculate interaction energy using 3-point interpolation
 
-                 If (jatm <= natms .or. idi < ltg(jatm)) Then
+                 If ((jatm <= natms .or. idi < ltg(jatm)) .and. keypot /= 5) Then
 
                     vk0 = vmet(l-1,k0,1)
                     vk1 = vmet(l  ,k0,1)
@@ -552,7 +586,7 @@ Subroutine metal_forces &
               End If
 
               If (.not.l2bmet) Then
-                 gamma=(gamma1+(gamma2*rho(iatm)+gamma3*rho(jatm)))/rsq
+                 gamma=(gamma1 + (gamma2*rho(iatm)+gamma3*rho(jatm)))/rsq
               Else !2B(EAM & EEAM)
                  gamma=(gamma1 + (gamma2*rho(iatm)+gamma3*rho(jatm)) &
                                + (gamm2s*rhs(iatm)+gamm3s*rhs(jatm)))/rsq

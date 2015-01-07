@@ -23,7 +23,7 @@ Subroutine set_temperature            &
   Use config_module,      Only : natms,nlast,nfree,lsite,        &
                                  lsi,lsa,ltg,lfrzn,lfree,lstfre, &
                                  atmnam,weight,vxx,vyy,vzz
-  Use dpd_module,         Only : l_dpd
+  Use dpd_module,         Only : keydpd
   Use rigid_bodies_module
   Use core_shell_module,  Only : ntshl,listshl,lshmv_shl,lishp_shl,lashp_shl
   Use kinetic_module,     Only : l_vom,getknr,chvom,getvom
@@ -78,7 +78,7 @@ Subroutine set_temperature            &
 
 ! 3 lost for fixing COM translation
 
-  If (l_vom .and. (.not.l_dpd)) Then
+  If (l_vom .and. keydpd == 0) Then
      com=Int(3,ip)
   Else
      com=Int(0,ip)

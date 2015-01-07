@@ -319,6 +319,8 @@ Contains
 
     Implicit None
 
+    Real( Kind = wp )                               :: word_2_real
+
     Character( Len = * ), Intent( In    )           :: word
     Real( Kind = wp ),    Intent( In    ), Optional :: def
     Logical,              Intent( In    ), Optional :: report
@@ -326,7 +328,7 @@ Contains
     Character( Len = 40 ) :: forma
     Logical               :: l_report = .true.
     Integer               :: word_end,slash_position
-    Real( Kind = wp )     :: word_2_real,denominator
+    Real( Kind = wp )     :: denominator
 
     If (Present(report)) l_report = report
 
@@ -392,6 +394,8 @@ Contains
 
     Implicit None
 
+    Real( Kind = wp )      :: truncate_real
+
     Real( Kind = wp ), Intent( In    ) :: r
 
     Logical               , Save :: newjob = .true.
@@ -400,7 +404,6 @@ Contains
 
     Character( Len = 100 ) :: word
     Integer                :: e_position,word_end,i
-    Real( Kind = wp )      :: truncate_real
 
     If (newjob) Then
        newjob = .false.

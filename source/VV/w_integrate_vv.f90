@@ -1,6 +1,12 @@
 !!!!!!!!!!!!!!!!!!!!!!  W_INTEGRATE_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
+! Sharlow's splittings for VV only (LFV->VV) DPD thermostat - no variable time-stepping!!!
+! One-off application for first order splitting and symmetric application for second order splitting
+! Velocity field change + generation of DPD virial & stress due to random and drag forces
+
+        If (keydpd*isw == 0) Call dpd_thermostat(isw,l_str,imcon,rcut,nstep,tstep)
+
 ! Integrate equations of motion - velocity verlet
 ! first (isw == 0) or second (isw == 1) stage
 
@@ -395,6 +401,12 @@
 
            End If
         End If
+
+! Sharlow's second order splittings for VV only (LFV->VV) DPD thermostat - no variable time-stepping!!!
+! Symmetric application for second order splitting
+! Velocity field change + generation of DPD virial & stress due to random and drag forces
+
+        If (keydpd*isw == 2) Call dpd_thermostat(isw,l_str,imcon,rcut,nstep,tstep)
 
 
 !!!!!!!!!!!!!!!!!!!!!!  W_INTEGRATE_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

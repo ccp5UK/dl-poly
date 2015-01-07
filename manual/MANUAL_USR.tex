@@ -92,10 +92,11 @@ Domain Decomposition (DD), Sub-Celled Liked Cells (LC);
 Conditional Verlet Neighbourlist Building;
 Symplectic Integration, Velocity Verlet (VV), Leapfrog Verlet (LFV);
 Ensembles: NVE; NVEk - Evans; NVT - VV-Langevin Impulse \& LFV-Langevin,
-DPD-VV-Shardlow, Andersen, Berendsen, Nose-Hoover, Gentle Stochastic Thermostat;
-NPT - Langevin, Berendesen, Nose-Hoover, Martyna-Tuckerman-Klein; NsT (extended to constant
-normal pressure \& surface area or surface tension) - Langevin,
-Berendesen, Nose-Hoover, Martyna-Tuckerman-Klein;
+Andersen, Berendsen, Nose-Hoover, Gentle Stochastic Thermostat,
+Dissipative Particle Dynamics (DPD) VV-Shardlow first and second order splitting;
+NPT - Langevin, Berendesen, Nose-Hoover, Martyna-Tuckerman-Klein;
+NsT (extended to constant normal pressure \& surface area or surface tension)
+- Langevin, Berendesen, Nose-Hoover, Martyna-Tuckerman-Klein;
 User Defined Intra- \& Inter-molecular Force-field,
 Frozen Particles, External Fields;
 Constraint Bonds (CB) \& Potential of Mean Field (PMF) Dynamics
@@ -135,6 +136,9 @@ Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
 \newcommand{\F}{{DL\_FIELD}\xspace}
 \newcommand{\WEF}{\href{http://www.ccp5.ac.uk/DL\_FIELD/}{http://www.ccp5.ac.uk/DL\_FIELD/}\xspace}
 
+\newcommand{\M}{{DL\_MESO}\xspace}
+\newcommand{\WEM}{\href{http://www.ccp5.ac.uk/DL\_MESO/}{http://www.ccp5.ac.uk/DL\_MESO/}\xspace}
+
 \newcommand{\vek}[1]{\mbox{$\underline{#1}$}}
 \newcommand{\mat}[1]{\mbox{$\underline{\underline{\bf #1}}$}}
 
@@ -164,7 +168,7 @@ Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
 STFC Daresbury Laboratory \\
 Daresbury, Warrington WA4 4AD \\
 Cheshire, England, United Kingdom}
-\date{\bf Version 4.07~~--~~December 2014}
+\date{\bf Version 4.07~~--~~January 2015}
 \clearpage
 \end{titlepage}
 
@@ -284,7 +288,7 @@ our mail list by following instructions in Section~\ref{other}.
 
 If you need one-to-one training, wish to collaborate scientifically and/or
 would like to become a contributor/developer then get in touch with me,
-Dr. I.T. Todorov, by email to
+Dr. I.T. Todorov, by emailing to
 {\href{mailto:ilian.todorov@stfc.ac.uk}{ilian.todorov@stfc.ac.uk}}.
 
 Best of luck!
@@ -394,20 +398,23 @@ and output files for which are in the {\em data} sub-directory.
 \appendix
 \addcontentsline{toc}{chapter}{\underline{Appendices}}
 
+\chapter{\D Dissipative Particle Dynamics}
+\input dpd.tex
+
 \chapter{\D Periodic Boundary Conditions}
 \input boundary_conditions.tex
 
 \chapter{\D Macros}
 \input macros.tex
 
-\chapter{\D Makefiles}
-\input makefiles.tex
-
 \chapter{\D Error Messages and User Action}
 \input error_messages.tex
 
-\chapter{\D README}
+\chapter{\D README wisdom}
 \input readme.tex
+
+\chapter{\D Academic Licence Agreement}
+\input licence.tex
 
 % The pdfdummyend counter is a workaround to get correct
 % bookmarks for the index & bibliography in pdf files

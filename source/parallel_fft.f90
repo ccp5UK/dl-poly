@@ -2111,7 +2111,7 @@ Contains
 
     Implicit None
 
-    Integer :: get_start_point
+    Integer                                                        :: get_start_point
 
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( In    ) :: a
     Integer                                      , Intent( In    ) :: ix
@@ -2218,7 +2218,7 @@ Contains
 
     Implicit None
 
-    Integer :: get_nth_prime
+    Integer                  :: get_nth_prime
 
     Integer, Intent( In    ) :: n
 
@@ -2257,7 +2257,7 @@ Contains
 
     Implicit None
 
-    Logical :: pfft_length_ok
+    Logical                  :: pfft_length_ok
 
     Integer, Intent( In    ) :: n
 

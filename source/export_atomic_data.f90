@@ -6,8 +6,9 @@ Subroutine export_atomic_data(mdir)
 ! for halo formation
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov august 2014
+! amended   - i.t.todorov december 2014
 ! contrib   - i.j.bush february 2014
+! contrib   - h.boateng december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -16,6 +17,7 @@ Subroutine export_atomic_data(mdir)
   Use setup_module,  Only : nrite,mxatms,mxbfxp
   Use domains_module
   Use config_module, Only : nlast,ltg,lsite,ixyz,cell,xxx,yyy,zzz
+  Use kim_module,    Only : kim,idhalo
 
   Implicit None
 
@@ -53,7 +55,7 @@ Subroutine export_atomic_data(mdir)
 ! kxyz - corrected halo reduction factor particles haloing both +&- sides
 ! ls.  - wrap-around +1 in . direction (domain on the left MD cell border)
 ! le.  - wrap-around -1 in . direction (domain on the right MD cell border)
-! jdnode - destination (send to), knode - source (receive from)
+! jdnode - destination (send to), kdnode - source (receive from)
 
   kx = 0 ; ky = 0 ; kz = 0
   lsx = .false. ; lex = .false.
@@ -219,9 +221,18 @@ Subroutine export_atomic_data(mdir)
 ! exchange buffers between nodes (this is a MUST)
 
   If (mxnode > 1) Then
-     Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Export_tag,dlp_comm_world,request,ierr)
-     Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Export_tag,dlp_comm_world,ierr)
-     Call MPI_WAIT(request,status,ierr)
+     If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Export_tag,dlp_comm_world,request,ierr)
+     If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Export_tag,dlp_comm_world,ierr)
+     If (jmove > 0) Call MPI_WAIT(request,status,ierr)
+  End If
+
+! openKIM halo indicators
+
+  If (kim /= ' ') Then
+     i = Abs(2*mdir)+Sign(mdir,1)
+     idhalo(0,i)=imove/iadd       ! atoms to send
+     idhalo(1,i)=nlast+1          ! first atom to receive
+     idhalo(2,i)=nlast+jmove/iadd ! last atom to receive
   End If
 
 ! load transferred data

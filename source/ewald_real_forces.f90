@@ -11,7 +11,7 @@ Subroutine ewald_real_forces                      &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov november 2014
+! amended   - i.t.todorov december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -122,7 +122,7 @@ Subroutine ewald_real_forces                      &
 
 ! calculate forces using 3pt interpolation
 
-           gk0 = fer(k) ; If (k == 0) gk0 = gk0*rrr
+           gk0 = fer(k)
            gk1 = fer(k+1)
            gk2 = fer(k+2)
 

@@ -102,7 +102,7 @@ Contains
 
      If ( nn /= 1 ) Then
         Write(Unit=*, Fmt=100) N
-100     Format(' *** WARNING!!!',i10,' IS NOT A LEGAL VALUE OF N ***')
+100     Format(' *** WARNING!!!',i10,' IS NOT A LEGAL VALUE OF N *** !!!')
         Return
      End If
 
@@ -2467,7 +2467,7 @@ Contains
 
      If ( nn /= 1 ) Then
         Write(Unit=*, Fmt=100) N
-100     Format(' *** WARNING!!!',i10,' IS NOT A LEGAL VALUE OF N ***')
+100     Format(' *** WARNING!!!',i10,' IS NOT A LEGAL VALUE OF N *** !!!')
         Return
      End If
 

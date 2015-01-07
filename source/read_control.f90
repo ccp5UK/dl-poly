@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2015
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -34,7 +34,7 @@ Subroutine read_control                                &
   Use comms_module,    Only : idnode
   Use setup_module
   Use config_module,   Only : sysname
-  Use dpd_module,      Only : l_dpd,gamdpd
+  Use dpd_module,      Only : keydpd,gamdpd
   Use langevin_module, Only : l_lan,l_gst,langevin_allocate_arrays
   Use parse_module
   Use bonds_module,    Only : rcbnd
@@ -1019,8 +1019,10 @@ Subroutine read_control                                &
         If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
         If (word(1:8) == 'leapfrog') lvv=.false.
 
-        If (l_dpd .and. (lvv .neqv. l_vv) .and. idnode == 0) Write(nrite,"(/,1x,a)") &
-           "*** warning - Leapfrog Verlet selected integration defaulted to Velocity Verlet for DPD thermostats!!!"
+! keydpd detected in scan_control
+
+        If (keydpd > 0 .and. (lvv .neqv. l_vv) .and. idnode == 0) Write(nrite,"(/,1x,a)") &
+           "*** warning - Leapfrog Verlet selected integration defaulted to Velocity Verlet for DPD thermostats!!! ***"
 
 ! read ensemble
 
@@ -1055,23 +1057,6 @@ Subroutine read_control                                &
 
               If (idnode == 0) Write(nrite,"(1x,'Ensemble : NVT Evans (Isokinetic)', &
                  & /,1x,'Gaussian temperature constraints in use')")
-
-              If (lens) Call error(414)
-              lens=.true.
-
-           Else If (word(1:3) == 'dpd') Then
-
-              keyens = 0 ! equivalence to doing NVE with some extra fiddling
-
-              Call get_word(record,word)
-              gamdpd(0) = Abs(word_2_real(word,0.0_wp))
-
-              If (gamdpd(0) <= zero_plus) Then
-                 If (idnode == 0) Write(nrite,"(1x,'Ensemble : NVT dpd (Dissipative Particle Dynamics)')")
-              Else
-                 If (idnode == 0) Write(nrite,"(1x,'Ensemble : NVT dpd (Dissipative Particle Dynamics)', &
-                    & /,1x,'drag coefficient    (Dalton/ps)',3x,1p,e12.4)") gamdpd(0)
-              End If
 
               If (lens) Call error(414)
               lens=.true.
@@ -1147,6 +1132,34 @@ Subroutine read_control                                &
               If (idnode == 0) Write(nrite,"(1x,'Ensemble : NVT gentle stochastic thermostat', &
                  & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                         &
                  & /,1x,'friction on thermostat  (ps^-1)',3x,1p,e12.4)") taut,gama
+
+              If (lens) Call error(414)
+              lens=.true.
+
+           Else If (word(1:3) == 'dpd') Then
+
+              If (idnode == 0) Write(nrite,"(1x,a)") "Ensemble : NVT dpd (Dissipative Particle Dynamics)"
+
+! keydpd determined in scan_control
+
+              If      (keydpd == 1) Then
+                 keyens = 0 ! equivalence to doing NVE with some extra fiddling before VV(0)
+                 If (idnode == 0) Write(nrite,"(1x,a)") "Ensemble type : Shardlow's first order splitting (S1)"
+              Else If (keydpd == 2) Then
+                 keyens = 0 ! equivalence to doing NVE with some extra fiddling before VV(0) and after VV(1)
+                 If (idnode == 0) Write(nrite,"(1x,a)") "Ensemble type : Shardlow's second order splitting (S2)"
+              Else
+                 Call strip_blanks(record)
+                 If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                 Call error(436)
+              End If
+
+              Call get_word(record,word)
+              gamdpd(0) = Abs(word_2_real(word,0.0_wp))
+
+              If (gamdpd(0) > zero_plus) Then
+                 If (idnode == 0) Write(nrite,"(1x,'drag coefficient (Dalton/ps)',6x,1p,e12.4)") gamdpd(0)
+              End If
 
               If (lens) Call error(414)
               lens=.true.
@@ -2272,7 +2285,7 @@ Subroutine read_control                                &
 
   If (lvar) Then
 
-     If (l_dpd) Then
+     If (keydpd > 0) Then
         lvar=.false.
         If (idnode == 0) Then
            Write(nrite,'(/,1x,a)') "*** warning - variable timestep unavalable in DPD themostats, defaulting to:"

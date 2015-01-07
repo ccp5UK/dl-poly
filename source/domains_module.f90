@@ -307,7 +307,7 @@ Contains
 
       Implicit None
 
-      Integer :: get_nth_prime
+      Integer                  :: get_nth_prime
 
       Integer, Intent( In    ) :: n
 
@@ -352,7 +352,7 @@ Contains
 
       Implicit None
 
-      Integer :: nfacs
+      Integer                                  :: nfacs
 
       Integer, Dimension( : ), Intent( In    ) :: factors
 
@@ -374,7 +374,9 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      Integer get_nth_factor
+      Implicit None
+
+      Integer                                  :: get_nth_factor
 
       Integer, Dimension( : ), Intent( In    ) :: factors
       Integer                , Intent( In    ) :: n
@@ -432,9 +434,9 @@ Contains
 
       Implicit None
 
-      Integer, Intent( In    ) :: i,j,k
-
       Integer                  :: idcube
+
+      Integer, Intent( In    ) :: i,j,k
 
       idcube = i + nprx * ( j + npry * k )
 

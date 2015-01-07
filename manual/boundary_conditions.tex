@@ -1,5 +1,5 @@
 \label{boundary-conditions}
-\subsection*{Introduction}
+\section{Introduction}
 
 \D is designed to accommodate a number of different periodic
 boundary conditions\index{boundary conditions}, which are defined
@@ -18,7 +18,7 @@ We shall now look at each of these in more detail.  Note that in
 all cases the cell vectors and the positions of the atoms in the
 cell are to be specified in Angstroms (\AA).
 
-\subsubsection*{No periodic boundary (${\tt imcon}~=~0$)}
+\section{No periodic boundary (${\tt imcon}~=~0$)}
 
 Simulations requiring no periodic boundaries are best suited to
 {\em in vacuuo} simulations, such as the conformational study of
@@ -36,8 +36,7 @@ domain decomposition is therefore limited to eight domains
 This boundary condition should not used with the SPM Ewald
 summation method.
 
-
-\subsubsection*{Cubic periodic boundaries (${\tt imcon}~=~1$)}
+\section{Cubic periodic boundaries (${\tt imcon}~=~1$)}
 
 \begin{figure}[htbp]
 \begin{center}
@@ -56,7 +55,7 @@ appearing in the CONFIG file should be: (D,0,0); (0,D,0); (0,0,D).
 Note the origin of the atomic coordinates is the centre of the
 cell.
 
-\subsubsection*{Orthorhombic periodic boundaries (${\tt imcon}~=~2$)}
+\section{Orthorhombic periodic boundaries (${\tt imcon}~=~2$)}
 
 \begin{figure}[htbp]
 \begin{center}
@@ -76,7 +75,7 @@ vectors appearing in the CONFIG file should be: (D,0,0); (0,E,0);
 (0,0,F).  Note the origin of the atomic coordinates is the centre
 of the cell.
 
-\subsubsection*{Parallelepiped periodic boundaries (${\tt imcon}~=~3$)}
+\section{Parallelepiped periodic boundaries (${\tt imcon}~=~3$)}
 
 \begin{figure}[htbp]
 \begin{center}
@@ -97,7 +96,7 @@ which L,M,N are integers, reflecting the multiplication of the
 unit cell in each principal direction.  Note that the atomic
 coordinate origin is the centre of the MD cell.
 
-\subsubsection*{Slab boundary conditions (${\tt imcon}~=~6$)}
+\section{Slab boundary conditions (${\tt imcon}~=~6$)}
 
 Slab boundaries are periodic in the X- and Y-directions, but not
 in the Z-direction.  They are particularly useful for simulating

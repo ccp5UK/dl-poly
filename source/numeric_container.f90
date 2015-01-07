@@ -20,8 +20,11 @@
 !                      distribution of unit variance (zero mean) using
 !                      the box-mueller method
 !
-! Subroutine erfcgen - generates interpolation tables for erfc and its
+! Subroutine erfcgen - generates interpolation tables for erfc and erfc/r
 !                      derivative
+!
+! Subroutine erfgen_met - generates interpolation tables for erf and its
+!                         true derivative
 !
 ! Function match - determines a match between integer value 'n' and an
 !                  array of integers in ascending order
@@ -99,11 +102,13 @@ Function uni()
 
   Implicit None
 
+  Real( Kind = wp )       :: uni
+
   Logical,           Save :: newjob = .true.
   Integer,           Save :: ir,jr
   Integer                 :: i,ii,ij,j,jj,k,kl,l,m
   Real( Kind = wp ), Save :: c,cd,cm,u(1:97)
-  Real( Kind = wp )       :: s,t,uni
+  Real( Kind = wp )       :: s,t
 
 ! initialise parameters u,c,cd,cm
 
@@ -211,11 +216,13 @@ Function sarurnd(seeda, seedb, seedc)
 
   Implicit None
 
+  Real( Kind = wp )        :: sarurnd
+
   Integer, Intent( In    ) :: seeda,  seedb,  seedc
 
   Integer( Kind = ip ) :: seed1,  seed2,  seed3, &
                           state, wstate, v, u32, itmp
-  Real( Kind = wp )    :: statepart1, statepart2, tmp, sarurnd
+  Real( Kind = wp )    :: statepart1, statepart2, tmp
 
   Integer( Kind = ip ), Parameter :: two32  = 2_ip**32
   Real( Kind = wp ),    Parameter :: two32r = 2.0_wp**32, &
@@ -427,7 +434,7 @@ Subroutine box_mueller_saru2(i,j,n,gauss1,l_str)
 ! dependent on sarurnd
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -436,9 +443,9 @@ Subroutine box_mueller_saru2(i,j,n,gauss1,l_str)
 
   Implicit None
 
-  Logical,           Intent( In    ), Optional :: l_str
-  Integer,           Intent( In    )           :: i,j,n
-  Real( Kind = wp ), Intent(   Out )           :: gauss1
+  Logical,           Intent( In    ) :: l_str
+  Integer,           Intent( In    ) :: i,j,n
+  Real( Kind = wp ), Intent(   Out ) :: gauss1
 
   Integer           :: k
   Real( Kind = wp ) :: sarurnd,ran0,ran1,ran2
@@ -453,11 +460,9 @@ Subroutine box_mueller_saru2(i,j,n,gauss1,l_str)
 
 ! CLT approximation
 
-  If (Present(l_str)) Then
-     If (.not.l_str) Then
-        ran0 = rt3*(2.0_wp*sarurnd(i,j,k)-1.0_wp)
-        Return
-     End If
+  If (.not.l_str) Then
+     ran0 = rt3*(2.0_wp*sarurnd(i,j,k)-1.0_wp)
+     Return
   End If
 
 ! generate uniform random numbers on [-1, 1)
@@ -783,7 +788,7 @@ Subroutine erfcgen(rcut,alpha,mxgele,erc,fer)
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester december 1994
-! amended   - i.t.todorov august 2014
+! amended   - i.t.todorov december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -821,13 +826,89 @@ Subroutine erfcgen(rcut,alpha,mxgele,erc,fer)
      fer(i) = (erc(i) + 2.0_wp*(alpha/sqrpi)*exp1)/rsq
   End Do
 
-! linear extrapolation for grid point 0 at distances close to 0
-! for derivative only
+! extrapolation for grid point 0 at distances close to 0
 
   erc(0) = 1.0_wp
-  fer(0) = (2.0_wp*fer(1)-0.5_wp*fer(2))/drewd
+  fer(0) = Huge(1.0_wp+2.0_wp*(alpha/sqrpi))
 
 End Subroutine erfcgen
+
+Subroutine erfgen_met(rmet,alpha,beta,mxgmet,merf,mfer)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine for generating interpolation tables for a magnified
+! offset error function and its true derivative - for use with MBPC type
+! of metal-like potentials
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov december 2014
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+  Use setup_module, Only : sqrpi
+
+  Implicit None
+
+  Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
+  Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
+  Real( Kind = wp ), Parameter :: a3 =  1.421413741_wp
+  Real( Kind = wp ), Parameter :: a4 = -1.453152027_wp
+  Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
+  Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
+
+  Integer,                                  Intent( In    ) :: mxgmet
+  Real( Kind = wp ),                        Intent( In    ) :: rmet,alpha,beta
+  Real( Kind = wp ), Dimension( 1:mxgmet ), Intent(   Out ) :: merf,mfer
+
+  Integer           :: i,offset
+  Real( Kind = wp ) :: drmet,exp1,rrr,rsq,tt
+
+! look-up tables for mbpc metal interaction
+
+  drmet = rmet/Real(mxgmet-1,wp)
+
+! store array specification parameters
+
+  merf(1) = Real(mxgmet,wp)
+  merf(2) = 0.0_wp          ! l_int(min) >= 1
+  merf(3) = rmet            ! rmet=rcut
+  merf(4) = drmet
+
+! offset
+
+  offset = Nint(beta/drmet)+1
+
+  Do i=1,4
+     mfer(i)=merf(i)
+  End Do
+
+  Do i=5,offset-1
+     rrr = -Real(i-offset,wp)*drmet ! make positive
+     rsq = rrr*rrr
+
+     tt = 1.0_wp/(1.0_wp + pp*alpha*rrr)
+     exp1 = Exp(-(alpha*rrr)**2)
+
+     merf(i) = tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1/rrr - 1.0_wp
+     mfer(i) = -2.0_wp*(alpha/sqrpi)*exp1
+  End Do
+
+  merf(offset) = 0.0_wp
+  mfer(offset) = 2.0_wp*(alpha/sqrpi)
+
+  Do i=offset+1,mxgmet
+     rrr = Real(i-offset,wp)*drmet
+
+     tt = 1.0_wp/(1.0_wp + pp*alpha*rrr)
+     exp1 = Exp(-(alpha*rrr)**2)
+
+     merf(i) = 1.0_wp - tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1/rrr
+     mfer(i) = 2.0_wp*(alpha/sqrpi)*exp1
+  End Do
+
+End Subroutine erfgen_met
 
 Function match(n,ind_top,list)
 
@@ -844,9 +925,10 @@ Function match(n,ind_top,list)
 
   Implicit None
 
+  Logical                  :: match
+
   Integer, Intent( In    ) :: n,ind_top,list(1:*)
 
-  Logical :: match
   Integer :: ind_old,ind_now
 
   If (n < 1) Call error(0)
@@ -1031,10 +1113,12 @@ Function local_index(global_index,search_limit,rank,list)
 
   Implicit None
 
+  Integer                                    :: local_index
+
   Integer,                   Intent( In    ) :: global_index,search_limit
   Integer, Dimension( 1:* ), Intent( In    ) :: rank,list
 
-  Integer local_index,point,lower_bound,upper_bound,down
+  Integer :: point,lower_bound,upper_bound,down
 
 ! Initialise
 

@@ -52,7 +52,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
                        sxij,syij,szij,                                 &
                        gk0,gk1,gk2,vk0,vk1,vk2,                        &
                        t1,t2,ppp,bi,ei,ci,di,c1i,c2i,c3i,c4i,c5i,hi,   &
-                       ak,bk,xkj,ykj,zkj,gtheta,cost,hmct2,c4exp,      &
+                       ak,bk,gtheta,cost,hmct2,c4exp,                  &
                        eterm,vterm,gterm,gamma,gam_ij,                 &
                        gam_dg,gam_df,gam_dw, fxj,fyj,fzj, fxk,fyk,fzk, &
                        strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:2)

@@ -2616,7 +2616,7 @@ Contains
 
     Implicit None
 
-    Logical :: ok
+    Logical                  :: ok
 
     Logical, Intent( In    ) :: flag
     Integer, Intent( In    ) :: comm
@@ -2645,7 +2645,7 @@ Contains
 
     Implicit None
 
-    Integer :: get_tot_atoms
+    Integer                  :: get_tot_atoms
 
     Integer, Intent( In    ) :: atoms
     Integer, Intent( In    ) :: comm

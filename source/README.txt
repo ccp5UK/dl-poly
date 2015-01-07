@@ -1,4 +1,4 @@
-DL_POLY_4.06
+DL_POLY_4.07
 ============
 
 The source is in fully self-contained free formatted FORTRAN90+MPI2
@@ -17,8 +17,8 @@ standard DL_POLY_Classic version with the exceptions of:
       MD cell conventions (PBC).  Note that the last one is easily
       convertible to orthorhombic (imcon = 2), see utility/nfold.f90.
   (3) Classic Ewald and Hautman-Klein Ewald Coulomb evaluations.
-  (4) Temperature Accelerated Dynamics, Hyper-Dynamics and
-      solvation energies.
+  (4) Hyper-Dynamics: Temperature Accelerated Dynamics, Biased
+      Potential Dynamics; Meta-Dynamics and solvation features.
 
 No previous DL_POLY_3/4 feature is deprecated.  ALL NEW features are
 documented in the "DL_POLY_4 User Manual".

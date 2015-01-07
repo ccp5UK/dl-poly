@@ -318,15 +318,15 @@ Subroutine pass_shared_units &
 ! transmit length of message
 
         l_in=0
-        Call MPI_IRECV(l_in,1,MPI_INTEGER,kdnode,Passunit_tag+k,dlp_comm_world,request,ierr)
-        Call MPI_SEND(l_out,1,MPI_INTEGER,jdnode,Passunit_tag+k,dlp_comm_world,ierr)
+        Call MPI_IRECV(l_in,1,MPI_INTEGER,kdnode,PassUnit_tag+k,dlp_comm_world,request,ierr)
+        Call MPI_SEND(l_out,1,MPI_INTEGER,jdnode,PassUnit_tag+k,dlp_comm_world,ierr)
         Call MPI_WAIT(request,status,ierr)
 
 ! transmit atom list of units
 
         listin=0
-        If (l_in  > 0) Call MPI_IRECV(listin,l_in,MPI_INTEGER,kdnode,Passunit_tag+k,dlp_comm_world,request,ierr)
-        If (l_out > 0) Call MPI_SEND(lstout,l_out,MPI_INTEGER,jdnode,Passunit_tag+k,dlp_comm_world,ierr)
+        If (l_in  > 0) Call MPI_IRECV(listin,l_in,MPI_INTEGER,kdnode,PassUnit_tag+k,dlp_comm_world,request,ierr)
+        If (l_out > 0) Call MPI_SEND(lstout,l_out,MPI_INTEGER,jdnode,PassUnit_tag+k,dlp_comm_world,ierr)
         If (l_in  > 0) Call MPI_WAIT(request,status,ierr)
 
         Do i=1,l_me

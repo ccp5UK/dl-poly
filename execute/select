@@ -1,6 +1,6 @@
-cp ../data/TEST$1/CONTROL   CONTROL
-cp ../data/TEST$1/FIELD     FIELD
-cp ../data/TEST$1/CONFIG    CONFIG
-cp ../data/TEST$1/TABLE     TABLE
-cp ../data/TEST$1/TABEAM    TABEAM
-cp ../data/TEST$1/REFERENCE REFERENCE
+cp -vpLH ../data/TEST$1/CONTROL   .
+cp -vpLH ../data/TEST$1/CONFIG    .
+cp -vpLH ../data/TEST$1/HISTORY   .
+cp -vpLH ../data/TEST$1/FIELD     .
+cp -vpLH ../data/TEST$1/TAB*      .
+cp -vpLH ../data/TEST$1/REFERENCE .

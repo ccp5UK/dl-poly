@@ -1,12 +1,16 @@
-Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
+Subroutine dpd_thermostat(isw,l_str,imcon,rcut,nstep,tstep)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine applying DPD thermostat in a Shardlow's VV manner
 ! using the verlet neighbour list
 !
+! isw=isw(VV) : by stages 0 for VV1 and 1 for VV2
+! keydpd = 1 for first order splitting
+! keydpd = 2 for second order splitting
+!
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -21,18 +25,20 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
   Implicit None
 
   Logical,           Intent( In    ) :: l_str
-  Integer,           Intent( In    ) :: imcon,nstep
+  Integer,           Intent( In    ) :: isw,imcon,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,tstep
 
 
-  Integer           :: fail(1:2),i,j,k,limit,idi,idj,ai,aj,key
-  Real( Kind = wp ) :: rstsq,hstep,fix,fiy,fiz,       &
-                       rrr,scrn,gauss,tmp,scl,       &
-                       rgamma,dgamma,gamma,fx,fy,fz, &
+  Integer           :: fail(1:2),nst_p,i,j,k,limit,idi,idj,ai,aj,key
+  Real( Kind = wp ) :: tst_p,rstsq,hstep,fix,fiy,fiz, &
+                       rrr,scrn,gauss,tmp,scl,        &
+                       rgamma,dgamma,gamma,fx,fy,fz,  &
                        strs1,strs2,strs3,strs5,strs6,strs9
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
   Real( Kind = wp ), Dimension( : ), Allocatable :: fdpdx,fdpdy,fdpdz
+
+  If (keydpd /= 1 .or. keydpd /= 2 .or. keydpd*isw == 1) Return
 
   fail=0
   Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat = fail(1))
@@ -42,15 +48,31 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
      Call error(0)
   End If
 
-! set tstep factors
+! set tstep and nstep wrt to order of splitting
 
-  hstep= 0.5_wp*tstep
-  rstsq = 1.0_wp/Sqrt(tstep)
+  If (keydpd == 1) Then
+     nst_p = nstep
+     tst_p = tstep
+  Else
+     If (isw == 0) Then
+        nst_p = nstep
+     Else ! If (isw == 1) Then
+        nst_p = -nstep
+     End If
+     tst_p = 0.5_wp*tstep
+  End If
+
+! Set tstep derivatives
+
+  hstep = 0.5_wp*tst_p
+  rstsq = 1.0_wp/Sqrt(tst_p)
 
 ! initialise DPD virial and stress contributions
 
-  virdpd = 0.0_wp
-  strdpd = 0.0_wp
+  If (isw == 0) Then
+     virdpd = 0.0_wp
+     strdpd = 0.0_wp
+  End If
 
 ! FIRST PASS
 
@@ -135,7 +157,7 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
 
 ! Get gaussian random number with zero mean
 
-           Call box_mueller_saru2(i,j,nstep,gauss,l_str)
+           Call box_mueller_saru2(idi,idj,nst_p,gauss,l_str)
 
 ! screening function
 
@@ -317,7 +339,7 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
 
 ! Get gaussian random number with zero mean
 
-           Call box_mueller_saru2(i,j,nstep,gauss,l_str)
+           Call box_mueller_saru2(idi,idj,nst_p,gauss,l_str)
 
 ! screening function
 
@@ -336,7 +358,7 @@ Subroutine dpd_thermostat(l_str,imcon,rcut,nstep,tstep)
            rgamma =  sigdpd(key) * scrn      * gauss * rstsq
 
            tmp    =  gamdpd(key) * (scrn**2)
-           scl    =  tmp / (1.0_wp+tmp*tstep)
+           scl    =  tmp / (1.0_wp+tmp*tst_p)
            dgamma = -tmp * ( xxt(k)*(vxx(i)-vxx(j)) + yyt(k)*(vyy(i)-vyy(j)) + zzt(k)*(vzz(i)-vzz(j)) )
 
            gamma=rgamma + scl*(dgamma-rgamma)

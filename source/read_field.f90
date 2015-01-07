@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2015
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno and i.t.todorov march 2014 (itramolecular TPs & PDFs)
@@ -26,6 +26,7 @@ Subroutine read_field                   &
   Use kinds_f90
   Use comms_module, Only : idnode
   Use setup_module
+  Use kim_module,   Only : kim
 
 ! SITE MODULE
 
@@ -39,7 +40,7 @@ Subroutine read_field                   &
 
 ! DPD module
 
-  Use dpd_module,    Only : l_dpd,gamdpd,sigdpd
+  Use dpd_module,    Only : keydpd,gamdpd,sigdpd
 
 ! INTERACTION MODULES
 
@@ -92,7 +93,7 @@ Subroutine read_field                   &
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
                             l_shl,l_con,l_rgd,l_tet,l_bnd,l_ang,l_dih,l_inv, &
-                            lshl_one,lshl_all,lpmf,lmet_safe,lter_safe,l_dpd_safe
+                            lshl_one,lshl_all,lpmf,lmet_safe,lter_safe,ldpd_safe
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
   Character( Len = 32  ) :: iddihd,idinvr
@@ -289,7 +290,7 @@ Subroutine read_field                   &
 
         Else
 
-           If (idnode == 0) Write(nrite,'(/,1x,a)') word(1:Len_Trim(word)+1)
+           If (idnode == 0) Write(nrite,'(/,1x,a)') word(1:Len_Trim(word))
            Call error(5)
 
         End If
@@ -3040,7 +3041,7 @@ Subroutine read_field                   &
            End If
 
            If (keypot == 0) Then
-              If (l_dpd) Then ! make sure gamdpd is read and reported for DPD
+              If (keydpd > 0) Then ! make sure gamdpd is read and reported for DPD
                  Call get_word(record,word)
                  parpot(1)=word_2_real(word)
                  If (idnode == 0 .and. l_top) &
@@ -3050,7 +3051,7 @@ Subroutine read_field                   &
   Write(nrite,"(1x,i10,5x,2a8,30x,a9)") itpvdw,atom1,atom2,"tabulated"
               End If
            Else
-              itmp=Merge(mxpvdw+1,mxpvdw,l_dpd)
+              itmp=Merge(mxpvdw+1,mxpvdw,keydpd > 0)
               Do i=1,itmp ! make sure gamdpd is read and reported for DPD
                  Call get_word(record,word)
                  parpot(i)=word_2_real(word)
@@ -3105,7 +3106,7 @@ Subroutine read_field                   &
               prmvdw(i,itpvdw)=parpot(i)
            End Do
 
-           If (l_dpd) Then ! store possible specification of DPD's gamma_ij
+           If (keydpd > 0) Then ! store possible specification of DPD's gamma_ij
               If      (keypot ==  0) Then
                  gamdpd(keyvdw)=Abs(parpot(1))
               Else If (keypot ==  1) Then
@@ -3155,9 +3156,9 @@ Subroutine read_field                   &
                  ltpvdw(i) = -1
               End Do
 
-              If (l_dpd) Then
+              If (keydpd > 0) Then
                  If (All(gamdpd(1:mxvdw) <= zero_plus)) Then ! So gamdpd(0) <= zero_plus too
-                    l_dpd=.false.
+                    keydpd = 0
                     If (idnode == 0) & ! default to NVE
   Write(nrite,"(1x,'Ensemble NVT dpd defaulting to NVE (Microcanonical) due to all drag coefficients equal to zero')")
 
@@ -3183,8 +3184,8 @@ Subroutine read_field                   &
 
               If (mxtvdw > 0) Then
 
-                 If (idnode == 0 .and. (l_top .or. l_dpd)) Then
-                    If (l_dpd) Then
+                 If (idnode == 0 .and. (l_top .or. keydpd > 0)) Then
+                    If (keydpd > 0) Then
   Write(nrite,"(/,1x,a)") "vdw potential mixing under testing..."
                     Else
   Write(nrite,"(/,1x,a)") "dpd potential mixing under testing..."
@@ -3193,7 +3194,7 @@ Subroutine read_field                   &
 
 ! Detect if there are qualifying candidates
 
-                 l_dpd_safe=.true. ! safe flag for DPD thermostats
+                 ldpd_safe = .true. ! safe flag for DPD thermostats
                  nsite=0 ! number of new cross pair potentials
                  Do i=1,ntpatm
                     isite=(i*(i-1))/2+i
@@ -3213,10 +3214,10 @@ Subroutine read_field                   &
                                 End If
                              Else
                                 If (lstvdw(ksite) > ntpvdw) Then
-                                   If (l_dpd) Then
+                                   If (keydpd > 0) Then
                                       If (gamdpd(0) <= zero_plus) Then
                                          If (l_str) Then
-                                            l_dpd_safe = .false. ! test for non-definable interactions
+                                            ldpd_safe = .false. ! test for non-definable interactions
                                             If (idnode == 0) &   ! in a DPD thermostating context
   Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,a)") '*** warning - the interaction between bead types: ', &
   unqatm(i), '&', unqatm(j), ' is unresolved and thus thermostating is ill defined in a DPD context!!! ***'
@@ -3237,14 +3238,14 @@ Subroutine read_field                   &
                        End Do
                     End If
                  End Do
-                 If (.not.l_dpd_safe) Call error(512)
+                 If (.not.ldpd_safe) Call error(512)
 
 ! Qualification has happened
 
                  If (nsite > 0) Then
 
-                    If (idnode == 0 .and. (l_top .or. l_dpd)) Then
-                       If (l_dpd) Then
+                    If (idnode == 0 .and. (l_top .or. keydpd > 0)) Then
+                       If (keydpd > 0) Then
   Write(nrite,"(/,1x,a)") "vdw potential mixing underway..."
                        Else
   Write(nrite,"(/,1x,a)") "dpd potential mixing underway..."
@@ -3319,7 +3320,7 @@ Subroutine read_field                   &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*(del(1)+del(2))
 
-                                If (l_dpd) &
+                                If (keydpd > 0) &
                                 gamdpd(ksite) = Sqrt(gamdpd(isite)*gamdpd(jsite))
 
                              Else If (mxtvdw == 2) Then
@@ -3333,7 +3334,7 @@ Subroutine read_field                   &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*(del(1)+del(2))
 
-                                If (l_dpd) Then
+                                If (keydpd > 0) Then
                                    If (gamdpd(isite)+gamdpd(jsite) > zero_plus) &
                                 gamdpd(ksite) = 2.0_wp*gamdpd(isite)*gamdpd(jsite) / (gamdpd(isite)+gamdpd(jsite))
                                 End If
@@ -3349,7 +3350,7 @@ Subroutine read_field                   &
                                 If (Any(del > zero_plus)) &
                                 del(0) = Sqrt(del(1)*del(2))
 
-                                If (l_dpd) &
+                                If (keydpd > 0) &
                                 gamdpd(ksite) = Sqrt(gamdpd(isite)*gamdpd(jsite))
 
                              Else If (mxtvdw == 4) Then
@@ -3363,7 +3364,7 @@ Subroutine read_field                   &
                                 If (Any(del > zero_plus)) &
                                 del(0) = (del(1)**3+del(2)**3) / (del(1)**2+del(2)**2)
 
-                                If (l_dpd) Then
+                                If (keydpd > 0) Then
                                    If (gamdpd(isite) >= zero_plus .and. gamdpd(jsite) >= zero_plus) Then
                                       If (Sqrt(gamdpd(isite))+Sqrt(gamdpd(jsite)) > zero_plus) &
                                 gamdpd(ksite) = 4.0_wp*gamdpd(isite)*gamdpd(jsite) / (Sqrt(gamdpd(isite))+Sqrt(gamdpd(jsite)))**2
@@ -3383,7 +3384,7 @@ Subroutine read_field                   &
                                 If (Any(del > zero_plus)) &
                                 del(0) = (0.5_wp*(del(1)**6+del(2)**6))**(1.0_wp/6.0_wp)
 
-                                If (l_dpd) &
+                                If (keydpd > 0) &
                                 gamdpd(ksite) = Sqrt(gamdpd(isite)*gamdpd(jsite)) * ((sig(1)*sig(2))**3) / tmp
 
                              Else If (mxtvdw == 6) Then
@@ -3401,7 +3402,7 @@ Subroutine read_field                   &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*sig(0)*(del(1)/sig(1) + del(2)/sig(2))
 
-                                If (l_dpd) &
+                                If (keydpd > 0) &
                                 gamdpd(ksite) = 0.5_wp*eps(0)*(gamdpd(isite)/eps(1) + gamdpd(jsite)/eps(2))
 
                              Else If (mxtvdw == 7) Then
@@ -3425,7 +3426,7 @@ Subroutine read_field                   &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*sig(0)*(del(1)/sig(1) + del(2)/sig(2))
 
-                                If (l_dpd) &
+                                If (keydpd > 0) &
                                 gamdpd(ksite) = 0.5_wp*eps(0)*(gamdpd(isite)/eps(1) + gamdpd(jsite)/eps(2))
 
                              End If
@@ -3447,7 +3448,7 @@ Subroutine read_field                   &
                              End If
 
                              If (idnode == 0 .and. l_top) Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,10f20.6)") &
-                                ntpvdw,unqatm(i),unqatm(j),keyword,(parpot(itmp),itmp=1,Merge(mxpvdw+1,mxpvdw,l_dpd))
+                                ntpvdw,unqatm(i),unqatm(j),keyword,(parpot(itmp),itmp=1,Merge(mxpvdw+1,mxpvdw,keydpd > 0))
 
                           End If
                        End Do
@@ -3464,10 +3465,10 @@ Subroutine read_field                   &
 
            End If
 
-           If (l_dpd) Then
+           If (keydpd > 0) Then
               If      (All(gamdpd(1:mxvdw) <= zero_plus)) Then
 
-                 l_dpd=.false.
+                 keydpd = 0
 
                  If (idnode == 0) & ! default to NVE
   Write(nrite,"(1x,'Ensemble NVT dpd defaulting to NVE (Microcanonical) due to all drag coefficients equal to zero')")
@@ -3664,6 +3665,7 @@ Subroutine read_field                   &
 
 ! generate metal force arrays
 
+           Call metal_generate_erf(rmet)
            If (.not.ld_met) Then
               Call allocate_metal_table_arrays()
               If (tabmet > 0) Then ! tabmet=(keypot=0)
@@ -4169,14 +4171,12 @@ Subroutine read_field                   &
            If (rcut < 2.0_wp*rcfbp) Call error(472)
         End If
 
-! read kim interaction data
+! read kim interaction data - kim and rkim set in scan_field
 
      Else If (word(1:3) == 'kim') Then
 
-        Call get_word(record,word)
-
         If (idnode == 0) &
-  Write(nrite,"(/,/,1x,'KIM interaction model specified: ',a)") word
+  Write(nrite,"(/,/,1x,'using open KIM interaction model: ',a)") kim
 
 ! read external field data
 
@@ -4279,9 +4279,9 @@ Subroutine read_field                   &
 
         If (idnode == 0) Then
            If ((keyfld == 2 .or. keyfld == 8) .and. (imcon /= 1 .and. imcon /= 2)) &
-  Write(nrite,"(/,1x,a)") '*** warning - external field is ignored as only applicable for imcon=1,2 (orthorhombic geometry)!!!'
+  Write(nrite,"(/,1x,a)") '*** warning - external field is ignored as only applicable for imcon=1,2 (orthorhombic geometry)!!! ***'
            If (keyfld == 3 .and. imcon /= 6) &
-  Write(nrite,"(/,/,1x,a)") '*** warning - external field is ignored as only applicable for imcon=6 (SLAB geometry)!!!'
+  Write(nrite,"(/,/,1x,a)") '*** warning - external field is ignored as only applicable for imcon=6 (SLAB geometry)!!! ***'
         End If
 
         If (keyfld == 8 .and. keyens /= 0) Call error(7)
@@ -4319,10 +4319,18 @@ Subroutine read_field                   &
         Call dihedrals_14_check &
            (l_str,l_top,lx_dih,ntpmls,nummols,numang,keyang,lstang,numdih,lstdih,prmdih)
 
-! test for existence/appliance of any two-body or tersoff interactions!!!
+! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
 
         If ( keyfce == 0 .and. ntpvdw == 0 .and. &
-             ntpmet == 0 .and. ntpter == 0 ) Call error(145)
+             ntpmet == 0 .and. ntpter == 0 .and. kim == ' ') Call error(145)
+
+! test for mixing KIM model with external interactions
+
+        If ( (keyfce /= 0 .or. ntpvdw /= 0 .or. &
+              ntpmet /= 0 .or. ntpter /= 0) .and. kim /= ' ') Then
+           If (idnode == 0) Write(nrite,"(/,1x,a)") &
+  '*** warning - open KIM model in use together with extra intermolecular interactions!!! ***'
+        End If
 
 ! EXIT IF ALL IS OK
 
@@ -4332,7 +4340,7 @@ Subroutine read_field                   &
 
 ! error exit for unidentified directive
 
-        If (idnode == 0) Write(nrite,'(/,1x,a)') word(1:Len_Trim(word)+1)
+        If (idnode == 0) Write(nrite,'(/,1x,a)') word(1:Len_Trim(word))
         Call error(4)
 
      End If

@@ -408,8 +408,8 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
                                 rec=rec+Int(1,ip)
                                 Write(Unit=nconf, Fmt='(a73)', Rec=rec) record3
                              Else
-                                Call MPI_SEND(record2,recsz,MPI_CHARACTER,0,Traject_tag,dlp_comm_world,ierr)
-                                Call MPI_SEND(record3,recsz,MPI_CHARACTER,0,Traject_tag,dlp_comm_world,ierr)
+                                Call MPI_SEND(record2,recsz,MPI_CHARACTER,0,SysExpand_tag,dlp_comm_world,ierr)
+                                Call MPI_SEND(record3,recsz,MPI_CHARACTER,0,SysExpand_tag,dlp_comm_world,ierr)
                              End If
 
                           End If
@@ -439,8 +439,8 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
                           rec   = offset + Int(2,ip)*(Int(i_xyz(ix,iy,iz),ip)*Int(setspc,ip) + Int(m,ip)) - Int(2,ip)
 
                           If (idnode == 0) Then
-                             Call MPI_RECV(record2,recsz,MPI_CHARACTER,idm,Traject_tag,dlp_comm_world,status,ierr)
-                             Call MPI_RECV(record3,recsz,MPI_CHARACTER,idm,Traject_tag,dlp_comm_world,status,ierr)
+                             Call MPI_RECV(record2,recsz,MPI_CHARACTER,idm,SysExpand_tag,dlp_comm_world,status,ierr)
+                             Call MPI_RECV(record3,recsz,MPI_CHARACTER,idm,SysExpand_tag,dlp_comm_world,status,ierr)
 
                              rec=rec+Int(1,ip)
                              Write(Unit=nconf, Fmt='(a73)', Rec=rec) record2

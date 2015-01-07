@@ -6,7 +6,7 @@ Module metal_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2014
+! author    - i.t.todorov december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -36,6 +36,11 @@ Module metal_module
 ! Atomic density [reused as embedding derivative(s)] helper array(s)
 
   Real( Kind = wp ), Dimension( : ), Allocatable, Save :: rho,rhs
+
+! Many-body perturbation potential error function and derivative arrays
+
+  Real( Kind = wp ), Dimension( : ), Allocatable, Save :: merf,mfer
+
 
   Public :: allocate_metal_arrays, &
             allocate_metal_table_arrays
@@ -104,5 +109,24 @@ Contains
     End If
 
   End Subroutine allocate_metal_table_arrays
+
+  Subroutine allocate_metal_erf_arrays()
+
+    Use setup_module, Only : mxgmet
+
+    Implicit None
+
+    Integer :: fail
+
+    fail = 0
+
+    Allocate (merf(1:mxgmet),mfer(1:mxgmet), Stat = fail)
+
+    If (fail > 0) Call error(1082)
+
+    merf = 0.0_wp
+    mfer = 0.0_wp
+
+  End Subroutine allocate_metal_erf_arrays
 
 End Module metal_module

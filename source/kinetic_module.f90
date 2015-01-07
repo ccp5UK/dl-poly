@@ -21,7 +21,7 @@ Module kinetic_module
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov july 2013
 !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!s!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module, Only : mxnode,gsum
@@ -60,10 +60,12 @@ Contains
 
     Implicit None
 
+    Real( Kind = wp )                                    :: getkin
+
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: vxx,vyy,vzz
 
     Integer           :: i
-    Real( Kind = wp ) :: getkin,engke
+    Real( Kind = wp ) :: engke
 
     engke = 0.0_wp
 
@@ -93,10 +95,12 @@ Contains
 
     Implicit None
 
+    Real( Kind = wp )                                    :: getknf
+
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: vxx,vyy,vzz
 
     Integer           :: i,j
-    Real( Kind = wp ) :: getknf,engke
+    Real( Kind = wp ) :: engke
 
     engke = 0.0_wp
 
@@ -129,10 +133,12 @@ Contains
 
     Implicit None
 
+    Real( Kind = wp )                                    :: getknt
+
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: rgdvxx,rgdvyy,rgdvzz
 
     Integer           :: irgd,lrgd,rgdtyp
-    Real( Kind = wp ) :: getknt,engtra,tmp
+    Real( Kind = wp ) :: engtra,tmp
 
     engtra = 0.0_wp
 
@@ -170,10 +176,12 @@ Contains
 
     Implicit None
 
+    Real( Kind = wp )                                    :: getknr
+
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: rgdoxx,rgdoyy,rgdozz
 
     Integer           :: irgd,lrgd,rgdtyp
-    Real( Kind = wp ) :: getknr,engrot,tmp
+    Real( Kind = wp ) :: engrot,tmp
 
     engrot = 0.0_wp
 

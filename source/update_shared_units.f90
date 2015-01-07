@@ -109,12 +109,12 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz)
 ! transmit length of message
 
         n=0
-        Call MPI_IRECV(n,1,MPI_INTEGER,kdnode,Updshun_tag+k,dlp_comm_world,request,ierr)
-        Call MPI_SEND(i,1,MPI_INTEGER,jdnode,Updshun_tag+k,dlp_comm_world,ierr)
+        Call MPI_IRECV(n,1,MPI_INTEGER,kdnode,UpdShUnit_tag+k,dlp_comm_world,request,ierr)
+        Call MPI_SEND(i,1,MPI_INTEGER,jdnode,UpdShUnit_tag+k,dlp_comm_world,ierr)
         Call MPI_WAIT(request,status,ierr)
 
-        If (n > 0) Call MPI_IRECV(buffer(i+1),n,wp_mpi,kdnode,Updshun_tag+k,dlp_comm_world,request,ierr)
-        If (i > 0) Call MPI_SEND(buffer(1),i,wp_mpi,jdnode,Updshun_tag+k,dlp_comm_world,ierr)
+        If (n > 0) Call MPI_IRECV(buffer(i+1),n,wp_mpi,kdnode,UpdShUnit_tag+k,dlp_comm_world,request,ierr)
+        If (i > 0) Call MPI_SEND(buffer(1),i,wp_mpi,jdnode,UpdShUnit_tag+k,dlp_comm_world,ierr)
         If (n > 0) Call MPI_WAIT(request,status,ierr)
 
 ! consolidate transferred data
@@ -270,12 +270,12 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii)
 ! transmit length of message
 
         n=0
-        Call MPI_IRECV(n,1,MPI_INTEGER,kdnode,Updshun_tag+k,dlp_comm_world,request,ierr)
-        Call MPI_SEND(i,1,MPI_INTEGER,jdnode,Updshun_tag+k,dlp_comm_world,ierr)
+        Call MPI_IRECV(n,1,MPI_INTEGER,kdnode,UpdShUnit_tag+k,dlp_comm_world,request,ierr)
+        Call MPI_SEND(i,1,MPI_INTEGER,jdnode,UpdShUnit_tag+k,dlp_comm_world,ierr)
         Call MPI_WAIT(request,status,ierr)
 
-        If (n > 0) Call MPI_IRECV(ibuffer(i+1),n,MPI_INTEGER,kdnode,Updshun_tag+k,dlp_comm_world,request,ierr)
-        If (i > 0) Call MPI_SEND(ibuffer(1),i,MPI_INTEGER,jdnode,Updshun_tag+k,dlp_comm_world,ierr)
+        If (n > 0) Call MPI_IRECV(ibuffer(i+1),n,MPI_INTEGER,kdnode,UpdShUnit_tag+k,dlp_comm_world,request,ierr)
+        If (i > 0) Call MPI_SEND(ibuffer(1),i,MPI_INTEGER,jdnode,UpdShUnit_tag+k,dlp_comm_world,ierr)
         If (n > 0) Call MPI_WAIT(request,status,ierr)
 
 ! consolidate transferred data
@@ -430,12 +430,12 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr)
 ! transmit length of message
 
         n=0
-        Call MPI_IRECV(n,1,MPI_INTEGER,kdnode,Updshun_tag+k,dlp_comm_world,request,ierr)
-        Call MPI_SEND(i,1,MPI_INTEGER,jdnode,Updshun_tag+k,dlp_comm_world,ierr)
+        Call MPI_IRECV(n,1,MPI_INTEGER,kdnode,UpdShUnit_tag+k,dlp_comm_world,request,ierr)
+        Call MPI_SEND(i,1,MPI_INTEGER,jdnode,UpdShUnit_tag+k,dlp_comm_world,ierr)
         Call MPI_WAIT(request,status,ierr)
 
-        If (n > 0) Call MPI_IRECV(buffer(i+1),n,wp_mpi,kdnode,Updshun_tag+k,dlp_comm_world,request,ierr)
-        If (i > 0) Call MPI_SEND(buffer(1),i,wp_mpi,jdnode,Updshun_tag+k,dlp_comm_world,ierr)
+        If (n > 0) Call MPI_IRECV(buffer(i+1),n,wp_mpi,kdnode,UpdShUnit_tag+k,dlp_comm_world,request,ierr)
+        If (i > 0) Call MPI_SEND(buffer(1),i,wp_mpi,jdnode,UpdShUnit_tag+k,dlp_comm_world,ierr)
         If (n > 0) Call MPI_WAIT(request,status,ierr)
 
 ! consolidate transferred data

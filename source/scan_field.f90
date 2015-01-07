@@ -18,7 +18,7 @@ Subroutine scan_field                                 &
 ! dl_poly_4 subroutine for raw scanning the contents of the FIELD file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov and w.smith november 2014
+! author    - i.t.todorov and w.smith december 2014
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno march 2014 (itramolecular TPs)
 !
@@ -35,7 +35,7 @@ Subroutine scan_field                                 &
   Use vdw_module,        Only : lt_vdw
   Use metal_module,      Only : tabmet
   Use tersoff_module,    Only : potter
-  Use kim_module,        Only : l_kim,rkim,kim_cutoff
+  Use kim_module,        Only : kim,rkim,kim_cutoff
 
   Implicit None
 
@@ -700,11 +700,6 @@ Subroutine scan_field                                 &
               rmet=Max(rmet,word_2_real(word))
               Call get_word(record,word) ; Call get_word(record,word)
               rmet=Max(rmet,word_2_real(word))
-           Else If (word(1:4) == 'mbpc') Then
-              Call get_word(record,word) ; Call get_word(record,word)
-              Call get_word(record,word) ; Call get_word(record,word)
-              Call get_word(record,word)
-              rmet=Max(rmet,word_2_real(word))
            End If
         End Do
 
@@ -865,10 +860,10 @@ Subroutine scan_field                                 &
 
      Else If (word(1:7) == 'kim') Then
 
-        Call get_word(record,word)
-        l_kim=.true.
+! Get KIM's IM name and cutoff
 
-        Call kim_cutoff(word,rkim) ! get cutoff
+        kim=record(1:Len_Trim(record))
+        Call kim_cutoff(kim,rkim)
 
      Else If (word(1:6) == 'extern') Then
 

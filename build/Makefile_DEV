@@ -1,6 +1,6 @@
-# Master makefile for DL_POLY_4.06 (parallel version)
+# Master makefile for DL_POLY_4.07 (parallel version)
 #
-# Author - I.T.Todorov June 2014
+# Author - I.T.Todorov December 2014
 #
 #
 # Define default settings
@@ -53,7 +53,7 @@ OBJ_ALL = \
 	bonds_table_read.o angles_table_read.o \
 	dihedrals_table_read.o inversions_table_read.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
-	metal_generate.o metal_table_read.o metal_table_derivatives.o \
+	metal_generate_erf.o metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
 	check_config.o origin_config.o scale_config.o write_config.o \
 	trajectory_write.o system_expand.o \
@@ -518,7 +518,7 @@ deport_atomic_data.o: angles_module.o bonds_module.o comms_module.o \
 	dihedrals_module.o domains_module.o ewald_module.o greenkubo_module.o \
 	inversions_module.o kinds_f90.o langevin_module.o minimise_module.o \
 	msd_module.o pmf_module.o rigid_bodies_module.o setup_module.o \
-	statistics_module.o tethers_module.o
+	statistics_module.o tethers_module.o vnl_module.o
 development_module.o: comms_module.o kinds_f90.o parse_module.o \
 	setup_module.o
 dihedrals_14_check.o: comms_module.o kinds_f90.o setup_module.o
@@ -532,18 +532,25 @@ dihedrals_table_read.o: comms_module.o dihedrals_module.o kinds_f90.o \
 	parse_module.o setup_module.o site_module.o
 dl_poly.o: angles_module.o bonds_module.o comms_module.o config_module.o \
 	constraints_module.o core_shell_module.o development_module.o \
-	dihedrals_module.o external_field_module.o four_body_module.o \
-	greenkubo_module.o inversions_module.o io_module.o kinds_f90.o \
-	kinetic_module.o langevin_module.o metal_module.o msd_module.o \
-	parse_module.o pmf_module.o rdf_module.o rigid_bodies_module.o \
-	setup_module.o site_module.o statistics_module.o tersoff_module.o \
-	tethers_module.o three_body_module.o vdw_module.o vnl_module.o \
-	z_density_module.o w_at_start_lfv.f90 w_at_start_vv.f90 \
-	w_calculate_forces.f90 w_impact_option.f90 w_integrate_lfv.f90 \
-	w_integrate_vv.f90 w_kinetic_options.f90 w_md_lfv.f90 w_md_vv.f90 \
-	w_refresh_mappings.f90 w_refresh_output.f90 w_replay_historf.f90 \
-	w_replay_history.f90 w_statistics_report.f90 w_write_options.f90
+	dihedrals_module.o dpd_module.o external_field_module.o \
+	four_body_module.o greenkubo_module.o inversions_module.o io_module.o \
+	kim_modul~.o kinds_f90.o kinetic_module.o langevin_module.o \
+	metal_module.o msd_module.o parse_module.o pmf_module.o rdf_module.o \
+	rigid_bodies_module.o setup_module.o site_module.o \
+	statistics_module.o tersoff_module.o tethers_module.o \
+	three_body_module.o vdw_module.o vnl_module.o z_density_module.o \
+	w_at_start_lfv.f90 w_at_start_vv.f90 w_calculate_forces.f90 \
+	w_impact_option.f90 w_integrate_lfv.f90 w_integrate_vv.f90 \
+	w_kinetic_options.f90 w_md_lfv.f90 w_md_vv.f90 w_refresh_mappings.f90 \
+	w_refresh_output.f90 w_replay_historf.f90 w_replay_history.f90 \
+	w_statistics_report.f90 w_write_options.f90
 domains_module.o: comms_module.o kinds_f90.o
+dpd_module.o: kinds_f90.o setup_module.o
+dpd_thermostat.o: comms_module.o config_module.o dpd_module.o kinds_f90.o \
+	rigid_bodies_module.o setup_module.o
+dpd_v_export.o: comms_module.o config_module.o domains_module.o kinds_f90.o \
+	setup_module.o
+dpd_v_set_halo.o: comms_module.o config_module.o setup_module.o
 error.o: comms_module.o setup_module.o
 ewald_excl_forces.o: config_module.o ewald_module.o kinds_f90.o \
 	setup_module.o
@@ -558,7 +565,7 @@ ewald_spme_force~.o: comms_module.o config_module.o domains_module.o \
 	ewald_module.o kinds_f90.o setup_module.o
 exchange_grid.o: comms_module.o domains_module.o kinds_f90.o setup_module.o
 export_atomic_data.o: comms_module.o config_module.o domains_module.o \
-	kinds_f90.o setup_module.o
+	kim_modul~.o kinds_f90.o setup_module.o
 export_atomic_positions.o: comms_module.o config_module.o domains_module.o \
 	kinds_f90.o setup_module.o
 external_field_apply.o: comms_module.o config_module.o core_shell_module.o \
@@ -570,7 +577,7 @@ external_field_module.o: kinds_f90.o setup_module.o
 four_body_forces.o: comms_module.o config_module.o domains_module.o \
 	four_body_module.o kinds_f90.o setup_module.o
 four_body_module.o: kinds_f90.o setup_module.o
-gpfa_module.o: kinds_f90.o
+gpfa_module.o: gpfa_module.o kinds_f90.o
 greenkubo_module.o: kinds_f90.o setup_module.o
 impact.o: comms_module.o config_module.o core_shell_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o
@@ -603,6 +610,7 @@ link~cell_pairs.o: comms_module.o config_module.o development_module.o \
 metal_forces.o: config_module.o kinds_f90.o metal_module.o setup_module.o \
 	site_module.o
 metal_generate.o: kinds_f90.o metal_module.o setup_module.o site_module.o
+metal_generate_erf.o: kinds_f90.o metal_module.o setup_module.o
 metal_ld_collect_eam.o: config_module.o kinds_f90.o metal_module.o \
 	setup_module.o site_module.o
 metal_ld_collect_fst.o: config_module.o kinds_f90.o metal_module.o \
@@ -812,16 +820,17 @@ read_config.o: comms_module.o config_module.o domains_module.o io_module.o \
 read_config_parallel.o: comms_module.o config_module.o domains_module.o \
 	io_module.o kinds_f90.o parse_module.o setup_module.o
 read_control.o: bonds_module.o comms_module.o config_module.o \
-	defects1_module.o development_module.o greenkubo_module.o kinds_f90.o \
-	kinetic_module.o langevin_module.o metal_module.o msd_module.o \
-	parse_module.o setup_module.o vdw_module.o
+	defects1_module.o development_module.o dpd_module.o \
+	greenkubo_module.o kinds_f90.o kinetic_module.o langevin_module.o \
+	metal_module.o msd_module.o parse_module.o setup_module.o \
+	vdw_module.o
 read_field.o: angles_module.o bonds_module.o comms_module.o config_module.o \
 	constraints_module.o core_shell_module.o dihedrals_module.o \
-	external_field_module.o four_body_module.o inversions_module.o \
-	kinds_f90.o kinetic_module.o metal_module.o parse_module.o \
-	pmf_module.o rdf_module.o rigid_bodies_module.o setup_module.o \
-	site_module.o tersoff_module.o tethers_module.o three_body_module.o \
-	vdw_module.o
+	dpd_module.o external_field_module.o four_body_module.o \
+	inversions_module.o kim_modul~.o kinds_f90.o kinetic_module.o \
+	metal_module.o parse_module.o pmf_module.o rdf_module.o \
+	rigid_bodies_module.o setup_module.o site_module.o tersoff_module.o \
+	tethers_module.o three_body_module.o vdw_module.o
 read_history.o: comms_module.o config_module.o domains_module.o io_module.o \
 	kinds_f90.o parse_module.o setup_module.o site_module.o
 refresh_halo_positions.o: comms_module.o config_module.o setup_module.o
@@ -860,8 +869,9 @@ scale_temperature.o: comms_module.o config_module.o kinds_f90.o \
 	kinetic_module.o rigid_bodies_module.o setup_module.o
 scan_config.o: comms_module.o io_module.o kinds_f90.o parse_module.o \
 	setup_module.o
-scan_control.o: comms_module.o development_module.o greenkubo_module.o \
-	kim_modul~.o kinds_f90.o msd_module.o parse_module.o setup_module.o
+scan_control.o: comms_module.o development_module.o dpd_module.o \
+	greenkubo_module.o kim_modul~.o kinds_f90.o msd_module.o \
+	parse_module.o setup_module.o
 scan_control_io.o: comms_module.o io_module.o kinds_f90.o parse_module.o \
 	setup_module.o
 scan_control_pre.o: comms_module.o kinds_f90.o parse_module.o setup_module.o
@@ -875,13 +885,13 @@ set_bounds.o: bonds_module.o comms_module.o config_module.o \
 set_halo_particles.o: config_module.o domains_module.o kinds_f90.o \
 	setup_module.o site_module.o
 set_temperature.o: comms_module.o config_module.o core_shell_module.o \
-	kinds_f90.o kinetic_module.o rigid_bodies_module.o setup_module.o \
-	site_module.o
+	dpd_module.o kinds_f90.o kinetic_module.o rigid_bodies_module.o \
+	setup_module.o site_module.o
 setup_module.o: kinds_f90.o
 site_module.o: kinds_f90.o setup_module.o
 spme_container.o: comms_module.o kinds_f90.o setup_module.o
-statistics_collect.o: comms_module.o config_module.o kinds_f90.o msd_module.o \
-	setup_module.o site_module.o statistics_module.o
+statistics_collect.o: comms_module.o config_module.o dpd_module.o kinds_f90.o \
+	msd_module.o setup_module.o site_module.o statistics_module.o
 statistics_connect_frames.o: comms_module.o config_module.o msd_module.o \
 	setup_module.o statistics_module.o
 statistics_connect_set.o: comms_module.o config_module.o domains_module.o \
@@ -890,10 +900,11 @@ statistics_connect_spread.o: comms_module.o config_module.o domains_module.o \
 	kinds_f90.o msd_module.o setup_module.o statistics_module.o
 statistics_module.o: comms_module.o kinds_f90.o setup_module.o
 statistics_result.o: angles_module.o bonds_module.o comms_module.o \
-	config_module.o core_shell_module.o dihedrals_module.o \
-	greenkubo_module.o inversions_module.o kinds_f90.o minimise_module.o \
-	msd_module.o rdf_module.o setup_module.o site_module.o \
-	statistics_module.o vnl_module.o z_density_module.o
+	config_module.o constraints_module.o core_shell_module.o \
+	dihedrals_module.o greenkubo_module.o inversions_module.o kinds_f90.o \
+	minimise_module.o msd_module.o pmf_module.o rdf_module.o \
+	setup_module.o site_module.o statistics_module.o vnl_module.o \
+	z_density_module.o
 system_expand.o: angles_module.o bonds_module.o comms_module.o \
 	config_module.o constraints_module.o core_shell_module.o \
 	dihedrals_module.o inversions_module.o io_module.o kinds_f90.o \

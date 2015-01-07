@@ -6,7 +6,7 @@ Subroutine dpd_v_export(mdir,mlast,ixyz0)
 ! regions for halo formation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -50,7 +50,7 @@ Subroutine dpd_v_export(mdir,mlast,ixyz0)
 ! k.   - direction selection factor
 ! jxyz - halo reduction factor
 ! kxyz - corrected halo reduction factor particles haloing both +&- sides
-! jdnode - destination (send to), knode - source (receive from)
+! jdnode - destination (send to), kdnode - source (receive from)
 
   kx = 0 ; ky = 0 ; kz = 0
   If      (mdir == -1) Then ! Direction -x
@@ -172,8 +172,8 @@ Subroutine dpd_v_export(mdir,mlast,ixyz0)
 ! exchange information on buffer sizes
 
   If (mxnode > 1) Then
-     Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Dpdvexp_tag,dlp_comm_world,request,ierr)
-     Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,Dpdvexp_tag,dlp_comm_world,ierr)
+     Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,DpdVExp_tag,dlp_comm_world,request,ierr)
+     Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,DpdVExp_tag,dlp_comm_world,ierr)
      Call MPI_WAIT(request,status,ierr)
   Else
      jmove=imove
@@ -193,9 +193,9 @@ Subroutine dpd_v_export(mdir,mlast,ixyz0)
 ! exchange buffers between nodes (this is a MUST)
 
   If (mxnode > 1) Then
-     Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Dpdvexp_tag,dlp_comm_world,request,ierr)
-     Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Dpdvexp_tag,dlp_comm_world,ierr)
-     Call MPI_WAIT(request,status,ierr)
+     If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,DpdVExp_tag,dlp_comm_world,request,ierr)
+     If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,DpdVExp_tag,dlp_comm_world,ierr)
+     If (jmove > 0) Call MPI_WAIT(request,status,ierr)
   End If
 
 ! load transferred data

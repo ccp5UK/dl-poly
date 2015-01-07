@@ -1,4 +1,4 @@
-# Master makefile for DL_POLY_4.07 (serial version 2)
+# Master makefile for DL_POLY_4.07 (serial version 2 with KIM)
 #
 # Author - I.T.Todorov January 2015
 #
@@ -9,11 +9,13 @@
 SHELL=/bin/sh
 
 .SUFFIXES:
-.SUFFIXES: .f90 .o
+.SUFFIXES: .f90 .o .F03
 
 BINROOT=../execute
 EX=DLPOLY.Z
 EXE=$(BINROOT)/$(EX)
+
+KIM_API_DIR=./kim-api-v1.6.0/src
 
 TYPE=master
 
@@ -30,7 +32,7 @@ OBJ_MOD = \
 	site_module.o config_module.o vnl_module.o \
 	defects_module.o defects1_module.o \
 	dpd_module.o vdw_module.o metal_module.o tersoff_module.o \
-	three_body_module.o four_body_module.o kim_modul~.o \
+	three_body_module.o four_body_module.o kim_module.o \
 	rdf_module.o z_density_module.o \
 	core_shell_module.o \
 	constraints_module.o pmf_module.o \
@@ -273,7 +275,7 @@ gnu-debug:
 #=====================================================================
 
 master: message check $(OBJ_MOD) $(OBJ_ALL)
-	$(LD) $(EXE) $(LDFLAGS) $(OBJ_MOD) $(OBJ_ALL)
+>-------$(LD) $(EXE) $(LDFLAGS) -L$(KIM_API_DIR) $(OBJ_MOD) $(OBJ_ALL) -lkim-api-v1
 
 # Message
 message:
@@ -303,6 +305,9 @@ check:
 
 .f90.o:
 	$(FC) $(FCFLAGS) $*.f90
+
+.F03.o:
+	$(FC) $(FCFLAGS) -I$(KIM_API_DIR) $*.F03
 
 # Declare dependencies
 #=====================================================================

@@ -5,7 +5,7 @@ Module kim_module
 ! dl_poly_4 module implementing the kim dummy
 
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov march 2014
+! amended   - i.t.todorov december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -13,9 +13,9 @@ Module kim_module
 
   Implicit None
 
-  Logical,           Save :: l_kim = .false. ! No KIM specified
-
-  Real( Kind = wp ), Save :: rkim = 0.0_wp
+  Character( Len = 125 ), Save :: kim  = ' '      ! KIM IM type for dl_poly
+  Real( Kind = wp ),      Save :: rkim = 0.0_wp   ! KIM cutoff for dl_poly
+  Integer,                Save :: idhalo(0:2,1:6) ! KIM halo indicator
 
   Public :: kim_cutoff,kim_setup,kim_forces,kim_cleanup
 
@@ -34,9 +34,11 @@ Contains
 
   End Subroutine kim_cutoff
 
-  Subroutine kim_setup()
+  Subroutine kim_setup(model_name)
 
     Implicit None
+
+    Character(Len = *), Intent( In    ) :: model_name
 
     Call kim_message()
 

@@ -7,14 +7,14 @@ Subroutine metal_generate(rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 2006
-! amended   - i.t.todorov september 2014
+! amended   - i.t.todorov december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module, Only : mxgmet
   Use site_module,  Only : ntpatm
-  Use metal_module, Only : lstmet,ltpmet,prmmet,dmet,vmet
+  Use metal_module, Only : lstmet,ltpmet,prmmet,dmet,vmet,merf,mfer
 
   Implicit None
 
@@ -200,22 +200,14 @@ Subroutine metal_generate(rmet)
               eps=prmmet(1,imet)
               sig=prmmet(2,imet)
               mmm=prmmet(3,imet)
-              ccc=prmmet(4,imet)
-              ddd=prmmet(5,imet)
-              cut1=ccc+4.0_wp*dlrpot
-              cut2=ddd+4.0_wp*dlrpot
-
-              dmet(3,imet,1)=cut2 !=rmet=/rcut
 
               Do i=5,mxgmet
                  rrr=Real(i,wp)*dlrpot
 !                 vmet(i,imet,1)=0.0_wp
 !                 vmet(i,imet,2)=0.0_wp
-                 If (rrr >= cut1 .and. rrr <= cut2) Then
-                     nnn=sig/(rrr**mmm)
-                     dmet(i,imet,1)=nnn
-                     dmet(i,imet,2)=mmm*nnn
-                 End If
+                 nnn=sig/rrr**mmm
+                 dmet(i,imet,1)=nnn*merf(i)
+                 dmet(i,imet,2)=mmm*dmet(i,imet,1)-rrr*nnn*mfer(i)
               End Do
 
               If (katom1 == katom2) Then

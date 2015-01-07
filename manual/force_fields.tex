@@ -6,8 +6,8 @@ a wide variety of analytical forms, with some basis in chemical
 physics, which must be parameterised to give the correct energy
 and forces.  A huge variety of forms is possible and for this
 reason the \D force field\index{force field!DL\_POLY} is designed
-to be adaptable.  While it is not supplied with its own force
-field\index{force field} parameters, many of the functions
+to be agnostic and adaptable.  While it is not supplied with its
+own force field\index{force field} parameters, many of the functions
 familiar to GROMOS\index{GROMOS} \index{force field!GROMOS}
 \cite{gunsteren-87a}, Dreiding\index{Dreiding} \index{force
 field!Dreiding} \cite{mayo-90a} and AMBER\index{AMBER}
@@ -141,7 +141,7 @@ U(r_{ij}) = 4\epsilon\left[\left
 \end{equation}
 \item Restrained harmonic:  ({\bf rhrm})
 \begin{equation}
-U(r_{ij}) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
 \frac{1}{2}k(r_{ij}-r_{o})^{2} & |r_{ij}-r_{o}|\le r_{c} \\
 \frac{1}{2}kr_{c}^{2}+kr_{c}(|r_{ij}-r_{o}|-r_{c}) & |r_{ij}-r_{o}| > r_{c}
 \end{array} \right.
@@ -164,7 +164,7 @@ It is worth noting that the Coulomb potential switches
 to the particular model of Electrostatics opted in CONTROL.
 \item Shifted finitely extendible non-linear elastic (FENE) potential \cite{warner-72a,bird-77a,grest-86a}:  ({\bf fene})
 \begin{equation}
-U(r_{ij}) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
 -0.5~k~R_{o}^{2}~ln\left[1-\left(\frac{r_{ij}-\Delta}{R_{o}}\right)^{2}\right] & |r_{ij} - \Delta| < R_{o} \\
 \infty & |r_{ij} - \Delta| \ge R_{o} \end{array} \right. \label{FENE}
 \end{equation}
@@ -1006,7 +1006,7 @@ U(r_{ij}) = \frac{1}{2}k(r_{i0})^{2}
 \end{equation}
 \item Restrained harmonic:  ({\bf rhrm})
 \begin{equation}
-U(r_{ij}) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
 \frac{1}{2}k(r_{i0})^{2} & |r_{i0}| \le r_{c} \\
 \frac{1}{2}kr_{c}^{2} + kr_{c}(r_{i0}-r_{c}) & |r_{i0}| > r_{c}
 \end{array} \right.
@@ -1119,7 +1119,7 @@ U(r_{ij}) = E_{o}~[\{1-\exp(-k(r_{ij}-r_{o}))\}^{2}-1]
 \end{equation}
 \item Shifted Weeks-Chandler-Anderson (WCA) potential \cite{weeks-71a}:  ({\bf wca})
 \begin{equation}
-U(r_{ij}) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
 4\epsilon\left[\left(\frac{\sigma}{r_{ij}-\Delta}\right)^{12}-\left(\frac{\sigma}{r_{ij}-\Delta}\right)^{6}\right]
 +\epsilon & r_{ij} < 2^{1 \over 6}~\sigma + \Delta \\
 0 & r_{ij} \ge 2^{1 \over 6}~\sigma + \Delta \end{array} \right. \label{wca}
@@ -1133,11 +1133,11 @@ implementation allows for a radius shift of up to half a $\sigma$
 ($\Delta_{default} = 0$).
 \item Standard DPD potential:  ({\bf dpd})
 \begin{equation}
-U(r_{ij}) = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
 \frac{A}{2}~r_{c}~\left(1-\frac{r_{ij}}{r_{c}}\right)^{2} & r_{ij} < r_{c} \\
 0 & r_{ij} \ge r_{c} \end{array} \right.
 \end{equation}
-It takes the Groot-Warren \cite{groot-71a} form giving a soft and purely repulsive interaction.
+It takes the Groot-Warren \cite{groot-97a} form giving a soft and purely repulsive interaction.
 \item AMOEBA force-field 14-7 pair potential \cite{ponder-10a}:  ({\bf amoe})
 \begin{equation}
 U(r_{ij}) = \epsilon\left(\frac{1.07}{(r_{ij}/r_{o})+0.07}\right)^{7}\left(\frac{1.12}{(r_{ij}/r_{o})^{7}+0.12}-2\right)
@@ -1425,14 +1425,17 @@ two body part may be defined by a matching van der Waals potential in
 the vdw section of the FIELD file.  It has the form:
 \begin{eqnarray}
 V_{ij}(r_{ij}) &=& 0 \nonumber \\
-\rho_{ij}(r_{ij}) &=& \left\{ \begin{array} {l@{\quad:\quad}l}
-0 & r_{ij} < c \\
-a/r_{ij}^{m} & c < r_{ij} < d \\
-0 & r_{ij} > d
-\end{array} \right. \\
+\rho_{ij}(r_{ij}) &=& \left(\frac{a}{r_{ij}^{m}}\right) \frac{1}{2}\left[1+{\rm erf}\left(\alpha(r_{ij}-r_{\rm o})\right)\right] \\
 F(\rho_{i}) &=& -\epsilon \sqrt{\rho_{i}}~~, \nonumber
 \end{eqnarray}
-with parameters: $\epsilon$, $a$, $m$, both $c$ and $d$ are cutoffs.
+with parameters: $\epsilon$, $a$, $m$, $\alpha$ and $r_{\rm o}$.
+
+{\bf Note} that the parameters $\alpha$ and $r_{\rm o}$ must be the same for all
+defined potentials of this type.  \D will set $\alpha={\rm Max}(0,\alpha_{pq})$
+and $r_{\rm o}={\rm Max}(0,r_{{\rm o}\_pq})$ for all defined interactions of
+this type between species $p$ and $q$.  If after this any is left undefined,
+i.e. zero, the undefined entities will be set to their defaults: $\alpha=20$
+and $r_{\rm o}={\rm Min}(1.5,0.2~r_{\rm cut})$.
 \end{enumerate}
 
 All of these metal potentials can be decomposed into pair
@@ -2396,21 +2399,21 @@ with the force on atom $i$ the negative of this.
 
 The force-shifted Coulomb potential can be elegantly extended to
 emulate long-range ordering by including distance depending damping
-function $erfc(\alpha~r_{ij})$ (identical to that seen in the
+function ${\rm erfc}(\alpha~r_{ij})$ (identical to that seen in the
 real-space portion of the Ewald sum) and thus mirror the effective
 charge screening \cite{fennell-06a} as shown below
 \begin{eqnarray}
 U(r_{ij}) = {q_{i} q_{j} \over 4\pi\epsilon_{0}\epsilon} \left[
-\left\{ \frac{erfc(\alpha~r_{ij})}{r_{ij}} + \left(\frac{erfc(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}}+
+\left\{ \frac{{\rm erfc}(\alpha~r_{ij})}{r_{ij}} + \left(\frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}}+
 \frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{\rm cut}^{2})}{r_{\rm cut}}\right)~r_{ij}\right\} - \phantom{xx} \right. \nonumber \\
-\left. \left\{ \frac{erfc(\alpha~r_{\rm cut})}{r_{\rm cut}} + \left(\frac{erfc(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}}+
+\left. \left\{ \frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}} + \left(\frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}}+
 \frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{\rm cut}^{2})}{r_{\rm cut}}\right)~r_{\rm cut}\right\} \right]~~,
 \end{eqnarray}
 with the force on an atom $j$ given by
 \begin{eqnarray}
-\vek{f}_{j} = {q_{i} q_{j} \over 4\pi\epsilon_{0}\epsilon} \left[ \left( \frac{erfc(\alpha~r_{ij})}{r_{ij}^{2}} +
+\vek{f}_{j} = {q_{i} q_{j} \over 4\pi\epsilon_{0}\epsilon} \left[ \left( \frac{{\rm erfc}(\alpha~r_{ij})}{r_{ij}^{2}} +
 \frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{ij}^{2})}{r_{ij}} \right) - \phantom{xxxxx} \right. \nonumber \\
-\left. \left( \frac{erfc(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}} +
+\left. \left( \frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}} +
 \frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{\rm cut}^{2})}{r_{\rm cut}} \right) \right]~\frac{\vek{r}_{ij}}{r_{ij}}~~,
 \end{eqnarray}
 with the force on atom $i$ the negative of this.
@@ -2535,22 +2538,22 @@ $n$ within the cavity is given by
 In \D the reaction field is optionally extended to emulate
 long-range ordering in a force-shifted manner by countering
 the reaction term and using a distance depending damping
-function $erfc(\alpha~r_{ij})$ (identical to that seen in
+function ${\rm erfc}(\alpha~r_{ij})$ (identical to that seen in
 the real-space portion of the Ewald sum) and thus mirror the
 effective charge screening \cite{fennell-06a}:
 \begin{eqnarray}
 U(r_{ij}) = {q_{i} q_{j} \over 4\pi\epsilon_{0}\epsilon} \left[
-\left\{ \frac{erfc(\alpha~r_{ij})}{r_{ij}} + \left(\frac{erfc(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}}+
+\left\{ \frac{{\rm erfc}(\alpha~r_{ij})}{r_{ij}} + \left(\frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}}+
 \frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{\rm cut}^{2})}{r_{\rm cut}}\right)~r_{ij}\right\} - \phantom{xxxxxxx} \right. \nonumber \\
-\left. \left\{ \frac{erfc(\alpha~r_{\rm cut})}{r_{\rm cut}} + \left(\frac{erfc(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}}+
+\left. \left\{ \frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}} + \left(\frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}}+
 \frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{\rm cut}^{2})}{r_{\rm cut}}\right)~r_{\rm cut}\right\} +
 \frac{B_{0}(r_{ij}^{2}-r_{\rm cut}^{2})}{2 r_{\rm cut}^{3}} \right],
 \end{eqnarray}
 with the force on an atom $j$ given by
 \begin{eqnarray}
-\vek{f}_{j} = {q_{i} q_{j} \over 4\pi\epsilon_{0}\epsilon} \left[ \left( \frac{erfc(\alpha~r_{ij})}{r_{ij}^{2}} +
+\vek{f}_{j} = {q_{i} q_{j} \over 4\pi\epsilon_{0}\epsilon} \left[ \left( \frac{{\rm erfc}(\alpha~r_{ij})}{r_{ij}^{2}} +
 \frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{ij}^{2})}{r_{ij}} \right) - \phantom{xxxxxxxxxxx} \right. \nonumber \\
-\left. \left( \frac{erfc(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}} +
+\left. \left( \frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}} +
 \frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{\rm cut}^{2})}{r_{\rm cut}} \right) -
 \frac{B_{0}r_{ij}}{r_{\rm cut}^{3}} \right]~\frac{\vek{r}_{ij}}{r_{ij}}~~,
 \end{eqnarray}
@@ -2624,8 +2627,8 @@ to removing terms corresponding to the potential energy of an ion
 $\ell$ due to the Gaussian\index{constraints!Gaussian} charge on a
 neighbouring charge $m$ (or {\em vice versa}).  This correction
 appears as the final term in the full Ewald\index{Ewald!summation}
-formula below.  The distinction between the error function $erf$
-and the more usual complementary error function $erfc$ found in
+formula below.  The distinction between the error function $\rm erf$
+and the more usual complementary error function $\rm erfc$ found in
 the real space sum, should be noted.
 
 The same considerations and modifications {\sc
@@ -2638,14 +2641,14 @@ U_{c}&=&\frac{1}{2V_{o} \epsilon_{0}\epsilon} \sum_{\vek{k} \neq
 \vek{0}}^{\vek{\infty}} \frac{\exp(-k^{2}/4\alpha^{2})}{k^{2}}
 |\sum_{j}^{N} q_{j}\exp(-i\vek{k}\cdot\vek{r}_{j})|^{2} +
 \frac{1}{4\pi\epsilon_{0}\epsilon} \sum_{n<j}^{N^{*}} \frac{q_{j}q_{n}}
-{r_{nj}} erfc(\alpha r_{nj}) - \phantom{xxxx} \nonumber \\
+{r_{nj}} {\rm erfc}(\alpha r_{nj}) - \phantom{xxxx} \nonumber \\
 & & \frac{1}{4\pi\epsilon_{0}\epsilon} \sum_{molecules}
 \sum_{\ell\le m}^{M^{*}} q_{\ell}q_{m} \left\{ \delta_{\ell m}
-\frac{\alpha}{\sqrt{\pi}} + \frac{erf(\alpha r_{\ell m})}{r_{\ell
+\frac{\alpha}{\sqrt{\pi}} + \frac{{\rm erf}(\alpha r_{\ell m})}{r_{\ell
 m}^{1-\delta_{\ell m}}} \right\} - \\
 & & \frac{1}{4\pi\epsilon_{0}\epsilon} \sum_{\ell\le m}^{F^{*}}
 q_{\ell}q_{m} \left\{ \delta_{\ell m} \frac{\alpha}{\sqrt{\pi}} +
-\frac{erf(\alpha r_{\ell m})}{r_{\ell m}^{1-\delta_{\ell m}}}
+\frac{{\rm erf}(\alpha r_{\ell m})}{r_{\ell m}^{1-\delta_{\ell m}}}
 \right\} - \frac{1}{4\pi\epsilon_{0}\epsilon} \frac{\pi}{2V_{o} \alpha^{2}}
 \left\{ \sum_{j}^{N} q_{j} \right\}^{2}~~, \nonumber
 \end{eqnarray}
@@ -3005,7 +3008,7 @@ P \cdot \vek{\textrm{Area}}(\perp\textrm{X-}direction)~~~~~: \forall~k=i,..,j~~.
 \end{equation}
 \item Harmonic restraint zone in z-direction: ({\bf zres})
 \begin{equation}
-\vek{F}_{z} = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+\vek{F}_{z} = \left\{ \begin{array} {l@{\quad:\quad}l}
 A~(z_{com}-z_{max}) & z_{com} > z_{max} \\
 A~(z_{min}-z_{com}) & z_{com} < z_{min}~~,
 \end{array} \right.
@@ -3013,14 +3016,14 @@ A~(z_{min}-z_{com}) & z_{com} < z_{min}~~,
 where $z_{com}$ is the chosen molecule centre of mass.
 \item Harmonic restraint zone in z-direction - (pull out): ({\bf zrs-})
 \begin{equation}
-\vek{F}_{z} = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+\vek{F}_{z} = \left\{ \begin{array} {l@{\quad:\quad}l}
 A~(z-z_{max}) & z \ge (z_{max}+z_{min})/2 \\
 A~(z_{min}-z) & z < (z_{max}+z_{min})/2
 \end{array} \right.
 \end{equation}
 \item Harmonic restraint zone in z-direction + (pull in): ({\bf zrs+})
 \begin{equation}
-\vek{F}_{z} = \left\{ \begin{array} {l@{\qquad:\qquad}l}
+\vek{F}_{z} = \left\{ \begin{array} {l@{\quad:\quad}l}
 A~(z-z_{max}) & z > z_{max} \\
 A~(z_{min}-z) & z < z_{min}
 \end{array} \right.
@@ -3115,3 +3118,21 @@ A 5-point interpolation is used for finding the numerical derivatives of
 (2B)(E)EAM type potentials which are supplied in TABEAM by the user.  For
 this a Lagrange formula is used, which can be found in any textbook on
 numerical methods.
+
+\section{Open Knowledgebase of Interatomic Models - openKIM}
+\label{kim}
+
+\D force-field allows for full model interactions specification by using an
+openKIM model - \\ \href{http://OpenKIM.org/}{http://OpenKIM.org/}\index{WWW}.
+A KIM model contains all necessary interactions (bonded and non-bonded of
+any kind) and their parameters for a specific model within a designated
+container.  Thus a KIM model can be used as a force-field container when
+made available to \D at run time (see the description of the FIELD file in
+Section~\ref{field-file}) upon a specification within FIELD together with a
+matching molecular description for the model system, also specified in FIELD.
+Due to the history of the openKIM initiative and the constraints of the logic
+of the \D FIELD file the designated place for a KIM model specification is
+in the VDW section.  In order to use openKIM functionality within \D one must
+further ensure that \D is cross-compiled with openKIM.  For guidance on this
+together with testing, please refer to {\sc README\_KIM.txt} in {\em source}
+and follow instructions within.

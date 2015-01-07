@@ -47,7 +47,7 @@ are advanced to to a full step using the new force
 simpler and numerically faster than the VV scheme, it is not time
 reversible and does not offer the numerical stability the VV scheme
 does.  Furthermore, all kinetic related properties have approximate
-estimators due to the half a step out of phase between velocity and psoition.
+estimators due to the half a step out of phase between velocity and position.
 
 The LFV algorithm is one staged.  It requires values of position
 ($\vek{r}$) and force ($\vek{f}$) at time $t$ and  velocity
@@ -158,6 +158,7 @@ LFV cast integration, within \D is as follows:
 XXXXXXXXXX\=XXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\kill\\
 {\sc nve\_0\_vv}  \> {\sc nve\_0\_lfv}  \> Constant E algorithm\index{ensemble!NVE} \\
 {\sc nve\_1\_vv}  \> {\sc nve\_1\_lfv}  \> The same as the above but also incorporating RB integration \\
+{\sc dpd\_thermostat} \> N/A            \> Constant T algorithm\index{ensemble!DPD NVT} (DPD \cite{shardlow-03a}) \\
 {\sc nvt\_e0\_vv} \> {\sc nvt\_e0\_lfv} \> Constant $E_{kin}$ algorithm\index{ensemble!Evans NVT} (Evans \cite{evans-84a}) \\
 {\sc nvt\_e1\_vv} \> {\sc nvt\_e1\_lfv} \> The same as the above but also incorporating RB integration \\
 {\sc nvt\_l0\_vv} \> {\sc nvt\_l0\_lfv} \> Constant T algorithm\index{ensemble!Langevin NVT} (Langevin \cite{adelman-76a}) \\
@@ -394,7 +395,7 @@ plotted as a function of reaction coordinate and the function
 integrated to obtain the free energy for the overall process
 \cite{mccammon-87a}.  The PMF constraint force, virial and
 contributions to the stress tensor are obtained in a manner
-analagous to that for a bond constraint (see previous section).
+analogous to that for a bond constraint (see previous section).
 The only difference is that the constraint is now applied
 between the centres of two groups which need not be atoms alone.
 \D reports the PMF constraint virial, ${\cal W}_{PMF}$, for each
@@ -411,7 +412,7 @@ atomic velocities of all particles constituting PMF units.
 
 In presence of both bond constraints\index{constraints!bond} and
 PMF constraints\index{constraints!PMF}.  The constraint procedures,
-i.e. SHAKE or RATTLE, for both types of constraineds are applied
+i.e. SHAKE or RATTLE, for both types of constraints are applied
 iteratively in order bonds-PMFs until convergence of ${\cal W}_{PMF}$
 reached.  The number of iteration cycles is limited by the same limit
 as for the bond constraints' procedures (SHAKE/RATTLE).
@@ -424,17 +425,18 @@ $T_{\rm ext}$.  When this is done the equations of motion are
 modified and the system no longer samples the microcanonical
 ensemble\index{ensemble!NVE}.  Instead trajectories in the canonical
 (NVT) ensemble\index{ensemble!canonical}, or something close to it
-are generated.  \D comes with six different thermostats: Evans
+are generated.  \D comes with seven different thermostats: Evans
 (Gaussian constraints)\index{constraints!Gaussian} \cite{evans-84a},
 Langevin \cite{adelman-76a,izaguirre-01a}, Andersen \cite{andersen-79a},
-Berendsen \cite{berendsen-84a}, Nos\'e-Hoover \cite{hoover-85a} and
-the gentle stochastic thermostat \cite{leimkuhler-09a,samoletov-07a}.  Of
-these, only the gentle stochastic thermostat, Nos\'e-Hoover and
-Langevin algorithms generate trajectories in the canonical (NVT)
-ensemble.  The rest will produce properties that typically differ
-from canonical averages by ${\cal O}(1/{\cal N})$ \cite{allen-89a}
-(where $\cal N$ is the number of particles in the system), as the
-Evans algorithm generates trajectories in the (NVE$_{kin}$) ensemble.
+Berendsen \cite{berendsen-84a}, Nos\'e-Hoover (N-H) \cite{hoover-85a} and
+the gentle stochastic thermostat (GST) \cite{leimkuhler-09a,samoletov-07a}
+as well as Dissipative Particle Dynamics (DPD) method \index{DPD}
+\cite{Hoogerbrugge-92a,espanol-95a,groot-97a,shardlow-03a},  Of these,
+only the Langevin, N-H, GST and DPD algorithms generate \emph{true}
+trajectories in the canonical (NVT) ensemble.  The rest will produce
+properties that typically differ from canonical averages by ${\cal O}(1/{\cal N})$
+\cite{allen-89a} (where $\cal N$ is the number of particles in the system),
+as the Evans algorithm generates trajectories in the (NVE$_{kin}$) ensemble.
 
 \subsection{Evans Thermostat (Gaussian Constraints)}
 
@@ -586,13 +588,13 @@ Impulse (LI) manner \cite{izaguirre-01a}:
 {\Delta t \over 2} \; {\vek{f}(t) \over m} \nonumber \\
 \vek{v}(t + {1 \over 2} \Delta t - \epsilon) &\leftarrow&
 \exp(-\chi~\Delta t) \; \vek{v}(t + \epsilon) +
-\frac{\sqrt{2~\chi~m~k_{B}T}}{m} \; \vec{Z}_{1}(\chi , \Delta t) \\
+\frac{\sqrt{2~\chi~m~k_{B}T}}{m} \; \vek{Z}_{1}(\chi , \Delta t) \\
 \vek{r}(t + \Delta t) &\leftarrow& \vek{r}(t) +
 \frac{1-\exp(-\chi~\Delta t)}{\chi} \; \vek{v}(t + \epsilon) +
 \frac{\sqrt{2~\chi~m~k_{B}T}}{\chi~m} \;
-\vec{Z}_{2}(\chi , \Delta t)~~, \nonumber
+\vek{Z}_{2}(\chi , \Delta t)~~, \nonumber
 \end{eqnarray}
-where $\vec{Z}_{1}(\chi , \Delta t)$ and $\vec{Z}_{2}(\chi , \Delta
+where $\vek{Z}_{1}(\chi , \Delta t)$ and $\vek{Z}_{2}(\chi , \Delta
 t)$ are joint Gaussian random variables of zero mean, sampling from
 a {\em bivariate} Gaussian distribution \cite{izaguirre-01a}:
 \begin{equation}
@@ -636,6 +638,12 @@ easily related to the Langevin random forces as defined in equation~(\ref{langev
 \item RATTLE\_VV2~~.
 \end{enumerate}
 The algorithm is self-consistent and requires no iterations.
+It is worth noting that the integration is conditional upon
+the Cholesky factorisation which is impossible when
+$\Delta t < \sigma_{1}^{2}/\sigma_{2}$~.  That is why a safety
+check is put in place which when failed iteratively increases
+the integration timestep to a safe value with respect to the
+above condition.
 
 The LFV implementation of the Langevin thermostat is straightforward:
 \begin{enumerate}
@@ -1119,6 +1127,65 @@ The VV and LFV flavours of the Gentle Stochastic Thermostat are implemented in
 the \D routines {\sc nvt\_g0\_vv} and {\sc nvt\_g0\_lfv} respectively.
 The routines {\sc nvt\_g1\_vv} and {\sc nvt\_g1\_lfv} implement the
 same but also incorporate RB dynamics.
+
+\subsection{Dissipative Particle Dynamics Thermostat}
+
+An elegant way to integrate the DPD equations of motions, as shown
+in Appendix~\ref{DPD-all}, is introduced by Shardlow \cite{shardlow-03a}.
+By applying ideas commonly used in solving differential equations
+to the case of integrating the equations of motion in DPD, the
+integration process is factorised by splitting the conservative forces
+calculation from that of the dissipative and random terms.  In this way
+the conservative part can be solved using traditional molecular dynamics
+methods, while the fluctuation-dissipation part is solved separately as
+a stochastic differential (Langevin) equation.  There are two Shardlow
+integrators, called S1 ({\bf dpds1}) and S2 ({\bf dpds2}), based on
+splitting the equations of motion up to first and second order,
+respectively, using Suzuki-Trotter(Strang) expansion of the Lioville
+evolution operator and thus warranting the integrators' symplectic.
+
+To describe the two integrators we define the algorithmic sequence
+\begin{equation}
+{\rm S}(\Delta t)~~=~~\left\{ \begin{array} {l}
+\textnormal{~For all pairs of particles for which}~r_{ij} < r_{c} : \\
+\begin{array} {l}
+(1):~~~\vek{v}_{i}~\leftarrow~\vek{v}_{i} - \frac{1}{2 m_{i}} \left\{ \gamma_{ij} w^{2}_{(r_{ij})}
+(\vek{v}_{ij} \cdot \vek{e}_{ij}) \vek{e}_{ij} \Delta t +
+\sqrt{2 \gamma_{ij} k_{B} T} w_{(r_{ij})} \zeta_{ij} \vek{e}_{ij} \sqrt{\Delta t} \right\} \\
+(2):~~~\vek{v}_{j}~\leftarrow~\vek{v}_{j} + \frac{1}{2 m_{i}} \left\{ \gamma_{ij} w^{2}_{(r_{ij})}
+(\vek{v}_{ij} \cdot \vek{e}_{ij}) \vek{e}_{ij} \Delta t -
+\sqrt{2 \gamma_{ij} k_{B} T} w_{(r_{ij})} \zeta_{ij} \vek{e}_{ij} \sqrt{\Delta t} \right\} \\
+(3):~~~\vek{v}_{i}~\leftarrow~\vek{v}_{i} + \frac{1}{2 m_{i}} \left\{ \sqrt{2 \gamma_{ij} k_{B} T}
+w_{(r_{ij})} \zeta_{ij} \vek{e}_{ij} \sqrt{\Delta t} -
+\frac{\gamma_{ij} w^{2}(r_{ij}) \Delta t}{1 + \gamma_{ij} w^{2}(r_{ij}) \Delta t} \right. \times \\
+\phantom{xxxxxxxxxxxxxxxxxxxxxxxxx} \left. \left[(\vek{v}_{ij} \cdot \vek{e}_{ij}) \vek{e}_{ij} +
+\sqrt{2 \gamma_{ij} k_{B} T} w_{(r_{ij})} \zeta_{ij} \vek{e}_{ij} \sqrt{\Delta t} \right] \right\} \\
+(4):~~~\vek{v}_{j}~\leftarrow~\vek{v}_{j} - \frac{1}{2 m_{i}} \left\{ \sqrt{2 \gamma_{ij} k_{B} T}
+w_{(r_{ij})} \zeta_{ij} \vek{e}_{ij} \sqrt{\Delta t} +
+\frac{\gamma_{ij} w^{2}(r_{ij}) \Delta t}{1 + \gamma_{ij} w^{2}(r_{ij}) \Delta t}  \right. \times \\
+\phantom{xxxxxxxxxxxxxxxxxxxxxxxxx} \left. \left[(\vek{v}_{ij} \cdot \vek{e}_{ij}) \vek{e}_{ij} +
+\sqrt{2 \gamma_{ij} k_{B} T} w_{(r_{ij})} \zeta_{ij} \vek{e}_{ij} \sqrt{\Delta t} \right] \right\}
+\end{array} \end{array} \right.
+\end{equation}
+as the Shardlow operator, where $\zeta_{ij}$ is the random number with zero mean
+and unit variance, unique for every unique pair $\left\{ij\right\}$ in the system,
+and $w_{(r_{ij})} = w^{C}(r_{ij})$ is the DPD conservative force switching function in
+equation~(\ref{DPDS}), $\gamma_{ij}$ is the drag coefficient between the types of
+particles $i$ and $j$, $\vek{v}_{ij} = \vek{v}_{j}-\vek{v}_{i}$ is the inter-particle
+relative velocity and $\vek{e}_{ij} = \vek{r}_{ij}/r_{ij}$ is the inter-particle unit
+vector.  $k_{B}$ and $T$ are the Boltzmann constant and the system target temperature.
+
+If we define the velocity Verlet microcsannonical (NVE) ensemble sequence as
+${\rm NVE}(t + \Delta t)$ then Shardlow's first (${\cal S}1$) and second (${\cal S}2$)
+order splittings can be written algorithmically as the following sequential operators applications:
+\begin{eqnarray}
+{\cal S}1 &::& {\rm S(~\Delta t~~)} \rightarrow {\rm NVE}(t + \Delta t) \nonumber \\
+{\cal S}2 &::& {\rm S}(\Delta t / 2) \rightarrow {\rm NVE}(t + \Delta t) \rightarrow {\rm S}(\Delta t / 2)~~.
+\end{eqnarray}
+
+The application of these DPD thermostats are implemented in the \D routine
+{\sc dpd\_thermostat} and which only applies as a perturbation around the
+NVE integrator incorporating both particle and RB dynamics.
 
 \section{Barostats}
 

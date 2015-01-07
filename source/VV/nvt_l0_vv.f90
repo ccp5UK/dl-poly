@@ -18,7 +18,7 @@ Subroutine nvt_l0_vv                                                &
 ! (brownian dynamics is not symplectic due to the random forces)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -168,12 +168,28 @@ Subroutine nvt_l0_vv                                                &
         strpmf=0.0_wp
      End If
 
-! update velocity and position
-! Create primitive scalers
+! Create primitive scalers and adjust/increase timestep if need be
+! when Cholesky factorisation is compromised
 
      t0 = Exp(-chi*tstep)
      t1 = (1.0_wp-t0   )/(  chi)
      t2 = (1.0_wp-t0**2)/(2*chi)
+
+     safe=.true.
+     Do
+        tmp=t1**2/t2
+        If (tstep-tmp >= zero_plus) Then
+           If ((.not.safe) .and. idnode == 0) Write(nrite,"(/,1x, &
+              & 'timestep increased due to impossibility of integration, new timestep is:',3x,1p,e16.8,/)") tstep
+           Exit
+        Else
+           safe=.false.
+           tstep=tmp+1.0e-10_wp
+           t0 = Exp(-chi*tstep)
+           t1 = (1.0_wp-t0   )/(  chi)
+           t2 = (1.0_wp-t0**2)/(2*chi)
+        End If
+     End Do
 
 ! Create complex scalers
 
@@ -184,6 +200,8 @@ Subroutine nvt_l0_vv                                                &
      scr1 = (t1-t2)/Sqrt(t2*tstep)/chi
      scl1 = Sqrt(1.0_wp-(t1**2)/(t2*tstep))/chi
      scv1 = Sqrt(t2/tstep)
+
+! update velocity and position
 
      Do i=1,natms
         If (weight(i) > 1.0e-6_wp) Then

@@ -1,6 +1,6 @@
 # Master makefile for DL_POLY_4.07 (serial version 1)
 #
-# Author - I.T.Todorov December 2014
+# Author - I.T.Todorov January 2015
 #
 #
 # Define default settings
@@ -29,7 +29,7 @@ OBJ_MOD = \
 	domains_module.o \
 	site_module.o config_module.o vnl_module.o \
 	defects_module.o defects1_module.o \
-	dpd_modile.o vdw_module.o metal_module.o tersoff_module.o \
+	dpd_module.o vdw_module.o metal_module.o tersoff_module.o \
 	three_body_module.o four_body_module.o kim_modul~.o \
 	rdf_module.o z_density_module.o \
 	core_shell_module.o \
@@ -53,7 +53,7 @@ OBJ_ALL = \
 	bonds_table_read.o angles_table_read.o \
 	dihedrals_table_read.o inversions_table_read.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
-	metal_generate.o metal_table_read.o metal_table_derivatives.o \
+	metal_generate_erf.o metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_field.o \
 	check_config.o origin_config.o scale_config.o write_config.o \
 	trajectory_write.o system_expand.o \
@@ -184,7 +184,7 @@ all:
 	@echo
 	@echo "The available, permissive targets are displayed below:"
 	@echo
-	@echo "win || win-debug"
+	@echo "gnu || gnu-debug"
 	@echo
 	@echo "Please examine this Makefile's targets for details!"
 	@echo "If no target suits your system then create your own"
@@ -249,20 +249,24 @@ uknown_platform:
 # System specific targets follow:
 #=====================================================================
 
-#====================== Generic f95 compilers ========================
-win:
-	$(MAKE) LD="f95 -o" \
+#====================== GNU fortran compiler =========================
+gnu:
+	$(MAKE) LD="gfortran -o" \
 	LDFLAGS="-O3" \
-	FC="f95 -c" \
+	FC="gfortran -c" \
 	FCFLAGS="-O3" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
-#====================== Generic f95 compilers - DEBUG ================
-win-debug:
-	$(MAKE) LD="f95 -o" \
-	LDFLAGS="-O0 -C=all -C=undefined" \
-	FC="f95 -c" \
-	FCFLAGS="-O0 -C=all -C=undefined" \
+#====================== GNU fortran compiler - DEBUG =================
+gnu-debug:
+	$(MAKE) LD="gfortran -o" \
+	LDFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
+	         -finit-integer=-9999 -finit-real=nan -std=f2003 \
+	         -ffpe-trap=invalid,zero,overflow -fdump-core" \
+	FC="gfortran -c" \
+	FCFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
+	         -finit-integer=-9999 -finit-real=nan -std=f2003 \
+	         -ffpe-trap=invalid,zero,overflow -fdump-core" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 # Default code

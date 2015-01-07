@@ -83,6 +83,8 @@ Program dl_poly
   Use three_body_module
   Use four_body_module
 
+  Use kim_module
+
   Use external_field_module
 
 ! STATISTICS MODULES
@@ -212,7 +214,7 @@ Program dl_poly
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  version:  4.07    /    december 2014  ****** O ****", &
+          "**         **  version:  4.07    /    january  2015  ****** O ****", &
           "*************  execution on ", mxnode, "    node(s)  ******* L ***", &
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
@@ -602,7 +604,7 @@ Program dl_poly
 ! Now you can run fast, boy
 
   If (l_fast) Call gsync(l_fast)
-  Call vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk)
+  Call vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk,width)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
