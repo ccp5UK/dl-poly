@@ -6,7 +6,7 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 ! adjust by weighting factor
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov september 2014
+! amended   - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,11 +23,11 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: dlrpot,rdr
 
-  Integer           :: key,k,l,ityp
-  Real( Kind = wp ) :: rsq,rrr,ppp,               &
-                       r0,r0rn,r0rm,r_6,sor6,     &
-                       rho,a,b,c,d,e0,kk,         &
-                       n,m,rc,sig,eps,alpha,beta, &
+  Integer           :: key,k,l,ityp,n,m
+  Real( Kind = wp ) :: rsq,rrr,ppp,                 &
+                       r0,r0rn,r0rm,r_6,sor6,       &
+                       rho,a,b,c,d,e0,kk,           &
+                       nr,mr,rc,sig,eps,alpha,beta, &
                        gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3
 
   If (newjob) Then
@@ -105,17 +105,17 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
            e0=prmvdw(1,k)
-           n =prmvdw(2,k)
-           m =prmvdw(3,k)
+           n =Nint(prmvdw(2,k)) ; nr=Real(n,wp)
+           m =Nint(prmvdw(3,k)) ; mr=Real(m,wp)
            r0=prmvdw(4,k)
 
            a=r0/rrr
-           b=1.0_wp/(n-m)
+           b=1.0_wp/(nr-mr)
            r0rn=a**n
            r0rm=a**m
 
-           eng   = e0*(m*r0rn-n*r0rm)*b
-           gamma = e0*m*n*(r0rn-r0rm)*b/rsq
+           eng   = e0*(mr*r0rn-nr*r0rm)*b
+           gamma = e0*mr*nr*(r0rn-r0rm)*b/rsq
 
            If (ls_vdw) Then ! force-shifting
               eng   = eng + afs(k)*rrr + bfs(k)
@@ -195,28 +195,28 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 ! shifted and force corrected n-m potential (w.smith) ::
 
            e0=prmvdw(1,k)
-           n =prmvdw(2,k)
-           m =prmvdw(3,k)
+           n =Nint(prmvdw(2,k)) ; nr=Real(n,wp)
+           m =Nint(prmvdw(3,k)) ; mr=Real(m,wp)
            r0=prmvdw(4,k)
            rc=prmvdw(5,k) ; If (rc < 1.0e-6_wp) rc=rvdw
 
            If (n <= m) Call error(470)
 
-           b=1.0_wp/(n-m)
+           b=1.0_wp/(nr-mr)
            c=rc/r0 ; If (c < 1.0_wp) Call error(468)
 
-           beta = c*( (c**(m+1.0_wp)-1.0_wp) / (c**(n+1.0_wp)-1.0_wp) )**b
-           alpha= -(n-m) / (  m*(beta**n)*(1.0_wp+(n/c-n-1.0_wp)/c**n) &
-                             -n*(beta**m)*(1.0_wp+(m/c-m-1.0_wp)/c**m) )
+           beta = c*( (c**(m+1)-1.0_wp) / (c**(n+1)-1.0_wp) )**b
+           alpha= -(nr-mr) / (  mr*(beta**n)*(1.0_wp+(nr/c-nr-1.0_wp)/c**n) &
+                               -nr*(beta**m)*(1.0_wp+(mr/c-mr-1.0_wp)/c**m) )
            e0 = e0*alpha
 
            If (rrr <= rc) Then
               a=r0/rrr
 
-              eng   = e0*(  m*(beta**n)*(a**n-(1.0_wp/c)**n) &
-                           -n*(beta**m)*(a**m-(1.0_wp/c)**m) &
-                           +n*m*((rrr/rc-1.0_wp)*((beta/c)**n-(beta/c)**m)) )*b
-              gamma = e0*m*n*( (beta**n)*a**n-(beta**m)*a**m &
+              eng   = e0*(  mr*(beta**n)*(a**n-(1.0_wp/c)**n) &
+                           -nr*(beta**m)*(a**m-(1.0_wp/c)**m) &
+                           +nr*mr*((rrr/rc-1.0_wp)*((beta/c)**n-(beta/c)**m)) )*b
+              gamma = e0*mr*nr*( (beta**n)*a**n-(beta**m)*a**m &
                                -rrr/rc*((beta/c)**n-(beta/c)**m) )*b/rsq
            End If
 

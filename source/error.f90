@@ -824,7 +824,7 @@ Subroutine error(kode)
 
      Else If (kode ==  506) Then
 
-        Write(nrite,'(/,1x,a)') 'error - EAM metal densities out of range'
+        Write(nrite,'(/,1x,a)') 'error - EAM or MBPC metal densities out of range'
 
      Else If (kode ==  507) Then
 

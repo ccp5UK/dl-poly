@@ -7,7 +7,7 @@ Subroutine vdw_generate(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov september 2014
+! amended   - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -19,9 +19,9 @@ Subroutine vdw_generate(rvdw)
 
   Real( Kind = wp ), Intent( In    ) :: rvdw
 
-  Integer           :: i,ivdw,keypot
+  Integer           :: i,ivdw,keypot,n,m
   Real( Kind = wp ) :: dlrpot,r,r0,r0rn,r0rm,r_6,sor6,  &
-                       rho,a,b,c,d,e0,k,n,m,rc,sig,eps, &
+                       rho,a,b,c,d,e0,k,nr,mr,rc,sig,eps, &
                        alpha,beta,t1,t2,t3,t
 
 ! allocate arrays for tabulating
@@ -90,26 +90,26 @@ Subroutine vdw_generate(rvdw)
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
         e0=prmvdw(1,ivdw)
-        n =prmvdw(2,ivdw)
-        m =prmvdw(3,ivdw)
+        n =Nint(prmvdw(2,ivdw)) ; nr=Real(n,wp)
+        m =Nint(prmvdw(3,ivdw)) ; mr=Real(m,wp)
         r0=prmvdw(4,ivdw)
 
         Do i=1,mxgvdw
            r=Real(i,wp)*dlrpot
 
            a=r0/r
-           b=1.0_wp/(n-m)
+           b=1.0_wp/(nr-mr)
            r0rn=(a)**n
            r0rm=(a)**m
 
-           vvdw(i,ivdw)=e0*(m*r0rn-n*r0rm)*b
-           gvdw(i,ivdw)=e0*m*n*(r0rn-r0rm)*b
+           vvdw(i,ivdw)=e0*(mr*r0rn-nr*r0rm)*b
+           gvdw(i,ivdw)=e0*mr*nr*(r0rn-r0rm)*b
         End Do
         vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
         gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
 
         If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=r0*(n/m)**(1.0_wp/(m-n))
+           sigeps(1,ivdw)=r0*(nr/mr)**(1.0_wp/(mr-nr))
            sigeps(2,ivdw)=e0
         End If
 
@@ -240,8 +240,8 @@ Subroutine vdw_generate(rvdw)
 ! shifted and force corrected n-m potential (w.smith) ::
 
         e0=prmvdw(1,ivdw)
-        n =prmvdw(2,ivdw)
-        m =prmvdw(3,ivdw)
+        n =Nint(prmvdw(2,ivdw)) ; nr=Real(n,wp)
+        m =Nint(prmvdw(3,ivdw)) ; mr=Real(m,wp)
         r0=prmvdw(4,ivdw)
         rc=prmvdw(5,ivdw) ; If (rc < 1.0e-6_wp) rc=rvdw
 
@@ -255,9 +255,9 @@ Subroutine vdw_generate(rvdw)
         b=1.0_wp/(n-m)
         c = rc/r0 ; If (c < 1.0_wp) Call error(468)
 
-        beta = c*( (c**(m+1.0_wp)-1.0_wp) / (c**(n+1.0_wp)-1.0_wp) )**b
-        alpha= -(n-m) / (  m*(beta**n)*(1.0_wp+(n/c-n-1.0_wp)/c**n) &
-                          -n*(beta**m)*(1.0_wp+(m/c-m-1.0_wp)/c**m) )
+        beta = c*( (c**(m+1)-1.0_wp) / (c**(n+1)-1.0_wp) )**b
+        alpha= -(n-m) / (  mr*(beta**n)*(1.0_wp+(nr/c-nr-1.0_wp)/c**n) &
+                          -nr*(beta**m)*(1.0_wp+(mr/c-mr-1.0_wp)/c**m) )
         e0 = e0*alpha
 
         Do i=1,mxgvdw
@@ -265,10 +265,10 @@ Subroutine vdw_generate(rvdw)
            If (r <= rc) Then
               a=r0/r
 
-              vvdw(i,ivdw)=e0*(  m*(beta**n)*(a**n-(1.0_wp/c)**n) &
-                                -n*(beta**m)*(a**m-(1.0_wp/c)**m) &
-                                +n*m*((r/rc-1.0_wp)*((beta/c)**n-(beta/c)**m)) )*b
-              gvdw(i,ivdw)=e0*m*n*( (beta**n)*a**n-(beta**m)*a**m &
+              vvdw(i,ivdw)=e0*(  mr*(beta**n)*(a**n-(1.0_wp/c)**n) &
+                                -nr*(beta**m)*(a**m-(1.0_wp/c)**m) &
+                                +nr*mr*((r/rc-1.0_wp)*((beta/c)**n-(beta/c)**m)) )*b
+              gvdw(i,ivdw)=e0*mr*nr*( (beta**n)*a**n-(beta**m)*a**m &
                                     -r/rc*((beta/c)**n-(beta/c)**m) )*b
 
 ! Sigma-epsilon search

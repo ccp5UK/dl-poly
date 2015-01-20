@@ -6,7 +6,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
 ! direct vdw evaluation
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov february 2014
+! amended   - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -18,9 +18,9 @@ Subroutine vdw_direct_fs_generate(rvdw)
 
   Real( Kind = wp ), Intent( In    ) :: rvdw
 
-  Integer           :: ivdw,keypot
-  Real( Kind = wp ) :: r0,r0rn,r0rm,r_6,sor6, &
-                       rho,a,b,c,d,e0,kk,n,m, &
+  Integer           :: ivdw,keypot,n,m
+  Real( Kind = wp ) :: r0,r0rn,r0rm,r_6,sor6,   &
+                       rho,a,b,c,d,e0,kk,nr,mr, &
                        sig,eps,t1,t2,t3
 
 ! allocate arrays for force-shifted corrections
@@ -63,8 +63,8 @@ Subroutine vdw_direct_fs_generate(rvdw)
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
         e0=prmvdw(1,ivdw)
-        n =prmvdw(2,ivdw)
-        m =prmvdw(3,ivdw)
+        n =Nint(prmvdw(2,ivdw)) ; nr=Real(n,wp)
+        m =Nint(prmvdw(3,ivdw)) ; mr=Real(m,wp)
         r0=prmvdw(4,ivdw)
 
         a=r0/rvdw
@@ -72,8 +72,8 @@ Subroutine vdw_direct_fs_generate(rvdw)
         r0rn=a**n
         r0rm=a**m
 
-        afs(ivdw) = e0*m*n*(r0rn-r0rm)*b
-        bfs(ivdw) =-e0*(m*r0rn-n*r0rm)*b - afs(ivdw)
+        afs(ivdw) = e0*mr*nr*(r0rn-r0rm)*b
+        bfs(ivdw) =-e0*(mr*r0rn-nr*r0rm)*b - afs(ivdw)
         afs(ivdw) = afs(ivdw)/rvdw
 
      Else If (keypot == 4) Then

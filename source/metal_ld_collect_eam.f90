@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov november 2014
+! amended   - i.t.todorov january 2015
 ! contrib   - r.davidchak (eeam) june 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -27,7 +27,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe)
   Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rrt
   Logical,                                  Intent( InOut ) :: safe
 
-  Integer           :: m,ai,ki,jatm,aj,kj,l,keymet,k0
+  Integer           :: m,ai,ki,jatm,aj,kj,l,key,k0
   Real( Kind = wp ) :: rrr,rdr,rr1,ppp,vk0,vk1,vk2,t1,t2,density
 
 ! start of primary loop for density
@@ -146,8 +146,8 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe)
 ! 2BEAM has symmetric s-densities with respect to atom type
 ! e.g. rho_(atom1,atom1), rho_(atom1,atom2) = rho_(atom2,atom1), rho_(atom2,atom2)
 
-           keymet=(Max(ai,aj)*(Max(ai,aj)-1))/2 + Min(ai,aj)
-           k0=lstmet(keymet)
+           key=(Max(ai,aj)*(Max(ai,aj)-1))/2 + Min(ai,aj)
+           k0=lstmet(key)
 
 ! first metal atom density and validity and truncation of potential
 

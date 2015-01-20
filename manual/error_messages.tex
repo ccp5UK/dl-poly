@@ -2121,9 +2121,11 @@ The resulting densities or pair crossfunctions are not defined in the TABEAM fil
 
 Recreate a TABEAM file with wider interval of defined densities and pair cross functions.
 
-\subsubsection*{\underline{Message 506}: error - EAM metal densities out of range}
+\subsubsection*{\underline{Message 506}: error - EAM or MBPC metal densities out of range}
 
-The resulting densities are not defined in the TABEAM file.
+The resulting densities are not defined in the TABEAM file if EAM
+is used or ill defined due to atoms nearly overlapping when MBPC
+metal potential is in use..
 
 \noindent \underline{\em Action}:
 

@@ -7,7 +7,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester may 1993
-! amended   - i.t.todorov november 2012
+! amended   - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,8 +24,8 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
   Real( Kind = wp ), Intent( In    ) :: rvdw
   Real( Kind = wp ), Intent(   Out ) :: elrc,virlrc
 
-  Integer           :: fail,i,j,k,ivdw,keypot
-  Real( Kind = wp ) :: a,b,c,d,e0,n,m,r0,r,eps,sig, &
+  Integer           :: fail,i,j,k,ivdw,keypot,n,m
+  Real( Kind = wp ) :: a,b,c,d,e0,nr,mr,r0,r,eps,sig, &
                        eadd,padd,denprd,plrc
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: numfrz
@@ -102,13 +102,13 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
               e0=prmvdw(1,k)
-              n =prmvdw(2,k)
-              m =prmvdw(3,k)
+              n =Nint(prmvdw(2,k)) ; nr=Real(n,wp)
+              m =Nint(prmvdw(3,k)) ; mr=Real(m,wp)
               r0=prmvdw(4,k)
               r =rvdw
 
-              eadd = e0/(n-m)*( m*r0**n/((n-3.0_wp)*r**(n-3.0_wp)) - n*r0**m/((m-3.0_wp)*r**(m-3.0_wp)) )
-              padd = e0/(n-m)*n*m*( r0**n/((n-3.0_wp)*r**(n-3.0_wp)) - r0**m/((m-3.0_wp)*r**(m-3.0_wp)) )
+              eadd = e0/(nr-mr)*( mr*r0**n/((nr-3.0_wp)*r**(n-3)) - nr*r0**m/((mr-3.0_wp)*r**(m-3)) )
+              padd = e0/(nr-mr)*nr*mr*( r0**n/((nr-3.0_wp)*r**(n-3)) - r0**m/((mr-3.0_wp)*r**(m-3)) )
 
            Else If (keypot == 4) Then
 

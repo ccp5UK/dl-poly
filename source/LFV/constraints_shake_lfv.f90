@@ -1,6 +1,6 @@
-Subroutine constraints_shake_lfv            &
-           (imcon,mxshak,tolnce,tstep,lcol, &
-           lstopt,dxx,dyy,dzz,listot,       &
+Subroutine constraints_shake_lfv       &
+           (imcon,mxshak,tolnce,tstep, &
+           lstopt,dxx,dyy,dzz,listot,  &
            xxx,yyy,zzz,strcon,vircon)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -12,7 +12,7 @@ Subroutine constraints_shake_lfv            &
 !       LFV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,7 +26,6 @@ Subroutine constraints_shake_lfv            &
 
   Integer,           Intent( In    ) :: imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
-  Logical,           Intent( In    ) :: lcol
   Integer,           Intent( In    ) :: lstopt(0:2,1:mxcons)
   Real( Kind = wp ), Intent( In    ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
   Integer,           Intent( In    ) :: listot(1:mxatms)
@@ -225,14 +224,6 @@ Subroutine constraints_shake_lfv            &
      passcon(5,1,1)=Max(passcon(1,1,1),passcon(5,1,1))
 
      passcon(1,2,1)=passcon(1,2,1)+passcon(1,1,1)
-     If (lcol) Then ! Collect
-        passcon(3,2,1)=passcon(2,2,1)*passcon(3,2,1)
-        passcon(2,2,1)=passcon(2,2,1)+1
-        passcon(3,2,1)=passcon(3,2,1)/passcon(2,2,1)+passcon(1,2,1)/passcon(2,2,1)
-        passcon(4,2,1)=Min(passcon(1,2,1),passcon(4,2,1))
-        passcon(5,2,1)=Max(passcon(1,2,1),passcon(5,2,1))
-        passcon(1,2,1)=0.0_wp ! Reset
-     End If
      passcon(1,1,1)=0.0_wp ! Reset
   End If
 

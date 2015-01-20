@@ -10,7 +10,7 @@ Subroutine scale_temperature(imcon,sigma,degtra,degrot,degfre)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith july 1992
-! amended   - i.t.todorov august 2010
+! amended   - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -233,7 +233,7 @@ Subroutine scale_temperature(imcon,sigma,degtra,degrot,degfre)
               y=(wzz*rgdxxx(irgd) - wxx*rgdzzz(irgd))
               z=(wxx*rgdyyy(irgd) - wyy*rgdxxx(irgd))
 
-              rgdvxx(irgd) = rgdvxx(irgd) + z
+              rgdvxx(irgd) = rgdvxx(irgd) + x
               rgdvyy(irgd) = rgdvyy(irgd) + y
               rgdvzz(irgd) = rgdvzz(irgd) + z
 

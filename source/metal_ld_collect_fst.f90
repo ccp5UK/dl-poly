@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov december 2014
+! amended   - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -25,11 +25,12 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
   Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rrt
   Logical,                                  Intent( InOut ) :: safe
 
-  Integer           :: m,ai,aj,jatm,key,kmn,kmx,k0,k1,k2,keypot,l
-  Real( Kind = wp ) :: rrr,rdr,rr1,vk0,vk1,vk2,       &
-                       t1,t2,density,eps,sig,nnn,mmm, &
-                       cc0,cc1,cc2,cc3,cc4,           &
-                       aaa,bbb,ccc,ddd,ppp,qqq,       &
+  Integer           :: m,ai,aj,jatm,key,kmn,kmx,k0,k1,k2, &
+                       keypot,nnn,mmm,l
+  Real( Kind = wp ) :: rrr,rdr,rr1,vk0,vk1,vk2, &
+                       t1,t2,density,eps,sig,   &
+                       cc0,cc1,cc2,cc3,cc4,     &
+                       aaa,bbb,ccc,ddd,ppp,qqq, &
                        bet,cut1,cut2,rr0
 
 ! start of primary loop for density
@@ -55,8 +56,8 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
         k1=Max(ai,aj)
         k2=Min(ai,aj)
 
-        kmx=k1*(k1-1)/2
-        kmn=k2*(k2-1)/2
+        kmx=k1*(k1+1)/2
+        kmn=k2*(k2+1)/2
 
         k1=lstmet(kmx)
         k2=lstmet(kmn)
@@ -131,8 +132,8 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
 
               eps=prmmet(1,k0)
               sig=prmmet(2,k0)
-              nnn=prmmet(3,k0)
-              mmm=prmmet(4,k0)
+              nnn=Nint(prmmet(3,k0))
+              mmm=Nint(prmmet(4,k0))
 
               density=(sig/rrr)**mmm
 
@@ -164,7 +165,7 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
 
               eps=prmmet(1,k0)
               sig=prmmet(2,k0)
-              mmm=prmmet(3,k0)
+              mmm=Nint(prmmet(3,k0))
 
 ! interpolation parameters
 

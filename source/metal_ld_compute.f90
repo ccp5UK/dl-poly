@@ -11,7 +11,7 @@ Subroutine metal_ld_compute         &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov december 2014
+! amended   - i.t.todorov january 2015
 ! contrib   - r.davidchak (eeam) june 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -21,7 +21,7 @@ Subroutine metal_ld_compute         &
   Use comms_module,  Only : idnode,mxnode,gsum,gcheck
   Use setup_module
   Use config_module, Only : cell,natms,ltg,ltype,list,xxx,yyy,zzz
-  Use metal_module,  Only : ls_met,l2bmet,fmet,fmes,rho,rhs
+  Use metal_module,  Only : ls_met,l2bmet,tabmet,fmet,fmes,rho,rhs
 
   Implicit None
 
@@ -30,8 +30,6 @@ Subroutine metal_ld_compute         &
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent( In    ) :: elrcm,vlrcm
   Real( Kind = wp ),                        Intent(   Out ) :: engden,virden
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
-
-  Integer, Save     :: keypot
 
   Logical           :: safe = .true.
   Integer           :: fail,limit,i,j,k,l,k0
@@ -88,9 +86,9 @@ Subroutine metal_ld_compute         &
 
 ! calculate contributions to local density
 
-     If (keypot == 0) Then ! EAM contributions
+     If (tabmet > 0) Then         ! EAM contributions
         Call metal_ld_collect_eam(i,rrt,safe)
-     Else                  ! FST contributions
+     Else ! If (tabmet == 0) Then ! FST contributions
         Call metal_ld_collect_fst(i,rmet,rrt,safe)
      End If
   End Do
@@ -101,18 +99,16 @@ Subroutine metal_ld_compute         &
      Call error(0)
   End If
 
-! Check safety for densities
+! Check safety for densities of EAM and MBPC
 
-  If (keypot == 0) Then
-     If (mxnode > 1) Call gcheck(safe)
-     If (.not.safe) Call error(506)
-  End If
+  If (mxnode > 1) Call gcheck(safe)
+  If (.not.safe) Call error(506)
 
   Do i=1,natms
 
 ! calculate density terms to energy and virial
 
-     If (keypot == 0) Then ! EAM potential
+     If (tabmet > 0) Then ! EAM potential
 
 ! potential function index
 
@@ -308,7 +304,7 @@ Subroutine metal_ld_compute         &
 
         End If
 
-     Else ! FST of metal potentials
+     Else ! If (tabmet == 0) Then FST of metal potentials
 
         If      (rho(i) > zero_plus) Then
 

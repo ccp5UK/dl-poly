@@ -7,7 +7,7 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov august 2014
+! amended   - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -25,10 +25,10 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent(   Out ) :: elrcm,vlrcm
 
   Logical, Save     :: newjob = .true.
-  Integer           :: i,j,k0,k1,k2,kmet,keypot
+  Integer           :: i,j,k0,k1,k2,kmet,keypot,nnn,mmm
 
   Real( Kind = wp ) :: elrc0,elrc1,elrc2,elrcsum,vlrc0,vlrc1,vlrc2, tmp, &
-                       eps,sig,nnn,mmm,ccc, aaa,rr0,ppp,zet,qqq,eee
+                       eps,sig,nnnr,mmmr,ccc, aaa,rr0,ppp,zet,qqq,eee
 
 
 ! long-range corrections to energy, pressure and density
@@ -61,12 +61,12 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
 
               eps=prmmet(1,k0)
               sig=prmmet(2,k0)
-              nnn=prmmet(3,k0)
-              mmm=prmmet(4,k0)
+              nnn=Nint(prmmet(3,k0)) ; nnnr=Real(nnn,wp)
+              mmm=Nint(prmmet(4,k0)) ; mmmr=Real(mmm,wp)
               ccc=prmmet(5,k0)
 
-              elrc0=eps*sig**3*(sig/rmet)**(nnn-3.0_wp)/(nnn-3.0_wp)
-              vlrc0=nnn*elrc0
+              elrc0=eps*sig**3*(sig/rmet)**(nnn-3)/(nnnr-3.0_wp)
+              vlrc0=nnnr*elrc0
 
 ! Self-interaction accounted once, interaction between different species
 ! MUST be accounted twice!!
@@ -79,13 +79,13 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
               elrcm(0) = elrcm(0) + twopi*volm*dens(i)*dens(j)*elrc0
               vlrcm(0) = vlrcm(0) - twopi*volm*dens(i)*dens(j)*vlrc0
 
-              tmp=sig**3*(sig/rmet)**(mmm-3.0_wp)/(mmm-3.0_wp)
+              tmp=sig**3*(sig/rmet)**(mmm-3)/(mmmr-3.0_wp)
               If (i == j) Then
                  elrc1=tmp*(eps*ccc)**2
                  elrcm(i)=elrcm(i)+fourpi*dens(i)*elrc1
                  elrcsum=elrcsum+twopi*volm*dens(i)**2*elrc1
 
-                 vlrc1=mmm*elrc1
+                 vlrc1=mmmr*elrc1
                  vlrcm(i)=vlrcm(i)+twopi*dens(i)*vlrc1
               Else
                  k1=lstmet((i*(i+1))/2)
@@ -97,8 +97,8 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
                  elrcm(j)=elrcm(j)+fourpi*dens(i)*elrc2
                  elrcsum=elrcsum+twopi*volm*dens(i)*dens(j)*(elrc1+elrc2)
 
-                 vlrc1=mmm*elrc1
-                 vlrc2=mmm*elrc2
+                 vlrc1=mmmr*elrc1
+                 vlrc2=mmmr*elrc2
                  vlrcm(i)=vlrcm(i)+twopi*dens(j)*vlrc1
                  vlrcm(j)=vlrcm(j)+twopi*dens(i)*vlrc2
               End If
@@ -156,7 +156,7 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
 
               eps=prmmet(1,k0)
               sig=prmmet(2,k0)
-              mmm=prmmet(3,k0)
+              mmm=Nint(prmmet(3,k0)) ; mmmr=Real(mmm,wp)
 
 ! No pairwise contributions for mbpc potentials!!!
 
@@ -174,13 +174,13 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
 !              elrcm(0) = elrcm(0) + twopi*volm*dens(i)*dens(j)*elrc0
 !              vlrcm(0) = vlrcm(0) - twopi*volm*dens(i)*dens(j)*vlrc0
 
-              tmp=sig/((mmm-3.0_wp)*rmet**(mmm-3.0_wp))
+              tmp=sig/((mmmr-3.0_wp)*rmet**(mmm-3))
               If (i == j) Then
                  elrc1=tmp*eps**2
                  elrcm(i)=elrcm(i)+fourpi*dens(i)*elrc1
                  elrcsum=elrcsum+twopi*volm*dens(i)**2*elrc1
 
-                 vlrc1=mmm*elrc1
+                 vlrc1=mmmr*elrc1
                  vlrcm(i)=vlrcm(i)+twopi*dens(i)*vlrc1
               Else
                  k1=lstmet((i*(i+1))/2)
@@ -192,8 +192,8 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
                  elrcm(j)=elrcm(j)+fourpi*dens(i)*elrc2
                  elrcsum=elrcsum+twopi*volm*dens(i)*dens(j)*(elrc1+elrc2)
 
-                 vlrc1=mmm*elrc1
-                 vlrc2=mmm*elrc2
+                 vlrc1=mmmr*elrc1
+                 vlrc2=mmmr*elrc2
                  vlrcm(i)=vlrcm(i)+twopi*dens(j)*vlrc1
                  vlrcm(j)=vlrcm(j)+twopi*dens(i)*vlrc2
               End If

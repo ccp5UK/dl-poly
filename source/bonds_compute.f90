@@ -6,7 +6,7 @@ Subroutine bonds_compute(temp)
 ! from accumulated data
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov august 2014
+! author    - a.v.brukhno & i.t.todorov january 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -151,7 +151,7 @@ Subroutine bonds_compute(temp)
 
            If (idnode == 0) Then
               If (.not.zero) Write(nrite,"(f11.5,1p,2e14.6)") rrr,pdfbnd1,sum1
-              Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,pdfbnd,pdfbnd/rdlr/dvol
+              Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,pdfbnd,pdfbnd*delr/dvol
            End If
 
 ! We use the non-normalised tail-truncated PDF version,
@@ -275,11 +275,11 @@ Subroutine bonds_compute(temp)
 
         Do ig=1,ngrid
            rrr = Real(ig,wp)*dgrid
-           ll = Int(rrr/delr)
+           ll = Int(rrr*rdlr)
 
 ! +0.5_wp due to half-a-bin shift in the original data
 
-           coef = rrr/delr-Real(ll,wp)+0.5_wp
+           coef = rrr*rdlr-Real(ll,wp)+0.5_wp
 
            fed0 = pmf(ll)
            fed1 = pmf(ll+1)
@@ -300,7 +300,7 @@ Subroutine bonds_compute(temp)
            dfed = t1 + (t2-t1)*coef*0.5_wp
 
            If (idnode == 0) &
-              Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,fed*kT2engo,dfed*kT2engo*rrr/delr
+              Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,fed*kT2engo,dfed*kT2engo*rrr*rdlr
         End Do
      End If
   End Do

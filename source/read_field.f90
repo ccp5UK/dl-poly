@@ -3668,9 +3668,9 @@ Subroutine read_field                   &
            Call metal_generate_erf(rmet)
            If (.not.ld_met) Then
               Call allocate_metal_table_arrays()
-              If (tabmet > 0) Then ! tabmet=(keypot=0)
+              If (tabmet > 0) Then ! keypot == 0
                  Call metal_table_read(l_top)
-              Else
+              Else ! If (tabmet == 0) Then
                  Call metal_generate(rmet)
               End If
            End If

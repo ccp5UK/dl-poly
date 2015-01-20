@@ -18,18 +18,20 @@ Subroutine npt_l0_vv                                       &
 !            J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,    Only : idnode,mxnode,gmax
+  Use comms_module,       Only : idnode,mxnode,gmax
   Use setup_module
-  Use site_module,     Only : ntpatm,dens,ntpshl,unqshl
-  Use config_module,   Only : cell,volm,natms,lfrzn,atmnam,weight, &
-                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use langevin_module, Only : fxl,fyl,fzl,fpl
-  Use kinetic_module,  Only : getvom,getkin,kinstress
+  Use site_module,        Only : ntpatm,dens,ntpshl,unqshl
+  Use config_module,      Only : cell,volm,natms,lfrzn,atmnam,weight, &
+                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use langevin_module,    Only : fxl,fyl,fzl,fpl
+  Use kinetic_module,     Only : getvom,getkin,kinstress
+  Use constraints_module, Only : passcon
+  Use pmf_module,         Only : passpmf
 
   Implicit None
 
@@ -296,15 +298,13 @@ Subroutine npt_l0_vv                                       &
            Do While ((.not.safe) .and. kit <= mxkit)
               kit=kit+1
 
-              lcol = (iter*kit == mxiter*mxkit)
-
               If (megcon > 0) Then
 
 ! apply constraint correction: vircon,strcon - constraint virial,stress
 
-                 Call constraints_shake_vv  &
-           (imcon,mxshak,tolnce,tstep,lcol, &
-           lstopt,dxx,dyy,dzz,listot,       &
+                 Call constraints_shake_vv &
+           (imcon,mxshak,tolnce,tstep, &
+           lstopt,dxx,dyy,dzz,listot,  &
            xxx,yyy,zzz,str,vir)
 
 ! constraint virial and stress tensor
@@ -319,9 +319,9 @@ Subroutine npt_l0_vv                                       &
 
 ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
-                 Call pmf_shake_vv          &
-           (imcon,mxshak,tolnce,tstep,lcol, &
-           indpmf,pxx,pyy,pzz,              &
+                 Call pmf_shake_vv     &
+           (imcon,mxshak,tolnce,tstep, &
+           indpmf,pxx,pyy,pzz,         &
            xxx,yyy,zzz,str,vir)
 
 ! PMF virial and stress tensor
@@ -334,6 +334,28 @@ Subroutine npt_l0_vv                                       &
            End Do
 
            If (.not.safe) Call error(478)
+
+! Collect per step passage statistics for bond and pmf constraints
+
+           If (iter == mxiter) Then
+              If (megcon > 0) Then
+                 passcon(3,2,1)=passcon(2,2,1)*passcon(3,2,1)
+                 passcon(2,2,1)=passcon(2,2,1)+1
+                 passcon(3,2,1)=passcon(3,2,1)/passcon(2,2,1)+passcon(1,2,1)/passcon(2,2,1)
+                 passcon(4,2,1)=Min(passcon(1,2,1),passcon(4,2,1))
+                 passcon(5,2,1)=Max(passcon(1,2,1),passcon(5,2,1))
+                 passcon(1,2,1)=0.0_wp ! Reset
+              End If
+
+              If (megpmf > 0) Then
+                 passpmf(3,2,1)=passpmf(2,2,1)*passpmf(3,2,1)
+                 passpmf(2,2,1)=passpmf(2,2,1)+1
+                 passpmf(3,2,1)=passpmf(3,2,1)/passpmf(2,2,1)+passpmf(1,2,1)/passpmf(2,2,1)
+                 passpmf(4,2,1)=Min(passpmf(1,2,1),passpmf(4,2,1))
+                 passpmf(5,2,1)=Max(passpmf(1,2,1),passpmf(5,2,1))
+                 passpmf(1,2,1)=0.0_wp ! Reset
+              End If
+           End If
 
 ! calculate velocity and force correction
 

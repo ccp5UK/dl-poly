@@ -124,10 +124,10 @@ further to the last one for the particular vdw potential form.  For a DPD thermo
 work correctly all possible two body interactions must be defined and all $\gamma_{ij} \ne 0$.
 What \D will attempt first, if a two body interaction is missing, is to derive it using
 mixing rules (default may be overridden by user specification).  However, if any of
-$\gamma_{ij} = 0$ then \D will check for the existence of a global $\gamma$ that may
-be optionally supplied by the user on the {\bf ensemble dpd} line and if it is non-zero
-a global override will occur.  Otherwise, when the requirements for a DPD thermostat are
-not satisfied, everything else will result in a controlled termination.
+$\gamma_{ij} = 0$ then \D will check for the existence of a global $\gamma$ that may be
+optionally supplied by the user on the {\bf ensemble nvt dpd}\textrm{\textit{\textbf{INT}}}
+line and if it is non-zero a global override will occur.  Otherwise, when the requirements
+for a DPD thermostat are not satisfied, everything else will result in a controlled termination.
 
 \section{Equation of state and dynamic properties}
 

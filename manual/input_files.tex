@@ -317,6 +317,12 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf ensemble nvt gst} $f_{1}~f_{2}$         \> select NVT ensemble\index{ensemble!Gentle Stochastic NVT}, type Gentle Stochastic with thermostat\index{thermostat} \\
 \>                                              \> relaxation constant $f_{1}$ in ps and Langevin friction $f_{1}$ in ps$^{-1}$ \\
 \>                                              \> \\
+\> {\bf ensemble nvt dpd}\textrm{\textit{\textbf{type}}}~~$\gamma$
+                                                \> select NVT ensemble\index{ensemble!DPD}, with a DPD thermostat\index{thermostat} of type
+                                                \textrm{\textit{\textbf{s1}}} or \textrm{\textit{\textbf{s2}}} \\
+\>                                              \> for Shardlow's splitting of first or second order respectively, \\
+\>                                              \> with an {\em optional} system global drag coefficient $\gamma$ in Dalton$/$ps \\
+\>                                              \> \\
 \> {\bf ensemble npt lang}evin $f_{1}~f_{2}$    \> select NPT ensemble\index{ensemble!Langevin NPT}, type Langevin, with $f_{1},~f_{2}$ as the \\
 \>                                              \> thermostat\index{thermostat} and barostat\index{barostat} relaxation speed (friction) constants in ps$^{-1}$ \\
 \>                                              \> \\
@@ -789,8 +795,16 @@ ${\bf equilibration}~\ge~{\bf steps}$ (i.e. optimise structure at
 start only!).  This is equvalent to using the {\bf optim}ise
 directive.  In this way it can be used as a configuration
 optimiser at the beginning of the equilibration period or when
-a "dry run" ({\bf steps} $= 0$) is performed (i.e. equilibrate
-without any actual dynamics!).
+a "dry run" ({\bf steps}~$= 0$) is performed (i.e. equilibrate
+without any actual dynamics!).  {\bf Note} that the CGM search
+algorithm stepping uses a step that is proportional to the
+instantaneous value of the {\bf timestep} and thus its usage in
+may lead to algorithm's instability and failure in the cases when
+optimisation is applied before any dynamics occurs in a model
+system in an unphysical state (i.e. much away from equilibrium)
+and/or with an ill/badly defined forcefield for the state.  Hence,
+special care should be taken when the option is used as
+{\bf optimise} or/and in a "dry run" mode with a timestep value too large for the model system state.
 
 \item The {\bf variable timestep} (or also {\bf timestep variable})
 option requires the user to specify an initial guess for a
@@ -811,6 +825,10 @@ doubled and the step repeated provided it does not exceed the
 user specified {\bf mxstep}.  If it does then it scales to
 {\bf mxstep} and the step is repeated.  In this way the integration
 timestep self-adjusts in response to the dynamics of the system.
+{\bf Note} that this option is abandoned when used in conjunction with
+DPD thermostats ({\bf ensemble nvt dpd}\textrm{\textit{\textbf{type}}}~~$\gamma$),
+since it cannot be applied efficiently and furthermore it is not
+well defined in a DPD sense either.
 
 \item The {\bf job time} and {\bf close time} directives are
 required to ensure a controlled close down procedure when a job

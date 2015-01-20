@@ -7,7 +7,7 @@ Subroutine metal_generate(rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 2006
-! amended   - i.t.todorov december 2014
+! amended   - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -21,9 +21,9 @@ Subroutine metal_generate(rmet)
   Real( Kind = wp ), Intent( In    ) :: rmet
 
   Integer           :: i,imet,kmet,keypot,katom1,katom2, &
-                       pmet,qmet
+                       pmet,qmet,nnn,mmm
   Real( Kind = wp ) :: dlrpot,rrr,              &
-                       eps,sig,nnn,mmm,         &
+                       eps,sig,nnnr,mmmr,       &
                        cc0,cc1,cc2,cc3,cc4,     &
                        aaa,bbb,ccc,ddd,ppp,qqq, &
                        bet,cut1,cut2,rr0
@@ -148,15 +148,15 @@ Subroutine metal_generate(rmet)
 
               eps=prmmet(1,imet)
               sig=prmmet(2,imet)
-              nnn=prmmet(3,imet)
-              mmm=prmmet(4,imet)
+              nnn=Nint(prmmet(3,imet)) ; nnnr=Real(nnn,wp)
+              mmm=Nint(prmmet(4,imet)) ; mmmr=Real(mmm,wp)
 
               Do i=5,mxgmet
                  rrr=Real(i,wp)*dlrpot
                  vmet(i,imet,1)=eps*(sig/rrr)**nnn
-                 vmet(i,imet,2)=nnn*eps*(sig/rrr)**nnn
+                 vmet(i,imet,2)=nnnr*eps*(sig/rrr)**nnn
                  dmet(i,imet,1)=(sig/rrr)**mmm
-                 dmet(i,imet,2)=mmm*(sig/rrr)**mmm
+                 dmet(i,imet,2)=mmmr*(sig/rrr)**mmm
               End Do
 
               If (katom1 == katom2) Then
@@ -199,15 +199,15 @@ Subroutine metal_generate(rmet)
 
               eps=prmmet(1,imet)
               sig=prmmet(2,imet)
-              mmm=prmmet(3,imet)
+              mmm=Nint(prmmet(3,imet)) ; mmmr=Real(mmm,wp)
 
               Do i=5,mxgmet
                  rrr=Real(i,wp)*dlrpot
 !                 vmet(i,imet,1)=0.0_wp
 !                 vmet(i,imet,2)=0.0_wp
-                 nnn=sig/rrr**mmm
-                 dmet(i,imet,1)=nnn*merf(i)
-                 dmet(i,imet,2)=mmm*dmet(i,imet,1)-rrr*nnn*mfer(i)
+                 nnnr=sig/rrr**mmm
+                 dmet(i,imet,1)=nnnr*merf(i)
+                 dmet(i,imet,2)=mmmr*dmet(i,imet,1)-rrr*nnnr*mfer(i)
               End Do
 
               If (katom1 == katom2) Then

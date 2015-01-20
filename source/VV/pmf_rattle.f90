@@ -12,7 +12,7 @@ Subroutine pmf_rattle                      &
 !       VV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -32,10 +32,11 @@ Subroutine pmf_rattle                      &
   Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
 
   Logical,           Save :: newjob = .true.
+  Real( Kind = wp ), Save :: amt(1:2)
 
   Logical                 :: safe
   Integer                 :: fail(1:2),ipmf,jpmf,k,l,icyc
-  Real( Kind = wp )       :: amt(1:2),dis,esig,gamma,gamm(1:2)
+  Real( Kind = wp )       :: dis,esig,gamma,gamm(1:2)
 
   Real( Kind = wp ), Dimension( : )   , Allocatable :: vxt,vyt,vzt
   Real( Kind = wp ), Dimension( :, : ), Allocatable :: xpmf,ypmf,zpmf

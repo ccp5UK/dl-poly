@@ -21,7 +21,7 @@ Subroutine nvt_a1_vv                               &
 !  particles' momenta of a particle subset on each domain)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -36,6 +36,8 @@ Subroutine nvt_a1_vv                               &
   Use rigid_bodies_module
   Use core_shell_module,  Only : ntshl,listshl,lshmv_shl,lishp_shl,lashp_shl
   Use kinetic_module,     Only : getvom,getknr,kinstresf,kinstrest
+  Use constraints_module, Only : passcon
+  Use pmf_module,         Only : passpmf
 
   Implicit None
 
@@ -287,15 +289,13 @@ Subroutine nvt_a1_vv                               &
         Do While ((.not.safe) .and. kit <= mxkit)
            kit=kit+1
 
-           lcol = (kit == mxkit)
-
            If (megcon > 0) Then
 
 ! apply constraint correction: vircon,strcon - constraint virial,stress
 
-              Call constraints_shake_vv     &
-           (imcon,mxshak,tolnce,tstep,lcol, &
-           lstopt,dxx,dyy,dzz,listot,       &
+              Call constraints_shake_vv &
+           (imcon,mxshak,tolnce,tstep, &
+           lstopt,dxx,dyy,dzz,listot,  &
            xxx,yyy,zzz,str,vir)
 
 ! constraint virial and stress tensor
@@ -310,9 +310,9 @@ Subroutine nvt_a1_vv                               &
 
 ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
-              Call pmf_shake_vv             &
-           (imcon,mxshak,tolnce,tstep,lcol, &
-           indpmf,pxx,pyy,pzz,              &
+              Call pmf_shake_vv        &
+           (imcon,mxshak,tolnce,tstep, &
+           indpmf,pxx,pyy,pzz,         &
            xxx,yyy,zzz,str,vir)
 
 ! PMF virial and stress tensor
@@ -325,6 +325,26 @@ Subroutine nvt_a1_vv                               &
         End Do
 
         If (.not.safe) Call error(478)
+
+! Collect per step passage statistics for bond and pmf constraints
+
+        If (megcon > 0) Then
+           passcon(3,2,1)=passcon(2,2,1)*passcon(3,2,1)
+           passcon(2,2,1)=passcon(2,2,1)+1
+           passcon(3,2,1)=passcon(3,2,1)/passcon(2,2,1)+passcon(1,2,1)/passcon(2,2,1)
+           passcon(4,2,1)=Min(passcon(1,2,1),passcon(4,2,1))
+           passcon(5,2,1)=Max(passcon(1,2,1),passcon(5,2,1))
+           passcon(1,2,1)=0.0_wp ! Reset
+        End If
+
+        If (megpmf > 0) Then
+           passpmf(3,2,1)=passpmf(2,2,1)*passpmf(3,2,1)
+           passpmf(2,2,1)=passpmf(2,2,1)+1
+           passpmf(3,2,1)=passpmf(3,2,1)/passpmf(2,2,1)+passpmf(1,2,1)/passpmf(2,2,1)
+           passpmf(4,2,1)=Min(passpmf(1,2,1),passpmf(4,2,1))
+           passpmf(5,2,1)=Max(passpmf(1,2,1),passpmf(5,2,1))
+           passpmf(1,2,1)=0.0_wp ! Reset
+        End If
 
 ! calculate velocity and force correction
 

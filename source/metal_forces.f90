@@ -8,7 +8,7 @@ Subroutine metal_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov december 2014
+! amended   - i.t.todorov january 2015
 ! contrib   - r.davidchak (eeam) june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -31,12 +31,12 @@ Subroutine metal_forces &
 
   Integer           :: m,idi,ai,ki,jatm,aj,kj, &
                        key,kmn,kmx,k0,keypot,  &
-                       k1,k2,l,ld
+                       k1,k2,nnn,mmm,l,ld
   Real( Kind = wp ) :: fix,fiy,fiz,fx,fy,fz,        &
                        rrr,rsq,rdr,rr1,ppd,eng,     &
                        gk0,gk1,gk2,vk0,vk1,vk2,     &
                        t1,t2,t3,t4,gam1,gam2,       &
-                       eps,sig,nnn,mmm,             &
+                       eps,sig,nnnr,mmmr,           &
                        cc0,cc1,cc2,cc3,cc4,         &
                        aaa,bbb,ccc,ddd,ppp,qqq,     &
                        bet,cut1,cut2,rr0,           &
@@ -99,8 +99,8 @@ Subroutine metal_forces &
         k1=Max(ai,aj)
         k2=Min(ai,aj)
 
-        kmx=k1*(k1-1)/2
-        kmn=k2*(k2-1)/2
+        kmx=k1*(k1+1)/2
+        kmn=k2*(k2+1)/2
 
         k1=lstmet(kmx)
         k2=lstmet(kmn)
@@ -213,18 +213,18 @@ Subroutine metal_forces &
 
               eps=prmmet(1,k0)
               sig=prmmet(2,k0)
-              nnn=prmmet(3,k0)
-              mmm=prmmet(4,k0)
+              nnn=Nint(prmmet(3,k0)) ; nnnr=Real(nnn,wp)
+              mmm=Nint(prmmet(4,k0)) ; mmmr=Real(mmm,wp)
 
 ! calculate pair forces and energies
 
-              gamma1=nnn*eps*(sig/rrr)**nnn
+              gamma1=nnnr*eps*(sig/rrr)**nnn
               If (jatm <= natms .or. idi < ltg(jatm)) &
-                    eng = gamma1/nnn
+                 eng = gamma1/nnnr
 
 ! calculate density contributions
 
-              gamma2=mmm*(sig/rrr)**mmm
+              gamma2=mmmr*(sig/rrr)**mmm
 
               If (ai == aj) Then
                  t1=(prmmet(1,k0)*prmmet(5,k0))**2
@@ -250,7 +250,7 @@ Subroutine metal_forces &
 
               gamma1=2.0_wp*aaa*Exp(-ppp*cut1)*ppp*cut2
               If (jatm <= natms .or. idi < ltg(jatm)) &
-                    eng = gamma1/(ppp*cut2)
+                 eng = gamma1/(ppp*cut2)
 
 ! calculate density contributions
 
@@ -265,13 +265,13 @@ Subroutine metal_forces &
 
               eps=prmmet(1,k0)
               sig=prmmet(2,k0)
-              mmm=prmmet(3,k0)
+              mmm=Nint(prmmet(3,k0)) ; mmmr=Real(mmm,wp)
 
 ! no pair forces and energies
 
 !             gamma1=0.0_wp
 !              If (jatm <= natms .or. idi < ltg(jatm)) &
-!                    eng = 0.0_wp
+!                 eng = 0.0_wp
 
 ! calculate density contributions
 
@@ -313,7 +313,7 @@ Subroutine metal_forces &
                  gam2 = t4 + 0.5_wp*(t4-t3)*(ppp-1.0_wp)
               End If
 
-              gamma2=(sig/rrr**mmm)*(mmm*gam1-rrr*gam2)
+              gamma2=(sig/rrr**mmm)*(mmmr*gam1-rrr*gam2)
 
               If (ai == aj) Then
                  t1=prmmet(1,k0)**2
@@ -326,9 +326,9 @@ Subroutine metal_forces &
            End If
 
            If (ai > aj) Then
-              gamma = -gamma2*(rho(iatm)*t1+rho(jatm)*t2)/rsq
+              gamma = (gamma1 - gamma2*(rho(iatm)*t1+rho(jatm)*t2))/rsq
            Else
-              gamma = -gamma2*(rho(iatm)*t2+rho(jatm)*t1)/rsq
+              gamma = (gamma1 - gamma2*(rho(iatm)*t2+rho(jatm)*t1))/rsq
            End If
 
            fx = gamma*xxt(m)
@@ -614,9 +614,9 @@ Subroutine metal_forces &
               End If
 
               If (ai > aj) Then
-                 gamma = (gamma1-gamma2*(rho(iatm)*dmet(1,k0,2)+rho(jatm)*dmet(2,k0,2)))/rsq
+                 gamma = (gamma1 - gamma2*(rho(iatm)*dmet(1,k0,2)+rho(jatm)*dmet(2,k0,2)))/rsq
               Else
-                 gamma = (gamma1-gamma2*(rho(iatm)*dmet(2,k0,2)+rho(jatm)*dmet(1,k0,2)))/rsq
+                 gamma = (gamma1 - gamma2*(rho(iatm)*dmet(2,k0,2)+rho(jatm)*dmet(1,k0,2)))/rsq
               End If
 
            End If

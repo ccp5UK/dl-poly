@@ -14,7 +14,7 @@ Subroutine nvt_b1_lfv                          &
 ! - leapfrog verlet with Berendsen thermostat
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -28,6 +28,8 @@ Subroutine nvt_b1_lfv                          &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
   Use kinetic_module,     Only : getvom
+  Use constraints_module, Only : passcon
+  Use pmf_module,         Only : passpmf
 
   Implicit None
 
@@ -49,7 +51,7 @@ Subroutine nvt_b1_lfv                          &
 
   Logical,           Save :: newjob = .true. , &
                              unsafe = .false.
-  Logical                 :: safe,lcol,lv_up,lv_dn
+  Logical                 :: safe,lv_up,lv_dn
   Integer,           Save :: mxiter,mxkit
   Integer                 :: fail(1:18),matms,iter,kit,i,j,i1,i2, &
                              irgd,jrgd,krgd,lrgd,rgdtyp
@@ -457,15 +459,13 @@ Subroutine nvt_b1_lfv                          &
         Do While ((.not.safe) .and. kit <= mxkit)
            kit=kit+1
 
-           lcol = (iter*kit == mxiter*mxkit)
-
            If (megcon > 0) Then
 
 ! apply constraint correction: vircon,strcon - constraint virial,stress
 
-              Call constraints_shake_lfv    &
-           (imcon,mxshak,tolnce,tstep,lcol, &
-           lstopt,dxx,dyy,dzz,listot,       &
+              Call constraints_shake_lfv &
+           (imcon,mxshak,tolnce,tstep, &
+           lstopt,dxx,dyy,dzz,listot,  &
            xxx,yyy,zzz,str,vir)
 
 ! constraint virial and stress tensor
@@ -480,9 +480,9 @@ Subroutine nvt_b1_lfv                          &
 
 ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
-              Call pmf_shake_lfv            &
-           (imcon,mxshak,tolnce,tstep,lcol, &
-           indpmf,pxx,pyy,pzz,              &
+              Call pmf_shake_lfv       &
+           (imcon,mxshak,tolnce,tstep, &
+           indpmf,pxx,pyy,pzz,         &
            xxx,yyy,zzz,str,vir)
 
 ! PMF virial and stress tensor
@@ -495,6 +495,28 @@ Subroutine nvt_b1_lfv                          &
         End Do
 
         If (.not.safe) Call error(478)
+
+! Collect per step passage statistics for bond and pmf constraints
+
+        If (iter == mxiter) Then
+           If (megcon > 0) Then
+              passcon(3,2,1)=passcon(2,2,1)*passcon(3,2,1)
+              passcon(2,2,1)=passcon(2,2,1)+1
+              passcon(3,2,1)=passcon(3,2,1)/passcon(2,2,1)+passcon(1,2,1)/passcon(2,2,1)
+              passcon(4,2,1)=Min(passcon(1,2,1),passcon(4,2,1))
+              passcon(5,2,1)=Max(passcon(1,2,1),passcon(5,2,1))
+              passcon(1,2,1)=0.0_wp ! Reset
+           End If
+
+           If (megpmf > 0) Then
+              passpmf(3,2,1)=passpmf(2,2,1)*passpmf(3,2,1)
+              passpmf(2,2,1)=passpmf(2,2,1)+1
+              passpmf(3,2,1)=passpmf(3,2,1)/passpmf(2,2,1)+passpmf(1,2,1)/passpmf(2,2,1)
+              passpmf(4,2,1)=Min(passpmf(1,2,1),passpmf(4,2,1))
+              passpmf(5,2,1)=Max(passpmf(1,2,1),passpmf(5,2,1))
+              passpmf(1,2,1)=0.0_wp ! Reset
+           End If
+        End If
 
 ! calculate velocity and force correction
 
