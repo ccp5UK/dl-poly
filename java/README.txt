@@ -9,7 +9,8 @@ Shell commands within this source directory:
 ============================================
 build - use this to rebuild the GUI on your computer, but only of you
         have the Java SDK installed on your computer
-gui   - script to run the program from within this directory
+try   - script to run the program from within this directory, even if
+        the script is executed as a soft link anywhere on the OS
 rmc   - script to remove the class files, once the GUI.jar file has
         been built (by using the "build" script for example)
 

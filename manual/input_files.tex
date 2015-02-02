@@ -700,8 +700,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> *** SPECIAL OPTIONS ***                      \> *** SPECIAL OPTIONS *** \\
 \>                                              \> \\
-\> {\bf l\_scr}                                 \> redirect OUTPUT file's contents to the OS's \\
-\>                                              \> default output channel (screen, interactive) \\
+\> {\bf l\_dis}                                 \> check and report on the minimum separation distance \\
 \>                                              \> \\
 \> {\bf l\_fast}                                \> abandon global safety checks, which gives more speed \\
 \>                                              \> to simulations run at too few link cells per domain \\
@@ -709,16 +708,20 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> in case of parallel failures no controlled manner \\
 \>                                              \> termination will happen (OS's feedback dependence!!!) \\
 \>                                              \> \\
-\> {\bf l\_rout}                                \> write REVIVE in ASCII (default is binary) \\
-\>                                              \> \\
-\> {\bf l\_rin}                                 \> read REVOLD in ASCII (default is binary) \\
-\>                                              \> \\
 \> {\bf l\_his}                                 \> generate a one frame HISTORY from CONFIG \\
 \>                                              \> and terminate straight after \\
 \>                                              \> \\
-\> {\bf l\_tor}                                 \> abandon the production of REVIVE and REVCON \\
+\> {\bf l\_org} $x~~y~~z~~n$                    \> translate CONFIG along a vector ($x,y,z$), default (0,0,0), into CFGORG \\
+\>                                              \> with configuration level $n$, default 0,  after reading input \& terminate \\
 \>                                              \> \\
-\> {\bf l\_dis}                                 \> check and report on the minimum separation distance \\
+\> {\bf l\_rin}                                 \> read REVOLD in ASCII (default is binary) \\
+\>                                              \> \\
+\> {\bf l\_rout}                                \> write REVIVE in ASCII (default is binary) \\
+\>                                              \> \\
+\> {\bf l\_scr}                                 \> redirect OUTPUT file's contents to the OS's \\
+\>                                              \> default output channel (screen, interactive) \\
+\>                                              \> \\
+\> {\bf l\_tor}                                 \> abandon the production of REVIVE and REVCON \\
 \>                                              \> between all Verlet neighbour list pairs at re/start
 \end{tabbing}
 
@@ -882,20 +885,20 @@ the integer variable {\tt keyres}, which is explained in Table~\ref{keyres}.
 \end{table}
 
 \item The various {\bf ensemble} options (i.e.
-{\bf nve} \index{ensemble!NVE},
-{\bf nvt evans} \index{ensemble!Evans NVT},
-{\bf nvt ander}sen \index{ensemble!Andersen NVT},
-{\bf nvt lang}evin \index{ensemble!Langevin NVT},
-{\bf nvt ber}endsen \index{ensemble!Berendsen NVT},
-{\bf nvt hoover} \index{ensemble!Nos\'{e}-Hoover NVT},
-{\bf npt lang}evin \index{ensemble!Langevin NPT},
-{\bf npt ber}endsen \index{ensemble!Berendsen NPT},
-{\bf npt hoover} \index{ensemble!Nos\'{e}-Hoover NPT},
-{\bf npt mtk} \index{ensemble!Martyna-Tuckerman-Klein NPT},
-{\bf nst lang}evin \index{ensemble!Langevin N$\sigma$T},
-{\bf nst ber}endsen \index{ensemble!Berendsen N$\sigma$T},
-{\bf nst hoover} \index{ensemble!Nos\'{e}-Hoover N$\sigma$T},
-{\bf nst mtk} \index{ensemble!Martyna-Tuckerman-Klein  N$\sigma$T})
+{\bf nve}\index{ensemble!NVE},
+{\bf nvt evans}\index{ensemble!Evans NVT},
+{\bf nvt ander}sen\index{ensemble!Andersen NVT},
+{\bf nvt lang}evin\index{ensemble!Langevin NVT},
+{\bf nvt ber}endsen\index{ensemble!Berendsen NVT},
+{\bf nvt hoover}\index{ensemble!Nos\'{e}-Hoover NVT},
+{\bf npt lang}evin\index{ensemble!Langevin NPT},
+{\bf npt ber}endsen\index{ensemble!Berendsen NPT},
+{\bf npt hoover}\index{ensemble!Nos\'{e}-Hoover NPT},
+{\bf npt mtk}\index{ensemble!Martyna-Tuckerman-Klein NPT},
+{\bf nst lang}evin\index{ensemble!Langevin N$\sigma$T},
+{\bf nst ber}endsen\index{ensemble!Berendsen N$\sigma$T},
+{\bf nst hoover}\index{ensemble!Nos\'{e}-Hoover N$\sigma$T},
+{\bf nst mtk}\index{ensemble!Martyna-Tuckerman-Klein  N$\sigma$T})
 are mutually exclusive, though none is mandatory (the default is
 the NVE ensemble\index{ensemble!NVE}).  These options are handled
 internally by the integer variable {\tt keyens}.  The meaning of

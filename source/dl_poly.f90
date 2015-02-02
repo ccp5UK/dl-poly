@@ -341,9 +341,7 @@ Program dl_poly
   If (l_org) Then
      Call gtime(timelp)
      If (idnode == 0) Then
-        Write(nrite,'(/,/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
-        Write(nrite,'(1x,a)') "*** Translating the MD system along a vector (CONFIG to CFGORG) ***"
-        Write(nrite,'(1x,a)') "*** ... ***"
+        Write(nrite,'(/,1x,a)') "*** Translating the MD system along a vector (CONFIG to CFGORG) ***"
         Write(nrite,'(1x,a)') "*** ... ***"
      End If
 
@@ -353,7 +351,7 @@ Program dl_poly
      If (idnode == 0) Then
         Write(nrite,'(1x,a)') "*** ... ***"
         Write(nrite,'(1x,a)') "*** ALL DONE ***"
-        Write(nrite,'(1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
+        Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
      End If
   End If
 
@@ -362,9 +360,7 @@ Program dl_poly
   If (l_scl) Then
      Call gtime(timelp)
      If (idnode == 0) Then
-        Write(nrite,'(/,/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
-        Write(nrite,'(1x,a)') "*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***"
-        Write(nrite,'(1x,a)') "*** ... ***"
+        Write(nrite,'(/,1x,a)') "*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***"
         Write(nrite,'(1x,a)') "*** ... ***"
      End If
 
@@ -374,7 +370,7 @@ Program dl_poly
      If (idnode == 0) Then
         Write(nrite,'(1x,a)') "*** ... ***"
         Write(nrite,'(1x,a)') "*** ALL DONE ***"
-        Write(nrite,'(1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
+        Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
      End If
   End If
 
@@ -383,9 +379,7 @@ Program dl_poly
   If (l_his) Then
      Call gtime(timelp)
      If (idnode == 0) Then
-        Write(nrite,'(/,/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
-        Write(nrite,'(1x,a)') "*** Generating a zero timestep HISTORY frame of the MD system ***"
-        Write(nrite,'(1x,a)') "*** ... ***"
+        Write(nrite,'(/,1x,a)') "*** Generating a zero timestep HISTORY frame of the MD system ***"
         Write(nrite,'(1x,a)') "*** ... ***"
      End If
 
@@ -401,7 +395,7 @@ Program dl_poly
      If (idnode == 0) Then
         Write(nrite,'(1x,a)') "*** ... ***"
         Write(nrite,'(1x,a)') "*** ALL DONE ***"
-        Write(nrite,'(1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
+        Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
      End If
   End If
 
@@ -412,7 +406,7 @@ Program dl_poly
 ! EXIT gracefully
 
   If (l_trm) Then
-     If (idnode == 0) Write(nrite,'(1x,a)') "*** Exiting gracefully ***"
+     If (idnode == 0) Write(nrite,'(/,1x,a)') "*** Exiting gracefully ***"
      Go To 10
   End If
 

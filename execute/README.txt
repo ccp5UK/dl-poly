@@ -65,3 +65,12 @@ cleanup
 in the sub-directory.  This will erase all unessential files prior to
 the next run of the program.  Do not use this macro before you have
 stored all your useful data!
+
+The gui macro
+
+If you type, in the execute sub-directory, the command:
+
+gui
+
+it will try to run the DL_POLY java GUI program from within the java
+sub-directory!

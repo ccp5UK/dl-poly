@@ -417,9 +417,9 @@ Subroutine read_control                                &
         l_org = .true.
         l_trm  = .true.
 
-        If (idnode == 0) Write(nrite,"(3(/,1x,a))")                                                   &
+        If (idnode == 0) Write(nrite,"(2(/,1x,a))")                                                   &
            "%%% translate CONFIG along a vector into CFGORG after reading input & terminate !!! %%%", &
-           "%%% vector and config level as follows: %%%"
+           "%%% vector and config level read as follows: %%%"
 
         Call get_word(record,word)
         xorg = word_2_real(word)
@@ -432,9 +432,9 @@ Subroutine read_control                                &
         lvcforg = Min( Int(Abs(word_2_real(word,0.0_wp))) , levcfg)
 
         If (idnode == 0) Then
-           Write(nrite,"(1x,a4)") '%%% '
-           Write(nrite,"(1x,a4,3f10.3)") '%%% ',xorg,yorg,zorg
-           Write(nrite,"(1x,a,i0)") '%%% CFGORG level ', lvcforg
+           Write(nrite,"(1x,a)")          '%%% '
+           Write(nrite,"(1x,a,3f10.3,a)") '%%% vector(x,y,x) ', xorg, yorg, zorg, ' %%%'
+           Write(nrite,"(1x,a,i0,a)")     '%%% CFGORG level ', lvcforg, ' %%%'
         End If
 
      Else If (word(1:5) == 'l_scl') Then
@@ -459,13 +459,13 @@ Subroutine read_control                                &
         Call invert(cels,rcell,tmp)
 
         If (idnode == 0) Then
-           Write(nrite,"(1x,a4)") '%%% '
-           Write(nrite,"(1x,a,i0)") '%%% CFGSCL level ', lvcforg
-           Write(nrite,"(1x,a4,3f20.10)") '%%% ',cels(1:3)
-           Write(nrite,"(1x,a4,3f20.10)") '%%% ',cels(4:6)
-           Write(nrite,"(1x,a4,3f20.10)") '%%% ',cels(7:9)
-           Write(nrite,"(1x,a4)") '%%% '
-           Write(nrite,"(1x,'%%% CFGSCL volume ',2x,1p,g22.12)") tmp
+           Write(nrite,"(1x,a)")             '%%% '
+           Write(nrite,"(1x,a,i0,a)")        '%%% CFGSCL level ', lvcforg, ' %%%'
+           Write(nrite,"(1x,a,3f20.10,a)")   '%%% ', cels(1:3), ' %%%'
+           Write(nrite,"(1x,a,3f20.10,a)")   '%%% ', cels(4:6), ' %%%'
+           Write(nrite,"(1x,a,3f20.10,a)")   '%%% ', cels(7:9), ' %%%'
+           Write(nrite,"(1x,a)")             '%%% '
+           Write(nrite,"(1x,a,1p,g22.12,a)") '%%% CFGSCL volume ', tmp, '%%%'
         End If
 
         If (tmp > zero_plus) Then
