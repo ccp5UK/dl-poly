@@ -8,8 +8,8 @@ Module plumed_module
   private
 
   Logical, public                :: l_plumed = .false.
-  Character( len = 125 ), public :: plumed_input = "plumed.dat"
-  Character( len = 125 ), public :: plumed_log = "plumed.out"
+  Character( len = 125 ), public :: plumed_input = "PLUMED"
+  Character( len = 125 ), public :: plumed_log = "OUTPUT.PLUMED"
 
   Real ( Kind = wp ), public     :: plumed_energyUnits = 0.01_wp ! DLPOLY_Internal(10J/mol^-1) /KJmol^-1
   Real ( Kind = wp ), public     :: plumed_lengthUnits = 0.1_wp ! Angstrtom/nanometer
