@@ -7,9 +7,9 @@ set(DLPOLY_VERSION "${DLPOLY_VERSION_MAJOR}.${DLPOLY_VERSION_MINOR}.${DLPOLY_VER
 set(AUTHOR "Alin M Elena")
 set(AUTHOR_DETAILS "alin.m.elena@gmail.com")
 set(DESCRIPTION "DL_POLY")
+
 set(src_dir source) 
 set(target_name DLPOLY.Z) 
-
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake" "${CMAKE_SOURCE_DIR}/cmake/Modules")
 include(DLPOLYBuildOptions)
@@ -20,6 +20,7 @@ cmake_minimum_required(VERSION 3.0.2)
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0004 OLD)
 endif(COMMAND cmake_policy)
+
 if(WITH_MPI)
 ### if we want MPI check for it and set the internal kitchen
   find_package(MPI REQUIRED)
@@ -74,6 +75,13 @@ if(WITH_KIM)
 else()
    message(STATUS "Build without KIM support")
 endif()
+if(WITH_PLUMED)
+   find_package(PLUMED 2.1 REQUIRED)
+   message(STATUS "Build with PLUMED support")
+   set(LIBS ${LIBS} ${PLUMED_LIBRARIES})
+else()
+   message(STATUS "Build without PLUMED support")
+endif()
 
 if(WITH_EXTRATIME)
    add_definitions("-DCHRONO")
@@ -92,8 +100,8 @@ if (DOCS)
 endif()
 ######################
 ##set the output folder for libs and bins
-set(LIBRARY_OUTPUT_PATH ${CMAKE_INSTALL_LIBDIR})
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_INSTALL_BINDIR})
+set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 
 add_subdirectory(source)
 
