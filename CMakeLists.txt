@@ -8,7 +8,7 @@ set(AUTHOR "Alin M Elena")
 set(AUTHOR_DETAILS "alin.m.elena@gmail.com")
 set(DESCRIPTION "DL_POLY")
 
-set(src_dir source) 
+set(src_dir ${CMAKE_SOURCE_DIR}/source) 
 set(target_name DLPOLY.Z) 
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake" "${CMAKE_SOURCE_DIR}/cmake/Modules")
@@ -31,11 +31,6 @@ if(WITH_MPI)
   endif()
   message(STATUS "Build with MPI support!")
 else()
-  include_directories(${src_dir}/SERIAL)
-  add_definitions(-DSERIAL)
-  set(dlpoly_SERIAL_SRCS 
-  ${src_dir}/SERIAL/mpi_module.f90
-  )
   message(STATUS "Build without MPI support!")
 endif()
 

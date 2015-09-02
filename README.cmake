@@ -2,11 +2,11 @@ to build using cmake
 with gcc compilers with MPI and OpenMP support one needs to tell cmake -DMPI=on or y
 -DOPENMP=y or on to activate netcdf support -DNETCDF=y
 
-1. starndard MPI only DLpoly
+1. standard MPI only DLpoly
 
 mkdir build
 cd build
-FFLAGS="-O3 -cpp" cmake ../ -DWIRH_MPI=y 
+FFLAGS="-O3 -cpp" cmake ../ -DWITH_MPI=y
 
 2. hybrid MPI and openmp DLPOLY
 
@@ -45,6 +45,12 @@ FC=mpiifort FFLAGS="-fpp -O3 -xHost -fimf-domain-exclusion=15" cmake ../ -DWITH_
 Xeon Phi:
 for building native binaries for Xeon Phi pass to cmake -DWITH_PHI=y
 
+
+Paranoid debug:
+gfortran
+FFLAGS="-g -O0 -std=f2008 -pedantic -fbacktrace -fcheck=all -finit-integer=2147483648 -finit-real=nan -finit-logical=true -finit-character=42"
+intel fortran
+FFLAGS="-g -O0 -stand f08 -traceback -C -fp-stack-check -ftrapuv"
 known issues: 
 1. FindMPI may trip with intel mpi
 I_MPI_F90=ifort FC=ifort 

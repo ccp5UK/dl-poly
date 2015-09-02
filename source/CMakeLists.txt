@@ -215,8 +215,16 @@ if(WITH_PLUMED)
 endif()
 set(plumed_SRCS plumed_module.F90)
 
-add_library(dlpoly  ${dlpoly_SRCS} ${dlpoly_SERIAL_SRCS} ${netcdf_SRCS})
-add_library(dlpolycore  ${dlpoly_CORE_SRCS})
+if( NOT WITH_MPI)
+  include_directories(${src_dir}/SERIAL)
+  add_definitions(-DSERIAL)
+  set(dlpoly_SERIAL_SRCS 
+  ${src_dir}/SERIAL/mpi_module.f90
+  )
+endif()
+
+add_library(dlpoly ${dlpoly_SRCS} ${netcdf_SRCS})
+add_library(dlpolycore  ${dlpoly_SERIAL_SRCS} ${dlpoly_CORE_SRCS})
 add_library(dlpolythermo  ${dlpoly_THERMO_SRCS})
 add_library(dlpolykim  ${kim_SRCS})
 add_library(dlpolyplumed  ${plumed_SRCS})

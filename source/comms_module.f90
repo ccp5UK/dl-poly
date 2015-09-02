@@ -10,7 +10,11 @@ Module comms_module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use mpi!_module
+#ifdef SERIAL
+  Use mpi_module
+#else
+  Use mpi
+#endif
 
   Implicit None
 
