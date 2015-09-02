@@ -19,10 +19,10 @@ LIBS="-lnetcdf -ltcl8.6 "
 rm -rf $BUILD_FOLDER
 mkdir -p $BUILD_FOLDER
 pushd $BUILD_FOLDER
-tar -xvf ../$PLUMED_SRC
+tar -xf ../$PLUMED_SRC
 pushd plumed-${PLUMED_VERSION}
 patch -p1 < ../../0001-fix-template-issue-for-optimalAlignment.patch
-
+mpic++ --show
 ./configure LDFLAGS="-L$VMD_PLUGIN/LINUXAMD64/molfile" CPPFLAGS="$VMD_INC" LIBS="$LIBS"  CXXFLAGS="$CXXFLAGS" CFLAGS="$CFLAGS" \
  --prefix=$PLUMED_INSTALL \
   --enable-external-molfile-plugins --enable-external-lapack \
