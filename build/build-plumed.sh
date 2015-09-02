@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 
 
-module load gnu-openmpi/1.8.3
-module list
+#module load gnu-openmpi/1.8.3
+#module list
 CC=gcc
 CXX=g++
 PLUMED_VERSION=2.2b
+BASE=$HOME
 PLUMED_SRC=plumed-${PLUMED_VERSION}.tgz
 BUILD_FOLDER=build-$CC
-PLUMED_INSTALL=/opt/plumed/$CC/$PLUMED_VERSION
-PLUMED_MODULE=/opt/modules/plumed/$CC/$PLUMED_VERSION
+PLUMED_INSTALL=$BASE/plumed/$CC/$PLUMED_VERSION
+PLUMED_MODULE=$BASE/modules/plumed/$CC/$PLUMED_VERSION
 CXXFLAGS="-O3 -mtune=native" 
 CFLAGS="-O3 -mtune=native"
 VMD_PLUGIN=/usr/lib64/vmd/1.9.2beta1.1427136773/plugins
