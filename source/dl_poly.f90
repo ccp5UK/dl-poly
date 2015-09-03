@@ -338,8 +338,8 @@ Program dl_poly
   End If
   
   If (l_plumed) Then
-     Call init_plumed(megatm,tstep,temp)
-     Call print_about_plumed()
+     Call plumed_init(megatm,tstep,temp)
+     Call plumed_print_about()
   else
      If (idnode == 0) Then
        Write(nrite,'(1x,a)') "***PLUMED is off or version without PLUMED***"
@@ -678,7 +678,7 @@ Program dl_poly
 10 Continue
 
 ! Ask for reference in publications
-  If (l_plumed) Call finalize_plumed()
+  If (l_plumed) Call plumed_finalize()
 
   If (idnode == 0) Write(nrite,'(/,/,9(1x,a,/))') &
      "*************************************************************************************************************************", &

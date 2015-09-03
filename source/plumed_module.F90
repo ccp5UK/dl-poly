@@ -11,7 +11,7 @@ Module plumed_module
   Character( len = 125 ), public :: plumed_input = "PLUMED"
   Character( len = 125 ), public :: plumed_log = "OUTPUT.PLUMED"
 
-  Real ( Kind = wp ), public     :: plumed_energyUnits = 0.01_wp ! DLPOLY_Internal(10J/mol^-1) /KJmol^-1
+  Real ( Kind = wp ), public     :: plumed_energyUnits = 0.01_wp ! DLPOLY_Internal(10J/mol) /kJ/mol
   Real ( Kind = wp ), public     :: plumed_lengthUnits = 0.1_wp ! Angstrtom/nanometer
   Real ( Kind = wp ), public     :: plumed_timeUnits = 1.0_wp ! picosecond
   Integer ( Kind = ip ), public  :: plumed_precision = wp ! DL_POLY preicision
@@ -22,13 +22,13 @@ Module plumed_module
   Real ( Kind = wp )  :: plumed_virial(1:9)
   character(len=1),parameter  :: sn=char(0)
 
-  public :: print_about_plumed
-  public :: init_plumed
-  public :: finalize_plumed
+  public :: plumed_print_about
+  public :: plumed_init
+  public :: plumed_finalize
   public :: plumed_apply
 Contains 
   
-  Subroutine init_plumed(megatm,tstep,temp)
+  Subroutine plumed_init(megatm,tstep,temp)
 
     Integer, Intent(In)           :: megatm
     Real(kind = wp ), Intent(in)  :: tstep, temp
@@ -57,9 +57,9 @@ Contains
        Call error(1083)
     End If
 #endif
-  End Subroutine init_plumed
+  End Subroutine plumed_init
 
-  Subroutine print_about_plumed()
+  Subroutine plumed_print_about()
 
 #ifdef PLUMED
    If (idnode == 0) Then
@@ -91,7 +91,7 @@ Contains
    End If
 #endif
     
-  End Subroutine print_about_plumed
+  End Subroutine plumed_print_about
 
   Subroutine plumed_apply(xxx,yyy,zzz,nstrun,nstep,stpcfg,stress)
      Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
@@ -131,10 +131,10 @@ Contains
 #endif
   End Subroutine plumed_apply
 
-  Subroutine finalize_plumed()
+  Subroutine plumed_finalize()
 #ifdef PLUMED
     If ( idnode == 0 ) Call plumed_f_gfinalize()
 #endif
-  End Subroutine finalize_plumed
+  End Subroutine plumed_finalize
 
 End Module plumed_module
