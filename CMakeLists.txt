@@ -99,6 +99,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 
 add_subdirectory(source)
+  configure_file(${CMAKE_SOURCE_DIR}/modulefile.cmake modulefile)
 
 if(DOCS)
   configure_file(${CMAKE_SOURCE_DIR}/Doxyfile.cmake Doxyfile)
