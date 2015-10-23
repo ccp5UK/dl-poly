@@ -49,7 +49,7 @@ Contains
       Call plumed_f_gcmd("setLogFile"//sn,trim(plumed_log)//sn)
       Call plumed_f_gcmd("setNatoms"//sn,megatm)
 ! The name should be updated when there are new releases of dlpoly
-      Call plumed_f_gcmd("setMDEngine"//sn,dl_poly_version//sn)
+      Call plumed_f_gcmd("setMDEngine"//sn,"DL_POLY "//dl_poly_version//sn)
       Call plumed_f_gcmd("setTimestep"//sn,tstep)
       call plumed_f_gcmd("setKbT"//sn,temp*boltz)  
       Call plumed_f_gcmd("init"//sn,0)
@@ -114,10 +114,6 @@ Contains
      call plumed_f_gcmd("setForcesX"//sn,fxx)
      call plumed_f_gcmd("setForcesY"//sn,fyy)
      call plumed_f_gcmd("setForcesZ"//sn,fzz)
-! Note virial contribution of plumed is scaled when using energy
-! cv and is only added on node 0 when using anything else
-! Hence, we can use dlpoly's all gather on the virial to 
-! ensure that the correct virial is propegated to all the nodes
      plumed_virial = -stress
      call plumed_f_gcmd("setVirial"//sn,plumed_virial)
      stress = -plumed_virial
