@@ -1,4 +1,5 @@
 before_script:
+  - module use /usr/share/modules
   - module load gnu-openmpi/1.8.8
 
 build-hpc:
