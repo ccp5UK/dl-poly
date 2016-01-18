@@ -1,0 +1,8 @@
+before_script:
+  - module load gnu-openmpi/1.8.8
+
+build-hpc:
+  script:
+    - pushd source
+    - ln -s ../build/Makefile_MPI
+    - make hpc   
