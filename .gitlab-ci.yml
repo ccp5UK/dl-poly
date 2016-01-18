@@ -6,5 +6,5 @@ before_script:
 build-hpc:
   script:
     - pushd source
-    - ln -s ../build/Makefile_MPI
+    - ln -s ../build/Makefile_MPI Makefile
     - make hpc   
