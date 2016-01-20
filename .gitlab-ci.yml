@@ -1,7 +1,7 @@
 before_script:
   - module use /usr/share/modules/
   - module av
-  - module load gnu-openmpi/1.8.3
+  - module load gnu-openmpi/1.8.8
 
 build-hpc:
   script:
