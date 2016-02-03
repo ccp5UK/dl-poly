@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov january 2015
+! amended   - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -116,7 +116,7 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
               cut2=ddd
 
               density=0.0_wp
-              If (rrr <= cut2) density=(rrr-ddd)**2+bbb*(rrr-ddd)**4
+              If (rrr <= cut2) density=(rrr-ddd)**2+bbb**2*(rrr-ddd)**4
 
               If (ai == aj) Then
                  t1=prmmet(7,k0)**2

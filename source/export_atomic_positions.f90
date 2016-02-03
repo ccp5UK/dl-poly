@@ -6,7 +6,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0)
 ! for halo refresh
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov december 2014
+! amended   - i.t.todorov january 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,7 +22,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0)
   Integer,           Intent( InOut ) :: mlast,ixyz0(1:mxatms)
 
 
-  Logical           :: safe,lsx,lsy,lsz,lex,ley,lez
+  Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap
   Integer           :: fail,iadd,limit,iblock,     &
                        i,j,jxyz,ix,iy,iz,kx,ky,kz, &
                        jdnode,kdnode,imove,jmove,itmp
@@ -111,9 +111,13 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0)
   vvv=0.0_wp ; If (lsy) vvv=+1.0_wp ; If (ley) vvv=-1.0_wp
   www=0.0_wp ; If (lsz) www=+1.0_wp ; If (lez) www=-1.0_wp
 
-  xadd = cell(1)*uuu+cell(4)*vvv+cell(7)*www
-  yadd = cell(2)*uuu+cell(5)*vvv+cell(8)*www
-  zadd = cell(3)*uuu+cell(6)*vvv+cell(9)*www
+  lwrap = (Abs(uuu)+Abs(vvv)+Abs(www) > 0.5_wp)
+
+  If (lwrap) Then
+     xadd = cell(1)*uuu+cell(4)*vvv+cell(7)*www
+     yadd = cell(2)*uuu+cell(5)*vvv+cell(8)*www
+     zadd = cell(3)*uuu+cell(6)*vvv+cell(9)*www
+  End If
 
 ! Initialise counters for length of sending and receiving buffers
 ! imove and jmove are the actual number of particles to get haloed
@@ -153,9 +157,15 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0)
 
 ! pack positions and apply possible PBC shift for the receiver
 
-              buffer(imove+1)=xxx(i)+xadd
-              buffer(imove+2)=yyy(i)+yadd
-              buffer(imove+3)=zzz(i)+zadd
+              If (.not.lwrap) Then
+                 buffer(imove+1)=xxx(i)
+                 buffer(imove+2)=yyy(i)
+                 buffer(imove+3)=zzz(i)
+              Else
+                 buffer(imove+1)=xxx(i)+xadd
+                 buffer(imove+2)=yyy(i)+yadd
+                 buffer(imove+3)=zzz(i)+zadd
+              End If
 
            Else
 

@@ -34,7 +34,7 @@ Subroutine two_body_forces                        &
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
   Use setup_module
-  Use config_module, Only : cell,volm,sumchg,natms,list,xxx,yyy,zzz
+  Use config_module, Only : cell,volm,sumchg,natms,ltg,list,xxx,yyy,zzz
   Use vnl_module,    Only : l_vnl
   Use ewald_module
   Use vdw_module,    Only : ntpvdw
@@ -176,7 +176,7 @@ Subroutine two_body_forces                        &
 
 ! periodic boundary conditions
 
-     Call images(imcon,cell,limit,xxt,yyt,zzt)
+!     Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! distances, thanks to Alin Elena (one too many changes)
 

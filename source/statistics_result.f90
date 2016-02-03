@@ -55,8 +55,8 @@ Subroutine statistics_result                                    &
      End If
 
      If (idnode == 0) Write(nrite,"(//,                                        &
-        & ' VNL skipping run statistics - skips per timestep: average ', f5.2, &
-        & ' minimum ', i3, ' maximum ', i3)")                                  &
+        & ' VNL skipping run statistics - skips per timestep: average ', f7.2, &
+        & ' minimum ', i4, ' maximum ', i4)")                                  &
         skipvnl(3),Nint(Merge(skipvnl(4),skipvnl(5),skipvnl(4)<skipvnl(5))),Nint(skipvnl(5))
   End If
 

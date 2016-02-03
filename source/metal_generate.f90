@@ -225,7 +225,6 @@ Subroutine metal_generate(rmet)
               Call error(151)
 
            End If
-
         End If
      End Do
   End Do

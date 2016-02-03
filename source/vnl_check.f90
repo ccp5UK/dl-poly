@@ -5,7 +5,7 @@ Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk,width)
 ! dl_poly_4 routine implementing the VNL conditional update checks
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2014
+! author    - i.t.todorov january 2016
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -86,7 +86,7 @@ Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk,width)
 
      Call images(imcon,cell,natms,x,y,z)
 
-     max_disp = Sqrt( Maxval( x(1:natms)**2 + y(1:natms)**2 + z(1:natms)**2 ) )
+     max_disp = Merge( Sqrt( Maxval( x(1:natms)**2 + y(1:natms)**2 + z(1:natms)**2 ) ) , 0.0_wp , natms > 0 )
 
      Deallocate (x,y,z, Stat = fail)
      If (fail > 0) Then

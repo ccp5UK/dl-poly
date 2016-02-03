@@ -74,9 +74,9 @@ Subroutine relocate_particles        &
      big=0.0_wp
 
      Do i =1,natms
-        big(1)=Max(big(1),abs(xxx(i)))
-        big(2)=Max(big(2),abs(yyy(i)))
-        big(3)=Max(big(3),abs(zzz(i)))
+        big(1)=Max(big(1),Abs(xxx(i)))
+        big(2)=Max(big(2),Abs(yyy(i)))
+        big(3)=Max(big(3),Abs(zzz(i)))
      End Do
 
      If (mxnode > 1) Call gmax(big)

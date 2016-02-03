@@ -23,10 +23,12 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2015
+! author    - i.t.todorov january 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
+! contrib   - h.a.boateng february 2015
+! contrib   - p.s.petkov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -96,8 +98,8 @@ Subroutine read_control                                &
 
 
   Logical                                 :: limp,lvv,lens,lforc, &
-                                             lpres,lstrext,       &
-                                             lstep,ltemp,safe,    &
+                                             ltemp,lpres,lstrext, &
+                                             lstep,safe,          &
                                              l_timjob,l_timcls
 
   Character( Len = 200 )                  :: record
@@ -106,7 +108,7 @@ Subroutine read_control                                &
   Integer                                 :: i,j,k,itmp,nstana,grdana,grdbnd,grdang, &
                                              grddih,grdinv,nstall
 
-  Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,eps,tol,rcb_d
+  Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,eps0,tol,rcb_d,prmps(1:4)
 
 
 ! initialise system control variables and their logical switches
@@ -1567,7 +1569,7 @@ Subroutine read_control                                &
 
      Else If (word(1:3) == 'pad' .or. word(1:4) == 'rpad') Then
 
-        Call get_word(record,word)
+        Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
         rpad1 = Abs(word_2_real(word))
         If (idnode == 0) Write(nrite,"(/,1x,'cutoff padding (Angs)       ',6x,1p,e12.4)") rpad1
 
@@ -1664,11 +1666,11 @@ Subroutine read_control                                &
            If (idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1)',10x,1p,e12.4)") alpha
         Else If (word(1:9) == 'precision') Then
            Call get_word(record,word)
-           eps = Abs(word_2_real(word))
-           If (idnode == 0) Write(nrite,"(1x,'precision parameter     ',10x,1p,e12.4)") eps
-           eps = Max(Min(eps,0.5_wp),1.0e-20_wp)
-           tol = Sqrt(Abs(Log(eps*rcut)))
-           alpha = Sqrt(Abs(Log(eps*rcut*tol)))/rcut
+           eps0 = Abs(word_2_real(word))
+           If (idnode == 0) Write(nrite,"(1x,'precision parameter     ',10x,1p,e12.4)") eps0
+           eps0 = Max(Min(eps0,0.5_wp),1.0e-20_wp)
+           tol = Sqrt(Abs(Log(eps0*rcut)))
+           alpha = Sqrt(Abs(Log(eps0*rcut*tol)))/rcut
            If (idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1) derived',2x,1p,e12.4)") alpha
         End If
         If (alpha > zero_plus) Then
@@ -1695,11 +1697,11 @@ Subroutine read_control                                &
            If (idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1)',10x,1p,e12.4)") alpha
         Else If (word(1:9) == 'precision') Then
            Call get_word(record,word)
-           eps = Abs(word_2_real(word))
-           If (idnode == 0) Write(nrite,"(1x,'precision parameter     ',10x,1p,e12.4)") eps
-           eps = Max(Min(eps,0.5_wp),1.0e-20_wp)
-           tol = Sqrt(Abs(Log(eps*rcut)))
-           alpha = Sqrt(Abs(Log(eps*rcut*tol)))/rcut
+           eps0 = Abs(word_2_real(word))
+           If (idnode == 0) Write(nrite,"(1x,'precision parameter     ',10x,1p,e12.4)") eps0
+           eps0 = Max(Min(eps0,0.5_wp),1.0e-20_wp)
+           tol = Sqrt(Abs(Log(eps0*rcut)))
+           alpha = Sqrt(Abs(Log(eps0*rcut*tol)))/rcut
            If (idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1) derived',2x,1p,e12.4)") alpha
         End If
         If (alpha > zero_plus) Then
@@ -1718,6 +1720,25 @@ Subroutine read_control                                &
         If (word(1:8) == 'constant') Call get_word(record,word)
         epsq = word_2_real(word)
         If (idnode == 0) Write(nrite,"(/,1x,'relative dielectric constant',6x,1p,e12.4)") epsq
+
+!     Else If (word(1:6) == 'induce') Then
+!
+!        If (idnode == 0) Write(nrite,"(/,1x,a)") "Employing induced dipoles"
+!        If (idnode == 0) Write(nrite,"(/,1x,a)") "Induced dipole conjugate gradient :"
+!        If (idnode == 0) Write(nrite,"(/,1x,a,i0)") "        max number of steps = ", politer
+!        If (idnode == 0) Write(nrite,"(/,1x,a,e7.3)") "        convergence criterion = ", convcrit
+!
+!     Else If (word(1:4) == 'gear') Then
+!
+!       If (idnode == 0) Write(nrite,"(/,1x,a,io,a)") "Using gear predictor with ",numcof," points"
+!
+!     Else If (word(1:4) == 'aspc') Then
+!
+!       If (idnode == 0) Write(nrite,"(/,1x,a,io,a)") "Using always stable predictor corrector with ",numcof," points"
+!
+!     Else If (word(1:5) == 'lstsq') Then
+!
+!       If (idnode == 0) Write(nrite,"(/,1x,a,io,a)") "Using least squares predictor with ",numcof," points"
 
 ! read option for accounting for extended coulombic exclusion
 
@@ -2094,7 +2115,7 @@ Subroutine read_control                                &
      Else If (word(1:4) == 'delr') Then
 
         Call warning(35,0.0_wp,0.0_wp,0.0_wp)
-        Call get_word(record,word)
+        Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
         rpad1 = 0.25_wp * Abs(word_2_real(word))
         If (idnode == 0) Write(nrite,"(1x,'cutoff padding (Angs)       ',6x,1p,e12.4)") rpad1
 

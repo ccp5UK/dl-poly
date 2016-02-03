@@ -8,7 +8,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 ! NOTE: When executing on one node we need not get here at all!
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov december 2014
+! author    - w.smith & i.t.todorov january 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014
 !
@@ -50,10 +50,10 @@ Subroutine deport_atomic_data(mdir,lbook)
 
   Implicit None
 
-  Logical,           Intent( In    ) :: lbook
-  Integer,           Intent( In    ) :: mdir
+  Logical, Intent( In    ) :: lbook
+  Integer, Intent( In    ) :: mdir
 
-  Logical           :: safe,lsx,lsy,lsz,lex,ley,lez, &
+  Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
                        stay,safe1,check
   Integer           :: fail(1:3),iblock,jdnode,kdnode,        &
                        imove,jmove,kmove,keep,                &
@@ -150,9 +150,13 @@ Subroutine deport_atomic_data(mdir,lbook)
   vvv=0.0_wp ; If (lsy) vvv=+1.0_wp ; If (ley) vvv=-1.0_wp
   www=0.0_wp ; If (lsz) www=+1.0_wp ; If (lez) www=-1.0_wp
 
-  xadd = cell(1)*uuu+cell(4)*vvv+cell(7)*www
-  yadd = cell(2)*uuu+cell(5)*vvv+cell(8)*www
-  zadd = cell(3)*uuu+cell(6)*vvv+cell(9)*www
+  lwrap = (Abs(uuu)+Abs(vvv)+Abs(www) > 0.5_wp)
+
+  If (lwrap) Then
+     xadd = cell(1)*uuu+cell(4)*vvv+cell(7)*www
+     yadd = cell(2)*uuu+cell(5)*vvv+cell(8)*www
+     zadd = cell(3)*uuu+cell(6)*vvv+cell(9)*www
+  End If
 
 ! Initialise counters for length of sending and receiving buffers
 ! buffer(1) and buffer(iblock+1) contain the actual number of
@@ -222,9 +226,15 @@ Subroutine deport_atomic_data(mdir,lbook)
 
 ! pack positions and apply possible PBC shift for the receiver
 
-           buffer(imove+1)=xxx(i)+xadd
-           buffer(imove+2)=yyy(i)+yadd
-           buffer(imove+3)=zzz(i)+zadd
+           If (.not.lwrap) Then
+              buffer(imove+1)=xxx(i)
+              buffer(imove+2)=yyy(i)
+              buffer(imove+3)=zzz(i)
+           Else
+              buffer(imove+1)=xxx(i)+xadd
+              buffer(imove+2)=yyy(i)+yadd
+              buffer(imove+3)=zzz(i)+zadd
+           End If
 
 ! pack velocities
 
@@ -728,7 +738,7 @@ Subroutine deport_atomic_data(mdir,lbook)
   k=ind_on(0)
   l=ind_off(0)
   Do ii=1,l
-     keep=ind_off(ii)
+     keep=ind_off(ii) ; If (keep > ind_on(k)) Exit ! Thanks to Alin Elena
      i   =ind_on(k-ii+1)
 
      xxx(keep)=xxx(i)
