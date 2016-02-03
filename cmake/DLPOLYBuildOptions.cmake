@@ -1,0 +1,8 @@
+option(WITH_MPI "build a MPI version" ON)
+option(WITH_OPENMP "build an OpenMP version" OFF)
+option(WITH_PHI "build an executable for Xeon Phi version" OFF)
+option(WITH_NETCDF "build using netcdf support version" OFF)
+option(WITH_EXTRATIME "activate extra timing information" OFF)
+option(WITH_KIM "Build with KIM support" OFF)
+option(DOCS "Doxygen Documentation" OFF)
+option(BUILD_SHARED_LIBS "Build with shared libraries" OFF)
