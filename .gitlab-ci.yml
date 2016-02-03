@@ -17,3 +17,10 @@ build-mpi-pure:
     - cmake ../ -DWITH_MPI=ON -DWITH_OPENMP=OFF
     - make -j10 
     - popd
+
+build-old-hpc:
+  script:
+    - cp -r source source-mpi
+    - pushd source-mpi
+    - ln -s ../build/Makefile_MPI Makefile
+    - make hpc   
