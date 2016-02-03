@@ -9,7 +9,7 @@
 SHELL=/bin/sh
 
 .SUFFIXES:
-.SUFFIXES: .f90 .F90 .o .F03
+.SUFFIXES: .f90 .F90 .o 
 
 BINROOT=../execute
 EX=DLPOLY.Z
@@ -308,9 +308,6 @@ check:
 
 .F90.o:
 	$(FC) $(FCFLAGS) $*.F90
-
-.F03.o:
-	$(FC) $(FCFLAGS) -I$(KIM_API_DIR) $*.F03
 
 # Declare dependencies
 #=====================================================================
