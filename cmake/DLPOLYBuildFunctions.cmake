@@ -1,0 +1,17 @@
+function(INSTALL_SUBLIB SUBLIB )
+
+  set_target_properties(
+                ${SUBLIB} PROPERTIES VERSION ${DLPOLY_VERSION}
+                SOVERSION ${DLPOLY_VERSION_MAJOR}
+                INTERFACE_${SUBLIB}_MAJOR_VERSION ${DLPOLY_VERSION_MAJOR}
+                COMPATIBLE_INTERFACE_STRING ${DLPOLY_VERSION_MAJOR}
+        )
+
+        install(TARGETS
+                ${SUBLIB}
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
+endfunction(INSTALL_SUBLIB)
+
