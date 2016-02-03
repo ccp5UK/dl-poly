@@ -1409,7 +1409,7 @@ Subroutine images(imcon,cell,pairs,xxx,yyy,zzz)
         zzz(i)=zzz(i)-cell(1)*Anint(aaa*zzz(i))
      End Do
 
-  Else If (imcon == 2) Then
+  Else If (imcon == 2 .or. imcon == 0) Then
 
 ! rectangular (slab) boundary conditions
 

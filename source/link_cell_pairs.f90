@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2016
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -38,7 +38,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
                        jx,jy,jz,jc
 
   Real( Kind = wp ) :: cut,rcsq,rsq,det,rcell(1:9),celprp(1:10), &
-                       x,y,z, dispx,dispy,dispz, xdc,ydc,zdc, nlr2
+                       x,y,z, x1,y1,z1, dispx,dispy,dispz, xdc,ydc,zdc, nlr2
 
   Logical,           Dimension( : ), Allocatable :: nir
   Integer,           Dimension( : ), Allocatable :: nix,niy,niz,          &
@@ -145,7 +145,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
      jz=iz**2
 
      Do iy=-nlp,nlp
-        If (iz == 0 .and. iy < 0) Go To 20
+        If (iz == 0 .and. iy < 0) Cycle
 
         nlp4=Abs(iy)
         If (nlp4 > 0) Then
@@ -155,12 +155,12 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
         End If
 
         ll=iz1+iy1
-        If (ll > nlp2) Go To 20
+        If (ll > nlp2) Cycle
 
         jy=jz+iy**2
 
         Do ix=-nlp,nlp
-           If (iz == 0 .and. iy == 0 .and. ix < 0) Go To 10
+           If (iz == 0 .and. iy == 0 .and. ix < 0) Cycle
 
            nlp4=Abs(ix)
            If (nlp4 > 0) Then
@@ -169,7 +169,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
               ix1=0
            End If
 
-           If (ll+ix1 > nlp2) Go To 10
+           If (ll+ix1 > nlp2) Cycle
 
            jx=jy+ix**2
 
@@ -179,10 +179,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
            niy(nsbcll)=iy
            niz(nsbcll)=iz
            nir(nsbcll)=(jx < nlp3)
-
-10         Continue
         End Do
-20      Continue
      End Do
   End Do
 !  Write(*,*) 'NLP',nlp,nsbcll,nlx,nly,nlz
@@ -273,8 +270,8 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 
 ! Correction for domain (idnode) only particles (1,natms) but due to
 ! some tiny numerical inaccuracy kicked into its halo link-cell space
-! Put all particles in bounded link-cell space: lower and upper bound
-! bounds as nl_coordinate_0e+1 <= i_coordinate <= nl_coordinate_1s-1!
+! Put all particles in a bounded link-cell space: lower and upper bounds
+! as follows nl_coordinate_0e+1 <= i_coordinate <= nl_coordinate_1s-1 !
 
      ix = Max( Min( ix , nlx1s-1) , nlx0e+1)
      iy = Max( Min( iy , nly1s-1) , nly0e+1)
@@ -328,7 +325,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
         iz =-Int(dispz) + jz - 1
      End If
 
-! Exclude all any negative bound residual halo
+! Exclude any negatively bound residual halo
 
      If (ix >= nlx0s .and. iy >= nly0s .and. iz >= nlz0s) Then
 
@@ -336,52 +333,43 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 ! (idnode) but due to some tiny numerical inaccuracy kicked into
 ! the domain only link-cell space
 
-        lx0=(ix == nlx0e+1)
-        lx1=(ix == nlx1s-1)
-        ly0=(iy == nly0e+1)
-        ly1=(iy == nly1s-1)
-        lz0=(iz == nlz0e+1)
-        lz1=(iz == nlz1s-1)
-        If ( (lx0 .or. lx1) .and. &
-             (ly0 .or. ly1) .and. &
-             (lz0 .or. lz1) ) Then ! 8 corners of the domain's cube in RS
-           If      (lx0 .or. lx1) Then
-              If      (lx0 ) Then
+        lx0=(ix > nlx0e)
+        lx1=(ix < nlx1s)
+        ly0=(iy > nly0e)
+        ly1=(iy < nly1s)
+        lz0=(iz > nlz0e)
+        lz1=(iz < nlz1s)
+        If ( (lx0 .and. lx1) .and. &
+             (ly0 .and. ly1) .and. &
+             (lz0 .and. lz1) ) Then
+
+! Put the closest to the halo coordinate in the halo
+
+           x1=Abs(x-0.5_wp*Sign(1.0_wp,x))
+           y1=Abs(y-0.5_wp*Sign(1.0_wp,y))
+           z1=Abs(z-0.5_wp*Sign(1.0_wp,z))
+           If      (x1 <= y1 .and. x1 <= z1) Then
+              If (x < 0.0_wp) Then
                  ix=nlx0e
-              Else If (lx1) Then
+              Else
                  ix=nlx1s
               End If
-!              If (x > -half_plus) Then
-!                 dispx = dispx + Real(jx-ix,wp)
-!              Else
-!                 dispx = dispx - Real(jx-ix-1,wp)
-!              End If
-           Else If (ly0 .or. ly1) Then
-              If      (ly0 ) Then
+           Else If (y1 <= x1 .and. y1 <= z1) Then
+              If (y < 0.0_wp) Then
                  iy=nly0e
-              Else If (ly1) Then
+              Else
                  iy=nly1s
               End If
-!              If (y > -half_plus) Then
-!                 dispy = dispy + Real(jy-iy,wp)
-!              Else
-!                 dispy = dispy - Real(jy-iy-1,wp)
-!              End If
-           Else If (lz0 .or. lz1) Then
-              If      (lz0 ) Then
+           Else
+              If (z < 0.0_wp) Then
                  iz=nlz0e
-              Else If (lz1) Then
+              Else
                  iz=nlz1s
               End If
-!              If (z > -half_plus) Then
-!                 dispz = dispz + Real(jz-iz,wp)
-!              Else
-!                 dispz = dispz - Real(jz-iz-1,wp)
-!              End If
            End If
         End If
 
-! Check for positive bound residual halo
+! Check for positively bound residual halo
 
         lx0=(ix < nlx0s)
         lx1=(ix > nlx1e)

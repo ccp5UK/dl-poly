@@ -6,7 +6,7 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov february 2016
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -18,7 +18,7 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
   Use config_module,     Only : cfgname,natms,atmnam,lsite,ltg, &
                                 weight
 
-  Use statistics_module, Only : ravval
+  Use statistics_module, Only : stpval
   Use parse_module,      Only : tabs_2_blanks, get_word, word_2_real
   Use io_module,         Only : io_set_parameters,             &
                                 io_get_parameters,             &
@@ -272,9 +272,9 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
      Do i=1,natms
         k=2*i
 
-        If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*ravval(27+k)/(boltz*3.0_wp)
+        If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
 
-        Write(record, Fmt='(a8,i10,1p,2e13.4,a8,a1)') atmnam(i),ltg(i),Sqrt(ravval(27+k-1)),tmp,Repeat(' ',8),lf
+        Write(record, Fmt='(a8,i10,1p,2e13.4,a8,a1)') atmnam(i),ltg(i),Sqrt(stpval(27+k-1)),tmp,Repeat(' ',8),lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -325,9 +325,9 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
            iwrk(i)=ltg(i)
            chbuf(i)=atmnam(i)
 
-           ddd(i)=Sqrt(ravval(27+k-1))
+           ddd(i)=Sqrt(stpval(27+k-1))
 
-           If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*ravval(27+k)/(boltz*3.0_wp)
+           If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
            eee(i)=tmp
         End Do
 
@@ -376,9 +376,9 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
         Do i=1,natms
            k=2*i
 
-           ddd(i)=Sqrt(ravval(27+k-1))
+           ddd(i)=Sqrt(stpval(27+k-1))
 
-           If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*ravval(27+k)/(boltz*3.0_wp)
+           If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
            eee(i)=tmp
         End Do
 
@@ -448,9 +448,9 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
      Do i=1,natms
         k=2*i
 
-        ddd(i)=Sqrt(ravval(27+k-1))
+        ddd(i)=Sqrt(stpval(27+k-1))
 
-        If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*ravval(27+k)/(boltz*3.0_wp)
+        If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
         eee(i)=tmp
      End Do
 
@@ -515,9 +515,9 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
            iwrk(i)=ltg(i)
            chbuf(i)=atmnam(i)
 
-           ddd(i)=Sqrt(ravval(27+k-1))
+           ddd(i)=Sqrt(stpval(27+k-1))
 
-           If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*ravval(27+k)/(boltz*3.0_wp)
+           If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
            eee(i)=tmp
         End Do
 
@@ -555,9 +555,9 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
         Do i=1,natms
            k=2*i
 
-           ddd(i)=Sqrt(ravval(27+k-1))
+           ddd(i)=Sqrt(stpval(27+k-1))
 
-           If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*ravval(27+k)/(boltz*3.0_wp)
+           If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
            eee(i)=tmp
         End Do
 

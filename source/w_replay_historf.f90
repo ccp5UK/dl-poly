@@ -57,7 +57,7 @@
 10   Continue
      If (nstep >= nstpe) Call statistics_connect_set(imcon,rlnk)
 
-! Make a move
+! Make a move - Read a frame
 
      Call read_history(l_str,"HISTORF",megatm,levcfg,imcon,dvar,nstep,tstep,time,exout)
 
@@ -72,6 +72,16 @@
         nstph=nstph+1
 
         If (nstep < nstpe) Go To 10 ! Deal with restarts
+
+! First frame positions (for estimates of MSD when levcfg==0)
+
+        If (nstph == 1) Then
+           Do i=1,natms
+              xin(i)=xxx(i)
+              yin(i)=yyy(i)
+              zin(i)=zzz(i)
+           End Do
+        End If
 
 ! CHECK MD CONFIGURATION
 
@@ -105,7 +115,7 @@
 
         Call w_calculate_forces()
 
-! Evaluate kinetics
+! Evaluate kinetics if available
 
         If (levcfg > 0 .and. levcfg < 3) Then
            If (lzero .and. nstep <= nsteql) Call zero_k_optimise(strkin,strknf,strknt,engke,engrot)
@@ -145,7 +155,9 @@
 
         tsths=Max(tstep ,(time-tmsh) / Real(Merge( nstph-1, 1, nstph > 2), wp))
 
-        Call vaf_collect(lvafav,leql,nsteql,nstph-1,time)
+! Collect VAF if kinetics is available
+
+        If (levcfg > 0 .and. levcfg < 3) Call vaf_collect(lvafav,leql,nsteql,nstph-1,time)
 
         Call statistics_collect            &
            (leql,nsteql,lzdn,nstzdn,       &
@@ -193,7 +205,7 @@
 
         If (nstph /= 0) lines=lines+1
 
-! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
+! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types if kinetics exists
 
         If (ltraj) Call trajectory_write &
            (imcon,keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
@@ -203,8 +215,10 @@
            (keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
         If (lrsd) Call rsd_write &
            (imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
-        If (vafsamp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
+        If (levcfg > 0 .and. levcfg < 3) Then
+           If (vafsamp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
            (lvafav,keyres,nstph,tsths)
+        End If
 
 ! Save restart data in event of system crash
 
@@ -237,9 +251,18 @@
      Else
         Exit
      End If
+
+! Save last frame positions (for estimates of MSD when levcfg==0)
+
+     Do i=1,natms
+        xin(i)=xxx(i)
+        yin(i)=yyy(i)
+        zin(i)=zzz(i)
+     End Do
   End Do
 
 ! If reading HISTORY finished awkwardly
+! recover positions and generate kinetics
 
   If (exout < 0) Then
      Do i=1,natms

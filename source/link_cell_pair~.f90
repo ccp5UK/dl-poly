@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -35,7 +35,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
                        jx,jy,jz,jc
 
   Real( Kind = wp ) :: cut,rcsq,rsq,det,rcell(1:9),celprp(1:10), &
-                       x,y,z, dispx,dispy,dispz, xdc,ydc,zdc
+                       x,y,z, x1,y1,z1, dispx,dispy,dispz, xdc,ydc,zdc
 
 ! Number of neighbouring cells to look around for single counting
 ! of two body interactions
@@ -54,10 +54,6 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 
   Integer,           Dimension( : ), Allocatable :: link,lct
 
-
-! image conditions not compliant with DD and link-cell
-
-  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
 ! Get the dimensional properties of the MD cell
 
@@ -185,7 +181,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
         iz =-Int(dispz) + jz - 1
      End If
 
-! Exclude all any negative bound residual halo
+! Exclude any negatively bound residual halo
 
      If (ix >= 0 .and. iy >= 0 .and. iz >= 0) Then
 
@@ -193,52 +189,43 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 ! (idnode) but due to some tiny numerical inaccuracy kicked into
 ! the domain only link-cell space
 
-        lx0=(ix == 1)
-        lx1=(ix == nlx)
-        ly0=(iy == 1)
-        ly1=(iy == nly)
-        lz0=(iz == 1)
-        lz1=(iz == nlz)
-        If ( (lx0 .or. lx1) .and. &
-             (ly0 .or. ly1) .and. &
-             (lz0 .or. lz1) ) Then ! 8 corners of the domain's cube in RS
-           If      (lx0 .or. lx1) Then
-              If      (lx0 ) Then
+        lx0=(ix >     0)
+        lx1=(ix < nlx+1)
+        ly0=(iy >     0)
+        ly1=(iy < nly+1)
+        lz0=(iz >     0)
+        lz1=(iz < nlz+1)
+        If ( (lx0 .and. lx1) .and. &
+             (ly0 .and. ly1) .and. &
+             (lz0 .and. lz1) ) Then
+
+! Put the closest to the halo coordinate in the halo
+
+           x1=Abs(x-0.5_wp*Sign(1.0_wp,x))
+           y1=Abs(y-0.5_wp*Sign(1.0_wp,y))
+           z1=Abs(z-0.5_wp*Sign(1.0_wp,z))
+           If      (x1 <= y1 .and. x1 <= z1) Then
+              If (x < 0.0_wp) Then
                  ix=0
-              Else If (lx1) Then
+              Else
                  ix=nlx+1
               End If
-!              If (x > -half_plus) Then
-!                 dispx = dispx + Real(jx-ix,wp)
-!              Else
-!                 dispx = dispx - Real(jx-ix-1,wp)
-!              End If
-           Else If (ly0 .or. ly1) Then
-              If      (ly0 ) Then
+           Else If (y1 <= x1 .and. y1 <= z1) Then
+              If (y < 0.0_wp) Then
                  iy=0
-              Else If (ly1) Then
+              Else
                  iy=nly+1
               End If
-!              If (y > -half_plus) Then
-!                 dispy = dispy + Real(jy-iy,wp)
-!              Else
-!                 dispy = dispy - Real(jy-iy-1,wp)
-!              End If
-           Else If (lz0 .or. lz1) Then
-              If      (lz0 ) Then
+           Else
+              If (z < 0.0_wp) Then
                  iz=0
-              Else If (lz1) Then
+              Else
                  iz=nlz+1
               End If
-!              If (z > -half_plus) Then
-!                 dispz = dispz + Real(jz-iz,wp)
-!              Else
-!                 dispz = dispz - Real(jz-iz-1,wp)
-!              End If
            End If
         End If
 
-! Check for residual halo
+! Check for positively bound residual halo
 
         lx0=(ix < 0)
         lx1=(ix > nlx+1)

@@ -8,7 +8,7 @@ Subroutine set_bounds                                       &
 ! iteration and others as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014 (VAF)
 !
@@ -446,6 +446,32 @@ Subroutine set_bounds                                       &
 
   If (idnode == 0) Write(nrite,'(/,/,1x,a,3i6)') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
 
+  If (rpad > zero_plus) Then
+
+! define cut
+
+     cut=rcut+1.0e-6_wp
+
+! Provide advise on decomposition
+
+     qlx=Int(celprp(7)/cut)
+     qly=Int(celprp(8)/cut)
+     qlz=Int(celprp(9)/cut)
+
+     If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                           &
+        'pure cutoff driven limit on largest possible decomposition:', qlx*qly*qlz , &
+        ' nodes/domains (', qlx,',',qly,',',qlz,')'
+
+     qlx=Max(1,qlx/2)
+     qly=Max(1,qly/2)
+     qlz=Max(1,qlz/2)
+
+     If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                           &
+        'pure cutoff driven limit on largest balanced decomposition:', qlx*qly*qlz , &
+        ' nodes/domains (', qlx,',',qly,',',qlz,')'
+
+  End If
+
 10 Continue ! possible rcut redefinition...
 
 ! Define link-cell cutoff (minimum width)
@@ -462,16 +488,16 @@ Subroutine set_bounds                                       &
   qly=Int(celprp(8)/cut)
   qlz=Int(celprp(9)/cut)
 
-  If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                      &
-     'cutoff driven limit on largest possible decomposition:', qlx*qly*qlz , &
+  If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                       &
+     'cutoffs driven limit on largest possible decomposition:', qlx*qly*qlz , &
      ' nodes/domains (', qlx,',',qly,',',qlz,')'
 
   qlx=Max(1,qlx/2)
   qly=Max(1,qly/2)
   qlz=Max(1,qlz/2)
 
-  If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                      &
-     'cutoff driven limit on largest balanced decomposition:', qlx*qly*qlz , &
+  If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                       &
+     'cutoffs driven limit on largest balanced decomposition:', qlx*qly*qlz , &
      ' nodes/domains (', qlx,',',qly,',',qlz,')'
 
 ! calculate link cell dimensions per node
@@ -566,15 +592,13 @@ Subroutine set_bounds                                       &
   kmaxb = kmaxb1
   kmaxc = kmaxc1
 
+  qlx = ilx
+  qly = ily
+  qlz = ilz
+
 ! mxspl = 0 is an indicator for no SPME electrostatics in CONTROL
 
-  If (mxspl == 0) Then
-
-     qlx = ilx
-     qly = ily
-     qlz = ilz
-
-  Else
+  If (mxspl /= 0) Then
 
 ! ensure (kmaxa,kmaxb,kmaxc) consistency with what DD
 ! (map_domains is already called) and DaFT are capable of
@@ -586,39 +610,30 @@ Subroutine set_bounds                                       &
 
 ! Calculate and check ql.
 
-     qlx = Min(ilx , kmaxa/(mxspl*nprx))
-     qly = Min(ily , kmaxb/(mxspl*npry))
-     qlz = Min(ilz , kmaxc/(mxspl*nprz))
-
-! Hard luck, giving up
-
-     If (qlx*qly*qlz == 0) Call error(308)
+     qlx = Min(qlx , kmaxa/(mxspl*nprx))
+     qly = Min(qly , kmaxb/(mxspl*npry))
+     qlz = Min(qlz , kmaxc/(mxspl*nprz))
 
      If (.not.llvnl) Then
         mxspl1=mxspl
      Else
         mxspl1=mxspl+Ceiling((rpad*Real(mxspl,wp))/rcut)
 
-! Possible kmax readjustments because of rpad driven mxspl1 failure of
-! the ql. test.  So compromise again as the rcut+mxspl ql. test holds up.
-
-        If (kmaxa < mxspl1*nprx) kmaxa=mxspl1*nprx
-        If (kmaxb < mxspl1*npry) kmaxb=mxspl1*npry
-        If (kmaxc < mxspl1*nprz) kmaxc=mxspl1*nprz
-
-! ensure (kmaxa,kmaxb,kmaxc) consistency with what DD
-! (map_domains is already called) and DaFT are capable of
-! or comment out adjustments if using ewald_spme_force~
-
-        Call adjust_kmax( kmaxa, nprx )
-        Call adjust_kmax( kmaxb, npry )
-        Call adjust_kmax( kmaxc, nprz )
-
 ! Redifine ql.
 
         qlx = Min(ilx , kmaxa/(mxspl1*nprx))
         qly = Min(ily , kmaxb/(mxspl1*npry))
         qlz = Min(ilz , kmaxc/(mxspl1*nprz))
+     End If
+
+! Hard luck, giving up
+
+     If (qlx*qly*qlz == 0) Then
+        If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))') &
+           'SPME driven limit on largest possible decomposition:',  &
+           (kmaxa/mxspl1)*(kmaxb/mxspl1)*(kmaxc/mxspl1) ,           &
+           ' nodes/domains (', kmaxa/mxspl1,',',kmaxb/mxspl1,',',kmaxc/mxspl1,')'
+        Call error(308)
      End If
 
   End If

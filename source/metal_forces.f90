@@ -8,7 +8,7 @@ Subroutine metal_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov january 2015
+! amended   - i.t.todorov january 2016
 ! contrib   - r.davidchak (eeam) june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -254,7 +254,7 @@ Subroutine metal_forces &
 
 ! calculate density contributions
 
-              gamma2=2.0_wp*Exp(-2.0_wp*qqq**cut1)*qqq*cut2
+              gamma2=2.0_wp*Exp(-2.0_wp*qqq*cut1)*qqq*cut2
 
               t1=prmmet(4,k0)**2
               t2=t1
