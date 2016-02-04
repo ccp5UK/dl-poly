@@ -78,7 +78,7 @@
   nstph = 0 ! trajectory points counter
   Do
      Call allocate_statistics_connect()
-10   Continue
+10    Continue
      If (nstep >= nstpe) Call statistics_connect_set(imcon,rlnk)
 
 ! Make a move - Read a frame
