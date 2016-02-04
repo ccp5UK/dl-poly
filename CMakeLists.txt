@@ -101,3 +101,38 @@ if(DOCS)
   install(CODE "execute_process(COMMAND ${CMAKE_BUILD_TOOL} docs)")
   install(DIRECTORY ${CMAKE_BINARY_DIR}/doc/html/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif(DOCS)
+
+if(WITH_TESTING)
+  include(CTest)
+  message(STATUS "Build with testing support support: make test")
+
+  macro (do_test arg)
+    execute_process(
+      COMMAND wget -nc ftp://ftp.dl.ac.uk/ccp5/DL_POLY/DL_POLY_4.0/DATA/${arg}.tar.gz
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/data/
+      )
+    execute_process(
+      COMMAND mkdir -p ${arg}
+      COMMAND cp ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz ${arg}/
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/
+      )
+    add_test(NAME ${arg} 
+      COMMAND ${CMAKE_SOURCE_DIR}/utils/beetest -f all.xml -v -k -s all -t ${arg} "${dlp}"
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing)
+    set_tests_properties (${arg}
+      PROPERTIES PASS_REGULAR_EXPRESSION "Status: PASSED")
+  endmacro (do_test)
+  configure_file(${CMAKE_SOURCE_DIR}/cmake/all.xml.cmake Testing/all.xml)
+
+  set(dlp "mpirun -n 8 ${CMAKE_BINARY_DIR}/bin/${target_name}")
+  foreach(test TEST1 TEST3 TEST5 TEST7)
+    do_test(${test})
+  endforeach()
+
+  set(dlp "mpirun -n 16 ${CMAKE_BINARY_DIR}/bin/${target_name}")
+  foreach(test TEST2 TEST4 TEST6 TEST8)
+    do_test(${test})
+  endforeach()
+else()
+  message(STATUS "Build without testing target")
+endif()

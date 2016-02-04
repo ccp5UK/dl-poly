@@ -2,7 +2,12 @@ before_script:
   - module use /usr/share/modules/
   - module load gnu-openmpi/1.8.8
 
+stages:
+  - build
+  - test
+
 build-serial:
+  stage: build
   script:
     - mkdir build-serial
     - pushd build-serial
@@ -11,6 +16,7 @@ build-serial:
     - popd
 
 build-mpi-pure:
+  stage: build
   script:
     - mkdir build-mpi-pure
     - pushd build-mpi-pure
@@ -19,8 +25,23 @@ build-mpi-pure:
     - popd
 
 build-old-hpc:
+  stage: build
   script:
     - cp -r source source-mpi
     - pushd source-mpi
     - ln -s ../build/Makefile_MPI Makefile
-    - make hpc   
+    - make hpc 
+  only:
+    - master
+
+testing-mpi:
+  stage: test
+  script:
+    - mkdir build-mpi-pure
+    - pushd build-mpi-pure 
+    - cmake ../ -DWITH_MPI=ON -DWITH_OPENMP=OFF -DWITH_TESTING=ON
+    - make -j10 
+    - make test  
+    - popd 
+  only:
+    - master
