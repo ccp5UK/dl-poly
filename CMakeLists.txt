@@ -102,20 +102,21 @@ if(DOCS)
   install(DIRECTORY ${CMAKE_BINARY_DIR}/doc/html/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif(DOCS)
 
-if(WITH_TESTING)
+if(BUILD_TESTING)
   include(CTest)
   message(STATUS "Build with testing support support: make test")
 
   macro (do_test arg)
-    execute_process(
-      COMMAND wget -nc ftp://ftp.dl.ac.uk/ccp5/DL_POLY/DL_POLY_4.0/DATA/${arg}.tar.gz
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/data/
-      )
-    execute_process(
-      COMMAND mkdir -p ${arg}
-      COMMAND cp ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz ${arg}/
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/
-      )
+    if (EXISTS ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz)
+      message(STATUS "Using already downloaded ${arg}.tar.gz")
+    else()
+      message(STATUS "Trying to download ${arg}.tar.gz")
+      file(DOWNLOAD ftp://ftp.dl.ac.uk/ccp5/DL_POLY/DL_POLY_4.0/DATA/${arg}.tar.gz 
+        ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz)
+    endif()
+    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/${arg})
+    file(COPY ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz 
+      DESTINATION ${CMAKE_BINARY_DIR}/Testing/${arg}/)
     add_test(NAME ${arg} 
       COMMAND ${CMAKE_SOURCE_DIR}/utils/beetest -f all.xml -v -k -s all -t ${arg} "${dlp}"
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing)
