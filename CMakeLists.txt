@@ -1,4 +1,5 @@
 project(DL_POLY Fortran)
+cmake_minimum_required(VERSION 3.0.2)
 
 set(DLPOLY_VERSION_MAJOR "4")                                                                                                                                   
 set(DLPOLY_VERSION_MINOR "07")
@@ -15,8 +16,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake" "${CMAKE_
 include(DLPOLYBuildOptions)
 include(DLPOLYBuildFunctions)
 include(GNUInstallDirs)
+#include(FeatureSummary)
 
-cmake_minimum_required(VERSION 3.0.2)
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0004 OLD)
 endif(COMMAND cmake_policy)
@@ -102,20 +103,44 @@ if(DOCS)
   install(DIRECTORY ${CMAKE_BINARY_DIR}/doc/html/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif(DOCS)
 
-if(WITH_TESTING)
+if (WITH_COVERAGE)
+  include(CodeCoverage)
+  set(BUILD_TESTING ON)
+  setup_coverage(coverage coverage)
+  file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/CodeAnalysis)
+  if (MPIEXEC)
+    set(dlp "${MPIEXEC} -n ${MPI_NPROCS} ${CMAKE_BINARY_DIR}/bin/${target_name}")
+  else()
+    set(dlp "${CMAKE_BINARY_DIR}/bin/${target_name}")
+  endif()
+  single_coverage(runcoverage coverage "${CMAKE_BINARY_DIR}/bin/${target_name}" CodeAnalysis)
+else()
+  message(STATUS "Build without code coverage testing")
+endif() 
+
+if (BUILD_TESTING AND NOT WITH_MPI)
+  message(STATUS "testing is supported only with MPI")
+endif()
+
+if (WITH_COVERAGE AND NOT WITH_MPI)
+  message(STATUS "code coverage is supported only with MPI")
+endif()
+
+if(BUILD_TESTING)
   include(CTest)
   message(STATUS "Build with testing support support: make test")
 
   macro (do_test arg)
-    execute_process(
-      COMMAND wget -nc ftp://ftp.dl.ac.uk/ccp5/DL_POLY/DL_POLY_4.0/DATA/${arg}.tar.gz
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/data/
-      )
-    execute_process(
-      COMMAND mkdir -p ${arg}
-      COMMAND cp ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz ${arg}/
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/
-      )
+    if (EXISTS ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz)
+      message(STATUS "Using already downloaded ${arg}.tar.gz")
+    else()
+      message(STATUS "Trying to download ${arg}.tar.gz")
+      file(DOWNLOAD ftp://ftp.dl.ac.uk/ccp5/DL_POLY/DL_POLY_4.0/DATA/${arg}.tar.gz 
+        ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz)
+    endif()
+    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/${arg})
+    file(COPY ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz 
+      DESTINATION ${CMAKE_BINARY_DIR}/Testing/${arg}/)
     add_test(NAME ${arg} 
       COMMAND ${CMAKE_SOURCE_DIR}/utils/beetest -f all.xml -v -k -s all -t ${arg} "${dlp}"
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing)
@@ -124,15 +149,17 @@ if(WITH_TESTING)
   endmacro (do_test)
   configure_file(${CMAKE_SOURCE_DIR}/cmake/all.xml.cmake Testing/all.xml)
 
-  set(dlp "mpirun -n 8 ${CMAKE_BINARY_DIR}/bin/${target_name}")
+  set(dlp "${MPIEXEC} -n 8 ${CMAKE_BINARY_DIR}/bin/${target_name}")
   foreach(test TEST1 TEST3 TEST5 TEST7)
     do_test(${test})
   endforeach()
 
-  set(dlp "mpirun -n 16 ${CMAKE_BINARY_DIR}/bin/${target_name}")
+  set(dlp "${MPIEXEC} -n 16 ${CMAKE_BINARY_DIR}/bin/${target_name}")
   foreach(test TEST2 TEST4 TEST6 TEST8)
     do_test(${test})
   endforeach()
 else()
   message(STATUS "Build without testing target")
 endif()
+
+#feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)

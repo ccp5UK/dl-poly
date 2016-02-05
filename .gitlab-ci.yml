@@ -39,7 +39,7 @@ testing-mpi:
   script:
     - mkdir build-mpi-pure
     - pushd build-mpi-pure 
-    - cmake ../ -DWITH_MPI=ON -DWITH_OPENMP=OFF -DWITH_TESTING=ON
+    - cmake ../ -DWITH_MPI=ON -DWITH_OPENMP=OFF -DBUILD_TESTING=ON
     - make -j10 
     - make test  
     - popd 
