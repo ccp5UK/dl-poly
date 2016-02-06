@@ -1,6 +1,6 @@
 # Building notes 
 * these notes are for building with [**cmake**](https://cmake.org)
-* you can pass options to cmake using **-DOPTION=value**. For a complete list of options inspect [cmake/cmake/DLPOLYBuildOptions.cmake](cmake/cmake/DLPOLYBuildOptions.cmake) 
+* you can pass options to cmake using **-DOPTION=value**. For a complete list of options inspect [cmake/DLPOLYBuildOptions.cmake](cmake/DLPOLYBuildOptions.cmake) 
 * explicit compiler specification can be achieved by using environment variable **FC** (eg. using Intel ifort *FC=ifort*)
 * compiler flags can be altered via **FFLAGS**, (eg *FFLAGS="-O3 -xHost"*)
 * one also can use **cmake-gui** to setup the build options
@@ -67,10 +67,13 @@ FC=ifort FFLAGS="-O3 " cmake ../ -DWITH_PHI=ON -DWITH_MPI=ON
 
 ## Optimisation flags
 * gfortran 
+
 ```
 FFLAGS="-O3 -mtune=native"
 ```
+
 * Intel
+
 ```
 FFLAGS="-fpp -O3 -xHost -fimf-domain-exclusion=15"
 ```
@@ -80,16 +83,19 @@ for the flags matching the _running machine_
 
 ## Debugging, or when things go merdre
 * gfortran
+
 ```
 FFLAGS="-g -O0 -std=f2008 -pedantic -fbacktrace -fcheck=all -finit-integer=2147483648 -finit-real=nan -finit-logical=true -finit-character=35 -ffpe-trap=invalid,zero,overflow -fdump-core"
 ```
-* Intel 
+* Intel
+
 ```
 FFLAGS="-g -O0 -stand f08 -traceback -C -fp-stack-check -ftrapuv"
 ```
 
 ## known issues: 
 1. FindMPI may trip with Intel MPI
+
 ```
 I_MPI_F90=ifort FC=ifort 
 ```
@@ -110,6 +116,7 @@ git clone ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git dl-poly-interna
 **User fork**: a copy of the project git, which is your working copy.
 create the fork on the web ui
 Assuming the user is *alin*
+
 ```
 git clone ssh://gitlab@ccforge.dl.ac.uk:1980/alin/dl-poly.git dl-poly-alin
 ```
@@ -124,12 +131,14 @@ Let us assume you have an issue with yout code which needs to be fixed.
 * **Step 1**: Branch from your fork (We assume the fork is up to date with Project git)
 - from the dashboard of your project you can branch from the + icon (issueXYZ)
 clone the branch 
+
 ```
 git clone -b issueXYZ --single-branch ssh://gitlab@ccforge.dl.ac.uk:1980/alin/dl-poly.git dl-poly-alin-issueXYZ
 ```
 
 or
 - create branch from cli
+
 ```
 git clone ssh://gitlab@ccforge.dl.ac.uk:1980/alin/dl-poly.git dl-poly-alin-issueXYZ
 pushd dl-poly-alin-issueXYZ
@@ -140,11 +149,13 @@ git push -u origin issueXYZ
 * **Step 2**: fix
 fix whatever is wrong.
 use git status to see what is changed
+
 ```
 git add <filename|folder> to add the new things
 git commit -m "[tag] my cool message"
 git push  
 ```
+
 Now you are ready for 
 * **Step 3a**: merge
 simplest way is to go to webui and merge the branch 
@@ -163,6 +174,7 @@ If all is ok merging is one click business. If not,
 you will need to merge the things by hand
 clone your project git and then follow the instructions gitlab indicates.
 in short, if you tried to merge to the master branch of Project git:
+
 ```
 git clone ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git dl-poly-internal
 pushd dl-poly-internal
@@ -197,6 +209,7 @@ project ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git (push)
 ```
 
 * when you need to sync
+
 ```
 git pull 
 git fetch project
@@ -210,6 +223,7 @@ of course one can try to merge any other branch or available projects.
 * rebasing commits
 you worked on your issue and you have pushed few commits, eg. 5 , in the branch
 squash them
+
 ```
 git rebase -i HEAD~5
 follow the instructions. Pick the first commit then s or f the rest.
@@ -218,6 +232,7 @@ git push origin issueXYZ --force
 
 * cleaning stale branches. Deleting branches from the interface will get rid of the remotes and not of your 
 local copies. Command *git branch -a* will list remotes which are long gone. These are called stale branches. To get rid of them 
+
 ```
 git remote prune origin
 ```
@@ -228,11 +243,15 @@ web ui or from command line as:
 ```
 git push origin :issueXYZ 
 ```
+
 to delete a local branch 
+
 ```
 git branch -d localBranch
 ```
+
 if unmerged stuff exists but you still want to delete
+
 ```
 git branch -D localBranch
 ```
