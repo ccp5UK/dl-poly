@@ -1,2 +1,0 @@
-d: DISTANCE ATOMS=1,10
-PRINT ARG=d FILE=colvar
