@@ -1,0 +1,37 @@
+8xGRAMICIDIN A WITH WATER SOLVATING (99120 ATOMS)
+# Test case supplied by Lewis Whitehead, University of Southampton
+
+#no strict
+
+temperature              300
+press                    0.001
+
+ensemble npt ber 0.5 1.0
+
+restart scale
+
+variable timestep        0.001 ps
+
+steps                    10
+equilibration            5
+collect
+vdw direct 
+scale                      3
+cap                     1000
+
+cut                      8.0 angstroms
+rvdw                     8.0 angstroms
+ewald precision          1.e-6
+
+#analyse bonds sample every 2 nbins 250 rmax 5.0
+#print analysis
+
+print every 2 steps
+stats every 2 steps
+
+shake                  0.000001
+plumed input plumed-metadyn.dat 
+job time               7200 seconds
+close time             100
+
+finish
