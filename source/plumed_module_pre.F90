@@ -1,16 +1,12 @@
+!This file is manually from plumed_module.F90 by 
+!gfortran -E -DPLUMED plumed_module.F90 > plumed_module_pre.F90
+! some lines may start with #, replace it by !
+! 1 "plumed_module.F90"
+! 1 "<built-in>"
+! 1 "<command-line>"
+! 1 "plumed_module.F90"
 Module plumed_module
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 module declaring global PLUMED variables and
-! arrays
-!
-! copyright - daresbury laboratory
-! author    - a.m.elena september 2015
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-Use kinds_f90
+  Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,dlp_comm_world
   Use setup_module,  Only : nrite, boltz, mxatms, dl_poly_version
   Use config_module, Only : cell,natms,weight,ltg,chge,fxx,fyy,fzz
@@ -43,7 +39,7 @@ Contains
 
     Integer, Intent(In)           :: megatm
     Real(kind = wp ), Intent(in)  :: tstep, temp
-#ifdef PLUMED
+
     Call plumed_f_installed(has_plumed)
 
     if (has_plumed > 0) then
@@ -67,12 +63,12 @@ Contains
     Else
        Call error(1083)
     End If
-#endif
+
   End Subroutine plumed_init
 
   Subroutine plumed_print_about()
 
-#ifdef PLUMED
+
    If (idnode == 0) Then
      Write(nrite,'(a)')""
      Write(nrite,'(14(a42,/))')&
@@ -100,7 +96,7 @@ Contains
      Write(nrite,'(a,es15.6)') "***Using PLUMED time conversion factor: ",plumed_timeUnits
      Write(nrite,'(a,i0)') "***Using PLUMED restart (0: no, 1: yes): ",plumed_restart
    End If
-#endif
+
     
   End Subroutine plumed_print_about
 
@@ -110,7 +106,7 @@ Contains
      Integer, Intent( In    )            :: nstep
      Integer, Intent(    Out)            :: nstrun
 
-#ifdef PLUMED
+
      call plumed_f_gcmd("setAtomsNlocal"//sn,natms)
      call plumed_f_gcmd("setAtomsFGatindex"//sn,ltg)
      call plumed_f_gcmd("setStep"//sn,nstep)
@@ -135,13 +131,13 @@ Contains
        If(idnode == 0) write(nrite,'(a,i0,a)')"*** warning DL_POLY was stopped cleanly by PLUMED at step: ",nstep," *** "
        nstrun=nstep
      End If
-#endif
+
   End Subroutine plumed_apply
 
   Subroutine plumed_finalize()
-#ifdef PLUMED
+
     If ( idnode == 0 ) Call plumed_f_gfinalize()
-#endif
+
   End Subroutine plumed_finalize
 
 End Module plumed_module

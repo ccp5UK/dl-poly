@@ -14,7 +14,7 @@ SHELL=/bin/sh
 BINROOT=../execute
 EX=DLPOLY.Z
 EXE=$(BINROOT)/$(EX)
-
+PLUMED_LIBDIR=/opt/plumed/gnu/2.2.1/lib64/
 TYPE=master
 
 FC=undefined
@@ -30,7 +30,7 @@ OBJ_MOD = \
 	site_module.o config_module.o vnl_module.o \
 	defects_module.o defects1_module.o \
 	dpd_module.o vdw_module.o metal_module.o tersoff_module.o \
-	three_body_module.o four_body_module.o kim_modul~.o plumed_modul~.o\
+	three_body_module.o four_body_module.o kim_modul~.o plumed_module_pre.o\
 	rdf_module.o z_density_module.o \
 	core_shell_module.o \
 	constraints_module.o pmf_module.o \
@@ -240,13 +240,13 @@ uknown_platform:
 #================== Cambridge HPC - darwin (Woodcrest)  ==============
 hpc:
 	$(MAKE) LD="mpif90 -o" LDFLAGS="-O3" \
-	FC="mpif90 -c" FCFLAGS="-O3" \
+	FC="mpif90 -c" FCFLAGS="-O3 " \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== Cambridge HPC - debug ============================
 hpcd:
 	$(MAKE) LD="mpif90 -o" LDFLAGS="-O0 -g -C" \
-	FC="mpif90 -c" FCFLAGS="-O0 -g -C" \
+	FC="mpif90 -c" FCFLAGS="-O0 -g -C " \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #================== Beowulf Linux ifort + mpich ======================
@@ -406,7 +406,7 @@ archer-X2-debug:
 #=====================================================================
 
 master: message check $(OBJ_MOD) $(OBJ_ALL)
-	$(LD) $(EXE) $(LDFLAGS) $(OBJ_MOD) $(OBJ_ALL)
+	$(LD) $(EXE) $(LDFLAGS) -L$(PLUMED_LIBDIR) -lplumed $(OBJ_MOD) $(OBJ_ALL)
 
 # Message
 message:

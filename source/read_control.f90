@@ -29,6 +29,7 @@ Subroutine read_control                                &
 ! contrib   - m.a.seaton june 2014
 ! contrib   - h.a.boateng february 2015
 ! contrib   - p.s.petkov february 2015
+! contrib   - a.m.elena september 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
