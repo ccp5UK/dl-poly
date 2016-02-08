@@ -7,7 +7,7 @@ Subroutine statistics_connect_frames()
 ! between replayed frames of history
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2014
+! author    - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -90,7 +90,7 @@ Subroutine statistics_connect_frames()
               xto0(i0) = xto0(natms0) ; yto0(i0) = yto0(natms0) ; zto0(i0) = zto0(natms0)
 
               If (l_msd) Then
-                 j =27+2*i0
+                 j =2*i0
                  j0=2*natms0
                  stpvl00(j-1)=stpvl00(j0-1)
                  stpvl00(j  )=stpvl00(j0  )
@@ -195,7 +195,7 @@ Subroutine statistics_connect_frames()
               xto0(i0) = xto0(natms0) ; yto0(i0) = yto0(natms0) ; zto0(i0) = zto0(natms0)
 
               If (l_msd) Then
-                 j =27+2*i0
+                 j =2*i0
                  j0=2*natms0
                  stpvl00(j-1)=stpvl00(j0-1)
                  stpvl00(j  )=stpvl00(j0  )
@@ -298,7 +298,7 @@ Subroutine statistics_connect_frames()
               xto0(i0) = xto0(natms0) ; yto0(i0) = yto0(natms0) ; zto0(i0) = zto0(natms0)
 
               If (l_msd) Then
-                 j =27+2*i0
+                 j =2*i0
                  j0=2*natms0
                  stpvl00(j-1)=stpvl00(j0-1)
                  stpvl00(j  )=stpvl00(j0  )
@@ -403,7 +403,7 @@ Subroutine statistics_connect_frames()
               xto0(i0) = xto0(natms0) ; yto0(i0) = yto0(natms0) ; zto0(i0) = zto0(natms0)
 
               If (l_msd) Then
-                 j =27+2*i0
+                 j =2*i0
                  j0=2*natms0
                  stpvl00(j-1)=stpvl00(j0-1)
                  stpvl00(j  )=stpvl00(j0  )
@@ -506,7 +506,7 @@ Subroutine statistics_connect_frames()
               xto0(i0) = xto0(natms0) ; yto0(i0) = yto0(natms0) ; zto0(i0) = zto0(natms0)
 
               If (l_msd) Then
-                 j =27+2*i0
+                 j =2*i0
                  j0=2*natms0
                  stpvl00(j-1)=stpvl00(j0-1)
                  stpvl00(j  )=stpvl00(j0  )
@@ -611,7 +611,7 @@ Subroutine statistics_connect_frames()
               xto0(i0) = xto0(natms0) ; yto0(i0) = yto0(natms0) ; zto0(i0) = zto0(natms0)
 
               If (l_msd) Then
-                 j =27+2*i0
+                 j =2*i0
                  j0=2*natms0
                  stpvl00(j-1)=stpvl00(j0-1)
                  stpvl00(j  )=stpvl00(j0  )
@@ -714,7 +714,7 @@ Subroutine statistics_connect_frames()
               xto0(i0) = xto0(natms0) ; yto0(i0) = yto0(natms0) ; zto0(i0) = zto0(natms0)
 
               If (l_msd) Then
-                 j =27+2*i0
+                 j =2*i0
                  j0=2*natms0
                  stpvl00(j-1)=stpvl00(j0-1)
                  stpvl00(j  )=stpvl00(j0  )

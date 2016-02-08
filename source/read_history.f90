@@ -5,7 +5,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,dvar,nstep,tstep,time,ex
 ! dl_poly_4 subroutine for reading the trajectory data file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -183,6 +183,13 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,dvar,nstep,tstep,time,ex
         Call io_set_parameters( user_comm = dlp_comm_world )
      If (io_read == IO_READ_MPIIO) Call io_init( recsz )
   End If
+
+! Reinitialise local-to-global counters and all levels of information at every bloody read! Ilian's & Alin's fix to clear incoherencies with re-emptied/re-filled domains
+
+  lsi=0 ; lsa=0 ; ltg=0
+  xxx=0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp
+  vxx=0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp
+  fxx=0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
 
 ! MASTER READ
 
