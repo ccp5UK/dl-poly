@@ -7,7 +7,7 @@ Subroutine statistics_connect_set(imcon,rcut)
 ! between replayed frames of history
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -95,27 +95,27 @@ Subroutine statistics_connect_set(imcon,rcut)
      End Do
 
      natms0 = natms
-     ltg0(1:natms0) = ltg(1:natms0)
-     lsa0(1:natms0) = lsa(1:natms0)
+     ltg0(1:natms0) = ltg(1:natms0) ; ltg0(natms0+1: ) = 0
+     lsa0(1:natms0) = lsa(1:natms0) ; lsa0(natms0+1: ) = 0
 
-     xin0(1:natms0) = xin(1:natms0)
-     yin0(1:natms0) = yin(1:natms0)
-     zin0(1:natms0) = zin(1:natms0)
+     xin0(1:natms0) = xin(1:natms0) ; xin0(natms0+1: ) = 0
+     yin0(1:natms0) = yin(1:natms0) ; yin0(natms0+1: ) = 0
+     zin0(1:natms0) = zin(1:natms0) ; zin0(natms0+1: ) = 0
 
-     xto0(1:natms0) = xto(1:natms0)
-     yto0(1:natms0) = yto(1:natms0)
-     zto0(1:natms0) = zto(1:natms0)
+     xto0(1:natms0) = xto(1:natms0) ; xto0(natms0+1: ) = 0
+     yto0(1:natms0) = yto(1:natms0) ; yto0(natms0+1: ) = 0
+     zto0(1:natms0) = zto(1:natms0) ; zto0(natms0+1: ) = 0
 
      If (l_msd) Then
         i0=2*natms0
-        stpvl00(1:i0)=stpvl0(28:27+i0)
-        stpval0(1:i0)=stpval(28:27+i0)
-        zumval0(1:i0)=zumval(28:27+i0)
-        ravval0(1:i0)=ravval(28:27+i0)
-        ssqval0(1:i0)=ssqval(28:27+i0)
-        sumval0(1:i0)=sumval(28:27+i0)
+        stpvl00(1:i0)=stpvl0(28:27+i0) ; stpvl00(i0+1: )=0.0_wp
+        stpval0(1:i0)=stpval(28:27+i0) ; stpval0(i0+1: )=0.0_wp
+        zumval0(1:i0)=zumval(28:27+i0) ; zumval0(i0+1: )=0.0_wp
+        ravval0(1:i0)=ravval(28:27+i0) ; ravval0(i0+1: )=0.0_wp
+        ssqval0(1:i0)=ssqval(28:27+i0) ; ssqval0(i0+1: )=0.0_wp
+        sumval0(1:i0)=sumval(28:27+i0) ; sumval0(i0+1: )=0.0_wp
         Do kk=1,mxstak
-           stkval0(kk,1:i0)=stkval(kk,1:i0)
+           stkval0(kk,1:i0)=stkval(kk,1:i0) ; stkval0(kk,i0+1: )=0.0_wp
         End Do
      End If
   End If

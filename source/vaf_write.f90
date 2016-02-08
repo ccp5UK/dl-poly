@@ -6,7 +6,7 @@ Subroutine vaf_write(lvafav,keyres,nstep,tstep)
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & m.a.seaton july 2014
+! author    - i.t.todorov & m.a.seaton february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -65,7 +65,8 @@ Subroutine vaf_write(lvafav,keyres,nstep,tstep)
 
   Do j=1,mxatyp
      numt = numtypnf(j)
-     factor = 1.0_wp/vaf(0,j)
+     factor = 1.0_wp
+     If (Abs(vaf(0,j)) > 0.0e-6_wp) factor = 1.0_wp/vaf(0,j)
      ovaf = vaf(0,j)/Real(numt,Kind=wp)
      If (lvafav) ovaf=ovaf/vafcount
 

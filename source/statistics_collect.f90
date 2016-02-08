@@ -134,7 +134,7 @@ Subroutine statistics_collect              &
   stptmp = 2.0_wp*(engke+engrot) / (boltz*Real(degfre,wp))
 
 ! system virial
-! Note: originally, purely angle dependent interactipons have zero virial!!!
+! Note: originally, purely angle dependent interactions have zero virial!!!
 ! So, virfbp, virinv and virdih are allegedly always zero!  virdih has an exception!
 
   stpvir = vircpe + virsrp + virter + virtbp + virfbp + &

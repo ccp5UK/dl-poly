@@ -55,7 +55,7 @@
   Do
      Call allocate_statistics_connect()
 10   Continue
-     If (nstep >= nstpe) Call statistics_connect_set(imcon,rlnk)
+     If (nstph >= nstpe) Call statistics_connect_set(imcon,rlnk)
 
 ! Make a move - Read a frame
 
@@ -71,7 +71,7 @@
      If (nstep >= 0 .and. exout >= 0) Then
         nstph=nstph+1
 
-        If (nstep < nstpe) Go To 10 ! Deal with restarts
+        If (nstph < nstpe) Go To 10 ! Deal with restarts
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
@@ -157,7 +157,7 @@
 
 ! Collect VAF if kinetics is available
 
-        If (levcfg > 0 .and. levcfg < 3) Call vaf_collect(lvafav,leql,nsteql,nstph-1,time)
+        Call vaf_collect(lvafav,leql,nsteql,nstph-1,time)
 
         Call statistics_collect            &
            (leql,nsteql,lzdn,nstzdn,       &
@@ -215,10 +215,8 @@
            (keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
         If (lrsd) Call rsd_write &
            (imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
-        If (levcfg > 0 .and. levcfg < 3) Then
-           If (vafsamp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
+        If (vafsamp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
            (lvafav,keyres,nstph,tsths)
-        End If
 
 ! Save restart data in event of system crash
 
