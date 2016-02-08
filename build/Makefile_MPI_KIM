@@ -9,7 +9,7 @@
 SHELL=/bin/sh
 
 .SUFFIXES:
-.SUFFIXES: .f90 .o .F03
+.SUFFIXES: .f90 .F90 .o
 
 BINROOT=../execute
 EX=DLPOLY.Z
@@ -414,7 +414,7 @@ master: message check $(OBJ_MOD) $(OBJ_ALL)
 message:
 	@echo "DL_POLY_4 compilation in MPI mode"
 	@echo
-	@echo "'Use mpi_module' must change to 'Use mpi' in 'comms_module.f90'"
+	@echo "'Use mpi_module' must change to 'Use mpi' in 'comms_module.F90'"
 	@echo
 
 # Check that a platform has been specified
@@ -439,8 +439,8 @@ check:
 .f90.o:
 	$(FC) $(FCFLAGS) $*.f90
 
-.F03.o:
-	$(FC) $(FCFLAGS) -I$(KIM_API_DIR) $*.F03
+.F90.o:
+	$(FC) $(FCFLAGS) $*.F90
 
 # Declare dependencies
 #=====================================================================

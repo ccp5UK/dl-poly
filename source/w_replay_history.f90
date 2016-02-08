@@ -81,7 +81,7 @@
 10   Continue
      If (nstep >= nstpe) Call statistics_connect_set(imcon,rlnk)
 
-! Read a frame
+! Make a move - Read a frame
 
      Call read_history(l_str,"HISTORY",megatm,levcfg,imcon,dvar,nstep,tstep,time,exout)
 
@@ -96,6 +96,16 @@
         nstph=nstph+1
 
         If (nstep < nstpe) Go To 10 ! Deal with restarts
+
+! First frame positions (for estimates of MSD when levcfg==0)
+
+        If (nstph == 1) Then
+           Do i=1,natms
+              xin(i)=xxx(i)
+              yin(i)=yyy(i)
+              zin(i)=zzz(i)
+           End Do
+        End If
 
 ! CHECK MD CONFIGURATION
 
@@ -193,7 +203,7 @@
 
         tsths=Max(tstep ,(time-tmsh) / Real(Merge( nstph-1, 1, nstph > 2), wp))
 
-        Call vaf_collect(lvafav,leql,nsteql,nstph-1,time)
+        If (levcfg > 0 .and. levcfg < 3) Call vaf_collect(lvafav,leql,nsteql,nstph-1,time)
 
         Call statistics_collect            &
            (leql,nsteql,lzdn,nstzdn,       &
@@ -260,6 +270,14 @@
      Else
         Exit
      End If
+
+! Save last frame positions (for estimates of MSD when levcfg==0)
+
+     Do i=1,natms
+        xin(i)=xxx(i)
+        yin(i)=yyy(i)
+        zin(i)=zzz(i)
+     End Do
   End Do
 
 ! If reading HISTORY finished awkwardly

@@ -22,7 +22,7 @@ Subroutine statistics_collect              &
 ! molecular dynamics simulation and computing the rolling averages
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov november 2014
+! author    - w.smith & i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -210,11 +210,16 @@ Subroutine statistics_collect              &
   If (nstep > 0) Then
      If (stptmp < 1.0_wp) Then ! HISTORY is replayed and no velocity field exists
         Do i=1,natms
-           xto(i)=xxx(i)-xin(i)
-           yto(i)=yyy(i)-yin(i)
-           zto(i)=zzz(i)-zin(i)
+           xin(i)=xxx(i)-xin(i)
+           yin(i)=yyy(i)-yin(i)
+           zin(i)=zzz(i)-zin(i)
         End Do
-        Call images(imcon,cell,natms,xto,yto,xto)
+        Call images(imcon,cell,natms,xin,yin,xin)
+        Do i=1,natms
+           xto(i)=xto(i)+xin(i)
+           yto(i)=yto(i)+yin(i)
+           zto(i)=zto(i)+zin(i)
+        End Do
      Else                      ! velocity field exists
         Do i=1,natms
            xto(i)=xto(i)+vxx(i)*tstep

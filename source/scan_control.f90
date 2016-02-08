@@ -277,7 +277,7 @@ Subroutine scan_control                                    &
      Else If (word(1:4) == 'delr') Then
 
         lrpad = .true.
-        Call get_word(record,word)
+        Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
         rpad = Max(rpad,0.25_wp*Abs(word_2_real(word)))
         lrpad = (rpad > zero_plus) ! if zero or nothing is entered
 

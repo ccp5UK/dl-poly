@@ -12,7 +12,7 @@ Subroutine pmf_shake_vv                &
 !       VV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2015
+! author    - i.t.todorov january 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -98,7 +98,7 @@ Subroutine pmf_shake_vv                &
 
 ! global verification of convergence
 
-     safe=(Maxval(esig(1:ntpmf)) < tolnce)
+     safe=Merge(Maxval(esig(1:ntpmf)) < tolnce,.true.,ntpmf > 0)
      If (mxnode > 1) Call gcheck(safe,"enforce")
 
 ! bypass next section and terminate iteration if all tolerances ok

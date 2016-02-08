@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -37,7 +37,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
                        jx,jy,jz,jc
 
   Real( Kind = wp ) :: cut,rcsq,rsq,det,rcell(1:9),celprp(1:10), &
-                       x,y,z, x1,y1,z1, dispx,dispy,dispz, xdc,ydc,zdc, nlr2
+                       x,y,z, x1,y1,z1, x2,y2,z2, dispx,dispy,dispz, xdc,ydc,zdc, nlr2
 
   Logical,           Dimension( : ), Allocatable :: nir
   Integer,           Dimension( : ), Allocatable :: nix,niy,niz,         &
@@ -45,10 +45,6 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
                                                     lct_where,which_cell,at_list
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
-
-! image conditions not compliant with DD and link-cell
-
-  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
 ! Get the dimensional properties of the MD cell
 
@@ -318,7 +314,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
         iz =-1
      End If
 
-! Exclude all any negative bound residual halo
+! Exclude all any negatively bound residual halo
 
      If (ix >= nlx0s .and. iy >= nly0s .and. iz >= nlz0s) Then
 
@@ -326,40 +322,43 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 ! (idnode) but due to some tiny numerical inaccuracy kicked into
 ! the domain only link-cell space
 
-        lx0=(ix == nlx0e+1)
-        lx1=(ix == nlx1s-1)
-        ly0=(iy == nly0e+1)
-        ly1=(iy == nly1s-1)
-        lz0=(iz == nlz0e+1)
-        lz1=(iz == nlz1s-1)
-        If ( (lx0 .or. lx1) .and. &
-             (ly0 .or. ly1) .and. &
-             (lz0 .or. lz1) ) Then ! 8 corners of the domain's cube in RS
-           If      (lx0 .or. lx1) Then
-              If      (lx0 ) Then
+        lx0=(ix > nlx0e)
+        lx1=(ix < nlx1s)
+        ly0=(iy > nly0e)
+        ly1=(iy < nly1s)
+        lz0=(iz > nlz0e)
+        lz1=(iz < nlz1s)
+        If ( (lx0 .and. lx1) .and. &
+             (ly0 .and. ly1) .and. &
+             (lz0 .and. lz1) ) Then
+
+! Put the closest to the halo coordinate in the halo
+
+           x2=Abs(x-x1-0.5_wp*Sign(1.0_wp,x-x1))
+           y2=Abs(y-y1-0.5_wp*Sign(1.0_wp,y-y1))
+           z2=Abs(z-z1-0.5_wp*Sign(1.0_wp,z-z1))
+           If      (x2 <= y2 .and. x2 <= z2) Then
+              If (x < 0.0_wp) Then
                  ix=nlx0e
-              Else If (lx1) Then
+              Else
                  ix=nlx1s
               End If
-!              dispx = dispx - Real(ix,wp)
-           Else If (ly0 .or. ly1) Then
-              If      (ly0 ) Then
+           Else If (y2 <= x2 .and. y2 <= z2) Then
+              If (y < 0.0_wp) Then
                  iy=nly0e
-              Else If (ly1) Then
+              Else
                  iy=nly1s
               End If
-!              dispy = dispy - Real(iy,wp)
-           Else If (lz0 .or. lz1) Then
-              If      (lz0 ) Then
+           Else
+              If (z < 0.0_wp) Then
                  iz=nlz0e
-              Else If (lz1) Then
+              Else
                  iz=nlz1s
               End If
-!              dispz = dispz - Real(iz,wp)
            End If
         End If
 
-! Check for positive bound residual halo
+! Check for positively bound residual halo
 
         lx0=(ix < nlx0s)
         lx1=(ix > nlx1e)
@@ -693,7 +692,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
      r_dis=Sqrt(r_dis)
 
      If (mxnode > 1) Then
-         Call gcheck(safe)
+         Call gcheck(safe,"enforce")
          Call gsum(det)
      End If
 

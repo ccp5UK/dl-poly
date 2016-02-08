@@ -11,7 +11,7 @@ Subroutine metal_ld_compute         &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov january 2015
+! amended   - i.t.todorov january 2016
 ! contrib   - r.davidchak (eeam) june 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -76,7 +76,7 @@ Subroutine metal_ld_compute         &
 
 ! periodic boundary conditions
 
-     Call images(imcon,cell,limit,xxt,yyt,zzt)
+!     Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
@@ -292,7 +292,7 @@ Subroutine metal_ld_compute         &
 
                    engden = engden + fmes(l,k0,1)
 
-                   rhs(i) = rhs(i) + 0.0_wp
+                   rhs(i) = 0.0_wp
 
                  End If
               Else

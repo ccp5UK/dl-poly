@@ -178,7 +178,7 @@ zero_k_optimise.f90
 
 set(dlpoly_CORE_SRCS
 kinds_f90.f90
-comms_module.f90
+comms_module.F90
 config_module.f90
 setup_module.f90
 constraints_module.f90

@@ -13,7 +13,7 @@ Module comms_module
 #ifdef SERIAL
   Use mpi_module
 #else
-  Use mpi
+  Use mpi!_module
 #endif
 
   Implicit None
