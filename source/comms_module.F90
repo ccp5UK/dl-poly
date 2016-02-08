@@ -6,6 +6,7 @@ Module comms_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov december 2014
+! contrib   - a.m.elena september 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -29,6 +29,7 @@ Subroutine read_control                                &
 ! contrib   - m.a.seaton june 2014
 ! contrib   - h.a.boateng february 2015
 ! contrib   - p.s.petkov february 2015
+! contrib   - a.m.elena september 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -47,7 +48,8 @@ Subroutine read_control                                &
   Use greenkubo_module
 
   Use kinetic_module,  Only : l_vom
-
+  Use plumed_module,   Only : l_plumed, plumed_input, plumed_log, plumed_precision, & 
+                              plumed_restart
   Use development_module
 
   Implicit None
@@ -109,7 +111,6 @@ Subroutine read_control                                &
                                              grddih,grdinv,nstall
 
   Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,eps0,tol,rcb_d,prmps(1:4)
-
 
 ! initialise system control variables and their logical switches
 
@@ -1958,6 +1959,7 @@ Subroutine read_control                                &
 !        ltcond = .true.
 !
 !        Call get_word(record,word)
+!
 !        If (word(1:4) == 'cond' .or. word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:4) == 'over') &
 !           Call get_word(record,word)
 !        If (word(1:4) == 'cond' .or. word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:4) == 'over') &
@@ -2195,7 +2197,41 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'finish') Then
 
         Go To 2000
+  
+     Else If (word(1:6) == 'plumed') Then
 
+        l_plumed=.true.
+
+        Call get_word(record,word)
+        If (word(1:3) == 'off') Then 
+          l_plumed=.false.
+        End If
+
+        If (word(1:5) == 'input') Then 
+          Call get_word(record,word)
+          plumed_input=trim(word)
+        End If 
+
+          If (word(1:3) == 'log') Then 
+            Call get_word(record,word)
+            plumed_log=trim(word)
+          End If 
+
+          If (word(1:9) == 'precision') Then 
+            Call get_word(record,word)
+            plumed_precision=Abs(Nint(word_2_real(word,1.0_wp)))
+          End If 
+
+          If (word(1:7) == 'restart') Then
+            plumed_restart=1 
+            Call get_word(record,word)
+            If ((word(1:3) == 'yes') .or. (word(1:1) == 'y')) Then 
+              plumed_restart=1
+            End If
+            If ((word(1:2) == 'no') .or. (word(1:1) == 'n')) Then 
+              plumed_restart=0
+            End If
+        End If
      Else
 
         Call strip_blanks(record)

@@ -84,6 +84,7 @@ Program dl_poly
   Use four_body_module
 
   Use kim_module
+  Use plumed_module
 
   Use external_field_module
 
@@ -208,13 +209,13 @@ Program dl_poly
   If (idnode == 0) Then
      If (.not.l_scr) Open(Unit=nrite, File='OUTPUT', Status='replace')
 
-     Write(nrite,'(6(1x,a,/),1x,a,i12,a,/,5(1x,a,/))')                          &
+     Write(nrite,'(5(1x,a,/),(1x,a,a8,a,a14,a/),1x,a,i12,a,/,5(1x,a,/))')                          &
           "******************************************************************", &
           "*************  stfc/ccp5  program  library  package  ** D ********", &
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  version:  4.07    /    january  2015  ****** O ****", &
+          "**         **  version: ",trim(dl_poly_version),"   /  ",trim(dl_poly_release_date),"  ****** O ****", &
           "*************  execution on ", mxnode, "    node(s)  ******* L ***", &
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
@@ -335,6 +336,15 @@ Program dl_poly
      Write(nrite,'(/,1x,a)') "*** all reading and connectivity checks DONE ***"
      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
   End If
+  
+  If (l_plumed) Then
+     Call plumed_init(megatm,tstep,temp)
+     Call plumed_print_about()
+  else
+     If (idnode == 0) Then
+       Write(nrite,'(1x,a)') "***PLUMED is off or version without PLUMED***"
+     End If 
+  End If 
 
 ! l_org: translate CONFIG into CFGORG and exit gracefully
 
@@ -668,6 +678,7 @@ Program dl_poly
 10 Continue
 
 ! Ask for reference in publications
+  If (l_plumed) Call plumed_finalize()
 
   If (idnode == 0) Write(nrite,'(/,/,9(1x,a,/))') &
      "*************************************************************************************************************************", &

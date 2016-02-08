@@ -167,4 +167,6 @@ Module setup_module
 
   Real( Kind = wp ), Save :: engunit = 1.0_wp
 
+  character( len=*) , parameter :: dl_poly_version="4.09α0"
+  character( len=*) , parameter :: dl_poly_release_date="None"
 End Module setup_module

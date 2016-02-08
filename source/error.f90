@@ -1301,6 +1301,10 @@ Subroutine error(kode)
 
         Write(nrite,'(/,1x,a)') 'error - allocation failure in metal_module -> allocate_metal_erf_arrays'
 
+     Else If (kode == 1083) Then
+
+        Write(nrite,'(/,1x,a)') 'error - PLUMED not available'
+
      Else
 
         Write(nrite,'(/,1x,a)') 'error - unnamed error found'
