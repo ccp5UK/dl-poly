@@ -335,6 +335,19 @@ DL\_POLY units (except otherwise specified as in the case of energy
 units) or their composite mixture representing the corresponding
 entity physically, i.e. velocities' components are in \AA ngsroms/picosecond.
 
+\noindent {\bf Exception:} It should be noted that when \D is used
+in a DPD mode (see Section~\ref{dpd} and Appendix~\ref{DPD-all})
+then the meaning of the molecular units is somewhat lost and it is
+only the interrelationship between units that is important (which
+can be exploited by the modeller)!  The fundamental units for a DPD
+simulation are related those of mass $[M]$, length $[L]$ and energy
+$[E]$ - all irrespectively of the actually chosen energy units by
+the {\bf UNITS} directive in the FIELD file.  Therefore, the DPD
+unit of time is equivalent to $[L]\sqrt{[M]/[E]}$ while temperature
+(in the form $k_{B}T$) is defined as two-thirds of the kinetic
+energy of the system's particles.  Similarly, volume is in units
+of $[L]^{3}$ and pressure in $[E]/[L]^{3}$.
+
 \subsection{Error Messages}
 
 All errors detected by \D during run time initiate a call to the

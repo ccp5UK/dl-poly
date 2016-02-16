@@ -789,10 +789,10 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt time }  \> real    \> elapsed simulation time \\
 \> {\tt nument} \> integer \> number of array elements to follow \\
 {\bf record ii} {\tt stpval}(1) -- {\tt stpval}(5) \\
-\> {\tt engcns} \> real    \> total extended system energy \\
-\>              \>         \> (i.e. the conserved quantity) \\
-\> {\tt temp}   \> real    \> system temperature \\
-\> {\tt engcfg} \> real    \> configurational energy \\
+\> {\tt engcns} \> real    \> total extended system energy, $E^{x}_{tot}=(E_{kin}+E_{rot})E_{conf}+E_{consv}$ \\
+\>              \>         \> (i.e. including the conserved quantity, $E_{consv}$) \\
+\> {\tt temp}   \> real    \> system temperature, $2\frac{E_{kin}+E_{rot}}{f k_{B}}$ \\
+\> {\tt engcfg} \> real    \> configurational energy, $E_{conf}$ \\
 \> {\tt engsrc} \> real    \> short range potential energy \\
 \> {\tt engcpe} \> real    \> electrostatic energy \\
 {\bf record iii} {\tt stpval}(6) -- {\tt stpval}(10) \\
@@ -800,9 +800,9 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt engang} \> real    \> valence angle and 3-body potential energy \\
 \> {\tt engdih} \> real    \> dihedral, inversion, and 4-body potential energy \\
 \> {\tt engtet} \> real    \> tethering energy \\
-\> {\tt enthal} \> real    \> enthalpy (total energy + PV) \\
+\> {\tt enthal} \> real    \> enthalpy ($E^{x}_{tot} + {\cal P} \cdot {\cal V}$) \\
 {\bf record iv} {\tt stpval}(11) -- {\tt stpval}(15) \\
-\> {\tt tmprot} \> real    \> rotational temperature \\
+\> {\tt tmprot} \> real    \> rotational temperature, $E_{rot}$ \\
 \> {\tt vir}    \> real    \> total virial \\
 \> {\tt virsrc} \> real    \> short-range virial \\
 \> {\tt vircpe} \> real    \> electrostatic virial \\
@@ -811,7 +811,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt virang} \> real    \> valence angle and 3-body virial \\
 \> {\tt vircon} \> real    \> constraint bond virial \\
 \> {\tt virtet} \> real    \> tethering virial \\
-\> {\tt volume} \> real    \> volume \\
+\> {\tt volume} \> real    \> volume, ${\cal V}$ \\
 \> {\tt tmpshl} \> real    \> core-shell temperature \\
 {\bf record vi} {\tt stpval}(21) -- {\tt stpval}(25) \\
 \> {\tt engshl} \> real    \> core-shell potential energy \\
@@ -821,7 +821,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt gamma } \> real    \> MD cell angle $\gamma$ \\
 {\bf record vii} {\tt stpval}(26) -- {\tt stpval}(27) \\
 \> {\tt virpmf} \> real    \> PMF constraint virial \\
-\> {\tt press}  \> real    \> pressure \\
+\> {\tt press}  \> real    \> pressure, ${\cal P}$ \\
 {\bf the next {\tt ntpatm} entries} \\
 \> {\tt amsd(1)} \> real   \> mean squared displacement of first atom types \\
 \> {\tt amsd(2)} \> real   \> mean squared displacement of second atom types \\
