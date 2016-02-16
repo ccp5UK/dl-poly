@@ -6,7 +6,8 @@ Subroutine error(kode)
 ! controlled termination of the program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2014
+! author    - i.t.todorov february 2016
+! contrib   - a.m.elena september 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1301,7 +1302,7 @@ Subroutine error(kode)
 
         Write(nrite,'(/,1x,a)') 'error - allocation failure in metal_module -> allocate_metal_erf_arrays'
 
-     Else If (kode == 1083) Then
+     Else If (kode == 1084) Then
 
         Write(nrite,'(/,1x,a)') 'error - PLUMED not available'
 

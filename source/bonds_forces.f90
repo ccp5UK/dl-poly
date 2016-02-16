@@ -1,5 +1,5 @@
 Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
-                       rcut,keyfce,alpha,epsq,engcpe,vircpe)
+            rcut,keyfce,alpha,epsq,engcpe,vircpe)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !

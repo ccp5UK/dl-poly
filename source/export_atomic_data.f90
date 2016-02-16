@@ -21,7 +21,7 @@ Subroutine export_atomic_data(mdir)
 
   Implicit None
 
-  Integer,           Intent( In    ) :: mdir
+  Integer,  Intent( In    ) :: mdir
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap
   Integer           :: fail,iadd,limit,iblock,          &
@@ -239,7 +239,7 @@ Subroutine export_atomic_data(mdir)
 ! openKIM halo indicators
 
   If (kim /= ' ') Then
-     i = Abs(2*mdir)+Sign(mdir,1)
+     i = Abs(2*mdir)+Sign(mdir,1) ! Merge( 2*mdir , -2*mdir-1 , mdir > 0 )
      idhalo(0,i)=imove/iadd       ! atoms to send
      idhalo(1,i)=nlast+1          ! first atom to receive
      idhalo(2,i)=nlast+jmove/iadd ! last atom to receive

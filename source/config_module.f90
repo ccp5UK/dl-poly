@@ -190,7 +190,7 @@ Contains
     If (Any(fail > 0)) Call error(1025)
 
     atmnam = ' '
-    lsi = 0 ; lsa = 0 ;ltg = 0
+    lsi = 0 ; lsa = 0 ; ltg = 0
 
     xxx = 0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp
     vxx = 0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp

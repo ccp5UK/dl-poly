@@ -131,7 +131,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
      jz=iz**2
 
      Do iy=-nlp,nlp
-        If (iz == 0 .and. iy < 0) Go To 20
+        If (iz == 0 .and. iy < 0) Cycle
 
         ibig=Abs(iy)
         If (ibig > 0) Then
@@ -146,7 +146,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
         jy=jz+iy**2
 
         Do ix=-nlp,nlp
-           If (iz == 0 .and. iy == 0 .and. ix < 0) Go To 10
+           If (iz == 0 .and. iy == 0 .and. ix < 0) Cycle
 
            ibig=Abs(ix)
            If (ibig > 0) Then
@@ -165,10 +165,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
            niy(nsbcll)=iy
            niz(nsbcll)=iz
            nir(nsbcll)=(jx < nlp3)
-
-10         Continue
         End Do
-20      Continue
      End Do
   End Do
 !  Write(*,*) 'NLP',nlp,nsbcll,nlx,nly,nlz
@@ -450,8 +447,8 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
            ix1=ix-nlx0e
            ix2=ix-nlx1s
 
-! loop over the domain's cells only (ipass=1) and
-! over the domain's border cells only (ipass=2)
+! loop over the domain's cells only (ipass==1) and
+! over the domain's border cells only (ipass==2)
 
            Do ipass=1,2
 
@@ -475,7 +472,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 
                     i=at_list(ii) ! by construction [1,natms]
 
-! secondary loop over neighbouring cells, when ipass=2
+! secondary loop over neighbouring cells, when ipass==2
 ! exclude self-self (i.e. domain - kk=1)
 
                     Do kk=ipass,nsbcll
@@ -490,8 +487,8 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
                           jz=iz-niz(kk)
                        End If
 
-! be on domain + possible positive halo cells only - ipass=1
-! be on halo cells only - ipass=2
+! be on domain + possible positive halo cells only - ipass==1
+! be on halo cells only - ipass==2
 
                        If ( (ipass == 1) .or.                     &
                             (jx <= nlx0e) .or. (jx >= nlx1s) .or. &
@@ -511,7 +508,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 
                              j_start=lct_start(jc)
 
-                          Else ! only when ipass=1
+                          Else ! only when ipass==1
 
 ! if the secondary cell is same as the primary cell
 ! get the next in line from the primary cell running index

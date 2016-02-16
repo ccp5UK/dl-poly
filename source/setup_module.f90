@@ -7,7 +7,7 @@ Module setup_module
 ! set @ execution time
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov february 2016
 !
 ! Note(1): The following internal units apply everywhere
 !
@@ -28,6 +28,11 @@ Module setup_module
 
   Implicit None
 
+
+! Version particulars
+
+  Character( Len = *), Parameter :: DLP_VERSION = "4.08"
+  Character( Len = *), Parameter :: DLP_RELEASE = "february 2016"
 
 ! FIXED PARAMETERS
 ! standard pi related values
@@ -167,6 +172,4 @@ Module setup_module
 
   Real( Kind = wp ), Save :: engunit = 1.0_wp
 
-  character( len=*) , parameter :: dl_poly_version="4.09α0"
-  character( len=*) , parameter :: dl_poly_release_date="None"
 End Module setup_module

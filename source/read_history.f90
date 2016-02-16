@@ -184,12 +184,13 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,dvar,nstep,tstep,time,ex
      If (io_read == IO_READ_MPIIO) Call io_init( recsz )
   End If
 
-! Reinitialise local-to-global counters and all levels of information at every bloody read! Ilian's & Alin's fix to clear incoherencies with re-emptied/re-filled domains
+! Reinitialise local-to-global counters and all levels of information at every bloody read
+! Ilian's & Alin's fix to clear incoherencies with re-emptied/re-filled domains
 
-  lsi=0 ; lsa=0 ; ltg=0
-  xxx=0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp
-  vxx=0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp
-  fxx=0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
+  lsi=0 ; lsa=0 ; ltg=0                    ! A must
+  xxx=0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp ! Not necessary but fair
+  vxx=0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp ! Not necessary but fair
+  fxx=0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp ! Not necessary but fair
 
 ! MASTER READ
 
