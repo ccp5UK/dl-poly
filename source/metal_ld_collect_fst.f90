@@ -33,9 +33,11 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
                        aaa,bbb,ccc,ddd,ppp,qqq, &
                        bet,cut1,cut2,rr0
 
-! start of primary loop for density
+! global type of itam
 
   ai=ltype(iatm)
+
+! start of primary loop for density
 
   Do m=1,list(0,iatm)
 

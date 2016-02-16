@@ -58,12 +58,9 @@ Subroutine metal_forces &
   strs6=0.0_wp
   strs9=0.0_wp
 
-! global identity of atom iatm
+! global identity and type of atom iatm
 
   idi=ltg(iatm)
-
-! start of primary loop for forces evaluation
-
   ai=ltype(iatm)
 
 ! load forces
@@ -71,6 +68,8 @@ Subroutine metal_forces &
   fix=fxx(iatm)
   fiy=fyy(iatm)
   fiz=fzz(iatm)
+
+! start of primary loop for forces evaluation
 
   Do m=1,list(0,iatm)
 

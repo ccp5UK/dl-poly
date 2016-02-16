@@ -1,5 +1,5 @@
 Subroutine statistics_collect              &
-           (leql,nsteql,lzdn,nstzdn,       &
+           (lsim,leql,nsteql,lzdn,nstzdn,  &
            keyres,keyens,iso,intsta,imcon, &
            degfre,degshl,degrot,           &
            nstep,tstep,time,tmst,          &
@@ -38,7 +38,7 @@ Subroutine statistics_collect              &
 
   Implicit None
 
-  Logical,           Intent( In    ) :: leql,lzdn
+  Logical,           Intent( In    ) :: lsim,leql,lzdn
   Integer,           Intent( In    ) :: nsteql,nstzdn,keyres, &
                                         keyens,iso,intsta,imcon,nstep
 
@@ -67,8 +67,8 @@ Subroutine statistics_collect              &
   Real( Kind = wp )       :: stpcns,stpshl,stprot,sclnv1,sclnv2,zistk, &
                              celprp(1:10),h_z
 
-
   Real( Kind = wp ), Allocatable :: amsd(:)
+  Real( Kind = wp ), Allocatable :: xxt(:),yyt(:),zzt(:)
 
   fail=0
   Allocate (amsd(1:mxatyp), Stat=fail)
@@ -208,23 +208,40 @@ Subroutine statistics_collect              &
   End If
 
   If (nstep > 0) Then
-     If (stptmp < 1.0_wp) Then ! HISTORY is replayed and no velocity field exists
-        Do i=1,natms
-           xin(i)=xxx(i)-xin(i)
-           yin(i)=yyy(i)-yin(i)
-           zin(i)=zzz(i)-zin(i)
-        End Do
-        Call images(imcon,cell,natms,xin,yin,xin)
-        Do i=1,natms
-           xto(i)=xto(i)+xin(i)
-           yto(i)=yto(i)+yin(i)
-           zto(i)=zto(i)+zin(i)
-        End Do
-     Else                      ! velocity field exists
+     If (lsim)  Then ! real dynamics is happening
         Do i=1,natms
            xto(i)=xto(i)+vxx(i)*tstep
            yto(i)=yto(i)+vyy(i)*tstep
            zto(i)=zto(i)+vzz(i)*tstep
+        End Do
+     Else            ! HISTORY is replayed
+        Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail)
+        If (fail > 0) Then
+           Write(nrite,'(/,1x,a,i0)') 'statistics_collect allocation failure 1, node: ', idnode
+           Call error(0)
+        End If
+        Do i=1,natms
+           xxt(i)=xxx(i)
+           yyt(i)=yyy(i)
+           zzt(i)=zzz(i)
+        End Do
+        Call pbcshfrc(imcon,cell,natms,xxt,yyt,zzt)
+        Call pbcshfrc(imcon,clin,natms,xin,yin,zin)
+        Do i=1,natms
+           xin(i)=xxt(i)-xin(i)
+           yin(i)=yyt(i)-yin(i)
+           zin(i)=zzt(i)-zin(i)
+        End Do
+        Deallocate (xxt,yyt,zzt, Stat=fail)
+        If (fail > 0) Then
+           Write(nrite,'(/,1x,a,i0)') 'statistics_collect deallocation failure 1, node: ', idnode
+           Call error(0)
+        End If
+        Call pbcshfrl(imcon,cell,natms,xin,yin,zin)
+        Do i=1,natms
+           xto(i)=xto(i)+xin(i)
+           yto(i)=yto(i)+yin(i)
+           zto(i)=zto(i)+zin(i)
         End Do
      End If
 
@@ -243,7 +260,6 @@ Subroutine statistics_collect              &
         stpval(iadd+j-1)=rsd(i)**2
         stpval(iadd+j  )=vxx(i)**2+vyy(i)**2+vzz(i)**2
      End Do
-
      iadd = iadd + 2*mxatdm
   End If
 
@@ -254,7 +270,6 @@ Subroutine statistics_collect              &
         stpval(iadd+k)=0.0_wp
      End If
   End Do
-
   iadd = iadd + ntpatm
 
 ! pressure tensor (derived for the stress tensor)
@@ -262,7 +277,6 @@ Subroutine statistics_collect              &
   Do i=1,9
      stpval(iadd+i)=strtot(i)*prsunt/stpvol
   End Do
-
   iadd = iadd + 9
 
 ! cell parameters
@@ -272,7 +286,6 @@ Subroutine statistics_collect              &
      Do i=1,9
        stpval(iadd+i)=cell(i)
      End Do
-
      iadd = iadd + 9
 
      If (iso > 0) Then
@@ -280,13 +293,11 @@ Subroutine statistics_collect              &
 
         stpval(iadd+1)=h_z
         stpval(iadd+2)=stpvol/h_z
-
         iadd = iadd + 2
 
         If (iso > 1) Then
            stpval(iadd+1)= -h_z*(strtot(1)-(press+strext(1)))*tenunt
            stpval(iadd+2)= -h_z*(strtot(5)-(press+strext(5)))*tenunt
-
            iadd = iadd + 2
         End If
      End If

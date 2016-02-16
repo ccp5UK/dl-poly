@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2016
+! author    - i.t.todorov february 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -43,13 +43,14 @@ Subroutine read_control                                &
   Use bonds_module,    Only : rcbnd
   Use vdw_module,      Only : ld_vdw,ls_vdw,mxtvdw
   Use metal_module,    Only : ld_met,ls_met,tabmet
+!  Use poisson_module,  Only : eps,mxitcg,mxitjb
   Use msd_module,      Only : l_msd
   Use defects1_module, Only : l_dfx
   Use greenkubo_module
 
   Use kinetic_module,  Only : l_vom
-  Use plumed_module,   Only : l_plumed, plumed_input, plumed_log, plumed_precision, & 
-                              plumed_restart
+  Use plumed_module,   Only : l_plumed, plumed_input, plumed_log, &
+                              plumed_precision, plumed_restart
   Use development_module
 
   Implicit None
@@ -111,6 +112,7 @@ Subroutine read_control                                &
                                              grddih,grdinv,nstall
 
   Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,eps0,tol,rcb_d,prmps(1:4)
+
 
 ! initialise system control variables and their logical switches
 
@@ -1713,6 +1715,55 @@ Subroutine read_control                                &
         If (lforc) Call error(416)
         lforc=.true.
 
+!     Else If (word(1:5) == 'poiss' .or. word(1:5) == 'psolv' ) Then
+!
+!        keyfce = 12
+!        If (idnode == 0) Write(nrite,"(/,1x,'Electrostatics : Poisson equation solver')")
+!
+!        prmps=0.0_wp
+!        Do i=1,4
+!           Call get_word(record,word)
+!
+!           If (word(1:5) == 'delta') Then   ! spacing
+!              Call get_word(record,word)
+!              prmps(1)=Abs(word_2_real(word))
+!           End If
+!
+!           If (word(1:3) == 'eps') Then     ! tolerance
+!              Call get_word(record,word)
+!              prmps(2)=Abs(word_2_real(word))
+!           End If
+!
+!           If (word(1:6) == 'maxits') Then  ! max number of iteration
+!              Call get_word(record,word)
+!              prmps(3)=Abs(word_2_real(word))
+!           End If
+!
+!           If (word(1:7) == 'jmaxits') Then ! max number Jacobian iterations
+!              Call get_word(record,word)
+!              prmps(4)=Abs(word_2_real(word))
+!           End If
+!        End Do
+!
+!        If (idnode == 0) Then
+!           Write(nrite,"(1x,'gridspacing parameter (A)',9x,1p,e12.4)") prmps(1)
+!           Write(nrite,"(1x,'convergance epsilon      ',9x,1p,e12.4)") prmps(2)
+!           Write(nrite,"(1x,'max # of Psolver iterations',9x,1p,i5)") Nint(prmps(3))
+!           Write(nrite,"(1x,'max # of Jacobi  iterations',9x,1p,i5)") Nint(prmps(4))
+!
+!           If ( Abs(prmps(1)-1.0_wp/alpha) > 1.0e-6_wp .or. Abs(prmps(2)-eps) > 1.0e-6_wp .or. &
+!                Nint(prmps(3)) == 0 .or. Nint(prmps(4)) == 0 ) Then
+!              Write(nrite,"(/,1x,a)") "*** warning - parameters reset to safe defaults occurred!!! ***"
+!              Write(nrite,"(1x,'gridspacing parameter (A)',9x,1p,e12.4)") 1.0_wp/alpha
+!              Write(nrite,"(1x,'convergance epsilon      ',9x,1p,e12.4)") eps
+!              Write(nrite,"(1x,'max # of Psolver iterations',9x,1p,i5)") mxitcg
+!              Write(nrite,"(1x,'max # of Jacobi  iterations',9x,1p,i5)") mxitjb
+!           End If
+!        End If
+!
+!        If (lforc) Call error(416)
+!        lforc=.true.
+
 ! read relative dielectric constant
 
      Else If (word(1:3) == 'eps') Then
@@ -1959,7 +2010,6 @@ Subroutine read_control                                &
 !        ltcond = .true.
 !
 !        Call get_word(record,word)
-!
 !        If (word(1:4) == 'cond' .or. word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:4) == 'over') &
 !           Call get_word(record,word)
 !        If (word(1:4) == 'cond' .or. word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:4) == 'over') &
@@ -2197,41 +2247,42 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'finish') Then
 
         Go To 2000
-  
+
      Else If (word(1:6) == 'plumed') Then
 
         l_plumed=.true.
 
         Call get_word(record,word)
-        If (word(1:3) == 'off') Then 
-          l_plumed=.false.
+        If (word(1:3) == 'off') Then
+           l_plumed=.false.
         End If
 
-        If (word(1:5) == 'input') Then 
-          Call get_word(record,word)
-          plumed_input=trim(word)
-        End If 
+        If (word(1:5) == 'input') Then
+           Call get_word(record,word)
+           plumed_input=Trim(word)
+        End If
 
-          If (word(1:3) == 'log') Then 
-            Call get_word(record,word)
-            plumed_log=trim(word)
-          End If 
+        If (word(1:3) == 'log') Then
+           Call get_word(record,word)
+           plumed_log=Trim(word)
+        End If
 
-          If (word(1:9) == 'precision') Then 
-            Call get_word(record,word)
-            plumed_precision=Abs(Nint(word_2_real(word,1.0_wp)))
-          End If 
+        If (word(1:9) == 'precision') Then
+           Call get_word(record,word)
+           plumed_precision=Abs(Nint(word_2_real(word,1.0_wp)))
+        End If
 
-          If (word(1:7) == 'restart') Then
-            plumed_restart=1 
-            Call get_word(record,word)
-            If ((word(1:3) == 'yes') .or. (word(1:1) == 'y')) Then 
+        If (word(1:7) == 'restart') Then
+           plumed_restart=1
+           Call get_word(record,word)
+           If ((word(1:3) == 'yes') .or. (word(1:1) == 'y')) Then
               plumed_restart=1
-            End If
-            If ((word(1:2) == 'no') .or. (word(1:1) == 'n')) Then 
+           End If
+           If ((word(1:2) == 'no') .or. (word(1:1) == 'n')) Then
               plumed_restart=0
-            End If
+           End If
         End If
+
      Else
 
         Call strip_blanks(record)

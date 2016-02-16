@@ -31,8 +31,7 @@ Program dl_poly
 ! dl_poly_4 is based on dl_poly_3 by i.t.todorov & w.smith.
 !
 ! copyright - daresbury laboratory
-! authors   - i.t.todorov & w.smith 2013
-! contributors: i.j.bush
+! authors   - i.t.todorov & w.smith 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -209,17 +208,18 @@ Program dl_poly
   If (idnode == 0) Then
      If (.not.l_scr) Open(Unit=nrite, File='OUTPUT', Status='replace')
 
-     Write(nrite,'(5(1x,a,/),(1x,a,a8,a,a14,a/),1x,a,i12,a,/,5(1x,a,/))')                          &
+     Write(nrite,'(5(1x,a,/),(1x,a24,a4,a,a14,a16/),1x,a,i12,a,/,5(1x,a,/))')   &
           "******************************************************************", &
           "*************  stfc/ccp5  program  library  package  ** D ********", &
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  version: ",trim(dl_poly_version),"   /  ",trim(dl_poly_release_date),"  ****** O ****", &
-          "*************  execution on ", mxnode, "    node(s)  ******* L ***", &
+          "**         **  version: ", Trim(DLP_VERSION), "    /   ",            &
+                                          Trim(DLP_RELEASE),"   ****** O ****", &
+          "*************  execution on ", mxnode, " process(es) ******* L ***", &
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
-          "*************  i.j.bush, r.davidchak,                *************", &
+          "*************  i.j.bush, r.davidchak, a.m.elena      *************", &
           "*************  m.a.seaton, a.v.brukhno               *************", &
           "******************************************************************"
 
@@ -336,15 +336,15 @@ Program dl_poly
      Write(nrite,'(/,1x,a)') "*** all reading and connectivity checks DONE ***"
      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
   End If
-  
+
   If (l_plumed) Then
      Call plumed_init(megatm,tstep,temp)
      Call plumed_print_about()
-  else
+  Else
      If (idnode == 0) Then
-       Write(nrite,'(1x,a)') "***PLUMED is off or version without PLUMED***"
-     End If 
-  End If 
+        Write(nrite,'(1x,a)') "*** PLUMED is off or version without PLUMED ***"
+     End If
+  End If
 
 ! l_org: translate CONFIG into CFGORG and exit gracefully
 

@@ -126,7 +126,7 @@
 ! Apply external field
 
      If (keyfld > 0) Call external_field_apply(imcon,keyshl,time,engfld,virfld)
-     
+
      If (l_plumed) Call plumed_apply(xxx,yyy,zzz,nstrun,nstep,stpcfg,stress)
 
 ! Apply pseudo thermostat - force cycle (0)

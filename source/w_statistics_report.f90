@@ -12,7 +12,7 @@
 ! Calculate physical quantities and collect statistics
 
         Call statistics_collect              &
-           (leql,nsteql,lzdn,nstzdn,         &
+           (lsim,leql,nsteql,lzdn,nstzdn,    &
            keyres,keyens,iso,intsta,imcon,   &
            degfre,degshl,degrot,             &
            nstep,tstep,time,tmst,            &

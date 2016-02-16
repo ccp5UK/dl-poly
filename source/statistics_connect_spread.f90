@@ -8,7 +8,7 @@ Subroutine statistics_connect_spread(mdir)
 ! NOTE: When executing on one node we need not get here at all!
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,10 +30,12 @@ Subroutine statistics_connect_spread(mdir)
   Logical           :: safe,stay,move
   Integer           :: fail,iblock,jdnode,kdnode,   &
                        imove,jmove,kmove,keep,send, &
-                       i,j,l,jj,kk,jxyz,kxyz,lxyz,  &
+                       i,j,l,jj,kk,jxyz,kxyz,       &
                        ix,iy,iz,kx,ky,kz,newatm
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
+
+  If (mxnode == 1) Return
 
   fail=0
   Allocate (buffer(1:mxbfss), Stat=fail)
@@ -59,42 +61,42 @@ Subroutine statistics_connect_spread(mdir)
   If      (mdir == -1) Then ! Direction -x
      kx  = 1
      jxyz= 1
-     kxyz= 3
+     kxyz= Merge(3,jxyz,nprx <= 2)
 
      jdnode = map(1)
      kdnode = map(2)
   Else If (mdir ==  1) Then ! Direction +x
      kx  = 1
      jxyz= 2
-     kxyz= 3
+     kxyz= Merge(3,jxyz,nprx <= 2)
 
      jdnode = map(2)
      kdnode = map(1)
   Else If (mdir == -2) Then ! Direction -y
      ky  = 1
      jxyz= 10
-     kxyz= 30
+     kxyz= Merge(30,jxyz,npry <= 2)
 
      jdnode = map(3)
      kdnode = map(4)
   Else If (mdir ==  2) Then ! Direction +y
      ky  = 1
      jxyz= 20
-     kxyz= 30
+     kxyz= Merge(30,jxyz,npry <= 2)
 
      jdnode = map(4)
      kdnode = map(3)
   Else If (mdir == -3) Then ! Direction -z
      kz  = 1
      jxyz= 100
-     kxyz= 300
+     kxyz= Merge(300,jxyz,nprz <= 2)
 
      jdnode = map(5)
      kdnode = map(6)
   Else If (mdir ==  3) Then ! Direction +z
      kz  = 1
      jxyz= 200
-     kxyz= 300
+     kxyz= Merge(300,jxyz,nprz <= 2)
 
      jdnode = map(6)
      kdnode = map(5)
@@ -119,7 +121,7 @@ Subroutine statistics_connect_spread(mdir)
 
   safe=.true.
 
-! LOOP OVER ALL NON-RESIDENT PARTICLES ON THIS NODE
+! LOOP OVER ALL PREVIOUS FRAME'S PARTICLES ON THIS NODE
 
   Do i=1,natms0
 
@@ -133,21 +135,19 @@ Subroutine statistics_connect_spread(mdir)
 
      j=ix*kx+iy*ky+iz*kz
 
-! If the particle is scheduled to be copied in the selected
-! direction then indicate it (move)
+! If the particle is scheduled to be sent in the selected
+! direction then indicate it in move
 
+     move=.false.
      If (j == jxyz .or. (j > jxyz .and. Mod(j,3) == 0)) Then
-        move=.true.
+        move=(idnode /= jdnode) ! but don't move it if back to itself
 
-! Use the corrected halo reduction factor when the particle is halo to both +&- sides
+! reduce particle move index (ixyz) using the corrected halo reduction
+! factor when the particle is sent to both +&- sides
 
-        lxyz=ixyz(i)-Merge(jxyz,kxyz,j == jxyz)
-
-! reduce particle move index (ixyz) and decide on keeping it (stay)
-
-        ixyz(i)=ixyz(i)-jxyz
+        ixyz(i)=ixyz(i)-Merge(kxyz,jxyz,j /= jxyz)
      End If
-     stay = (ixyz(i) /= 0)
+     stay = (ixyz(i) /= 0) ! decide on keeping it when to be sent elsewhere
 
      If (stay) Then ! keep it
         keep=keep+1
@@ -198,7 +198,7 @@ Subroutine statistics_connect_spread(mdir)
 ! pack config indexing and move indexing arrays
 
            buffer(imove+1)=Real(ltg0(i),wp)
-           buffer(imove+2)=Real(lxyz,wp)
+           buffer(imove+2)=Real(ixyz(i),wp)
 
 ! pack initial positions
 
@@ -221,22 +221,22 @@ Subroutine statistics_connect_spread(mdir)
         If (l_msd) Then
            If (imove+2*(6+mxstak) <= iblock) Then
               jj=2*i
-              buffer(imove+ 1)=stpvl0(jj-1)
-              buffer(imove+ 2)=stpvl0(jj  )
-              buffer(imove+ 3)=stpval(jj-1)
-              buffer(imove+ 4)=stpval(jj  )
-              buffer(imove+ 5)=zumval(jj-1)
-              buffer(imove+ 6)=zumval(jj  )
-              buffer(imove+ 7)=ravval(jj-1)
-              buffer(imove+ 8)=ravval(jj  )
-              buffer(imove+ 9)=ssqval(jj-1)
-              buffer(imove+10)=ssqval(jj  )
-              buffer(imove+11)=sumval(jj-1)
-              buffer(imove+12)=sumval(jj  )
+              buffer(imove+ 1)=stpvl00(jj-1)
+              buffer(imove+ 2)=stpvl00(jj  )
+              buffer(imove+ 3)=stpval0(jj-1)
+              buffer(imove+ 4)=stpval0(jj  )
+              buffer(imove+ 5)=zumval0(jj-1)
+              buffer(imove+ 6)=zumval0(jj  )
+              buffer(imove+ 7)=ravval0(jj-1)
+              buffer(imove+ 8)=ravval0(jj  )
+              buffer(imove+ 9)=ssqval0(jj-1)
+              buffer(imove+10)=ssqval0(jj  )
+              buffer(imove+11)=sumval0(jj-1)
+              buffer(imove+12)=sumval0(jj  )
               Do kk=1,mxstak
-                 l=2*kk
-                 buffer(imove+12+l-1)=stkval(kk,jj-1)
-                 buffer(imove+12+l  )=stkval(kk,jj  )
+                 l=12+2*kk
+                 buffer(imove+l-1)=stkval0(kk,jj-1)
+                 buffer(imove+l  )=stkval0(kk,jj  )
               End Do
            Else
               safe=.false.
@@ -273,7 +273,17 @@ Subroutine statistics_connect_spread(mdir)
   kmove=iblock+1
   jmove=Nint(buffer(kmove))
 
-  natms0=keep+jmove
+! Test for overloading and collect how many are to really be accepted
+
+  imove=0
+  Do i=1,jmove
+     l=Nint(buffer(kmove+1))
+     If (All(ltg0(1:natms0) /= l)) imove=imove+1
+     kmove=kmove+8
+     If (l_msd) kmove=kmove+2*(6+mxstak)
+  End Do
+
+  natms0=keep+imove
 
 ! Check for array bound overflow (can arrays cope with incoming data)
 
@@ -283,8 +293,19 @@ Subroutine statistics_connect_spread(mdir)
 
 ! load transferred data
 
+  kmove=iblock+1 ! restore kmove
+  newatm=keep    ! restore newatm
   Do i=1,jmove
-     newatm=i+keep
+     If (imove /= jmove) Then
+        l=Nint(buffer(kmove+1))
+        If (Any(ltg0(1:keep) == l)) Then
+           kmove=kmove+8
+           If (l_msd) kmove=kmove+2*(6+mxstak)
+           Cycle
+        End If
+     End If
+
+     newatm=newatm+1
 
 ! unpack config indexing, site and move indexing arrays
 
@@ -322,9 +343,9 @@ Subroutine statistics_connect_spread(mdir)
         sumval0(jj-1)=buffer(kmove+11)
         sumval0(jj  )=buffer(kmove+12)
         Do kk=1,mxstak
-           l=2*kk
-           stkval0(kk,jj-1)=buffer(kmove+12+l-1)
-           stkval0(kk,jj  )=buffer(kmove+12+l  )
+           l=12+2*kk
+           stkval0(kk,jj-1)=buffer(kmove+l-1)
+           stkval0(kk,jj  )=buffer(kmove+l  )
         End Do
 
         kmove=kmove+2*(6+mxstak)

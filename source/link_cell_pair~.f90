@@ -316,8 +316,8 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
   ibig=0
   safe=.true.
 
-! loop over the domain's cells only (ipass=1) and
-! over the domain's border cells only (ipass=2)
+! loop over the domain's cells only (ipass==1) and
+! over the domain's border cells only (ipass==2)
 
   Do ipass=1,2
 
@@ -327,7 +327,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
         Do iy=1,nly
            Do ix=1,nlx
 
-! When ipass=2 be on the domain's border link-cells only
+! When ipass==2 be on the domain's border link-cells only
 
               If ( (ipass == 1) .or. &
                    (ix == 1) .or. (ix == nlx) .or. &
@@ -351,7 +351,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 
 100                 Continue
 
-! secondary loop over neighbouring cells, when ipass=2
+! secondary loop over neighbouring cells, when ipass==2
 ! exclude self-self (i.e. domain - kk=1)
 
                     Do kk=ipass,nsbcll
@@ -366,8 +366,8 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
                           jz=iz-niz(kk)
                        End If
 
-! be on domain + possible positive halo cells only - ipass=1
-! be on halo cells only - ipass=2
+! be on domain + possible positive halo cells only - ipass==1
+! be on halo cells only - ipass==2
 
                        If ( (ipass == 1) .or. &
                             (jx == 0) .or. (jx == nlx+1) .or. &
@@ -391,7 +391,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 
 ! if the secondary cell is same as the primary cell
 
-                          Else ! only when ipass=1
+                          Else ! only when ipass==1
 
 ! get the next in line from the primary cell running index
 

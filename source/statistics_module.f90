@@ -6,7 +6,7 @@ Module statistics_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -16,6 +16,8 @@ Module statistics_module
 
   Integer,                        Save :: numacc = 0 , &
                                           natms0 = 0
+
+  Real( Kind = wp ),              Save :: clin(1:9) = 0.0_wp
 
   Real( Kind = wp ), Allocatable, Save :: xin(:),yin(:),zin(:)
   Real( Kind = wp ), Allocatable, Save :: xto(:),yto(:),zto(:),rsd(:)
@@ -64,48 +66,41 @@ Contains
 
   Subroutine allocate_statistics_connect()
 
-    Use comms_module, Only : mxnode
     Use setup_module, Only : mxatdm,mxstak
 
     Implicit None
 
     Integer, Dimension( 1:6 ) :: fail
 
-    If (mxnode > 1) Then
-       fail = 0
+    fail = 0
 
-       Allocate (found(1:mxatdm),found0(1:mxatdm),                                                Stat = fail(1))
-       Allocate (lsi0(1:mxatdm),lsa0(1:mxatdm),ltg0(1:mxatdm),                                    Stat = fail(2))
-       Allocate (xin0(1:mxatdm),yin0(1:mxatdm),zin0(1:mxatdm),                                    Stat = fail(3))
-       Allocate (xto0(1:mxatdm),yto0(1:mxatdm),zto0(1:mxatdm),                                    Stat = fail(4))
-       Allocate (stpval0(1:2*mxatdm),stpvl00(1:2*mxatdm),sumval0(1:2*mxatdm),ssqval0(1:2*mxatdm), Stat = fail(5))
-       Allocate (zumval0(1:2*mxatdm),ravval0(1:2*mxatdm),stkval0(1:mxstak,1:2*mxatdm),            Stat = fail(6))
+    Allocate (found(1:mxatdm),found0(1:mxatdm),                                                Stat = fail(1))
+    Allocate (lsi0(1:mxatdm),lsa0(1:mxatdm),ltg0(1:mxatdm),                                    Stat = fail(2))
+    Allocate (xin0(1:mxatdm),yin0(1:mxatdm),zin0(1:mxatdm),                                    Stat = fail(3))
+    Allocate (xto0(1:mxatdm),yto0(1:mxatdm),zto0(1:mxatdm),                                    Stat = fail(4))
+    Allocate (stpval0(1:2*mxatdm),stpvl00(1:2*mxatdm),sumval0(1:2*mxatdm),ssqval0(1:2*mxatdm), Stat = fail(5))
+    Allocate (zumval0(1:2*mxatdm),ravval0(1:2*mxatdm),stkval0(1:mxstak,1:2*mxatdm),            Stat = fail(6))
 
-       If (Any(fail > 0)) Call error(1060)
-    End If
+    If (Any(fail > 0)) Call error(1060)
 
   End Subroutine allocate_statistics_connect
 
   Subroutine deallocate_statistics_connect()
 
-    Use comms_module, Only : mxnode
-
     Implicit None
 
     Integer, Dimension( 1:6 ) :: fail
 
-    If (mxnode > 1) Then
-       fail = 0
+    fail = 0
 
-       Deallocate (found,found0,                    Stat = fail(1))
-       Deallocate (lsi0,lsa0,ltg0,                  Stat = fail(2))
-       Deallocate (xin0,yin0,zin0,                  Stat = fail(3))
-       Deallocate (xto0,yto0,zto0,                  Stat = fail(4))
-       Deallocate (stpval0,stpvl00,sumval0,ssqval0, Stat = fail(5))
-       Deallocate (zumval0,ravval0,stkval0,         Stat = fail(6))
+    Deallocate (found,found0,                    Stat = fail(1))
+    Deallocate (lsi0,lsa0,ltg0,                  Stat = fail(2))
+    Deallocate (xin0,yin0,zin0,                  Stat = fail(3))
+    Deallocate (xto0,yto0,zto0,                  Stat = fail(4))
+    Deallocate (stpval0,stpvl00,sumval0,ssqval0, Stat = fail(5))
+    Deallocate (zumval0,ravval0,stkval0,         Stat = fail(6))
 
-       If (Any(fail > 0)) Call error(1061)
-    End If
+    If (Any(fail > 0)) Call error(1061)
 
   End Subroutine deallocate_statistics_connect
 

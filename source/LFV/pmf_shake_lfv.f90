@@ -1,6 +1,6 @@
-Subroutine pmf_shake_lfv                    &
-           (imcon,mxshak,tolnce,tstep,lcol, &
-           indpmf,pxx,pyy,pzz,              &
+Subroutine pmf_shake_lfv               &
+           (imcon,mxshak,tolnce,tstep, &
+           indpmf,pxx,pyy,pzz,         &
            xxx,yyy,zzz,strpmf,virpmf)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -26,7 +26,6 @@ Subroutine pmf_shake_lfv                    &
 
   Integer,           Intent( In    ) :: imcon,mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
-  Logical,           Intent( In    ) :: lcol
   Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
   Real( Kind = wp ), Intent( In    ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
   Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)

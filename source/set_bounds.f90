@@ -4,8 +4,8 @@ Subroutine set_bounds                                       &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine to determine various limits: array bounds,
-! iteration and others as specified in setup_module
+! dl_poly_4 subroutine to determine various limits as array bounds,
+! grid sizes, paddings, iterations, etc. as specified in setup_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov january 2016
@@ -510,13 +510,13 @@ Subroutine set_bounds                                       &
 
   If (idnode == 0) Write(nrite,'(/,1x,a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
 
-  test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0) ! 2% (w/ SPME) or 4% (w/o SPME)
+  test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0) ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
   cut=Min(r_nprx*celprp(7),r_npry*celprp(8),r_nprz*celprp(9))-1.0e-6_wp
   If (ilx*ily*ilz == 0) Then
      If (l_trm) Then ! we are prepared to exit gracefully(-:
         rcut = cut   ! - rpad (was zeroed in scan_control)
         If (idnode == 0) Write(nrite,'(/,1x,a)') &
-           "*** warning - real space cutoff reset has occured, early run termination is due !!! ***"
+           "*** warning - real space cutoff reset has occurred, early run termination is due !!! ***"
         Go To 10
      Else
         If (cut < rcut) Then
@@ -596,13 +596,13 @@ Subroutine set_bounds                                       &
   qly = ily
   qlz = ilz
 
-! mxspl = 0 is an indicator for no SPME electrostatics in CONTROL
+! mxspl = 0 is an indicator for no SPME or Poisson Solver electrostatics in CONTROL
 
   If (mxspl /= 0) Then
 
-! ensure (kmaxa,kmaxb,kmaxc) consistency with what DD
-! (map_domains is already called) and DaFT are capable of
-! or comment out adjustments if using ewald_spme_force~
+! ensure (kmaxa,kmaxb,kmaxc) consistency between the DD
+! processor grid (map_domains is already called) and the grid
+! method or comment out adjustments if using ewald_spme_force~
 
      Call adjust_kmax( kmaxa, nprx )
      Call adjust_kmax( kmaxb, npry )
@@ -727,7 +727,7 @@ Subroutine set_bounds                                       &
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
-  mxbfss = Merge( 2, 0, mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*(6+mxstak), 0, l_msd)),wp) * dens0)
+  mxbfss = Merge( 4, 0, mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*(6+mxstak), 0, l_msd)),wp) * dens0)
 
 ! exporting single per atom
 

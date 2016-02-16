@@ -8,14 +8,13 @@ your next task will be to compile it.  To aid compilation three
 general makefiles have been provided in the sub-directory {\em
 build}.  These are ``Makefile\_MPI'' - for compiling a parallel
 version of \D, and ``Makefile\_SRL1'' and ``Makefile\_SRL2'' - for
-compiling a serial versions (see Appendix~\ref{makefiles}).  After
-choosing what the default compilation is to be, the appropriate
-makefile is to be copied as ``Makefile'' in the sub-directory {\em
-source}.  The general \D makefile will build an executable with the
-full range of functionality - sufficient for the test cases and for
-most users' requirements.  In most cases, the user will have to
-modify few entries in the specification part of their makefile to
-match the location of certain software on their system architecture.
+compiling a serial versions.  After choosing what the default compilation
+is to be, the appropriate makefile is to be copied as ``Makefile'' in
+the sub-directory {\em source}.  The general \D makefile will build an
+executable with the full range of functionality - sufficient for the
+test cases and for most users' requirements.  In most cases, the user
+will have to modify few entries in the specification part of their
+makefile to match the location of certain software on their system architecture.
 {\bf Note} that {\bf only} FORTRAN90 compiler is required for
 successful build of \D in serial mode, and {\bf only} FORTRAN90\index{FORTRAN90}
 and MPI implementation - for \D in parallel mode.  Should the user
