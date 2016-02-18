@@ -11,7 +11,7 @@ Subroutine metal_ld_compute         &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov january 2016
+! amended   - i.t.todorov february 2016
 ! contrib   - r.davidchak (eeam) june 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -20,7 +20,7 @@ Subroutine metal_ld_compute         &
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum,gcheck
   Use setup_module
-  Use config_module, Only : cell,natms,ltg,ltype,list,xxx,yyy,zzz
+  Use config_module, Only : natms,ltg,ltype,list,xxx,yyy,zzz
   Use metal_module,  Only : ls_met,l2bmet,tabmet,fmet,fmes,rho,rhs
 
   Implicit None
