@@ -6,7 +6,7 @@ Subroutine rdf_compute(lpana,rcut,temp)
 ! from accumulated data
 !
 ! copyright - daresbury laboratory
-! author    - t.forester & i.t.todorov august 2014
+! author    - t.forester & i.t.todorov november 2015
 ! contrib   - a.v.brukhno january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -15,7 +15,7 @@ Subroutine rdf_compute(lpana,rcut,temp)
   Use comms_module,  Only : idnode,mxnode,gsum
   Use setup_module,  Only : fourpi,boltz,delr_max,nrite,nrdfdt,npdfdt,npdgdt, &
                             mxgrdf,engunit,zero_plus
-  Use site_module,   Only : ntpatm,unqatm,dens
+  Use site_module,   Only : ntpatm,unqatm,numtyp,dens
   Use config_module, Only : cfgname,volm
   Use rdf_module
 
@@ -96,7 +96,7 @@ Subroutine rdf_compute(lpana,rcut,temp)
 ! normalisation factor
 
            factor1=volm*dens(ia)*dens(ib)*Real(ncfrdf,wp)
-           If (ia == ib) factor1=factor1*0.5_wp ! *(1.0_wp-1.0_wp/numtyp(ia))
+           If (ia == ib) factor1=factor1*0.5_wp*(1.0_wp-1.0_wp/numtyp(ia))
 
 ! running integration of rdf
 

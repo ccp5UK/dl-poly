@@ -5,7 +5,7 @@ Module ewald_module
 ! dl_poly_4 module declaring ewald routines arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -13,13 +13,12 @@ Module ewald_module
 
   Implicit None
 
-  Logical,                        Save :: l_fce = .true. , l_cp = .false. , &
+  Logical,                        Save :: l_fce  = .true. , l_cp  = .false. , &
                                           lf_fce = .true. , lf_cp = .false.
 
   Real( Kind = wp ),              Save :: e_rc = 0.0_wp , v_rc = 0.0_wp , s_rc(1:9) = 0.0_wp , &
-                                          e_ex = 0.0_wp , v_ex = 0.0_wp , s_ex(1:9) = 0.0_wp , &
                                           e_fr = 0.0_wp , v_fr = 0.0_wp , s_fr(1:9) = 0.0_wp , &
-                                          ef_fr = 0.0_wp , vf_fr = 0.0_wp , sf_fr(1:9) = 0.0_wp
+                                          ef_fr= 0.0_wp , vf_fr= 0.0_wp , sf_fr(1:9)= 0.0_wp
 
   Real( Kind = wp ), Allocatable, Save :: fcx(:),fcy(:),fcz(:)
   Real( Kind = wp ), Allocatable, Save :: ffx(:),ffy(:),ffz(:)
@@ -134,21 +133,19 @@ Contains
           fcx = 0.0_wp ; fcy = 0.0_wp ; fcx = 0.0_wp
 
           e_rc = 0.0_wp ; v_rc = 0.0_wp ; s_rc = 0.0_wp
-          e_ex = 0.0_wp ; v_ex = 0.0_wp ; s_ex = 0.0_wp
           e_fr = 0.0_wp ; v_fr = 0.0_wp ; s_fr = 0.0_wp
        End If
     End If
 
   End Subroutine ewald_check
 
-  Subroutine ewald_refresh(engcpe_rc,vircpe_rc,engcpe_ex,vircpe_ex,engcpe_fr,vircpe_fr,stress)
+  Subroutine ewald_refresh(engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stress)
 
     Use config_module, Only : natms,fxx,fyy,fzz
 
     Implicit None
 
     Real( Kind = wp ), Intent( InOut ) :: engcpe_rc,vircpe_rc, &
-                                          engcpe_ex,vircpe_ex, &
                                           engcpe_fr,vircpe_fr, &
                                           stress(1:9)
 
@@ -161,7 +158,6 @@ Contains
     End Do
 
     engcpe_rc=e_rc ; vircpe_rc=v_rc ; stress=stress+s_rc
-    engcpe_ex=e_ex ; vircpe_ex=v_ex ; stress=stress+s_ex
     engcpe_fr=e_fr ; vircpe_fr=v_fr ; stress=stress+s_fr
 
   End Subroutine ewald_refresh

@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2016
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -38,7 +38,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
                        jx,jy,jz,jc
 
   Real( Kind = wp ) :: cut,rcsq,rsq,det,rcell(1:9),celprp(1:10), &
-                       x,y,z, dispx,dispy,dispz, xdc,ydc,zdc, nlr2
+                       x,y,z, x1,y1,z1, dispx,dispy,dispz, xdc,ydc,zdc, nlr2
 
   Logical,           Dimension( : ), Allocatable :: nir
   Integer,           Dimension( : ), Allocatable :: nix,niy,niz,         &
@@ -46,10 +46,6 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
                                                     lct_where,which_cell,at_list
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
-
-! image conditions not compliant with DD and link-cell
-
-  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
 ! Get the dimensional properties of the MD cell
 
@@ -106,10 +102,10 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
   nlp3=(1+(1+2*nlp)**3)/2
 
   fail=0
-  Allocate (nix(1:nlp3),niy(1:nlp3),niz(1:nlp3),nir(1:nlp3),                  Stat=fail(1))
-  Allocate (which_cell(1:mxatms),at_list(1:mxatms),                           Stat=fail(2))
-  Allocate (lct_count(0:ncells),lct_start(0:ncells+1 ),lct_where(0:ncells+1), Stat=fail(3))
-  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                        Stat=fail(4))
+  Allocate (nix(1:nlp3),niy(1:nlp3),niz(1:nlp3),nir(1:nlp3),                 Stat=fail(1))
+  Allocate (which_cell(1:mxatms),at_list(1:mxatms),                          Stat=fail(2))
+  Allocate (lct_count(0:ncells),lct_start(0:ncells+1),lct_where(0:ncells+1), Stat=fail(3))
+  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                       Stat=fail(4))
   If (Any(fail > 0)) Then
      Write(nrite,'(/,1x,a,i0)') 'link_cell_pairs allocation failure, node: ', idnode
      Call error(0)
@@ -136,7 +132,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
      jz=iz**2
 
      Do iy=-nlp,nlp
-        If (iz == 0 .and. iy < 0) Go To 20
+        If (iz == 0 .and. iy < 0) Cycle
 
         ibig=Abs(iy)
         If (ibig > 0) Then
@@ -151,7 +147,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
         jy=jz+iy**2
 
         Do ix=-nlp,nlp
-           If (iz == 0 .and. iy == 0 .and. ix < 0) Go To 10
+           If (iz == 0 .and. iy == 0 .and. ix < 0) Cycle
 
            ibig=Abs(ix)
            If (ibig > 0) Then
@@ -170,10 +166,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
            niy(nsbcll)=iy
            niz(nsbcll)=iz
            nir(nsbcll)=(jx < nlp3)
-
-10         Continue
         End Do
-20      Continue
      End Do
   End Do
 !  Write(*,*) 'NLP',nlp,nsbcll,nlx,nly,nlz
@@ -264,8 +257,8 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 
 ! Correction for domain (idnode) only particles (1,natms) but due to
 ! some tiny numerical inaccuracy kicked into its halo link-cell space
-! Put all particles in bounded link-cell space: lower and upper bound
-! bounds as nl_coordinate_0e+1 <= i_coordinate <= nl_coordinate_1s-1!
+! Put all particles in a bounded link-cell space: lower and upper bounds
+! as follows nl_coordinate_0e+1 <= i_coordinate <= nl_coordinate_1s-1 !
 
      ix = Max( Min( ix , nlx1s-1) , nlx0e+1)
      iy = Max( Min( iy , nly1s-1) , nly0e+1)
@@ -319,7 +312,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
         iz =-Int(dispz) + jz - 1
      End If
 
-! Exclude all any negative bound residual halo
+! Exclude any negatively bound residual halo
 
      If (ix >= nlx0s .and. iy >= nly0s .and. iz >= nlz0s) Then
 
@@ -327,52 +320,43 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 ! (idnode) but due to some tiny numerical inaccuracy kicked into
 ! the domain only link-cell space
 
-        lx0=(ix == nlx0e+1)
-        lx1=(ix == nlx1s-1)
-        ly0=(iy == nly0e+1)
-        ly1=(iy == nly1s-1)
-        lz0=(iz == nlz0e+1)
-        lz1=(iz == nlz1s-1)
-        If ( (lx0 .or. lx1) .and. &
-             (ly0 .or. ly1) .and. &
-             (lz0 .or. lz1) ) Then ! 8 corners of the domain's cube in RS
-           If      (lx0 .or. lx1) Then
-              If      (lx0 ) Then
+        lx0=(ix > nlx0e)
+        lx1=(ix < nlx1s)
+        ly0=(iy > nly0e)
+        ly1=(iy < nly1s)
+        lz0=(iz > nlz0e)
+        lz1=(iz < nlz1s)
+        If ( (lx0 .and. lx1) .and. &
+             (ly0 .and. ly1) .and. &
+             (lz0 .and. lz1) ) Then
+
+! Put the closest to the halo coordinate in the halo
+
+           x1=Abs(x-0.5_wp*Sign(1.0_wp,x))
+           y1=Abs(y-0.5_wp*Sign(1.0_wp,y))
+           z1=Abs(z-0.5_wp*Sign(1.0_wp,z))
+           If      (x1 <= y1 .and. x1 <= z1) Then
+              If (x < 0.0_wp) Then
                  ix=nlx0e
-              Else If (lx1) Then
+              Else
                  ix=nlx1s
               End If
-!              If (x > -half_plus) Then
-!                 dispx = dispx + Real(jx-ix,wp)
-!              Else
-!                 dispx = dispx - Real(jx-ix-1,wp)
-!              End If
-           Else If (ly0 .or. ly1) Then
-              If      (ly0 ) Then
+           Else If (y1 <= x1 .and. y1 <= z1) Then
+              If (y < 0.0_wp) Then
                  iy=nly0e
-              Else If (ly1) Then
+              Else
                  iy=nly1s
               End If
-!              If (y > -half_plus) Then
-!                 dispy = dispy + Real(jy-iy,wp)
-!              Else
-!                 dispy = dispy - Real(jy-iy-1,wp)
-!              End If
-           Else If (lz0 .or. lz1) Then
-              If      (lz0 ) Then
+           Else
+              If (z < 0.0_wp) Then
                  iz=nlz0e
-              Else If (lz1) Then
+              Else
                  iz=nlz1s
               End If
-!              If (z > -half_plus) Then
-!                 dispz = dispz + Real(jz-iz,wp)
-!              Else
-!                 dispz = dispz - Real(jz-iz-1,wp)
-!              End If
            End If
         End If
 
-! Check for positive bound residual halo
+! Check for positively bound residual halo
 
         lx0=(ix < nlx0s)
         lx1=(ix > nlx1e)
@@ -464,8 +448,8 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
            ix1=ix-nlx0e
            ix2=ix-nlx1s
 
-! loop over the domain's cells only (ipass=1) and
-! over the domain's border cells only (ipass=2)
+! loop over the domain's cells only (ipass==1) and
+! over the domain's border cells only (ipass==2)
 
            Do ipass=1,2
 
@@ -489,7 +473,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 
                     i=at_list(ii) ! by construction [1,natms]
 
-! secondary loop over neighbouring cells, when ipass=2
+! secondary loop over neighbouring cells, when ipass==2
 ! exclude self-self (i.e. domain - kk=1)
 
                     Do kk=ipass,nsbcll
@@ -504,8 +488,8 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
                           jz=iz-niz(kk)
                        End If
 
-! be on domain + possible positive halo cells only - ipass=1
-! be on halo cells only - ipass=2
+! be on domain + possible positive halo cells only - ipass==1
+! be on halo cells only - ipass==2
 
                        If ( (ipass == 1) .or.                     &
                             (jx <= nlx0e) .or. (jx >= nlx1s) .or. &
@@ -525,7 +509,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 
                              j_start=lct_start(jc)
 
-                          Else ! only when ipass=1
+                          Else ! only when ipass==1
 
 ! if the secondary cell is same as the primary cell
 ! get the next in line from the primary cell running index

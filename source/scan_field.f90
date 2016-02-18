@@ -18,7 +18,7 @@ Subroutine scan_field                                 &
 ! dl_poly_4 subroutine for raw scanning the contents of the FIELD file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov and w.smith december 2014
+! author    - i.t.todorov and w.smith february 2016
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno march 2014 (itramolecular TPs)
 !
@@ -49,7 +49,7 @@ Subroutine scan_field                                 &
 
   Character( Len = 8   ), Dimension( 1:mmk ) :: chr
 
-  Character( Len = 200 ) :: record
+  Character( Len = 200 ) :: record,record_raw
   Character( Len = 40  ) :: word
   Character( Len = 8   ) :: name
 
@@ -71,7 +71,7 @@ Subroutine scan_field                                 &
                        mxt(1:9),mxf(1:9)
   Real( Kind = wp ) :: rcbnd,rvdw,rmet,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
 
-  l_n_e=.true.
+  l_n_e=.true.  ! no electrostatics opted
 
   nummols=0
 
@@ -187,6 +187,7 @@ Subroutine scan_field                                 &
      word(1:1)='#'
      Do While (word(1:1) == '#' .or. word(1:1) == ' ')
         Call get_line(safe,nfield,record)
+        record_raw = record ! KIM needs case sensitive IM name
         If (.not.safe) Go To 30
         Call lower_case(record)
         Call get_word(record,word)
@@ -862,8 +863,10 @@ Subroutine scan_field                                 &
 
 ! Get KIM's IM name and cutoff
 
-        kim=record(1:Len_Trim(record))
-        Call kim_cutoff(kim,rkim)
+        Call get_word(record_raw,word)
+        Call strip_blanks(record_raw)
+        kim=record(1:Len_Trim(record_raw))
+        Call kim_cutoff(mxatyp,chr,kim,rkim)
 
      Else If (word(1:6) == 'extern') Then
 

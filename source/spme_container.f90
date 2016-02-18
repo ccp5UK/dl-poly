@@ -78,7 +78,7 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith july 1998
-! amended   - i.t.todorov june 2007
+! amended   - i.t.todorov april 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -109,10 +109,14 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
 
   Do i=1,nospl
      real_no(i) = Real(i,wp)
-     inv_no(i)  = 1.0_wp / i
+     inv_no(i)  = 1.0_wp / real_no(i)
   End Do
 
   Do i=1,natms
+
+! initializing 2nd order B-spline
+! for u where (0<u<1) and (1<u<2)
+
      bspx(1,i)=xxx(i)-Aint(xxx(i),wp)
      bspy(1,i)=yyy(i)-Aint(yyy(i),wp)
      bspz(1,i)=zzz(i)-Aint(zzz(i),wp)
@@ -120,6 +124,9 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
      bspx(2,i)=1.0_wp-bspx(1,i)
      bspy(2,i)=1.0_wp-bspy(1,i)
      bspz(2,i)=1.0_wp-bspz(1,i)
+
+! Now on to calculate order k B-spline values at k
+! points where (0<u<k)
 
      rix0=bspx(1,i)
      riy0=bspy(1,i)
@@ -133,7 +140,8 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
      bsdy(2,i)=-1.0_wp
      bsdz(2,i)=-1.0_wp
 
-     Do k=3,nospl-1
+     Do k=3,nospl-1 ! Order of B-spline
+
         bspx(k,i)=0.0_wp
         bspy(k,i)=0.0_wp
         bspz(k,i)=0.0_wp
@@ -141,7 +149,8 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
         k_r   =real_no(k)
         km1_rr=inv_no(k-1)
 
-        Do j=k,2,-1
+        Do j=k,2,-1 ! Compute order k B-spline at points {k,k-1,...,1}
+
            jm1_r=real_no(j-1)
 
            aaa=rix0+jm1_r
@@ -151,12 +160,17 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
            bspx(j,i)=(aaa*bspx(j,i)+(k_r-aaa)*bspx(j-1,i))*km1_rr
            bspy(j,i)=(bbb*bspy(j,i)+(k_r-bbb)*bspy(j-1,i))*km1_rr
            bspz(j,i)=(ccc*bspz(j,i)+(k_r-ccc)*bspz(j-1,i))*km1_rr
+
         End Do
 
         bspx(1,i)=bspx(1,i)*rix0*km1_rr
         bspy(1,i)=bspy(1,i)*riy0*km1_rr
         bspz(1,i)=bspz(1,i)*riz0*km1_rr
+
      End Do
+
+! Now compute B-splines for order nospl at k points where
+! (0<u<nospl)
 
      k=nospl
 
@@ -168,6 +182,9 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
      km1_rr=inv_no(k-1)
 
      Do j=k,2,-1
+
+! Derivatives of B-splines with order nospl at k-1 points
+
         bsdx(j,i)=bspx(j,i)-bspx(j-1,i)
         bsdy(j,i)=bspy(j,i)-bspy(j-1,i)
         bsdz(j,i)=bspz(j,i)-bspz(j-1,i)
@@ -181,6 +198,7 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
         bspx(j,i)=(aaa*bspx(j,i)+(k_r-aaa)*bspx(j-1,i))*km1_rr
         bspy(j,i)=(bbb*bspy(j,i)+(k_r-bbb)*bspy(j-1,i))*km1_rr
         bspz(j,i)=(ccc*bspz(j,i)+(k_r-ccc)*bspz(j-1,i))*km1_rr
+
      End Do
 
      bsdx(1,i)=bspx(1,i)
@@ -190,6 +208,7 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
      bspx(1,i)=bspx(1,i)*rix0*km1_rr
      bspy(1,i)=bspy(1,i)*riy0*km1_rr
      bspz(1,i)=bspz(1,i)*riz0*km1_rr
+
   End Do
 
   Deallocate (real_no,inv_no, Stat=fail)
@@ -199,6 +218,303 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
   End If
 
 End Subroutine bspgen
+
+Subroutine bspgen_mpl(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsddx,bsddy,bsddz)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine to calculate B-splines for SPME method for
+! multipolar interactions
+!
+! copyright - daresbury laboratory
+! author    - h.a.boateng april 2014
+! amended   - i.t.todorov april 2015
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+  Use comms_module,      Only : idnode
+  Use setup_module
+  Use multipoles_module, Only : ncombk
+
+  Implicit None
+
+  Integer,                                                      Intent( In    ) :: natms,nospl
+  Real( Kind = wp ), Dimension( 1:mxatms ),                     Intent( In    ) :: xxx,yyy,zzz
+
+  Real( Kind = wp ), Dimension( 1:mxspl , 1:mxatms ),           Intent(   Out ) :: bspx,bspy,bspz
+  Real( Kind = wp ), Dimension( 0:mxspl , 1:mxspl , 1:mxatms ), Intent(   Out ) :: bsddx,bsddy,bsddz
+
+  Integer           :: fail,i,j,k,m,n,p,r,s
+  Real( Kind = wp ) :: aaa,bbb,ccc, rix0,riy0,riz0, jm1_r,k_r,km1_rr
+  Real( Kind = wp ) :: tmp,tempx,tempy,tempz,pcombr
+
+  Real( Kind = wp ), Dimension( : ), Allocatable :: real_no, inv_no, pmo_no
+
+  fail=0
+  Allocate (real_no(1:nospl),inv_no(1:nospl),pmo_no(1:nospl), Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'bspgen_mpl allocation failure, node: ', idnode
+     Call error(0)
+  End If
+
+! initialize derivatives
+
+  bsddx(:,:,:)=0.0_wp
+  bsddy(:,:,:)=0.0_wp
+  bsddz(:,:,:)=0.0_wp
+
+! construct B-splines
+
+  Do i=1,nospl
+     real_no(i) = Real(i,wp)
+     inv_no(i)  = 1.0_wp / real_no(i)
+     pmo_no(i)  = Real(-1**i,wp)
+  End Do
+
+  Do i=1,natms
+
+! initializing 2nd order B-spline
+! for u where (0<u<1) and (1<u<2)
+
+     bspx(1,i)=xxx(i)-Aint(xxx(i),wp)
+     bspy(1,i)=yyy(i)-Aint(yyy(i),wp)
+     bspz(1,i)=zzz(i)-Aint(zzz(i),wp)
+
+     bspx(2,i)=1.0_wp-bspx(1,i)
+     bspy(2,i)=1.0_wp-bspy(1,i)
+     bspz(2,i)=1.0_wp-bspz(1,i)
+
+! compute the (nospl-2)nd derivatives
+
+     k=2; p=nospl-2
+
+     Do j=1,nospl
+
+        m=Max(0,j-k)
+        n=Min(p,j-1)
+
+        tempx=0.0_wp ; tempy=0.0_wp ; tempz=0.0_wp
+
+        Do r=m,n
+           s     = j - r
+           pcombr= pmo_no(r)*ncombk(p,r)
+
+           tempx = tempx + pcombr*bspx(s,i)
+           tempy = tempy + pcombr*bspy(s,i)
+           tempz = tempz + pcombr*bspz(s,i)
+        End Do
+
+        bsddx(p,j,i)=tempx
+        bsddy(p,j,i)=tempy
+        bsddz(p,j,i)=tempz
+
+     End Do
+
+! Now on to calculate order k B-spline values at k
+! points where (0<u<k)
+
+     rix0=bspx(1,i)
+     riy0=bspy(1,i)
+     riz0=bspz(1,i)
+
+     Do k=3,nospl-1 ! Order of B-spline
+
+        bspx(k,i)=0.0_wp
+        bspy(k,i)=0.0_wp
+        bspz(k,i)=0.0_wp
+
+        k_r   =real_no(k)
+        km1_rr=inv_no(k-1)
+
+        Do j=k,2,-1 ! Compute order k B-spline at points {k,k-1,...,1}
+
+           jm1_r=real_no(j-1)
+
+           aaa=rix0+jm1_r
+           bbb=riy0+jm1_r
+           ccc=riz0+jm1_r
+
+           bspx(j,i)=(aaa*bspx(j,i)+(k_r-aaa)*bspx(j-1,i))*km1_rr
+           bspy(j,i)=(bbb*bspy(j,i)+(k_r-bbb)*bspy(j-1,i))*km1_rr
+           bspz(j,i)=(ccc*bspz(j,i)+(k_r-ccc)*bspz(j-1,i))*km1_rr
+
+        End Do
+
+        bspx(1,i)=bspx(1,i)*rix0*km1_rr
+        bspy(1,i)=bspy(1,i)*riy0*km1_rr
+        bspz(1,i)=bspz(1,i)*riz0*km1_rr
+
+! compute the (nospl-3)rd to 1st derivatives
+
+        p = nospl-k
+
+        Do j=1,nospl
+
+           m=Max(0,j-k)
+           n=Min(p,j-1)
+
+           tempx=0.0_wp ; tempy=0.0_wp ; tempz=0.0_wp
+
+           Do r=m,n
+              s     = j - r
+              pcombr= pmo_no(r)*ncombk(p,r)
+
+              tempx = tempx + pcombr*bspx(s,i)
+              tempy = tempy + pcombr*bspy(s,i)
+              tempz = tempz + pcombr*bspz(s,i)
+           End Do
+
+           bsddx(p,j,i)=tempx
+           bsddy(p,j,i)=tempy
+           bsddz(p,j,i)=tempz
+
+        End Do
+
+     End Do
+
+! Now compute B-splines for order nospl at k points where
+! (0<u<nospl)
+
+     k=nospl
+
+     bspx(k,i)=0.0_wp
+     bspy(k,i)=0.0_wp
+     bspz(k,i)=0.0_wp
+
+     k_r   =real_no(k)
+     km1_rr=inv_no(k-1)
+
+     Do j=k,2,-1
+
+! B-splines with order nospl at k-1 points
+
+        jm1_r=real_no(j-1)
+
+        aaa=rix0+jm1_r
+        bbb=riy0+jm1_r
+        ccc=riz0+jm1_r
+
+        bspx(j,i)=(aaa*bspx(j,i)+(k_r-aaa)*bspx(j-1,i))*km1_rr
+        bspy(j,i)=(bbb*bspy(j,i)+(k_r-bbb)*bspy(j-1,i))*km1_rr
+        bspz(j,i)=(ccc*bspz(j,i)+(k_r-ccc)*bspz(j-1,i))*km1_rr
+
+     End Do
+
+     bspx(1,i)=bspx(1,i)*rix0*km1_rr
+     bspy(1,i)=bspy(1,i)*riy0*km1_rr
+     bspz(1,i)=bspz(1,i)*riz0*km1_rr
+
+! Now the zeroth derivatives
+
+     bsddx(0,:,i)=bspx(:,i)
+     bsddy(0,:,i)=bspy(:,i)
+     bsddz(0,:,i)=bspz(:,i)
+
+  End Do
+
+  Deallocate (real_no,inv_no,pmo_no, Stat=fail )
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'bspgen_mpl deallocation failure, node: ', idnode
+     Call error(0)
+  End If
+
+End Subroutine bspgen_mpl
+
+Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! Function to compute arbitrary derivatives of the product of three
+! b-splines for use with multipolear interactions
+!
+! copyright - daresbury laboratory
+! author    - h.a.boateng april 2014
+! amended   - i.t.todorov march 2015
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+  Use setup_module
+  Use config_module,     Only : imcon
+  Use multipoles_module, Only : ncombk
+
+  Implicit None
+
+  Real( Kind = wp ) :: Dtpbsp
+
+  Integer,                                 Intent( In   ) :: s1,s2,s3
+  Real( Kind = wp ),                       Intent( In   ) :: rcell(9)
+  Real( Kind = wp ), Dimension( 0:mxspl ), Intent( In   ) :: bsddx,bsddy,bsddz
+
+  Real( Kind = wp ) :: tx,ty,tz,sx,sy,sz
+  Real( Kind = wp ) :: ka11,ka12,ka13,kb21,kb22,kb23,kc31,kc32,kc33
+  Integer           :: i,j,k,j1,j2,j3,k1,k2,k3,jj,kk,sk,sk3,sk2,sk1
+
+  Dtpbsp = 0.0_wp
+
+  ka11 = Real(kmaxa,wp)*rcell(1)
+  ka12 = Real(kmaxa,wp)*rcell(4)
+  ka13 = Real(kmaxa,wp)*rcell(7)
+  kb21 = Real(kmaxb,wp)*rcell(2)
+  kb22 = Real(kmaxb,wp)*rcell(5)
+  kb23 = Real(kmaxb,wp)*rcell(8)
+  kc31 = Real(kmaxc,wp)*rcell(3)
+  kc32 = Real(kmaxc,wp)*rcell(6)
+  kc33 = Real(kmaxc,wp)*rcell(9)
+
+! Typically, the box is orthogonal => only diagonals-ka11,kb22,kc33-are non-zero
+
+  If (imcon /= 3) Then
+
+     Dtpbsp = ka11**s1 * kb22**s2 * kc33**s3 * bsddx(s1) * bsddy(s2) * bsddz(s3)
+
+  Else
+
+     tz = 1.0_wp
+     Do k3 = 0, s3
+        ty = tz * ncombk(s3,k3); sk3=s3-k3
+
+        Do k2 = 0, s2
+           tx = ty * ncombk(s2,k2); sk2=s2-k2
+
+           Do k1 = 0, s1
+              kk = k1+k2+k3; sk1=s1-k1; sk=sk1+sk2+sk3
+
+              sz = tx * ncombk(s1,k1)*bsddx(kk)
+
+              Do j3 = 0, sk3
+                 sy = sz * ncombk(sk3,j3)*kc33**(sk3-j3)
+
+                 Do j2 = 0, sk2
+                    sx = sy * ncombk(sk2,j2)*kc32**(sk2-j2)
+
+                    Do j1 = 0, sk1
+                       jj = j1+j2+j3
+
+                       Dtpbsp = Dtpbsp + sx * kc31**(sk1-j1) * ncombk(sk1,j1)*bsddy(jj)*bsddz(sk-jj)
+
+                       sx=sx*kb21
+                    End Do
+
+                    sy=sy*kb22
+                 End Do
+
+                 sz=sz*kb23
+              End Do
+
+              tx=tx*ka11
+           End Do
+
+           ty=ty*ka12
+        End Do
+
+        tz=tz*ka13
+     End Do
+
+  End If
+
+End Function Dtpbsp
 
 Subroutine spl_cexp(ndiv1,ndiv2,ndiv3,ww1,ww2,ww3)
 
