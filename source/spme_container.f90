@@ -233,9 +233,9 @@ Subroutine bspgen_mpl(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsddx,bsddy,bsddz)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,      Only : idnode
+  Use comms_module,  Only : idnode
   Use setup_module
-  Use multipoles_module, Only : ncombk
+!  Use mpoles_module, Only : ncombk
 
   Implicit None
 
@@ -246,7 +246,7 @@ Subroutine bspgen_mpl(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsddx,bsddy,bsddz)
   Real( Kind = wp ), Dimension( 0:mxspl , 1:mxspl , 1:mxatms ), Intent(   Out ) :: bsddx,bsddy,bsddz
 
   Integer           :: fail,i,j,k,m,n,p,r,s
-  Real( Kind = wp ) :: aaa,bbb,ccc, rix0,riy0,riz0, jm1_r,k_r,km1_rr
+  Real( Kind = wp ) :: aaa,bbb,ccc, rix0,riy0,riz0, jm1_r,k_r,km1_rr,ncombk(0:mxspl,0:mxspl) = 0.0_wp
   Real( Kind = wp ) :: tmp,tempx,tempy,tempz,pcombr
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: real_no, inv_no, pmo_no
@@ -436,8 +436,8 @@ Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz)
 
   Use kinds_f90
   Use setup_module
-  Use config_module,     Only : imcon
-  Use multipoles_module, Only : ncombk
+  Use config_module, Only : imcon
+!  Use mpoles_module, Only : ncombk
 
   Implicit None
 
@@ -447,7 +447,7 @@ Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz)
   Real( Kind = wp ),                       Intent( In   ) :: rcell(9)
   Real( Kind = wp ), Dimension( 0:mxspl ), Intent( In   ) :: bsddx,bsddy,bsddz
 
-  Real( Kind = wp ) :: tx,ty,tz,sx,sy,sz
+  Real( Kind = wp ) :: tx,ty,tz,sx,sy,sz,ncombk(0:mxspl,0:mxspl) = 0.0_wp
   Real( Kind = wp ) :: ka11,ka12,ka13,kb21,kb22,kb23,kc31,kc32,kc33
   Integer           :: i,j,k,j1,j2,j3,k1,k2,k3,jj,kk,sk,sk3,sk2,sk1
 
