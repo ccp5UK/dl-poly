@@ -27,7 +27,7 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2014
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -395,7 +395,7 @@ Subroutine two_body_forces                        &
 
 ! Refresh all Ewald k-space contributions but the non-zero system charge
 
-        Call ewald_refresh(engcpe_rc,vircpe_rc,engcpe_ex,vircpe_ex,engcpe_fr,vircpe_fr,stress)
+        Call ewald_refresh(engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stress)
 
      End If
 
