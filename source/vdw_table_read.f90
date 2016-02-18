@@ -27,7 +27,7 @@ Subroutine vdw_table_read(rvdw)
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
   Character( Len = 8   ) :: atom1,atom2
-  Integer                :: fail,ngrid,katom1,katom2,ivdw,jtpatm,keyvdw,i,j
+  Integer                :: fail,ngrid,katom1,katom2,ivdw,jtpatm,keyvdw,i,j,l
   Real( Kind = wp )      :: delpot,cutpot,dlrpot,rdr,rrr,ppp,vk,vk1,vk2,t,t1,t2
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
