@@ -10,8 +10,8 @@ Module kim_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - r.s.elliott feb 2014; nov 2014
-! contrib   - h.boateng & i.t.todorov 2014
+! author    - r.s.elliott march 2015
+! contrib   - h.boateng & i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,7 +27,7 @@ Module kim_module
 
   Implicit None
 
-  Character( Len = 125 ), Save :: kim  = ' '      ! KIM IM type for dl_poly
+  Character( Len = 200 ), Save :: kim  = ' '      ! KIM IM type for dl_poly
   Real( Kind = wp ),      Save :: rkim = 0.0_wp   ! KIM cutoff for dl_poly
   Integer,                Save :: idhalo(0:2,1:6) ! KIM halo indicator
 
@@ -52,7 +52,7 @@ Module kim_module
 
 Contains
 
-  Subroutine kim_cutoff(model_name,cutoff)
+  Subroutine kim_cutoff(num_types,model_types,model_name,cutoff)
 
 !-------------------------------------------------------------------------------
 !
@@ -64,15 +64,17 @@ Contains
 
     Implicit None
 
-    Character( Len = * ), Intent( In    ) :: model_name
-    Real( Kind = wp ),    Intent(   Out ) :: cutoff
+    Integer( Kind = c_int ), Intent( In    ) :: num_types
+    Character( Len = * ),    Intent( In    ) :: model_types(num_types)
+    Character( Len = * ),    Intent( In    ) :: model_name
+    Real( Kind = wp ),       Intent(   Out ) :: cutoff
 
     Integer( Kind = c_int )          :: ier, idum
     Real( Kind = c_double ), Pointer :: model_cutoff; Type(c_ptr) :: pcut
 
     ier = KIM_STATUS_OK
 
-    ier = kim_basic_init(Trim(model_name))
+    ier = kim_basic_init(num_types, model_types, Trim(model_name))
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_basic_init", ier)
@@ -122,7 +124,7 @@ Contains
 
   End Subroutine  kim_cutoff
 
-  Subroutine kim_setup(model_name)
+  Subroutine kim_setup(num_types, model_types, model_name)
 
 !-------------------------------------------------------------------------------
 !
@@ -134,7 +136,9 @@ Contains
 
     Implicit None
 
-    Character(Len = *), Intent( In    )  :: model_name
+    Character(Len = *),      Intent( In    ) :: model_name
+    Integer( Kind = c_int ), Intent( In    ) :: num_types
+    Character( Len = * ),    Intent( In    ) :: model_types(num_types)
 
     Integer( Kind = c_int ) :: ier,idum
     Integer                 :: fail,i,limit
@@ -147,7 +151,7 @@ Contains
 
     ier = KIM_STATUS_OK
 
-    ier = kim_basic_init(Trim(model_name))
+    ier = kim_basic_init(num_types, model_types, Trim(model_name))
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_basic_init", ier)
@@ -428,7 +432,7 @@ Contains
 
     Real( Kind = c_double ), Intent( In    ) :: forces(:,:)
 
-    Integer :: i,jdnode,kdnode,j,jj,imove,jmove
+    Integer :: i,jdnode,kdnode,j,jj,k,imove,jmove
     Integer :: local_index  ! function defined in numeric_container.f90
 
     Do i=1,6
@@ -473,12 +477,14 @@ Contains
           If (jmove > 0) Call MPI_IRECV(rev_comm_buffer(iblock+1),jmove,wp_mpi,kdnode,Export_tag,dlp_comm_world,request,ierr)
           If (imove > 0) Call MPI_SEND(rev_comm_buffer(1),imove,wp_mpi,jdnode,Export_tag,dlp_comm_world,ierr)
           If (jmove > 0) Call MPI_WAIT(request,status,ierr)
+       Else
+          jmove=imove
        End If
 
 ! unpack if need be
 
-       j=Merge(iblock,0,mxnode > 1)
-       Do i=1,jmove/add
+       k=Merge(iblock,0,mxnode > 1)
+       Do k=1,jmove/iadd
           jj=local_index(Nint(rev_comm_buffer(j+4)),nlast,lsi,lsa)
 
           fxx(jj)=fxx(jj)+rev_comm_buffer(j+1)
@@ -516,7 +522,7 @@ Contains
     Integer( Kind = c_int ), Save    :: iterVal = 0
     Integer( Kind = c_int )          :: N
     Integer( Kind = c_int )          :: atomToReturn
-    Integer( Kind = c_int ), Pointer :: numberOfParticles; Type(c_ptr) :: pnAtoms
+    Integer( Kind = c_int ), Pointer :: numberOfParticles; Type( Kind = c_ptr ) :: pnAtoms
     Integer( Kind = c_int )          :: ier, idum
 
 ! unpack number of particles
@@ -601,7 +607,7 @@ Contains
 
   End Function get_neigh
 
-  Subroutine Write_KIM_descriptor(NBC_method, max_types, model_types, num_types, &
+  Subroutine Write_KIM_descriptor(NBC_method, num_types, model_types, &
                                   kim_descriptor, ier)
 
 !-------------------------------------------------------------------------------
@@ -614,8 +620,8 @@ Contains
     Implicit None
 
     Character( Len = KIM_KEY_STRING_LENGTH ), Intent( In    ) :: NBC_method(:)
-    Integer( Kind = c_int ),                  Intent( In    ) :: max_types
-    Character( Len = * ),                     Intent( In    ) :: model_types(max_types)
+    Integer( Kind = c_int ),                  Intent( In    ) :: num_types
+    Character( Len = * ),                     Intent( In    ) :: model_types(num_types)
     Integer( Kind = c_int ),                  Intent( In    ) :: num_types
     Character( Len = 10000 ),                 Intent(   Out ) :: kim_descriptor
     Integer( Kind = c_int ),                  Intent(   Out ) :: ier
@@ -711,19 +717,19 @@ Contains
      divider                                                                      // cr // &
      'MODEL_INPUT:'                                                               // cr // &
      '# Name                      Type         Unit       Shape              requirements' // cr // &
-     'numberOfParticles           Integer      None       []'                     // cr // &
+     'numberOfParticles           integer      None       []'                     // cr // &
                                                                                      cr // &
-     'numberOfSpecies             Integer      None       []'                     // cr // &
+     'numberOfSpecies             integer      None       []'                     // cr // &
                                                                                      cr // &
-     'particleSpecies             Integer      None       [numberOfParticles]'    // cr // &
+     'particleSpecies             integer      None       [numberOfParticles]'    // cr // &
                                                                                      cr // &
      'coordinates                 double       length     [numberOfParticles,3]'  // cr // &
                                                                                      cr // &
      'get_neigh                   method       None       []'                     // cr // &
                                                                                      cr // &
-     'neighObject                 Pointer      None       []'                     // cr // &
+     'neighObject                 pointer      None       []'                     // cr // &
                                                                                      cr // &
-     'numberContributingParticles Integer      None       []'                     // cr // &
+     'numberContributingParticles integer      None       []'                     // cr // &
                                                                                      cr // &
      divider                                                                      // cr // &
      'MODEL_OUTPUT:'                                                              // cr // &
@@ -745,7 +751,7 @@ Contains
 
   End Subroutine Write_KIM_descriptor
 
-  Function kim_basic_init(model_name)
+  Function kim_basic_init(num_types, model_types, model_name)
 
 !-------------------------------------------------------------------------------
 !
@@ -757,12 +763,13 @@ Contains
 
     Implicit None
 
-    Integer( Kind = c_int )               :: kim_basic_init
+    Integer( Kind = c_int )                  :: kim_basic_init
 
-    Character( Len = * ), Intent( In    ) :: model_name
+    Integer( Kind = c_int ), Intent( In    ) :: num_types
+    Character( Len = * ),    Intent( In    ) :: model_types(num_types)
+    Character( Len = * ),    Intent( In    ) :: model_name
 
     Integer :: ier, idum
-    Integer, Parameter :: max_types = 20
     Character( Len = 10000 ) :: kim_descriptor
     Character( Len = KIM_KEY_STRING_LENGTH ) :: NBC_Method(4)
 
@@ -777,7 +784,7 @@ Contains
 
 ! Here we assume that all particle types interact via the KIM Model.
 
-    Call Write_KIM_descriptor(NBC_Method, mxsite, unqatm, ntpatm, &
+    Call Write_KIM_descriptor(NBC_Method, num_types, model_types, &
                               kim_descriptor, ier)
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
