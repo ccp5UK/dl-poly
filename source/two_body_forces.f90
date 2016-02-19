@@ -35,7 +35,7 @@ Subroutine two_body_forces                        &
   Use comms_module,  Only : idnode,mxnode,gsum
   Use setup_module
   Use config_module, Only : cell,volm,sumchg,natms,list,xxx,yyy,zzz
-  Use vnl_module,    Only : l_vnl
+  Use vnl_module,    Only : l_vnl 
   Use ewald_module
   Use vdw_module,    Only : ntpvdw
   Use metal_module,  Only : ntpmet
