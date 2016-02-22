@@ -27,15 +27,16 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2015
+! author    - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
   Use setup_module
+  Use site_module,    Only : ntpatm,unqatm
   Use config_module, Only : cell,volm,sumchg,natms,list,xxx,yyy,zzz
-  Use vnl_module,    Only : l_vnl 
+  Use vnl_module,    Only : l_vnl
   Use ewald_module
   Use vdw_module,    Only : ntpvdw
   Use metal_module,  Only : ntpmet
@@ -133,7 +134,7 @@ Subroutine two_body_forces                        &
 ! Calculate all contributions from KIM
 
   If (kim /= ' ') Then
-     Call kim_setup(kim)
+     Call kim_setup(ntpatm,unqatm,kim)
      Call kim_forces(engkim,virkim,stress)
      Call kim_cleanup()
   End If

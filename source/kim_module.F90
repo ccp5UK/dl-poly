@@ -11,7 +11,7 @@ Module kim_module
 !
 ! copyright - daresbury laboratory
 ! author    - r.s.elliott march 2015
-! contrib   - h.boateng & i.t.todorov march 2014
+! contrib   - h.boateng & i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -124,7 +124,7 @@ Contains
 
   End Subroutine  kim_cutoff
 
-  Subroutine kim_setup(num_types, model_types, model_name)
+  Subroutine kim_setup(num_types,model_types,model_name)
 
 !-------------------------------------------------------------------------------
 !

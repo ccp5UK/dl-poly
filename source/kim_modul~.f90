@@ -5,7 +5,7 @@ Module kim_module
 ! dl_poly_4 module implementing the kim dummy
 
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov march 2015
+! amended   - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -36,11 +36,13 @@ Contains
 
   End Subroutine kim_cutoff
 
-  Subroutine kim_setup(model_name)
+  Subroutine kim_setup(num_types,model_types,model_name)
 
     Implicit None
 
-    Character(Len = *), Intent( In    ) :: model_name
+    Integer,              Intent( In    ) :: num_types
+    Character( Len = * ), Intent( In    ) :: model_types(1:num_types)
+    Character( Len = * ), Intent( In    ) :: model_name
 
     Call kim_message()
 

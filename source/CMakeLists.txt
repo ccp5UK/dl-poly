@@ -1,7 +1,7 @@
 include_directories(${CMAKE_BINARY_DIR}/source)
 include_directories(VV)
 include_directories(LFV)
-set(dlpoly_SRCS 
+set(dlpoly_SRCS
 angles_compute.f90
 angles_forces.f90
 angles_module.f90
@@ -44,9 +44,9 @@ dihedrals_compute.f90
 dihedrals_forces.f90
 dihedrals_module.f90
 dihedrals_table_read.f90
-dpd_module.f90  
-dpd_thermostat.f90  
-dpd_v_export.f90  
+dpd_module.f90
+dpd_thermostat.f90
+dpd_v_export.f90
 dpd_v_set_halo.f90
 error.f90
 ewald_excl_forces.f90
@@ -218,7 +218,7 @@ set(plumed_SRCS plumed_module.F90)
 if( NOT WITH_MPI)
   include_directories(${src_dir}/SERIAL)
   add_definitions(-DSERIAL)
-  set(dlpoly_SERIAL_SRCS 
+  set(dlpoly_SERIAL_SRCS
   ${src_dir}/SERIAL/mpi_module.f90
   )
 endif()
