@@ -158,7 +158,7 @@ if(BUILD_TESTING)
   configure_file(${CMAKE_SOURCE_DIR}/cmake/all.xml.cmake Testing/all.xml)
 
   set(dlp "${MPIEXEC} -n ${MPI_NPROCS} ${CMAKE_BINARY_DIR}/bin/${target_name}")
-  foreach(test TEST01 TEST02 TEST03 TEST04)
+  foreach(test TEST01 TEST02 TEST03 TEST04 TEST05 TEST06)
     do_test(${test})
   endforeach()
 else()
