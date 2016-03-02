@@ -1,14 +1,18 @@
-#ifdef KIM
+! This file is generated manually from kim_module.F90 by
+! gfortran -E -P -DKIM kim_module.F90 > kim_module_pre.F90
+
+
+
 #include "KIM_API_status.h"
-#define THIS_FILE_NAME __FILE__
+#define THIS_FILE_NAME "kim_module.F90"
 #define TRUEFALSE(TRUTH) merge(1,0,(TRUTH))
-#endif
+
 
 Module kim_module
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 module declaring global KIM interaction variables and
+! dl_poly_4 module declaring global 1 interaction variables and
 ! arrays
 !
 ! copyright - daresbury laboratory
@@ -19,7 +23,7 @@ Module kim_module
 
   Use, Intrinsic :: iso_c_binding
   Use kinds_f90
-#ifdef KIM
+
   Use KIM_API_F03
   Use domains_module, Only : map
   Use config_module,  Only : natms,nlast,lsi,lsa,ltg,list,lsite, &
@@ -27,15 +31,15 @@ Module kim_module
   Use setup_module,   Only : nrite,mxsite,mxlist,mxatdm,mxbfxp
   Use site_module,    Only : unqatm,ntpatm,sitnam
   Use comms_module
-#endif
+
 
   Implicit None
 
-  Character( Len = 200 ), Save :: kim  = ' '      ! KIM IM type for dl_poly
-  Real( Kind = wp ),      Save :: rkim = 0.0_wp   ! KIM cutoff for dl_poly
-  Integer,                Save :: idhalo(0:2,1:6) ! KIM halo indicator
+  Character( Len = 200 ), Save :: kim  = ' '      ! 1 IM type for dl_poly
+  Real( Kind = wp ),      Save :: rkim = 0.0_wp   ! 1 cutoff for dl_poly
+  Integer,                Save :: idhalo(0:2,1:6) ! 1 halo indicator
 
-#ifdef KIM
+
   Type( Kind = c_ptr ),    Save          :: pkim
   Integer( Kind = c_int ), Save, Pointer :: kim_list(:,:)
   Real( Kind = c_double ), Save, Pointer :: kim_Rij(:,:,:)
@@ -46,16 +50,16 @@ Module kim_module
   Integer, Parameter                   :: iadd = 4  ! number of scalars per particle to be sent
   Integer, Save                        :: iblock    ! comm buffer half-size
   Real( Kind = wp ), Save, Allocatable :: rev_comm_buffer(:)  ! comm buffer
-#endif
+
   Public :: kim_cutoff,  &
             kim_setup,   &
             kim_forces,  &
             kim_cleanup
 
-#ifdef KIM
+
   Private :: kim_basic_init, &
              kim_reverse_communication
-#endif
+
 
 Contains
 
@@ -65,7 +69,7 @@ Contains
 !
 ! kim_cutoff
 !
-! This function extracts the cutoff distance for the specified KIM model_name
+! This function extracts the cutoff distance for the specified 1 model_name
 !
 !-------------------------------------------------------------------------------
 
@@ -76,7 +80,7 @@ Contains
     Character( Len = * ),    Intent( In    ) :: model_name
     Real( Kind = wp ),       Intent(   Out ) :: cutoff
 
-#ifdef KIM
+
     Integer( Kind = c_int )          :: ier, idum
     Real( Kind = c_double ), Pointer :: model_cutoff; Type(c_ptr) :: pcut
 
@@ -84,7 +88,7 @@ Contains
 
     ier = kim_basic_init(num_types, model_types, Trim(model_name))
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(87, THIS_FILE_NAME, &
                                    "kim_basic_init", ier)
        Stop
     End If
@@ -93,21 +97,21 @@ Contains
 
     Call kim_api_allocate(pkim, 1, 1, ier)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(96, THIS_FILE_NAME, &
                                    "kim_api_allocate", ier)
        Stop
     End If
 
     ier = kim_api_model_init(pkim)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(103, THIS_FILE_NAME, &
                                    "kim_api_model_init", ier)
        Stop
     End If
 
     pcut = kim_api_get_data(pkim, "cutoff", ier)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(110, THIS_FILE_NAME, &
                                    "kim_api_getm_data", ier)
        Stop
     End If
@@ -117,22 +121,22 @@ Contains
 
     ier = kim_api_model_destroy(pkim)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(120, THIS_FILE_NAME, &
                                    "kim_api_model_destroy", ier)
        Stop
     End If
 
     Call kim_api_free(pkim, ier)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(127, THIS_FILE_NAME, &
                                    "kim_api_free", ier)
        Stop
     End If
     pkim = c_null_ptr
-#else
-    cutoff = 0.0_wp
-    Call kim_message()
-#endif
+
+
+
+
   End Subroutine  kim_cutoff
 
   Subroutine kim_setup(num_types,model_types,model_name)
@@ -141,7 +145,7 @@ Contains
 !
 ! kim_setup
 !
-! This function creates the interface via the KIM API to KIM model_name
+! This function creates the interface via the 1 API to 1 model_name
 !
 !-------------------------------------------------------------------------------
 
@@ -151,7 +155,7 @@ Contains
     Integer( Kind = c_int ), Intent( In    ) :: num_types
     Character( Len = * ),    Intent( In    ) :: model_types(1:num_types)
 
-#ifdef KIM
+
     Integer( Kind = c_int ) :: ier,idum
     Integer                 :: fail,i,limit
 
@@ -165,14 +169,14 @@ Contains
 
     ier = kim_basic_init(num_types, model_types, Trim(model_name))
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(168, THIS_FILE_NAME, &
                                    "kim_basic_init", ier)
        Stop
     End If
 
     ier = kim_api_get_NBC_method(pkim, ActiveNBC_Method)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(175, THIS_FILE_NAME, &
                                    "kim_api_get_NBC_method", ier)
        Stop
     End If
@@ -220,14 +224,14 @@ Contains
 
     Call kim_api_allocate(pkim, nlast, 1, ier)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(223, THIS_FILE_NAME, &
                                    "kim_api_allocate", ier)
        Stop
     End If
 
     ier = kim_api_model_init(pkim)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(230, THIS_FILE_NAME, &
                                    "kim_api_model_init", ier)
        Stop
     End If
@@ -238,7 +242,7 @@ Contains
       "numberContributingParticles", pNCP, TRUEFALSE(HalfList), &
       "particleSpecies",             pPT,  1)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(241, THIS_FILE_NAME, &
                                    "kim_api_getm_data", ier)
        Stop
     End If
@@ -255,7 +259,7 @@ Contains
        particleSpecies(i) = kim_api_get_species_code(pkim, &
                                                      Trim(sitnam(lsite(i))), ier)
        If (ier < KIM_STATUS_OK) Then
-          idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+          idum = kim_api_report_error(258, THIS_FILE_NAME, &
                                       "kim_api_get_partcl_type_code", ier)
           Stop
        End If
@@ -263,13 +267,13 @@ Contains
 
     ier = kim_api_set_method(pkim, "get_neigh", 1, c_funloc(get_neigh))
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(266, THIS_FILE_NAME, &
                                    "kim_api_set_method", ier)
        Stop
     End If
-#else
-    Call kim_message()
-#endif
+
+
+
   End Subroutine kim_setup
 
   Subroutine kim_cleanup()
@@ -278,13 +282,13 @@ Contains
 !
 ! kim_cleanup
 !
-! This function releases resources and cleans up the KIM API interface
+! This function releases resources and cleans up the 1 API interface
 !
 !-------------------------------------------------------------------------------
 
     Implicit None
 
-#ifdef KIM
+
     Integer                 :: fail
     Integer( Kind = c_int ) :: ier, idum
 
@@ -313,21 +317,21 @@ Contains
 
     ier = kim_api_model_destroy(pkim)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(316, THIS_FILE_NAME, &
                                    "kim_api_model_destroy", ier)
        Stop
     End If
 
     Call kim_api_free(pkim, ier)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(323, THIS_FILE_NAME, &
                                    "kim_api_free", ier)
        Stop
     End If
     pkim = c_null_ptr
-#else
-    Call kim_message()
-#endif
+
+
+
   End Subroutine kim_cleanup
 
   Subroutine kim_forces(engkim,virkim,stress)
@@ -336,8 +340,8 @@ Contains
 !
 ! kim_forces
 !
-! This function updates the data needed by the KIM Model and then asks for
-! the energy, forces, and virial from the KIM Model, distributes force
+! This function updates the data needed by the 1 Model and then asks for
+! the energy, forces, and virial from the 1 Model, distributes force
 ! contributions appropriately to all the processors and updates virial
 ! and pressure values.
 !
@@ -349,7 +353,7 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: virkim
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
 
-#ifdef KIM
+
     Integer( Kind = c_int ) :: i,j,k
     Integer( Kind = c_int ) :: ier,idum
 
@@ -365,7 +369,7 @@ Contains
                            "forces",      pF,     1, &
                            "virial",      pV,     1)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(368, THIS_FILE_NAME, &
                                    "kim_api_getm_data", ier)
        Stop
     End If
@@ -403,7 +407,7 @@ Contains
 
     ier = kim_api_model_compute(pkim)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(406, THIS_FILE_NAME, &
                                    "kim_api_compute", ier)
        Stop
     End If
@@ -432,16 +436,16 @@ Contains
     stress(9) = stress(9) - Real(virial(3), wp)
 
     virkim = virkim + Real(virial(1)+virial(2)+virial(3), wp)
-#else
-    engkim = 0.0_wp
-    virkim = 0.0_wp
-    stress = 0.0_wp
 
-    Call kim_message()
-#endif
+
+
+
+
+
+
   End Subroutine kim_forces
 
-#ifdef KIM
+
   Subroutine kim_reverse_communication(forces)
 
 !-------------------------------------------------------------------------------
@@ -554,7 +558,7 @@ Contains
 
     pnAtoms = kim_api_get_data(pkim, "numberOfParticles", ier)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(557, THIS_FILE_NAME, &
                                    "kim_api_get_data", ier)
        Stop
     End If
@@ -580,7 +584,7 @@ Contains
              atomToReturn = iterVal
           End If
        Else
-          idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+          idum = kim_api_report_error(583, THIS_FILE_NAME, &
                                       "Invalid request in get_neigh", &
                                       KIM_STATUS_NEIGH_INVALID_REQUEST)
           get_neigh = KIM_STATUS_NEIGH_INVALID_REQUEST
@@ -588,7 +592,7 @@ Contains
        End If
     Else If (mode == 1) Then ! locator mode
        If (request > N .or. request < 1) Then
-          idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+          idum = kim_api_report_error(591, THIS_FILE_NAME, &
                                       "Invalid atom ID in get_neigh", &
                                       KIM_STATUS_PARTICLE_INVALID_ID)
           get_neigh = KIM_STATUS_PARTICLE_INVALID_ID
@@ -597,7 +601,7 @@ Contains
           atomToReturn = request
        End If
     Else ! not iterator or locator mode
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(600, THIS_FILE_NAME, &
                                    "Invalid mode in get_neigh", &
                                    KIM_STATUS_NEIGH_INVALID_MODE)
        get_neigh = KIM_STATUS_NEIGH_INVALID_MODE
@@ -637,7 +641,7 @@ Contains
 
 !-------------------------------------------------------------------------------
 !
-!  Write KIM descriptor file for MiniMol for given NBC and set of
+!  Write 1 descriptor file for MiniMol for given NBC and set of
 !  support species types
 !
 !-------------------------------------------------------------------------------
@@ -807,38 +811,29 @@ Contains
 
     ier = KIM_STATUS_OK
 
-! Here we assume that all particle types interact via the KIM Model.
+! Here we assume that all particle types interact via the 1 Model.
 
     Call Write_KIM_descriptor(NBC_Method, num_types, model_types, &
                               kim_descriptor, ier)
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(815, THIS_FILE_NAME, &
                                    "Write_KIM_descriptor", ier)
        Stop
     End If
 
     ier = kim_api_string_init(pkim, Trim(kim_descriptor), Trim(model_name))
     If (ier < KIM_STATUS_OK) Then
-       idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
+       idum = kim_api_report_error(822, THIS_FILE_NAME, &
                                    "kim_api_string_init", ier)
        Stop
     End If
 
     kim_basic_init = ier
   End Function kim_basic_init
-#endif
+
 
   Subroutine kim_message()
 
-#ifndef KIM
-    Use comms_module, Only : idnode
-    Use setup_module, Only : nrite
-
-    Implicit None
-
-    If (idnode == 0) Write(nrite,'(1x,a)') "No openKIM crosscompiled"
-    Call error(0)
-#endif
   End Subroutine kim_message
 
 End Module kim_module

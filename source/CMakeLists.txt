@@ -197,19 +197,15 @@ nvt_e0_scl.f90
 nvt_e1_scl.f90
 )
 if(WITH_NETCDF)
-  set(netcdf_SRCS
-  netcdf_module.f90
-  )
-else()
-  set(netcdf_SRCS
-  netcdf_modul~.f90
-  )
+  add_definitions("-DNETCDF")
 endif()
+set(netcdf_SRCS netcdf_module.F90)
+
 if(WITH_KIM)
-  set(kim_SRCS kim_module.F90)
-else()
-  set(kim_SRCS kim_modul~.f90)
+  add_definitions("-DKIM")
 endif()
+set(kim_SRCS kim_module.F90)
+
 if(WITH_PLUMED)
   add_definitions("-DPLUMED")
 endif()

@@ -32,7 +32,7 @@ OBJ_MOD = \
 	site_module.o config_module.o vnl_module.o \
 	defects_module.o defects1_module.o \
 	dpd_module.o vdw_module.o metal_module.o tersoff_module.o \
-	three_body_module.o four_body_module.o kim_module.o \
+	three_body_module.o four_body_module.o kim_module_pre.o \
 	rdf_module.o z_density_module.o \
 	core_shell_module.o \
 	constraints_module.o pmf_module.o \
