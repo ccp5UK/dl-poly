@@ -31,7 +31,8 @@ Program dl_poly
 ! dl_poly_4 is based on dl_poly_3 by i.t.todorov & w.smith.
 !
 ! copyright - daresbury laboratory
-! authors   - i.t.todorov & w.smith 2016
+! authors   - i.t.todorov & w.smith march 2016
+! contrib   - i.j.bush, h.a.boateng, a.m.elena
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

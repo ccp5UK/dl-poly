@@ -31,7 +31,7 @@ Subroutine rdf_collect(iatm,rcut,rrt)
 
   rdelr= Real(mxgrdf,wp)/rcut
 
-! global identity and type f iatm
+! global identity and type of iatm
 
   idi=ltg(iatm)
   ai=ltype(iatm)

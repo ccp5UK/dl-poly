@@ -21,7 +21,7 @@ Subroutine vdw_generate(rvdw)
 
   Integer           :: i,ivdw,keypot,n,m
   Real( Kind = wp ) :: dlrpot,r,r0,r0rn,r0rm,r_6,sor6,  &
-                       rho,a,b,c,d,e0,k,nr,mr,rc,sig,eps, &
+                       rho,a,b,c,d,e0,kk,nr,mr,rc,sig,eps, &
                        alpha,beta,t1,t2,t3,t
 
 ! allocate arrays for tabulating
@@ -297,21 +297,21 @@ Subroutine vdw_generate(rvdw)
 
         e0=prmvdw(1,ivdw)
         r0=prmvdw(2,ivdw)
-        k=prmvdw(3,ivdw)
+        kk=prmvdw(3,ivdw)
 
         Do i=0,mxgvdw
            r=Real(i,wp)*dlrpot
 
-           t1=Exp(-k*(r-r0))
+           t1=Exp(-kk*(r-r0))
 
            vvdw(i,ivdw)=e0*((1.0_wp-t1)**2-1.0_wp)
-           gvdw(i,ivdw)=-2.0_wp*r*e0*k*(1.0_wp-t1)*t1
+           gvdw(i,ivdw)=-2.0_wp*r*e0*kk*(1.0_wp-t1)*t1
         End Do
-        t1=Exp(+k*r0)
-        gvdw(0,ivdw)=-2.0_wp*e0*k*(1.0_wp-t1)*t1
+        t1=Exp(+kk*r0)
+        gvdw(0,ivdw)=-2.0_wp*e0*kk*(1.0_wp-t1)*t1
 
         If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=r0-log(2.0_wp)/k
+           sigeps(1,ivdw)=r0-log(2.0_wp)/kk
            sigeps(2,ivdw)=e0
         End If
 

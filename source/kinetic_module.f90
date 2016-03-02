@@ -733,7 +733,7 @@ Contains
              fzz(i) = fzz(i)*scale
           End If
 
-! accummulate forces - to check on momentum conservation
+! accumulate forces - to check on momentum conservation
 
           fcom(1) = fcom(1) + fxx(i)
           fcom(2) = fcom(2) + fyy(i)

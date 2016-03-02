@@ -72,9 +72,9 @@ Subroutine set_halo_particles(imcon,rlnk,keyfce)
 
 ! I.e. take the smaller width in reduced space!!!
 
-     ecwx=Min(cwx,ecwx)
-     ecwy=Min(cwy,ecwy)
-     ecwz=Min(cwz,ecwz)
+     ecwx=Max(cwx,ecwx)
+     ecwy=Max(cwy,ecwy)
+     ecwz=Max(cwz,ecwz)
   Else
      ecwx=cwx
      ecwy=cwy

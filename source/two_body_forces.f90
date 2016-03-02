@@ -27,13 +27,14 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2014
+! author    - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
   Use setup_module
+  Use site_module,   Only : ntpatm,unqatm
   Use config_module, Only : cell,volm,sumchg,natms,list,xxx,yyy,zzz
   Use vnl_module,    Only : l_vnl
   Use ewald_module
@@ -133,7 +134,7 @@ Subroutine two_body_forces                        &
 ! Calculate all contributions from KIM
 
   If (kim /= ' ') Then
-     Call kim_setup(kim)
+     Call kim_setup(ntpatm,unqatm,kim)
      Call kim_forces(engkim,virkim,stress)
      Call kim_cleanup()
   End If
@@ -146,9 +147,7 @@ Subroutine two_body_forces                        &
 
 ! calculate local density in metals
 
-     Call metal_ld_compute          &
-           (imcon,rmet,elrcm,vlrcm, &
-           engden,virden,stress)
+     Call metal_ld_compute(imcon,rmet,elrcm,vlrcm,engden,virden,stress)
 
   End If
 
@@ -187,8 +186,7 @@ Subroutine two_body_forces                        &
 ! calculate metal forces and potential
 
      If (ntpmet > 0) Then
-        Call metal_forces &
-       (i,rmet,xxt,yyt,zzt,rrt,engacc,viracc,stress,safe)
+        Call metal_forces(i,rmet,xxt,yyt,zzt,rrt,engacc,viracc,stress,safe)
 
         engmet=engmet+engacc
         virmet=virmet+viracc
@@ -197,8 +195,7 @@ Subroutine two_body_forces                        &
 ! calculate short-range force and potential terms
 
      If (ntpvdw > 0) Then
-        Call vdw_forces &
-       (i,rvdw,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+        Call vdw_forces(i,rvdw,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
         engvdw=engvdw+engacc
         virvdw=virvdw+viracc
@@ -212,8 +209,7 @@ Subroutine two_body_forces                        &
 
 ! calculate coulombic forces, Ewald sum - real space contribution
 
-        Call ewald_real_forces &
-       (i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+        Call ewald_real_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
         engcpe_rl=engcpe_rl+engacc
         vircpe_rl=vircpe_rl+viracc
@@ -222,8 +218,7 @@ Subroutine two_body_forces                        &
 
 ! distance dependant dielectric potential
 
-        Call coul_dddp_forces &
-       (i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+        Call coul_dddp_forces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
         engcpe_rl=engcpe_rl+engacc
         vircpe_rl=vircpe_rl+viracc
@@ -232,8 +227,7 @@ Subroutine two_body_forces                        &
 
 ! coulombic 1/r potential with no truncation or damping
 
-        Call coul_cp_forces &
-       (i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+        Call coul_cp_forces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
         engcpe_rl=engcpe_rl+engacc
         vircpe_rl=vircpe_rl+viracc
@@ -242,8 +236,7 @@ Subroutine two_body_forces                        &
 
 ! force-shifted coulomb potentials
 
-        Call coul_fscp_forces &
-       (i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+        Call coul_fscp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
         engcpe_rl=engcpe_rl+engacc
         vircpe_rl=vircpe_rl+viracc
@@ -252,8 +245,7 @@ Subroutine two_body_forces                        &
 
 ! reaction field potential
 
-        Call coul_rfp_forces &
-       (i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+        Call coul_rfp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
         engcpe_rl=engcpe_rl+engacc
         vircpe_rl=vircpe_rl+viracc
@@ -274,10 +266,9 @@ Subroutine two_body_forces                        &
 
 ! In the case of excluded interactions
 ! accumulate further radial distribution functions and/or
-! calculate Ewald corrections due to long-range exclusions
-! if (keyfce == 2 .and. l_fce)
+! calculate Ewald corrections due to short-range exclusions
 
-  If ( lbook .and. (l_do_rdf .or. (keyfce == 2 .and. l_fce)) ) Then
+  If (lbook .and. (l_do_rdf .or. keyfce == 2)) Then
 
 ! outer loop over atoms
 
@@ -300,7 +291,7 @@ Subroutine two_body_forces                        &
 
 ! periodic boundary conditions
 
-           Call images(imcon,cell,limit,xxt,yyt,zzt)
+!          Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
@@ -314,9 +305,8 @@ Subroutine two_body_forces                        &
 
 ! Ewald corrections
 
-           If (keyfce == 2 .and. l_fce) Then
-              Call ewald_excl_forces &
-           (i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           If (keyfce == 2) Then
+              Call ewald_excl_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
               engcpe_ex=engcpe_ex+engacc
               vircpe_ex=vircpe_ex+viracc
@@ -355,7 +345,7 @@ Subroutine two_body_forces                        &
 
 ! periodic boundary conditions
 
-              Call images(imcon,cell,limit,xxt,yyt,zzt)
+!              Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
@@ -388,14 +378,13 @@ Subroutine two_body_forces                        &
 
 ! frozen pairs corrections to coulombic forces
 
-        If (megfrz /= 0) Call ewald_frzn_forces &
-           (imcon,rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
+        If (megfrz /= 0) Call ewald_frzn_forces(imcon,rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
 
      Else
 
-! Refresh all Ewald k-space contributions but the non-zero system charge
+! Refresh all Ewald k-space contributions
 
-        Call ewald_refresh(engcpe_rc,vircpe_rc,engcpe_ex,vircpe_ex,engcpe_fr,vircpe_fr,stress)
+        Call ewald_refresh(engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stress)
 
      End If
 
@@ -434,7 +423,7 @@ Subroutine two_body_forces                        &
      buffer(15) = engcpe_fr
      buffer(16) = vircpe_fr
 
-     Call gsum(buffer(0:14))
+     Call gsum(buffer(0:16))
 
      tmp       = buffer( 0)
      engkim    = buffer( 1)

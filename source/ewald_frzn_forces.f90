@@ -3,8 +3,8 @@ Subroutine ewald_frzn_forces &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for calculating corrections to coulombic forces
-! in a periodic system arising from frozen pairs
+! dl_poly_4 subroutine for calculating corrections to coulombic energy
+! and forces in a periodic system arising from frozen pairs
 !
 ! Note: Forces (as well as velocities) on frozen atoms are zeroed at the
 !       end (and any COM drift removed) but corrections to the stress
@@ -14,15 +14,15 @@ Subroutine ewald_frzn_forces &
 !       ewald_check<-two_body_forces
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2012
+! author    - i.t.todorov december 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use config_module, Only : cell,natms,list,ltg,lfrzn,chge, &
-                            xxx,yyy,zzz,fxx,fyy,fzz
+  Use config_module, Only : cell,natms,list,ltg,lfrzn, &
+                            chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use ewald_module
 
   Implicit None
@@ -40,18 +40,14 @@ Subroutine ewald_frzn_forces &
   Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
 
   Integer           :: fail,i,j,k,ii,jj,idi,nzfr,limit
-  Real( Kind = wp ) :: det,rcell(1:9),xrr,yrr,zrr,rrr,rsq, &
-                       chgprd,erfr,egamma,exp1,tt,         &
-                       fx,fy,fz,xss,yss,zss,               &
+  Real( Kind = wp ) :: scl,det,rcell(1:9),xrr,yrr,zrr,rrr,rsq, &
+                       chgprd,erfr,egamma,exp1,tt,             &
+                       fx,fy,fz,xss,yss,zss,                   &
                        strs1,strs2,strs3,strs5,strs6,strs9
 
   Integer,           Dimension( : ), Allocatable :: l_ind,nz_fr
   Real( Kind = wp ), Dimension( : ), Allocatable :: cfr,xfr,yfr,zfr
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
-
-! image conditions not compliant with DD and link-cell
-
-  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
   If (.not.lf_fce) Then ! All's been done but needs copying
      Do i=1,natms
@@ -110,6 +106,7 @@ Subroutine ewald_frzn_forces &
   If (mxnode > 1) Call gsum(nz_fr)
   nz_fr(0) = Sum(nz_fr(0:idnode)) ! Offset
 
+  scl=r4pie0/epsq
   nzfr = Sum(nz_fr(1:mxnode))     ! Total
   If (nzfr <= 10*mxatms) Then
 
@@ -163,7 +160,7 @@ Subroutine ewald_frzn_forces &
            rsq=xrr**2+yrr**2+zrr**2
 
            rrr=Sqrt(rsq)
-           chgprd=cfr(ii)*cfr(jj)/epsq*r4pie0
+           chgprd=cfr(ii)*cfr(jj)*scl
 
 ! calculate error function and derivative
 
@@ -226,7 +223,7 @@ Subroutine ewald_frzn_forces &
            rsq=xrr**2+yrr**2+zrr**2
 
            rrr=Sqrt(rsq)
-           chgprd=cfr(ii)*cfr(jj)/epsq*r4pie0
+           chgprd=cfr(ii)*cfr(jj)*scl
 
 ! calculate error function and derivative
 
@@ -313,7 +310,7 @@ Subroutine ewald_frzn_forces &
            rsq=xrr**2+yrr**2+zrr**2
 
            rrr=Sqrt(rsq)
-           chgprd=cfr(ii)*cfr(jj)/epsq*r4pie0
+           chgprd=cfr(ii)*cfr(jj)*scl
 
 ! calculate error function and derivative
 
@@ -353,17 +350,17 @@ Subroutine ewald_frzn_forces &
 
 ! calculate potential energy and virial
 
-            engcpe_fr = engcpe_fr - erfr
-            vircpe_fr = vircpe_fr - egamma*rsq
+           engcpe_fr = engcpe_fr - erfr
+           vircpe_fr = vircpe_fr - egamma*rsq
 
 ! calculate stress tensor
 
-            strs1 = strs1 + xrr*fx
-            strs2 = strs2 + xrr*fy
-            strs3 = strs3 + xrr*fz
-            strs5 = strs5 + yrr*fy
-            strs6 = strs6 + yrr*fz
-            strs9 = strs9 + zrr*fz
+           strs1 = strs1 + xrr*fx
+           strs2 = strs2 + xrr*fy
+           strs3 = strs3 + xrr*fz
+           strs5 = strs5 + yrr*fy
+           strs6 = strs6 + yrr*fz
+           strs9 = strs9 + zrr*fz
         End Do
      End Do
 
@@ -403,9 +400,9 @@ Subroutine ewald_frzn_forces &
               zzt(k)=zzz(i)-zzz(j)
            End Do
 
-! periodic boundary conditions
-
-           Call images(imcon,cell,limit,xxt,yyt,zzt)
+! periodic boundary conditions not needed by LC construction
+!
+!           Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
@@ -418,7 +415,7 @@ Subroutine ewald_frzn_forces &
 
               rrr=rrt(k)
               If (Abs(chge(j)) > zero_plus .and. rrr < rcut) Then
-                 chgprd=chge(i)*chge(j)/epsq*r4pie0
+                 chgprd=chge(i)*chge(j)*scl
                  rsq=rrr**2
 
 ! calculate error function and derivative

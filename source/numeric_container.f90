@@ -802,7 +802,7 @@ Subroutine erfcgen(rcut,alpha,mxgele,erc,fer)
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester december 1994
-! amended   - i.t.todorov december 2014
+! amended   - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -842,7 +842,7 @@ Subroutine erfcgen(rcut,alpha,mxgele,erc,fer)
 
 ! extrapolation for grid point 0 at distances close to 0
 
-  erc(0) = 1.0_wp
+  erc(0) = Huge(1.0_wp)
   fer(0) = Huge(1.0_wp+2.0_wp*(alpha/sqrpi))
 
 End Subroutine erfcgen

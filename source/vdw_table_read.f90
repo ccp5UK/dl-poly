@@ -7,7 +7,7 @@ Subroutine vdw_table_read(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1994
-! amended   - i.t.todorov june 2014
+! amended   - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -146,11 +146,11 @@ Subroutine vdw_table_read(rvdw)
 ! read in potential arrays
 
         Do i=1,(ngrid+3)/4
-           l=Min(4,ngrid-(i-1)*4)
+           j=Min(4,ngrid-(i-1)*4)
            If (idnode == 0) Then
-              Read(Unit=ntable, Fmt=*, End=100) (buffer((i-1)*4+j),j=1,l)
+              Read(Unit=ntable, Fmt=*, End=100) buffer((i-1)*4+1:(i-1)*4+j)
            Else
-              buffer((i-1)*4+1:(i-1)*4+l)=0.0_wp
+              buffer((i-1)*4+1:(i-1)*4+j)=0.0_wp
            End If
         End Do
         If (mxnode > 1) Call MPI_BCAST(buffer(1:ngrid), ngrid, wp_mpi, 0, dlp_comm_world, ierr)
@@ -205,11 +205,11 @@ Subroutine vdw_table_read(rvdw)
 ! read in force arrays
 
         Do i=1,(ngrid+3)/4
-           l=Min(4,ngrid-(i-1)*4)
+           j=Min(4,ngrid-(i-1)*4)
            If (idnode == 0) Then
-              Read(Unit=ntable, Fmt=*, End=100) (buffer((i-1)*4+j),j=1,l)
+              Read(Unit=ntable, Fmt=*, End=100) buffer((i-1)*4+1:(i-1)*4+j)
            Else
-              buffer((i-1)*4+1:(i-1)*4+l)=0.0_wp
+              buffer((i-1)*4+1:(i-1)*4+j)=0.0_wp
            End If
         End Do
         If (mxnode > 1) Call MPI_BCAST(buffer(1:ngrid), ngrid, wp_mpi, 0, dlp_comm_world, ierr)

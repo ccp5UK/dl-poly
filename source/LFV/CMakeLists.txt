@@ -1,4 +1,4 @@
-set(dlpoly_LFV_SRCS 
+set(dlpoly_LFV_SRCS
 constraints_shake_lfv.f90
 npt_b0_lfv.f90
 npt_b1_lfv.f90

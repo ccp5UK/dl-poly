@@ -9,7 +9,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 ! Note: (fourier) reciprocal space terms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith & i.j.bush june 2014
+! author    - i.t.todorov & w.smith & i.j.bush april 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -49,9 +49,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
 ! blocking factors for splines and fft
 
-  Integer, Save :: block_x
-  Integer, Save :: block_y
-  Integer, Save :: block_z
+  Integer,           Save :: block_x,block_y,block_z
 
 ! B-spline coefficients
 
@@ -66,27 +64,25 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
 ! context for parallel fft
 
-  Integer, Save :: context
+  Integer,           Save :: context
 
-! indexing arrays for x, y and z as used in parallel fft
+! indexing arrays for x, y & z as used in parallel fft
 
-  Integer, Dimension( : ), Allocatable, Save :: index_x
-  Integer, Dimension( : ), Allocatable, Save :: index_y
-  Integer, Dimension( : ), Allocatable, Save :: index_z
+  Integer,              Dimension( : ),   Allocatable, Save :: index_x,index_y,index_z
 
 ! temporary qqc
 
-  Real( Kind = wp ) :: qqc_tmp
+  Real( Kind = wp )    :: qqc_tmp
 
 ! temporary workspace for parallel fft
 
-  Complex( Kind = wp ), Dimension( :, :, : ), Allocatable, Save :: qqq_local
-  Complex( Kind = wp ), Dimension( :, :, : ), Allocatable, Save :: pfft_work
+  Real( Kind = wp ),    Dimension( :,:,: ), Allocatable, Save :: qqc_local
+  Complex( Kind = wp ), Dimension( :,:,: ), Allocatable, Save :: qqq_local
+  Complex( Kind = wp ), Dimension( :,:,: ), Allocatable, Save :: pfft_work
 
-  Real( Kind = wp ),    Dimension( :, :, : ), Allocatable, Save :: qqc_local
+! DaFT arrays local indices
 
-  Integer :: j_local, k_local, l_local
-
+  Integer              :: j_local, k_local, l_local
 
   fail=0
   If (newjob) Then
@@ -184,10 +180,9 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
 ! workspace arrays for DaFT
 
-     Allocate ( qqq_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(1) )
-     Allocate ( qqc_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(2) )
+     Allocate ( qqc_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(1) )
+     Allocate ( qqq_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(2) )
      Allocate ( pfft_work( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(3) )
-
      If (Any(fail > 0)) Then
         Write(nrite,'(/,1x,a,i0)') 'SPME DaFT workspace arrays allocation failure, node: ', idnode
         Call error(0)
@@ -333,6 +328,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 !
 !                       If (jj >= ixb .and. jj <= ixt) Then
 !                          j_local = jj - ixb + 1
+!
 !                          det=bb1*bspx(j,i)
 !
 !                          qqc_local(j_local,k_local,l_local)=qqc_local(j_local,k_local,l_local)+det
@@ -842,12 +838,14 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
               vterm=bb1*Exp(ralph*rksq)/rksq*qqq_local(j_local,k_local,l_local)
               akv=2.0_wp*(1.0_wp/rksq-ralph)*Real( vterm*Conjg(qqq_local(j_local,k_local,l_local)),wp )
+
               strs(1)=strs(1)-rkx3*rkx3*akv
               strs(5)=strs(5)-rky3*rky3*akv
               strs(9)=strs(9)-rkz3*rkz3*akv
               strs(2)=strs(2)-rkx3*rky3*akv
               strs(3)=strs(3)-rkx3*rkz3*akv
               strs(6)=strs(6)-rky3*rkz3*akv
+
               qqq_local(j_local,k_local,l_local)=vterm
 
            Else
@@ -873,9 +871,9 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
   strs = strs * scale / Real(mxnode,wp)
 
-  Call pfft(qqq_local,pfft_work,context,-1)
-
 ! calculate atomic energy
+
+  Call pfft(qqq_local,pfft_work,context,-1)
 
   eng = 0.0_wp
   Do l=1,block_z
@@ -896,10 +894,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
   eng = eng * scale / Real(mxnode,wp)
 
-! calculate atomic forces
-
-  Call spme_forces(rcell,scale, ixx,iyy,izz, bspx,bspy,bspz, bsdx,bsdy,bsdz, qqc_local, ixb,ixt, iyb,iyt, izb,izt)
-
+! Second part of the monopole contribution to the stress tensor
 ! calculate stress tensor (symmetrical, per node)
 
   strs   = strs + eng*uni
@@ -917,6 +912,10 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      v_rc=vircpe_rc
      s_rc=strs
   End If
+
+! calculate atomic forces
+
+  Call spme_forces(rcell,scale, ixx,iyy,izz, bspx,bspy,bspz, bsdx,bsdy,bsdz, qqc_local, ixb,ixt, iyb,iyt, izb,izt)
 
   Deallocate (ixx,iyy,izz,it, Stat = fail(1))
   Deallocate (bsdx,bsdy,bsdz, Stat = fail(2))
@@ -963,16 +962,6 @@ Contains
 
     Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: qqc_domain
 
-! Real values of kmax vectors
-
-    If (newjob) Then
-       newjob = .false.
-
-       kmaxa_r=Real(kmaxa,wp)
-       kmaxb_r=Real(kmaxb,wp)
-       kmaxc_r=Real(kmaxc,wp)
-    End If
-
 ! Define extended ranges for the domain = local + halo slice and allocate
 
     ixdb = ixb - mxspl2
@@ -988,11 +977,21 @@ Contains
     fail=0
     Allocate (qqc_domain( ixdb:ixdt, iydb:iydt, izdb:izdt ), Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'spme_for_domain allocation failure, node: ', idnode
+       Write(nrite,'(/,1x,a,i0)') 'spme_forces allocation failure, node: ', idnode
     End If
 
     Call exchange_grid( ixb , ixt , iyb , iyt , izb , izt , qqc_local , &
                         ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain  )
+
+! Real values of kmax vectors
+
+    If (newjob) Then
+       newjob = .false.
+
+       kmaxa_r=Real(kmaxa,wp)
+       kmaxb_r=Real(kmaxb,wp)
+       kmaxc_r=Real(kmaxc,wp)
+    End If
 
     tmp=-2.0_wp*scale
     facx=tmp*kmaxa_r
@@ -1007,9 +1006,7 @@ Contains
 
 ! initialise forces
 
-          fix=0.0_wp
-          fiy=0.0_wp
-          fiz=0.0_wp
+          fix=0.0_wp ; fiy=0.0_wp ; fiz=0.0_wp
 
           Do l=1,mxspl
              ll=izz(i)-l+2
@@ -1095,7 +1092,7 @@ Contains
 
     Deallocate (qqc_domain, Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'spme_for_domain dealocation failure, node: ', idnode
+       Write(nrite,'(/,1x,a,i0)') 'spme_forces dealocation failure, node: ', idnode
     End If
 
   End Subroutine spme_forces

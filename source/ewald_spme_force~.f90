@@ -17,7 +17,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 !           are not needed.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith & i.j.bush june 2014
+! author    - i.t.todorov & w.smith & i.j.bush april 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -53,14 +53,16 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
 ! B-spline coefficients
 
-  Complex( Kind = wp ), Dimension( : ),   Allocatable, Save :: bscx,bscy,bscz
-  Complex( Kind = wp ), Dimension( : ),   Allocatable       :: ww1,ww2,ww3
+  Complex( Kind = wp ), Dimension( : ),     Allocatable, Save :: bscx,bscy,bscz
+  Complex( Kind = wp ), Dimension( : ),     Allocatable       :: ww1,ww2,ww3
 
-  Real( Kind = wp ),    Dimension( : ),   Allocatable       :: csp,buffer
-  Real( Kind = wp ),    Dimension( : ),   Allocatable       :: txx,tyy,tzz
-  Integer,              Dimension( : ),   Allocatable       :: ixx,iyy,izz,it
-  Real( Kind = wp ),    Dimension( :,: ), Allocatable       :: bsdx,bsdy,bsdz
-  Real( Kind = wp ),    Dimension( :,: ), Allocatable       :: bspx,bspy,bspz
+  Real( Kind = wp ),    Dimension( : ),     Allocatable       :: csp,buffer
+  Real( Kind = wp ),    Dimension( : ),     Allocatable       :: txx,tyy,tzz
+  Integer,              Dimension( : ),     Allocatable       :: ixx,iyy,izz,it
+  Real( Kind = wp ),    Dimension( :,: ),   Allocatable       :: bsdx,bsdy,bsdz
+  Real( Kind = wp ),    Dimension( :,: ),   Allocatable       :: bspx,bspy,bspz
+
+! FFT workspace arrays
 
   Real( Kind = wp ),    Dimension( :,:,: ), Allocatable, Save :: qqc
   Complex( Kind = wp ), Dimension( :,:,: ), Allocatable, Save :: qqq
@@ -127,8 +129,9 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
 ! allocate the global charge arrays (NOT deallocated manually)
 
-     Allocate (qqc(1:kmaxa,1:kmaxb,1:kmaxc),qqq(1:kmaxa,1:kmaxb,1:kmaxc), Stat = fail(1))
-     If (fail(1) > 0) Then
+     Allocate (qqc(1:kmaxa,1:kmaxb,1:kmaxc), Stat = fail(1))
+     Allocate (qqq(1:kmaxa,1:kmaxb,1:kmaxc), Stat = fail(2))
+     If (Any(fail > 0)) Then
         Write(nrite,'(/,1x,a,i0)') 'qqq,qqc workspace arrays allocation failure, node: ', idnode
         Call error(0)
      End If
@@ -261,6 +264,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 !              End Do
 !           End If
 !        End Do
+
         llb = Max( izb, izz(i) - mxspl + 2 )
         llt = Min( izt, izz(i) + 1 )
 
@@ -384,11 +388,12 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
               qqq(j,k,l)=(0.0_wp,0.0_wp)
 
            End If
-        End Do
-     End Do
-  End Do
 
-  Call Dcft3(qqq,inc2,inc3,qqq,inc2,inc3,kmaxa,kmaxb,kmaxc,1,1.0_wp,buffer,limit)
+        End Do
+
+     End Do
+
+  End Do
 
 ! complete strs
 
@@ -400,6 +405,8 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
   strs = strs * scale / Real(mxnode,wp)
 
+  Call Dcft3(qqq,inc2,inc3,qqq,inc2,inc3,kmaxa,kmaxb,kmaxc,1,1.0_wp,buffer,limit)
+
 ! calculate atomic energy
 
   eng = Real(Sum(qqq*qqc),wp)
@@ -408,10 +415,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
   eng = eng * scale / Real(mxnode,wp)
 
-! calculate atomic forces
-
-  Call spme_forces(rcell,scale, ixx,iyy,izz, bspx,bspy,bspz, bsdx,bsdy,bsdz, qqq)
-
+! Second part of the monopole contribution to the stress tensor
 ! calculate stress tensor (symmetrical, per node)
 
   strs   = strs + eng*uni
@@ -429,6 +433,10 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      v_rc=vircpe_rc
      s_rc=strs
   End If
+
+! calculate atomic forces
+
+  Call spme_forces(rcell,scale, ixx,iyy,izz, bspx,bspy,bspz, bsdx,bsdy,bsdz, qqq)
 
   Deallocate (ixx,iyy,izz,it, Stat = fail(1))
   Deallocate (bsdx,bsdy,bsdz, Stat = fail(2))

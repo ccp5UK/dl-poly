@@ -7,7 +7,7 @@ Subroutine metal_table_read(l_top)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2006
-! amended   - i.t.todorov april 2014
+! amended   - i.t.todorov january 2016
 ! contrib   - r.davidchak (eeam) june 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -29,7 +29,7 @@ Subroutine metal_table_read(l_top)
   Character( Len = 40  ) :: word
   Character( Len = 4   ) :: keyword
   Character( Len = 8   ) :: atom1,atom2
-  Integer                :: fail(1:2),i,j,k,ipot,numpot,ktype,ngrid, &
+  Integer                :: fail(1:2),i,j,ipot,numpot,ktype,ngrid, &
                             cp,cd,cds,ce,ces,katom1,katom2,keymet,k0,jtpatm
   Real( Kind = wp )      :: start,finish
 
@@ -167,11 +167,11 @@ Subroutine metal_table_read(l_top)
 ! read in potential arrays
 
      Do i=1,(ngrid+3)/4
-        k=Min(4,ngrid-(i-1)*4)
+        j=Min(4,ngrid-(i-1)*4)
         If (idnode == 0) Then
-           Read(Unit=ntable, Fmt=*, End=100) (buffer(4*i+j),j=1,k)
+           Read(Unit=ntable, Fmt=*, End=100) buffer(4*i+1:4*i+j)
         Else
-           buffer(4*i+1:4*i+k)=0.0_wp
+           buffer(4*i+1:4*i+j)=0.0_wp
         End If
      End Do
 

@@ -350,7 +350,7 @@ Contains
 
     If (slash_position > 0) Then
        forma = ' '
-       Write(forma, 20) word_end - slash_position
+       Write(forma,20) word_end - slash_position
        Read(word(slash_position + 1:word_end), forma, Err=30) denominator
        word_end = slash_position - 1
     End If

@@ -10,14 +10,13 @@ Subroutine ewald_excl_forces &
 !       frozen pairs are ignored by default, they are not dealt with here
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module
   Use config_module, Only : natms,ltg,list,chge,fxx,fyy,fzz
-  Use ewald_module
 
   Implicit None
 
@@ -38,7 +37,7 @@ Subroutine ewald_excl_forces &
   Real( Kind = wp ), Parameter :: r42  = 1.0_wp/42.0_wp
   Real( Kind = wp ), Parameter :: r216 = 1.0_wp/216.0_wp
 
-  Integer           :: jatm,m,idi,limit
+  Integer           :: limit,idi,jatm,m
   Real( Kind = wp ) :: chgea,chgprd,rsq,rrr,alpr,alpr2, &
                        erfr,egamma,exp1,tt,             &
                        fix,fiy,fiz,fx,fy,fz,            &
@@ -62,11 +61,9 @@ Subroutine ewald_excl_forces &
 
   idi=ltg(iatm)
 
-! start of primary loop for forces evaluation
+! ignore interaction if the charge is zero
 
   chgea = chge(iatm)
-
-! ignore interaction if the charge is zero
 
   If (Abs(chgea) > zero_plus) Then
 
@@ -81,6 +78,9 @@ Subroutine ewald_excl_forces &
 ! Get list limit
 
      limit=list(-1,iatm)-list(0,iatm)
+
+! start of primary loop for forces evaluation
+
      Do m=1,limit
 
 ! atomic index and charge
@@ -125,8 +125,8 @@ Subroutine ewald_excl_forces &
 
 ! distant particles - traditional
 
-              exp1 =Exp(-(alpha*rrr)**2)
-              tt   =1.0_wp/(1.0_wp+pp*alpha*rrr)
+              exp1=Exp(-(alpha*rrr)**2)
+              tt  =1.0_wp/(1.0_wp+pp*alpha*rrr)
 
               erfr=chgprd * &
               (1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/rrr
@@ -145,27 +145,11 @@ Subroutine ewald_excl_forces &
            fiy=fiy+fy
            fiz=fiz+fz
 
-! infrequent calculations copying
-
-           If (l_cp) Then
-              fcx(iatm)=fcx(iatm)+fx
-              fcy(iatm)=fcy(iatm)+fy
-              fcz(iatm)=fcz(iatm)+fz
-           End If
-
            If (jatm <= natms) Then
 
               fxx(jatm)=fxx(jatm)-fx
               fyy(jatm)=fyy(jatm)-fy
               fzz(jatm)=fzz(jatm)-fz
-
-! infrequent calculations copying
-
-              If (l_cp) Then
-                 fcx(jatm)=fcx(jatm)-fx
-                 fcy(jatm)=fcy(jatm)-fy
-                 fcz(jatm)=fcz(jatm)-fz
-              End If
 
            End If
 
@@ -175,13 +159,6 @@ Subroutine ewald_excl_forces &
 
               engcpe_ex = engcpe_ex - erfr
               vircpe_ex = vircpe_ex - egamma*rsq
-
-! infrequent calculations copying
-
-              If (l_cp) Then
-                 e_ex = e_ex - erfr
-                 v_ex = v_ex - egamma*rsq
-              End If
 
 ! add stress tensor
 
@@ -215,20 +192,6 @@ Subroutine ewald_excl_forces &
      stress(7) = stress(7) + strs3
      stress(8) = stress(8) + strs6
      stress(9) = stress(9) + strs9
-
-! infrequent calculations copying
-
-     If (l_cp) Then
-        s_ex(1) = s_ex(1) + strs1
-        s_ex(2) = s_ex(2) + strs2
-        s_ex(3) = s_ex(3) + strs3
-        s_ex(4) = s_ex(4) + strs2
-        s_ex(5) = s_ex(5) + strs5
-        s_ex(6) = s_ex(6) + strs6
-        s_ex(7) = s_ex(7) + strs3
-        s_ex(8) = s_ex(8) + strs6
-        s_ex(9) = s_ex(9) + strs9
-     End If
 
   End If
 

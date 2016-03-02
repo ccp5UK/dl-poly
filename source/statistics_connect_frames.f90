@@ -13,6 +13,7 @@ Subroutine statistics_connect_frames(megatm)
 
   Use comms_module,      Only : mxnode,idnode,gsum
   Use setup_module,      Only : nrite
+  Use domains_module,    Only : nprx,npry,nprz
   Use config_module,     Only : natms
   Use statistics_module, Only : found,natms0
 
@@ -22,8 +23,8 @@ Subroutine statistics_connect_frames(megatm)
 
   Integer :: icyc,nres
 
-  found = 0 ; icyc = 0 ; nres = 1 ! icyc limit of 3 means 3 domains across
-  Do While (icyc < 3 .and. nres > 0)
+  found = 0 ; icyc = 0 ; nres = 1
+  Do While (icyc <= Max(nprx,npry,nprz)/2 .and. nres > 0)
      Call match_compress_spread_sort(-1) ! -x direction spread
      Call match_compress_spread_sort( 1) ! +x direction spread
 
@@ -44,8 +45,8 @@ Subroutine statistics_connect_frames(megatm)
      End If
   End Do
 
-  If (icyc == 3 .and. nres > 0 .and. idnode == 0) &
-        Write(nrite,'(/,1x,a)') '*** warning - particles dynamics properties will be corrupted!!! ***'
+  If (nres > 0 .and. idnode == 0) &
+     Write(nrite,'(/,1x,a)') '*** warning - particles dynamics properties will be corrupted!!! ***'
 
 Contains
 

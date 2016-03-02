@@ -1,6 +1,5 @@
-Subroutine ewald_real_forces                      &
-           (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt, &
-           engcpe_rl,vircpe_rl,stress)
+Subroutine ewald_real_forces &
+           (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -11,7 +10,7 @@ Subroutine ewald_real_forces                      &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov december 2014
+! amended   - i.t.todorov april 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -80,11 +79,9 @@ Subroutine ewald_real_forces                      &
 
   idi=ltg(iatm)
 
-! start of primary loop for forces evaluation
+! ignore interaction if the charge is zero
 
   chgea = chge(iatm)
-
-! ignore interaction if the charge is zero
 
   If (Abs(chgea) > zero_plus) Then
 
@@ -95,6 +92,8 @@ Subroutine ewald_real_forces                      &
      fix=fxx(iatm)
      fiy=fyy(iatm)
      fiz=fzz(iatm)
+
+! start of primary loop for forces evaluation
 
      Do m=1,list(0,iatm)
 
@@ -122,7 +121,7 @@ Subroutine ewald_real_forces                      &
 
 ! calculate forces using 3pt interpolation
 
-           gk0 = fer(k)
+           gk0 = fer(k) ; If (k == 0) gk0 = gk0*rrr
            gk1 = fer(k+1)
            gk2 = fer(k+2)
 

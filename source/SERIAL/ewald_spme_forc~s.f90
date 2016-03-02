@@ -7,7 +7,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 ! by Essmann et al. J. Chem. Phys. 103 (1995) 8577
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov april 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -39,18 +39,20 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 ! uni is the diagonal unit matrix
 
   Real( Kind = wp )    :: &
-  uni(1:9) = (/ 1.0_wp,0.0_wp,0.0_wp, 0.0_wp,1.0_wp,0.0_wp, 0.0_wp,0.0_wp,1.0_wp /)
+     uni(1:9) = (/ 1.0_wp,0.0_wp,0.0_wp, 0.0_wp,1.0_wp,0.0_wp, 0.0_wp,0.0_wp,1.0_wp /)
 
 ! B-spline coefficients
 
-  Complex( Kind = wp ), Dimension( : ),   Allocatable, Save :: bscx,bscy,bscz
-  Complex( Kind = wp ), Dimension( : ),   Allocatable, Save :: ww1,ww2,ww3
+  Complex( Kind = wp ), Dimension( : ),     Allocatable, Save :: bscx,bscy,bscz
+  Complex( Kind = wp ), Dimension( : ),     Allocatable, Save :: ww1,ww2,ww3
 
-  Real( Kind = wp ),    Dimension( : ),   Allocatable       :: csp
-  Real( Kind = wp ),    Dimension( : ),   Allocatable       :: txx,tyy,tzz
-  Integer,              Dimension( : ),   Allocatable       :: ixx,iyy,izz,it
-  Real( Kind = wp ),    Dimension( :,: ), Allocatable       :: bsdx,bsdy,bsdz
-  Real( Kind = wp ),    Dimension( :,: ), Allocatable       :: bspx,bspy,bspz
+  Real( Kind = wp ),    Dimension( : ),     Allocatable       :: csp
+  Real( Kind = wp ),    Dimension( : ),     Allocatable       :: txx,tyy,tzz
+  Integer,              Dimension( : ),     Allocatable       :: ixx,iyy,izz,it
+  Real( Kind = wp ),    Dimension( :,: ),   Allocatable       :: bsdx,bsdy,bsdz
+  Real( Kind = wp ),    Dimension( :,: ),   Allocatable       :: bspx,bspy,bspz
+
+! FFT workspace arrays
 
   Real( Kind = wp ),    Dimension( :,:,: ), Allocatable, Save :: qqc
   Complex( Kind = wp ), Dimension( :,:,: ), Allocatable, Save :: qqq
@@ -79,7 +81,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 !!! END DD SPME VARIABLES
 
 !!! BEGIN CARDINAL B-SPLINES SET-UP
-! allocate the complex exponential arrays
+! allocate the complex exponential arrays (NOT deallocated manually)
 
      Allocate (ww1(1:kmaxa),ww2(1:kmaxb),ww3(1:kmaxc), Stat = fail(1))
      If (fail(1) > 0) Then
@@ -116,8 +118,9 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
 ! allocate the global charge arrays (NOT deallocated manually)
 
-     Allocate (qqc(1:kmaxa,1:kmaxb,1:kmaxc),qqq(1:kmaxa,1:kmaxb,1:kmaxc), Stat = fail(1))
-     If (fail(1) > 0) Then
+     Allocate (qqc(1:kmaxa,1:kmaxb,1:kmaxc), Stat = fail(1))
+     Allocate (qqq(1:kmaxa,1:kmaxb,1:kmaxc), Stat = fail(2))
+     If (Any(fail > 0)) Then
         Write(nrite,'(/,1x,a,i0)') 'qqq,qqc workspace arrays allocation failure, node: ', idnode
         Call error(0)
      End If
@@ -362,8 +365,6 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      End Do
   End Do
 
-  Call dlpfft3(-1,kmaxa,kmaxb,kmaxc,ww1,ww2,ww3,qqq)
-
 ! complete strs
 
   strs(4) = strs(2)
@@ -376,16 +377,15 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
 ! calculate atomic energy
 
+  Call dlpfft3(-1,kmaxa,kmaxb,kmaxc,ww1,ww2,ww3,qqq)
+
   eng = Real(Sum(qqq*qqc),wp)
 
 ! scale eng and distribute per node
 
   eng = eng * scale
 
-! calculate atomic forces
-
-  Call spme_forces(rcell,scale, ixx,iyy,izz, bspx,bspy,bspz, bsdx,bsdy,bsdz, qqq)
-
+! Second part of the monopole contribution to the stress tensor
 ! calculate stress tensor (symmetrical, per node)
 
   strs   = strs + eng*uni
@@ -403,6 +403,10 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
      v_rc=vircpe_rc
      s_rc=strs
   End If
+
+! calculate atomic forces
+
+  Call spme_forces(rcell,scale, ixx,iyy,izz, bspx,bspy,bspz, bsdx,bsdy,bsdz, qqq)
 
   Deallocate (ixx,iyy,izz,it, Stat = fail(1))
   Deallocate (bsdx,bsdy,bsdz, Stat = fail(2))
@@ -448,7 +452,7 @@ Contains
 ! Real values of kmax vectors
 
     If (newjob) Then
-       newjob=.false.
+       newjob = .false.
 
        kmaxa_r=Real(kmaxa,wp)
        kmaxb_r=Real(kmaxb,wp)
