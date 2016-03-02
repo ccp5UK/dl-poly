@@ -16,8 +16,8 @@ Module kim_module
 ! arrays
 !
 ! copyright - daresbury laboratory
-! author    - r.s.elliott feb 2014; nov 2014
-! contrib   - h.boateng & i.t.todorov 2014
+! author    - r.s.elliott march 2015
+! contrib   - h.boateng & i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,7 +26,7 @@ Module kim_module
 
   Implicit None
 
-  Character( Len = 125 ), Save :: kim  = ' '      ! KIM IM type for dl_poly
+  Character( Len = 200 ), Save :: kim  = ' '      ! KIM IM type for dl_poly
   Real( Kind = wp ),      Save :: rkim = 0.0_wp   ! KIM cutoff for dl_poly
   Integer,                Save :: idhalo(0:2,1:6) ! KIM halo indicator
 
@@ -38,7 +38,7 @@ Module kim_module
 
 Contains
 
-  Subroutine kim_cutoff(model_name,cutoff)
+  Subroutine kim_cutoff(num_types,model_types,model_name,cutoff)
 
 !-------------------------------------------------------------------------------
 !
@@ -50,13 +50,16 @@ Contains
 
     Implicit None
 
-    Character( Len = * ), Intent( In    ) :: model_name
-    Real( Kind = wp ),    Intent(   Out ) :: cutoff
+    Integer( Kind = c_int ), Intent( In    ) :: num_types
+    Character( Len = * ),    Intent( In    ) :: model_types(1:num_types)
+    Character( Len = * ),    Intent( In    ) :: model_name
+    Real( Kind = wp ),       Intent(   Out ) :: cutoff
+
     cutoff = 0.0_wp
     Call kim_message()
   End Subroutine  kim_cutoff
 
-  Subroutine kim_setup(model_name)
+  Subroutine kim_setup(num_types,model_types,model_name)
 
 !-------------------------------------------------------------------------------
 !
@@ -68,7 +71,9 @@ Contains
 
     Implicit None
 
-    Character(Len = *), Intent( In    )  :: model_name
+    Character(Len = *),      Intent( In    ) :: model_name
+    Integer( Kind = c_int ), Intent( In    ) :: num_types
+    Character( Len = * ),    Intent( In    ) :: model_types(1:num_types)
 
     Call kim_message()
   End Subroutine kim_setup
@@ -114,7 +119,7 @@ Contains
     Call kim_message()
   End Subroutine kim_forces
 
- 
+
   Subroutine kim_message()
 
     Use comms_module, Only : idnode
