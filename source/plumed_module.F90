@@ -145,6 +145,8 @@ Contains
         If (idnode == 0) Write(nrite,'(a,i0,a)')"*** warning - DL_POLY was stopped cleanly by PLUMED at step: ",nstep," *** "
         nstrun=nstep
      End If
+#else
+     nstrun=nstep      
 #endif
 
   End Subroutine plumed_apply

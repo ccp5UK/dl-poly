@@ -634,7 +634,7 @@ minimise_relax.o: comms_module.o config_module.o kinds_f90.o \
 	minimise_module.o parse_module.o rigid_bodies_module.o setup_module.o
 msd_write.o: comms_module.o config_module.o io_module.o kinds_f90.o \
 	parse_module.o setup_module.o site_module.o statistics_module.o
-netcdf_module.o: kinds_f90.o
+netcdf_module_pre.o: kinds_f90.o
 netcdf_modul~.o: kinds_f90.o
 npt_b0_lfv.o: comms_module.o config_module.o kinds_f90.o kinetic_module.o \
 	setup_module.o site_module.o

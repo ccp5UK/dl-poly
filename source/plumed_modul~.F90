@@ -1,10 +1,7 @@
-! This file is manually from plumed_module.F90 by
-! gfortran -E plumed_module.F90 > plumed_modul~.F90
-! some lines may start with #, replace it by !
-! 1 "plumed_module.F90"
-! 1 "<built-in>"
-! 1 "<command-line>"
-! 1 "plumed_module.F90"
+! This file is generated manually from plumed_module.F90 by
+! gfortran -E -P plumed_module.F90 > plumed_modul~.F90
+
+
 Module plumed_module
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -57,13 +54,11 @@ Contains
     Integer,          Intent( In    ) :: megatm
     Real(kind = wp ), Intent( In    ) :: tstep, temp
 
-! 78 "plumed_module.F90"
 
   End Subroutine plumed_init
 
   Subroutine plumed_print_about()
 
-! 112 "plumed_module.F90"
 
   End Subroutine plumed_print_about
 
@@ -75,14 +70,11 @@ Contains
      Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
      Real( Kind = wp ), Intent( InOut ) :: stress(1:9),stpcfg
 
-! 149 "plumed_module.F90"
+     nstrun=nstep      
 
   End Subroutine plumed_apply
 
   Subroutine plumed_finalize()
-
-
-
 
 
   End Subroutine plumed_finalize

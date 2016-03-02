@@ -1,10 +1,7 @@
-! This file is manually from plumed_module.F90 by
-! gfortran -E -DPLUMED plumed_module.F90 > plumed_module_pre.F90
-! some lines may start with #, replace it by !
-! 1 "plumed_module.F90"
-! 1 "<built-in>"
-! 1 "<command-line>"
-! 1 "plumed_module.F90"
+! This file is generated manually from plumed_module.F90 by
+! gfortran -E -P -DPLUMED plumed_module.F90 > plumed_module_pre.F90
+
+
 Module plumed_module
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -152,6 +149,8 @@ Contains
         If (idnode == 0) Write(nrite,'(a,i0,a)')"*** warning - DL_POLY was stopped cleanly by PLUMED at step: ",nstep," *** "
         nstrun=nstep
      End If
+
+
 
 
   End Subroutine plumed_apply
