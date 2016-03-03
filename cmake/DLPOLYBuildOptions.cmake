@@ -7,6 +7,7 @@ option(WITH_KIM "Build with KIM support" OFF)
 option(WITH_PLUMED "Build with PLUMED support" OFF)
 option(BUILD_TESTING "Build with Testing support" OFF)
 option(WITH_COVERAGE "Build with instrumentation for code coverage" OFF)
+option(WITH_FORCHECK "Build with forcheck for code" OFF)
 option(DOCS "Doxygen Documentation" OFF)
 option(BUILD_SHARED_LIBS "Build with shared libraries" OFF)
 

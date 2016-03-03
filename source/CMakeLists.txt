@@ -1,6 +1,7 @@
-include_directories(${CMAKE_BINARY_DIR}/source)
+include_directories("${CMAKE_BINARY_DIR}/source")
 include_directories(VV)
 include_directories(LFV)
+
 set(dlpoly_SRCS
 angles_compute.f90
 angles_forces.f90
@@ -190,51 +191,57 @@ domains_module.f90
 langevin_module.f90
 core_shell_module.f90
 )
+
 set(dlpoly_THERMO_SRCS
 nvt_b0_scl.f90
 nvt_b1_scl.f90
 nvt_e0_scl.f90
 nvt_e1_scl.f90
 )
-if(WITH_NETCDF)
-  add_definitions("-DNETCDF")
-endif()
+
 set(netcdf_SRCS netcdf_module.F90)
-
-if(WITH_KIM)
-  add_definitions("-DKIM")
-endif()
 set(kim_SRCS kim_module.F90)
-
-if(WITH_PLUMED)
-  add_definitions("-DPLUMED")
-endif()
 set(plumed_SRCS plumed_module.F90)
 
 if( NOT WITH_MPI)
-  include_directories(${src_dir}/SERIAL)
-  add_definitions(-DSERIAL)
-  set(dlpoly_SERIAL_SRCS
-  ${src_dir}/SERIAL/mpi_module.f90
-  )
+  set(dlpoly_SERIAL_SRCS ${src_dir}/SERIAL/mpi_module.f90)
 endif()
 
 add_library(dlpoly ${dlpoly_SRCS} ${netcdf_SRCS})
-add_library(dlpolycore  ${dlpoly_SERIAL_SRCS} ${dlpoly_CORE_SRCS})
+if(WITH_NETCDF)
+  set_target_properties(dlpoly PROPERTIES
+    COMPILE_DEFINITIONS "NETCDF" 
+    )
+endif()
+
+add_library(dlpolycore ${dlpoly_CORE_SRCS} ${dlpoly_SERIAL_SRCS})
+if( NOT WITH_MPI)
+  set_target_properties(dlpolycore PROPERTIES 
+     COMPILE_DEFINITIONS "SERIAL" 
+     INCLUDE_DIR ${src_dir}/SERIAL
+     )
+endif()
 add_library(dlpolythermo  ${dlpoly_THERMO_SRCS})
 add_library(dlpolykim  ${kim_SRCS})
+if(WITH_KIM)
+  set_target_properties(dlpolykim PROPERTIES
+    COMPILE_DEFINITIONS "KIM" 
+    )
+endif()
 add_library(dlpolyplumed  ${plumed_SRCS})
-
+if(WITH_PLUMED)
+  set_target_properties(dlpolyplumed PROPERTIES 
+    COMPILE_DEFINITIONS "PLUMED"
+    )
+endif()
 ## sets the linking
 link_directories (${LIBRARY_OUTPUT_PATH})
 add_subdirectory(VV)
 add_subdirectory(LFV)
-
 target_link_libraries(dlpolykim dlpolycore)
 target_link_libraries(dlpolyplumed dlpolycore)
 target_link_libraries(dlpolythermo dlpolycore)
 target_link_libraries(dlpoly dlpolycore dlpolykim dlpolyplumed)
-
 add_executable(${target_name} dl_poly.f90)
 set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${OMP_LINK_FLAGS} ${MIC_LINK_FLAGS}")
 target_link_libraries(${target_name} ${LIBS} dlpoly dlpolycore dlpolythermo dlpolyvv dlpolylfv dlpolykim dlpolyplumed)
