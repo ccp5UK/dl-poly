@@ -11,5 +11,5 @@ option(WITH_FORCHECK "Build with forcheck for code" OFF)
 option(DOCS "Doxygen Documentation" OFF)
 option(BUILD_SHARED_LIBS "Build with shared libraries" OFF)
 
-set(MPI_NPROCS 4 CACHE STRING "number of MPI processes to be used for code coverage")
+set(MPI_NPROCS 8 CACHE STRING "number of MPI processes to be used for code coverage and tests")
 mark_as_advanced(MPI_NPROCS)
