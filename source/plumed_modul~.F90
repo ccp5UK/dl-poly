@@ -30,11 +30,11 @@ Module plumed_module
   Real     ( Kind = wp ), Public :: plumed_energyUnits = 0.01_wp ! DLPOLY_Internal(10J/mol) /kJ/mol
   Real     ( Kind = wp ), Public :: plumed_lengthUnits = 0.1_wp  ! Angstrtom/nanometer
   Real     ( Kind = wp ), Public :: plumed_timeUnits   = 1.0_wp  ! picosecond
-  Integer  ( Kind = ip ), Public :: plumed_precision   = wp      ! DL_POLY preicision
-  Integer  ( Kind = ip ), Public :: plumed_restart     = 0       ! default no
+  Integer               , Public :: plumed_precision   = wp      ! DL_POLY precision
+  Integer               , Public :: plumed_restart     = 0       ! default no
 
   Real     ( Kind = wp ) :: plumed_eng
-  Integer  ( Kind = ip ) :: plumed_version = 0, &
+  Integer                :: plumed_version = 0, &
                             plumed_stop    = 0, &
                             has_plumed     = 0
 

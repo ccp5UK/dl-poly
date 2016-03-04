@@ -20,7 +20,7 @@ build-mpi-pure:
   script:
     - mkdir build-mpi-pure
     - pushd build-mpi-pure
-    - cmake ../ -DWITH_MPI=ON -DWITH_OPENMP=OFF
+    - cmake ../ 
     - make -j10 
     - popd
 
@@ -39,7 +39,7 @@ testing-mpi:
   script:
     - mkdir build-mpi-pure
     - pushd build-mpi-pure 
-    - cmake ../ -DWITH_MPI=ON -DWITH_OPENMP=OFF -DBUILD_TESTING=ON
+    - FFLAGS="-O3 -mtune=native" cmake ../ -DBUILD_TESTING=ON
     - make -j10 
     - make test  
     - popd 
