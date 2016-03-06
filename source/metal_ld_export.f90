@@ -18,13 +18,13 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0)
 
   Implicit None
 
-  Integer,           Intent( In    ) :: mdir
-  Integer,           Intent( InOut ) :: mlast,ixyz0(1:mxatms)
+  Integer, Intent( In    ) :: mdir
+  Integer, Intent( InOut ) :: mlast,ixyz0(1:mxatms)
 
-  Logical           :: safe,lrhs
-  Integer           :: fail,iadd,limit,iblock,          &
-                       i,j,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
-                       jdnode,kdnode,imove,jmove,itmp
+  Logical :: safe,lrhs
+  Integer :: fail,iadd,limit,iblock,          &
+             i,j,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
+             jdnode,kdnode,imove,jmove,itmp
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
@@ -163,7 +163,9 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0)
 
               safe=.false.
 
+
            End If
+
            imove=imove+iadd
 
         End If

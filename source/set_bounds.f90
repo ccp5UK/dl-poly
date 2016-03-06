@@ -1,5 +1,5 @@
-Subroutine set_bounds                                       &
-           (levcfg,imcon,lsim,l_vv,l_str,l_n_e,l_n_v,l_ind, &
+Subroutine set_bounds                                 &
+           (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -8,7 +8,7 @@ Subroutine set_bounds                                       &
 ! grid sizes, paddings, iterations, etc. as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2016
+! author    - i.t.todorov february 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014 (VAF)
 !
@@ -18,18 +18,19 @@ Subroutine set_bounds                                       &
   Use comms_module,       Only : idnode,mxnode
   Use setup_module
   Use domains_module,     Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
-  Use config_module,      Only : imc_n,cfgname,cell,volm
-  Use vnl_module,         Only : llvnl ! Depends on lsim, rpad & l_str
+  Use config_module,      Only : imcon,imc_n,cfgname,cell,volm
+  Use vnl_module,         Only : llvnl ! Depends on l_str,lsim & rpad
   Use msd_module
   Use bonds_module,       Only : rcbnd
   Use tersoff_module,     Only : potter
   Use development_module, Only : l_trm
   Use greenkubo_module,   Only : vafsamp
+  Use mpoles_module,      Only : induce
 
   Implicit None
 
-  Logical,           Intent(   Out ) :: lsim,l_vv,l_str,l_n_e,l_n_v,l_ind
-  Integer,           Intent(   Out ) :: levcfg,imcon,nstfce
+  Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_e,l_n_v,l_ind
+  Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rpad,rlnk
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
 
@@ -50,19 +51,20 @@ Subroutine set_bounds                                       &
 
 ! scan the FIELD file data
 
-  Call scan_field                                     &
-           (l_n_e,mxsite,mxatyp,megatm,mxtmls,mxexcl, &
-           mtshl,mxtshl,mxshl,mxfshl,                 &
-           mtcons,mxtcon,mxcons,mxfcon,               &
-           mxtpmf,mxpmf,mxfpmf,                       &
-           mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,          &
-           mtteth,mxtteth,mxteth,mxftet,              &
-           mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,mxgbnd,  &
-           mtangl,mxtang,mxangl,mxfang,mxgang,        &
-           mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,        &
-           mtinv,mxtinv,mxinv,mxfinv,mxginv,          &
-           mxrdf,mxvdw,rvdw,mxgvdw,                   &
-           mxmet,mxmed,mxmds,rmet,mxgmet,             &
+  Call scan_field                                    &
+           (l_n_e,mxompl,mximpl,                     &
+           mxsite,mxatyp,megatm,mxtmls,mxexcl,       &
+           mtshl,mxtshl,mxshl,mxfshl,                &
+           mtcons,mxtcon,mxcons,mxfcon,              &
+           mxtpmf,mxpmf,mxfpmf,                      &
+           mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
+           mtteth,mxtteth,mxteth,mxftet,             &
+           mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,mxgbnd, &
+           mtangl,mxtang,mxangl,mxfang,mxgang,       &
+           mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
+           mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
+           mxrdf,mxvdw,rvdw,mxgvdw,                  &
+           mxmet,mxmed,mxmds,rmet,mxgmet,            &
            mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext)
 
 ! Get imc_r & set dvar
@@ -86,7 +88,7 @@ Subroutine set_bounds                                       &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
+           mxompl,mximpl,nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -642,8 +644,7 @@ Subroutine set_bounds                                       &
 
 ! decide on MXATMS while reading CONFIG and scan particle density
 
-  Call read_config &
-           (megatm,levcfg,imcon,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens)
+  Call read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens)
 
 ! Create f(fdvar,dens0,dens)
 
@@ -700,12 +701,10 @@ Subroutine set_bounds                                       &
   mxstak = Max(100,mxstak)
 
 ! maximum number of variables in stack arrays
+! update number if the MSD option is used, 51=1+27+...+9+9+1+2+2
+! consult statistic_collect for more information
 
-  mxnstk = 50+mxatyp
-
-! update maximum number of variables in stack arrays if MSD option is used
-
-  If (l_msd) mxnstk = mxnstk+2*mxatdm
+  mxnstk = 51 + mxatyp + Merge(2*mxatdm,0,l_msd)
 
 ! maximum dimension of principal transfer buffer
 
@@ -718,8 +717,8 @@ Subroutine set_bounds                                       &
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
   mxbfdp = Merge( 2, 0, mxnode > 1) * Nint( Real(                                     &
-           mxatdm*(18+12+mxexcl + Merge(3,0,llvnl) + Merge(2*(6+mxstak), 0, l_msd)) + &
-           3*vafsamp                                                                + &
+           mxatdm*(18+15 + Merge(mxexcl,0,mximpl > 0) + mxexcl + Merge(3,0,llvnl)   + &
+           Merge(2*(6+mxstak), 0, l_msd)) + 3*vafsamp                               + &
            4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd            + &
            3*mxteth+4*mxbond+5*mxangl+8*mxdihd+6*mxinv,wp) * dens0)
 
@@ -733,7 +732,13 @@ Subroutine set_bounds                                       &
 
 !  dens  = Real(((ilx+3)*(ily+3)*(ilz+3))/Min(ilx,ily,ilz)+3,wp) / Real(ilx*ily*ilz,wp)
   dens  = Real(((qlx+2)*(qly+2)*(qlz+2))/Min(qlx,qly,qlz)+2,wp) / Real(qlx*qly*qlz,wp)
-  mxbfxp = 2 * 6 * Nint(Real(mxatdm,wp) * dens)
+  mxbfxp = 2 * (6 + Merge(7,0,induce)) * Nint(Real(mxatdm,wp) * dens) ! included induced dipoles
+
+! exporting multipolar rotation matrices and infinitely rotated matrices per atom
+
+!  dens  = Real(((ilx+3)*(ily+3)*(ilz+3))/Min(ilx,ily,ilz)+3,wp) / Real(ilx*ily*ilz,wp)
+  dens  = Real(((qlx+2)*(qly+2)*(qlz+2))/Min(qlx,qly,qlz)+2,wp) / Real(qlx*qly*qlz,wp)
+  mxbfrt = 2 * (1+4*mximpl) * Nint(Real(mxatdm,wp) * dens)
 
 ! shared units single per atom
 

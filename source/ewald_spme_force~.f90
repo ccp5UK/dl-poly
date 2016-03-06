@@ -17,7 +17,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 !           are not needed.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith & i.j.bush april 2015
+! author    - i.t.todorov & w.smith & i.j.bush february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -36,7 +36,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
   Logical,           Save :: newjob = .true.
   Integer,           Save :: ixb,iyb,izb, ixt,iyt,izt
-  Real( Kind = wp ), Save :: kmaxa_r,kmaxb_r,kmaxc_r,engsic
+  Real( Kind = wp ), Save :: kmaxa_r,kmaxb_r,kmaxc_r
 
   Integer              :: fail(1:4),limit, i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt, inc2,inc3
 
@@ -136,14 +136,14 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
         Call error(0)
      End If
 
-! calculate self-interaction correction (per node)
+! calculate self-interaction correction
 
      engsic=0.0_wp
      Do i=1,natms
         engsic=engsic+chge(i)**2
      End Do
      If (mxnode > 1) Call gsum(engsic)
-     engsic=-r4pie0/epsq * alpha*engsic/sqrpi / Real(mxnode,wp)
+     engsic=-r4pie0/epsq * alpha*engsic/sqrpi
   End If
 
   limit=Max(mxbuff,kmaxa*kmaxb*kmaxc) ! Try 3*kmaxa*kmaxb*kmaxc
@@ -423,7 +423,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
 ! distribute energy and virial terms (per node)
 
-  engcpe_rc = eng + engsic
+  engcpe_rc = eng + engsic / Real(mxnode,wp)
   vircpe_rc = -(strs(1)+strs(5)+strs(9))
 
 ! infrequent calculations copying

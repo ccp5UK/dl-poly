@@ -17,7 +17,7 @@ Subroutine pseudo_lfv                                     &
 !           as well as to shells.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -38,7 +38,7 @@ Subroutine pseudo_lfv                                     &
                                         strknf(1:9),strknt(1:9),engrot
 
   Logical,           Save :: newjob = .true.
-  Integer,           Save :: ntp,stp,rtp,megrgd,imcon
+  Integer,           Save :: ntp,stp,rtp,megrgd
   Integer                 :: fail(1:3),matms,local_index, &
                              i,j,k,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp )       :: celprp(1:10),ssx,ssy,ssz,      &
@@ -81,10 +81,6 @@ Subroutine pseudo_lfv                                     &
 ! recover megrgd
 
         megrgd=rgdmeg
-
-! recover imcon
-
-        imcon=rgdimc
 
         Allocate (qn(1:mxatms),tpn(0:mxnode-1),    Stat=fail(1))
         Allocate (qs(0:2,1:mxshl),tps(0:mxnode-1), Stat=fail(2))

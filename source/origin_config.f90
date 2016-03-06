@@ -1,4 +1,4 @@
-Subroutine origin_config(imcon,megatm)
+Subroutine origin_config(megatm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,17 +7,17 @@ Subroutine origin_config(imcon,megatm)
 ! CFGORG
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2013
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use config_module,      Only : cell,natms,xxx,yyy,zzz
+  Use config_module,      Only : imcon,cell,natms,xxx,yyy,zzz
   Use development_module, Only : lvcforg,xorg,yorg,zorg
 
   Implicit None
 
-  Integer, Intent( In    ) :: imcon,megatm
+  Integer, Intent( In    ) :: megatm
 
   Character ( Len = 6 ) :: name
   Integer               :: i,nstep
@@ -42,6 +42,6 @@ Subroutine origin_config(imcon,megatm)
   tstep  = 0.0_wp   ! no step exists
   time   = 0.0_wp   ! time is not relevant
 
-  Call write_config(name,lvcforg,imcon,megatm,nstep,tstep,time)
+  Call write_config(name,lvcforg,megatm,nstep,tstep,time)
 
 End Subroutine origin_config

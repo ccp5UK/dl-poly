@@ -1,4 +1,4 @@
-Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
+Subroutine three_body_forces(rctbp,engtbp,virtbp,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -12,7 +12,7 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1994
-! amended   - i.t.todorov november 2014
+! amended   - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,7 +27,6 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: imcon
   Real( Kind = wp ),                   Intent( In    ) :: rctbp
   Real( Kind = wp ),                   Intent(   Out ) :: engtbp,virtbp
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
@@ -68,10 +67,6 @@ Subroutine three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
   Integer,           Dimension( : ), Allocatable :: link,lct,lst,listin
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
-
-! image conditions not compliant with DD and link-cell
-
-  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
 ! Get the dimensional properties of the MD cell
 

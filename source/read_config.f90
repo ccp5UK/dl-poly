@@ -1,5 +1,4 @@
-Subroutine read_config &
-           (megatm,levcfg,imcon,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens)
+Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,14 +6,14 @@ Subroutine read_config &
 ! particle density
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
   Use setup_module,   Only : nconf,nrite,mxatms,half_minus
-  Use config_module,  Only : imc_n,cell,allocate_config_arrays_read, &
+  Use config_module,  Only : imcon,imc_n,cell,allocate_config_arrays_read, &
                              natms,nlast,atmnam,lsi,lsa,ltg, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use domains_module
@@ -26,7 +25,7 @@ Subroutine read_config &
 
   Implicit None
 
-  Integer,           Intent( In    ) :: megatm,levcfg,imcon
+  Integer,           Intent( In    ) :: megatm,levcfg
   Logical,           Intent( In    ) :: l_ind,l_str
   Real( Kind = wp ), Intent( In    ) :: rcut,dvar
   Real( Kind = wp ), Intent( InOut ) :: xhi,yhi,zhi

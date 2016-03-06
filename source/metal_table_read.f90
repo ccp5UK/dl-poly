@@ -7,7 +7,7 @@ Subroutine metal_table_read(l_top)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2006
-! amended   - i.t.todorov january 2016
+! amended   - i.t.todorov march 2016
 ! contrib   - r.davidchak (eeam) june 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -331,7 +331,7 @@ Subroutine metal_table_read(l_top)
         dmes(3,k0,1)=buffer(3)
         dmes(4,k0,1)=buffer(4)
 
-        If (buffer(1) > 5) Then
+        If (Nint(buffer(1)) > 5) Then
 
            Do i=5,mxgmet
               If (i-4 > ngrid) Then

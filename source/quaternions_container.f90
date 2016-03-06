@@ -18,19 +18,19 @@ Subroutine q_setup()
 ! dl_poly_4 subroutine for setting up RBs' quaternions
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2014
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gmax,gsum
   Use setup_module
-  Use config_module,      Only : cell,xxx,yyy,zzz
+  Use config_module,      Only : imcon,cell,xxx,yyy,zzz
   Use rigid_bodies_module
 
   Implicit None
 
-  Integer           :: fail,imcon,irgd,jrgd,krgd,lrgd,rgdtyp, &
+  Integer           :: fail,irgd,jrgd,krgd,lrgd,rgdtyp, &
                        ill,i1,i2,i3,itmp
   Real( Kind = wp ) :: rot(1:9),aa(1:9),rsq,tol, &
                        aq,bq,cq,dq,eq,fq,gq,hq,rnorm, x,y,z
@@ -43,11 +43,6 @@ Subroutine q_setup()
      Write(nrite,'(/,1x,a,i0)') 'q_setup allocation failure, node: ', idnode
      Call error(0)
   End If
-
-
-! Recover/localise imcon
-
-  imcon=rgdimc
 
 ! quaternions for all RB on this domain
 

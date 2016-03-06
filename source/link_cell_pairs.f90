@@ -1,4 +1,4 @@
-Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
+Subroutine link_cell_pairs(rlnk,lbook,megfrz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2016
+! author    - i.t.todorov february 2016
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -23,7 +23,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
   Implicit None
 
   Logical,            Intent( In    ) :: lbook
-  Integer,            Intent( In    ) :: imcon,megfrz
+  Integer,            Intent( In    ) :: megfrz
   Real( Kind = wp ) , Intent( In    ) :: rlnk
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1,match
@@ -47,10 +47,6 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
                                                     cell_dom,cell_bor,at_list
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
-
-! image conditions not compliant with DD and link-cell
-
-  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
 ! Get the dimensional properties of the MD cell
 
@@ -841,9 +837,10 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
            If (j <= natms .or. ii < jj) Then
               rsq=(xxx(i)-xxx(j))**2+(yyy(i)-yyy(j))**2+(zzz(i)-zzz(j))**2
               If (rsq < r_dis) Then
-                 Write(nrite,'(/,1x,a,2i10,a)')                   &
-                      '*** warning - pair with global indeces: ', &
-                      ii,jj,' violates minimum separation distance'
+                 Write(nrite,'(/,1x,a,2(i10,a),f5.3,a)')                      &
+                      '*** warning - the pair with global indeces: '      ,   &
+                      ii,'  &',jj,'  violates minimum separation distance (', &
+                      Sqrt(rsq),' Angs) ***'
                  safe=.false.
                  det=det+1.0_wp
               End If
@@ -857,9 +854,9 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
          Call gsum(det)
      End If
 
-     If ((.not.safe) .and. idnode == 0) Write(nrite,'(/,1x,a,i0,2a)') &
-        '*** warning - ', Int(det,ip), ' number of pairs violated ',  &
-        'the minimum separation distance ***'
+     If ((.not.safe) .and. idnode == 0) Write(nrite,'(/,1x,a,i0,2a,f5.3,a,/)') &
+        '*** warning - ', Int(det,ip), ' pair(s) of particles in CONFIG ', &
+        'violate(s) the minimum separation distance of ',r_dis,' Angs ***'
   End If
 
 ! Rear down frozen pairs

@@ -1,4 +1,4 @@
-Subroutine core_shell_forces(imcon,engshl,virshl,stress)
+Subroutine core_shell_forces(engshl,virshl,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,19 +6,18 @@ Subroutine core_shell_forces(imcon,engshl,virshl,stress)
 ! and force terms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2013
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gsync,gsum,gcheck
   Use setup_module,      Only : mxshl,nrite
-  Use config_module,     Only : cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,fxx,fyy,fzz
+  Use config_module,     Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,fxx,fyy,fzz
   Use core_shell_module, Only : ntshl,listshl,prmshl
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: imcon
   Real( Kind = wp ),                   Intent(   Out ) :: engshl,virshl
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
 

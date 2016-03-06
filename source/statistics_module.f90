@@ -51,8 +51,8 @@ Contains
 
     Allocate (xin(1:mxatdm),yin(1:mxatdm),zin(1:mxatdm),                           Stat = fail(1))
     Allocate (xto(1:mxatdm),yto(1:mxatdm),zto(1:mxatdm),rsd(1:mxatdm),             Stat = fail(2))
-    Allocate (stpval(1:mxnstk),stpvl0(1:mxnstk),sumval(1:mxnstk),ssqval(1:mxnstk), Stat = fail(3))
-    Allocate (zumval(1:mxnstk),ravval(1:mxnstk),stkval(1:mxstak,1:mxnstk),         Stat = fail(4))
+    Allocate (stpval(0:mxnstk),stpvl0(0:mxnstk),sumval(0:mxnstk),ssqval(0:mxnstk), Stat = fail(3))
+    Allocate (zumval(0:mxnstk),ravval(0:mxnstk),stkval(1:mxstak,0:mxnstk),         Stat = fail(4))
 
     If (Any(fail > 0)) Call error(1016)
 

@@ -32,7 +32,7 @@ Module setup_module
 ! Version particulars
 
   Character( Len = *), Parameter :: DLP_VERSION = "4.08"
-  Character( Len = *), Parameter :: DLP_RELEASE = "february 2016"
+  Character( Len = *), Parameter :: DLP_RELEASE = " march  2016 "
 
 ! FIXED PARAMETERS
 ! standard pi related values
@@ -132,6 +132,10 @@ Module setup_module
 
   Integer, Parameter :: nvafdt = 30
 
+! multipoles file channel number
+
+  Integer, Parameter :: nmpldt = 31
+
 
 ! Random seeding
 
@@ -141,7 +145,7 @@ Module setup_module
 ! GLOBAL PARAMETERS FOR ARRAYS' BOUNDS LIMITS (set_bounds)
 
   Integer, Save ::                                              &
-    mxsite,mxatyp,mxtmls,mxexcl,                                &
+    mxsite,mxatyp,mxtmls,mxexcl,mxompl,mximpl,                  &
     mxspl,mxspl1,mxspl2,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1, &
     mxtshl,mxshl,mxfshl,mxtcon,mxcons,mxfcon,mxlshp,mxproc,     &
     mxtpmf(1:2),mxpmf,mxfpmf,mxtrgd,mxrgd,mxlrgd,mxfrgd,        &
@@ -158,7 +162,7 @@ Module setup_module
     mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,                    &
     mxpfld,                                                     &
     mxstak,mxnstk,mxlist,mxcell,mxatms,mxatdm,                  &
-    mxbfdp,mxbfss,mxbfxp,mxbfsh,mxbuff
+    mxbfdp,mxbfss,mxbfxp,mxbfrt,mxbfsh,mxbuff
 
 ! zero+ and half+/- :: defined in set_bounds
 

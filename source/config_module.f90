@@ -5,7 +5,7 @@ Module config_module
 ! dl_poly_4 module declaring global configuration variables and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2013
+! author    - i.t.todorov october 2015
 ! contrib   - i.j.bush march 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -17,10 +17,11 @@ Module config_module
   Character( Len = 72 ), Save :: cfgname = ' ' , &
                                  sysname = ' '
 
-  Integer,               Save :: natms = 0 , &
+  Integer,               Save :: imcon =-1 , &
+                                 imc_n =-1 , &
+                                 natms = 0 , &
                                  nlast = 0 , &
-                                 nfree = 0 , &
-                                 imc_n =-1
+                                 nfree = 0
 
   Real( Kind = wp ),     Save :: cell(1:9) = 0.0_wp , &
                                  volm      = 0.0_wp , &
@@ -200,11 +201,11 @@ Contains
 
   Subroutine allocate_config_arrays()
 
-    Use setup_module, Only : mxatms,mxatdm,mxexcl,mxlist
+    Use setup_module
 
     Implicit None
 
-    Integer :: fail(1:5),stat(1:13)
+    Integer           :: fail(1:5),stat(1:13)
 
     fail = 0
 

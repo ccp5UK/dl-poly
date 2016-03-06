@@ -1,5 +1,5 @@
 Subroutine read_field                   &
-           (imcon,l_n_v,l_str,l_top,    &
+           (l_str,l_top,l_n_v,          &
            rcut,rvdw,rmet,width,temp,   &
            keyens,keyfce,keyshl,        &
            lecx,lbook,lexcl,            &
@@ -14,10 +14,10 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2015
+! author    - i.t.todorov february 2016
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
-! contrib   - a.v.brukhno and i.t.todorov march 2014 (itramolecular TPs & PDFs)
+! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -36,7 +36,7 @@ Subroutine read_field                   &
 ! Fuchs correction of charge non-neutral systems
 ! Global_To_Local variables
 
-  Use config_module, Only : cell,sumchg
+  Use config_module, Only : imcon,cell,sumchg
 
 ! DPD module
 
@@ -78,8 +78,8 @@ Subroutine read_field                   &
 
   Implicit None
 
-  Logical,           Intent( In    ) :: l_n_v,l_str,l_top
-  Integer,           Intent( In    ) :: imcon,keyens
+  Logical,           Intent( In    ) :: l_str,l_top,l_n_v
+  Integer,           Intent( In    ) :: keyens
   Integer,           Intent( InOut ) :: keyfce
   Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width,temp
   Logical,           Intent( InOut ) :: lecx
@@ -245,12 +245,12 @@ Subroutine read_field                   &
 ! read and process directives from field file
 
   Do
+
      word(1:1)='#'
      Do While (word(1:1) == '#' .or. word(1:1) == ' ')
         Call get_line(safe,nfield,record)
         If (.not.safe) Go To 2000
-        Call lower_case(record)
-        Call get_word(record,word)
+        Call get_word(record,word) ; Call lower_case(word)
      End Do
 
 ! energy unit for input/output
@@ -258,7 +258,7 @@ Subroutine read_field                   &
      If (word(1:5) == 'units') Then
 
         lunits=.true.
-        Call get_word(record,word)
+        Call get_word(record,word) ; Call lower_case(word)
 
         If (word(1:2) == 'ev') Then
 
@@ -295,6 +295,22 @@ Subroutine read_field                   &
 
         End If
 
+! multipolar electrostatics control option
+
+     Else If (word(1:4) == 'mult') Then
+
+        Call get_word(record,word) ; Call lower_case(word)
+        If (word(1:5) == 'order') Call get_word(record,word)
+
+        If (idnode == 0) Then
+           Write(nrite,"(/,/,1x,a,i0,/,1x,a)") &
+              "Multipolar electrostatics opted with poles up to order ", Nint(word_2_real(word)), &
+              "MPOLES file scheduled for reading after reading all intramolecular topology in FIELD"
+
+           If (mximpl == 0) Write(nrite,"(1x,a)") &
+              'MPOLES file scheduling abandoned due to the "no elec" option in CONTROL'
+        End If
+
 ! neutral group control option
 
      Else If (word(1:4) == 'neut') Then
@@ -305,7 +321,7 @@ Subroutine read_field                   &
 
      Else If (word(1:7) == 'molecul') Then
 
-        Call get_word(record,word)
+        Call get_word(record,word) ; Call lower_case(word)
         If (word(1:4) == 'type') Call get_word(record,word)
 
 ! number of molecular types
@@ -333,7 +349,7 @@ Subroutine read_field                   &
            l_shl=.true. ; l_con=.true. ; l_rgd=.true. ; l_tet=.true.
            l_bnd=.true. ; l_ang=.true. ; l_dih=.true. ; l_inv=.true.
 
-           If (idnode == 0 .and. l_top) Write(nrite,"(/,/,1x,'molecular species type',9x,i10)") itmols
+           If (idnode == 0) Write(nrite,"(/,/,1x,'molecular species type',9x,i10)") itmols
 
 ! name of molecular species
 
@@ -346,7 +362,7 @@ Subroutine read_field                   &
            Call strip_blanks(record)
            molnam(itmols)=word(1:Len_Trim(word)+1)//record
 
-           If (idnode == 0 .and. l_top) Write(nrite,"(/,1x,'name of species:',13x,a40)") molnam(itmols)
+           If (idnode == 0) Write(nrite,"(/,1x,'name of species:',13x,a40)") molnam(itmols)
 
 ! stop processing if energy unit has not been specified
 
@@ -355,6 +371,7 @@ Subroutine read_field                   &
 ! read molecular data
 
            Do
+
               word(1:1)='#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                  Call get_line(safe,nfield,record)
@@ -370,7 +387,7 @@ Subroutine read_field                   &
                  Call get_word(record,word)
                  nummols(itmols)=Nint(word_2_real(word))
 
-                 If (idnode == 0 .and. l_top) Write(nrite,"(/,1x,'number of molecules  ',10x,i10)") nummols(itmols)
+                 If (idnode == 0) Write(nrite,"(/,1x,'number of molecules  ',10x,i10)") nummols(itmols)
 
 ! read in atomic details
 
@@ -379,7 +396,7 @@ Subroutine read_field                   &
                  Call get_word(record,word)
                  numsit(itmols)=Nint(word_2_real(word))
 
-                 If (idnode == 0 .and. l_top) Then
+                 If (idnode == 0) Then
   Write(nrite,"(/,1x,'number of atoms/sites',10x,i10)") numsit(itmols)
   Write(nrite,"(/,1x,'atomic characteristics:', &
        & /,/,15x,'site',4x,'name',13x,'mass',9x,'charge',6x,'repeat',6x,'freeze',/)")
@@ -392,12 +409,10 @@ Subroutine read_field                   &
 ! reference point
 
                  ksite=0
-
                  Do isite=1,numsit(itmols)
-
                     If (ksite < numsit(itmols)) Then
 
-! read atom name, mass, charge, freeze option
+! read atom name, mass, charge, repeat, freeze option
 
                        word(1:1)='#'
                        Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -414,11 +429,13 @@ Subroutine read_field                   &
                        Call get_word(record,word)
                        charge=word_2_real(word)
 
-                       sumchg=sumchg+Abs(charge)
-
                        Call get_word(record,word)
                        nrept=Nint(word_2_real(word))
                        If (nrept == 0) nrept=1
+
+! sum absolute charges
+
+                       sumchg=sumchg+Abs(charge)
 
                        Call get_word(record,word)
                        ifrz=Nint(word_2_real(word))
@@ -426,7 +443,7 @@ Subroutine read_field                   &
 
                        numfrz(itmols)=numfrz(itmols)+ifrz*nrept
 
-                       If (idnode == 0 .and. l_top) &
+                       If (idnode == 0) &
   Write(nrite,"(9x,i10,4x,a8,2f15.6,2i10)") ksite+1,atom1,weight,charge,nrept,ifrz
 
                        Do irept=1,nrept
@@ -466,6 +483,7 @@ Subroutine read_field                   &
                              typsit(irept)=ntpatm
                           End Do
                        End If
+
                     End If
                  End Do
 
@@ -486,8 +504,9 @@ Subroutine read_field                   &
                  ntmp=Nint(word_2_real(word))
                  numshl(itmols)=numshl(itmols)+ntmp
 
-                 If (idnode == 0 .and. l_top) Then
+                 If (idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of core-shell units',5x,i10)") ntmp
+                    If (l_top)              &
   Write(nrite,"(/,1x,'core-shell details:', &
        & /,/,18x,'unit',5x,'index',5x,'index',13x,'parameters',/)")
                  End If
@@ -599,8 +618,9 @@ Subroutine read_field                   &
                  ntmp=Nint(word_2_real(word))
                  numcon(itmols)=numcon(itmols)+ntmp
 
-                 If (idnode == 0 .and. l_top) Then
+                 If (idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of bond constraints',5x,i10)") ntmp
+                    If (l_top)                   &
   Write(nrite,"(/,1x,'constraint bond details:', &
        & /,/,18x,'unit',5x,'index',5x,'index',7x,'bondlength',/)")
                  End If
@@ -712,7 +732,7 @@ Subroutine read_field                   &
                  Call get_word(record,word)
                  prmpmf=word_2_real(word)
 
-                 If (idnode == 0 .and. l_top) Then
+                 If (idnode == 0) Then
   Write(nrite,"(/,/,1x,'PMF constraint details')")
   Write(nrite,"(/,5x,'bondlength:',5x,f15.6)") prmpmf
                  End If
@@ -882,8 +902,9 @@ Subroutine read_field                   &
                  ntmp=Nint(word_2_real(word))
                  numrgd(itmols)=numrgd(itmols)+ntmp
 
-                 If (idnode == 0 .and. l_top) Then
+                 If (idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of rigid bodies',9x,i10)") ntmp
+                    If (l_top) &
   Write(nrite,"(/,1x,'rigid body details:', &
        & /,/,18x,'unit',6x,'size',12x,'indices',/)")
                  End If
@@ -947,11 +968,9 @@ Subroutine read_field                   &
 
                     If (idnode == 0 .and. l_top) Then
                        If (rgdfrz(0,nrigid) /= 0) Then
-  Write(nrite,"(4x,a8,12i10,100(/,36x,10i10))") &
-       '*frozen*',irgd,(lstrgd(i,nrigid),i=0,lrgd)
+  Write(nrite,"(4x,a8,12i10,100(/,36x,10i10))") '*frozen*',irgd,lstrgd(0:lrgd,nrigid)
                        Else
-  Write(nrite,"(12x,12i10,100(/,36x,10i10))") &
-                  irgd,(lstrgd(i,nrigid),i=0,lrgd)
+  Write(nrite,"(12x,12i10,100(/,36x,10i10))")              irgd,lstrgd(0:lrgd,nrigid)
                        End If
 
 ! test for weightless RB
@@ -1005,8 +1024,9 @@ Subroutine read_field                   &
                  ntmp=Nint(word_2_real(word))
                  numteth(itmols)=numteth(itmols)+ntmp
 
-                 If (idnode == 0 .and. l_top) Then
+                 If (idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of tethered sites',7x,i10)") ntmp
+                    If (l_top)                 &
   Write(nrite,"(/,1x,'tethered site details:', &
        & /,/,18x,'unit',5x,'key',6x,'site',19x,'parameters',/) ")
                  End If
@@ -1060,11 +1080,9 @@ Subroutine read_field                   &
 
                     If (idnode == 0 .and. l_top) Then
                        If (frzsit(isite1) /= 0) Then
-  Write(nrite,"(4x,a8,i10,a8,i10,2x,10f15.6)") &
-       '*frozen*',iteth,keyword,lsttet(nteth),(prmtet(ja,nteth),ja=1,mxpteth)
+  Write(nrite,"(4x,a8,i10,a8,i10,2x,10f15.6)") '*frozen*',iteth,keyword,lsttet(nteth),prmtet(1:mxpteth,nteth)
                        Else
-  Write(nrite,"(12x,i10,a8,i10,2x,10f15.6)") &
-                  iteth,keyword,lsttet(nteth),(prmtet(ja,nteth),ja=1,mxpteth)
+  Write(nrite,"(12x,i10,a8,i10,2x,10f15.6)")              iteth,keyword,lsttet(nteth),prmtet(1:mxpteth,nteth)
                        End If
                     End If
 
@@ -1109,8 +1127,9 @@ Subroutine read_field                   &
                  ntmp=Nint(word_2_real(word))
                  numbonds(itmols)=numbonds(itmols)+ntmp
 
-                 If (idnode == 0 .and. l_top) Then
+                 If (idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of chemical bonds',7x,i10)") ntmp
+                    If (l_top)                 &
   Write(nrite,"(/,1x,'chemical bond details:', &
        & /,/,18x,'unit',5x,'key',5x,'index',5x,'index',28x,'parameters',/)")
                  End If
@@ -1219,16 +1238,18 @@ Subroutine read_field                   &
                        If (idnode == 0 .and. l_top) Then
                           If (frzsit(isite1)*frzsit(isite2) /= 0) Then
   Write(nrite,"(4x,a8,i10,a8,2i10,2x,10f15.6)") &
-       '*frozen*',ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds),(prmbnd(ja,nbonds),ja=1,mxpbnd)
+       '*frozen*',ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds),prmbnd(1:mxpbnd,nbonds)
                           Else
   Write(nrite,"(12x,i10,a8,2i10,2x,10f15.6)") &
-                  ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds),(prmbnd(ja,nbonds),ja=1,mxpbnd)
+                  ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds),prmbnd(1:mxpbnd,nbonds)
                           End If
                        End If
 
 ! convert energy units to internal units
 
-                       prmbnd(1,nbonds)=prmbnd(1,nbonds)*engunit
+                       If (Abs(keybnd(nbonds)) /= 8) Then
+                          prmbnd(1,nbonds)=prmbnd(1,nbonds)*engunit
+                       End If
 
                        If (Abs(keybnd(nbonds)) == 3) Then
                           prmbnd(2,nbonds)=prmbnd(2,nbonds)*engunit
@@ -1277,11 +1298,9 @@ Subroutine read_field                   &
 
                        If (idnode == 0 .and. l_top) Then
                           If (frzsit(isite1)*frzsit(isite2) /= 0) Then
-  Write(nrite,"(4x,a8,i10,a8,2i10,2x,a9)") &
-       '*frozen*',ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds),"tabulated"
+  Write(nrite,"(4x,a8,i10,a8,2i10,2x,a9)") '*frozen*',ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds),"tabulated"
                           Else
-  Write(nrite,"(12x,i10,a8,2i10,2x,a9)") &
-                  ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds),"tabulated"
+  Write(nrite,"(12x,i10,a8,2i10,2x,a9)")              ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds),"tabulated"
                           End If
                        End If
 
@@ -1329,8 +1348,9 @@ Subroutine read_field                   &
                  ntmp=Nint(word_2_real(word))
                  numang(itmols)=numang(itmols)+ntmp
 
-                 If (idnode == 0 .and. l_top) Then
+                 If (idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of bond angles',10x,i10)") ntmp
+                    If (l_top)              &
   Write(nrite,"(/,1x,'bond angle details:', &
        & /,/,18x,'unit',5x,'key',5x,'index',5x,'index',5x,'index',7x,'f-const',8x,'angle',/)")
                  End If
@@ -1456,11 +1476,9 @@ Subroutine read_field                   &
 
                        If (idnode == 0 .and. l_top) Then
                           If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) /= 0) Then
-  Write(nrite,"(4x,a8,i10,a8,3i10,10f15.6)") &
-       '*frozen*',iang,keyword,(lstang(ia,nangle),ia=1,3),(prmang(ja,nangle),ja=1,mxpang)
+  Write(nrite,"(4x,a8,i10,a8,3i10,10f15.6)") '*frozen*',iang,keyword,lstang(1:3,nangle),prmang(1:mxpang,nangle)
                           Else
-  Write(nrite,"(12x,i10,a8,3i10,10f15.6)") &
-                  iang,keyword,(lstang(ia,nangle),ia=1,3),(prmang(ja,nangle),ja=1,mxpang)
+  Write(nrite,"(12x,i10,a8,3i10,10f15.6)")              iang,keyword,lstang(1:3,nangle),prmang(1:mxpang,nangle)
                           End If
                        End If
 
@@ -1520,11 +1538,9 @@ Subroutine read_field                   &
 
                        If (idnode == 0 .and. l_top) Then
                           If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) /= 0) Then
-  Write(nrite,"(4x,a8,i10,a8,3i10,2x,a9)") &
-       '*frozen*',iang,keyword,(lstang(ia,nangle),ia=1,3),"tabulated"
+  Write(nrite,"(4x,a8,i10,a8,3i10,2x,a9)") '*frozen*',iang,keyword,lstang(1:3,nangle),"tabulated"
                           Else
-  Write(nrite,"(12x,i10,a8,3i10,2x,a9)") &
-                  iang,keyword,(lstang(ia,nangle),ia=1,3),"tabulated"
+  Write(nrite,"(12x,i10,a8,3i10,2x,a9)")              iang,keyword,lstang(1:3,nangle),"tabulated"
                           End If
                        End If
 
@@ -1576,8 +1592,9 @@ Subroutine read_field                   &
                  ntmp=Nint(word_2_real(word))
                  numdih(itmols)=numdih(itmols)+ntmp
 
-                 If (idnode == 0 .and. l_top) Then
+                 If (idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of dihedral angles',6x,i10)") ntmp
+                    If (l_top)                  &
   Write(nrite,"(/,1x,'dihedral angle details:', &
        & /,/,18x,'unit',5x,'key',5x,'index',5x,'index',5x,'index',5x,'index', &
        & 7x,'f-const',8x,'angle',9x,'trig',11x,'1-4 elec',7x,'1-4 vdw',/)")
@@ -1679,11 +1696,9 @@ Subroutine read_field                   &
 
                        If (idnode == 0 .and. l_top) Then
                           If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
-  Write(nrite,"(4x,a8,i10,a8,4i10,10f15.6)") &
-       '*frozen*',idih,keyword,(lstdih(ia,ndihed),ia=1,4),(prmdih(ja,ndihed),ja=1,mxpdih)
+  Write(nrite,"(4x,a8,i10,a8,4i10,10f15.6)") '*frozen*',idih,keyword,lstdih(1:4,ndihed),prmdih(1:mxpdih,ndihed)
                           Else
-  Write(nrite,"(12x,i10,a8,4i10,10f15.6)") &
-                  idih,keyword,(lstdih(ia,ndihed),ia=1,4),(prmdih(ja,ndihed),ja=1,mxpdih)
+  Write(nrite,"(12x,i10,a8,4i10,10f15.6)")              idih,keyword,lstdih(1:4,ndihed),prmdih(1:mxpdih,ndihed)
                           End If
                        End If
 
@@ -1747,11 +1762,9 @@ Subroutine read_field                   &
 
                        If (idnode == 0 .and. l_top) Then
                           If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
-  Write(nrite,"(4x,a8,i10,a8,4i10,2x,a9)") &
-       '*frozen*',idih,keyword,(lstdih(ia,ndihed),ia=1,4),"tabulated"
+  Write(nrite,"(4x,a8,i10,a8,4i10,2x,a9)") '*frozen*',idih,keyword,lstdih(1:4,ndihed),"tabulated"
                           Else
-  Write(nrite,"(12x,i10,a8,4i10,2x,a9)") &
-                  idih,keyword,(lstdih(ia,ndihed),ia=1,4),"tabulated"
+  Write(nrite,"(12x,i10,a8,4i10,2x,a9)")              idih,keyword,lstdih(1:4,ndihed),"tabulated"
                           End If
                        End If
 
@@ -1809,8 +1822,9 @@ Subroutine read_field                   &
                  ntmp=Nint(word_2_real(word))
                  numinv(itmols)=numinv(itmols)+ntmp
 
-                 If (idnode == 0 .and. l_top) Then
+                 If (idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of inversion angles',5x,i10)") ntmp
+                    If (l_top)                   &
   Write(nrite,"(/,1x,'inversion angle details:', &
        & /,/,18x,'unit',5x,'key',5x,'index',5x,'index',5x,'index',5x,'index', &
        & 7x,'f-const',8x,'angle',8x,'factor',/)")
@@ -1897,11 +1911,9 @@ Subroutine read_field                   &
 
                        If (idnode == 0 .and. l_top) Then
                           If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
-  Write(nrite,"(4x,a8,i10,a8,4i10,10f15.6)") &
-       '*frozen*',iinv,keyword,(lstinv(ia,ninver),ia=1,4),(prminv(ja,ninver),ja=1,mxpinv)
+  Write(nrite,"(4x,a8,i10,a8,4i10,10f15.6)") '*frozen*',iinv,keyword,lstinv(1:4,ninver),prminv(1:mxpinv,ninver)
                           Else
-  Write(nrite,"(12x,i10,a8,4i10,10f15.6)") &
-                  iinv,keyword,(lstinv(ia,ninver),ia=1,4),(prminv(ja,ninver),ja=1,mxpinv)
+  Write(nrite,"(12x,i10,a8,4i10,10f15.6)")              iinv,keyword,lstinv(1:4,ninver),prminv(1:mxpinv,ninver)
                           End If
                        End If
 
@@ -1968,11 +1980,9 @@ Subroutine read_field                   &
 
                        If (idnode == 0 .and. l_top) Then
                           If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
-  Write(nrite,"(4x,a8,i10,a8,4i10,2x,a9)") &
-       '*frozen*',iinv,keyword,(lstinv(ia,ninver),ia=1,4),"tabulated"
+  Write(nrite,"(4x,a8,i10,a8,4i10,2x,a9)") '*frozen*',iinv,keyword,lstinv(1:4,ninver),"tabulated"
                           Else
-  Write(nrite,"(12x,i10,a8,4i10,2x,a9)") &
-                  iinv,keyword,(lstinv(ia,ninver),ia=1,4),"tabulated"
+  Write(nrite,"(12x,i10,a8,4i10,2x,a9)")              iinv,keyword,lstinv(1:4,ninver),"tabulated"
                           End If
                        End If
 
@@ -2050,6 +2060,7 @@ Subroutine read_field                   &
                  Call error(12)
 
               End If
+
            End Do
 
 ! just finished with this type molecule data
@@ -2626,6 +2637,12 @@ Subroutine read_field                   &
            lecx = .false.   ! extended coulombic exclusion is abandoned
         End If
 
+! check megshl and l_n_e/keyfce
+
+! Process MPOLES
+
+        If (mximpl > 0) Call read_mpoles(l_top,sumchg)
+
 ! Check for charges in the system
 
         If (keyfce /= 0 .and. Abs(sumchg) <= zero_plus) Then
@@ -2910,10 +2927,9 @@ Subroutine read_field                   &
               nsite=nsite+numsit(itmols)
            End Do
 
-! Globalise megrgd,imcon,rcut for RBs
+! Globalise megrgd & rcut for RBs
 
            rgdmeg=megrgd
-           rgdimc=imcon
            rgdrct=rcut
 
         End If
@@ -3057,7 +3073,7 @@ Subroutine read_field                   &
                  parpot(i)=word_2_real(word)
               End Do
               If (idnode == 0 .and. l_top) &
-  Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,10f20.6)") itpvdw,atom1,atom2,keyword,(parpot(i),i=1,itmp)
+  Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,10f20.6)") itpvdw,atom1,atom2,keyword,parpot(1:itmp)
 
 ! convert energies to internal unit
 
@@ -3448,7 +3464,7 @@ Subroutine read_field                   &
                              End If
 
                              If (idnode == 0 .and. l_top) Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,10f20.6)") &
-                                ntpvdw,unqatm(i),unqatm(j),keyword,(parpot(itmp),itmp=1,Merge(mxpvdw+1,mxpvdw,keydpd > 0))
+                                ntpvdw,unqatm(i),unqatm(j),keyword,parpot(1:Merge(mxpvdw+1,mxpvdw,keydpd > 0))
 
                           End If
                        End Do
@@ -3584,7 +3600,7 @@ Subroutine read_field                   &
               parpot(9)=word_2_real(word)
 
               If (idnode == 0 .and. l_top) &
-  Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,10f15.6)") itpmet,atom1,atom2,keyword,(parpot(j),j=1,mxpmet)
+  Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,10f15.6)") itpmet,atom1,atom2,keyword,parpot(1:mxpmet)
            End If
 
            katom1=0
@@ -3756,8 +3772,8 @@ Subroutine read_field                   &
               parpot(11)=word_2_real(word)      ! h_i
 
               If (idnode == 0 .and. l_top) Then
-  Write(nrite,"(1x,i10,5x,a8,3x,a4,1x,10(1p,e13.4))") itpter,atom0,keyword,(parpot(j),j=1,5)
-  Write(nrite,"(32x,10(1p,e13.4))") (parpot(j),j=6,11)
+  Write(nrite,"(1x,i10,5x,a8,3x,a4,1x,10(1p,e13.4))") itpter,atom0,keyword,parpot(1: 5)
+  Write(nrite,"(32x,10(1p,e13.4))")                                        parpot(6:11)
               End If
 
            Else If (keypot == 2) Then
@@ -3790,9 +3806,9 @@ Subroutine read_field                   &
               parpot(16)=word_2_real(word)      ! beta_i
 
               If (idnode == 0 .and. l_top) Then
-  Write(nrite,"(1x,i10,5x,a8,3x,a4,1x,10(1p,e13.4))") itpter,atom0,keyword,(parpot(j),j=1,5)
-  Write(nrite,"(32x,10(1p,e13.4))") (parpot(j),j=6,11)
-  Write(nrite,"(32x,10(1p,e13.4))") (parpot(j),j=12,mxpter)
+  Write(nrite,"(1x,i10,5x,a8,3x,a4,1x,10(1p,e13.4))") itpter,atom0,keyword,parpot( 1:     5)
+  Write(nrite,"(32x,10(1p,e13.4))")                                        parpot( 6:    11)
+  Write(nrite,"(32x,10(1p,e13.4))")                                        parpot(12:mxpter)
               End If
 
            End If
@@ -3892,7 +3908,7 @@ Subroutine read_field                   &
               prmter2(keyter,2)=parpot(2)
 
               If (idnode == 0 .and. l_top) &
-  Write(nrite,"(1x,i10,5x,2a8,1x,2f15.6)") icross,atom1,atom2,(parpot(j),j=1,2)
+  Write(nrite,"(1x,i10,5x,2a8,1x,2f15.6)") icross,atom1,atom2,parpot(1:2)
 
            End Do
 
@@ -3974,7 +3990,7 @@ Subroutine read_field                   &
            parpot(5)=word_2_real(word)
 
            If (idnode == 0 .and. l_top) &
-  Write(nrite,"(1x,i10,5x,3a8,3x,a4,1x,10f15.6)") itptbp,atom1,atom0,atom2,keyword,(parpot(j),j=1,mxptbp)
+  Write(nrite,"(1x,i10,5x,3a8,3x,a4,1x,10f15.6)") itptbp,atom1,atom0,atom2,keyword,parpot(1:mxptbp)
 
            katom0=0
            katom1=0
@@ -4103,7 +4119,7 @@ Subroutine read_field                   &
            parpot(3)=word_2_real(word)
 
            If (idnode == 0 .and. l_top) &
-  Write(nrite,"(1x,i10,3x,4a8,3x,a4,2x,10f15.6)") itpfbp,atom0,atom1,atom2,atom3,keyword,(parpot(j),j=1,mxpfbp)
+  Write(nrite,"(1x,i10,3x,4a8,3x,a4,2x,10f15.6)") itpfbp,atom0,atom1,atom2,atom3,keyword,parpot(1:mxpfbp)
 
            katom0=0
            katom1=0
@@ -4292,7 +4308,7 @@ Subroutine read_field                   &
 
         If (idnode == 0) Close(Unit=nfield)
 
-! Precautions: (vdw,met) may have lead to rdf scanning (mxrdf > 0), see set_bounds
+! Precautions: (vdw,met) may have led to rdf scanning (mxrdf > 0), see set_bounds
 
         If (ntprdf == 0 .and. mxrdf > 0) Then
            Do ia=1,ntpatm
@@ -4344,6 +4360,7 @@ Subroutine read_field                   &
         Call error(4)
 
      End If
+
   End Do
 
 ! uncontrolled error exit from field file processing

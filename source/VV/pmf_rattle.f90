@@ -12,7 +12,7 @@ Subroutine pmf_rattle                      &
 !       VV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2015
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -164,9 +164,9 @@ Subroutine pmf_rattle                      &
   If (.not.safe) Then ! error exit for non-convergence
      Call error(499)
   Else ! Collect per call and per step passage statistics
-     passpmf(1,1,2)=icyc-1
+     passpmf(1,1,2)=Real(icyc-1,wp)
      passpmf(3,1,2)=passpmf(2,1,2)*passpmf(3,1,2)
-     passpmf(2,1,2)=passpmf(2,1,2)+1
+     passpmf(2,1,2)=passpmf(2,1,2)+1.0_wp
      passpmf(3,1,2)=passpmf(3,1,2)/passpmf(2,1,2)+passpmf(1,1,2)/passpmf(2,1,2)
      passpmf(4,1,2)=Min(passpmf(1,1,2),passpmf(4,1,2))
      passpmf(5,1,2)=Max(passpmf(1,1,2),passpmf(5,1,2))
@@ -174,7 +174,7 @@ Subroutine pmf_rattle                      &
      passpmf(1,2,2)=passpmf(1,2,2)+passpmf(1,1,2)
      If (lcol) Then ! Collect
         passpmf(3,2,2)=passpmf(2,2,2)*passpmf(3,2,2)
-        passpmf(2,2,2)=passpmf(2,2,2)+1
+        passpmf(2,2,2)=passpmf(2,2,2)+1.0_wp
         passpmf(3,2,2)=passpmf(3,2,2)/passpmf(2,2,2)+passpmf(1,2,2)/passpmf(2,2,2)
         passpmf(4,2,2)=Min(passpmf(1,2,2),passpmf(4,2,2))
         passpmf(5,2,2)=Max(passpmf(1,2,2),passpmf(5,2,2))

@@ -3,7 +3,7 @@
 
 ! Apply external field
 
-        If (keyfld > 0) Call external_field_correct(imcon)
+        If (keyfld > 0) Call external_field_correct()
 
 ! Apply pseudo thermostat - velocity cycle (1)
 
@@ -26,27 +26,27 @@
            chip = 0.0_wp
            eta  = 0.0_wp
 
-           Call regauss_temperature(imcon,megrgd)
+           Call regauss_temperature(megrgd)
 
 ! quench constraints & PMFs
 
-           If (megcon > 0) Call constraints_quench(imcon,mxshak,tolnce)
-           If (megpmf > 0) Call pmf_quench(imcon,mxshak,tolnce)
+           If (megcon > 0) Call constraints_quench(mxshak,tolnce)
+           If (megpmf > 0) Call pmf_quench(mxshak,tolnce)
 
 ! quench core-shell units in adiabatic model
 
            If (megshl > 0 .and. keyshl == 1) Then
               stptmp = 2.0_wp*(engke+engrot) / (boltz*Real(degfre,wp))
               Do
-                 Call scale_temperature(imcon,engke+engrot,degtra,degrot,degfre)
+                 Call scale_temperature(engke+engrot,degtra,degrot,degfre)
                  Call core_shell_quench(safe,stptmp)
-                 If (megcon > 0) Call constraints_quench(imcon,mxshak,tolnce)
-                 If (megpmf > 0) Call pmf_quench(imcon,mxshak,tolnce)
-                 If (megrgd > 0) Call rigid_bodies_quench(imcon)
+                 If (megcon > 0) Call constraints_quench(mxshak,tolnce)
+                 If (megpmf > 0) Call pmf_quench(mxshak,tolnce)
+                 If (megrgd > 0) Call rigid_bodies_quench()
                  If (safe) Exit
               End Do
            Else
-              Call scale_temperature(imcon,engke+engrot,degtra,degrot,degfre)
+              Call scale_temperature(engke+engrot,degtra,degrot,degfre)
            End If
 
 ! Correct kinetic stress and energy
@@ -73,22 +73,22 @@
 
 ! quench constraints & PMFs
 
-           If (megcon > 0) Call constraints_quench(imcon,mxshak,tolnce)
-           If (megpmf > 0) Call pmf_quench(imcon,mxshak,tolnce)
+           If (megcon > 0) Call constraints_quench(mxshak,tolnce)
+           If (megpmf > 0) Call pmf_quench(mxshak,tolnce)
 
 ! quench core-shell units in adiabatic model
 
            If (megshl > 0 .and. keyshl == 1) Then
               Do
-                 Call scale_temperature(imcon,sigma,degtra,degrot,degfre)
+                 Call scale_temperature(sigma,degtra,degrot,degfre)
                  Call core_shell_quench(safe,stptmp)
-                 If (megcon > 0) Call constraints_quench(imcon,mxshak,tolnce)
-                 If (megpmf > 0) Call pmf_quench(imcon,mxshak,tolnce)
-                 If (megrgd > 0) Call rigid_bodies_quench(imcon)
+                 If (megcon > 0) Call constraints_quench(mxshak,tolnce)
+                 If (megpmf > 0) Call pmf_quench(mxshak,tolnce)
+                 If (megrgd > 0) Call rigid_bodies_quench()
                  If (safe) Exit
               End Do
            Else
-              Call scale_temperature(imcon,sigma,degtra,degrot,degfre)
+              Call scale_temperature(sigma,degtra,degrot,degfre)
            End If
 
 ! Correct kinetic stress and energy

@@ -1,4 +1,4 @@
-Subroutine constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
+Subroutine constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -8,20 +8,19 @@ Subroutine constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
 ! Note: must be used in conjunction with integration algorithms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2011
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gsync,gcheck
   Use setup_module
-  Use config_module,      Only : cell,natms,nlast,lsi,lsa,lfrzn, &
+  Use config_module,      Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                                  xxx,yyy,zzz
   Use constraints_module, Only : ntcons,listcon
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon
   Logical,           Intent( InOut ) :: lstitr(1:mxatms)
   Integer,           Intent(   Out ) :: lstopt(0:2,1:mxcons)
   Real( Kind = wp ), Intent(   Out ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)

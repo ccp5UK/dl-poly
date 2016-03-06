@@ -77,6 +77,8 @@ Program dl_poly
   Use dihedrals_module
   Use inversions_module
 
+  Use mpoles_module
+
   Use vdw_module
   Use metal_module
   Use tersoff_module
@@ -84,7 +86,6 @@ Program dl_poly
   Use four_body_module
 
   Use kim_module
-  Use plumed_module
 
   Use external_field_module
 
@@ -150,7 +151,7 @@ Program dl_poly
                        relaxed_shl = .true.,        &
                        relaxed_min = .true.
 
-  Integer           :: i,j,isw,levcfg,imcon,nstfce,        &
+  Integer           :: i,j,isw,levcfg,nstfce,              &
                        nx,ny,nz,imd,tmd,                   &
                        keyres,nstrun,nsteql,               &
                        keymin,nstmin,nstgaus,nstscal,      &
@@ -220,8 +221,8 @@ Program dl_poly
           "*************  execution on ", mxnode, " process(es) ******* L ***", &
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
-          "*************  i.j.bush, r.davidchak, a.m.elena      *************", &
-          "*************  m.a.seaton, a.v.brukhno               *************", &
+          "*************  i.j.bush, h.a.boateng, r.davidchak,   *************", &
+          "*************  m.a.seaton, a.v.brukhno, a.m.elena    *************", &
           "******************************************************************"
 
      Write(nrite,'(7(1x,a,/))') &
@@ -230,7 +231,7 @@ Program dl_poly
           "****  Please do cite `J. Mater. Chem.', 16, 1911-1918 (2006)  ****", &
           "****  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ****", &
           "****  when publishing research data obtained using DL_POLY_4  ****", &
-          "****  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ****", &
+          "****  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ****", &
           "******************************************************************"
   End If
 
@@ -241,8 +242,8 @@ Program dl_poly
 ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
 ! (setup_module and domains_module)
 
-  Call set_bounds                                           &
-           (levcfg,imcon,lsim,l_vv,l_str,l_n_e,l_n_v,l_ind, &
+  Call set_bounds                                     &
+           (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width)
 
   Call gtime(timelp)
@@ -276,6 +277,8 @@ Program dl_poly
   Call allocate_dihedrals_arrays()
   Call allocate_inversions_arrays()
 
+  Call allocate_mpoles_arrays()
+
 ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
 
   Call allocate_vdw_arrays()
@@ -296,11 +299,11 @@ Program dl_poly
 ! READ SIMULATION CONTROL PARAMETERS
 
   Call read_control                                    &
-           (levcfg,l_vv,l_str,l_n_e,l_n_v,             &
+           (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
            rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
            l_exp,lecx,lfcap,l_top,lzero,lmin,          &
            ltgaus,ltscal,lvar,leql,lpse,               &
-           lsim,lfce,lpana,lrdf,lprdf,lzdn,lpzdn,      &
+           lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
            lvafav,lpvaf,ltraj,ldef,lrsd,               &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
            temp,press,strext,keyres,                   &
@@ -318,7 +321,7 @@ Program dl_poly
 ! READ SIMULATION FORCE FIELD
 
   Call read_field                       &
-           (imcon,l_n_v,l_str,l_top,    &
+           (l_str,l_top,l_n_v,          &
            rcut,rvdw,rmet,width,temp,   &
            keyens,keyfce,keyshl,        &
            lecx,lbook,lexcl,            &
@@ -327,24 +330,18 @@ Program dl_poly
            megshl,megcon,megpmf,megrgd, &
            megtet,megbnd,megang,megdih,meginv)
 
+! If using induced dipoles then read in atomic polarizability
+
+!  If (induce) Call read_polarity()
+
 ! CHECK MD CONFIGURATION
 
-  Call check_config &
-           (levcfg,imcon,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
+  Call check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
   Call gtime(timelp)
   If (idnode == 0) Then
      Write(nrite,'(/,1x,a)') "*** all reading and connectivity checks DONE ***"
      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
-  End If
-
-  If (l_plumed) Then
-     Call plumed_init(megatm,tstep,temp)
-     Call plumed_print_about()
-  Else
-     If (idnode == 0) Then
-        Write(nrite,'(1x,a)') "*** PLUMED is off or version without PLUMED ***"
-     End If
   End If
 
 ! l_org: translate CONFIG into CFGORG and exit gracefully
@@ -356,7 +353,7 @@ Program dl_poly
         Write(nrite,'(1x,a)') "*** ... ***"
      End If
 
-     Call origin_config(imcon,megatm)
+     Call origin_config(megatm)
 
      Call gtime(timelp)
      If (idnode == 0) Then
@@ -375,7 +372,7 @@ Program dl_poly
         Write(nrite,'(1x,a)') "*** ... ***"
      End If
 
-     Call scale_config(imcon,megatm)
+     Call scale_config(megatm)
 
      Call gtime(timelp)
      If (idnode == 0) Then
@@ -399,8 +396,7 @@ Program dl_poly
      nstraj = 0 ; istraj = 1 ; keytrj = 0  ! default trajectory
      nstep  = 0                            ! no steps done
      time   = 0.0_wp                       ! time is not relevant
-     Call trajectory_write &
-           (imcon,keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
+     Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
      Call gtime(timelp)
      If (idnode == 0) Then
@@ -412,7 +408,7 @@ Program dl_poly
 
 ! Expand current system if opted for
 
-  If (l_exp) Call system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
+  If (l_exp) Call system_expand(l_str,rcut,nx,ny,nz,megatm)
 
 ! EXIT gracefully
 
@@ -424,15 +420,14 @@ Program dl_poly
 ! READ REVOLD (thermodynamic and structural data from restart file)
 
   Call system_init                                                 &
-           (levcfg,imcon,rcut,rvdw,rbin,rmet,                      &
-           lrdf,lzdn,keyres,megatm,                                &
+           (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
            time,tmst,nstep,tstep,chit,cint,chip,eta,virtot,stress, &
            vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm)
 
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-  Call set_halo_particles(imcon,rlnk,keyfce)
+  Call set_halo_particles(rlnk,keyfce)
 
   Call gtime(timelp)
   If (idnode == 0) Then
@@ -445,11 +440,12 @@ Program dl_poly
 
   If (lbook) Then
      Call build_book_intra              &
-           (lsim,dvar,                  &
+           (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
            megtet,megbnd,megang,megdih,meginv)
+     If (mximpl > 0) Call build_tplg_intra()
      If (lexcl) Call build_excl_intra(lecx)
   Else
      Call report_topology                &
@@ -482,15 +478,23 @@ Program dl_poly
      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
   End If
 
+! set and halo rotational matrices and their infinitesimal rotations
+
+  If (mximpl > 0) Call mpoles_rotmat_set_halo()
+
+! Make first check on VNL conditioning
+
+  Call vnl_check(l_str,m_rgd,rcut,rpad,rlnk,width)
+
 ! SET initial system temperature
 
-  Call set_temperature                &
-           (levcfg,imcon,temp,keyres, &
-           lmin,nstep,nstrun,nstmin,  &
-           mxshak,tolnce,keyshl,      &
-           atmfre,atmfrz,             &
-           megshl,megcon,megpmf,      &
-           megrgd,degtra,degrot,      &
+  Call set_temperature               &
+           (levcfg,temp,keyres,      &
+           lmin,nstep,nstrun,nstmin, &
+           mxshak,tolnce,keyshl,     &
+           atmfre,atmfrz,            &
+           megshl,megcon,megpmf,     &
+           megrgd,degtra,degrot,     &
            degfre,degshl,sigma,engrot)
 
   Call gtime(timelp)
@@ -609,7 +613,7 @@ Program dl_poly
 ! Now you can run fast, boy
 
   If (l_fast) Call gsync(l_fast)
-  Call vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk,width)
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -663,8 +667,8 @@ Program dl_poly
 
 ! Save restart data (final)
 
-  If (.not.l_tor) Call system_revive                                &
-           (imcon,rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
+  If (.not.l_tor) Call system_revive                          &
+           (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
            chit,cint,chip,eta,strcon,strpmf,stress)
 
 ! Produce summary of simulation
@@ -679,18 +683,27 @@ Program dl_poly
 10 Continue
 
 ! Ask for reference in publications
-  If (l_plumed) Call plumed_finalize()
 
-  If (idnode == 0) Write(nrite,'(/,/,9(1x,a,/))') &
-     "*************************************************************************************************************************", &
-     "**************                                                                                             **************", &
-     "**************  Thank you for using the DL_POLY_4 package in your work.  Please, acknowledge our efforts   **************", &
-     "**************                                                                                             **************", &
-     "**************  by including the following reference when publishing data obtained using DL_POLY_4:        **************", &
-     "**************                                                                                             **************", &
-     "**************  I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove, `J. Mater. Chem.', 16, 1911-1918 (2006)  **************", &
-     "**************                                                                                             **************", &
-     "*************************************************************************************************************************"
+  If (idnode == 0) Then
+     Write(nrite,'(/,/,6(1x,a,/),1x,a)') &
+  "*************************************************************************************************************************", &
+  "**************                                                                                             **************", &
+  "**************  Thank you for using the DL_POLY_4 package in your work.  Please, acknowledge our efforts   **************", &
+  "**************                                                                                             **************", &
+  "**************  by including the following references when publishing data obtained using DL_POLY_4:       **************", &
+  "**************                                                                                             **************", &
+  "**************  I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove, `J. Mater. Chem.', 16, 1911-1918 (2006)  **************"
+
+     If (keyfce == 2) Write(nrite,'(1x,a)') &
+  "**************  I.J. Bush, I.T. Todorov & W. Smith, `Comp. Phys. Commun.', 175, 323-329 (2006)             **************"
+
+     If (mximpl > 0)  Write(nrite,'(1x,a)') &
+  "**************  H.A. Boateng & I.T. Todorov, `J. Chem. Phys.', 142, 034117 (2015)                          **************"
+
+     Write(nrite,'(2(1x,a,/))') &
+  "**************                                                                                             **************", &
+  "*************************************************************************************************************************"
+  End If
 
   If (idnode == 0 .and. l_eng) Write(nrite,"(/,1x,a,1p,e20.10)") "TOTAL ENERGY: ", stpval(1)
 

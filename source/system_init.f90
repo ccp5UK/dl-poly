@@ -1,6 +1,5 @@
 Subroutine system_init                                             &
-           (levcfg,imcon,rcut,rvdw,rbin,rmet,                      &
-           lrdf,lzdn,keyres,megatm,                                &
+           (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
            time,tmst,nstep,tstep,chit,cint,chip,eta,virtot,stress, &
            vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm)
 
@@ -10,7 +9,7 @@ Subroutine system_init                                             &
 ! initial thermodynamic and structural accumulators
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2014
+! author    - i.t.todorov february 2016
 ! contrib   - m.a.seaton june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -38,7 +37,7 @@ Subroutine system_init                                             &
 
   Logical,           Intent( In    ) :: lrdf,lzdn
   Integer,           Intent( InOut ) :: levcfg,keyres
-  Integer,           Intent( In    ) :: imcon,megatm
+  Integer,           Intent( In    ) :: megatm
   Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rbin,rmet
 
   Integer,           Intent(   Out ) :: nstep
@@ -97,7 +96,7 @@ Subroutine system_init                                             &
      virpmf = 0.0_wp
      strpmf = 0.0_wp
 
-! initialise accumulator arrays if reading failure occured
+! initialise accumulator arrays if reading failure occurred
 
      If (keyio > 0) Then
 
@@ -279,30 +278,30 @@ Subroutine system_init                                             &
 ! broadcast stored variables
 
      If (mxnode > 1) Then
-        Call MPI_BCAST(nstep,                 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
-        Call MPI_BCAST(dtstep,                1, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(time,                  1, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(tmst,                  1, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(numacc,                1, MPI_INTEGER, 0, dlp_comm_world, ierr)
-        Call MPI_BCAST(chit,                  1, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(chip,                  1, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(cint,                  1, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(eta(1:9),              9, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(stpval(1:mxnstk), mxnstk, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(stpvl0(1:mxnstk), mxnstk, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(sumval(1:mxnstk), mxnstk, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(ssqval(1:mxnstk), mxnstk, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(zumval(1:mxnstk), mxnstk, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(ravval(1:mxnstk), mxnstk, wp_mpi,      0, dlp_comm_world, ierr)
-        Do k=1,mxnstk
-           Call MPI_BCAST(stkval(1:mxstak,k), mxstak, wp_mpi, 0, dlp_comm_world, ierr)
+        Call MPI_BCAST(nstep,                   1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+        Call MPI_BCAST(dtstep,                  1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(time,                    1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(tmst,                    1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(numacc,                  1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+        Call MPI_BCAST(chit,                    1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(chip,                    1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(cint,                    1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(eta(1:9),                9, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(stpval(0:mxnstk), mxnstk+1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(stpvl0(0:mxnstk), mxnstk+1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(sumval(0:mxnstk), mxnstk+1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(ssqval(0:mxnstk), mxnstk+1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(zumval(0:mxnstk), mxnstk+1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(ravval(0:mxnstk), mxnstk+1, wp_mpi,      0, dlp_comm_world, ierr)
+        Do k=0,mxnstk
+           Call MPI_BCAST(stkval(0:mxstak,k), mxstak+1, wp_mpi, 0, dlp_comm_world, ierr)
         End Do
-        Call MPI_BCAST(strcon(1:9),           9, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(strpmf(1:9),           9, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(stress(1:9),           9, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(vircon,                1, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(virpmf,                1, wp_mpi,      0, dlp_comm_world, ierr)
-        Call MPI_BCAST(virtot,                1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(strcon(1:9),             9, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(strpmf(1:9),             9, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(stress(1:9),             9, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(vircon,                  1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(virpmf,                  1, wp_mpi,      0, dlp_comm_world, ierr)
+        Call MPI_BCAST(virtot,                  1, wp_mpi,      0, dlp_comm_world, ierr)
 
 ! Reset timestep
 
@@ -547,10 +546,10 @@ Subroutine system_init                                             &
 ! elrc & virlrc arrays are zeroed in vdw_module,
 ! no lrc when vdw interactions are force-shifted
 
-  If (ntpvdw > 0 .and. (.not.ls_vdw)) Call vdw_lrc(imcon,rvdw,elrc,virlrc)
+  If (ntpvdw > 0 .and. (.not.ls_vdw)) Call vdw_lrc(rvdw,elrc,virlrc)
 
 ! elrcm & vlrcm arrays are zeroed in metal_module
 
-  If (ntpmet > 0) Call metal_lrc(imcon,rmet,elrcm,vlrcm)
+  If (ntpmet > 0) Call metal_lrc(rmet,elrcm,vlrcm)
 
 End Subroutine system_init

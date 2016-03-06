@@ -1,4 +1,4 @@
-Subroutine statistics_connect_set(imcon,rcut)
+Subroutine statistics_connect_set(rcut)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -21,10 +21,8 @@ Subroutine statistics_connect_set(imcon,rcut)
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon
   Real( Kind = wp ), Intent( In    ) :: rcut
 
-  Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: cut
 
   Integer           :: nlx,nly,nlz,i,i0,kk
@@ -32,17 +30,10 @@ Subroutine statistics_connect_set(imcon,rcut)
                        xdc,ydc,zdc,cwx,cwy,cwz,ecwx,ecwy,ecwz
 
   If (mxnode > 1) Then
-     If (newjob) Then
-        newjob = .false.
-
-! image conditions not compliant with DD and link-cell
-
-        If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
 ! Define cut
 
-        cut=rcut+1.0e-6_wp
-     End If
+     cut=rcut+1.0e-6_wp
 
      Call dcell(cell,celprp)
      Call invert(cell,rcell,det)

@@ -1,4 +1,4 @@
-Subroutine external_field_apply(imcon,keyshl,time,engfld,virfld)
+Subroutine external_field_apply(keyshl,time,engfld,virfld)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,14 +7,14 @@ Subroutine external_field_apply(imcon,keyshl,time,engfld,virfld)
 ! Note: Only one field at a time is allowed
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2014
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,   Only : idnode,mxnode,gcheck,gsum
   Use setup_module,   Only : twopi,nrite,mxshl,mxatms
-  Use config_module,  Only : cell,natms,nfree,nlast,lsi,lsa,ltg, &
+  Use config_module,  Only : imcon,cell,natms,nfree,nlast,lsi,lsa,ltg, &
                              lfrzn,lstfre,weight,chge,           &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use kinetic_module, Only : getcom_mol
@@ -24,7 +24,7 @@ Subroutine external_field_apply(imcon,keyshl,time,engfld,virfld)
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon,keyshl
+  Integer,           Intent( In    ) :: keyshl
   Real( Kind = wp ), Intent( In    ) :: time ! for oscillating fields
   Real( Kind = wp ), Intent(   Out ) :: engfld,virfld
 
@@ -379,7 +379,7 @@ Subroutine external_field_apply(imcon,keyshl,time,engfld,virfld)
 
 ! Get molecule's weight and CoM
 
-      Call getcom_mol(imcon,ia,ib,cmm)
+      Call getcom_mol(ia,ib,cmm)
 
 ! Apply force corrections
 

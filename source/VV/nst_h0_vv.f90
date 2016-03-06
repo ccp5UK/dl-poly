@@ -1,9 +1,13 @@
-Subroutine nst_h0_vv                                       &
-           (isw,lvar,mndis,mxdis,mxstp,tstep,strkin,engke, &
-           imcon,mxshak,tolnce,megcon,strcon,vircon,       &
-           megpmf,strpmf,virpmf,                           &
-           iso,degfre,sigma,taut,chit,cint,consv,          &
-           press,strext,ten,taup,chip,eta,stress,          &
+Subroutine nst_h0_vv                          &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
+           sigma,taut,chit,cint,              &
+           press,strext,taup,chip,eta,        &
+           degfre,iso,ten,stress,             &
+           consv,                             &
+           strkin,engke,                      &
+           mxshak,tolnce,                     &
+           megcon,strcon,vircon,              &
+           megpmf,strpmf,virpmf,              &
            elrc,virlrc)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -32,7 +36,7 @@ Subroutine nst_h0_vv                                       &
 ! reference3: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2015
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -49,25 +53,32 @@ Subroutine nst_h0_vv                                       &
   Implicit None
 
   Integer,           Intent( In    ) :: isw
+
   Logical,           Intent( In    ) :: lvar
   Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
   Real( Kind = wp ), Intent( InOut ) :: tstep
-  Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
-  Integer,           Intent( In    ) :: imcon,mxshak
-  Real( Kind = wp ), Intent( In    ) :: tolnce
-  Integer,           Intent( In    ) :: megcon,megpmf
-  Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon,strpmf(1:9),virpmf
-
-  Integer,           Intent( In    ) :: iso
-  Integer(Kind=ip),  Intent( In    ) :: degfre
   Real( Kind = wp ), Intent( In    ) :: sigma,taut
   Real( Kind = wp ), Intent( InOut ) :: chit,cint
-  Real( Kind = wp ), Intent(   Out ) :: consv
-  Real( Kind = wp ), Intent( In    ) :: press,strext(1:9),ten,taup
+
+  Real( Kind = wp ), Intent( In    ) :: press,strext(1:9),taup
   Real( Kind = wp ), Intent(   Out ) :: chip
   Real( Kind = wp ), Intent( InOut ) :: eta(1:9)
-  Real( Kind = wp ), Intent( In    ) :: stress(1:9)
+
+  Integer(Kind=ip),  Intent( In    ) :: degfre
+  Integer,           Intent( In    ) :: iso
+  Real( Kind = wp ), Intent( In    ) :: ten,stress(1:9)
+
+  Real( Kind = wp ), Intent(   Out ) :: consv
+
+  Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
+
+  Integer,           Intent( In    ) :: mxshak
+  Real( Kind = wp ), Intent( In    ) :: tolnce
+  Integer,           Intent( In    ) :: megcon,megpmf
+  Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
+                                        strpmf(1:9),virpmf
+
   Real( Kind = wp ), Intent( InOut ) :: elrc,virlrc
 
 
@@ -192,12 +203,12 @@ Subroutine nst_h0_vv                                       &
 ! construct current bond vectors and listot array (shared
 ! constraint atoms) for iterative bond algorithms
 
-     If (megcon > 0) Call constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
+     If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
 
 ! construct current PMF constraint vectors and shared description
 ! for iterative PMF constraint algorithms
 
-     If (megpmf > 0) Call pmf_tags(imcon,lstitr,indpmf,pxx,pyy,pzz)
+     If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
   End If
 
 ! timestep derivatives
@@ -348,8 +359,8 @@ Subroutine nst_h0_vv                                       &
 ! apply constraint correction: vircon,strcon - constraint virial,stress
 
                  Call constraints_shake_vv &
-           (imcon,mxshak,tolnce,tstep, &
-           lstopt,dxx,dyy,dzz,listot,  &
+           (mxshak,tolnce,tstep,      &
+           lstopt,dxx,dyy,dzz,listot, &
            xxx,yyy,zzz,str,vir)
 
 ! constraint virial and stress tensor
@@ -364,9 +375,9 @@ Subroutine nst_h0_vv                                       &
 
 ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
-                 Call pmf_shake_vv     &
-           (imcon,mxshak,tolnce,tstep, &
-           indpmf,pxx,pyy,pzz,         &
+                 Call pmf_shake_vv &
+           (mxshak,tolnce,tstep, &
+           indpmf,pxx,pyy,pzz,   &
            xxx,yyy,zzz,str,vir)
 
 ! PMF virial and stress tensor
@@ -385,7 +396,7 @@ Subroutine nst_h0_vv                                       &
            If (iter == mxiter) Then
               If (megcon > 0) Then
                  passcon(3,2,1)=passcon(2,2,1)*passcon(3,2,1)
-                 passcon(2,2,1)=passcon(2,2,1)+1
+                 passcon(2,2,1)=passcon(2,2,1)+1.0_wp
                  passcon(3,2,1)=passcon(3,2,1)/passcon(2,2,1)+passcon(1,2,1)/passcon(2,2,1)
                  passcon(4,2,1)=Min(passcon(1,2,1),passcon(4,2,1))
                  passcon(5,2,1)=Max(passcon(1,2,1),passcon(5,2,1))
@@ -394,7 +405,7 @@ Subroutine nst_h0_vv                                       &
 
               If (megpmf > 0) Then
                  passpmf(3,2,1)=passpmf(2,2,1)*passpmf(3,2,1)
-                 passpmf(2,2,1)=passpmf(2,2,1)+1
+                 passpmf(2,2,1)=passpmf(2,2,1)+1.0_wp
                  passpmf(3,2,1)=passpmf(3,2,1)/passpmf(2,2,1)+passpmf(1,2,1)/passpmf(2,2,1)
                  passpmf(4,2,1)=Min(passpmf(1,2,1),passpmf(4,2,1))
                  passpmf(5,2,1)=Max(passpmf(1,2,1),passpmf(5,2,1))

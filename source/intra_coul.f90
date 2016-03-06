@@ -6,7 +6,7 @@ Subroutine intra_coul(keyfce,rcut,alpha,epsq,chgprd,rrr,rsq,coul,fcoul,safe)
 ! electrostatics: adjusted by a weighting factor
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov march 2012
+! amended   - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -21,7 +21,11 @@ Subroutine intra_coul(keyfce,rcut,alpha,epsq,chgprd,rrr,rsq,coul,fcoul,safe)
   Logical,           Intent( InOut ) :: safe
 
   Logical,           Save :: newjob = .true. , damp
-  Real( Kind = wp ), Save :: aa,bb, rfld0,rfld1
+  Real( Kind = wp ), Save :: aa     = 0.0_wp , &
+                             bb     = 0.0_wp , &
+                             rfld0  = 0.0_wp , &
+                             rfld1  = 0.0_wp , &
+                             rfld2  = 0.0_wp
 
   Real( Kind = wp ) :: exp1,tt,erc,fer,b0
 
@@ -61,13 +65,14 @@ Subroutine intra_coul(keyfce,rcut,alpha,epsq,chgprd,rrr,rsq,coul,fcoul,safe)
         b0    = 2.0_wp*(epsq - 1.0_wp)/(2.0_wp*epsq + 1.0_wp)
         rfld0 = b0/rcut**3
         rfld1 = (1.0_wp + 0.5_wp*b0)/rcut
+        rfld2 = 0.5_wp*rfld0
      End If
   End If
 
 ! initialise defaults for coulombic energy and force contributions
 
-   coul =0.0_wp
-   fcoul=0.0_wp
+  coul =0.0_wp
+  fcoul=0.0_wp
 
 ! Electrostatics by ewald sum = direct coulombic
 
@@ -108,10 +113,10 @@ Subroutine intra_coul(keyfce,rcut,alpha,epsq,chgprd,rrr,rsq,coul,fcoul,safe)
         End If
      Else If (keyfce == 10) Then ! reaction field
         If (.not.damp) Then ! pure
-           coul = chgprd*(1.0_wp/rrr + 0.5_wp*rfld0*rsq - rfld1)
+           coul = chgprd*(1.0_wp/rrr + rfld2*rsq - rfld1)
            fcoul= chgprd*(1.0_wp/rsq/rrr - rfld0)
         Else                ! damped
-           coul = coul  + chgprd*(0.5_wp*rfld0*rsq - rfld1)
+           coul = coul  + chgprd*(rfld2*rsq - rfld1)
            fcoul= fcoul + chgprd*(- rfld0)
         End If
      End If

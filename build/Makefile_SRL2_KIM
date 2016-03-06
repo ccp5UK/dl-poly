@@ -1,6 +1,6 @@
-# Master makefile for DL_POLY_4.07 (serial version 2 with KIM)
+# Master makefile for DL_POLY_4.08 (serial version 2 with KIM)
 #
-# Author - I.T.Todorov January 2015
+# Author - I.T.Todorov March 2016
 #
 #
 # Define default settings
@@ -9,7 +9,7 @@
 SHELL=/bin/sh
 
 .SUFFIXES:
-.SUFFIXES: .f90 .F90 .o 
+.SUFFIXES: .f90 .F90 .o
 
 BINROOT=../execute
 EX=DLPOLY.Z
@@ -31,8 +31,10 @@ OBJ_MOD = \
 	domains_module.o \
 	site_module.o config_module.o vnl_module.o \
 	defects_module.o defects1_module.o \
-	dpd_module.o vdw_module.o metal_module.o tersoff_module.o \
-	three_body_module.o four_body_module.o kim_module_pre.o \
+	dpd_module.o \
+	ewald_module.o mpoles_module.o poisson_module.o \
+	vdw_module.o metal_module.o tersoff_module.o \
+	three_body_module.o four_body_module.o kim_module_pre.o plumed_modul~.o \
 	rdf_module.o z_density_module.o \
 	core_shell_module.o \
 	constraints_module.o pmf_module.o \
@@ -41,13 +43,14 @@ OBJ_MOD = \
 	bonds_module.o angles_module.o dihedrals_module.o inversions_module.o \
 	\
 	external_field_module.o langevin_module.o minimise_module.o \
-	ewald_module.o msd_module.o statistics_module.o greenkubo_module.o \
+	msd_module.o statistics_module.o greenkubo_module.o \
 	\
 	kinetic_module.o gpfa_module.o parallel_fft.o
 
 OBJ_ALL = \
 	warning.o error.o scan_control_io.o \
-	numeric_container.o spme_container.o quaternions_container.o \
+	numeric_container.o quaternions_container.o \
+	mpoles_container.o spme_container.o \
 	scan_field.o scan_control_pre.o \
 	read_config_parallel.o scan_config.o scan_control.o read_config.o \
 	set_bounds.o \
@@ -56,13 +59,13 @@ OBJ_ALL = \
 	dihedrals_table_read.o inversions_table_read.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate_erf.o metal_generate.o metal_table_read.o metal_table_derivatives.o \
-	tersoff_generate.o dihedrals_14_check.o read_field.o \
+	tersoff_generate.o dihedrals_14_check.o read_mpoles.o read_field.o \
 	check_config.o origin_config.o scale_config.o write_config.o \
 	trajectory_write.o system_expand.o \
 	rigid_bodies_tags.o rigid_bodies_coms.o rigid_bodies_widths.o \
 	rigid_bodies_setup.o \
 	init_intra.o tag_legend.o report_topology.o pass_shared_units.o \
-	build_book_intra.o build_excl_intra.o \
+	build_book_intra.o build_tplg_intra.o build_excl_intra.o \
 	scale_temperature.o update_shared_units.o \
 	core_shell_quench.o constraints_tags.o constraints_quench.o \
 	pmf_coms.o pmf_tags.o pmf_vcoms.o pmf_quench.o \
@@ -71,6 +74,7 @@ OBJ_ALL = \
 	vdw_lrc.o metal_lrc.o system_init.o vnl_check.o \
 	export_atomic_data.o set_halo_particles.o \
 	export_atomic_positions.o refresh_halo_positions.o \
+	mpoles_rotmat_export.o mpoles_rotmat_set_halo.o \
 	rigid_bodies_stress.o \
 	read_history.o \
 	defects_reference_read.o defects_reference_read_parallel.o \
@@ -86,14 +90,20 @@ OBJ_ALL = \
 	metal_ld_collect_eam.o metal_ld_collect_fst.o \
 	metal_ld_export.o metal_ld_set_halo.o \
 	metal_ld_compute.o \
-	exchange_grid.o ewald_spme_forces.o \
-	metal_forces.o vdw_forces.o ewald_real_forces.o \
-	coul_dddp_forces.o coul_cp_forces.o coul_fscp_forces.o \
-	coul_rfp_forces.o rdf_collect.o rdf_excl_collect.o rdf_frzn_collect.o \
-	ewald_excl_forces.o ewald_frzn_forces.o two_body_forces.o \
+	exchange_grid.o ewald_spme_forces.o ewald_spme_mforces.o ewald_spme_mforces_d.o \
+	metal_forces.o vdw_forces.o \
+	ewald_real_forces.o ewald_real_mforces.o ewald_real_mforces_d.o \
+	coul_dddp_forces.o coul_dddp_mforces.o \
+	coul_cp_forces.o coul_cp_mforces.o \
+	coul_fscp_forces.o coul_fscp_mforces.o \
+	coul_rfp_forces.o coul_rfp_mforces.o \
+	ewald_excl_forces.o ewald_excl_mforces.o ewald_excl_mforces_d.o \
+	ewald_frzn_forces.o ewald_frzn_mforces.o \
+	rdf_collect.o rdf_excl_collect.o rdf_frzn_collect.o \
+	d_ene_trq_mpoles.o two_body_forces.o \
 	tersoff_forces.o three_body_forces.o four_body_forces.o \
 	core_shell_forces.o tethers_forces.o \
-	intra_coul.o bonds_forces.o angles_forces.o \
+	intra_coul.o intra_mcoul.o bonds_forces.o angles_forces.o \
 	dihedrals_14_vdw.o dihedrals_forces.o inversions_forces.o \
 	external_field_apply.o external_field_correct.o \
 	langevin_forces.o \
@@ -237,15 +247,15 @@ links_lfv:
 #=====================================================================
 
 clean:
-	rm -f $(OBJ_MOD) $(OBJ_ALL) $(FILES_VV) $(FILES_LFV) $(FILES_SERIAL) *.mod
+	rm -f $(OBJ_MOD) $(OBJ_ALL) $(FILES_VV) $(FILES_LFV) *.mod
 
 # Generic target template
 #=====================================================================
 uknown_platform:
 	$(MAKE) LD="path to FORTRAN90 Linker-loaDer" \
-	LDFLAGS="appropriate flags for LD" \
+	LDFLAGS="appropriate flags for LD (MPI libraries)" \
 	FC="path to FORTRAN90 compiler" \
-	FCFLAGS="appropriate flags for FC" \
+	FCFLAGS="appropriate flags for FC (MPI include)" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 # System specific targets follow:
@@ -275,7 +285,7 @@ gnu-debug:
 #=====================================================================
 
 master: message check $(OBJ_MOD) $(OBJ_ALL)
->-------$(LD) $(EXE) $(LDFLAGS) -L$(KIM_API_DIR) $(OBJ_MOD) $(OBJ_ALL) -lkim-api-v1
+	$(LD) $(EXE) $(LDFLAGS) -L$(KIM_API_DIR) -lkim-api-v1 $(OBJ_MOD) $(OBJ_ALL)
 
 # Message
 message:

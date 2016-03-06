@@ -1,12 +1,11 @@
-Subroutine defects_reference_read &
-           (name,imcon,nstep,celr,nrefs,namr,indr,xr,yr,zr)
+Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for reading particles data from REFERENCE file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -14,7 +13,7 @@ Subroutine defects_reference_read &
   Use comms_module
   Use setup_module,   Only : nrite,nrefdt,mxatms,half_minus
   Use site_module
-  Use config_module,  Only : cell,natms
+  Use config_module,  Only : imcon,cell,natms
   Use domains_module, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
   Use parse_module,   Only : tabs_2_blanks, get_line, get_word, word_2_real, strip_blanks
   Use io_module,      Only : io_set_parameters, io_get_parameters, &
@@ -26,7 +25,7 @@ Subroutine defects_reference_read &
   Implicit None
 
   Character( Len = * ), Intent( In    ) :: name
-  Integer,              Intent( In    ) :: imcon,nstep
+  Integer,              Intent( In    ) :: nstep
   Real( Kind = wp ),    Intent(   Out ) :: celr(1:9)
   Character( Len = 8 ), Intent(   Out ) :: namr(1:mxatms)
   Integer,              Intent(   Out ) :: indr(1:mxatms),nrefs
@@ -229,6 +228,10 @@ Subroutine defects_reference_read &
         Call error(552) ! Lattice parameters are a must
      End If
 
+! image conditions not compliant with DD and link-cell
+
+     If (imconr == 4 .or. imconr == 5 .or. imconr == 7) Call error(300)
+
 ! Close REFERENCE
 
      If (idnode == 0) Close(Unit=nrefdt)
@@ -246,6 +249,10 @@ Subroutine defects_reference_read &
      Call io_nc_get_var( 'datalevel'      , fh, lvcfgr, i, 1  )
 
      Call io_nc_get_var( 'imageconvention', fh, imconr, i, 1  )
+
+! image conditions not compliant with DD and link-cell
+
+     If (imconr == 4 .or. imconr == 5 .or. imconr == 7) Call error(300)
 
      Call io_nc_get_var( 'cell'           , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
      celr = Reshape( cell_vecs, (/ Size( celr ) /) )
@@ -537,7 +544,7 @@ Subroutine defects_reference_read &
 ! MATCH glitch fix
 
   If (.not.match) Then
-     Call defects_reference_write(fname,imcon,megref,nrefs,namr,indr,xr,yr,zr)
+     Call defects_reference_write(fname,megref,nrefs,namr,indr,xr,yr,zr)
      Go To 5
   End If
 

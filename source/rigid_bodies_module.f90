@@ -5,7 +5,7 @@ Module rigid_bodies_module
 ! dl_poly_4 module for defining rigid bodies' (RBs) variables and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -19,10 +19,9 @@ Module rigid_bodies_module
                                           ntrgd1 = 0 , &
                                           m_rgd  = 0
 
-! Globalised megrgd,imcon,rcut
+! Globalised megrgd & rcut
 
-  Integer,                        Save :: rgdmeg = 0 , &
-                                          rgdimc = 0
+  Integer,                        Save :: rgdmeg = 0
   Real( Kind = wp ),              Save :: rgdrct = 0.0_wp
 
   Integer,           Allocatable, Save :: numrgd(:)

@@ -1,6 +1,6 @@
-Subroutine pmf_shake_lfv               &
-           (imcon,mxshak,tolnce,tstep, &
-           indpmf,pxx,pyy,pzz,         &
+Subroutine pmf_shake_lfv         &
+           (mxshak,tolnce,tstep, &
+           indpmf,pxx,pyy,pzz,   &
            xxx,yyy,zzz,strpmf,virpmf)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -12,7 +12,7 @@ Subroutine pmf_shake_lfv               &
 !       LFV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2016
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,7 +24,7 @@ Subroutine pmf_shake_lfv               &
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
   Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
   Real( Kind = wp ), Intent( In    ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
@@ -87,7 +87,7 @@ Subroutine pmf_shake_lfv               &
 
 ! calculate temporary PMF units' COM vectors
 
-     Call pmf_coms(imcon,indpmf,pxt,pyt,pzt)
+     Call pmf_coms(indpmf,pxt,pyt,pzt)
 
 ! calculate maximum error in bondlength
 
@@ -169,9 +169,9 @@ Subroutine pmf_shake_lfv               &
      End Do
      Call error(498)
   Else ! Collect per call and per step passage statistics
-     passpmf(1,1,1)=icyc-1
+     passpmf(1,1,1)=Real(icyc-1,wp)
      passpmf(3,1,1)=passpmf(2,1,1)*passpmf(3,1,1)
-     passpmf(2,1,1)=passpmf(2,1,1)+1
+     passpmf(2,1,1)=passpmf(2,1,1)+1.0_wp
      passpmf(3,1,1)=passpmf(3,1,1)/passpmf(2,1,1)+passpmf(1,1,1)/passpmf(2,1,1)
      passpmf(4,1,1)=Min(passpmf(1,1,1),passpmf(4,1,1))
      passpmf(5,1,1)=Max(passpmf(1,1,1),passpmf(5,1,1))

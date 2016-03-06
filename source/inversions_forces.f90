@@ -1,4 +1,4 @@
-Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
+Subroutine inversions_forces(isw,enginv,virinv,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -10,21 +10,21 @@ Subroutine inversions_forces(isw,imcon,enginv,virinv,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1996
-! amended   - i.t.todorov november 2014
+! amended   - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gsync,gsum,gcheck
   Use setup_module,      Only : nrite,mxinv,mxginv1,pi
-  Use config_module,     Only : cell,natms,nlast,lsi,lsa,lfrzn, &
+  Use config_module,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                                 xxx,yyy,zzz,fxx,fyy,fzz
   Use inversions_module, Only : ntinv,keyinv,listinv,prminv, &
                                 ltpinv,vinv,ginv,ncfinv,ldfinv,dstinv
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: isw,imcon
+  Integer,                             Intent( In    ) :: isw
   Real( Kind = wp ),                   Intent(   Out ) :: enginv,virinv
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
 

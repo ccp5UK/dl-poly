@@ -5,7 +5,7 @@ Module dpd_module
 ! dl_poly_4 module declaring global DPD variables and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2015
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -18,7 +18,6 @@ Module dpd_module
   Real( Kind = wp ), Save :: virdpd      = 0.0_wp , &
                              strdpd(1:9) = 0.0_wp
 
-  Integer,           Allocatable, Save :: lstdpd(:,:)
   Real( Kind = wp ), Allocatable, Save :: gamdpd(:),sigdpd(:)
 
   Public :: allocate_dpd_arrays

@@ -1,5 +1,4 @@
-Subroutine trajectory_write &
-           (imcon,keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
+Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,7 +6,7 @@ Subroutine trajectory_write &
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov february 2015
 ! contrib   - w.smith, i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -15,7 +14,7 @@ Subroutine trajectory_write &
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use config_module,     Only : cfgname,cell,natms,     &
+  Use config_module,     Only : cfgname,imcon,cell,natms,     &
                                 ltg,atmnam,chge,weight, &
                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use statistics_module, Only : rsd
@@ -47,7 +46,7 @@ Subroutine trajectory_write &
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon,keyres,         &
+  Integer,           Intent( In    ) :: keyres,               &
                                         nstraj,istraj,keytrj, &
                                         megatm,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,time

@@ -1,18 +1,18 @@
-Subroutine xscale(imcon,m_rgd,keyens,tstep,eta)
+Subroutine xscale(m_rgd,keyens,tstep,eta)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 routine to scale initial positions with change in box shape
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2014
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : idnode
   Use setup_module
-  Use config_module,       Only : cell,natms,nlast,nfree,lstfre,lsi,lsa
+  Use config_module,       Only : imcon,cell,natms,nlast,nfree,lstfre,lsi,lsa
   Use vnl_module,          Only : llvnl,l_vnl,xbg,ybg,zbg
   Use statistics_module,   Only : xin,yin,zin
   Use rigid_bodies_module, Only : ntrgd,listrgd,indrgd,lshmv_rgd,lishp_rgd,lashp_rgd
@@ -20,7 +20,7 @@ Subroutine xscale(imcon,m_rgd,keyens,tstep,eta)
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon,m_rgd,keyens
+  Integer,           Intent( In    ) :: m_rgd,keyens
   Real( Kind = wp ), Intent( In    ) :: tstep,eta(1:9)
 
   Integer           :: fail,i,j,irgd,jrgd,lrgd
@@ -291,7 +291,7 @@ Subroutine xscale(imcon,m_rgd,keyens,tstep,eta)
 ! to get initial COMs
 
      If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xin,yin,zin)
-     Call rigid_bodies_coms(imcon,xin,yin,zin,rgdxin,rgdyin,rgdzin)
+     Call rigid_bodies_coms(xin,yin,zin,rgdxin,rgdyin,rgdzin)
 
      If (keyens == 21 .or. keyens == 31) Then
 
@@ -570,7 +570,7 @@ Subroutine xscale(imcon,m_rgd,keyens,tstep,eta)
 ! to get initial COMs
 
         If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xbg,ybg,zbg)
-        Call rigid_bodies_coms(imcon,xbg,ybg,zbg,rgdxin,rgdyin,rgdzin)
+        Call rigid_bodies_coms(xbg,ybg,zbg,rgdxin,rgdyin,rgdzin)
 
         If (keyens == 21 .or. keyens == 31) Then
 

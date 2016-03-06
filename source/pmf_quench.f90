@@ -1,11 +1,11 @@
-Subroutine pmf_quench(imcon,mxshak,tolnce)
+Subroutine pmf_quench(mxshak,tolnce)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for applying PMF constraint quench
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,7 +17,7 @@ Subroutine pmf_quench(imcon,mxshak,tolnce)
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
 
   Logical,           Save :: newjob = .true.
@@ -59,7 +59,7 @@ Subroutine pmf_quench(imcon,mxshak,tolnce)
   End If
 
   lstitr(1:natms)=.false. ! initialise lstitr
-  Call pmf_tags(imcon,lstitr,indpmf,pxx,pyy,pzz)
+  Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
 
 ! normalise PMF constraint vectors
 
@@ -161,9 +161,9 @@ Subroutine pmf_quench(imcon,mxshak,tolnce)
   If (.not.safe) Then ! error exit if quenching fails
      Call error(497)
   Else ! Collect per call passage statistics
-     passpmq(1)=icyc-1
+     passpmq(1)=Real(icyc-1,wp)
      passpmq(3)=passpmq(2)*passpmq(3)
-     passpmq(2)=passpmq(2)+1
+     passpmq(2)=passpmq(2)+1.0_wp
      passpmq(3)=passpmq(3)/passpmq(2)+passpmq(1)/passpmq(2)
      passpmq(4)=Min(passpmq(1),passpmq(4))
      passpmq(5)=Max(passpmq(1),passpmq(5))

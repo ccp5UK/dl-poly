@@ -1,10 +1,10 @@
-Subroutine nvt_a1_vv                               &
-           (isw,lvar,mndis,mxdis,mxstp,temp,tstep, &
-           keyshl,taut,soft,                       &
-           strkin,strknf,strknt,engke,engrot,      &
-           nstep,imcon,mxshak,tolnce,              &
-           megcon,strcon,vircon,                   &
-           megpmf,strpmf,virpmf,                   &
+Subroutine nvt_a1_vv                          &
+           (isw,lvar,mndis,mxdis,mxstp,tstep, &
+           nstep,temp,keyshl,taut,soft,       &
+           strkin,strknf,strknt,engke,engrot, &
+           mxshak,tolnce,                     &
+           megcon,strcon,vircon,              &
+           megpmf,strpmf,virpmf,              &
            strcom,vircom)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -21,7 +21,7 @@ Subroutine nvt_a1_vv                               &
 !  particles' momenta of a particle subset on each domain)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2015
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,7 +30,7 @@ Subroutine nvt_a1_vv                               &
   Use setup_module
   Use domains_module,     Only : map
   Use site_module,        Only : dofsit,ntpshl,unqshl
-  Use config_module,      Only : cell,natms,nlast,nfree,lsite,          &
+  Use config_module,      Only : imcon,cell,natms,nlast,nfree,lsite,    &
                                  lsi,lsa,ltg,lfrzn,lfree,lstfre,atmnam, &
                                  weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
@@ -41,20 +41,25 @@ Subroutine nvt_a1_vv                               &
 
   Implicit None
 
-  Integer,           Intent( In    ) :: isw,keyshl
+  Integer,           Intent( In    ) :: isw
+
   Logical,           Intent( In    ) :: lvar
-  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp, &
-                                        temp,taut,soft
+  Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
   Real( Kind = wp ), Intent( InOut ) :: tstep
+
+  Integer,           Intent( In    ) :: nstep,keyshl
+  Real( Kind = wp ), Intent( In    ) :: temp,taut,soft
+
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
 
-  Integer,           Intent( In    ) :: nstep,imcon,mxshak
+  Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Integer,           Intent( In    ) :: megcon,megpmf
   Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
-                                        strpmf(1:9),virpmf, &
-                                        strcom(1:9),vircom
+                                        strpmf(1:9),virpmf
+
+  Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
 
 
   Logical,           Save :: newjob = .true. , &
@@ -153,12 +158,12 @@ Subroutine nvt_a1_vv                               &
 ! construct current bond vectors and listot array (shared
 ! constraint atoms) for iterative bond algorithms
 
-     If (megcon > 0) Call constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
+     If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
 
 ! construct current PMF constraint vectors and shared description
 ! for iterative PMF constraint algorithms
 
-     If (megpmf > 0) Call pmf_tags(imcon,lstitr,indpmf,pxx,pyy,pzz)
+     If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
   End If
 
 ! Get the RB particles vectors wrt the RB's COM
@@ -294,8 +299,8 @@ Subroutine nvt_a1_vv                               &
 ! apply constraint correction: vircon,strcon - constraint virial,stress
 
               Call constraints_shake_vv &
-           (imcon,mxshak,tolnce,tstep, &
-           lstopt,dxx,dyy,dzz,listot,  &
+           (mxshak,tolnce,tstep,      &
+           lstopt,dxx,dyy,dzz,listot, &
            xxx,yyy,zzz,str,vir)
 
 ! constraint virial and stress tensor
@@ -310,9 +315,9 @@ Subroutine nvt_a1_vv                               &
 
 ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
-              Call pmf_shake_vv        &
-           (imcon,mxshak,tolnce,tstep, &
-           indpmf,pxx,pyy,pzz,         &
+              Call pmf_shake_vv  &
+           (mxshak,tolnce,tstep, &
+           indpmf,pxx,pyy,pzz,   &
            xxx,yyy,zzz,str,vir)
 
 ! PMF virial and stress tensor
@@ -330,7 +335,7 @@ Subroutine nvt_a1_vv                               &
 
         If (megcon > 0) Then
            passcon(3,2,1)=passcon(2,2,1)*passcon(3,2,1)
-           passcon(2,2,1)=passcon(2,2,1)+1
+           passcon(2,2,1)=passcon(2,2,1)+1.0_wp
            passcon(3,2,1)=passcon(3,2,1)/passcon(2,2,1)+passcon(1,2,1)/passcon(2,2,1)
            passcon(4,2,1)=Min(passcon(1,2,1),passcon(4,2,1))
            passcon(5,2,1)=Max(passcon(1,2,1),passcon(5,2,1))
@@ -339,7 +344,7 @@ Subroutine nvt_a1_vv                               &
 
         If (megpmf > 0) Then
            passpmf(3,2,1)=passpmf(2,2,1)*passpmf(3,2,1)
-           passpmf(2,2,1)=passpmf(2,2,1)+1
+           passpmf(2,2,1)=passpmf(2,2,1)+1.0_wp
            passpmf(3,2,1)=passpmf(3,2,1)/passpmf(2,2,1)+passpmf(1,2,1)/passpmf(2,2,1)
            passpmf(4,2,1)=Min(passpmf(1,2,1),passpmf(4,2,1))
            passpmf(5,2,1)=Max(passpmf(1,2,1),passpmf(5,2,1))

@@ -8,15 +8,13 @@ Subroutine init_intra()
 ! torsion angles, and inversion angles; with exclusions too at the top
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2014
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! SETUP MODULES
 
   Use kinds_f90
-  Use comms_module
-  Use setup_module
 
 ! CONFIG MODULE
 

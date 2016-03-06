@@ -16,7 +16,8 @@ Module ewald_module
   Logical,                        Save :: l_fce  = .true. , l_cp  = .false. , &
                                           lf_fce = .true. , lf_cp = .false.
 
-  Real( Kind = wp ),              Save :: e_rc = 0.0_wp , v_rc = 0.0_wp , s_rc(1:9) = 0.0_wp , &
+  Real( Kind = wp ),              Save :: engsic = 0.0_wp ,                                    &
+                                          e_rc = 0.0_wp , v_rc = 0.0_wp , s_rc(1:9) = 0.0_wp , &
                                           e_fr = 0.0_wp , v_fr = 0.0_wp , s_fr(1:9) = 0.0_wp , &
                                           ef_fr= 0.0_wp , vf_fr= 0.0_wp , sf_fr(1:9)= 0.0_wp
 

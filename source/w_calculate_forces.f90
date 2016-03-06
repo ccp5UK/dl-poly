@@ -1,6 +1,5 @@
 !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
-
 ! for new simulations when using the relaxed shell model
 ! set shells on top of their cores preventatively
 
@@ -10,28 +9,28 @@
 
 ! Check VNL conditioning
 
-        Call vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk,width)
+        Call vnl_check(l_str,m_rgd,rcut,rpad,rlnk,width)
 
         If (l_vnl) Then
 
 ! Relocate atoms to new domains and restore bonding description
 
-           Call relocate_particles   &
-           (imcon,rlnk,lbook,megatm, &
-           megshl,m_con,megpmf,      &
-           m_rgd,megtet,             &
+           Call relocate_particles &
+           (rlnk,lbook,megatm,  &
+           megshl,m_con,megpmf, &
+           m_rgd,megtet,        &
            megbnd,megang,megdih,meginv)
 
 ! Exchange atomic data in border regions
 
-           Call set_halo_particles(imcon,rlnk,keyfce)
+           Call set_halo_particles(rlnk,keyfce) ! inducing in here only
 
 ! Re-tag RBs when called again after the very first time
 ! when it's done in rigid_bodies_setup <- build_book_intra
 
            If (m_rgd > 0) Then
               Call rigid_bodies_tags()
-              Call rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
+              Call rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
            End If
 
         Else
@@ -42,24 +41,28 @@
 
         End If
 
+! set and halo rotational matrices and their infinitesimal rotations
+
+        If (mximpl > 0) Call mpoles_rotmat_set_halo()
+
      End If
 
 100  Continue ! Only used when relaxed is false
 
-! Initialise force arrays and stress tensor (these are all additive
-! in the force subroutines)
+! Initialise force arrays and possible torques for multipolar electrostatics
+! and stress tensor (these are all additive in the force subroutines)
 
-     fxx = 0.0_wp
-     fyy = 0.0_wp
-     fzz = 0.0_wp
-
+     fxx = 0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
+     If (mximpl > 0) Then
+        mptrqx=0.0_wp ; mptrqy=0.0_wp ; mptrqz=0.0_wp
+     End If
      stress = 0.0_wp
 
 ! Calculate pair-like forces (metal,vdw,electrostatic) and add lrc
 
      If (.not.(mxmet == 0 .and. keyfce == 0 .and. l_n_v .and. mxrdf == 0 .and. kim == ' ')) &
         Call two_body_forces                      &
-           (imcon,rcut,rlnk,rvdw,rmet,keyens,     &
+           (rcut,rlnk,rvdw,rmet,keyens,           &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &
@@ -67,23 +70,23 @@
 
 ! Calculate tersoff forces
 
-     If (ntpter > 0) Call tersoff_forces(imcon,rcter,engter,virter,stress)
+     If (ntpter > 0) Call tersoff_forces(rcter,engter,virter,stress)
 
 ! Calculate three-body forces
 
-     If (ntptbp > 0) Call three_body_forces(imcon,rctbp,engtbp,virtbp,stress)
+     If (ntptbp > 0) Call three_body_forces(rctbp,engtbp,virtbp,stress)
 
 ! Calculate four-body forces
 
-     If (ntpfbp > 0) Call four_body_forces(imcon,rcfbp,engfbp,virfbp,stress)
+     If (ntpfbp > 0) Call four_body_forces(rcfbp,engfbp,virfbp,stress)
 
 ! Calculate shell model forces
 
-     If (megshl > 0) Call core_shell_forces(imcon,engshl,virshl,stress)
+     If (megshl > 0) Call core_shell_forces(engshl,virshl,stress)
 
 ! Calculate tethered atom forces
 
-     If (megtet > 0) Call tethers_forces(imcon,engtet,virtet,stress)
+     If (megtet > 0) Call tethers_forces(engtet,virtet,stress)
 
 ! Calculate bond forces
 
@@ -91,8 +94,7 @@
         ltmp = (mxgbnd1 > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstbnd) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
-        Call bonds_forces(isw,imcon,engbnd,virbnd,stress, &
-                       rcut,keyfce,alpha,epsq,engcpe,vircpe)
+        Call bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,vircpe)
      End If
 
 ! Calculate valence angle forces
@@ -101,7 +103,7 @@
         ltmp = (mxgang1 > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstang) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
-        Call angles_forces(isw,imcon,engang,virang,stress)
+        Call angles_forces(isw,engang,virang,stress)
      End If
 
 ! Calculate dihedral forces
@@ -110,7 +112,7 @@
         ltmp = (mxgdih1 > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstdih) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
-        Call dihedrals_forces(isw,imcon,engdih,virdih,stress, &
+        Call dihedrals_forces(isw,engdih,virdih,stress, &
            rcut,rvdw,keyfce,alpha,epsq,engcpe,vircpe,engsrp,virsrp)
      End If
 
@@ -120,14 +122,12 @@
         ltmp = (mxginv1 > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstinv) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
-        Call inversions_forces(isw,imcon,enginv,virinv,stress)
+        Call inversions_forces(isw,enginv,virinv,stress)
      End If
 
 ! Apply external field
 
-     If (keyfld > 0) Call external_field_apply(imcon,keyshl,time,engfld,virfld)
-
-     If (l_plumed) Call plumed_apply(xxx,yyy,zzz,nstrun,nstep,stpcfg,stress)
+     If (keyfld > 0) Call external_field_apply(keyshl,time,engfld,virfld)
 
 ! Apply pseudo thermostat - force cycle (0)
 
@@ -165,11 +165,11 @@
         If (lmin .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
            If      (nstmin == 0 .and. nstep == 0) Then
               Call minimise_relax &
-           (l_str,relaxed_min,lrdf,imcon,megatm,megcon,megpmf,megrgd, &
+           (l_str,relaxed_min,lrdf,megatm,megcon,megpmf,megrgd, &
            keymin,min_tol,tstep,stpcfg)
            Else If (nstmin >  0 .and. nstep >  0) Then
               If (Mod(nstep-nsteql,nstmin) == 0) Call minimise_relax &
-           (l_str,relaxed_min,lrdf,imcon,megatm,megcon,megpmf,megrgd, &
+           (l_str,relaxed_min,lrdf,megatm,megcon,megpmf,megrgd, &
            keymin,min_tol,tstep,stpcfg)
            End If
         End If

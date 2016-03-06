@@ -6,7 +6,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
 ! direct vdw evaluation
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov january 2015
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -68,7 +68,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
         r0=prmvdw(4,ivdw)
 
         a=r0/rvdw
-        b=1.0_wp/(n-m)
+        b=1.0_wp/Real(n-m,wp)
         r0rn=a**n
         r0rm=a**m
 

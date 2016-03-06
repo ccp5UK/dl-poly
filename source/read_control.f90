@@ -1,9 +1,9 @@
 Subroutine read_control                                &
-           (levcfg,l_vv,l_str,l_n_e,l_n_v,             &
+           (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
            rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
            l_exp,lecx,lfcap,l_top,lzero,lmin,          &
            ltgaus,ltscal,lvar,leql,lpse,               &
-           lsim,lfce,lpana,lrdf,lprdf,lzdn,lpzdn,      &
+           lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
            lvafav,lpvaf,ltraj,ldef,lrsd,               &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
            temp,press,strext,keyres,                   &
@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2016
+! author    - i.t.todorov march 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -43,7 +43,7 @@ Subroutine read_control                                &
   Use bonds_module,    Only : rcbnd
   Use vdw_module,      Only : ld_vdw,ls_vdw,mxtvdw
   Use metal_module,    Only : ld_met,ls_met,tabmet
-!  Use poisson_module,  Only : eps,mxitcg,mxitjb
+  Use poisson_module,  Only : eps,mxitcg,mxitjb
   Use msd_module,      Only : l_msd
   Use defects1_module, Only : l_dfx
   Use greenkubo_module
@@ -55,7 +55,7 @@ Subroutine read_control                                &
 
   Implicit None
 
-  Logical,                Intent( In    ) :: lsim,l_vv,l_str,l_n_e,l_n_v
+  Logical,                Intent( In    ) :: l_str,lsim,l_vv,l_n_e,l_n_v
   Integer,                Intent( In    ) :: levcfg
   Integer,                Intent( InOut ) :: nstfce
   Real( Kind = wp ),      Intent( In    ) :: rcut,rpad,rvdw,rbin,width
@@ -1715,54 +1715,54 @@ Subroutine read_control                                &
         If (lforc) Call error(416)
         lforc=.true.
 
-!     Else If (word(1:5) == 'poiss' .or. word(1:5) == 'psolv' ) Then
-!
-!        keyfce = 12
-!        If (idnode == 0) Write(nrite,"(/,1x,'Electrostatics : Poisson equation solver')")
-!
-!        prmps=0.0_wp
-!        Do i=1,4
-!           Call get_word(record,word)
-!
-!           If (word(1:5) == 'delta') Then   ! spacing
-!              Call get_word(record,word)
-!              prmps(1)=Abs(word_2_real(word))
-!           End If
-!
-!           If (word(1:3) == 'eps') Then     ! tolerance
-!              Call get_word(record,word)
-!              prmps(2)=Abs(word_2_real(word))
-!           End If
-!
-!           If (word(1:6) == 'maxits') Then  ! max number of iteration
-!              Call get_word(record,word)
-!              prmps(3)=Abs(word_2_real(word))
-!           End If
-!
-!           If (word(1:7) == 'jmaxits') Then ! max number Jacobian iterations
-!              Call get_word(record,word)
-!              prmps(4)=Abs(word_2_real(word))
-!           End If
-!        End Do
-!
-!        If (idnode == 0) Then
-!           Write(nrite,"(1x,'gridspacing parameter (A)',9x,1p,e12.4)") prmps(1)
-!           Write(nrite,"(1x,'convergance epsilon      ',9x,1p,e12.4)") prmps(2)
-!           Write(nrite,"(1x,'max # of Psolver iterations',9x,1p,i5)") Nint(prmps(3))
-!           Write(nrite,"(1x,'max # of Jacobi  iterations',9x,1p,i5)") Nint(prmps(4))
-!
-!           If ( Abs(prmps(1)-1.0_wp/alpha) > 1.0e-6_wp .or. Abs(prmps(2)-eps) > 1.0e-6_wp .or. &
-!                Nint(prmps(3)) == 0 .or. Nint(prmps(4)) == 0 ) Then
-!              Write(nrite,"(/,1x,a)") "*** warning - parameters reset to safe defaults occurred!!! ***"
-!              Write(nrite,"(1x,'gridspacing parameter (A)',9x,1p,e12.4)") 1.0_wp/alpha
-!              Write(nrite,"(1x,'convergance epsilon      ',9x,1p,e12.4)") eps
-!              Write(nrite,"(1x,'max # of Psolver iterations',9x,1p,i5)") mxitcg
-!              Write(nrite,"(1x,'max # of Jacobi  iterations',9x,1p,i5)") mxitjb
-!           End If
-!        End If
-!
-!        If (lforc) Call error(416)
-!        lforc=.true.
+     Else If (word(1:5) == 'poiss' .or. word(1:5) == 'psolv' ) Then
+
+        keyfce = 12
+        If (idnode == 0) Write(nrite,"(/,1x,'Electrostatics : Poisson equation solver')")
+
+        prmps=0.0_wp
+        Do i=1,4
+           Call get_word(record,word)
+
+           If (word(1:5) == 'delta') Then   ! spacing
+              Call get_word(record,word)
+              prmps(1)=Abs(word_2_real(word))
+           End If
+
+           If (word(1:3) == 'eps') Then     ! tolerance
+              Call get_word(record,word)
+              prmps(2)=Abs(word_2_real(word))
+           End If
+
+           If (word(1:6) == 'maxits') Then  ! max number of iteration
+              Call get_word(record,word)
+              prmps(3)=Abs(word_2_real(word))
+           End If
+
+           If (word(1:7) == 'jmaxits') Then ! max number Jacobian iterations
+              Call get_word(record,word)
+              prmps(4)=Abs(word_2_real(word))
+           End If
+        End Do
+
+        If (idnode == 0) Then
+           Write(nrite,"(1x,'gridspacing parameter (A)',9x,1p,e12.4)") prmps(1)
+           Write(nrite,"(1x,'convergance epsilon      ',9x,1p,e12.4)") prmps(2)
+           Write(nrite,"(1x,'max # of Psolver iterations',9x,1p,i5)") Nint(prmps(3))
+           Write(nrite,"(1x,'max # of Jacobi  iterations',9x,1p,i5)") Nint(prmps(4))
+
+           If ( Abs(prmps(1)-1.0_wp/alpha) > 1.0e-6_wp .or. Abs(prmps(2)-eps) > 1.0e-6_wp .or. &
+                Nint(prmps(3)) == 0 .or. Nint(prmps(4)) == 0 ) Then
+              Write(nrite,"(/,1x,a)") "*** warning - parameters reset to safe defaults occurred!!! ***"
+              Write(nrite,"(1x,'gridspacing parameter (A)',9x,1p,e12.4)") 1.0_wp/alpha
+              Write(nrite,"(1x,'convergance epsilon      ',9x,1p,e12.4)") eps
+              Write(nrite,"(1x,'max # of Psolver iterations',9x,1p,i5)") mxitcg
+              Write(nrite,"(1x,'max # of Jacobi  iterations',9x,1p,i5)") mxitjb
+           End If
+        End If
+
+        If (lforc) Call error(416)
+        lforc=.true.
 
 ! read relative dielectric constant
 
@@ -1951,14 +1951,14 @@ Subroutine read_control                                &
 
         If      (akey == 'all') Then
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
-           tmp=Abs(Nint(word_2_real(word))) ! bond length
+           tmp=Abs(word_2_real(word)) ! bond length
 
            nstana=Max(nstana,i)
            grdana=Max(grdana,j)
            rcb_d =Max(rcb_d,tmp)
         Else If (akey == 'bon') Then
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
-           tmp=Abs(Nint(word_2_real(word))) ! bond length
+           tmp=Abs(word_2_real(word)) ! bond length
 
            nstbnd=Max(nstbnd,i)
            grdbnd=j

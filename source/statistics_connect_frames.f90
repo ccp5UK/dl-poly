@@ -11,7 +11,7 @@ Subroutine statistics_connect_frames(megatm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use comms_module,      Only : mxnode,idnode,gsum
+  Use comms_module,      Only : idnode,gsum
   Use setup_module,      Only : nrite
   Use domains_module,    Only : nprx,npry,nprz
   Use config_module,     Only : natms

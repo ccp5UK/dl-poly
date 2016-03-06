@@ -1,29 +1,30 @@
-Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
+Subroutine rigid_bodies_setup(l_str,l_top,megatm,megfrz,megrgd,degtra,degrot)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for constructing RBs' rotational inertia tesnors
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2014
+! author    - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,       Only : idnode,mxnode,gsum,gmin
+  Use comms_module,  Only : idnode,mxnode,gsum,gmin
   Use site_module
   Use setup_module
-  Use config_module,      Only : cell,nlast,ltg,lsite,lfrzn,xxx,yyy,zzz
+  Use config_module, Only : imcon,cell,nlast,ltg,lsite,lfrzn,xxx,yyy,zzz
   Use rigid_bodies_module
 
   Implicit None
 
+  Logical,           Intent( In    ) :: l_str,l_top
   Integer,           Intent( In    ) :: megatm
   Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=ip),  Intent( InOut ) :: degtra,degrot
 
-  Logical           :: safe,pass1,pass2
-  Integer           :: fail(1:2),imcon,irgd,jrgd,krgd,lrgd,rgdtyp, &
+  Logical           :: l_print,safe,pass1,pass2
+  Integer           :: fail(1:2),irgd,jrgd,krgd,lrgd,rgdtyp, &
                        i,ill,i1,i2,i3, nsite,itmols,nrigid,frzrgd, &
                        ifrz, rotrgd,trargd,iatm1,isite1,ntmp
   Real( Kind = wp ) :: rcut,tmp,weight,                            &
@@ -43,20 +44,23 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
   End If
 
 
-! Recover/localise imcon and rcut
+! Recover/localise rcut
 
-  imcon=rgdimc
   rcut=rgdrct
 
 ! Initialise safety flag
 
   safe=.true.
 
+! decide on detailed printing
+
+  l_print = (l_str .and. l_top)
+
 ! Tag RBs, find their COMs and check their widths to rcut (system cutoff)
 
   Call rigid_bodies_tags()
-  Call rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
-  Call rigid_bodies_widths(imcon,rcut)
+  Call rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
+  Call rigid_bodies_widths(rcut)
 
 ! Find as many as possible different groups of RB units on this domain
 ! and qualify a representative by the oldest copy of the very first one
@@ -648,7 +652,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
 
 ! summarise results
 
-  If (idnode==0) Then
+  If (idnode==0 .and. l_print) Then
      Write(nrite,"(/,/,1x,'summary of rigid body set up')")
 
      nrigid=0
@@ -702,7 +706,7 @@ Subroutine rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
         End Do
      End Do
   End If
-  If (idnode == 0) Write(nrite,Fmt=*)
+  If (idnode == 0 .and. l_print) Write(nrite,Fmt=*)
 
 ! equalise sites DoF due to participating in a good RB (not fully frozen)
 

@@ -1,4 +1,4 @@
-Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
+Subroutine metal_lrc(rmet,elrcm,vlrcm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,7 +7,7 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov january 2015
+! amended   - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -15,12 +15,11 @@ Subroutine metal_lrc(imcon,rmet,elrcm,vlrcm)
   Use comms_module,  Only : idnode
   Use setup_module
   Use site_module,   Only : ntpatm,unqatm,dens
-  Use config_module, Only : volm
+  Use config_module, Only : imcon,volm
   Use metal_module,  Only : lstmet,ltpmet,prmmet
 
   Implicit None
 
-  Integer,                                  Intent( In    ) :: imcon
   Real( Kind = wp ),                        Intent( In    ) :: rmet
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent(   Out ) :: elrcm,vlrcm
 

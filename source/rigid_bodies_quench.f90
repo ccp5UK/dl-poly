@@ -1,4 +1,4 @@
-Subroutine rigid_bodies_quench(imcon)
+Subroutine rigid_bodies_quench()
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,19 +6,17 @@ Subroutine rigid_bodies_quench(imcon)
 ! angular velocity
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,       Only : idnode
+  Use comms_module,  Only : idnode
   Use setup_module
-  Use config_module,      Only : cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz
+  Use config_module, Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz
   Use rigid_bodies_module
 
   Implicit None
-
-  Integer, Intent( In    ) :: imcon
 
   Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp ) :: weight,rot(1:9),wxx,wyy,wzz,x(1:1),y(1:1),z(1:1),tmp
@@ -31,7 +29,6 @@ Subroutine rigid_bodies_quench(imcon)
      Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_quench allocation failure, node: ', idnode
      Call error(0)
   End If
-
 
 ! Halo velocity field across onto neighbouring domains
 
@@ -196,21 +193,21 @@ Subroutine rigid_bodies_q_ench(qr)
 ! angular velocity
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,       Only : idnode
+  Use comms_module,  Only : idnode
   Use setup_module
-  Use config_module,      Only : cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz
+  Use config_module, Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz
   Use rigid_bodies_module
 
   Implicit None
 
   Integer, Intent( In    ) :: qr(1:mxrgd)
 
-  Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp,imcon
+  Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp ) :: weight,rot(1:9),wxx,wyy,wzz,x(1:1),y(1:1),z(1:1),tmp
 
   Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
@@ -221,11 +218,6 @@ Subroutine rigid_bodies_q_ench(qr)
      Write(nrite,'(/,1x,a,i0)') 'rigid_bodies_q_ench allocation failure, node: ', idnode
      Call error(0)
   End If
-
-
-! recover imcon
-
-  imcon=rgdimc
 
 ! Halo velocity field across onto neighbouring domains
 

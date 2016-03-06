@@ -7,7 +7,6 @@ Subroutine error(kode)
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2016
-! contrib   - a.m.elena september 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -37,7 +36,7 @@ Subroutine error(kode)
 
      Else If (kode ==    4) Then
 
-        Write(nrite,'(/,1x,a)') 'error - unknown directive found in FIELD file'
+        Write(nrite,'(/,1x,a)') 'error - unknown directive found in FIELD or MPOLES file'
 
      Else If (kode ==    5) Then
 
@@ -65,7 +64,7 @@ Subroutine error(kode)
 
      Else If (kode ==   12) Then
 
-        Write(nrite,'(/,1x,a)') 'error - unknown molecule directive in FIELD file'
+        Write(nrite,'(/,1x,a)') 'error - unknown molecule directive in FIELD or MPOLES file'
 
      Else If (kode ==   13) Then
 
@@ -193,7 +192,7 @@ Subroutine error(kode)
 
      Else If (kode ==   46) Then
 
-        Write(nrite,'(/,1x,a)') 'error - undefined direction passed to export_atomic_data'
+        Write(nrite,'(/,1x,a)') 'error - undefined direction passed to export_atomic_data/positions'
 
      Else If (kode ==   47) Then
 
@@ -217,7 +216,7 @@ Subroutine error(kode)
 
      Else If (kode ==   52) Then
 
-        Write(nrite,'(/,1x,a)') 'error - end of FIELD file encountered'
+        Write(nrite,'(/,1x,a)') 'error - end of FIELD or MPOLES file encountered'
 
      Else If (kode ==   53) Then
 
@@ -225,7 +224,7 @@ Subroutine error(kode)
 
      Else If (kode ==   54) Then
 
-        Write(nrite,'(/,1x,a)') 'error - outgoing transfer buffer size exceeded in export_atomic_data'
+        Write(nrite,'(/,1x,a)') 'error - outgoing transfer buffer size exceeded in export_atomic_data/positions'
 
      Else If (kode ==   55) Then
 
@@ -233,7 +232,7 @@ Subroutine error(kode)
 
      Else If (kode ==   56) Then
 
-        Write(nrite,'(/,1x,a)') 'error - incoming data transfer size exceeds limit in export_atomic_data'
+        Write(nrite,'(/,1x,a)') 'error - incoming data transfer size exceeds limit in export_atomic_data/positions'
 
      Else If (kode ==   57) Then
 
@@ -546,6 +545,22 @@ Subroutine error(kode)
      Else If (kode ==  172) Then
 
         Write(nrite,'(/,1x,a)') 'error - duplicate intra-molecular entries specified in TABBND||TABANG||TABDIH||TABINV'
+
+     Else If (kode ==  174) Then
+
+        Write(nrite,'(/,1x,a)') 'error - incorrect atom totals assignments in mpoles_rotmat_set_halo'
+
+     Else If (kode ==  176) Then
+
+        Write(nrite,'(/,1x,a)') 'error - undefined direction passed to mpoles_rotmat_export'
+
+     Else If (kode ==  178) Then
+
+        Write(nrite,'(/,1x,a)') 'error - outgoing transfer buffer size exceeded in mpoles_rotmat_export'
+
+     Else If (kode ==  180) Then
+
+        Write(nrite,'(/,1x,a)') 'error - incoming data transfer size exceeds limit in mpoles_rotmat_export'
 
      Else If (kode ==  200) Then
 
@@ -962,6 +977,10 @@ Subroutine error(kode)
 
         Write(nrite,'(/,1x,a)') 'error - duplicate or mixed intra-molecular entries specified in FIELD'
 
+     Else If (kode ==  623) Then
+
+        Write(nrite,'(/,1x,a)') "error - MPOLES's molecular data mismatched with respect to FIELD's data"
+
      Else If (kode ==  625) Then
 
         Write(nrite,'(/,1x,a)') 'error - only one *rigid* directive per molecule is allowed'
@@ -1301,10 +1320,6 @@ Subroutine error(kode)
      Else If (kode == 1082) Then
 
         Write(nrite,'(/,1x,a)') 'error - allocation failure in metal_module -> allocate_metal_erf_arrays'
-
-     Else If (kode == 1084) Then
-
-        Write(nrite,'(/,1x,a)') 'error - PLUMED not available'
 
      Else
 

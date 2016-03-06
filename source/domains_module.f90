@@ -6,7 +6,7 @@ Module domains_module
 ! and arrays for the entire package
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov march 2016
 ! contrib   - i.j.bush august 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -56,7 +56,7 @@ Contains
 
     Integer                            :: limx,limy,limz
 
-! processor factorisations of and factorised grid verctors over the x and y
+! processor factorisations of and factorised grid vectors over the x and y
 ! sides of the Cartesian rectangular parallelepiped approximating the MD cell
 
     Integer                            :: nfacsx, nfacsy
@@ -109,7 +109,7 @@ Contains
        Do i = 1, nfacsx
           nx = get_nth_factor( pfacsx, i )
           If ( nx > limx ) Cycle
-          dx = wx / nx
+          dx = wx / Real(nx,wp)
 
           Pyz = P / nx
           Call factor( Pyz, pfacsy )
@@ -117,11 +117,11 @@ Contains
           Do j = 1, nfacsy
              ny = get_nth_factor( pfacsy, j )
              If ( ny > limy ) Cycle
-             dy = wy / ny
+             dy = wy / Real(ny,wp)
 
              nz = Pyz / ny
              If ( nz > limz ) Cycle
-             dz = wz / nz
+             dz = wz / Real(nz,wp)
 
              S = 2.0_wp * ( dx*dy + dy*dz + dz*dx )
 

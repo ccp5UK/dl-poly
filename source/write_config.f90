@@ -1,11 +1,11 @@
-Subroutine write_config(name,levcfg,imcon,megatm,nstep,tstep,time)
+Subroutine write_config(name,levcfg,megatm,nstep,tstep,time)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for writing configuration file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2011
+! author    - i.t.todorov february 2015
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -13,7 +13,7 @@ Subroutine write_config(name,levcfg,imcon,megatm,nstep,tstep,time)
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use config_module, Only : cfgname,cell,natms,ltg,atmnam, &
+  Use config_module, Only : cfgname,imcon,cell,natms,ltg,atmnam, &
                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use io_module,     Only : io_set_parameters,         &
                             io_get_parameters,         &
@@ -40,7 +40,7 @@ Subroutine write_config(name,levcfg,imcon,megatm,nstep,tstep,time)
   Implicit None
 
   Character( Len = * ), Intent( In    ) :: name
-  Integer,              Intent( In    ) :: imcon,levcfg,megatm,nstep
+  Integer,              Intent( In    ) :: levcfg,megatm,nstep
   Real( Kind = wp ),    Intent( In    ) :: tstep,time
 
   Integer, Parameter :: recsz    =   73 ! default record size

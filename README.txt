@@ -30,8 +30,10 @@ Thank you for using the DL_POLY_4 package in your work.  Please,
 acknowledge our efforts by including the following references when
 publishing data obtained using DL_POLY_4
   (1) "I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,
-       J. Mater. Chem., 16 (20), 1911-1918 (2006)".
-  (2) "H.A. Boateng and I.T. Todorov,
+       J. Mater. Chem., 16 (20), 1911-1918 (2006)"
+  (2) "I.J. Bush, I.T. Todorov & W. Smith,
+       Comp. Phys. Commun., 175, 323-329 (2006)"
+  (3) "H.A. Boateng & I.T. Todorov,
        J. Chem. Phys., 142, 034117 (2015)".
 
 Warnings:

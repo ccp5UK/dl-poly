@@ -1,6 +1,6 @@
-# Building notes
+# Building notes 
 * these notes are for building with [**cmake**](https://cmake.org)
-* you can pass options to cmake using **-DOPTION=value**. For a complete list of options inspect [cmake/DLPOLYBuildOptions.cmake](cmake/DLPOLYBuildOptions.cmake)
+* you can pass options to cmake using **-DOPTION=value**. For a complete list of options inspect [cmake/DLPOLYBuildOptions.cmake](cmake/DLPOLYBuildOptions.cmake) 
 * explicit compiler specification can be achieved by using environment variable **FC** (eg. using Intel ifort *FC=ifort*)
 * compiler flags can be altered via **FFLAGS**, (eg *FFLAGS="-O3 -xHost"*)
 * one also can use **cmake-gui** to setup the build options
@@ -9,12 +9,12 @@
 * for a list of all supported targets **make help**
 * TODO check it works on Windows...
 
-## Standard MPI
+## Standard MPI 
 ```
 mkdir build-mpi-pure
 pushd build-mpi-pure
 FFLAGS="-O3" cmake ../ -DWITH_MPI=ON
-make -j10
+make -j10 
 make install
 ```
 * will use whatever default MPI is found
@@ -29,7 +29,7 @@ FC=mpiifort FFLAGS="-O3" cmake ../ -DWITH_MPI=ON
 mkdir build-mpi-openmp
 pushd build-mpi-openmp
 FFLAGS="-O3" cmake ../ -DWITH_MPI=ON -DWITH_OPENMP=ON
-make -j10
+make -j10 
 make install
 ```
 *Intel Compilers*
@@ -37,15 +37,15 @@ make install
 FC=mpiifort FFLAGS="-O3" cmake ../ -DWITH_MPI=ON -DWITH_OPENMP=ON
 ```
 
-## Serial
+## Serial 
 ```
 mkdir build-serial
 pushd build-serial
-FFLAGS="-O3" cmake ../
+FFLAGS="-O3" cmake ../ 
 ```
 *Intel Compilers*
 ```
-FC=ifort FFLAGS="-O3" cmake ../
+FC=ifort FFLAGS="-O3" cmake ../ 
 ```
 
 ## Serial with OpenMP threads
@@ -56,7 +56,7 @@ FFLAGS="-O3" cmake ../ -DWITH_OPENMP=ON
 ```
 *Intel Compilers*
 ```
-FC=ifort FFLAGS="-O3" cmake ../
+FC=ifort FFLAGS="-O3" cmake ../ 
 ```
 ## Xeon Phi
 ```
@@ -66,7 +66,7 @@ FC=ifort FFLAGS="-O3 " cmake ../ -DWITH_PHI=ON -DWITH_MPI=ON
 ```
 
 ## Optimisation flags
-* gfortran
+* gfortran 
 
 ```
 FFLAGS="-O3 -mtune=native"
@@ -78,7 +78,7 @@ FFLAGS="-O3 -mtune=native"
 FFLAGS="-fpp -O3 -xHost -fimf-domain-exclusion=15"
 ```
 
-* If you plan to run the binary on a different type of a machine than you build it, check the manual of your compiler
+* If you plan to run the binary on a different type of a machine than you build it, check the manual of your compiler 
 for the flags matching the _running machine_
 
 ## Debugging, or when things go merdre
@@ -93,11 +93,11 @@ FFLAGS="-g -O0 -std=f2008 -pedantic -fbacktrace -fcheck=all -finit-integer=21474
 FFLAGS="-g -O0 -stand f08 -traceback -C -fp-stack-check -ftrapuv"
 ```
 
-## known issues:
+## known issues: 
 1. FindMPI may trip with Intel MPI
 
 ```
-I_MPI_F90=ifort FC=ifort
+I_MPI_F90=ifort FC=ifort 
 ```
 shall cure all issues.
 
@@ -124,13 +124,13 @@ git clone ssh://gitlab@ccforge.dl.ac.uk:1980/alin/dl-poly.git dl-poly-alin
 **Rationale**: While the _Project_ git and the _Fork_ git contain the same info, consider the fork
 as your playground from where once you are happy you can make _Merge Requests_ to the Project.
 You shall be able to play as much as you like with the code but keep the Project git clean and tidy.
-
+ 
 ## Branch, fix, merge  model:
-Let us assume you have an issue with yout code which needs to be fixed.
+Let us assume you have an issue with yout code which needs to be fixed. 
 
 * **Step 1**: Branch from your fork (We assume the fork is up to date with Project git)
 - from the dashboard of your project you can branch from the + icon (issueXYZ)
-clone the branch
+clone the branch 
 
 ```
 git clone -b issueXYZ --single-branch ssh://gitlab@ccforge.dl.ac.uk:1980/alin/dl-poly.git dl-poly-alin-issueXYZ
@@ -153,16 +153,16 @@ use git status to see what is changed
 ```
 git add <filename|folder> to add the new things
 git commit -m "[tag] my cool message"
-git push
+git push  
 ```
 
-Now you are ready for
+Now you are ready for 
 * **Step 3a**: merge
-simplest way is to go to webui and merge the branch
+simplest way is to go to webui and merge the branch 
 look for your Forked project, list the branches. Compare and if happy click Merge Request.
 now all shall be created and one shall be able to accept the merge.
 
-One can merge in two places.
+One can merge in two places. 
 1. Fork git
 2. Project git
 
@@ -179,7 +179,7 @@ in short, if you tried to merge to the master branch of Project git:
 git clone ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git dl-poly-internal
 pushd dl-poly-internal
 git fetch ssh://gitlab@ccforge.dl.ac.uk:1980/alin/dl-poly.git issueXYZ
-git checkout -b alin/dl-poly-issueXYZ FETCH_HEAD
+git checkout -b alin/dl-poly-issueXYZ FETCH_HEAD  
 git checkout master
 git merge --no-ff alin/dl-poly-issueXYZ
 fix the resulting conflicts if any
@@ -194,7 +194,7 @@ git push origin master
 
 ```
 git clone ssh://gitlab@ccforge.dl.ac.uk:1980/alin/dl-poly.git dl-poly-alin
-pushd dl-poly-alin
+pushd dl-poly-alin 
 git remote add project ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git
 ```
 
@@ -211,11 +211,11 @@ project ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git (push)
 * when you need to sync
 
 ```
-git pull
+git pull 
 git fetch project
 git checkout master
 git merge project/master
-git push
+git push 
 ```
 
 of course one can try to merge any other branch or available projects.
@@ -230,21 +230,21 @@ follow the instructions. Pick the first commit then s or f the rest.
 git push origin issueXYZ --force
 ```
 
-* cleaning stale branches. Deleting branches from the interface will get rid of the remotes and not of your
-local copies. Command *git branch -a* will list remotes which are long gone. These are called stale branches. To get rid of them
+* cleaning stale branches. Deleting branches from the interface will get rid of the remotes and not of your 
+local copies. Command *git branch -a* will list remotes which are long gone. These are called stale branches. To get rid of them 
 
 ```
 git remote prune origin
 ```
 
-* delete a local and remote branch. When you have merged a request forgot to delete the origin. You can delete the branch from the
+* delete a local and remote branch. When you have merged a request forgot to delete the origin. You can delete the branch from the 
 web ui or from command line as:
 
 ```
-git push origin :issueXYZ
+git push origin :issueXYZ 
 ```
 
-to delete a local branch
+to delete a local branch 
 
 ```
 git branch -d localBranch

@@ -1,4 +1,4 @@
-Subroutine angles_forces(isw,imcon,engang,virang,stress)
+Subroutine angles_forces(isw,engang,virang,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -10,22 +10,22 @@ Subroutine angles_forces(isw,imcon,engang,virang,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov september 2014
-! contrib   - a.v.brukhno and i.t.todorov april 2014 (itramolecular TPs & PDFs)
+! amended   - i.t.todorov february 2015
+! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsync,gsum,gcheck
   Use setup_module,  Only : mxangl,mxgang1,nrite,pi,twopi
-  Use config_module, Only : cell,natms,nlast,lsi,lsa,lfrzn, &
+  Use config_module, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                             xxx,yyy,zzz,fxx,fyy,fzz
   Use angles_module, Only : ntangl,keyang,listang,prmang, &
                             ltpang,vang,gang,ncfang,ldfang,dstang
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: isw,imcon
+  Integer,                             Intent( In    ) :: isw
   Real( Kind = wp ),                   Intent(   Out ) :: engang,virang
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
 

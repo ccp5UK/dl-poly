@@ -1,5 +1,5 @@
 Subroutine two_body_forces                        &
-           (imcon,rcut,rlnk,rvdw,rmet,keyens,     &
+           (rcut,rlnk,rvdw,rmet,keyens,           &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &
@@ -22,31 +22,36 @@ Subroutine two_body_forces                        &
 ! keyfce = 6 ------ coulombic 1/r potential (coul_cp)
 ! keyfce = 8 ------ force-shifted and damped coulombic potential (coul_fscp)
 ! keyfce =10 ------ reaction field and damped coulombic potential (coul_rfp)
+! keyfce =12 ------ direct space Poisson solver (possion_module)
 !
 ! nstfce - the rate at which the k-space contributions of SPME are
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2016
+! contrib   - h.a.boateng february 2016
+! contrib   - p.s.petkov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,  Only : idnode,mxnode,gsum
+  Use comms_module,   Only : idnode,mxnode,gsum
   Use setup_module
-  Use site_module,   Only : ntpatm,unqatm
-  Use config_module, Only : cell,volm,sumchg,natms,list,xxx,yyy,zzz
-  Use vnl_module,    Only : l_vnl
+  Use site_module,    Only : ntpatm,unqatm
+  Use config_module,  Only : volm,sumchg,natms,list,xxx,yyy,zzz
+  Use vnl_module,     Only : l_vnl
   Use ewald_module
-  Use vdw_module,    Only : ntpvdw
-  Use metal_module,  Only : ntpmet
+  Use mpoles_module,  Only : induce
+  Use poisson_module, Only : poisson_forces,poisson_excl_forces,poisson_frzn_forces
+  Use vdw_module,     Only : ntpvdw
+  Use metal_module,   Only : ntpmet
   Use kim_module
-  Use rdf_module,    Only : ncfrdf
+  Use rdf_module,     Only : ncfrdf
 
   Implicit None
 
   Logical,                                  Intent( In    ) :: lbook,lrdf,leql
-  Integer,                                  Intent( In    ) :: imcon,keyens,  &
+  Integer,                                  Intent( In    ) :: keyens,        &
                                                                keyfce,nstfce, &
                                                                megfrz,nstrdf, &
                                                                nsteql,nstep
@@ -66,10 +71,10 @@ Subroutine two_body_forces                        &
   Integer           :: fail,i,j,k,limit
   Real( Kind = wp ) :: engcpe_rc,vircpe_rc,engcpe_rl,vircpe_rl, &
                        engcpe_ex,vircpe_ex,engcpe_fr,vircpe_fr, &
-                       engcpe_nz,vircpe_nz,                     &
+                       engcpe_nz,vircpe_nz,          vircpe_dt, &
                        engden,virden,engmet,virmet,             &
                        engvdw,virvdw,engkim,virkim,             &
-                       engacc,viracc,tmp,buffer(0:16)
+                       engacc,viracc,tmp,buffer(0:17)
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
 
@@ -88,7 +93,7 @@ Subroutine two_body_forces                        &
 ! evaluation.  Repeat the same but only for the SPME k-space
 ! frozen-frozen evaluations in constant volume ensembles only.
 
-  If (keyfce == 2) Call ewald_check(keyens,megfrz,nsteql,nstfce,nstep)
+  If (keyfce == 2 .or. keyfce == 12) Call ewald_check(keyens,megfrz,nsteql,nstfce,nstep)
 
 ! initialise energy and virial accumulators
 
@@ -124,12 +129,14 @@ Subroutine two_body_forces                        &
   engcpe_nz = 0.0_wp
   vircpe_nz = 0.0_wp
 
+  vircpe_dt = 0.0_wp
+
   engcpe    = 0.0_wp
   vircpe    = 0.0_wp
 
 ! Set up non-bonded interaction (verlet) list using link cells
 
-  If (l_vnl) Call link_cell_pairs(imcon,rlnk,lbook,megfrz)
+  If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rlnk,lbook,megfrz)
 
 ! Calculate all contributions from KIM
 
@@ -143,17 +150,27 @@ Subroutine two_body_forces                        &
 
 ! Reset metal long-range corrections (constant pressure/stress only)
 
-     If (keyens >= 20) Call metal_lrc(imcon,rmet,elrcm,vlrcm)
+     If (keyens >= 20) Call metal_lrc(rmet,elrcm,vlrcm)
 
 ! calculate local density in metals
 
-     Call metal_ld_compute(imcon,rmet,elrcm,vlrcm,engden,virden,stress)
+     Call metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stress)
 
   End If
 
 ! calculate coulombic forces, Ewald sum - fourier contribution
 
-  If (keyfce == 2 .and. l_fce) Call ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
+  If (keyfce == 2 .and. l_fce) Then
+     If (mximpl > 0) Then
+        If (mxompl <= 2) Then
+           Call ewald_spme_mforces_d(alpha,epsq,engcpe_rc,vircpe_rc,stress)
+        Else
+           Call ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
+        End If
+     Else
+        Call ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
+     End If
+  End If
 
 ! outer loop over atoms
 
@@ -173,8 +190,8 @@ Subroutine two_body_forces                        &
         zzt(k)=zzz(i)-zzz(j)
      End Do
 
-! periodic boundary conditions
-
+! periodic boundary conditions not needed by LC construction
+!
 !     Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! distances, thanks to Alin Elena (one too many changes)
@@ -205,50 +222,109 @@ Subroutine two_body_forces                        &
 ! COULOMBIC CONTRIBUTIONS
 !!!!!!!!!!!!!!!!!!!!!!!!1
 
-     If (keyfce == 2) Then
+     If (mximpl > 0) Then
+
+!!! MULTIPOLAR ATOMIC SITES
+
+        If (keyfce == 2) Then
 
 ! calculate coulombic forces, Ewald sum - real space contribution
 
-        Call ewald_real_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           If (mxompl <= 2) Then
+              Call ewald_real_mforces_d(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Else
+              Call ewald_real_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           End If
 
-        engcpe_rl=engcpe_rl+engacc
-        vircpe_rl=vircpe_rl+viracc
+           engcpe_rl=engcpe_rl+engacc
+           vircpe_rl=vircpe_rl+viracc
 
-     Else If (keyfce == 4) Then
+        Else If (keyfce == 4) Then
 
 ! distance dependant dielectric potential
 
-        Call coul_dddp_forces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Call coul_dddp_mforces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
-        engcpe_rl=engcpe_rl+engacc
-        vircpe_rl=vircpe_rl+viracc
+           engcpe_rl=engcpe_rl+engacc
+           vircpe_rl=vircpe_rl+viracc
 
-     Else If (keyfce == 6) Then
+        Else If (keyfce == 6) Then
 
 ! coulombic 1/r potential with no truncation or damping
 
-        Call coul_cp_forces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Call coul_cp_mforces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
-        engcpe_rl=engcpe_rl+engacc
-        vircpe_rl=vircpe_rl+viracc
+           engcpe_rl=engcpe_rl+engacc
+           vircpe_rl=vircpe_rl+viracc
 
-     Else If (keyfce == 8) Then
+        Else If (keyfce == 8) Then
 
 ! force-shifted coulomb potentials
 
-        Call coul_fscp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Call coul_fscp_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
-        engcpe_rl=engcpe_rl+engacc
-        vircpe_rl=vircpe_rl+viracc
+           engcpe_rl=engcpe_rl+engacc
+           vircpe_rl=vircpe_rl+viracc
 
-     Else If (keyfce == 10) Then
+        Else If (keyfce == 10) Then
 
 ! reaction field potential
 
-        Call coul_rfp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Call coul_rfp_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
-        engcpe_rl=engcpe_rl+engacc
-        vircpe_rl=vircpe_rl+viracc
+           engcpe_rl=engcpe_rl+engacc
+           vircpe_rl=vircpe_rl+viracc
+
+        End If
+
+     Else
+
+        If (keyfce == 2) Then
+
+! calculate coulombic forces, Ewald sum - real space contribution
+
+           Call ewald_real_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+
+           engcpe_rl=engcpe_rl+engacc
+           vircpe_rl=vircpe_rl+viracc
+
+        Else If (keyfce == 4) Then
+
+! distance dependant dielectric potential
+
+           Call coul_dddp_forces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+
+           engcpe_rl=engcpe_rl+engacc
+           vircpe_rl=vircpe_rl+viracc
+
+        Else If (keyfce == 6) Then
+
+! coulombic 1/r potential with no truncation or damping
+
+           Call coul_cp_forces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+
+           engcpe_rl=engcpe_rl+engacc
+           vircpe_rl=vircpe_rl+viracc
+
+        Else If (keyfce == 8) Then
+
+! force-shifted coulomb potentials
+
+           Call coul_fscp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+
+           engcpe_rl=engcpe_rl+engacc
+           vircpe_rl=vircpe_rl+viracc
+
+        Else If (keyfce == 10) Then
+
+! reaction field potential
+
+           Call coul_rfp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+
+           engcpe_rl=engcpe_rl+engacc
+           vircpe_rl=vircpe_rl+viracc
+
+        End If
 
      End If
 
@@ -257,6 +333,15 @@ Subroutine two_body_forces                        &
      If (l_do_rdf) Call rdf_collect(i,rcut,rrt)
 
   End Do
+
+! Poisson solver alternative to Ewald
+
+  If (keyfce == 12) Then
+     Call poisson_forces(alpha,epsq,engacc,viracc,stress)
+
+     engcpe_rl=engcpe_rl+engacc
+     vircpe_rl=vircpe_rl+viracc
+  End If
 
   If (safe) Then
      tmp=0.0_wp
@@ -268,7 +353,7 @@ Subroutine two_body_forces                        &
 ! accumulate further radial distribution functions and/or
 ! calculate Ewald corrections due to short-range exclusions
 
-  If (lbook .and. (l_do_rdf .or. keyfce == 2)) Then
+  If ( lbook .and. (l_do_rdf .or. (keyfce == 2 .or. keyfce == 12)) ) Then
 
 ! outer loop over atoms
 
@@ -289,9 +374,9 @@ Subroutine two_body_forces                        &
               zzt(k)=zzz(i)-zzz(j)
            End Do
 
-! periodic boundary conditions
-
-!          Call images(imcon,cell,limit,xxt,yyt,zzt)
+! periodic boundary conditions not needed by LC construction
+!
+!           Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
@@ -303,10 +388,16 @@ Subroutine two_body_forces                        &
 
            If (l_do_rdf) Call rdf_excl_collect(i,rcut,rrt)
 
-! Ewald corrections
-
-           If (keyfce == 2) Then
-              Call ewald_excl_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           If (keyfce == 2) Then ! Ewald corrections
+              If (mximpl > 0) Then
+                 If (mxompl <= 2) Then
+                    Call ewald_excl_mforces_d(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+                 Else
+                    Call ewald_excl_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+                 End If
+              Else
+                 Call ewald_excl_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+              End If
 
               engcpe_ex=engcpe_ex+engacc
               vircpe_ex=vircpe_ex+viracc
@@ -343,8 +434,8 @@ Subroutine two_body_forces                        &
                  zzt(k)=zzz(i)-zzz(j)
               End Do
 
-! periodic boundary conditions
-
+! periodic boundary conditions not needed by LC construction
+!
 !              Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
@@ -371,14 +462,24 @@ Subroutine two_body_forces                        &
      Call error(0)
   End If
 
-! Further Ewald corrections or an infrequent refresh
+! Further Ewald/Poisson Solver corrections or an infrequent refresh
 
-  If (keyfce == 2) Then
+  If (keyfce == 2 .or. keyfce == 12) Then
      If (l_fce) Then
 
 ! frozen pairs corrections to coulombic forces
 
-        If (megfrz /= 0) Call ewald_frzn_forces(imcon,rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
+        If (megfrz /= 0) Then
+           If (keyfce == 2) Then ! Ewald
+              If (mximpl > 0) Then
+                 Call ewald_frzn_mforces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
+              Else
+                 Call ewald_frzn_forces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
+              End If
+           Else !If (keyfce == 12) Then ! Poisson Solver
+              Call poisson_frzn_forces(rcut,epsq,engcpe_fr,vircpe_fr,stress)
+           End If
+        End If
 
      Else
 
@@ -402,6 +503,11 @@ Subroutine two_body_forces                        &
      End If
   End If
 
+! Find the change of energy produced by the torques on multipoles
+! under infinitesimal rotations & convert to Cartesian coordinates
+
+  If (mximpl > 0) Call d_ene_trq_mpoles(vircpe_dt,stress)
+
 ! sum up contributions to potentials
 
   If (mxnode > 1) Then
@@ -422,8 +528,9 @@ Subroutine two_body_forces                        &
      buffer(14) = vircpe_ex
      buffer(15) = engcpe_fr
      buffer(16) = vircpe_fr
+     buffer(17) = vircpe_dt
 
-     Call gsum(buffer(0:16))
+     Call gsum(buffer(0:17))
 
      tmp       = buffer( 0)
      engkim    = buffer( 1)
@@ -442,15 +549,23 @@ Subroutine two_body_forces                        &
      vircpe_ex = buffer(14)
      engcpe_fr = buffer(15)
      vircpe_fr = buffer(16)
+     vircpe_dt = buffer(17)
   End If
 
   safe=(tmp < 0.5_wp)
   If (.not.safe) Call error(505)
 
+! Self-interaction is constant for the default charges only SPME
+
+  If (mxnode > 1 .and. keyfce == 2) Then ! Sum it up for multipolar SPME
+     If (mximpl > 0 .and. mxompl <= 2) Call gsum(engsic)
+!     If (idnode == 0) Write(nrite,'(1x,a,1p,e18.10 )') 'Self-interaction term: ',engsic
+  End If
+
 ! Globalise coulombic contributions: cpe
 
   engcpe = engcpe_rc + engcpe_rl + engcpe_ex + engcpe_fr + engcpe_nz
-  vircpe = vircpe_rc + vircpe_rl + vircpe_ex + vircpe_fr + vircpe_nz
+  vircpe = vircpe_rc + vircpe_rl + vircpe_ex + vircpe_fr + vircpe_nz + vircpe_dt
 
 ! Add non-zero total system charge correction to
 ! diagonal terms of stress tensor (per node)

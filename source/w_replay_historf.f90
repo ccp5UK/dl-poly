@@ -55,11 +55,11 @@
   Do
      Call allocate_statistics_connect()
 10   Continue
-     If (nstph > nstpe) Call statistics_connect_set(imcon,rlnk)
+     If (nstph > nstpe) Call statistics_connect_set(rlnk)
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,"HISTORF",megatm,levcfg,imcon,dvar,nstep,tstep,time,exout)
+     Call read_history(l_str,"HISTORF",megatm,levcfg,dvar,nstep,tstep,time,exout)
 
      If (newjb) Then
         newjb = .false.
@@ -83,7 +83,7 @@
 ! CHECK MD CONFIGURATION
 
            Call check_config &
-           (levcfg,imcon,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
+           (levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
@@ -97,7 +97,7 @@
 !              xin(natms+1: ) = 0.0_wp
 !              yin(natms+1: ) = 0.0_wp
 !              zin(natms+1: ) = 0.0_wp
-              Call statistics_connect_set(imcon,rlnk)
+              Call statistics_connect_set(rlnk)
            End If
 
 ! get xto/xin/msdtmp arrays sorted
@@ -108,14 +108,14 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(imcon,rlnk,keyfce)
+           Call set_halo_particles(rlnk,keyfce)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
 
            If (lbook) Then
               Call build_book_intra     &
-           (lsim,dvar,                  &
+           (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
@@ -135,7 +135,7 @@
 ! Calculate kinetic stress and energy if available
 
               If (megrgd > 0) Then
-                 Call rigid_bodies_quench(imcon)
+                 Call rigid_bodies_quench()
 
                  Call kinstresf(vxx,vyy,vzz,strknf)
                  Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt)
@@ -173,22 +173,22 @@
 
            Call vaf_collect(lvafav,leql,nsteql,nstph-1,time)
 
-           Call statistics_collect         &
-           (lsim,leql,nsteql,lzdn,nstzdn,  &
-           keyres,keyens,iso,intsta,imcon, &
-           degfre,degshl,degrot,           &
-           nstph,tsths,time,tmsh,          &
-           engcpe,vircpe,engsrp,virsrp,    &
-           engter,virter,                  &
-           engtbp,virtbp,engfbp,virfbp,    &
-           engshl,virshl,shlke,            &
-           vircon,virpmf,                  &
-           engtet,virtet,engfld,virfld,    &
-           engbnd,virbnd,engang,virang,    &
-           engdih,virdih,enginv,virinv,    &
-           engke,engrot,consv,vircom,      &
-           strtot,press,strext,            &
-           stpeng,stpvir,stpcfg,stpeth,    &
+           Call statistics_collect        &
+           (lsim,leql,nsteql,lzdn,nstzdn, &
+           keyres,keyens,iso,intsta,      &
+           degfre,degshl,degrot,          &
+           nstph,tsths,time,tmsh,         &
+           engcpe,vircpe,engsrp,virsrp,   &
+           engter,virter,                 &
+           engtbp,virtbp,engfbp,virfbp,   &
+           engshl,virshl,shlke,           &
+           vircon,virpmf,                 &
+           engtet,virtet,engfld,virfld,   &
+           engbnd,virbnd,engang,virang,   &
+           engdih,virdih,enginv,virinv,   &
+           engke,engrot,consv,vircom,     &
+           strtot,press,strext,           &
+           stpeng,stpvir,stpcfg,stpeth,   &
            stptmp,stpprs,stpvol)
 
 ! line-printer output
@@ -206,12 +206,13 @@
               & 5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',           &
               & 5x,'vir_pmf',7x,'press',/,/,1x,130('-'))")
 
-              Write(nrite,"(1x,i13,1p,9e12.4,/,0p,f14.5,1p,9e12.4,       &
-                   & /,1x,0p,f13.3,1p,9e12.4)") nstep,(stpval(i),i=1,9), &
-                   time,(stpval(i),i=10,18),timelp,(stpval(i),i=19,27)
+              Write(nrite,"(1x,i13,1p,9e12.4,/,0p,f14.5,1p,9e12.4,    &
+                   & /,1x,0p,f13.3,1p,9e12.4)") nstep, stpval( 1: 9), &
+                                                time,  stpval(10:18), &
+                                                timelp,stpval(19:27)
 
               Write(nrite,"(/,7x,'rolling',1p,9e12.4,/,6x,'averages', &
-                   & 1p,9e12.4,/,14x,9e12.4)") (ravval(i),i=1,27)
+                   & 1p,9e12.4,/,14x,9e12.4)")         ravval( 1:27)
 
               Write(nrite,"(1x,130('-'))")
            End If
@@ -221,21 +222,21 @@
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
            If (ltraj) Call trajectory_write &
-           (imcon,keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
+           (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
            If (ldef) Call defects_write &
-           (imcon,rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time)
+           (rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time)
            If (l_msd) Call msd_write &
            (keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
            If (lrsd) Call rsd_write &
-           (imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
+           (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
            If (vafsamp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
            (lvafav,keyres,nstph,tsths)
 
 ! Save restart data in event of system crash
 
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.l_tor)) &
-              Call system_revive                                    &
-           (imcon,rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
+              Call system_revive                              &
+           (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
            chit,cint,chip,eta,strcon,strpmf,stress)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
@@ -285,13 +286,13 @@
      End Do
      cell=clin
 
-     Call set_temperature             &
-           (levcfg,imcon,temp,keyres, &
-           lmin,nstep,nstrun,nstmin,  &
-           mxshak,tolnce,keyshl,      &
-           atmfre,atmfrz,             &
-           megshl,megcon,megpmf,      &
-           megrgd,degtra,degrot,      &
+     Call set_temperature            &
+           (levcfg,temp,keyres,      &
+           lmin,nstep,nstrun,nstmin, &
+           mxshak,tolnce,keyshl,     &
+           atmfre,atmfrz,            &
+           megshl,megcon,megpmf,     &
+           megrgd,degtra,degrot,     &
            degfre,degshl,sigma,engrot)
   End If
 

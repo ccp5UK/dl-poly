@@ -6,7 +6,7 @@ Subroutine inversions_compute(temp)
 ! from accumulated data
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov august 2014
+! author    - a.v.brukhno & i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -178,12 +178,12 @@ Subroutine inversions_compute(temp)
   If (idnode == 0) Then
      Open(Unit=npdgdt, File='INVPMF', Status='replace')
      Write(npdgdt,'(a)') '# '//cfgname
-     Write(npdgdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',mxginv1,delth*mxginv1*rad2dgr,delth*rad2dgr,kk, &
+     Write(npdgdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',mxginv1,delth*Real(mxginv1,wp)*rad2dgr,delth*rad2dgr,kk, &
           '   conversion factor(kT -> energy units) =',kT2engo
 
      Open(Unit=npdfdt, File='INVPMF', Status='replace')
      Write(npdfdt,'(a)') '# '//cfgname
-     Write(npdfdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',ngrid,dgrid*ngrid*rad2dgr,dgrid*rad2dgr,kk, &
+     Write(npdfdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',ngrid,dgrid*Real(ngrid,wp)*rad2dgr,dgrid*rad2dgr,kk, &
           '   conversion factor(kT -> energy units) =',kT2engo
   End If
 
