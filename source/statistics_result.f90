@@ -40,7 +40,7 @@ Subroutine statistics_result                                    &
   Real( Kind = wp ), Intent( In    ) :: rcut,press,strext(1:9),tstep,time,tmst
 
   Logical           :: check
-  Integer           :: i,j,iadd
+  Integer           :: i,iadd
   Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty,temp
 
 ! VNL skipping statistics
