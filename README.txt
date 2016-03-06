@@ -135,16 +135,6 @@ implementation is needed), or
 
 followed by <Enter>.
 
-Note that in `comms_module.f90' it is crucial that line 13 reads as:
-`Use mpi_module'    - for serial compilation or as
-`Use mpi'           - for parallel compilation (which is the default).
-
-If the parallel OS environment, one is compiling on, is not fully F90
-compatible then the `Use mpi' entry in the `comms_module.f90' file may
-be interpreted as erroneous.  This is easily overcome by commenting out
-the `Use mpi' line and uncommenting the `Include 'mpif.h'' one situated
-immediately after the `Implicit None' line.
-
 If there is an `entry' in the Makefile for the particular combination
 of architecture, compiler & MPI implementation, then the user may
 instantiate the compilation by issuing at the command line:
