@@ -4,17 +4,18 @@ Subroutine scan_control                                    &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
+           mxompl,mximpl,nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2015
+! author    - i.t.todorov march 2016
 ! contrib   - i.j.bush february 2014
-! contrib   - a.v.brukhno and i.t.todorov april 2014 (itramolecular TPs & PDFs)
+! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
+! contrib   - p.s.petkov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,17 +24,18 @@ Subroutine scan_control                                    &
   Use setup_module,       Only : nread,nrite,pi,zero_plus
   Use parse_module,       Only : get_line,get_word,lower_case,word_2_real
   Use dpd_module,         Only : keydpd
-  Use msd_module
-  Use development_module, Only : l_trm
+  Use poisson_module,     Only : eps,mxitcg,mxitjb
   Use kim_module,         Only : kim,rkim
+  Use msd_module
   Use greenkubo_module,   Only : isvaf,nsvaf,vafsamp
+  Use development_module, Only : l_trm
 
   Implicit None
 
   Logical,           Intent( InOut ) :: l_n_e
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,mxrgd,imcon
-  Integer,           Intent( InOut ) :: imc_n
+  Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl
   Integer,           Intent(   Out ) :: mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1, &
                                         mxstak,nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
@@ -43,11 +45,12 @@ Subroutine scan_control                                    &
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
                             lrcut,lrpad,lrvdw,lrmet,lelec,lrdf,lvdw,lmet,l_n_m,lter,l_exp
   Character( Len = 200 ) :: record
-  Character( Len = 40  ) :: word,akey
-  Integer                :: itmp,nstrun
-  Real( Kind = wp )      :: celprp(1:10),cut,eps,fac,tol,tol1
+  Character( Len = 40  ) :: word,word1,word2,akey
+  Integer                :: i,itmp,nstrun,mxspl2
+  Real( Kind = wp )      :: celprp(1:10),cut,eps0,fac,tol,tol1
 
-  Integer,           Parameter :: mxspl_def = 8           ! default spline for SPME
+  Integer,           Parameter :: mxspl_def = 8,        & ! default spline for SPME (4 & 6 possible)
+                                  mxspl_min = 3           ! minimum spline order, needed for derivatives of forces
   Real( Kind = wp ), Parameter :: rcut_def  = 1.0_wp  , & ! minimum real space cutoff
                                   rbin_def  = 0.05_wp , & ! default bin size
                                   rcbnd_def = 2.0_wp      ! minimum bond length for bond analysis
@@ -112,13 +115,15 @@ Subroutine scan_control                                    &
 
   nstfce = -1 ! None defined
 
-! Ewald sum parameters defaults
+! Ewald/Poisson Solver sum parameters defaults
 
   mxspl = 0
   alpha = 0.0_wp
   kmaxa1 = 0
   kmaxb1 = 0
   kmaxc1 = 0
+
+!  induce = .false.
 
 ! default number of steps and expansion option
 
@@ -157,9 +162,13 @@ Subroutine scan_control                                    &
      Call lower_case(record)
      Call get_word(record,word)
 
+! record is commented out
+
+     If      (word(1:1) == '#' .or. word(1:1) == ' ') Then
+
 ! read slab option (limiting DD slicing in z direction to 2)
 
-     If      (word(1:4) == 'slab') Then
+     Else If (word(1:4) == 'slab') Then
 
         If (imcon /= 0 .and. imcon /= 6) imc_n=6
 
@@ -177,7 +186,7 @@ Subroutine scan_control                                    &
      Else If (word(1:3) == 'pad' .or. word(1:4) == 'rpad') Then
 
         lrpad = .true.
-        Call get_word(record,word)
+        Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
         rpad = Max(rpad,Abs(word_2_real(word)))
         lrpad = (rpad > zero_plus) ! if zero or nothing is entered
 
@@ -310,6 +319,10 @@ Subroutine scan_control                                    &
 
         End If
 
+     Else If (word(1:5) == 'poiss' .or. word(1:5) == 'psolv') Then
+
+        lelec = .true.
+
      Else If (word(1:6) == 'distan') Then
 
         lelec = .true.
@@ -326,6 +339,35 @@ Subroutine scan_control                                    &
 
         lelec = .true.
 
+!     Else If (word(1:6) == 'induce') Then
+!
+!        induce=.true.
+!        Call get_word(record,word1)
+!        politer = Min(500,Nint(Abs(word_2_real(word1))))
+!
+!        Call get_word(record,word2)
+!        convcrit = Abs(word_2_real(word2)) !Min(0.001_wp,(Abs(word_2_real(word2))))
+
+!     Else If (word(1:4) == 'gear') Then
+!
+!         gear=.true.
+!         Call get_word(record,word)
+!         numcof = Max(0,1+Nint(Abs(word_2_real(word))))
+!         numcof = Min(numcof,7)
+!
+!     Else If (word(1:4) == 'aspc') Then
+!
+!         aspc=.true.
+!         Call get_word(record,word)
+!         numcof = Max(0,1+Nint(Abs(word_2_real(word))))
+!         numcof = Min(numcof,7)
+!
+!     Else If (word(1:5) == 'lstsq') Then
+!
+!         lstsq=.true.
+!         Call get_word(record,word)
+!         numcof = Max(0,1+Nint(Abs(word_2_real(word))))
+
 ! read "no vdw", "no elec" and "no str" options
 
      Else If (word(1:2) == 'no') Then
@@ -339,6 +381,11 @@ Subroutine scan_control                                    &
         Else If (word(1:4) == 'elec') Then
 
            l_n_e = .true.
+
+! reinitialise multipolar electrostatics indicators
+
+           mximpl = 0
+           mxompl = 0
 
         Else If (word(1:3) == 'ind' ) Then
 
@@ -490,7 +537,7 @@ Subroutine scan_control                                    &
 
   If (idnode == 0) Rewind(nread)
 
-! Second Pass.  Sort out cutoffs, cell parameters and Ewald precision.
+! Second Pass.  Sort out cutoffs, cell parameters and Ewald/Poisson Solver precision.
 
   Call get_line(safe,nread,record)
   If (.not.safe) Go To 20
@@ -504,13 +551,19 @@ Subroutine scan_control                                    &
      Call lower_case(record)
      Call get_word(record,word)
 
-     If (lelec .and. (word(1:5) == 'ewald' .or. word(1:4) == 'spme')) Then
+! record is commented out
 
-! Double the kmax size if specified "ewald sum"
+     If      (word(1:1) == '#' .or. word(1:1) == ' ') Then
 
-        If (word(1:5) == 'ewald') Then
+     Else If (lelec .and. ((word(1:5) == 'ewald' .or. word(1:4) == 'spme') .or. &
+                           (word(1:5) == 'poiss' .or. word(1:5) == 'psolv'))) Then
+
+! Double the kmax size if specified "ewald sum" instead of "spme sum"
+
+        itmp=0
+        If       (word(1:5) == 'ewald') Then
            itmp=2
-        Else
+        Else If  (word(1:4) == 'spme' ) Then
            itmp=1
         End If
 
@@ -549,58 +602,118 @@ Subroutine scan_control                                    &
 
            End If
 
-           If (word(1:9) == 'precision') Then
+           If (itmp > 0) Then ! Ewald or SPME
 
-              Call dcell(cell,celprp)
+              If (word(1:9) == 'precision') Then
 
-              Call get_word(record,word)
-              eps = Abs(word_2_real(word))
-              eps = Max(Min(eps,0.5_wp),1.0e-20_wp)
+                 Call dcell(cell,celprp)
 
-              Call get_word(record,word)
-              mxspl = Abs(Nint(word_2_real(word)))
+                 Call get_word(record,word)
+                 eps0 = Abs(word_2_real(word))
+                 eps0 = Max(Min(eps0,0.5_wp),1.0e-20_wp)
 
-              tol = Sqrt(Abs(Log(eps*rcut)))
-              alpha = Sqrt(Abs(Log(eps*rcut*tol)))/rcut
-              tol1 = Sqrt(-Log(eps*rcut*(2.0_wp*tol*alpha)**2))
+                 Call get_word(record,word)
+                 mxspl = Abs(Nint(word_2_real(word)))
 
-              fac = 1.0_wp
-              If (imcon == 4 .or. imcon == 5 .or. imcon == 7) fac = 2.0_wp**(1.0_wp/3.0_wp)
+                 tol = Sqrt(Abs(Log(eps0*rcut)))
+                 alpha = Sqrt(Abs(Log(eps0*rcut*tol)))/rcut
+                 tol1 = Sqrt(-Log(eps0*rcut*(2.0_wp*tol*alpha)**2))
 
-              kmaxa1 = 2*Nint(0.25_wp + fac*celprp(1)*alpha*tol1/pi)
-              kmaxb1 = 2*Nint(0.25_wp + fac*celprp(2)*alpha*tol1/pi)
-              kmaxc1 = 2*Nint(0.25_wp + fac*celprp(3)*alpha*tol1/pi)
+                 fac = 1.0_wp
+                 If (imcon == 4 .or. imcon == 5 .or. imcon == 7) fac = 2.0_wp**(1.0_wp/3.0_wp)
+
+                 kmaxa1 = 2*Nint(0.25_wp + fac*celprp(7)*alpha*tol1/pi)
+                 kmaxb1 = 2*Nint(0.25_wp + fac*celprp(8)*alpha*tol1/pi)
+                 kmaxc1 = 2*Nint(0.25_wp + fac*celprp(9)*alpha*tol1/pi)
 
 ! rcut is needed directly for the SPME and it MUST exist
 
-              If (.not.lrcut) Call error(433)
+                 If (.not.lrcut) Call error(433)
 
-           Else
+              Else
 
-              If (word(1:3) == 'sum') Call get_word(record,word)
-              alpha = Abs(word_2_real(word))
+                 If (word(1:3) == 'sum') Call get_word(record,word)
+                 alpha = Abs(word_2_real(word))
 
-              Call get_word(record,word)
-              kmaxa1 = itmp*Nint(Abs(word_2_real(word)))
+                 Call get_word(record,word)
+                 kmaxa1 = itmp*Nint(Abs(word_2_real(word)))
 
-              Call get_word(record,word)
-              kmaxb1 = itmp*Nint(Abs(word_2_real(word)))
+                 Call get_word(record,word)
+                 kmaxb1 = itmp*Nint(Abs(word_2_real(word)))
 
-              Call get_word(record,word)
-              kmaxc1 = itmp*Nint(Abs(word_2_real(word)))
+                 Call get_word(record,word)
+                 kmaxc1 = itmp*Nint(Abs(word_2_real(word)))
 
-              Call get_word(record,word)
-              mxspl = Nint(Abs(word_2_real(word)))
+                 Call get_word(record,word)
+                 mxspl = Nint(Abs(word_2_real(word)))
 
 ! rcut is not needed directly for the SPME but it's needed
 ! for the link-cell division of the domains
 ! let's not fail here if no cutoff is specified
 
+              End If
+
+! Get default spline order or one driven by multipolar sums if none is specified
+! Only even order splines are allowed so pick the even=odd+1 if resulting in odd!!!
+
+              If (mxspl == 0) Then
+                 mxspl  = mxspl_def+mxompl
+                 mxspl2 = mxspl
+              Else
+                 mxspl  = Max(mxspl,mxspl_min)
+                 mxspl2 = mxspl+mxompl
+                 mxspl2 = 2*Ceiling(0.5_wp*Real(mxspl2,wp))
+              End If
+              mxspl=2*Ceiling(0.5_wp*Real(mxspl,wp))
+              mxspl=Max(mxspl,mxspl2)
+
+           Else !If (itmp == 0) Then ! Poisson Solver
+
+              Do i=1,4
+                 If (word(1:5) == 'delta') Then   ! spacing
+                    Call get_word(record,word)
+                    alpha=1.0_wp/Abs(word_2_real(word))
+                 End If
+
+                 If (word(1:3) == 'eps') Then     ! tolerance
+                    Call get_word(record,word)
+                    eps=Abs(word_2_real(word))
+                 End If
+
+                 If (word(1:6) == 'maxits') Then  ! max number of iteration
+                    Call get_word(record,word)
+                    mxitcg=Nint(Abs(word_2_real(word)))
+                 End If
+
+                 If (word(1:7) == 'jmaxits') Then ! max number Jacobian iterations
+                    Call get_word(record,word)
+                    mxitjb=Nint(Abs(word_2_real(word)))
+                 End If
+
+                 Call get_word(record,word)
+              End Do
+
+! Check for undefined and ill defined parameters
+
+!             0.1 Angs <= delta=1/alpha <= Min(3 Angs,rcut/3) - 3 grid points within a link-cell
+              If (alpha > 10.0_wp)                       alpha = 10.0_wp
+              If (alpha < 1.0_wp/Min(3.0_wp,cut/3.0_wp)) alpha = 1.0_wp/Min(3.0_wp,cut/3.0_wp)
+
+              If (mxitcg == 0) mxitcg = 1000 ! default
+              If (mxitjb == 0) mxitjb = 1000 ! default
+
+! Derive grid spacing represented as a k-vector
+
+              Call dcell(cell,celprp)
+              kmaxa1 = Nint(celprp(7)*alpha)
+              kmaxb1 = Nint(celprp(8)*alpha)
+              kmaxc1 = Nint(celprp(9)*alpha)
+
+! Define stencil halo size (7) as a spline order (7/2==3)
+
+              mxspl = 3
+
            End If
-
-! Get default spline order if none is specified
-
-           If (mxspl == 0) mxspl = mxspl_def
 
         End If
 
@@ -630,20 +743,24 @@ Subroutine scan_control                                    &
 
 ! Sort rcut by a reset sequence
 ! rcut may be >= rcut_def but lrcut may still be .false.
-! mxspl = 0 is an indicator for no SPME electrostatics in CONTROL
+! mxspl = 0 is an indicator for no SPME or Poisson Solver electrostatics in CONTROL
 
-        If (mxspl /= 0) Then
+        If (mxspl /= 0) Then ! SPME or Poisson Solver
 
-! (1) to Max(rcut,Max(cell_width*mxspl/kmax)) satisfying SPME b-splines
-! propagation width
+! (1) to Max(rcut,Max(cell_width*mxspl/kmax),mxspl*delta) satisfying SPME b-splines
+! propagation width or the Poisson Solver extra halo relation to cutoff
+! delta=1/alpha is the grid spacing and mxspl is the grid length needed for the
+! 3 haloed stencil of differentiation
 
            If (.not.lrcut) Then
               lrcut=.true.
+
               Call dcell(cell,celprp)
-              rcut=Max( rcut                                         , &
-                        Max(celprp(7)*Real(mxspl,wp)/Real(kmaxa1,wp) , &
-                            celprp(8)*Real(mxspl,wp)/Real(kmaxb1,wp) , &
-                            celprp(9)*Real(mxspl,wp)/Real(kmaxc1,wp)) )
+              rcut=Max( rcut, Merge(Real(mxspl,wp)/alpha,                          &
+                                    Max(celprp(7)*Real(mxspl,wp)/Real(kmaxa1,wp),  &
+                                        celprp(8)*Real(mxspl,wp)/Real(kmaxb1,wp),  &
+                                        celprp(9)*Real(mxspl,wp)/Real(kmaxc1,wp)), &
+                                    itmp == 0) )
            End If
 
 ! Reset rvdw, rmet and rcut when only tersoff potentials are opted for

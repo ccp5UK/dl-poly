@@ -1,5 +1,5 @@
 Subroutine build_book_intra             &
-           (lsim,dvar,                  &
+           (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
@@ -13,7 +13,7 @@ Subroutine build_book_intra             &
 ! torsion and improper torsion angles, and inversion angles
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -48,21 +48,20 @@ Subroutine build_book_intra             &
 
   Implicit None
 
-  Logical,           Intent( In    ) :: lsim
+  Logical,           Intent( In    ) :: l_str,l_top,lsim
   Real(Kind = wp),   Intent( In    ) :: dvar
 
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
-                                        megshl,megpmf,        &
+                                        megshl,megcon,megpmf, &
                                         megtet,megbnd,megang, &
                                         megdih,meginv
-  Integer,           Intent( InOut ) :: megfrz,megcon,megrgd
+  Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=ip),  Intent( InOut ) :: degrot,degtra
 
   Logical, Save :: newjob = .true.
 
   Logical :: safe(1:11),go
-  Integer :: fail(1:2),imcon,                       &
-             i,j,isite,itmols,imols,                &
+  Integer :: fail(1:2),i,j,isite,itmols,imols,      &
              nsatm,neatm,nlapm,local_index,         &
              iat0,jat0,kat0,lat0,mat0,nat0,         &
              iatm,jatm,katm,latm,matm,natm,         &
@@ -1586,7 +1585,7 @@ Subroutine build_book_intra             &
 
 ! Set RB particulars and quaternions
 
-     If (m_rgd > 0) Call rigid_bodies_setup(megatm,megfrz,megrgd,degtra,degrot)
+     If (m_rgd > 0) Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,megrgd,degtra,degrot)
 
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
@@ -1613,16 +1612,15 @@ Subroutine build_book_intra             &
 
   Else
 
-! Recover/localise imcon and rcut
+! Recover/localise rcut
 
-     imcon=rgdimc
      rcut=rgdrct
 
 ! Tag RBs, find their COMs and check their widths to rcut (system cutoff)
 
      Call rigid_bodies_tags()
-     Call rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
-     Call rigid_bodies_widths(imcon,rcut)
+     Call rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
+     Call rigid_bodies_widths(rcut)
 
   End If
 

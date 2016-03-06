@@ -4,7 +4,7 @@
 \begin{figure}[htbp]
 \begin{center}
 \vskip 1ex
-\centerline{\includegraphics[height=12.0cm]{dlpoly_files.eps}}
+\centerline{\includegraphics[height=15.0cm]{dlpoly_files.eps}}
 \caption[\D input (left) and output (right) files]
 {\D input (left) and output (right) files.  {\bf Note}:
 files marked with an asterisk are non-mandatory.}
@@ -12,11 +12,11 @@ files marked with an asterisk are non-mandatory.}
 \end{center}
 \end{figure}
 
-\D requires seven input files named CONTROL, CONFIG, FIELD, TABLE,
-TABEAM, REFERENCE and REVOLD.  The first three files are mandatory,
-whereas TABLE and TABEAM are only used to input certain kinds of
-pair or metal potentials, and may not always be required.  REFERENCE
-is required only if defect detection is switched on in CONTROL.
+\D may require many input files.  However, only CONTROL, CONFIG and
+FIELD are mandatory.  The MPOLES and TAB* are complimentary to FIELD
+and are only required when opted within.  HISTORY is required when
+an old trajectory is opted for re-play in CONTROL. REFERENCE is
+required when defect detection is switched on in CONTROL.
 REVOLD is required only if the job represents a continuation of a
 previous job.  In the following sections we describe the form and
 content of these files.
@@ -208,7 +208,7 @@ The file is free-formatted and not case-sensitive.  Every line is
 treated as a command sentence (record).  Commented records
 (beginning with a \#) and blank lines are not processed and may be
 added to aid legibility (see example above).  Records must be
-limited in length to 100 characters.  Records are read in words
+limited in length to 200 characters.  Records are read in words
 ({\bf directives} and additional {\bf keywords} and {\bf
 numbers}), as a word must not exceed 40 characters in length.
 Words are recognised as such by separation by one or more space
@@ -1608,8 +1608,7 @@ system in the CONFIG file.  The FIELD file is read by the subroutine
 {\sc read\_field}. (It is also read by the subroutine {\sc
 scan\_field} in the {\sc set\_bounds} routine.) Excerpts from a
 force field file are shown below.  The example is the antibiotic
-Valinomycin in a cluster of 146 water molecules.
-
+Valinomycin in a cluster of 146 water molecules:
 \begin{verbatim}
 Valinomycin Molecule with 146 SPC Waters
 UNITS kcal
@@ -1677,11 +1676,11 @@ CLOSE
 
 \subsubsection{The FIELD File Format}
 
-The file is free-formatted and not case-sensitive. Every line is
-treated as a command sentence (record).  Commented records
+The file is free-formatted and not case-sensitive (except for the site names).
+Every line is treated as a command sentence (record).  Commented records
 (beginning with a \#) and blank lines are not processed and may be
 added to aid legibility (see example above).  Records must be
-limited in length to 100 characters.  Records are read in words,
+limited in length to 200 characters.  Records are read in words,
 as a word must not exceed 40 characters in length.  Words are
 recognised as such by separation by one or more space characters.
 The contents of the file are variable and are defined by the use
@@ -1691,8 +1690,8 @@ the directives.
 \subsubsection{Definitions of Variables in the FIELD File}
 
 The file divides into three sections: general information, molecular
-descriptions, and non-bonded\index{potential!non-bonded} interaction descriptions, appearing in that
-order in the file.
+descriptions, and non-bonded\index{potential!non-bonded} interaction
+descriptions, appearing in that order in the file.
 
 \subsubsection*{General information}
 
@@ -1701,7 +1700,7 @@ second is the {\bf units} directive.  Both of these are mandatory.
 \begin{tabbing}
 X\=XXXXXXXXXX\=XXXXX\=\kill
 {\bf record 1} \\
-\> header      \> a100 \> field file header \\
+\> header      \> a200 \> field file header \\
 {\bf record 2}\\
 \> {\bf units} \> a40  \> Unit of energy used for input and output
 \end{tabbing}
@@ -1725,7 +1724,27 @@ output energies are read in {\bf units per MD cell}.
 in terms of the specified energy units.  If such a parameter
 depends on an angle then the dependence is read in terms of
 radians although the following angle in the parameter sequence
-is read in terms of degrees.
+is read in terms of degrees.  As to any rule, there is an exception
+- the electrostatic bond potential has no energy bearing parameter!
+
+A third optional record can then be supplied before any molecular
+description:
+\begin{tabbing}
+X\=XXXXXXXXXXXXXX\=XXXXXXXXX\=\kill
+{\bf record 3} \\
+\> {\bf mult}ipolar order $n$ \> a50, integer \> Electrostatics evaluation to order $n$ poles
+\end{tabbing}
+\noindent This will later trigger the parsing of the MPOLES file
+(see Section~\ref{mpoles-file}) which supplies the multipolar
+momenta values of the molecular sites specified in FIELD.  Sites
+with specified pole orders, $m$, smaller than the one required, $n$,
+will have their $m+1$ to $n$ order poles' momenta zeroed.
+Similarly, if sites have momenta of poles of higher order than
+the one required, $n$, these will not be processed by \D.
+
+{\bf Note}, although algorithms in \D could in principle handle
+any high pole order summation, in practice, however, \D will abort
+if the order is higher than hexadecapole (order 4)!
 
 \subsubsection*{Molecular details}
 
@@ -1756,7 +1775,7 @@ defining individual molecules:
 \begin{enumerate}
 
 \item {\em name-of-molecule} \\
-which can be any character string up to 100 characters in length.
+which can be any character string up to 200 characters in length.
 ({\bf Note}: this is not a directive, just a simple character string.)
 
 \item {\bf nummols {\em n}} \\
@@ -1779,8 +1798,8 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \end{tabbing}
 The integer {\tt nrept} need not be specified if the atom/site is
 not frozen (in which case a value of 1 is assumed.)  A number
-greater than 1 specified here indicates that the next ({\tt nrept}
-- 1) entries in the CONFIG file are ascribed the atomic
+greater than 1 specified here indicates that the next ({\tt nrept}-1)
+entries in the CONFIG file are ascribed the atomic
 characteristics given in the current record.  The sum of the
 repeat numbers for all atoms in a molecule should equal the number
 specified by the {\bf atoms} directive.
@@ -2938,6 +2957,179 @@ The FIELD file must be closed with the directive:\\
 \noindent which signals the end of the force field data.  Without
 this directive \D will abort.
 
+\subsection{The MPOLES File}
+\label{mpoles-file}
+
+The MPOLES file serves to define the multipolar momenta of the
+sites defined in FIELD (see Section~\ref{field-file}).  It is
+only read by \D when the \underline{{\bf mult}ipolar~order~{\em n}}
+directive is specified at the top of FIELD.  The file is read
+by the subroutine {\sc read\_mpoles}.  The MPOLES file and has
+the same molecular topology syntax and rules as FIELD except that \\
+{\bf (i)} it only understands the stoichiometry information; and \\
+{\bf (ii)} will abort should more FIELD like detail is supplied.\\
+Thus the molecular topology/stoichiometry information must
+explicitly match that in FIELD.
+
+Example from a water system with multipolar momenta beyond the
+single point charges is shown below:
+\begin{verbatim}
+Puddle Test Case (32000 AMOEBA Waters)
+
+MOLECULES 1
+
+SPC WATER
+NUMMOLS   32000
+
+ATOMS     3
+
+O  2
+-0.51966
+ 0.00000   0.00000   0.14279
+ 0.37928   0.00000   0.00000  -0.41809   0.00000   0.03881
+
+H  2
+0.25983
+-0.03859   0.00000  -0.05818
+-0.03673   0.00000  -0.00203  -0.10739   0.00000   0.14412
+
+H  2
+0.25983
+-0.03859   0.00000  -0.05818
+-0.03673   0.00000  -0.00203  -0.10739   0.00000   0.14412
+
+FINISH
+
+CLOSE
+\end{verbatim}
+
+\subsubsection{The MPOLES File Format}
+
+The file is free-formatted and not case-sensitive (except for the site names).
+Every line is treated as a command sentence (record).  Commented records
+(beginning with a \#) and blank lines are not processed and may be
+added to aid legibility (see example above).  Records must be
+limited in length to 200 characters.  Records are read in words,
+as a word must not exceed 40 characters in length.  Words are
+recognised as such by separation by one or more space characters.
+The contents of the file are variable and are defined by the use
+of {\bf directives}.  Additional information is associated with
+the directives.
+
+\subsubsection{Definitions of Variables in the MPOLES File}
+
+The file divides into two sections: general information, molecular
+descriptions.
+
+\subsubsection*{General information}
+
+The first viable record in the MPOLES file is the title, which is mandatory.
+\begin{tabbing}
+X\=XXXXXXXXXX\=XXXXX\=\kill
+{\bf record 1} \\
+\> header      \> a200 \> field file header
+\end{tabbing}
+
+\subsubsection*{Molecular details}
+
+It is important for the user to understand that there is an
+organisational correspondence between the FIELD file and the
+CONFIG file described above.  It is required that the order of
+specification of molecular types and their atomic constituents in
+the FIELD file follows the order of indices in which they appear
+in the CONFIG file.  Failure to adhere to this common sequence
+will be detected by \D and result in premature termination of the
+job. It is therefore essential to work from the CONFIG file when
+constructing the FIELD file.  It is not as difficult as it sounds!
+
+The entry of the molecular details begins with the mandatory
+directive:
+
+\noindent {\bf molecules {\em n}}
+
+\noindent where {\em n} is an integer specifying the number of
+different {\em types} of molecule appearing in the FIELD file.
+Once this directive has been encountered, \D enters the {\em
+molecular description} environment in which only molecular
+description keywords and data are valid.
+
+Immediately following the {\bf molecules} directive, are the records
+defining individual molecules:
+
+\begin{enumerate}
+
+\item {\em name-of-molecule} \\
+which can be any character string up to 200 characters in length.
+({\bf Note}: this is not a directive, just a simple character string.)
+
+\item {\bf nummols {\em n}} \\
+where {\em n} is the number of times a molecule of this type
+appears in the simulated system.  The molecular data then follow
+in subsequent records:
+
+\item {\bf atoms {\em n}} \\
+where {\em n} indicates the number of atoms in this type of
+molecule.  A number of records follow, each giving details of the
+atoms in the molecule i.e. site names, masses and charges.  Each
+record carries the entries:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> {\tt sitnam} \> a8      \> atomic site name \\
+\> {\tt order}  \> integer \> multipolar order supplied \\
+\> {\tt nrept}  \> integer \> repeat counter
+\end{tabbing}
+The integer {\tt nrept} need not be specified (in which case a value
+of 1 is assumed.)  A number greater than 1 specified here indicates
+that the next ({\tt nrept}-1) entries in the CONFIG file are ascribed
+the atomic characteristics given in the current record.  The sum of the
+repeat numbers for all atoms in a molecule should equal the number
+specified by the {\bf atoms} directive.
+
+For each pole {\tt order} specified \D will read a new line that
+will specify the pole order momenta.  If a site has a specified
+pole order, $m$, smaller than the one specified in FIELD, $n$,
+then the $m+1$ to $n$ order poles' momenta will be zero.
+Similarly, if a site has momenta of poles of higher order than
+the one specified in FIELD, $n$, these will not be processed by \D.
+
+\D will read same order momenta in their natural vector format:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+\> {\tt charge}       \> real(1)  \> scalar \\
+\> {\tt dipole}       \> real(3)  \> vector (x,y,z) \\
+\> {\tt quadrupole}   \> real(6)  \> vector (xx,xy,xz,yy,yz,zz) \\
+\> {\tt octupole}     \> real(10) \> vector (xxx,xxy,xxz,xyy,xyz,xzz,yyy,yyz,yzz,zzz) \\
+\> {\tt hexadecapole} \> real(15) \> vector (xxxx,xxxy,xxxz,....,yyyz,yyzz,yzzz,zzzz) \\
+\end{tabbing}
+
+{\bf Note} that the charge values supplied in FIELD will be
+overwritten with those supplied here!
+
+{\bf Note}, although algorithms in \D could in principle handle
+any high pole order summation, in practice, however, \D will abort
+if the order is higher than hexadecapole (order 4)!
+
+\item {\bf finish} \\
+This directive is entered to signal \D that the entry of the
+details of a molecule has been completed.
+
+The entries for a second molecule may now be entered, beginning with
+the {\em name-of-molecule} record and ending with the {\bf finish}
+directive.
+
+The cycle is repeated until all the types of molecules indicated by
+the {\bf molecules} directive have been entered.
+
+\end{enumerate}
+
+\subsubsection{Closing the MPOLES File}
+
+The MPOLES file must be closed with the directive:\\
+\\
+{\bf close}
+\\
+after which \D will resume will processing the intermolecular part of FIELD.
+
 \subsection{The REFERENCE File}
 \label{reference-file}
 
@@ -3048,7 +3240,7 @@ allowed.
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 1} \\
-\> {\tt header} \> a100    \> file header \\
+\> {\tt header} \> a200    \> file header \\
 {\bf record 2} \\
 \> {\tt delpot} \> real    \> mesh resolution in \AA~(${\tt delpot} = \frac{\tt cutpot}{{\tt ngrid}-4}$) \\
 \> {\tt cutpot} \> real    \> cutoff used to define tables in \AA \\
@@ -3115,7 +3307,7 @@ allowed.
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 1} \\
-\> {\tt header} \> a100    \> file header \\
+\> {\tt header} \> a200    \> file header \\
 {\bf record 2} \\
 \> {\tt numpot} \> integer \> number of potential functions in file
 \end{tabbing}
@@ -3231,7 +3423,7 @@ their derivation and usage in coarse grained model systems.
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 1} \\
-\> {\tt header}    \> a100    \> file header \\
+\> {\tt header}    \> a200    \> file header \\
 {\bf record 2} \\
 \> {\tt \#}        \> a1      \> a hash (\#) symbol \\
 \> {\tt cutpot}    \> real    \> cutoff in \AA~- {\bf only expected in TABBND} as the \\

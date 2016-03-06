@@ -8,7 +8,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 ! NOTE: When executing on one node we need not get here at all!
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov january 2016
+! author    - w.smith & i.t.todorov february 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014
 !
@@ -45,6 +45,8 @@ Subroutine deport_atomic_data(mdir,lbook)
   Use langevin_module,     Only : l_lan,fxl,fyl,fzl
 
   Use ewald_module
+  Use mpoles_module,       Only : ltpatm
+
   Use msd_module
   Use greenkubo_module,    Only : vxi,vyi,vzi,vafsamp
 
@@ -372,9 +374,9 @@ Subroutine deport_atomic_data(mdir,lbook)
               buffer(imove+11)=sumval(jj-1)
               buffer(imove+12)=sumval(jj  )
               Do kk=1,mxstak
-                 l=2*kk
-                 buffer(imove+12+l-1)=stkval(kk,jj-1)
-                 buffer(imove+12+l  )=stkval(kk,jj  )
+                 l=2*kk   +12
+                 buffer(imove+l-1)=stkval(kk,jj-1)
+                 buffer(imove+l  )=stkval(kk,jj  )
               End Do
            Else
               safe=.false.
@@ -385,6 +387,28 @@ Subroutine deport_atomic_data(mdir,lbook)
 ! If intra-molecular entities exist in the system
 
         If (lbook) Then
+
+! pack topological array
+
+           If (mximpl > 0) Then
+              kk=ltpatm(0,i)
+              If (imove+1 <= iblock) Then
+                 imove=imove+1
+                 buffer(imove)=Real(kk,wp)
+              Else
+                 imove=imove+1
+                 safe=.false.
+              End If
+              If (imove+kk <= iblock) Then
+                 Do k=1,kk
+                    imove=imove+1
+                    buffer(imove)=Real(ltpatm(k,i),wp)
+                 End Do
+              Else
+                 imove=imove+kk
+                 safe=.false.
+              End If
+           End If
 
 ! pack the exclusion list
 
@@ -823,6 +847,9 @@ Subroutine deport_atomic_data(mdir,lbook)
      End If
 
      If (lbook) Then
+        If (mximpl > 0) &
+        ltpatm(:,keep)=ltpatm(:,i)
+
         lexatm(:,keep)=lexatm(:,i)
 
         legshl(:,keep)=legshl(:,i)
@@ -1000,15 +1027,28 @@ Subroutine deport_atomic_data(mdir,lbook)
         sumval(jj-1)=buffer(kmove+11)
         sumval(jj  )=buffer(kmove+12)
         Do kk=1,mxstak
-           l=2*kk
-           stkval(kk,jj-1)=buffer(kmove+12+l-1)
-           stkval(kk,jj  )=buffer(kmove+12+l  )
+           l=2*kk                +12
+           stkval(kk,jj-1)=buffer(kmove+l-1)
+           stkval(kk,jj  )=buffer(kmove+l  )
         End Do
 
         kmove=kmove+2*(6+mxstak)
      End If
 
      If (lbook) Then
+
+! unpack topological array
+
+        If (mximpl > 0) Then
+           kmove=kmove+1
+           kk=Nint(buffer(kmove))
+           ltpatm(0,newatm)=kk
+           Do k=1,kk
+              kmove=kmove+1
+              ltpatm(k,newatm)=Nint(buffer(kmove))
+           End Do
+           ltpatm(kk+1:mxexcl,newatm)=0
+        End If
 
 ! unpack the exclusion list
 

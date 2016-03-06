@@ -8,7 +8,7 @@ Subroutine statistics_result                                    &
 ! dl_poly_4 subroutine for writing simulation summary
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov october 2014
+! author    - w.smith & i.t.todorov march 2016
 ! contrib   - m.a.seaton june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -139,13 +139,13 @@ Subroutine statistics_result                                    &
 
 ! shift back statistical averages as from statistics_collect
 
-  Do i=1,mxnstk
+  Do i=0,mxnstk
      sumval(i)=sumval(i)+stpvl0(i)
   End Do
 
 ! calculate final fluctuations
 
-  Do i=1,mxnstk
+  Do i=0,mxnstk
      ssqval(i)=Sqrt(ssqval(i))
   End Do
 
@@ -167,13 +167,26 @@ Subroutine statistics_result                                    &
           & 5x,'vir_pmf',7x,'press',/,/,1x,130('-'))")
 
      Write(nrite,'(1x,i13,1p,9e12.4,/,0p,f14.5,1p,9e12.4,/,1x,0p,f13.3, &
-          & 1p,9e12.4)') numacc,(sumval(i),i=1,9),tmp,                  &
-                      (sumval(i),i=10,18),timelp,(sumval(i),i=19,27)
+          & 1p,9e12.4)') numacc,sumval(1:9),tmp,sumval(10:18),timelp,sumval(19:27)
 
-     Write(nrite,"(/,6x,' r.m.s. ',1p,9e12.4,/,6x,'fluctn. ',1p,9e12.4, &
-          & /,14x,9e12.4)") (ssqval(i),i=1,27)
+     Write(nrite,"(/,6x,' r.m.s. ',1p,9e12.4,/,6x,'fluctu- ',1p,9e12.4, &
+          & /,6x,'ations  ',1p,9e12.4)") ssqval(1:27)
 
      Write(nrite,"(1x,130('-'))")
+
+! Some extra information - conserved quantity=extended ensemble energy
+
+     Write(nrite,"(/,1x,a,1p,e12.4,5x,a,1p,e12.4)") &
+          "Extended energy:       ", sumval(0),     &
+          " r.m.s. fluctuations:  ", ssqval(0)
+
+! Some extra information - <P*V> term - only matters for NP/sT ensembles
+
+     If (keyens >= 20) Write(nrite,"(/,1x,a,1p,e12.4,5x,a,1p,e12.4)")           &
+          "<P*V> term:            ", sumval(37+ntpatm+2*Merge(mxatdm,0,l_msd)), &
+          " r.m.s. fluctuations:  ", ssqval(37+ntpatm+2*Merge(mxatdm,0,l_msd))
+
+     Write(nrite,"(/,1x,130('-'))")
   End If
 
 ! Move at the end of the default 27 quantities
@@ -210,7 +223,7 @@ Subroutine statistics_result                                    &
      Write(nrite,"(/,/,16x,'Average pressure tensor  (katms)',30x,'r.m.s. fluctuations',/)")
 
      Do i=iadd,iadd+6,3
-        Write(nrite,'(9x,1p,3e12.4,24x,3e12.4)') (sumval(i+j),j = 1,3),(ssqval(i+j),j = 1,3)
+        Write(nrite,'(9x,1p,3e12.4,24x,3e12.4)') sumval(i+1:i+3),ssqval(i+1:i+3)
      End Do
 
      Write(nrite,'(/,12x,a,1p,e12.4)') 'trace/3  ', (sumval(iadd+1)+sumval(iadd+5)+sumval(iadd+9))/3.0_wp
@@ -229,14 +242,18 @@ Subroutine statistics_result                                    &
      End Do
 
      If (idnode == 0) Then
-        Write(nrite,"(/,/,16x,'Average cell vectors     (Angs) ',30x,'r.m.s. fluctuations ',/)")
+        Write(nrite,"(/,/,16x,'Average cell vectors     (Angs) ',30x,'r.m.s. fluctuations',/)")
 
         Do i=iadd,iadd+6,3
-           Write(nrite,'(3f20.10,9x,1p,3e12.4)') (sumval(i+j),j = 1,3),(ssqval(i+j),j = 1,3)
+           Write(nrite,'(3f20.10,9x,1p,3e12.4)') sumval(i+1:i+3),ssqval(i+1:i+3)
         End Do
      End If
 
      iadd = iadd+9
+
+! PV term used above
+
+     iadd = iadd+1
 
      If (iso > 0) Then
         h_z=sumval(iadd+1)

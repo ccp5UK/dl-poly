@@ -7,7 +7,7 @@ Subroutine metal_generate(rmet)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 2006
-! amended   - i.t.todorov january 2015
+! amended   - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -128,7 +128,7 @@ Subroutine metal_generate(rmet)
 
                  If (rrr <= cut2) Then
                     dmet(i,imet,1)=(rrr-ddd)**2+bbb**2*(rrr-ddd)**4
-                    dmet(i,imet,2)=-rrr*(2.0_wp*(rrr-ddd)+4.0_wp*bbb*2*(rrr-ddd)**3)
+                    dmet(i,imet,2)=-rrr*(2.0_wp*(rrr-ddd)+4.0_wp*bbb**2*(rrr-ddd)**3)
                  End If
               End Do
 

@@ -8,7 +8,7 @@ Subroutine metal_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov january 2016
+! amended   - i.t.todorov march 2016
 ! contrib   - r.davidchak (eeam) june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -196,7 +196,7 @@ Subroutine metal_forces &
 ! calculate density contributions
 
               If (rrr <= cut2) &
-                 gamma2 = -rrr*(2.0_wp*(rrr-ddd)+4.0_wp*bbb*2*(rrr-ddd)**3)
+                 gamma2 = -rrr*(2.0_wp*(rrr-ddd)+4.0_wp*bbb**2*(rrr-ddd)**3)
 
               If (ai == aj) Then
                  t1=prmmet(7,k0)**2

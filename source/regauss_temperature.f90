@@ -1,4 +1,4 @@
-Subroutine regauss_temperature(imcon,megrgd)
+Subroutine regauss_temperature(megrgd)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,7 +7,7 @@ Subroutine regauss_temperature(imcon,megrgd)
 ! active particles (no massless shells or massless RB members)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2010
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -21,7 +21,7 @@ Subroutine regauss_temperature(imcon,megrgd)
 
   Implicit None
 
-  Integer, Intent( In    ) :: imcon,megrgd
+  Integer, Intent( In    ) :: megrgd
 
   Integer           :: fail,i,j,k,l,is,irgd,jrgd,lrgd,rgdtyp
   Real( Kind = wp ) :: uni,vom(1:3),tmp
@@ -105,7 +105,7 @@ Subroutine regauss_temperature(imcon,megrgd)
 
 ! quench RBs
 
-     Call rigid_bodies_quench(imcon)
+     Call rigid_bodies_quench()
 
 ! remove centre of mass motion
 

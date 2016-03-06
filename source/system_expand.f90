@@ -1,4 +1,4 @@
-Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
+Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -10,7 +10,7 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
 ! supported image conditions: 1,2,3, 6(nz==1)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2014
+! author    - i.t.todorov february 2015
 ! contrib   - w.smith, i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -19,7 +19,7 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
   Use comms_module
   Use setup_module,        Only : nfield,nconf,nrite,mxatms
   Use site_module
-  Use config_module,       Only : cfgname,cell,natms,lsi,lsa, &
+  Use config_module,       Only : cfgname,imcon,cell,natms,lsi,lsa, &
                                   atmnam,xxx,yyy,zzz
   Use core_shell_module,   Only : numshl,lstshl
   Use constraints_module,  Only : numcon,lstcon
@@ -55,7 +55,7 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
   Implicit None
 
   Logical,           Intent( In    ) :: l_str
-  Integer,           Intent( In    ) :: imcon,nx,ny,megatm
+  Integer,           Intent( In    ) :: nx,ny,megatm
   Real( Kind = wp ), Intent( In    ) :: rcut
   Integer,           Intent( InOut ) :: nz
 
@@ -1033,8 +1033,8 @@ Subroutine system_expand(l_str,imcon,rcut,nx,ny,nz,megatm)
         Read(Unit=nfield, Fmt='(a)', End=10) record
         Call tabs_2_blanks(record) ; Call strip_blanks(record)
         record1=record
-        Call lower_case(record)
         Call get_word(record,word)
+        Call lower_case(word)
 
 ! number of molecules of this type
 

@@ -1,4 +1,4 @@
-Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
+Subroutine link_cell_pairs(rlnk,lbook,megfrz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -22,7 +22,7 @@ Subroutine link_cell_pairs(imcon,rlnk,lbook,megfrz)
   Implicit None
 
   Logical,            Intent( In    ) :: lbook
-  Integer,            Intent( In    ) :: imcon,megfrz
+  Integer,            Intent( In    ) :: megfrz
   Real( Kind = wp ) , Intent( In    ) :: rlnk
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1,match

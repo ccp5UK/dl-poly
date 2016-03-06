@@ -1,4 +1,4 @@
-Subroutine four_body_forces(imcon,rcfbp,engfbp,virfbp,stress)
+Subroutine four_body_forces(rcfbp,engfbp,virfbp,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -12,7 +12,7 @@ Subroutine four_body_forces(imcon,rcfbp,engfbp,virfbp,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith july 1996
-! amended   - i.t.todorov november 2014
+! amended   - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,7 +27,6 @@ Subroutine four_body_forces(imcon,rcfbp,engfbp,virfbp,stress)
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: imcon
   Real( Kind = wp ),                   Intent( In    ) :: rcfbp
   Real( Kind = wp ),                   Intent(   Out ) :: engfbp,virfbp
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
@@ -72,10 +71,6 @@ Subroutine four_body_forces(imcon,rcfbp,engfbp,virfbp,stress)
   Integer,           Dimension( : ), Allocatable :: link,lct,lst,listin
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
-
-! image conditions not compliant with DD and link-cell
-
-  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
 ! Get the dimensional properties of the MD cell
 

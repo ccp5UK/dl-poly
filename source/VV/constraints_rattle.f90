@@ -12,7 +12,7 @@ Subroutine constraints_rattle              &
 !       VV applicable ONLY
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -162,9 +162,9 @@ Subroutine constraints_rattle              &
   If (.not.safe) Then ! error exit for non-convergence
      Call error(515)
   Else ! Collect per call and per step passage statistics
-     passcon(1,1,2)=icyc-1
+     passcon(1,1,2)=Real(icyc-1,wp)
      passcon(3,1,2)=passcon(2,1,2)*passcon(3,1,2)
-     passcon(2,1,2)=passcon(2,1,2)+1
+     passcon(2,1,2)=passcon(2,1,2)+1.0_wp
      passcon(3,1,2)=passcon(3,1,2)/passcon(2,1,2)+passcon(1,1,2)/passcon(2,1,2)
      passcon(4,1,2)=Min(passcon(1,1,2),passcon(4,1,2))
      passcon(5,1,2)=Max(passcon(1,1,2),passcon(5,1,2))
@@ -172,7 +172,7 @@ Subroutine constraints_rattle              &
      passcon(1,2,2)=passcon(1,2,2)+passcon(1,1,2)
      If (lcol) Then ! Collect
         passcon(3,2,2)=passcon(2,2,2)*passcon(3,2,2)
-        passcon(2,2,2)=passcon(2,2,2)+1
+        passcon(2,2,2)=passcon(2,2,2)+1.0_wp
         passcon(3,2,2)=passcon(3,2,2)/passcon(2,2,2)+passcon(1,2,2)/passcon(2,2,2)
         passcon(4,2,2)=Min(passcon(1,2,2),passcon(4,2,2))
         passcon(5,2,2)=Max(passcon(1,2,2),passcon(5,2,2))

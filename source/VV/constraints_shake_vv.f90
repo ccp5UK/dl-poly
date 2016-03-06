@@ -1,6 +1,6 @@
-Subroutine constraints_shake_vv        &
-           (imcon,mxshak,tolnce,tstep, &
-           lstopt,dxx,dyy,dzz,listot,  &
+Subroutine constraints_shake_vv       &
+           (mxshak,tolnce,tstep,      &
+           lstopt,dxx,dyy,dzz,listot, &
            xxx,yyy,zzz,strcon,vircon)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -12,19 +12,19 @@ Subroutine constraints_shake_vv        &
 !       VV compliant
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2015
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsync,gcheck,gsum
   Use setup_module
-  Use config_module, Only : cell,natms,nlast,lsi,lsa,lfrzn,weight
+  Use config_module, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn,weight
   Use constraints_module
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
   Integer,           Intent( In    ) :: lstopt(0:2,1:mxcons)
   Real( Kind = wp ), Intent( In    ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
@@ -216,9 +216,9 @@ Subroutine constraints_shake_vv        &
      End Do
      Call error(105)
   Else ! Collect per call and per step passage statistics
-     passcon(1,1,1)=icyc-1
+     passcon(1,1,1)=Real(icyc-1,wp)
      passcon(3,1,1)=passcon(2,1,1)*passcon(3,1,1)
-     passcon(2,1,1)=passcon(2,1,1)+1
+     passcon(2,1,1)=passcon(2,1,1)+1.0_wp
      passcon(3,1,1)=passcon(3,1,1)/passcon(2,1,1)+passcon(1,1,1)/passcon(2,1,1)
      passcon(4,1,1)=Min(passcon(1,1,1),passcon(4,1,1))
      passcon(5,1,1)=Max(passcon(1,1,1),passcon(5,1,1))

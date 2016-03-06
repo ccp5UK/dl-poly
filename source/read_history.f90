@@ -1,4 +1,4 @@
-Subroutine read_history(l_str,fname,megatm,levcfg,imcon,dvar,nstep,tstep,time,exout)
+Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -35,7 +35,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,dvar,nstep,tstep,time,ex
   Logical,              Intent( In    ) :: l_str
   Integer,              Intent( In    ) :: megatm
 
-  Integer,              Intent( InOut ) :: levcfg,imcon,nstep
+  Integer,              Intent( InOut ) :: levcfg,nstep
   Real( Kind = wp ),    Intent( In    ) :: dvar
   Real( Kind = wp ),    Intent( InOut ) :: tstep,time
   Integer,              Intent(   Out ) :: exout
@@ -216,6 +216,11 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,dvar,nstep,tstep,time,ex
      Call get_word(record,word) ; If (Nint(word_2_real(word)) /= megatm) Go To 300
      Call get_word(record,word) ; levcfg = Nint(word_2_real(word))
      Call get_word(record,word) ; imcon = Nint(word_2_real(word))
+
+! image conditions not compliant with DD and link-cell
+
+     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
+
      Call get_word(record,word) ; tstep = word_2_real(word)
      Call get_word(record,word) ; time = word_2_real(word)
 
@@ -445,6 +450,11 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,dvar,nstep,tstep,time,ex
      Call get_word(record,word) ; If (Nint(word_2_real(word)) /= megatm) Go To 300
      Call get_word(record,word) ; levcfg = Nint(word_2_real(word))
      Call get_word(record,word) ; imcon = Nint(word_2_real(word))
+
+! image conditions not compliant with DD and link-cell
+
+    If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
+
      Call get_word(record,word) ; tstep = word_2_real(word)
      Call get_word(record,word) ; time = word_2_real(word)
 
@@ -507,6 +517,11 @@ Subroutine read_history(l_str,fname,megatm,levcfg,imcon,dvar,nstep,tstep,time,ex
      Call io_nc_get_var( 'time'           , fh,   time, i, 1 )
      Call io_nc_get_var( 'datalevel'      , fh, levcfg, i, 1 )
      Call io_nc_get_var( 'imageconvention', fh,  imcon, i, 1 )
+
+! image conditions not compliant with DD and link-cell
+
+     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
+
      Call io_nc_get_var( 'timestep'       , fh,  tstep, i, 1 )
      Call io_nc_get_var( 'step'           , fh,  nstep, i, 1 )
 

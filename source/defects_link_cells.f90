@@ -1,5 +1,5 @@
 Subroutine defects_link_cells &
-           (imcon,cell,cut,mxcldef,na,nl,xxt,yyt,zzt,nlx,nly,nlz,link,lct)
+           (cut,mxcldef,na,nl,xxt,yyt,zzt,nlx,nly,nlz,link,lct)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,35 +7,24 @@ Subroutine defects_link_cells &
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module
   Use domains_module
+  Use config_module, Only : cell
 
   Implicit None
 
-  Integer,            Intent( In    ) :: imcon,mxcldef,na,nl
-  Real( Kind = wp ) , Intent( In    ) :: cell(1:9),cut, &
-                                         xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms)
-
+  Integer,            Intent( In    ) :: mxcldef,na,nl
+  Real( Kind = wp ) , Intent( In    ) :: cut,xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms)
   Integer,            Intent(   Out ) :: nlx,nly,nlz,link(1:mxatms),lct(0:mxcldef)
-
-  Logical, Save :: newjob = .true.
 
   Logical           :: lx0,lx1,ly0,ly1,lz0,lz1
   Integer           :: icell,ncells,i,ix,iy,iz,jx,jy,jz
   Real( Kind = wp ) :: celprp(1:10), dispx,dispy,dispz, xdc,ydc,zdc
-
-  If (newjob) Then
-     newjob = .false.
-
-! image conditions not compliant with DD and link-cell
-
-     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
-  End If
 
 ! Get the dimensional properties of the MD cell
 

@@ -1,19 +1,19 @@
-Subroutine statistics_collect              &
-           (lsim,leql,nsteql,lzdn,nstzdn,  &
-           keyres,keyens,iso,intsta,imcon, &
-           degfre,degshl,degrot,           &
-           nstep,tstep,time,tmst,          &
-           engcpe,vircpe,engsrp,virsrp,    &
-           engter,virter,                  &
-           engtbp,virtbp,engfbp,virfbp,    &
-           engshl,virshl,shlke,            &
-           vircon,virpmf,                  &
-           engtet,virtet,engfld,virfld,    &
-           engbnd,virbnd,engang,virang,    &
-           engdih,virdih,enginv,virinv,    &
-           engke,engrot,consv,vircom,      &
-           strtot,press,strext,            &
-           stpeng,stpvir,stpcfg,stpeth,    &
+Subroutine statistics_collect             &
+           (lsim,leql,nsteql,lzdn,nstzdn, &
+           keyres,keyens,iso,intsta,      &
+           degfre,degshl,degrot,          &
+           nstep,tstep,time,tmst,         &
+           engcpe,vircpe,engsrp,virsrp,   &
+           engter,virter,                 &
+           engtbp,virtbp,engfbp,virfbp,   &
+           engshl,virshl,shlke,           &
+           vircon,virpmf,                 &
+           engtet,virtet,engfld,virfld,   &
+           engbnd,virbnd,engang,virang,   &
+           engdih,virdih,enginv,virinv,   &
+           engke,engrot,consv,vircom,     &
+           strtot,press,strext,           &
+           stpeng,stpvir,stpcfg,stpeth,   &
            stptmp,stpprs,stpvol)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -22,7 +22,7 @@ Subroutine statistics_collect              &
 ! molecular dynamics simulation and computing the rolling averages
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov february 2016
+! author    - w.smith & i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,7 +30,7 @@ Subroutine statistics_collect              &
   Use comms_module,   Only : idnode,mxnode,gsum
   Use setup_module
   Use site_module,    Only : ntpatm,numtypnf
-  Use config_module,  Only : cfgname,cell,volm,natms,ltype, &
+  Use config_module,  Only : cfgname,imcon,cell,volm,natms,ltype, &
                              xxx,yyy,zzz,vxx,vyy,vzz
   Use dpd_module,     Only : virdpd
   Use statistics_module
@@ -40,7 +40,7 @@ Subroutine statistics_collect              &
 
   Logical,           Intent( In    ) :: lsim,leql,lzdn
   Integer,           Intent( In    ) :: nsteql,nstzdn,keyres, &
-                                        keyens,iso,intsta,imcon,nstep
+                                        keyens,iso,intsta,nstep
 
   Integer(Kind=ip),  Intent( In    ) :: degfre,degshl,degrot
 
@@ -64,8 +64,8 @@ Subroutine statistics_collect              &
 
   Logical                 :: l_tmp
   Integer                 :: fail,i,j,k,iadd,kstak
-  Real( Kind = wp )       :: stpcns,stpshl,stprot,sclnv1,sclnv2,zistk, &
-                             celprp(1:10),h_z
+  Real( Kind = wp )       :: stpcns,stpshl,stprot,stpipv,celprp(1:10), &
+                             zistk,sclnv1,sclnv2,h_z
 
   Real( Kind = wp ), Allocatable :: amsd(:)
   Real( Kind = wp ), Allocatable :: xxt(:),yyt(:),zzt(:)
@@ -149,9 +149,17 @@ Subroutine statistics_collect              &
 
   stpprs = (2.0_wp*engke-stpvir) / (3.0_wp*stpvol)
 
+! system PV
+
+  stpipv = stpprs*stpvol
+
 ! system enthalpy
 
-  stpeth = stpeng + stpprs*stpvol
+  If (keyens >= 20) Then             ! P_target*V_instantaneous
+     stpeth = stpeng + press*stpvol
+  Else                               ! for keyens < 20 V_instantaneous=V_target
+     stpeth = stpeng + stpipv        ! and there is only P_instantaneous
+  End If
 
   Call dcell(cell,celprp)
 
@@ -164,6 +172,7 @@ Subroutine statistics_collect              &
 !     virtet , virbnd , virang , virdih , virinv , &
 !     virdpd
 
+  stpval(0) =consv/engunit
   stpval(1) =stpcns/engunit
   stpval(2) =stptmp
   stpval(3) =stpcfg/engunit
@@ -279,14 +288,19 @@ Subroutine statistics_collect              &
   End Do
   iadd = iadd + 9
 
-! cell parameters
-
   If (keyens >= 20) Then
+
+! cell parameters
 
      Do i=1,9
        stpval(iadd+i)=cell(i)
      End Do
      iadd = iadd + 9
+
+! instantaneous PV
+
+     stpval(iadd+1)=stpipv/engunit
+     iadd = iadd + 1
 
      If (iso > 0) Then
         h_z=celprp(9)
@@ -310,10 +324,10 @@ Subroutine statistics_collect              &
 
      If (l_msd) Then
         Write(nstats,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
-             nstep,time,iadd-2*mxatdm,(stpval(k),k=1,27),(stpval(k),k=28+2*mxatdm,iadd)
+             nstep,time,iadd-2*mxatdm,stpval(1:  27),stpval(0),stpval(28+2*mxatdm:iadd)
      Else
         Write(nstats,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
-             nstep,time,iadd,(stpval(k),k=1,iadd)
+             nstep,time,iadd,         stpval(1:  27),stpval(0),stpval(28         :iadd)
      End If
 
      Close(Unit=nstats)
@@ -334,23 +348,23 @@ Subroutine statistics_collect              &
 ! subtract old stack value from the stack average
 
   If (nstep > mxstak) Then
-     Do i=1,mxnstk
+     Do i=0,mxnstk
         zumval(i)=zumval(i)-stkval(kstak,i)
      End Do
   End If
 
 ! store quantities in stack and update the stack average
 
-  Do i=1,mxnstk
+  Do i=0,mxnstk
      stkval(kstak,i)=stpval(i)
      zumval(i)=zumval(i)+stpval(i)
   End Do
 
 ! calculate rolling averages
 
-  zistk=Min(mxstak,nstep)
+  zistk=Real(Min(mxstak,nstep),wp)
 
-  Do i=1,mxnstk
+  Do i=0,mxnstk
      ravval(i)=zumval(i)/zistk
   End Do
 
@@ -365,7 +379,7 @@ Subroutine statistics_collect              &
 
      If (nstep == nsteql+1 .or. ((.not.leql) .and. nstep == 1)) stpvl0=stpval
      stpval=stpval-stpvl0
-     Do i=1,mxnstk
+     Do i=0,mxnstk
         ssqval(i)=sclnv1*(ssqval(i)+sclnv2*(stpval(i)-sumval(i))**2)
 
 ! sumval has to be shifted back to sumval+stpvl0 in statistics_result

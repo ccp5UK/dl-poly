@@ -1,5 +1,5 @@
-Subroutine system_revive                                            &
-           (imcon,rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
+Subroutine system_revive                                      &
+           (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
            chit,cint,chip,eta,strcon,strpmf,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -9,7 +9,7 @@ Subroutine system_revive                                            &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith december 1992
-! amended   - i.t.todorov july 2014
+! amended   - i.t.todorov february 2016
 ! contrib   - m.a.seaton june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -32,7 +32,7 @@ Subroutine system_revive                                            &
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon,megatm,nstep
+  Integer,           Intent( In    ) :: megatm,nstep
   Logical,           Intent( In    ) :: lrdf,lzdn
   Real( Kind = wp ), Intent( In    ) :: rcut,rbin,tstep,time,tmst, &
                                         chit,cint,chip,eta(1:9),   &
@@ -63,7 +63,7 @@ Subroutine system_revive                                            &
 
   If (l_rout) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
-     j = Max(mxstak*mxnstk,mxgrdf*mxrdf,mxgana*mxtana)
+     j = Max(mxstak*mxnstk+1,mxgrdf*mxrdf,mxgana*mxtana)
 
      Write(forma ,10) j/4+1,i+9,i
 10   Format('(1p,',i0,'(/,4e',i0,'.',i0,'E3))')
@@ -186,7 +186,7 @@ Subroutine system_revive                                            &
   name = 'REVCON' ! file name
   levcfg = 2      ! define level of information in REVCON
 
-  Call write_config(name,levcfg,imcon,megatm,nstep,tstep,time)
+  Call write_config(name,levcfg,megatm,nstep,tstep,time)
 
 ! node 0 handles I/O
 

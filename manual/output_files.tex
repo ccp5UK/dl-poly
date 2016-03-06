@@ -1,21 +1,23 @@
 \section{The OUTPUT Files}
 \label{output-files}
 
-\D produces up to 20 kinds of output files.  Some of these
-are HISTORY, DEFECTS, MSDTMP, CFGMIN, OUTPUT, REVCON,
-REVIVE, RDFDAT, ZDNDAT, VDFDAT\_* and STATIS.
-These respectively contain: an incremental dump file of all
-atomic coordinates, velocities and forces; an incremental
-dump file of atomic coordinates of defected particles
-(interstitials) and sites (vacancies); an incremental dump
-file of of individual atomic mean square displacement and
-temperature; a dump file of all atomic coordinates of a
-minimised structure; an incremental summary file of the
-simulation; a restart (final) configuration file; a restart
-(final) statistics accumulators file; a radial distribution
+\D may produce many output files.  However only OUTPUT
+(an incremental summary file of the simulation), STATIS
+(a statistical history file), REVCON (a restart configuration
+file - final) and REVIVE (a restart statistics accumulators
+file - final) are mandatory.  The existence of the rest
+optional upon the user specifications in CONTROL.  Some of
+these optional files are HISTORY, DEFECTS, MSDTMP, CFGMIN,
+RDFDAT, ZDNDAT, VDFDAT\_*.  These respectively contain: an
+incremental dump file of all atomic coordinates, velocities
+and forces; an incremental dump file of atomic coordinates
+of defected particles (interstitials) and sites (vacancies);
+an incremental dump file of of individual atomic mean square
+displacement and temperature; a dump file of all atomic
+coordinates of a minimised structure; a radial distribution
 function data file; Z-density distribution data file;
 velocity autocorrelation function data files (one file
-for each species) and a statistical history file.
+for each species).
 
 \subsection{The HISTORY File}
 \label{history-file}
@@ -762,7 +764,7 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 {\bf record 1} \\
 \> {\tt cfgname} \> a72 \> configuration name \\
 {\bf record 2} \\
-\> {\tt string}  \> a8   \> energy units
+\> {\tt string}  \> a8  \> energy units
 \end{tabbing}
 
 {\bf Data records}\\ Subsequent lines contain the instantaneous
@@ -772,16 +774,18 @@ written in the format ``(1p,5e14.6)''.  The number of array
 elements required (determined by the parameter {\tt mxnstk} in the
 {\sc setup\_module} file) is
 \begin{eqnarray}
-{\tt mxnstk} \ge & 27  + {\tt ntpatm}~(\rm number~of~unique~atomic~sites) ~+ \nonumber \\
-                 & 9~(\rm stress~tensor~elements) ~+ \nonumber \\
-                 & 9~(\rm if~constant~pressure~simulation~requested) ~+ \nonumber
-                 & 2*mxatdm~(\rm if~msdtmp~option~is~used) \nonumber
+{\tt mxnstk} & \ge & 28 + {\tt ntpatm}~(\rm number~of~unique~atomic~sites) ~+ \nonumber \\
+             &     & 9~(\rm stress~tensor~elements) ~+ \nonumber \\
+             &     & 10~(\rm if~constant~pressure~simulation~requested) ~+ \nonumber \\
+             &     & 2~(\rm if~iso~>~0~requested) + 2~(\rm if~iso~>~1~requested) ~+ \nonumber \\
+             &     & 2*mxatdm~(\rm if~msdtmp~option~is~used) \nonumber
 \end{eqnarray}
 The STATIS file is appended at intervals determined by the {\bf
 stats} directive in the CONTROL file.  The energy unit is as
 specified in the FIELD file with the {\bf units} directive, and
 are compatible with the data appearing in the OUTPUT file.  The
-contents of the appended information is:
+contents of the appended information of calculated
+{\em instantaneous} observables is:
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 {\bf record i} \\
@@ -789,7 +793,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt time }  \> real    \> elapsed simulation time \\
 \> {\tt nument} \> integer \> number of array elements to follow \\
 {\bf record ii} {\tt stpval}(1) -- {\tt stpval}(5) \\
-\> {\tt engcns} \> real    \> total extended system energy, $E^{x}_{tot}=(E_{kin}+E_{rot})E_{conf}+E_{consv}$ \\
+\> {\tt engcns} \> real    \> total extended system energy, $E^{x}_{tot}=(E_{kin}+E_{rot})+E_{conf}+E_{consv}$ \\
 \>              \>         \> (i.e. including the conserved quantity, $E_{consv}$) \\
 \> {\tt temp}   \> real    \> system temperature, $2\frac{E_{kin}+E_{rot}}{f k_{B}}$ \\
 \> {\tt engcfg} \> real    \> configurational energy, $E_{conf}$ \\
@@ -800,7 +804,8 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt engang} \> real    \> valence angle and 3-body potential energy \\
 \> {\tt engdih} \> real    \> dihedral, inversion, and 4-body potential energy \\
 \> {\tt engtet} \> real    \> tethering energy \\
-\> {\tt enthal} \> real    \> enthalpy ($E^{x}_{tot} + {\cal P} \cdot {\cal V}$) \\
+\> {\tt enthal} \> real    \> enthalpy ($E^{x}_{tot} + {\cal P} \cdot V$) for NVE/T/E$_{kin}$ ensembles \\
+\>              \>         \> enthalpy ($E^{x}_{tot} + P \cdot {\cal V}$) for NP/$\sigma$T or NP$_{n}$A/$\gamma$ ensembles \\
 {\bf record iv} {\tt stpval}(11) -- {\tt stpval}(15) \\
 \> {\tt tmprot} \> real    \> rotational temperature, $E_{rot}$ \\
 \> {\tt vir}    \> real    \> total virial \\
@@ -819,9 +824,10 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt alpha } \> real    \> MD cell angle $\alpha$ \\
 \> {\tt beta }  \> real    \> MD cell angle $\beta$ \\
 \> {\tt gamma } \> real    \> MD cell angle $\gamma$ \\
-{\bf record vii} {\tt stpval}(26) -- {\tt stpval}(27) \\
+{\bf record vii} {\tt stpval}(26), {\tt stpval}(27), {\tt stpval}(0) \\
 \> {\tt virpmf} \> real    \> PMF constraint virial \\
 \> {\tt press}  \> real    \> pressure, ${\cal P}$ \\
+\> {\tt consv}  \> real    \> extended DoF energy, $E_{consv}$ \\
 {\bf the next {\tt ntpatm} entries} \\
 \> {\tt amsd(1)} \> real   \> mean squared displacement of first atom types \\
 \> {\tt amsd(2)} \> real   \> mean squared displacement of second atom types \\
@@ -834,11 +840,18 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt stress(4)} \> real \> yx component of stress tensor \\
 \> {\tt ...} \> real \> ... \\
 \> {\tt stress(9)} \> real \> zz component of stress tensor \\
-{\bf the next 9 entries - {\em if} a NPT or N$\mat{\sigma}$T simulation is undertaken} \\
+{\bf the next 10 entries - {\em if} a NPT or N$\mat{\sigma}$T simulation is undertaken} \\
 \> {\tt cell(1)} \> real   \> x component of $a$ cell vector \\
 \> {\tt cell(2)} \> real   \> y component of $a$ cell vector \\
 \> {\tt cell(3)} \> real   \> z component of $a$ cell vector \\
 \> {\tt cell(4)} \> real   \> x component of $b$ cell vector \\
 \> {\tt ...} \> real \> ... \\
-\> {\tt cell(9)} \> real   \> z component of $c$ cell vector
+\> {\tt cell(9)} \> real   \> z component of $c$ cell vector \\
+\> {\tt stpipv} \> real    \> pressure, ${\cal P} \cdot {\cal V}$ \\
+{\bf the next 2 entries - {\em if} a NPT or NP$_{n}$AT simulation is undertaken} \\
+\> {\tt h\_z}   \> real    \> MD cell height $h_{z}$ to normal surface ${\cal A}\perp{z}$ \\
+\> {\tt A$\perp${z}} \> real \> MD cell normal surface ${\cal A}\perp{z}={\cal V}/h_{z}$ \\
+{\bf the next 2 entries - {\em if} a NPT or N$\gamma_{n}$AT simulation is undertaken} \\
+\> {\tt gamma\_x} \> real \> surface tension $\gamma_{n_{x}}$ on normal surface ${\cal A}\perp{z}$ \\
+\> {\tt gamma\_y} \> real \> surface tension $\gamma_{n_{y}}$ on normal surface ${\cal A}\perp{z}$
 \end{tabbing}

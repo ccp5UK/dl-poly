@@ -1,5 +1,4 @@
-Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
-            rcut,keyfce,alpha,epsq,engcpe,vircpe)
+Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,vircpe)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -12,22 +11,22 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith july 1992
-! amended   - i.t.todorov september 2014
-! contrib   - a.v.brukhno and i.t.todorov april 2014 (itramolecular TPs & PDFs)
+! amended   - i.t.todorov march 2016
+! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,  Only : nrite,mxbond,mxgbnd1,r4pie0,zero_plus,engunit
-  Use config_module, Only : cell,natms,nlast,lsi,lsa,lfrzn, &
+  Use setup_module,  Only : nrite,r4pie0,zero_plus,mximpl,mxbond,mxgbnd1
+  Use config_module, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                             chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use bonds_module,  Only : ntbond,keybnd,listbnd,prmbnd, &
                             ltpbnd,vbnd,gbnd,ncfbnd,rcbnd,ldfbnd,dstbnd
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: isw,imcon
+  Integer,                             Intent( In    ) :: isw
   Real( Kind = wp ),                   Intent(   Out ) :: engbnd,virbnd
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
   Real( Kind = wp ),                   Intent( In    ) :: rcut,alpha,epsq
@@ -36,12 +35,12 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 
   Logical           :: safe(1:3)
   Integer           :: fail(1:2),i,j,l,ia,ib,keyb,kk,local_index
-  Real( Kind = wp ) :: rab,rab2,fx,fy,fz,gamma,omega,  &
-                       term,term1,term2,eps,sig,       &
-                       k,k2,k3,k4,r0,dr,dra,dr2,       &
-                       e0,rc,a,b,c,rho,delta,chgprd,   &
-                       rdelr,rdr,ppp,vk,vk1,vk2,t1,t2, &
-                       engc12,virc12,buffer(1:4),      &
+  Real( Kind = wp ) :: rab,rab2,fx,fy,fz,gamma,omega,    &
+                       term,term1,term2,eps,sig,         &
+                       k,k2,k3,k4,r0,dr,dra,dr2,         &
+                       e0,rc,a,b,c,rho,delta,chgprd,     &
+                       rdelr,rdr,ppp,vk,vk1,vk2,t1,t2,   &
+                       viracc,engc12,virc12,buffer(1:4), &
                        strs1,strs2,strs3,strs5,strs6,strs9
 
   Logical,           Allocatable :: lunsafe(:)
@@ -131,6 +130,8 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 
      engc12=0.0_wp
      virc12=0.0_wp
+
+     viracc=0.0_wp
 
 ! initialise stress tensor accumulators
 
@@ -290,15 +291,26 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 
 ! scaled charge product times dielectric constants
 
-           chgprd=(prmbnd(1,kk)/engunit)*chge(ia)*chge(ib)*r4pie0/epsq
-           If (Abs(chgprd) > zero_plus .and. keyfce > 0) Then
-              Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rab,rab2,omega,gamma,safe(1))
+           chgprd=prmbnd(1,kk)*chge(ia)*chge(ib)*r4pie0/epsq
+           If ((Abs(chgprd) > zero_plus .or. mximpl > 0) .and. keyfce > 0) Then
+              If (mximpl > 0) Then
+                 Call intra_mcoul(keyfce,rcut,alpha,epsq,ia,ib,chgprd, &
+                      rab,xdab(i),ydab(i),zdab(i),omega,viracc,fx,fy,fz,safe(1))
+              Else
+                 Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rab,rab2,omega,gamma,safe(1))
+
+                 fx = gamma*xdab(i)
+                 fy = gamma*xdab(i)
+                 fz = gamma*xdab(i)
+
+                 viracc = -gamma*rab2
+              End If
 
 ! correct electrostatic energy and virial
 
               If (ia <= natms) Then
                  engc12 = engc12 + omega
-                 virc12 = virc12 - gamma*rab2
+                 virc12 = virc12 + viracc
               End If
            End If
 
@@ -312,7 +324,7 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
            dr   =rab-delta
 
            term =1.0_wp-(dr/r0)**2
-           If (term > 0) Then
+           If (term > 0.0_wp) Then
               omega=-0.5_wp*k*r0**2 * Log(term)
               gamma=-k*dr/term/rab
            Else
@@ -378,11 +390,17 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 
         End If
 
-! calculate forces
+! calculate forces and virial additions
 
-        fx = gamma*xdab(i)
-        fy = gamma*ydab(i)
-        fz = gamma*zdab(i)
+        If (keyb /= 8) Then
+           fx = gamma*xdab(i)
+           fy = gamma*ydab(i)
+           fz = gamma*zdab(i)
+
+           viracc=-gamma*rab2
+        End If
+
+! add forces
 
         If (ia <= natms) Then
 
@@ -393,7 +411,7 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 ! calculate bond energy and virial
 
            engbnd=engbnd+omega
-           virbnd=virbnd-gamma*rab2
+           virbnd=virbnd+viracc
 
 ! calculate stress tensor
 
@@ -422,19 +440,19 @@ Subroutine bonds_forces(isw,imcon,engbnd,virbnd,stress, &
 ! sum contributions to potential and virial
 
      If (mxnode > 1) Then
-        buffer(1)=engbnd
-        buffer(2)=virbnd
-        buffer(3)=engc12
-        buffer(4)=virc12
+        buffer(1) = engbnd
+        buffer(2) = virbnd
+        buffer(3) = engc12
+        buffer(4) = virc12
         Call gsum(buffer(1:4))
-        engbnd=buffer(1)
-        virbnd=buffer(2)
-        engc12=buffer(3)
-        virc12=buffer(4)
+        engbnd = buffer(1)
+        virbnd = buffer(2)
+        engc12 = buffer(3)
+        virc12 = buffer(4)
      End If
 
-     engbnd=engbnd - engc12
-     virbnd=virbnd - virc12
+     engbnd = engbnd - engc12
+     virbnd = virbnd - virc12
 
      engcpe = engcpe + engc12
      vircpe = vircpe + virc12

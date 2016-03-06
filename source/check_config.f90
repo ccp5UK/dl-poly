@@ -1,5 +1,4 @@
-Subroutine check_config &
-           (levcfg,imcon,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
+Subroutine check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -9,7 +8,7 @@ Subroutine check_config &
 ! data (positions+) to the topology (sites+), i.e. CONFIG to FIELD
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2013
+! author    - i.t.todorov january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,13 +16,12 @@ Subroutine check_config &
   Use comms_module
   Use setup_module
   Use site_module
-  Use config_module
+  Use config_module ! imcon may change!!!
 
   Implicit None
 
   Logical, Intent( In    ) :: l_str,lpse
   Integer, Intent( In    ) :: levcfg,keyens,iso,keyfce,keyres,megatm
-  Integer, Intent( InOut ) :: imcon
 
   Logical, Save     :: newjob = .true.
   Logical           :: safe

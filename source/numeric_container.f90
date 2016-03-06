@@ -46,8 +46,8 @@
 ! Subroutine images - calculates the minimum image distance of
 !                     atom pairs within a specified MD cell
 !
-! Subroutine images_scalar - calculates the minimum image distance of
-!                     a single atom pair within a specified MD cell
+! Subroutine images_s - calculates the minimum image distance of
+!                       a single atom pair within a specified MD cell
 !
 ! Subroutine pbcshift - calculates the minimum image of atoms within
 !                       a specified MD cell in accordance with the DD
@@ -221,7 +221,7 @@ Function sarurnd(seeda, seedb, seedc)
 ! Note: It returns in [0,1)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2014
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -281,7 +281,7 @@ Function sarurnd(seeda, seedb, seedc)
 ! seed3 ^= 0xA5366B4D*((seed2>>11) ^ (seed1<<1));
 
   itmp  = Ieor(Ishft(seed2, -11_ip), Ishft(seed1, 1_ip))
-  tmp   = 2771807053_wp * Real(itmp, Kind=wp)
+  tmp   = 2771807053.0_wp * Real(itmp, Kind=wp)
   itmp  = Int(Mod(tmp, two32r), Kind=ip)
   seed3 = Ieor(seed3, itmp)
   seed3 = Mod(seed3, two32)
@@ -289,7 +289,7 @@ Function sarurnd(seeda, seedb, seedc)
 ! seed2 += 0x72BE1579*((seed1<<4) ^ (seed3>>16));
 
   itmp  = Ieor(Ishft(seed1, 4_ip), Ishft(seed3, -16_ip))
-  tmp   = 1925059961_wp * Real(itmp, Kind=wp)
+  tmp   = 1925059961.0_wp * Real(itmp, Kind=wp)
   itmp  = Int(Mod(tmp, two32r), Kind=ip)
   seed2 = seed2 + itmp
   seed2 = Mod(seed2, two32)
@@ -297,7 +297,7 @@ Function sarurnd(seeda, seedb, seedc)
 ! seed1 ^= 0X3F38A6ED*((seed3>>5) ^ (((signed int)seed2)>>22));
 
   itmp  = Ieor(Ishft(seed3, -5_ip), Ishft(Int(Int(seed2), Kind=ip), -22_ip))
-  tmp   = 1060677357_wp * Real(itmp, Kind=wp)
+  tmp   = 1060677357.0_wp * Real(itmp, Kind=wp)
   itmp  = Int(Mod(tmp, two32r), Kind=ip)
   If (itmp < 0) itmp = itmp + two32
   seed1 = Ieor(seed1, itmp)
@@ -325,7 +325,7 @@ Function sarurnd(seeda, seedb, seedc)
 ! state = 0x79dedea3*(seed1^(((signed int)seed1)>>14));
 
   itmp  = Ieor(seed1, Ishft(Int(Int(seed1), Kind=ip), -14_ip))
-  tmp   = 2044649123_wp * Real(itmp, Kind=wp)
+  tmp   = 2044649123.0_wp * Real(itmp, Kind=wp)
   state = Int(Mod(tmp, two32r), Kind=ip)
   If (state < 0) state = state + two32
 
@@ -344,13 +344,13 @@ Function sarurnd(seeda, seedb, seedc)
 
 ! wstate = 0xABCB96F7 + (wstate>>1);
 
-  wstate = 2882246391_ip + Ishft(wstate, -1_wp)
+  wstate = 2882246391_ip + Ishft(wstate, -1_ip)
   wstate = Mod(wstate, two32)
 
 ! advance LCG state by 1
 ! state = 0x4beb5d59*state + 0x2600e1f7; // LCG
 
-  tmp   = 1273716057_wp * Real(state, Kind=wp)
+  tmp   = 1273716057.0_wp * Real(state, Kind=wp)
   itmp  = Int(Mod(tmp, two32r), Kind=ip)
   state = itmp + 637592055_ip
   state = Mod(state, two32)
@@ -371,7 +371,7 @@ Function sarurnd(seeda, seedb, seedc)
 ! u32 = (v^(v>>20))*0x6957f5a7;
 
   itmp = Ieor(v, Ishft(v, -20_ip))
-  tmp  = Real(itmp, Kind=wp) * 1767372199_wp
+  tmp  = Real(itmp, Kind=wp) * 1767372199.0_wp
   u32  = Int(Mod(tmp, two32r), Kind=ip)
 
 ! convert to real (double-precision) number between 0 and 1
@@ -1549,7 +1549,7 @@ Subroutine images(imcon,cell,pairs,xxx,yyy,zzz)
 
 End Subroutine images
 
-Subroutine images_scalar(imcon,cell,xxx,yyy,zzz)
+Subroutine images_s(imcon,cell,xxx,yyy,zzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1710,7 +1710,7 @@ Subroutine images_scalar(imcon,cell,xxx,yyy,zzz)
 
   End If
 
-End Subroutine images_scalar
+End Subroutine images_s
 
 Subroutine pbcshift(imcon,cell,natms,xxx,yyy,zzz)
 

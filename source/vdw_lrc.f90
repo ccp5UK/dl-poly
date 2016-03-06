@@ -1,4 +1,4 @@
-Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
+Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,7 +7,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
 !
 ! copyright - daresbury laboratory
 ! author    - t.forester may 1993
-! amended   - i.t.todorov january 2015
+! amended   - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -15,12 +15,11 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
   Use comms_module,  Only : idnode,mxnode,gsum
   Use setup_module
   Use site_module,   Only : ntpatm,numtyp
-  Use config_module, Only : volm,natms,ltype,lfrzn
+  Use config_module, Only : imcon,volm,natms,ltype,lfrzn
   Use vdw_module,    Only : ls_vdw,lstvdw,ltpvdw,prmvdw
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon
   Real( Kind = wp ), Intent( In    ) :: rvdw
   Real( Kind = wp ), Intent(   Out ) :: elrc,virlrc
 
@@ -46,7 +45,7 @@ Subroutine vdw_lrc(imcon,rvdw,elrc,virlrc)
 
 ! initialise counter arrays and evaluate number density in system
 
-  numfrz = 0
+  numfrz = 0.0_wp
   Do i=1,natms
      k = ltype(i)
      If (lfrzn(i) /= 0) numfrz(k)=numfrz(k)+1.0_wp

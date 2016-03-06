@@ -1,4 +1,4 @@
-Subroutine tethers_forces(imcon,engtet,virtet,stress)
+Subroutine tethers_forces(engtet,virtet,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,21 +6,20 @@ Subroutine tethers_forces(imcon,engtet,virtet,stress)
 ! tethered particles
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2010
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gsum,gcheck
   Use setup_module,      Only : mxteth,nrite
-  Use config_module,     Only : cell,natms,nlast,lsi,lsa,lfrzn, &
+  Use config_module,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                                 xxx,yyy,zzz,fxx,fyy,fzz
   Use tethers_module,    Only : ntteth,keytet,listtet,prmtet
   Use statistics_module, Only : xin,yin,zin
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: imcon
   Real( Kind = wp ),                   Intent(   Out ) :: engtet,virtet
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
 

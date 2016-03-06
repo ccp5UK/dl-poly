@@ -1,5 +1,5 @@
 Subroutine minimise_relax &
-           (l_str,relaxed,lrdf,imcon,megatm,megcon,megpmf,megrgd, &
+           (l_str,relaxed,lrdf,megatm,megcon,megpmf,megrgd, &
            keymin,min_tol,tstep,stpcfg)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -13,7 +13,7 @@ Subroutine minimise_relax &
 !       keymin=2 : absolute displacement
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith august 2014
+! author    - i.t.todorov & w.smith february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -31,7 +31,7 @@ Subroutine minimise_relax &
 
   Logical,           Intent( In    ) :: l_str
   Logical,           Intent( InOut ) :: relaxed,lrdf
-  Integer,           Intent( In    ) :: imcon,megatm,megcon, &
+  Integer,           Intent( In    ) :: megatm,megcon, &
                                         megpmf,megrgd,keymin
   Real( Kind = wp ), Intent( In    ) :: min_tol,tstep,stpcfg
 
@@ -193,13 +193,13 @@ Subroutine minimise_relax &
      lstitr(1:natms)=.false. ! initialise lstitr
 
      If (megcon > 0) Then
-        Call constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
+        Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
         Call constraints_pseudo_bonds(lstopt,dxx,dyy,dzz,gxx,gyy,gzz,engcon)
         eng=eng+engcon
      End If
 
      If (megpmf > 0) Then
-        Call pmf_tags(imcon,lstitr,indpmf,pxx,pyy,pzz)
+        Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
         Call pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf)
         eng=eng+engpmf
      End If
@@ -209,7 +209,7 @@ Subroutine minimise_relax &
 
   If (megrgd > 0) Then
      If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,gxx,gyy,gzz)
-     Call rigid_bodies_split_torque(imcon,gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
+     Call rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
   End If
 
 ! Initialise/get eng_tol & verify relaxed condition
@@ -474,7 +474,7 @@ Subroutine minimise_relax &
         name = 'CFGMIN' ! file name
         levcfg = 0      ! define level of information in file
 
-        Call write_config(name,levcfg,imcon,megatm,i-1,eng_min/engunit,eng_0/engunit)
+        Call write_config(name,levcfg,megatm,i-1,eng_min/engunit,eng_0/engunit)
      End If
 
 ! setup new quaternions

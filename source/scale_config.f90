@@ -1,4 +1,4 @@
-Subroutine scale_config(imcon,megatm)
+Subroutine scale_config(megatm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,7 +6,7 @@ Subroutine scale_config(imcon,megatm)
 ! from CONFIG to new lattice parameters and saving it in CFGSCL
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2013
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -16,7 +16,7 @@ Subroutine scale_config(imcon,megatm)
 
   Implicit None
 
-  Integer, Intent( In    ) :: imcon,megatm
+  Integer, Intent( In    ) :: megatm
 
   Character ( Len = 6 ) :: name
   Integer               :: i,nstep
@@ -54,7 +54,7 @@ Subroutine scale_config(imcon,megatm)
   time   = 0.0_wp   ! time is not relevant
 
   rcell = cell ; cell = cels
-  Call write_config(name,lvcfscl,imcon,megatm,nstep,tstep,time)
+  Call write_config(name,lvcfscl,megatm,nstep,tstep,time)
   cell = rcell
 
 End Subroutine scale_config

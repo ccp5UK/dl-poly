@@ -1,5 +1,5 @@
 Subroutine defects1_write &
-           (imcon,rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time)
+           (rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,7 +7,7 @@ Subroutine defects1_write &
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov march 2016
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -16,7 +16,7 @@ Subroutine defects1_write &
   Use comms_module
   Use setup_module
   Use site_module,     Only : ntpshl,unqshl
-  Use config_module,   Only : cfgname,cell,natms,nlast, &
+  Use config_module,   Only : cfgname,imcon,cell,natms,nlast, &
                               atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use defects1_module
   Use parse_module,    Only : tabs_2_blanks, get_word, word_2_real
@@ -36,7 +36,7 @@ Subroutine defects1_write &
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon,keyres,keyens, &
+  Integer,           Intent( In    ) :: keyres,keyens, &
                                         nsdef,isdef,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,rdef,tstep,time
 
@@ -112,15 +112,14 @@ Subroutine defects1_write &
 
      Call allocate_defects1_arrays()
      Call defects_reference_read &
-           ('REFERENCE1',imcon,nstep,celr1,nrefs1,namr1,indr1,xr1,yr1,zr1)
+           ('REFERENCE1',nstep,celr1,nrefs1,namr1,indr1,xr1,yr1,zr1)
 
 ! Assume that the MD cell will not change much in size and shape from
 ! the one provided in REFERENCE, a smaller halo(cutoff(rdef)) is to be set
 
      cut=rdef+0.15_wp
-     Call defects_reference_set_halo  &
-           (imcon,cut,cwx,cwy,cwz,    &
-           dxl,dxr,dyl,dyr,dzl,dzr,   &
+     Call defects_reference_set_halo                 &
+           (cut,cwx,cwy,cwz,dxl,dxr,dyl,dyr,dzl,dzr, &
            nrefs1,nlrefs1,namr1,lri1,lra1,indr1,xr1,yr1,zr1)
 
 ! If the keyres=1, is DEFECTS1 old (does it exist) and
@@ -238,7 +237,7 @@ Subroutine defects1_write &
 ! New real space cutoff and expansion for defects link-cells
 
      cutdef=Min(rcut/3.0_wp,2.0_wp*rdef)
-     mxlcdef=Nint(((rcut/cutdef)**3+0.15_wp)*mxcell)
+     mxlcdef=Nint(((rcut/cutdef)**3+0.15_wp)*Real(mxcell,wp))
   End If
 
 ! Update rcell
@@ -304,9 +303,9 @@ Subroutine defects1_write &
      Call error(0)
   End If
   Call defects_link_cells &
-           (imcon,cell,cutdef,mxlcdef,nrefs1,nlrefs1,xr1,yr1,zr1,nlx,nly,nlz,linkr,lctr)
+           (cutdef,mxlcdef,nrefs1,nlrefs1,xr1,yr1,zr1,nlx,nly,nlz,linkr,lctr)
   Call defects_link_cells &
-           (imcon,cell,cutdef,mxlcdef,natms,nlast,cxx,cyy,czz,nlx,nly,nlz,link,lct)
+           (cutdef,mxlcdef,natms,nlast,cxx,cyy,czz,nlx,nly,nlz,link,lct)
 
   safe = .true.          ! Initialise safety flag to all safe
   nv = 0                 ! Assume no vacancies (all sites are occupied)

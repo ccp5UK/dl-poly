@@ -1,12 +1,13 @@
-DL_POLY_4.07
+DL_POLY_4.08
 ============
 
 The source is in fully self-contained free formatted FORTRAN90+MPI2
-code (specifically FORTRAN90 + TR15581 + MPI1 + MPI-I/O only).  The
-available NetCDF functionality makes the extended code dependent upon
-it.  The non-extended code complies with the NAGWare and FORCHECK F90
-standards with exception of the FORTRAN2003 feature TR15581, which is
-very rarely unavailable in the nowadays FORTRAN90/95 compilers.
+code (specifically FORTRAN90 + TR15581 + MPI1 + MPI-I/O only).  Any
+available functionality that dependent on external libraries; such as
+NetCDF, PLUMED and OpenKIM; will require the user to satisfy any the
+dependencies upon compilation and thus the use of `cmake` (refer to
+README.md).  The non-extended, vanilla code complies with the NAGWare
+and FORCHECK F90.
 
 This version supports ALL features that are available in the
 standard DL_POLY_Classic version with the exceptions of:
@@ -23,12 +24,17 @@ standard DL_POLY_Classic version with the exceptions of:
 No previous DL_POLY_3/4 feature is deprecated.  ALL NEW features are
 documented in the "DL_POLY_4 User Manual".
 
-Reference
----------
+References:
+-----------
 Thank you for using the DL_POLY_4 package in your work.  Please,
-acknowledge our efforts by including the following reference when
-publishing data obtained using DL_POLY_4: "I.T. Todorov, W. Smith,
-K. Trachenko & M.T. Dove, J. Mater. Chem., 16 (20), 1911-1918 (2006)".
+acknowledge our efforts by including the following references when
+publishing data obtained using DL_POLY_4
+  (1) "I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,
+       J. Mater. Chem., 16 (20), 1911-1918 (2006)"
+  (2) "I.J. Bush, I.T. Todorov & W. Smith,
+       Comp. Phys. Commun., 175, 323-329 (2006)"
+  (3) "H.A. Boateng & I.T. Todorov,
+       J. Chem. Phys., 142, 034117 (2015)".
 
 Warnings:
 ---------
@@ -49,21 +55,7 @@ Warnings:
   (2) REVIVE files produced by different versions are not compatible.
       Furthermore, restarting runs across different sub-versions
       may not be possible.
-  (3) The DL_POLY_4 parallel performance and efficiency are considered
-      very-good-to-excellent as long as (i) all CPU cores are loaded
-      with no less than 500 particles each and (ii) the major linked
-      cells algorithm has no dimension less than 4.
-  (4) Although DL_POLY_4 can be compiled in a serial mode, users are
-      advised to consider DL_POLY_Classic as a suitable alternative to
-      DL_POLY_4 when simulations are likely to be serial jobs for
-      systems containing < 500 particles-per-processor.  In such
-      circumstances, with both codes compiled in serial mode, the
-      difference in performance, measured by the time-per-timestep
-      ratio [DL_POLY_Classic(t)-DL_POLY_4(t)]/DL_POLY_Classic(t),
-      varies in the range -5:+5%.  This variation depends strongly on
-      the system force-field complexity and very weakly on the system
-      size.
-  (5) The `rpad' & `no strict' CONTROL options should be used with
+  (3) The `rpad' & `no strict' CONTROL options should be used with
       care especially in conjunction with the `variable timestep`
       option when iterative algorithms are present in the simulation.
       Such may be driven by a combination of options such as:
@@ -72,6 +64,27 @@ Warnings:
       options) and/or core shells units (dealt by the relaxed shell
       model and associated with the `rlxtol' option) in the model
       system as defined in the FIELD file.
+  (4) System stability is more easily compromised than the one when
+      running DL_POLY_Classic!  When starting a new system it may be
+      beneficial and considerate to make use of options that aim to
+      provide extra safety; such as `l_scr`, `scale', `cap forces'
+      (`zero') and other tolerance related ones, and especially
+      when in equilibration mode the `variable timestep` one in
+      conjunction with an ensemble in Berendsen formulation!
+  (5) The DL_POLY_4 parallel performance and efficiency are considered
+      very-good-to-excellent as long as (i) all CPU cores are loaded
+      with no less than 500 particles each and (ii) the major linked
+      cells algorithm has no dimension less than 3.
+  (6) Although DL_POLY_4 can be compiled in a serial mode, users are
+      advised to consider DL_POLY_Classic as a suitable alternative to
+      DL_POLY_4 when simulations are likely to be serial jobs for
+      systems containing < 200 particles-per-processor.  In such
+      circumstances, with both codes compiled in serial mode, the
+      difference in performance, measured by the time-per-timestep
+      ratio [DL_POLY_Classic(t)-DL_POLY_4(t)]/DL_POLY_Classic(t),
+      varies in the range -5:+5%.  This variation depends strongly on
+      the system force-field complexity and very weakly on the system
+      size.
 
 Integration Defaults:
 ---------------------
@@ -105,18 +118,18 @@ treat CB/PMF/RB entities in a more precise (symplectic) manner than
 the LFV ones and thus not only have better numerical stability but
 also produce more accurate dynamics.
 
-Makefiles & compilation
------------------------
+Makefiles for legacy compilation:
+--------------------------------
 From within the `source' directory the user may compile the code by
 selecting the appropriate Makefile from the `build' directory and
-copying it across by typing at the command line:
+linking (or copying) it across by typing at the command line:
 
-   cp ../build/Makefile_MPI Makefile
+	ln -s ../build/Makefile_MPI Makefile
 
 - intended for parallel execution on multi-processor platforms (an MPI
 implementation is needed), or
 
-   cp ../build/Makefile_SRLx Makefile
+	ln -s ../build/Makefile_SRL2 Makefile
 
 - intended for serial execution (no MPI required)
 
@@ -136,7 +149,7 @@ If there is an `entry' in the Makefile for the particular combination
 of architecture, compiler & MPI implementation, then the user may
 instantiate the compilation by issuing at the command line:
 
-   make `entry'
+	make `entry'
 
 and then pressing <Enter>.
 
@@ -144,7 +157,7 @@ Usually the one named `hpc' is suitable for the majority of platforms.
 To find out the keywords for all available entries within the Makefile
 issue:
 
-   make
+	make
 
 press <Enter> and then examine the Makefile entries corresponding to
 the keywords reported.  If there is not a suitable entry then you
@@ -152,18 +165,19 @@ should seek advice from a computer scientist or the support staff of
 the particular machine (HPC service).
 
 The necessary components for the source compilation are:
-  (1) a FORTRAN90 + TR15581 compliant compiler (if the full PATH to it
-      is not passed to the DEFAULT ENVIRONMENT PATH, then it MUST be
-      explicitly supplied in the Makefile)
+  (1) a FORTRAN90 + TR15581 compliant compiler, i.e. a gfortran
+      (requires a gcc version 4.2.0 or higher).  If the full PATH to
+      it is not passed to the DEFAULT ENVIRONMENT PATH, then it MUST
+      be explicitly supplied in the Makefile!
   (2) an MPI2 (or MPI1 + MPI-I/O) implementation, COMPILED for the
-      architecture/OS and the targeted compiler (if the full PATH to
-      these is not passed to the DEFAULT ENVIRONMENT PATH, then it MUST
-      be explicitly supplied in the Makefile)
-  (3) a MAKE command (Makefile interpreter in the system SHELL)
-where (2) is not necessary for compilation in SERIAL mode!
-
-Note that for the TR15581 compliance, gfortran requires a gcc version
-4.2.0 or above!
+      architecture/OS and the targeted compiler.  Usually, this is
+      encapsulated and badged as an mpif90 entry (or ftn on ARCHER)
+      after appropriate module load on an HPC architecture.
+      Otherwise, if the full PATH to these components is not passed
+      to the DEFAULT ENVIRONMENT PATH then it MUST be explicitly
+      supplied in the Makefile!
+  (3) a MAKE command (Makefile interpreter in the system SHELL).
+Note that (2) is not necessary for compilation in SERIAL mode!
 
 By default, if the compilation process is successful then an executable
 (build) will be placed in `../execute' directory (at the same level as
@@ -173,8 +187,8 @@ by the Makefile script.  The build may then be moved, renamed, etc. and
 used as the user wishes.  However, when executed, the program will look
 for input files in the directory of execution!
 
-Compilation on Windows
-----------------------
+Compilation on Windows:
+-----------------------
 The best way to get around it is to install cygwin on the system
 (http://www.cygwin.com/) to emulate a UNIX/Linux like environment
 and then use the "make" command.  During the cygwin installation please
@@ -185,17 +199,6 @@ one may encounter, is that the compiler may not pick symbolic links.
 This can be resolved by substituting the soft links with hard in the
 Makefile.  For parallel compilation all "openMPI" components must also
 be opted for during the cygwin install!!!
-
-Compiling with NetCDF functionality
------------------------------------
-The targeted Makefile needs the following substitution within before
-attempting compilation:
-
-"netcdf_modul~.o -> netcdf_module.o"
-
-Note that suitable entry may need to be created within the Makefile
-so that it matches the particular combination of architecture/OS,
-compiler, MPI library & netCDF library.
 
 Contacts at STFC Daresbury Laboratory
 -------------------------------------

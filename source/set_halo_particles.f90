@@ -1,4 +1,4 @@
-Subroutine set_halo_particles(imcon,rlnk,keyfce)
+Subroutine set_halo_particles(rlnk,keyfce)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,7 +6,7 @@ Subroutine set_halo_particles(imcon,rlnk,keyfce)
 ! neighbouring domains/nodes
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2014
+! author    - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -18,27 +18,18 @@ Subroutine set_halo_particles(imcon,rlnk,keyfce)
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon,keyfce
+  Integer,           Intent( In    ) :: keyfce
   Real( Kind = wp ), Intent( In    ) :: rlnk
 
-  Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: cut
 
   Integer           :: nlx,nly,nlz,i,j,ia,ib
   Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9),x,y,z, &
                        xdc,ydc,zdc,cwx,cwy,cwz,ecwx,ecwy,ecwz
 
-  If (newjob) Then
-     newjob = .false.
-
-! image conditions not compliant with DD and link-cell
-
-     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
-
 ! Define cut
 
-     cut=rlnk+1.0e-6_wp
-  End If
+  cut=rlnk+1.0e-6_wp
 
 ! Get the dimensional properties of the MD cell
 
@@ -152,6 +143,8 @@ Subroutine set_halo_particles(imcon,rlnk,keyfce)
      lsa(i)=ltg(i)
   End Do
   Call shellsort2(nlast,lsi,lsa)
+
+! Sort multiple entries
 
   Do i=1,nlast-1
      j=1

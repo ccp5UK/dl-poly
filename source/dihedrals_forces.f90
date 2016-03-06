@@ -1,5 +1,5 @@
-Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
-           rcut,rvdw,keyfce,alpha,epsq,engcpe,vircpe,engsrp,virsrp)
+Subroutine dihedrals_forces &
+           (isw,engdih,virdih,stress,rcut,rvdw,keyfce,alpha,epsq,engcpe,vircpe,engsrp,virsrp)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -14,15 +14,15 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1992
-! amended   - i.t.todorov september 2014
-! contrib   - a.v.brukhno and i.t.todorov april 2014 (itramolecular TPs & PDFs)
+! amended   - i.t.todorov march 2016
+! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gsync,gsum,gcheck
-  Use setup_module,      Only : nrite,mxdihd,mxgdih1,pi,twopi,rtwopi,r4pie0,zero_plus
-  Use config_module,     Only : cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
+  Use setup_module,      Only : nrite,pi,twopi,rtwopi,r4pie0,zero_plus,mxdihd,mxgdih1,mximpl
+  Use config_module,     Only : imcon,cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
                                 chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use dihedrals_module,  Only : lx_dih,ntdihd,keydih,listdih,prmdih, &
                                 ltpdih,vdih,gdih,ncfdih,ldfdih,dstdih
@@ -31,7 +31,7 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: isw,imcon
+  Integer,                             Intent( In    ) :: isw
   Real( Kind = wp ),                   Intent(   Out ) :: engdih,virdih
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
   Real( Kind = wp ),                   Intent( In    ) :: rcut,rvdw, &
@@ -55,7 +55,7 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
                              pcx,pcy,pcz,pc2,rpc1,rpc2,                &
                              pbpc,cost,sint,rsint,theta,theta0,dtheta, &
                              a,a0,a1,a2,a3,d,m,term,pterm,gamma,       &
-                             scale,chgprd,coul,fcoul,eng,              &
+                             scale,chgprd,coul,fcoul,eng,virele,       &
                              engc14,virc14,engs14,virs14,              &
                              strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:5)
 
@@ -380,7 +380,7 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
            a     =prmdih(1,kk)
            theta0=prmdih(2,kk)
            dtheta=theta-theta0
-           dtheta=dtheta-Nint(dtheta*rtwopi)*twopi
+           dtheta=dtheta-Real(Nint(dtheta*rtwopi),wp)*twopi
 
            term  =a*dtheta
 
@@ -621,20 +621,27 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
 ! scaled charge product times dielectric constants
 
         chgprd=scale*chge(ia)*chge(id)*r4pie0/epsq
-        If (Abs(chgprd) > zero_plus .and. keyfce > 0) Then
+        If ((Abs(chgprd) > zero_plus .or. mximpl > 0) .and. keyfce > 0) Then
 
-           Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(0),rad2(0),coul,fcoul,safe(3))
+           If (mximpl > 0) Then
+              Call intra_mcoul(keyfce,rcut,alpha,epsq,ia,id,scale, &
+                      rad(0),xad,yad,zad,coul,virele,fx,fy,fz,safe(3))
+           Else
+              Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(0),rad2(0),coul,fcoul,safe(3))
 
-           fx = fcoul*xad
-           fy = fcoul*yad
-           fz = fcoul*zad
+              fx = fcoul*xad
+              fy = fcoul*yad
+              fz = fcoul*zad
+
+              virele = -fcoul*rad2(0)
+           End If
 
            If (ia <= natms) Then
 
 ! correction to electrostatic energy and virial
 
               engc14 = engc14 + coul
-              virc14 = virc14 - fcoul*rad2(0)
+              virc14 = virc14 + virele
 
 ! calculate stress tensor
 
@@ -664,20 +671,26 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
         If (lx_dih) Then
            If (lad(1,i)) Then
               chgprd=scale*chge(ia0)*chge(id)*r4pie0/epsq
-              If (Abs(chgprd) > zero_plus .and. keyfce > 0) Then
+              If ((Abs(chgprd) > zero_plus .or. mximpl > 0) .and. keyfce > 0) Then
+                 If (mximpl > 0) Then
+                    Call intra_mcoul(keyfce,rcut,alpha,epsq,ia0,id,scale, &
+                      rad(1),xdad(1,i),ydad(1,i),zdad(1,i),coul,virele,fx,fy,fz,safe(3))
+                 Else
+                    Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(1),rad2(1),coul,fcoul,safe(3))
 
-                 Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(1),rad2(1),coul,fcoul,safe(3))
+                    fx = fcoul*xdad(1,i)
+                    fy = fcoul*ydad(1,i)
+                    fz = fcoul*zdad(1,i)
 
-                 fx = fcoul*xdad(1,i)
-                 fy = fcoul*ydad(1,i)
-                 fz = fcoul*zdad(1,i)
+                    virele = -fcoul*rad2(1)
+                 End If
 
                  If (ia0 <= natms) Then
 
 ! correction to electrostatic energy and virial
 
                     engc14 = engc14 + coul
-                    virc14 = virc14 - fcoul*rad2(1)
+                    virc14 = virc14 + virele
 
 ! calculate stress tensor
 
@@ -707,20 +720,26 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
 
            If (lad(2,i)) Then
               chgprd=scale*chge(ia)*chge(id0)*r4pie0/epsq
-              If (Abs(chgprd) > zero_plus .and. keyfce > 0) Then
+              If ((Abs(chgprd) > zero_plus .or. mximpl > 0) .and. keyfce > 0) Then
+                 If (mximpl > 0) Then
+                    Call intra_mcoul(keyfce,rcut,alpha,epsq,ia,id0,scale, &
+                      rad(2),xdad(2,i),ydad(2,i),zdad(2,i),coul,virele,fx,fy,fz,safe(3))
+                 Else
+                    Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(2),rad2(2),coul,fcoul,safe(3))
 
-                 Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(2),rad2(2),coul,fcoul,safe(3))
+                    fx = fcoul*xdad(2,i)
+                    fy = fcoul*ydad(2,i)
+                    fz = fcoul*zdad(2,i)
 
-                 fx = fcoul*xdad(2,i)
-                 fy = fcoul*ydad(2,i)
-                 fz = fcoul*zdad(2,i)
+                    virele = -fcoul*rad2(2)
+                 End If
 
                  If (ia <= natms) Then
 
 ! correction to electrostatic energy and virial
 
                     engc14 = engc14 + coul
-                    virc14 = virc14 - fcoul*rad2(2)
+                    virc14 = virc14 + virele
 
 ! calculate stress tensor
 
@@ -749,20 +768,26 @@ Subroutine dihedrals_forces(isw,imcon,engdih,virdih,stress, &
 
            If (lad(3,i)) Then
               chgprd=scale*chge(ia0)*chge(id0)*r4pie0/epsq
-              If (Abs(chgprd) > zero_plus .and. keyfce > 0) Then
+              If ((Abs(chgprd) > zero_plus .or. mximpl > 0) .and. keyfce > 0) Then
+                 If (mximpl > 0) Then
+                    Call intra_mcoul(keyfce,rcut,alpha,epsq,ia0,id0,scale, &
+                      rad(3),xdad(3,i),ydad(3,i),zdad(3,i),coul,virele,fx,fy,fz,safe(3))
+                 Else
+                    Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(3),rad2(3),coul,fcoul,safe(3))
 
-                 Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(3),rad2(3),coul,fcoul,safe(3))
+                    fx = fcoul*xdad(3,i)
+                    fy = fcoul*ydad(3,i)
+                    fz = fcoul*zdad(3,i)
 
-                 fx = fcoul*xdad(3,i)
-                 fy = fcoul*ydad(3,i)
-                 fz = fcoul*zdad(3,i)
+                    virele = -fcoul*rad2(3)
+                 End If
 
                  If (ia0 <= natms) Then
 
 ! correction to electrostatic energy and virial
 
                     engc14 = engc14 + coul
-                    virc14 = virc14 - fcoul*rad2(3)
+                    virc14 = virc14 + virele
 
 ! calculate stress tensor
 

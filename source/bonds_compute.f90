@@ -6,7 +6,7 @@ Subroutine bonds_compute(temp)
 ! from accumulated data
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov january 2014
+! author    - a.v.brukhno & i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -173,12 +173,12 @@ Subroutine bonds_compute(temp)
   If (idnode == 0) Then
      Open(Unit=npdgdt, File='BNDPMF', Status='replace')
      Write(npdgdt,'(a)') '# '//cfgname
-     Write(npdgdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',delr*mxgbnd1,mxgbnd1,delr,kk, &
+     Write(npdgdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',delr*Real(mxgbnd1,wp),mxgbnd1,delr,kk, &
           '   conversion factor(kT -> energy units) =',kT2engo
 
      Open(Unit=npdfdt, File='BNDTAB', Status='replace')
      Write(npdfdt,'(a)') '# '//cfgname
-     Write(npdfdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',dgrid*ngrid,ngrid,dgrid,kk, &
+     Write(npdfdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',dgrid*Real(ngrid,wp),ngrid,dgrid,kk, &
           '   conversion factor(kT -> energy units) =',kT2engo
   End If
 

@@ -8,7 +8,7 @@ Subroutine vdw_forces &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov january 2015
+! amended   - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -60,12 +60,9 @@ Subroutine vdw_forces &
   strs6=0.0_wp
   strs9=0.0_wp
 
-! global identity of iatm
+! global identity and type of iatm
 
   idi=ltg(iatm)
-
-! start of primary loop for forces evaluation
-
   ai=ltype(iatm)
 
 ! load forces
@@ -73,6 +70,8 @@ Subroutine vdw_forces &
   fix=fxx(iatm)
   fiy=fyy(iatm)
   fiz=fzz(iatm)
+
+! start of primary loop for forces evaluation
 
   Do mm=1,list(0,iatm)
 
@@ -272,8 +271,8 @@ Subroutine vdw_forces &
                     eng   = e0*(  mr*(beta**n)*(a**n-(1.0_wp/c)**n) &
                                  -nr*(beta**m)*(a**m-(1.0_wp/c)**m) &
                                  +nr*mr*((rrr/rc-1.0_wp)*((beta/c)**n-(beta/c)**m)) )*b
-                 gamma = e0*m*n*(  (beta**n)*a**n-(beta**m)*a**m &
-                                  -rrr/rc*((beta/c)**n-(beta/c)**m) )*b/rsq
+                 gamma = e0*Real(m*n,wp)*(  (beta**n)*a**n-(beta**m)*a**m &
+                                           -rrr/rc*((beta/c)**n-(beta/c)**m) )*b/rsq
               End If
 
            Else If (ityp == 8) Then

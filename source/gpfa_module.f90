@@ -39,7 +39,7 @@ Contains
 !       **! this is the all-FORTRAN version ***
 !           -------------------------------
 !
-!       call gpfa(a,b,trigs,inc,jump,n,lot,isign)
+!       Call gpfa(a,b,trigs,inc,jump,n,lot,isign)
 !
 !       a is first real input/output vector
 !       b is first imaginary input/output vector

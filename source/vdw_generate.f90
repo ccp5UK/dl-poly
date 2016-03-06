@@ -7,7 +7,7 @@ Subroutine vdw_generate(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov january 2015
+! amended   - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -252,12 +252,14 @@ Subroutine vdw_generate(rvdw)
         sigeps(1,ivdw)=-1.0_wp
         sigeps(2,ivdw)= 0.0_wp
 
-        b=1.0_wp/(n-m)
+        t=Real(n-m,wp)
+
+        b=1.0_wp/t
         c = rc/r0 ; If (c < 1.0_wp) Call error(468)
 
         beta = c*( (c**(m+1)-1.0_wp) / (c**(n+1)-1.0_wp) )**b
-        alpha= -(n-m) / (  mr*(beta**n)*(1.0_wp+(nr/c-nr-1.0_wp)/c**n) &
-                          -nr*(beta**m)*(1.0_wp+(mr/c-mr-1.0_wp)/c**m) )
+        alpha= -t / (  mr*(beta**n)*(1.0_wp+(nr/c-nr-1.0_wp)/c**n) &
+                      -nr*(beta**m)*(1.0_wp+(mr/c-mr-1.0_wp)/c**m) )
         e0 = e0*alpha
 
         Do i=1,mxgvdw

@@ -1,6 +1,4 @@
-Subroutine metal_ld_compute         &
-           (imcon,rmet,elrcm,vlrcm, &
-           engden,virden,stress)
+Subroutine metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -11,7 +9,7 @@ Subroutine metal_ld_compute         &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov february 2016
+! amended   - i.t.todorov january 2016
 ! contrib   - r.davidchak (eeam) june 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -25,7 +23,6 @@ Subroutine metal_ld_compute         &
 
   Implicit None
 
-  Integer,                                  Intent( In    ) :: imcon
   Real( Kind = wp ),                        Intent( In    ) :: rmet
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent( In    ) :: elrcm,vlrcm
   Real( Kind = wp ),                        Intent(   Out ) :: engden,virden
@@ -74,8 +71,8 @@ Subroutine metal_ld_compute         &
         zzt(k)=zzz(i)-zzz(j)
      End Do
 
-! periodic boundary conditions
-
+! periodic boundary conditions not needed by LC construction
+!
 !     Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances

@@ -89,11 +89,11 @@ pdfsubject={Guide to the DL-POLY-4 Package},
 pdfcreator={I.T. Todorov},
 pdfkeywords={General Purpose Molecular Dynamics (MD) Software;
 Domain Decomposition (DD), Sub-Celled Liked Cells (LC);
-Conditional Verlet Neighbourlist Building;
+Conditional Verlet Neighbour List Building;
 Symplectic Integration, Velocity Verlet (VV), Leapfrog Verlet (LFV);
 Ensembles: NVE; NVEk - Evans; NVT - VV-Langevin Impulse \& LFV-Langevin,
 Andersen, Berendsen, Nose-Hoover, Gentle Stochastic Thermostat,
-Dissipative Particle Dynamics (DPD) VV-Shardlow first and second order splitting;
+Dissipative Particle Dynamics (DPD) VV-Shardlow first \& second order splitting;
 NPT - Langevin, Berendesen, Nose-Hoover, Martyna-Tuckerman-Klein;
 NsT (extended to constant normal pressure \& surface area or surface tension)
 - Langevin, Berendesen, Nose-Hoover, Martyna-Tuckerman-Klein;
@@ -103,6 +103,8 @@ Constraint Bonds (CB) \& Potential of Mean Field (PMF) Dynamics
 with SHAKE (LFV) \& RATTLE (VV),
 DD Rigid Body (RB) Dynamics with Euler-Quaternions using
 FIQA (LFV) \& NOSQUISH (VV) integration schemes;
+Electrostatics beyond point charges with multipolar interactions
+up to hexadecapole (cartesian poles formulation);
 Long-ranged Coulomb Interactions by Parallelised Smoothed
 Particle Mesh Ewald (SPME) using Memory Distributed 3D FFT (DaFT),
 Damped Force-shifted Coulomb, Ion Polarisation by Dynamical
@@ -110,10 +112,10 @@ Damped Force-shifted Coulomb, Ion Polarisation by Dynamical
 harmonic + quartic + breathing shell potential;
 Zero Temperature \& Conjugate Gradient Method (CGM) Minimisers;
 Temperature rescaling, Boundary Pseudo Thermostats, Defect Detection Tool;
-Coarse-Grained Analysis \& Dynamics, Lennard-Jones mixing rules;
-PLUMED MetaDynamics Plugin intergrability, OpenKIM Knodledge-base
-Interaction Models integrability;
-Optimised Parallel (ASCII \& netCDF Amber) I/O (includes MPI-I/O),
+Coarse-Grained Analysis \& Dynamics, Lennar-Jones mixing rules;
+PLUMED MetaDynamics Plugin integratability, HDF5/netCDF integrability,
+OpenKIM Knodledge-base Interaction Models integrability;
+Optimised Parallel (ASCII \& Amber-netCDF) I/O (includes MPI-I/O),
 Verifiable \& User Extendible Source Code in Self-Contained \& Portable,
 Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
 ]{hyperref}
@@ -255,8 +257,7 @@ If you have followed the procedure for obtaining and downloading the
 \D package (see Obtaining~the~Source~Code, Section~\ref{source}),
 have successfully unpacked it and are ready to compile the source code,
 then jump to the Makefiles section of the \D~README Appendix~\ref{readme}
-or alternatively view the {\sc README.txt} in {\em source}) and follow
-the instructions within.
+or alternatively view the {\sc README.txt} and follow the instructions within.
 
 If you have compiled successfully then a freshly date-stamped file,
 named DLPOLY.Z %(or DLPOLY.Z.cu if you successfully followed the

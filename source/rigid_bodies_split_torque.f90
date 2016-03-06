@@ -1,4 +1,4 @@
-Subroutine rigid_bodies_split_torque(imcon,gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
+Subroutine rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,19 +7,18 @@ Subroutine rigid_bodies_split_torque(imcon,gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 2006
-! adapted   - i.t.todorov september 2014
+! adapted   - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode
   Use setup_module,       Only : nrite,mxatms,mxrgd,mxlrgd
-  Use config_module,      Only : cell,xxx,yyy,zzz
+  Use config_module,      Only : imcon,cell,xxx,yyy,zzz
   Use rigid_bodies_module
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon
   Real( Kind = wp ), Intent( InOut ) :: gxx(1:mxatms),gyy(1:mxatms),gzz(1:mxatms)
   Real( Kind = wp ), Intent(   Out ) :: txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms), &
                                         uxx(1:mxatms),uyy(1:mxatms),uzz(1:mxatms)

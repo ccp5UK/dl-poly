@@ -5,17 +5,12 @@ Module comms_module
 ! dl_poly_4 module for global communication routines and functions
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2014
-! contrib   - a.m.elena september 2015
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-#ifdef SERIAL
-  Use mpi_module
-#else
   Use mpi!_module
-#endif
 
   Implicit None
 
@@ -52,12 +47,13 @@ Module comms_module
                         Spread_tag    = 1188, &
                         DpdVExp_tag   = 1199, &
                         MetLdExp_tag  = 2200, &
-                        ExchgGrid_tag = 2211, &
-                        DefRWrite_tag = 2222, &
-                        DefExport_tag = 2233, &
-                        DefWrite_tag  = 2244, &
-                        RsdWrite_tag  = 2255, &
-                        MsdWrite_tag  = 2266
+                        ExpMplRM_tag  = 2211, &
+                        ExchgGrid_tag = 2222, &
+                        DefRWrite_tag = 2233, &
+                        DefExport_tag = 2244, &
+                        DefWrite_tag  = 2255, &
+                        RsdWrite_tag  = 2266, &
+                        MsdWrite_tag  = 2277
 
 
   Public :: init_comms, exit_comms, abort_comms, &

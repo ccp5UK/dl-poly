@@ -1,4 +1,4 @@
-Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk,width)
+Subroutine vnl_check(l_str,m_rgd,rcut,rpad,rlnk,width)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -14,13 +14,13 @@ Subroutine vnl_check(l_str,imcon,m_rgd,rcut,rpad,rlnk,width)
   Use comms_module,   Only : idnode,mxnode,gmax
   Use setup_module,   Only : nrite,mxspl,mxatms,mxatdm
   Use domains_module, Only : r_nprx,r_npry,r_nprz
-  Use config_module,  Only : cell,natms,nlast,xxx,yyy,zzz
+  Use config_module,  Only : imcon,cell,natms,nlast,xxx,yyy,zzz
   Use vnl_module
 
   Implicit None
 
   Logical,           Intent ( In    ) :: l_str
-  Integer,           Intent ( In    ) :: imcon,m_rgd
+  Integer,           Intent ( In    ) :: m_rgd
   Real( Kind = wp ), Intent ( In    ) :: rcut
   Real( Kind = wp ), Intent ( InOut ) :: rpad,rlnk,width
 

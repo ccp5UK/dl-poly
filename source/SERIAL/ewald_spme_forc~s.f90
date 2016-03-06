@@ -7,7 +7,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 ! by Essmann et al. J. Chem. Phys. 103 (1995) 8577
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2015
+! author    - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,7 +26,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
   Logical,           Save :: newjob = .true.
   Integer,           Save :: ixb,iyb,izb, ixt,iyt,izt
-  Real( Kind = wp ), Save :: kmaxa_r,kmaxb_r,kmaxc_r,engsic
+  Real( Kind = wp ), Save :: kmaxa_r,kmaxb_r,kmaxc_r
 
   Integer              :: fail(1:4), i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt
 
@@ -125,7 +125,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
         Call error(0)
      End If
 
-! calculate self-interaction correction (per node)
+! calculate self-interaction correction
 
      engsic=0.0_wp
      Do i=1,natms

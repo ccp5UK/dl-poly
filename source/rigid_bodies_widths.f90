@@ -1,4 +1,4 @@
-Subroutine rigid_bodies_widths(imcon,rcut)
+Subroutine rigid_bodies_widths(rcut)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,19 +6,18 @@ Subroutine rigid_bodies_widths(imcon,rcut)
 ! (the system cutoff)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : idnode,mxnode,gmax
   Use setup_module
-  Use config_module,       Only : cell,xxx,yyy,zzz
+  Use config_module,       Only : imcon,cell,xxx,yyy,zzz
   Use rigid_bodies_module, Only : ntrgd,listrgd,indrgd
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon
   Real( Kind = wp ), Intent( In    ) :: rcut
 
   Integer           :: fail,irgd,jrgd,krgd,lrgd,mrgd,nrgd,rgdtyp

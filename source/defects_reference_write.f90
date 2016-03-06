@@ -1,4 +1,4 @@
-Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
+Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,7 +6,7 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
 !           defects detection
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2011
+! author    - i.t.todorov february 2015
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -14,7 +14,7 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use config_module, Only : cfgname,cell
+  Use config_module, Only : cfgname,imcon,cell
   Use io_module,     Only : io_set_parameters,         &
                             io_get_parameters,         &
                             io_init, io_nc_create,     &
@@ -41,7 +41,7 @@ Subroutine defects_reference_write(name,imcon,megref,nrefs,namr,indr,xr,yr,zr)
   Implicit None
 
   Character( Len = * ), Intent( In    ) :: name
-  Integer,              Intent( In    ) :: imcon,megref,nrefs
+  Integer,              Intent( In    ) :: megref,nrefs
   Character( Len = 8 ), Intent( In    ) :: namr(1:mxatms)
   Integer,              Intent( In    ) :: indr(1:mxatms)
   Real( Kind = wp ),    Intent( In    ) :: xr(1:mxatms),yr(1:mxatms),zr(1:mxatms)

@@ -16,7 +16,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot)
   Use kinds_f90
   Use comms_module,        Only : idnode
   Use setup_module,        Only : mxrgd,mxlrgd,nrite
-  Use config_module,       Only : cell,natms,nfree,lfrzn,lstfre,weight, &
+  Use config_module,       Only : imcon,cell,natms,nfree,lfrzn,lstfre,weight, &
                                   xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
   Use kinetic_module,      Only : getvom,getknr,kinstress,kinstresf,kinstrest
@@ -28,7 +28,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot)
 
   Integer           :: fail,i,j,i1,i2,      &
                        irgd,jrgd,krgd,lrgd, &
-                       rgdtyp,imcon,megrgd
+                       rgdtyp,megrgd
   Real( Kind = wp ) :: scale,vdotf,fsq,vom(1:3),tmp,        &
                        x(1:1),y(1:1),z(1:1),rot(1:9),       &
                        fmx,fmy,fmz,tqx,tqy,tqz,trx,try,trz, &
@@ -49,10 +49,6 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot)
         Write(nrite,'(/,1x,a,i0)') 'zero_k_optimise allocation failure, node: ', idnode
         Call error(0)
      End If
-
-! recover imcon
-
-     imcon=rgdimc
 
 ! Get the RB particles vectors wrt the RB's COM
 

@@ -30,9 +30,11 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe)
   Integer           :: m,ai,ki,jatm,aj,kj,l,key,k0
   Real( Kind = wp ) :: rrr,rdr,rr1,ppp,vk0,vk1,vk2,t1,t2,density
 
-! start of primary loop for density
+! global type of itam
 
   ai=ltype(iatm)
+
+! start of primary loop for density
 
   Do m=1,list(0,iatm)
 

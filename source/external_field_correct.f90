@@ -1,4 +1,4 @@
-Subroutine external_field_correct(imcon)
+Subroutine external_field_correct()
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,21 +7,19 @@ Subroutine external_field_correct(imcon)
 ! Note: Only one field at a time is allowed
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : mxnode,gsum
-  Use config_module, Only : cell,natms,nfree,ltg, &
+  Use config_module, Only : imcon,cell,natms,nfree,ltg, &
                             lfrzn,lstfre,weight,  &
                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
   Use external_field_module
 
   Implicit None
-
-  Integer,           Intent( In    ) :: imcon
 
   Integer           :: i,j,ia,ib, irgd,jrgd,lrgd,rgdtyp,megrgd
   Real( Kind = wp ) :: rz,vxt,tmp,rtmp(1:2), &

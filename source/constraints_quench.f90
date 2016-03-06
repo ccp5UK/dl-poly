@@ -1,4 +1,4 @@
-Subroutine constraints_quench(imcon,mxshak,tolnce)
+Subroutine constraints_quench(mxshak,tolnce)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,19 +6,19 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
 ! initial structure of a molecule defined by constraints
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,  Only : idnode,mxnode,gcheck
+  Use comms_module, Only : idnode,mxnode,gcheck
   Use setup_module
   Use config_module
   Use constraints_module
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon,mxshak
+  Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
 
   Logical           :: safe
@@ -48,7 +48,7 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
 ! constraint atoms) for iterative (constraints) algorithms
 
   lstitr(1:natms)=.false. ! initialise lstitr
-  Call constraints_tags(imcon,lstitr,lstopt,dxx,dyy,dzz,listot)
+  Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
 
 ! normalise constraint vectors
 
@@ -169,9 +169,9 @@ Subroutine constraints_quench(imcon,mxshak,tolnce)
   If (.not.safe) Then ! error exit if quenching fails
      Call error(70)
   Else ! Collect per call passage statistics
-     passcnq(1)=icyc-1
+     passcnq(1)=Real(icyc-1,wp)
      passcnq(3)=passcnq(2)*passcnq(3)
-     passcnq(2)=passcnq(2)+1
+     passcnq(2)=passcnq(2)+1.0_wp
      passcnq(3)=passcnq(3)/passcnq(2)+passcnq(1)/passcnq(2)
      passcnq(4)=Min(passcnq(1),passcnq(4))
      passcnq(5)=Max(passcnq(1),passcnq(5))

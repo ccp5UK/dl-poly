@@ -6,7 +6,7 @@ Subroutine rdf_compute(lpana,rcut,temp)
 ! from accumulated data
 !
 ! copyright - daresbury laboratory
-! author    - t.forester & i.t.todorov november 2015
+! author    - t.forester & i.t.todorov march 2016
 ! contrib   - a.v.brukhno january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -144,7 +144,7 @@ Subroutine rdf_compute(lpana,rcut,temp)
                 If (lpana) dstdrdf(i,kk) = gofr1 ! RDFs density
            End Do
         Else
-           If (lpana) dstdrdf(:,kk) = 0 ! RDFs density
+           If (lpana) dstdrdf(:,kk) = 0.0_wp ! RDFs density
         End If
 
      End Do
@@ -161,12 +161,12 @@ Subroutine rdf_compute(lpana,rcut,temp)
      If (idnode == 0) Then
         Open(Unit=npdgdt, File='VDWPMF', Status='replace')
         Write(npdgdt,'(a)') '# '//cfgname
-        Write(npdgdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',delr*mxgrdf,mxgrdf,delr,ntprdf, &
+        Write(npdgdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',delr*Real(mxgrdf,wp),mxgrdf,delr,ntprdf, &
              '   conversion factor(kT -> energy units) =',kT2engo
 
         Open(Unit=npdfdt, File='VDWTAB', Status='replace')
         Write(npdfdt,'(a)') '# '//cfgname
-        Write(npdfdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',dgrid*ngrid,ngrid,dgrid,ntprdf, &
+        Write(npdfdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',dgrid*Real(ngrid,wp),ngrid,dgrid,ntprdf, &
           '   conversion factor(kT -> energy units) =',kT2engo
      End If
 

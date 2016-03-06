@@ -9,7 +9,7 @@ Module parallel_fft
 !
 ! copyright - daresbury laboratory
 ! author    - i.j.bush august 2010
-! amended   - i.t.todorov october 2010
+! amended   - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -354,7 +354,7 @@ Contains
 
       ! How many of the `butterflys' require communications.
 
-      comms_steps = Int( Log( n_procs + 0.01_wp ) / Log( 2.0_wp ) )
+      comms_steps = Int( Log( Real(n_procs,wp) + 0.01_wp ) / Log( 2.0_wp ) )
 
       ! Store the basic comms environment data about the 1D FFT
       ! down this dimension.
@@ -598,10 +598,11 @@ Contains
                  called_routine = 'ALLOCATE' )
          End If
          k2 = ( my_grid_pos( dim ) * block ) / fac2
-         delta = Cmplx( 0.0_wp, 2.0_wp * pi * k2 / Real( length, Kind = wp ), Kind = wp )
+         delta = Cmplx( 0.0_wp, 2.0_wp * pi * Real( k2 , Kind = wp) / Real( length, Kind = wp ), Kind = wp )
          delta = Exp( delta )
          i0 = my_grid_pos( dim ) * block - fac2 * k2
-         dim_fac%twiddles( 0 ) = Exp( Cmplx( 0.0_wp, 2.0_wp * pi * k2 * i0 / Real( length, Kind = wp ), Kind = wp ) )
+         dim_fac%twiddles( 0 ) = Exp( Cmplx( 0.0_wp, 2.0_wp * pi * Real( k2 * i0 , Kind = wp ) / &
+                                                     Real( length, Kind = wp ), Kind = wp ) )
          angle = dim_fac%twiddles( 0 )
          Do i = 1, fac2 - 1
             angle = angle * delta
@@ -747,7 +748,7 @@ Contains
        Write( Unit=* , Fmt=* ) ' Total        local        comms         exch        gpfa'
        Do j = 1, 2
           Do i = 1, 3
-             Write( Unit=* , Fmt='( 1x, 5( f8.5, 5x ) )' ) fft_times( :, i, j ) / n_calls( 1 )
+             Write( Unit=* , Fmt='( 1x, 5( f8.5, 5x ) )' ) fft_times( :, i, j ) / Real(n_calls( 1 ),wp)
           End Do
        End Do
        Write( Unit=* , Fmt='('' ---------------------------------------------------------------------- '')' )
@@ -1871,14 +1872,15 @@ Contains
 
     work = a
 
-    a = 0.0_wp
+    a = (0.0_wp,0.0_wp)
 
     rank = desc%rank
     rem_rank = rank
 
     Do pulse = 0, desc%size - 1
 
-       t = Exp( Cmplx( 0.0_wp, ( sign * 2.0_wp * pi * rank * rem_rank ) / desc%length, Kind = wp ) )
+       t = Exp( Cmplx( 0.0_wp, ( 2.0_wp * pi * Real( sign * rank * rem_rank , Kind = wp ) ) / &
+                               Real( desc%length , Kind = wp ), Kind = wp ) )
 
        If ( which == 0 ) Then
           If ( pulse /= desc%size - 1 ) Then

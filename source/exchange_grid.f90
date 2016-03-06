@@ -3,7 +3,7 @@ Subroutine exchange_grid( ixb , ixt , iyb , iyt , izb , izt , qqc_local , &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for excahnging grid data post DaFT
+! dl_poly_4 subroutine for exchanging grid data post DaFT
 !
 ! Get all the data required to calculate the reciprocal space
 ! contribution to the forces on the atoms held by this processor, and
@@ -157,7 +157,7 @@ Contains
 ! LX = XDT - XDB + 1 = XLT - XLB + 1, etc. for LY, LZ.
 
 ! copyright - daresbury laboratory
-! author    - i.j.bush and i.t.todorov june 2014
+! author    - i.j.bush & i.t.todorov june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

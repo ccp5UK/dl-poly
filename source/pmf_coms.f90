@@ -1,4 +1,4 @@
-Subroutine pmf_coms(imcon,indpmf,pxx,pyy,pzz)
+Subroutine pmf_coms(indpmf,pxx,pyy,pzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -8,19 +8,18 @@ Subroutine pmf_coms(imcon,indpmf,pxx,pyy,pzz)
 ! Note: must be used in conjunction with integration algorithms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gcheck,gsum
   Use setup_module
-  Use config_module, Only : cell,natms,xxx,yyy,zzz
+  Use config_module, Only : imcon,cell,natms,xxx,yyy,zzz
   Use pmf_module,    Only : ntpmf,listpmf,pmfwgt
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon
   Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
 
   Real( Kind = wp ), Intent(   Out ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)

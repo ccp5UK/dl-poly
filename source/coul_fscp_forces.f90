@@ -112,11 +112,9 @@ Subroutine coul_fscp_forces &
 
   idi=ltg(iatm)
 
-! start of primary loop for forces evaluation
+! ignore interaction if the charge is zero
 
   chgea = chge(iatm)
-
-! ignore interaction if the charge is zero
 
   If (Abs(chgea) > zero_plus) Then
 
@@ -127,6 +125,8 @@ Subroutine coul_fscp_forces &
      fix=fxx(iatm)
      fiy=fyy(iatm)
      fiz=fzz(iatm)
+
+! start of primary loop for forces evaluation
 
      Do m=1,list(0,iatm)
 

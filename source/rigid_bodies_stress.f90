@@ -157,22 +157,22 @@ Subroutine rigid_bodies_str_ss(strcom)
 ! tensor
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : idnode,mxnode,gsum
   Use setup_module,        Only : nrite,mxrgd,mxlrgd
-  Use config_module,       Only : cell,natms,lfrzn,xxx,yyy,zzz,fxx,fyy,fzz
-  Use rigid_bodies_module, Only : ntrgd,rgdimc,rgdfrz,listrgd,indrgd, &
+  Use config_module,       Only : imcon,cell,natms,lfrzn,xxx,yyy,zzz,fxx,fyy,fzz
+  Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd, &
                                   rgdxxx,rgdyyy,rgdzzz
 
   Implicit None
 
   Real( Kind = wp ), Intent(   Out ) :: strcom(1:9)
 
-  Integer :: fail,i,irgd,jrgd,krgd,lrgd,rgdtyp,imcon
+  Integer :: fail,i,irgd,jrgd,krgd,lrgd,rgdtyp
 
   Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
 
@@ -204,10 +204,6 @@ Subroutine rigid_bodies_str_ss(strcom)
         End Do
      End If
   End Do
-
-! recover imcon
-
-  imcon=rgdimc
 
 ! minimum image convention for bond vectors
 
@@ -276,15 +272,15 @@ Subroutine rigid_bodies_str__s(strcom,fxx,fyy,fzz)
 ! tensor
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : idnode,mxnode,gsum
   Use setup_module,        Only : nrite,mxatms,mxrgd,mxlrgd
-  Use config_module,       Only : cell,natms,lfrzn,xxx,yyy,zzz
-  Use rigid_bodies_module, Only : ntrgd,rgdimc,rgdfrz,listrgd,indrgd, &
+  Use config_module,       Only : imcon,cell,natms,lfrzn,xxx,yyy,zzz
+  Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd, &
                                   rgdxxx,rgdyyy,rgdzzz
 
   Implicit None
@@ -292,7 +288,7 @@ Subroutine rigid_bodies_str__s(strcom,fxx,fyy,fzz)
   Real( Kind = wp ), Intent(   Out ) :: strcom(1:9)
   Real( Kind = wp ), Intent( In    ) :: fxx(1:mxatms),fyy(1:mxatms),fzz(1:mxatms)
 
-  Integer :: fail,i,irgd,jrgd,krgd,lrgd,rgdtyp,imcon
+  Integer :: fail,i,irgd,jrgd,krgd,lrgd,rgdtyp
 
   Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
 
@@ -324,10 +320,6 @@ Subroutine rigid_bodies_str__s(strcom,fxx,fyy,fzz)
         End Do
      End If
   End Do
-
-! recover imcon
-
-  imcon=rgdimc
 
 ! minimum image convention for bond vectors
 

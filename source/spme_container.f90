@@ -219,7 +219,7 @@ Subroutine bspgen(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsdx,bsdy,bsdz)
 
 End Subroutine bspgen
 
-Subroutine bspgen_mpl(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsddx,bsddy,bsddz)
+Subroutine bspgen_mpoles(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsddx,bsddy,bsddz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -227,7 +227,7 @@ Subroutine bspgen_mpl(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsddx,bsddy,bsddz)
 ! multipolar interactions
 !
 ! copyright - daresbury laboratory
-! author    - h.a.boateng april 2014
+! author    - h.a.boateng february 2016
 ! amended   - i.t.todorov april 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -235,7 +235,7 @@ Subroutine bspgen_mpl(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsddx,bsddy,bsddz)
   Use kinds_f90
   Use comms_module,  Only : idnode
   Use setup_module
-!  Use mpoles_module, Only : ncombk
+  Use mpoles_module, Only : ncombk
 
   Implicit None
 
@@ -246,17 +246,15 @@ Subroutine bspgen_mpl(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsddx,bsddy,bsddz)
   Real( Kind = wp ), Dimension( 0:mxspl , 1:mxspl , 1:mxatms ), Intent(   Out ) :: bsddx,bsddy,bsddz
 
   Integer           :: fail,i,j,k,m,n,p,r,s
-  Real( Kind = wp ) :: aaa,bbb,ccc, rix0,riy0,riz0, jm1_r,k_r,km1_rr,ncombk(0:mxspl,0:mxspl)
-  Real( Kind = wp ) :: tmp,tempx,tempy,tempz,pcombr
+  Real( Kind = wp ) :: aaa,bbb,ccc, rix0,riy0,riz0, jm1_r,k_r,km1_rr
+  Real( Kind = wp ) :: tempx,tempy,tempz,pcombr
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: real_no, inv_no, pmo_no
 
-  ncombk(0:mxspl,0:mxspl) = 0.0_wp
-
   fail=0
-  Allocate (real_no(1:nospl),inv_no(1:nospl),pmo_no(1:nospl), Stat=fail)
+  Allocate (real_no(1:nospl),inv_no(1:nospl),pmo_no(0:nospl), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'bspgen_mpl allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'bspgen_mpoles allocation failure, node: ', idnode
      Call error(0)
   End If
 
@@ -268,6 +266,7 @@ Subroutine bspgen_mpl(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsddx,bsddy,bsddz)
 
 ! construct B-splines
 
+  pmo_no(0) = 1.0_wp
   Do i=1,nospl
      real_no(i) = Real(i,wp)
      inv_no(i)  = 1.0_wp / real_no(i)
@@ -417,11 +416,11 @@ Subroutine bspgen_mpl(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsddx,bsddy,bsddz)
 
   Deallocate (real_no,inv_no,pmo_no, Stat=fail )
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'bspgen_mpl deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'bspgen_moples deallocation failure, node: ', idnode
      Call error(0)
   End If
 
-End Subroutine bspgen_mpl
+End Subroutine bspgen_mpoles
 
 Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz)
 
@@ -438,8 +437,8 @@ Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz)
 
   Use kinds_f90
   Use setup_module
-!  Use config_module, Only : imcon
-!  Use mpoles_module, Only : ncombk
+  Use config_module, Only : imcon
+  Use mpoles_module, Only : ncombk
 
   Implicit None
 
@@ -449,11 +448,9 @@ Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz)
   Real( Kind = wp ),                       Intent( In   ) :: rcell(9)
   Real( Kind = wp ), Dimension( 0:mxspl ), Intent( In   ) :: bsddx,bsddy,bsddz
 
-  Real( Kind = wp ) :: tx,ty,tz,sx,sy,sz,ncombk(0:mxspl,0:mxspl)
+  Real( Kind = wp ) :: tx,ty,tz,sx,sy,sz
   Real( Kind = wp ) :: ka11,ka12,ka13,kb21,kb22,kb23,kc31,kc32,kc33
-  Integer           :: i,j,k,j1,j2,j3,k1,k2,k3,jj,kk,sk,sk3,sk2,sk1,imcon
-
-  ncombk(0:mxspl,0:mxspl)=0.0_wp ; imcon=3
+  Integer           :: j1,j2,j3,k1,k2,k3,jj,kk,sk,sk3,sk2,sk1
 
   Dtpbsp = 0.0_wp
 

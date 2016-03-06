@@ -6,9 +6,9 @@ Subroutine export_atomic_data(mdir)
 ! for halo formation
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov january 2016
-! contrib   - i.j.bush february 2014
-! contrib   - h.boateng december 2014
+! amended   - i.t.todorov february 2016
+! contrib   - i.j.bush february 2016
+! contrib   - h.a.boateng february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,6 +17,7 @@ Subroutine export_atomic_data(mdir)
   Use setup_module,  Only : nrite,mxatms,mxbfxp
   Use domains_module
   Use config_module, Only : nlast,ltg,lsite,ixyz,cell,xxx,yyy,zzz
+  Use mpoles_module, Only : induce,indipx,indipy,indipz,atplrz,rsdx,rsdy,rsdz
   Use kim_module,    Only : kim,idhalo
 
   Implicit None
@@ -24,16 +25,16 @@ Subroutine export_atomic_data(mdir)
   Integer,  Intent( In    ) :: mdir
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap
-  Integer           :: fail,iadd,limit,iblock,          &
-                       i,j,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
-                       jdnode,kdnode,imove,jmove,itmp
+  Integer           :: fail,iadd,limit,iblock,            &
+                       i,j,k,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
+                       jdnode,kdnode,imove,jmove,kmove,itmp
   Real( Kind = wp ) :: uuu,vvv,www,xadd,yadd,zadd
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
 ! Number of transported quantities per particle
 
-  iadd=6
+  iadd=6+Merge(7,0,induce)
 
   fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
@@ -180,9 +181,23 @@ Subroutine export_atomic_data(mdir)
               buffer(imove+4)=Real(ltg(i),wp)
               buffer(imove+5)=Real(lsite(i),wp)
 
+! pack induced dipoles data
+
+              If (induce) Then
+                 kmove=imove+5
+
+                 buffer(kmove+1)=indipx(i)
+                 buffer(kmove+2)=indipy(i)
+                 buffer(kmove+3)=indipz(i)
+                 buffer(kmove+4)=rsdx(i)
+                 buffer(kmove+5)=rsdy(i)
+                 buffer(kmove+6)=rsdz(i)
+                 buffer(kmove+7)=atplrz(i)
+              End If
+
 ! Use the corrected halo reduction factor when the particle is halo to both +&- sides
 
-              buffer(imove+6)=Real(ixyz(i)-Merge(jxyz,kxyz,j == jxyz),wp)
+              buffer(imove+iadd)=Real(ixyz(i)-Merge(jxyz,kxyz,j == jxyz),wp)
 
            Else
 
@@ -261,7 +276,24 @@ Subroutine export_atomic_data(mdir)
 
      ltg(nlast)  =Nint(buffer(j+4))
      lsite(nlast)=Nint(buffer(j+5))
-     ixyz(nlast) =Nint(buffer(j+6))
+
+! unpack induced dipoles data
+
+     If (induce) Then
+        k=j+5
+
+        indipx(nlast)=buffer(k+1)
+        indipy(nlast)=buffer(k+2)
+        indipz(nlast)=buffer(k+3)
+        rsdx(nlast)  =buffer(k+4)
+        rsdy(nlast)  =buffer(k+5)
+        rsdz(nlast)  =buffer(k+6)
+        atplrz(nlast)=buffer(k+7)
+     End If
+
+! unpack remaining halo indexing
+
+     ixyz(nlast) =Nint(buffer(j+iadd))
 
      j=j+iadd
   End Do

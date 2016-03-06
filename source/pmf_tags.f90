@@ -1,4 +1,4 @@
-Subroutine pmf_tags(imcon,lstitr,indpmf,pxx,pyy,pzz)
+Subroutine pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -8,7 +8,7 @@ Subroutine pmf_tags(imcon,lstitr,indpmf,pxx,pyy,pzz)
 ! Note: must be used in conjunction with integration algorithms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2011
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,7 +20,6 @@ Subroutine pmf_tags(imcon,lstitr,indpmf,pxx,pyy,pzz)
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon
   Logical,           Intent( InOut ) :: lstitr(1:mxatms)
   Integer,           Intent(   Out ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
   Real( Kind = wp ), Intent(   Out ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
@@ -51,6 +50,6 @@ Subroutine pmf_tags(imcon,lstitr,indpmf,pxx,pyy,pzz)
 
 ! Get PMF units' COM vectors
 
-  Call pmf_coms(imcon,indpmf,pxx,pyy,pzz)
+  Call pmf_coms(indpmf,pxx,pyy,pzz)
 
 End Subroutine pmf_tags

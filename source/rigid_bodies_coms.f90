@@ -1,4 +1,4 @@
-Subroutine rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
+Subroutine rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -8,19 +8,18 @@ Subroutine rigid_bodies_coms(imcon,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
 ! (even those in the halo of the domain)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : idnode
   Use setup_module,        Only : nrite,mxatms,mxrgd,mxlrgd
-  Use config_module,       Only : cell
+  Use config_module,       Only : imcon,cell
   Use rigid_bodies_module, Only : ntrgd,listrgd,indrgd,rgdwg1
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon
   Real( Kind = wp ), Intent( In    ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
   Real( Kind = wp ), Intent(   Out ) :: rgdxxx(1:mxrgd),rgdyyy(1:mxrgd),rgdzzz(1:mxrgd)
 

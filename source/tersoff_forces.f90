@@ -1,4 +1,4 @@
-Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
+Subroutine tersoff_forces(rcter,engter,virter,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -15,8 +15,8 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 ! parallelepiped cell geometry.
 !
 ! copyright - daresbury laboratory
-! author    - w.smith  october 2004
-! amended   - i.t.todorov november 2014
+! author    - w.smith october 2004
+! amended   - i.t.todorov march 2016
 ! amended   - k.galvin september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -32,7 +32,6 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: imcon
   Real( Kind = wp ),                   Intent( In    ) :: rcter
   Real( Kind = wp ),                   Intent(   Out ) :: engter,virter
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
@@ -75,10 +74,6 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
   Real( Kind = wp ), Dimension( : ), Allocatable :: ert,eat,grt,gat
   Real( Kind = wp ), Dimension( : ), Allocatable :: scr,gcr,gam,gvr,cst,rkj,wkj
 
-
-! image conditions not compliant with DD and link-cell
-
-  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
 ! Get reciprocal of interpolation interval
 
@@ -709,7 +704,7 @@ Subroutine tersoff_forces(imcon,rcter,engter,virter,stress)
               Else If (potter == 2) Then ! KIHS
                  gam_dg = 0.5_wp*gamma*scr(kk)*wkj(kk)*gvr(kk)
                  gam_df = 0.5_wp*gamma*gam(kk)*wkj(kk)*gcr(kk)
-                 gam_dw = 0.5_wp*gamma*scr(kk)*gam(kk)*wkj(kk)*(ak*bk*rkj(kk)**(bk-1))
+                 gam_dw = 0.5_wp*gamma*scr(kk)*gam(kk)*wkj(kk)*(ak*bk*rkj(kk)**(bk-1.0_wp))
 
 ! calculate contribution to atomic forces
 

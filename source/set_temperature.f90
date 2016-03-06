@@ -1,10 +1,10 @@
-Subroutine set_temperature            &
-           (levcfg,imcon,temp,keyres, &
-           lmin,nstep,nstrun,nstmin,  &
-           mxshak,tolnce,keyshl,      &
-           atmfre,atmfrz,             &
-           megshl,megcon,megpmf,      &
-           megrgd,degtra,degrot,      &
+Subroutine set_temperature           &
+           (levcfg,temp,keyres,      &
+           lmin,nstep,nstrun,nstmin, &
+           mxshak,tolnce,keyshl,     &
+           atmfre,atmfrz,            &
+           megshl,megcon,megpmf,     &
+           megrgd,degtra,degrot,     &
            degfre,degshl,sigma,engrot)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -12,7 +12,7 @@ Subroutine set_temperature            &
 ! dl_poly_4 subroutine for setting the initial system temperature
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,7 +20,7 @@ Subroutine set_temperature            &
   Use comms_module,       Only : idnode,mxnode,gsum
   Use setup_module
   Use site_module,        Only : dofsit,ntpshl,unqshl
-  Use config_module,      Only : natms,nlast,nfree,lsite,        &
+  Use config_module,      Only : imcon,natms,nlast,nfree,lsite,  &
                                  lsi,lsa,ltg,lfrzn,lfree,lstfre, &
                                  atmnam,weight,vxx,vyy,vzz
   Use dpd_module,         Only : keydpd
@@ -31,11 +31,12 @@ Subroutine set_temperature            &
   Implicit None
 
   Logical,           Intent( In    ) :: lmin
-  Integer,           Intent( In    ) :: imcon,keyres,nstep,   &
-                                        nstrun,nstmin,        &
-                                        mxshak,keyshl,        &
-                                        atmfre,atmfrz,        &
-                                        megshl,megcon,megpmf, &
+  Integer,           Intent( In    ) :: keyres,nstep,  &
+                                        nstrun,nstmin, &
+                                        mxshak,keyshl, &
+                                        atmfre,atmfrz, &
+                                        megshl,        &
+                                        megcon,megpmf, &
                                         megrgd
   Real( Kind = wp ), Intent( In    ) :: temp,tolnce
 
@@ -469,7 +470,7 @@ Subroutine set_temperature            &
 
 ! quench RBs
 
-     If (megrgd > 0) Call rigid_bodies_quench(imcon)
+     If (megrgd > 0) Call rigid_bodies_quench()
 
   End If
 
@@ -489,23 +490,23 @@ Subroutine set_temperature            &
 ! quench constraints & PMFs
 
      If (no_min_0) Then
-        If (megcon > 0) Call constraints_quench(imcon,mxshak,tolnce)
-        If (megpmf > 0) Call pmf_quench(imcon,mxshak,tolnce)
+        If (megcon > 0) Call constraints_quench(mxshak,tolnce)
+        If (megpmf > 0) Call pmf_quench(mxshak,tolnce)
      End If
 
 ! quench core-shell units in adiabatic model
 
      If (megshl > 0 .and. keyshl == 1 .and. no_min_0) Then
         Do
-           Call scale_temperature(imcon,sigma,degtra,degrot,degfre)
+           Call scale_temperature(sigma,degtra,degrot,degfre)
            Call core_shell_quench(safe,temp)
-           If (megcon > 0) Call constraints_quench(imcon,mxshak,tolnce)
-           If (megpmf > 0) Call pmf_quench(imcon,mxshak,tolnce)
-           If (megrgd > 0) Call rigid_bodies_quench(imcon)
+           If (megcon > 0) Call constraints_quench(mxshak,tolnce)
+           If (megpmf > 0) Call pmf_quench(mxshak,tolnce)
+           If (megrgd > 0) Call rigid_bodies_quench()
            If (safe) Exit
         End Do
      Else
-        Call scale_temperature(imcon,sigma,degtra,degrot,degfre)
+        Call scale_temperature(sigma,degtra,degrot,degfre)
      End If
 
   End If

@@ -398,7 +398,7 @@ Contains
 
   End Subroutine getcom
 
-  Subroutine getcom_mol(imcon,istart,ifinish,cmm)
+  Subroutine getcom_mol(istart,ifinish,cmm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -408,16 +408,16 @@ Contains
 ! ifinish - the global index of the last atom of the molecule
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Use comms_module,  Only : idnode
     Use setup_module,  Only : nrite,zero_plus
-    Use config_module, Only : cell,natms,ltg,lfrzn,xxx,yyy,zzz,weight
+    Use config_module, Only : imcon,cell,natms,ltg,lfrzn,xxx,yyy,zzz,weight
 
     Implicit None
-    Integer,           Intent( In    ) :: imcon,istart,ifinish
+    Integer,           Intent( In    ) :: istart,ifinish
 
     Real( Kind = wp ), Intent(   Out ) :: cmm(0:3)
 

@@ -1,4 +1,4 @@
-Subroutine scale_temperature(imcon,sigma,degtra,degrot,degfre)
+Subroutine scale_temperature(sigma,degtra,degrot,degfre)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -10,21 +10,20 @@ Subroutine scale_temperature(imcon,sigma,degtra,degrot,degfre)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith july 1992
-! amended   - i.t.todorov january 2015
+! amended   - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : idnode,mxnode,gsum
   Use setup_module
-  Use config_module,       Only : natms,nfree,lfrzn,lstfre, &
+  Use config_module,       Only : imcon,natms,nfree,lfrzn,lstfre, &
                                   weight,xxx,yyy,zzz,vxx,vyy,vzz
   Use rigid_bodies_module
   Use kinetic_module,      Only : getcom,getvom,getkin,getknf,getknt,getknr
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon
   Real( Kind = wp ), Intent( In    ) :: sigma
   Integer(Kind=ip),  Intent( In    ) :: degtra,degrot,degfre
 

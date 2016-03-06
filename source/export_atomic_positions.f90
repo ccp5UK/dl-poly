@@ -6,7 +6,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0)
 ! for halo refresh
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov february 2016
+! amended   - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -19,8 +19,8 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0)
 
   Implicit None
 
-  Integer, Intent( In    ) :: mdir
-  Integer, Intent( InOut ) :: mlast,ixyz0(1:mxatms)
+  Integer, Intent( In    ) :: mdir,ixyz0(1:mxatms)
+  Integer, Intent( InOut ) :: mlast
 
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap

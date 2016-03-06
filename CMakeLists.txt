@@ -1,7 +1,7 @@
 project(DL_POLY Fortran)
 cmake_minimum_required(VERSION 3.0.2)
 
-set(DLPOLY_VERSION_MAJOR "4")                                                                                                                                   
+set(DLPOLY_VERSION_MAJOR "4")
 set(DLPOLY_VERSION_MINOR "07")
 set(DLPOLY_VERSION_PATCH "01")
 set(DLPOLY_VERSION "${DLPOLY_VERSION_MAJOR}.${DLPOLY_VERSION_MINOR}.${DLPOLY_VERSION_PATCH}")
@@ -9,8 +9,8 @@ set(AUTHOR "Ilian Todorov;Bill Smith")
 set(AUTHOR_DETAILS "ilian.todorov@stfc.ac.uk")
 set(DESCRIPTION "DL_POLY4 classical MD code")
 
-set(src_dir ${CMAKE_SOURCE_DIR}/source) 
-set(target_name DLPOLY.Z) 
+set(src_dir ${CMAKE_SOURCE_DIR}/source)
+set(target_name DLPOLY.Z)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake" "${CMAKE_SOURCE_DIR}/cmake/Modules")
 include(DLPOLYBuildOptions)
@@ -124,7 +124,7 @@ if (WITH_COVERAGE)
   single_coverage(runcoverage coverage "${CMAKE_BINARY_DIR}/bin/${target_name}" CodeAnalysis)
 else()
   message(STATUS "Build without code coverage testing")
-endif() 
+endif()
 
 if (BUILD_TESTING AND NOT WITH_MPI)
   message(STATUS "testing is supported only with MPI")
@@ -176,13 +176,13 @@ if(BUILD_TESTING)
       message(STATUS "Using already downloaded ${arg}.tar.gz")
     else()
       message(STATUS "Trying to download ${arg}.tar.gz")
-      file(DOWNLOAD ftp://ftp.dl.ac.uk/ccp5/DL_POLY/DL_POLY_4.0/.NEW/${arg}.tar.gz 
+      file(DOWNLOAD ftp://ftp.dl.ac.uk/ccp5/DL_POLY/DL_POLY_4.0/.NEW/${arg}.tar.gz
         ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz)
     endif()
     file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/${arg})
-    file(COPY ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz 
+    file(COPY ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz
       DESTINATION ${CMAKE_BINARY_DIR}/Testing/${arg}/)
-    add_test(NAME ${arg} 
+    add_test(NAME ${arg}
       COMMAND ${CMAKE_SOURCE_DIR}/utils/beetest -f all.xml -v -k -s all -t ${arg} "${dlp}"
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing)
     set_tests_properties (${arg}

@@ -1,5 +1,4 @@
-Subroutine ewald_frzn_forces &
-           (imcon,rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
+Subroutine ewald_frzn_forces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -27,7 +26,6 @@ Subroutine ewald_frzn_forces &
 
   Implicit None
 
-  Integer,                             Intent( In    ) :: imcon
   Real( Kind = wp ),                   Intent( In    ) :: rcut,alpha,epsq
   Real( Kind = wp ),                   Intent(   Out ) :: engcpe_fr,vircpe_fr
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress

@@ -1,6 +1,5 @@
-Subroutine defects_reference_set_halo &
-           (imcon,cut,cwx,cwy,cwz,    &
-           dxl,dxr,dyl,dyr,dzl,dzr,   &
+Subroutine defects_reference_set_halo                &
+           (cut,cwx,cwy,cwz,dxl,dxr,dyl,dyr,dzl,dzr, &
            nrefs,nlrefs,namr,lri,lra,indr,xr,yr,zr)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -9,7 +8,7 @@ Subroutine defects_reference_set_halo &
 ! neighbouring domains/nodes for REFERENCE
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2012
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -21,7 +20,6 @@ Subroutine defects_reference_set_halo &
 
   Implicit None
 
-  Integer,              Intent( In    ) :: imcon
   Real( Kind = wp ),    Intent( In    ) :: cut
   Real( Kind = wp ),    Intent(   Out ) :: cwx,cwy,cwz,dxl,dxr,dyl,dyr,dzl,dzr
   Integer,              Intent( In    ) :: nrefs
@@ -29,8 +27,6 @@ Subroutine defects_reference_set_halo &
   Character( Len = 8 ), Intent( InOut ) :: namr(1:mxatms)
   Integer,              Intent( InOut ) :: lri(1:mxatms),lra(1:mxatms),indr(1:mxatms)
   Real( Kind = wp ),    Intent( InOut ) :: xr(1:mxatms),yr(1:mxatms),zr(1:mxatms)
-
-  Logical,           Save :: newjob = .true.
 
   Integer           :: fail,nlx,nly,nlz,i,j,ia,ib
   Real( Kind = wp ) :: celprp(1:10),xdc,ydc,zdc
@@ -42,14 +38,6 @@ Subroutine defects_reference_set_halo &
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'defects_reference_set_halo allocation failure, node: ', idnode
      Call error(0)
-  End If
-
-  If (newjob) Then
-     newjob = .false.
-
-! image conditions not compliant with DD and link-cell
-
-     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
   End If
 
 ! Get the dimensional properties of the MD cell

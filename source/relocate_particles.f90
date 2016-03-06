@@ -1,7 +1,7 @@
-Subroutine relocate_particles        &
-           (imcon,rlnk,lbook,megatm, &
-           megshl,m_con,megpmf,      &
-           m_rgd,megtet,             &
+Subroutine relocate_particles   &
+           (rlnk,lbook,megatm,  &
+           megshl,m_con,megpmf, &
+           m_rgd,megtet,        &
            megbnd,megang,megdih,meginv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -11,7 +11,7 @@ Subroutine relocate_particles        &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov december 2013
+! amended   - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -40,30 +40,21 @@ Subroutine relocate_particles        &
   Implicit None
 
   Logical,           Intent( In    ) :: lbook
-  Integer,           Intent( In    ) :: imcon,megatm,        &
+  Integer,           Intent( In    ) :: megatm,              &
                                         megshl,m_con,megpmf, &
                                         m_rgd,megtet,        &
                                         megbnd,megang,megdih,meginv
   Real( Kind = wp ), Intent( In    ) :: rlnk
 
-  Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: cut
 
   Logical           :: safe(1:9)
   Integer           :: i,nlimit,ipx,ipy,ipz
   Real( Kind = wp ) :: big(1:3),det,celprp(1:10),rcell(1:9),x,y,z
 
-  If (newjob) Then
-     newjob = .false.
-
-! image conditions not compliant with DD and link-cell
-
-     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
-
 ! Define cut
 
-     cut=rlnk+1.0e-6_wp
-  End If
+  cut=rlnk+1.0e-6_wp
 
 ! rescale mock cell vectors for non-periodic system
 
@@ -268,7 +259,7 @@ Subroutine relocate_particles        &
 
   Else
 
-! Restore periodic boundaries
+! Restore periodic boundaries (re-bound > re-wrap)
 
      Call pbcshift(imcon,cell,natms,xxx,yyy,zzz)
 

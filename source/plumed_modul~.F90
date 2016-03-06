@@ -6,11 +6,11 @@ Module plumed_module
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 module declaring global PLUMED variables and
-! arrays
+! dl_poly_4 module declaring global PLUMED variables and arrays
 !
 ! copyright - daresbury laboratory
 ! author    - a.m.elena september 2015
+! amended   - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,20 +27,19 @@ Module plumed_module
   Character( Len = 125 ), Public :: plumed_input       = "PLUMED"
   Character( Len = 125 ), Public :: plumed_log         = "OUTPUT.PLUMED"
 
-  Real     ( Kind = wp ), Public :: plumed_energyUnits = 0.01_wp ! DLPOLY_Internal(10J/mol) /kJ/mol
-  Real     ( Kind = wp ), Public :: plumed_lengthUnits = 0.1_wp  ! Angstrtom/nanometer
-  Real     ( Kind = wp ), Public :: plumed_timeUnits   = 1.0_wp  ! picosecond
-  Integer               , Public :: plumed_precision   = wp      ! DL_POLY precision
-  Integer               , Public :: plumed_restart     = 0       ! default no
-
-  Real     ( Kind = wp ) :: plumed_eng
-  Integer                :: plumed_version = 0, &
-                            plumed_stop    = 0, &
-                            has_plumed     = 0
-
-  Real     ( Kind = wp )    :: plumed_virial(1:9)
+  Real( Kind = wp ),      Public :: plumed_energyUnits = 0.01_wp ! DLPOLY_Internal(10J/mol) /kJ/mol
+  Real( Kind = wp ),      Public :: plumed_lengthUnits = 0.1_wp  ! Angstrtom/nanometer
+  Real( Kind = wp ),      Public :: plumed_timeUnits   = 1.0_wp  ! picosecond
+  Integer,                Public :: plumed_precision   = wp      ! DL_POLY precision
+  Integer,                Public :: plumed_restart     = 0       ! default no
 
   Character( Len =   1 ), Parameter  :: sn=Char(0)
+
+  Integer           :: plumed_version = 0, &
+                       plumed_stop    = 0, &
+                       has_plumed     = 0
+
+  Real( Kind = wp ) :: plumed_eng,plumed_virial(1:9)
 
   Public :: plumed_print_about
   Public :: plumed_init
@@ -51,8 +50,8 @@ Contains
 
   Subroutine plumed_init(megatm,tstep,temp)
 
-    Integer,          Intent( In    ) :: megatm
-    Real(kind = wp ), Intent( In    ) :: tstep, temp
+    Integer,           Intent( In    ) :: megatm
+    Real( Kind = wp ), Intent( In    ) :: tstep, temp
 
 
   End Subroutine plumed_init
@@ -70,7 +69,7 @@ Contains
      Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
      Real( Kind = wp ), Intent( InOut ) :: stress(1:9),stpcfg
 
-     nstrun=nstep      
+     nstrun=nstep
 
   End Subroutine plumed_apply
 

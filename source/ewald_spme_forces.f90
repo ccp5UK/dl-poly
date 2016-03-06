@@ -9,7 +9,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 ! Note: (fourier) reciprocal space terms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith & i.j.bush april 2015
+! author    - i.t.todorov & w.smith & i.j.bush february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -31,7 +31,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   Integer,           Save :: ixb,iyb,izb, ixt,iyt,izt
   Real( Kind = wp ), Save :: ixbm1_r,iybm1_r,izbm1_r, &
                              ixtm0_r,iytm0_r,iztm0_r, &
-                             kmaxa_r,kmaxb_r,kmaxc_r,engsic
+                             kmaxa_r,kmaxb_r,kmaxc_r
 
   Logical              :: llspl=.true.
   Integer              :: fail(1:4), i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt
@@ -190,14 +190,14 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
 !!! END DAFT SET-UP
 
-! calculate self-interaction correction (per node)
+! calculate self-interaction correction
 
      engsic=0.0_wp
      Do i=1,natms
         engsic=engsic+chge(i)**2
      End Do
      If (mxnode > 1) Call gsum(engsic)
-     engsic=-r4pie0/epsq * alpha*engsic/sqrpi / Real(mxnode,wp)
+     engsic=-r4pie0/epsq * alpha*engsic/sqrpi
   End If
 
   Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),                            Stat = fail(1))
@@ -902,7 +902,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
 ! distribute energy and virial terms (per node)
 
-  engcpe_rc = eng + engsic
+  engcpe_rc = eng + engsic / Real(mxnode,wp)
   vircpe_rc = -(strs(1)+strs(5)+strs(9))
 
 ! infrequent calculations copying

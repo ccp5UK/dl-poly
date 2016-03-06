@@ -1,16 +1,17 @@
-Subroutine scan_field                                 &
-           (l_n_e,mxsite,mxatyp,megatm,mxtmls,mxexcl, &
-           mtshl,mxtshl,mxshl,mxfshl,                 &
-           mtcons,mxtcon,mxcons,mxfcon,               &
-           mxtpmf,mxpmf,mxfpmf,                       &
-           mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,          &
-           mtteth,mxtteth,mxteth,mxftet,              &
-           mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,mxgbnd,  &
-           mtangl,mxtang,mxangl,mxfang,mxgang,        &
-           mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,        &
-           mtinv,mxtinv,mxinv,mxfinv,mxginv,          &
-           mxrdf,mxvdw,rvdw,mxgvdw,                   &
-           mxmet,mxmed,mxmds,rmet,mxgmet,             &
+Subroutine scan_field                                &
+           (l_n_e,mxompl,mximpl,                     &
+           mxsite,mxatyp,megatm,mxtmls,mxexcl,       &
+           mtshl,mxtshl,mxshl,mxfshl,                &
+           mtcons,mxtcon,mxcons,mxfcon,              &
+           mxtpmf,mxpmf,mxfpmf,                      &
+           mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
+           mtteth,mxtteth,mxteth,mxftet,             &
+           mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,mxgbnd, &
+           mtangl,mxtang,mxangl,mxfang,mxgang,       &
+           mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
+           mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
+           mxrdf,mxvdw,rvdw,mxgvdw,                  &
+           mxmet,mxmed,mxmds,rmet,mxgmet,            &
            mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -18,15 +19,16 @@ Subroutine scan_field                                 &
 ! dl_poly_4 subroutine for raw scanning the contents of the FIELD file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov and w.smith february 2016
+! author    - i.t.todorov & w.smith february 2016
 ! contrib   - b.palmer (2band) may 2013
-! contrib   - a.v.brukhno march 2014 (itramolecular TPs)
+! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs)
+! contrib   - h.a.boateng february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gcheck
-  Use setup_module,      Only : nfield,ntable
+  Use setup_module,      Only : nrite,nfield,ntable
   Use parse_module,      Only : get_line,strip_blanks, &
                                 get_word,lower_case,word_2_real
   Use bonds_module,      Only : lt_bnd
@@ -56,7 +58,7 @@ Subroutine scan_field                                 &
 
   Logical           :: l_n_e,check,safe,lext
   Integer           :: mxtmls,itmols,nummols,numsit,mxnmst,isite,ksite,nrept,  &
-                       mxsite,mxatyp,megatm,i,j,k,mxexcl,                      &
+                       mxompl,mximpl,mxsite,mxatyp,megatm,i,j,k,mxexcl,        &
                        numshl,mtshl,mxtshl,mxshl,ishls,mxfshl,                 &
                        numcon,mtcons,mxtcon,mxcons,icon,mxfcon,                &
                        mxtpmf(1:2),mxpmf,ipmf,jpmf,mxfpmf,                     &
@@ -73,6 +75,9 @@ Subroutine scan_field                                 &
   Real( Kind = wp ) :: rcbnd,rvdw,rmet,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
 
   l_n_e=.true.  ! no electrostatics opted
+  mxompl=0      ! default of maximum order of poles (charges)
+  mximpl=0      ! default maximum number of independent poles values
+                ! it initialises to 0 if no MULT directive exists in FIELD
 
   nummols=0
 
@@ -194,7 +199,21 @@ Subroutine scan_field                                 &
         Call get_word(record,word)
      End Do
 
-     If (word(1:7) == 'molecul') Then
+! multipoles container detection
+
+     If (word(1:9) == 'multipole') Then
+
+        l_n_e=.false.
+
+        Call get_word(record,word)
+        mxompl = Max(0,Nint(word_2_real(word)))
+
+        mximpl = (mxompl+3)*(mxompl+2)*(mxompl+1)/6
+
+        If (idnode == 0 .and. mxompl > 4) &
+  Write(nrite,'(1x,a,i0)') "Extending electrostatics to multipolar interactions of order ", mxompl
+
+     Else If (word(1:7) == 'molecul') Then
 
         Call get_word(record,word)
         If (word(1:4) == 'type') Call get_word(record,word)

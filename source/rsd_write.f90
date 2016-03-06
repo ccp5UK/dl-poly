@@ -1,4 +1,4 @@
-Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
+Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,7 +6,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -14,7 +14,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
   Use comms_module
   Use setup_module
   Use site_module,       Only : ntpshl,unqshl
-  Use config_module,     Only : cfgname,cell,natms, &
+  Use config_module,     Only : cfgname,imcon,cell,natms, &
                                 atmnam,ltg,xxx,yyy,zzz
   Use statistics_module, Only : rsd
 
@@ -35,8 +35,7 @@ Subroutine rsd_write(imcon,keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
   Implicit None
 
-  Integer,           Intent( In    ) :: imcon,keyres, &
-                                        nsrsd,isrsd,nstep
+  Integer,           Intent( In    ) :: keyres,nsrsd,isrsd,nstep
   Real( Kind = wp ), Intent( In    ) :: rrsd,tstep,time
 
   Integer, Parameter :: recsz = 73 ! default record size
