@@ -6,6 +6,7 @@ Module comms_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2015
+! contrib   - a.m.elena september 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -15,6 +16,7 @@ Module comms_module
 #else
   Use mpi!_module
 #endif
+
   Implicit None
 
 !  Include 'mpif.h'  ! Needed instead "Use mpi" for some machines
@@ -57,7 +59,6 @@ Module comms_module
                         DefWrite_tag  = 2255, &
                         RsdWrite_tag  = 2266, &
                         MsdWrite_tag  = 2277
-
 
   Public :: init_comms, exit_comms, abort_comms, &
             gsync, gcheck, gsum, gmax, gtime

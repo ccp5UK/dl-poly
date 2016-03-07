@@ -7,7 +7,7 @@ Subroutine read_config_parallel                 &
 ! dl_poly_4 subroutine for reading in the CONFIG data file in parallel
 !
 ! copyright - daresbury laboratory
-! author    - i.j.bush & i.t.todorov february 2014
+! author    - i.j.bush & i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -131,7 +131,6 @@ Subroutine read_config_parallel                 &
 
      n_skip = Int(recs_per_at,MPI_OFFSET_KIND) * Int(first_at(my_read_proc_num),MPI_OFFSET_KIND) + &
               top_skip-Int(1,MPI_OFFSET_KIND)
-
      If (.not.fast) Then
         n_sk=Int(n_skip,ip)
         n_jj=73*batsz ! Assuming average max line length of 73
@@ -141,7 +140,7 @@ Subroutine read_config_parallel                 &
               Write(forma,'( "(", i0, "/)" )') n_jj
               Read(Unit=nconf, Fmt=forma, End=100)
            End Do
-           n_ii=Mod(Int(n_skip,ip),n_jj)
+           n_ii=Mod(n_sk,n_jj)-1_ip
            If (n_ii > 0_ip) Then
               forma=' '
               Write(forma,'( "(", i0, "/)" )') n_ii
@@ -241,6 +240,7 @@ Subroutine read_config_parallel                 &
                  record( j:j ) = rec_buff( j, this_rec_buff )
               End Do
               Call strip_blanks(record)
+
               Call get_word(record,word) ; chbuf_read(i)=word(1:8)
               If (l_ind) Then
                  Call get_word(record,word)
