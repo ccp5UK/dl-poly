@@ -7,11 +7,12 @@ Module netcdf_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.j.bush april 2011
-! amended   - i.t.todorov april 2011
+! amended   - i.t.todorov aplril 2011
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90, Only : wp
+#ifdef NETCDF 
   Use netcdf   , Only : NF90_NETCDF4, NF90_CLOBBER, NF90_WRITE,              &
                         NF90_GLOBAL, NF90_UNLIMITED, NF90_INDEPENDENT,       &
                         NF90_CHAR, NF90_INT, NF90_DOUBLE, NF90_FLOAT,        &
@@ -22,8 +23,10 @@ Module netcdf_module
                         nf90_get_att, nf90_get_var, nf90_var_par_access,     &
                         nf90_inquire_dimension, nf90_inq_dimid,              &
                         nf90_inq_varid, nf90_inquire_variable
-
+#endif
   Implicit None
+
+  Private
 
   Public :: netcdf_create
   Public :: netcdf_open
@@ -49,12 +52,13 @@ Module netcdf_module
      Integer :: dummy_id
   End Type netcdf_desc
 
-  Private
 
   ! The printing precision for reals. Affects only entities of dimension "atom" size
   Integer :: pp = wp
   ! The netCDF handle corresponding to the real printing precision
+#ifdef NETCDF
   Integer :: ncp = NF90_DOUBLE
+#endif
 
   Interface netcdf_put_var
      Module Procedure netcdf_put_var_rwp_0d
@@ -91,13 +95,45 @@ Contains
     Type( netcdf_desc )   , Intent(   Out )            :: desc
     Integer               , Intent( In    ) , Optional :: comm
     Integer               , Intent( In    ) , Optional :: info
-
+#ifdef NETCDF
     If ( .Not. Present( comm ) ) Then
        Call check( nf90_create( name, NF90_NETCDF4 + NF90_CLOBBER, desc%ncid ) )
     Else
        Call check( nf90_create_par( name, NF90_NETCDF4 + NF90_CLOBBER, comm, info, desc%ncid ) )
     End If
+#else    
+    desc%ncid                  = 0
 
+    desc%spatial_id            = 0
+    desc%atom_id               = 0
+    desc%frame_id              = 0
+    desc%cell_spatial_id       = 0
+    desc%cell_angular_id       = 0
+    desc%label_id              = 0
+
+    desc%spatial_var_id        = 0
+    desc%cell_spatial_var_id   = 0
+    desc%cell_angular_var_id   = 0
+
+    desc%form_id               = 0
+    desc%imcon_id              = 0
+    desc%time_step_id          = 0
+    desc%time_id               = 0
+    desc%step_id               = 0
+    desc%cell_id               = 0
+    desc%cell_lengths_id       = 0
+    desc%cell_angles_id        = 0
+
+    desc%coords_id             = 0
+    desc%vels_id               = 0
+    desc%forces_id             = 0
+    desc%name_id               = 0
+    desc%index_id              = 0
+    desc%w_id                  = 0
+    desc%q_id                  = 0
+    desc%rsd_id                = 0
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_create
 
   Subroutine netcdf_open( name, desc, comm, info )
@@ -108,13 +144,45 @@ Contains
     Type( netcdf_desc )   , Intent(   Out )            :: desc
     Integer               , Intent( In    ) , Optional :: comm
     Integer               , Intent( In    ) , Optional :: info
-
+#ifdef NETCDF
     If ( .Not. Present( comm ) ) Then
        Call check( nf90_open( name, NF90_WRITE, desc%ncid ) )
     Else
        Call check( nf90_open_par( name, NF90_WRITE, comm, info, desc%ncid ) )
     End If
+#else
+    desc%ncid                  = 0
 
+    desc%spatial_id            = 0
+    desc%atom_id               = 0
+    desc%frame_id              = 0
+    desc%cell_spatial_id       = 0
+    desc%cell_angular_id       = 0
+    desc%label_id              = 0
+
+    desc%spatial_var_id        = 0
+    desc%cell_spatial_var_id   = 0
+    desc%cell_angular_var_id   = 0
+
+    desc%form_id               = 0
+    desc%imcon_id              = 0
+    desc%time_step_id          = 0
+    desc%time_id               = 0
+    desc%step_id               = 0
+    desc%cell_id               = 0
+    desc%cell_lengths_id       = 0
+    desc%cell_angles_id        = 0
+
+    desc%coords_id             = 0
+    desc%vels_id               = 0
+    desc%forces_id             = 0
+    desc%name_id               = 0
+    desc%index_id              = 0
+    desc%w_id                  = 0
+    desc%q_id                  = 0
+    desc%rsd_id                = 0
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_open
 
   Subroutine netcdf_close( desc )
@@ -123,8 +191,11 @@ Contains
 
     Type( netcdf_desc ), Intent( In    ) :: desc
 
+#ifdef NETCDF
     Call check( nf90_close( desc%ncid ) )
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_close
 
   Subroutine netcdf_set_def( title, n, desc )
@@ -135,6 +206,7 @@ Contains
     Integer               , Intent( In    ) :: n
     Type( netcdf_desc )   , Intent( InOut ) :: desc
 
+#ifdef NETCDF
     Character( Len = 10 ) :: earth_time
     Character( Len = 10 ) :: earth_date
 
@@ -255,7 +327,9 @@ Contains
     Call check( nf90_put_var( desc%ncid,      desc%spatial_var_id, "xyz" ) )
     Call check( nf90_put_var( desc%ncid, desc%cell_spatial_var_id, "abc" ) )
     Call check( nf90_put_var( desc%ncid, desc%cell_angular_var_id, (/ "alpha", "beta ", "gamma" /) ) )
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_set_def
 
   Subroutine netcdf_put_var_rwp_0d( what, desc, val, start, count )
@@ -268,6 +342,7 @@ Contains
     Integer               , Intent( In    ), Optional :: start
     Integer               , Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -283,7 +358,9 @@ Contains
     Else
        Call check( nf90_put_var( desc%ncid, id, val ) )
     End If
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_put_var_rwp_0d
 
   Subroutine netcdf_put_var_rwp_1d( what, desc, val, start, count )
@@ -296,6 +373,7 @@ Contains
     Integer               , Dimension( : ), Intent( In    ), Optional :: start
     Integer               , Dimension( : ), Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -325,7 +403,9 @@ Contains
           Call check( nf90_put_var( desc%ncid, id, val ) )
        End If
     End If
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_put_var_rwp_1d
 
   Subroutine netcdf_put_var_rwp_2d( what, desc, val, start, count )
@@ -338,6 +418,7 @@ Contains
     Integer               , Dimension( :    ), Intent( In    ), Optional :: start
     Integer               , Dimension( :    ), Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -365,7 +446,9 @@ Contains
           Call check( nf90_put_var( desc%ncid, id, val ) )
        End If
     End If
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_put_var_rwp_2d
 
   Subroutine netcdf_put_var_int_0d( what, desc, val, start, count )
@@ -378,6 +461,7 @@ Contains
     Integer               , Intent( In    ), Optional :: start
     Integer               , Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -395,7 +479,9 @@ Contains
     Else
        Call check( nf90_put_var( desc%ncid, id, val ) )
     End If
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_put_var_int_0d
 
   Subroutine netcdf_put_var_int_1d( what, desc, val, start, count )
@@ -408,6 +494,7 @@ Contains
     Integer               , Dimension( : ), Intent( In    ), Optional :: start
     Integer               , Dimension( : ), Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -429,7 +516,9 @@ Contains
           Call check( nf90_put_var( desc%ncid, id, val ) )
        End If
     End If
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_put_var_int_1d
 
   Subroutine netcdf_put_var_chr_1d( what, desc, val, start, count )
@@ -442,6 +531,7 @@ Contains
     Integer               , Dimension( : ), Intent( In    ), Optional :: start
     Integer               , Dimension( : ), Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -463,7 +553,9 @@ Contains
           Call check( nf90_put_var( desc%ncid, id, val ) )
        End If
     End If
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_put_var_chr_1d
 
   Subroutine netcdf_put_var_chr_2d( what, desc, val, start, count )
@@ -476,6 +568,7 @@ Contains
     Integer               , Dimension( :    ), Intent( In    ), Optional :: start
     Integer               , Dimension( :    ), Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -497,7 +590,9 @@ Contains
           Call check( nf90_put_var( desc%ncid, id, val ) )
        End If
     End If
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_put_var_chr_2d
 
   Subroutine netcdf_get_def( desc, title, n )
@@ -508,6 +603,7 @@ Contains
     Character( Len = * )  , Intent(   Out ), Optional :: title
     Integer               , Intent(   Out ), Optional :: n
 
+#ifdef NETCDF
     Call check( nf90_inq_dimid( desc%ncid, "spatial"     , desc%spatial_id ) )
     Call check( nf90_inq_dimid( desc%ncid, "atom"        , desc%atom_id    ) )
     Call check( nf90_inq_dimid( desc%ncid, "frame"       , desc%frame_id   ) )
@@ -579,7 +675,9 @@ Contains
     If ( Present( title ) ) Then
        Call check( nf90_get_att( desc%ncid, NF90_GLOBAL, 'title'          , title ) )
     End If
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_get_def
 
   Subroutine netcdf_get_dim( what, desc, val )
@@ -590,6 +688,7 @@ Contains
     Type( netcdf_desc )   , Intent( In    ) :: desc
     Integer               , Intent(   Out ) :: val
 
+#ifdef NETCDF
     Integer :: dim_id
 
     Select Case( what )
@@ -608,7 +707,10 @@ Contains
     End Select
 
     Call check( nf90_inquire_dimension( desc%ncid, dim_id, len = val ) )
-
+#else
+    val=0
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_get_dim
 
   Subroutine netcdf_get_att_int( what, desc, val )
@@ -619,8 +721,12 @@ Contains
     Type( netcdf_desc )   , Intent( In    )           :: desc
     Integer               , Intent(   Out )           :: val
 
+#ifdef NETCDF
     Call check( nf90_get_att( desc%ncid, NF90_GLOBAL, what, val ) )
-
+#else
+    val=0
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_get_att_int
 
   Subroutine netcdf_get_att_chr( what, desc, val )
@@ -631,8 +737,12 @@ Contains
     Type( netcdf_desc )   , Intent( In    )           :: desc
     Character( Len = * )  , Intent(   Out )           :: val
 
+#ifdef NETCDF
     Call check( nf90_get_att( desc%ncid, NF90_GLOBAL, what, val ) )
-
+#else  
+    val="*"
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_get_att_chr
 
   Subroutine netcdf_get_var_rwp_0d( what, desc, val, start, count )
@@ -645,6 +755,7 @@ Contains
     Integer               , Intent( In    ), Optional :: start
     Integer               , Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -660,7 +771,10 @@ Contains
     Else
        Call check( nf90_get_var( desc%ncid, id, val ) )
     End If
-
+#else
+    val=0.0_wp
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_get_var_rwp_0d
 
   Subroutine netcdf_get_var_rwp_1d( what, desc, val, start, count )
@@ -673,6 +787,7 @@ Contains
     Integer               , Dimension( : ), Intent( In    ), Optional :: start
     Integer               , Dimension( : ), Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -702,7 +817,10 @@ Contains
           Call check( nf90_get_var( desc%ncid, id, val ) )
        End If
     End If
-
+#else
+    val=0.0_wp
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_get_var_rwp_1d
 
   Subroutine netcdf_get_var_rwp_2d( what, desc, val, start, count )
@@ -715,6 +833,7 @@ Contains
     Integer               , Dimension( :    ), Intent( In    ), Optional :: start
     Integer               , Dimension( :    ), Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -742,7 +861,10 @@ Contains
           Call check( nf90_get_var( desc%ncid, id, val ) )
        End If
     End If
-
+#else
+    val=0.0_wp
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_get_var_rwp_2d
 
   Subroutine netcdf_get_var_int_0d( what, desc, val, start, count )
@@ -755,6 +877,7 @@ Contains
     Integer               , Intent( In    ), Optional :: start
     Integer               , Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -772,7 +895,10 @@ Contains
     Else
        Call check( nf90_get_var( desc%ncid, id, val ) )
     End If
-
+#else
+    val=0
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_get_var_int_0d
 
   Subroutine netcdf_get_var_int_1d( what, desc, val, start, count )
@@ -785,6 +911,7 @@ Contains
     Integer               , Dimension( : ), Intent( In    ), Optional :: start
     Integer               , Dimension( : ), Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -806,7 +933,10 @@ Contains
           Call check( nf90_get_var( desc%ncid, id, val ) )
        End If
     End If
-
+#else 
+    val=0
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_get_var_int_1d
 
   Subroutine netcdf_get_var_chr_1d( what, desc, val, start, count )
@@ -819,6 +949,7 @@ Contains
     Integer               , Dimension( : ), Intent( In    ), Optional :: start
     Integer               , Dimension( : ), Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -840,7 +971,10 @@ Contains
           Call check( nf90_get_var( desc%ncid, id, val ) )
        End If
     End If
-
+#else
+    val="*"    
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_get_var_chr_1d
 
   Subroutine netcdf_get_var_chr_2d( what, desc, val, start, count )
@@ -853,6 +987,7 @@ Contains
     Integer               , Dimension( :    ), Intent( In    ), Optional :: start
     Integer               , Dimension( :    ), Intent( In    ), Optional :: count
 
+#ifdef NETCDF
     Integer :: id
 
     Select Case( what )
@@ -874,12 +1009,19 @@ Contains
           Call check( nf90_get_var( desc%ncid, id, val ) )
        End If
     End If
-
+#else
+    val="*"
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_get_var_chr_2d
 
   Subroutine netcdf_compiled()
 
     Implicit None
+#ifndef NETCDF
+    Write(Unit=*, Fmt=*) ' *** NOT netCDF COMPILED BUILD !!! ***'
+    Call error(0)
+#endif
 
   End Subroutine netcdf_compiled
 
@@ -891,6 +1033,7 @@ Contains
 
     error = 0
 
+#ifdef NETCDF
     pp = Selected_real_kind( p, r )
 
     !In the following the use of 1.0d0 is deliberate - do NOT change them to use wp !!!!!!!!!
@@ -910,7 +1053,9 @@ Contains
     If ( pp < 0 ) Then
        error = pp
     End If
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_set_real_precision
 
   Subroutine netcdf_get_real_precision( p, r, error )
@@ -919,6 +1064,7 @@ Contains
     Integer, Intent(   Out ) :: r
     Integer, Intent(   Out ) :: error
 
+#ifdef NETCDF
     error = 0
 
     !In the following the use of 1.0d0 is deliberate - do NOT change them to use wp !!!!!!!!!
@@ -936,11 +1082,15 @@ Contains
        p = Precision( 1.0d0 )
        r = Range( 1.0d0 )
     Case Default
+#endif
        p = -1
        r = -1
        error = -1
+#ifdef NETCDF
     End Select
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_get_real_precision
 
   Subroutine netcdf_get_file_real_precision( desc, p, r, error )
@@ -952,6 +1102,7 @@ Contains
     Integer               , Intent(   Out ) :: r
     Integer               , Intent(   Out ) :: error
 
+#ifdef NETCDF
     Integer :: file_real
 
     error = 0
@@ -966,29 +1117,37 @@ Contains
        p = Precision( 1.0d0 )
        r = Range( 1.0d0 )
     Case Default
+#endif      
        p = -1
        r = -1
        error = -1
+#ifdef NETCDF
     End Select
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine netcdf_get_file_real_precision
+
 
   Subroutine check( status )
 
+#ifdef NETCDF
     Use netcdf, Only : nf90_noerr, nf90_strerror
-
+#endif 
     Implicit None
 
     Integer, Intent( In    ) :: status
 
+#ifdef NETCDF
     If ( status /= nf90_noerr ) Then
        Write( Unit=*, Fmt=* ) 'NETCDF error:'
        Write( Unit=*, Fmt=* )
        Write( Unit=*, Fmt='( a )' ) trim( nf90_strerror( status ) )
        Call error(0)
-       Stop
     End If
-
+#else
+    Call netcdf_compiled()
+#endif
   End Subroutine check
 
 End Module netcdf_module
