@@ -44,7 +44,7 @@ get_filename_component (NetCDF_lib_dirs "${NETCDF_LIBRARIES_C}" PATH)
 
 macro (NetCDF_check_interface lang header libs)
   if (NETCDF_${lang})
-    find_path (NETCDF_INCLUDES_${lang} NAMES ${header} )
+    find_path(NETCDF_INCLUDES_${lang} NAMES ${header} HINTS /usr/lib64/gfortran/modules)
     find_library (NETCDF_LIBRARIES_${lang} NAMES ${libs} HINTS ENV LD_LIBRARY_PATH)
     mark_as_advanced (NETCDF_INCLUDES_${lang} NETCDF_LIBRARIES_${lang})
     if (NETCDF_INCLUDES_${lang} AND NETCDF_LIBRARIES_${lang})
