@@ -38,7 +38,7 @@ defects_write.f90
 defects1_module.f90
 defects1_write.f90
 deport_atomic_data.f90
-development_module.f90
+development_module.F90
 dihedrals_14_check.f90
 dihedrals_14_vdw.f90
 dihedrals_compute.f90
@@ -196,7 +196,12 @@ ewald_excl_mforces.f90
 ewald_frzn_mforces.f90
 d_ene_trq_mpoles.f90
 )
-
+if(BUILDER)
+  set_property(SOURCE development_module.F90 APPEND PROPERTY
+    COMPILE_DEFINITIONS "BUILDER='${BUILDER}'")
+endif()  
+set_property(SOURCE development_module.F90 APPEND PROPERTY
+  COMPILE_DEFINITIONS "HOST='${HOST}'")
 
 set(dlpoly_CORE_SRCS
 kinds_f90.f90
