@@ -1,4 +1,4 @@
-Subroutine link_cell_pairs(rlnk,lbook,megfrz)
+Subroutine link_cell_pairs(rlnk,pdplnc,lbook,megfrz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(rlnk,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2016
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,7 +23,7 @@ Subroutine link_cell_pairs(rlnk,lbook,megfrz)
 
   Logical,            Intent( In    ) :: lbook
   Integer,            Intent( In    ) :: megfrz
-  Real( Kind = wp ) , Intent( In    ) :: rlnk
+  Real( Kind = wp ) , Intent( In    ) :: rlnk,pdplnc
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1,match
 

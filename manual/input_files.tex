@@ -119,6 +119,7 @@ pressure                0.001 k-atmospheres
 rcut                   10.0  Angstroms
 rpad                    0.35 Angstroms
 rvdw                    8.0  Angstroms
+subcelling thershold   50.0  particles
 exclude
 epsilon                 1.0
 ewald precision         1.0e-5
@@ -133,7 +134,7 @@ shake                   1.0e-5
 
 # INTEGRATION FLAVOUR, ENSEMBLE AND PSEUDO THERMOSTAT
 integration velocity verlet
-ensemble nst hoover 0.5 0.5
+ensemble nst berendsen 0.5 1.5
 pseudo langevin   2.0 150.0
 
 # INTEGRATION TIMESTEP
@@ -148,7 +149,7 @@ equilibration        1000 steps
 
 # EQUILIBRATION DIRECTIVES
 zero
-cap                  2000 kT/Angstrom
+cap                   500 kT/Angstrom
 scale                   5 steps
 regauss                 3 steps
 minimise force      20  1.0
@@ -647,6 +648,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf steps} $n$                              \> run simulation for $n$ timesteps (default $n~=~0$, \\
 \>                                              \> corresponding to a "dry" run) \\
+\>                                              \> \\
+\> {\bf subcell}ing (threshold) (density) $f$   \> set the subcelling threshold density of particles per link cell \\
+\>                                              \> below which decreasing link-cell size stops $f$ ($f~\ge~1.0$, default $f~=~50.0)$) \\
 \>                                              \> \\
 \> {\bf temp}erature $f$                        \> set required simulation temperature to $f$ Kelvin \\
 \>                                              \> (target temperature for constant temperature\index{units!temperature} ensembles) \\
@@ -1415,6 +1419,15 @@ a few hundreds of timesteps.  This is usually accounting for over $90\%$ of
 the time tosolution.} of the order of $10 \div 30\%$ for force-fields
 involving the Ewald summation methodology and $60 \div 100\%$ for force-fields
 without electrostatics evaluations involving the Ewald summation methodology.
+
+\item The {\bf subcell} option will set the threshold density of particles
+per link cell below which subcelling (decreasing link-cell size) stops.  The
+default is 50 although experimenting with values between 10 and 100 may
+provide sufficient information about a performance sweetspot.  The comparison
+condition is carried out on the average density per sub-link cell of each
+domain.  Thus subcelling takes into account only the per domain density
+variation. Obviously, the subcelling threshhold is limited to 1 particle per
+cell for the sake of safty and sanity reasons.
 \end{enumerate}
 
 \noindent Users are advised to study the example CONTROL files
