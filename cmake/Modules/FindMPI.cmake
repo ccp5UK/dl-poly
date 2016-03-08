@@ -618,7 +618,7 @@ foreach (lang C CXX Fortran)
     endif()
   endif()
 endforeach()
-
+mark_as_advanced(MPI_EXTRA_LIBRARY MPI_LIBRARY)
 
 #=============================================================================
 # More backward compatibility stuff
@@ -634,6 +634,9 @@ elseif (MPI_C_FOUND)
   foreach (var ${_MPI_OLD_VARS})
     set(MPI_${var} ${MPI_C_${var}})
   endforeach()
+elseif (MPI_Fortran_FOUND)
+  #this is a very bad hack... somewhere a kitten has died
+  set(MPI_FOUND TRUE)
 else()
   # Note that we might still have found Fortran, but you'll need to use MPI_Fortran_FOUND
   set(MPI_FOUND FALSE)

@@ -54,6 +54,15 @@ build-mpi-kim:
     - make -j10 
     - popd
 
+build-mpi-all:
+  stage: build
+  script:
+    - mkdir build-mpi-all
+    - pushd build-mpi-all
+    - cmake ../ -DWITH_KIM=ON -DWITH_PLUMED=ON -DWITH_NETCDF=ON 
+    - make -j10 
+    - popd
+
 build-old-hpc:
   stage: build
   script:
