@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 kim_version=1.7.2
-kim_compiler=INTEL #GCC or INTEL not too much variation 
+kim_compiler=GCC #GCC or INTEL not too much variation 
 kim_os=linux # 'linux', 'darwin', or 'freebsd' 
 kim_archive=kim-api-v${kim_version}.tgz
 kim_folder=${kim_archive/.tgz/}
