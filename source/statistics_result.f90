@@ -205,7 +205,7 @@ Subroutine statistics_result                                    &
   Do i=1,ntpatm
      If (numtypnf(i) > zero_plus) Then
         dc = 10.0_wp * (ravval(iadd+i)-sumval(iadd+i)) / &
-             (3.0_wp*Real(numacc-Min(mxnstk,numacc-1),wp)*tstep)
+             (3.0_wp*Real(numacc-Min(mxstak,numacc-1),wp)*tstep)
         If (dc < 1.0e-10_wp) dc = 0.0_wp
 
         srmsd = Sqrt(ravval(iadd+i))

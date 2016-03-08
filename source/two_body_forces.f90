@@ -1,5 +1,5 @@
 Subroutine two_body_forces                        &
-           (rcut,rlnk,rvdw,rmet,keyens,           &
+           (rcut,rlnk,rvdw,rmet,pdplnc,keyens,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &
@@ -28,7 +28,7 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2016
+! author    - i.t.todorov march 2016
 ! contrib   - h.a.boateng february 2016
 ! contrib   - p.s.petkov february 2015
 !
@@ -56,7 +56,7 @@ Subroutine two_body_forces                        &
                                                                megfrz,nstrdf, &
                                                                nsteql,nstep
   Real( Kind = wp ),                        Intent( In    ) :: rcut,rlnk,rvdw,rmet, &
-                                                               alpha,epsq
+                                                               pdplnc,alpha,epsq
   Real( Kind = wp ),                        Intent( In    ) :: elrc,virlrc
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent( InOut ) :: elrcm,vlrcm
   Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe, &
@@ -136,7 +136,7 @@ Subroutine two_body_forces                        &
 
 ! Set up non-bonded interaction (verlet) list using link cells
 
-  If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rlnk,lbook,megfrz)
+  If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rlnk,pdplnc,lbook,megfrz)
 
 ! Calculate all contributions from KIM
 
