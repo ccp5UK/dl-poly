@@ -45,7 +45,7 @@ build-mpi-plumed:
     - make -j10 
     - popd
 
-build-mpi-plumed:
+build-mpi-kim:
   stage: build
   script:
     - mkdir build-mpi-kim
