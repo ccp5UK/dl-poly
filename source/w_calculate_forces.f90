@@ -62,7 +62,7 @@
 
      If (.not.(mxmet == 0 .and. keyfce == 0 .and. l_n_v .and. mxrdf == 0 .and. kim == ' ')) &
         Call two_body_forces                      &
-           (rcut,rlnk,rvdw,rmet,keyens,           &
+           (rcut,rlnk,rvdw,rmet,pdplnc,keyens,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &

@@ -16,7 +16,7 @@ Subroutine read_control                                &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstmsd,istmsd,nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-           ndump,timjob,timcls)
+           ndump,pdplnc,timjob,timcls)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -97,7 +97,8 @@ Subroutine read_control                                &
                                              wthpse,tmppse,min_tol,   &
                                              fmax,epsq,rlx_tol,       &
                                              tolnce,quattol,          &
-                                             rdef,rrsd,timjob,timcls
+                                             rdef,rrsd,pdplnc,        &
+                                             timjob,timcls
 
 
   Logical                                 :: limp,lvv,lens,lforc, &
@@ -349,6 +350,11 @@ Subroutine read_control                                &
 ! default value for data dumping interval
 
   ndump = 1000
+
+! default value for the particle density per link cell limit
+! below which subcelling (decreasing link-cell dimensions) stops
+
+  pdplnc = 50.0_wp
 
 ! default times for job execution and output dump
 
@@ -2202,6 +2208,16 @@ Subroutine read_control                                &
         If (word(1:4) == 'data' .or. word(1:5) == 'every') Call get_word(record,word)
         ndump = Max(Abs(Nint(word_2_real(word))),1)
 
+! default for particle density per link cell below
+! which decreasing link-cell size (subcelling) stops
+
+     Else If (word(1:7) == 'subcell') Then
+
+        Call get_word(record,word)
+        If (word(1:4) == 'dens' .or. word(1:6) == 'thresh') Call get_word(record,word)
+        If (word(1:4) == 'dens' .or. word(1:6) == 'thresh') Call get_word(record,word)
+        pdplnc = Max(Abs(word_2_real(word)),1.0_wp) ! disallow any less than 1
+
 ! read machine time for simulation run (in seconds)
 
      Else If (word(1:3) == 'job') Then
@@ -2628,10 +2644,11 @@ Subroutine read_control                                &
 !    End If
 !  End If
 
-! report data dumping interval and job times
+! report data dumping interval, subcelling threshold density and job times
 
   If (idnode == 0) Then
      Write(nrite,"(/,1x,'data dumping interval (steps)',2x,i10)") ndump
+     Write(nrite,"(/,1x,'subcelling threshold density',6x,1p,e12.4)") pdplnc
      Write(nrite,"(/,1x,'allocated job run time   (s)',6x,1p,e12.4)") timjob
      Write(nrite,"(/,1x,'allocated job close time (s)',6x,1p,e12.4)") timcls
   End If

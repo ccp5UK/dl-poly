@@ -180,7 +180,7 @@ Program dl_poly
                        alpha,epsq,fmax,                           &
                        width,mndis,mxdis,mxstp,wthpse,tmppse,     &
                        rlx_tol,min_tol,tolnce,quattol,rdef,rrsd,  &
-                       emd,vmx,vmy,vmz,temp,sigma,                &
+                       pdplnc,emd,vmx,vmy,vmz,temp,sigma,         &
                        press,strext(1:9),ten,                     &
                        taut,chi,soft,gama,taup,tai,               &
                        chit,eta(1:9),chip,cint,consv,             &
@@ -316,7 +316,7 @@ Program dl_poly
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstmsd,istmsd,nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-           ndump,timjob,timcls)
+           ndump,pdplnc,timjob,timcls)
 
 ! READ SIMULATION FORCE FIELD
 
