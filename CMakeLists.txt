@@ -35,6 +35,18 @@ else()
   message(STATUS "Build without MPI support!")
 endif()
 
+if (BUILDER)
+  message(STATUS "${BUILDER} is the builder")
+else() 
+  message(STATUS "default value for builder will be used")
+endif()
+#if (NOT HOST)
+#  message(STATUS "determining hostname...")
+#  cmake_host_system_information(RESULT AH QUERY FQDN)
+#  set(HOST "${AH}" CACHE STRING )
+#endif()
+message(STATUS "building on ${HOST}")
+
 if(WITH_OPENMP)
    find_package(OpenMP REQUIRED)
    add_definitions(${OpenMP_Fortran_FLAGS})
@@ -203,3 +215,4 @@ else()
 endif()
 
 #feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
+

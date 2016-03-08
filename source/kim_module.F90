@@ -36,7 +36,7 @@ Module kim_module
   Integer,                Save :: idhalo(0:2,1:6) ! KIM halo indicator
 
 #ifdef KIM
-  Type( Kind = c_ptr ),    Save          :: pkim
+  Type( c_ptr ),    Save          :: pkim
   Integer( Kind = c_int ), Save, Pointer :: kim_list(:,:)
   Real( Kind = c_double ), Save, Pointer :: kim_Rij(:,:,:)
   Logical,                 Save          :: HalfList, RijNeeded
@@ -156,10 +156,10 @@ Contains
     Integer                 :: fail,i,limit
 
     Character( Len = KIM_KEY_STRING_LENGTH ) :: ActiveNBC_Method
-    Integer( Kind = c_int ), Pointer :: numberOfParticles;           Type( Kind = c_ptr ) :: pNOP
-    Integer( Kind = c_int ), Pointer :: numberOfSpecies;             Type( Kind = c_ptr ) :: pNPT
-    Integer( Kind = c_int ), Pointer :: numberContributingParticles; Type( Kind = c_ptr ) :: pNCP
-    Integer( Kind = c_int ), Pointer :: particleSpecies(:);          Type( Kind = c_ptr ) :: pPT
+    Integer( Kind = c_int ), Pointer :: numberOfParticles;           Type( c_ptr ) :: pNOP
+    Integer( Kind = c_int ), Pointer :: numberOfSpecies;             Type( c_ptr ) :: pNPT
+    Integer( Kind = c_int ), Pointer :: numberContributingParticles; Type( c_ptr ) :: pNCP
+    Integer( Kind = c_int ), Pointer :: particleSpecies(:);          Type( c_ptr ) :: pPT
 
     ier = KIM_STATUS_OK
 
@@ -353,11 +353,11 @@ Contains
     Integer( Kind = c_int ) :: i,j,k
     Integer( Kind = c_int ) :: ier,idum
 
-    Real( Kind = c_double ), Pointer :: coordinates(:,:); Type( Kind = c_ptr ) :: pCOORD
+    Real( Kind = c_double ), Pointer :: coordinates(:,:); Type( c_ptr ) :: pCOORD
 
-    Real( Kind = c_double ), Pointer :: energy;           Type( Kind = c_ptr ) :: pE
-    Real( Kind = c_double ), Pointer :: forces(:,:);      Type( Kind = c_ptr ) :: pF
-    Real( Kind = c_double ), Pointer :: virial(:);        Type( Kind = c_ptr ) :: pV
+    Real( Kind = c_double ), Pointer :: energy;           Type( c_ptr ) :: pE
+    Real( Kind = c_double ), Pointer :: forces(:,:);      Type( c_ptr ) :: pF
+    Real( Kind = c_double ), Pointer :: virial(:);        Type( c_ptr ) :: pV
 
     Call kim_api_getm_data(pkim, ier,                &
                            "coordinates", pCOORD, 1, &
@@ -498,7 +498,7 @@ Contains
 ! exchange buffers
 
        If (mxnode > 1) Then
-          jmove=idhalo(0,i)*add
+          jmove=idhalo(0,i)*iadd
           If (jmove > 0) Call MPI_IRECV(rev_comm_buffer(iblock+1),jmove,wp_mpi,kdnode,Export_tag,dlp_comm_world,request,ierr)
           If (imove > 0) Call MPI_SEND(rev_comm_buffer(1),imove,wp_mpi,jdnode,Export_tag,dlp_comm_world,ierr)
           If (jmove > 0) Call MPI_WAIT(request,status,ierr)
@@ -536,18 +536,18 @@ Contains
 
     Integer( Kind = c_int )                  :: get_neigh
 
-    Type( Kind = c_ptr ),    Intent( In    ) :: pkim
+    Type( c_ptr ),    Intent( In    ) :: pkim
     Integer( Kind = c_int ), Intent( In    ) :: mode
     Integer( Kind = c_int ), Intent( In    ) :: request
     Integer( Kind = c_int ), Intent(   Out ) :: atom
     Integer( Kind = c_int ), Intent(   Out ) :: numnei
-    Type( Kind = c_ptr ),    Intent(   Out ) :: pnei1atom
-    Type( Kind = c_ptr ),    Intent(   Out ) :: pRij
+    Type( c_ptr ),    Intent(   Out ) :: pnei1atom
+    Type( c_ptr ),    Intent(   Out ) :: pRij
 
     Integer( Kind = c_int ), Save    :: iterVal = 0
     Integer( Kind = c_int )          :: N
     Integer( Kind = c_int )          :: atomToReturn
-    Integer( Kind = c_int ), Pointer :: numberOfParticles; Type( Kind = c_ptr ) :: pnAtoms
+    Integer( Kind = c_int ), Pointer :: numberOfParticles; Type( c_ptr ) :: pnAtoms
     Integer( Kind = c_int )          :: ier, idum
 
 ! unpack number of particles
@@ -647,7 +647,6 @@ Contains
     Character( Len = KIM_KEY_STRING_LENGTH ), Intent( In    ) :: NBC_method(:)
     Integer( Kind = c_int ),                  Intent( In    ) :: num_types
     Character( Len = * ),                     Intent( In    ) :: model_types(num_types)
-    Integer( Kind = c_int ),                  Intent( In    ) :: num_types
     Character( Len = 10000 ),                 Intent(   Out ) :: kim_descriptor
     Integer( Kind = c_int ),                  Intent(   Out ) :: ier
 
@@ -798,7 +797,7 @@ Contains
     Character( Len = 10000 ) :: kim_descriptor
     Character( Len = KIM_KEY_STRING_LENGTH ) :: NBC_Method(4)
 
-    Real( Kind = c_double ), Pointer :: model_cutoff; Type( Kind = c_ptr ) :: pcut
+    Real( Kind = c_double ), Pointer :: model_cutoff; Type( c_ptr ) :: pcut
 
     NBC_Method = ["NEIGH_RVEC_H", &
                   "NEIGH_PURE_H", &

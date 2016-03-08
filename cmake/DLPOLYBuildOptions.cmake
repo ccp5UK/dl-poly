@@ -12,4 +12,6 @@ option(DOCS "Doxygen Documentation" OFF)
 option(BUILD_SHARED_LIBS "Build with shared libraries" OFF)
 
 set(MPI_NPROCS 8 CACHE STRING "number of MPI processes to be used for code coverage and tests")
-mark_as_advanced(MPI_NPROCS)
+cmake_host_system_information(RESULT AH QUERY FQDN)
+set(HOST "${AH}" CACHE STRING "name of the hostname we build on.")
+set(BUILDER "" CACHE STRING "name of the person who built the binary.")
