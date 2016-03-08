@@ -1,5 +1,5 @@
 before_script:
-  - module use /usr/share/modules/
+  - module use /opt/modules/
   - module load openmpi/gcc/1.10.1
   - module load netcdf/gcc/4.4.0
   - module load plumed/gcc/2.2.1
