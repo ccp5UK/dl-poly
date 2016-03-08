@@ -6,36 +6,43 @@ Module development_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov june 2013
-!
+! contrib   - i.j.bush november 2008
+! contrib   - a.m.elena march 2016
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
+  Use setup_module, Only : nrite, nread
 
   Implicit None
 
-  Logical, Save :: l_scr  = .false. ! OUTPUT redirection to the default output (screen)
-  Logical, Save :: l_fast = .false. ! avoid global safety checks (no elegant parallel failures)
-  Logical, Save :: l_eng  = .false. ! OUTPUT inclusion of an extra last line with E_tot
-  Logical, Save :: l_rout = .false. ! REVIVE writing in ASCII (default is binary)
-  Logical, Save :: l_rin  = .false. ! REVOLD reading in ASCII (default is binary)
-  Logical, Save :: l_org  = .false. ! translate CONFIG along a vector to CFGORG
-  Logical, Save :: l_scl  = .false. ! CONFIG rescaling to CFGSCL after reading with termination
-  Logical, Save :: l_his  = .false. ! HISTORY generation after reading with termination
-  Logical, Save :: l_trm  = .false. ! termination flag
+  Private 
+
+  Logical, Save, Public :: l_scr  = .false. ! OUTPUT redirection to the default output (screen)
+  Logical, Save, Public :: l_fast = .false. ! avoid global safety checks (no elegant parallel failures)
+  Logical, Save, Public :: l_eng  = .false. ! OUTPUT inclusion of an extra last line with E_tot
+  Logical, Save, Public :: l_rout = .false. ! REVIVE writing in ASCII (default is binary)
+  Logical, Save, Public :: l_rin  = .false. ! REVOLD reading in ASCII (default is binary)
+  Logical, Save, Public :: l_org  = .false. ! translate CONFIG along a vector to CFGORG
+  Logical, Save, Public :: l_scl  = .false. ! CONFIG rescaling to CFGSCL after reading with termination
+  Logical, Save, Public :: l_his  = .false. ! HISTORY generation after reading with termination
+  Logical, Save, Public :: l_trm  = .false. ! termination flag
   Logical, Save :: l_tim  = .false. ! detailed timing
-  Logical, Save :: l_tor  = .false. ! no production of REVCON & REVIVE
-  Logical, Save :: l_dis  = .false. ! check on minimum separation distance between VNL pairs at re/start
+  Logical, Save, Public :: l_tor  = .false. ! no production of REVCON & REVIVE
+  Logical, Save, Public :: l_dis  = .false. ! check on minimum separation distance between VNL pairs at re/start
 
 
-  Integer, Save           :: lvcforg = -1                                ! CFGORG levcfg
-  Real( Kind = wp ), Save :: xorg = 0.0_wp, yorg = 0.0_wp, zorg = 0.0_wp ! reorigin vector
+  Integer, Save, Public           :: lvcforg = -1                                ! CFGORG levcfg
+  Real( Kind = wp ), Save, Public :: xorg = 0.0_wp, yorg = 0.0_wp, zorg = 0.0_wp ! reorigin vector
 
-  Integer, Save           :: lvcfscl = -1       ! CFGSCL levcfg
-  Real( Kind = wp ), Save :: cels(1:9) = 0.0_wp ! CFGSCL lattice parameters
+  Integer, Save, Public           :: lvcfscl = -1       ! CFGSCL levcfg
+  Real( Kind = wp ), Save, Public :: cels(1:9) = 0.0_wp ! CFGSCL lattice parameters
 
-  Real( Kind = wp ), Save :: r_dis = 0.5_wp ! l_dis default check condition
+  Real( Kind = wp ), Save, Public :: r_dis = 0.5_wp ! l_dis default check condition
 
-  Real( Kind = wp ), Save :: t_zero
+  Real( Kind = wp ), Save, Public :: t_zero
+
+  Public :: scan_development
+  Public :: build_info
 
 Contains
 
@@ -52,7 +59,6 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Use comms_module, Only : idnode,mxnode,gcheck
-    Use setup_module, Only : nread
     Use parse_module, Only : get_line,get_word,lower_case
 
     Implicit None
@@ -148,7 +154,6 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Use comms_module, Only : gtime, gsync, idnode
-    Use setup_module, Only : nrite
 
     Character( Len = * ), Intent( In    ) :: name
 
@@ -166,4 +171,41 @@ Contains
 
   End Subroutine end_devel_time
 
+#ifdef HOST
+#define __HOSTNAME__ HOST
+#else
+#define __HOSTNAME__ 'unknown'
+#endif  
+
+#ifdef BUILDER
+#define __BUILDER__ BUILDER
+#else
+#define __BUILDER__  'dr faustroll'
+#endif
+
+#ifdef __GFORTRAN__
+#define __COMPILER__ 'gfortran'
+#elif __INTEL__
+#define __COMPILER__ 'ifort'
+#elif CRAY
+#define __COMPILER__ 'ftn'
+#else
+#define __COMPILER__ 'noidea'
+#endif
+
+  Subroutine build_info()
+    character(len=48) :: aux
+    Write(nrite,'(1x,a66)')Repeat("*",66)
+    Write(aux,*)__DATE__//"@"//__TIME__
+    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"****","built on: ",aux,"****"
+    Write(aux,*)__HOSTNAME__
+    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"****","machine: ",aux,"****"
+    Write(aux,*)__BUILDER__
+    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"****","human: ",aux,"****"
+    Write(aux,*)__COMPILER__
+    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"****","compiler: ",aux,"****"
+    Write(aux,*)__VERSION__
+    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"****","version: ",aux,"****"
+    Write(nrite,'(1x,a66,/)')Repeat("*",66)
+  End Subroutine build_info
 End Module development_module
