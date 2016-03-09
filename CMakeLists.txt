@@ -195,7 +195,7 @@ if(BUILD_TESTING)
     file(COPY ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz
       DESTINATION ${CMAKE_BINARY_DIR}/Testing/${arg}/)
     add_test(NAME ${arg}
-      COMMAND ${CMAKE_SOURCE_DIR}/utils/beetest -f all.xml -v -k -s all -t ${arg} "${dlp}"
+      COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/utils/beetest -f all.xml -v -k -s all -t ${arg} "${dlp}"
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing)
     set_tests_properties (${arg}
       PROPERTIES PASS_REGULAR_EXPRESSION "Status: PASSED")
