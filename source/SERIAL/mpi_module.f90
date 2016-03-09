@@ -42,7 +42,6 @@ Module mpi_module
   Integer( Kind = MPI_OFFSET_KIND ), Dimension(1:mpi_io_max), Save :: mpi_io_disp    = 0_MPI_OFFSET_KIND
   Character( Len =  6 ),             Dimension(1:mpi_io_max), Save :: mpi_io_datarep = ' '
 
-
   Public :: MPI_INIT, MPI_FINALIZE, MPI_ABORT, MPI_COMM_RANK,    &
             MPI_COMM_SIZE, MPI_COMM_DUP, MPI_COMM_SPLIT,         &
             MPI_COMM_FREE, MPI_BARRIER, MPI_WAIT, MPI_WTIME,     &
@@ -54,7 +53,9 @@ Module mpi_module
             MPI_TYPE_CONTIGUOUS, MPI_TYPE_COMMIT, MPI_TYPE_FREE, &
             MPI_FILE_DELETE, MPI_FILE_OPEN, MPI_FILE_CLOSE,      &
             MPI_FILE_SET_VIEW, MPI_FILE_GET_VIEW, MPI_GET_COUNT, &
-            MPI_FILE_WRITE_AT, MPI_FILE_READ_AT
+            MPI_FILE_WRITE_AT, MPI_FILE_READ_AT,                 &
+            MPI_GET_PROCESSOR_NAME, MPI_GET_LIBRARY_VERSION,     &
+            MPI_GET_VERSION
 
   Private :: mpi_io_max, mpi_io_cnt, mpi_io_rec_len,  &
              mpi_io_etype, mpi_io_ftype, mpi_io_comm, &
@@ -4823,5 +4824,31 @@ X:  Do i = 1, Ubound( aaa, Dim = 2 )
     status(1) = -1
 
   End Subroutine MPI_FILE_READ_AT_chr_m_1
+ 
+  Subroutine  MPI_GET_VERSION(mpi_ver,mpi_subver,ierr)
+    Integer, Intent(   Out ) :: mpi_ver,mpi_subver,ierr
+
+    mpi_ver = 0
+    mpi_subver = 0
+    ierr = 0
+  End Subroutine MPI_GET_VERSION
+    
+  Subroutine MPI_GET_PROCESSOR_NAME(proc_name,lname, ierr)
+    Character(Len = MPI_MAX_PROCESSOR_NAME), Intent(   Out ) :: proc_name
+    Integer,                                 Intent(   Out ) :: lname,ierr
+
+    proc_name = "*"
+    lname = 1
+    ierr = 0
+  End Subroutine MPI_GET_PROCESSOR_NAME
+
+  Subroutine MPI_GET_LIBRARY_VERSION(lib_version,lversion, ierr)
+    Character(Len = MPI_MAX_LIBRARY_VERSION_STRING), Intent(   Out ) :: lib_version
+    Integer,                                         Intent(   Out ) :: lversion,ierr
+
+    lib_version = "*"
+    lversion = 1
+    ierr = 0
+  End Subroutine MPI_GET_LIBRARY_VERSION
 
 End Module mpi_module

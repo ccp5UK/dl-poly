@@ -46,3 +46,8 @@
   Integer, Parameter :: MPI_MODE_SEQUENTIAL      =   1000
   Integer, Parameter :: MPI_MODE_APPEND          =  10000
   Integer, Parameter :: MPI_MODE_UNIQUE_OPEN     = 100000
+
+! Environment inquiries
+
+  Integer, Parameter    :: MPI_MAX_PROCESSOR_NAME = 1
+  Integer, Parameter    :: MPI_MAX_LIBRARY_VERSION_STRING = 1

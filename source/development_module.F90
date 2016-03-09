@@ -12,6 +12,7 @@ Module development_module
 
   Use kinds_f90
   Use setup_module, Only : nrite, nread
+  Use comms_module, Only : mpi_ver,mpi_subver,lib_version
 
   Implicit None
 
@@ -194,18 +195,34 @@ Contains
 #endif
 
   Subroutine build_info()
-    character(len=48) :: aux
+    Character(len=48) :: aux
+
+    Integer :: i
+
     Write(nrite,'(1x,a66)')Repeat("*",66)
     Write(aux,*)__DATE__//"@"//__TIME__
-    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"****","built on: ",aux,"****"
+    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"***","birthday: ",aux,"****"
     Write(aux,*)__HOSTNAME__
-    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"****","machine: ",aux,"****"
+    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"***","machine: ",aux,"****"
     Write(aux,*)__BUILDER__
-    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"****","human: ",aux,"****"
+    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"***","builder: ",aux,"****"
     Write(aux,*)__COMPILER__
-    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"****","compiler: ",aux,"****"
+    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"***","compiler: ",aux,"****"
     Write(aux,*)__VERSION__
-    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"****","version: ",aux,"****"
+    Write(nrite,'(1x,a3,1x,a10,a48,a4)')"***","version: ",aux,"****"
+    If (mpi_ver > 0) Then
+      Write(nrite,'(1x,a3,1x,a10,1x,i1,a1,i1,a48)')"***","MPI: ",mpi_ver,".",mpi_subver,Repeat(" ",44)//"****"
+      Do i=1,Len_trim(lib_version),47
+        aux=lib_version(i:Min(i+46,len_trim(lib_version)))
+        Write(nrite,'(1x,a3,1x,a10,a48,a4)')"***","library: ",aux,"****"
+      End Do
+    Else IF (mpi_ver < 0) Then
+      Write(aux,*)"MPI Library too old. Update!"
+      Write(nrite,'(1x,a3,1x,a10,a48,a4)')"***"," ",aux,"****"
+    Else
+      Write(aux,*)"Serial mode selected"
+      Write(nrite,'(1x,a3,1x,a10,a48,a4)')"***"," ",aux,"****"
+    End If
     Write(nrite,'(1x,a66,/)')Repeat("*",66)
   End Subroutine build_info
 End Module development_module
