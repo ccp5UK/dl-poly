@@ -15,6 +15,9 @@ BINROOT=../execute
 EX=DLPOLY.Z
 EXE=$(BINROOT)/$(EX)
 
+BUILDER?='Your Name'
+HOSTNAME=$(shell hostname)
+
 TYPE=master
 
 FC=undefined
@@ -253,31 +256,37 @@ clean:
 uknown_platform:
 	$(MAKE) LD="path to FORTRAN90 Linker-loaDer" \
 	LDFLAGS="appropriate flags for LD (MPI libraries)" \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	FC="path to FORTRAN90 compiler" \
 	FCFLAGS="appropriate flags for FC (MPI include)" \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 # System specific targets follow:
 #=====================================================================
 
-#====================== GNU fortran compiler =========================
+#================== System Default  ==================================
 gnu:
-	$(MAKE) LD="gfortran -o" \
-	LDFLAGS="-O3" \
+	$(MAKE) LD="gfortran -o"
+	LDFLAGS="-O3 \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	FC="gfortran -c" \
-	FCFLAGS="-O3" \
+	FCFLAGS="-O3 \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #====================== GNU fortran compiler - DEBUG =================
 gnu-debug:
 	$(MAKE) LD="gfortran -o" \
 	LDFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
-	         -finit-integer=-9999 -finit-real=nan -std=f2003 \
-	         -ffpe-trap=invalid,zero,overflow -fdump-core" \
+	         -finit-integer=-9999 -finit-real=nan -std=f2003 -fdump-core \
+	         -ffpe-trap=invalid,zero,overflow -frecord-gcc-switches \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	FC="gfortran -c" \
 	FCFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
-	         -finit-integer=-9999 -finit-real=nan -std=f2003 \
-	         -ffpe-trap=invalid,zero,overflow -fdump-core" \
+	         -finit-integer=-9999 -finit-real=nan -std=f2003 -fdump-core \
+	         -ffpe-trap=invalid,zero,overflow -frecord-gcc-switches \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 # Default code

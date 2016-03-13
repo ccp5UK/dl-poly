@@ -38,9 +38,18 @@
 \setcounter{secnumdepth}{5}
 
 % General Packages
-\usepackage{fix-cm,array,tabularx,multicol,dcolumn,makeidx,ifthen,enumitem}
+\usepackage{fix-cm,array,tabularx,multicol,dcolumn,makeidx,ifthen}
+\usepackage[shortlabels]{enumitem}
 % times - for TNR fonts
 \usepackage[normalem]{ulem}
+% line wrapped verbatim
+\renewcommand{\ttdefault}{cmtt}
+\usepackage{listings}
+\lstset{
+basicstyle=\small\ttfamily\bfseries,
+columns=fixed,
+breaklines=true
+}
 
 % General Language
 \usepackage[english]{babel}
@@ -113,7 +122,7 @@ harmonic + quartic + breathing shell potential;
 Zero Temperature \& Conjugate Gradient Method (CGM) Minimisers;
 Temperature rescaling, Boundary Pseudo Thermostats, Defect Detection Tool;
 Coarse-Grained Analysis \& Dynamics, Lennar-Jones mixing rules;
-PLUMED MetaDynamics Plugin integratability, HDF5/netCDF integrability,
+PLUMED MetaDynamics Plugin integrability, HDF5/netCDF integrability,
 OpenKIM Knodledge-base Interaction Models integrability;
 Optimised Parallel (ASCII \& Amber-netCDF) I/O (includes MPI-I/O),
 Verifiable \& User Extendible Source Code in Self-Contained \& Portable,
@@ -256,30 +265,30 @@ to obtain more detailed information if need be.}
 If you have followed the procedure for obtaining and downloading the
 \D package (see Obtaining~the~Source~Code, Section~\ref{source}),
 have successfully unpacked it and are ready to compile the source code,
-then jump to the Makefiles section of the \D~README Appendix~\ref{readme}
+then jump to the Makefiles section of the \D~README in Appendix~\ref{readme}
 or alternatively view the {\sc README.txt} and follow the instructions within.
 
 If you have compiled successfully then a freshly date-stamped file,
 named DLPOLY.Z %(or DLPOLY.Z.cu if you successfully followed the
 %instructions within {\em source}/{\em CUDA}/{\tt README\_CUDA.txt})
 should appear in the listing of the {\em execute} subdirectory (the
-'{\tt ls -haltr}' command issued on a Linux/Unix-like shell within
+'{\tt ls~-haltr}' command issued on a Linux/Unix-like shell within
 {\em execute} will place the executable in the last row of the list).
 If {\bf unsuccessful} then you should read the Compiling~and~Running~\D
-Section~\ref{compilation}.
+(Section~\ref{compilation}).
 
 To run the code you first need to place the necessary input files
 within {\em execute}.  TEST cases containing suitable input files,
 as well as examples of output files, can be obtained at the \D FTP
 site, \FTP.  Examine the contents of {\em data}/{\tt README.txt} and
 {\em bench}/{\tt README.txt} for more information.  To run the serial
-version you simply issue the command {\tt DLPOLY.Z} (or {\tt DLPOLY.Z.cu})
+version you simply issue the command {\tt DLPOLY.Z} %(or {\tt DLPOLY.Z.cu})
 within the {\em execute} subdirectory.  If you have compiled a parallel
 version and are running it on a parallel machine, then naturally you
 will need to familiarise yourself with the local procedures of how to
 run jobs on that machine.  In general though, running a parallel job
 will usually require that you issue a necessary run command (e.g.
-{\tt mpirun -n 8 DLPOLY.Z}) or submit a job script from within {\em execute}.
+{\tt mpirun~-n~8~DLPOLY.Z}) or submit a job script from within {\em execute}.
 
 If you need to know more then search the manual and examine sections of
 interests.  You may also wish to visit DL\_POLY project web-page \WEB
@@ -426,7 +435,7 @@ and output files for which are in the {\em data} sub-directory.
 
 %       B I B L I O G R A P H Y
 
-\cleardoublepage
+%\cleardoublepage
 
 %pagestyle
 \rhead{Bibliography}

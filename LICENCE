@@ -1,7 +1,17 @@
                         LICENCE AGREEMENT
+
+PLEASE READ THE LICENCE BELOW, COMPLETE THE REGISTRATION INFORMATION,
+AND ACCEPT THE TERMS OF THE LICENCE IN ORDER TO DOWNLOAD THE SOFTWARE.
+BY CLICKING “ACCEPT” AND DOWNLOADING THE SOFTWARE YOU ARE CONFIRMING
+YOUR INTENTION TO ENTER INTO A LEGALLY BINDING AGREEMENT GOVERNED BY
+THE TERMS AND CONDITIONS SET OUT BELOW (THE "AGREEMENT").  IN THE
+FOLLOWING TERMS AND CONDITIONS YOU ARE REFERRED TO AS THE "LICENSEE".
+
 1. DEFINITIONS AND INTERPRETATION
+
 1.1 In this Licence Agreement the following expressions have the
     meanings set opposite:
+
 Academic Purposes       fundamental or basic research or academic
                         teaching, including any fundamental research
                         that is funded by any public or charitable
@@ -12,20 +22,24 @@ Academic Purposes       fundamental or basic research or academic
                         making organisation or that is carried out for
                         the benefit of any profit-making organisation
                         is not an Academic Purpose;
+
 a Derived Work          any modification of, or enhancement or
                         improvement to, any of the DL_POLY_4 Software
                         and any software or other work developed or
                         derived from any of the DL_POLY_4 Software;
+
 the DL_POLY_4 Software  the release and version of the DL_POLY_4
                         Software downloaded by the Licensee from the
                         DL_POLY_4 Website immediately after the
                         Licensee
                         agrees to the terms and conditions of this
                         Licence Agreement;
+
 the DL_POLY_4 Website   the website with the URL
                         http://www.ccp5.ac.uk/DL_POLY/ ,
                         and any website that from time to time replaces
                         that website;
+
 a Harmful Element       any virus, worm, time bomb, time lock, drop
                         dead device, trap and access code or anything
                         else that might disrupt, disable, harm or
@@ -35,6 +49,7 @@ a Harmful Element       any virus, worm, time bomb, time lock, drop
                         on, or that may allow any unauthorised person
                         to gain access to, any information system or
                         any software, data or file on it;
+
 Intellectual Property   patents, trade marks, service marks, registered
                         designs, copyrights, database rights, design
                         rights, know-how, confidential information,
@@ -43,32 +58,39 @@ Intellectual Property   patents, trade marks, service marks, registered
                         any jurisdiction, together with all rights of
                         action in relation to the infringement of any
                         of the above;
+
 the Licence Period      the period beginning when the Licensee agrees
                         to the terms and conditions of this Licence
                         Agreement and downloads the DL_POLY_4 Software
                         from the DL_POLY_4 Website and ending on the
                         termination of this Licence Agreement under
                         clause 5.2.
+
 2. LICENCE
+
 2.1 STFC grants the Licensee an indefinite, non-exclusive,
     non-transferable, royalty free licence to use, copy, modify, and
     enhance the DL_POLY_4 Software during the Licence Period on the
     terms and conditions of this Licence Agreement provided that:
+
     2.1.1 the Licensee may not distribute any of the DL_POLY_4 Software
           or any Derived Work to any third party, or share their use
           with any third party (whether free of charge or otherwise),
           and the Licensee may not sub-license the use of any of the
           DL_POLY_4 Software to any third party unless, in each case,
           that third party has complied with clause 2.3 below;
+
     2.1.2 the Licensee may not use the DL_POLY_4 Software on behalf of,
           or for the benefit of, any third party (including, without
           limitation, using it to provide bureau, outsourcing or
           application services or facilities management services)
           party unless that third party has complied with clause 2.3
           below; and
+
     2.1.3 the DL_POLY_4 Software and any Derived Work may be used by
           the Licensee and its employees and registered students for
           Academic Purposes only.
+
 2.2 If the Licensee wishes to use the DL_POLY_4 Software or any Derived
     Work in any way except for Academic Purposes, or wishes to
     distribute or make the DL_POLY_4 Software or any Derived Work
@@ -77,6 +99,7 @@ the Licence Period      the period beginning when the Licensee agrees
     the Licensee a commercial licence.  If STFC agrees to grant a
     commercial licence, that licence will be on such terms and
     conditions as STFC sees fit.
+
 2.3 If the Licensee wishes to carry out any collaboration for Academic
     Purposes with any third party and that third party needs to use the
     DL_POLY_4 Software in connection with that collaboration, or if the
@@ -89,18 +112,34 @@ the Licence Period      the period beginning when the Licensee agrees
     terms and conditions of the Licence Agreement for the use of the
     DL_POLY_4 Software for Academic Purposes that then appear on the
     DL_POLY_4 Website.
+
 2.4 This Licence Agreement allows the Licensee to use only the release
     or version of the DL_POLY_4 Software downloaded by the Licensee
     from the DL_POLY_4 Website immediately after the Licensee agrees to
     the terms and conditions of this Licence Agreement; the Licensee
     must acquire a new licence for any future release or version of the
     DL_POLY_4 Software that it wishes to use.
+
 2.5 The Licensee will not tamper with, or remove, any copyright or
     other proprietary notice or any disclaimer that appears on or in
     any part of the DL_POLY_4 Software, and will reproduce the same in
     all copies of any of the DL_POLY_4 Software and in all Derived
     Works.
+
+2.6 The Licensee may not itself distribute any Derived Work.  If the
+    Licensee would like any Derived Work made by or for the Licensee,
+    or by any of its employees or students, based on any of the
+    DL_POLY_4 Software to be considered for wider distribution, it
+    should notify STFC of such Derived Work and provide STFC with a
+    copy of that Derived Work (in source code) (a “Contribution”).  In
+    providing STFC with such a Contribution the Licensee grants STFC an
+    irrevocable, indefinite licence to make that Contribution available
+    to any third party on such terms and conditions as STFC may from time
+    to time decide. The Licensee warrants that it owns (or has the
+    necessary rights to) such Contribution to give effect to this clause.
+
 3. WARRANTIES AND LIABILITY
+
 3.1 The DL_ POLY Software is provided for Academic Purposes free of
     charge.  Therefore, STFC gives no warranty and makes no
     representation in relation to the DL_POLY_4 Software or any
@@ -109,6 +148,7 @@ the Licence Period      the period beginning when the Licensee agrees
     and all claims arising as a result of the Licensee having made any
     of the DL_POLY_4 Software or any Derived Work available to any
     third party.
+
 3.2 Before using any of the DL_POLY_4 Software, the Licensee will check
     that the DL_POLY_4 Software does not contain any Harmful Element.
     STFC does not warrant that the DL_POLY_4 Software will run without
@@ -121,6 +161,7 @@ the Licence Period      the period beginning when the Licensee agrees
     sort of service, assistance or advice, subject to clause 3.7, STFC
     will not be liable for any loss or damage suffered by the Licensee
     as a result.
+
 3.3 STFC will not be liable to the Licensee to the extent that any loss
     or damage is caused: by the Licensee's failure to implement, or the
     Licensee's delay in implementing, any correction or advice in
@@ -130,6 +171,7 @@ the Licence Period      the period beginning when the Licensee agrees
     DL_POLY_4 Software that would have remedied or mitigated the
     effects of any error, defect, bug or deficiency in the DL_POLY_4
     Software.
+
 3.4 The Licensee acknowledges that proper use of the DL_POLY_4 Software
     and any Derived Work is dependent on the Licensee, its employees
     and students exercising proper skill and care in inputting data and
@@ -140,6 +182,7 @@ the Licence Period      the period beginning when the Licensee agrees
     which may be made by the Licensee of that output, nor for any
     reliance which may be placed on that output, nor for advice or
     information given in connection with that output.
+
 3.5 Subject to clause 3.7, STFC's liability or any breach of this
     Licence Agreement, any negligence or arising in any other way out
     of the subject matter of this Licence Agreement or the use of the
@@ -149,74 +192,96 @@ the Licence Period      the period beginning when the Licensee agrees
     direct or indirect, even if the Licensee has advised STFC of the
     possibility of those losses arising or if they were or are within
     STFC's contemplation.
+
 3.6 Subject to clause 3.7, the aggregate liability of STFC for any
     and all breaches of this Licence Agreement, any negligence or
     arising in any other way out of the subject matter of this Licence
     Agreement or the use of the DL_POLY_4 Software will not exceed in
     total £5,000.
+
 3.7 Nothing in this Licence Agreement limits or excludes STFC's
     liability for death or personal injury caused by its negligence or
     for any fraud, or for any sort of liability that, by law, cannot be
     limited or excluded.
+
 3.8 The express undertakings and given by STFC in this Licence
     Agreement and the terms of this Licence Agreement are in lieu of
     all warranties, conditions, terms, undertakings and obligations on
     the part of STFC, whether express or implied by statute, common
     law, custom, trade usage, course of dealing or in any other way.
     All of these are excluded to the fullest extent permitted by law.
+
 4. INTELLECTUAL PROPERTY RIGHTS AND ACKNOWLEDGEMENTS
+
 4.1 Nothing in this Licence Agreement assigns or transfers any
     Intellectual Property Rights in any of the DL_POLY_4 Software.
     Those rights are reserved to STFC.
+
 4.2 The Licensee will ensure that, if any of its employees or students
     publishes any article or other material resulting from, or relating
     to, a project or work undertaken with the assistance of any part of
     the DL_POLY_4 Software, that publication will contain the following
     acknowledgement:
+
     "DL_POLY_4 is a molecular dynamics simulation package written by
     I.T. Todorov and W. Smith, and has been obtained from STFC's
     Daresbury Laboratory via the website
     http://www.ccp5.ac.uk/DL_POLY"
+
     and cite the following reference:
-    "I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,
+
+    "I.T. Todorov, W. Smith, K. Trachenko& M.T. Dove,
     `J. Mater. Chem.', 16, 1911-1918 (2006)".
+
 5.  TERMINATION
+
 5.1 This Licence Agreement will take effect and the Licence Period will
     start when the Licensee has agreed to the terms and conditions of
     this Licence Agreement and downloaded the DL_POLY_4 Software from
     the DL_POLY_4 Website.
+
 5.2 This Licence Agreement will terminate immediately and automatically
     if:
+
     5.2.1 the Licensee is in breach of this Licence Agreement; or
+
     5.2.2 the Licensee becomes insolvent, or if an order is made or a
           resolution is passed for its winding up (except voluntarily
           for the purpose of solvent amalgamation or reconstruction),
           or if an administrator, administrative receiver or receiver
           is appointed over the whole or any part of its assets, or if
           it makes any arrangement with its creditors.
+
 5.3 The Licensee's right to use the DL_POLY_4 Software will cease
     immediately on the termination of this Licence Agreement, and the
     Licensee will destroy all copies of the DL_POLY_4 Software that it
     or any of its employees or students then holds.
+
 5.4 Clauses 1, 2.2, 3, 4, 5.3, 5.4, 5.5 and 6 will survive the expiry
     of the Licence Period and the termination of this Licence
     Agreement, and will continue indefinitely.
+
 5.5 STFC may stop providing any assistance or advice in relation to, or
     any corrections, new releases or versions of the DL_POLY_4, and may
     stop updating or publishing the DL_POLY_4 Website at any time.
+
 6. GENERAL
+
 6.1 Headings: The headings in this Licence Agreement are for ease of
     reference only; they do not affect its construction or
     interpretation.
+
 6.2 Assignment etc: The Licensee may not assign or transfer this
     Licence Agreement as a whole, or any of its rights or obligations
     under it, without first obtaining the written consent of STFC.
+
 6.3 Illegal/unenforceable provisions: If the whole or any part of any
     provision of this Licence Agreement is void or unenforceable in any
     jurisdiction, the other provisions of this Licence Agreement, and
     the rest of the void or unenforceable provision, will continue in
     force in that jurisdiction, and the validity and enforceability of
     that provision in any other jurisdiction will not be affected.
+
 6.4 Waiver of rights: If STFC fails to enforce, or delays in enforcing,
     an obligation of the Licensee, or fails to exercise, or delays in
     exercising, a right under this Licence Agreement, that failure or
@@ -225,6 +290,7 @@ the Licence Period      the period beginning when the Licensee agrees
     provision of this Licence Agreement will not, unless expressly
     stated to the contrary, constitute a waiver of that provision on a
     future occasion.
+
 6.5 Entire agreement: This Licence Agreement constitutes the entire
     agreement between the parties relating to its subject matter.  The
     Licensee acknowledges that it has not entered into this Licence
@@ -238,15 +304,18 @@ the Licence Period      the period beginning when the Licensee agrees
     Licensee may have to rescind this Licence Agreement) in respect of
     any fraudulent misrepresentation or fraudulent concealment before
     the signing of this Licence Agreement.
+
 6.6 Amendments: No variation of, or amendment to, this Licence
     Agreement will be effective unless it is made in writing and signed
     by each party's representative.
+
 6.7 Third parties: No one who is not a party to this Licence Agreement
     has any right to prevent the amendment of this Licence Agreement or
     its termination, and no one except a party to this Licence
     Agreement may enforce any benefit conferred by this Licence
     Agreement, unless this Licence Agreement expressly provides
     otherwise.
+
 6.8 Governing law: This Licence Agreement is governed by, and is to be
     construed in accordance with, English law.  The English Courts will
     have exclusive jurisdiction to deal with any dispute which has

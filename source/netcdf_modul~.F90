@@ -396,7 +396,7 @@ Contains
     Integer               , Dimension( : ), Intent( In    ), Optional :: start
     Integer               , Dimension( : ), Intent( In    ), Optional :: count
 
-    val="*"    
+    val="*"
     Call netcdf_compiled()
   End Subroutine netcdf_get_var_chr_1d
 

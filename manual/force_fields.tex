@@ -901,7 +901,7 @@ the routine {\sc inversions\_forces}.
 \centerline{\includegraphics[height=6.9cm]{calcite.eps}}
 \caption{The vectors of the calcite potential}
 \label{calcfig}
-\vskip 1ex
+%\vskip 1ex
 \end{center}
 \end{figure}
 
@@ -3119,6 +3119,33 @@ A 5-point interpolation is used for finding the numerical derivatives of
 this a Lagrange formula is used, which can be found in any textbook on
 numerical methods.
 
+\section{Free Energy Capabilities via the PLUMED plugin}
+\label{plumed}
+
+\D supports a native integration with PLUMED - \href{http://www.plumed.org/}{http://www.plumed.org/}\index{WWW}.
+PLUMED is an open source library for free energy calculations in
+molecular systems which works together with some of the most popular
+molecular dynamics engines.  Free energy calculations can be performed
+as a function of many order parameters with a particular focus on
+biological problems, using state of the art methods such as metadynamics,
+umbrella sampling and Jarzynski-equation based steered MD.  The software,
+written in C++, can be easily interfaced with both FORTRAN and C/C++ codes.
+
+Using PLUMED can be as simple as adding the keyword {\bf plumed} in
+your CONTROL file. By default the input file for PLUMED is called PLUMED
+and shall be placed in the same place as your other \D input files. Once
+\D runs by default OUTPUT.PLUMED will be generated in addition to the
+normal PLUMED and \D output files.  The default names of the files can
+be changed by using {\bf input} and {\bf log} parameters with the
+{\bf plumed} keyword (see Section~\ref{control-file}).
+
+\emph{Note} that this feature should be considered as \textbf{\textit{young}} rather
+than mature, so please report any bugs and provide feedback regarding its
+improvements.
+
+\emph{Note} that to use the PLUMED functionality within \D one must
+further ensure that \D is cross-compiled with it.
+
 \section{Open Knowledgebase of Interatomic Models - openKIM}
 \label{kim}
 
@@ -3132,7 +3159,8 @@ Section~\ref{field-file}) upon a specification within FIELD together with a
 matching molecular description for the model system, also specified in FIELD.
 Due to the history of the openKIM initiative and the constraints of the logic
 of the \D FIELD file the designated place for a KIM model specification is
-in the VDW section.  In order to use openKIM functionality within \D one must
-further ensure that \D is cross-compiled with openKIM.  For guidance on this
-together with testing, please refer to {\sc README\_KIM.txt} in {\em source}
-and follow instructions within.
+in the VDW section.  For guidance on testing, please refer to
+{\sc README\_KIM.txt} in {\em source} and follow instructions within.
+
+\emph{Note} that to use openKIM functionality within \D one must further ensure
+that \D is cross-compiled with openKIM.

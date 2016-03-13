@@ -15,7 +15,7 @@ Module development_module
 
   Implicit None
 
-  Private 
+  Private
 
   Logical, Save, Public :: l_scr  = .false. ! OUTPUT redirection to the default output (screen)
   Logical, Save, Public :: l_fast = .false. ! avoid global safety checks (no elegant parallel failures)
@@ -175,7 +175,7 @@ Contains
 #define __HOSTNAME__ HOST
 #else
 #define __HOSTNAME__ 'unknown'
-#endif  
+#endif
 
 #ifdef BUILDER
 #define __BUILDER__ BUILDER
