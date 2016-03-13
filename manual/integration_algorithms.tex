@@ -2367,10 +2367,12 @@ frame is described via a four dimensional unit vector, the quaternion:
 and the rotational matrix $\mat{R}$ to transform from the local body
 frame to the space fixed frame is the unitary matrix:
 \begin{equation}
-\mat{R} = \pmatrix{
+\mat{R} =
+\begin{pmatrix}
  q_0^2+q_1^2-q_2^2-q_3^2 & 2~(q_1~q_2-q_0~q_3)     & 2~(q_1~q_3+q_0~q_2)     \cr
  2~(q_1~q_2+q_0~q_3)     & q_0^2-q_1^2+q_2^2-q_3^2 & 2~(q_2~q_3-q_0~q_1)     \cr
- 2~(q_1~q_3-q_0~q_2)     & 2~(q_2~q_3+q_0~q_1)     & q_0^2-q_1^2-q_2^2+q_3^2 \cr}
+ 2~(q_1~q_3-q_0~q_2)     & 2~(q_2~q_3+q_0~q_1)     & q_0^2-q_1^2-q_2^2+q_3^2 \cr
+\end{pmatrix}
 \end{equation}
 so that if $\hat{\vek{d}}_{j}$ is the position of an atom in the local
 body frame (with respect to its COM), its position in the universal frame
@@ -2423,13 +2425,18 @@ to integrate equations~(\ref{euler}) simultaneously with an integration of
 the quaternions describing the orientation of the rigid body.  The equation
 describing this is:
 \begin{equation}
-\pmatrix{\dot{q}_0 \cr \dot{q}_1 \cr \dot{q}_2 \cr \dot{q}_3 \cr}=
-{1 \over 2} \pmatrix{
+\begin{pmatrix}
+\dot{q}_0 \cr \dot{q}_1 \cr \dot{q}_2 \cr \dot{q}_3 \cr
+\end{pmatrix}= {1 \over 2}
+\begin{pmatrix}
 q_0 & -q_1 & -q_2 & -q_3 \cr
 q_1 & ~q_0 & -q_3 & ~q_2 \cr
 q_2 & ~q_3 & ~q_0 & -q_1 \cr
-q_3 & -q_2 & ~q_1 & ~q_0}
-\pmatrix{0 \cr \hat{\omega}_{x} \cr \hat{\omega}_{y} \cr \hat{\omega}_{z}}~~.
+q_3 & -q_2 & ~q_1 & ~q_0
+\end{pmatrix}
+\begin{pmatrix}
+0 \cr \hat{\omega}_{x} \cr \hat{\omega}_{y} \cr \hat{\omega}_{z}
+\end{pmatrix}~~.
 \end{equation}
 
 Rotational motion in \D is handled by two different methods.  For the LFV implementation,
@@ -2454,11 +2461,13 @@ In this algorithm the new quaternions are found by solving the implicit equation
 \end{equation}
 where $\hat{\vek{w}} = [ 0,\hat{\vek{\omega}}]^T$ and $\mat{Q}[\vek{q}]$ is:
 \begin{equation}
-\mat{Q} ={1 \over 2} \pmatrix{
+\mat{Q} = {1 \over 2}
+\begin{pmatrix}
 q_0 & -q_1 & -q_2 & -q_3 \cr
 q_1 & ~q_0 & -q_3 & ~q_2 \cr
 q_2 & ~q_3 & ~q_0 & -q_1 \cr
-q_3 & -q_2 & ~q_1 & ~q_0}~~.
+q_3 & -q_2 & ~q_1 & ~q_0
+\end{pmatrix}~~.
 \end{equation}
 The above equation is solved iteratively with
 \begin{equation}
@@ -2475,21 +2484,35 @@ While all the above is enough to build LFV implementations, the VV implementatio
 based on the NOSQUISH\index{algorithm!NOSQUISH} algorithm of Miller {\em et al.}
 \cite{miller-02a}, also require treatment of the quaternion momenta as defined by:
 \begin{equation}
-\pmatrix{p_0 \cr p_1 \cr p_2 \cr p_3 \cr} = 2\pmatrix{
+\begin{pmatrix}
+p_0 \cr p_1 \cr p_2 \cr p_3 \cr
+\end{pmatrix}
+= 2
+\begin{pmatrix}
 q_0 & -q_1 & -q_2 & -q_3 \cr
 q_1 & ~q_0 & -q_3 & ~q_2 \cr
 q_2 & ~q_3 & ~q_0 & -q_1 \cr
-q_3 & -q_2 & ~q_1 & ~q_0}
-\pmatrix{0 \cr \hat{I}_{xx}~\hat{\omega}_{x} \cr \hat{I}_{yy}~\hat{\omega}_{y} \cr \hat{I}_{zz}~\hat{\omega}_{z}}~~,
+q_3 & -q_2 & ~q_1 & ~q_0
+\end{pmatrix}
+\begin{pmatrix}
+0 \cr \hat{I}_{xx}~\hat{\omega}_{x} \cr \hat{I}_{yy}~\hat{\omega}_{y} \cr \hat{I}_{zz}~\hat{\omega}_{z}
+\end{pmatrix}~~,
 \end{equation}
 and quaternion torques as defined by:
 \begin{equation}
-\pmatrix{\Upsilon_0 \cr \Upsilon_1 \cr \Upsilon_2 \cr \Upsilon_3 \cr} = 2\pmatrix{
+\begin{pmatrix}
+\Upsilon_0 \cr \Upsilon_1 \cr \Upsilon_2 \cr \Upsilon_3 \cr
+\end{pmatrix}
+= 2
+\begin{pmatrix}
 q_0 & -q_1 & -q_2 & -q_3 \cr
 q_1 & ~q_0 & -q_3 & ~q_2 \cr
 q_2 & ~q_3 & ~q_0 & -q_1 \cr
-q_3 & -q_2 & q_1 & q_0}
-\pmatrix{0 \cr \hat{\tau}_{x} \cr \hat{\tau}_{y} \cr \hat{\tau}_{z}}~~.
+q_3 & -q_2 & q_1 & q_0
+\end{pmatrix}
+\begin{pmatrix}
+0 \cr \hat{\tau}_{x} \cr \hat{\tau}_{y} \cr \hat{\tau}_{z}
+\end{pmatrix}~~.
 \end{equation}
 It should be noted that vectors $\vek{p}$ and $\vek{\Upsilon}$ are 4-component vectors.
 The quaternion momenta are first updated a half-step using the formula:

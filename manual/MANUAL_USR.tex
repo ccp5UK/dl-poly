@@ -38,18 +38,62 @@
 \setcounter{secnumdepth}{5}
 
 % General Packages
-\usepackage{fix-cm,array,tabularx,multicol,dcolumn,makeidx,ifthen}
+\usepackage{fix-cm,array,tabularx,multicol,dcolumn,makeidx,amsmath,ifthen}
 \usepackage[shortlabels]{enumitem}
 % times - for TNR fonts
 \usepackage[normalem]{ulem}
 % line wrapped verbatim
-\renewcommand{\ttdefault}{cmtt}
+%\renewcommand{\ttdefault}{cmtt}
 \usepackage{listings}
 \lstset{
-basicstyle=\small\ttfamily\bfseries,
+basicstyle=\normalsize\ttfamily\bfseries,
 columns=fixed,
-breaklines=true
-}
+fontadjust=true,
+basewidth=0.5em,
+keepspaces=true,
+breaklines=true}
+
+%% extending section and paragraph definitions
+%\usepackage{titlesec}
+%\titleclass{\subsubsubsection}{straight}[\subsection]
+%
+%\newcounter{subsubsubsection}[subsubsection]
+%\renewcommand\thesubsubsubsection{\thesubsubsection.\arabic{subsubsubsection}}
+%\renewcommand\theparagraph{\thesubsubsubsection.\arabic{paragraph}} % optional; useful if paragraphs are to be numbered
+%
+%\titleformat{\subsubsubsection}
+%  {\normalfont\normalsize\bfseries}{\thesubsubsubsection}{1em}{}
+%\titlespacing*{\subsubsubsection}
+%{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+%
+%\makeatletter
+%\renewcommand\paragraph{\@startsection{paragraph}{5}{\z@}%
+%  {3.25ex \@plus1ex \@minus.2ex}%
+%  {-1em}%
+%  {\normalfont\normalsize\bfseries}}
+%\renewcommand\subparagraph{\@startsection{subparagraph}{6}{\parindent}%
+%  {3.25ex \@plus1ex \@minus .2ex}%
+%  {-1em}%
+%  {\normalfont\normalsize\bfseries}}
+%\def\toclevel@subsubsubsection{4}
+%\def\toclevel@paragraph{5}
+%\def\toclevel@paragraph{6}
+%\def\l@subsubsubsection{\@dottedtocline{4}{7em}{4em}}
+%\def\l@paragraph{\@dottedtocline{5}{10em}{5em}}
+%\def\l@subparagraph{\@dottedtocline{6}{14em}{6em}}
+%\makeatother
+%
+%\setcounter{secnumdepth}{4}
+%\setcounter{tocdepth}{4}
+
+% footnote settings
+\usepackage{perpage} %the perpage package
+\MakePerPage{footnote} %the perpage package command
+\interfootnotelinepenalty=10000  %footnote not crossing over pages
+\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+\usepackage[bottom,hang,multiple]{footmisc}
+\setlength{\footnotemargin}{0.8em}
+\renewcommand{\footnotelayout}{\noindent} % for having aligned footnotes text
 
 % General Language
 \usepackage[english]{babel}
@@ -76,6 +120,7 @@ plainpages=true,
 backref=true,
 pagebackref=true,
 pdfpagelabels,
+hyperfootnotes=false
 % Extension Options
 encap,
 colorlinks=true,
@@ -133,10 +178,10 @@ Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
 
 \usepackage[all]{hypcap}
 
-%General Pagestyle
+% General Pagestyle
 \usepackage{fancyhdr}
 
-%commands
+% commands
 \usepackage{xspace}
 
 \newcommand{\D}{{DL\_POLY\_4}\xspace}
@@ -161,7 +206,7 @@ Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
 
 %       T I T L E   P A G E
 
-%pagestyle
+% pagestyle
 \pagenumbering{alph} \setcounter{page}{0}
 \pagestyle{empty}
 
@@ -190,7 +235,7 @@ Cheshire, England, United Kingdom}
 
 %       P R E F A C E
 
-%pagestyle
+% pagestyle
 \pagestyle{fancy}
 \lhead{\copyright STFC}
 \chead{}
@@ -222,7 +267,7 @@ Cheshire, England, United Kingdom}
 
 %       C O N T E N T S
 
-%pagestyle
+% pagestyle
 \rhead{Contents}
 
 \newpage
@@ -249,7 +294,7 @@ Cheshire, England, United Kingdom}
 
 \cleardoublepage
 
-%pagestyle
+% pagestyle
 \pagenumbering{arabic} \setcounter{page}{1}
 \rhead{Section \thesection}
 \setcounter{chapter}{-1}
@@ -404,7 +449,7 @@ and output files for which are in the {\em data} sub-directory.
 
 %\cleardoublepage
 
-%pagestyle
+% pagestyle
 \rhead{Appendix \thechapter}
 
 \appendix
@@ -437,7 +482,7 @@ and output files for which are in the {\em data} sub-directory.
 
 %\cleardoublepage
 
-%pagestyle
+% pagestyle
 \rhead{Bibliography}
 %
 \refstepcounter{pdfdummyend}
@@ -450,8 +495,7 @@ and output files for which are in the {\em data} sub-directory.
 %       I N D E X
 
 \cleardoublepage
-%
-%pagestyle
+% pagestyle
 \rhead{Index}
 
 \refstepcounter{pdfdummyend}
