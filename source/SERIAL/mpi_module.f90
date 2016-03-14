@@ -10,6 +10,7 @@ Module mpi_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov june 2010
+! contrib   - a.m.elena march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -41,7 +42,6 @@ Module mpi_module
   Integer,                           Dimension(1:mpi_io_max), Save :: mpi_io_fh      = 0
   Integer( Kind = MPI_OFFSET_KIND ), Dimension(1:mpi_io_max), Save :: mpi_io_disp    = 0_MPI_OFFSET_KIND
   Character( Len =  6 ),             Dimension(1:mpi_io_max), Save :: mpi_io_datarep = ' '
-
   Public :: MPI_INIT, MPI_FINALIZE, MPI_ABORT, MPI_COMM_RANK,    &
             MPI_COMM_SIZE, MPI_COMM_DUP, MPI_COMM_SPLIT,         &
             MPI_COMM_FREE, MPI_BARRIER, MPI_WAIT, MPI_WTIME,     &
@@ -396,12 +396,12 @@ Contains
     Real( Kind = wp )           :: MPI_WTIME
 
     Logical,               Save :: newjob = .true.
-    Character( Len = 8  ), Save :: date   = ' '
+    Character( Len =  8 ), Save :: date   = ' '
     Integer,               Save :: days   = 0
 
-    Character( Len = 8  )       :: date1
+    Character( Len =  8 )       :: date1
     Character( Len = 10 )       :: time
-    Character( Len = 5  )       :: zone
+    Character( Len =  5 )       :: zone
     Integer                     :: value(1:8)
 
     If (newjob) Then
@@ -4824,31 +4824,31 @@ X:  Do i = 1, Ubound( aaa, Dim = 2 )
     status(1) = -1
 
   End Subroutine MPI_FILE_READ_AT_chr_m_1
- 
+
   Subroutine  MPI_GET_VERSION(mpi_ver,mpi_subver,ierr)
     Integer, Intent(   Out ) :: mpi_ver,mpi_subver,ierr
 
-    mpi_ver = 0
+    mpi_ver    = 0
     mpi_subver = 0
-    ierr = 0
+    ierr       = 0
   End Subroutine MPI_GET_VERSION
-    
+
   Subroutine MPI_GET_PROCESSOR_NAME(proc_name,lname, ierr)
-    Character(Len = MPI_MAX_PROCESSOR_NAME), Intent(   Out ) :: proc_name
-    Integer,                                 Intent(   Out ) :: lname,ierr
+    Character( Len = MPI_MAX_PROCESSOR_NAME ), Intent(   Out ) :: proc_name
+    Integer,                                   Intent(   Out ) :: lname,ierr
 
     proc_name = "*"
-    lname = 1
-    ierr = 0
+    lname     = 1
+    ierr      = 0
   End Subroutine MPI_GET_PROCESSOR_NAME
 
   Subroutine MPI_GET_LIBRARY_VERSION(lib_version,lversion, ierr)
-    Character(Len = MPI_MAX_LIBRARY_VERSION_STRING), Intent(   Out ) :: lib_version
-    Integer,                                         Intent(   Out ) :: lversion,ierr
+    Character( Len = MPI_MAX_LIBRARY_VERSION_STRING ), Intent(   Out ) :: lib_version
+    Integer,                                           Intent(   Out ) :: lversion,ierr
 
     lib_version = "*"
-    lversion = 1
-    ierr = 0
+    lversion    = 1
+    ierr        = 0
   End Subroutine MPI_GET_LIBRARY_VERSION
 
 End Module mpi_module

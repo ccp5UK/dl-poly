@@ -369,32 +369,36 @@ represent a harmless condition.
 The entire \D package is stored in a UNIX directory structure. The
 topmost directory is named {\em dl\_poly\_4.nn}, where {\em nn} is
 a generation number.  Beneath this directory are several
-sub-directories named: {\em source\index{sub-directory!source}},
-{\em utility\index{sub-directory!utility}},
+sub-directories named:
+{\em manual\index{sub-directory!manual}},
+{\em source\index{sub-directory!source}},
+{\em build\index{sub-directory!build}},
+{\em cmake\index{sub-directory!cmake}},
+{\em utils\index{sub-directory!utils}},
+{\em execute\index{sub-directory!execute}},
 {\em data\index{sub-directory!data}},
 {\em bench\index{sub-directory!bench}},
-{\em execute\index{sub-directory!execute}},
-{\em build\index{sub-directory!build}},
-{\em public\index{sub-directory!public}}, and
-{\em java\index{sub-directory!java}}.
+{\em java\index{sub-directory!java}}, and
+{\em utility\index{sub-directory!utility}}.
 
 Briefly, the content of each sub-directory is as follows:
 \begin{tabbing}
 XXXXXXXXXXXXXXX\= XXXXXXXX\= \kill
 sub-directory\> ~ \> contents \\
 \> ~ \> \\
-{\em source} \> primary subroutines for the \D package \\
-{\em utility} \> subroutines, programs and example data for all utilities \\
-{\em data} \> example input and output files for \D \\
-{\em bench} \> large test cases suitable for benchmarking \\
+{\em manual}  \> \D main user manual and \D Java GUI manual \\
+{\em source}  \> primary subroutines for the \D package \\
+{\em build}   \> makefiles to assemble and compile \D source \\
+{\em cmake}   \> contains files needed for \D {\sl cmake} build system \\
+{\em utils}   \> contains a series of scripts needed for testing \\
 {\em execute} \> the \D run-time directory \\
-{\em build} \> makefiles to assemble and compile \D programs \\
-{\em public} \> directory of routines donated by \D users \\
-{\em java} \> directory of Java and FORTRAN routines for the Java GUI. \\
+{\em data}    \> example input and output files for \D \\
+{\em bench}   \> large test cases suitable for benchmarking \\
+{\em java}    \> directory of Java and FORTRAN routines for the Java GUI \\
+{\em utility} \> directory of routines donated by \D users.
 \end{tabbing}
 
-\noindent A more detailed description of each sub-directory
-follows.
+\noindent A more detailed description of each sub-directory follows.
 
 \subsection{The {\em source} Sub-directory}
 
@@ -405,13 +409,38 @@ programs; these are assembled at compile time using an appropriate
 makefile.  The subroutines in this sub-directory are documented in
 Chapter~\ref{source}.
 
-\subsection{The {\em utility} Sub-directory}
+\subsection{The {\em build} Sub-directory}
 
-This sub-directory stores all the utility subroutines, functions and
-programs in \D, together with examples of data.  Some of the various
-routines in this sub-directory are documented in the \C
-User Manual.  Users who devise their own utilities are advised
-to store them in the {\em utility} sub-directory.
+This sub-directory contains legacy makefiles for the
+creation (i.e. compilation and linking) of the \D simulation
+program.  The makefiles supplied select the appropriate
+subroutines from the {\em source} sub-directory and deposit the
+executable program in the {\em execute} directory.  Building \D
+by using these legacy makefiles is described in Section~\ref{make}.
+
+\subsection{The {\em cmake} Sub-directory}
+
+This sub-directory contains necessary scripts and information
+needed for the \D CMake system.  Building \D with {\sl cmake}
+is described in Section~\ref{cmake}.
+
+\subsection{The {\em utils} Sub-directory}
+
+This sub-directory contains a framework of scripts needed by \D
+developers for testing purposes.  The general user is welcome to
+look and learn from it.  The scripts are the documentation themselves.
+
+\subsection{The {\em execute} Sub-directory}
+
+In the supplied version of \D, this sub-directory contains only a
+few macros for copying and storing data from and to the {\em data}
+sub-directory and for submitting programs for execution (see
+Appendix~\ref{macros}).  However, if the \D program is assembled
+by using a legacy makefile, the executable will be placed in this
+sub-directory and could be used from here.  Then output files from
+a job run in here will also appear here, so users may find it
+convenient to use this sub-directory as originally intended.
+(The experienced user is not at all required to use \D this way however.)
 
 \subsection{The {\em data} Sub-directory}
 
@@ -431,40 +460,6 @@ These are described in Chapter~\ref{data}. Note that these are no
 longer within the distribution of any DL\_POLY version but
 are made available on-line at the DL\_POLY FTP - \FTP\index{FTP}.
 
-\subsection{The {\em execute} Sub-directory}
-
-In the supplied version of \D, this sub-directory contains only a
-few macros for copying and storing data from and to the {\em data}
-sub-directory and for submitting programs for execution (see
-Appendix~\ref{macros}).  However, when a \D program is assembled
-by using the appropriate makefile, it will be placed in this
-sub-directory and will subsequently be executed from here.
-The output from the job will also appear here, so users will
-find it convenient to use this sub-directory if they wish to
-use \D as intended.  (The experienced user is not at all
-required to use \D this way however.)
-
-\subsection{The {\em build} Sub-directory}
-
-This sub-directory contains the standard makefiles for the
-creation (i.e. compilation and linking) of the \D simulation
-program.  The makefiles supplied select the appropriate
-subroutines from the {\em source} sub-directory and deposit the
-executable program in the {\em execute} directory.  The user is
-advised to copy the appropriate makefile into the {\em source}
-directory, in case any modifications are required.  The copy in
-the {\em build} sub-directory will then serve as a backup.
-
-\subsection{The {\em public} Sub-directory}
-
-This sub-directory contains assorted routines donated by DL\_POLY
-users.  Potential users should note that these routines are {\bf
-unsupported} and come {\bf without any guarantee or liability
-whatsoever}.  They should be regarded as potentially useful
-resources to be hacked into shape as needed by the user.  This
-directory is available from the CCP5\index{CCP5} Program Library
-by direct FTP\index{FTP}(see below).
-
 \subsection{The {\em java} Sub-directory}
 \index{Java GUI}
 
@@ -472,10 +467,21 @@ The \D Java Graphical User Interface (GUI)\index{GUI} is based on
 the Java language developed by Sun.  The Java source code for this
 GUI is to be found in this sub-directory.  The source is complete
 and sufficient to create a working GUI, provided the user has installed
-the Java Development Kit, (1.4 or above) which is available free
+the Java Development Kit, (1.7 or above) which is available free
 from Sun at \href{http://java.sun.com/}{http://java.sun.com/}\index{WWW}.
 The GUI, once compiled, may be executed on any machine where Java
 is installed \cite{smith-gui}.
+
+\subsection{The {\em utility} Sub-directory}
+
+This sub-directory contains assorted routines donated by DL\_POLY
+users.  Potential users should note that these routines are {\bf
+unsupported} and come {\bf without any guarantee or liability
+whatsoever}.  They should be regarded as potentially useful
+resources to be hacked into shape as needed by the user.  Some of
+the various routines in this sub-directory are documented in the \C
+User Manual.  Users who devise their own utilities are advised
+to store them in the {\em utility} sub-directory.
 
 \section{Obtaining the Source Code}
 \label{distribution} \index{user registration} \index{\D software licence}
@@ -525,13 +531,12 @@ developments!}
 
 \section{Other Information}\label{other}
 
-The DL\_POLY website - \WEB\index{WWW},
-provides additional information in the form of
+The DL\_POLY website - \WEB\index{WWW}, provides additional information in the form of
 \begin{enumerate}
 \item Access to all documentation (including licences)
 \item Frequently asked questions
 \item Bug reports
-\item Access to the DL\_POLY online forum.
+\item Access to the DL\_Software portal.
 \end{enumerate}
 
 \noindent
@@ -543,7 +548,7 @@ user, but not on this list you may request to be added by sending
 a mail message to {\href{mailto:majordomo@dl.ac.uk}{majordomo@dl.ac.uk}}
 with the one-line message: $subscribe~dl\_poly\_4\_news$.
 
-The DL\_POLY {\bf Forum} is a web based centre for all DL\_POLY users
+The DL\_Software {\bf Portal} is a web based centre for all DL\_POLY users
 to exchange comments and queries.  You may access the forum through the
 DL\_POLY website.  A registration (and vetting) process is required
 before you can use the forum, but it is open, in principle, to everyone.

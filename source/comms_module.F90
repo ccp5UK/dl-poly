@@ -6,7 +6,7 @@ Module comms_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2015
-! contrib   - a.m.elena september 2015
+! contrib   - a.m.elena march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -37,12 +37,12 @@ Module comms_module
 
 ! MPI-I/O representation
 
-  Character( Len = 6), Parameter :: datarep = 'native'
+  Character( Len = 6 ), Parameter :: datarep = 'native'
 
-  Integer, Public                                       :: mpi_ver=-1,mpi_subver=-1
-  Character(Len=MPI_MAX_PROCESSOR_NAME), Public         :: proc_name="*"
-  Character(Len=MPI_MAX_LIBRARY_VERSION_STRING), Public :: lib_version="*"
-  
+  Integer,                                           Public :: mpi_ver     = -1, &
+                                                               mpi_subver  = -1
+  Character( Len = MPI_MAX_PROCESSOR_NAME ),         Public :: proc_name   = "*"
+  Character( Len = MPI_MAX_LIBRARY_VERSION_STRING ), Public :: lib_version = "*"
 
 ! Message tags
 
@@ -136,7 +136,7 @@ Contains
     Call MPI_COMM_RANK(dlp_comm_world, idnode, ierr)
     Call MPI_COMM_SIZE(dlp_comm_world, mxnode, ierr)
 
-#ifndef OLDMPI 
+#ifndef OLDMPI
     Call MPI_GET_PROCESSOR_NAME(proc_name,lname, ierr)
     Call MPI_GET_VERSION(mpi_ver,mpi_subver, ierr)
     Call MPI_GET_LIBRARY_VERSION(lib_version,lversion, ierr)
