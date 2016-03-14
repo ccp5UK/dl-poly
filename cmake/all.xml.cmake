@@ -2,163 +2,163 @@
   <properties>
     <property name="eng_tot">
       <description> eng tot</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/eng_tot.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/eng_tot.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="temp_tot">
       <description> temp tot</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/temp_tot.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/temp_tot.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="eng_cfg">
       <description> eng cfg</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/eng_cfg.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/eng_cfg.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="eng_src">
       <description> eng src</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/eng_src.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/eng_src.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="eng_cou">
       <description> eng cou</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/eng_cou.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/eng_cou.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="eng_bnd">
       <description> eng bnd</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/eng_bnd.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/eng_bnd.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="eng_ang">
       <description> eng ang</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/eng_ang.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/eng_ang.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="eng_dih">
       <description> eng dih</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/eng_dih.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/eng_dih.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="eng_tet">
       <description> eng tet</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/eng_tet.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/eng_tet.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="eng_pv">
       <description> eng pv</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/eng_pv.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/eng_pv.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="temp_rot">
       <description> temp rot</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/temp_rot.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/temp_rot.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="vir_cfg">
       <description> vir cfg</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/vir_cfg.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/vir_cfg.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="vir_src">
       <description> vir src</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/vir_src.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/vir_src.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="vir_cou">
       <description> vir cou</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/vir_cou.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/vir_cou.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="vir_bnd">
       <description> vir bnd</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/vir_bnd.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/vir_bnd.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="vir_ang">
       <description> vir ang</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/vir_ang.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/vir_ang.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="vir_con">
       <description> vir con</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/vir_con.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/vir_con.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="vir_tet">
       <description> vir tet</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/vir_tet.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/vir_tet.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="volume">
       <description> volume</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/volume.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/volume.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="temp_shl">
       <description> temp shl</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/temp_shl.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/temp_shl.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="eng_shl">
       <description> eng shl</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/eng_shl.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/eng_shl.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="vir_shl">
       <description> vir shl</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/vir_shl.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/vir_shl.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="alpha">
       <description> alpha</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/alpha.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/alpha.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="beta">
       <description> beta</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/beta.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/beta.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="gamma">
       <description> gamma</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/gamma.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/gamma.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="vir_pmf">
       <description> vir pmf</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/vir_pmf.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/vir_pmf.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
     <property name="press">
       <description> press</description>
-      <script>@CMAKE_SOURCE_DIR@/utils/Scripts/press.sh</script>
+      <script>@PYTHON_EXECUTABLE@ @CMAKE_SOURCE_DIR@/utils/Scripts/press.py</script>
       <type>Float</type>
       <relativeprecision>1.0E-5</relativeprecision>
     </property>
