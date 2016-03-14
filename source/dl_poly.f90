@@ -86,6 +86,7 @@ Program dl_poly
   Use four_body_module
 
   Use kim_module
+  Use plumed_module
 
   Use external_field_module
 
@@ -342,6 +343,15 @@ Program dl_poly
   If (idnode == 0) Then
      Write(nrite,'(/,1x,a)') "*** all reading and connectivity checks DONE ***"
      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
+  End If
+
+  If (l_plumed) Then
+     Call plumed_init(megatm,tstep,temp)
+     Call plumed_print_about()
+  Else
+     If (idnode == 0) Then
+       Write(nrite,'(1x,a)') "***PLUMED is off or version without PLUMED***"
+     End If
   End If
 
 ! l_org: translate CONFIG into CFGORG and exit gracefully
@@ -682,6 +692,7 @@ Program dl_poly
 
 10 Continue
 
+  If (l_plumed) Call plumed_finalize()
 ! Ask for reference in publications
 
   If (idnode == 0) Then
