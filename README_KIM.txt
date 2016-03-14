@@ -16,9 +16,9 @@ Test & Verify KIM:
 2) Move DL_POLY input files to the DL_POLY_4.Z/execute directory.
 
 	% cd ../execute
-	% cp ../data/TEST21/CONFIG .
-	% cp ../data/TEST21/CONTROL .
-	% cp ../data/TEST21/FIELD .
+	% cp ../data/TEST12/CONFIG .
+	% cp ../data/TEST12/CONTROL .
+	% cp ../data/TEST12/FIELD .
 
 3) Edit FIELD and change
 
@@ -61,7 +61,7 @@ Test & Verify KIM:
 	% ./DLPOLY.Z
 	% mv OUTPUT OUTPUT.native
 
-6) Edit FILED and change
+6) Edit FIELD and change
 
 	vdw 1
 	Cu      Cu      mors 3.42900e-01 2.86600e+00 1.35880e+00

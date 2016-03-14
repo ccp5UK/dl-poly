@@ -901,7 +901,7 @@ the routine {\sc inversions\_forces}.
 \centerline{\includegraphics[height=6.9cm]{calcite.eps}}
 \caption{The vectors of the calcite potential}
 \label{calcfig}
-\vskip 1ex
+%\vskip 1ex
 \end{center}
 \end{figure}
 
@@ -2289,7 +2289,7 @@ routine {\sc four\_body\_forces}.
 electrostatic potentials\index{potential!electrostatics}\footnote{Unlike the
 other elements of the force field, the electrostatic forces are
 NOT specified in the input FIELD file, but by setting appropriate
-directives in the CONTROL file. See Section~\ref{control-file}.}.
+directives in the CONTROL file.  See Section~\ref{control-file}.}.
 These are as follows:
 \begin{enumerate}
 \item Direct Coulomb sum
@@ -2319,7 +2319,9 @@ normal.
 option in \C, on account of it being too slow for large
 scale systems.  The SPME method is the standard Ewald method in \D.
 
-\subsection{Direct Coulomb Sum\index{direct Coulomb sum}}
+\subsection{Default (Point Charges) Electrostatics}
+
+\subsubsection{Direct Coulomb Sum\index{direct Coulomb sum}}
 
 Use of the direct Coulomb sum\index{direct Coulomb sum} is
 sometimes necessary for accurate simulation of isolated
@@ -2356,7 +2358,7 @@ stress\index{stress tensor} tensor is symmetric.
 In \D these forces are handled by the subroutine {\sc
 coul\_cp\_forces}.
 
-\subsection{Force-Shifted Coulomb Sum\index{force-shifted Coulomb sum}}
+\subsubsection{Force-Shifted Coulomb Sum\index{force-shifted Coulomb sum}}
 
 This form of the Coulomb sum has the advantage that it drastically
 reduces the range of electrostatic interactions, without giving
@@ -2439,7 +2441,7 @@ tensor\index{stress tensor} is symmetric.
 
 In \D these forces are handled by the routine {\sc coul\_fscp\_forces}.
 
-\subsection{Coulomb Sum with Distance Dependent Dielectric\index{distance dependant dielectric}}
+\subsubsection{Coulomb Sum with Distance Dependent Dielectric\index{distance dependant dielectric}}
 
 This potential attempts to address the difficulties of applying
 the direct Coulomb sum\index{direct Coulomb sum}, without the
@@ -2487,7 +2489,7 @@ tensor\index{stress tensor} is symmetric.
 In \D these forces are handled by the routine {\sc
 coul\_dddp\_forces}.
 
-\subsection{Reaction Field\index{reaction field}}
+\subsubsection{Reaction Field\index{reaction field}}
 
 In the reaction field\index{reaction field} method it is assumed
 that any given molecule is surrounded by a spherical cavity of
@@ -2544,18 +2546,18 @@ effective charge screening \cite{fennell-06a}:
 \begin{eqnarray}
 U(r_{ij}) = {q_{i} q_{j} \over 4\pi\epsilon_{0}\epsilon} \left[
 \left\{ \frac{{\rm erfc}(\alpha~r_{ij})}{r_{ij}} + \left(\frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}}+
-\frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{\rm cut}^{2})}{r_{\rm cut}}\right)~r_{ij}\right\} - \phantom{xxxxxxx} \right. \nonumber \\
-\left. \left\{ \frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}} + \left(\frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}}+
+\frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{\rm cut}^{2})}{r_{\rm cut}}\right)~r_{ij}\right\} - \phantom{xxxxxxxxxxxxxxx} \right. \\
+\left. \phantom{xxxxxxxxxxxx} \left\{ \frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}} + \left(\frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}}+
 \frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{\rm cut}^{2})}{r_{\rm cut}}\right)~r_{\rm cut}\right\} +
-\frac{B_{0}(r_{ij}^{2}-r_{\rm cut}^{2})}{2 r_{\rm cut}^{3}} \right],
+\frac{B_{0}(r_{ij}^{2}-r_{\rm cut}^{2})}{2 r_{\rm cut}^{3}} \right]~~, \nonumber
 \end{eqnarray}
 with the force on an atom $j$ given by
 \begin{eqnarray}
 \vek{f}_{j} = {q_{i} q_{j} \over 4\pi\epsilon_{0}\epsilon} \left[ \left( \frac{{\rm erfc}(\alpha~r_{ij})}{r_{ij}^{2}} +
-\frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{ij}^{2})}{r_{ij}} \right) - \phantom{xxxxxxxxxxx} \right. \nonumber \\
+\frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{ij}^{2})}{r_{ij}} \right) - \phantom{xxxxxxxxxxx} \right. \\
 \left. \left( \frac{{\rm erfc}(\alpha~r_{\rm cut})}{r_{\rm cut}^{2}} +
 \frac{2\alpha}{\sqrt{\pi}}~\frac{\exp(-\alpha^{2}~r_{\rm cut}^{2})}{r_{\rm cut}} \right) -
-\frac{B_{0}r_{ij}}{r_{\rm cut}^{3}} \right]~\frac{\vek{r}_{ij}}{r_{ij}}~~,
+\frac{B_{0}r_{ij}}{r_{\rm cut}^{3}} \right]~\frac{\vek{r}_{ij}}{r_{ij}}~~, \nonumber
 \end{eqnarray}
 with the force on atom $i$ the negative of this.
 
@@ -2580,7 +2582,7 @@ tensor\index{stress tensor} is symmetric.
 In \D the reaction field\index{reaction field} is handled by the
 subroutine {\sc coul\_rfp\_forces}.
 
-\subsection{Smoothed Particle Mesh Ewald}
+\subsubsection{Smoothed Particle Mesh Ewald}
 \label{SPME}
 
 The Ewald sum\index{Ewald!summation} \cite{allen-89a} is the best
@@ -2600,7 +2602,7 @@ treatable by the methods described above
 (Section~\ref{force-field})\footnote{Strictly speaking, the real space sum
 ranges over all periodic images of the simulation cell, but in the
 \D implementation, the parameters are chosen to restrict the sum
-to the simulation cell and its nearest neighbours i.e. the {\em
+to the simulation cell and its nearest neighbours, i.e.~the {\em
 minimum images} of the cell contents.}.  The second modification
 is to superimpose a second set of Gaussian charges, this time with
 the same charges as the original point ions and again centred on
@@ -2795,6 +2797,12 @@ subroutines are called sequentially and also the Fuchs correction
 \cite{fuchs-35a} for electrically non-neutral MD cells is applied if
 needed.
 \end{enumerate}
+
+\subsection{Multipolar Electrostatics\index{multipolar electrostatics}}
+\label{mpoles}
+{ %mpoles-begin
+\input multipolar.tex
+} %mpoles-end
 
 \section{Polarisation Shell Models}
 \index{polarisation!shell models}
@@ -3119,6 +3127,33 @@ A 5-point interpolation is used for finding the numerical derivatives of
 this a Lagrange formula is used, which can be found in any textbook on
 numerical methods.
 
+\section{Free Energy Capabilities via the PLUMED plugin}
+\label{plumed}
+
+\D supports a native integration with PLUMED - \href{http://www.plumed.org/}{http://www.plumed.org/}\index{WWW}.
+PLUMED is an open source library for free energy calculations in
+molecular systems which works together with some of the most popular
+molecular dynamics engines.  Free energy calculations can be performed
+as a function of many order parameters with a particular focus on
+biological problems, using state of the art methods such as metadynamics,
+umbrella sampling and Jarzynski-equation based steered MD.  The software,
+written in C++, can be easily interfaced with both FORTRAN and C/C++ codes.
+
+Using PLUMED can be as simple as adding the keyword {\bf plumed} in
+your CONTROL file. By default the input file for PLUMED is called PLUMED
+and shall be placed in the same place as your other \D input files. Once
+\D runs by default OUTPUT.PLUMED will be generated in addition to the
+normal PLUMED and \D output files.  The default names of the files can
+be changed by using {\bf input} and {\bf log} parameters with the
+{\bf plumed} keyword (see Section~\ref{control-file}).
+
+\emph{Note} that this feature should be considered as \textbf{\textit{young}} rather
+than mature, so please report any bugs and provide feedback regarding its
+improvements.
+
+\emph{Note} that to use the PLUMED functionality within \D one must
+further ensure that \D is cross-compiled with it.
+
 \section{Open Knowledgebase of Interatomic Models - openKIM}
 \label{kim}
 
@@ -3132,7 +3167,8 @@ Section~\ref{field-file}) upon a specification within FIELD together with a
 matching molecular description for the model system, also specified in FIELD.
 Due to the history of the openKIM initiative and the constraints of the logic
 of the \D FIELD file the designated place for a KIM model specification is
-in the VDW section.  In order to use openKIM functionality within \D one must
-further ensure that \D is cross-compiled with openKIM.  For guidance on this
-together with testing, please refer to {\sc README\_KIM.txt} in {\em source}
-and follow instructions within.
+in the VDW section.  For guidance on testing, please refer to
+{\sc README\_KIM.txt} in {\em source} and follow instructions within.
+
+\emph{Note} that to use openKIM functionality within \D one must further ensure
+that \D is cross-compiled with openKIM.

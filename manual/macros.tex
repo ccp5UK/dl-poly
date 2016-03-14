@@ -28,73 +28,32 @@ DL\_POLY Java GUI \cite{smith-gui}.
 {\sl cleanup} removes several standard data files from the {\em
 execute} sub-directory\index{sub-directory}.  It contains the UNIX
 commands:
-\begin{verbatim}
-rm OUTPUT STATIS REVCON REVOLD REVIVE RDFDAT ZDNDAT DEFECTS gopoly.*
-\end{verbatim}
-\noindent and removes the files OUTPUT, REVCON, REVOLD, STATIS,
-REVIVE, DEFECTS and gopoly.* (all variants).  It is useful for
-cleaning the sub-directory\index{sub-directory} up after a run.
-(Useful data should be stored elsewhere however!)
+
+\lstinputlisting{../execute/cleanup}
+
+\noindent  It is useful for cleaning the sub-directory\index{sub-directory}
+up after a run. (Useful data should be stored elsewhere however!)
 
 \subsubsection*{{\sl copy}}
 
 {\sl copy} invokes the UNIX commands:
 
-\begin{verbatim}
-mv -v CONFIG CONFIG.OLD
-mv -v REVCON CONFIG
-mv -v REVIVE REVOLD
-\end{verbatim}
+\lstinputlisting{../execute/copy}
 
-\noindent which collectively prepare the \D files in the {\em
-execute} sub-directory\index{sub-directory} for the continuation of
-a simulation.  It is always a good idea to store these files
-elsewhere in addition to using this macro.
+\noindent which collectively prepare the \D files in the {\em execute}
+sub-directory\index{sub-directory} for the continuation of a simulation.
+It is always a good idea to store these files elsewhere in addition to using this macro.
 
 \subsubsection*{{\sl gopoly}}
 
-{\sl gopoly} is used to submit a \D job to the HPC$x$, which
-operates a LOAD-LEVELER job queuing system.  It invokes the
-following script:
+{\sl gopoly} is used to submit a \D job to the HPC$x$, which operates
+a LOAD-LEVELER job queuing system.  It invokes the following script:
 
-\begin{verbatim}
-#@ shell = /usr/bin/tcsh
-#
-#@ job_type = parallel
-#@ job_name = gopoly
-#
-#@ cpus = 32
-#
-#@ node_usage = not_shared
-#@ network.MPI = csss,shared,US
-#
-#@ wall_clock_limit = 00:30:00
-#@ account_no = my_account
-#
-#@ output = $(job_name).$(schedd_host).$(jobid).out
-#@ error  = $(job_name).$(schedd_host).$(jobid).err
-#@ notification = never
-#
-#@ bulkxfer = yes
-#@ data_limit = 850000000
-#@ stack_limit = 10000000
-#
-#@ queue
-#
-# ENVIRONMENT SETTINGS
-#
-setenv MP_EAGER_LIMIT 65536
-setenv MP_SHARED_MEMORY yes
-setenv MEMORY_AFFINITY MCM
-setenv MP_TASK_AFFINITY MCM
-setenv MP_SINGLE_THREAD yes
-#
-poe  ./DLPOLY.Z
-\end{verbatim}
+\lstinputlisting{../execute/gopoly}
 
 \noindent Using LOADLEVELLER, the job is submitted by the UNIX command: \\
 \\
-{\sl llsubmit} {\sl gopoly} \\
+{\sl llsubmit gopoly} \\
 \\
 \noindent where {\sl llsubmit} is a local command for submission
 to the IBM SP4 cluster.  The number of required nodes and the job
@@ -105,9 +64,7 @@ time are indicated in the above script.
 {\sl gui} is a macro that starts up the \D Java GUI.  It invokes
 the following UNIX commands:
 
-\begin{verbatim}
-java -jar ../java/GUI.jar $1 &
-\end{verbatim}
+\lstinputlisting{../execute/gui}
 
 \noindent In other words the macro invokes the Java Virtual Machine
 which executes the instructions in the Java archive file GUI.jar,
@@ -119,14 +76,7 @@ which is stored in the {\em java} subdirectory of \D. (Note: Java
 {\sl select} is a macro enabling easy selection of one of the test
 cases.  It invokes the UNIX commands:
 
-\begin{verbatim}
-cp -vpLH ../data/TEST$1/CONTROL   .
-cp -vpLH ../data/TEST$1/CONFIG    .
-cp -vpLH ../data/TEST$1/HISTORY   .
-cp -vpLH ../data/TEST$1/FIELD     .
-cp -vpLH ../data/TEST$1/TAB*      .
-cp -vpLH ../data/TEST$1/REFERENCE .
-\end{verbatim}
+\lstinputlisting{../execute/select}
 
 \noindent {\sl select} requires one argument (an integer) to be specified: \\
 \\
@@ -137,36 +87,15 @@ cp -vpLH ../data/TEST$1/REFERENCE .
 
 This macro sets up the required input files in the {\em execute}
 sub-directory\index{sub-directory} to run the {\sl n}-th test
-case.  The last three copy commands may not be necessary in
-most cases.
+case.  The last three copy commands may not be necessary in most cases.
 
 \subsubsection*{{\sl store}}
 
-The {\sl store} macro provides a convenient way of moving data
-back from the {\em execute} sub-directory\index{sub-directory} to
-the {\em data} sub-directory\index{sub-directory}.  It invokes the
-UNIX commands:
+The {\sl store} macro provides a convenient way of moving data back
+from the {\em execute} sub-directory\index{sub-directory} to the
+{\em data} sub-directory\index{sub-directory}.  It invokes the UNIX commands:
 
-\begin{verbatim}
-mkdir -pv          ../data/TEST$1
-cp -vpLH CONTROL   ../data/TEST$1
-cp -vpLH CONFIG    ../data/TEST$1
-cp -vpLH FIELD     ../data/TEST$1
-cp -vpLH TAB*      ../data/TEST$1
-cp -vpLH REFERENCE ../data/TEST$1
-cp -vpLH HISTORY   ../data/TEST$1
-mv -v     REVCON   ../data/TEST$1
-mv -v     CFGMIN   ../data/TEST$1
-mv -v     OUTPUT   ../data/TEST$1
-mv -v     HISTORF  ../data/TEST$1
-mv -v     DEFECTS  ../data/TEST$1
-mv -v     STATIS   ../data/TEST$1
-mv -v     *DAT*    ../data/TEST$1
-mv -v     *PMF     ../data/TEST$1
-mv -v     *TAB     ../data/TEST$1
-mv -v     REVIVE   ../data/TEST$1
-chmod -R a-w       ../data/TEST$1
-\end{verbatim}
+\lstinputlisting{../execute/store}
 
 \noindent which first creates a new DL\_POLY {\em data/TEST..}
 sub-directory\index{sub-directory} and then moves the standard \D

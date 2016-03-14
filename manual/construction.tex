@@ -8,38 +8,22 @@ a working simulation program of their own design from the
 subroutines available, which is capable of performing a specific
 simulation.  However, we recognise that many, perhaps most, users
 will be content with creating a standard version that covers all
-of the possible applications and for this reason we have only
-provided the necessary tools to assemble such a version.  The
-method of creating the standard version is described in detail in
-this chapter, however a brief step-by-step description follows.
+of the possible applications with \D native functionalities and may
+be a few external ones for this reason we have only provided the
+necessary tools to assemble such a version.  The methods of creating
+the standard versions is described in detail in this chapter,
+however a brief step-by-step description follows.
 
 \begin{enumerate}
-\item \D is supplied as a UNIX compressed file (tarred and
-gzipped).  This must uncompressed and un-tared to create the \D
-directory (Section~\ref{directory-structure}).
+\item \D is supplied as a ZIP compressed file.  This must uncompressed
+to create the \D directory (Section~\ref{directory-structure}).
 
-\item In the {\em build} subdirectory you will find the required
-\D makefiles (see Section~\ref{compilation}).  This must be
-copied into the subdirectory containing the relevant source code. In
-most cases this will be the {\em source} subdirectory.
-
-\item The chosen makefile is executed with an appropriate keyword
-(Section~\ref{compilation}) which is selected for specific platforms.
-For \D compilation in parallel mode (a FORTRAN90 compiler
-and an MPI implementation for the specific machine architecture are
-required) in many cases the user (sometimes with help from the
-administrator of their platform) will have to create their own
-keyword entry in the makefile due to the large variety of (i)
-software needed for the compilation of \D and (ii) places where
-it could be installed (PATHS).  To facilitate the user with the
-construction of their own keyword entry, examples are provided
-in the makefiles.  In the case when users use a makefile for \D
-compilation in serial mode they will have to provide a valid
-PATH to the FORTRAN90 compiler on their specific platform.
-
-\item The makefile produces the executable version of the code,
-which as a default will be named DLPOLY.Z and located in the {\em
-execute} subdirectory.
+\item The next step is to compile \D either by using the traditional
+Makefiles or by creating OS customised ones using {\bf cmake}.  In either
+case {\bf make} will be used to produce a binary executable (see
+Section~\ref{compilation}), which as a default will be named DLPOLY.Z
+and located in the {\em execute} subdirectory if compiling in traditional
+mode or in the place of using {\bf cmake}.
 
 \item \D also has a Java GUI.  The files for this are stored
 in the subdirectory {\em java}.  Compilation of this is simple and
@@ -47,16 +31,15 @@ requires running the javac compiler and the jar utility.  Details
 for these procedures are provided in the GUI manual \cite{smith-gui}.
 
 \item To run the executable for the first time you require the files
-CONTROL, FIELD and CONFIG (and possibly TABLE - if you have
-tabulated van der Walls potentials, TABEAM - if you have
-tabulated metal potentials and REFERENCE - if defect detection is opted
-for).  These must be present in the directory from which the program
-is executed. (See Section~\ref{input-files} for the description of
-the input files.)
+CONTROL, FIELD and CONFIG; and possibly a few tabulated files (TABLE,
+TABEAM, etc.).  These must be present in the directory from which the
+program is executed.  (See Section~\ref{input-files} for the description
+of the input files.)
 
 \item Executing the program will produce the files OUTPUT, STATIS,
-REVCON and REVIVE (and optionally HISTORY, RDFDAT, ZDNDAT, MSDTMP,
-REFERENCE, DEFECTS) in the executing directory.
+REVCON and REVIVE; and optionally a constellation of others in the
+executing directory depending on user options in CONTROL (HISTORY,
+RDFDAT, ZDNDAT, MSDTMP, REFERENCE, DEFECTS, etc.).
 (See Section~\ref{output-files} for the description of the output files.)
 \end{enumerate}
 
@@ -66,12 +49,12 @@ sizes.  \D contains features which allocate arrays after scanning
 the input files for a simulation.  Sometimes these initial estimates
 are insufficient for a long simulation when, for example, the system
 volume changes markedly during the simulation or when a system is
-artificially constructed to have a non-uniform density. Usually,
+artificially constructed to have a non-uniform density.  Usually,
 simply restarting the program will cure the problem, but sometimes,
 especially when the local atom density is somewhat higher than the
-global one or the system undergoes some form of clustering 
-and the distribution of bonded-like interactions is far from uniform,
-it may be necessary to amend the array sizes in accordance with the
+global one or the system undergoes some form of clustering and the
+distribution of bonded-like interactions is far from uniform, it
+may be necessary to amend the array sizes in accordance with the
 error message obtained.  To trigger lengthening of the density
 dependent global arrays the user may use the {\bf densvar} option in
 the CONTROL (Section~\ref{control-file}) file.  However, lengthening
@@ -97,11 +80,11 @@ dynamics cycle'' and monitor the {\em cpu} and {\em memory} usage.
 They also bring about a controlled termination of the program if
 the {\em cpu} usage approaches the allotted job time within a
 pre-set closure time and/or if the {\em memory} usage approaches the
-allocated limit for density dependent arrays.   Users are
-recommended to study the aforementioned root directories as a model for
-other implementations of the package they may wish to construct. The
-dependencies and calling hierarchies of all the \D subroutines can
-be found in Section~\ref{file-structure}.
+allocated limit for density dependent arrays.   Users are recommended
+to study the aforementioned root directories as a model for other
+implementations of the package they may wish to construct.  Some
+advise on hierarchies of all the \D subroutines can be found in
+Section~\ref{file-structure}.
 
 Should additional functionality be added to \D by the user, the
 {\sc set\_bounds} routine (and its support subroutines) may need
@@ -144,16 +127,15 @@ which reads the FIELD file.  The {\sc system\_init} routine is
 called next to initialise various simulation arrays and variables
 with the data available so far and detects if the job is a restart of
 previous simulation run.  If so it reads the REVOLD (Section~\ref{revold-file})
-to supply some arrays and variables with the
-necessary values as saved from the previous job.  The domain halo is
-constructed immediately afterwards by the routine {\sc set\_halo\_particles}.
+to supply some arrays and variables with the necessary values as
+saved from the previous job.  The domain halo is constructed
+immediately afterwards by the routine {\sc set\_halo\_particles}.
 After gathering all these data, bookkeeping and exclusion arrays are
 created for the intramolecular and site related interactions
 (core-shell, constraint and tether units) by the {\sc build\_book\_intra}
 and {\sc build\_excl\_intra} routines.  Lastly, the thermodynamic
-properties of the system are checked and set by the
-{\sc set\_temperature} routine (which also generates the initial
-velocities if required to do so).
+properties of the system are checked and set by the {\sc set\_temperature}
+routine (which also generates the initial velocities if required to do so).
 
 The calculation of the pair-like forces is carried out in the
 {\sc two\_body\_forces} routine and represents the main part of any
@@ -174,7 +156,7 @@ forces (Section~\ref{vdw}), {\sc metal\_lrc}, {\sc metal\_ld\_compute} and
 {\sc ewald\_frzn\_forces} and {\sc ewald\_excl\_forces} for the
 Coulombic forces (Section~\ref{coulomb}).
 
-Higher order intermolecular\index{potential!intermolecular}, site-related 
+Higher order intermolecular\index{potential!intermolecular}, site-related
 and intramolecular\index{potential!intramolecular} forces
 require the routines \\
 {\sc tersoff\_forces}, {\sc three\_body\_forces},

@@ -12,7 +12,7 @@ Module netcdf_module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90, Only : wp
-#ifdef NETCDF 
+#ifdef NETCDF
   Use netcdf   , Only : NF90_NETCDF4, NF90_CLOBBER, NF90_WRITE,              &
                         NF90_GLOBAL, NF90_UNLIMITED, NF90_INDEPENDENT,       &
                         NF90_CHAR, NF90_INT, NF90_DOUBLE, NF90_FLOAT,        &
@@ -101,7 +101,7 @@ Contains
     Else
        Call check( nf90_create_par( name, NF90_NETCDF4 + NF90_CLOBBER, comm, info, desc%ncid ) )
     End If
-#else    
+#else
     desc%ncid                  = 0
 
     desc%spatial_id            = 0
@@ -739,7 +739,7 @@ Contains
 
 #ifdef NETCDF
     Call check( nf90_get_att( desc%ncid, NF90_GLOBAL, what, val ) )
-#else  
+#else
     val="*"
     Call netcdf_compiled()
 #endif
@@ -933,7 +933,7 @@ Contains
           Call check( nf90_get_var( desc%ncid, id, val ) )
        End If
     End If
-#else 
+#else
     val=0
     Call netcdf_compiled()
 #endif
@@ -972,7 +972,7 @@ Contains
        End If
     End If
 #else
-    val="*"    
+    val="*"
     Call netcdf_compiled()
 #endif
   End Subroutine netcdf_get_var_chr_1d
@@ -1117,7 +1117,7 @@ Contains
        p = Precision( 1.0d0 )
        r = Range( 1.0d0 )
     Case Default
-#endif      
+#endif
        p = -1
        r = -1
        error = -1
@@ -1133,7 +1133,7 @@ Contains
 
 #ifdef NETCDF
     Use netcdf, Only : nf90_noerr, nf90_strerror
-#endif 
+#endif
     Implicit None
 
     Integer, Intent( In    ) :: status

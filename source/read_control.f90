@@ -103,7 +103,7 @@ Subroutine read_control                                &
 
   Logical                                 :: limp,lvv,lens,lforc, &
                                              ltemp,lpres,lstrext, &
-                                             lstep,safe,          &
+                                             lstep,lplumed,safe,  &
                                              l_timjob,l_timcls
 
   Character( Len = 200 )                  :: record
@@ -276,6 +276,10 @@ Subroutine read_control                                &
 ! proceed normal simulation
 
   lfce = .false. ! don't recalculate forces based on history positions
+
+! PLUMED read detector
+
+  lplumed=.true.
 
 ! default switches for calculation and printing of intramolecular analysis
 
@@ -2266,36 +2270,42 @@ Subroutine read_control                                &
 
      Else If (word(1:6) == 'plumed') Then
 
-        l_plumed=.true.
+        If (lplumed) Then
+           l_plumed=.true.
 
-        Call get_word(record,word)
-        If (word(1:3) == 'off') Then
-           l_plumed=.false.
-        End If
-
-        If (word(1:5) == 'input') Then
            Call get_word(record,word)
-           plumed_input=Trim(word)
-        End If
-
-        If (word(1:3) == 'log') Then
-           Call get_word(record,word)
-           plumed_log=Trim(word)
-        End If
-
-        If (word(1:9) == 'precision') Then
-           Call get_word(record,word)
-           plumed_precision=Abs(Nint(word_2_real(word,1.0_wp)))
-        End If
-
-        If (word(1:7) == 'restart') Then
-           plumed_restart=1
-           Call get_word(record,word)
-           If ((word(1:3) == 'yes') .or. (word(1:1) == 'y')) Then
-              plumed_restart=1
+           If (word(1:3) == 'off') Then
+              l_plumed=.false.
+              lplumed=.false.
            End If
-           If ((word(1:2) == 'no') .or. (word(1:1) == 'n')) Then
-              plumed_restart=0
+
+           If (word(1:5) == 'input') Then
+              Call get_word(record,word)
+              plumed_input=Trim(word)
+           End If
+
+           If (word(1:3) == 'log') Then
+              Call get_word(record,word)
+              plumed_log=Trim(word)
+           End If
+
+           If (word(1:9) == 'precision') Then
+              Call get_word(record,word)
+              plumed_precision=Abs(Nint(word_2_real(word,1.0_wp)))
+           End If
+
+           If (word(1:7) == 'restart') Then
+              plumed_restart=1
+
+              Call get_word(record,word)
+
+              If ((word(1:3) == 'yes') .or. (word(1:1) == 'y')) Then
+                 plumed_restart=1
+              End If
+
+              If ((word(1:2) == 'no') .or. (word(1:1) == 'n')) Then
+                 plumed_restart=0
+              End If
            End If
         End If
 

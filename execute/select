@@ -2,5 +2,6 @@ cp -vpLH ../data/TEST$1/CONTROL   .
 cp -vpLH ../data/TEST$1/CONFIG    .
 cp -vpLH ../data/TEST$1/HISTORY   .
 cp -vpLH ../data/TEST$1/FIELD     .
+cp -vpLH ../data/TEST$1/MPOLES    .
 cp -vpLH ../data/TEST$1/TAB*      .
 cp -vpLH ../data/TEST$1/REFERENCE .

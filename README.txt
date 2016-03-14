@@ -5,7 +5,7 @@ The source is in fully self-contained free formatted FORTRAN90+MPI2
 code (specifically FORTRAN90 + TR15581 + MPI1 + MPI-I/O only).  Any
 available functionality that dependent on external libraries; such as
 NetCDF, PLUMED and OpenKIM; will require the user to satisfy any the
-dependencies upon compilation and thus the use of `cmake` (refer to
+dependencies upon compilation and thus the use of `cmake' (refer to
 README.md).  The non-extended, vanilla code complies with the NAGWare
 and FORCHECK F90.
 
@@ -67,7 +67,7 @@ Warnings:
   (4) System stability is more easily compromised than the one when
       running DL_POLY_Classic!  When starting a new system it may be
       beneficial and considerate to make use of options that aim to
-      provide extra safety; such as `l_scr`, `scale', `cap forces'
+      provide extra safety; such as `l_scr', `scale', `cap forces'
       (`zero') and other tolerance related ones, and especially
       when in equilibration mode the `variable timestep` one in
       conjunction with an ensemble in Berendsen formulation!
@@ -139,11 +139,16 @@ If there is an `entry' in the Makefile for the particular combination
 of architecture, compiler & MPI implementation, then the user may
 instantiate the compilation by issuing at the command line:
 
-	make `entry'
+	make `entry' BUILDER='Your Name Here'
 
 and then pressing <Enter>.
 
-Usually the one named `hpc' is suitable for the majority of platforms.
+Usually, the one named `hpc' is suitable for the majority of platforms.
+Specifying your name as the person building the code is optional but
+it may be useful metadata in the future for citation/acknowledgment
+purposes when the results produced with the particular executable
+are examined as part of a research programme.
+
 To find out the keywords for all available entries within the Makefile
 issue:
 

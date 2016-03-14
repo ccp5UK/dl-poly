@@ -203,6 +203,8 @@ Subroutine statistics_collect             &
 
   iadd = 27
 
+! iadd = iadd + 1 ! for the stpval(0)!!! Thus to account for in printing
+
 ! mean squared displacements per species, dependent on
 ! particle displacements from initial positions (at t=0)
 
@@ -324,10 +326,10 @@ Subroutine statistics_collect             &
 
      If (l_msd) Then
         Write(nstats,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
-             nstep,time,iadd-2*mxatdm,stpval(1:  27),stpval(0),stpval(28+2*mxatdm:iadd)
+             nstep,time,iadd+1-2*mxatdm,stpval(1:  27),stpval(0),stpval(28+2*mxatdm:iadd)
      Else
         Write(nstats,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
-             nstep,time,iadd,         stpval(1:  27),stpval(0),stpval(28         :iadd)
+             nstep,time,iadd+1,         stpval(1:  27),stpval(0),stpval(28         :iadd)
      End If
 
      Close(Unit=nstats)

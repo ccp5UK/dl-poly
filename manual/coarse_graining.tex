@@ -65,7 +65,7 @@ angles, dihedrals and/or inversions, the CONTROL file must
 contain any combination of the options demonstrated
 in the example below.
 
-\begin{verbatim}
+\begin{lstlisting}
 TITLE: EXAMPLE OF DL_POLY_4 PDF ANALYSIS DIRECTIVES SNIPPET
 
 # DIRECTIVES TO INVOKE INTRAMOLECULAR PDF ANALYSIS BY TYPE
@@ -80,7 +80,7 @@ analyse  all         sample every 100  nbins 1000  rmax 5.0
 # DIRECTIVES TO INVOKE PRINTING FOR ANY DEFINED
 # INTER-(RDF->VDW) & INTRA-(bonded) MOLECULAR PDF ANALYSIS
 print analysis
-\end{verbatim}
+\end{lstlisting}
 
 The {\bf analyse} directive acts in a similar manner to that
 of the {\bf rdf} directive outlining {\bf (i)} the frequency
@@ -133,7 +133,7 @@ in this section).
 
 Partial examples of the *DAT files for bonds and angles are given below.
 
-\begin{verbatim}
+\begin{lstlisting}
 [user@host]$ more BNDDAT
 # TITLE: Hexane FA OPLSAA -> CG mapped with 3 beads (A-B-A)
 # BONDS: Probability Density Functions (PDF) := histogram(bin)/hist_sum(bins)/dr_bin
@@ -167,7 +167,7 @@ Partial examples of the *DAT files for bonds and angles are given below.
   178.75000  1.380569E-02  6.328564E-01
   179.25000  8.368490E-03  6.393238E-01
   179.75000  2.901532E-03  6.649842E-01
-\end{verbatim}
+\end{lstlisting}
 
 One can see that all the header lines are commented out due
 to starting with the hash symbol, {\bf \#}.  Nonetheless, the
@@ -248,7 +248,7 @@ corresponding to the above PDF examples. {\bf Note} that
 the PMF and force data have been resampled onto a finer grid
 with points located {\em at bin edges}.
 
-\begin{verbatim}
+\begin{lstlisting}
 [user@host]$ more TABBND
 # TITLE: Hexane FA OPLSAA -> CG mapped with 3 beads (A-B-A)
 # 5.0 500
@@ -268,7 +268,7 @@ with points located {\em at bin edges}.
  3.60000e-01   8.8596227e+01   6.9119227e-01
  5.40000e-01   8.8471827e+01   6.9118704e-01
 ...
-\end{verbatim}
+\end{lstlisting}
 
 The input tables for bonds, angles, dihedrals and inversions are
 named TABBND, TABANG, TABDIH and TABINV, correspondingly.
@@ -355,9 +355,9 @@ compilation; found in \D directory {\tt utility}) as follows.
 
 %{\tt [user@host]\$ pmf2tab.exe < VDWTAB}
 
-\begin{verbatim}
+\begin{lstlisting}
 [user@host]$ pmf2tab.exe < VDWTAB
-\end{verbatim}
+\end{lstlisting}
 
 \item Check the data for accuracy and amend the tabulated
 force-fields. Redo the analysis on coarser/finer grid(s),

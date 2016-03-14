@@ -352,7 +352,7 @@ is meant to be a human readable file, destined for hardcopy output.
 Gives the \D version number, the number of processors in use, the
 link-cell algorithm in use and a title for the job as given in the
 header line of the input file CONTROL.  This part of the file is
-written from the subroutines {\sc dl\_poly\_}, {\sc set\_bounds}
+written from the subroutines {\sc dl\_poly}, {\sc set\_bounds}
 and {\sc read\_control}.
 
 \subsubsection{Simulation Control Specifications}
@@ -392,12 +392,10 @@ listed.  If {\tt levcfg} is 2 forces are also written out.
 
 \subsubsection{Simulation Progress}
 
-This part of the file is written by the \D root segment {\sc
-dl\_poly\_}.  The header line is printed at the top of each page
-as:
+This part of the file is written by the \D root segment
+{\sc dl\_poly}.  The header line is printed at the top of each page as:
 
-{\scriptsize\begin{verbatim}
-
+\begin{lstlisting}[basicstyle=\small]
 --------------------------------------------------------------------------------------------------
 
     step   eng_tot  temp_tot   eng_cfg   eng_src   eng_cou   eng_bnd   eng_ang   eng_dih   eng_tet
@@ -405,7 +403,7 @@ time(ps)    eng_pv  temp_rot   vir_cfg   vir_src   vir_cou   vir_bnd   vir_ang  
 cpu  (s)    volume  temp_shl   eng_shl   vir_shl     alpha      beta     gamma   vir_pmf     press
 
 --------------------------------------------------------------------------------------------------
-\end{verbatim}}
+\end{lstlisting}
 
 \noindent The labels refer to :
 \begin{tabbing}
@@ -636,9 +634,9 @@ found in \D directory {\tt utility}) as follows,
 
 {\tt [user@host]\$ pmf2tab.exe < VDWTAB}
 
-%\begin{verbatim}
+%\begin{lstlisting}
 %[user@host]$ pmf2tab.exe < VDWTAB
-%\end{verbatim}
+%\end{lstlisting}
 
 see Section~\ref{cg-intro} for completeness.
 

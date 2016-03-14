@@ -63,7 +63,7 @@ example lists all possible and not mutually excluding directives
 in a particular order.  Although this order is not mandatory, it
 is highly recommended.
 
-\begin{verbatim}
+\begin{lstlisting}
 TITLE RECORD: DL_POLY_4 SAFE ORDER OF CONTROL DIRECTIVES
 
 # SYSTEM REPLICATION & IMPACT OPTION
@@ -201,7 +201,7 @@ close time             10 seconds
 
 # FINISH
 finish
-\end{verbatim}
+\end{lstlisting}
 
 \subsubsection{The CONTROL File Format}
 
@@ -537,6 +537,25 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf pad}ding $f$  ($\equiv$ {\bf rpad} $f$) \> set optional padding to the major cutoff, \\
 \>                                              \> $r_{\rm cut}$, to $f$ \AA~ ($f \ge {\rm Min}[0.05,0.5\%.r_{\rm cut}]$, default $f~=~0$) \\
+\>                                              \> \\
+\> {\bf plumed} {\em string} (on$|$off)         \> global on/off switch for a PLUMED calculation  {\em on} is specified \\
+\>                                              \> (default {\em on}), if {\em off} is specified all other plumed directives are ignored \\
+\>                                              \> \\
+\> {\bf plumed input} $<$$filename$$>$          \> starts a PLUMED calculation, if not switched off, sets PLUMED \\
+\>                                              \> input to be read from $<$$filename$$>$ (if unspecified the default is \\
+\>                                              \> $<$$filename$$>$~=~PLUMED) \\
+\>                                              \> \\
+\> {\bf plumed log} $<$$filename$$>$            \> starts a PLUMED calculation, if not switched off, and sets \\
+\>                                              \> PLUMED logging to be recorded in $<$$filename$$>$ (default \\
+\>                                              \> $<$$filename$$>$~=~OUTPUT.PLUMED) \\
+\>                                              \> \\
+\> {\bf plumed precision} $int$-$val$           \> starts a PLUMED calculation, if not switched off, and sets \\
+\>                                              \> PLUMED calculation precision to $int$-$val$ (default $int$-$val$~=~$wp$ - \\
+\>                                              \> the \D working precision) \\
+\>                                              \> \\
+\> {\bf plumed restart} {\em string} (yes$|$no) \> starts a PLUMED calculation, if not switched off, and hints \\
+\>                                              \> PLUMED about restarting (default {\em on}), if {\em off} is specified \\
+\>                                              \> PLUMED restart accumulators will reinitialised \\
 \>                                              \> \\
 \> {\bf pres}sure $f$                           \> set required system pressure to $f$ katms \\
 \>                                              \> (target pressure for constant pressure\index{units!pressure} ensembles) \\
@@ -1413,10 +1432,10 @@ performace degradation.  It is recomended that $r_{\rm pad}$ is set up at a
 value of $\approx 1 \div 5\%$ of the cutoff, $r_{\rm cut}$, as long as the
 major link-cell algorithm uses a link-cell decomposition that not worse than
 $4 \otimes 4 \otimes 4$ per domain.  For such setups, in practice, one
-may expect average compute speedups \footnote{I.e. I/O effects are excluded
-from comparison with a default simualtion and comparisons are carried over
+may expect average compute speedups \footnote{I.e.~I/O effects are excluded
+from comparison with a default simulation and comparisons are carried over
 a few hundreds of timesteps.  This is usually accounting for over $90\%$ of
-the time tosolution.} of the order of $10 \div 30\%$ for force-fields
+the time to solution.} of the order of $10 \div 30\%$ for force-fields
 involving the Ewald summation methodology and $60 \div 100\%$ for force-fields
 without electrostatics evaluations involving the Ewald summation methodology.
 
@@ -1444,7 +1463,7 @@ subroutine {\sc read\_config} (optionally by {\sc scan\_config})
 in the {\sc set\_bounds} routine.  The first few records of a
 typical CONFIG file are shown below:
 
-\begin{verbatim}
+\begin{lstlisting}
 IceI structure 6x6x6 unit cells with proton disorder
          2         3               276
   26.988000000000000   0.000000000000000   0.000000000000000
@@ -1468,7 +1487,7 @@ IceI structure 6x6x6 unit cells with proton disorder
      9226.455153         9445.662860         5365.202509
 
 etc.
-\end{verbatim}
+\end{lstlisting}
 
 \subsubsection{The CONFIG File Format}
 
@@ -1622,7 +1641,7 @@ system in the CONFIG file.  The FIELD file is read by the subroutine
 scan\_field} in the {\sc set\_bounds} routine.) Excerpts from a
 force field file are shown below.  The example is the antibiotic
 Valinomycin in a cluster of 146 water molecules:
-\begin{verbatim}
+\begin{lstlisting}
 Valinomycin Molecule with 146 SPC Waters
 UNITS kcal
 
@@ -1685,7 +1704,7 @@ C       CT        lj   0.08485      3.2518
 OW      OS        lj   0.15100      3.0451
 OS      OS        lj   0.15000      2.9400
 CLOSE
-\end{verbatim}
+\end{lstlisting}
 
 \subsubsection{The FIELD File Format}
 
@@ -1757,7 +1776,8 @@ the one required, $n$, these will not be processed by \D.
 
 {\bf Note}, although algorithms in \D could in principle handle
 any high pole order summation, in practice, however, \D will abort
-if the order is higher than hexadecapole (order 4)!
+if the order is higher than hexadecapole (order 4)!  For more
+information on this functionality refer to Section~\ref{mpoles}.
 
 \subsubsection*{Molecular details}
 
@@ -2923,13 +2943,13 @@ H(DL\_POLY) &=& H(MKS)~1.037837512 \times 10^{4}~~. \nonumber
 \end{eqnarray}
 Thus to apply a magnetic field of 1~Tesla along the $y$ axis,
 one could specify in FIELD the following:
-\begin{verbatim}
+\begin{lstlisting}
 UNITS internal
 ...
 external
 magnetic 0  1/1.037837512e04   0
 ...
-\end{verbatim}
+\end{lstlisting}
 when working in DL\_POLY internal units.  If we worked in {\em unit}
 units then
 \begin{eqnarray}
@@ -2953,13 +2973,13 @@ k_{eV \to DL\_POLY} &=& 9648.530821 \\
 H(eV) &=& H(MKS)~1.07564305~~, \nonumber
 \end{eqnarray}
 the FIELD file should be amended to read:
-\begin{verbatim}
+\begin{lstlisting}
 UNITS eV
 ...
 external
 magnetic 0  1/1.07564305   0
 ...
-\end{verbatim}
+\end{lstlisting}
 
 \subsubsection{Closing the FIELD File}
 
@@ -2986,7 +3006,7 @@ explicitly match that in FIELD.
 
 Example from a water system with multipolar momenta beyond the
 single point charges is shown below:
-\begin{verbatim}
+\begin{lstlisting}
 Puddle Test Case (32000 AMOEBA Waters)
 
 MOLECULES 1
@@ -3014,7 +3034,7 @@ H  2
 FINISH
 
 CLOSE
-\end{verbatim}
+\end{lstlisting}
 
 \subsubsection{The MPOLES File Format}
 
@@ -3410,10 +3430,10 @@ is usually only for the alloy component, so that local concentrations of
 a single element revert to the standard EAM or EEAM!  In such case, the
 densities functions must be zeroed in the \D TABEAM file.  A convenient
 way to do this, for example, will be data record of the type:
-\begin{verbatim}
+\begin{lstlisting}
 SDEN Atom1 Atom1 1 0 1
 0
-\end{verbatim}
+\end{lstlisting}
 
 \subsection{The TABBND, TABANG, TABDIH \& TABINV Files}
 \label{intra-tables}
@@ -3489,3 +3509,12 @@ G(r)=-r\frac{\partial}{\partial r}U(r)~~.
 {\bf Note}, this is {\em not} the same as the true force.  During simulation,
 interactions beyond distance ${\tt cutpot}$ will bring the run to a controlled
 termination.
+
+\subsection{The HISTORY File}
+
+The HISTORY file is usually an output file (see Section~\ref{history-file}).
+However, upon specifying the {\bf replay} option a HISTORY trajectory can
+be replayed and various observables recreated should there is enough
+information within to recover the specific observable (e.g. velocities
+supplied within HISTORY for regeneration of velocity autocorrelation
+data).  Thus it can be used as input as well.

@@ -15,6 +15,9 @@ BINROOT=../execute
 EX=DLPOLY.Z
 EXE=$(BINROOT)/$(EX)
 
+BUILDER?='Your Name'
+HOSTNAME=$(shell hostname)
+
 TYPE=master
 
 FC=undefined
@@ -189,13 +192,7 @@ all:
 	@echo
 	@echo "The available, permissive targets are displayed below:"
 	@echo
-	@echo "hpc || lake || newton || dirac || franklin ||"
-	@echo "hpcx || hpcx-debug || BGL || BGP ||"
-	@echo "archer || archer-pgi-debug ||"
-	@echo "archer-gnu || archer-gnu-debug ||"
-	@echo "archer-cray || archer-cray-debug ||"
-	@echo "archer-pathscale || archer-pathscale-debug ||"
-	@echo "archer-X2 || archer-X2-debug"
+	@echo "hpc || archer || gnu-debug"
 	@echo
 	@echo "Please examine this Makefile's targets for details!"
 	@echo "If no target suits your system then create your own"
@@ -239,176 +236,48 @@ clean:
 #=====================================================================
 uknown_platform:
 	$(MAKE) LD="path to FORTRAN90 Linker-loaDer" \
-	LDFLAGS="appropriate flags for LD (MPI libraries)" \
+	LDFLAGS="appropriate flags for LD (MPI libraries) \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	FC="path to FORTRAN90 compiler" \
-	FCFLAGS="appropriate flags for FC (MPI include)" \
+	FCFLAGS="appropriate flags for FC (MPI include) \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 # System specific targets follow:
 #=====================================================================
 
-#================== Cambridge HPC - darwin (Woodcrest)  ==============
+#================== System Default  ==================================
 hpc:
-	$(MAKE) LD="mpif90 -o" LDFLAGS="-O3" \
-	FC="mpif90 -c" FCFLAGS="-O3" \
+	$(MAKE) LD="mpif90 -o" \
+	LDFLAGS="-O3 \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
+	FC="mpif90 -c" \
+	FCFLAGS="-O3 \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
-#================== Cambridge HPC - debug ============================
-hpcd:
-	$(MAKE) LD="mpif90 -o" LDFLAGS="-O0 -g -C" \
-	FC="mpif90 -c" FCFLAGS="-O0 -g -C" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== Beowulf Linux ifort + mpich ======================
-lake:
-	$(MAKE) LD="/opt/intel/compiler70/ia32/bin/ifc -v -o" \
-	LDFLAGS="-O3 -xW -prec_div -L/opt/mpich-intel/lib -lmpich \
-	-L/opt/intel/compiler70/ia32/lib/ -lPEPCF90" \
-	FC="/opt/intel/compiler70/ia32/bin/ifc -c" \
-	FCFLAGS="-O3 -xW -prec_div -I/opt/mpich-intel/include" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== Linux efc SGI ALTIX + parallel FFT  ==============
-newton:
-	$(MAKE) LD="ifort -o" LDFLAGS="-tpp2 -ip -O3 -lmpi -lguide" \
-	FC="ifort -c" FCFLAGS="-O3 -tpp2 -ip -w" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== Beowulf Linux pgf90 + myrinet / mpich ============
-dirac:
-	$(MAKE) LD="/usr/local/mpich-gm-pgroup121-7b/bin/mpif90 -v -o" \
-	LDFLAGS="-O3 -L/usr/local/mpich-gm-pgroup121-7b/lib -lmpich -lfmpich \
-	         -lmpichf90 -L/usr/local/gm/binary/lib -lgm -L/usr/local/lib" \
-	FC="/usr/local/mpich-gm-pgroup121-7b/bin/mpif90 -c" \
-	FCFLAGS="-fast -Knoieee -Mdalign -O3" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== Franklin (SUNfire cluster) =======================
-#setenv HPCF_MPI yes
-franklin:
-	$(MAKE) LD="/opt/SUNWhpc/bin/mpf90 -o" \
-	LDFLAGS="-stackvar -fsimple=1 -xO3 -xarch=v9b -DHPCF_MPI -lmpi \
-	         -xlic_lib=sunperf" \
-	FC="/opt/SUNWhpc/bin/mpf90 -c" \
-	FCFLAGS="-stackvar -fsimple=1 -xO3 -xarch=v9b -xchip=ultra \
-	         -xlic_lib=sunperf -xalias=actual -fpover -ftrap=%none \
-	         -fnonstd -libmil -dalign -I/opt/SUNWhpc/HPC5.0/include/v9" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== HPCx SP5 =========================================
-hpcx:
-	$(MAKE) LD="mpxlf90_r -o" LDFLAGS="-O3 -q64 -qmaxmem=-1" \
-	FC="mpxlf90_r -qsuffix=f=f90 -c" \
-	FCFLAGS="-O3 -q64 -qmaxmem=-1 -qarch=pwr5 -qtune=pwr5 -qnosave" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== HPCx SP5 - DEBUG =================================
-hpcx-debug:
-	$(MAKE) LD="mpxlf90_r -o" LDFLAGS="-g -C -q64 -O0 -lessl -lhmd" \
-	FC="mpxlf90_r -qsuffix=f=f90 -c" \
-	FCFLAGS="-g -C -q64 -O0 -qarch=pwr5 -qtune=pwr5 -qnosave" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== BG/L =============================================
-BGL:
-	$(MAKE) LD="/bgl/BlueLight/ppcfloor/bglsys/bin/mpixlf95 -o" \
-	LDFLAGS="-O3 -qhot -qarch=440d -qtune=440" \
-	FC="/bgl/BlueLight/ppcfloor/bglsys/bin/mpixlf95 -c" \
-	FCFLAGS="-O3 -qhot -qarch=440d -qtune=440" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== BG/P =============================================
-BGP:
-	$(MAKE) LD="/bgsys/drivers/ppcfloor/comm/bin/mpixlf2003_r -o" \
-	LDFLAGS="-O3 -qhot -qarch=450d -qtune=450 -qmaxmem=128000" \
-	FC="/bgsys/drivers/ppcfloor/comm/bin/mpixlf2003_r -c" \
-	FCFLAGS="-O3 -qhot -qarch=450d -qtune=450 -qmaxmem=128000" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== CRAY XT3/6 pgi compilers (default) ===============
+#================== ARCHER Default ===================================
 archer:
 	$(MAKE) LD="ftn -o" \
-	LDFLAGS="-O3" \
+	LDFLAGS="-O3 \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	FC="ftn -c" \
-	FCFLAGS="-O3" \
+	FCFLAGS="-O3 \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
-#================== CRAY XT3/6 pgi compilers - DEBUG =================
-archer-pgi-debug:
-	$(MAKE) LD="ftn -o" \
-	LDFLAGS="-O0 -W -Wall -pedantic -std=f2003 -g -fbounds-check \
-	         -fbacktrace -finit-real=nan -finit-integer=999999" \
-	FC="ftn -c" \
-	FCFLAGS="-O0 -W -Wall -pedantic -std=f2003 -g -fbounds-check \
-	         -fbacktrace -finit-real=nan -finit-integer=999999" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== CRAY XT3/6 gnu compilers =========================
-archer-gnu:
-	$(MAKE) LD="ftn -o" \
-	LDFLAGS="-O3 -Wall -pedantic -g" \
-	FC="ftn -c" \
-	FCFLAGS="-O3 -Wall -pedantic -g" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== CRAY XT3/6 gnu compilers - DEBUG =================
-archer-gnu-debug:
+#================== Ilian's Paranoiac Default ========================
+gnu-debug:
 	$(MAKE) LD="mpif90 -o" \
 	LDFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
-	         -finit-integer=-9999 -finit-real=nan -std=f2003 \
-	         -ffpe-trap=invalid,zero,overflow -fdump-core" \
+	         -finit-integer=-9999 -finit-real=nan -std=f2003 -fdump-core \
+	         -ffpe-trap=invalid,zero,overflow -frecord-gcc-switches \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	FC="mpif90 -c" \
 	FCFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
-	         -finit-integer=-9999 -finit-real=nan -std=f2003 \
-	         -ffpe-trap=invalid,zero,overflow -fdump-core" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== CRAY XT3/6 cray compilers ========================
-archer-cray:
-	$(MAKE) LD="ftn -o" \
-	LDFLAGS="-O3 -en" \
-	FC="ftn -c" \
-	FCFLAGS="-O3 -en" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== CRAY XT3/6 cray compilers - DEBUG ================
-archer-cray-debug:
-	$(MAKE) LD="ftn -o" \
-	LDFLAGS="-O3 -en -G2" \
-	FC="ftn -c" \
-	FCFLAGS="-O3 -en -G2" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== CRAY XT3/6 pathscale compilers ===================
-archer-pathscale:
-	$(MAKE) LD="ftn -o" \
-	LDFLAGS="-byteswapio -O3" \
-	FC="ftn -c" \
-	FCFLAGS="-byteswapio -O3" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== CRAY XT3/6 pathscale compilers - DEBUG ===========
-archer-pathscale-debug:
-	$(MAKE) LD="ftn -o" \
-	LDFLAGS="-byteswapio -O0 -g -ffortran-bounds-check" \
-	FC="ftn -c" \
-	FCFLAGS="-byteswapio -O0 -g -ffortran-bounds-check" \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== CRAY X2 ==========================================
-archer-X2:
-	$(MAKE) LD="ftn -o" \
-	LDFLAGS="-O3 -Ofp3 -Ocache2 -rm " \
-	FC="ftn -c" \
-	FCFLAGS="-O3 -Ofp3 -Ocache2 -rm " \
-	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
-
-#================== CRAY X2 - DEBUG ==================================
-archer-X2-debug:
-	$(MAKE) LD="ftn -o" \
-	LDFLAGS="-G0 -O0 -rm " \
-	FC="ftn -c" \
-	FCFLAGS="-G0 -O0 -rm " \
+	         -finit-integer=-9999 -finit-real=nan -std=f2003 -fdump-core \
+	         -ffpe-trap=invalid,zero,overflow -frecord-gcc-switches \
+	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 # Default code
