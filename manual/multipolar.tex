@@ -186,12 +186,12 @@
 \newcommand{\cpt}{{\emph{cluster-particle}}}
 \newcommand{\cct}{{\emph{cluster-cluster}}}
 
-\D offers advanced potential energy potentials through multipolar
+\D offers advanced potential energy calculations through multipolar
 electrostatics.  This is an extension to the point-charge model
-where the charge density of chemical species are described by
-higher order point multipoles. The generic algorithms in \D are
-designed to allow for arbitrary order multipoles but for practical
-reasons the functionality is limited to hexadecapoles only.
+where the charge density of chemical species are described by higher
+order point multipoles. The generic algorithms in \D are designed to
+allow for arbitrary order \cite{boateng-15a} multipoles but for
+practical reasons the functionality is limited to hexadecapoles only.
 
 \subsubsection*{Multipoles}
 
@@ -253,8 +253,8 @@ the electrostatic field at $\bri$ is
 \end{array}\right]\psi(\rij)~~,\label{eqn:mpolefield}
 \eeq
 where $\be_1=\langle1,0, 0\rangle$, $\be_2=\langle0,1,0\rangle$, and
-$\be_3=\langle0,0,1\rangle$ and the torque on particle $i$ in the
-$\alpha$-direction, $\tau_{i,\alpha}$, is obtained as
+$\be_3=\langle0,0,1\rangle$ and the torque \cite{sagui-04a} on particle
+$i$ in the $\alpha$-direction, $\tau_{i,\alpha}$, is obtained as
 \beq
 \tau_{i,\alpha} = \sum_{\bs = \bze}^{p} \mcal_{i,\alpha}^{\bs} \bpart_{i}^{\bs} \phi(\brij)
 = \sum_{\bs = \bze}^{p} \mcal_{i,\alpha}^{\bs} \sum_{j \ne i}^{N} \sum_{\bk = \bze}^{p}
