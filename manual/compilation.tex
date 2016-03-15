@@ -38,14 +38,18 @@ version of \D.
 In UNIX environment the compilation of the program is initiated by
 typing the command:
 
-{\sl make} $target$
+{\sl make} $target$ BUILDER='Your Name Here'
 
 \noindent where $target$ is the specification of the required
 machine.  For many computer systems this is all that is required
-to compile a working version of \D. (To determine which targets
-are already defined in the makefile, examine it or type the
-command {\sl make} without a nominated target - it will produce a
-list of known targets.)
+to compile a working version of \D.   (To determine which
+targets are already defined in the makefile, examine it or type
+the command {\sl make} without a nominated target - it will
+produce a list of known targets.)  Specifying your name as the
+person building the code is optional but it may be useful
+metadata in the future for citation/acknowledgment purposes
+when the results produced with the particular executable
+are examined as part of a research programme.
 
 Some of the {\sl make} keywords and their uses are described below.
 {\bf Note} that some of the keywords may also be set in the UNIX

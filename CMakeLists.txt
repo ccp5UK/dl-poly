@@ -37,7 +37,7 @@ endif()
 
 if (BUILDER)
   message(STATUS "${BUILDER} is the builder")
-else() 
+else()
   message(STATUS "default value for builder will be used")
 endif()
 #if (NOT HOST)

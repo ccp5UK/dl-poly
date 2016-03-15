@@ -129,6 +129,8 @@
 
      If (keyfld > 0) Call external_field_apply(keyshl,time,engfld,virfld)
 
+! Apply PLUMED driven dynamics
+
      If (l_plumed) Call plumed_apply(xxx,yyy,zzz,nstrun,nstep,stpcfg,stress)
 
 ! Apply pseudo thermostat - force cycle (0)

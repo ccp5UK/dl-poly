@@ -6,6 +6,7 @@
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov march 2011
+! contrib   - a.m.elena march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -49,5 +50,5 @@
 
 ! Environment inquiries
 
-  Integer, Parameter    :: MPI_MAX_PROCESSOR_NAME = 1
-  Integer, Parameter    :: MPI_MAX_LIBRARY_VERSION_STRING = 1
+  Integer, Parameter :: MPI_MAX_PROCESSOR_NAME         = 1
+  Integer, Parameter :: MPI_MAX_LIBRARY_VERSION_STRING = 1

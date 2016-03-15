@@ -199,7 +199,7 @@ d_ene_trq_mpoles.f90
 if(BUILDER)
   set_property(SOURCE development_module.F90 APPEND PROPERTY
     COMPILE_DEFINITIONS "BUILDER='${BUILDER}'")
-endif()  
+endif()
 set_property(SOURCE development_module.F90 APPEND PROPERTY
   COMPILE_DEFINITIONS "HOST='${HOST}'")
 
@@ -236,14 +236,14 @@ endif()
 add_library(dlpoly ${dlpoly_SRCS} ${netcdf_SRCS})
 if(WITH_NETCDF)
   set_target_properties(dlpoly PROPERTIES
-    COMPILE_DEFINITIONS "NETCDF" 
+    COMPILE_DEFINITIONS "NETCDF"
     )
 endif()
 
 add_library(dlpolycore ${dlpoly_CORE_SRCS} ${dlpoly_SERIAL_SRCS})
 if( NOT WITH_MPI)
-  set_target_properties(dlpolycore PROPERTIES 
-     COMPILE_DEFINITIONS "SERIAL" 
+  set_target_properties(dlpolycore PROPERTIES
+     COMPILE_DEFINITIONS "SERIAL"
      INCLUDE_DIR ${src_dir}/SERIAL
      )
 endif()
@@ -251,12 +251,12 @@ add_library(dlpolythermo  ${dlpoly_THERMO_SRCS})
 add_library(dlpolykim  ${kim_SRCS})
 if(WITH_KIM)
   set_target_properties(dlpolykim PROPERTIES
-    COMPILE_DEFINITIONS "KIM" 
+    COMPILE_DEFINITIONS "KIM"
     )
 endif()
 add_library(dlpolyplumed  ${plumed_SRCS})
 if(WITH_PLUMED)
-  set_target_properties(dlpolyplumed PROPERTIES 
+  set_target_properties(dlpolyplumed PROPERTIES
     COMPILE_DEFINITIONS "PLUMED"
     )
 endif()

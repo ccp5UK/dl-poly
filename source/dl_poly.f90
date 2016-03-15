@@ -345,15 +345,6 @@ Program dl_poly
      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
   End If
 
-  If (l_plumed) Then
-     Call plumed_init(megatm,tstep,temp)
-     Call plumed_print_about()
-  Else
-     If (idnode == 0) Then
-       Write(nrite,'(1x,a)') "***PLUMED is off or version without PLUMED***"
-     End If
-  End If
-
 ! l_org: translate CONFIG into CFGORG and exit gracefully
 
   If (l_org) Then
@@ -520,6 +511,17 @@ Program dl_poly
 ! Cap forces in equilibration mode
 
   If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,temp)
+
+! PLUMED initialisation or information message
+
+  If (l_plumed) Then
+     Call plumed_init(megatm,tstep,temp)
+     Call plumed_print_about()
+  Else
+     If (idnode == 0) Then
+       Write(nrite,'(1x,a)') "***PLUMED is off or version without PLUMED***"
+     End If
+  End If
 
 ! Print out sample of initial configuration on node zero
 
@@ -692,7 +694,10 @@ Program dl_poly
 
 10 Continue
 
+! PLUMED finalisation
+
   If (l_plumed) Call plumed_finalize()
+
 ! Ask for reference in publications
 
   If (idnode == 0) Then
@@ -715,6 +720,8 @@ Program dl_poly
   "**************                                                                                             **************", &
   "*************************************************************************************************************************"
   End If
+
+! Get just the one number to compare against
 
   If (idnode == 0 .and. l_eng) Write(nrite,"(/,1x,a,1p,e20.10)") "TOTAL ENERGY: ", stpval(1)
 

@@ -18,7 +18,7 @@ EXE=$(BINROOT)/$(EX)
 KIM_API_DIR=./kim-api-v1.6.0/src
 
 BUILDER?='Your Name'
-HOSTNAME=$(shell hostname)
+HOSTNAME='$(shell hostname)'
 
 TYPE=master
 
@@ -257,10 +257,9 @@ clean:
 uknown_platform:
 	$(MAKE) LD="path to FORTRAN90 Linker-loaDer" \
 	LDFLAGS="appropriate flags for LD (MPI libraries)" \
-	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
 	FC="path to FORTRAN90 compiler" \
-	FCFLAGS="appropriate flags for FC (MPI include)" \
-	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
+	FCFLAGS="appropriate flags for FC (MPI include) \
+	         -DBUILDER=\"$(BUILDER)\" -DHOST=\"$(HOSTNAME)\"" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 # System specific targets follow:
@@ -269,11 +268,9 @@ uknown_platform:
 #================== System Default  ==================================
 gnu:
 	$(MAKE) LD="gfortran -o"
-	LDFLAGS="-O3 \
-	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
+	LDFLAGS="-O3" \
 	FC="gfortran -c" \
-	FCFLAGS="-O3 \
-	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
+	FCFLAGS="-O3 -DBUILDER=\"$(BUILDER)\" -DHOST=\"$(HOSTNAME)\"" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #====================== GNU fortran compiler - DEBUG =================
@@ -281,13 +278,12 @@ gnu-debug:
 	$(MAKE) LD="gfortran -o" \
 	LDFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
 	         -finit-integer=-9999 -finit-real=nan -std=f2003 -fdump-core \
-	         -ffpe-trap=invalid,zero,overflow -frecord-gcc-switches \
-	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
+	         -ffpe-trap=invalid,zero,overflow -frecord-gcc-switches" \
 	FC="gfortran -c" \
 	FCFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
 	         -finit-integer=-9999 -finit-real=nan -std=f2003 -fdump-core \
 	         -ffpe-trap=invalid,zero,overflow -frecord-gcc-switches \
-	         -DBUILDER=\"'$(BUILDER)'\" -DHOST=\"'$(HOSTNAME)'\"" \
+	         -DBUILDER=\"$(BUILDER)\" -DHOST=\"$(HOSTNAME)\"" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 # Default code
