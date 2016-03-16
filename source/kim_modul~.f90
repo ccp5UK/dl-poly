@@ -17,7 +17,7 @@ Module kim_module
 !
 ! copyright - daresbury laboratory
 ! author    - r.s.elliott march 2015
-! contrib   - h.boateng & i.t.todorov february 2016
+! contrib   - h.boateng & i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -127,7 +127,7 @@ Contains
 
     Implicit None
 
-    If (idnode == 0) Write(nrite,'(1x,a)') "No openKIM crosscompiled"
+    If (idnode == 0) Write(nrite,'(1x,a)') "*** warning - kim directive found in FIELD but openKIM not available! ***"
     Call error(0)
   End Subroutine kim_message
 
