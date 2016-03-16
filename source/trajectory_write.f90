@@ -14,8 +14,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use config_module,     Only : cfgname,imcon,cell,natms,     &
-                                ltg,atmnam,chge,weight, &
+  Use config_module,     Only : cfgname,imcon,cell,natms, &
+                                ltg,atmnam,chge,weight,   &
                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use statistics_module, Only : rsd
   Use parse_module,      Only : tabs_2_blanks, get_word, &
@@ -1189,7 +1189,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
   frm=frm+Int(1,ip)
 
 ! NO UNSORTED WRITING AS NO INDICES ARE WRITTEN
-! In other words if the user asked for unsorted I/O they get it sorted.
+! In other words even if the user asked for unsorted I/O they get it sorted.
 
 ! SORTED MPI-I/O or Parallel Direct Access FORTRAN
 

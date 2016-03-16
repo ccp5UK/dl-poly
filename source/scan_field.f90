@@ -19,7 +19,7 @@ Subroutine scan_field                                &
 ! dl_poly_4 subroutine for raw scanning the contents of the FIELD file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith february 2016
+! author    - i.t.todorov & w.smith march 2016
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs)
 ! contrib   - h.a.boateng february 2015
@@ -201,17 +201,16 @@ Subroutine scan_field                                &
 
 ! multipoles container detection
 
-     If (word(1:9) == 'multipole') Then
+     If (word(1:5) == 'multi') Then
+
+        Call get_word(record,word) ; Call lower_case(word)
+        If (word(1:5) == 'order') Call get_word(record,word)
 
         l_n_e=.false.
 
-        Call get_word(record,word)
-        mxompl = Max(0,Nint(word_2_real(word)))
+        mxompl = Min(Max(0,Nint(word_2_real(word))),4)
 
         mximpl = (mxompl+3)*(mxompl+2)*(mxompl+1)/6
-
-        If (idnode == 0 .and. mxompl > 4) &
-  Write(nrite,'(1x,a,i0)') "Extending electrostatics to multipolar interactions of order ", mxompl
 
      Else If (word(1:7) == 'molecul') Then
 
