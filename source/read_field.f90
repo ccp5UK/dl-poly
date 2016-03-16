@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2016
+! author    - i.t.todorov march 2016
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs & PDFs)
@@ -297,14 +297,19 @@ Subroutine read_field                   &
 
 ! multipolar electrostatics control option
 
-     Else If (word(1:4) == 'mult') Then
+     Else If (word(1:5) == 'multi') Then
 
         Call get_word(record,word) ; Call lower_case(word)
         If (word(1:5) == 'order') Call get_word(record,word)
 
         If (idnode == 0) Then
-           Write(nrite,"(/,/,1x,a,i0,/,1x,a)") &
-              "Multipolar electrostatics opted with poles up to order ", Nint(word_2_real(word)), &
+           Write(nrite,"(/,/,1x,a,i0)") &
+              "Multipolar electrostatics opted with poles up to order ", Nint(word_2_real(word))
+
+           If (Nint(word_2_real(word)) > mxompl) Write(nrite,"(1x,a)") &
+             "*** warning - supplied multipolar expansion order reduced to the maximum allowed - 4! ***"
+
+           Write(nrite,"(1x,a)") &
               "MPOLES file scheduled for reading after reading all intramolecular topology in FIELD"
 
            If (mximpl == 0) Write(nrite,"(1x,a)") &
