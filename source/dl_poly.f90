@@ -514,14 +514,7 @@ Program dl_poly
 
 ! PLUMED initialisation or information message
 
-  If (l_plumed) Then
-     Call plumed_init(megatm,tstep,temp)
-     Call plumed_print_about()
-  Else
-     If (idnode == 0) Then
-       Write(nrite,'(1x,a)') "***PLUMED is off or version without PLUMED***"
-     End If
-  End If
+  If (l_plumed) Call plumed_init(megatm,tstep,temp)
 
 ! Print out sample of initial configuration on node zero
 
