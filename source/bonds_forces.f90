@@ -335,7 +335,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
         Else If (keyb == 10) Then
 
-! AMOEBA potential
+! MM3-bond-stretch potential
 
            k =prmbnd(1,kk)
            r0=prmbnd(2,kk)

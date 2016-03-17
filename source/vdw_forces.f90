@@ -341,14 +341,14 @@ Subroutine vdw_forces &
               eps=prmvdw(1,k)
               sig=prmvdw(2,k)
 
-              rho=sig/rrr
+              rho=rrr/sig
               t1=1.0_wp/(0.07_wp+rho)
               t2=1.0_wp/(0.12_wp+rho**7)
-              t3=eps*(1.07_wp/t1**7)
+              t3=eps*(1.07_wp*t1)**7
 
               If (jatm <= natms .or. idi < ltg(jatm)) &
-              eng   = t3*((1.12_wp/t2)-2.0_wp)
-              gamma =-7.0_wp*t3*rho*(((1.12_wp/t2)-2.0_wp)/t1 + (1.12_wp/t2**2)*rho**6)/rsq
+              eng   = t3*((1.12_wp*t2) - 2.0_wp)
+              gamma = eng*7.0_wp*(t1 + 1.12_wp*t2*rho**6)/rho/rsq
 
               If (ls_vdw) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &

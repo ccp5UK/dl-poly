@@ -13,7 +13,11 @@ Module development_module
 
   Use kinds_f90
   Use setup_module, Only : nrite, nread
+#ifdef OLDMPI
+  Use comms_module, Only : mpi_ver,mpi_subver
+#else
   Use comms_module, Only : mpi_ver,mpi_subver,lib_version
+#endif
 
   Implicit None
 
@@ -213,10 +217,12 @@ Contains
     Write(nrite,'(1x,a3,1x,a10,a48,a4)') "***","version: ", aux,"****"
     If (mpi_ver > 0) Then
        Write(nrite,'(1x,a3,1x,a10,1x,i1,a1,i1,a48)') "***","MPI: ",mpi_ver,".",mpi_subver,Repeat(" ",44)//"****"
+#ifndef OLDMPI
        Do i=1,Len_trim(lib_version),47
           aux=lib_version(i:Min(i+46,len_trim(lib_version)))
           Write(nrite,'(1x,a3,1x,a10,a48,a4)') "***","library: ",aux,"****"
        End Do
+#endif
     Else If (mpi_ver < 0) Then
        Write(aux,*) "MPI Library too old.  Update!!!"
        Write(nrite,'(1x,a3,1x,a10,a48,a4)') "***"," ",aux,"****"

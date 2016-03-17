@@ -699,7 +699,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \phantom{x} (ii)~~single species potentials are available \\
 \>                                              \> \phantom{x} ~~~~~~(specified) and of the same type; and \\
 \>                                              \> \phantom{x} (iii)~their type is allowed to mix, i.e. of \\
-\>                                              \> \phantom{x} ~~~~~~12-6 or LJ or DPD or AMOE or WCA type. \\
+\>                                              \> \phantom{x} ~~~~~~12-6 or LJ or DPD or 14-7 or WCA type. \\
 \>                                              \> The available mixing {\bf \em rule}s are as follows: \\
 \>                                              \> \phantom{x} {\em lore}ntz for the Lorentz-Berthelot type of mixing \\
 \>                                              \> \phantom{x} {\em fend}er for the Fender-Halsey type of mixing \\
@@ -2073,9 +2073,9 @@ $U(r) = -0.5~k~R_{o}~ln\left[1-\left(\frac{r_{ij}-\Delta}{R_{o}^{2}}\right)^{2}\
 {\bf -fne}  & \cite{warner-72a,bird-77a,grest-86a} & &   &          &       &
 $U(r) = \infty~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~:~r_{ij} \ge R_{o} + \Delta$ \\
             &                    &            &          &          &       & \\
-{\bf amoe}  & AMOEBA \cite{ponder-10a} & $k$  & $r_{o}$  &          &       &
+{\bf mmst}  & MM3 bond stretch   & $k$        & $r_{o}$  &          &       &
 $U(r) = k~\delta^{2}\left[1-2.55~\delta+(7/12)~2.55^{2}~\delta^{2}\right]~;~\delta~ = r-r_{o}$ \\
-{\bf -amo}  & FF bond            &            &          &          &       & \\
+{\bf -mst}  & \cite{allinger-89a} &           &          &          &       & \\
             &                    &            &          &          &       & \\
 \hline
 \end{tabular}
@@ -2175,9 +2175,9 @@ $U(\theta) = A~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o}) + (\theta-\theta_{0})
 {\bf -cmp} & all terms           & $r_{ij}^{o}$ & $r_{jk}^{o}$ &   &            &
 $ [B~(r_{ij} - r_{ij}^{o})+C~(r_{ik} - r_{ik}^{o})]$ \\
            &                     &     &              &            &            & \\
-{\bf amoe} & AMOEBA \cite{ponder-10a} & $k$ & $\theta_{0}$ &       &            &
+{\bf mmbd} & MM3 angle bend      & $k$ & $\theta_{0}$ &            &            &
 $U(\theta) = k~\Delta^{2}[1 - 1.4 \cdot 10^{-2}\Delta + 5.6 \cdot 10^{-5}\Delta^{2}$ \\
-{\bf -amo} & FF angle            &     &              &            &            &
+{\bf -mbd} & \cite{allinger-89a} &     &              &            &            &
 $- 7.0 \cdot 10^{-7}\Delta^{3}+2.2 \cdot 10^{-8}\Delta^{4})]~;~\Delta = \theta-\theta_{0}$ \\
            &                     &     &              &            &            & \\
 {\bf kky}  & KKY \cite{ponder-10a} & $f_{k}$ & $\theta_{0}$ & $g_{r}$ & $r_{o}$ &
@@ -2452,17 +2452,17 @@ $U(r) = E_{0}[\{1-\exp(-k(r-r_{0}))\}^{2}-1]$ \\
 {\bf wca}  & Shifted$^{*}$ \cite{weeks-71a} Weeks- & $\epsilon$ & $\sigma^{\ddagger}$ & $\Delta$ & &       &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r-\Delta} \right)^{12} -
 \left( \frac{\sigma}{r-\Delta}\right)^{6} \right] + \epsilon : r_{ij} < 2^{1 \over 6}~\sigma + \Delta$ \\
-           & Chandler-Anderson &   &          &          &         &                      &
+           & Chandler-Anderson         &            &          &          &         &                      &
 $U(r) = 0~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~: r_{ij} \ge 2^{1 \over 6}~\sigma + \Delta$ \\
            &                           &            &          &          &         &                      & \\
 {\bf dpd}  & Standard DPD \cite{groot-97a} & $A$    & $r_{c}$$^{\ddagger}$ &        &         &                      &
 $U(r) = \frac{A}{2}~r_{c}~\left(1-\frac{r}{r_{c}}\right)^{2}~:~r < r_{c}$ \\
-           & (Groot-Warren)             &           &          &          &         &                      &
+           & (Groot-Warren)            &            &          &          &         &                      &
 $U(r) = 0~~~~~~~~~~~~~~~~~~~:~r \ge r_{c}$ \\
            &                           &            &          &          &         &                      & \\
-{\bf amoe} & AMOEBA \cite{ponder-10a} & $\epsilon$ & $r_{o}$   &          &         &                      &
+{\bf 14-7} & 14-7 buffered             & $\epsilon$ & $r_{o}$  &          &         &                      &
 $U(r) = \epsilon\left(\frac{1.07}{{(r_{ij}/r_{o})+0.07}^{\vphantom{7}}}\right)^{7}\left(\frac{1.12}{{(r_{ij}/r_{o})^{7}+0.12}^{\vphantom{7}}}-2\right)$ \\
-           & FF 14-7 pair              &            &          &          &         &                      & \\
+           & AMOEBA FF \cite{ponder-10a} &          &          &          &         &                      & \\
            &                           &            &          &          &         &                      & \\
 \hline
 \end{tabular}

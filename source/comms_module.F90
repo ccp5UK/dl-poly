@@ -42,7 +42,9 @@ Module comms_module
   Integer,                                           Public :: mpi_ver     = -1, &
                                                                mpi_subver  = -1
   Character( Len = MPI_MAX_PROCESSOR_NAME ),         Public :: proc_name   = "*"
+#ifndef OLDMPI
   Character( Len = MPI_MAX_LIBRARY_VERSION_STRING ), Public :: lib_version = "*"
+#endif
 
 ! Message tags
 

@@ -1197,9 +1197,9 @@ Subroutine read_field                   &
                        keybnd(nbonds)=9
                     Else If (keyword == '-fne') Then
                        keybnd(nbonds)=-9
-                    Else If (keyword == 'amoe') Then
+                    Else If (keyword == 'mmst') Then
                        keybnd(nbonds)=10
-                    Else If (keyword == '-amo') Then
+                    Else If (keyword == '-mst') Then
                        keybnd(nbonds)=-10
                     Else
 
@@ -1430,9 +1430,9 @@ Subroutine read_field                   &
                        keyang(nangle)=12
                     Else If (keyword == '-cmp') Then
                        keyang(nangle)=-12
-                    Else If (keyword == 'amoe') Then
+                    Else If (keyword == 'mmbd') Then
                        keyang(nangle)=13
-                    Else If (keyword == '-amo') Then
+                    Else If (keyword == '-mbd') Then
                        keyang(nangle)=-13
                     Else If (keyword == 'kky' ) Then
                        keyang(nangle)=14
@@ -3052,7 +3052,7 @@ Subroutine read_field                   &
               keypot=9
            Else If (keyword == 'dpd' ) Then
               keypot=10
-           Else If (keyword == 'amoe') Then
+           Else If (keyword == '14-7') Then
               keypot=11
            Else
 
@@ -3195,7 +3195,7 @@ Subroutine read_field                   &
                           If (idnode == 0) Write(nrite,"(3(/,1x,a))")                        &
   "type of mixing defaulted - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2", &
   "mixing is limited to potentials of the same type only",                                   &
-  "mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)"
+  "mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA 14-7)"
                        End If
                     End If
                  End If
