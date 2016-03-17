@@ -400,8 +400,10 @@ Subroutine vdw_generate(rvdw)
            t2=1.0_wp/(0.12_wp+rho**7)
            t3=eps*(1.07_wp*t1)**7
 
-           vvdw(i,ivdw)=t3*((1.12_wp*t2) - 2.0_wp)
-           gvdw(i,ivdw)=vvdw(i,ivdw)*7.0_wp*(t1 + 1.12_wp*t2*rho**6)/rho
+           t=t3*((1.12_wp*t2) - 2.0_wp)
+
+           vvdw(i,ivdw)=t
+           gvdw(i,ivdw)=7.0_wp*(t1*t + 1.12_wp*t3*t2**2*rho**6)*rho
         End Do
         vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
         gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
