@@ -352,7 +352,7 @@ Subroutine angles_forces(isw,engang,virang,stress)
 
         Else If (keya == 9) Then
 
-! MM3 stretch-bend potential
+! MM3-stretch-bend potential
 
            a     =prmang(1,kk)
            theta0=prmang(2,kk)
@@ -428,7 +428,7 @@ Subroutine angles_forces(isw,engang,virang,stress)
 
         Else If (keya == 13) Then
 
-! MM3angle-bend potential
+! MM3-angle-bend potential
 
            k     =prmang(1,kk)
            theta0=prmang(2,kk)
