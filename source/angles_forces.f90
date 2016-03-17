@@ -10,7 +10,7 @@ Subroutine angles_forces(isw,engang,virang,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith may 1992
-! amended   - i.t.todorov february 2015
+! amended   - i.t.todorov march 2016
 ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -428,7 +428,7 @@ Subroutine angles_forces(isw,engang,virang,stress)
 
         Else If (keya == 13) Then
 
-! AMOEBA potential
+! MM3angle-bend potential
 
            k     =prmang(1,kk)
            theta0=prmang(2,kk)

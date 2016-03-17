@@ -266,9 +266,7 @@ archer:
 #================== Ilian's Paranoiac Default ========================
 gnu-debug:
 	$(MAKE) LD="mpif90 -o" \
-	LDFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
-	         -finit-integer=-9999 -finit-real=nan -std=f2003 -fdump-core \
-	         -ffpe-trap=invalid,zero,overflow -frecord-gcc-switches" \
+	LDFLAGS="-O3 -g -fbacktrace" \
 	FC="mpif90 -c" \
 	FCFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
 	         -finit-integer=-9999 -finit-real=nan -std=f2003 -fdump-core \

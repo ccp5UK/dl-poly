@@ -29,12 +29,12 @@ Subroutine vdw_forces &
   Real( Kind = wp ), Save :: dlrpot,rdr
 
   Integer           :: mm,idi,ai,aj,jatm,key,k,l,ityp,n,m
-  Real( Kind = wp ) :: rrr,rsq,ppp,gamma,eng,          &
-                       r0,r0rn,r0rm,r_6,sor6,          &
-                       rho,a,b,c,d,e0,kk,              &
-                       nr,mr,rc,sig,eps,alpha,beta,    &
-                       fix,fiy,fiz,fx,fy,fz,           &
-                       gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3, &
+  Real( Kind = wp ) :: rrr,rsq,ppp,gamma,eng,            &
+                       r0,r0rn,r0rm,r_6,sor6,            &
+                       rho,a,b,c,d,e0,kk,                &
+                       nr,mr,rc,sig,eps,alpha,beta,      &
+                       fix,fiy,fiz,fx,fy,fz,             &
+                       gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3,t, &
                        strs1,strs2,strs3,strs5,strs6,strs9
 
 ! define grid resolution for potential arrays and interpolation spacing
@@ -256,12 +256,14 @@ Subroutine vdw_forces &
 
               If (n <= m) Call error(470)
 
-              b=1.0_wp/(nr-mr)
+              t=Real(n-m,wp)
+
+              b=1.0_wp/t
               c=rc/r0 ; If (c < 1.0_wp) Call error(468)
 
               beta = c*( (c**(m+1)-1.0_wp) / (c**(n+1)-1.0_wp) )**b
-              alpha= -(nr-mr) / (  mr*(beta**n)*(1.0_wp+(nr/c-nr-1.0_wp)/c**n) &
-                                  -nr*(beta**m)*(1.0_wp+(mr/c-mr-1.0_wp)/c**m) )
+              alpha= -t / (  mr*(beta**n)*(1.0_wp+(nr/c-nr-1.0_wp)/c**n) &
+                            -nr*(beta**m)*(1.0_wp+(mr/c-mr-1.0_wp)/c**m) )
               e0 = e0*alpha
 
               If (rrr <= rc) Then
@@ -341,14 +343,16 @@ Subroutine vdw_forces &
               eps=prmvdw(1,k)
               sig=prmvdw(2,k)
 
-              rho=sig/rrr
+              rho=rrr/sig
               t1=1.0_wp/(0.07_wp+rho)
               t2=1.0_wp/(0.12_wp+rho**7)
-              t3=eps*(1.07_wp/t1**7)
+              t3=eps*(1.07_wp*t1)**7
+
+              t=t3*((1.12_wp*t2) - 2.0_wp)
 
               If (jatm <= natms .or. idi < ltg(jatm)) &
-              eng   = t3*((1.12_wp/t2)-2.0_wp)
-              gamma =-7.0_wp*t3*rho*(((1.12_wp/t2)-2.0_wp)/t1 + (1.12_wp/t2**2)*rho**6)/rsq
+              eng   = t
+              gamma = 7.0_wp*(t1*t + 1.12_wp*t3*t2**2*rho**6)*rho/rsq
 
               If (ls_vdw) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &

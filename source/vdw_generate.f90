@@ -387,7 +387,7 @@ Subroutine vdw_generate(rvdw)
 
      Else If (keypot == 11) Then
 
-! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
+! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
 
         eps=prmvdw(1,ivdw)
         sig=prmvdw(2,ivdw)
@@ -395,19 +395,21 @@ Subroutine vdw_generate(rvdw)
         Do i=1,mxgvdw
            r=Real(i,wp)*dlrpot
 
-           rho=sig/r
+           rho=r/sig
            t1=1.0_wp/(0.07_wp+rho)
            t2=1.0_wp/(0.12_wp+rho**7)
-           t3=eps*(1.07_wp/t1**7)
+           t3=eps*(1.07_wp*t1)**7
 
-           vvdw(i,ivdw)=t3*((1.12_wp/t2)-2.0_wp)
-           gvdw(i,ivdw)=-7.0_wp*t3*rho*(((1.12_wp/t2)-2.0_wp)/t1 + (1.12_wp/t2**2)*rho**6)
+           t=t3*((1.12_wp*t2) - 2.0_wp)
+
+           vvdw(i,ivdw)=t
+           gvdw(i,ivdw)=7.0_wp*(t1*t + 1.12_wp*t3*t2**2*rho**6)*rho
         End Do
         vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
         gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
 
         If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=sig/(0.44_wp)**(1.0_wp/7.0_wp)
+           sigeps(1,ivdw)=sig
            sigeps(2,ivdw)=eps
         End If
 

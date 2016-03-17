@@ -175,7 +175,7 @@ a potential well for the flexible bonds of a molecule, that
 maintains the topology of the molecule.  This implementation allows
 for a radius shift of up to half a $R_{o}$ ($|\Delta| \le
 0.5~R_{o}$) with a default of zero ($\Delta_{default} = 0$).
-\item AMOEBA force-field bond potential \cite{ponder-10a}:  ({\bf amoe})
+\item MM3 bond stretch potential \cite{allinger-89a}:  ({\bf m3st})
 \begin{equation}
 U(r_{ij}) = k~(r_{ij}-r_{o})^{2}\left[1-2.55~(r_{ij}-r_{o})+(7/12)~2.55^{2}~(r_{ij}-r_{o})^{2}\right]
 \end{equation}
@@ -242,7 +242,7 @@ different key words:
 \item Buckingham potential:  ({\bf -bck})
 \item Coulomb potential:  ({\bf -cul})
 \item FENE potential:  ({\bf -fne})
-\item AMOEBA force-field bond potential \cite{ponder-10a}:  ({\bf -amo})
+\item MM3 bond stretch potential \cite{allinger-89a}:  ({\bf -m3s})
 \item Tabulated potential:  ({\bf -tab}).  The potential is defined numerically in TABBND (see Section~\ref{bonded-tables} and Section~\ref{intra-tables}).
 \end{enumerate}
 
@@ -324,7 +324,7 @@ U(\theta_{jik}) = A~(\theta_{jik}-\theta_{0})~(r_{ij} - r_{ij}^{o})
 U(\theta_{jik}) = A~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o}) +
 (\theta_{jik}-\theta_{0})~[B~(r_{ij} - r_{ij}^{o})+C~(r_{ik} - r_{ik}^{o})]
 \end{equation}
-\item AMOEBA force-field angle \cite{ponder-10a}:  ({\bf amoe})
+\item MM3 angle bend term \cite{alinger-89a}:  ({\bf m3ab})
 \begin{eqnarray}
 U(\theta_{jik}) = k~(\theta_{jik}-\theta_{0})^{2}[1 &-& 1.4 \cdot 10^{-2}(\theta_{jik}-\theta_{0})^{~}+5.6 \cdot 10^{-5}(\theta_{jik}-\theta_{0})^{2} \nonumber \\
 &-& 7.0 \cdot 10^{-7}(\theta_{jik}-\theta_{0})^{3}+2.2 \cdot 10^{-8}(\theta_{jik}-\theta_{0})^{4}]
@@ -440,7 +440,7 @@ words:
 \item Compass stretch-stretch \cite{sun-98a}:  ({\bf -sts})
 \item Compass stretch-bend \cite{sun-98a}:  ({\bf -stb})
 \item Compass all terms \cite{sun-98a}:  ({\bf -cmp})
-\item AMOEBA force-field angle \cite{ponder-10a}:  ({\bf -amo})
+\item MM3 angle bend \cite{allinger-89a}:  ({\bf -m3a})
 \item KKY \cite{kumagai-94a}:  ({\bf -kky})
 \item Tabulated potential:  ({\bf -tab}).  The potential is defined numerically in TABANG (see Section~\ref{bonded-tables} and Section~\ref{intra-tables}).
 \end{enumerate}
@@ -1138,7 +1138,7 @@ U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
 0 & r_{ij} \ge r_{c} \end{array} \right.
 \end{equation}
 It takes the Groot-Warren \cite{groot-97a} form giving a soft and purely repulsive interaction.
-\item AMOEBA force-field 14-7 pair potential \cite{ponder-10a}:  ({\bf amoe})
+\item 14-7 pair potential \cite{ponder-10a}:  ({\bf 14-7})
 \begin{equation}
 U(r_{ij}) = \epsilon\left(\frac{1.07}{(r_{ij}/r_{o})+0.07}\right)^{7}\left(\frac{1.12}{(r_{ij}/r_{o})^{7}+0.12}-2\right)
 \end{equation}
@@ -1234,7 +1234,7 @@ system is reasonably isotropic beyond the cutoff.
 \D allows a short cut for mixing some of the explicitly specified
 pair interactions for single species of the same type so that
 cross-species interactions are generated if unspecified.  This is
-only possible for the {\bf 12-6, lj, dpd, amoeba, \& wca} types.
+only possible for the {\bf 12-6, lj, dpd, 14-7 \& wca} types.
 The mixing is derived from the Lennard-Jones style characteristic
 paramteres for energy ($\epsilon$) and distance ($\sigma$ or $r_{0}$)
 terms.  The available types of mixing within \D are borrowed from
