@@ -149,6 +149,12 @@ it may be useful metadata in the future for citation/acknowledgment
 purposes when the results produced with the particular executable
 are examined as part of a research programme.
 
+In case the compilation process fails with a message about undefined
+MPI related definitions in comms_module than it means that the MPI
+libraries used in the process are old.  To rectify the matters you
+will need to add `-DOLDMPI' to the FCFLAGS string within the relevant
+Makefile `entry' before you try to compile again.
+
 To find out the keywords for all available entries within the Makefile
 issue:
 
