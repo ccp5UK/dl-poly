@@ -209,7 +209,7 @@ if(BUILD_TESTING)
   foreach(test RANGE 10 25 1)
     do_test("TEST${test}")
   endforeach()
-  do_test("TEST28")
+  #do_test("TEST28")
 
 else()
   message(STATUS "Build without testing target")
