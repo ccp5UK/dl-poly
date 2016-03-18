@@ -188,7 +188,7 @@ if(BUILD_TESTING)
       message(STATUS "Using already downloaded ${arg}.tar.gz")
     else()
       message(STATUS "Trying to download ${arg}.tar.gz")
-      file(DOWNLOAD ftp://ftp.dl.ac.uk/ccp5/DL_POLY/DL_POLY_4.0/.NEW/${arg}.tar.gz
+      file(DOWNLOAD ftp://ftp.dl.ac.uk/ccp5/DL_POLY/DL_POLY_4.0/.DEV/${arg}.tar.gz
         ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz)
     endif()
     file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/${arg})
@@ -209,6 +209,7 @@ if(BUILD_TESTING)
   foreach(test RANGE 10 25 1)
     do_test("TEST${test}")
   endforeach()
+  #do_test("TEST28")
 
 else()
   message(STATUS "Build without testing target")

@@ -76,9 +76,9 @@ build-old-hpc:
 testing-mpi:
   stage: test
   script:
-    - mkdir build-mpi-pure
-    - pushd build-mpi-pure 
-    - FFLAGS="-O3 -mtune=native" cmake ../ -DBUILD_TESTING=ON -DBUILDER="Gitlab Slave"
+    - mkdir build-mpi-plumed
+    - pushd build-mpi-plumed
+    - FFLAGS="-O3 -mtune=native" cmake ../ -DBUILD_TESTING=ON -DWITH_PLUMED=ON -DBUILDER="Gitlab Slave"
     - make -j10 
     - make test  
     - popd 

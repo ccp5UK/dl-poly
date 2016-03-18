@@ -92,14 +92,17 @@ Subroutine statistics_collect             &
 
         Write(nstats,'(a)') cfgname
 
-        If (Abs(engunit-9648.530821_wp) <= zero_plus) &
+        If (Abs(engunit-9648.530821_wp) <= zero_plus) Then
            Write(nstats,'(1x,a)') 'ENERGY UNITS = electron Volts'
-        If (Abs(engunit-418.4_wp)       <= zero_plus) &
+        Else If (Abs(engunit-418.4_wp)       <= zero_plus) Then
            Write(nstats,'(1x,a)') 'ENERGY UNITS = kcal/mol'
-        If (Abs(engunit-1.0e2_wp)       <= zero_plus) &
+        Else If (Abs(engunit-1.0e2_wp)       <= zero_plus) Then
            Write(nstats,'(1x,a)') 'ENERGY UNITS = kjoule/mol'
-        If (Abs(engunit-1.0_wp)         <= zero_plus) &
+        Else If (Abs(engunit-1.0_wp)         <= zero_plus) Then
            Write(nstats,'(1x,a)') 'ENERGY UNITS = DL_POLY Internal UNITS'
+        Else 
+           Write(nstats,'(1x,a)') 'ENERGY UNITS = Unknown'
+        End IF  
 
         Close(Unit=nstats)
      End If
