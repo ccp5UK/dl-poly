@@ -69,7 +69,7 @@ Subroutine coul_fscp_mfield &
         fail=0
         Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
         If (fail > 0) Then
-           Write(nrite,'(/,1x,a,i0)') 'coul_fscp_mfiled allocation failure, idnode: ', idnode
+           Write(nrite,'(/,1x,a,i0)') 'coul_fscp_mfield allocation failure, idnode: ', idnode
            Call error(0)
         End If
 

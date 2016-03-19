@@ -7,7 +7,7 @@ Module setup_module
 ! set @ execution time
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2016
+! author    - i.t.todorov march 2016
 !
 ! Note(1): The following internal units apply everywhere
 !
@@ -170,9 +170,10 @@ Module setup_module
 
 ! ENGUNIT:: defined in read_field
 ! engunit = 9648.530821_wp for eV - most used
+! engunit = 418.4_wp for kcal/mol - often used
 ! engunit = 100.0_wp for kJ/mol   - rarely used
 ! engunit = 1.0_wp for 10 J/mol   - internal units == default
-! engunit = boltz for K/Boltzmann - rarely used
+! engunit = boltz for K/Boltzmann - very rarely used
 
   Real( Kind = wp ), Save :: engunit = 1.0_wp
 
