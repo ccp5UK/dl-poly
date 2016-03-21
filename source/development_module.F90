@@ -201,35 +201,53 @@ Contains
 
   Subroutine build_info()
 
-    Character( Len = 48 ) :: aux
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 development subroutine for ending timing
+!
+! copyright - daresbury laboratory
+! author    - a.m.elena & i.t.todorov march 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Character( Len =  8 ) :: date
+    Character( Len = 10 ) :: time
+    Character( Len =  5 ) :: zone
+    Integer               :: value(1:8)
+
+    Character( Len = 47 ) :: aux
     Integer               :: i
 
     Write(nrite,'(1x,a66)') Repeat("*",66)
-    Write(aux,*) __DATE__//"@"//__TIME__
-    Write(nrite,'(1x,a3,1x,a10,a48,a4)') "***","birthday: ",aux,"****"
+    Write(aux,*) __DATE__,"  @  ",__TIME__
+    Write(nrite,'(1x,a4,1x,a9,a47,1x,a4)') "****", "birthday:", aux, "****"
     Write(aux,*) __HOSTNAME__
-    Write(nrite,'(1x,a3,1x,a10,a48,a4)') "***","machine: ", aux,"****"
+    Write(nrite,'(1x,a4,1x,a9,a47,1x,a4)') "****", " machine:", aux, "****"
     Write(aux,*) __BUILDER__
-    Write(nrite,'(1x,a3,1x,a10,a48,a4)') "***","builder: ", aux,"****"
-    Write(aux,*) __COMPILER__
-    Write(nrite,'(1x,a3,1x,a10,a48,a4)') "***","compiler: ",aux,"****"
-    Write(aux,*) __VERSION__
-    Write(nrite,'(1x,a3,1x,a10,a48,a4)') "***","version: ", aux,"****"
+    Write(nrite,'(1x,a4,1x,a9,a47,1x,a4)') "****", " builder:", aux, "****"
+    If      (mpi_ver == 0) Then
+       Write(aux,*) __COMPILER__," v",__VERSION__," (serial build)"
+    Else If (mpi_ver >  0) Then
+       Write(aux,'(4a,i0,a1,i0)') __COMPILER__," v",__VERSION__, &
+             " with MPI v",mpi_ver,".",mpi_subver
+    End If
+    Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "compiler:", aux, "****"
     If (mpi_ver > 0) Then
-       Write(nrite,'(1x,a3,1x,a10,1x,i1,a1,i1,a48)') "***","MPI: ",mpi_ver,".",mpi_subver,Repeat(" ",44)//"****"
 #ifndef OLDMPI
-       Do i=1,Len_trim(lib_version),47
-          aux=lib_version(i:Min(i+46,len_trim(lib_version)))
-          Write(nrite,'(1x,a3,1x,a10,a48,a4)') "***","library: ",aux,"****"
+       Do i=1,Len_Trim(lib_version),46
+          aux=lib_version(i:Min(i+45,Len_Trim(lib_version)))
+          Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
        End Do
 #endif
     Else If (mpi_ver < 0) Then
-       Write(aux,*) "MPI Library too old.  Update!!!"
-       Write(nrite,'(1x,a3,1x,a10,a48,a4)') "***"," ",aux,"****"
-    Else
-       Write(aux,*) "Serial mode selected..."
-       Write(nrite,'(1x,a3,1x,a10,a48,a4)') "***"," ",aux,"****"
+       Write(aux,*) "MPI Library too old.  Please update!!!"
+       Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
     End If
+    Call date_and_time(date,time,zone,value)
+    Write(aux,*) date(1:4),"-",date(5:6),"-",date(7:8),"  @  ",   &
+                 time(1:2),":",time(3:4),":",time(5:10),"  (GMT", &
+                 zone(1:3),":",zone(4:5),")"
+    Write(nrite,'(1x,a4,1x,a9,a47,1x,a4)') "****", "executed:", aux, "****"
     Write(nrite,'(1x,a66,/)') Repeat("*",66)
 
   End Subroutine build_info
