@@ -211,21 +211,23 @@ Program dl_poly
   If (idnode == 0) Then
      If (.not.l_scr) Open(Unit=nrite, File='OUTPUT', Status='replace')
 
-     Write(nrite,'(5(1x,a,/),(1x,a24,a4,a,a14,a16/),1x,a,i12,a,/,5(1x,a,/))')   &
+     Write(nrite,'(5(1x,a,/),(1x,a25,a8,a4,a14,a15/),1x,a,i10,a,/,5(1x,a,/))')  &
           "******************************************************************", &
           "*************  stfc/ccp5  program  library  package  ** D ********", &
           "*************  daresbury laboratory general purpose  *** L *******", &
           "**         **  classical molecular dynamics program  **** \ ******", &
           "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-          "**         **  version: ", Trim(DLP_VERSION), "    /   ",            &
-                                          Trim(DLP_RELEASE),"   ****** O ****", &
-          "*************  execution on ", mxnode, " process(es) ******* L ***", &
+          "**         **  version:  ", DLP_VERSION,                 " /  "    , &
+                                       DLP_RELEASE,          "  ****** O ****", &
+          "*************  execution on  ",mxnode," process(es)  ******* L ***", &
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
           "*************  i.j.bush, h.a.boateng, r.davidchak,   *************", &
           "*************  m.a.seaton, a.v.brukhno, a.m.elena    *************", &
           "******************************************************************"
+
      Call build_info()
+
      Write(nrite,'(7(1x,a,/))') &
           "******************************************************************", &
           "****  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ****", &

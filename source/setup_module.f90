@@ -31,8 +31,8 @@ Module setup_module
 
 ! Version particulars
 
-  Character( Len = *), Parameter :: DLP_VERSION = "4.08"
-  Character( Len = *), Parameter :: DLP_RELEASE = " march  2016 "
+  Character( Len =  8), Parameter :: DLP_VERSION = " 4.08   "
+  Character( Len = 14), Parameter :: DLP_RELEASE = "   march  2016"
 
 ! FIXED PARAMETERS
 ! standard pi related values
