@@ -338,7 +338,7 @@ Subroutine vdw_forces &
 
            Else If (ityp == 11) Then
 
-! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
+! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
 
               eps=prmvdw(1,k)
               sig=prmvdw(2,k)
