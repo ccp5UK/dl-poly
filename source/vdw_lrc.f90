@@ -17,6 +17,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
   Use site_module,   Only : ntpatm,numtyp
   Use config_module, Only : imcon,volm,natms,ltype,lfrzn
   Use vdw_module,    Only : ls_vdw,lstvdw,ltpvdw,prmvdw
+  Use mm3_module
 
   Implicit None
 
@@ -67,14 +68,14 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
            k = lstvdw(ivdw)
 
            keypot=ltpvdw(k)
-           If (keypot == 0) Then
+           If      (keypot ==  0) Then
 
 ! tabulated energy and pressure lrc
 
               eadd = prmvdw(1,k)
               padd =-prmvdw(2,k)
 
-           Else If (keypot == 1) Then
+           Else If (keypot ==  1) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
 
@@ -85,7 +86,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
               eadd = a/(9.0_wp*r**9) - b/(3.0_wp*r**3)
               padd = 12.0_wp*a/(9.0_wp*r**9)- 6.0_wp*b/(3.0_wp*r**3)
 
-           Else If (keypot == 2) Then
+           Else If (keypot ==  2) Then
 
 ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
@@ -96,7 +97,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
               eadd = 4.0_wp*eps*(sig**12/(9.0_wp*r**9) - sig**6/(3.0_wp*r**3))
               padd = 4.0_wp*eps*(12.0_wp*sig**12/(9.0_wp*r**9) - 2.0_wp*sig**6/(r**3))
 
-           Else If (keypot == 3) Then
+           Else If (keypot ==  3) Then
 
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
@@ -109,7 +110,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
               eadd = e0/(nr-mr)*( mr*r0**n/((nr-3.0_wp)*r**(n-3)) - nr*r0**m/((mr-3.0_wp)*r**(m-3)) )
               padd = e0/(nr-mr)*nr*mr*( r0**n/((nr-3.0_wp)*r**(n-3)) - r0**m/((mr-3.0_wp)*r**(m-3)) )
 
-           Else If (keypot == 4) Then
+           Else If (keypot ==  4) Then
 
 ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
@@ -119,7 +120,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
               eadd = -c/(3.0_wp*r**3)
               padd = -2.0_wp*c/(r**3)
 
-           Else If (keypot == 5) Then
+           Else If (keypot ==  5) Then
 
 ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
@@ -130,7 +131,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
               eadd = -c/(3.0_wp*r**3) - d/(5.0_wp*r**5)
               padd = -2.0_wp*c/(r**3) - 8.0_wp*d/(5.0_wp*r**5)
 
-           Else If (keypot == 6) Then
+           Else If (keypot ==  6) Then
 
 ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
@@ -140,6 +141,20 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
               eadd = a/(9.0_wp*r**9) - b/(7.0_wp*r**7)
               padd = 12.0_wp*a/(9.0_wp*r**9) - 10.0_wp*b/(7.0_wp*r**7)
+
+           Else If (keypot == 11) Then
+
+! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
+
+              eps=prmvdw(1,k)
+              sig=prmvdw(2,k)
+
+              a =0.07_wp
+              b =0.12_wp
+              e0=1.0e-12_wp
+
+              eadd = intRadMM3(sig,a,b,eps,rvdw,e0)
+              padd = -intRaddMM3(sig,a,b,eps,rvdw,e0)
 
            End If
 

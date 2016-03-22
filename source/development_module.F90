@@ -177,7 +177,6 @@ Contains
 
   End Subroutine end_devel_time
 
-
 #ifdef HOST
 #define __HOSTNAME__ HOST
 #else
@@ -211,51 +210,58 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Use parse_module, Only : strip_blanks
+
+    Implicit None
+
     Character( Len =  8 ) :: date
     Character( Len = 10 ) :: time
     Character( Len =  5 ) :: zone
     Integer               :: value(1:8)
 
-    Character( Len = 47  ) :: aux
+    Character( Len = 47 ) :: aux
     Integer               :: i
 
     Write(nrite,'(1x,a66)') Repeat("*",66)
-    If (Len_trim( __DATE__//"  @  "//__TIME__) > 47) Then
+    If (Len_Trim( __DATE__//"  @  "//__TIME__) > 47) Then
       Write(aux,'(a47)') __DATE__//"  @  "//__TIME__
     Else
       Write(aux,*) __DATE__//"  @  "//__TIME__
     End If
-    Write(nrite,'(1x,a4,1x,a9,a47,1x,a4)') "****", "birthday:", aux, "****"
-    If (Len_trim(__HOSTNAME__) > 47) Then
+    Call strip_blanks(aux)
+    Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "birthday:", aux, "****"
+    If (Len_Trim(__HOSTNAME__) > 47) Then
       Write(aux,'(a47)') __HOSTNAME__
     Else
-      Write(aux,*)__HOSTNAME__
+      Write(aux,*) __HOSTNAME__
     End If
-    Write(nrite,'(1x,a4,1x,a9,a47,1x,a4)') "****", " machine:", aux, "****"
-    If (Len_trim(__BUILDER__) > 47) Then
+    Call strip_blanks(aux)
+    Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", " machine:", aux, "****"
+    If (Len_Trim(__BUILDER__) > 47) Then
       Write(aux,'(a47)') __BUILDER__
-    Else 
+    Else
       Write(aux,*) __BUILDER__
     End If
-    Write(nrite,'(1x,a4,1x,a9,a47,1x,a4)') "****", " builder:", aux, "****"
+    Call strip_blanks(aux)
+    Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", " builder:", aux, "****"
     If      (mpi_ver == 0) Then
-       If (Len_trim(__COMPILER__//" v"//__VERSION__//" (serial build)") > 47) Then
+       If (Len_Trim(__COMPILER__//" v"//__VERSION__//" (serial build)") > 47) Then
          Write(aux,'(a47)') __COMPILER__//" v"//__VERSION__//" (serial build)"
-       Else 
+       Else
          Write(aux,*) __COMPILER__//" v"//__VERSION__//" (serial build)"
-      End IF
+      End If
     Else If (mpi_ver >  0) Then
-      If (Len_trim(__COMPILER__//" v"//__VERSION__)>47) Then
+      If (Len_Trim(__COMPILER__//" v"//__VERSION__) > 47) Then
         Write(aux,'(a47)') __COMPILER__//" v"//__VERSION__
       Else
         Write(aux,*) __COMPILER__//" v"//__VERSION__
       End If
     End If
+    Call strip_blanks(aux)
     Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "compiler:", aux, "****"
     If (mpi_ver > 0) Then
-
        Write(aux,'(a1,i0,a1,i0)') "v",mpi_ver,".",mpi_subver
-       Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "MPI:", aux, "****"
+       Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "     MPI:", aux, "****"
 #ifndef OLDMPI
        Do i=1,Len_Trim(lib_version),46
           aux=lib_version(i:Min(i+45,Len_Trim(lib_version)))
