@@ -10,14 +10,14 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
 ! supported image conditions: 1,2,3, 6(nz==1)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2015
+! author    - i.t.todorov march 2016
 ! contrib   - w.smith, i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module,        Only : nfield,nconf,nrite,mxatms
+  Use setup_module,        Only : nconf,nfield,nmpldt,nrite,mxatms
   Use site_module
   Use config_module,       Only : cfgname,imcon,cell,natms,lsi,lsa, &
                                   atmnam,xxx,yyy,zzz
@@ -61,10 +61,11 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
 
   Integer, Parameter     :: recsz = 73 ! default record size
 
-  Logical                :: safex,safey,safez,safer,safel,safem,safe,safeg
+  Logical                :: safex,safey,safez,safer,safel,safem,safe,safeg, &
+                            lmpldt=.false.
 
   Character( Len = 200 ) :: record,record1
-  Character( Len = 40  ) :: word,fcfg,ffld
+  Character( Len = 40  ) :: word,fcfg,ffld,fmpl
   Integer                :: fail(1:5),nall, i,j,ix,iy,iz,m, &
                             itmols,setspc,imols,          &
                             indatm,indatm1,nattot,mxiter, &
@@ -149,6 +150,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
   fcfg="CONFIG" // record(1:Len_Trim(record))
   ffld=' '
   ffld="FIELD" // record(1:Len_Trim(record))
+  fmpl=' '
+  fmpl="MPOLES" // record(1:Len_Trim(record))
 
 ! netCDF CONFIG name convention
 
@@ -1013,10 +1016,10 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
      Write(nrite,'(/,1x,3a)') '*** ', fcfg(1:Len_Trim(fcfg)), ' expansion completed !'
      Write(nrite,'(1x,a,i10,a)') '*** Size: ', nall*megatm, ' particles'
      Write(nrite,'(1x,a,f10.2,a)') '*** Maximum radius of cutoff: ', x, ' Angstroms'
-     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') t
+     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') t
      Open(Unit=nfield, File='FIELD', Status='old')
      Open(Unit=nconf, File=ffld(1:Len_Trim(ffld)), Status='replace')
-     Write(nrite,'(1x,2a)')'*** Expanding FIELD in file ', ffld(1:Len_Trim(ffld))
+     Write(nrite,'(/,1x,2a)')'*** Expanding FIELD in file ', ffld(1:Len_Trim(ffld))
      Write(nrite,'(1x,a)') '***'
 
 ! omit first line
@@ -1036,9 +1039,15 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
         Call get_word(record,word)
         Call lower_case(word)
 
+        If      (word(1:5) == 'multi') Then
+
+! MPOLES should exist
+
+           lmpldt=.true.
+
 ! number of molecules of this type
 
-        If (word(1:6) == 'nummol') Then
+        Else If (word(1:6) == 'nummol') Then
 
            Call get_word(record,word)
            index=Nint(word_2_real(word))
@@ -1055,9 +1064,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
            Close(Unit=nfield)
            Close(Unit=nconf)
            Write(nrite,'(1x,3a)') '*** ', ffld(1:Len_Trim(ffld)), ' expansion done !'
-           Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') t
-           Write(nrite,'(1x,a)') '*** Simulation continues as scheduled...'
-           Go To 10
+           Exit
 
 ! just paste the copy
 
@@ -1067,9 +1074,67 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
 
         End If
      End Do
-  End If
 
-10 Continue
+10   Continue
+
+     If (lmpldt) Inquire(File='MPOLES', Exist=lmpldt)
+     If (lmpldt) Then
+        Open(Unit=nmpldt, File='MPOLES', Status='old')
+        Open(Unit=nconf, File=fmpl(1:Len_Trim(fmpl)), Status='replace')
+        Write(nrite,'(/,1x,2a)')'*** Expanding MPOLES in file ', fmpl(1:Len_Trim(fmpl))
+        Write(nrite,'(1x,a)') '***'
+
+! omit first line
+
+        record=' '
+        Read(Unit=nmpldt, Fmt='(a)', End=10) record
+        Call tabs_2_blanks(record) ; Call strip_blanks(record)
+        Write(nconf,'(a)') record(1:Len_Trim(record))
+
+! read and process directives from mpoles file
+
+        Do
+           record=' '
+           Read(Unit=nmpldt, Fmt='(a)', End=20) record
+           Call tabs_2_blanks(record) ; Call strip_blanks(record)
+           record1=record
+           Call get_word(record,word)
+           Call lower_case(word)
+
+           If      (word(1:6) == 'nummol') Then
+
+              Call get_word(record,word)
+              index=Nint(word_2_real(word))
+              Call get_word(record1,word)
+              Write(Unit=nconf,Fmt='(a,i10)') word(1:Len_Trim(word)), nall*index
+
+! close mpoles file
+
+           Else If (word(1:5) == 'close') Then
+
+              Call gtime(t)
+
+              Write(Unit=nconf,Fmt='(a)') record1(1:Len_Trim(record1))
+              Close(Unit=nmpldt)
+              Close(Unit=nconf)
+              Write(nrite,'(1x,3a)') '*** ', fmpl(1:Len_Trim(fmpl)), ' expansion done !'
+              Exit
+
+! just paste the copy
+
+           Else
+
+              Write(nconf,'(a)') record1(1:Len_Trim(record1))
+
+           End If
+        End Do
+     End If
+
+20   Continue
+
+     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') t
+     Write(nrite,'(1x,a)') '*** Simulation continues as scheduled...'
+  End If
   If (mxnode > 1) Call gsync()
 
   Deallocate (f1,f2,f3, Stat=fail(1))

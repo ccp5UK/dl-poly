@@ -172,78 +172,9 @@ Subroutine read_mpoles(l_top,sumchg)
 
                  ksite=0
                  Do isite=1,numsit(itmols)
+                    If (ksite < numsit(itmols)) Then
 
 ! read atom name, highest pole order supplied, repeat
-
-                    word(1:1)='#'
-                    Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nmpldt,record)
-                       If (.not.safe) Go To 2000
-                       Call get_word(record,word)
-                    End Do
-
-                    atom=word(1:8)
-
-! read supplied pole order
-
-                    Call get_word(record,word)
-                    ordmpl=Abs(Nint(word_2_real(word)))
-                    indmpl=(ordmpl+3)*(ordmpl+2)*(ordmpl+1)/6
-
-                    Call get_word(record,word)
-                    nrept=Abs(Nint(word_2_real(word)))
-                    If (nrept == 0) nrept=1
-
-                    jsite=nsite+1
-                    lsite=jsite+nrept-1
-
-                    Do i=jsite,lsite
-                       If (sitnam(i) /= atom) Then
-                          If (idnode == 0) Write(nrite,'(/,1x,a,i0,a)') &
-  "*** warning - site names mistmatch between FIELD and MPOLES for site ", ksite+1+i-jsite, " !!! ***"
-
-                          Call error(623)
-                       End If
-                    End Do
-
-                    If (idnode == 0 .and. l_top) &
-  Write(nrite,"(9x,i10,4x,a8,4x,i2,5x,i10)") ksite+1,atom,ordmpl,nrept
-
-! monopole=charge
-
-                    word(1:1)='#'
-                    Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nmpldt,record)
-                       If (.not.safe) Go To 2000
-                       Call get_word(record,word)
-                    End Do
-
-                    sitmpl = 1
-
-                    charge=word_2_real(word)
-
-                    chgsit(jsite:lsite)=charge
-                    mpllfr(sitmpl,jsite:lsite)=charge
-
-! sum absolute charges
-
-                    sumchg=sumchg+Abs(charge)
-
-! report
-
-                    If (idnode == 0 .and. l_top) &
-  Write(nrite,"(3x,a12,3x,f10.5)") 'charge',charge
-
-! higher poles counters
-
-                    ordmpl_start = 0
-                    ordmpl_next  = ordmpl_start+1
-                    indmpl_start = sitmpl+1
-                    indmpl_final = (ordmpl_next+3)*(ordmpl_next+2)*(ordmpl_next+1)/6
-
-                    Do While (ordmpl_next <= ordmpl)
-
-! read line per pole order
 
                        word(1:1)='#'
                        Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -252,85 +183,156 @@ Subroutine read_mpoles(l_top,sumchg)
                           Call get_word(record,word)
                        End Do
 
-! Only assign what FIELD says is needed
+                       atom=word(1:8)
 
-                       If (ordmpl_next <= mxompl) Then
+! read supplied pole order
 
-                          Do i=indmpl_start,indmpl_final
-                             sitmpl = sitmpl+1
-                             mpllfr(sitmpl,jsite:lsite)=word_2_real(word)
-                             Call get_word(record,word)
-                          End Do
+                       Call get_word(record,word)
+                       ordmpl=Abs(Nint(word_2_real(word)))
+                       indmpl=(ordmpl+3)*(ordmpl+2)*(ordmpl+1)/6
+
+                       Call get_word(record,word)
+                       nrept=Abs(Nint(word_2_real(word)))
+                       If (nrept == 0) nrept=1
+
+                       jsite=nsite+1
+                       lsite=jsite+nrept-1
+
+                       Do i=jsite,lsite
+                          If (sitnam(i) /= atom) Then
+                             If (idnode == 0) Write(nrite,'(/,1x,a,i0,a)') &
+  "*** warning - site names mistmatch between FIELD and MPOLES for site ", ksite+1+i-jsite, " !!! ***"
+
+                             Call error(623)
+                          End If
+                       End Do
+
+                       If (idnode == 0 .and. l_top) &
+  Write(nrite,"(9x,i10,4x,a8,4x,i2,5x,i10)") ksite+1,atom,ordmpl,nrept
+
+! monopole=charge
+
+                       word(1:1)='#'
+                       Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                          Call get_line(safe,nmpldt,record)
+                          If (.not.safe) Go To 2000
+                          Call get_word(record,word)
+                       End Do
+
+                       sitmpl = 1
+
+                       charge=word_2_real(word)
+
+                       chgsit(jsite:lsite)=charge
+                       mpllfr(sitmpl,jsite:lsite)=charge
+
+! sum absolute charges
+
+                       sumchg=sumchg+Abs(charge)
 
 ! report
 
-                          If (idnode == 0 .and. l_top) Then
-                             If      (ordmpl_next == 1) Then
-  Write(nrite,"(3x,a12,3x, 3f10.5)") 'dipole',       mpllfr(indmpl_start:indmpl_final,jsite)
-                             Else If (ordmpl_next == 2) Then
-  Write(nrite,"(3x,a12,3x, 6f10.5)") 'quadrupole',   mpllfr(indmpl_start:indmpl_final,jsite)
-                             Else If (ordmpl_next == 3) Then
-  Write(nrite,"(3x,a12,3x,10f10.5)") 'octupole',     mpllfr(indmpl_start:indmpl_final,jsite)
-                             Else If (ordmpl_next == 4) Then
-  Write(nrite,"(3x,a12,3x,15f10.5)") 'hexadecapole', mpllfr(indmpl_start:indmpl_final,jsite)
-                             End If
-                          End If
+                       If (idnode == 0 .and. l_top) &
+  Write(nrite,"(3x,a12,3x,f10.5)") 'charge',charge
 
-! rescale poles values by their degeneracy
+! higher poles counters
 
-                          If (ordmpl_next > 1) Then
-                             sitmpl=sitmpl-(indmpl_final-indmpl_start+1) ! rewind
-                             Do i=ordmpl_next,0,-1
-                                l=ordmpl_next-i
-                                Do j=l,0,-1
-                                   k=l-j
-
-                                   scl=Exp(Factorial(ordmpl_next)-Factorial(k)-Factorial(j)-Factorial(i))
-!                                   Write(*,*) i,j,k,Nint(scl)
-
-                                   sitmpl = sitmpl+1 ! forward and apply scaling if degeneracy exists
-                                   If (Nint(scl) /= 1) mpllfr(sitmpl,jsite:lsite)=mpllfr(sitmpl,jsite:lsite)/scl
-                                End Do
-                             End Do
-                          End If
-
-                       Else
-
-                          l_ord=.true.
-
-! update actual order marker
-
-                          sitmpl=indmpl_final
-
-! report
-
-                          If (idnode == 0 .and. l_top) Then
-                             If      (ordmpl_next == 1) Then
-  Write(nrite,"(3x,a12,1x,a)") 'dipole',                 '     *** supplied but not required ***'
-                             Else If (ordmpl_next == 2) Then
-  Write(nrite,"(3x,a12,1x,a)") 'quadrupole',             '     *** supplied but not required ***'
-                             Else If (ordmpl_next == 3) Then
-  Write(nrite,"(3x,a12,1x,a)") 'octupole',               '     *** supplied but not required ***'
-                             Else If (ordmpl_next == 4) Then
-  Write(nrite,"(3x,a12,1x,a)") 'hexadecapole',           '     *** supplied but not required ***'
-                             Else
-  Write(nrite,"(3x,a12,i0,a)") 'pole order ',ordmpl_next,'     *** supplied but not required ***'
-                             End If
-                          End If
-
-                       End If
-
-! update poles counters
-
-                       ordmpl_next  = ordmpl_next+1
+                       ordmpl_start = 0
+                       ordmpl_next  = ordmpl_start+1
                        indmpl_start = sitmpl+1
                        indmpl_final = (ordmpl_next+3)*(ordmpl_next+2)*(ordmpl_next+1)/6
 
-                    End Do
+                       Do While (ordmpl_next <= ordmpl)
 
-                    nsite=nsite+nrept
-                    ksite=ksite+nrept
+! read line per pole order
 
+                          word(1:1)='#'
+                          Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                             Call get_line(safe,nmpldt,record)
+                             If (.not.safe) Go To 2000
+                             Call get_word(record,word)
+                          End Do
+
+! Only assign what FIELD says is needed
+
+                          If (ordmpl_next <= mxompl) Then
+
+                             Do i=indmpl_start,indmpl_final
+                                sitmpl = sitmpl+1
+                                mpllfr(sitmpl,jsite:lsite)=word_2_real(word)
+                                Call get_word(record,word)
+                             End Do
+
+! report
+
+                             If (idnode == 0 .and. l_top) Then
+                                If      (ordmpl_next == 1) Then
+  Write(nrite,"(3x,a12,3x, 3f10.5)") 'dipole',       mpllfr(indmpl_start:indmpl_final,jsite)
+                                Else If (ordmpl_next == 2) Then
+  Write(nrite,"(3x,a12,3x, 6f10.5)") 'quadrupole',   mpllfr(indmpl_start:indmpl_final,jsite)
+                                Else If (ordmpl_next == 3) Then
+  Write(nrite,"(3x,a12,3x,10f10.5)") 'octupole',     mpllfr(indmpl_start:indmpl_final,jsite)
+                                Else If (ordmpl_next == 4) Then
+  Write(nrite,"(3x,a12,3x,15f10.5)") 'hexadecapole', mpllfr(indmpl_start:indmpl_final,jsite)
+                                End If
+                             End If
+
+! rescale poles values by their degeneracy
+
+                             If (ordmpl_next > 1) Then
+                                sitmpl=sitmpl-(indmpl_final-indmpl_start+1) ! rewind
+                                Do i=ordmpl_next,0,-1
+                                   l=ordmpl_next-i
+                                   Do j=l,0,-1
+                                      k=l-j
+
+                                      scl=Exp(Factorial(ordmpl_next)-Factorial(k)-Factorial(j)-Factorial(i))
+!                                      Write(*,*) i,j,k,Nint(scl)
+
+                                      sitmpl = sitmpl+1 ! forward and apply scaling if degeneracy exists
+                                      If (Nint(scl) /= 1) mpllfr(sitmpl,jsite:lsite)=mpllfr(sitmpl,jsite:lsite)/scl
+                                   End Do
+                                End Do
+                             End If
+
+                          Else
+
+                             l_ord=.true.
+
+! update actual order marker
+
+                             sitmpl=indmpl_final
+
+! report
+
+                             If (idnode == 0 .and. l_top) Then
+                                If      (ordmpl_next == 1) Then
+  Write(nrite,"(3x,a12,1x,a)") 'dipole',                 '     *** supplied but not required ***'
+                                Else If (ordmpl_next == 2) Then
+  Write(nrite,"(3x,a12,1x,a)") 'quadrupole',             '     *** supplied but not required ***'
+                                Else If (ordmpl_next == 3) Then
+  Write(nrite,"(3x,a12,1x,a)") 'octupole',               '     *** supplied but not required ***'
+                                Else If (ordmpl_next == 4) Then
+  Write(nrite,"(3x,a12,1x,a)") 'hexadecapole',           '     *** supplied but not required ***'
+                                Else
+  Write(nrite,"(3x,a12,i0,a)") 'pole order ',ordmpl_next,'     *** supplied but not required ***'
+                                End If
+                             End If
+
+                          End If
+
+! update poles counters
+
+                          ordmpl_next  = ordmpl_next+1
+                          indmpl_start = sitmpl+1
+                          indmpl_final = (ordmpl_next+3)*(ordmpl_next+2)*(ordmpl_next+1)/6
+
+                       End Do
+
+                       nsite=nsite+nrept
+                       ksite=ksite+nrept
+
+                    End If
                  End Do
 
 ! finish of data for one molecular type

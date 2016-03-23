@@ -17,7 +17,7 @@ Subroutine tersoff_forces(rcter,engter,virter,stress)
 ! copyright - daresbury laboratory
 ! author    - w.smith october 2004
 ! amended   - i.t.todorov march 2016
-! amended   - k.galvin september 2014
+! amended   - g.khara september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
