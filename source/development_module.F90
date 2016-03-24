@@ -199,6 +199,9 @@ Contains
 #define __COMPILER__ 'noidea'
 #endif
 
+#ifndef __VERSION__
+#define __VERSION__ 'XYZ'
+#endif
   Subroutine build_info()
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
