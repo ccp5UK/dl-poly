@@ -8,7 +8,7 @@ Subroutine set_bounds                                 &
 ! grid sizes, paddings, iterations, etc. as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2016
+! author    - i.t.todorov march 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014 (VAF)
 !
@@ -728,25 +728,19 @@ Subroutine set_bounds                                 &
   dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
   mxbfss = Merge( 4, 0, mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*(6+mxstak), 0, l_msd)),wp) * dens0)
 
-! exporting single per atom
+! exporting single per atom (times 13 up to 35)
 
 !  dens  = Real(((ilx+3)*(ily+3)*(ilz+3))/Min(ilx,ily,ilz)+3,wp) / Real(ilx*ily*ilz,wp)
   dens  = Real(((qlx+2)*(qly+2)*(qlz+2))/Min(qlx,qly,qlz)+2,wp) / Real(qlx*qly*qlz,wp)
-  mxbfxp = 2 * (6 + Merge(7,0,induce)) * Nint(Real(mxatdm,wp) * dens) ! included induced dipoles
+  mxbfxp = 2 * Nint(Real(mxatdm,wp) * dens) ! included induced dipoles
 
-! exporting multipolar rotation matrices and infinitely rotated matrices per atom
-
-!  dens  = Real(((ilx+3)*(ily+3)*(ilz+3))/Min(ilx,ily,ilz)+3,wp) / Real(ilx*ily*ilz,wp)
-  dens  = Real(((qlx+2)*(qly+2)*(qlz+2))/Min(qlx,qly,qlz)+2,wp) / Real(qlx*qly*qlz,wp)
-  mxbfrt = 2 * (1+4*mximpl) * Nint(Real(mxatdm,wp) * dens)
-
-! shared units single per atom
+! shared units single per atom of all shared unit
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) - 1.0_wp
   dens0 = dens0/Max(rlnk/2.0_wp,1.0_wp)
   mxbfsh = Merge( 1, 0, mxnode > 1) * Nint(Real(Max(2*mxshl,2*mxcons,mxlrgd*mxrgd),wp) * dens0)
 
-  mxbuff = Max( mxbfdp , 13*mxbfxp , 4*mxbfsh , 2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
+  mxbuff = Max( mxbfdp , 35*mxbfxp , 4*mxbfsh , 2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
                 mxnstk*mxstak , mxgrid , mxgrdf , mxlrgd*Max(mxrgd,mxtrgd), mxtrgd*(4+3*mxlrgd), 10000 )
 
 ! reset (increase) link-cell maximum (mxcell)

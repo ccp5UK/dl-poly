@@ -6,7 +6,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0)
 ! for halo refresh
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov march 2016
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

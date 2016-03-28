@@ -6,7 +6,7 @@ Subroutine export_atomic_data(mdir)
 ! for halo formation
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov february 2016
+! author    - i.t.todorov february 2016
 ! contrib   - i.j.bush february 2016
 ! contrib   - h.a.boateng february 2016
 !
