@@ -162,7 +162,7 @@ Module setup_module
     mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,                    &
     mxpfld,                                                     &
     mxstak,mxnstk,mxlist,mxcell,mxatms,mxatdm,                  &
-    mxbfdp,mxbfss,mxbfxp,mxbfrt,mxbfsh,mxbuff
+    mxbfdp,mxbfss,mxbfxp,mxbfsh,mxbuff
 
 ! zero+ and half+/- :: defined in set_bounds
 

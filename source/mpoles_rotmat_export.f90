@@ -6,13 +6,13 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0)
 ! rotated matrices in the halo
 !
 ! copyright - daresbury laboratory
-! amended   - i.t.todorov february 2016
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module,  Only : nrite,mximpl,mxatms,mxbfrt
+  Use setup_module,  Only : nrite,mximpl,mxatms,mxbfxp
   Use domains_module
   Use mpoles_module, Only : mplgfr,mprotx,mproty,mprotz
 
@@ -35,7 +35,7 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0)
   iadd=4*mximpl+1
   idl1=mximpl ; idl2=2*mximpl ; idl3=3*mximpl ; idl4=4*mximpl
 
-  fail=0 ; limit=iadd*mxbfrt ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
+  fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'export_atomic_positions allocation failure, node: ', idnode

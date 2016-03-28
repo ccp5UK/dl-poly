@@ -10,14 +10,14 @@ Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep)
 ! keydpd = 2 for second order splitting
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2015
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : idnode,mxnode,gsum
   Use setup_module,        Only : nrite,mxlist,mxatdm
-  Use config_module,       Only : imcon,cell,natms,nlast,lsi,lsa,ltg,ltype,lfree, &
+  Use config_module,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
                                   list,weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use dpd_module
   Use rigid_bodies_module, Only : lshmv_rgd,lishp_rgd,lashp_rgd
@@ -103,10 +103,6 @@ Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep)
         yyt(k)=yyy(i)-yyy(j)
         zzt(k)=zzz(i)-zzz(j)
      End Do
-
-! periodic boundary conditions
-
-     Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
@@ -285,10 +281,6 @@ Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep)
         yyt(k)=yyy(i)-yyy(j)
         zzt(k)=zzz(i)-zzz(j)
      End Do
-
-! periodic boundary conditions
-
-     Call images(imcon,cell,limit,xxt,yyt,zzt)
 
 ! square of distances
 
