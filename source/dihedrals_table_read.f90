@@ -6,7 +6,7 @@ Subroutine dihedrals_table_read(dihd_name)
 ! from TABDIH file (for dihedral potentials & forces only)
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov may 2014
+! author    - a.v.brukhno & i.t.todorov april 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -251,7 +251,7 @@ Subroutine dihedrals_table_read(dihd_name)
 ! reconstruct arrays using 3pt interpolation
 
      If (remake) Then
-        Do i=0,mxgdih-2
+        Do i=0,mxgdih-4
            rrr = Real(i,wp)*delth_max
            l   = Int(rrr*rdr)
            ppp = rrr*rdr-Real(l,wp)

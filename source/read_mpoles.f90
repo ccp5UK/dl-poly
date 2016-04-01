@@ -39,6 +39,7 @@ Subroutine read_mpoles(l_top,sumchg)
   Integer                :: itmols,nrept,i,j,k,l,                 &
                             isite,jsite,ksite,lsite,nsite,sitmpl, &
                             ordmpl,ordmpl_start,ordmpl_next,      &
+                            ordmpl_min,ordmpl_max,                &
                             indmpl,indmpl_start,indmpl_final
 
   Real( Kind = wp )      :: Factorial,charge,scl
@@ -58,6 +59,9 @@ Subroutine read_mpoles(l_top,sumchg)
 
   nsite  = 0
   sumchg = 0.0_wp
+
+  ordmpl_min = 4
+  ordmpl_max = 0
 
 ! read and process directives from mpols/field file
 
@@ -190,6 +194,11 @@ Subroutine read_mpoles(l_top,sumchg)
                        Call get_word(record,word)
                        ordmpl=Abs(Nint(word_2_real(word)))
                        indmpl=(ordmpl+3)*(ordmpl+2)*(ordmpl+1)/6
+
+! get the min and max order defined
+
+                       ordmpl_min=Min(ordmpl_min,ordmpl)
+                       ordmpl_max=Max(ordmpl_max,ordmpl)
 
                        Call get_word(record,word)
                        nrept=Abs(Nint(word_2_real(word)))
@@ -339,8 +348,12 @@ Subroutine read_mpoles(l_top,sumchg)
 
               Else If (word(1:6) == 'finish') Then
 
-                          If (idnode == 0) Write(nrite,'(/,1x,a,i0)') &
+                 If (idnode == 0) Then
+                    If (ordmpl_max > 4) Write(nrite,'(/,1x,a,i0)') &
   "*** warning - electrostatics interactions beyond hexadecapole order are not implemented and thus ignored !!! ***"
+                    If (ordmpl_max /= ordmpl) Write(nrite,'(/,1x,2(a,i0),a)') &
+  "*** warning - electrostatics interactions specified up to order ", ordmpl, " but requested to order ",ordmpl_max," !!! ***"
+                 End If
 
                  Go To 1000
 

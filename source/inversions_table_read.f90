@@ -6,7 +6,7 @@ Subroutine inversions_table_read(invr_name)
 ! from TABINV file (for inversion potentials & forces only)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2014
+! author    - i.t.todorov april 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -262,7 +262,7 @@ Subroutine inversions_table_read(invr_name)
 ! reconstruct arrays using 3pt interpolation
 
      If (remake) Then
-        Do i=1,mxginv-3
+        Do i=1,mxginv-4
            rrr = Real(i,wp)*dlrpot
            l   = Int(rrr*rdr)
            ppp = rrr*rdr-Real(l,wp)

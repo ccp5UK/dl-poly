@@ -6,7 +6,7 @@ Subroutine bonds_table_read(bond_name)
 ! from TABBND file (for bond potentials & forces only)
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov june 2014
+! author    - a.v.brukhno & i.t.todorov april 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -238,7 +238,7 @@ Subroutine bonds_table_read(bond_name)
 ! reconstruct arrays using 3pt interpolation
 
      If (remake) Then
-        Do i=1,mxgbnd-3
+        Do i=1,mxgbnd-4
            rrr = Real(i,wp)*dlrpot
            l   = Int(rrr*rdr)
            ppp = rrr*rdr-Real(l,wp)

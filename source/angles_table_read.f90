@@ -242,7 +242,7 @@ Subroutine angles_table_read(angl_name)
 ! reconstruct arrays using 3pt interpolation
 
      If (remake) Then
-        Do i=1,mxgang-3
+        Do i=1,mxgang-4
            rrr = Real(i,wp)*dlrpot
            l   = Int(rrr*rdr)
            ppp = rrr*rdr-Real(l,wp)
