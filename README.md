@@ -22,9 +22,13 @@ make install
 ```
 * will use whatever default MPI is found
 
-*Intel Compilers*
+*Intel Compilers - Intel MPI*
 ```
-FC=mpiifort FFLAGS="-O3" cmake ../
+FC=ifort FFLAGS="-O3" cmake ../ -DMPI_Fortran_COMPILER=mpiifort 
+```
+*Intel Compilers - Some default mpi library, other than Intel MPI*
+```
+FC=ifort FFLAGS="-O3" cmake ../ 
 ```
 
 ## Hybrid MPI and OpenMP
@@ -35,9 +39,9 @@ FFLAGS="-O3" cmake ../ -DWITH_OPENMP=ON
 make -j10
 make install
 ```
-*Intel Compilers*
+*Intel Compilers - Intel MPI*
 ```
-FC=mpiifort FFLAGS="-O3" cmake ../ -DWITH_OPENMP=ON
+FC=ifort FFLAGS="-O3" cmake ../ -DWITH_OPENMP=ON -DMPI_Fortran_COMPILER=mpiifort
 ```
 
 ## Serial
@@ -95,14 +99,6 @@ FFLAGS="-g -O0 -std=f2008 -pedantic -fbacktrace -fcheck=all -finit-integer=21474
 ```
 FFLAGS="-g -O0 -stand f08 -traceback -C -fp-stack-check -ftrapuv"
 ```
-
-## known issues:
-1. FindMPI may trip with Intel MPI
-
-```
-I_MPI_F90=ifort FC=ifort
-```
-shall cure all issues.
 
 ## Building with NETCDF support
 ```

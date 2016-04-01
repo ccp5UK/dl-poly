@@ -215,5 +215,5 @@ else()
   message(STATUS "Build without testing target")
 endif()
 
-#feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
+feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
