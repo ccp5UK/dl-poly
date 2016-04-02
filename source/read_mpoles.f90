@@ -39,7 +39,6 @@ Subroutine read_mpoles(l_top,sumchg)
   Integer                :: itmols,nrept,i,j,k,l,                 &
                             isite,jsite,ksite,lsite,nsite,sitmpl, &
                             ordmpl,ordmpl_start,ordmpl_next,      &
-                            ordmpl_min,ordmpl_max,                &
                             indmpl,indmpl_start,indmpl_final
 
   Real( Kind = wp )      :: Factorial,charge,scl
@@ -59,9 +58,6 @@ Subroutine read_mpoles(l_top,sumchg)
 
   nsite  = 0
   sumchg = 0.0_wp
-
-  ordmpl_min = 4
-  ordmpl_max = 0
 
 ! read and process directives from mpols/field file
 
@@ -194,11 +190,6 @@ Subroutine read_mpoles(l_top,sumchg)
                        Call get_word(record,word)
                        ordmpl=Abs(Nint(word_2_real(word)))
                        indmpl=(ordmpl+3)*(ordmpl+2)*(ordmpl+1)/6
-
-! get the min and max order defined
-
-                       ordmpl_min=Min(ordmpl_min,ordmpl)
-                       ordmpl_max=Max(ordmpl_max,ordmpl)
 
                        Call get_word(record,word)
                        nrept=Abs(Nint(word_2_real(word)))
@@ -348,18 +339,8 @@ Subroutine read_mpoles(l_top,sumchg)
 
               Else If (word(1:6) == 'finish') Then
 
-                 If (idnode == 0) Then
-                    Write(nrite,'(/,1x,3(a,i0),a)') &
-  "*** warning - multipolar electrostatics requested up to order ", &
-  ordmpl, " with specified interactions up order ",                 &
-  ordmpl_max," and least order ", ordmpl_min," !!! ***"
-                    If (ordmpl_max*ordmpl == 0) Write(nrite,'(1x,2a)') &
-  "*** warning - multipolar electrostatics machinery to be used for ", &
-  "monopoles only electrostatic interactions (point charges only) !!! ***"
-                    If (ordmpl_max > 4) Write(nrite,'(1x,2a)')     &
-  "*** warning - electrostatic interactions beyond hexadecapole ", &
-  "order can not be considered and are thus ignored !!! ***"
-                 End If
+                          If (idnode == 0) Write(nrite,'(/,1x,a,i0)') &
+  "*** warning - electrostatics interactions beyond hexadecapole order are not implemented and thus ignored !!! ***"
 
                  Go To 1000
 
