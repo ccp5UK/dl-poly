@@ -349,10 +349,13 @@ Subroutine read_mpoles(l_top,sumchg)
               Else If (word(1:6) == 'finish') Then
 
                  If (idnode == 0) Then
-                    If (ordmpl_max > 4) Write(nrite,'(/,1x,a,i0)') &
-  "*** warning - electrostatics interactions beyond hexadecapole order are not implemented and thus ignored !!! ***"
-                    If (ordmpl_max /= ordmpl) Write(nrite,'(/,1x,2(a,i0),a)') &
-  "*** warning - electrostatics interactions specified up to order ", ordmpl, " but requested to order ",ordmpl_max," !!! ***"
+                    Write(nrite,'(/,1x,3(a,i0),a)') &
+  "*** warning - multipolar electrostatics requested up to order ", ordmpl, " with specified interactions up order ", &
+  ordmpl_max," and least order ", ordmpl_min," !!! ***"
+                    If (ordmpl_max*ordmpl == 0) Write(nrite,'(1x,a)') &
+  "*** warning - multipolar electrostatics machinery to be used for monopoles only electrostatic interactions (point charges only) !!! ***"
+                    If (ordmpl_max > 4) Write(nrite,'(1x,a)') &
+  "*** warning - electrostatic interactions beyond hexadecapole order can not be considered and are thus ignored !!! ***"
                  End If
 
                  Go To 1000
