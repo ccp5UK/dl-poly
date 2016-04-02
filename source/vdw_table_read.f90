@@ -8,6 +8,7 @@ Subroutine vdw_table_read(rvdw)
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1994
 ! amended   - i.t.todorov april 2016
+! amended   - a.m.elena april 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
