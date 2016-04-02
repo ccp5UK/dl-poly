@@ -7,7 +7,7 @@ Subroutine vdw_table_read(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1994
-! amended   - i.t.todorov february 2016
+! amended   - i.t.todorov april 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -162,7 +162,7 @@ Subroutine vdw_table_read(rvdw)
 ! reconstruct arrays using 3pt interpolation
 
         If (remake) Then
-           Do i=1,mxgvdw-3
+           Do i=1,mxgvdw-4
               rrr = Real(i,wp)*dlrpot
               l   = Int(rrr*rdr)
               ppp=rrr*rdr-Real(l,wp)
