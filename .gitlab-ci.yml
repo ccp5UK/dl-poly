@@ -1,9 +1,5 @@
 before_script:
   - module use /opt/modules/
-  - module load openmpi/gcc/1.10.1
-  - module load netcdf/gcc/4.4.0
-  - module load plumed/gcc/2.2.1
-  - module load kim/gcc/1.7.2
 
 stages:
   - build
@@ -12,75 +8,48 @@ stages:
 build-serial:
   stage: build
   script:
-    - mkdir build-serial
-    - pushd build-serial
-    - cmake ../ -DWITH_MPI=OFF 
-    - make -j10 
-    - popd
+    - sh utils/build-serial.sh
 
 build-mpi-pure:
   stage: build
   script:
-    - mkdir build-mpi-pure
-    - pushd build-mpi-pure
-    - cmake ../ 
-    - make -j10 
-    - popd
+    - sh utils/build-mpi-pure.sh
 
 build-mpi-netcdf:
   stage: build
   script:
-    - mkdir build-mpi-netcdf
-    - pushd build-mpi-netcdf
-    - cmake ../ -DWITH_NETCDF=ON 
-    - make -j10 
-    - popd
+    - sh utils/build-mpi-netcdf.sh
 
 build-mpi-plumed:
   stage: build
   script:
-    - mkdir build-mpi-plumed
-    - pushd build-mpi-plumed
-    - cmake ../ -DWITH_PLUMED=ON 
-    - make -j10 
-    - popd
+    - sh utils/build-mpi-plumed.sh
 
 build-mpi-kim:
   stage: build
   script:
-    - mkdir build-mpi-kim
-    - pushd build-mpi-kim
-    - cmake ../ -DWITH_KIM=ON 
-    - make -j10 
-    - popd
+    - sh utils/build-mpi-kim.sh
 
 build-mpi-all:
   stage: build
   script:
-    - mkdir build-mpi-all
-    - pushd build-mpi-all
-    - cmake ../ -DWITH_KIM=ON -DWITH_PLUMED=ON -DWITH_NETCDF=ON 
-    - make -j10 
-    - popd
+    - sh utils/build-mpi-all.sh
+
+build-intel: 
+  stage: build
+  script:
+    - sh utils/build-intel.sh 
 
 build-old-hpc:
   stage: build
   script:
-    - cp -r source source-mpi
-    - pushd source-mpi
-    - ln -s ../build/Makefile_MPI Makefile
-    - make hpc 
+    - sh utils/build-old.sh
   only:
     - master
 
 testing-mpi:
   stage: test
   script:
-    - mkdir build-mpi-plumed
-    - pushd build-mpi-plumed
-    - FFLAGS="-O3 -mtune=native" cmake ../ -DBUILD_TESTING=ON -DWITH_PLUMED=ON -DBUILDER="Gitlab Slave"
-    - make -j10 
-    - make test  
-    - popd 
+    - sh utils/mpi-testing.sh 
   only:
     - master
