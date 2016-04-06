@@ -50,6 +50,6 @@ build-old-hpc:
 testing-mpi:
   stage: test
   script:
-    - sh utils/mpi-testings.sh 
+    - sh utils/mpi-testing.sh 
   only:
     - master
