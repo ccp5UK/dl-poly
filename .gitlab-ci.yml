@@ -62,6 +62,13 @@ build-mpi-all:
     - cmake ../ -DWITH_KIM=ON -DWITH_PLUMED=ON -DWITH_NETCDF=ON 
     - make -j10 
     - popd
+build-intel: 
+  stage: build
+  script:
+    - mkdir build-mpi-intel
+    - pushd build-mpi-intel
+    - sh ../utils/build-intel.sh 
+    - popd
 
 build-old-hpc:
   stage: build
