@@ -1,4 +1,4 @@
-Subroutine link_cell_pairs(rlnk,lbook,megfrz)
+Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(rlnk,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2016
+! author    - i.t.todorov april 2016
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -24,7 +24,7 @@ Subroutine link_cell_pairs(rlnk,lbook,megfrz)
 
   Logical,            Intent( In    ) :: lbook
   Integer,            Intent( In    ) :: megfrz
-  Real( Kind = wp ) , Intent( In    ) :: rlnk
+  Real( Kind = wp ) , Intent( In    ) :: rcut,rlnk,rvdw,rmet,pdplnc
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1,match
 
@@ -37,7 +37,7 @@ Subroutine link_cell_pairs(rlnk,lbook,megfrz)
                        ix,iy,iz,ic, ix1,ix2,iy1,iy2,iz1,iz2, &
                        jx,jy,jz,jc
 
-  Real( Kind = wp ) :: cut,rcsq,rsq,det,rcell(1:9),celprp(1:10), &
+  Real( Kind = wp ) :: cut,rcsq,rsq,det,rcell(1:9),celprp(1:10),cnt(0:4), &
                        x,y,z, x1,y1,z1, dispx,dispy,dispz, xdc,ydc,zdc, nlr2
 
   Logical,           Dimension( : ), Allocatable :: nir
@@ -653,52 +653,6 @@ Subroutine link_cell_pairs(rlnk,lbook,megfrz)
      Call error(106)
   End If
 
-! check on minimum separation distance between VNL pairs at re/start
-
-  If (l_dis) Then
-     l_dis=.false. ! at re/start ONLY
-     r_dis=r_dis**2
-
-     det=0.0_wp
-     Do i=1,natms
-        ii=ltg(i)
-
-!        iz=(which_cell(i)-1)/((nlx + 2*nlp)*(nlx + 2*nlp))
-!        iy=(which_cell(i)-1)/(nlx + 2*nlp) - (nly + 2*nlp)*iz
-!        ix=Mod(which_cell(i)-1,nlx + 2*nlp)
-
-        Do kk=1,list(0,i)
-           j =list(kk,i)
-           jj=ltg(j)
-
-!           jz=(which_cell(j)-1)/((nlx + 2*nlp)*(nlx + 2*nlp))
-!           jy=(which_cell(j)-1)/(nlx + 2*nlp) - (nly + 2*nlp)*jz
-!           jx=Mod(which_cell(j)-1,nlx + 2*nlp)
-
-           If (j <= natms .or. ii < jj) Then
-              rsq=(xxx(i)-xxx(j))**2+(yyy(i)-yyy(j))**2+(zzz(i)-zzz(j))**2
-              If (rsq < r_dis) Then
-                 Write(nrite,'(/,1x,a,2i10,a)')                   &
-                      '*** warning - pair with global indeces: ', &
-                      ii,jj,' violates minimum separation distance'
-                 safe=.false.
-                 det=det+1.0_wp
-              End If
-           End If
-        End Do
-     End Do
-     r_dis=Sqrt(r_dis)
-
-     If (mxnode > 1) Then
-         Call gcheck(safe,"enforce")
-         Call gsum(det)
-     End If
-
-     If ((.not.safe) .and. idnode == 0) Write(nrite,'(/,1x,a,i0,2a)') &
-        '*** warning - ', Int(det,ip), ' number of pairs violated ',  &
-        'the minimum separation distance ***'
-  End If
-
 ! Rear down frozen pairs
 
   If (megfrz > 1) Then
@@ -759,6 +713,75 @@ Subroutine link_cell_pairs(rlnk,lbook,megfrz)
      Do i=1,natms
         list(-1,i)=list(0,i) ! End of NFP FNRH VNL
      End Do
+  End If
+
+! check on minimum separation distance between VNL pairs at re/start
+
+  If (l_dis) Then
+     l_dis=.false. ! at re/start ONLY
+
+     cnt=0.0_wp
+     Do i=1,natms
+        ii=ltg(i)
+
+!        iz=(which_cell(i)-1)/((nlx + 2*nlp)*(nlx + 2*nlp))
+!        iy=(which_cell(i)-1)/(nlx + 2*nlp) - (nly + 2*nlp)*iz
+!        ix=Mod(which_cell(i)-1,nlx + 2*nlp)
+
+        Do kk=1,list(-2,i)
+           j =list(kk,i)
+           jj=ltg(j)
+
+!           jz=(which_cell(j)-1)/((nlx + 2*nlp)*(nlx + 2*nlp))
+!           jy=(which_cell(j)-1)/(nlx + 2*nlp) - (nly + 2*nlp)*jz
+!           jx=Mod(which_cell(j)-1,nlx + 2*nlp)
+
+           If (j <= natms .or. ii < jj) Then
+              cnt(1)=cnt(1)+1.0_wp ! sum up all pairs (rlnk=rcut+rpad)
+
+              det=Sqrt((xxx(i)-xxx(j))**2+(yyy(i)-yyy(j))**2+(zzz(i)-zzz(j))**2)
+
+              If (det < r_dis) Then
+                 safe=.false.
+                 Write(nrite,'(/,1x,a,2(i10,a),f5.3,a)')                      &
+                      '*** warning - the pair with global indeces: '      ,   &
+                      ii,'  &',jj,'  violates minimum separation distance (', &
+                      det,' Angs) ***'
+                 cnt(0)=cnt(0)+1.0_wp ! sum up violators
+              End If
+
+              If (kk <= list(0,i)) Then
+                 If (det <  rcut) cnt(2)=cnt(2)+1.0_wp ! sum up all pairs (rcut, electrostatics)
+                 If (det <  rvdw) cnt(3)=cnt(3)+1.0_wp ! sum up all pairs (rvdw, vdw)
+                 If (det <= rmet) cnt(4)=cnt(4)+1.0_wp ! sum up all pairs (rmet, metal)
+              End If
+           End If
+        End Do
+     End Do
+
+     If (mxnode > 1) Then
+        Call gcheck(safe,"enforce")
+        Call gsum(cnt)
+     End If
+
+     If (idnode == 0) Then
+        If (.not.safe) Write(nrite,'(1x,a,i0,2a,f5.3,a,/)')                  &
+        '*** warning - ', Int(cnt(0),ip), ' pair(s) of particles in CONFIG ', &
+        'violate(s) the minimum separation distance of ',r_dis,' Angs ***'
+
+        Write(nrite,'(1x,a)') &
+        'Pair totals of short range interactions over cutoffs (in Angstroms):'
+        If (Abs(rlnk-rcut) > 1.0e-6_wp) Write(nrite,'(6x,a,i0,a,f5.3)') &
+        'extended       -  ', Int(cnt(1),ip), '  within rlnk = ', rlnk
+        Write(nrite,'(6x,a,i0,a,f5.3)') &
+        'electrostatics -  ', Int(cnt(2),ip), '  within rcut = ', rcut
+
+        Write(nrite,'(6x,a,i0,a,f5.3)') &
+        'van der Waals  -  ', Int(cnt(3),ip), '  within rvdw = ', rvdw
+
+        Write(nrite,'(6x,a,i0,a,f5.3,/)') &
+        'metal          -  ', Int(cnt(4),ip), '  within rmet = ', rmet
+     End If
   End If
 
   Deallocate (nix,niy,niz,                   Stat=fail(1))

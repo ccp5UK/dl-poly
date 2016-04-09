@@ -28,7 +28,7 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2016
+! author    - i.t.todorov april 2016
 ! contrib   - h.a.boateng february 2016
 ! contrib   - p.s.petkov february 2015
 !
@@ -136,7 +136,7 @@ Subroutine two_body_forces                        &
 
 ! Set up non-bonded interaction (verlet) list using link cells
 
-  If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rlnk,pdplnc,lbook,megfrz)
+  If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 
 ! Calculate all contributions from KIM
 
