@@ -710,9 +710,11 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> The mixing formulae can be found in Section~\ref{vdw} \\
 \>                                              \> \\
 \> {\bf vdw shift}                              \> apply a force-shifting procedure to all van der Waals \\
-\>                                              \> potentials (except the shifted-force n-m potential) so \\
-\>                                              \> that the VDW interactions' energy and force contributions \\
-\>                                              \> fall to zero smoothly for distances approaching $r_{\rm cut}$ \\
+\>                                              \> potentials (except for the shifted-force n-m and dpd ones) \\
+\>                                              \> so that the VDW interactions' energy and force contributions \\
+\>                                              \> fall to zero smoothly for distances approaching $r_{\rm cut}$, by solving \\
+\>                                              \> $\left(\partial U_{new}(r) / \partial r \right)|_{r = r_{\rm cut}} = 0$ and $U_{new}(r)|_{r=r_{\rm cut}}= 0$ for $a$ and $b$ in \\
+\>                                              \> $U_{new}(r) = U(r) + a \cdot r + b$ and the using $U_{new}$ instead $U(r)$ \\
 \>                                              \> \\
 \> {\bf zden} (sampling) (every) $f$            \> calculate and collect the Z-density profile \\
 \>                                              \> every $f$ timesteps (default $f~=~1$) \\
@@ -1824,8 +1826,8 @@ record carries the entries:
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt sitnam} \> a8      \> atomic site name \\
-\> {\tt weight} \> real    \> atomic site mass \\
-\> {\tt chge}   \> real    \> atomic site charge \\
+\> {\tt weight} \> real    \> atomic site mass (in Daltons) \\
+\> {\tt chge}   \> real    \> atomic site charge (in protons) \\
 \> {\tt nrept}  \> integer \> repeat counter \\
 \> {\tt ifrz}   \> integer \> `frozen' atom (if {\tt ifrz}$~>~0$)
 \end{tabbing}
@@ -3127,14 +3129,13 @@ the one specified in FIELD, $n$, these will not be processed by \D.
 
 \D will read same order momenta in their natural vector format:
 \begin{tabbing}
-X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
-\> {\tt charge}       \> real(1)  \> scalar \\
-\> {\tt dipole}       \> real(3)  \> vector (x,y,z) \\
-\> {\tt quadrupole}   \> real(6)  \> vector (xx,xy,xz,yy,yz,zz) \\
-\> {\tt octupole}     \> real(10) \> vector (xxx,xxy,xxz,xyy,xyz,xzz,yyy,yyz,yzz,zzz) \\
-\> {\tt hexadecapole} \> real(15) \> vector (xxxx,xxxy,xxxz,....,yyyz,yyzz,yzzz,zzzz) \\
+X\=XXXXXXXX\=XXXXXXXX\=\kill
+\> {\tt charge}       \> real(1)  \> scalar $q$ (in protons) \\
+\> {\tt dipole}       \> real(3)  \> vector $(x,y,z)$ (in protons/\AA) \\
+\> {\tt quadrupole}   \> real(6)  \> vector $(xx,xy,xz,yy,yz,zz)$ (in protons/\AA$^{2}$) \\
+\> {\tt octupole}     \> real(10) \> vector $(xxx,xxy,xxz,xyy,xyz,xzz,yyy,yyz,yzz,zzz)$ (in protons/\AA$^{3}$) \\
+\> {\tt hexadecapole} \> real(15) \> vector $(xxxx,xxxy,xxxz,....,yyyz,yyzz,yzzz,zzzz)$ (in protons/\AA$^{4}$)
 \end{tabbing}
-
 {\bf Note} that the charge values supplied in FIELD will be
 overwritten with those supplied here!
 
