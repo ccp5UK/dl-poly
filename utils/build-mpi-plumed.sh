@@ -6,7 +6,7 @@ module load plumed/gcc/2.2.1
 
 mkdir build-mpi-plumed
 pushd build-mpi-plumed
-cmake ../ -DWITH_PLUMED=ON 
-make -j10 
+cmake ../ -DWITH_PLUMED=ON
+make -j10
 
 

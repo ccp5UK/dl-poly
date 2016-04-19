@@ -5,7 +5,7 @@ module load netcdf/gcc/4.4.0
 
 mkdir build-mpi-netcdf
 pushd build-mpi-netcdf
-cmake ../ -DWITH_NETCDF=ON 
-make -j10 
+cmake ../ -DWITH_NETCDF=ON
+make -j10
 
 

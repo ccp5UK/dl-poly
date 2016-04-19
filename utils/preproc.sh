@@ -18,12 +18,12 @@ EOF
 if [ "x$i" != "xkim" ] ; then
   gfortran -E -P -D${i^^} ${i}_module.F90 >> ${i}_module_pre.F90
 else
-  sed -i "s;#include;!#include;g" ${i}_module.F90 
-  sed -i "s;#define;!#define;g" ${i}_module.F90 
+  sed -i "s;#include;!#include;g" ${i}_module.F90
+  sed -i "s;#define;!#define;g" ${i}_module.F90
   gfortran -E -P -D${i^^} ${i}_module.F90 >> ${i}_module_pre.F90
-  sed -i "s;!#include;#include;g" ${i}_module.F90 
-  sed -i "s;!#define;#define;g" ${i}_module.F90 
-  sed -i "s;!#include;#include;g" ${i}_module_pre.F90 
-  sed -i "s;!#define;#define;g" ${i}_module_pre.F90 
+  sed -i "s;!#include;#include;g" ${i}_module.F90
+  sed -i "s;!#define;#define;g" ${i}_module.F90
+  sed -i "s;!#include;#include;g" ${i}_module_pre.F90
+  sed -i "s;!#define;#define;g" ${i}_module_pre.F90
 fi
 done

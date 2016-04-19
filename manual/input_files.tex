@@ -518,9 +518,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf no top}ology                            \> skip detailed topology reporting during read of FIELD in OUTPUT \\
 \>                                              \> (no FIELD replication), useful for large bio-chemcal simulations \\
 \>                                              \> \\
-\> {\bf no vafav}eraging                        \> ignore time-averaging of velocity autocorrelation functions (VAFs), \\
-\>                                              \> report all calculated VAF profiles for individual species to VAFDAT \\
-\>                                              \> files and final profile (for all species) in OUTPUT \\
+\> {\bf no vafav}eraging                        \> ignore time-averaging of velocity autocorrelation functions \\
+\>                                              \> (VAFs), report all calculated VAF profiles for individual species \\
+\>                                              \> to VAFDAT files and final profile (for all species) in OUTPUT \\
 \>                                              \> \\
 \> {\bf no vdw}                                 \> ignore short range (non-bonded)\index{potential!non-bonded} interactions in simulation \\
 \>                                              \> \\
@@ -604,9 +604,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> properties such as RDFs, z-density profiles, defects and \\
 \>                                              \> displacements trajectories (execution halts if no property is specified) \\
 \>                                              \> \\
-\> {\bf replay} (history) {\bf force}           \> abort simulation and replay the HISTORF file (a HISTORY copy) with full \\
-\>                                              \> force evaluation driven by FIELD (different from the one used for the \\
-\>                                              \> HISTORF generation) \\
+\> {\bf replay} (history) {\bf force}           \> abort simulation and replay the HISTORF file (a HISTORY copy) \\
+\>                                              \> with full force evaluation driven by FIELD (different from \\
+\>                                              \> the one used for the HISTORF generation) \\
 \>                                              \> \\
 \> {\bf restart}                                \> restart job from end point of previous run \\
 \>                                              \> (i.e. continue current simulation, REVOLD required) \\
@@ -668,8 +668,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf steps} $n$                              \> run simulation for $n$ timesteps (default $n~=~0$, \\
 \>                                              \> corresponding to a "dry" run) \\
 \>                                              \> \\
-\> {\bf subcell}ing (threshold) (density) $f$   \> set the subcelling threshold density of particles per link cell \\
-\>                                              \> below which decreasing link-cell size stops $f$ ($f~\ge~1.0$, default $f~=~50.0)$) \\
+\> {\bf subcell}ing (threshold) (density) $f$   \> set the subcelling threshold density of particles per link cell below \\
+\>                                              \> which decreasing link-cell size stops $f$ ($f~\ge~1.0$, default $f~=~50.0)$) \\
 \>                                              \> \\
 \> {\bf temp}erature $f$                        \> set required simulation temperature to $f$ Kelvin \\
 \>                                              \> (target temperature for constant temperature\index{units!temperature} ensembles) \\
@@ -682,7 +682,6 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf vaf} (sampling) (every) $i$ (bin) (size) $n$ \> \phantom{xxxx} calculate and collect velocity autocorrelation function profiles \\
 \>                                                   \> \phantom{xxxx} every $i$ timesteps (default $i~=~50$) with a bin size set to $n$ \\
 \>                                                   \> \phantom{xxxx} timesteps (default $n~=~2i$, if $i~/ge~100$, or $n~=~100$ otherwise) \\
-\>                                              \> \\
 \>                                              \> \\
 \> {\bf timestep} $f$                           \> set timestep to $f$ ps \\
 \>                                              \> \\
@@ -736,12 +735,18 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf l\_his}                                 \> generate a one frame HISTORY from CONFIG \\
 \>                                              \> and terminate straight after \\
 \>                                              \> \\
-\> {\bf l\_org} $x~~y~~z~~n$                    \> translate CONFIG along a vector ($x,y,z$), default (0,0,0), into CFGORG \\
-\>                                              \> with configuration level $n$, default 0,  after reading input \& terminate \\
+\> {\bf l\_org} $x~~y~~z~~n$                    \> after reading input recast CONFIG's contents in CFGORG by \\
+\>                                              \> translating all coordinates along a vector ($x,y,z$), default \\
+\>                                              \> (0,0,0), with a configuration level $n$ (default $n=0$) \& terminate \\
 \>                                              \> \\
 \> {\bf l\_rin}                                 \> read REVOLD in ASCII (default is binary) \\
 \>                                              \> \\
 \> {\bf l\_rout}                                \> write REVIVE in ASCII (default is binary) \\
+\>                                              \> \\
+\> {\bf l\_scl} \phantom{xxx} $n$               \> after reading input cast CONFIG's contents into CFGSCL with \\
+\> \phantom{xxxxxxxx} $a_{1}~~a_{2}~~a_{3}$     \> a configuration level $n$ (default $n=0$), rescaling all coordinates \\
+\> \phantom{xxxxxxxx} $b_{1}~~b_{2}~~b_{3}$     \> within a new lattice defined by the vectors ($\vek{a},\vek{b},\vek{c}$), \\
+\> \phantom{xxxxxxxx} $c_{1}~~c_{2}~~c_{3}$     \> each specified on a new line, \& then terminate the run \\
 \>                                              \> \\
 \> {\bf l\_scr}                                 \> redirect OUTPUT file's contents to the OS's \\
 \>                                              \> default output channel (screen, interactive) \\

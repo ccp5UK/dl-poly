@@ -6,6 +6,6 @@ module load kim/gcc/1.7.2
 
 mkdir build-mpi-all
 pushd build-mpi-all
-cmake ../ -DWITH_KIM=ON -DWITH_PLUMED=ON -DWITH_NETCDF=ON 
-make -j10 
+cmake ../ -DWITH_KIM=ON -DWITH_PLUMED=ON -DWITH_NETCDF=ON
+make -j10
 
