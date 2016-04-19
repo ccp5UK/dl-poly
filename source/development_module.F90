@@ -224,7 +224,7 @@ Contains
     Integer               :: value(1:8)
 
     Character( Len = 47 ) :: aux
-    Integer               :: i
+    Integer               :: i,l
 
     Write(nrite,'(1x,a66)') Repeat("*",66)
     If (Len_Trim( __DATE__//"  @  "//__TIME__) > 47) Then
@@ -269,6 +269,11 @@ Contains
 #ifndef OLDMPI
        Do i=1,Len_Trim(lib_version),46
           aux=lib_version(i:Min(i+45,Len_Trim(lib_version)))
+          ! some libs strings contain end of line... strip it
+          l=Index(aux,New_line("a"))
+          If (l>0) Then
+            aux=aux(1:l-Len(New_line("a")))
+          End If
           Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
        End Do
 #endif
