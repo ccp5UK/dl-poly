@@ -35,10 +35,10 @@ build-mpi-all:
   script:
     - sh utils/build-mpi-all.sh
 
-build-intel: 
+build-intel:
   stage: build
   script:
-    - sh utils/build-intel.sh 
+    - sh utils/build-intel.sh
 
 build-old-hpc:
   stage: build
@@ -50,6 +50,6 @@ build-old-hpc:
 testing-mpi:
   stage: test
   script:
-    - sh utils/mpi-testing.sh 
+    - sh utils/mpi-testing.sh
   only:
     - master

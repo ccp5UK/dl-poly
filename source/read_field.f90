@@ -3195,7 +3195,7 @@ Subroutine read_field                   &
                           If (idnode == 0) Write(nrite,"(3(/,1x,a))")                        &
   "type of mixing defaulted - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2", &
   "mixing is limited to potentials of the same type only",                                   &
-  "mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA 14-7)"
+  "mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,14-7)"
                        End If
                     End If
                  End If
@@ -3308,10 +3308,10 @@ Subroutine read_field                   &
                                 sig(2)=(prmvdw(1,ja)/prmvdw(2,ja))**(1.0_wp/6.0_wp)
                              Else If (keypot == 2  .or. &
                                       keypot == 10 .or. &
-                                      keypot == 11) Then ! LJ, DPD, AMOEBA 14-7
+                                      keypot == 11) Then ! LJ, DPD, 14-7
                                 If (keypot == 2 ) keyword='lj  '
                                 If (keypot == 10) keyword='dpd '
-                                If (keypot == 11) keyword='amoe'
+                                If (keypot == 11) keyword='14-7'
 
                                 eps(1)=prmvdw(1,ia)
                                 sig(1)=prmvdw(2,ia)
@@ -3459,7 +3459,7 @@ Subroutine read_field                   &
                                 prmvdw(2,ntpvdw)=4.0_wp*eps(0)*(sig(0)**6)
                              Else If (keypot == 2  .or. &
                                       keypot == 10 .or. &
-                                      keypot == 11) Then ! LJ, DPD, AMOEBA 14-7
+                                      keypot == 11) Then ! LJ, DPD, 14-7
                                 prmvdw(1,ntpvdw)=eps(0)
                                 prmvdw(2,ntpvdw)=sig(0)
                              Else If (keypot == 9)  Then ! WCA

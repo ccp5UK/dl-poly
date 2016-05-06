@@ -210,11 +210,11 @@ Contains
 ! dl_poly_4 development subroutine for ending timing
 !
 ! copyright - daresbury laboratory
-! author    - a.m.elena & i.t.todorov march 2016
+! author    - a.m.elena & i.t.todorov april 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use parse_module, Only : strip_blanks
+    Use parse_module, Only : clean_string
 
     Implicit None
 
@@ -232,21 +232,21 @@ Contains
     Else
       Write(aux,*) __DATE__//"  @  "//__TIME__
     End If
-    Call strip_blanks(aux)
+    Call clean_string(aux)
     Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "birthday:", aux, "****"
     If (Len_Trim(__HOSTNAME__) > 47) Then
       Write(aux,'(a47)') __HOSTNAME__
     Else
       Write(aux,*) __HOSTNAME__
     End If
-    Call strip_blanks(aux)
+    Call clean_string(aux)
     Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", " machine:", aux, "****"
     If (Len_Trim(__BUILDER__) > 47) Then
       Write(aux,'(a47)') __BUILDER__
     Else
       Write(aux,*) __BUILDER__
     End If
-    Call strip_blanks(aux)
+    Call clean_string(aux)
     Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", " builder:", aux, "****"
     If      (mpi_ver == 0) Then
        If (Len_Trim(__COMPILER__//" v"//__VERSION__//" (serial build)") > 47) Then
@@ -261,19 +261,15 @@ Contains
         Write(aux,*) __COMPILER__//" v"//__VERSION__
       End If
     End If
-    Call strip_blanks(aux)
+    Call clean_string(aux)
     Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "compiler:", aux, "****"
     If (mpi_ver > 0) Then
        Write(aux,'(a1,i0,a1,i0)') "v",mpi_ver,".",mpi_subver
        Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "     MPI:", aux, "****"
 #ifndef OLDMPI
+       Call clean_string(lib_version)
        Do i=1,Len_Trim(lib_version),46
           aux=lib_version(i:Min(i+45,Len_Trim(lib_version)))
-          ! some libs strings contain end of line... strip it
-          l=Index(aux,New_line("a"))
-          If (l>0) Then
-            aux=aux(1:l-Len(New_line("a")))
-          End If
           Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
        End Do
 #endif

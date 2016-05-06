@@ -2,5 +2,5 @@
 
 mkdir build-serial
 pushd build-serial
-cmake ../ -DWITH_MPI=OFF 
-make -j10 
+cmake ../ -DWITH_MPI=OFF
+make -j10
