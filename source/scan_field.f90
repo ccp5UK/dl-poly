@@ -19,7 +19,7 @@ Subroutine scan_field                                &
 ! dl_poly_4 subroutine for raw scanning the contents of the FIELD file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith march 2016
+! author    - i.t.todorov & w.smith april 2016
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs)
 ! contrib   - h.a.boateng february 2015
@@ -942,7 +942,7 @@ Subroutine scan_field                                &
   Do i=1,9
      mxt(i)=Min(1,mxf(i))
   End Do
-  mxexcl = Min( mxnmst , Max( mxfrgd , Sum(mxf)/Max(1,Sum(mxt)) ) * (Min(1,mxshl)+1) )
+  mxexcl = Min( mxnmst , Max( mxfrgd , Sum(mxf)/Max(1,Sum(mxt)) ) * (Max(1,mxshl)+1) )
   If (mxexcl > 0) mxexcl=mxexcl+1 ! violation excess element
 
   Return

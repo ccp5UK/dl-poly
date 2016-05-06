@@ -1623,6 +1623,7 @@ Subroutine read_control                                &
            If (idnode == 0) Then
               Write(nrite,"(1x,'Ewald convergence parameter (A^-1)',1p,e12.4)") alpha
               Write(nrite,"(1x,'Ewald kmax1 kmax2 kmax3   (x2)',1x,3i5)") kmaxa1,kmaxb1,kmaxc1
+              If (kmaxa /= kmaxa1 .or. kmaxb /= kmaxb1 .or. kmaxc /= kmaxc1) &
               Write(nrite,"(1x,'DaFT adjusted kmax values (x2)',1x,3i5)") kmaxa,kmaxb,kmaxc
               Write(nrite,"(1x,'B-spline interpolation order',8x,1p,i5)") mxspl
            End If

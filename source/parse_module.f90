@@ -11,7 +11,8 @@ Module parse_module
 
   Implicit None
 
-  Public :: tabs_2_blanks, get_line, strip_blanks, lower_case, get_word, word_2_real
+  Public :: tabs_2_blanks, nls_2_blanks, strip_blanks, get_word, &
+            clean_string, lower_case, get_line, word_2_real
 
 Contains
 
@@ -30,7 +31,7 @@ Contains
 
     Character( Len = * ), Intent( InOut ) :: record
 
-    Integer              :: i
+    Integer :: i
 
     Do i=1,Len_Trim(record)
        If (record(i:i) == Achar(9)) record(i:i) = ' '
@@ -38,84 +39,64 @@ Contains
 
   End Subroutine tabs_2_blanks
 
-  Subroutine get_line(safe,ifile,record)
+  Subroutine nls_2_blanks_old(record)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine to read a character string on node zero and
-! broadcast it to all other nodes
+! dl_poly_4 subroutine to convert new line sequences into blanks in a
+! string, catching both EoL and CR
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2011
+! author    - i.t.todorov april 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use comms_module
 
     Implicit None
 
-    Logical,              Intent(   Out ) :: safe
-    Integer,              Intent( In    ) :: ifile
-    Character( Len = * ), Intent(   Out ) :: record
+    Character( Len = * ), Intent( InOut ) :: record
 
-    Integer                              :: i,fail,rec_len
-    Integer, Dimension( : ), Allocatable :: line
+    Integer :: i
 
-    rec_len = Len(record)
+    Do i=1,Len_Trim(record)
+       If ( record(i:i) == Achar(10) .or. &
+            record(i:i) == Achar(13) ) record(i:i) = ' '
+    End Do
 
-    fail = 0
-    Allocate (line(1:rec_len), Stat = fail)
-    If (fail > 0) Call error(1011)
+  End Subroutine nls_2_blanks_old
 
-    record = ' '
-    safe = .true.
+  Subroutine nls_2_blanks(record)
 
-    If (mxnode > 1) Call gsync()
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine to convert new line sequences into blanks in a
+! string, catching both EoL and CR
+!
+! copyright - daresbury laboratory
+! author    - a.m.elena april 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    If (idnode == 0) Then
+    Implicit None
 
-       Read(Unit=ifile, Fmt='(a)', End=100) record
+    Character( Len = * ), Intent( InOut ) :: record
 
-       If (mxnode > 1) Then
-          Do i=1,rec_len
-             line(i) = Ichar(record(i:i))
-          End Do
+    Integer :: i,j,k
 
-          Call gcheck(safe)
-
-          Call MPI_BCAST(line(1:rec_len), rec_len, MPI_INTEGER, 0, dlp_comm_world, ierr)
+    i=Len_Trim(record)
+    j=Index(record(1:i),New_line("a"))
+    k=Len(New_line("a"))
+    Do While (j > 0)
+       If (j == i) Then
+          record=record(1:j-k)
+          j=0 !Exit
+       Else
+          record=record(1:j-k) // record(j+1:i)
+          i=i-k
+          j=Index(record(1:i),New_line("a")) ! nearly impossible to have a second one
        End If
+    End Do
 
-       Go To 200
-
-100    safe = .false.
-
-       If (mxnode > 1) Call gcheck(safe)
-       If (.not.safe) Go To 200
-
-    Else
-
-       Call gcheck(safe)
-       If (.not.safe) Go To 200
-
-       line = 0
-
-       Call MPI_BCAST(line(1:rec_len), rec_len, MPI_INTEGER, 0, dlp_comm_world, ierr)
-
-       Do i=1,rec_len
-          record(i:i) = Char(line(i))
-       End Do
-
-    End If
-
-200 Continue
-
-    Call tabs_2_blanks(record)
-
-    Deallocate (line, Stat = fail)
-    If (fail > 0) Call error(1012)
-
-  End Subroutine get_line
+  End Subroutine nls_2_blanks
 
   Subroutine strip_blanks(record)
 
@@ -135,82 +116,6 @@ Contains
     record = Trim(Adjustl(record))
 
   End Subroutine strip_blanks
-
-  Subroutine lower_case(record)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine to lower the character case of a string.
-! Transportable to non-ASCII machines
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov june 2004
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Implicit None
-
-    Character( Len = * ), Intent( InOut ) :: record
-
-    Integer :: i
-
-    Do i=1,Len(record)
-       If (record(i:i) == 'A') Then
-          record(i:i) = 'a'
-       Else If (record(i:i) == 'B') Then
-          record(i:i) = 'b'
-       Else If (record(i:i) == 'C') Then
-          record(i:i) = 'c'
-       Else If (record(i:i) == 'D') Then
-          record(i:i) = 'd'
-       Else If (record(i:i) == 'E') Then
-          record(i:i) = 'e'
-       Else If (record(i:i) == 'F') Then
-          record(i:i) = 'f'
-       Else If (record(i:i) == 'G') Then
-          record(i:i) = 'g'
-       Else If (record(i:i) == 'H') Then
-          record(i:i) = 'h'
-       Else If (record(i:i) == 'I') Then
-          record(i:i) = 'i'
-       Else If (record(i:i) == 'J') Then
-          record(i:i) = 'j'
-       Else If (record(i:i) == 'K') Then
-          record(i:i) = 'k'
-       Else If (record(i:i) == 'L') Then
-          record(i:i) = 'l'
-       Else If (record(i:i) == 'M') Then
-          record(i:i) = 'm'
-       Else If (record(i:i) == 'N') Then
-          record(i:i) = 'n'
-       Else If (record(i:i) == 'O') Then
-          record(i:i) = 'o'
-       Else If (record(i:i) == 'P') Then
-          record(i:i) = 'p'
-       Else If (record(i:i) == 'Q') Then
-          record(i:i) = 'q'
-       Else If (record(i:i) == 'R') Then
-          record(i:i) = 'r'
-       Else If (record(i:i) == 'S') Then
-          record(i:i) = 's'
-       Else If (record(i:i) == 'T') Then
-          record(i:i) = 't'
-       Else If (record(i:i) == 'U') Then
-          record(i:i) = 'u'
-       Else If (record(i:i) == 'V') Then
-          record(i:i) = 'v'
-       Else If (record(i:i) == 'W') Then
-          record(i:i) = 'w'
-       Else If (record(i:i) == 'X') Then
-          record(i:i) = 'x'
-       Else If (record(i:i) == 'Y') Then
-          record(i:i) = 'y'
-       Else If (record(i:i) == 'Z') Then
-          record(i:i) = 'z'
-       End If
-    End Do
-
-  End Subroutine lower_case
 
   Subroutine get_word(record,word)
 
@@ -293,6 +198,213 @@ Contains
     End Do
 
   End Subroutine get_word
+
+  Subroutine clean_string(record)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine to clean multiple white spacing such as blanks,
+! tabs and new lines form a string
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov april 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Implicit None
+
+    Character( Len = * ), Intent( InOut ) :: record
+
+    Character( Len = 10000 ) :: record1
+    Character( Len = 200   ) :: word
+
+! assign
+
+    record1 = record(1:Len_Trim(record))
+
+! clean
+
+    Call tabs_2_blanks(record1)
+    Call nls_2_blanks(record1)
+    Call strip_blanks(record1)
+
+! compress for fun
+
+    record = ' '
+    Do While (Len_Trim(record1) > 0)
+
+! read word
+
+       word(1:1) = ' '
+       Do While (word(1:1) == ' ')
+          Call get_word(record1,word)
+       End Do
+
+! add cleanly
+
+       If (Len_Trim(record) > 0) Then
+          record = record(1:Len_Trim(record)) // ' ' // word(1:Len_Trim(word))
+       Else
+          record = word(1:Len_Trim(word))
+       End If
+    End Do
+
+  End Subroutine clean_string
+
+  Subroutine lower_case(record)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine to lower the character case of a string.
+! Transportable to non-ASCII machines
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov june 2004
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Implicit None
+
+    Character( Len = * ), Intent( InOut ) :: record
+
+    Integer :: i
+
+    Do i=1,Len(record)
+       If (record(i:i) == 'A') Then
+          record(i:i) = 'a'
+       Else If (record(i:i) == 'B') Then
+          record(i:i) = 'b'
+       Else If (record(i:i) == 'C') Then
+          record(i:i) = 'c'
+       Else If (record(i:i) == 'D') Then
+          record(i:i) = 'd'
+       Else If (record(i:i) == 'E') Then
+          record(i:i) = 'e'
+       Else If (record(i:i) == 'F') Then
+          record(i:i) = 'f'
+       Else If (record(i:i) == 'G') Then
+          record(i:i) = 'g'
+       Else If (record(i:i) == 'H') Then
+          record(i:i) = 'h'
+       Else If (record(i:i) == 'I') Then
+          record(i:i) = 'i'
+       Else If (record(i:i) == 'J') Then
+          record(i:i) = 'j'
+       Else If (record(i:i) == 'K') Then
+          record(i:i) = 'k'
+       Else If (record(i:i) == 'L') Then
+          record(i:i) = 'l'
+       Else If (record(i:i) == 'M') Then
+          record(i:i) = 'm'
+       Else If (record(i:i) == 'N') Then
+          record(i:i) = 'n'
+       Else If (record(i:i) == 'O') Then
+          record(i:i) = 'o'
+       Else If (record(i:i) == 'P') Then
+          record(i:i) = 'p'
+       Else If (record(i:i) == 'Q') Then
+          record(i:i) = 'q'
+       Else If (record(i:i) == 'R') Then
+          record(i:i) = 'r'
+       Else If (record(i:i) == 'S') Then
+          record(i:i) = 's'
+       Else If (record(i:i) == 'T') Then
+          record(i:i) = 't'
+       Else If (record(i:i) == 'U') Then
+          record(i:i) = 'u'
+       Else If (record(i:i) == 'V') Then
+          record(i:i) = 'v'
+       Else If (record(i:i) == 'W') Then
+          record(i:i) = 'w'
+       Else If (record(i:i) == 'X') Then
+          record(i:i) = 'x'
+       Else If (record(i:i) == 'Y') Then
+          record(i:i) = 'y'
+       Else If (record(i:i) == 'Z') Then
+          record(i:i) = 'z'
+       End If
+    End Do
+
+  End Subroutine lower_case
+
+  Subroutine get_line(safe,ifile,record)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine to read a character string on node zero and
+! broadcast it to all other nodes
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov june 2011
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Use comms_module
+
+    Implicit None
+
+    Logical,              Intent(   Out ) :: safe
+    Integer,              Intent( In    ) :: ifile
+    Character( Len = * ), Intent(   Out ) :: record
+
+    Integer                              :: i,fail,rec_len
+    Integer, Dimension( : ), Allocatable :: line
+
+    rec_len = Len(record)
+
+    fail = 0
+    Allocate (line(1:rec_len), Stat = fail)
+    If (fail > 0) Call error(1011)
+
+    record = ' '
+    safe = .true.
+
+    If (mxnode > 1) Call gsync()
+
+    If (idnode == 0) Then
+
+       Read(Unit=ifile, Fmt='(a)', End=100) record
+
+       If (mxnode > 1) Then
+          Do i=1,rec_len
+             line(i) = Ichar(record(i:i))
+          End Do
+
+          Call gcheck(safe)
+
+          Call MPI_BCAST(line(1:rec_len), rec_len, MPI_INTEGER, 0, dlp_comm_world, ierr)
+       End If
+
+       Go To 200
+
+100    safe = .false.
+
+       If (mxnode > 1) Call gcheck(safe)
+       If (.not.safe) Go To 200
+
+    Else
+
+       Call gcheck(safe)
+       If (.not.safe) Go To 200
+
+       line = 0
+
+       Call MPI_BCAST(line(1:rec_len), rec_len, MPI_INTEGER, 0, dlp_comm_world, ierr)
+
+       Do i=1,rec_len
+          record(i:i) = Char(line(i))
+       End Do
+
+    End If
+
+200 Continue
+
+    Call tabs_2_blanks(record)
+
+    Deallocate (line, Stat = fail)
+    If (fail > 0) Call error(1012)
+
+  End Subroutine get_line
 
   Function word_2_real(word,def,report)
 

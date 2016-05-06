@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2016
+! author    - i.t.todorov may 2016
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -18,6 +18,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
                                  r_nprx,r_npry,r_nprz
   Use config_module,      Only : cell,natms,nlast,ltg,lfrzn, &
                                  xxx,yyy,zzz,lexatm,list
+  Use core_shell_module,  Only : legshl
   Use development_module, Only : l_dis,r_dis
 
   Implicit None
@@ -718,7 +719,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 ! check on minimum separation distance between VNL pairs at re/start
 
   If (l_dis) Then
-     l_dis=.false. ! at re/start ONLY
+!     l_dis=.false. ! at re/start ONLY
 
      cnt=0.0_wp
      Do i=1,natms
@@ -735,6 +736,12 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 !           jz=(which_cell(j)-1)/((nlx + 2*nlp)*(nlx + 2*nlp))
 !           jy=(which_cell(j)-1)/(nlx + 2*nlp) - (nly + 2*nlp)*jz
 !           jx=Mod(which_cell(j)-1,nlx + 2*nlp)
+
+! Exclude core-shell units from the check
+
+           If (legshl(0,i) > 0) Then
+              If (legshl(1,i) == jj) Cycle
+           End If
 
            If (j <= natms .or. ii < jj) Then
               cnt(1)=cnt(1)+1.0_wp ! sum up all pairs (rlnk=rcut+rpad)
