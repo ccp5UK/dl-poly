@@ -158,7 +158,8 @@ with SHAKE (LFV) \& RATTLE (VV),
 DD Rigid Body (RB) Dynamics with Euler-Quaternions using
 FIQA (LFV) \& NOSQUISH (VV) integration schemes;
 Electrostatics beyond point charges with multipolar interactions
-up to hexadecapole (cartesian poles formulation);
+up to hexadecapole (Cartesian poles formulation) \&
+Drude self-induced polarisation;
 Long-ranged Coulomb Interactions by Parallelised Smoothed
 Particle Mesh Ewald (SPME) using Memory Distributed 3D FFT (DaFT),
 Damped Force-shifted Coulomb, Ion Polarisation by Dynamical
@@ -310,8 +311,9 @@ to obtain more detailed information if need be.}
 If you have followed the procedure for obtaining and downloading the
 \D package (see Obtaining~the~Source~Code, Section~\ref{source}),
 have successfully unpacked it and are ready to compile the source code,
-then jump to the Makefiles section of the \D~README in Appendix~\ref{readme}
-or alternatively view the {\sc README.txt} and follow the instructions within.
+then jump to the INSTALL Notes in the {\sc INSTALL} file or to Makefiles
+section of {\sc README.txt}, both in the main distribution directory
+as well as in the Appendix~\ref{readme}.
 
 If you have compiled successfully then a freshly date-stamped file,
 named DLPOLY.Z %(or DLPOLY.Z.cu if you successfully followed the
@@ -464,10 +466,10 @@ and output files for which are in the {\em data} sub-directory.
 \chapter{\D Macros}
 \input macros.tex
 
-\chapter{\D Error Messages and User Action}
+\chapter{\D Error Messages \& User Action}
 \input error_messages.tex
 
-\chapter{\D README wisdom}
+\chapter{\D INSTALL Notes \& README Wisdom}
 \input readme.tex
 
 \chapter{\D Academic Licence Agreement}

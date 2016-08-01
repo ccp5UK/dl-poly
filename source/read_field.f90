@@ -589,7 +589,7 @@ Subroutine read_field                   &
                     smax=Max(smax,prmshl(1,nshels)+0.5_wp*prmshl(2,nshels))
                  End Do
 
-! Check for mixed or multiple core-shell entries
+! Check for mixed or multiple core-shell entries (no inter units linkage!)
 
                  Do i=nshels-numshl(itmols)+1,nshels
                     is(1)=lstshl(1,i)

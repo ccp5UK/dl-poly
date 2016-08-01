@@ -3,7 +3,8 @@ Subroutine build_tplg_intra()
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for constructing the topology related list
-! of neighbours for the MD system mapped onto this node
+! of neighbours for the MD system mapped onto this node.  It is presumed
+! that constraint bonds are put on top of chemical bonds!
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2016
@@ -226,7 +227,7 @@ Contains
 
     If (.not.l_excluded) Then
 
-! Get local safety no array overfloat
+! Get local safety no array overflow
 
        safe_local = (last < mxexcl-1)
 

@@ -8,7 +8,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 ! NOTE: When executing on one node we need not get here at all!
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov february 2016
+! author    - w.smith & i.t.todorov july 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014
 !
@@ -439,9 +439,12 @@ Subroutine deport_atomic_data(mdir,lbook)
            If (jj > 0) Then
               Do ll=1,jj
                  If (imove+3 <= iblock) Then
-                    kk=legshl(ll,i)
+                    kk=Abs(legshl(ll,i))
 
-                    Do k=0,2
+                    imove=imove+1
+                    buffer(imove)=Real(Sign(1,legshl(ll,i))*listshl(0,kk),wp)
+
+                    Do k=1,2
                        imove=imove+1
                        buffer(imove)=Real(listshl(k,kk),wp)
                     End Do
@@ -1085,9 +1088,9 @@ Subroutine deport_atomic_data(mdir,lbook)
 
         legshl(:,newatm) = 0
         Do While (buffer(kmove+1) > 0.0_wp .and. safe)
-           jj=Nint(buffer(kmove+1))
-           iatm=Nint(buffer(kmove+2))
-           jatm=Nint(buffer(kmove+3))
+           jj=Nint(buffer(kmove+1)) ; ll=Sign(1,jj) ; jj=jj*ll
+           iatm=Nint(buffer(kmove+2)) ! ll=1
+           jatm=Nint(buffer(kmove+3)) ! ll=-1
            kmove=kmove+3
 
 ! check if core-shell unit already specified
@@ -1110,13 +1113,13 @@ Subroutine deport_atomic_data(mdir,lbook)
                  listshl(1,jshels)=iatm
                  listshl(2,jshels)=jatm
 
-                 Call tag_legend(safe1,newatm,jshels,legshl,mxfshl)
+                 Call tag_legend(safe1,newatm,ll*jshels,legshl,mxfshl)
               Else
                  safe=.false.
                  Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many core-shell units on node: ", idnode, " !!! ***"
               End If
            Else
-              Call tag_legend(safe1,newatm,kshels,legshl,mxfshl)
+              Call tag_legend(safe1,newatm,ll*kshels,legshl,mxfshl)
            End If
         End Do
         kmove=kmove+1

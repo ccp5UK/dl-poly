@@ -152,7 +152,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
 
      Else If (keypot == 9) Then
 
-! Weeks-Chandler-Anderson (shifted & truncated Lenard-Jones) (i.t.todorov)
+! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
 ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
 
         eps=prmvdw(1,ivdw)

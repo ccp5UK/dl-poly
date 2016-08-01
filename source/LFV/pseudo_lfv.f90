@@ -17,14 +17,14 @@ Subroutine pseudo_lfv                                     &
 !           as well as to shells.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2015
+! author    - i.t.todorov july 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gsum
   Use setup_module,       Only : boltz,nrite,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
-  Use site_module,        Only : dofsit,ntpshl,unqshl
+  Use site_module,        Only : dofsit,legshl
   Use config_module
   Use rigid_bodies_module
   Use core_shell_module,  Only : ntshl,listshl,lshmv_shl,lishp_shl,lashp_shl
@@ -130,7 +130,7 @@ Subroutine pseudo_lfv                                     &
            ssy=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i) ; ssy=Abs(ssy-Anint(ssy))
            ssz=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i) ; ssz=Abs(ssz-Anint(ssz))
 
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. (.not.Any(unqshl(1:ntpshl) == atmnam(i))) .and. &
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0 .and. &
                (ssx >= sx .or. ssy >= sy .or. ssz >= sz)) Then
               j = j + 1
               qn(i) = 1
@@ -258,7 +258,7 @@ Subroutine pseudo_lfv                                     &
         ssy=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i) ; ssy=Abs(ssy-Anint(ssy))
         ssz=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i) ; ssz=Abs(ssz-Anint(ssz))
 
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. (.not.Any(unqshl(1:ntpshl) == atmnam(i))) .and. &
+        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0 .and. &
             (ssx >= sx .or. ssy >= sy .or. ssz >= sz)) Then
            j = j + 1
            qn(i) = 1

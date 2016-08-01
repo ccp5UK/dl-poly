@@ -1,0 +1,65 @@
+INSTALLATION NOTES
+==================
+
+Reasonable Expectations for Compiling DL_POLY_4
+-----------------------------------------------
+The trends in software evolution are of increasing methodological
+complexity, ever expanding user-base with widening expectations and
+even more diverse requirements in the complex space of platforms
+(hardware+OS+compiler+MPI+openMP) that varies considerably both in
+time and geographically.
+
+Thus we have set on the common sense expectation that a modern, user
+supported platform will not have less than 4 year old OS components -
+cmake3.0+, gcc4.5+, gnu make4.0+ and MPI3+.
+
+Well, if that is the case then all that you need to compile DL_POLY_4
+from source is:
+
+THE CMAKE WAY:
+-------------
+
+	wget ftp://ftp.dl.ac.uk/ccp5/DL_POLY/TRANSFERS/dl_poly_4.08.zip
+	rm -rf dl_poly.4.08
+	unzip dl_poly_4.08.zip
+	cd dl_poly.4.08
+	mkdir mybuild ; cd mybuild
+	cmake .. ; make -j10
+	ls -haltr bin
+
+Usually, life is not that simple.  Anything below the above assumptions
+spells risks and will requires some extent of professional expertise
+and testing to make sure things work.
+
+However, the old ``make'' way warrants a fall-back to 2003 standards:
+gcc4.2+ (due to TR15581), gnu make3.8+ and MPI1.1+MPI-I/O.
+
+THE PARALLEL MAKE WAY:
+---------------------
+
+	wget ftp://ftp.dl.ac.uk/ccp5/DL_POLY/TRANSFERS/dl_poly_4.08.zip
+	rm -rf dl_poly.4.08
+	unzip dl_poly_4.08.zip
+	cd dl_poly.4.08/source
+	ln -s ../build/Makefile_MPI Makefile
+	make FCFLAGS=-DOLDMPI hpc
+	ls -haltr bin
+
+THE SERIAL MAKE WAY:
+-------------------
+
+	wget ftp://ftp.dl.ac.uk/ccp5/DL_POLY/TRANSFERS/dl_poly_4.08.zip
+	rm -rf dl_poly.4.08
+	unzip dl_poly_4.08.zip
+	cd dl_poly.4.08/source
+	ln -s ../build/Makefile_SRL2 Makefile
+	make FCFLAGS=-DSERIAL gnu
+	ls -haltr bin
+
+If all above fails for you then read the manual or ask your supervisor
+for help.
+
+Good luck,
+
+Ilian Todorov
+July 2016

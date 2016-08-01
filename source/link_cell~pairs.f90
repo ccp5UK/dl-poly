@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2016
+! author    - i.t.todorov july 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,7 +17,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
                                  r_nprx,r_npry,r_nprz
   Use config_module,      Only : cell,natms,nlast,ltg,lfrzn, &
                                  xxx,yyy,zzz,lexatm,list
-  Use core_shell_module,  Only : legshl
+  Use core_shell_module,  Only : listshl,legshl
   Use development_module, Only : l_dis,r_dis
 
   Implicit None
@@ -523,7 +523,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 
                           If (nir(kk)) Then
 
-! check for overfloat
+! check for overflow
 
                              ll=list(0,i)+lct_start(jc+1)-j_start
                              If (ll <= mxlist) Then
@@ -738,8 +738,10 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 
 ! Exclude core-shell units from the check
 
-           If (legshl(0,i) > 0) Then
-              If (legshl(1,i) == jj) Cycle
+           If      (legshl(0,i) > 0) Then ! core
+              If (listshl(2, legshl(1,i)) == jj) Cycle ! shell
+           Else If (legshl(0,i) < 0) Then ! shell
+              If (listshl(1,-legshl(1,i)) == jj) Cycle ! core
            End If
 
            If (j <= natms .or. ii < jj) Then

@@ -10,7 +10,7 @@ Subroutine ewald_excl_mforces &
 ! Note: exclusion correction term
 !
 ! copyright - daresbury laboratory
-! author    - h.a.boateng february 2016
+! author    - h.a.boateng june 2016
 ! amended   - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -39,6 +39,7 @@ Subroutine ewald_excl_mforces &
   Real( Kind = wp ), Parameter :: r10  = 0.1_wp
   Real( Kind = wp ), Parameter :: r42  = 1.0_wp/42.0_wp
   Real( Kind = wp ), Parameter :: r216 = 1.0_wp/216.0_wp
+  Real( Kind = wp ), Parameter :: rreg = 0.001_wp
 
   Integer           :: limit,idi,jatm,k1,k2,k3,s1,s2,s3,m,n
   Integer           :: ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
@@ -164,6 +165,20 @@ Subroutine ewald_excl_mforces &
               erfr=2.0_wp/sqrpi * &
               (1.0_wp+alpr2*(-rr3+alpr2*(r10+alpr2*(-r42+alpr2*r216))))
 
+! compute derivatives of kernel using a regularization
+
+              If (rrr < rreg) Then
+
+                 Call ewald_deriv(-2,2*mxompl+1,2,erfr,alpha*xxt(m),alpha*yyt(m),alpha*zzt(m), &
+                      alpha*sqrt(rrr**2+rreg**2),d1)
+
+              Else
+
+                 Call ewald_deriv(-2,2*mxompl+1,2,erfr,alpha*xxt(m),alpha*yyt(m),alpha*zzt(m), &
+                      alpha*rrr,d1)
+
+              End If
+
            Else
 
 ! distant particles - traditional
@@ -173,11 +188,12 @@ Subroutine ewald_excl_mforces &
 
               erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(alpha*rrr)
 
-           End If
-
 ! compute derivatives of kernel
 
-           Call ewald_deriv(-2,2*mxompl+1,2,erfr,alpha*xxt(m),alpha*yyt(m),alpha*zzt(m),alpha*rrr,d1)
+              Call ewald_deriv(-2,2*mxompl+1,2,erfr,alpha*xxt(m),alpha*yyt(m),alpha*zzt(m), &
+                   alpha*rrr,d1)
+
+           End If
 
 ! calculate forces
 
