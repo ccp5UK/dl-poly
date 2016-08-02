@@ -19,18 +19,18 @@ Subroutine nvt_a0_vv                          &
 !  particles' momenta of a particle subset on each domain)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov august 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gsum,gmax
   Use setup_module
-  Use site_module,        Only : dofsit,legshl
+  Use site_module,        Only : dofsit
   Use config_module,      Only : natms,nlast,lsite,lsi,lsa,ltg,lfrzn, &
                                  weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use core_shell_module,  Only : ntshl,listshl,lshmv_shl,lishp_shl,lashp_shl
   Use kinetic_module,     Only : getvom,kinstress
+  Use core_shell_module,  Only : ntshl,legshl,listshl,lshmv_shl,lishp_shl,lashp_shl
   Use constraints_module, Only : passcon
   Use pmf_module,         Only : passpmf
 

@@ -19,7 +19,7 @@ Subroutine nvt_h1_vv                          &
 !            Mol. Phys., 1996, Vol. 87 (5), p. 1117
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov august 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,12 +27,12 @@ Subroutine nvt_h1_vv                          &
   Use comms_module,       Only : idnode,mxnode,gmax
   Use setup_module
   Use domains_module,     Only : map
-  Use site_module,        Only : legshl
   Use config_module,      Only : imcon,cell,natms,nlast,nfree, &
                                  lstfre,weight,                &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
   Use kinetic_module,     Only : kinstresf,kinstrest
+  Use core_shell_module,  Only : legshl
   Use constraints_module, Only : passcon
   Use pmf_module,         Only : passpmf
 

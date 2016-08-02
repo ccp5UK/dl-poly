@@ -17,17 +17,17 @@ Subroutine pseudo_lfv                                     &
 !           as well as to shells.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov august 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gsum
   Use setup_module,       Only : boltz,nrite,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
-  Use site_module,        Only : dofsit,legshl
+  Use site_module,        Only : dofsit
   Use config_module
   Use rigid_bodies_module
-  Use core_shell_module,  Only : ntshl,listshl,lshmv_shl,lishp_shl,lashp_shl
+  Use core_shell_module,  Only : ntshl,legshl,listshl,lshmv_shl,lishp_shl,lashp_shl
   Use kinetic_module,     Only : getvom,getknr,kinstress,kinstresf,kinstrest
 
   Implicit None

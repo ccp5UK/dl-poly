@@ -13,18 +13,18 @@ Subroutine nvt_l0_lfv                     &
 ! (standard brownian dynamics)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov august 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gmax
   Use setup_module
-  Use site_module,        Only : legshl
   Use config_module,      Only : natms,lfrzn,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use langevin_module,    Only : fxl,fyl,fzl
   Use kinetic_module,     Only : getvom,kinstress
+  Use core_shell_module,  Only : legshl
   Use constraints_module, Only : passcon
   Use pmf_module,         Only : passpmf
 

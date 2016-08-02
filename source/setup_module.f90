@@ -7,7 +7,7 @@ Module setup_module
 ! set @ execution time
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2016
+! author    - i.t.todorov august 2016
 !
 ! Note(1): The following internal units apply everywhere
 !
@@ -31,8 +31,8 @@ Module setup_module
 
 ! Version particulars
 
-  Character( Len =  8), Parameter :: DLP_VERSION = " 4.08   "
-  Character( Len = 14), Parameter :: DLP_RELEASE = "   march  2016"
+  Character( Len =  8), Parameter :: DLP_VERSION = " 4.09   "
+  Character( Len = 14), Parameter :: DLP_RELEASE = "  august  2016"
 
 ! FIXED PARAMETERS
 ! standard pi related values

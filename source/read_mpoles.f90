@@ -6,20 +6,21 @@ Subroutine read_mpoles(l_top,sumchg)
 ! specifications of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov august 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! SETUP MODULES
 
   Use kinds_f90
-  Use comms_module,  Only : idnode
-  Use setup_module,  Only : nrite,nmpldt,mxompl
+  Use comms_module,      Only : idnode
+  Use setup_module,      Only : nrite,nmpldt,mxompl
 
 ! SITE & MPOLES MODULE
 
   Use site_module
-  Use mpoles_module, Only : mpllfr
+  Use core_shell_module, Only : numshl,lstshl
+  Use mpoles_module,     Only : mpllfr
 
 ! PARSE MODULE
 
@@ -214,7 +215,7 @@ Subroutine read_mpoles(l_top,sumchg)
                           nshels=nshels+1
 
                           isite2=nsite+lstshl(2,nshels)
-                          If ((isite2 >= jsite .and. site2 <= lsite) .and. ordmpl > 0) Then
+                          If ((isite2 >= jsite .and. isite2 <= lsite) .and. ordmpl > 0) Then
                              l_rsh=.false.
                              If (idnode == 0) Write(nrite,'(/,1x,a,i0,a)') &
   "*** warning - a shell (of a polarisable multipolar ion) can only bear a charge to emulate a self-iduced dipole!!! ***"
@@ -340,6 +341,7 @@ Subroutine read_mpoles(l_top,sumchg)
   Write(nrite,"(3x,a12,i0,a)") 'pole order ',ordmpl_next,'     *** supplied but not required ***'
                                    End If
                                 Else
+                                   If      (ordmpl_next == 1) Then
   Write(nrite,"(3x,a12,1x,a)") 'dipole',                 '     *** supplied but ignored as invalid ***'
                                    Else If (ordmpl_next == 2) Then
   Write(nrite,"(3x,a12,1x,a)") 'quadrupole',             '     *** supplied but ignored as invalid ***'
@@ -349,6 +351,7 @@ Subroutine read_mpoles(l_top,sumchg)
   Write(nrite,"(3x,a12,1x,a)") 'hexadecapole',           '     *** supplied but ignored as invalid ***'
                                    Else
   Write(nrite,"(3x,a12,i0,a)") 'pole order ',ordmpl_next,'     *** supplied but ignored as invalid ***'
+                                   End If
                                 End If
                              End If
 

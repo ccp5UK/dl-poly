@@ -32,7 +32,7 @@ Subroutine nst_l1_lfv                         &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 2009
-! amended   - i.t.todorov july 2016
+! amended   - i.t.todorov august 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -40,13 +40,14 @@ Subroutine nst_l1_lfv                         &
   Use comms_module,       Only : idnode,mxnode,gmax,gcheck
   Use setup_module
   Use domains_module,     Only : map
-  Use site_module,        Only : ntpatm,dens,legshl
+  Use site_module,        Only : ntpatm,dens
   Use config_module,      Only : imcon,cell,volm,natms,nlast,nfree, &
                                  lsi,lsa,lfrzn,lstfre,weight,       &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use langevin_module,    Only : fxl,fyl,fzl,fpl
   Use rigid_bodies_module
   Use kinetic_module,     Only : getvom,getknr,kinstresf,kinstrest
+  Use core_shell_module,  Only : legshl
   Use constraints_module, Only : passcon
   Use pmf_module,         Only : passpmf
 

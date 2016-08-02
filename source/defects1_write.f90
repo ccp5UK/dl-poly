@@ -7,7 +7,7 @@ Subroutine defects1_write &
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov august 2016
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -15,24 +15,24 @@ Subroutine defects1_write &
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use site_module,     Only : ntshl,listshl
-  Use config_module,   Only : cfgname,imcon,cell,natms,nlast, &
-                              atmnam,ltg,lfrzn,xxx,yyy,zzz
+  Use config_module,     Only : cfgname,imcon,cell,natms,nlast, &
+                                atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use defects1_module
-  Use parse_module,    Only : tabs_2_blanks, get_word, word_2_real
-  Use io_module,       Only : io_set_parameters,        &
-                              io_get_parameters,        &
-                              io_init, io_open,         &
-                              io_write_record,          &
-                              io_write_batch,           &
-                              io_close, io_finalize,    &
-                              IO_WRITE_UNSORTED_MPIIO,  &
-                              IO_WRITE_UNSORTED_DIRECT, &
-                              IO_WRITE_UNSORTED_MASTER, &
-                              IO_WRITE_SORTED_MPIIO,    &
-                              IO_WRITE_SORTED_DIRECT,   &
-                              IO_WRITE_SORTED_NETCDF,   &
-                              IO_WRITE_SORTED_MASTER
+  Use core_shell_module, Only : ntshl,listshl
+  Use parse_module,      Only : tabs_2_blanks, get_word, word_2_real
+  Use io_module,         Only : io_set_parameters,        &
+                                io_get_parameters,        &
+                                io_init, io_open,         &
+                                io_write_record,          &
+                                io_write_batch,           &
+                                io_close, io_finalize,    &
+                                IO_WRITE_UNSORTED_MPIIO,  &
+                                IO_WRITE_UNSORTED_DIRECT, &
+                                IO_WRITE_UNSORTED_MASTER, &
+                                IO_WRITE_SORTED_MPIIO,    &
+                                IO_WRITE_SORTED_DIRECT,   &
+                                IO_WRITE_SORTED_NETCDF,   &
+                                IO_WRITE_SORTED_MASTER
 
   Implicit None
 
