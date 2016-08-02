@@ -10,7 +10,7 @@ Subroutine ewald_excl_mforces_d &
 ! Note: exclusion correction term
 !
 ! copyright - daresbury laboratory
-! author    - h.a.boateng march 2014
+! author    - h.a.boateng june 2016
 ! amended   - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -40,7 +40,7 @@ Subroutine ewald_excl_mforces_d &
   Real( Kind = wp ), Parameter :: r216 = 1.0_wp/216.0_wp
 
   Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: alp2,co1,co2,co3,co4,co5
+  Real( Kind = wp ), Save :: alp2,co1,co2,co3,co4,co5,co6
 
   Integer           :: idi,jatm,limit,m
 
@@ -96,6 +96,7 @@ Subroutine ewald_excl_mforces_d &
      co3 = talp2*co2
      co4 = talp2*co3
      co5 = talp2*co4
+     co6 = talp2*co5
 
      alp2= alpha*alpha
   End If
@@ -269,6 +270,20 @@ Subroutine ewald_excl_mforces_d &
               b0 = 2.0_wp*(alpha/sqrpi) * &
               (1.0_wp+alpr2*(-rr3+alpr2*(r10+alpr2*(-r42+alpr2*r216))))
 
+              b1 = co2*(1.0_wp/3.0_wp-alpr2*(1.0_wp/5.0_wp-alpr2 * &
+                   (1.0_wp/14.0_wp-alpr2*(1.0_wp/54.0_wp-alpr2   * &
+                   (1.0_wp/264.0_wp-alpr2/2340.0_wp)))))
+
+              b2 = co3*(1.0_wp/5.0_wp-alpr2*(1.0_wp/7.0_wp-alpr2 * &
+                   (1.0_wp/18.0_wp-alpr2*(1.0_wp/66.0_wp-alpr2/468.0_wp))))
+
+              b3 = co4*(1.0_wp/7.0_wp-alpr2*(1.0_wp/9.0_wp-alpr2 * &
+                   (1.0_wp/22.0_wp-alpr2/117.0_wp)))
+
+              b4 = co5*(1.0_wp/9.0_wp-alpr2*(1.0_wp/11.0_wp-alpr2/39.0_wp))
+
+              b5 = co6*(1.0_wp/11.0_wp-2.0_wp*alpr2/39.0_wp)
+
            Else
 
 ! distant particles - traditional
@@ -277,15 +292,15 @@ Subroutine ewald_excl_mforces_d &
 
               b0 = (1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exparr)/rrr
 
-           End If
-
 ! compute other recurrence terms
 
-           b1 = (b0        - co1*exparr)/rsq
-           b2 = (3.0_wp*b1 - co2*exparr)/rsq
-           b3 = (5.0_wp*b2 - co3*exparr)/rsq
-           b4 = (7.0_wp*b3 - co4*exparr)/rsq
-           b5 = (9.0_wp*b4 - co5*exparr)/rsq
+              b1 = (b0        - co1*exparr)/rsq
+              b2 = (3.0_wp*b1 - co2*exparr)/rsq
+              b3 = (5.0_wp*b2 - co3*exparr)/rsq
+              b4 = (7.0_wp*b3 - co4*exparr)/rsq
+              b5 = (9.0_wp*b4 - co5*exparr)/rsq
+
+           End If
 
 ! charge-charge interaction
 

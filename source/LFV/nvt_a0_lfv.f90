@@ -16,15 +16,15 @@ Subroutine nvt_a0_lfv                     &
 !      H.C. Andersen. J. Chem. Phys., 72:2384-2393, 1980.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2016
+! author    - i.t.todorov july 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gsum,gmax
   Use setup_module
-  Use site_module,        Only : dofsit,ntpshl,unqshl
-  Use config_module,      Only : natms,nlast,lsite,lsi,lsa,ltg,lfrzn,atmnam, &
+  Use site_module,        Only : dofsit,legshl
+  Use config_module,      Only : natms,nlast,lsite,lsi,lsa,ltg,lfrzn, &
                                  weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use core_shell_module,  Only : ntshl,listshl,lshmv_shl,lishp_shl,lashp_shl
   Use kinetic_module,     Only : getvom,kinstress
@@ -292,7 +292,7 @@ Subroutine nvt_a0_lfv                     &
 
      mxdr = 0.0_wp
      Do i=1,natms
-        If (.not.Any(unqshl(1:ntpshl) == atmnam(i))) &
+        If (legshl(0,i) >= 0) &
            mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
      End Do
      mxdr=Sqrt(mxdr)
@@ -349,7 +349,7 @@ Subroutine nvt_a0_lfv                     &
   mxdr = 0.0_wp
   scale = tstep/taut
   Do i=1,natms
-     If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. (.not.Any(unqshl(1:ntpshl) == atmnam(i)))) Then
+     If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
         If (sarurnd(ltg(i),0,nstep) <= scale) Then
            j = j + 1
            qn(i) = 1

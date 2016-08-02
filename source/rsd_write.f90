@@ -6,16 +6,16 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2015
+! author    - i.t.todorov july 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use site_module,       Only : ntpshl,unqshl
   Use config_module,     Only : cfgname,imcon,cell,natms, &
                                 atmnam,ltg,xxx,yyy,zzz
+  Use core_shell_module, Only : legshl
   Use statistics_module, Only : rsd
 
   Use parse_module,      Only : tabs_2_blanks, get_word, word_2_real
@@ -202,7 +202,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
   n=0
   Do i=1,natms
-     If (rsd(i) > rrsd .and. (.not.Any(unqshl(1:ntpshl) == atmnam(i)))) Then
+     If (rsd(i) > rrsd .and. legshl(1,i) >= 0) Then
         n=n+1
         nam(n)=atmnam(i)
         ind(n)=ltg(i)

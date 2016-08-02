@@ -16,7 +16,7 @@ Subroutine ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - h.a.boateng february 2016
-! amended   - i.t.todorov march 2016
+! amended   - i.t.todorov july 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -198,9 +198,9 @@ Subroutine ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
 ! get the components for site i infinitesimal rotations
 
-        impx=mplrotx(:,i)
-        impy=mplroty(:,i)
-        impz=mplrotz(:,i)
+        impx=mprotx(:,i)
+        impy=mproty(:,i)
+        impz=mprotz(:,i)
 
 ! initialize torques for atom i (temporary)
 

@@ -1,8 +1,9 @@
-DL_POLY_4.08
+DL_POLY_4.09
 ============
 
 The source is in fully self-contained free formatted FORTRAN90+MPI2
-code (specifically FORTRAN90 + TR15581 + MPI1 + MPI-I/O only).  Any
+code.  Specifically, it is FORTRAN90 with TR15581 (FORTRAN2003) with
+mostly MPI1 and  MPI-I/O and very few MPI3 specific calls.  Any
 available functionality that dependent on external libraries; such as
 NetCDF, PLUMED and OpenKIM; will require the user to satisfy any the
 dependencies upon compilation and thus the use of `cmake' (refer to
@@ -85,6 +86,17 @@ Warnings:
       varies in the range -5:+5%.  This variation depends strongly on
       the system force-field complexity and very weakly on the system
       size.
+  (7) Using multipolar electrostatics is costly.  If N is the maximum
+      pole order to be considered in a calculation then the switch-on
+      cost of the machinery is
+      cost(O(0)) ≈ 3 * cost(O'(0)) ,
+      where O(0) means order 0 (monopoles, charges only) calculations
+      using the multipolar electrostatics machinery while O'(0)
+      corresponds to using the default classical electrostatics.  The
+      cost for higher order poles calculations can be summarised as
+      cost(O(N+1)) ≈ 2 * cost(O(N)) for N=0,1,3 ,
+      with a particular jump of cost
+      cost(O(3)) ≈ 25 * cost(O(2)) at N=2.
 
 Integration Defaults:
 ---------------------
@@ -150,10 +162,18 @@ purposes when the results produced with the particular executable
 are examined as part of a research programme.
 
 In case the compilation process fails with a message about undefined
-MPI related definitions in comms_module than it means that the MPI
-libraries used in the process are old.  To rectify the matters you
-will need to add `-DOLDMPI' to the FCFLAGS string within the relevant
-Makefile `entry' before you try to compile again.
+MPI related definitions in comms_module then it means that the MPI
+libraries used in the process are old.  To rectify the matter you
+will need to reissue the above command with a slight modification:
+
+	make `entry' FCFLAGS=-DOLDMPI BUILDER='Your Name Here'
+
+Similarly, if the compilation process fails with a message about a
+fatal error in in comms_module about the line 'Use mpi!_module' then
+it means that you are compiling in SERIAL mode. To rectify the matter
+you will need to reissue the above command with a slightl modification:
+
+	make `entry' FCFLAGS=-DSERIAL BUILDER='Your Name Here'
 
 To find out the keywords for all available entries within the Makefile
 issue:
@@ -177,7 +197,7 @@ The necessary components for the source compilation are:
       Otherwise, if the full PATH to these components is not passed
       to the DEFAULT ENVIRONMENT PATH then it MUST be explicitly
       supplied in the Makefile!
-  (3) a MAKE command (Makefile interpreter in the system SHELL).
+  (3) a MAKE command (Makefile interpreter in the OS SHELL).
 Note that (2) is not necessary for compilation in SERIAL mode!
 
 By default, if the compilation process is successful then an executable

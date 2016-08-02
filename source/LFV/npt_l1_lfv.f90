@@ -25,7 +25,7 @@ Subroutine npt_l1_lfv                         &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith february 2009
-! amended   - i.t.todorov march 2016
+! amended   - i.t.todorov july 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -33,9 +33,9 @@ Subroutine npt_l1_lfv                         &
   Use comms_module,       Only : idnode,mxnode,gmax,gcheck
   Use setup_module
   Use domains_module,     Only : map
-  Use site_module,        Only : ntpatm,dens,ntpshl,unqshl
-  Use config_module,      Only : imcon,cell,volm,natms,nlast,nfree,  &
-                                 lsi,lsa,lfrzn,lstfre,atmnam,weight, &
+  Use site_module,        Only : ntpatm,dens,legshl
+  Use config_module,      Only : imcon,cell,volm,natms,nlast,nfree, &
+                                 lsi,lsa,lfrzn,lstfre,weight,       &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use langevin_module,    Only : fxl,fyl,fzl,fpl
   Use rigid_bodies_module
@@ -972,7 +972,7 @@ Subroutine npt_l1_lfv                         &
 
      mxdr = 0.0_wp
      Do i=1,natms
-        If (.not.Any(unqshl(1:ntpshl) == atmnam(i))) &
+        If (legshl(0,i) >= 0) &
            mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
      End Do
      mxdr=Sqrt(mxdr)

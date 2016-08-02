@@ -13,7 +13,7 @@ Subroutine build_book_intra             &
 ! torsion and improper torsion angles, and inversion angles
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2016
+! author    - i.t.todorov july 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -220,7 +220,7 @@ Subroutine build_book_intra             &
                     End If
 
                     If (jat0 > 0) Then
-                       Call tag_legend(safe(1),jat0,jshels,legshl,mxfshl)
+                       Call tag_legend(safe(1),jat0,-jshels,legshl,mxfshl)
                        If (legshl(mxfshl,jat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many core-shell type neighbours !!! ***",                &
