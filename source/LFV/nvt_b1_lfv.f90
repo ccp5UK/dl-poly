@@ -14,7 +14,7 @@ Subroutine nvt_b1_lfv                         &
 ! - leapfrog verlet with Berendsen thermostat
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,9 +22,9 @@ Subroutine nvt_b1_lfv                         &
   Use comms_module,       Only : idnode,mxnode,gmax,gcheck
   Use setup_module
   Use domains_module,     Only : map
-  Use site_module,        Only : legshl
+  Use site_module,        Only : ntpshl,unqshl
   Use config_module,      Only : imcon,cell,natms,nlast,nfree, &
-                                 lfrzn,lstfre,weight,          &
+                                 lfrzn,lstfre,atmnam,weight,   &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
   Use kinetic_module,     Only : getvom
@@ -735,7 +735,7 @@ Subroutine nvt_b1_lfv                         &
 
      mxdr = 0.0_wp
      Do i=1,natms
-        If (legshl(0,i) >= 0) &
+        If (.not.Any(unqshl(1:ntpshl) == atmnam(i))) &
            mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
      End Do
      mxdr=Sqrt(mxdr)

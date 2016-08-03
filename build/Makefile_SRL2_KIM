@@ -1,6 +1,6 @@
-# Master makefile for DL_POLY_4.09 (serial version 2 with KIM)
+# Master makefile for DL_POLY_4.08 (serial version 2 with KIM)
 #
-# Author - I.T.Todorov July 2016
+# Author - I.T.Todorov March 2016
 #
 #
 # Define default settings
@@ -258,7 +258,7 @@ uknown_platform:
 	$(MAKE) LD="path to FORTRAN90 Linker-loaDer" \
 	LDFLAGS="appropriate flags for LD (MPI libraries)" \
 	FC="path to FORTRAN90 compiler" \
-	FCFLAGS?="appropriate flags for FC (MPI include) \
+	FCFLAGS="appropriate flags for FC (MPI include) \
 	         -DBUILDER=\"$(BUILDER)\" -DHOST=\"$(HOSTNAME)\"" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
@@ -267,10 +267,10 @@ uknown_platform:
 
 #================== System Default  ==================================
 gnu:
-	$(MAKE) LD="gfortran -o" \
+	$(MAKE) LD="gfortran -o"
 	LDFLAGS="-O3" \
 	FC="gfortran -c" \
-	FCFLAGS?="-O3 -DBUILDER=\"$(BUILDER)\" -DHOST=\"$(HOSTNAME)\"" \
+	FCFLAGS="-O3 -DBUILDER=\"$(BUILDER)\" -DHOST=\"$(HOSTNAME)\"" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)
 
 #====================== GNU fortran compiler - DEBUG =================
@@ -278,7 +278,7 @@ gnu-debug:
 	$(MAKE) LD="gfortran -o" \
 	LDFLAGS="-O3 -g -fbacktrace" \
 	FC="gfortran -c" \
-	FCFLAGS?="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
+	FCFLAGS="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
 	         -finit-integer=-9999 -finit-real=nan -std=f2003 -fdump-core \
 	         -ffpe-trap=invalid,zero,overflow -frecord-gcc-switches \
 	         -DBUILDER=\"$(BUILDER)\" -DHOST=\"$(HOSTNAME)\"" \

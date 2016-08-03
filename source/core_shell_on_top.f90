@@ -29,7 +29,7 @@ Subroutine core_shell_on_top()
   End If
 
 
-! Coincide shells with their cores
+! Coincide shell with thir cores
 
   Do i=1,ntshl
      lunsafe(i)=.false.

@@ -82,5 +82,5 @@ Test & Verify KIM:
 
 Good luck!
 
-Ryan Elliott, Ilian Todorov and Henry Boateng
 March 2015
+Ryan Elliott, Ilian Todorov and Henry Boateng

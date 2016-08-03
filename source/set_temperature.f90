@@ -12,20 +12,20 @@ Subroutine set_temperature           &
 ! dl_poly_4 subroutine for setting the initial system temperature
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov february 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gsum
   Use setup_module
-  Use site_module,        Only : dofsit
+  Use site_module,        Only : dofsit,ntpshl,unqshl
   Use config_module,      Only : imcon,natms,nlast,nfree,lsite,  &
                                  lsi,lsa,ltg,lfrzn,lfree,lstfre, &
                                  atmnam,weight,vxx,vyy,vzz
   Use dpd_module,         Only : keydpd
   Use rigid_bodies_module
-  Use core_shell_module,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
+  Use core_shell_module,  Only : ntshl,listshl,lshmv_shl,lishp_shl,lashp_shl
   Use kinetic_module,     Only : l_vom,getknr,chvom,getvom
 
   Implicit None
@@ -158,7 +158,7 @@ Subroutine set_temperature           &
 
      j = 0
      Do i=1,natms
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(1,i) >= 0) Then
+        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. (.not.Any(unqshl(1:ntpshl) == atmnam(i)))) Then
            j = j + 1
            qn(i) = 1
         End If

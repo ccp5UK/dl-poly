@@ -11,7 +11,7 @@ Subroutine scan_control                                    &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2016
+! author    - i.t.todorov march 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
@@ -646,11 +646,6 @@ Subroutine scan_control                                    &
 
                  Call get_word(record,word)
                  mxspl = Nint(Abs(word_2_real(word)))
-
-! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
-
-                 tol=alpha*Real(kmaxa1,wp)*Real(kmaxa1,wp)*Real(kmaxa1,wp)
-                 If (Nint(tol) < 1) Call error(9)
 
 ! rcut is not needed directly for the SPME but it's needed
 ! for the link-cell division of the domains

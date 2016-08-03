@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov may 2016
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -18,7 +18,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
                                  r_nprx,r_npry,r_nprz
   Use config_module,      Only : cell,natms,nlast,ltg,lfrzn, &
                                  xxx,yyy,zzz,lexatm,list
-  Use core_shell_module,  Only : listshl,legshl
+  Use core_shell_module,  Only : legshl
   Use development_module, Only : l_dis,r_dis
 
   Implicit None
@@ -524,7 +524,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 
                           If (nir(kk)) Then
 
-! check for overflow
+! check for overfloat
 
                              ll=list(0,i)+lct_start(jc+1)-j_start
                              If (ll <= mxlist) Then
@@ -546,7 +546,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 
                                 End Do
 
-! overflow is to occur
+! overfloat is to occur
 
                              Else
 
@@ -558,7 +558,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 
                                    j=at_list(jj)
 
-! check for overflow and add an entry
+! check for overfloat and add an entry
 
                                    ll=list(0,i)+1
                                    If (ll <= mxlist) Then
@@ -596,7 +596,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
                                 rsq=(xxt(jj)-xxx(i))**2+(yyt(jj)-yyy(i))**2+(zzt(jj)-zzz(i))**2
                                 If (rsq <= rcsq) Then
 
-! check for overflow and add an entry
+! check for overfloat and add an entry
 
                                    ll=list(0,i)+1
                                    If (ll <= mxlist) Then
@@ -739,10 +739,8 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 
 ! Exclude core-shell units from the check
 
-           If      (legshl(0,i) > 0) Then ! core
-              If (listshl(2, legshl(1,i)) == jj) Cycle ! shell
-           Else If (legshl(0,i) < 0) Then ! shell
-              If (listshl(1,-legshl(1,i)) == jj) Cycle ! core
+           If (legshl(0,i) > 0) Then
+              If (legshl(1,i) == jj) Cycle
            End If
 
            If (j <= natms .or. ii < jj) Then

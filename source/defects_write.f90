@@ -7,7 +7,7 @@ Subroutine defects_write &
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov march 2016
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -15,7 +15,7 @@ Subroutine defects_write &
   Use kinds_f90
   Use comms_module
   Use setup_module
-  Use site_module,     Only : ntshl,listshl
+  Use site_module,     Only : ntpshl,unqshl
   Use config_module,   Only : cfgname,imcon,cell,natms,nlast, &
                               atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use defects_module
@@ -282,7 +282,7 @@ Subroutine defects_write &
 
 ! Exclude frozen and shell particles from consideration
 
-     If ( j == 1 .and. (lfrzn(i) /= 0 .or. Any(listshl(2,1:ntshl) == ltg(i))) ) j=0
+     If ( j == 1 .and. (lfrzn(i) /= 0 .or. Any(unqshl(1:ntpshl) == atmnam(i))) ) j=0
 
 ! Assume that every considered particles (1) is an interstitial
 ! and (2) does not occupy a site yet
@@ -339,7 +339,7 @@ Subroutine defects_write &
 
 ! Bypass if the site is a shell
 
-              If (Any(listshl(2,1:ntshl) == ltg(i))) Go To 400
+              If (Any(unqshl(1:ntpshl) == namr(i))) Go To 400
 
 ! Assume the site is vacant
 

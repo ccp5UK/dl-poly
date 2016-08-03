@@ -13,15 +13,15 @@ Subroutine nvt_h0_lfv                     &
 ! molecular dynamics - leapfrog verlet with Hoover thermostat
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gmax
   Use setup_module
-  Use site_module,        Only : legshl
-  Use config_module,      Only : natms,weight, &
+  Use site_module,        Only : ntpshl,unqshl
+  Use config_module,      Only : natms,atmnam,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use kinetic_module,     Only : getkin,kinstress
   Use constraints_module, Only : passcon
@@ -352,7 +352,7 @@ Subroutine nvt_h0_lfv                     &
 
      mxdr = 0.0_wp
      Do i=1,natms
-        If (legshl(0,i) >= 0) &
+        If (.not.Any(unqshl(1:ntpshl) == atmnam(i))) &
            mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
      End Do
      mxdr=Sqrt(mxdr)

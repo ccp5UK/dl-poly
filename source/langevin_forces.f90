@@ -11,14 +11,14 @@ Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
 !           as well as shells.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov march 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module,      Only : boltz,mxatms
+  Use site_module,       Only : ntpshl,unqshl
   Use config_module,     Only : natms,ltg,lfrzn,atmnam,weight
-  Use core_shell_module, Only : legshl
 
   Implicit None
 
@@ -36,7 +36,7 @@ Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
 ! Make variance = target variance and nullify the rest
 
   Do i=1,natms
-     If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(1,i) >= 0) Then
+     If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. (.not.Any(unqshl(1:ntpshl) == atmnam(i)))) Then
         Call box_mueller_saru3(ltg(i),nstep,fxr(i),fyr(i),fzr(i))
 
         tmp = scale*Sqrt(weight(i))

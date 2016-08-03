@@ -9,7 +9,7 @@ Subroutine build_excl_intra(lecx)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith february 1999
-! amended   - i.t.todorov july 2016
+! amended   - i.t.todorov october 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -295,20 +295,20 @@ Subroutine build_excl_intra(lecx)
                  ka=listshl(2,j)
                  ka0=local_index(ka,nlast,lsi,lsa)
                  If (ka0 > natms) ka0=0
-!              Else If (listshl(2,j) == ja) Then
-!                 ka=listshl(1,j)
-!                 ka0=local_index(ka,nlast,lsi,lsa)
-!                 If (ka0 > natms) ka0=0
+              Else If (listshl(2,j) == ja) Then
+                 ka=listshl(1,j)
+                 ka0=local_index(ka,nlast,lsi,lsa)
+                 If (ka0 > natms) ka0=0
               End If
 
               If (listshl(1,j) == jb) Then
                  kb=listshl(2,j)
                  kb0=local_index(kb,nlast,lsi,lsa)
                  If (kb0 > natms) kb0=0
-!              Else If (listshl(2,j) == jb) Then
-!                 kb=listshl(1,j)
-!                 kb0=local_index(kb,nlast,lsi,lsa)
-!                 If (kb0 > natms) kb0=0
+              Else If (listshl(2,j) == jb) Then
+                 kb=listshl(1,j)
+                 kb0=local_index(kb,nlast,lsi,lsa)
+                 If (kb0 > natms) kb0=0
               End If
            End Do
         End If
@@ -1183,7 +1183,7 @@ Contains
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1999
-! amended   - i.t.todorov july 2016
+! amended   - i.t.todorov august 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1209,7 +1209,7 @@ Contains
 
     If (.not.l_excluded) Then
 
-! Get local safety no array overflow
+! Get local safety no array overfloat
 
        safe_local = (last < mxexcl-1)
 

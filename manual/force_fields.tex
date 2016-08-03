@@ -1117,7 +1117,7 @@ minimum) retain their original values after the shifting process.
 \begin{equation}
 U(r_{ij}) = E_{o}~[\{1-\exp(-k(r_{ij}-r_{o}))\}^{2}-1]
 \end{equation}
-\item Shifted Weeks-Chandler-Andersen (WCA) potential \cite{weeks-71a}:  ({\bf wca})
+\item Shifted Weeks-Chandler-Anderson (WCA) potential \cite{weeks-71a}:  ({\bf wca})
 \begin{equation}
 U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
 4\epsilon\left[\left(\frac{\sigma}{r_{ij}-\Delta}\right)^{12}-\left(\frac{\sigma}{r_{ij}-\Delta}\right)^{6}\right]
@@ -1151,11 +1151,6 @@ time (see the description of the FIELD file in Section~\ref{field-file}).
 Each atom type in the system is specified by a unique eight-character
 label defined by the user.  The pair potential is then defined internally
 by the combination of two atom labels.
-
-It is worth noting that some potentials are implemented in an extended
-form from their original reference specification.  Often this is done
-by replacing the $r$ argument by $r-r_{o}$ to define a surface
-softness/hardness width/radius.
 
 As well as the numerical parameters defining the potentials, \D
 should also be provided with a cutoff radius, $r_{\rm vdw}$, which
@@ -1234,16 +1229,7 @@ r}U_{ab}(r)r^{3}dr~~,
 where the same approximations are applied.
 
 {\bf Note} that these formulae are based on the assumption that the
-system is reasonably isotropic beyond the cutoff.  It is worth noting
-that the 14-7 pair potential's corrections to system energy and virial
-are solved numerically.
-
-In \D the short ranged forces are calculated by the subroutine
-{\sc vdw\_forces}.  The long-ranged corrections are calculated by
-routine {\sc vdw\_lrc}.  The calculation makes use of the
-Verlet\index{algorithm!Verlet} neighbour list (see above).
-
-\subsubsection*{Notes on mixing rules for short-ranged interactions}
+system is reasonably isotropic beyond the cutoff.
 
 \D allows a short cut for mixing some of the explicitly specified
 pair interactions for single species of the same type so that
@@ -1288,6 +1274,11 @@ It is woth noting that the $i$ and $j$ symbols in the equations
 for mixing denote atom types (species) and the indices for the
 same species interaction parameters are contracted to a single
 species index for simplicity.
+
+In \D the short ranged forces are calculated by the subroutine
+{\sc vdw\_forces}.  The long-ranged corrections are calculated by
+routine {\sc vdw\_lrc}.  The calculation makes use of the
+Verlet\index{algorithm!Verlet} neighbour list (see above).
 
 \subsection{Metal Potentials}
 \label{metal}
@@ -2826,16 +2817,14 @@ expressed by the equation
 where $\vek{\mu}$ is the induced dipole and $\vek{E}$ is the
 electric field.  The constant $\alpha$ is the polarisability.
 
-In the {\em static} shell model, also called core-shell model or
-known as the Drude model or Druder oscillator \cite{drude-00a,drude-00b},
-a polarisable\index{polarisation!shell model} atom is represented by
-a massive core (often called a nucleus) and a ``massless'' shell
-(also known as a Druder particle), connected by a harmonic spring,
+In the {\em static} shell model a
+polarisable\index{polarisation!shell model} atom is represented by
+a massive core and massless shell, connected by a harmonic spring,
 hereafter called the core-shell unit.  The core and shell carry
 different electric charges, the sum of which equals the charge on
-the original {\em rigid-ion} atom.  There is no electrostatic
-interaction (i.e. self-interaction) between the core and shell of
-the same atom.  Non-coulombic interactions arise from the shell alone.
+the original atom.  There is no electrostatic interaction (i.e.
+self interaction) between the core and shell of the same atom.
+Non-coulombic interactions arise from the shell alone.
 
 The core-shell interaction is described by a harmonic spring
 potential of the form:
@@ -2845,7 +2834,7 @@ U_{spring}(r_{ij})=\frac{1}{2}k_{2} r_{ij}^{2}~~,
 However, sometimes an anharmonic spring is used, described by a
 quartic form:
 \begin{equation}
-U_{spring}(r_{ij})=\frac{1}{2}k_{2} r_{ij}^{2}+\frac{1}{4!}k_{4} r_{ij}^{4}.
+U_{spring}(r_{ij})=\frac{1}{2}k_{2} r_{ij}^{2}+\frac{1}{4}k_{4} r_{ij}^{4}.
 \end{equation}
 Normally, in practice, $k_{2}$ is much larger than $k_{4}$.
 
@@ -2973,6 +2962,9 @@ and temperature scaling applied by routine {\sc core\_shell\_quench}.
 In case of the relaxed shell model shell are relaxed to zero force
 by {\sc core\_shell\_relaxed}.
 
+All shell models\index{polarisation!shell model} can be used in
+conjunction with the methods for long-ranged forces described above.
+
 {\bf Note} that \D determines which shell model to use by scanning
 shell weights provided the FIELD file (see Section~\ref{field-file}).
 If all shells have zero weight the \D will choose the relaxed shell
@@ -2981,34 +2973,6 @@ one.  In case when some shells are massless and some are not \D will
 terminate execution controllably and provide information about the
 error and possible possible choices of action in the OUTPUT file
 (see Section~\ref{output-file}).
-
-{\bf Note} that all \D's shell models\index{polarisation!shell model}
-can be used in conjunction with the methods for long-ranged forces
-described above.  This also includes uses in the context of multipolar
-electrostatics where self-induced polarisation is often a crucial part
-of polarisable force-field models such as CHARMM, AMBER, AMOEBA.
-Currently, there are the following restrictions within \D:
-\begin{itemize}
-\item shell particles are restricted to only bear a charge.
-\item shell particles cannot be frozen, part of a rigid body
-formation, constraint bonded, PMF constrained or tethered.
-\item shell particles cannot have shells.
-\item a core and shell unit cannot be in a relation via an
-angle, dihedral or inversion type of interaction.  However, they
-can be in a bond type of interactions (see the BSM section above).
-\end{itemize}
-However, bonded interactions such as chemical bonds, angles,
-dihedrals and inversions can be defined over any possible mixture
-of core and shell members of different core-shell units!  For example,
-in the solid state materials community it is common to define bonds
-and angles over the shells as the shells represent the electronic
-clouds between which the bonding occurs.  However, this is right the
-opposite in the liquid, organic and bio-chemical communities, where
-all bonding is between the nuclei (cores) and the shells are only
-there to account purely for the polarisability.  As \D allows for
-too much flexibility in the space of possible model definitions, it is
-strongly advised that the modeller must exercise great care to define
-the correct force-field model representation within \D input files!
 
 \section{External Fields}
 \label{external-field}

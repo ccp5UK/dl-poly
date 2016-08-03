@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2016
+! author    - i.t.todorov april 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -34,19 +34,18 @@ Subroutine read_control                                &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,      Only : idnode
+  Use comms_module,    Only : idnode
   Use setup_module
-  Use config_module,     Only : sysname
-  Use dpd_module,        Only : keydpd,gamdpd
-  Use langevin_module,   Only : l_lan,l_gst,langevin_allocate_arrays
+  Use config_module,   Only : sysname
+  Use dpd_module,      Only : keydpd,gamdpd
+  Use langevin_module, Only : l_lan,l_gst,langevin_allocate_arrays
   Use parse_module
-  Use core_shell_module, Only : l_dpl
-  Use bonds_module,      Only : rcbnd
-  Use vdw_module,        Only : ld_vdw,ls_vdw,mxtvdw
-  Use metal_module,      Only : ld_met,ls_met,tabmet
-  Use poisson_module,    Only : eps,mxitcg,mxitjb
-  Use msd_module,        Only : l_msd
-  Use defects1_module,   Only : l_dfx
+  Use bonds_module,    Only : rcbnd
+  Use vdw_module,      Only : ld_vdw,ls_vdw,mxtvdw
+  Use metal_module,    Only : ld_met,ls_met,tabmet
+  Use poisson_module,  Only : eps,mxitcg,mxitjb
+  Use msd_module,      Only : l_msd
+  Use defects1_module, Only : l_dfx
   Use greenkubo_module
 
   Use kinetic_module,  Only : l_vom
@@ -1025,13 +1024,6 @@ Subroutine read_control                                &
         ltscal =.true.
         If (idnode == 0) Write(nrite,"(/,1x,'temperature scaling on (during equilibration)', &
            & /,1x,'temperature scaling interval',3x,i10)") nstscal
-
-! read depolarisation option
-
-     Else If (word(1:5) == 'depol') Then
-
-        l_dpl =.true.
-        If (idnode == 0) Write(nrite,"(/,1x,'depolarisation on (during equilibration)')")
 
 ! read integration flavour
 

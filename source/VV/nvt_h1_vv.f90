@@ -19,7 +19,7 @@ Subroutine nvt_h1_vv                          &
 !            Mol. Phys., 1996, Vol. 87 (5), p. 1117
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,9 +27,9 @@ Subroutine nvt_h1_vv                          &
   Use comms_module,       Only : idnode,mxnode,gmax
   Use setup_module
   Use domains_module,     Only : map
-  Use site_module,        Only : legshl
+  Use site_module,        Only : ntpshl,unqshl
   Use config_module,      Only : imcon,cell,natms,nlast,nfree, &
-                                 lstfre,weight,                &
+                                 lstfre,atmnam,weight,         &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
   Use kinetic_module,     Only : kinstresf,kinstrest
@@ -557,7 +557,7 @@ Subroutine nvt_h1_vv                          &
 
         mxdr = 0.0_wp
         Do i=1,natms
-           If (legshl(0,i) >= 0) &
+           If (.not.Any(unqshl(1:ntpshl) == atmnam(i))) &
               mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
         End Do
         mxdr=Sqrt(mxdr)
