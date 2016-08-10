@@ -27,7 +27,7 @@ Subroutine nvt_a0_lfv                     &
   Use config_module,      Only : natms,nlast,lsite,lsi,lsa,ltg,lfrzn, &
                                  weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use kinetic_module,     Only : getvom,kinstress
-  Use core_shell_module,  Only : ntshl,legshl,listshl,lshmv_shl,lishp_shl,lashp_shl
+  Use core_shell_module,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
   Use constraints_module, Only : passcon
   Use pmf_module,         Only : passpmf
 

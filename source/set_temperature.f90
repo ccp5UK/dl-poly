@@ -12,7 +12,7 @@ Subroutine set_temperature           &
 ! dl_poly_4 subroutine for setting the initial system temperature
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov august 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -158,7 +158,7 @@ Subroutine set_temperature           &
 
      j = 0
      Do i=1,natms
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(1,i) >= 0) Then
+        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
            j = j + 1
            qn(i) = 1
         End If

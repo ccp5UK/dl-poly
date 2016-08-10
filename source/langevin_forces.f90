@@ -11,7 +11,7 @@ Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
 !           as well as shells.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov august 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -36,7 +36,7 @@ Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
 ! Make variance = target variance and nullify the rest
 
   Do i=1,natms
-     If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(1,i) >= 0) Then
+     If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
         Call box_mueller_saru3(ltg(i),nstep,fxr(i),fyr(i),fzr(i))
 
         tmp = scale*Sqrt(weight(i))

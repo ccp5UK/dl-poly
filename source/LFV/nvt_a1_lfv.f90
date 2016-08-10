@@ -32,7 +32,7 @@ Subroutine nvt_a1_lfv                         &
                                  weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
   Use kinetic_module,     Only : getvom,getknr,kinstresf,kinstrest
-  Use core_shell_module,  Only : ntshl,legshl,listshl,lshmv_shl,lishp_shl,lashp_shl
+  Use core_shell_module,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
   Use constraints_module, Only : passcon
   Use pmf_module,         Only : passpmf
 

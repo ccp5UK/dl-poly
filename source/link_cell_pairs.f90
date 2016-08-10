@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov august 2016
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -883,6 +883,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
      cnt=0.0_wp
      Do i=1,natms
         ii=ltg(i)
+        ll=legshl(0,i)
 
 !        iz=(which_cell(i)-1)/((nlx + 2*nlp)*(nlx + 2*nlp))
 !        iy=(which_cell(i)-1)/(nlx + 2*nlp) - (nly + 2*nlp)*iz
@@ -896,12 +897,20 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 !           jy=(which_cell(j)-1)/(nlx + 2*nlp) - (nly + 2*nlp)*jz
 !           jx=Mod(which_cell(j)-1,nlx + 2*nlp)
 
-! Exclude core-shell units from the check
+! Exclude core-shell units' pairs from the check
 
-           If      (legshl(0,i) > 0) Then ! core
-              If (listshl(2, legshl(1,i)) == jj) Cycle ! shell
-           Else If (legshl(0,i) < 0) Then ! shell
-              If (listshl(1,-legshl(1,i)) == jj) Cycle ! core
+           If (ll /= 0) Then ! the primary particle is part of a unit
+              If (j <= natms) Then ! can check directly if the pair is part of the same unit
+                 If (legshl(0,j) /= 0) Then ! the secondary particle is part of a unit
+                    If (legshl(1,i) == legshl(1,j)) Cycle ! both are part of the same unit
+                 End If
+              Else                 ! cannot check directly
+                 If (ll > 0) Then ! the primary particle is a core
+                    If (listshl(2,legshl(1,i)) == jj) Cycle ! jj is the shell of that core
+                 Else               ! the primary particle is a shell
+                    If (listshl(1,legshl(1,i)) == jj) Cycle ! jj is the core of that shell
+                 End If
+              End If
            End If
 
            If (j <= natms .or. ii < jj) Then

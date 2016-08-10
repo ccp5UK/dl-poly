@@ -27,7 +27,7 @@ Subroutine pseudo_lfv                                     &
   Use site_module,        Only : dofsit
   Use config_module
   Use rigid_bodies_module
-  Use core_shell_module,  Only : ntshl,legshl,listshl,lshmv_shl,lishp_shl,lashp_shl
+  Use core_shell_module,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
   Use kinetic_module,     Only : getvom,getknr,kinstress,kinstresf,kinstrest
 
   Implicit None

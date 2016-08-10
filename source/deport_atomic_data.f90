@@ -8,7 +8,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 ! NOTE: When executing on one node we need not get here at all!
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov july 2016
+! author    - w.smith & i.t.todorov august 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014
 !
@@ -435,14 +435,14 @@ Subroutine deport_atomic_data(mdir,lbook)
 
 ! pack core-shell details
 
-           jj=legshl(0,i)
+           jj=legshl(0,i) ; ii=Sign(1,jj) ; jj=Abs(jj)
            If (jj > 0) Then
               Do ll=1,jj
                  If (imove+3 <= iblock) Then
-                    kk=Abs(legshl(ll,i))
+                    kk=legshl(ll,i)
 
                     imove=imove+1
-                    buffer(imove)=Real(Sign(1,legshl(ll,i))*listshl(0,kk),wp)
+                    buffer(imove)=Real(ii*listshl(0,kk),wp) ! negative for a shell particle
 
                     Do k=1,2
                        imove=imove+1
@@ -1087,8 +1087,8 @@ Subroutine deport_atomic_data(mdir,lbook)
 ! unpack core-shell details
 
         legshl(:,newatm) = 0
-        Do While (buffer(kmove+1) > 0.0_wp .and. safe)
-           jj=Nint(buffer(kmove+1)) ; ll=Sign(1,jj) ; jj=jj*ll
+        Do While (Abs(buffer(kmove+1)) > 0.0_wp .and. safe)
+           jj=Nint(buffer(kmove+1)) ; ll=Sign(1,jj) ; jj=Abs(jj)
            iatm=Nint(buffer(kmove+2)) ! ll=1
            jatm=Nint(buffer(kmove+3)) ! ll=-1
            kmove=kmove+3

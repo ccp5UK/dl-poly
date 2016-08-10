@@ -6,7 +6,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov august 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -202,7 +202,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
   n=0
   Do i=1,natms
-     If (rsd(i) > rrsd .and. legshl(1,i) >= 0) Then
+     If (rsd(i) > rrsd .and. legshl(0,i) >= 0) Then
         n=n+1
         nam(n)=atmnam(i)
         ind(n)=ltg(i)

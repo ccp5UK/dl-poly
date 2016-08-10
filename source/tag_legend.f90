@@ -5,8 +5,10 @@ Subroutine tag_legend(safe,iatm,nt,legend,mxf)
 ! dl_poly_4 subroutine to tag the legend arrays recording the
 ! intra-like descriptions for each atom in a domain
 !
+! nt should always be supplied positive except for shells!
+!
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2010
+! author    - i.t.todorov august 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,7 +25,7 @@ Subroutine tag_legend(safe,iatm,nt,legend,mxf)
 
 ! Get current length
 
-  last = legend(0,iatm)
+  last = Abs(legend(0,iatm))
 
 ! Get local safety no array overflow
 
@@ -39,8 +41,13 @@ Subroutine tag_legend(safe,iatm,nt,legend,mxf)
 ! (particle) in a unit of this legend type with a local domain number 'nt'
 
      last = last + 1
-     legend(0,iatm) = last
-     legend(last,iatm) = nt
+     If (.not.(nt < 0 .and. last == 1)) Then ! THE NORMAL CASE
+        legend(0,iatm) = last
+        legend(last,iatm) = nt
+     Else ! This should be hit just the once for shell particles only!!!
+        legend(0,iatm) = -1
+        legend(last,iatm) = -nt
+     End If
 
   Else
 
