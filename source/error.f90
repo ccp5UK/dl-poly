@@ -6,7 +6,7 @@ Subroutine error(kode)
 ! controlled termination of the program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2016
+! author    - i.t.todorov june 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -53,6 +53,10 @@ Subroutine error(kode)
      Else If (kode ==    8) Then
 
         Write(nrite,'(/,1x,a)') 'error - ewald precision must be a POSITIVE real number'
+
+     Else If (kode ==    9) Then
+
+        Write(nrite,'(/,1x,a)') 'error - ewald sum parameters must be well defined'
 
      Else If (kode ==   10) Then
 

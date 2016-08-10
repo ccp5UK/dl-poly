@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov may 2016
+! author    - i.t.todorov august 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,7 +17,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
                                  r_nprx,r_npry,r_nprz
   Use config_module,      Only : cell,natms,nlast,ltg,lfrzn, &
                                  xxx,yyy,zzz,lexatm,list
-  Use core_shell_module,  Only : legshl
+  Use core_shell_module,  Only : listshl,legshl
   Use development_module, Only : l_dis,r_dis
 
   Implicit None
@@ -414,7 +414,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
                              rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
                              If (rsq <= rcsq) Then
 
-! check for overfloat and add an entry
+! check for overflow and add an entry
 
                                 ll=list(0,i)+1
                                 If (ll <= mxlist) Then
@@ -559,10 +559,20 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 !           jy=(which_cell(j)-1)/(nlx + 2*nlp) - (nly + 2*nlp)*jz
 !           jx=Mod(which_cell(j)-1,nlx + 2*nlp)
 
-! Exclude core-shell units from the check
+! Exclude core-shell units' pairs from the check
 
-           If (legshl(0,i) > 0) Then
-              If (legshl(1,i) == jj) Cycle
+           If (ll /= 0) Then ! the primary particle is part of a unit
+              If (j <= natms) Then ! can check directly if the pair is part of the same unit
+                 If (legshl(0,j) /= 0) Then ! the secondary particle is part of a unit
+                    If (legshl(1,i) == legshl(1,j)) Cycle ! both are part of the same unit
+                 End If
+              Else                 ! cannot check directly
+                 If (ll > 0) Then ! the primary particle is a core
+                    If (listshl(2,legshl(1,i)) == jj) Cycle ! jj is the shell of that core
+                 Else               ! the primary particle is a shell
+                    If (listshl(1,legshl(1,i)) == jj) Cycle ! jj is the core of that shell
+                 End If
+              End If
            End If
 
            If (j <= natms .or. ii < jj) Then

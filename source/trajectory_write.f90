@@ -6,7 +6,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 ! in simulation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2015
+! author    - i.t.todorov august 2016
 ! contrib   - w.smith, i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -790,7 +790,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
         Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Recl=recsz)
 
         rec=rec+Int(1,ip)
-        Write(Unit=nhist, Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
+        Write(Unit=nhist, Fmt='(a8,2i10,2i2,2f20.6,a1)', Rec=rec) 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
 
         Do i = 0, 2
            rec=rec+Int(1,ip)

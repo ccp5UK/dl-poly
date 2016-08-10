@@ -6,20 +6,21 @@ Subroutine read_mpoles(l_top,sumchg)
 ! specifications of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2016
+! author    - i.t.todorov august 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! SETUP MODULES
 
   Use kinds_f90
-  Use comms_module,  Only : idnode
-  Use setup_module,  Only : nrite,nmpldt,mxompl
+  Use comms_module,      Only : idnode
+  Use setup_module,      Only : nrite,nmpldt,mxompl
 
 ! SITE & MPOLES MODULE
 
   Use site_module
-  Use mpoles_module, Only : mpllfr
+  Use core_shell_module, Only : numshl,lstshl
+  Use mpoles_module,     Only : mpllfr
 
 ! PARSE MODULE
 
@@ -30,7 +31,7 @@ Subroutine read_mpoles(l_top,sumchg)
   Logical,           Intent ( In    ) :: l_top
   Real( Kind = wp ), Intent ( InOut ) :: sumchg
 
-  Logical                :: safe, l_ord=.false.
+  Logical                :: safe,l_rsh,l_ord=.false.
 
   Character( Len = 200 ) :: record,record1,record2
   Character( Len = 40  ) :: word
@@ -38,6 +39,7 @@ Subroutine read_mpoles(l_top,sumchg)
 
   Integer                :: itmols,nrept,i,j,k,l,                 &
                             isite,jsite,ksite,lsite,nsite,sitmpl, &
+                            ishls,nshels,isite2,                  &
                             ordmpl,ordmpl_start,ordmpl_next,      &
                             ordmpl_min,ordmpl_max,                &
                             indmpl,indmpl_start,indmpl_final
@@ -58,6 +60,7 @@ Subroutine read_mpoles(l_top,sumchg)
 ! omit first line
 
   nsite  = 0
+  nshels = 0
   sumchg = 0.0_wp
 
   ordmpl_min = 4
@@ -168,13 +171,9 @@ Subroutine read_mpoles(l_top,sumchg)
                     Call error(623)
                  End If
 
-! for every molecule of this type
+! for every molecule of this type get site and atom description
 
-! get site and atom description
-
-! reference point
-
-                 ksite=0
+                 ksite=0 ! reference point
                  Do isite=1,numsit(itmols)
                     If (ksite < numsit(itmols)) Then
 
@@ -195,11 +194,6 @@ Subroutine read_mpoles(l_top,sumchg)
                        ordmpl=Abs(Nint(word_2_real(word)))
                        indmpl=(ordmpl+3)*(ordmpl+2)*(ordmpl+1)/6
 
-! get the min and max order defined
-
-                       ordmpl_min=Min(ordmpl_min,ordmpl)
-                       ordmpl_max=Max(ordmpl_max,ordmpl)
-
                        Call get_word(record,word)
                        nrept=Abs(Nint(word_2_real(word)))
                        If (nrept == 0) nrept=1
@@ -208,7 +202,7 @@ Subroutine read_mpoles(l_top,sumchg)
                        lsite=jsite+nrept-1
 
                        Do i=jsite,lsite
-                          If (sitnam(i) /= atom) Then
+                          If (sitnam(i) /= atom) Then ! detect mish-mash
                              If (idnode == 0) Write(nrite,'(/,1x,a,i0,a)') &
   "*** warning - site names mistmatch between FIELD and MPOLES for site ", ksite+1+i-jsite, " !!! ***"
 
@@ -216,8 +210,27 @@ Subroutine read_mpoles(l_top,sumchg)
                           End If
                        End Do
 
+                       l_rsh=.true. ! regular or no shelling (Drude)
+                       Do ishls=1,numshl(itmols) ! detect beyond charge shelling
+                          nshels=nshels+1
+
+                          isite2=nsite+lstshl(2,nshels)
+                          If ((isite2 >= jsite .and. isite2 <= lsite) .and. ordmpl > 0) Then
+                             l_rsh=.false.
+                             If (idnode == 0) Write(nrite,'(/,1x,a,i0,a)') &
+  "*** warning - a shell (of a polarisable multipolar ion) can only bear a charge to emulate a self-iduced dipole!!! ***"
+                          End If
+                       End Do
+
+! get the min and max order defined for cores/nucleus, ignore irregular shells
+
+                       If (l_rsh) Then
+                          ordmpl_min=Min(ordmpl_min,ordmpl)
+                          ordmpl_max=Max(ordmpl_max,ordmpl)
+                       End If
+
                        If (idnode == 0 .and. l_top) &
-  Write(nrite,"(9x,i10,4x,a8,4x,i2,5x,i10)") ksite+1,atom,ordmpl,nrept
+  Write(nrite,"(9x,i10,4x,a8,4x,i2,5x,i10)") ksite+1,atom,Merge(ordmpl,1,l_rsh),nrept
 
 ! monopole=charge
 
@@ -262,9 +275,9 @@ Subroutine read_mpoles(l_top,sumchg)
                              Call get_word(record,word)
                           End Do
 
-! Only assign what FIELD says is needed
+! Only assign what FIELD says is needed or it is a shell
 
-                          If (ordmpl_next <= mxompl) Then
+                          If (ordmpl_next <= Merge(mxompl,1,l_rsh)) Then
 
                              Do i=indmpl_start,indmpl_final
                                 sitmpl = sitmpl+1
@@ -315,16 +328,30 @@ Subroutine read_mpoles(l_top,sumchg)
 ! report
 
                              If (idnode == 0 .and. l_top) Then
-                                If      (ordmpl_next == 1) Then
+                                If (l_rsh) Then
+                                   If      (ordmpl_next == 1) Then
   Write(nrite,"(3x,a12,1x,a)") 'dipole',                 '     *** supplied but not required ***'
-                                Else If (ordmpl_next == 2) Then
+                                   Else If (ordmpl_next == 2) Then
   Write(nrite,"(3x,a12,1x,a)") 'quadrupole',             '     *** supplied but not required ***'
-                                Else If (ordmpl_next == 3) Then
+                                   Else If (ordmpl_next == 3) Then
   Write(nrite,"(3x,a12,1x,a)") 'octupole',               '     *** supplied but not required ***'
-                                Else If (ordmpl_next == 4) Then
+                                   Else If (ordmpl_next == 4) Then
   Write(nrite,"(3x,a12,1x,a)") 'hexadecapole',           '     *** supplied but not required ***'
-                                Else
+                                   Else
   Write(nrite,"(3x,a12,i0,a)") 'pole order ',ordmpl_next,'     *** supplied but not required ***'
+                                   End If
+                                Else
+                                   If      (ordmpl_next == 1) Then
+  Write(nrite,"(3x,a12,1x,a)") 'dipole',                 '     *** supplied but ignored as invalid ***'
+                                   Else If (ordmpl_next == 2) Then
+  Write(nrite,"(3x,a12,1x,a)") 'quadrupole',             '     *** supplied but ignored as invalid ***'
+                                   Else If (ordmpl_next == 3) Then
+  Write(nrite,"(3x,a12,1x,a)") 'octupole',               '     *** supplied but ignored as invalid ***'
+                                   Else If (ordmpl_next == 4) Then
+  Write(nrite,"(3x,a12,1x,a)") 'hexadecapole',           '     *** supplied but ignored as invalid ***'
+                                   Else
+  Write(nrite,"(3x,a12,i0,a)") 'pole order ',ordmpl_next,'     *** supplied but ignored as invalid ***'
+                                   End If
                                 End If
                              End If
 

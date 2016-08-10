@@ -6,7 +6,7 @@ Module core_shell_module
 ! and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
+! author    - i.t.todorov july 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -14,7 +14,8 @@ Module core_shell_module
 
   Implicit None
 
-  Logical,                        Save :: lshmv_shl = .false.
+  Logical,                        Save :: lshmv_shl = .false. , &
+                                          l_dpl = .false. ! don't depolarise
 
   Integer,                        Save :: ntshl  = 0 , &
                                           ntshl1 = 0 , &

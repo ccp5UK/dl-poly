@@ -6,7 +6,7 @@ Subroutine core_shell_forces(engshl,virshl,stress)
 ! and force terms
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2015
+! author    - i.t.todorov june 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,7 +23,7 @@ Subroutine core_shell_forces(engshl,virshl,stress)
 
   Logical           :: safe
   Integer           :: fail(1:2),i,j,ia,ib,kk,local_index
-  Real( Kind = wp ) :: rabsq,fx,fy,fz,gamma,omega, &
+  Real( Kind = wp ) :: rabsq,fx,fy,fz,gamma,omega,r_4_fac, &
                        strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:2)
 
   Logical,           Allocatable :: lunsafe(:)
@@ -38,6 +38,7 @@ Subroutine core_shell_forces(engshl,virshl,stress)
      Call error(0)
   End If
 
+  r_4_fac = 1.0_wp/24.0_wp ! aharmonic shell coefficient = 1/(4!)
 
 ! calculate core-shell separation vectors
 
@@ -131,7 +132,7 @@ Subroutine core_shell_forces(engshl,virshl,stress)
 ! calculate scalar constant terms using spring potential function
 ! and the parameters in array prmshl
 
-        omega=(0.5_wp*prmshl(1,kk)+0.25_wp*prmshl(2,kk)*rabsq)*rabsq
+        omega=(0.5_wp*prmshl(1,kk)+r_4_fac*prmshl(2,kk)*rabsq)*rabsq
         gamma=prmshl(1,kk)+prmshl(2,kk)*rabsq
 
 ! calculate forces

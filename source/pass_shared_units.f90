@@ -16,7 +16,7 @@ Subroutine pass_shared_units &
 !                       (2) relocate_particles if mxnode>1 and meg_u>0
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2012
+! author    - i.t.todorov august 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -131,9 +131,9 @@ Subroutine pass_shared_units &
 
               Do i=1,n_nt
                  j=j0(i)
-                 If (j > 0) Then    ! For all particles in list_u(1:n_nt,nt_u),
-                    m=leg_u(0,j)    ! if present on this node, repoint unit
-                    Do l=1,m        ! 'nt_u' to 'k' in their leg_u array
+                 If (j > 0) Then      ! For all particles in list_u(1:n_nt,nt_u),
+                    m=Abs(leg_u(0,j)) ! if present on this node, repoint unit [for shell particles legshl(0,:)=-1]
+                    Do l=1,m          ! 'nt_u' to 'k' in their leg_u array
                        If (leg_u(l,j) == nt_u) leg_u(l,j) = k
                     End Do
                  End If
