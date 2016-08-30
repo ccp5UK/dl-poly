@@ -10,6 +10,11 @@ build-serial:
   script:
     - sh utils/build-serial.sh
 
+build-openmp-pure:
+  stage: build
+  script:
+    - sh utils/build-openmp-pure.sh
+
 build-mpi-pure:
   stage: build
   script:
