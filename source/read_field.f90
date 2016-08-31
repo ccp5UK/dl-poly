@@ -18,6 +18,7 @@ Subroutine read_field                   &
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs & PDFs)
+! contrib   - a.m.elena ljc 
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -3054,6 +3055,8 @@ Subroutine read_field                   &
               keypot=10
            Else If (keyword == '14-7') Then
               keypot=11
+           Else If (keyword == 'ljc') Then
+              keypot=12
            Else
 
               If (idnode == 0) Write(nrite,'(/,1x,a)') keyword
@@ -3152,6 +3155,8 @@ Subroutine read_field                   &
                  gamdpd(keyvdw)=Abs(parpot(3))
               Else If (keypot == 11) Then
                  gamdpd(keyvdw)=Abs(parpot(3))
+              Else If (keypot == 12) Then
+                gamdpd(keyvdw)=Abs(parpot(4)) ! does it need to be 3 or 4?
               End If
               If (gamdpd(0) > zero_plus) gamdpd(keyvdw)=gamdpd(0) ! override
            End If
@@ -3227,7 +3232,7 @@ Subroutine read_field                   &
                              ja=ltpvdw(lstvdw(jsite))
                              If (ia == ja .and.             & ! only if of the same type
                                  (ia == 1 .or. ia == 2 .or. & ! and the type is allowed mixing
-                                  ia == 9 .or. ia == 10 .or. ia == 11)) Then
+                                  ia == 9 .or. ia == 10 .or. ia == 11 .or. ia == 12)) Then
                                 ksite=isite+j-i
                                 If (lstvdw(ksite) > ntpvdw) Then ! if it does not exist - no overriding
                                    nsite=nsite+1
@@ -3308,7 +3313,8 @@ Subroutine read_field                   &
                                 sig(2)=(prmvdw(1,ja)/prmvdw(2,ja))**(1.0_wp/6.0_wp)
                              Else If (keypot == 2  .or. &
                                       keypot == 10 .or. &
-                                      keypot == 11) Then ! LJ, DPD, 14-7
+                                      keypot == 11 .or. &
+                                      keypot == 12) Then ! LJ, DPD, 14-7
                                 If (keypot == 2 ) keyword='lj  '
                                 If (keypot == 10) keyword='dpd '
                                 If (keypot == 11) keyword='14-7'
@@ -3321,6 +3327,15 @@ Subroutine read_field                   &
                              Else If (keypot == 9)  Then ! WCA
                                 keyword='wca '
 
+                                eps(1)=prmvdw(1,ia)
+                                sig(1)=prmvdw(2,ia)
+                                del(1)=prmvdw(3,ia)
+
+                                eps(2)=prmvdw(1,ja)
+                                sig(2)=prmvdw(2,ja)
+                                del(2)=prmvdw(3,ja)
+                             Else If (keypot == 12) Then 
+                               keyword='ljc '
                                 eps(1)=prmvdw(1,ia)
                                 sig(1)=prmvdw(2,ia)
                                 del(1)=prmvdw(3,ia)
@@ -3459,10 +3474,14 @@ Subroutine read_field                   &
                                 prmvdw(2,ntpvdw)=4.0_wp*eps(0)*(sig(0)**6)
                              Else If (keypot == 2  .or. &
                                       keypot == 10 .or. &
-                                      keypot == 11) Then ! LJ, DPD, 14-7
+                                      keypot == 11) Then ! LJ, DPD, 14-7,LJC
                                 prmvdw(1,ntpvdw)=eps(0)
                                 prmvdw(2,ntpvdw)=sig(0)
                              Else If (keypot == 9)  Then ! WCA
+                                prmvdw(1,ntpvdw)=eps(0)
+                                prmvdw(2,ntpvdw)=sig(0)
+                                prmvdw(3,ntpvdw)=del(0)
+                             Else If (keypot == 12)  Then ! LJC
                                 prmvdw(1,ntpvdw)=eps(0)
                                 prmvdw(2,ntpvdw)=sig(0)
                                 prmvdw(3,ntpvdw)=del(0)

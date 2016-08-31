@@ -155,6 +155,17 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
               eadd = intRadMM3(sig,a,b,eps,rvdw,e0)
               padd = -intRaddMM3(sig,a,b,eps,rvdw,e0)
+           Else If (keypot ==  12) Then
+
+! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
+
+              eps=prmvdw(1,k)
+              sig=prmvdw(2,k)
+              c  =prmvdw(3,k)
+              r  =rvdw
+!triple check this one
+              eadd = 4.0_wp*eps*(sig**12/(9.0_wp*r**9) - c*sig**6/(3.0_wp*r**3))
+              padd = 8.0_wp*eps*(6.0_wp*sig**12/(9.0_wp*r**9) - c*sig**6/(r**3))
 
            End If
 
