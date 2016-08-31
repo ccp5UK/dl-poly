@@ -49,12 +49,8 @@ build-old-hpc:
   stage: build
   script:
     - sh utils/build-old.sh
-  only:
-    - master
 
 testing-mpi:
   stage: test
   script:
     - sh utils/mpi-testing.sh
-  only:
-    - master
