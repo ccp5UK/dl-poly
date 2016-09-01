@@ -52,6 +52,11 @@ build-old-hpc:
   only:
     - master
 
+build-win32-serial:
+  stage: build
+  script:
+    - sh utils/build-win32-serial.sh
+
 testing-mpi-gcc:
   stage: test
   script:
