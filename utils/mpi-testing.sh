@@ -6,7 +6,7 @@ module load plumed/gcc/2.2.1
 
 mkdir build-mpi-testing
 pushd build-mpi-testing
-FFLAGS="-Ofast -ffast-math -march=native -mtune=native" cmake ../ -DBUILD_TESTING=ON -DWITH_PLUMED=ON -DBUILDER="Gitlab Slave"
+FFLAGS="-O3 -march=native -mtune=native" cmake ../ -DBUILD_TESTING=ON -DWITH_PLUMED=ON -DBUILDER="Gitlab Slave"
 make -j10
 make test
 
