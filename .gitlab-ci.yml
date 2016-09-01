@@ -57,6 +57,11 @@ build-win32-serial:
   script:
     - sh utils/build-win32-serial.sh
 
+build-win64-serial:
+  stage: build
+  script:
+    - sh utils/build-win64-serial.sh
+
 testing-mpi-gcc:
   stage: test
   script:
