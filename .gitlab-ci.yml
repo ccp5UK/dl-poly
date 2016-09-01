@@ -52,7 +52,12 @@ build-old-hpc:
   only:
     - master
 
-testing-mpi:
+testing-mpi-gcc:
   stage: test
   script:
     - sh utils/mpi-testing.sh
+
+testing-mpi-intel:
+  stage: test
+  script:
+    - sh utils/intel-testing.sh
