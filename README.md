@@ -7,7 +7,7 @@
 * one also can use **cmake-gui** or **ccmake** to setup the build options
 * to change the install path use **-DCMAKE_INSTALL_PREFIX=<path>** (*-DCMAKE_INSTALL_PREFIX=$HOME/101/DL_POLY*)
 * automatic testing can be done after **DL_POLY_4** is built, using **make test**
-* to see all the tests available use **ctest -n**
+* to see all the tests available use **ctest -N**
 * to run one specific test use **ctest -R <TESTNAME>**
 * for a list of all supported targets **make help**
 * TODO check it works on Windows...
