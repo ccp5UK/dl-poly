@@ -1,0 +1,164 @@
+  <properties>
+    <property name="eng_tot">
+      <description> eng tot</description>
+      <script>Scripts/eng_tot.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="temp_tot">
+      <description> temp tot</description>
+      <script>Scripts/temp_tot.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="eng_cfg">
+      <description> eng cfg</description>
+      <script>Scripts/eng_cfg.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="eng_src">
+      <description> eng src</description>
+      <script>Scripts/eng_src.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="eng_cou">
+      <description> eng cou</description>
+      <script>Scripts/eng_cou.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="eng_bnd">
+      <description> eng bnd</description>
+      <script>Scripts/eng_bnd.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="eng_ang">
+      <description> eng ang</description>
+      <script>Scripts/eng_ang.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="eng_dih">
+      <description> eng dih</description>
+      <script>Scripts/eng_dih.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="eng_tet">
+      <description> eng tet</description>
+      <script>Scripts/eng_tet.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="eng_pv">
+      <description> eng pv</description>
+      <script>Scripts/eng_pv.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="temp_rot">
+      <description> temp rot</description>
+      <script>Scripts/temp_rot.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="vir_cfg">
+      <description> vir cfg</description>
+      <script>Scripts/vir_cfg.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="vir_src">
+      <description> vir src</description>
+      <script>Scripts/vir_src.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="vir_cou">
+      <description> vir cou</description>
+      <script>Scripts/vir_cou.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="vir_bnd">
+      <description> vir bnd</description>
+      <script>Scripts/vir_bnd.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="vir_ang">
+      <description> vir ang</description>
+      <script>Scripts/vir_ang.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="vir_con">
+      <description> vir con</description>
+      <script>Scripts/vir_con.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="vir_tet">
+      <description> vir tet</description>
+      <script>Scripts/vir_tet.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="volume">
+      <description> volume</description>
+      <script>Scripts/volume.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="temp_shl">
+      <description> temp shl</description>
+      <script>Scripts/temp_shl.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="eng_shl">
+      <description> eng shl</description>
+      <script>Scripts/eng_shl.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="vir_shl">
+      <description> vir shl</description>
+      <script>Scripts/vir_shl.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="alpha">
+      <description> alpha</description>
+      <script>Scripts/alpha.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="beta">
+      <description> beta</description>
+      <script>Scripts/beta.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="gamma">
+      <description> gamma</description>
+      <script>Scripts/gamma.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="vir_pmf">
+      <description> vir pmf</description>
+      <script>Scripts/vir_pmf.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+    <property name="press">
+      <description> press</description>
+      <script>Scripts/press.py</script>
+      <type>Float</type>
+      <relativeprecision>1.0E-5</relativeprecision>
+    </property>
+  </properties>
