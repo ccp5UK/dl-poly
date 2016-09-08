@@ -6,7 +6,7 @@ Subroutine error(kode)
 ! controlled termination of the program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2016
+! author    - i.t.todorov september 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1039,7 +1039,7 @@ Subroutine error(kode)
 
      Else If (kode ==  660) Then
 
-        Write(nrite,'(/,1x,a)') 'error - TABBND or PDF bond breaking failure'
+        Write(nrite,'(/,1x,a)') 'error - bond length > cutoff in TABBND or cutoff for PDF collection'
 
      Else If (kode == 1000) Then
 

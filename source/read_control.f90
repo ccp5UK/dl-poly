@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2016
+! author    - i.t.todorov september 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -2688,7 +2688,7 @@ Subroutine read_control                                &
 
 ! abort if there's no structural property to recalculate
 
-        If (.not.(lrdf .or. lzdn .or. ldef .or. l_msd .or. lrsd)) Call error(580)
+        If (.not.(lrdf .or. lzdn .or. ldef .or. l_msd .or. lrsd .or. (mxgana > 0))) Call error(580)
      End If
 
      If (keyres /= 0) Then

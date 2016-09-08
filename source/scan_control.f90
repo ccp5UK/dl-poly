@@ -11,7 +11,7 @@ Subroutine scan_control                                    &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov june 2016
+! author    - i.t.todorov september 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
@@ -53,7 +53,7 @@ Subroutine scan_control                                    &
                                   mxspl_min = 3           ! minimum spline order, needed for derivatives of forces
   Real( Kind = wp ), Parameter :: rcut_def  = 1.0_wp  , & ! minimum real space cutoff
                                   rbin_def  = 0.05_wp , & ! default bin size
-                                  rcbnd_def = 2.0_wp      ! minimum bond length for bond analysis
+                                  rcbnd_def = 2.5_wp      ! minimum bond length for bond analysis
 
 ! default reading indices options
 
@@ -533,7 +533,7 @@ Subroutine scan_control                                    &
 
 ! Sort rcut as the maximum of all valid cutoffs
 
-  rcut=Max(rcut,rcbnd,rvdw,rmet,rkim,2.0_wp*rcter+1.0e-6_wp)
+  rcut=Max(rcut,rvdw,rmet,rkim,2.0_wp*Max(rcter,rcbnd)+1.0e-6_wp)
 
   If (idnode == 0) Rewind(nread)
 
@@ -775,9 +775,9 @@ Subroutine scan_control                                    &
               rmet=0.0_wp
               If (.not.l_str) Then
                  If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
-                    rcut=Max(rcbnd,2.0_wp*rcter)+1.0e-6_wp
+                    rcut=2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp
                  Else
-                    rcut=Max(rcut,rcbnd,2.0_wp*rcter+1.0e-6_wp)
+                    rcut=Max(rcut,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
                  End If
               End If
            End If
@@ -798,9 +798,9 @@ Subroutine scan_control                                    &
                 (lrvdw .or. lrmet .or. lter .or. kim /= ' ') ) Then
               lrcut=.true.
               If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
-                 rcut=Max(rcbnd,rvdw,rmet,rkim,2.0_wp*rcter+1.0e-6_wp)
+                 rcut=Max(rvdw,rmet,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
               Else
-                 rcut=Max(rcut,rcbnd,rvdw,rmet,rkim,2.0_wp*rcter+1.0e-6_wp)
+                 rcut=Max(rcut,rvdw,rmet,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
               End If
            End If
 
@@ -813,9 +813,9 @@ Subroutine scan_control                                    &
               If (.not.l_str) Then
                  lrcut=.true.
                  If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
-                    rcut=Max(rcbnd,2.0_wp*rcter)+1.0e-6_wp
+                    rcut=2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp
                  Else
-                    rcut=Max(rcut,rcbnd,2.0_wp*rcter)+1.0e-6_wp
+                    rcut=Max(rcut,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
                  End If
               End If
            End If

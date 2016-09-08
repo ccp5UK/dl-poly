@@ -2615,16 +2615,17 @@ A FENE type bond was broken.
 
 Examine FIELD for erroneous directives, if any, correct and resubmit.
 
-\subsubsection*{\underline{Message 660}: error - TABBND or PDF bond breaking failure}
+\subsubsection*{\underline{Message 660}: error - bond-length $>$ cutoff in TABBND or cutoff for PDF collection}
 
-A bond with potential defined in TABBND or for which intra-molecular
-potential distribution is collected has exceeded its bondleghth limit.
+A bond has reached a length beyond the cutoff over which (i) its interactions
+are defined in TABBND or (ii) its potential distribution function is sampled.
 
 \noindent \underline{\em Action}:
 
-If there is a TABBND present, reconstruct TABBND with potentials defined
-over larger cutoff and try again.  If bonds PDF are collected, increase
-their cutoff value in CONTROL.
+If there is a TABBND present, reconstruct TABBND with the original interaction
+potentials defined over a larger cutoff and try to run the system with new TABBND.
+If bonds PDFs are collected then increase the PDF bond cutoff value in CONTROL
+and try to run the system.
 
 \subsubsection*{\underline{Message 1000}: error - working precision mismatch between FORTRAN90 and MPI implementation}
 
