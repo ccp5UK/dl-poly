@@ -2615,16 +2615,17 @@ A FENE type bond was broken.
 
 Examine FIELD for erroneous directives, if any, correct and resubmit.
 
-\subsubsection*{\underline{Message 660}: error - TABBND or PDF bond breaking failure}
+\subsubsection*{\underline{Message 660}: error - bond-length $>$ cutoff in TABBND or cutoff for PDF collection}
 
-A bond with potential defined in TABBND or for which intra-molecular
-potential distribution is collected has exceeded its bondleghth limit.
+A bond has reached a length beyond the cutoff over which (i) its interactions
+are defined in TABBND or (ii) its potential distribution function is sampled.
 
 \noindent \underline{\em Action}:
 
-If there is a TABBND present, reconstruct TABBND with potentials defined
-over larger cutoff and try again.  If bonds PDF are collected, increase
-their cutoff value in CONTROL.
+If there is a TABBND present, reconstruct TABBND with the original interaction
+potentials defined over a larger cutoff and try to run the system with new TABBND.
+If bonds PDFs are collected then increase the PDF bond cutoff value in CONTROL
+and try to run the system.
 
 \subsubsection*{\underline{Message 1000}: error - working precision mismatch between FORTRAN90 and MPI implementation}
 
@@ -3082,7 +3083,7 @@ This should never happen!
 
 Contact authors if the problem persists.
 
-\subsubsection*{\underline{Message 1059}: error -  unknown write level given to sorted I/O}
+\subsubsection*{\underline{Message 1059}: error - unknown write level given to sorted I/O}
 
 This should never happen!
 
@@ -3090,7 +3091,7 @@ This should never happen!
 
 Contact authors if the problem persists.
 
-\subsubsection*{\underline{Message 1060}: error - allocation failure in statistics\_module -> allocate\_statitics\_connect}
+\subsubsection*{\underline{Message 1060}: error - allocation failure in statistics\_module $->$ allocate\_statitics\_connect}
 
 See notes on message 1001 above.
 
@@ -3098,7 +3099,7 @@ See notes on message 1001 above.
 
 See action notes on message 1001 above.
 
-\subsubsection*{\underline{Message 1061}: error - allocation failure in statistics\_module -> deallocate\_statitics\_connect}
+\subsubsection*{\underline{Message 1061}: error - allocation failure in statistics\_module $->$ deallocate\_statitics\_connect}
 
 See notes on message 1001 above.
 
@@ -3138,7 +3139,7 @@ See notes on message 1001 above.
 
 See action notes on message 1001 above.
 
-\subsubsection*{\underline{Message 1072}: error - allocation failure in bonds\_module -> allocate\_bond\_pot\_arrays}
+\subsubsection*{\underline{Message 1072}: error - allocation failure in bonds\_module $->$ allocate\_bond\_pot\_arrays}
 
 See notes on message 1001 above.
 
@@ -3146,7 +3147,7 @@ See notes on message 1001 above.
 
 See action notes on message 1001 above.
 
-\subsubsection*{\underline{Message 1073}: error - allocation failure in bonds\_module -> allocate\_bond\_dst\_arrays}
+\subsubsection*{\underline{Message 1073}: error - allocation failure in bonds\_module $->$ allocate\_bond\_dst\_arrays}
 
 See notes on message 1001 above.
 
@@ -3154,7 +3155,7 @@ See notes on message 1001 above.
 
 See action notes on message 1001 above.
 
-\subsubsection*{\underline{Message 1074}: error - allocation failure in angles\_module -> allocate\_angl\_pot\_arrays}
+\subsubsection*{\underline{Message 1074}: error - allocation failure in angles\_module $->$ allocate\_angl\_pot\_arrays}
 
 See notes on message 1001 above.
 
@@ -3162,7 +3163,7 @@ See notes on message 1001 above.
 
 See action notes on message 1001 above.
 
-\subsubsection*{\underline{Message 1075}: error - allocation failure in angles\_module -> allocate\_angl\_dst\_arrays}
+\subsubsection*{\underline{Message 1075}: error - allocation failure in angles\_module $->$ allocate\_angl\_dst\_arrays}
 
 See notes on message 1001 above.
 
@@ -3170,7 +3171,7 @@ See notes on message 1001 above.
 
 See action notes on message 1001 above.
 
-\subsubsection*{\underline{Message 1076}: error - allocation failure in dihedrals\_module -> allocate\_dihd\_pot\_arrays}
+\subsubsection*{\underline{Message 1076}: error - allocation failure in dihedrals\_module $->$ allocate\_dihd\_pot\_arrays}
 
 See notes on message 1001 above.
 
@@ -3178,7 +3179,7 @@ See notes on message 1001 above.
 
 See action notes on message 1001 above.
 
-\subsubsection*{\underline{Message 1077}: error - allocation failure in dihedrals\_module -> allocate\_dihd\_dst\_arrays}
+\subsubsection*{\underline{Message 1077}: error - allocation failure in dihedrals\_module $->$ allocate\_dihd\_dst\_arrays}
 
 See notes on message 1001 above.
 
@@ -3186,7 +3187,7 @@ See notes on message 1001 above.
 
 See action notes on message 1001 above.
 
-\subsubsection*{\underline{Message 1078}: error - allocation failure in inversions\_module -> allocate\_invr\_pot\_arrays}
+\subsubsection*{\underline{Message 1078}: error - allocation failure in inversions\_module $->$ allocate\_invr\_pot\_arrays}
 
 See notes on message 1001 above.
 
@@ -3194,7 +3195,7 @@ See notes on message 1001 above.
 
 See action notes on message 1001 above.
 
-\subsubsection*{\underline{Message 1079}: error - allocation failure in inversions\_module -> allocate\_invr\_dst\_arrays}
+\subsubsection*{\underline{Message 1079}: error - allocation failure in inversions\_module $->$ allocate\_invr\_dst\_arrays}
 
 See notes on message 1001 above.
 
@@ -3202,7 +3203,7 @@ See notes on message 1001 above.
 
 See action notes on message 1001 above.
 
-\subsubsection*{\underline{Message 1080}: error - allocation failure in greenkubo\_module -> allocate\_greenkubo\_arrays}
+\subsubsection*{\underline{Message 1080}: error - allocation failure in greenkubo\_module $->$ allocate\_greenkubo\_arrays}
 
 See notes on message 1001 above.
 
@@ -3210,7 +3211,7 @@ See notes on message 1001 above.
 
 See action notes on message 1001 above.
 
-\subsubsection*{\underline{Message 1081}: error - allocation failure in dpd\_module -> allocate\_dpd\_arrays}
+\subsubsection*{\underline{Message 1081}: error - allocation failure in dpd\_module $->$ allocate\_dpd\_arrays}
 
 See notes on message 1001 above.
 
