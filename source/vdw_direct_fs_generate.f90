@@ -188,6 +188,20 @@ Subroutine vdw_direct_fs_generate(rvdw)
         bfs(ivdw) =-t3*((1.12_wp/t2)-2.0_wp) - afs(ivdw)
         afs(ivdw) = afs(ivdw)/rvdw
 
+      Else If (keypot == 12) Then
+
+! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
+
+        eps=prmvdw(1,ivdw)
+        sig=prmvdw(2,ivdw)
+        c=prmvdw(3,ivdw)
+
+        sor6=(sig/rvdw)**6
+
+        afs(ivdw) = 24.0_wp*eps*sor6*(2.0_wp*sor6-c)
+        bfs(ivdw) =-4.0_wp*eps*sor6*(sor6-c) - afs(ivdw)
+        afs(ivdw) = afs(ivdw)/rvdw
+
      Else
 
         Call error(150)
