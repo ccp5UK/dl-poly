@@ -360,6 +360,26 @@ Subroutine vdw_forces &
                  gamma = gamma - afs(k)/rrr
               End If
 
+            Else If (ityp == 12) Then
+
+! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
+
+              eps=prmvdw(1,k)
+              sig=prmvdw(2,k)
+              c=prmvdw(3,k)
+
+              sor6=(sig/rrr)**6
+
+              If (jatm <= natms .or. idi < ltg(jatm)) &
+              eng   = 4.0_wp*eps*sor6*(sor6-c)
+              gamma = 24.0_wp*eps*sor6*(2.0_wp*sor6-c)/rsq
+
+              If (ls_vdw) Then ! force-shifting
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 eng   = eng + afs(k)*rrr + bfs(k)
+                 gamma = gamma - afs(k)/rrr
+              End If
+
            Else If (Abs(vvdw(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
 
               l   = Int(rrr*rdr)
