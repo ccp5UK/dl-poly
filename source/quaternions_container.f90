@@ -286,7 +286,7 @@ Subroutine no_squish                    &
 !
 ! copyright - daresbury laboratory
 ! author    - m.leslie january 2004
-! adapted   - i.t.todorov october 2010
+! adapted   - i.t.todorov september 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -302,7 +302,7 @@ Subroutine no_squish                    &
   Real( Kind = wp )  :: rotstep,zetax,zetay,zetaz,cs,sn, &
                         qn1(0:3),pq2(0:3), &
                         qn2(0:3),pq3(0:3), &
-                        qn3(0:3),pq4(0:3)
+                        qn3(0:3),pq4(0:3), rnorm
 
 ! rotation: iterate over mrot rotational time steps
 
@@ -388,6 +388,15 @@ Subroutine no_squish                    &
      p2=cs*pq3(2)-sn*pq3(1)
      p3=cs*pq3(3)+sn*pq3(0)
   End Do
+
+! stay normalised (long term drift)
+
+  rnorm=1.0_wp/Sqrt(q0**2+q1**2+q2**2+q3**2)
+
+  q0=q0*rnorm
+  q1=q1*rnorm
+  q2=q2*rnorm
+  q3=q3*rnorm
 
 End Subroutine no_squish
 
