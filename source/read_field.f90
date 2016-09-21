@@ -14,11 +14,11 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2016
+! author    - i.t.todorov september 2016
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs & PDFs)
-! contrib   - a.m.elena ljc 
+! contrib   - a.m.elena september 2016 (ljc)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -3156,7 +3156,7 @@ Subroutine read_field                   &
               Else If (keypot == 11) Then
                  gamdpd(keyvdw)=Abs(parpot(3))
               Else If (keypot == 12) Then
-                gamdpd(keyvdw)=Abs(parpot(4)) ! does it need to be 3 or 4?
+                 gamdpd(keyvdw)=Abs(parpot(4))
               End If
               If (gamdpd(0) > zero_plus) gamdpd(keyvdw)=gamdpd(0) ! override
            End If
@@ -3200,7 +3200,7 @@ Subroutine read_field                   &
                           If (idnode == 0) Write(nrite,"(3(/,1x,a))")                        &
   "type of mixing defaulted - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2", &
   "mixing is limited to potentials of the same type only",                                   &
-  "mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,14-7)"
+  "mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,14-7,LJC)"
                        End If
                     End If
                  End If
@@ -3230,9 +3230,10 @@ Subroutine read_field                   &
                           jsite=(j*(j-1))/2+j
                           If (lstvdw(jsite) <= ntpvdw) Then ! if it exists
                              ja=ltpvdw(lstvdw(jsite))
-                             If (ia == ja .and.             & ! only if of the same type
-                                 (ia == 1 .or. ia == 2 .or. & ! and the type is allowed mixing
-                                  ia == 9 .or. ia == 10 .or. ia == 11 .or. ia == 12)) Then
+                             If (ia == ja .and.               & ! only if of the same type
+                                 (ia == 1  .or. ia == 2  .or. & ! and the type is allowed mixing
+                                  ia == 9  .or. ia == 10 .or. &  ! ! LJ, 12-6, WCA, DPD, 14-7, LJC
+                                  ia == 11 .or. ia == 12)) Then
                                 ksite=isite+j-i
                                 If (lstvdw(ksite) > ntpvdw) Then ! if it does not exist - no overriding
                                    nsite=nsite+1
@@ -3311,31 +3312,21 @@ Subroutine read_field                   &
 
                                 eps(2)=prmvdw(2,ja)**2/(4.0_wp*prmvdw(1,ja))
                                 sig(2)=(prmvdw(1,ja)/prmvdw(2,ja))**(1.0_wp/6.0_wp)
-                             Else If (keypot == 2  .or. &
-                                      keypot == 10 .or. &
-                                      keypot == 11 .or. &
-                                      keypot == 12) Then ! LJ, DPD, 14-7
+                             Else If (keypot == 2  .or. keypot == 10 .or. &
+                                      keypot == 11 .or. keypot == 12) Then ! LJ, DPD, 14-7, LJC
                                 If (keypot == 2 ) keyword='lj  '
                                 If (keypot == 10) keyword='dpd '
                                 If (keypot == 11) keyword='14-7'
+                                If (keypot == 12) keyword='ljc '
 
                                 eps(1)=prmvdw(1,ia)
                                 sig(1)=prmvdw(2,ia)
 
                                 eps(2)=prmvdw(1,ja)
                                 sig(2)=prmvdw(2,ja)
-                             Else If (keypot == 9)  Then ! WCA
+                             Else If (keypot == 9) Then ! WCA
                                 keyword='wca '
 
-                                eps(1)=prmvdw(1,ia)
-                                sig(1)=prmvdw(2,ia)
-                                del(1)=prmvdw(3,ia)
-
-                                eps(2)=prmvdw(1,ja)
-                                sig(2)=prmvdw(2,ja)
-                                del(2)=prmvdw(3,ja)
-                             Else If (keypot == 12) Then 
-                               keyword='ljc '
                                 eps(1)=prmvdw(1,ia)
                                 sig(1)=prmvdw(2,ia)
                                 del(1)=prmvdw(3,ia)
@@ -3469,19 +3460,14 @@ Subroutine read_field                   &
 
 ! Recover and/or paste in the vdw parameter array
 
-                             If      ( keypot == 1)  Then ! 12-6
+                             If      (keypot == 1)  Then ! 12-6
                                 prmvdw(1,ntpvdw)=4.0_wp*eps(0)*(sig(0)**12)
                                 prmvdw(2,ntpvdw)=4.0_wp*eps(0)*(sig(0)**6)
-                             Else If (keypot == 2  .or. &
-                                      keypot == 10 .or. &
-                                      keypot == 11) Then ! LJ, DPD, 14-7,LJC
+                             Else If (keypot == 2  .or. keypot == 10 .or. &
+                                      keypot == 11 .or. keypot == 12) Then ! LJ, DPD, 14-7, LJC
                                 prmvdw(1,ntpvdw)=eps(0)
                                 prmvdw(2,ntpvdw)=sig(0)
-                             Else If (keypot == 9)  Then ! WCA
-                                prmvdw(1,ntpvdw)=eps(0)
-                                prmvdw(2,ntpvdw)=sig(0)
-                                prmvdw(3,ntpvdw)=del(0)
-                             Else If (keypot == 12)  Then ! LJC
+                             Else If (keypot == 9) Then ! WCA
                                 prmvdw(1,ntpvdw)=eps(0)
                                 prmvdw(2,ntpvdw)=sig(0)
                                 prmvdw(3,ntpvdw)=del(0)

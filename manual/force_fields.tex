@@ -1071,6 +1071,14 @@ U(r_{ij}) =
 U(r_{ij}) = 4\epsilon\left[\left
 (\frac{\sigma}{r_{ij}}\right)^{12}-\left(\frac{\sigma}{r_{ij}}\right)^{6}\right]
 \end{equation}
+\item Lennard-Jones cohesive potential \cite{barrat-99a}:  ({\bf ljc})
+\begin{equation}
+U(r_{ij}) = 4\epsilon\left[\left
+(\frac{\sigma}{r_{ij}}\right)^{12}-c_{ij}\left(\frac{\sigma}{r_{ij}}\right)^{6}\right]
+\end{equation}
+This potential has an extra constant to tune the attractive part of the
+potential serving to describe the different cohesiveness between different
+fluids and surfaces in engineering flows models.
 \item n-m potential (aka Mie) \cite{mie-03a,clarke-86a}:  ({\bf nm})
 \begin{equation}
 U(r_{ij}) = \frac{E_{o}}{(n-m)}\left[m\left
@@ -1248,7 +1256,7 @@ Verlet\index{algorithm!Verlet} neighbour list (see above).
 \D allows a short cut for mixing some of the explicitly specified
 pair interactions for single species of the same type so that
 cross-species interactions are generated if unspecified.  This is
-only possible for the {\bf 12-6, lj, dpd, 14-7 \& wca} types.
+only possible for the {\bf 12-6, lj, dpd, 14-7, wca \& ljc} types.
 The mixing is derived from the Lennard-Jones style characteristic
 paramteres for energy ($\epsilon$) and distance ($\sigma$ or $r_{0}$)
 terms.  The available types of mixing within \D are borrowed from
