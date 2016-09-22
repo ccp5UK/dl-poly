@@ -11,7 +11,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith july 1992
-! amended   - i.t.todorov march 2016
+! amended   - i.t.todorov september 2016
 ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -300,8 +300,8 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
                  Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rab,rab2,omega,gamma,safe(1))
 
                  fx = gamma*xdab(i)
-                 fy = gamma*xdab(i)
-                 fz = gamma*xdab(i)
+                 fy = gamma*ydab(i)
+                 fz = gamma*zdab(i)
 
                  viracc = -gamma*rab2
               End If

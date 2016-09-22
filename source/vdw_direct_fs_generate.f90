@@ -7,6 +7,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov march 2016
+! contrib   - a.m.elena september 2016 (ljc)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -190,11 +191,11 @@ Subroutine vdw_direct_fs_generate(rvdw)
 
       Else If (keypot == 12) Then
 
-! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
+! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
 
         eps=prmvdw(1,ivdw)
         sig=prmvdw(2,ivdw)
-        c=prmvdw(3,ivdw)
+        c  =prmvdw(3,ivdw)
 
         sor6=(sig/rvdw)**6
 

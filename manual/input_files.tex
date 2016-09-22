@@ -2427,6 +2427,9 @@ $U(r) = \left( \frac{A}{r^{12}} \right) - \left( \frac{B}{r^{6}} \right)$ \\
 {\bf lj}   & Lennard-Jones             & $\epsilon$ & $\sigma$ &          &         &                      &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r}\right)^{6} \right]$ \\
            &                           &            &          &          &         &                      & \\
+{\bf lj}   & Lennard-Jones cohesive \cite{barrat-99a} & $\epsilon$ & $\sigma$ & $c$      &         &       &
+$U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - c~\left( \frac{\sigma}{r}\right)^{6} \right]$ \\
+           &                           &            &          &          &         &                      & \\
 {\bf nm}   & n-m \cite{mie-03a,clarke-86a} & $E_{o}$ & $n$     & $m$      & $r_{0}$ &                      &
 $U(r) = \frac{E_{o}}{(n-m)} \left[ m \left( \frac{r_{o}}{r} \right)^{n}
 -n \left( \frac{r_{o}}{r} \right)^{m} \right]$ \\

@@ -9,6 +9,7 @@ Subroutine vdw_forces &
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
 ! amended   - i.t.todorov march 2016
+! contrib   - a.m.elena september 2016 (ljc)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -362,11 +363,11 @@ Subroutine vdw_forces &
 
             Else If (ityp == 12) Then
 
-! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
+! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
 
               eps=prmvdw(1,k)
               sig=prmvdw(2,k)
-              c=prmvdw(3,k)
+              c  =prmvdw(3,k)
 
               sor6=(sig/rrr)**6
 
