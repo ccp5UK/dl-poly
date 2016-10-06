@@ -3,7 +3,7 @@
 
 ! Apply external field
 
-        If (keyfld > 0) Call external_field_correct()
+        If (keyfld > 0) Call external_field_correct(engfld)
 
 ! Apply pseudo thermostat - velocity cycle (1)
 

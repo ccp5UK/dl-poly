@@ -1,4 +1,4 @@
-Subroutine external_field_correct()
+Subroutine external_field_correct(engfld)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -20,6 +20,8 @@ Subroutine external_field_correct()
   Use external_field_module
 
   Implicit None
+
+  Real( Kind = wp ), Intent(   Out ) :: engfld
 
   Integer           :: i,j,ia,ib, irgd,jrgd,lrgd,rgdtyp,megrgd
   Real( Kind = wp ) :: rz,vxt,tmp,rtmp(1:2), &
@@ -97,25 +99,28 @@ Subroutine external_field_correct()
      ia = Nint(prmfld(1))
      ib = Nint(prmfld(2))
 
-     rtmp=0.0_wp ! average velocity and force per atom in x direction of the piston
-     Do i=1,natms
+     rtmp=0.0_wp  ! average velocity and force per atom in x direction of the piston
+     Do i=1,natms ! preserve momentum and velocity in the direction of the push
         If (ltg(i) >= ia .and. ltg(i) <= ib) Then
-           rtmp(1)=rtmp(1)+vxx(i) ; rtmp(2)=rtmp(2)+fxx(i)
-           vyy(i) = 0.0_wp        ; fyy(i) = 0.0_wp
-           vzz(i) = 0.0_wp        ; fzz(i) = 0.0_wp
+           rtmp(1)=rtmp(1)+weight(i)*vxx(i) ; rtmp(2)=rtmp(2)+fxx(i)
+           vyy(i) = 0.0_wp                  ; fyy(i) = 0.0_wp
+           vzz(i) = 0.0_wp                  ; fzz(i) = 0.0_wp
         End If
      End Do
      If (mxnode > 1) Call gsum(rtmp) ! net velocity and force to ensure solid wall behaviour
 
-     rtmp(1)=rtmp(1)/Real(ib-ia+1)     ! averaged velocity per particle
-     rtmp(2)=(rtmp(2)+prmfld(3))/mass  ! averaged acceleration of the slab
+     rtmp(1)=rtmp(1)/mass             ! averaged velocity per particle
+     rtmp(2)=(rtmp(2)+prmfld(3))/mass ! averaged acceleration of the slab
 
      Do i=1,natms
         If (ltg(i) >= ia .and. ltg(i) <= ib) Then
+           engfld=weight(i)*(rtmp(1)-vxx(i))**2 ! must change E_kin to reflect solidity
            vxx(i)=rtmp(1)
            fxx(i)=rtmp(2)*weight(i) ! force per particle
         End If
      End Do
+
+     engfld=0.5_wp*engfld
 
   End If
 

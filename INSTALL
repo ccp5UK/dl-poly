@@ -24,7 +24,7 @@ THE CMAKE WAY:
 	unzip dl_poly_4.08.zip
 	cd dl_poly.4.08
 	mkdir mybuild ; cd mybuild
-	cmake .. ; make -j10
+	cmake .. ; make -j 10
 	ls -haltr bin
 
 Usually, life is not that simple.  Anything below the above assumptions

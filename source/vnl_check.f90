@@ -5,7 +5,7 @@ Subroutine vnl_check(l_str,m_rgd,rcut,rpad,rlnk,width)
 ! dl_poly_4 routine implementing the VNL conditional update checks
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2016
+! author    - i.t.todorov september 2016
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -27,7 +27,7 @@ Subroutine vnl_check(l_str,m_rgd,rcut,rpad,rlnk,width)
   Logical,     Save :: newjob=.true.,newstart=.true.
   Integer,     Save :: mxsize,alist
   Integer           :: fail,ilx,ily,ilz
-  Real( Kind = wp ) :: max_disp,cut,test,celprp(1:10)
+  Real( Kind = wp ) :: max_disp,cut,test,tol,celprp(1:10)
 
   Real( Kind = wp ), Allocatable :: x(:),y(:),z(:)
 
@@ -113,8 +113,10 @@ Subroutine vnl_check(l_str,m_rgd,rcut,rpad,rlnk,width)
      ily=Int(r_npry*celprp(8)/cut)
      ilz=Int(r_nprz*celprp(9)/cut)
 
-     test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0) ! 2% (w/ SPME) or 4% (w/o SPME)
-     cut=Min(r_nprx*celprp(7),r_npry*celprp(8),r_nprz*celprp(9))-1.0e-6_wp
+     tol=Min(0.05_wp,0.005_wp*rcut)                                        ! tolerance
+     test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0)                    ! 2% (w/ SPME) or 4% (w/o SPME)
+     cut=Min(r_nprx*celprp(7),r_npry*celprp(8),r_nprz*celprp(9))-1.0e-6_wp ! domain size
+
      If (ilx*ily*ilz == 0) Then
         If (cut < rcut) Then
   If (idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
@@ -128,7 +130,7 @@ Subroutine vnl_check(l_str,m_rgd,rcut,rpad,rlnk,width)
                  If (cut >= rcut) Then ! Re-set rpad with some slack
                     rpad = Min( 0.95_wp * (cut - rcut) , test * rcut)
                     rpad = Real( Int( 100.0_wp * rpad , wp ) ) / 100.0_wp
-                    If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
+                    If (rpad < tol) rpad = 0.0_wp ! Don't bother
                     rlnk = rcut + rpad
                     l_vnl=.true.
                  End If
@@ -150,7 +152,7 @@ Subroutine vnl_check(l_str,m_rgd,rcut,rpad,rlnk,width)
               End If
            End If
            cut = Real( Int( 100.0_wp * cut ) , wp ) / 100.0_wp
-           If ((.not.(cut < Min(0.05_wp,0.005_wp*rcut))) .and. cut-rpad > 0.005_wp) Then ! Do bother
+           If ((.not.(cut < tol)) .and. cut-rpad > 0.005_wp) Then ! Do bother
   If (idnode == 0) Write(nrite,'(/,1x,2(a,f5.2),a,/)') 'cutoff padding reset from ', rpad, ' Angs to ', cut, ' Angs'
               rpad = cut
               rlnk = rcut + rpad
