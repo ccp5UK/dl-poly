@@ -2446,7 +2446,7 @@ $U(r) = \left( \frac{A}{r^{12}} \right) - \left( \frac{B}{r^{6}} \right)$ \\
 {\bf lj}   & Lennard-Jones             & $\epsilon$ & $\sigma$ &          &         &                      &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r}\right)^{6} \right]$ \\
            &                           &            &          &          &         &                      & \\
-{\bf lj}   & Lennard-Jones cohesive \cite{barrat-99a} & $\epsilon$ & $\sigma$ & $c$      &         &       &
+{\bf ljc}  & Lennard-Jones cohesive \cite{barrat-99a} & $\epsilon$ & $\sigma$ & $c$      &         &       &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - c~\left( \frac{\sigma}{r}\right)^{6} \right]$ \\
            &                           &            &          &          &         &                      & \\
 {\bf nm}   & n-m \cite{mie-03a,clarke-86a} & $E_{o}$ & $n$     & $m$      & $r_{0}$ &                      &
@@ -2883,7 +2883,8 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> variable 2    \> real    \> potential parameter, see Table~\ref{external-field-table} \\
 \> variable 3    \> real    \> potential parameter, see Table~\ref{external-field-table} \\
 \> variable 4    \> real    \> potential parameter, see Table~\ref{external-field-table} \\
-\> variable 5    \> real    \> potential parameter, see Table~\ref{external-field-table}
+\> variable 5    \> real    \> potential parameter, see Table~\ref{external-field-table} \\
+\> variable 6    \> real    \> potential parameter, see Table~\ref{external-field-table}
 \end{tabbing}
 The variables pertaining to each field potential are described
 in Table~\ref{external-field-table}.
@@ -2894,63 +2895,67 @@ in Table~\ref{external-field-table}.
 \begin{centering}
 \caption{\label{external-field-table} External Fields}
 \vskip 1ex
-\begin{tabular}{|l|l|c|c|c|c|c|l|}
+\begin{tabular}{|l|l|c|c|c|c|c|c|l|}
 \hline
-key & potential type & \multicolumn{5}{c|}{Variables (1-5)} & functional form \\
+key & potential type & \multicolumn{6}{c|}{Variables (1-6)} & functional form \\
 \hline
-           &                     &         &         &         &         &               & \\
-{\bf elec} & Electric Field      & $E_{x}$ & $E_{y}$ & $E_{z}$ &         &               &
+           &                     &         &         &         &         &          &        & \\
+{\bf elec} & Electric Field      & $E_{x}$ & $E_{y}$ & $E_{z}$ &         &          &        &
 $\vek{F} = q \; \vek{E}$ \\
-           &                     &         &         &         &         &               & \\
-{\bf oshr} & Oscillating Shear   & $A$     & $n$     &         &         &               &
+           &                     &         &         &         &         &          &        & \\
+{\bf oshr} & Oscillating Shear   & $A$     & $n$     &         &         &          &        &
 $\vek{F}_x = A \; \cos(2 n\pi \cdot z/L_{z})$ \\
-           &                     &         &         &         &         &               & \\
-{\bf shrx} & Continuous Shear    & $A$     & $z_{0}$ &         &         &               &
+           &                     &         &         &         &         &          &        & \\
+{\bf shrx} & Continuous Shear    & $A$     & $z_{0}$ &         &         &          &        &
 $\vek{v}_x = \frac{A}{2} \frac{|z|}{z}~:~|z|~>~z_{0}$ \\
-           &                     &         &         &         &         &               & \\
-{\bf grav} & Gravitational Field & $G_{x}$ & $G_{y}$ & $G_{z}$ &         &               &
+           &                     &         &         &         &         &          &        & \\
+{\bf grav} & Gravitational Field & $G_{x}$ & $G_{y}$ & $G_{z}$ &         &          &        &
 $\vek{F} = m \; \vek{G}$ \\
-           &                     &         &         &         &         &               & \\
-{\bf magn} & Magnetic Field      & $H_{x}$ & $H_{y}$ & $H_{z}$ &         &               &
+           &                     &         &         &         &         &          &        & \\
+{\bf magn} & Magnetic Field      & $H_{x}$ & $H_{y}$ & $H_{z}$ &         &          &        &
 $\vek{F} = q \; (\vek{v} \times \vek{H})$ \\
-           &                     &       &           &         &         &               & \\
-{\bf sphr} & Containing Sphere   & $A$   & $R_{0}$   & $n$     & $R_{\rm cut}$ &         &
+           &                     &       &           &         &         &          &        & \\
+{\bf sphr} & Containing Sphere   & $A$   & $R_{0}$   & $n$     & $R_{\rm cut}$ &    &        &
 $\vek{F} = A \; (R_{0} - r)^{-n}~:~r > R_{\rm cut}$ \\
-           &                     &       &           &         &         &               & \\
-{\bf zbnd} & Repulsive Wall      & $A$   & $z_{0}$   & $p$     &         &               &
+           &                     &       &           &         &         &          &        & \\
+{\bf zbnd} & Repulsive Wall      & $A$   & $z_{0}$   & $p$     &         &          &        &
 $\vek{F} = A \; (z_{0} - z) ~:~p \cdot z > p \cdot z_{0}$ \\
-           &                     &       &           &         &         &               & \\
-{\bf xpis} & X-Piston & $i^{glob}_{ind}$ & $j^{glob}_{ind}$ & $P^{in}_{k-atm}$ & &       &
-$\vek{F}_{x} = \frac{\textrm{$P$} \cdot \vek{\textrm{Area}}(\perp\textrm{X-}dir)}
+           &                     &       &           &         &         &          &        & \\
+{\bf xpis} & X-Piston            & $i_{gid}$ & $j_{gid}$ & $P_{k {\rm atm}}$ &  &   &        &
+$\vek{F}_{x} = \frac{P \cdot \vek{\textrm{Area}}(\perp\textrm{X-}dir)}
 {\left[\sum_{k=i}^{j}m_{k}\right] \textrm{/} m_{k}} : \forall~k=i,..,j $ \\
-           &                     &       &           &         &         &               & \\
-{\bf zres} & Molecule in HR Zone & $i^{glob}_{ind}$ & $j^{glob}_{ind}$ & $k$ & $z_{mn}$ & $z_{mx}$ &
+           &                     &       &           &         &         &          &        & \\
+{\bf zres} & Molecule in HR Zone & $i_{gid}$ & $j_{gid}$ & $k$ & $z_{mn}$ & $z_{mx}$ &       &
 $
 \vek{F}_{z} = \left\{ \begin{array} {l@{~:~}l}
 A(z_{cm}-z_{mx}) & z_{cm} > z_{mx} \\
 A(z_{mn}-z_{cm}) & z_{cm} < z_{mn}
 \end{array} \right.
 $ \\
-           &                     &       &           &         &         &               & \\
-{\bf zrs-} & HR Zone (pull out)  & $i^{glob}_{ind}$ & $j^{glob}_{ind}$ & $k$ & $z_{mn}$ & $z_{mx}$ &
+           &                     &       &           &         &         &          &        & \\
+{\bf zrs$-$} & HR Zone (push out) & $i_{gid}$ & $j_{gid}$ & $k$ & $z_{mn}$ & $z_{mx}$ &      &
 $
 \vek{F}_{z} = \left\{ \begin{array} {l@{~:~}l}
 A(z-z_{mx}) & z \ge \frac{z_{mx}+z_{mn}}{2} \\
 A(z_{mn}-z) & z < \frac{z_{mx}+z_{mn}}{2}
 \end{array} \right.
 $ \\
-           &                     &       &           &         &         &               & \\
-{\bf zrs+} & HR Zone (pull in)   & $i^{glob}_{ind}$ & $j^{glob}_{ind}$ & $k$ & $z_{mn}$ & $z_{mx}$ &
+           &                     &       &           &         &         &          &        & \\
+{\bf zrs+} & HR Zone (pull in)   & $i_{gid}$ & $j_{gid}$ & $k$ & $z_{mn}$ & $z_{mx}$ &       &
 $
 \vek{F}_{z} = \left\{ \begin{array} {l@{~:~}l}
 A(z-z_{mx}) & z > z_{mx} \\
 A(z_{mn}-z) & z < z_{mn}
 \end{array} \right.
 $ \\
-           &                     &       &           &         &         &               & \\
-{\bf osel} & Osc. Electric Field & $E_{x}$ & $E_{y}$ & $E_{z}$ & $\omega^{in}_{ps^{-1}}$ & &
+           &                     &       &           &         &         &          &        & \\
+{\bf osel} & Osc. Electric Field & $E_{x}$ & $E_{y}$ & $E_{z}$ & $\omega_{{\rm ps}^{-1}}$ & & &
 $\vek{F} = q \; \vek{E} \; \sin(2 \pi \omega t)$ \\
-           &                     &       &           &         &         &               & \\
+           &                     &       &           &         &         &          &        & \\
+{\bf upmf} & umbrella sampling   & $i^{A}_{gid}$ & $j^{A}_{gid}$ & $i^{B}_{gid}$ & $j^{B}_{gid}$ &
+                                   $k$              & $R_{0}$           &
+$U_{AB} = \frac{k}{2} (R_{AB}-R_{0})^{2}$ \\
+           &                     &       &           &         &         &          &        & \\
 \hline
 \end{tabular}
 \vskip 1ex

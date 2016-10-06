@@ -8,7 +8,7 @@ Subroutine set_bounds                                 &
 ! grid sizes, paddings, iterations, etc. as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov march 2016
+! author    - i.t.todorov october 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014 (VAF)
 !
@@ -21,6 +21,7 @@ Subroutine set_bounds                                 &
   Use config_module,      Only : imcon,imc_n,cfgname,cell,volm
   Use vnl_module,         Only : llvnl ! Depends on l_str,lsim & rpad
   Use msd_module
+  Use kim_module,         Only : kim
   Use bonds_module,       Only : rcbnd
   Use tersoff_module,     Only : potter
   Use development_module, Only : l_trm
@@ -39,7 +40,7 @@ Subroutine set_bounds                                 &
                        mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
   Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
                        dens0,dens,fdens,fdvar,  &
-                       test,vcell,              &
+                       test,vcell,tol,          &
                        rcter,rctbp,rcfbp,       &
                        xhi,yhi,zhi
 
@@ -434,7 +435,7 @@ Subroutine set_bounds                                 &
 ! maximum number of external field parameters
 
   If (lext) Then
-     mxpfld = 5
+     mxpfld = 6
   Else
      mxpfld = 0
   End If
@@ -512,8 +513,10 @@ Subroutine set_bounds                                 &
 
   If (idnode == 0) Write(nrite,'(/,1x,a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
 
-  test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0) ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
-  cut=Min(r_nprx*celprp(7),r_npry*celprp(8),r_nprz*celprp(9))-1.0e-6_wp
+  tol=Min(0.05_wp,0.005_wp*rcut)                                        ! tolerance
+  test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0)                    ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
+  cut=Min(r_nprx*celprp(7),r_npry*celprp(8),r_nprz*celprp(9))-1.0e-6_wp ! domain size
+
   If (ilx*ily*ilz == 0) Then
      If (l_trm) Then ! we are prepared to exit gracefully(-:
         rcut = cut   ! - rpad (was zeroed in scan_control)
@@ -528,7 +531,7 @@ Subroutine set_bounds                                 &
            If (rpad > zero_plus .and. (.not.l_str)) Then ! Re-set rpad with some slack
               rpad = Min( 0.95_wp * (cut - rcut) , test * rcut)
               rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
-              If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
+              If (rpad < tol) rpad = 0.0_wp ! Don't bother
               Go To 10
            Else
               If (idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
@@ -536,32 +539,39 @@ Subroutine set_bounds                                 &
            End If
         End If
      End If
-  Else ! push the limits when real dynamics exists & in 'no strict' mode
-     If (lsim .and. (.not.l_str)) Then
-        If (mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
-           rpad = 0.85_wp * (0.5_wp*width - rcut - 1.0e-6_wp)
-           rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
+  Else ! push/reset the limits in 'no strict' mode
+     If (.not.l_str) Then
+        If (.not.(mxmet == 0 .and. l_n_e .and. l_n_v .and. mxrdf == 0 .and. kim == ' ')) Then ! 2b link-cells are needed
+           If (mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
+              rpad = 0.85_wp * (0.5_wp*width - rcut - 1.0e-6_wp)
+              rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
+           End If
+
+           If (rpad <= zero_plus) Then ! When rpad is undefined give it some value
+              If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then ! good non-exception
+                 rpad = test * rcut
+                 rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
+                 If (rpad > tol) Go To 10
+              Else ! not so good non-exception
+                 rpad = Min( 0.85_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
+                                               r_npry * celprp(8) / Real(ily,wp) , &
+                                               r_nprz * celprp(9) / Real(ilz,wp) ) &
+                                         - rcut - 1.0e-6_wp ) , test * rcut )
+              rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
+              End If
+           End If
+
+           If (rpad > zero_plus) Then
+              If (rpad < tol) rpad = 0.0_wp ! Don't bother
+           End If
+        Else
+           If (rpad >= zero_plus) rpad = 0.0_wp ! Don't bother
         End If
 
-        If (rpad <= zero_plus) Then ! When rpad undefined give it some value
-           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then ! good non-exception
-              rpad = test * rcut
-              rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
-              If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
-              Go To 10
-           Else ! not so good non-exception
-              rpad = Min( 0.85_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
-                                            r_npry * celprp(8) / Real(ily,wp) , &
-                                            r_nprz * celprp(9) / Real(ilz,wp) ) &
-                                      - rcut - 1.0e-6_wp ) , test * rcut )
-           End If
-           rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
-        End If
-        If (rpad < Min(0.05_wp,0.005_wp*rcut)) rpad = 0.0_wp ! Don't bother
-        rlnk = rcut + rpad ! and correct rlnk respectively
+        rlnk = rcut + rpad ! recalculate rlnk respectively
      End If
   End If
-  llvnl = (rpad > zero_plus) ! Detect conditional VNL updating at start
+  llvnl = (rpad > zero_plus) ! Determine/Detect conditional VNL updating at start
 
   If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call warning(100,0.0_wp,0.0_wp,0.0_wp)
 

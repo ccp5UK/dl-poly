@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2016
+! author    - i.t.todorov october 2016
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs & PDFs)
@@ -3233,7 +3233,7 @@ Subroutine read_field                   &
                              ja=ltpvdw(lstvdw(jsite))
                              If (ia == ja .and.               & ! only if of the same type
                                  (ia == 1  .or. ia == 2  .or. & ! and the type is allowed mixing
-                                  ia == 9  .or. ia == 10 .or. &  ! ! LJ, 12-6, WCA, DPD, 14-7, LJC
+                                  ia == 9  .or. ia == 10 .or. & ! LJ, 12-6, WCA, DPD, 14-7, LJC
                                   ia == 11 .or. ia == 12)) Then
                                 ksite=isite+j-i
                                 If (lstvdw(ksite) > ntpvdw) Then ! if it does not exist - no overriding
@@ -3246,11 +3246,11 @@ Subroutine read_field                   &
                                       If (gamdpd(0) <= zero_plus) Then
                                          If (l_str) Then
                                             ldpd_safe = .false. ! test for non-definable interactions
-                                            If (idnode == 0) &   ! in a DPD thermostating context
+                                            If (idnode == 0) &  ! in a DPD thermostating context
   Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,a)") '*** warning - the interaction between bead types: ', &
   unqatm(i), '&', unqatm(j), ' is unresolved and thus thermostating is ill defined in a DPD context!!! ***'
                                          Else
-                                            If (idnode == 0) &   ! in a DPD thermostating context
+                                            If (idnode == 0) &  ! in a DPD thermostating context
   Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,a)") '*** warning - the interaction between bead types: ', &
   unqatm(i), '&', unqatm(j), ' is unresolved and thus thermostating is ill defined in a DPD context but may be OK in CG MD!!! ***'
                                          End If
@@ -4255,6 +4255,8 @@ Subroutine read_field                   &
            keyfld=11
         Else If (keyword == 'osel') Then
            keyfld=12
+        Else If (keyword == 'upmf') Then
+           keyfld=13
         Else
 
            If (idnode == 0) Write(nrite,'(/,1x,a)') keyword
@@ -4301,6 +4303,12 @@ Subroutine read_field                   &
            If (.not.lunits) Call error(6)
 
            prmfld(3) = prmfld(3)*engunit
+
+        Else If (keyfld == 13) Then
+
+           If (.not.lunits) Call error(6)
+
+           prmfld(5) = prmfld(5)*engunit
 
         End If
 
