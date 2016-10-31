@@ -1,0 +1,11 @@
+DL_POLY_4 (no plugins) can be built successfully on windows in all its flavours forms.
+The method I use is cross compilation on a linux box.
+There are scripts to help you to build if you are interested in utils/build-win*
+
+Note for MPI version. I use MS MPI version 7 at the moment. Obtain both the runtime and the sdk from the 
+microsoft website.
+the library will need processed to get a .a version that will be used for linkage with mingw.
+Since the binaries may be provided with each official release please contact alin-marin.elena@stfc.ac.uk 
+if you are intrested in replicating the build process.
+
+
