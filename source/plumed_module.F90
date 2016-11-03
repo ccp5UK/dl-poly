@@ -161,7 +161,7 @@ Contains
   Subroutine plumed_finalize()
 
 #ifdef PLUMED
-    If (idnode == 0) Call plumed_f_gfinalize()
+    Call plumed_f_gfinalize()
 #endif
 
   End Subroutine plumed_finalize
