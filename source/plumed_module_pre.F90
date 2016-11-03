@@ -165,7 +165,7 @@ Contains
   Subroutine plumed_finalize()
 
 
-    If (idnode == 0) Call plumed_f_gfinalize()
+    Call plumed_f_gfinalize()
 
 
   End Subroutine plumed_finalize
