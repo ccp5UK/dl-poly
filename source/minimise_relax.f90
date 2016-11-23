@@ -13,13 +13,13 @@ Subroutine minimise_relax &
 !       keymin=2 : absolute displacement
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith february 2014
+! author    - i.t.todorov & w.smith november 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : idnode,mxnode,gsum,gmax
-  Use setup_module,        Only : nrite,mxatms,mxcons,mxtpmf,mxpmf,engunit
+  Use setup_module,        Only : nrite,mxatms,mxcons,mxtpmf,mxpmf,engunit,zero_plus
   Use config_module,       Only : natms,nlast,nfree,          &
                                   lsi,lsa,lfrzn,lfree,lstfre, &
                                   weight,xxx,yyy,zzz,fxx,fyy,fzz
@@ -33,7 +33,7 @@ Subroutine minimise_relax &
   Logical,           Intent( InOut ) :: relaxed,lrdf
   Integer,           Intent( In    ) :: megatm,megcon, &
                                         megpmf,megrgd,keymin
-  Real( Kind = wp ), Intent( In    ) :: min_tol,tstep,stpcfg
+  Real( Kind = wp ), Intent( In    ) :: min_tol(1:2),tstep,stpcfg
 
   Logical,              Save :: newjob = .true. , l_rdf, l_mov
   Character( Len = 8 ), Save :: word
@@ -117,15 +117,30 @@ Subroutine minimise_relax &
      If (mxnode > 1) Call gsum(total)
   End If
 
-! Step length for relaxation, enlarged depending on functionality
+! Step length for relaxation
 
-  step=tstep**2
-  If (megcon == 0 .and. megpmf == 0) Then
-     If (megrgd == 0) Then
-        step=10.0_wp*step
-     Else
-        step=5.0_wp*step
+  If (min_tol(2) > zero_plus) Then
+
+! Optionally specified
+
+     step=min_tol(2)
+
+  Else
+
+! default if unspecified
+
+     step=tstep**2
+
+! enlarged depending on functionality if defaulted
+
+     If (megcon == 0 .and. megpmf == 0) Then
+        If (megrgd == 0) Then
+           step=10.0_wp*step
+        Else
+           step=5.0_wp*step
+        End If
      End If
+
   End If
 
   If (keyopt == 0) Then
@@ -170,7 +185,7 @@ Subroutine minimise_relax &
      If (l_str .and. idnode == 0) Then
         Write(nrite, Fmt=*)
         Write(nrite,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,9x,a,1p,e12.4)') &
-             'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol
+             'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1)
         Write(nrite,"(1x,130('-'))")
      End If
   End If
@@ -217,7 +232,7 @@ Subroutine minimise_relax &
   eng_tol=0.0_wp
   If (keyopt > 0) Then
      eng_tol=Abs(1.0_wp-eng2/eng)
-     If (keymin == 1) relaxed=(eng_tol < min_tol)
+     If (keymin == 1) relaxed=(eng_tol < min_tol(1))
   End If
 
 ! Current gradient (modulus of the total force)
@@ -233,7 +248,7 @@ Subroutine minimise_relax &
 ! Get grad_tol & verify relaxed condition
 
   grad_tol=grad/total
-  If (keymin == 0) relaxed=(grad_tol < min_tol)
+  If (keymin == 0) relaxed=(grad_tol < min_tol(1))
 
 ! Initialise dist_tol
 
@@ -263,12 +278,12 @@ Subroutine minimise_relax &
 
      If (Nint(passmin(2)) == 0) Then
         If (Nint(passmin(1)) >= 10*mxpass) Then
-           Call warning(330,min_tol,min_pass,0.0_wp)
+           Call warning(330,min_tol(1),min_pass,0.0_wp)
            Call error(474)
         End If
      Else
         If (Nint(passmin(1)) >= mxpass) Then
-           Call warning(330,min_tol,min_pass,0.0_wp)
+           Call warning(330,min_tol(1),min_pass,0.0_wp)
            Call error(474)
         End If
      End If
@@ -400,7 +415,7 @@ Subroutine minimise_relax &
   End If
   If (mxnode > 1) Call gmax(dist_tol)
 
-  If (keymin == 2) relaxed=(dist_tol < min_tol)
+  If (keymin == 2) relaxed=(dist_tol < min_tol(1))
 
 ! Fit headers in and Close and Open OUTPUT at every 25th print-out
 
@@ -410,7 +425,7 @@ Subroutine minimise_relax &
      If (Mod(i,25) == 0) Then
         Write(nrite,"(1x,130('-'))")
         Write(nrite,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,9x,a,1p,e12.4)') &
-             'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol
+             'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1)
         Write(nrite,"(1x,130('-'))")
 
         If (idnode == 0) Then
@@ -437,7 +452,7 @@ Subroutine minimise_relax &
         If (.not.l_str) Then
            Write(nrite, Fmt=*)
            Write(nrite,'(3(1x,a),5x,a,10x,a,10x,a,11x,a,9x,a,1p,e12.4)') &
-                'Minimised',word,'passes','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol
+                'Minimised',word,'passes','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1)
            Write(nrite,"(1x,130('-'))")
         End If
         Write(nrite,'(1x,i23,1p,4e18.8)') i,eng/engunit,grad_tol,eng_tol,dist_tol

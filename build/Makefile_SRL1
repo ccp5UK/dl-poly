@@ -278,7 +278,8 @@ gnu-debug:
 	LDFLAGS="-O3 -g -fbacktrace" \
 	FC="gfortran -c" \
 	FCFLAGS?="-O3 -Wall -Wextra -pedantic -g -fbounds-check -fbacktrace \
-	         -finit-integer=-9999 -finit-real=nan -std=f2003 -fdump-core \
+	         -finit-integer=-9999 -finit-real=nan -finit-logical=true \
+	         -finit-character=42 -std=f2008 -fdump-core -fcheck=all \
 	         -ffpe-trap=invalid,zero,overflow -frecord-gcc-switches \
 	         -DBUILDER=\"$(BUILDER)\" -DHOST=\"$(HOSTNAME)\"" \
 	EX=$(EX) BINROOT=$(BINROOT) $(TYPE)

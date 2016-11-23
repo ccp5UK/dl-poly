@@ -1,4 +1,4 @@
-Subroutine external_field_apply(keyshl,time,engfld,virfld)
+Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,7 +7,7 @@ Subroutine external_field_apply(keyshl,time,engfld,virfld)
 ! Note: Only one field at a time is allowed
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2016
+! author    - i.t.todorov november 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,7 +24,8 @@ Subroutine external_field_apply(keyshl,time,engfld,virfld)
 
   Implicit None
 
-  Integer,           Intent( In    ) :: keyshl
+  Logical,           Intent( In    ) :: leql
+  Integer,           Intent( In    ) :: keyshl,nsteql,nstep
   Real( Kind = wp ), Intent( In    ) :: time ! for oscillating fields
   Real( Kind = wp ), Intent(   Out ) :: engfld,virfld
 
@@ -478,13 +479,13 @@ Subroutine external_field_apply(keyshl,time,engfld,virfld)
 
   Else If (keyfld == 13) Then
 
-! uspmf external field: umbrella sampling pmf (pull in)
+! uphr external field: umbrella potential harmonic restraint (pull in)
 ! prmfld(1) is the index of first atom of the first atom group/molecule
 ! prmfld(2) is the index of last atom of the first atom group/molecule
 ! prmfld(3) is the index of first atom of the second atom group/molecule
 ! prmfld(4) is the index of last atom of the second atom group/molecule
 ! prmfld(5) is the umbrella force constant
-! prmfld(6) umbrella minimum separation
+! prmfld(6) is the com separation at the minimum of umbrella potential
 
      ia = Nint(prmfld(1))
      ib = Nint(prmfld(2))
@@ -509,6 +510,14 @@ Subroutine external_field_apply(keyshl,time,engfld,virfld)
      Call images(imcon,cell,1,x,y,z)
 
      rrr=Sqrt(x(1)**2+y(1)**2+z(1)**2)
+
+! accumulate RDF for the 2 COMs every 5 timesteps and
+! refresh UPRDAT every 500 timesteps
+
+     If ((.not.leql) .or. nstep >= nsteql) Then
+        If (Mod(nstep,5) == 0) Call upr_collect(rrr)
+        If (Mod(nstep,500) == 0) Call upr_compute()
+     End If
 
 ! get force magnitude
 

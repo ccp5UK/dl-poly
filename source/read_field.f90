@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2016
+! author    - i.t.todorov november 2016
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs & PDFs)
@@ -263,17 +263,17 @@ Subroutine read_field                   &
 
         If (word(1:2) == 'ev') Then
 
-           engunit = 9648.530821_wp
+           engunit = eu_ev
            If (idnode == 0) Write(nrite,"(/,1x,'energy units = eV')")
 
         Else If (word(1:4) == 'kcal') Then
 
-           engunit = 418.4_wp
+           engunit = eu_kcpm
            If (idnode == 0) Write(nrite,"(/,1x,'energy units = kcal/mol')")
 
         Else If (word(1:2) == 'kj') Then
 
-           engunit = 100.0_wp
+           engunit = eu_kjpm
            If (idnode == 0) Write(nrite,"(/,1x,'energy units = kJ/mol')")
 
         Else If (word(1:8) == 'internal') Then
@@ -587,7 +587,7 @@ Subroutine read_field                   &
 ! convert energy units to internal units
 
                     prmshl(1:2,nshels)=prmshl(1:2,nshels)*engunit
-                    smax=Max(smax,prmshl(1,nshels)+0.5_wp*prmshl(2,nshels))
+                    smax=Max(smax,prmshl(1,nshels)+12.0_wp*prmshl(2,nshels))
                  End Do
 
 ! Check for mixed or multiple core-shell entries (no inter units linkage!)
@@ -4254,7 +4254,7 @@ Subroutine read_field                   &
            keyfld=11
         Else If (keyword == 'osel') Then
            keyfld=12
-        Else If (keyword == 'upmf') Then
+        Else If (keyword == 'uphf') Then
            keyfld=13
         Else
 

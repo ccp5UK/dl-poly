@@ -126,7 +126,7 @@ ewald precision         1.0e-5
 ewald evaluate          4
 
 # RELAXED SHELL MODEL TOLERANCE
-rlxtol                  1.0 force
+rlxtol                  1.0
 
 # CONSTRANTS ITERATION LENGTH and TOLERANCE
 mxshak                250 cycles
@@ -148,7 +148,7 @@ steps               10000 steps
 equilibration        1000 steps
 
 # EQUILIBRATION DIRECTIVES
-zero
+zero fire
 cap                   500 kT/Angstrom
 scale                   5 steps
 regauss                 3 steps
@@ -466,14 +466,16 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf mindis} $f$                             \> set minimum distance allowed in variable timestep (control) \\
 \>                                              \> to $f$ \AA~(default $f~=~0.03$ \AA) \\
 \>                                              \> \\
-\> {\bf minim}ise {\em string} $n$ $f$          \> minimise the instantaneous system configuration every \\
+\> {\bf minim}ise {\em string} $n$ $f$ $s$      \> minimise the instantaneous system configuration every \\
 \>                                              \> $n$ steps during equilibration (with respect to the last \\
 \>                                              \> equilibration step) using conjugate gradient method (CGM) \\
-\>                                              \> with respect to the criterion, {\em string}, and tolerance, $f$, \\
-\>                                              \> where this criterion can only be {\em force} ($1~\le~f~\le~1000$, \\
-\>                                              \> default $f~=~50$) or {\em energy} ($0~<~f~\le~0.01$, default \\
-\>                                              \> $f~=~0.005$) or {\em distance} (maximum absolute displacement in \\
-\>                                              \> \AA, $10^{-6}~\le~f~\le~0.1$, default $f~=~0.005$); the lowest {\em string} \\
+\>                                              \> with respect to the criterion, {\em string}, tolerance, $f$, and \\
+\>                                              \> and optional CGM stepping, $s$, where this criterion can only be: \\
+\>                                              \> {\em force} ($1~\le~f~\le~1000$, default $f~=~50$) or \\
+\>                                              \> {\em energy} ($0~<~f~\le~0.01$, default $f~=~0.005$) or \\
+\>                                              \> {\em distance} (maximum absolute displacement in \AA, \\
+\>                                              \> $10^{-6}~\le~f~\le~0.1$, default $f~=~0.005$); \\
+\>                                              \> the optional stepping, $s$, default is $\delta t_{instanteneous}^{2}$; the lowest {\em string} \\
 \>                                              \> CGM minimised configuration during equilibration is saved \\
 \>                                              \> in a file, CFGMIN which has the same format as CONFIG \\
 \>                                              \> \\
@@ -526,13 +528,16 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf no vom}                                 \> ignore Centre of Mass momentum removal during the simulation \\
 \>                                              \> \\
-\> {\bf optim}ise {\em string} $f$              \> minimise the system configuration at start during equilibration \\
+\> {\bf optim}ise {\em string} $f$ $s$          \> minimise the system configuration at start during equilibration \\
 \>                                              \> using conjugate gradient method (CGM) with respect to the \\
-\>                                              \> criterion, {\em string}, and tolerance, $f$, where the criterion can only \\
-\>                                              \> be {\em force} ($1~\le~f~\le~1000$, default $f~=~50$) or {\em energy} \\
-\>                                              \> ($0~<~f~\le~0.01$, default $f~=~0.005$) or {\em distance} (maximum \\
-\>                                              \> absolute displacement in \AA) ($10^{-6}~\le~f~\le~0.1$, default \\
-\>                                              \> $f~=~0.005$); the CGM minimised configuration is saved \\
+\>                                              \> criterion, {\em string}, tolerance, $f$ and optional CGM \\
+\>                                              \> stepping, $s$, where this criterion can only be: \\
+\>                                              \> {\em force} ($1~\le~f~\le~1000$, default $f~=~50$) or \\
+\>                                              \> {\em energy} ($0~<~f~\le~0.01$, default $f~=~0.005$) or \\
+\>                                              \> {\em distance} (maximum absolute displacement in \AA, \\
+\>                                              \> $10^{-6}~\le~f~\le~0.1$, default $f~=~0.005$); \\
+\>                                              \> the optional stepping, $s$, default is $\delta t_{instanteneous}^{2}$; \\
+\>                                              \> the CGM minimised configuration is saved \\
 \>                                              \> in a file, CFGMIN which has the same format as CONFIG \\
 \>                                              \> \\
 \> {\bf pad}ding $f$  ($\equiv$ {\bf rpad} $f$) \> set optional padding to the major cutoff, \\
@@ -598,7 +603,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf regaus}s (every) $n$                    \> resample the instantaneous system momenta distribution \\
 \>                                              \> every $n$ steps during equilibration \\
-\>                                              \> (with respect to the last equilibration step) \\
+\>                                              \> (with respect to the last equilibration step), {\bf N.B.} \\
+\>                                              \> any thermostat and barostat memory is also erased \\
 \>                                              \> \\
 \> {\bf replay} (history)                       \> abort simulation and replay HISTORY to recalculate structural \\
 \>                                              \> properties such as RDFs, z-density profiles, defects and \\
@@ -621,8 +627,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf rcut} $f$  ($\equiv$ {\bf cut}off $f$)  \> act exactly the same as the {\bf cut}off $f$ option above \\
 \>                                              \> \\
-\> {\bf rlxtol} $f$                             \> set tolerance for relaxed shell model to $f$ \\
-\>                                              \> (default $f~=~1$ in D~\AA~~ps$^{-2}$) \\
+\> {\bf rlxtol} $f$ $s$                         \> set the CGM tolerance (on total force gradient), $f$, for the \\
+\>                                              \> relaxed shell model (default $f~=~1$ in D~\AA~~ps$^{-2}$) and \\
+\>                                              \> optional CGM stepping, $s$, (default $Max(k_{core-shell})/2$) \\
 \>                                              \> \\
 \> {\bf rpad} $f$  ($\equiv$ {\bf pad}ding $f$) \> act exactly the same as {\bf pad}ding $f$ option above \\
 \>                                              \> \\
@@ -630,7 +637,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf scale} (temperature) (every) $n$        \> rescale system temperature every $n$ steps during equilibration \\
 \>                                              \> (with respect to the last equilibration step, \\
-\>                                              \> (atomic velocities are scaled collectively) \\
+\>                                              \> (atomic velocities are scaled collectively), {\bf N.B.} \\
+\>                                              \> any thermostat and barostat memory is also erased \\
 \>                                              \> \\
 \> {\bf seed} $n_{1}~n_{2}~n_{3}$               \> seed control to the random number generator used in the \\
 \>                                              \> generation of gaussian distributions and stochastic processes \\
@@ -718,8 +726,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf zden} (sampling) (every) $f$            \> calculate and collect the Z-density profile \\
 \>                                              \> every $f$ timesteps (default $f~=~1$) \\
 \>                                              \> \\
-\> {\bf zero}                                   \> perform zero temperature MD run (reset target system \\
-\>                                              \> temperature $10$ Kelvin) \\
+\> {\bf zero} (fire)                            \> perform a dynamic "zero temperature" optimisation MD run \\
+\>                                              \> if $fire$ is specified then target temperature is assumed \\
+\>                                              \> else target system temperature is reset to $10$ Kelvin \\
 \>                                              \> \\
 \>                                              \> \\
 \> *** SPECIAL OPTIONS ***                      \> *** SPECIAL OPTIONS *** \\
@@ -787,11 +796,10 @@ exclusive} alternatives) are {\bf mandatory}:
 \item {\bf rcut} ($\equiv$ {\bf cut}): specifying the short range forces cutoff.
 {\bf It is compulsory in all circumstances as all \D algorithms are
 directly or indirectly dependent on it.}
-\item {\bf temp} or {\bf zero}: specifying the system temperature
-(not mutually exclusive but if {\bf temp} has to proceed
-{\bf zero} in CONTROL if {\bf zero} is needed.  {\bf Use only one
-instance of these in CONTROL!}  If a "dry run" is performed (see
-below) these can be omitted.
+\item {\bf temp} or {\bf zero}: both may specify the system target temperature.
+Though not mutually exclusive aim to specify {\bf temp} and {\bf zero} after
+in CONTROL.  {\bf Use only one instance of these in CONTROL!}
+If a "dry run" is performed (see below) these can be omitted.
 \item {\bf timestep} or {\bf variable timestep}: specifying the
 simulation timestep.  {\bf Use only one instance of these in
 CONTROL!} If a "dry run" is performed (see below) and a timestep
@@ -829,15 +837,16 @@ start only!).  This is equvalent to using the {\bf optim}ise
 directive.  In this way it can be used as a configuration
 optimiser at the beginning of the equilibration period or when
 a "dry run" ({\bf steps}~$= 0$) is performed (i.e. equilibrate
-without any actual dynamics!).  {\bf Note} that the CGM search
-algorithm stepping uses a step that is proportional to the
-instantaneous value of the {\bf timestep} and thus its usage in
+without any actual dynamics!).  {\bf Note} that the default CGM search
+algorithm stepping uses a step that is proportional to the square of
+the instantaneous value of the {\bf timestep} and thus its usage in
 may lead to algorithm's instability and failure in the cases when
 optimisation is applied before any dynamics occurs in a model
 system in an unphysical state (i.e. much away from equilibrium)
 and/or with an ill/badly defined forcefield for the state.  Hence,
-special care should be taken when the option is used as
-{\bf optimise} or/and in a "dry run" mode with a timestep value too large for the model system state.
+special care (specifying the optional CGM stepping for example)
+should be taken when the option is used, especially as {\bf optimise}
+or/and in a "dry run" mode with a timestep value too large for the model system state.
 
 \item The {\bf variable timestep} (or also {\bf timestep variable})
 option requires the user to specify an initial guess for a
@@ -1173,11 +1182,13 @@ manner.  Dsiplacemets of atoms from their original position at
 the end of equilibration (the start of statistics), $t~=0~$, is
 carried out at each timestep.
 
-\item The tolerance for relaxed shell model {\bf rlxtol}, is a last
-resort option to aid shell relaxation of systems with very energetic
-and/or rough potential surface.  Users are advised to use it with
-caution, should there really need be, as the use of high values may
-result in physically incorrect dynamics.
+\item The tolerance and stepping for relaxed shell model {\bf rlxtol},
+is a last resort option to aid shell relaxation of systems with very
+energetic and/or rough potential surface.  Users are advised to use
+it with caution, should there really need be, as the use of high values
+for the tolerance (default of 1) may result in physically incorrect
+dynamics and small stepping (default $Max(k_{core-shell})/2$) to
+expensive force evaluations.
 
 \item The difference between the directives {\bf ewald} and {\bf spme}
 is only in the {\bf ewald/spme sum} directive, in which the

@@ -6,7 +6,7 @@ Module mpoles_module
 ! multipoles
 !
 ! copyright - daresbury laboratory
-! author    - h.a.boateng & i.t.todorov march 2016
+! author    - h.a.boateng & i.t.todorov november 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,7 +24,8 @@ Module mpoles_module
 
 ! variables for multipolar interactions
 
-  Logical,           Save :: induce,gear,aspc,lstsq
+  Logical,           Save :: induce=.false. , &
+                             gear,aspc,lstsq
   Integer,           Save :: numcof,politer
   Real( Kind = wp ), Save :: convcrit,enepol
 

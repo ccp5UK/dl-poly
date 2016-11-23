@@ -12,7 +12,7 @@ Subroutine set_temperature           &
 ! dl_poly_4 subroutine for setting the initial system temperature
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2016
+! author    - i.t.todorov november 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,7 +22,7 @@ Subroutine set_temperature           &
   Use site_module,        Only : dofsit
   Use config_module,      Only : imcon,natms,nlast,nfree,lsite,  &
                                  lsi,lsa,ltg,lfrzn,lfree,lstfre, &
-                                 atmnam,weight,vxx,vyy,vzz
+                                 weight,vxx,vyy,vzz
   Use dpd_module,         Only : keydpd
   Use rigid_bodies_module
   Use core_shell_module,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl

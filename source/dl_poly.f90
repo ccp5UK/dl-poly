@@ -180,7 +180,8 @@ Program dl_poly
                        rvdw,rmet,rbin,rcter,rctbp,rcfbp,          &
                        alpha,epsq,fmax,                           &
                        width,mndis,mxdis,mxstp,wthpse,tmppse,     &
-                       rlx_tol,min_tol,tolnce,quattol,rdef,rrsd,  &
+                       rlx_tol(1:2),min_tol(1:2),                 &
+                       tolnce,quattol,rdef,rrsd,                  &
                        pdplnc,emd,vmx,vmy,vmz,temp,sigma,         &
                        press,strext(1:9),ten,                     &
                        taut,chi,soft,gama,taup,tai,               &
