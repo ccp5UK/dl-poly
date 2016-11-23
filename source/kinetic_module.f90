@@ -422,7 +422,7 @@ Contains
     Real( Kind = wp ), Intent(   Out ) :: cmm(0:3)
 
     Integer           :: fail,i,j,k
-    Real( Kind = wp ) :: com
+    Real( Kind = wp ) :: mass,r(1:3)
 
     Real( Kind = wp ), Allocatable :: mol(:,:)
 
@@ -435,7 +435,7 @@ Contains
 
 ! Initialise
 
-    com  = 0.0_wp
+    mass = 0.0_wp
     cmm  = 0.0_wp
 
     mol = 0.0_wp
@@ -453,21 +453,30 @@ Contains
 
     If (mxnode > 1) Call gsum(mol)
 
-    mol(:,1) = xxx(:)-xxx(1)
-    mol(:,2) = yyy(:)-yyy(1)
-    mol(:,3) = zzz(:)-zzz(1)
+    r(1) = mol(1,1)
+    r(2) = mol(1,2)
+    r(3) = mol(1,3)
+
+    mol(:,1) = mol(:,1)-r(1)
+    mol(:,2) = mol(:,2)-r(2)
+    mol(:,3) = mol(:,3)-r(3)
 
     k=ifinish-istart+1
     Call images(imcon,cell,k,mol(:,1),mol(:,2),mol(:,3))
-    Do i=1,ifinish-istart+1
-       com    = com    + mol(i,0)
+
+    mol(:,1) = mol(:,1)+r(1)
+    mol(:,2) = mol(:,2)+r(2)
+    mol(:,3) = mol(:,3)+r(3)
+
+    Do i=1,k
+       mass   = mass   + mol(i,0)
        cmm(0) = cmm(0) + mol(i,0)*Real(lfrzn(i)-1,wp)
        cmm(1) = cmm(1) + mol(i,0)*mol(i,1)
        cmm(2) = cmm(2) + mol(i,0)*mol(i,2)
        cmm(3) = cmm(3) + mol(i,0)*mol(i,3)
     End Do
 
-    If (cmm(0) >= zero_plus) cmm(1:3) = cmm(1:3) / com
+    If (cmm(0) >= zero_plus) cmm(1:3) = cmm(1:3) / mass
 
     fail = 0
     Deallocate (mol, Stat = fail)

@@ -5,11 +5,12 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
 ! dl_poly_4 subroutine for setting impact on a particle
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2013
+! author    - i.t.todorov november 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
+  Use setup_module,        Only : eu_ev
   Use comms_module,        Only : mxnode,gcheck
   Use config_module,       Only : natms,nlast,nfree,          &
                                   lfrzn,lfree,lstfre,lsi,lsa, &
@@ -35,7 +36,7 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
   i=local_index(imd,nlast,lsi,lsa)
   If (i > 0 .and. i <= natms) Then
      If (lfrzn(i) == 0 .and. lfree(i) == 0 .and. All(listshl(2,1:ntshl) /= imd)) Then
-        tmp=Sqrt(2000.0_wp*emd*9648.530821_wp/weight(i)/(vmx**2+vmy**2+vmz**2)) !emd is in keV
+        tmp=Sqrt(2000.0_wp*emd*eu_ev/weight(i)/(vmx**2+vmy**2+vmz**2)) !emd is in keV=1000*eu_ev
         vxx(i)=tmp*vmx
         vyy(i)=tmp*vmy
         vzz(i)=tmp*vmz

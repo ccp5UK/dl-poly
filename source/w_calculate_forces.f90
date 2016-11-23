@@ -127,7 +127,7 @@
 
 ! Apply external field
 
-     If (keyfld > 0) Call external_field_apply(keyshl,time,engfld,virfld)
+     If (keyfld > 0) Call external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
 
 ! Apply PLUMED driven dynamics
 

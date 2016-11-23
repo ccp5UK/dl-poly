@@ -75,3 +75,39 @@ Subroutine rdf_collect(iatm,rcut,rrt)
   End Do
 
 End Subroutine rdf_collect
+
+Subroutine upr_collect(rrt)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for accumulating statistic for UPR RDFs
+!
+! Note: to be used in external_field_apply
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov & a.brukhno november 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+  Use setup_module,  Only : mxgupr
+  Use rdf_module,    Only : ncfupr,rupr,upr
+
+  Implicit None
+
+  Real( Kind = wp ), Intent( In    ) :: rrt
+
+  Integer           :: ll
+  Real( Kind = wp ) :: rdelr
+
+! set cutoff condition for pair forces and grid interval for rdf tables
+
+  rdelr= Real(mxgupr,wp)/rupr
+
+  If (rrt < rupr) Then ! apply truncation of potential
+     ll=Min(1+Int(rrt*rdelr),mxgupr)
+     upr(ll) = upr(ll) + 1.0_wp ! accumulate correlation
+     ncfupr = ncfupr + 1        ! Increment sample
+  End If
+
+End Subroutine upr_collect

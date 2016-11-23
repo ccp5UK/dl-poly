@@ -314,3 +314,77 @@ Subroutine rdf_compute(lpana,rcut,temp)
   End If
 
 End Subroutine rdf_compute
+
+Subroutine upr_compute()
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for calculating radial distribution function
+! from accumulated data for umbrella sampled two COMs separation (upmf)
+!
+! to be used in exernal_field_apply & statistics_result
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov & a.brukhno november 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds_f90
+  Use comms_module,  Only : idnode,mxnode,gsum
+  Use setup_module,  Only : fourpi,nrdfdt,mxgupr
+  Use config_module, Only : cfgname,volm
+  Use rdf_module,    Only : rupr,upr
+
+
+  Implicit None
+
+  Integer           :: i
+  Real( Kind = wp ) :: delr,rdlr,factor1,rrr,dvol,gofr,sum0,sum1
+
+! grid interval for rdf tables
+
+  delr = rupr/Real(mxgupr,wp)
+  rdlr = 1.0_wp/delr
+
+! open RDF file and Write headers
+
+  If (idnode == 0) Then
+     Open(Unit=nrdfdt, File='UPRDAT', Status='replace')
+     Write(nrdfdt,'(2a)') '# ',cfgname
+     Write(nrdfdt,'(a)')  '# RDF for two COMs (umbrella sampling)'
+     Write(nrdfdt,'(a,2i10,2f12.6,e15.6,/)') '#',1,mxgupr,rupr,delr,volm
+  End If
+
+! global sum of data on all nodes
+
+  If (mxnode > 1) Call gsum(upr(1:mxgupr))
+
+! get normalisation factor
+
+  factor1 = Sum(upr(1:mxgupr))
+
+! running integration of rdf
+
+  sum0 = 0.0_wp
+  sum1 = 0.0_wp
+
+! loop over distances
+
+  Do i=1,mxgupr
+     gofr = upr(i)/factor1
+     sum0 = sum0 + gofr
+
+     rrr  = (Real(i,wp)-0.5_wp)*delr
+     dvol = fourpi*delr*(rrr**2+delr**2/12.0_wp)
+     gofr = gofr*volm/dvol
+     sum1 = sum1 + gofr
+
+! print out information
+
+     If (idnode == 0) Write(nrdfdt,"(1p,4e15.6)") rrr,gofr
+     !If (idnode == 0) Write(nrdfdt,"(1p,4e15.6)") rrr,gofr,sum0,sum1
+  End Do
+
+  If (idnode == 0) Close(Unit=nrdfdt)
+
+End Subroutine upr_compute

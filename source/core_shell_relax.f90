@@ -8,12 +8,13 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov & w.smith august 2014
 ! contrib   - a.m.elena february 2017
+! contrib   - i.t.todorov february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,   Only : idnode,mxnode,gsum
-  Use setup_module,   Only : nrite,mxatms,mxatdm,mxshl,engunit,output
+  Use setup_module,   Only : nrite,mxatims,mxatdm,mxshl,engunit,output,zero_plus
   Use config_module,  Only : natms,nlast,lsi,lsa, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use parse_module,   Only : strip_blanks,lower_case
@@ -25,7 +26,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
   Logical,           Intent( In    ) :: l_str
   Logical,           Intent( InOut ) :: relaxed,lrdf
   Integer,           Intent( In    ) :: megshl
-  Real( Kind = wp ), Intent( In    ) :: rlx_tol,stpcfg
+  Real( Kind = wp ), Intent( In    ) :: rlx_tol(1:2),stpcfg
 
   Logical,           Save :: newjob = .true. , l_rdf
   Integer,           Save :: keyopt
@@ -78,9 +79,21 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
      End If
   End If
 
-! step length for relaxation
+! Step length for relaxation
 
-  step=0.5_wp/smax
+  If (rlx_tol(2) > zero_plus) Then
+
+! Optionally specified
+
+     step=rlx_tol(2)
+
+  Else
+
+! default if unspecified
+
+     step=0.5_wp/smax
+
+  End If
 
   If (keyopt == 0) Then
 
@@ -102,7 +115,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
      If (l_str .and. idnode == 0) Then
         Write(nrite, Fmt=*)
         Write(nrite,'(1x,a,6x,a,10x,a,11x,a,9x,a,1p,e12.4)') &
-             'Relaxing shells to cores:','pass','eng_tot','grad_tol','tol=', rlx_tol
+             'Relaxing shells to cores:','pass','eng_tot','grad_tol','tol=', rlx_tol(1)
         Write(nrite,"(1x,130('-'))")
      End If
   End If
@@ -144,7 +157,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 ! Get grad_tol & verify relaxed condition
 
   grad_tol=grad/Real(megshl,wp)
-  relaxed=(grad_tol < rlx_tol)
+  relaxed=(grad_tol < rlx_tol(1))
 
 ! CHECK FOR CONVERGENCE
 
@@ -164,12 +177,12 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
      If (Nint(passshl(2)) == 0) Then
         If (Nint(passshl(1)) >= 10*mxpass) Then
-           Call warning(330,rlx_tol,grad_pass,0.0_wp)
+           Call warning(330,rlx_tol(1),grad_pass,0.0_wp)
            Call error(474)
         End If
      Else
         If (Nint(passshl(1)) >= mxpass) Then
-           Call warning(330,rlx_tol,grad_pass,0.0_wp)
+           Call warning(330,rlx_tol(1),grad_pass,0.0_wp)
            Call error(474)
         End If
      End If
@@ -299,7 +312,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
      If (Mod(i,25) == 0) Then
         Write(nrite,"(1x,130('-'))")
         Write(nrite,'(1x,a,6x,a,10x,a,11x,a,9x,a,1p,e12.4)') &
-             'Relaxing shells to cores:','pass','eng_tot','grad_tol','tol=', rlx_tol
+             'Relaxing shells to cores:','pass','eng_tot','grad_tol','tol=', rlx_tol(1)
         Write(nrite,"(1x,130('-'))")
 
         If (idnode == 0) Then

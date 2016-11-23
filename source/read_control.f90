@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2016
+! author    - i.t.todorov november 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -91,25 +91,25 @@ Subroutine read_control                                &
                                              nsrsd,isrsd,          &
                                              ndump
 
-  Real( Kind = wp ),      Intent(   Out ) :: emd,vmx,vmy,vmz,         &
-                                             temp,press,strext(1:9),  &
-                                             tstep,mndis,mxdis,mxstp, &
-                                             taut,chi,soft,gama,      &
-                                             taup,tai,ten,            &
-                                             wthpse,tmppse,min_tol,   &
-                                             fmax,epsq,rlx_tol,       &
-                                             tolnce,quattol,          &
-                                             rdef,rrsd,pdplnc,        &
+  Real( Kind = wp ),      Intent(   Out ) :: emd,vmx,vmy,vmz,            &
+                                             temp,press,strext(1:9),     &
+                                             tstep,mndis,mxdis,mxstp,    &
+                                             taut,chi,soft,gama,         &
+                                             taup,tai,ten,               &
+                                             wthpse,tmppse,min_tol(1:2), &
+                                             fmax,epsq,rlx_tol(1:2),     &
+                                             tolnce,quattol,             &
+                                             rdef,rrsd,pdplnc,           &
                                              timjob,timcls
 
 
-  Logical                                 :: limp,lvv,lens,lforc, &
-                                             ltemp,lpres,lstrext, &
-                                             lstep,lplumed,safe,  &
+  Logical                                 :: limp,lvv,lens,lforc,     &
+                                             ltemp,l_0,lpres,lstrext, &
+                                             lstep,lplumed,safe,      &
                                              l_timjob,l_timcls
 
   Character( Len = 200 )                  :: record
-  Character( Len = 40  )                  :: word,word1,word2,akey
+  Character( Len = 40  )                  :: word,word1,word2,word3,akey
 
   Integer                                 :: i,j,k,itmp,nstana,grdana,grdbnd,grdang, &
                                              grddih,grdinv,nstall
@@ -199,7 +199,7 @@ Subroutine read_control                                &
   lmin   = .false.
   keymin = -1
   nstmin = 0
-  min_tol= 0.0_wp
+  min_tol(1:2) = (/ 0.0_wp , -1.0_wp /) ! tolerance, optional CGM step
 
 ! default switch for regaussing temperature and default number of
 ! steps when to be applied
@@ -216,6 +216,7 @@ Subroutine read_control                                &
 ! default switch for zero temperature optimisation
 
   lzero = .false.
+  l_0   = .false.
 
 ! default integration type (VV), ensemble switch (not defined) and key
 
@@ -271,9 +272,9 @@ Subroutine read_control                                &
   mxquat =100
   quattol=1.0e-8_wp
 
-! Default relaxed shell model tolerance
+! Default relaxed shell model tolerance and optional CGM step
 
-  rlx_tol = 1.0_wp
+  rlx_tol(1:2) = (/ 1.0_wp , -1.0_wp /)
 
 ! proceed normal simulation
 
@@ -720,22 +721,28 @@ Subroutine read_control                                &
 
         ltemp = .true.
         Call get_word(record,word)
-        If (.not.lzero) Then
-           temp = Abs(word_2_real(word))
-           If (idnode == 0) Write(nrite,"(/,1x,'simulation temperature (K)  ',6x,1p,e12.4)") temp
-        End If
+        temp = Abs(word_2_real(word))
+        If (idnode == 0) Write(nrite,"(/,1x,'simulation temperature (K)  ',6x,1p,e12.4)") temp
 
 ! read zero temperature optimisation
 
      Else If (word(1:4) == 'zero') Then
 
         lzero  = .true.
-        ltemp  = .true.
-        ltscal = .false.
-        temp   = 10.0_wp
+        If (idnode == 0) Write(nrite,"(/,1x,a)") 'zero K optimisation requested'
 
-        If (idnode == 0) Write(nrite,"(/,1x,'zero K optimisation requested', &
-           & /,1x,'actual temperature reset to 10 Kelvin')")
+        Call get_word(record,word)
+        l_0 = (word(1:4) == 'fire')
+
+        If (l_0) Then
+           If (idnode == 0) &
+  Write(nrite,"(1x,a)") 'fire option on - actual temperature will reset to 10 Kelvin if no target tempreature is specified'
+        Else
+           ltemp  = .true.
+           temp = 10.0_wp
+           If (idnode == 0) &
+  Write(nrite,"(1x,a)") 'fire option off - actual temperature reset to 10 Kelvin'
+        End If
 
 ! read pressure
 
@@ -963,28 +970,31 @@ Subroutine read_control                                &
         itmp=0
         If      (keymin == 0) Then
            If (tmp < 1.0_wp .or. tmp > 1000.0_wp) Then
-              min_tol=50.0_wp
+              min_tol(1)=50.0_wp
               itmp=1
            Else
-              min_tol=tmp
+              min_tol(1)=tmp
            End If
         Else If (keymin == 1) Then
            If (tmp < zero_plus .or. tmp > 0.01_wp) Then
-              min_tol=0.005_wp
+              min_tol(1)=0.005_wp
               itmp=1
            Else
               min_tol=tmp
            End If
         Else If (keymin == 2) Then
            If (tmp < 1.0e-6_wp .or. tmp > 0.1_wp) Then
-              min_tol=0.005_wp
+              min_tol(1)=0.005_wp
               itmp=1
            Else
-              min_tol=tmp
+              min_tol(1)=tmp
            End If
         End If
 
-        If (itmp == 1) Call warning(360,tmp,min_tol,0.0_wp)
+        If (itmp == 1) Call warning(360,tmp,min_tol(1),0.0_wp)
+
+        Call get_word(record,word3)
+        min_tol(2) = word_2_real(word3,-1.0_wp)
 
         If (word2(1:5) == 'minim') Then
            If (idnode == 0) Write(nrite,                                &
@@ -992,14 +1002,20 @@ Subroutine read_control                                &
               &   /,1x,'minimisation criterion        ',1x,a8,          &
               &   /,1x,'minimisation frequency (steps)',1x,i10,         &
               &   /,1x,'minimisation tolerance        ',4x,1p,e12.4)")  &
-              word1(1:8),nstmin,min_tol
+              word1(1:8),nstmin,min_tol(1)
+           If (min_tol(2) > zero_plus .and. idnode == 0) Write(nrite,   &
+              & "(  1x,'minimisation CGM step         ',4x,1p,e12.4)") min_tol(2)
         Else
            If (idnode == 0) Write(nrite,                               &
               & "(/,1x,'optimisation at start',                        &
               &   /,1x,'optimisation criterion        ',1x,a8,         &
               &   /,1x,'optimisation tolerance        ',4x,1p,e12.4)") &
-              word1(1:8),min_tol
+              word1(1:8),min_tol(1)
+           If (min_tol(2) > zero_plus .and. idnode == 0) Write(nrite,  &
+              & "(  1x,'optimisation CGM step         ',4x,1p,e12.4)") min_tol(2)
         End If
+
+
 
 ! read regauss option
 
@@ -1891,8 +1907,13 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'rlxtol') Then
 
         Call get_word(record,word)
-        rlx_tol = Max(1.0_wp,Abs(word_2_real(word)))
-        If (idnode == 0) Write(nrite,"(/,1x,'tolerance for relaxed shell model',1x,1p,e12.4)") rlx_tol
+        rlx_tol(1) = Max(1.0_wp,Abs(word_2_real(word)))
+        If (idnode == 0) Write(nrite,"(/,1x,'relaxed shell model CGM tolerance',1x,1p,e12.4)") rlx_tol(1)
+
+        Call get_word(record,word1)
+        rlx_tol(2) = word_2_real(word1,-1.0_wp)
+        If (rlx_tol(2) > zero_plus .and. idnode == 0) &
+                         Write(nrite,"(/,1x,'relaxed shell model CGM step     ',1x,1p,e12.4)") rlx_tol(2)
 
 ! read maximum number of iterations in constraint algorithms
 
@@ -2699,6 +2720,12 @@ Subroutine read_control                                &
   End If
 
 !!! RESORT TO DEFAULTS IF NEED BE !!!
+
+  If (l_0 .and. (.not. ltemp)) Then ! zero K over zero fire
+     temp = 10.0_wp
+     If (idnode == 0) &
+        Write(nrite,"(/,1x,'default simulation temperature (K)',1p,e12.4)") temp
+  End If
 
   If      (nstrun == 0) Then !!! DRY RUN
 

@@ -7,8 +7,7 @@ Subroutine metal_forces &
 ! for EAM and FST interactions using verlet neighbour list
 !
 ! copyright - daresbury laboratory
-! author    - w.smith august 1998
-! amended   - i.t.todorov march 2016
+! author    - w.smith & i.t.todorov november 2016
 ! contrib   - r.davidchak (eeam) june 2012
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -375,8 +374,8 @@ Subroutine metal_forces &
 
 ! interpolation parameters
 
-              If (rrr <= vmet(3,k0,1) .or. & ! Next covers the FST density!
-                  (keypot /= 0 .and. rrr <= dmet(3,k0,1))) Then
+              If (rrr <= vmet(3,k0,1) .or. & ! Next covers the FST density - merge used to avoid table check beyond bound!
+                  (keypot /= 0 .and. rrr <= dmet(3,Merge(k0,1,keypot /= 0),1))) Then
 
                  rdr = 1.0_wp/vmet(4,k0,1)
                  rr1 = rrr - vmet(2,k0,1)

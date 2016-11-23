@@ -10,7 +10,7 @@ Subroutine scale_temperature(sigma,degtra,degrot,degfre)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith july 1992
-! amended   - i.t.todorov february 2015
+! amended   - i.t.todorov november 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -429,77 +429,89 @@ Subroutine scale_temperature(sigma,degtra,degrot,degfre)
 
 ! apply temperature scaling
 
-  tmp=1.0_wp
-  If (engke+engrot > 1.0e-6_wp .and. sigma > zero_plus) tmp=Sqrt(sigma/(engke+engrot))
+  If (engke+engrot > 1.0e-6_wp .and. sigma > zero_plus) Then
+     tmp=Sqrt(sigma/(engke+engrot))
 
-  If (megrgd > 0) Then
-     Do j=1,nfree
-        i=lstfre(j)
+     If (megrgd > 0) Then
+        Do j=1,nfree
+           i=lstfre(j)
 
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           vxx(i)=vxx(i)*tmp
-           vyy(i)=vyy(i)*tmp
-           vzz(i)=vzz(i)*tmp
-        End If
-     End Do
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
+              vxx(i)=vxx(i)*tmp
+              vyy(i)=vyy(i)*tmp
+              vzz(i)=vzz(i)*tmp
+           End If
+        End Do
 
-     Do irgd=1,ntrgd
-        rgdtyp=listrgd(0,irgd)
+        Do irgd=1,ntrgd
+           rgdtyp=listrgd(0,irgd)
 
-        lrgd=listrgd(-1,irgd)
-        If (rgdfrz(0,rgdtyp) < lrgd) Then
+           lrgd=listrgd(-1,irgd)
+           If (rgdfrz(0,rgdtyp) < lrgd) Then
 
 ! new angular velocity
 
-           rgdoxx(irgd)=rgdoxx(irgd)*tmp
-           rgdoyy(irgd)=rgdoyy(irgd)*tmp
-           rgdozz(irgd)=rgdozz(irgd)*tmp
+              rgdoxx(irgd)=rgdoxx(irgd)*tmp
+              rgdoyy(irgd)=rgdoyy(irgd)*tmp
+              rgdozz(irgd)=rgdozz(irgd)*tmp
 
 ! new translational velocity
 
-           If (rgdfrz(0,rgdtyp) == 0) Then
-              rgdvxx(irgd)=rgdvxx(irgd)*tmp
-              rgdvyy(irgd)=rgdvyy(irgd)*tmp
-              rgdvzz(irgd)=rgdvzz(irgd)*tmp
-           End If
+              If (rgdfrz(0,rgdtyp) == 0) Then
+                 rgdvxx(irgd)=rgdvxx(irgd)*tmp
+                 rgdvyy(irgd)=rgdvyy(irgd)*tmp
+                 rgdvzz(irgd)=rgdvzz(irgd)*tmp
+              End If
 
 ! new rotational matrix
 
-           Call getrotmat(q0(irgd),q1(irgd),q2(irgd),q3(irgd),rot)
+              Call getrotmat(q0(irgd),q1(irgd),q2(irgd),q3(irgd),rot)
 
-           Do jrgd=1,lrgd
-              If (rgdfrz(jrgd,rgdtyp) == 0) Then ! Apply restrictions
-                 i=indrgd(jrgd,irgd) ! local index of particle/site
+              Do jrgd=1,lrgd
+                 If (rgdfrz(jrgd,rgdtyp) == 0) Then ! Apply restrictions
+                    i=indrgd(jrgd,irgd) ! local index of particle/site
 
-                 If (i <= natms) Then
-                    x=rgdx(jrgd,rgdtyp)
-                    y=rgdy(jrgd,rgdtyp)
-                    z=rgdz(jrgd,rgdtyp)
+                    If (i <= natms) Then
+                       x=rgdx(jrgd,rgdtyp)
+                       y=rgdy(jrgd,rgdtyp)
+                       z=rgdz(jrgd,rgdtyp)
 
 ! site velocity in body frame
 
-                    wxx=rgdoyy(irgd)*z-rgdozz(irgd)*y
-                    wyy=rgdozz(irgd)*x-rgdoxx(irgd)*z
-                    wzz=rgdoxx(irgd)*y-rgdoyy(irgd)*x
+                       wxx=rgdoyy(irgd)*z-rgdozz(irgd)*y
+                       wyy=rgdozz(irgd)*x-rgdoxx(irgd)*z
+                       wzz=rgdoxx(irgd)*y-rgdoyy(irgd)*x
 
 ! new atomic velocities in lab frame
 
-                    vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rgdvxx(irgd)
-                    vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rgdvyy(irgd)
-                    vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rgdvzz(irgd)
+                       vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rgdvxx(irgd)
+                       vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rgdvyy(irgd)
+                       vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rgdvzz(irgd)
+                    End If
                  End If
-              End If
-           End Do
-        End If
-     End Do
-  Else
+              End Do
+           End If
+        End Do
+     Else
+        Do i=1,natms
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
+              vxx(i)=vxx(i)*tmp
+              vyy(i)=vyy(i)*tmp
+              vzz(i)=vzz(i)*tmp
+           End If
+        End Do
+     End If
+  Else ! sigma must be zero
      Do i=1,natms
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           vxx(i)=vxx(i)*tmp
-           vyy(i)=vyy(i)*tmp
-           vzz(i)=vzz(i)*tmp
-        End If
+        vxx(i)=0.0_wp ; vyy(i)=0.0_wp ; vzz(i)=0.0_wp
      End Do
+
+     If (megrgd > 0) Then
+        Do irgd=1,ntrgd
+           rgdvxx(irgd)=0.0_wp ; rgdvyy(irgd)=0.0_wp ; rgdvzz(irgd)=0.0_wp
+           rgdoxx(irgd)=0.0_wp ; rgdoyy(irgd)=0.0_wp ; rgdozz(irgd)=0.0_wp
+        End Do
+     End If
   End If
 
   Deallocate (buffer, Stat=fail)
