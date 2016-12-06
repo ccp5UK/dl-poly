@@ -171,7 +171,7 @@ Module setup_module
     mxter,mxpter,mxgter,mxgrid,                                 &
     mxtana,mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,              &
     mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,                    &
-    mxpfld,mxgupr,                                              &
+    mxpfld,mxgusr,                                              &
     mxstak,mxnstk,mxlist,mxcell,mxatms,mxatdm,                  &
     mxbfdp,mxbfss,mxbfxp,mxbfsh,mxbuff
 

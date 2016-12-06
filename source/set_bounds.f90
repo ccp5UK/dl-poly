@@ -21,7 +21,7 @@ Subroutine set_bounds                                 &
   Use config_module,      Only : imcon,imc_n,cfgname,cell,volm
   Use vnl_module,         Only : llvnl ! Depends on l_str,lsim & rpad
   Use msd_module
-  Use rdf_module,         Only : rupr
+  Use rdf_module,         Only : rusr
   Use kim_module,         Only : kim
   Use bonds_module,       Only : rcbnd
   Use tersoff_module,     Only : potter
@@ -36,7 +36,7 @@ Subroutine set_bounds                                 &
   Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rpad,rlnk
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
 
-  Logical           :: l_upr,l_n_r,lzdn,lext
+  Logical           :: l_usr,l_n_r,lzdn,lext
   Integer           :: megatm,ilx,ily,ilz,qlx,qly,qlz, &
                        mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
   Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
@@ -58,7 +58,7 @@ Subroutine set_bounds                                 &
            mxsite,mxatyp,megatm,mxtmls,mxexcl,       &
            mtshl,mxtshl,mxshl,mxfshl,                &
            mtcons,mxtcon,mxcons,mxfcon,              &
-           mxtpmf,mxpmf,mxfpmf,l_upr,                &
+           mxtpmf,mxpmf,mxfpmf,l_usr,                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
            mtteth,mxtteth,mxteth,mxftet,             &
            mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,mxgbnd, &
@@ -322,19 +322,20 @@ Subroutine set_bounds                                 &
      mxgrdf = 0 ! RDF and Z-density function MUST NOT get called!!!
   End If
 
-! RDFs particulars for UPR (umbrella potential restraints)
+! RDFs particulars for USR (umbrella sampling restraints)
 
-  If (l_upr) Then
-     rupr   = 0.375_wp*width
-     mxgupr = Nint(rupr/rbin) ! 75% system shrinkage assumed
+  If (l_usr) Then
+     rusr   = 0.45_wp*width
+     mxgusr = Nint(rusr/rbin)      ! allows for up to ~75% system volume shrinkage
+     rusr   = Real(mxgusr,wp)*rbin ! round up and beautify for Andrey Brukhno's sake
   Else
-     rupr   = 0.0_wp
-     mxgupr = 0 ! decider on calling PMF RDF
+     rusr   = 0.0_wp
+     mxgusr = 0 ! decider on calling USR RDF
   End If
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgana,mxgvdw,mxgmet,mxgrdf,mxgupr,1004,Nint(rcut/delr_max)+4)
+  mxgrid = Max(mxgana,mxgvdw,mxgmet,mxgrdf,mxgusr,1004,Nint(rcut/delr_max)+4)
 
 ! grids setting and overrides
 

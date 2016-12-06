@@ -19,7 +19,6 @@ Subroutine rdf_compute(lpana,rcut,temp)
   Use config_module, Only : cfgname,volm
   Use rdf_module
 
-
   Implicit None
 
   Logical          , Intent( In    ) :: lpana
@@ -315,12 +314,12 @@ Subroutine rdf_compute(lpana,rcut,temp)
 
 End Subroutine rdf_compute
 
-Subroutine upr_compute()
+Subroutine usr_compute()
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for calculating radial distribution function
-! from accumulated data for umbrella sampled two COMs separation (upmf)
+! from accumulated data for umbrella sampled two COMs separation (ushr)
 !
 ! to be used in exernal_field_apply & statistics_result
 !
@@ -331,10 +330,9 @@ Subroutine upr_compute()
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
-  Use setup_module,  Only : fourpi,nrdfdt,mxgupr
+  Use setup_module,  Only : fourpi,nrdfdt,mxgusr
   Use config_module, Only : cfgname,volm
-  Use rdf_module,    Only : rupr,upr
-
+  Use rdf_module,    Only : ncfusr,rusr,usr
 
   Implicit None
 
@@ -343,25 +341,26 @@ Subroutine upr_compute()
 
 ! grid interval for rdf tables
 
-  delr = rupr/Real(mxgupr,wp)
+  delr = rusr/Real(mxgusr,wp)
   rdlr = 1.0_wp/delr
 
 ! open RDF file and Write headers
 
   If (idnode == 0) Then
-     Open(Unit=nrdfdt, File='UPRDAT', Status='replace')
-     Write(nrdfdt,'(2a)') '# ',cfgname
-     Write(nrdfdt,'(a)')  '# RDF for two COMs (umbrella sampling)'
-     Write(nrdfdt,'(a,2i10,2f12.6,e15.6,/)') '#',1,mxgupr,rupr,delr,volm
+     Open(Unit=nrdfdt, File='USRDAT', Status='replace')
+     Write(nrdfdt,'(2a)') '# '//cfgname
+     Write(nrdfdt,'(a)')  "# RDF for the two fragments' COMs (umbrella sampling)"
+     Write(nrdfdt,'(a,i10,f12.6,i10,e15.6,/)') '# bins, cutoff, frames, volume: ',mxgusr,rusr,ncfusr,volm
+     Write(nrdfdt,'(a)') '#'
   End If
 
 ! global sum of data on all nodes
 
-  If (mxnode > 1) Call gsum(upr(1:mxgupr))
+  If (mxnode > 1) Call gsum(usr(1:mxgusr))
 
 ! get normalisation factor
 
-  factor1 = Sum(upr(1:mxgupr))
+  factor1 = Sum(usr(1:mxgusr))
 
 ! running integration of rdf
 
@@ -370,8 +369,8 @@ Subroutine upr_compute()
 
 ! loop over distances
 
-  Do i=1,mxgupr
-     gofr = upr(i)/factor1
+  Do i=1,mxgusr
+     gofr = usr(i)/factor1
      sum0 = sum0 + gofr
 
      rrr  = (Real(i,wp)-0.5_wp)*delr
@@ -382,9 +381,13 @@ Subroutine upr_compute()
 ! print out information
 
      If (idnode == 0) Write(nrdfdt,"(1p,4e15.6)") rrr,gofr
-     !If (idnode == 0) Write(nrdfdt,"(1p,4e15.6)") rrr,gofr,sum0,sum1
+!     If (idnode == 0) Write(nrdfdt,"(1p,4e15.6)") rrr,gofr,sum0,sum1
   End Do
 
   If (idnode == 0) Close(Unit=nrdfdt)
 
-End Subroutine upr_compute
+! distribute usr between nodes
+
+  If (mxnode > 1) usr(:) = usr(:) / Real(mxnode,wp)
+
+End Subroutine usr_compute

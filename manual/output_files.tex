@@ -8,16 +8,16 @@ file - final) and REVIVE (a restart statistics accumulators
 file - final) are mandatory.  The existence of the rest
 optional upon the user specifications in CONTROL.  Some of
 these optional files are HISTORY, DEFECTS, MSDTMP, CFGMIN,
-RDFDAT, ZDNDAT, VDFDAT\_*.  These respectively contain: an
+RDFDAT, USRDAT, ZDNDAT, VDFDAT\_*.  These respectively contain: an
 incremental dump file of all atomic coordinates, velocities
 and forces; an incremental dump file of atomic coordinates
 of defected particles (interstitials) and sites (vacancies);
 an incremental dump file of of individual atomic mean square
 displacement and temperature; a dump file of all atomic
 coordinates of a minimised structure; a radial distribution
-function data file; Z-density distribution data file;
-velocity autocorrelation function data files (one file
-for each species).
+function (RDF) data file; the RDF data file for the umbrella sampling
+(harmonic restraint); Z-density distribution data file;
+velocity autocorrelation function (VAF) data files (one file for each species).
 
 \subsection{The HISTORY File}
 \label{history-file}
@@ -522,6 +522,15 @@ a sphere of radius $r$ around an atom of type `a'.
 Note that a readable version of these data is provided by the
 RDFDAT file (below).
 
+\subsubsection{Umbrella Sampling Restraint RDF}
+
+If an umbrella sampling harmonic restraint is defined in the FIELD file
+(by selecting the {\bf ushr} external field sectione) the RDF of the
+two restraint objects/fragments is printed out.  This is written from
+the subroutine {\sc usr\_compute} in {\sc rdf\_compute}.
+Note that a readable version of these data is provided by the
+USRDAT file (below).
+
 \subsubsection{Z-density Profile}
 
 If both calculation and printing of Z-density profiles have been
@@ -640,6 +649,29 @@ found in \D directory {\tt utility}) as follows,
 
 see Section~\ref{cg-intro} for completeness.
 
+\subsection{The USRDAT File}
+\label{usr-file}
+
+\begin{tabbing}
+X\=XXXXXXXX\=XXXXXXXX\=\kill
+{\bf record 1} \\
+\> {\tt \# title}  \> a100    \> file header title \\
+{\bf record 2} \\
+\> {\tt \# header} \> a100    \> file information header \\
+{\bf record 3} \\
+\> {\tt \# info}   \> a30     \> information to follow string \\
+{\bf record 3} \\
+\> {\tt bins}      \> integer \> number of bins \\
+\> {\tt cutoff}    \> real    \> cutoff in \AA \\
+\> {\tt frames}    \> integer \> number of sampled configurations \\
+\> {\tt volume}    \> real    \> average cell volue \AA$^{3}$ \\
+{\bf record 4} \\
+\> {\tt \#}        \> a1      \> a hash (\#) symbol \\
+{\bf following records} ({\em mxgusr} records) \\
+\> {\tt radius}    \> real    \> interatomic distance (\AA) \\
+\> {\tt g(r)}      \> real    \> RDF at given radius
+\end{tabbing}
+
 \subsection{The ZDNDAT File}
 \label{zdn-file}
 
@@ -710,14 +742,15 @@ for their meaning and usage in coarse grained model systems.
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 1} \\
-\> {\tt title}     \> a100    \> file header title \\
+\> {\tt \# title}  \> a100    \> file header title \\
 {\bf record 2} \\
-\> {\tt header}    \> a100    \> file information header \\
+\> {\tt \# header} \> a100    \> file information header \\
 {\bf record 3} \\
 \> {\tt \# info}   \> a30     \> information to follow string \\
 \> {\tt bins}   \> integer \> number of bins for all PDFs \\
 \> {\tt cutoff} \> real    \> cutoff in \AA~for bonds and RDFs or degrees \\
 \>                 \>         \> for angular intramolecular interactions \\
+\> {\tt frames} \> integer \> number of sampled configurations \\
 \> {\tt types}  \> integer \> number of unique types of these interactions \\
 {\bf record 4} \\
 \> {\tt \#}        \> a1      \> a hash (\#) symbol \\

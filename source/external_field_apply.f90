@@ -383,7 +383,7 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
      ia = Nint(prmfld(1))
      ib = Nint(prmfld(2))
 
-! Get molecule's weight and CoM
+! Get molecule's weight and COM
 
      Call getcom_mol(ia,ib,cmm)
 
@@ -490,14 +490,14 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
      ia = Nint(prmfld(1))
      ib = Nint(prmfld(2))
 
-! Get first molecule's weight and CoM
+! Get first molecule's weight and COM
 
      Call getcom_mol(ia,ib,cmm)
 
      ic = Nint(prmfld(3))
      id = Nint(prmfld(4))
 
-! Get second molecule's weight and CoM
+! Get second molecule's weight and COM
 
      Call getcom_mol(ic,id,cm2)
 
@@ -511,12 +511,12 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
 
      rrr=Sqrt(x(1)**2+y(1)**2+z(1)**2)
 
-! accumulate RDF for the 2 COMs every 5 timesteps and
-! refresh UPRDAT every 500 timesteps
+! accumulate RDF for the 2 COMs every 50 timesteps and
+! refresh USRDAT every 500 timesteps
 
      If ((.not.leql) .or. nstep >= nsteql) Then
-        If (Mod(nstep,5) == 0) Call upr_collect(rrr)
-        If (Mod(nstep,500) == 0) Call upr_compute()
+        If (Mod(nstep,50)  == 0) Call usr_collect(rrr)
+        If (Mod(nstep,500) == 0) Call usr_compute()
      End If
 
 ! get force magnitude
