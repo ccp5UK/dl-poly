@@ -11,7 +11,7 @@ Subroutine scan_control                                    &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2016
+! author    - i.t.todorov november 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
@@ -52,7 +52,7 @@ Subroutine scan_control                                    &
   Integer,           Parameter :: mxspl_def = 8,        & ! default spline for SPME (4 & 6 possible)
                                   mxspl_min = 3           ! minimum spline order, needed for derivatives of forces
   Real( Kind = wp ), Parameter :: rcut_def  = 1.0_wp  , & ! minimum real space cutoff
-                                  rbin_def  = 0.05_wp , & ! default bin size
+                                  rbin_def  = 0.05_wp , & ! default bin size (RDF/USR & z-density)
                                   rcbnd_def = 2.5_wp      ! minimum bond length for bond analysis
 
 ! default reading indices options

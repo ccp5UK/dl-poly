@@ -4211,7 +4211,7 @@ Subroutine read_field                   &
         Call get_word(record,word)
         nfld=0
         If (word(1:1) /= '#' .and. word(1:1) /= ' ') nfld=Nint(word_2_real(word))
-        If (nfld <= 0) nfld=5
+        If (nfld <= 0) nfld=6
 
         word(1:1)='#'
         Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -4254,7 +4254,7 @@ Subroutine read_field                   &
            keyfld=11
         Else If (keyword == 'osel') Then
            keyfld=12
-        Else If (keyword == 'uphf') Then
+        Else If (keyword == 'ushr') Then
            keyfld=13
         Else
 

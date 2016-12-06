@@ -3,7 +3,7 @@ Subroutine scan_field                                &
            mxsite,mxatyp,megatm,mxtmls,mxexcl,       &
            mtshl,mxtshl,mxshl,mxfshl,                &
            mtcons,mxtcon,mxcons,mxfcon,              &
-           mxtpmf,mxpmf,mxfpmf,l_upr,                &
+           mxtpmf,mxpmf,mxfpmf,l_usr,                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
            mtteth,mxtteth,mxteth,mxftet,             &
            mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,mxgbnd, &
@@ -56,7 +56,7 @@ Subroutine scan_field                                &
   Character( Len = 40  ) :: word
   Character( Len = 8   ) :: name
 
-  Logical           :: l_n_e,check,safe,l_upr,lext
+  Logical           :: l_n_e,check,safe,l_usr,lext
   Integer           :: mxtmls,itmols,nummols,numsit,mxnmst,isite,ksite,nrept,  &
                        mxompl,mximpl,mxsite,mxatyp,megatm,i,j,k,mxexcl,        &
                        numshl,mtshl,mxtshl,mxshl,ishls,mxfshl,                 &
@@ -170,7 +170,7 @@ Subroutine scan_field                                &
   mxexcl=0
 
   lext =.false.
-  l_upr=.false.
+  l_usr=.false.
 
 ! Set safe flag
 
@@ -899,7 +899,7 @@ Subroutine scan_field                                &
            Call get_word(record,word)
         End Do
 
-        l_upr = (word(1:4) == 'uphr')
+        l_usr = (word(1:4) == 'ushr')
 
      Else If (word(1:5) == 'close') Then
 

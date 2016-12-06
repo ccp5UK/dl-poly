@@ -9,7 +9,7 @@ Subroutine system_init                                             &
 ! initial thermodynamic and structural accumulators
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2016
+! author    - i.t.todorov november 2016
 ! contrib   - m.a.seaton june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -20,7 +20,7 @@ Subroutine system_init                                             &
   Use site_module,        Only : ntpatm,numtyp,numtypnf,dens
   Use config_module,      Only : volm,natms,ltg,ltype,lfrzn,xxx,yyy,zzz
   Use statistics_module
-  Use rdf_module,         Only : ncfrdf,rdf
+  Use rdf_module,         Only : ncfrdf,rdf,ncfusr,rusr,usr
   Use z_density_module,   Only : ncfzdn,zdens
   Use bonds_module,       Only : ldfbnd,ncfbnd,dstbnd
   Use angles_module,      Only : ldfang,ncfang,dstang
@@ -51,7 +51,7 @@ Subroutine system_init                                             &
 
   Logical               :: l_tmp
   Integer               :: i,j,k,l,keyio,i_tmp,gidx
-  Real( Kind = wp )     :: dnstep,dtstep,dnumacc,dncfrdf,dncfzdn, &
+  Real( Kind = wp )     :: dnstep,dtstep,dnumacc,dncfrdf,dmxgusr,drusr,dncfusr,dncfzdn, &
                            dncfbnd,dncfang,dncfdih,dncfinv,r_mxnode,xyz(0:6),dvafstep(1:vafsamp)
 
 
@@ -59,7 +59,7 @@ Subroutine system_init                                             &
 
   If (l_rin) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
-     j = Max(mxstak*mxnstk,mxgrdf*mxrdf,mxgana*mxtana)
+     j = Max(mxstak*mxnstk,mxgrdf*mxrdf,mxgusr,mxgana*mxtana)
 
      Write(forma ,10) j/4+1,i+9,i
 10   Format('(1p,',i0,'(/,4e',i0,'.',i0,'E3))')
@@ -112,6 +112,12 @@ Subroutine system_init                                             &
         If (lrdf) Then
            ncfrdf=0
            rdf   =0.0_wp
+        End If
+
+        If (mxgusr > 0) Then
+           rusr  =0.0_wp
+           ncfusr=0
+           usr   =0
         End If
 
         If (lzdn) Then
@@ -197,6 +203,7 @@ Subroutine system_init                                             &
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stress
 
            If (lrdf) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfrdf,rdf
+           If (mxgusr > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,usr
            If (lzdn) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfzdn,zdens
            If (vafsamp > 0) Then
              Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) vafcount
@@ -226,6 +233,7 @@ Subroutine system_init                                             &
            Read(Unit=nrest, IOStat=keyio, End=100) stress
 
            If (lrdf) Read(Unit=nrest, IOStat=keyio, End=100) dncfrdf,rdf
+           If (mxgusr > 0) Read(Unit=nrest, IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,usr
            If (lzdn) Read(Unit=nrest, IOStat=keyio, End=100) dncfzdn,zdens
            If (vafsamp > 0) Then
              Read(Unit=nrest, IOStat=keyio, End=100) vafcount
@@ -246,6 +254,11 @@ Subroutine system_init                                             &
         numacc=Nint(dnumacc)
 
         If (lrdf) ncfrdf=Nint(dncfrdf)
+        If (mxgusr > 0) Then
+           mxgusr=Nint(dmxgusr)
+           rusr  =drusr
+           ncfusr=Nint(dncfusr)
+        End If
         If (lzdn) ncfzdn=Nint(dncfzdn)
         If (vafsamp > 0) vafstep=Nint(dvafstep)
 
@@ -318,6 +331,17 @@ Subroutine system_init                                             &
 
               rdf(:,k) = rdf(:,k) * r_mxnode
            End Do
+        End If
+
+! USR RDF table - broadcast and normalise
+
+        If (mxgusr > 0) Then
+           Call MPI_BCAST(mxgusr,             1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+           Call MPI_BCAST(rusr,               1, wp_mpi,      0, dlp_comm_world, ierr)
+           Call MPI_BCAST(ncfusr,             1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+           Call MPI_BCAST(usr(1:mxgusr), mxgusr, wp_mpi,      0, dlp_comm_world, ierr)
+
+           usr(:) = usr(:) * r_mxnode
         End If
 
 ! z-density table - broadcast and normalise

@@ -27,7 +27,7 @@ Subroutine statistics_result                                    &
   Use angles_module,      Only : ncfang
   Use dihedrals_module,   Only : ncfdih
   Use inversions_module,  Only : ncfinv
-  Use rdf_module,         Only : ncfrdf,ncfupr
+  Use rdf_module,         Only : ncfrdf,ncfusr
   Use z_density_module,   Only : ncfzdn
   Use statistics_module
   Use msd_module
@@ -335,7 +335,7 @@ Subroutine statistics_result                                    &
 ! calculate and print radial distribution functions
 
   If (lrdf .and. lprdf .and. ncfrdf > 0) Call rdf_compute(lpana,rcut,temp)
-  If (ncfupr > 0) Call upr_compute()
+  If (ncfusr > 0) Call usr_compute()
 
 ! calculate and print z-density profile
 

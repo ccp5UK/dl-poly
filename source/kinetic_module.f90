@@ -402,13 +402,13 @@ Contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 routine to calculate a molecule's mass and CoM
+! dl_poly_4 routine to calculate a molecule's mass and COM
 !
 ! istart  - the global index of the first atom of the molecule
 ! ifinish - the global index of the last atom of the molecule
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2016
+! author    - i.t.todorov november 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -470,7 +470,7 @@ Contains
 
     Do i=1,k
        mass   = mass   + mol(i,0)
-       cmm(0) = cmm(0) + mol(i,0)*Real(lfrzn(i)-1,wp)
+       cmm(0) = cmm(0) + mol(i,0)*Real(1-lfrzn(i),wp)
        cmm(1) = cmm(1) + mol(i,0)*mol(i,1)
        cmm(2) = cmm(2) + mol(i,0)*mol(i,2)
        cmm(3) = cmm(3) + mol(i,0)*mol(i,3)

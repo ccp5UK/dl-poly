@@ -2720,12 +2720,6 @@ Subroutine read_control                                &
 
 !!! RESORT TO DEFAULTS IF NEED BE !!!
 
-  If (l_0 .and. (.not. ltemp)) Then ! zero K over zero fire
-     temp = 10.0_wp
-     If (idnode == 0) &
-        Write(nrite,"(/,1x,'default simulation temperature (K)',1p,e12.4)") temp
-  End If
-
   If      (nstrun == 0) Then !!! DRY RUN
 
      ltemp = .true. ! zero is ok
@@ -2779,6 +2773,12 @@ Subroutine read_control                                &
            Write(nrite,"(/,1x,'allocated job close time (s)',6x,1p,e12.4)") timcls
      End If
 
+  End If
+
+  If (l_0 .and. (.not. ltemp)) Then ! zero K over zero fire
+     temp = 10.0_wp
+     If (idnode == 0) &
+        Write(nrite,"(/,1x,'default simulation temperature (K)',1p,e12.4)") temp
   End If
 
 !!! ERROR CHECKS !!!
