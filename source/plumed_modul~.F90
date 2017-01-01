@@ -91,7 +91,7 @@ Contains
 
     Implicit None
 
-    If (idnode == 0) Write(nrite,'(1x,a)') "*** warning - PLUMED directive found in CONTROL but PLUMED not available! ***"
+    If (idnode == 0) Write(nrite,'(1x,a)') "*** warning - PLUMED directive found in CONTROL but PLUMED not available !!! ***"
     Call error(0)
   End Subroutine plumed_message
 

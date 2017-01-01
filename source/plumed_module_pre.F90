@@ -76,7 +76,7 @@ Contains
        Call plumed_f_gcmd("setKbT"//sn,temp*boltz)
        Call plumed_f_gcmd("init"//sn,0)
     Else
-       If (idnode == 0) Write(nrite,'(1x,a)') "*** warning - internal PLUMED library failure! ***"
+       If (idnode == 0) Write(nrite,'(1x,a)') "*** warning - internal PLUMED library failure !!! ***"
        Call error(0)
     End If
 

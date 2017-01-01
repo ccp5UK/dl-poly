@@ -8,7 +8,7 @@ Subroutine coul_cp_dfield &
 !
 ! copyright - daresbury laboratory
 ! author    - h.a.boateng december 2014
-! amended   - i.t.todorov april 2015
+! amended   - i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -16,7 +16,7 @@ Subroutine coul_cp_dfield &
   Use comms_module,  Only : idnode,gtime
   Use config_module, Only : natms,nlast,ltg,list
   Use mpoles_module, Only : indipx,indipy,indipz,mpfldx,mpfldy,mpfldz,&
-                            atplrz
+                            plratm
   Use setup_module
 
   Implicit None
@@ -60,7 +60,7 @@ Subroutine coul_cp_dfield &
   imp1=indipx(iatm)*scl
   imp2=indipy(iatm)*scl
   imp3=indipz(iatm)*scl
-  iplrz=atplrz(iatm)
+  iplrz=plratm(iatm)
 
 ! load field
 
@@ -96,7 +96,7 @@ Subroutine coul_cp_dfield &
            jatm = list(list(0,iatm)+m,iatm)
         End If
 
-        damp    = -awidth*rrr*rsq/Sqrt(iplrz*atplrz(jatm))
+        damp    = -awidth*rrr*rsq/Sqrt(iplrz*plratm(jatm))
         expdamp = Exp(damp)
         scale3  = 1.0_wp-expdamp
         scale5  = 1.0_wp-(1.0_wp-damp)*expdamp
@@ -146,6 +146,7 @@ Subroutine coul_cp_dfield &
                  mpfldx(jatm) = mpfldx(jatm) + (dpxx*imp1 + dpxy*imp2 + dpxz*imp3)
                  mpfldy(jatm) = mpfldy(jatm) + (dpxy*imp1 + dpyy*imp2 + dpyz*imp3)
                  mpfldz(jatm) = mpfldz(jatm) + (dpxz*imp1 + dpyz*imp2 + dpzz*imp3)
+              End If
            End If
         End If
      End If

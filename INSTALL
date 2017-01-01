@@ -19,10 +19,10 @@ from source is:
 THE CMAKE WAY:
 -------------
 
-	wget ftp://ftp.dl.ac.uk/ccp5/DL_POLY/TRANSFERS/dl_poly_4.08.zip
-	rm -rf dl_poly.4.08
-	unzip dl_poly_4.08.zip
-	cd dl_poly.4.08
+	wget ftp://ftp.dl.ac.uk/ccp5/DL_POLY/TRANSFERS/dl_poly_4.09.zip
+	rm -rf dl_poly.4.09
+	unzip dl_poly_4.09.zip
+	cd dl_poly.4.09
 	mkdir mybuild ; cd mybuild
 	cmake .. ; make -j 10
 	ls -haltr bin
@@ -37,10 +37,10 @@ gcc4.2+ (due to TR15581), gnu make3.8+ and MPI1.1+MPI-I/O.
 THE PARALLEL MAKE WAY:
 ---------------------
 
-	wget ftp://ftp.dl.ac.uk/ccp5/DL_POLY/TRANSFERS/dl_poly_4.08.zip
-	rm -rf dl_poly.4.08
-	unzip dl_poly_4.08.zip
-	cd dl_poly.4.08/source
+	wget ftp://ftp.dl.ac.uk/ccp5/DL_POLY/TRANSFERS/dl_poly_4.09.zip
+	rm -rf dl_poly.4.09
+	unzip dl_poly_4.09.zip
+	cd dl_poly.4.09/source
 	ln -s ../build/Makefile_MPI Makefile
 	make FCFLAGS=-DOLDMPI hpc
 	ls -haltr bin
@@ -48,10 +48,10 @@ THE PARALLEL MAKE WAY:
 THE SERIAL MAKE WAY:
 -------------------
 
-	wget ftp://ftp.dl.ac.uk/ccp5/DL_POLY/TRANSFERS/dl_poly_4.08.zip
-	rm -rf dl_poly.4.08
-	unzip dl_poly_4.08.zip
-	cd dl_poly.4.08/source
+	wget ftp://ftp.dl.ac.uk/ccp5/DL_POLY/TRANSFERS/dl_poly_4.09.zip
+	rm -rf dl_poly.4.09
+	unzip dl_poly_4.09.zip
+	cd dl_poly.4.09/source
 	ln -s ../build/Makefile_SRL2 Makefile
 	make FCFLAGS=-DSERIAL gnu
 	ls -haltr bin
@@ -62,4 +62,4 @@ for help.
 Good luck,
 
 Ilian Todorov
-July 2016
+December 2016

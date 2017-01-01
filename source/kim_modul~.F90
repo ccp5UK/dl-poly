@@ -127,7 +127,7 @@ Contains
 
     Implicit None
 
-    If (idnode == 0) Write(nrite,'(1x,a)') "*** warning - kim directive found in FIELD but openKIM not available! ***"
+    If (idnode == 0) Write(nrite,'(1x,a)') "*** warning - kim directive found in FIELD but openKIM not available !!! ***"
     Call error(0)
   End Subroutine kim_message
 

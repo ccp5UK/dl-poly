@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov january 2015
+! amended   - i.t.todorov december 2016
 ! contrib   - r.davidchak (eeam) june 2012
 ! contrib   - b.palmer (2band) may 2013
 !
@@ -69,6 +69,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe)
            l   = Min(Nint(rr1*rdr),Nint(dmet(1,kj,1))-1)
            If (l < 5) Then ! catch unsafe value
               safe=.false.
+              Write(*,*) 'aaa',l,iatm,jatm,rrr
               l=6
            End If
            ppp = rr1*rdr - Real(l,wp)
@@ -111,6 +112,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe)
               l   = Min(Nint(rr1*rdr),Nint(dmet(1,ki,1))-1)
               If (l < 5) Then ! catch unsafe value
                  safe=.false.
+                 Write(*,*) 'bbb',l,iatm,jatm,rrr
                  l=6
               End If
               ppp = rr1*rdr - Real(l,wp)
@@ -163,6 +165,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe)
                  l   = Min(Nint(rr1*rdr),Nint(dmes(1,k0,1))-1)
                  If (l < 5) Then ! catch unsafe value
                     safe=.false.
+                    Write(*,*) 'ccc',l,iatm,jatm,rrr
                     l=6
                  End If
                  ppp = rr1*rdr - Real(l,wp)
@@ -206,6 +209,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe)
                  l   = Min(Nint(rr1*rdr),Nint(dmes(1,kj,1))-1)
                  If (l < 5) Then ! catch unsafe value
                     safe=.false.
+                    Write(*,*) 'ddd',l,iatm,jatm,rrr
                     l=6
                  End If
                  ppp = rr1*rdr - Real(l,wp)
@@ -248,6 +252,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe)
                     l   = Min(Nint(rr1*rdr),Nint(dmes(1,ki,1))-1)
                     If (l < 5) Then ! catch unsafe value
                        safe=.false.
+                       Write(*,*) 'eee',l,iatm,jatm,rrr
                        l=6
                     End If
                     ppp = rr1*rdr - Real(l,wp)
