@@ -9,7 +9,7 @@ Subroutine ewald_real_mfield &
 !
 ! copyright - daresbury laboratory
 ! author    - h.a.boateng november 2014
-! amended   - i.t.todorov september 2015
+! amended   - i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,13 +17,13 @@ Subroutine ewald_real_mfield &
   Use comms_module,  Only : idnode,gtime
   Use setup_module
   Use config_module, Only : natms,nlast,ltg,ltype,list
-  Use mpoles_module, Only : mplmap,mplgfr,mplfldx,mplfldy,mplfldz
+  Use mpoles_module, Only : mplmap,mplgfr,mpfldx,mpfldy,mpfldz
 
   Implicit None
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xdf,ydf,zdf,rrt
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
 
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: drewd,rdrewd
@@ -86,9 +86,9 @@ Subroutine ewald_real_mfield &
 
 ! load field
 
-     fix=mplfldx(iatm)
-     fiy=mplfldy(iatm)
-     fiz=mplfldz(iatm)
+     fix=mpfldx(iatm)
+     fiy=mpfldy(iatm)
+     fiz=mpfldz(iatm)
 
 ! initialize torques for atom i (temporary)
 
@@ -202,9 +202,9 @@ Subroutine ewald_real_mfield &
 
            If (jatm <= natms) Then
 
-              mplfldx(jatm)=mplfldx(jatm)+tjx
-              mplfldy(jatm)=mplfldy(jatm)+tjy
-              mplfldz(jatm)=mplfldz(jatm)+tjz
+              mpfldx(jatm)=mpfldx(jatm)+tjx
+              mpfldy(jatm)=mpfldy(jatm)+tjy
+              mpfldz(jatm)=mpfldz(jatm)+tjz
 
            End If
 
@@ -214,9 +214,9 @@ Subroutine ewald_real_mfield &
 
 ! load back field
 
-     mplfldx(iatm)=fix
-     mplfldy(iatm)=fiy
-     mplfldz(iatm)=fiz
+     mpfldx(iatm)=fix
+     mpfldy(iatm)=fiy
+     mpfldz(iatm)=fiz
 
   End If
 

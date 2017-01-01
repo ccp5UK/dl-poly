@@ -20,7 +20,7 @@ Subroutine ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - h.a.boateng february 2016
-! amended   - i.t.todorov march 2016
+! amended   - i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -683,7 +683,7 @@ Subroutine ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   stress(6) = stress(6) + 0.5_wp * (strs(6) + strs(8))
   stress(7) = stress(7) + 0.5_wp * (strs(3) + strs(7))
   stress(8) = stress(8) + 0.5_wp * (strs(6) + strs(8))
-  stress(9) = stress(9) + strs(9
+  stress(9) = stress(9) + strs(9)
   engcpe_rc = eng + engsic
   vircpe_rc = -(strs(1)+strs(5)+strs(9))
 

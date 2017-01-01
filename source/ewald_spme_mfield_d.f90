@@ -1598,12 +1598,12 @@ Contains
 !       and therefore there is no need for periodic images (!!)
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov march 2016
+! author    - w.smith & i.t.todorov december 2016
 ! amended   - h.a.boateng december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use mpoles_module, Only : mplfldx,mplfldy,mplfldz
+    Use mpoles_module, Only : mpfldx,mpfldy,mpfldz
 
     Implicit None
 
@@ -1683,9 +1683,9 @@ Contains
 
 ! load field
 
-       mplfldx(i)=mplfldx(i)+fix
-       mplfldy(i)=mplfldy(i)+fiy
-       mplfldz(i)=mplfldz(i)+fiz
+       mpfldx(i)=mpfldx(i)+fix
+       mpfldy(i)=mpfldy(i)+fiy
+       mpfldz(i)=mpfldz(i)+fiz
 
     End Do
 

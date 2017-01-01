@@ -15,7 +15,7 @@ Subroutine ewald_spme_mfield_d(alpha,epsq)
 !           are not needed.
 !
 ! copyright - daresbury laboratory
-! author    - h.a.boateng and i.t.todorov march 2016
+! author    - h.a.boateng and i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -420,7 +420,7 @@ Contains
 ! mesh ewald method (fourier part)
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov march 2016
+! author    - w.smith & i.t.todorov december 2016
 ! amended   - h.a.boateng december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -433,7 +433,7 @@ Contains
     Real( Kind = wp ),    Intent( In    ) :: rcell(1:9),                      &
                                              bsddx(0:mxspl,1:mxspl,1:mxatms), &
                                              bsddy(0:mxspl,1:mxspl,1:mxatms), &
-                                             bsddz(0:mxspl,1:mxspl,1:mxatms), &
+                                             bsddz(0:mxspl,1:mxspl,1:mxatms)
 
     Complex( Kind = wp ), Intent( In    ) :: qqq(1:kmaxa,1:kmaxb,1:kmaxc)
 
@@ -491,9 +491,9 @@ Contains
 
 ! load field
 
-       mplfldx(i)=mplfldx(i)+fix
-       mplfldy(i)=mplfldy(i)+fiy
-       mplfldz(i)=mplfldz(i)+fiz
+       mpfldx(i)=mpfldx(i)+fix
+       mpfldy(i)=mpfldy(i)+fiy
+       mpfldz(i)=mpfldz(i)+fiz
 
     End Do
 

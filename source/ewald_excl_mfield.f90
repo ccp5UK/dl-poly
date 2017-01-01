@@ -11,7 +11,7 @@ Subroutine ewald_excl_mfield &
 !
 ! copyright - daresbury laboratory
 ! author    - h.a.boateng november 2014
-! amended   - i.t.todorov june 2015
+! amended   - i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -39,7 +39,7 @@ Subroutine ewald_excl_mfield &
   Real( Kind = wp ), Parameter :: r216 = 1.0_wp/216.0_wp
 
   Integer           :: limit,idi,ai,jatm,aj,k1,k2,k3,s1,s2,s3,m,n
-  Integer           :: k,s21,s31,ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
+  Integer           :: k,s11,s21,s31,ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
 
   Real( Kind = wp ) :: scl,rrr,fix,fiy,fiz,fx,fy,fz,           &
                        strs1,strs2,strs3,strs5,strs6,strs9,    &

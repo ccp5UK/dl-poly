@@ -8,15 +8,15 @@ Subroutine ewald_real_mfield_d &
 ! kernel
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & h.a.boateng september 2015
+! author    - i.t.todorov & h.a.boateng december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,      Only : idnode,gtime
+  Use comms_module,  Only : idnode,gtime
   Use setup_module
-  Use config_module,     Only : natms,nlast,ltg,list
-  Use multipoles_module, Only : mplgfr,mplfldx,mplfldy,mplfldz
+  Use config_module, Only : natms,nlast,ltg,list
+  Use mpoles_module, Only : mplgfr,mpfldx,mpfldy,mpfldz
 
   Implicit None
 
@@ -120,9 +120,9 @@ Subroutine ewald_real_mfield_d &
 
 ! load field
 
-     fix=mplfldx(iatm)
-     fiy=mplfldy(iatm)
-     fiz=mplfldz(iatm)
+     fix=mpfldx(iatm)
+     fiy=mpfldy(iatm)
+     fiz=mpfldz(iatm)
 
 ! start of primary loop for electrostatic field evaluation
 
@@ -277,9 +277,9 @@ Subroutine ewald_real_mfield_d &
 
               End If
 
-              mplfldx(jatm) = mplfldx(jatm) + tjx
-              mplfldy(jatm) = mplfldy(jatm) + tjy
-              mplfldz(jatm) = mplfldz(jatm) + tjz
+              mpfldx(jatm) = mpfldx(jatm) + tjx
+              mpfldy(jatm) = mpfldy(jatm) + tjy
+              mpfldz(jatm) = mpfldz(jatm) + tjz
 
            End If
 
@@ -289,9 +289,9 @@ Subroutine ewald_real_mfield_d &
 
 ! load back electrostatic field
 
-     mplfldx(iatm)=fix
-     mplfldy(iatm)=fiy
-     mplfldz(iatm)=fiz
+     mpfldx(iatm)=fix
+     mpfldy(iatm)=fiy
+     mpfldz(iatm)=fiz
 
   End If
 

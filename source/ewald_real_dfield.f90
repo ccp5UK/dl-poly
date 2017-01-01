@@ -1,5 +1,5 @@
 Subroutine ewald_real_dfield &
-           (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rsqdf,flag)
+           (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,flag)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -9,15 +9,16 @@ Subroutine ewald_real_dfield &
 !
 ! copyright - daresbury laboratory
 ! author    - h.a.boateng december 2014
-! amended   - i.t.todorov april 2015
+! amended   - i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,gtime
+  Use setup_module,  Only : mxgele
   Use config_module, Only : natms,nlast,ltg,list
   Use mpoles_module, Only : indipx,indipy,indipz,mpfldx,mpfldy,mpfldz,&
-                            atplrz
+                            plratm
   Use setup_module
 
   Implicit None
@@ -52,7 +53,7 @@ Subroutine ewald_real_dfield &
      newjob = .false.
 
      fail=0
-     Allocate (erc(0:mgxele),fer(0:mxgele), Stat=fail)
+     Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
      If (fail > 0) Then
         Write(nrite,'(/,1x,a,i0)') 'ewald_real_mfield allocation failure, node: ', idnode
         Call error(0)
@@ -98,7 +99,7 @@ Subroutine ewald_real_dfield &
   imp1=indipx(iatm)*scl
   imp2=indipy(iatm)*scl
   imp3=indipz(iatm)*scl
-  iplrz=atplrz(iatm)
+  iplrz=plratm(iatm)
 
 ! load field
 
@@ -136,7 +137,7 @@ Subroutine ewald_real_dfield &
         Else
            jatm = list(list(0,iatm)+m,iatm)
 
-           damp    = -awidth*rrr*rsq/Sqrt(iplrz*atplrz(jatm))
+           damp    = -awidth*rrr*rsq/Sqrt(iplrz*plratm(jatm))
            expdamp = Exp(damp)
            scale3  = 1.0_wp-expdamp
            scale5  = 1.0_wp-(1.0_wp-damp)*expdamp
@@ -209,6 +210,7 @@ Subroutine ewald_real_dfield &
                  mpfldx(jatm) = mpfldx(jatm) + (dpxx*imp1 + dpxy*imp2 + dpxz*imp3)
                  mpfldy(jatm) = mpfldy(jatm) + (dpxy*imp1 + dpyy*imp2 + dpyz*imp3)
                  mpfldz(jatm) = mpfldz(jatm) + (dpxz*imp1 + dpyz*imp2 + dpzz*imp3)
+              End If
            End If
         End If
      End If

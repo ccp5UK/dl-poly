@@ -9,14 +9,14 @@ Subroutine coul_cp_mfield &
 !
 ! copyright - daresbury laboratory
 ! author    - h.a.boateng december 2014
-! amended   - i.t.todorov september 2015
+! amended   - i.t.todorov december 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module
   Use config_module, Only : natms,nlast,ltg,ltype,list
-  Use mpoles_module, Only : mplmap,mplgfr,mplfldx,mplfldy,mplfldz
+  Use mpoles_module, Only : mplmap,mplgfr,mpfldx,mpfldy,mpfldz
 
   Implicit None
 
@@ -56,9 +56,9 @@ Subroutine coul_cp_mfield &
 
 ! load field
 
-     fix=mplfldx(iatm)
-     fiy=mplfldy(iatm)
-     fiz=mplfldz(iatm)
+     fix=mpfldx(iatm)
+     fiy=mpfldy(iatm)
+     fiz=mpfldz(iatm)
 
 ! start of primary loop for forces evaluation
 
@@ -145,9 +145,9 @@ Subroutine coul_cp_mfield &
 
            If (jatm <= natms) Then
 
-              mplfldx(jatm)=mplfldx(jatm)+tjx
-              mplfldy(jatm)=mplfldy(jatm)+tjy
-              mplfldz(jatm)=mplfldz(jatm)+tjz
+              mpfldx(jatm)=mpfldx(jatm)+tjx
+              mpfldy(jatm)=mpfldy(jatm)+tjy
+              mpfldz(jatm)=mpfldz(jatm)+tjz
 
            End If
 
@@ -157,9 +157,9 @@ Subroutine coul_cp_mfield &
 
 ! load back field
 
-     mplfldx(iatm)=fix
-     mplfldy(iatm)=fiy
-     mplfldz(iatm)=fiz
+     mpfldx(iatm)=fix
+     mpfldy(iatm)=fiy
+     mpfldz(iatm)=fiz
 
   End If
 

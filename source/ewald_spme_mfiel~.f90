@@ -184,14 +184,6 @@ Subroutine ewald_spme_mfield(alpha,epsq)
      tyy(i)=kmaxb_r*(rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+0.5_wp)
      tzz(i)=kmaxc_r*(rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+0.5_wp)
 
-! If not DD bound in kmax grid space when .not.llvnl = (mxspl1 == mxspl)
-
-     If (mxspl1 == mxspl .and. i <= natms) Then
-        If (txx(i) < ixbm1_r .or. txx(i) > ixtm0_r .or. &
-            tyy(i) < iybm1_r .or. tyy(i) > iytm0_r .or. &
-            tzz(i) < izbm1_r .or. tzz(i) > iztm0_r) llspl=.false.
-     End If
-
      ixx(i)=Int(txx(i))
      iyy(i)=Int(tyy(i))
      izz(i)=Int(tzz(i))
@@ -444,7 +436,7 @@ Contains
 ! mesh ewald method (fourier part)
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov march 2016
+! author    - w.smith & i.t.todorov december 2016
 ! amended   - h.a.boateng december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -453,12 +445,11 @@ Contains
 
     Implicit None
 
-    Integer,              Intent( In    ) :: ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms), &
-                                             ixb,ixt, iyb,iyt, izb,izt
+    Integer,              Intent( In    ) :: ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms)
     Real( Kind = wp ),    Intent( In    ) :: rcell(1:9),                      &
                                              bsddx(0:mxspl,1:mxspl,1:mxatms), &
                                              bsddy(0:mxspl,1:mxspl,1:mxatms), &
-                                             bsddz(0:mxspl,1:mxspl,1:mxatms), &
+                                             bsddz(0:mxspl,1:mxspl,1:mxatms)
 
     Complex( Kind = wp ), Intent( In    ) :: qqq(1:kmaxa,1:kmaxb,1:kmaxc)
 

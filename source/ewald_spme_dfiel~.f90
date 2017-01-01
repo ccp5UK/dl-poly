@@ -20,14 +20,14 @@ Subroutine ewald_spme_dfield(alpha,epsq)
 !
 ! copyright - daresbury laboratory
 ! author    - h.a.boateng december 2014
-! amended   - i.t.todorov march 2016
+! amended   - i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,   Only : idnode,mxnode,gsum
   Use setup_module
-  Use domains_module, Only : nprx,npry,nprz
+  Use domains_module, Only : nprx,npry,nprz,idx,idy,idz
   Use config_module,  Only : imcon,cell,natms,nlast,xxx,yyy,zzz
   Use mpoles_module,  Only : indipx,indipy,indipz
   Use ewald_module
@@ -391,7 +391,7 @@ Contains
 ! mesh ewald method (fourier part)
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov march 2016
+! author    - w.smith & i.t.todorov december 2016
 ! amended   - h.a.boateng december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -401,9 +401,9 @@ Contains
     Implicit None
 
     Integer,              Intent( In    ) :: ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms)
-    Real( Kind = wp ),    Intent( In    ) :: rcell(1:9),                                                           &
-                                             bsdx(1:mxspl,1:mxatms),bsdy(1:mxspl,1:mxatms),bsdz(1:mxspl,1:mxatms), &
-                                             bspx(1:mxspl,1:mxatms),bspy(1:mxspl,1:mxatms),bspz(1:mxspl,1:mxatms)
+    Real( Kind = wp ),    Intent( In    ) :: rcell(1:9),                      &
+        bsdx(1:mxspl,1:mxatms),bsdy(1:mxspl,1:mxatms),bsdz(1:mxspl,1:mxatms), &
+        bspx(1:mxspl,1:mxatms),bspy(1:mxspl,1:mxatms),bspz(1:mxspl,1:mxatms)
 
     Complex( Kind = wp ), Intent( In    ) :: qqq(1:kmaxa,1:kmaxb,1:kmaxc)
 
