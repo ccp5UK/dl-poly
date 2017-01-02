@@ -23,7 +23,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2016
+! author    - i.t.todorov december 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -38,10 +38,10 @@ Subroutine read_control                                &
   Use comms_module,      Only : idnode
   Use setup_module
   Use config_module,     Only : sysname
+  Use mpoles_module,     Only : thole
   Use dpd_module,        Only : keydpd,gamdpd
   Use langevin_module,   Only : l_lan,l_gst,langevin_allocate_arrays
   Use parse_module
-  Use core_shell_module, Only : l_dpl
   Use bonds_module,      Only : rcbnd
   Use vdw_module,        Only : ld_vdw,ls_vdw,mxtvdw
   Use metal_module,      Only : ld_met,ls_met,tabmet
@@ -1043,12 +1043,35 @@ Subroutine read_control                                &
         If (idnode == 0) Write(nrite,"(/,1x,'temperature scaling on (during equilibration)', &
            & /,1x,'temperature scaling interval',3x,i10)") nstscal
 
-! read depolarisation option
+! read polarisation option
 
-     Else If (word(1:5) == 'depol') Then
+     Else If (word(1:5) == 'polar') Then
 
-        l_dpl =.true.
-        If (idnode == 0) Write(nrite,"(/,1x,'depolarisation on (during equilibration)')")
+        If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
+        If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
+        If (word(1:6) == 'charmm') Then
+           If (word(1:6) == 'thole') Then
+              Call get_word(record,word)
+              If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record,word)
+              If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record,word)
+              thole = Abs(word_2_real(word,0.0_wp))
+           End If
+           If (idnode == 0) Then
+  Write(nrite,"(/,1x,'CHARMM polarisation scheme selected with optional atomic thole dumping of ',f5.2)") thole
+              If (mximpl == 0) &
+  Write(nrite,"(1x,a)") "*** warning - scheme deselected due to switched off electrostatics !!! ***"
+              If (mxshl == 0) &
+  Write(nrite,"(1x,a)") "*** warning - scheme disabled due to lack of core-shell defined interatcions !!! ***"
+           End If
+
+           If (mximpl == 0 .or. mxshl == 0) Then
+!              keyind=0 ! done in scan_control
+           Else
+              lecx = .true. ! enable extended coulombic exclusion
+              If (idnode == 0) &
+  Write(nrite,"(1x,'Extended Coulombic eXclusion activated for CHARMM polarisation')")
+           End If
+        End If
 
 ! read integration flavour
 
@@ -1062,7 +1085,7 @@ Subroutine read_control                                &
 ! keydpd detected in scan_control
 
         If (keydpd > 0 .and. (lvv .neqv. l_vv) .and. idnode == 0) Write(nrite,"(/,1x,a)") &
-           "*** warning - Leapfrog Verlet selected integration defaulted to Velocity Verlet for DPD thermostats!!! ***"
+           "*** warning - Leapfrog Verlet selected integration defaulted to Velocity Verlet for DPD thermostats !!! ***"
 
 ! read ensemble
 
@@ -1789,7 +1812,7 @@ Subroutine read_control                                &
 
            If ( Abs(prmps(1)-1.0_wp/alpha) > 1.0e-6_wp .or. Abs(prmps(2)-eps) > 1.0e-6_wp .or. &
                 Nint(prmps(3)) == 0 .or. Nint(prmps(4)) == 0 ) Then
-              Write(nrite,"(/,1x,a)") "*** warning - parameters reset to safe defaults occurred!!! ***"
+              Write(nrite,"(/,1x,a)") "*** warning - parameters reset to safe defaults occurred !!! ***"
               Write(nrite,"(1x,'gridspacing parameter (A)',9x,1p,e12.4)") 1.0_wp/alpha
               Write(nrite,"(1x,'convergance epsilon      ',9x,1p,e12.4)") eps
               Write(nrite,"(1x,'max # of Psolver iterations',9x,1p,i5)") mxitcg
@@ -1833,6 +1856,7 @@ Subroutine read_control                                &
      Else If (word(1:5) == 'exclu') Then
 
         lecx = .true.
+        If (idnode == 0) Write(nrite,"(/,1x,'Extended Coulombic eXclusion opted for')")
 
 ! read force capping option
 

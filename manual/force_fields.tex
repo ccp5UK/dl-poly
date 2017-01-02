@@ -2868,7 +2868,7 @@ giving rise to a {\em polarisation} dipole
 \end{equation}
 The condition of static equilibrium then gives the polarisability as:
 \begin{equation}
-\alpha = q_{s}^{2}/k_{2}~~,
+\alpha = q_{s}^{2}/k_{2}~~, \label{druder}
 \end{equation}
 where $q_{s}$ is the shell charge and $k_{2}$ is the force
 constant of the harmonic spring.
@@ -2883,6 +2883,79 @@ different however, as the core-shell unit is permitted only three
 translational degrees of freedom, and the degrees of freedom
 corresponding to rotation and vibration of the unit are discounted
 as if the kinetic energy of these is regarded as zero (equation~\ref{freedom}).
+
+\subsection{CHARMM Shell Model Self-Induction}
+
+The \href{https://www.charmm.org/}{CHARMM}\index{WWW} model for
+self-induced polarisablility relies on the Druder formalism as
+described above.  However, the CHARMM core-shell model interactions,
+conventions and controls have further specificity \cite{mackerell-16a}
+that is worth outlining in \D terms.
+
+To enable the CHARMM core-shell model in \D, the user, {\em at the very
+least}, needs to specify atomic polarisabilities (and, optionally, the
+respective Thole dumping factors) for all cores in the MPOLES file
+(see Section~\ref{mpoles-file}), make sure that reading MPOLES is
+triggered by using the \underline{{\bf mult}ipolar~order~{\em n}}
+directive in the FIELD file (see Section~\ref{field-file}), and use
+the \underline{{\bf polar}isability {\em CHARMM} {\bf thole} {\em f}}
+directive in CONTROL (see Section~\ref{control-file}).  {\bf Note that}
+if no Thole dumping factors are specified in MPOLES as well as no global
+Thole dumping factor is (optionally) provided with the above directive
+in CONTROL, then a default one of 1.3 is assumed for all inducible particles.
+
+Equation~(\ref{druder}) governs the relation between the force constant,
+$k_{2}$ (positive), the shell charge $q_{s}$, and the atomic polarisability,
+$\alpha$ (positive).  Thus if one is missing, undefined or zero, it can be
+recovered from the rest in \D.  CHARMM only allows for $q_{s}$ to be
+recovered.  {\bf Note} that in \D if $q_{s}$ is recovered, it has an
+opposite sign to that of $q_{c}$!  In the special case when all Druders'
+force constants, $k_{2}$, are undefined or zero (in FIELD), \D will resort
+to using the same one of 1000~kcal~mol$^{-1}$\AA$^{-2}$ for all core-shell
+units, following the CHARMM recommendations in \cite{mackerell-16a}.
+In all other cases if two (or more) of these three quantities are undefined
+or zero \D will terminate execution in a controlled manner, indicating the
+exact nature of the problem.
+
+CHARMM postulates a scaled intra-molecular self-induction between 1-2
+and 1-3 intra-molecular neighbours.  Thus cross core-shell coulombic
+interactions within {\em conventional} bonded interactions are not fully
+excluded (dipole-dipole only, no charge−dipole).  They are scaled
+(see below) for all possible 1-2 (chemical bonds or constraints) and
+1-2-3 (chemical bond angles) qualifying neighbours.  For example, let
+1-2-3-4 define a torsion angle, then all 1-2-3 and 2-3-4 core-shell
+cross-interaction are considered.  {\bf Note} that this is not the case
+for the 1-4 one, which is excluded in this scenario but it could still
+be scaled via torsion 1-4 coulombic scaling!.  In \D's CHARMM context,
+also, then all possible coulombic cross-interactions are considered
+in the case of an inversion angle interaction.  It is worth {\bf stressing}
+that in \D will further exclude (disregard as non-contributing) any
+core-core bonded interactions if they are frozen or mapped onto a RB!
+
+Let's demonstrate this for a conventional bond angle unit, 1-2-3, with
+only members 1 and 2 being polarisable (having a core and a shell).  So,
+the only CHARMM scaled intra-molecular coulombic interactions for this
+scenario will be the four pairs $1_{core}$-$2_{core}$, $1_{core}$-$2_{shell}$,
+$1_{shell}$-$2_{core}$ and $1_{shell}$-$2_{shell}$ (dipole-dipole
+interactions only, the charge−dipole interactions are not considered!).
+In the case when members 1 and 3 are frozen or in a RB configuration
+then the pair $1_{core}$-$2_{core}$ will be disregarded from that list.
+
+The CHARMM, self-induced intra-molecular (dipole-dipole) interactions
+are scaled by a factor of
+\begin{equation}
+S(r_{ij} = 1 -\left[ 1 + \frac{1}{2}
+\frac{a_{i}+a_{j}}{(\alpha_{i}\alpha_{j})^{1/6}} r_{ij}\right]~
+\exp\left(-\frac{a_{i}+a_{j}}{(\alpha_{i}\alpha_{j})^{1/6}} r_{ij}\right)~~,
+\end{equation}
+where $r_{ij}$ is the distance between atoms i and j, $\alpha_{i}$ and
+$\alpha_{j}$ are the respective atomic polarisabilities, and $a_{i}$
+and $a_{j}$ are the respective atomic (Thole) damping constants.  This
+equation is equivalent to a smeared charge distribution described by
+\begin{equation}
+\rho = \frac{a^{3}}{8\pi}~\exp\left(-\frac{a}{(\alpha_{i}\alpha_{j})^{1/6}} r_{ij}\right)~~,
+\end{equation}
+with $a~=~a_{i}+a_{j}$, as originally proposed by Thole \cite{thole-81a}.
 
 \subsection{Dynamical (Adiabatic Shells) Shell Model}
 
@@ -3005,8 +3078,8 @@ formation, constraint bonded, PMF constrained or tethered.
 angle, dihedral or inversion type of interaction.  However, they
 can be in a bond type of interactions (see the BSM section above).
 \end{itemize}
-However, bonded interactions such as chemical bonds, angles,
-dihedrals and inversions can be defined over any possible mixture
+It is worth noting that bonded interactions such as chemical bonds,
+angles, dihedrals and inversions can be defined over any possible mixture
 of core and shell members of different core-shell units!  For example,
 in the solid state materials community it is common to define bonds
 and angles over the shells as the shells represent the electronic

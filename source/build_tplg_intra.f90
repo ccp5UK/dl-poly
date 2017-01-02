@@ -7,7 +7,7 @@ Subroutine build_tplg_intra()
 ! that constraint bonds are put on top of chemical bonds!
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2016
+! author    - i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -42,7 +42,7 @@ Subroutine build_tplg_intra()
   ibig=0
   safe=.true.
 
-! exclude sites on basis of chemical bonds
+! include sites on basis of chemical bonds
 
   Do i=1,ntbond
      If (Abs(keybnd(listbnd(0,i))) > 0) Then
@@ -55,21 +55,20 @@ Subroutine build_tplg_intra()
         If (ia0 > natms) ia0=0
         If (ib0 > natms) ib0=0
 
-! add atoms to exclusion list
+! add atoms to topology list
 
         If (ia0 > 0) Call add_exclusion(safe,ia0,ib,ibig,ltpatm)
         If (ib0 > 0) Call add_exclusion(safe,ib0,ia,ibig,ltpatm)
      End If
   End Do
 
-! exclude sites on basis of bond angles
+! include sites on basis of bond angles
 
   Do i=1,ntangl
      If (Abs(keyang(listang(0,i))) > 0) Then
         ia=listang(1,i)
         ib=listang(2,i)
         ic=listang(3,i)
-
 
         ia0=local_index(ia,nlast,lsi,lsa)
         ib0=local_index(ib,nlast,lsi,lsa)
@@ -79,24 +78,26 @@ Subroutine build_tplg_intra()
         If (ib0 > natms) ib0=0
         If (ic0 > natms) ic0=0
 
-! add atoms to exclusion list
+! add atoms to topology list
 
-        If (ia0 > 0) Then ! ia : ib interactions
+        If (ia0 > 0) Then ! ia : ib - ic neighbours
            Call add_exclusion(safe,ia0,ib,ibig,ltpatm)
+           Call add_exclusion(safe,ia0,ic,ibig,ltpatm)
         End If
 
-        If (ib0 > 0) Then ! ib : ia - ic interactions
+        If (ib0 > 0) Then ! ib : ia - ic neighbours
            Call add_exclusion(safe,ib0,ia,ibig,ltpatm)
            Call add_exclusion(safe,ib0,ic,ibig,ltpatm)
         End If
 
-        If (ic0 > 0) Then ! ic : ib interactions
+        If (ic0 > 0) Then ! ic : ia - ib neighbours
+           Call add_exclusion(safe,ic0,ia,ibig,ltpatm)
            Call add_exclusion(safe,ic0,ib,ibig,ltpatm)
         End If
      End If
   End Do
 
-! exclude sites on basis of dihedral angles
+! include sites on basis of dihedral angles
 
   Do i=1,ntdihd
      ia=listdih(1,i)
@@ -114,28 +115,30 @@ Subroutine build_tplg_intra()
      If (ic0 > natms) ic0=0
      If (id0 > natms) id0=0
 
-! add atoms to exclusion list
+! add atoms to topology list
 
-     If (ia0 > 0) Then ! ia : ib interactions
+     If (ia0 > 0) Then ! ia : ib - ic neighbours
         Call add_exclusion(safe,ia0,ib,ibig,ltpatm)
+        Call add_exclusion(safe,ia0,ic,ibig,ltpatm)
      End If
 
-     If (ib0 > 0) Then ! ib : ia - ic interactions
+     If (ib0 > 0) Then ! ib : ia - ic neighbours
         Call add_exclusion(safe,ib0,ia,ibig,ltpatm)
         Call add_exclusion(safe,ib0,ic,ibig,ltpatm)
      End If
 
-     If (ic0 > 0) Then ! ic : ib - id interactions
+     If (ic0 > 0) Then ! ic : ib - id neighbours
         Call add_exclusion(safe,ic0,ib,ibig,ltpatm)
         Call add_exclusion(safe,ic0,id,ibig,ltpatm)
      End If
 
-     If (id0 > 0) Then ! id : ic interactions
+     If (id0 > 0) Then ! id : ib - ic neighbours
+        Call add_exclusion(safe,id0,ib,ibig,ltpatm)
         Call add_exclusion(safe,id0,ic,ibig,ltpatm)
      End If
   End Do
 
-! exclude sites on basis of inversion potentials
+! include sites on basis of inversion potentials
 
   Do i=1,ntinv
      ia=listinv(1,i)
@@ -153,24 +156,30 @@ Subroutine build_tplg_intra()
      If (ic0 > natms) ic0=0
      If (id0 > natms) id0=0
 
-! add atoms to exclusion list
+! add atoms to topology list
 
-     If (ia0 > 0) Then ! ia : ib - ic - id interactions
+     If (ia0 > 0) Then ! ia : ib - ic - id neighbours
         Call add_exclusion(safe,ia0,ib,ibig,ltpatm)
         Call add_exclusion(safe,ia0,ic,ibig,ltpatm)
         Call add_exclusion(safe,ia0,id,ibig,ltpatm)
      End If
 
-     If (ib0 > 0) Then ! ib : ia interactions
+     If (ib0 > 0) Then ! ib : ia - ic - id neighbours
         Call add_exclusion(safe,ib0,ia,ibig,ltpatm)
+        Call add_exclusion(safe,ib0,ic,ibig,ltpatm)
+        Call add_exclusion(safe,ib0,id,ibig,ltpatm)
      End If
 
-     If (ic0 > 0) Then ! ic : ia interactions
+     If (ic0 > 0) Then ! ic : ia - ib - id neighbours
         Call add_exclusion(safe,ic0,ia,ibig,ltpatm)
+        Call add_exclusion(safe,ic0,ib,ibig,ltpatm)
+        Call add_exclusion(safe,ic0,id,ibig,ltpatm)
      End If
 
-     If (id0 > 0) Then ! id : ia interactions
+     If (id0 > 0) Then ! id : ia - ib - ic neighbours
         Call add_exclusion(safe,id0,ia,ibig,ltpatm)
+        Call add_exclusion(safe,id0,ib,ibig,ltpatm)
+        Call add_exclusion(safe,id0,ic,ibig,ltpatm)
      End If
   End Do
 

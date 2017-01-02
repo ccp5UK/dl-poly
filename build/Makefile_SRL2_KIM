@@ -1,6 +1,6 @@
 # Master makefile for DL_POLY_4.09 (serial version 2 with KIM)
 #
-# Author - I.T.Todorov July 2016
+# Author - I.T.Todorov January 2017
 #
 #
 # Define default settings
@@ -68,14 +68,14 @@ OBJ_ALL = \
 	rigid_bodies_tags.o rigid_bodies_coms.o rigid_bodies_widths.o \
 	rigid_bodies_setup.o \
 	init_intra.o tag_legend.o report_topology.o pass_shared_units.o \
-	build_book_intra.o build_tplg_intra.o build_excl_intra.o \
+	build_book_intra.o build_tplg_intra.o build_chrm_intra.o build_excl_intra.o \
 	scale_temperature.o update_shared_units.o \
 	core_shell_quench.o constraints_tags.o constraints_quench.o \
 	pmf_coms.o pmf_tags.o pmf_vcoms.o pmf_quench.o \
 	rigid_bodies_quench.o \
 	set_temperature.o \
-	vdw_lrc.o metal_lrc.o system_init.o vnl_check.o \
-	export_atomic_data.o set_halo_particles.o \
+	vdw_lrc.o metal_lrc.o system_init.o \
+	export_atomic_data.o vnl_set_check.o set_halo_particles.o \
 	export_atomic_positions.o refresh_halo_positions.o \
 	mpoles_rotmat_export.o mpoles_rotmat_set_halo.o \
 	rigid_bodies_stress.o \
@@ -108,7 +108,7 @@ OBJ_ALL = \
 	core_shell_forces.o tethers_forces.o \
 	intra_coul.o intra_mcoul.o bonds_forces.o angles_forces.o \
 	dihedrals_14_vdw.o dihedrals_forces.o inversions_forces.o \
-	external_field_apply.o external_field_correct.o \
+	usr_collect.o external_field_apply.o external_field_correct.o \
 	langevin_forces.o \
 	constraints_pseudo_bonds.o pmf_pseudo_bonds.o \
 	rigid_bodies_split_torque.o rigid_bodies_move.o minimise_relax.o \
@@ -140,12 +140,14 @@ OBJ_ALL = \
 	npt_l1_lfv.o npt_b1_lfv.o npt_h1_lfv.o npt_m1_lfv.o \
 	nst_l1_lfv.o nst_b1_lfv.o nst_h1_lfv.o nst_m1_lfv.o \
 	\
-	xscale.o core_shell_kinetic.o regauss_temperature.o \
+	xscale.o vnl_check.o \
+	\
+	core_shell_kinetic.o regauss_temperature.o \
 	\
 	z_density_collect.o statistics_collect.o \
 	statistics_connect_set.o statistics_connect_spread.o statistics_connect_frames.o \
 	system_revive.o \
-	rdf_compute.o z_density_compute.o vaf_compute.o \
+	rdf_compute.o usr_compute.o z_density_compute.o vaf_compute.o \
 	bonds_compute.o angles_compute.o dihedrals_compute.o inversions_compute.o \
 	statistics_result.o \
 	dl_poly.o

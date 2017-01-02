@@ -5,7 +5,7 @@ Subroutine xscale(m_rgd,keyens,tstep,eta)
 ! dl_poly_4 routine to scale initial positions with change in box shape
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2015
+! author    - i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -566,10 +566,6 @@ Subroutine xscale(m_rgd,keyens,tstep,eta)
 
      If (.not.l_vnl) Then
 
-! Halo initial RB members positions across onto neighbouring domains
-! to get initial COMs
-
-        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xbg,ybg,zbg)
         Call rigid_bodies_coms(xbg,ybg,zbg,rgdxin,rgdyin,rgdzin)
 
         If (keyens == 21 .or. keyens == 31) Then
@@ -850,6 +846,10 @@ Subroutine xscale(m_rgd,keyens,tstep,eta)
         Write(nrite,'(/,1x,a,i0)') 'xscale deallocation failure, node: ', idnode
         Call error(0)
      End If
+
+! Halo final RB members positions across onto neighbouring domains
+
+        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xbg,ybg,zbg)
 
   End If
 

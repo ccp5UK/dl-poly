@@ -9,7 +9,7 @@
 
 ! Check VNL conditioning
 
-        Call vnl_check(l_str,m_rgd,rcut,rpad,rlnk,width)
+        Call vnl_check(l_str,rcut,rpad,rlnk,width)
 
         If (l_vnl) Then
 
@@ -82,7 +82,7 @@
 
 ! Calculate shell model forces
 
-     If (megshl > 0 .and. (.not.l_dpl)) Call core_shell_forces(engshl,virshl,stress)
+     If (megshl > 0) Call core_shell_forces(engshl,virshl,stress)
 
 ! Calculate tethered atom forces
 
