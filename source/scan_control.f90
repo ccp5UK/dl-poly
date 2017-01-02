@@ -4,14 +4,15 @@ Subroutine scan_control                                    &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
-           mxompl,mximpl,nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
+           mxshl,mxompl,mximpl,keyind,                     &
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2016
+! author    - i.t.todorov december 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
@@ -34,8 +35,8 @@ Subroutine scan_control                                    &
 
   Logical,           Intent( InOut ) :: l_n_e
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
-  Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,mxrgd,imcon
-  Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl
+  Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,mxrgd,imcon,mxshl
+  Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl,keyind
   Integer,           Intent(   Out ) :: mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1, &
                                         mxstak,nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
@@ -370,6 +371,12 @@ Subroutine scan_control                                    &
 
 ! read "no vdw", "no elec" and "no str" options
 
+     Else If (word(1:5) == 'polar') Then
+
+        If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
+        If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
+        If (word(1:6) == 'charmm' .and. mxshl > 0) keyind=1
+
      Else If (word(1:2) == 'no') Then
 
         Call get_word(record,word)
@@ -381,11 +388,6 @@ Subroutine scan_control                                    &
         Else If (word(1:4) == 'elec') Then
 
            l_n_e = .true.
-
-! reinitialise multipolar electrostatics indicators
-
-           mximpl = 0
-           mxompl = 0
 
         Else If (word(1:3) == 'ind' ) Then
 
@@ -516,6 +518,14 @@ Subroutine scan_control                                    &
      If (l_n_e) lelec = .not.l_n_e
   Else
      l_n_e = .true.
+  End If
+
+! reinitialise multipolar electrostatics indicators
+
+  If (l_n_e) Then
+     mximpl = 0
+     mxompl = 0
+     keyind = 0
   End If
 
 ! Sort vdw

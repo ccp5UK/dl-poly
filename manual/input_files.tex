@@ -119,7 +119,7 @@ pressure                0.001 k-atmospheres
 rcut                   10.0  Angstroms
 rpad                    0.35 Angstroms
 rvdw                    8.0  Angstroms
-subcelling thershold   50.0  particles
+subcelling threshold   50.0  particles
 exclude
 epsilon                 1.0
 ewald precision         1.0e-5
@@ -424,7 +424,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
 \>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
 \>                                              \> \\
-  \> {\bf io writ}e {\em method} $rp$ {\em type} $j$ $k$ $l$ $e$ \> set the general I/O write interface to: \\
+\> {\bf io writ}e {\em method} $rp$ {\em type} $j$ $k$ $l$ $e$ \> set the general I/O write interface to: \\
 \>                                              \> {\bf \em method} :: {\em mpiio} for MPI-I/O, {\em direct} for parallel direct access \\
 \>                                              \> \phantom{x} FORTRAN I/O or {\em master} for traditional master I/O or {\em netcdf} \\
 \>                                              \> \phantom{x} for netCDF I/O provided \D is compiled in a \\
@@ -561,6 +561,12 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf plumed restart} {\em string} (yes$|$no) \> starts a PLUMED calculation, if not switched off, and hints \\
 \>                                              \> PLUMED about restarting (default {\em on}), if {\em off} is specified \\
 \>                                              \> PLUMED restart accumulators will reinitialised \\
+\>                                              \> \\
+\> {\bf polar}isation {\em scheme/type} {\bf thole} $f$ \> set possible polarisation scheme to $type$ with \\
+\>                                              \> optional global atomic (Thole) dumping factor \\
+\>                                              \> (default $f=1.3$ if none are specified in MPOLES), \\
+\>                                              \> only $type=CHARMM$ for Druder core-shell polarisation \\
+\>                                              \> is currently available!!! \\
 \>                                              \> \\
 \> {\bf pres}sure $f$                           \> set required system pressure to $f$ katms \\
 \>                                              \> (target pressure for constant pressure\index{units!pressure} ensembles) \\
@@ -1463,7 +1469,7 @@ default is 50 although experimenting with values between 10 and 100 may
 provide sufficient information about a performance sweetspot.  The comparison
 condition is carried out on the average density per sub-link cell of each
 domain.  Thus subcelling takes into account only the per domain density
-variation. Obviously, the subcelling threshhold is limited to 1 particle per
+variation.  Obviously, the subcelling threshhold is limited to 1 particle per
 cell for the sake of safty and sanity reasons.
 \end{enumerate}
 
@@ -3133,9 +3139,11 @@ atoms in the molecule i.e. site names, masses and charges.  Each
 record carries the entries:
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
-\> {\tt sitnam} \> a8      \> atomic site name \\
-\> {\tt order}  \> integer \> multipolar order supplied \\
-\> {\tt nrept}  \> integer \> repeat counter
+\> {\tt sitnam}    \> a8      \> atomic site name \\
+\> {\tt order}     \> integer \> multipolar order supplied \\
+\> {\tt nrept}     \> integer \> repeat counter \\
+\> {\tt $\alpha$}  \> real(1) \> {\em optional} atomic polarisability (in $\AA^{3}$) \\
+\> {\tt $a$}       \> real(1) \> {\em optional} Thole dumping factor
 \end{tabbing}
 The integer {\tt nrept} need not be specified (in which case a value
 of 1 is assumed.)  A number greater than 1 specified here indicates
@@ -3143,6 +3151,13 @@ that the next ({\tt nrept}-1) entries in the CONFIG file are ascribed
 the atomic characteristics given in the current record.  The sum of the
 repeat numbers for all atoms in a molecule should equal the number
 specified by the {\bf atoms} directive.
+
+The atomic polarisability, $\alpha$, and the Thole \cite{thole-81a}
+dumping factor, $a$, are optional and are only parsed for the core
+(non-Druder) particles of core-shell units.  If all polarisabilities
+as well as core and shell charges and associated force constants are
+well defined then $a$ may default for (Druder nuclei) core particles
+if no Thole dumping is specified in both MPOLES and CONTROL.
 
 For each pole {\tt order} specified \D will read a new line that
 will specify the pole order momenta.  If a site has a specified

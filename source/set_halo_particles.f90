@@ -6,7 +6,7 @@ Subroutine set_halo_particles(rlnk,keyfce)
 ! neighbouring domains/nodes
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2016
+! author    - i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -15,6 +15,7 @@ Subroutine set_halo_particles(rlnk,keyfce)
   Use domains_module
   Use site_module
   Use config_module
+  Use mpoles_module
 
   Implicit None
 
@@ -134,6 +135,19 @@ Subroutine set_halo_particles(rlnk,keyfce)
      lfrzn(i)=frzsit(lsite(i))
      lfree(i)=fresit(lsite(i))
   End Do
+
+! Assign polarisation and dumping factor
+
+  If (mximpl > 0) Then
+     Do i=natms+1,nlast
+        plratm(i)=plrsit(lsite(i))
+        dmpatm(i)=dmpsit(lsite(i))
+     End Do
+  End If
+
+! Set VNL checkpoint
+
+  Call vnl_set_check()
 
 ! Record global atom indices for local+halo sorting
 ! and sort multiple entries

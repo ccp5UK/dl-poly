@@ -52,11 +52,11 @@ Subroutine error(kode)
 
      Else If (kode ==    8) Then
 
-        Write(nrite,'(/,1x,a)') 'error - ewald precision must be a POSITIVE real number'
+        Write(nrite,'(/,1x,a)') 'error - ewald precision MUST be a POSITIVE real number'
 
      Else If (kode ==    9) Then
 
-        Write(nrite,'(/,1x,a)') 'error - ewald sum parameters must be well defined'
+        Write(nrite,'(/,1x,a)') 'error - ewald sum parameters MUST be well defined'
 
      Else If (kode ==   10) Then
 
@@ -664,7 +664,7 @@ Subroutine error(kode)
 
      Else If (kode ==  433) Then
 
-        Write(nrite,'(/,1x,a)') 'error - rcut must be specified for the Ewald sum precision'
+        Write(nrite,'(/,1x,a)') 'error - rcut MUST be specified for the Ewald sum precision'
 
      Else If (kode ==  436) Then
 
@@ -732,23 +732,23 @@ Subroutine error(kode)
 
      Else If (kode ==  462) Then
 
-        Write(nrite,'(/,1x,a)') 'error - thermostat friction constant must be > 0'
+        Write(nrite,'(/,1x,a)') 'error - thermostat friction constant MUST be > 0'
 
      Else If (kode ==  463) Then
 
-        Write(nrite,'(/,1x,a)') 'error - barostat friction constant must be > 0'
+        Write(nrite,'(/,1x,a)') 'error - barostat friction constant MUST be > 0'
 
      Else If (kode ==  464) Then
 
-        Write(nrite,'(/,1x,a)') 'error - thermostat relaxation time constant must be > 0'
+        Write(nrite,'(/,1x,a)') 'error - thermostat relaxation time constant MUST be > 0'
 
      Else If (kode ==  466) Then
 
-        Write(nrite,'(/,1x,a)') 'error - barostat relaxation time constant must be > 0'
+        Write(nrite,'(/,1x,a)') 'error - barostat relaxation time constant MUST be > 0'
 
      Else If (kode ==  467) Then
 
-        Write(nrite,'(/,1x,a)') 'error - rho must not be zero in valid buckingham potential'
+        Write(nrite,'(/,1x,a)') 'error - rho MUST not be zero in valid buckingham potential'
 
      Else If (kode ==  468) Then
 
@@ -918,7 +918,7 @@ Subroutine error(kode)
 
      Else If (kode ==  552) Then
 
-        Write(nrite,'(/,1x,a)') 'error - REFERENCE must contain cell parameters !!!'
+        Write(nrite,'(/,1x,a)') 'error - REFERENCE MUST contain cell parameters !!!'
 
      Else If (kode ==  553) Then
 
@@ -974,8 +974,12 @@ Subroutine error(kode)
 
      Else If (kode ==  610) Then
 
-        Write(nrite,'(/,1x,2a)') &
+        Write(nrite,'(/,1x,a)') &
         'error - "impact" applied on particle that is either frozen, or the shell of a core-shell unit or part of a RB'
+
+     Else If (kode ==  615) Then
+
+        Write(nrite,'(/,1x,a)') 'error - q(core)*q(shell)*k(core-shell) MUST NOT be zero'
 
      Else If (kode ==  620) Then
 

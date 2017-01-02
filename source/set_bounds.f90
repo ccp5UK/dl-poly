@@ -8,7 +8,7 @@ Subroutine set_bounds                                 &
 ! grid sizes, paddings, iterations, etc. as specified in setup_module
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2016
+! author    - i.t.todorov december 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014 (VAF)
 !
@@ -27,7 +27,7 @@ Subroutine set_bounds                                 &
   Use tersoff_module,     Only : potter
   Use development_module, Only : l_trm
   Use greenkubo_module,   Only : vafsamp
-  Use mpoles_module,      Only : induce
+  Use mpoles_module,      Only : keyind,induce
 
   Implicit None
 
@@ -90,7 +90,8 @@ Subroutine set_bounds                                 &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
-           mxompl,mximpl,nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
+           mxshl,mxompl,mximpl,keyind,                     &
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -555,7 +556,7 @@ Subroutine set_bounds                                 &
      If (.not.l_str) Then
         If (.not.(mxmet == 0 .and. l_n_e .and. l_n_v .and. mxrdf == 0 .and. kim == ' ')) Then ! 2b link-cells are needed
            If (mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
-              rpad = 0.85_wp * (0.5_wp*width - rcut - 1.0e-6_wp)
+              rpad = 0.95_wp * (0.5_wp*width - rcut - 1.0e-6_wp)
               rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
            End If
 
@@ -565,7 +566,7 @@ Subroutine set_bounds                                 &
                  rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
                  If (rpad > tol) Go To 10
               Else ! not so good non-exception
-                 rpad = Min( 0.85_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
+                 rpad = Min( 0.95_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
                                                r_npry * celprp(8) / Real(ily,wp) , &
                                                r_nprz * celprp(9) / Real(ilz,wp) ) &
                                          - rcut - 1.0e-6_wp ) , test * rcut )
@@ -738,10 +739,11 @@ Subroutine set_bounds                                 &
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
-  mxbfdp = Merge( 2, 0, mxnode > 1) * Nint( Real(                                     &
-           mxatdm*(18+15 + Merge(mxexcl,0,mximpl > 0) + mxexcl + Merge(3,0,llvnl)   + &
-           Merge(2*(6+mxstak), 0, l_msd)) + 3*vafsamp                               + &
-           4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd            + &
+  mxbfdp = Merge( 2, 0, mxnode > 1) * Nint( Real(                          &
+           mxatdm*(18+12 + Merge(3,0,llvnl) + (mxexcl+1)                 + &
+           Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0)  + &
+           Merge(2*(6+mxstak), 0, l_msd)) + 3*vafsamp                    + &
+           4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
            3*mxteth+4*mxbond+5*mxangl+8*mxdihd+6*mxinv,wp) * dens0)
 
 ! statistics connect deporting total per atom
