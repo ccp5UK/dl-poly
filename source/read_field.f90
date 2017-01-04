@@ -2673,8 +2673,8 @@ Subroutine read_field                   &
                  iatm1=lstshl(1,nshels) ! core
                  iatm2=lstshl(2,nshels) ! shell
 
-                 isite1 = nsite - numsit(itmols) + iatm1
-                 isite2 = nsite - numsit(itmols) + iatm2
+                 isite1 = nsite + iatm1
+                 isite2 = nsite + iatm2
 
                  q_core_p=q_core_p*chgsit(isite1)
                  q_core_s=q_core_s+Abs(chgsit(isite1))
@@ -2751,8 +2751,8 @@ Subroutine read_field                   &
                     iatm1=lstshl(1,nshels) ! core
                     iatm2=lstshl(2,nshels) ! shell
 
-                    isite1 = nsite - numsit(itmols) + iatm1
-                    isite2 = nsite - numsit(itmols) + iatm2
+                    isite1 = nsite + iatm1
+                    isite2 = nsite + iatm2
 
                     q_core=chgsit(isite1)
                     p_core=plrsit(isite1)
@@ -2809,14 +2809,14 @@ Subroutine read_field                   &
                     iatm1=lstshl(1,nshels) ! core
                     iatm2=lstshl(2,nshels) ! shell
 
-                    isite1 = nsite - numsit(itmols) + iatm1
-                    isite2 = nsite - numsit(itmols) + iatm2
+                    isite1 = nsite + iatm1
+                    isite2 = nsite + iatm2
 
                     q_core=chgsit(isite1)
                     q_shel=chgsit(isite2)
                     k_crsh=prmshl(1,nshels)
 
-                    If (q_core*q_shel*k_crsh <= zero_plus) Then
+                    If (Abs(q_core*q_shel*k_crsh) <= zero_plus) Then
                        lshl_abort=.true.
                        Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
                     End If
