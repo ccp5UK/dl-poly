@@ -2773,6 +2773,7 @@ Subroutine read_field                   &
                        Else
                           chgsit(isite2)=charge
                           mpllfr(1,isite2)=charge
+                          sumchg=sumchg+Abs(charge)
                        End If
                     Else If (p_core <= zero_plus) Then ! set drude force constants
                        If (k_crsh <= zero_plus) Then
@@ -2827,6 +2828,16 @@ Subroutine read_field                   &
            If (lshl_abort) Call error(615)
         End If
 
+! check (keyfce) for charges in the system
+
+        If (keyfce /= 0 .and. Abs(sumchg) <= zero_plus) Then
+           If (idnode == 0) Call warning(4,sumchg,0.0_wp,0.0_wp)
+           If (l_str) Then
+              keyfce=0
+              If (idnode == 0) Write(nrite,"(1x,'Electrostatics switched off!!!')")
+           End If
+        End If
+
 ! calculate total system charge
 
         sumchg=0.0_wp
@@ -2839,16 +2850,6 @@ Subroutine read_field                   &
         End Do
 
         If (Abs(sumchg) > 1.0e-6_wp .and. idnode == 0) Call warning(5,sumchg,0.0_wp,0.0_wp)
-
-! check (keyfce) for charges in the system
-
-        If (keyfce /= 0 .and. Abs(sumchg) <= zero_plus) Then
-           If (idnode == 0) Call warning(4,sumchg,0.0_wp,0.0_wp)
-           If (l_str) Then
-              keyfce=0
-              If (idnode == 0) Write(nrite,"(1x,'Electrostatics switched off!!!')")
-           End If
-        End If
 
 ! check (megshl) shell topological irregularities
 
