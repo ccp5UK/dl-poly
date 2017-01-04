@@ -989,8 +989,9 @@ their model system.
 \end{table}
 
 \item The {\bf zero} directive, enables a "zero temperature"
-optimisation.  The target temperature of the simulation is reset to
-$10$ Kelvin and a crude energy minimiser:
+optimisation.  If no optional "fire" keyword is added then the
+target temperature of the simulation is reset to $10$ Kelvin.
+In either case a crude energy minimiser:
 \begin{equation}
 \vek{v}_{i} \leftarrow \left\{ \begin{array} {l@{\quad:\quad}l}
 0 & \vek{v}_{i} \cdot \vek{f}_{i} < 0 \\
@@ -1001,10 +1002,9 @@ $10$ Kelvin and a crude energy minimiser:
 \end{equation}
 is used to help the system relax before each integration of the
 equations of motion (measures are taken to conserve the MD cell
-momentum).  This must not be thought of as a true energy
-minimization method.  {\bf Note} that this optimisation is applied
-irrespectively of whether the simulation runs in equilibration or
-statistical mode.
+momentum).  This must not be thought of as a true energy minimization
+method.  {\bf Note} that this optimisation is only applied
+when the simulation runs in equilibration mode.
 
 The algorithm is developed in the \D routine {\sc zero\_k\_optimise}.
 
@@ -1471,6 +1471,13 @@ condition is carried out on the average density per sub-link cell of each
 domain.  Thus subcelling takes into account only the per domain density
 variation.  Obviously, the subcelling threshhold is limited to 1 particle per
 cell for the sake of safty and sanity reasons.
+
+\item The {\bf exclu}de option will make sure that for all {\em conventional}
+(no distance restraints) intra-molecular interactions (bonds, angles,
+digedrals, inversions) as well as for CB and RB units any intra-core-shell
+interactions fall within the list of excluded interactions.  This is not
+a default behaviour.  The option is also triggered by the {\bf polar}isation
+option.
 \end{enumerate}
 
 \noindent Users are advised to study the example CONTROL files

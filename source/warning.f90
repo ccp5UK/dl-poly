@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2016
+! author    - i.t.todorov january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -41,7 +41,7 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode ==   4) Then
 
-        Write(nrite,'(/,1x,2(a,/))')                             &
+        Write(nrite,'(/,2(1x,a,/))')                             &
         '*** warning - system with uncharged particles !!! ***', &
         '*** "no elec" or/and "no strict" directives in CONTROL may speed up simulation !!! ***'
 

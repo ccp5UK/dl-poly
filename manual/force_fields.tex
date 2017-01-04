@@ -2908,11 +2908,11 @@ Equation~(\ref{druder}) governs the relation between the force constant,
 $k_{2}$ (positive), the shell charge $q_{s}$, and the atomic polarisability,
 $\alpha$ (positive).  Thus if one is missing, undefined or zero, it can be
 recovered from the rest in \D.  CHARMM only allows for $q_{s}$ to be
-recovered.  {\bf Note} that in \D if $q_{s}$ is recovered, it has an
-opposite sign to that of $q_{c}$!  In the special case when all Druders'
-force constants, $k_{2}$, are undefined or zero (in FIELD), \D will resort
-to using the same one of 1000~kcal~mol$^{-1}$\AA$^{-2}$ for all core-shell
-units, following the CHARMM recommendations in \cite{mackerell-16a}.
+recovered.  {\bf Note} that in \D if any $q_{s}$ is recovered, it has an
+opposite sign to that of its corresponding $q_{c}$!  In the special case
+when all Druders' force constants, $k_{2}$, are undefined or zero (in FIELD),
+\D will resort to using the value of 1000~kcal~mol$^{-1}$\AA$^{-2}$ for all
+core-shell units, as per CHARMM recommendations in \cite{mackerell-16a}.
 In all other cases if two (or more) of these three quantities are undefined
 or zero \D will terminate execution in a controlled manner, indicating the
 exact nature of the problem.
