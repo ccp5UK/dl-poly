@@ -4,47 +4,11 @@
 ! set shells on top of their cores preventatively
 
      If (megshl > 0 .and. keyshl == 2 .and. nstep == 0 .and. nsteql > 0) Then
-
         Call core_shell_on_top()
 
-! Check VNL conditioning
+! Refresh mappings
 
-        Call vnl_check(l_str,rcut,rpad,rlnk,width)
-
-        If (l_vnl) Then
-
-! Relocate atoms to new domains and restore bonding description
-
-           Call relocate_particles &
-           (rlnk,lbook,megatm,  &
-           megshl,m_con,megpmf, &
-           m_rgd,megtet,        &
-           megbnd,megang,megdih,meginv)
-
-! Exchange atomic data in border regions
-
-           Call set_halo_particles(rlnk,keyfce) ! inducing in here only
-
-! Re-tag RBs when called again after the very first time
-! when it's done in rigid_bodies_setup <- build_book_intra
-
-           If (m_rgd > 0) Then
-              Call rigid_bodies_tags()
-              Call rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
-           End If
-
-        Else
-
-! Exchange atomic positions in border regions
-
-           Call refresh_halo_positions()
-
-        End If
-
-! set and halo rotational matrices and their infinitesimal rotations
-
-        If (mximpl > 0) Call mpoles_rotmat_set_halo()
-
+        Call w_refresh_mappings()
      End If
 
 100  Continue ! Only used when relaxed is false

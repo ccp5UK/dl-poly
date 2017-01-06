@@ -5,7 +5,7 @@ Subroutine xscale(m_rgd,keyens,tstep,eta)
 ! dl_poly_4 routine to scale initial positions with change in box shape
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2016
+! author    - i.t.todorov january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,6 +29,7 @@ Subroutine xscale(m_rgd,keyens,tstep,eta)
 
   Real( Kind = wp ), Allocatable :: rgdxin(:),rgdyin(:),rgdzin(:)
 
+  If (keyens < 20) Return
 
   If (m_rgd == 0) Then
 
@@ -550,7 +551,7 @@ Subroutine xscale(m_rgd,keyens,tstep,eta)
 
               lrgd=listrgd(-1,irgd)
               Do jrgd=1,lrgd
-                 i=indrgd(jrgd,irgd)
+                    i=indrgd(jrgd,irgd)
 
                  If (i <= natms) Then
                     xin(i) = xin(i) - x + rgdxin(irgd)
@@ -839,6 +840,10 @@ Subroutine xscale(m_rgd,keyens,tstep,eta)
 
         End If
 
+! Halo final RB members positions across onto neighbouring domains
+
+        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xbg,ybg,zbg)
+
      End If
 
      Deallocate (rgdxin,rgdyin,rgdzin, Stat = fail)
@@ -846,10 +851,6 @@ Subroutine xscale(m_rgd,keyens,tstep,eta)
         Write(nrite,'(/,1x,a,i0)') 'xscale deallocation failure, node: ', idnode
         Call error(0)
      End If
-
-! Halo final RB members positions across onto neighbouring domains
-
-        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xbg,ybg,zbg)
 
   End If
 

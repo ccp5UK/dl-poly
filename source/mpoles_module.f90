@@ -6,7 +6,7 @@ Module mpoles_module
 ! multipoles
 !
 ! copyright - daresbury laboratory
-! author    - h.a.boateng & i.t.todorov december 2016
+! author    - h.a.boateng & i.t.todorov january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,7 +27,7 @@ Module mpoles_module
   Integer,           Save :: keyind = 0 ! 0 - default :: unscreened & undamped - iAMOEBA like
                                         ! 1 - CHARMM  :: q_shell == -Sign(q_core) * Sqrt(alpha * k) ; k_CHARMM = 1000 kcal*mol^−1*Å^−2
 
-  Real,              Save :: thole  = 1.3_wp  ! default thole dumping for CHARMM representation
+  Real( Kind = wp ), Save :: thole  = 1.3_wp  ! default thole dumping for CHARMM representation
 
 ! variables for multipolar interactions
 
