@@ -29,6 +29,7 @@ Subroutine scan_control                                    &
   Use kim_module,         Only : kim,rkim
   Use msd_module
   Use greenkubo_module,   Only : isvaf,nsvaf,vafsamp
+  Use rdf_module,         Only : l_jack, l_block
   Use development_module, Only : l_trm
 
   Implicit None
