@@ -10,13 +10,14 @@ Subroutine rdf_collect(iatm,rcut,rrt)
 ! copyright - daresbury laboratory
 ! author    - t.forester march 1994
 ! amended   - i.t.todorov november 2014
+! contrib   - a.b.g.chalk january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module,  Only : mxlist,mxgrdf
   Use config_module, Only : natms,ltg,ltype,list
-  Use rdf_module
+  Use rdf_module,        Only : ntprdf,lstrdf,rdf, tmp_rdf, block_number, l_block, l_jack
 
   Implicit None
 
@@ -66,6 +67,8 @@ Subroutine rdf_collect(iatm,rcut,rrt)
 ! accumulate correlation
 
               rdf(ll,kk) = rdf(ll,kk) + 1.0_wp
+   If(l_block .or. l_jack) tmp_rdf(ll,kk,block_number) = tmp_rdf(ll,kk,block_number) + 1.0_wp
+
            End If
 
         End If

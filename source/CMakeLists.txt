@@ -195,6 +195,7 @@ ewald_excl_mforces_d.f90
 ewald_excl_mforces.f90
 ewald_frzn_mforces.f90
 d_ene_trq_mpoles.f90
+error_calculation.F90
 )
 if(BUILDER)
   set_property(SOURCE development_module.F90 APPEND PROPERTY

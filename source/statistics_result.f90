@@ -10,6 +10,7 @@ Subroutine statistics_result                                    &
 ! copyright - daresbury laboratory
 ! author    - w.smith & i.t.todorov march 2016
 ! contrib   - m.a.seaton june 2014
+! contrib   - a.b.g.chalk january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -27,10 +28,11 @@ Subroutine statistics_result                                    &
   Use angles_module,      Only : ncfang
   Use dihedrals_module,   Only : ncfdih
   Use inversions_module,  Only : ncfinv
-  Use rdf_module,         Only : ncfrdf
+  Use rdf_module,         Only : ncfrdf, l_jack, l_block
   Use z_density_module,   Only : ncfzdn
   Use statistics_module
   Use msd_module
+  Use block_averages_module
   Use greenkubo_module,   Only : vafsamp,vafcount
 
   Implicit None
@@ -314,7 +316,10 @@ Subroutine statistics_result                                    &
 
 ! calculate and print radial distribution functions
 
-  If (lrdf .and. lprdf .and. ncfrdf > 0) Call rdf_compute(lpana,rcut,temp)
+!If block average errors, output that, else if jackknife errors output those, else just RDF.
+  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_block) Call calculate_errors(temp, rcut, nstep)
+  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_jack .and. .not. l_block) Call calculate_errors_jackknife(temp, rcut, nstep)
+  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. .not.(l_block .or. l_jack)) Call rdf_compute(lpana,rcut,temp)
 
 ! calculate and print z-density profile
 

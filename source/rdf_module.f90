@@ -6,6 +6,7 @@ Module rdf_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov march 2014
+! contrib   - a.b.g.chalk january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,7 +21,15 @@ Module rdf_module
 
   Real( Kind = wp ), Allocatable, Save :: rdf(:,:)
 
-  Public :: allocate_rdf_arrays
+  Real( Kind = wp ), Allocatable, Save :: block_averages(:,:,:,:)
+  Integer, Parameter                   :: num_blocks = 25
+  Integer, Save                        :: block_size
+  Integer,                        Save :: block_number = 1
+  Real( Kind = wp ), Allocatable, Save :: tmp_rdf(:,:,:)
+  Logical,                        Save :: tmp_rdf_sync = .FALSE.
+  Logical,        Save :: l_block = .FALSE., l_jack = .FALSE.
+
+  Public :: allocate_rdf_arrays, allocate_block_average_array
 
 Contains
 
@@ -44,5 +53,31 @@ Contains
     rdf = 0.0_wp
 
   End Subroutine allocate_rdf_arrays
+
+Subroutine allocate_block_average_array(nstrun)
+
+  Use site_module, Only: ntpatm
+      Use setup_module, Only : mxrdf,mxgrdf
+  Implicit None
+  Integer, Intent( In ) :: nstrun
+  Integer :: temp1, temp2
+  
+  Integer, Dimension( 1:2 ) :: fail
+  block_size = nstrun/(num_blocks-1)
+  if(block_size < 2) then
+    block_size = 2
+  endif
+
+  temp1 = mxrdf + 16-Mod(mxrdf,16)
+  temp2 = mxgrdf + 16-Mod(mxgrdf,16)
+  Allocate(block_averages(1:ntpatm,1:ntpatm,1:mxgrdf,1:num_blocks+1), Stat = fail(1))
+  Allocate(tmp_rdf( 1:temp2,1:temp1, 1:num_blocks+1 ), Stat = fail(2))
+
+  If (Any(fail > 0)) Call error(1016)
+  block_averages = 0.0_wp
+  tmp_rdf = 0.0_wp
+
+  End Subroutine allocate_block_average_array
+
 
 End Module rdf_module

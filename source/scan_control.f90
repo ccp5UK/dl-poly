@@ -16,6 +16,7 @@ Subroutine scan_control                                    &
 ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
 ! contrib   - p.s.petkov february 2015
+! contrib   - a.b.g.chalk january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -480,6 +481,15 @@ Subroutine scan_control                                    &
 
         carry=.false.
 
+     Else If (word(1:6) == 'errors') Then
+       Call lower_case(record)
+       Call get_word(record,word)
+       If(word(1:4) == 'jack') Then
+	
+          l_jack = .TRUE.
+       Else
+         l_block = .TRUE.
+       End If
      End If
 
   End Do
@@ -883,6 +893,8 @@ Subroutine scan_control                                    &
   l_trm = (l_exp .and. nstrun == 0)
   If (((.not.lsim) .or. l_trm) .and. lrpad) rpad=0.0_wp
 
+  l_block = l_block .and. lrdf
+  l_jack = l_jack .and. lrdf
   Return
 
 ! CONTROL file does not exist

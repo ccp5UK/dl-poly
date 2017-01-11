@@ -31,6 +31,7 @@ Subroutine two_body_forces                        &
 ! author    - i.t.todorov april 2016
 ! contrib   - h.a.boateng february 2016
 ! contrib   - p.s.petkov february 2015
+! contrib   - a.b.g.chalk january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -46,7 +47,8 @@ Subroutine two_body_forces                        &
   Use vdw_module,     Only : ntpvdw
   Use metal_module,   Only : ntpmet
   Use kim_module
-  Use rdf_module,     Only : ncfrdf
+  Use rdf_module,    Only : ncfrdf, block_size, l_block, l_jack
+  Use block_averages_module
 
   Implicit None
 
@@ -462,6 +464,9 @@ Subroutine two_body_forces                        &
      Call error(0)
   End If
 
+!Increase block_number when required
+if((l_block .or. l_jack) .and. l_do_rdf .and. mod(nstep, block_size) == 0) block_number = block_number + 1
+
 ! Further Ewald/Poisson Solver corrections or an infrequent refresh
 
   If (keyfce == 2 .or. keyfce == 12) Then
@@ -587,5 +592,6 @@ Subroutine two_body_forces                        &
   stress(1) = stress(1) + tmp
   stress(5) = stress(5) + tmp
   stress(9) = stress(9) + tmp
+
 
 End Subroutine two_body_forces
