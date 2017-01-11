@@ -12,7 +12,6 @@ module block_averages_module
   Use kinds_f90
   Use config_module
   Use parse_module
-  Use rdf_collect_module
   Use io_module, Only : io_close
 Use setup_module, Only : engunit, boltz, mxgrdf, delr_max, fourpi, mxlist, mxrdf, nrdfdt,nrite
 Use site_module, Only: ntpatm, dens, unqatm, numtyp
