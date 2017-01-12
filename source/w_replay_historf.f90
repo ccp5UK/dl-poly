@@ -68,7 +68,7 @@
         tmsh=0.0_wp ! tmst substitute
      End If
 
-     If (exout >= 0) Then
+     If (exout == 0) Then
         nstph=nstph+1
 
         If (nstph <= nstpe) Then
@@ -268,17 +268,27 @@
            zin(i)=zzz(i)
         End Do
         clin=cell
-
-        If (exout > 0) Exit
      Else
         Exit
      End If
   End Do
 
+! Finish with grace
+
+  If      (exout > 0) Then ! normal exit
+
+! recover connectivity arrays for REVCON, REVIVE and printing purposes
+! read_history MUST NOT initialise R,V,F arrays!!!
+
+     ltg(1:natms) = ltg0(1:natms)
+     lsa(1:natms) = lsa0(1:natms)
+     lsi(1:natms) = lsi0(1:natms)
+
+  Else If (exout < 0) Then ! abnormal exit
+
 ! If reading HISTORY finished awkwardly
 ! recover positions and generate kinetics
 
-  If (exout < 0) Then
      Do i=1,natms
         xxx(i)=xin(i)
         yyy(i)=yin(i)
@@ -294,7 +304,15 @@
            megshl,megcon,megpmf,     &
            megrgd,degtra,degrot,     &
            degfre,degshl,sigma,engrot)
+
   End If
+  Call deallocate_statistics_connect()
+
+! Save restart data because of next action (and disallow the same in dl_poly)
+
+  If (.not. l_tor) Call system_revive                         &
+           (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
+           chit,cint,chip,eta,strcon,strpmf,stress)
 
 ! step counter is data counter now, so statistics_result is triggered
 

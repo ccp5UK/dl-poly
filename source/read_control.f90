@@ -2523,14 +2523,14 @@ Subroutine read_control                                &
 
   If (lpana .or. mxgana > 0) Then
      If (mxgana == 0) Then
-        If (idnode == 0) Write(nrite,"(/,1x,a)") 'no intramolecuar distribution collection requested'
+        If (idnode == 0) Write(nrite,"(/,1x,a)") 'no intramolecular distribution collection requested'
      Else
         If (mxgbnd1 > 0 .and. mxgang1 > 0 .and. &
             mxgdih1 > 0 .and. mxginv1 > 0) Then
            If (idnode == 0) &
-              Write(nrite,"(/,1x,a)") 'full intramolecuar distribution collection requested (all=bnd/ang/dih/inv):'
+              Write(nrite,"(/,1x,a)") 'full intramolecular distribution collection requested (all=bnd/ang/dih/inv):'
         Else
-           If (idnode == 0) Write(nrite,"(/,1x,a)") 'intramolecuar distribution collection requested for:'
+           If (idnode == 0) Write(nrite,"(/,1x,a)") 'intramolecular distribution collection requested for:'
         End If
 
         i=Max(1,nstana,nstbnd,nstang,nstdih,nstinv)

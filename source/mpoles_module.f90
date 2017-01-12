@@ -42,7 +42,7 @@ Module mpoles_module
   Integer,           Allocatable, Save :: lchatm(:,:)                         ! CHARMM core-shell screened electrostatics induction list
 
   Real( Kind = wp ), Allocatable, Save :: mpllfr(:,:),mplgfr(:,:)             ! local/lab(site) and global(atom) frames
-  Real( Kind = wp ), Allocatable, Save :: plrsit(:),plratm(:)                 ! induced dipole polarisation for sites and atoms
+  Real( Kind = wp ), Allocatable, Save :: plrsit(:),plratm(:)                 ! induced dipole polarisation for sites and atoms (inversed if non-zero)
   Real( Kind = wp ), Allocatable, Save :: dmpsit(:),dmpatm(:)                 ! sites' and atoms' (thole) dumping coefficient/factor (for self-polarisation)
 
   Type( rot_mat ),   Allocatable, Save :: mprotm(:)                           ! rotation matrices
