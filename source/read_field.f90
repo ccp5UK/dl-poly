@@ -2791,6 +2791,10 @@ Subroutine read_field                   &
                        End If
                     End If
 
+! Redefine plrsit as reciprocal of polarisability
+
+                    plrsit(isite1)=1.0_wp/plrsit(isite1)
+
 ! copy polarisability and dumping from cores to their shells
 
                     plrsit(isite2)=plrsit(isite1)

@@ -669,15 +669,13 @@ Program dl_poly
      End If
   End If
 
-! Save restart data (final)
+! Save restart data for real simulations only (final)
 
-  If (.not.l_tor) Call system_revive                          &
+  If (lsim .and. (.not.l_tor)) Call system_revive             &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
            chit,cint,chip,eta,strcon,strpmf,stress)
 
 ! Produce summary of simulation
-
-  If (.not.lsim) tstep=tsths ! tstep for 'replay history'
 
   Call statistics_result                                        &
            (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &

@@ -5,7 +5,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 ! dl_poly_4 subroutine for reading the trajectory data file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2016
+! author    - i.t.todorov january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -187,10 +187,12 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 ! Reinitialise local-to-global counters and all levels of information at every bloody read
 ! Ilian's & Alin's fix to clear incoherencies with re-emptied/re-filled domains
 
-  lsi=0 ; lsa=0 ; ltg=0                    ! A must
-  xxx=0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp ! Not necessary but fair
-  vxx=0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp ! Not necessary but fair
-  fxx=0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp ! Not necessary but fair
+  lsi=0 ; lsa=0 ; ltg=0                     ! A must unfortunately
+
+! Necessary to not initialise keep the last frame info after hitting EOF
+!  xxx=0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp ! unfortunate but
+!  vxx=0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp ! unfortunate but
+!  fxx=0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp ! unfortunate but
 
 ! MASTER READ
 
