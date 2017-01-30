@@ -213,6 +213,10 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 
      Call get_line(safe,nconf,record); If (.not.safe) Go To 200
 
+     xxx=0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp
+     vxx=0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp
+     fxx=0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
+
      Call get_word(record,word) ! timestep
      Call get_word(record,word) ; nstep = Nint(word_2_real(word))
      Call get_word(record,word) ; If (Nint(word_2_real(word)) /= megatm) Go To 300

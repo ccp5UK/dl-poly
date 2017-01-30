@@ -250,6 +250,7 @@ In \D distance restraints\index{distance restraints} are handled
 by the routine {\sc bonds\_forces} (and {\sc intra\_coul} called within).
 
 \subsection{Valence Angle Potentials}
+\label{angle-potentials}
 
 \begin{figure}[htbp]
 \begin{center}
@@ -449,6 +450,7 @@ In \D angular restraints\index{angular restraints} are handled by
 the routine {\sc angles\_forces}.
 
 \subsection{Dihedral Angle Potentials}
+\label{dihedral-potentials}
 
 \begin{figure}[htbp]
 \begin{center}
@@ -651,6 +653,7 @@ In \D dihedral forces are handled by the routine {\sc dihedrals\_forces}
 (and {\sc intra\_coul} and {\sc dihedrals\_14\_vdw} called within).
 
 \subsection{Improper Dihedral Angle Potentials}
+\label{improper-dihedral-potentials}
 
 Improper dihedrals\index{potential!improper dihedral} are used to
 restrict the geometry of molecules and as such need not have a
@@ -720,6 +723,7 @@ In \D torsional restraints\index{torsional restraints} are handled by
 the routine {\sc dihedrals\_forces}.
 
 \subsection{Inversion Angle Potentials}
+\label{inversion-potentials}
 
 \begin{figure}[htbp]
 \begin{center}
@@ -2944,7 +2948,7 @@ then the pair $1_{core}$-$2_{core}$ will be disregarded from that list.
 The CHARMM, self-induced intra-molecular (dipole-dipole) interactions
 are scaled by a factor of
 \begin{equation}
-S(r_{ij} = 1 -\left[ 1 + \frac{1}{2}
+S(r_{ij}) = 1 -\left[ 1 + \frac{1}{2}
 \frac{a_{i}+a_{j}}{(\alpha_{i}\alpha_{j})^{1/6}} r_{ij}\right]~
 \exp\left(-\frac{a_{i}+a_{j}}{(\alpha_{i}\alpha_{j})^{1/6}} r_{ij}\right)~~,
 \end{equation}

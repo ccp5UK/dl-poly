@@ -14,10 +14,10 @@ Subroutine coul_cp_dfield &
 
   Use kinds_f90
   Use comms_module,  Only : idnode,gtime
+  Use setup_module
   Use config_module, Only : natms,nlast,ltg,list
   Use mpoles_module, Only : indipx,indipy,indipz,mpfldx,mpfldy,mpfldz,&
                             plratm
-  Use setup_module
 
   Implicit None
 

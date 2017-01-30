@@ -8,7 +8,8 @@ Subroutine read_control                                &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
            temp,press,strext,keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
-           keymin,nstmin,min_tol,nstgaus,nstscal,      &
+           keymin,nstmin,min_tol,                      &
+           nstzero,nstgaus,nstscal,                    &
            keyens,iso,taut,chi,soft,gama,taup,tai,ten, &
            keypse,wthpse,tmppse,                       &
            fmax,nstbpo,intsta,keyfce,epsq,             &
@@ -23,7 +24,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2016
+! author    - i.t.todorov january 2017
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -64,7 +65,7 @@ Subroutine read_control                                &
 
   Logical,                Intent(   Out ) :: l_exp,lecx,            &
                                              lfcap,l_top,           &
-                                             lzero,lmin,            &
+                                             lmin,lzero,            &
                                              ltgaus,ltscal,         &
                                              lvar,leql,lpse,lfce,   &
                                              lpana,                 &
@@ -74,7 +75,8 @@ Subroutine read_control                                &
 
 
   Integer,                Intent(   Out ) :: nx,ny,nz,imd,tmd,     &
-                                             keyres,nstrun,nsteql, &
+                                             keyres,nstrun,        &
+                                             nsteql,nstzero,       &
                                              keymin,nstmin,        &
                                              nstgaus,nstscal,      &
                                              keyens,iso,           &
@@ -212,10 +214,12 @@ Subroutine read_control                                &
   ltscal  = .false.
   nstscal = 0
 
-! default switch for zero temperature optimisation
+! default switch for zero temperature optimisation and default number of
+! steps when to be applied
 
-  lzero = .false.
-  l_0   = .false.
+  lzero   = .false.
+  nstzero = 0
+  l_0     = .false. ! T/=10K
 
 ! default integration type (VV), ensemble switch (not defined) and key
 
@@ -727,11 +731,19 @@ Subroutine read_control                                &
 
      Else If (word(1:4) == 'zero') Then
 
-        lzero  = .true.
-        If (idnode == 0) Write(nrite,"(/,1x,a)") 'zero K optimisation requested'
+        lzero = .true.
+
+! Check defaults
 
         Call get_word(record,word)
         l_0 = (word(1:4) == 'fire')
+        nstzero = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
+
+        If (word(1:5) == 'every') Call get_word(record,word)
+        nstzero = Max(nstzero,Abs(Nint(word_2_real(word,0.0_wp))))
+
+        If (idnode == 0) Write(nrite,"(/,1x,'zero K optimisation on (during equilibration)', &
+           & /,1x,'temperature regaussing interval',i10)") nstzero
 
         If (l_0) Then
            If (idnode == 0) &
@@ -1023,7 +1035,7 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
-        nstgaus = Abs(Nint(word_2_real(word,0.0_wp)))
+        nstgaus = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
         ltgaus =.true.
         If (idnode == 0) Write(nrite,"(/,1x,'regauss temperature on (during equilibration)', &
@@ -1036,7 +1048,7 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
-        nstscal = Abs(Nint(word_2_real(word,0.0_wp)))
+        nstscal = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
         ltscal =.true.
         If (idnode == 0) Write(nrite,"(/,1x,'temperature scaling on (during equilibration)', &
@@ -2394,6 +2406,7 @@ Subroutine read_control                                &
 ! fix on step-dependent options
 
   If (nstmin  == 0) nstmin  = nsteql+1
+  If (nstzero == 0) nstzero = nsteql+1
   If (nstgaus == 0) nstgaus = nsteql+1
   If (nstscal == 0) nstscal = nsteql+1
 

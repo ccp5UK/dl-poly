@@ -130,6 +130,9 @@
 ! Evaluate kinetics if available
 
            If (levcfg > 0 .and. levcfg < 3) Then
+              If (lzero .and. nstep <= nsteql .and. Mod(nstep+1-nsteql,nstzero) == 0) &
+                 Call zero_k_optimise(strkin,strknf,strknt,engke,engrot)
+
               If (lzero .and. nstep <= nsteql) Call zero_k_optimise(strkin,strknf,strknt,engke,engrot)
 
 ! Calculate kinetic stress and energy if available

@@ -25,6 +25,7 @@ core_shell_quench.f90
 core_shell_relax.f90
 coul_cp_forces.f90
 coul_cp_mforces.f90
+coul_chrm_forces.f90
 coul_dddp_forces.f90
 coul_dddp_mforces.f90
 coul_fscp_forces.f90

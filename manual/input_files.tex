@@ -477,7 +477,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> $10^{-6}~\le~f~\le~0.1$, default $f~=~0.005$); \\
 \>                                              \> the optional stepping, $s$, default is $\delta t_{instanteneous}^{2}$; the lowest {\em string} \\
 \>                                              \> CGM minimised configuration during equilibration is saved \\
-\>                                              \> in a file, CFGMIN which has the same format as CONFIG \\
+\>                                              \> in a file, CFGMIN which has the same format as CONFIG, \\
+\>                                              \> {\bf N.B.} thermostat and barostat memory are not erased \\
 \>                                              \> \\
 \> {\bf msdtmp} $i~j$                           \> write MSDTMP file, containing particles' individual $\sqrt{MSD}$ \\
 \>                                              \> (in \AA) and T$_{mean}$ (in Kelvin), with controls: \\
@@ -608,7 +609,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> as for Ewald summation ($10^{-20}~\le~f~\le~0.5$, default $f~=~10^{-20}$) \\
 \>                                              \> \\
 \> {\bf regaus}s (every) $n$                    \> resample the instantaneous system momenta distribution \\
-\>                                              \> every $n$ steps during equilibration \\
+\>                                              \> every $n$ steps (default $n~=~1$) during equilibration \\
 \>                                              \> (with respect to the last equilibration step), {\bf N.B.} \\
 \>                                              \> any thermostat and barostat memory is also erased \\
 \>                                              \> \\
@@ -641,9 +642,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf rvdw} (cutoff) $f$                      \> set required short-ranged interactions cutoff to $f$ \AA \\
 \>                                              \> \\
-\> {\bf scale} (temperature) (every) $n$        \> rescale system temperature every $n$ steps during equilibration \\
-\>                                              \> (with respect to the last equilibration step, \\
-\>                                              \> (atomic velocities are scaled collectively), {\bf N.B.} \\
+\> {\bf scale} (temperature) (every) $n$        \> rescale system temperature every $n$ steps (default $n~=~1$) \\
+\>                                              \> during equilibration (with respect to the last equilibration \\
+\>                                              \> step - atomic velocities are scaled collectively), {\bf N.B.} \\
 \>                                              \> any thermostat and barostat memory is also erased \\
 \>                                              \> \\
 \> {\bf seed} $n_{1}~n_{2}~n_{3}$               \> seed control to the random number generator used in the \\
@@ -732,9 +733,12 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf zden} (sampling) (every) $f$            \> calculate and collect the Z-density profile \\
 \>                                              \> every $f$ timesteps (default $f~=~1$) \\
 \>                                              \> \\
-\> {\bf zero} (fire)                            \> perform a dynamic "zero temperature" optimisation MD run \\
-\>                                              \> if $fire$ is specified then target temperature is assumed \\
-\>                                              \> else target system temperature is reset to $10$ Kelvin \\
+\> {\bf zero} (fire) (every $n$)                \> perform a dynamic "zero temperature" optimisation MD run \\
+\>                                              \> during equilibration; if $fire$ is specified then the system \\
+\>                                              \> target temperature is assumed, if not then it is reset to \\
+\>                                              \> $10$ Kelvin; if $n$ is specified then every $n$ steps \\
+\>                                              \> (default $n~=~1$, with respect to the last equilibration step) \\
+\>                                              \> {\bf N.B.} thermostat and barostat memory are not erased \\
 \>                                              \> \\
 \>                                              \> \\
 \> *** SPECIAL OPTIONS ***                      \> *** SPECIAL OPTIONS *** \\
@@ -991,7 +995,9 @@ their model system.
 \item The {\bf zero} directive, enables a "zero temperature"
 optimisation.  If no optional "fire" keyword is added then the
 target temperature of the simulation is reset to $10$ Kelvin.
-In either case a crude energy minimiser:
+In either case a crude energy minimiser is used to help the
+system relax before each integration of the equations of motion.
+The function of the minimiser can be summarised as
 \begin{equation}
 \vek{v}_{i} \leftarrow \left\{ \begin{array} {l@{\quad:\quad}l}
 0 & \vek{v}_{i} \cdot \vek{f}_{i} < 0 \\
@@ -1000,9 +1006,30 @@ In either case a crude energy minimiser:
 \vek{f}_{i} \ge 0
 \end{array} \right.
 \end{equation}
-is used to help the system relax before each integration of the
-equations of motion (measures are taken to conserve the MD cell
-momentum).  This must not be thought of as a true energy minimization
+for systems with free particles only, where $\vek{v}_{i}$ and
+$\vek{f}_{i}$ are the force and velocity of particle $i$.  The
+algorithm is extended in the case of RBs by including
+\begin{eqnarray}
+\vek{V}_{j} \leftarrow \left\{ \begin{array} {l@{\quad:\quad}l}
+0 & \vek{V}_{j} \cdot \vek{F}_{j} < 0 \\
+\vek{F}_{j} \; \frac{\vek{V}_{j}~\cdot~\vek{F}_{j}}
+{\vek{F}_{j}~\cdot~\vek{F}_{j}} & \vek{V}_{j} \cdot
+\vek{F}_{j} \ge 0
+\end{array} \right. \\ \nonumber
+\vek{\omega}_{j} \leftarrow \left\{ \begin{array} {l@{\quad:\quad}l}
+0 & \vek{\omega}_{j} \cdot \vek{\tau}_{j} < 0 \\
+\vek{\tau}_{j} \; \frac{\vek{\omega}_{j}~\cdot~\vek{\tau}_{j}}
+{\vek{\tau}_{j}~\cdot~\vek{\tau}_{j}} & \vek{\omega}_{j} \cdot
+\vek{\tau}_{j} \ge 0
+\end{array} \right.~~,
+\end{eqnarray}
+where $\vek{V}_{j}$ and $\vek{F}_{j}$ are the velocity and
+force of the RB's centre of mass, and $\vek{\omega}_{j}$ and
+$\vek{\tau}_{j}$ are the angular velocity and torque of RB $j$.
+Measures are taken to conserve the MD cell momentum and the
+thermostat's instantaneous kinetic energy.
+
+This must not be thought of as a true energy minimization
 method.  {\bf Note} that this optimisation is only applied
 when the simulation runs in equilibration mode.
 
@@ -2065,6 +2092,10 @@ above.
 key & potential type & \multicolumn{4}{c|}{Variables (1-4)} & functional form \\
 \hline
             &                    &            &          &          &       & \\
+{\bf tab}   & Tabulation, see     &            &          &          &       & tabulated potential \\
+{\bf -tab}  & Sections~\ref{bond-potentials}~\ref{intra-tables}
+                                 &            &          &          &       & in TABBND file \\
+            &                    &            &          &          &       & \\
 {\bf harm}  & Harmonic           & $k$        & $r_{0}$  &          &       &
 $U(r) = \frac{1}{2}~k~(r_{ij}-r_{0})^{2}$ \\
 {\bf -hrm}  &                    &            &          &          &       & \\
@@ -2154,6 +2185,10 @@ atomic indices appearing under the {\bf shell} directive above.
 \hline
 key & potential type & \multicolumn{4}{c|}{Variables (1-4)} & functional form\dag \\
 \hline
+           &                     &     &              &            &            & \\
+{\bf tab}  & Tabulation, see      &     &              &            &            & tabulated potential \\
+{\bf -tab} & Sections~\ref{angle-potentials}~\ref{intra-tables}
+                                 &     &              &            &            & in TABANG file \\
            &                     &     &              &            &            & \\
 {\bf harm} & Harmonic            & $k$ & $\theta_{0}$ &            &            &
 $U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}$ \\
@@ -2268,6 +2303,11 @@ the {\bf shell} directive above.
 key & potential type & \multicolumn{3}{c|}{Variables (1-3,6-7)} & functional form\ddag \\
 \hline
            &                 &         &            &         & \\
+{\bf tab}  & Tabulation, see
+                             &         &            &         & tabulated potential \\
+           & Sections~\ref{dihedral-potentials}~\ref{improper-dihedral-potentials}~\ref{intra-tables}
+                             &         &            &         & in TABDIH file \\
+           &                 &         &            &         & \\
 {\bf cos}  & Cosine          & $A$     & $\delta$   & $m$     &
 $U(\phi) = A~\left[ 1 + \cos(m\phi - \delta) \right]$ \\
            &                 &         &            &         & \\
@@ -2343,6 +2383,10 @@ above.
 key & potential type & \multicolumn{3}{c|}{Variables (1-3)} & functional form\ddag \\
 \hline
            &                 &     &            &            & \\
+{\bf tab}  & Tabulation, see  &     &            &            & tabulated potential \\
+           & Sections~\ref{inversion-potentials}~\ref{intra-tables}
+                             &     &            &            & in TABINV file \\
+           &                 &     &            &            & \\
 {\bf harm} & Harmonic        & $k$ & $\phi_{0}$ &            &
 $U(\phi) = {k \over 2}~(\phi - \phi_{0})^{2}$ \\
            &                 &     &            &            & \\
@@ -2355,7 +2399,7 @@ $U(\phi) = A~[1 - \cos(\phi)]$ \\
 {\bf xpln} & Extended planar & $k$ & $m$        & $\phi_{0}$ &
 $U(\phi) = {k \over 2}~[ 1 - \cos(m~\phi - \phi_{0}) ]$ \\
            &                 &     &            &            & \\
-{\bf calc} & Calcite         & $A$ & $B$        &            &
+{\bf calc} & Calcite \ref{calcite} & $A$ & $B$  &            &
 $U(u)= Au^{2}+Bu^{4}$ \\
            &                 &     &            &            & \\
 \hline
@@ -2442,8 +2486,8 @@ file, will be assumed to be zero.
 key & potential type & \multicolumn{5}{c|}{Variables (1-5)}& functional form \\
 \hline
            &                           &            &          &          &         &                      & \\
-{\bf tab}  & Tabulation                &            &          &          &         &                      &
-tabulated potential \\
+{\bf tab}  & Tabulation, see            &            &          &          &         &                      & tabulated potential \\
+           & Sections~\ref{vdw}~\ref{table-file} &  &          &          &         &                      & in TABLE file \\
            &                           &            &          &          &         &                      & \\
 {\bf 12-6} & 12-6                      & $A$        & $B$      &          &         &                      &
 $U(r) = \left( \frac{A}{r^{12}} \right) - \left( \frac{B}{r^{6}} \right)$ \\
@@ -2451,7 +2495,7 @@ $U(r) = \left( \frac{A}{r^{12}} \right) - \left( \frac{B}{r^{6}} \right)$ \\
 {\bf lj}   & Lennard-Jones             & $\epsilon$ & $\sigma$ &          &         &                      &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r}\right)^{6} \right]$ \\
            &                           &            &          &          &         &                      & \\
-{\bf ljc}  & Lennard-Jones cohesive \cite{barrat-99a} & $\epsilon$ & $\sigma$ & $c$      &         &       &
+{\bf ljc}  & LJ cohesive \cite{barrat-99a} & $\epsilon$ & $\sigma$ & $c$  &         &                      &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - c~\left( \frac{\sigma}{r}\right)^{6} \right]$ \\
            &                           &            &          &          &         &                      & \\
 {\bf nm}   & n-m \cite{mie-03a,clarke-86a} & $E_{o}$ & $n$     & $m$      & $r_{0}$ &                      &
@@ -2489,7 +2533,7 @@ $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r-\Delta} \right)^{12} -
            & Chandler-Andersen         &            &          &          &         &                      &
 $U(r) = 0~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~: r_{ij} \ge 2^{1 \over 6}~\sigma + \Delta$ \\
            &                           &            &          &          &         &                      & \\
-{\bf dpd}  & Standard DPD \cite{groot-97a} & $A$    & $r_{c}$$^{\ddagger}$ &        &         &                      &
+{\bf dpd}  & Standard DPD \cite{groot-97a} & $A$    & $r_{c}$$^{\ddagger}$ &  &     &                      &
 $U(r) = \frac{A}{2}~r_{c}~\left(1-\frac{r}{r_{c}}\right)^{2}~:~r < r_{c}$ \\
            & (Groot-Warren)            &            &          &          &         &                      &
 $U(r) = 0~~~~~~~~~~~~~~~~~~~:~r \ge r_{c}$ \\
@@ -2553,16 +2597,16 @@ key & potential type & \multicolumn{5}{c|}{Variables (1-5,6-9)}& functional form
 \hline
            &                 &         &         &         &     &          & \\
 {\bf eam}  & EAM             &         &         &         &     &          &
-tabulated potential \\
+tabulated potential in TABEAM \\
            &                 &         &         &         &     &          & \\
 {\bf eeam} & EEAM            &         &         &         &     &          &
-tabulated potential \\
+tabulated potential in TABEAM \\
            &                 &         &         &         &     &          & \\
 {\bf 2bea} & 2BEAM           &         &         &         &     &          &
-tabulated potential \\
+tabulated potential in TABEAM \\
            &                 &         &         &         &     &          & \\
 {\bf 2bee} & 2BEEAM          &         &         &         &     &          &
-tabulated potential \\
+tabulated potential in TABEAM \\
            &                 &         &         &         &     &          & \\
 {\bf fnsc} & Finnis-Sinclair & $c_{0}$ & $c_{1}$ & $c_{2}$ & $c$ & $A$      &
 $U_{i}(r) = {1 \over 2} \sum\limits_{j \ne i} (r_{ij}-c)^{2} (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}) - A \sqrt{\rho_{i}}~;$ \\
@@ -3055,17 +3099,12 @@ NUMMOLS   32000
 
 ATOMS     3
 
-O  2
+O  2  1  0.837  0.39
 -0.51966
  0.00000   0.00000   0.14279
  0.37928   0.00000   0.00000  -0.41809   0.00000   0.03881
 
-H  2
-0.25983
--0.03859   0.00000  -0.05818
--0.03673   0.00000  -0.00203  -0.10739   0.00000   0.14412
-
-H  2
+H  2  2  0.496  0.39
 0.25983
 -0.03859   0.00000  -0.05818
 -0.03673   0.00000  -0.00203  -0.10739   0.00000   0.14412
@@ -3149,18 +3188,19 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt sitnam}    \> a8      \> atomic site name \\
 \> {\tt order}     \> integer \> multipolar order supplied \\
 \> {\tt nrept}     \> integer \> repeat counter \\
-\> {\tt $\alpha$}  \> real(1) \> {\em optional} atomic polarisability (in $\AA^{3}$) \\
+\> {\tt $\alpha$}  \> real(1) \> {\em optional} atomic polarisability (in \AA$^{3}$) \\
 \> {\tt $a$}       \> real(1) \> {\em optional} Thole dumping factor
 \end{tabbing}
-The integer {\tt nrept} need not be specified (in which case a value
-of 1 is assumed.)  A number greater than 1 specified here indicates
-that the next ({\tt nrept}-1) entries in the CONFIG file are ascribed
-the atomic characteristics given in the current record.  The sum of the
+The integer {\tt nrept} may be omitted (in which case a value
+of 1 is assumed) if no further optional directives are provided!
+A number greater than 1 specified here indicates that the next
+({\tt nrept}-1) entries in the CONFIG file are ascribed the atomic
+characteristics given in the current record.  The sum of the
 repeat numbers for all atoms in a molecule should equal the number
 specified by the {\bf atoms} directive.
 
 The atomic polarisability, $\alpha$, and the Thole \cite{thole-81a}
-dumping factor, $a$, are optional and are only parsed for the core
+dumping factor, $a$, are {\em optional} and are only parsed for the core
 (non-Druder) particles of core-shell units.  If all polarisabilities
 as well as core and shell charges and associated force constants are
 well defined then $a$ may default for (Druder nuclei) core particles
