@@ -14,8 +14,8 @@ Subroutine coul_dddp_forces &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use config_module, Only : natms,ltg,list,chge,fxx,fyy,fzz
   Use setup_module
+  Use config_module, Only : natms,ltg,list,chge,fxx,fyy,fzz
 
   Implicit None
 

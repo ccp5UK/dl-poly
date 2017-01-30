@@ -156,7 +156,8 @@ Program dl_poly
   Integer           :: i,j,isw,levcfg,nstfce,              &
                        nx,ny,nz,imd,tmd,                   &
                        keyres,nstrun,nsteql,               &
-                       keymin,nstmin,nstgaus,nstscal,      &
+                       keymin,nstmin,                      &
+                       nstzero,nstgaus,nstscal,            &
                        keyens,iso,intsta,keypse,nstbpo,    &
                        keyfce,mxshak,mxquat,               &
                        nstbnd,nstang,nstdih,nstinv,        &
@@ -319,7 +320,8 @@ Program dl_poly
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
            temp,press,strext,keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
-           keymin,nstmin,min_tol,nstgaus,nstscal,      &
+           keymin,nstmin,min_tol,                      &
+           nstzero,nstgaus,nstscal,                    &
            keyens,iso,taut,chi,soft,gama,taup,tai,ten, &
            keypse,wthpse,tmppse,                       &
            fmax,nstbpo,intsta,keyfce,epsq,             &

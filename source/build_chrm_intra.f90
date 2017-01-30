@@ -1151,7 +1151,7 @@ Subroutine build_chrm_intra()
 
   If (kk == 0) Then
      keyind = 0
-     If (idnode == 0) Write(nrite,"(1x,a)") "*** warning - CHARMM polarisation scheme unapplicable !!! ***"
+     If (idnode == 0) Write(nrite,"(1x,a)") "*** warning - CHARMM polarisation scheme unapplicable as no pair are detected !!! ***"
      Deallocate (lchatm, Stat=fail)
   End If
 
