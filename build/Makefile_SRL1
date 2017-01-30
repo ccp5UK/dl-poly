@@ -98,7 +98,7 @@ OBJ_ALL = \
 	coul_cp_forces.o coul_cp_mforces.o \
 	coul_fscp_forces.o coul_fscp_mforces.o \
 	coul_rfp_forces.o coul_rfp_mforces.o \
-	ewald_excl_forces.o ewald_excl_mforces.o ewald_excl_mforces_d.o \
+	ewald_excl_forces.o ewald_excl_mforces.o ewald_excl_mforces_d.o coul_chrm_forces.o \
 	ewald_frzn_forces.o ewald_frzn_mforces.o \
 	rdf_collect.o rdf_excl_collect.o rdf_frzn_collect.o \
 	d_ene_trq_mpoles.o two_body_forces.o \

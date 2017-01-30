@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2016
+! author    - i.t.todorov january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -18,6 +18,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
   Use config_module,      Only : cell,natms,nlast,ltg,lfrzn, &
                                  xxx,yyy,zzz,lexatm,list
   Use core_shell_module,  Only : listshl,legshl
+  Use mpoles_module,      Only : keyind,lchatm
   Use development_module, Only : l_dis,r_dis
 
   Implicit None
@@ -532,9 +533,57 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
         list(-1,i)=list(0,i) ! End of NFP FNRH VNL
         list( 0,i)=m_end     ! End of new list with no excluded interactions (NXI)
      End Do
+
+! CHARMM core-shell screened electrostatic induction interactions
+! Push up CHARMM pairs at the top of the bonded part of the list
+
+     If (keyind == 1) Then
+        Do i=1,natms
+           l_end=list(-1,i) ! search marker to move up
+           m_end=list( 0,i) ! CHARMM marker to move down
+
+           ii=lchatm(0,i)
+           If (ii > 0) Then ! find what the local sublist CHARMM marker is
+outside:      Do While (l_end > m_end+1)    ! Only when space for swap exists
+
+! Check for space at the top
+
+                 j =list(m_end+1,i)
+                 jj=ltg(j)
+                 If (match(jj,ii,lchatm(1:ii,i))) Then
+                    m_end=m_end+1    ! move down CHARMM marker
+                    Cycle outside
+                 End If
+
+! if a swap can be made at the top space m_end+1
+! check for a qualifier (l_end) at the bottom
+
+inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
+                    j =list(l_end,i)
+                    jj=ltg(j)
+                    If (match(jj,ii,lchatm(1:ii,i))) Then
+                       ibig            = list(m_end+1,i)
+                       list(m_end+1,i) = list(l_end,i)
+                       list(l_end,i)   = ibig
+
+                       l_end=l_end-1 ! move up search marker
+                       m_end=m_end+1 ! move down CHARMM marker
+                       Cycle outside
+                    End If
+                    l_end=l_end-1    ! move up search marker
+                    Cycle inside
+                 End Do inside
+              End Do outside
+           End If
+           list(-4,i)=m_end  ! CHARMM end within NFP FNRH VNL, offset wrt NXI end
+        End Do
+     Else
+        list(-4,i)=list(0,i) ! CHARMM end coincides with NXI end
+     End If
   Else
      Do i=1,natms
         list(-1,i)=list(0,i) ! End of NFP FNRH VNL
+        list(-4,i)=list(0,i) ! CHARMM end coincides with NXI end
      End Do
   End If
 
