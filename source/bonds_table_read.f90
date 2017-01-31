@@ -6,7 +6,7 @@ Subroutine bonds_table_read(bond_name)
 ! from TABBND file (for bond potentials & forces only)
 !
 ! copyright - daresbury laboratory
-! author    - a.v.brukhno & i.t.todorov april 2016
+! author    - a.v.brukhno & i.t.todorov january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,7 +29,8 @@ Subroutine bonds_table_read(bond_name)
   Character( Len = 8   ) :: atom1,atom2
 
   Integer                :: fail(1:2),ngrid,rtbnd,itbnd,jtbnd,katom1,katom2,jtpatm,i,l
-  Real( Kind = wp )      :: cutpot,delpot,dlrpot,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
+  Real( Kind = wp )      :: cutpot,delpot,dlrpot,rdr,rrr,rrr0, &
+                            ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
 
   Integer,           Allocatable :: read_type(:)
   Real( Kind = wp ), Allocatable :: bufpot(:),bufvir(:)
@@ -167,13 +168,14 @@ Subroutine bonds_table_read(bond_name)
 ! read in potential & force arrays
 
      Do i=0,2
-        bufpot(0) = 0.0_wp
-        bufvir(0) = 0.0_wp
+        bufpot(i) = 0.0_wp
+        bufvir(i) = 0.0_wp
      End Do
 
 ! read in the zero and/or first & second data elements (potential & virial)
 
      If (idnode == 0) Then
+        rrr=0.0_wp
         Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
 
         If (rrr > zero_plus) Then ! no zero element data => extrapolate to zero
@@ -187,8 +189,17 @@ Subroutine bonds_table_read(bond_name)
 
            bufpot(1) = bufp0
            bufvir(1) = bufv0
+           rrr0      = rrr
 
            Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
+
+           If (Abs((rrr-rrr0-delpot)/delpot) > 1.0e-8_wp) Then
+              safe=.false.
+              If (idnode == 0) Write(nrite,"(/,                      &
+                 & ' TABBND stated  radial increment : ',1p,e15.7,/, &
+                 & ' TABBND read-in radial increment : ',1p,e15.7)") &
+                 delpot,rrr-rrr0
+           End If
 
            bufpot(2) = bufp0
            bufvir(2) = bufv0
