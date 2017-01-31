@@ -3210,8 +3210,8 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt $\alpha$}  \> real(1) \> {\em optional} atomic polarisability (in \AA$^{3}$) \\
 \> {\tt $a$}       \> real(1) \> {\em optional} Thole dumping factor
 \end{tabbing}
-The integer {\tt nrept} may be omitted (in which case a value
-of 1 is assumed) if no further optional directives are provided!
+The integer {\tt nrept} may be omitted (in which case a value or 1
+is assumed) {\bf only if} no further optional directives are provided!
 A number greater than 1 specified here indicates that the next
 ({\tt nrept}-1) entries in the CONFIG file are ascribed the atomic
 characteristics given in the current record.  The sum of the
@@ -3234,7 +3234,7 @@ the one specified in FIELD, $n$, these will not be processed by \D.
 
 \D will read same order momenta in their natural vector format:
 \begin{tabbing}
-X\=XXXXXXXX\=XXXXXXXX\=\kill
+X\=XXXXXXXXXX\=XXXXXX\=\kill
 \> {\tt charge}       \> real(1)  \> scalar $q$ (in protons) \\
 \> {\tt dipole}       \> real(3)  \> vector $(x,y,z)$ (in protons/\AA) \\
 \> {\tt quadrupole}   \> real(6)  \> vector $(xx,xy,xz,yy,yz,zz)$ (in protons/\AA$^{2}$) \\
