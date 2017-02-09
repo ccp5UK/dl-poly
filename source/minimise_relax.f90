@@ -15,7 +15,7 @@ Subroutine minimise_relax &
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov & w.smith february 2014
 ! contrib   - a.m.elena february 2017
-! contrib   - i.t.todorov february 2016
+! contrib   - i.t.todorov february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -187,8 +187,8 @@ Subroutine minimise_relax &
 
      If (l_str .and. idnode == 0) Then
         Write(nrite, Fmt=*)
-        Write(nrite,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,9x,a,1p,e12.4)') &
-             'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1)
+        Write(nrite,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
+  'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1),'step=',step
         Write(nrite,"(1x,130('-'))")
      End If
   End If
@@ -427,8 +427,8 @@ Subroutine minimise_relax &
      Write(nrite,'(1x,i23,1p,4e18.8)') i-1,eng/engunit,grad_tol,eng_tol,dist_tol
      If (Mod(i,25) == 0) Then
         Write(nrite,"(1x,130('-'))")
-        Write(nrite,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,9x,a,1p,e12.4)') &
-             'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1)
+        Write(nrite,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
+  'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1),'step=',step
         Write(nrite,"(1x,130('-'))")
 
         If (idnode == 0) Then
@@ -454,8 +454,8 @@ Subroutine minimise_relax &
      If (idnode == 0) Then
         If (.not.l_str) Then
            Write(nrite, Fmt=*)
-           Write(nrite,'(3(1x,a),5x,a,10x,a,10x,a,11x,a,9x,a,1p,e12.4)') &
-                'Minimised',word,'passes','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1)
+           Write(nrite,'(3(1x,a),5x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
+  'Minimised',word,'passes','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1),'step=',step
            Write(nrite,"(1x,130('-'))")
         End If
         Write(nrite,'(1x,i23,1p,4e18.8)') i,eng/engunit,grad_tol,eng_tol,dist_tol

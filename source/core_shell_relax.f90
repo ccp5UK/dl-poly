@@ -13,9 +13,9 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,   Only : idnode,mxnode,gsum
+  Use comms_module,   Only : idnode,mxnode,gsum,gmax
   Use setup_module,   Only : nrite,mxatims,mxatdm,mxshl,engunit,output,zero_plus
-  Use config_module,  Only : natms,nlast,lsi,lsa, &
+  Use config_module,  Only : imcon,cell,natms,nlast,lsi,lsa, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use parse_module,   Only : strip_blanks,lower_case
   Use kinetic_module, Only : freeze_atoms
@@ -31,9 +31,10 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
   Logical,           Save :: newjob = .true. , l_rdf
   Integer,           Save :: keyopt
   Integer                 :: fail(1:2),i,ia,ib,jshl,local_index
-  Real( Kind = wp ), Save :: grad_tol,step,eng,eng0,eng1,eng2, &
+  Real( Kind = wp ), Save :: grad_tol,eng_tol,dist_tol(1:2),   &
+                             step,eng,eng0,eng1,eng2,          &
                              grad,grad0,grad1,grad2,onorm,sgn, &
-                             stride,gamma,fff(0:3)
+                             stride,gamma,x(1),y(1),z(1),fff(0:3)
 
 ! OUTPUT existence
 
@@ -114,8 +115,8 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
      If (l_str .and. idnode == 0) Then
         Write(nrite, Fmt=*)
-        Write(nrite,'(1x,a,6x,a,10x,a,11x,a,9x,a,1p,e12.4)') &
-             'Relaxing shells to cores:','pass','eng_tot','grad_tol','tol=', rlx_tol(1)
+        Write(nrite,'(1x,a,3x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
+  'Relaxing shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',rlx_tol(1),'step=',step
         Write(nrite,"(1x,130('-'))")
      End If
   End If
@@ -145,6 +146,12 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
   eng=stpcfg
 
+! Initialise/get eng_tol & verify relaxed condition
+
+  eng_tol=0.0_wp
+  If (keyopt > 0) Then
+     eng_tol=Abs(1.0_wp-eng2/eng)
+  End If
 ! Current gradient (modulus of the total force on shells)
 
   grad=0.0_wp
@@ -158,6 +165,10 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
   grad_tol=grad/Real(megshl,wp)
   relaxed=(grad_tol < rlx_tol(1))
+
+! Initialise dist_tol
+
+  dist_tol=0.0_wp
 
 ! CHECK FOR CONVERGENCE
 
@@ -301,18 +312,25 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
         xxx(ib)=xxx(ib)+stride*fxt(ia)
         yyy(ib)=yyy(ib)+stride*fyt(ia)
         zzz(ib)=zzz(ib)+stride*fzt(ia)
+        dist_tol(1)=Max(dist_tol(1),fxt(ia)**2+fyt(ia)**2+fzt(ia)**2) ! - shell move
+        x(1)=xxx(ib)-xxx(ia) ; y(1)=yyy(ib)-yyy(ia) ; z(1)=zzz(ib)-zzz(ia)
+        Call images(imcon,cell,1,x,y,z)
+        dist_tol(2)=Max(dist_tol(2),x(1)**2+y(1)**2+z(1)**2) ! - core-shell separation
      End If
   End Do
+  dist_tol=Sqrt(dist_tol)
+  dist_tol(1)=dist_tol(1)*Abs(stride)
+  If (mxnode > 1) Call gmax(dist_tol)
 
 ! Fit headers in and Close and Open OUTPUT at every 25th print-out
 
   i=Nint(passshl(1))
   If (l_str .and. idnode == 0) Then
-     Write(nrite,'(1x,i34,4x,1p,2e18.8)') i-1,stpcfg/engunit,grad_tol
+     Write(nrite,'(1x,i31,1x,1p,2e18.8,4x,f7.4,4x,f7.4,12x,e18.8)') i-1,stpcfg/engunit,grad_tol,dist_tol(1),dist_tol(2),eng_tol
      If (Mod(i,25) == 0) Then
         Write(nrite,"(1x,130('-'))")
-        Write(nrite,'(1x,a,6x,a,10x,a,11x,a,9x,a,1p,e12.4)') &
-             'Relaxing shells to cores:','pass','eng_tot','grad_tol','tol=', rlx_tol(1)
+        Write(nrite,'(1x,a,3x,a,6x,a,11x,a,9x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
+  'Relaxing shells to cores:','pass','eng_tot','grad_tol','ds_tol','dcs_max','tol=',rlx_tol(1),'step=',step
         Write(nrite,"(1x,130('-'))")
 
         If (idnode == 0) Then
@@ -334,8 +352,15 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 ! Final printout
 
      i=Nint(passshl(1))
-     If (l_str .and. idnode == 0) Then
-        Write(nrite,'(1x,i34,4x,1p,2e18.8)') i,stpcfg/engunit,grad_tol
+     If (idnode == 0) Then
+        If (.not.l_str) Then
+           Write(nrite, Fmt=*)
+           Write(nrite,'(1x,a,4x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
+  'Relaxed shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',rlx_tol(1),'step=',step
+           Write(nrite,"(1x,130('-'))")
+        End If
+        Write(nrite,'(1x,i31,1x,1p,2e18.8,4x,f7.4,4x,f7.4,12x,e18.8)') &
+             i-1,stpcfg/engunit,grad_tol,dist_tol(1),dist_tol(2),eng_tol
         Write(nrite, Fmt=*)
         Write(nrite,"(1x,130('-'))")
      End If

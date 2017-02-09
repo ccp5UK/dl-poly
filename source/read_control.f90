@@ -24,7 +24,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2017
+! author    - i.t.todorov february 2017
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -1059,6 +1059,7 @@ Subroutine read_control                                &
 
      Else If (word(1:5) == 'polar') Then
 
+        Call get_word(record,word)
         If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
         If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
         If (word(1:6) == 'charmm') Then

@@ -1,11 +1,11 @@
-Subroutine read_field                   &
-           (l_str,l_top,l_n_v,          &
-           rcut,rvdw,rmet,width,temp,   &
-           keyens,keyfce,keyshl,        &
-           lecx,lbook,lexcl,            &
-           rcter,rctbp,rcfbp,           &
-           atmfre,atmfrz,megatm,megfrz, &
-           megshl,megcon,megpmf,megrgd, &
+Subroutine read_field                      &
+           (l_str,l_top,l_n_v,             &
+           rcut,rvdw,rmet,width,temp,epsq, &
+           keyens,keyfce,keyshl,           &
+           lecx,lbook,lexcl,               &
+           rcter,rctbp,rcfbp,              &
+           atmfre,atmfrz,megatm,megfrz,    &
+           megshl,megcon,megpmf,megrgd,    &
            megtet,megbnd,megang,megdih,meginv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -14,7 +14,7 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2017
+! author    - i.t.todorov february 2017
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs & PDFs)
@@ -84,7 +84,7 @@ Subroutine read_field                   &
   Logical,           Intent( In    ) :: l_str,l_top,l_n_v
   Integer,           Intent( In    ) :: keyens
   Integer,           Intent( InOut ) :: keyfce
-  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width,temp
+  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width,temp,epsq
   Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
@@ -316,7 +316,7 @@ Subroutine read_field                   &
               "Multipolar electrostatics opted with poles up to order ", Nint(word_2_real(word))
 
            If (Nint(word_2_real(word)) > mxompl) Write(nrite,"(1x,a)") &
-             "*** warning - supplied multipolar expansion order reduced to the maximum allowed - 4 !!! ***"
+              "*** warning - supplied multipolar expansion order reduced to the maximum allowed - 4 !!! ***"
 
            Write(nrite,"(1x,a)") &
               "MPOLES file scheduled for reading after reading all intramolecular topology in FIELD"
@@ -595,7 +595,7 @@ Subroutine read_field                   &
 ! convert energy units to internal units
 
                     prmshl(1:2,nshels)=prmshl(1:2,nshels)*engunit
-                    smax=Max(smax,prmshl(1,nshels)+12.0_wp*prmshl(2,nshels))
+                    smax=Max(smax,prmshl(1,nshels)+6.0_wp*prmshl(2,nshels))
                  End Do
 
 ! Check for mixed or multiple core-shell entries (no inter units linkage!)
@@ -2717,9 +2717,10 @@ Subroutine read_field                   &
                  If (k_crsh_s <= zero_plus .and. q_shel_s <= zero_plus) Then
                     If (keyind > 0) Then
                        k_crsh_p = 1000 * eu_kcpm ! reset to k_charmm = 1000 kcal*mol^−1*Å^−2
+                       smax=k_crsh_p             ! set smax
                        If (idnode == 0) Then
-  Write(nrite,"(/,1x,a)") "*** warning - all core-shell force constants and charges are zero !!! ***"
-  Write(nrite,"(/,1x,a)") "***           CHAMRRM defaulting constants to 1000 kcal*mol^−1*Å^−2 ! ***"
+  Write(nrite,"(/,1x,a)") "*** warning - all core-shell force constants and shell charges are zero !!! ***"
+  Write(nrite,"(  1x,a)") "***           force constants to use 1000 kcal*mol^−1*Å^−2 CHARMM default ! ***"
                        End If
                     Else
                        lshl_abort=.true.
@@ -2742,6 +2743,8 @@ Subroutine read_field                   &
            End If
 
            If (mximpl > 0) Then ! Time for possible resets
+              d_core_p=0.0_wp ! the new d_core_s check for switching charming off!!!
+
               nsite =0
               nshels=0
 
@@ -2759,14 +2762,18 @@ Subroutine read_field                   &
 
                     q_shel=chgsit(isite2)
                     If (k_crsh_s <= zero_plus .and. q_shel_s <= zero_plus .and. &
-                        k_crsh_p > zero_plus) prmshl(1,nshels)=k_crsh_p
+                        k_crsh_p > zero_plus) Then
+                       prmshl(1,nshels)=k_crsh_p
+                       prmshl(2,nshels)=0.0_wp
+                    End If
                     k_crsh=prmshl(1,nshels)
 
-                    If (d_core_s <= zero_plus) dmpsit(isite1) = thole
+                    If (d_core_s <= zero_plus .and. thole >= -zero_plus) dmpsit(isite1) = thole
                     d_core=dmpsit(isite1)
+                    d_core_p=d_core_p+d_core
 
-                    If      (q_shel <= zero_plus) Then ! set shell's charge
-                       charge=-Sign(1.0_wp,q_core)*Sqrt(p_core*k_crsh)
+                    If      (Abs(q_shel) <= zero_plus) Then ! set shell's charge
+                       charge=-Sign(1.0_wp,q_core)*Sqrt(p_core*k_crsh/(r4pie0/epsq))
                        If (Abs(charge) <= zero_plus) Then
                           lshl_abort=.true.
                           Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
@@ -2780,14 +2787,14 @@ Subroutine read_field                   &
                           lshl_abort=.true.
                           Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
                        Else
-                          plrsit(isite1)=q_shel**2/k_crsh
+                          plrsit(isite1)=(r4pie0/epsq)*q_shel**2/k_crsh
                        End If
                     Else If (k_crsh <= zero_plus) Then ! set polarisability
                        If (p_core <= zero_plus) Then
                           lshl_abort=.true.
                           Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
                        Else
-                          prmshl(1,nshels)=q_shel**2/p_core
+                          prmshl(1,nshels)=(r4pie0/epsq)*q_shel**2/p_core
                           prmshl(2,nshels)=0.0_wp
                        End If
                     End If
@@ -2803,6 +2810,12 @@ Subroutine read_field                   &
                  End Do
                  nsite=nsite+numsit(itmols)
               End Do
+
+              If (keyind == 1 .and. d_core_p <= zero_plus) Then
+                 keyind = 0
+                 If (idnode == 0) &
+  Write(nrite,'(/,1x,a)') "*** warning - CHARMM polarisation scheme deselected due to zero dumping factor !!!"
+              End If
            Else
               nsite =0
               nshels=0

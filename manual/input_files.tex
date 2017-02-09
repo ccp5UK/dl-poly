@@ -2841,8 +2841,10 @@ The variables pertaining to each potential are described in Table
 \ref{tbp-table}.
 
 Note that the fifth variable is the range at which the three
-body\index{potential!three-body} potential is truncated.  The
-distance is in \AA, measured from the central atom.
+body\index{potential!three-body} potential is truncated.
+The distance is in \AA, measured from the central atom.
+Note that interactions defined with less than four potential
+parameters must provide zeros for the ones up to the cutoff one.
 
 \begin{table}[htbp]
 \begin{centering}
@@ -2853,10 +2855,10 @@ distance is in \AA, measured from the central atom.
 key & potential type & \multicolumn{4}{c|}{Variables (1-4)} & functional form\dag \\
 \hline
            &                                        &           &              &            &            & \\
-{\bf harm} & Harmonic                               & $k$       & $\theta_{0}$ &            &            &
+{\bf harm} & Harmonic                               & $k$       & $\theta_{0}$ &     0      &      0     &
 $U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}$ \\
            &                                        &           &              &            &            & \\
-{\bf thrm} & Truncated harmonic                     & $k$       & $\theta_{0}$ & $\rho$     &            &
+{\bf thrm} & Truncated harmonic                     & $k$       & $\theta_{0}$ & $\rho$     &      0     &
 $U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}~\exp[-(r_{ij}^{8} + r_{ik}^{8})/\rho^{8}]$ \\
            &                                        &           &              &            &            & \\
 {\bf shrm} & Screened harmonic                      & $k$       & $\theta_{0}$ & $\rho_{1}$ & $\rho_{2}$ &
@@ -2872,7 +2874,7 @@ $U(\theta) = k~(\theta-\theta_{0})^{2}~\big[ \theta^a (\theta-\theta_{0})^{2} (\
            &                                        &           &              &            &            &
 $+ {a \over 2} \pi^{a-1}(\theta_{0}-\pi)^{3}\big]~\exp[-(r_{ij}^{8} + r_{ik}^{8})/\rho^{8}]$ \\
            &                                        &           &              &            &            & \\
-{\bf hbnd} & H-bond \cite{mayo-90a}                 & $D_{hb}$  & $R_{hb}$     &            &            &
+{\bf hbnd} & H-bond \cite{mayo-90a}                 & $D_{hb}$  & $R_{hb}$     &     0      &     0      &
 $U(\theta) = D_{hb}~\cos^{4}(\theta) \times$ \\
            &                                        &           &              &            &            &
 $[5(R_{hb}/r_{jk})^{12} - 6(R_{hb}/r_{jk})^{10}]$ \\
@@ -2904,8 +2906,10 @@ The variables pertaining to each potential are described in Table
 \ref{fbp-table}.
 
 Note that the third variable is the range at which the
-four-body\index{potential!four-body} potential is truncated.  The
-distance is in \AA, measured from the central atom.
+four-body\index{potential!four-body} potential is truncated.
+The distance is in \AA, measured from the central atom.
+Note that interactions idefined with less than two potential
+parameters must provide zeros for the ones up to the cutoff one.
 
 \begin{table}[htbp]
 \begin{centering}
@@ -2922,7 +2926,7 @@ $U(\phi) = {k \over 2}~(\phi - \phi_{0})^{2}$ \\
 {\bf hcos} & Harmonic cosine & $k$ & $\phi_{0}$ &
 $U(\phi) = {k \over 2}~(\cos(\phi) - \cos(\phi_{0}))^{2}$ \\
            &                 &     &            & \\
-{\bf plan} & Planar          & $A$ &            &
+{\bf plan} & Planar          & $A$ &     0      &
 $U(\phi) = A~[1 - \cos(\phi)]$ \\
            &                 &     &            & \\
 \hline
