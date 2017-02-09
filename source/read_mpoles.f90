@@ -6,7 +6,7 @@ Subroutine read_mpoles(l_top,sumchg)
 ! specifications of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2016
+! author    - i.t.todorov february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -39,7 +39,7 @@ Subroutine read_mpoles(l_top,sumchg)
 
   Integer                :: itmols,nrept,i,j,k,l,                 &
                             isite,jsite,ksite,lsite,nsite,sitmpl, &
-                            ishls,nshels,isite2,                  &
+                            ishls,nshels,kshels,isite2,           &
                             ordmpl,ordmpl_start,ordmpl_next,      &
                             ordmpl_min,ordmpl_max,                &
                             indmpl,indmpl_start,indmpl_final
@@ -218,10 +218,11 @@ Subroutine read_mpoles(l_top,sumchg)
                        Call get_word(record,word) ; dumping =Abs(word_2_real(word,0.0_wp))
 
                        l_rsh=.true. ! regular or no shelling (Drude)
+                       kshels=nshels
                        Do ishls=1,numshl(itmols) ! detect beyond charge shelling
-                          nshels=nshels+1
+                          kshels=kshels+1
 
-                          isite2=nsite+lstshl(2,nshels)
+                          isite2=nsite+lstshl(2,kshels)
                           If ((isite2 >= jsite .and. isite2 <= lsite)) Then
                              l_rsh=.false.
                              If (idnode == 0) Then
@@ -393,6 +394,8 @@ Subroutine read_mpoles(l_top,sumchg)
                        nsite=nsite+nrept
                        ksite=ksite+nrept
 
+                       If (ksite == numsit(itmols)) nshels=kshels
+
                     End If
                  End Do
 
@@ -403,9 +406,9 @@ Subroutine read_mpoles(l_top,sumchg)
                  If (idnode == 0) Then
                     Write(nrite,'(/,1x,3(a,i0),a)') &
   "*** warning - multipolar electrostatics requested up to order ", &
-  ordmpl, " with specified interactions up order ",                 &
+  mxompl, " with specified interactions up order ",                 &
   ordmpl_max," and least order ", ordmpl_min," !!! ***"
-                    If (ordmpl_max*ordmpl == 0) Write(nrite,'(1x,2a)') &
+                    If (ordmpl_max*mxompl == 0) Write(nrite,'(1x,2a)') &
   "*** warning - multipolar electrostatics machinery to be used for ", &
   "monopoles only electrostatic interactions (point charges only) !!! ***"
                     If (ordmpl_max > 4) Write(nrite,'(1x,2a)')     &

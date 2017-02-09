@@ -425,18 +425,18 @@ In \D the multipolar reaction field is handled by the routine {\sc coul\_rfp\_mf
 
 \subsubsection{Smoothed Particle Mesh Ewald}
 \D provides two different smooth particle Mesh Ewald implementations
-for multipolar electrostatics. The first implementation is for
+for multipolar electrostatics.  The first implementation is for
 systems with charges, dipoles and quadrupoles and does not use
 recurrence relations.  The second implementation, which uses
 recurrence relations, is more general and allows for specification
-of an arbitrary order up to hexadecapoles. 
+of an arbitrary order up to hexadecapoles.
 
 \noindent
-When the multipolar form of PME is employed, the total electrostatic
-energy is given as
+When the multipolar form of SPME is employed, the total electrostatic
+energy for a system on $N$ point ions is given as
 
 \beq
-U_c = U_{\textrm{dir}} + U_{\textrm{rec}} - U_{\textrm{excl}} - U_{\textrm{self}}~~,\label{eqn:totE}
+U_c = U_{\textrm{dir}} + U_{\textrm{rec}} - U_{\textrm{excl}} - U_{\textrm{frzn}} - U_{\textrm{self}}~~,\label{eqn:totE}
 \eeq
 where
 \beq
@@ -446,6 +446,10 @@ U_{\textrm{dir}} = \sum_{i < j}^{N^*} \sum_{\bn}^{'}\Lihat\Ljhat
 \beq
 U_{\textrm{excl}} = \frac{1}{\fpieoe}\sum_{(i,j)\in M^*}
 \Lihat\Ljhat \frac{\erf(\alpha \cdot \rij)}{\rij}~~,\label{exclewald}
+\eeq
+\beq
+U_{\textrm{frzn}} = \frac{1}{\fpieoe}\sum_{(i,j)\in F^*}
+\Lihat\Ljhat \frac{\erf(\alpha \cdot \rij)}{\rij}~~,\label{frznewald}
 \eeq
 \beq
 U_{\textrm{self}} = \frac{1}{\epieoe}\lim_{| \bri |\to 0}\sum_{i = 1}^{N}
@@ -463,8 +467,9 @@ S(\bk) = \sum_{i=1}^N \Lihat \texp(\imath \bk \cdot \bri)~~.\label{eqn:sfac}
 
 \noindent
 In the expressions above, $M^*$ is the set of all excluded
-interactions due to intramolecular bonds or frozen atoms in the
-simulation cell, $N^* = N - M^*$, $V_o$ is the volume of the
+interactions due to intramolecular bonds in the simulation cell,
+$F^*$ the set of frozen-frozen interactions in the simulation cell,
+$N^* = N - M^* - F^*$, $V_o$ is the volume of the
 simulation cell and $S(\bk)$ is the structure factor.
 
 \subsubsection*{Real Space Sum}
@@ -494,10 +499,27 @@ the kernel are computed as
 \bd_i^{\bs}\psi(\rij) = \frac{2}{\sqrt{\pi}}d_{\bs}~~.
 \eeq
 \noindent
-In \D the routine {\sc ewald\_excl\_mforces\_d} computes the real space
-interactions explicitly for simulations with multipoles of order 2 without
+In \D the routine {\sc ewald\_excl\_mforces\_d} computes the reciprocal
+space corrections due to the exclusions between intramolecularly related
+atoms explicitly for simulations with multipoles of order 2 without
 using the recurrence relation.  The routine {\sc ewald\_excl\_mforces}
 handles the general version of up to order 4 using recurrence relations.
+
+\subsubsection*{Frozen Sum}
+
+The relevant kernel for the real space from equation~(\ref{frznewald}) is
+$\displaystyle \psi(\rij) = \frac{\erf(\alpha \cdot \rij)}{\rij}$~.
+\D uses the recurrence giving in equation~(\ref{eqn:erfrecur}) to generate
+the multidimensional derivatives of the kernel.  Thus, the derivatives of
+the kernel are computed as
+\beq
+\bd_i^{\bs}\psi(\rij) = \frac{2}{\sqrt{\pi}}d_{\bs}~~.
+\eeq
+\noindent
+In \D the routine {\sc ewald\_frzn\_mforces} computes computes the
+reciprocal space corrections due to the exclusions between frozen
+atoms generically for simulations with multipoles up to order 4
+using recurrence relations.
 
 \subsubsection*{Self-Interaction}
 
@@ -511,7 +533,7 @@ arbitrary order, the self-interaction is computed in the reciprocal space.
 \subsubsection*{Reciprocal Space Sum}
 
 \noindent
-The key idea of PME is in approximating the structure factor, in a uniform grid,
+The key idea of SPME is in approximating the structure factor, in a uniform grid,
 with  $K_1 \times K_2 \times K_3$ dimensions, that fills the simulation cell.
 Define the fractional coordinates of an ion $i$ as \\
 \noindent $\langle s_{i_{1}}, s_{i_{2}}, s_{i_{3}} \rangle = \langle \ba_1^*\cdot \bri, \ba_2^*\cdot \bri, \ba_3^*\cdot \bri \rangle$,
@@ -617,10 +639,6 @@ in addition to the routines used for the point charges, are:
 \begin{enumerate}
 \item {\sc bspgen\_mpoles}, in {\sc spme\_container} evaluates
 equation~(\ref{dprodmn}) or (\ref{dprodmnsimple}) to compute the B-splines.
-
-\item {\sc ewald\_frzn\_mforces} which calculates the reciprocal space
-corrections due to the exclusions between frozen atoms.
-
 \item {\sc limit\_erfr\_deriv} in {\sc mpoles\_container} which computes
 the limit of the derivatives of the kernel for the self-interaction term.
 {\sc limit\_erfr\_deriv} is called in {\sc ewald\_spme\_mforces}.

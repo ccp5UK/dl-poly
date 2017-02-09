@@ -2613,14 +2613,14 @@ technique for calculating electrostatic interactions in a periodic
 The basic model for a neutral periodic system is a system of
 charged point ions mutually interacting via the Coulomb potential.
 The Ewald method makes two amendments to this simple model.
-Firstly each ion is effectively neutralised (at long-ranged) by the
+Firstly, each ion is effectively neutralised (at long-ranged) by the
 superposition of a spherical Gaussian\index{constraints!Gaussian}
 cloud of opposite charge centred on the ion.  The combined
 assembly of point ions and Gaussian\index{constraints!Gaussian}
 charges becomes the {\em Real Space} part of the Ewald
 sum\index{Ewald!summation}, which is now short ranged and
 treatable by the methods described above
-(Section~\ref{force-field})\footnote{Strictly speaking, the real space sum
+(Chapter~\ref{force-field})\footnote{Strictly speaking, the real space sum
 ranges over all periodic images of the simulation cell, but in the
 \D implementation, the parameters are chosen to restrict the sum
 to the simulation cell and its nearest neighbours, i.e.~the {\em
@@ -2640,35 +2640,40 @@ real space and one in reciprocal space; and the self energy
 correction.
 
 For molecular systems, as opposed to systems comprised simply of
-point ions, additional modifications \\ \noindent {\sc ewald\_excl\_forces} are
-necessary to correct for the excluded (intra-molecular) coulombic
-interactions. In the real space sum these are simply omitted.  In
-reciprocal space however, the effects of individual
+point ions, additional modifications \\ \noindent {\sc ewald\_excl\_forces}
+are necessary to correct for the excluded (intra-molecular)
+coulombic interactions.  In the real space sum these are simply
+omitted.  In reciprocal space however, the effects of individual
 Gaussian\index{constraints!Gaussian} charges cannot easily be
 extracted, and the correction is made in real space.  It amounts
 to removing terms corresponding to the potential energy of an ion
 $\ell$ due to the Gaussian\index{constraints!Gaussian} charge on a
 neighbouring charge $m$ (or {\em vice versa}).  This correction
-appears as the final term in the full Ewald\index{Ewald!summation}
-formula below.  The distinction between the error function $\rm erf$
-and the more usual complementary error function $\rm erfc$ found in
-the real space sum, should be noted.
+appears in the term noting a summation over $molecules$ in the
+full Ewald\index{Ewald!summation} formula below.
 
-The same considerations and modifications {\sc
-ewald\_frzn\_forces} are taken into account for frozen atoms,
-which mutual coulombic interaction must be excluded.
+The same considerations and modifications {\sc ewald\_frzn\_forces}
+are taken into account for frozen atoms, which mutual coulombic
+interaction must also be excluded.  This correction appears in the
+term noting a summation over $F^{*}$ (all frozen-frozen pairs in the
+MD cell) in the full Ewald\index{Ewald!summation} formula below.
 
-The total electrostatic energy is given by the following formula.
+Note the distinction between the {\em error function} {\bf erf} and
+the more usual {\em complementary error function} {\bf erfc} found
+in the real space sums below.
+
+The total electrostatic energy is given by the following formula:
 \begin{eqnarray}
 U_{c}&=&\frac{1}{2V_{o} \epsilon_{0}\epsilon} \sum_{\vek{k} \neq
 \vek{0}}^{\vek{\infty}} \frac{\exp(-k^{2}/4\alpha^{2})}{k^{2}}
-|\sum_{j}^{N} q_{j}\exp(-i\vek{k}\cdot\vek{r}_{j})|^{2} +
-\frac{1}{4\pi\epsilon_{0}\epsilon} \sum_{n<j}^{N^{*}} \frac{q_{j}q_{n}}
-{r_{nj}} {\rm erfc}(\alpha r_{nj}) - \phantom{xxxx} \nonumber \\
-& & \frac{1}{4\pi\epsilon_{0}\epsilon} \sum_{molecules}
-\sum_{\ell\le m}^{M^{*}} q_{\ell}q_{m} \left\{ \delta_{\ell m}
+\left|\sum_{j}^{N} q_{j}\exp(-i\vek{k}\cdot\vek{r}_{j})\right|^{2} -
+\frac{1}{4\pi\epsilon_{0}\epsilon} \frac{\alpha}{\sqrt{\pi}}
+\sum_{j}^{N} q_{j}^2 + \nonumber \\
+& & \frac{1}{4\pi\epsilon_{0}\epsilon} \sum_{n<j}^{N^{*}} \frac{q_{j}q_{n}}
+{r_{nj}} {\rm erfc}(\alpha r_{nj}) - \frac{1}{4\pi\epsilon_{0}\epsilon}
+\sum_{molecules} \sum_{\ell\le m}^{M^{*}} q_{\ell}q_{m} \left\{ \delta_{\ell m}
 \frac{\alpha}{\sqrt{\pi}} + \frac{{\rm erf}(\alpha r_{\ell m})}{r_{\ell
-m}^{1-\delta_{\ell m}}} \right\} - \\
+m}^{1-\delta_{\ell m}}} \right\} - \phantom{xxxxxxx} \\
 & & \frac{1}{4\pi\epsilon_{0}\epsilon} \sum_{\ell\le m}^{F^{*}}
 q_{\ell}q_{m} \left\{ \delta_{\ell m} \frac{\alpha}{\sqrt{\pi}} +
 \frac{{\rm erf}(\alpha r_{\ell m})}{r_{\ell m}^{1-\delta_{\ell m}}}
@@ -2833,7 +2838,7 @@ An atom or ion is polarisable\index{polarisation} if it develops a
 dipole moment when placed in an electric field.  It is commonly
 expressed by the equation
 \begin{equation}
-\vek{\mu} = \alpha \vek{E}~~,
+\frac{1}{4\pi\epsilon_{0}\epsilon} \vek{\mu} = \alpha \vek{E}~~,
 \end{equation}
 where $\vek{\mu}$ is the induced dipole and $\vek{E}$ is the
 electric field.  The constant $\alpha$ is the polarisability.
@@ -2872,7 +2877,7 @@ giving rise to a {\em polarisation} dipole
 \end{equation}
 The condition of static equilibrium then gives the polarisability as:
 \begin{equation}
-\alpha = q_{s}^{2}/k_{2}~~, \label{druder}
+\alpha = \frac{1}{4\pi\epsilon_{0}\epsilon} q_{s}^{2}/k_{2}~~, \label{druder}
 \end{equation}
 where $q_{s}$ is the shell charge and $k_{2}$ is the force
 constant of the harmonic spring.
@@ -2905,8 +2910,14 @@ directive in the FIELD file (see Section~\ref{field-file}), and use
 the \underline{{\bf polar}isability {\em CHARMM} {\bf thole} {\em f}}
 directive in CONTROL (see Section~\ref{control-file}).  {\bf Note that}
 if no Thole dumping factors are specified in MPOLES as well as no global
-Thole dumping factor is (optionally) provided with the above directive
-in CONTROL, then a default one of 1.3 is assumed for all inducible particles.
+Thole dumping factor is (optional) provided with the above directive
+in CONTROL, then a default one of 1.3 is assumed for all inducible
+particles!  Also, if no Thole dumping factors are specified in MPOLES
+and a {\bf zero} global Thole dumping factor is (optional) provided
+in CONTROL that will also invalidate the use of CHARMM scaled
+electrostatics in the simulation although the option will help with
+checking, verifying and setting CHARMM related defaults for shell
+charges, core-shell spring force constants and atomic polarisations!
 
 Equation~(\ref{druder}) governs the relation between the force constant,
 $k_{2}$ (positive), the shell charge $q_{s}$, and the atomic polarisability,

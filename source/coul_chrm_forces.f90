@@ -13,7 +13,7 @@ Subroutine coul_chrm_forces(iatm,epsq,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress
 ! Fchrm(r_ij) = -Uchrm'(r_ij) = S(r_ij)*F(r_ij) - S'(r_ij)*U(r_ij)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2017
+! author    - i.t.todorov february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -76,7 +76,7 @@ Subroutine coul_chrm_forces(iatm,epsq,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress
 
 ! Get list limit
 
-  limit=list(-4,iatm)-list(0,iatm)
+  limit=list(-3,iatm)-list(0,iatm)
 
   Do m=1,limit
 

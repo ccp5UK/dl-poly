@@ -28,7 +28,7 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2017
+! author    - i.t.todorov february 2017
 ! contrib   - h.a.boateng february 2016
 ! contrib   - p.s.petkov february 2015
 !
@@ -408,7 +408,7 @@ Subroutine two_body_forces                        &
 ! get CHARMM core-shell self-induction contributions
 
            If (keyind == 1) Then
-              If (list(-4,i)-list(0,i) > 0) Then
+              If (list(-3,i)-list(0,i) > 0) Then
                  Call coul_chrm_forces(i,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
 
                  engcpe_ch=engcpe_ch+engacc

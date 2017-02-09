@@ -3,7 +3,8 @@
 ! for new simulations when using the relaxed shell model
 ! set shells on top of their cores preventatively
 
-     If (megshl > 0 .and. keyshl == 2 .and. nstep == 0 .and. nsteql > 0) Then
+     If ( (megshl > 0 .and. keyshl == 2) .and. &
+          (keyres == 0 .and. nstep == 0 .and. nsteql > 0) ) Then
         Call core_shell_on_top()
 
 ! Refresh mappings
@@ -133,11 +134,11 @@
         If (lmin .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
            If      (nstmin == 0 .and. nstep == 0) Then
               Call minimise_relax &
-           (l_str,relaxed_min,lrdf,megatm,megcon,megpmf,megrgd, &
+           (l_str .or. keyshl == 2,relaxed_min,lrdf,megatm,megcon,megpmf,megrgd, &
            keymin,min_tol,tstep,stpcfg)
            Else If (nstmin >  0 .and. nstep >  0) Then
               If (Mod(nstep-nsteql,nstmin) == 0) Call minimise_relax &
-           (l_str,relaxed_min,lrdf,megatm,megcon,megpmf,megrgd, &
+           (l_str .or. keyshl == 2,relaxed_min,lrdf,megatm,megcon,megpmf,megrgd, &
            keymin,min_tol,tstep,stpcfg)
            End If
         End If

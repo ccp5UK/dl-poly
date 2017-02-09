@@ -327,14 +327,14 @@ Program dl_poly
 
 ! READ SIMULATION FORCE FIELD
 
-  Call read_field                       &
-           (l_str,l_top,l_n_v,          &
-           rcut,rvdw,rmet,width,temp,   &
-           keyens,keyfce,keyshl,        &
-           lecx,lbook,lexcl,            &
-           rcter,rctbp,rcfbp,           &
-           atmfre,atmfrz,megatm,megfrz, &
-           megshl,megcon,megpmf,megrgd, &
+  Call read_field                          &
+           (l_str,l_top,l_n_v,             &
+           rcut,rvdw,rmet,width,temp,epsq, &
+           keyens,keyfce,keyshl,           &
+           lecx,lbook,lexcl,               &
+           rcter,rctbp,rcfbp,              &
+           atmfre,atmfrz,megatm,megfrz,    &
+           megshl,megcon,megpmf,megrgd,    &
            megtet,megbnd,megang,megdih,meginv)
 
 ! CHECK MD CONFIGURATION

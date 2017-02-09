@@ -12,7 +12,7 @@ Subroutine scan_control                                    &
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov december 2016
+! author    - i.t.todorov february 2017
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
@@ -373,6 +373,7 @@ Subroutine scan_control                                    &
 
      Else If (word(1:5) == 'polar') Then
 
+        Call get_word(record,word)
         If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
         If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
         If (word(1:6) == 'charmm' .and. mxshl > 0) keyind=1

@@ -6,7 +6,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 ! method.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2017
+! author    - i.t.todorov february 2017
 ! contrib   - i.j.bush february 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -912,15 +912,17 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
                  End Do inside
               End Do outside
            End If
-           list(-4,i)=m_end  ! CHARMM end within NFP FNRH VNL, offset wrt NXI end
+           list(-3,i)=m_end     ! CHARMM end within NFP FNRH VNL, offset wrt NXI end
         End Do
      Else
-        list(-4,i)=list(0,i) ! CHARMM end coincides with NXI end
+        Do i=1,natms
+           list(-3,i)=list(0,i) ! CHARMM end coincides with NXI end
+        End Do
      End If
   Else
      Do i=1,natms
-        list(-1,i)=list(0,i) ! End of NFP FNRH VNL
-        list(-4,i)=list(0,i) ! CHARMM end coincides with NXI end
+        list(-1,i)=list(0,i)    ! End of NFP FNRH VNL
+        list(-3,i)=list(0,i)    ! CHARMM end coincides with NXI end
      End Do
   End If
 
@@ -991,21 +993,21 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
      End If
 
      If (idnode == 0) Then
-        If (.not.safe) Write(nrite,'(1x,a,i0,2a,f5.3,a,/)')                  &
+        If (.not.safe) Write(nrite,'(/,1x,a,i20,2a,f7.3,a,/)')                &
         '*** warning - ', Int(cnt(0),ip), ' pair(s) of particles in CONFIG ', &
         'violate(s) the minimum separation distance of ',r_dis,' Angs ***'
 
-        Write(nrite,'(1x,a)') &
+        Write(nrite,'(/,1x,a)') &
         'Pair totals of short range interactions over cutoffs (in Angstroms):'
-        If (Abs(rlnk-rcut) > 1.0e-6_wp) Write(nrite,'(6x,a,i0,a,f5.3)') &
+        If (Abs(rlnk-rcut) > 1.0e-6_wp) Write(nrite,'(6x,a,i20,a,f7.3)') &
         'extended       -  ', Int(cnt(1),ip), '  within rlnk = ', rlnk
-        Write(nrite,'(6x,a,i0,a,f5.3)') &
+        Write(nrite,'(6x,a,i20,a,f7.3)') &
         'electrostatics -  ', Int(cnt(2),ip), '  within rcut = ', rcut
 
-        Write(nrite,'(6x,a,i0,a,f5.3)') &
+        Write(nrite,'(6x,a,i20,a,f7.3)') &
         'van der Waals  -  ', Int(cnt(3),ip), '  within rvdw = ', rvdw
 
-        Write(nrite,'(6x,a,i0,a,f5.3,/)') &
+        Write(nrite,'(6x,a,i20,a,f7.3,/)') &
         'metal          -  ', Int(cnt(4),ip), '  within rmet = ', rmet
      End If
   End If
