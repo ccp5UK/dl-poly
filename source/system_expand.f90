@@ -12,12 +12,14 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov march 2016
 ! contrib   - w.smith, i.j.bush
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module,        Only : nconf,nfield,nmpldt,nrite,mxatms
+  Use setup_module,        Only : nconf,nfield,nmpldt,nrite,mxatms, &
+                                  config,field
   Use site_module
   Use config_module,       Only : cfgname,imcon,cell,natms,lsi,lsa, &
                                   atmnam,xxx,yyy,zzz
@@ -147,9 +149,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
 
   record= ' ' ; Write(record,'(3(a1,i0))') '_',nx,'_',ny,'_',nz
   fcfg=' '
-  fcfg="CONFIG" // record(1:Len_Trim(record))
+  fcfg=trim(config) // record(1:Len_Trim(record))
   ffld=' '
-  ffld="FIELD" // record(1:Len_Trim(record))
+  ffld=trim(field) // record(1:Len_Trim(record))
   fmpl=' '
   fmpl="MPOLES" // record(1:Len_Trim(record))
 

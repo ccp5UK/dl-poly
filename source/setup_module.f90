@@ -8,6 +8,7 @@ Module setup_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov august 2016
+! contrib   - a.m.elena february 2017
 !
 ! Note(1): The following internal units apply everywhere
 !
@@ -176,5 +177,19 @@ Module setup_module
 ! engunit = boltz for K/Boltzmann - very rarely used
 
   Real( Kind = wp ), Save :: engunit = 1.0_wp
-
+! this is the name containting all the simulation control 
+! directives  
+  Character(len=1024)     :: control = "CONTROL"
+! this is the default name for the OUTPUT file  
+  Character(len=1024)     :: output = "OUTPUT"
+! this is the default name for the CONFIG file  
+  Character(len=1024)     :: config = "CONFIG"
+! this is the default name for the FIELD file  
+  Character(len=1024)     :: field = "FIELD"
+! this is the default name for the STATIS file  
+  Character(len=1024)     :: statis = "STATIS"
+! this is the default name for the HISTORY file  
+  Character(len=1024)     :: history = "HISTORY"
+! this is the default name for the HISTORF file  
+  Character(len=1024)     :: historf = "HISTORF"
 End Module setup_module

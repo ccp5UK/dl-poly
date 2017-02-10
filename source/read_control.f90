@@ -30,6 +30,7 @@ Subroutine read_control                                &
 ! contrib   - h.a.boateng february 2015
 ! contrib   - p.s.petkov february 2015
 ! contrib   - a.m.elena september 2015
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -374,7 +375,7 @@ Subroutine read_control                                &
 
 ! open the simulation control file
 
-  If (idnode == 0) Open(Unit=nread, File = 'CONTROL', Status = 'old')
+  If (idnode == 0) Open(Unit=nread, File = trim(control), Status = 'old')
 
 ! read simulation control name
 
@@ -2073,7 +2074,7 @@ Subroutine read_control                                &
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         intsta = Nint(word_2_real(word))
         If (idnode == 0) Write(nrite,"(/,1x,'statistics file interval    ',3x,i10)") intsta
-
+  
 ! read MSDTMP printing option
 
      Else If (word(1:6) == 'msdtmp') Then
@@ -2271,6 +2272,30 @@ Subroutine read_control                                &
 
         End If
 
+     Else If (word(1:6) == 'output') Then
+   
+        If (idnode == 0) Write(nrite,"(/,1a)")" OUTPUT file is "//trim(output) 
+
+     Else If (word(1:6) == 'config') Then
+        
+        If (idnode == 0) Write(nrite,"(/,1a)")" CONFIG file is "//trim(config) 
+
+     Else If (word(1:5) == 'field') Then
+        
+        If (idnode == 0) Write(nrite,"(/,1a)")" FIELD file is "//trim(field) 
+
+      Else If (word(1:7) == 'outstat') Then
+        
+        If (idnode == 0) Write(nrite,"(/,1a)")" STATIS file is "//trim(statis) 
+
+      Else If (word(1:7) == 'history') Then
+        
+        If (idnode == 0) Write(nrite,"(/,1a)")" HISTORY file is "//trim(history) 
+
+      Else If (word(1:7) == 'historf') Then
+        
+        If (idnode == 0) Write(nrite,"(/,1a)")" HISTORF file is "//trim(historf) 
+
 ! close control file
 
      Else If (word(1:6) == 'finish') Then
@@ -2318,8 +2343,8 @@ Subroutine read_control                                &
            End If
         End If
 
-     Else
 
+     Else
         Call strip_blanks(record)
         If (idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
         Call error(3)

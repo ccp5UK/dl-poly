@@ -8,6 +8,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov august 2016
 ! contrib   - w.smith, i.j.bush
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -107,9 +108,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 ! name convention
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        fname = 'HISTORY'
+        fname = trim(history)
      Else
-        fname = 'HISTORY.nc'
+        fname = trim(history)//'nc'
      End If
 
 ! If keyres=1, is HISTORY old (does it exist) and
@@ -957,9 +958,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 ! name convention
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        fname = 'HISTORY'
+        fname = trim(history)
      Else
-        fname = 'HISTORY.nc'
+        fname = trim(history)//'nc'
      End If
 
 ! If keyres=1, is HISTORY old (does it exist) and

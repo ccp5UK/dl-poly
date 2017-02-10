@@ -12,7 +12,7 @@ Subroutine scan_control_io()
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gcheck
-  Use setup_module,  Only : nread,nrite
+  Use setup_module,  Only : nread,nrite,control,output
   Use parse_module,  Only : get_line,get_word,lower_case,strip_blanks,word_2_real
   Use io_module,     Only : io_set_parameters,        &
                             io_get_parameters,        &
@@ -54,12 +54,12 @@ Subroutine scan_control_io()
 
 ! Open the simulation input file
 
-  If (idnode == 0) Inquire(File='CONTROL', Exist=safe)
+  If (idnode == 0) Inquire(File=trim(control), Exist=safe)
   If (mxnode > 1) Call gcheck(safe,"enforce")
   If (.not.safe) Then
      Go To 10
   Else
-     If (idnode == 0) Open(Unit=nread, File='CONTROL', Status='old')
+     If (idnode == 0) Open(Unit=nread, File=trim(control), Status='old')
   End If
 
 ! Read TITLE record
@@ -389,7 +389,8 @@ Subroutine scan_control_io()
            Call error(3)
 
         End If
-
+     Else If (word(1:6) == 'output') Then
+        Call get_word( record, output )
 ! read finish
 
      Else If (word(1:6) == 'finish') Then
@@ -498,3 +499,86 @@ Subroutine scan_control_io()
   Call error(17)
 
 End Subroutine scan_control_io
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for scanning the I/O filenames in the control file
+!
+! copyright - daresbury laboratory
+! author    - a.m.elena february 2017
+!
+Subroutine scan_control_output()
+
+  Use kinds_f90
+  Use comms_module,  Only : idnode,mxnode,gcheck
+  Use setup_module,  Only : nread,nrite,control,output,config, &
+                            field,statis,history,historf
+  Use parse_module,  Only : get_line,get_word,lower_case
+
+  Implicit None
+
+  Logical                :: carry,safe
+  Character( Len = 200 ) :: record
+  Character( Len = 40  ) :: word
+
+  safe   = .true.  ! all is safe
+
+! Open the simulation input file
+
+  If (idnode == 0) Inquire(File=trim(control), Exist=safe)
+  If (mxnode > 1) Call gcheck(safe,"enforce")
+  If (.not.safe) Then
+    Open(Unit=nrite, File=trim(output), Status='replace')
+    Call error(126)
+  Else
+     If (idnode == 0) Open(Unit=nread, File=trim(control), Status='old')
+  End If
+
+! Read TITLE record
+
+  Call get_line(safe,nread,record)
+  If (.not.safe) Then
+    Open(Unit=nrite, File=trim(output), Status='replace')
+    Call error(17)
+  End If
+
+  carry = .true.
+  Do While (carry)
+     Call get_line(safe,nread,record)
+     If (.not.safe) Then
+       Call error(17)
+     End If
+
+     Call lower_case(record)
+
+     Call get_word( record, word )
+     If (word(1:6) == 'output') Then
+        Call get_word( record, output )
+
+     Else If (word(1:6) == 'config') Then
+        Call get_word( record, config )
+
+     Else If (word(1:5) == 'field') Then
+        Call get_word( record, field )
+
+     Else If (word(1:7) == 'outstat') Then
+        Call get_word( record, statis )
+
+     Else If (word(1:7) == 'history') Then
+        Call get_word( record, history )
+
+     Else If (word(1:7) == 'historf') Then
+        Call get_word( record, historf )
+! read finish
+
+     Else If (word(1:6) == 'finish') Then
+
+        carry=.false.
+
+     End If
+
+  End Do
+
+  If (idnode == 0) Close(Unit=nread)
+
+End Subroutine scan_control_output

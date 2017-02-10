@@ -11,12 +11,12 @@
               timelp/Real( nstep , wp) ) ) Then
 
            If (idnode == 0) Then
-              Inquire(File='OUTPUT', Exist=l_out, Position=c_out)
+              Inquire(File=trim(output), Exist=l_out, Position=c_out)
               Call strip_blanks(c_out)
               Call lower_case(c_out)
               If (l_out .and. c_out(1:6) == 'append') Then
                  Close(Unit=nrite)
-                 Open(Unit=nrite, File='OUTPUT', Position='append')
+                 Open(Unit=nrite, File=trim(output), Position='append')
               End If
            End If
 
