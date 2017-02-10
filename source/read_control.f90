@@ -2296,6 +2296,18 @@ Subroutine read_control                                &
         
         If (idnode == 0) Write(nrite,"(/,1a)")" HISTORF file is "//trim(historf) 
 
+      Else If (word(1:6) == 'revive') Then
+        
+        If (idnode == 0) Write(nrite,"(/,1a)")" REVIVE file is "//trim(revive) 
+
+      Else If (word(1:6) == 'revcon') Then
+        
+        If (idnode == 0) Write(nrite,"(/,1a)")" REVCON file is "//trim(revcon) 
+
+      Else If (word(1:6) == 'revold') Then
+        
+        If (idnode == 0) Write(nrite,"(/,1a)")" REVOLD file is "//trim(revold) 
+
 ! close control file
 
      Else If (word(1:6) == 'finish') Then

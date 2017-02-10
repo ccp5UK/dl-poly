@@ -512,7 +512,8 @@ Subroutine scan_control_output()
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gcheck
   Use setup_module,  Only : nread,nrite,control,output,config, &
-                            field,statis,history,historf
+                            field,statis,history,historf, &
+                            revive,revcon,revold
   Use parse_module,  Only : get_line,get_word,lower_case
 
   Implicit None
@@ -569,6 +570,15 @@ Subroutine scan_control_output()
 
      Else If (word(1:7) == 'historf') Then
         Call get_word( record, historf )
+
+     Else If (word(1:6) == 'revive') Then
+        Call get_word( record, revive )
+
+     Else If (word(1:6) == 'revcon') Then
+        Call get_word( record, revcon )
+
+     Else If (word(1:6) == 'revold') Then
+        Call get_word( record, revold )
 ! read finish
 
      Else If (word(1:6) == 'finish') Then

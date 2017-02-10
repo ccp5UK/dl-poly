@@ -192,4 +192,10 @@ Module setup_module
   Character(len=1024)     :: history = "HISTORY"
 ! this is the default name for the HISTORF file  
   Character(len=1024)     :: historf = "HISTORF"
+! this is the default name for the REVIVE file  
+  Character(len=1024)     :: revive = "REVIVE"
+! this is the default name for the REVOLD file  
+  Character(len=1024)     :: revold = "REVOLD"
+! this is the default name for the REVCON file  
+  Character(len=1024)     :: revcon = "REVCON"
 End Module setup_module

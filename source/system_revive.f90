@@ -39,7 +39,7 @@ Subroutine system_revive                                      &
                                         strcon(1:9),strpmf(1:9),stress(1:9)
 
   Logical               :: ready
-  Character( Len = 6 )  :: name
+  Character( Len = 42 )  :: name
   Character( Len = 40 ) :: forma  = ' '
 
   Integer               :: fail(1:3),i,j,l,levcfg,jdnode,jatms,nsum
@@ -183,7 +183,7 @@ Subroutine system_revive                                      &
 
 ! Write REVCON
 
-  name = 'REVCON' ! file name
+  name = trim(revcon) ! file name
   levcfg = 2      ! define level of information in REVCON
 
   Call write_config(name,levcfg,megatm,nstep,tstep,time)
@@ -195,7 +195,7 @@ Subroutine system_revive                                      &
 ! Write accumulator data to dump file
 
      If (l_rout) Then
-        Open(Unit=nrest, File='REVIVE', Form='formatted', Status='replace')
+        Open(Unit=nrest, File=trim(revive), Form='formatted', Status='replace')
 
         Write(Unit=nrest, Fmt=forma, Advance='No') rcut,rbin,Real(megatm,wp)
         Write(Unit=nrest, Fmt=forma, Advance='No') &
@@ -227,7 +227,7 @@ Subroutine system_revive                                      &
         If (mxgdih1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfdih,wp),dstdih
         If (mxginv1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfinv,wp),dstinv
      Else
-        Open(Unit=nrest, File='REVIVE', Form='unformatted', Status='replace')
+        Open(Unit=nrest, File=trim(revive), Form='unformatted', Status='replace')
 
         Write(Unit=nrest) rcut,rbin,Real(megatm,wp)
         Write(Unit=nrest) &
