@@ -177,6 +177,7 @@ Module setup_module
 ! engunit = boltz for K/Boltzmann - very rarely used
 
   Real( Kind = wp ), Save :: engunit = 1.0_wp
+
 ! this is the name containting all the simulation control 
 ! directives  
   Character(len=1024)     :: control = "CONTROL"
