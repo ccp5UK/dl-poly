@@ -14,12 +14,14 @@ Subroutine minimise_relax &
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov & w.smith february 2014
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,        Only : idnode,mxnode,gsum,gmax
-  Use setup_module,        Only : nrite,mxatms,mxcons,mxtpmf,mxpmf,engunit
+  Use setup_module,        Only : nrite,mxatms,mxcons,mxtpmf, & 
+                                  mxpmf,engunit,output
   Use config_module,       Only : natms,nlast,nfree,          &
                                   lsi,lsa,lfrzn,lfree,lstfre, &
                                   weight,xxx,yyy,zzz,fxx,fyy,fzz
@@ -414,12 +416,12 @@ Subroutine minimise_relax &
         Write(nrite,"(1x,130('-'))")
 
         If (idnode == 0) Then
-           Inquire(File='OUTPUT', Exist=l_out, Position=c_out)
+           Inquire(File=trim(output), Exist=l_out, Position=c_out)
            Call strip_blanks(c_out)
            Call lower_case(c_out)
            If (l_out .and. c_out(1:6) == 'append') Then
               Close(Unit=nrite)
-              Open(Unit=nrite, File='OUTPUT', Position='append')
+              Open(Unit=nrite, File=trim(output), Position='append')
            End If
         End If
      End If

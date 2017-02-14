@@ -19,6 +19,7 @@ Subroutine read_field                   &
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs & PDFs)
 ! contrib   - a.m.elena september 2016 (ljc)
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -233,7 +234,7 @@ Subroutine read_field                   &
 ! open force field data file
 
   If (idnode == 0) Then
-     Open(Unit=nfield, File = 'FIELD', Status = 'old')
+     Open(Unit=nfield, File = trim(field), Status = 'old')
      Write(nrite,"(/,/,1x,'SYSTEM SPECIFICATION')")
      If (.not.l_top) Write(nrite,"(/,1x,'detailed topology opted out')")
   End If

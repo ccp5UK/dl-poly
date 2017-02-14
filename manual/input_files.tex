@@ -760,6 +760,25 @@ brackets ``(...)'', may also be supplied in the directives, or
 directives may be used in a long form.  However, it is strongly
 recommended that the user uses only the {\bf bold} part of these
 directives.
+\noindent{Traditionally DL\_POLY\_4 uses hardcoded names for different input and output files. However since verion 4.09 some of
+them can be altered via directives in CONTROL file. Even the CONTROL file can be named differently but in this case one will need to
+pass it as a command line argument to DLPOLY.Z}
+
+\begin{tabbing}
+X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
+\> \uuline{{\bf directive:}}                    \> \phantom{xxxxxxxxxxxxxxxxx} \uuline{{\bf meaning:}} \\
+\>                                              \> \\
+\> *** IO Custom ***                            \> *** IO CUSTOM *** \\
+\> {\bf io output} {\it filename}                \> Will use {\it filename} instead of OUTPUT \\
+\> {\bf io config} {\it filename}                \> Will use {\it filename} instead of CONFIG \\
+\> {\bf io field} {\it filename}                 \> Will use {\it filename} instead of FIELD \\
+\> {\bf io outstat} {\it filename}                 \> Will use {\it filename} instead of STATIS \\
+\> {\bf io history} {\it filename}                 \> Will use {\it filename} instead of HISTORY \\
+\> {\bf io historf} {\it filename}                 \> Will use {\it filename} instead of HISTORF \\
+\> {\bf io revive} {\it filename}                 \> Will use {\it filename} instead of REVIVE \\
+\> {\bf io revold} {\it filename}                 \> Will use {\it filename} instead of REVOLD \\
+\> {\bf io revcon} {\it filename}                 \> Will use {\it filename} instead of REVCON \\
+\end{tabbing}
 
 \begin{table}[htbp]
 \begin{centering}

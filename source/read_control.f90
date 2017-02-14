@@ -30,6 +30,7 @@ Subroutine read_control                                &
 ! contrib   - h.a.boateng february 2015
 ! contrib   - p.s.petkov february 2015
 ! contrib   - a.m.elena september 2015
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -374,7 +375,7 @@ Subroutine read_control                                &
 
 ! open the simulation control file
 
-  If (idnode == 0) Open(Unit=nread, File = 'CONTROL', Status = 'old')
+  If (idnode == 0) Open(Unit=nread, File = trim(control), Status = 'old')
 
 ! read simulation control name
 
@@ -2270,7 +2271,7 @@ Subroutine read_control                                &
            Call error(3)
 
         End If
-
+ 
 ! close control file
 
      Else If (word(1:6) == 'finish') Then

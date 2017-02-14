@@ -7,12 +7,13 @@ Subroutine scan_control_pre(imc_n,dvar)
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2014
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gcheck
-  Use setup_module,  Only : nread
+  Use setup_module,  Only : nread,control
   Use parse_module,  Only : get_line,get_word,lower_case,word_2_real
   Implicit None
 
@@ -29,12 +30,12 @@ Subroutine scan_control_pre(imc_n,dvar)
 
   dvar = 1.0_wp
 
-  If (idnode == 0) Inquire(File='CONTROL', Exist=safe)
+  If (idnode == 0) Inquire(File=trim(control), Exist=safe)
   If (mxnode > 1) Call gcheck(safe,"enforce")
   If (.not.safe) Then
      Go To 10
   Else
-     If (idnode == 0) Open(Unit=nread, File='CONTROL', Status='old')
+     If (idnode == 0) Open(Unit=nread, File=trim(control), Status='old')
   End If
 
 ! Read TITLE record

@@ -203,13 +203,19 @@ Program dl_poly
   Call init_comms()
   If (mxnode > 1) Call gsync()
   Call gtime(timelp)
+  If (idnode == 0) Then
+    If (command_argument_count() == 1 ) Then
+      Call get_command_argument(1, control)
+    End If
+  End If
 
   Call scan_development()
 
 ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
 
+  Call scan_control_output()
   If (idnode == 0) Then
-     If (.not.l_scr) Open(Unit=nrite, File='OUTPUT', Status='replace')
+     If (.not.l_scr) Open(Unit=nrite, File=trim(output), Status='replace')
 
      Write(nrite,'(5(1x,a,/),(1x,a25,a8,a4,a14,a15/),1x,a,i10,a,/,5(1x,a,/))')  &
           "******************************************************************", &
@@ -236,8 +242,8 @@ Program dl_poly
           "****  when publishing research data obtained using DL_POLY_4  ****", &
           "****  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ****", &
           "******************************************************************"
-  End If
 
+  End If
 ! TEST I/O
 
   Call scan_control_io()

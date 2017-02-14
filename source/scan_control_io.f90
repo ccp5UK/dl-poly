@@ -12,7 +12,8 @@ Subroutine scan_control_io()
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gcheck
-  Use setup_module,  Only : nread,nrite
+  Use setup_module,  Only : nread,nrite,control,output,field,config,statis,&
+                            history,historf,revive,revcon,revold
   Use parse_module,  Only : get_line,get_word,lower_case,strip_blanks,word_2_real
   Use io_module,     Only : io_set_parameters,        &
                             io_get_parameters,        &
@@ -54,12 +55,12 @@ Subroutine scan_control_io()
 
 ! Open the simulation input file
 
-  If (idnode == 0) Inquire(File='CONTROL', Exist=safe)
+  If (idnode == 0) Inquire(File=trim(control), Exist=safe)
   If (mxnode > 1) Call gcheck(safe,"enforce")
   If (.not.safe) Then
      Go To 10
   Else
-     If (idnode == 0) Open(Unit=nread, File='CONTROL', Status='old')
+     If (idnode == 0) Open(Unit=nread, File=trim(control), Status='old')
   End If
 
 ! Read TITLE record
@@ -254,7 +255,7 @@ Subroutine scan_control_io()
               If (idnode == 0) Write(nrite,"(/,1x,'I/O write method: serial by using a single master process')" )
            Else
               Call strip_blanks(record)
-              If (idnode == 0) Write(nrite,"(/,/,4a)") 'io ',word1(1:Len_Trim(word1)+1),word(1:Len_Trim(word)+1),record
+               If (idnode == 0) Write(nrite,"(/,/,4a)") 'io ',word1(1:Len_Trim(word1)+1),word(1:Len_Trim(word)+1),record
               Call error(3)
            End If
 
@@ -382,6 +383,49 @@ Subroutine scan_control_io()
               Call io_set_parameters( user_error_check = l_tmp )
            End If
 
+        Else If ((word(1:6) == 'output') .or. (word(1:6) == 'config') .or. &
+          (word(1:5) == 'field') .or. (word(1:7) == 'statis') .or. (word(1:7) == 'history') &
+          .or. (word(1:7) == 'historf') .or. (word(1:6) == 'revive') .or. &
+          (word(1:6) == 'revcon') .or. (word(1:6) == 'revold')) Then
+          If (word(1:6) == 'output') Then
+   
+            If (idnode == 0) Write(nrite,"(/,1a)")" OUTPUT file is "//trim(output) 
+
+          Else If (word(1:6) == 'config') Then
+        
+            If (idnode == 0) Write(nrite,"(1a)")" CONFIG file is "//trim(config) 
+
+          Else If (word(1:5) == 'field') Then
+        
+            If (idnode == 0) Write(nrite,"(1a)")" FIELD file is "//trim(field) 
+
+          Else If (word(1:6) == 'statis') Then
+        
+            If (idnode == 0) Write(nrite,"(1a)")" STATIS file is "//trim(statis) 
+
+          Else If (word(1:7) == 'history') Then
+        
+            If (idnode == 0) Write(nrite,"(1a)")" HISTORY file is "//trim(history) 
+
+          Else If (word(1:7) == 'historf') Then
+        
+            If (idnode == 0) Write(nrite,"(1a)")" HISTORF file is "//trim(historf) 
+
+          Else If (word(1:6) == 'revive') Then
+        
+            If (idnode == 0) Write(nrite,"(1a)")" REVIVE file is "//trim(revive) 
+
+          Else If (word(1:6) == 'revcon') Then
+        
+            If (idnode == 0) Write(nrite,"(1a)")" REVCON file is "//trim(revcon) 
+
+          Else If (word(1:6) == 'revold') Then
+        
+            If (idnode == 0) Write(nrite,"(1a,/)")" REVOLD file is "//trim(revold) 
+
+          End If
+! close control file
+
         Else
 
            Call strip_blanks(record)
@@ -483,7 +527,6 @@ Subroutine scan_control_io()
   End If
 
   If (io_write == IO_WRITE_SORTED_NETCDF .or. io_read == IO_READ_NETCDF) Call io_nc_compiled()
-
   Return
 
 ! CONTROL file does not exist
@@ -498,3 +541,100 @@ Subroutine scan_control_io()
   Call error(17)
 
 End Subroutine scan_control_io
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for scanning the I/O filenames in the control file
+!
+! copyright - daresbury laboratory
+! author    - a.m.elena february 2017
+!
+Subroutine scan_control_output()
+
+  Use kinds_f90
+  Use comms_module,  Only : idnode,mxnode,gcheck
+  Use setup_module,  Only : nread,nrite,control,output,config, &
+                            field,statis,history,historf, &
+                            revive,revcon,revold
+  Use parse_module,  Only : get_line,get_word,lower_case
+
+  Implicit None
+
+  Logical                :: carry,safe
+  Character( Len = 200 ) :: record
+  Character( Len = 40  ) :: word,word1
+
+  safe   = .true.  ! all is safe
+
+! Open the simulation input file
+
+  If (idnode == 0) Inquire(File=trim(control), Exist=safe)
+  If (mxnode > 1) Call gcheck(safe,"enforce")
+  If (.not.safe) Then
+    Open(Unit=nrite, File=trim(output), Status='replace')
+    Call error(126)
+  Else
+     If (idnode == 0) Open(Unit=nread, File=trim(control), Status='old')
+  End If
+
+! Read TITLE record
+
+  Call get_line(safe,nread,record)
+  If (.not.safe) Then
+    Open(Unit=nrite, File=trim(output), Status='replace')
+    Call error(17)
+  End If
+
+  carry = .true.
+  Do While (carry)
+     Call get_line(safe,nread,record)
+     If (.not.safe) Then
+       Call error(17)
+     End If
+
+     Call lower_case(record)
+
+     Call get_word( record, word )
+     If      (word(1:2) == 'io' ) Then
+
+        Call get_word( record, word1 )
+        If (word1(1:6) == 'output') Then
+          Call get_word( record, output )
+
+        Else If (word1(1:6) == 'config') Then
+          Call get_word( record, config )
+
+        Else If (word1(1:5) == 'field') Then
+          Call get_word( record, field )
+
+        Else If (word1(1:6) == 'statis') Then
+          Call get_word( record, statis )
+
+        Else If (word1(1:7) == 'history') Then
+          Call get_word( record, history )
+
+        Else If (word1(1:7) == 'historf') Then
+          Call get_word( record, historf )
+
+        Else If (word1(1:6) == 'revive') Then
+          Call get_word( record, revive )
+
+        Else If (word1(1:6) == 'revcon') Then
+          Call get_word( record, revcon )
+
+        Else If (word1(1:6) == 'revold') Then
+          Call get_word( record, revold )
+        End If
+! read finish
+
+     Else If (word(1:6) == 'finish') Then
+
+        carry=.false.
+
+     End If
+
+  End Do
+
+  If (idnode == 0) Close(Unit=nread)
+
+End Subroutine scan_control_output
