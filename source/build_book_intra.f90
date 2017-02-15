@@ -13,13 +13,13 @@ Subroutine build_book_intra             &
 ! torsion and improper torsion angles, and inversion angles
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov july 2016
+! author    - i.t.todorov february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! SETUP MODULES
 
-  Use comms_module,  Only : idnode,mxnode,gcheck
+  Use comms_module,  Only : idnode,mxnode,gcheck,gmax
   Use setup_module
 
 ! SITE MODULE
@@ -72,8 +72,9 @@ Subroutine build_book_intra             &
              ibonds,jbonds,kbonds,lbonds,           &
              iangle,jangle,kangle,langle,           &
              idihed,jdihed,kdihed,ldihed,           &
-             iinver,jinver,kinver,linver
-  Real(Kind = wp) :: rcut
+             iinver,jinver,kinver,linver,           &
+             itmp(1:9),jtmp(1:9)
+  Real(Kind = wp) :: rcut,tmp
 
   Integer, Dimension( : ), Allocatable :: iwrk,irgd,irgd0, &
                                           i1pmf,i1pmf0,i2pmf,i2pmf0
@@ -1556,11 +1557,30 @@ Subroutine build_book_intra             &
 
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe( 1)) Call error( 88)
-  If (Any(.not.safe) .and. idnode == 0) Write(nrite,'(1x,a,i0)')                                       &
-     '*** warning - estimated denvar value for passing this stage safely is : ',                       &
-       Nint(dvar * 100.0_wp*Real(Max(ishels/Max(1,mxshl) , iconst/Max(1,mxcons), ipmf/Max(1,mxpmf)   , &
-                                     irigid/Max(1,mxrgd) , iteths/Max(1,mxteth), ibonds/Max(1,mxbond), &
-                                     iangle/Max(1,mxangl), idihed/Max(1,mxdihd), iinver/Max(1,mxinv)),wp)+0.5_wp)
+
+  If (Any(.not.safe)) Then
+     itmp(1)=ishels ; jtmp(1)=mxshl
+     itmp(2)=iconst ; jtmp(2)=mxcons
+     itmp(3)=ipmf   ; jtmp(3)=mxpmf
+     itmp(4)=irigid ; jtmp(4)=mxrgd
+     itmp(5)=iteths ; jtmp(5)=mxteth
+     itmp(6)=ibonds ; jtmp(6)=mxbond
+     itmp(7)=iangle ; jtmp(7)=mxangl
+     itmp(8)=idihed ; jtmp(8)=mxdihd
+     itmp(9)=iinver ; jtmp(9)=mxinv
+
+     If (mxnode > 1) Call gmax(itmp(1:9))
+
+     tmp=1.0_wp
+     Do i=1,9
+        tmp=Max(tmp,1.0_wp+Real(itmp(i),wp)/Real(Max(1,jtmp(i)),wp))
+     End Do
+
+     If (idnode == 0) Write(nrite,'(1x,a,i0,2f5.2)')                                 &
+        '*** warning - estimated densvar value for passing this stage safely is : ', &
+        Nint((dvar*tmp-1.0_wp)*100.0_wp+0.5_wp)
+  End If
+
   If (.not.safe( 2)) Call error( 59)
   If (.not.safe( 3)) Call error( 41)
   If (.not.safe( 4)) Call error(488)

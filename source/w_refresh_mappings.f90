@@ -13,10 +13,10 @@
 
 ! Relocate atoms to new domains and restore bonding description
 
-           Call relocate_particles &
-           (rlnk,lbook,megatm,  &
-           megshl,m_con,megpmf, &
-           m_rgd,megtet,        &
+           Call relocate_particles  &
+           (dvar,rlnk,lbook,megatm, &
+           megshl,m_con,megpmf,     &
+           m_rgd,megtet,            &
            megbnd,megang,megdih,meginv)
 
 ! Exchange atomic data in border regions
