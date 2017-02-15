@@ -14,7 +14,8 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg)
 
   Use kinds_f90
   Use comms_module,   Only : idnode,mxnode,gsum,gmax
-  Use setup_module,   Only : nrite,mxatims,mxatdm,mxshl,engunit,output,zero_plus
+  Use setup_module,   Only : nrite,mxatms,mxatdm,mxshl,engunit,&
+                             output,zero_plus
   Use config_module,  Only : imcon,cell,natms,nlast,lsi,lsa, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use parse_module,   Only : strip_blanks,lower_case
