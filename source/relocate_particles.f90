@@ -1,7 +1,7 @@
-Subroutine relocate_particles   &
-           (rlnk,lbook,megatm,  &
-           megshl,m_con,megpmf, &
-           m_rgd,megtet,        &
+Subroutine relocate_particles       &
+           (dvar,rlnk,lbook,megatm, &
+           megshl,m_con,megpmf,     &
+           m_rgd,megtet,            &
            megbnd,megang,megdih,meginv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -11,12 +11,12 @@ Subroutine relocate_particles   &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith august 1998
-! amended   - i.t.todorov february 2015
+! amended   - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,       Only : mxnode,gsum,gmax,gcheck
+  Use comms_module,       Only : idnode,mxnode,gsum,gmax,gcheck
   Use setup_module
   Use domains_module
 
@@ -44,13 +44,13 @@ Subroutine relocate_particles   &
                                         megshl,m_con,megpmf, &
                                         m_rgd,megtet,        &
                                         megbnd,megang,megdih,meginv
-  Real( Kind = wp ), Intent( In    ) :: rlnk
+  Real( Kind = wp ), Intent( In    ) :: dvar,rlnk
 
   Real( Kind = wp ), Save :: cut
 
   Logical           :: safe(1:9)
-  Integer           :: i,nlimit,ipx,ipy,ipz
-  Real( Kind = wp ) :: big(1:3),det,celprp(1:10),rcell(1:9),x,y,z
+  Integer           :: i,nlimit,ipx,ipy,ipz,itmp(1:9),jtmp(1:9)
+  Real( Kind = wp ) :: big(1:3),det,celprp(1:10),rcell(1:9),x,y,z,tmp
 
 ! Define cut
 
@@ -218,6 +218,30 @@ Subroutine relocate_particles   &
         If (meginv > 0) safe(9)=(ntinv  <= mxinv )
 
         If (mxnode > 1) Call gcheck(safe)
+
+        If (Any(.not.safe)) Then
+           itmp(1)=ntshl  ; jtmp(1)=mxshl
+           itmp(2)=ntcons ; jtmp(2)=mxcons
+           itmp(3)=ntpmf  ; jtmp(3)=mxpmf
+           itmp(4)=ntrgd  ; jtmp(4)=mxrgd
+           itmp(5)=ntteth ; jtmp(5)=mxteth
+           itmp(6)=ntbond ; jtmp(6)=mxbond
+           itmp(7)=ntangl ; jtmp(7)=mxangl
+           itmp(8)=ntdihd ; jtmp(8)=mxdihd
+           itmp(9)=ntinv  ; jtmp(9)=mxinv
+
+           If (mxnode > 1) Call gmax(itmp(1:9))
+
+           tmp=1.0_wp
+           Do i=1,9
+              tmp=Max(tmp,1.0_wp+Real(itmp(i),wp)/Real(Max(1,jtmp(i)),wp))
+           End Do
+
+           If (idnode == 0) Write(nrite,'(1x,a,i0,2f5.2)')                                 &
+              '*** warning - estimated densvar value for passing this stage safely is : ', &
+              Nint((dvar*tmp-1.0_wp)*100.0_wp+0.5_wp)
+        End If
+
         If (.not.safe(1)) Call error( 59)
         If (.not.safe(2)) Call error( 41)
         If (.not.safe(3)) Call error(488)
