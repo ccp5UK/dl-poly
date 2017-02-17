@@ -6,7 +6,7 @@ Subroutine read_mpoles(l_top,sumchg)
 ! specifications of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2016
+! author    - i.t.todorov february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -14,13 +14,13 @@ Subroutine read_mpoles(l_top,sumchg)
 
   Use kinds_f90
   Use comms_module,      Only : idnode
-  Use setup_module,      Only : nrite,nmpldt,mxompl
+  Use setup_module,      Only : nrite,nmpldt,mxompl,zero_plus
 
 ! SITE & MPOLES MODULE
 
   Use site_module
   Use core_shell_module, Only : numshl,lstshl
-  Use mpoles_module,     Only : mpllfr
+  Use mpoles_module,     Only : mpllfr,plrsit,dmpsit
 
 ! PARSE MODULE
 
@@ -39,12 +39,12 @@ Subroutine read_mpoles(l_top,sumchg)
 
   Integer                :: itmols,nrept,i,j,k,l,                 &
                             isite,jsite,ksite,lsite,nsite,sitmpl, &
-                            ishls,nshels,isite2,                  &
+                            ishls,nshels,kshels,isite2,           &
                             ordmpl,ordmpl_start,ordmpl_next,      &
                             ordmpl_min,ordmpl_max,                &
                             indmpl,indmpl_start,indmpl_final
 
-  Real( Kind = wp )      :: Factorial,charge,scl
+  Real( Kind = wp )      :: Factorial,charge,scl,polarity,dumping
 
 ! open MPOLES data file
 
@@ -194,6 +194,8 @@ Subroutine read_mpoles(l_top,sumchg)
                        ordmpl=Abs(Nint(word_2_real(word)))
                        indmpl=(ordmpl+3)*(ordmpl+2)*(ordmpl+1)/6
 
+! read supplied repetition
+
                        Call get_word(record,word)
                        nrept=Abs(Nint(word_2_real(word)))
                        If (nrept == 0) nrept=1
@@ -210,15 +212,27 @@ Subroutine read_mpoles(l_top,sumchg)
                           End If
                        End Do
 
-                       l_rsh=.true. ! regular or no shelling (Drude)
-                       Do ishls=1,numshl(itmols) ! detect beyond charge shelling
-                          nshels=nshels+1
+! read supplied site polarisation and dumping factor
 
-                          isite2=nsite+lstshl(2,nshels)
-                          If ((isite2 >= jsite .and. isite2 <= lsite) .and. ordmpl > 0) Then
+                       Call get_word(record,word) ; polarity=Abs(word_2_real(word,0.0_wp))
+                       Call get_word(record,word) ; dumping =Abs(word_2_real(word,0.0_wp))
+
+                       l_rsh=.true. ! regular or no shelling (Drude)
+                       kshels=nshels
+                       Do ishls=1,numshl(itmols) ! detect beyond charge shelling
+                          kshels=kshels+1
+
+                          isite2=nsite+lstshl(2,kshels)
+                          If ((isite2 >= jsite .and. isite2 <= lsite)) Then
                              l_rsh=.false.
-                             If (idnode == 0) Write(nrite,'(/,1x,a,i0,a)') &
-  "*** warning - a shell (of a polarisable multipolar ion) can only bear a charge to emulate a self-iduced dipole!!! ***"
+                             If (idnode == 0) Then
+                                If (ordmpl > 0) Write(nrite,'(/,1x,a)') &
+  "*** warning - a shell (of a polarisable multipolar ion) can only bear a charge to emulate a self-iduced dipole !!! ***"
+                                If (polarity > zero_plus) Write(nrite,'(/,1x,a)') &
+  "*** warning - a shell (of a polarisable multipolar ion) cannot have its own associated polarisability !!! ***"
+                                If (dumping  > zero_plus) Write(nrite,'(/,1x,a)') &
+  "*** warning - a shell (of a polarisable multipolar ion) cannot have its own associated dumping factor !!! ***"
+                             End If
                           End If
                        End Do
 
@@ -229,8 +243,15 @@ Subroutine read_mpoles(l_top,sumchg)
                           ordmpl_max=Max(ordmpl_max,ordmpl)
                        End If
 
-                       If (idnode == 0 .and. l_top) &
-  Write(nrite,"(9x,i10,4x,a8,4x,i2,5x,i10)") ksite+1,atom,Merge(ordmpl,1,l_rsh),nrept
+                       If (idnode == 0 .and. l_top) Then
+                          If (l_rsh) Then
+  Write(nrite,"(9x,i10,4x,a8,4x,i2,5x,i10,2f7.3)") ksite+1,atom,ordmpl,nrept,polarity,dumping
+                          Else
+  Write(nrite,"(9x,i10,4x,a8,4x,i2,5x,i10,2a)") ksite+1,atom,1,nrept,                                 &
+                                             Merge(' *ignored* ','           ',polarity > zero_plus), &
+                                             Merge(' *ignored* ','           ',dumping  > zero_plus)
+                          End If
+                       End If
 
 ! monopole=charge
 
@@ -247,6 +268,11 @@ Subroutine read_mpoles(l_top,sumchg)
 
                        chgsit(jsite:lsite)=charge
                        mpllfr(sitmpl,jsite:lsite)=charge
+                       If (l_rsh) Then
+                          plrsit(jsite:lsite)=polarity
+                          dmpsit(jsite:lsite)=dumping
+!                      Else ! initilised to zero in mpoles_module
+                       End If
 
 ! sum absolute charges
 
@@ -368,6 +394,8 @@ Subroutine read_mpoles(l_top,sumchg)
                        nsite=nsite+nrept
                        ksite=ksite+nrept
 
+                       If (ksite == numsit(itmols)) nshels=kshels
+
                     End If
                  End Do
 
@@ -378,9 +406,9 @@ Subroutine read_mpoles(l_top,sumchg)
                  If (idnode == 0) Then
                     Write(nrite,'(/,1x,3(a,i0),a)') &
   "*** warning - multipolar electrostatics requested up to order ", &
-  ordmpl, " with specified interactions up order ",                 &
+  mxompl, " with specified interactions up order ",                 &
   ordmpl_max," and least order ", ordmpl_min," !!! ***"
-                    If (ordmpl_max*ordmpl == 0) Write(nrite,'(1x,2a)') &
+                    If (ordmpl_max*mxompl == 0) Write(nrite,'(1x,2a)') &
   "*** warning - multipolar electrostatics machinery to be used for ", &
   "monopoles only electrostatic interactions (point charges only) !!! ***"
                     If (ordmpl_max > 4) Write(nrite,'(1x,2a)')     &

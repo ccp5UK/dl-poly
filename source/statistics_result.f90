@@ -8,7 +8,7 @@ Subroutine statistics_result                                    &
 ! dl_poly_4 subroutine for writing simulation summary
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov march 2016
+! author    - w.smith & i.t.todorov november 2016
 ! contrib   - m.a.seaton june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -27,7 +27,7 @@ Subroutine statistics_result                                    &
   Use angles_module,      Only : ncfang
   Use dihedrals_module,   Only : ncfdih
   Use inversions_module,  Only : ncfinv
-  Use rdf_module,         Only : ncfrdf
+  Use rdf_module,         Only : ncfrdf,ncfusr
   Use z_density_module,   Only : ncfzdn
   Use statistics_module
   Use msd_module
@@ -45,7 +45,7 @@ Subroutine statistics_result                                    &
 
 ! VNL skipping statistics
 
-  If (llvnl) Then
+  If (llvnl .and. nstep > 0) Then
      If (.not.l_vnl) Then ! Include the final skip in skipping statistics
         skipvnl(3)=skipvnl(2)*skipvnl(3)
         skipvnl(2)=skipvnl(2)+1.0_wp
@@ -118,22 +118,42 @@ Subroutine statistics_result                                    &
 
 ! Report termination
 
-  If (idnode == 0) &
-     Write(nrite,"(/,/,1x,'run terminated after',i9,' steps (',f10.3,   &
-          & ' ps), final averages calculated over',i9,' steps (',f10.3, &
-          & ' ps).',/,/)") nstep,time,numacc,tmp
 
+  If (idnode == 0) Then
+     If ((nstep == 0 .and. nstrun == 0) .or. numacc == 0) Then
+        Write(nrite,"(/,/,1x,'dry run terminated',/)")
+     Else
+        Write(nrite,"(/,/,1x,'run terminated after',i9,' steps (',f10.3,   &
+             & ' ps), final averages calculated over',i9,' steps (',f10.3, &
+             & ' ps).',/,/)") nstep,time,numacc,tmp
+     End If
+  End If
 
 ! safe average volume and cell
 
   avvol = volm
   avcel = cell
 
-! If dry/static/minimisation run - NO AVERAGES, but possible RDF and Z-Density
+! If dry/static/minimisation run - NO AVERAGES
+! Print pressure tensor and jump to possible RDF and Z-Density
 
-  If (nstep == 0 .and. nstrun == 0) Go To 10
+  If (nstep == 0 .and. nstrun == 0) Then
+     iadd = 27+2*Merge(mxatdm,0,l_msd)+ntpatm
 
-! If still running in the pure equilibration regeime - NO AVERAGES
+     If (idnode == 0) Then
+        Write(nrite,"(16x,'pressure tensor  (katms)',/)")
+
+        Do i=iadd,iadd+6,3
+           Write(nrite,'(9x,1p,3e12.4)') stpval(i+1:i+3)
+        End Do
+
+        Write(nrite,'(/,12x,a,1p,e12.4)') 'trace/3  ', (stpval(iadd+1)+stpval(iadd+5)+stpval(iadd+9))/3.0_wp
+     End If
+
+     Go To 10
+  End If
+
+! If still running in the pure equilibration regime - NO AVERAGES
 
   If (numacc == 0) Go To 20
 
@@ -315,6 +335,7 @@ Subroutine statistics_result                                    &
 ! calculate and print radial distribution functions
 
   If (lrdf .and. lprdf .and. ncfrdf > 0) Call rdf_compute(lpana,rcut,temp)
+  If (ncfusr > 0) Call usr_compute()
 
 ! calculate and print z-density profile
 

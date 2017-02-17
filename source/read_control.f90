@@ -8,7 +8,8 @@ Subroutine read_control                                &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
            temp,press,strext,keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
-           keymin,nstmin,min_tol,nstgaus,nstscal,      &
+           keymin,nstmin,min_tol,                      &
+           nstzero,nstgaus,nstscal,                    &
            keyens,iso,taut,chi,soft,gama,taup,tai,ten, &
            keypse,wthpse,tmppse,                       &
            fmax,nstbpo,intsta,keyfce,epsq,             &
@@ -23,7 +24,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2016
+! author    - i.t.todorov february 2017
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -38,10 +39,10 @@ Subroutine read_control                                &
   Use comms_module,      Only : idnode
   Use setup_module
   Use config_module,     Only : sysname
+  Use mpoles_module,     Only : thole
   Use dpd_module,        Only : keydpd,gamdpd
   Use langevin_module,   Only : l_lan,l_gst,langevin_allocate_arrays
   Use parse_module
-  Use core_shell_module, Only : l_dpl
   Use bonds_module,      Only : rcbnd
   Use vdw_module,        Only : ld_vdw,ls_vdw,mxtvdw
   Use metal_module,      Only : ld_met,ls_met,tabmet
@@ -65,7 +66,7 @@ Subroutine read_control                                &
 
   Logical,                Intent(   Out ) :: l_exp,lecx,            &
                                              lfcap,l_top,           &
-                                             lzero,lmin,            &
+                                             lmin,lzero,            &
                                              ltgaus,ltscal,         &
                                              lvar,leql,lpse,lfce,   &
                                              lpana,                 &
@@ -75,7 +76,8 @@ Subroutine read_control                                &
 
 
   Integer,                Intent(   Out ) :: nx,ny,nz,imd,tmd,     &
-                                             keyres,nstrun,nsteql, &
+                                             keyres,nstrun,        &
+                                             nsteql,nstzero,       &
                                              keymin,nstmin,        &
                                              nstgaus,nstscal,      &
                                              keyens,iso,           &
@@ -91,25 +93,25 @@ Subroutine read_control                                &
                                              nsrsd,isrsd,          &
                                              ndump
 
-  Real( Kind = wp ),      Intent(   Out ) :: emd,vmx,vmy,vmz,         &
-                                             temp,press,strext(1:9),  &
-                                             tstep,mndis,mxdis,mxstp, &
-                                             taut,chi,soft,gama,      &
-                                             taup,tai,ten,            &
-                                             wthpse,tmppse,min_tol,   &
-                                             fmax,epsq,rlx_tol,       &
-                                             tolnce,quattol,          &
-                                             rdef,rrsd,pdplnc,        &
+  Real( Kind = wp ),      Intent(   Out ) :: emd,vmx,vmy,vmz,            &
+                                             temp,press,strext(1:9),     &
+                                             tstep,mndis,mxdis,mxstp,    &
+                                             taut,chi,soft,gama,         &
+                                             taup,tai,ten,               &
+                                             wthpse,tmppse,min_tol(1:2), &
+                                             fmax,epsq,rlx_tol(1:2),     &
+                                             tolnce,quattol,             &
+                                             rdef,rrsd,pdplnc,           &
                                              timjob,timcls
 
 
-  Logical                                 :: limp,lvv,lens,lforc, &
-                                             ltemp,lpres,lstrext, &
-                                             lstep,lplumed,safe,  &
+  Logical                                 :: limp,lvv,lens,lforc,     &
+                                             ltemp,l_0,lpres,lstrext, &
+                                             lstep,lplumed,safe,      &
                                              l_timjob,l_timcls
 
   Character( Len = 200 )                  :: record
-  Character( Len = 40  )                  :: word,word1,word2,akey
+  Character( Len = 40  )                  :: word,word1,word2,word3,akey
 
   Integer                                 :: i,j,k,itmp,nstana,grdana,grdbnd,grdang, &
                                              grddih,grdinv,nstall
@@ -199,7 +201,7 @@ Subroutine read_control                                &
   lmin   = .false.
   keymin = -1
   nstmin = 0
-  min_tol= 0.0_wp
+  min_tol(1:2) = (/ 0.0_wp , -1.0_wp /) ! tolerance, optional CGM step
 
 ! default switch for regaussing temperature and default number of
 ! steps when to be applied
@@ -213,9 +215,12 @@ Subroutine read_control                                &
   ltscal  = .false.
   nstscal = 0
 
-! default switch for zero temperature optimisation
+! default switch for zero temperature optimisation and default number of
+! steps when to be applied
 
-  lzero = .false.
+  lzero   = .false.
+  nstzero = 0
+  l_0     = .false. ! T/=10K
 
 ! default integration type (VV), ensemble switch (not defined) and key
 
@@ -271,9 +276,9 @@ Subroutine read_control                                &
   mxquat =100
   quattol=1.0e-8_wp
 
-! Default relaxed shell model tolerance
+! Default relaxed shell model tolerance and optional CGM step
 
-  rlx_tol = 1.0_wp
+  rlx_tol(1:2) = (/ 1.0_wp , -1.0_wp /)
 
 ! proceed normal simulation
 
@@ -720,22 +725,36 @@ Subroutine read_control                                &
 
         ltemp = .true.
         Call get_word(record,word)
-        If (.not.lzero) Then
-           temp = Abs(word_2_real(word))
-           If (idnode == 0) Write(nrite,"(/,1x,'simulation temperature (K)  ',6x,1p,e12.4)") temp
-        End If
+        temp = Abs(word_2_real(word))
+        If (idnode == 0) Write(nrite,"(/,1x,'simulation temperature (K)  ',6x,1p,e12.4)") temp
 
 ! read zero temperature optimisation
 
      Else If (word(1:4) == 'zero') Then
 
-        lzero  = .true.
-        ltemp  = .true.
-        ltscal = .false.
-        temp   = 10.0_wp
+        lzero = .true.
 
-        If (idnode == 0) Write(nrite,"(/,1x,'zero K optimisation requested', &
-           & /,1x,'actual temperature reset to 10 Kelvin')")
+! Check defaults
+
+        Call get_word(record,word)
+        l_0 = (word(1:4) == 'fire')
+        nstzero = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
+
+        If (word(1:5) == 'every') Call get_word(record,word)
+        nstzero = Max(nstzero,Abs(Nint(word_2_real(word,0.0_wp))))
+
+        If (idnode == 0) Write(nrite,"(/,1x,'zero K optimisation on (during equilibration)', &
+           & /,1x,'temperature regaussing interval',i10)") nstzero
+
+        If (l_0) Then
+           If (idnode == 0) &
+  Write(nrite,"(1x,a)") 'fire option on - actual temperature will reset to 10 Kelvin if no target tempreature is specified'
+        Else
+           ltemp  = .true.
+           temp = 10.0_wp
+           If (idnode == 0) &
+  Write(nrite,"(1x,a)") 'fire option off - actual temperature reset to 10 Kelvin'
+        End If
 
 ! read pressure
 
@@ -963,28 +982,31 @@ Subroutine read_control                                &
         itmp=0
         If      (keymin == 0) Then
            If (tmp < 1.0_wp .or. tmp > 1000.0_wp) Then
-              min_tol=50.0_wp
+              min_tol(1)=50.0_wp
               itmp=1
            Else
-              min_tol=tmp
+              min_tol(1)=tmp
            End If
         Else If (keymin == 1) Then
            If (tmp < zero_plus .or. tmp > 0.01_wp) Then
-              min_tol=0.005_wp
+              min_tol(1)=0.005_wp
               itmp=1
            Else
               min_tol=tmp
            End If
         Else If (keymin == 2) Then
            If (tmp < 1.0e-6_wp .or. tmp > 0.1_wp) Then
-              min_tol=0.005_wp
+              min_tol(1)=0.005_wp
               itmp=1
            Else
-              min_tol=tmp
+              min_tol(1)=tmp
            End If
         End If
 
-        If (itmp == 1) Call warning(360,tmp,min_tol,0.0_wp)
+        If (itmp == 1) Call warning(360,tmp,min_tol(1),0.0_wp)
+
+        Call get_word(record,word3)
+        min_tol(2) = word_2_real(word3,-1.0_wp)
 
         If (word2(1:5) == 'minim') Then
            If (idnode == 0) Write(nrite,                                &
@@ -992,14 +1014,20 @@ Subroutine read_control                                &
               &   /,1x,'minimisation criterion        ',1x,a8,          &
               &   /,1x,'minimisation frequency (steps)',1x,i10,         &
               &   /,1x,'minimisation tolerance        ',4x,1p,e12.4)")  &
-              word1(1:8),nstmin,min_tol
+              word1(1:8),nstmin,min_tol(1)
+           If (min_tol(2) > zero_plus .and. idnode == 0) Write(nrite,   &
+              & "(  1x,'minimisation CGM step         ',4x,1p,e12.4)") min_tol(2)
         Else
            If (idnode == 0) Write(nrite,                               &
               & "(/,1x,'optimisation at start',                        &
               &   /,1x,'optimisation criterion        ',1x,a8,         &
               &   /,1x,'optimisation tolerance        ',4x,1p,e12.4)") &
-              word1(1:8),min_tol
+              word1(1:8),min_tol(1)
+           If (min_tol(2) > zero_plus .and. idnode == 0) Write(nrite,  &
+              & "(  1x,'optimisation CGM step         ',4x,1p,e12.4)") min_tol(2)
         End If
+
+
 
 ! read regauss option
 
@@ -1008,7 +1036,7 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
-        nstgaus = Abs(Nint(word_2_real(word,0.0_wp)))
+        nstgaus = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
         ltgaus =.true.
         If (idnode == 0) Write(nrite,"(/,1x,'regauss temperature on (during equilibration)', &
@@ -1021,18 +1049,42 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
-        nstscal = Abs(Nint(word_2_real(word,0.0_wp)))
+        nstscal = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
         ltscal =.true.
         If (idnode == 0) Write(nrite,"(/,1x,'temperature scaling on (during equilibration)', &
            & /,1x,'temperature scaling interval',3x,i10)") nstscal
 
-! read depolarisation option
+! read polarisation option
 
-     Else If (word(1:5) == 'depol') Then
+     Else If (word(1:5) == 'polar') Then
 
-        l_dpl =.true.
-        If (idnode == 0) Write(nrite,"(/,1x,'depolarisation on (during equilibration)')")
+        Call get_word(record,word)
+        If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
+        If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
+        If (word(1:6) == 'charmm') Then
+           If (word(1:6) == 'thole') Then
+              Call get_word(record,word)
+              If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record,word)
+              If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record,word)
+              thole = Abs(word_2_real(word,0.0_wp))
+           End If
+           If (idnode == 0) Then
+  Write(nrite,"(/,1x,'CHARMM polarisation scheme selected with optional atomic thole dumping of ',f5.2)") thole
+              If (mximpl == 0) &
+  Write(nrite,"(1x,a)") "*** warning - scheme deselected due to switched off electrostatics !!! ***"
+              If (mxshl == 0) &
+  Write(nrite,"(1x,a)") "*** warning - scheme disabled due to lack of core-shell defined interatcions !!! ***"
+           End If
+
+           If (mximpl == 0 .or. mxshl == 0) Then
+!              keyind=0 ! done in scan_control
+           Else
+              lecx = .true. ! enable extended coulombic exclusion
+              If (idnode == 0) &
+  Write(nrite,"(1x,'Extended Coulombic eXclusion activated for CHARMM polarisation')")
+           End If
+        End If
 
 ! read integration flavour
 
@@ -1046,7 +1098,7 @@ Subroutine read_control                                &
 ! keydpd detected in scan_control
 
         If (keydpd > 0 .and. (lvv .neqv. l_vv) .and. idnode == 0) Write(nrite,"(/,1x,a)") &
-           "*** warning - Leapfrog Verlet selected integration defaulted to Velocity Verlet for DPD thermostats!!! ***"
+           "*** warning - Leapfrog Verlet selected integration defaulted to Velocity Verlet for DPD thermostats !!! ***"
 
 ! read ensemble
 
@@ -1773,7 +1825,7 @@ Subroutine read_control                                &
 
            If ( Abs(prmps(1)-1.0_wp/alpha) > 1.0e-6_wp .or. Abs(prmps(2)-eps) > 1.0e-6_wp .or. &
                 Nint(prmps(3)) == 0 .or. Nint(prmps(4)) == 0 ) Then
-              Write(nrite,"(/,1x,a)") "*** warning - parameters reset to safe defaults occurred!!! ***"
+              Write(nrite,"(/,1x,a)") "*** warning - parameters reset to safe defaults occurred !!! ***"
               Write(nrite,"(1x,'gridspacing parameter (A)',9x,1p,e12.4)") 1.0_wp/alpha
               Write(nrite,"(1x,'convergance epsilon      ',9x,1p,e12.4)") eps
               Write(nrite,"(1x,'max # of Psolver iterations',9x,1p,i5)") mxitcg
@@ -1817,6 +1869,7 @@ Subroutine read_control                                &
      Else If (word(1:5) == 'exclu') Then
 
         lecx = .true.
+        If (idnode == 0) Write(nrite,"(/,1x,'Extended Coulombic eXclusion opted for')")
 
 ! read force capping option
 
@@ -1891,8 +1944,13 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'rlxtol') Then
 
         Call get_word(record,word)
-        rlx_tol = Max(1.0_wp,Abs(word_2_real(word)))
-        If (idnode == 0) Write(nrite,"(/,1x,'tolerance for relaxed shell model',1x,1p,e12.4)") rlx_tol
+        rlx_tol(1) = Max(1.0_wp,Abs(word_2_real(word)))
+        If (idnode == 0) Write(nrite,"(/,1x,'relaxed shell model CGM tolerance',1x,1p,e12.4)") rlx_tol(1)
+
+        Call get_word(record,word1)
+        rlx_tol(2) = word_2_real(word1,-1.0_wp)
+        If (rlx_tol(2) > zero_plus .and. idnode == 0) &
+                         Write(nrite,"(/,1x,'relaxed shell model CGM step     ',1x,1p,e12.4)") rlx_tol(2)
 
 ! read maximum number of iterations in constraint algorithms
 
@@ -2350,6 +2408,7 @@ Subroutine read_control                                &
 ! fix on step-dependent options
 
   If (nstmin  == 0) nstmin  = nsteql+1
+  If (nstzero == 0) nstzero = nsteql+1
   If (nstgaus == 0) nstgaus = nsteql+1
   If (nstscal == 0) nstscal = nsteql+1
 
@@ -2478,14 +2537,14 @@ Subroutine read_control                                &
 
   If (lpana .or. mxgana > 0) Then
      If (mxgana == 0) Then
-        If (idnode == 0) Write(nrite,"(/,1x,a)") 'no intramolecuar distribution collection requested'
+        If (idnode == 0) Write(nrite,"(/,1x,a)") 'no intramolecular distribution collection requested'
      Else
         If (mxgbnd1 > 0 .and. mxgang1 > 0 .and. &
             mxgdih1 > 0 .and. mxginv1 > 0) Then
            If (idnode == 0) &
-              Write(nrite,"(/,1x,a)") 'full intramolecuar distribution collection requested (all=bnd/ang/dih/inv):'
+              Write(nrite,"(/,1x,a)") 'full intramolecular distribution collection requested (all=bnd/ang/dih/inv):'
         Else
-           If (idnode == 0) Write(nrite,"(/,1x,a)") 'intramolecuar distribution collection requested for:'
+           If (idnode == 0) Write(nrite,"(/,1x,a)") 'intramolecular distribution collection requested for:'
         End If
 
         i=Max(1,nstana,nstbnd,nstang,nstdih,nstinv)
@@ -2753,6 +2812,12 @@ Subroutine read_control                                &
            Write(nrite,"(/,1x,'allocated job close time (s)',6x,1p,e12.4)") timcls
      End If
 
+  End If
+
+  If (l_0 .and. (.not. ltemp)) Then ! zero K over zero fire
+     temp = 10.0_wp
+     If (idnode == 0) &
+        Write(nrite,"(/,1x,'default simulation temperature (K)',1p,e12.4)") temp
   End If
 
 !!! ERROR CHECKS !!!

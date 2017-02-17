@@ -19,7 +19,6 @@ Subroutine rdf_compute(lpana,rcut,temp)
   Use config_module, Only : cfgname,volm
   Use rdf_module
 
-
   Implicit None
 
   Logical          , Intent( In    ) :: lpana

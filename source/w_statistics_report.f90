@@ -72,10 +72,30 @@
 
         If (nstep == nsteql) Then
 
-           If (ltscal .and. nstep > 0) Then
-              ltscal=.false.
-              If (idnode == 0) Write(nrite,"(/,1x,a,i0)") &
-                 'switching off temperature scaling at step ',nstep
+           If (nstep > 0) Then
+              If (lzero) Then
+                 lzero=.false.
+                 If (idnode == 0) Write(nrite,"(/,1x,a,i0)") &
+                    'switching off zero Kelvin optimiser at step ',nstep
+              End If
+
+              If (lmin) Then
+                 lmin=.false.
+                 If (idnode == 0) Write(nrite,"(/,1x,a,i0)") &
+                    'switching off CGM minimiser at step ',nstep
+              End If
+
+              If (ltscal) Then
+                 ltscal=.false.
+                 If (idnode == 0) Write(nrite,"(/,1x,a,i0)") &
+                    'switching off temperature scaling at step ',nstep
+              End If
+
+              If (ltgaus) Then
+                 ltgaus=.false.
+                 If (idnode == 0) Write(nrite,"(/,1x,a,i0)") &
+                    'switching off temperature regaussing at step ',nstep
+              End If
            End If
 
 ! bond & PMF constraint quenching iterative cycles statistics report

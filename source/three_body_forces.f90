@@ -451,7 +451,7 @@ Subroutine three_body_forces(rctbp,engtbp,virtbp,stress)
 
   If (ktyp /= 6) Then
 
-! for potentials different from dreiding/charmm hydrogen bond
+! for potentials different from dreiding/CHARMM hydrogen bond
 
      sint=Max(1.0e-10_wp,Sqrt(1.0_wp-cost**2))
      rsint=1.0_wp/sint
@@ -567,7 +567,7 @@ Subroutine three_body_forces(rctbp,engtbp,virtbp,stress)
 
   Else If (ktyp == 6) Then
 
-! dreiding/charmm hydrogen bond
+! dreiding/CHARMM hydrogen bond
 
      If (Min(rab,rbc) < 1.5_wp .and. rac < rcttbp(kktbp)) Then
         dhb   =prmtbp(1,kktbp)

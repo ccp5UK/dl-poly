@@ -8,7 +8,7 @@ Subroutine vdw_table_read(rvdw)
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1994
 ! amended   - i.t.todorov april 2016
-! amended   - a.m.elena april 2016
+! amended   - a.m.elena january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -119,10 +119,10 @@ Subroutine vdw_table_read(rvdw)
         Call get_word(record,atom2)
 
         Call get_word(record,word)
-        prmvdw(1,ivdw)=word_2_real(word)
+        prmvdw(1,ivdw)=word_2_real(word)*engunit
 
         Call get_word(record,word)
-        prmvdw(2,ivdw)=word_2_real(word)
+        prmvdw(2,ivdw)=word_2_real(word)*engunit
 
         katom1=0
         katom2=0

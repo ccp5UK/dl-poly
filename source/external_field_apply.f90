@@ -1,4 +1,4 @@
-Subroutine external_field_apply(keyshl,time,engfld,virfld)
+Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -7,7 +7,7 @@ Subroutine external_field_apply(keyshl,time,engfld,virfld)
 ! Note: Only one field at a time is allowed
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2015
+! author    - i.t.todorov november 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -24,17 +24,18 @@ Subroutine external_field_apply(keyshl,time,engfld,virfld)
 
   Implicit None
 
-  Integer,           Intent( In    ) :: keyshl
+  Logical,           Intent( In    ) :: leql
+  Integer,           Intent( In    ) :: keyshl,nsteql,nstep
   Real( Kind = wp ), Intent( In    ) :: time ! for oscillating fields
   Real( Kind = wp ), Intent(   Out ) :: engfld,virfld
 
   Logical, Save     :: newjob = .true.
 
-  Logical           :: safe
-  Integer           :: i,j,ia,ib,fail(1:2),local_index, &
+  Logical           :: safe,l1,l2
+  Integer           :: i,j,ia,ib,ic,id,fail(1:2),local_index, &
                        irgd,jrgd,lrgd,rgdtyp,megrgd
   Real( Kind = wp ) :: gamma,rrr,rz,zdif,vxt,vyt,vzt,tmp,rtmp(1:2), &
-                       x(1:1),y(1:1),z(1:1),cmm(0:3)
+                       x(1:1),y(1:1),z(1:1),cmm(0:3),cm2(0:3)
 
   Integer,           Allocatable :: lstopt(:,:),list(:)
   Real( Kind = wp ), Allocatable :: oxt(:),oyt(:),ozt(:)
@@ -307,9 +308,11 @@ Subroutine external_field_apply(keyshl,time,engfld,virfld)
            gamma=-prmfld(1)*zdif
 
            fzz(i)=fzz(i) + gamma
-           engfld=engfld - gamma*zdif/2.0_wp
+           engfld=engfld - gamma*zdif
         End If
      End Do
+
+     engfld=0.5_wp*engfld
 
   Else If (keyfld == 8) Then
 
@@ -344,27 +347,30 @@ Subroutine external_field_apply(keyshl,time,engfld,virfld)
         If (.not.safe) Call error(456)
      End If
 
-     rtmp=0.0_wp ! average velocity and force per atom in x direction of the piston
-     Do i=1,natms
+     rtmp=0.0_wp  ! average velocity and force per atom in x direction of the piston
+     Do i=1,natms ! preserve momentum and velocity in the direction of the push
         If (ltg(i) >= ia .and. ltg(i) <= ib) Then
-           rtmp(1)=rtmp(1)+vxx(i) ; rtmp(2)=rtmp(2)+fxx(i)
-           vyy(i) = 0.0_wp        ; fyy(i) = 0.0_wp
-           vzz(i) = 0.0_wp        ; fzz(i) = 0.0_wp
+           rtmp(1)=rtmp(1)+weight(i)*vxx(i) ; rtmp(2)=rtmp(2)+fxx(i)
+           vyy(i) = 0.0_wp                  ; fyy(i) = 0.0_wp
+           vzz(i) = 0.0_wp                  ; fzz(i) = 0.0_wp
         End If
      End Do
      If (mxnode > 1) Call gsum(rtmp) ! net velocity and force to ensure solid wall behaviour
 
-     rtmp(1)=rtmp(1)/Real(ib-ia+1)     ! averaged velocity per particle
-     rtmp(2)=(rtmp(2)+prmfld(3))/mass  ! averaged acceleration of the slab
+     rtmp(1)=rtmp(1)/mass             ! averaged velocity per particle
+     rtmp(2)=(rtmp(2)+prmfld(3))/mass ! averaged acceleration of the slab
 
      Do i=1,natms
         If (ltg(i) >= ia .and. ltg(i) <= ib) Then
+           engfld=weight(i)*(rtmp(1)-vxx(i))**2 ! must change E_kin to reflect solidity
            vxx(i)=rtmp(1)
            fxx(i)=rtmp(2)*weight(i) ! force per particle
         End If
      End Do
 
-   Else If (keyfld == 9) Then
+     engfld=0.5_wp*engfld
+
+  Else If (keyfld == 9) Then
 
 ! zres external field: restrain molecule z-position (pull in)
 ! prmfld(1) is the index of first atom of restrained molecule
@@ -374,31 +380,33 @@ Subroutine external_field_apply(keyshl,time,engfld,virfld)
 ! prmfld(5) is z-max (max limit in z-direction)
 ! where prmfld(4) < prmfld(5)
 
-      ia = Nint(prmfld(1))
-      ib = Nint(prmfld(2))
+     ia = Nint(prmfld(1))
+     ib = Nint(prmfld(2))
 
-! Get molecule's weight and CoM
+! Get molecule's weight and COM
 
-      Call getcom_mol(ia,ib,cmm)
+     Call getcom_mol(ia,ib,cmm)
 
 ! Apply force corrections
 
-      Do i=1,natms
-         If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
-            If (cmm(3) < prmfld(4) .or. cmm(3) > prmfld(5)) Then
-               If (cmm(3) < prmfld(4)) zdif = cmm(3) - prmfld(4)
-               If (cmm(3) > prmfld(5)) zdif = prmfld(5) - cmm(3)
+     Do i=1,natms
+        If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
+           If (cmm(3) < prmfld(4) .or. cmm(3) > prmfld(5)) Then
+              If (cmm(3) < prmfld(4)) zdif = cmm(3) - prmfld(4)
+              If (cmm(3) > prmfld(5)) zdif = prmfld(5) - cmm(3)
 
-               gamma=-prmfld(3)*zdif*weight(i)/cmm(0)
-               fzz(i)=fzz(i) + gamma
-               engfld=engfld - 0.5_wp*gamma*zdif
-            End If
-         End If
-      End Do
+              gamma=-prmfld(3)*zdif*weight(i)/cmm(0)
+              fzz(i)=fzz(i) + gamma
+              engfld=engfld - gamma*zdif
+           End If
+        End If
+     End Do
 
-   Else If (keyfld == 10) Then
+     engfld=0.5_wp*engfld
 
-! extension to exzn- external field (pull out)
+  Else If (keyfld == 10) Then
+
+! extension to exzn- external field (push out)
 ! prmfld(1) is the index of first atom of the water molecules to be restrained
 ! prmfld(2) is the index of last atom of the water molecules to be restrained
 ! prmfld(3) is the restraining constant
@@ -420,12 +428,14 @@ Subroutine external_field_apply(keyshl,time,engfld,virfld)
 
                gamma=-prmfld(3)*zdif
                fzz(i)=fzz(i) + gamma
-               engfld=engfld - 0.5_wp*gamma*zdif
+               engfld=engfld - gamma*zdif
             End If
          End If
       End Do
 
-   Else If (keyfld == 11) Then
+      engfld=0.5_wp*engfld
+
+  Else If (keyfld == 11) Then
 
 ! extension to exzn+ external field (pull in)
 ! prmfld(1) is the index of first atom of the water molecules to be restrained
@@ -436,20 +446,22 @@ Subroutine external_field_apply(keyshl,time,engfld,virfld)
 ! where prmfld(4) < prmfld(5)
 ! This will keep water within this region.
 
-      ia = Nint(prmfld(1))
-      ib = Nint(prmfld(2))
-      Do i=1,natms
-         If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
-            If (zzz(i) < prmfld(4) .and. zzz(i) > prmfld(5)) Then
-               If (zzz(i) < prmfld(4)) zdif = zzz(i) - prmfld(4)
-               If (zzz(i) > prmfld(5)) zdif = prmfld(5) - zzz(i)
+     ia = Nint(prmfld(1))
+     ib = Nint(prmfld(2))
+     Do i=1,natms
+        If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
+           If (zzz(i) < prmfld(4) .and. zzz(i) > prmfld(5)) Then
+              If (zzz(i) < prmfld(4)) zdif = zzz(i) - prmfld(4)
+              If (zzz(i) > prmfld(5)) zdif = prmfld(5) - zzz(i)
 
-               gamma=-prmfld(3)*zdif
-               fzz(i)=fzz(i) + gamma
-               engfld=engfld - 0.5_wp*gamma*zdif
-            End If
-         End If
-      End Do
+              gamma=-prmfld(3)*zdif
+              fzz(i)=fzz(i) + gamma
+              engfld=engfld - gamma*zdif
+           End If
+        End If
+     End Do
+
+     engfld=0.5_wp*engfld
 
   Else If (keyfld == 12) Then
 
@@ -464,6 +476,77 @@ Subroutine external_field_apply(keyshl,time,engfld,virfld)
            fzz(i)=fzz(i) + chge(i)*prmfld(3)*tmp
         End If
      End Do
+
+  Else If (keyfld == 13) Then
+
+! uphr external field: umbrella potential harmonic restraint (pull in)
+! prmfld(1) is the index of first atom of the first atom group/molecule
+! prmfld(2) is the index of last atom of the first atom group/molecule
+! prmfld(3) is the index of first atom of the second atom group/molecule
+! prmfld(4) is the index of last atom of the second atom group/molecule
+! prmfld(5) is the umbrella force constant
+! prmfld(6) is the com separation at the minimum of umbrella potential
+
+     ia = Nint(prmfld(1))
+     ib = Nint(prmfld(2))
+
+! Get first molecule's weight and COM
+
+     Call getcom_mol(ia,ib,cmm)
+
+     ic = Nint(prmfld(3))
+     id = Nint(prmfld(4))
+
+! Get second molecule's weight and COM
+
+     Call getcom_mol(ic,id,cm2)
+
+! Apply PBC to COMS vector
+
+     x(1)=cm2(1)-cmm(1)
+     y(1)=cm2(2)-cmm(2)
+     z(1)=cm2(3)-cmm(3)
+
+     Call images(imcon,cell,1,x,y,z)
+
+     rrr=Sqrt(x(1)**2+y(1)**2+z(1)**2)
+
+! accumulate RDF for the 2 COMs every 50 timesteps and
+! refresh USRDAT every 500 timesteps
+
+     If ((.not.leql) .or. nstep >= nsteql) Then
+        If (Mod(nstep,50)  == 0) Call usr_collect(rrr)
+        If (Mod(nstep,500) == 0) Call usr_compute()
+     End If
+
+! get force magnitude
+
+     zdif  =rrr-prmfld(6)
+     engfld=-prmfld(5)*zdif/rrr
+
+! Apply force corrections
+
+     Do i=1,natms
+        l1=(ltg(i) >= ia .and. ltg(i) <= ib)
+        l2=(ltg(i) >= ic .and. ltg(i) <= id)
+
+        If ((l1 .or. l2) .and. lfrzn(i) == 0) Then
+           tmp=engfld*weight(i)
+
+           If (l2) Then
+              tmp=tmp/cm2(0)
+           Else ! If (l2) - no crossover
+              tmp=-tmp/cmm(0)
+           End If
+
+           fxx(i)=fxx(i) + tmp*x(1)
+           fyy(i)=fyy(i) + tmp*y(1)
+           fzz(i)=fzz(i) + tmp*z(1)
+        End If
+     End Do
+
+     virfld=-prmfld(5)*zdif*rrr
+     engfld=0.5_wp*prmfld(5)*zdif**2
 
   Else
 

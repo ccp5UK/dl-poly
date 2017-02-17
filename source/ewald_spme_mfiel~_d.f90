@@ -42,7 +42,6 @@ Subroutine ewald_spme_mfield_d(alpha,epsq)
                              ixtm0_r,iytm0_r,iztm0_r, &
                              kmaxa_r,kmaxb_r,kmaxc_r
 
-  Logical              :: llspl=.true.
   Integer              :: fail(1:4),limit, i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt, &
                           inc2,inc3
 
@@ -201,14 +200,6 @@ Subroutine ewald_spme_mfield_d(alpha,epsq)
      txx(i)=kmaxa_r*(rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+0.5_wp)
      tyy(i)=kmaxb_r*(rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+0.5_wp)
      tzz(i)=kmaxc_r*(rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+0.5_wp)
-
-! If not DD bound in kmax grid space when .not.llvnl = (mxspl1 == mxspl)
-
-     If (mxspl1 == mxspl .and. i <= natms) Then
-        If (txx(i) < ixbm1_r .or. txx(i) > ixtm0_r .or. &
-            tyy(i) < iybm1_r .or. tyy(i) > iytm0_r .or. &
-            tzz(i) < izbm1_r .or. tzz(i) > iztm0_r) llspl=.false.
-     End If
 
      ixx(i)=Int(txx(i))
      iyy(i)=Int(tyy(i))
@@ -442,7 +433,7 @@ Contains
 ! mesh ewald method (fourier part)
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov march 2016
+! author    - w.smith & i.t.todorov december 2016
 ! amended   - h.a.boateng december 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -455,7 +446,7 @@ Contains
     Real( Kind = wp ),    Intent( In    ) :: rcell(1:9),                      &
                                              bsddx(0:mxspl,1:mxspl,1:mxatms), &
                                              bsddy(0:mxspl,1:mxspl,1:mxatms), &
-                                             bsddz(0:mxspl,1:mxspl,1:mxatms), &
+                                             bsddz(0:mxspl,1:mxspl,1:mxatms)
 
     Complex( Kind = wp ), Intent( In    ) :: qqq(1:kmaxa,1:kmaxb,1:kmaxc)
 
@@ -513,9 +504,9 @@ Contains
 
 ! load field
 
-       mplfldx(i)=mplfldx(i)+fix
-       mplfldy(i)=mplfldy(i)+fiy
-       mplfldz(i)=mplfldz(i)+fiz
+       mpfldx(i)=mpfldx(i)+fix
+       mpfldy(i)=mpfldy(i)+fiy
+       mpfldz(i)=mpfldz(i)+fiz
 
     End Do
 

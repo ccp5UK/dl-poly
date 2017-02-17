@@ -17,7 +17,7 @@ Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
 
   Use kinds_f90
   Use setup_module,      Only : boltz,mxatms
-  Use config_module,     Only : natms,ltg,lfrzn,atmnam,weight
+  Use config_module,     Only : natms,ltg,lfrzn,weight
   Use core_shell_module, Only : legshl
 
   Implicit None
