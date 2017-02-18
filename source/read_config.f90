@@ -7,12 +7,13 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2015
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module,   Only : nconf,nrite,mxatms,half_minus
+  Use setup_module,   Only : nconf,nrite,config,mxatms,half_minus
   Use config_module,  Only : imcon,imc_n,cell,allocate_config_arrays_read, &
                              natms,nlast,atmnam,lsi,lsa,ltg, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
@@ -127,9 +128,9 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 ! Define filename ASCII or netCDF
 
   If (io_read /= IO_READ_NETCDF) Then
-     fname='CONFIG'
+     fname=Trim(config)
   Else
-     fname='CONFIG.nc'
+     fname=Trim(config) // '.nc'
   End If
 
 ! Define/Detect the FAST reading status

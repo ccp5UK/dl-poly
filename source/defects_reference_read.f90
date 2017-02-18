@@ -6,12 +6,13 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr)
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2016
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module,   Only : nrite,nrefdt,mxatms,half_minus
+  Use setup_module,   Only : nrite,nrefdt,config,mxatms,half_minus
   Use site_module
   Use config_module,  Only : imcon,cell,natms
   Use domains_module, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
@@ -77,9 +78,9 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr)
      Else                ! Use data from CONFIG
         Call warning(320,0.0_wp,0.0_wp,0.0_wp)
         If (io_read /= IO_READ_NETCDF) Then
-           fname='CONFIG'
+           fname=Trim(config)
         Else
-           fname='CONFIG.nc'
+           fname=Trim(config)//'.nc'
         End If
         megref=natms
         If (mxnode > 1) Call gsum(megref)
@@ -501,7 +502,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr)
 ! Remove frozen sites so they don't come up as vacancies
 ! only when dealing with CONFIG
 
-  If (fname(1:6) /= 'CONFIG') Then
+  If (Trim(fname) /= Trim(config)) Then
 
      nsite=0
      msite=0

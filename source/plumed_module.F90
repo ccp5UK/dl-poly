@@ -63,8 +63,8 @@ Contains
        Call plumed_f_gcmd("setMPIFComm"//sn,dlp_comm_world)
 ! Ideally would change file names here into names that can be controlled by user
 ! from control
-       Call plumed_f_gcmd("setPlumedDat"//sn,trim(plumed_input)//sn)
-       Call plumed_f_gcmd("setLogFile"//sn,trim(plumed_log)//sn)
+       Call plumed_f_gcmd("setPlumedDat"//sn,Trim(plumed_input)//sn)
+       Call plumed_f_gcmd("setLogFile"//sn,Trim(plumed_log)//sn)
        Call plumed_f_gcmd("setNatoms"//sn,megatm)
 ! The name should be updated when there are new releases of dlpoly
        Call plumed_f_gcmd("setMDEngine"//sn,"DL_POLY "//DLP_VERSION//sn)
@@ -102,8 +102,8 @@ Contains
        "***|   ;==`-,                           |",    &
        "***--------------------------------------"
        Write(nrite,'(a)')        "*** Activating PLUMED Extension. ***"
-       Write(nrite,'(a)')        "*** Using PLUMED input file: "//trim(plumed_input)
-       Write(nrite,'(a)')        "*** Using PLUMED log file: "//trim(plumed_log)
+       Write(nrite,'(a)')        "*** Using PLUMED input file: "//Trim(plumed_input)
+       Write(nrite,'(a)')        "*** Using PLUMED log file: "//Trim(plumed_log)
        Write(nrite,'(a,i0)')     "*** Using PLUMED API version: ",plumed_version
        Write(nrite,'(a,i0)')     "*** Using PLUMED Real precision: ", plumed_precision
        Write(nrite,'(a,es15.6)') "*** Using PLUMED energy conversion factor: ", plumed_energyUnits
@@ -161,7 +161,7 @@ Contains
   Subroutine plumed_finalize()
 
 #ifdef PLUMED
-    If (idnode == 0) Call plumed_f_gfinalize()
+    Call plumed_f_gfinalize()
 #endif
 
   End Subroutine plumed_finalize

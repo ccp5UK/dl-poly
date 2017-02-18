@@ -1142,7 +1142,7 @@ Contains
     If ( status /= nf90_noerr ) Then
        Write( Unit=*, Fmt=* ) 'NETCDF error:'
        Write( Unit=*, Fmt=* )
-       Write( Unit=*, Fmt='( a )' ) trim( nf90_strerror( status ) )
+       Write( Unit=*, Fmt='( a )' ) Trim( nf90_strerror( status ) )
        Call error(0)
     End If
 #else

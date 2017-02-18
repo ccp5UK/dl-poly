@@ -164,7 +164,7 @@ Subroutine system_init                                             &
 ! If REVOLD doesn't exist then abort (mishmashed REVOLD is handled separately)
 
      l_tmp=.true.
-     If (idnode == 0) Inquire(File='REVOLD', Exist=l_tmp)
+     If (idnode == 0) Inquire(File=Trim(revold), Exist=l_tmp)
      If (mxnode > 1) Call gcheck(l_tmp,"enforce")
      If (.not.l_tmp) Call error(519)
 
@@ -173,10 +173,10 @@ Subroutine system_init                                             &
      xyz(1:3)=0.0_wp
      If (idnode == 0) Then
         If (l_rin) Then
-           Open(Unit=nrest, file='REVOLD', form='formatted', IOStat=keyio)
+           Open(Unit=nrest, file=Trim(revold), form='formatted', IOStat=keyio)
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) xyz(1),xyz(2),xyz(3)
         Else
-           Open(Unit=nrest, file='REVOLD', form='unformatted', IOStat=keyio)
+           Open(Unit=nrest, file=Trim(revold), form='unformatted', IOStat=keyio)
            Read(Unit=nrest, IOStat=keyio, End=100) xyz(1),xyz(2),xyz(3)
         End If
      End If

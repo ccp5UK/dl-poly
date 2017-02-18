@@ -31,6 +31,7 @@ Subroutine read_control                                &
 ! contrib   - h.a.boateng february 2015
 ! contrib   - p.s.petkov february 2015
 ! contrib   - a.m.elena september 2015
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -379,7 +380,7 @@ Subroutine read_control                                &
 
 ! open the simulation control file
 
-  If (idnode == 0) Open(Unit=nread, File = 'CONTROL', Status = 'old')
+  If (idnode == 0) Open(Unit=nread, File = Trim(control), Status = 'old')
 
 ! read simulation control name
 

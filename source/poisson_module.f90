@@ -814,8 +814,8 @@ Contains
     character(len=128) :: filename, line
     unit=39
     line="pot"
-    Write(filename,'(a,i1,i1,i1,a)') trim(adjustl(line)),idx,idy,idz,".dx"
-    OPEN(UNIT=unit, FILE=trim(adjustl(filename)), STATUS='replace')
+    Write(filename,'(a,i1,i1,i1,a)') Trim(Adjustl(line)),idx,idy,idz,".dx"
+    Open(Unit=unit, File=Trim(Adjustl(filename)), Status='replace')
     Write(unit,'(a,1x,I7,1x,I7,1x,I7)') "object 1 class gridpositions counts ", block_x,block_y,block_z
     Write(unit,'(a,1x,f9.3,1x,f9.3,1x,f9.3)') "origin ", &
          Real(idx*(kmaxa/nprx),wp)*delta,Real(idy*(kmaxb/npry),wp)*delta,Real(idz*(kmaxc/nprz),wp)*delta
@@ -831,10 +831,10 @@ Contains
     Do kpkp=1,block_x
        Do kk=1,block_y
           Do kpk=1,block_z
-             Write(line,"(a,3E15.5)") trim(line), Real(phi(kpkp,kk,kpk),4)
+             Write(line,"(a,3E15.5)") Trim(line), Real(phi(kpkp,kk,kpk),4)
              tt=tt+1
              If ( mod(tt,3) == 0 ) Then
-                Write(unit,'(a)') trim(adjustl(line))
+                Write(unit,'(a)') Trim(Adjustl(line))
                 line=""
                 tt=0
              End If
@@ -842,7 +842,7 @@ Contains
        End Do
     End Do
 
-    Write(unit,'(a)') trim(adjustl(line))
+    Write(unit,'(a)') Trim(Adjustl(line))
     Write(unit,'(a)') 'attribute "dep" string "positions"'
     Write(unit,'(a)') 'object "PME potential (kT/e, T=300K)" class field'
     Write(unit,'(a)') 'component "positions" value 1'
@@ -858,14 +858,14 @@ Contains
     character(len=128) :: filename, line
     unit=39
     line="b"
-    Write(filename,'(a,i1,i1,i1,a)') trim(adjustl(line)),idx,idy,idz,".dx"
-    OPEN(UNIT=unit, FILE=trim(adjustl(filename)), STATUS='replace')
+    Write(filename,'(a,i1,i1,i1,a)') Trim(Adjustl(line)),idx,idy,idz,".dx"
+    Open(Unit=unit, File=Trim(Adjustl(filename)), Status='replace')
     Write(unit,'(a,1x,I7,1x,I7,1x,I7)') "object 1 class gridpositions counts ", block_x,block_y,block_z
     Write(unit,'(a,1x,f9.3,1x,f9.3,1x,f9.3)') "origin ", &
          Real(idx*(kmaxa/nprx),wp)*delta,Real(idy*(kmaxb/npry),wp)*delta,Real(idz*(kmaxc/nprz),wp)*delta
     Write(unit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "delta ", (/Real(delta), 0.0,0.0/)
-    Write(unit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)')"delta ", (/ 0.0,Real(delta), 0.0/)
-    Write(unit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)')"delta ", (/0.0,0.0, Real(delta)/)
+    Write(unit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "delta ", (/ 0.0,Real(delta), 0.0/)
+    Write(unit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "delta ", (/0.0,0.0, Real(delta)/)
     Write(unit,'(a,I5,1x,I5,1x,I5)') "object 2 class gridconnections counts ",block_x,block_y,block_z
     Write(unit,'(a,1x,I20,1x,a)')'object 3 class array type Double rank 0 items ', &
          &block_x*block_y*block_z , 'data follows'
@@ -875,10 +875,10 @@ Contains
     Do kpkp=1,block_x
        Do kk=1,block_y
           Do kpk=1,block_z
-             Write(line,"(a,3E15.5)") trim(line), Real(b(kpkp,kk,kpk),4)
+             Write(line,"(a,3E15.5)") Trim(line), Real(b(kpkp,kk,kpk),4)
              tt=tt+1
              If ( mod(tt,3) == 0 ) Then
-                Write(unit,'(a)') trim(adjustl(line))
+                Write(unit,'(a)') Trim(Adjustl(line))
                 line=""
                 tt=0
              End If
@@ -886,7 +886,7 @@ Contains
        End Do
     End Do
 
-    Write(unit,'(a)') trim(adjustl(line))
+    Write(unit,'(a)') Trim(Adjustl(line))
     Write(unit,'(a)') 'attribute "dep" string "positions"'
     Write(unit,'(a)') 'object "PME potential (kT/e, T=300K)" class field'
     Write(unit,'(a)') 'component "positions" value 1'

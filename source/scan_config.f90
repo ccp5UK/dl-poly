@@ -7,12 +7,13 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2014
 ! contrib   - i.j.bush april 2010
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module, Only : nconf
+  Use setup_module, Only : nconf,config
   Use parse_module, Only : get_line, get_word, strip_blanks, word_2_real
   Use io_module,    Only : io_set_parameters,     &
                            io_get_parameters,     &
@@ -56,9 +57,9 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
 ! Define filename ASCII or netCDF
 
   If (io_read /= IO_READ_NETCDF) Then
-     fname='CONFIG'
+     fname=Trim(config)
   Else
-     fname='CONFIG.nc'
+     fname=Trim(config)//'nc'
   End If
 
 ! Check if we have a CONFIG

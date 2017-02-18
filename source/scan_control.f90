@@ -17,12 +17,13 @@ Subroutine scan_control                                    &
 ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
 ! contrib   - p.s.petkov february 2015
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gcheck
-  Use setup_module,       Only : nread,nrite,pi,zero_plus
+  Use setup_module,       Only : nread,nrite,control,pi,zero_plus
   Use parse_module,       Only : get_line,get_word,lower_case,word_2_real
   Use dpd_module,         Only : keydpd
   Use poisson_module,     Only : eps,mxitcg,mxitjb
@@ -141,12 +142,12 @@ Subroutine scan_control                                    &
 
 ! Open the simulation input file
 
-  If (idnode == 0) Inquire(File='CONTROL', Exist=safe)
+  If (idnode == 0) Inquire(File=Trim(control), Exist=safe)
   If (mxnode > 1) Call gcheck(safe,"enforce")
   If (.not.safe) Then
      Go To 10
   Else
-     If (idnode == 0) Open(Unit=nread, File='CONTROL', Status='old')
+     If (idnode == 0) Open(Unit=nread, File=Trim(control), Status='old')
   End If
 
 ! First Pass.  Get cutoff distances, stacksize and density variation.

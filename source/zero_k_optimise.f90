@@ -8,7 +8,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot)
 !
 ! the free particle velocity, V, is set in the direction of the force,
 ! F, when V.F > 0 :: V=F*[(V.F)/(F.F)] and set to zero if V.F < 0 :: V=0.
-! the same rational is extended to RB dynamics where, additionally to 
+! the same rational is extended to RB dynamics where, additionally to
 ! applying the same strategy to the RB COM velocity change upon the COM
 ! force, alos the angular velocity of the RB, W, is set in the direction
 ! of the torque, T, for when W.T > 0 :: W=T*[(W.T)/(T.T)] and set to zero
