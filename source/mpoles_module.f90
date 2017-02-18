@@ -25,7 +25,8 @@ Module mpoles_module
 ! Type of inducible (self-polarisation) scheme
 
   Integer,           Save :: keyind = 0 ! 0 - default :: unscreened & undamped - iAMOEBA like
-                                        ! 1 - CHARMM  :: q_shell == -Sign(q_core) * Sqrt(alpha * k) ; k_CHARMM = 1000 kcal*mol^−1*Å^−2
+                                        ! 1 - CHARMM  :: q_shell == -Sign(q_core) * Sqrt(alpha * k) ; 
+                                        !                k_CHARMM = 1000 kcal*mol^−1*Å^−2
 
   Real( Kind = wp ), Save :: thole  = 1.3_wp  ! default thole dumping for CHARMM representation
 
@@ -36,21 +37,24 @@ Module mpoles_module
   Integer,           Save :: numcof,politer
   Real( Kind = wp ), Save :: convcrit,enepol
 
-  Integer,           Allocatable, Save :: mplmap(:,:,:),mplltg(:)             ! mappings from three indices multipole to a one index multipole
-  Integer,           Allocatable, Save :: mplflg(:)                           ! rotation counter flag
-  Integer,           Allocatable, Save :: ltpatm(:,:)                         ! bonded connectivity
-  Integer,           Allocatable, Save :: lchatm(:,:)                         ! CHARMM core-shell screened electrostatics induction list
+  Integer,           Allocatable, Save :: mplmap(:,:,:),mplltg(:) ! mappings from three indices multipole to a one index multipole
+  Integer,           Allocatable, Save :: mplflg(:)               ! rotation counter flag
+  Integer,           Allocatable, Save :: ltpatm(:,:)             ! bonded connectivity
+  Integer,           Allocatable, Save :: lchatm(:,:)             ! CHARMM core-shell screened electrostatics induction list
 
-  Real( Kind = wp ), Allocatable, Save :: mpllfr(:,:),mplgfr(:,:)             ! local/lab(site) and global(atom) frames
-  Real( Kind = wp ), Allocatable, Save :: plrsit(:),plratm(:)                 ! induced dipole polarisation for sites and atoms (inversed if non-zero)
-  Real( Kind = wp ), Allocatable, Save :: dmpsit(:),dmpatm(:)                 ! sites' and atoms' (thole) dumping coefficient/factor (for self-polarisation)
+  Real( Kind = wp ), Allocatable, Save :: mpllfr(:,:),mplgfr(:,:) ! local/lab(site) and global(atom) frames
+  Real( Kind = wp ), Allocatable, Save :: plrsit(:),plratm(:)     ! induced dipole polarisation for sites 
+                                                                  ! and atoms (inversed if non-zero)
+  Real( Kind = wp ), Allocatable, Save :: dmpsit(:),dmpatm(:)     ! sites' and atoms' (thole) dumping 
+                                                                  ! coefficient/factor (for self-polarisation)
 
   Type( rot_mat ),   Allocatable, Save :: mprotm(:)                           ! rotation matrices
 
   Real( Kind = wp ), Allocatable, Save :: mprotx(:,:),mproty(:,:),mprotz(:,:) ! infinitesimal rotations
   Real( Kind = wp ), Allocatable, Save :: mptrqx(:),mptrqy(:),mptrqz(:)       ! torques due to infinitesimal rotations
 
-  Real( Kind = wp ), Allocatable, Save :: ncombk(:,:)                         ! n combination k values for usage in computing the reciprocal space Ewald sum
+  Real( Kind = wp ), Allocatable, Save :: ncombk(:,:)                         ! n combination k values for usage 
+                                                                              ! in computing the reciprocal space Ewald sum
 
   Real( Kind = wp ), Allocatable, Save :: mpfldx(:),mpfldy(:),mpfldz(:)       ! field
 
