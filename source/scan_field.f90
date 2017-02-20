@@ -179,12 +179,12 @@ Subroutine scan_field                                &
 
 ! Open the interactions input file
 
-  If (idnode == 0) Inquire(File=trim(field), Exist=safe)
+  If (idnode == 0) Inquire(File=Trim(field), Exist=safe)
   If (mxnode > 1) Call gcheck(safe,"enforce")
   If (.not.safe) Then
      Go To 20
   Else
-     If (idnode == 0) Open(Unit=nfield, File=trim(field), Status='old')
+     If (idnode == 0) Open(Unit=nfield, File=Trim(field), Status='old')
   End If
 
   Call get_line(safe,nfield,record)

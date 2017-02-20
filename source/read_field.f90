@@ -241,7 +241,7 @@ Subroutine read_field                      &
 ! open force field data file
 
   If (idnode == 0) Then
-     Open(Unit=nfield, File = trim(field), Status = 'old')
+     Open(Unit=nfield, File = Trim(field), Status = 'old')
      Write(nrite,"(/,/,1x,'SYSTEM SPECIFICATION')")
      If (.not.l_top) Write(nrite,"(/,1x,'detailed topology opted out')")
   End If

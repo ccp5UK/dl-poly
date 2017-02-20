@@ -108,9 +108,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 ! name convention
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        fname = trim(history)
+        fname = Trim(history)
      Else
-        fname = trim(history)//'nc'
+        fname = Trim(history) // '.nc'
      End If
 
 ! If keyres=1, is HISTORY old (does it exist) and
@@ -958,9 +958,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 ! name convention
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        fname = trim(history)
+        fname = Trim(history)
      Else
-        fname = trim(history)//'nc'
+        fname = Trim(history) // '.nc'
      End If
 
 ! If keyres=1, is HISTORY old (does it exist) and

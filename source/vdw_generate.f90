@@ -413,7 +413,7 @@ Subroutine vdw_generate(rvdw)
            sigeps(1,ivdw)=sig
            sigeps(2,ivdw)=eps
         End If
-  
+
       Else If (keypot == 12) Then
 
 ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]

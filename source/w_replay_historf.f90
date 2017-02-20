@@ -59,7 +59,7 @@
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout)
+     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout)
 
      If (newjb) Then
         newjb = .false.
@@ -251,12 +251,12 @@
                  timelp/Real( nstph , wp) ) ) Then
 
               If (idnode == 0) Then
-                 Inquire(File=trim(output), Exist=l_out, Position=c_out)
+                 Inquire(File=Trim(output), Exist=l_out, Position=c_out)
                  Call strip_blanks(c_out)
                  Call lower_case(c_out)
                  If (l_out .and. c_out(1:6) == 'append') Then
                     Close(Unit=nrite)
-                    Open(Unit=nrite, File=trim(output), Position='append')
+                    Open(Unit=nrite, File=Trim(output), Position='append')
                  End If
               End If
 

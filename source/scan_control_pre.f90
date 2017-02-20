@@ -30,12 +30,12 @@ Subroutine scan_control_pre(imc_n,dvar)
 
   dvar = 1.0_wp
 
-  If (idnode == 0) Inquire(File=trim(control), Exist=safe)
+  If (idnode == 0) Inquire(File=Trim(control), Exist=safe)
   If (mxnode > 1) Call gcheck(safe,"enforce")
   If (.not.safe) Then
      Go To 10
   Else
-     If (idnode == 0) Open(Unit=nread, File=trim(control), Status='old')
+     If (idnode == 0) Open(Unit=nread, File=Trim(control), Status='old')
   End If
 
 ! Read TITLE record

@@ -187,7 +187,7 @@ Subroutine system_revive                                      &
 
 ! Write REVCON
 
-  name = trim(revcon) ! file name
+  name = Trim(revcon) ! file name
   levcfg = 2      ! define level of information in REVCON
 
   Call write_config(name,levcfg,megatm,nstep,tstep,time)
@@ -199,7 +199,7 @@ Subroutine system_revive                                      &
 ! Write accumulator data to dump file
 
      If (l_rout) Then
-        Open(Unit=nrest, File=trim(revive), Form='formatted', Status='replace')
+        Open(Unit=nrest, File=Trim(revive), Form='formatted', Status='replace')
 
         Write(Unit=nrest, Fmt=forma, Advance='No') rcut,rbin,Real(megatm,wp)
         Write(Unit=nrest, Fmt=forma, Advance='No') &
@@ -232,7 +232,7 @@ Subroutine system_revive                                      &
         If (mxgdih1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfdih,wp),dstdih
         If (mxginv1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfinv,wp),dstinv
      Else
-        Open(Unit=nrest, File=trim(revive), Form='unformatted', Status='replace')
+        Open(Unit=nrest, File=Trim(revive), Form='unformatted', Status='replace')
 
         Write(Unit=nrest) rcut,rbin,Real(megatm,wp)
         Write(Unit=nrest) &

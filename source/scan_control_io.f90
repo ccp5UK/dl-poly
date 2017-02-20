@@ -12,7 +12,8 @@ Subroutine scan_control_io()
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gcheck
-  Use setup_module,  Only : nread,nrite,control,output,field,config,statis,&
+  Use setup_module,  Only : nread,nrite,                        &
+                            control,output,field,config,statis, &
                             history,historf,revive,revcon,revold
   Use parse_module,  Only : get_line,get_word,lower_case,strip_blanks,word_2_real
   Use io_module,     Only : io_set_parameters,        &
@@ -55,12 +56,12 @@ Subroutine scan_control_io()
 
 ! Open the simulation input file
 
-  If (idnode == 0) Inquire(File=trim(control), Exist=safe)
+  If (idnode == 0) Inquire(File=Trim(control), Exist=safe)
   If (mxnode > 1) Call gcheck(safe,"enforce")
   If (.not.safe) Then
      Go To 10
   Else
-     If (idnode == 0) Open(Unit=nread, File=trim(control), Status='old')
+     If (idnode == 0) Open(Unit=nread, File=Trim(control), Status='old')
   End If
 
 ! Read TITLE record
@@ -388,40 +389,40 @@ Subroutine scan_control_io()
           .or. (word(1:7) == 'historf') .or. (word(1:6) == 'revive') .or. &
           (word(1:6) == 'revcon') .or. (word(1:6) == 'revold')) Then
           If (word(1:6) == 'output') Then
-   
-            If (idnode == 0) Write(nrite,"(/,1a)")" OUTPUT file is "//trim(output) 
+
+            If (idnode == 0) Write(nrite,"(/,1a)")" OUTPUT file is "//Trim(output)
 
           Else If (word(1:6) == 'config') Then
-        
-            If (idnode == 0) Write(nrite,"(1a)")" CONFIG file is "//trim(config) 
+
+            If (idnode == 0) Write(nrite,"(1a)")" CONFIG file is "//Trim(config)
 
           Else If (word(1:5) == 'field') Then
-        
-            If (idnode == 0) Write(nrite,"(1a)")" FIELD file is "//trim(field) 
+
+            If (idnode == 0) Write(nrite,"(1a)")" FIELD file is "//Trim(field)
 
           Else If (word(1:6) == 'statis') Then
-        
-            If (idnode == 0) Write(nrite,"(1a)")" STATIS file is "//trim(statis) 
+
+            If (idnode == 0) Write(nrite,"(1a)")" STATIS file is "//Trim(statis)
 
           Else If (word(1:7) == 'history') Then
-        
-            If (idnode == 0) Write(nrite,"(1a)")" HISTORY file is "//trim(history) 
+
+            If (idnode == 0) Write(nrite,"(1a)")" HISTORY file is "//Trim(history)
 
           Else If (word(1:7) == 'historf') Then
-        
-            If (idnode == 0) Write(nrite,"(1a)")" HISTORF file is "//trim(historf) 
+
+            If (idnode == 0) Write(nrite,"(1a)")" HISTORF file is "//Trim(historf)
 
           Else If (word(1:6) == 'revive') Then
-        
-            If (idnode == 0) Write(nrite,"(1a)")" REVIVE file is "//trim(revive) 
+
+            If (idnode == 0) Write(nrite,"(1a)")" REVIVE file is "//Trim(revive)
 
           Else If (word(1:6) == 'revcon') Then
-        
-            If (idnode == 0) Write(nrite,"(1a)")" REVCON file is "//trim(revcon) 
+
+            If (idnode == 0) Write(nrite,"(1a)")" REVCON file is "//Trim(revcon)
 
           Else If (word(1:6) == 'revold') Then
-        
-            If (idnode == 0) Write(nrite,"(1a,/)")" REVOLD file is "//trim(revold) 
+
+            If (idnode == 0) Write(nrite,"(1a,/)")" REVOLD file is "//Trim(revold)
 
           End If
 ! close control file
@@ -542,6 +543,8 @@ Subroutine scan_control_io()
 
 End Subroutine scan_control_io
 
+Subroutine scan_control_output()
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for scanning the I/O filenames in the control file
@@ -549,13 +552,13 @@ End Subroutine scan_control_io
 ! copyright - daresbury laboratory
 ! author    - a.m.elena february 2017
 !
-Subroutine scan_control_output()
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gcheck
-  Use setup_module,  Only : nread,nrite,control,output,config, &
-                            field,statis,history,historf, &
-                            revive,revcon,revold
+  Use setup_module,  Only : nread,nrite,                        &
+                            control,output,field,config,statis, &
+                            history,historf,revive,revcon,revold
   Use parse_module,  Only : get_line,get_word,lower_case
 
   Implicit None
@@ -568,20 +571,20 @@ Subroutine scan_control_output()
 
 ! Open the simulation input file
 
-  If (idnode == 0) Inquire(File=trim(control), Exist=safe)
+  If (idnode == 0) Inquire(File=Trim(control), Exist=safe)
   If (mxnode > 1) Call gcheck(safe,"enforce")
   If (.not.safe) Then
-    Open(Unit=nrite, File=trim(output), Status='replace')
+    Open(Unit=nrite, File=Trim(output), Status='replace')
     Call error(126)
   Else
-     If (idnode == 0) Open(Unit=nread, File=trim(control), Status='old')
+     If (idnode == 0) Open(Unit=nread, File=Trim(control), Status='old')
   End If
 
 ! Read TITLE record
 
   Call get_line(safe,nread,record)
   If (.not.safe) Then
-    Open(Unit=nrite, File=trim(output), Status='replace')
+    Open(Unit=nrite, File=Trim(output), Status='replace')
     Call error(17)
   End If
 

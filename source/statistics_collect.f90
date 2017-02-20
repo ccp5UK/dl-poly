@@ -87,10 +87,10 @@ Subroutine statistics_collect             &
 ! If the keyres=1 is the file old (does it exist)?
 
      l_tmp=.false.
-     If (keyres == 1) Inquire(File=trim(statis), Exist=l_tmp)
+     If (keyres == 1) Inquire(File=Trim(statis), Exist=l_tmp)
 
      If (.not.l_tmp) Then
-        Open(Unit=nstats, File=trim(STATIS), Status='replace')
+        Open(Unit=nstats, File=Trim(STATIS), Status='replace')
 
         Write(nstats,'(a)') cfgname
 
@@ -329,7 +329,7 @@ Subroutine statistics_collect             &
 ! write statistics file
 
   If (idnode == 0 .and. Mod(nstep,intsta) == 0) Then
-     Open(Unit=nstats, File=trim(STATIS), Position='append')
+     Open(Unit=nstats, File=Trim(STATIS), Position='append')
 
      If (l_msd) Then
         Write(nstats,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &

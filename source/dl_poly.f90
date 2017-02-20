@@ -217,8 +217,9 @@ Program dl_poly
 ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
 
   Call scan_control_output()
+
   If (idnode == 0) Then
-     If (.not.l_scr) Open(Unit=nrite, File=trim(output), Status='replace')
+     If (.not.l_scr) Open(Unit=nrite, File=Trim(output), Status='replace')
 
      Write(nrite,'(5(1x,a,/),(1x,a25,a8,a4,a14,a15/),1x,a,i10,a,/,5(1x,a,/))')  &
           "******************************************************************", &
@@ -245,8 +246,8 @@ Program dl_poly
           "****  when publishing research data obtained using DL_POLY_4  ****", &
           "****  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ****", &
           "******************************************************************"
-
   End If
+
 ! TEST I/O
 
   Call scan_control_io()

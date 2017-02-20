@@ -380,7 +380,7 @@ Subroutine read_control                                &
 
 ! open the simulation control file
 
-  If (idnode == 0) Open(Unit=nread, File = trim(control), Status = 'old')
+  If (idnode == 0) Open(Unit=nread, File = Trim(control), Status = 'old')
 
 ! read simulation control name
 
@@ -2329,7 +2329,7 @@ Subroutine read_control                                &
            Call error(3)
 
         End If
- 
+
 ! close control file
 
      Else If (word(1:6) == 'finish') Then

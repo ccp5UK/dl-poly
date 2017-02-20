@@ -57,12 +57,13 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
 ! Define filename ASCII or netCDF
 
   If (io_read /= IO_READ_NETCDF) Then
-     fname=trim(config)
+     fname=Trim(config)
   Else
-     fname=trim(config)//'nc'
+     fname=Trim(config)//'nc'
   End If
 
 ! Check if we have a CONFIG
+
   If (idnode == 0) Inquire(File=fname, Exist=safe)
   If (mxnode > 1) Call gcheck(safe)
   If (.not.safe) Call error(124)

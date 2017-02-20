@@ -3,12 +3,12 @@ Module setup_module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 MAIN insert module setting fundamental parameters for the
-! entire package @ compile time and specifing execution parameters
+! entire package @ compile time and specifying execution parameters
 ! set @ execution time
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov august 2016
-! contrib    - i.t.todorov november 2016
+! contrib   - i.t.todorov november 2016
 ! contrib   - a.m.elena february 2017
 !
 ! Note(1): The following internal units apply everywhere
@@ -147,6 +147,47 @@ Module setup_module
 
   Integer, Parameter :: nmpldt = 31
 
+! this is the default name containing all the
+! simulation control directives
+
+  Character( Len = 1024 ), Save :: control = "CONTROL"
+
+! this is the default name for the OUTPUT file
+
+  Character( Len = 1024 ), Save :: output = "OUTPUT"
+
+! this is the default name for the CONFIG file
+
+  Character( Len = 1024 ), Save :: config = "CONFIG"
+
+! this is the default name for the FIELD file
+
+  Character( Len = 1024 ), Save :: field = "FIELD"
+
+! this is the default name for the STATIS file
+
+  Character( Len = 1024 ), Save :: statis = "STATIS"
+
+! this is the default name for the HISTORY file
+
+  Character( Len = 1024 ), Save :: history = "HISTORY"
+
+! this is the default name for the HISTORF file
+
+  Character( Len = 1024 ), Save :: historf = "HISTORF"
+
+! this is the default name for the REVIVE file
+
+  Character( Len = 1024 ), Save :: revive = "REVIVE"
+
+! this is the default name for the REVOLD file
+
+  Character( Len = 1024 ), Save :: revold = "REVOLD"
+
+! this is the default name for the REVCON file
+
+  Character( Len = 1024 ), Save :: revcon = "REVCON"
+
 
 ! Random seeding
 
@@ -179,32 +220,4 @@ Module setup_module
 
   Real( Kind = wp ), Save :: zero_plus,half_plus,half_minus
 
-! ENGUNIT:: defined in read_field
-! engunit = 9648.530821_wp for eV - most used
-! engunit = 418.4_wp for kcal/mol - often used
-! engunit = 100.0_wp for kJ/mol   - rarely used
-! engunit = 1.0_wp for 10 J/mol   - internal units == default
-! engunit = boltz for K/Boltzmann - very rarely used
-
-! this is the name containting all the simulation control 
-! directives  
-  Character(len=1024)     :: control = "CONTROL"
-! this is the default name for the OUTPUT file  
-  Character(len=1024)     :: output = "OUTPUT"
-! this is the default name for the CONFIG file  
-  Character(len=1024)     :: config = "CONFIG"
-! this is the default name for the FIELD file  
-  Character(len=1024)     :: field = "FIELD"
-! this is the default name for the STATIS file  
-  Character(len=1024)     :: statis = "STATIS"
-! this is the default name for the HISTORY file  
-  Character(len=1024)     :: history = "HISTORY"
-! this is the default name for the HISTORF file  
-  Character(len=1024)     :: historf = "HISTORF"
-! this is the default name for the REVIVE file  
-  Character(len=1024)     :: revive = "REVIVE"
-! this is the default name for the REVOLD file  
-  Character(len=1024)     :: revold = "REVOLD"
-! this is the default name for the REVCON file  
-  Character(len=1024)     :: revcon = "REVCON"
 End Module setup_module

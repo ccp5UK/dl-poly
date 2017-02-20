@@ -13,7 +13,7 @@ Module development_module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module, Only : nrite, nread, control 
+  Use setup_module, Only : nrite, nread, control
 #ifdef OLDMPI
   Use comms_module, Only : mpi_ver,mpi_subver
 #else
@@ -80,12 +80,12 @@ Contains
 
 ! Open the simulation input file
 
-    If (idnode == 0) Inquire(File=trim(control), Exist=safe)
+    If (idnode == 0) Inquire(File=Trim(control), Exist=safe)
     If (mxnode > 1) Call gcheck(safe,"enforce")
     If (.not.safe) Then
        Return
     Else
-       If (idnode == 0) Open(Unit=nread, File=trim(control), Status='old')
+       If (idnode == 0) Open(Unit=nread, File=Trim(control), Status='old')
     End If
 
     Call get_line(safe,nread,record)

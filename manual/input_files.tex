@@ -16,10 +16,21 @@ files marked with an asterisk are non-mandatory.}
 FIELD are mandatory.  The MPOLES and TAB* are complimentary to FIELD
 and are only required when opted within.  HISTORY is required when
 an old trajectory is opted for re-play in CONTROL. REFERENCE is
-required when defect detection is switched on in CONTROL.
-REVOLD is required only if the job represents a continuation of a
+optionally required when defect detection is switched on in CONTROL.
+REVOLD is required only when the job represents a continuation of a
 previous job.  In the following sections we describe the form and
 content of these files.
+
+It is worth noting that historically DL\_POLY used hard-coded names
+for different I/O files as shown in Figure~\ref{input-files}.
+\uline{{\bf This is no longer the case!}}  Upon instructions in
+the CONTROL many I/O file name can be overridden with specific,
+user-defined filenames (see \hyperref[io]{I/O Control Options}).
+Even the CONTROL file can be named differently but in this case the
+alternative name {\bf must be passed as a command line argument}
+to the \D executable (usually named {\bf DLPOLY.Z}).  Thus the
+\D engine can be efficiently embedded and utilised within external
+frameworks for user-definable work-flows.
 
 \subsection{The CONTROL File}
 \label{control-file}
@@ -227,8 +238,15 @@ Between the header and the {\bf finish} directive, a wide choice
 of control directives may be inserted.  These are described below.
 
 \subsubsection{The CONTROL File Directives}
+\label{control_options}
 
-The directives available are as follows:
+\noindent {\bf Note} that in some cases additional keywords, shown in
+brackets ``(...)'', may also be supplied in the directives, or
+directives may be used in a long form.  However, it is strongly
+recommended that the user uses only the {\bf bold} part of these
+directives.
+
+The \uline{{\bf MAIN LIST}} of directives available is as follows:
 
 \begin{tabbing}
 X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
@@ -404,51 +422,6 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf integrat}or {\em string}                \> set the type of Verlet integrator, where {\em string} can only be \\
 \>                                              \> {\em leapfrog} or {\em velocity}, as the later is the default \\
-\>                                              \> \\
-\> {\bf io read} {\em method}  $j$ $k$ $l$ $e$  \> set the general I/O read interface to: \\
-\>                                              \> {\bf \em method} :: {\em mpiio} for MPI-I/O, {\em direct} for parallel direct access \\
-\>                                              \> \phantom{x} FORTRAN I/O or {\em master} for traditional master I/O or {\em netcdf} \\
-\>                                              \> \phantom{x} for netCDF I/O provided \D is compiled in a \\
-\>                                              \> \phantom{x} netCDF-enabled mode (default {\em mpiio}) \\
-\>                                              \> \phantom{xxx} {\bf \em j, reader count} :: $1~\le~j~\le~{\tt job~size}$ \\
-\>                                              \> \phantom{xxxx} (default $j~=~2^{Int\left[Log\left\{Min({\tt job~size},2\sqrt{\tt job~size})\right\}/Log(2)\right]}$) \\
-\>                                              \> \phantom{xxxx} is the designated number of processes to \\
-\>                                              \> \phantom{xxxx} carry out I/O read operations simultaneously \\
-\>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~10,000,000$ (default $2,000,000$) \\
-\>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
-\>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
-\>                                              \> \phantom{xxxx} I/O groups (= I/O readers) for domain distribution purposes \\
-\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $20,000$) \\
-\>                                              \> \phantom{x} is the maximum number of ASCII line records read in a batch \\
-\>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
-\>                                              \> \\
-\> {\bf io writ}e {\em method} $rp$ {\em type} $j$ $k$ $l$ $e$ \> set the general I/O write interface to: \\
-\>                                              \> {\bf \em method} :: {\em mpiio} for MPI-I/O, {\em direct} for parallel direct access \\
-\>                                              \> \phantom{x} FORTRAN I/O or {\em master} for traditional master I/O or {\em netcdf} \\
-\>                                              \> \phantom{x} for netCDF I/O provided \D is compiled in a \\
-\>                                              \> \phantom{x} netCDF-enabled mode (default {\em mpiio}) \\
-\>                                              \> \phantom{x} {\bf WARRNING: {\em direct} is not a platfotm portable} \\
-\>                                              \> \phantom{x} {\bf solution (as it fails on LUSTRE but works on GPFS)} \\
-\>                                              \> {\bf NOTE that {\em rp} is only applicable for the {\em netcdf} method} \\
-\>                                              \> {\bf \em rp, real precision} :: {\em 32bit} or {\em amber} for 32-bit (float), \\
-\>                                              \> \phantom{x} otherwise 64-bit (double) is defaulted if unspecified \\
-\>                                              \> {\bf \em type} :: {\em sorted} or {\em unsort}ed (DD scrambled) by global index output \\
-\>                                              \> \phantom{x} (default {\em sorted}) \\
-\>                                              \> \phantom{xxx} {\bf \em j, writer count} :: $1~\le~j~\le~{\tt job~size}$ \\
-\>                                              \> \phantom{xxxx} (default $j~=~2^{Int\left[Log\left\{Min({\tt job~size},8\sqrt{\tt job~size})\right\}/Log(2)\right]}$) \\
-\>                                              \> \phantom{xxxx} is the designated number of processes to \\
-\>                                              \> \phantom{xxxx} carry out I/O write operations simultaneously \\
-\>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~10,000,000$ (default $2,000,000$) \\
-\>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
-\>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
-\>                                              \> \phantom{xxxx} I/O groups (= I/O writers) for global sorting purposes \\
-\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $20,000$) \\
-\>                                              \> \phantom{x} is the maximum number of ASCII line records written in a batch \\
-\>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
 \>                                              \> \\
 \> {\bf job time} $f$                           \> set job time to $f$ seconds \\
 \>                                              \> \\
@@ -738,10 +711,31 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> target temperature is assumed, if not then it is reset to \\
 \>                                              \> $10$ Kelvin; if $n$ is specified then every $n$ steps \\
 \>                                              \> (default $n~=~1$, with respect to the last equilibration step) \\
-\>                                              \> {\bf N.B.} thermostat and barostat memory are not erased \\
-\>                                              \> \\
-\>                                              \> \\
-\> *** SPECIAL OPTIONS ***                      \> *** SPECIAL OPTIONS *** \\
+\>                                              \> {\bf N.B.} thermostat and barostat memory are not erased
+\end{tabbing}
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{keytrj} Internal Trajectory/Defects File Key}
+\vskip 1ex
+\begin{tabular}{|r|l|}
+\hline
+{\tt keytrj} & \multicolumn{1}{c|}{meaning} \\
+\hline
+0 & coordinates only in file \\
+1 & coordinates and velocities in file \\
+2 & coordinates, velocities and forces in file \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\end{table}
+
+\D also offers a \uline{{\bf SPECIAL OPTIONS LIST}} of directives as follows:
+
+\begin{tabbing}
+X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
+\> \uuline{{\bf directive:}}                    \> \phantom{xxxxxxxxxxxxxxxxx} \uuline{{\bf meaning:}} \\
 \>                                              \> \\
 \> {\bf l\_dis}                                 \> check and report on the minimum separation distance \\
 \>                                              \> \\
@@ -774,47 +768,91 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> between all Verlet neighbour list pairs at re/start
 \end{tabbing}
 
-\noindent {\bf Note} that in some cases additional keywords, shown in
-brackets ``(...)'', may also be supplied in the directives, or
-directives may be used in a long form.  However, it is strongly
-recommended that the user uses only the {\bf bold} part of these
-directives.
-\noindent{Traditionally DL\_POLY\_4 uses hardcoded names for different input and output files. However since verion 4.09 some of
-them can be altered via directives in CONTROL file. Even the CONTROL file can be named differently but in this case one will need to
-pass it as a command line argument to DLPOLY.Z}
+\subsubsection{I/O Control Options}
+\label{io}
+
+\noindent{\bf Note} that historically DL\_POLY used serial I/O read
+and write as well as hard-coded names for different I/O files (see
+Figure~\ref{input-files}).  However, {\bf (i)} since version 4.01
+\D has defaulted to using parallel read and write via MPI-I/O
+(but also supporting a variety of alternative options) and
+{\bf (ii)} since version 4.09 the program has also introduced the
+functionality for user defined I/O filenames, both via the CONTROL
+{\bf io} directives below.  Even the CONTROL file may be named
+differently but in this case the alternative name must be passed
+as a command line argument to the \D executable (usually named
+{\bf DLPOLY.Z}).  It is worth noting that the latter options have
+paved the way for user defined work-flows exploitation of the \D engine.
+
+The \uline{{\bf I/O LIST}} of directives available is as follows:
 
 \begin{tabbing}
 X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> \uuline{{\bf directive:}}                    \> \phantom{xxxxxxxxxxxxxxxxx} \uuline{{\bf meaning:}} \\
 \>                                              \> \\
-\> *** IO Custom ***                            \> *** IO CUSTOM *** \\
-\> {\bf io output} {\it filename}                \> Will use {\it filename} instead of OUTPUT \\
-\> {\bf io config} {\it filename}                \> Will use {\it filename} instead of CONFIG \\
-\> {\bf io field} {\it filename}                 \> Will use {\it filename} instead of FIELD \\
-\> {\bf io outstat} {\it filename}                 \> Will use {\it filename} instead of STATIS \\
-\> {\bf io history} {\it filename}                 \> Will use {\it filename} instead of HISTORY \\
-\> {\bf io historf} {\it filename}                 \> Will use {\it filename} instead of HISTORF \\
-\> {\bf io revive} {\it filename}                 \> Will use {\it filename} instead of REVIVE \\
-\> {\bf io revold} {\it filename}                 \> Will use {\it filename} instead of REVOLD \\
-\> {\bf io revcon} {\it filename}                 \> Will use {\it filename} instead of REVCON \\
+\> {\bf io read} {\em method}  $j$ $k$ $l$ $e$  \> set the general I/O read interface to: \\
+\>                                              \> {\bf \em method} :: {\em mpiio} for MPI-I/O, {\em direct} for parallel direct access \\
+\>                                              \> \phantom{x} FORTRAN I/O or {\em master} for traditional master I/O or {\em netcdf} \\
+\>                                              \> \phantom{x} for netCDF I/O provided \D is compiled in a \\
+\>                                              \> \phantom{x} netCDF-enabled mode (default {\em mpiio}) \\
+\>                                              \> \phantom{xxx} {\bf \em j, reader count} :: $1~\le~j~\le~{\tt job~size}$ \\
+\>                                              \> \phantom{xxxx} (default $j~=~2^{Int\left[Log\left\{Min({\tt job~size},2\sqrt{\tt job~size})\right\}/Log(2)\right]}$) \\
+\>                                              \> \phantom{xxxx} is the designated number of processes to \\
+\>                                              \> \phantom{xxxx} carry out I/O read operations simultaneously \\
+\>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
+\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~10,000,000$ (default $2,000,000$) \\
+\>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
+\>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
+\>                                              \> \phantom{xxxx} I/O groups (= I/O readers) for domain distribution purposes \\
+\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $20,000$) \\
+\>                                              \> \phantom{x} is the maximum number of ASCII line records read in a batch \\
+\>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
+\>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
+\>                                              \> \\
+\> {\bf io writ}e {\em method} $rp$ {\em type} $j$ $k$ $l$ $e$ \> set the general I/O write interface to: \\
+\>                                              \> {\bf \em method} :: {\em mpiio} for MPI-I/O, {\em direct} for parallel direct access \\
+\>                                              \> \phantom{x} FORTRAN I/O or {\em master} for traditional master I/O or {\em netcdf} \\
+\>                                              \> \phantom{x} for netCDF I/O provided \D is compiled in a \\
+\>                                              \> \phantom{x} netCDF-enabled mode (default {\em mpiio}) \\
+\>                                              \> \phantom{x} {\bf WARRNING: {\em direct} is not a platfotm portable} \\
+\>                                              \> \phantom{x} {\bf solution (as it fails on LUSTRE but works on GPFS)} \\
+\>                                              \> {\bf NOTE that {\em rp} is only applicable for the {\em netcdf} method} \\
+\>                                              \> {\bf \em rp, real precision} :: {\em 32bit} or {\em amber} for 32-bit (float), \\
+\>                                              \> \phantom{x} otherwise 64-bit (double) is defaulted if unspecified \\
+\>                                              \> {\bf \em type} :: {\em sorted} or {\em unsort}ed (DD scrambled) by global index output \\
+\>                                              \> \phantom{x} (default {\em sorted}) \\
+\>                                              \> \phantom{xxx} {\bf \em j, writer count} :: $1~\le~j~\le~{\tt job~size}$ \\
+\>                                              \> \phantom{xxxx} (default $j~=~2^{Int\left[Log\left\{Min({\tt job~size},8\sqrt{\tt job~size})\right\}/Log(2)\right]}$) \\
+\>                                              \> \phantom{xxxx} is the designated number of processes to \\
+\>                                              \> \phantom{xxxx} carry out I/O write operations simultaneously \\
+\>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
+\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~10,000,000$ (default $2,000,000$) \\
+\>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
+\>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
+\>                                              \> \phantom{xxxx} I/O groups (= I/O writers) for global sorting purposes \\
+\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $20,000$) \\
+\>                                              \> \phantom{x} is the maximum number of ASCII line records written in a batch \\
+\>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
+\>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
+\>                                              \> \\
+\> {\bf io output}  {\it filename}              \> use {\it filename} instead of OUTPUT \\
+\>                                              \> \\
+\> {\bf io config}  {\it filename}              \> use {\it filename} instead of CONFIG \\
+\>                                              \> \\
+\> {\bf io field}   {\it filename}              \> use {\it filename} instead of FIELD \\
+\>                                              \> \\
+\> {\bf io outstat} {\it filename}              \> use {\it filename} instead of STATIS \\
+\>                                              \> \\
+\> {\bf io history} {\it filename}              \> use {\it filename} instead of HISTORY \\
+\>                                              \> \\
+\> {\bf io historf} {\it filename}              \> use {\it filename} instead of HISTORF \\
+\>                                              \> \\
+\> {\bf io revive}  {\it filename}              \> use {\it filename} instead of REVIVE \\
+\>                                              \> \\
+\> {\bf io revold}  {\it filename}              \> use {\it filename} instead of REVOLD \\
+\>                                              \> \\
+\> {\bf io revcon}  {\it filename}              \> use {\it filename} instead of REVCON
 \end{tabbing}
-
-\begin{table}[htbp]
-\begin{centering}
-\caption{\label{keytrj} Internal Trajectory/Defects File Key}
-\vskip 1ex
-\begin{tabular}{|r|l|}
-\hline
-{\tt keytrj} & \multicolumn{1}{c|}{meaning} \\
-\hline
-0 & coordinates only in file \\
-1 & coordinates and velocities in file \\
-2 & coordinates, velocities and forces in file \\
-\hline
-\end{tabular}
-\vskip 1ex
-\end{centering}
-\end{table}
 
 \subsubsection{Further Comments on the CONTROL File}
 
