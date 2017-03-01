@@ -90,6 +90,19 @@
            megcon,strcon,vircon,          &
            megpmf,strpmf,virpmf)
 
+! Inhomogeneous (two-temperature) 
+! Langevin thermostat (Stochastic Dynamics)
+		
+           Else If (keyens == 15) Then
+
+              Call nvt_l2_lfv             &
+           (lvar,mndis,mxdis,mxstp,tstep, &
+           nstep,temp,chi_ep,chi_es,      &
+           vel_es2,strkin,engke,          &
+           mxshak,tolnce,                 &
+           megcon,strcon,vircon,          &
+           megpmf,strpmf,virpmf)
+
            Else If (keyens == 20) Then
 
 ! Langevin thermostat and isotropic barostat

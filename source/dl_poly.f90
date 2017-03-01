@@ -118,6 +118,10 @@ Program dl_poly
 
   Use langevin_module
 
+! TWO-TEMPERATURE MODEL MODULE
+
+  Use ttm_module
+
 ! MAIN PROGRAM VARIABLES
 
   Implicit None
@@ -186,8 +190,8 @@ Program dl_poly
                        tolnce,quattol,rdef,rrsd,                  &
                        pdplnc,emd,vmx,vmy,vmz,temp,sigma,         &
                        press,strext(1:9),ten,                     &
-                       taut,chi,soft,gama,taup,tai,               &
-                       chit,eta(1:9),chip,cint,consv,             &
+                       taut,chi,chi_ep,chi_es,soft,gama,taup,tai, &
+                       chit,vel_es2,eta(1:9),chip,cint,consv,     &
                        strtot(1:9),virtot,                        &
                        strkin(1:9),engke,strknf(1:9),strknt(1:9), &
                        engrot,strcom(1:9),vircom,                 &
@@ -323,8 +327,8 @@ Program dl_poly
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
            keymin,nstmin,min_tol,                      &
            nstzero,nstgaus,nstscal,                    &
-           keyens,iso,taut,chi,soft,gama,taup,tai,ten, &
-           keypse,wthpse,tmppse,                       &
+           keyens,iso,taut,chi,chi_ep,chi_es,soft,gama,&
+           taup,tai,ten,vel_es2,keypse,wthpse,tmppse,  &
            fmax,nstbpo,intsta,keyfce,epsq,             &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
@@ -616,6 +620,15 @@ Program dl_poly
 
   consv = 0.0_wp
 
+! Array allocation for two-temperature model, scan/read
+! table file and initialisation from available restart files
+
+  If (l_ttm) Then
+    Call allocate_ttm_arrays(temp)
+    Call ttm_table_scan()
+    Call ttm_table_read()
+    Call ttm_system_init(nstep,keyres,'DUMP_E',temp)
+  End If
 
 ! start-up time when forces are not recalculated
 
@@ -680,9 +693,12 @@ Program dl_poly
 
 ! Save restart data for real simulations only (final)
 
-  If (lsim .and. (.not.l_tor)) Call system_revive             &
+  If (lsim .and. (.not.l_tor)) Then
+      Call system_revive &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
            chit,cint,chip,eta,strcon,strpmf,stress)
+      If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,1,nstrun)
+  End If
 
 ! Produce summary of simulation
 

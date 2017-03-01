@@ -1045,6 +1045,67 @@ Subroutine error(kode)
 
         Write(nrite,'(/,1x,a)') 'error - bond length > cutoff in TABBND or cutoff for PDF collection'
 
+     Else If (kode ==  670) Then
+
+        Write(nrite,'(/,1x,a)') 'error - insufficient electronic temperature cells for TTM heat diffusion'
+
+     Else If (kode ==  671) Then
+
+        Write(nrite,'(/,1x,a)') 'error - electronic specific heat not fully specified'
+
+     Else If (kode ==  672) Then
+
+        Write(nrite,'(/,1x,a)') 'error - thermal conductivity of metal not specified'
+
+     Else If (kode ==  673) Then
+
+        Write(nrite,'(/,1x,a)') 'error - thermal diffusivity of non-metal not specified'
+
+     Else If (kode ==  674) Then
+
+        Write(nrite,'(/,1x,a)') 'error - cannot find or open thermal conductivity table file (Ke.dat)'
+
+     Else If (kode ==  675) Then
+
+        Write(nrite,'(/,1x,a)') 'error - no data found in thermal conductivity table file (Ke.dat)'
+
+     Else If (kode ==  676) Then
+
+        Write(nrite,'(/,1x,a)') 'error - cannot find or open specific heat capacity table file (Ce.dat)'
+
+     Else If (kode ==  677) Then
+
+        Write(nrite,'(/,1x,a)') 'error - no data found in specific heat capacity table file (Ce.dat)'
+
+     Else If (kode ==  678) Then
+
+        Write(nrite,'(/,1x,a)') 'error - cannot find or open coupling constant table file (g.dat)'
+
+     Else If (kode ==  679) Then
+
+        Write(nrite,'(/,1x,a)') 'error - no data found in coupling constant table file (g.dat)'
+
+     Else If (kode ==  680) Then
+
+        Write(nrite,'(/,1x,a)') 'error - end of file encountered in table file (Ke.dat, Ce.dat or g.dat)'
+
+     Else If (kode ==  681) Then
+
+        Write(nrite,'(/,1x,a)') 'error - negative electronic temperature: instability in electronic heat diffusion equation'
+
+     Else If (kode ==  682) Then
+
+        Write(nrite,'(/,1x,a)') 'error - electronic temperature restart file (DUMP_E) is incompatible or does not exist'
+
+     Else If (kode ==  683) Then
+
+        Write(nrite,'(/,1x,a)') &
+        'error - mismatch in electronic temperature lattice sizes between restart (DUMP_E) and CONTROL files'
+
+     Else If (kode ==  684) Then
+
+        Write(nrite,'(/,1x,a)') 'error - cannot read electronic temperature restart (DUMP_E) file'
+
      Else If (kode == 1000) Then
 
         Write(nrite,'(/,1x,a)') 'error - working precision mismatch between FORTRAN90 and MPI implementation'
@@ -1328,6 +1389,38 @@ Subroutine error(kode)
      Else If (kode == 1082) Then
 
         Write(nrite,'(/,1x,a)') 'error - allocation failure in metal_module -> allocate_metal_erf_arrays'
+
+     Else If (kode == 1083) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in ttm_module -> allocate_ttm_arrays'
+
+     Else If (kode == 1084) Then
+
+        Write(nrite,'(/,1x,a)') 'error - deallocation failure in ttm_module -> deallocate_ttm_arrays'
+
+     Else If (kode == 1085) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in ttm_ion_temperature'
+
+     Else If (kode == 1086) Then
+
+        Write(nrite,'(/,1x,a)') 'error - deallocation failure in ttm_ion_temperature'
+
+     Else If (kode == 1087) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in ttm_thermal_diffusion'
+
+     Else If (kode == 1088) Then
+
+        Write(nrite,'(/,1x,a)') 'error - deallocation failure in ttm_thermal_diffusion'
+
+     Else If (kode == 1089) Then
+
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in ttm_track_module -> depoinit'
+
+     Else If (kode == 1090) Then
+
+        Write(nrite,'(/,1x,a)') 'error - deallocation failure in ttm_track_module -> depoevolve'
 
      Else
 
