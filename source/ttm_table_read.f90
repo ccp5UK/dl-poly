@@ -59,7 +59,7 @@ Subroutine ttm_table_read()
                  &/,1x,"maximum temperature (K)            = ",ES8.4,&
                  &/,1x,"minimum t.c. value (W m^-1 K^-1)   = ",ES8.4,&
                  &/,1x,"maximum t.c. value (W m^-1 K^-1)   = ",ES8.4)') &
-                 Minval(ketable(:,1)).Maxval(ketable(:,1)),Minval(ketable(:,2)),Maxval(ketable(:,2))
+                 Minval(ketable(:,1)),Maxval(ketable(:,1)),Minval(ketable(:,2)),Maxval(ketable(:,2))
     End If
 
 ! convert thermal conductivity values from W m^-1 K^-1 to kB A^-1 ps^-1
@@ -101,7 +101,7 @@ Subroutine ttm_table_read()
                  &/,1x,"maximum temperature (K)            = ",ES8.4,&
                  &/,1x,"minimum s.h.c. value (J m^-3 K^-1) = ",ES8.4,&
                  &/,1x,"maximum s.h.c. value (J m^-3 K^-1) = ",ES8.4)') &
-                 Minval(cetable(:,1)).Maxval(cetable(:,1)),Minval(cetable(:,2)),Maxval(cetable(:,2))
+                 Minval(cetable(:,1)),Maxval(cetable(:,1)),Minval(cetable(:,2)),Maxval(cetable(:,2))
     End If
 
 ! convert thermal conductivity values from J m^-3 K^-1 to kB A^-3
@@ -143,7 +143,7 @@ Subroutine ttm_table_read()
                  &/,1x,"maximum temperature (K)            = ",ES8.4,&
                  &/,1x,"minimum e-p value (W m^-3 K^-1)    = ",ES8.4,&
                  &/,1x,"maximum e-p value (W m^-3 K^-1)    = ",ES8.4)') &
-                 Minval(gtable(:,1)).Maxval(gtable(:,1)),Minval(gtable(:,2)),Maxval(gtable(:,2))
+                 Minval(gtable(:,1)),Maxval(gtable(:,1)),Minval(gtable(:,2)),Maxval(gtable(:,2))
     End If
 
 ! convert electron-phonon coupling values from W m^-3 K^-1 to ps^-1

@@ -23,7 +23,7 @@ Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
   Use setup_module,      Only : boltz,mxatms
   Use config_module,     Only : natms,ltg,lfrzn,weight,xxx,yyy,zzz
   Use core_shell_module, Only : legshl
-  Use ttm_module,        Only : eltemp,zerocell,ntcell,delx,dely,delz,gvar,epctochi
+  Use ttm_module,        Only : eltemp,zerocell,ntcell,delx,dely,delz,gvar,l_ttm,nstepcpl
   Use ttm_utils,         Only : Gep
 
   Implicit None
@@ -75,7 +75,7 @@ Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
           ja = Floor((yyy(i)+zerocell(2))/dely) + 1
           ka = Floor((zzz(i)+zerocell(3))/delz) + 1
           ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
-          tmp = scale*Sqrt(Gep(eltemp(ijk,0,0,0))*epctochi*eltemp(ijk,0,0,0)*weight(i))
+          tmp = scale*Sqrt(Gep(eltemp(ijk,0,0,0))*eltemp(ijk,0,0,0)*weight(i))
 
           fxr(i) = fxr(i)*tmp
           fyr(i) = fyr(i)*tmp

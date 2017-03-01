@@ -185,15 +185,15 @@ Contains
     ! tolerance, report discrepancy as warning
 
       If (idnode == 0) Then
-        If (Abs((lat_I_sum-lat_U_sum)/lat_U_sum) > err_tol .or. &
-            Abs((lat_I_max-lat_U_max)/lat_U_max) > err_tol .or. &
-            Abs((lat_I_min-lat_U_min)/lat_U_min) > err_tol) Then
+        If (Abs(lat_I_sum-lat_U_sum) > err_tol*lat_U_sum .or. &
+            Abs(lat_I_max-lat_U_max) > err_tol*lat_U_max .or. &
+            Abs(lat_I_min-lat_U_min) > err_tol*lat_U_min) Then
           Call warning(530,Abs(lat_I_sum-lat_U_sum)/lat_U_sum*100.0_wp,0.0_wp,0.0_wp)
         End If
       End If
 
       If (idnode == 0) Then
-        Write(nrite,"(/,1x,a,i0,a)") &
+        Write(nrite,"(/,1x,a,i0,a,/)") &
           'electronic energy deposition completed successfully after ',nstep,' timesteps'
       End If
 
@@ -313,8 +313,7 @@ Contains
     ! check if lattice sum equals the expected value
 
     If (idnode == 0 .and. Abs((realdEdx-dEdX)/dEdX) > 0.01_wp) Then
-        Call warning(540,Abs(realdEdx-dEdX)/dEdX*100_wp,0.0_wp,0.0_wp)
-      End if
+      Call warning(540,Abs(realdEdx-dEdX)/dEdX*100_wp,0.0_wp,0.0_wp)
     End If
     
   End Subroutine gaussianTrack

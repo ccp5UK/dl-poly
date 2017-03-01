@@ -30,7 +30,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
   Real ( Kind = wp ) :: fomAx,fomAy,fomAz,mintstep,maxtstep,opttstep,delx2,dely2,delz2
   Real ( Kind = wp ) :: fopttstep,del2av,eltempmax,eltempmin,eltempmean,eltempmaxKe,eltempminKe
   Real ( Kind = wp ) :: actsite, actxm, actxp, actym, actyp, actzm, actzp, alploc
-  Integer ( Kind = ip ) :: i,j,k,ii,jj,kk,ijk
+  Integer :: i,j,k,ii,jj,kk,ijk
   Logical :: safe,stable
   Integer :: fail,redtstepmx,redtstep
 
@@ -43,7 +43,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
   Allocate (eltemp1(1:numcell,-eltcell(1):eltcell(1),-eltcell(2):eltcell(2),-eltcell(3):eltcell(3)), Stat = fail)
   If (fail>0) Call error(1087)
   eltemp1 = 0.0_wp
-  redtstepmx = 1_ip
+  redtstepmx = 1
 
 ! determine timestep reduction factor (chosen empirically, acts beyond minimum stability condition)
 
@@ -484,8 +484,8 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
                   tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))
                 Case (2)
                   eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)-&
-                  tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))*
-                                                                               &Gep(eltemp(ijk,0,0,0))
+                  tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))*&
+                                                                                Gep(eltemp(ijk,0,0,0))
                 End Select
               End If
             End If

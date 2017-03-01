@@ -152,7 +152,7 @@ Contains
     ! to kB ps^-1 A^-1
     Case (1,2)
       If (isMetal .and. Abs(Ka0) <= zero_plus) Call error(672)
-      Ka0 = Ka0*Jms2kBAps
+      Ka0 = Ka0*JKms_to_kBAps
     End Select
 
     ! thermal diffusivity: converted from m^2 s^-1 to A^2 ps^-1

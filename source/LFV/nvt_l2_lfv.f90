@@ -56,7 +56,7 @@ Subroutine nvt_l2_lfv                     &
   Real( Kind = wp )       :: rstep,chi
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
                              vom(1:3),sclv,sclf,gscale,      &
-                             gscale1
+                             gscale1,velsq
 
 
   Logical,           Allocatable :: lstitr(:)

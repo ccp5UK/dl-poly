@@ -624,7 +624,7 @@ Program dl_poly
 ! table file and initialisation from available restart files
 
   If (l_ttm) Then
-    Call allocate_ttm_arrays(temp)
+    Call allocate_ttm_arrays(temp,megatm)
     Call ttm_table_scan()
     Call ttm_table_read()
     Call ttm_system_init(nstep,keyres,'DUMP_E',temp)

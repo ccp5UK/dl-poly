@@ -2270,7 +2270,7 @@ Subroutine read_control                                &
           Call get_word(record,word)
           dEdX = word_2_real(word)
           If (idnode == 0) Then
-            Write(nrite,"(1x,'elec. stopping power (eV/nm)',7x,1p,e12.4)") dEdX
+            Write(nrite,"(1x,'elec. stopping power (eV/nm)',6x,1p,e12.4)") dEdX
           End If
 
         Else If (word1(1:6) == 'sgauss' .or. word1(1:5) == 'sigma') Then
@@ -2382,7 +2382,7 @@ Subroutine read_control                                &
           If (word(1:8) == 'periodic') Then
             bcTypeE = 1
             If (idnode == 0) Then
-              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as periodic'")
+              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as periodic')")
             End If
           Else If (word(1:6) == 'dirich') Then
             bcTypeE = 2

@@ -65,9 +65,9 @@ Subroutine ttm_system_init(nstep,keyres,dumpfile,temp)
       ii = Floor(Real(ix,Kind=wp)/Real(ntsys(1),Kind=wp))
       jj = Floor(Real(iy,Kind=wp)/Real(ntsys(2),Kind=wp))
       kk = Floor(Real(iz,Kind=wp)/Real(ntsys(3),Kind=wp))
-      ix = Mod(Int(ix+ntsys(1)*eltcell(1),Kind=ip),ntsys(1)) + 1 - ntcelloff(1)
-      iy = Mod(Int(iy+ntsys(2)*eltcell(2),Kind=ip),ntsys(2)) + 1 - ntcelloff(2)
-      iz = Mod(Int(iz+ntsys(3)*eltcell(3),Kind=ip),ntsys(3)) + 1 - ntcelloff(3)
+      ix = Mod(ix+ntsys(1)*eltcell(1),ntsys(1)) + 1 - ntcelloff(1)
+      iy = Mod(iy+ntsys(2)*eltcell(2),ntsys(2)) + 1 - ntcelloff(2)
+      iz = Mod(iz+ntsys(3)*eltcell(3),ntsys(3)) + 1 - ntcelloff(3)
       If (ix>0 .and. ix<=ntcell(1) .and. iy>0 .and. iy<=ntcell(2) .and. iz>0 .and. iz<=ntcell(3)) Then
         ijk = 1 + ix + (ntcell(1)+2) * (iy + (ntcell(2)+2) * iz)
         eltemp(ijk,ii,jj,kk) = eltmp
@@ -85,7 +85,7 @@ Subroutine ttm_system_init(nstep,keyres,dumpfile,temp)
       Write(nrite,'(/,1x,a)') 'electronic temperatures read from DUMP_E file for two-temperature model'
       Write(nrite,'(1x,"minimum temperature (K) = ",ES8.4,&
                  &/,1x,"maximum temperature (K) = ",ES8.4,&
-                 &/,1x,"sum of temperatures (K) = ",ES8.4') &
+                 &/,1x,"sum of temperatures (K) = ",ES8.4)') &
                  lat_min, lat_max, lat_sum
       Close (iounit)
     End If

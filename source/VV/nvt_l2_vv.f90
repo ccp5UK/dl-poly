@@ -36,7 +36,7 @@ Subroutine nvt_l2_vv                          &
   Use constraints_module, Only : passcon
   Use pmf_module,         Only : passpmf
   Use ttm_module
-  Use ttm_utils,          Only : Gep,calcchies
+  Use ttm_utils,          Only : Gep,calcchies,eltemp_max
 
   Implicit None
 
@@ -59,12 +59,14 @@ Subroutine nvt_l2_vv                          &
 
 
   Logical,           Save :: newjob = .true.
-  Logical                 :: safe,lcol,lfst,lv_up,lv_dn
+  Logical                 :: safe,lcol,lfst,lv_up,lv_dn,lrand,lvel
   Integer,           Save :: mxkit,kit
-  Integer                 :: fail(1:9),i
-  Real( Kind = wp )       :: hstep,rstep
+  Integer                 :: fail(1:9),i,ia,ja,ka,ijk
+  Real( Kind = wp )       :: hstep,rstep,chi
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,vom(1:3), &
-                             t0,t1,t2,scr,scl,scv,scr1,scl1,scv1
+                             t0,t1,t2,scr,scl,scv,scr1,scl1,scv1,     &
+                             t0a,t1a,t2a,t0b,t1b,t2b,scr1a,scl1a,     &
+                             scv1a,scr1b,scl1b,scv1b,velsq,eltempmax
 
 
   Logical,           Allocatable :: lstitr(:)
@@ -174,8 +176,8 @@ Subroutine nvt_l2_vv                          &
      End If
 
      If (lrand) Then
-       Call langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
-       Call langevin_forces(-nstep,temp,tstep,chi,fxl,fyl,fzl)
+       Call langevin_forces(nstep,temp,tstep,chi_ep,fxr,fyr,fzr)
+       Call langevin_forces(-nstep,temp,tstep,chi_ep,fxl,fyl,fzl)
      Else
        fxr = 0.0_wp; fyr = 0.0_wp; fzr = 0.0_wp
        fxl = 0.0_wp; fyl = 0.0_wp; fzl = 0.0_wp
@@ -620,4 +622,4 @@ Subroutine nvt_l2_vv                          &
      Call error(0)
   End If
 
-End Subroutine nvt_l0_vv
+End Subroutine nvt_l2_vv
