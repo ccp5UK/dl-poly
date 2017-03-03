@@ -1303,7 +1303,7 @@ Subroutine read_control                                &
               Call get_word(record,word)
               vel_es2 = Abs(word_2_real(word))
 
-              If (idnode == 0) Write(nrite,"(1x,'Ensemble : NVT inhomogenous Langevin (Stochastic Dynamics)', &
+              If (idnode == 0) Write(nrite,"(1x,'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)', &
                  & /,1x,'e-phonon friction       (ps^-1)',3x,1p,e12.4, &
                  & /,1x,'e-stopping friction     (ps^-1)',3x,1p,e12.4, &
                  & /,1x,'e-stopping velocity   (A ps^-1)',3x,1p,e12.4)") chi_ep,chi_es,vel_es2
@@ -2176,11 +2176,11 @@ Subroutine read_control                                &
 
         Else If (word1(1:5) == 'cetab') Then
 
-        ! electronic specific heat capacity given in tabulated form
+        ! electronic volumetric heat capacity given in tabulated form
 
           CeType = 3
           If (idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic specific heat capacity given as tabulated function of temperature')")
+            Write(nrite,"(/,1x,'electronic volumetric heat capacity given as tabulated function of temperature')")
           End If
 
         Else If (word1(1:5) == 'keinf') Then
@@ -2223,7 +2223,9 @@ Subroutine read_control                                &
 
           KeType = 3
           If (idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic thermal conductivity given as tabulated function of temperature')")
+            Write(nrite,"(/,1x,'electronic thermal conductivity given as tabulated function of temperature:',&
+                        & /,1x,'uses ionic or system temperature to calculate cell conductivity value',&
+                        & /,1x,'for thermal diffusion equation')")
           End If
 
         Else If (word1(1:4) == 'diff') Then
@@ -2270,7 +2272,7 @@ Subroutine read_control                                &
           Call get_word(record,word)
           dEdX = word_2_real(word)
           If (idnode == 0) Then
-            Write(nrite,"(1x,'elec. stopping power (eV/nm)',6x,1p,e12.4)") dEdX
+            Write(nrite,"(/,1x,'elec. stopping power (eV/nm)',6x,1p,e12.4)") dEdX
           End If
 
         Else If (word1(1:6) == 'sgauss' .or. word1(1:5) == 'sigma') Then
@@ -2329,7 +2331,7 @@ Subroutine read_control                                &
           If (idnode == 0) Then
             Write(nrite,"(/,1x,'gaussian temporal energy deposition in electronic system')")
             Write(nrite,"(1x,'sigma of distribution (ps)',8x,1p,e12.4)") tdepo
-            Write(nrite,"(1x,'distribution cutoff   (ps)',8x,1p,e12.4)") tcdepo*tdepo
+            Write(nrite,"(1x,'distribution cutoff   (ps)',8x,1p,e12.4)") 2.0_wp*tcdepo*tdepo
           End If
 
         Else If (word1(1:5) == 'nexp') Then
@@ -2346,6 +2348,16 @@ Subroutine read_control                                &
             Write(nrite,"(/,1x,'decaying exponential temporal energy deposition in electronic system')")
             Write(nrite,"(1x,'tau of distribution (ps)',10x,1p,e12.4)") tdepo
             Write(nrite,"(1x,'distribution cutoff (ps)',10x,1p,e12.4)") tcdepo*tdepo
+          End If
+
+        Else If (word1(1:5) == 'delta') Then
+
+        ! dirac delta pulse temporal distribution for energy deposition into
+        ! electronic system
+
+          tdepoType = 3
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'pulse (dirac delta) temporal energy deposition in electronic system')")
           End If
 
         Else If (word1(1:4) == 'varg') Then
@@ -2387,37 +2399,38 @@ Subroutine read_control                                &
           Else If (word(1:6) == 'dirich') Then
             bcTypeE = 2
             If (idnode == 0) Then
-              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as dirichlet',&
-                          & /,1x,'(setting boundaries to system temperature)')")
+              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as dirichlet:',&
+                          & /,1x,'setting boundaries to system temperature')")
             End If
           Else If (word(1:7) == 'neumann') Then
             bcTypeE = 3
             If (idnode == 0) Then
-              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as neumann',&
-                          & /,1x,'(zero energy flux at boundaries)')")
+              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as neumann:',&
+                          & /,1x,'zero energy flux at boundaries')")
             End If
           Else If (word(1:8) == 'xydirich') Then
             bcTypeE = 4
             If (idnode == 0) Then
-              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as dirichlet (xy), neumann (z)',&
-                          & /,1x,'(system temperature at x and y boundaries, zero energy flux at z boundaries)')")
+              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as dirichlet (xy), neumann (z):',&
+                          & /,1x,'system temperature at x and y boundaries,',&
+                          & /,1x,'zero energy flux at z boundaries')")
             End If
           Else If (word(1:5) == 'robin') Then
             bcTypeE = 5
             Call get_word(record,word)
             fluxout = word_2_real(word)
             If (idnode == 0) Then
-              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin',&
-                          & /,1x,'(temperature leakage at boundaries of ',1p,e12.4,')')") fluxout
+              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin:',&
+                          & /,1x,'temperature leakage at boundaries of ',1p,e12.4)") fluxout
             End If
           Else If (word(1:7) == 'xyrobin') Then
             bcTypeE = 6
             Call get_word(record,word)
             fluxout = word_2_real(word)
             If (idnode == 0) Then
-              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin (xy), neumann (z)',&
-                          & /,1x,'(temperature leakage at x and y boundaries of ',1p,e12.4,&
-                               & ', zero energy flux at z boundaries)')") fluxout
+              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin (xy), neumann (z):',&
+                          & /,1x,'temperature leakage at x and y boundaries of ',1p,e12.4,',',&
+                          & /,1x,'zero energy flux at z boundaries')") fluxout
             End If
           End If
 
@@ -2437,7 +2450,7 @@ Subroutine read_control                                &
           Call get_word(record,word)
           ttmstats = Abs(Nint(word_2_real(word)))
           If (idnode == 0) Write(nrite,"(/,1x,'ttm statistics file option on', &
-             & /,1x,'ttm statistics file interval',4x,i10)") ttmstats
+             & /,1x,'ttm statistics file interval',3x,i10)") ttmstats
 
         Else If (word1(1:4) == 'traj') Then
 
@@ -2891,7 +2904,9 @@ Subroutine read_control                                &
      keyres=0
   End If
 
-! report default ensemble if none is specified
+! report default ensemble if none is specified:
+! inhomogeneous Langevin if two-temperature model
+! is in use, NVE if not
 
   If (.not.lens) Then
      Call warning(130,0.0_wp,0.0_wp,0.0_wp)
@@ -2901,9 +2916,34 @@ Subroutine read_control                                &
         Else
            Write(nrite,"(/,1x,'Integration : Leapfrog Verlet')")
         End If
-        Write(nrite,"(1x,'Ensemble : NVE (Microcanonical)')")
+        If (l_ttm) Then
+          Write(nrite,"(1x,'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)', &
+                    & /,1x,'e-phonon friction       (ps^-1)',3x,1p,e12.4, &
+                    & /,1x,'e-stopping friction     (ps^-1)',3x,1p,e12.4, &
+                    & /,1x,'e-stopping velocity   (A ps^-1)',3x,1p,e12.4)") chi_ep,chi_es,vel_es2
+        Else
+          Write(nrite,"(1x,'Ensemble : NVE (Microcanonical)')")
+        End If
      End If
+     If (l_ttm) keyens = 15
      lens=.true.
+  End If
+
+! report replacement of specified ensemble with inhomogeneous
+! Langevin if two-temperature model is in use, replacing
+! default electron-phonon friction value with chi from
+! standard Langevin thermostat (if supplied)
+
+  If (l_ttm .and. keyens/=15) Then
+     Call warning(130,0.0_wp,0.0_wp,0.0_wp)
+     If (keyens==10. or. keyens==20 .or. keyens==30 .and. chi>zero_plus) chi_ep = chi
+     If (idnode == 0) Then
+       Write(nrite,"(1x,'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)', &
+                 & /,1x,'e-phonon friction       (ps^-1)',3x,1p,e12.4, &
+                 & /,1x,'e-stopping friction     (ps^-1)',3x,1p,e12.4, &
+                 & /,1x,'e-stopping velocity   (A ps^-1)',3x,1p,e12.4)") chi_ep,chi_es,vel_es2
+     End If
+     keyens = 15
   End If
 
 ! report iteration length and tolerance condition for constraints and PMF algorithms

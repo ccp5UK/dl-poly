@@ -22,7 +22,7 @@ Module ttm_track_module
   Real( Kind = wp ), Allocatable, Dimension (:,:,:) :: lat_U,lat_B,lat_I
   Real( Kind = wp ) :: norm, timeequil0
 
-  Logical :: trackInit
+  Logical :: trackInit = .false.
 
 Contains
 
@@ -44,9 +44,9 @@ Contains
 
     If (Any(fail>0)) Call error(1089)
 		
-    lat_U(:,:,:) = 0.0_wp		! Spatial-deposition [eV]
-    lat_B(:,:,:) = 0.0_wp		! Time-deposition of lat_U [eV]
-    lat_I(:,:,:) = 0.0_wp		! Sum of time-deposition of lat_B = lat_U [eV]
+    lat_U(:,:,:) = 0.0_wp ! spatial deposition (eV)
+    lat_B(:,:,:) = 0.0_wp ! temporal deposition of lat_U (eV)
+    lat_I(:,:,:) = 0.0_wp ! sum of temporal deposition of lat_B (eV)
 
 ! spatial distribution of track
 
@@ -67,17 +67,23 @@ Contains
     ! Gaussian temporal deposition
       norm = 1.0_wp/(sqrpi*rt2*tdepo)
     Case (2)
-    ! decaying expotential temporal deposition
+    ! decaying exponential temporal deposition
       norm = 1.0_wp/(1.0_wp-Exp(-tcdepo))
     Case (3)
     ! pulse temporal deposition
       norm = 1.0_wp
     End Select
 		
-    trackInit = .true.		! flags that track initialisation is in progress
-    isAdaptive = .false.	! no adaptive timestepping
-    timeequil0 = time 	    ! time [ps] when equilibration finishes
-		
+    trackInit = .true. ! switch on flag indicating track initialisation is in progress
+    timeequil0 = time  ! time (ps) when equilibration finished, i.e. current time
+
+    ! report start of energy deposition
+
+    If (idnode == 0) Then
+      Write(nrite,"(/,1x,a,f14.5,a,/)") &
+        'electronic energy deposition starting at time = ',time,' ps'
+    End If
+
   End Subroutine depoinit
 
   Subroutine depoevolve(nstep,nsteql,time,tstep,redtstep,redtstepmx)
@@ -92,9 +98,9 @@ Contains
     Real( Kind = wp ) :: lat_U_min, lat_U_max, lat_U_sum, invbin
     Real( Kind = wp ) :: currenttime,adjtime,adjeng,err_tol = 0.01_wp
     Real( Kind = wp ) :: energy_diff,oldCe,newCe,start_Te,end_Te,increase
-    Integer( Kind = ip ) :: i,j,k,ii,jj,kk,ijk
-    Integer( Kind = ip ), Dimension( 1:3 ) :: fail = 0
-    Logical :: startdepo, enddepo
+    Integer :: i,j,k,ijk
+    Integer, Dimension( 1:3 ) :: fail = 0
+    Logical :: deposit
 
     ! start deposition, reducing size of timestep for thermal diffusion
 
@@ -103,28 +109,37 @@ Contains
     Select Case (tdepoType)
     Case (1)
     ! Gaussian temporal deposition
-      adjtime = (time-timeequil0-(tdepo*tcdepo)+tstep/Real(redtstepmx,Kind=wp)*Real(redtstep,Kind=wp))/tdepo
-      startdepo = (2.0_wp*tdepo*tcdepo>currenttime)
+      adjtime = currenttime/tdepo-tcdepo
+      deposit = (currenttime<2.0_wp*tdepo*tcdepo)
       invbin = 1.0_wp/Real(redtstepmx,Kind=wp)*tstep
       adjeng = Exp(-0.5_wp*adjtime*adjtime)
     Case (2)
-    ! decaying expotential temporal deposition
-      adjtime = (time-timeequil0+tstep/Real(redtstepmx,Kind=wp)*Real(redtstep,Kind=wp))/tdepo
-      startdepo = (tdepo*tcdepo>currenttime)
+    ! decaying exponential temporal deposition
+      adjtime = currenttime/tdepo
+      deposit = (currenttime<tdepo*tcdepo)
       invbin = 1.0_wp/(tdepo/tstep*Real(redtstepmx,Kind=wp))
       adjeng = Exp(-adjtime)
+    Case (3)
+    ! pulse temporal deposition (over single diffusion timestep)
+      deposit = (currenttime<tstep/(Real(redtstepmx,Kind=wp)))
+      invbin = 1.0_wp
+      adjeng = 1.0_wp
     End Select
-    If (startdepo) Then
+
+    ! if (still) depositing energy, add to electronic temperature
+    ! grid and adjust electronic temperatures accordingly
+
+    If (deposit) Then
       lat_B(:,:,:) = lat_U(:,:,:)*norm*invbin*adjeng
-      lat_I(:,:,:) = lat_I(:,:,:) + lat_B(:,:,:)
+      lat_I(:,:,:) = lat_I(:,:,:)+lat_B(:,:,:)
       Do k=1,ntcell(3)
         Do j=1,ntcell(2)
           Do i=1,ntcell(1)
             ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2)*k)
-            energy_diff = lat_B(i,j,k)
+            energy_diff = lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)
             ! work out change in electronic temperature for energy deposition
             ! (searching first in 0.01 kelvin increments, then interpolate based
-            !  on constant heat capacity)
+            ! on constant heat capacity)
             If (energy_diff > zero_plus) Then
               start_Te = eltemp(ijk,0,0,0)
               oldCe = Ce(start_Te)
@@ -138,28 +153,17 @@ Contains
               energy_diff = energy_diff + increase*volume*kB_to_eV
               start_Te = start_Te - 0.01_wp
               newCe = Ce(start_Te)
-              end_Te = start_Te + 0.02_wp * energy_diff / (oldCe+newCe)
+              end_Te = start_Te + 2.0_wp * energy_diff / (oldCe+newCe)
               eltemp(ijk,0,0,0) = end_Te
             End If
           End Do
         End Do
       End Do
-    End If
 
-    ! detect if end of deposition is reached
 
-    Select Case (tdepoType)
-    Case (1)
-    ! Gaussian temporal deposition
-      enddepo = ((nstep-nsteql-1)*redtstepmx+redtstep==Int(tdepo/tstep*Real(redtstepmx,Kind=wp)*2.0_wp*tcdepo))
-    Case (2)
-    ! decaying expotential temporal deposition
-      enddepo = ((nstep-nsteql-1)*redtstepmx + redtstep==Int(tdepo/tstep*Real(redtstepmx,Kind=wp)*tcdepo))
-    End Select
+    Else
 
-    If (enddepo) Then
-	  
-    ! find deposited energy at end of deposition
+    ! if at end of deposition, find deposited energy at end of deposition
 
       lat_I_min = Minval(lat_I(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
       lat_I_max = Maxval(lat_I(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
@@ -185,21 +189,22 @@ Contains
     ! tolerance, report discrepancy as warning
 
       If (idnode == 0) Then
-        If (Abs(lat_I_sum-lat_U_sum) > err_tol*lat_U_sum .or. &
-            Abs(lat_I_max-lat_U_max) > err_tol*lat_U_max .or. &
-            Abs(lat_I_min-lat_U_min) > err_tol*lat_U_min) Then
+        If (Abs(lat_I_sum-lat_U_sum) > Abs(err_tol*lat_U_sum) .or. &
+            Abs(lat_I_max-lat_U_max) > Abs(err_tol*lat_U_max) .or. &
+            Abs(lat_I_min-lat_U_min) > Abs(err_tol*lat_U_min)) Then
           Call warning(530,Abs(lat_I_sum-lat_U_sum)/lat_U_sum*100.0_wp,0.0_wp,0.0_wp)
         End If
       End If
 
+    ! report successful completion of energy deposition
+
       If (idnode == 0) Then
-        Write(nrite,"(/,1x,a,i0,a,/)") &
-          'electronic energy deposition completed successfully after ',nstep,' timesteps'
+        Write(nrite,"(/,1x,a,e11.5,a,f9.5,a,/)") &
+          'electronic energy deposition of ',lat_I_sum,' eV completed successfully after ',currenttime,' ps'
       End If
 
-    ! switch on adaptive timestepping and deallocate arrays
+    ! switch off tracking and deallocate arrays
 
-      isAdaptive = .true.
       trackInit = .false.
 
       Deallocate(lat_U, Stat = fail(1))
@@ -245,8 +250,8 @@ Contains
 
     Implicit None
     Real ( Kind = wp ), Intent ( Inout ), Dimension(0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1) :: lat_in
-    Real ( Kind = wp ) :: normdEdX,realdEdx,sigmamx,sigmamy,sig2x,sig2y,sigcellx,sigcelly,ii,jj,ii2,jj2,iip2,jjp2,iim2,jjm2
-    Real ( Kind = wp ) :: Emax,Emin
+    Real ( Kind = wp ) :: normdEdX,realdEdx,sigmamx,sigmamy,sig2x,sig2y,sigcellx,sigcelly
+    Real ( Kind = wp ) :: ii,jj,ii2,jj2,iip2,jjp2,iim2,jjm2
     Integer :: i,j,k
     Logical :: cutwarn=.false.
 

@@ -28,10 +28,10 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
 
   Real ( Kind = wp ), Allocatable :: eltemp1(:,:,:,:)
   Real ( Kind = wp ) :: fomAx,fomAy,fomAz,mintstep,maxtstep,opttstep,delx2,dely2,delz2
-  Real ( Kind = wp ) :: fopttstep,del2av,eltempmax,eltempmin,eltempmean,eltempmaxKe,eltempminKe
+  Real ( Kind = wp ) :: fopttstep,del2av,eltempmax,eltempmin,eltempmean,eltempKe,eltempmaxKe,eltempminKe
   Real ( Kind = wp ) :: actsite, actxm, actxp, actym, actyp, actzm, actzp, alploc
   Integer :: i,j,k,ii,jj,kk,ijk
-  Logical :: safe,stable
+  Logical :: safe
   Integer :: fail,redtstepmx,redtstep
 
 ! Debugging flag
@@ -97,7 +97,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
     Case (2)
       redtstepmx = Max(10000, redtstepmx)
     Case Default
-      redtstepmx = 2
+      redtstepmx = Max(2, redtstepmx)
     End Select
   End If
 
@@ -177,13 +177,9 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
 ! infinite thermal conductivity case: set all electronic temperatures
 ! to mean value in active cells, to system temperature in inactive cells
       Call eltemp_mean(eltempmean)
-      Do k=1,ntcell(3)
-        Do j=1,ntcell(2)
-          Do i=1,ntcell(1)
-            ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
-            eltemp1(ijk,0,0,0) = Merge(eltempmean,temp,act_ele_cell(ijk,0,0,0)>zero_plus)
-          End Do
-        End Do
+      eltemp1 = eltempmean
+      Do ijk=1,numcell
+        If(act_ele_cell(ijk,0,0,0)>zero_plus) eltemp1(ijk,0,0,0) = temp
       End Do
 
     Case (1)
@@ -196,7 +192,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
 
               If (ii>-2 .and. ii<2 .and. jj>-2 .and. jj<2 .and. kk>-2 .and. kk<2) Then
               ! replace electronic temperatures with values required for energy redistribution
-                Do ijk = 1, numcell
+                Do ijk = 1,numcell
                   If (adjust (ijk,ii,jj,kk)) eltemp(ijk,ii,jj,kk) = eltemp_adj(ijk,ii,jj,kk)
                 End Do
               ! calculate thermal diffusion only for active ionic temeperature sites (and active neighbours)
@@ -369,15 +365,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
       End If
 
     Case (3)
-! tabulated thermal conductivity
-      eltempKe = temp
-      Do k=1,ntcell(3)
-        Do j=1,ntcell(2)
-          Do i=1,ntcell(1)
-            eltempKe(ijk,0,0,0) = tempion(ijk)
-          End Do
-        End Do
-      End Do
+! tabulated thermal conductivity: uses local ionic or system temperature to calculate value
       If (deactivation) Then
       ! system with cell deactivation/energy redistribution
         Do kk=-eltcell(3),eltcell(3)
@@ -389,7 +377,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
                 Do ijk = 1, numcell
                   If (adjust (ijk,ii,jj,kk)) eltemp(ijk,ii,jj,kk) = eltemp_adj(ijk,ii,jj,kk)
                 End Do
-              ! calculate thermal diffusion only for active ionic temeperature sites (and active neighbours)
+              ! calculate thermal diffusion only for active ionic temperature sites (and active neighbours)
                 Do k=1,ntcell(3)
                   Do j=1,ntcell(2)
                     Do i=1,ntcell(1)
@@ -401,7 +389,8 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
                       actyp = actsite*act_ele_cell(ijk+(ntcell(1)+2),ii,jj,kk)
                       actzm = actsite*act_ele_cell(ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)
                       actzp = actsite*act_ele_cell(ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)
-                      alploc = Ke(eltempKe(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))
+                      eltempKe = (tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
+                      alploc = Ke(eltempKe)/Ce(eltemp(ijk,ii,jj,kk))
                       eltemp1(ijk,ii,jj,kk) = eltemp(ijk,ii,jj,kk)+&
                         fomAx*actxm*alploc*(eltemp(ijk-1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
                         fomAx*actxp*alploc*(eltemp(ijk+1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
@@ -418,7 +407,9 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
                   Do j=1,ntcell(2)
                     Do i=1,ntcell(1)
                       ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
-                      alploc = Ke(eltempKe(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))
+                      ! note that temperature for thermal conductivity is always system
+                      ! temperature for electronic cells away from ionic cells
+                      alploc = Ke(temp)/Ce(eltemp(ijk,ii,jj,kk))
                       eltemp1(ijk,ii,jj,kk) = eltemp(ijk,ii,jj,kk)+&
                         fomAx*alploc*(eltemp(ijk-1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
                         fomAx*alploc*(eltemp(ijk+1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
@@ -443,18 +434,19 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
                 Do j=1,ntcell(2)
                   Do i=1,ntcell(1)
                     ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+                    eltempKe = (tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
                     eltemp1(ijk,ii,jj,kk) = eltemp(ijk,ii,jj,kk)+&
-                      fomAx*Ke(eltempKe(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))*&
+                      fomAx*Ke(eltempKe)/Ce(eltemp(ijk,ii,jj,kk))*&
                       (eltemp(ijk-1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
-                      fomAx*Ke(eltempKe(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))*&
+                      fomAx*Ke(eltempKe)/Ce(eltemp(ijk,ii,jj,kk))*&
                       (eltemp(ijk+1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
-                      fomAy*Ke(eltempKe(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))*&
+                      fomAy*Ke(eltempKe)/Ce(eltemp(ijk,ii,jj,kk))*&
                       (eltemp(ijk-(ntcell(1)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
-                      fomAy*Ke(eltempKe(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))*&
+                      fomAy*Ke(eltempKe)/Ce(eltemp(ijk,ii,jj,kk))*&
                       (eltemp(ijk+(ntcell(1)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
-                      fomAz*Ke(eltempKe(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))*&
+                      fomAz*Ke(eltempKe)/Ce(eltemp(ijk,ii,jj,kk))*&
                       (eltemp(ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
-                      fomAz*Ke(eltempKe(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))*&
+                      fomAz*Ke(eltempKe)/Ce(eltemp(ijk,ii,jj,kk))*&
                       (eltemp(ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))
                   End Do
                 End Do

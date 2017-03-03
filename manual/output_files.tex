@@ -5,10 +5,14 @@
 (an incremental summary file of the simulation), STATIS
 (a statistical history file), REVCON (a restart configuration
 file - final) and REVIVE (a restart statistics accumulators
-file - final) are mandatory.  The existence of the rest
-optional upon the user specifications in CONTROL.  Some of
+file - final) are mandatory.  DUMP\_E (a restart electronic 
+temperature grid file - final) is also produced if the 
+\index{Two-Temperature Model} two-temperature model (TTM)
+is in use. The existence of the remaining files is 
+optional upon user specifications in CONTROL.  Some of
 these optional files are HISTORY, DEFECTS, MSDTMP, CFGMIN,
-RDFDAT, USRDAT, ZDNDAT, VDFDAT\_*.  These respectively contain: an
+RDFDAT, USRDAT, ZDNDAT, VDFDAT\_*, LATS\_E, LATS\_I,
+PEAK\_E, PEAK\_I.  These respectively contain: an
 incremental dump file of all atomic coordinates, velocities
 and forces; an incremental dump file of atomic coordinates
 of defected particles (interstitials) and sites (vacancies);
@@ -17,7 +21,10 @@ displacement and temperature; a dump file of all atomic
 coordinates of a minimised structure; a radial distribution
 function (RDF) data file; the RDF data file for the umbrella sampling
 (harmonic restraint); Z-density distribution data file;
-velocity autocorrelation function (VAF) data files (one file for each species).
+velocity autocorrelation function (VAF) data files (one file for each species);
+electronic temperature profile data file; ionic temperature profile data file;
+electronic temperature statistical data file; 
+ionic temperature statistical data file.
 
 \subsection{The HISTORY File}
 \label{history-file}
@@ -474,6 +481,17 @@ per MD cell.
 The unit of pressure\index{units!pressure} is katms, irrespective
 of what energy unit is chosen.
 
+\subsubsection*{Two-Temperature Model}
+
+If the \index{Two-Temperature Model}two-temperature model is
+in use, information about the timestep sizes used for electronic 
+thermal diffusivity is written immediately prior to each report of 
+statistical variables at each molecular dynamics timestep for which
+printout is requested. The optimum diffusive timestep size is given 
+in pico-seconds, along with the chosen value and the corresponding 
+number of divisions of the MD timestep. Reports are also given when 
+energy deposition starts and finishes.
+
 \subsubsection{Sample of Final Configuration}
 
 The positions, velocities and forces of the 20 atoms used for the
@@ -598,6 +616,18 @@ restart} keyword must be included in the CONTROL file.
 The format of the REVIVE file is identical to the REVOLD file
 described in Section~\ref{revold-file}.
 
+\subsection{The DUMP\_E File}
+
+This file is formatted and written by the subroutine
+{\sc ttm\_system\_revive} every {\tt ndump} time steps.  It 
+contains the electronic temperatures of all coarse-grained 
+electronic temperature (CET) cells and can be used to 
+restart a simulation using the \index{Two-Temperature Model}
+two-temperature model without renaming the file.
+
+The format of the DUMP\_E is described in 
+Section~\ref{dumpe-file}.
+ 
 \subsection{The RDFDAT File}
 \label{rdf-file}
 
@@ -885,4 +915,54 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 {\bf the next 2 entries - {\em if} a NPT or N$\gamma_{n}$AT simulation is undertaken} \\
 \> {\tt gamma\_x} \> real \> surface tension $\gamma_{n_{x}}$ on normal surface ${\cal A}\perp{z}$ \\
 \> {\tt gamma\_y} \> real \> surface tension $\gamma_{n_{y}}$ on normal surface ${\cal A}\perp{z}$
+\end{tabbing}
+
+\subsection{The LATS\_E and LATS\_I Files}
+\label{latsei-files}
+
+These are formatted files containing electronic (LATS\_E)
+and ionic (LATS\_I)temperatures at user-requested intervals
+along the y-direction in the centre of the system's xz-plane 
+from \index{Two-Temperature Model} two-temperature model
+calculations.
+
+Each line in these files consists of a series of electronic or ionic 
+temperatures along the y-direction -- {\tt -eltsys(2)/2} $\le y \le$ {\tt +eltsys(2)/2} 
+and {\tt -ntsys(2)/2} $\le y \le$ {\tt +ntsys(2)/2} at $x=z=0$ -- 
+corresponding to a requested timestep. The number of values in
+each line will depend on the number of electronic or ionic temperature
+cells requested by the user. 
+
+\subsection{The PEAK\_E and PEAK\_I Files}
+\label{peakei-files}
+
+These are formatted files containing statistics from 
+\index{Two-Temperature Model} two-temperature model
+calculations at user-requested intervals. Each line in these 
+files corresponds to a requested time step and the data is
+based upon active coarse-grained electronic (CET) and 
+ionic (CIT) temperature grid cells. 
+
+In the PEAK\_E file, the data are formatted as follows:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+{\bf record i} \\
+\> {\tt nstep}  \> integer \> current MD time-step \\
+\> {\tt time }  \> real    \> elapsed simulation time \\
+\> {\tt eltemp\_min} \> real \> minimum value of electronic temperature in system (K) \\
+\> {\tt eltemp\_max} \> real \> maximum value of electronic temperature in system (K) \\
+\> {\tt eltemp\_mean} \> real \> mean value of electronic temperature in system (K) \\
+\> {\tt eltemp\_sum} \> real \> sum of electronic temperatures in system (K) \\
+\> {\tt Ue} \> real \> total electronic energy in system (eV) \\
+\end{tabbing}
+The PEAK\_I file is formatted in a similar fashion, as follows:
+\begin{tabbing}
+X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
+{\bf record i} \\
+\> {\tt nstep}  \> integer \> current MD time-step \\
+\> {\tt time }  \> real    \> elapsed simulation time \\
+\> {\tt tempion\_min} \> real \> minimum value of ionic temperature in system (K) \\
+\> {\tt tempion\_max} \> real \> maximum value of ionic temperature in system (K) \\
+\> {\tt tempion\_mean} \> real \> mean value of ionic temperature in system (K) \\
+\> {\tt tempion\_sum} \> real \> sum of ionic temperatures in system (K) \\
 \end{tabbing}

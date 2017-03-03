@@ -899,61 +899,6 @@ Contains
 
   End Subroutine peakProfiler
  
-  Subroutine peakProfilerElecKe(peakfile, nstep, freq)
-
-! prints a slice across y (centred in xz-plane) of the electronic temperature lattice to a file
-
-    Implicit None
-
-    Real ( Kind = wp ), Dimension (eltsys(2)) :: laty
-    Integer, Intent( In ) :: nstep,freq
-    Character ( Len = * ), Intent( In ) :: peakfile
-    Integer :: iounit = 114
-    Integer :: i,j,jj,jmin,jmax,k,l,ijk
-
-    laty = 0.0_wp
-
-    If (freq /= 0) Then
-      If (Mod(nstep,freq)==0 .or. nstep==1) Then
-        i = midI(1) - ntcelloff(1)
-        k = midI(3) - ntcelloff(3)
-        If (i>0 .and. i<=ntcell(1) .and. k>0 .and. k<=ntcell(3)) Then
-          Do jj=-eltcell(2),eltcell(2)
-            If (eltcell(2)>0 .and. jj==-eltcell(2) .and. ttmbcmap(3)>=0) Then
-              jmin = ttmbc(3)
-            Else
-              jmin = 1
-            End If
-            If (eltcell(2)>0 .and. jj==eltcell(2) .and. ttmbcmap(4)>=0) Then
-              jmax = ttmbc(4)
-            Else
-              jmax = ntcell(2)
-            End If
-            Do j=jmin,jmax
-              l = j + ntcelloff(2) + (jj + eltcell(2)) * ntsys(2) - zeroE(2)
-              ijk = 1 + i + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
-              If (l>0 .and. l<=eltsys(2)) laty(l) = eltempKe(ijk,0,jj,0)
-            End Do
-          End Do
-        End If
-        If (mxnode>1) Call gsum (laty)
-        If (idnode==0) Then
-          If (nstep==1) Then
-            Open (Unit=iounit, File=peakfile, Status='replace')
-          Else
-            Open (Unit=iounit, File=peakfile, Position='append')
-          End If
-          Do i=1,eltsys(2)
-            Write(iounit,Fmt='(9es12.4,1p)', Advance='no') laty(i)
-          End Do
-          Close (iounit)
-        End If
-      End If
-    End If
-
-  End Subroutine peakProfilerElecKe
-
- 
   Subroutine peakProfilerElec(peakfile, nstep, freq)
 
 ! prints a slice across y (centred in xz-plane) of the electronic temperature lattice to a file
@@ -1019,7 +964,7 @@ Contains
     Real ( Kind = wp ), Intent ( In ) :: time
     Character ( Len = * ), Intent ( In ) :: latfile
 
-    Real (kind = wp) :: lat_sum,lat_min,lat_max
+    Real (kind = wp) :: lat_sum,lat_min,lat_max,rtotal
     Integer :: iounit = 113
     Integer :: i,j,k,ijk
 
@@ -1047,13 +992,16 @@ Contains
           Call gmax(lat_max)
         End If
 
+        rtotal = 1.0_wp/Real(acell,Kind=wp)
+
         If (idnode == 0) Then
           If (nstep==1) Then
             Open(Unit=iounit, File=latfile, Status='replace')
           Else
             Open(Unit=iounit, File=latfile, Position='append')
           End If
-          Write(iounit,'(i8,1p,es12.4,1p,es12.4,1p,es12.4,1p,es12.4)') nstep, time, lat_min, lat_max, lat_sum
+          Write(iounit,'(i8,1p,es12.4,1p,es12.4,1p,es12.4,1p,es12.4,1p,es12.4)') &
+                        nstep, time, lat_min, lat_max, lat_sum*rtotal, lat_sum
           Close(iounit)
         End If
 
@@ -1173,8 +1121,9 @@ Contains
     Implicit None
 
     Real ( Kind = wp ), Intent ( Out ) :: eltempsum
+    Real ( Kind = wp )                 :: tmp
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
-    Logical                            :: lrange
+    Logical                            :: lrange,lcentre
 
     eltempsum = 0.0_wp
 
@@ -1213,6 +1162,7 @@ Contains
           Else
             imax = ntcell(1)
           End If
+          lcentre = (ii==0 .and. jj==0 .and. kk==0)
           Do k = kmin, kmax
             lz = k + ntcelloff(3) + (kk + eltcell(3)) * ntsys(3) - zeroE(3)
             Do j = jmin, jmax
@@ -1221,7 +1171,8 @@ Contains
                 lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
                 lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
                 ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
-                If (lrange) eltempsum = eltempsum + eltemp(ijk,ii,jj,kk)
+                tmp = eltemp(ijk,ii,jj,kk) * Merge (act_ele_cell (ijk,0,0,0), 1.0_wp, lcentre)
+                If (lrange) eltempav = eltempav + tmp
               End Do
             End Do
           End Do
@@ -1311,8 +1262,9 @@ Contains
     Implicit None
 
     Real ( Kind = wp ), Intent ( Out ) :: eltempmax
+    Real ( Kind = wp )                 :: eltempKe
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
-    Logical                            :: lrange
+    Logical                            :: lrange,lcentre
 
     eltempmax = 0.0_wp
 
@@ -1351,15 +1303,18 @@ Contains
           Else
             imax = ntcell(1)
           End If
+          lcentre = (ii==0 .and. jj==0 .and. kk==0)
           Do k = kmin, kmax
             lz = k + ntcelloff(3) + (kk + eltcell(3)) * ntsys(3) - zeroE(3)
             Do j = jmin, jmax
               ly = j + ntcelloff(2) + (jj + eltcell(2)) * ntsys(2) - zeroE(2)
               Do i = imin, imax
                 lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
-                lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
                 ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
-                If (lrange) eltempmax = Max (eltempmax, eltempKe(ijk,ii,jj,kk))
+                lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
+                If (lcentre) lrange = (lrange .and. (act_ele_cell(ijk,0,0,0)>zero_plus))
+                eltempKe = (tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
+                If (lrange) eltempmax = Max (eltempmax, eltempKe)
               End Do
             End Do
           End Do
@@ -1378,7 +1333,7 @@ Contains
 
     Real ( Kind = wp ), Intent ( Out ) :: eltempmax
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
-    Logical                            :: lrange
+    Logical                            :: lrange,lcentre
 
     eltempmax = 0.0_wp
 
@@ -1417,14 +1372,16 @@ Contains
           Else
             imax = ntcell(1)
           End If
+          lcentre = (ii==0 .and. jj==0 .and. kk==0)
           Do k = kmin, kmax
             lz = k + ntcelloff(3) + (kk + eltcell(3)) * ntsys(3) - zeroE(3)
             Do j = jmin, jmax
               ly = j + ntcelloff(2) + (jj + eltcell(2)) * ntsys(2) - zeroE(2)
               Do i = imin, imax
                 lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
-                lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
                 ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+                lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
+                If (lcentre) lrange = (lrange .and. (act_ele_cell(ijk,0,0,0)>zero_plus))
                 If (lrange) eltempmax = Max (eltempmax, eltemp(ijk,ii,jj,kk))
               End Do
             End Do
@@ -1443,6 +1400,7 @@ Contains
     Implicit None
 
     Real ( Kind = wp ), Intent ( Out ) :: eltempmin
+    Real ( Kind = wp )                 :: eltempKe
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
     Logical                            :: lrange
 
@@ -1491,7 +1449,8 @@ Contains
                 lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
                 lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
                 ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
-                If (lrange) eltempmin = Min (eltempmin, eltempKe(ijk,ii,jj,kk))
+                eltempKe = (tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
+                If (lrange) eltempmin = Min (eltempmin, eltempKe)
               End Do
             End Do
           End Do
@@ -1556,8 +1515,9 @@ Contains
               ly = j + ntcelloff(2) + (jj + eltcell(2)) * ntsys(2) - zeroE(2)
               Do i = imin, imax
                 lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
-                lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
                 ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+                lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
+                If (ii==0 .and. jj==0 .and. kk==0) lrange
                 If (lrange) eltempmin = Min (eltempmin, eltemp(ijk,ii,jj,kk))
               End Do
             End Do
@@ -1644,7 +1604,7 @@ Contains
 
     Real( Kind = wp ), Intent ( In ) :: temp0
     Integer :: i, j, k, ii, jj, kk, ijk, ijk1, ijk2, ijkpx, ijkmx, ijkpy, ijkmy, ijkpz, ijkmz, n, numint
-	Real( Kind = wp ) :: energy_per_cell, U_e, start_Te, end_Te, running_energy, increase, oldCe, newCe
+    Real( Kind = wp ) :: energy_per_cell, U_e, start_Te, end_Te, increase, oldCe, newCe
     Real( Kind = wp ) :: energy_diff, tmp2, act_sur_cells, sgnplus
 
     Integer, Dimension(4) :: req
@@ -1668,7 +1628,7 @@ Contains
           ijkmz = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * (k - 1))
           If (act_ele_cell(ijk,0,0,0)<=zero_plus .and. old_ele_cell(ijk,0,0,0)>zero_plus) Then
 		! Calculate amount of energy left in the cell (Ue = integral of Ce(Te)d(Te) between 300K and Te)
-	  	    tmp2 = 0.0_wp
+            tmp2 = 0.0_wp
             numint = Floor(eltemp(ijk,0,0,0) - temp0)
             sgnplus = Sign (1.0_wp, Real(numint, Kind=wp))
             Do n = 1,Abs(numint)
@@ -1677,7 +1637,7 @@ Contains
             tmp2 = tmp2 + 0.5_wp * (Ce(temp0+Real(numint, Kind=wp))+Ce(eltemp(ijk,ii,jj,kk)))
             U_e = tmp2*volume*kB_to_eV
 		! Check how many cells are connected to the now turned-off cell
-		    act_sur_cells = act_ele_cell(ijkmx,0,0,0) + act_ele_cell(ijkpx,0,0,0) + act_ele_cell(ijkmy,0,0,0) + &
+            act_sur_cells = act_ele_cell(ijkmx,0,0,0) + act_ele_cell(ijkpx,0,0,0) + act_ele_cell(ijkmy,0,0,0) + &
                             act_ele_cell(ijkpy,0,0,0) + act_ele_cell(ijkmz,0,0,0) + act_ele_cell(ijkpz,0,0,0)
 		! Calculate energy redistribution to each cell and assign to cells
             If (act_sur_cells>zero_plus) energy_per_cell = U_e / act_sur_cells

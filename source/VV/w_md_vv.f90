@@ -71,7 +71,7 @@
 
         If (l_ttm) Then
           Call ttm_ion_temperature(chi_ep,chi_es,vel_es2)
-          Call ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndump,nstrun)
+          Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,temp,intsta,keyres,ndump,nstrun)
         End If
 
 ! Integrate equations of motion - velocity verlet second stage

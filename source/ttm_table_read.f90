@@ -23,7 +23,7 @@ Subroutine ttm_table_read()
   Logical                :: safe
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
-  Integer                :: fail,i
+  Integer                :: i
   Real( Kind = wp )      :: vk1,vk2
 
 ! read thermal conductivity data
@@ -55,10 +55,10 @@ Subroutine ttm_table_read()
     If (idnode==0) Then
       Close(Unit=ntable)
       Write(nrite,'(/,1x,a)') 'thermal conductivity table read from Ke.dat file for two-temperature model'
-      Write(nrite,'(1x,"minimum temperature (K)            = ",ES8.4,&
-                 &/,1x,"maximum temperature (K)            = ",ES8.4,&
-                 &/,1x,"minimum t.c. value (W m^-1 K^-1)   = ",ES8.4,&
-                 &/,1x,"maximum t.c. value (W m^-1 K^-1)   = ",ES8.4)') &
+      Write(nrite,'(1x,"minimum temperature (K)            = ",ES12.4,&
+                 &/,1x,"maximum temperature (K)            = ",ES12.4,&
+                 &/,1x,"minimum t.c. value (W m^-1 K^-1)   = ",ES12.4,&
+                 &/,1x,"maximum t.c. value (W m^-1 K^-1)   = ",ES12.4)') &
                  Minval(ketable(:,1)),Maxval(ketable(:,1)),Minval(ketable(:,2)),Maxval(ketable(:,2))
     End If
 
@@ -96,11 +96,11 @@ Subroutine ttm_table_read()
 
     If (idnode==0) Then
       Close(Unit=ntable)
-      Write(nrite,'(/,1x,a)') 'electronic specific heat capacity table read from Ce.dat file for two-temperature model'
-      Write(nrite,'(1x,"minimum temperature (K)            = ",ES8.4,&
-                 &/,1x,"maximum temperature (K)            = ",ES8.4,&
-                 &/,1x,"minimum s.h.c. value (J m^-3 K^-1) = ",ES8.4,&
-                 &/,1x,"maximum s.h.c. value (J m^-3 K^-1) = ",ES8.4)') &
+      Write(nrite,'(/,1x,a)') 'electronic volumetric heat capacity table read from Ce.dat file for two-temperature model'
+      Write(nrite,'(1x,"minimum temperature (K)            = ",ES12.4,&
+                 &/,1x,"maximum temperature (K)            = ",ES12.4,&
+                 &/,1x,"minimum v.h.c. value (J m^-3 K^-1) = ",ES12.4,&
+                 &/,1x,"maximum v.h.c. value (J m^-3 K^-1) = ",ES12.4)') &
                  Minval(cetable(:,1)),Maxval(cetable(:,1)),Minval(cetable(:,2)),Maxval(cetable(:,2))
     End If
 
@@ -139,10 +139,10 @@ Subroutine ttm_table_read()
     If (idnode==0) Then
       Close(Unit=ntable)
       Write(nrite,'(/,1x,a)') 'electron-phonon coupling table read from g.dat file for two-temperature model'
-      Write(nrite,'(1x,"minimum temperature (K)            = ",ES8.4,&
-                 &/,1x,"maximum temperature (K)            = ",ES8.4,&
-                 &/,1x,"minimum e-p value (W m^-3 K^-1)    = ",ES8.4,&
-                 &/,1x,"maximum e-p value (W m^-3 K^-1)    = ",ES8.4)') &
+      Write(nrite,'(1x,"minimum temperature (K)            = ",ES12.4,&
+                 &/,1x,"maximum temperature (K)            = ",ES12.4,&
+                 &/,1x,"minimum e-p value (W m^-3 K^-1)    = ",ES12.4,&
+                 &/,1x,"maximum e-p value (W m^-3 K^-1)    = ",ES12.4)') &
                  Minval(gtable(:,1)),Maxval(gtable(:,1)),Minval(gtable(:,2)),Maxval(gtable(:,2))
     End If
 

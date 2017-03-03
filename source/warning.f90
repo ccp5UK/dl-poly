@@ -193,6 +193,12 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,/)') '*** warning - no ensemble is specified !!! ***'
 
+     Else If (kode == 135) Then
+
+        Write(nrite,'(/,1x,a,/,1x,a,/)')                                                  &
+          '*** warning - incorrect ensemble specified for two-temperature model !!! ***', &
+          '*** replacing ensemble with NVT inhomogeneous Langevin !!! ***'
+
      Else If (kode == 140) Then
 
         Write(nrite,'(/,1x,2a,2(f8.5,a),/,1x,a,/)')                &

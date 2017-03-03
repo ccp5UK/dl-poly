@@ -21,7 +21,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
   Implicit None
 
   Real ( Kind = wp ), Intent ( In ) :: chi_ep,chi_es,vel_es2
-  Integer ( Kind = ip ) :: ia,ja,ka,ijk,ijk1,ijk2,i,j,k,ii,jj,kk
+  Integer :: ia,ja,ka,ijk,ijk1,ijk2,i,ii,jj,kk
   Real ( Kind = wp ) :: velsq,tmp,gsadd,vx,vy,vz
   Integer :: fail, natmin
   Real ( Kind = wp ), Allocatable :: buf1(:),buf2(:),buf3(:),buf4(:)
@@ -43,8 +43,9 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
   ttmvommass = 0.0_wp
   ijkatm = 0
 
-! [GK] if heterogeneous, gsource is an array containing no. of atoms in each cell
-! otherwise it is an array containing the effective e-p relaxation strength
+! if heterogeneous, gsource is an array containing no. of atoms in each cell
+! otherwise it is an array containing the effective electron-phonon relaxation 
+! strength (known value for constant and homogeneous dynamic calculations)
 
   Select Case (gvar)
   Case (0,1)
@@ -209,7 +210,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
       nat(2*ijk) = nat(2*ijk) + 1
     End If
 
-  End Do	
+  End Do
 
   If (mxnode>1) Then
     Allocate (buf1(1:numcell), buf2(1:numcell), buf3(1:numcell), buf5 (1:2*numcell), Stat=fail)

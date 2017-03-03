@@ -20,7 +20,7 @@ Module ttm_module
 
   Implicit None
 
-  Real( Kind = wp ), Allocatable :: eltemp(:,:,:,:),eltempKe(:,:,:,:),eltemp_adj(:,:,:,:)
+  Real( Kind = wp ), Allocatable :: eltemp(:,:,:,:),eltemp_adj(:,:,:,:)
   Real( Kind = wp ), Allocatable :: asource(:),tempion(:),gsource(:)
   Real( Kind = wp ), Allocatable :: act_ele_cell(:,:,:,:),old_ele_cell(:,:,:,:)
   Logical          , Allocatable :: adjust(:,:,:,:)
@@ -36,7 +36,7 @@ Module ttm_module
 
   Real ( Kind = wp ) :: delx,dely,delz,volume
   Real ( Kind = wp ) :: zerocell(3)
-  Integer ( Kind = ip ) :: numcell
+  Integer :: numcell
   Integer :: ttmbc(6),ttmbcmap(6)
 
   Logical :: l_ttm,isMetal,l_epcp,deactivation
@@ -49,7 +49,6 @@ Module ttm_module
 ! DEBUG (TODO)
   Real ( Kind = wp ) :: epstart
   Integer :: keyres0,nstepcpl = 0
-  Logical :: isAdaptive = .false.
 
   Integer :: cel,gel,kel
   Integer :: acell,acell_old,amin
@@ -70,7 +69,7 @@ Contains
     Real ( Kind = wp ), Intent ( In ) :: temp
     Integer, Intent ( In ) :: megatm
     Real ( Kind = wp ) :: start, finish
-    Integer, Dimension ( 1:8 ) :: fail
+    Integer, Dimension ( 1:7 ) :: fail
     Integer :: i,numbc,numbcmap
     Integer :: basicslice,oneslicex,oneslicey,oneslicez
     Integer :: bbasicslice,boneslicex,boneslicey,boneslicez
@@ -117,12 +116,14 @@ Contains
       deactivation = .false.
     End If
 
-! Print sizes of ionic and electronic temperature cells and grids
+! Print sizes of ionic and electronic temperature cells and grids,
+! and average number of particles per ionic temperature cell
 
     If (idnode == 0) Then
       Write(nrite,'(/,1x,a,3(2x,f8.4))') "temperature cell size (A)        (x,y,z): ",delx,dely,delz
-      Write(nrite,'(/,1x,a,3(2x,i8))')   "ionic temperature grid size      (x,y,z): ",ntsys(1),ntsys(2),ntsys(3)
-      Write(nrite,'(/,1x,a,3(2x,i8))')   "electronic temperature grid size (x,y,z): ",eltsys(1),eltsys(2),eltsys(3)
+      Write(nrite,'(1x,a,3(2x,i8))')     "ionic temperature grid size      (x,y,z): ",ntsys(1),ntsys(2),ntsys(3)
+      Write(nrite,'(1x,a,3(2x,i8))')     "electronic temperature grid size (x,y,z): ",eltsys(1),eltsys(2),eltsys(3)
+      Write(nrite,'(1x,a,f10.4)')        "average no. of atoms per cell           : ",cellrho*volume
     End If
 
 ! Check sufficient parameters are specified for electronic specific
@@ -357,10 +358,9 @@ Contains
     Allocate (asource(1:numcell)                                                                        , Stat = fail(2))
     Allocate (tempion(1:numcell)                                                                        , Stat = fail(3))
     Allocate (gsource(1:numcell)                                                                        , Stat = fail(4))
-    Allocate (eltempKe(1:numcell,-eltcell(1):eltcell(1),-eltcell(2):eltcell(2),-eltcell(3):eltcell(3))  , Stat = fail(5))
     Allocate (eltemp_adj(1:numcell,-eltcell(1):eltcell(1),-eltcell(2):eltcell(2),-eltcell(3):eltcell(3)), Stat = fail(5))
-    Allocate (act_ele_cell(1:numcell,-1:1,-1:1,-1:1), old_ele_cell(1:numcell,-1:1,-1:1,-1:1)            , Stat = fail(7))
-    Allocate (adjust(1:numcell,-1:1,-1:1,-1:1)                                                          , Stat = fail(8))
+    Allocate (act_ele_cell(1:numcell,-1:1,-1:1,-1:1), old_ele_cell(1:numcell,-1:1,-1:1,-1:1)            , Stat = fail(6))
+    Allocate (adjust(1:numcell,-1:1,-1:1,-1:1)                                                          , Stat = fail(7))
 
     If (Any(fail > 0)) Call error(1083)
 
@@ -380,7 +380,6 @@ Contains
     kel = 0
 
     keyres0 = 1
-!    keyres0 = 4
 
   End Subroutine allocate_ttm_arrays
 
@@ -388,13 +387,16 @@ Contains
 
     Implicit None
 
-    Integer:: fail
+    Integer, Dimension ( 1:4 ) :: fail
 
     fail = 0
 
-    Deallocate (eltemp,eltempKe,eltemp_adj,asource,tempion,gsource,act_ele_cell,old_ele_cell,adjust, Stat = fail)
+    Deallocate (eltemp,eltemp_adj,asource,tempion,gsource,act_ele_cell,old_ele_cell,adjust, Stat = fail(1))
+    If (kel>0) Deallocate(ketable,                                                          Stat = fail(2))
+    If (cel>0) Deallocate(cetable,                                                          Stat = fail(3))
+    If (gel>0) Deallocate(gtable,                                                           Stat = fail(4))
 
-    If (fail > 0) Call error(1084)
+    If (Any(fail > 0)) Call error(1084)
 
   End Subroutine deallocate_ttm_arrays
 
