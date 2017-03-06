@@ -35,7 +35,7 @@ Subroutine ttm_table_scan()
      Call error(0)
   End If
 
-![GK] check existence of thermal conductivity table file
+! check existence of thermal conductivity table file
 
   If (KeType == 3) Then
 

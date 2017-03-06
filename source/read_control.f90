@@ -323,9 +323,12 @@ Subroutine read_control                                &
   gvar = 0
 
 ! default initial stopping power to be deposited in 
-! electronic system (standard cascade)
+! electronic system (standard cascade) and laser 
+! fluence and penetration depth
 
-  dEdX = 0.0_wp
+  dEdX    = 0.0_wp
+  fluence = 0.0_wp
+  pdepth  = 0.0_wp
 
 ! default values for (i) spatial, (ii) temporal
 ! energy deposition
@@ -2189,7 +2192,7 @@ Subroutine read_control                                &
 
           KeType = 0
           If (idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic thermal conductivity set as infinity')")
+            Write(nrite,"(/,1x,'electronic thermal conductivity set to infinity')")
           End If
 
         Else If (word1(1:7) == "keconst") Then
@@ -2936,7 +2939,7 @@ Subroutine read_control                                &
 
   If (l_ttm .and. keyens/=15) Then
      Call warning(130,0.0_wp,0.0_wp,0.0_wp)
-     If (keyens==10. or. keyens==20 .or. keyens==30 .and. chi>zero_plus) chi_ep = chi
+     If (keyens==10 .or. keyens==20 .or. keyens==30 .and. chi>zero_plus) chi_ep = chi
      If (idnode == 0) Then
        Write(nrite,"(1x,'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)', &
                  & /,1x,'e-phonon friction       (ps^-1)',3x,1p,e12.4, &

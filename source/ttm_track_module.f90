@@ -82,6 +82,7 @@ Contains
     If (idnode == 0) Then
       Write(nrite,"(/,1x,a,f14.5,a,/)") &
         'electronic energy deposition starting at time = ',time,' ps'
+      Write(nrite,"(1x,130('-'))")
     End If
 
   End Subroutine depoinit
@@ -111,13 +112,13 @@ Contains
     ! Gaussian temporal deposition
       adjtime = currenttime/tdepo-tcdepo
       deposit = (currenttime<2.0_wp*tdepo*tcdepo)
-      invbin = 1.0_wp/Real(redtstepmx,Kind=wp)*tstep
+      invbin = tstep/Real(redtstepmx,Kind=wp)
       adjeng = Exp(-0.5_wp*adjtime*adjtime)
     Case (2)
     ! decaying exponential temporal deposition
       adjtime = currenttime/tdepo
       deposit = (currenttime<tdepo*tcdepo)
-      invbin = 1.0_wp/(tdepo/tstep*Real(redtstepmx,Kind=wp))
+      invbin = tstep/(tdepo*Real(redtstepmx,Kind=wp))
       adjeng = Exp(-adjtime)
     Case (3)
     ! pulse temporal deposition (over single diffusion timestep)
@@ -127,15 +128,16 @@ Contains
     End Select
 
     ! if (still) depositing energy, add to electronic temperature
-    ! grid and adjust electronic temperatures accordingly
+    ! grid (active cells only) and adjust electronic temperatures 
+    ! accordingly
 
     If (deposit) Then
       lat_B(:,:,:) = lat_U(:,:,:)*norm*invbin*adjeng
-      lat_I(:,:,:) = lat_I(:,:,:)+lat_B(:,:,:)
       Do k=1,ntcell(3)
         Do j=1,ntcell(2)
           Do i=1,ntcell(1)
             ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2)*k)
+            lat_I(i,j,k) = lat_I(i,j,k)+lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)
             energy_diff = lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)
             ! work out change in electronic temperature for energy deposition
             ! (searching first in 0.01 kelvin increments, then interpolate based
@@ -199,8 +201,9 @@ Contains
     ! report successful completion of energy deposition
 
       If (idnode == 0) Then
-        Write(nrite,"(/,1x,a,e11.5,a,f9.5,a,/)") &
-          'electronic energy deposition of ',lat_I_sum,' eV completed successfully after ',currenttime,' ps'
+        Write(nrite,"(/,1x,a,es11.5,a,f14.5,a,/)") &
+          'electronic energy deposition of ',lat_I_sum,' eV completed successfully after ',currenttime*1000.0_wp,' fs'
+        Write(nrite,"(1x,130('-'))")
       End If
 
     ! switch off tracking and deallocate arrays
@@ -223,25 +226,24 @@ Contains
 ! implement constant (homogeneous) spatial deposition
 	
     Implicit None
-    Integer :: i,j,k
     Real( Kind = wp ), Intent ( Inout ), Dimension(0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1) :: lat_in
     Real( Kind = wp ) :: dEdV
 
-    ! express deposition energy per unit volume (eV/A^3)
+    ! express deposition energy per unit volume (eV/A^3):
+    ! note penetration depth will be non-zero if laser is
+    ! in use, otherwise use dE/dX value
 
-    dEdV = fluence/pdepth
+    If (pdepth>zero_plus) Then
+      dEdV = fluence/pdepth
+    Else
+      dEdV = dEdX/(Real(ntsys(1),Kind=wp)*Real(ntsys(2),Kind=wp)*delx*dely)
+    End If
 		
     ! homogeneous excitation: each temperature cell receives
     ! the same energy
 
-    Do k=1,ntcell(3)
-      Do j=1,ntcell(2)
-        Do i=1,ntcell(1)
-          lat_in(i,j,k)=dEdV*volume
-        End Do
-      End Do
-    End Do
-		
+    lat_in(1:ntcell(1),1:ntcell(2),1:ntcell(3))=dEdV*volume
+
   End Subroutine uniformDist
 
   Subroutine gaussianTrack(lat_in)
@@ -252,7 +254,7 @@ Contains
     Real ( Kind = wp ), Intent ( Inout ), Dimension(0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1) :: lat_in
     Real ( Kind = wp ) :: normdEdX,realdEdx,sigmamx,sigmamy,sig2x,sig2y,sigcellx,sigcelly
     Real ( Kind = wp ) :: ii,jj,ii2,jj2,iip2,jjp2,iim2,jjm2
-    Integer :: i,j,k
+    Integer :: i,j,sgmx,sgmy
     Logical :: cutwarn=.false.
 
     lat_in(:,:,:) = 0.0_wp
@@ -286,25 +288,26 @@ Contains
       Call warning(535,0.0_wp,0.0_wp,0.0_wp)
     End If
 
+    sgmx = Nint(sigmamx)
+    sgmy = Nint(sigmamy)
+
     ! apply five-point linear stencil for gaussian track:
     ! stencil modified to (hopefully!) deposit correct overall energy
 
-    Do k=1,ntcell(3)
-      Do j=1,ntcell(2)
-        jj = Real(j+ntcelloff(2)-midI(2),Kind=wp)
-        jj2 = -jj*jj/sig2y
-        jjp2 = -(jj+0.5_wp)*(jj+0.5_wp)/sig2y
-        jjm2 = -(jj-0.5_wp)*(jj-0.5_wp)/sig2y
-        Do i=1,ntcell(1)
-          ii = Real(i+ntcelloff(1)-midI(1),Kind=wp)
-          ii2 = -ii*ii/sig2x
-          iip2 = -(ii+0.5_wp)*(ii+0.5_wp)/sig2x
-          iim2 = -(ii-0.5_wp)*(ii-0.5_wp)/sig2x
-          If (Abs(ii)<=Nint(sigmamx) .and. Abs(jj)<=Nint(sigmamy)) Then
-            lat_in(i,j,k) = 0.2_wp*normdEdX/(2.0_wp*pi*sigcellx*sigcelly)*&
-            (Exp(ii2+jj2)+Exp(iim2+jj2)+Exp(iim2+jj2)+Exp(ii2+jjp2)+Exp(ii2+jjm2))
-          End If
-        End Do
+    Do j=1,ntcell(2)
+      jj = Real(j+ntcelloff(2)-midI(2),Kind=wp)
+      jj2 = -jj*jj/sig2y
+      jjp2 = -(jj+0.5_wp)*(jj+0.5_wp)/sig2y
+      jjm2 = -(jj-0.5_wp)*(jj-0.5_wp)/sig2y
+      Do i=1,ntcell(1)
+        ii = Real(i+ntcelloff(1)-midI(1),Kind=wp)
+        ii2 = -ii*ii/sig2x
+        iip2 = -(ii+0.5_wp)*(ii+0.5_wp)/sig2x
+        iim2 = -(ii-0.5_wp)*(ii-0.5_wp)/sig2x
+        If (Abs(ii)<=sgmx .and. Abs(jj)<=sgmy) Then
+          lat_in(i,j,1:ntcell(3)) = 0.2_wp*normdEdX/(2.0_wp*pi*sigcellx*sigcelly)*&
+                                    (Exp(ii2+jj2)+Exp(iim2+jj2)+Exp(iim2+jj2)+Exp(ii2+jjp2)+Exp(ii2+jjm2))
+        End If
       End Do
     End Do
 

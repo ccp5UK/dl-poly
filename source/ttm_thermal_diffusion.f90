@@ -79,8 +79,8 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
     opttstep = fopttstep*Min(mintstep,maxtstep)
     redtstepmx = Max(Ceiling(tstep/opttstep),2)
   Case (3)
-  Call eltemp_maxKe (eltempmaxKe)
-  Call eltemp_minKe (eltempminKe)
+  Call eltemp_maxKe (temp, eltempmaxKe)
+  Call eltemp_minKe (temp, eltempminKe)
 ! tabulated thermal conductivity
     mintstep = 0.5_wp*del2av*Ce(eltempmax)/Ke(eltempmaxKe)
     maxtstep = 0.5_wp*del2av*Ce(eltempmin)/Ke(eltempminKe)
@@ -389,7 +389,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
                       actyp = actsite*act_ele_cell(ijk+(ntcell(1)+2),ii,jj,kk)
                       actzm = actsite*act_ele_cell(ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)
                       actzp = actsite*act_ele_cell(ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)
-                      eltempKe = (tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
+                      eltempKe = Merge(tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
                       alploc = Ke(eltempKe)/Ce(eltemp(ijk,ii,jj,kk))
                       eltemp1(ijk,ii,jj,kk) = eltemp(ijk,ii,jj,kk)+&
                         fomAx*actxm*alploc*(eltemp(ijk-1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
@@ -434,7 +434,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
                 Do j=1,ntcell(2)
                   Do i=1,ntcell(1)
                     ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
-                    eltempKe = (tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
+                    eltempKe = Merge(tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
                     eltemp1(ijk,ii,jj,kk) = eltemp(ijk,ii,jj,kk)+&
                       fomAx*Ke(eltempKe)/Ce(eltemp(ijk,ii,jj,kk))*&
                       (eltemp(ijk-1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&

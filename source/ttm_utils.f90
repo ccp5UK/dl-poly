@@ -1172,7 +1172,7 @@ Contains
                 lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
                 ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
                 tmp = eltemp(ijk,ii,jj,kk) * Merge (act_ele_cell (ijk,0,0,0), 1.0_wp, lcentre)
-                If (lrange) eltempav = eltempav + tmp
+                If (lrange) eltempsum = eltempsum + tmp
               End Do
             End Do
           End Do
@@ -1257,10 +1257,11 @@ Contains
 
   End Subroutine eltemp_mean
 
-  Subroutine eltemp_maxKe (eltempmax)
+  Subroutine eltemp_maxKe (temp, eltempmax)
 
     Implicit None
 
+    Real ( Kind = wp ), Intent ( In )  :: temp
     Real ( Kind = wp ), Intent ( Out ) :: eltempmax
     Real ( Kind = wp )                 :: eltempKe
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
@@ -1313,7 +1314,7 @@ Contains
                 ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
                 lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
                 If (lcentre) lrange = (lrange .and. (act_ele_cell(ijk,0,0,0)>zero_plus))
-                eltempKe = (tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
+                eltempKe = Merge(tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
                 If (lrange) eltempmax = Max (eltempmax, eltempKe)
               End Do
             End Do
@@ -1395,10 +1396,11 @@ Contains
 
   End Subroutine eltemp_max
 
-  Subroutine eltemp_minKe (eltempmin)
+  Subroutine eltemp_minKe (temp, eltempmin)
 
     Implicit None
 
+    Real ( Kind = wp ), Intent ( In )  :: temp
     Real ( Kind = wp ), Intent ( Out ) :: eltempmin
     Real ( Kind = wp )                 :: eltempKe
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
@@ -1449,7 +1451,7 @@ Contains
                 lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
                 lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
                 ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
-                eltempKe = (tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
+                eltempKe = Merge(tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
                 If (lrange) eltempmin = Min (eltempmin, eltempKe)
               End Do
             End Do
@@ -1517,7 +1519,7 @@ Contains
                 lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
                 ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
                 lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
-                If (ii==0 .and. jj==0 .and. kk==0) lrange
+                If (ii==0 .and. jj==0 .and. kk==0) lrange = (lrange .and. (act_ele_cell(ijk,0,0,0)>zero_plus))
                 If (lrange) eltempmin = Min (eltempmin, eltemp(ijk,ii,jj,kk))
               End Do
             End Do

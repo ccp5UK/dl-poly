@@ -365,7 +365,6 @@ Contains
     If (Any(fail > 0)) Call error(1083)
 
     eltemp(:,:,:,:) = temp
-    eltempKe(:,:,:,:) = temp
     eltemp_adj(:,:,:,:) = 0.0_wp
     gsource(:) = 0.0_wp
     asource(:) = 0.0_wp

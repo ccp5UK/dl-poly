@@ -1071,11 +1071,11 @@ Subroutine error(kode)
 
      Else If (kode ==  676) Then
 
-        Write(nrite,'(/,1x,a)') 'error - cannot find or open specific heat capacity table file (Ce.dat)'
+        Write(nrite,'(/,1x,a)') 'error - cannot find or open volumetric heat capacity table file (Ce.dat)'
 
      Else If (kode ==  677) Then
 
-        Write(nrite,'(/,1x,a)') 'error - no data found in specific heat capacity table file (Ce.dat)'
+        Write(nrite,'(/,1x,a)') 'error - no data found in volumetric heat capacity table file (Ce.dat)'
 
      Else If (kode ==  678) Then
 
@@ -1095,7 +1095,7 @@ Subroutine error(kode)
 
      Else If (kode ==  682) Then
 
-        Write(nrite,'(/,1x,a)') 'error - electronic temperature restart file (DUMP_E) is incompatible or does not exist'
+        Write(nrite,'(/,1x,a)') 'error - electronic temperature restart file (DUMP_E) does not exist'
 
      Else If (kode ==  683) Then
 

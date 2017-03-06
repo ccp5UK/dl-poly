@@ -296,8 +296,15 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
         ! minimum number of particles (1 during deposition, amin 
         ! at all other times), removing centre of mass motion
         ! and determining any inactive ionic temperature cells
-        If (nat(2*ijk-1)>natmin) Then
+        If (nat(2*ijk-1)>natmin .and. nat(2*ijk-1)>1) Then
           tempion(ijk) = tempion(ijk)/(3.0_wp*boltz*Real(nat(2*ijk-1),Kind=wp))
+          acell = acell + 1
+        Else If (natmin==0 .and. nat(2*ijk-1)==1) Then
+          vx = 0.5_wp*ttmvom(ijk,1)
+          vy = 0.5_wp*ttmvom(ijk,2)
+          vz = 0.5_wp*ttmvom(ijk,3)
+          velsq = ttmvommass(ijk)*(vx*vx+vy*vy+vz*vz)
+          tempion(ijk) = velsq/(3.0_wp*boltz)
           acell = acell + 1
         Else
           tempion(ijk) = 0.0_wp
