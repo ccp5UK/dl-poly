@@ -48,7 +48,8 @@ OBJ_MOD = \
 	external_field_module.o langevin_module.o minimise_module.o \
 	msd_module.o statistics_module.o greenkubo_module.o \
 	\
-	kinetic_module.o gpfa_module.o parallel_fft.o
+	kinetic_module.o gpfa_module.o parallel_fft.o \
+	ttm_module.o ttm_utils.o ttm_track_module.o 
 
 OBJ_ALL = \
 	warning.o error.o scan_control_io.o \
@@ -58,6 +59,8 @@ OBJ_ALL = \
 	read_config_parallel.o scan_config.o scan_control.o read_config.o \
 	set_bounds.o \
 	read_control.o \
+	ttm_thermal_diffusion.o ttm_ion_temperature.o ttm_system_init.o ttm_system_revive.o \
+	ttm_table_scan.o ttm_table_read.o \
 	bonds_table_read.o angles_table_read.o \
 	dihedrals_table_read.o inversions_table_read.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
@@ -120,7 +123,7 @@ OBJ_ALL = \
 	constraints_rattle.o pmf_rattle.o \
 	nvt_h0_scl.o nvt_g0_scl.o npt_h0_scl.o nst_h0_scl.o \
 	nve_0_vv.o nvt_e0_vv.o \
-	nvt_l0_vv.o nvt_a0_vv.o nvt_b0_vv.o nvt_h0_vv.o nvt_g0_vv.o \
+	nvt_l0_vv.o nvt_l2_vv.o nvt_a0_vv.o nvt_b0_vv.o nvt_h0_vv.o nvt_g0_vv.o \
 	npt_l0_vv.o npt_b0_vv.o npt_h0_vv.o npt_m0_vv.o \
 	nst_l0_vv.o nst_b0_vv.o nst_h0_vv.o nst_m0_vv.o \
 	nvt_h1_scl.o nvt_g1_scl.o npt_h1_scl.o nst_h1_scl.o \
@@ -132,7 +135,7 @@ OBJ_ALL = \
 	pseudo_lfv.o \
 	constraints_shake_lfv.o pmf_shake_lfv.o \
 	nve_0_lfv.o nvt_e0_lfv.o \
-	nvt_l0_lfv.o nvt_a0_lfv.o nvt_b0_lfv.o nvt_h0_lfv.o nvt_g0_lfv.o \
+	nvt_l0_lfv.o nvt_l2_lfv.o nvt_a0_lfv.o nvt_b0_lfv.o nvt_h0_lfv.o nvt_g0_lfv.o \
 	npt_l0_lfv.o npt_b0_lfv.o npt_h0_lfv.o npt_m0_lfv.o \
 	nst_l0_lfv.o nst_b0_lfv.o nst_h0_lfv.o nst_m0_lfv.o \
 	nve_1_lfv.o nvt_e1_lfv.o \
@@ -166,7 +169,7 @@ FILES_VV = \
 	constraints_rattle.f90 pmf_rattle.f90 \
 	nvt_h0_scl.f90 nvt_g0_scl.f90 npt_h0_scl.f90 nst_h0_scl.f90 \
 	nve_0_vv.f90 nvt_e0_vv.f90 \
-	nvt_l0_vv.f90 nvt_a0_vv.f90 nvt_b0_vv.f90 nvt_h0_vv.f90 nvt_g0_vv.f90 \
+	nvt_l0_vv.f90 nvt_l2_vv.f90 nvt_a0_vv.f90 nvt_b0_vv.f90 nvt_h0_vv.f90 nvt_g0_vv.f90 \
 	npt_l0_vv.f90 npt_b0_vv.f90 npt_h0_vv.f90 npt_m0_vv.f90 \
 	nst_l0_vv.f90 nst_b0_vv.f90 nst_h0_vv.f90 nst_m0_vv.f90 \
 	nvt_h1_scl.f90 nvt_g1_scl.f90 npt_h1_scl.f90 nst_h1_scl.f90 \
@@ -183,7 +186,7 @@ FILES_LFV = \
 	pseudo_lfv.f90 \
 	constraints_shake_lfv.f90 pmf_shake_lfv.f90 \
 	nve_0_lfv.f90 nvt_e0_lfv.f90 \
-	nvt_l0_lfv.f90 nvt_a0_lfv.f90 nvt_b0_lfv.f90 nvt_h0_lfv.f90 nvt_g0_lfv.f90 \
+	nvt_l0_lfv.f90 nvt_l2_lfv.f90 nvt_a0_lfv.f90 nvt_b0_lfv.f90 nvt_h0_lfv.f90 nvt_g0_lfv.f90 \
 	npt_l0_lfv.f90 npt_b0_lfv.f90 npt_h0_lfv.f90 npt_m0_lfv.f90 \
 	nst_l0_lfv.f90 nst_b0_lfv.f90 nst_h0_lfv.f90 nst_m0_lfv.f90 \
 	nve_1_lfv.f90 nvt_e1_lfv.f90 \

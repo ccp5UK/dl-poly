@@ -39,6 +39,7 @@ nvt_h1_scl.f90
 nvt_h1_vv.f90
 nvt_l0_vv.f90
 nvt_l1_vv.f90
+nvt_l2_vv.f90
 pmf_rattle.f90
 pmf_shake_vv.f90
 pseudo_vv.f90

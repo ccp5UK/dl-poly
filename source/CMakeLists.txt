@@ -151,6 +151,12 @@ tersoff_forces.f90
 tersoff_generate.f90
 tethers_forces.f90
 three_body_forces.f90
+ttm_ion_temperature.f90
+ttm_system_init.f90
+ttm_system_revive.f90
+ttm_table_read.f90
+ttm_table_scan.f90
+ttm_thermal_diffusion.f90
 trajectory_write.f90
 two_body_forces.f90
 update_shared_units.f90
@@ -215,6 +221,9 @@ greenkubo_module.f90
 kinetic_module.f90
 gpfa_module.f90
 parallel_fft.f90
+ttm_module.f90
+ttm_utils.f90
+ttm_track_module.f90
 )
 if(BUILDER)
   set_property(SOURCE development_module.F90 APPEND PROPERTY
