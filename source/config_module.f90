@@ -5,7 +5,7 @@ Module config_module
 ! dl_poly_4 module declaring global configuration variables and arrays
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov october 2015
+! author    - i.t.todorov january 2017
 ! contrib   - i.j.bush march 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -212,7 +212,7 @@ Contains
     Allocate (lsite(1:mxatms),ltype(1:mxatms),           Stat = fail(1))
     Allocate (lfrzn(1:mxatms),lfree(1:mxatms),           Stat = fail(2))
     Allocate (lexatm(0:mxexcl,1:mxatdm),ixyz(1:mxatms),  Stat = fail(3))
-    Allocate (list(-2:mxlist,1:mxatdm),lstfre(1:mxatdm), Stat = fail(4))
+    Allocate (list(-3:mxlist,1:mxatdm),lstfre(1:mxatdm), Stat = fail(4))
     Allocate (weight(1:mxatms),chge(1:mxatms),           Stat = fail(5))
 
     If (Any(fail > 0)) Call error(1025)

@@ -6,7 +6,7 @@ Subroutine warning(kode,a,b,c)
 ! control back to the main program
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
+! author    - i.t.todorov january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -41,7 +41,7 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode ==   4) Then
 
-        Write(nrite,'(/,1x,2(a,/))')                             &
+        Write(nrite,'(/,2(1x,a,/))')                             &
         '*** warning - system with uncharged particles !!! ***', &
         '*** "no elec" or/and "no strict" directives in CONTROL may speed up simulation !!! ***'
 
@@ -304,6 +304,16 @@ Subroutine warning(kode,a,b,c)
         '*** warning - PMF unit ', ia, ' and rigid body unit ', ib, &
         ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
+     Else If (kode == 296) Then
+
+        ia = Nint(a)
+        ib = Nint(b)
+
+        Write(nrite,'(/,1x,a,3(i0,a),/)')     &
+        '*** warning - core-shell unit ', ia, &
+        ' on molecular species type ', ib,    &
+        ' with compromised polarisability !!! ***'
+
      Else If (kode == 297) Then
 
         ia = Nint(a)
@@ -313,6 +323,7 @@ Subroutine warning(kode,a,b,c)
         Write(nrite,'(/,1x,a,3(i0,a),/)')                             &
         '*** warning - core-shell unit ', ia, ' and angle unit ', ib, &
         ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
+
      Else If (kode == 298) Then
 
         ia = Nint(a)
@@ -458,7 +469,7 @@ Subroutine warning(kode,a,b,c)
      Else If (kode == 350) Then
 
         Write(nrite,'(/,1x,a)') &
-        '*** warning - expansion along z axis not allowed for slab geometry, nz defaults to 1!!! ***'
+        '*** warning - expansion along z axis not allowed for slab geometry, nz defaults to 1 !!! ***'
 
      Else If (kode == 360) Then
 

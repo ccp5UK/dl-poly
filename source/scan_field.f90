@@ -3,7 +3,7 @@ Subroutine scan_field                                &
            mxsite,mxatyp,megatm,mxtmls,mxexcl,       &
            mtshl,mxtshl,mxshl,mxfshl,                &
            mtcons,mxtcon,mxcons,mxfcon,              &
-           mxtpmf,mxpmf,mxfpmf,                      &
+           mxtpmf,mxpmf,mxfpmf,l_usr,                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
            mtteth,mxtteth,mxteth,mxftet,             &
            mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,mxgbnd, &
@@ -19,16 +19,17 @@ Subroutine scan_field                                &
 ! dl_poly_4 subroutine for raw scanning the contents of the FIELD file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov & w.smith april 2016
+! author    - i.t.todorov & w.smith november 2016
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs)
 ! contrib   - h.a.boateng february 2015
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gcheck
-  Use setup_module,      Only : nrite,nfield,ntable
+  Use setup_module,      Only : nrite,nfield,ntable,field
   Use parse_module,      Only : get_line,strip_blanks, &
                                 get_word,lower_case,word_2_real
   Use bonds_module,      Only : lt_bnd
@@ -56,7 +57,7 @@ Subroutine scan_field                                &
   Character( Len = 40  ) :: word
   Character( Len = 8   ) :: name
 
-  Logical           :: l_n_e,check,safe,lext
+  Logical           :: l_n_e,check,safe,l_usr,lext
   Integer           :: mxtmls,itmols,nummols,numsit,mxnmst,isite,ksite,nrept,  &
                        mxompl,mximpl,mxsite,mxatyp,megatm,i,j,k,mxexcl,        &
                        numshl,mtshl,mxtshl,mxshl,ishls,mxfshl,                 &
@@ -169,7 +170,8 @@ Subroutine scan_field                                &
 
   mxexcl=0
 
-  lext=.false.
+  lext =.false.
+  l_usr=.false.
 
 ! Set safe flag
 
@@ -177,12 +179,12 @@ Subroutine scan_field                                &
 
 ! Open the interactions input file
 
-  If (idnode == 0) Inquire(File='FIELD', Exist=safe)
+  If (idnode == 0) Inquire(File=Trim(field), Exist=safe)
   If (mxnode > 1) Call gcheck(safe,"enforce")
   If (.not.safe) Then
      Go To 20
   Else
-     If (idnode == 0) Open(Unit=nfield, File='FIELD', Status='old')
+     If (idnode == 0) Open(Unit=nfield, File=Trim(field), Status='old')
   End If
 
   Call get_line(safe,nfield,record)
@@ -897,6 +899,8 @@ Subroutine scan_field                                &
            If (.not.safe) Go To 30
            Call get_word(record,word)
         End Do
+
+        l_usr = (word(1:4) == 'ushr')
 
      Else If (word(1:5) == 'close') Then
 

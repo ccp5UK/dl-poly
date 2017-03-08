@@ -23,8 +23,8 @@ Subroutine coul_fscp_forces &
 
   Use kinds_f90
   Use comms_module,  Only : idnode
-  Use config_module, Only : natms,ltg,list,chge,fxx,fyy,fzz
   Use setup_module
+  Use config_module, Only : natms,ltg,list,chge,fxx,fyy,fzz
 
   Implicit None
 

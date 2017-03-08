@@ -6,7 +6,7 @@ Module mpoles_module
 ! multipoles
 !
 ! copyright - daresbury laboratory
-! author    - h.a.boateng & i.t.todorov march 2016
+! author    - h.a.boateng & i.t.todorov january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,34 +22,49 @@ Module mpoles_module
      Integer                           :: flag,mbnd(1:2)
   End Type rot_mat
 
+! Type of inducible (self-polarisation) scheme
+
+  Integer,           Save :: keyind = 0 ! 0 - default :: unscreened & undamped - iAMOEBA like
+                                        ! 1 - CHARMM  :: q_shell == -Sign(q_core) * Sqrt(alpha * k) ; 
+                                        !                k_CHARMM = 1000 kcal*mol^−1*Å^−2
+
+  Real( Kind = wp ), Save :: thole  = 1.3_wp  ! default thole dumping for CHARMM representation
+
 ! variables for multipolar interactions
 
-  Logical,           Save :: induce,gear,aspc,lstsq
+  Logical,           Save :: induce=.false. , &
+                             gear,aspc,lstsq
   Integer,           Save :: numcof,politer
   Real( Kind = wp ), Save :: convcrit,enepol
 
-  Integer,           Allocatable, Save :: mplmap(:,:,:),mplltg(:)             ! mappings from three indices multipole to a one index multipole
-  Integer,           Allocatable, Save :: mplflg(:)                           ! rotation counter flag
-  Integer,           Allocatable, Save :: ltpatm(:,:)                         ! bonded connectivity
+  Integer,           Allocatable, Save :: mplmap(:,:,:),mplltg(:) ! mappings from three indices multipole to a one index multipole
+  Integer,           Allocatable, Save :: mplflg(:)               ! rotation counter flag
+  Integer,           Allocatable, Save :: ltpatm(:,:)             ! bonded connectivity
+  Integer,           Allocatable, Save :: lchatm(:,:)             ! CHARMM core-shell screened electrostatics induction list
 
-  Real( Kind = wp ), Allocatable, Save :: mpllfr(:,:),mplgfr(:,:)             ! local/lab and global frames
+  Real( Kind = wp ), Allocatable, Save :: mpllfr(:,:),mplgfr(:,:) ! local/lab(site) and global(atom) frames
+  Real( Kind = wp ), Allocatable, Save :: plrsit(:),plratm(:)     ! induced dipole polarisation for sites 
+                                                                  ! and atoms (inversed if non-zero)
+  Real( Kind = wp ), Allocatable, Save :: dmpsit(:),dmpatm(:)     ! sites' and atoms' (thole) dumping 
+                                                                  ! coefficient/factor (for self-polarisation)
 
   Type( rot_mat ),   Allocatable, Save :: mprotm(:)                           ! rotation matrices
 
   Real( Kind = wp ), Allocatable, Save :: mprotx(:,:),mproty(:,:),mprotz(:,:) ! infinitesimal rotations
   Real( Kind = wp ), Allocatable, Save :: mptrqx(:),mptrqy(:),mptrqz(:)       ! torques due to infinitesimal rotations
 
-  Real( Kind = wp ), Allocatable, Save :: ncombk(:,:)                         ! n combination k values for usage in computing the reciprocal space Ewald sum
+  Real( Kind = wp ), Allocatable, Save :: ncombk(:,:)                         ! n combination k values for usage 
+                                                                              ! in computing the reciprocal space Ewald sum
 
   Real( Kind = wp ), Allocatable, Save :: mpfldx(:),mpfldy(:),mpfldz(:)       ! field
 
   Real( Kind = wp ), Allocatable, Save :: muindx(:),muindy(:),muindz(:)
   Real( Kind = wp ), Allocatable, Save :: indipx(:),indipy(:),indipz(:)
-  Real( Kind = wp ), Allocatable, Save :: atplrz(:)
+
   Real( Kind = wp ), Allocatable, Save :: upidpx(:,:),upidpy(:,:),upidpz(:,:)
   Real( Kind = wp ), Allocatable, Save :: rsdx(:),rsdy(:),rsdz(:)
   Real( Kind = wp ), Allocatable, Save :: polcof(:)
-  Real( Kind = wp ), Allocatable, Save :: polarity(:)                         ! atomic polarity for sites
+
 
   Public :: allocate_mpoles_arrays
 
@@ -61,7 +76,7 @@ Contains
 
     Implicit None
 
-    Integer           :: n,k,om1,numpl,fail(1:6)
+    Integer           :: n,k,om1,numpl,fail(1:9)
     Real( Kind = wp ) :: Factorial,gearp(1:7),aspcp(1:7)
 
     If (mximpl < 1) Return ! no MPOLES file read <= no multipoles directive in FIELD
@@ -73,18 +88,25 @@ Contains
 
     Allocate (mplmap(0:mxompl,0:mxompl,0:mxompl),mplltg(1:numpl),  Stat = fail(1))
     Allocate (mplflg(1:mxatdm),ltpatm(0:mxexcl,1:mxatdm),          Stat = fail(2))
-    Allocate (mpllfr(1:mximpl,1:mxsite),mplgfr(1:mximpl,1:mxatms), Stat = fail(3))
-    Allocate (mprotm(1:mxatdm),ncombk(0:mxspl,0:mxspl),            Stat = fail(4))
-    Allocate (mptrqx(1:mxatdm),mptrqy(1:mxatdm),mptrqz(1:mxatdm),  Stat = fail(5))
+    If (keyind == 1) &
+    Allocate (lchatm(0:mxexcl,1:mxatdm),                           Stat = fail(3))
+    Allocate (mpllfr(1:mximpl,1:mxsite),mplgfr(1:mximpl,1:mxatms), Stat = fail(4))
+    Allocate (plrsit(1:mxsite),plratm(1:mxatms),                   Stat = fail(5))
+    Allocate (dmpsit(1:mxsite),dmpatm(1:mxatms),                   Stat = fail(6))
+    Allocate (mprotm(1:mxatdm),ncombk(0:mxspl,0:mxspl),            Stat = fail(7))
+    Allocate (mptrqx(1:mxatdm),mptrqy(1:mxatdm),mptrqz(1:mxatdm),  Stat = fail(8))
     Allocate (mprotx(1:mximpl,1:mxatms), &
               mproty(1:mximpl,1:mxatms), &
-              mprotz(1:mximpl,1:mxatms),                           Stat = fail(6))
+              mprotz(1:mximpl,1:mxatms),                           Stat = fail(9))
 
     If (Any(fail > 0)) Call error(1025)
 
     mplflg = 0 ; ltpatm = 0
+    If (keyind == 1) lchatm = 0
 
     mpllfr = 0.0_wp ; mplgfr = 0.0_wp
+    plrsit = 0.0_wp ; plratm = 0.0_wp
+    dmpsit = 0.0_wp ; dmpatm = 0.0_wp
 
     Do n=1,mxatdm
        mprotm(n)%mtrxa = 0.0_wp
@@ -202,7 +224,7 @@ Contains
        Allocate (mpfldx(1:mxatms),mpfldy(1:mxatms),mpfldz(1:mxatms),            Stat = fail(1))
        Allocate (muindx(1:mxatms),muindy(1:mxatms),muindz(1:mxatms),            Stat = fail(2))
        Allocate (indipx(1:mxatms),indipy(1:mxatms),indipz(1:mxatms),            Stat = fail(3))
-       Allocate (atplrz(1:mxatms),polcof(numcof),polarity(1:mxsite),            Stat = fail(4))
+       Allocate (polcof(numcof),                                                Stat = fail(4))
        Allocate (upidpx(1:numcof,1:mxatms),upidpy(1:numcof,1:mxatms),upidpz(1:numcof,1:mxatms),&
                                                                                 Stat = fail(5))
        Allocate (rsdx(1:mxatms),rsdy(1:mxatms),rsdz(1:mxatms),                  Stat = fail(6))
@@ -222,7 +244,6 @@ Contains
                                                           ! conjugate gradient
                                                           ! minimization of
                                                           ! polarization energy
-!       polarity = 0.0_wp
 
 ! Coefficients for polynomial predictor
 

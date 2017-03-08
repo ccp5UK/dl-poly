@@ -12,7 +12,7 @@ Subroutine set_temperature           &
 ! dl_poly_4 subroutine for setting the initial system temperature
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov august 2016
+! author    - i.t.todorov january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,25 +22,24 @@ Subroutine set_temperature           &
   Use site_module,        Only : dofsit
   Use config_module,      Only : imcon,natms,nlast,nfree,lsite,  &
                                  lsi,lsa,ltg,lfrzn,lfree,lstfre, &
-                                 atmnam,weight,vxx,vyy,vzz
+                                 weight,vxx,vyy,vzz
   Use dpd_module,         Only : keydpd
   Use rigid_bodies_module
   Use core_shell_module,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
-  Use kinetic_module,     Only : l_vom,getknr,chvom,getvom
+  Use kinetic_module,     Only : l_vom,chvom,getvom,getkin,getknf,getknt,getknr
 
   Implicit None
 
   Logical,           Intent( In    ) :: lmin
-  Integer,           Intent( In    ) :: keyres,nstep,  &
-                                        nstrun,nstmin, &
-                                        mxshak,keyshl, &
-                                        atmfre,atmfrz, &
-                                        megshl,        &
-                                        megcon,megpmf, &
+  Integer,           Intent( In    ) :: nstep,nstrun,nstmin, &
+                                        mxshak,keyshl,       &
+                                        atmfre,atmfrz,       &
+                                        megshl,              &
+                                        megcon,megpmf,       &
                                         megrgd
   Real( Kind = wp ), Intent( In    ) :: temp,tolnce
 
-  Integer,           Intent( InOut ) :: levcfg
+  Integer,           Intent( InOut ) :: keyres,levcfg
   Integer(Kind=ip),  Intent( InOut ) :: degtra,degrot
 
   Integer(Kind=ip),  Intent(   Out ) :: degfre,degshl
@@ -51,8 +50,8 @@ Subroutine set_temperature           &
                        stp,i1,i2,local_index, &
                        irgd,jrgd,lrgd,rgdtyp
   Integer(Kind=ip)  :: com,con,frz,meg,non
-  Real( Kind = wp ) :: tmp,vom(1:3),                  &
-                       x(1:1),y(1:1),z(1:1),rot(1:9), &
+  Real( Kind = wp ) :: tmp,vom(1:3),engk,engf,engt,engr, &
+                       x(1:1),y(1:1),z(1:1),rot(1:9),    &
                        vpx,vpy,vpz
 
 
@@ -140,6 +139,25 @@ Subroutine set_temperature           &
 ! desired kinetic energy
 
   sigma=0.5_wp*Real(degfre,wp)*boltz*temp
+
+! avoid user defined 0K field to break up anything
+
+  If (megrgd > 0) Then
+     engf=getknf(vxx,vyy,vzz)/Real(Max(1_ip,degfre),wp)
+     engt=getknt(rgdvxx,rgdvyy,rgdvzz)/Real(Max(1_ip,degtra),wp)
+
+     engr=getknr(rgdoxx,rgdoyy,rgdozz)/Real(Max(1_ip,degrot),wp)
+     engk=engf+engt
+  Else
+     engk=getkin(vxx,vyy,vzz)/Real(Max(1_ip,degfre),wp)
+  End If
+  If (sigma > 1.0e-6_wp .and. engk < 1.0e-6_wp .and. (keyres /= 0 .and. nstrun /= 0)) Then
+     If (idnode == 0) Write(nrite,"(2(/,1x,a))") &
+  "*** warning - 0K velocity field detected in CONFIG with a restart at non 0K temperature in CONTROL !!! ***", &
+  "*** clean start enforced ***"
+
+     keyres = 0
+  End If
 
   If (keyres == 0) Then
 

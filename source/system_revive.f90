@@ -9,7 +9,7 @@ Subroutine system_revive                                      &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith december 1992
-! amended   - i.t.todorov february 2016
+! amended   - i.t.todorov november 2016
 ! contrib   - m.a.seaton june 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -19,7 +19,7 @@ Subroutine system_revive                                      &
   Use setup_module
   Use config_module,      Only : natms,ltg
   Use statistics_module
-  Use rdf_module,         Only : ncfrdf,rdf
+  Use rdf_module,         Only : ncfrdf,rdf,ncfusr,rusr,usr
   Use z_density_module,   Only : ncfzdn,zdens
   Use bonds_module,       Only : ldfbnd,ncfbnd,dstbnd
   Use angles_module,      Only : ldfang,ncfang,dstang
@@ -39,7 +39,7 @@ Subroutine system_revive                                      &
                                         strcon(1:9),strpmf(1:9),stress(1:9)
 
   Logical               :: ready
-  Character( Len = 6 )  :: name
+  Character( Len = 42 )  :: name
   Character( Len = 40 ) :: forma  = ' '
 
   Integer               :: fail(1:3),i,j,l,levcfg,jdnode,jatms,nsum
@@ -63,7 +63,7 @@ Subroutine system_revive                                      &
 
   If (l_rout) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
-     j = Max(mxstak*mxnstk+1,mxgrdf*mxrdf,mxgana*mxtana)
+     j = Max(mxstak*mxnstk+1,mxgrdf*mxrdf,mxgusr,mxgana*mxtana)
 
      Write(forma ,10) j/4+1,i+9,i
 10   Format('(1p,',i0,'(/,4e',i0,'.',i0,'E3))')
@@ -85,6 +85,10 @@ Subroutine system_revive                                      &
         End Do
 
      End If
+
+! globally sum USR RDF information before saving
+
+     If (mxgusr > 0) Call gsum(usr(1:mxgusr))
 
 ! globally sum z-density information before saving
 
@@ -183,7 +187,7 @@ Subroutine system_revive                                      &
 
 ! Write REVCON
 
-  name = 'REVCON' ! file name
+  name = Trim(revcon) ! file name
   levcfg = 2      ! define level of information in REVCON
 
   Call write_config(name,levcfg,megatm,nstep,tstep,time)
@@ -195,7 +199,7 @@ Subroutine system_revive                                      &
 ! Write accumulator data to dump file
 
      If (l_rout) Then
-        Open(Unit=nrest, File='REVIVE', Form='formatted', Status='replace')
+        Open(Unit=nrest, File=Trim(revive), Form='formatted', Status='replace')
 
         Write(Unit=nrest, Fmt=forma, Advance='No') rcut,rbin,Real(megatm,wp)
         Write(Unit=nrest, Fmt=forma, Advance='No') &
@@ -213,6 +217,7 @@ Subroutine system_revive                                      &
         Write(Unit=nrest, Fmt=forma, Advance='No') stress
 
         If (lrdf) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfrdf,wp),rdf
+        If (mxgusr > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(mxgusr),rusr,Real(ncfusr,wp),usr
         If (lzdn) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfzdn,wp),zdens
         If (vafsamp > 0) Then
           Write(Unit=nrest, Fmt=forma, Advance='No') vafcount
@@ -227,7 +232,7 @@ Subroutine system_revive                                      &
         If (mxgdih1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfdih,wp),dstdih
         If (mxginv1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfinv,wp),dstinv
      Else
-        Open(Unit=nrest, File='REVIVE', Form='unformatted', Status='replace')
+        Open(Unit=nrest, File=Trim(revive), Form='unformatted', Status='replace')
 
         Write(Unit=nrest) rcut,rbin,Real(megatm,wp)
         Write(Unit=nrest) &
@@ -245,6 +250,7 @@ Subroutine system_revive                                      &
         Write(Unit=nrest) stress
 
         If (lrdf) Write(Unit=nrest) Real(ncfrdf,wp),rdf
+        If (mxgusr > 0) Write(Unit=nrest) Real(mxgusr),rusr,Real(ncfusr,wp),usr
         If (lzdn) Write(Unit=nrest) Real(ncfzdn,wp),zdens
         If (vafsamp > 0) Then
           Write(Unit=nrest) vafcount
@@ -396,6 +402,10 @@ Subroutine system_revive                                      &
 ! globally divide rdf data between nodes
 
      If (lrdf) rdf = rdf * r_mxnode
+
+! globally divide USR rdf data between nodes
+
+     If (mxgusr > 0) usr = usr * r_mxnode
 
 ! globally divide z-density data between nodes
 

@@ -7,12 +7,13 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2015
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module
-  Use setup_module,   Only : nconf,nrite,mxatms,half_minus
+  Use setup_module,   Only : nconf,nrite,config,mxatms,half_minus
   Use config_module,  Only : imcon,imc_n,cell,allocate_config_arrays_read, &
                              natms,nlast,atmnam,lsi,lsa,ltg, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
@@ -127,9 +128,9 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 ! Define filename ASCII or netCDF
 
   If (io_read /= IO_READ_NETCDF) Then
-     fname='CONFIG'
+     fname=Trim(config)
   Else
-     fname='CONFIG.nc'
+     fname=Trim(config) // '.nc'
   End If
 
 ! Define/Detect the FAST reading status
@@ -414,7 +415,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
   Write(nrite,'(/,1x,a,i0)')  '*** warning - next error due to maximum number of atoms per domain set to : ', mxatms
   Write(nrite,'(1x,2(a,i0))') '***           but maximum & minumum numbers of atoms per domain asked for : ', &
        max_fail, ' & ', min_fail
-  Write(nrite,'(1x,a,i0)')    '***           estimated denvar value for passing this stage safely is : ', &
+  Write(nrite,'(1x,a,i0)')    '***           estimated densvar value for passing this stage safely is : ', &
        Ceiling((dvar*(Real(max_fail,wp)/Real(mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
               End If
               Call error(45)

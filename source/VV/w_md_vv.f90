@@ -38,7 +38,8 @@
 
 ! zero Kelvin structure optimisation
 
-        If (lzero .and. nstep <= nsteql) Call zero_k_optimise(strkin,strknf,strknt,engke,engrot)
+        If (lzero .and. nstep <= nsteql .and. Mod(nstep-nsteql,nstzero) == 0) &
+           Call zero_k_optimise(strkin,strknf,strknt,engke,engrot)
 
 ! Integrate equations of motion - velocity verlet first stage
 

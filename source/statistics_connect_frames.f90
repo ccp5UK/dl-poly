@@ -46,7 +46,7 @@ Subroutine statistics_connect_frames(megatm)
   End Do
 
   If (nres > 0 .and. idnode == 0) &
-     Write(nrite,'(/,1x,a)') '*** warning - particles dynamics properties will be corrupted!!! ***'
+     Write(nrite,'(/,1x,a)') '*** warning - particles dynamics properties will be corrupted !!! ***'
 
 Contains
 

@@ -8,7 +8,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 ! NOTE: When executing on one node we need not get here at all!
 !
 ! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov august 2016
+! author    - w.smith & i.t.todorov december 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014
 !
@@ -40,12 +40,11 @@ Subroutine deport_atomic_data(mdir,lbook)
 
   Use statistics_module
 
-  Use vnl_module,          Only : llvnl,xbg,ybg,zbg
   Use minimise_module,     Only : l_x,oxx,oyy,ozz
   Use langevin_module,     Only : l_lan,fxl,fyl,fzl
 
   Use ewald_module
-  Use mpoles_module,       Only : ltpatm
+  Use mpoles_module,       Only : keyind,ltpatm,lchatm
 
   Use msd_module
   Use greenkubo_module,    Only : vxi,vyi,vzi,vafsamp
@@ -275,19 +274,6 @@ Subroutine deport_atomic_data(mdir,lbook)
         End If
         imove=imove+18
 
-! pack conditional VNL positions arrays
-
-        If (llvnl) Then
-           If (imove+3 <= iblock) Then
-              buffer(imove+1)=xbg(i)
-              buffer(imove+2)=ybg(i)
-              buffer(imove+3)=zbg(i)
-           Else
-              safe=.false.
-           End If
-           imove=imove+3
-        End If
-
 ! pack Langevin forces arrays
 
         If (l_lan) Then
@@ -388,9 +374,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 
         If (lbook) Then
 
-! pack topological array
-
-           If (mximpl > 0) Then
+           If (mximpl > 0) Then ! pack topological array
               kk=ltpatm(0,i)
               If (imove+1 <= iblock) Then
                  imove=imove+1
@@ -408,6 +392,27 @@ Subroutine deport_atomic_data(mdir,lbook)
                  imove=imove+kk
                  safe=.false.
               End If
+
+              If (keyind == 1) Then ! pack CHARMMing core-shell interactions array
+                 kk=lchatm(0,i)
+                 If (imove+1 <= iblock) Then
+                    imove=imove+1
+                    buffer(imove)=Real(kk,wp)
+                 Else
+                    imove=imove+1
+                    safe=.false.
+                 End If
+                 If (imove+kk <= iblock) Then
+                    Do k=1,kk
+                       imove=imove+1
+                       buffer(imove)=Real(lchatm(k,i),wp)
+                    End Do
+                 Else
+                    imove=imove+kk
+                    safe=.false.
+                 End If
+              End If
+
            End If
 
 ! pack the exclusion list
@@ -792,12 +797,6 @@ Subroutine deport_atomic_data(mdir,lbook)
      yto(keep)=yto(i)
      zto(keep)=zto(i)
 
-     If (llvnl) Then
-        xbg(keep)=xbg(i)
-        ybg(keep)=ybg(i)
-        zbg(keep)=zbg(i)
-     End If
-
      If (l_lan) Then
         fxl(keep)=fxl(i)
         fyl(keep)=fyl(i)
@@ -850,8 +849,10 @@ Subroutine deport_atomic_data(mdir,lbook)
      End If
 
      If (lbook) Then
-        If (mximpl > 0) &
-        ltpatm(:,keep)=ltpatm(:,i)
+        If (mximpl > 0) Then
+           ltpatm(:,keep)=ltpatm(:,i)
+           If (keyind == 1) lchatm(:,keep)=lchatm(:,i)
+        End If
 
         lexatm(:,keep)=lexatm(:,i)
 
@@ -951,16 +952,6 @@ Subroutine deport_atomic_data(mdir,lbook)
 
      kmove=kmove+18
 
-! unpack conditional VNL positions arrays
-
-     If (llvnl) Then
-        xbg(newatm)=buffer(kmove+1)
-        ybg(newatm)=buffer(kmove+2)
-        zbg(newatm)=buffer(kmove+3)
-
-        kmove=kmove+3
-     End If
-
 ! unpack Langevin forces arrays
 
      If (l_lan) Then
@@ -1040,9 +1031,7 @@ Subroutine deport_atomic_data(mdir,lbook)
 
      If (lbook) Then
 
-! unpack topological array
-
-        If (mximpl > 0) Then
+        If (mximpl > 0) Then ! unpack topological array
            kmove=kmove+1
            kk=Nint(buffer(kmove))
            ltpatm(0,newatm)=kk
@@ -1051,6 +1040,17 @@ Subroutine deport_atomic_data(mdir,lbook)
               ltpatm(k,newatm)=Nint(buffer(kmove))
            End Do
            ltpatm(kk+1:mxexcl,newatm)=0
+
+           If (keyind == 1) Then ! unpack CHARMMing core-shell interactions array
+              kmove=kmove+1
+              kk=Nint(buffer(kmove))
+              lchatm(0,newatm)=kk
+              Do k=1,kk
+                 kmove=kmove+1
+                 lchatm(k,newatm)=Nint(buffer(kmove))
+              End Do
+              lchatm(kk+1:mxexcl,newatm)=0
+           End If
         End If
 
 ! unpack the exclusion list

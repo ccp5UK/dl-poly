@@ -285,6 +285,11 @@ X\=XXXXXXXXX\=XXXXXXXXXXXXXX\=\kill
 \> {\tt rt3}         \> 1.73205080756887719  \> $\sqrt[2]{3}$ constant \\
 \> {\tt r4pie0}      \> 138935.4835          \> electrostatics conversion factor to internal units, i.e. $\frac{1}{4 \pi \epsilon_{o}}$ \\
 \> {\tt boltz}       \> 0.831451115          \> Boltzmann constant in internal units \\
+\>                   \>                      \> also used as Kelvin/Boltzmann energy unit (very rarely used) \\
+\> {\tt engunit}     \> {\em variable}       \> the system energy unit \\
+\> {\tt eu\_ev}      \> 9648.530821          \> eV energy unit (most used) \\
+\> {\tt eu\_kcpm}    \> 418.4                \> kcal/mol energy unit (often used) \\
+\> {\tt eu\_kjpm}    \> 100.0                \> kJouls/mol energy unit (rarely used) \\
 \> {\tt prsunt}      \> 0.163882576          \> conversion factor for pressure from internal units to katms \\
 \> {\tt tenunt}      \> 1.660540200          \> conversion factor for surface tension from internal units to dyn/cm \\
 \>                   \>                      \> \\
@@ -369,7 +374,7 @@ X\=XXXXXXXXX\=XXXXXXXXXXXXXX\=\kill
 \> {\tt mxrdf }      \> {\em variable}       \> max number of pairwise RDF in system \\
 \> {\tt mxgrdf}      \> {\em variable}       \> number of grid points for RDF and Z-density arrays ($> 1004$)\\
 \> {\tt mxgele}      \> {\em variable}       \> max number of grid points for ewald exclusion potential arrays \\
-
+\> {\tt mxgusr}      \> {\em variable}       \> number of grid points for umbrella sampling restraint's RDF ($> 1004$)\\
 \> {\tt mxvdw}       \> {\em variable}       \> max number of van der Waals potentials in system \\
 \> {\tt mxpvdw}      \> {\em variable}       \> max number of van der Waals potential parameters (5) \\
 \> {\tt mxgvdw}      \> {\em variable}       \> max number of grid points in vdw potential arrays ($> 1004$) \\
@@ -394,6 +399,7 @@ X\=XXXXXXXXX\=XXXXXXXXXXXXXX\=\kill
 \> {\tt mxfbp}       \> {\em variable}       \> max number of four-body potentials in system \\
 \> {\tt mx2fbp}      \> {\em variable}       \> array dimension of four-body potential parameters \\
 \> {\tt mxpfbp}      \> {\em variable}       \> max number of four-body potential parameters (3) \\
+
 \> {\tt mxpfld}      \> {\em variable}       \> max number of external field parameters (5) \\
 \> {\tt mxstak}      \> {\em variable}       \> dimension of stack arrays for rolling averages \\
 \> {\tt mxnstk}      \> {\em variable}       \> max number of stacked variables \\
@@ -410,6 +416,4 @@ X\=XXXXXXXXX\=XXXXXXXXXXXXXX\=\kill
 \> {\tt zero\_plus}  \> {\em variable}       \> the machine representation of $+0$ at working precision \\
 \> {\tt half\_plus}  \> {\em variable}       \> the machine representation of $+0.5\uparrow$ at working precision \\
 \> {\tt half\_minus} \> {\em variable}       \> the machine representation of $+0.5\downarrow$ at working precision \\
-\>                   \>                      \> \\
-\> {\tt engunit}     \> {\em variable}       \> the system energy unit \\
 \end{tabbing}

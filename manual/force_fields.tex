@@ -250,6 +250,7 @@ In \D distance restraints\index{distance restraints} are handled
 by the routine {\sc bonds\_forces} (and {\sc intra\_coul} called within).
 
 \subsection{Valence Angle Potentials}
+\label{angle-potentials}
 
 \begin{figure}[htbp]
 \begin{center}
@@ -449,6 +450,7 @@ In \D angular restraints\index{angular restraints} are handled by
 the routine {\sc angles\_forces}.
 
 \subsection{Dihedral Angle Potentials}
+\label{dihedral-potentials}
 
 \begin{figure}[htbp]
 \begin{center}
@@ -651,6 +653,7 @@ In \D dihedral forces are handled by the routine {\sc dihedrals\_forces}
 (and {\sc intra\_coul} and {\sc dihedrals\_14\_vdw} called within).
 
 \subsection{Improper Dihedral Angle Potentials}
+\label{improper-dihedral-potentials}
 
 Improper dihedrals\index{potential!improper dihedral} are used to
 restrict the geometry of molecules and as such need not have a
@@ -720,6 +723,7 @@ In \D torsional restraints\index{torsional restraints} are handled by
 the routine {\sc dihedrals\_forces}.
 
 \subsection{Inversion Angle Potentials}
+\label{inversion-potentials}
 
 \begin{figure}[htbp]
 \begin{center}
@@ -2609,14 +2613,14 @@ technique for calculating electrostatic interactions in a periodic
 The basic model for a neutral periodic system is a system of
 charged point ions mutually interacting via the Coulomb potential.
 The Ewald method makes two amendments to this simple model.
-Firstly each ion is effectively neutralised (at long-ranged) by the
+Firstly, each ion is effectively neutralised (at long-ranged) by the
 superposition of a spherical Gaussian\index{constraints!Gaussian}
 cloud of opposite charge centred on the ion.  The combined
 assembly of point ions and Gaussian\index{constraints!Gaussian}
 charges becomes the {\em Real Space} part of the Ewald
 sum\index{Ewald!summation}, which is now short ranged and
 treatable by the methods described above
-(Section~\ref{force-field})\footnote{Strictly speaking, the real space sum
+(Chapter~\ref{force-field})\footnote{Strictly speaking, the real space sum
 ranges over all periodic images of the simulation cell, but in the
 \D implementation, the parameters are chosen to restrict the sum
 to the simulation cell and its nearest neighbours, i.e.~the {\em
@@ -2636,35 +2640,40 @@ real space and one in reciprocal space; and the self energy
 correction.
 
 For molecular systems, as opposed to systems comprised simply of
-point ions, additional modifications \\ \noindent {\sc ewald\_excl\_forces} are
-necessary to correct for the excluded (intra-molecular) coulombic
-interactions. In the real space sum these are simply omitted.  In
-reciprocal space however, the effects of individual
+point ions, additional modifications \\ \noindent {\sc ewald\_excl\_forces}
+are necessary to correct for the excluded (intra-molecular)
+coulombic interactions.  In the real space sum these are simply
+omitted.  In reciprocal space however, the effects of individual
 Gaussian\index{constraints!Gaussian} charges cannot easily be
 extracted, and the correction is made in real space.  It amounts
 to removing terms corresponding to the potential energy of an ion
 $\ell$ due to the Gaussian\index{constraints!Gaussian} charge on a
 neighbouring charge $m$ (or {\em vice versa}).  This correction
-appears as the final term in the full Ewald\index{Ewald!summation}
-formula below.  The distinction between the error function $\rm erf$
-and the more usual complementary error function $\rm erfc$ found in
-the real space sum, should be noted.
+appears in the term noting a summation over $molecules$ in the
+full Ewald\index{Ewald!summation} formula below.
 
-The same considerations and modifications {\sc
-ewald\_frzn\_forces} are taken into account for frozen atoms,
-which mutual coulombic interaction must be excluded.
+The same considerations and modifications {\sc ewald\_frzn\_forces}
+are taken into account for frozen atoms, which mutual coulombic
+interaction must also be excluded.  This correction appears in the
+term noting a summation over $F^{*}$ (all frozen-frozen pairs in the
+MD cell) in the full Ewald\index{Ewald!summation} formula below.
 
-The total electrostatic energy is given by the following formula.
+Note the distinction between the {\em error function} {\bf erf} and
+the more usual {\em complementary error function} {\bf erfc} found
+in the real space sums below.
+
+The total electrostatic energy is given by the following formula:
 \begin{eqnarray}
 U_{c}&=&\frac{1}{2V_{o} \epsilon_{0}\epsilon} \sum_{\vek{k} \neq
 \vek{0}}^{\vek{\infty}} \frac{\exp(-k^{2}/4\alpha^{2})}{k^{2}}
-|\sum_{j}^{N} q_{j}\exp(-i\vek{k}\cdot\vek{r}_{j})|^{2} +
-\frac{1}{4\pi\epsilon_{0}\epsilon} \sum_{n<j}^{N^{*}} \frac{q_{j}q_{n}}
-{r_{nj}} {\rm erfc}(\alpha r_{nj}) - \phantom{xxxx} \nonumber \\
-& & \frac{1}{4\pi\epsilon_{0}\epsilon} \sum_{molecules}
-\sum_{\ell\le m}^{M^{*}} q_{\ell}q_{m} \left\{ \delta_{\ell m}
+\left|\sum_{j}^{N} q_{j}\exp(-i\vek{k}\cdot\vek{r}_{j})\right|^{2} -
+\frac{1}{4\pi\epsilon_{0}\epsilon} \frac{\alpha}{\sqrt{\pi}}
+\sum_{j}^{N} q_{j}^2 + \nonumber \\
+& & \frac{1}{4\pi\epsilon_{0}\epsilon} \sum_{n<j}^{N^{*}} \frac{q_{j}q_{n}}
+{r_{nj}} {\rm erfc}(\alpha r_{nj}) - \frac{1}{4\pi\epsilon_{0}\epsilon}
+\sum_{molecules} \sum_{\ell\le m}^{M^{*}} q_{\ell}q_{m} \left\{ \delta_{\ell m}
 \frac{\alpha}{\sqrt{\pi}} + \frac{{\rm erf}(\alpha r_{\ell m})}{r_{\ell
-m}^{1-\delta_{\ell m}}} \right\} - \\
+m}^{1-\delta_{\ell m}}} \right\} - \phantom{xxxxxxx} \\
 & & \frac{1}{4\pi\epsilon_{0}\epsilon} \sum_{\ell\le m}^{F^{*}}
 q_{\ell}q_{m} \left\{ \delta_{\ell m} \frac{\alpha}{\sqrt{\pi}} +
 \frac{{\rm erf}(\alpha r_{\ell m})}{r_{\ell m}^{1-\delta_{\ell m}}}
@@ -2829,7 +2838,7 @@ An atom or ion is polarisable\index{polarisation} if it develops a
 dipole moment when placed in an electric field.  It is commonly
 expressed by the equation
 \begin{equation}
-\vek{\mu} = \alpha \vek{E}~~,
+\frac{1}{4\pi\epsilon_{0}\epsilon} \vek{\mu} = \alpha \vek{E}~~,
 \end{equation}
 where $\vek{\mu}$ is the induced dipole and $\vek{E}$ is the
 electric field.  The constant $\alpha$ is the polarisability.
@@ -2868,7 +2877,7 @@ giving rise to a {\em polarisation} dipole
 \end{equation}
 The condition of static equilibrium then gives the polarisability as:
 \begin{equation}
-\alpha = q_{s}^{2}/k_{2}~~,
+\alpha = \frac{1}{4\pi\epsilon_{0}\epsilon} q_{s}^{2}/k_{2}~~, \label{druder}
 \end{equation}
 where $q_{s}$ is the shell charge and $k_{2}$ is the force
 constant of the harmonic spring.
@@ -2883,6 +2892,85 @@ different however, as the core-shell unit is permitted only three
 translational degrees of freedom, and the degrees of freedom
 corresponding to rotation and vibration of the unit are discounted
 as if the kinetic energy of these is regarded as zero (equation~\ref{freedom}).
+
+\subsection{CHARMM Shell Model Self-Induction}
+
+The \href{https://www.charmm.org/}{CHARMM}\index{WWW} model for
+self-induced polarisablility relies on the Druder formalism as
+described above.  However, the CHARMM core-shell model interactions,
+conventions and controls have further specificity \cite{mackerell-16a}
+that is worth outlining in \D terms.
+
+To enable the CHARMM core-shell model in \D, the user, {\em at the very
+least}, needs to specify atomic polarisabilities (and, optionally, the
+respective Thole dumping factors) for all cores in the MPOLES file
+(see Section~\ref{mpoles-file}), make sure that reading MPOLES is
+triggered by using the \underline{{\bf mult}ipolar~order~{\em n}}
+directive in the FIELD file (see Section~\ref{field-file}), and use
+the \underline{{\bf polar}isability {\em CHARMM} {\bf thole} {\em f}}
+directive in CONTROL (see Section~\ref{control-file}).  {\bf Note that}
+if no Thole dumping factors are specified in MPOLES as well as no global
+Thole dumping factor is (optional) provided with the above directive
+in CONTROL, then a default one of 1.3 is assumed for all inducible
+particles!  Also, if no Thole dumping factors are specified in MPOLES
+and a {\bf zero} global Thole dumping factor is (optional) provided
+in CONTROL that will also invalidate the use of CHARMM scaled
+electrostatics in the simulation although the option will help with
+checking, verifying and setting CHARMM related defaults for shell
+charges, core-shell spring force constants and atomic polarisations!
+
+Equation~(\ref{druder}) governs the relation between the force constant,
+$k_{2}$ (positive), the shell charge $q_{s}$, and the atomic polarisability,
+$\alpha$ (positive).  Thus if one is missing, undefined or zero, it can be
+recovered from the rest in \D.  CHARMM only allows for $q_{s}$ to be
+recovered.  {\bf Note} that in \D if any $q_{s}$ is recovered, it has an
+opposite sign to that of its corresponding $q_{c}$!  In the special case
+when all Druders' force constants, $k_{2}$, are undefined or zero (in FIELD),
+\D will resort to using the value of 1000~kcal~mol$^{-1}$\AA$^{-2}$ for all
+core-shell units, as per CHARMM recommendations in \cite{mackerell-16a}.
+In all other cases if two (or more) of these three quantities are undefined
+or zero \D will terminate execution in a controlled manner, indicating the
+exact nature of the problem.
+
+CHARMM postulates a scaled intra-molecular self-induction between 1-2
+and 1-3 intra-molecular neighbours.  Thus cross core-shell coulombic
+interactions within {\em conventional} bonded interactions are not fully
+excluded (dipole-dipole only, no charge−dipole).  They are scaled
+(see below) for all possible 1-2 (chemical bonds or constraints) and
+1-2-3 (chemical bond angles) qualifying neighbours.  For example, let
+1-2-3-4 define a torsion angle, then all 1-2-3 and 2-3-4 core-shell
+cross-interaction are considered.  {\bf Note} that this is not the case
+for the 1-4 one, which is excluded in this scenario but it could still
+be scaled via torsion 1-4 coulombic scaling!.  In \D's CHARMM context,
+also, then all possible coulombic cross-interactions are considered
+in the case of an inversion angle interaction.  It is worth {\bf stressing}
+that in \D will further exclude (disregard as non-contributing) any
+core-core bonded interactions if they are frozen or mapped onto a RB!
+
+Let's demonstrate this for a conventional bond angle unit, 1-2-3, with
+only members 1 and 2 being polarisable (having a core and a shell).  So,
+the only CHARMM scaled intra-molecular coulombic interactions for this
+scenario will be the four pairs $1_{core}$-$2_{core}$, $1_{core}$-$2_{shell}$,
+$1_{shell}$-$2_{core}$ and $1_{shell}$-$2_{shell}$ (dipole-dipole
+interactions only, the charge−dipole interactions are not considered!).
+In the case when members 1 and 3 are frozen or in a RB configuration
+then the pair $1_{core}$-$2_{core}$ will be disregarded from that list.
+
+The CHARMM, self-induced intra-molecular (dipole-dipole) interactions
+are scaled by a factor of
+\begin{equation}
+S(r_{ij}) = 1 -\left[ 1 + \frac{1}{2}
+\frac{a_{i}+a_{j}}{(\alpha_{i}\alpha_{j})^{1/6}} r_{ij}\right]~
+\exp\left(-\frac{a_{i}+a_{j}}{(\alpha_{i}\alpha_{j})^{1/6}} r_{ij}\right)~~,
+\end{equation}
+where $r_{ij}$ is the distance between atoms i and j, $\alpha_{i}$ and
+$\alpha_{j}$ are the respective atomic polarisabilities, and $a_{i}$
+and $a_{j}$ are the respective atomic (Thole) damping constants.  This
+equation is equivalent to a smeared charge distribution described by
+\begin{equation}
+\rho = \frac{a^{3}}{8\pi}~\exp\left(-\frac{a}{(\alpha_{i}\alpha_{j})^{1/6}} r_{ij}\right)~~,
+\end{equation}
+with $a~=~a_{i}+a_{j}$, as originally proposed by Thole \cite{thole-81a}.
 
 \subsection{Dynamical (Adiabatic Shells) Shell Model}
 
@@ -3005,8 +3093,8 @@ formation, constraint bonded, PMF constrained or tethered.
 angle, dihedral or inversion type of interaction.  However, they
 can be in a bond type of interactions (see the BSM section above).
 \end{itemize}
-However, bonded interactions such as chemical bonds, angles,
-dihedrals and inversions can be defined over any possible mixture
+It is worth noting that bonded interactions such as chemical bonds,
+angles, dihedrals and inversions can be defined over any possible mixture
 of core and shell members of different core-shell units!  For example,
 in the solid state materials community it is common to define bonds
 and angles over the shells as the shells represent the electronic
@@ -3066,7 +3154,7 @@ A~(z_{min}-z_{com}) & z_{com} < z_{min}~~,
 \end{array} \right.
 \end{equation}
 where $z_{com}$ is the chosen molecule centre of mass.
-\item Harmonic restraint zone in z-direction - (pull out): ({\bf zrs-})
+\item Harmonic restraint zone in z-direction $-$ (push out): ({\bf zrs$-$})
 \begin{equation}
 \vek{F}_{z} = \left\{ \begin{array} {l@{\quad:\quad}l}
 A~(z-z_{max}) & z \ge (z_{max}+z_{min})/2 \\
@@ -3085,6 +3173,11 @@ A~(z_{min}-z) & z < z_{min}
 \vek{F_{i}} = \vek{F_{i}} + q_{i} \cdot \vek{E} \cdot \sin(2 \pi \omega t)~,
 \end {equation}
 where $t$ is the simulated time.
+\item Umbrella sampling (harmonic restraint) \cite{torrie-77a,kastner-11a}:  ({\bf ushr})
+\begin{equation}
+U_{AB} = \frac{k}{2} (R_{AB}-R_{0})^{2}~,
+\end {equation}
+is an umbrella sampling harmonic restraint between the centres of masses of two molecules (non-overlapping clusters of particles), $A$ and $B$, with a force constant, $k$, and an equilibrium distance, $R_{0}$.
 \end{enumerate}
 It is recommended that the use of an external field should be
 accompanied by a thermostat\index{thermostat} (this does not apply
@@ -3180,8 +3273,9 @@ molecular systems which works together with some of the most popular
 molecular dynamics engines.  Free energy calculations can be performed
 as a function of many order parameters with a particular focus on
 biological problems, using state of the art methods such as metadynamics,
-umbrella sampling and Jarzynski-equation based steered MD.  The software,
-written in C++, can be easily interfaced with both FORTRAN and C/C++ codes.
+umbrella sampling \cite{torrie-77a,kastner-11a} and Jarzynski-equation
+based steered MD.  The software, written in C++, can be easily interfaced
+with both FORTRAN and C/C++ codes.
 
 Using PLUMED can be as simple as adding the keyword {\bf plumed} in
 your CONTROL file. By default the input file for PLUMED is called PLUMED

@@ -23,6 +23,8 @@ Subroutine statistics_collect             &
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith & i.t.todorov march 2016
+! contrib   - a.m.elena february 2017
+! contrib   - i.t.todorov february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -85,22 +87,22 @@ Subroutine statistics_collect             &
 ! If the keyres=1 is the file old (does it exist)?
 
      l_tmp=.false.
-     If (keyres == 1) Inquire(File='STATIS', Exist=l_tmp)
+     If (keyres == 1) Inquire(File=Trim(statis), Exist=l_tmp)
 
      If (.not.l_tmp) Then
-        Open(Unit=nstats, File='STATIS', Status='replace')
+        Open(Unit=nstats, File=Trim(STATIS), Status='replace')
 
         Write(nstats,'(a)') cfgname
 
-        If      (Abs(engunit - 9648.530821_wp) <= zero_plus) Then
+        If      (Abs(engunit - eu_ev)   <= zero_plus) Then
            Write(nstats,'(1x,a)') 'ENERGY UNITS = electron Volts'
-        Else If (Abs(engunit - 418.4_wp)       <= zero_plus) Then
+        Else If (Abs(engunit - eu_kcpm) <= zero_plus) Then
            Write(nstats,'(1x,a)') 'ENERGY UNITS = kcal/mol'
-        Else If (Abs(engunit - 1.0e2_wp)       <= zero_plus) Then
+        Else If (Abs(engunit - eu_kjpm) <= zero_plus) Then
            Write(nstats,'(1x,a)') 'ENERGY UNITS = kjoule/mol'
-        Else If (Abs(engunit - 1.0_wp)         <= zero_plus) Then
+        Else If (Abs(engunit - 1.0_wp)  <= zero_plus) Then
            Write(nstats,'(1x,a)') 'ENERGY UNITS = DL_POLY Internal UNITS (10 J/mol)'
-        Else If (Abs(engunit - boltz)          <= zero_plus) Then
+        Else If (Abs(engunit - boltz)   <= zero_plus) Then
            Write(nstats,'(1x,a)') 'ENERGY UNITS = Kelvin/Boltzmann'
         Else ! once in a blue moon
            Write(nstats,'(1x,a)') 'ENERGY UNITS = DPD (Unknown)'
@@ -327,7 +329,7 @@ Subroutine statistics_collect             &
 ! write statistics file
 
   If (idnode == 0 .and. Mod(nstep,intsta) == 0) Then
-     Open(Unit=nstats, File='STATIS', Position='append')
+     Open(Unit=nstats, File=Trim(STATIS), Position='append')
 
      If (l_msd) Then
         Write(nstats,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &

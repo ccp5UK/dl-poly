@@ -20,7 +20,7 @@ Subroutine ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 !
 ! copyright - daresbury laboratory
 ! author    - h.a.boateng february 2016
-! amended   - i.t.todorov february 2016
+! amended   - i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -44,8 +44,7 @@ Subroutine ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
                              ixtm0_r,iytm0_r,iztm0_r, &
                              kmaxa_r,kmaxb_r,kmaxc_r
 
-  Logical              :: llspl=.true.
-  Integer              :: fail(1:4), i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt
+  Integer              :: fail(1:4),limit, i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt, inc2,inc3
 
   Real( Kind = wp )    :: Dtpbsp,det,rcell(1:9),celprp(1:10),ralph,rvolm,scale,exclcoef, &
                           rcpcut,rcpct2,strs(1:9),eng,akv,tmp,bb1,bb2,bb3,               &
@@ -167,7 +166,7 @@ Subroutine ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   End If
 
   limit=Max(mxbuff,3*kmaxa*kmaxb*kmaxc) ! Try 3*kmaxa*kmaxb*kmaxc
-  Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),,buffer(1:limit),           Stat = fail(1))
+  Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),buffer(1:limit),            Stat = fail(1))
   Allocate (ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms),it(1:mxatms),               Stat = fail(2))
   Allocate (bdx(0:mxspl),bsddx(0:mxspl,1:mxspl,1:mxatms), &
             bdy(0:mxspl),bsddy(0:mxspl,1:mxspl,1:mxatms), &

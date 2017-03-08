@@ -16,10 +16,21 @@ files marked with an asterisk are non-mandatory.}
 FIELD are mandatory.  The MPOLES and TAB* are complimentary to FIELD
 and are only required when opted within.  HISTORY is required when
 an old trajectory is opted for re-play in CONTROL. REFERENCE is
-required when defect detection is switched on in CONTROL.
-REVOLD is required only if the job represents a continuation of a
+optionally required when defect detection is switched on in CONTROL.
+REVOLD is required only when the job represents a continuation of a
 previous job.  In the following sections we describe the form and
 content of these files.
+
+It is worth noting that historically DL\_POLY used hard-coded names
+for different I/O files as shown in Figure~\ref{input-files}.
+\uline{{\bf This is no longer the case!}}  Upon instructions in
+the CONTROL many I/O file name can be overridden with specific,
+user-defined filenames (see \hyperref[io]{I/O Control Options}).
+Even the CONTROL file can be named differently but in this case the
+alternative name {\bf must be passed as a command line argument}
+to the \D executable (usually named {\bf DLPOLY.Z}).  Thus the
+\D engine can be efficiently embedded and utilised within external
+frameworks for user-definable work-flows.
 
 \subsection{The CONTROL File}
 \label{control-file}
@@ -119,14 +130,14 @@ pressure                0.001 k-atmospheres
 rcut                   10.0  Angstroms
 rpad                    0.35 Angstroms
 rvdw                    8.0  Angstroms
-subcelling thershold   50.0  particles
+subcelling threshold   50.0  particles
 exclude
 epsilon                 1.0
 ewald precision         1.0e-5
 ewald evaluate          4
 
 # RELAXED SHELL MODEL TOLERANCE
-rlxtol                  1.0 force
+rlxtol                  1.0
 
 # CONSTRANTS ITERATION LENGTH and TOLERANCE
 mxshak                250 cycles
@@ -148,7 +159,7 @@ steps               10000 steps
 equilibration        1000 steps
 
 # EQUILIBRATION DIRECTIVES
-zero
+zero fire
 cap                   500 kT/Angstrom
 scale                   5 steps
 regauss                 3 steps
@@ -227,8 +238,15 @@ Between the header and the {\bf finish} directive, a wide choice
 of control directives may be inserted.  These are described below.
 
 \subsubsection{The CONTROL File Directives}
+\label{control_options}
 
-The directives available are as follows:
+\noindent {\bf Note} that in some cases additional keywords, shown in
+brackets ``(...)'', may also be supplied in the directives, or
+directives may be used in a long form.  However, it is strongly
+recommended that the user uses only the {\bf bold} part of these
+directives.
+
+The \uline{{\bf MAIN LIST}} of directives available is as follows:
 
 \begin{tabbing}
 X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
@@ -405,51 +423,6 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf integrat}or {\em string}                \> set the type of Verlet integrator, where {\em string} can only be \\
 \>                                              \> {\em leapfrog} or {\em velocity}, as the later is the default \\
 \>                                              \> \\
-\> {\bf io read} {\em method}  $j$ $k$ $l$ $e$  \> set the general I/O read interface to: \\
-\>                                              \> {\bf \em method} :: {\em mpiio} for MPI-I/O, {\em direct} for parallel direct access \\
-\>                                              \> \phantom{x} FORTRAN I/O or {\em master} for traditional master I/O or {\em netcdf} \\
-\>                                              \> \phantom{x} for netCDF I/O provided \D is compiled in a \\
-\>                                              \> \phantom{x} netCDF-enabled mode (default {\em mpiio}) \\
-\>                                              \> \phantom{xxx} {\bf \em j, reader count} :: $1~\le~j~\le~{\tt job~size}$ \\
-\>                                              \> \phantom{xxxx} (default $j~=~2^{Int\left[Log\left\{Min({\tt job~size},2\sqrt{\tt job~size})\right\}/Log(2)\right]}$) \\
-\>                                              \> \phantom{xxxx} is the designated number of processes to \\
-\>                                              \> \phantom{xxxx} carry out I/O read operations simultaneously \\
-\>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~10,000,000$ (default $2,000,000$) \\
-\>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
-\>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
-\>                                              \> \phantom{xxxx} I/O groups (= I/O readers) for domain distribution purposes \\
-\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $20,000$) \\
-\>                                              \> \phantom{x} is the maximum number of ASCII line records read in a batch \\
-\>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
-\>                                              \> \\
-  \> {\bf io writ}e {\em method} $rp$ {\em type} $j$ $k$ $l$ $e$ \> set the general I/O write interface to: \\
-\>                                              \> {\bf \em method} :: {\em mpiio} for MPI-I/O, {\em direct} for parallel direct access \\
-\>                                              \> \phantom{x} FORTRAN I/O or {\em master} for traditional master I/O or {\em netcdf} \\
-\>                                              \> \phantom{x} for netCDF I/O provided \D is compiled in a \\
-\>                                              \> \phantom{x} netCDF-enabled mode (default {\em mpiio}) \\
-\>                                              \> \phantom{x} {\bf WARRNING: {\em direct} is not a platfotm portable} \\
-\>                                              \> \phantom{x} {\bf solution (as it fails on LUSTRE but works on GPFS)} \\
-\>                                              \> {\bf NOTE that {\em rp} is only applicable for the {\em netcdf} method} \\
-\>                                              \> {\bf \em rp, real precision} :: {\em 32bit} or {\em amber} for 32-bit (float), \\
-\>                                              \> \phantom{x} otherwise 64-bit (double) is defaulted if unspecified \\
-\>                                              \> {\bf \em type} :: {\em sorted} or {\em unsort}ed (DD scrambled) by global index output \\
-\>                                              \> \phantom{x} (default {\em sorted}) \\
-\>                                              \> \phantom{xxx} {\bf \em j, writer count} :: $1~\le~j~\le~{\tt job~size}$ \\
-\>                                              \> \phantom{xxxx} (default $j~=~2^{Int\left[Log\left\{Min({\tt job~size},8\sqrt{\tt job~size})\right\}/Log(2)\right]}$) \\
-\>                                              \> \phantom{xxxx} is the designated number of processes to \\
-\>                                              \> \phantom{xxxx} carry out I/O write operations simultaneously \\
-\>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~10,000,000$ (default $2,000,000$) \\
-\>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
-\>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
-\>                                              \> \phantom{xxxx} I/O groups (= I/O writers) for global sorting purposes \\
-\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $20,000$) \\
-\>                                              \> \phantom{x} is the maximum number of ASCII line records written in a batch \\
-\>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
-\>                                              \> \\
 \> {\bf job time} $f$                           \> set job time to $f$ seconds \\
 \>                                              \> \\
 \> {\bf maxdis} $f$                             \> set maximum distance allowed in variable timestep (control) \\
@@ -466,16 +439,19 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf mindis} $f$                             \> set minimum distance allowed in variable timestep (control) \\
 \>                                              \> to $f$ \AA~(default $f~=~0.03$ \AA) \\
 \>                                              \> \\
-\> {\bf minim}ise {\em string} $n$ $f$          \> minimise the instantaneous system configuration every \\
+\> {\bf minim}ise {\em string} $n$ $f$ $s$      \> minimise the instantaneous system configuration every \\
 \>                                              \> $n$ steps during equilibration (with respect to the last \\
 \>                                              \> equilibration step) using conjugate gradient method (CGM) \\
-\>                                              \> with respect to the criterion, {\em string}, and tolerance, $f$, \\
-\>                                              \> where this criterion can only be {\em force} ($1~\le~f~\le~1000$, \\
-\>                                              \> default $f~=~50$) or {\em energy} ($0~<~f~\le~0.01$, default \\
-\>                                              \> $f~=~0.005$) or {\em distance} (maximum absolute displacement in \\
-\>                                              \> \AA, $10^{-6}~\le~f~\le~0.1$, default $f~=~0.005$); the lowest {\em string} \\
+\>                                              \> with respect to the criterion, {\em string}, tolerance, $f$, and \\
+\>                                              \> and optional CGM stepping, $s$, where this criterion can only be: \\
+\>                                              \> {\em force} ($1~\le~f~\le~1000$, default $f~=~50$) or \\
+\>                                              \> {\em energy} ($0~<~f~\le~0.01$, default $f~=~0.005$) or \\
+\>                                              \> {\em distance} (maximum absolute displacement in \AA, \\
+\>                                              \> $10^{-6}~\le~f~\le~0.1$, default $f~=~0.005$); \\
+\>                                              \> the optional stepping, $s$, default is $\delta t_{instanteneous}^{2}$; the lowest {\em string} \\
 \>                                              \> CGM minimised configuration during equilibration is saved \\
-\>                                              \> in a file, CFGMIN which has the same format as CONFIG \\
+\>                                              \> in a file, CFGMIN which has the same format as CONFIG, \\
+\>                                              \> {\bf N.B.} thermostat and barostat memory are not erased \\
 \>                                              \> \\
 \> {\bf msdtmp} $i~j$                           \> write MSDTMP file, containing particles' individual $\sqrt{MSD}$ \\
 \>                                              \> (in \AA) and T$_{mean}$ (in Kelvin), with controls: \\
@@ -526,13 +502,16 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf no vom}                                 \> ignore Centre of Mass momentum removal during the simulation \\
 \>                                              \> \\
-\> {\bf optim}ise {\em string} $f$              \> minimise the system configuration at start during equilibration \\
+\> {\bf optim}ise {\em string} $f$ $s$          \> minimise the system configuration at start during equilibration \\
 \>                                              \> using conjugate gradient method (CGM) with respect to the \\
-\>                                              \> criterion, {\em string}, and tolerance, $f$, where the criterion can only \\
-\>                                              \> be {\em force} ($1~\le~f~\le~1000$, default $f~=~50$) or {\em energy} \\
-\>                                              \> ($0~<~f~\le~0.01$, default $f~=~0.005$) or {\em distance} (maximum \\
-\>                                              \> absolute displacement in \AA) ($10^{-6}~\le~f~\le~0.1$, default \\
-\>                                              \> $f~=~0.005$); the CGM minimised configuration is saved \\
+\>                                              \> criterion, {\em string}, tolerance, $f$ and optional CGM \\
+\>                                              \> stepping, $s$, where this criterion can only be: \\
+\>                                              \> {\em force} ($1~\le~f~\le~1000$, default $f~=~50$) or \\
+\>                                              \> {\em energy} ($0~<~f~\le~0.01$, default $f~=~0.005$) or \\
+\>                                              \> {\em distance} (maximum absolute displacement in \AA, \\
+\>                                              \> $10^{-6}~\le~f~\le~0.1$, default $f~=~0.005$); \\
+\>                                              \> the optional stepping, $s$, default is $\delta t_{instanteneous}^{2}$; \\
+\>                                              \> the CGM minimised configuration is saved \\
 \>                                              \> in a file, CFGMIN which has the same format as CONFIG \\
 \>                                              \> \\
 \> {\bf pad}ding $f$  ($\equiv$ {\bf rpad} $f$) \> set optional padding to the major cutoff, \\
@@ -556,6 +535,12 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf plumed restart} {\em string} (yes$|$no) \> starts a PLUMED calculation, if not switched off, and hints \\
 \>                                              \> PLUMED about restarting (default {\em on}), if {\em off} is specified \\
 \>                                              \> PLUMED restart accumulators will reinitialised \\
+\>                                              \> \\
+\> {\bf polar}isation {\em scheme/type} {\bf thole} $f$ \> set possible polarisation scheme to $type$ with \\
+\>                                              \> optional global atomic (Thole) dumping factor \\
+\>                                              \> (default $f=1.3$ if none are specified in MPOLES), \\
+\>                                              \> only $type=CHARMM$ for Druder core-shell polarisation \\
+\>                                              \> is currently available!!! \\
 \>                                              \> \\
 \> {\bf pres}sure $f$                           \> set required system pressure to $f$ katms \\
 \>                                              \> (target pressure for constant pressure\index{units!pressure} ensembles) \\
@@ -597,8 +582,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> as for Ewald summation ($10^{-20}~\le~f~\le~0.5$, default $f~=~10^{-20}$) \\
 \>                                              \> \\
 \> {\bf regaus}s (every) $n$                    \> resample the instantaneous system momenta distribution \\
-\>                                              \> every $n$ steps during equilibration \\
-\>                                              \> (with respect to the last equilibration step) \\
+\>                                              \> every $n$ steps (default $n~=~1$) during equilibration \\
+\>                                              \> (with respect to the last equilibration step), {\bf N.B.} \\
+\>                                              \> any thermostat and barostat memory is also erased \\
 \>                                              \> \\
 \> {\bf replay} (history)                       \> abort simulation and replay HISTORY to recalculate structural \\
 \>                                              \> properties such as RDFs, z-density profiles, defects and \\
@@ -621,16 +607,18 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf rcut} $f$  ($\equiv$ {\bf cut}off $f$)  \> act exactly the same as the {\bf cut}off $f$ option above \\
 \>                                              \> \\
-\> {\bf rlxtol} $f$                             \> set tolerance for relaxed shell model to $f$ \\
-\>                                              \> (default $f~=~1$ in D~\AA~~ps$^{-2}$) \\
+\> {\bf rlxtol} $f$ $s$                         \> set the CGM tolerance (on total force gradient), $f$, for the \\
+\>                                              \> relaxed shell model (default $f~=~1$ in D~\AA~~ps$^{-2}$) and \\
+\>                                              \> optional CGM stepping, $s$, (default $Max(k_{core-shell})/2$) \\
 \>                                              \> \\
 \> {\bf rpad} $f$  ($\equiv$ {\bf pad}ding $f$) \> act exactly the same as {\bf pad}ding $f$ option above \\
 \>                                              \> \\
 \> {\bf rvdw} (cutoff) $f$                      \> set required short-ranged interactions cutoff to $f$ \AA \\
 \>                                              \> \\
-\> {\bf scale} (temperature) (every) $n$        \> rescale system temperature every $n$ steps during equilibration \\
-\>                                              \> (with respect to the last equilibration step, \\
-\>                                              \> (atomic velocities are scaled collectively) \\
+\> {\bf scale} (temperature) (every) $n$        \> rescale system temperature every $n$ steps (default $n~=~1$) \\
+\>                                              \> during equilibration (with respect to the last equilibration \\
+\>                                              \> step - atomic velocities are scaled collectively), {\bf N.B.} \\
+\>                                              \> any thermostat and barostat memory is also erased \\
 \>                                              \> \\
 \> {\bf seed} $n_{1}~n_{2}~n_{3}$               \> seed control to the random number generator used in the \\
 \>                                              \> generation of gaussian distributions and stochastic processes \\
@@ -718,11 +706,36 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf zden} (sampling) (every) $f$            \> calculate and collect the Z-density profile \\
 \>                                              \> every $f$ timesteps (default $f~=~1$) \\
 \>                                              \> \\
-\> {\bf zero}                                   \> perform zero temperature MD run (reset target system \\
-\>                                              \> temperature $10$ Kelvin) \\
-\>                                              \> \\
-\>                                              \> \\
-\> *** SPECIAL OPTIONS ***                      \> *** SPECIAL OPTIONS *** \\
+\> {\bf zero} (fire) (every $n$)                \> perform a dynamic "zero temperature" optimisation MD run \\
+\>                                              \> during equilibration; if $fire$ is specified then the system \\
+\>                                              \> target temperature is assumed, if not then it is reset to \\
+\>                                              \> $10$ Kelvin; if $n$ is specified then every $n$ steps \\
+\>                                              \> (default $n~=~1$, with respect to the last equilibration step) \\
+\>                                              \> {\bf N.B.} thermostat and barostat memory are not erased
+\end{tabbing}
+
+\begin{table}[htbp]
+\begin{centering}
+\caption{\label{keytrj} Internal Trajectory/Defects File Key}
+\vskip 1ex
+\begin{tabular}{|r|l|}
+\hline
+{\tt keytrj} & \multicolumn{1}{c|}{meaning} \\
+\hline
+0 & coordinates only in file \\
+1 & coordinates and velocities in file \\
+2 & coordinates, velocities and forces in file \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\end{table}
+
+\D also offers a \uline{{\bf SPECIAL OPTIONS LIST}} of directives as follows:
+
+\begin{tabbing}
+X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
+\> \uuline{{\bf directive:}}                    \> \phantom{xxxxxxxxxxxxxxxxx} \uuline{{\bf meaning:}} \\
 \>                                              \> \\
 \> {\bf l\_dis}                                 \> check and report on the minimum separation distance \\
 \>                                              \> \\
@@ -755,28 +768,91 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> between all Verlet neighbour list pairs at re/start
 \end{tabbing}
 
-\noindent {\bf Note} that in some cases additional keywords, shown in
-brackets ``(...)'', may also be supplied in the directives, or
-directives may be used in a long form.  However, it is strongly
-recommended that the user uses only the {\bf bold} part of these
-directives.
+\subsubsection{I/O Control Options}
+\label{io}
 
-\begin{table}[htbp]
-\begin{centering}
-\caption{\label{keytrj} Internal Trajectory/Defects File Key}
-\vskip 1ex
-\begin{tabular}{|r|l|}
-\hline
-{\tt keytrj} & \multicolumn{1}{c|}{meaning} \\
-\hline
-0 & coordinates only in file \\
-1 & coordinates and velocities in file \\
-2 & coordinates, velocities and forces in file \\
-\hline
-\end{tabular}
-\vskip 1ex
-\end{centering}
-\end{table}
+\noindent{\bf Note} that historically DL\_POLY used serial I/O read
+and write as well as hard-coded names for different I/O files (see
+Figure~\ref{input-files}).  However, {\bf (i)} since version 4.01
+\D has defaulted to using parallel read and write via MPI-I/O
+(but also supporting a variety of alternative options) and
+{\bf (ii)} since version 4.09 the program has also introduced the
+functionality for user defined I/O filenames, both via the CONTROL
+{\bf io} directives below.  Even the CONTROL file may be named
+differently but in this case the alternative name must be passed
+as a command line argument to the \D executable (usually named
+{\bf DLPOLY.Z}).  It is worth noting that the latter options have
+paved the way for user defined work-flows exploitation of the \D engine.
+
+The \uline{{\bf I/O LIST}} of directives available is as follows:
+
+\begin{tabbing}
+X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
+\> \uuline{{\bf directive:}}                    \> \phantom{xxxxxxxxxxxxxxxxx} \uuline{{\bf meaning:}} \\
+\>                                              \> \\
+\> {\bf io read} {\em method}  $j$ $k$ $l$ $e$  \> set the general I/O read interface to: \\
+\>                                              \> {\bf \em method} :: {\em mpiio} for MPI-I/O, {\em direct} for parallel direct access \\
+\>                                              \> \phantom{x} FORTRAN I/O or {\em master} for traditional master I/O or {\em netcdf} \\
+\>                                              \> \phantom{x} for netCDF I/O provided \D is compiled in a \\
+\>                                              \> \phantom{x} netCDF-enabled mode (default {\em mpiio}) \\
+\>                                              \> \phantom{xxx} {\bf \em j, reader count} :: $1~\le~j~\le~{\tt job~size}$ \\
+\>                                              \> \phantom{xxxx} (default $j~=~2^{Int\left[Log\left\{Min({\tt job~size},2\sqrt{\tt job~size})\right\}/Log(2)\right]}$) \\
+\>                                              \> \phantom{xxxx} is the designated number of processes to \\
+\>                                              \> \phantom{xxxx} carry out I/O read operations simultaneously \\
+\>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
+\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~10,000,000$ (default $2,000,000$) \\
+\>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
+\>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
+\>                                              \> \phantom{xxxx} I/O groups (= I/O readers) for domain distribution purposes \\
+\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $20,000$) \\
+\>                                              \> \phantom{x} is the maximum number of ASCII line records read in a batch \\
+\>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
+\>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
+\>                                              \> \\
+\> {\bf io writ}e {\em method} $rp$ {\em type} $j$ $k$ $l$ $e$ \> set the general I/O write interface to: \\
+\>                                              \> {\bf \em method} :: {\em mpiio} for MPI-I/O, {\em direct} for parallel direct access \\
+\>                                              \> \phantom{x} FORTRAN I/O or {\em master} for traditional master I/O or {\em netcdf} \\
+\>                                              \> \phantom{x} for netCDF I/O provided \D is compiled in a \\
+\>                                              \> \phantom{x} netCDF-enabled mode (default {\em mpiio}) \\
+\>                                              \> \phantom{x} {\bf WARRNING: {\em direct} is not a platfotm portable} \\
+\>                                              \> \phantom{x} {\bf solution (as it fails on LUSTRE but works on GPFS)} \\
+\>                                              \> {\bf NOTE that {\em rp} is only applicable for the {\em netcdf} method} \\
+\>                                              \> {\bf \em rp, real precision} :: {\em 32bit} or {\em amber} for 32-bit (float), \\
+\>                                              \> \phantom{x} otherwise 64-bit (double) is defaulted if unspecified \\
+\>                                              \> {\bf \em type} :: {\em sorted} or {\em unsort}ed (DD scrambled) by global index output \\
+\>                                              \> \phantom{x} (default {\em sorted}) \\
+\>                                              \> \phantom{xxx} {\bf \em j, writer count} :: $1~\le~j~\le~{\tt job~size}$ \\
+\>                                              \> \phantom{xxxx} (default $j~=~2^{Int\left[Log\left\{Min({\tt job~size},8\sqrt{\tt job~size})\right\}/Log(2)\right]}$) \\
+\>                                              \> \phantom{xxxx} is the designated number of processes to \\
+\>                                              \> \phantom{xxxx} carry out I/O write operations simultaneously \\
+\>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
+\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~10,000,000$ (default $2,000,000$) \\
+\>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
+\>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
+\>                                              \> \phantom{xxxx} I/O groups (= I/O writers) for global sorting purposes \\
+\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $20,000$) \\
+\>                                              \> \phantom{x} is the maximum number of ASCII line records written in a batch \\
+\>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
+\>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
+\>                                              \> \\
+\> {\bf io output}  {\it filename}              \> use {\it filename} instead of OUTPUT \\
+\>                                              \> \\
+\> {\bf io config}  {\it filename}              \> use {\it filename} instead of CONFIG \\
+\>                                              \> \\
+\> {\bf io field}   {\it filename}              \> use {\it filename} instead of FIELD \\
+\>                                              \> \\
+\> {\bf io outstat} {\it filename}              \> use {\it filename} instead of STATIS \\
+\>                                              \> \\
+\> {\bf io history} {\it filename}              \> use {\it filename} instead of HISTORY \\
+\>                                              \> \\
+\> {\bf io historf} {\it filename}              \> use {\it filename} instead of HISTORF \\
+\>                                              \> \\
+\> {\bf io revive}  {\it filename}              \> use {\it filename} instead of REVIVE \\
+\>                                              \> \\
+\> {\bf io revold}  {\it filename}              \> use {\it filename} instead of REVOLD \\
+\>                                              \> \\
+\> {\bf io revcon}  {\it filename}              \> use {\it filename} instead of REVCON
+\end{tabbing}
 
 \subsubsection{Further Comments on the CONTROL File}
 
@@ -787,11 +863,10 @@ exclusive} alternatives) are {\bf mandatory}:
 \item {\bf rcut} ($\equiv$ {\bf cut}): specifying the short range forces cutoff.
 {\bf It is compulsory in all circumstances as all \D algorithms are
 directly or indirectly dependent on it.}
-\item {\bf temp} or {\bf zero}: specifying the system temperature
-(not mutually exclusive but if {\bf temp} has to proceed
-{\bf zero} in CONTROL if {\bf zero} is needed.  {\bf Use only one
-instance of these in CONTROL!}  If a "dry run" is performed (see
-below) these can be omitted.
+\item {\bf temp} or {\bf zero}: both may specify the system target temperature.
+Though not mutually exclusive aim to specify {\bf temp} and {\bf zero} after
+in CONTROL.  {\bf Use only one instance of these in CONTROL!}
+If a "dry run" is performed (see below) these can be omitted.
 \item {\bf timestep} or {\bf variable timestep}: specifying the
 simulation timestep.  {\bf Use only one instance of these in
 CONTROL!} If a "dry run" is performed (see below) and a timestep
@@ -829,15 +904,16 @@ start only!).  This is equvalent to using the {\bf optim}ise
 directive.  In this way it can be used as a configuration
 optimiser at the beginning of the equilibration period or when
 a "dry run" ({\bf steps}~$= 0$) is performed (i.e. equilibrate
-without any actual dynamics!).  {\bf Note} that the CGM search
-algorithm stepping uses a step that is proportional to the
-instantaneous value of the {\bf timestep} and thus its usage in
+without any actual dynamics!).  {\bf Note} that the default CGM search
+algorithm stepping uses a step that is proportional to the square of
+the instantaneous value of the {\bf timestep} and thus its usage in
 may lead to algorithm's instability and failure in the cases when
 optimisation is applied before any dynamics occurs in a model
 system in an unphysical state (i.e. much away from equilibrium)
 and/or with an ill/badly defined forcefield for the state.  Hence,
-special care should be taken when the option is used as
-{\bf optimise} or/and in a "dry run" mode with a timestep value too large for the model system state.
+special care (specifying the optional CGM stepping for example)
+should be taken when the option is used, especially as {\bf optimise}
+or/and in a "dry run" mode with a timestep value too large for the model system state.
 
 \item The {\bf variable timestep} (or also {\bf timestep variable})
 option requires the user to specify an initial guess for a
@@ -974,8 +1050,11 @@ their model system.
 \end{table}
 
 \item The {\bf zero} directive, enables a "zero temperature"
-optimisation.  The target temperature of the simulation is reset to
-$10$ Kelvin and a crude energy minimiser:
+optimisation.  If no optional "fire" keyword is added then the
+target temperature of the simulation is reset to $10$ Kelvin.
+In either case a crude energy minimiser is used to help the
+system relax before each integration of the equations of motion.
+The function of the minimiser can be summarised as
 \begin{equation}
 \vek{v}_{i} \leftarrow \left\{ \begin{array} {l@{\quad:\quad}l}
 0 & \vek{v}_{i} \cdot \vek{f}_{i} < 0 \\
@@ -984,12 +1063,32 @@ $10$ Kelvin and a crude energy minimiser:
 \vek{f}_{i} \ge 0
 \end{array} \right.
 \end{equation}
-is used to help the system relax before each integration of the
-equations of motion (measures are taken to conserve the MD cell
-momentum).  This must not be thought of as a true energy
-minimization method.  {\bf Note} that this optimisation is applied
-irrespectively of whether the simulation runs in equilibration or
-statistical mode.
+for systems with free particles only, where $\vek{v}_{i}$ and
+$\vek{f}_{i}$ are the force and velocity of particle $i$.  The
+algorithm is extended in the case of RBs by including
+\begin{eqnarray}
+\vek{V}_{j} \leftarrow \left\{ \begin{array} {l@{\quad:\quad}l}
+0 & \vek{V}_{j} \cdot \vek{F}_{j} < 0 \\
+\vek{F}_{j} \; \frac{\vek{V}_{j}~\cdot~\vek{F}_{j}}
+{\vek{F}_{j}~\cdot~\vek{F}_{j}} & \vek{V}_{j} \cdot
+\vek{F}_{j} \ge 0
+\end{array} \right. \\ \nonumber
+\vek{\omega}_{j} \leftarrow \left\{ \begin{array} {l@{\quad:\quad}l}
+0 & \vek{\omega}_{j} \cdot \vek{\tau}_{j} < 0 \\
+\vek{\tau}_{j} \; \frac{\vek{\omega}_{j}~\cdot~\vek{\tau}_{j}}
+{\vek{\tau}_{j}~\cdot~\vek{\tau}_{j}} & \vek{\omega}_{j} \cdot
+\vek{\tau}_{j} \ge 0
+\end{array} \right.~~,
+\end{eqnarray}
+where $\vek{V}_{j}$ and $\vek{F}_{j}$ are the velocity and
+force of the RB's centre of mass, and $\vek{\omega}_{j}$ and
+$\vek{\tau}_{j}$ are the angular velocity and torque of RB $j$.
+Measures are taken to conserve the MD cell momentum and the
+thermostat's instantaneous kinetic energy.
+
+This must not be thought of as a true energy minimization
+method.  {\bf Note} that this optimisation is only applied
+when the simulation runs in equilibration mode.
 
 The algorithm is developed in the \D routine {\sc zero\_k\_optimise}.
 
@@ -1173,11 +1272,13 @@ manner.  Dsiplacemets of atoms from their original position at
 the end of equilibration (the start of statistics), $t~=0~$, is
 carried out at each timestep.
 
-\item The tolerance for relaxed shell model {\bf rlxtol}, is a last
-resort option to aid shell relaxation of systems with very energetic
-and/or rough potential surface.  Users are advised to use it with
-caution, should there really need be, as the use of high values may
-result in physically incorrect dynamics.
+\item The tolerance and stepping for relaxed shell model {\bf rlxtol},
+is a last resort option to aid shell relaxation of systems with very
+energetic and/or rough potential surface.  Users are advised to use
+it with caution, should there really need be, as the use of high values
+for the tolerance (default of 1) may result in physically incorrect
+dynamics and small stepping (default $Max(k_{core-shell})/2$) to
+expensive force evaluations.
 
 \item The difference between the directives {\bf ewald} and {\bf spme}
 is only in the {\bf ewald/spme sum} directive, in which the
@@ -1452,8 +1553,15 @@ default is 50 although experimenting with values between 10 and 100 may
 provide sufficient information about a performance sweetspot.  The comparison
 condition is carried out on the average density per sub-link cell of each
 domain.  Thus subcelling takes into account only the per domain density
-variation. Obviously, the subcelling threshhold is limited to 1 particle per
+variation.  Obviously, the subcelling threshhold is limited to 1 particle per
 cell for the sake of safty and sanity reasons.
+
+\item The {\bf exclu}de option will make sure that for all {\em conventional}
+(no distance restraints) intra-molecular interactions (bonds, angles,
+digedrals, inversions) as well as for CB and RB units any intra-core-shell
+interactions fall within the list of excluded interactions.  This is not
+a default behaviour.  The option is also triggered by the {\bf polar}isation
+option.
 \end{enumerate}
 
 \noindent Users are advised to study the example CONTROL files
@@ -2041,6 +2149,10 @@ above.
 key & potential type & \multicolumn{4}{c|}{Variables (1-4)} & functional form \\
 \hline
             &                    &            &          &          &       & \\
+{\bf tab}   & Tabulation, see     &            &          &          &       & tabulated potential \\
+{\bf -tab}  & Sections~\ref{bond-potentials}~\ref{intra-tables}
+                                 &            &          &          &       & in TABBND file \\
+            &                    &            &          &          &       & \\
 {\bf harm}  & Harmonic           & $k$        & $r_{0}$  &          &       &
 $U(r) = \frac{1}{2}~k~(r_{ij}-r_{0})^{2}$ \\
 {\bf -hrm}  &                    &            &          &          &       & \\
@@ -2130,6 +2242,10 @@ atomic indices appearing under the {\bf shell} directive above.
 \hline
 key & potential type & \multicolumn{4}{c|}{Variables (1-4)} & functional form\dag \\
 \hline
+           &                     &     &              &            &            & \\
+{\bf tab}  & Tabulation, see      &     &              &            &            & tabulated potential \\
+{\bf -tab} & Sections~\ref{angle-potentials}~\ref{intra-tables}
+                                 &     &              &            &            & in TABANG file \\
            &                     &     &              &            &            & \\
 {\bf harm} & Harmonic            & $k$ & $\theta_{0}$ &            &            &
 $U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}$ \\
@@ -2244,6 +2360,11 @@ the {\bf shell} directive above.
 key & potential type & \multicolumn{3}{c|}{Variables (1-3,6-7)} & functional form\ddag \\
 \hline
            &                 &         &            &         & \\
+{\bf tab}  & Tabulation, see
+                             &         &            &         & tabulated potential \\
+           & Sections~\ref{dihedral-potentials}~\ref{improper-dihedral-potentials}~\ref{intra-tables}
+                             &         &            &         & in TABDIH file \\
+           &                 &         &            &         & \\
 {\bf cos}  & Cosine          & $A$     & $\delta$   & $m$     &
 $U(\phi) = A~\left[ 1 + \cos(m\phi - \delta) \right]$ \\
            &                 &         &            &         & \\
@@ -2319,6 +2440,10 @@ above.
 key & potential type & \multicolumn{3}{c|}{Variables (1-3)} & functional form\ddag \\
 \hline
            &                 &     &            &            & \\
+{\bf tab}  & Tabulation, see  &     &            &            & tabulated potential \\
+           & Sections~\ref{inversion-potentials}~\ref{intra-tables}
+                             &     &            &            & in TABINV file \\
+           &                 &     &            &            & \\
 {\bf harm} & Harmonic        & $k$ & $\phi_{0}$ &            &
 $U(\phi) = {k \over 2}~(\phi - \phi_{0})^{2}$ \\
            &                 &     &            &            & \\
@@ -2331,7 +2456,7 @@ $U(\phi) = A~[1 - \cos(\phi)]$ \\
 {\bf xpln} & Extended planar & $k$ & $m$        & $\phi_{0}$ &
 $U(\phi) = {k \over 2}~[ 1 - \cos(m~\phi - \phi_{0}) ]$ \\
            &                 &     &            &            & \\
-{\bf calc} & Calcite         & $A$ & $B$        &            &
+{\bf calc} & Calcite \ref{calcite} & $A$ & $B$  &            &
 $U(u)= Au^{2}+Bu^{4}$ \\
            &                 &     &            &            & \\
 \hline
@@ -2418,8 +2543,8 @@ file, will be assumed to be zero.
 key & potential type & \multicolumn{5}{c|}{Variables (1-5)}& functional form \\
 \hline
            &                           &            &          &          &         &                      & \\
-{\bf tab}  & Tabulation                &            &          &          &         &                      &
-tabulated potential \\
+{\bf tab}  & Tabulation, see            &            &          &          &         &                      & tabulated potential \\
+           & Sections~\ref{vdw}~\ref{table-file} &  &          &          &         &                      & in TABLE file \\
            &                           &            &          &          &         &                      & \\
 {\bf 12-6} & 12-6                      & $A$        & $B$      &          &         &                      &
 $U(r) = \left( \frac{A}{r^{12}} \right) - \left( \frac{B}{r^{6}} \right)$ \\
@@ -2427,7 +2552,7 @@ $U(r) = \left( \frac{A}{r^{12}} \right) - \left( \frac{B}{r^{6}} \right)$ \\
 {\bf lj}   & Lennard-Jones             & $\epsilon$ & $\sigma$ &          &         &                      &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r}\right)^{6} \right]$ \\
            &                           &            &          &          &         &                      & \\
-{\bf lj}   & Lennard-Jones cohesive \cite{barrat-99a} & $\epsilon$ & $\sigma$ & $c$      &         &       &
+{\bf ljc}  & LJ cohesive \cite{barrat-99a} & $\epsilon$ & $\sigma$ & $c$  &         &                      &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - c~\left( \frac{\sigma}{r}\right)^{6} \right]$ \\
            &                           &            &          &          &         &                      & \\
 {\bf nm}   & n-m \cite{mie-03a,clarke-86a} & $E_{o}$ & $n$     & $m$      & $r_{0}$ &                      &
@@ -2465,7 +2590,7 @@ $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r-\Delta} \right)^{12} -
            & Chandler-Andersen         &            &          &          &         &                      &
 $U(r) = 0~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~: r_{ij} \ge 2^{1 \over 6}~\sigma + \Delta$ \\
            &                           &            &          &          &         &                      & \\
-{\bf dpd}  & Standard DPD \cite{groot-97a} & $A$    & $r_{c}$$^{\ddagger}$ &        &         &                      &
+{\bf dpd}  & Standard DPD \cite{groot-97a} & $A$    & $r_{c}$$^{\ddagger}$ &  &     &                      &
 $U(r) = \frac{A}{2}~r_{c}~\left(1-\frac{r}{r_{c}}\right)^{2}~:~r < r_{c}$ \\
            & (Groot-Warren)            &            &          &          &         &                      &
 $U(r) = 0~~~~~~~~~~~~~~~~~~~:~r \ge r_{c}$ \\
@@ -2529,16 +2654,16 @@ key & potential type & \multicolumn{5}{c|}{Variables (1-5,6-9)}& functional form
 \hline
            &                 &         &         &         &     &          & \\
 {\bf eam}  & EAM             &         &         &         &     &          &
-tabulated potential \\
+tabulated potential in TABEAM \\
            &                 &         &         &         &     &          & \\
 {\bf eeam} & EEAM            &         &         &         &     &          &
-tabulated potential \\
+tabulated potential in TABEAM \\
            &                 &         &         &         &     &          & \\
 {\bf 2bea} & 2BEAM           &         &         &         &     &          &
-tabulated potential \\
+tabulated potential in TABEAM \\
            &                 &         &         &         &     &          & \\
 {\bf 2bee} & 2BEEAM          &         &         &         &     &          &
-tabulated potential \\
+tabulated potential in TABEAM \\
            &                 &         &         &         &     &          & \\
 {\bf fnsc} & Finnis-Sinclair & $c_{0}$ & $c_{1}$ & $c_{2}$ & $c$ & $A$      &
 $U_{i}(r) = {1 \over 2} \sum\limits_{j \ne i} (r_{ij}-c)^{2} (c_{0}+c_{1}r_{ij}+c_{2}r_{ij}^{2}) - A \sqrt{\rho_{i}}~;$ \\
@@ -2754,8 +2879,10 @@ The variables pertaining to each potential are described in Table
 \ref{tbp-table}.
 
 Note that the fifth variable is the range at which the three
-body\index{potential!three-body} potential is truncated.  The
-distance is in \AA, measured from the central atom.
+body\index{potential!three-body} potential is truncated.
+The distance is in \AA, measured from the central atom.
+Note that interactions defined with less than four potential
+parameters must provide zeros for the ones up to the cutoff one.
 
 \begin{table}[htbp]
 \begin{centering}
@@ -2766,10 +2893,10 @@ distance is in \AA, measured from the central atom.
 key & potential type & \multicolumn{4}{c|}{Variables (1-4)} & functional form\dag \\
 \hline
            &                                        &           &              &            &            & \\
-{\bf harm} & Harmonic                               & $k$       & $\theta_{0}$ &            &            &
+{\bf harm} & Harmonic                               & $k$       & $\theta_{0}$ &     0      &      0     &
 $U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}$ \\
            &                                        &           &              &            &            & \\
-{\bf thrm} & Truncated harmonic                     & $k$       & $\theta_{0}$ & $\rho$     &            &
+{\bf thrm} & Truncated harmonic                     & $k$       & $\theta_{0}$ & $\rho$     &      0     &
 $U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}~\exp[-(r_{ij}^{8} + r_{ik}^{8})/\rho^{8}]$ \\
            &                                        &           &              &            &            & \\
 {\bf shrm} & Screened harmonic                      & $k$       & $\theta_{0}$ & $\rho_{1}$ & $\rho_{2}$ &
@@ -2785,7 +2912,7 @@ $U(\theta) = k~(\theta-\theta_{0})^{2}~\big[ \theta^a (\theta-\theta_{0})^{2} (\
            &                                        &           &              &            &            &
 $+ {a \over 2} \pi^{a-1}(\theta_{0}-\pi)^{3}\big]~\exp[-(r_{ij}^{8} + r_{ik}^{8})/\rho^{8}]$ \\
            &                                        &           &              &            &            & \\
-{\bf hbnd} & H-bond \cite{mayo-90a}                 & $D_{hb}$  & $R_{hb}$     &            &            &
+{\bf hbnd} & H-bond \cite{mayo-90a}                 & $D_{hb}$  & $R_{hb}$     &     0      &     0      &
 $U(\theta) = D_{hb}~\cos^{4}(\theta) \times$ \\
            &                                        &           &              &            &            &
 $[5(R_{hb}/r_{jk})^{12} - 6(R_{hb}/r_{jk})^{10}]$ \\
@@ -2817,8 +2944,10 @@ The variables pertaining to each potential are described in Table
 \ref{fbp-table}.
 
 Note that the third variable is the range at which the
-four-body\index{potential!four-body} potential is truncated.  The
-distance is in \AA, measured from the central atom.
+four-body\index{potential!four-body} potential is truncated.
+The distance is in \AA, measured from the central atom.
+Note that interactions idefined with less than two potential
+parameters must provide zeros for the ones up to the cutoff one.
 
 \begin{table}[htbp]
 \begin{centering}
@@ -2835,7 +2964,7 @@ $U(\phi) = {k \over 2}~(\phi - \phi_{0})^{2}$ \\
 {\bf hcos} & Harmonic cosine & $k$ & $\phi_{0}$ &
 $U(\phi) = {k \over 2}~(\cos(\phi) - \cos(\phi_{0}))^{2}$ \\
            &                 &     &            & \\
-{\bf plan} & Planar          & $A$ &            &
+{\bf plan} & Planar          & $A$ &     0      &
 $U(\phi) = A~[1 - \cos(\phi)]$ \\
            &                 &     &            & \\
 \hline
@@ -2864,7 +2993,8 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> variable 2    \> real    \> potential parameter, see Table~\ref{external-field-table} \\
 \> variable 3    \> real    \> potential parameter, see Table~\ref{external-field-table} \\
 \> variable 4    \> real    \> potential parameter, see Table~\ref{external-field-table} \\
-\> variable 5    \> real    \> potential parameter, see Table~\ref{external-field-table}
+\> variable 5    \> real    \> potential parameter, see Table~\ref{external-field-table} \\
+\> variable 6    \> real    \> potential parameter, see Table~\ref{external-field-table}
 \end{tabbing}
 The variables pertaining to each field potential are described
 in Table~\ref{external-field-table}.
@@ -2875,63 +3005,67 @@ in Table~\ref{external-field-table}.
 \begin{centering}
 \caption{\label{external-field-table} External Fields}
 \vskip 1ex
-\begin{tabular}{|l|l|c|c|c|c|c|l|}
+\begin{tabular}{|l|l|c|c|c|c|c|c|l|}
 \hline
-key & potential type & \multicolumn{5}{c|}{Variables (1-5)} & functional form \\
+key & potential type & \multicolumn{6}{c|}{Variables (1-6)} & functional form \\
 \hline
-           &                     &         &         &         &         &               & \\
-{\bf elec} & Electric Field      & $E_{x}$ & $E_{y}$ & $E_{z}$ &         &               &
+           &                     &         &         &         &         &          &        & \\
+{\bf elec} & Electric Field      & $E_{x}$ & $E_{y}$ & $E_{z}$ &         &          &        &
 $\vek{F} = q \; \vek{E}$ \\
-           &                     &         &         &         &         &               & \\
-{\bf oshr} & Oscillating Shear   & $A$     & $n$     &         &         &               &
+           &                     &         &         &         &         &          &        & \\
+{\bf oshr} & Oscillating Shear   & $A$     & $n$     &         &         &          &        &
 $\vek{F}_x = A \; \cos(2 n\pi \cdot z/L_{z})$ \\
-           &                     &         &         &         &         &               & \\
-{\bf shrx} & Continuous Shear    & $A$     & $z_{0}$ &         &         &               &
+           &                     &         &         &         &         &          &        & \\
+{\bf shrx} & Continuous Shear    & $A$     & $z_{0}$ &         &         &          &        &
 $\vek{v}_x = \frac{A}{2} \frac{|z|}{z}~:~|z|~>~z_{0}$ \\
-           &                     &         &         &         &         &               & \\
-{\bf grav} & Gravitational Field & $G_{x}$ & $G_{y}$ & $G_{z}$ &         &               &
+           &                     &         &         &         &         &          &        & \\
+{\bf grav} & Gravitational Field & $G_{x}$ & $G_{y}$ & $G_{z}$ &         &          &        &
 $\vek{F} = m \; \vek{G}$ \\
-           &                     &         &         &         &         &               & \\
-{\bf magn} & Magnetic Field      & $H_{x}$ & $H_{y}$ & $H_{z}$ &         &               &
+           &                     &         &         &         &         &          &        & \\
+{\bf magn} & Magnetic Field      & $H_{x}$ & $H_{y}$ & $H_{z}$ &         &          &        &
 $\vek{F} = q \; (\vek{v} \times \vek{H})$ \\
-           &                     &       &           &         &         &               & \\
-{\bf sphr} & Containing Sphere   & $A$   & $R_{0}$   & $n$     & $R_{\rm cut}$ &         &
+           &                     &       &           &         &         &          &        & \\
+{\bf sphr} & Containing Sphere   & $A$   & $R_{0}$   & $n$     & $R_{\rm cut}$ &    &        &
 $\vek{F} = A \; (R_{0} - r)^{-n}~:~r > R_{\rm cut}$ \\
-           &                     &       &           &         &         &               & \\
-{\bf zbnd} & Repulsive Wall      & $A$   & $z_{0}$   & $p$     &         &               &
+           &                     &       &           &         &         &          &        & \\
+{\bf zbnd} & Repulsive Wall      & $A$   & $z_{0}$   & $p$     &         &          &        &
 $\vek{F} = A \; (z_{0} - z) ~:~p \cdot z > p \cdot z_{0}$ \\
-           &                     &       &           &         &         &               & \\
-{\bf xpis} & X-Piston & $i^{glob}_{ind}$ & $j^{glob}_{ind}$ & $P^{in}_{k-atm}$ & &       &
-$\vek{F}_{x} = \frac{\textrm{$P$} \cdot \vek{\textrm{Area}}(\perp\textrm{X-}dir)}
+           &                     &       &           &         &         &          &        & \\
+{\bf xpis} & X-Piston            & $i_{gid}$ & $j_{gid}$ & $P_{k {\rm atm}}$ &  &   &        &
+$\vek{F}_{x} = \frac{P \cdot \vek{\textrm{Area}}(\perp\textrm{X-}dir)}
 {\left[\sum_{k=i}^{j}m_{k}\right] \textrm{/} m_{k}} : \forall~k=i,..,j $ \\
-           &                     &       &           &         &         &               & \\
-{\bf zres} & Molecule in HR Zone & $i^{glob}_{ind}$ & $j^{glob}_{ind}$ & $k$ & $z_{mn}$ & $z_{mx}$ &
+           &                     &       &           &         &         &          &        & \\
+{\bf zres} & Molecule in HR Zone & $i_{gid}$ & $j_{gid}$ & $k$ & $z_{mn}$ & $z_{mx}$ &       &
 $
 \vek{F}_{z} = \left\{ \begin{array} {l@{~:~}l}
 A(z_{cm}-z_{mx}) & z_{cm} > z_{mx} \\
 A(z_{mn}-z_{cm}) & z_{cm} < z_{mn}
 \end{array} \right.
 $ \\
-           &                     &       &           &         &         &               & \\
-{\bf zrs-} & HR Zone (pull out)  & $i^{glob}_{ind}$ & $j^{glob}_{ind}$ & $k$ & $z_{mn}$ & $z_{mx}$ &
+           &                     &       &           &         &         &          &        & \\
+{\bf zrs$-$} & HR Zone (push out) & $i_{gid}$ & $j_{gid}$ & $k$ & $z_{mn}$ & $z_{mx}$ &      &
 $
 \vek{F}_{z} = \left\{ \begin{array} {l@{~:~}l}
 A(z-z_{mx}) & z \ge \frac{z_{mx}+z_{mn}}{2} \\
 A(z_{mn}-z) & z < \frac{z_{mx}+z_{mn}}{2}
 \end{array} \right.
 $ \\
-           &                     &       &           &         &         &               & \\
-{\bf zrs+} & HR Zone (pull in)   & $i^{glob}_{ind}$ & $j^{glob}_{ind}$ & $k$ & $z_{mn}$ & $z_{mx}$ &
+           &                     &       &           &         &         &          &        & \\
+{\bf zrs+} & HR Zone (pull in)   & $i_{gid}$ & $j_{gid}$ & $k$ & $z_{mn}$ & $z_{mx}$ &       &
 $
 \vek{F}_{z} = \left\{ \begin{array} {l@{~:~}l}
 A(z-z_{mx}) & z > z_{mx} \\
 A(z_{mn}-z) & z < z_{mn}
 \end{array} \right.
 $ \\
-           &                     &       &           &         &         &               & \\
-{\bf osel} & Osc. Electric Field & $E_{x}$ & $E_{y}$ & $E_{z}$ & $\omega^{in}_{ps^{-1}}$ & &
+           &                     &       &           &         &         &          &        & \\
+{\bf osel} & Osc. Electric Field & $E_{x}$ & $E_{y}$ & $E_{z}$ & $\omega_{{\rm ps}^{-1}}$ & & &
 $\vek{F} = q \; \vek{E} \; \sin(2 \pi \omega t)$ \\
-           &                     &       &           &         &         &               & \\
+           &                     &       &           &         &         &          &        & \\
+{\bf ushr} & umbrella sampling  \cite{torrie-77a} & $i^{A}_{gid}$ & $j^{A}_{gid}$ & $i^{B}_{gid}$ & $j^{B}_{gid}$ &
+                                   $k$              & $R_{0}$           &
+$U_{AB} = \frac{k}{2} (R_{AB}-R_{0})^{2}$ \\
+           & harm. constraint  \cite{kastner-11a} &       &           &         &         &          &        & \\
 \hline
 \end{tabular}
 \vskip 1ex
@@ -3026,17 +3160,12 @@ NUMMOLS   32000
 
 ATOMS     3
 
-O  2
+O  2  1  0.837  0.39
 -0.51966
  0.00000   0.00000   0.14279
  0.37928   0.00000   0.00000  -0.41809   0.00000   0.03881
 
-H  2
-0.25983
--0.03859   0.00000  -0.05818
--0.03673   0.00000  -0.00203  -0.10739   0.00000   0.14412
-
-H  2
+H  2  2  0.496  0.39
 0.25983
 -0.03859   0.00000  -0.05818
 -0.03673   0.00000  -0.00203  -0.10739   0.00000   0.14412
@@ -3117,16 +3246,26 @@ atoms in the molecule i.e. site names, masses and charges.  Each
 record carries the entries:
 \begin{tabbing}
 X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
-\> {\tt sitnam} \> a8      \> atomic site name \\
-\> {\tt order}  \> integer \> multipolar order supplied \\
-\> {\tt nrept}  \> integer \> repeat counter
+\> {\tt sitnam}    \> a8      \> atomic site name \\
+\> {\tt order}     \> integer \> multipolar order supplied \\
+\> {\tt nrept}     \> integer \> repeat counter \\
+\> {\tt $\alpha$}  \> real(1) \> {\em optional} atomic polarisability (in \AA$^{3}$) \\
+\> {\tt $a$}       \> real(1) \> {\em optional} Thole dumping factor
 \end{tabbing}
-The integer {\tt nrept} need not be specified (in which case a value
-of 1 is assumed.)  A number greater than 1 specified here indicates
-that the next ({\tt nrept}-1) entries in the CONFIG file are ascribed
-the atomic characteristics given in the current record.  The sum of the
+The integer {\tt nrept} may be omitted (in which case a value or 1
+is assumed) {\bf only if} no further optional directives are provided!
+A number greater than 1 specified here indicates that the next
+({\tt nrept}-1) entries in the CONFIG file are ascribed the atomic
+characteristics given in the current record.  The sum of the
 repeat numbers for all atoms in a molecule should equal the number
 specified by the {\bf atoms} directive.
+
+The atomic polarisability, $\alpha$, and the Thole \cite{thole-81a}
+dumping factor, $a$, are {\em optional} and are only parsed for the core
+(non-Druder) particles of core-shell units.  If all polarisabilities
+as well as core and shell charges and associated force constants are
+well defined then $a$ may default for (Druder nuclei) core particles
+if no Thole dumping is specified in both MPOLES and CONTROL.
 
 For each pole {\tt order} specified \D will read a new line that
 will specify the pole order momenta.  If a site has a specified
@@ -3137,7 +3276,7 @@ the one specified in FIELD, $n$, these will not be processed by \D.
 
 \D will read same order momenta in their natural vector format:
 \begin{tabbing}
-X\=XXXXXXXX\=XXXXXXXX\=\kill
+X\=XXXXXXXXXX\=XXXXXX\=\kill
 \> {\tt charge}       \> real(1)  \> scalar $q$ (in protons) \\
 \> {\tt dipole}       \> real(3)  \> vector $(x,y,z)$ (in protons/\AA) \\
 \> {\tt quadrupole}   \> real(6)  \> vector $(xx,xy,xz,yy,yz,zz)$ (in protons/\AA$^{2}$) \\
@@ -3242,10 +3381,12 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 {\bf record 11}: \\
 \> {\tt stress} \>  atomic stress (9) \\
 {\bf record 12}: (Optional) \\
-\> {\tt rdf}    \> RDF array ({\tt mxgrdf}$\times${\tt mxrdf}) \\
+\> {\tt rdf}    \> RDF arrays ({\tt mxgrdf}$\times${\tt mxrdf}) \\
 {\bf record 13}: (Optional) \\
-\> {\tt zdens}  \> Z-density array ({\tt mxgrdf}$\times${\tt mxatyp}) \\
+\> {\tt usr}    \> umbrella sampling RDF array ({\tt mxgusr}) \\
 {\bf record 14}: (Optional) \\
+\> {\tt zdens}  \> Z-density array ({\tt mxgrdf}$\times${\tt mxatyp}) \\
+{\bf record 15}: (Optional) \\
 \> {\tt vaf}    \> VAF arrays (sizes dependent on sampling frequency and VAF bin size)
 \end{tabbing}
 

@@ -402,13 +402,13 @@ Contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 routine to calculate a molecule's mass and CoM
+! dl_poly_4 routine to calculate a molecule's mass and COM
 !
 ! istart  - the global index of the first atom of the molecule
 ! ifinish - the global index of the last atom of the molecule
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2015
+! author    - i.t.todorov november 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -422,6 +422,7 @@ Contains
     Real( Kind = wp ), Intent(   Out ) :: cmm(0:3)
 
     Integer           :: fail,i,j,k
+    Real( Kind = wp ) :: mass,r(1:3)
 
     Real( Kind = wp ), Allocatable :: mol(:,:)
 
@@ -434,6 +435,7 @@ Contains
 
 ! Initialise
 
+    mass = 0.0_wp
     cmm  = 0.0_wp
 
     mol = 0.0_wp
@@ -442,7 +444,7 @@ Contains
        If (j >= istart .and. j <= ifinish) Then
           k=j-istart+1
 
-          mol(k,0) = weight(i)*Real(lfrzn(i)-1,wp)
+          mol(k,0) = weight(i)
           mol(k,1) = xxx(i)
           mol(k,2) = yyy(i)
           mol(k,3) = zzz(i)
@@ -451,20 +453,30 @@ Contains
 
     If (mxnode > 1) Call gsum(mol)
 
-    mol(:,1) = xxx(:)-xxx(1)
-    mol(:,2) = yyy(:)-yyy(1)
-    mol(:,3) = zzz(:)-zzz(1)
+    r(1) = mol(1,1)
+    r(2) = mol(1,2)
+    r(3) = mol(1,3)
+
+    mol(:,1) = mol(:,1)-r(1)
+    mol(:,2) = mol(:,2)-r(2)
+    mol(:,3) = mol(:,3)-r(3)
 
     k=ifinish-istart+1
     Call images(imcon,cell,k,mol(:,1),mol(:,2),mol(:,3))
-    Do i=1,ifinish-istart+1
-       cmm(0) = cmm(0) + mol(i,0)
+
+    mol(:,1) = mol(:,1)+r(1)
+    mol(:,2) = mol(:,2)+r(2)
+    mol(:,3) = mol(:,3)+r(3)
+
+    Do i=1,k
+       mass   = mass   + mol(i,0)
+       cmm(0) = cmm(0) + mol(i,0)*Real(1-lfrzn(i),wp)
        cmm(1) = cmm(1) + mol(i,0)*mol(i,1)
        cmm(2) = cmm(2) + mol(i,0)*mol(i,2)
        cmm(3) = cmm(3) + mol(i,0)*mol(i,3)
     End Do
 
-    If (cmm(0) >= zero_plus) cmm(1:3) = cmm(1:3) / cmm(0)
+    If (cmm(0) >= zero_plus) cmm(1:3) = cmm(1:3) / mass
 
     fail = 0
     Deallocate (mol, Stat = fail)

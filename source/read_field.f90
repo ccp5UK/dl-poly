@@ -1,11 +1,11 @@
-Subroutine read_field                   &
-           (l_str,l_top,l_n_v,          &
-           rcut,rvdw,rmet,width,temp,   &
-           keyens,keyfce,keyshl,        &
-           lecx,lbook,lexcl,            &
-           rcter,rctbp,rcfbp,           &
-           atmfre,atmfrz,megatm,megfrz, &
-           megshl,megcon,megpmf,megrgd, &
+Subroutine read_field                      &
+           (l_str,l_top,l_n_v,             &
+           rcut,rvdw,rmet,width,temp,epsq, &
+           keyens,keyfce,keyshl,           &
+           lecx,lbook,lexcl,               &
+           rcter,rctbp,rcfbp,              &
+           atmfre,atmfrz,megatm,megfrz,    &
+           megshl,megcon,megpmf,megrgd,    &
            megtet,megbnd,megang,megdih,meginv)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -14,11 +14,12 @@ Subroutine read_field                   &
 ! of the system to be simulated
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2016
+! author    - i.t.todorov february 2017
 ! contrib   - r.davidchak (eeam) july 2012
 ! contrib   - b.palmer (2band) may 2013
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs & PDFs)
 ! contrib   - a.m.elena september 2016 (ljc)
+! contrib   - a.m.elena february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -46,6 +47,7 @@ Subroutine read_field                   &
 ! INTERACTION MODULES
 
   Use core_shell_module
+  Use mpoles_module, Only : keyind,thole,mpllfr,plrsit,dmpsit
 
   Use constraints_module
   Use pmf_module
@@ -82,7 +84,7 @@ Subroutine read_field                   &
   Logical,           Intent( In    ) :: l_str,l_top,l_n_v
   Integer,           Intent( In    ) :: keyens
   Integer,           Intent( InOut ) :: keyfce
-  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width,temp
+  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width,temp,epsq
   Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
@@ -94,7 +96,8 @@ Subroutine read_field                   &
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
                             l_shl,l_con,l_rgd,l_tet,l_bnd,l_ang,l_dih,l_inv, &
-                            lshl_one,lshl_all,lpmf,lmet_safe,lter_safe,ldpd_safe
+                            lshl_one,lshl_all,lshl_abort,lpmf,               &
+                            lmet_safe,lter_safe,ldpd_safe
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
   Character( Len = 32  ) :: iddihd,idinvr
@@ -116,7 +119,12 @@ Subroutine read_field                   &
                             itbp,itptbp,keytbp,ktbp,                            &
                             ifbp,itpfbp,keyfbp,ka1,ka2,ka3,kfbp,nfld,itmp
   Real( Kind = wp )      :: weight,charge,pmf_tmp(1:2),parpot(1:30),tmp,        &
-                            sig(0:2),eps(0:2),del(0:2)
+                            sig(0:2),eps(0:2),del(0:2),                         &
+                            q_core_p, q_core_s , q_core,                        &
+                            q_shel_p, q_shel_s , q_shel,                        &
+                            k_crsh_p, k_crsh_s , k_crsh,                        &
+                            p_core_p, p_core_s , p_core,                        &
+                            d_core_p, d_core_s , d_core
 
   Character( Len = 32 ), Allocatable :: dihd_name(:),invr_name(:)
   Character( Len = 24 ), Allocatable :: angl_name(:)
@@ -233,7 +241,7 @@ Subroutine read_field                   &
 ! open force field data file
 
   If (idnode == 0) Then
-     Open(Unit=nfield, File = 'FIELD', Status = 'old')
+     Open(Unit=nfield, File = Trim(field), Status = 'old')
      Write(nrite,"(/,/,1x,'SYSTEM SPECIFICATION')")
      If (.not.l_top) Write(nrite,"(/,1x,'detailed topology opted out')")
   End If
@@ -263,17 +271,17 @@ Subroutine read_field                   &
 
         If (word(1:2) == 'ev') Then
 
-           engunit = 9648.530821_wp
+           engunit = eu_ev
            If (idnode == 0) Write(nrite,"(/,1x,'energy units = eV')")
 
         Else If (word(1:4) == 'kcal') Then
 
-           engunit = 418.4_wp
+           engunit = eu_kcpm
            If (idnode == 0) Write(nrite,"(/,1x,'energy units = kcal/mol')")
 
         Else If (word(1:2) == 'kj') Then
 
-           engunit = 100.0_wp
+           engunit = eu_kjpm
            If (idnode == 0) Write(nrite,"(/,1x,'energy units = kJ/mol')")
 
         Else If (word(1:8) == 'internal') Then
@@ -308,7 +316,7 @@ Subroutine read_field                   &
               "Multipolar electrostatics opted with poles up to order ", Nint(word_2_real(word))
 
            If (Nint(word_2_real(word)) > mxompl) Write(nrite,"(1x,a)") &
-             "*** warning - supplied multipolar expansion order reduced to the maximum allowed - 4! ***"
+              "*** warning - supplied multipolar expansion order reduced to the maximum allowed - 4 !!! ***"
 
            Write(nrite,"(1x,a)") &
               "MPOLES file scheduled for reading after reading all intramolecular topology in FIELD"
@@ -587,7 +595,7 @@ Subroutine read_field                   &
 ! convert energy units to internal units
 
                     prmshl(1:2,nshels)=prmshl(1:2,nshels)*engunit
-                    smax=Max(smax,prmshl(1,nshels)+0.5_wp*prmshl(2,nshels))
+                    smax=Max(smax,prmshl(1,nshels)+6.0_wp*prmshl(2,nshels))
                  End Do
 
 ! Check for mixed or multiple core-shell entries (no inter units linkage!)
@@ -1451,7 +1459,7 @@ Subroutine read_field                   &
                     Call get_word(record,word)
                     iatm1=Nint(word_2_real(word))
                     Call get_word(record,word)
-                    iatm2=Nint(word_2_real(word))
+                    iatm2=Nint(word_2_real(word)) ! central atom
                     Call get_word(record,word)
                     iatm3=Nint(word_2_real(word))
 
@@ -1886,7 +1894,7 @@ Subroutine read_field                   &
 ! read inversion atom indices
 
                     Call get_word(record,word)
-                    iatm1=Nint(word_2_real(word))
+                    iatm1=Nint(word_2_real(word)) ! central atom
                     Call get_word(record,word)
                     iatm2=Nint(word_2_real(word))
                     Call get_word(record,word)
@@ -2643,13 +2651,201 @@ Subroutine read_field                   &
            lecx = .false.   ! extended coulombic exclusion is abandoned
         End If
 
-! check megshl and l_n_e/keyfce
-
 ! Process MPOLES
 
         If (mximpl > 0) Call read_mpoles(l_top,sumchg)
 
-! Check for charges in the system
+! check charmming shells (megshl) globalisation
+
+        If (megshl > 0) Then
+           nsite =0
+           nshels=0
+
+!          product             sum
+           q_core_p = 1.0_wp ; q_core_s = 0.0_wp
+           q_shel_p = 1.0_wp ; q_shel_s = 0.0_wp
+           k_crsh_p = 1.0_wp ; k_crsh_s = 0.0_wp
+           p_core_p = 1.0_wp ; p_core_s = 0.0_wp
+           d_core_p = 1.0_wp ; d_core_s = 0.0_wp
+           Do itmols=1,ntpmls
+              Do ishls=1,numshl(itmols)
+                 nshels=nshels+1
+                 iatm1=lstshl(1,nshels) ! core
+                 iatm2=lstshl(2,nshels) ! shell
+
+                 isite1 = nsite + iatm1
+                 isite2 = nsite + iatm2
+
+                 q_core_p=q_core_p*chgsit(isite1)
+                 q_core_s=q_core_s+Abs(chgsit(isite1))
+
+                 q_shel_p=q_shel_p*chgsit(isite2)
+                 q_shel_s=q_shel_s+Abs(chgsit(isite2))
+
+                 k_crsh_p=k_crsh_p*prmshl(1,nshels)
+                 k_crsh_s=k_crsh_s+prmshl(1,nshels)
+
+                 If (mximpl > 0) Then
+                    p_core_p=p_core_p*plrsit(isite1)
+                    p_core_s=p_core_s+plrsit(isite1)
+
+                    d_core_p=d_core_p*dmpsit(isite1)
+                    d_core_s=d_core_s+dmpsit(isite1)
+                 End If
+              End Do
+              nsite=nsite+numsit(itmols)
+           End Do
+
+! Checks for ABORTS
+
+           lshl_abort=.false. ! no aborting
+
+           If (Abs(q_core_p) <= zero_plus) Then
+              lshl_abort=.true.
+              If (idnode == 0) &
+  Write(nrite,"(/,1x,a)") "*** warning - a core of a core-shell unit bears a zero charge !!! ***"
+           End If
+
+           If (mximpl > 0) Then ! sort k_charm
+              If (p_core_s <= zero_plus .and. &
+                  k_crsh_s <= zero_plus .and. &
+                  q_shel_s <= zero_plus) Then
+                 lshl_abort=.true.
+                 If (idnode == 0) &
+  Write(nrite,"(/,1x,a)") "*** warning - core-shell units polarisability is compromised !!! ***"
+              Else
+                 If (k_crsh_s <= zero_plus .and. q_shel_s <= zero_plus) Then
+                    If (keyind > 0) Then
+                       k_crsh_p = 1000 * eu_kcpm ! reset to k_charmm = 1000 kcal*mol^−1*Å^−2
+                       smax=k_crsh_p             ! set smax
+                       If (idnode == 0) Then
+  Write(nrite,"(/,1x,a)") "*** warning - all core-shell force constants and shell charges are zero !!! ***"
+  Write(nrite,"(  1x,a)") "***           force constants to use 1000 kcal*mol^−1*Å^−2 CHARMM default ! ***"
+                       End If
+                    Else
+                       lshl_abort=.true.
+                       If (idnode == 0) &
+  Write(nrite,"(/,1x,a)") "*** warning - all core-shell force constants and charges are zero !!! ***"
+                    End If
+                 End If
+              End If
+           Else ! particles' polarisabilities not really needed
+              If (k_crsh_p <= zero_plus) Then
+                 lshl_abort=.true.
+                 If (idnode == 0) &
+  Write(nrite,"(/,1x,a)") "*** warning - a core-shell force constant is undefined/zero !!! ***"
+              End If
+              If (Abs(q_core_p*q_shel_p) <= zero_plus) Then
+                 lshl_abort=.true.
+                 If (idnode == 0) &
+  Write(nrite,"(/,1x,a)") "*** warning - core-shell units polarisability is compromised !!! ***"
+              End If
+           End If
+
+           If (mximpl > 0) Then ! Time for possible resets
+              d_core_p=0.0_wp ! the new d_core_s check for switching charming off!!!
+
+              nsite =0
+              nshels=0
+
+              Do itmols=1,ntpmls
+                 Do ishls=1,numshl(itmols)
+                    nshels=nshels+1
+                    iatm1=lstshl(1,nshels) ! core
+                    iatm2=lstshl(2,nshels) ! shell
+
+                    isite1 = nsite + iatm1
+                    isite2 = nsite + iatm2
+
+                    q_core=chgsit(isite1)
+                    p_core=plrsit(isite1)
+
+                    q_shel=chgsit(isite2)
+                    If (k_crsh_s <= zero_plus .and. q_shel_s <= zero_plus .and. &
+                        k_crsh_p > zero_plus) Then
+                       prmshl(1,nshels)=k_crsh_p
+                       prmshl(2,nshels)=0.0_wp
+                    End If
+                    k_crsh=prmshl(1,nshels)
+
+                    If (d_core_s <= zero_plus .and. thole >= -zero_plus) dmpsit(isite1) = thole
+                    d_core=dmpsit(isite1)
+                    d_core_p=d_core_p+d_core
+
+                    If      (Abs(q_shel) <= zero_plus) Then ! set shell's charge
+                       charge=-Sign(1.0_wp,q_core)*Sqrt(p_core*k_crsh/(r4pie0/epsq))
+                       If (Abs(charge) <= zero_plus) Then
+                          lshl_abort=.true.
+                          Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
+                       Else
+                          chgsit(isite2)=charge
+                          mpllfr(1,isite2)=charge
+                          sumchg=sumchg+Abs(charge)
+                       End If
+                    Else If (p_core <= zero_plus) Then ! set drude force constants
+                       If (k_crsh <= zero_plus) Then
+                          lshl_abort=.true.
+                          Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
+                       Else
+                          plrsit(isite1)=(r4pie0/epsq)*q_shel**2/k_crsh
+                       End If
+                    Else If (k_crsh <= zero_plus) Then ! set polarisability
+                       If (p_core <= zero_plus) Then
+                          lshl_abort=.true.
+                          Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
+                       Else
+                          prmshl(1,nshels)=(r4pie0/epsq)*q_shel**2/p_core
+                          prmshl(2,nshels)=0.0_wp
+                       End If
+                    End If
+
+! Redefine plrsit as reciprocal of polarisability
+
+                    plrsit(isite1)=1.0_wp/plrsit(isite1)
+
+! copy polarisability and dumping from cores to their shells
+
+                    plrsit(isite2)=plrsit(isite1)
+                    dmpsit(isite2)=dmpsit(isite1)
+                 End Do
+                 nsite=nsite+numsit(itmols)
+              End Do
+
+              If (keyind == 1 .and. d_core_p <= zero_plus) Then
+                 keyind = 0
+                 If (idnode == 0) &
+  Write(nrite,'(/,1x,a)') "*** warning - CHARMM polarisation scheme deselected due to zero dumping factor !!!"
+              End If
+           Else
+              nsite =0
+              nshels=0
+
+              Do itmols=1,ntpmls
+                 Do ishls=1,numshl(itmols)
+                    nshels=nshels+1
+                    iatm1=lstshl(1,nshels) ! core
+                    iatm2=lstshl(2,nshels) ! shell
+
+                    isite1 = nsite + iatm1
+                    isite2 = nsite + iatm2
+
+                    q_core=chgsit(isite1)
+                    q_shel=chgsit(isite2)
+                    k_crsh=prmshl(1,nshels)
+
+                    If (Abs(q_core*q_shel*k_crsh) <= zero_plus) Then
+                       lshl_abort=.true.
+                       Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
+                    End If
+                 End Do
+                 nsite=nsite+numsit(itmols)
+              End Do
+           End If
+
+           If (lshl_abort) Call error(615)
+        End If
+
+! check (keyfce) for charges in the system
 
         If (keyfce /= 0 .and. Abs(sumchg) <= zero_plus) Then
            If (idnode == 0) Call warning(4,sumchg,0.0_wp,0.0_wp)
@@ -2671,6 +2867,8 @@ Subroutine read_field                   &
         End Do
 
         If (Abs(sumchg) > 1.0e-6_wp .and. idnode == 0) Call warning(5,sumchg,0.0_wp,0.0_wp)
+
+! check (megshl) shell topological irregularities
 
         If (megshl > 0) Then
            nsite =0
@@ -3190,7 +3388,7 @@ Subroutine read_field                   &
 
                  Else
                     If (gamdpd(0) > zero_plus .and. idnode == 0) Write(nrite,"(/,1x,a)") &
-  "*** warning - all defined interactions have their drag coefficient overridden! ***"
+  "*** warning - all defined interactions have their drag coefficient overridden !!! ***"
                     If (mxtvdw == 0) Then
                        If (idnode == 0) Write(nrite,"(/,1x,a)") &
   "vdw/dpd cross terms mixing (for undefined mixed potentials) may be required"
@@ -3232,7 +3430,7 @@ Subroutine read_field                   &
                              ja=ltpvdw(lstvdw(jsite))
                              If (ia == ja .and.               & ! only if of the same type
                                  (ia == 1  .or. ia == 2  .or. & ! and the type is allowed mixing
-                                  ia == 9  .or. ia == 10 .or. &  ! ! LJ, 12-6, WCA, DPD, 14-7, LJC
+                                  ia == 9  .or. ia == 10 .or. & ! LJ, 12-6, WCA, DPD, 14-7, LJC
                                   ia == 11 .or. ia == 12)) Then
                                 ksite=isite+j-i
                                 If (lstvdw(ksite) > ntpvdw) Then ! if it does not exist - no overriding
@@ -3245,11 +3443,11 @@ Subroutine read_field                   &
                                       If (gamdpd(0) <= zero_plus) Then
                                          If (l_str) Then
                                             ldpd_safe = .false. ! test for non-definable interactions
-                                            If (idnode == 0) &   ! in a DPD thermostating context
+                                            If (idnode == 0) &  ! in a DPD thermostating context
   Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,a)") '*** warning - the interaction between bead types: ', &
   unqatm(i), '&', unqatm(j), ' is unresolved and thus thermostating is ill defined in a DPD context!!! ***'
                                          Else
-                                            If (idnode == 0) &   ! in a DPD thermostating context
+                                            If (idnode == 0) &  ! in a DPD thermostating context
   Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,a)") '*** warning - the interaction between bead types: ', &
   unqatm(i), '&', unqatm(j), ' is unresolved and thus thermostating is ill defined in a DPD context but may be OK in CG MD!!! ***'
                                          End If
@@ -3502,7 +3700,7 @@ Subroutine read_field                   &
               Else If (Any(gamdpd(1:mxvdw) <= zero_plus)) Then ! in principle we should come up with the error before here
 
                  If (idnode == 0) & ! interactions drag coefficients mishmash
-  Write(nrite,"(1x,a4)") '*** warning - there is a two-body interaction with a non-zero mutual drag coefficient!!! ***'
+  Write(nrite,"(1x,a4)") '*** warning - there is a two-body interaction with a non-zero mutual drag coefficient !!! ***'
 
                  sigdpd(1:mxvdw) = Sqrt(2.0_wp*boltz*temp*gamdpd(1:mxvdw)) ! define sigdpd
 
@@ -4211,7 +4409,7 @@ Subroutine read_field                   &
         Call get_word(record,word)
         nfld=0
         If (word(1:1) /= '#' .and. word(1:1) /= ' ') nfld=Nint(word_2_real(word))
-        If (nfld <= 0) nfld=5
+        If (nfld <= 0) nfld=6
 
         word(1:1)='#'
         Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -4254,6 +4452,8 @@ Subroutine read_field                   &
            keyfld=11
         Else If (keyword == 'osel') Then
            keyfld=12
+        Else If (keyword == 'ushr') Then
+           keyfld=13
         Else
 
            If (idnode == 0) Write(nrite,'(/,1x,a)') keyword
@@ -4300,6 +4500,12 @@ Subroutine read_field                   &
            If (.not.lunits) Call error(6)
 
            prmfld(3) = prmfld(3)*engunit
+
+        Else If (keyfld == 13) Then
+
+           If (.not.lunits) Call error(6)
+
+           prmfld(5) = prmfld(5)*engunit
 
         End If
 
@@ -4355,7 +4561,7 @@ Subroutine read_field                   &
         If ( (keyfce /= 0 .or. ntpvdw /= 0 .or. &
               ntpmet /= 0 .or. ntpter /= 0) .and. kim /= ' ') Then
            If (idnode == 0) Write(nrite,"(/,1x,a)") &
-  '*** warning - open KIM model in use together with extra intermolecular interactions!!! ***'
+  '*** warning - open KIM model in use together with extra intermolecular interactions !!! ***'
         End If
 
 ! EXIT IF ALL IS OK

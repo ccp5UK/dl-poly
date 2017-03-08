@@ -4,25 +4,27 @@ Subroutine scan_control                                    &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
-           mxompl,mximpl,nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
+           mxshl,mxompl,mximpl,keyind,                     &
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for raw scanning the contents of the control file
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov september 2016
+! author    - i.t.todorov february 2017
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
 ! contrib   - p.s.petkov february 2015
-! contrib   - a.b.g.chalk january 2017
+! contrib   - a.m.elena february 2017
+! contrib   - a.b.g.chalk march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,       Only : idnode,mxnode,gcheck
-  Use setup_module,       Only : nread,nrite,pi,zero_plus
+  Use setup_module,       Only : nread,nrite,control,pi,zero_plus
   Use parse_module,       Only : get_line,get_word,lower_case,word_2_real
   Use dpd_module,         Only : keydpd
   Use poisson_module,     Only : eps,mxitcg,mxitjb
@@ -36,8 +38,8 @@ Subroutine scan_control                                    &
 
   Logical,           Intent( InOut ) :: l_n_e
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
-  Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,mxrgd,imcon
-  Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl
+  Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,mxrgd,imcon,mxshl
+  Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl,keyind
   Integer,           Intent(   Out ) :: mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1, &
                                         mxstak,nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
@@ -54,7 +56,7 @@ Subroutine scan_control                                    &
   Integer,           Parameter :: mxspl_def = 8,        & ! default spline for SPME (4 & 6 possible)
                                   mxspl_min = 3           ! minimum spline order, needed for derivatives of forces
   Real( Kind = wp ), Parameter :: rcut_def  = 1.0_wp  , & ! minimum real space cutoff
-                                  rbin_def  = 0.05_wp , & ! default bin size
+                                  rbin_def  = 0.05_wp , & ! default bin size (RDF/USR & z-density)
                                   rcbnd_def = 2.5_wp      ! minimum bond length for bond analysis
 
 ! default reading indices options
@@ -142,12 +144,12 @@ Subroutine scan_control                                    &
 
 ! Open the simulation input file
 
-  If (idnode == 0) Inquire(File='CONTROL', Exist=safe)
+  If (idnode == 0) Inquire(File=Trim(control), Exist=safe)
   If (mxnode > 1) Call gcheck(safe,"enforce")
   If (.not.safe) Then
      Go To 10
   Else
-     If (idnode == 0) Open(Unit=nread, File='CONTROL', Status='old')
+     If (idnode == 0) Open(Unit=nread, File=Trim(control), Status='old')
   End If
 
 ! First Pass.  Get cutoff distances, stacksize and density variation.
@@ -372,6 +374,13 @@ Subroutine scan_control                                    &
 
 ! read "no vdw", "no elec" and "no str" options
 
+     Else If (word(1:5) == 'polar') Then
+
+        Call get_word(record,word)
+        If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
+        If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
+        If (word(1:6) == 'charmm' .and. mxshl > 0) keyind=1
+
      Else If (word(1:2) == 'no') Then
 
         Call get_word(record,word)
@@ -383,11 +392,6 @@ Subroutine scan_control                                    &
         Else If (word(1:4) == 'elec') Then
 
            l_n_e = .true.
-
-! reinitialise multipolar electrostatics indicators
-
-           mximpl = 0
-           mxompl = 0
 
         Else If (word(1:3) == 'ind' ) Then
 
@@ -527,6 +531,14 @@ Subroutine scan_control                                    &
      If (l_n_e) lelec = .not.l_n_e
   Else
      l_n_e = .true.
+  End If
+
+! reinitialise multipolar electrostatics indicators
+
+  If (l_n_e) Then
+     mximpl = 0
+     mxompl = 0
+     keyind = 0
   End If
 
 ! Sort vdw

@@ -3,20 +3,20 @@
 
 ! Scale t=0 reference positions
 
-        Call xscale(m_rgd,keyens,tstep,eta)
+        If (nstep > 0) Call xscale(m_rgd,keyens,tstep,eta)
 
 ! Check VNL conditioning
 
-        Call vnl_check(l_str,m_rgd,rcut,rpad,rlnk,width)
+        Call vnl_check(l_str,rcut,rpad,rlnk,width)
 
         If (l_vnl) Then
 
 ! Relocate atoms to new domains and restore bonding description
 
-           Call relocate_particles &
-           (rlnk,lbook,megatm,  &
-           megshl,m_con,megpmf, &
-           m_rgd,megtet,        &
+           Call relocate_particles  &
+           (dvar,rlnk,lbook,megatm, &
+           megshl,m_con,megpmf,     &
+           m_rgd,megtet,            &
            megbnd,megang,megdih,meginv)
 
 ! Exchange atomic data in border regions

@@ -83,7 +83,7 @@
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,"HISTORY",megatm,levcfg,dvar,nstep,tstep,time,exout)
+     Call read_history(l_str,Trim(history),megatm,levcfg,dvar,nstep,tstep,time,exout)
 
      If (newjb) Then
         newjb = .false.
@@ -92,7 +92,7 @@
         tmsh=0.0_wp ! tmst substitute
      End If
 
-     If (exout >= 0) Then
+     If (exout == 0) Then
         nstph=nstph+1
 
         If (nstph <= nstpe) Then
@@ -286,12 +286,12 @@
                  timelp/Real( nstph , wp) ) ) Then
 
               If (idnode == 0) Then
-                 Inquire(File='OUTPUT', Exist=l_out, Position=c_out)
+                 Inquire(File=Trim(output), Exist=l_out, Position=c_out)
                  Call strip_blanks(c_out)
                  Call lower_case(c_out)
                  If (l_out .and. c_out(1:6) == 'append') Then
                     Close(Unit=nrite)
-                    Open(Unit=nrite, File='OUTPUT', Position='append')
+                    Open(Unit=nrite, File=Trim(output), Position='append')
                  End If
               End If
 
@@ -306,16 +306,27 @@
            zin(i)=zzz(i)
         End Do
         clin=cell
-
-        If (exout > 0) Exit
      Else
         Exit
      End If
   End Do
 
-! If reading HISTORY finished awkwardly
+! Finish with grace
 
-  If (exout < 0) Then
+  If      (exout > 0) Then ! normal exit
+
+! recover connectivity arrays for REVCON, REVIVE and printing purposes
+! read_history MUST NOT initialise R,V,F arrays!!!
+
+     ltg(1:natms) = ltg0(1:natms)
+     lsa(1:natms) = lsa0(1:natms)
+     lsi(1:natms) = lsi0(1:natms)
+
+  Else If (exout < 0) Then ! abnormal exit
+
+! If reading HISTORY finished awkwardly
+! recover positions and generate kinetics
+
      Do i=1,natms
         xxx(i)=xin(i)
         yyy(i)=yin(i)
@@ -331,7 +342,15 @@
            megshl,megcon,megpmf,     &
            megrgd,degtra,degrot,     &
            degfre,degshl,sigma,engrot)
+
   End If
+  Call deallocate_statistics_connect()
+
+! Save restart data because of next action (and disallow the same in dl_poly)
+
+  If (.not. l_tor) Call system_revive                         &
+           (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
+           chit,cint,chip,eta,strcon,strpmf,stress)
 
 ! step counter is data counter now, so statistics_result is triggered
 

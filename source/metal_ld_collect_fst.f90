@@ -9,7 +9,7 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith june 1995
-! amended   - i.t.todorov february 2016
+! amended   - i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -176,6 +176,7 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
               l   = Min(Nint(rr1*rdr),Nint(merf(1))-1)
               If (l < 5) Then ! catch unsafe value
                  safe=.false.
+                 Write(*,*) 'aaa',l,iatm,jatm,rrr
                  l=6
               End If
               ppp = rr1*rdr - Real(l,wp)
@@ -229,6 +230,7 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
               l   = Min(Nint(rr1*rdr),Nint(dmet(1,k0,1))-1)
               If (l < 5) Then ! catch unsafe value
                  safe=.false.
+                 Write(*,*) 'bbb',l,iatm,jatm,rrr
                  l=6
               End If
               ppp = rr1*rdr - Real(l,wp)

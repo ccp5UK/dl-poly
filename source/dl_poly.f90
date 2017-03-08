@@ -44,9 +44,18 @@ Program dl_poly
   Use comms_module
   Use setup_module
 
-! IO MODULE
+! PARSE MODULE
+
+  Use parse_module
+
+! DEVELOPMENT MODULE
+
+  Use development_module
+
+! IO & DOMAINS MODULES
 
   Use io_module
+  Use domains_module
 
 ! SITE & CONFIG MODULES
 
@@ -97,10 +106,6 @@ Program dl_poly
   Use statistics_module
   Use greenkubo_module
 
-! PARSE MODULE
-
-  Use parse_module
-
 ! MSD MODULE
 
   Use msd_module
@@ -112,10 +117,6 @@ Program dl_poly
 ! LANGEVIN MODULE
 
   Use langevin_module
-
-! DEVELOPMENT MODULE
-
-  Use development_module
 
 ! MAIN PROGRAM VARIABLES
 
@@ -155,7 +156,8 @@ Program dl_poly
   Integer           :: i,j,isw,levcfg,nstfce,              &
                        nx,ny,nz,imd,tmd,                   &
                        keyres,nstrun,nsteql,               &
-                       keymin,nstmin,nstgaus,nstscal,      &
+                       keymin,nstmin,                      &
+                       nstzero,nstgaus,nstscal,            &
                        keyens,iso,intsta,keypse,nstbpo,    &
                        keyfce,mxshak,mxquat,               &
                        nstbnd,nstang,nstdih,nstinv,        &
@@ -180,7 +182,8 @@ Program dl_poly
                        rvdw,rmet,rbin,rcter,rctbp,rcfbp,          &
                        alpha,epsq,fmax,                           &
                        width,mndis,mxdis,mxstp,wthpse,tmppse,     &
-                       rlx_tol,min_tol,tolnce,quattol,rdef,rrsd,  &
+                       rlx_tol(1:2),min_tol(1:2),                 &
+                       tolnce,quattol,rdef,rrsd,                  &
                        pdplnc,emd,vmx,vmy,vmz,temp,sigma,         &
                        press,strext(1:9),ten,                     &
                        taut,chi,soft,gama,taup,tai,               &
@@ -203,13 +206,20 @@ Program dl_poly
   Call init_comms()
   If (mxnode > 1) Call gsync()
   Call gtime(timelp)
+  If (idnode == 0) Then
+    If (command_argument_count() == 1 ) Then
+      Call get_command_argument(1, control)
+    End If
+  End If
 
   Call scan_development()
 
 ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
 
+  Call scan_control_output()
+
   If (idnode == 0) Then
-     If (.not.l_scr) Open(Unit=nrite, File='OUTPUT', Status='replace')
+     If (.not.l_scr) Open(Unit=nrite, File=Trim(output), Status='replace')
 
      Write(nrite,'(5(1x,a,/),(1x,a25,a8,a4,a14,a15/),1x,a,i10,a,/,5(1x,a,/))')  &
           "******************************************************************", &
@@ -311,7 +321,8 @@ Program dl_poly
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
            temp,press,strext,keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
-           keymin,nstmin,min_tol,nstgaus,nstscal,      &
+           keymin,nstmin,min_tol,                      &
+           nstzero,nstgaus,nstscal,                    &
            keyens,iso,taut,chi,soft,gama,taup,tai,ten, &
            keypse,wthpse,tmppse,                       &
            fmax,nstbpo,intsta,keyfce,epsq,             &
@@ -323,20 +334,20 @@ Program dl_poly
 
 ! READ SIMULATION FORCE FIELD
 
-  Call read_field                       &
-           (l_str,l_top,l_n_v,          &
-           rcut,rvdw,rmet,width,temp,   &
-           keyens,keyfce,keyshl,        &
-           lecx,lbook,lexcl,            &
-           rcter,rctbp,rcfbp,           &
-           atmfre,atmfrz,megatm,megfrz, &
-           megshl,megcon,megpmf,megrgd, &
+  Call read_field                          &
+           (l_str,l_top,l_n_v,             &
+           rcut,rvdw,rmet,width,temp,epsq, &
+           keyens,keyfce,keyshl,           &
+           lecx,lbook,lexcl,               &
+           rcter,rctbp,rcfbp,              &
+           atmfre,atmfrz,megatm,megfrz,    &
+           megshl,megcon,megpmf,megrgd,    &
            megtet,megbnd,megang,megdih,meginv)
 
-
-If(l_jack .or. l_block) then
-  Call allocate_block_average_array(nstrun)
-End If
+! If computing rdf errors, we need to initialise the arrays.
+  If(l_jack .or. l_block) then
+     Call allocate_block_average_array(nstrun)
+  End If
 
 ! If using induced dipoles then read in atomic polarizability
 
@@ -453,7 +464,10 @@ End If
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
            megtet,megbnd,megang,megdih,meginv)
-     If (mximpl > 0) Call build_tplg_intra()
+     If (mximpl > 0) Then
+        Call build_tplg_intra() ! multipoles topology for internal coordinate system
+        If (keyind == 1) Call build_chrm_intra() ! CHARMM core-shell screened electrostatic induction interactions
+     End If
      If (lexcl) Call build_excl_intra(lecx)
   Else
      Call report_topology                &
@@ -489,10 +503,6 @@ End If
 ! set and halo rotational matrices and their infinitesimal rotations
 
   If (mximpl > 0) Call mpoles_rotmat_set_halo()
-
-! Make first check on VNL conditioning
-
-  Call vnl_check(l_str,m_rgd,rcut,rpad,rlnk,width)
 
 ! SET initial system temperature
 
@@ -677,15 +687,13 @@ End If
      End If
   End If
 
-! Save restart data (final)
+! Save restart data for real simulations only (final)
 
-  If (.not.l_tor) Call system_revive                          &
+  If (lsim .and. (.not.l_tor)) Call system_revive             &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
            chit,cint,chip,eta,strcon,strpmf,stress)
 
 ! Produce summary of simulation
-
-  If (.not.lsim) tstep=tsths ! tstep for 'replay history'
 
   Call statistics_result                                        &
            (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &

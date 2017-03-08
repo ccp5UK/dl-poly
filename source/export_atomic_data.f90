@@ -6,7 +6,7 @@ Subroutine export_atomic_data(mdir)
 ! for halo formation
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2016
+! author    - i.t.todorov december 2016
 ! contrib   - i.j.bush february 2016
 ! contrib   - h.a.boateng february 2016
 !
@@ -17,7 +17,7 @@ Subroutine export_atomic_data(mdir)
   Use setup_module,  Only : nrite,mxatms,mxbfxp
   Use domains_module
   Use config_module, Only : nlast,ltg,lsite,ixyz,cell,xxx,yyy,zzz
-  Use mpoles_module, Only : induce,indipx,indipy,indipz,atplrz,rsdx,rsdy,rsdz
+  Use mpoles_module, Only : induce,indipx,indipy,indipz,rsdx,rsdy,rsdz
   Use kim_module,    Only : kim,idhalo
 
   Implicit None
@@ -34,7 +34,7 @@ Subroutine export_atomic_data(mdir)
 
 ! Number of transported quantities per particle
 
-  iadd=6+Merge(7,0,induce)
+  iadd=6+Merge(6,0,induce)
 
   fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
@@ -192,7 +192,6 @@ Subroutine export_atomic_data(mdir)
                  buffer(kmove+4)=rsdx(i)
                  buffer(kmove+5)=rsdy(i)
                  buffer(kmove+6)=rsdz(i)
-                 buffer(kmove+7)=atplrz(i)
               End If
 
 ! Use the corrected halo reduction factor when the particle is halo to both +&- sides
@@ -288,7 +287,6 @@ Subroutine export_atomic_data(mdir)
         rsdx(nlast)  =buffer(k+4)
         rsdy(nlast)  =buffer(k+5)
         rsdz(nlast)  =buffer(k+6)
-        atplrz(nlast)=buffer(k+7)
      End If
 
 ! unpack remaining halo indexing

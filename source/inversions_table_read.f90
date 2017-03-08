@@ -6,7 +6,7 @@ Subroutine inversions_table_read(invr_name)
 ! from TABINV file (for inversion potentials & forces only)
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2016
+! author    - i.t.todorov january 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,7 +29,8 @@ Subroutine inversions_table_read(invr_name)
   Character( Len = 8   ) :: atom1,atom2,atom3,atom4
 
   Integer                :: fail(1:2),ngrid,rtinv,itinv,jtinv,katom1,katom2,katom3,katom4,jtpatm,i,l
-  Real( Kind = wp )      :: delpot,dlrpot,rad2dgr,dgr2rad,rdr,rrr,ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
+  Real( Kind = wp )      :: delpot,dlrpot,rad2dgr,dgr2rad,rdr,rrr,rrr0, &
+                            ppp,vk,vk1,vk2,t1,t2,bufp0,bufv0
 
   Integer,           Allocatable :: read_type(:)
   Real( Kind = wp ), Allocatable :: bufpot(:),bufvir(:)
@@ -186,16 +187,15 @@ Subroutine inversions_table_read(invr_name)
 
 ! read in potential & force arrays
 
-! read in potential & force arrays
-
      Do i=0,2
-        bufpot(0) = 0.0_wp
-        bufvir(0) = 0.0_wp
+        bufpot(i) = 0.0_wp
+        bufvir(i) = 0.0_wp
      End Do
 
 ! read in the zero and/or first & second data elements (potential & virial)
 
      If (idnode == 0) Then
+        rrr=0.0_wp
         Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
 
         If (rrr > zero_plus) Then ! no zero element data => extrapolate to zero
@@ -209,8 +209,17 @@ Subroutine inversions_table_read(invr_name)
 
            bufpot(1) = bufp0
            bufvir(1) = bufv0
+           rrr0      = rrr
 
            Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
+
+           If (Abs((rrr-rrr0-delpot)/delpot) > 1.0e-8_wp) Then
+              safe=.false.
+              If (idnode == 0) Write(nrite,"(/,                       &
+                 & ' TABINV stated  angular increment : ',1p,e15.7,/, &
+                 & ' TABINV read-in angular increment : ',1p,e15.7)") &
+                 delpot,rrr-rrr0
+           End If
 
            bufpot(2) = bufp0
            bufvir(2) = bufv0

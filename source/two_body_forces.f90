@@ -28,7 +28,7 @@ Subroutine two_body_forces                        &
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov april 2016
+! author    - i.t.todorov february 2017
 ! contrib   - h.a.boateng february 2016
 ! contrib   - p.s.petkov february 2015
 ! contrib   - a.b.g.chalk january 2017
@@ -42,7 +42,7 @@ Subroutine two_body_forces                        &
   Use config_module,  Only : volm,sumchg,natms,list,xxx,yyy,zzz
   Use vnl_module,     Only : l_vnl
   Use ewald_module
-  Use mpoles_module,  Only : induce
+  Use mpoles_module,  Only : induce,keyind
   Use poisson_module, Only : poisson_forces,poisson_excl_forces,poisson_frzn_forces
   Use vdw_module,     Only : ntpvdw
   Use metal_module,   Only : ntpmet
@@ -72,11 +72,12 @@ Subroutine two_body_forces                        &
   Logical           :: safe = .true., l_do_rdf
   Integer           :: fail,i,j,k,limit
   Real( Kind = wp ) :: engcpe_rc,vircpe_rc,engcpe_rl,vircpe_rl, &
-                       engcpe_ex,vircpe_ex,engcpe_fr,vircpe_fr, &
-                       engcpe_nz,vircpe_nz,          vircpe_dt, &
+                       engcpe_ch,vircpe_ch,engcpe_ex,vircpe_ex, &
+                       engcpe_fr,vircpe_fr,engcpe_nz,vircpe_nz, &
+                       vircpe_dt,                              &
                        engden,virden,engmet,virmet,             &
                        engvdw,virvdw,engkim,virkim,             &
-                       engacc,viracc,tmp,buffer(0:17)
+                       engacc,viracc,tmp,buffer(0:19)
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
 
@@ -121,6 +122,9 @@ Subroutine two_body_forces                        &
 
   engcpe_rl = 0.0_wp
   vircpe_rl = 0.0_wp
+
+  engcpe_ch = 0.0_wp
+  vircpe_ch = 0.0_wp
 
   engcpe_ex = 0.0_wp
   vircpe_ex = 0.0_wp
@@ -345,25 +349,23 @@ Subroutine two_body_forces                        &
      vircpe_rl=vircpe_rl+viracc
   End If
 
+! metal potential safety
+
   If (safe) Then
      tmp=0.0_wp
   Else
      tmp=1.0_wp
   End If
 
-! In the case of excluded interactions
-! accumulate further radial distribution functions and/or
-! calculate Ewald corrections due to short-range exclusions
+! in the case of bonded interactions 3 possible subcases
+! cases for excluded interactions:
+! (1) RDF accumulate further the short-range exclusions
+! (2) Ewald corrections due to short-range exclusions
+! (3) CHARMM core-shell self-induction additions
 
-  If ( lbook .and. (l_do_rdf .or. (keyfce == 2 .or. keyfce == 12)) ) Then
-
-! outer loop over atoms
-
-     Do i=1,natms
-
-! Get list limit
-
-        limit=list(-1,i)-list(0,i)
+  If ( lbook .and. (l_do_rdf .or. (keyfce == 2 .or. keyfce == 12) .or. keyind == 1) ) Then
+     Do i=1,natms ! outer loop over atoms
+        limit=list(-1,i)-list(0,i) ! Get list limit
         If (limit > 0) Then
 
 ! calculate interatomic distances
@@ -405,10 +407,19 @@ Subroutine two_body_forces                        &
               vircpe_ex=vircpe_ex+viracc
            End If
 
+! get CHARMM core-shell self-induction contributions
+
+           If (keyind == 1) Then
+              If (list(-3,i)-list(0,i) > 0) Then
+                 Call coul_chrm_forces(i,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+
+                 engcpe_ch=engcpe_ch+engacc
+                 vircpe_ch=vircpe_ch+viracc
+              End If
+           End If
+
         End If
-
      End Do
-
   End If
 
 ! counter for rdf statistics outside loop structures
@@ -429,7 +440,7 @@ Subroutine two_body_forces                        &
 ! calculate interatomic distances
 
               Do k=1,limit
-                 j=list(list(0,i)+k,i)
+                 j=list(list(-1,i)+k,i)
 
                  xxt(k)=xxx(i)-xxx(j)
                  yyt(k)=yyy(i)-yyy(j)
@@ -529,11 +540,13 @@ if((l_block .or. l_jack) .and. l_do_rdf .and. mod(nstep, block_size) == 0) block
      buffer(10) = vircpe_rc
      buffer(11) = engcpe_rl
      buffer(12) = vircpe_rl
-     buffer(13) = engcpe_ex
-     buffer(14) = vircpe_ex
-     buffer(15) = engcpe_fr
-     buffer(16) = vircpe_fr
-     buffer(17) = vircpe_dt
+     buffer(13) = engcpe_ch
+     buffer(14) = vircpe_ch
+     buffer(15) = engcpe_ex
+     buffer(16) = vircpe_ex
+     buffer(17) = engcpe_fr
+     buffer(18) = vircpe_fr
+     buffer(19) = vircpe_dt
 
      Call gsum(buffer(0:17))
 
@@ -550,11 +563,13 @@ if((l_block .or. l_jack) .and. l_do_rdf .and. mod(nstep, block_size) == 0) block
      vircpe_rc = buffer(10)
      engcpe_rl = buffer(11)
      vircpe_rl = buffer(12)
-     engcpe_ex = buffer(13)
-     vircpe_ex = buffer(14)
-     engcpe_fr = buffer(15)
-     vircpe_fr = buffer(16)
-     vircpe_dt = buffer(17)
+     engcpe_ch = buffer(13)
+     vircpe_ch = buffer(14)
+     engcpe_ex = buffer(15)
+     vircpe_ex = buffer(16)
+     engcpe_fr = buffer(17)
+     vircpe_fr = buffer(18)
+     vircpe_dt = buffer(19)
   End If
 
   safe=(tmp < 0.5_wp)
@@ -569,8 +584,8 @@ if((l_block .or. l_jack) .and. l_do_rdf .and. mod(nstep, block_size) == 0) block
 
 ! Globalise coulombic contributions: cpe
 
-  engcpe = engcpe_rc + engcpe_rl + engcpe_ex + engcpe_fr + engcpe_nz
-  vircpe = vircpe_rc + vircpe_rl + vircpe_ex + vircpe_fr + vircpe_nz + vircpe_dt
+  engcpe = engcpe_rc + engcpe_rl + engcpe_ch + engcpe_ex + engcpe_fr + engcpe_nz
+  vircpe = vircpe_rc + vircpe_rl + vircpe_ch + vircpe_ex + vircpe_fr + vircpe_nz + vircpe_dt
 
 ! Add non-zero total system charge correction to
 ! diagonal terms of stress tensor (per node)

@@ -5289,7 +5289,7 @@ Subroutine rotate_mpoles(iatm)
 !
 ! copyright - daresbury laboratory
 ! author    - h.a.boateng april 2014
-! amended   - i.t.todorov february 2016
+! amended   - i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -5297,8 +5297,7 @@ Subroutine rotate_mpoles(iatm)
   Use comms_module,  Only : idnode
   Use setup_module
   Use config_module, Only : imcon,cell,lsite,nlast,lsi,lsa,ltg,xxx,yyy,zzz
-  Use mpoles_module, Only : induce,ltpatm,mpllfr,mprotm,mplltg, &
-                            mplgfr,mplflg,polarity,atplrz
+  Use mpoles_module, Only : ltpatm,mpllfr,mprotm,mplltg,mplgfr,mplflg
 
   Implicit None
 
@@ -5313,10 +5312,6 @@ Subroutine rotate_mpoles(iatm)
                        rrp1,rrp2,rrp3,rrp12,rrp22,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rsqt
-
-! Assign polarity
-
-  If (induce) atplrz(iatm) = polarity(lsite(iatm))
 
 ! Now on to permanent multipoles
 
@@ -6021,7 +6016,7 @@ Subroutine rotate_mpoles_d(iatm)
 !
 ! copyright - daresbury laboratory
 ! author    - h.a.boateng february 2016
-! amended   - i.t.todorov february 2016
+! amended   - i.t.todorov december 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -6029,8 +6024,7 @@ Subroutine rotate_mpoles_d(iatm)
   Use comms_module,  Only : idnode
   Use setup_module
   Use config_module, Only : imcon,cell,lsite,nlast,lsi,lsa,ltg,xxx,yyy,zzz
-  Use mpoles_module, Only : induce,ltpatm,mpllfr,mprotm,mplgfr, &
-                            mplflg,mprotx,mproty,mprotz,polarity,atplrz
+  Use mpoles_module, Only : ltpatm,mpllfr,mprotm,mplgfr,mplflg,mprotx,mproty,mprotz
 
   Implicit None
 
@@ -6046,10 +6040,6 @@ Subroutine rotate_mpoles_d(iatm)
                       rrp1,rrp2,rrp3,rrp12,rrp22
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rsqt
-
-! Assign polarity
-
-  If (induce) atplrz(iatm) = polarity(lsite(iatm))
 
 ! Now on to permanent multipoles
 

@@ -3,48 +3,13 @@
 ! for new simulations when using the relaxed shell model
 ! set shells on top of their cores preventatively
 
-     If (megshl > 0 .and. keyshl == 2 .and. nstep == 0 .and. nsteql > 0) Then
-
+     If ( (megshl > 0 .and. keyshl == 2) .and. &
+          (keyres == 0 .and. nstep == 0 .and. nsteql > 0) ) Then
         Call core_shell_on_top()
 
-! Check VNL conditioning
+! Refresh mappings
 
-        Call vnl_check(l_str,m_rgd,rcut,rpad,rlnk,width)
-
-        If (l_vnl) Then
-
-! Relocate atoms to new domains and restore bonding description
-
-           Call relocate_particles &
-           (rlnk,lbook,megatm,  &
-           megshl,m_con,megpmf, &
-           m_rgd,megtet,        &
-           megbnd,megang,megdih,meginv)
-
-! Exchange atomic data in border regions
-
-           Call set_halo_particles(rlnk,keyfce) ! inducing in here only
-
-! Re-tag RBs when called again after the very first time
-! when it's done in rigid_bodies_setup <- build_book_intra
-
-           If (m_rgd > 0) Then
-              Call rigid_bodies_tags()
-              Call rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
-           End If
-
-        Else
-
-! Exchange atomic positions in border regions
-
-           Call refresh_halo_positions()
-
-        End If
-
-! set and halo rotational matrices and their infinitesimal rotations
-
-        If (mximpl > 0) Call mpoles_rotmat_set_halo()
-
+        Call w_refresh_mappings()
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -82,7 +47,7 @@
 
 ! Calculate shell model forces
 
-     If (megshl > 0 .and. (.not.l_dpl)) Call core_shell_forces(engshl,virshl,stress)
+     If (megshl > 0) Call core_shell_forces(engshl,virshl,stress)
 
 ! Calculate tethered atom forces
 
@@ -127,7 +92,7 @@
 
 ! Apply external field
 
-     If (keyfld > 0) Call external_field_apply(keyshl,time,engfld,virfld)
+     If (keyfld > 0) Call external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
 
 ! Apply PLUMED driven dynamics
 
@@ -169,11 +134,11 @@
         If (lmin .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
            If      (nstmin == 0 .and. nstep == 0) Then
               Call minimise_relax &
-           (l_str,relaxed_min,lrdf,megatm,megcon,megpmf,megrgd, &
+           (l_str .or. keyshl == 2,relaxed_min,lrdf,megatm,megcon,megpmf,megrgd, &
            keymin,min_tol,tstep,stpcfg)
            Else If (nstmin >  0 .and. nstep >  0) Then
               If (Mod(nstep-nsteql,nstmin) == 0) Call minimise_relax &
-           (l_str,relaxed_min,lrdf,megatm,megcon,megpmf,megrgd, &
+           (l_str .or. keyshl == 2,relaxed_min,lrdf,megatm,megcon,megpmf,megrgd, &
            keymin,min_tol,tstep,stpcfg)
            End If
         End If
