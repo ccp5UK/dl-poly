@@ -118,7 +118,7 @@ Contains
   Function alp(Te)
 
 ! Thermal diffusivity: given as A^2/ps
-! (different cases for metals and insulators: constant value for latter)
+! (different cases for metals and insulators)
 
     Implicit None
 
@@ -128,7 +128,17 @@ Contains
     If (isMetal) Then
       alp = Ke(Te) / Ce(Te)
     Else
-      alp = Diff0
+      Select Case (DeType)
+      Case (0)
+      ! Case 0: constant value (given as A^2/ps)
+        alp = Diff0
+      Case (1)
+      ! Case 1: reciprocal function of temperature up to Fermi temperature,
+      !         Diff0 previously scaled with system temperature (given as A^2/ps)
+        alp = Diff0/Min(Te,Tfermi)
+      Case (2)
+      ! Case 2: thermal diffusivity interpolated from table (given as A^2/ps)
+        Call interpolate(del, detable, Te, alp)
     End If
 
   End Function alp
@@ -1021,7 +1031,7 @@ Contains
     Real ( Kind = wp ), Intent ( In ) :: time,temp0
     Character ( Len = * ), Intent ( In ) :: latfile
 
-    Real ( Kind = wp ) :: lat_sum,lat_min,lat_max,Ue,tmp,sgnplus
+    Real ( Kind = wp ) :: lat_sum,lat_min,lat_max,Ue,tmp,sgnplus,eltmp
     Integer :: iounit = 115
     Integer :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax
     Integer :: ijk,numint,n,lx,ly,lz
@@ -1081,15 +1091,30 @@ Contains
                     ! integrate electronic heat capacity from temp0 to electronic temperature
                     ! of cell if it is within global range and active (within ionic temperature cells)
                     If (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3)) Then
-                      numint = Merge(Floor(eltemp(ijk,ii,jj,kk)-temp0),0,&
-                                     (act_ele_cell(ijk,0,0,0)>zero_plus .or. (ii/=0 .or. jj/=0 .or. kk/=0)))
-                      tmp = 0.0_wp
-                      sgnplus = Sign (1.0_wp, Real(numint, Kind=wp))
-                      Do n = 1,Abs(numint)
-                        tmp = tmp + 0.5_wp * sgnplus * (Ce(temp0+sgnplus*Real(n-1, Kind=wp))+Ce(temp0+sgnplus*Real(n, Kind=wp)))
-                      End Do
-                      tmp = tmp + 0.5_wp * (Ce(temp0+Real(numint, Kind=wp))+Ce(eltemp(ijk,ii,jj,kk)))
-                      Ue = Ue + tmp*volume*kB_to_eV
+                      eltmp = eltemp(ijk,ii,jj,kk)
+                      tmp = Merge(1.0_wp,0.0_wp,(act_ele_cell(ijk,0,0,0)>zero_plus .or. (ii/=0 .or. jj/=0 .or. kk/=0)))
+                      Select Case (CeType)
+                      Case (0)
+                      ! constant specific heat capacity
+                        tmp = tmp*Ce0*(eltmp-temp0)
+                      Case (1)
+                      ! hyperbolic tangent specific heat capacity
+                        tmp = tmp*sh_A*Ln(Cosh(sh_B*eltmp)/Cosh(sh_B*temp0))/sh_B
+                      Case (2)
+                      ! linear specific heat capacity to Fermi temperature
+                        tmp = tmp*Cemax*(0.5_wp*((Min(Tfermi,eltmp))**2-temp*temp)/Tfermi+Max(eltmp-Tfermi,0.0_wp))
+                      Case (3)
+                      ! tabulated volumetric heat capacity: integrate using trapezium rule
+                      ! with final interval of <=1 kelvin
+                        numint = Floor(tmp*(eltemp-temp0))
+                        tmp = 0.0_wp
+                        sgnplus = Sign(1.0_wp,Real(numint,Kind=wp))
+                        Do n=1,Abs(numint)
+                          tmp = tmp+0.5_wp*sgnplus*(Ce(temp0+sgnplus*Real(n-1,Kind=wp))+Ce(temp0+sgnplus*Real(n,Kind=wp)))
+                        End Do
+                        tmp = tmp+0.5_wp*(Ce(temp0+Real(numint,Kind=wp))+Ce(eltmp))
+                      End Select
+                      Ue = Ue+tmp*volume*kB_to_eV
                     End If
                   End Do
                 End Do
@@ -1631,12 +1656,27 @@ Contains
           If (act_ele_cell(ijk,0,0,0)<=zero_plus .and. old_ele_cell(ijk,0,0,0)>zero_plus) Then
 		! Calculate amount of energy left in the cell (Ue = integral of Ce(Te)d(Te) between 300K and Te)
             tmp2 = 0.0_wp
-            numint = Floor(eltemp(ijk,0,0,0) - temp0)
-            sgnplus = Sign (1.0_wp, Real(numint, Kind=wp))
-            Do n = 1,Abs(numint)
-              tmp2 = tmp2 + 0.5_wp * sgnplus * (Ce(temp0+sgnplus*Real(n-1, Kind=wp))+Ce(temp0+sgnplus*Real(n, Kind=wp)))
-            End Do
-            tmp2 = tmp2 + 0.5_wp * (Ce(temp0+Real(numint, Kind=wp))+Ce(eltemp(ijk,ii,jj,kk)))
+            end_Te = eltemp(ijk,0,0,0)
+            Select Case (CeType)
+            Case (0)
+            ! constant specific heat capacity
+              tmp2 = Ce0*(end_Te-temp0)
+            Case (1)
+            ! hyperbolic tangent specific heat capacity
+              tmp2 = sh_A*Ln(Cosh(sh_B*end_Te)/Cosh(sh_B*temp0))/sh_B
+            Case (2)
+            ! linear specific heat capacity to Fermi temperature
+              tmp2 = Cemax*(0.5_wp*((Min(Tfermi,end_Te))**2-temp0*temp0)/Tfermi+Max(end_Te-Tfermi,0.0_wp))
+            Case (3)
+            ! tabulated volumetric heat capacity: integrate using trapezium rule
+            ! with final interval of <=1 kelvin
+              numint = Floor(end_Te - temp0)
+              sgnplus = Sign (1.0_wp, Real(numint, Kind=wp))
+              Do n = 1,Abs(numint)
+                tmp2 = tmp2 + 0.5_wp * sgnplus * (Ce(temp0+sgnplus*Real(n-1, Kind=wp))+Ce(temp0+sgnplus*Real(n, Kind=wp)))
+              End Do
+              tmp2 = tmp2 + 0.5_wp * (Ce(temp0+Real(numint, Kind=wp))+Ce(end_Te))
+            End Select
             U_e = tmp2*volume*kB_to_eV
 		! Check how many cells are connected to the now turned-off cell
             act_sur_cells = act_ele_cell(ijkmx,0,0,0) + act_ele_cell(ijkpx,0,0,0) + act_ele_cell(ijkmy,0,0,0) + &
@@ -1766,40 +1806,100 @@ Contains
 
     ! work through electronic temperature cells within ionic temperature voxels
     ! and in immediate borders: determine electronic temperatures needed to add
-    ! redistributed energies and identify relevant cells
+    ! redistributed energies and identify relevant cells - split according to
+    ! available functional form of heat capacity
 
-    Do kk = -1, 1
-      Do jj = -1, 1
-        Do ii = -1, 1
-          Do ijk = 1, numcell
-            If (Abs (energydist (ijk,ii,jj,kk))>zero_plus) Then
-              energy_per_cell = energydist (ijk,ii,jj,kk)
-              sgnplus = Sign (1.0_wp, energy_per_cell)
-              start_Te = eltemp(ijk,ii,jj,kk)
-              energy_diff = sgnplus*energy_per_cell
-              oldCe = Ce(start_Te)
-              ! increase/decrease temperature of electronic cell by 1 kelvin until
-              ! required energy change is reached or exceeded
-              Do While (energy_diff>=zero_plus)
-                newCe = Ce(start_Te+sgnplus)
-                increase = 0.5_wp * (oldCe+newCe)
-                energy_diff = energy_diff - increase*volume*kB_to_eV
-                start_Te = start_Te + sgnplus
-                oldCe = newCe
-              End Do
-              ! now interpolate for new temperature by using average specific heat
-              ! over surrounding one-kelvin interval
-              energy_diff = energy_diff + increase*volume*kB_to_eV
-              start_Te = start_Te - sgnplus
-              newCe = Ce(start_Te)
-              end_Te = start_Te + 2.0_wp * sgnplus * energy_diff / (oldCe+newCe)
-              eltemp_adj(ijk,ii,jj,kk) = end_Te
-              adjust(ijk,ii,jj,kk) = .true.
-            End If
+    Select Case (CeType)
+    Case (0)
+    ! constant specific heat capacity
+      Do kk = -1, 1
+        Do jj = -1, 1
+          Do ii = -1, 1
+            Do ijk = 1, numcell
+              If (Abs(energydist(ijk,ii,jj,kk))>zero_plus) Then
+                energy_per_cell = energydist(ijk,ii,jj,kk)*rvolume*eV_to_kB
+                start_Te = eltemp(ijk,ii,jj,kk)
+                end_Te = start_Te+energy_per_cell/Ce0
+                eltemp_adj(ijk,ii,jj,kk) = end_Te
+                adjust(ijk,ii,jj,kk) = .true.
+              End If
+            End Do
           End Do
         End Do
       End Do
-    End Do
+    Case (1)
+    ! hyperbolic tangent specific heat capacity
+      Do kk = -1, 1
+        Do jj = -1, 1
+          Do ii = -1, 1
+            Do ijk = 1, numcell
+              If (Abs(energydist(ijk,ii,jj,kk))>zero_plus) Then
+                energy_per_cell = energydist(ijk,ii,jj,kk)*rvolume*eV_to_kB
+                start_Te = eltemp(ijk,ii,jj,kk)
+                increase = Cosh(sh_B*start_Te)*Exp(sh_B*energy_per_cell/sh_A)
+                ! using equivalent function: Acosh(x)=Log(x+Sqrt((x-1.0)*(x+1.0)))
+                end_Te = Log(increase+Sqrt((increase-1.0_wp)*(increase+1.0_wp)))/sh_B
+                eltemp_adj(ijk,ii,jj,kk) = end_Te
+                adjust(ijk,ii,jj,kk) = .true.
+              End If
+            End Do
+          End Do
+        End Do
+      End Do
+    Case (2)
+    ! linear specific heat capacity to Fermi temperature
+      Do kk = -1, 1
+        Do jj = -1, 1
+          Do ii = -1, 1
+            Do ijk = 1, numcell
+              If (Abs(energydist(ijk,ii,jj,kk))>zero_plus) Then
+                energy_per_cell = energydist(ijk,ii,jj,kk)*rvolume*eV_to_kB
+                start_Te = eltemp(ijk,ii,jj,kk)
+                end_Te = Sqrt(start_Te*start_Te+2.0_wp*energy_per_cell/Cemax)
+                If (end_Te>Tfermi) end_Te = energy_per_cell/Cemax+0.5_wp*(Tfermi+start_Te*start_Te/Tfermi)
+                eltemp_adj(ijk,ii,jj,kk) = end_Te
+                adjust(ijk,ii,jj,kk) = .true.
+              End If
+            End Do
+          End Do
+        End Do
+      End Do
+    Case (3)
+    ! tabulated volumetric heat capacity: find new temperature
+    ! iteratively by gradual integration
+      Do kk = -1, 1
+        Do jj = -1, 1
+          Do ii = -1, 1
+            Do ijk = 1, numcell
+              If (Abs(energydist(ijk,ii,jj,kk))>zero_plus) Then
+                energy_per_cell = energydist(ijk,ii,jj,kk)*rvolume*eV_to_kB
+                start_Te = eltemp(ijk,ii,jj,kk)
+                sgnplus = Sign(1.0_wp,energy_per_cell)
+                energy_diff = sgnplus*energy_per_cell
+                oldCe = Ce(start_Te)
+                ! increase/decrease temperature of electronic cell by 1 kelvin until
+                ! required energy change is reached or exceeded
+                Do While(energy_diff>=zero_plus)
+                  newCe = Ce(start_Te+sgnplus)
+                  increase = 0.5_wp*(oldCe+newCe)
+                  energy_diff = energy_diff-increase
+                  start_Te = start_Te+sgnplus
+                  oldCe = newCe
+                End Do
+                ! now interpolate for new temperature by using average specific heat
+                ! over surrounding one-kelvin interval
+                energy_diff = energy_diff+increase
+                start_Te = start_Te-sgnplus
+                newCe = Ce(start_Te)
+                end_Te = start_Te+2.0_wp*sgnplus*energy_diff/(oldCe+newCe)
+                eltemp_adj(ijk,ii,jj,kk) = end_Te
+                adjust(ijk,ii,jj,kk) = .true.
+              End If
+            End Do
+          End Do
+        End Do
+      End Do
+    End Select
 
     Deallocate (energydist)
 

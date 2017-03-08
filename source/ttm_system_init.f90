@@ -34,7 +34,7 @@ Subroutine ttm_system_init(nstep,keyres,dumpfile,temp)
 
   If (idnode == 0) Inquire(File=dumpfile, Exist=l_tmp)
   If (mxnode > 1) Call gcheck(l_tmp)
-  If ((.not. l_tmp) .and. keyres==keyres0) Call error(682)
+  If ((.not. l_tmp) .and. keyres==keyres0) Call error(684)
 
 ! if restarting simulation, read restart file
 
@@ -47,7 +47,7 @@ Subroutine ttm_system_init(nstep,keyres,dumpfile,temp)
     Call get_line(safe,iounit,record); If (.not.safe) Goto 100
     Call get_word(record,word) ; nstp=Nint(word_2_real(word,0.0_wp))
     ! check size of electronic temperature grid matches with size given in CONTROL file
-    If (nxx/=eltsys(1) .or. nyy/=eltsys(2) .or. nzz/=eltsys(3)) Call error(683)
+    If (nxx/=eltsys(1) .or. nyy/=eltsys(2) .or. nzz/=eltsys(3)) Call error(685)
     ! check restart file is at same timestep as restart
     ! (can proceed if not, but need to warn user)
     If (nstp/=nstep) Call warning(520,0.0_wp,0.0_wp,0.0_wp)
@@ -98,7 +98,7 @@ Subroutine ttm_system_init(nstep,keyres,dumpfile,temp)
 100 Continue
 
   If (idnode == 0) Write(nrite,"(/,1x,a)") dumpfile, ' data mishmash detected'
-  Call error(684)
+  Call error(686)
   Return
 
 End Subroutine ttm_system_init

@@ -133,35 +133,90 @@ Contains
 
     If (deposit) Then
       lat_B(:,:,:) = lat_U(:,:,:)*norm*invbin*adjeng
-      Do k=1,ntcell(3)
-        Do j=1,ntcell(2)
-          Do i=1,ntcell(1)
-            ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2)*k)
-            lat_I(i,j,k) = lat_I(i,j,k)+lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)
-            energy_diff = lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)
-            ! work out change in electronic temperature for energy deposition
-            ! (searching first in 0.01 kelvin increments, then interpolate based
-            ! on constant heat capacity)
-            If (energy_diff > zero_plus) Then
-              start_Te = eltemp(ijk,0,0,0)
-              oldCe = Ce(start_Te)
-              Do While (energy_diff > 0.0_wp)
-                newCe = Ce(start_Te+0.01_wp)
-                increase = 0.005_wp*(oldCe+newCe)
-                energy_diff = energy_diff - increase*volume*kB_to_eV
-                start_Te = start_Te + 0.01_wp
-                oldCe = newCe
-              End Do
-              energy_diff = energy_diff + increase*volume*kB_to_eV
-              start_Te = start_Te - 0.01_wp
-              newCe = Ce(start_Te)
-              end_Te = start_Te + 2.0_wp * energy_diff / (oldCe+newCe)
-              eltemp(ijk,0,0,0) = end_Te
-            End If
+      Select Case (CeType)
+      Case (0)
+      ! constant specific heat capacity
+        Do k=1,ntcell(3)
+          Do j=1,ntcell(2)
+            Do i=1,ntcell(1)
+              ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2)*k)
+              lat_I(i,j,k) = lat_I(i,j,k)+lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)
+              energy_diff = lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)*rvolume*eV_to_kB
+              If(energy_diff>zero_plus)
+                start_Te = eltemp(ijk,0,0,0)
+                end_Te = start_Te + energy_diff/Ce0
+                eltemp(ijk,0,0,0) = end_Te
+              End If
+            End Do
           End Do
         End Do
-      End Do
-
+      Case (1)
+      ! hyperbolic tangent specific heat capacity
+        Do k=1,ntcell(3)
+          Do j=1,ntcell(2)
+            Do i=1,ntcell(1)
+              ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2)*k)
+              lat_I(i,j,k) = lat_I(i,j,k)+lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)
+              energy_diff = lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)*rvolume*eV_to_kB
+              If(energy_diff>zero_plus)
+                start_Te = eltemp(ijk,0,0,0)
+                increase = Cosh(sh_B*start_Te)*Exp(sh_B*energy_diff/sh_A)
+                ! using equivalent function: Acosh(x)=Log(x+Sqrt((x-1.0)*(x+1.0)))
+                end_Te = Log(increase+Sqrt((increase-1.0_wp)*(increase+1.0_wp)))/sh_B
+                eltemp(ijk,0,0,0) = end_Te
+              End If
+            End Do
+          End Do
+        End Do
+      Case (2)
+      ! linear specific heat capacity to Fermi temperature
+        Do k=1,ntcell(3)
+          Do j=1,ntcell(2)
+            Do i=1,ntcell(1)
+              ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2)*k)
+              lat_I(i,j,k) = lat_I(i,j,k)+lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)
+              energy_diff = lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)*rvolume*eV_to_kB
+              If(energy_diff>zero_plus)
+                start_Te = eltemp(ijk,0,0,0)
+                end_Te = Sqrt(start_Te*start_Te+2.0_wp*energy_diff/Cemax)
+                If (end_Te>Tfermi) end_Te = energy_diff/Cemax+0.5_wp*(Tfermi+start_Te*start_Te/Tfermi)
+                eltemp(ijk,0,0,0) = end_Te
+              End If
+            End Do
+          End Do
+        End Do
+      Case (3)
+      ! tabulated volumetric heat capacity: find new temperature
+      ! iteratively by gradual integration
+        Do k=1,ntcell(3)
+          Do j=1,ntcell(2)
+            Do i=1,ntcell(1)
+              ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2)*k)
+              lat_I(i,j,k) = lat_I(i,j,k)+lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)
+              energy_diff = lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)*rvolume*eV_to_kB
+              ! work out change in electronic temperature for energy deposition
+              ! (searching first in 0.01 kelvin increments, then interpolate based
+              ! on constant heat capacity)
+              If (energy_diff > zero_plus) Then
+                start_Te = eltemp(ijk,0,0,0)
+                oldCe = Ce(start_Te)
+                Do While (energy_diff > 0.0_wp)
+                  newCe = Ce(start_Te+0.01_wp)
+                  increase = 0.005_wp*(oldCe+newCe)
+                  energy_diff = energy_diff - increase
+                  start_Te = start_Te + 0.01_wp
+                  oldCe = newCe
+                End Do
+                energy_diff = energy_diff + increase
+                start_Te = start_Te - 0.01_wp
+                newCe = Ce(start_Te)
+                end_Te = start_Te + 2.0_wp * energy_diff / (oldCe+newCe)
+                eltemp(ijk,0,0,0) = end_Te
+              End If
+            End Do
+          End Do
+        End Do
+      End Select
 
     Else
 

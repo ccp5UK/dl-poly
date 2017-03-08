@@ -680,6 +680,10 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf ttm amin} $n$                 \> sets minimum number of atoms required in each ionic temperature \\
 \>                                              \> cell (CIT) to ensure cell is active (default $n~=~1$) \\
 \>                                              \> \\
+\> {\bf ttm atomdens} $f$          \> sets atomic density, used to convert specific heat capacities to \\
+\>                                              \> volumetric heat capacities, to $f$ (default $f$ set by system \\ 
+\>                                              \> configuration) \\
+\>                                              \> \\
 \> {\bf ttm bcs} $Q$                  \> sets electronic temperature boundary conditions for \index{Two-Temperature Model}two-temperature\\
 \>                                              \> model (TTM) to type $Q$, where $Q$ can be: \\
 \>                                              \> {\em periodic}: periodic boundaries in all directions \\
@@ -707,6 +711,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf ttm cetanh} $f_{1}~f_{2}$  \> sets electronic specific heat capacity to hyperbolic tangent form, \\
 \>                                              \> $C_{e} (T_{e}) = f_{1} \tanh \left(10^{-4} f_{2} T_{e} \right)$, with constants $f_{1}$ $k_B$/atom and $f_{2}$ K$^{-1}$ \\
 \>                                              \> \\
+\> {\bf ttm deconst} $f$             \> sets constant thermal diffusivity of non-metal system to $f$ m$^2$/s \\
+\>                                              \> \\
 \> {\bf ttm dedx} $f$                  \> sets electron stopping power of projectile entering electronic system \\
 \>                                              \> to $f$ eV/nm (default $f~=~0$): this energy is deposited into electronic \\
 \>                                              \> temperature cells (CETs) after equilibration \\
@@ -715,7 +721,14 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> a single thermal diffusion timestep, i.e. as a Dirac delta-like time \\
 \>                                              \> pulse \\
 \>                                              \> \\
-\> {\bf ttm diff} $f$                     \> sets constant thermal diffusivity of non-metal system to $f$ m$^2$/s \\
+\> {\bf ttm derecip} $f_{1}~f_{2}$ \> sets thermal diffusivity of non-metal system to reciprocal function of \\
+\>                                              \> temperature with value at system temperature of $f$ m$^2$/s, holding \\
+\>                                              \> constant beyond Fermi temperature $f_{2}$ K \\
+\>                                              \> \\
+\> {\bf ttm detab}                       \> sets thermal diffusivity of non-metal system based on tabulated \\ 
+\>                                              \> values given in additional file (De.dat) \\
+\>                                              \> \\
+\> {\bf ttm diff} $f$                     \> identical to {\bf ttm deconst} \\
 \>                                              \> \\
 \> {\bf ttm gauss} $f_{1}~f_{2}$  \> specifies temporal energy deposition to electronic system as \\
 \>                                              \> Gaussian function of time with standard deviation $f_{1}$ ps, lasting \\
@@ -759,6 +772,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf ttm offset} $f$                 \> offsets initial coupling of electronic and ionic systems via inhomogeneous \\
 \>                                              \> Langevin thermostat until after $f$ ps (default $f~=~0$) \\
+\>                                              \> \\
+\> {\bf ttm oneway}                   \> switches on one-way electron-phonon coupling: only switched on \\
+\>                                              \> when electronic tempereature is greater than ionic temperature \\
 \>                                              \> \\
 \> {\bf ttm sflat}                         \> specifies initial spatial deposition of energy into electronic system \\
 \>                                              \> as flat (homogeneous) profile \\

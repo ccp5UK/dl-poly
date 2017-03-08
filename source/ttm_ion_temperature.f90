@@ -22,7 +22,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
 
   Real ( Kind = wp ), Intent ( In ) :: chi_ep,chi_es,vel_es2
   Integer :: ia,ja,ka,ijk,ijk1,ijk2,i,ii,jj,kk
-  Real ( Kind = wp ) :: velsq,tmp,gsadd,vx,vy,vz
+  Real ( Kind = wp ) :: velsq,tmp,gsadd,vx,vy,vz,vomcorr
   Integer :: fail, natmin
   Real ( Kind = wp ), Allocatable :: buf1(:),buf2(:),buf3(:),buf4(:)
   Real ( Kind = wp ), Allocatable :: ttmvom(:,:), ttmvommass(:)
@@ -75,7 +75,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
 
   End Do
 
-  If (mxnode>1) Then
+  If (mxnode>1 .and. ttmthvel) Then
     Allocate (buf1(1:numcell), buf2(1:numcell), buf3(1:numcell), buf4(1:numcell), Stat=fail)
     If (fail>0) Call error(1085)
     ! Sum up cell momenta and atomic masses in boundaries for ionic temperature corrections
@@ -177,17 +177,21 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
     If (fail>0) Call error(1086)
   End If
 
-  Do i=1,numcell
-    If (ttmvommass(i)>zero_plus) Then
-      ttmvom(i,1:3)=ttmvom(i,1:3)/ttmvommass(i)
-    Else
-      ttmvom(i,1:3)=0.0_wp
-    End If
-  End Do
+  If (ttmthvel) Then
+    Do i=1,numcell
+      If (ttmvommass(i)>zero_plus) Then
+        ttmvom(i,1:3)=ttmvom(i,1:3)/ttmvommass(i)
+      Else
+        ttmvom(i,1:3)=0.0_wp
+      End If
+    End Do
+  Else
+    ttmvom = 0.0_wp
+  End If
 
-! calculate ionic temperatures (accounting for cell velocities)
-! and source terms: electron-phonon (gsource) and electronic
-! stopping (asource)
+! calculate ionic temperatures (accounting for cell velocities
+! if option switched on) and source terms: electron-phonon 
+! (gsource) and electronic stopping (asource)
 
   Do i=1,natms
 

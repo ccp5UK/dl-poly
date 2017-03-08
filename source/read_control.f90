@@ -304,10 +304,13 @@ Subroutine read_control                                &
 
 ! default values for ttm material type (metal or insulator) and
 ! coefficients for (i) electronic specific heat capacities, 
-! (ii) thermal conductivity, (iii) thermal diffusivity
+! (ii) thermal conductivity, (iii) thermal diffusivity,
+! (iv) atomic density (to convert specific heats to volumetric
+!      values)
 
   isMetal = .true.
 
+  CeType  = 0
   Ce0     = 1.0_wp
   sh_A    = 0.0_wp
   sh_B    = 0.0_wp
@@ -317,6 +320,8 @@ Subroutine read_control                                &
   Ka0     = 0.0_wp
 
   Diff0   = 0.0_wp
+
+  cellrho = 0.0_wp
 
 ! default ttm electron-phonon coupling type
 
@@ -345,11 +350,16 @@ Subroutine read_control                                &
   bcTypeE = 3
 
 ! default minimum number of atoms required per voxel cell
-! to calculate ionic temperatures and option to redistribute
-! electronic energies to neighbouring voxels on deactivation
+! to calculate ionic temperatures, options to redistribute
+! electronic energies to neighbouring voxels on deactivation,
+! centre-of-mass momentum corrections for ionic
+! temperature calculations and one-way electron-phonon
+! coupling in thermal diffusion and thermostat
 
   amin         = 1
   deactivation = .false.
+  ttmthvel     = .true.
+  oneway       = .false.
 
 ! default values for time step frequencies to output
 ! (i) statistical data and (ii) electronic/ionic temperature
@@ -2027,7 +2037,9 @@ Subroutine read_control                                &
               '*** warning - this may lead to a build up of the COM momentum and ***',     &
               '***           a manifestation of the "flying ice-cube" effect !!! ***'
 
-           l_vom = .false.
+           l_vom    = .false.
+           ttmthvel = .false. ! also switches off COM momentum removal for calculating
+                              ! ionic temperatures in two-temperature model
 
         Else If (word1(1:4) == 'link') Then ! NON-TRANSFERABLE OPTION FROM DL_POLY_2
 
@@ -2231,18 +2243,53 @@ Subroutine read_control                                &
                         & /,1x,'for thermal diffusion equation')")
           End If
 
-        Else If (word1(1:4) == 'diff') Then
+        Else If (word1(1:4) == 'diff' .or. word1(1:7)=='deconst') Then
 
         ! electronic thermal diffusivity given as constant value
         ! (for non-metal systems)
 
-          KeType = 1
+          DeType = 0
           Call get_word(record,word)
           Diff0 = word_2_real(word)
           If (idnode == 0) Then
             Write(nrite,"(/,1x,'electronic thermal diffusivity set to constant value')")
             Write(nrite,"(1x,'electronic t.d. (m^2 s^-1)',8x,1p,e12.4)") Diff0
           End If
+
+        Else If (word1(1:7) == 'derecip') Then
+
+        ! electronic thermal diffusivity given as reciprocal function
+        ! of temperature (up to Fermi temperature), constant afterwards
+
+          DeType = 1
+          Call get_word(record,word)
+          Diff0 = word_2_real(word)
+          Call get_word(record,word)
+          Tfermi = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic thermal diffusivity set to reciprocal function up to Fermi temperature')")
+            Write(nrite,"(1x,'datum electronic t.d. (m^2 s^-1)',2x,1p,e12.4)") Diff0
+            Write(nrite,"(1x,'Fermi temperature            (K)',2x,1p,e12.4)") Tfermi
+          End If
+
+        Else If (word1(1:4) == 'detab') Then
+
+        ! electronic thermal diffusivity given in tabulated form
+
+          DeType = 2
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic thermal diffusivity given as tabulated function of temperature')")
+          End If
+
+        Else If (word1(1:8) == 'atomdens') Then
+
+        ! user-specified atomic density, used to convert specific
+        ! heat capacities to volumetric values: this option will
+        ! be reported later when the two-temperature model is 
+        ! set up (in ttm_module.f90)
+
+          Call get_word(record,word)
+          cellrho = Abs(word_2_real(word))
 
         Else If (word1(1:4) == 'amin') Then
 
@@ -2444,6 +2491,15 @@ Subroutine read_control                                &
           Call get_word(record,word)
           ttmoffset = word_2_real(word)
           If (idnode == 0) Write(nrite,"(/,1x,'electron-ion coupling offset (ps)',1x,1p,e12.4)") ttmoffset
+
+        Else If (word1(1:6) == 'oneway') Then
+
+        ! one-way electron-phonon coupling in thermostat and thermal
+        ! diffusion: only apply when electronic temperature exceeds
+        ! ionic temperature
+
+          oneway = .true.
+          If (idnode == 0) Write(nrite,"(/,1x,'one-way electron-phonon coupling option switched on')")
 
         Else If (word1(1:5) == 'stats') Then
 

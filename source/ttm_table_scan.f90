@@ -137,6 +137,57 @@ Subroutine ttm_table_scan()
 
   End If
 
+! check existence of thermal diffusivity table file
+
+  If (DeType == 2) Then
+
+    Inquire (File='De.dat', Exist=lexist)
+    If (mxnode > 1) Call gcheck(lexist)
+
+    If (.not.lexist) Then
+      Go To 300
+    Else
+      If (idnode == 0) Open(Unit=ntable, File='De.dat', Status='old')
+    End If
+
+! determine number of lines of data to read
+
+    del = 0
+    Do While(.true.)
+
+      Call get_line(safe,ntable,record)
+      If (.not.safe) Then
+        Go To 15
+      Else
+        Call get_word(record,word)
+        vk1 = word_2_real(word)
+        Call get_word(record,word)
+        vk2 = word_2_real(word)
+        If (vk1>=zero_plus) del=del+1
+      End If
+
+    End Do
+15  Continue
+
+    If (idnode == 0) Close(Unit=ntable)
+
+! check number of data lines and allocate array
+
+    safe = (del>0)
+    If (mxnode > 1) Call gcheck(safe)
+    If (.not. safe) Then
+      Call error(679)
+    Else
+      Allocate (detable(1:del,2), Stat=fail)
+      If (fail > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'ttm_table_scan allocation failure, node: ', idnode
+        Call error(0)
+      End If
+      detable(:,:) = 0.0_wp
+    End If
+
+  End If
+
 ! check existence of coupling constant table file
 
   If (gvar>0) Then
@@ -145,7 +196,7 @@ Subroutine ttm_table_scan()
     If (mxnode > 1) Call gcheck(lexist)
 
     If (.not.lexist) Then
-      Go To 300
+      Go To 400
     Else
       If (idnode == 0) Open(Unit=ntable, File='g.dat', Status='old')
     End If
@@ -176,7 +227,7 @@ Subroutine ttm_table_scan()
     safe = (gel>0)
     If (mxnode > 1) Call gcheck(safe)
     If (.not. safe) Then 
-      Call error(679)
+      Call error(681)
     Else
       Allocate (gtable(1:gel,2), Stat=fail) ! [GK] array length corrected
       If (fail > 0) Then
@@ -216,6 +267,11 @@ Subroutine ttm_table_scan()
 
   If (idnode == 0) Close(Unit=ntable)
   Call error(678)
+
+400 Continue
+
+  If (idnode == 0) Close(Unit=ntable)
+  Call error(680)
 
 End Subroutine ttm_table_scan
 

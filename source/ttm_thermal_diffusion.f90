@@ -460,30 +460,59 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
 
 ! electron stopping and electron-phonon couplings
 
-    If (nstep > nstepcpl) Then
-      Do k=1,ntcell(3)
-        Do j=1,ntcell(2)
-          Do i=1,ntcell(1)
-            ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
-            If (act_ele_cell(ijk,0,0,0)>zero_plus) Then
-              ! e-s coupling term
-              eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)+tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*asource(ijk)
-              ! e-p coupling term
-              If (l_epcp) Then
-                Select Case (gvar)
-                Case (0,1)
-                  eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)-&
-                  tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))
-                Case (2)
-                  eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)-&
-                  tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))*&
-                                                                                Gep(eltemp(ijk,0,0,0))
-                End Select
+    If (oneway) Then
+      If (nstep > nstepcpl) Then
+        Do k=1,ntcell(3)
+          Do j=1,ntcell(2)
+            Do i=1,ntcell(1)
+              ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+              If (act_ele_cell(ijk,0,0,0)>zero_plus) Then
+                ! e-s coupling term
+                eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)+tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*asource(ijk)
+                ! e-p coupling term: only use if electronic temperature 
+                ! exceeds ionic temperature
+                If (l_epcp .and. eltemp(ijk,0,0,0)>tempion(ijk)) Then
+                  Select Case (gvar)
+                  Case (0,1)
+                    eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)-&
+                    tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))
+                  Case (2)
+                    eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)-&
+                    tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))*&
+                                                                                  Gep(eltemp(ijk,0,0,0))
+                  End Select
+                End If
               End If
-            End If
+            End Do
           End Do
         End Do
-      End Do
+      End If
+    Else
+      If (nstep > nstepcpl) Then
+        Do k=1,ntcell(3)
+          Do j=1,ntcell(2)
+            Do i=1,ntcell(1)
+              ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+              If (act_ele_cell(ijk,0,0,0)>zero_plus) Then
+                ! e-s coupling term
+                eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)+tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*asource(ijk)
+                ! e-p coupling term
+                If (l_epcp) Then
+                  Select Case (gvar)
+                  Case (0,1)
+                    eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)-&
+                    tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))
+                  Case (2)
+                    eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)-&
+                    tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))*&
+                                                                                  Gep(eltemp(ijk,0,0,0))
+                  End Select
+                End If
+              End If
+            End Do
+          End Do
+        End Do
+      End If
     End If
 
 ! update electronic temperatures to adjusted values
@@ -507,7 +536,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
 
     If (Any(eltemp < 0.0_wp)) safe = .false.
     Call gcheck(safe)
-    If (.not. safe) Call error (681)
+    If (.not. safe) Call error (683)
 
   End Do
 

@@ -25,7 +25,7 @@ Module ttm_module
   Real( Kind = wp ), Allocatable :: act_ele_cell(:,:,:,:),old_ele_cell(:,:,:,:)
   Logical          , Allocatable :: adjust(:,:,:,:)
 
-  Real( Kind = wp ), Allocatable :: cetable(:,:),gtable(:,:),ketable(:,:)
+  Real( Kind = wp ), Allocatable :: cetable(:,:),gtable(:,:),detable(:,:),ketable(:,:)
 
   Integer :: ntsys(3),eltsys(3)
   Integer :: ntcell(3),eltcell(3)
@@ -34,13 +34,13 @@ Module ttm_module
   Integer :: tmpmsgx,tmpmsgy,tmpmsgz
   Integer :: nummsgx,nummsgy,nummsgz
 
-  Real ( Kind = wp ) :: delx,dely,delz,volume
+  Real ( Kind = wp ) :: delx,dely,delz,volume,rvolume
   Real ( Kind = wp ) :: zerocell(3)
   Integer :: numcell
   Integer :: ttmbc(6),ttmbcmap(6)
 
-  Logical :: l_ttm,isMetal,l_epcp,deactivation
-  Integer :: CeType,bcTypeE,ttmstats,ttmtraj,tdepoType,sdepoType,KeType,gvar
+  Logical :: l_ttm,isMetal,l_epcp,deactivation,ttmthvel,oneway
+  Integer :: CeType,KeType,DeType,gvar,bcTypeE,ttmstats,ttmtraj,tdepoType,sdepoType
   Real ( Kind = wp ) :: fluxout,ttmoffset
   Real ( Kind = wp ) :: sh_A,sh_B,Ka0,Ce0
   Real ( Kind = wp ) :: Cemax,Tfermi,Diff0
@@ -50,10 +50,10 @@ Module ttm_module
   Real ( Kind = wp ) :: epstart
   Integer :: keyres0,nstepcpl = 0
 
-  Integer :: cel,gel,kel
+  Integer :: cel,gel,del,kel
   Integer :: acell,acell_old,amin
 
-  Real ( Kind = wp ), Save :: Jm3K_to_kBA3,JKms_to_kBAps,kB_to_eV,mJcm2_to_eVA2
+  Real ( Kind = wp ), Save :: Jm3K_to_kBA3,JKms_to_kBAps,kB_to_eV,eV_to_kB,mJcm2_to_eVA2
   Real ( Kind = wp ), Save :: cellrho,epc_to_chi
   Real ( Kind = wp ) :: fluence,pdepth
   Real ( Kind = wp ) :: epthreshold = 1.1_wp
@@ -84,23 +84,20 @@ Contains
     JKms_to_kBAps = 10.0_wp/(boltz*tenunt)    ! convert W m^-1 K^-1 to kB A^-1 ps^-1
     Jm3K_to_kBA3  = 1.0e-7_wp/(boltz*tenunt)  ! convert J m^-3 K^-1 to kB A^-3
     kB_to_eV      = boltz/eu_ev               ! convert kB to eV
+    eV_to_kB      = eu_ev/boltz               ! convert eV to kB
     mJcm2_to_eVA2 = 1.0e4_wp/(eu_ev*tenunt)   ! convert mJ cm^-2 to eV A^-2
-
-! Calculate atomic density and conversion factor to calculate
-! electron-phonon friction factor (chi_ep)
-
-    cellrho    = Real(megatm,Kind=wp)/(cell(1)*cell(5)*cell(9))
-    epc_to_chi = 1.0e-12_wp*Jm3K_to_kBa3/(3.0_wp*cellrho)
 
 ! Convert inputs for ion temperature grid (number in z-direction)
 ! into numbers for x- and y-directions, grid spacings and cell volume
+! (plus its reciprocal)
 
-    delz = cell(9)/Real(ntsys(3),wp)
+    delz     = cell(9)/Real(ntsys(3),wp)
     ntsys(1) = Nint(cell(1)/delz)
     ntsys(2) = Nint(cell(5)/delz) 
-    delx = cell(1)/Real(ntsys(1),wp)
-    dely = cell(5)/Real(ntsys(2),wp)
-    volume = delx*dely*delz
+    delx     = cell(1)/Real(ntsys(1),wp)
+    dely     = cell(5)/Real(ntsys(2),wp)
+    volume   = delx*dely*delz
+    rvolume  = 1.0_wp/volume
 
 ! Check number of electronic temperature cells is greater than/
 ! equal to number of ionic temperature cells
@@ -123,8 +120,25 @@ Contains
       Write(nrite,'(/,1x,a,3(2x,f8.4))') "temperature cell size (A)        (x,y,z): ",delx,dely,delz
       Write(nrite,'(1x,a,3(2x,i8))')     "ionic temperature grid size      (x,y,z): ",ntsys(1),ntsys(2),ntsys(3)
       Write(nrite,'(1x,a,3(2x,i8))')     "electronic temperature grid size (x,y,z): ",eltsys(1),eltsys(2),eltsys(3)
-      Write(nrite,'(1x,a,f10.4)')        "average no. of atoms per cell           : ",cellrho*volume
     End If
+
+! Calculate atomic density (if not supplied) and conversion factor 
+! to calculate electron-phonon friction factor (chi_ep)
+
+    If (cellrho<=zero_plus) Then
+      cellrho = Real(megatm,Kind=wp)/(cell(1)*cell(5)*cell(9))
+      If (idnode == 0) Then
+        Write(nrite,'(1x,a,f10.4)') "assumed atomic density           (A^-3) : ",cellrho
+        Write(nrite,'(1x,a,f10.4)') "average no. of atoms per cell           : ",cellrho*volume
+      End If
+    Else
+      If (idnode == 0) Then
+        Write(nrite,'(1x,a,f10.4)') "user-specified atomic density    (A^-3) : ",cellrho
+        Write(nrite,'(1x,a,f10.4)') "average no. of atoms per cell           : ",cellrho*volume
+      End If
+    End If
+
+    epc_to_chi = 1.0e-12_wp*Jm3K_to_kBa3/(3.0_wp*cellrho)
 
 ! Check sufficient parameters are specified for electronic specific
 ! heats, thermal conductivity, diffusivity, energy loss and laser deposition
@@ -156,9 +170,17 @@ Contains
       Ka0 = Ka0*JKms_to_kBAps
     End Select
 
-    ! thermal diffusivity: converted from m^2 s^-1 to A^2 ps^-1
-    If (.not. isMetal .and. Abs(Diff0) <= zero_plus) Call error(673)
-    Diff0 = Diff0*1.0e8_wp
+    Select Case (DeType)
+    Case (0)
+    ! constant thermal diffusivity: converted from m^2 s^-1 to A^2 ps^-1
+      If (.not. isMetal .and. Abs(Diff0) <= zero_plus) Call error(673)
+      Diff0 = Diff0*1.0e8_wp
+    Case (1)
+    ! reciprocal thermal diffusivity: converted from m^2 s^-1 to A^2 ps^-1
+    ! and Diff0 scaled with system temperature
+      If (.not. isMetal .and. Abs(Diff0) <= zero_plus .or. Abs(Tfermi) <= zero_plus) Call error(673)
+      Diff0 = Diff0*temp*1.0e8_wp
+    End Select
 
     ! spatial deposition (gaussian) standard deviation: convert from nm to A
     sig = sig*10.0_wp
@@ -375,8 +397,9 @@ Contains
     acell_old = acell
     adjust = .false.
     cel = 0
-    gel = 0
     kel = 0
+    del = 0
+    gel = 0
 
     keyres0 = 1
 
@@ -386,14 +409,15 @@ Contains
 
     Implicit None
 
-    Integer, Dimension ( 1:4 ) :: fail
+    Integer, Dimension ( 1:5 ) :: fail
 
     fail = 0
 
     Deallocate (eltemp,eltemp_adj,asource,tempion,gsource,act_ele_cell,old_ele_cell,adjust, Stat = fail(1))
     If (kel>0) Deallocate(ketable,                                                          Stat = fail(2))
     If (cel>0) Deallocate(cetable,                                                          Stat = fail(3))
-    If (gel>0) Deallocate(gtable,                                                           Stat = fail(4))
+    If (del>0) Deallocate(detable,                                                          Stat = fail(4))
+    If (gel>0) Deallocate(gtable,                                                           Stat = fail(5))
 
     If (Any(fail > 0)) Call error(1084)
 

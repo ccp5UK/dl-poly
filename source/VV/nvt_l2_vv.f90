@@ -271,31 +271,112 @@ Subroutine nvt_l2_vv                          &
 
      If (l_ttm) Then
 
-       Do i=1,natms
-          velsq = vxx(i)*vxx(i)+vyy(i)*vyy(i)+vzz(i)*vzz(i)
-          lvel = (velsq>vel_es2 .and. chi_es>zero_plus)
-          If (weight(i) > 1.0e-6_wp) Then
-
-             Select Case (gvar)
-             Case (0,1)
-               t0 = Merge(t0a,t0b,lvel)
-               t1 = Merge(t1a,t1b,lvel)
-               scr1 = Merge(scr1a,scr1b,lvel)
-               scl1 = Merge(scl1a,scl1b,lvel)
-               scv1 = Merge(scv1a,scv1b,lvel)
-             Case (2)
+       If (oneway) Then
+       ! one-way electron-phonon coupling
+         Do i=1,natms
+            velsq = vxx(i)*vxx(i)+vyy(i)*vyy(i)+vzz(i)*vzz(i)
+            lvel = (velsq>vel_es2 .and. chi_es>zero_plus)
+            If (weight(i) > 1.0e-6_wp) Then
+               ! check for active cell and electronic temperature is
+               ! higher than ionic tmeperature: if not, switch off thermostat
                ia = Floor((xxx(i)+zerocell(1))/delx) + 1
                ja = Floor((yyy(i)+zerocell(2))/dely) + 1
                ka = Floor((zzz(i)+zerocell(3))/delz) + 1
                ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
-               chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(chi_es,0.0_wp,lvel)
-               If (l_epcp) Then
-                 t0 = Exp(-tstep*chi)
-                 t1 = (1.0_wp-t0)/chi
-                 t2 = (1.0_wp-t0**2)/(2*chi)
-                 scr1 = (t1-t2)/Sqrt(t2*tstep)/chi
-                 scl1 = Sqrt(1.0_wp-(t1**2)/(t2*tstep))/chi
-                 scv1 = Sqrt(t2/tstep)
+               If (act_ele_cell(ijk,0,0,0)>zero_plus .and. eltemp(ijk,0,0,0)>tempion(ijk)) Then
+                 Select Case (gvar)
+                 Case (0,1)
+                   t0 = Merge(t0a,t0b,lvel)
+                   t1 = Merge(t1a,t1b,lvel)
+                   scr1 = Merge(scr1a,scr1b,lvel)
+                   scl1 = Merge(scl1a,scl1b,lvel)
+                   scv1 = Merge(scv1a,scv1b,lvel)
+                 Case (2)
+                   chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(chi_es,0.0_wp,lvel)
+                   If (l_epcp) Then
+                     t0 = Exp(-tstep*chi)
+                     t1 = (1.0_wp-t0)/chi
+                     t2 = (1.0_wp-t0**2)/(2*chi)
+                     scr1 = (t1-t2)/Sqrt(t2*tstep)/chi
+                     scl1 = Sqrt(1.0_wp-(t1**2)/(t2*tstep))/chi
+                     scv1 = Sqrt(t2/tstep)
+                   Else
+                     t0 = 1.0_wp
+                     t1 = tstep
+                     scr1 = 0.0_wp
+                     scl1 = 0.0_wp
+                     scv1 = 0.0_wp
+                   End If
+                 End Select
+               Else
+                 t0 = 1.0_wp
+                 t1 = tstep
+                 scr1 = 0.0_wp
+                 scl1 = 0.0_wp
+                 scv1 = 0.0_wp
+               End If
+
+! Half-kick velocity
+
+               tmp=hstep/weight(i)
+               vxx(i)=vxt(i)+tmp*fxt(i)
+               vyy(i)=vyt(i)+tmp*fyt(i)
+               vzz(i)=vzt(i)+tmp*fzt(i)
+
+               tmp=tstep/weight(i)
+
+! Full time fluctuations on positions using half-kick velocity
+
+               xxx(i)=xxt(i)+vxx(i)*t1+tmp*(fxr(i)*scr1+fxl(i)*scl1)
+               yyy(i)=yyt(i)+vyy(i)*t1+tmp*(fyr(i)*scr1+fyl(i)*scl1)
+               zzz(i)=zzt(i)+vzz(i)*t1+tmp*(fzr(i)*scr1+fzl(i)*scl1)
+
+! Full time fluctuations on half-kick velocity
+
+               vxx(i)=vxx(i)*t0+tmp*fxr(i)*scv1
+               vyy(i)=vyy(i)*t0+tmp*fyr(i)*scv1
+               vzz(i)=vzz(i)*t0+tmp*fzr(i)*scv1
+
+            End If
+         End Do
+
+       Else
+
+         Do i=1,natms
+            velsq = vxx(i)*vxx(i)+vyy(i)*vyy(i)+vzz(i)*vzz(i)
+            lvel = (velsq>vel_es2 .and. chi_es>zero_plus)
+            If (weight(i) > 1.0e-6_wp) Then
+               ! check for active cell: if not, switch off thermostat
+               ia = Floor((xxx(i)+zerocell(1))/delx) + 1
+               ja = Floor((yyy(i)+zerocell(2))/dely) + 1
+               ka = Floor((zzz(i)+zerocell(3))/delz) + 1
+               ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
+               If (act_ele_cell(ijk,0,0,0)>zero_plus) Then
+                 Select Case (gvar)
+                 Case (0,1)
+                   t0 = Merge(t0a,t0b,lvel)
+                   t1 = Merge(t1a,t1b,lvel)
+                   scr1 = Merge(scr1a,scr1b,lvel)
+                   scl1 = Merge(scl1a,scl1b,lvel)
+                   scv1 = Merge(scv1a,scv1b,lvel)
+                 Case (2)
+                   chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(chi_es,0.0_wp,lvel)
+                   If (l_epcp) Then
+                     t0 = Exp(-tstep*chi)
+                     t1 = (1.0_wp-t0)/chi
+                     t2 = (1.0_wp-t0**2)/(2*chi)
+                     scr1 = (t1-t2)/Sqrt(t2*tstep)/chi
+                     scl1 = Sqrt(1.0_wp-(t1**2)/(t2*tstep))/chi
+                     scv1 = Sqrt(t2/tstep)
+                   Else
+                     t0 = 1.0_wp
+                     t1 = tstep
+                     t2 = 0.0_wp
+                     scr1 = 0.0_wp
+                     scl1 = 0.0_wp
+                     scv1 = 0.0_wp
+                   End If
+                 End Select
                Else
                  t0 = 1.0_wp
                  t1 = tstep
@@ -304,33 +385,35 @@ Subroutine nvt_l2_vv                          &
                  scl1 = 0.0_wp
                  scv1 = 0.0_wp
                End If
-             End Select
 
 ! Half-kick velocity
 
-             tmp=hstep/weight(i)
-             vxx(i)=vxt(i)+tmp*fxt(i)
-             vyy(i)=vyt(i)+tmp*fyt(i)
-             vzz(i)=vzt(i)+tmp*fzt(i)
+               tmp=hstep/weight(i)
+               vxx(i)=vxt(i)+tmp*fxt(i)
+               vyy(i)=vyt(i)+tmp*fyt(i)
+               vzz(i)=vzt(i)+tmp*fzt(i)
 
-             tmp=tstep/weight(i)
+               tmp=tstep/weight(i)
 
 ! Full time fluctuations on positions using half-kick velocity
 
-             xxx(i)=xxt(i)+vxx(i)*t1+tmp*(fxr(i)*scr1+fxl(i)*scl1)
-             yyy(i)=yyt(i)+vyy(i)*t1+tmp*(fyr(i)*scr1+fyl(i)*scl1)
-             zzz(i)=zzt(i)+vzz(i)*t1+tmp*(fzr(i)*scr1+fzl(i)*scl1)
+               xxx(i)=xxt(i)+vxx(i)*t1+tmp*(fxr(i)*scr1+fxl(i)*scl1)
+               yyy(i)=yyt(i)+vyy(i)*t1+tmp*(fyr(i)*scr1+fyl(i)*scl1)
+               zzz(i)=zzt(i)+vzz(i)*t1+tmp*(fzr(i)*scr1+fzl(i)*scl1)
 
 ! Full time fluctuations on half-kick velocity
 
-             vxx(i)=vxx(i)*t0+tmp*fxr(i)*scv1
-             vyy(i)=vyy(i)*t0+tmp*fyr(i)*scv1
-             vzz(i)=vzz(i)*t0+tmp*fzr(i)*scv1
+               vxx(i)=vxx(i)*t0+tmp*fxr(i)*scv1
+               vyy(i)=vyy(i)*t0+tmp*fyr(i)*scv1
+               vzz(i)=vzz(i)*t0+tmp*fzr(i)*scv1
 
-          End If
-       End Do
+            End If
+         End Do
+       End If
 
      Else
+
+! no ttm option: just inhomogeneous Langevin thermostat
 
        Do i=1,natms
           velsq = vxx(i)*vxx(i)+vyy(i)*vyy(i)+vzz(i)*vzz(i)

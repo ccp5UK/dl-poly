@@ -53,7 +53,7 @@ Subroutine nvt_l2_lfv                     &
   Logical                 :: safe,lv_up,lv_dn,lrand,lvel
   Integer,           Save :: mxkit
   Integer                 :: fail(1:9),kit,i,ia,ja,ka,ijk
-  Real( Kind = wp )       :: rstep,chi
+  Real( Kind = wp )       :: rstep,chi,active
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
                              vom(1:3),sclv,sclf,gscale,      &
                              gscale1,velsq
@@ -178,33 +178,69 @@ Subroutine nvt_l2_lfv                     &
 ! update velocity and position
 
   If (l_ttm) Then
-    Do i=1,natms
-       velsq = vxx(i)*vxx(i)+vyy(i)*vyy(i)+vzz(i)*vzz(i)
-       lvel = (velsq>vel_es2 .and. chi_es>zero_plus)
-       If (weight(i) > 1.0e-6_wp) Then
-          Select Case (gvar)
-          Case (0,1)
-            chi = Merge(chi_ep,0.0_wp,l_epcp) + Merge(chi_es,0.0_wp,lvel)
-          Case (2)
+    If (oneway) Then
+    ! one-way electron-phonon coupling: check electronic
+    ! temperature is higher than ionic temperature for
+    ! thermostatting (as well as active cell)
+      Do i=1,natms
+         velsq = vxx(i)*vxx(i)+vyy(i)*vyy(i)+vzz(i)*vzz(i)
+         lvel = (velsq>vel_es2 .and. chi_es>zero_plus)
+         If (weight(i) > 1.0e-6_wp) Then
             ia = Floor((xxx(i)+zerocell(1))/delx) + 1
             ja = Floor((yyy(i)+zerocell(2))/dely) + 1
             ka = Floor((zzz(i)+zerocell(3))/delz) + 1
             ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
-            chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(chi_es,0.0_wp,lvel)
-          End Select
-          tmp  = 1.0_wp/(1.0_wp+0.5_wp*chi*tstep)
-          sclv = 2.0_wp*tmp-1.0_wp
-          sclf = tstep*tmp
-          tmp=sclf/weight(i)
-          vxx(i)=vxt(i)*sclv+tmp*(fxt(i)+fxl(i))
-          vyy(i)=vyt(i)*sclv+tmp*(fyt(i)+fyl(i))
-          vzz(i)=vzt(i)*sclv+tmp*(fzt(i)+fzl(i))
+            active = act_ele_cell(ijk,0,0,0)*Merge(1.0_wp,0.0_wp,(eltemp(ijk,0,0,0)>tempion(ijk)))
+            Select Case (gvar)
+            Case (0,1)
+              chi = active*(Merge(chi_ep,0.0_wp,l_epcp) + Merge(chi_es,0.0_wp,lvel))
+            Case (2)
+              chi = active*(Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(chi_es,0.0_wp,lvel))
+            End Select
+            tmp  = 1.0_wp/(1.0_wp+0.5_wp*chi*tstep)
+            sclv = 2.0_wp*tmp-1.0_wp
+            sclf = tstep*tmp
+            tmp=sclf/weight(i)
+            vxx(i)=vxt(i)*sclv+tmp*(fxt(i)+fxl(i))
+            vyy(i)=vyt(i)*sclv+tmp*(fyt(i)+fyl(i))
+            vzz(i)=vzt(i)*sclv+tmp*(fzt(i)+fzl(i))
 
-          xxx(i)=xxt(i)+tstep*vxx(i)
-          yyy(i)=yyt(i)+tstep*vyy(i)
-          zzz(i)=zzt(i)+tstep*vzz(i)
-       End If
-    End Do
+            xxx(i)=xxt(i)+tstep*vxx(i)
+            yyy(i)=yyt(i)+tstep*vyy(i)
+            zzz(i)=zzt(i)+tstep*vzz(i)
+         End If
+      End Do
+    Else
+    ! switch off thermostatting for inactive cells
+      Do i=1,natms
+         velsq = vxx(i)*vxx(i)+vyy(i)*vyy(i)+vzz(i)*vzz(i)
+         lvel = (velsq>vel_es2 .and. chi_es>zero_plus)
+         If (weight(i) > 1.0e-6_wp) Then
+            ia = Floor((xxx(i)+zerocell(1))/delx) + 1
+            ja = Floor((yyy(i)+zerocell(2))/dely) + 1
+            ka = Floor((zzz(i)+zerocell(3))/delz) + 1
+            ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
+            active = act_ele_cell(ijk,0,0,0)
+            Select Case (gvar)
+            Case (0,1)
+              chi = active*(Merge(chi_ep,0.0_wp,l_epcp) + Merge(chi_es,0.0_wp,lvel))
+            Case (2)
+              chi = active*(Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(chi_es,0.0_wp,lvel))
+            End Select
+            tmp  = 1.0_wp/(1.0_wp+0.5_wp*chi*tstep)
+            sclv = 2.0_wp*tmp-1.0_wp
+            sclf = tstep*tmp
+            tmp=sclf/weight(i)
+            vxx(i)=vxt(i)*sclv+tmp*(fxt(i)+fxl(i))
+            vyy(i)=vyt(i)*sclv+tmp*(fyt(i)+fyl(i))
+            vzz(i)=vzt(i)*sclv+tmp*(fzt(i)+fzl(i))
+
+            xxx(i)=xxt(i)+tstep*vxx(i)
+            yyy(i)=yyt(i)+tstep*vyy(i)
+            zzz(i)=zzt(i)+tstep*vzz(i)
+         End If
+      End Do
+    End If
   Else
     gscale1 = Sqrt(1.0_wp+chi_es/chi_ep)
     Do i=1,natms
