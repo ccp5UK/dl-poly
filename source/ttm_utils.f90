@@ -125,21 +125,23 @@ Contains
     Real ( Kind = wp ), Intent ( In ) :: Te
     Real ( Kind = wp )                :: alp
 
-    If (isMetal) Then
+    Select Case (DeType)
+    Case (0)
+    ! Case 0: metal system - ratio of conductivity/heat capacity
       alp = Ke(Te) / Ce(Te)
-    Else
-      Select Case (DeType)
-      Case (0)
-      ! Case 0: constant value (given as A^2/ps)
-        alp = Diff0
-      Case (1)
-      ! Case 1: reciprocal function of temperature up to Fermi temperature,
-      !         Diff0 previously scaled with system temperature (given as A^2/ps)
-        alp = Diff0/Min(Te,Tfermi)
-      Case (2)
-      ! Case 2: thermal diffusivity interpolated from table (given as A^2/ps)
-        Call interpolate(del, detable, Te, alp)
-    End If
+    Case (1)
+    ! Case 1: non-metal system - constant value (given as A^2/ps)
+      alp = Diff0
+    Case (2)
+    ! Case 2: non-metal system - reciprocal function of temperature
+    !         up to Fermi temperature, Diff0 previously scaled with
+    !         system temperature (given as A^2/ps)
+      alp = Diff0/Min(Te,Tfermi)
+    Case (3)
+    ! Case 3: non-metal system - thermal diffusivity interpolated 
+    !         from table (given as A^2/ps)
+      Call interpolate(del, detable, Te, alp)
+    End Select
 
   End Function alp
 
@@ -882,7 +884,7 @@ Contains
     laty = 0.0_wp
 
     If (freq /= 0) Then
-      If (Mod(nstep,freq)==0 .or. nstep==1) Then
+      If (Mod(nstep,freq)==0) Then
         i = midI(1) - ntcelloff(1)
         k = midI(3) - ntcelloff(3)
         If (i>0 .and. i<=ntcell(1) .and. k>0 .and. k<=ntcell(3)) Then
@@ -894,7 +896,7 @@ Contains
         End If
         If (mxnode>1) Call gsum (laty)
         If (idnode==0) Then
-          If (nstep==1) Then
+          If (nstep==0) Then
             Open (Unit=iounit, File=peakfile, Status='replace')
           Else
             Open (Unit=iounit, File=peakfile, Position='append')
@@ -924,7 +926,7 @@ Contains
     laty = 0.0_wp
 
     If (freq /= 0) Then
-      If (Mod(nstep,freq)==0 .or. nstep==1) Then
+      If (Mod(nstep,freq)==0) Then
         i = midI(1) - ntcelloff(1)
         k = midI(3) - ntcelloff(3)
         If (i>0 .and. i<=ntcell(1) .and. k>0 .and. k<=ntcell(3)) Then
@@ -948,7 +950,7 @@ Contains
         End If
         If (mxnode>1) Call gsum (laty)
         If (idnode==0) Then
-          If (nstep==1) Then
+          If (nstep==0) Then
             Open (Unit=iounit, File=peakfile, Status='replace')
           Else
             Open (Unit=iounit, File=peakfile, Position='append')
@@ -983,7 +985,7 @@ Contains
     lat_max=0.0_wp
 
     If (freq /= 0) Then
-      If (Mod(nstep,freq)==0 .or. nstep==1) Then
+      If (Mod(nstep,freq)==0) Then
 
         Do k = 1,ntcell(3)
           Do j = 1,ntcell(2)
@@ -1005,13 +1007,12 @@ Contains
         rtotal = 1.0_wp/Real(acell,Kind=wp)
 
         If (idnode == 0) Then
-          If (nstep==1) Then
+          If (nstep==0) Then
             Open(Unit=iounit, File=latfile, Status='replace')
           Else
             Open(Unit=iounit, File=latfile, Position='append')
           End If
-          Write(iounit,'(i8,1p,es12.4,1p,es12.4,1p,es12.4,1p,es12.4,1p,es12.4)') &
-                        nstep, time, lat_min, lat_max, lat_sum*rtotal, lat_sum
+          Write(iounit,'(i8,5(1p,es12.4))') nstep, time, lat_min, lat_max, lat_sum*rtotal, lat_sum
           Close(iounit)
         End If
 
@@ -1031,13 +1032,13 @@ Contains
     Real ( Kind = wp ), Intent ( In ) :: time,temp0
     Character ( Len = * ), Intent ( In ) :: latfile
 
-    Real ( Kind = wp ) :: lat_sum,lat_min,lat_max,Ue,tmp,sgnplus,eltmp
+    Real ( Kind = wp ) :: lat_sum,lat_min,lat_max,Ue,tmp,sgnplus,eltmp,rtotal
     Integer :: iounit = 115
     Integer :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax
     Integer :: ijk,numint,n,lx,ly,lz
 
     If (freq /= 0) Then
-      If (Mod(nstep,freq)==0 .or. nstep==1) Then
+      If (Mod(nstep,freq)==0) Then
 
         Call eltemp_sum(lat_sum)
         Call eltemp_min(lat_min)
@@ -1099,14 +1100,15 @@ Contains
                         tmp = tmp*Ce0*(eltmp-temp0)
                       Case (1)
                       ! hyperbolic tangent specific heat capacity
-                        tmp = tmp*sh_A*Ln(Cosh(sh_B*eltmp)/Cosh(sh_B*temp0))/sh_B
+                        tmp = tmp*sh_A*Log(Cosh(sh_B*eltmp)/Cosh(sh_B*temp0))/sh_B
                       Case (2)
                       ! linear specific heat capacity to Fermi temperature
-                        tmp = tmp*Cemax*(0.5_wp*((Min(Tfermi,eltmp))**2-temp*temp)/Tfermi+Max(eltmp-Tfermi,0.0_wp))
-                      Case (3)
-                      ! tabulated volumetric heat capacity: integrate using trapezium rule
+                        tmp = tmp*Cemax*(0.5_wp*((Min(Tfermi,eltmp))**2-temp0*temp0)/Tfermi+Max(eltmp-Tfermi,0.0_wp))
+                      Case Default
+                      ! tabulated volumetric heat capacity or more complex 
+                      ! functions: integrate using trapezium rule
                       ! with final interval of <=1 kelvin
-                        numint = Floor(tmp*(eltemp-temp0))
+                        numint = Floor(tmp*(eltmp-temp0))
                         tmp = 0.0_wp
                         sgnplus = Sign(1.0_wp,Real(numint,Kind=wp))
                         Do n=1,Abs(numint)
@@ -1126,13 +1128,15 @@ Contains
 
         If (mxnode>1) Call gsum(Ue)
 
+        rtotal = 1.0_wp/(Real(eltsys(1)*eltsys(2)*eltsys(3)-ntsys(1)*ntsys(2)*ntsys(3)+acell,Kind=wp))
+
         If (idnode == 0) Then
-          If (nstep==1) Then
+          If (nstep==0) Then
             Open(Unit=iounit, File=latfile, Status='replace')
           Else
             Open(Unit=iounit, File=latfile, Position='append')
           End If
-          Write(iounit,'(i8,1p,es12.4,1p,es12.4,1p,es12.4,1p,es12.4,1p,es12.4)') nstep, time, lat_min, lat_max, lat_sum, Ue
+          Write(iounit,'(i8,6(1p,es12.4))') nstep, time, lat_min, lat_max, lat_sum*rtotal, lat_sum, Ue
           Close(iounit)
         End If
 
@@ -1663,12 +1667,14 @@ Contains
               tmp2 = Ce0*(end_Te-temp0)
             Case (1)
             ! hyperbolic tangent specific heat capacity
-              tmp2 = sh_A*Ln(Cosh(sh_B*end_Te)/Cosh(sh_B*temp0))/sh_B
+              tmp2 = sh_A*Log(Cosh(sh_B*end_Te)/Cosh(sh_B*temp0))/sh_B
             Case (2)
             ! linear specific heat capacity to Fermi temperature
-              tmp2 = Cemax*(0.5_wp*((Min(Tfermi,end_Te))**2-temp0*temp0)/Tfermi+Max(end_Te-Tfermi,0.0_wp))
-            Case (3)
-            ! tabulated volumetric heat capacity: integrate using trapezium rule
+              increase = Min(Tfermi,end_Te)
+              tmp2 = Cemax*(0.5_wp*(increase*increase-temp0*temp0)/Tfermi+Max(end_Te-Tfermi,0.0_wp))
+            Case Default
+            ! tabulated volumetric heat capacity or more complex 
+            ! functions: integrate using trapezium rule
             ! with final interval of <=1 kelvin
               numint = Floor(end_Te - temp0)
               sgnplus = Sign (1.0_wp, Real(numint, Kind=wp))
@@ -1855,8 +1861,13 @@ Contains
               If (Abs(energydist(ijk,ii,jj,kk))>zero_plus) Then
                 energy_per_cell = energydist(ijk,ii,jj,kk)*rvolume*eV_to_kB
                 start_Te = eltemp(ijk,ii,jj,kk)
-                end_Te = Sqrt(start_Te*start_Te+2.0_wp*energy_per_cell/Cemax)
-                If (end_Te>Tfermi) end_Te = energy_per_cell/Cemax+0.5_wp*(Tfermi+start_Te*start_Te/Tfermi)
+                If (energy_per_cell>zero_plus) Then
+                  end_Te = Sqrt(start_Te*start_Te+2.0_wp*energy_per_cell*Tfermi/Cemax)
+                  If (end_Te>Tfermi) end_Te = 0.5_wp*(start_Te*start_Te/Tfermi+Tfermi)+energy_per_cell/Cemax
+                Else
+                  end_Te = start_Te + energy_per_cell/Cemax
+                  If (end_Te<Tfermi) end_Te = Sqrt(Tfermi*(2.0_wp*(start_Te+energy_per_cell/Cemax)-Tfermi))
+                End If
                 eltemp_adj(ijk,ii,jj,kk) = end_Te
                 adjust(ijk,ii,jj,kk) = .true.
               End If
@@ -1864,9 +1875,11 @@ Contains
           End Do
         End Do
       End Do
-    Case (3)
-    ! tabulated volumetric heat capacity: find new temperature
-    ! iteratively by gradual integration
+    Case Default
+    ! tabulated volumetric heat capacity or more complex
+    ! function: find new temperature iteratively by
+    ! gradual integration (1 kelvin at a time)
+    ! and interpolate within last kelvin
       Do kk = -1, 1
         Do jj = -1, 1
           Do ii = -1, 1

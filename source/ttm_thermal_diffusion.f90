@@ -67,7 +67,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
     redtstepmx = 1
     opttstep = tstep
   Case (1)
-! constant thermal conductivity
+! constant thermal conductivity and non-metal systems
     mintstep = 0.5_wp*del2av/alp(eltempmax)
     maxtstep = 0.5_wp*del2av/alp(eltempmin)
     opttstep = fopttstep*Min(mintstep,maxtstep)
@@ -128,21 +128,23 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
   Call boundaryCond (bcTypeE, temp)
 
 ! print statistics to files: electronic and ionic temperatures
+! (note timestep is subtracted by 1, as these are values at
+!  beginning of MD timestep)
 
-  Call printElecLatticeStatsToFile('PEAK_E', time, temp, nstep, ttmstats)
-  Call peakProfilerElec('LATS_E', nstep, ttmtraj)
+  Call printElecLatticeStatsToFile('PEAK_E', time, temp, nstep-1, ttmstats)
+  Call peakProfilerElec('LATS_E', nstep-1, ttmtraj)
 
-  Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep, ttmstats)
-  Call peakProfiler(tempion, 'LATS_I', nstep, ttmtraj)
+  Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep-1, ttmstats)
+  Call peakProfiler(tempion, 'LATS_I', nstep-1, ttmtraj)
 
 ! debugging option: print electron-phonon and electronic stopping source terms
 !                   (normally switched off)
 
   If (debug1) Then
-    Call printLatticeStatsToFile(gsource, 'PEAK_G', time, nstep, ttmstats)
-    Call peakProfiler(gsource, 'LATS_G', nstep, ttmtraj)
-    Call printLatticeStatsToFile(asource, 'PEAK_A', time, nstep, ttmstats)
-    Call peakProfiler(asource, 'LATS_A', nstep, ttmtraj)
+    Call printLatticeStatsToFile(gsource, 'PEAK_G', time, nstep-1, ttmstats)
+    Call peakProfiler(gsource, 'LATS_G', nstep-1, ttmtraj)
+    Call printLatticeStatsToFile(asource, 'PEAK_A', time, nstep-1, ttmstats)
+    Call peakProfiler(asource, 'LATS_A', nstep-1, ttmtraj)
   End If
 
   safe=.true.
@@ -183,7 +185,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
       End Do
 
     Case (1)
-! constant thermal conductivity case
+! constant thermal conductivity or non-metal case 
       If (deactivation) Then
       ! system with cell deactivation/energy redistribution
         Do kk=-eltcell(3),eltcell(3)

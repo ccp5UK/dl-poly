@@ -3855,7 +3855,7 @@ insufficient electronic temperatures are supplied. No matching up
 of restart timestep between REVOLD and DUMP\_E is absolutely 
 necessary, but the user will be warned if they are not the same.
 
-\subsection{The Ce.dat, Ke.dat and g.dat Files}
+\subsection{The Ce.dat, Ke.dat, De.dat and g.dat Files}
 \label{ttm-tabulated-files}
 
 The \index{Two-Temperature Model}two-temperature model (TTM) 
@@ -3863,15 +3863,17 @@ implementation in \D allows specification of the following tabulated data:
 \begin{itemize}
 \item Ce.dat - for electronic volumetric heat capacity - temperature dependent
 \item Ke.dat - for metallic thermal conductivity - temperature dependent
+\item De.dat - for non-metallic thermal diffusivity - temperature dependent
 \item g.dat - for electron-phonon coupling constants - temperature dependent
 \end{itemize}
 
 Each file is free-formatted and only consist of two columns: the first column 
 gives temperature in K, while the second gives electronic volumetric heat 
 capacity in J~m$^{-3}$~K$^{-1}$ (Ce.dat), thermal conductivity in 
-W~m$^{-1}$~K$^{-1}$ (Ke.dat) or the electron-phonon coupling constant 
-in W~m$^{-3}$~K$^{-1}$ (g.dat). These files are read by the subroutine 
-{\sc ttm\_table\_read} if the {\bf ttm cetab}, {\bf ttm ketab} and/or {\bf ttm gvar} 
+W~m$^{-1}$~K$^{-1}$ (Ke.dat), thermal diffusivity in m$^{2}$~s$^{-1}$
+(De.dat) or the electron-phonon coupling constant in W~m$^{-3}$~K$^{-1}$ 
+(g.dat). These files are read by the subroutine {\sc ttm\_table\_read} if the 
+{\bf ttm cetab}, {\bf ttm ketab}, {\bf ttm detab} and/or {\bf ttm gvar} 
 directives are included in the CONTROL file.
 
 \subsection{The HISTORY File}

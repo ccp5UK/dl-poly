@@ -128,12 +128,12 @@ Contains
     If (cellrho<=zero_plus) Then
       cellrho = Real(megatm,Kind=wp)/(cell(1)*cell(5)*cell(9))
       If (idnode == 0) Then
-        Write(nrite,'(1x,a,f10.4)') "assumed atomic density           (A^-3) : ",cellrho
+        Write(nrite,'(1x,a,f10.4)') "assumed atomic density            (A^-3): ",cellrho
         Write(nrite,'(1x,a,f10.4)') "average no. of atoms per cell           : ",cellrho*volume
       End If
     Else
       If (idnode == 0) Then
-        Write(nrite,'(1x,a,f10.4)') "user-specified atomic density    (A^-3) : ",cellrho
+        Write(nrite,'(1x,a,f10.4)') "user-specified atomic density     (A^-3): ",cellrho
         Write(nrite,'(1x,a,f10.4)') "average no. of atoms per cell           : ",cellrho*volume
       End If
     End If
@@ -171,11 +171,11 @@ Contains
     End Select
 
     Select Case (DeType)
-    Case (0)
+    Case (1)
     ! constant thermal diffusivity: converted from m^2 s^-1 to A^2 ps^-1
       If (.not. isMetal .and. Abs(Diff0) <= zero_plus) Call error(673)
       Diff0 = Diff0*1.0e8_wp
-    Case (1)
+    Case (2)
     ! reciprocal thermal diffusivity: converted from m^2 s^-1 to A^2 ps^-1
     ! and Diff0 scaled with system temperature
       If (.not. isMetal .and. Abs(Diff0) <= zero_plus .or. Abs(Tfermi) <= zero_plus) Call error(673)

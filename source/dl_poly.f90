@@ -118,9 +118,10 @@ Program dl_poly
 
   Use langevin_module
 
-! TWO-TEMPERATURE MODEL MODULE
+! TWO-TEMPERATURE MODEL MODULES
 
   Use ttm_module
+  Use ttm_utils
 
 ! MAIN PROGRAM VARIABLES
 
@@ -690,6 +691,18 @@ Program dl_poly
               ltg(i),xxx(i),yyy(i),zzz(i),vxx(i),vyy(i),vzz(i),fxx(i),fyy(i),fzz(i)
         End Do
      End If
+  End If
+
+! Two-temperature model simulations: calculate final 
+! ionic temperatures and print statistics to files
+! (final)
+
+  If (l_ttm) Then
+    Call ttm_ion_temperature (chi_ep,chi_es,vel_es2)
+    Call printElecLatticeStatsToFile('PEAK_E', time, temp, nstep, ttmstats)
+    Call peakProfilerElec('LATS_E', nstep, ttmtraj)
+    Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep, ttmstats)
+    Call peakProfiler(tempion, 'LATS_I', nstep, ttmtraj)
   End If
 
 ! Save restart data for real simulations only (final)

@@ -35,6 +35,7 @@ Contains
 
     Real ( Kind = wp ), Intent( In ) :: time
     Integer, Dimension( 1:3 ) :: fail
+    Character ( Len = 14 ) :: number
 
     fail = 0
 
@@ -80,8 +81,9 @@ Contains
     ! report start of energy deposition
 
     If (idnode == 0) Then
-      Write(nrite,"(/,1x,a,f14.5,a,/)") &
-        'electronic energy deposition starting at time = ',time,' ps'
+      Write(number, '(f14.5)') time
+      Write(nrite,"(/,6x,a,a,a,/)") &
+        'electronic energy deposition starting at time = ',Trim(Adjustl(number)),' ps'
       Write(nrite,"(1x,130('-'))")
     End If
 
@@ -101,6 +103,7 @@ Contains
     Real( Kind = wp ) :: energy_diff,oldCe,newCe,start_Te,end_Te,increase
     Integer :: i,j,k,ijk
     Integer, Dimension( 1:3 ) :: fail = 0
+    Character ( Len = 14 ) :: number
     Logical :: deposit
 
     ! start deposition, reducing size of timestep for thermal diffusion
@@ -142,7 +145,7 @@ Contains
               ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2)*k)
               lat_I(i,j,k) = lat_I(i,j,k)+lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)
               energy_diff = lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)*rvolume*eV_to_kB
-              If(energy_diff>zero_plus)
+              If (energy_diff>zero_plus) Then
                 start_Te = eltemp(ijk,0,0,0)
                 end_Te = start_Te + energy_diff/Ce0
                 eltemp(ijk,0,0,0) = end_Te
@@ -158,7 +161,7 @@ Contains
               ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2)*k)
               lat_I(i,j,k) = lat_I(i,j,k)+lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)
               energy_diff = lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)*rvolume*eV_to_kB
-              If(energy_diff>zero_plus)
+              If (energy_diff>zero_plus) Then
                 start_Te = eltemp(ijk,0,0,0)
                 increase = Cosh(sh_B*start_Te)*Exp(sh_B*energy_diff/sh_A)
                 ! using equivalent function: Acosh(x)=Log(x+Sqrt((x-1.0)*(x+1.0)))
@@ -176,18 +179,24 @@ Contains
               ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2)*k)
               lat_I(i,j,k) = lat_I(i,j,k)+lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)
               energy_diff = lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)*rvolume*eV_to_kB
-              If(energy_diff>zero_plus)
+              If (energy_diff>zero_plus) Then
                 start_Te = eltemp(ijk,0,0,0)
-                end_Te = Sqrt(start_Te*start_Te+2.0_wp*energy_diff/Cemax)
-                If (end_Te>Tfermi) end_Te = energy_diff/Cemax+0.5_wp*(Tfermi+start_Te*start_Te/Tfermi)
+                If (start_Te>=Tfermi) Then
+                  end_Te = start_Te + energy_diff/Cemax
+                Else
+                  end_Te = Sqrt(start_Te*start_Te+2.0_wp*energy_diff*Tfermi/Cemax)
+                  If (end_Te>Tfermi) end_Te = 0.5_wp*(start_Te*start_Te/Tfermi+Tfermi)+energy_diff/Cemax
+                End If
                 eltemp(ijk,0,0,0) = end_Te
               End If
             End Do
           End Do
         End Do
-      Case (3)
-      ! tabulated volumetric heat capacity: find new temperature
-      ! iteratively by gradual integration
+      Case Default
+      ! tabulated volumetric heat capacity or more complex
+      ! function: find new temperature iteratively by 
+      ! gradual integration (0.01 kelvin at a time)
+      ! and interpolate over last 0.01 kelvin
         Do k=1,ntcell(3)
           Do j=1,ntcell(2)
             Do i=1,ntcell(1)
@@ -256,8 +265,9 @@ Contains
     ! report successful completion of energy deposition
 
       If (idnode == 0) Then
-        Write(nrite,"(/,1x,a,es11.5,a,f14.5,a,/)") &
-          'electronic energy deposition of ',lat_I_sum,' eV completed successfully after ',currenttime*1000.0_wp,' fs'
+        Write(number, '(f14.5)') currenttime*1000.0_wp
+        Write(nrite,"(/,6x,a,es11.5,a,a,a,/)") &
+          'electronic energy deposition of ',lat_I_sum,' eV completed successfully after ',Trim(Adjustl(number)),' fs'
         Write(nrite,"(1x,130('-'))")
       End If
 

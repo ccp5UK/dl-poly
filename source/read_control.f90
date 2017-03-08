@@ -2202,6 +2202,7 @@ Subroutine read_control                                &
 
         ! infinite electronic thermal conductivity
 
+          DeType = 0
           KeType = 0
           If (idnode == 0) Then
             Write(nrite,"(/,1x,'electronic thermal conductivity set to infinity')")
@@ -2211,6 +2212,7 @@ Subroutine read_control                                &
 
         ! electronic thermal conductivity given as constant value
 
+          DeType = 0
           KeType = 1
           Call get_word(record,word)
           Ka0 = word_2_real(word)
@@ -2224,6 +2226,7 @@ Subroutine read_control                                &
         ! electronic thermal conductivity given as drude model (propertional to
         ! electronic temperature, giving t.c. at system temperature)
 
+          DeType = 0
           KeType = 2
           Call get_word(record,word)
           Ka0 = word_2_real(word)
@@ -2236,6 +2239,7 @@ Subroutine read_control                                &
 
         ! electronic thermal conductivity given in tabulated form
 
+          DeType = 0
           KeType = 3
           If (idnode == 0) Then
             Write(nrite,"(/,1x,'electronic thermal conductivity given as tabulated function of temperature:',&
@@ -2248,7 +2252,8 @@ Subroutine read_control                                &
         ! electronic thermal diffusivity given as constant value
         ! (for non-metal systems)
 
-          DeType = 0
+          KeType = 1
+          DeType = 1
           Call get_word(record,word)
           Diff0 = word_2_real(word)
           If (idnode == 0) Then
@@ -2261,7 +2266,8 @@ Subroutine read_control                                &
         ! electronic thermal diffusivity given as reciprocal function
         ! of temperature (up to Fermi temperature), constant afterwards
 
-          DeType = 1
+          KeType = 1
+          DeType = 2
           Call get_word(record,word)
           Diff0 = word_2_real(word)
           Call get_word(record,word)
@@ -2276,7 +2282,8 @@ Subroutine read_control                                &
 
         ! electronic thermal diffusivity given in tabulated form
 
-          DeType = 2
+          KeType = 1
+          DeType = 3
           If (idnode == 0) Then
             Write(nrite,"(/,1x,'electronic thermal diffusivity given as tabulated function of temperature')")
           End If

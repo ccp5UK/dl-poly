@@ -51,8 +51,8 @@
 ! Evolve electronic temperature for two-temperature model
 
         If (l_ttm) Then
-          Call ttm_ion_temperature (chi_ep,chi_es,vel_es2)
-          Call ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndump,nstrun,lines,npage)
+          Call ttm_ion_temperature(chi_ep,chi_es,vel_es2)
+          Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,temp,intsta,keyres,ndump,nstrun,lines,npage)
         End If
 
 ! Integrate equations of motion - leap-frog verlet

@@ -22,7 +22,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
 
   Real ( Kind = wp ), Intent ( In ) :: chi_ep,chi_es,vel_es2
   Integer :: ia,ja,ka,ijk,ijk1,ijk2,i,ii,jj,kk
-  Real ( Kind = wp ) :: velsq,tmp,gsadd,vx,vy,vz,vomcorr
+  Real ( Kind = wp ) :: velsq,tmp,gsadd,vx,vy,vz
   Integer :: fail, natmin
   Real ( Kind = wp ), Allocatable :: buf1(:),buf2(:),buf3(:),buf4(:)
   Real ( Kind = wp ), Allocatable :: ttmvom(:,:), ttmvommass(:)
