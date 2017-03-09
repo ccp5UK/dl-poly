@@ -265,9 +265,15 @@ Contains
     ! report successful completion of energy deposition
 
       If (idnode == 0) Then
-        Write(number, '(f14.5)') currenttime*1000.0_wp
-        Write(nrite,"(/,6x,a,es11.5,a,a,a,/)") &
-          'electronic energy deposition of ',lat_I_sum,' eV completed successfully after ',Trim(Adjustl(number)),' fs'
+        If (currenttime<1.0_wp) Then
+          Write(number, '(f14.3)') currenttime*1000.0_wp
+          Write(nrite,"(/,6x,a,es11.5,a,a,a,/)") &
+            'electronic energy deposition of ',lat_I_sum,' eV completed successfully after ',Trim(Adjustl(number)),' fs'
+        Else
+          Write(number, '(f14.6)') currenttime
+          Write(nrite,"(/,6x,a,es11.5,a,a,a,/)") &
+            'electronic energy deposition of ',lat_I_sum,' eV completed successfully after ',Trim(Adjustl(number)),' ps'
+        End If
         Write(nrite,"(1x,130('-'))")
       End If
 

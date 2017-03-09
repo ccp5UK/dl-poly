@@ -182,7 +182,7 @@ Contains
       Diff0 = Diff0*temp*1.0e8_wp
     End Select
 
-    ! spatial deposition (gaussian) standard deviation: convert from nm to A
+    ! spatial deposition (gaussian) standard deviation: converted from nm to A
     sig = sig*10.0_wp
 
     ! penetration depth: convert from nm to A
@@ -190,10 +190,10 @@ Contains
     Call warning(510,0.0_wp,0.0_wp,0.0_wp)
     pdepth = 10.0_wp*pdepth
 
-    ! fluence: convert from mJ cm^-2 to eV A^-2
+    ! fluence: converted from mJ cm^-2 to eV A^-2
     fluence = fluence*mJcm2_to_eVA2
 
-    ! electronic stopping power: convert from eV/nm to eV/A
+    ! electronic stopping power: converted from eV/nm to eV/A
     If (Abs(dEdx) <= zero_plus) Call warning(515,0.0_wp,0.0_wp,0.0_wp)
     dEdX = 0.1_wp*dEdX
 

@@ -2469,7 +2469,7 @@ Subroutine read_control                                &
             bcTypeE = 4
             If (idnode == 0) Then
               Write(nrite,"(/,1x,'electronic temperature boundary conditions set as dirichlet (xy), neumann (z):',&
-                          & /,1x,'system temperature at x and y boundaries,',&
+                          & /,1x,'system temperature at x and y boundaries',&
                           & /,1x,'zero energy flux at z boundaries')")
             End If
           Else If (word(1:5) == 'robin') Then
@@ -2478,7 +2478,7 @@ Subroutine read_control                                &
             fluxout = word_2_real(word)
             If (idnode == 0) Then
               Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin:',&
-                          & /,1x,'temperature leakage at boundaries of ',1p,e12.4)") fluxout
+                          & /,1x,'temperature leakage at boundaries of ',1p,e10.4)") fluxout
             End If
           Else If (word(1:7) == 'xyrobin') Then
             bcTypeE = 6
@@ -2486,7 +2486,7 @@ Subroutine read_control                                &
             fluxout = word_2_real(word)
             If (idnode == 0) Then
               Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin (xy), neumann (z):',&
-                          & /,1x,'temperature leakage at x and y boundaries of ',1p,e12.4,',',&
+                          & /,1x,'temperature leakage at x and y boundaries of ',1p,e10.4,&
                           & /,1x,'zero energy flux at z boundaries')") fluxout
             End If
           End If

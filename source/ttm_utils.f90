@@ -1032,7 +1032,7 @@ Contains
     Real ( Kind = wp ), Intent ( In ) :: time,temp0
     Character ( Len = * ), Intent ( In ) :: latfile
 
-    Real ( Kind = wp ) :: lat_sum,lat_min,lat_max,Ue,tmp,sgnplus,eltmp,rtotal
+    Real ( Kind = wp ) :: lat_sum,lat_min,lat_max,Ue,tmp,sgnplus,eltmp,totalcell
     Integer :: iounit = 115
     Integer :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax
     Integer :: ijk,numint,n,lx,ly,lz
@@ -1045,6 +1045,7 @@ Contains
         Call eltemp_max(lat_max)
 
         Ue = 0.0_wp
+        totalcell = 0.0_wp
 
         Do kk = -eltcell(3), eltcell(3)
           If (eltcell(3)>0 .and. kk == -eltcell(3) .and. ttmbcmap(5)>=0) Then
@@ -1094,6 +1095,7 @@ Contains
                     If (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3)) Then
                       eltmp = eltemp(ijk,ii,jj,kk)
                       tmp = Merge(1.0_wp,0.0_wp,(act_ele_cell(ijk,0,0,0)>zero_plus .or. (ii/=0 .or. jj/=0 .or. kk/=0)))
+                      totalcell = totalcell + tmp
                       Select Case (CeType)
                       Case (0)
                       ! constant specific heat capacity
@@ -1126,9 +1128,10 @@ Contains
           End Do
         End Do
 
-        If (mxnode>1) Call gsum(Ue)
-
-        rtotal = 1.0_wp/(Real(eltsys(1)*eltsys(2)*eltsys(3)-ntsys(1)*ntsys(2)*ntsys(3)+acell,Kind=wp))
+        If (mxnode>1) Then
+          Call gsum(Ue)
+          Call gsum(totalcell)
+        End If
 
         If (idnode == 0) Then
           If (nstep==0) Then
@@ -1136,7 +1139,7 @@ Contains
           Else
             Open(Unit=iounit, File=latfile, Position='append')
           End If
-          Write(iounit,'(i8,6(1p,es12.4))') nstep, time, lat_min, lat_max, lat_sum*rtotal, lat_sum, Ue
+          Write(iounit,'(i8,6(1p,es12.4))') nstep, time, lat_min, lat_max, lat_sum/totalcell, lat_sum, Ue
           Close(iounit)
         End If
 
@@ -1146,6 +1149,8 @@ Contains
   End Subroutine printElecLatticeStatsToFile
   
   Subroutine eltemp_sum (eltempsum)
+
+! Find sum of electronic temperatures over all active CET voxels
 
     Implicit None
 
@@ -1216,14 +1221,17 @@ Contains
 
   Subroutine eltemp_mean (eltempav)
 
+! Find mean electronic temperature over all active CET voxels
+
     Implicit None
 
     Real ( Kind = wp ), Intent ( Out ) :: eltempav
-    Real ( Kind = wp )                 :: tmp
-    Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz,acl
+    Real ( Kind = wp )                 :: tmp,acl
+    Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
     Logical                            :: lrange,lcentre
 
     eltempav = 0.0_wp
+    acl = 0.0_wp
 
     Do kk = -eltcell(3), eltcell(3)
       If (eltcell(3)>0 .and. kk == -eltcell(3) .and. ttmbcmap(5)>=0) Then
@@ -1269,8 +1277,11 @@ Contains
                 lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
                 lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
                 ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
-                tmp = eltemp(ijk,ii,jj,kk) * Merge (act_ele_cell (ijk,0,0,0), 1.0_wp, lcentre)
-                If (lrange) eltempav = eltempav + tmp
+                tmp = Merge (act_ele_cell (ijk,0,0,0), 1.0_wp, lcentre)
+                If (lrange) Then
+                  eltempav = eltempav + eltemp(ijk,ii,jj,kk) * tmp
+                  acl = acl + tmp
+                End If
               End Do
             End Do
           End Do
@@ -1279,14 +1290,20 @@ Contains
       End Do
     End Do
 
-    If (mxnode>1) Call gsum (eltempav)
+    If (mxnode>1) Then
+      Call gsum (eltempav)
+      Call gsum (acl)
+    End If
 
-    acl = eltsys(1)*eltsys(2)*eltsys(3) + acell - ntsys(1)*ntsys(2)*ntsys(3)
-    eltempav = eltempav / Real (acl, Kind = wp)
+    If (acl>zero_plus) eltempav = eltempav/acl
 
   End Subroutine eltemp_mean
 
   Subroutine eltemp_maxKe (temp, eltempmax)
+
+! Find maximum temperature for calculating tabulated
+! thermal conductivities (ionic or system) over all 
+! active CET voxels
 
     Implicit None
 
@@ -1359,6 +1376,9 @@ Contains
 	
   Subroutine eltemp_max (eltempmax)
 
+! Find maximum electronic temperature over all
+! active CET cells
+
     Implicit None
 
     Real ( Kind = wp ), Intent ( Out ) :: eltempmax
@@ -1426,6 +1446,10 @@ Contains
   End Subroutine eltemp_max
 
   Subroutine eltemp_minKe (temp, eltempmin)
+
+! Find minimum temperature for calculating tabulated
+! thermal conductivities (ionic or system) over all 
+! active CET voxels
 
     Implicit None
 
@@ -1496,6 +1520,9 @@ Contains
 	
 	
   Subroutine eltemp_min (eltempmin)
+
+! Find minimum electronic temperature over all
+! active CET cells
 
     Implicit None
 
@@ -1629,14 +1656,14 @@ Contains
 
   Subroutine redistribute_Te (temp0)
 
-! redistribute electronic energy when electronic temperature voxels are closed
+! Redistribute electronic energy when electronic temperature voxels are closed
 
     Implicit None
 
     Real( Kind = wp ), Intent ( In ) :: temp0
     Integer :: i, j, k, ii, jj, kk, ijk, ijk1, ijk2, ijkpx, ijkmx, ijkpy, ijkmy, ijkpz, ijkmz, n, numint
     Real( Kind = wp ) :: energy_per_cell, U_e, start_Te, end_Te, increase, oldCe, newCe
-    Real( Kind = wp ) :: energy_diff, tmp2, act_sur_cells, sgnplus
+    Real( Kind = wp ) :: energy_diff, act_sur_cells, sgnplus
 
     Integer, Dimension(4) :: req
     Integer, Dimension(MPI_STATUS_SIZE,4) :: stat
@@ -1658,20 +1685,21 @@ Contains
           ijkpz = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * (k + 1))
           ijkmz = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * (k - 1))
           If (act_ele_cell(ijk,0,0,0)<=zero_plus .and. old_ele_cell(ijk,0,0,0)>zero_plus) Then
-		! Calculate amount of energy left in the cell (Ue = integral of Ce(Te)d(Te) between 300K and Te)
-            tmp2 = 0.0_wp
+		! Calculate amount of energy left in the cell 
+        ! (Ue = integral of Ce(Te)d(Te) between temp0 and Te)
+            Ue = 0.0_wp
             end_Te = eltemp(ijk,0,0,0)
             Select Case (CeType)
             Case (0)
             ! constant specific heat capacity
-              tmp2 = Ce0*(end_Te-temp0)
+              Ue = Ce0*(end_Te-temp0)
             Case (1)
             ! hyperbolic tangent specific heat capacity
-              tmp2 = sh_A*Log(Cosh(sh_B*end_Te)/Cosh(sh_B*temp0))/sh_B
+              Ue = sh_A*Log(Cosh(sh_B*end_Te)/Cosh(sh_B*temp0))/sh_B
             Case (2)
             ! linear specific heat capacity to Fermi temperature
               increase = Min(Tfermi,end_Te)
-              tmp2 = Cemax*(0.5_wp*(increase*increase-temp0*temp0)/Tfermi+Max(end_Te-Tfermi,0.0_wp))
+              Ue = Cemax*(0.5_wp*(increase*increase-temp0*temp0)/Tfermi+Max(end_Te-Tfermi,0.0_wp))
             Case Default
             ! tabulated volumetric heat capacity or more complex 
             ! functions: integrate using trapezium rule
@@ -1679,11 +1707,10 @@ Contains
               numint = Floor(end_Te - temp0)
               sgnplus = Sign (1.0_wp, Real(numint, Kind=wp))
               Do n = 1,Abs(numint)
-                tmp2 = tmp2 + 0.5_wp * sgnplus * (Ce(temp0+sgnplus*Real(n-1, Kind=wp))+Ce(temp0+sgnplus*Real(n, Kind=wp)))
+                Ue = Ue + 0.5_wp * sgnplus * (Ce(temp0+sgnplus*Real(n-1, Kind=wp))+Ce(temp0+sgnplus*Real(n, Kind=wp)))
               End Do
-              tmp2 = tmp2 + 0.5_wp * (Ce(temp0+Real(numint, Kind=wp))+Ce(end_Te))
+              Ue = Ue + 0.5_wp * (Ce(temp0+Real(numint, Kind=wp))+Ce(end_Te))
             End Select
-            U_e = tmp2*volume*kB_to_eV
 		! Check how many cells are connected to the now turned-off cell
             act_sur_cells = act_ele_cell(ijkmx,0,0,0) + act_ele_cell(ijkpx,0,0,0) + act_ele_cell(ijkmy,0,0,0) + &
                             act_ele_cell(ijkpy,0,0,0) + act_ele_cell(ijkmz,0,0,0) + act_ele_cell(ijkpz,0,0,0)
@@ -1823,7 +1850,7 @@ Contains
           Do ii = -1, 1
             Do ijk = 1, numcell
               If (Abs(energydist(ijk,ii,jj,kk))>zero_plus) Then
-                energy_per_cell = energydist(ijk,ii,jj,kk)*rvolume*eV_to_kB
+                energy_per_cell = energydist(ijk,ii,jj,kk)
                 start_Te = eltemp(ijk,ii,jj,kk)
                 end_Te = start_Te+energy_per_cell/Ce0
                 eltemp_adj(ijk,ii,jj,kk) = end_Te
@@ -1840,7 +1867,7 @@ Contains
           Do ii = -1, 1
             Do ijk = 1, numcell
               If (Abs(energydist(ijk,ii,jj,kk))>zero_plus) Then
-                energy_per_cell = energydist(ijk,ii,jj,kk)*rvolume*eV_to_kB
+                energy_per_cell = energydist(ijk,ii,jj,kk)
                 start_Te = eltemp(ijk,ii,jj,kk)
                 increase = Cosh(sh_B*start_Te)*Exp(sh_B*energy_per_cell/sh_A)
                 ! using equivalent function: Acosh(x)=Log(x+Sqrt((x-1.0)*(x+1.0)))
@@ -1859,7 +1886,7 @@ Contains
           Do ii = -1, 1
             Do ijk = 1, numcell
               If (Abs(energydist(ijk,ii,jj,kk))>zero_plus) Then
-                energy_per_cell = energydist(ijk,ii,jj,kk)*rvolume*eV_to_kB
+                energy_per_cell = energydist(ijk,ii,jj,kk)
                 start_Te = eltemp(ijk,ii,jj,kk)
                 If (energy_per_cell>zero_plus) Then
                   end_Te = Sqrt(start_Te*start_Te+2.0_wp*energy_per_cell*Tfermi/Cemax)
@@ -1885,7 +1912,7 @@ Contains
           Do ii = -1, 1
             Do ijk = 1, numcell
               If (Abs(energydist(ijk,ii,jj,kk))>zero_plus) Then
-                energy_per_cell = energydist(ijk,ii,jj,kk)*rvolume*eV_to_kB
+                energy_per_cell = energydist(ijk,ii,jj,kk)
                 start_Te = eltemp(ijk,ii,jj,kk)
                 sgnplus = Sign(1.0_wp,energy_per_cell)
                 energy_diff = sgnplus*energy_per_cell
