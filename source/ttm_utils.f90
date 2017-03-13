@@ -1004,7 +1004,7 @@ Contains
           Call gmax(lat_max)
         End If
 
-        rtotal = 1.0_wp/Real(acell,Kind=wp)
+        rtotal = Merge(1.0_wp/Real(acell,Kind=wp),0.0_wp,(acell>0))
 
         If (idnode == 0) Then
           If (nstep==0) Then
@@ -1032,7 +1032,7 @@ Contains
     Real ( Kind = wp ), Intent ( In ) :: time,temp0
     Character ( Len = * ), Intent ( In ) :: latfile
 
-    Real ( Kind = wp ) :: lat_sum,lat_min,lat_max,Ue,tmp,sgnplus,eltmp,totalcell
+    Real ( Kind = wp ) :: lat_sum,lat_min,lat_max,Ue,tmp,sgnplus,eltmp,totalcell,rtotal
     Integer :: iounit = 115
     Integer :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax
     Integer :: ijk,numint,n,lx,ly,lz
@@ -1133,13 +1133,15 @@ Contains
           Call gsum(totalcell)
         End If
 
+        rtotal = Merge(1.0_wp/totalcell,0.0_wp,(totalcell>zero_plus))
+
         If (idnode == 0) Then
           If (nstep==0) Then
             Open(Unit=iounit, File=latfile, Status='replace')
           Else
             Open(Unit=iounit, File=latfile, Position='append')
           End If
-          Write(iounit,'(i8,6(1p,es12.4))') nstep, time, lat_min, lat_max, lat_sum/totalcell, lat_sum, Ue
+          Write(iounit,'(i8,6(1p,es12.4))') nstep, time, lat_min, lat_max, lat_sum*rtotal, lat_sum, Ue
           Close(iounit)
         End If
 
@@ -1303,72 +1305,29 @@ Contains
 
 ! Find maximum temperature for calculating tabulated
 ! thermal conductivities (ionic or system) over all 
-! active CET voxels
+! active CET voxels (note that system temperature 
+! applies over all CET voxels that do not overlap
+! CIT voxels)
 
     Implicit None
 
     Real ( Kind = wp ), Intent ( In )  :: temp
     Real ( Kind = wp ), Intent ( Out ) :: eltempmax
     Real ( Kind = wp )                 :: eltempKe
-    Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
-    Logical                            :: lrange,lcentre
+    Integer                            :: i,j,k,ijk
 
     eltempmax = 0.0_wp
 
-    Do kk = -eltcell(3), eltcell(3)
-      If (eltcell(3)>0 .and. kk == -eltcell(3) .and. ttmbcmap(5)>=0) Then
-        kmin = ttmbc(5)
-      Else
-        kmin = 1
-      End If
-      If (eltcell(3)>0 .and. kk == eltcell(3) .and. ttmbcmap(6)>=0) Then
-        kmax = ttmbc(6)
-      Else
-        kmax = ntcell(3)
-      End If
-
-      Do jj = -eltcell(2), eltcell(2)
-        If (eltcell(2)>0 .and. jj == -eltcell(2) .and. ttmbcmap(3)>=0) Then
-          jmin = ttmbc(3)
-        Else
-          jmin = 1
-        End If
-        If (eltcell(2)>0 .and. jj == eltcell(2) .and. ttmbcmap(4)>=0) Then
-          jmax = ttmbc(4)
-        Else
-          jmax = ntcell(2)
-        End If
-
-        Do ii = -eltcell(1), eltcell(1)
-          If (eltcell(1)>0 .and. ii == -eltcell(1) .and. ttmbcmap(1)>=0) Then
-            imin = ttmbc(1)
-          Else
-            imin = 1
-          End If
-          If (eltcell(1)>0 .and. ii == eltcell(1) .and. ttmbcmap(2)>=0) Then
-            imax = ttmbc(2)
-          Else
-            imax = ntcell(1)
-          End If
-          lcentre = (ii==0 .and. jj==0 .and. kk==0)
-          Do k = kmin, kmax
-            lz = k + ntcelloff(3) + (kk + eltcell(3)) * ntsys(3) - zeroE(3)
-            Do j = jmin, jmax
-              ly = j + ntcelloff(2) + (jj + eltcell(2)) * ntsys(2) - zeroE(2)
-              Do i = imin, imax
-                lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
-                ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
-                lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
-                If (lcentre) lrange = (lrange .and. (act_ele_cell(ijk,0,0,0)>zero_plus))
-                eltempKe = Merge(tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
-                If (lrange) eltempmax = Max (eltempmax, eltempKe)
-              End Do
-            End Do
-          End Do
-
+    Do k = 1, ntcell(3)
+      Do j = 1, ntcell(2)
+        Do i = 1, ntcell(1)
+          ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+          eltempKe = tempion(ijk)
+          If (act_ele_cell(ijk,0,0,0)>zero_plus) eltempmax = Max (eltempmax, eltempKe)
         End Do
       End Do
     End Do
+    eltempmax = Max (eltempmax, temp)
 
     If (mxnode>1) Call gmax (eltempmax)
 
@@ -1449,7 +1408,9 @@ Contains
 
 ! Find minimum temperature for calculating tabulated
 ! thermal conductivities (ionic or system) over all 
-! active CET voxels
+! active CET voxels (note that system temperature
+! applies over all CET voxels that do not overlap
+! CIT voxels)
 
     Implicit None
 
@@ -1461,58 +1422,17 @@ Contains
 
     eltempmin = 1.0e30_wp
 
-    Do kk = -eltcell(3), eltcell(3)
-      If (eltcell(3)>0 .and. kk == -eltcell(3) .and. ttmbcmap(5)>=0) Then
-        kmin = ttmbc(5)
-      Else
-        kmin = 1
-      End If
-      If (eltcell(3)>0 .and. kk == eltcell(3) .and. ttmbcmap(6)>=0) Then
-        kmax = ttmbc(6)
-      Else
-        kmax = ntcell(3)
-      End If
-
-      Do jj = -eltcell(2), eltcell(2)
-        If (eltcell(2)>0 .and. jj == -eltcell(2) .and. ttmbcmap(3)>=0) Then
-          jmin = ttmbc(3)
-        Else
-          jmin = 1
-        End If
-        If (eltcell(2)>0 .and. jj == eltcell(2) .and. ttmbcmap(4)>=0) Then
-          jmax = ttmbc(4)
-        Else
-          jmax = ntcell(2)
-        End If
-
-        Do ii = -eltcell(1), eltcell(1)
-          If (eltcell(1)>0 .and. ii == -eltcell(1) .and. ttmbcmap(1)>=0) Then
-            imin = ttmbc(1)
-          Else
-            imin = 1
-          End If
-          If (eltcell(1)>0 .and. ii == eltcell(1) .and. ttmbcmap(2)>=0) Then
-            imax = ttmbc(2)
-          Else
-            imax = ntcell(1)
-          End If
-          Do k = kmin, kmax
-            lz = k + ntcelloff(3) + (kk + eltcell(3)) * ntsys(3) - zeroE(3)
-            Do j = jmin, jmax
-              ly = j + ntcelloff(2) + (jj + eltcell(2)) * ntsys(2) - zeroE(2)
-              Do i = imin, imax
-                lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
-                lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
-                ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
-                eltempKe = Merge(tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
-                If (lrange) eltempmin = Min (eltempmin, eltempKe)
-              End Do
-            End Do
-          End Do
-
+    Do k = 1, ntcell(3)
+      Do j = 1, ntcell(2)
+        Do i = 1, ntcell(1)
+          ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+          eltempKe = tempion (ijk)
+          If (act_ele_cell(ijk,0,0,0)>zero_plus) eltempmin = Min (eltempmin, eltempKe)
         End Do
       End Do
     End Do
+
+    eltempmin = Min (eltempmin, temp)
 
     If (mxnode>1) Call gmin (eltempmin)
 
@@ -1687,19 +1607,19 @@ Contains
           If (act_ele_cell(ijk,0,0,0)<=zero_plus .and. old_ele_cell(ijk,0,0,0)>zero_plus) Then
 		! Calculate amount of energy left in the cell 
         ! (Ue = integral of Ce(Te)d(Te) between temp0 and Te)
-            Ue = 0.0_wp
+            U_e = 0.0_wp
             end_Te = eltemp(ijk,0,0,0)
             Select Case (CeType)
             Case (0)
             ! constant specific heat capacity
-              Ue = Ce0*(end_Te-temp0)
+              U_e = Ce0*(end_Te-temp0)
             Case (1)
             ! hyperbolic tangent specific heat capacity
-              Ue = sh_A*Log(Cosh(sh_B*end_Te)/Cosh(sh_B*temp0))/sh_B
+              U_e = sh_A*Log(Cosh(sh_B*end_Te)/Cosh(sh_B*temp0))/sh_B
             Case (2)
             ! linear specific heat capacity to Fermi temperature
               increase = Min(Tfermi,end_Te)
-              Ue = Cemax*(0.5_wp*(increase*increase-temp0*temp0)/Tfermi+Max(end_Te-Tfermi,0.0_wp))
+              U_e = Cemax*(0.5_wp*(increase*increase-temp0*temp0)/Tfermi+Max(end_Te-Tfermi,0.0_wp))
             Case Default
             ! tabulated volumetric heat capacity or more complex 
             ! functions: integrate using trapezium rule
@@ -1707,9 +1627,9 @@ Contains
               numint = Floor(end_Te - temp0)
               sgnplus = Sign (1.0_wp, Real(numint, Kind=wp))
               Do n = 1,Abs(numint)
-                Ue = Ue + 0.5_wp * sgnplus * (Ce(temp0+sgnplus*Real(n-1, Kind=wp))+Ce(temp0+sgnplus*Real(n, Kind=wp)))
+                U_e = U_e + 0.5_wp * sgnplus * (Ce(temp0+sgnplus*Real(n-1, Kind=wp))+Ce(temp0+sgnplus*Real(n, Kind=wp)))
               End Do
-              Ue = Ue + 0.5_wp * (Ce(temp0+Real(numint, Kind=wp))+Ce(end_Te))
+              U_e = U_e + 0.5_wp * (Ce(temp0+Real(numint, Kind=wp))+Ce(end_Te))
             End Select
 		! Check how many cells are connected to the now turned-off cell
             act_sur_cells = act_ele_cell(ijkmx,0,0,0) + act_ele_cell(ijkpx,0,0,0) + act_ele_cell(ijkmy,0,0,0) + &

@@ -1,4 +1,4 @@
-Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndump,nstrun,lines,npage)
+Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndump,nstrun,lines,npage)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -23,7 +23,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
 
   Implicit None
 
-  Integer, Intent( In ) :: keyres,ndump,intsta,nsteql,nstep,nstrun,lines,npage
+  Integer, Intent( In ) :: keyres,ndump,nstbpo,nsteql,nstep,nstrun,lines,npage
   Real ( Kind = wp ), Intent( In ) :: temp,tstep,time
 
   Real ( Kind = wp ), Allocatable :: eltemp1(:,:,:,:)
@@ -51,10 +51,10 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
 
 ! determine maximum/minimum spacings and electronic temperatures
 
-  delx2 = delx * delx
-  dely2 = dely * dely
-  delz2 = delz * delz
-  del2av = (delx2 * dely2 * delz2) / (dely2 * delz2 + delx2 * delz2 + delx2 * dely2)
+  delx2 = delx*delx
+  dely2 = dely*dely
+  delz2 = delz*delz
+  del2av = (delx2*dely2*delz2)/(dely2*delz2+delx2*delz2+delx2*dely2)
   Call eltemp_max (eltempmax)
   Call eltemp_min (eltempmin)
 
@@ -114,7 +114,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,intsta,keyres,ndu
 
 ! write information to OUTPUT
 
-  If (mod(nstep, intsta) == 0 .or. nstep == 1) Then
+  If (mod(nstep,nstbpo) == 0 .or. nstep == 1) Then
     If (idnode == 0) Then
       Write(nrite,'(6x,"ttm thermal diffusion timesteps:",2x,"optimal/ps",3x,"actual/ps",5x,"diff/md")')
       Write(nrite,'(38x,es12.4,es12.4,2x,i10)') opttstep, tstep/Real(redtstepmx,Kind=wp), redtstepmx
