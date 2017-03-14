@@ -85,208 +85,212 @@ Contains
     eV_to_kB      = eu_ev/boltz               ! convert eV to kB
     mJcm2_to_eVA2 = 1.0e4_wp/(eu_ev*tenunt)   ! convert mJ cm^-2 to eV A^-2
 
+    If (l_ttm) Then
+
 ! Determine number of ion temperature cells for domain and
 ! offsets for ion temperature determination
 
-    start = cell(1)*Real(idx,wp)*r_nprx
-    finish = cell(1)*Real(idx+1,wp)*r_nprx
-    ntcell(1) = Ceiling(finish/delx) - Ceiling(start/delx)
-    ntcelloff(1) = Ceiling(start/delx)
-    zerocell(1) = 0.5_wp*cell(1) - delx*Real(Ceiling(start/delx),wp)
+      start = cell(1)*Real(idx,wp)*r_nprx
+      finish = cell(1)*Real(idx+1,wp)*r_nprx
+      ntcell(1) = Ceiling(finish/delx) - Ceiling(start/delx)
+      ntcelloff(1) = Ceiling(start/delx)
+      zerocell(1) = 0.5_wp*cell(1) - delx*Real(Ceiling(start/delx),wp)
 
-    start = cell(5)*Real(idy,wp)*r_npry
-    finish = cell(5)*Real(idy+1,wp)*r_npry
-    ntcell(2) = Ceiling(finish/dely) - Ceiling(start/dely)
-    ntcelloff(2) = Ceiling(start/dely)
-    zerocell(2) = 0.5_wp*cell(5) - dely*Real(Ceiling(start/dely),wp)
+      start = cell(5)*Real(idy,wp)*r_npry
+      finish = cell(5)*Real(idy+1,wp)*r_npry
+      ntcell(2) = Ceiling(finish/dely) - Ceiling(start/dely)
+      ntcelloff(2) = Ceiling(start/dely)
+      zerocell(2) = 0.5_wp*cell(5) - dely*Real(Ceiling(start/dely),wp)
 
-    start = cell(9)*Real(idz,wp)*r_nprz
-    finish = cell(9)*Real(idz+1,wp)*r_nprz
-    ntcell(3) = Ceiling(finish/delz) - Ceiling(start/delz)
-    ntcelloff(3) = Ceiling(start/delz)
-    zerocell(3) = 0.5_wp*cell(9) - delz*Real(Ceiling(start/delz),wp)
+      start = cell(9)*Real(idz,wp)*r_nprz
+      finish = cell(9)*Real(idz+1,wp)*r_nprz
+      ntcell(3) = Ceiling(finish/delz) - Ceiling(start/delz)
+      ntcelloff(3) = Ceiling(start/delz)
+      zerocell(3) = 0.5_wp*cell(9) - delz*Real(Ceiling(start/delz),wp)
 
-    numcell = (ntcell(1)+2)*(ntcell(2)+2)*(ntcell(3)+2)
+      numcell = (ntcell(1)+2)*(ntcell(2)+2)*(ntcell(3)+2)
 
 ! Determine mid-values for ion and electronic temperature grid
 
-    midI(:) = INT((ntsys(:)+1)/2)
-    midE(:) = INT((eltsys(:)+1)/2)
+      midI(:) = INT((ntsys(:)+1)/2)
+      midE(:) = INT((eltsys(:)+1)/2)
 
 ! Determine number of multiple ion temperature grids for electronic
 ! temperature grids
 
-    eltcell(1) = Ceiling(Real(eltsys(1)-ntsys(1), Kind=wp)/Real(2*ntsys(1), Kind=wp))
-    eltcell(2) = Ceiling(Real(eltsys(2)-ntsys(2), Kind=wp)/Real(2*ntsys(2), Kind=wp))
-    eltcell(3) = Ceiling(Real(eltsys(3)-ntsys(3), Kind=wp)/Real(2*ntsys(3), Kind=wp))
+      eltcell(1) = Ceiling(Real(eltsys(1)-ntsys(1), Kind=wp)/Real(2*ntsys(1), Kind=wp))
+      eltcell(2) = Ceiling(Real(eltsys(2)-ntsys(2), Kind=wp)/Real(2*ntsys(2), Kind=wp))
+      eltcell(3) = Ceiling(Real(eltsys(3)-ntsys(3), Kind=wp)/Real(2*ntsys(3), Kind=wp))
 
 ! Determine positions of boundaries for electronic temperature grids
 
 !   -x boundary
-    numbc = -(eltsys(1)-ntsys(1))/2
-    numbc = MOD(numbc+ntsys(1)*(eltcell(1)+1),ntsys(1)) + 1
-    zeroE(1) = numbc - 1
-    numbcmap = (eltsys(1)-ntsys(1))/2
-    numbcmap = MOD(numbcmap+ntsys(1)*(eltcell(1)+1)-1,ntsys(1)) + 1
-    If (numbc>ntcelloff(1) .and. numbc<=(ntcelloff(1)+ntcell(1))) Then
-      ttmbc(1) = numbc - ntcelloff(1)
-      Do i = 0, nprx-1
-        start = cell(1)*Real(i,wp)*r_nprx
-        finish = cell(1)*Real(i+1,wp)*r_nprx
-        If (numbcmap>Ceiling(start/delx) .and. numbcmap<=Ceiling(finish/delx)) ttmbcmap(1) = idcube(i,idy,idz)
-      End Do
-    Else
-      ttmbc(1) = 0
-      ttmbcmap(1) = -1
-    End If
+      numbc = -(eltsys(1)-ntsys(1))/2
+      numbc = MOD(numbc+ntsys(1)*(eltcell(1)+1),ntsys(1)) + 1
+      zeroE(1) = numbc - 1
+      numbcmap = (eltsys(1)-ntsys(1))/2
+      numbcmap = MOD(numbcmap+ntsys(1)*(eltcell(1)+1)-1,ntsys(1)) + 1
+      If (numbc>ntcelloff(1) .and. numbc<=(ntcelloff(1)+ntcell(1))) Then
+        ttmbc(1) = numbc - ntcelloff(1)
+        Do i = 0, nprx-1
+          start = cell(1)*Real(i,wp)*r_nprx
+          finish = cell(1)*Real(i+1,wp)*r_nprx
+          If (numbcmap>Ceiling(start/delx) .and. numbcmap<=Ceiling(finish/delx)) ttmbcmap(1) = idcube(i,idy,idz)
+        End Do
+      Else
+        ttmbc(1) = 0
+        ttmbcmap(1) = -1
+      End If
 
 !   +x boundary
-    numbc = (eltsys(1)-ntsys(1))/2
-    numbc = MOD(numbc+ntsys(1)*(eltcell(1)+1)-1,ntsys(1)) + 1
-    numbcmap = -(eltsys(1)-ntsys(1))/2
-    numbcmap = MOD(numbcmap+ntsys(1)*(eltcell(1)+1),ntsys(1)) + 1
-    If (numbc>ntcelloff(1) .and. numbc<=(ntcelloff(1)+ntcell(1))) Then
-      ttmbc(2) = numbc - ntcelloff(1)
-      Do i = 0, nprx-1
-        start = cell(1)*Real(i,wp)*r_nprx
-        finish = cell(1)*Real(i+1,wp)*r_nprx
-        If (numbcmap>Ceiling(start/delx) .and. numbcmap<=Ceiling(finish/delx)) ttmbcmap(2) = idcube(i,idy,idz)
-      End Do
-    Else
-      ttmbc(2) = 0
-      ttmbcmap(2) = -1
-    End If
+      numbc = (eltsys(1)-ntsys(1))/2
+      numbc = MOD(numbc+ntsys(1)*(eltcell(1)+1)-1,ntsys(1)) + 1
+      numbcmap = -(eltsys(1)-ntsys(1))/2
+      numbcmap = MOD(numbcmap+ntsys(1)*(eltcell(1)+1),ntsys(1)) + 1
+      If (numbc>ntcelloff(1) .and. numbc<=(ntcelloff(1)+ntcell(1))) Then
+        ttmbc(2) = numbc - ntcelloff(1)
+        Do i = 0, nprx-1
+          start = cell(1)*Real(i,wp)*r_nprx
+          finish = cell(1)*Real(i+1,wp)*r_nprx
+          If (numbcmap>Ceiling(start/delx) .and. numbcmap<=Ceiling(finish/delx)) ttmbcmap(2) = idcube(i,idy,idz)
+        End Do
+      Else
+        ttmbc(2) = 0
+        ttmbcmap(2) = -1
+      End If
     
 !   -y boundary
-    numbc = -(eltsys(2)-ntsys(2))/2
-    numbc = MOD(numbc+ntsys(2)*(eltcell(2)+1),ntsys(2)) + 1
-    zeroE(2) = numbc - 1
-    numbcmap = (eltsys(2)-ntsys(2))/2
-    numbcmap = MOD(numbcmap+ntsys(2)*(eltcell(2)+1)-1,ntsys(2)) + 1
-    If (numbc>ntcelloff(2) .and. numbc<=(ntcelloff(2)+ntcell(2))) Then
-      ttmbc(3) = numbc - ntcelloff(2)
-      Do i = 0, npry-1
-        start = cell(5)*Real(i,wp)*r_npry
-        finish = cell(5)*Real(i+1,wp)*r_npry
-        If (numbcmap>Ceiling(start/dely) .and. numbcmap<=Ceiling(finish/dely)) ttmbcmap(3) = idcube(idx,i,idz)
-      End Do
-    Else
-      ttmbc(3) = 0
-      ttmbcmap(3) = -1
-    End If
+      numbc = -(eltsys(2)-ntsys(2))/2
+      numbc = MOD(numbc+ntsys(2)*(eltcell(2)+1),ntsys(2)) + 1
+      zeroE(2) = numbc - 1
+      numbcmap = (eltsys(2)-ntsys(2))/2
+      numbcmap = MOD(numbcmap+ntsys(2)*(eltcell(2)+1)-1,ntsys(2)) + 1
+      If (numbc>ntcelloff(2) .and. numbc<=(ntcelloff(2)+ntcell(2))) Then
+        ttmbc(3) = numbc - ntcelloff(2)
+        Do i = 0, npry-1
+          start = cell(5)*Real(i,wp)*r_npry
+          finish = cell(5)*Real(i+1,wp)*r_npry
+          If (numbcmap>Ceiling(start/dely) .and. numbcmap<=Ceiling(finish/dely)) ttmbcmap(3) = idcube(idx,i,idz)
+        End Do
+      Else
+        ttmbc(3) = 0
+        ttmbcmap(3) = -1
+      End If
 
 !   +y boundary
-    numbc = (eltsys(2)-ntsys(2))/2
-    numbc = MOD(numbc+ntsys(2)*(eltcell(2)+1)-1,ntsys(2)) + 1
-    numbcmap = -(eltsys(2)-ntsys(2))/2
-    numbcmap = MOD(numbcmap+ntsys(2)*(eltcell(2)+1),ntsys(2)) + 1
-    If (numbc>ntcelloff(2) .and. numbc<=(ntcelloff(2)+ntcell(2))) Then
-      ttmbc(4) = numbc - ntcelloff(2)
-      Do i = 0, npry-1
-        start = cell(5)*Real(i,wp)*r_npry
-        finish = cell(5)*Real(i+1,wp)*r_npry
-        If (numbcmap>Ceiling(start/dely) .and. numbcmap<=Ceiling(finish/dely)) ttmbcmap(4) = idcube(idx,i,idz)
-      End Do
-    Else
-      ttmbc(4) = 0
-      ttmbcmap(4) = -1
-    End If
+      numbc = (eltsys(2)-ntsys(2))/2
+      numbc = MOD(numbc+ntsys(2)*(eltcell(2)+1)-1,ntsys(2)) + 1
+      numbcmap = -(eltsys(2)-ntsys(2))/2
+      numbcmap = MOD(numbcmap+ntsys(2)*(eltcell(2)+1),ntsys(2)) + 1
+      If (numbc>ntcelloff(2) .and. numbc<=(ntcelloff(2)+ntcell(2))) Then
+        ttmbc(4) = numbc - ntcelloff(2)
+        Do i = 0, npry-1
+          start = cell(5)*Real(i,wp)*r_npry
+          finish = cell(5)*Real(i+1,wp)*r_npry
+          If (numbcmap>Ceiling(start/dely) .and. numbcmap<=Ceiling(finish/dely)) ttmbcmap(4) = idcube(idx,i,idz)
+        End Do
+      Else
+        ttmbc(4) = 0
+        ttmbcmap(4) = -1
+      End If
 
 !   -z boundary
-    numbc = -(eltsys(3)-ntsys(3))/2
-    numbc = MOD(numbc+ntsys(3)*(eltcell(3)+1),ntsys(3)) + 1
-    zeroE(3) = numbc - 1
-    numbcmap = (eltsys(3)-ntsys(3))/2
-    numbcmap = MOD(numbcmap+ntsys(3)*(eltcell(3)+1)-1,ntsys(3)) + 1
-    If (numbc>ntcelloff(3) .and. numbc<=(ntcelloff(3)+ntcell(3))) Then
-      ttmbc(5) = numbc - ntcelloff(3)
-      Do i = 0, nprz-1
-        start = cell(9)*Real(i,wp)*r_nprz
-        finish = cell(9)*Real(i+1,wp)*r_nprz
-        If (numbcmap>Ceiling(start/delz) .and. numbcmap<=Ceiling(finish/delz)) ttmbcmap(5) = idcube(idx,idy,i)
-      End Do
-    Else
-      ttmbc(5) = 0
-      ttmbcmap(5) = -1
-    End If
+      numbc = -(eltsys(3)-ntsys(3))/2
+      numbc = MOD(numbc+ntsys(3)*(eltcell(3)+1),ntsys(3)) + 1
+      zeroE(3) = numbc - 1
+      numbcmap = (eltsys(3)-ntsys(3))/2
+      numbcmap = MOD(numbcmap+ntsys(3)*(eltcell(3)+1)-1,ntsys(3)) + 1
+      If (numbc>ntcelloff(3) .and. numbc<=(ntcelloff(3)+ntcell(3))) Then
+        ttmbc(5) = numbc - ntcelloff(3)
+        Do i = 0, nprz-1
+          start = cell(9)*Real(i,wp)*r_nprz
+          finish = cell(9)*Real(i+1,wp)*r_nprz
+          If (numbcmap>Ceiling(start/delz) .and. numbcmap<=Ceiling(finish/delz)) ttmbcmap(5) = idcube(idx,idy,i)
+        End Do
+      Else
+        ttmbc(5) = 0
+        ttmbcmap(5) = -1
+      End If
 
 !   +z boundary
-    numbc = (eltsys(3)-ntsys(3))/2
-    numbc = MOD(numbc+ntsys(3)*(eltcell(3)+1)-1,ntsys(3)) + 1
-    numbcmap = -(eltsys(3)-ntsys(3))/2
-    numbcmap = MOD(numbcmap+ntsys(3)*(eltcell(3)+1),ntsys(3)) + 1
-    If (numbc>ntcelloff(3) .and. numbc<=(ntcelloff(3)+ntcell(3))) Then
-      ttmbc(6) = numbc - ntcelloff(3)
-      Do i = 0, nprz-1
-        start = cell(9)*Real(i,wp)*r_nprz
-        finish = cell(9)*Real(i+1,wp)*r_nprz
-        If (numbcmap>Ceiling(start/delz) .and. numbcmap<=Ceiling(finish/delz)) ttmbcmap(6) = idcube(idx,idy,i)
-      End Do
-    Else
-      ttmbc(6) = 0
-      ttmbcmap(6) = -1
-    End If
+      numbc = (eltsys(3)-ntsys(3))/2
+      numbc = MOD(numbc+ntsys(3)*(eltcell(3)+1)-1,ntsys(3)) + 1
+      numbcmap = -(eltsys(3)-ntsys(3))/2
+      numbcmap = MOD(numbcmap+ntsys(3)*(eltcell(3)+1),ntsys(3)) + 1
+      If (numbc>ntcelloff(3) .and. numbc<=(ntcelloff(3)+ntcell(3))) Then
+        ttmbc(6) = numbc - ntcelloff(3)
+        Do i = 0, nprz-1
+          start = cell(9)*Real(i,wp)*r_nprz
+          finish = cell(9)*Real(i+1,wp)*r_nprz
+          If (numbcmap>Ceiling(start/delz) .and. numbcmap<=Ceiling(finish/delz)) ttmbcmap(6) = idcube(idx,idy,i)
+        End Do
+      Else
+        ttmbc(6) = 0
+        ttmbcmap(6) = -1
+      End If
 
 ! Derived MPI datatypes for communication of temperatures (MPI 2.x+)
 
-    If (mxnode>1) Then
-      Call MPI_TYPE_GET_EXTENT (wp_mpi, lb1, dbleth, ierr)
-      Call MPI_TYPE_GET_EXTENT (MPI_INTEGER, lb2, inleth, ierr)
-      Call MPI_TYPE_VECTOR (1, 1, 1, wp_mpi, basicslice, ierr)
-      Call MPI_TYPE_VECTOR (1, 2, 2, MPI_INTEGER, bbasicslice, ierr)
-      xlth = (ntcell(1) + 2) * dbleth
-      ylth = (ntcell(2) + 2) * xlth
-      Call MPI_TYPE_CREATE_HVECTOR (ntcell(2)    , 1, xlth, basicslice, oneslicex, ierr)
-      Call MPI_TYPE_CREATE_HVECTOR (ntcell(3)    , 1, ylth, oneslicex, tmpmsgx, ierr)
-      Call MPI_TYPE_COMMIT (tmpmsgx, ierr)
-      Call MPI_TYPE_CREATE_HVECTOR (1, ntcell(1) + 2, xlth, basicslice, oneslicey, ierr)
-      Call MPI_TYPE_CREATE_HVECTOR (ntcell(3)    , 1, ylth, oneslicey, tmpmsgy, ierr)
-      Call MPI_TYPE_COMMIT (tmpmsgy, ierr)
-      Call MPI_TYPE_CREATE_HVECTOR (1, ntcell(1) + 2, xlth, basicslice, oneslicez, ierr)
-      Call MPI_TYPE_CREATE_HVECTOR (1, ntcell(2) + 2, ylth, oneslicez, tmpmsgz, ierr)
-      Call MPI_TYPE_COMMIT (tmpmsgz, ierr)
-      bxlth = 2 * (ntcell(1) + 2) * inleth
-      bylth = (ntcell(2) + 2) * bxlth
-      Call MPI_TYPE_CREATE_HVECTOR (ntcell(2)    , 1, bxlth, bbasicslice, boneslicex, ierr)
-      Call MPI_TYPE_CREATE_HVECTOR (ntcell(3)    , 1, bylth, boneslicex, nummsgx, ierr)
-      Call MPI_TYPE_COMMIT (nummsgx, ierr)
-      Call MPI_TYPE_CREATE_HVECTOR (1, ntcell(1) + 2, bxlth, bbasicslice, boneslicey, ierr)
-      Call MPI_TYPE_CREATE_HVECTOR (ntcell(3)    , 1, bylth, boneslicey, nummsgy, ierr)
-      Call MPI_TYPE_COMMIT (nummsgy, ierr)
-      Call MPI_TYPE_CREATE_HVECTOR (1, ntcell(1) + 2, bxlth, bbasicslice, boneslicez, ierr)
-      Call MPI_TYPE_CREATE_HVECTOR (1, ntcell(2) + 2, bylth, boneslicez, nummsgz, ierr)
-      Call MPI_TYPE_COMMIT (nummsgz, ierr)
-    Else
-      tmpmsgx = 0; tmpmsgy = 0; tmpmsgz = 0
-      nummsgx = 0; nummsgy = 0; nummsgz = 0
-    End If
+      If (mxnode>1) Then
+        Call MPI_TYPE_GET_EXTENT (wp_mpi, lb1, dbleth, ierr)
+        Call MPI_TYPE_GET_EXTENT (MPI_INTEGER, lb2, inleth, ierr)
+        Call MPI_TYPE_VECTOR (1, 1, 1, wp_mpi, basicslice, ierr)
+        Call MPI_TYPE_VECTOR (1, 2, 2, MPI_INTEGER, bbasicslice, ierr)
+        xlth = (ntcell(1) + 2) * dbleth
+        ylth = (ntcell(2) + 2) * xlth
+        Call MPI_TYPE_CREATE_HVECTOR (ntcell(2)    , 1, xlth, basicslice, oneslicex, ierr)
+        Call MPI_TYPE_CREATE_HVECTOR (ntcell(3)    , 1, ylth, oneslicex, tmpmsgx, ierr)
+        Call MPI_TYPE_COMMIT (tmpmsgx, ierr)
+        Call MPI_TYPE_CREATE_HVECTOR (1, ntcell(1) + 2, xlth, basicslice, oneslicey, ierr)
+        Call MPI_TYPE_CREATE_HVECTOR (ntcell(3)    , 1, ylth, oneslicey, tmpmsgy, ierr)
+        Call MPI_TYPE_COMMIT (tmpmsgy, ierr)
+        Call MPI_TYPE_CREATE_HVECTOR (1, ntcell(1) + 2, xlth, basicslice, oneslicez, ierr)
+        Call MPI_TYPE_CREATE_HVECTOR (1, ntcell(2) + 2, ylth, oneslicez, tmpmsgz, ierr)
+        Call MPI_TYPE_COMMIT (tmpmsgz, ierr)
+        bxlth = 2 * (ntcell(1) + 2) * inleth
+        bylth = (ntcell(2) + 2) * bxlth
+        Call MPI_TYPE_CREATE_HVECTOR (ntcell(2)    , 1, bxlth, bbasicslice, boneslicex, ierr)
+        Call MPI_TYPE_CREATE_HVECTOR (ntcell(3)    , 1, bylth, boneslicex, nummsgx, ierr)
+        Call MPI_TYPE_COMMIT (nummsgx, ierr)
+        Call MPI_TYPE_CREATE_HVECTOR (1, ntcell(1) + 2, bxlth, bbasicslice, boneslicey, ierr)
+        Call MPI_TYPE_CREATE_HVECTOR (ntcell(3)    , 1, bylth, boneslicey, nummsgy, ierr)
+        Call MPI_TYPE_COMMIT (nummsgy, ierr)
+        Call MPI_TYPE_CREATE_HVECTOR (1, ntcell(1) + 2, bxlth, bbasicslice, boneslicez, ierr)
+        Call MPI_TYPE_CREATE_HVECTOR (1, ntcell(2) + 2, bylth, boneslicez, nummsgz, ierr)
+        Call MPI_TYPE_COMMIT (nummsgz, ierr)
+      Else
+        tmpmsgx = 0; tmpmsgy = 0; tmpmsgz = 0
+        nummsgx = 0; nummsgy = 0; nummsgz = 0
+      End If
 
 ! Array allocation and initialization
 
-    Allocate (eltemp(1:numcell,-eltcell(1):eltcell(1),-eltcell(2):eltcell(2),-eltcell(3):eltcell(3))    , Stat = fail(1))
-    Allocate (asource(1:numcell)                                                                        , Stat = fail(2))
-    Allocate (tempion(1:numcell)                                                                        , Stat = fail(3))
-    Allocate (gsource(1:numcell)                                                                        , Stat = fail(4))
-    Allocate (eltemp_adj(1:numcell,-eltcell(1):eltcell(1),-eltcell(2):eltcell(2),-eltcell(3):eltcell(3)), Stat = fail(5))
-    Allocate (act_ele_cell(1:numcell,-1:1,-1:1,-1:1), old_ele_cell(1:numcell,-1:1,-1:1,-1:1)            , Stat = fail(6))
-    Allocate (adjust(1:numcell,-1:1,-1:1,-1:1)                                                          , Stat = fail(7))
+      Allocate (eltemp(1:numcell,-eltcell(1):eltcell(1),-eltcell(2):eltcell(2),-eltcell(3):eltcell(3))    , Stat = fail(1))
+      Allocate (asource(1:numcell)                                                                        , Stat = fail(2))
+      Allocate (tempion(1:numcell)                                                                        , Stat = fail(3))
+      Allocate (gsource(1:numcell)                                                                        , Stat = fail(4))
+      Allocate (eltemp_adj(1:numcell,-eltcell(1):eltcell(1),-eltcell(2):eltcell(2),-eltcell(3):eltcell(3)), Stat = fail(5))
+      Allocate (act_ele_cell(1:numcell,-1:1,-1:1,-1:1), old_ele_cell(1:numcell,-1:1,-1:1,-1:1)            , Stat = fail(6))
+      Allocate (adjust(1:numcell,-1:1,-1:1,-1:1)                                                          , Stat = fail(7))
 
-    If (Any(fail > 0)) Call error(1083)
+      If (Any(fail > 0)) Call error(1083)
 
-    eltemp(:,:,:,:)       = 0.0_wp
-    eltemp_adj(:,:,:,:)   = 0.0_wp
-    gsource(:)            = 0.0_wp
-    asource(:)            = 0.0_wp
-    tempion(:)            = 0.0_wp
-    act_ele_cell(:,:,:,:) = 1.0_wp
-    old_ele_cell(:,:,:,:) = 1.0_wp
-    acell                 = ntsys(1)*ntsys(2)*ntsys(3)
-    acell_old             = acell
-    adjust                = .false.
-    cel                   = 0
-    kel                   = 0
-    del                   = 0
-    gel                   = 0
+      eltemp(:,:,:,:)       = 0.0_wp
+      eltemp_adj(:,:,:,:)   = 0.0_wp
+      gsource(:)            = 0.0_wp
+      asource(:)            = 0.0_wp
+      tempion(:)            = 0.0_wp
+      act_ele_cell(:,:,:,:) = 1.0_wp
+      old_ele_cell(:,:,:,:) = 1.0_wp
+      acell                 = ntsys(1)*ntsys(2)*ntsys(3)
+      acell_old             = acell
+      adjust                = .false.
+      cel                   = 0
+      kel                   = 0
+      del                   = 0
+      gel                   = 0
+
+    End If
 
     keyres0 = 1
 

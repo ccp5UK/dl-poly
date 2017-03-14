@@ -317,10 +317,8 @@ Program dl_poly
 
 ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
 
-  If (l_ttm) Then
-    Call allocate_ttm_arrays()
-    Call ttm_table_scan()
-  End If
+  Call allocate_ttm_arrays()
+  Call ttm_table_scan()
 
 ! READ SIMULATION CONTROL PARAMETERS
 
@@ -525,6 +523,14 @@ Program dl_poly
      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
   End If
 
+! Read ttm table file and initialise electronic temperature
+! grid from any available restart file
+
+  If (l_ttm) Then
+    Call ttm_table_read()
+    Call ttm_system_init(nstep,keyres,'DUMP_E',temp)
+  End If
+
 ! Frozen atoms option
 
   Call freeze_atoms()
@@ -628,14 +634,6 @@ Program dl_poly
 ! Initialise conserved quantity (other than K + U)
 
   consv = 0.0_wp
-
-! Read ttm table file and initialise electronic temperature
-! grid from any available restart file
-
-  If (l_ttm) Then
-    Call ttm_table_read()
-    Call ttm_system_init(nstep,keyres,'DUMP_E',temp)
-  End If
 
 ! start-up time when forces are not recalculated
 
