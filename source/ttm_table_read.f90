@@ -112,7 +112,7 @@ Subroutine ttm_table_read()
 
 ! read thermal diffusivity data
 
-  If (DeType == 2) Then
+  If (DeType == 3) Then
 
     If (idnode == 0) Open(Unit=ntable, File='De.dat', Status='old')
 

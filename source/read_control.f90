@@ -32,7 +32,7 @@ Subroutine read_control                                &
 ! contrib   - p.s.petkov february 2015
 ! contrib   - a.m.elena september 2015
 ! contrib   - a.m.elena february 2017
-! contrib   - g.khara & m.a.seaton february 2017
+! contrib   - g.khara & m.a.seaton march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -291,26 +291,16 @@ Subroutine read_control                                &
 
   rlx_tol(1:2) = (/ 1.0_wp , -1.0_wp /)
 
-! default switch for two-temperature model (ttm)
+! default switch for two-temperature model (TTM) calculations:
+! already determined its use in scan_control but repeating
+! here to output message
 
   l_ttm = .false.
 
-! default values for ttm ionic and electronic voxel grid sizes
-
-  ntsys(3)  = 10
-  eltsys(1) = 50
-  eltsys(2) = 50
-  eltsys(3) = 50
-
-! default values for ttm material type (metal or insulator) and
-! coefficients for (i) electronic specific heat capacities, 
+! default values for (i) electronic specific heat capacities,
 ! (ii) thermal conductivity, (iii) thermal diffusivity,
-! (iv) atomic density (to convert specific heats to volumetric
-!      values)
+! (iv) atomic density (converting specific heats to volumetric values)
 
-  isMetal = .true.
-
-  CeType  = 0
   Ce0     = 1.0_wp
   sh_A    = 0.0_wp
   sh_B    = 0.0_wp
@@ -323,11 +313,7 @@ Subroutine read_control                                &
 
   cellrho = 0.0_wp
 
-! default ttm electron-phonon coupling type
-
-  gvar = 0
-
-! default initial stopping power to be deposited in 
+! default initial stopping power to be deposited in
 ! electronic system (standard cascade) and laser 
 ! fluence and penetration depth
 
@@ -350,16 +336,14 @@ Subroutine read_control                                &
   bcTypeE = 3
 
 ! default minimum number of atoms required per voxel cell
-! to calculate ionic temperatures, options to redistribute
-! electronic energies to neighbouring voxels on deactivation,
+! to calculate ionic temperatures, options for
 ! centre-of-mass momentum corrections for ionic
 ! temperature calculations and one-way electron-phonon
 ! coupling in thermal diffusion and thermostat
 
-  amin         = 1
-  deactivation = .false.
-  ttmthvel     = .true.
-  oneway       = .false.
+  amin     = 1
+  ttmthvel = .true.
+  oneway   = .false.
 
 ! default values for time step frequencies to output
 ! (i) statistical data and (ii) electronic/ionic temperature
@@ -2100,6 +2084,8 @@ Subroutine read_control                                &
 
      Else If (word(1:3) == 'ttm') Then
 
+        ! detecting l_ttm purely to print message on first occasion
+
         If (.not. l_ttm) Then
           l_ttm = .true.
           If (idnode == 0) Write(nrite,"(/,1x,'Two Temperature Model (TTM) opted for')")
@@ -2109,48 +2095,43 @@ Subroutine read_control                                &
 
         If (word1(1:4) == 'ncit') Then
 
-        ! number of coarse-grained ion temperature cells (CIT)
-        ! in z-direction: geometry of system determines 
-        ! CITs in x- and y-directions
+        ! number of coarse-grained ion temperature cells (CIT):
+        ! already determined in scan_control
 
-          Call get_word(record,word)
-          ntsys(3) = Abs(Nint(word_2_real(word)))
+           If (idnode == 0) Write(nrite,"(/,1x,'ionic temperature grid size      (x,y,z): ',3(2x,i8),&
+                                         &/,1x,'temperature cell size (A)        (x,y,z): ',3(2x,f8.4),&
+                                         &/,1x,'average number of atoms/cell              ',f10.4)") &
+                                           ntsys(1),ntsys(2),ntsys(3),delx,dely,delz,sysrho*volume
 
         Else If (word1(1:4) == 'ncet') Then
 
-        ! number of coarse-grained electronic temperature cells
-        ! (CET) in x-, y- and z-directions
+        ! number of coarse-grained electronic temperature cells (CET):
+        ! already determined in scan_control
 
-          Call get_word(record,word)
-          eltsys(1) = Abs(Nint(word_2_real(word)))
-          Call get_word(record,word)
-          eltsys(2) = Abs(Nint(word_2_real(word)))
-          Call get_word(record,word)
-          eltsys(3) = Abs(Nint(word_2_real(word)))
+           If (idnode == 0 ) Write(nrite,"(/,1x,'electronic temperature grid size (x,y,z): ',3(2x,i8))") &
+                                           eltsys(1),eltsys(2),eltsys(3)
 
         Else If (word1(1:5) == 'metal') Then
 
-        ! sets properties of electronic subsystem as a metal
+        ! sets properties of electronic subsystem as a metal:
+        ! already determined in scan_control
 
-          isMetal = .true.
           If (idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic subsystem represents metal: requires thermal conductivity')")
+            Write(nrite,"(/,1x,'electronic subsystem represents metal: thermal conductivity required')")
           End If
 
         Else If (word1(1:8) == 'nonmetal') Then
 
         ! sets properties of electronic subsystem as a non-metal
 
-          isMetal = .false.
           If (idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic subsystem represents non-metal: requires thermal diffusivity')")
+            Write(nrite,"(/,1x,'electronic subsystem represents non-metal: thermal diffusivity required')")
           End If
 
         Else If (word1(1:7) == 'ceconst') Then
 
         ! electronic specific heat capacity given as constant value
 
-          CeType = 0
           Call get_word(record,word)
           Ce0 = word_2_real(word)
           If (idnode == 0) Then
@@ -2162,7 +2143,6 @@ Subroutine read_control                                &
 
         ! electronic specific heat capacity given as tanh function
 
-          CeType = 1
           Call get_word(record,word)
           sh_A = word_2_real(word)
           Call get_word(record,word)
@@ -2178,7 +2158,6 @@ Subroutine read_control                                &
         ! electronic specific heat capacity given as linear function
         ! up to Fermi temperature, constant afterwards
 
-          CeType = 2
           Call get_word(record,word)
           Cemax = word_2_real(word)
           Call get_word(record,word)
@@ -2193,7 +2172,6 @@ Subroutine read_control                                &
 
         ! electronic volumetric heat capacity given in tabulated form
 
-          CeType = 3
           If (idnode == 0) Then
             Write(nrite,"(/,1x,'electronic volumetric heat capacity given as tabulated function of temperature')")
           End If
@@ -2202,8 +2180,6 @@ Subroutine read_control                                &
 
         ! infinite electronic thermal conductivity
 
-          DeType = 0
-          KeType = 0
           If (idnode == 0) Then
             Write(nrite,"(/,1x,'electronic thermal conductivity set to infinity')")
           End If
@@ -2212,8 +2188,6 @@ Subroutine read_control                                &
 
         ! electronic thermal conductivity given as constant value
 
-          DeType = 0
-          KeType = 1
           Call get_word(record,word)
           Ka0 = word_2_real(word)
           If (idnode == 0) Then
@@ -2226,8 +2200,6 @@ Subroutine read_control                                &
         ! electronic thermal conductivity given as drude model (propertional to
         ! electronic temperature, giving t.c. at system temperature)
 
-          DeType = 0
-          KeType = 2
           Call get_word(record,word)
           Ka0 = word_2_real(word)
           If (idnode == 0) Then
@@ -2239,8 +2211,6 @@ Subroutine read_control                                &
 
         ! electronic thermal conductivity given in tabulated form
 
-          DeType = 0
-          KeType = 3
           If (idnode == 0) Then
             Write(nrite,"(/,1x,'electronic thermal conductivity given as tabulated function of temperature:',&
                         & /,1x,'uses ionic or system temperature to calculate cell conductivity value',&
@@ -2252,8 +2222,6 @@ Subroutine read_control                                &
         ! electronic thermal diffusivity given as constant value
         ! (for non-metal systems)
 
-          KeType = 1
-          DeType = 1
           Call get_word(record,word)
           Diff0 = word_2_real(word)
           If (idnode == 0) Then
@@ -2266,8 +2234,6 @@ Subroutine read_control                                &
         ! electronic thermal diffusivity given as reciprocal function
         ! of temperature (up to Fermi temperature), constant afterwards
 
-          KeType = 1
-          DeType = 2
           Call get_word(record,word)
           Diff0 = word_2_real(word)
           Call get_word(record,word)
@@ -2282,8 +2248,6 @@ Subroutine read_control                                &
 
         ! electronic thermal diffusivity given in tabulated form
 
-          KeType = 1
-          DeType = 3
           If (idnode == 0) Then
             Write(nrite,"(/,1x,'electronic thermal diffusivity given as tabulated function of temperature')")
           End If
@@ -2291,12 +2255,13 @@ Subroutine read_control                                &
         Else If (word1(1:8) == 'atomdens') Then
 
         ! user-specified atomic density, used to convert specific
-        ! heat capacities to volumetric values: this option will
-        ! be reported later when the two-temperature model is 
-        ! set up (in ttm_module.f90)
+        ! heat capacities to volumetric values
 
           Call get_word(record,word)
-          cellrho = Abs(word_2_real(word))
+          cellrho = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(1x,'user-specified atomic density (A^-3)',6x,f10.4)") cellrho
+          End If
 
         Else If (word1(1:4) == 'amin') Then
 
@@ -2315,8 +2280,7 @@ Subroutine read_control                                &
         ! slab geometry and redistribution of electronic energy from
         ! deactivated cells to active neighbours
 
-          deactivation = .true.
-          If (idnode == 0) Then
+          If (deactivation .and. idnode == 0) Then
             Write(nrite,"(/,1x,'slab geometry in use for electronic temperature grid:',&
                         & /,1x,'redistributing energy from deactivated grid cells into active neighbours',&
                         & /,1x,'(requires at least one electronic temperature cell beyond ionic cells)')")
@@ -2425,22 +2389,20 @@ Subroutine read_control                                &
         ! electronic temperature) or heterogeneously (using local 
         ! electronic temperature for each voxel)
 
-          Call get_word(record,word)
-          If (word(1:4) == 'homo') Then
-            gvar = 1
+          Select Case (gvar)
+          Case (1)
             If (idnode == 0) Then
               Write(nrite,"(/,1x,'variable electron-phonon coupling values to be applied homogeneously',&
                           & /,1x,'(overrides value given for ensemble, required tabulated stopping',&
                            & /,2x,'terms in g.dat file)')")
             End If
-          Else If (word(1:6) == 'hetero') Then
-            gvar = 2
+          Case (2)
             If (idnode == 0) Then
               Write(nrite,"(/,1x,'variable electron-phonon coupling values to be applied heterogeneously',&
                           & /,1x,'(overrides value given for ensemble, required tabulated stopping',&
                            & /,2x,'terms in g.dat file)')")
             End If
-          End If
+          End Select
 
         Else If (word1(1:3) == 'bcs') Then
 
@@ -3478,5 +3440,69 @@ Subroutine read_control                                &
      End If
      If (keyens /= 20 .and. keyens /= 30 .and. taup <= 0.0_wp) Call error(466)
   End If
+
+! Two-temperature model: calculate atomic density (if not
+! already specified and electron-phonon friction
+! conversion factor (to calculate chi_ep from G_ep values)
+
+  If (cellrho<=zero_plus) cellrho = sysrho
+  epc_to_chi = 1.0e-12_wp*Jm3K_to_kBa3/(3.0_wp*cellrho)
+
+! Check sufficient parameters are specified for TTM electronic specific
+! heats, thermal conductivity/diffusivity, energy loss and laser deposition
+! and rescale to calculate efficiently (in functions Ce, Ke, KeD etc.)
+
+  Select Case (CeType)
+  Case (0)
+  ! constant electronic specific heat: converted from kB/atom to kB/A^3
+  ! by multiplication of atomic density
+    Ce0 = Ce0*cellrho
+  Case (1)
+  ! hyperbolic tangent electronic specific heat: multiplier converted
+  ! from kB/atom to kB/A^3, temperature term (K^-1) scaled by 10^-4
+    If (Abs(sh_A) <= zero_plus .or. Abs(sh_B) <= zero_plus) Call error(671)
+    sh_A = sh_A*cellrho
+    sh_B = sh_B*1.0e-4_wp
+  Case (2)
+  ! linear electronic specific heat to Fermi temperature: maximum
+  ! value converted from kB/atom to kB/A^3
+    If (Abs(Tfermi) <= zero_plus .or. Abs(Cemax) <= zero_plus) Call error(671)
+    Cemax = Cemax*cellrho
+  End Select
+
+  Select Case (KeType)
+  ! constant and Drude thermal conductivity: converted from W m^-1 K^-1
+  ! to kB ps^-1 A^-1
+  Case (1,2)
+    If (isMetal .and. Abs(Ka0) <= zero_plus) Call error(672)
+    Ka0 = Ka0*JKms_to_kBAps
+  End Select
+
+  Select Case (DeType)
+  Case (1)
+  ! constant thermal diffusivity: converted from m^2 s^-1 to A^2 ps^-1
+    If (.not. isMetal .and. Abs(Diff0) <= zero_plus) Call error(673)
+    Diff0 = Diff0*1.0e8_wp
+  Case (2)
+  ! reciprocal thermal diffusivity: converted from m^2 s^-1 to A^2 ps^-1
+  ! and Diff0 scaled with system temperature
+    If (.not. isMetal .and. Abs(Diff0) <= zero_plus .or. Abs(Tfermi) <= zero_plus) Call error(673)
+    Diff0 = Diff0*temp*1.0e8_wp
+  End Select
+
+  ! spatial deposition (gaussian) standard deviation: converted from nm to A
+  sig = sig*10.0_wp
+
+  ! penetration depth: convert from nm to A
+  If (sdepoType == 2 .and. (Abs(dEdX) <= zero_plus .or. Abs(pdepth-1.0_wp) <= zero_plus)) &
+  Call warning(510,0.0_wp,0.0_wp,0.0_wp)
+  pdepth = 10.0_wp*pdepth
+
+  ! fluence: converted from mJ cm^-2 to eV A^-2
+  fluence = fluence*mJcm2_to_eVA2
+
+  ! electronic stopping power: converted from eV/nm to eV/A
+  If (Abs(dEdx) <= zero_plus) Call warning(515,0.0_wp,0.0_wp,0.0_wp)
+  dEdX = 0.1_wp*dEdX
 
 End Subroutine read_control

@@ -8,7 +8,7 @@ Module ttm_module
 ! copyright - daresbury laboratory
 ! authors   - s.l.daraszewicz & m.a.seaton may 2012
 ! contrib   - g.khara may 2016
-! contrib   - m.a.seaton february 2017
+! contrib   - m.a.seaton march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -53,8 +53,8 @@ Module ttm_module
   Integer :: cel,gel,del,kel
   Integer :: acell,acell_old,amin
 
-  Real ( Kind = wp ), Save :: Jm3K_to_kBA3,JKms_to_kBAps,kB_to_eV,eV_to_kB,mJcm2_to_eVA2
-  Real ( Kind = wp ), Save :: cellrho,epc_to_chi
+  Real ( Kind = wp ), Save :: Jm3K_to_kBA3,JKms_to_kBAps,kB_to_eV,eV_to_kB,mJcm2_to_eVA2,epc_to_chi
+  Real ( Kind = wp ) :: cellrho,sysrho
   Real ( Kind = wp ) :: fluence,pdepth
   Real ( Kind = wp ) :: epthreshold = 1.1_wp
 
@@ -62,12 +62,10 @@ Module ttm_module
 
 Contains
 
-  Subroutine allocate_ttm_arrays(temp,megatm)
+  Subroutine allocate_ttm_arrays()
 
     Implicit None
 
-    Real ( Kind = wp ), Intent ( In ) :: temp
-    Integer, Intent ( In ) :: megatm
     Real ( Kind = wp ) :: start, finish
     Integer, Dimension ( 1:7 ) :: fail
     Integer :: i,numbc,numbcmap
@@ -86,116 +84,6 @@ Contains
     kB_to_eV      = boltz/eu_ev               ! convert kB to eV
     eV_to_kB      = eu_ev/boltz               ! convert eV to kB
     mJcm2_to_eVA2 = 1.0e4_wp/(eu_ev*tenunt)   ! convert mJ cm^-2 to eV A^-2
-
-! Convert inputs for ion temperature grid (number in z-direction)
-! into numbers for x- and y-directions, grid spacings and cell volume
-! (plus its reciprocal)
-
-    delz     = cell(9)/Real(ntsys(3),wp)
-    ntsys(1) = Nint(cell(1)/delz)
-    ntsys(2) = Nint(cell(5)/delz) 
-    delx     = cell(1)/Real(ntsys(1),wp)
-    dely     = cell(5)/Real(ntsys(2),wp)
-    volume   = delx*dely*delz
-    rvolume  = 1.0_wp/volume
-
-! Check number of electronic temperature cells is greater than/
-! equal to number of ionic temperature cells
-
-    If (Any(eltsys<ntsys)) Call error(670)
-
-! If slab option selected, check for sufficient electronic temperature
-! cells to redistribute energy when ionic tmeperature cells are switched off:
-! if not available, switch off this option
-
-    If (deactivation .and. (eltsys(1)<ntsys(1)+2 .or. eltsys(2)<ntsys(2)+2 .or. eltsys(3)<ntsys(3)+2)) Then
-      Call warning(500,0.0_wp,0.0_wp,0.0_wp)
-      deactivation = .false.
-    End If
-
-! Print sizes of ionic and electronic temperature cells and grids,
-! and average number of particles per ionic temperature cell
-
-    If (idnode == 0) Then
-      Write(nrite,'(/,1x,a,3(2x,f8.4))') "temperature cell size (A)        (x,y,z): ",delx,dely,delz
-      Write(nrite,'(1x,a,3(2x,i8))')     "ionic temperature grid size      (x,y,z): ",ntsys(1),ntsys(2),ntsys(3)
-      Write(nrite,'(1x,a,3(2x,i8))')     "electronic temperature grid size (x,y,z): ",eltsys(1),eltsys(2),eltsys(3)
-    End If
-
-! Calculate atomic density (if not supplied) and conversion factor 
-! to calculate electron-phonon friction factor (chi_ep)
-
-    If (cellrho<=zero_plus) Then
-      cellrho = Real(megatm,Kind=wp)/(cell(1)*cell(5)*cell(9))
-      If (idnode == 0) Then
-        Write(nrite,'(1x,a,f10.4)') "assumed atomic density            (A^-3): ",cellrho
-        Write(nrite,'(1x,a,f10.4)') "average no. of atoms per cell           : ",cellrho*volume
-      End If
-    Else
-      If (idnode == 0) Then
-        Write(nrite,'(1x,a,f10.4)') "user-specified atomic density     (A^-3): ",cellrho
-        Write(nrite,'(1x,a,f10.4)') "average no. of atoms per cell           : ",cellrho*volume
-      End If
-    End If
-
-    epc_to_chi = 1.0e-12_wp*Jm3K_to_kBa3/(3.0_wp*cellrho)
-
-! Check sufficient parameters are specified for electronic specific
-! heats, thermal conductivity, diffusivity, energy loss and laser deposition
-! and rescale to calculate efficiently (in functions Ce, Ke, KeD etc.)
-
-    Select Case (CeType)
-    Case (0)
-    ! constant electronic specific heat: converted from kB/atom to kB/A^3
-    ! by multiplication of atomic density
-      Ce0 = Ce0*cellrho
-    Case (1)
-    ! hyperbolic tangent electronic specific heat: multiplier converted 
-    ! from kB/atom to kB/A^3, temperature term (K^-1) scaled by 10^-4
-      If (Abs(sh_A) <= zero_plus .or. Abs(sh_B) <= zero_plus) Call error(671)
-      sh_A = sh_A*cellrho
-      sh_B = sh_B*1.0e-4_wp
-    Case (2)
-    ! linear electronic specific heat to Fermi temperature: maximum
-    ! value converted from kB/atom to kB/A^3
-      If (Abs(Tfermi) <= zero_plus .or. Abs(Cemax) <= zero_plus) Call error(671)
-      Cemax = Cemax*cellrho
-    End Select
-
-    Select Case (KeType)
-    ! constant and Drude thermal conductivity: converted from W m^-1 K^-1
-    ! to kB ps^-1 A^-1
-    Case (1,2)
-      If (isMetal .and. Abs(Ka0) <= zero_plus) Call error(672)
-      Ka0 = Ka0*JKms_to_kBAps
-    End Select
-
-    Select Case (DeType)
-    Case (1)
-    ! constant thermal diffusivity: converted from m^2 s^-1 to A^2 ps^-1
-      If (.not. isMetal .and. Abs(Diff0) <= zero_plus) Call error(673)
-      Diff0 = Diff0*1.0e8_wp
-    Case (2)
-    ! reciprocal thermal diffusivity: converted from m^2 s^-1 to A^2 ps^-1
-    ! and Diff0 scaled with system temperature
-      If (.not. isMetal .and. Abs(Diff0) <= zero_plus .or. Abs(Tfermi) <= zero_plus) Call error(673)
-      Diff0 = Diff0*temp*1.0e8_wp
-    End Select
-
-    ! spatial deposition (gaussian) standard deviation: converted from nm to A
-    sig = sig*10.0_wp
-
-    ! penetration depth: convert from nm to A
-    If (sdepoType == 2 .and. (Abs(dEdX) <= zero_plus .or. Abs(pdepth-1.0_wp) <= zero_plus)) &
-    Call warning(510,0.0_wp,0.0_wp,0.0_wp)
-    pdepth = 10.0_wp*pdepth
-
-    ! fluence: converted from mJ cm^-2 to eV A^-2
-    fluence = fluence*mJcm2_to_eVA2
-
-    ! electronic stopping power: converted from eV/nm to eV/A
-    If (Abs(dEdx) <= zero_plus) Call warning(515,0.0_wp,0.0_wp,0.0_wp)
-    dEdX = 0.1_wp*dEdX
 
 ! Determine number of ion temperature cells for domain and
 ! offsets for ion temperature determination
@@ -231,7 +119,6 @@ Contains
     eltcell(1) = Ceiling(Real(eltsys(1)-ntsys(1), Kind=wp)/Real(2*ntsys(1), Kind=wp))
     eltcell(2) = Ceiling(Real(eltsys(2)-ntsys(2), Kind=wp)/Real(2*ntsys(2), Kind=wp))
     eltcell(3) = Ceiling(Real(eltsys(3)-ntsys(3), Kind=wp)/Real(2*ntsys(3), Kind=wp))
-
 
 ! Determine positions of boundaries for electronic temperature grids
 
@@ -386,20 +273,20 @@ Contains
 
     If (Any(fail > 0)) Call error(1083)
 
-    eltemp(:,:,:,:) = temp
-    eltemp_adj(:,:,:,:) = 0.0_wp
-    gsource(:) = 0.0_wp
-    asource(:) = 0.0_wp
-    tempion(:) = 0.0_wp
+    eltemp(:,:,:,:)       = 0.0_wp
+    eltemp_adj(:,:,:,:)   = 0.0_wp
+    gsource(:)            = 0.0_wp
+    asource(:)            = 0.0_wp
+    tempion(:)            = 0.0_wp
     act_ele_cell(:,:,:,:) = 1.0_wp
     old_ele_cell(:,:,:,:) = 1.0_wp
-    acell = ntsys(1)*ntsys(2)*ntsys(3)
-    acell_old = acell
-    adjust = .false.
-    cel = 0
-    kel = 0
-    del = 0
-    gel = 0
+    acell                 = ntsys(1)*ntsys(2)*ntsys(3)
+    acell_old             = acell
+    adjust                = .false.
+    cel                   = 0
+    kel                   = 0
+    del                   = 0
+    gel                   = 0
 
     keyres0 = 1
 

@@ -315,6 +315,13 @@ Program dl_poly
   Call allocate_statistics_arrays()
   Call allocate_greenkubo_arrays()
 
+! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
+
+  If (l_ttm) Then
+    Call allocate_ttm_arrays()
+    Call ttm_table_scan()
+  End If
+
 ! READ SIMULATION CONTROL PARAMETERS
 
   Call read_control                                    &
@@ -622,12 +629,10 @@ Program dl_poly
 
   consv = 0.0_wp
 
-! Array allocation for two-temperature model, scan/read
-! table file and initialisation from available restart files
+! Read ttm table file and initialise electronic temperature
+! grid from any available restart file
 
   If (l_ttm) Then
-    Call allocate_ttm_arrays(temp,megatm)
-    Call ttm_table_scan()
     Call ttm_table_read()
     Call ttm_system_init(nstep,keyres,'DUMP_E',temp)
   End If

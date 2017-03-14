@@ -45,6 +45,13 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
   eltemp1 = 0.0_wp
   redtstepmx = 1
 
+! deposition stage 1 (initialization)
+! keyres==1: reads electronic temperature from file, nstep-nsteql offsets equilibration time
+
+  If (keyres/=keyres0) Then
+    If ((nstep-nsteql)==1 .and. (dEdX>zero_plus .or. fluence>zero_plus)) Call depoinit (time)
+  End If
+
 ! determine timestep reduction factor (chosen empirically, acts beyond minimum stability condition)
 
   fopttstep = 0.25_wp
@@ -104,13 +111,6 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
   fomAx = tstep/(delx2*Real(redtstepmx,Kind=wp))
   fomAy = tstep/(dely2*Real(redtstepmx,Kind=wp))
   fomAz = tstep/(delz2*Real(redtstepmx,Kind=wp))
-
-! deposition stage 1 (initialization)
-! keyres==1: reads electronic temperature from file, nstep-nsteql offsets equilibration time
-
-  If (keyres/=keyres0) Then
-    If ((nstep-nsteql)==1 .and. (dEdX>zero_plus .or. fluence>zero_plus)) Call depoinit (time)
-  End If
 
 ! write information to OUTPUT
 
@@ -470,18 +470,18 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
               ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
               If (act_ele_cell(ijk,0,0,0)>zero_plus) Then
                 ! e-s coupling term
-                eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)+tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*asource(ijk)
+                eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)+tstep*rvolume/(Ce(eltemp(ijk,0,0,0))*Real(redtstepmx,Kind=wp))*asource(ijk)
                 ! e-p coupling term: only use if electronic temperature 
                 ! exceeds ionic temperature
                 If (l_epcp .and. eltemp(ijk,0,0,0)>tempion(ijk)) Then
                   Select Case (gvar)
                   Case (0,1)
                     eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)-&
-                    tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))
+                    tstep*rvolume/(Ce(eltemp(ijk,0,0,0))*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))
                   Case (2)
                     eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)-&
-                    tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))*&
-                                                                                  Gep(eltemp(ijk,0,0,0))
+                    tstep*rvolume/(Ce(eltemp(ijk,0,0,0))*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))*&
+                                                                                   Gep(eltemp(ijk,0,0,0))
                   End Select
                 End If
               End If
@@ -497,17 +497,17 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
               ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
               If (act_ele_cell(ijk,0,0,0)>zero_plus) Then
                 ! e-s coupling term
-                eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)+tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*asource(ijk)
+                eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)+tstep*rvolume/(Ce(eltemp(ijk,0,0,0))*Real(redtstepmx,Kind=wp))*asource(ijk)
                 ! e-p coupling term
                 If (l_epcp) Then
                   Select Case (gvar)
                   Case (0,1)
                     eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)-&
-                    tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))
+                    tstep*rvolume/(Ce(eltemp(ijk,0,0,0))*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))
                   Case (2)
                     eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)-&
-                    tstep/(Ce(eltemp(ijk,0,0,0))*volume*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))*&
-                                                                                  Gep(eltemp(ijk,0,0,0))
+                    tstep*rvolume/(Ce(eltemp(ijk,0,0,0))*Real(redtstepmx,Kind=wp))*gsource(ijk)*(eltemp(ijk,0,0,0)-tempion(ijk))*&
+                                                                                   Gep(eltemp(ijk,0,0,0))
                   End Select
                 End If
               End If

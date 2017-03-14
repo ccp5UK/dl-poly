@@ -39,6 +39,7 @@ Subroutine ttm_system_init(nstep,keyres,dumpfile,temp)
 ! if restarting simulation, read restart file
 
   If (l_tmp .and. keyres==keyres0) Then
+
     If (idnode==0) Open (Unit=iounit, File=dumpfile)
     Call get_line(safe,iounit,record); If (.not.safe) Goto 100
     Call get_word(record,word) ; nxx=Nint(word_2_real(word,0.0_wp))
@@ -89,6 +90,14 @@ Subroutine ttm_system_init(nstep,keyres,dumpfile,temp)
                  lat_min, lat_max, lat_sum
       Close (iounit)
     End If
+
+  Else
+
+! if not restarting simulation, set electronic temperature grid
+! to system temperature
+
+    eltemp = temp
+
   End If
 
   Return

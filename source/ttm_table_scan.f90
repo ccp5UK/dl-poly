@@ -139,7 +139,7 @@ Subroutine ttm_table_scan()
 
 ! check existence of thermal diffusivity table file
 
-  If (DeType == 2) Then
+  If (DeType == 3) Then
 
     Inquire (File='De.dat', Exist=lexist)
     If (mxnode > 1) Call gcheck(lexist)
