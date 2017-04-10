@@ -1,8 +1,8 @@
 Subroutine nvt_g1_scl &
-           (tstep,ceng,qmass,temp,gama,r_0,pmass,chip, &
-           vxx,vyy,vzz,                                &
-           rgdvxx,rgdvyy,rgdvzz,                       &
-           rgdoxx,rgdoyy,rgdozz,                       &
+           (tstep,degfre,isw,nstep,ceng,qmass,temp,gama,pmass,chip, &
+           vxx,vyy,vzz,                                             &
+           rgdvxx,rgdvyy,rgdvzz,                                    &
+           rgdoxx,rgdoyy,rgdozz,                                    &
            chit,cint,engke,engrot)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -14,6 +14,7 @@ Subroutine nvt_g1_scl &
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov january 2012
+! amended   - i.t.todorov march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -26,8 +27,9 @@ Subroutine nvt_g1_scl &
   Implicit None
 
   Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
-                                                               temp,gama,r_0,    &
-                                                               pmass,chip
+                                                               temp,gama,pmass,chip
+  Integer(Kind=ip),                         Intent( In    ) :: degfre
+  Integer,                                  Intent( In    ) :: isw,nstep
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
   Real( Kind = wp ), Dimension( 1:mxrgd ),  Intent( InOut ) :: rgdvxx,rgdvyy,rgdvzz
   Real( Kind = wp ), Dimension( 1:mxrgd ),  Intent( InOut ) :: rgdoxx,rgdoyy,rgdozz
@@ -35,7 +37,7 @@ Subroutine nvt_g1_scl &
   Real( Kind = wp ),                        Intent(   Out ) :: engke,engrot
 
   Integer           :: i,j,irgd
-  Real( Kind = wp ) :: engkf,engkt,hstep,qstep,factor,scale,fex
+  Real( Kind = wp ) :: engkf,engkt,hstep,qstep,factor,scale,fex,r_0
 
 
 ! timestep derivative and factor
@@ -58,6 +60,11 @@ Subroutine nvt_g1_scl &
   engrot=getknr(rgdoxx,rgdoyy,rgdozz)
 
   fex=Exp(-gama*hstep)
+
+! generate a Gaussian random number for use in the
+! Langevin process on the thermostat friction
+
+  Call box_mueller_saru2(Int(degfre/3_ip),nstep-1,2*isw+1,r_0,.true.)
 
 ! update chit to 1/2*tstep
 
@@ -93,6 +100,11 @@ Subroutine nvt_g1_scl &
 
   engke=engke*scale**2
   engrot=engrot*scale**2
+
+! generate a Gaussian random number for use in the
+! Langevin process on the thermostat friction
+
+  Call box_mueller_saru2(Int(degfre/3_ip),nstep-1,2*isw+2,r_0,.true.)
 
 ! update chit to full (2/2)*tstep
 

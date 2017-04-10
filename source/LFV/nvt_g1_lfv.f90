@@ -24,6 +24,7 @@ Subroutine nvt_g1_lfv                         &
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov august 2016
+! amended   - i.t.todorov march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -35,7 +36,6 @@ Subroutine nvt_g1_lfv                         &
                                  lstfre,weight,                &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
-  Use langevin_module,    Only : r_0
   Use kinetic_module,     Only : getknf,getknt,getknr,kinstresf,kinstrest
   Use core_shell_module,  Only : legshl
   Use constraints_module, Only : passcon
@@ -79,7 +79,7 @@ Subroutine nvt_g1_lfv                         &
   Real( Kind = wp ), Save :: qmass,ceng
   Real( Kind = wp )       :: hstep,rstep
   Real( Kind = wp )       :: chit1,chit2,engkf,engkt
-  Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,fex
+  Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,fex,r_0
   Real( Kind = wp )       :: x(1:1),y(1:1),z(1:1),rot(1:9), &
                              opx,opy,opz,fmx,fmy,fmz,       &
                              tqx,tqy,tqz,trx,try,trz,       &
