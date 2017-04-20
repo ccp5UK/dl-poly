@@ -8,6 +8,7 @@ Module langevin_module
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov march 2014
+! amended   - i.t.todorov march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -18,8 +19,7 @@ Module langevin_module
   Logical,                        Save :: l_lan    = .false., &
                                           l_gst    = .false.
 
-  Real( Kind = wp ),              Save :: fpl(1:9) = 0.0_wp, &
-                                          r_0      = 0.0_wp
+  Real( Kind = wp ),              Save :: fpl(1:9) = 0.0_wp
 
   Real( Kind = wp ), Allocatable, Save :: fxl(:),fyl(:),fzl(:)
 
