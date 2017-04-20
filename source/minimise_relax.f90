@@ -16,6 +16,7 @@ Subroutine minimise_relax &
 ! author    - i.t.todorov & w.smith february 2014
 ! contrib   - a.m.elena february 2017
 ! contrib   - i.t.todorov february 2017
+! contrib   - i.scivetti april 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -101,7 +102,7 @@ Subroutine minimise_relax &
 
 ! At start the minimum energy is defined as zero
 
-     eng_min = 0.0_wp
+     eng_min = Huge(0.0_wp)
 
 ! Passage accumulators are initialised in minimise_module
 ! passmin(1) - cycles counter
