@@ -47,8 +47,7 @@ Subroutine two_body_forces                        &
   Use vdw_module,     Only : ntpvdw
   Use metal_module,   Only : ntpmet
   Use kim_module
-  Use rdf_module,    Only : ncfrdf, block_size, l_errors_block, l_errors_jack
-  Use block_averages_module
+  Use rdf_module,    Only : ncfrdf, block_size, l_errors_block, l_errors_jack, block_number
 
   Implicit None
 
