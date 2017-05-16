@@ -330,7 +330,7 @@ Subroutine statistics_collect             &
 ! write statistics file
 
   If (idnode == 0 .and. Mod(nstep,intsta) == 0) Then
-     If (.not statis_file_open) Then
+     If (.not. statis_file_open) Then
          Open(Unit=nstats, File=Trim(STATIS), Position='append')
          statis_file_open = .true.
      End If
