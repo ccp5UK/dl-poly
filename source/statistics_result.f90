@@ -338,7 +338,8 @@ Subroutine statistics_result                                    &
 
 !If block average errors, output that, else if jackknife errors output those, else just RDF.
   If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_block) Call calculate_errors(temp, rcut, nstep)
-  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_jack .and. .not. l_errors_block) Call calculate_errors_jackknife(temp, rcut, nstep)
+  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_jack .and. .not. l_errors_block) &
+     Call calculate_errors_jackknife(temp, rcut, nstep)
   If (lrdf .and. lprdf .and. ncfrdf > 0 .and. .not.(l_errors_block .or. l_errors_jack)) Call rdf_compute(lpana,rcut,temp)
   If (ncfusr > 0) Call usr_compute()
 
