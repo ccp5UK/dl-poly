@@ -32,7 +32,7 @@ Subroutine statistics_result                                    &
   Use z_density_module,   Only : ncfzdn
   Use statistics_module
   Use msd_module
-  Use rdf_compute_modules
+  Use rdf_compute_module
   Use greenkubo_module,   Only : vafsamp,vafcount
 
   Implicit None
