@@ -3,7 +3,7 @@ Module rdf_compute_module
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsum
   Use setup_module,  Only : fourpi,boltz,delr_max,nrite,nrdfdt,npdfdt,npdgdt, &
-                            mxgrdf,engunit,zero_plus
+                            mxgrdf,engunit,zero_plus,mxlist
   Use site_module,   Only : ntpatm,unqatm,numtyp,dens
   Use config_module, Only : cfgname,volm
   Use rdf_module
