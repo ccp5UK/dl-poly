@@ -47,7 +47,7 @@ Subroutine two_body_forces                        &
   Use vdw_module,     Only : ntpvdw
   Use metal_module,   Only : ntpmet
   Use kim_module
-  Use rdf_module,    Only : ncfrdf, block_size, l_block, l_jack
+  Use rdf_module,    Only : ncfrdf, block_size, l_errors_block, l_errors_jack
   Use block_averages_module
 
   Implicit None
@@ -476,7 +476,7 @@ Subroutine two_body_forces                        &
   End If
 
 !Increase block_number when required
-if((l_block .or. l_jack) .and. l_do_rdf .and. mod(nstep, block_size) == 0) block_number = block_number + 1
+if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_size) == 0) block_number = block_number + 1
 
 ! Further Ewald/Poisson Solver corrections or an infrequent refresh
 

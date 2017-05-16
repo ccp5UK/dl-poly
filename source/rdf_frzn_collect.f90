@@ -16,7 +16,7 @@ Subroutine rdf_frzn_collect(iatm,rcut,rrt)
   Use kinds_f90
   Use setup_module,  Only : mxlist,mxgrdf
   Use config_module, Only : natms,ltg,ltype,list
-  Use rdf_module, Only : ntprdf,lstrdf,rdf,tmp_rdf, l_block, l_jack, block_number
+  Use rdf_module,    Only : ntprdf,lstrdf,rdf,tmp_rdf,l_errors_block,l_errors_jack,block_number
 
   Implicit None
 
@@ -70,7 +70,7 @@ Subroutine rdf_frzn_collect(iatm,rcut,rrt)
 ! accumulate correlation
 
               rdf(ll,kk) = rdf(ll,kk) + 1.0_wp
-   If(l_block .or. l_jack) tmp_rdf(ll,kk,block_number) = tmp_rdf(ll,kk,block_number) + 1.0_wp
+              If(l_errors_block .or. l_errors_jack) tmp_rdf(ll,kk,block_number) = tmp_rdf(ll,kk,block_number) + 1.0_wp
            End If
 
         End If

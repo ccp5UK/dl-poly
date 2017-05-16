@@ -32,7 +32,7 @@ Module rdf_module
   Integer,                        Save :: block_number = 1
   Real( Kind = wp ), Allocatable, Save :: tmp_rdf(:,:,:)
   Logical,                        Save :: tmp_rdf_sync = .FALSE.
-  Logical,        Save :: l_block = .FALSE., l_jack = .FALSE.
+  Logical,                        Save :: l_errors_block = .FALSE., l_errors_jack = .FALSE.
 
   Public :: allocate_rdf_arrays, allocate_block_average_array
 

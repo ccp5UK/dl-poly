@@ -31,7 +31,7 @@ Subroutine scan_control                                    &
   Use kim_module,         Only : kim,rkim
   Use msd_module
   Use greenkubo_module,   Only : isvaf,nsvaf,vafsamp
-  Use rdf_module,         Only : l_jack, l_block
+  Use rdf_module,         Only : l_errors_jack, l_errors_block
   Use development_module, Only : l_trm
 
   Implicit None
@@ -490,10 +490,9 @@ Subroutine scan_control                                    &
        Call lower_case(record)
        Call get_word(record,word)
        If(word(1:4) == 'jack') Then
-	
-          l_jack = .TRUE.
+          l_errors_jack = .TRUE.
        Else
-         l_block = .TRUE.
+          l_errors_block = .TRUE.
        End If
      End If
 
@@ -906,8 +905,8 @@ Subroutine scan_control                                    &
   l_trm = (l_exp .and. nstrun == 0)
   If (((.not.lsim) .or. l_trm) .and. lrpad) rpad=0.0_wp
 
-  l_block = l_block .and. lrdf
-  l_jack = l_jack .and. lrdf
+  l_errors_block = l_errors_block .and. lrdf
+  l_errors_jack = l_errors_jack .and. lrdf
   Return
 
 ! CONTROL file does not exist

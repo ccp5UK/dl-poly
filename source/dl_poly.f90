@@ -345,7 +345,7 @@ Program dl_poly
            megtet,megbnd,megang,megdih,meginv)
 
 ! If computing rdf errors, we need to initialise the arrays.
-  If(l_jack .or. l_block) then
+  If(l_errors_jack .or. l_errors_block) then
      Call allocate_block_average_array(nstrun)
   End If
 
