@@ -450,7 +450,18 @@ thermostat will be selected automatically if TTM is otherwise switched on.
 Default values for $\chi_{ep}$, $\chi_{es}$ and $v_{cut}$ will be used in this 
 case if they have not been specified, although if a standard NVT Langevin 
 ensemble has been selected, its thermostat friction term $\chi$ will be used 
-for $\chi_{ep}$.
+for $\chi_{ep}$. 
+
+By default, the inhomogeneous Langevin thermostat will be applied only to 
+particle thermal velocities, i.e. velocities that have been corrected to 
+remove the centre-of-mass flow calculated from its coarse-grained ionic 
+temperature (CIT) voxel. This can be overridden either by the directive 
+{\bf ttm thvelz} to only correct the z-direction velocity component and use 
+total velocity components in the x- and y-directions, or by the directive 
+{\bf ttm nothvel} to omit all velocity corrections and use total particle 
+velocities. A warning message will also be printed if the {\bf no vom} option
+is not used, as removal of total centre-of-mass motion may affect the 
+dynamics of systems with electronic stopping effects.
 
 The number of coarse-grained electronic temperature (CET) voxels is 
 specified in the CONTROL file with the directive {\bf ttm ncet}: by default, 
@@ -581,7 +592,7 @@ still applied as normal. All voxels within the CIT grid are checked
 at each MD timestep and can be reactivated once the minimum number 
 of atoms can be found. 
 
-If the {\bf ttm slab} option is in use, any recently deactivated voxels 
+If the {\bf ttm redist} option is in use, any recently deactivated voxels 
 have their electronic energy transferred to neighbouring active voxels 
 by increasing their electronic temperatures: these are used for localised 
 Dirichlet (constant temperature) boundary conditions during thermal 

@@ -770,11 +770,17 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf ttm nonmetal}                 \> specifies parameters for non-metallic system are required for \\
 \>                                              \> \index{Two-Temperature Model}two-temperature model), i.e. thermal diffusivity \\
 \>                                              \> \\
+\> {\bf ttm nothvel}                    \> apply inhomogeneous Langevin thermostat to total particle velocities, \\
+\>                                              \> overriding default of using thermal velocities (excluding localised flow) \\
+\>                                              \> \\
 \> {\bf ttm offset} $f$                 \> offsets initial coupling of electronic and ionic systems via inhomogeneous \\
 \>                                              \> Langevin thermostat until after $f$ ps (default $f~=~0$) \\
 \>                                              \> \\
 \> {\bf ttm oneway}                   \> switches on one-way electron-phonon coupling: only switched on \\
 \>                                              \> when electronic tempereature is greater than ionic temperature \\
+\>                                              \> \\
+\> {\bf ttm redist}ribute              \> redistribute electronic energy in newly-deactivated temperature \\
+\>                                              \> cells to nearest active neighbours \\
 \>                                              \> \\
 \> {\bf ttm sflat}                         \> specifies initial spatial deposition of energy into electronic system \\
 \>                                              \> as flat (homogeneous) profile \\
@@ -786,12 +792,11 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf ttm sigma} $f_{1}~f_{2}$ \> identical to {\bf ttm sgauss} \\
 \>                                              \> \\
-\> {\bf ttm slab}                         \> specifies slab system for \index{Two-Temperature Model}two-temperature model), in which any \\
-\>                                              \> electronic energy in newly-deactivated temperature cells \\
-\>                                              \> is transferred to their nearest neighbours \\
-\>                                              \> \\
 \> {\bf ttm stats} $n$                 \> accumulate statistics for two-temperature model every $n$ timesteps \\
 \>                                              \> in PEAK\_E and PEAK\_I files \\
+\>                                              \> \\
+\> {\bf ttm thvelz}                      \> apply inhomogeneous Langevin thermostat to particle thermal velocities \\
+\>                                              \> in z-direction only (using total velocities in x- and y-directions) \\
 \>                                              \> \\
 \> {\bf ttm traj} $n$                   \> accumulate profiles of electronic and ionic temperatures every \\
 \>                                              \> $n$ timesteps in LATS\_E and LATS\_I files \\

@@ -32,7 +32,7 @@ Subroutine scan_control                                    &
   Use msd_module
   Use greenkubo_module,   Only : isvaf,nsvaf,vafsamp
   Use development_module, Only : l_trm
-  Use ttm_module,         Only : l_ttm,ntsys,eltsys,isMetal,CeType,DeType,KeType,gvar,deactivation
+  Use ttm_module,         Only : l_ttm,ntsys,eltsys,isMetal,CeType,DeType,KeType,gvar,redistribute,ttmthvel,ttmthvelz
 
   Implicit None
 
@@ -142,10 +142,16 @@ Subroutine scan_control                                    &
 
   l_ttm = .false.
 
-! default switch for redistribution of energy from 
+! default switch for redistribution of energy from
 ! deactivated electronic cells for ttm
 
-  deactivation = .false.
+  redistribute = .false.
+
+! default switches for removing centre-of-mass motion
+! when applying inhomogeneous Langevin thermostat with ttm
+
+  ttmthvel  = .true.
+  ttmthvelz = .false.
 
 ! default values for ttm ionic and electronic voxel grid sizes
 
@@ -646,12 +652,31 @@ Subroutine scan_control                                    &
             gvar = 2
           End If
 
-        Else If (word(1:4) == 'slab') Then
+        Else If (word(1:7) == 'nothvel') Then
 
-        ! slab geometry and redistribution of electronic energy from
-        ! deactivated cells to active neighbours
+        ! option to switch off centre-of-mass motion correction to
+        ! velocities used in inhomogeneous Langevin thermostat
 
-          deactivation = .true.
+          ttmthvel = .false.
+          ttmthvelz = .false.
+
+        Else If (word(1:6) == 'thvelz') Then
+
+        ! option to only apply centre-of-mass motion corrections to
+        ! z components of velocities, when used in inhomogeneous
+        ! Langevin thermostat
+
+          ttmthvelz = .true.
+          ttmthvel = .true.
+
+        Else If (word(1:6) == 'redist') Then
+
+        ! redistribute electronic energy from any deactivated cells
+        ! to active neighbouring cells: note that this requires overlap
+        ! of electronic and ionic temperature grids in at least
+        ! x- and y-directions
+
+          redistribute = .true.
 
         End If
 

@@ -336,13 +336,10 @@ Subroutine read_control                                &
   bcTypeE = 3
 
 ! default minimum number of atoms required per voxel cell
-! to calculate ionic temperatures, options for
-! centre-of-mass momentum corrections for ionic
-! temperature calculations and one-way electron-phonon
+! to calculate ionic temperatures and one-way electron-phonon
 ! coupling in thermal diffusion and thermostat
 
   amin     = 1
-  ttmthvel = .true.
   oneway   = .false.
 
 ! default values for time step frequencies to output
@@ -2022,8 +2019,6 @@ Subroutine read_control                                &
               '***           a manifestation of the "flying ice-cube" effect !!! ***'
 
            l_vom    = .false.
-           ttmthvel = .false. ! also switches off COM momentum removal for calculating
-                              ! ionic temperatures in two-temperature model
 
         Else If (word1(1:4) == 'link') Then ! NON-TRANSFERABLE OPTION FROM DL_POLY_2
 
@@ -2268,6 +2263,7 @@ Subroutine read_control                                &
         ! minimum number of atoms needed per ionic temperature cell
         ! to give definable ionic temperature (default = 1): smaller
         ! number deactivates ionic and electronic temperature cells
+        ! (by default, electronic energies are not redistributed)
 
           Call get_word(record,word)
           amin = Abs(Nint(word_2_real(word)))
@@ -2275,14 +2271,13 @@ Subroutine read_control                                &
             Write(nrite,"(/,1x,'min. atom no. for ionic cells',5x,1p,i8)") amin
           End If
 
-        Else If (word1(1:4) == 'slab') Then
+        Else If (word1(1:6) == 'redist') Then
 
-        ! slab geometry and redistribution of electronic energy from
-        ! deactivated cells to active neighbours
+        ! redistribution of electronic energy from deactivated cells 
+        ! to active neighbours
 
           If (deactivation .and. idnode == 0) Then
-            Write(nrite,"(/,1x,'slab geometry in use for electronic temperature grid:',&
-                        & /,1x,'redistributing energy from deactivated grid cells into active neighbours',&
+            Write(nrite,"(/,1x,'redistributing energy from deactivated electronic cells into active neighbours',&
                         & /,1x,'(requires at least one electronic temperature cell beyond ionic cells)')")
           End If
 
@@ -2960,7 +2955,8 @@ Subroutine read_control                                &
 ! report replacement of specified ensemble with inhomogeneous
 ! Langevin if two-temperature model is in use, replacing
 ! default electron-phonon friction value with chi from
-! standard Langevin thermostat (if supplied)
+! standard Langevin thermostat (if supplied), and use of
+! thermal velocities only for thermostat
 
   If (l_ttm .and. keyens/=15) Then
      Call warning(130,0.0_wp,0.0_wp,0.0_wp)
@@ -2970,8 +2966,17 @@ Subroutine read_control                                &
                  & /,1x,'e-phonon friction       (ps^-1)',3x,1p,e12.4, &
                  & /,1x,'e-stopping friction     (ps^-1)',3x,1p,e12.4, &
                  & /,1x,'e-stopping velocity   (A ps^-1)',3x,1p,e12.4)") chi_ep,chi_es,vel_es2
+       If (ttmthvel) Then
+         Write(nrite,"(/,1x,'applying to thermal velocities in all directions')")
+       Else If (ttmthvelz) Then
+         Write(nrite,"(/,1x,'applying to total velocities in x and y directions,', &
+                     & /,1x,'thermal velocities in z direction')")
+       Else
+         Write(nrite,"(/,1x,'applying to total velocities in all directions')")
+       End If
      End If
      keyens = 15
+
   End If
 
 ! report iteration length and tolerance condition for constraints and PMF algorithms
@@ -3061,13 +3066,18 @@ Subroutine read_control                                &
 
   End If
 
-! report no vom option
+! report no vom option: its use recommended with ttm
 
-  If (.not.l_vom) Then
+  If (.not.l_vom .and. .not.l_ttm) Then
      If (idnode == 0) Write(nrite,"(3(/,1x,a))")                                 &
         'no vom option on - COM momentum removal will be abandoned',             &
         '*** warning - this may lead to a build up of the COM momentum and ***', &
         '***           a manifestation of the "flying ice-cube" effect !!! ***'
+  Else If (l_vom .and. l_ttm) Then
+     If (idnode == 0) Write(nrite,"(3(/,1x,a))")                                         &
+        'no vom option off - COM momentum removal will be used',                         &
+        '*** warning - this may lead to incorrect dynamic behaviour for            ***', &
+        '***           two-temperature model: COM momentum removal recommended !!! ***'
   End If
 
 ! report intramolecular analysis options

@@ -22,7 +22,7 @@ Subroutine nvt_l2_vv                          &
 ! (brownian dynamics is not symplectic due to the random forces)
 !
 ! copyright - daresbury laboratory
-! authors   - i.t.todorov & m.a.seaton february 2017
+! authors   - i.t.todorov & m.a.seaton june 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -331,11 +331,11 @@ Subroutine nvt_l2_vv                          &
                yyy(i)=yyt(i)+vyy(i)*t1+tmp*(fyr(i)*scr1+fyl(i)*scl1)
                zzz(i)=zzt(i)+vzz(i)*t1+tmp*(fzr(i)*scr1+fzl(i)*scl1)
 
-! Full time fluctuations on half-kick velocity
+! Full time fluctuations on half-kick perculiar (thermal only) velocity
 
-               vxx(i)=vxx(i)*t0+tmp*fxr(i)*scv1
-               vyy(i)=vyy(i)*t0+tmp*fyr(i)*scv1
-               vzz(i)=vzz(i)*t0+tmp*fzr(i)*scv1
+               vxx(i)=(vxx(i)-ttmvom(ijk,1))*t0+tmp*fxr(i)*scv1+ttmvom(ijk,1)
+               vyy(i)=(vyy(i)-ttmvom(ijk,2))*t0+tmp*fyr(i)*scv1+ttmvom(ijk,2)
+               vzz(i)=(vzz(i)-ttmvom(ijk,3))*t0+tmp*fzr(i)*scv1+ttmvom(ijk,3)
 
             End If
          End Do
@@ -401,11 +401,11 @@ Subroutine nvt_l2_vv                          &
                yyy(i)=yyt(i)+vyy(i)*t1+tmp*(fyr(i)*scr1+fyl(i)*scl1)
                zzz(i)=zzt(i)+vzz(i)*t1+tmp*(fzr(i)*scr1+fzl(i)*scl1)
 
-! Full time fluctuations on half-kick velocity
+! Full time fluctuations on half-kick peculiar (thermal only) velocity
 
-               vxx(i)=vxx(i)*t0+tmp*fxr(i)*scv1
-               vyy(i)=vyy(i)*t0+tmp*fyr(i)*scv1
-               vzz(i)=vzz(i)*t0+tmp*fzr(i)*scv1
+               vxx(i)=(vxx(i)-ttmvom(ijk,1))*t0+tmp*fxr(i)*scv1+ttmvom(ijk,1)
+               vyy(i)=(vyy(i)-ttmvom(ijk,2))*t0+tmp*fyr(i)*scv1+ttmvom(ijk,2)
+               vzz(i)=(vzz(i)-ttmvom(ijk,3))*t0+tmp*fzr(i)*scv1+ttmvom(ijk,3)
 
             End If
          End Do

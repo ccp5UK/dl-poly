@@ -8,7 +8,7 @@ Module ttm_module
 ! copyright - daresbury laboratory
 ! authors   - s.l.daraszewicz & m.a.seaton may 2012
 ! contrib   - g.khara may 2016
-! contrib   - m.a.seaton march 2017
+! contrib   - m.a.seaton june 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -21,7 +21,7 @@ Module ttm_module
   Implicit None
 
   Real( Kind = wp ), Allocatable :: eltemp(:,:,:,:),eltemp_adj(:,:,:,:)
-  Real( Kind = wp ), Allocatable :: asource(:),tempion(:),gsource(:)
+  Real( Kind = wp ), Allocatable :: asource(:),tempion(:),ttmvom(:,:),gsource(:)
   Real( Kind = wp ), Allocatable :: act_ele_cell(:,:,:,:),old_ele_cell(:,:,:,:)
   Logical          , Allocatable :: adjust(:,:,:,:)
 
@@ -39,7 +39,7 @@ Module ttm_module
   Integer :: numcell
   Integer :: ttmbc(6),ttmbcmap(6)
 
-  Logical :: l_ttm,isMetal,l_epcp,deactivation,ttmthvel,oneway
+  Logical :: l_ttm,isMetal,l_epcp,redistribute,ttmthvel,ttmthvelz,oneway,ttmslab
   Integer :: CeType,KeType,DeType,gvar,bcTypeE,ttmstats,ttmtraj,tdepoType,sdepoType
   Real ( Kind = wp ) :: fluxout,ttmoffset
   Real ( Kind = wp ) :: sh_A,sh_B,Ka0,Ce0
@@ -266,12 +266,11 @@ Contains
 ! Array allocation and initialization
 
       Allocate (eltemp(1:numcell,-eltcell(1):eltcell(1),-eltcell(2):eltcell(2),-eltcell(3):eltcell(3))    , Stat = fail(1))
-      Allocate (asource(1:numcell)                                                                        , Stat = fail(2))
-      Allocate (tempion(1:numcell)                                                                        , Stat = fail(3))
-      Allocate (gsource(1:numcell)                                                                        , Stat = fail(4))
-      Allocate (eltemp_adj(1:numcell,-eltcell(1):eltcell(1),-eltcell(2):eltcell(2),-eltcell(3):eltcell(3)), Stat = fail(5))
-      Allocate (act_ele_cell(1:numcell,-1:1,-1:1,-1:1), old_ele_cell(1:numcell,-1:1,-1:1,-1:1)            , Stat = fail(6))
-      Allocate (adjust(1:numcell,-1:1,-1:1,-1:1)                                                          , Stat = fail(7))
+      Allocate (asource(1:numcell),tempion(1:numcell),gsource(1:numcell)                                  , Stat = fail(2))
+      Allocate (ttmvom(1:numcell,1:4)                                                                     , Stat = fail(3))
+      Allocate (eltemp_adj(1:numcell,-eltcell(1):eltcell(1),-eltcell(2):eltcell(2),-eltcell(3):eltcell(3)), Stat = fail(4))
+      Allocate (act_ele_cell(1:numcell,-1:1,-1:1,-1:1), old_ele_cell(1:numcell,-1:1,-1:1,-1:1)            , Stat = fail(5))
+      Allocate (adjust(1:numcell,-1:1,-1:1,-1:1)                                                          , Stat = fail(6))
 
       If (Any(fail > 0)) Call error(1083)
 
@@ -280,6 +279,7 @@ Contains
       gsource(:)            = 0.0_wp
       asource(:)            = 0.0_wp
       tempion(:)            = 0.0_wp
+      ttmvom(:,:)           = 0.0_wp
       act_ele_cell(:,:,:,:) = 1.0_wp
       old_ele_cell(:,:,:,:) = 1.0_wp
       acell                 = ntsys(1)*ntsys(2)*ntsys(3)
@@ -304,11 +304,11 @@ Contains
 
     fail = 0
 
-    Deallocate (eltemp,eltemp_adj,asource,tempion,gsource,act_ele_cell,old_ele_cell,adjust, Stat = fail(1))
-    If (kel>0) Deallocate(ketable,                                                          Stat = fail(2))
-    If (cel>0) Deallocate(cetable,                                                          Stat = fail(3))
-    If (del>0) Deallocate(detable,                                                          Stat = fail(4))
-    If (gel>0) Deallocate(gtable,                                                           Stat = fail(5))
+    Deallocate (eltemp,eltemp_adj,asource,tempion,gsource,ttmvom,act_ele_cell,old_ele_cell,adjust, Stat = fail(1))
+    If (kel>0) Deallocate(ketable,                                                                 Stat = fail(2))
+    If (cel>0) Deallocate(cetable,                                                                 Stat = fail(3))
+    If (del>0) Deallocate(detable,                                                                 Stat = fail(4))
+    If (gel>0) Deallocate(gtable,                                                                  Stat = fail(5))
 
     If (Any(fail > 0)) Call error(1084)
 

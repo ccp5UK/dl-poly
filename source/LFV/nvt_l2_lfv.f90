@@ -201,9 +201,9 @@ Subroutine nvt_l2_lfv                     &
             sclv = 2.0_wp*tmp-1.0_wp
             sclf = tstep*tmp
             tmp=sclf/weight(i)
-            vxx(i)=vxt(i)*sclv+tmp*(fxt(i)+fxl(i))
-            vyy(i)=vyt(i)*sclv+tmp*(fyt(i)+fyl(i))
-            vzz(i)=vzt(i)*sclv+tmp*(fzt(i)+fzl(i))
+            vxx(i)=(vxt(i)-ttmvom(ijk,1))*sclv+tmp*(fxt(i)+fxl(i))+ttmvom(ijk,1)
+            vyy(i)=(vyt(i)-ttmvom(ijk,2))*sclv+tmp*(fyt(i)+fyl(i))+ttmvom(ijk,2)
+            vzz(i)=(vzt(i)-ttmvom(ijk,3))*sclv+tmp*(fzt(i)+fzl(i))+ttmvom(ijk,3)
 
             xxx(i)=xxt(i)+tstep*vxx(i)
             yyy(i)=yyt(i)+tstep*vyy(i)
