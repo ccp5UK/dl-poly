@@ -151,7 +151,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
 
 ! determine energy redistribution from deactivated ionic temperature voxels for slab geometry
 
-  If (deactivation) Call redistribute_Te (temp)
+  If (redistribute) Call redistribute_Te (temp)
 
 ! Adaptive timestep
 
@@ -186,7 +186,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
 
     Case (1)
 ! constant thermal conductivity or non-metal case 
-      If (deactivation) Then
+      If (redistribute) Then
       ! system with cell deactivation/energy redistribution
         Do kk=-eltcell(3),eltcell(3)
           Do jj=-eltcell(2),eltcell(2)
@@ -269,7 +269,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
 
     Case (2)
 ! Drude-type thermal conductivity case
-      If (deactivation) Then
+      If (redistribute) Then
       ! system with cell deactivation/energy redistribution
         Do kk=-eltcell(3),eltcell(3)
           Do jj=-eltcell(2),eltcell(2)
@@ -368,7 +368,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
 
     Case (3)
 ! tabulated thermal conductivity: uses local ionic or system temperature to calculate value
-      If (deactivation) Then
+      If (redistribute) Then
       ! system with cell deactivation/energy redistribution
         Do kk=-eltcell(3),eltcell(3)
           Do jj=-eltcell(2),eltcell(2)

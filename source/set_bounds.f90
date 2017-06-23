@@ -29,7 +29,7 @@ Subroutine set_bounds                                 &
   Use development_module, Only : l_trm
   Use greenkubo_module,   Only : vafsamp
   Use mpoles_module,      Only : keyind,induce
-  Use ttm_module,         Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,deactivation,sysrho
+  Use ttm_module,         Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
 
   Implicit None
 
@@ -812,13 +812,13 @@ Subroutine set_bounds                                 &
 
   If (Any(eltsys<ntsys)) Call error(670)
 
-! If slab option selected, check for sufficient electronic temperature
+! If redistribute option selected, check for sufficient electronic temperature
 ! cells to redistribute energy when ionic tmeperature cells are switched off:
 ! if not available, switch off this option
 
-  If (deactivation .and. (eltsys(1)<ntsys(1)+2 .or. eltsys(2)<ntsys(2)+2 .or. eltsys(3)<ntsys(3)+2)) Then
+  If (redistribute .and. (eltsys(1)<ntsys(1)+2 .or. eltsys(2)<ntsys(2)+2 .or. eltsys(3)<ntsys(3)+2)) Then
     Call warning(500,0.0_wp,0.0_wp,0.0_wp)
-    deactivation = .false.
+    redistribute = .false.
   End If
 
 ! Calculate average atomic density: if not overridden by
