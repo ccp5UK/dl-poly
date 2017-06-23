@@ -11,6 +11,7 @@ Module mpi_module
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov june 2010
 ! contrib   - a.m.elena march 2016
+! contrib   - m.a.seaton june 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -48,10 +49,10 @@ Module mpi_module
   Character( Len =  6 ),             Dimension(1:mpi_io_max), Save :: mpi_io_datarep = ' '
   Public :: MPI_INIT, MPI_FINALIZE, MPI_ABORT, MPI_COMM_RANK,    &
             MPI_COMM_SIZE, MPI_COMM_DUP, MPI_COMM_SPLIT,         &
-            MPI_COMM_FREE, MPI_BARRIER, MPI_WAIT, MPI_WTIME,     &
-            MPI_BCAST, MPI_ALLREDUCE,MPI_GATHERV, MPI_ALLGATHER, &
-            MPI_ALLTOALL, MPI_ALLTOALLV,                         &
-            MPI_SEND, MPI_ISSEND, MPI_RECV, MPI_IRECV,           &
+            MPI_COMM_FREE, MPI_BARRIER, MPI_WAIT, MPI_WAITALL,   &
+            MPI_WTIME, MPI_BCAST, MPI_ALLREDUCE,MPI_GATHERV,     &
+            MPI_ALLGATHER, MPI_ALLTOALL, MPI_ALLTOALLV,          &
+            MPI_SEND, MPI_ISEND,MPI_ISSEND, MPI_RECV, MPI_IRECV, &
             MPI_SCATTER, MPI_SCATTERV,                           &
             MPI_OFFSET_KIND, MPI_INFO_NULL,                      &
             MPI_TYPE_CONTIGUOUS, MPI_TYPE_COMMIT, MPI_TYPE_FREE, &
@@ -161,6 +162,24 @@ Module mpi_module
      Module Procedure MPI_SEND_cwp_c
   End Interface !MPI_SEND
 
+  Interface MPI_ISEND
+     Module Procedure MPI_ISEND_log_s
+     Module Procedure MPI_ISEND_log_v
+     Module Procedure MPI_ISEND_chr_s
+     Module Procedure MPI_ISEND_chr_v
+     Module Procedure MPI_ISEND_int_s
+     Module Procedure MPI_ISEND_int_v
+     Module Procedure MPI_ISEND_rwp_s
+     Module Procedure MPI_ISEND_rwp_v
+     Module Procedure MPI_ISEND_rwp_m
+     Module Procedure MPI_ISEND_rwp_c
+     Module Procedure MPI_ISEND_rwp_f
+     Module Procedure MPI_ISEND_cwp_s
+     Module Procedure MPI_ISEND_cwp_v
+     Module Procedure MPI_ISEND_cwp_m
+     Module Procedure MPI_ISEND_cwp_c
+  End Interface !MPI_ISEND
+
   Interface MPI_ISSEND
      Module Procedure MPI_ISSEND_log_s
      Module Procedure MPI_ISSEND_log_v
@@ -206,6 +225,7 @@ Module mpi_module
      Module Procedure MPI_IRECV_rwp_v
      Module Procedure MPI_IRECV_rwp_m
      Module Procedure MPI_IRECV_rwp_c
+     Module Procedure MPI_IRECV_rwp_f
      Module Procedure MPI_IRECV_cwp_s
      Module Procedure MPI_IRECV_cwp_v
      Module Procedure MPI_IRECV_cwp_m
@@ -391,6 +411,20 @@ Contains
     status = 0
 
   End Subroutine MPI_WAIT
+
+
+  Subroutine MPI_WAITALL(n,request,status,ierr)
+
+    Implicit None
+
+    Integer, Intent( In    ) :: n,request(:)
+    Integer, Intent(   Out ) :: ierr
+    Integer, Intent(   Out ) :: status(MPI_STATUS_SIZE,*)
+
+    ierr = 0
+    status(MPI_STATUS_SIZE,1:n) = 0
+
+  End Subroutine MPI_WAITALL
 
 
   Function MPI_WTIME()
@@ -2035,6 +2069,278 @@ X:  Do i = 1, Ubound( aaa, Dim = 2 )
   End Subroutine MPI_SEND_cwp_c
 
 
+  Subroutine MPI_ISEND_log_s(aaa,n,MPI_LOGICAL,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer, Intent( In    ) :: MPI_LOGICAL,idnode,tag,MPI_COMM_WORLD
+    Integer, Intent(   Out ) :: request,ierr
+
+    Integer, Intent( In    ) :: n
+    Logical, Intent( In    ) :: aaa
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= 1) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_log_s
+  Subroutine MPI_ISEND_log_v(aaa,n,MPI_LOGICAL,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer, Intent( In    ) :: MPI_LOGICAL,idnode,tag,MPI_COMM_WORLD
+    Integer, Intent(   Out ) :: request,ierr
+
+    Integer, Intent( In    ) :: n
+    Logical, Intent( In    ) :: aaa(:)
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= Size(aaa)) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_log_v
+  Subroutine MPI_ISEND_chr_s(aaa,n,MPI_CHARACTER,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer,              Intent( In    ) :: MPI_CHARACTER,idnode,tag,MPI_COMM_WORLD
+    Integer,              Intent(   Out ) :: request,ierr
+
+    Integer,              Intent( In    ) :: n
+    Character( Len = * ), Intent( In    ) :: aaa
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= Len(aaa)) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_chr_s
+  Subroutine MPI_ISEND_chr_v(aaa,n,MPI_CHARACTER,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer,              Intent( In    ) :: MPI_CHARACTER,idnode,tag,MPI_COMM_WORLD
+    Integer,              Intent(   Out ) :: request,ierr
+
+    Integer,              Intent( In    ) :: n
+    Character( Len = * ), Intent( In    ) :: aaa(:)
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= Size(aaa)*Len(aaa)) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_chr_v
+  Subroutine MPI_ISEND_int_s(aaa,n,MPI_INTEGER,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer, Intent( In    ) :: MPI_INTEGER,idnode,tag,MPI_COMM_WORLD
+    Integer, Intent(   Out ) :: request,ierr
+
+    Integer, Intent( In    ) :: n
+    Integer, Intent( In    ) :: aaa
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= 1) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_int_s
+  Subroutine MPI_ISEND_int_v(aaa,n,MPI_INTEGER,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer, Intent( In    ) :: MPI_INTEGER,idnode,tag,MPI_COMM_WORLD
+    Integer, Intent(   Out ) :: request,ierr
+
+    Integer, Intent( In    ) :: n
+    Integer, Intent( In    ) :: aaa(:)
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= Size(aaa)) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_int_v
+  Subroutine MPI_ISEND_rwp_s(aaa,n,MPI_WP,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer,           Intent( In    ) :: MPI_WP,idnode,tag,MPI_COMM_WORLD
+    Integer,           Intent(   Out ) :: request,ierr
+
+    Integer,           Intent( In    ) :: n
+    Real( Kind = wp ), Intent( In    ) :: aaa
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= 1) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_rwp_s
+  Subroutine MPI_ISEND_rwp_v(aaa,n,MPI_WP,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer,           Intent( In    ) :: MPI_WP,idnode,tag,MPI_COMM_WORLD
+    Integer,           Intent(   Out ) :: request,ierr
+
+    Integer,           Intent( In    ) :: n
+    Real( Kind = wp ), Intent( In    ) :: aaa(:)
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= Size(aaa)) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_rwp_v
+  Subroutine MPI_ISEND_rwp_m(aaa,n,MPI_WP,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer,           Intent( In    ) :: MPI_WP,idnode,tag,MPI_COMM_WORLD
+    Integer,           Intent(   Out ) :: request,ierr
+
+    Integer,           Intent( In    ) :: n
+    Real( Kind = wp ), Intent( In    ) :: aaa(:,:)
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= Size(aaa)) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_rwp_m
+  Subroutine MPI_ISEND_rwp_c(aaa,n,MPI_WP,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer,           Intent( In    ) :: MPI_WP,idnode,tag,MPI_COMM_WORLD
+    Integer,           Intent(   Out ) :: request,ierr
+
+    Integer,           Intent( In    ) :: n
+    Real( Kind = wp ), Intent( In    ) :: aaa(:,:,:)
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= Size(aaa)) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_rwp_c
+  Subroutine MPI_ISEND_rwp_f(aaa,n,MPI_WP,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer,           Intent( In    ) :: MPI_WP,idnode,tag,MPI_COMM_WORLD
+    Integer,           Intent(   Out ) :: request,ierr
+
+    Integer,           Intent( In    ) :: n
+    Real( Kind = wp ), Intent( In    ) :: aaa(:,:,:,:)
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= Size(aaa)) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_rwp_f
+  Subroutine MPI_ISEND_cwp_s(aaa,n,MPI_WP,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer,              Intent( In    ) :: MPI_WP,idnode,tag,MPI_COMM_WORLD
+    Integer,              Intent(   Out ) :: request,ierr
+
+    Integer,              Intent( In    ) :: n
+    Complex( Kind = wp ), Intent( In    ) :: aaa
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= 2) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_cwp_s
+  Subroutine MPI_ISEND_cwp_v(aaa,n,MPI_WP,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer,              Intent( In    ) :: MPI_WP,idnode,tag,MPI_COMM_WORLD
+    Integer,              Intent(   Out ) :: request,ierr
+
+    Integer,              Intent( In    ) :: n
+    Complex( Kind = wp ), Intent( In    ) :: aaa(:)
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= 2*Size(aaa)) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_cwp_v
+  Subroutine MPI_ISEND_cwp_m(aaa,n,MPI_WP,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer,              Intent( In    ) :: MPI_WP,idnode,tag,MPI_COMM_WORLD
+    Integer,              Intent(   Out ) :: request,ierr
+
+    Integer,              Intent( In    ) :: n
+    Complex( Kind = wp ), Intent( In    ) :: aaa(:,:)
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= 2*Size(aaa)) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_cwp_m
+  Subroutine MPI_ISEND_cwp_c(aaa,n,MPI_WP,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer,              Intent( In    ) :: MPI_WP,idnode,tag,MPI_COMM_WORLD
+    Integer,              Intent(   Out ) :: request,ierr
+
+    Integer,              Intent( In    ) :: n
+    Complex( Kind = wp ), Intent( In    ) :: aaa(:,:,:)
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= 2*Size(aaa)) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_ISEND_cwp_c
+
+
   Subroutine MPI_ISSEND_log_s(aaa,n,MPI_LOGICAL,idnode,tag,MPI_COMM_WORLD,request,ierr)
 
     Implicit None
@@ -2723,6 +3029,24 @@ X:  Do i = 1, Ubound( aaa, Dim = 2 )
     End If
 
   End Subroutine MPI_IRECV_rwp_c
+  Subroutine MPI_IRECV_rwp_f(aaa,n,MPI_WP,idnode,tag,MPI_COMM_WORLD,request,ierr)
+
+    Implicit None
+
+    Integer,           Intent( In    ) :: MPI_WP,idnode,tag,MPI_COMM_WORLD
+    Integer,           Intent(   Out ) :: request,ierr
+
+    Integer,           Intent( In    ) :: n
+    Real( Kind = wp ), Intent( InOut ) :: aaa(:,:,:,:)
+
+    ierr = 0
+    request = 0
+    If (idnode /= 0 .or. n /= Size(aaa)) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_IRECV_rwp_f
   Subroutine MPI_IRECV_cwp_s(aaa,n,MPI_WP,idnode,tag,MPI_COMM_WORLD,request,ierr)
 
     Implicit None
