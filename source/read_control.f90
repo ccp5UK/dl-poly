@@ -2276,7 +2276,7 @@ Subroutine read_control                                &
         ! redistribution of electronic energy from deactivated cells 
         ! to active neighbours
 
-          If (deactivation .and. idnode == 0) Then
+          If (redistribute .and. idnode == 0) Then
             Write(nrite,"(/,1x,'redistributing energy from deactivated electronic cells into active neighbours',&
                         & /,1x,'(requires at least one electronic temperature cell beyond ionic cells)')")
           End If
@@ -2435,7 +2435,7 @@ Subroutine read_control                                &
             fluxout = word_2_real(word)
             If (idnode == 0) Then
               Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin:',&
-                          & /,1x,'temperature leakage at boundaries of ',1p,e10.4)") fluxout
+                          & /,1x,'temperature leakage at boundaries of ',1p,e11.4)") fluxout
             End If
           Else If (word(1:7) == 'xyrobin') Then
             bcTypeE = 6
@@ -2443,7 +2443,7 @@ Subroutine read_control                                &
             fluxout = word_2_real(word)
             If (idnode == 0) Then
               Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin (xy), neumann (z):',&
-                          & /,1x,'temperature leakage at x and y boundaries of ',1p,e10.4,&
+                          & /,1x,'temperature leakage at x and y boundaries of ',1p,e11.4,&
                           & /,1x,'zero energy flux at z boundaries')") fluxout
             End If
           End If

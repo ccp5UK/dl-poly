@@ -20,6 +20,10 @@ Module mpi_module
 
   Include 'mpif.h' !  Include 'mpiof.h' ! Needed for ScaliMPI
 
+! MPI address kind
+
+  Integer, Parameter   :: MPI_ADDRESS_KIND = ip
+
 ! MPI-I/O SPECIFICS
 ! MPI-I/O kind = high-precision integer 'kinds_f90' module
 
