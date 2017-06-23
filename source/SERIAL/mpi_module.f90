@@ -55,6 +55,8 @@ Module mpi_module
             MPI_SEND, MPI_ISEND,MPI_ISSEND, MPI_RECV, MPI_IRECV, &
             MPI_SCATTER, MPI_SCATTERV,                           &
             MPI_OFFSET_KIND, MPI_INFO_NULL,                      &
+            MPI_TYPE_GET_EXTENT, MPI_TYPE_EXTENT,                &
+            MPI_TYPE_CREATE_HVECTOR, MPI_TYPE_HVECTOR,           &
             MPI_TYPE_CONTIGUOUS, MPI_TYPE_COMMIT, MPI_TYPE_FREE, &
             MPI_FILE_DELETE, MPI_FILE_OPEN, MPI_FILE_CLOSE,      &
             MPI_FILE_SET_VIEW, MPI_FILE_GET_VIEW, MPI_GET_COUNT, &
@@ -3826,6 +3828,33 @@ X:  Do i = 1, Ubound( aaa, Dim = 2 )
   End Subroutine MPI_SCATTERV_cwp_mm
 
 
+  Subroutine MPI_TYPE_GET_EXTENT(size_in,mpi_type_out1,mpi_type_out2,ierr)
+
+    Implicit None
+
+    Integer,                             Intent( In    ) :: size_in
+    Integer ( Kind = MPI_ADDRESS_KIND ), Intent(   Out ) :: mpi_type_out1,mpi_type_out2
+    Integer,                             Intent(   Out ) :: ierr
+
+    ierr = 0
+    mpi_type_out1=size_in
+    mpi_type_out2=size_in
+
+  End Subroutine MPI_TYPE_GET_EXTENT
+
+  Subroutine MPI_TYPE_EXTENT(size_in,mpi_type_out,ierr)
+
+    Implicit None
+
+    Integer,                             Intent( In    ) :: size_in
+    Integer ( Kind = MPI_ADDRESS_KIND ), Intent(   Out ) :: mpi_type_out
+    Integer,                             Intent(   Out ) :: ierr
+
+    ierr = 0
+    mpi_type_out=size_in
+
+  End Subroutine MPI_TYPE_EXTENT
+
   Subroutine MPI_TYPE_CONTIGUOUS(size_in,mpi_type_in,mpi_type_out,ierr)
 
     Implicit None
@@ -3852,6 +3881,44 @@ X:  Do i = 1, Ubound( aaa, Dim = 2 )
     mpi_io_ftype(mpi_io_cnt)=mpi_type
 
   End Subroutine MPI_TYPE_COMMIT
+
+  Subroutine MPI_TYPE_VECTOR(nnn,block_length,stride,mpi_type_in,mpi_type_out,ierr)
+
+    Implicit None
+
+    Integer, Intent( In    ) :: nnn,block_length,stride,mpi_type_in
+    Integer, Intent(   Out ) :: mpi_type_out,ierr
+
+    ierr = 0
+    mpi_type_out=mpi_type_in*nnn
+
+  End Subroutine MPI_TYPE_VECTOR
+
+  Subroutine MPI_TYPE_CREATE_HVECTOR(nnn,block_length,stride,mpi_type_in,mpi_type_out,ierr)
+
+    Implicit None
+
+    Integer,                             Intent( In    ) :: nnn,block_length,mpi_type_in
+    Integer ( Kind = MPI_ADDRESS_KIND ), Intent( In    ) :: stride
+    Integer,                             Intent(   Out ) :: mpi_type_out,ierr
+
+    ierr = 0
+    mpi_type_out=mpi_type_in*nnn
+
+  End Subroutine MPI_TYPE_CREATE_HVECTOR
+
+  Subroutine MPI_TYPE_HVECTOR(nnn,block_length,stride,mpi_type_in,mpi_type_out,ierr)
+
+    Implicit None
+
+    Integer,                             Intent( In    ) :: nnn,block_length,mpi_type_in
+    Integer ( Kind = MPI_ADDRESS_KIND ), Intent( In    ) :: stride
+    Integer,                             Intent(   Out ) :: mpi_type_out,ierr
+
+    ierr = 0
+    mpi_type_out=mpi_type_in*nnn
+
+  End Subroutine MPI_TYPE_HVECTOR
 
   Subroutine MPI_TYPE_FREE(mpi_type,ierr)
 
