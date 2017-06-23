@@ -25,7 +25,6 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
   Real ( Kind = wp ) :: velsq,tmp,gsadd,vx,vy,vz
   Integer :: fail, natmin
   Real ( Kind = wp ), Allocatable :: buf1(:),buf2(:),buf3(:),buf4(:)
-  Real ( Kind = wp ), Allocatable :: ttmvom(:,:), ttmvommass(:)
   Integer, Allocatable :: nat(:),buf5(:),ijkatm(:)
   Integer, Dimension(8) :: req
   Integer, Dimension(MPI_STATUS_SIZE,8) :: stat
@@ -74,7 +73,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
 
   End Do
 
-  If (mxnode>1 .and. ttmthvel) Then
+  If (mxnode>1) Then
     Allocate (buf1(1:numcell), buf2(1:numcell), buf3(1:numcell), buf4(1:numcell), Stat=fail)
     If (fail>0) Call error(1085)
     ! Sum up cell momenta and atomic masses in boundaries for ionic temperature corrections
@@ -304,7 +303,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
           vx = 0.5_wp*ttmvom(ijk,1)
           vy = 0.5_wp*ttmvom(ijk,2)
           vz = 0.5_wp*ttmvom(ijk,3)
-          velsq = ttmvommass(ijk)*(vx*vx+vy*vy+vz*vz)
+          velsq = ttmvom(ijk,4)*(vx*vx+vy*vy+vz*vz)
           tempion(ijk) = velsq/(3.0_wp*boltz)
           acell = acell + 1
         Else
@@ -423,7 +422,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
 !    Call MPI_WAITALL (2, req, stat, ierr)
 !  End If
 
-  Deallocate (nat, ttmvom, ijkatm, Stat=fail)
+  Deallocate (nat, ijkatm, Stat=fail)
   If (fail > 0) Call error(1086)
 
 End Subroutine ttm_ion_temperature
