@@ -2328,10 +2328,20 @@ Subroutine read_control                                &
           fluence = word_2_real(word)
           Call get_word(record,word)
           pdepth = word_2_real(word)
+          Call get_word(record,word)
+          If (word(1:4) == 'zdep') sdepoType = 3
           If (idnode == 0) Then
-            Write(nrite,"(/,1x,'initial homogeneous (flat) spatial energy deposition in electronic system due to laser')")
-            Write(nrite,"(1x,'absorbed fluence (mJ cm^-2)',7x,1p,e12.4)") fluence
-            Write(nrite,"(1x,'penetration depth      (nm)',7x,1p,e12.4)") pdepth
+            Select Case (sdepoType)
+            Case (2)
+              Write(nrite,"(/,1x,'initial homogeneous (flat) spatial energy deposition in electronic system due to laser')")
+              Write(nrite,"(1x,'absorbed fluence (mJ cm^-2)',7x,1p,e12.4)") fluence
+              Write(nrite,"(1x,'penetration depth      (nm)',7x,1p,e12.4)") pdepth
+            Case (3)
+              Write(nrite,"(/,1x,'initial xy-homogeneous, z-exponential decaying spatial energy deposition in',/&
+                            &,1x,'electronic system due to laser')")
+              Write(nrite,"(1x,'absorbed fluence at surface (mJ cm^-2)',7x,1p,e12.4)") fluence
+              Write(nrite,"(1x,'penetration depth                 (nm)',7x,1p,e12.4)") pdepth
+            End Select
           End If
 
         Else If (word1(1:5) == 'gauss') Then

@@ -379,13 +379,14 @@ small cross-section of the evolution of a micron-sized track.
 	\label{fig:laser}
 \end{figure*}
 Laser excitation systems can be modelled with an initial homogeneous
-spatial energy deposition into the electronic system with either Gaussian 
+spatial energy deposition into the electronic system (either in all three directions
+or in x- and y-directions with exponential decay in the z-direction) with either Gaussian 
 or exponentially decaying temporal distribution in electronic temperature. 
-(The energy deposition can be specified either by setting $\frac{dE}{dx} > 0$ 
-or by giving values for the absorbed fluence and penetration depth from the 
-laser.) The size of the electronic temperature (CET) grid is set to the same 
-size as the ionic temperature (CIT) grid, with zero-flux (Neumann) boundary 
-conditions in all directions. This setup (shown in Figure~\ref{fig:laser}) 
+(The energy deposition can be specified for the fully homogeneous case 
+either by setting $\frac{dE}{dx} > 0$ or by giving values for the absorbed fluence 
+and penetration depth from the laser.) The size of the electronic temperature (CET) 
+grid is set to the same size as the ionic temperature (CIT) grid, with zero-flux 
+(Neumann) boundary conditions in all directions. This setup (shown in Figure~\ref{fig:laser}) 
 represents a homogeneous laser excitation with the simulated part as a 
 small section of a larger photoexcited sample.
 
@@ -557,17 +558,19 @@ An energy deposition\index{Two-Temperature Model!energy deposition}
 ($A(r,t)$) can be applied using one of two CONTROL file directives:
 \begin{itemize}
 \item {\bf ttm dedx}: specifies the electron stopping power of a projectile entering the electronic system ($\frac{dE}{dx}$ in eV/nm);
-\item {\bf ttm laser}: specifies the absorbed fluence (in mJ~cm$^{-2}$) and penetration depth (in nm) of a laser.
+\item {\bf ttm laser}: specifies the absorbed fluence ($F$ in mJ~cm$^{-2}$) and penetration depth ($l_p$ in nm) of a laser.
 \end{itemize}
 The energy deposition can be split into spatial and temporal parts, i.e.
-$A(r,t) = f(r) g(t) \Delta V$. Depositions can be applied spatially in one of two ways:
+$A(r,t) = f(r,z) g(t) \Delta V$. Depositions can be applied spatially in one of three ways:
 \begin{itemize}
-\item {\bf ttm sflat}: specifies a homogeneous distribution in x- and y-directions \begin{equation*}f(r) = \frac{dE}{dV} = \frac{dE}{dx} \frac{1}{L_{x} L_{y}}\end{equation*} where $L_{x}$ and $L_{y}$ are the MD system dimensions in x- and y-directions;
-\item {\bf ttm sgauss}: specifies a Gaussian distribution in x- and y-directions from the centre of the system, i.e.\begin{equation*}f(r) = \frac{dE}{dx} \frac{1}{2 \pi \sigma^2} e^{-\frac{r^2}{2\sigma^2}}\end{equation*} with standard deviation $\sigma$, extending up to a cut-off distance (given in multiples of $\sigma$).
+\item {\bf ttm sflat}: specifies a homogeneous distribution in x-, y- and z-directions \begin{equation*}f(r) = \frac{dE}{dV} = \frac{dE}{dx} \frac{1}{L_{x} L_{y}}\end{equation*} where $L_{x}$ and $L_{y}$ are the MD system dimensions in x- and y-directions;
+\item {\bf ttm sgauss}: specifies a Gaussian distribution in x- and y-directions from the centre of the system, i.e.\begin{equation*}f(r) = \frac{dE}{dx} \frac{1}{2 \pi \sigma^2} e^{-\frac{r^2}{2\sigma^2}}\end{equation*} with standard deviation $\sigma$, extending up to a cut-off distance (given in multiples of $\sigma$);
+\item {\bf ttm laser} $F$ $l_p$ {\bf zdep}: specifies a homogeneous distribution in x- and y-directions with exponential decay in the z-direction \begin{equation*}f(r,z) = \frac{F}{l_p} \exp\left(-\frac{z}{l_p}\right) \end{equation*} using the penetration depth as the scaling factor for z-direction decay.
 \end{itemize}
-In both cases, spatial depositions are homogeneous in the z-direction. 
-Laser depositions are fixed as homogeneous in all three directions: the 
-ratio of absorbed fluence to penetration depth is equal to $\frac{dE}{dV}$.
+In the first two cases, spatial depositions are homogeneous in the z-direction. 
+Unless the {\bf zdep} option is invoked, laser depositions are homogeneous 
+in all three directions (similar to the {\bf ttm sflat} case), with the ratio of 
+absorbed fluence to penetration depth equal to $\frac{dE}{dV}$.
 The deposition can be applied temporally in one of three ways:
 \begin{itemize}
 \item {\bf ttm delta}: specifies a Dirac delta function in time \begin{equation*} g(t) = \delta (t - t_0) \end{equation*} which is approximated as an energy injection during a single diffusion timestep;

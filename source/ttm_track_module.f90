@@ -58,6 +58,9 @@ Contains
     Case (2)
     ! Constant (flat) spatial deposition
       Call uniformDist(lat_U)
+    Case (3)
+    ! xy-flat, z-exp spatial deposition
+      Call uniformDistZexp(lat_U)
     End Select
 
 ! temporal deposition of track: calculate time normalisation factor
@@ -316,6 +319,38 @@ Contains
     lat_in(1:ntcell(1),1:ntcell(2),1:ntcell(3))=dEdV*volume
 
   End Subroutine uniformDist
+
+  Subroutine uniformDistZexp(lat_in)
+
+! implement constant (homogeneous) spatial deposition
+! in x and y-directions, exponential decay of fluence
+! in z-direction (only with laser)
+	
+    Implicit None
+    Real( Kind = wp ), Intent ( Inout ), Dimension(0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1) :: lat_in
+    Real( Kind = wp ) :: dEdVmax, dEdV, zz, rpdepth
+    Integer :: k
+
+    ! express maximum deposition energy per unit volume (eV/A^3)
+
+    If (pdepth>zero_plus) Then
+      rpdepth = 1.0_wp/pdepth
+    Else
+      rpdepth = 0.0_wp
+    End If
+    dEdVmax = fluence*rpdepth
+
+    ! loop through z-cells: calculate stopping power per
+    ! cell based on z-position (maximum at z=0)
+    ! and assign across all x and y points in plane
+
+    Do k = 1, ntcell(3)
+      zz = Real(k,Kind=wp)-0.5_wp
+      dEdV = dEdVmax*Exp(-zz*delz*rpdepth)
+      lat_in(1:ntcell(1),1:ntcell(2),k) = dEdV*volume
+    End Do
+
+  End Subroutine uniformDistZexp
 
   Subroutine gaussianTrack(lat_in)
 
