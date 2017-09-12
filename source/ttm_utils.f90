@@ -35,17 +35,19 @@ Contains
 
   End Function Kep
 
-! [GK] Define function to calculate e-p coupling for given electronic temperature
   Function Gep(T)
 
   ! Calculate electron-phonon coupling term (friction parameter for inhomogeneous
   ! Langevin thermostat): given as ps^-1
+
     Implicit None
 
     Real (Kind = wp), Intent(In) :: T
     Real (Kind = wp)             :: Gep
 
-    Call interpolate(gel, gtable, T, Gep)
+    Call interpolate (gel, gtable, T, Gep)
+
+    Gep = Gep * rcellrho
 
     return
 
@@ -54,7 +56,8 @@ Contains
   Function Ce(T)
 
 ! Temperature-dependent specific heat capacity (different for metals and insulators)
-! given as kB/A^3: all conversions from inputs carried out during setup of ttm
+! given as kB/A^3: conversions from kB/atom carried out for cases 0, 1 and 2, allowing
+! for changes in number of atoms per voxel (cellrho)
 
     Implicit None
 
@@ -64,15 +67,15 @@ Contains
     Select Case (CeType)
     Case (0)
       ! Case 0: constant specific heat capacity (given as kB/A^3)
-      Ce = Ce0
+      Ce = Ce0*cellrho
     Case (1)
       ! Case 1: hyperbolic tangent specific heat capacity (given as kB/A^3) -
       !         Ce = sh_A*Tanh(T*sh_B*1.0e-4) [kB/atom]
-      Ce = sh_A*Tanh(T*sh_B)
+      Ce = sh_A*cellrho*Tanh(T*sh_B)
     Case (2)
       ! Case 2: linear specific heat capacity to maximum value at/beyond Tfermi
       !         (given as kB/A^3)
-      Ce = Min(T/Tfermi,1.0_wp)*Cemax
+      Ce = Min(T/Tfermi,1.0_wp)*Cemax*cellrho
     Case (3)
       ! Case 3: interpolated specific heat capacity from table (given as kB/A^3)
       Call interpolate(cel, cetable, T, Ce)
@@ -1099,13 +1102,13 @@ Contains
                       Select Case (CeType)
                       Case (0)
                       ! constant specific heat capacity
-                        tmp = tmp*Ce0*(eltmp-temp0)
+                        tmp = tmp*Ce0*cellrho*(eltmp-temp0)
                       Case (1)
                       ! hyperbolic tangent specific heat capacity
-                        tmp = tmp*sh_A*Log(Cosh(sh_B*eltmp)/Cosh(sh_B*temp0))/sh_B
+                        tmp = tmp*sh_A*cellrho*Log(Cosh(sh_B*eltmp)/Cosh(sh_B*temp0))/sh_B
                       Case (2)
                       ! linear specific heat capacity to Fermi temperature
-                        tmp = tmp*Cemax*(0.5_wp*((Min(Tfermi,eltmp))**2-temp0*temp0)/Tfermi+Max(eltmp-Tfermi,0.0_wp))
+                        tmp = tmp*Cemax*cellrho*(0.5_wp*((Min(Tfermi,eltmp))**2-temp0*temp0)/Tfermi+Max(eltmp-Tfermi,0.0_wp))
                       Case Default
                       ! tabulated volumetric heat capacity or more complex 
                       ! functions: integrate using trapezium rule
@@ -1612,14 +1615,14 @@ Contains
             Select Case (CeType)
             Case (0)
             ! constant specific heat capacity
-              U_e = Ce0*(end_Te-temp0)
+              U_e = Ce0*cellrho*(end_Te-temp0)
             Case (1)
             ! hyperbolic tangent specific heat capacity
-              U_e = sh_A*Log(Cosh(sh_B*end_Te)/Cosh(sh_B*temp0))/sh_B
+              U_e = sh_A*cellrho*Log(Cosh(sh_B*end_Te)/Cosh(sh_B*temp0))/sh_B
             Case (2)
             ! linear specific heat capacity to Fermi temperature
               increase = Min(Tfermi,end_Te)
-              U_e = Cemax*(0.5_wp*(increase*increase-temp0*temp0)/Tfermi+Max(end_Te-Tfermi,0.0_wp))
+              U_e = Cemax*cellrho*(0.5_wp*(increase*increase-temp0*temp0)/Tfermi+Max(end_Te-Tfermi,0.0_wp))
             Case Default
             ! tabulated volumetric heat capacity or more complex 
             ! functions: integrate using trapezium rule
@@ -1772,7 +1775,7 @@ Contains
               If (Abs(energydist(ijk,ii,jj,kk))>zero_plus) Then
                 energy_per_cell = energydist(ijk,ii,jj,kk)
                 start_Te = eltemp(ijk,ii,jj,kk)
-                end_Te = start_Te+energy_per_cell/Ce0
+                end_Te = start_Te+energy_per_cell*rcellrho/Ce0
                 eltemp_adj(ijk,ii,jj,kk) = end_Te
                 adjust(ijk,ii,jj,kk) = .true.
               End If
@@ -1789,7 +1792,7 @@ Contains
               If (Abs(energydist(ijk,ii,jj,kk))>zero_plus) Then
                 energy_per_cell = energydist(ijk,ii,jj,kk)
                 start_Te = eltemp(ijk,ii,jj,kk)
-                increase = Cosh(sh_B*start_Te)*Exp(sh_B*energy_per_cell/sh_A)
+                increase = Cosh(sh_B*start_Te)*Exp(sh_B*energy_per_cell*rcellrho/sh_A)
                 ! using equivalent function: Acosh(x)=Log(x+Sqrt((x-1.0)*(x+1.0)))
                 end_Te = Log(increase+Sqrt((increase-1.0_wp)*(increase+1.0_wp)))/sh_B
                 eltemp_adj(ijk,ii,jj,kk) = end_Te
@@ -1809,11 +1812,11 @@ Contains
                 energy_per_cell = energydist(ijk,ii,jj,kk)
                 start_Te = eltemp(ijk,ii,jj,kk)
                 If (energy_per_cell>zero_plus) Then
-                  end_Te = Sqrt(start_Te*start_Te+2.0_wp*energy_per_cell*Tfermi/Cemax)
-                  If (end_Te>Tfermi) end_Te = 0.5_wp*(start_Te*start_Te/Tfermi+Tfermi)+energy_per_cell/Cemax
+                  end_Te = Sqrt(start_Te*start_Te+2.0_wp*energy_per_cell*Tfermi*rcellrho/Cemax)
+                  If (end_Te>Tfermi) end_Te = 0.5_wp*(start_Te*start_Te/Tfermi+Tfermi)+energy_per_cell*rcellrho/Cemax
                 Else
-                  end_Te = start_Te + energy_per_cell/Cemax
-                  If (end_Te<Tfermi) end_Te = Sqrt(Tfermi*(2.0_wp*(start_Te+energy_per_cell/Cemax)-Tfermi))
+                  end_Te = start_Te + energy_per_cell*rcellrho/Cemax
+                  If (end_Te<Tfermi) end_Te = Sqrt(Tfermi*(2.0_wp*(start_Te+energy_per_cell*rcellrho/Cemax)-Tfermi))
                 End If
                 eltemp_adj(ijk,ii,jj,kk) = end_Te
                 adjust(ijk,ii,jj,kk) = .true.

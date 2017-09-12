@@ -8,7 +8,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
 ! copyright - daresbury laboratory
 ! author    - s.l.darazewicz & m.a.seaton july 2012
 ! contrib   - g.khara may 2016
-! contrib   - m.a.seaton february 2017
+! contrib   - m.a.seaton september 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,7 +22,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
 
   Real ( Kind = wp ), Intent ( In ) :: chi_ep,chi_es,vel_es2
   Integer :: ia,ja,ka,ijk,ijk1,ijk2,i,ii,jj,kk
-  Real ( Kind = wp ) :: velsq,tmp,gsadd,vx,vy,vz
+  Real ( Kind = wp ) :: velsq,tmp,gsadd,vx,vy,vz,crho
   Integer :: fail, natmin
   Real ( Kind = wp ), Allocatable :: buf1(:),buf2(:),buf3(:),buf4(:)
   Integer, Allocatable :: nat(:),buf5(:),ijkatm(:)
@@ -40,6 +40,10 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
   gsource = 0.0_wp
   ttmvom = 0.0_wp
   ijkatm = 0
+
+! zero variable for dynamic cell density calculations
+
+  crho = 0.0_wp
 
 ! if heterogeneous, gsource is an array containing no. of atoms in each cell
 ! otherwise it is an array containing the effective electron-phonon relaxation 
@@ -294,11 +298,13 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
         ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
         ! calculate ionic temperature for all cells with at least
         ! minimum number of particles (1 during deposition, amin 
-        ! at all other times), removing centre of mass motion
-        ! and determining any inactive ionic temperature cells
+        ! at all other times), calculating dynamic cell density
+        ! (if required) from active cells, removing centre of mass
+        ! motion and determining any inactive ionic temperature cells
         If (nat(2*ijk-1)>natmin .and. nat(2*ijk-1)>1) Then
           tempion(ijk) = tempion(ijk)/(3.0_wp*boltz*Real(nat(2*ijk-1),Kind=wp))
           acell = acell + 1
+          crho = crho + gsource(ijk)
         Else If (natmin==0 .and. nat(2*ijk-1)==1) Then
           vx = 0.5_wp*ttmvom(ijk,1)
           vy = 0.5_wp*ttmvom(ijk,2)
@@ -306,6 +312,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
           velsq = ttmvom(ijk,4)*(vx*vx+vy*vy+vz*vz)
           tempion(ijk) = velsq/(3.0_wp*boltz)
           acell = acell + 1
+          crho = crho + gsource(ijk)
         Else
           tempion(ijk) = 0.0_wp
           act_ele_cell(ijk,0,0,0) = 0.0_wp
@@ -326,6 +333,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
 
   If (mxnode>1) Then
     Call gsum (acell)
+    Call gsum (crho)
     ijk1 = 2 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
     ijk2 = 1 + (ntcell(1)+1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
     ii = Merge (-1,0,(idx==nprx-1))
@@ -394,12 +402,30 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
 
 ! cell velocities generally used to correct velocities
 ! used in inhomogeneous Langevin thermostat: zero these
-! velocities (x- and y-components only) if the
+! velocities (x- and y-components only) if the user
+! says otherwise (only for z-component)
 
   If (.not. ttmthvel) Then
     ttmvom = 0.0_wp
   Else If (ttmthvelz) Then
     ttmvom(1:numcell,1:2) = 0.0_wp
+  End If
+
+! dynamically calculate cell density for active cells
+! if requested by user
+
+  If (ttmdyndens) Then
+    Select Case (gvar)
+    Case (0,1)
+      cellrho = crho / (Real(acell,Kind=wp)*chi_ep)
+    Case (2)
+      cellrho = crho / Real(acell,Kind=wp)
+    End Select
+    If (cellrho>zero_plus) Then
+      rcellrho = 1.0_wp/cellrho
+    Else
+      rcellrho = 0.0_wp
+    End If
   End If
 
 ! optional: send asource terms back to boundary voxels (only needed in +x, +y, +z directions)

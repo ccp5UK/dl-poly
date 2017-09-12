@@ -8,7 +8,7 @@ Module ttm_module
 ! copyright - daresbury laboratory
 ! authors   - s.l.daraszewicz & m.a.seaton may 2012
 ! contrib   - g.khara may 2016
-! contrib   - m.a.seaton june 2017
+! contrib   - m.a.seaton september 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -39,7 +39,7 @@ Module ttm_module
   Integer :: numcell
   Integer :: ttmbc(6),ttmbcmap(6)
 
-  Logical :: l_ttm,isMetal,l_epcp,redistribute,ttmthvel,ttmthvelz,oneway,ttmslab
+  Logical :: l_ttm,isMetal,l_epcp,redistribute,ttmthvel,ttmthvelz,oneway,ttmslab,ttmdyndens
   Integer :: CeType,KeType,DeType,gvar,bcTypeE,ttmstats,ttmtraj,tdepoType,sdepoType
   Real ( Kind = wp ) :: fluxout,ttmoffset
   Real ( Kind = wp ) :: sh_A,sh_B,Ka0,Ce0
@@ -54,7 +54,7 @@ Module ttm_module
   Integer :: acell,acell_old,amin
 
   Real ( Kind = wp ), Save :: Jm3K_to_kBA3,JKms_to_kBAps,kB_to_eV,eV_to_kB,mJcm2_to_eVA2,epc_to_chi
-  Real ( Kind = wp ) :: cellrho,sysrho
+  Real ( Kind = wp ) :: cellrho,rcellrho,sysrho
   Real ( Kind = wp ) :: fluence,pdepth
   Real ( Kind = wp ) :: epthreshold = 1.1_wp
 

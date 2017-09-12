@@ -353,6 +353,10 @@ Subroutine read_control                                &
 
   ttmoffset = 0.0_wp
 
+! default switch for dynamic cell density calculations
+
+  ttmdyndens = .false.
+
 ! proceed normal simulation
 
   lfce = .false. ! don't recalculate forces based on history positions
@@ -2255,7 +2259,18 @@ Subroutine read_control                                &
           Call get_word(record,word)
           cellrho = word_2_real(word)
           If (idnode == 0) Then
-            Write(nrite,"(1x,'user-specified atomic density (A^-3)',6x,f10.4)") cellrho
+            Write(nrite,"(/,1x,'user-specified atomic density (A^-3)',6x,f10.4)") cellrho
+          End If
+
+        Else If (word1(1:7) == 'dyndens') Then
+
+        ! dynamic calculation of atom density in active cells during
+        ! TTM calculations, used to convert specific heat capacities
+        ! to volumetric values
+
+          ttmdyndens = .true.
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'dynamic calculations of average atomic density in active ionic cells')")
           End If
 
         Else If (word1(1:4) == 'amin') Then
@@ -3466,32 +3481,34 @@ Subroutine read_control                                &
 ! conversion factor (to calculate chi_ep from G_ep values)
 
   If (cellrho<=zero_plus) cellrho = sysrho
-  epc_to_chi = 1.0e-12_wp*Jm3K_to_kBa3/(3.0_wp*cellrho)
+  If (cellrho>zero_plus) Then
+    rcellrho = 1.0_wp/cellrho
+  Else
+    rcellrho = 0.0_wp
+  End If
+
+  epc_to_chi = 1.0e-12_wp*Jm3K_to_kBA3/3.0_wp
 
 ! Check sufficient parameters are specified for TTM electronic specific
 ! heats, thermal conductivity/diffusivity, energy loss and laser deposition
-! and rescale to calculate efficiently (in functions Ce, Ke, KeD etc.)
 
   Select Case (CeType)
   Case (0)
-  ! constant electronic specific heat: converted from kB/atom to kB/A^3
+  ! constant electronic specific heat: will convert from kB/atom to kB/A^3
   ! by multiplication of atomic density
-    Ce0 = Ce0*cellrho
   Case (1)
-  ! hyperbolic tangent electronic specific heat: multiplier converted
-  ! from kB/atom to kB/A^3, temperature term (K^-1) scaled by 10^-4
+  ! hyperbolic tangent electronic specific heat: multiplier will be converted
+  ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
     If (Abs(sh_A) <= zero_plus .or. Abs(sh_B) <= zero_plus) Call error(671)
-    sh_A = sh_A*cellrho
     sh_B = sh_B*1.0e-4_wp
   Case (2)
   ! linear electronic specific heat to Fermi temperature: maximum
-  ! value converted from kB/atom to kB/A^3
+  ! value will be converted from kB/atom to kB/A^3
     If (Abs(Tfermi) <= zero_plus .or. Abs(Cemax) <= zero_plus) Call error(671)
-    Cemax = Cemax*cellrho
   End Select
 
   Select Case (KeType)
-  ! constant and Drude thermal conductivity: converted from W m^-1 K^-1
+  ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
   ! to kB ps^-1 A^-1
   Case (1,2)
     If (isMetal .and. Abs(Ka0) <= zero_plus) Call error(672)
@@ -3500,17 +3517,17 @@ Subroutine read_control                                &
 
   Select Case (DeType)
   Case (1)
-  ! constant thermal diffusivity: converted from m^2 s^-1 to A^2 ps^-1
+  ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
     If (.not. isMetal .and. Abs(Diff0) <= zero_plus) Call error(673)
     Diff0 = Diff0*1.0e8_wp
   Case (2)
-  ! reciprocal thermal diffusivity: converted from m^2 s^-1 to A^2 ps^-1
+  ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
   ! and Diff0 scaled with system temperature
     If (.not. isMetal .and. Abs(Diff0) <= zero_plus .or. Abs(Tfermi) <= zero_plus) Call error(673)
     Diff0 = Diff0*temp*1.0e8_wp
   End Select
 
-  ! spatial deposition (gaussian) standard deviation: converted from nm to A
+  ! spatial deposition (gaussian) standard deviation: convert from nm to A
   sig = sig*10.0_wp
 
   ! penetration depth: convert from nm to A
@@ -3518,10 +3535,10 @@ Subroutine read_control                                &
   Call warning(510,0.0_wp,0.0_wp,0.0_wp)
   pdepth = 10.0_wp*pdepth
 
-  ! fluence: converted from mJ cm^-2 to eV A^-2
+  ! fluence: convert from mJ cm^-2 to eV A^-2
   fluence = fluence*mJcm2_to_eVA2
 
-  ! electronic stopping power: converted from eV/nm to eV/A
+  ! electronic stopping power: convert from eV/nm to eV/A
   If (Abs(dEdx) <= zero_plus) Call warning(515,0.0_wp,0.0_wp,0.0_wp)
   dEdX = 0.1_wp*dEdX
 

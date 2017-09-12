@@ -487,11 +487,15 @@ Note that the values given for the first three options are specific heat
 capacities ($C_0$ and $A$ given in $k_B$ per atom), which are 
 converted to volumetric heat capacities by multiplying by the atomic 
 density $\rho = \frac{N}{\Delta V}$. The atomic density is assumed to 
-be constant throughout the system and can either be given by the 
-{\bf ttm atomdens} directive, or by calculating the average value from 
-the provided configuration. Tabulated volumetric heat capacities are given 
-in the Ce.dat file as J~m$^{-3}$~K$^{-1}$, which are converted to 
-$k_B$~\AA$^{-3}$. If no heat capacity information is supplied, \D will 
+be constant throughout the system, and this value can be set in one of three
+ways: (1) the user can specifiy a value using the {\bf ttm atomdens} directive 
+in the CONTROL file, (2) the value can be calculated 
+dynamically from active CITs when using the {\bf ttm dyndens} directive, or 
+(3) an unchanging value can be calculated from the provided configuration
+at the start (assuming all ionic temperature cells are active). Tabulated 
+volumetric heat capacities are given in the Ce.dat file as 
+J~m$^{-3}$~K$^{-1}$, which are converted to $k_B$~\AA$^{-3}$. 
+If no heat capacity information is supplied, \D will 
 assume a constant volumetric heat capacity of 1 $k_B$ per atom by 
 default. In all cases, the electronic energy of a given voxel can be 
 determined from the product of cell volume and the integral of the 
@@ -565,7 +569,7 @@ $A(r,t) = f(r,z) g(t) \Delta V$. Depositions can be applied spatially in one of 
 \begin{itemize}
 \item {\bf ttm sflat}: specifies a homogeneous distribution in x-, y- and z-directions \begin{equation*}f(r) = \frac{dE}{dV} = \frac{dE}{dx} \frac{1}{L_{x} L_{y}}\end{equation*} where $L_{x}$ and $L_{y}$ are the MD system dimensions in x- and y-directions;
 \item {\bf ttm sgauss}: specifies a Gaussian distribution in x- and y-directions from the centre of the system, i.e.\begin{equation*}f(r) = \frac{dE}{dx} \frac{1}{2 \pi \sigma^2} e^{-\frac{r^2}{2\sigma^2}}\end{equation*} with standard deviation $\sigma$, extending up to a cut-off distance (given in multiples of $\sigma$);
-\item {\bf ttm laser} $F$ $l_p$ {\bf zdep}: specifies a homogeneous distribution in x- and y-directions with exponential decay in the z-direction \begin{equation*}f(r,z) = \frac{F}{l_p} \exp\left(-\frac{z}{l_p}\right) \end{equation*} using the penetration depth as the scaling factor for z-direction decay.
+\item {\bf ttm laser} $F$ $l_p$ {\bf zdep}: specifies a homogeneous distribution in x- and y-directions with exponential decay in the z-direction \begin{equation*}f(r,z) = \frac{F}{l_p} \exp\left(-\frac{z}{l_p}\right) \end{equation*} using the penetration depth $l_p$ as the exponential scaling factor.
 \end{itemize}
 In the first two cases, spatial depositions are homogeneous in the z-direction. 
 Unless the {\bf zdep} option is invoked, laser depositions are homogeneous 
@@ -593,7 +597,9 @@ considered inactive: no electron-phonon coupling is applied to the
 corresponding electronic temperature cell, although thermal diffusion is 
 still applied as normal. All voxels within the CIT grid are checked 
 at each MD timestep and can be reactivated once the minimum number 
-of atoms can be found. 
+of atoms can be found. If the {\bf ttm dyndens} option is also specified,
+the average cell density (number of atoms per cell) will be recalculated 
+by only considering active CIT voxels.
 
 If the {\bf ttm redist} option is in use, any recently deactivated voxels 
 have their electronic energy transferred to neighbouring active voxels 

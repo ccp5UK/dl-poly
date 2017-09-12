@@ -9,7 +9,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
 ! copyright - daresbury laboratory
 ! author    - s.l.darazewicz & m.a.seaton july 2012
 ! contrib -   g.khara may 2016
-! contrib -   g.khara, s.t.murphy & m.a.seaton february 2017
+! contrib -   g.khara, s.t.murphy & m.a.seaton september 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -118,6 +118,10 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
     If (idnode == 0) Then
       Write(nrite,'(6x,"ttm thermal diffusion timesteps:",2x,"optimal/ps",3x,"actual/ps",5x,"diff/md")')
       Write(nrite,'(38x,es12.4,es12.4,2x,i10)') opttstep, tstep/Real(redtstepmx,Kind=wp), redtstepmx
+      If (ttmdyndens) Then
+        Write(nrite,'(6x,"active ion temperature cells:",7x,"atom/vol",5x,"no. of active cells")')
+        Write(nrite,'(38x,es12.4,14x,i10)') cellrho,acell
+      End If
       If(nstep>1 .and. Mod(lines,npage)/=0) Write(nrite,"(1x,130('-'))")
     End If
   End If
