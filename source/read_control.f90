@@ -324,6 +324,7 @@ Subroutine read_control                                &
 ! default values for (i) spatial, (ii) temporal
 ! energy deposition
 
+  sdepoType = 0
   sig       = 1.0_wp
   sigmax    = 5
 
@@ -2015,9 +2016,9 @@ Subroutine read_control                                &
 
            lvafav = .false.
 
-        Else If (word1(1:3) == 'vom' ) Then
+        Else If (word1(1:3) == 'vom' ) Then ! "no vom" should be used with TTM
 
-           If (idnode == 0) Write(nrite,"(3(/,1x,a))")                                     &
+           If (idnode == 0 .and. .not.l_ttm) Write(nrite,"(3(/,1x,a))")                    &
               '"no vom" option auto-switched on - COM momentum removal will be abandoned', &
               '*** warning - this may lead to a build up of the COM momentum and ***',     &
               '***           a manifestation of the "flying ice-cube" effect !!! ***'
@@ -3488,20 +3489,37 @@ Subroutine read_control                                &
   End If
 
   epc_to_chi = 1.0e-12_wp*Jm3K_to_kBA3/3.0_wp
+  If (.not. ttmdyndens) epc_to_chi = epc_to_chi*rcellrho
 
 ! Check sufficient parameters are specified for TTM electronic specific
 ! heats, thermal conductivity/diffusivity, energy loss and laser deposition
 
+  If (ttmdyndens) CeType = CeType + 4
   Select Case (CeType)
   Case (0)
   ! constant electronic specific heat: will convert from kB/atom to kB/A^3
   ! by multiplication of atomic density
+    Ce0 = Ce0*cellrho
   Case (1)
   ! hyperbolic tangent electronic specific heat: multiplier will be converted
   ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
     If (Abs(sh_A) <= zero_plus .or. Abs(sh_B) <= zero_plus) Call error(671)
+    sh_A = sh_A*cellrho
     sh_B = sh_B*1.0e-4_wp
   Case (2)
+  ! linear electronic specific heat to Fermi temperature: maximum
+  ! value will be converted from kB/atom to kB/A^3
+    If (Abs(Tfermi) <= zero_plus .or. Abs(Cemax) <= zero_plus) Call error(671)
+    Cemax = Cemax*cellrho
+  Case (4)
+  ! constant electronic specific heat: will convert from kB/atom to kB/A^3
+  ! by multiplication of atomic density
+  Case (5)
+  ! hyperbolic tangent electronic specific heat: multiplier will be converted
+  ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
+    If (Abs(sh_A) <= zero_plus .or. Abs(sh_B) <= zero_plus) Call error(671)
+    sh_B = sh_B*1.0e-4_wp
+  Case (6)
   ! linear electronic specific heat to Fermi temperature: maximum
   ! value will be converted from kB/atom to kB/A^3
     If (Abs(Tfermi) <= zero_plus .or. Abs(Cemax) <= zero_plus) Call error(671)
@@ -3531,7 +3549,7 @@ Subroutine read_control                                &
   sig = sig*10.0_wp
 
   ! penetration depth: convert from nm to A
-  If (sdepoType == 2 .and. (Abs(dEdX) <= zero_plus .or. Abs(pdepth-1.0_wp) <= zero_plus)) &
+  If (sdepoType == 2 .or. sdepoType == 3 .and. (Abs(dEdX) <= zero_plus .or. Abs(pdepth-1.0_wp) <= zero_plus)) &
   Call warning(510,0.0_wp,0.0_wp,0.0_wp)
   pdepth = 10.0_wp*pdepth
 
@@ -3539,7 +3557,7 @@ Subroutine read_control                                &
   fluence = fluence*mJcm2_to_eVA2
 
   ! electronic stopping power: convert from eV/nm to eV/A
-  If (Abs(dEdx) <= zero_plus) Call warning(515,0.0_wp,0.0_wp,0.0_wp)
+  If (sdepoType>0 .and. Abs(dEdx) <= zero_plus) Call warning(515,0.0_wp,0.0_wp,0.0_wp)
   dEdX = 0.1_wp*dEdX
 
 End Subroutine read_control

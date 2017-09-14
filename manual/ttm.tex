@@ -488,14 +488,15 @@ capacities ($C_0$ and $A$ given in $k_B$ per atom), which are
 converted to volumetric heat capacities by multiplying by the atomic 
 density $\rho = \frac{N}{\Delta V}$. The atomic density is assumed to 
 be constant throughout the system, and this value can be set in one of three
-ways: (1) the user can specifiy a value using the {\bf ttm atomdens} directive 
-in the CONTROL file, (2) the value can be calculated 
-dynamically from active CITs when using the {\bf ttm dyndens} directive, or 
-(3) an unchanging value can be calculated from the provided configuration
-at the start (assuming all ionic temperature cells are active). Tabulated 
-volumetric heat capacities are given in the Ce.dat file as 
-J~m$^{-3}$~K$^{-1}$, which are converted to $k_B$~\AA$^{-3}$. 
-If no heat capacity information is supplied, \D will 
+ways: (1) a value can be calculated from the provided configuration at the 
+start (assuming all ionic temperature cells are active), (2) the user can 
+specifiy a value using the {\bf ttm atomdens} directive in the CONTROL file, 
+or (3) after energy deposition to the electronic temperature grid, the value
+can be calculated dynamically from active CITs when using the {\bf ttm dyndens} 
+directive. In the latter case, the system or user-specified atomic density is
+used during energy deposition. Tabulated volumetric heat capacities are 
+given in the Ce.dat file as J~m$^{-3}$~K$^{-1}$, which are converted to 
+$k_B$~\AA$^{-3}$. If no heat capacity information is supplied, \D will 
 assume a constant volumetric heat capacity of 1 $k_B$ per atom by 
 default. In all cases, the electronic energy of a given voxel can be 
 determined from the product of cell volume and the integral of the 

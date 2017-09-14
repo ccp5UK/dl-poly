@@ -20,7 +20,7 @@ Module ttm_track_module
   Implicit None
 	
   Real( Kind = wp ), Allocatable, Dimension (:,:,:) :: lat_U,lat_B,lat_I
-  Real( Kind = wp ) :: norm, timeequil0
+  Real( Kind = wp ) :: norm
 
   Logical :: trackInit = .false.
 
@@ -63,6 +63,9 @@ Contains
       Call uniformDistZexp(lat_U)
     End Select
 
+    trackInit = .true.                           ! switch on flag indicating track initialisation is in progress
+    If (depostart<=zero_plus) depostart = time   ! time (ps) when deposition starts, i.e. current time
+
 ! temporal deposition of track: calculate time normalisation factor
 
     Select Case (tdepoType)
@@ -70,21 +73,21 @@ Contains
     Case (1)
     ! Gaussian temporal deposition
       norm = 1.0_wp/(sqrpi*rt2*tdepo)
+      depoend = depostart+2.0_wp*tcdepo*tdepo
     Case (2)
     ! decaying exponential temporal deposition
       norm = 1.0_wp/(1.0_wp-Exp(-tcdepo))
+      depoend = depostart+2.0_wp*tcdepo*tdepo
     Case (3)
     ! pulse temporal deposition
       norm = 1.0_wp
+      depoend = depostart
     End Select
-		
-    trackInit = .true. ! switch on flag indicating track initialisation is in progress
-    timeequil0 = time  ! time (ps) when equilibration finished, i.e. current time
 
     ! report start of energy deposition
 
     If (idnode == 0) Then
-      Write(number, '(f14.5)') time
+      Write(number, '(f14.5)') depostart
       Write(nrite,"(/,6x,a,a,a,/)") &
         'electronic energy deposition starting at time = ',Trim(Adjustl(number)),' ps'
       Write(nrite,"(1x,130('-'))")
@@ -111,7 +114,7 @@ Contains
 
     ! start deposition, reducing size of timestep for thermal diffusion
 
-    currenttime = time-timeequil0+tstep/Real(redtstepmx,Kind=wp)*Real(redtstep,Kind=wp)
+    currenttime = time-depostart+tstep/Real(redtstepmx,Kind=wp)*Real(redtstep,Kind=wp)
 
     Select Case (tdepoType)
     Case (1)
@@ -283,6 +286,7 @@ Contains
     ! switch off tracking and deallocate arrays
 
       trackInit = .false.
+      findepo = .true.
 
       Deallocate(lat_U, Stat = fail(1))
       Deallocate(lat_B, Stat = fail(2))

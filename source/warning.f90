@@ -602,7 +602,7 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode == 530) Then
 
-        Write(nrite,'(/,1x,a,f6.2,a,/,a,/)') &
+        Write(nrite,'(/,1x,a,f6.2,a,/,1x,a,/)') &
         '*** warning - possible time energy deposition discrepancy of at least ',a,'% !!! ***', &
         '*** discrepancy may be due to inactive cells !!! ***'
 

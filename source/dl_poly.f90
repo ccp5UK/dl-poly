@@ -528,7 +528,7 @@ Program dl_poly
 
   If (l_ttm) Then
     Call ttm_table_read()
-    Call ttm_system_init(nstep,keyres,'DUMP_E',temp)
+    Call ttm_system_init(nstep,nsteql,keyres,'DUMP_E',time,temp)
   End If
 
 ! Frozen atoms option
@@ -714,7 +714,7 @@ Program dl_poly
       Call system_revive &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
            chit,cint,chip,eta,strcon,strpmf,stress)
-      If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,1,nstrun)
+      If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun)
   End If
 
 ! Produce summary of simulation

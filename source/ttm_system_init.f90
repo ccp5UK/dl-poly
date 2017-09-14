@@ -1,4 +1,4 @@
-Subroutine ttm_system_init(nstep,keyres,dumpfile,temp)
+Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -6,28 +6,29 @@ Subroutine ttm_system_init(nstep,keyres,dumpfile,temp)
 ! at job termination or selected intervals in simulation
 !
 ! copyright - daresbury laboratory
-! authors   - s.l.daraszewicz & m.a.seaton september 2015
+! authors   - s.l.daraszewicz & m.a.seaton september 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use setup_module
   Use ttm_module
   Use ttm_utils
+  Use ttm_track_module
   Use comms_module
   Use parse_module,   Only : tabs_2_blanks, get_line, get_word, &
                              strip_blanks, word_2_real
 
   Implicit None
 
-  Integer,             Intent ( In ) :: keyres,nstep
-  Real ( Kind = wp ),  Intent ( In ) :: temp
+  Integer,             Intent ( In ) :: keyres,nstep,nsteql
+  Real ( Kind = wp ),  Intent ( In ) :: temp,time
   Character (Len = *), Intent ( In ) :: dumpfile
 
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
   Logical                :: safe,l_tmp = .true.
   Integer                :: nxx,nyy,nzz,nstp,i,ix,iy,iz,ii,jj,kk,ijk,ipos(3)
-  Real ( Kind = wp )     :: eltmp,lat_sum,lat_max,lat_min
+  Real ( Kind = wp )     :: eltmp,tme,lat_sum,lat_max,lat_min
   Integer                :: iounit = 225
 
 ! check existence of readable restart file (DUMP_E)
@@ -47,11 +48,14 @@ Subroutine ttm_system_init(nstep,keyres,dumpfile,temp)
     Call get_word(record,word) ; nzz=Nint(word_2_real(word,0.0_wp))
     Call get_line(safe,iounit,record); If (.not.safe) Goto 100
     Call get_word(record,word) ; nstp=Nint(word_2_real(word,0.0_wp))
+    Call get_word(record,word) ; tme=word_2_real(word,0.0_wp)
+    Call get_word(record,word) ; depostart=word_2_real(word,0.0_wp)
+    Call get_word(record,word) ; depoend=word_2_real(word,0.0_wp)
     ! check size of electronic temperature grid matches with size given in CONTROL file
     If (nxx/=eltsys(1) .or. nyy/=eltsys(2) .or. nzz/=eltsys(3)) Call error(685)
     ! check restart file is at same timestep as restart
     ! (can proceed if not, but need to warn user)
-    If (nstp/=nstep) Call warning(520,0.0_wp,0.0_wp,0.0_wp)
+    If (nstp/=nstep .or. Abs(tme-time)>zero_plus) Call warning(520,0.0_wp,0.0_wp,0.0_wp)
     ! read in each line, find appropriate grid cell and assign
     ! electronic temperature if processor has that cell
     Do i=1,eltsys(1)*eltsys(2)*eltsys(3)
@@ -77,6 +81,13 @@ Subroutine ttm_system_init(nstep,keyres,dumpfile,temp)
     ! fill boundary halo values and deal with required boundary conditions
     Call boundaryHalo ()
     Call boundaryCond (bcTypeE, temp)
+    ! check whether or not energy deposition has happened yet
+    If(nstep>nsteql .and. time>=depostart .and. time<depoend) Then
+      Call depoinit(time)
+    Else If (time>=depoend) Then
+      findepo = .true.
+    End If
+
     ! report successful reading and minimum, maximum and sums of
     ! electronic temperatures
     Call eltemp_sum (lat_sum)

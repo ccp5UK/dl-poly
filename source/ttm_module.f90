@@ -39,9 +39,9 @@ Module ttm_module
   Integer :: numcell
   Integer :: ttmbc(6),ttmbcmap(6)
 
-  Logical :: l_ttm,isMetal,l_epcp,redistribute,ttmthvel,ttmthvelz,oneway,ttmslab,ttmdyndens
+  Logical :: l_ttm,isMetal,l_epcp,redistribute,ttmthvel,ttmthvelz,oneway,ttmdyndens,findepo
   Integer :: CeType,KeType,DeType,gvar,bcTypeE,ttmstats,ttmtraj,tdepoType,sdepoType
-  Real ( Kind = wp ) :: fluxout,ttmoffset
+  Real ( Kind = wp ) :: fluxout,ttmoffset,depostart,depoend
   Real ( Kind = wp ) :: sh_A,sh_B,Ka0,Ce0
   Real ( Kind = wp ) :: Cemax,Tfermi,Diff0
   Real ( Kind = wp ) :: dEdX,sig,sigmax,tdepo,tcdepo
@@ -75,6 +75,9 @@ Contains
     Integer ( Kind = MPI_ADDRESS_KIND ) :: xlth,ylth,bxlth,bylth
 
     fail = 0
+
+    depostart = 0.0_wp
+    depoend = 0.0_wp
 
 ! Setup constants based on fundamental values (found in
 ! setup_module.f90)
@@ -285,6 +288,7 @@ Contains
       acell                 = ntsys(1)*ntsys(2)*ntsys(3)
       acell_old             = acell
       adjust                = .false.
+      findepo               = .false.
       cel                   = 0
       kel                   = 0
       del                   = 0

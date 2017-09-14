@@ -124,16 +124,16 @@ Subroutine nvt_l2_lfv                     &
 
 ! leapfrog verlet algorithm (starts with velocities at half step)!!!
 
+! Rescale chi to match average electronic temperature if
+! using homogeneous electron-phonon coupling
+
+  If (l_ttm .and. gvar==1) Call calcchies(chi_ep)
+
 ! check whether or not Langevin forces are needed: if electron-phonon
 ! friction coefficient is/will be greater than zero and coupling is 
 ! switched on after time offset
 
   lrand = ((chi_ep>zero_plus .or. gvar==2) .and. l_epcp)
-
-! Rescale chi to match average electronic temperature if
-! using homogeneous electron-phonon coupling
-
-  If (l_ttm .and. gvar==1) Call calcchies(chi_ep)
 
 ! store initial values
 

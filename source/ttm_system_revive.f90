@@ -1,5 +1,5 @@
 Subroutine ttm_system_revive    &
-           (dumpfile,nstep,freq,nstrun)
+           (dumpfile,nstep,time,freq,nstrun)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -19,6 +19,7 @@ Subroutine ttm_system_revive    &
 
   Character (Len = *), Intent ( In ) :: dumpfile
   Integer, Intent ( In ) :: nstep,freq,nstrun
+  Real(Kind=wp), Intent ( In ) :: time
   Integer :: iounit = 117
   Integer :: id,ii,jj,kk,imin,jmin,kmin,imax,jmax,kmax,i,j,k,ijk,ix,iy,iz
   Logical :: lrange
@@ -26,11 +27,10 @@ Subroutine ttm_system_revive    &
   If (freq /=0) Then
     If (Mod(nstep,freq)==0 .or. nstep==nstrun) Then
 
-
       If (idnode==0) Then
         Open(Unit=iounit, File=dumpfile, Status='replace')
         Write(iounit,'(3i8)') eltsys(1),eltsys(2),eltsys(3)
-        Write(iounit,'(i12)') nstep
+        Write(iounit,'(i12,3(2x,es24.15))') nstep,time,depostart,depoend
         Close(iounit)
       End If
       If (mxnode > 1) Call gsync()

@@ -45,12 +45,10 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
   eltemp1 = 0.0_wp
   redtstepmx = 1
 
-! deposition stage 1 (initialization)
-! keyres==1: reads electronic temperature from file, nstep-nsteql offsets equilibration time
+! deposition stage 1 (initialization):
+! nstep-nsteql offsets equilibration time
 
-  If (keyres/=keyres0) Then
-    If ((nstep-nsteql)==1 .and. (dEdX>zero_plus .or. fluence>zero_plus)) Call depoinit (time)
-  End If
+  If ((nstep-nsteql)==1 .and. (sdepoType>0 .and. (dEdX>zero_plus .or. fluence>zero_plus))) Call depoinit (time)
 
 ! determine timestep reduction factor (chosen empirically, acts beyond minimum stability condition)
 
@@ -119,7 +117,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
       Write(nrite,'(6x,"ttm thermal diffusion timesteps:",2x,"optimal/ps",3x,"actual/ps",5x,"diff/md")')
       Write(nrite,'(38x,es12.4,es12.4,2x,i10)') opttstep, tstep/Real(redtstepmx,Kind=wp), redtstepmx
       If (ttmdyndens) Then
-        Write(nrite,'(6x,"active ion temperature cells:",7x,"atom/vol",5x,"no. of active cells")')
+        Write(nrite,'(6x,"active ion temperature cells:",5x,"atom dens.",5x,"no. of active cells")')
         Write(nrite,'(38x,es12.4,14x,i10)') cellrho,acell
       End If
       If(nstep>1 .and. Mod(lines,npage)/=0) Write(nrite,"(1x,130('-'))")
@@ -185,7 +183,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
       Call eltemp_mean(eltempmean)
       eltemp1 = eltempmean
       Do ijk=1,numcell
-        If(act_ele_cell(ijk,0,0,0)>zero_plus) eltemp1(ijk,0,0,0) = temp
+        If(act_ele_cell(ijk,0,0,0)<=zero_plus) eltemp1(ijk,0,0,0) = temp
       End Do
 
     Case (1)
@@ -547,7 +545,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
   End Do
 
 ! Dumping Te file every ndump steps
-  Call ttm_system_revive ('DUMP_E',nstep,ndump,nstrun)
+  Call ttm_system_revive ('DUMP_E',nstep,time,ndump,nstrun)
 
   Deallocate (eltemp1, Stat = fail)
   If (fail>0) Call error(1088)

@@ -412,14 +412,14 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
   End If
 
 ! dynamically calculate cell density for active cells
-! if requested by user
+! if requested by user (after deposition stage)
 
-  If (ttmdyndens) Then
+  If (ttmdyndens .and. findepo) Then
     Select Case (gvar)
     Case (0,1)
-      cellrho = crho / (Real(acell,Kind=wp)*chi_ep)
+      cellrho = crho / (Real(acell,Kind=wp)*chi_ep*volume)
     Case (2)
-      cellrho = crho / Real(acell,Kind=wp)
+      cellrho = crho / (Real(acell,Kind=wp)*volume)
     End Select
     If (cellrho>zero_plus) Then
       rcellrho = 1.0_wp/cellrho

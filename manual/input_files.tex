@@ -732,7 +732,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf ttm dyndens}                  \> dynamically recalculate atom density by only including active \\
 \>                                              \> ionic temperature cells (CITs), used to convert specific heat \\
-\>                                              \> capacities to volumetric heat capacities \\
+\>                                              \> capacities to volumetric heat capacities after energy deposition \\
 \>                                              \> \\
 \> {\bf ttm gauss} $f_{1}~f_{2}$  \> specifies temporal energy deposition to electronic system as \\
 \>                                              \> Gaussian function of time with standard deviation $f_{1}$ ps, lasting \\
@@ -1424,7 +1424,7 @@ total number of defects.
 
 \item The {\bf disp}lacements option will trigger dump of atom
 displacements based on a qualifying cutoff in a trajectory like
-manner.  Dsiplacemets of atoms from their original position at
+manner.  Displacements of atoms from their original position at
 the end of equilibration (the start of statistics), $t~=0~$, is
 carried out at each timestep.
 
@@ -3850,7 +3850,10 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 \> {\tt eltsys(2)}    \> integer   \> number of CET cells in y-direction \\
 \> {\tt eltsys(3)}    \> integer   \> number of CET cells in z-direction \\
 {\bf record 2:} \\
-\> {\tt nstep}    \> integer   \> timestep of current electronic temperature profile \\
+\> {\tt nstep}         \> integer   \> timestep of current electronic temperature profile \\
+\> {\tt time}           \> real        \> elapsed simulation time \\
+\> {\tt depostart}   \> real        \> time when energy deposition started \\
+\> {\tt depoend}    \> real        \> time when energy deposition ended or is due to end \\
 \end{tabbing}
 and each subsequent record is formatted as follows:
 \begin{tabbing}
@@ -3866,8 +3869,9 @@ The file is read by the subroutine {\sc ttm\_system\_init}. It
 will not be accepted by \D if the number of CET cells in each 
 direction does not match the values given in the CONTROL file or 
 insufficient electronic temperatures are supplied. No matching up 
-of restart timestep between REVOLD and DUMP\_E is absolutely 
-necessary, but the user will be warned if they are not the same.
+of restart timestep or elapsed simulation time between REVOLD 
+and DUMP\_E is absolutely necessary, but the user will be warned 
+if they are not the same.
 
 \subsection{The Ce.dat, Ke.dat, De.dat and g.dat Files}
 \label{ttm-tabulated-files}
