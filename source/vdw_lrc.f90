@@ -27,7 +27,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
   Integer           :: fail,i,j,k,ivdw,keypot,n,m
   Real( Kind = wp ) :: a,b,c,d,e0,nr,mr,r0,r,eps,sig, &
-                       eadd,padd,denprd,plrc
+                       eadd,padd,denprd,plrc,t,kk,s9
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: numfrz
 
@@ -143,6 +143,24 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
               eadd = a/(9.0_wp*r**9) - b/(7.0_wp*r**7)
               padd = 12.0_wp*a/(9.0_wp*r**9) - 10.0_wp*b/(7.0_wp*r**7)
 
+           Else If (keypot == 8) Then
+
+! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
+
+              e0=prmvdw(1,ivdw)
+              r0=prmvdw(2,ivdw)
+              kk=prmvdw(3,ivdw)
+              If (kk > Tiny(kk)) Then
+                 t = Exp(-kk*(rvdw - r0))
+
+                 eadd = -2.0_wp*e0*t/(kk*kk*kk)*((kk*rvdw+1)**2 + 1) + &
+                    e0*t*t/(4.0_wp*kk*kk*kk)*((kk*rvdw+1)**2 + kk*kk*rvdw*rvdw)
+                 padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*rvdw**3 + &
+                      3*kk**2*rvdw**2 +6*kk*rvdw + 6) + &
+                      e0*t*t/(4.0_wp*kk*kk*kk)* & 
+                      (4.0_wp*kk**3*rvdw**3 + 6*kk**2*rvdw**2 + 6*kk*rvdw + 3)
+              End If
+
            Else If (keypot == 11) Then
 
 ! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
@@ -168,6 +186,29 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
               eadd = 4.0_wp*eps*(sig**12/(9.0_wp*r**9) - c*sig**6/(3.0_wp*r**3))
               padd = 8.0_wp*eps*(6.0_wp*sig**12/(9.0_wp*r**9) - c*sig**6/(r**3))
+
+           Else If (keypot == 13) Then
+
+! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
+
+              e0 = prmvdw(1,ivdw)
+              r0 = prmvdw(2,ivdw)
+              kk = prmvdw(3,ivdw)
+               c = prmvdw(4,ivdw)
+
+              If (kk>Tiny(kk)) Then
+
+                 t = Exp(-kk*(rvdw - r0))
+                 s9 = c/(9.0_wp*rvdw**9)
+
+                 eadd = -2.0_wp*e0*t/(kk*kk*kk)*((kk*rvdw+1)**2 + 1) + &
+                     e0*t*t/(4.0_wp*kk*kk*kk)*((kk*rvdw+1)**2 + & 
+                     kk*kk*rvdw*rvdw) + s9
+                 padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*rvdw**3 + & 
+                       3*kk**2*rvdw**2 + 6*kk*rvdw + 6) + & 
+                       e0*t*t/(4.0_wp*kk*kk*kk)* (4.0_wp*kk**3*rvdw**3 + & 
+                       6*kk**2*rvdw**2 + 6*kk*rvdw + 3) + 12.0_wp*s9
+              End If
 
            End If
 

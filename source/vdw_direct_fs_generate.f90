@@ -203,6 +203,23 @@ Subroutine vdw_direct_fs_generate(rvdw)
         bfs(ivdw) =-4.0_wp*eps*sor6*(sor6-c) - afs(ivdw)
         afs(ivdw) = afs(ivdw)/rvdw
 
+     Else If (keypot == 13) Then
+
+! Morse potential with twelve term:: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
+! needs new shifting recomputed
+        e0=prmvdw(1,ivdw)
+        r0=prmvdw(2,ivdw)
+        kk=prmvdw(3,ivdw)
+        c=prmvdw(4,ivdw)
+
+        t1=Exp(-kk*(rvdw-r0))
+        sor6 = c/rvdw**12
+
+        afs(ivdw) =-2.0_wp*e0*kk*t1*(1.0_wp-t1)*rvdw + 12.0_wp*sor6
+        bfs(ivdw) =-e0*t1*(t1-2.0_wp) + sor6 - afs(ivdw)
+        afs(ivdw) = afs(ivdw)/rvdw
+
+
      Else
 
         Call error(150)

@@ -387,6 +387,28 @@ Subroutine vdw_forces &
                  gamma = gamma - afs(k)*r_rrr
               End If
 
+            Else If (ityp == 13) Then
+
+! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}+c/r^12
+
+              e0=prmvdw(1,k)
+              r0=prmvdw(2,k)
+              kk=prmvdw(3,k)
+              c=prmvdw(4,k)
+
+              t1=Exp(-kk*(rrr-r0))
+              sor6 = c*r_rrr**12
+              If (jatm <= natms .or. idi < ltg(jatm)) &
+              eng   = e0*t1*(t1-2.0_wp)+sor6
+              gamma = -2.0_wp*e0*kk*t1*(1.0_wp-t1)*r_rrr-12.0_wp*sor6*r_rrr
+
+              If (ls_vdw) Then ! force-shifting
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 eng   = eng + afs(k)*rrr + bfs(k)
+                 gamma = gamma - afs(k)*r_rrr
+              End If
+
+
            Else If (Abs(vvdw(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
 
               l   = Int(rrr*rdr)

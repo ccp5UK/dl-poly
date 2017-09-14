@@ -438,6 +438,32 @@ Subroutine vdw_generate(rvdw)
            sigeps(2,ivdw)=eps
         End If
 
+     Else If (keypot == 13) Then
+
+! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
+
+        e0 = prmvdw(1,ivdw)
+        r0 = prmvdw(2,ivdw)
+        kk = prmvdw(3,ivdw)
+        c  = prmvdw(4,ivdw)
+
+        Do i=1,mxgvdw
+           r=Real(i,wp)*dlrpot
+
+           t1=Exp(-kk*(r - r0))
+           sor6=c/r**12
+
+           vvdw(i,ivdw)=e0*((1.0_wp-t1)**2-1.0_wp)+sor6
+           gvdw(i,ivdw)=-2.0_wp*r*e0*kk*(1.0_wp-t1)*t1+12.0_wp*sor6
+        End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+
+        If (.not.ls_vdw) Then !???
+           sigeps(1,ivdw)=r0-log(2.0_wp)/kk
+           sigeps(2,ivdw)=e0
+        End If
+
      Else
 
         If (.not.lt_vdw) Call error(150)
