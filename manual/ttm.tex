@@ -570,15 +570,16 @@ $A(r,t) = f(r,z) g(t) \Delta V$. Depositions can be applied spatially in one of 
 \begin{itemize}
 \item {\bf ttm sflat}: specifies a homogeneous distribution in x-, y- and z-directions \begin{equation*}f(r) = \frac{dE}{dV} = \frac{dE}{dx} \frac{1}{L_{x} L_{y}}\end{equation*} where $L_{x}$ and $L_{y}$ are the MD system dimensions in x- and y-directions;
 \item {\bf ttm sgauss}: specifies a Gaussian distribution in x- and y-directions from the centre of the system, i.e.\begin{equation*}f(r) = \frac{dE}{dx} \frac{1}{2 \pi \sigma^2} e^{-\frac{r^2}{2\sigma^2}}\end{equation*} with standard deviation $\sigma$, extending up to a cut-off distance (given in multiples of $\sigma$);
-\item {\bf ttm laser} $F$ $l_p$ {\bf zdep}: specifies a homogeneous distribution in x- and y-directions with exponential decay in the z-direction \begin{equation*}f(r,z) = \frac{F}{l_p} \exp\left(-\frac{z}{l_p}\right) \end{equation*} using the penetration depth $l_p$ as the exponential scaling factor.
+\item {\bf ttm laser} $F$ $l_p$ {\bf zdep}: specifies a homogeneous distribution in x- and y-directions with exponential decay in the z-direction (from the centre of the system) \begin{equation*}f(r,z) = \frac{F}{l_p} \exp\left(-\frac{|z|}{l_p}\right) \end{equation*} using the penetration depth $l_p$ as the exponential scaling factor.
 \end{itemize}
 In the first two cases, spatial depositions are homogeneous in the z-direction. 
 Unless the {\bf zdep} option is invoked, laser depositions are homogeneous 
 in all three directions (similar to the {\bf ttm sflat} case), with the ratio of 
 absorbed fluence to penetration depth equal to $\frac{dE}{dV}$.
-The deposition can be applied temporally in one of three ways:
+The deposition can be applied temporally in one of four ways:
 \begin{itemize}
 \item {\bf ttm delta}: specifies a Dirac delta function in time \begin{equation*} g(t) = \delta (t - t_0) \end{equation*} which is approximated as an energy injection during a single diffusion timestep;
+\item {\bf ttm pulse}: specifies a square pulse function in time \begin{equation*} g(t) = \left\{\begin{array}{lr} \frac{1}{\tau}, & t - t_0 < \tau\\ 0, & t<t_0 \text{ and } t - t_0 \ge \tau \end{array} \right. \end{equation*} over a period $\tau$;
 \item {\bf ttm gauss}: specifies a Gaussian function in time \begin{equation*} g(t) = \frac{1}{\sigma\sqrt{2\pi}}e^{-\left(\frac{t-t_0}{\sigma}\right)^2} \end{equation*} over a period of a multiple of standard deviations $\sigma$;
 \item {\bf ttm nexp}: specifies a decaying exponential function in time \begin{equation*} g(t) = e^{-\frac{t-t_0}{\tau}} \end{equation*} over a period of a multiple of $\tau$.
 \end{itemize}
@@ -599,8 +600,10 @@ corresponding electronic temperature cell, although thermal diffusion is
 still applied as normal. All voxels within the CIT grid are checked 
 at each MD timestep and can be reactivated once the minimum number 
 of atoms can be found. If the {\bf ttm dyndens} option is also specified,
-the average cell density (number of atoms per cell) will be recalculated 
-by only considering active CIT voxels.
+the average cell density (number of atoms per unit volume) will be 
+recalculated after energy deposition by only considering active CIT 
+voxels: note that the system-based or user-specified atomic density
+will be used before and during energy deposition.
 
 If the {\bf ttm redist} option is in use, any recently deactivated voxels 
 have their electronic energy transferred to neighbouring active voxels 

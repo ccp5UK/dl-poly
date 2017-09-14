@@ -79,9 +79,13 @@ Contains
       norm = 1.0_wp/(1.0_wp-Exp(-tcdepo))
       depoend = depostart+2.0_wp*tcdepo*tdepo
     Case (3)
-    ! pulse temporal deposition
+    ! delta temporal deposition
       norm = 1.0_wp
       depoend = depostart
+    Case (4)
+    ! pulse temporal deposition
+      norm = 1.0_wp/tdepo
+      depoend = depostart+tdepo
     End Select
 
     ! report start of energy deposition
@@ -107,10 +111,17 @@ Contains
     Real( Kind = wp ) :: lat_U_min, lat_U_max, lat_U_sum, invbin
     Real( Kind = wp ) :: currenttime,adjtime,adjeng,err_tol = 0.01_wp
     Real( Kind = wp ) :: energy_diff,oldCe,newCe,start_Te,end_Te,increase
+    Real( Kind = wp ) :: Ce0a, sh_Aa, Cemaxa
     Integer :: i,j,k,ijk
     Integer, Dimension( 1:3 ) :: fail = 0
     Character ( Len = 14 ) :: number
     Logical :: deposit
+
+    ! provide atomic density corrections to heat capacities
+
+    Ce0a   = Ce0  *Merge(cellrho,1.0_wp,ttmdyndens)
+    sh_Aa  = sh_A *Merge(cellrho,1.0_wp,ttmdyndens)
+    Cemaxa = Cemax*Merge(cellrho,1.0_wp,ttmdyndens)
 
     ! start deposition, reducing size of timestep for thermal diffusion
 
@@ -130,8 +141,13 @@ Contains
       invbin = tstep/(tdepo*Real(redtstepmx,Kind=wp))
       adjeng = Exp(-adjtime)
     Case (3)
-    ! pulse temporal deposition (over single diffusion timestep)
+    ! delta temporal deposition (over single diffusion timestep)
       deposit = (currenttime<tstep/(Real(redtstepmx,Kind=wp)))
+      invbin = 1.0_wp
+      adjeng = 1.0_wp
+    Case (4)
+    ! pulse temporal deposition (over tdepo ps)
+      deposit = (currenttime<tdepo)
       invbin = 1.0_wp
       adjeng = 1.0_wp
     End Select
@@ -143,7 +159,7 @@ Contains
     If (deposit) Then
       lat_B(:,:,:) = lat_U(:,:,:)*norm*invbin*adjeng
       Select Case (CeType)
-      Case (0)
+      Case (0,4)
       ! constant specific heat capacity
         Do k=1,ntcell(3)
           Do j=1,ntcell(2)
@@ -153,13 +169,13 @@ Contains
               energy_diff = lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)*rvolume*eV_to_kB
               If (energy_diff>zero_plus) Then
                 start_Te = eltemp(ijk,0,0,0)
-                end_Te = start_Te + energy_diff/Ce0
+                end_Te = start_Te + energy_diff/Ce0a
                 eltemp(ijk,0,0,0) = end_Te
               End If
             End Do
           End Do
         End Do
-      Case (1)
+      Case (1,5)
       ! hyperbolic tangent specific heat capacity
         Do k=1,ntcell(3)
           Do j=1,ntcell(2)
@@ -169,7 +185,7 @@ Contains
               energy_diff = lat_B(i,j,k)*act_ele_cell(ijk,0,0,0)*rvolume*eV_to_kB
               If (energy_diff>zero_plus) Then
                 start_Te = eltemp(ijk,0,0,0)
-                increase = Cosh(sh_B*start_Te)*Exp(sh_B*energy_diff/sh_A)
+                increase = Cosh(sh_B*start_Te)*Exp(sh_B*energy_diff/sh_Aa)
                 ! using equivalent function: Acosh(x)=Log(x+Sqrt((x-1.0)*(x+1.0)))
                 end_Te = Log(increase+Sqrt((increase-1.0_wp)*(increase+1.0_wp)))/sh_B
                 eltemp(ijk,0,0,0) = end_Te
@@ -177,7 +193,7 @@ Contains
             End Do
           End Do
         End Do
-      Case (2)
+      Case (2,6)
       ! linear specific heat capacity to Fermi temperature
         Do k=1,ntcell(3)
           Do j=1,ntcell(2)
@@ -188,10 +204,10 @@ Contains
               If (energy_diff>zero_plus) Then
                 start_Te = eltemp(ijk,0,0,0)
                 If (start_Te>=Tfermi) Then
-                  end_Te = start_Te + energy_diff/Cemax
+                  end_Te = start_Te + energy_diff/Cemaxa
                 Else
-                  end_Te = Sqrt(start_Te*start_Te+2.0_wp*energy_diff*Tfermi/Cemax)
-                  If (end_Te>Tfermi) end_Te = 0.5_wp*(start_Te*start_Te/Tfermi+Tfermi)+energy_diff/Cemax
+                  end_Te = Sqrt(start_Te*start_Te+2.0_wp*energy_diff*Tfermi/Cemaxa)
+                  If (end_Te>Tfermi) end_Te = 0.5_wp*(start_Te*start_Te/Tfermi+Tfermi)+energy_diff/Cemaxa
                 End If
                 eltemp(ijk,0,0,0) = end_Te
               End If
@@ -345,11 +361,11 @@ Contains
     dEdVmax = fluence*rpdepth
 
     ! loop through z-cells: calculate stopping power per
-    ! cell based on z-position (maximum at z=0)
+    ! cell based on z-position (maximum at z=0, grid centre)
     ! and assign across all x and y points in plane
 
     Do k = 1, ntcell(3)
-      zz = Real(k,Kind=wp)-0.5_wp
+      zz = Abs(Real(k+ntcelloff(3)-midI(3),Kind=wp))
       dEdV = dEdVmax*Exp(-zz*delz*rpdepth)
       lat_in(1:ntcell(1),1:ntcell(2),k) = dEdV*volume
     End Do

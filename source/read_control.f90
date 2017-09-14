@@ -2394,12 +2394,34 @@ Subroutine read_control                                &
 
         Else If (word1(1:5) == 'delta') Then
 
-        ! dirac delta pulse temporal distribution for energy deposition into
+        ! dirac delta temporal distribution for energy deposition into
         ! electronic system
 
           tdepoType = 3
           If (idnode == 0) Then
-            Write(nrite,"(/,1x,'pulse (dirac delta) temporal energy deposition in electronic system')")
+            Write(nrite,"(/,1x,'dirac delta temporal energy deposition in electronic system')")
+          End If
+
+        Else If (word1(1:5) == 'pulse') Then
+
+        ! square pulse temporal distribution for energy deposition into
+        ! electronic system (defaults to dirac delta if pulse duration
+        ! set to zero)
+
+          tdepoType = 4
+          Call get_word(record,word)
+          tdepo = word_2_real(word)
+          If (tdepo<zero_plus) Then
+            tdepoType = 3
+            If (idnode == 0) Then
+              Write(nrite,"(/,1x,'square pulse temporal energy deposition in electronic system',/&
+                             &1x,'of zero duration: being treated as dirac delta')")
+            End If
+          Else
+            If (idnode == 0) Then
+              Write(nrite,"(/,1x,'square pulse temporal energy deposition in electronic system')")
+              Write(nrite,"(1x,'pulse duration (ps)',15x,1p,e12.4)") tdepo
+            End If
           End If
 
         Else If (word1(1:4) == 'varg') Then
