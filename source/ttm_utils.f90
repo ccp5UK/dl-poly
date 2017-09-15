@@ -76,20 +76,20 @@ Contains
       ! Case 2: linear specific heat capacity to maximum value at/beyond Tfermi
       !         (given as kB/A^3)
       Ce = Min(T/Tfermi,1.0_wp)*Cemax
-    Case (3,7)
-      ! Case 3: interpolated specific heat capacity from table (given as kB/A^3)
-      Call interpolate(cel, cetable, T, Ce)
     Case (4)
-      ! Case 0: constant specific heat capacity (given as kB/A^3)
+      ! Case 4: constant specific heat capacity (converted as kB/A^3)
       Ce = Ce0*cellrho
     Case (5)
-      ! Case 1: hyperbolic tangent specific heat capacity (given as kB/A^3) -
+      ! Case 5: hyperbolic tangent specific heat capacity (converted to kB/A^3) -
       !         Ce = sh_A*Tanh(T*sh_B*1.0e-4) [kB/atom]
      Ce = sh_A*cellrho*Tanh(T*sh_B)
     Case (6)
-      ! Case 2: linear specific heat capacity to maximum value at/beyond Tfermi
-      !         (given as kB/A^3)
+      ! Case 6: linear specific heat capacity to maximum value at/beyond Tfermi
+      !         (converted to kB/A^3)
       Ce = Min(T/Tfermi,1.0_wp)*Cemax*cellrho
+    Case (3,7)
+      ! Case 3: interpolated specific heat capacity from table (given as kB/A^3)
+      Call interpolate(cel, cetable, T, Ce)
     End Select
 
   End Function Ce

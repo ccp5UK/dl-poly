@@ -70,7 +70,7 @@ Subroutine ttm_table_read()
 
 ! read volumetric heat capacity data
 
-  If (CeType == 3) Then
+  If (CeType == 3 .or. CeType == 7) Then
 
     If (idnode == 0) Open(Unit=ntable, File='Ce.dat', Status='old')
 

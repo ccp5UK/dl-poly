@@ -2411,7 +2411,7 @@ Subroutine read_control                                &
           tdepoType = 4
           Call get_word(record,word)
           tdepo = word_2_real(word)
-          If (tdepo<zero_plus) Then
+          If (tdepo<=zero_plus) Then
             tdepoType = 3
             If (idnode == 0) Then
               Write(nrite,"(/,1x,'square pulse temporal energy deposition in electronic system',/&
@@ -3571,15 +3571,18 @@ Subroutine read_control                                &
   sig = sig*10.0_wp
 
   ! penetration depth: convert from nm to A
-  If (sdepoType == 2 .or. sdepoType == 3 .and. (Abs(dEdX) <= zero_plus .or. Abs(pdepth-1.0_wp) <= zero_plus)) &
+  If ((sdepoType == 2 .and. Abs(dEdX) <= zero_plus .and. Abs(pdepth-1.0_wp)<=zero_plus) .or. &
+      (sdepoType == 3 .and. Abs(pdepth-1.0_wp) <= zero_plus)) &
   Call warning(510,0.0_wp,0.0_wp,0.0_wp)
   pdepth = 10.0_wp*pdepth
 
-  ! fluence: convert from mJ cm^-2 to eV A^-2
-  fluence = fluence*mJcm2_to_eVA2
 
   ! electronic stopping power: convert from eV/nm to eV/A
-  If (sdepoType>0 .and. Abs(dEdx) <= zero_plus) Call warning(515,0.0_wp,0.0_wp,0.0_wp)
+  ! fluence: convert from mJ cm^-2 to eV A^-2
+  If (sdepoType>0 .and. sdepoType<3 .and. (Abs(dEdx) <= zero_plus .or. Abs(fluence)<zero_plus)) &
+  Call warning(515,0.0_wp,0.0_wp,0.0_wp)
+
+  fluence = fluence*mJcm2_to_eVA2
   dEdX = 0.1_wp*dEdX
 
 End Subroutine read_control
