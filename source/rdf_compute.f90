@@ -1,3 +1,22 @@
+Module rdf_compute_module
+
+  Use kinds_f90
+  Use comms_module,  Only : idnode,mxnode,gsum
+  Use setup_module,  Only : fourpi,boltz,delr_max,nrite,nrdfdt,npdfdt,npdgdt, &
+                            mxgrdf,engunit,zero_plus,mxlist
+  Use site_module,   Only : ntpatm,unqatm,numtyp,dens
+  Use config_module, Only : cfgname,volm
+  Use rdf_module
+  Use parse_module
+  Use io_module
+
+  Implicit None
+  
+  Public  :: rdf_compute, calculate_errors, calculate_errors_jackknife
+  Private :: calculate_block
+
+Contains
+
 Subroutine rdf_compute(lpana,rcut,temp)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -11,15 +30,6 @@ Subroutine rdf_compute(lpana,rcut,temp)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds_f90
-  Use comms_module,  Only : idnode,mxnode,gsum
-  Use setup_module,  Only : fourpi,boltz,delr_max,nrite,nrdfdt,npdfdt,npdgdt, &
-                            mxgrdf,engunit,zero_plus
-  Use site_module,   Only : ntpatm,unqatm,numtyp,dens
-  Use config_module, Only : cfgname,volm
-  Use rdf_module
-
-  Implicit None
 
   Logical          , Intent( In    ) :: lpana
   Real( Kind = wp ), Intent( In    ) :: rcut,temp
@@ -313,3 +323,262 @@ Subroutine rdf_compute(lpana,rcut,temp)
   End If
 
 End Subroutine rdf_compute
+
+Subroutine calculate_block(temp, rcut)
+
+  Implicit None
+
+  Real( Kind = wp ), Intent(in)            :: temp, rcut
+  Real( Kind = wp ), Dimension( 1:mxlist ) :: rrt, xxt, yyt, zzt
+  Real( Kind = wp )                        :: kT2engo, delr, rdlr, dgrid, pdfzero, factor1, rrr,dvol,gofr,gofr1
+
+  Integer :: i, loopend, j, ia, ib, ngrid, kk, k, limit, jj
+  Logical :: zero
+
+  kT2engo = boltz*temp/engunit
+! grid interval for rdf tables
+  delr = rcut/Real(mxgrdf,wp)
+  rdlr = 1.0_wp/delr
+! resampling grid and grid interval for rdf tables
+  ngrid = Max(Nint(rcut/delr_max),mxgrdf)
+  dgrid = rcut/Real(ngrid,wp)
+  pdfzero = 1.0e-9_wp
+  Do ia=1,ntpatm
+     Do ib=ia,ntpatm
+! number of the interaction by its rdf key
+        kk=lstrdf(ib*(ib-1)/2+ia)
+! only for valid interactions specified for a look up
+! global sum of data on all nodes
+! normalisation factor
+        factor1=volm*dens(ia)*dens(ib)*Real(ncfrdf,wp)
+        If (ia == ib) factor1=factor1*0.5_wp*(1.0_wp-1.0_wp/numtyp(ia))
+! loop over distances
+        zero=.true.
+        Do i=1,mxgrdf
+           If (zero .and. i < (mxgrdf-3)) zero=(tmp_rdf(i+2,kk, block_number) <= 0.0_wp)
+           gofr= tmp_rdf(i,kk, block_number)/factor1
+           rrr = (Real(i,wp)-0.5_wp)*delr
+           dvol= fourpi*delr*(rrr**2+delr**2/12.0_wp)
+           gofr= gofr/dvol
+! zero it if < pdfzero
+           If (gofr < pdfzero) Then
+              gofr1 = 0.0_wp
+           Else
+              gofr1 = gofr
+           End If
+! Store information to compute block average
+           block_averages(ia, ib,i, block_number) = block_averages(ia,ib,i, block_number) + gofr1 !!* i_blocksize
+        End Do
+     End Do
+  End Do
+
+End Subroutine calculate_block
+
+Subroutine calculate_errors(temp, rcut, num_steps)
+
+  Implicit None
+
+  Real( Kind = wp ), Intent(in)                        :: temp, rcut
+  Real( Kind = wp )                                    :: test1, delr
+  Real( kind = wp ), Dimension( :, : , :), Allocatable :: averages, errors
+  Real( kind = wp)                                     :: i_nr_blocks, s
+
+  Integer, Intent(in) :: num_steps
+  Integer             :: nr_blocks, i, j,k ,l, ierr, ierr2, ierr3, a, b, ia, ib, kk
+
+  test1 = 0.0_wp
+  block_number = 1
+
+  If(mxnode > 1 .and. .not. tmp_rdf_sync) Then
+     Do i=1, num_blocks+1
+        CALL gsum(tmp_rdf(:,:,i))
+     End Do
+     tmp_rdf_sync = .TRUE.
+  End If
+
+  Allocate(averages(ntpatm,ntpatm, mxgrdf), stat = ierr2)
+  Allocate(errors(ntpatm,ntpatm, mxgrdf), stat = ierr3)
+  If(ierr > 0 .or. ierr2 > 0 .or. ierr3 > 0) Then
+     Call error(1084)
+  End If
+  averages = 0.0_wp
+  errors = 0.0_wp
+
+!Compute the rdf for each of the blocks
+  Do block_number=1, num_blocks+1
+     Call calculate_block(temp, rcut)
+  End Do
+  nr_blocks = num_blocks+1
+
+!Compute the errors.
+  i_nr_blocks = 1.0_wp / Real(nr_blocks, wp)
+  Do k=1, nr_blocks
+     Do l=1, mxgrdf
+        Do j=1, ntpatm
+           Do i=1, ntpatm
+              averages(i,j,l) = averages(i,j,l) + block_averages(i,j,l,k) * i_nr_blocks
+           End Do
+        End Do
+     End Do
+  End Do
+
+  i_nr_blocks = 1.0_wp / Real(nr_blocks *(nr_blocks-1), wp)
+  Do i=1, nr_blocks
+     Do k=1, ntpatm
+        Do j=1, ntpatm
+           Do l=1, mxgrdf
+               errors(j,k,l) = errors(j,k,l) + ( (block_averages(j,k,l,i) - averages(j,k,l))**2 * i_nr_blocks )
+           End Do
+        End Do
+     End Do
+  End Do
+
+  Do l=1, mxgrdf
+     Do j=1, ntpatm
+        Do i = 1, ntpatm
+           averages(i,j,l) = averages(i,j,l) * Real(nr_blocks,wp)
+        End Do
+    End Do
+  End Do
+
+!output errors
+  If (idnode == 0) Then
+     Open(Unit=nrdfdt, File='RDFDAT', Status='replace')
+     Write(nrdfdt,'(a)') cfgname
+     Write(nrdfdt,'(2i10)') ntprdf,mxgrdf
+
+     delr = rcut/Real(mxgrdf,wp)
+     Do j =1, ntpatm
+        Do k = j, ntpatm
+           kk=lstrdf(k*(k-1)/2+j)
+           If (kk > 0 .and. kk <= ntprdf) Then
+              Write(nrite,"(/,' g(r)  :',2(1x,a8),/,/,8x,'r',6x,'g(r)',9x,'n(r)',/)") unqatm(j),unqatm(k)
+              Write(nrdfdt,'(2a8)') unqatm(j),unqatm(k)
+              Do i=1,mxgrdf
+                 Write(nrdfdt,"(1p,2e14.6,2e14.6)") ((Real(i,wp)-0.5_wp)*delr),averages(j,k,i),errors(j,k,i)
+              End Do
+           End If
+        End Do
+     End Do
+     Close(Unit=nrdfdt)
+  End If
+  Deallocate(averages, errors)
+End Subroutine calculate_errors
+
+Subroutine calculate_errors_jackknife(temp, rcut, num_steps)
+
+  Implicit None
+
+  Real( Kind = wp ), Intent(In)                        :: temp, rcut
+  Real( Kind = wp )                                    :: test1
+  Real( Kind = wp ), Dimension( :, : , :), Allocatable :: averages, errors
+  Real(Kind = wp)                                      :: i_nr_blocks, delr, s
+
+  Integer, Intent(in) :: num_steps
+  Integer             :: nr_blocks, i, j,k ,l, ierr, ierr2, ierr3, a, b, kk
+
+  test1 = 0.0_wp
+  block_number = 1
+  If(mxnode > 1 .and. .not. tmp_rdf_sync) Then
+     Do i=1, num_blocks+1
+        Call gsum(tmp_rdf(:,:,i))
+     End Do
+     tmp_rdf_sync = .TRUE.
+  End If
+
+  Allocate(averages(ntpatm,ntpatm, mxgrdf), stat = ierr2)
+  Allocate(errors(ntpatm,ntpatm, mxgrdf), stat = ierr3)
+  if(ierr > 0 .or. ierr2 > 0 .or. ierr3 > 0) then
+     Call error(1084)
+  end if
+  averages = 0.0_wp
+  errors = 0.0_wp
+  block_averages =0.0_wp
+
+!Compute the rdf for each of the blocks
+  Do block_number=1,num_blocks+1
+     Call calculate_block(temp, rcut)
+  End Do
+  nr_blocks = num_blocks+1
+  i_nr_blocks = 1.0_wp / Real(nr_blocks, wp)
+
+  Do k=1, nr_blocks
+     Do l=1, mxgrdf
+        Do j=1, ntpatm
+           Do i=1, ntpatm
+              averages(i,j,l) = averages(i,j,l) + block_averages(i,j,l,k) !* i_nr_blocks
+           End Do
+        End Do
+     End Do
+  End Do
+
+
+  i_nr_blocks = 1.0_wp / Real(nr_blocks-1, wp)
+!Create jackknife bins
+  Do k=1, nr_blocks
+     Do l=1, mxgrdf
+        Do j=1, ntpatm
+           Do i=1, ntpatm
+              block_averages(i,j,l,k) = (averages(i,j,l) - block_averages(i,j,l,k)) * i_nr_blocks
+           End Do
+        End Do
+     End Do
+  End Do
+
+!Average
+  i_nr_blocks = 1.0_wp / Real(nr_blocks,wp)
+  Do l=1, mxgrdf
+    Do j=1, ntpatm
+      Do i=1, ntpatm
+        averages(i,j,l) = averages(i,j,l) * i_nr_blocks
+      End Do
+    End Do
+  End Do
+
+!Errors
+!Compute the errors
+  i_nr_blocks = Real((nr_blocks-1), wp) / Real(nr_blocks, wp)
+  Do i=1, nr_blocks
+     Do k=1, ntpatm
+        Do j=1, ntpatm
+           Do l=1, mxgrdf
+              errors(j,k,l) = errors(j,k,l) + ( (block_averages(j,k,l,i) - averages(j,k,l))**2 * i_nr_blocks )
+           End Do
+        End Do
+     End Do
+  End Do
+
+  Do l=1, mxgrdf
+     Do j=1, ntpatm
+        Do i = 1, ntpatm
+           averages(i,j,l) = averages(i,j,l)*Real(nr_blocks,wp)
+        End Do
+     End Do
+  End Do
+
+!output errors
+  If (idnode == 0) Then
+     Open(Unit=nrdfdt, File='RDFDAT', Status='replace')
+     Write(nrdfdt,'(a)') cfgname
+     Write(nrdfdt,'(2i10)') ntprdf,mxgrdf
+
+     delr = rcut/Real(mxgrdf,wp)
+     Do j =1, ntpatm
+        Do k = j, ntpatm
+           kk=lstrdf(k*(k-1)/2+j)
+           If (kk > 0 .and. kk <= ntprdf) Then
+              Write(nrite,"(/,' g(r)  :',2(1x,a8),/,/,8x,'r',6x,'g(r)',9x,'n(r)',/)") unqatm(j),unqatm(k)
+              Write(nrdfdt,'(2a8)') unqatm(j),unqatm(k)
+              Do i=1,mxgrdf
+                 Write(nrdfdt,"(1p,2e14.6,2e14.6)") ((Real(i,wp)-0.5_wp)*delr),averages(j,k,i),errors(j,k,i)
+              End Do
+           End If
+        End Do
+     End Do
+     Close(Unit=nrdfdt)
+  End If
+End Subroutine calculate_errors_jackknife
+
+
+
+End Module rdf_compute_module

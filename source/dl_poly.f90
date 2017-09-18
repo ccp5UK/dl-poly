@@ -32,7 +32,7 @@ Program dl_poly
 !
 ! copyright - daresbury laboratory
 ! authors   - i.t.todorov & w.smith march 2016
-! contrib   - i.j.bush, h.a.boateng, a.m.elena
+! contrib   - i.j.bush, h.a.boateng, a.m.elena, a.b.g.chalk
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -343,6 +343,15 @@ Program dl_poly
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &
            megtet,megbnd,megang,megdih,meginv)
+
+! If computing rdf errors, we need to initialise the arrays.
+  If(l_errors_jack .or. l_errors_block) then
+     Call allocate_block_average_array(nstrun)
+  End If
+
+! If using induced dipoles then read in atomic polarizability
+
+!  If (induce) Call read_polarity()
 
 ! CHECK MD CONFIGURATION
 
