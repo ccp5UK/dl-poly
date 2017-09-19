@@ -34,6 +34,8 @@ Module statistics_module
   Real( Kind = wp ), Allocatable, Save :: stpval0(:),stpvl00(:),sumval0(:),ssqval0(:)
   Real( Kind = wp ), Allocatable, Save :: zumval0(:),ravval0(:),stkval0(:,:)
 
+  Logical,                        Save :: statis_file_open = .false.
+
   Public :: allocate_statistics_arrays, allocate_statistics_connect, &
             deallocate_statistics_connect
 

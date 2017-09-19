@@ -646,6 +646,8 @@ Program dl_poly
      End If
   End If
 
+!Close the statis file if we used it.
+     If (statis_file_open) Close(Unit=nstats)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -63,7 +63,6 @@ Subroutine statistics_collect             &
                                         stptmp,stpprs,stpvol
 
   Logical,           Save :: newjob = .true.
-  Logical,           Save :: statis_file_open = .false.
 
   Logical                 :: l_tmp
   Integer                 :: fail,i,j,k,iadd,kstak
