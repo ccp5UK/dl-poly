@@ -365,7 +365,7 @@ Subroutine system_init                                             &
 
 ! avoid normalising timing information
 
-                 If (k /= mxatyp+1) vafdata(:,k) = vafdata(:,k) * r_mxnode
+                 If (k /= mxatyp+1) vafdata(:,l+k) = vafdata(:,l+k) * r_mxnode
               End Do
            End Do
         End If
