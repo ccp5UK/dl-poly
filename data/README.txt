@@ -49,3 +49,9 @@ TEST 25 - Iron/Chromium Alloy with 2BEAM (metal) Ptentials (32,000 particles)
 TEST 26 - Hexane Melt (1000 molecules) with FA and CG Force-Fields
 TEST 27 - Methanol Melt (1000 molecules) with FA and CG Force-Fields
 TEST 28 - Butane in CCl4 Solution with Umbrella Sampling via PLUMED
+
+======
+
+TEST 100 - Iron with tabulated EAM (metal) Potential, Two-Temperature Model and Cascade (54,000 atoms)
+TEST 101 - Silicon with original Tersoff (T3) Potential, Two-Temperature Model and Swift heavy ion irradiation (200,000 atoms)
+TEST 102 - Tungsten with extended Finnis-Sinclair Potential, Two-Temperature Model and laser-induced relaxation of thin film (722,672 atoms)
