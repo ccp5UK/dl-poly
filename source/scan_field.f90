@@ -24,6 +24,8 @@ Subroutine scan_field                                &
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs)
 ! contrib   - h.a.boateng february 2015
 ! contrib   - a.m.elena february 2017
+! contrib   - i.t.todorov may 2017
+! contrib   - v.sokhan may 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -58,7 +60,7 @@ Subroutine scan_field                                &
   Character( Len = 8   ) :: name
 
   Logical           :: l_n_e,check,safe,l_usr,lext
-  Integer           :: mxtmls,itmols,nummols,numsit,mxnmst,isite,ksite,nrept,  &
+  Integer           :: mxtmls,itmols,nummols,numsit,mxnmst,ksite,nrept,        &
                        mxompl,mximpl,mxsite,mxatyp,megatm,i,j,k,mxexcl,        &
                        numshl,mtshl,mxtshl,mxshl,ishls,mxfshl,                 &
                        numcon,mtcons,mxtcon,mxcons,icon,mxfcon,                &
@@ -208,7 +210,7 @@ Subroutine scan_field                                &
         Call get_word(record,word) ; Call lower_case(word)
         If (word(1:5) == 'order') Call get_word(record,word)
 
-        l_n_e=.false.
+        l_n_e=.false. ! abandon assumptions
 
         mxompl = Min(Max(0,Nint(word_2_real(word))),4)
 
@@ -254,45 +256,40 @@ Subroutine scan_field                                &
                  mxsite=mxsite+numsit
 
                  ksite=0
+                 Do While (ksite < numsit)
 
-                 Do isite=1,numsit
+                    word(1:1)='#'
+                    Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                       Call get_line(safe,nfield,record)
+                       If (.not.safe) Go To 30
+                       Call get_word(record,word)
+                    End Do
 
-                    If (ksite < numsit) Then
+                    name=word(1:8)
 
-                       word(1:1)='#'
-                       Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                          Call get_line(safe,nfield,record)
-                          If (.not.safe) Go To 30
-                          Call get_word(record,word)
+                    Call get_word(record,word)
+                    Call get_word(record,word)
+                    l_n_e=(l_n_e.and.(Abs(word_2_real(word)) < 1.0e-5_wp))
+                    Call get_word(record,word)
+                    nrept=Nint(word_2_real(word))
+                    If (nrept == 0) nrept=1
+
+                    If (mxatyp == 0) Then
+                       mxatyp=1
+                       chr(1)=name
+                    Else
+                       check=.true.
+                       Do j=1,mxatyp
+                          If (name == chr(j)) check=.false.
                        End Do
 
-                       name=word(1:8)
-
-                       Call get_word(record,word)
-                       Call get_word(record,word)
-                       l_n_e=(l_n_e.and.(Abs(word_2_real(word)) < 1.0e-5_wp))
-                       Call get_word(record,word)
-                       nrept=Nint(word_2_real(word))
-                       If (nrept == 0) nrept=1
-
-                       If (mxatyp == 0) Then
-                          mxatyp=1
-                          chr(1)=name
-                       Else
-                          check=.true.
-                          Do j=1,mxatyp
-                             If (name == chr(j)) check=.false.
-                          End Do
-
-                          If (check) Then
-                             mxatyp=mxatyp+1
-                             If (mxatyp <= mmk) chr(mxatyp)=name
-                          End If
+                       If (check) Then
+                          mxatyp=mxatyp+1
+                          If (mxatyp <= mmk) chr(mxatyp)=name
                        End If
-
-                       ksite=ksite+nrept
-
                     End If
+
+                    ksite=ksite+nrept
 
                  End Do
 

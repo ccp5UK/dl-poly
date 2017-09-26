@@ -20,6 +20,7 @@ Subroutine read_field                      &
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs & PDFs)
 ! contrib   - a.m.elena september 2016 (ljc)
 ! contrib   - a.m.elena february 2017
+! contrib   - v.sokhan may 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -423,82 +424,80 @@ Subroutine read_field                      &
 ! reference point
 
                  ksite=0
-                 Do isite=1,numsit(itmols)
-                    If (ksite < numsit(itmols)) Then
+                 Do While (ksite < numsit(itmols))
 
 ! read atom name, mass, charge, repeat, freeze option
 
-                       word(1:1)='#'
-                       Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                          Call get_line(safe,nfield,record)
-                          If (.not.safe) Go To 2000
-                          Call get_word(record,word)
-                       End Do
-
-                       atom1=word(1:8)
-
+                    word(1:1)='#'
+                    Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                       Call get_line(safe,nfield,record)
+                       If (.not.safe) Go To 2000
                        Call get_word(record,word)
-                       weight=Abs(word_2_real(word))
+                    End Do
 
-                       Call get_word(record,word)
-                       charge=word_2_real(word)
+                    atom1=word(1:8)
 
-                       Call get_word(record,word)
-                       nrept=Nint(word_2_real(word))
-                       If (nrept == 0) nrept=1
+                    Call get_word(record,word)
+                    weight=Abs(word_2_real(word))
+
+                    Call get_word(record,word)
+                    charge=word_2_real(word)
+
+                    Call get_word(record,word)
+                    nrept=Nint(word_2_real(word))
+                    If (nrept == 0) nrept=1
 
 ! sum absolute charges
 
-                       sumchg=sumchg+Abs(charge)
+                    sumchg=sumchg+Abs(charge)
 
-                       Call get_word(record,word)
-                       ifrz=Nint(word_2_real(word))
-                       If (ifrz /= 0) ifrz=1
+                    Call get_word(record,word)
+                    ifrz=Nint(word_2_real(word))
+                    If (ifrz /= 0) ifrz=1
 
-                       numfrz(itmols)=numfrz(itmols)+ifrz*nrept
+                    numfrz(itmols)=numfrz(itmols)+ifrz*nrept
 
-                       If (idnode == 0) &
+                    If (idnode == 0) &
   Write(nrite,"(9x,i10,4x,a8,2f15.6,2i10)") ksite+1,atom1,weight,charge,nrept,ifrz
 
-                       Do irept=1,nrept
-                          ksite=ksite+1
-                          If (ksite > numsit(itmols)) Call error(21)
+                    Do irept=1,nrept
+                       ksite=ksite+1
+                       If (ksite > numsit(itmols)) Call error(21)
 
-                          nsite=nsite+1
-                          If (nsite > mxsite) Call error(20)
+                       nsite=nsite+1
+                       If (nsite > mxsite) Call error(20)
 
-                          sitnam(nsite)=atom1
-                          wgtsit(nsite)=weight
-                          chgsit(nsite)=charge
-                          frzsit(nsite)=ifrz
-                          If (wgtsit(nsite) > 1.0e-6_wp) dofsit(nsite)=3.0_wp*Real(Abs(1-ifrz),wp)
-                       End Do
+                       sitnam(nsite)=atom1
+                       wgtsit(nsite)=weight
+                       chgsit(nsite)=charge
+                       frzsit(nsite)=ifrz
+                       If (wgtsit(nsite) > 1.0e-6_wp) dofsit(nsite)=3.0_wp*Real(Abs(1-ifrz),wp)
+                    End Do
 
 ! establish list of unique atom types
 
-                       atmchk=.true.
-                       Do jsite=1,ntpatm
-                          If (atom1 == unqatm(jsite)) Then
-                             atmchk=.false.
-
-                             Do irept=nsite,nsite-nrept+1,-1
-                                typsit(irept)=jsite
-                             End Do
-                          End If
-                       End Do
-
-                       If (atmchk) Then
-                          ntpatm=ntpatm+1
-                          If (ntpatm > mxatyp) Call error(14)
-
-                          unqatm(ntpatm)=atom1
+                    atmchk=.true.
+                    Do jsite=1,ntpatm
+                       If (atom1 == unqatm(jsite)) Then
+                          atmchk=.false.
 
                           Do irept=nsite,nsite-nrept+1,-1
-                             typsit(irept)=ntpatm
+                             typsit(irept)=jsite
                           End Do
                        End If
+                    End Do
 
+                    If (atmchk) Then
+                       ntpatm=ntpatm+1
+                       If (ntpatm > mxatyp) Call error(14)
+
+                       unqatm(ntpatm)=atom1
+
+                       Do irept=nsite,nsite-nrept+1,-1
+                          typsit(irept)=ntpatm
+                       End Do
                     End If
+
                  End Do
 
 ! read interaction/field units
