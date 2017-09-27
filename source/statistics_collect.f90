@@ -91,6 +91,7 @@ Subroutine statistics_collect             &
 
      If (.not.l_tmp) Then
         Open(Unit=nstats, File=Trim(STATIS), Status='replace')
+        statis_file_open = .true.
 
         Write(nstats,'(a)') cfgname
 
@@ -108,7 +109,6 @@ Subroutine statistics_collect             &
            Write(nstats,'(1x,a)') 'ENERGY UNITS = DPD (Unknown)'
         End If
 
-        Close(Unit=nstats)
      End If
   End If
 
@@ -329,7 +329,10 @@ Subroutine statistics_collect             &
 ! write statistics file
 
   If (idnode == 0 .and. Mod(nstep,intsta) == 0) Then
-     Open(Unit=nstats, File=Trim(STATIS), Position='append')
+     If (.not. statis_file_open) Then
+         Open(Unit=nstats, File=Trim(STATIS), Position='append')
+         statis_file_open = .true.
+     End If
 
      If (l_msd) Then
         Write(nstats,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
@@ -339,7 +342,6 @@ Subroutine statistics_collect             &
              nstep,time,iadd+1,         stpval(1:  27),stpval(0),stpval(28         :iadd)
      End If
 
-     Close(Unit=nstats)
   End If
 
 ! check on number of variables for stack
