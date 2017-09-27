@@ -8,6 +8,8 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov november 2016
+! amended   - i.t.todorov september 2017 :: zres, zrs+ and zrs- fields
+!                                           gsum engfld and virfld
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -393,7 +395,7 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
         If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
            If (cmm(3) < prmfld(4) .or. cmm(3) > prmfld(5)) Then
               If (cmm(3) < prmfld(4)) zdif = cmm(3) - prmfld(4)
-              If (cmm(3) > prmfld(5)) zdif = prmfld(5) - cmm(3)
+              If (cmm(3) > prmfld(5)) zdif = cmm(3) - prmfld(5)
 
               gamma=-prmfld(3)*zdif*weight(i)/cmm(0)
               fzz(i)=fzz(i) + gamma
@@ -406,7 +408,7 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
 
   Else If (keyfld == 10) Then
 
-! extension to exzn- external field (push out)
+! extension to zrs- external field (push out)
 ! prmfld(1) is the index of first atom of the water molecules to be restrained
 ! prmfld(2) is the index of last atom of the water molecules to be restrained
 ! prmfld(3) is the restraining constant
@@ -423,8 +425,11 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
             If (zzz(i) > prmfld(4) .and. zzz(i) < prmfld(5)) Then
                tmp = prmfld(5) + prmfld(4)
 
-               If (zzz(i) <  tmp) zdif = zzz(i) - prmfld(4)
-               If (zzz(i) >= tmp) zdif = prmfld(5) - zzz(i)
+               If (zzz(i) <  tmp) Then
+                  zdif = zzz(i) - prmfld(4)
+               Else
+                  zdif = zzz(i) - prmfld(5)
+               End If
 
                gamma=-prmfld(3)*zdif
                fzz(i)=fzz(i) + gamma
@@ -437,7 +442,7 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
 
   Else If (keyfld == 11) Then
 
-! extension to exzn+ external field (pull in)
+! extension to zrs+ external field (pull in)
 ! prmfld(1) is the index of first atom of the water molecules to be restrained
 ! prmfld(2) is the index of last atom of the water molecules to be restrained
 ! prmfld(3) is the restraining constant
@@ -450,9 +455,9 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
      ib = Nint(prmfld(2))
      Do i=1,natms
         If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
-           If (zzz(i) < prmfld(4) .and. zzz(i) > prmfld(5)) Then
+           If (zzz(i) < prmfld(4) .or. zzz(i) > prmfld(5)) Then
               If (zzz(i) < prmfld(4)) zdif = zzz(i) - prmfld(4)
-              If (zzz(i) > prmfld(5)) zdif = prmfld(5) - zzz(i)
+              If (zzz(i) > prmfld(5)) zdif = zzz(i) - prmfld(5)
 
               gamma=-prmfld(3)*zdif
               fzz(i)=fzz(i) + gamma
@@ -554,6 +559,18 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
 
      Call error(454)
 
+  End If
+
+! sum up energy and virial contributions
+
+  If (mxnode > 1) Then
+     rtmp(1) = engfld
+     rtmp(2) = virfld
+
+     Call gsum(rtmp)
+
+     engfld = rtmp(1)
+     virfld = rtmp(2)
   End If
 
 End Subroutine external_field_apply
