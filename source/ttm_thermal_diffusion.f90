@@ -1,4 +1,4 @@
-Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndump,nstrun,lines,npage)
+Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstrun,lines,npage)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -23,7 +23,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
 
   Implicit None
 
-  Integer, Intent( In ) :: keyres,ndump,nstbpo,nsteql,nstep,nstrun,lines,npage
+  Integer, Intent( In ) :: ndump,nstbpo,nsteql,nstep,nstrun,lines,npage
   Real ( Kind = wp ), Intent( In ) :: temp,tstep,time
 
   Real ( Kind = wp ), Allocatable :: eltemp1(:,:,:,:)
@@ -162,7 +162,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,keyres,ndu
 ! deposition stage 2 (with boundary conditions)
 
     If (trackInit) Then
-      Call depoevolve(nstep, nsteql, time, tstep, redtstep, redtstepmx)
+      Call depoevolve(time, tstep, redtstep, redtstepmx)
       Call boundaryCond(bcTypeE, temp)
     End If
 

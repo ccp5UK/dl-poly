@@ -99,13 +99,13 @@ Contains
 
   End Subroutine depoinit
 
-  Subroutine depoevolve(nstep,nsteql,time,tstep,redtstep,redtstepmx)
+  Subroutine depoevolve(time,tstep,redtstep,redtstepmx)
 
 ! determine how deposition evolves over time
 
     Implicit None
     Real( Kind = wp ), Intent ( In ) :: tstep,time
-    Integer, Intent ( In ) :: nstep,nsteql,redtstepmx,redtstep
+    Integer, Intent ( In ) :: redtstepmx,redtstep
 		
     Real( Kind = wp ) :: lat_I_max, lat_I_sum, lat_I_min
     Real( Kind = wp ) :: lat_U_min, lat_U_max, lat_U_sum, invbin

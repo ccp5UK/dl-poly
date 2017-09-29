@@ -64,7 +64,7 @@ Subroutine nvt_l2_vv                          &
   Integer                 :: fail(1:9),i,ia,ja,ka,ijk
   Real( Kind = wp )       :: hstep,rstep,chi
   Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,vom(1:3), &
-                             t0,t1,t2,scr,scl,scv,scr1,scl1,scv1,     &
+                             t0,t1,t2,scr1,scl1,scv1,                 &
                              t0a,t1a,t2a,t0b,t1b,t2b,scr1a,scl1a,     &
                              scv1a,scr1b,scl1b,scv1b,velsq,eltempmax
 

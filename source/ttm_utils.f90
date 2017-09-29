@@ -64,6 +64,8 @@ Contains
     Real ( Kind = wp ), Intent ( In ) :: T
     Real ( Kind = wp )                :: Ce
 
+    Ce = 1.0_wp
+
     Select Case (CeType)
     Case (0)
       ! Case 0: constant specific heat capacity (given as kB/A^3)
@@ -90,6 +92,9 @@ Contains
     Case (3,7)
       ! Case 3: interpolated specific heat capacity from table (given as kB/A^3)
       Call interpolate(cel, cetable, T, Ce)
+    Case Default
+      ! Default case: constant specific heat capacity of 1 kB/atom (convert to kB/A^3)
+      Ce = cellrho
     End Select
 
   End Function Ce
@@ -155,6 +160,8 @@ Contains
     ! Case 3: non-metal system - thermal diffusivity interpolated 
     !         from table (given as A^2/ps)
       Call interpolate(del, detable, Te, alp)
+    Case Default
+      alp = 0.0_wp
     End Select
 
   End Function alp
@@ -1439,8 +1446,7 @@ Contains
     Real ( Kind = wp ), Intent ( In )  :: temp
     Real ( Kind = wp ), Intent ( Out ) :: eltempmin
     Real ( Kind = wp )                 :: eltempKe
-    Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
-    Logical                            :: lrange
+    Integer                            :: i,j,k,ijk
 
     eltempmin = 1.0e30_wp
 
