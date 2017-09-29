@@ -22,6 +22,7 @@ Subroutine nvt_g0_lfv                     &
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov august 2016
+! amended   - i.t.todorov march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,7 +31,6 @@ Subroutine nvt_g0_lfv                     &
   Use setup_module
   Use config_module,      Only : natms,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use langevin_module,    Only : r_0
   Use kinetic_module,     Only : getkin,kinstress
   Use core_shell_module,  Only : legshl
   Use constraints_module, Only : passcon
@@ -67,7 +67,7 @@ Subroutine nvt_g0_lfv                     &
   Real( Kind = wp ), Save :: qmass,ceng
   Real( Kind = wp )       :: hstep,rstep
   Real( Kind = wp )       :: chit1,chit2
-  Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,fex
+  Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,fex,r_0
 
 
   Logical,           Allocatable :: lstitr(:)

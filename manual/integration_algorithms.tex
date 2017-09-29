@@ -1053,15 +1053,15 @@ where $\epsilon = \alpha\sigma^{2}/2$ and $\Delta \omega \sim \mathcal{N}(0,1)$.
 The VV implementation of the Gentle Stochastic Thermostat algorithm
 takes place in a symplectic manner as follows:
 \begin{enumerate}
-\item Thermostat: Note $E_{kin}(t)$ changes inside and $R_{g}(t)$, drown from ${\tt Gauss}(0,1)$, is carried over from the previous half-timestep
+\item Thermostat: Note $E_{kin}(t)$ changes inside and $R_{g_{1,2}}(t)$, drawn from ${\tt Gauss}(0,1)$, are independent
 \begin{eqnarray}
 \chi (t + {1 \over 4} \Delta t) &\leftarrow& \chi (t) ~ \exp \left[-\gamma~{\Delta t \over 4} \right] +
-\sqrt{\frac{k_{B}~T_{\rm ext}}{q_{mass}}\left(1-\exp^{2} \left[-\gamma~{\Delta t \over 4} \right]\right)}~R_{g}(t) \phantom{xxx} \nonumber \\
+\sqrt{\frac{k_{B}~T_{\rm ext}}{q_{mass}}\left(1-\exp^{2} \left[-\gamma~{\Delta t \over 4} \right]\right)}~R_{g_{1}}(t) \phantom{xxx} \nonumber \\
 & &\phantom{xxxxxxxxxxxxxxxx} + {\Delta t \over 4} \; {{2 E_{kin}(t) - 2 \sigma} \over q_{mass}} \nonumber \\
 \vek{v}(t) &\leftarrow& \vek{v}(t) \; \exp \left(
 -\chi (t + {1 \over 4} \Delta t) \; {\Delta t \over 2} \right) \\
 \chi (t + {1 \over 2} \Delta t) &\leftarrow& \chi (t + {1 \over 4} \Delta t) ~ \exp \left[-\gamma~{\Delta t \over 4} \right] +
-\sqrt{\frac{k_{B}~T_{\rm ext}}{q_{mass}}\left(1-\exp^{2} \left[-\gamma~{\Delta t \over 4} \right]\right)}~R_{g}(t) \phantom{xxx} \nonumber \\
+\sqrt{\frac{k_{B}~T_{\rm ext}}{q_{mass}}\left(1-\exp^{2} \left[-\gamma~{\Delta t \over 4} \right]\right)}~R_{g_{2}}(t+{1 \over 4} \Delta t) \phantom{xxx} \nonumber \\
 & &\phantom{xxxxxxxxxxxxxxxx} + {\Delta t \over 4} \; {{2 E_{kin}(t) - 2 \sigma} \over q_{mass}} \nonumber
 \end{eqnarray}
 \item VV1:
@@ -1082,15 +1082,15 @@ takes place in a symplectic manner as follows:
 {\Delta t \over 2} \; {\vek{f}(t + \Delta t) \over m}
 \end{equation}
 \item RATTLE\_VV2
-\item Thermostat: Note $E_{kin}(t + \Delta t)$ changes inside and $R_{g}(t + \Delta t)$ is drown anew from ${\tt Gauss}(0,1)$, and is to be carried over the next half-timestep
+\item Thermostat: Note $E_{kin}(t + \Delta t)$ changes inside and $R_{g_{3,4}}(t)$, drawn from ${\tt Gauss}(0,1)$, are independent
 \begin{eqnarray}
 \chi (t + {3 \over 4} \Delta t) &\leftarrow& \chi (t + {1 \over 2} \Delta t) ~ \exp \left[-\gamma~{\Delta t \over 4} \right] +
-\sqrt{\frac{k_{B}~T_{\rm ext}}{q_{mass}}\left(1-\exp^{2} \left[-\gamma~{\Delta t \over 4} \right]\right)}~R_{g}(t + \Delta t) \phantom{xxx} \nonumber \\
+\sqrt{\frac{k_{B}~T_{\rm ext}}{q_{mass}}\left(1-\exp^{2} \left[-\gamma~{\Delta t \over 4} \right]\right)}~R_{g_{3}}(t + {2 \over 4} \Delta t) \phantom{xxx} \nonumber \\
 & &\phantom{xxxxxxxxxxxxxxxx} + {\Delta t \over 4} \; {{2 E_{kin}(t) - 2 \sigma} \over q_{mass}} \nonumber \\
 \vek{v}(t + \Delta t) &\leftarrow& \vek{v}(t + \Delta t) \; \exp \left(
 -\chi (t + {3 \over 4} \Delta t) \; {\Delta t \over 2} \right) \\
 \chi (t + \Delta t) &\leftarrow& \chi (t + {3 \over 4} \Delta t) ~ \exp \left[-\gamma~{\Delta t \over 4} \right] +
-\sqrt{\frac{k_{B}~T_{\rm ext}}{q_{mass}}\left(1-\exp^{2} \left[-\gamma~{\Delta t \over 4} \right]\right)}~R_{g}(t + \Delta t) \phantom{xxx} \nonumber \\
+\sqrt{\frac{k_{B}~T_{\rm ext}}{q_{mass}}\left(1-\exp^{2} \left[-\gamma~{\Delta t \over 4} \right]\right)}~R_{g_{4}}(t + {3 \over 4} \Delta t) \phantom{xxx} \nonumber \\
 & &\phantom{xxxxxxxxxxxxxxxx} + {\Delta t \over 4} \; {{2 E_{kin}(t) - 2 \sigma} \over q_{mass}} \nonumber
 \end{eqnarray}
 \end{enumerate}
@@ -1116,7 +1116,7 @@ an unconstrained estimate of the velocity at full step, $\vek{v}(t)$.
 \vek{v}(t) \leftarrow {1 \over 2} \left[ \vek{v}(t - {1 \over 2} \Delta t) +
 \vek{v}(t + {1 \over 2} \Delta t) \right]
 \end{equation}
-\item Thermostat: Note $R_{g}(t)$ is drown from ${\tt Gauss}(0,1)$ just once per timestep
+\item Thermostat: Note $R_{g}(t)$ is drawn from ${\tt Gauss}(0,1)$ just once per timestep
 \begin{eqnarray}
 \chi (t + {1 \over 2} \Delta t) &\leftarrow& \chi (t - {1 \over 2} \Delta t) ~ \exp \left[-\gamma~{\Delta t \over 4} \right] +
 \sqrt{\frac{k_{B}~T_{\rm ext}}{q_{mass}}\left(1-\exp^{2} \left[-\gamma~{\Delta t \over 4} \right]\right)}~R_{g}(t) \phantom{xxx} \nonumber \\
@@ -2359,8 +2359,8 @@ COM, and is given by:
 \vek{d}_{j}=\vek{r}_{j}-\vek{R}~~.
 \end{equation}
 
-The rigid body angular velocity $\vek{\omega}$ is the scalar product of
-the moment of inertia, $\mat{I}$, inverse and the angular momentum, $\vek{J}$,:
+The rigid body angular velocity $\vek{\omega}$ is the right dot product of the
+inverse of the moment inertia, $\mat{I}$, and the angular momentum, $\vek{J}$,:
 \begin{equation}
 \vek{\omega} =  \mat{I}^{-1} \cdot \vek{J}~~.
 \end{equation}

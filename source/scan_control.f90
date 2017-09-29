@@ -14,11 +14,12 @@ Subroutine scan_control                                    &
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2017
 ! contrib   - i.j.bush february 2014
-! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
+! contrib   - a.v.brukhno & i.t.todorov april 2014 (intramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
 ! contrib   - p.s.petkov february 2015
 ! contrib   - a.m.elena february 2017
 ! contrib   - m.a.seaton march 2017 (TTM)
+! contrib   - a.b.g.chalk march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -31,6 +32,7 @@ Subroutine scan_control                                    &
   Use kim_module,         Only : kim,rkim
   Use msd_module
   Use greenkubo_module,   Only : isvaf,nsvaf,vafsamp
+  Use rdf_module,         Only : l_errors_jack, l_errors_block
   Use development_module, Only : l_trm
   Use ttm_module,         Only : l_ttm,ntsys,eltsys,isMetal,CeType,DeType,KeType,gvar,redistribute,ttmthvel,ttmthvelz
 
@@ -686,6 +688,14 @@ Subroutine scan_control                                    &
 
         carry=.false.
 
+     Else If (word(1:6) == 'errors') Then
+       Call lower_case(record)
+       Call get_word(record,word)
+       If(word(1:4) == 'jack') Then
+          l_errors_jack = .TRUE.
+       Else
+          l_errors_block = .TRUE.
+       End If
      End If
 
   End Do
@@ -1097,6 +1107,8 @@ Subroutine scan_control                                    &
   l_trm = (l_exp .and. nstrun == 0)
   If (((.not.lsim) .or. l_trm) .and. lrpad) rpad=0.0_wp
 
+  l_errors_block = l_errors_block .and. lrdf
+  l_errors_jack = l_errors_jack .and. lrdf
   Return
 
 ! CONTROL file does not exist

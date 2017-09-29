@@ -22,6 +22,7 @@ Subroutine nvt_g0_vv                          &
 
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov august 2016
+! amended   - i.t.todorov march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -30,7 +31,6 @@ Subroutine nvt_g0_vv                          &
   Use setup_module
   Use config_module,      Only : natms,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use langevin_module,    Only : r_0
   Use kinetic_module,     Only : kinstress
   Use core_shell_module,  Only : legshl
   Use constraints_module, Only : passcon
@@ -118,11 +118,6 @@ Subroutine nvt_g0_vv                          &
 
      If (megcon > 0 .or.  megpmf > 0) mxkit=1
      If (megcon > 0 .and. megpmf > 0) mxkit=mxshak
-
-! generate a Gaussian random number for use in the
-! Langevin process on the thermostat friction
-
-     Call box_mueller_saru1(Int(degfre/3_ip),nstep-1,r_0)
   End If
 
   If (megcon > 0 .or. megpmf > 0) Then
@@ -190,7 +185,7 @@ Subroutine nvt_g0_vv                          &
 ! integrate and apply nvt_g0_scl thermostat - 1/2 step
 
      Call nvt_g0_scl &
-           (hstep,ceng,qmass,temp,gama,r_0,0.0_wp,0.0_wp, &
+           (hstep,degfre,isw,nstep,ceng,qmass,temp,gama,0.0_wp,0.0_wp, &
            vxx,vyy,vzz,chit,cint,engke)
 
 ! update velocity and position
@@ -377,11 +372,6 @@ Subroutine nvt_g0_vv                          &
 
   Else
 
-! generate a Gaussian random number for use in the
-! Langevin process on the thermostat friction
-
-     Call box_mueller_saru1(Int(degfre/3_ip),nstep,r_0)
-
 ! update velocity
 
      Do i=1,natms
@@ -416,7 +406,7 @@ Subroutine nvt_g0_vv                          &
 ! integrate and apply nvt_g0_scl thermostat - 1/2 step
 
      Call nvt_g0_scl &
-           (hstep,ceng,qmass,temp,gama,r_0,0.0_wp,0.0_wp, &
+           (hstep,degfre,isw,nstep,ceng,qmass,temp,gama,0.0_wp,0.0_wp, &
            vxx,vyy,vzz,chit,cint,engke)
 
 ! conserved quantity less kinetic and potential energy terms

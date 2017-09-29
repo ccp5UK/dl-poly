@@ -1,5 +1,5 @@
 Subroutine nvt_g0_scl &
-           (tstep,ceng,qmass,temp,gama,r_0,pmass,chip, &
+           (tstep,degfre,isw,nstep,ceng,qmass,temp,gama,pmass,chip, &
            vxx,vyy,vzz,chit,cint,engke)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -11,6 +11,7 @@ Subroutine nvt_g0_scl &
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov january 2012
+! amended   - i.t.todorov march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,14 +23,15 @@ Subroutine nvt_g0_scl &
   Implicit None
 
   Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
-                                                               temp,gama,r_0,    &
-                                                               pmass,chip
+                                                               temp,gama,pmass,chip
+  Integer(Kind=ip),                         Intent( In    ) :: degfre
+  Integer,                                  Intent( In    ) :: isw,nstep
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
   Real( Kind = wp ),                        Intent( InOut ) :: chit,cint
   Real( Kind = wp ),                        Intent(   Out ) :: engke
 
   Integer           :: i
-  Real( Kind = wp ) :: hstep,qstep,factor,scale,fex
+  Real( Kind = wp ) :: hstep,qstep,factor,scale,fex,r_0
 
 
 ! timestep derivative and factor
@@ -47,6 +49,11 @@ Subroutine nvt_g0_scl &
   engke=getkin(vxx,vyy,vzz)
 
   fex=Exp(-gama*hstep)
+
+! generate a Gaussian random number for use in the
+! Langevin process on the thermostat friction
+
+  Call box_mueller_saru2(Int(degfre/3_ip),nstep-1,2*isw+1,r_0,.true.)
 
 ! update chit to 1/2*tstep
 
@@ -69,6 +76,11 @@ Subroutine nvt_g0_scl &
 ! thermostat the energy consequently
 
   engke=engke*scale**2
+
+! generate a Gaussian random number for use in the
+! Langevin process on the thermostat friction
+
+  Call box_mueller_saru2(Int(degfre/3_ip),nstep-1,2*isw+2,r_0,.true.)
 
 ! update chit to full (2/2)*tstep
 

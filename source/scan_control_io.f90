@@ -564,8 +564,8 @@ Subroutine scan_control_output()
   Implicit None
 
   Logical                :: carry,safe
-  Character( Len = 200 ) :: record
-  Character( Len = 40  ) :: word,word1
+  Character( Len = 200 ) :: record,rec_case_sensitive
+  Character( Len = 40  ) :: word,word1,wordo
 
   safe   = .true.  ! all is safe
 
@@ -594,39 +594,41 @@ Subroutine scan_control_output()
      If (.not.safe) Then
        Call error(17)
      End If
-
+     rec_case_sensitive = record
      Call lower_case(record)
 
      Call get_word( record, word )
+     Call get_word( rec_case_sensitive, wordo )
      If      (word(1:2) == 'io' ) Then
 
         Call get_word( record, word1 )
+        Call get_word( rec_case_sensitive, wordo )
         If (word1(1:6) == 'output') Then
-          Call get_word( record, output )
+          Call get_word( rec_case_sensitive, output )
 
         Else If (word1(1:6) == 'config') Then
-          Call get_word( record, config )
+          Call get_word( rec_case_sensitive, config )
 
         Else If (word1(1:5) == 'field') Then
-          Call get_word( record, field )
+          Call get_word( rec_case_sensitive, field )
 
         Else If (word1(1:6) == 'statis') Then
-          Call get_word( record, statis )
+          Call get_word( rec_case_sensitive, statis )
 
         Else If (word1(1:7) == 'history') Then
-          Call get_word( record, history )
+          Call get_word( rec_case_sensitive, history )
 
         Else If (word1(1:7) == 'historf') Then
-          Call get_word( record, historf )
+          Call get_word( rec_case_sensitive, historf )
 
         Else If (word1(1:6) == 'revive') Then
-          Call get_word( record, revive )
+          Call get_word( rec_case_sensitive, revive )
 
         Else If (word1(1:6) == 'revcon') Then
-          Call get_word( record, revcon )
+          Call get_word( rec_case_sensitive, revcon )
 
         Else If (word1(1:6) == 'revold') Then
-          Call get_word( record, revold )
+          Call get_word( rec_case_sensitive, revold )
         End If
 ! read finish
 

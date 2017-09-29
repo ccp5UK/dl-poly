@@ -73,17 +73,17 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 \> {\tt tstep}    \> real    \> integration timestep (ps) \\
 \> {\tt time}     \> real    \> elapsed simulation time (ps) \\
 {\bf record ii} \\
-\> {\tt cell(1)}  \> real    \> x component of $a$ cell vector \\
-\> {\tt cell(2)}  \> real    \> y component of $a$ cell vector \\
-\> {\tt cell(3)}  \> real    \> z component of $a$ cell vector \\
+\> {\tt cell(1)}  \> real    \> x component of $a$ cell vector in \AA \\
+\> {\tt cell(2)}  \> real    \> y component of $a$ cell vector in \AA \\
+\> {\tt cell(3)}  \> real    \> z component of $a$ cell vector in \AA \\
 {\bf record iii} \\
-\> {\tt cell(4)}  \> real    \> x component of $b$ cell vector \\
-\> {\tt cell(5)}  \> real    \> y component of $b$ cell vector \\
-\> {\tt cell(6)}  \> real    \> z component of $b$ cell vector \\
+\> {\tt cell(4)}  \> real    \> x component of $b$ cell vector in \AA \\
+\> {\tt cell(5)}  \> real    \> y component of $b$ cell vector in \AA \\
+\> {\tt cell(6)}  \> real    \> z component of $b$ cell vector in \AA \\
 {\bf record iv} \\
-\> {\tt cell(7)}  \> real    \> x component of $c$ cell vector \\
-\> {\tt cell(8)}  \> real    \> y component of $c$ cell vector \\
-\> {\tt cell(9)}  \> real    \> z component of $c$ cell vector
+\> {\tt cell(7)}  \> real    \> x component of $c$ cell vector in \AA \\
+\> {\tt cell(8)}  \> real    \> y component of $c$ cell vector in \AA \\
+\> {\tt cell(9)}  \> real    \> z component of $c$ cell vector in \AA
 \end{tabbing}
 This is followed by the configuration for the current timestep. i.e.
 for each atom in the system the following data are included:
@@ -94,22 +94,21 @@ X\=XXXXXXXX\=XXXXXXXXXXXXXXXX\=\kill
 \> {\tt iatm}   \> integer \> atom index \\
 \> {\tt weight} \> real    \> atomic mass (a.m.u.) \\
 \> {\tt charge} \> real    \> atomic charge (e) \\
-\> {\tt rsd}    \> real    \> displacement from position at $t=0$ (\AA)\\
+\> {\tt rsd}    \> real    \> displacement from position at $t=0$ in \AA \\
 {\bf record b} \\
 \> {\tt xxx}    \> real    \> x coordinate \\
 \> {\tt yyy}    \> real    \> y coordinate \\
 \> {\tt zzz}    \> real    \> z coordinate \\
 {\bf record c} only for {\tt keytrj} $>$ 0 \\
-\> {\tt vxx}    \> real    \> x component of velocity \\
-\> {\tt vyy}    \> real    \> y component of velocity \\
-\> {\tt vzz}    \> real    \> z component of velocity \\
+\> {\tt vxx}    \> real    \> x component of velocity in \AA/picosecond \\
+\> {\tt vyy}    \> real    \> y component of velocity in \AA/picosecond \\
+\> {\tt vzz}    \> real    \> z component of velocity in \AA/picosecond \\
 {\bf record d} only for {\tt keytrj} $>$ 1 \\
-\> {\tt fxx}    \> real    \> x component of force \\
-\> {\tt fyy}    \> real    \> y component of force \\
-\> {\tt fzz}    \> real    \> z component of force
+\> {\tt fxx}    \> real    \> x component of force in \AA$\cdot$Dalton/picosecond$^{2}$ \\
+\> {\tt fyy}    \> real    \> y component of force in \AA$\cdot$Dalton/picosecond$^{2}$ \\
+\> {\tt fzz}    \> real    \> z component of force in \AA$\cdot$Dalton/picosecond$^{2}$
 \end{tabbing}
-Thus the data for each atom is a minimum of two records and a maximum
-of 4.
+Thus the data for each atom is a minimum of two records and a maximum of 4.
 
 \subsection{The MSDTMP File}
 \label{msdtmp-file}

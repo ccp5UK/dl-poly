@@ -8,6 +8,7 @@ Subroutine external_field_correct(engfld)
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2015
+! amnded    - i.t.todorov september 2015 : gsum engfld
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -88,6 +89,8 @@ Subroutine external_field_correct(engfld)
 
   Else If (keyfld == 8) Then
 
+     engfld = 0.0_wp
+
 ! xpist - piston wall pushing down along the X=bxc direction
 ! prmfld(1) is the first atom of the layer of molecules (membrane) to be pushed
 ! prmfld(2) is the last atom of the layer of molecules (membrane) to be pushed
@@ -121,6 +124,8 @@ Subroutine external_field_correct(engfld)
      End Do
 
      engfld=0.5_wp*engfld
+
+     If (mxnode > 1) Call gsum(engfld)
 
   End If
 

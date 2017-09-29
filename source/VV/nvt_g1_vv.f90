@@ -24,6 +24,7 @@ Subroutine nvt_g1_vv                          &
 
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov august 2016
+! amended   - i.t.todorov march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -35,7 +36,6 @@ Subroutine nvt_g1_vv                          &
                                  lstfre,weight,                &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
-  Use langevin_module,    Only : r_0
   Use kinetic_module,     Only : kinstresf,kinstrest
   Use core_shell_module,  Only : legshl
   Use constraints_module, Only : passcon
@@ -168,11 +168,6 @@ Subroutine nvt_g1_vv                          &
 ! for iterative PMF constraint algorithms
 
      If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
-
-! generate a Gaussian random number for use in the
-! Langevin process on the thermostat friction
-
-     Call box_mueller_saru1(Int(degfre/3_ip),nstep-1,r_0)
   End If
 
 ! Get the RB particles vectors wrt the RB's COM
@@ -273,10 +268,10 @@ Subroutine nvt_g1_vv                          &
 ! integrate and apply nvt_g1_scl thermostat - 1/2 step
 
      Call nvt_g1_scl &
-           (hstep,ceng,qmass,temp,gama,r_0,0.0_wp,0.0_wp, &
-           vxx,vyy,vzz,                                &
-           rgdvxx,rgdvyy,rgdvzz,                       &
-           rgdoxx,rgdoyy,rgdozz,                       &
+           (hstep,degfre,isw,nstep,ceng,qmass,temp,gama,0.0_wp,0.0_wp, &
+           vxx,vyy,vzz,                                                &
+           rgdvxx,rgdvyy,rgdvzz,                                       &
+           rgdoxx,rgdoyy,rgdozz,                                       &
            chit,cint,engke,engrot)
 
 ! update velocity and position of FPs
@@ -647,11 +642,6 @@ Subroutine nvt_g1_vv                          &
 
   Else
 
-! generate a Gaussian random number for use in the
-! Langevin process on the thermostat friction
-
-     Call box_mueller_saru1(Int(degfre/3_ip),nstep,r_0)
-
 ! update velocity of FPs
 
      Do j=1,nfree
@@ -824,10 +814,10 @@ Subroutine nvt_g1_vv                          &
 ! integrate and apply nvt_g1_scl thermostat - 1/2 step
 
      Call nvt_g1_scl &
-           (hstep,ceng,qmass,temp,gama,r_0,0.0_wp,0.0_wp, &
-           vxx,vyy,vzz,                                &
-           rgdvxx,rgdvyy,rgdvzz,                       &
-           rgdoxx,rgdoyy,rgdozz,                       &
+           (hstep,degfre,isw,nstep,ceng,qmass,temp,gama,0.0_wp,0.0_wp, &
+           vxx,vyy,vzz,                                                &
+           rgdvxx,rgdvyy,rgdvzz,                                       &
+           rgdoxx,rgdoyy,rgdozz,                                       &
            chit,cint,engke,engrot)
 
 ! conserved quantity less kinetic and potential energy terms

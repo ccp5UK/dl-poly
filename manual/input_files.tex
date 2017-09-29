@@ -77,6 +77,21 @@ is highly recommended.
 \begin{lstlisting}
 TITLE RECORD: DL_POLY_4 SAFE ORDER OF CONTROL DIRECTIVES
 
+# I/O REDIRECT
+io output  my-dl_poly-run
+io config  CONFIG-CDS-generated
+io field   FILED-dl_field.out
+io history new-trajectory
+io revive  REVIVE-2ps-run
+io revold  REVIVE-1ps-run
+io revcon  REVCON-100k-output
+
+# I/O READ: METHOD, READER COUNT, BATCH & BUFFER SIZES
+io read  mpiio        2 2000000 20000
+
+# I/O WRITE: METHOD, TYPE, WRITER COUNT, BATCH & BUFFER SIZES
+io write mpiio sorted 8 2000000 20000
+
 # SYSTEM REPLICATION & IMPACT OPTION
 nfold              10 10 10
 impact 1 2000 7.5 1.0 2.0 3.0
@@ -108,12 +123,6 @@ vdw shift
 
 # RANDOM NUMBER GENERATOR SEEDING
 seed 100 200 300
-
-# I/O READ: METHOD, READER COUNT, BATCH & BUFFER SIZES
-io read  mpiio        2 2000000 20000
-
-# I/O WRITE: METHOD, TYPE, WRITER COUNT, BATCH & BUFFER SIZES
-io write mpiio sorted 8 2000000 20000
 
 # SLAB SIMULATION PARALLEL CONTROL
 slab
@@ -163,8 +172,8 @@ zero fire
 cap                   500 kT/Angstrom
 scale                   5 steps
 regauss                 3 steps
-minimise force      20  1.0
-optimise energy         0.001
+minimise force      20  1.0    0.00001
+optimise energy         0.001  0.00005
 
 # STATISTICS
 collect
@@ -172,7 +181,7 @@ stack                  50 deep
 stats                  10 steps
 
 # OUTPUT
-print                   2 steps
+print                  20 steps
 
 # HISTORY
 replay
@@ -520,7 +529,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> {\em energy} ($0~<~f~\le~0.01$, default $f~=~0.005$) or \\
 \>                                              \> {\em distance} (maximum absolute displacement in \AA, \\
 \>                                              \> $10^{-6}~\le~f~\le~0.1$, default $f~=~0.005$); \\
-\>                                              \> the optional stepping, $s$, default is $\delta t_{instanteneous}^{2}$; \\
+\>                                              \> the optional stepping, $s$, default is $(\Delta t_{instanteneous})^{2}$; \\
 \>                                              \> the CGM minimised configuration is saved \\
 \>                                              \> in a file, CFGMIN which has the same format as CONFIG \\
 \>                                              \> \\
@@ -935,10 +944,10 @@ Figure~\ref{input-files}).  However, {\bf (i)} since version 4.01
 \D has defaulted to using parallel read and write via MPI-I/O
 (but also supporting a variety of alternative options) and
 {\bf (ii)} since version 4.09 the program has also introduced the
-functionality for user defined I/O filenames, both via the CONTROL
-{\bf io} directives below.  Even the CONTROL file may be named
-differently but in this case the alternative name must be passed
-as a command line argument to the \D executable (usually named
+functionality for user defined I/O filenames, both available via
+the CONTROL {\bf io} directives below.  Even the CONTROL file may
+be named differently but in this case the alternative name must be
+passed as a command line argument to the \D executable (usually named
 {\bf DLPOLY.Z}).  It is worth noting that the latter options have
 paved the way for user defined work-flows exploitation of the \D engine.
 
@@ -1783,14 +1792,14 @@ etc.
 
 \subsubsection{The CONFIG File Format}
 
-The file is free-formatted and not case sensitive.  Every line is
-treated as a command sentence (record).  However, line records are
-limited to 72 characters in length.  Records are read in words,
-as a word must not exceed 40 characters in length.  Words are
-recognised as such by separation by one or more space characters.
-The first record in the CONFIG file is a header (up to 72
-characters long) to aid identification of the file.  Blank and
-commented lines are not allowed.
+The file is free-formatted and case sensitive for the atom
+species names.  Every line is treated as a command sentence
+(record).  However, line records are limited to 72 characters
+in length.  Records are read in words, as a word must not
+exceed 40 characters in length.  Words are recognised as such
+by separation by one or more space characters. The first record
+in the CONFIG file is a header (up to 72 characters long) to
+aid identification of the file.  Blank and commented lines are not allowed.
 
 \subsubsection{Definitions of Variables in the CONFIG File}
 
@@ -1846,13 +1855,13 @@ X\=XXXXXXX\=XXXXXX\=XXXXXX\kill
 \> {\tt yyy}     \> real    \> y coordinate in \AA \\
 \> {\tt zzz}     \> real    \> z coordinate in \AA \\
 {\bf record iii} \>         \> included only if {\tt levcfg} $>0$ \\
-\> {\tt vxx}     \> real    \> x component of velocity \\
-\> {\tt vyy}     \> real    \> y component of velocity \\
-\> {\tt vzz}     \> real    \> x component of velocity \\
+\> {\tt vxx}     \> real    \> x component of velocity in \AA/picosecond \\
+\> {\tt vyy}     \> real    \> y component of velocity in \AA/picosecond \\
+\> {\tt vzz}     \> real    \> x component of velocity in \AA/picosecond \\
 {\bf record iv}  \>         \> included only if {\tt levcfg} $>1$ \\
-\> {\tt fxx}     \> real    \> x component of force \\
-\> {\tt fyy}     \> real    \> y component of force \\
-\> {\tt fzz}     \> real    \> z component of force
+\> {\tt fxx}     \> real    \> x component of force in \AA$\cdot$Dalton/picosecond$^{2}$ \\
+\> {\tt fyy}     \> real    \> y component of force in \AA$\cdot$Dalton/picosecond$^{2}$ \\
+\> {\tt fzz}     \> real    \> z component of force in \AA$\cdot$Dalton/picosecond$^{2}$
 \end{tabbing}
 \noindent {\bf Note} that on {\bf record i} only the atom name is
 strictly mandatory, any other items are not read by \C but may be
@@ -1868,7 +1877,8 @@ in \AA, there is a {\bf fine connection} between them!  This would
 not be the case if the particles' positions were kept in reduced space
 with fractional coordinates.  Last but not least, it is worth pointing
 out that composite entities, such as velocities and forces, have their
-units expressed as composites of the DL\_POLY units as shown in Section~\ref{units}.
+units expressed as composites of the default DL\_POLY units as shown in
+Section~\ref{units}.
 
 \begin{table}[htbp]
 \begin{centering}
@@ -2761,6 +2771,9 @@ $+ \frac{nm\alpha E_{o}}{(n-m)} \left( \frac{r-\gamma r_{o}}
 {\bf mors} & Morse                     & $E_{0}$    & $r_{0}$  & $k$      &         &                      &
 $U(r) = E_{0}[\{1-\exp(-k(r-r_{0}))\}^{2}-1]$ \\
            &                           &            &          &          &         &                      & \\
+{\bf mstw} & Morse modified             & $E_{0}$    & $r_{0}$  & $k$      &   $c$   &                      &
+  $U(r) = E_{0}[\{1-\exp(-k(r-r_{0}))\}^{2}-1] + \frac{c}{r^{12}}$ \\
+           &                           &            &          &          &         &                      & \\
 {\bf wca}  & Shifted$^{*}$ \cite{weeks-71a} Weeks- & $\epsilon$ & $\sigma^{\ddagger}$ & $\Delta$ & &       &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r-\Delta} \right)^{12} -
 \left( \frac{\sigma}{r-\Delta}\right)^{6} \right] + \epsilon : r_{ij} < 2^{1 \over 6}~\sigma + \Delta$ \\
@@ -3205,14 +3218,14 @@ $\vek{F} = q \; (\vek{v} \times \vek{H})$ \\
 {\bf sphr} & Containing Sphere   & $A$   & $R_{0}$   & $n$     & $R_{\rm cut}$ &    &        &
 $\vek{F} = A \; (R_{0} - r)^{-n}~:~r > R_{\rm cut}$ \\
            &                     &       &           &         &         &          &        & \\
-{\bf zbnd} & Repulsive Wall      & $A$   & $z_{0}$   & $p$     &         &          &        &
-$\vek{F} = A \; (z_{0} - z) ~:~p \cdot z > p \cdot z_{0}$ \\
+{\bf zbnd} & Repulsive Wall      & $A$   & $z_{0}$   & $f=\pm 1$ &       &          &        &
+$\vek{F} = A \; (z_{0} - z) ~:~f \cdot z > f \cdot z_{0}$ \\
            &                     &       &           &         &         &          &        & \\
 {\bf xpis} & X-Piston            & $i_{gid}$ & $j_{gid}$ & $P_{k {\rm atm}}$ &  &   &        &
 $\vek{F}_{x} = \frac{P \cdot \vek{\textrm{Area}}(\perp\textrm{X-}dir)}
 {\left[\sum_{k=i}^{j}m_{k}\right] \textrm{/} m_{k}} : \forall~k=i,..,j $ \\
            &                     &       &           &         &         &          &        & \\
-{\bf zres} & Molecule in HR Zone & $i_{gid}$ & $j_{gid}$ & $k$ & $z_{mn}$ & $z_{mx}$ &       &
+{\bf zres} & Molecule in HR Zone & $i_{gid}$ & $j_{gid}$ & $A$ & $z_{mn}$ & $z_{mx}$ &       &
 $
 \vek{F}_{z} = \left\{ \begin{array} {l@{~:~}l}
 A(z_{cm}-z_{mx}) & z_{cm} > z_{mx} \\
@@ -3220,7 +3233,7 @@ A(z_{mn}-z_{cm}) & z_{cm} < z_{mn}
 \end{array} \right.
 $ \\
            &                     &       &           &         &         &          &        & \\
-{\bf zrs$-$} & HR Zone (push out) & $i_{gid}$ & $j_{gid}$ & $k$ & $z_{mn}$ & $z_{mx}$ &      &
+{\bf zrs$-$} & HR Zone (push out) & $i_{gid}$ & $j_{gid}$ & $A$ & $z_{mn}$ & $z_{mx}$ &      &
 $
 \vek{F}_{z} = \left\{ \begin{array} {l@{~:~}l}
 A(z-z_{mx}) & z \ge \frac{z_{mx}+z_{mn}}{2} \\
@@ -3228,7 +3241,7 @@ A(z_{mn}-z) & z < \frac{z_{mx}+z_{mn}}{2}
 \end{array} \right.
 $ \\
            &                     &       &           &         &         &          &        & \\
-{\bf zrs+} & HR Zone (pull in)   & $i_{gid}$ & $j_{gid}$ & $k$ & $z_{mn}$ & $z_{mx}$ &       &
+{\bf zrs+} & HR Zone (pull in)   & $i_{gid}$ & $j_{gid}$ & $A$ & $z_{mn}$ & $z_{mx}$ &       &
 $
 \vek{F}_{z} = \left\{ \begin{array} {l@{~:~}l}
 A(z-z_{mx}) & z > z_{mx} \\
@@ -3498,7 +3511,7 @@ more or less particles than CONFIG does and may have
 particles with identities that are not defined in FIELD
 (see Section~\ref{field-file}).  The positions of these
 particles are used to define the crystalline lattice sites
-to whitch the particles in CONFIG compare during simulation
+to which the particles in CONFIG compare during simulation
 when the defect detection option, {\bf defe}cts, is used.
 REFERENCE is read by the subroutine {\sc defects\_reference\_read}.
 
@@ -3898,7 +3911,7 @@ W~m$^{-1}$~K$^{-1}$ (Ke.dat), thermal diffusivity in m$^{2}$~s$^{-1}$
 {\bf ttm cetab}, {\bf ttm ketab}, {\bf ttm detab} and/or {\bf ttm gvar} 
 directives are included in the CONTROL file.
 
-\subsection{The HISTORY File}
+\subsection{The HISTORY/HISTROF File}
 
 The HISTORY file is usually an output file (see Section~\ref{history-file}).
 However, upon specifying the {\bf replay} option a HISTORY trajectory can
@@ -3906,3 +3919,11 @@ be replayed and various observables recreated should there is enough
 information within to recover the specific observable (e.g. velocities
 supplied within HISTORY for regeneration of velocity autocorrelation
 data).  Thus it can be used as input as well.
+
+If the {\bf replay force} option is used in CONTROL it enforce a new
+trajectory generation, i.e. generation of HISTORY, which necessitates the
+trajectory reading routine to default to reading a differently named, HISTORF
+(copy of HISTORY), basic trajectory file instead.  However, using this option
+expects a full force evaluation driven by expectedly a different FIELD field
+file from the one used for the HISTORF generation.  For more information do
+refer to CONTROL file directives and options (see Section~\ref{control-file}).
