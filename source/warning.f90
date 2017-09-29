@@ -193,6 +193,12 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,/)') '*** warning - no ensemble is specified !!! ***'
 
+     Else If (kode == 135) Then
+
+        Write(nrite,'(/,1x,a,/,1x,a,/)')                                                  &
+          '*** warning - incorrect ensemble specified for two-temperature model !!! ***', &
+          '*** replacing ensemble with NVT inhomogeneous Langevin !!! ***'
+
      Else If (kode == 140) Then
 
         Write(nrite,'(/,1x,2a,2(f8.5,a),/,1x,a,/)')                &
@@ -572,6 +578,43 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)') &
         '*** warning - "metal sqrtrho" option disabled as incompatible with FS type potentials (analytic forms) !!! ***'
+
+     Else If (kode == 500) Then
+
+        Write(nrite,'(/,1x,a,/,1x,a,/)') &
+        '*** warning - insufficient electronic temperature cells to allow energy redistribution from inactive cells !!! ***', &
+        '*** option switched off - electronic temperature conservation no longer guaranteed !!! ***'
+
+     Else If (kode == 510) Then
+
+        Write(nrite,'(/,1x,a,/)') &
+        '*** warning - no laser energy deposition for two-temperature model specified !!! ***'
+
+     Else If (kode == 515) Then
+
+        Write(nrite,'(/,1x,a,/)') &
+        '*** warning - no initial stopping power for two-temperature model specified !!! ***'
+
+     Else If (kode == 520) Then
+
+        Write(nrite,'(/,1x,a,/)') &
+        '*** warning - mismatch in timestep between REVIVE and provided electronic temperature lattice !!! ***'
+
+     Else If (kode == 530) Then
+
+        Write(nrite,'(/,1x,a,f6.2,a,/,1x,a,/)') &
+        '*** warning - possible time energy deposition discrepancy of at least ',a,'% !!! ***', &
+        '*** discrepancy may be due to inactive cells !!! ***'
+
+     Else If (kode == 535) Then
+
+        Write(nrite,'(/,1x,a,/)') &
+        '*** warning - spatial energy deposition cutoff in xy-directions greater than available ionic temperature cells !!! ***'
+
+     Else If (kode == 540) Then
+
+        Write(nrite,'(/,1x,a,f6.2,a,/)') &
+        '*** warning - possible spatial energy deposition discrepancy of at least ',a,'% !!! ***'
 
      Else
 

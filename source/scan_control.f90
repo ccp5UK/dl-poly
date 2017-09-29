@@ -14,10 +14,11 @@ Subroutine scan_control                                    &
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2017
 ! contrib   - i.j.bush february 2014
-! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
+! contrib   - a.v.brukhno & i.t.todorov april 2014 (intramolecular TPs & PDFs)
 ! contrib   - m.a.seaton june 2014 (VAF)
 ! contrib   - p.s.petkov february 2015
 ! contrib   - a.m.elena february 2017
+! contrib   - m.a.seaton march 2017 (TTM)
 ! contrib   - a.b.g.chalk march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -33,6 +34,7 @@ Subroutine scan_control                                    &
   Use greenkubo_module,   Only : isvaf,nsvaf,vafsamp
   Use rdf_module,         Only : l_errors_jack, l_errors_block
   Use development_module, Only : l_trm
+  Use ttm_module,         Only : l_ttm,ntsys,eltsys,isMetal,CeType,DeType,KeType,gvar,redistribute,ttmthvel,ttmthvelz
 
   Implicit None
 
@@ -137,6 +139,38 @@ Subroutine scan_control                                    &
 ! default stack size
 
   mxstak = 1
+
+! default switch for two-temperature model (ttm)
+
+  l_ttm = .false.
+
+! default switch for redistribution of energy from
+! deactivated electronic cells for ttm
+
+  redistribute = .false.
+
+! default switches for removing centre-of-mass motion
+! when applying inhomogeneous Langevin thermostat with ttm
+
+  ttmthvel  = .true.
+  ttmthvelz = .false.
+
+! default values for ttm ionic and electronic voxel grid sizes
+
+  ntsys(3)  = 10
+  eltsys(1) = 50
+  eltsys(2) = 50
+  eltsys(3) = 50
+
+! default ttm heat capacity, conductivity and diffusivity types
+
+  CeType = 0
+  KeType = 0
+  DeType = 0
+
+! default ttm electron-phonon coupling type
+
+  gvar = 0
 
 ! Set safe flag
 
@@ -479,6 +513,174 @@ Subroutine scan_control                                    &
      Else If (word(1:4) == 'zden') Then
 
         lzdn = .true.
+
+! read two-temperature model options
+
+     Else If (word(1:3) == 'ttm') Then
+
+        l_ttm = .true.
+
+        Call get_word(record,word)
+
+        If (word(1:4) == 'ncit') Then
+
+        ! number of coarse-grained ion temperature cells (CIT)
+        ! in z-direction: geometry of system determines 
+        ! CITs in x- and y-directions
+
+          Call get_word(record,word)
+          ntsys(3) = Abs(Nint(word_2_real(word)))
+
+        Else If (word(1:4) == 'ncet') Then
+
+        ! number of coarse-grained electronic temperature cells
+        ! (CET) in x-, y- and z-directions
+
+          Call get_word(record,word)
+          eltsys(1) = Abs(Nint(word_2_real(word)))
+          Call get_word(record,word)
+          eltsys(2) = Abs(Nint(word_2_real(word)))
+          Call get_word(record,word)
+          eltsys(3) = Abs(Nint(word_2_real(word)))
+
+        Else If (word1(1:5) == 'metal') Then
+
+        ! sets properties of electronic subsystem as a metal
+
+          isMetal = .true.
+
+        Else If (word1(1:8) == 'nonmetal') Then
+
+        ! sets properties of electronic subsystem as a non-metal
+
+          isMetal = .false.
+
+        Else If (word(1:7) == 'ceconst') Then
+
+        ! electronic specific heat capacity given as constant value
+
+          CeType = 0
+
+        Else If (word(1:6) == 'cetanh') Then
+
+        ! electronic specific heat capacity given as tanh function
+
+          CeType = 1
+
+        Else If (word(1:5) == 'celin') Then
+
+        ! electronic specific heat capacity given as linear function
+        ! up to Fermi temperature, constant afterwards
+
+          CeType = 2
+
+        Else If (word(1:5) == 'cetab') Then
+
+        ! electronic volumetric heat capacity given in tabulated form
+
+          CeType = 3
+
+        Else If (word(1:5) == 'keinf') Then
+
+        ! infinite electronic thermal conductivity
+
+          DeType = 0
+          KeType = 0
+          isMetal = .true.
+
+        Else If (word(1:7) == "keconst") Then
+
+        ! electronic thermal conductivity given as constant value
+
+          DeType = 0
+          KeType = 1
+          isMetal = .true.
+
+        Else If (word(1:7) == 'kedrude') Then
+
+        ! electronic thermal conductivity given as drude model (propertional to
+        ! electronic temperature, giving t.c. at system temperature)
+
+          DeType = 0
+          KeType = 2
+          isMetal = .true.
+
+        Else If (word(1:5) == 'ketab') Then
+
+        ! electronic thermal conductivity given in tabulated form
+
+          DeType = 0
+          KeType = 3
+          isMetal = .true.
+
+        Else If (word(1:4) == 'diff' .or. word(1:7)=='deconst') Then
+
+        ! electronic thermal diffusivity given as constant value
+        ! (for non-metal systems)
+
+          KeType = 1
+          DeType = 1
+          isMetal = .false.
+
+        Else If (word(1:7) == 'derecip') Then
+
+        ! electronic thermal diffusivity given as reciprocal function
+        ! of temperature (up to Fermi temperature), constant afterwards
+
+          KeType = 1
+          DeType = 2
+          isMetal = .false.
+
+        Else If (word(1:4) == 'detab') Then
+
+        ! electronic thermal diffusivity given in tabulated form
+
+          KeType = 1
+          DeType = 3
+          isMetal = .false.
+
+        Else If (word(1:4) == 'varg') Then
+
+        ! variable electron-phonon coupling constant (chi_ep) based on
+        ! tabular electronic stopping terms (in g.dat file): option to
+        ! apply value homogeneously across system (based on average 
+        ! electronic temperature) or heterogeneously (using local 
+        ! electronic temperature for each voxel)
+
+          Call get_word(record,word)
+          If (word(1:4) == 'homo') Then
+            gvar = 1
+          Else If (word(1:6) == 'hetero') Then
+            gvar = 2
+          End If
+
+        Else If (word(1:7) == 'nothvel') Then
+
+        ! option to switch off centre-of-mass motion correction to
+        ! velocities used in inhomogeneous Langevin thermostat
+
+          ttmthvel = .false.
+          ttmthvelz = .false.
+
+        Else If (word(1:6) == 'thvelz') Then
+
+        ! option to only apply centre-of-mass motion corrections to
+        ! z components of velocities, when used in inhomogeneous
+        ! Langevin thermostat
+
+          ttmthvelz = .true.
+          ttmthvel = .true.
+
+        Else If (word(1:6) == 'redist') Then
+
+        ! redistribute electronic energy from any deactivated cells
+        ! to active neighbouring cells: note that this requires overlap
+        ! of electronic and ionic temperature grids in at least
+        ! x- and y-directions
+
+          redistribute = .true.
+
+        End If
 
 ! read finish
 

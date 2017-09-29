@@ -41,6 +41,10 @@
         If (lzero .and. nstep <= nsteql .and. Mod(nstep-nsteql,nstzero) == 0) &
            Call zero_k_optimise(strkin,strknf,strknt,engke,engrot)
 
+! Switch on electron-phonon coupling only after time offset
+
+        l_epcp = (time >= ttmoffset)
+
 ! Integrate equations of motion - velocity verlet first stage
 
         Call w_integrate_vv(0)
@@ -62,6 +66,13 @@
 ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 
      If (nstep > 0 .and. nstep <= nstrun .and. (.not.newjob)) Then
+
+! Evolve electronic temperature for two-temperature model
+
+        If (l_ttm) Then
+          Call ttm_ion_temperature(chi_ep,chi_es,vel_es2)
+          Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstrun,lines,npage)
+        End If
 
 ! Integrate equations of motion - velocity verlet second stage
 

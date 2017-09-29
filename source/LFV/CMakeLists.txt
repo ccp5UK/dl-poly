@@ -30,6 +30,7 @@ nvt_h0_lfv.f90
 nvt_h1_lfv.f90
 nvt_l0_lfv.f90
 nvt_l1_lfv.f90
+nvt_l2_lfv.f90
 pmf_shake_lfv.f90
 pseudo_lfv.f90
 )

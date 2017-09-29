@@ -118,6 +118,11 @@ Program dl_poly
 
   Use langevin_module
 
+! TWO-TEMPERATURE MODEL MODULES
+
+  Use ttm_module
+  Use ttm_utils
+
 ! MAIN PROGRAM VARIABLES
 
   Implicit None
@@ -186,8 +191,8 @@ Program dl_poly
                        tolnce,quattol,rdef,rrsd,                  &
                        pdplnc,emd,vmx,vmy,vmz,temp,sigma,         &
                        press,strext(1:9),ten,                     &
-                       taut,chi,soft,gama,taup,tai,               &
-                       chit,eta(1:9),chip,cint,consv,             &
+                       taut,chi,chi_ep,chi_es,soft,gama,taup,tai, &
+                       chit,vel_es2,eta(1:9),chip,cint,consv,     &
                        strtot(1:9),virtot,                        &
                        strkin(1:9),engke,strknf(1:9),strknt(1:9), &
                        engrot,strcom(1:9),vircom,                 &
@@ -233,7 +238,8 @@ Program dl_poly
           "*************  contributors' list:                   ******** Y **", &
           "*************  ------------------------------------  *************", &
           "*************  i.j.bush, h.a.boateng, r.davidchak,   *************", &
-          "*************  m.a.seaton, a.v.brukhno, a.m.elena    *************", &
+          "*************  m.a.seaton, a.v.brukhno, a.m.elena,   *************", &
+          "*************  s.l.daraszewicz,g.khara,s.t.murphy    *************", &
           "******************************************************************"
 
      Call build_info()
@@ -309,6 +315,11 @@ Program dl_poly
   Call allocate_statistics_arrays()
   Call allocate_greenkubo_arrays()
 
+! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
+
+  Call allocate_ttm_arrays()
+  Call ttm_table_scan()
+
 ! READ SIMULATION CONTROL PARAMETERS
 
   Call read_control                                    &
@@ -323,8 +334,8 @@ Program dl_poly
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
            keymin,nstmin,min_tol,                      &
            nstzero,nstgaus,nstscal,                    &
-           keyens,iso,taut,chi,soft,gama,taup,tai,ten, &
-           keypse,wthpse,tmppse,                       &
+           keyens,iso,taut,chi,chi_ep,chi_es,soft,gama,&
+           taup,tai,ten,vel_es2,keypse,wthpse,tmppse,  &
            fmax,nstbpo,intsta,keyfce,epsq,             &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
@@ -521,6 +532,14 @@ Program dl_poly
      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
   End If
 
+! Read ttm table file and initialise electronic temperature
+! grid from any available restart file
+
+  If (l_ttm) Then
+    Call ttm_table_read()
+    Call ttm_system_init(nstep,nsteql,keyres,'DUMP_E',time,temp)
+  End If
+
 ! Frozen atoms option
 
   Call freeze_atoms()
@@ -625,7 +644,6 @@ Program dl_poly
 
   consv = 0.0_wp
 
-
 ! start-up time when forces are not recalculated
 
   Call gtime(timelp)
@@ -689,11 +707,26 @@ Program dl_poly
      End If
   End If
 
+! Two-temperature model simulations: calculate final 
+! ionic temperatures and print statistics to files
+! (final)
+
+  If (l_ttm) Then
+    Call ttm_ion_temperature (chi_ep,chi_es,vel_es2)
+    Call printElecLatticeStatsToFile('PEAK_E', time, temp, nstep, ttmstats)
+    Call peakProfilerElec('LATS_E', nstep, ttmtraj)
+    Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep, ttmstats)
+    Call peakProfiler(tempion, 'LATS_I', nstep, ttmtraj)
+  End If
+
 ! Save restart data for real simulations only (final)
 
-  If (lsim .and. (.not.l_tor)) Call system_revive             &
+  If (lsim .and. (.not.l_tor)) Then
+      Call system_revive &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
            chit,cint,chip,eta,strcon,strpmf,stress)
+      If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun)
+  End If
 
 ! Produce summary of simulation
 

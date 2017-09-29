@@ -65,7 +65,11 @@ Module comms_module
                         DefExport_tag = 2244, &
                         DefWrite_tag  = 2255, &
                         RsdWrite_tag  = 2266, &
-                        MsdWrite_tag  = 2277
+                        MsdWrite_tag  = 2277, &
+                        Grid1_tag     = 3300, &
+                        Grid2_tag     = 3311, &
+                        Grid3_tag     = 3322, &
+                        Grid4_tag     = 3333
 
   Public :: init_comms, exit_comms, abort_comms, &
             gsync, gcheck, gsum, gmax, gtime

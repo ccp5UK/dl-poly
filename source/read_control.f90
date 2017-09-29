@@ -10,8 +10,8 @@ Subroutine read_control                                &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
            keymin,nstmin,min_tol,                      &
            nstzero,nstgaus,nstscal,                    &
-           keyens,iso,taut,chi,soft,gama,taup,tai,ten, &
-           keypse,wthpse,tmppse,                       &
+           keyens,iso,taut,chi,chi_ep,chi_es,soft,gama,&
+           taup,tai,ten,vel_es2,keypse,wthpse,tmppse,  &
            fmax,nstbpo,intsta,keyfce,epsq,             &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
@@ -32,6 +32,7 @@ Subroutine read_control                                &
 ! contrib   - p.s.petkov february 2015
 ! contrib   - a.m.elena september 2015
 ! contrib   - a.m.elena february 2017
+! contrib   - g.khara & m.a.seaton march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -50,6 +51,7 @@ Subroutine read_control                                &
   Use msd_module,        Only : l_msd
   Use defects1_module,   Only : l_dfx
   Use greenkubo_module
+  Use ttm_module
 
   Use kinetic_module,  Only : l_vom
   Use plumed_module,   Only : l_plumed, plumed_input, plumed_log, &
@@ -96,8 +98,8 @@ Subroutine read_control                                &
   Real( Kind = wp ),      Intent(   Out ) :: emd,vmx,vmy,vmz,            &
                                              temp,press,strext(1:9),     &
                                              tstep,mndis,mxdis,mxstp,    &
-                                             taut,chi,soft,gama,         &
-                                             taup,tai,ten,               &
+                                             taut,chi,chi_ep,chi_es,soft,&
+                                             gama,taup,tai,ten,vel_es2,  &
                                              wthpse,tmppse,min_tol(1:2), &
                                              fmax,epsq,rlx_tol(1:2),     &
                                              tolnce,quattol,             &
@@ -230,14 +232,23 @@ Subroutine read_control                                &
 
 ! default thermostat and barostat friction time constants
 
-  taut = 0.0_wp ! thermostat relaxation time
-  chi  = 0.0_wp ! Stochastic Dynamics (SD Langevin) thermostat friction
-  soft = 0.0_wp ! Softness for Andersen thermostat
-  gama = 0.0_wp ! Stochastic (Langevin) friction on a thermostat
-  taup = 0.0_wp ! barostat relaxation time
-  tai  = 0.0_wp ! Stochastic Dynamics (SD Langevin) barostat friction
-  iso  = 0      ! no semi-isotropic feature
-  ten  = 0.0_wp ! surface tension
+  taut   = 0.0_wp ! thermostat relaxation time
+  chi    = 0.0_wp ! Stochastic Dynamics (SD Langevin) thermostat friction
+  chi_ep = 0.5_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin) 
+                  ! thermostat/electron-phonon friction
+  chi_es = 0.0_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin)
+                  ! thermostat/electronic stopping friction
+  soft   = 0.0_wp ! Softness for Andersen thermostat
+  gama   = 0.0_wp ! Stochastic (Langevin) friction on a thermostat
+  taup   = 0.0_wp ! barostat relaxation time
+  tai    = 0.0_wp ! Stochastic Dynamics (SD Langevin) barostat friction
+  iso    = 0      ! no semi-isotropic feature
+  ten    = 0.0_wp ! surface tension
+
+! default value for inhomogeneous Langevin thermostat/
+! two-temperature model source term cutoff velocity
+
+  vel_es2 = 50.0_wp
 
 ! default value for accounting extended coulombic exclusion
 ! (not accounted)
@@ -279,6 +290,73 @@ Subroutine read_control                                &
 ! Default relaxed shell model tolerance and optional CGM step
 
   rlx_tol(1:2) = (/ 1.0_wp , -1.0_wp /)
+
+! default switch for two-temperature model (TTM) calculations:
+! already determined its use in scan_control but repeating
+! here to output message
+
+  l_ttm = .false.
+
+! default values for (i) electronic specific heat capacities,
+! (ii) thermal conductivity, (iii) thermal diffusivity,
+! (iv) atomic density (converting specific heats to volumetric values)
+
+  Ce0     = 1.0_wp
+  sh_A    = 0.0_wp
+  sh_B    = 0.0_wp
+  Cemax   = 0.0_wp
+  Tfermi  = 0.0_wp
+
+  Ka0     = 0.0_wp
+
+  Diff0   = 0.0_wp
+
+  cellrho = 0.0_wp
+
+! default initial stopping power to be deposited in
+! electronic system (standard cascade) and laser 
+! fluence and penetration depth
+
+  dEdX    = 0.0_wp
+  fluence = 0.0_wp
+  pdepth  = 0.0_wp
+
+! default values for (i) spatial, (ii) temporal
+! energy deposition
+
+  sdepoType = 0
+  sig       = 1.0_wp
+  sigmax    = 5
+
+  tdepoType = 1
+  tdepo     = 1.0e-3_wp
+  tcdepo    = 5
+
+! default boundary conditions for electronic temperature
+
+  bcTypeE = 3
+
+! default minimum number of atoms required per voxel cell
+! to calculate ionic temperatures and one-way electron-phonon
+! coupling in thermal diffusion and thermostat
+
+  amin     = 1
+  oneway   = .false.
+
+! default values for time step frequencies to output
+! (i) statistical data and (ii) electronic/ionic temperature
+! grid values
+
+  ttmstats = 0
+  ttmtraj  = 0
+
+! default value for time to start electron-phonon coupling
+
+  ttmoffset = 0.0_wp
+
+! default switch for dynamic cell density calculations
+
+  ttmdyndens = .false.
 
 ! proceed normal simulation
 
@@ -1212,6 +1290,26 @@ Subroutine read_control                                &
               If (lens) Call error(414)
               lens=.true.
 
+           Else If (word(1:4) == 'ttm' .or. word(1:6) == 'inhomo') Then
+
+              keyens = 15
+              If (.not.l_vv) l_lan = .true.
+
+              Call get_word(record,word)
+              chi_ep  = Abs(word_2_real(word))
+              Call get_word(record,word)
+              chi_es  = Abs(word_2_real(word))
+              Call get_word(record,word)
+              vel_es2 = Abs(word_2_real(word))
+
+              If (idnode == 0) Write(nrite,"(1x,'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)', &
+                 & /,1x,'e-phonon friction       (ps^-1)',3x,1p,e12.4, &
+                 & /,1x,'e-stopping friction     (ps^-1)',3x,1p,e12.4, &
+                 & /,1x,'e-stopping velocity   (A ps^-1)',3x,1p,e12.4)") chi_ep,chi_es,vel_es2
+
+              If (lens) Call error(414)
+              lens=.true.
+
            Else If (word(1:3) == 'dpd') Then
 
               If (idnode == 0) Write(nrite,"(1x,a)") "Ensemble : NVT dpd (Dissipative Particle Dynamics)"
@@ -1918,14 +2016,14 @@ Subroutine read_control                                &
 
            lvafav = .false.
 
-        Else If (word1(1:3) == 'vom' ) Then
+        Else If (word1(1:3) == 'vom' ) Then ! "no vom" should be used with TTM
 
-           If (idnode == 0) Write(nrite,"(3(/,1x,a))")                                     &
+           If (idnode == 0 .and. .not.l_ttm) Write(nrite,"(3(/,1x,a))")                    &
               '"no vom" option auto-switched on - COM momentum removal will be abandoned', &
               '*** warning - this may lead to a build up of the COM momentum and ***',     &
               '***           a manifestation of the "flying ice-cube" effect !!! ***'
 
-           l_vom = .false.
+           l_vom    = .false.
 
         Else If (word1(1:4) == 'link') Then ! NON-TRANSFERABLE OPTION FROM DL_POLY_2
 
@@ -1981,6 +2079,461 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:9) == 'tolerance') Call get_word(record,word)
         quattol = Abs(word_2_real(word))
+
+! read two-temperature model (ttm) specific flags
+
+     Else If (word(1:3) == 'ttm') Then
+
+        ! detecting l_ttm purely to print message on first occasion
+
+        If (.not. l_ttm) Then
+          l_ttm = .true.
+          If (idnode == 0) Write(nrite,"(/,1x,'Two Temperature Model (TTM) opted for')")
+        End If
+
+        Call get_word(record,word1)
+
+        If (word1(1:4) == 'ncit') Then
+
+        ! number of coarse-grained ion temperature cells (CIT):
+        ! already determined in scan_control
+
+           If (idnode == 0) Write(nrite,"(/,1x,'ionic temperature grid size      (x,y,z): ',3(2x,i8),&
+                                         &/,1x,'temperature cell size (A)        (x,y,z): ',3(2x,f8.4),&
+                                         &/,1x,'average number of atoms/cell              ',f10.4)") &
+                                           ntsys(1),ntsys(2),ntsys(3),delx,dely,delz,sysrho*volume
+
+        Else If (word1(1:4) == 'ncet') Then
+
+        ! number of coarse-grained electronic temperature cells (CET):
+        ! already determined in scan_control
+
+           If (idnode == 0 ) Write(nrite,"(/,1x,'electronic temperature grid size (x,y,z): ',3(2x,i8))") &
+                                           eltsys(1),eltsys(2),eltsys(3)
+
+        Else If (word1(1:5) == 'metal') Then
+
+        ! sets properties of electronic subsystem as a metal:
+        ! already determined in scan_control
+
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic subsystem represents metal: thermal conductivity required')")
+          End If
+
+        Else If (word1(1:8) == 'nonmetal') Then
+
+        ! sets properties of electronic subsystem as a non-metal
+
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic subsystem represents non-metal: thermal diffusivity required')")
+          End If
+
+        Else If (word1(1:7) == 'ceconst') Then
+
+        ! electronic specific heat capacity given as constant value
+
+          Call get_word(record,word)
+          Ce0 = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic specific heat capacity set to constant value')")
+            Write(nrite,"(1x,'electronic s.h.c. (kB/atom)',7x,1p,e12.4)") Ce0
+          End If
+
+        Else If (word1(1:6) == 'cetanh') Then
+
+        ! electronic specific heat capacity given as tanh function
+
+          Call get_word(record,word)
+          sh_A = word_2_real(word)
+          Call get_word(record,word)
+          sh_B = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic specific heat capacity set to hyperbolic tangent function')")
+            Write(nrite,"(1x,'constant term A    (kB/atom)',6x,1p,e12.4)") sh_A
+            Write(nrite,"(1x,'temperature term B    (K^-1)',6x,1p,e12.4)") sh_B
+          End If
+
+        Else If (word1(1:5) == 'celin') Then
+
+        ! electronic specific heat capacity given as linear function
+        ! up to Fermi temperature, constant afterwards
+
+          Call get_word(record,word)
+          Cemax = word_2_real(word)
+          Call get_word(record,word)
+          Tfermi = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic specific heat capacity set to linear function up to Fermi temperature')")
+            Write(nrite,"(1x,'max. electronic s.h.c. (kB/atom)',2x,1p,e12.4)") Cemax
+            Write(nrite,"(1x,'Fermi temperature            (K)',2x,1p,e12.4)") Tfermi
+          End If
+
+        Else If (word1(1:5) == 'cetab') Then
+
+        ! electronic volumetric heat capacity given in tabulated form
+
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic volumetric heat capacity given as tabulated function of temperature')")
+          End If
+
+        Else If (word1(1:5) == 'keinf') Then
+
+        ! infinite electronic thermal conductivity
+
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic thermal conductivity set to infinity')")
+          End If
+
+        Else If (word1(1:7) == "keconst") Then
+
+        ! electronic thermal conductivity given as constant value
+
+          Call get_word(record,word)
+          Ka0 = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic thermal conductivity set to constant value')")
+            Write(nrite,"(1x,'electronic t.c. (W m^-1 K^-1)',5x,1p,e12.4)") Ka0
+          End If
+
+        Else If (word1(1:7) == 'kedrude') Then
+
+        ! electronic thermal conductivity given as drude model (propertional to
+        ! electronic temperature, giving t.c. at system temperature)
+
+          Call get_word(record,word)
+          Ka0 = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic thermal conductivity set to drude model')")
+            Write(nrite,"(1x,'t.c. at system temp. (W m^-1 K^-1)',1p,e12.4)") Ka0
+          End If
+
+        Else If (word1(1:5) == 'ketab') Then
+
+        ! electronic thermal conductivity given in tabulated form
+
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic thermal conductivity given as tabulated function of temperature:',&
+                        & /,1x,'uses ionic or system temperature to calculate cell conductivity value',&
+                        & /,1x,'for thermal diffusion equation')")
+          End If
+
+        Else If (word1(1:4) == 'diff' .or. word1(1:7)=='deconst') Then
+
+        ! electronic thermal diffusivity given as constant value
+        ! (for non-metal systems)
+
+          Call get_word(record,word)
+          Diff0 = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic thermal diffusivity set to constant value')")
+            Write(nrite,"(1x,'electronic t.d. (m^2 s^-1)',8x,1p,e12.4)") Diff0
+          End If
+
+        Else If (word1(1:7) == 'derecip') Then
+
+        ! electronic thermal diffusivity given as reciprocal function
+        ! of temperature (up to Fermi temperature), constant afterwards
+
+          Call get_word(record,word)
+          Diff0 = word_2_real(word)
+          Call get_word(record,word)
+          Tfermi = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic thermal diffusivity set to reciprocal function up to Fermi temperature')")
+            Write(nrite,"(1x,'datum electronic t.d. (m^2 s^-1)',2x,1p,e12.4)") Diff0
+            Write(nrite,"(1x,'Fermi temperature            (K)',2x,1p,e12.4)") Tfermi
+          End If
+
+        Else If (word1(1:4) == 'detab') Then
+
+        ! electronic thermal diffusivity given in tabulated form
+
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'electronic thermal diffusivity given as tabulated function of temperature')")
+          End If
+
+        Else If (word1(1:8) == 'atomdens') Then
+
+        ! user-specified atomic density, used to convert specific
+        ! heat capacities to volumetric values
+
+          Call get_word(record,word)
+          cellrho = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'user-specified atomic density (A^-3)',6x,f10.4)") cellrho
+          End If
+
+        Else If (word1(1:7) == 'dyndens') Then
+
+        ! dynamic calculation of atom density in active cells during
+        ! TTM calculations, used to convert specific heat capacities
+        ! to volumetric values
+
+          ttmdyndens = .true.
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'dynamic calculations of average atomic density in active ionic cells')")
+          End If
+
+        Else If (word1(1:4) == 'amin') Then
+
+        ! minimum number of atoms needed per ionic temperature cell
+        ! to give definable ionic temperature (default = 1): smaller
+        ! number deactivates ionic and electronic temperature cells
+        ! (by default, electronic energies are not redistributed)
+
+          Call get_word(record,word)
+          amin = Abs(Nint(word_2_real(word)))
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'min. atom no. for ionic cells',5x,1p,i8)") amin
+          End If
+
+        Else If (word1(1:6) == 'redist') Then
+
+        ! redistribution of electronic energy from deactivated cells 
+        ! to active neighbours
+
+          If (redistribute .and. idnode == 0) Then
+            Write(nrite,"(/,1x,'redistributing energy from deactivated electronic cells into active neighbours',&
+                        & /,1x,'(requires at least one electronic temperature cell beyond ionic cells)')")
+          End If
+
+        Else If (word1(1:4) == 'dedx') Then
+
+        ! electronic stopping power of projectile entering electronic system
+
+          Call get_word(record,word)
+          dEdX = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'elec. stopping power (eV/nm)',6x,1p,e12.4)") dEdX
+          End If
+
+        Else If (word1(1:6) == 'sgauss' .or. word1(1:5) == 'sigma') Then
+
+        ! gaussian spatial distribution for initial energy deposition into
+        ! electronic system
+
+          sdepoType = 1
+          Call get_word(record,word)
+          sig = word_2_real(word)
+          Call get_word(record,word)
+          sigmax = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'initial gaussian spatial energy deposition in electronic system')")
+            Write(nrite,"(1x,'sigma of distribution (nm)',8x,1p,e12.4)") sig
+            Write(nrite,"(1x,'distribution cutoff   (nm)',8x,1p,e12.4)") sigmax*sig
+          End If
+
+        Else If (word1(1:5) == 'sflat') Then
+
+        ! homogeneous spatial distribution for initial energy deposition into
+        ! electronic system
+
+          sdepoType = 2
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'initial homogeneous (flat) spatial energy deposition in electronic system')")
+          End If
+
+        Else If (word1(1:5) == 'laser') Then
+
+        ! homogeneous spatial distribution for initial energy deposition into
+        ! electronic system due to laser: setting absorbed fluence and
+        ! penetration depth
+
+          sdepoType = 2
+          Call get_word(record,word)
+          fluence = word_2_real(word)
+          Call get_word(record,word)
+          pdepth = word_2_real(word)
+          Call get_word(record,word)
+          If (word(1:4) == 'zdep') sdepoType = 3
+          If (idnode == 0) Then
+            Select Case (sdepoType)
+            Case (2)
+              Write(nrite,"(/,1x,'initial homogeneous (flat) spatial energy deposition in electronic system due to laser')")
+              Write(nrite,"(1x,'absorbed fluence (mJ cm^-2)',7x,1p,e12.4)") fluence
+              Write(nrite,"(1x,'penetration depth      (nm)',7x,1p,e12.4)") pdepth
+            Case (3)
+              Write(nrite,"(/,1x,'initial xy-homogeneous, z-exponential decaying spatial energy deposition in',/&
+                            &,1x,'electronic system due to laser')")
+              Write(nrite,"(1x,'absorbed fluence at surface (mJ cm^-2)',7x,1p,e12.4)") fluence
+              Write(nrite,"(1x,'penetration depth                 (nm)',7x,1p,e12.4)") pdepth
+            End Select
+          End If
+
+        Else If (word1(1:5) == 'gauss') Then
+
+        ! gaussian temporal distribution for energy deposition into
+        ! electronic system
+
+          tdepoType = 1
+          Call get_word(record,word)
+          tdepo = word_2_real(word)
+          Call get_word(record,word)
+          tcdepo = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'gaussian temporal energy deposition in electronic system')")
+            Write(nrite,"(1x,'sigma of distribution (ps)',8x,1p,e12.4)") tdepo
+            Write(nrite,"(1x,'distribution cutoff   (ps)',8x,1p,e12.4)") 2.0_wp*tcdepo*tdepo
+          End If
+
+        Else If (word1(1:5) == 'nexp') Then
+
+        ! decaying exponential temporal distribution for energy deposition into
+        ! electronic system
+
+          tdepoType = 2
+          Call get_word(record,word)
+          tdepo = word_2_real(word)
+          Call get_word(record,word)
+          tcdepo = word_2_real(word)
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'decaying exponential temporal energy deposition in electronic system')")
+            Write(nrite,"(1x,'tau of distribution (ps)',10x,1p,e12.4)") tdepo
+            Write(nrite,"(1x,'distribution cutoff (ps)',10x,1p,e12.4)") tcdepo*tdepo
+          End If
+
+        Else If (word1(1:5) == 'delta') Then
+
+        ! dirac delta temporal distribution for energy deposition into
+        ! electronic system
+
+          tdepoType = 3
+          If (idnode == 0) Then
+            Write(nrite,"(/,1x,'dirac delta temporal energy deposition in electronic system')")
+          End If
+
+        Else If (word1(1:5) == 'pulse') Then
+
+        ! square pulse temporal distribution for energy deposition into
+        ! electronic system (defaults to dirac delta if pulse duration
+        ! set to zero)
+
+          tdepoType = 4
+          Call get_word(record,word)
+          tdepo = word_2_real(word)
+          If (tdepo<=zero_plus) Then
+            tdepoType = 3
+            If (idnode == 0) Then
+              Write(nrite,"(/,1x,'square pulse temporal energy deposition in electronic system',/&
+                             &1x,'of zero duration: being treated as dirac delta')")
+            End If
+          Else
+            If (idnode == 0) Then
+              Write(nrite,"(/,1x,'square pulse temporal energy deposition in electronic system')")
+              Write(nrite,"(1x,'pulse duration (ps)',15x,1p,e12.4)") tdepo
+            End If
+          End If
+
+        Else If (word1(1:4) == 'varg') Then
+
+        ! variable electron-phonon coupling constant (chi_ep) based on
+        ! tabular electronic stopping terms (in g.dat file): option to
+        ! apply value homogeneously across system (based on average 
+        ! electronic temperature) or heterogeneously (using local 
+        ! electronic temperature for each voxel)
+
+          Select Case (gvar)
+          Case (1)
+            If (idnode == 0) Then
+              Write(nrite,"(/,1x,'variable electron-phonon coupling values to be applied homogeneously',&
+                          & /,1x,'(overrides value given for ensemble, required tabulated stopping',&
+                           & /,2x,'terms in g.dat file)')")
+            End If
+          Case (2)
+            If (idnode == 0) Then
+              Write(nrite,"(/,1x,'variable electron-phonon coupling values to be applied heterogeneously',&
+                          & /,1x,'(overrides value given for ensemble, required tabulated stopping',&
+                           & /,2x,'terms in g.dat file)')")
+            End If
+          End Select
+
+        Else If (word1(1:3) == 'bcs') Then
+
+        ! electronic temperature boundary conditions
+
+          Call get_word(record,word)
+
+          If (word(1:8) == 'periodic') Then
+            bcTypeE = 1
+            If (idnode == 0) Then
+              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as periodic')")
+            End If
+          Else If (word(1:6) == 'dirich') Then
+            bcTypeE = 2
+            If (idnode == 0) Then
+              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as dirichlet:',&
+                          & /,1x,'setting boundaries to system temperature')")
+            End If
+          Else If (word(1:7) == 'neumann') Then
+            bcTypeE = 3
+            If (idnode == 0) Then
+              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as neumann:',&
+                          & /,1x,'zero energy flux at boundaries')")
+            End If
+          Else If (word(1:8) == 'xydirich') Then
+            bcTypeE = 4
+            If (idnode == 0) Then
+              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as dirichlet (xy), neumann (z):',&
+                          & /,1x,'system temperature at x and y boundaries',&
+                          & /,1x,'zero energy flux at z boundaries')")
+            End If
+          Else If (word(1:5) == 'robin') Then
+            bcTypeE = 5
+            Call get_word(record,word)
+            fluxout = word_2_real(word)
+            If (idnode == 0) Then
+              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin:',&
+                          & /,1x,'temperature leakage at boundaries of ',1p,e11.4)") fluxout
+            End If
+          Else If (word(1:7) == 'xyrobin') Then
+            bcTypeE = 6
+            Call get_word(record,word)
+            fluxout = word_2_real(word)
+            If (idnode == 0) Then
+              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin (xy), neumann (z):',&
+                          & /,1x,'temperature leakage at x and y boundaries of ',1p,e11.4,&
+                          & /,1x,'zero energy flux at z boundaries')") fluxout
+            End If
+          End If
+
+        Else If (word1(1:6) == 'offset') Then
+
+        ! time offset in coupling electronic and ionic systems
+
+          Call get_word(record,word)
+          ttmoffset = word_2_real(word)
+          If (idnode == 0) Write(nrite,"(/,1x,'electron-ion coupling offset (ps)',1x,1p,e12.4)") ttmoffset
+
+        Else If (word1(1:6) == 'oneway') Then
+
+        ! one-way electron-phonon coupling in thermostat and thermal
+        ! diffusion: only apply when electronic temperature exceeds
+        ! ionic temperature
+
+          oneway = .true.
+          If (idnode == 0) Write(nrite,"(/,1x,'one-way electron-phonon coupling option switched on')")
+
+        Else If (word1(1:5) == 'stats') Then
+
+        ! ttm statistics (minimum and maximum ionic/electronic temperatures,
+        ! electronic energy) file option and output frequency
+
+          Call get_word(record,word)
+          ttmstats = Abs(Nint(word_2_real(word)))
+          If (idnode == 0) Write(nrite,"(/,1x,'ttm statistics file option on', &
+             & /,1x,'ttm statistics file interval',3x,i10)") ttmstats
+
+        Else If (word1(1:4) == 'traj') Then
+
+        ! ttm trajectory (one-dimensional ionic and electronic 
+        ! temperature profile) file option and output frequency
+
+          Call get_word(record,word)
+          ttmtraj = Abs(Nint(word_2_real(word)))
+          If (idnode == 0) Write(nrite,"(/,1x,'ttm trajectory (temperature profile) file option on', &
+             & /,1x,'ttm trajectory file interval',3x,i10)") ttmtraj
+
+        End If
 
 ! read replay history option
 
@@ -2422,7 +2975,9 @@ Subroutine read_control                                &
      keyres=0
   End If
 
-! report default ensemble if none is specified
+! report default ensemble if none is specified:
+! inhomogeneous Langevin if two-temperature model
+! is in use, NVE if not
 
   If (.not.lens) Then
      Call warning(130,0.0_wp,0.0_wp,0.0_wp)
@@ -2432,9 +2987,44 @@ Subroutine read_control                                &
         Else
            Write(nrite,"(/,1x,'Integration : Leapfrog Verlet')")
         End If
-        Write(nrite,"(1x,'Ensemble : NVE (Microcanonical)')")
+        If (l_ttm) Then
+          Write(nrite,"(1x,'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)', &
+                    & /,1x,'e-phonon friction       (ps^-1)',3x,1p,e12.4, &
+                    & /,1x,'e-stopping friction     (ps^-1)',3x,1p,e12.4, &
+                    & /,1x,'e-stopping velocity   (A ps^-1)',3x,1p,e12.4)") chi_ep,chi_es,vel_es2
+        Else
+          Write(nrite,"(1x,'Ensemble : NVE (Microcanonical)')")
+        End If
      End If
+     If (l_ttm) keyens = 15
      lens=.true.
+  End If
+
+! report replacement of specified ensemble with inhomogeneous
+! Langevin if two-temperature model is in use, replacing
+! default electron-phonon friction value with chi from
+! standard Langevin thermostat (if supplied), and use of
+! thermal velocities only for thermostat
+
+  If (l_ttm .and. keyens/=15) Then
+     Call warning(130,0.0_wp,0.0_wp,0.0_wp)
+     If (keyens==10 .or. keyens==20 .or. keyens==30 .and. chi>zero_plus) chi_ep = chi
+     If (idnode == 0) Then
+       Write(nrite,"(1x,'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)', &
+                 & /,1x,'e-phonon friction       (ps^-1)',3x,1p,e12.4, &
+                 & /,1x,'e-stopping friction     (ps^-1)',3x,1p,e12.4, &
+                 & /,1x,'e-stopping velocity   (A ps^-1)',3x,1p,e12.4)") chi_ep,chi_es,vel_es2
+       If (ttmthvel) Then
+         Write(nrite,"(/,1x,'applying to thermal velocities in all directions')")
+       Else If (ttmthvelz) Then
+         Write(nrite,"(/,1x,'applying to total velocities in x and y directions,', &
+                     & /,1x,'thermal velocities in z direction')")
+       Else
+         Write(nrite,"(/,1x,'applying to total velocities in all directions')")
+       End If
+     End If
+     keyens = 15
+
   End If
 
 ! report iteration length and tolerance condition for constraints and PMF algorithms
@@ -2524,13 +3114,18 @@ Subroutine read_control                                &
 
   End If
 
-! report no vom option
+! report no vom option: its use recommended with ttm
 
-  If (.not.l_vom) Then
+  If (.not.l_vom .and. .not.l_ttm) Then
      If (idnode == 0) Write(nrite,"(3(/,1x,a))")                                 &
         'no vom option on - COM momentum removal will be abandoned',             &
         '*** warning - this may lead to a build up of the COM momentum and ***', &
         '***           a manifestation of the "flying ice-cube" effect !!! ***'
+  Else If (l_vom .and. l_ttm) Then
+     If (idnode == 0) Write(nrite,"(3(/,1x,a))")                                         &
+        'no vom option off - COM momentum removal will be used',                         &
+        '*** warning - this may lead to incorrect dynamic behaviour for            ***', &
+        '***           two-temperature model: COM momentum removal recommended !!! ***'
   End If
 
 ! report intramolecular analysis options
@@ -2820,6 +3415,9 @@ Subroutine read_control                                &
         Write(nrite,"(/,1x,'default simulation temperature (K)',1p,e12.4)") temp
   End If
 
+  vel_es2 = vel_es2 * vel_es2 ! square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
+  amin = Max (amin, 1)        ! minimum number of atoms for ttm ionic temperature cell
+
 !!! ERROR CHECKS !!!
 ! Temperature
 
@@ -2833,6 +3431,12 @@ Subroutine read_control                                &
 
   If ((keyens == 10 .or. keyens == 20 .or. keyens == 30) .and. &
       chi <= zero_plus) Call error(462)
+
+  If (keyens == 15 ) Then
+    If (gvar==0 .and. chi_ep <= zero_plus) Call error(462)
+    If (Abs(chi_es) <= zero_plus .and. idnode == 0) &
+      Write(nrite,"(1x,'assuming no electronic stopping in inhomogeneous Langevin thermostat')")
+  End If
 
   If ((keyens == 20 .or. keyens == 30) .and. &
       tai <= zero_plus) Call error(463)
@@ -2894,5 +3498,91 @@ Subroutine read_control                                &
      End If
      If (keyens /= 20 .and. keyens /= 30 .and. taup <= 0.0_wp) Call error(466)
   End If
+
+! Two-temperature model: calculate atomic density (if not
+! already specified and electron-phonon friction
+! conversion factor (to calculate chi_ep from G_ep values)
+
+  If (cellrho<=zero_plus) cellrho = sysrho
+  If (cellrho>zero_plus) Then
+    rcellrho = 1.0_wp/cellrho
+  Else
+    rcellrho = 0.0_wp
+  End If
+
+  epc_to_chi = 1.0e-12_wp*Jm3K_to_kBA3/3.0_wp
+  If (.not. ttmdyndens) epc_to_chi = epc_to_chi*rcellrho
+
+! Check sufficient parameters are specified for TTM electronic specific
+! heats, thermal conductivity/diffusivity, energy loss and laser deposition
+
+  If (ttmdyndens) CeType = CeType + 4
+  Select Case (CeType)
+  Case (0)
+  ! constant electronic specific heat: will convert from kB/atom to kB/A^3
+  ! by multiplication of atomic density
+    Ce0 = Ce0*cellrho
+  Case (1)
+  ! hyperbolic tangent electronic specific heat: multiplier will be converted
+  ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
+    If (Abs(sh_A) <= zero_plus .or. Abs(sh_B) <= zero_plus) Call error(671)
+    sh_A = sh_A*cellrho
+    sh_B = sh_B*1.0e-4_wp
+  Case (2)
+  ! linear electronic specific heat to Fermi temperature: maximum
+  ! value will be converted from kB/atom to kB/A^3
+    If (Abs(Tfermi) <= zero_plus .or. Abs(Cemax) <= zero_plus) Call error(671)
+    Cemax = Cemax*cellrho
+  Case (4)
+  ! constant electronic specific heat: will convert from kB/atom to kB/A^3
+  ! by multiplication of atomic density
+  Case (5)
+  ! hyperbolic tangent electronic specific heat: multiplier will be converted
+  ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
+    If (Abs(sh_A) <= zero_plus .or. Abs(sh_B) <= zero_plus) Call error(671)
+    sh_B = sh_B*1.0e-4_wp
+  Case (6)
+  ! linear electronic specific heat to Fermi temperature: maximum
+  ! value will be converted from kB/atom to kB/A^3
+    If (Abs(Tfermi) <= zero_plus .or. Abs(Cemax) <= zero_plus) Call error(671)
+  End Select
+
+  Select Case (KeType)
+  ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
+  ! to kB ps^-1 A^-1
+  Case (1,2)
+    If (isMetal .and. Abs(Ka0) <= zero_plus) Call error(672)
+    Ka0 = Ka0*JKms_to_kBAps
+  End Select
+
+  Select Case (DeType)
+  Case (1)
+  ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
+    If (.not. isMetal .and. Abs(Diff0) <= zero_plus) Call error(673)
+    Diff0 = Diff0*1.0e8_wp
+  Case (2)
+  ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
+  ! and Diff0 scaled with system temperature
+    If (.not. isMetal .and. Abs(Diff0) <= zero_plus .or. Abs(Tfermi) <= zero_plus) Call error(673)
+    Diff0 = Diff0*temp*1.0e8_wp
+  End Select
+
+  ! spatial deposition (gaussian) standard deviation: convert from nm to A
+  sig = sig*10.0_wp
+
+  ! penetration depth: convert from nm to A
+  If ((sdepoType == 2 .and. Abs(dEdX) <= zero_plus .and. Abs(pdepth-1.0_wp)<=zero_plus) .or. &
+      (sdepoType == 3 .and. Abs(pdepth-1.0_wp) <= zero_plus)) &
+  Call warning(510,0.0_wp,0.0_wp,0.0_wp)
+  pdepth = 10.0_wp*pdepth
+
+
+  ! electronic stopping power: convert from eV/nm to eV/A
+  ! fluence: convert from mJ cm^-2 to eV A^-2
+  If (sdepoType>0 .and. sdepoType<3 .and. (Abs(dEdx) <= zero_plus .or. Abs(fluence)<zero_plus)) &
+  Call warning(515,0.0_wp,0.0_wp,0.0_wp)
+
+  fluence = fluence*mJcm2_to_eVA2
+  dEdX = 0.1_wp*dEdX
 
 End Subroutine read_control

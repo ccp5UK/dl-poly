@@ -11,6 +11,7 @@ Subroutine set_bounds                                 &
 ! author    - i.t.todorov december 2016
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014 (VAF)
+! contrib   - m.a.seaton march 2017 (TTM)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -28,6 +29,7 @@ Subroutine set_bounds                                 &
   Use development_module, Only : l_trm
   Use greenkubo_module,   Only : vafsamp
   Use mpoles_module,      Only : keyind,induce
+  Use ttm_module,         Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
 
   Implicit None
 
@@ -792,5 +794,38 @@ Subroutine set_bounds                                 &
         mxcell = Max(mxcell,Nint((fdvar**2) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
      End If
   End If
+
+! two-temperature model: determine number of CITs
+! in x- and y-directions based on number in z-direction
+! and system size
+
+  delz     = cell(9)/Real(ntsys(3),wp)
+  ntsys(1) = Nint(cell(1)/delz)
+  ntsys(2) = Nint(cell(5)/delz)
+  delx     = cell(1)/Real(ntsys(1),wp)
+  dely     = cell(5)/Real(ntsys(2),wp)
+  volume   = delx*dely*delz
+  rvolume  = 1.0_wp/volume
+
+! Check number of electronic temperature cells is greater than/
+! equal to number of ionic temperature cells
+
+  If (Any(eltsys<ntsys)) Call error(670)
+
+! If redistribute option selected, check for sufficient electronic temperature
+! cells to redistribute energy when ionic tmeperature cells are switched off:
+! if not available, switch off this option
+
+  If (redistribute .and. (eltsys(1)<ntsys(1)+2 .or. eltsys(2)<ntsys(2)+2 .or. eltsys(3)<ntsys(3)+2)) Then
+    Call warning(500,0.0_wp,0.0_wp,0.0_wp)
+    redistribute = .false.
+  End If
+
+! Calculate average atomic density: if not overridden by
+! 'ttm atomdens' directive in CONTROL file, will be used
+! to convert specific heat capacities to volumetric 
+! heat capacity etc.
+
+  sysrho = Real(megatm,Kind=wp)/(cell(1)*cell(5)*cell(9))
 
 End Subroutine set_bounds
