@@ -8,6 +8,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov march 2016
 ! contrib   - a.m.elena september 2016 (ljc)
+! contrib   - a.m.elena september 2017 (ryd)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -206,7 +207,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
      Else If (keypot == 13) Then
 
 ! Morse potential with twelve term:: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
-! needs new shifting recomputed
+
         e0=prmvdw(1,ivdw)
         r0=prmvdw(2,ivdw)
         kk=prmvdw(3,ivdw)
@@ -219,7 +220,18 @@ Subroutine vdw_direct_fs_generate(rvdw)
         bfs(ivdw) =-e0*t1*(t1-2.0_wp) + sor6 - afs(ivdw)
         afs(ivdw) = afs(ivdw)/rvdw
 
+     Else If (keypot == 14) Then
 
+! Morse potential with twelve term:: u=(a+b*r)Exp(-r/c)
+
+        a = prmvdw(1,ivdw)
+        b = prmvdw(2,ivdw)
+        c = prmvdw(3,ivdw)
+
+        kk=1.0_wp/c
+        t1=Exp(-rvdw*kk)
+        afs(ivdw) = (a+b*rvdw)*kk*t1-b*t1
+        bfs(ivdw) = -(a*c+a*rvdw+b*rvdw*rvdw)*kk*t1
      Else
 
         Call error(150)

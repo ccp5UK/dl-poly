@@ -9,6 +9,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 ! author    - t.forester may 1993
 ! amended   - i.t.todorov september 2016
 ! contrib   - a.m.elena september 2016 (ljc)
+! contrib   - a.m.elena september 2017 (rydberg)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -209,7 +210,19 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
                        e0*t*t/(4.0_wp*kk*kk*kk)* (4.0_wp*kk**3*rvdw**3 + & 
                        6*kk**2*rvdw**2 + 6*kk*rvdw + 3) + 12.0_wp*s9
               End If
+           Else If (keypot == 14) Then
 
+! Rydberg potential:: u=(a+b*r)Exp(-r/c)
+
+              a = prmvdw(1,ivdw)
+              b = prmvdw(2,ivdw)
+              c = prmvdw(3,ivdw)
+              t = exp(-rvdw/c)
+
+              eadd = (b*c*rvdw**3+(3*b*c**2+a*c)*rvdw**2+(6*b*c**3+2*a*c**2)*rvdw&
+                +6*b*c**4+2*a*c**3)*t
+              padd = (b*rvdw**4+(3*b*c+a)*rvdw**3+(9*b*c**2+3*a*c)*rvdw**2+& 
+                (18*b*c**3+6*a*c**2)*rvdw+18*b*c**4+6*a*c**3)*t
            End If
 
 ! Self-interaction accounted once, interaction between different species

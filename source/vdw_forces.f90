@@ -10,6 +10,7 @@ Subroutine vdw_forces &
 ! author    - w.smith august 1998
 ! amended   - i.t.todorov march 2016
 ! contrib   - a.m.elena september 2016 (ljc)
+! contrib   - a.m.elena september 2017 (rydberg)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -408,6 +409,26 @@ Subroutine vdw_forces &
                  gamma = gamma - afs(k)*r_rrr
               End If
 
+            Else If (ityp == 14) Then
+
+! Rydberg potential:: u=(a+b*r)Exp(-r/c)
+
+              a = prmvdw(1,k)
+              b = prmvdw(2,k)
+              c = prmvdw(3,k)
+
+              kk = rrr/c
+              t1 = Exp(-kk)
+
+              If (jatm <= natms .or. idi < ltg(jatm)) &
+              eng   = (a+b*rrr)*t1
+              gamma = kk*t1*(a-b*c+b*rrr)*r_rsq
+
+              If (ls_vdw) Then ! force-shifting
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 eng   = eng + afs(k)*rrr + bfs(k)
+                 gamma = gamma - afs(k)*r_rrr
+              End If
 
            Else If (Abs(vvdw(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
 

@@ -9,6 +9,7 @@ Subroutine vdw_generate(rvdw)
 ! author    - w.smith may 1992
 ! amended   - i.t.todorov march 2016
 ! contrib   - a.m.elena september 2016 (ljc)
+! contrib   - a.m.elena september 2017 (rydberg)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -462,6 +463,31 @@ Subroutine vdw_generate(rvdw)
         If (.not.ls_vdw) Then !???
            sigeps(1,ivdw)=r0-log(2.0_wp)/kk
            sigeps(2,ivdw)=e0
+        End If
+
+     Else If (keypot == 14) Then
+
+! Rydberg potential:: u=(a+b*r)Exp(-r/c)
+        
+        a = prmvdw(1,ivdw)
+        b = prmvdw(2,ivdw)
+        c = prmvdw(3,ivdw)
+
+        Do i=1,mxgvdw
+           r=Real(i,wp)*dlrpot
+
+           kk = r/c
+           t1=Exp(-kk)           
+
+           vvdw(i,ivdw) = (a+b*r)*t1
+           gvdw(i,ivdw) = t1*kk*(a-b*c+b*r)
+        End Do
+        vvdw(0,ivdw)= a
+        gvdw(0,ivdw)= 0
+
+        If (.not.ls_vdw) Then !???
+           sigeps(1,ivdw)=1.0_wp
+           sigeps(2,ivdw)=0.0_wp
         End If
 
      Else
