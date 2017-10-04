@@ -171,6 +171,7 @@ write_config.f90
 xscale.f90
 z_density_collect.f90
 z_density_compute.f90
+zbl.F90
 zero_k_optimise.f90
 )
 

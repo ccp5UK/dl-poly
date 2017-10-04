@@ -232,6 +232,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
         t1=Exp(-rvdw*kk)
         afs(ivdw) = (a+b*rvdw)*kk*t1-b*t1
         bfs(ivdw) = -(a*c+a*rvdw+b*rvdw*rvdw)*kk*t1
+
      Else
 
         Call error(150)

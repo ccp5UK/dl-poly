@@ -22,6 +22,7 @@ Subroutine read_field                      &
 ! contrib   - a.m.elena february 2017
 ! contrib   - a.m.elena august 2017 (mstw)
 ! contrib   - a.m.elena september 2017 (ryd)
+! contrib   - a.m.elena october 2017 (zbl)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -3261,6 +3262,8 @@ Subroutine read_field                      &
               keypot=13
            Else If (keyword == 'ryd') Then
               keypot=14
+           Else If (keyword == 'zbl') Then
+              keypot=15
            Else
 
               If (idnode == 0) Write(nrite,'(/,1x,a)') keyword
@@ -3369,6 +3372,8 @@ Subroutine read_field                      &
                  gamdpd(keyvdw)=Abs(parpot(5))
               Else If (keypot == 14) Then
                  gamdpd(keyvdw)=Abs(parpot(4))
+              Else If (keypot == 15) Then
+                 gamdpd(keyvdw)=Abs(parpot(5))
               End If
               If (gamdpd(0) > zero_plus) gamdpd(keyvdw)=gamdpd(0) ! override
            End If
