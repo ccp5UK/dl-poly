@@ -3312,6 +3312,8 @@ Subroutine read_field                      &
                  parpot(4)=parpot(4)*engunit
               Else If (keypot == 14) Then
                  parpot(2)=parpot(2)*engunit
+              Else If (keypot == 15) Then
+                 parpot(1)=parpot(1)/engunit
               End If
            End If
 
