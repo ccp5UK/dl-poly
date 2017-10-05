@@ -10,6 +10,8 @@ Subroutine vdw_forces &
 ! author    - w.smith august 1998
 ! amended   - i.t.todorov march 2016
 ! contrib   - a.m.elena september 2016 (ljc)
+! contrib   - a.m.elena september 2017 (rydberg)
+! contrib   - a.m.elena october 2017 (zbl)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -17,6 +19,7 @@ Subroutine vdw_forces &
   Use setup_module
   Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
   Use vdw_module
+  Use m_zbl, Only : ab,zbl
 
   Implicit None
 
@@ -37,7 +40,8 @@ Subroutine vdw_forces &
                        nr,mr,rc,sig,eps,alpha,beta,       &
                        fix,fiy,fiz,fx,fy,fz,              &
                        gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3,t,  &
-                       strs1,strs2,strs3,strs5,strs6,strs9
+                       strs1,strs2,strs3,strs5,strs6,     &
+                       strs9,z1,z2
 
 ! define grid resolution for potential arrays and interpolation spacing
 
@@ -401,6 +405,49 @@ Subroutine vdw_forces &
               If (jatm <= natms .or. idi < ltg(jatm)) &
               eng   = e0*t1*(t1-2.0_wp)+sor6
               gamma = -2.0_wp*e0*kk*t1*(1.0_wp-t1)*r_rrr-12.0_wp*sor6*r_rrr
+
+              If (ls_vdw) Then ! force-shifting
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 eng   = eng + afs(k)*rrr + bfs(k)
+                 gamma = gamma - afs(k)*r_rrr
+              End If
+
+            Else If (ityp == 14) Then
+
+! Rydberg potential:: u=(a+b*r)Exp(-r/c)
+
+              a = prmvdw(1,k)
+              b = prmvdw(2,k)
+              c = prmvdw(3,k)
+
+              kk = rrr/c
+              t1 = Exp(-kk)
+
+              If (jatm <= natms .or. idi < ltg(jatm)) &
+              eng   = (a+b*rrr)*t1
+              gamma = kk*t1*(a-b*c+b*rrr)*r_rsq
+
+              If (ls_vdw) Then ! force-shifting
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 eng   = eng + afs(k)*rrr + bfs(k)
+                 gamma = gamma - afs(k)*r_rrr
+              End If
+
+            Else If (ityp == 15) Then
+
+! ZBL potential:: u=Z1Z2/(4πε0r)∑_{i=1}^4b_ie^{-c_i*r/a}
+
+              z1 = prmvdw(1,k)
+              z2 = prmvdw(2,k)
+        
+        ! this is in fact inverse a
+              a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
+              kk = z1*z2*r4pie0
+
+              Call zbl(rrr,kk,a,t1,gamma)
+              If (jatm <= natms .or. idi < ltg(jatm)) &
+              eng = t1
+              gamma = gamma*r_rsq
 
               If (ls_vdw) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &

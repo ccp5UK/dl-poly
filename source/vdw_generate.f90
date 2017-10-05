@@ -9,12 +9,15 @@ Subroutine vdw_generate(rvdw)
 ! author    - w.smith may 1992
 ! amended   - i.t.todorov march 2016
 ! contrib   - a.m.elena september 2016 (ljc)
+! contrib   - a.m.elena september 2017 (rydberg)
+! contrib   - a.m.elena october 2017 (zbl)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module, Only : mxgvdw,zero_plus
+  Use setup_module, Only : mxgvdw,zero_plus,r4pie0
   Use vdw_module
+  Use m_zbl, Only : ab, zbl
 
   Implicit None
 
@@ -23,7 +26,7 @@ Subroutine vdw_generate(rvdw)
   Integer           :: i,ivdw,keypot,n,m
   Real( Kind = wp ) :: dlrpot,r,r0,r0rn,r0rm,r_6,sor6,  &
                        rho,a,b,c,d,e0,kk,nr,mr,rc,sig,eps, &
-                       alpha,beta,t1,t2,t3,t
+                       alpha,beta,t1,t2,t3,t,z1,z2,dphi,phi
 
 ! allocate arrays for tabulating
 
@@ -462,6 +465,59 @@ Subroutine vdw_generate(rvdw)
         If (.not.ls_vdw) Then !???
            sigeps(1,ivdw)=r0-log(2.0_wp)/kk
            sigeps(2,ivdw)=e0
+        End If
+
+     Else If (keypot == 14) Then
+
+! Rydberg potential:: u=(a+b*r)Exp(-r/c)
+        
+        a = prmvdw(1,ivdw)
+        b = prmvdw(2,ivdw)
+        c = prmvdw(3,ivdw)
+
+        Do i=1,mxgvdw
+           r=Real(i,wp)*dlrpot
+
+           kk = r/c
+           t1=Exp(-kk)           
+
+           vvdw(i,ivdw) = (a+b*r)*t1
+           gvdw(i,ivdw) = t1*kk*(a-b*c+b*r)
+        End Do
+        vvdw(0,ivdw)= a
+        gvdw(0,ivdw)= 0
+
+        If (.not.ls_vdw) Then !???
+           sigeps(1,ivdw)=1.0_wp
+           sigeps(2,ivdw)=0.0_wp
+        End If
+
+     Else If (keypot == 15) Then
+
+! ZBL potential:: u=Z1Z2/(4πε0r)∑_{i=1}^4b_ie^{-c_i*r/a}
+
+        z1 = prmvdw(1,ivdw)
+        z2 = prmvdw(2,ivdw)
+        
+        ! this is in fact inverse a
+        a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
+        kk = z1*z2*r4pie0
+
+        Do i=1,mxgvdw
+           r=Real(i,wp)*dlrpot
+
+           call zbl(r,kk,a,phi,dphi)
+
+           vvdw(i,ivdw) = phi
+           gvdw(i,ivdw) = dphi
+
+        End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=0.0_wp
+           sigeps(2,ivdw)=0.0_wp
         End If
 
      Else
