@@ -17,6 +17,7 @@ Module io_module
 ! copyright - daresbury laboratory
 ! author    - i.j.bush april 2011
 ! amended   - m.a.seaton november 2011
+! amended   - a.m.elena september 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1881,8 +1882,8 @@ Contains
                Write( line, '( 8a1, i10, a54, a1 )' ) name( :, i ), indices( i ), Repeat( ' ', 54 ), lf
             Case( IO_HISTORY )
                ! History File
-               Write( line, '( 8a1, i10, 3f12.6, a18, a1 )' ) name( :, i ), indices( i ), &
-                    data( W_IND, i ), data( Q_IND, i ), data( D_IND, i ), Repeat( ' ', 18 ), lf
+               Write( line, '( 8a1, i10, 3(1x,f13.6), a12, a1 )' ) name( :, i ), indices( i ), &
+                    data( W_IND, i ), data( Q_IND, i ), data( D_IND, i ), Repeat( ' ', 12 ), lf
             Case( IO_HISTORD )
                ! Short History File
                Write( line, '( 6a1, 4f7.1, a1 )' ) &
