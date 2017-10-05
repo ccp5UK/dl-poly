@@ -60,7 +60,7 @@ OBJ_ALL = \
 	ttm_thermal_diffusion.o ttm_ion_temperature.o ttm_system_init.o ttm_system_revive.o \
 	ttm_table_scan.o ttm_table_read.o \
 	bonds_table_read.o angles_table_read.o \
-	dihedrals_table_read.o inversions_table_read.o \
+	dihedrals_table_read.o inversions_table_read.o zbl.o \
 	vdw_generate.o vdw_table_read.o vdw_direct_fs_generate.o \
 	metal_generate_erf.o metal_generate.o metal_table_read.o metal_table_derivatives.o \
 	tersoff_generate.o dihedrals_14_check.o read_mpoles.o read_field.o \
