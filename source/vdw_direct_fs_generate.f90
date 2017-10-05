@@ -13,8 +13,9 @@ Subroutine vdw_direct_fs_generate(rvdw)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use setup_module, Only : zero_plus
+  Use setup_module, Only : zero_plus, r4pie0
   Use vdw_module
+  Use m_zbl, Only : zbl,ab,zbls
 
   Implicit None
 
@@ -23,7 +24,8 @@ Subroutine vdw_direct_fs_generate(rvdw)
   Integer           :: ivdw,keypot,n,m
   Real( Kind = wp ) :: r0,r0rn,r0rm,r_6,sor6,   &
                        rho,a,b,c,d,e0,kk,nr,mr, &
-                       sig,eps,t1,t2,t3
+                       sig,eps,t1,t2,t3,z,dz,   &
+                       z1,z2,rm,ic,k
 
 ! allocate arrays for force-shifted corrections
 
@@ -232,6 +234,38 @@ Subroutine vdw_direct_fs_generate(rvdw)
         t1=Exp(-rvdw*kk)
         afs(ivdw) = (a+b*rvdw)*kk*t1-b*t1
         bfs(ivdw) = -(a*c+a*rvdw+b*rvdw*rvdw)*kk*t1
+
+     Else If (keypot == 15) Then
+
+! ZBL potential:: u=Z1Z2/(4πε0r)∑_{i=1}^4b_ie^{-c_i*r/a}
+
+        z1 = prmvdw(1,ivdw)
+        z2 = prmvdw(2,ivdw)
+
+        a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
+        kk = z1*z2*r4pie0
+
+        call zbl(rvdw,kk,a,z,dz)
+        afs(ivdw) = dz/rvdw
+        bfs(ivdw) = -z-dz
+
+     Else If (keypot == 16) Then
+
+! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
+
+        z1 = prmvdw(1,ivdw)
+        z2 = prmvdw(2,ivdw)
+        rm = prmvdw(3,ivdw)
+        ic = 1.0_wp/prmvdw(4,ivdw)
+        e0 = prmvdw(5,ivdw)
+        r0 = prmvdw(6,ivdw)
+        k = prmvdw(7,ivdw)
+
+        a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
+        kk = z1*z2*r4pie0
+        Call zbls(rvdw,kk,a,rm,ic,e0,k,r0,z,dz)
+        afs(ivdw) = dz/rvdw
+        bfs(ivdw) = -z-dz
 
      Else
 

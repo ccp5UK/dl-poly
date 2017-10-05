@@ -10,6 +10,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 ! amended   - i.t.todorov september 2016
 ! contrib   - a.m.elena september 2016 (ljc)
 ! contrib   - a.m.elena september 2017 (rydberg)
+! contrib   - a.m.elena october 2017 (zbl/zbls)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,6 +21,8 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
   Use config_module, Only : imcon,volm,natms,ltype,lfrzn
   Use vdw_module,    Only : ls_vdw,lstvdw,ltpvdw,prmvdw
   Use mm3_module
+  Use m_zbl,         Only : ab, intRadZBL, intdRadZBL, &
+                             intRadZBLs,intdRadZBLs
 
   Implicit None
 
@@ -28,7 +31,8 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
   Integer           :: fail,i,j,k,ivdw,keypot,n,m
   Real( Kind = wp ) :: a,b,c,d,e0,nr,mr,r0,r,eps,sig, &
-                       eadd,padd,denprd,plrc,t,kk,s9
+                       eadd,padd,denprd,plrc,t,kk,s9, &
+                       z1,z2,rm,al
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: numfrz
 
@@ -210,6 +214,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
                        e0*t*t/(4.0_wp*kk*kk*kk)* (4.0_wp*kk**3*rvdw**3 + & 
                        6*kk**2*rvdw**2 + 6*kk*rvdw + 3) + 12.0_wp*s9
               End If
+
            Else If (keypot == 14) Then
 
 ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
@@ -223,6 +228,38 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
                 +6*b*c**4+2*a*c**3)*t
               padd = (b*rvdw**4+(3*b*c+a)*rvdw**3+(9*b*c**2+3*a*c)*rvdw**2+& 
                 (18*b*c**3+6*a*c**2)*rvdw+18*b*c**4+6*a*c**3)*t
+
+           Else If (keypot == 15) Then
+
+! ZBL potential:: u=Z1Z2/(4πε0r)∑_{i=1}^4b_ie^{-c_i*r/a}
+
+              z1 = prmvdw(1,ivdw)
+              z2 = prmvdw(2,ivdw)
+
+        ! this is in fact inverse a
+              a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
+              kk = z1*z2*r4pie0
+              eadd = intRadZBL(kk,a,rvdw,1e-12_wp)
+              padd = intdRadZBL(kk,a,rvdw,1e-12_wp)
+
+           Else If (keypot == 16) Then
+
+! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
+
+              z1 = prmvdw(1,ivdw)
+              z2 = prmvdw(2,ivdw)
+              rm = prmvdw(3,ivdw)
+              c = 1.0_wp/prmvdw(4,ivdw)
+              e0 = prmvdw(5,ivdw)
+              r0 = prmvdw(6,ivdw)
+              al = prmvdw(7,ivdw)
+
+              a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
+              kk = z1*z2*r4pie0
+
+              eadd = intRadZBLs(kk,a,rm,c,e0,al,r0,rvdw,1e-12_wp)
+              padd = intdRadZBLs(kk,a,rm,c,e0,al,r0,rvdw,1e-12_wp)
+
            End If
 
 ! Self-interaction accounted once, interaction between different species
