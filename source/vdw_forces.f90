@@ -19,7 +19,7 @@ Subroutine vdw_forces &
   Use setup_module
   Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
   Use vdw_module
-  Use m_zbl, Only : ab,zbl
+  Use m_zbl, Only : ab,zbl,zbls
 
   Implicit None
 
@@ -41,7 +41,7 @@ Subroutine vdw_forces &
                        fix,fiy,fiz,fx,fy,fz,              &
                        gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3,t,  &
                        strs1,strs2,strs3,strs5,strs6,     &
-                       strs9,z1,z2
+                       strs9,z1,z2,rm
 
 ! define grid resolution for potential arrays and interpolation spacing
 
@@ -445,6 +445,34 @@ Subroutine vdw_forces &
               kk = z1*z2*r4pie0
 
               Call zbl(rrr,kk,a,t1,gamma)
+              If (jatm <= natms .or. idi < ltg(jatm)) &
+              eng = t1
+              gamma = gamma*r_rsq
+
+              If (ls_vdw) Then ! force-shifting
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 eng   = eng + afs(k)*rrr + bfs(k)
+                 gamma = gamma - afs(k)*r_rrr
+              End If
+
+            Else If (ityp == 15) Then
+
+! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
+
+              z1 = prmvdw(1,k)
+              z2 = prmvdw(2,k)
+              rm = prmvdw(3,k)
+              c = 1.0_wp/prmvdw(4,k)
+              e0 = prmvdw(5,k)
+              r0 = prmvdw(6,k)
+              t2 = prmvdw(7,k)
+
+        ! this is in fact inverse a
+              a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
+              kk = z1*z2*r4pie0
+
+              Call zbls(rrr,kk,a,rm,c,e0,t2,r0,t1,gamma)
+
               If (jatm <= natms .or. idi < ltg(jatm)) &
               eng = t1
               gamma = gamma*r_rsq

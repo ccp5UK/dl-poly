@@ -386,7 +386,7 @@ Subroutine set_bounds                                 &
 
   If (mxvdw > 0) Then
      mxvdw = mxvdw+1
-     mxpvdw = 5
+     mxpvdw = 7
   Else
      mxpvdw = 0
   End If

@@ -1162,7 +1162,7 @@ U(r_{ij}) = \epsilon\left(\frac{1.07}{(r_{ij}/r_{o})+0.07}\right)^{7}\left(\frac
   \begin{equation}
     U(r_{ij}) = (a+br)\exp(-r/\rho)
   \end{equation}
-\item ZBL: ({\bf zbl})
+\item Ziegler-Biersack-Littmark (ZBL): \cite{ziegler1985} ({\bf zbl})
   \begin{equation}
     \begin{split}
       U(r_{ij}) =& \frac{Z_1Z_2e^2}{4\pi\varepsilon_0r}\sum_{i=1}^{4}b_i e^{-c_ir/a} \\
@@ -1172,6 +1172,19 @@ U(r_{ij}) = \epsilon\left(\frac{1.07}{(r_{ij}/r_{o})+0.07}\right)^{7}\left(\frac
                a_B =& 0.52917721067\AA
     \end{split}
   \end{equation}
+\item ZBL mixed with Morse, \cite{trachenko2003}: ({\bf zbls})
+  \begin{equation}
+      U(r_{ij}) = f(r_{ij})U_{ZBL}(r_{ij})+(1-f(r))U_{morse}(r_{ij})
+  \end{equation}
+  \begin{equation*}
+     f(r)=\left\{
+       \begin{array}{ll}
+         1-e^{-(r_m-r)/\xi}/2 & r<r_m \\
+         e^{-(r-r_m)/\xi}/2 & r\geq r_m\\
+       \end{array}
+       \right.
+  \end{equation*}
+
 \item Tabulation:  ({\bf tab}).  The potential is defined
 numerically only.
 \end{enumerate}
