@@ -95,9 +95,9 @@ Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp)
     Call eltemp_min (lat_min)
     If (idnode==0) Then
       Write(nrite,'(/,1x,a)') 'electronic temperatures read from DUMP_E file for two-temperature model'
-      Write(nrite,'(1x,"minimum temperature (K) = ",ES8.4,&
-                 &/,1x,"maximum temperature (K) = ",ES8.4,&
-                 &/,1x,"sum of temperatures (K) = ",ES8.4)') &
+      Write(nrite,'(1x,"minimum temperature (K) = ",ES11.4,&
+                 &/,1x,"maximum temperature (K) = ",ES11.4,&
+                 &/,1x,"sum of temperatures (K) = ",ES11.4)') &
                  lat_min, lat_max, lat_sum
       Close (iounit)
     End If

@@ -92,7 +92,7 @@
 
 ! Inhomogeneous (two-temperature) 
 ! Langevin thermostat (Stochastic Dynamics)
-		
+
            Else If (keyens == 15) Then
 
               Call nvt_l2_lfv             &

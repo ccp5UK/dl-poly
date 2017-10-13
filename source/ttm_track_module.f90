@@ -16,9 +16,9 @@ Module ttm_track_module
   Use setup_module
   Use ttm_module
   Use ttm_utils
-	
+
   Implicit None
-	
+
   Real( Kind = wp ), Allocatable, Dimension (:,:,:) :: lat_U,lat_B,lat_I
   Real( Kind = wp ) :: norm
 
@@ -44,7 +44,7 @@ Contains
     Allocate (lat_I (0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1), Stat = fail(3))
 
     If (Any(fail>0)) Call error(1089)
-		
+
     lat_U(:,:,:) = 0.0_wp ! spatial deposition (eV)
     lat_B(:,:,:) = 0.0_wp ! temporal deposition of lat_U (eV)
     lat_I(:,:,:) = 0.0_wp ! sum of temporal deposition of lat_B (eV)
@@ -106,7 +106,7 @@ Contains
     Implicit None
     Real( Kind = wp ), Intent ( In ) :: tstep,time
     Integer, Intent ( In ) :: redtstepmx,redtstep
-		
+
     Real( Kind = wp ) :: lat_I_max, lat_I_sum, lat_I_min
     Real( Kind = wp ) :: lat_U_min, lat_U_max, lat_U_sum, invbin
     Real( Kind = wp ) :: currenttime,adjtime,adjeng,err_tol = 0.01_wp
@@ -311,14 +311,13 @@ Contains
       If (Any(fail > 0)) Call error(1090)
 
     End If
-	
+
   End Subroutine depoevolve
-	
 
   Subroutine uniformDist(lat_in)
 
 ! implement constant (homogeneous) spatial deposition
-	
+
     Implicit None
     Real( Kind = wp ), Intent ( Inout ), Dimension(0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1) :: lat_in
     Real( Kind = wp ) :: dEdV
@@ -332,7 +331,7 @@ Contains
     Else
       dEdV = dEdX/(Real(ntsys(1),Kind=wp)*Real(ntsys(2),Kind=wp)*delx*dely)
     End If
-		
+
     ! homogeneous excitation: each temperature cell receives
     ! the same energy
 
@@ -345,7 +344,7 @@ Contains
 ! implement constant (homogeneous) spatial deposition
 ! in x and y-directions, exponential decay of fluence
 ! in z-direction (only with laser)
-	
+
     Implicit None
     Real( Kind = wp ), Intent ( Inout ), Dimension(0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1) :: lat_in
     Real( Kind = wp ) :: dEdVmax, dEdV, zz, rpdepth
