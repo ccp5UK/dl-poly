@@ -183,7 +183,7 @@ Contains
     Call interpolate (gel, gtable, eltempav, epc)
 
     chi_ep = epc*Merge(rcellrho, 1.0_wp, ttmdyndens)
-				
+
   End Subroutine calcchies
 
   Subroutine boundaryHalo ()
@@ -1361,7 +1361,7 @@ Contains
     If (mxnode>1) Call gmax (eltempmax)
 
   End Subroutine eltemp_maxKe
-	
+
   Subroutine eltemp_max (eltempmax)
 
 ! Find maximum electronic temperature over all
@@ -1465,8 +1465,7 @@ Contains
     If (mxnode>1) Call gmin (eltempmin)
 
   End Subroutine eltemp_minKe
-	
-	
+
   Subroutine eltemp_min (eltempmin)
 
 ! Find minimum electronic temperature over all
@@ -1536,8 +1535,7 @@ Contains
     If (mxnode>1) Call gmin (eltempmin)
 
   End Subroutine eltemp_min
-	
-	
+
   Subroutine interpolate(tabsize, tab, x0, resp)
 
 ! Interpolation helper subroutine
@@ -1637,7 +1635,7 @@ Contains
           ijkpz = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * (k + 1))
           ijkmz = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * (k - 1))
           If (act_ele_cell(ijk,0,0,0)<=zero_plus .and. old_ele_cell(ijk,0,0,0)>zero_plus) Then
-		! Calculate amount of energy left in the cell 
+        ! Calculate amount of energy left in the cell 
         ! (Ue = integral of Ce(Te)d(Te) between temp0 and Te)
             U_e = 0.0_wp
             end_Te = eltemp(ijk,0,0,0)
@@ -1663,10 +1661,10 @@ Contains
               End Do
               U_e = U_e + 0.5_wp * (Ce(temp0+Real(numint, Kind=wp))+Ce(end_Te))
             End Select
-		! Check how many cells are connected to the now turned-off cell
+            ! Check how many cells are connected to the now turned-off cell
             act_sur_cells = act_ele_cell(ijkmx,0,0,0) + act_ele_cell(ijkpx,0,0,0) + act_ele_cell(ijkmy,0,0,0) + &
                             act_ele_cell(ijkpy,0,0,0) + act_ele_cell(ijkmz,0,0,0) + act_ele_cell(ijkpz,0,0,0)
-		! Calculate energy redistribution to each cell and assign to cells
+            ! Calculate energy redistribution to each cell and assign to cells
             If (act_sur_cells>zero_plus) energy_per_cell = U_e / act_sur_cells
             If (act_ele_cell(ijkmx,0,0,0)>zero_plus) energydist (ijkmx,0,0,0) = energydist (ijkmx,0,0,0) + energy_per_cell
             If (act_ele_cell(ijkpx,0,0,0)>zero_plus) energydist (ijkpx,0,0,0) = energydist (ijkpx,0,0,0) + energy_per_cell
