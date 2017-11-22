@@ -367,7 +367,7 @@ Subroutine calculate_block(temp, rcut)
               gofr1 = gofr
            End If
 ! Store information to compute block average
-           block_averages(ia, ib,i, block_number) = block_averages(ia,ib,i, block_number) + gofr1 !!* i_blocksize
+           block_averages(ia, ib,i, block_number) = block_averages(ia,ib,i, block_number) + gofr1  
         End Do
      End Do
   End Do
@@ -506,7 +506,7 @@ Subroutine calculate_errors_jackknife(temp, rcut, num_steps)
      Do l=1, mxgrdf
         Do j=1, ntpatm
            Do i=1, ntpatm
-              averages(i,j,l) = averages(i,j,l) + block_averages(i,j,l,k) !* i_nr_blocks
+              averages(i,j,l) = averages(i,j,l) + block_averages(i,j,l,k) 
            End Do
         End Do
      End Do
