@@ -19,7 +19,7 @@ include(GNUInstallDirs)
 include(FeatureSummary)
 
 if(COMMAND cmake_policy)
-  cmake_policy(SET CMP0004 OLD)
+  #  cmake_policy(SET CMP0004 OLD)
 endif(COMMAND cmake_policy)
 
 if(WITH_MPI)
@@ -106,6 +106,7 @@ if (DOCS)
    message(STATUS "Build Doxygen API Documentation")
   set(doc_dir doc)
   find_package(Doxygen REQUIRED)
+  find_package(Ford REQUIRED)
 endif()
 ######################
 ##set the output folder for libs and bins
@@ -121,6 +122,11 @@ if(DOCS)
     ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/Doxyfile)
   install(CODE "execute_process(COMMAND ${CMAKE_BUILD_TOOL} docs)")
   install(DIRECTORY ${CMAKE_BINARY_DIR}/doc/html/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
+
+  configure_file(${CMAKE_SOURCE_DIR}/cmake/dlpoly.md.cmake dlpoly.md)
+  add_custom_target(ford
+    ${FORD_EXECUTABLE} ${PROJECT_BINARY_DIR}/dlpoly.md)
+
 endif(DOCS)
 
 if (WITH_COVERAGE)
