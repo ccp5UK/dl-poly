@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-module load openmpi/gcc/1.10.1
-module load kim/gcc/1.7.2
+module load openmpi/gcc
+module load kim/gcc
 
 mkdir build-mpi-kim
 pushd build-mpi-kim

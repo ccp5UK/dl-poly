@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-module load openmpi/gcc/1.10.1
+module load openmpi/gcc
 
 cp -r source source-mpi
 pushd source-mpi

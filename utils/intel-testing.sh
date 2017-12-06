@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-module load intel/2016.3 
+module load intel 
 mpr=`which mpirun` 
 mkdir build-intel-testing
 pushd build-intel-testing
