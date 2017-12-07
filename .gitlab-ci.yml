@@ -77,6 +77,13 @@ testing-mpi-gcc:
   script:
     - sh utils/mpi-testing.sh
 
+testing-mpi-gcc-paranoid:
+  stage: test
+  script:
+    - sh utils/mpi-testing-paranoid.sh
+  only:
+    - master
+
 testing-mpi-intel:
   stage: test
   script:
