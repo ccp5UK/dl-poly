@@ -298,7 +298,7 @@ for testsuite in xmltree.findall("testsuite"):
 					os.system("mkdir -p " + outdir + testcasepath)
 					os.system("cp -r  " + testpath + testcasepath + "* " + outdir + testcasepath)
 					if isArchived:
-					   os.system("pushd  " + outdir + testcasepath+" >> /dev/null; tar -xf *.tar.gz;rm -f *.tar.gz; popd >>/dev/null")
+					   os.system("pushd  " + outdir + testcasepath+" >> /dev/null; tar -xf *.tar.xz;rm -f *.tar.xz; popd >>/dev/null")
 					rtestcasepath = outdir + testcasepath
 				else:
 					print("copy the files from "+rtestcasepath + " to "+testpath + outdir + testcasepath)
@@ -307,7 +307,7 @@ for testsuite in xmltree.findall("testsuite"):
 					os.system("cp -r  " + testpath + testcasepath + "* " + testpath + outdir + testcasepath)
 					rtestcasepath = testpath + outdir + testcasepath
 					if isArchived:
-					  os.system("pushd  " + outdir + testcasepath + " >>/dev/null ;  tar -xf *.tar.gz --strip-components 1  && rm -f *.tar.gz && popd >>/dev/null")
+					  os.system("pushd  " + outdir + testcasepath + " >>/dev/null ;  tar -xf *.tar.xz --strip-components 1  && rm -f *.tar.xz && popd >>/dev/null")
 			if options.verbose:
 				if inputfile_specified:
 					if outputfile_specified:

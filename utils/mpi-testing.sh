@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-module load openmpi/gcc/1.10.1
-module load netcdf/gcc/4.4.0
-module load plumed/gcc/2.2.1
+module load openmpi/gcc
+module load netcdf/gcc
+module load plumed/gnu
 
 mkdir build-mpi-testing
 pushd build-mpi-testing

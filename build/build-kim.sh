@@ -43,7 +43,10 @@ set PREFIX /opt/\$PKG/\$COMP/\$VER
 setenv KIM_ROOT \$PREFIX
 prepend-path PATH \$PREFIX/bin
 prepend-path INCLUDE \$PREFIX/include/kim-api
+prepend-path C_INCLUDE_PATH \$PREFIX/include/kim-api
+prepend-path CPLUS_INCLUDE_PATH \$PREFIX/include/kim-api
 prepend-path CPATH \$PREFIX/include/kim-api
 prepend-path MANPATH \$PREFIX/share/man
 prepend-path LD_LIBRARY_PATH \$PREFIX/lib
+prepend-path LIBRARY_PATH \$PREFIX/lib
 EOF

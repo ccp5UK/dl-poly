@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-module load openmpi/gcc/1.10.1
-module load netcdf/gcc/4.4.0
+module load openmpi/gcc
+module load netcdf/gcc
 
 mkdir build-mpi-netcdf
 pushd build-mpi-netcdf
