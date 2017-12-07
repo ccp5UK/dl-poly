@@ -190,15 +190,15 @@ if(BUILD_TESTING)
   message(STATUS "Build with testing support support: make test")
   find_package(PythonInterp 3.0 REQUIRED)
   macro (do_test arg)
-    if (EXISTS ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz)
-      message(STATUS "Using already downloaded ${arg}.tar.gz")
+    if (EXISTS ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz)
+      message(STATUS "Using already downloaded ${arg}.tar.xz")
     else()
-      message(STATUS "Trying to download ${arg}.tar.gz")
-      file(DOWNLOAD ftp://ftp.dl.ac.uk/ccp5/DL_POLY/DL_POLY_4.0/DATA/${DLPOLY_VERSION_MAJOR}.${DLPOLY_VERSION_MINOR}/${arg}.tar.gz
-        ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz)
+      message(STATUS "Trying to download ${arg}.tar.xz")
+      file(DOWNLOAD ftp://ftp.dl.ac.uk/ccp5/DL_POLY/DL_POLY_4.0/DATA/${DLPOLY_VERSION_MAJOR}.${DLPOLY_VERSION_MINOR}/${arg}.tar.xz
+        ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz)
     endif()
     file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/${arg})
-    file(COPY ${CMAKE_SOURCE_DIR}/data/${arg}.tar.gz
+    file(COPY ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz
       DESTINATION ${CMAKE_BINARY_DIR}/Testing/${arg}/)
     add_test(NAME ${arg}
       COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/utils/beetest -f all.xml -v -k -s all -t ${arg} "${dlp}"
@@ -215,7 +215,9 @@ if(BUILD_TESTING)
   foreach(test RANGE 10 25 1)
     do_test("TEST${test}")
   endforeach()
-  #do_test("TEST28")
+  foreach(test RANGE 28 49 1)
+    do_test("TEST${test}")
+  endforeach()
 
 else()
   message(STATUS "Build without testing target")
