@@ -9,13 +9,15 @@ Subroutine vdw_direct_fs_generate(rvdw)
 ! author    - i.t.todorov march 2016
 ! contrib   - a.m.elena september 2016 (ljc)
 ! contrib   - a.m.elena september 2017 (ryd)
+! contrib   - a.m.elena october 2017 (zbl/zbls)
+! contrib   - a.m.elena december 2017 (zblb)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module, Only : zero_plus, r4pie0
   Use vdw_module
-  Use m_zbl, Only : zbl,ab,zbls
+  Use m_zbl, Only : zbl,ab,zbls,zblb
 
   Implicit None
 
@@ -264,6 +266,24 @@ Subroutine vdw_direct_fs_generate(rvdw)
         a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
         kk = z1*z2*r4pie0
         Call zbls(rvdw,kk,a,rm,ic,e0,k,r0,z,dz)
+        afs(ivdw) = dz/rvdw
+        bfs(ivdw) = -z-dz
+
+     Else If (keypot == 17) Then
+
+! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
+
+        z1 = prmvdw(1,ivdw)
+        z2 = prmvdw(2,ivdw)
+        rm = prmvdw(3,ivdw)
+        ic = 1.0_wp/prmvdw(4,ivdw)
+        e0 = prmvdw(5,ivdw)
+        r0 = prmvdw(6,ivdw)
+        k = prmvdw(7,ivdw)
+
+        a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
+        kk = z1*z2*r4pie0
+        Call zblb(rvdw,kk,a,rm,ic,e0,k,r0,z,dz)
         afs(ivdw) = dz/rvdw
         bfs(ivdw) = -z-dz
 

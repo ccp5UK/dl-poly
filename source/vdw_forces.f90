@@ -11,7 +11,8 @@ Subroutine vdw_forces &
 ! amended   - i.t.todorov march 2016
 ! contrib   - a.m.elena september 2016 (ljc)
 ! contrib   - a.m.elena september 2017 (rydberg)
-! contrib   - a.m.elena october 2017 (zbl)
+! contrib   - a.m.elena october 2017 (zbl/zbls)
+! contrib   - a.m.elena december 2017 (zblb)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -19,7 +20,7 @@ Subroutine vdw_forces &
   Use setup_module
   Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
   Use vdw_module
-  Use m_zbl, Only : ab,zbl,zbls
+  Use m_zbl, Only : ab,zbl,zbls,zblb
 
   Implicit None
 
@@ -455,7 +456,7 @@ Subroutine vdw_forces &
                  gamma = gamma - afs(k)*r_rrr
               End If
 
-            Else If (ityp == 15) Then
+            Else If (ityp == 16) Then
 
 ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
@@ -483,6 +484,33 @@ Subroutine vdw_forces &
                  gamma = gamma - afs(k)*r_rrr
               End If
 
+            Else If (ityp == 17) Then
+
+! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
+
+              z1 = prmvdw(1,k)
+              z2 = prmvdw(2,k)
+              rm = prmvdw(3,k)
+              c = 1.0_wp/prmvdw(4,k)
+              e0 = prmvdw(5,k)
+              r0 = prmvdw(6,k)
+              t2 = prmvdw(7,k)
+
+        ! this is in fact inverse a
+              a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
+              kk = z1*z2*r4pie0
+
+              Call zblb(rrr,kk,a,rm,c,e0,t2,r0,t1,gamma)
+
+              If (jatm <= natms .or. idi < ltg(jatm)) &
+              eng = t1
+              gamma = gamma*r_rsq
+
+              If (ls_vdw) Then ! force-shifting
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 eng   = eng + afs(k)*rrr + bfs(k)
+                 gamma = gamma - afs(k)*r_rrr
+              End If
 
            Else If (Abs(vvdw(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
 

@@ -1156,35 +1156,50 @@ U(r_{ij}) = \epsilon\left(\frac{1.07}{(r_{ij}/r_{o})+0.07}\right)^{7}\left(\frac
 \end{equation}
 \item Morse modified \cite{pedone2006}: ({\bf mstw})
   \begin{equation}
-    U(r_{ij}) = E_{o}~[\{1-\exp(-k(r_{ij}-r_{o}))\}^{2}-1]+\frac{c_{ij}}{r^{12}}
+    U\left(r_{ij}\right) = E_{0}~\{\left[1-\exp\left(-k\left(r_{ij}-r_{0}\right)\right)\right]^{2}-1\}+\frac{c}{r_{ij}^{12}}
   \end{equation}
-\item Rydberg: ({\bf ryd})
+\item Rydberg: ({\bf ryd})  
   \begin{equation}
-    U(r_{ij}) = (a+br)\exp(-r/\rho)
-  \end{equation}
-\item Ziegler-Biersack-Littmark (ZBL): \cite{ziegler1985} ({\bf zbl})
+    U\left(r_{ij}\right) = \left(a+br_{ij}\right)\exp\left(-r_{ij}/\rho\right)
+  \end{equation} 
+\item Ziegler-Biersack-Littmark (ZBL): \cite{ziegler1985} ({\bf zbl} )
   \begin{equation}
     \begin{split}
-      U(r_{ij}) =& \frac{Z_1Z_2e^2}{4\pi\varepsilon_0r}\sum_{i=1}^{4}b_i e^{-c_ir/a} \\
+      U(r_{ij}) =& \frac{Z_1Z_2e^2}{4\pi\varepsilon_0\varepsilon_r}\sum_{i=1}^{4}b_i \exp\left(-c_ir/a\right) \\
                a=&\frac{0.88534a_B}{Z_1^{0.23}+Z_2^{0.23}}\\
                b=&[0.18175,0.50986,0.28022,0.02817]\\
                c=&[3.1998,0.94229,0.40290,0.20162] \\
-               a_B =& 0.52917721067\AA
+               a_B =& 0.52917721067~\textrm{\AA}
     \end{split}
   \end{equation}
 \item ZBL mixed with Morse, \cite{trachenko2003}: ({\bf zbls})
   \begin{equation}
-      U(r_{ij}) = f(r_{ij})U_{ZBL}(r_{ij})+(1-f(r))U_{morse}(r_{ij})
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{ZBL}\left(r_{ij}\right)+\left(1-f\left(r_{ij}\right)\right)U_{morse}\left(r_{ij}\right)
   \end{equation}
+  with $f\left(r\right)$ defined by
   \begin{equation*}
-     f(r)=\left\{
+     f\left(r\right) = \left\{
        \begin{array}{ll}
-         1-e^{-(r_m-r)/\xi}/2 & r<r_m \\
-         e^{-(r-r_m)/\xi}/2 & r\geq r_m\\
+         1-e^{-\left(r_m-r\right)/\xi}/2 & r<r_m \\
+         e^{-\left(r-r_m\right)/\xi}/2 & r\geq r_m\\
        \end{array}
        \right.
   \end{equation*}
 
+\item ZBL mixed with Buckingham, \cite{trachenko2003}: ({\bf zblb}) 
+  \begin{equation}
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{ZBL}\left(r_{ij}\right)+\left(1-f\left(r_{ij}\right)\right)U_{buckingham}\left(r_{ij}\right)
+  \end{equation}
+  with $f\left(r\right)$ defined by
+  \begin{equation*}
+     f\left(r\right) = \left\{
+       \begin{array}{ll}
+         1-e^{-\left(r_m-r\right)/\xi}/2 & r<r_m \\
+         e^{-\left(r-r_m\right)/\xi}/2 & r\geq r_m\\
+       \end{array}
+       \right.
+  \end{equation*}
+ 
 \item Tabulation:  ({\bf tab}).  The potential is defined
 numerically only.
 \end{enumerate}

@@ -2713,7 +2713,9 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> variable 2   \> real \> potential parameter, see Table~\ref{vdw-table} \\
 \> variable 3   \> real \> potential parameter, see Table~\ref{vdw-table} \\
 \> variable 4   \> real \> potential parameter, see Table~\ref{vdw-table} \\
-\> variable 5   \> real \> potential parameter, see Table~\ref{vdw-table}
+\> variable 5   \> real \> potential parameter, see Table~\ref{vdw-table} \\
+\> variable 6   \> real \> potential parameter, see Table~\ref{vdw-table} \\
+\> variable 7   \> real \> potential parameter, see Table~\ref{vdw-table}
 \end{tabbing}
 The variables pertaining to each potential are described in Table
 \ref{vdw-table}.
@@ -2727,77 +2729,100 @@ file, will be assumed to be zero.
 \vskip 1ex
 \begin{tabular}{|l|l|c|c|c|c|c|c|}
 \hline
-key & potential type & \multicolumn{5}{c|}{Variables (1-5)}& functional form \\
+key & potential type & \multicolumn{4}{c|}{Variables (1-4)}& functional form \\
+    &                & \multicolumn{4}{c|}{Variables (5-7)}&  \\
 \hline
-           &                           &            &          &          &         &                      & \\
-{\bf tab}  & Tabulation, see            &            &          &          &         &                      & tabulated potential \\
-           & Sections~\ref{vdw}~\ref{table-file} &  &          &          &         &                      & in TABLE file \\
-           &                           &            &          &          &         &                      & \\
-{\bf 12-6} & 12-6                      & $A$        & $B$      &          &         &                      &
+           &                           &            &          &          &                               & \\
+{\bf tab}  & Tabulation, see           &            &          &          &                               & tabulated potential \\
+           & Sections~\ref{vdw}~\ref{table-file} &  &          &          &                               & in TABLE file \\
+           &                           &            &          &          &                               & \\
+{\bf 12-6} & 12-6                      & $A$        & $B$      &          &                               &
 $U(r) = \left( \frac{A}{r^{12}} \right) - \left( \frac{B}{r^{6}} \right)$ \\
-           &                           &            &          &          &         &                      & \\
-{\bf lj}   & Lennard-Jones             & $\epsilon$ & $\sigma$ &          &         &                      &
+           &                           &            &          &          &                               & \\
+{\bf lj}   & Lennard-Jones             & $\epsilon$ & $\sigma$ &          &                               &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r}\right)^{6} \right]$ \\
-           &                           &            &          &          &         &                      & \\
-{\bf ljc}  & LJ cohesive \cite{barrat-99a} & $\epsilon$ & $\sigma$ & $c$  &         &                      &
+           &                           &            &          &          &                               & \\
+{\bf ljc}  & LJ cohesive \cite{barrat-99a} & $\epsilon$ & $\sigma$ & $c$  &                               &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - c~\left( \frac{\sigma}{r}\right)^{6} \right]$ \\
-           &                           &            &          &          &         &                      & \\
-{\bf nm}   & n-m \cite{mie-03a,clarke-86a} & $E_{o}$ & $n$     & $m$      & $r_{0}$ &                      &
+           &                           &            &          &          &                               & \\
+{\bf nm}   & n-m \cite{mie-03a,clarke-86a} & $E_{o}$ & $n$     & $m$      & $r_{0}$                       &
 $U(r) = \frac{E_{o}}{(n-m)} \left[ m \left( \frac{r_{o}}{r} \right)^{n}
 -n \left( \frac{r_{o}}{r} \right)^{m} \right]$ \\
-           &                           &            &          &          &         &                      & \\
-{\bf buck} & Buckingham                & $A$        & $\rho$   & $C$      &         &                      &
+           &                           &            &          &          &                               & \\
+{\bf buck} & Buckingham                & $A$        & $\rho$   & $C$      &                               &
 $U(r) = A~\exp \left( -\frac{r}{\rho} \right) - \frac{C}{r^{6}}$ \\
-           &                           &            &          &          &         &                      & \\
-{\bf bhm}  & Born-Huggins              & $A$        & $B$      & $\sigma$ & $C$     & $D$                  &
+           &                           &            &          &          &                               & \\
+{\bf bhm}  & Born-Huggins              & $A$        & $B$      & $\sigma$ & $C$                           &                   
 $U(r)=A~\exp[B(\sigma-r)]-\frac{C}{r^{6}}-\frac{D}{r^{8}}$\\
-           & -Meyer                    &            &          &          &         &                      & \\
-           &                           &            &          &          &         &                      & \\
-{\bf hbnd} & 12-10 H-bond              & $A$        & $B$      &          &         &                      &
+           & -Meyer                    & $D$        &          &          &                               & \\
+           &                           &            &          &          &                               & \\
+{\bf hbnd} & 12-10 H-bond              & $A$        & $B$      &          &                               &
 $U(r) = \left( \frac{A}{r^{12}} \right) - \left( \frac{B}{r^{10}} \right)$ \\
-           &                           &            &          &          &         &                      & \\
-{\bf snm}  & Shifted force$^{\dagger}$ & $E_{o}$    & $n$      & $m$      & $r_{0}$ & $r_{c}$$^{\ddagger}$ &
+           &                           &            &          &          &                               & \\
+{\bf snm}  & Shifted force$^{\dagger}$ & $E_{o}$    & $n$      & $m$      & $r_{0}$                       &
 $U(r) = \frac{\alpha E_{o}}{(n-m)}\times$ \\
-           & n-m \cite{mie-03a,clarke-86a} &        &          &          &         &                      &
+           & n-m \cite{mie-03a,clarke-86a} &   $r_{c}$$^{\ddagger}$ &     &     &                         &
 $\left[ m\beta^{n} \left\{ \left( \frac{r_{o}}{r} \right)^{n} -
 \left( \frac{1}{\gamma} \right)^{n} \right\} - n\beta^{m} \left\{
 \left( \frac{r_{o}}{r} \right)^{m} - \left( \frac{1}{\gamma}
 \right)^{m}\right\} \right]$ \\
-           &                           &            &          &          &         &                      &
+           &                           &            &          &          &                               &
 $+ \frac{nm\alpha E_{o}}{(n-m)} \left( \frac{r-\gamma r_{o}}
 {\gamma r_{o}} \right) \left\{ \left( \frac{\beta}{\gamma}
 \right)^{n} - \left( \frac{\beta}{\gamma} \right)^{m} \right\}$ \\
-           &                           &            &          &          &         &                      & \\
-{\bf mors} & Morse                     & $E_{0}$    & $r_{0}$  & $k$      &         &                      &
+           &                           &            &          &          &                               & \\
+{\bf mors} & Morse                     & $E_{0}$    & $r_{0}$  & $k$      &                               &
 $U(r) = E_{0}[\{1-\exp(-k(r-r_{0}))\}^{2}-1]$ \\
-           &                           &            &          &          &         &                      & \\
-{\bf mstw} & Morse modified             & $E_{0}$    & $r_{0}$  & $k$      &   $c$   &                      &
-  $U(r) = E_{0}[\{1-\exp(-k(r-r_{0}))\}^{2}-1] + \frac{c}{r^{12}}$ \\
-           &                           &            &          &          &         &                      & \\
-{\bf ryd} & Rydberg                    & $a$        & $b$      & $\rho$   &         &                      &
-  $U(r) = (a+br)\exp(-r/\rho)$  \\
-           &                           &            &          &          &         &                      & \\
-{\bf zbl} & ZBL                    & $Z_1$        & $Z_2$      &    &         &                      &
-  $U(r_{ij}) = \frac{Z_1Z_2e^2}{4\pi\varepsilon_0r}\sum_{i=1}^{4}b_i e^{-c_ir/a}$  \\
-           &                           &            &          &          &         &                      & \\
-{\bf zbls} & ZBL mixed with Morse                & $Z_1$        & $Z_2$      & $r_m$   & $\xi$        &    $E_0,r_0,k$               &
-  $U(r_{ij}) = f(r_{ij})U_{ZBL}(r_{ij})+(1-f(r_{ij}))U_{morse}(r_{ij}) $ \\
-           &                           &            &          &          &         &                      & \\
-{\bf wca}  & Shifted$^{*}$ \cite{weeks-71a} Weeks- & $\epsilon$ & $\sigma^{\ddagger}$ & $\Delta$ & &       &
+           &                           &            &          &          &                               & \\
+{\bf wca}  & Shifted$^{*}$ \cite{weeks-71a} Weeks- & $\epsilon$ & $\sigma^{\ddagger}$ & $\Delta$ &        &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r-\Delta} \right)^{12} -
 \left( \frac{\sigma}{r-\Delta}\right)^{6} \right] + \epsilon : r_{ij} < 2^{1 \over 6}~\sigma + \Delta$ \\
-           & Chandler-Andersen         &            &          &          &         &                      &
+           & Chandler-Andersen         &            &          &          &                               &
 $U(r) = 0~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~: r_{ij} \ge 2^{1 \over 6}~\sigma + \Delta$ \\
-           &                           &            &          &          &         &                      & \\
-{\bf dpd}  & Standard DPD \cite{groot-97a} & $A$    & $r_{c}$$^{\ddagger}$ &  &     &                      &
+           &                           &            &          &          &                               & \\
+{\bf dpd}  & Standard DPD \cite{groot-97a} & $A$    & $r_{c}$$^{\ddagger}$ &  &                           &
 $U(r) = \frac{A}{2}~r_{c}~\left(1-\frac{r}{r_{c}}\right)^{2}~:~r < r_{c}$ \\
-           & (Groot-Warren)            &            &          &          &         &                      &
+           & (Groot-Warren)            &            &          &          &                               &
 $U(r) = 0~~~~~~~~~~~~~~~~~~~:~r \ge r_{c}$ \\
-           &                           &            &          &          &         &                      & \\
-{\bf 14-7} & 14-7 buffered             & $\epsilon$ & $r_{o}$  &          &         &                      &
+           &                           &            &          &          &                               & \\
+{\bf 14-7} & 14-7 buffered             & $\epsilon$ & $r_{o}$  &          &                               &
 $U(r) = \epsilon\left(\frac{1.07}{{(r_{ij}/r_{o})+0.07}^{\vphantom{7}}}\right)^{7}\left(\frac{1.12}{{(r_{ij}/r_{o})^{7}+0.12}^{\vphantom{7}}}-2\right)$ \\
-           & AMOEBA FF \cite{ponder-10a} &          &          &          &         &                      & \\
-           &                           &            &          &          &         &                      & \\
+           & AMOEBA FF \cite{ponder-10a} &          &          &          &                               & \\
+           &                           &            &          &          &                               & \\
+{\bf mstw} & Morse modified             & $E_{0}$    & $r_{0}$  & $k$      &   $c$                        &
+$U(r) = E_{0}\{\left[1-\exp\left(-k\left(r-r_{0}\right)\right)\right]^{2}-1\}+ \frac{c}{r^{12}}$ \\
+           &                           &            &          &          &                               & \\
+{\bf ryd} & Rydberg                    & $a$        & $b$      & $\rho$   &                               &
+$U(r) = (a+br)\exp\left(-r/\rho\right)$  \\
+           &                           &            &          &          &                               & \\
+{\bf zbl} & ZBL                    & $Z_1$        & $Z_2$      &          &                               & 
+  $U(r) = \frac{Z_1Z_2e^2}{4\pi\varepsilon_0\varepsilon_r}\sum_{i=1}^{4}b_i \exp\left(-c_ir/a\right)$  \\
+           &                           &            &          &          &                               & \\
+           &                &            &          &          & &\emph{continues on next page}   \\
+\hline
+\end{tabular}
+\vskip 1ex
+\end{centering}
+\vskip 1ex
+\end{table}
+
+\begin{table}[htbp]
+\begin{centering}
+  \caption*{Pair Potentials - \emph{continued from previous page}}
+\vskip 1ex
+\begin{tabular}{|l|l|c|c|c|c|c|c|}
+\hline
+key & potential type & \multicolumn{4}{c|}{Variables (1-4)}& functional form \\
+    &                & \multicolumn{4}{c|}{Variables (5-7)}&  \\
+\hline
+{\bf zbls} & ZBL mixed                 & $Z_1$           & $Z_2$         & $r_m$    & $\xi$       &
+  $U(r) = f\left(r\right)U_{ZBL}\left(r\right)+\left(1-f\left(r\right)\right)U_{morse}\left(r\right)$ \\
+           &  with Morse               &   $E_0$         &    $r_0$      &    $k$   &             &  \\
+           &                           &                 &               &          &             &  \\
+{\bf zblb} & ZBL mixed                 & $Z_1$           & $Z_2$         & $r_m$    & $\xi$       &
+  $U(r) = f\left(r\right)U_{ZBL}\left(r\right)+\left(1-f\left(r\right)\right)U_{buckingham}\left(r\right)$ \\
+           & with Buckingham           &        $A$    &  $\rho$        &     $C$   &             & \\
+           &                           &               &                &           &             & \\
 \hline
 \end{tabular}
 \vskip 1ex
