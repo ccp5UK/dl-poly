@@ -24,7 +24,7 @@ Subroutine nst_h1_scl &
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov december 2012
-!
+! contrib   - a.m.elena december 2017
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
@@ -55,7 +55,7 @@ Subroutine nst_h1_scl &
 
 ! initialise factor for Nose-Hoover ensembles
 
-  Real( Kind = wp ) :: rf, factor
+  Real( Kind = wp ), save :: rf, factor
 
 ! uni is the diagonal unit matrix
 

@@ -30,6 +30,7 @@ Subroutine nst_b1_vv                          &
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov august 2016
+! contrib   - a.m.elena december 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -177,7 +178,7 @@ Subroutine nst_b1_vv                          &
      h_z=0
      If      (iso == 1) Then
         eta(1) = 1.0_wp ; eta(2:4) = 0.0_wp
-        eta(5) = 1.0_wp ; eta(1:8) = 0.0_wp
+        eta(5) = 1.0_wp ; eta(6:8) = 0.0_wp
      Else If (iso >  1) Then
         eta(2:4) = 0.0_wp
         eta(6:8) = 0.0_wp

@@ -23,6 +23,7 @@ Subroutine nst_h0_scl &
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov december 2012
+! contrib.  - a.m.elena december 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -50,7 +51,7 @@ Subroutine nst_h0_scl &
 
   Real( Kind = wp ) :: a1,a2,a3,a5,a6,a9,b1,b2,b3,b5,b6,b9, vxt,vyt,vzt
 
-  Real( Kind = wp ) :: rf, factor
+  Real( Kind = wp ), save :: rf, factor
 
 ! uni is the diagonal unit matrix
 
