@@ -127,7 +127,8 @@ Contains
     Integer,           Intent(   Out ) :: nstrun
 
     Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
-    Real( Kind = wp ), Intent( InOut ) :: stress(1:9),stpcfg
+    Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
+    Real( Kind = wp ), Intent( In    ) :: stpcfg
 
 
     Call plumed_f_gcmd("setAtomsNlocal"//sn,natms)
