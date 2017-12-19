@@ -96,8 +96,12 @@
 
 ! Apply PLUMED driven dynamics
 
-     If (l_plumed) Call plumed_apply(xxx,yyy,zzz,nstrun,nstep,stpcfg,stress)
-
+     If (l_plumed) Then
+        stpcfg = engcpe + engsrp + engter + engtbp + engfbp + &
+                 engshl + engtet + engfld +                   &
+                 engbnd + engang + engdih + enginv
+        Call plumed_apply(xxx,yyy,zzz,nstrun,nstep,stpcfg,stress)
+     End If
 ! Apply pseudo thermostat - force cycle (0)
 
      If (lpse) Then
