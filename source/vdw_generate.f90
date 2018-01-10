@@ -10,14 +10,15 @@ Subroutine vdw_generate(rvdw)
 ! amended   - i.t.todorov march 2016
 ! contrib   - a.m.elena september 2016 (ljc)
 ! contrib   - a.m.elena september 2017 (rydberg)
-! contrib   - a.m.elena october 2017 (zbl)
+! contrib   - a.m.elena october 2017 (zbl/zbls)
+! contrib   - a.m.elena december 2017 (zblb)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module, Only : mxgvdw,zero_plus,r4pie0
   Use vdw_module
-  Use m_zbl, Only : ab, zbl,zbls
+  Use m_zbl, Only : ab,zbl,zbls,zblb
 
   Implicit None
 
@@ -540,6 +541,36 @@ Subroutine vdw_generate(rvdw)
            r=Real(i,wp)*dlrpot
 
            Call zbls(r,kk,a,rm,c,e0,k,r0,phi,dphi)
+           vvdw(i,ivdw) = phi
+           gvdw(i,ivdw) = dphi
+        End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=0.0_wp
+           sigeps(2,ivdw)=0.0_wp
+        End If
+
+     Else If (keypot == 17) Then
+
+! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
+
+        z1 = prmvdw(1,ivdw)
+        z2 = prmvdw(2,ivdw)
+        rm = prmvdw(3,ivdw)
+        c = 1.0_wp/prmvdw(4,ivdw)
+        e0 = prmvdw(5,ivdw)
+        r0 = prmvdw(6,ivdw)
+        k = prmvdw(7,ivdw)
+
+        a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
+        kk = z1*z2*r4pie0
+
+        Do i=1,mxgvdw
+           r=Real(i,wp)*dlrpot
+
+           Call zblb(r,kk,a,rm,c,e0,k,r0,phi,dphi)
            vvdw(i,ivdw) = phi
            gvdw(i,ivdw) = dphi
         End Do

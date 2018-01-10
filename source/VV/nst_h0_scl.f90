@@ -51,7 +51,7 @@ Subroutine nst_h0_scl &
 
   Real( Kind = wp ) :: a1,a2,a3,a5,a6,a9,b1,b2,b3,b5,b6,b9, vxt,vyt,vzt
 
-  Real( Kind = wp ), save :: rf, factor
+  Real( Kind = wp ), Save :: rf, factor
 
 ! uni is the diagonal unit matrix
 

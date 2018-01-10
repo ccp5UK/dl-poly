@@ -55,7 +55,7 @@ Subroutine nst_h1_scl &
 
 ! initialise factor for Nose-Hoover ensembles
 
-  Real( Kind = wp ), save :: rf, factor
+  Real( Kind = wp ), Save :: rf, factor
 
 ! uni is the diagonal unit matrix
 
