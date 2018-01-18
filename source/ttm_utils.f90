@@ -1063,7 +1063,7 @@ Contains
     Integer :: ijk,numint,n,lx,ly,lz
 
     Ce0a   = Ce0  *Merge(cellrho,1.0_wp,ttmdyndens)
-    sh_Aa  = sh_Aa*Merge(cellrho,1.0_wp,ttmdyndens)
+    sh_Aa  = sh_A *Merge(cellrho,1.0_wp,ttmdyndens)
     Cemaxa = Cemax*Merge(cellrho,1.0_wp,ttmdyndens)
 
     If (freq /= 0) Then
