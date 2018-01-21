@@ -283,7 +283,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
 
         a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
         kk = z1*z2*r4pie0
-        Call zblb(rvdw,kk,a,rm,ic,e0,k,r0,z,dz)
+        Call zblb(rvdw,kk,a,rm,ic,e0,r0,k,z,dz)
         afs(ivdw) = dz/rvdw
         bfs(ivdw) = -z-dz
 

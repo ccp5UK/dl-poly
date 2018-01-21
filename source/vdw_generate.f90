@@ -570,7 +570,7 @@ Subroutine vdw_generate(rvdw)
         Do i=1,mxgvdw
            r=Real(i,wp)*dlrpot
 
-           Call zblb(r,kk,a,rm,c,e0,k,r0,phi,dphi)
+           Call zblb(r,kk,a,rm,c,e0,r0,k,phi,dphi)
            vvdw(i,ivdw) = phi
            gvdw(i,ivdw) = dphi
         End Do

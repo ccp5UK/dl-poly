@@ -56,7 +56,7 @@ Contains
     If (r<rm) Then
       t = Exp(-(rm-r)*ic)*0.5_wp
       f = 1.0_wp-t
-      df = -r*ic*t
+      df = r*ic*t
     Else
       t = Exp(-(r-rm)*ic)*0.5_wp
       f = t
@@ -81,15 +81,14 @@ Contains
     Real(wp), Intent( In    )  :: r,A,r0,C
     Real(wp), Intent(   Out ) ::b,db
 
-    Real(wp) :: t1,t2,ir,ir6
+    Real(wp) :: t1,t2,ir0
 
-    ir=1.0_wp/r0
-    ir6=ir**6
-    t1 = A*Exp(-r*r0)
-    t2 = -C*ir6
+    ir0=1.0_wp/r0
+    t1 = A*Exp(-r*ir0)
+    t2 = -C*(1.0_wp/r)**6
 
     b = t1+t2
-    db=r*ir*t1+6.0_wp*t2
+    db=r*ir0*t1+6.0_wp*t2
   End Subroutine buckingham
 
   Pure Subroutine zbls(r,kk,ia,rm,ic,d,k,r0,V,dV)
