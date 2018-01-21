@@ -152,9 +152,9 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
 ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
 
-              e0=prmvdw(1,ivdw)
-              r0=prmvdw(2,ivdw)
-              kk=prmvdw(3,ivdw)
+              e0=prmvdw(1,k)
+              r0=prmvdw(2,k)
+              kk=prmvdw(3,k)
               If (kk > Tiny(kk)) Then
                  t = Exp(-kk*(rvdw - r0))
 
@@ -196,10 +196,10 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
 ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
 
-              e0 = prmvdw(1,ivdw)
-              r0 = prmvdw(2,ivdw)
-              kk = prmvdw(3,ivdw)
-               c = prmvdw(4,ivdw)
+              e0 = prmvdw(1,k)
+              r0 = prmvdw(2,k)
+              kk = prmvdw(3,k)
+               c = prmvdw(4,k)
 
               If (kk>Tiny(kk)) Then
 
@@ -219,9 +219,9 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
 ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
 
-              a = prmvdw(1,ivdw)
-              b = prmvdw(2,ivdw)
-              c = prmvdw(3,ivdw)
+              a = prmvdw(1,k)
+              b = prmvdw(2,k)
+              c = prmvdw(3,k)
               t = exp(-rvdw/c)
 
               eadd = (b*c*rvdw**3+(3*b*c**2+a*c)*rvdw**2+(6*b*c**3+2*a*c**2)*rvdw&
@@ -233,8 +233,8 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
 ! ZBL potential:: u=Z1Z2/(4πε0r)∑_{i=1}^4b_ie^{-c_i*r/a}
 
-              z1 = prmvdw(1,ivdw)
-              z2 = prmvdw(2,ivdw)
+              z1 = prmvdw(1,k)
+              z2 = prmvdw(2,k)
 
         ! this is in fact inverse a
               a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
@@ -246,9 +246,9 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
 ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
-              e0 = prmvdw(5,ivdw)
-              r0 = prmvdw(6,ivdw)
-              kk = prmvdw(7,ivdw)
+              e0 = prmvdw(5,k)
+              r0 = prmvdw(6,k)
+              kk = prmvdw(7,k)
 
               If (kk > Tiny(kk)) Then
                  t = Exp(-kk*(rvdw - r0))
@@ -265,11 +265,12 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
 ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
-              A = prmvdw(5,ivdw)
-              r0 = prmvdw(6,ivdw)
-              c = prmvdw(7,ivdw)
-              
+              A = prmvdw(5,k)
+              r0 = prmvdw(6,k)
+              c = prmvdw(7,k)
+
               t=A*Exp(-rvdw/r0)
+
               eadd = (rvdw**2+2*r0*rvdw+2*r0**2)*t*r0-c/(3.0_wp*rvdw**3)
               padd = (rvdw**3+3*r0*rvdw**2+6*r0**2*rvdw+6*r0**3)*t -2.0_wp*c/(rvdw**3)
 

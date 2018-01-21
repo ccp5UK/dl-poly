@@ -500,7 +500,7 @@ Subroutine vdw_forces &
               a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
               kk = z1*z2*r4pie0
 
-              Call zblb(rrr,kk,a,rm,c,e0,t2,r0,t1,gamma)
+              Call zblb(rrr,kk,a,rm,c,e0,r0,t2,t1,gamma)
 
               If (jatm <= natms .or. idi < ltg(jatm)) &
               eng = t1
