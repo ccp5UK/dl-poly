@@ -7,6 +7,7 @@ Subroutine dihedrals_table_read(dihd_name)
 !
 ! copyright - daresbury laboratory
 ! author    - a.v.brukhno & i.t.todorov january 2017
+! contrib   - a.v.brukhno, february 2018
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -185,15 +186,7 @@ Subroutine dihedrals_table_read(dihd_name)
         rrr=0.0_wp
         Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
 
-        If (rrr > zero_plus) Then ! no zero element data => extrapolate to zero
-           If (Abs((rrr-delpot)/delpot) > 1.0e-8_wp) Then
-              safe=.false.
-              If (idnode == 0) Write(nrite,"(/,                       &
-                 & ' TABDIH stated  angular increment : ',1p,e15.7,/, &
-                 & ' TABDIH read-in angular increment : ',1p,e15.7)") &
-                 delpot,rrr
-           End If
-
+        If (Abs(rrr) > zero_plus) Then ! no zero element data => extrapolate to zero
            bufpot(1) = bufp0
            bufvir(1) = bufv0
            rrr0      = rrr
