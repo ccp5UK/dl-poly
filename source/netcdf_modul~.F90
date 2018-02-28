@@ -15,7 +15,7 @@ Module netcdf_module
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds_f90, Only : wp
+  Use kinds, only : wp, Only : wp
   Implicit None
 
   Private

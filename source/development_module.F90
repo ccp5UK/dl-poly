@@ -12,7 +12,7 @@ Module development_module
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds_f90
+  Use kinds, only : wp
   Use setup_module, Only : nrite, nread, control
 #ifdef OLDMPI
   Use comms_module, Only : mpi_ver,mpi_subver

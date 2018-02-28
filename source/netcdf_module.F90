@@ -11,7 +11,7 @@ Module netcdf_module
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds_f90, Only : wp
+  Use kinds,  Only    : wp
 #ifdef NETCDF
   Use netcdf   , Only : NF90_NETCDF4, NF90_CLOBBER, NF90_WRITE,              &
                         NF90_GLOBAL, NF90_UNLIMITED, NF90_INDEPENDENT,       &

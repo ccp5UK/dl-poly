@@ -22,7 +22,7 @@ Module kim_module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use, Intrinsic :: iso_c_binding
-  Use kinds_f90
+  Use kinds, only : wp
 
   Use KIM_API_F03
   Use domains_module, Only : map

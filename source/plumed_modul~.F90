@@ -14,7 +14,7 @@ Module plumed_module
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds_f90
+  Use kinds, only : wp
   Use comms_module,  Only : idnode,mxnode,dlp_comm_world
   Use setup_module,  Only : nrite, boltz, mxatms, DLP_VERSION
   Use config_module, Only : cell,natms,weight,ltg,chge,fxx,fyy,fzz

@@ -9,7 +9,7 @@ Module m_zbl
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use Kinds_f90, only : wp
+  Use Kinds, Only : wp
   Implicit None
   Private 
 
