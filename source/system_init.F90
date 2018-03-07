@@ -18,7 +18,7 @@ Subroutine system_init                                             &
   Use comms_module
   Use setup_module
   Use site_module,        Only : ntpatm,numtyp,numtypnf,dens
-  Use config_module,      Only : volm,natms,ltg,ltype,lfrzn,xxx,yyy,zzz
+  Use configuration,      Only : volm,natms,ltg,ltype,lfrzn,xxx,yyy,zzz
   Use statistics_module
   Use rdf_module,         Only : ncfrdf,rdf,ncfusr,rusr,usr
   Use z_density_module,   Only : ncfzdn,zdens

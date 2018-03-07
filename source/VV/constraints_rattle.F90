@@ -19,7 +19,7 @@ Subroutine constraints_rattle              &
   Use kinds, only : wp
   Use comms_module,  Only : idnode,mxnode,gcheck
   Use setup_module
-  Use config_module, Only : natms,nlast,lsi,lsa,lfrzn,weight
+  Use configuration, Only : natms,nlast,lsi,lsa,lfrzn,weight
   Use constraints_module
 
   Implicit None

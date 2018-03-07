@@ -19,7 +19,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
   Use comms_module,  Only : idnode,mxnode,gsum
   Use setup_module
   Use site_module,   Only : ntpatm,numtyp
-  Use config_module, Only : imcon,volm,natms,ltype,lfrzn
+  Use configuration, Only : imcon,volm,natms,ltype,lfrzn
   Use vdw_module,    Only : ls_vdw,lstvdw,ltpvdw,prmvdw
   Use mm3_module
   Use m_zbl,         Only : ab, intRadZBL, intdRadZBL

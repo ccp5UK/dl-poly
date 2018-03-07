@@ -16,7 +16,7 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
   Use kinds, only : wp
   Use comms_module,   Only : idnode,mxnode,gcheck,gsum
   Use setup_module,   Only : twopi,nrite,mxshl,mxatms
-  Use config_module,  Only : imcon,cell,natms,nfree,nlast,lsi,lsa,ltg, &
+  Use configuration,  Only : imcon,cell,natms,nfree,nlast,lsi,lsa,ltg, &
                              lfrzn,lstfre,weight,chge,           &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use kinetic_module, Only : getcom_mol

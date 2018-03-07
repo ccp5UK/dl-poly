@@ -15,7 +15,7 @@ Subroutine read_config_parallel                 &
   Use comms_module
   Use setup_module,   Only : nrite, nconf, mxatms, half_minus
   Use domains_module, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
-  Use config_module,  Only : cell,natms,atmnam,ltg, &
+  Use configuration,  Only : cell,natms,atmnam,ltg, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use parse_module,   Only : strip_blanks, get_word, word_2_real
   Use io_module,      Only : io_get_parameters, io_read_batch, &
@@ -204,7 +204,7 @@ Subroutine read_config_parallel                 &
 
   If (.not.l_xtr) Call invert(cell,rcell,det)
 
-! Initialise domain localised atom counter (config_module),
+! Initialise domain localised atom counter (configuration),
 ! dispatched atom counter and safe dispatch flag
 
   natms =0

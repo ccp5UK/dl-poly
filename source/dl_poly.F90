@@ -41,7 +41,7 @@ Program dl_poly
   ! SETUP MODULES
 
   Use kinds, Only : wp,li
-  Use comms_module
+  Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime 
   Use setup_module
 
   ! PARSE MODULE
@@ -60,7 +60,7 @@ Program dl_poly
   ! SITE & CONFIG MODULES
 
   Use site_module
-  Use config_module
+  Use configuration
 
   ! VNL module
 
@@ -206,12 +206,16 @@ Program dl_poly
     engfld,virfld,                             &
     stptmp,stpprs,stpvol,stpcfg,stpeng,stpeth,stpvir
 
+
+  Type(comms_type), Allocatable :: dlp_world(:)
+
   ! SET UP COMMUNICATIONS & CLOCKING
 
-  Call init_comms()
-  If (mxnode > 1) Call gsync()
+  Allocate(dlp_world(0:0))
+  Call init_comms(dlp_world(0))
+  If (dlp_world(0)%mxnode > 1) Call gsync(dlp_world(0))
   Call gtime(timelp)
-  If (idnode == 0) Then
+  If (dlp_world(0)%idnode == 0) Then
     If (command_argument_count() == 1 ) Then
       Call get_command_argument(1, control)
     End If
@@ -223,7 +227,7 @@ Program dl_poly
 
   Call scan_control_output()
 
-  If (idnode == 0) Then
+  If (dlp_world(0)%idnode == 0) Then
     If (.not.l_scr) Open(Unit=nrite, File=Trim(output), Status='replace')
 
     Write(nrite,'(5(1x,a,/),(1x,a25,a8,a4,a14,a15/),1x,a,i10,a,/,5(1x,a,/))')  &
@@ -234,7 +238,7 @@ Program dl_poly
       "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
       "**         **  version:  ", DLP_VERSION,                 " /  "    , &
       DLP_RELEASE,          "  ****** O ****", &
-      "*************  execution on  ",mxnode," process(es)  ******* L ***", &
+      "*************  execution on  ",dlp_world(0)%mxnode," process(es)  ******* L ***", &
       "*************  contributors' list:                   ******** Y **", &
       "*************  ------------------------------------  *************", &
       "*************  i.j.bush, h.a.boateng, r.davidchak,   *************", &
@@ -266,7 +270,7 @@ Program dl_poly
     dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width)
 
   Call gtime(timelp)
-  If (idnode == 0) Then
+  If (dlp_world(0)%idnode == 0) Then
     Write(nrite,'(/,1x,a)') "*** pre-scanning stage (set_bounds) DONE ***"
     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
   End If
@@ -369,7 +373,7 @@ Program dl_poly
   Call check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
   Call gtime(timelp)
-  If (idnode == 0) Then
+  If (dlp_world(0)%idnode == 0) Then
     Write(nrite,'(/,1x,a)') "*** all reading and connectivity checks DONE ***"
     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
   End If
@@ -378,7 +382,7 @@ Program dl_poly
 
   If (l_org) Then
     Call gtime(timelp)
-    If (idnode == 0) Then
+    If (dlp_world(0)%idnode == 0) Then
       Write(nrite,'(/,1x,a)') "*** Translating the MD system along a vector (CONFIG to CFGORG) ***"
       Write(nrite,'(1x,a)') "*** ... ***"
     End If
@@ -386,7 +390,7 @@ Program dl_poly
     Call origin_config(megatm)
 
     Call gtime(timelp)
-    If (idnode == 0) Then
+    If (dlp_world(0)%idnode == 0) Then
       Write(nrite,'(1x,a)') "*** ... ***"
       Write(nrite,'(1x,a)') "*** ALL DONE ***"
       Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
@@ -397,7 +401,7 @@ Program dl_poly
 
   If (l_scl) Then
     Call gtime(timelp)
-    If (idnode == 0) Then
+    If (dlp_world(0)%idnode == 0) Then
       Write(nrite,'(/,1x,a)') "*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***"
       Write(nrite,'(1x,a)') "*** ... ***"
     End If
@@ -405,7 +409,7 @@ Program dl_poly
     Call scale_config(megatm)
 
     Call gtime(timelp)
-    If (idnode == 0) Then
+    If (dlp_world(0)%idnode == 0) Then
       Write(nrite,'(1x,a)') "*** ... ***"
       Write(nrite,'(1x,a)') "*** ALL DONE ***"
       Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
@@ -416,7 +420,7 @@ Program dl_poly
 
   If (l_his) Then
     Call gtime(timelp)
-    If (idnode == 0) Then
+    If (dlp_world(0)%idnode == 0) Then
       Write(nrite,'(/,1x,a)') "*** Generating a zero timestep HISTORY frame of the MD system ***"
       Write(nrite,'(1x,a)') "*** ... ***"
     End If
@@ -429,7 +433,7 @@ Program dl_poly
     Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
     Call gtime(timelp)
-    If (idnode == 0) Then
+    If (dlp_world(0)%idnode == 0) Then
       Write(nrite,'(1x,a)') "*** ... ***"
       Write(nrite,'(1x,a)') "*** ALL DONE ***"
       Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
@@ -443,7 +447,7 @@ Program dl_poly
   ! EXIT gracefully
 
   If (l_trm) Then
-    If (idnode == 0) Write(nrite,'(/,1x,a)') "*** Exiting gracefully ***"
+    If (dlp_world(0)%idnode == 0) Write(nrite,'(/,1x,a)') "*** Exiting gracefully ***"
     Go To 10
   End If
 
@@ -460,7 +464,7 @@ Program dl_poly
   Call set_halo_particles(rlnk,keyfce)
 
   Call gtime(timelp)
-  If (idnode == 0) Then
+  If (dlp_world(0)%idnode == 0) Then
     Write(nrite,'(/,1x,a)') "*** initialisation and haloing DONE ***"
     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
   End If
@@ -506,7 +510,7 @@ Program dl_poly
   End If
 
   Call gtime(timelp)
-  If (idnode == 0) Then
+  If (dlp_world(0)%idnode == 0) Then
     Write(nrite,'(/,1x,a)') "*** bookkeeping DONE ***"
     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
   End If
@@ -527,7 +531,7 @@ Program dl_poly
     degfre,degshl,sigma,engrot)
 
   Call gtime(timelp)
-  If (idnode == 0) Then
+  If (dlp_world(0)%idnode == 0) Then
     Write(nrite,'(/,1x,a)') "*** temperature setting DONE ***"
     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
   End If
@@ -647,7 +651,7 @@ Program dl_poly
   ! start-up time when forces are not recalculated
 
   Call gtime(timelp)
-  If (idnode == 0) &
+  If (dlp_world(0)%idnode == 0) &
     Write(nrite,'(/,/,/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
 
   ! Now you can run fast, boy
@@ -678,13 +682,13 @@ Program dl_poly
 
   ! Report termination of the MD simulation
 
-  If (idnode == 0) Write(nrite,"(/,/,1x,'run terminating...  ',  &
+  If (dlp_world(0)%idnode == 0) Write(nrite,"(/,/,1x,'run terminating...  ',  &
     & 'elapsed cpu time: ', f12.3, ' sec, job time: ', f12.3,   &
     & ' sec, close time: ', f12.3, ' sec',/)") timelp,timjob,timcls
 
   ! Print out sample of final configuration on node zero
 
-  If (idnode == 0) Then
+  If (dlp_world(0)%idnode == 0) Then
     Write(nrite,"(/,/,1x,'sample of final configuration on node zero',/)")
 
     Write(nrite,"(8x,'i',7x,'x(i)',8x,'y(i)',8x,'z(i)', &
@@ -739,7 +743,7 @@ Program dl_poly
 
   ! Ask for reference in publications
 
-  If (idnode == 0) Then
+  If (dlp_world(0)%idnode == 0) Then
     Write(nrite,'(/,/,6(1x,a,/),1x,a)') &
       "*************************************************************************************************************************", &
       "**************                                                                                             **************", &
@@ -762,19 +766,19 @@ Program dl_poly
 
   ! Get just the one number to compare against
 
-  If (idnode == 0 .and. l_eng) Write(nrite,"(/,1x,a,1p,e20.10)") "TOTAL ENERGY: ", stpval(1)
+  If (dlp_world(0)%idnode == 0 .and. l_eng) Write(nrite,"(/,1x,a,1p,e20.10)") "TOTAL ENERGY: ", stpval(1)
 
   ! Close output channel
 
-  If (idnode == 0 .and. (.not.l_scr)) Close(Unit=nrite)
+  If (dlp_world(0)%idnode == 0 .and. (.not.l_scr)) Close(Unit=nrite)
 
   ! Terminate job
 
-  If (mxnode > 1) Call gsync()
+  If (dlp_world(0)%mxnode > 1) Call gsync()
   Call exit_comms()
 
-  ! Create wrappers for the MD cycle in VV, LFV and replay history
-
+  ! Create wrappers for the MD cycle in VV, and replay history
+  Call Deallocate(dlp_world)
 Contains
 
   Subroutine w_impact_option()

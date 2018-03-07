@@ -14,7 +14,7 @@ Subroutine dpd_v_export(mdir,mlast,ixyz0)
   Use comms_module
   Use setup_module,  Only : nrite,mxatms,mxbfxp
   Use domains_module
-  Use config_module, Only : vxx,vyy,vzz
+  Use configuration, Only : vxx,vyy,vzz
 
   Implicit None
 

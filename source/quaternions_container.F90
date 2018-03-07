@@ -25,7 +25,7 @@ Subroutine q_setup()
   Use kinds, only : wp
   Use comms_module,       Only : idnode,mxnode,gmax,gsum
   Use setup_module
-  Use config_module,      Only : imcon,cell,xxx,yyy,zzz
+  Use configuration,      Only : imcon,cell,xxx,yyy,zzz
   Use rigid_bodies_module
 
   Implicit None

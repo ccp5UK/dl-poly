@@ -13,7 +13,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time)
   Use kinds, Only : wp, li
   Use comms_module
   Use setup_module
-  Use config_module, Only : cfgname,imcon,cell,natms,ltg,atmnam, &
+  Use configuration, Only : cfgname,imcon,cell,natms,ltg,atmnam, &
                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use io_module,     Only : io_set_parameters,         &
                             io_get_parameters,         &

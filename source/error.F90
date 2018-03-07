@@ -1216,7 +1216,7 @@ Subroutine error(kode)
 
      Else If (kode == 1025) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in config_module -> allocate_config_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in configuration -> allocate_config_arrays'
 
      Else If (kode == 1026) Then
 

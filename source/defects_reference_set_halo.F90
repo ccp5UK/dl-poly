@@ -15,7 +15,7 @@ Subroutine defects_reference_set_halo                &
   Use kinds, only : wp
   Use comms_module,  Only : idnode
   Use setup_module,  Only : nrite,mxatms,zero_plus
-  Use config_module, Only : cell
+  Use configuration, Only : cell
   Use domains_module
 
   Implicit None

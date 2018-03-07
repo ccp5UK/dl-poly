@@ -19,7 +19,7 @@ Subroutine deport_atomic_data(mdir,lbook)
   Use setup_module
   Use domains_module
 
-  Use config_module
+  Use configuration
 
   Use core_shell_module,   Only : ntshl,listshl,legshl
 

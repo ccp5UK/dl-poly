@@ -20,7 +20,7 @@ Subroutine ewald_spme_mforces_d(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   Use comms_module,   Only : idnode,mxnode,gcheck,gsum,dlp_comm_world
   Use setup_module
   Use domains_module, Only : nprx,npry,nprz,idx,idy,idz
-  Use config_module,  Only : cell,volm,natms,nlast,xxx,yyy,zzz
+  Use configuration,  Only : cell,volm,natms,nlast,xxx,yyy,zzz
   Use mpoles_module
   Use ewald_module
   Use parallel_fft
@@ -2012,7 +2012,7 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use config_module, Only : fxx,fyy,fzz
+    Use configuration, Only : fxx,fyy,fzz
 
     Implicit None
 

@@ -12,7 +12,7 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
   Use kinds, only : wp
   Use setup_module,        Only : eu_ev
   Use comms_module,        Only : mxnode,gcheck
-  Use config_module,       Only : natms,nlast,nfree,          &
+  Use configuration,       Only : natms,nlast,nfree,          &
                                   lfrzn,lfree,lstfre,lsi,lsa, &
                                   weight,vxx,vyy,vzz
   Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd, &

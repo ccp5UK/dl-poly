@@ -15,7 +15,7 @@ Subroutine rdf_frzn_collect(iatm,rcut,rrt)
 
   Use kinds, only : wp
   Use setup_module,  Only : mxlist,mxgrdf
-  Use config_module, Only : natms,ltg,ltype,list
+  Use configuration, Only : natms,ltg,ltype,list
   Use rdf_module,    Only : ntprdf,lstrdf,rdf,tmp_rdf,l_errors_block,l_errors_jack,block_number
 
   Implicit None

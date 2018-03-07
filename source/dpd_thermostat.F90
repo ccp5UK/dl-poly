@@ -17,7 +17,7 @@ Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep)
   Use kinds, only : wp
   Use comms_module,        Only : idnode,mxnode,gsum
   Use setup_module,        Only : nrite,mxlist,mxatdm
-  Use config_module,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
+  Use configuration,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
                                   list,weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use dpd_module
   Use rigid_bodies_module, Only : lshmv_rgd,lishp_rgd,lashp_rgd

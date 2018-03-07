@@ -24,7 +24,7 @@ Subroutine pass_shared_units &
   Use comms_module
   Use setup_module
   Use domains_module,      Only : map,mop
-  Use config_module,       Only : natms,nlast,lsi,lsa
+  Use configuration,       Only : natms,nlast,lsi,lsa
   Use rigid_bodies_module, Only : q0,q1,q2,q3,          &
                                   rgdvxx,rgdvyy,rgdvzz, &
                                   rgdoxx,rgdoyy,rgdozz

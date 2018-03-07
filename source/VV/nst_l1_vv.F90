@@ -40,7 +40,7 @@ Subroutine nst_l1_vv                          &
   Use setup_module
   Use domains_module,     Only : map
   Use site_module,        Only : ntpatm,dens
-  Use config_module,      Only : imcon,cell,volm,natms,nlast,nfree,  &
+  Use configuration,      Only : imcon,cell,volm,natms,nlast,nfree,  &
                                  lsi,lsa,lfrzn,lstfre,weight,        &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module

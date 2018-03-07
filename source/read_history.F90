@@ -14,7 +14,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
   Use setup_module
   Use domains_module, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
   Use site_module
-  Use config_module
+  Use configuration
   Use parse_module,   Only : tabs_2_blanks, get_line, get_word, &
                              strip_blanks, word_2_real
   Use io_module,      Only : io_set_parameters,     &
@@ -251,7 +251,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 
      Call invert(cell,rcell,det)
 
-! Initialise domain localised atom counter (config_module)
+! Initialise domain localised atom counter (configuration)
 
      natms=0
 
@@ -559,7 +559,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
   If (mxnode > 1) Call gsum(totatm)
   If (totatm /= megatm) Call error(58)
 
-! Record global atom indices for local sorting (config_module)
+! Record global atom indices for local sorting (configuration)
 
   Do i=1,natms
      lsi(i)=i
@@ -588,7 +588,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
   If (mxnode > 1) Call gsum(totatm)
   If (totatm /= megatm) Call error(58)
 
-! Record global atom indices for local sorting (config_module)
+! Record global atom indices for local sorting (configuration)
 
   Do i=1,natms
      lsi(i)=i

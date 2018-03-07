@@ -18,7 +18,7 @@ Subroutine nve_0_vv                           &
   Use kinds, only : wp
   Use comms_module,       Only : idnode,mxnode,gmax
   Use setup_module
-  Use config_module,      Only : natms,weight, &
+  Use configuration,      Only : natms,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use kinetic_module,     Only : kinstress
   Use core_shell_module,  Only : legshl

@@ -12,7 +12,7 @@ Subroutine vnl_set_check()
 
   Use comms_module,   Only : idnode
   Use setup_module,   Only : nrite,mxatms
-  Use config_module,  Only : nlast,xxx,yyy,zzz
+  Use configuration,  Only : nlast,xxx,yyy,zzz
   Use vnl_module,     Only : llvnl,xbg,ybg,zbg
 
   Implicit None

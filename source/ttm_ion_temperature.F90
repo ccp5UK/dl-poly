@@ -14,7 +14,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
 
   Use setup_module
   Use comms_module
-  Use config_module
+  Use configuration
   Use ttm_module
   Use ttm_track_module
 

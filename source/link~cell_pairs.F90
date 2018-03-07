@@ -16,7 +16,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
   Use setup_module
   Use domains_module,     Only : idx,idy,idz, nprx,npry,nprz, &
                                  r_nprx,r_npry,r_nprz
-  Use config_module,      Only : cell,natms,nlast,ltg,lfrzn, &
+  Use configuration,      Only : cell,natms,nlast,ltg,lfrzn, &
                                  xxx,yyy,zzz,lexatm,list
   Use core_shell_module,  Only : listshl,legshl
   Use mpoles_module,      Only : keyind,lchatm$

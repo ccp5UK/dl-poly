@@ -14,7 +14,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0)
   Use comms_module
   Use setup_module,  Only : nrite,mxatms,mxbfxp
   Use domains_module
-  Use config_module, Only : cell,xxx,yyy,zzz
+  Use configuration, Only : cell,xxx,yyy,zzz
   Use kim_module,    Only : kim,idhalo
 
   Implicit None

@@ -24,8 +24,12 @@ Module kinetic_module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, only : wp
-  Use comms_module, Only : mxnode,gsum
-
+  Use comms, Only : comms_type, gsum
+  Use setup_module,  Only : nrite,zero_plus,mxatms,mxrgd,boltz
+  Use configuration, Only : imcon,cell,natms,ltg,lfrzn,xxx,yyy,zzz,weight,&
+                            nfree, lstfre, vxx,vyy,vzz,fxx,fyy,fzz
+  Use rigid_bodies_module, Only : ntrgd,rgdfrz,rgdwgt,listrgd,indrgd, &
+                                   rgdrix,rgdriy,rgdriz
   Implicit None
 
 ! Remove COM motion defaults
@@ -45,7 +49,7 @@ Module kinetic_module
 
 Contains
 
-  Function getkin(vxx,vyy,vzz)
+  Function getkin(vxx,vyy,vzz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -56,13 +60,11 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use config_module, Only : natms,lfrzn,weight
-
-    Implicit None
 
     Real( Kind = wp )                                    :: getkin
 
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: vxx,vyy,vzz
+    Type(comms_type), Intent ( InOut )                   :: comm
 
     Integer           :: i
     Real( Kind = wp ) :: engke
@@ -74,13 +76,13 @@ Contains
           engke = engke + weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
     End Do
 
-    If (mxnode > 1) Call gsum(engke)
+    Call gsum(comm,engke)
 
     getkin = 0.5_wp * engke
 
   End Function getkin
 
-  Function getknf(vxx,vyy,vzz)
+  Function getknf(vxx,vyy,vzz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -91,13 +93,11 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use config_module, Only : nfree,lfrzn,lstfre,weight
-
-    Implicit None
 
     Real( Kind = wp )                                    :: getknf
 
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: vxx,vyy,vzz
+    Type(comms_type), Intent (InOut)                     :: comm
 
     Integer           :: i,j
     Real( Kind = wp ) :: engke
@@ -111,13 +111,13 @@ Contains
           engke = engke + weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
     End Do
 
-    If (mxnode > 1) Call gsum(engke)
+    Call gsum(comm,engke)
 
     getknf = 0.5_wp * engke
 
   End Function getknf
 
-  Function getknt(rgdvxx,rgdvyy,rgdvzz)
+  Function getknt(rgdvxx,rgdvyy,rgdvzz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -129,13 +129,10 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use rigid_bodies_module, Only : ntrgd,rgdfrz,rgdwgt,listrgd,indrgd
-
-    Implicit None
-
     Real( Kind = wp )                                    :: getknt
 
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: rgdvxx,rgdvyy,rgdvzz
+    Type(comms_type), Intent ( InOut )                     :: comm
 
     Integer           :: irgd,lrgd,rgdtyp
     Real( Kind = wp ) :: engtra,tmp
@@ -154,13 +151,13 @@ Contains
        End If
     End Do
 
-    If (mxnode > 1) Call gsum(engtra)
+    Call gsum(comm,engtra)
 
     getknt = 0.5_wp * engtra
 
   End Function getknt
 
-  Function getknr(rgdoxx,rgdoyy,rgdozz)
+  Function getknr(rgdoxx,rgdoyy,rgdozz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -172,13 +169,10 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use rigid_bodies_module, Only : ntrgd,rgdfrz,rgdrix,rgdriy,rgdriz,listrgd,indrgd
-
-    Implicit None
-
     Real( Kind = wp )                                    :: getknr
 
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: rgdoxx,rgdoyy,rgdozz
+    Type(comms_type), Intent ( InOut )                   :: comm
 
     Integer           :: irgd,lrgd,rgdtyp
     Real( Kind = wp ) :: engrot,tmp
@@ -199,13 +193,13 @@ Contains
        End If
     End Do
 
-    If (mxnode > 1) Call gsum(engrot)
+    Call gsum(comm,engrot)
 
     getknr = 0.5_wp * engrot
 
   End Function getknr
 
-  Subroutine kinstress(vxx,vyy,vzz,strkin)
+  Subroutine kinstress(vxx,vyy,vzz,strkin,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -217,12 +211,9 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use config_module, Only : natms,lfrzn,weight
-
-    Implicit None
-
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: vxx,vyy,vzz
     Real( Kind = wp ), Dimension( 1:9 ), Intent(   Out ) :: strkin
+    Type(comms_type), Intent ( InOut )                   :: comm
 
     Integer :: i
 
@@ -239,7 +230,7 @@ Contains
        End If
     End Do
 
-    If (mxnode > 1) Call gsum(strkin)
+    Call gsum(comm,strkin)
 
 ! Symmetrise
 
@@ -249,7 +240,7 @@ Contains
 
   End Subroutine kinstress
 
-  Subroutine kinstresf(vxx,vyy,vzz,strknf)
+  Subroutine kinstresf(vxx,vyy,vzz,strknf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -261,12 +252,9 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use config_module, Only : nfree,lfrzn,lstfre,weight
-
-    Implicit None
-
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: vxx,vyy,vzz
     Real( Kind = wp ), Dimension( 1:9 ), Intent(   Out ) :: strknf
+    Type(comms_type), Intent ( InOut )                   :: comm
 
     Integer :: i,j
 
@@ -285,7 +273,7 @@ Contains
        End If
     End Do
 
-    If (mxnode > 1) Call gsum(strknf)
+    Call gsum(comm,strknf)
 
 ! Symmetrise
 
@@ -295,7 +283,7 @@ Contains
 
   End Subroutine kinstresf
 
-  Subroutine kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt)
+  Subroutine kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -307,12 +295,9 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use rigid_bodies_module, Only : ntrgd,rgdfrz,rgdwgt,listrgd,indrgd
-
-    Implicit None
-
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: rgdvxx,rgdvyy,rgdvzz
     Real( Kind = wp ), Dimension( 1:9 ), Intent(   Out ) :: strknt
+    Type(comms_type), Intent ( InOut )                   :: comm
 
     Integer           :: irgd,lrgd,rgdtyp
     Real( Kind = wp ) :: tmp
@@ -336,7 +321,7 @@ Contains
        End If
     End Do
 
-    If (mxnode > 1) Call gsum(strknt)
+    Call gsum(comm,strknt)
 
 ! Symmetrise
 
@@ -346,7 +331,7 @@ Contains
 
   End Subroutine kinstrest
 
-  Subroutine getcom(xxx,yyy,zzz,com)
+  Subroutine getcom(xxx,yyy,zzz,com,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -357,13 +342,9 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use setup_module,  Only : zero_plus
-    Use config_module, Only : natms,lfrzn,weight
-
-    Implicit None
-
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: xxx,yyy,zzz
     Real( Kind = wp ), Dimension( 1:3 ), Intent(   Out ) :: com
+    Type(comms_type), Intent ( InOut )                   :: comm
 
     Logical,           Save :: newjob = .true.
     Real( Kind = wp ), Save :: totmas
@@ -380,7 +361,7 @@ Contains
           If (lfrzn(i) == 0) totmas = totmas + weight(i)
        End Do
 
-       If (mxnode > 1) Call gsum(totmas)
+       Call gsum(comm,totmas)
     End If
 
     com = 0.0_wp
@@ -393,12 +374,12 @@ Contains
        End If
     End Do
 
-    If (mxnode > 1) Call gsum(com)
+    Call gsum(comm,com)
     If (totmas >= zero_plus) com = com/totmas
 
   End Subroutine getcom
 
-  Subroutine getcom_mol(istart,ifinish,cmm)
+  Subroutine getcom_mol(istart,ifinish,cmm,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -412,14 +393,11 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use comms_module,  Only : idnode
-    Use setup_module,  Only : nrite,zero_plus
-    Use config_module, Only : imcon,cell,natms,ltg,lfrzn,xxx,yyy,zzz,weight
 
-    Implicit None
     Integer,           Intent( In    ) :: istart,ifinish
 
     Real( Kind = wp ), Intent(   Out ) :: cmm(0:3)
+    Type(comms_type), Intent ( InOut ) :: comm
 
     Integer           :: fail,i,j,k
     Real( Kind = wp ) :: mass,r(1:3)
@@ -429,7 +407,7 @@ Contains
     fail = 0
     Allocate (mol(1:(ifinish-istart+1),0:3), Stat = fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'getcom_mol allocation failure, node: ', idnode
+       Write(nrite,'(/,1x,a,i0)') 'getcom_mol allocation failure, node: ', comm%idnode
        Call error(0)
     End If
 
@@ -451,7 +429,7 @@ Contains
        End If
     End Do
 
-    If (mxnode > 1) Call gsum(mol)
+    Call gsum(comm,mol)
 
     r(1) = mol(1,1)
     r(2) = mol(1,2)
@@ -481,7 +459,7 @@ Contains
     fail = 0
     Deallocate (mol, Stat = fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'getcom_mol deallocation failure, node: ', idnode
+       Write(nrite,'(/,1x,a,i0)') 'getcom_mol deallocation failure, node: ', comm%idnode
        Call error(0)
     End If
 
@@ -498,9 +476,8 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Implicit None
+    Logical, Intent( In ) :: flag
 
-    Logical :: flag
 
     If (flag) Then
        lvom=.true.  ! Remove COM momentum
@@ -510,7 +487,7 @@ Contains
 
   End Subroutine chvom
 
-  Subroutine getvom(vom,vxx,vyy,vzz)
+  Subroutine getvom(vom,vxx,vyy,vzz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -521,13 +498,9 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use setup_module,  Only : mxatms,zero_plus
-    Use config_module, Only : natms,lfrzn,weight
-
-    Implicit None
-
     Real( Kind = wp ), Intent(   Out ) :: vom(1:3)
     Real( Kind = wp ), Intent( In    ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
+    Type(comms_type), Intent ( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
     Real( Kind = wp ), Save :: totmas
@@ -546,7 +519,7 @@ Contains
           If (lfrzn(i) == 0) totmas = totmas + weight(i)
        End Do
 
-       If (mxnode > 1) Call gsum(totmas)
+       Call gsum(comm,totmas)
     End If
 
     vom = 0.0_wp
@@ -563,12 +536,12 @@ Contains
        End If
     End Do
 
-    If (mxnode > 1) Call gsum(vom)
+    Call gsum(comm,vom)
     If (totmas >= zero_plus) vom = vom/totmas
 
   End Subroutine getvom
 
-  Subroutine getvom_rgd(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz)
+  Subroutine getvom_rgd(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -579,15 +552,10 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use setup_module,        Only : mxatms,mxrgd,zero_plus
-    Use config_module,       Only : nfree,lfrzn,lstfre,weight
-    Use rigid_bodies_module, Only : ntrgd,rgdfrz,rgdwgt,listrgd,indrgd
-
-    Implicit None
-
     Real( Kind = wp ), Intent(   Out ) :: vom(1:3)
     Real( Kind = wp ), Intent( In    ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
     Real( Kind = wp ), Intent( In    ) :: rgdvxx(1:mxrgd),rgdvyy(1:mxrgd),rgdvzz(1:mxrgd)
+    Type(comms_type), Intent ( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
     Real( Kind = wp ), Save :: totmas
@@ -622,7 +590,7 @@ Contains
              totmas = totmas + rgdwgt(0,rgdtyp)*Real(indrgd(0,irgd),wp)/Real(lrgd,wp)
        End Do
 
-       If (mxnode > 1) Call gsum(totmas)
+       Call gsum(comm,totmas)
     End If
 
     vom = 0.0_wp
@@ -657,7 +625,7 @@ Contains
        End If
     End Do
 
-    If (mxnode > 1) Call gsum(vom)
+    Call gsum(comm,vom)
     If (totmas >= zero_plus) vom = vom/totmas
 
   End Subroutine getvom_rgd
@@ -673,9 +641,6 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use config_module, Only : natms,lfrzn,vxx,vyy,vzz,fxx,fyy,fzz
-
-    Implicit None
 
     Integer :: i
 
@@ -688,7 +653,7 @@ Contains
 
   End Subroutine freeze_atoms
 
-  Subroutine cap_forces(fmax,temp)
+  Subroutine cap_forces(fmax,temp,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -700,12 +665,9 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use setup_module,  Only : boltz
-    Use config_module, Only : natms,lfrzn,weight,fxx,fyy,fzz
-
-    Implicit None
 
     Real( Kind = wp ), Intent( In    ) :: fmax,temp
+    Type(comms_type), Intent ( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
     Real( Kind = wp ), Save :: meg
@@ -723,7 +685,7 @@ Contains
           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) &
              meg=meg+1.0_wp
        End Do
-       If (mxnode > 1) Call gsum(meg)
+       Call gsum(comm,meg)
     End If
 
 ! maximum force permitted
@@ -755,7 +717,7 @@ Contains
 
 ! ensure net forces sum to zero
 
-    If (mxnode > 1) Call gsum(fcom)
+    Call gsum(comm,fcom)
     fcom = fcom/meg
 
 ! conserve momentum

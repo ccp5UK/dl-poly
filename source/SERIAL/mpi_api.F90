@@ -1,4 +1,4 @@
-Module mpi_module
+Module mpi_api
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -5246,4 +5246,4 @@ X:  Do i = 1, Ubound( aaa, Dim = 2 )
     ierr        = 0
   End Subroutine MPI_GET_LIBRARY_VERSION
 
-End Module mpi_module
+End Module mpi_api

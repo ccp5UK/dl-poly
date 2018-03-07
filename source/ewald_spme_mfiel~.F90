@@ -28,7 +28,7 @@ Subroutine ewald_spme_mfield(alpha,epsq)
   Use comms_module,   Only : idnode,mxnode,gsum
   Use setup_module
   Use domains_module, Only : nprx,npry,nprz,idx,idy,idz
-  Use config_module,  Only : cell,natms,nlast,xxx,yyy,zzz
+  Use configuration,  Only : cell,natms,nlast,xxx,yyy,zzz
   Use mpoles_module,  Only : mplmap,mplgfr
 
   Implicit None

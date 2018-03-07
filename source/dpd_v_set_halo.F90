@@ -12,7 +12,7 @@ Subroutine dpd_v_set_halo()
 
   Use comms_module,  Only : idnode,mxnode,gcheck
   Use setup_module,  Only : nrite,mxatms
-  Use config_module, Only : natms,nlast,ixyz
+  Use configuration, Only : natms,nlast,ixyz
 
   Implicit None
 

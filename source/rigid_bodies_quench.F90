@@ -13,7 +13,7 @@ Subroutine rigid_bodies_quench()
   Use kinds, only : wp
   Use comms_module,  Only : idnode
   Use setup_module
-  Use config_module, Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz
+  Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz
   Use rigid_bodies_module
 
   Implicit None
@@ -200,7 +200,7 @@ Subroutine rigid_bodies_q_ench(qr)
   Use kinds, only : wp
   Use comms_module,  Only : idnode
   Use setup_module
-  Use config_module, Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz
+  Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz
   Use rigid_bodies_module
 
   Implicit None

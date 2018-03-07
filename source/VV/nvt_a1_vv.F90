@@ -30,7 +30,7 @@ Subroutine nvt_a1_vv                          &
   Use setup_module
   Use domains_module,     Only : map
   Use site_module,        Only : dofsit
-  Use config_module,      Only : imcon,cell,natms,nlast,nfree,lsite, &
+  Use configuration,      Only : imcon,cell,natms,nlast,nfree,lsite, &
                                  lsi,lsa,ltg,lfrzn,lfree,lstfre,     &
                                  weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module

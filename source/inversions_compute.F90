@@ -15,7 +15,7 @@ Subroutine inversions_compute(temp)
   Use setup_module,  Only : pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                             mxginv,mxginv1,engunit,zero_plus
   Use site_module,   Only : unqatm
-  Use config_module, Only : cfgname
+  Use configuration, Only : cfgname
   Use inversions_module
 
   Implicit None

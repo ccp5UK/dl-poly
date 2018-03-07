@@ -1,11 +1,11 @@
 Module rdf_compute_module
 
-  Use kinds, only : wp
-  Use comms_module,  Only : idnode,mxnode,gsum
+  Use kinds, Only : wp
+  Use comms,  Only : comms_type,gsum
   Use setup_module,  Only : fourpi,boltz,delr_max,nrite,nrdfdt,npdfdt,npdgdt, &
                             mxgrdf,engunit,zero_plus,mxlist
   Use site_module,   Only : ntpatm,unqatm,numtyp,dens
-  Use config_module, Only : cfgname,volm
+  Use configuration, Only : cfgname,volm
   Use rdf_module
   Use parse_module
   Use io_module
@@ -17,7 +17,7 @@ Module rdf_compute_module
 
 Contains
 
-Subroutine rdf_compute(lpana,rcut,temp)
+Subroutine rdf_compute(lpana,rcut,temp,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -33,6 +33,7 @@ Subroutine rdf_compute(lpana,rcut,temp)
 
   Logical          , Intent( In    ) :: lpana
   Real( Kind = wp ), Intent( In    ) :: rcut,temp
+  Type(comms_type), Intent( InOut )  :: comm
 
   Logical           :: zero
   Integer           :: fail,ngrid,i,ia,ib,kk,ig,ll
@@ -47,7 +48,7 @@ Subroutine rdf_compute(lpana,rcut,temp)
      fail = 0
      Allocate (dstdrdf(0:mxgrdf,1:ntprdf),pmf(0:mxgrdf+2),vir(0:mxgrdf+2), Stat = fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'rdf_compute - allocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'rdf_compute - allocation failure, node: ', comm%idnode
         Call error(0)
      End If
   End If
@@ -66,12 +67,12 @@ Subroutine rdf_compute(lpana,rcut,temp)
   ngrid = Max(Nint(rcut/delr_max),mxgrdf)
   dgrid = rcut/Real(ngrid,wp)
 
-  If (idnode == 0) Write(nrite,"(/,/,12x,'RADIAL DISTRIBUTION FUNCTIONS',/,/, &
+  If (comm%idnode == 0) Write(nrite,"(/,/,12x,'RADIAL DISTRIBUTION FUNCTIONS',/,/, &
      & ' calculated using ',i8,' configurations')") ncfrdf
 
 ! open RDF file and Write headers
 
-  If (idnode == 0) Then
+  If (comm%idnode == 0) Then
      Open(Unit=nrdfdt, File='RDFDAT', Status='replace')
      Write(nrdfdt,'(a)') cfgname
      Write(nrdfdt,'(2i10)') ntprdf,mxgrdf
@@ -93,14 +94,14 @@ Subroutine rdf_compute(lpana,rcut,temp)
 ! only for valid interactions specified for a look up
 
         If (kk > 0 .and. kk <= ntprdf) Then
-           If (idnode == 0) Then
+           If (comm%idnode == 0) Then
               Write(nrite,"(/,' g(r)  :',2(1x,a8),/,/,8x,'r',6x,'g(r)',9x,'n(r)',/)") unqatm(ia),unqatm(ib)
               Write(nrdfdt,'(2a8)') unqatm(ia),unqatm(ib)
            End If
 
 ! global sum of data on all nodes
 
-           If (mxnode > 1) Call gsum(rdf(1:mxgrdf,kk))
+           Call gsum(comm,rdf(1:mxgrdf,kk))
 
 ! normalisation factor
 
@@ -140,7 +141,7 @@ Subroutine rdf_compute(lpana,rcut,temp)
 
 ! print out information
 
-              If (idnode == 0) Then
+              If (comm%idnode == 0) Then
                  If (.not.zero) Write(nrite,"(f10.4,1p,2e14.6)") rrr,gofr1,sum1
                  Write(nrdfdt,"(1p,2e14.6)") rrr,gofr
               End If
@@ -159,7 +160,7 @@ Subroutine rdf_compute(lpana,rcut,temp)
      End Do
   End Do
 
-  If (idnode == 0) Close(Unit=nrdfdt)
+  If (comm%idnode == 0) Close(Unit=nrdfdt)
 
 ! Only when PDF analysis is requested
 
@@ -167,7 +168,7 @@ Subroutine rdf_compute(lpana,rcut,temp)
 
 ! open PDF files and write headers
 
-     If (idnode == 0) Then
+     If (comm%idnode == 0) Then
         Open(Unit=npdgdt, File='VDWPMF', Status='replace')
         Write(npdgdt,'(a)') '# '//cfgname
         Write(npdgdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',delr*Real(mxgrdf,wp),mxgrdf,delr,ntprdf, &
@@ -191,7 +192,7 @@ Subroutine rdf_compute(lpana,rcut,temp)
 ! only for valid interactions specified for a look up
 
            If (kk > 0 .and. kk <= ntprdf) Then
-              If (idnode == 0) Then
+              If (comm%idnode == 0) Then
                  Write(npdgdt,'(/,a2,2a8)') '# ',unqatm(ia),unqatm(ib)
                  Write(npdfdt,'(/,a2,2a8)') '# ',unqatm(ia),unqatm(ib)
               End If
@@ -262,7 +263,7 @@ Subroutine rdf_compute(lpana,rcut,temp)
 
 ! Print
 
-                 If (idnode == 0) &
+                 If (comm%idnode == 0) &
                       Write(npdgdt,"(f11.5,1p,2e14.6)") rrr,fed*kT2engo,dfed*kT2engo*tmp
               End Do
 
@@ -303,21 +304,21 @@ Subroutine rdf_compute(lpana,rcut,temp)
 
                  dfed = t1 + (t2-t1)*coef*0.5_wp
 
-                 If (idnode == 0) &
+                 If (comm%idnode == 0) &
                     Write(npdfdt,"(f11.5,1p,2e14.6)") rrr,fed*kT2engo,dfed*kT2engo*rrr*rdlr
               End Do
            End If
         End Do
      End Do
 
-     If (idnode == 0) Then
+     If (comm%idnode == 0) Then
         Close(Unit=npdgdt)
         Close(Unit=npdfdt)
      End If
 
      Deallocate (dstdrdf,pmf,vir, Stat = fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'rdf_compute - deallocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'rdf_compute - deallocation failure, node: ', comm%idnode
         Call error(0)
      End If
   End If
@@ -374,24 +375,25 @@ Subroutine calculate_block(temp, rcut)
 
 End Subroutine calculate_block
 
-Subroutine calculate_errors(temp, rcut, num_steps)
+Subroutine calculate_errors(temp, rcut, num_steps, comm)
 
   Implicit None
 
-  Real( Kind = wp ), Intent(in)                        :: temp, rcut
+  Real( Kind = wp ), Intent( In )                      :: temp, rcut
+  Type(comms_type), Intent( InOut )                    :: comm
   Real( Kind = wp )                                    :: test1, delr
   Real( kind = wp ), Dimension( :, : , :), Allocatable :: averages, errors
   Real( kind = wp)                                     :: i_nr_blocks, s
 
-  Integer, Intent(in) :: num_steps
+  Integer, Intent(In) :: num_steps
   Integer             :: nr_blocks, i, j,k ,l, ierr, ierr2, ierr3, a, b, ia, ib, kk
 
   test1 = 0.0_wp
   block_number = 1
 
-  If(mxnode > 1 .and. .not. tmp_rdf_sync) Then
+  If(comm%mxnode > 1 .and. .not. tmp_rdf_sync) Then
      Do i=1, num_blocks+1
-        CALL gsum(tmp_rdf(:,:,i))
+        Call gsum(comm,tmp_rdf(:,:,i))
      End Do
      tmp_rdf_sync = .TRUE.
   End If
@@ -442,7 +444,7 @@ Subroutine calculate_errors(temp, rcut, num_steps)
   End Do
 
 !output errors
-  If (idnode == 0) Then
+  If (comm%idnode == 0) Then
      Open(Unit=nrdfdt, File='RDFDAT', Status='replace')
      Write(nrdfdt,'(a)') cfgname
      Write(nrdfdt,'(2i10)') ntprdf,mxgrdf
@@ -465,11 +467,10 @@ Subroutine calculate_errors(temp, rcut, num_steps)
   Deallocate(averages, errors)
 End Subroutine calculate_errors
 
-Subroutine calculate_errors_jackknife(temp, rcut, num_steps)
-
-  Implicit None
+Subroutine calculate_errors_jackknife(temp, rcut, num_steps,comm)
 
   Real( Kind = wp ), Intent(In)                        :: temp, rcut
+  Type(comms_type), Intent( InOut )                    :: comm
   Real( Kind = wp )                                    :: test1
   Real( Kind = wp ), Dimension( :, : , :), Allocatable :: averages, errors
   Real(Kind = wp)                                      :: i_nr_blocks, delr, s
@@ -479,9 +480,9 @@ Subroutine calculate_errors_jackknife(temp, rcut, num_steps)
 
   test1 = 0.0_wp
   block_number = 1
-  If(mxnode > 1 .and. .not. tmp_rdf_sync) Then
+  If(comm%mxnode > 1 .and. .not. tmp_rdf_sync) Then
      Do i=1, num_blocks+1
-        Call gsum(tmp_rdf(:,:,i))
+        Call gsum(comm,tmp_rdf(:,:,i))
      End Do
      tmp_rdf_sync = .TRUE.
   End If
@@ -557,7 +558,7 @@ Subroutine calculate_errors_jackknife(temp, rcut, num_steps)
   End Do
 
 !output errors
-  If (idnode == 0) Then
+  If (comm%idnode == 0) Then
      Open(Unit=nrdfdt, File='RDFDAT', Status='replace')
      Write(nrdfdt,'(a)') cfgname
      Write(nrdfdt,'(2i10)') ntprdf,mxgrdf

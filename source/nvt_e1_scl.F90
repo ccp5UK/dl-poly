@@ -17,7 +17,7 @@ Subroutine nvt_e1_scl &
   Use kinds, only : wp
   Use comms_module,        Only : mxnode,gsum
   Use setup_module,        Only : mxatms,mxrgd
-  Use config_module,       Only : nfree,lstfre,weight
+  Use configuration,       Only : nfree,lstfre,weight
   Use rigid_bodies_module, Only : ntrgd,rgdfrz,rgdwgt, &
                                   listrgd,indrgd,      &
                                   rgdrix,rgdriy,rgdriz

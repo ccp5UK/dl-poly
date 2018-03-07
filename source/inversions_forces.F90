@@ -17,7 +17,7 @@ Subroutine inversions_forces(isw,enginv,virinv,stress)
   Use kinds, only : wp
   Use comms_module,      Only : idnode,mxnode,gsync,gsum,gcheck
   Use setup_module,      Only : nrite,mxinv,mxginv1,pi
-  Use config_module,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
+  Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                                 xxx,yyy,zzz,fxx,fyy,fzz
   Use inversions_module, Only : ntinv,keyinv,listinv,prminv, &
                                 ltpinv,vinv,ginv,ncfinv,ldfinv,dstinv

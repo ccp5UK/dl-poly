@@ -19,7 +19,7 @@ Subroutine pmf_shake_vv          &
   Use kinds, only : wp
   Use comms_module,  Only : idnode,mxnode,gsync,gcheck,gsum
   Use setup_module
-  Use config_module, Only : natms,lfrzn
+  Use configuration, Only : natms,lfrzn
   Use pmf_module
 
   Implicit None

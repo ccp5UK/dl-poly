@@ -15,7 +15,7 @@ Subroutine dihedrals_compute(temp)
   Use setup_module,  Only : pi,twopi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                             mxgdih,mxgdih1,engunit,zero_plus
   Use site_module,   Only : unqatm
-  Use config_module, Only : cfgname
+  Use configuration, Only : cfgname
   Use dihedrals_module
 
   Implicit None

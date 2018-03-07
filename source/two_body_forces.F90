@@ -39,7 +39,7 @@ Subroutine two_body_forces                        &
   Use comms_module,   Only : idnode,mxnode,gsum
   Use setup_module
   Use site_module,    Only : ntpatm,unqatm
-  Use config_module,  Only : volm,sumchg,natms,list,xxx,yyy,zzz
+  Use configuration,  Only : volm,sumchg,natms,list,xxx,yyy,zzz
   Use vnl_module,     Only : l_vnl
   Use ewald_module
   Use mpoles_module,  Only : induce,keyind

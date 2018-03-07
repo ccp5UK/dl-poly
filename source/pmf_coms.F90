@@ -15,7 +15,7 @@ Subroutine pmf_coms(indpmf,pxx,pyy,pzz)
   Use kinds, only : wp
   Use comms_module,  Only : idnode,mxnode,gcheck,gsum
   Use setup_module
-  Use config_module, Only : imcon,cell,natms,xxx,yyy,zzz
+  Use configuration, Only : imcon,cell,natms,xxx,yyy,zzz
   Use pmf_module,    Only : ntpmf,listpmf,pmfwgt
 
   Implicit None

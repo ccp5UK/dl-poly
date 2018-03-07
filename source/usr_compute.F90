@@ -15,7 +15,7 @@ Subroutine usr_compute()
   Use kinds, only : wp
   Use comms_module,  Only : idnode,mxnode,gsum
   Use setup_module,  Only : fourpi,nrdfdt,mxgusr
-  Use config_module, Only : cfgname,volm
+  Use configuration, Only : cfgname,volm
   Use rdf_module,    Only : ncfusr,rusr,usr
 
   Implicit None

@@ -13,7 +13,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
   Use kinds, Only : wp, li
   Use comms_module
   Use setup_module
-  Use config_module,     Only : cfgname,imcon,cell,natms, &
+  Use configuration,     Only : cfgname,imcon,cell,natms, &
                                 atmnam,ltg,xxx,yyy,zzz
   Use core_shell_module, Only : legshl
   Use statistics_module, Only : rsd

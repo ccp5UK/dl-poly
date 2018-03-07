@@ -30,7 +30,7 @@ Subroutine npt_l0_vv                          &
   Use comms_module,       Only : idnode,mxnode,gmax
   Use setup_module
   Use site_module,        Only : ntpatm,dens
-  Use config_module,      Only : cell,volm,natms,lfrzn,weight, &
+  Use configuration,      Only : cell,volm,natms,lfrzn,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use langevin_module,    Only : fxl,fyl,fzl,fpl
   Use kinetic_module,     Only : getvom,getkin,kinstress

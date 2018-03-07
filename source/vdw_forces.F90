@@ -18,7 +18,7 @@ Subroutine vdw_forces &
 
   Use kinds, only : wp
   Use setup_module
-  Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
+  Use configuration, Only : natms,ltg,ltype,list,fxx,fyy,fzz
   Use vdw_module
   Use m_zbl, Only : ab,zbl,zbls,zblb
 

@@ -16,7 +16,7 @@ Subroutine statistics_connect_spread(mdir)
   Use comms_module
   Use setup_module,  Only : nrite,mxstak,mxatdm,mxbfss
   Use domains_module
-  Use config_module, Only : ixyz
+  Use configuration, Only : ixyz
 
   Use msd_module,    Only : l_msd
 

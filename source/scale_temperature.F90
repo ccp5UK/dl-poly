@@ -17,7 +17,7 @@ Subroutine scale_temperature(sigma,degtra,degrot,degfre)
   Use kinds, Only : wp, li
   Use comms_module,   Only : idnode,mxnode,gsum
   Use setup_module
-  Use config_module,  Only : imcon,natms,nfree,lfrzn,lstfre, &
+  Use configuration,  Only : imcon,natms,nfree,lfrzn,lstfre, &
                              weight,xxx,yyy,zzz,vxx,vyy,vzz
   Use rigid_bodies_module
   Use kinetic_module, Only : getcom,getvom,getkin,getknf,getknt,getknr

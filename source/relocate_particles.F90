@@ -21,7 +21,7 @@ Subroutine relocate_particles       &
   Use domains_module
 
   Use site_module
-  Use config_module
+  Use configuration
 
   Use core_shell_module,   Only : ntshl, listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
 

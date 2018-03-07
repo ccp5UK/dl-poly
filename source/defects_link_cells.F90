@@ -14,7 +14,7 @@ Subroutine defects_link_cells &
   Use kinds, only : wp
   Use setup_module
   Use domains_module
-  Use config_module, Only : cell
+  Use configuration, Only : cell
 
   Implicit None
 

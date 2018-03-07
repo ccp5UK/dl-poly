@@ -1,14 +1,19 @@
 Module poisson_module
 
-  Use kinds, only : wp
-  Use comms_module
+  Use kinds, Only : wp
+  Use comms, Only : gsum, comms_type,wp_mpi,ExchgGrid_tag
   Use domains_module
   Use setup_module,  Only : fourpi,r4pie0,nrite,            &
                             kmaxa,kmaxb,kmaxc,mxspl,mxspl1, &
                             mxlist,mxatms,mxatdm,half_minus,zero_plus
-  Use config_module, Only : imcon,cell,natms,nlast,list,ltg,lfrzn, &
+  Use configuration, Only : imcon,cell,natms,nlast,list,ltg,lfrzn, &
                             chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use ewald_module
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi
+#endif
 
   Implicit None
 
@@ -33,13 +38,12 @@ Module poisson_module
 
 Contains
 
-  Subroutine poisson_forces(alphain,epsq,engcpe,vircpe,stress)
-
-    Implicit None
+  Subroutine poisson_forces(alphain,epsq,engcpe,vircpe,stress,comm)
 
     Real( Kind = wp ), Intent( In    ) :: epsq,alphain
     Real( Kind = wp ), Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
+    Type(comms_type), Intent( InOut)   :: comm
 
     Real( Kind = wp ) :: eng,virr
     Real( Kind = wp ) :: strs(1:9)
@@ -52,12 +56,12 @@ Contains
        epsilon=epsq
        alpha=alphain
        delta=1.0_wp/alpha
-       Call biCGStab_init()
+       Call biCGStab_init(comm)
 
-       Call biCGStab_charge_density
+       Call biCGStab_charge_density(comm)
 
        If (normb > zero_plus) Then
-          Call biCGStab_solver_omp(eps)
+          Call biCGStab_solver_omp(eps,comm)
        Else
           STOP "normb too small"
        End If
@@ -66,13 +70,13 @@ Contains
 
     Else
 
-       Call biCGStab_charge_density
+       Call biCGStab_charge_density(comm)
 
     End If
 
     If (normb > zero_plus) Then
-       Call P_solver_omp(eps)
-       Call biCGStab_calc_forces(eng,virr,strs)
+       Call P_solver_omp(eps,comm)
+       Call biCGStab_calc_forces(eng,virr,strs,comm)
     Else
        STOP "normb too small"
     End If
@@ -83,12 +87,10 @@ Contains
 
   End Subroutine poisson_forces
 
-  Subroutine biCGStab_init()
+  Subroutine biCGStab_init(comm)
 
 ! calculates preambles
-
-    Implicit None
-
+   Type(comms_type), Intent( InOut ) :: comm
 ! copy DD mapping
 
     lmap=map
@@ -168,7 +170,7 @@ Contains
     Allocate ( r0(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) , Stat = fail( 9) )
     Allocate (  v(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) , Stat = fail(10) )
     If (Any(fail(1:10) > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'biCGStab_init allocation failure, node: ', idnode
+       Write(nrite,'(/,1x,a,i0)') 'biCGStab_init allocation failure, node: ', comm%idnode
        Call error(0)
     End If
 
@@ -185,12 +187,11 @@ Contains
 
   End Subroutine biCGStab_init
 
-  Subroutine biCGStab_charge_density
+  Subroutine biCGStab_charge_density(comm)
 
 ! calculates charge dansity at 0th order
 
-    Implicit None
-
+    Type(comms_type), Intent( InOut ) :: comm 
     Integer           :: i,j,k,n
     Real( Kind = wp ) :: reps0dv, txx,tyy,tzz, det,rcell(9)
 
@@ -242,20 +243,20 @@ Contains
     !$omp End paralleldo
 
     normb=Sum(b**2)
-    Call gsum(normb)
+    Call gsum(comm,normb)
 
-    Call gsum(ccsum)
-    Call gsum(ccxxx)
-    Call gsum(ccyyy)
-    Call gsum(cczzz)
+    Call gsum(comm,ccsum)
+    Call gsum(comm,ccxxx)
+    Call gsum(comm,ccyyy)
+    Call gsum(comm,cczzz)
 
   End Subroutine biCGStab_charge_density
 
-  Recursive Subroutine P_solver_omp(occ)
+  Recursive Subroutine P_solver_omp(occ, comm)
 
-    Implicit None
 
     Real( Kind = wp ) :: Totstart, occ, dphi
+    Type(comms_type), Intent( InOut)   :: comm
 
     Integer           :: mmm, i,j,k
     Real( Kind = wp ) :: element,  sm1,sm2,sm3,sm4 ! SM stands for Stoyan Markov (long live!!!)
@@ -270,11 +271,11 @@ Contains
     End Do
     !$omp End paralleldo
 
-    Call gsum(normphi0)
+    Call gsum(comm,normphi0)
 
     Do mmm=1,mxitjb+3 ! Za seki sluchaj, proverka sa stabilno shozhdane
 
-       Call biCGStab_exchange_halo(phi,xhalo)
+       Call biCGStab_exchange_halo(phi,xhalo,comm)
 
        sm1 = -600.0_wp/144.0_wp
        sm2 =   60.0_wp/144.0_wp
@@ -326,19 +327,19 @@ Contains
        End Do
        !$omp End paralleldo
 
-       Call gsum(normphi1)
+       Call gsum(comm, normphi1)
 
        dphi=Abs(normphi1-normphi0)
        If (dphi <= occ*normb) Then
-          Call biCGStab_exchange_halo(phi,xhalo)
-          If (idnode==0) Write (*,*)  "Jacobi it = ", mmm ,&
+          Call biCGStab_exchange_halo(phi,xhalo,comm)
+          If (comm%idnode==0) Write (*,*)  "Jacobi it = ", mmm ,&
                &"d|Coulomb potential|/NormB >>>",&
                &Abs(normphi1 - normphi0)/normb, MPI_WTIME()-Totstart
           pconverged=.true.
           Return
        End If
 
-       If (mmm > mxitjb) Call biCGStab_solver_omp(occ)
+       If (mmm > mxitjb) Call biCGStab_solver_omp(occ,comm)
        normphi0=normphi1
 
     End Do
@@ -348,10 +349,9 @@ Contains
 
   End Subroutine P_solver_omp
 
-  Recursive Subroutine biCGStab_solver_omp(occ)
+  Recursive Subroutine biCGStab_solver_omp(occ,comm)
 
-    Implicit None
-
+    Type(comms_type), Intent( InOut )  :: comm
     Real( Kind = wp ) :: alfa, beta, omega, rho1,rho0,rv,tt,ts
     Real( Kind = wp ) :: Totstart,occ
 
@@ -364,7 +364,7 @@ Contains
     rho1=1.0_wp
     rho0=1.0_wp
 
-    Call biCGStab_exchange_halo(phi,xhalo)
+    Call biCGStab_exchange_halo(phi,xhalo,comm)
     Call Adot_omp(phi,xhalo,F,0)
 
     !$omp parallel default(shared) private(kk)
@@ -390,7 +390,7 @@ Contains
     End Do
     !$omp End parallel
 
-    Call gsum(normphi0)
+    Call gsum(comm,normphi0)
     Do mmm=1,mxitcg
        rho0 = rho1
        rho1 = 0.0_wp
@@ -399,7 +399,7 @@ Contains
           rho1 = rho1 + Sum(r0(1:block_x,1:block_y,kk)*r(1:block_x,1:block_y,kk))
        End Do
        !$omp End paralleldo
-       Call gsum(rho1)
+       Call gsum(comm,rho1)
 
        beta = (rho1/rho0) * (alfa/omega)
 
@@ -410,7 +410,7 @@ Contains
        End Do
        !$omp End paralleldo
 
-       Call biCGStab_exchange_halo(p,0)
+       Call biCGStab_exchange_halo(p,0,comm)
        Call Adot_omp(p,0,v,0)
 
        rv=0.0_wp
@@ -419,7 +419,7 @@ Contains
           rv = rv + Sum(r0(1:block_x,1:block_y,kk) * v(1:block_x,1:block_y,kk))
        End Do
        !$omp End paralleldo
-       Call gsum(rv)
+       Call gsum(comm,rv)
 
        alfa=rho1/rv
 
@@ -429,7 +429,7 @@ Contains
        End Do
        !$omp End paralleldo
 
-       Call biCGStab_exchange_halo(s,0)
+       Call biCGStab_exchange_halo(s,0,comm)
        Call Adot_omp(s,0,t,0)
 
        tt=0.0_wp
@@ -438,7 +438,7 @@ Contains
           tt = tt + Sum(t(1:block_x,1:block_y,kk)**2)
        End Do
        !$omp End paralleldo
-       Call gsum(tt)
+       Call gsum(comm,tt)
 
        ts=0.0_wp
        !$omp paralleldo default(shared) private(kk) reduction(+:ts)
@@ -446,7 +446,7 @@ Contains
           ts = ts + Sum(t(1:block_x,1:block_y,kk)*s(1:block_x,1:block_y,kk))
        End Do
        !$omp End paralleldo
-       Call gsum(ts)
+       Call gsum(comm,ts)
 
        omega=ts/tt
 
@@ -463,7 +463,7 @@ Contains
           normphi1 = normphi1 + Sum(phi(1:block_x,1:block_y,kk)**2)
        End Do
        !$omp End paralleldo
-       Call gsum(normphi1)
+       Call gsum(comm,normphi1)
 
        If (maxbicgst > 0 .and. mmm > maxbicgst) Then
           !$omp paralleldo default(shared) private(kk)
@@ -474,26 +474,25 @@ Contains
 
           maxbicgst=0
           pconverged=.false.
-          If (idnode==0) &
+          If (comm%idnode==0) &
              Print*, "bicgstab exceeded *maxbicgst*... reset potential... pconverged=.false."
           Return
        End If
-
        Write (*,*)  "biCGStab it = ", mmm ,&
             &"d|Coulomb potential|/NormB >>>",(Abs(normphi1 - normphi0)/normb),&
             &MPI_WTIME()-Totstart
 
        If (Abs(normphi1 - normphi0) <= occ*normb) Then
-          Call biCGStab_exchange_halo(phi,xhalo)
+          Call biCGStab_exchange_halo(phi,xhalo,comm)
 
-         If (idnode == 0) Write (*,*)  "biCGStab it = ", mmm ,&
+         If (comm%idnode == 0) Write (*,*)  "biCGStab it = ", mmm ,&
               &"d|Coulomb potential|/NormB >>>",(Abs(normphi1 - normphi0)/normb),&
               &MPI_WTIME()-Totstart
           If (maxbicgst == 0) Then
              maxbicgst=mmm
           End If
           pconverged=.true.
-          If (idnode == 0) Print*, "*maxbicgst* set to",maxbicgst,"pconverged=.true."
+          If (comm%idnode == 0) Print*, "*maxbicgst* set to",maxbicgst,"pconverged=.true."
           Return
        End If
 
@@ -506,25 +505,24 @@ Contains
        normphi0=normphi1
     End Do
     pconverged=.false.
-    If (idnode == 0) Print*, "maxit reached... pconverged=.false."
+    If (comm%idnode == 0) Print*, "maxit reached... pconverged=.false."
 
   End Subroutine biCGStab_solver_omp
 
-  Subroutine biCGStab_exchange_halo(vec,xtra)
-
-    Implicit None
+  Subroutine biCGStab_exchange_halo(vec,xtra,comm)
 
     Integer,           Intent( In    ) :: xtra
 
     Real( Kind = wp ), Intent( InOut ) :: vec( lnxl-xtra:lnxu+xtra, &
                                                lnyl-xtra:lnyu+xtra, &
                                                lnzl-xtra:lnzu+xtra )
+    Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: me, lx,ly,lz
 
 ! What's my name?
 
-    me = idnode
+    me = comm%idnode
 
 ! Find length of sides of the domain
 
@@ -537,51 +535,49 @@ Contains
     Call exchange_grid_halo( lmap(1),                     lmap(2), &
          xtra+1,                      ly,                          lz, &
          lx-(xtra+1)+1, lx  ,         1,              ly,            1,              lz, &
-         1-(xtra+1),    1-1,          1,              ly,            1,              lz)
+         1-(xtra+1),    1-1,          1,              ly,            1,              lz,comm)
 
 ! -X direction face - positive halo
 
     Call exchange_grid_halo( lmap(2),                     lmap(1), &
          xtra+1,                      ly,                          lz, &
          1,             1+(xtra+1)-1, 1,              ly,            1,              lz, &
-         lx+1,          lx+(xtra+1),  1,              ly,            1,              lz)
+         lx+1,          lx+(xtra+1),  1,              ly,            1,              lz,comm)
 
 ! +Y direction face (including the +&-X faces extensions) - negative halo
 
     Call exchange_grid_halo( lmap(3),                     lmap(4), &
          lx+2*(xtra+1),              xtra+1,                       lz, &
          1-(xtra+1),    lx+(xtra+1),  ly-(xtra+1)+1, ly,             1,              lz, &
-         1-(xtra+1),    lx+(xtra+1),  1-(xtra+1)  ,  1-1,            1,              lz)
+         1-(xtra+1),    lx+(xtra+1),  1-(xtra+1)  ,  1-1,            1,              lz,comm)
 
 ! -Y direction face (including the +&-X faces extensions) - positive halo
 
     Call exchange_grid_halo( lmap(4),                     lmap(3), &
          lx+2*(xtra+1),              xtra+1,                       lz, &
          1-(xtra+1),    lx+(xtra+1),  1,              1+(xtra+1)-1,  1, lz, &
-         1-(xtra+1),    lx+(xtra+1),  ly+1,           ly+(xtra+1),   1, lz)
+         1-(xtra+1),    lx+(xtra+1),  ly+1,           ly+(xtra+1),   1, lz,comm)
 
 ! +Z direction face (including the +&-Y+&-X faces extensions) - negative halo
 
     Call exchange_grid_halo( lmap(5),                     lmap(6), &
          lx+2*(xtra+1),              ly+2*(xtra+1),              xtra+1, &
          1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  lz-(xtra+1)+1, lz, &
-         1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  1-(xtra+1)  ,  1-1)
+         1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  1-(xtra+1)  ,  1-1,comm)
 
 ! -Z direction face (including the +&-Y+&-X faces extensions) - positive halo
 
     Call exchange_grid_halo( lmap(6),                     lmap(5), &
          lx+2*(xtra+1),              ly+2*(xtra+1),              xtra+1, &
          1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  1,              1+(xtra+1)-1, &
-         1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  lz+1,           lz+(xtra+1))
+         1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  lz+1,           lz+(xtra+1),comm)
 
   Contains
 
     Subroutine exchange_grid_halo(     from,       to,           &
                                    lx,       ly,       lz,       &
                                    xlb, xlt, ylb, ylt, zlb, zlt, &
-                                   xdb, xdt, ydb, ydt, zdb, zdt )
-
-      Implicit None
+                                   xdb, xdt, ydb, ydt, zdb, zdt,comm )
 
       Integer, Intent( In    ) :: from, to
       Integer, Intent( In    ) :: lx, ly, lz
@@ -589,6 +585,7 @@ Contains
       Integer, Intent( In    ) :: xlt, ylt, zlt
       Integer, Intent( In    ) :: xdb, ydb, zdb
       Integer, Intent( In    ) :: xdt, ydt, zdt
+      Type( comms_type), Intent( InOut ) :: comm
 
       Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: send_buffer
       Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: recv_buffer
@@ -615,17 +612,17 @@ Contains
          If (from > -1) Then
             Allocate ( recv_buffer( xdb:xdt, ydb:ydt, zdb:zdt ) , Stat = fail(1) )
             If (fail(1) > 0) Then
-               Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo receive allocation failure, node: ', idnode
+               Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo receive allocation failure, node: ', comm%idnode
                Call error(0)
             End If
 
-            Call MPI_IRECV( recv_buffer, length, wp_mpi, from, ExchgGrid_tag, dlp_comm_world, request, ierr )
+            Call MPI_IRECV( recv_buffer, length, wp_mpi, from, ExchgGrid_tag, comm%comm, comm%request, comm%ierr )
          End If
 
          If (to   > -1) Then
             Allocate ( send_buffer( xlb:xlt, ylb:ylt, zlb:zlt ) , Stat = fail(1) )
             If (fail(1) > 0) Then
-               Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo send allocation failure, node: ', idnode
+               Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo send allocation failure, node: ', comm%idnode
                Call error(0)
             End If
 
@@ -633,13 +630,13 @@ Contains
 
             send_buffer = vec( xlb:xlt, ylb:ylt, zlb:zlt )
 
-            Call MPI_SEND(  send_buffer, length, wp_mpi, to  , ExchgGrid_tag, dlp_comm_world, ierr )
+            Call MPI_SEND(  send_buffer, length, wp_mpi, to  , ExchgGrid_tag, comm%comm, comm%ierr )
          End If
 
 ! Exchange the data
 
          If (from > -1) Then
-            Call MPI_WAIT(  request, status, ierr )
+            Call MPI_WAIT(  comm%request, comm%status, comm%ierr )
 
 ! Copy the received data into the domain halo
 
@@ -649,7 +646,7 @@ Contains
 
             Deallocate ( recv_buffer , Stat = fail(1) )
             If (fail(1) > 0) Then
-               Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo receive deallocation failure, node: ', idnode
+               Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo receive deallocation failure, node: ', comm%idnode
                Call error(0)
             End If
          End If
@@ -657,7 +654,7 @@ Contains
          If (to   > -1) Then
             Deallocate ( send_buffer , Stat = fail(1) )
             If (fail(1) > 0) Then
-               Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo send deallocation failure, node: ', idnode
+               Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo send deallocation failure, node: ', comm%idnode
                Call error(0)
             End If
          End If
@@ -674,23 +671,20 @@ Contains
 
   End Subroutine biCGStab_exchange_halo
 
-  Subroutine biCGStab_Deallocate_grids
+  Subroutine biCGStab_Deallocate_grids(comm)
 
-    Implicit None
-
+    Type( comms_type ), Intent( InOut ) :: comm
     Deallocate(t ,   b ,  v , Stat = fail(1) )
     Deallocate(F ,   s ,  r , Stat = fail(2) )
     Deallocate(p , phi , r0 , Stat = fail(3) )
     If (Any(fail(1:3) > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo send deallocation failure, node: ', idnode
+       Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo send deallocation failure, node: ', comm%idnode
        Call error(0)
     End If
 
   End Subroutine biCGStab_Deallocate_grids
 
   Subroutine Adot_omp(vec,vx,res,rx)
-
-    Implicit None
 
     Integer          , Intent( In    ) :: vx,rx
     Real( Kind = wp ), Intent( In    ) :: vec(lnxl-vx:lnxu+vx,lnyl-vx:lnyu+vx,lnzl-vx:lnzu+vx)
@@ -726,11 +720,10 @@ Contains
 
   End Subroutine Adot_omp
 
-  Subroutine biCGStab_calc_forces(cenergy,vir,stress)
-
-    Implicit None
+  Subroutine biCGStab_calc_forces(cenergy,vir,stress,comm)
 
     Real( Kind = wp ), Intent( InOut ) :: cenergy, vir, stress(1:9)
+    Type( comms_type), Intent( InOut ) :: comm
 
     Integer       :: i,j,k,n, ii,jj,kk
     Real(Kind=wp) :: reps0dv,txx,tyy,tzz, det,rcell(1:9),        &
@@ -738,7 +731,7 @@ Contains
                      uenergy,r8veps0
 
     If(.Not.pconverged) Then
-       if (idnode == 0) Print*, "poisson solver not converged"
+       if (comm%idnode == 0) Print*, "poisson solver not converged"
        Return
     End If
 
@@ -1154,7 +1147,7 @@ Contains
 
   End Subroutine poisson_excl_forces
 
-  Subroutine poisson_frzn_forces(rcut,epsq,engcpe_fr,vircpe_fr,stress)
+  Subroutine poisson_frzn_forces(rcut,epsq,engcpe_fr,vircpe_fr,stress,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1174,11 +1167,10 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Implicit None
-
     Real( Kind = wp ),                   Intent( In    ) :: rcut,epsq
     Real( Kind = wp ),                   Intent(   Out ) :: engcpe_fr,vircpe_fr
     Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
+    Type(comms_type), Intent( InOut)                     :: comm
 
     Integer           :: fail,i,j,k,ii,jj,idi,nzfr,limit
     Real( Kind = wp ) :: det,rcell(1:9),xrr,yrr,zrr,rrr,rsq, &
@@ -1218,9 +1210,9 @@ Contains
 
 
     fail=0
-    Allocate (l_ind(1:mxatdm),nz_fr(0:mxnode), Stat=fail)
+    Allocate (l_ind(1:mxatdm),nz_fr(0:comm%mxnode), Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces allocation failure, node: ', idnode
+       Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces allocation failure, node: ', comm%idnode
        Call error(0)
     End If
 
@@ -1241,19 +1233,19 @@ Contains
     l_ind=0 ; nz_fr=0
     Do i=1,natms
        If (lfrzn(i) > 0 .and. Abs(chge(i)) > zero_plus) Then
-          nz_fr(idnode+1)=nz_fr(idnode+1)+1
-          l_ind(nz_fr(idnode+1))=i
+          nz_fr(comm%idnode+1)=nz_fr(comm%idnode+1)+1
+          l_ind(nz_fr(comm%idnode+1))=i
        End If
     End Do
-    If (mxnode > 1) Call gsum(nz_fr)
-    nz_fr(0) = Sum(nz_fr(0:idnode)) ! Offset
+    Call gsum(comm,nz_fr)
+    nz_fr(0) = Sum(nz_fr(0:comm%idnode)) ! Offset
 
-    nzfr = Sum(nz_fr(1:mxnode))     ! Total
+    nzfr = Sum(nz_fr(1:comm%mxnode))     ! Total
     If (nzfr <= 10*mxatms) Then
 
        Allocate (cfr(1:nzfr),xfr(1:nzfr),yfr(1:nzfr),zfr(1:nzfr), Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces allocation failure 1, node: ', idnode
+          Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces allocation failure 1, node: ', comm%idnode
           Call error(0)
        End If
 
@@ -1261,7 +1253,7 @@ Contains
        xfr=0.0_wp
        yfr=0.0_wp
        zfr=0.0_wp
-       Do i=1,nz_fr(idnode+1)
+       Do i=1,nz_fr(comm%idnode+1)
           ii=nz_fr(0)+i
 
           cfr(ii)=chge(l_ind(i))
@@ -1269,14 +1261,14 @@ Contains
           yfr(ii)=yyy(l_ind(i))
           zfr(ii)=zzz(l_ind(i))
        End Do
-       If (mxnode > 1) Then
-          Call gsum(cfr)
-          Call gsum(xfr)
-          Call gsum(yfr)
-          Call gsum(zfr)
+       If (comm%mxnode > 1) Then
+          Call gsum(comm,cfr)
+          Call gsum(comm,xfr)
+          Call gsum(comm,yfr)
+          Call gsum(comm,zfr)
        End If
 
-       Do i=1,nz_fr(idnode+1)
+       Do i=1,nz_fr(comm%idnode+1)
           ii=nz_fr(0)+i
 
           Do jj=1,nz_fr(0) ! -, on nodes<idnode
@@ -1335,7 +1327,7 @@ Contains
              End If
           End Do
 
-          Do j=i+1,nz_fr(idnode+1) ! =, node=idnode (OVERLAP but no SELF)!
+          Do j=i+1,nz_fr(comm%idnode+1) ! =, node=idnode (OVERLAP but no SELF)!
              jj=nz_fr(0)+j
 
              xrr=xfr(ii)-xfr(jj)
@@ -1418,7 +1410,7 @@ Contains
              strs9 = strs9 + zrr*fz
           End Do
 
-          Do jj=nz_fr(0)+nz_fr(idnode+1)+1,nzfr ! +, on nodes>idnode
+          Do jj=nz_fr(0)+nz_fr(comm%idnode+1)+1,nzfr ! +, on nodes>idnode
              xrr=xfr(ii)-xfr(jj)
              yrr=yfr(ii)-yfr(jj)
              zrr=zfr(ii)-zfr(jj)
@@ -1488,7 +1480,7 @@ Contains
 
        Deallocate (cfr,xfr,yfr,zfr, Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces deallocation failure 1, node: ', idnode
+          Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces deallocation failure 1, node: ', comm%idnode
           Call error(0)
        End If
 
@@ -1499,12 +1491,12 @@ Contains
 
        Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces allocation failure 2, node: ', idnode
+          Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces allocation failure 2, node: ', comm%idnode
           Call error(0)
        End If
 
-       Do ii=1,nz_fr(idnode+1)
-          i=l_ind(nz_fr(idnode+1))
+       Do ii=1,nz_fr(comm%idnode+1)
+          i=l_ind(nz_fr(comm%idnode+1))
           idi=ltg(ii)
 
 ! Get list limit
@@ -1618,7 +1610,7 @@ Contains
 
        Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces deallocation failure 2, node: ', idnode
+          Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces deallocation failure 2, node: ', comm%idnode
           Call error(0)
        End If
 
@@ -1676,7 +1668,7 @@ Contains
 
     Deallocate (l_ind,nz_fr, Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces deallocation failure, node: ', idnode
+       Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces deallocation failure, node: ', comm%idnode
        Call error(0)
     End If
 

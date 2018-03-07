@@ -19,7 +19,7 @@ Subroutine set_bounds                                 &
   Use comms_module,       Only : idnode,mxnode
   Use setup_module
   Use domains_module,     Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
-  Use config_module,      Only : imcon,imc_n,cfgname,cell,volm
+  Use configuration,      Only : imcon,imc_n,cfgname,cell,volm
   Use vnl_module,         Only : llvnl ! Depends on l_str,lsim & rpad
   Use msd_module
   Use rdf_module,         Only : rusr

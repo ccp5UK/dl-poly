@@ -21,7 +21,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
   Use setup_module,        Only : nconf,nfield,nmpldt,nrite,config,field, &
                                   mxatms
   Use site_module
-  Use config_module,       Only : cfgname,imcon,cell,natms,lsi,lsa, &
+  Use configuration,       Only : cfgname,imcon,cell,natms,lsi,lsa, &
                                   atmnam,xxx,yyy,zzz
   Use core_shell_module,   Only : numshl,lstshl
   Use constraints_module,  Only : numcon,lstcon

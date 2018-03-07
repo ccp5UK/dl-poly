@@ -14,7 +14,7 @@ Subroutine vaf_collect(lvafav,leql,nsteql,nstep,time)
   Use kinds, only : wp
   Use comms_module,     Only : idnode,mxnode,gsum
   Use setup_module,     Only : nrite,mxatyp,mxbuff
-  Use config_module,    Only : natms,ltype,lfrzn,vxx,vyy,vzz
+  Use configuration,    Only : natms,ltype,lfrzn,vxx,vyy,vzz
   Use greenkubo_module, Only : isvaf,nsvaf,vaftsts,vafsamp,vafcount, &
                                vafstep,vxi,vyi,vzi,vafdata,vaftime,vaf
 

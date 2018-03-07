@@ -75,7 +75,7 @@
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-Function uni()
+Function uni(comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -114,11 +114,11 @@ Function uni()
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use comms_module, Only : idnode
+  Use comms, Only : comms_type
   Use setup_module, Only : lseed,seed
 
   Implicit None
-
+  Type(comms_type), Intent( In ) :: comm
   Real( Kind = wp )       :: uni
 
   Logical,           Save :: newjob = .true.
@@ -141,11 +141,11 @@ Function uni()
 ! First random number seed must be between 0 and 31328
 ! Second seed must have a value between 0 and 30081
 
-        ij=Mod(Abs(seed(1)+idnode),31328)
+        ij=Mod(Abs(seed(1)+comm%idnode),31328)
         i = Mod(ij/177,177) + 2;
         j = Mod(ij,177)     + 2;
 
-        kl=Mod(Abs(seed(2)+idnode),30081)
+        kl=Mod(Abs(seed(2)+comm%idnode),30081)
         k = Mod(kl/169,178) + 1
         l = Mod(kl,169)
 
@@ -154,10 +154,10 @@ Function uni()
 ! initial values of i,j,k must be in range 1 to 178 (not all 1)
 ! initial value of l must be in range 0 to 168
 
-        i = Mod(idnode,166) + 12
-        j = Mod(idnode,144) + 34
-        k = Mod(idnode,122) + 56
-        l = Mod(idnode,90)  + 78
+        i = Mod(comm%idnode,166) + 12
+        j = Mod(comm%idnode,144) + 34
+        k = Mod(comm%idnode,122) + 56
+        l = Mod(comm%idnode,90)  + 78
 
      End If
 
@@ -642,7 +642,7 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 
 End Subroutine box_mueller_saru6
 
-Subroutine box_mueller_uni(gauss1,gauss2)
+Subroutine box_mueller_uni(gauss1,gauss2,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -663,10 +663,12 @@ Subroutine box_mueller_uni(gauss1,gauss2)
 
   Use kinds, Only : wp
   Use setup_module, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
+  Use comms, Only : comms_type
 
   Implicit None
 
   Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2
+  Type(comms_type), Intent( In )  :: comm
 
   Logical           :: newjob = .true.
   Real( Kind = wp ) :: uni,ran0,ran1,ran2
@@ -675,15 +677,15 @@ Subroutine box_mueller_uni(gauss1,gauss2)
 
   If (newjob) Then
      newjob = .false.
-     ran0=uni()
+     ran0=uni(comm)
   End If
 
 ! generate uniform random numbers on [-1, 1)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*uni()-1.0_wp
-     ran2=2.0_wp*uni()-1.0_wp
+     ran1=2.0_wp*uni(comm)-1.0_wp
+     ran2=2.0_wp*uni(comm)-1.0_wp
      ran0=ran1**2+ran2**2
   End Do
 
@@ -695,7 +697,7 @@ Subroutine box_mueller_uni(gauss1,gauss2)
 
 End Subroutine box_mueller_uni
 
-Subroutine gauss_1(natms,vxx,vyy,vzz)
+Subroutine gauss_1(natms,vxx,vyy,vzz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -714,6 +716,7 @@ Subroutine gauss_1(natms,vxx,vyy,vzz)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
+  Use comms, Only : comms_type
 
   Implicit None
 
@@ -725,6 +728,7 @@ Subroutine gauss_1(natms,vxx,vyy,vzz)
 
   Integer,                             Intent( In    ) :: natms
   Real( Kind = wp ), Dimension( 1:* ), Intent(   Out ) :: vxx,vyy,vzz
+  Type( comms_type ),                  Intent( In    ) :: comm
 
   Integer           :: i,j
   Real( Kind = wp ) :: uni,rrr,rr2
@@ -732,7 +736,7 @@ Subroutine gauss_1(natms,vxx,vyy,vzz)
   Do i=1,natms
      rrr=0.0_wp
      Do j=1,12
-        rrr=rrr+uni()
+        rrr=rrr+uni(comm)
      End Do
      rrr=(rrr-6.0_wp)/4.0_wp
      rr2=rrr*rrr
@@ -740,7 +744,7 @@ Subroutine gauss_1(natms,vxx,vyy,vzz)
 
      rrr=0.0_wp
      Do j=1,12
-        rrr=rrr+uni()
+        rrr=rrr+uni(comm)
      End Do
      rrr=(rrr-6.0_wp)/4.0_wp
      rr2=rrr*rrr
@@ -748,7 +752,7 @@ Subroutine gauss_1(natms,vxx,vyy,vzz)
 
      rrr=0.0_wp
      Do j=1,12
-        rrr=rrr+uni()
+        rrr=rrr+uni(comm)
      End Do
      rrr=(rrr-6.0_wp)/4.0_wp
      rr2=rrr*rrr
@@ -757,7 +761,7 @@ Subroutine gauss_1(natms,vxx,vyy,vzz)
 
 End Subroutine gauss_1
 
-Subroutine gauss_2(natms,vxx,vyy,vzz)
+Subroutine gauss_2(natms,vxx,vyy,vzz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -771,9 +775,11 @@ Subroutine gauss_2(natms,vxx,vyy,vzz)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
+  Use comms, Only : comms_type
 
   Integer,                             Intent( In    ) :: natms
   Real( Kind = wp ), Dimension( 1:* ), Intent(   Out ) :: vxx,vyy,vzz
+  Type(comms_type), Intent ( InOut )                   :: comm
 
   Integer           :: i,j
   Real( Kind = wp ) :: gauss1,gauss2
@@ -781,15 +787,15 @@ Subroutine gauss_2(natms,vxx,vyy,vzz)
   Do i=1,(natms+1)/2
      j=natms+1-i
 
-     Call box_mueller_uni(gauss1,gauss2)
+     Call box_mueller_uni(gauss1,gauss2,comm)
      vxx(i)=gauss1
      vxx(j)=gauss2
 
-     Call box_mueller_uni(gauss1,gauss2)
+     Call box_mueller_uni(gauss1,gauss2,comm)
      vyy(i)=gauss1
      vyy(j)=gauss2
 
-     Call box_mueller_uni(gauss1,gauss2)
+     Call box_mueller_uni(gauss1,gauss2,comm)
      vzz(i)=gauss1
      vzz(j)=gauss2
   End Do

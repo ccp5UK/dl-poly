@@ -142,7 +142,7 @@ Contains
 
   Subroutine ewald_refresh(engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stress)
 
-    Use config_module, Only : natms,fxx,fyy,fzz
+    Use configuration, Only : natms,fxx,fyy,fzz
 
     Implicit None
 

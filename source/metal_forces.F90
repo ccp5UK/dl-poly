@@ -15,7 +15,7 @@ Subroutine metal_forces &
   Use kinds, only : wp
   Use setup_module
   Use site_module,   Only : ntpatm
-  Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
+  Use configuration, Only : natms,ltg,ltype,list,fxx,fyy,fzz
   Use metal_module,  Only : ld_met,l2bmet,tabmet,lstmet,ltpmet, &
                             vmet,dmet,dmes,prmmet,rho,rhs,merf,mfer
 

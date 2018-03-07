@@ -2,26 +2,10 @@ include_directories("${CMAKE_BINARY_DIR}/source")
 include_directories(VV)
 
 set(dlpoly_SRCS
-angles_compute.F90
-angles_forces.F90
-angles_table_read.F90
-bonds_compute.F90
-bonds_forces.F90
-bonds_table_read.F90
-build_book_intra.F90
-build_chrm_intra.F90
-build_excl_intra.F90
-build_tplg_intra.F90
-check_config.F90
-compress_book_intra.F90
-constraints_pseudo_bonds.F90
-constraints_quench.F90
-constraints_tags.F90
-core_shell_forces.F90
-core_shell_kinetic.F90
-core_shell_on_top.F90
-core_shell_quench.F90
-core_shell_relax.F90
+build_book.F90
+build_chrm.F90
+build_excl.F90
+build_tplg.F90
 coul_cp_forces.F90
 coul_cp_mforces.F90
 coul_chrm_forces.F90
@@ -182,13 +166,13 @@ zero_k_optimise.F90
 
 set(dlpoly_CORE_SRCS
 kinds.F90
-comms_module.F90
+comms.F90
 setup_module.F90
 parse_module.F90
 development_module.F90
 domains_module.F90
 site_module.F90
-config_module.F90
+configuration.F90
 vnl_module.F90
 defects_module.F90
 defects1_module.F90
@@ -203,13 +187,13 @@ three_body_module.F90
 four_body_module.F90
 rdf_module.F90
 z_density_module.F90
-core_shell_module.F90
-constraints_module.F90
+core_shell.F90
+constraints.F90
 pmf_module.F90
 rigid_bodies_module.F90
 tethers_module.F90
-bonds_module.F90
-angles_module.F90
+bonds.F90
+angles.F90
 dihedrals_module.F90
 inversions_module.F90
 external_field_module.F90
@@ -244,7 +228,7 @@ set(kim_SRCS kim_module.F90)
 set(plumed_SRCS plumed_module.F90)
 
 if( NOT WITH_MPI)
-  set(dlpoly_SERIAL_SRCS ${src_dir}/SERIAL/mpi_module.F90)
+  set(dlpoly_SERIAL_SRCS ${src_dir}/SERIAL/mpi_api.F90)
 endif()
 
 add_library(dlpoly ${dlpoly_SRCS} ${netcdf_SRCS})

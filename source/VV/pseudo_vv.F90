@@ -25,7 +25,7 @@ Subroutine pseudo_vv                                      &
   Use comms_module,       Only : idnode,mxnode,gsum
   Use setup_module,       Only : boltz,nrite,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
   Use site_module,        Only : dofsit
-  Use config_module
+  Use configuration
   Use rigid_bodies_module
   Use core_shell_module,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
   Use kinetic_module,     Only : getvom,getknr,kinstress,kinstresf,kinstrest

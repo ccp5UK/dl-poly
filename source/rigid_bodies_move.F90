@@ -13,7 +13,7 @@ Subroutine rigid_bodies_move(stride,oxx,oyy,ozz,txx,tyy,tzz,uxx,uyy,uzz,dist_tol
 
   Use kinds, only : wp
   Use setup_module,       Only : mxatms
-  Use config_module,      Only : natms,xxx,yyy,zzz
+  Use configuration,      Only : natms,xxx,yyy,zzz
   Use rigid_bodies_module
 
   Implicit None

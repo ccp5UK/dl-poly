@@ -14,7 +14,7 @@ Subroutine statistics_connect_frames(megatm)
   Use comms_module,      Only : idnode,gsum
   Use setup_module,      Only : nrite
   Use domains_module,    Only : nprx,npry,nprz
-  Use config_module,     Only : natms
+  Use configuration,     Only : natms
   Use statistics_module, Only : found,natms0
 
   Implicit None
@@ -62,7 +62,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Use setup_module,  Only : mxatdm,mxstak
-    Use config_module, Only : ixyz,lsa,lsi
+    Use configuration, Only : ixyz,lsa,lsi
 
     Use statistics_module
 

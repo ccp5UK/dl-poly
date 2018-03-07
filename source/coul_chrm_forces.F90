@@ -20,7 +20,7 @@ Subroutine coul_chrm_forces(iatm,epsq,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress
   Use kinds, only : wp
   Use comms_module,  Only : idnode
   Use setup_module
-  Use config_module, Only : natms,ltg,list,chge,fxx,fyy,fzz
+  Use configuration, Only : natms,ltg,list,chge,fxx,fyy,fzz
   Use mpoles_module, Only : plratm,dmpatm
 
   Implicit None

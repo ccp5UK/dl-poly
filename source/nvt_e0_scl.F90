@@ -13,7 +13,7 @@ Subroutine nvt_e0_scl(isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke)
   Use kinds, only : wp
   Use comms_module,  Only : mxnode,gsum
   Use setup_module,  Only : mxatms
-  Use config_module, Only : natms,weight
+  Use configuration, Only : natms,weight
 
   Implicit None
 

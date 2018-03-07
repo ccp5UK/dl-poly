@@ -12,7 +12,7 @@ Subroutine xscale(m_rgd,keyens,tstep,eta)
   Use kinds, only : wp
   Use comms_module,        Only : idnode
   Use setup_module
-  Use config_module,       Only : imcon,cell,natms,nlast,nfree,lstfre,lsi,lsa
+  Use configuration,       Only : imcon,cell,natms,nlast,nfree,lstfre,lsi,lsa
   Use vnl_module,          Only : llvnl,l_vnl,xbg,ybg,zbg
   Use statistics_module,   Only : xin,yin,zin
   Use rigid_bodies_module, Only : ntrgd,listrgd,indrgd,lshmv_rgd,lishp_rgd,lashp_rgd

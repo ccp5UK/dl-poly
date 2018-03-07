@@ -31,7 +31,7 @@ Subroutine nvt_l1_vv                          &
   Use comms_module,       Only : idnode,mxnode,gmax
   Use setup_module
   Use domains_module,     Only : map
-  Use config_module,      Only : imcon,cell,natms,nlast,nfree, &
+  Use configuration,      Only : imcon,cell,natms,nlast,nfree, &
                                  lsi,lsa,lfrzn,lstfre,weight,  &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module

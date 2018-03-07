@@ -15,7 +15,7 @@ Subroutine z_density_compute()
   Use comms_module,  Only : idnode,mxnode,gsum
   Use setup_module,  Only : mxgrdf,nrite,nzdndt
   Use site_module,   Only : ntpatm,unqatm
-  Use config_module, Only : cfgname,cell,volm
+  Use configuration, Only : cfgname,cell,volm
   Use z_density_module
 
   Implicit None

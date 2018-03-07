@@ -21,7 +21,7 @@ Subroutine four_body_forces(rcfbp,engfbp,virfbp,stress)
   Use setup_module
   Use domains_module, Only : idx,idy,idz, nprx,npry,nprz, &
                              r_nprx,r_npry,r_nprz
-  Use config_module,  Only : cell,natms,nlast,lfrzn,ltype, &
+  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
                              xxx,yyy,zzz,fxx,fyy,fzz
   Use four_body_module
 

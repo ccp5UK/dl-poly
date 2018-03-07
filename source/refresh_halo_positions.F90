@@ -15,7 +15,7 @@ Subroutine refresh_halo_positions()
 
   Use comms_module,  Only : idnode,mxnode,gcheck
   Use setup_module,  Only : nrite,mxatms
-  Use config_module, Only : natms,nlast,ixyz
+  Use configuration, Only : natms,nlast,ixyz
 
   Implicit None
 

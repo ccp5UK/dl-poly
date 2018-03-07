@@ -14,7 +14,7 @@ Subroutine external_field_correct(engfld)
 
   Use kinds, only : wp
   Use comms_module,  Only : mxnode,gsum
-  Use config_module, Only : imcon,cell,natms,nfree,ltg, &
+  Use configuration, Only : imcon,cell,natms,nfree,ltg, &
                             lfrzn,lstfre,weight,  &
                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module

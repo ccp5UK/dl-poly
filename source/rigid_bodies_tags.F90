@@ -13,7 +13,7 @@ Subroutine rigid_bodies_tags()
 
   Use comms_module,  Only : idnode,mxnode,gsync,gcheck
   Use setup_module,  Only : nrite,mxrgd
-  Use config_module, Only : natms,nlast,lsi,lsa
+  Use configuration, Only : natms,nlast,lsi,lsa
   Use rigid_bodies_module
 
   Implicit None

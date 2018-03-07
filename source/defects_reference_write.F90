@@ -14,7 +14,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr)
   Use kinds, Only : wp, li
   Use comms_module
   Use setup_module
-  Use config_module, Only : cfgname,imcon,cell
+  Use configuration, Only : cfgname,imcon,cell
   Use io_module,     Only : io_set_parameters,         &
                             io_get_parameters,         &
                             io_init, io_nc_create,     &

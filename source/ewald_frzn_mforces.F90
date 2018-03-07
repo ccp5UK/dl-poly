@@ -20,7 +20,7 @@ Subroutine ewald_frzn_mforces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
   Use kinds, only : wp
   Use comms_module
   Use setup_module
-  Use config_module, Only : cell,natms,list,ltg,lfrzn,xxx,yyy,zzz,fxx,fyy,fzz
+  Use configuration, Only : cell,natms,list,ltg,lfrzn,xxx,yyy,zzz,fxx,fyy,fzz
   Use mpoles_module
   Use ewald_module
 

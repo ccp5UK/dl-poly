@@ -15,7 +15,7 @@ Subroutine statistics_connect_set(rcut)
   Use comms_module, Only : mxnode
   Use setup_module, only : mxatdm,mxstak,zero_plus
   Use domains_module
-  Use config_module
+  Use configuration
   Use statistics_module
   Use msd_module,   Only : l_msd
 

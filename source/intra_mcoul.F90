@@ -13,7 +13,7 @@ Subroutine intra_mcoul(keyfce,rcut,alpha,epsq,iatm,jatm,scale, &
 
   Use kinds, only : wp
   Use setup_module, Only : sqrpi,r4pie0,zero_plus,mxompl,mximpl
-  Use config_module,Only : natms
+  Use configuration,Only : natms
   Use mpoles_module
 
   Implicit None

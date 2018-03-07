@@ -13,7 +13,7 @@ Subroutine tethers_forces(engtet,virtet,stress)
   Use kinds, only : wp
   Use comms_module,      Only : idnode,mxnode,gsum,gcheck
   Use setup_module,      Only : mxteth,nrite
-  Use config_module,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
+  Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                                 xxx,yyy,zzz,fxx,fyy,fzz
   Use tethers_module,    Only : ntteth,keytet,listtet,prmtet
   Use statistics_module, Only : xin,yin,zin

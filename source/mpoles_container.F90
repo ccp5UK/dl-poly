@@ -5296,7 +5296,7 @@ Subroutine rotate_mpoles(iatm)
   Use kinds, only : wp
   Use comms_module,  Only : idnode
   Use setup_module
-  Use config_module, Only : imcon,cell,lsite,nlast,lsi,lsa,ltg,xxx,yyy,zzz
+  Use configuration, Only : imcon,cell,lsite,nlast,lsi,lsa,ltg,xxx,yyy,zzz
   Use mpoles_module, Only : ltpatm,mpllfr,mprotm,mplltg,mplgfr,mplflg
 
   Implicit None
@@ -6023,7 +6023,7 @@ Subroutine rotate_mpoles_d(iatm)
   Use kinds, only : wp
   Use comms_module,  Only : idnode
   Use setup_module
-  Use config_module, Only : imcon,cell,lsite,nlast,lsi,lsa,ltg,xxx,yyy,zzz
+  Use configuration, Only : imcon,cell,lsite,nlast,lsi,lsa,ltg,xxx,yyy,zzz
   Use mpoles_module, Only : ltpatm,mpllfr,mprotm,mplgfr,mplflg,mprotx,mproty,mprotz
 
   Implicit None

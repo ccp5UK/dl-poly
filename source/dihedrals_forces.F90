@@ -22,7 +22,7 @@ Subroutine dihedrals_forces &
   Use kinds, only : wp
   Use comms_module,      Only : idnode,mxnode,gsync,gsum,gcheck
   Use setup_module,      Only : nrite,pi,twopi,rtwopi,r4pie0,zero_plus,mxdihd,mxgdih1,mximpl
-  Use config_module,     Only : imcon,cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
+  Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
                                 chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use dihedrals_module,  Only : lx_dih,ntdihd,keydih,listdih,prmdih, &
                                 ltpdih,vdih,gdih,ncfdih,ldfdih,dstdih

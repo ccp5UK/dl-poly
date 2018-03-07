@@ -16,7 +16,7 @@ Subroutine d_ene_trq_mpoles(vircpe_dt,stress)
 
   Use kinds, only : wp
   Use setup_module
-  Use config_module, Only : imcon,natms,ltg,fxx,fyy,fzz,xxx,yyy,zzz,cell
+  Use configuration, Only : imcon,natms,ltg,fxx,fyy,fzz,xxx,yyy,zzz,cell
   Use mpoles_module, Only : mprotm,mptrqx,mptrqy,mptrqz
 
   Implicit None

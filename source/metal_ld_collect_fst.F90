@@ -15,7 +15,7 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe)
 
   Use kinds, only : wp
   Use setup_module
-  Use config_module, Only : natms,ltype,list
+  Use configuration, Only : natms,ltype,list
   Use metal_module,  Only : ld_met,lstmet,ltpmet,prmmet,dmet,merf,rho
 
   Implicit None

@@ -1,9 +1,50 @@
+Module build_book
+! SETUP MODULES
+  Use kinds,         Only : wp, li
+  Use comms,  Only : comms_type,gcheck,gmax
+  Use setup_module
+
+! SITE MODULE
+
+  Use site_module
+
+! CONFIG MODULE
+
+  Use configuration, Only : natms,nlast,lsi,lsa,xxx,yyy,zzz
+
+! INTERACTION MODULES
+
+  Use core_shell_module
+
+  Use constraints_module
+  Use pmf_module
+
+  Use rigid_bodies_module
+
+  Use tethers_module
+
+  Use bonds
+  Use angles
+  Use dihedrals_module
+  Use inversions_module
+
+  Implicit None
+
+  Private
+
+
+
+  Public :: build_book_intra
+  Public :: compress_book_intra
+
+  contains
+
 Subroutine build_book_intra             &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,megbnd,megang,megdih,meginv)
+           megtet,megbnd,megang,megdih,meginv,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -17,37 +58,6 @@ Subroutine build_book_intra             &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-! SETUP MODULES
-  Use kinds,         Only : wp, li
-  Use comms_module,  Only : idnode,mxnode,gcheck,gmax
-  Use setup_module
-
-! SITE MODULE
-
-  Use site_module
-
-! CONFIG MODULE
-
-  Use config_module, Only : natms,nlast,lsi,lsa,xxx,yyy,zzz
-
-! INTERACTION MODULES
-
-  Use core_shell_module
-
-  Use constraints_module
-  Use pmf_module
-
-  Use rigid_bodies_module
-
-  Use tethers_module
-
-  Use bonds_module
-  Use angles_module
-  Use dihedrals_module
-  Use inversions_module
-
-  Implicit None
-
   Logical,           Intent( In    ) :: l_str,l_top,lsim
   Real(Kind = wp),   Intent( In    ) :: dvar
 
@@ -57,6 +67,7 @@ Subroutine build_book_intra             &
                                         megdih,meginv
   Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
+  Type( comms_type), Intent( InOut ) :: comm
 
   Logical, Save :: newjob = .true.
 
@@ -83,7 +94,7 @@ Subroutine build_book_intra             &
   Allocate (iwrk(1:mxatms),                                Stat=fail(1))
   If (m_rgd > 0) Allocate (irgd(1:mxlrgd),irgd0(1:mxlrgd), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'build_book_intra allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'build_book_intra allocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
@@ -210,7 +221,7 @@ Subroutine build_book_intra             &
                        If (legshl(mxfshl,iat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many core-shell type neighbours !!! ***",                &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfshl-1+legshl(mxfshl,iat0), &
   "***           but maximum length allowed: ", mxfshl-1,                     &
   "***           for particle (global ID #): ", iatm,                         &
@@ -225,7 +236,7 @@ Subroutine build_book_intra             &
                        If (legshl(mxfshl,jat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many core-shell type neighbours !!! ***",                &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfshl-1+legshl(mxfshl,jat0), &
   "***           but maximum length allowed: ", mxfshl-1,                     &
   "***           for particle (global ID #): ", jatm,                         &
@@ -265,7 +276,7 @@ Subroutine build_book_intra             &
                        If (legcon(mxfcon,iat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many constraint type neighbours !!! ***",                &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfcon-1+legcon(mxfcon,iat0), &
   "***           but maximum length allowed: ", mxfcon-1,                     &
   "***           for particle (global ID #): ", iatm,                         &
@@ -280,7 +291,7 @@ Subroutine build_book_intra             &
                        If (legcon(mxfcon,jat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many constraint type neighbours !!! ***",                &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfcon-1+legcon(mxfcon,jat0), &
   "***           but maximum length allowed: ", mxfcon-1,                     &
   "***           for particle (global ID #): ", jatm,                         &
@@ -303,7 +314,7 @@ Subroutine build_book_intra             &
            Do lpmf=1,numpmf(itmols) ! numpmf can only be 1 or 0, so the 'Do' loop is used as an 'If' condition
               Allocate (i1pmf(1:mxtpmf(1)),i1pmf0(1:mxtpmf(1)),i2pmf(1:mxtpmf(2)),i2pmf0(1:mxtpmf(2)), Stat=fail(1))
               If (fail(1) > 0) Then
-                 Write(nrite,'(/,1x,a,i0)') 'build_book_intra PMF allocation failure, node: ', idnode
+                 Write(nrite,'(/,1x,a,i0)') 'build_book_intra PMF allocation failure, node: ', comm%idnode
                  Call error(0)
               End If
 
@@ -343,7 +354,7 @@ Subroutine build_book_intra             &
                           If (legpmf(mxfpmf,i1pmf0(i)) > 0)                        &
                              Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                  &
   "*** warning - too many PMF type neighbours !!! ***",                            &
-  "***           on node      (MPI  rank #): ", idnode,                            &
+  "***           on node      (MPI  rank #): ", comm%idnode,                            &
   "***           requiring a list length of: ", mxfpmf-1+legpmf(mxfpmf,i1pmf0(i)), &
   "***           but maximum length allowed: ", mxfpmf-1,                          &
   "***           on mol. site (local  ID #): ", lstpmf(i,1),                       &
@@ -362,7 +373,7 @@ Subroutine build_book_intra             &
                           If (legpmf(mxfpmf,i2pmf0(i)) > 0)                        &
                              Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                  &
   "*** warning - too many PMF type neighbours !!! ***",                            &
-  "***           on node      (MPI  rank #): ", idnode,                            &
+  "***           on node      (MPI  rank #): ", comm%idnode,                            &
   "***           requiring a list length of: ", mxfpmf-1+legpmf(mxfpmf,i2pmf0(i)), &
   "***           but maximum length allowed: ", mxfpmf-1,                          &
   "***           for particle (global ID #): ", i2pmf(i),                          &
@@ -382,7 +393,7 @@ Subroutine build_book_intra             &
 
               Deallocate (i1pmf,i1pmf0,i2pmf,i2pmf0, Stat=fail(1))
               If (fail(1) > 0) Then
-                 Write(nrite,'(/,1x,a,i0)') 'build_book_intra PMF deallocation failure, node: ', idnode
+                 Write(nrite,'(/,1x,a,i0)') 'build_book_intra PMF deallocation failure, node: ', comm%idnode
                  Call error(0)
               End If
            End Do
@@ -411,7 +422,7 @@ Subroutine build_book_intra             &
                           If (legrgd(mxfrgd,irgd0(irigid)) > 0)                        &
                              Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                      &
   "*** warning - too many RB type neighbours !!! ***",                                 &
-  "***           on node      (MPI  rank #): ", idnode,                                &
+  "***           on node      (MPI  rank #): ", comm%idnode,                                &
   "***           requiring a list length of: ", mxfrgd-1+legrgd(mxfrgd,irgd0(irigid)), &
   "***           but maximum length allowed: ", mxfrgd-1,                              &
   "***           for particle (global ID #): ", irgd(irigid),                          &
@@ -445,7 +456,7 @@ Subroutine build_book_intra             &
                     If (legtet(mxftet,iat0) > 0)                              &
                        Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                   &
   "*** warning - too many tether type neighbours !!! ***",                    &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxftet-1+legtet(mxftet,iat0), &
   "***           but maximum length allowed: ", mxftet-1,                     &
   "***           for particle (global ID #): ", iatm,                         &
@@ -484,7 +495,7 @@ Subroutine build_book_intra             &
                        If (legbnd(mxfbnd,iat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many bond type neighbours !!! ***",                      &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfbnd-1+legbnd(mxfbnd,iat0), &
   "***           but maximum length allowed: ", mxfbnd-1,                     &
   "***           for particle (global ID #): ", iatm,                         &
@@ -499,7 +510,7 @@ Subroutine build_book_intra             &
                        If (legbnd(mxfbnd,jat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many bond type neighbours !!! ***",                      &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfbnd-1+legbnd(mxfbnd,jat0), &
   "***           but maximum length allowed: ", mxfbnd-1,                     &
   "***           for particle (global ID #): ", jatm,                         &
@@ -544,7 +555,7 @@ Subroutine build_book_intra             &
                        If (legang(mxfang,iat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many angle type neighbours !!! ***",                     &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfang-1+legang(mxfang,iat0), &
   "***           but maximum length allowed: ", mxfang-1,                     &
   "***           for particle (global ID #): ", iatm,                         &
@@ -559,7 +570,7 @@ Subroutine build_book_intra             &
                        If (legang(mxfang,jat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many angle type neighbours !!! ***",                     &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfang-1+legang(mxfang,jat0), &
   "***           but maximum length allowed: ", mxfang-1,                     &
   "***           for particle (global ID #): ", jatm,                         &
@@ -574,7 +585,7 @@ Subroutine build_book_intra             &
                        If (legang(mxfang,kat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many angle type neighbours !!! ***",                     &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfang-1+legang(mxfang,kat0), &
   "***           but maximum length allowed: ", mxfang-1,                     &
   "***           for particle (global ID #): ", katm,                         &
@@ -645,7 +656,7 @@ Subroutine build_book_intra             &
                        If (legdih(mxfdih,iat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many dihedral type neighbours !!! ***",                  &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,iat0), &
   "***           but maximum length allowed: ", mxfdih-1,                     &
   "***           for particle (global ID #): ", iatm,                         &
@@ -660,7 +671,7 @@ Subroutine build_book_intra             &
                        If (legdih(mxfdih,jat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many dihedral type neighbours !!! ***",                  &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,jat0), &
   "***           but maximum length allowed: ", mxfdih-1,                     &
   "***           for particle (global ID #): ", jatm,                         &
@@ -675,7 +686,7 @@ Subroutine build_book_intra             &
                        If (legdih(mxfdih,kat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many dihedral type neighbours !!! ***",                  &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,kat0), &
   "***           but maximum length allowed: ", mxfdih-1,                     &
   "***           for particle (global ID #): ", katm,                         &
@@ -690,7 +701,7 @@ Subroutine build_book_intra             &
                        If (legdih(mxfdih,lat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many dihedral type neighbours !!! ***",                  &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,lat0), &
   "***           but maximum length allowed: ", mxfdih-1,                     &
   "***           for particle (global ID #): ", latm,                         &
@@ -705,7 +716,7 @@ Subroutine build_book_intra             &
                        If (legdih(mxfdih,mat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many dihedral type neighbours !!! ***",                  &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,mat0), &
   "***           but maximum length allowed: ", mxfdih-1,                     &
   "***           for particle (global ID #): ", matm,                         &
@@ -720,7 +731,7 @@ Subroutine build_book_intra             &
                        If (legdih(mxfdih,nat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many dihedral type neighbours !!! ***",                  &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,nat0), &
   "***           but maximum length allowed: ", mxfdih-1,                     &
   "***           for particle (global ID #): ", natm,                         &
@@ -768,7 +779,7 @@ Subroutine build_book_intra             &
                        If (leginv(mxfinv,iat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many inversion type neighbours !!! ***",                 &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,iat0), &
   "***           but maximum length allowed: ", mxfinv-1,                     &
   "***           for particle (global ID #): ", iatm,                         &
@@ -783,7 +794,7 @@ Subroutine build_book_intra             &
                        If (leginv(mxfinv,jat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many inversion type neighbours !!! ***",                 &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,jat0), &
   "***           but maximum length allowed: ", mxfinv-1,                     &
   "***           for particle (global ID #): ", jatm,                         &
@@ -798,7 +809,7 @@ Subroutine build_book_intra             &
                        If (leginv(mxfinv,kat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many inversion type neighbours !!! ***",                 &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,kat0), &
   "***           but maximum length allowed: ", mxfinv-1,                     &
   "***           for particle (global ID #): ", katm,                         &
@@ -813,7 +824,7 @@ Subroutine build_book_intra             &
                        If (leginv(mxfinv,lat0) > 0)                           &
                           Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
   "*** warning - too many inversion type neighbours !!! ***",                 &
-  "***           on node      (MPI  rank #): ", idnode,                       &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
   "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,lat0), &
   "***           but maximum length allowed: ", mxfinv-1,                     &
   "***           for particle (global ID #): ", latm,                         &
@@ -1555,7 +1566,7 @@ Subroutine build_book_intra             &
 
 ! error exit for all error conditions (size of work arrays)
 
-  If (mxnode > 1) Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe( 1)) Call error( 88)
 
   If (Any(.not.safe)) Then
@@ -1569,14 +1580,14 @@ Subroutine build_book_intra             &
      itmp(8)=idihed ; jtmp(8)=mxdihd
      itmp(9)=iinver ; jtmp(9)=mxinv
 
-     If (mxnode > 1) Call gmax(itmp(1:9))
+     Call gmax(comm,itmp(1:9))
 
      tmp=1.0_wp
      Do i=1,9
         tmp=Max(tmp,1.0_wp+Real(itmp(i),wp)/Real(Max(1,jtmp(i)),wp))
      End Do
 
-     If (idnode == 0) Write(nrite,'(1x,a,i0,2f5.2)')                                 &
+     If (comm%idnode == 0) Write(nrite,'(1x,a,i0,2f5.2)')                                 &
         '*** warning - estimated densvar value for passing this stage safely is : ', &
         Nint((dvar*tmp-1.0_wp)*100.0_wp+0.5_wp)
   End If
@@ -1595,7 +1606,7 @@ Subroutine build_book_intra             &
   Deallocate (iwrk,                      Stat=fail(1))
   If (m_rgd > 0) Deallocate (irgd,irgd0, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'build_book_intra deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'build_book_intra deallocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
@@ -1647,13 +1658,100 @@ Subroutine build_book_intra             &
 ! Update shared core-shell, constraint and RB units
 ! (pmf data updated by construction)
 
-  If (megshl > 0 .and. mxnode > 1) Call pass_shared_units &
+  If (megshl > 0 .and. comm%mxnode > 1) Call pass_shared_units &
      (mxshl, Lbound(listshl,Dim=1),Ubound(listshl,Dim=1),ntshl, listshl,mxfshl,legshl,lshmv_shl,lishp_shl,lashp_shl)
 
-  If (m_con > 0 .and. mxnode > 1) Call pass_shared_units &
+  If (m_con > 0 .and. comm%mxnode > 1) Call pass_shared_units &
      (mxcons,Lbound(listcon,Dim=1),Ubound(listcon,Dim=1),ntcons,listcon,mxfcon,legcon,lshmv_con,lishp_con,lashp_con)
 
-  If (m_rgd > 0 .and. mxnode > 1) Call pass_shared_units &
+  If (m_rgd > 0 .and. comm%mxnode > 1) Call pass_shared_units &
      (mxrgd, Lbound(listrgd,Dim=1),Ubound(listrgd,Dim=1),ntrgd, listrgd,mxfrgd,legrgd,lshmv_rgd,lishp_rgd,lashp_rgd)
 
 End Subroutine build_book_intra
+
+Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine to prevent bookkeeping arrays from expanding
+! when execution is on many nodes, mxnode>1, (shells, constraints, PMFs
+! and RBs are dealt differently pass_shared_units and pmf_units_set)
+!
+! Note: This routine is to be only called from relocate_particles
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov october 2012
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Integer, Intent( In    )          :: mxf_u,mx_u,b_u
+  Integer, Intent( InOut )          :: nt_u,list_u(0:b_u,1:mx_u),leg_u(0:mxf_u,1:mxatdm)
+  Type( comms_type), Intent( InOut) :: comm
+
+  Logical :: ok,keep_k,keep_nt
+  Integer :: i,j,k,l,m,local_index
+
+! is it ok not to do it since it's safe - there's enough buffering space
+
+  ok=.true.
+  If (mx_u > 0) Then
+     ok=.not.(Real(nt_u,wp)/Real(mx_u,wp) > 0.85_wp)
+     Call gcheck(comm,ok)
+  End If
+
+  If (.not.ok) Then
+     k=0
+     Do While (k < nt_u)
+        k=k+1
+10      Continue
+
+        keep_k=.false.
+        Do i=1,b_u
+           keep_k=keep_k .or. (local_index(list_u(i,k),natms,lsi,lsa) /= 0)
+        End Do
+
+        If (.not.keep_k) Then
+20         Continue
+
+! If the whole unit has moved out of this node - compress list_u and leg_u
+
+           If      (k  < nt_u) Then
+
+              keep_nt=.false.
+              Do i=1,b_u
+                 j=local_index(list_u(i,nt_u),natms,lsi,lsa)
+                 If (j > 0) Then         ! For all particles in list_u(1:b_u,nt_u),
+                    keep_nt=.true.       ! [indicate that this unit is being kept]
+                    m=leg_u(0,j)         ! if present on this node, repoint unit
+                    Do l=1,m             ! 'nt_u' to 'k' in their leg_u array
+                       If (leg_u(l,j) == nt_u) leg_u(l,j) = k
+                    End Do
+                 End If
+              End Do
+
+              If (keep_nt) Then             ! Do repointing
+                 list_u(:,k)=list_u(:,nt_u) ! Copy list content from 'nt_u' to 'k'
+                 list_u(:,nt_u)=0           ! Remove list content in 'nt_u'
+                 nt_u=nt_u-1                ! Reduce 'nt_u' pointer
+              Else
+                 list_u(:,nt_u)=0           ! Remove list content in 'nt_u'
+                 nt_u=nt_u-1                ! Reduce 'nt_u' pointer
+
+                 Go To 20 ! Go back and check again for the new list contents in 'nt_u'
+              End If
+
+              Go To 10    ! Go back and check it all again for the new list contents in 'k'
+
+           Else If (k == nt_u) Then
+
+              list_u(:,nt_u)=0           ! Remove list content in 'k=nt_u'
+              nt_u=nt_u-1                ! Reduce 'nt_u' pointer
+
+           End If
+        End If
+     End Do
+  End If
+
+End Subroutine compress_book_intra
+
+End Module build_book

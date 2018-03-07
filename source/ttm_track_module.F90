@@ -12,10 +12,11 @@ Module ttm_track_module
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
+  Use kinds, Only : wp
   Use setup_module
   Use ttm_module
   Use ttm_utils
+  Use comms, Only : comms_type
 
   Implicit None
 
@@ -26,14 +27,13 @@ Module ttm_track_module
 
 Contains
 
-  Subroutine depoinit(time)
+  Subroutine depoinit(time,comm)
 
 ! determine initial energy deposition to electronic system,
 ! both temporally and spatially
 
-    Implicit None
-
     Real ( Kind = wp ), Intent( In ) :: time
+    Type( comms_type), Intent( InOut ) :: comm
     Integer, Dimension( 1:3 ) :: fail
     Character ( Len = 14 ) :: number
 
@@ -54,7 +54,7 @@ Contains
     Select Case (sdepoType)
     Case (1)
     ! Gaussian spatial deposition
-      Call gaussianTrack(lat_U)
+      Call gaussianTrack(lat_U,comm)
     Case (2)
     ! Constant (flat) spatial deposition
       Call uniformDist(lat_U)
@@ -90,7 +90,7 @@ Contains
 
     ! report start of energy deposition
 
-    If (idnode == 0) Then
+    If (comm%idnode == 0) Then
       Write(number, '(f14.5)') depostart
       Write(nrite,"(/,6x,a,a,a,/)") &
         'electronic energy deposition starting at time = ',Trim(Adjustl(number)),' ps'
@@ -99,13 +99,13 @@ Contains
 
   End Subroutine depoinit
 
-  Subroutine depoevolve(time,tstep,redtstep,redtstepmx)
+  Subroutine depoevolve(time,tstep,redtstep,redtstepmx,comm)
 
 ! determine how deposition evolves over time
 
-    Implicit None
     Real( Kind = wp ), Intent ( In ) :: tstep,time
     Integer, Intent ( In ) :: redtstepmx,redtstep
+    Type( comms_type), Intent( InOut ) :: comm
 
     Real( Kind = wp ) :: lat_I_max, lat_I_sum, lat_I_min
     Real( Kind = wp ) :: lat_U_min, lat_U_max, lat_U_sum, invbin
@@ -256,10 +256,10 @@ Contains
       lat_I_min = Minval(lat_I(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
       lat_I_max = Maxval(lat_I(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
       lat_I_sum = Sum(lat_I(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
-      If (mxnode>1) Then
-        Call gmin(lat_I_min)
-        Call gmax(lat_I_max)
-        Call gsum(lat_I_sum)
+      If (comm%mxnode>1) Then
+        Call gmin(comm,lat_I_min)
+        Call gmax(comm,lat_I_max)
+        Call gsum(comm,lat_I_sum)
       End If
 
     ! find energy input into electronic temperature system
@@ -267,16 +267,16 @@ Contains
       lat_U_min = Minval(lat_U(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
       lat_U_max = Maxval(lat_U(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
       lat_U_sum = Sum(lat_U(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
-      If (mxnode>1) Then
-        Call gmin(lat_U_min)
-        Call gmax(lat_U_max)
-        Call gsum(lat_U_sum)
+      If (comm%mxnode>1) Then
+        Call gmin(comm,lat_U_min)
+        Call gmax(comm,lat_U_max)
+        Call gsum(comm,lat_U_sum)
       End If
 
     ! check how closely two values match up: if error greater than
     ! tolerance, report discrepancy as warning
 
-      If (idnode == 0) Then
+      If (comm%idnode == 0) Then
         If (Abs(lat_I_sum-lat_U_sum) > Abs(err_tol*lat_U_sum) .or. &
             Abs(lat_I_max-lat_U_max) > Abs(err_tol*lat_U_max) .or. &
             Abs(lat_I_min-lat_U_min) > Abs(err_tol*lat_U_min)) Then
@@ -286,7 +286,7 @@ Contains
 
     ! report successful completion of energy deposition
 
-      If (idnode == 0) Then
+      If (comm%idnode == 0) Then
         If (currenttime<1.0_wp) Then
           Write(number, '(f14.3)') currenttime*1000.0_wp
           Write(nrite,"(/,6x,a,es12.5,a,a,a,/)") &
@@ -371,12 +371,12 @@ Contains
 
   End Subroutine uniformDistZexp
 
-  Subroutine gaussianTrack(lat_in)
+  Subroutine gaussianTrack(lat_in, comm)
 
 ! implement gaussian spatial deposition
 
-    Implicit None
     Real ( Kind = wp ), Intent ( Inout ), Dimension(0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1) :: lat_in
+    Type( comms_type), Intent( InOut) :: comm
     Real ( Kind = wp ) :: normdEdX,realdEdx,sigmamx,sigmamy,sig2x,sig2y,sigcellx,sigcelly
     Real ( Kind = wp ) :: ii,jj,ii2,jj2,iip2,jjp2,iim2,jjm2
     Integer :: i,j,sgmx,sgmy
@@ -409,7 +409,7 @@ Contains
       cutwarn = .true.
     End If
 
-    If (idnode == 0 .and. cutwarn) Then
+    If (comm%idnode == 0 .and. cutwarn) Then
       Call warning(535,0.0_wp,0.0_wp,0.0_wp)
     End If
 
@@ -440,12 +440,12 @@ Contains
     ! (note that stopping power is in z-direction)
 
     realdEdx = Sum(lat_in(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
-    If (mxnode>1) Call gsum(realdEdx)
+    If (comm%mxnode>1) Call gsum(comm,realdEdx)
     realdEdx = realdEdx/(Real(ntsys(3),Kind=wp)*delz)
 
     ! check if lattice sum equals the expected value
 
-    If (idnode == 0 .and. Abs((realdEdx-dEdX)/dEdX) > 0.01_wp) Then
+    If (comm%idnode == 0 .and. Abs((realdEdx-dEdX)/dEdX) > 0.01_wp) Then
       Call warning(540,Abs(realdEdx-dEdX)/dEdX*100_wp,0.0_wp,0.0_wp)
     End If
     

@@ -14,7 +14,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
   Use kinds, only : wp
   Use comms_module
   Use setup_module,   Only : nconf,nrite,config,mxatms,half_minus
-  Use config_module,  Only : imcon,imc_n,cell,allocate_config_arrays_read, &
+  Use configuration,  Only : imcon,imc_n,cell,allocate_config_arrays_read, &
                              natms,nlast,atmnam,lsi,lsa,ltg, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use domains_module
@@ -241,7 +241,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
         Call error(0)
      End If
 
-! Initialise domain localised atom counter (config_module)
+! Initialise domain localised atom counter (configuration)
 ! and dispatched atom counter
 
      natms =0
@@ -495,7 +495,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
   If (mxnode > 1) Call gsum(totatm)
   If (totatm /= megatm) Call error(58)
 
-! Record global atom indices for local sorting (config_module)
+! Record global atom indices for local sorting (configuration)
 
   Do i=1,natms
      lsi(i)=i

@@ -15,7 +15,7 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf)
   Use kinds, only : wp
   Use comms_module,  Only : idnode,mxnode,gsum
   Use setup_module
-  Use config_module, Only : natms,vxx,vyy,vzz
+  Use configuration, Only : natms,vxx,vyy,vzz
   Use pmf_module,    Only : ntpmf,listpmf,pmfwg1
 
   Implicit None

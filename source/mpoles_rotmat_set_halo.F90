@@ -14,7 +14,7 @@ Subroutine mpoles_rotmat_set_halo()
 
   Use comms_module,  Only : idnode,mxnode,gcheck
   Use setup_module,  Only : nrite,mxompl,mxatms
-  Use config_module, Only : natms,nlast,ixyz
+  Use configuration, Only : natms,nlast,ixyz
   Use mpoles_module, Only : mplflg
 
   Implicit None

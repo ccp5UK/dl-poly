@@ -17,7 +17,7 @@ Subroutine pmf_units_set()
   Use comms_module,  Only : idnode,gcheck
   Use setup_module
 
-  Use config_module, Only : natms,lsi,lsa
+  Use configuration, Only : natms,lsi,lsa
   Use pmf_module
 
   Implicit None

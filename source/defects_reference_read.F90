@@ -14,7 +14,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr)
   Use comms_module
   Use setup_module,   Only : nrite,nrefdt,config,mxatms,half_minus
   Use site_module
-  Use config_module,  Only : imcon,cell,natms
+  Use configuration,  Only : imcon,cell,natms
   Use domains_module, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
   Use parse_module,   Only : tabs_2_blanks, get_line, get_word, word_2_real, strip_blanks
   Use io_module,      Only : io_set_parameters, io_get_parameters, &

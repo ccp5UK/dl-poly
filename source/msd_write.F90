@@ -15,7 +15,7 @@ Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
   Use comms_module
   Use setup_module
   Use site_module,       Only : dofsit
-  Use config_module,     Only : cfgname,natms,atmnam,lsite,ltg, &
+  Use configuration,     Only : cfgname,natms,atmnam,lsite,ltg, &
                                 weight
 
   Use statistics_module, Only : stpval

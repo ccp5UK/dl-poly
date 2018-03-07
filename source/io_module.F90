@@ -22,7 +22,12 @@ Module io_module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp, li
-  Use comms_module
+  Use comms, Only : comms_type, wp_mpi,datarep
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi
+#endif
   Use netcdf_module
 
   Implicit None
@@ -190,9 +195,8 @@ Contains
 
     ! Initialise the sorted I/O method
 
-    Implicit None
-
     Integer, Intent( In    ) :: this_rec_size
+    Integer :: ierr
 
     rec_size = this_rec_size
 
@@ -212,12 +216,11 @@ Contains
 
   End Subroutine io_init
 
-  Subroutine io_finalize
+  Subroutine io_finalize()
 
     ! Finalize the sorted I/O method for MPI-I/O
 
-    Implicit None
-
+    Integer :: ierr
     ! Free the MPI derived type if MPI-I/O is used anywhere
     If ( ( method_write == IO_WRITE_UNSORTED_MPIIO .or. method_write == IO_WRITE_SORTED_MPIIO ) .or. &
            method_read  == IO_READ_MPIIO ) Then
@@ -260,8 +263,6 @@ Contains
     ! FLAGS      : The flags with which the file shall be opened
     ! FILE_HANDLE: The returned file handle
 
-    Implicit None
-
     Integer             , Intent( In    ) :: method
     Integer             , Intent( In    ) :: comm
     Character( Len = * ), Intent( In    ) :: file_name
@@ -270,7 +271,7 @@ Contains
 
     Type( netcdf_desc ) :: desc
 
-    Integer :: fh
+    Integer :: fh,ierr
 
     Logical :: do_read, do_write
 
@@ -380,6 +381,7 @@ Contains
     Integer, Intent( In    ) :: io_file_handle
 
     Integer :: file_handle
+    Integer :: ierr
 
     If ( known_files( io_file_handle )%method /= UNUSED ) Then
        file_handle = known_files( io_file_handle )%file_handle
@@ -419,7 +421,7 @@ Contains
 
   End Subroutine io_nc_get_dim
 
-  Subroutine io_delete( file_name )
+  Subroutine io_delete( file_name, comm )
 
     ! Delete a file - note that it is NOT an error to try to
     ! delete a non-existent file, it is silently ignored
@@ -427,16 +429,15 @@ Contains
     ! Arguments are:
     ! FILE_NAME  : the file name
 
-    Implicit None
-
     Character( Len = * ), Intent( In    ) :: file_name
+    Type(comms_type), Intent( InOut ) :: comm
 
-    Integer :: file_handle
+    Integer :: file_handle, ierr
 
     Logical :: exist
 
     ! Only 1 need do it and avoid contention.
-    If ( idnode == 0 ) Then
+    If ( comm%idnode == 0 ) Then
 
        Inquire( File = file_name, Exist = exist )
 
@@ -500,6 +501,7 @@ Contains
     Character, Intent( In    ), Optional :: user_line_feed
     Logical  , Intent( In    ), Optional :: user_error_check
 
+    Integer :: ierr
     ! Set the communicator
     If ( Present( user_comm ) ) Then
        ! Use a copy of the communicator to avoid potential message clashes with what
@@ -749,7 +751,7 @@ Contains
     Character( Len = 1 ), Dimension( :, : ), Allocatable :: local_name
     Character( Len = 1 ), Dimension( :, : ), Allocatable :: gathered_name
     Character( Len = 1 ), Dimension( :, : ), Allocatable :: sorted_name
-
+    Integer :: ierr
     ! Ever the optimist
     error = 0
 
@@ -2039,13 +2041,12 @@ Contains
     ! REC_NUM       : The record number
     ! RECORD        : the data to be written
 
-    Implicit None
-
     Integer                          , Intent( In    ) :: io_file_handle
     Integer( Kind = MPI_OFFSET_KIND ), Intent( In    ) :: rec_num
     Character( Len = * )             , Intent( In    ) :: record
 
-    Integer :: file_handle
+    Integer               :: status(1:MPI_STATUS_SIZE)
+    Integer :: file_handle, ierr
     Integer :: i,j
 
     Character( Len = 1 ), Dimension( 1:rec_size ) :: line
@@ -2096,7 +2097,8 @@ Contains
     Integer( Kind = MPI_OFFSET_KIND ),       Intent( In    ) :: next_rec
     Character( Len = 1 ), Dimension( :, : ), Intent( In    ) :: buffer
 
-    Integer :: file_handle
+    Integer               :: status(1:MPI_STATUS_SIZE) 
+    Integer :: file_handle, ierr
     Integer :: i
 
     ! Get the actual file handle or unit in use, rather than the one given to the outside world
@@ -2137,7 +2139,9 @@ Contains
     Integer :: file_handle
     Integer :: etype, filetype
     Integer :: count
-    Integer :: i
+    Integer :: i, ierr
+
+    Integer               :: status(1:MPI_STATUS_SIZE) 
 
     Character( len = 20 ) :: datarep
 
@@ -2426,8 +2430,6 @@ Contains
     ! IO_GATHER_COMM   : The communicator for gathering onto/scattering from the I/O processors
     ! DO_IO            : true if this processor is will perform I/O
 
-    Implicit None
-
     Integer, Intent( In    ) :: base_comm
     Integer, Intent( In    ) :: n_io_procs_write
     Integer, Intent(   Out ) :: io_comm
@@ -2437,7 +2439,7 @@ Contains
     Integer :: actual_io_procs
     Integer :: n_base, rank_base
     Integer :: everyth_for_io
-    Integer :: colour, key
+    Integer :: colour, key, ierr
 
     Call MPI_COMM_SIZE( base_comm,    n_base, ierr )
     Call MPI_COMM_RANK( base_comm, rank_base, ierr )
@@ -2499,14 +2501,12 @@ Contains
 
     ! Freeing IO_COMM and IO_GATHER_COMM.
 
-    Implicit None
-
     Logical                  :: do_io
     ! Note we can not set an intent on this - on procs NOT doing I/O it is
     ! intent Out, on procs doing I/O it is InOut
     Integer                  :: io_comm
     Integer, Intent( InOut ) :: io_gather_comm
-
+    Integer :: ierr
     If( do_io ) Then
        Call MPI_COMM_FREE( io_comm, ierr )
     End If
@@ -2623,6 +2623,7 @@ Contains
     Integer, Intent( In    ) :: comm
 
     Logical :: g_flag
+    Integer :: ierr
 
     If ( global_error_check ) Then
 
@@ -2651,7 +2652,7 @@ Contains
     Integer, Intent( In    ) :: atoms
     Integer, Intent( In    ) :: comm
 
-    Integer :: g_atoms
+    Integer :: g_atoms, ierr
 
     Call MPI_ALLREDUCE( atoms, g_atoms, 1, MPI_INTEGER, MPI_SUM, comm, ierr )
 

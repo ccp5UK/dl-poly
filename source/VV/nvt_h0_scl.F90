@@ -16,7 +16,7 @@ Subroutine nvt_h0_scl &
 
   Use kinds, only : wp
   Use setup_module
-  Use config_module,  Only : natms
+  Use configuration,  Only : natms
   Use kinetic_module, Only : getkin
 
   Implicit None

@@ -17,7 +17,7 @@ Subroutine ewald_excl_mfield &
 
   Use kinds, only : wp
   Use setup_module
-  Use config_module, Only : natms,nlast,ltg,ltype,list,fxx,fyy,fzz
+  Use configuration, Only : natms,nlast,ltg,ltype,list,fxx,fyy,fzz
   Use mpoles_module, Only : mplmap,mplgfr,mpfldx,mpfldy,mpfldz
   Use ewald_module
 

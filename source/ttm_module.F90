@@ -12,11 +12,16 @@ Module ttm_module
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
+  Use kinds, Only : wp
   Use setup_module
-  Use comms_module
-  Use config_module, only : cell
+  Use configuration, Only : cell
   Use domains_module
+  Use comms, Only : wp_mpi, comms_type
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi
+#endif
 
   Implicit None
 
@@ -62,10 +67,10 @@ Module ttm_module
 
 Contains
 
-  Subroutine allocate_ttm_arrays()
+  Subroutine allocate_ttm_arrays(comm)
 
-    Implicit None
 
+    Type(comms_type), Intent(In) :: comm
     Real ( Kind = wp ) :: start, finish
     Integer, Dimension ( 1:7 ) :: fail
     Integer :: i,numbc,numbcmap
@@ -73,6 +78,7 @@ Contains
     Integer :: bbasicslice,boneslicex,boneslicey,boneslicez
     Integer ( Kind = MPI_ADDRESS_KIND ) :: dbleth,inleth,lb1,lb2
     Integer ( Kind = MPI_ADDRESS_KIND ) :: xlth,ylth,bxlth,bylth
+    Integer                             :: ierr
 
     fail = 0
 
@@ -234,7 +240,7 @@ Contains
 
 ! Derived MPI datatypes for communication of temperatures (MPI 2.x+)
 
-      If (mxnode>1) Then
+      If (comm%mxnode>1) Then
         Call MPI_TYPE_GET_EXTENT (wp_mpi, lb1, dbleth, ierr)
         Call MPI_TYPE_GET_EXTENT (MPI_INTEGER, lb2, inleth, ierr)
         Call MPI_TYPE_VECTOR (1, 1, 1, wp_mpi, basicslice, ierr)

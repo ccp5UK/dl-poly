@@ -21,7 +21,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
   Use comms_module
   Use setup_module,  Only : nfield,nconf,nrite,field,config
   Use site_module
-  Use config_module, Only : cfgname,imcon,cell,natms,lsi,lsa, &
+  Use configuration, Only : cfgname,imcon,cell,natms,lsi,lsa, &
                             atmnam,xxx,yyy,zzz
   Use parse_module,  Only : tabs_2_blanks, get_word, strip_blanks, &
                             lower_case, word_2_real

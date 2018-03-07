@@ -18,7 +18,7 @@ Subroutine metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stress)
   Use kinds, only : wp
   Use comms_module,  Only : idnode,mxnode,gsum,gcheck
   Use setup_module
-  Use config_module, Only : natms,ltg,ltype,list,xxx,yyy,zzz
+  Use configuration, Only : natms,ltg,ltype,list,xxx,yyy,zzz
   Use metal_module,  Only : ls_met,l2bmet,tabmet,fmet,fmes,rho,rhs
 
   Implicit None

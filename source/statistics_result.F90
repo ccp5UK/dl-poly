@@ -18,7 +18,7 @@ Subroutine statistics_result                                    &
   Use comms_module,       Only : idnode,gtime,gmax
   Use setup_module
   Use site_module,        Only : ntpatm,unqatm,numtypnf,dens
-  Use config_module,      Only : cell,volm
+  Use configuration,      Only : cell,volm
   Use vnl_module
   Use minimise_module,    Only : passmin
   Use core_shell_module,  Only : passshl

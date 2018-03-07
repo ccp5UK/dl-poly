@@ -13,7 +13,7 @@ Subroutine rigid_bodies_stress(strcom,ggx,ggy,ggz)
   Use kinds, only : wp
   Use comms_module,        Only : mxnode,gsum
   Use setup_module,        Only : mxrgd,mxlrgd
-  Use config_module,       Only : natms,lfrzn,fxx,fyy,fzz
+  Use configuration,       Only : natms,lfrzn,fxx,fyy,fzz
   Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd
 
   Implicit None
@@ -88,7 +88,7 @@ Subroutine rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx,fyy,fzz)
   Use kinds, only : wp
   Use comms_module,        Only : mxnode,gsum
   Use setup_module,        Only : mxatms,mxrgd,mxlrgd
-  Use config_module,       Only : natms,lfrzn
+  Use configuration,       Only : natms,lfrzn
   Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd
 
   Implicit None
@@ -164,7 +164,7 @@ Subroutine rigid_bodies_str_ss(strcom)
   Use kinds, only : wp
   Use comms_module,        Only : idnode,mxnode,gsum
   Use setup_module,        Only : nrite,mxrgd,mxlrgd
-  Use config_module,       Only : imcon,cell,natms,lfrzn,xxx,yyy,zzz,fxx,fyy,fzz
+  Use configuration,       Only : imcon,cell,natms,lfrzn,xxx,yyy,zzz,fxx,fyy,fzz
   Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd, &
                                   rgdxxx,rgdyyy,rgdzzz
 
@@ -279,7 +279,7 @@ Subroutine rigid_bodies_str__s(strcom,fxx,fyy,fzz)
   Use kinds, only : wp
   Use comms_module,        Only : idnode,mxnode,gsum
   Use setup_module,        Only : nrite,mxatms,mxrgd,mxlrgd
-  Use config_module,       Only : imcon,cell,natms,lfrzn,xxx,yyy,zzz
+  Use configuration,       Only : imcon,cell,natms,lfrzn,xxx,yyy,zzz
   Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd, &
                                   rgdxxx,rgdyyy,rgdzzz
 

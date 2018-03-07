@@ -36,7 +36,7 @@ Subroutine nst_b0_vv                          &
   Use comms_module,       Only : idnode,mxnode,gmax
   Use setup_module
   Use site_module,        Only : ntpatm,dens
-  Use config_module,      Only : cell,volm,natms,lfrzn,weight, &
+  Use configuration,      Only : cell,volm,natms,lfrzn,weight, &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use kinetic_module,     Only : getvom
   Use core_shell_module,  Only : legshl

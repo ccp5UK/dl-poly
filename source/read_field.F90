@@ -42,7 +42,7 @@ Subroutine read_field                      &
 ! Fuchs correction of charge non-neutral systems
 ! Global_To_Local variables
 
-  Use config_module, Only : imcon,cell,sumchg
+  Use configuration, Only : imcon,cell,sumchg
 
 ! DPD module
 

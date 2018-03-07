@@ -15,8 +15,12 @@ Module parallel_fft
 
   Use kinds,        Only : wp
   Use setup_module, Only : pi
-
-  Use comms_module ! access to the generalised mpi_wp and
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi
+#endif
+  Use comms, Only : wp_mpi ! access to the generalised wp_mpi and
                    ! the intrinsics in mpif.h/mpi-module
   Use gpfa_module, Only : gpfa_set
 

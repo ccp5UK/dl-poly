@@ -11,7 +11,7 @@ Subroutine z_density_collect()
 
   Use kinds, only : wp
   Use setup_module,      Only : mxgrdf
-  Use config_module,     Only : cell,natms,ltype,zzz
+  Use configuration,     Only : cell,natms,ltype,zzz
   Use z_density_module
 
   Implicit None

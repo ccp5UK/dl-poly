@@ -19,7 +19,7 @@ Subroutine constraints_shake_vv       &
   Use kinds, only : wp
   Use comms_module,  Only : idnode,mxnode,gsync,gcheck,gsum
   Use setup_module
-  Use config_module, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn,weight
+  Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn,weight
   Use constraints_module
 
   Implicit None

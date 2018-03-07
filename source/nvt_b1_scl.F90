@@ -15,7 +15,7 @@ Subroutine nvt_b1_scl &
 
   Use kinds, only : wp
   Use setup_module,        Only : mxatms,mxrgd
-  Use config_module,       Only : nfree,lstfre
+  Use configuration,       Only : nfree,lstfre
   Use kinetic_module,      Only : kinstresf,kinstrest,getknr
   Use rigid_bodies_module, Only : ntrgd
 

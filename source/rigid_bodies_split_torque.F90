@@ -14,7 +14,7 @@ Subroutine rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
   Use kinds, only : wp
   Use comms_module,       Only : idnode
   Use setup_module,       Only : nrite,mxatms,mxrgd,mxlrgd
-  Use config_module,      Only : imcon,cell,xxx,yyy,zzz
+  Use configuration,      Only : imcon,cell,xxx,yyy,zzz
   Use rigid_bodies_module
 
   Implicit None

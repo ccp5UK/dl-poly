@@ -15,7 +15,7 @@ Subroutine metal_lrc(rmet,elrcm,vlrcm)
   Use comms_module,  Only : idnode
   Use setup_module
   Use site_module,   Only : ntpatm,unqatm,dens
-  Use config_module, Only : imcon,volm
+  Use configuration, Only : imcon,volm
   Use metal_module,  Only : lstmet,ltpmet,prmmet
 
   Implicit None

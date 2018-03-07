@@ -20,7 +20,7 @@ Subroutine npt_h1_scl &
 
   Use kinds, Only : wp, li
   Use setup_module
-  Use config_module,       Only : nfree,lstfre
+  Use configuration,       Only : nfree,lstfre
   Use rigid_bodies_module, Only : ntrgd
 
   Implicit None

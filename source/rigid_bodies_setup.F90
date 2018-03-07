@@ -13,7 +13,7 @@ Subroutine rigid_bodies_setup(l_str,l_top,megatm,megfrz,megrgd,degtra,degrot)
   Use comms_module,  Only : idnode,mxnode,gsum,gmin
   Use site_module
   Use setup_module
-  Use config_module, Only : imcon,cell,nlast,ltg,lsite,lfrzn,xxx,yyy,zzz
+  Use configuration, Only : imcon,cell,nlast,ltg,lsite,lfrzn,xxx,yyy,zzz
   Use rigid_bodies_module
 
   Implicit None

@@ -17,7 +17,7 @@ Subroutine system_revive                                      &
   Use kinds, only : wp
   Use comms_module
   Use setup_module
-  Use config_module,      Only : natms,ltg
+  Use configuration,      Only : natms,ltg
   Use statistics_module
   Use rdf_module,         Only : ncfrdf,rdf,ncfusr,rusr,usr
   Use z_density_module,   Only : ncfzdn,zdens

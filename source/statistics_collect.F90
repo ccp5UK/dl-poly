@@ -32,7 +32,7 @@ Subroutine statistics_collect             &
   Use comms_module,   Only : idnode,mxnode,gsum
   Use setup_module
   Use site_module,    Only : ntpatm,numtypnf
-  Use config_module,  Only : cfgname,imcon,cell,volm,natms,ltype, &
+  Use configuration,  Only : cfgname,imcon,cell,volm,natms,ltype, &
                              xxx,yyy,zzz,vxx,vyy,vzz
   Use dpd_module,     Only : virdpd
   Use statistics_module

@@ -20,7 +20,7 @@ Subroutine set_temperature           &
   Use comms_module,       Only : idnode,mxnode,gsum
   Use setup_module
   Use site_module,        Only : dofsit
-  Use config_module,      Only : imcon,natms,nlast,nfree,lsite,  &
+  Use configuration,      Only : imcon,natms,nlast,nfree,lsite,  &
                                  lsi,lsa,ltg,lfrzn,lfree,lstfre, &
                                  weight,vxx,vyy,vzz
   Use dpd_module,         Only : keydpd

@@ -27,7 +27,7 @@ Subroutine nvt_a0_vv                          &
   Use comms_module,       Only : idnode,mxnode,gsum,gmax
   Use setup_module
   Use site_module,        Only : dofsit
-  Use config_module,      Only : natms,nlast,lsite,lsi,lsa,ltg,lfrzn, &
+  Use configuration,      Only : natms,nlast,lsite,lsi,lsa,ltg,lfrzn, &
                                  weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use kinetic_module,     Only : getvom,kinstress
   Use core_shell_module,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl

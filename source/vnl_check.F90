@@ -14,7 +14,7 @@ Subroutine vnl_check(l_str,rcut,rpad,rlnk,width)
   Use comms_module,   Only : idnode,mxnode,gcheck
   Use setup_module,   Only : nrite,mxspl,mxatms
   Use domains_module, Only : r_nprx,r_npry,r_nprz
-  Use config_module,  Only : imcon,cell,natms,nlast,list, &
+  Use configuration,  Only : imcon,cell,natms,nlast,list, &
                              xxx,yyy,zzz
   Use vnl_module
 

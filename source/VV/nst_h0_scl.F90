@@ -29,7 +29,7 @@ Subroutine nst_h0_scl &
 
   Use kinds, Only : wp, li
   Use setup_module
-  Use config_module,  Only : natms
+  Use configuration,  Only : natms
   Use kinetic_module, Only : kinstress
 
   Implicit None

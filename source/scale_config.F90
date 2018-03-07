@@ -11,7 +11,7 @@ Subroutine scale_config(megatm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, only : wp
-  Use config_module,      Only : cell,natms,xxx,yyy,zzz
+  Use configuration,      Only : cell,natms,xxx,yyy,zzz
   Use development_module, Only : lvcfscl,cels
 
   Implicit None

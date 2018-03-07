@@ -14,8 +14,13 @@ Module ttm_utils
 
   Use setup_module
   Use ttm_module
-  Use comms_module
+  Use comms, Only : comms_type,Grid1_tag, Grid2_tag
   Use domains_module, Only : idx,idy,idz,nprx,npry,nprz
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi
+#endif
   Implicit None
 
 Contains
@@ -39,8 +44,6 @@ Contains
 
   ! Calculate electron-phonon coupling term (friction parameter for inhomogeneous
   ! Langevin thermostat): given as ps^-1
-
-    Implicit None
 
     Real (Kind = wp), Intent(In) :: T
     Real (Kind = wp)             :: Gep
@@ -166,19 +169,18 @@ Contains
 
   End Function alp
 
-  Subroutine calcchies(chi_ep)
+  Subroutine calcchies(chi_ep,comm)
 
 ! Calculate electron-phonon coupling friction term (chi_ep)
 ! for homogeneously coupled system: uses mean electronic temperature
 ! and interpolates from tabulated values given in g.dat file
 
-    Implicit None
-
     Real ( Kind = wp ), Intent ( Inout ) :: chi_ep
+    Type (comms_type), Intent ( In )     :: comm
     Real ( Kind = wp )                   :: eltempav = 0.0_wp
     Real ( Kind = wp )                   :: epc = 0.0_wp
 
-    Call eltemp_mean (eltempav)
+    Call eltemp_mean (eltempav, comm)
 
     Call interpolate (gel, gtable, eltempav, epc)
 
@@ -186,18 +188,20 @@ Contains
 
   End Subroutine calcchies
 
-  Subroutine boundaryHalo ()
+  Subroutine boundaryHalo (comm)
 
 ! fills halo regions of electronic temperature lattice from neighbouring sections
 ! (periodic boundary conditions)
 
-    Implicit None
+    Type(comms_type), Intent(In) :: comm
     Integer :: i,ii,iii1,iii2,j,jj,jjj1,jjj2,k,kk,kkk1,kkk2,ijk1,ijk2
     Integer, Dimension(4) :: req
     Integer, Allocatable :: stats(:,:)
 
+    Integer :: ierr
+
     Allocate (stats(1:MPI_STATUS_SIZE,1:4))
-    If (mxnode>1) Then
+    If (comm%mxnode>1) Then
 
       Do kk = -eltcell(3), eltcell(3)
         Do jj = -eltcell(2), eltcell(2)
@@ -328,16 +332,16 @@ Contains
 
   End Subroutine boundaryHalo
 
-  Subroutine boundaryCond (key, temp)
+  Subroutine boundaryCond (key, temp,comm)
 
 ! appends halo regions of entire electronic temperature lattice with appropriate boundary conditions
 
-    Implicit None
 
     Real ( Kind = wp ), Intent ( In ) :: temp
     Integer,            Intent ( In ) :: key
+    Type(comms_type),   Intent ( In ) :: comm
 
-    Integer :: i,ii,j,jj,k,kk,ijk1,ijk2
+    Integer :: i,ii,j,jj,k,kk,ijk1,ijk2,ierr
     Integer, Dimension(4) :: req
     Integer, Dimension(MPI_STATUS_SIZE,4) :: stat
 
@@ -346,7 +350,7 @@ Contains
   ! Periodic boundary conditions
     Case (1)
       If (ttmbcmap(1)>=0 .or. ttmbcmap(2)>=0) Then
-        If (mxnode>1) Then
+        If (comm%mxnode>1) Then
           Do kk = -eltcell(3), eltcell(3)
             Do jj = -eltcell(2), eltcell(2)
               If (ttmbcmap(1)>=0) Then
@@ -385,7 +389,7 @@ Contains
       End If
 
       If (ttmbcmap(3)>=0 .or. ttmbcmap(4)>=0) Then
-        If (mxnode>1) Then
+        If (comm%mxnode>1) Then
           Do kk = -eltcell(3), eltcell(3)
             Do ii = -eltcell(1), eltcell(1)
               If (ttmbcmap(3)>=0) Then
@@ -424,7 +428,7 @@ Contains
       End If
 
       If (ttmbcmap(5)>=0 .or. ttmbcmap(6)>=0) Then
-        If (mxnode>1) Then
+        If (comm%mxnode>1) Then
           Do jj = -eltcell(2), eltcell(2)
             Do ii = -eltcell(1), eltcell(1)
               If (ttmbcmap(5)>=0) Then
@@ -889,12 +893,11 @@ Contains
 
   End Subroutine boundaryCond
 
-  Subroutine peakProfiler(lat, peakfile, nstep, freq)
+  Subroutine peakProfiler(lat, peakfile, nstep, freq,comm)
 
 ! prints a slice across y (centred in xz-plane) of a lattice to a file
 
-    Implicit None
-
+    Type(comms_type), Intent ( In ) :: comm
     Real ( Kind = wp ), Dimension (numcell), Intent( In ) :: lat
     Real ( Kind = wp ), Dimension (ntsys(2)) :: laty
     Integer, Intent( In ) :: nstep,freq
@@ -915,8 +918,8 @@ Contains
             laty(l) = lat(ijk)
           End Do
         End If
-        If (mxnode>1) Call gsum (laty)
-        If (idnode==0) Then
+        If (comm%mxnode>1) Call gsum (laty)
+        If (comm%idnode==0) Then
           If (nstep==0) Then
             Open (Unit=iounit, File=peakfile, Status='replace')
           Else
@@ -932,12 +935,11 @@ Contains
 
   End Subroutine peakProfiler
  
-  Subroutine peakProfilerElec(peakfile, nstep, freq)
+  Subroutine peakProfilerElec(peakfile, nstep, freq, comm)
 
 ! prints a slice across y (centred in xz-plane) of the electronic temperature lattice to a file
 
-    Implicit None
-
+    Type(comms_type), Intent( In ) :: comm
     Real ( Kind = wp ), Dimension (eltsys(2)) :: laty
     Integer, Intent( In ) :: nstep,freq
     Character ( Len = * ), Intent( In ) :: peakfile
@@ -969,8 +971,8 @@ Contains
             End Do
           End Do
         End If
-        If (mxnode>1) Call gsum (laty)
-        If (idnode==0) Then
+        If (comm%mxnode>1) Call gsum (comm,laty)
+        If (comm%idnode==0) Then
           If (nstep==0) Then
             Open (Unit=iounit, File=peakfile, Status='replace')
           Else
@@ -986,16 +988,16 @@ Contains
 
   End Subroutine peakProfilerElec
 
-  Subroutine printLatticeStatsToFile(lat, latfile, time, nstep, freq)
+  Subroutine printLatticeStatsToFile(lat, latfile, time, nstep, freq, comm)
 
 ! prints lattice statistics (minimum, maximum, sum) to file
 
-    Implicit None
-
+   
     Real ( Kind = wp ), Dimension(numcell), Intent ( In ) :: lat
     Integer, Intent( In ) :: nstep,freq
     Real ( Kind = wp ), Intent ( In ) :: time
     Character ( Len = * ), Intent ( In ) :: latfile
+    Type(comms_type), Intent ( In ) :: comm
 
     Real (kind = wp) :: lat_sum,lat_min,lat_max,rtotal
     Integer :: iounit = 113
@@ -1022,15 +1024,15 @@ Contains
           End Do
         End Do
 
-        If (mxnode>1) Then
-          Call gsum(lat_sum)
-          Call gmin(lat_min)
-          Call gmax(lat_max)
+        If (comm%mxnode>1) Then
+          Call gsum(comm,lat_sum)
+          Call gmin(comm,lat_min)
+          Call gmax(comm,lat_max)
         End If
 
         rtotal = Merge(1.0_wp/Real(acell,Kind=wp),0.0_wp,(acell>0))
 
-        If (idnode == 0) Then
+        If (comm%idnode == 0) Then
           If (nstep==0) Then
             Open(Unit=iounit, File=latfile, Status='replace')
           Else
@@ -1045,16 +1047,15 @@ Contains
       
   End Subroutine printLatticeStatsToFile
   
-  Subroutine printElecLatticeStatsToFile(latfile, time, temp0, nstep, freq)
+  Subroutine printElecLatticeStatsToFile(latfile, time, temp0, nstep, freq, comm)
 
 ! prints electronic temperature lattice statistics (minimum, maximum, sum) 
 ! and energy (E = integral of Ce(Te)*Te between temp0 and Te) to file
 
-    Implicit None
-
     Integer, Intent( In ) :: nstep,freq
     Real ( Kind = wp ), Intent ( In ) :: time,temp0
     Character ( Len = * ), Intent ( In ) :: latfile
+    Type( comms_type), Intent ( In ) :: comm
 
     Real ( Kind = wp ) :: lat_sum,lat_min,lat_max,Ue,tmp,sgnplus,eltmp,totalcell,rtotal
     Real ( Kind = wp ) :: Ce0a,sh_Aa,Cemaxa
@@ -1069,9 +1070,9 @@ Contains
     If (freq /= 0) Then
       If (Mod(nstep,freq)==0) Then
 
-        Call eltemp_sum(lat_sum)
-        Call eltemp_min(lat_min)
-        Call eltemp_max(lat_max)
+        Call eltemp_sum(lat_sum,comm)
+        Call eltemp_min(lat_min,comm)
+        Call eltemp_max(lat_max,comm)
 
         Ue = 0.0_wp
         totalcell = 0.0_wp
@@ -1157,14 +1158,14 @@ Contains
           End Do
         End Do
 
-        If (mxnode>1) Then
-          Call gsum(Ue)
-          Call gsum(totalcell)
+        If (comm%mxnode>1) Then
+          Call gsum(comm,Ue)
+          Call gsum(comm,totalcell)
         End If
 
         rtotal = Merge(1.0_wp/totalcell,0.0_wp,(totalcell>zero_plus))
 
-        If (idnode == 0) Then
+        If (comm%idnode == 0) Then
           If (nstep==0) Then
             Open(Unit=iounit, File=latfile, Status='replace')
           Else
@@ -1179,13 +1180,12 @@ Contains
       
   End Subroutine printElecLatticeStatsToFile
   
-  Subroutine eltemp_sum (eltempsum)
+  Subroutine eltemp_sum (eltempsum,comm)
 
 ! Find sum of electronic temperatures over all active CET voxels
 
-    Implicit None
-
-    Real ( Kind = wp ), Intent ( Out ) :: eltempsum
+    Real ( Kind = wp ), Intent (   Out ) :: eltempsum
+    Type ( comms_type), Intent ( In    ) :: comm
     Real ( Kind = wp )                 :: tmp
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
     Logical                            :: lrange,lcentre
@@ -1246,18 +1246,19 @@ Contains
       End Do
     End Do
 
-    If (mxnode>1) Call gsum (eltempsum)
+    If (comm%mxnode>1) Then 
+      Call gsum (comm,eltempsum)
+    End If
 
   End Subroutine eltemp_sum
 
-  Subroutine eltemp_mean (eltempav)
+  Subroutine eltemp_mean (eltempav,comm)
 
 ! Find mean electronic temperature over all active CET voxels
 
-    Implicit None
-
     Real ( Kind = wp ), Intent ( Out ) :: eltempav
     Real ( Kind = wp )                 :: tmp,acl
+    Type( comms_type ), Intent ( In )    :: comm
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
     Logical                            :: lrange,lcentre
 
@@ -1321,16 +1322,16 @@ Contains
       End Do
     End Do
 
-    If (mxnode>1) Then
-      Call gsum (eltempav)
-      Call gsum (acl)
+    If (comm%mxnode>1) Then
+      Call gsum (comm, eltempav)
+      Call gsum (comm, acl)
     End If
 
     If (acl>zero_plus) eltempav = eltempav/acl
 
   End Subroutine eltemp_mean
 
-  Subroutine eltemp_maxKe (temp, eltempmax)
+  Subroutine eltemp_maxKe (temp, eltempmax, comm)
 
 ! Find maximum temperature for calculating tabulated
 ! thermal conductivities (ionic or system) over all 
@@ -1338,10 +1339,9 @@ Contains
 ! applies over all CET voxels that do not overlap
 ! CIT voxels)
 
-    Implicit None
-
     Real ( Kind = wp ), Intent ( In )  :: temp
     Real ( Kind = wp ), Intent ( Out ) :: eltempmax
+    Type( comms_type ), Intent ( In )  :: comm
     Real ( Kind = wp )                 :: eltempKe
     Integer                            :: i,j,k,ijk
 
@@ -1358,18 +1358,17 @@ Contains
     End Do
     eltempmax = Max (eltempmax, temp)
 
-    If (mxnode>1) Call gmax (eltempmax)
+    If (comm%mxnode>1) Call gmax (comm,eltempmax)
 
   End Subroutine eltemp_maxKe
 
-  Subroutine eltemp_max (eltempmax)
+  Subroutine eltemp_max (eltempmax,comm)
 
 ! Find maximum electronic temperature over all
 ! active CET cells
 
-    Implicit None
-
     Real ( Kind = wp ), Intent ( Out ) :: eltempmax
+    Type( comms_type ), Intent ( In )  :: comm
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
     Logical                            :: lrange,lcentre
 
@@ -1429,11 +1428,11 @@ Contains
       End Do
     End Do
 
-    If (mxnode>1) Call gmax (eltempmax)
+    If (comm%mxnode>1) Call gmax (comm,eltempmax)
 
   End Subroutine eltemp_max
 
-  Subroutine eltemp_minKe (temp, eltempmin)
+  Subroutine eltemp_minKe (temp, eltempmin, comm)
 
 ! Find minimum temperature for calculating tabulated
 ! thermal conductivities (ionic or system) over all 
@@ -1441,8 +1440,7 @@ Contains
 ! applies over all CET voxels that do not overlap
 ! CIT voxels)
 
-    Implicit None
-
+    Type( comms_type ), Intent ( In )  :: comm
     Real ( Kind = wp ), Intent ( In )  :: temp
     Real ( Kind = wp ), Intent ( Out ) :: eltempmin
     Real ( Kind = wp )                 :: eltempKe
@@ -1462,18 +1460,17 @@ Contains
 
     eltempmin = Min (eltempmin, temp)
 
-    If (mxnode>1) Call gmin (eltempmin)
+    If (comm%mxnode>1) Call gmin (comm,eltempmin)
 
   End Subroutine eltemp_minKe
 
-  Subroutine eltemp_min (eltempmin)
+  Subroutine eltemp_min (eltempmin,comm)
 
 ! Find minimum electronic temperature over all
 ! active CET cells
 
-    Implicit None
-
-    Real ( Kind = wp ), Intent ( Out ) :: eltempmin
+    Real( Kind = wp ), Intent ( Out ) :: eltempmin
+    Type( comms_type ), Intent ( In ) :: comm
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
     Logical                            :: lrange
 
@@ -1532,7 +1529,7 @@ Contains
       End Do
     End Do
 
-    If (mxnode>1) Call gmin (eltempmin)
+    If (comm%mxnode>1) Call gmin (comm,eltempmin)
 
   End Subroutine eltemp_min
 
@@ -1540,14 +1537,12 @@ Contains
 
 ! Interpolation helper subroutine
 
-    Implicit None
-
     Integer,                                      Intent( In )  :: tabsize
     Real( Kind = wp ), Dimension (1:tabsize,1:2), Intent( In )  :: tab
     Real( Kind = wp ),                            Intent( In )  :: x0
     Real( Kind = wp ),                            Intent( Out ) :: resp
 
-    Integer :: i,j,k
+    Integer :: i,j,k, ierr
 
     If (tabsize == 1) Then
       resp = tab(1,2)
@@ -1600,14 +1595,14 @@ Contains
 
   End Subroutine interpolate
 
-  Subroutine redistribute_Te (temp0)
+  Subroutine redistribute_Te (temp0,comm)
 
 ! Redistribute electronic energy when electronic temperature voxels are closed
 
-    Implicit None
-
     Real( Kind = wp ), Intent ( In ) :: temp0
-    Integer :: i, j, k, ii, jj, kk, ijk, ijk1, ijk2, ijkpx, ijkmx, ijkpy, ijkmy, ijkpz, ijkmz, n, numint
+    Type( comms_type), Intent ( In ) :: comm
+    Integer :: i, j, k, ii, jj, kk, ijk, ijk1, ijk2, ijkpx, ijkmx, ijkpy, ijkmy, &
+               ijkpz, ijkmz, n, numint, ierr
     Real( Kind = wp ) :: energy_per_cell, U_e, start_Te, end_Te, increase, oldCe, newCe
     Real( Kind = wp ) :: energy_diff, act_sur_cells, sgnplus, Ce0a, sh_Aa, Cemaxa
 
@@ -1677,7 +1672,7 @@ Contains
       End Do
     End Do
 
-    If(mxnode>1) Then
+    If(comm%mxnode>1) Then
 
       Allocate (buffer (numcell,-1:1,-1:1,-1:1))
       buffer = 0.0_wp

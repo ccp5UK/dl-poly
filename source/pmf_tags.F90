@@ -15,7 +15,7 @@ Subroutine pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
   Use kinds, only : wp
   Use setup_module
 
-  Use config_module, Only : natms,nlast,lsi,lsa,lfrzn
+  Use configuration, Only : natms,nlast,lsi,lsa,lfrzn
   Use pmf_module,    Only : ntpmf,listpmf
 
   Implicit None

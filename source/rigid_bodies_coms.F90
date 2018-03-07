@@ -15,7 +15,7 @@ Subroutine rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
   Use kinds, only : wp
   Use comms_module,        Only : idnode
   Use setup_module,        Only : nrite,mxatms,mxrgd,mxlrgd
-  Use config_module,       Only : imcon,cell
+  Use configuration,       Only : imcon,cell
   Use rigid_bodies_module, Only : ntrgd,listrgd,indrgd,rgdwg1
 
   Implicit None

@@ -19,7 +19,7 @@ Subroutine pmf_rattle                      &
   Use kinds, only : wp
   Use comms_module,  Only : idnode,mxnode,gcheck
   Use setup_module
-  Use config_module, Only : natms,lfrzn
+  Use configuration, Only : natms,lfrzn
   Use pmf_module
 
   Implicit None

@@ -24,7 +24,7 @@ Subroutine minimise_relax &
   Use comms_module,        Only : idnode,mxnode,gsum,gmax
   Use setup_module,        Only : engunit,nrite,output, &
                                   mxatms,mxcons,mxtpmf,mxpmf,zero_plus
-  Use config_module,       Only : natms,nlast,nfree,          &
+  Use configuration,       Only : natms,nlast,nfree,          &
                                   lsi,lsa,lfrzn,lfree,lstfre, &
                                   weight,xxx,yyy,zzz,fxx,fyy,fzz
   Use rigid_bodies_module, Only : lshmv_rgd,lishp_rgd,lashp_rgd

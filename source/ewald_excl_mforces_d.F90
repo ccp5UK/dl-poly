@@ -17,7 +17,7 @@ Subroutine ewald_excl_mforces_d &
 
   Use kinds, only : wp
   Use setup_module
-  Use config_module, Only : natms,ltg,list,fxx,fyy,fzz
+  Use configuration, Only : natms,ltg,list,fxx,fyy,fzz
   Use mpoles_module
 
   Implicit None

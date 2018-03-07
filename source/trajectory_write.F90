@@ -15,7 +15,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
   Use kinds, Only : wp, li
   Use comms_module
   Use setup_module
-  Use config_module,     Only : cfgname,imcon,cell,natms, &
+  Use configuration,     Only : cfgname,imcon,cell,natms, &
                                 ltg,atmnam,chge,weight,   &
                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use statistics_module, Only : rsd

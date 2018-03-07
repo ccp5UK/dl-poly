@@ -14,7 +14,7 @@ Subroutine set_halo_particles(rlnk,keyfce)
   Use setup_module
   Use domains_module
   Use site_module
-  Use config_module
+  Use configuration
   Use mpoles_module
 
   Implicit None

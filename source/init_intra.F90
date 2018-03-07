@@ -18,7 +18,7 @@ Subroutine init_intra()
 
 ! CONFIG MODULE
 
-  Use config_module
+  Use configuration
 
 ! INTERACTION MODULES
 

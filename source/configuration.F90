@@ -1,4 +1,262 @@
-Subroutine check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
+Module configuration
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 module declaring global configuration variables and arrays
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov january 2017
+! contrib   - i.j.bush march 2010
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds, Only : wp
+  Use comms, Only : comms_type
+  Use setup_module
+  Use site_module
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi
+#endif
+
+  Implicit None
+
+  Character( Len = 72 ), Save :: cfgname = ' ' , &
+                                 sysname = ' '
+
+  Integer,               Save :: imcon =-1 , &
+                                 imc_n =-1 , &
+                                 natms = 0 , &
+                                 nlast = 0 , &
+                                 nfree = 0
+
+  Real( Kind = wp ),     Save :: cell(1:9) = 0.0_wp , &
+                                 volm      = 0.0_wp , &
+                                 sumchg    = 0.0_wp
+
+
+  Character( Len = 8 ), Allocatable, Save :: atmnam(:)
+
+  Integer,              Allocatable, Save :: lsite(:),ltype(:)
+  Integer,              Allocatable, Save :: lfrzn(:),lfree(:)
+  Integer,              Allocatable, Save :: lsi(:),lsa(:),ltg(:)
+  Integer,              Allocatable, Save :: lexatm(:,:)
+  Integer,              Allocatable, Save :: ixyz(:),list(:,:)
+  Integer,              Allocatable, Save :: lstfre(:)
+
+  Real( Kind = wp ),    Allocatable, Save :: weight(:),chge(:)
+  Real( Kind = wp ),    Allocatable, Save :: xxx(:),yyy(:),zzz(:)
+  Real( Kind = wp ),    Allocatable, Save :: vxx(:),vyy(:),vzz(:)
+  Real( Kind = wp ),    Allocatable, Save :: fxx(:),fyy(:),fzz(:)
+
+  Public :: reallocate, allocate_config_arrays_read, allocate_config_arrays
+  Public :: check_config
+
+  Interface reallocate
+     Module Procedure reallocate_chr_v
+     Module Procedure reallocate_int_v
+     Module Procedure reallocate_rwp_v
+  End Interface
+
+  Private :: reallocate_chr_v, reallocate_int_v, reallocate_rwp_v
+
+Contains
+
+  Subroutine reallocate_chr_v( delta, a, stat )
+
+    Implicit None
+
+    Integer,                           Intent( In    ) :: delta
+    Character( Len = * ), Allocatable, Intent( InOut ) :: a(:)
+    Integer,                           Intent(   Out ) :: stat
+
+    Integer :: size_old, size_new, size_crs
+
+    Character( Len = Len( a ) ), Allocatable :: tmp(:)
+
+    stat = 0
+    If ( delta == 0 ) Return
+
+    size_old = Size( a )
+    size_new = size_old + delta
+    size_crs = Min( size_old, size_new )
+
+    Allocate ( tmp( 1:size_old ), Stat = stat )
+    If ( stat /= 0 ) Return
+
+    tmp = a
+
+    Deallocate ( a, Stat = stat )
+    If ( stat /= 0 ) Return
+
+    Allocate ( a( 1:size_new ), Stat = stat )
+    If ( stat /= 0 ) Return
+
+    If ( size_crs > 0 ) Then
+       a( 1:size_crs ) = tmp( 1:size_crs )
+       If ( delta > 0 ) a( size_crs+1:size_new ) = ' '
+    End If
+
+    Deallocate ( tmp, Stat = stat )
+
+  End Subroutine reallocate_chr_v
+
+  Subroutine reallocate_int_v( delta, a, stat )
+
+    Implicit None
+
+    Integer,              Intent( In    ) :: delta
+    Integer, Allocatable, Intent( InOut ) :: a(:)
+    Integer,              Intent(   Out ) :: stat
+
+    Integer :: size_old, size_new, size_crs
+
+    Integer, Allocatable :: tmp(:)
+
+    stat = 0
+    If ( delta == 0 ) Return
+
+    size_old = Size( a )
+    size_new = size_old + delta
+    size_crs = Min( size_old, size_new )
+
+    Allocate ( tmp( 1:size_old ), Stat = stat )
+    If ( stat /= 0 ) Return
+
+    tmp = a
+
+    Deallocate ( a, Stat = stat )
+    If ( stat /= 0 ) Return
+
+    Allocate ( a( 1:size_new ), Stat = stat )
+    If ( stat /= 0 ) Return
+
+    If ( size_crs > 0 ) Then
+       a( 1:size_crs ) = tmp( 1:size_crs )
+       If ( delta > 0 ) a( size_crs+1:size_new ) = 0
+    End If
+
+    Deallocate ( tmp, Stat = stat )
+
+  End Subroutine reallocate_int_v
+
+  Subroutine reallocate_rwp_v( delta, a, stat )
+
+    Implicit None
+
+    Integer,                        Intent( In    ) :: delta
+    Real( Kind = wp ), Allocatable, Intent( InOut ) :: a(:)
+    Integer,                        Intent(   Out ) :: stat
+
+    Integer :: size_old, size_new, size_crs
+
+    Real( Kind = wp ), Allocatable :: tmp(:)
+
+    stat = 0
+    If ( delta == 0 ) Return
+
+    size_old = Size( a )
+    size_new = size_old + delta
+    size_crs = Min( size_old, size_new )
+
+    Allocate ( tmp( 1:size_old ), Stat = stat )
+    If ( stat /= 0 ) Return
+
+    tmp = a
+
+    Deallocate ( a, Stat = stat )
+    If ( stat /= 0 ) Return
+
+    Allocate ( a( 1:size_new ), Stat = stat )
+    If ( stat /= 0 ) Return
+
+    If ( size_crs > 0 ) Then
+       a( 1:size_crs ) = tmp( 1:size_crs )
+       If ( delta > 0 ) a( size_crs+1:size_new ) = 0.0_wp
+    End If
+
+    Deallocate ( tmp, Stat = stat )
+
+  End Subroutine reallocate_rwp_v
+
+
+  Subroutine allocate_config_arrays_read( isize )
+
+    Implicit None
+
+    Integer, Intent( In    ) :: isize
+
+    Integer :: fail(1:5)
+
+    fail = 0
+
+    Allocate (atmnam(1:isize),                        Stat = fail(1))
+    Allocate (lsi(1:isize),lsa(1:isize),ltg(1:isize), Stat = fail(2))
+    Allocate (xxx(1:isize),yyy(1:isize),zzz(1:isize), Stat = fail(3))
+    Allocate (vxx(1:isize),vyy(1:isize),vzz(1:isize), Stat = fail(4))
+    Allocate (fxx(1:isize),fyy(1:isize),fzz(1:isize), Stat = fail(5))
+
+    If (Any(fail > 0)) Call error(1025)
+
+    atmnam = ' '
+    lsi = 0 ; lsa = 0 ; ltg = 0
+
+    xxx = 0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp
+    vxx = 0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp
+    fxx = 0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
+
+  End Subroutine allocate_config_arrays_read
+
+  Subroutine allocate_config_arrays()
+
+    Use setup_module
+
+    Implicit None
+
+    Integer           :: fail(1:5),stat(1:13)
+
+    fail = 0
+
+    Allocate (lsite(1:mxatms),ltype(1:mxatms),           Stat = fail(1))
+    Allocate (lfrzn(1:mxatms),lfree(1:mxatms),           Stat = fail(2))
+    Allocate (lexatm(0:mxexcl,1:mxatdm),ixyz(1:mxatms),  Stat = fail(3))
+    Allocate (list(-3:mxlist,1:mxatdm),lstfre(1:mxatdm), Stat = fail(4))
+    Allocate (weight(1:mxatms),chge(1:mxatms),           Stat = fail(5))
+
+    If (Any(fail > 0)) Call error(1025)
+
+    lsite = 0 ; ltype = 0
+    lfrzn = 0 ; lfree = 0
+
+    lexatm = 0 ; ixyz = 0
+    list = 0 ; lstfre = 0
+
+    weight = 0.0_wp ; chge = 0.0_wp
+
+! Resize the arrays in allocate_config_arrays_read
+
+    stat = 0
+
+    Call reallocate( mxatms - Size( atmnam ), atmnam, stat( 1) )
+    Call reallocate( mxatms - Size( lsi    ), lsi,    stat( 2) )
+    Call reallocate( mxatms - Size( lsa    ), lsa,    stat( 3) )
+    Call reallocate( mxatms - Size( ltg    ), ltg,    stat( 4) )
+    Call reallocate( mxatms - Size( xxx    ), xxx,    stat( 5) )
+    Call reallocate( mxatms - Size( yyy    ), yyy,    stat( 6) )
+    Call reallocate( mxatms - Size( zzz    ), zzz,    stat( 7) )
+    Call reallocate( mxatms - Size( vxx    ), vxx,    stat( 8) )
+    Call reallocate( mxatms - Size( vyy    ), vyy,    stat( 9) )
+    Call reallocate( mxatms - Size( vzz    ), vzz,    stat(10) )
+    Call reallocate( mxatms - Size( fxx    ), fxx,    stat(11) )
+    Call reallocate( mxatms - Size( fyy    ), fyy,    stat(12) )
+    Call reallocate( mxatms - Size( fzz    ), fzz,    stat(13) )
+
+    If ( Any(stat /= 0 )) Call error(1025)
+
+  End Subroutine allocate_config_arrays
+  
+  Subroutine check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -12,16 +270,9 @@ Subroutine check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use comms_module
-  Use setup_module
-  Use site_module
-  Use config_module ! imcon may change!!!
-
-  Implicit None
-
   Logical, Intent( In    ) :: l_str,lpse
   Integer, Intent( In    ) :: levcfg,keyens,iso,keyfce,keyres,megatm
+  Type( comms_type ), Intent( InOut ) :: comm
 
   Logical, Save     :: newjob = .true.
   Logical           :: safe
@@ -35,13 +286,13 @@ Subroutine check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
   If (l_str) Then
      Allocate (iwrk(1:mxatms), Stat=fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'check_config allocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'check_config allocation failure, node: ', comm%idnode
         Call error(0)
     End If
   End If
 
 
-  If (idnode == 0 .and. newjob) Then
+  If (comm%idnode == 0 .and. newjob) Then
      Write(nrite,"(/,1x,'configuration file name: ',/,/,10x,a)") cfgname
      Write(nrite,"(/,/,1x,'selected image convention',6x,i10)") imcon
   End If
@@ -84,7 +335,7 @@ Subroutine check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
 ! Specify molecular dynamics simulation cell
 
-  If (idnode == 0 .and. newjob) Then
+  If (comm%idnode == 0 .and. newjob) Then
      Write(nrite,"(/,/,1x,'simulation cell vectors'/)")
      Write(nrite,"(3f20.10)") cell
      Write(nrite,"(/,/,1x,'system volume     ',2x,1p,g22.12)") det
@@ -174,19 +425,19 @@ Subroutine check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
 
 ! Global check on successful connection between CONFIG and FIELD
 
-  If (mxnode > 1) Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Call error(25)
 
 ! Check CONFIG indices eligibility
 
   If (l_str) Then
      Call all_inds_present( iwrk, indatm, megatm, safe )
-     If (mxnode > 1) Call gcheck(safe)
+     Call gcheck(comm,safe)
      If (.not.safe) Call error(28)
 
      Deallocate (iwrk, Stat=fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'check_config deallocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'check_config deallocation failure, node: ', comm%idnode
         Call error(0)
      End If
   End If
@@ -233,8 +484,8 @@ Contains
 
     Logical :: loc_present
 
-    me    = idnode
-    nproc = mxnode
+    me    = comm%idnode
+    nproc = comm%mxnode
 
     ! Ever the optimist !
     all_present = .true.
@@ -250,11 +501,11 @@ Contains
     ! of the way mpi error handlers are usually dealt with
 !
 !    all_n_loc = 0
-!    all_n_loc( idnode ) = n_loc
+!    all_n_loc( comm%idnode ) = n_loc
 !    Call gsum( all_n_loc( 0:nrpocs - 1 ) )
 !
     Call MPI_ALLGATHER(     n_loc, 1, MPI_INTEGER, &
-                        all_n_loc, 1, MPI_INTEGER, dlp_comm_world, ierr )
+                        all_n_loc, 1, MPI_INTEGER, comm%comm, comm%ierr )
     all_present = ( Sum( all_n_loc ) == n )
     If ( .not. all_present ) Return
 
@@ -295,7 +546,7 @@ Contains
 
     Call MPI_ALLTOALL( to_send, 1, MPI_INTEGER, &
                        to_recv, 1, MPI_INTEGER, &
-                       dlp_comm_world, ierr )
+                       comm%comm, comm%ierr )
 
     ! Work out the displacements in the sending and receiving arrays
     Allocate ( displs_send( 0:nproc - 1 ), Stat = fail )
@@ -320,7 +571,7 @@ Contains
 
     Call MPI_ALLTOALLV( local_ind, to_send, displs_send, MPI_INTEGER, &
                         reorg_ind, to_recv, displs_recv, MPI_INTEGER, &
-                        dlp_comm_world, ierr )
+                        comm%comm, comm%ierr )
 
     ! Sort the reorganized data
     Call shellsort( n_loc, reorg_ind )
@@ -343,7 +594,7 @@ Contains
 
     ! Is everybody happy?
     loc_present = all_present
-    Call MPI_ALLREDUCE( loc_present, all_present, 1, MPI_LOGICAL, MPI_LAND, dlp_comm_world, ierr )
+    Call MPI_ALLREDUCE( loc_present, all_present, 1, MPI_LOGICAL, MPI_LAND, comm%comm, comm%ierr )
 
     Deallocate ( reorg_ind   , Stat = fail )
     If ( fail /= 0 ) Go To 100
@@ -366,10 +617,13 @@ Contains
 
 100 Continue
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'all_inds_present allocation/deallocation failure, node: ', idnode
+       Write(nrite,'(/,1x,a,i0)') 'all_inds_present allocation/deallocation failure, node: ', comm%idnode
        Call error(0)
     End If
 
   End Subroutine all_inds_present
 
 End Subroutine check_config
+
+
+End Module configuration

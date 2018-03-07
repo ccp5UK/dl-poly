@@ -11,7 +11,8 @@ Module domains_module
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
+  Use kinds, Only : wp
+  Use comms, Only : comms_type, gsync
 
   Implicit None
 
@@ -31,7 +32,7 @@ Module domains_module
 
 Contains
 
-  Subroutine map_domains(imcon,wx,wy,wz)
+  Subroutine map_domains(imcon,wx,wy,wz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -43,12 +44,10 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use comms_module, Only : idnode,mxnode,gsync
-
-    Implicit None
-
     Integer,           Intent( In    ) :: imcon
     Real( Kind = wp ), Intent( In    ) :: wx,wy,wz ! MD cell Cartesian widths
+    Type(comms_type),  Intent( InOut ) :: comm
+
 
     Integer                            :: i,j, jdx,jdy,jdz
 
@@ -82,7 +81,7 @@ Contains
 
 ! DD SEARCH
 
-    If (mxnode == 1) Then
+    If (comm%mxnode == 1) Then
 
        nprx = 1
        npry = 1
@@ -103,7 +102,7 @@ Contains
        npry = -1
        nprz = -1
 
-       P = mxnode
+       P = comm%mxnode
        Call factor( P, pfacsx )
        nfacsx = get_n_factors( pfacsx )
        Do i = 1, nfacsx
@@ -173,7 +172,7 @@ Contains
           End Do
        End Do
 
-       Call gsync()
+       Call gsync(comm)
        If ( nprx == - 1 .or. npry == -1 .or. nprz == -1 ) Call error(520)
 
     End If
@@ -191,9 +190,9 @@ Contains
 
 ! construct map of neighbouring nodes and domains
 
-    idz=idnode/(nprx*npry)
-    idy=idnode/nprx-idz*npry
-    idx=Mod(idnode,nprx)
+    idz=comm%idnode/(nprx*npry)
+    idy=comm%idnode/nprx-idz*npry
+    idx=Mod(comm%idnode,nprx)
 
     jdz=nprz+idz
     jdy=npry+idy
@@ -246,7 +245,7 @@ Contains
 ! NEEDED FOR CATCHING SELF-HALOING
 
     Do i=1,26
-       If (idnode == map(i)) mop(i)=1
+       If (comm%idnode == map(i)) mop(i)=1
        Do j=i+1,26
           If (map(i) == map(j)) mop(j)=1
        End Do

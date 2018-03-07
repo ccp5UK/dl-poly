@@ -1,4 +1,35 @@
-Subroutine build_excl_intra(lecx)
+Module build_excl
+! SETUP MODULES
+
+  Use kinds, Only : wp
+  Use comms,  Only : comms_type,gcheck,gmax
+  Use setup_module
+
+! CONFIG MODULE
+
+  Use configuration, Only : natms,nlast,lsi,lsa,lexatm
+
+! INTERACTION MODULES
+
+  Use core_shell_module
+
+  Use constraints_module
+
+  Use rigid_bodies_module
+
+  Use bonds
+  Use angles
+  Use dihedrals_module
+  Use inversions_module
+
+  Implicit None
+
+  Private
+  Public :: build_excl_intra
+
+Contains
+
+Subroutine build_excl_intra(lecx,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -13,32 +44,9 @@ Subroutine build_excl_intra(lecx)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-! SETUP MODULES
 
-  Use kinds, only : wp
-  Use comms_module,  Only : idnode,mxnode,gcheck,gmax
-  Use setup_module
-
-! CONFIG MODULE
-
-  Use config_module, Only : natms,nlast,lsi,lsa,lexatm
-
-! INTERACTION MODULES
-
-  Use core_shell_module
-
-  Use constraints_module
-
-  Use rigid_bodies_module
-
-  Use bonds_module
-  Use angles_module
-  Use dihedrals_module
-  Use inversions_module
-
-  Implicit None
-
-  Logical, Intent( In    ) :: lecx
+  Logical,             Intent( In    ) :: lecx
+  Type( comms_type ),  Intent( InOut ) :: comm
 
   Logical :: safe
   Integer :: fail(1:2),i,j,k,l,kk,             &
@@ -53,7 +61,7 @@ Subroutine build_excl_intra(lecx)
      Allocate (irgd(1:mxlrgd,1:mxrgd),irgd0(1:mxlrgd,1:mxrgd), Stat=fail(1))
      Allocate (jrgd(1:mxlrgd,1:mxrgd),jrgd0(1:mxlrgd,1:mxrgd), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'build_excl_intra allocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'build_excl_intra allocation failure, node: ', comm%idnode
         Call error(0)
      End If
   End If
@@ -1149,9 +1157,9 @@ Subroutine build_excl_intra(lecx)
 
 ! check for exceeded array bounds
 
-  If (mxnode > 1) Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Then
-     If (mxnode > 1) Call gmax(ibig)
+     Call gmax(comm,ibig)
      Call warning(250,Real(ibig,wp),Real(mxexcl,wp),0.0_wp)
      Call error(65)
   End If
@@ -1167,7 +1175,7 @@ Subroutine build_excl_intra(lecx)
      Deallocate (irgd,irgd0, Stat=fail(1))
      Deallocate (jrgd,jrgd0, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'build_excl_intra deallocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'build_excl_intra deallocation failure, node: ', comm%idnode
         Call error(0)
      End If
   End If
@@ -1242,3 +1250,4 @@ Contains
   End Subroutine add_exclusion
 
 End Subroutine build_excl_intra
+End Module build_excl

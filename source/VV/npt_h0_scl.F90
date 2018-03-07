@@ -19,7 +19,7 @@ Subroutine npt_h0_scl &
 
   Use kinds, Only : wp, li
   Use setup_module
-  Use config_module, Only : natms
+  Use configuration, Only : natms
 
   Implicit None
 

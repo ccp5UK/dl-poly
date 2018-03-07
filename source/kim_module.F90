@@ -22,11 +22,14 @@ Module kim_module
 #ifdef KIM
   Use KIM_API_F03
   Use domains_module, Only : map
-  Use config_module,  Only : natms,nlast,lsi,lsa,ltg,list,lsite, &
+  Use configuration,  Only : natms,nlast,lsi,lsa,ltg,list,lsite, &
                              xxx,yyy,zzz,fxx,fyy,fzz
   Use setup_module,   Only : nrite,mxsite,mxlist,mxatdm,mxbfxp
   Use site_module,    Only : unqatm,ntpatm,sitnam
-  Use comms_module
+  Use comms, Only : comms_type
+#else  
+  Use comms, Only : comms_type
+  Use setup_module, Only : nrite
 #endif
 
   Implicit None
@@ -59,7 +62,7 @@ Module kim_module
 
 Contains
 
-  Subroutine kim_cutoff(num_types,model_types,model_name,cutoff)
+  Subroutine kim_cutoff(num_types,model_types,model_name,cutoff,comm)
 
 !-------------------------------------------------------------------------------
 !
@@ -69,12 +72,11 @@ Contains
 !
 !-------------------------------------------------------------------------------
 
-    Implicit None
-
     Integer( Kind = c_int ), Intent( In    ) :: num_types
     Character( Len = * ),    Intent( In    ) :: model_types(1:num_types)
     Character( Len = * ),    Intent( In    ) :: model_name
     Real( Kind = wp ),       Intent(   Out ) :: cutoff
+    Type(comms_type),        Intent( InOut ) :: comm
 
 #ifdef KIM
     Integer( Kind = c_int )          :: ier, idum
@@ -131,11 +133,11 @@ Contains
     pkim = c_null_ptr
 #else
     cutoff = 0.0_wp
-    Call kim_message()
+    Call kim_message(comm)
 #endif
   End Subroutine  kim_cutoff
 
-  Subroutine kim_setup(num_types,model_types,model_name)
+  Subroutine kim_setup(num_types,model_types,model_name,comm)
 
 !-------------------------------------------------------------------------------
 !
@@ -145,11 +147,10 @@ Contains
 !
 !-------------------------------------------------------------------------------
 
-    Implicit None
-
     Character(Len = *),      Intent( In    ) :: model_name
     Integer( Kind = c_int ), Intent( In    ) :: num_types
     Character( Len = * ),    Intent( In    ) :: model_types(1:num_types)
+    Type(comms_type),        Intent( InOut ) :: comm
 
 #ifdef KIM
     Integer( Kind = c_int ) :: ier,idum
@@ -194,14 +195,14 @@ Contains
     Allocate (kim_list(mxlist,mxatdm), Stat=fail)
     If (fail > 0) Then
        Write(nrite, '(/,1x,a,i0)') &
-            'kim_setup kim_list allocation failure, node: ', idnode
+            'kim_setup kim_list allocation failure, node: ', comm%idnode
        Call error(0)
     End If
 
     If (RijNeeded) Allocate (kim_Rij(3,mxlist,mxatdm), Stat=fail)
     If (fail > 0) Then
        Write(nrite, '(/,1x,a,i0)') &
-            'kim_setup kim_Rij allocation failure, node: ', idnode
+            'kim_setup kim_Rij allocation failure, node: ', comm%idnode
        Call error(0)
     End If
 
@@ -210,7 +211,7 @@ Contains
     Allocate (rev_comm_buffer(1:limit), Stat=fail)
     If (fail > 0) Then
        Write(nrite, '(/,1x,a,i0)') &
-            'kim_setup rev_comm_buffer allocation failure, node: ', idnode
+            'kim_setup rev_comm_buffer allocation failure, node: ', comm%idnode
        Call error(0)
     End If
 
@@ -268,11 +269,11 @@ Contains
        Stop
     End If
 #else
-    Call kim_message()
+    Call kim_message(comm)
 #endif
   End Subroutine kim_setup
 
-  Subroutine kim_cleanup()
+  Subroutine kim_cleanup(comm)
 
 !-------------------------------------------------------------------------------
 !
@@ -282,7 +283,7 @@ Contains
 !
 !-------------------------------------------------------------------------------
 
-    Implicit None
+    Type(comms_type),        Intent( InOut ) :: comm
 
 #ifdef KIM
     Integer                 :: fail
@@ -292,7 +293,7 @@ Contains
     Deallocate (kim_list, Stat=fail)
     If (fail > 0) Then
        Write(nrite,'(/,1x,a,i0)') &
-            'failure deallocating kim_list in kim_module, node: ', idnode
+            'failure deallocating kim_list in kim_module, node: ', comm%idnode
        Call error(0)
     End If
 
@@ -300,14 +301,14 @@ Contains
     If (RijNeeded) Deallocate (kim_Rij, Stat=fail)
     If (fail > 0) Then
        Write(nrite,'(/,1x,a,i0)') &
-            'failure deallocating kim_Rij in kim_module, node: ', idnode
+            'failure deallocating kim_Rij in kim_module, node: ', comm%idnode
        Call error(0)
     End If
 
     Deallocate (rev_comm_buffer, Stat=fail)
     If (fail > 0) Then
        Write(nrite,'(/,1x,a,i0)') &
-            'failure deallocating rev_comm_buffer in kim_module, node: ', idnode
+            'failure deallocating rev_comm_buffer in kim_module, node: ', comm%idnode
        Call error(0)
     End If
 
@@ -326,11 +327,11 @@ Contains
     End If
     pkim = c_null_ptr
 #else
-    Call kim_message()
+    Call kim_message(comm)
 #endif
   End Subroutine kim_cleanup
 
-  Subroutine kim_forces(engkim,virkim,stress)
+  Subroutine kim_forces(engkim,virkim,stress,comm)
 
 !-------------------------------------------------------------------------------
 !
@@ -343,11 +344,11 @@ Contains
 !
 !-------------------------------------------------------------------------------
 
-    Implicit None
 
     Real( Kind = wp ), Intent( InOut ) :: engkim
     Real( Kind = wp ), Intent( InOut ) :: virkim
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
+    Type(comms_type),        Intent( InOut ) :: comm
 
 #ifdef KIM
     Integer( Kind = c_int ) :: i,j,k
@@ -437,7 +438,7 @@ Contains
     virkim = 0.0_wp
     stress = 0.0_wp
 
-    Call kim_message()
+    Call kim_message(comm)
 #endif
   End Subroutine kim_forces
 
@@ -827,15 +828,11 @@ Contains
   End Function kim_basic_init
 #endif
 
-  Subroutine kim_message()
+  Subroutine kim_message(comm)
 
 #ifndef KIM
-    Use comms_module, Only : idnode
-    Use setup_module, Only : nrite
-
-    Implicit None
-
-    If (idnode == 0) Write(nrite,'(1x,a)') "*** warning - kim directive found in FIELD but openKIM not available !!! ***"
+    Type(comms_type), Intent( In ) :: comm
+    If (comm%idnode == 0) Write(nrite,'(1x,a)') "*** warning - kim directive found in FIELD but openKIM not available !!! ***"
     Call error(0)
 #endif
   End Subroutine kim_message

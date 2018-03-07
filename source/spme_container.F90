@@ -437,7 +437,7 @@ Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz)
 
   Use kinds, only : wp
   Use setup_module
-  Use config_module, Only : imcon
+  Use configuration, Only : imcon
   Use mpoles_module, Only : ncombk
 
   Implicit None

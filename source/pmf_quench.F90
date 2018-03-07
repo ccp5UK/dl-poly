@@ -12,7 +12,7 @@ Subroutine pmf_quench(mxshak,tolnce)
   Use kinds, only : wp
   Use comms_module,  Only : idnode,mxnode,gcheck
   Use setup_module
-  Use config_module, Only : natms,lfrzn,vxx,vyy,vzz
+  Use configuration, Only : natms,lfrzn,vxx,vyy,vzz
   Use pmf_module
 
   Implicit None

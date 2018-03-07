@@ -39,7 +39,7 @@ Subroutine read_control                                &
   Use kinds, only : wp
   Use comms_module,      Only : idnode
   Use setup_module
-  Use config_module,     Only : sysname
+  Use configuration,     Only : sysname
   Use mpoles_module,     Only : thole
   Use dpd_module,        Only : keydpd,gamdpd
   Use langevin_module,   Only : l_lan,l_gst,langevin_allocate_arrays

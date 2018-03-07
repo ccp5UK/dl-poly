@@ -12,7 +12,7 @@ Subroutine origin_config(megatm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, only : wp
-  Use config_module,      Only : imcon,cell,natms,xxx,yyy,zzz
+  Use configuration,      Only : imcon,cell,natms,xxx,yyy,zzz
   Use development_module, Only : lvcforg,xorg,yorg,zorg
 
   Implicit None

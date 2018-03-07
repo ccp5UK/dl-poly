@@ -15,7 +15,7 @@ Subroutine coul_cp_mfield &
 
   Use kinds, only : wp
   Use setup_module
-  Use config_module, Only : natms,nlast,ltg,ltype,list
+  Use configuration, Only : natms,nlast,ltg,ltype,list
   Use mpoles_module, Only : mplmap,mplgfr,mpfldx,mpfldy,mpfldz
 
   Implicit None

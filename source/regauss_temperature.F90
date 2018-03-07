@@ -14,7 +14,7 @@ Subroutine regauss_temperature(megrgd)
   Use kinds, only : wp
   Use comms_module,       Only : idnode
   Use setup_module,       Only : nrite
-  Use config_module,      Only : natms,nfree,lfrzn,lstfre, &
+  Use configuration,      Only : natms,nfree,lfrzn,lstfre, &
                                  weight,vxx,vyy,vzz
   Use rigid_bodies_module
   Use kinetic_module,     Only : getvom

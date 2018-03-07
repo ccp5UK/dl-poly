@@ -13,7 +13,7 @@ Subroutine pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf)
   Use kinds, only : wp
   Use comms_module,    Only : mxnode,gsum
   Use setup_module
-  Use config_module,   Only : natms,lfrzn
+  Use configuration,   Only : natms,lfrzn
   Use pmf_module
 
   Implicit None

@@ -15,7 +15,7 @@ Subroutine defects_write &
   Use kinds, Only : wp, li
   Use comms_module
   Use setup_module
-  Use config_module,     Only : cfgname,imcon,cell,natms,nlast, &
+  Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use defects_module
   Use defects1_module,   Only : l_dfx

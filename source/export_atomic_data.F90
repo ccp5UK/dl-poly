@@ -16,7 +16,7 @@ Subroutine export_atomic_data(mdir)
   Use comms_module
   Use setup_module,  Only : nrite,mxatms,mxbfxp
   Use domains_module
-  Use config_module, Only : nlast,ltg,lsite,ixyz,cell,xxx,yyy,zzz
+  Use configuration, Only : nlast,ltg,lsite,ixyz,cell,xxx,yyy,zzz
   Use mpoles_module, Only : induce,indipx,indipy,indipz,rsdx,rsdy,rsdz
   Use kim_module,    Only : kim,idhalo
 

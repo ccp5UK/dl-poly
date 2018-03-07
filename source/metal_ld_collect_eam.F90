@@ -17,7 +17,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe)
 
   Use kinds, only : wp
   Use setup_module
-  Use config_module, Only : natms,ltype,list
+  Use configuration, Only : natms,ltype,list
   Use metal_module,  Only : l2bmet,tabmet,lstmet,dmet,dmes,rho,rhs
   Use site_module,   Only : ntpatm
 

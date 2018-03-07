@@ -15,7 +15,7 @@ Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
   Use comms_module,   Only : idnode
   Use setup_module
   Use domains_module, Only : nprx,npry,nprz,idx,idy,idz
-  Use config_module,  Only : cell,volm,natms,nlast,chge,xxx,yyy,zzz
+  Use configuration,  Only : cell,volm,natms,nlast,chge,xxx,yyy,zzz
   Use ewald_module
 
   Implicit None
@@ -431,7 +431,7 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use config_module, Only : fxx,fyy,fzz
+    Use configuration, Only : fxx,fyy,fzz
 
     Implicit None
 

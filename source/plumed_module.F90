@@ -10,10 +10,10 @@ Module plumed_module
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use comms_module,  Only : idnode,mxnode,dlp_comm_world
+  Use kinds, Only : wp
+  Use comms,  Only : comms_type
   Use setup_module,  Only : nrite, boltz, mxatms, DLP_VERSION
-  Use config_module, Only : cell,natms,weight,ltg,chge,fxx,fyy,fzz
+  Use configuration, Only : cell,natms,weight,ltg,chge,fxx,fyy,fzz
 
   Implicit None
 
@@ -45,10 +45,11 @@ Module plumed_module
 
 Contains
 
-  Subroutine plumed_init(megatm,tstep,temp)
+  Subroutine plumed_init(megatm,tstep,temp,comm)
 
     Integer,           Intent( In    ) :: megatm
     Real( Kind = wp ), Intent( In    ) :: tstep,temp
+    Type(comms_type),  Intent( InOut ) :: comm
 
 #ifdef PLUMED
     Call plumed_f_installed(has_plumed)
@@ -60,7 +61,7 @@ Contains
        Call plumed_f_gcmd("setMDEnergyUnits"//sn,plumed_energyUnits)
        Call plumed_f_gcmd("setMDLengthUnits"//sn,plumed_lengthUnits)
        Call plumed_f_gcmd("setMDTimeUnits"//sn,plumed_timeUnits)
-       Call plumed_f_gcmd("setMPIFComm"//sn,dlp_comm_world)
+       Call plumed_f_gcmd("setMPIFComm"//sn,comm%comm)
 ! Ideally would change file names here into names that can be controlled by user
 ! from control
        Call plumed_f_gcmd("setPlumedDat"//sn,Trim(plumed_input)//sn)
@@ -72,19 +73,20 @@ Contains
        Call plumed_f_gcmd("setKbT"//sn,temp*boltz)
        Call plumed_f_gcmd("init"//sn,0)
     Else
-       If (idnode == 0) Write(nrite,'(1x,a)') "*** warning - internal PLUMED library failure !!! ***"
+       If (comm%idnode == 0) Write(nrite,'(1x,a)') "*** warning - internal PLUMED library failure !!! ***"
        Call error(0)
     End If
 #endif
 
-    Call plumed_print_about()
+    Call plumed_print_about(comm)
 
   End Subroutine plumed_init
 
-  Subroutine plumed_print_about()
+  Subroutine plumed_print_about(comm)
 
+    Type(comms_type), Intent( InOut ) :: comm
 #ifdef PLUMED
-    If (idnode == 0) Then
+    If (comm%idnode == 0) Then
        Write(nrite,'(a)')""
        Write(nrite,'(14(a42,/))')                      &
        "***_____________________________________ ",    &
@@ -112,12 +114,12 @@ Contains
        Write(nrite,'(a,i0)')     "*** Using PLUMED restart (0: no, 1: yes): ", plumed_restart
     End If
 #else
-    Call plumed_message()
+    Call plumed_message(comm)
 #endif
 
   End Subroutine plumed_print_about
 
-  Subroutine plumed_apply(xxx,yyy,zzz,nstrun,nstep,stpcfg,stress)
+  Subroutine plumed_apply(xxx,yyy,zzz,nstrun,nstep,stpcfg,stress,comm)
 
     Integer,           Intent( In    ) :: nstep
     Integer,           Intent(   Out ) :: nstrun
@@ -125,6 +127,7 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
     Real( Kind = wp ), Intent( In    ) :: stpcfg
+    Type(comms_type), Intent( InOut )  :: comm
 
 #ifdef PLUMED
     Call plumed_f_gcmd("setAtomsNlocal"//sn,natms)
@@ -148,13 +151,13 @@ Contains
     Call plumed_f_gcmd("calc"//sn )
 
     If (plumed_stop /= 0) Then
-       If (idnode == 0) Write(nrite,'(a,i0,a)')"*** warning - DL_POLY was stopped cleanly by PLUMED at step: ",nstep," *** "
+       If (comm%idnode == 0) Write(nrite,'(a,i0,a)')"*** warning - DL_POLY was stopped cleanly by PLUMED at step: ",nstep," *** "
        nstrun=nstep
     End If
 #else
     nstrun=nstep
 
-    Call plumed_message()
+    Call plumed_message(comm)
 #endif
 
   End Subroutine plumed_apply
@@ -167,15 +170,11 @@ Contains
 
   End Subroutine plumed_finalize
 
-  Subroutine plumed_message()
-
+  Subroutine plumed_message(comm)
+    Type(comms_type), Intent( InOut ) :: comm
 #ifndef PLUMED
-    Use comms_module, Only : idnode
-    Use setup_module, Only : nrite
 
-    Implicit None
-
-    If (idnode == 0) Write(nrite,'(1x,a)') "*** warning - PLUMED directive found in CONTROL but PLUMED not available !!! ***"
+    If (comm%idnode == 0) Write(nrite,'(1x,a)') "*** warning - PLUMED directive found in CONTROL but PLUMED not available !!! ***"
     Call error(0)
 #endif
   End Subroutine plumed_message
