@@ -29,7 +29,7 @@ Subroutine set_bounds                                 &
   Use development_module, Only : l_trm
   Use greenkubo_module,   Only : vafsamp
   Use mpoles_module,      Only : keyind,induce
-  Use ttm_module,         Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
+  Use ttm_module,         Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho,l_ttm
 
   Implicit None
 
@@ -810,7 +810,7 @@ Subroutine set_bounds                                 &
 ! Check number of electronic temperature cells is greater than/
 ! equal to number of ionic temperature cells
 
-  If (Any(eltsys<ntsys)) Call error(670)
+  If (l_ttm .and. Any(eltsys<ntsys)) Call error(670)
 
 ! If redistribute option selected, check for sufficient electronic temperature
 ! cells to redistribute energy when ionic tmeperature cells are switched off:
