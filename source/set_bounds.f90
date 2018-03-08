@@ -29,7 +29,7 @@ Subroutine set_bounds                                 &
   Use development_module, Only : l_trm
   Use greenkubo_module,   Only : vafsamp
   Use mpoles_module,      Only : keyind,induce
-  Use ttm_module,         Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
+  Use ttm_module,         Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho,l_ttm
 
   Implicit None
 
