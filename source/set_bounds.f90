@@ -810,7 +810,7 @@ Subroutine set_bounds                                 &
 ! Check number of electronic temperature cells is greater than/
 ! equal to number of ionic temperature cells
 
-  If (Any(eltsys<ntsys)) Call error(670)
+  If (l_ttm .and. Any(eltsys<ntsys)) Call error(670)
 
 ! If redistribute option selected, check for sufficient electronic temperature
 ! cells to redistribute energy when ionic tmeperature cells are switched off:
