@@ -22,11 +22,11 @@ Module kim_module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use, Intrinsic :: iso_c_binding
-  Use kinds_f90
+  Use kinds, only : wp
 
   Use KIM_API_F03
   Use domains_module, Only : map
-  Use config_module,  Only : natms,nlast,lsi,lsa,ltg,list,lsite, &
+  Use configuration,  Only : natms,nlast,lsi,lsa,ltg,list,lsite, &
                              xxx,yyy,zzz,fxx,fyy,fzz
   Use setup_module,   Only : nrite,mxsite,mxlist,mxatdm,mxbfxp
   Use site_module,    Only : unqatm,ntpatm,sitnam

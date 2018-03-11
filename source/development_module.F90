@@ -1,24 +1,26 @@
 Module development_module
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 development module
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
-! contrib   - i.j.bush november 2008
-! contrib   - a.m.elena march 2016
-! contrib   - a.m.elena february 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 development module
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov june 2013
+  ! contrib   - i.j.bush november 2008
+  ! contrib   - a.m.elena march 2016
+  ! contrib   - a.m.elena february 2017
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds_f90
+  Use kinds, only : wp
   Use setup_module, Only : nrite, nread, control
 #ifdef OLDMPI
-  Use comms_module, Only : mpi_ver,mpi_subver
+  Use comms, Only : mpi_ver,mpi_subver, comms_type,gcheck, gtime, gsync
 #else
-  Use comms_module, Only : mpi_ver,mpi_subver,lib_version
+  Use comms, Only : mpi_ver,mpi_subver,lib_version,comms_type,gcheck, &
+    gtime, gsync
 #endif
+  Use parse_module, Only : get_line,get_word,lower_case
 
   Implicit None
 
@@ -53,126 +55,119 @@ Module development_module
 
 Contains
 
-  Subroutine scan_development()
+  Subroutine scan_development(comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 development subroutine for raw scanning the contents of the
-! control file
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov june 2013
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 development subroutine for raw scanning the contents of the
+    ! control file
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov june 2013
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use comms_module, Only : idnode,mxnode,gcheck
-    Use parse_module, Only : get_line,get_word,lower_case
-
-    Implicit None
-
+    Type( comms_type ), Intent( InOut ) :: comm
     Logical                :: carry,safe
     Character( Len = 200 ) :: record
     Character( Len = 40  ) :: word
 
-! Set safe flag
+    ! Set safe flag
 
     safe=.true.
 
-! Open the simulation input file
+    ! Open the simulation input file
 
-    If (idnode == 0) Inquire(File=Trim(control), Exist=safe)
-    If (mxnode > 1) Call gcheck(safe,"enforce")
+    If (comm%idnode == 0) Inquire(File=Trim(control), Exist=safe)
+    If (comm%mxnode > 1) Call gcheck(comm,safe,"enforce")
     If (.not.safe) Then
-       Return
+      Return
     Else
-       If (idnode == 0) Open(Unit=nread, File=Trim(control), Status='old')
+      If (comm%idnode == 0) Open(Unit=nread, File=Trim(control), Status='old')
     End If
 
-    Call get_line(safe,nread,record)
-    If (.not.safe) Go To 10
+    Call get_line(safe,nread,record,comm)
+    If (safe) Then 
 
-    carry = .true.
-    Do While (carry)
+      carry = .true.
+      Do While (carry)
 
-       Call get_line(safe,nread,record)
-       If (.not.safe) Go To 10
+        Call get_line(safe,nread,record,comm)
+        If (.not.safe) Exit
 
-       Call lower_case(record)
-       Call get_word(record,word)
+        Call lower_case(record)
+        Call get_word(record,word)
 
-! read DEVELOPMENT option: OUTPUT to screen
+        ! read DEVELOPMENT option: OUTPUT to screen
 
-       If      (word(1:5) == 'l_scr') Then
+        If      (word(1:5) == 'l_scr') Then
 
           l_scr = .true.
 
-       Else If (word(1:6) == 'l_fast') Then
+        Else If (word(1:6) == 'l_fast') Then
 
           l_fast=.true.
 
-       Else If (word(1:5) == 'l_tim') Then
+        Else If (word(1:5) == 'l_tim') Then
 
           l_tim=.true.
 
-       Else If (word(1:6) == 'finish') Then
+        Else If (word(1:6) == 'finish') Then
 
           carry=.false.
 
-       End If
+        End If
 
-    End Do
-
-10  Continue
-    If (idnode == 0) Close(Unit=nread)
+      End Do
+    End If
+    If (comm%idnode == 0) Close(Unit=nread)
 
   End Subroutine scan_development
 
-  Subroutine start_devel_time(name)
+  Subroutine start_devel_time(name,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 development subroutine for starting timing
-!
-! copyright - daresbury laboratory
-! author    - i.j.bush november 2009
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use comms_module, Only : gtime, gsync
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 development subroutine for starting timing
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.j.bush november 2009
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Character( Len = * ), Intent( In    ) :: name
+    Type( comms_type ), Intent( InOut ) :: comm
 
     If (l_tim) Then
-       Call gsync()
-       Call gtime(t_zero)
+      Call gsync(comm)
+      Call gtime(t_zero)
     End If
 
   End Subroutine start_devel_time
 
-  Subroutine end_devel_time(name)
+  Subroutine end_devel_time(name,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 development subroutine for ending timing
-!
-! copyright - daresbury laboratory
-! author    - i.j.bush november 2009
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use comms_module, Only : gtime, gsync, idnode
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 development subroutine for ending timing
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.j.bush november 2009
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Character( Len = * ), Intent( In    ) :: name
+    Type( comms_type ), Intent( InOut ) :: comm
 
     Real( Kind = wp ) :: t
 
     If (l_tim) Then
-       Call gsync()
-       Call gtime(t)
+      Call gsync(comm)
+      Call gtime(t)
 
-       If (idnode == 0) Then
-          Write(nrite,'(1x,2(a,3x),f0.3)') 'DEVEL TIME: Time in', name, t-t_zero
-       End If
+      If (comm%idnode == 0) Then
+        Write(nrite,'(1x,2(a,3x),f0.3)') 'DEVEL TIME: Time in', name, t-t_zero
+      End If
 
     End If
 
@@ -206,18 +201,14 @@ Contains
 
   Subroutine build_info()
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 development subroutine for ending timing
-!
-! copyright - daresbury laboratory
-! author    - a.m.elena & i.t.todorov april 2016
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use parse_module, Only : clean_string
-
-    Implicit None
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 development subroutine for ending timing
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.m.elena & i.t.todorov april 2016
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Character( Len =  8 ) :: date
     Character( Len = 10 ) :: time
@@ -250,10 +241,10 @@ Contains
     Call clean_string(aux)
     Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", " builder:", aux, "****"
     If      (mpi_ver == 0) Then
-       If (Len_Trim(__COMPILER__//" v"//__VERSION__//" (serial build)") > 47) Then
-         Write(aux,'(a47)') __COMPILER__//" v"//__VERSION__//" (serial build)"
-       Else
-         Write(aux,*) __COMPILER__//" v"//__VERSION__//" (serial build)"
+      If (Len_Trim(__COMPILER__//" v"//__VERSION__//" (serial build)") > 47) Then
+        Write(aux,'(a47)') __COMPILER__//" v"//__VERSION__//" (serial build)"
+      Else
+        Write(aux,*) __COMPILER__//" v"//__VERSION__//" (serial build)"
       End If
     Else If (mpi_ver >  0) Then
       If (Len_Trim(__COMPILER__//" v"//__VERSION__) > 47) Then
@@ -265,23 +256,23 @@ Contains
     Call clean_string(aux)
     Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "compiler:", aux, "****"
     If (mpi_ver > 0) Then
-       Write(aux,'(a1,i0,a1,i0)') "v",mpi_ver,".",mpi_subver
-       Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "     MPI:", aux, "****"
+      Write(aux,'(a1,i0,a1,i0)') "v",mpi_ver,".",mpi_subver
+      Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "     MPI:", aux, "****"
 #ifndef OLDMPI
-       Call clean_string(lib_version)
-       Do i=1,Len_Trim(lib_version),46
-          aux=lib_version(i:Min(i+45,Len_Trim(lib_version)))
-          Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
-       End Do
+      Call clean_string(lib_version)
+      Do i=1,Len_Trim(lib_version),46
+        aux=lib_version(i:Min(i+45,Len_Trim(lib_version)))
+        Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
+      End Do
 #endif
     Else If (mpi_ver < 0) Then
-       Write(aux,*) "MPI Library too old.  Please update!!!"
-       Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
+      Write(aux,*) "MPI Library too old.  Please update!!!"
+      Write(nrite,'(1x,a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
     End If
     Call date_and_time(date,time,zone,value)
     Write(aux,*) date(1:4),"-",date(5:6),"-",date(7:8),"  @  ",   &
-                 time(1:2),":",time(3:4),":",time(5:10),"  (GMT", &
-                 zone(1:3),":",zone(4:5),")"
+      time(1:2),":",time(3:4),":",time(5:10),"  (GMT", &
+      zone(1:3),":",zone(4:5),")"
     Write(nrite,'(1x,a4,1x,a9,a47,1x,a4)') "****", "executed:", aux, "****"
     Write(nrite,'(1x,a66,/)') Repeat("*",66)
 

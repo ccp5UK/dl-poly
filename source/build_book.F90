@@ -1,0 +1,1757 @@
+Module build_book
+! SETUP MODULES
+  Use kinds,         Only : wp, li
+  Use comms,  Only : comms_type,gcheck,gmax
+  Use setup_module
+
+! SITE MODULE
+
+  Use site_module
+
+! CONFIG MODULE
+
+  Use configuration, Only : natms,nlast,lsi,lsa,xxx,yyy,zzz
+
+! INTERACTION MODULES
+
+  Use core_shell
+
+  Use constraints
+  Use pmf_module
+
+  Use rigid_bodies_module
+
+  Use tethers_module
+
+  Use bonds
+  Use angles
+  Use dihedrals_module
+  Use inversions_module
+
+  Implicit None
+
+  Private
+
+
+
+  Public :: build_book_intra
+  Public :: compress_book_intra
+
+  contains
+
+Subroutine build_book_intra             &
+           (l_str,l_top,lsim,dvar,      &
+           megatm,megfrz,atmfre,atmfrz, &
+           megshl,megcon,megpmf,        &
+           megrgd,degrot,degtra,        &
+           megtet,megbnd,megang,megdih,meginv,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for setting up the domain distributed bookkeeping
+! of intra-like interactions: core-shell, bond constraints, PMF
+! constraints, RBs, tethered atoms, chemical bonds, valence angles,
+! torsion and improper torsion angles, and inversion angles
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov february 2017
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Logical,           Intent( In    ) :: l_str,l_top,lsim
+  Real(Kind = wp),   Intent( In    ) :: dvar
+
+  Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
+                                        megshl,megcon,megpmf, &
+                                        megtet,megbnd,megang, &
+                                        megdih,meginv
+  Integer,           Intent( InOut ) :: megfrz,megrgd
+  Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
+  Type( comms_type), Intent( InOut ) :: comm
+
+  Logical, Save :: newjob = .true.
+
+  Logical :: safe(1:11),go
+  Integer :: fail(1:2),i,j,isite,itmols,imols,      &
+             nsatm,neatm,nlapm,local_index,         &
+             iat0,jat0,kat0,lat0,mat0,nat0,         &
+             iatm,jatm,katm,latm,matm,natm,         &
+             ishels,jshels,kshels,lshels,mshels,    &
+             iconst,jconst,kconst,lconst,ipmf,lpmf, &
+             irigid,jrigid,krigid,lrigid,mrigid,    &
+             iteths,jteths,kteths,lteths,           &
+             ibonds,jbonds,kbonds,lbonds,           &
+             iangle,jangle,kangle,langle,           &
+             idihed,jdihed,kdihed,ldihed,           &
+             iinver,jinver,kinver,linver,           &
+             itmp(1:9),jtmp(1:9)
+  Real(Kind = wp) :: rcut,tmp
+
+  Integer, Dimension( : ), Allocatable :: iwrk,irgd,irgd0, &
+                                          i1pmf,i1pmf0,i2pmf,i2pmf0
+
+  fail=0
+  Allocate (iwrk(1:mxatms),                                Stat=fail(1))
+  If (m_rgd > 0) Allocate (irgd(1:mxlrgd),irgd0(1:mxlrgd), Stat=fail(2))
+  If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'build_book_intra allocation failure, node: ', comm%idnode
+     Call error(0)
+  End If
+
+  If (.not.(newjob .or. lsim)) Call init_intra()
+
+! Initialise safety flags
+
+  safe=.true.
+
+! Initialise bookkeeping indices
+
+  isite=0
+
+! "i" stands for excess number of intra-like units
+!
+! "j" stands for running index of intra-like unit
+!
+! "k" stands for last index of intra-like unit
+!     on last molecule of previous molecule type
+
+  ishels=0
+  jshels=0
+  kshels=0
+
+  iconst=0
+  jconst=0
+  kconst=0
+
+! No 'jpmf' and 'kpmf' needed since PMF is defined on one and only one
+! molecular type and therefore 'ntpmf' is enough and is used locally as 'jpmf'
+
+  ipmf  =0
+
+  irigid=0
+  jrigid=0
+  krigid=0
+
+  iteths=0
+  jteths=0
+  kteths=0
+
+  ibonds=0
+  jbonds=0
+  kbonds=0
+
+  iangle=0
+  jangle=0
+  kangle=0
+
+  idihed=0
+  jdihed=0
+  kdihed=0
+
+  iinver=0
+  jinver=0
+  kinver=0
+
+! global atom counter
+
+  nsatm=0
+
+! loop over molecule types in the system
+
+  Do itmols=1,ntpmls
+
+! loop over molecules of this type
+
+     Do imols=1,nummols(itmols)
+
+! last atom in the molecule
+
+        neatm=nsatm+numsit(itmols)
+
+! number of local atoms on this molecule
+
+        nlapm=0
+
+! From the first till the last atom of this molecule, get the number
+! of localised atoms on this node and save their local_index in iwrk
+
+        Do iatm=nsatm+1,neatm
+           iat0=local_index(iatm,nlast,lsi,lsa)
+           If (iat0 > natms) iat0=0
+
+           If (iat0 > 0) Then
+              nlapm=nlapm+1
+              iwrk(nlapm)=iat0
+           End If
+        End Do
+
+! If there are atoms of this molecule on this node, get global indices and
+! corresponding local_indices of the specific intra-like unit.  If any of
+! the local indices exists increase the local number of these intra-like
+! units (local = belongs to this node).  If it's safe to proceed (array
+! bounds check) record the global number of the intra-like unit and the
+! global atomic indices of its atoms.  Tag the local numbers of the
+! intra-like units and count them for each local atom (on domain) that is
+! a member of them in the intra-like unit's legend array.
+
+        If (nlapm > 0) Then
+
+! Construct core-shell list
+
+           Do lshels=1,numshl(itmols)
+              iatm=lstshl(1,lshels+kshels)+isite
+              jatm=lstshl(2,lshels+kshels)+isite
+
+              iat0=local_index(iatm,nlast,lsi,lsa)
+              jat0=local_index(jatm,nlast,lsi,lsa)
+
+              If (iat0 > natms) iat0=0
+              If (jat0 > natms) jat0=0
+
+              If (iat0 > 0 .or. jat0 > 0) Then
+                 jshels=jshels+1
+
+                 If (jshels <= mxshl) Then
+                    listshl(0,jshels)=lshels+kshels
+                    listshl(1,jshels)=iatm
+                    listshl(2,jshels)=jatm
+
+                    If (iat0 > 0) Then
+                       Call tag_legend(safe(1),iat0,jshels,legshl,mxfshl)
+                       If (legshl(mxfshl,iat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many core-shell type neighbours !!! ***",                &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfshl-1+legshl(mxfshl,iat0), &
+  "***           but maximum length allowed: ", mxfshl-1,                     &
+  "***           for particle (global ID #): ", iatm,                         &
+  "***           on mol. site (local  ID #): ", lstshl(1,lshels+kshels),      &
+  "***           of unit      (local  ID #): ", lshels,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (jat0 > 0) Then
+                       Call tag_legend(safe(1),jat0,-jshels,legshl,mxfshl)
+                       If (legshl(mxfshl,jat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many core-shell type neighbours !!! ***",                &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfshl-1+legshl(mxfshl,jat0), &
+  "***           but maximum length allowed: ", mxfshl-1,                     &
+  "***           for particle (global ID #): ", jatm,                         &
+  "***           on mol. site (local  ID #): ", lstshl(2,lshels+kshels),      &
+  "***           of unit      (local  ID #): ", lshels,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+                 Else
+                    ishels=ishels+1
+                    safe(2)=.false.
+                 End If
+              End If
+           End Do
+
+! Construct constraint bond list
+
+           Do lconst=1,numcon(itmols)
+              iatm=lstcon(1,lconst+kconst)+isite
+              jatm=lstcon(2,lconst+kconst)+isite
+
+              iat0=local_index(iatm,nlast,lsi,lsa)
+              jat0=local_index(jatm,nlast,lsi,lsa)
+
+              If (iat0 > natms) iat0=0
+              If (jat0 > natms) jat0=0
+
+              If (iat0 > 0 .or. jat0 > 0) Then
+                 jconst=jconst+1
+                 If (jconst <= mxcons) Then
+                    listcon(0,jconst)=lconst+kconst
+                    listcon(1,jconst)=iatm
+                    listcon(2,jconst)=jatm
+
+                    If (iat0 > 0) Then
+                       Call tag_legend(safe(1),iat0,jconst,legcon,mxfcon)
+                       If (legcon(mxfcon,iat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many constraint type neighbours !!! ***",                &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfcon-1+legcon(mxfcon,iat0), &
+  "***           but maximum length allowed: ", mxfcon-1,                     &
+  "***           for particle (global ID #): ", iatm,                         &
+  "***           on mol. site (local  ID #): ", lstcon(1,lconst+kconst),      &
+  "***           of unit      (local  ID #): ", lconst,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (jat0 > 0) Then
+                       Call tag_legend(safe(1),jat0,jconst,legcon,mxfcon)
+                       If (legcon(mxfcon,jat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many constraint type neighbours !!! ***",                &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfcon-1+legcon(mxfcon,jat0), &
+  "***           but maximum length allowed: ", mxfcon-1,                     &
+  "***           for particle (global ID #): ", jatm,                         &
+  "***           on mol. site (local  ID #): ", lstcon(2,lconst+kconst),      &
+  "***           of unit      (local  ID #): ", lconst,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+                 Else
+                    iconst=iconst+1
+                    safe(3)=.false.
+                 End If
+              End If
+           End Do
+
+! Construct PMF bond list
+! Note: This is executed for only one given molecular
+!       type as only one PMF type per MD system is allowed.
+
+           Do lpmf=1,numpmf(itmols) ! numpmf can only be 1 or 0, so the 'Do' loop is used as an 'If' condition
+              Allocate (i1pmf(1:mxtpmf(1)),i1pmf0(1:mxtpmf(1)),i2pmf(1:mxtpmf(2)),i2pmf0(1:mxtpmf(2)), Stat=fail(1))
+              If (fail(1) > 0) Then
+                 Write(nrite,'(/,1x,a,i0)') 'build_book_intra PMF allocation failure, node: ', comm%idnode
+                 Call error(0)
+              End If
+
+              i1pmf=0 ; i1pmf0=0
+              Do i=1,mxtpmf(1)
+                 i1pmf(i) =lstpmf(i,1)+isite
+                 i1pmf0(i)=local_index(i1pmf(i),nlast,lsi,lsa)
+                 If (i1pmf0(i) > natms) i1pmf0(i)=0
+              End Do
+
+              i2pmf=0 ; i2pmf0=0
+              Do i=1,mxtpmf(2)
+                 i2pmf(i) =lstpmf(i,2)+isite
+                 i2pmf0(i)=local_index(i2pmf(i),nlast,lsi,lsa)
+                 If (i2pmf0(i) > natms) i2pmf0(i)=0
+              End Do
+
+              If (Any(i1pmf0 > 0) .or. Any(i2pmf0 > 0)) Then
+                 ntpmf=ntpmf+1
+                 If (ntpmf <= mxpmf) Then
+
+! This holds the global PMF index
+
+                    listpmf(0,1,ntpmf)=imols
+
+! For presence of : PMF unit 1 only - this holds 1
+!                   PMF unit 2 only - this holds 2
+!                   both units 1&2  - this holds 3
+! It CANNOT and MUST NOT hold ZERO
+
+                    listpmf(0,2,ntpmf)=0
+
+                    Do i=1,mxtpmf(1)
+                       listpmf(i,1,ntpmf)=i1pmf(i)
+                       If (i1pmf0(i) > 0) Then
+                          Call tag_legend(safe(1),i1pmf0(i),ntpmf,legpmf,mxfpmf)
+                          If (legpmf(mxfpmf,i1pmf0(i)) > 0)                        &
+                             Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                  &
+  "*** warning - too many PMF type neighbours !!! ***",                            &
+  "***           on node      (MPI  rank #): ", comm%idnode,                            &
+  "***           requiring a list length of: ", mxfpmf-1+legpmf(mxfpmf,i1pmf0(i)), &
+  "***           but maximum length allowed: ", mxfpmf-1,                          &
+  "***           on mol. site (local  ID #): ", lstpmf(i,1),                       &
+  "***           for particle (global ID #): ", i1pmf(i),                          &
+  "***           of PMF unit  (1 or 2 only): ", 1,                                 &
+  "***           in molecule  (local  ID #): ", imols,                             &
+  "***           of type      (       ID #): ", itmols
+                       End If
+                    End Do
+                    If (Any(i1pmf0 > 0)) listpmf(0,2,ntpmf)=listpmf(0,2,ntpmf)+1
+
+                    Do i=1,mxtpmf(2)
+                       listpmf(i,2,ntpmf)=i2pmf(i)
+                       If (i2pmf0(i) > 0) Then
+                          Call tag_legend(safe(1),i2pmf0(i),ntpmf,legpmf,mxfpmf)
+                          If (legpmf(mxfpmf,i2pmf0(i)) > 0)                        &
+                             Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                  &
+  "*** warning - too many PMF type neighbours !!! ***",                            &
+  "***           on node      (MPI  rank #): ", comm%idnode,                            &
+  "***           requiring a list length of: ", mxfpmf-1+legpmf(mxfpmf,i2pmf0(i)), &
+  "***           but maximum length allowed: ", mxfpmf-1,                          &
+  "***           for particle (global ID #): ", i2pmf(i),                          &
+  "***           on mol. site (local  ID #): ", lstpmf(i,2),                       &
+  "***           of PMF unit  (1 or 2 only): ", 2,                                 &
+  "***           in molecule  (local  ID #): ", imols,                             &
+  "***           of type      (       ID #): ", itmols
+                       End If
+                    End Do
+                    If (Any(i2pmf0 > 0)) listpmf(0,2,ntpmf)=listpmf(0,2,ntpmf)+2
+
+                 Else
+                    ipmf=ipmf+1
+                    safe(4)=.false.
+                 End If
+              End If
+
+              Deallocate (i1pmf,i1pmf0,i2pmf,i2pmf0, Stat=fail(1))
+              If (fail(1) > 0) Then
+                 Write(nrite,'(/,1x,a,i0)') 'build_book_intra PMF deallocation failure, node: ', comm%idnode
+                 Call error(0)
+              End If
+           End Do
+
+! Construct RBs list
+
+           Do lrigid=1,numrgd(itmols)
+              mrigid=lstrgd(0,lrigid+krigid)
+
+              irgd=0 ; irgd0=0
+              Do irigid=1,mrigid
+                 irgd(irigid)=lstrgd(irigid,lrigid+krigid)+isite
+                 irgd0(irigid)=local_index(irgd(irigid),nlast,lsi,lsa)
+                 If (irgd0(irigid) > natms) irgd0(irigid)=0
+              End Do
+
+              If (Any(irgd0 > 0)) Then
+                 jrigid=jrigid+1
+                 If (jrigid <= mxrgd) Then
+                    listrgd(-1,jrigid)=mrigid
+                    listrgd( 0,jrigid)=lrigid+krigid
+                    Do irigid=1,mrigid
+                       listrgd(irigid,jrigid)=irgd(irigid)
+                       If (irgd0(irigid) > 0) Then
+                          Call tag_legend(safe(1),irgd0(irigid),jrigid,legrgd,mxfrgd)
+                          If (legrgd(mxfrgd,irgd0(irigid)) > 0)                        &
+                             Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                      &
+  "*** warning - too many RB type neighbours !!! ***",                                 &
+  "***           on node      (MPI  rank #): ", comm%idnode,                                &
+  "***           requiring a list length of: ", mxfrgd-1+legrgd(mxfrgd,irgd0(irigid)), &
+  "***           but maximum length allowed: ", mxfrgd-1,                              &
+  "***           for particle (global ID #): ", irgd(irigid),                          &
+  "***           on mol. site (local  ID #): ", lstrgd(irigid,lrigid+krigid),          &
+  "***           of unit      (local  ID #): ", lrigid,                                &
+  "***           in molecule  (local  ID #): ", imols,                                 &
+  "***           of type      (       ID #): ", itmols
+                       End If
+                    End Do
+                 Else
+                    irigid=irigid+1
+                    safe(5)=.false.
+                 End If
+              End If
+           End Do
+
+! Construct tethered atoms interaction list
+
+           Do lteths=1,numteth(itmols)
+              iatm=lsttet(lteths+kteths)+isite
+              iat0=local_index(iatm,nlast,lsi,lsa)
+              If (iat0 > natms) iat0=0
+
+              If (iat0 > 0) Then
+                 jteths=jteths+1
+                 If (jteths <= mxteth) Then
+                    listtet(0,jteths)=lteths+kteths
+                    listtet(1,jteths)=iatm
+
+                    Call tag_legend(safe(1),iat0,jteths,legtet,mxftet)
+                    If (legtet(mxftet,iat0) > 0)                              &
+                       Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                   &
+  "*** warning - too many tether type neighbours !!! ***",                    &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxftet-1+legtet(mxftet,iat0), &
+  "***           but maximum length allowed: ", mxftet-1,                     &
+  "***           for particle (global ID #): ", iatm,                         &
+  "***           on mol. site (local  ID #): ", lsttet(lteths+kteths),        &
+  "***           of unit      (local  ID #): ", lteths,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                 Else
+                    iteths=iteths+1
+                    safe(6)=.false.
+                 End If
+              End If
+           End Do
+
+! Construct chemical bond interaction list
+
+           Do lbonds=1,numbonds(itmols)
+              iatm=lstbnd(1,lbonds+kbonds)+isite
+              jatm=lstbnd(2,lbonds+kbonds)+isite
+
+              iat0=local_index(iatm,nlast,lsi,lsa)
+              jat0=local_index(jatm,nlast,lsi,lsa)
+
+              If (iat0 > natms) iat0=0
+              If (jat0 > natms) jat0=0
+
+              If (iat0 > 0 .or. jat0 > 0) Then
+                 jbonds=jbonds+1
+                 If (jbonds <= mxbond) Then
+                    listbnd(0,jbonds)=lbonds+kbonds
+                    listbnd(1,jbonds)=iatm
+                    listbnd(2,jbonds)=jatm
+
+                    If (iat0 > 0) Then
+                       Call tag_legend(safe(1),iat0,jbonds,legbnd,mxfbnd)
+                       If (legbnd(mxfbnd,iat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many bond type neighbours !!! ***",                      &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfbnd-1+legbnd(mxfbnd,iat0), &
+  "***           but maximum length allowed: ", mxfbnd-1,                     &
+  "***           for particle (global ID #): ", iatm,                         &
+  "***           on mol. site (local  ID #): ", lstbnd(1,lbonds+kbonds),      &
+  "***           of unit      (local  ID #): ", lbonds,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (jat0 > 0) Then
+                       Call tag_legend(safe(1),jat0,jbonds,legbnd,mxfbnd)
+                       If (legbnd(mxfbnd,jat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many bond type neighbours !!! ***",                      &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfbnd-1+legbnd(mxfbnd,jat0), &
+  "***           but maximum length allowed: ", mxfbnd-1,                     &
+  "***           for particle (global ID #): ", jatm,                         &
+  "***           on mol. site (local  ID #): ", lstbnd(2,lbonds+kbonds),      &
+  "***           of unit      (local  ID #): ", lbonds,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+                 Else
+                    ibonds=ibonds+1
+                    safe(7)=.false.
+                 End If
+              End If
+
+           End Do
+
+! Construct valence angle interaction list
+
+           Do langle=1,numang(itmols)
+              iatm=lstang(1,langle+kangle)+isite
+              jatm=lstang(2,langle+kangle)+isite
+              katm=lstang(3,langle+kangle)+isite
+
+              iat0=local_index(iatm,nlast,lsi,lsa)
+              jat0=local_index(jatm,nlast,lsi,lsa)
+              kat0=local_index(katm,nlast,lsi,lsa)
+
+              If (iat0 > natms) iat0=0
+              If (jat0 > natms) jat0=0
+              If (kat0 > natms) kat0=0
+
+              If (iat0 > 0 .or. jat0 > 0 .or. kat0 > 0) Then
+                 jangle=jangle+1
+                 If (jangle <= mxangl) Then
+                    listang(0,jangle)=langle+kangle
+                    listang(1,jangle)=iatm
+                    listang(2,jangle)=jatm
+                    listang(3,jangle)=katm
+
+                    If (iat0 > 0) Then
+                       Call tag_legend(safe(1),iat0,jangle,legang,mxfang)
+                       If (legang(mxfang,iat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many angle type neighbours !!! ***",                     &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfang-1+legang(mxfang,iat0), &
+  "***           but maximum length allowed: ", mxfang-1,                     &
+  "***           for particle (global ID #): ", iatm,                         &
+  "***           on mol. site (local  ID #): ", lstang(1,langle+kangle),      &
+  "***           of unit      (local  ID #): ", langle,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (jat0 > 0) Then
+                       Call tag_legend(safe(1),jat0,jangle,legang,mxfang)
+                       If (legang(mxfang,jat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many angle type neighbours !!! ***",                     &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfang-1+legang(mxfang,jat0), &
+  "***           but maximum length allowed: ", mxfang-1,                     &
+  "***           for particle (global ID #): ", jatm,                         &
+  "***           on mol. site (local  ID #): ", lstang(2,langle+kangle),      &
+  "***           of unit      (local  ID #): ", langle,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (kat0 > 0) Then
+                       Call tag_legend(safe(1),kat0,jangle,legang,mxfang)
+                       If (legang(mxfang,kat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many angle type neighbours !!! ***",                     &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfang-1+legang(mxfang,kat0), &
+  "***           but maximum length allowed: ", mxfang-1,                     &
+  "***           for particle (global ID #): ", katm,                         &
+  "***           on mol. site (local  ID #): ", lstang(3,langle+kangle),      &
+  "***           of unit      (local  ID #): ", langle,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+                 Else
+                    iangle=iangle+1
+                    safe(8)=.false.
+                 End If
+              End If
+           End Do
+
+! Construct dihedral angle interaction list
+
+           Do ldihed=1,numdih(itmols)
+              iatm=lstdih(1,ldihed+kdihed)+isite
+              jatm=lstdih(2,ldihed+kdihed)+isite
+              katm=lstdih(3,ldihed+kdihed)+isite
+              latm=lstdih(4,ldihed+kdihed)+isite
+              If (lx_dih) Then
+                 matm=lstdih(5,ldihed+kdihed)+isite
+                 natm=lstdih(6,ldihed+kdihed)+isite
+              End If
+
+              iat0=local_index(iatm,nlast,lsi,lsa)
+              jat0=local_index(jatm,nlast,lsi,lsa)
+              kat0=local_index(katm,nlast,lsi,lsa)
+              lat0=local_index(latm,nlast,lsi,lsa)
+              If (lx_dih) Then
+                 mat0=local_index(matm,nlast,lsi,lsa)
+                 nat0=local_index(natm,nlast,lsi,lsa)
+              Else
+                 mat0=0
+                 nat0=0
+              End If
+
+              If (iat0 > natms) iat0=0
+              If (jat0 > natms) jat0=0
+              If (kat0 > natms) kat0=0
+              If (lat0 > natms) lat0=0
+              If (lx_dih) Then
+                 If (mat0 > natms) mat0=0
+                 If (nat0 > natms) nat0=0
+              Else
+                 mat0=0
+                 nat0=0
+              End If
+
+              If (iat0 > 0 .or. jat0 > 0 .or. kat0 > 0 .or. lat0 > 0 .or. & ! lx_dih=.false.
+                  mat0 > 0 .or. nat0 > 0) Then                              ! lx_dix=.true.
+                 jdihed=jdihed+1
+                 If (jdihed <= mxdihd) Then
+                    listdih(0,jdihed)=ldihed+kdihed
+                    listdih(1,jdihed)=iatm
+                    listdih(2,jdihed)=jatm
+                    listdih(3,jdihed)=katm
+                    listdih(4,jdihed)=latm
+                    If (lx_dih) Then
+                       listdih(5,jdihed)=matm
+                       listdih(6,jdihed)=natm
+                    End If
+
+                    If (iat0 > 0) Then
+                       Call tag_legend(safe(1),iat0,jdihed,legdih,mxfdih)
+                       If (legdih(mxfdih,iat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many dihedral type neighbours !!! ***",                  &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,iat0), &
+  "***           but maximum length allowed: ", mxfdih-1,                     &
+  "***           for particle (global ID #): ", iatm,                         &
+  "***           on mol. site (local  ID #): ", lstdih(1,ldihed+kdihed),      &
+  "***           of unit      (local  ID #): ", ldihed,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (jat0 > 0) Then
+                       Call tag_legend(safe(1),jat0,jdihed,legdih,mxfdih)
+                       If (legdih(mxfdih,jat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many dihedral type neighbours !!! ***",                  &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,jat0), &
+  "***           but maximum length allowed: ", mxfdih-1,                     &
+  "***           for particle (global ID #): ", jatm,                         &
+  "***           on mol. site (local  ID #): ", lstdih(2,ldihed+kdihed),      &
+  "***           of unit      (local  ID #): ", ldihed,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (kat0 > 0) Then
+                       Call tag_legend(safe(1),kat0,jdihed,legdih,mxfdih)
+                       If (legdih(mxfdih,kat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many dihedral type neighbours !!! ***",                  &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,kat0), &
+  "***           but maximum length allowed: ", mxfdih-1,                     &
+  "***           for particle (global ID #): ", katm,                         &
+  "***           on mol. site (local  ID #): ", lstdih(3,ldihed+kdihed),      &
+  "***           of unit      (local  ID #): ", ldihed,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (lat0 > 0) Then
+                       Call tag_legend(safe(1),lat0,jdihed,legdih,mxfdih)
+                       If (legdih(mxfdih,lat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many dihedral type neighbours !!! ***",                  &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,lat0), &
+  "***           but maximum length allowed: ", mxfdih-1,                     &
+  "***           for particle (global ID #): ", latm,                         &
+  "***           on mol. site (local  ID #): ", lstdih(4,ldihed+kdihed),      &
+  "***           of unit      (local  ID #): ", ldihed,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (mat0 > 0) Then
+                       Call tag_legend(safe(1),mat0,jdihed,legdih,mxfdih)
+                       If (legdih(mxfdih,mat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many dihedral type neighbours !!! ***",                  &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,mat0), &
+  "***           but maximum length allowed: ", mxfdih-1,                     &
+  "***           for particle (global ID #): ", matm,                         &
+  "***           on mol. site (local  ID #): ", lstdih(4,ldihed+kdihed),      &
+  "***           of unit      (local  ID #): ", ldihed,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (nat0 > 0) Then
+                       Call tag_legend(safe(1),nat0,jdihed,legdih,mxfdih)
+                       If (legdih(mxfdih,nat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many dihedral type neighbours !!! ***",                  &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfdih-1+legdih(mxfdih,nat0), &
+  "***           but maximum length allowed: ", mxfdih-1,                     &
+  "***           for particle (global ID #): ", natm,                         &
+  "***           on mol. site (local  ID #): ", lstdih(4,ldihed+kdihed),      &
+  "***           of unit      (local  ID #): ", ldihed,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+                 Else
+                    idihed=idihed+1
+                    safe(9)=.false.
+                 End If
+              End If
+           End Do
+
+! Construct inversion potential interaction list
+
+           Do linver=1,numinv(itmols)
+              iatm=lstinv(1,linver+kinver)+isite
+              jatm=lstinv(2,linver+kinver)+isite
+              katm=lstinv(3,linver+kinver)+isite
+              latm=lstinv(4,linver+kinver)+isite
+
+              iat0=local_index(iatm,nlast,lsi,lsa)
+              jat0=local_index(jatm,nlast,lsi,lsa)
+              kat0=local_index(katm,nlast,lsi,lsa)
+              lat0=local_index(latm,nlast,lsi,lsa)
+
+              If (iat0 > natms) iat0=0
+              If (jat0 > natms) jat0=0
+              If (kat0 > natms) kat0=0
+              If (lat0 > natms) lat0=0
+
+              If (iat0 > 0 .or. jat0 > 0 .or. kat0 > 0 .or. lat0 > 0) Then
+                 jinver=jinver+1
+                 If (jinver <= mxinv) Then
+                    listinv(0,jinver)=linver+kinver
+                    listinv(1,jinver)=iatm
+                    listinv(2,jinver)=jatm
+                    listinv(3,jinver)=katm
+                    listinv(4,jinver)=latm
+
+                    If (iat0 > 0) Then
+                       Call tag_legend(safe(1),iat0,jinver,leginv,mxfinv)
+                       If (leginv(mxfinv,iat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many inversion type neighbours !!! ***",                 &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,iat0), &
+  "***           but maximum length allowed: ", mxfinv-1,                     &
+  "***           for particle (global ID #): ", iatm,                         &
+  "***           on mol. site (local  ID #): ", lstinv(1,linver+kinver),      &
+  "***           of unit      (local  ID #): ", linver,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (jat0 > 0) Then
+                       Call tag_legend(safe(1),jat0,jinver,leginv,mxfinv)
+                       If (leginv(mxfinv,jat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many inversion type neighbours !!! ***",                 &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,jat0), &
+  "***           but maximum length allowed: ", mxfinv-1,                     &
+  "***           for particle (global ID #): ", jatm,                         &
+  "***           on mol. site (local  ID #): ", lstinv(2,linver+kinver),      &
+  "***           of unit      (local  ID #): ", linver,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (kat0 > 0) Then
+                       Call tag_legend(safe(1),kat0,jinver,leginv,mxfinv)
+                       If (leginv(mxfinv,kat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many inversion type neighbours !!! ***",                 &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,kat0), &
+  "***           but maximum length allowed: ", mxfinv-1,                     &
+  "***           for particle (global ID #): ", katm,                         &
+  "***           on mol. site (local  ID #): ", lstinv(3,linver+kinver),      &
+  "***           of unit      (local  ID #): ", linver,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+
+                    If (lat0 > 0) Then
+                       Call tag_legend(safe(1),lat0,jinver,leginv,mxfinv)
+                       If (leginv(mxfinv,lat0) > 0)                           &
+                          Write(nrite,'(/,1x,a,8(/,1x,a,i0))')                &
+  "*** warning - too many inversion type neighbours !!! ***",                 &
+  "***           on node      (MPI  rank #): ", comm%idnode,                       &
+  "***           requiring a list length of: ", mxfinv-1+leginv(mxfinv,lat0), &
+  "***           but maximum length allowed: ", mxfinv-1,                     &
+  "***           for particle (global ID #): ", latm,                         &
+  "***           on mol. site (local  ID #): ", lstinv(4,linver+kinver),      &
+  "***           of unit      (local  ID #): ", linver,                       &
+  "***           in molecule  (local  ID #): ", imols,                        &
+  "***           of type      (       ID #): ", itmols
+                    End If
+                 Else
+                    iinver=iinver+1
+                    safe(10)=.false.
+                 End If
+              End If
+           End Do
+
+        End If
+
+        isite=isite+numsit(itmols)
+        nsatm=neatm
+
+     End Do
+
+! Update global unit numbers for all passed molecules so far
+
+     kshels=kshels+numshl(itmols)
+
+     kconst=kconst+numcon(itmols)
+! No 'kpmf' needed since PMF is defined on one and only one molecular type
+
+     krigid=krigid+numrgd(itmols)
+
+     kteths=kteths+numteth(itmols)
+
+     kbonds=kbonds+numbonds(itmols)
+     kangle=kangle+numang(itmols)
+     kdihed=kdihed+numdih(itmols)
+     kinver=kinver+numinv(itmols)
+
+  End Do
+
+! Store array counters for bookkeeping
+
+  ntshl =jshels
+
+  ntcons=jconst
+! 'ntpmf' is updated locally as PMFs are global and one type only
+
+  ntrgd =jrigid
+
+  ntteth=jteths
+
+  ntbond=jbonds
+  ntangl=jangle
+  ntdihd=jdihed
+  ntinv =jinver
+
+  If (megshl == 0) Then
+     ntshl1 =ntshl
+
+     ntcons1=ntcons
+
+     ntrgd1 =ntrgd
+
+     ntbond1=ntbond
+     ntangl1=ntangl
+     ntdihd1=ntdihd
+     ntinv1 =ntinv
+
+     ntshl2 =ntshl1
+
+     Go To 400
+  End If
+
+! Cycle through all constraint, RB, bond, angle, dihedral and inversion
+! units on this node and record the non-local index particles
+
+  iwrk=0
+  mshels=0
+  Do i=1,ntcons
+     iatm=listcon(1,i)
+     jatm=listcon(2,i)
+
+     iat0=local_index(iatm,nlast,lsi,lsa)
+     jat0=local_index(jatm,nlast,lsi,lsa)
+
+     If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=iatm
+     End If
+
+     If (jat0 > natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=jatm
+     End If
+  End Do
+  Do i=1,ntrgd
+     mrigid=listrgd(-1,i)
+
+     Do lrigid=1,mrigid
+        iatm=listrgd(lrigid,i)
+        iat0=local_index(iatm,nlast,lsi,lsa)
+
+        If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
+           mshels=mshels+1
+           iwrk(mshels)=iatm
+        End If
+     End Do
+  End Do
+  Do i=1,ntbond
+     iatm=listbnd(1,i)
+     jatm=listbnd(2,i)
+
+     iat0=local_index(iatm,nlast,lsi,lsa)
+     jat0=local_index(jatm,nlast,lsi,lsa)
+
+     If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=iatm
+     End If
+
+     If (jat0 > natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=jatm
+     End If
+  End Do
+  Do i=1,ntangl
+     iatm=listang(1,i)
+     jatm=listang(2,i)
+     katm=listang(3,i)
+
+     iat0=local_index(iatm,nlast,lsi,lsa)
+     jat0=local_index(jatm,nlast,lsi,lsa)
+     kat0=local_index(katm,nlast,lsi,lsa)
+
+     If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=iatm
+     End If
+
+     If (jat0 > natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=jatm
+     End If
+
+     If (kat0 > natms .and. (.not.Any(iwrk(1:mshels) == katm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=katm
+     End If
+  End Do
+  Do i=1,ntdihd
+     iatm=listdih(1,i)
+     jatm=listdih(2,i)
+     katm=listdih(3,i)
+     latm=listdih(4,i)
+     If (lx_dih) Then
+        matm=listdih(5,i)
+        natm=listdih(6,i)
+     End If
+
+     iat0=local_index(iatm,nlast,lsi,lsa)
+     jat0=local_index(jatm,nlast,lsi,lsa)
+     kat0=local_index(katm,nlast,lsi,lsa)
+     lat0=local_index(latm,nlast,lsi,lsa)
+     If (lx_dih) Then
+        mat0=local_index(matm,nlast,lsi,lsa)
+        nat0=local_index(natm,nlast,lsi,lsa)
+     Else
+        mat0=0
+        nat0=0
+     End If
+
+     If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=iatm
+     End If
+
+     If (jat0 > natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=jatm
+     End If
+
+     If (kat0 > natms .and. (.not.Any(iwrk(1:mshels) == katm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=katm
+     End If
+
+     If (lat0 > natms .and. (.not.Any(iwrk(1:mshels) == latm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=latm
+     End If
+
+     If (mat0 > natms .and. (.not.Any(iwrk(1:mshels) == matm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=matm
+     End If
+
+     If (nat0 > natms .and. (.not.Any(iwrk(1:mshels) == natm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=natm
+     End If
+  End Do
+  Do i=1,ntinv
+     iatm=listinv(1,i)
+     jatm=listinv(2,i)
+     katm=listinv(3,i)
+     latm=listinv(4,i)
+
+     iat0=local_index(iatm,nlast,lsi,lsa)
+     jat0=local_index(jatm,nlast,lsi,lsa)
+     kat0=local_index(katm,nlast,lsi,lsa)
+     lat0=local_index(latm,nlast,lsi,lsa)
+
+     If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=iatm
+     End If
+
+     If (jat0 > natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=jatm
+     End If
+
+     If (kat0 > natms .and. (.not.Any(iwrk(1:mshels) == katm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=katm
+     End If
+     If (lat0 > natms .and. (.not.Any(iwrk(1:mshels) == latm))) Then
+        mshels=mshels+1
+        iwrk(mshels)=latm
+     End If
+  End Do
+
+  If (mshels == 0) Go To 100
+
+! Include in local core-shell units' description
+! non-local units that are connected to partly shared
+! constraints, RBs, bonds, angles, dihedrals and inversions
+
+  isite=0                            ! initialise bookkeeping indices
+  kshels=0                           ! last index of core-shell unit
+  nsatm =0                           ! global atom counter
+  Do itmols=1,ntpmls                 ! loop over molecule types in the system
+     Do imols=1,nummols(itmols)      ! loop over molecules of this type
+        neatm=nsatm+numsit(itmols)   ! last atom in the molecule
+
+! From the first till the last atom of this molecule, is there a
+! non-local atom iwrk(1:mshels)
+
+        i=0                          ! There is not
+        Do iatm=nsatm+1,neatm
+           If (Any(iwrk(1:mshels) == iatm)) i=i+1
+        End Do
+
+! If there is a non-local atom iwrk(1:mshels) on this
+! molecule on this node, extend listshl
+
+        If (i > 0) Then
+
+! Extend core-shell units interaction list
+
+           Do lshels=1,numshl(itmols)
+              iatm=lstshl(1,lshels+kshels)+isite
+              jatm=lstshl(2,lshels+kshels)+isite
+
+              If ( Any(iwrk(1:mshels) == iatm) .or. &
+                   Any(iwrk(1:mshels) == jatm) ) Then
+                 jshels=jshels+1
+                 If (jshels <= mxshl) Then
+                    listshl(0,jshels)=lshels+kshels
+                    listshl(1,jshels)=iatm
+                    listshl(2,jshels)=jatm
+                 Else
+                    safe(2)=.false.
+                 End If
+              End If
+           End Do
+
+        End If
+
+        isite=isite+numsit(itmols)
+        nsatm=neatm
+     End Do
+
+! Update core-shell units number for all passed molecules so far
+
+     kshels=kshels+numshl(itmols)
+  End Do
+
+100 Continue
+
+! Store first (local+non-local) extended array counter
+! for bookkeeping and exclusion of core-shell units
+
+  ntshl1 =jshels
+
+! Cycle through all local and partly shared core-shell units on
+! this node and record the non-local indices of cross-domained
+! core-shell unit particles
+
+  iwrk=0
+  mshels=0
+  Do i=1,ntshl
+     iatm=listshl(1,i)
+     jatm=listshl(2,i)
+
+     iat0=local_index(iatm,nlast,lsi,lsa) ! This is a core
+     jat0=local_index(jatm,nlast,lsi,lsa) ! This is a shell
+
+     If (iat0 == 0 .and. jat0 == 0) safe(11)=.false.
+
+! Core is out
+
+     If (iat0 > natms) Then
+        mshels=mshels+1
+        iwrk(mshels)=iatm
+     End If
+
+! Shell is out
+
+     If (jat0 > natms) Then
+        mshels=mshels+1
+        iwrk(mshels)=jatm
+     End If
+  End Do
+
+  If (mshels == 0) Go To 200
+
+! Include in (local constraint, RB, bond, angle, dihedral
+! and inversion) units' descriptions non-local units that
+! are connected to partly shared core-shell units
+
+  isite=0                            ! initialise bookkeeping indices
+  kconst=0                           ! last index of constraint unit
+  krigid=0                           ! last index of RB unit
+  kbonds=0                           ! last index of bond unit
+  kangle=0                           ! last index of angle unit
+  kdihed=0                           ! last index of dihedral unit
+  kinver=0                           ! last index of inversion unit
+  nsatm =0                           ! global atom counter
+  Do itmols=1,ntpmls                 ! loop over molecule types in the system
+     Do imols=1,nummols(itmols)      ! loop over molecules of this type
+        neatm=nsatm+numsit(itmols)   ! last atom in the molecule
+
+! From the first till the last atom of this molecule, is there a
+! non-local, cross-domained core-shell unit atom
+
+        i=0                          ! There is not
+        Do iatm=nsatm+1,neatm
+           If (Any(iwrk(1:mshels) == iatm)) i=i+1
+        End Do
+
+! If there is a non-local, cross-domained core-shell unit atom on this
+! molecule on this node, extend listcon, listrgd, listbnd and listang
+
+        If (i > 0) Then
+
+! Extend constraint bond list
+
+           Do lconst=1,numcon(itmols)
+              iatm=lstcon(1,lconst+kconst)+isite
+              jatm=lstcon(2,lconst+kconst)+isite
+
+              If ( Any(iwrk(1:mshels) == iatm) .or. &
+                   Any(iwrk(1:mshels) == jatm) ) Then
+                 jconst=jconst+1
+                 If (jconst <= mxcons) Then
+                    listcon(0,jconst)=lconst+kconst
+                    listcon(1,jconst)=iatm
+                    listcon(2,jconst)=jatm
+                 Else
+                    safe(3)=.false.
+                 End If
+              End If
+           End Do
+
+! Extend RB list
+
+           Do lrigid=1,numrgd(itmols)
+              mrigid=lstrgd(0,lrigid+krigid)
+
+              irgd=0 ; irgd0=0 ; go=.false.
+              Do irigid=1,mrigid
+                 irgd(irigid)=lstrgd(irigid,lrigid+krigid)+isite
+                 go=(go .or. Any(iwrk(1:mshels) == irgd(irigid)))
+              End Do
+
+              If (go) Then
+                 jrigid=jrigid+1
+                 If (jrigid <= mxrgd) Then
+                    listrgd(-1,jrigid)=lstrgd(0,lrigid+krigid)
+                    listrgd( 0,jrigid)=lrigid+krigid
+                    Do irigid=1,mrigid
+                       listrgd(irigid,jrigid)=irgd(irigid)
+                    End Do
+                 Else
+                    safe(5)=.false.
+                 End If
+              End If
+           End Do
+
+! Extend chemical bond interaction list
+
+           Do lbonds=1,numbonds(itmols)
+              iatm=lstbnd(1,lbonds+kbonds)+isite
+              jatm=lstbnd(2,lbonds+kbonds)+isite
+
+              If ( Any(iwrk(1:mshels) == iatm) .or. &
+                   Any(iwrk(1:mshels) == jatm) ) Then
+                 jbonds=jbonds+1
+                 If (jbonds <= mxbond) Then
+                    listbnd(0,jbonds)=lbonds+kbonds
+                    listbnd(1,jbonds)=iatm
+                    listbnd(2,jbonds)=jatm
+                 Else
+                    safe(7)=.false.
+                 End If
+              End If
+           End Do
+
+! Extend valence angle interaction list
+
+           Do langle=1,numang(itmols)
+              iatm=lstang(1,langle+kangle)+isite
+              jatm=lstang(2,langle+kangle)+isite
+              katm=lstang(3,langle+kangle)+isite
+
+              If ( Any(iwrk(1:mshels) == iatm) .or. &
+                   Any(iwrk(1:mshels) == jatm) .or. &
+                   Any(iwrk(1:mshels) == katm) ) Then
+                 jangle=jangle+1
+                 If (jangle <= mxangl) Then
+                    listang(0,jangle)=langle+kangle
+                    listang(1,jangle)=iatm
+                    listang(2,jangle)=jatm
+                    listang(3,jangle)=katm
+                 Else
+                    safe(8)=.false.
+                 End If
+              End If
+           End Do
+
+! Extend dihedral angle interaction list
+
+           Do ldihed=1,numdih(itmols)
+              iatm=lstdih(1,ldihed+kdihed)+isite
+              jatm=lstdih(2,ldihed+kdihed)+isite
+              katm=lstdih(3,ldihed+kdihed)+isite
+              latm=lstdih(4,ldihed+kdihed)+isite
+
+              If ( Any(iwrk(1:mshels) == iatm) .or.    &
+                   Any(iwrk(1:mshels) == jatm) .or.    &
+                   Any(iwrk(1:mshels) == katm) .or.    &
+                   Any(iwrk(1:mshels) == latm) ) Then
+
+                 If (lx_dih) Then
+                    matm=lstdih(5,ldihed+kdihed)+isite
+                    natm=lstdih(6,ldihed+kdihed)+isite
+                    If ( .not.(Any(iwrk(1:mshels) == jatm) .or. &
+                               Any(iwrk(1:mshels) == katm)) ) Exit
+                 End If
+
+                 jdihed=jdihed+1
+                 If (jdihed <= mxdihd) Then
+                    listdih(0,jdihed)=ldihed+kdihed
+                    listdih(1,jdihed)=iatm
+                    listdih(2,jdihed)=jatm
+                    listdih(3,jdihed)=katm
+                    listdih(4,jdihed)=latm
+                    If (lx_dih) Then
+                       listdih(5,jdihed)=matm
+                       listdih(6,jdihed)=natm
+                    End If
+                 Else
+                    safe(9)=.false.
+                 End If
+              End If
+           End Do
+
+! Extend inversion potential interaction list
+
+           Do linver=1,numinv(itmols)
+              iatm=lstinv(1,linver+kinver)+isite
+              jatm=lstinv(2,linver+kinver)+isite
+              katm=lstinv(3,linver+kinver)+isite
+              latm=lstinv(4,linver+kinver)+isite
+
+              If ( Any(iwrk(1:mshels) == iatm) .or. &
+                   Any(iwrk(1:mshels) == jatm) .or. &
+                   Any(iwrk(1:mshels) == katm) .or. &
+                   Any(iwrk(1:mshels) == latm) ) Then
+                 jinver=jinver+1
+                 If (jinver <= mxinv) Then
+                    listinv(0,jinver)=linver+kinver
+                    listinv(1,jinver)=iatm
+                    listinv(2,jinver)=jatm
+                    listinv(3,jinver)=katm
+                    listinv(4,jinver)=latm
+                 Else
+                    safe(10)=.false.
+                 End If
+              End If
+           End Do
+
+        End If
+
+        isite=isite+numsit(itmols)
+        nsatm=neatm
+     End Do
+
+! Update constraint, RB, bond, angle, dihedral and inversion
+! units numbers for all passed molecules so far
+
+     kconst=kconst+numcon(itmols)
+
+     krigid=krigid+numrgd(itmols)
+
+     kbonds=kbonds+numbonds(itmols)
+     kangle=kangle+numang(itmols)
+     kdihed=kdihed+numdih(itmols)
+     kinver=kinver+numinv(itmols)
+  End Do
+
+200 Continue
+
+! Store first extended array counters for bookkeeping and exclusion
+! of constraint, RB, bond, angle, dihedral and inversion units
+
+  ntcons1=jconst
+
+  ntrgd1 =jrigid
+
+  ntbond1=jbonds
+  ntangl1=jangle
+  ntdihd1=jdihed
+  ntinv1 =jinver
+
+! Cycle through the extended -
+! constraint, RB, bond, angle, dihedral and inversion units
+! on this node and record the non-local index particles
+
+  iwrk=0
+  mshels=0
+  Do i=ntcons+1,ntcons1
+     iatm=listcon(1,i)
+     jatm=listcon(2,i)
+
+     If (.not.Any(iwrk(1:mshels) == iatm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=iatm
+     End If
+
+     If (.not.Any(iwrk(1:mshels) == jatm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=jatm
+     End If
+  End Do
+  Do i=ntrgd+1,ntrgd1
+     mrigid=listrgd(-1,i)
+
+     Do j=1,mrigid
+        iatm=listrgd(j,i)
+        If (.not.Any(iwrk(1:mshels) == iatm)) Then
+           mshels=mshels+1
+           iwrk(mshels)=iatm
+        End If
+     End Do
+  End Do
+  Do i=ntbond+1,ntbond1
+     iatm=listbnd(1,i)
+     jatm=listbnd(2,i)
+
+     If (.not.Any(iwrk(1:mshels) == iatm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=iatm
+     End If
+
+     If (.not.Any(iwrk(1:mshels) == jatm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=jatm
+     End If
+  End Do
+  Do i=ntangl+1,ntangl1
+     iatm=listang(1,i)
+     jatm=listang(2,i)
+     katm=listang(3,i)
+
+     If (.not.Any(iwrk(1:mshels) == iatm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=iatm
+     End If
+
+     If (.not.Any(iwrk(1:mshels) == jatm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=jatm
+     End If
+
+     If (.not.Any(iwrk(1:mshels) == katm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=katm
+     End If
+  End Do
+  Do i=ntdihd+1,ntdihd1
+     iatm=listdih(1,i)
+     jatm=listdih(2,i)
+     katm=listdih(3,i)
+     latm=listdih(4,i)
+     If (lx_dih) Then
+        matm=listdih(5,i)
+        natm=listdih(6,i)
+     End If
+
+     If (.not.Any(iwrk(1:mshels) == iatm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=iatm
+     End If
+
+     If (.not.Any(iwrk(1:mshels) == jatm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=jatm
+     End If
+
+     If (.not.Any(iwrk(1:mshels) == katm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=katm
+     End If
+
+     If (.not.Any(iwrk(1:mshels) == latm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=latm
+     End If
+
+     If (lx_dih) Then
+        If (.not.Any(iwrk(1:mshels) == matm)) Then
+           mshels=mshels+1
+           iwrk(mshels)=matm
+        End If
+
+        If (.not.Any(iwrk(1:mshels) == natm)) Then
+           mshels=mshels+1
+           iwrk(mshels)=natm
+        End If
+     End If
+  End Do
+  Do i=ntinv+1,ntinv1
+     iatm=listinv(1,i)
+     jatm=listinv(2,i)
+     katm=listinv(3,i)
+     latm=listinv(4,i)
+
+     If (.not.Any(iwrk(1:mshels) == iatm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=iatm
+     End If
+
+     If (.not.Any(iwrk(1:mshels) == jatm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=jatm
+     End If
+
+     If (.not.Any(iwrk(1:mshels) == katm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=katm
+     End If
+
+     If (.not.Any(iwrk(1:mshels) == latm)) Then
+        mshels=mshels+1
+        iwrk(mshels)=latm
+     End If
+  End Do
+
+  If (mshels == 0) Go To 300
+
+! Include in local and non-local - connected to partly shared
+! constraints, RBs, bonds, angles, dihedrals or inversions -
+! core-shell unit description of foreign units that are connected to
+! non-local constraints, RBs, bonds, angles, dihedrals or inversions
+! by partly shared core-shell units
+
+  isite=0                            ! initialise bookkeeping indices
+  kshels=0                           ! last index of core-shell unit
+  nsatm =0                           ! global atom counter
+  Do itmols=1,ntpmls                 ! loop over molecule types in the system
+     Do imols=1,nummols(itmols)      ! loop over molecules of this type
+        neatm=nsatm+numsit(itmols)   ! last atom in the molecule
+
+! From the first till the last atom of this molecule, is there a
+! non-local atom iwrk(1:mshels)
+
+        i=0                          ! There is not
+        Do iatm=nsatm+1,neatm
+           If (Any(iwrk(1:mshels) == iatm)) i=i+1
+        End Do
+
+! If there is a non-local atom iwrk(1:mshels) on this
+! molecule on this node, extend listshl
+
+        If (i > 0) Then
+
+! Extend core-shell units interaction list
+
+           Do lshels=1,numshl(itmols)
+              iatm=lstshl(1,lshels+kshels)+isite
+              jatm=lstshl(2,lshels+kshels)+isite
+
+              If ( Any(iwrk(1:mshels) == iatm) .or. &
+                   Any(iwrk(1:mshels) == jatm) ) Then
+                 jshels=jshels+1
+                 If (jshels <= mxshl) Then
+                    listshl(0,jshels)=lshels+kshels
+                    listshl(1,jshels)=iatm
+                    listshl(2,jshels)=jatm
+                 Else
+                    safe(2)=.false.
+                 End If
+              End If
+           End Do
+
+        End If
+
+        isite=isite+numsit(itmols)
+        nsatm=neatm
+     End Do
+
+! Update core-shell units number for all passed molecules so far
+
+     kshels=kshels+numshl(itmols)
+  End Do
+
+300 Continue
+
+! Store second (local+non-local+foreign) extended array counter
+! for bookkeeping and exclusion of core-shell units
+
+  ntshl2 =jshels
+
+!  If (lx_dih) ntdihd=ntdihd1 ! extend the dihedrals' set
+
+400 Continue
+
+! error exit for all error conditions (size of work arrays)
+
+  Call gcheck(comm,safe)
+  If (.not.safe( 1)) Call error( 88)
+
+  If (Any(.not.safe)) Then
+     itmp(1)=ishels ; jtmp(1)=mxshl
+     itmp(2)=iconst ; jtmp(2)=mxcons
+     itmp(3)=ipmf   ; jtmp(3)=mxpmf
+     itmp(4)=irigid ; jtmp(4)=mxrgd
+     itmp(5)=iteths ; jtmp(5)=mxteth
+     itmp(6)=ibonds ; jtmp(6)=mxbond
+     itmp(7)=iangle ; jtmp(7)=mxangl
+     itmp(8)=idihed ; jtmp(8)=mxdihd
+     itmp(9)=iinver ; jtmp(9)=mxinv
+
+     Call gmax(comm,itmp(1:9))
+
+     tmp=1.0_wp
+     Do i=1,9
+        tmp=Max(tmp,1.0_wp+Real(itmp(i),wp)/Real(Max(1,jtmp(i)),wp))
+     End Do
+
+     If (comm%idnode == 0) Write(nrite,'(1x,a,i0,2f5.2)')                                 &
+        '*** warning - estimated densvar value for passing this stage safely is : ', &
+        Nint((dvar*tmp-1.0_wp)*100.0_wp+0.5_wp)
+  End If
+
+  If (.not.safe( 2)) Call error( 59)
+  If (.not.safe( 3)) Call error( 41)
+  If (.not.safe( 4)) Call error(488)
+  If (.not.safe( 5)) Call error(640)
+  If (.not.safe( 6)) Call error( 63)
+  If (.not.safe( 7)) Call error( 31)
+  If (.not.safe( 8)) Call error( 51)
+  If (.not.safe( 9)) Call error( 61)
+  If (.not.safe(10)) Call error( 77)
+  If (.not.safe(11)) Call error( 64)
+
+  Deallocate (iwrk,                      Stat=fail(1))
+  If (m_rgd > 0) Deallocate (irgd,irgd0, Stat=fail(2))
+  If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'build_book_intra deallocation failure, node: ', comm%idnode
+     Call error(0)
+  End If
+
+  If (newjob) Then
+
+     newjob=.false.
+
+! Set RB particulars and quaternions
+
+     If (m_rgd > 0) Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,megrgd,degtra,degrot)
+
+     Call report_topology                &
+           (megatm,megfrz,atmfre,atmfrz, &
+           megshl,megcon,megpmf,megrgd,  &
+           megtet,megbnd,megang,megdih,meginv)
+
+! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
+
+     If (lsim) Then
+        Call deallocate_core_shell_arrays()
+
+        Call deallocate_constraints_arrays()
+        Call deallocate_pmf_arrays()
+
+        Call deallocate_rigid_bodies_arrays()
+
+        Call deallocate_tethers_arrays()
+
+        Call deallocate_bonds_arrays()
+        Call deallocate_angles_arrays()
+        Call deallocate_dihedrals_arrays()
+        Call deallocate_inversions_arrays()
+     End If
+
+  Else
+
+! Recover/localise rcut
+
+     rcut=rgdrct
+
+! Tag RBs, find their COMs and check their widths to rcut (system cutoff)
+
+     Call rigid_bodies_tags()
+     Call rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
+     Call rigid_bodies_widths(rcut)
+
+  End If
+
+! Update shared core-shell, constraint and RB units
+! (pmf data updated by construction)
+
+  If (megshl > 0 .and. comm%mxnode > 1) Call pass_shared_units &
+     (mxshl, Lbound(listshl,Dim=1),Ubound(listshl,Dim=1),ntshl, listshl,mxfshl,legshl,lshmv_shl,lishp_shl,lashp_shl)
+
+  If (m_con > 0 .and. comm%mxnode > 1) Call pass_shared_units &
+     (mxcons,Lbound(listcon,Dim=1),Ubound(listcon,Dim=1),ntcons,listcon,mxfcon,legcon,lshmv_con,lishp_con,lashp_con)
+
+  If (m_rgd > 0 .and. comm%mxnode > 1) Call pass_shared_units &
+     (mxrgd, Lbound(listrgd,Dim=1),Ubound(listrgd,Dim=1),ntrgd, listrgd,mxfrgd,legrgd,lshmv_rgd,lishp_rgd,lashp_rgd)
+
+End Subroutine build_book_intra
+
+Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine to prevent bookkeeping arrays from expanding
+! when execution is on many nodes, mxnode>1, (shells, constraints, PMFs
+! and RBs are dealt differently pass_shared_units and pmf_units_set)
+!
+! Note: This routine is to be only called from relocate_particles
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov october 2012
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Integer, Intent( In    )          :: mxf_u,mx_u,b_u
+  Integer, Intent( InOut )          :: nt_u,list_u(0:b_u,1:mx_u),leg_u(0:mxf_u,1:mxatdm)
+  Type( comms_type), Intent( InOut) :: comm
+
+  Logical :: ok,keep_k,keep_nt
+  Integer :: i,j,k,l,m,local_index
+
+! is it ok not to do it since it's safe - there's enough buffering space
+
+  ok=.true.
+  If (mx_u > 0) Then
+     ok=.not.(Real(nt_u,wp)/Real(mx_u,wp) > 0.85_wp)
+     Call gcheck(comm,ok)
+  End If
+
+  If (.not.ok) Then
+     k=0
+     Do While (k < nt_u)
+        k=k+1
+10      Continue
+
+        keep_k=.false.
+        Do i=1,b_u
+           keep_k=keep_k .or. (local_index(list_u(i,k),natms,lsi,lsa) /= 0)
+        End Do
+
+        If (.not.keep_k) Then
+20         Continue
+
+! If the whole unit has moved out of this node - compress list_u and leg_u
+
+           If      (k  < nt_u) Then
+
+              keep_nt=.false.
+              Do i=1,b_u
+                 j=local_index(list_u(i,nt_u),natms,lsi,lsa)
+                 If (j > 0) Then         ! For all particles in list_u(1:b_u,nt_u),
+                    keep_nt=.true.       ! [indicate that this unit is being kept]
+                    m=leg_u(0,j)         ! if present on this node, repoint unit
+                    Do l=1,m             ! 'nt_u' to 'k' in their leg_u array
+                       If (leg_u(l,j) == nt_u) leg_u(l,j) = k
+                    End Do
+                 End If
+              End Do
+
+              If (keep_nt) Then             ! Do repointing
+                 list_u(:,k)=list_u(:,nt_u) ! Copy list content from 'nt_u' to 'k'
+                 list_u(:,nt_u)=0           ! Remove list content in 'nt_u'
+                 nt_u=nt_u-1                ! Reduce 'nt_u' pointer
+              Else
+                 list_u(:,nt_u)=0           ! Remove list content in 'nt_u'
+                 nt_u=nt_u-1                ! Reduce 'nt_u' pointer
+
+                 Go To 20 ! Go back and check again for the new list contents in 'nt_u'
+              End If
+
+              Go To 10    ! Go back and check it all again for the new list contents in 'k'
+
+           Else If (k == nt_u) Then
+
+              list_u(:,nt_u)=0           ! Remove list content in 'k=nt_u'
+              nt_u=nt_u-1                ! Reduce 'nt_u' pointer
+
+           End If
+        End If
+     End Do
+  End If
+
+End Subroutine compress_book_intra
+
+End Module build_book
