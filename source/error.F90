@@ -1176,7 +1176,7 @@ Subroutine error(kode)
 
      Else If (kode == 1015) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in core_shell_module -> allocate_core_shell_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in core_shell -> allocate_core_shell_arrays'
 
      Else If (kode == 1016) Then
 
@@ -1188,7 +1188,7 @@ Subroutine error(kode)
 
      Else If (kode == 1018) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in constraints_module -> allocate_constraints_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in constraints -> allocate_constraints_arrays'
 
      Else If (kode == 1019) Then
 
@@ -1236,7 +1236,7 @@ Subroutine error(kode)
 
      Else If (kode == 1030) Then
 
-        Write(nrite,'(/,1x,a)') 'error - deallocation failure in core_shell_module -> deallocate_core_shell_arrays'
+        Write(nrite,'(/,1x,a)') 'error - deallocation failure in core_shell -> deallocate_core_shell_arrays'
 
      Else If (kode == 1031) Then
 
@@ -1244,7 +1244,7 @@ Subroutine error(kode)
 
      Else If (kode == 1032) Then
 
-        Write(nrite,'(/,1x,a)') 'error - deallocation failure in constraints_module -> deallocate_constraints_arrays'
+        Write(nrite,'(/,1x,a)') 'error - deallocation failure in constraints -> deallocate_constraints_arrays'
 
      Else If (kode == 1033) Then
 

@@ -15,7 +15,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
   Use setup_module
   Use configuration,     Only : cfgname,imcon,cell,natms, &
                                 atmnam,ltg,xxx,yyy,zzz
-  Use core_shell_module, Only : legshl
+  Use core_shell, Only : legshl
   Use statistics_module, Only : rsd
 
   Use parse_module,      Only : tabs_2_blanks, get_word, word_2_real

@@ -47,7 +47,7 @@ Module angles
 
   Public :: allocate_angles_arrays , deallocate_angles_arrays , &
             allocate_angl_pot_arrays , allocate_angl_dst_arrays, angles_compute, &
-            angles_forces
+            angles_forces, angles_table_read
 
 Contains
 

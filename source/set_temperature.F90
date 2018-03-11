@@ -25,7 +25,7 @@ Subroutine set_temperature           &
                                  weight,vxx,vyy,vzz
   Use dpd_module,         Only : keydpd
   Use rigid_bodies_module
-  Use core_shell_module,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
+  Use core_shell,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
   Use kinetic_module,     Only : l_vom,chvom,getvom,getkin,getknf,getknt,getknr
 
   Implicit None

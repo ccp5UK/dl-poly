@@ -21,8 +21,8 @@ Subroutine statistics_result                                    &
   Use configuration,      Only : cell,volm
   Use vnl_module
   Use minimise_module,    Only : passmin
-  Use core_shell_module,  Only : passshl
-  Use constraints_module, Only : passcon
+  Use core_shell,  Only : passshl
+  Use constraints, Only : passcon
   Use pmf_module,         Only : passpmf
   Use bonds_module,       Only : ncfbnd
   Use angles_module,      Only : ncfang

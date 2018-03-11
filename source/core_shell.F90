@@ -591,7 +591,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg,comm)
 
      keyopt = 0
 
-! Passage accumulators are initialised in core_shell_module
+! Passage accumulators are initialised in core_shell
 ! passshl(1) - cycles counter
 ! passshl(2) - access counter
 ! passshl(3) - average cycles

@@ -50,10 +50,10 @@ Subroutine read_field                      &
 
 ! INTERACTION MODULES
 
-  Use core_shell_module
+  Use core_shell
   Use mpoles_module, Only : keyind,thole,mpllfr,plrsit,dmpsit
 
-  Use constraints_module
+  Use constraints
   Use pmf_module
 
   Use rigid_bodies_module

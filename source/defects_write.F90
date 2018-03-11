@@ -19,7 +19,7 @@ Subroutine defects_write &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use defects_module
   Use defects1_module,   Only : l_dfx
-  Use core_shell_module, Only : ntshl,listshl
+  Use core_shell, Only : ntshl,listshl
   Use parse_module,      Only : tabs_2_blanks, get_word, word_2_real
   Use io_module,         Only : io_set_parameters,        &
                                 io_get_parameters,        &

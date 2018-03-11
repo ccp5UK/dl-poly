@@ -18,7 +18,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
                                  r_nprx,r_npry,r_nprz
   Use configuration,      Only : cell,natms,nlast,ltg,lfrzn, &
                                  xxx,yyy,zzz,lexatm,list
-  Use core_shell_module,  Only : listshl,legshl
+  Use core_shell,  Only : listshl,legshl
   Use mpoles_module,      Only : keyind,lchatm$
   Use development_module, Only : l_dis,r_dis
 

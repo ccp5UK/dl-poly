@@ -21,7 +21,7 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use kinetic_module, Only : getcom_mol
   Use rigid_bodies_module
-  Use core_shell_module
+  Use core_shell
   Use external_field_module
 
   Implicit None

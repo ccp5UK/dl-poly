@@ -14,9 +14,9 @@ Module build_book
 
 ! INTERACTION MODULES
 
-  Use core_shell_module
+  Use core_shell
 
-  Use constraints_module
+  Use constraints
   Use pmf_module
 
   Use rigid_bodies_module

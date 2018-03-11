@@ -23,8 +23,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
   Use site_module
   Use configuration,       Only : cfgname,imcon,cell,natms,lsi,lsa, &
                                   atmnam,xxx,yyy,zzz
-  Use core_shell_module,   Only : numshl,lstshl
-  Use constraints_module,  Only : numcon,lstcon
+  Use core_shell,   Only : numshl,lstshl
+  Use constraints,  Only : numcon,lstcon
   Use rigid_bodies_module, Only : numrgd,lstrgd
   Use bonds_module,        Only : numbonds,lstbnd,keybnd
   Use angles_module,       Only : numang,lstang,keyang

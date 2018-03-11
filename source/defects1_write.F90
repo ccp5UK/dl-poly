@@ -18,7 +18,7 @@ Subroutine defects1_write &
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use defects1_module
-  Use core_shell_module, Only : ntshl,listshl
+  Use core_shell, Only : ntshl,listshl
   Use parse_module,      Only : tabs_2_blanks, get_word, word_2_real
   Use io_module,         Only : io_set_parameters,        &
                                 io_get_parameters,        &

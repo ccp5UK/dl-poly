@@ -22,7 +22,7 @@ Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
   Use kinds, only : wp
   Use setup_module,      Only : boltz,mxatms
   Use configuration,     Only : natms,ltg,lfrzn,weight,xxx,yyy,zzz
-  Use core_shell_module, Only : legshl
+  Use core_shell, Only : legshl
   Use ttm_module,        Only : eltemp,zerocell,ntcell,delx,dely,delz,gvar,l_ttm,nstepcpl
   Use ttm_utils,         Only : Gep
 

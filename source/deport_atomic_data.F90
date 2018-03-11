@@ -21,9 +21,9 @@ Subroutine deport_atomic_data(mdir,lbook)
 
   Use configuration
 
-  Use core_shell_module,   Only : ntshl,listshl,legshl
+  Use core_shell,   Only : ntshl,listshl,legshl
 
-  Use constraints_module,  Only : ntcons,listcon,legcon
+  Use constraints,  Only : ntcons,listcon,legcon
   Use pmf_module,          Only : ntpmf,listpmf,legpmf
 
   Use rigid_bodies_module, Only : ntrgd,listrgd,legrgd, &

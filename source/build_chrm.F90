@@ -11,9 +11,9 @@ Module build_chrm
 
   ! INTERACTION MODULES
 
-  Use core_shell_module
+  Use core_shell
 
-  Use constraints_module
+  Use constraints
 
   Use rigid_bodies_module
 

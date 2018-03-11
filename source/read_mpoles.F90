@@ -19,7 +19,7 @@ Subroutine read_mpoles(l_top,sumchg)
 ! SITE & MPOLES MODULE
 
   Use site_module
-  Use core_shell_module, Only : numshl,lstshl
+  Use core_shell, Only : numshl,lstshl
   Use mpoles_module,     Only : mpllfr,plrsit,dmpsit
 
 ! PARSE MODULE
