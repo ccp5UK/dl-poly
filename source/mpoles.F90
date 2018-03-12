@@ -310,6 +310,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Use mpoles_container, Only : explicit_fscp_rfp_loops, explicit_ewald_real_loops
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
@@ -531,11 +532,13 @@ Contains
 
                             jj = mplmap(k1,k2,k3)
 
-                            If (Abs(jmp(jj)) > zero_plus) Call explicit_fscp_rfp_loops &
-             (2*mxompl+1, k1,k2,k3, alpha, d1,a1,               &
-             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-             kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-             engmpl,fx,fy,fz)
+                            If (Abs(jmp(jj)) > zero_plus) Then
+                              Call explicit_fscp_rfp_loops &
+                               (2*mxompl+1, k1,k2,k3, alpha, d1,a1,               &
+                               imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                               kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
+                               engmpl,fx,fy,fz)
+                           End If
 
                             kx = -kx
 
@@ -672,11 +675,13 @@ Contains
 
                             jj = mplmap(k1,k2,k3)
 
-                            If (Abs(jmp(jj)) > zero_plus)  Call explicit_ewald_real_loops &
-             (-2,2*mxompl+1, k1,k2,k3, 1.0_wp, d1,              &
-             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-             kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-             engmpl,fx,fy,fz)
+                            If (Abs(jmp(jj)) > zero_plus)  Then
+                              Call explicit_ewald_real_loops &
+                               (-2,2*mxompl+1, k1,k2,k3, 1.0_wp, d1,              &
+                               imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                               kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
+                               engmpl,fx,fy,fz)
+                           End If
 
                             kx = -kx
 
@@ -886,6 +891,7 @@ Contains
   ! amended   - i.t.todorov february 2016
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  Use mpoles_container, Only : explicit_fscp_rfp_loops, explicit_ewald_real_loops
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
@@ -1124,11 +1130,13 @@ Contains
 
                             jj = mplmap(k1,k2,k3)
 
-                            If (Abs(jmp(jj)) > zero_plus) Call explicit_fscp_rfp_loops &
-             (2*mxompl+1, k1,k2,k3, alpha, d1,a1,               &
-             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-             kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-             engmpl,fx,fy,fz)
+                            If (Abs(jmp(jj)) > zero_plus) Then
+                              Call explicit_fscp_rfp_loops &
+                               (2*mxompl+1, k1,k2,k3, alpha, d1,a1,               &
+                               imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                               kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
+                               engmpl,fx,fy,fz)
+                           End If
 
                             kx = -kx
 
@@ -1282,11 +1290,13 @@ Contains
 
                             jj = mplmap(k1,k2,k3)
 
-                            If (Abs(jmp(jj)) > zero_plus)  Call explicit_ewald_real_loops &
-             (-2,2*mxompl+1, k1,k2,k3, 1.0_wp, d1,              &
-             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-             kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-             engmpl,fx,fy,fz)
+                            If (Abs(jmp(jj)) > zero_plus) Then
+                              Call explicit_ewald_real_loops &
+                               (-2,2*mxompl+1, k1,k2,k3, 1.0_wp, d1,              &
+                               imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                               kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
+                               engmpl,fx,fy,fz)
+                           End If
 
                             kx = -kx
 
@@ -1488,6 +1498,7 @@ Contains
   ! amended   - i.t.todorov february 2016
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  Use mpoles_container, Only : explicit_ewald_real_loops
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: rcut,epsq
@@ -1619,11 +1630,13 @@ Contains
 
                          jj = mplmap(k1,k2,k3)
 
-                         If (Abs(jmp(jj)) > zero_plus) Call explicit_ewald_real_loops &
-             (-2,2*mxompl+1, k1,k2,k3, 1.0_wp, d1,              &
-             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-             kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-             engmpl,fx,fy,fz)
+                         If (Abs(jmp(jj)) > zero_plus) Then
+                           Call explicit_ewald_real_loops &
+                             (-2,2*mxompl+1, k1,k2,k3, 1.0_wp, d1,              &
+                             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                             kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
+                             engmpl,fx,fy,fz)
+                         End If
 
                          kx = -kx
 
@@ -1805,6 +1818,7 @@ Contains
   ! amended   - i.t.todorov february 2016
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Use mpoles_container, Only : explicit_ewald_real_loops
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: rcut,epsq
@@ -1936,11 +1950,13 @@ Contains
 
                          jj = mplmap(k1,k2,k3)
 
-                         If (Abs(jmp(jj)) > zero_plus) Call explicit_ewald_real_loops &
-             (-2,2*mxompl+1, k1,k2,k3, 1.0_wp, d1,              &
-             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-             kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-             engmpl,fx,fy,fz)
+                         If (Abs(jmp(jj)) > zero_plus) Then
+                           Call explicit_ewald_real_loops &
+                             (-2,2*mxompl+1, k1,k2,k3, 1.0_wp, d1,              &
+                             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                             kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
+                             engmpl,fx,fy,fz)
+                         End If
 
                          kx = -kx
 
