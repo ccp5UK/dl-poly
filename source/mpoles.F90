@@ -18,6 +18,8 @@ Module mpoles
 
   Implicit None
 
+  Private
+
 ! A derived data type for defining the rotation matrix for multipolar sites
 
   Type rot_mat

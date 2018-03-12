@@ -5,6 +5,10 @@ Module spole
   Use configuration, Only : natms,ltg,list,chge,fxx,fyy,fzz
   Implicit None
 
+  Private
+
+  Public :: coul_chrm_forces, coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
+
   Contains
 
   Subroutine coul_chrm_forces(iatm,epsq,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress)
@@ -163,7 +167,6 @@ Module spole
     stress(9) = stress(9) + strs9
 
   End Subroutine coul_chrm_forces
-
 
   Subroutine coul_fscp_forces &
              (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,comm)
