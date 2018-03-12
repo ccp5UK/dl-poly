@@ -6,14 +6,9 @@ build_book.F90
 build_chrm.F90
 build_excl.F90
 build_tplg.F90
-coul_cp_forces.F90
 coul_cp_mforces.F90
-coul_chrm_forces.F90
-coul_dddp_forces.F90
 coul_dddp_mforces.F90
-coul_fscp_forces.F90
 coul_fscp_mforces.F90
-coul_rfp_forces.F90
 coul_rfp_mforces.F90
 d_ene_trq_mpoles.F90
 defects1_write.F90
@@ -122,6 +117,7 @@ set_bounds.F90
 set_halo_particles.F90
 set_temperature.F90
 spme_container.F90
+spole.F90
 statistics_collect.F90
 statistics_connect_frames.F90
 statistics_connect_set.F90
