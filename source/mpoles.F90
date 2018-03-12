@@ -72,6 +72,8 @@ Module mpoles
   Real( Kind = wp ), Allocatable, Save :: polcof(:)
 
 
+  Public :: keyind, lchatm, ltpatm, mplmap, mpllfr, mprotm, mplltg, mplflg, &
+            mplgfr, mprotx, mproty, mprotz, plratm, dmpatm
   Public :: allocate_mpoles_arrays
 
 Contains

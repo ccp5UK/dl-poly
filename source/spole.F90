@@ -30,7 +30,7 @@ Module spole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use mpoles_module, Only : plratm,dmpatm
+    Use mpoles, Only : plratm,dmpatm
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: epsq
