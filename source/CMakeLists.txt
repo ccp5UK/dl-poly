@@ -6,11 +6,6 @@ build_book.F90
 build_chrm.F90
 build_excl.F90
 build_tplg.F90
-coul_cp_mforces.F90
-coul_dddp_mforces.F90
-coul_fscp_mforces.F90
-coul_rfp_mforces.F90
-d_ene_trq_mpoles.F90
 defects1_write.F90
 defects_link_cells.F90
 defects_reference_export.F90
@@ -175,7 +170,7 @@ defects_module.F90
 defects1_module.F90
 dpd_module.F90
 ewald_module.F90
-mpoles_module.F90
+mpoles.F90
 poisson_module.F90
 vdw_module.F90
 metal_module.F90
