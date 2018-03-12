@@ -24,15 +24,13 @@ dpd_thermostat.F90
 dpd_v_export.F90
 dpd_v_set_halo.F90
 error.F90
-ewald_excl_forces.F90
+ewald_spole.F90
 ewald_excl_mforces.F90
 ewald_excl_mforces_d.F90
 ewald_frzn_forces.F90
 ewald_frzn_mforces.F90
-ewald_real_forces.F90
 ewald_real_mforces.F90
 ewald_real_mforces_d.F90
-ewald_spme_forces.F90
 ewald_spme_mforces.F90
 ewald_spme_mforces_d.F90
 exchange_grid.F90
