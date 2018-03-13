@@ -42,7 +42,10 @@ Subroutine two_body_forces                        &
   Use configuration,  Only : volm,sumchg,natms,list,xxx,yyy,zzz
   Use vnl_module,     Only : l_vnl
   Use ewald_module
-  Use mpoles_module,  Only : induce,keyind
+  Use mpole,          Only : induce,keyind
+  Use spoles,         Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
+  Use mpoles,         Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
+                             coul_dddp_mforces, coul_chrm_forces, d_ene_trq_mpoles
   Use poisson_module, Only : poisson_forces,poisson_excl_forces,poisson_frzn_forces
   Use vdw_module,     Only : ntpvdw
   Use metal_module,   Only : ntpmet
