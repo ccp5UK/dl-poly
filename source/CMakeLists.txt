@@ -24,13 +24,6 @@ dpd_thermostat.F90
 dpd_v_export.F90
 dpd_v_set_halo.F90
 error.F90
-ewald_excl_mforces.F90
-ewald_excl_mforces_d.F90
-ewald_frzn_mforces.F90
-ewald_real_mforces.F90
-ewald_real_mforces_d.F90
-ewald_spme_mforces.F90
-ewald_spme_mforces_d.F90
 exchange_grid.F90
 export_atomic_data.F90
 export_atomic_positions.F90
@@ -166,6 +159,7 @@ defects1_module.F90
 dpd_module.F90
 ewald_module.F90
 ewald_spole.F90
+ewald_mpoles.F90
 mpoles_container.F90
 mpole.F90
 coul_mpoles.F90
