@@ -230,7 +230,7 @@ Module ewald_spole
 
     Use domains_module, Only : nprx,npry,nprz,idx,idy,idz
     Use ewald_module, Only : e_rc, engsic, l_cp, s_rc, v_rc, fcx, fcy, fcz
-    Use parallel_fft, Only : initialize_fft, pfft, pfft_indicies
+    Use parallel_fft, Only : initialize_fft, pfft, pfft_indices
 
     Real( Kind = wp ), Intent( In    ) :: alpha,epsq
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
