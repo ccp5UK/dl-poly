@@ -157,7 +157,7 @@ vnl_module.F90
 defects_module.F90
 defects1_module.F90
 dpd_module.F90
-ewald_module.F90
+ewald.F90
 ewald_spole.F90
 ewald_mpoles.F90
 mpoles_container.F90
