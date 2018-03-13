@@ -1,4 +1,4 @@
-Module spole
+Module coul_spole
   Use kinds, Only : wp
   Use comms,  Only : comms_type
   Use setup_module, Only : mxlist, r4pie0, zero_plus, mxgele, nrite
@@ -812,4 +812,4 @@ Module spole
     End If
 
   End Subroutine coul_dddp_forces
-End Module spole
+End Module coul_spole
