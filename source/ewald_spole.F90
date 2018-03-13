@@ -1,6 +1,12 @@
 Module ewald_spole
   Use kinds, Only : wp
   Use comms,  Only : comms_type, gcheck, gsum
+  Use setup_module, Only : mxlist, mxatdm, mxatms, nrite, r4pie0, sqrpi, twopi, &
+                           mxspl, mxspl1, mxspl2, kmaxa, kmaxb, kmaxc, &
+                           zero_plus, mxgele
+  Use configuration, Only : natms,ltg,list,chge,fxx,fyy,fzz,cell,volm,nlast, &
+                            xxx,yyy,zzz, lfrzn
+
   Implicit None
 
   Private
@@ -24,9 +30,6 @@ Module ewald_spole
   ! amended   - i.t.todorov april 2015
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use setup_module
-    Use configuration, Only : natms,ltg,list,chge,fxx,fyy,fzz
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
@@ -225,11 +228,9 @@ Module ewald_spole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use setup_module
     Use domains_module, Only : nprx,npry,nprz,idx,idy,idz
-    Use configuration,  Only : cell,volm,natms,nlast,chge,xxx,yyy,zzz
-    Use ewald_module
-    Use parallel_fft
+    Use ewald_module, Only : e_rc, engsic, l_cp, s_rc, v_rc, fcx, fcy, fcz
+    Use parallel_fft, Only : initialize_fft, pfft, pfft_indicies
 
     Real( Kind = wp ), Intent( In    ) :: alpha,epsq
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
@@ -1151,7 +1152,6 @@ Module ewald_spole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      Use configuration, Only : fxx,fyy,fzz
 
       Integer,           Intent( In    ) :: ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms), &
                                             ixb,ixt, iyb,iyt, izb,izt
@@ -1353,9 +1353,6 @@ Module ewald_spole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use setup_module
-    Use configuration, Only : natms,ltg,list,chge,fxx,fyy,fzz
-
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
     Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
@@ -1552,10 +1549,8 @@ Module ewald_spole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use setup_module
-    Use configuration, Only : cell,natms,list,ltg,lfrzn, &
-                              chge,xxx,yyy,zzz,fxx,fyy,fzz
-    Use ewald_module
+    Use ewald_module, Only : s_fr, sf_fr, e_fr, ef_fr, v_fr, vf_fr, l_cp, lf_cp, &
+                             lf_fce, ffx, ffy, ffz, fcx, fcy, fcz
 
     Real( Kind = wp ),                   Intent( In    ) :: rcut,alpha,epsq
     Real( Kind = wp ),                   Intent(   Out ) :: engcpe_fr,vircpe_fr
