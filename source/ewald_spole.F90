@@ -11,7 +11,7 @@ Module ewald_spole
 
   Private
 
-  Public :: ewald_real_forces, ewald_spme_forces
+  Public :: ewald_real_forces, ewald_spme_forces, ewald_excl_forces, ewald_frzn_forces
 
   Contains
 
