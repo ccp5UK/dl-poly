@@ -14,7 +14,8 @@ Module mpoles
   Use comms,  Only : comms_type
   Use setup_module, Only : mxsite,mxexcl,mxspl,mxompl,mximpl,mxatdm,mxatms, &
                            mxlist, r4pie0, zero_plus, mxgele, nrite, sqrpi
-  Use configuration, Only : imcon,natms,ltg,fxx,fyy,fzz,xxx,yyy,zzz,cell,list
+  Use configuration, Only : imcon,natms,ltg,fxx,fyy,fzz,xxx,yyy,zzz,cell,list, &
+                            chge
   Use mpole
 
   Implicit None
