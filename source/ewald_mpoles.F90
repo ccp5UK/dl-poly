@@ -6,8 +6,7 @@ Module ewald_mpoles
                             xxx,yyy,zzz,lfrzn
   Use setup_module, Only : mxlist, nrite, r4pie0, sqrpi, zero_plus, &
                            kmaxa, kmaxb, kmaxc, mxspl1, mxspl2, twopi, mxgele
-  Use ewald_module,  Only : engsic, sf_fr, s_fr, e_fr, ef_fr, l_cp, lf_cp, lf_fce, &
-                            v_fr, vf_fr, e_rc, ffx, ffy, ffz, fcx, fcy, fcz, s_rc, v_rc
+  Use ewald,        Only : ewald_type
 
   Implicit None
 
@@ -388,7 +387,7 @@ Module ewald_mpoles
   End Subroutine ewald_real_mforces
 
   Subroutine ewald_real_mforces_d &
-             (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress,comm)
+             (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress,comm,ewld)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -408,6 +407,7 @@ Module ewald_mpoles
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_rl,vircpe_rl
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( comms_type ),                       Intent( In    ) :: comm
+    Type( ewald_type ),                       Intent( InOut ) :: ewld
 
     Logical,           Save :: newjob = .true.
     Real( Kind = wp ), Save :: drewd,rdrewd,alp2,co1,co2,co3,co4,co5,exclcoef, &
@@ -611,7 +611,7 @@ Module ewald_mpoles
   ! add self-interaction energy
 
        engcpe_rl = engcpe_rl - siceng
-       engsic    = engsic    - siceng
+       ewld%engsic    = ewld%engsic    - siceng
 
   ! initialize torques for atom i (temporary)
 
@@ -1095,7 +1095,7 @@ Module ewald_mpoles
 
   End Subroutine ewald_real_mforces_d
 
-  Subroutine ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress,comm)
+  Subroutine ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress,comm,ewld)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1120,6 +1120,7 @@ Module ewald_mpoles
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
     Type( comms_type ), Intent( InOut ) :: comm
+    Type( ewald_type ), Intent( InOut ) :: ewld
 
     Logical,           Save :: newjob = .true.
     Integer,           Save :: ixb,iyb,izb, ixt,iyt,izt
@@ -1319,7 +1320,7 @@ Module ewald_mpoles
 
   ! compute self-interaction energy (per node) and torques
 
-    engsic=0.0_wp; exclcoef = 0.5_wp*r4pie0/epsq
+    ewld%engsic=0.0_wp; exclcoef = 0.5_wp*r4pie0/epsq
     Do i=1,natms
 
   ! get the multipoles for site i
@@ -1379,7 +1380,7 @@ Module ewald_mpoles
 
   ! energy
 
-                                        engsic = engsic + imp(mm)*tmpi
+                                        ewld%engsic = ewld%engsic + imp(mm)*tmpi
 
   ! torque
 
@@ -1412,8 +1413,8 @@ Module ewald_mpoles
        End If
 
     End Do
-    Call gsum(comm,engsic)
-    engsic = -exclcoef * engsic / Real(comm%mxnode,wp)
+    Call gsum(comm,ewld%engsic)
+    ewld%engsic = -exclcoef * ewld%engsic / Real(comm%mxnode,wp)
 
   ! initialise coulombic potential energy and virial
 
@@ -1929,15 +1930,15 @@ Module ewald_mpoles
 
   ! distribute energy and virial terms (per node)
 
-    engcpe_rc = eng + engsic
+    engcpe_rc = eng + ewld%engsic
     vircpe_rc = -(strs(1)+strs(5)+strs(9))
 
   ! infrequent calculations copying
 
-    If (l_cp) Then
-       e_rc=engcpe_rc
-       v_rc=vircpe_rc
-       s_rc=strs
+    If (ewld%l_cp) Then
+       ewld%e_rc=engcpe_rc
+       ewld%v_rc=vircpe_rc
+       ewld%s_rc=strs
     End If
 
   ! calculate atomic forces
@@ -2106,10 +2107,10 @@ Module ewald_mpoles
 
   ! infrequent calculations copying
 
-               If (l_cp) Then
-                  fcx(i)=fcx(i)+fix
-                  fcy(i)=fcy(i)+fiy
-                  fcz(i)=fcz(i)+fiz
+               If (ewld%l_cp) Then
+                  ewld%fcx(i)=ewld%fcx(i)+fix
+                  ewld%fcy(i)=ewld%fcy(i)+fiy
+                  ewld%fcz(i)=ewld%fcz(i)+fiz
                End If
 
             End If
@@ -2214,10 +2215,10 @@ Module ewald_mpoles
 
   ! infrequent calculations copying
 
-               If (l_cp) Then
-                  fcx(i)=fcx(i)+fix
-                  fcy(i)=fcy(i)+fiy
-                  fcz(i)=fcz(i)+fiz
+               If (ewld%l_cp) Then
+                  ewld%fcx(i)=ewld%fcx(i)+fix
+                  ewld%fcy(i)=ewld%fcy(i)+fiy
+                  ewld%fcz(i)=ewld%fcz(i)+fiz
                End If
 
             End If
@@ -2242,10 +2243,10 @@ Module ewald_mpoles
 
   ! infrequent calculations copying
 
-               If (l_cp) Then
-                  fcx(i)=fcx(i)-fff(1)
-                  fcy(i)=fcy(i)-fff(2)
-                  fcz(i)=fcz(i)-fff(3)
+               If (ewld%l_cp) Then
+                  ewld%fcx(i)=ewld%fcx(i)-fff(1)
+                  ewld%fcy(i)=ewld%fcy(i)-fff(2)
+                  ewld%fcz(i)=ewld%fcz(i)-fff(3)
                End If
             End If
          End Do
@@ -2261,7 +2262,7 @@ Module ewald_mpoles
 
   End Subroutine ewald_spme_mforces
 
-  Subroutine ewald_spme_mforces_d(alpha,epsq,engcpe_rc,vircpe_rc,stress,comm)
+  Subroutine ewald_spme_mforces_d(alpha,epsq,engcpe_rc,vircpe_rc,stress,comm,ewld)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2286,6 +2287,7 @@ Module ewald_mpoles
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
     Type( comms_type ), Intent( InOut ) :: comm
+    Type( ewald_type ), Intent( InOut ) :: ewld
 
     Logical,           Save :: newjob = .true.
     Integer,           Save :: ixb,iyb,izb, ixt,iyt,izt
@@ -2481,7 +2483,7 @@ Module ewald_mpoles
 
   ! initialise coulombic potential energy and virial
 
-    engsic    = 0.0_wp
+    ewld%engsic    = 0.0_wp
     engcpe_rc = 0.0_wp
     vircpe_rc = 0.0_wp
 
@@ -4231,10 +4233,10 @@ Module ewald_mpoles
 
   ! infrequent calculations copying
 
-    If (l_cp) Then
-       e_rc=engcpe_rc
-       v_rc=vircpe_rc
-       s_rc=strs
+    If (ewld%l_cp) Then
+       ewld%e_rc=engcpe_rc
+       ewld%v_rc=vircpe_rc
+       ewld%s_rc=strs
     End If
 
   ! calculate atomic forces
@@ -4482,10 +4484,10 @@ Module ewald_mpoles
 
   ! infrequent calculations copying
 
-            If (l_cp) Then
-               fcx(i)=fcx(i)+fix
-               fcy(i)=fcy(i)+fiy
-               fcz(i)=fcz(i)+fiz
+            If (ewld%l_cp) Then
+               ewld%fcx(i)=ewld%fcx(i)+fix
+               ewld%fcy(i)=ewld%fcy(i)+fiy
+               ewld%fcz(i)=ewld%fcz(i)+fiz
             End If
 
          End If
@@ -4508,10 +4510,10 @@ Module ewald_mpoles
 
   ! infrequent calculations copying
 
-               If (l_cp) Then
-                  fcx(i)=fcx(i)-fff(1)
-                  fcy(i)=fcy(i)-fff(2)
-                  fcz(i)=fcz(i)-fff(3)
+               If (ewld%l_cp) Then
+                  ewld%fcx(i)=ewld%fcx(i)-fff(1)
+                  ewld%fcy(i)=ewld%fcy(i)-fff(2)
+                  ewld%fcz(i)=ewld%fcz(i)-fff(3)
                End If
             End If
          End Do
@@ -5585,7 +5587,7 @@ Module ewald_mpoles
 
   End Subroutine ewald_excl_mforces_d
 
-  Subroutine ewald_frzn_mforces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress,comm)
+  Subroutine ewald_frzn_mforces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress,comm,ewld)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -5608,6 +5610,7 @@ Module ewald_mpoles
     Real( Kind = wp ),                     Intent(   Out ) :: engcpe_fr,vircpe_fr
     Real( Kind = wp ), Dimension( 1:9 ),   Intent( InOut ) :: stress
     Type( comms_type ),                    Intent( InOut ) :: comm
+    Type( ewald_type ),                    Intent( InOut ) :: ewld
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
     Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
@@ -5640,27 +5643,27 @@ Module ewald_mpoles
     Real( Kind = wp ) :: impx(1:mximpl),impy(1:mximpl),impz(1:mximpl)
     Real( Kind = wp ) :: jmpx(1:mximpl),jmpy(1:mximpl),jmpz(1:mximpl)
 
-    If (.not.lf_fce) Then ! All's been done but needs copying
+    If (.not.ewld%lf_fce) Then ! All's been done but needs copying
        Do i=1,natms
-          fxx(i)=fxx(i)+ffx(i)
-          fyy(i)=fyy(i)+ffy(i)
-          fzz(i)=fzz(i)+ffz(i)
+          fxx(i)=fxx(i)+ewld%ffx(i)
+          fyy(i)=fyy(i)+ewld%ffy(i)
+          fzz(i)=fzz(i)+ewld%ffz(i)
        End Do
 
-       engcpe_fr=ef_fr
-       vircpe_fr=vf_fr
-       stress=stress+sf_fr
+       engcpe_fr=ewld%ef_fr
+       vircpe_fr=ewld%vf_fr
+       stress=stress+ewld%sf_fr
 
-       If (l_cp) Then
+       If (ewld%l_cp) Then
           Do i=1,natms
-             fcx(i)=fcx(i)+ffx(i)
-             fcy(i)=fcy(i)+ffy(i)
-             fcz(i)=fcz(i)+ffz(i)
+             ewld%fcx(i)=ewld%fcx(i)+ewld%ffx(i)
+             ewld%fcy(i)=ewld%fcy(i)+ewld%ffy(i)
+             ewld%fcz(i)=ewld%fcz(i)+ewld%ffz(i)
           End Do
 
-          e_fr=ef_fr
-          v_fr=vf_fr
-          s_fr=sf_fr
+          ewld%e_fr=ewld%ef_fr
+          ewld%v_fr=ewld%vf_fr
+          ewld%s_fr=ewld%sf_fr
        End If
 
        Return
@@ -5944,18 +5947,18 @@ Module ewald_mpoles
 
   ! redundant calculations copying
 
-             If (lf_cp) Then
-                ffx(l_ind(i))=ffx(l_ind(i))-fx
-                ffy(l_ind(i))=ffy(l_ind(i))-fy
-                ffz(l_ind(i))=ffz(l_ind(i))-fz
+             If (ewld%lf_cp) Then
+                ewld%ffx(l_ind(i))=ewld%ffx(l_ind(i))-fx
+                ewld%ffy(l_ind(i))=ewld%ffy(l_ind(i))-fy
+                ewld%ffz(l_ind(i))=ewld%ffz(l_ind(i))-fz
              End If
 
   ! infrequent calculations copying
 
-             If (l_cp) Then
-                fcx(l_ind(i))=fcx(l_ind(i))-fx
-                fcy(l_ind(i))=fcy(l_ind(i))-fy
-                fcz(l_ind(i))=fcz(l_ind(i))-fz
+             If (ewld%l_cp) Then
+                ewld%fcx(l_ind(i))=ewld%fcx(l_ind(i))-fx
+                ewld%fcy(l_ind(i))=ewld%fcy(l_ind(i))-fy
+                ewld%fcz(l_ind(i))=ewld%fcz(l_ind(i))-fz
              End If
           End Do
 
@@ -6145,26 +6148,26 @@ Module ewald_mpoles
 
   ! redundant calculations copying
 
-             If (lf_cp) Then
-                ffx(l_ind(i))=ffx(l_ind(i))-fx
-                ffy(l_ind(i))=ffy(l_ind(i))-fy
-                ffz(l_ind(i))=ffz(l_ind(i))-fz
+             If (ewld%lf_cp) Then
+                ewld%ffx(l_ind(i))=ewld%ffx(l_ind(i))-fx
+                ewld%ffy(l_ind(i))=ewld%ffy(l_ind(i))-fy
+                ewld%ffz(l_ind(i))=ewld%ffz(l_ind(i))-fz
 
-                ffx(l_ind(j))=ffx(l_ind(j))+fx
-                ffy(l_ind(j))=ffy(l_ind(j))+fy
-                ffz(l_ind(j))=ffz(l_ind(j))+fz
+                ewld%ffx(l_ind(j))=ewld%ffx(l_ind(j))+fx
+                ewld%ffy(l_ind(j))=ewld%ffy(l_ind(j))+fy
+                ewld%ffz(l_ind(j))=ewld%ffz(l_ind(j))+fz
              End If
 
   ! infrequent calculations copying
 
-             If (l_cp) Then
-                fcx(l_ind(i))=fcx(l_ind(i))-fx
-                fcy(l_ind(i))=fcy(l_ind(i))-fy
-                fcz(l_ind(i))=fcz(l_ind(i))-fz
+             If (ewld%l_cp) Then
+                ewld%fcx(l_ind(i))=ewld%fcx(l_ind(i))-fx
+                ewld%fcy(l_ind(i))=ewld%fcy(l_ind(i))-fy
+                ewld%fcz(l_ind(i))=ewld%fcz(l_ind(i))-fz
 
-                fcx(l_ind(j))=fcx(l_ind(j))+fx
-                fcy(l_ind(j))=fcy(l_ind(j))+fy
-                fcz(l_ind(j))=fcz(l_ind(j))+fz
+                ewld%fcx(l_ind(j))=ewld%fcx(l_ind(j))+fx
+                ewld%fcy(l_ind(j))=ewld%fcy(l_ind(j))+fy
+                ewld%fcz(l_ind(j))=ewld%fcz(l_ind(j))+fz
              End If
 
   ! calculate potential energy and virial
@@ -6358,18 +6361,18 @@ Module ewald_mpoles
 
   ! redundant calculations copying
 
-             If (lf_cp) Then
-                ffx(l_ind(i))=ffx(l_ind(i))-fx
-                ffy(l_ind(i))=ffy(l_ind(i))-fy
-                ffz(l_ind(i))=ffz(l_ind(i))-fz
+             If (ewld%lf_cp) Then
+                ewld%ffx(l_ind(i))=ewld%ffx(l_ind(i))-fx
+                ewld%ffy(l_ind(i))=ewld%ffy(l_ind(i))-fy
+                ewld%ffz(l_ind(i))=ewld%ffz(l_ind(i))-fz
              End If
 
   ! infrequent calculations copying
 
-             If (l_cp) Then
-                fcx(l_ind(i))=fcx(l_ind(i))-fx
-                fcy(l_ind(i))=fcy(l_ind(i))-fy
-                fcz(l_ind(i))=fcz(l_ind(i))-fz
+             If (ewld%l_cp) Then
+                ewld%fcx(l_ind(i))=ewld%fcx(l_ind(i))-fx
+                ewld%fcy(l_ind(i))=ewld%fcy(l_ind(i))-fy
+                ewld%fcz(l_ind(i))=ewld%fcz(l_ind(i))-fz
              End If
 
   ! calculate potential energy and virial
@@ -6611,18 +6614,18 @@ Module ewald_mpoles
 
   ! redundant calculations copying
 
-                   If (lf_cp) Then
-                      ffx(i)=ffx(i)-fx
-                      ffy(i)=ffy(i)-fy
-                      ffz(i)=ffz(i)-fz
+                   If (ewld%lf_cp) Then
+                      ewld%ffx(i)=ewld%ffx(i)-fx
+                      ewld%ffy(i)=ewld%ffy(i)-fy
+                      ewld%ffz(i)=ewld%ffz(i)-fz
                    End If
 
   ! infrequent calculations copying
 
-                   If (l_cp) Then
-                      fcx(i)=fcx(i)-fx
-                      fcy(i)=fcy(i)-fy
-                      fcz(i)=fcz(i)-fz
+                   If (ewld%l_cp) Then
+                      ewld%fcx(i)=ewld%fcx(i)-fx
+                      ewld%fcy(i)=ewld%fcy(i)-fy
+                      ewld%fcz(i)=ewld%fcz(i)-fz
                    End If
 
                    If (j <= natms) Then
@@ -6637,18 +6640,18 @@ Module ewald_mpoles
 
   ! redundant calculations copying
 
-                      If (lf_cp) Then
-                         ffx(j)=ffx(j)+fx
-                         ffy(j)=ffy(j)+fy
-                         ffz(j)=ffz(j)+fz
+                      If (ewld%lf_cp) Then
+                         ewld%ffx(j)=ewld%ffx(j)+fx
+                         ewld%ffy(j)=ewld%ffy(j)+fy
+                         ewld%ffz(j)=ewld%ffz(j)+fz
                       End If
 
   ! infrequent calculations copying
 
-                      If (l_cp) Then
-                         fcx(j)=fcx(j)+fx
-                         fcy(j)=fcy(j)+fy
-                         fcz(j)=fcz(j)+fz
+                      If (ewld%l_cp) Then
+                         ewld%fcx(j)=ewld%fcx(j)+fx
+                         ewld%fcy(j)=ewld%fcy(j)+fy
+                         ewld%fcz(j)=ewld%fcz(j)+fz
                       End If
 
                    End If
@@ -6706,36 +6709,36 @@ Module ewald_mpoles
 
   ! redundant calculations copying
 
-    If (lf_cp) Then
-       ef_fr=engcpe_fr
-       vf_fr=vircpe_fr
+    If (ewld%lf_cp) Then
+       ewld%ef_fr=engcpe_fr
+       ewld%vf_fr=vircpe_fr
 
-       sf_fr(1) = strs1
-       sf_fr(2) = strs2
-       sf_fr(3) = strs3
-       sf_fr(4) = strs2
-       sf_fr(5) = strs5
-       sf_fr(6) = strs6
-       sf_fr(7) = strs3
-       sf_fr(8) = strs6
-       sf_fr(9) = strs9
+       ewld%sf_fr(1) = strs1
+       ewld%sf_fr(2) = strs2
+       ewld%sf_fr(3) = strs3
+       ewld%sf_fr(4) = strs2
+       ewld%sf_fr(5) = strs5
+       ewld%sf_fr(6) = strs6
+       ewld%sf_fr(7) = strs3
+       ewld%sf_fr(8) = strs6
+       ewld%sf_fr(9) = strs9
     End If
 
   ! infrequent calculations copying
 
-    If (l_cp) Then
-       e_fr=engcpe_fr
-       v_fr=vircpe_fr
+    If (ewld%l_cp) Then
+       ewld%e_fr=engcpe_fr
+       ewld%v_fr=vircpe_fr
 
-       s_fr(1) = strs1
-       s_fr(2) = strs2
-       s_fr(3) = strs3
-       s_fr(4) = strs2
-       s_fr(5) = strs5
-       s_fr(6) = strs6
-       s_fr(7) = strs3
-       s_fr(8) = strs6
-       s_fr(9) = strs9
+       ewld%s_fr(1) = strs1
+       ewld%s_fr(2) = strs2
+       ewld%s_fr(3) = strs3
+       ewld%s_fr(4) = strs2
+       ewld%s_fr(5) = strs5
+       ewld%s_fr(6) = strs6
+       ewld%s_fr(7) = strs3
+       ewld%s_fr(8) = strs6
+       ewld%s_fr(9) = strs9
     End If
 
     Deallocate (l_ind,nz_fr, Stat=fail)

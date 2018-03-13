@@ -3726,8 +3726,6 @@ Module mpoles_container
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use ewald_module
-
     Integer,          Intent( In    ) :: flag
     Real( Kind = wp), Intent( In    ) :: rcell(1:9)
     Real( Kind = wp), Intent( In    ) :: imp(1:mximpl)
@@ -4804,8 +4802,6 @@ Module mpoles_container
   ! author    - i.t.todorov february 2016
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use ewald_module
 
     Real( Kind = wp), Intent( In    ) :: rcell(1:9)
     Real( Kind = wp), Intent( In    ) :: bdx(0:mxspl),bdy(0:mxspl),bdz(0:mxspl)

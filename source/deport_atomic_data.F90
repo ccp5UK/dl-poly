@@ -1,4 +1,4 @@
-Subroutine deport_atomic_data(mdir,lbook)
+Subroutine deport_atomic_data(mdir,lbook,ewld)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -43,7 +43,7 @@ Subroutine deport_atomic_data(mdir,lbook)
   Use minimise_module,     Only : l_x,oxx,oyy,ozz
   Use langevin_module,     Only : l_lan,fxl,fyl,fzl
 
-  Use ewald_module
+  Use ewald,               Only : ewald_type
   Use mpoles_module,       Only : keyind,ltpatm,lchatm
 
   Use msd_module
@@ -51,8 +51,9 @@ Subroutine deport_atomic_data(mdir,lbook)
 
   Implicit None
 
-  Logical, Intent( In    ) :: lbook
-  Integer, Intent( In    ) :: mdir
+  Logical,            Intent( In    ) :: lbook
+  Integer,            Intent( In    ) :: mdir
+  Type( ewald_type ), Intent( InOut ) :: ewld
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
                        stay,safe1,check
@@ -302,11 +303,11 @@ Subroutine deport_atomic_data(mdir,lbook)
 
 ! pack frozen-frozen k-space SPME forces arrays
 
-        If (lf_cp) Then
+        If (ewld%lf_cp) Then
            If (imove+3 <= iblock) Then
-              buffer(imove+1)=ffx(i)
-              buffer(imove+2)=ffy(i)
-              buffer(imove+3)=ffz(i)
+              buffer(imove+1)=ewld%ffx(i)
+              buffer(imove+2)=ewld%ffy(i)
+              buffer(imove+3)=ewld%ffz(i)
            Else
               safe=.false.
            End If
@@ -315,11 +316,11 @@ Subroutine deport_atomic_data(mdir,lbook)
 
 ! pack k-space SPME forces arrays
 
-        If (l_cp) Then
+        If (ewld%l_cp) Then
            If (imove+3 <= iblock) Then
-              buffer(imove+1)=fcx(i)
-              buffer(imove+2)=fcy(i)
-              buffer(imove+3)=fcz(i)
+              buffer(imove+1)=ewld%fcx(i)
+              buffer(imove+2)=ewld%fcy(i)
+              buffer(imove+3)=ewld%fcz(i)
            Else
               safe=.false.
            End If
@@ -809,16 +810,16 @@ Subroutine deport_atomic_data(mdir,lbook)
         ozz(keep)=ozz(i)
      End If
 
-     If (lf_cp) Then
-        ffx(keep)=ffx(i)
-        ffy(keep)=ffy(i)
-        ffz(keep)=ffz(i)
+     If (ewld%lf_cp) Then
+        ewld%ffx(keep)=ewld%ffx(i)
+        ewld%ffy(keep)=ewld%ffy(i)
+        ewld%ffz(keep)=ewld%ffz(i)
      End If
 
-     If (l_cp) Then
-        fcx(keep)=fcx(i)
-        fcy(keep)=fcy(i)
-        fcz(keep)=fcz(i)
+     If (ewld%l_cp) Then
+        ewld%fcx(keep)=ewld%fcx(i)
+        ewld%fcy(keep)=ewld%fcy(i)
+        ewld%fcz(keep)=ewld%fcz(i)
      End If
 
      If (vafsamp > 0) Then
@@ -974,20 +975,20 @@ Subroutine deport_atomic_data(mdir,lbook)
 
 ! unpack frozen-frozen k-space SPME forces arrays
 
-     If (lf_cp) Then
-        ffx(newatm)=buffer(kmove+1)
-        ffy(newatm)=buffer(kmove+2)
-        ffz(newatm)=buffer(kmove+3)
+     If (ewld%lf_cp) Then
+        ewld%ffx(newatm)=buffer(kmove+1)
+        ewld%ffy(newatm)=buffer(kmove+2)
+        ewld%ffz(newatm)=buffer(kmove+3)
 
         kmove=kmove+3
      End If
 
 ! unpack k-space SPME forces arrays
 
-     If (l_cp) Then
-        fcx(newatm)=buffer(kmove+1)
-        fcy(newatm)=buffer(kmove+2)
-        fcz(newatm)=buffer(kmove+3)
+     If (ewld%l_cp) Then
+        ewld%fcx(newatm)=buffer(kmove+1)
+        ewld%fcy(newatm)=buffer(kmove+2)
+        ewld%fcz(newatm)=buffer(kmove+3)
 
         kmove=kmove+3
      End If

@@ -3,7 +3,7 @@ Subroutine two_body_forces                        &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &
-           engcpe,vircpe,engsrp,virsrp,stress)
+           engcpe,vircpe,engsrp,virsrp,stress,ewld)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -41,7 +41,7 @@ Subroutine two_body_forces                        &
   Use site_module,    Only : ntpatm,unqatm
   Use configuration,  Only : volm,sumchg,natms,list,xxx,yyy,zzz
   Use vnl_module,     Only : l_vnl
-  Use ewald_module
+  Use ewald           Only : ewald_type
   Use mpole,          Only : induce,keyind
   Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
   Use coul_mpoles,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
@@ -66,6 +66,7 @@ Subroutine two_body_forces                        &
   Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe, &
                                                                engsrp,virsrp
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+  Type( ewald_type ),                       Intent( InOut ) :: ewld
 
 
   Logical,           Save :: new_nz    = .true.
@@ -98,7 +99,9 @@ Subroutine two_body_forces                        &
 ! evaluation.  Repeat the same but only for the SPME k-space
 ! frozen-frozen evaluations in constant volume ensembles only.
 
-  If (keyfce == 2 .or. keyfce == 12) Call ewald_check(keyens,megfrz,nsteql,nstfce,nstep)
+  If (keyfce == 2 .or. keyfce == 12) Then
+    Call ewld%check(keyens,megfrz,nsteql,nstfce,nstep)
+  End If
 
 ! initialise energy and virial accumulators
 
@@ -168,7 +171,7 @@ Subroutine two_body_forces                        &
 
 ! calculate coulombic forces, Ewald sum - fourier contribution
 
-  If (keyfce == 2 .and. l_fce) Then
+  If (keyfce == 2 .and. ewld%l_fce) Then
      If (mximpl > 0) Then
         If (mxompl <= 2) Then
            Call ewald_spme_mforces_d(alpha,epsq,engcpe_rc,vircpe_rc,stress)
@@ -483,7 +486,7 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
 ! Further Ewald/Poisson Solver corrections or an infrequent refresh
 
   If (keyfce == 2 .or. keyfce == 12) Then
-     If (l_fce) Then
+     If (ewld%l_fce) Then
 
 ! frozen pairs corrections to coulombic forces
 
@@ -503,7 +506,7 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
 
 ! Refresh all Ewald k-space contributions
 
-        Call ewald_refresh(engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stress)
+        Call ewld%refresh(engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stress)
 
      End If
 
@@ -580,7 +583,7 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
 ! Self-interaction is constant for the default charges only SPME
 
   If (mxnode > 1 .and. keyfce == 2) Then ! Sum it up for multipolar SPME
-     If (mximpl > 0 .and. mxompl <= 2) Call gsum(engsic)
+     If (mximpl > 0 .and. mxompl <= 2) Call gsum(T%engsic)
 !     If (idnode == 0) Write(nrite,'(1x,a,1p,e18.10 )') 'Self-interaction term: ',engsic
   End If
 
