@@ -24,7 +24,7 @@ Module build_chrm
 
   ! MULTIPOLES MODULE
 
-  Use mpoles, Only : keyind,lchatm ! equivalent to lexatm in configuration
+  Use mpole, Only : keyind,lchatm ! equivalent to lexatm in configuration
 
   Implicit None
 

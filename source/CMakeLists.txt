@@ -27,7 +27,6 @@ error.F90
 ewald_spole.F90
 ewald_excl_mforces.F90
 ewald_excl_mforces_d.F90
-ewald_frzn_forces.F90
 ewald_frzn_mforces.F90
 ewald_real_mforces.F90
 ewald_real_mforces_d.F90
@@ -61,7 +60,6 @@ metal_lrc.F90
 metal_table_derivatives.F90
 metal_table_read.F90
 minimise_relax.F90
-mpoles_container.F90
 mpoles_rotmat_export.F90
 mpoles_rotmat_set_halo.F90
 msd_write.F90
@@ -168,6 +166,8 @@ defects_module.F90
 defects1_module.F90
 dpd_module.F90
 ewald_module.F90
+mpoles_container.F90
+mpole.F90
 mpoles.F90
 poisson_module.F90
 vdw_module.F90

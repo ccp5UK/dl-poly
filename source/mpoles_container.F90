@@ -1,10 +1,10 @@
 Module mpoles_container
   Use kinds, Only : wp
   Use comms, Only : comms_type
-  Use mpoles, Only : ltpatm,mpllfr,mprotm,mplltg,mplflg, &
-                     mplgfr,mprotx,mproty,mprotz,mplmap
   Use setup_module, Only : mxompl, sqrpi, mximpl, mxspl, mxompl, nrite
   Use configuration, Only : imcon,cell,lsite,nlast,lsi,lsa,ltg,xxx,yyy,zzz
+  Use mpole, Only : ltpatm,mpllfr,mprotm,mplltg,mplflg, &
+                     mplgfr,mprotx,mproty,mprotz,mplmap
 
   Implicit None
 

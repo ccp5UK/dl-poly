@@ -18,7 +18,7 @@ Module build_tplg
 
   ! MULTIPOLES MODULE
 
-  Use mpoles, Only : ltpatm ! equivalent to lexatm in configuration
+  Use mpole, Only : ltpatm ! equivalent to lexatm in configuration
 
   Implicit None
 
