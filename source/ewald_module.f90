@@ -99,7 +99,7 @@ Contains
 ! Reinitialise
 
        If (lf_fce) Then
-          ffx = 0.0_wp ; ffy = 0.0_wp ; ffx = 0.0_wp
+          ffx = 0.0_wp ; ffy = 0.0_wp ; ffz = 0.0_wp
 
           ef_fr = 0.0_wp ; vf_fr = 0.0_wp ; sf_fr = 0.0_wp
        End If
@@ -131,7 +131,7 @@ Contains
 ! Reinitialise
 
        If (l_fce) Then
-          fcx = 0.0_wp ; fcy = 0.0_wp ; fcx = 0.0_wp
+          fcx = 0.0_wp ; fcy = 0.0_wp ; fcz = 0.0_wp
 
           e_rc = 0.0_wp ; v_rc = 0.0_wp ; s_rc = 0.0_wp
           e_fr = 0.0_wp ; v_fr = 0.0_wp ; s_fr = 0.0_wp
