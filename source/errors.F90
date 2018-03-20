@@ -1,4 +1,16 @@
-Subroutine error(kode)
+Module errors
+  Use comms, Only : comms_type,abort_comms
+  Use setup_module, Only : nread,nconf,nfield,ntable,nrefdt,nrite, &
+                           nstats,nrest,nhist,ndefdt,nrdfdt,nzdndt,nrsddt
+
+  Implicit None
+  Private
+  Public :: error
+
+  contains
+
+
+Subroutine error(kode,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -10,15 +22,11 @@ Subroutine error(kode)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use comms_module, Only : idnode,abort_comms
-  Use setup_module, Only : nread,nconf,nfield,ntable,nrefdt,nrite, &
-                           nstats,nrest,nhist,ndefdt,nrdfdt,nzdndt,nrsddt
-
-  Implicit None
 
   Integer, Intent( In    ) :: kode
+  Type(comms_type) :: comm
 
-  If (idnode == 0) Then
+  If (comm%idnode == 0) Then
 
      Write(nrite,'(/,1x,a,i5)') 'DL_POLY_4 terminated due to error ', kode
 
@@ -1456,6 +1464,7 @@ Subroutine error(kode)
 
 ! abort comms
 
-  Call abort_comms()
+  Call abort_comms(comm)
 
 End Subroutine error
+End Module errors
