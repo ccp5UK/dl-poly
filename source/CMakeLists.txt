@@ -10,9 +10,6 @@ defects_link_cells.F90
 defects.F90
 deport_atomic.F90
 dihedrals.F90
-inversions_compute.F90
-inversions_forces.F90
-inversions_table_read.F90
 dpd_thermostat.F90
 dpd_v_export.F90
 dpd_v_set_halo.F90
@@ -166,7 +163,7 @@ rigid_bodies_module.F90
 tethers_module.F90
 bonds.F90
 angles.F90
-inversions_module.F90
+inversions.F90
 external_field_module.F90
 langevin_module.F90
 minimise_module.F90
