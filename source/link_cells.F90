@@ -1,4 +1,22 @@
-Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
+Module link_cells
+  Use kinds, Only : wp, li
+  Use comms,       Only : comms_type,gcheck,gmax,gsum
+  Use setup_module
+  Use domains_module,     Only : idx,idy,idz, nprx,npry,nprz, &
+                                 r_nprx,r_npry,r_nprz
+  Use configuration,      Only : cell,natms,nlast,ltg,lfrzn, &
+                                 xxx,yyy,zzz,lexatm,list
+  Use core_shell,  Only : listshl,legshl
+  Use mpole,      Only : keyind,lchatm
+  Use development_module, Only : l_dis,r_dis
+
+  Implicit None
+  Private
+  Public :: link_cell_pairs
+
+  Contains
+
+Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -11,22 +29,11 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp, li
-  Use comms_module,       Only : idnode,mxnode,gcheck,gmax,gsum
-  Use setup_module
-  Use domains_module,     Only : idx,idy,idz, nprx,npry,nprz, &
-                                 r_nprx,r_npry,r_nprz
-  Use configuration,      Only : cell,natms,nlast,ltg,lfrzn, &
-                                 xxx,yyy,zzz,lexatm,list
-  Use core_shell,  Only : listshl,legshl
-  Use mpoles_module,      Only : keyind,lchatm
-  Use development_module, Only : l_dis,r_dis
-
-  Implicit None
 
   Logical,            Intent( In    ) :: lbook
   Integer,            Intent( In    ) :: megfrz
   Real( Kind = wp ) , Intent( In    ) :: rcut,rlnk,rvdw,rmet,pdplnc
+  Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1,match
 
@@ -116,7 +123,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
   Allocate (cell_dom(0:nlp3),cell_bor(0:nlp4),                               Stat=fail(4))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                       Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'link_cell_pairs allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'link_cell_pairs allocation failure, node: ', comm%idnode
      Call error(0)
   End If
   cell_dom(0)=nlp3 ! save array's limit
@@ -807,9 +814,9 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
 
 ! terminate job if neighbour list array exceeded
 
-  If (mxnode > 1) Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Then
-     If (mxnode > 1) Call gmax(ibig)
+     Call gmax(comm,ibig)
      Call warning(290,Real(ibig,wp),Real(mxlist,wp),0.0_wp)
      Call error(106)
   End If
@@ -987,12 +994,10 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
         End Do
      End Do
 
-     If (mxnode > 1) Then
-        Call gcheck(safe,"enforce")
-        Call gsum(cnt)
-     End If
+        Call gcheck(comm,safe,"enforce")
+        Call gsum(comm,cnt)
 
-     If (idnode == 0) Then
+     If (comm%idnode == 0) Then
         If (.not.safe) Write(nrite,'(/,1x,a,i20,2a,f7.3,a,/)')                &
         '*** warning - ', Int(cnt(0),li), ' pair(s) of particles in CONFIG ', &
         'violate(s) the minimum separation distance of ',r_dis,' Angs ***'
@@ -1018,8 +1023,10 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
   Deallocate (cell_dom,cell_bor,             Stat=fail(4))
   Deallocate (xxt,yyt,zzt,                   Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'link_cell_pairs deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'link_cell_pairs deallocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
 End Subroutine link_cell_pairs
+
+End Module link_cells

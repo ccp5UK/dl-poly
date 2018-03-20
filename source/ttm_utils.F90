@@ -13,7 +13,7 @@ Module ttm_utils
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use setup_module
-  Use ttm_module
+  Use ttm
   Use comms, Only : comms_type,Grid1_tag, Grid2_tag
   Use domains_module, Only : idx,idy,idz,nprx,npry,nprz
 #ifdef SERIAL
@@ -1889,6 +1889,5 @@ Contains
     Deallocate (energydist)
 
   End Subroutine redistribute_Te
-
 
 End Module ttm_utils

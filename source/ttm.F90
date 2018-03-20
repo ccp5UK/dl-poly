@@ -1,4 +1,4 @@
-Module ttm_module
+Module ttm
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -335,8 +335,6 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Implicit None
-
     Integer, Intent( In    ) :: i,j,k
 
     Integer                  :: idcube
@@ -345,4 +343,4 @@ Contains
 
   End Function idcube
 
-End Module ttm_module
+End Module ttm

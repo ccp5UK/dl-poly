@@ -10,6 +10,15 @@ Module ewald
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
+  Use comms, Only : ExchgGrid_tag, comms_type,wp_mpi
+  Use setup_module, Only : mxatms,nrite,mxspl,mxspl2
+  Use configuration, Only : natms,fxx,fyy,fzz
+  Use domains_module, Only : map
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi
+#endif
 
   Implicit None
 
@@ -41,7 +50,6 @@ Module ewald
 Contains
 
   Subroutine ewald_allocate_kall_arrays(T)
-    Use setup_module, Only : mxatms
 
     Class(ewald_type) :: T
 
@@ -59,7 +67,6 @@ Contains
   End Subroutine ewald_allocate_kall_arrays
 
   Subroutine ewald_allocate_kfrz_arrays(T)
-    Use setup_module, Only : mxatms
 
     Class(ewald_type) :: T
 
@@ -160,7 +167,6 @@ Contains
   End Subroutine ewald_check
 
   Subroutine ewald_refresh(T,engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stress)
-    Use configuration, Only : natms,fxx,fyy,fzz
 
     Class( ewald_type )                :: T
     Real( Kind = wp ), Intent( InOut ) :: engcpe_rc,vircpe_rc, &
@@ -231,10 +237,6 @@ Contains
   ! author    - i.j.bush & i.t.todorov june 2014
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use comms, Only : comms_type
-    Use setup_module,   Only : nrite,mxspl,mxspl2
-    Use domains_module, Only : map
 
     Integer,            Intent( In    ) :: ixb , iyb , izb
     Integer,            Intent( In    ) :: ixt , iyt , izt
@@ -370,11 +372,6 @@ Contains
   ! author    - i.j.bush & i.t.todorov june 2014
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif
 
       Integer, Intent( In    ) :: from, to
       Integer, Intent( In    ) :: lx, ly, lz
@@ -420,9 +417,9 @@ Contains
 
   ! Exchange the data
 
-         Call MPI_IRECV( recv_buffer, length, wp_mpi, from, ExchgGrid_tag, dlp_comm_world, request, ierr )
-         Call MPI_SEND(  send_buffer, length, wp_mpi, to  , ExchgGrid_tag, dlp_comm_world, ierr )
-         Call MPI_WAIT(  request, status, ierr )
+         Call MPI_IRECV( recv_buffer, length, wp_mpi, from, ExchgGrid_tag, comm%comm, comm%request, comm%ierr )
+         Call MPI_SEND(  send_buffer, length, wp_mpi, to  , ExchgGrid_tag, comm%comm, comm%ierr )
+         Call MPI_WAIT(  comm%request, comm%status, comm%ierr )
 
   ! Copy the received data into the domain halo
 

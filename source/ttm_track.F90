@@ -1,4 +1,4 @@
-Module ttm_track_module
+Module ttm_track
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -14,7 +14,7 @@ Module ttm_track_module
 
   Use kinds, Only : wp
   Use setup_module
-  Use ttm_module
+  Use ttm
   Use ttm_utils
   Use comms, Only : comms_type
 
@@ -451,4 +451,4 @@ Contains
     
   End Subroutine gaussianTrack
 
-End Module ttm_track_module
+End Module ttm_track

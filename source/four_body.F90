@@ -1,4 +1,67 @@
-Subroutine four_body_forces(rcfbp,engfbp,virfbp,stress)
+Module four_body
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 module declaring global four-body potential variables and
+! arrays
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov june 2008
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds,          Only : wp
+  Use comms,          Only : comms_type,gsum,gcheck
+  
+  Use domains_module, Only : idx,idy,idz, nprx,npry,nprz, &
+                             r_nprx,r_npry,r_nprz
+  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
+                             xxx,yyy,zzz,fxx,fyy,fzz
+  Use setup_module, Only : mxsite,mxfbp,mxpfbp,zero_plus,mx3fbp, &
+                          mxcell, mxatms,nrite
+
+
+  Implicit None
+
+  Integer,                        Save :: ntpfbp = 0
+
+
+  Logical,           Allocatable, Save :: lfrfbp(:)
+
+  Integer,           Allocatable, Save :: lstfbp(:),ltpfbp(:)
+
+  Real( Kind = wp ), Allocatable, Save :: prmfbp(:,:),rctfbp(:)
+
+  Public :: allocate_four_body_arrays
+
+Contains
+
+  Subroutine allocate_four_body_arrays()
+
+    Integer, Dimension( 1:5 ) :: fail
+
+    fail = 0
+
+    Allocate (lfrfbp(1:Merge(mxsite,0,mxfbp > 0)), Stat = fail(1))
+    Allocate (lstfbp(1:mxfbp),                     Stat = fail(2))
+    Allocate (ltpfbp(1:mxfbp),                     Stat = fail(3))
+    Allocate (prmfbp(1:mxpfbp,1:mxfbp),            Stat = fail(4))
+    Allocate (rctfbp(1:mxfbp),                     Stat = fail(5))
+
+    If (Any(fail > 0)) Call error(1024)
+
+    lfrfbp = .false.
+
+    lstfbp = 0
+    ltpfbp = 0
+
+    prmfbp = 0.0_wp
+    rctfbp = 0.0_wp
+
+  End Subroutine allocate_four_body_arrays
+  
+  
+  Subroutine four_body_forces(rcfbp,engfbp,virfbp,stress,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -16,21 +79,12 @@ Subroutine four_body_forces(rcfbp,engfbp,virfbp,stress)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use comms_module,   Only : idnode,mxnode,gsum,gcheck
-  Use setup_module
-  Use domains_module, Only : idx,idy,idz, nprx,npry,nprz, &
-                             r_nprx,r_npry,r_nprz
-  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
-                             xxx,yyy,zzz,fxx,fyy,fzz
-  Use four_body_module
-
-  Implicit None
 
   Real( Kind = wp ),                   Intent( In    ) :: rcfbp
   Real( Kind = wp ),                   Intent(   Out ) :: engfbp,virfbp
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
-
+  Type( comms_type ),                  Intent( InOut ) :: comm
+  
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
 
   Integer           :: fail(1:2),                       &
@@ -97,7 +151,7 @@ Subroutine four_body_forces(rcfbp,engfbp,virfbp,stress)
   Allocate (link(1:mxatms),listin(1:mxatms),lct(1:ncells),lst(1:ncells), Stat=fail(1))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'four_body_forces allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'four_body_forces allocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
@@ -724,12 +778,12 @@ Subroutine four_body_forces(rcfbp,engfbp,virfbp,stress)
 
 ! check for undefined potentials
 
-  If (mxnode > 1) Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Call error(443)
 
 ! global sum of four-body potential: virial is zero!!!
 
-  If (mxnode > 1) Call gsum(engfbp)
+  Call gsum(comm,engfbp)
 
 ! complete stress tensor
 
@@ -746,8 +800,11 @@ Subroutine four_body_forces(rcfbp,engfbp,virfbp,stress)
   Deallocate (link,listin,lct,lst, Stat=fail(1))
   Deallocate (xxt,yyt,zzt,         Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'four_body_forces deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'four_body_forces deallocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
 End Subroutine four_body_forces
+
+
+End Module four_body
