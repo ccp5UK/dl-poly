@@ -1208,7 +1208,7 @@ Subroutine error(kode,comm)
 
      Else If (kode == 1021) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in inversions_module -> allocate_inversion_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in inversions -> allocate_inversion_arrays'
 
      Else If (kode == 1022) Then
 
@@ -1260,7 +1260,7 @@ Subroutine error(kode,comm)
 
      Else If (kode == 1034) Then
 
-        Write(nrite,'(/,1x,a)') 'error - deallocation failure in inversions_module -> deallocate_inversions_arrays'
+        Write(nrite,'(/,1x,a)') 'error - deallocation failure in inversions -> deallocate_inversions_arrays'
 
      Else If (kode == 1035) Then
 

@@ -18,8 +18,6 @@ Module inversions
 
   Implicit None
 
-  Private
-
   Logical,                        Save :: lt_inv=.false. ! no tabulated potentials opted
 
   Integer,                        Save :: ntinv  = 0 , &
