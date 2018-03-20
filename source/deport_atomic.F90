@@ -1,21 +1,7 @@
-Subroutine deport_atomic_data(mdir,lbook,ewld)
+Module deport_atomic 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine to deport atomic and topological data of particles
-! leaving this domain
-!
-! NOTE: When executing on one node we need not get here at all!
-!
-! copyright - daresbury laboratory
-! author    - w.smith & i.t.todorov december 2016
-! contrib   - i.j.bush february 2014
-! contrib   - m.a.seaton june 2014
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use kinds, only : wp
-  Use comms_module
+  Use kinds,            Only : wp
+  Use comms,            Only : comms_type,gcheck,wp_mpi, Deport_tag
   Use setup_module
   Use domains_module
 
@@ -33,8 +19,8 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
 
   Use tethers_module,      Only : ntteth,listtet,legtet
 
-  Use bonds_module,        Only : ntbond,listbnd,legbnd
-  Use angles_module,       Only : ntangl,listang,legang
+  Use bonds,        Only : ntbond,listbnd,legbnd
+  Use angles,       Only : ntangl,listang,legang
   Use dihedrals_module,    Only : ntdihd,listdih,legdih,lx_dih
   Use inversions_module,   Only : ntinv,listinv,leginv
 
@@ -44,16 +30,43 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
   Use langevin_module,     Only : l_lan,fxl,fyl,fzl
 
   Use ewald,               Only : ewald_type
-  Use mpoles_module,       Only : keyind,ltpatm,lchatm
+  Use mpole ,              Only : keyind,ltpatm,lchatm
 
   Use msd_module
   Use greenkubo_module,    Only : vxi,vyi,vzi,vafsamp
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi
+#endif  
 
   Implicit None
+  
+  Public :: deport_atomic_data
+  
+  Contains 
+  
+
+Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine to deport atomic and topological data of particles
+! leaving this domain
+!
+! NOTE: When executing on one node we need not get here at all!
+!
+! copyright - daresbury laboratory
+! author    - w.smith & i.t.todorov december 2016
+! contrib   - i.j.bush february 2014
+! contrib   - m.a.seaton june 2014
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
 
   Logical,            Intent( In    ) :: lbook
   Integer,            Intent( In    ) :: mdir
   Type( ewald_type ), Intent( InOut ) :: ewld
+  Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
                        stay,safe1,check
@@ -78,7 +91,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
   Allocate (lrgd(-1:Max(mxlrgd,mxrgd)),         Stat=fail(2))
   Allocate (ind_on(0:mxatms),ind_off(0:mxatms), Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'deport_atomic_data allocation failure 1, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'deport_atomic_data allocation failure 1, node: ', comm%idnode
      Call error(0)
   End If
 
@@ -762,7 +775,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
 
 ! Check for array bound overflow (have arrays coped with outgoing data)
 
-  Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Call error(43)
 
 ! Restack arrays for leaving off particles with staying on ones
@@ -880,15 +893,15 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
 
 ! exchange information on buffer sizes
 
-  Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Deport_tag,dlp_comm_world,request,ierr)
-  Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,Deport_tag,dlp_comm_world,ierr)
-  Call MPI_WAIT(request,status,ierr)
+  Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Deport_tag,comm%comm,comm%request,comm%ierr)
+  Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,Deport_tag,comm%comm,comm%ierr)
+  Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
 ! exchange buffers between nodes (this is a MUST)
 
-  If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Deport_tag,dlp_comm_world,request,ierr)
-  If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Deport_tag,dlp_comm_world,ierr)
-  If (jmove > 0) Call MPI_WAIT(request,status,ierr)
+  If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Deport_tag,comm%comm,comm%request,comm%ierr)
+  If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Deport_tag,comm%comm,comm%ierr)
+  If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
 ! check arrays can cope with incoming atom numbers
 
@@ -900,13 +913,13 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
 ! Check for array bound overflow (can arrays cope with incoming data)
 
   safe=(natms <= mxatms)
-  Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Call error(44)
 
   Deallocate (ind_on,ind_off,                        Stat=fail(1))
   Allocate   (i1pmf(1:mxtpmf(1)),i2pmf(1:mxtpmf(2)), Stat=fail(2))
   If (Any(fail(1:2) > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'deport_atomic_data de/allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'deport_atomic_data de/allocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
@@ -1117,7 +1130,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
                  Call tag_legend(safe1,newatm,ll*jshels,legshl,mxfshl)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many core-shell units on node: ", idnode, " !!! ***"
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many core-shell units on node: ", comm%idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,ll*kshels,legshl,mxfshl)
@@ -1158,7 +1171,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
                  Call tag_legend(safe1,newatm,jconst,legcon,mxfcon)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many constraint units on node: ", idnode, " !!! ***"
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many constraint units on node: ", comm%idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kconst,legcon,mxfcon)
@@ -1214,7 +1227,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
                  Call tag_legend(safe1,newatm,jpmf,legpmf,mxfpmf)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many PMF units on node: ", idnode, " !!! ***"
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many PMF units on node: ", comm%idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kpmf,legpmf,mxfpmf)
@@ -1344,7 +1357,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
                  kmove=kmove+3
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many rigid body units on node: ", idnode, " !!! ***"
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many rigid body units on node: ", comm%idnode, " !!! ***"
               End If
            Else
               If (lrgd(2) == 0) Then  ! Unduplication: Details have already been sent -
@@ -1388,7 +1401,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
                  Call tag_legend(safe1,newatm,jteths,legtet,mxftet)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many tether units on node: ", idnode, " !!! ***"
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many tether units on node: ", comm%idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kteths,legtet,mxftet)
@@ -1429,7 +1442,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
                  Call tag_legend(safe1,newatm,jbonds,legbnd,mxfbnd)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many bond units on node: ", idnode, " !!! ***"
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many bond units on node: ", comm%idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kbonds,legbnd,mxfbnd)
@@ -1473,7 +1486,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
                  Call tag_legend(safe1,newatm,jangle,legang,mxfang)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many angle units on node: ", idnode, " !!! ***"
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many angle units on node: ", comm%idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kangle,legang,mxfang)
@@ -1530,7 +1543,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
                  Call tag_legend(safe1,newatm,jdihed,legdih,mxfdih)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many dihedral units on node: ", idnode, " !!! ***"
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many dihedral units on node: ", comm%idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kdihed,legdih,mxfdih)
@@ -1577,7 +1590,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
                  Call tag_legend(safe1,newatm,jinver,leginv,mxfinv)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many inversion units on node: ", idnode, " !!! ***"
+                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many inversion units on node: ", comm%idnode, " !!! ***"
               End If
            Else
               Call tag_legend(safe1,newatm,kinver,leginv,mxfinv)
@@ -1606,17 +1619,18 @@ Subroutine deport_atomic_data(mdir,lbook,ewld)
 
 ! check error flags
 
-  Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Call error(113)
-  Call gcheck(safe1)
+  Call gcheck(comm,safe1)
   If (.not.safe1) Call error(114)
 
   Deallocate (buffer,      Stat=fail(1))
   Deallocate (lrgd,        Stat=fail(2))
   Deallocate (i1pmf,i2pmf, Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'deport_atomic_data deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'deport_atomic_data deallocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
 End Subroutine deport_atomic_data
+End Module deport_atomic

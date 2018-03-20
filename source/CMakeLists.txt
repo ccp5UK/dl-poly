@@ -6,15 +6,9 @@ build_book.F90
 build_chrm.F90
 build_excl.F90
 build_tplg.F90
-defects1_write.F90
 defects_link_cells.F90
-defects_reference_export.F90
-defects_reference_read.F90
-defects_reference_read_parallel.F90
-defects_reference_set_halo.F90
-defects_reference_write.F90
-defects_write.F90
-deport_atomic_data.F90
+defects.F90
+deport_atomic.F90
 dihedrals_14_check.F90
 dihedrals_14_vdw.F90
 dihedrals_compute.F90
@@ -154,8 +148,6 @@ domains_module.F90
 site_module.F90
 configuration.F90
 vnl_module.F90
-defects_module.F90
-defects1_module.F90
 dpd_module.F90
 ewald.F90
 ewald_spole.F90
