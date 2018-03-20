@@ -10,10 +10,8 @@ defects_link_cells.F90
 defects.F90
 deport_atomic.F90
 dihedrals.F90
-dpd_thermostat.F90
-dpd_v_export.F90
-dpd_v_set_halo.F90
-error.F90
+dpd.F90
+errors.F90
 exchange_grid.F90
 export_atomic_data.F90
 export_atomic_positions.F90
@@ -141,7 +139,6 @@ domains_module.F90
 site_module.F90
 configuration.F90
 vnl_module.F90
-dpd_module.F90
 ewald.F90
 ewald_spole.F90
 ewald_mpoles.F90
