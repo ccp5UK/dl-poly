@@ -24,7 +24,7 @@ Subroutine system_revive                                      &
   Use bonds_module,       Only : ldfbnd,ncfbnd,dstbnd
   Use angles_module,      Only : ldfang,ncfang,dstang
   Use dihedrals,   Only : ldfdih,ncfdih,dstdih
-  Use inversions_module,  Only : ldfinv,ncfinv,dstinv
+  Use inversions,  Only : ldfinv,ncfinv,dstinv
   Use greenkubo_module,   Only : nsvaf,vafsamp,vafcount,vafstep, &
                                  vxi,vyi,vzi,vafdata,vaf,vaftime
 

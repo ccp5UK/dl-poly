@@ -37,7 +37,7 @@ Subroutine scan_field                                &
   Use bonds_module,      Only : lt_bnd
   Use angles_module,     Only : lt_ang
   Use dihedrals,  Only : lt_dih
-  Use inversions_module, Only : lt_inv
+  Use inversions, Only : lt_inv
   Use vdw_module,        Only : lt_vdw
   Use metal_module,      Only : tabmet
   Use tersoff_module,    Only : potter

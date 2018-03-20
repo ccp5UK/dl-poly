@@ -63,7 +63,7 @@ Subroutine read_field                      &
   Use bonds_module
   Use angles_module
   Use dihedrals
-  Use inversions_module
+  Use inversions
 
   Use vdw_module
   Use metal_module
@@ -2351,7 +2351,7 @@ Subroutine read_field                      &
            If (mxginv1 > 0) Then
               ntpinv = 0 ! for inversions
               Call allocate_invr_dst_arrays() ! as it depends on ldfinv(0)
-!             typinv = 0 ! initialised in inversions_module
+!             typinv = 0 ! initialised in inversions
            End If
 
            nsite =0

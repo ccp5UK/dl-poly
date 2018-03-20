@@ -14,7 +14,7 @@ Module build_tplg
   Use bonds
   Use angles
   Use dihedrals
-  Use inversions_module
+  Use inversions
 
   ! MULTIPOLES MODULE
 

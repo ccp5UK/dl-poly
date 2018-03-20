@@ -22,9 +22,6 @@ impact.F90
 init_intra.F90
 intra_coul.F90
 intra_mcoul.F90
-inversions_compute.F90
-inversions_forces.F90
-inversions_table_read.F90
 io_module.F90
 langevin_forces.F90
 link_cell_pairs.F90
@@ -163,7 +160,7 @@ rigid_bodies_module.F90
 tethers_module.F90
 bonds.F90
 angles.F90
-inversions_module.F90
+inversions.F90
 external_field_module.F90
 langevin_module.F90
 minimise_module.F90

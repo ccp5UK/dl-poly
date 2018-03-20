@@ -20,7 +20,7 @@ Module build_excl
   Use bonds
   Use angles
   Use dihedrals
-  Use inversions_module
+  Use inversions
 
   Implicit None
 

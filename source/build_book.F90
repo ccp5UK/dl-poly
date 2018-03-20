@@ -26,7 +26,7 @@ Module build_book
   Use bonds
   Use angles
   Use dihedrals
-  Use inversions_module
+  Use inversions
 
   Implicit None
 
