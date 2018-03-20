@@ -13,7 +13,6 @@ dihedrals.F90
 dpd.F90
 errors.F90
 external_field.F90
-exchange_grid.F90
 four_body_forces.F90
 impact.F90
 init_intra.F90
