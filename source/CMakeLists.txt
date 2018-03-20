@@ -12,11 +12,8 @@ deport_atomic.F90
 dihedrals.F90
 dpd.F90
 errors.F90
+external_field.F90
 exchange_grid.F90
-export_atomic_data.F90
-export_atomic_positions.F90
-external_field_apply.F90
-external_field_correct.F90
 four_body_forces.F90
 impact.F90
 init_intra.F90
@@ -164,7 +161,6 @@ tethers_module.F90
 bonds.F90
 angles.F90
 inversions_module.F90
-external_field_module.F90
 langevin_module.F90
 minimise_module.F90
 msd_module.F90

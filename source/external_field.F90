@@ -1,4 +1,56 @@
-Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
+Module external_field_module
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 module declaring global external field variables and arrays
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov july 2004
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds, Only : wp
+  Use setup_module, Only : mxpfld
+  
+  Use comms,   Only : comms_type,gcheck,gsum
+  Use setup_module,   Only : twopi,nrite,mxshl,mxatms
+  Use configuration,  Only : imcon,cell,natms,nfree,nlast,lsi,lsa,ltg, &
+                             lfrzn,lstfre,weight,chge,           &
+                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use kinetic_module, Only : getcom_mol
+  Use rigid_bodies_module
+  Use core_shell
+  Implicit None
+
+! Only one type of field can be applied on the system (keyfld is a scalar)
+
+  Integer,                        Save :: keyfld = 0
+
+  Real( Kind = wp ),              Save :: mass = 0.0_wp
+
+  Real( Kind = wp ), Allocatable, Save :: prmfld(:)
+
+  Public :: allocate_external_field_arrays
+
+Contains
+
+  Subroutine allocate_external_field_arrays()
+
+
+    Integer, Dimension( 1:1 ) :: fail
+
+    fail = 0
+
+    Allocate (prmfld(mxpfld), Stat = fail(1))
+
+    If (Any(fail > 0)) Call error(1019)
+
+    prmfld = 0.0_wp
+
+  End Subroutine allocate_external_field_arrays
+  
+  
+  Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -13,23 +65,11 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use comms_module,   Only : idnode,mxnode,gcheck,gsum
-  Use setup_module,   Only : twopi,nrite,mxshl,mxatms
-  Use configuration,  Only : imcon,cell,natms,nfree,nlast,lsi,lsa,ltg, &
-                             lfrzn,lstfre,weight,chge,           &
-                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use kinetic_module, Only : getcom_mol
-  Use rigid_bodies_module
-  Use core_shell
-  Use external_field_module
-
-  Implicit None
-
   Logical,           Intent( In    ) :: leql
   Integer,           Intent( In    ) :: keyshl,nsteql,nstep
   Real( Kind = wp ), Intent( In    ) :: time ! for oscillating fields
   Real( Kind = wp ), Intent(   Out ) :: engfld,virfld
+  Type( comms_type ), Intent( Inout ) :: comm
 
   Logical, Save     :: newjob = .true.
 
@@ -150,7 +190,7 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
         Allocate (lstopt(1:2,1:mxshl),                       Stat=fail(1))
         Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms), Stat=fail(2))
         If (Any(fail > 0)) Then
-           Write(nrite,'(/,1x,a,i0)') 'external_field_apply allocation failure, node: ', idnode
+           Write(nrite,'(/,1x,a,i0)') 'external_field_apply allocation failure, node: ', comm%idnode
            Call error(0)
         End If
 
@@ -196,7 +236,7 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
         Deallocate (lstopt,      Stat=fail(1))
         Deallocate (oxt,oyt,ozt, Stat=fail(2))
         If (Any(fail > 0)) Then
-           Write(nrite,'(/,1x,a,i0)') 'external_field_apply deallocation failure, node: ', idnode
+           Write(nrite,'(/,1x,a,i0)') 'external_field_apply deallocation failure, node: ', comm%idnode
            Call error(0)
         End If
 
@@ -222,7 +262,7 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
         Allocate (lstopt(1:2,1:mxshl),                       Stat=fail(1))
         Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms), Stat=fail(2))
         If (Any(fail > 0)) Then
-           Write(nrite,'(/,1x,a,i0)') 'external_field_apply allocation failure, node: ', idnode
+           Write(nrite,'(/,1x,a,i0)') 'external_field_apply allocation failure, node: ', comm%idnode
            Call error(0)
         End If
 
@@ -270,7 +310,7 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
         Deallocate (lstopt,      Stat=fail(1))
         Deallocate (oxt,oyt,ozt, Stat=fail(2))
         If (Any(fail > 0)) Then
-           Write(nrite,'(/,1x,a,i0)') 'external_field_apply deallocation failure, node: ', idnode
+           Write(nrite,'(/,1x,a,i0)') 'external_field_apply deallocation failure, node: ', comm%idnode
            Call error(0)
         End If
 
@@ -342,10 +382,8 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
            End If
         End Do
 
-        If (mxnode > 1) Then
-           Call gsum(mass)
-           Call gcheck(safe)
-        End If
+        Call gsum(comm,mass)
+        Call gcheck(comm,safe)
         If (.not.safe) Call error(456)
      End If
 
@@ -357,7 +395,7 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
            vzz(i) = 0.0_wp                  ; fzz(i) = 0.0_wp
         End If
      End Do
-     If (mxnode > 1) Call gsum(rtmp) ! net velocity and force to ensure solid wall behaviour
+     Call gsum(comm,rtmp) ! net velocity and force to ensure solid wall behaviour
 
      rtmp(1)=rtmp(1)/mass             ! averaged velocity per particle
      rtmp(2)=(rtmp(2)+prmfld(3))/mass ! averaged acceleration of the slab
@@ -387,7 +425,7 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
 
 ! Get molecule's weight and COM
 
-     Call getcom_mol(ia,ib,cmm)
+     Call getcom_mol(ia,ib,cmm,comm)
 
 ! Apply force corrections
 
@@ -497,14 +535,14 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
 
 ! Get first molecule's weight and COM
 
-     Call getcom_mol(ia,ib,cmm)
+     Call getcom_mol(ia,ib,cmm,comm)
 
      ic = Nint(prmfld(3))
      id = Nint(prmfld(4))
 
 ! Get second molecule's weight and COM
 
-     Call getcom_mol(ic,id,cm2)
+     Call getcom_mol(ic,id,cm2,comm)
 
 ! Apply PBC to COMS vector
 
@@ -563,14 +601,141 @@ Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld)
 
 ! sum up energy and virial contributions
 
-  If (mxnode > 1) Then
+  
      rtmp(1) = engfld
      rtmp(2) = virfld
 
-     Call gsum(rtmp)
+     Call gsum(comm,rtmp)
 
      engfld = rtmp(1)
      virfld = rtmp(2)
-  End If
+  
 
 End Subroutine external_field_apply
+
+Subroutine external_field_correct(engfld,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for correcting an external field application
+!
+! Note: Only one field at a time is allowed
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov february 2015
+! amnded    - i.t.todorov september 2015 : gsum engfld
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Real( Kind = wp ), Intent(   Out ) :: engfld
+  Type( comms_type ), Intent( InOut ) :: comm
+
+  Integer           :: i,j,ia,ib, irgd,jrgd,lrgd,rgdtyp,megrgd
+  Real( Kind = wp ) :: rz,vxt,tmp,rtmp(1:2), &
+                       x(1:1),y(1:1),z(1:1)
+
+! Recover megrgd
+
+  megrgd=rgdmeg
+
+  If (keyfld == 3) Then
+
+! continuous shear of walls : 2D periodic box (imcon=6)
+
+     If (imcon /= 6) Return
+
+! shear rate=prmfld(1) angstrom per ps for non-frozen
+! and non-weightless atoms at Abs(z) > prmfld(2)
+
+     If (megrgd > 0) Then
+
+! FPs
+        Do j=1,nfree
+           i=lstfre(j)
+
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > prmfld(2)) &
+           vxx(i)=0.5_wp*Sign(prmfld(1),zzz(i))
+        End Do
+
+! RBs
+
+        Do irgd=1,ntrgd
+           rgdtyp=listrgd(0,irgd)
+
+! For all good RBs
+
+           lrgd=listrgd(-1,irgd)
+           If (rgdfrz(0,rgdtyp) == 0) Then
+              x=rgdxxx(irgd) ; y=rgdyyy(irgd) ; z=rgdzzz(irgd)
+              Call images(imcon,cell,1,x,y,z)
+
+              rz=z(1)
+              If (Abs(rz) > prmfld(2)) Then
+                 tmp=0.5_wp*Sign(prmfld(1),rz)
+                 vxt=tmp-rgdvxx(irgd)
+
+                 rgdvxx(irgd)=tmp
+                 Do jrgd=1,lrgd
+                    i=indrgd(jrgd,irgd) ! local index of particle/site
+
+                    If (i <= natms) vxx(i)=vxx(i)+vxt
+                 End Do
+              End If
+           End If
+        End Do
+
+     Else
+
+        Do i=1,natms
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > prmfld(2)) &
+           vxx(i)=0.5_wp*Sign(prmfld(1),zzz(i))
+        End Do
+
+     End If
+
+  Else If (keyfld == 8) Then
+
+     engfld = 0.0_wp
+
+! xpist - piston wall pushing down along the X=bxc direction
+! prmfld(1) is the first atom of the layer of molecules (membrane) to be pushed
+! prmfld(2) is the last atom of the layer of molecules (membrane) to be pushed
+! prmfld(3) is the pressure applied to the layer of molecules (membrane) in the
+! +X=bxc direction - i.e. left to right.  The layer plane is defined as _|_ bxc
+
+     If (imcon /= 1 .and. imcon /= 2) Return
+
+     ia = Nint(prmfld(1))
+     ib = Nint(prmfld(2))
+
+     rtmp=0.0_wp  ! average velocity and force per atom in x direction of the piston
+     Do i=1,natms ! preserve momentum and velocity in the direction of the push
+        If (ltg(i) >= ia .and. ltg(i) <= ib) Then
+           rtmp(1)=rtmp(1)+weight(i)*vxx(i) ; rtmp(2)=rtmp(2)+fxx(i)
+           vyy(i) = 0.0_wp                  ; fyy(i) = 0.0_wp
+           vzz(i) = 0.0_wp                  ; fzz(i) = 0.0_wp
+        End If
+     End Do
+     Call gsum(comm,rtmp) ! net velocity and force to ensure solid wall behaviour
+
+     rtmp(1)=rtmp(1)/mass             ! averaged velocity per particle
+     rtmp(2)=(rtmp(2)+prmfld(3))/mass ! averaged acceleration of the slab
+
+     Do i=1,natms
+        If (ltg(i) >= ia .and. ltg(i) <= ib) Then
+           engfld=weight(i)*(rtmp(1)-vxx(i))**2 ! must change E_kin to reflect solidity
+           vxx(i)=rtmp(1)
+           fxx(i)=rtmp(2)*weight(i) ! force per particle
+        End If
+     End Do
+
+     engfld=0.5_wp*engfld
+
+     Call gsum(comm,engfld)
+
+  End If
+
+End Subroutine external_field_correct
+
+
+End Module external_field_module
