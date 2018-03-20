@@ -1196,7 +1196,7 @@ Subroutine error(kode)
 
      Else If (kode == 1020) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in dihedrals_module -> allocate_dihedrals_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in dihedrals -> allocate_dihedrals_arrays'
 
      Else If (kode == 1021) Then
 
@@ -1248,7 +1248,7 @@ Subroutine error(kode)
 
      Else If (kode == 1033) Then
 
-        Write(nrite,'(/,1x,a)') 'error - deallocation failure in dihedrals_module -> deallocate_dihedrals_arrays'
+        Write(nrite,'(/,1x,a)') 'error - deallocation failure in dihedrals -> deallocate_dihedrals_arrays'
 
      Else If (kode == 1034) Then
 
@@ -1372,11 +1372,11 @@ Subroutine error(kode)
 
      Else If (kode == 1076) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in dihedrals_module -> allocate_dihd_pot_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in dihedrals -> allocate_dihd_pot_arrays'
 
      Else If (kode == 1077) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in dihedrals_module -> allocate_dihd_dst_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in dihedrals -> allocate_dihd_dst_arrays'
 
      Else If (kode == 1078) Then
 

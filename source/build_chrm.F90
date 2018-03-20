@@ -19,7 +19,7 @@ Module build_chrm
 
   Use bonds
   Use angles
-  Use dihedrals_module
+  Use dihedrals
   Use inversions_module
 
   ! MULTIPOLES MODULE

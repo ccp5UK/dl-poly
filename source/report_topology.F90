@@ -34,7 +34,7 @@ Subroutine report_topology               &
 
   Use bonds_module
   Use angles_module
-  Use dihedrals_module
+  Use dihedrals
   Use inversions_module
 
   Implicit None

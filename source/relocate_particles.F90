@@ -34,7 +34,7 @@ Subroutine relocate_particles       &
 
   Use bonds_module,        Only : ntbond,listbnd,legbnd
   Use angles_module,       Only : ntangl,listang,legang
-  Use dihedrals_module,    Only : ntdihd,listdih,legdih
+  Use dihedrals,    Only : ntdihd,listdih,legdih
   Use inversions_module,   Only : ntinv, listinv,leginv
 
   Implicit None

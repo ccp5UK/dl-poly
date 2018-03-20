@@ -62,7 +62,7 @@ Subroutine read_field                      &
 
   Use bonds_module
   Use angles_module
-  Use dihedrals_module
+  Use dihedrals
   Use inversions_module
 
   Use vdw_module
@@ -2346,7 +2346,7 @@ Subroutine read_field                      &
            If (mxgdih1 > 0) Then
               ntpdih = 0 ! for dihedrals
               Call allocate_dihd_dst_arrays() ! as it depends on ldfdih(0)
-!             typdih = 0 ! initialised in dihedrals_module
+!             typdih = 0 ! initialised in dihedrals
            End If
            If (mxginv1 > 0) Then
               ntpinv = 0 ! for inversions
@@ -2958,7 +2958,7 @@ Subroutine read_field                      &
 
 ! core-shell up the 1 and 4 members
 
-                    If (lecx) Then ! lx_dih=.false. is the default in dihedrals_module
+                    If (lecx) Then ! lx_dih=.false. is the default in dihedrals
                        If (lstdih(1,ndihed) == ia) Then
                           lx_dih=.true.
                           lstdih(5,ndihed)=ja

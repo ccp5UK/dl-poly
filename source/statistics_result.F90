@@ -26,7 +26,7 @@ Subroutine statistics_result                                    &
   Use pmf_module,         Only : passpmf
   Use bonds_module,       Only : ncfbnd
   Use angles_module,      Only : ncfang
-  Use dihedrals_module,   Only : ncfdih
+  Use dihedrals,   Only : ncfdih
   Use inversions_module,  Only : ncfinv
   Use rdf_module,         Only : ncfrdf, l_errors_jack, l_errors_block, ncfusr
   Use z_density_module,   Only : ncfzdn

@@ -36,7 +36,7 @@ Subroutine scan_field                                &
                                 get_word,lower_case,word_2_real
   Use bonds_module,      Only : lt_bnd
   Use angles_module,     Only : lt_ang
-  Use dihedrals_module,  Only : lt_dih
+  Use dihedrals,  Only : lt_dih
   Use inversions_module, Only : lt_inv
   Use vdw_module,        Only : lt_vdw
   Use metal_module,      Only : tabmet
@@ -504,7 +504,7 @@ Subroutine scan_field                                &
 
               Else If (word(1:6) == 'dihedr') Then
 
-!                 lt_dih=.false. ! initialised in dihedrals_module.f90
+!                 lt_dih=.false. ! initialised in dihedrals.f90
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
@@ -545,7 +545,7 @@ Subroutine scan_field                                &
 
               Else If (word(1:6) == 'invers') Then
 
-!                 lt_dih=.false. ! initialised in dihedrals_module.f90
+!                 lt_dih=.false. ! initialised in dihedrals.f90
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)

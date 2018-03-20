@@ -28,7 +28,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
   Use rigid_bodies_module, Only : numrgd,lstrgd
   Use bonds_module,        Only : numbonds,lstbnd,keybnd
   Use angles_module,       Only : numang,lstang,keyang
-  Use dihedrals_module,    Only : numdih,lstdih
+  Use dihedrals,    Only : numdih,lstdih
   Use inversions_module,   Only : numinv,lstinv
   Use parse_module,        Only : tabs_2_blanks, get_word, strip_blanks, &
                                   lower_case, word_2_real

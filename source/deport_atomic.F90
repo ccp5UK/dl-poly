@@ -21,7 +21,7 @@ Module deport_atomic
 
   Use bonds,        Only : ntbond,listbnd,legbnd
   Use angles,       Only : ntangl,listang,legang
-  Use dihedrals_module,    Only : ntdihd,listdih,legdih,lx_dih
+  Use dihedrals,    Only : ntdihd,listdih,legdih,lx_dih
   Use inversions_module,   Only : ntinv,listinv,leginv
 
   Use statistics_module
