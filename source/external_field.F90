@@ -17,7 +17,7 @@ Module external_field_module
   Use configuration,  Only : imcon,cell,natms,nfree,nlast,lsi,lsa,ltg, &
                              lfrzn,lstfre,weight,chge,           &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use kinetic_module, Only : getcom_mol
+  Use kinetics, Only : getcom_mol
   Use rigid_bodies_module
   Use core_shell
   Implicit None

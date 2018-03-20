@@ -17,7 +17,7 @@ Module build_book
   Use core_shell
 
   Use constraints
-  Use pmf_module
+  Use pmf
 
   Use rigid_bodies_module
 

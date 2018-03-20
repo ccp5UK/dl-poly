@@ -54,7 +54,7 @@ Program dl_poly
 
   ! IO & DOMAINS MODULES
 
-  Use io_module
+  Use io
   Use domains_module
 
   ! SITE & CONFIG MODULES
@@ -75,7 +75,7 @@ Program dl_poly
   Use core_shell
 
   Use constraints
-  Use pmf_module
+  Use pmf
 
   Use rigid_bodies_module
 
@@ -108,11 +108,11 @@ Program dl_poly
 
   ! MSD MODULE
 
-  Use msd_module
+  Use msd
 
   ! KINETIC MODULE
 
-  Use kinetic_module
+  Use kinetics
 
   ! LANGEVIN MODULE
 
@@ -120,7 +120,7 @@ Program dl_poly
 
   ! TWO-TEMPERATURE MODEL MODULES
 
-  Use ttm_module
+  Use ttm
   Use ttm_utils
 
   ! MAIN PROGRAM VARIABLES

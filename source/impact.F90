@@ -8,7 +8,7 @@ Module impacts
   Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd, &
                                   rgdvxx,rgdvyy,rgdvzz
   Use core_shell,   Only : ntshl,listshl
-  Use kinetic_module,      Only : getvom,l_vom,chvom
+  Use kinetics,      Only : getvom,l_vom,chvom
 
   Implicit None
   

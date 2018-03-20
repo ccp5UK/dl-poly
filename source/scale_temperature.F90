@@ -20,7 +20,7 @@ Subroutine scale_temperature(sigma,degtra,degrot,degfre)
   Use configuration,  Only : imcon,natms,nfree,lfrzn,lstfre, &
                              weight,xxx,yyy,zzz,vxx,vyy,vzz
   Use rigid_bodies_module
-  Use kinetic_module, Only : getcom,getvom,getkin,getknf,getknt,getknr
+  Use kinetics, Only : getcom,getvom,getkin,getknf,getknt,getknr
 
   Implicit None
 

@@ -17,7 +17,7 @@ Module msd
 
   Use statistics_module, Only : stpval
   Use parse_module,      Only : tabs_2_blanks, get_word, word_2_real
-  Use io_module,         Only : io_set_parameters,             &
+  Use io,         Only : io_set_parameters,             &
                                 io_get_parameters,             &
                                 io_init,                       &
                                 io_open, io_write_record,      &
@@ -43,9 +43,9 @@ Module msd
 #endif
 
   Implicit None
+  Private
 
-  Logical, Save :: l_msd = .false.
-  private
+  Logical, Public, Save :: l_msd = .false.
   Public :: msd_write
   Contains
 
@@ -80,7 +80,7 @@ Module msd
   Integer                :: fail(1:2),i,jj,k,jdnode,jatms
   Real( Kind = wp )      :: buffer(1:2),tmp
 
-! Some parameters and variables needed by io_module interfaces
+! Some parameters and variables needed by io interfaces
 
   Integer                           :: fh, io_write, batsz
   Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io

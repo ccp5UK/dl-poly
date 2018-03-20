@@ -26,7 +26,7 @@ Subroutine set_temperature           &
   Use dpd_module,         Only : keydpd
   Use rigid_bodies_module
   Use core_shell,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
-  Use kinetic_module,     Only : l_vom,chvom,getvom,getkin,getknf,getknt,getknr
+  Use kinetics,     Only : l_vom,chvom,getvom,getkin,getknf,getknt,getknr
 
   Implicit None
 

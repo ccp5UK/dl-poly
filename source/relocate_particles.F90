@@ -26,7 +26,7 @@ Subroutine relocate_particles       &
   Use core_shell,   Only : ntshl, listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
 
   Use constraints,  Only : ntcons,listcon,legcon,lshmv_con,lishp_con,lashp_con
-  Use pmf_module,          Only : ntpmf
+  Use pmf,          Only : ntpmf
 
   Use rigid_bodies_module, Only : ntrgd, listrgd,legrgd,lshmv_rgd,lishp_rgd,lashp_rgd
 

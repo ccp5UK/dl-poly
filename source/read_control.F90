@@ -53,7 +53,7 @@ Subroutine read_control                                &
   Use greenkubo_module
   Use ttm_module
 
-  Use kinetic_module,  Only : l_vom
+  Use kinetics,  Only : l_vom
   Use plumed_module,   Only : l_plumed, plumed_input, plumed_log, &
                               plumed_precision, plumed_restart
   Use development_module
@@ -266,7 +266,7 @@ Subroutine read_control                                &
 
 ! default switch for removing COM momentum for ensembles
 !
-!  l_vom = .true. ! initialised in kinetic_module
+!  l_vom = .true. ! initialised in kinetics
 
 ! defaults for: force key = no electrostatics,
 ! specified force field = not yet, relative dielectric constant = 1

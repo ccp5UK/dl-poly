@@ -8,7 +8,7 @@ Module rdf_compute_module
   Use configuration, Only : cfgname,volm
   Use rdf_module
   Use parse_module
-  Use io_module
+  Use io
 
   Implicit None
   

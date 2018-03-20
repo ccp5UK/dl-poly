@@ -49,7 +49,7 @@ Subroutine nst_h0_vv                          &
   Use kinetic_module,     Only : getcom,getvom,kinstress
   Use core_shell_module,  Only : legshl
   Use constraints_module, Only : passcon
-  Use pmf_module,         Only : passpmf
+  Use pmf,         Only : passpmf
 
   Implicit None
 

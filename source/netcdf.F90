@@ -1,4 +1,4 @@
-Module netcdf_module
+Module netcdf_wrap
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1150,4 +1150,4 @@ Contains
 #endif
   End Subroutine check
 
-End Module netcdf_module
+End Module netcdf_wrap

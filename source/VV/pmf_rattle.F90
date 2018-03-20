@@ -20,7 +20,7 @@ Subroutine pmf_rattle                      &
   Use comms_module,  Only : idnode,mxnode,gcheck
   Use setup_module
   Use configuration, Only : natms,lfrzn
-  Use pmf_module
+  Use pmf
 
   Implicit None
 

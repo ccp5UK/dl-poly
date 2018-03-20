@@ -25,7 +25,7 @@ Subroutine nvt_e0_vv                          &
   Use kinetic_module,     Only : kinstress
   Use core_shell_module,  Only : legshl
   Use constraints_module, Only : passcon
-  Use pmf_module,         Only : passpmf
+  Use pmf,         Only : passpmf
 
   Implicit None
 

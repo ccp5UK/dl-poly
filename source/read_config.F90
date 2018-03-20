@@ -20,7 +20,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
   Use domains_module
   Use parse_module,   Only : tabs_2_blanks, &
                              strip_blanks, get_word, word_2_real
-  Use io_module,      Only : io_set_parameters,io_get_parameters,     &
+  Use io,      Only : io_set_parameters,io_get_parameters,     &
                              io_init, io_open, io_close, io_finalize, &
                              IO_READ_MASTER, IO_READ_NETCDF
 
@@ -51,7 +51,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
                             pda_max,pda_min,pda_ave,               &
                             pda_dom_max,pda_dom_min
 
-! Some parameters and variables needed by io_module interfaces
+! Some parameters and variables needed by io interfaces
 
   Integer                           :: recsz = 73 ! default record size
   Integer                           :: fh, io_read

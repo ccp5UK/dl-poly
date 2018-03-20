@@ -12,7 +12,7 @@ Module deport_atomic
   Use core_shell,   Only : ntshl,listshl,legshl
 
   Use constraints,  Only : ntcons,listcon,legcon
-  Use pmf_module,          Only : ntpmf,listpmf,legpmf
+  Use pmf,          Only : ntpmf,listpmf,legpmf
 
   Use rigid_bodies_module, Only : ntrgd,listrgd,legrgd, &
                                   q0,q1,q2,q3,          &
@@ -36,7 +36,7 @@ Module deport_atomic
                                  induce,indipx,indipy,indipz,rsdx,rsdy,rsdz, &
                                  mplgfr,mprotx,mproty,mprotz, mplflg
 
-  Use msd_module
+  Use msd
   Use greenkubo_module,    Only : vxi,vyi,vzi,vafsamp
 
   Use kim_module,    Only : kim,idhalo

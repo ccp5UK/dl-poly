@@ -18,7 +18,7 @@ Subroutine read_config_parallel                 &
   Use configuration,  Only : cell,natms,atmnam,ltg, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use parse_module,   Only : strip_blanks, get_word, word_2_real
-  Use io_module,      Only : io_get_parameters, io_read_batch, &
+  Use io,      Only : io_get_parameters, io_read_batch, &
                              io_nc_get_dim, io_nc_get_var, IO_READ_NETCDF
 
   Implicit None
@@ -42,7 +42,7 @@ Subroutine read_config_parallel                 &
   Integer( Kind = li )   :: n_sk,n_ii,n_jj
   Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz
 
-! Some parameters and variables needed by io_module interfaces
+! Some parameters and variables needed by io interfaces
 
   Integer                           :: io_read
   Integer                           :: recsz, batsz

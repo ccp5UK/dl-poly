@@ -1,4 +1,4 @@
-Module kinetic_module
+Module kinetics
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -732,4 +732,4 @@ Contains
 
   End Subroutine cap_forces
 
-End Module kinetic_module
+End Module kinetics

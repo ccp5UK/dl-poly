@@ -18,7 +18,7 @@ Module defects
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use core_shell,        Only : ntshl,listshl
   Use parse_module,      Only : tabs_2_blanks,get_word,word_2_real,get_line,strip_blanks
-  Use io_module,         Only : io_set_parameters,        &
+  Use io,         Only : io_set_parameters,        &
                                 io_get_parameters,        &
                                 io_init, io_open,         &
                                 io_write_record,          &
@@ -163,7 +163,7 @@ Contains
                              taken,ni,megni,nv,megnv,jdnode,jatms
   Real( Kind = wp )       :: cut,x,y,z,xs,ys,zs,buffer(1:2)
 
-! Some parameters and variables needed by io_module interfaces
+! Some parameters and variables needed by io interfaces
 
   Integer                           :: fh, io_write, batsz
   Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io
@@ -1379,7 +1379,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
                             itmols,isite,nsite,msite,fsite,ifrz,nrept
   Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz,cell_vecs(1:3,1:3)
 
-! Some parameters and variables needed by io_module interfaces
+! Some parameters and variables needed by io interfaces
 
   Integer                           :: recsz = 73 ! default record size
   Integer                           :: fh, io_read
@@ -1930,7 +1930,7 @@ Subroutine defects_reference_read_parallel      &
   Integer( Kind = li )   :: n_sk,n_ii,n_jj
   Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz
 
-! Some parameters and variables needed by io_module interfaces
+! Some parameters and variables needed by io interfaces
 
   Integer                           :: io_read,ierr
   Integer                           :: recsz, batsz
@@ -2599,7 +2599,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
   Real( Kind = wp )     :: celprp(1:10),x,y,z,cell_vecs(1:3,1:3)
   Real( Kind = wp )     :: lengths(1:3), angles(1:3)
 
-! Some parameters and variables needed by io_module interfaces
+! Some parameters and variables needed by io interfaces
 
   Integer                           :: fh
   Integer                           :: io_write,io_read,batsz,ierr
@@ -3185,7 +3185,7 @@ Subroutine defects_write &
                              taken,ni,megni,nv,megnv,jdnode,jatms
   Real( Kind = wp )       :: cut,x,y,z,xs,ys,zs,buffer(1:2)
 
-! Some parameters and variables needed by io_module interfaces
+! Some parameters and variables needed by io interfaces
 
   Integer                           :: fh, io_write, batsz
   Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io

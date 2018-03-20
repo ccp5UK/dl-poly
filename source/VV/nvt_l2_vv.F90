@@ -34,7 +34,7 @@ Subroutine nvt_l2_vv                          &
   Use kinetic_module,     Only : getvom,kinstress
   Use core_shell_module,  Only : legshl
   Use constraints_module, Only : passcon
-  Use pmf_module,         Only : passpmf
+  Use pmf,         Only : passpmf
   Use ttm_module
   Use ttm_utils,          Only : Gep,calcchies,eltemp_max
 

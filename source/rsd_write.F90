@@ -19,7 +19,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
   Use statistics_module, Only : rsd
 
   Use parse_module,      Only : tabs_2_blanks, get_word, word_2_real
-  Use io_module,         Only : io_set_parameters,        &
+  Use io,         Only : io_set_parameters,        &
                                 io_get_parameters,        &
                                 io_init, io_open,         &
                                 io_write_record,          &
@@ -49,7 +49,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
   Integer                 :: fail(1:2),i,j,k,n,megn,jdnode,jatms
   Real( Kind = wp )       :: buffer(1:2)
 
-! Some parameters and variables needed by io_module interfaces
+! Some parameters and variables needed by io interfaces
 
   Integer                           :: fh, io_write, batsz
   Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io

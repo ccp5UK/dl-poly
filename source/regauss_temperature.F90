@@ -17,7 +17,7 @@ Subroutine regauss_temperature(megrgd)
   Use configuration,      Only : natms,nfree,lfrzn,lstfre, &
                                  weight,vxx,vyy,vzz
   Use rigid_bodies_module
-  Use kinetic_module,     Only : getvom
+  Use kinetics,     Only : getvom
 
   Implicit None
 

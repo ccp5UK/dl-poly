@@ -1268,11 +1268,11 @@ Subroutine error(kode,comm)
 
      Else If (kode == 1036) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in pmf_module -> allocate_pmf_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in pmf -> allocate_pmf_arrays'
 
      Else If (kode == 1037) Then
 
-        Write(nrite,'(/,1x,a)') 'error - deallocation failure in pmf_module -> deallocate_pmf_arrays'
+        Write(nrite,'(/,1x,a)') 'error - deallocation failure in pmf -> deallocate_pmf_arrays'
 
      Else If (kode == 1038) Then
 

@@ -32,7 +32,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot)
   Use configuration,  Only : imcon,cell,natms,nfree,lfrzn,lstfre,weight, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies_module
-  Use kinetic_module, Only : getcom,getvom,getkin,getknf,getknt,getknr, &
+  Use kinetics, Only : getcom,getvom,getkin,getknf,getknt,getknr, &
                              kinstress,kinstresf,kinstrest
 
   Implicit None

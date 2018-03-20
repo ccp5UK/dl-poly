@@ -54,7 +54,7 @@ Subroutine read_field                      &
   Use mpoles_module, Only : keyind,thole,mpllfr,plrsit,dmpsit
 
   Use constraints
-  Use pmf_module
+  Use pmf
 
   Use rigid_bodies_module
 
@@ -73,7 +73,7 @@ Subroutine read_field                      &
 
   Use external_field_module
 
-  Use kinetic_module, Only : l_vom
+  Use kinetics, Only : l_vom
 
 ! RDF MODULE
 

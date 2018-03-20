@@ -15,7 +15,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
   Use comms_module
   Use setup_module, Only : nconf,config
   Use parse_module, Only : get_line, get_word, strip_blanks, word_2_real
-  Use io_module,    Only : io_set_parameters,     &
+  Use io,    Only : io_set_parameters,     &
                            io_get_parameters,     &
                            io_init, io_open,      &
                            io_nc_get_att,         &
@@ -43,7 +43,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
   Integer                :: totatm,i,j
   Real( Kind = wp )      :: xxx,yyy,zzz,buffer(1:4),cell_vecs(1:3,1:3)
 
-! Some parameters and variables needed by io_module interfaces
+! Some parameters and variables needed by io interfaces
 
   Integer                           :: recsz = 73 ! default record size
   Integer                           :: fh, io_read

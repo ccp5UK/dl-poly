@@ -17,7 +17,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
   Use configuration
   Use parse_module,   Only : tabs_2_blanks, get_line, get_word, &
                              strip_blanks, word_2_real
-  Use io_module,      Only : io_set_parameters,     &
+  Use io,      Only : io_set_parameters,     &
                              io_get_parameters,     &
                              io_init, io_open,      &
                              io_read_batch,         &
@@ -57,7 +57,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
   Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz,xhi,yhi,zhi, &
                             cell_vecs(1:3,1:3)
 
-! Some parameters and variables needed by io_module interfaces
+! Some parameters and variables needed by io interfaces
 
   Integer,                           Save :: recsz ! record size
   Integer,                           Save :: fh, io_read

@@ -16,19 +16,13 @@ external_field.F90
 four_body.F90
 impact.F90
 intra_coul.F90
-io_module.F90
 langevin_forces.F90
 link_cells.F90
 numerics.F90
 mm3lrc.F90
 origin_config.F90
-pass_shared_units.F90
-pmf_coms.F90
-pmf_pseudo_bonds.F90
-pmf_quench.F90
-pmf_tags.F90
-pmf_units_set.F90
-pmf_vcoms.F90
+shared_units.F90
+pmf.F90
 quaternions_container.F90
 rdf_collect.F90
 rdf_compute.F90
@@ -86,7 +80,6 @@ ttm_table_scan.F90
 ttm_thermal_diffusion.F90
 trajectory_write.F90
 two_body_forces.F90
-update_shared_units.F90
 usr_collect.F90
 usr_compute.F90
 vaf_collect.F90
@@ -106,6 +99,8 @@ z_density_collect.F90
 z_density_compute.F90
 zbl.F90
 zero_k_optimise.F90
+io.F90
+msd.F90
 )
 
 set(dlpoly_CORE_SRCS
@@ -133,7 +128,6 @@ rdf_module.F90
 z_density_module.F90
 core_shell.F90
 constraints.F90
-pmf_module.F90
 rigid_bodies_module.F90
 tethers_module.F90
 bonds.F90
@@ -141,10 +135,9 @@ angles.F90
 inversions.F90
 langevin_module.F90
 minimise.F90
-msd.F90
 statistics_module.F90
 greenkubo_module.F90
-kinetic_module.F90
+kinetics.F90
 gpfa_module.F90
 parallel_fft.F90
 ttm.F90
@@ -165,7 +158,7 @@ nvt_e0_scl.F90
 nvt_e1_scl.F90
 )
 
-set(netcdf_SRCS netcdf_module.F90)
+set(netcdf_SRCS netcdf.F90)
 set(kim_SRCS kim_module.F90)
 set(plumed_SRCS plumed_module.F90)
 

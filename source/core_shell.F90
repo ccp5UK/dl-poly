@@ -16,7 +16,7 @@ Module core_shell
   Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,fxx,fyy,fzz, &
     weight,vxx,vyy,vzz,lfrzn
   Use parse_module,      Only : strip_blanks,lower_case
-  Use kinetic_module,    Only : freeze_atoms
+  Use kinetics,    Only : freeze_atoms
 
   Implicit None
 

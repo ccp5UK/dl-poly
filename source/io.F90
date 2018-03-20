@@ -1,4 +1,4 @@
-Module io_module
+Module io
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -28,7 +28,7 @@ Module io_module
 #else
   Use mpi
 #endif
-  Use netcdf_module
+  Use netcdf_wrap
 
   Implicit None
 
@@ -2692,5 +2692,5 @@ Contains
 
   End Subroutine io_nc_compiled
 
-End Module io_module
+End Module io
 

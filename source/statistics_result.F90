@@ -23,7 +23,7 @@ Subroutine statistics_result                                    &
   Use minimise_module,    Only : passmin
   Use core_shell,  Only : passshl
   Use constraints, Only : passcon
-  Use pmf_module,         Only : passpmf
+  Use pmf,         Only : passpmf
   Use bonds_module,       Only : ncfbnd
   Use angles_module,      Only : ncfang
   Use dihedrals,   Only : ncfdih
