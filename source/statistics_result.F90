@@ -27,7 +27,7 @@ Subroutine statistics_result                                    &
   Use bonds_module,       Only : ncfbnd
   Use angles_module,      Only : ncfang
   Use dihedrals,   Only : ncfdih
-  Use inversions_module,  Only : ncfinv
+  Use inversions,  Only : ncfinv
   Use rdf_module,         Only : ncfrdf, l_errors_jack, l_errors_block, ncfusr
   Use z_density_module,   Only : ncfzdn
   Use statistics_module

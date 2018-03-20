@@ -29,7 +29,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
   Use bonds_module,        Only : numbonds,lstbnd,keybnd
   Use angles_module,       Only : numang,lstang,keyang
   Use dihedrals,    Only : numdih,lstdih
-  Use inversions_module,   Only : numinv,lstinv
+  Use inversions,   Only : numinv,lstinv
   Use parse_module,        Only : tabs_2_blanks, get_word, strip_blanks, &
                                   lower_case, word_2_real
   Use io_module,           Only : io_set_parameters,        &
