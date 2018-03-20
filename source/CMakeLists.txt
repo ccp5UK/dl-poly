@@ -8,7 +8,7 @@ build_excl.F90
 build_tplg.F90
 defects_link_cells.F90
 defects.F90
-deport_atomic.F90
+deport_data.F90
 dihedrals.F90
 dpd.F90
 errors.F90
@@ -19,10 +19,6 @@ intra_coul.F90
 io_module.F90
 langevin_forces.F90
 link_cells.F90
-minimise_relax.F90
-mpoles_rotmat_export.F90
-mpoles_rotmat_set_halo.F90
-msd_write.F90
 numerics.F90
 mm3lrc.F90
 origin_config.F90
@@ -144,8 +140,8 @@ bonds.F90
 angles.F90
 inversions.F90
 langevin_module.F90
-minimise_module.F90
-msd_module.F90
+minimise.F90
+msd.F90
 statistics_module.F90
 greenkubo_module.F90
 kinetic_module.F90
