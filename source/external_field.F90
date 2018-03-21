@@ -1,4 +1,4 @@
-Module external_field_module
+Module external_field
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -738,4 +738,4 @@ Subroutine external_field_correct(engfld,comm)
 End Subroutine external_field_correct
 
 
-End Module external_field_module
+End Module external_field

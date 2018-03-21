@@ -23,20 +23,13 @@ mm3lrc.F90
 origin_config.F90
 shared_units.F90
 pmf.F90
-quaternions_container.F90
-rdf_collect.F90
-rdf_compute.F90
-rdf_excl_collect.F90
-rdf_frzn_collect.F90
-read_config.F90
-read_config_parallel.F90
-read_control.F90
-read_field.F90
-read_history.F90
-read_mpoles.F90
-refresh_halo_positions.F90
+quaternions.F90
+rdfs.F90
+control.F90
+ffield.F90
+history.F90
+halo.F90
 regauss_temperature.F90
-relocate_particles.F90
 report_topology.F90
 rigid_bodies_coms.F90
 rigid_bodies_move.F90
@@ -99,50 +92,51 @@ z_density_collect.F90
 z_density_compute.F90
 zbl.F90
 zero_k_optimise.F90
-io.F90
-msd.F90
+
 )
 
 set(dlpoly_CORE_SRCS
 kinds.F90
 comms.F90
+configuration.F90
+io.F90
+mpole.F90
+core_shell.F90
+kinetics.F90
+msd.F90
+ewald.F90
+mpoles_container.F90
+ttm.F90
+ttm_utils.F90
+ttm_track.F90
+angles.F90
+bonds.F90
+constraints.F90
+coul_mpoles.F90
+ewald_spole.F90
+ewald_mpoles.F90
+inversions.F90
+metal.F90
+minimise.F90
+poisson.F90
+
 setup_module.F90
 parse_module.F90
 development_module.F90
 domains_module.F90
 site_module.F90
-configuration.F90
 vnl_module.F90
-ewald.F90
-ewald_spole.F90
-ewald_mpoles.F90
-mpoles_container.F90
-mpole.F90
-coul_mpoles.F90
-poisson_module.F90
 vdw_module.F90
-metal.F90
 tersoff_module.F90
 three_body_module.F90
-rdf_module.F90
 z_density_module.F90
-core_shell.F90
-constraints.F90
 rigid_bodies_module.F90
 tethers_module.F90
-bonds.F90
-angles.F90
-inversions.F90
 langevin_module.F90
-minimise.F90
 statistics_module.F90
 greenkubo_module.F90
-kinetics.F90
 gpfa_module.F90
 parallel_fft.F90
-ttm.F90
-ttm_utils.F90
-ttm_track.F90
 )
 if(BUILDER)
   set_property(SOURCE development_module.F90 APPEND PROPERTY
@@ -160,25 +154,25 @@ nvt_e1_scl.F90
 
 set(netcdf_SRCS netcdf.F90)
 set(kim_SRCS kim_module.F90)
-set(plumed_SRCS plumed_module.F90)
+set(plumed_SRCS plumed.F90)
 
 if( NOT WITH_MPI)
   set(dlpoly_SERIAL_SRCS ${src_dir}/SERIAL/mpi_api.F90)
 endif()
 
-add_library(dlpoly ${dlpoly_SRCS} ${netcdf_SRCS})
-if(WITH_NETCDF)
-  set_target_properties(dlpoly PROPERTIES
-    COMPILE_DEFINITIONS "NETCDF"
-    )
-endif()
+add_library(dlpoly ${dlpoly_SRCS})
 
-add_library(dlpolycore ${dlpoly_CORE_SRCS} ${dlpoly_SERIAL_SRCS})
+add_library(dlpolycore ${dlpoly_CORE_SRCS} ${dlpoly_SERIAL_SRCS} ${netcdf_SRCS})
 if( NOT WITH_MPI)
   set_target_properties(dlpolycore PROPERTIES
      COMPILE_DEFINITIONS "SERIAL"
      INCLUDE_DIR ${src_dir}/SERIAL
      )
+endif()
+if(WITH_NETCDF)
+  set_target_properties(dlpolycore PROPERTIES
+    COMPILE_DEFINITIONS "NETCDF"
+    )
 endif()
 add_library(dlpolythermo  ${dlpoly_THERMO_SRCS})
 add_library(dlpolykim  ${kim_SRCS})
@@ -197,8 +191,8 @@ endif()
 link_directories (${LIBRARY_OUTPUT_PATH})
 add_subdirectory(VV)
 target_link_libraries(dlpolykim dlpolycore)
-target_link_libraries(dlpolyplumed dlpolycore)
 target_link_libraries(dlpolythermo dlpolycore)
+target_link_libraries(dlpolyplumed dlpolycore)
 target_link_libraries(dlpoly dlpolycore dlpolykim dlpolyplumed)
 add_executable(${target_name} dl_poly.F90)
 set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${OMP_LINK_FLAGS} ${MIC_LINK_FLAGS}")

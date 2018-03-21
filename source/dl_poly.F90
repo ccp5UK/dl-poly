@@ -61,6 +61,7 @@ Program dl_poly
 
   Use site_module
   Use configuration
+  Use control, Only : read_control
 
   ! VNL module
 

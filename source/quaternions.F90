@@ -1,3 +1,17 @@
+Module quaternions
+  Use kinds, Only : wp
+  Use comms,       Only : comms_type,gmax,gsum
+  Use setup_module
+  Use configuration,      Only : imcon,cell,xxx,yyy,zzz
+  Use rigid_bodies_module
+
+  Implicit None
+
+
+  Private
+
+
+  Contains
 !!!!!!!!!!!!!!!!!!!!! THIS IS QUATERNIONS_CONTAINER !!!!!!!!!!!!!!!!!!!!
 !
 ! Subroutine q_setup - sets quaternions for RB dynamics
@@ -11,7 +25,7 @@
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-Subroutine q_setup()
+Subroutine q_setup(comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -22,14 +36,7 @@ Subroutine q_setup()
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use comms_module,       Only : idnode,mxnode,gmax,gsum
-  Use setup_module
-  Use configuration,      Only : imcon,cell,xxx,yyy,zzz
-  Use rigid_bodies_module
-
-  Implicit None
-
+  Type( comms_type ), Intent( InOut ) :: comm
   Integer           :: fail,irgd,jrgd,krgd,lrgd,rgdtyp, &
                        ill,i1,i2,i3,itmp
   Real( Kind = wp ) :: rot(1:9),aa(1:9),rsq,tol, &
@@ -40,7 +47,7 @@ Subroutine q_setup()
   fail = 0
   Allocate (gxx(1:mxlrgd*mxrgd),gyy(1:mxlrgd*mxrgd),gzz(1:mxlrgd*mxrgd), Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'q_setup allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'q_setup allocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
@@ -219,7 +226,7 @@ Subroutine q_setup()
               itmp=1
               Write(nrite,'(/,1x,a,3i7,0p,2f7.3)')                                                            &
                    '*** warning - q_setup failure for RB local_id member, on node, with norm > tolerance : ', &
-                   irgd,jrgd,idnode,rnorm,tol
+                   irgd,jrgd,comm%idnode,rnorm,tol
            End If
 
            rsq=Max(rsq,rnorm)
@@ -228,17 +235,17 @@ Subroutine q_setup()
 
      End If
   End Do
-  If (mxnode > 1) Call gmax(rsq)
+  Call gmax(comm,rsq)
   If (rsq > tol) Then
-     If (mxnode > 1) Call gsum(ill)
-     If (idnode == 0) Write(nrite,'(/,1x,a,i7,2f7.3)') &
+     Call gsum(comm,ill)
+     If (comm%idnode == 0) Write(nrite,'(/,1x,a,i7,2f7.3)') &
         '*** warning - q_setup failure for RBs total, with Max(norm) > tolerance : ', ill,rsq,tol
      Call error(648)
   End If
 
   Deallocate (gxx,gyy,gzz, Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'q_setup deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'q_setup deallocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
@@ -255,10 +262,6 @@ Subroutine getrotmat(q0,q1,q2,q3,rot)
 ! author    - i.t.todorov september 2008
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use kinds, only : wp
-
-  Implicit None
 
   Real( Kind = wp ), Intent( In    ) :: q0,q1,q2,q3
   Real( Kind = wp ), Intent(   Out ) :: rot(1:9)
@@ -289,10 +292,6 @@ Subroutine no_squish                    &
 ! adapted   - i.t.todorov september 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use kinds, only : wp
-
-  Implicit None
 
   Real( Kind = wp ), Intent( In    ) :: tstep,rgdrix,rgdriy,rgdriz
   Real( Kind = wp ), Intent( InOut ) :: q0,q1,q2,q3,p0,p1,p2,p3
@@ -414,10 +413,6 @@ subroutine q_update                                       &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-
-  Implicit None
-
   Logical,           Intent( InOut ) :: safe
   Integer,           Intent( In    ) :: mxquat
   Real( Kind = wp ), Intent( In    ) :: tstep,oxp,oyp,ozp,oxq,oyq,ozq,quattol
@@ -485,3 +480,4 @@ subroutine q_update                                       &
   If (itq == mxquat) safe=.false.
 
 End Subroutine q_update
+End Module quaternions

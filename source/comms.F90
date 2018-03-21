@@ -109,6 +109,7 @@ Module comms
   Interface gbcast
     Module procedure gbcast_integer
     Module procedure gbcast_real
+    Module procedure gbcast_char
   End Interface !gbcast
 
 Contains
@@ -743,6 +744,29 @@ Contains
 
     Call MPI_BCAST(vec(n_l:n_u), n_s, wp_mpi, root, comm%comm, comm%ierr)
   End Subroutine gbcast_real
+
+  Subroutine gbcast_char(comm,vec,root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 broadcast a real array subroutine 
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.m.elena march 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Character(Len=*), Intent( InOut )                   :: vec(:)
+    Integer, Intent( In    )                           :: root
+    Type(comms_type), Intent (InOut)                   :: comm
+
+    Integer                                            :: n_l,n_u,n_s,fail
+
+    If (comm%mxnode == 1) Return
+    n_l = Lbound(vec, Dim = 1)
+    n_u = Ubound(vec, Dim = 1)
+    n_s = Size(vec, Dim = 1)*sizeof(vec(n_l))
+
+    Call MPI_BCAST(vec(n_l:n_u), n_s,MPI_CHARACTER, root, comm%comm, comm%ierr)
+  End Subroutine gbcast_char
 
 
   Subroutine gtime(time)

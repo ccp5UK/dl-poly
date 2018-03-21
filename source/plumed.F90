@@ -1,4 +1,4 @@
-Module plumed_module
+Module plumed
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -179,4 +179,4 @@ Contains
 #endif
   End Subroutine plumed_message
 
-End Module plumed_module
+End Module plumed

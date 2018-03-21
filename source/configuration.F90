@@ -10,10 +10,20 @@ Module configuration
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use comms, Only : comms_type
-  Use setup_module
+  Use kinds, Only : wp,li
+  Use comms, Only : comms_type,wp_mpi,gbcast
   Use site_module
+  
+  Use setup_module,   Only : nconf,nrite,config,mxatms,half_minus
+  Use parse_module,   Only : tabs_2_blanks, &
+                             strip_blanks, get_word, word_2_real
+  Use io,      Only : io_set_parameters,io_get_parameters,     &
+                             io_init, io_open, io_close, io_finalize,   &
+                             io_read_batch,io_nc_get_dim, io_nc_get_var,&
+                             IO_READ_MASTER, IO_READ_NETCDF
+
+  Use domains_module, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r,idx,idy,idz
+
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -624,6 +634,1344 @@ Contains
   End Subroutine all_inds_present
 
 End Subroutine check_config
+
+
+
+
+Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for reading CONFIG and getting the average
+! particle density
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov february 2015
+! contrib   - a.m.elena february 2017
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+  Integer,           Intent( In    ) :: megatm,levcfg
+  Logical,           Intent( In    ) :: l_ind,l_str
+  Real( Kind = wp ), Intent( In    ) :: rcut,dvar
+  Real( Kind = wp ), Intent( InOut ) :: xhi,yhi,zhi
+  Real( Kind = wp ), Intent(   Out ) :: dens0,dens
+  Type( comms_type), Intent( InOut ) :: comm
+
+  Real( Kind = wp ) :: cut
+
+  Character( Len = 200 ) :: record
+  Character( Len = 40  ) :: word,fname
+  Logical                :: safe  = .true.  , &
+                            l_his = .false. , &
+                            l_xtr = .false. , &
+                            fast
+  Integer                :: fail(1:4),i,j,idm,max_fail,min_fail, &
+                            icell,ncells,                        &
+                            indatm,nattot,totatm,                &
+                            ipx,ipy,ipz,nlx,nly,nlz,             &
+                            ix,iy,iz,jx,jy,jz
+  Real( Kind = wp )      :: celprp(1:10),rcell(1:9),celh(1:9),det, &
+                            volm,vcell,                            &
+                            sxx,syy,szz,xdc,ydc,zdc,               &
+                            pda_max,pda_min,pda_ave,               &
+                            pda_dom_max,pda_dom_min
+
+! Some parameters and variables needed by io interfaces
+
+  Integer                           :: recsz = 73 ! default record size
+  Integer                           :: fh, io_read
+  Integer( Kind = MPI_OFFSET_KIND ) :: top_skip
+
+  Real( Kind = wp ),    Dimension( : ), Allocatable :: pda
+
+  Character( Len = 8 ), Dimension( : ), Allocatable :: chbuf
+  Integer,              Dimension( : ), Allocatable :: iwrk
+  Real( Kind = wp ),    Dimension( : ), Allocatable :: axx,ayy,azz, &
+                                                       bxx,byy,bzz, &
+                                                       cxx,cyy,czz
+
+
+! image conditions not compliant with DD and link-cell
+
+  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
+
+! Real space cutoff shortened by 50% but not < 1 Angstrom
+!(or ==rcut_def in scan_control)
+
+  cut=Max(0.5_wp*rcut,1.0_wp)+1.0e-6_wp
+
+! Get the dimensional properties of the MD cell
+
+  Call dcell(cell,celprp)
+  volm = celprp(10)
+
+! Calculate the number of link-cells per domain in every direction
+
+  nlx=Int(celprp(7)/(cut*nprx_r))
+  nly=Int(celprp(8)/(cut*npry_r))
+  nlz=Int(celprp(9)/(cut*nprz_r))
+
+  ncells=nlx*nly*nlz
+
+! Check for link cell algorithm violations
+
+  If (ncells == 0) Call error(307)
+
+! Amend volume of density cell if cluster, slab or bulk slab
+! cell dimensional properties overwritten but not needed anyway
+
+  If (imcon == 0 .or. imcon == 6 .or. imc_n == 6) Then
+     celh=cell
+
+     If (imcon == 0) Then
+        celh(1) = Max(1.0_wp,xhi)
+        celh(5) = Max(1.0_wp,yhi)
+        celh(9) = Max(1.0_wp,zhi)
+     Else If (imcon == 6) Then
+        celh(9) = Max(1.0_wp,zhi)
+     End If
+
+     Call dcell(celh,celprp)
+     volm = celprp(10)
+  End If
+
+  vcell = volm / (Real(ncells,wp) * Real(comm%mxnode,wp))
+
+! Approximate density and mxatms
+
+  dens = Real(megatm,wp) / volm
+  mxatms = Max(1 , Nint( (dvar**1.7_wp) * dens*vcell * Real((nlx+3)*(nly+3)*(nlz+3),wp)))
+
+! Allocate necessary arrays to read CONFIG
+
+  Call allocate_config_arrays_read(mxatms)
+
+! Get type of I/O for reading
+
+  Call io_get_parameters( user_method_read = io_read )
+
+! Define filename ASCII or netCDF
+
+  If (io_read /= IO_READ_NETCDF) Then
+     fname=Trim(config)
+  Else
+     fname=Trim(config) // '.nc'
+  End If
+
+! Define/Detect the FAST reading status
+
+  If      (io_read == IO_READ_MASTER) Then
+
+     fast = .false.
+
+  Else If (io_read == IO_READ_NETCDF) Then
+
+     fast = .true.
+
+  Else
+
+! Check if the system input file is a new style CONFIG:
+! (i)  all lines are 72 ASCII characters long with
+!      a UNIX carriage return as end of line;
+! (ii) LINE2 has the particles total value
+!      after values of levcfg and imcon.
+! No fall back if users have mangled with further lines
+
+     fast = .true.
+     If (comm%idnode == 0) Then
+
+! Open CONFIG
+
+        Open(Unit=nconf, File=fname)
+
+! Read the CONFIG file header (TITLE record)
+
+        i = 0 ! position counter
+        j = 0 ! IOStat return
+        record = ' '
+        Do
+           i = i + 1
+           safe = .false.
+           Read(Unit=nconf, Fmt='(a1)', Advance='No', IOStat=j, End=10) record(i:i)
+           safe = .true.
+           If (j < 0) Go To 10
+        End Do
+10      Continue
+        fast = (fast .and. i == recsz)
+
+! Read configuration level and image condition (RECORD2)
+
+        i = 0 ! position counter
+        j = 0 ! IOStat return
+        record = ' '
+        Do
+           i = i + 1
+           safe = .false.
+           Read(Unit=nconf, Fmt='(a1)', Advance='No', IOStat=j, End=20) record(i:i)
+           safe = .true.
+           If (j < 0) Go To 20
+        End Do
+20      Continue
+        fast = (fast .and. i == recsz)
+
+! Read particles total value
+
+        Call get_word(record,word) ; Call get_word(record,word)
+        Call get_word(record,word) ; i=Nint(word_2_real(word,comm,0.0_wp,l_str))
+        fast = (fast .and. i == megatm)
+
+     End If
+        Call gsync(comm)
+        Call gcheck(comm,safe,"enforce")
+        Call gcheck(comm,fast,"enforce")
+     
+     If (.not.safe) Go To 50
+
+! Close CONFIG
+
+     If (comm%idnode == 0) Close(Unit=nconf)
+
+  End If
+
+  fail = 0
+
+! If MASTER read
+
+  If (io_read == IO_READ_MASTER) Then
+
+     Call invert(cell,rcell,det)
+
+! Open CONFIG and skip the header
+
+     If (comm%idnode == 0) Then
+        Open(Unit=nconf, File=fname)
+
+        Read(Unit=nconf, Fmt=*)    ! CONFIG file header (TITLE record)
+        Read(Unit=nconf, Fmt=*)    ! configuration level and image condition
+
+        If (imcon /= 0) Then
+           Read(Unit=nconf, Fmt=*) ! cell vectors (not defined for imcon=0) but cell
+           Read(Unit=nconf, Fmt=*) ! is modified in set_bounds for imcon 0 and 6!!!
+           Read(Unit=nconf, Fmt=*)
+        End If
+     End If
+
+     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
+     Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
+     Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(3))
+     Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
+     If (Any(fail > 0)) Then
+        Write(nrite,'(/,1x,a,i0)') 'read_config allocation failure, node: ', comm%idnode
+        Call error(0)
+     End If
+
+! Initialise domain localised atom counter (configuration)
+! and dispatched atom counter
+
+     natms =0
+     indatm=0
+     Do nattot=1,megatm
+        indatm=indatm+1
+
+! Initialise transmission arrays
+
+        chbuf(indatm)=' '
+        iwrk(indatm)=0
+
+        axx(indatm)=0.0_wp
+        ayy(indatm)=0.0_wp
+        azz(indatm)=0.0_wp
+
+        If (levcfg > 0) Then
+           bxx(indatm)=0.0_wp
+           byy(indatm)=0.0_wp
+           bzz(indatm)=0.0_wp
+
+           If (levcfg > 1) Then
+              cxx(indatm)=0.0_wp
+              cyy(indatm)=0.0_wp
+              czz(indatm)=0.0_wp
+           End If
+        End If
+
+! Read in transmission arrays
+
+        If (comm%idnode == 0 .and. safe) Then
+           record=' '
+           Read(Unit=nconf, Fmt='(a)', End=30) record
+           Call tabs_2_blanks(record) ; Call strip_blanks(record)
+           Call get_word(record,word) ; chbuf(indatm)=word(1:8)
+           If (l_ind) Then
+              Call get_word(record,word)
+              iwrk(indatm)=Nint(word_2_real(word,comm,0.0_wp,l_str))
+              If (iwrk(indatm) /= 0) Then
+                 iwrk(indatm)=Abs(iwrk(indatm))
+              Else
+                 iwrk(indatm)=nattot
+              End If
+           Else
+              iwrk(indatm)=nattot
+           End If
+
+           Read(Unit=nconf, Fmt=*, End=30) axx(indatm),ayy(indatm),azz(indatm)
+
+           If (levcfg > 0) Then
+              Read(Unit=nconf, Fmt=*, End=30) bxx(indatm),byy(indatm),bzz(indatm)
+              If (levcfg > 1) Read(Unit=nconf, Fmt=*, End=30) cxx(indatm),cyy(indatm),czz(indatm)
+           End If
+           Go To 40
+
+30         Continue
+           safe=.false. ! catch error
+
+40         Continue
+        End If
+
+! Circulate configuration data to all nodes when transmission arrays are filled up
+
+        If (indatm == mxatms .or. nattot == megatm) Then
+
+! Check if batch was read fine
+
+           Call gcheck(comm,safe)
+           If (.not.safe) Go To 50
+
+! Ensure all atoms are in prescribed simulation cell (DD bound) and broadcast them
+!
+!           Call pbcshift(imcon,cell,indatm,axx,ayy,azz)
+
+              Call gbcast(comm,chbuf,0)
+              Call gbcast(comm,iwrk,0)
+
+              Call gbcast(comm,axx,0)
+              Call gbcast(comm,ayy,0)
+              Call gbcast(comm,azz,0)
+
+
+              If (levcfg > 0) Then
+
+                Call gbcast(comm,bxx,0)
+                Call gbcast(comm,byy,0)
+                Call gbcast(comm,bzz,0)
+
+                 If (levcfg > 1) Then
+
+                   Call gbcast(comm,cxx,0)
+                   Call gbcast(comm,cyy,0)
+                   Call gbcast(comm,czz,0)
+                 End If
+              End If
+
+! Assign atoms to correct domains
+
+           Do i=1,indatm
+              sxx=rcell(1)*axx(i)+rcell(4)*ayy(i)+rcell(7)*azz(i)
+              syy=rcell(2)*axx(i)+rcell(5)*ayy(i)+rcell(8)*azz(i)
+              szz=rcell(3)*axx(i)+rcell(6)*ayy(i)+rcell(9)*azz(i)
+
+! sxx,syy,szz are in [-0.5,0.5) interval as values as 0.4(9) may pose a problem
+
+              sxx=sxx-Anint(sxx) ; If (sxx >= half_minus) sxx=-sxx
+              syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
+              szz=szz-Anint(szz) ; If (szz >= half_minus) szz=-szz
+
+! fold back coordinates
+
+              axx(i)=cell(1)*sxx+cell(4)*syy+cell(7)*szz
+              ayy(i)=cell(2)*sxx+cell(5)*syy+cell(8)*szz
+              azz(i)=cell(3)*sxx+cell(6)*syy+cell(9)*szz
+
+! assign domain coordinates (call for errors)
+
+              ipx=Int((sxx+0.5_wp)*nprx_r)
+              ipy=Int((syy+0.5_wp)*npry_r)
+              ipz=Int((szz+0.5_wp)*nprz_r)
+
+              idm=ipx+nprx*(ipy+npry*ipz)
+              If      (idm < 0 .or. idm > (comm%mxnode-1)) Then
+                 Call error(513)
+               Else If (idm == comm%idnode)                 Then
+                 natms=natms+1
+
+                 If (natms < mxatms) Then
+                    atmnam(natms)=chbuf(i)
+                    ltg(natms)=iwrk(i)
+
+                    xxx(natms)=axx(i)
+                    yyy(natms)=ayy(i)
+                    zzz(natms)=azz(i)
+
+                    If (levcfg > 0) Then
+                       vxx(natms)=bxx(i)
+                       vyy(natms)=byy(i)
+                       vzz(natms)=bzz(i)
+                    Else
+                       vxx(natms)=0.0_wp
+                       vyy(natms)=0.0_wp
+                       vzz(natms)=0.0_wp
+                    End If
+
+                    If (levcfg > 1) Then
+                       fxx(natms)=cxx(i)
+                       fyy(natms)=cyy(i)
+                       fzz(natms)=czz(i)
+                    Else
+                       fxx(natms)=0.0_wp
+                       fyy(natms)=0.0_wp
+                       fzz(natms)=0.0_wp
+                    End If
+                 Else
+                    safe=.false.
+                 End If
+              End If
+           End Do
+
+! Check if all is dispatched fine
+
+           max_fail=natms
+           min_fail=natms
+              Call gcheck(comm,safe)
+              Call gmax(comm,max_fail)
+              Call gmin(comm,min_fail)
+
+           If (.not.safe) Then
+              If (comm%idnode == 0) Then
+  Write(nrite,'(/,1x,a,i0)')  '*** warning - next error due to maximum number of atoms per domain set to : ', mxatms
+  Write(nrite,'(1x,2(a,i0))') '***           but maximum & minumum numbers of atoms per domain asked for : ', &
+       max_fail, ' & ', min_fail
+  Write(nrite,'(1x,a,i0)')    '***           estimated densvar value for passing this stage safely is : ', &
+       Ceiling((dvar*(Real(max_fail,wp)/Real(mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
+              End If
+              Call error(45)
+           End If
+
+! Nullify dispatch counter
+
+           indatm=0
+
+        End If
+     End Do
+
+! Close CONFIG
+
+     If (comm%idnode == 0) Close(Unit=nconf)
+     Call gsync(comm)
+
+     Deallocate (chbuf,iwrk,  Stat=fail(1))
+     Deallocate (axx,ayy,azz, Stat=fail(2))
+     Deallocate (bxx,byy,bzz, Stat=fail(3))
+     Deallocate (cxx,cyy,czz, Stat=fail(4))
+     If (Any(fail > 0)) Then
+        Write(nrite,'(/,1x,a,i0)') 'read_config deallocation failure, node: ', comm%idnode
+        Call error(0)
+     End If
+
+! If PROPER read
+
+  Else
+
+! Open CONFIG
+
+     If (fast) Then
+        Call io_set_parameters( user_comm = comm%comm )
+        Call io_init( recsz )
+        Call io_open( io_read, comm%comm, fname, MPI_MODE_RDONLY, fh )
+     Else
+        Open(Unit=nconf, File=fname)
+     End If
+
+! top_skip is header size
+
+     If (io_read /= IO_READ_NETCDF) Then
+        If (imcon == 0) Then
+           top_skip = Int(2,MPI_OFFSET_KIND)
+        Else
+           top_skip = Int(5,MPI_OFFSET_KIND)
+        End If
+     Else
+        top_skip = Int(1,MPI_OFFSET_KIND) ! This is now the frame = 1
+     End If
+
+     Call read_config_parallel                  &
+           (levcfg, dvar, l_ind, l_str, megatm, &
+            l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi,comm)
+
+! Close CONFIG
+
+     If (fast) Then
+        Call io_close( fh )
+        Call io_finalize
+     Else
+        Close(Unit=nconf)
+     End If
+
+  End If
+
+! To prevent users from the danger of changing the order of calls
+! in dl_poly set 'nlast' to the innocent 'natms'
+
+  nlast=natms
+
+! Check if the number of atoms in the system (MD cell) derived by
+! topology description (FIELD) match the crystallographic (CONFIG) one?
+
+  totatm=natms
+  Call gsum(comm,totatm)
+  If (totatm /= megatm) Call error(58)
+
+! Record global atom indices for local sorting (configuration)
+
+  Do i=1,natms
+     lsi(i)=i
+     lsa(i)=ltg(i)
+  End Do
+  Call shellsort2(natms,lsi,lsa)
+
+  If (io_read /= IO_READ_MASTER) Then
+
+! This section is not strictly necessary.  However, the new read in method
+! means the atoms are not necessarily in the same order in memory as the
+! older, slower, method would put them.  This bit makes sure that the order
+! is so that 'ltg' is strictly monotonically increasing.  This captures the
+! common case where CONFIG has the 'ltg' values all in order (or not
+! specified), but there is no easy way for the general case of arbitrary
+! ordering of the 'ltg' values in CONFIG.  Of course, this makes no
+! difference to the science and to restarts.  However, for initial runs it
+! means the initial velocities will not be the same as the old method for
+! the arbitrary ordering case.
+
+     atmnam( 1:natms ) = atmnam( lsi( 1:natms ) )
+     ltg( 1:natms ) = ltg( lsi( 1:natms ) )
+
+     xxx( 1:natms ) = xxx( lsi( 1:natms ) )
+     yyy( 1:natms ) = yyy( lsi( 1:natms ) )
+     zzz( 1:natms ) = zzz( lsi( 1:natms ) )
+
+     If (levcfg > 0) Then
+        vxx( 1:natms ) = vxx( lsi( 1:natms ) )
+        vyy( 1:natms ) = vyy( lsi( 1:natms ) )
+        vzz( 1:natms ) = vzz( lsi( 1:natms ) )
+
+        If (levcfg > 1) Then
+           fxx( 1:natms ) = fxx( lsi( 1:natms ) )
+           fyy( 1:natms ) = fyy( lsi( 1:natms ) )
+           fzz( 1:natms ) = fzz( lsi( 1:natms ) )
+        End If
+     End If
+     Do i=1,natms
+        lsi(i)=i
+        lsa(i)=ltg(i)
+     End Do
+
+  End If
+
+! READ CONFIG END
+
+! PARTICLE DENSITY START
+! Allocate and initialise particle density array
+
+  Allocate (pda(1:ncells), Stat=fail(1))
+  If (fail(1) > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'read_config allocation failure, node: ', comm%idnode
+     Call error(0)
+  End If
+  pda=0.0_wp
+
+! Get the total number of link-cells in MD cell per direction
+
+  xdc=Real(nlx*nprx,wp)
+  ydc=Real(nly*npry,wp)
+  zdc=Real(nlz*nprz,wp)
+
+! Shifts from global to local link-cell space:
+! (0,0,0) left-most link-cell on the domain (halo)
+! (nlx+2*nlp-1,nly+2*nlp-1,nly+2*nlp-1) right-most
+! link-cell on the domain (halo)
+
+  jx=1-nlx*idx
+  jy=1-nly*idy
+  jz=1-nlz*idz
+
+! Get the inverse cell matrix
+
+  Call invert(cell,rcell,celprp(10))
+
+  Do i=1,natms
+     sxx=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
+     syy=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
+     szz=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+
+! Get cell coordinates accordingly
+
+     ix = Int(xdc*(sxx+0.5_wp)) + jx
+     iy = Int(ydc*(syy+0.5_wp)) + jy
+     iz = Int(zdc*(szz+0.5_wp)) + jz
+
+! Put all particles in bounded link-cell space: lower and upper
+! bounds as 1 <= i_coordinate <= nl_coordinate
+
+     ix = Max( Min( ix , nlx) , 1)
+     iy = Max( Min( iy , nly) , 1)
+     iz = Max( Min( iz , nlz) , 1)
+
+! Hypercube function transformation (counting starts from one
+! rather than zero /map_domains/
+
+     icell=1+(ix-1)+nlx*((iy-1)+nly*(iz-1))
+
+     pda(icell)=pda(icell)+1.0_wp
+  End Do
+
+  pda_max=  0.0_wp
+  pda_min=100.0_wp
+  pda_ave=  0.0_wp
+  Do icell=1,ncells
+     pda_max=Max(pda(icell),pda_max)
+     pda_min=Min(pda(icell),pda_min)
+     pda_ave=pda_ave+pda(icell)
+  End Do
+  pda_ave=pda_ave/Real(ncells,wp)
+
+  pda_dom_max=pda_ave
+  pda_dom_min=pda_ave
+     Call gmax(comm,pda_dom_max)
+     Call gmin(comm,pda_dom_min)
+
+     Call gmax(comm,pda_max)
+     Call gmin(comm,pda_min)
+
+     Call gsum(comm,pda_ave)
+     pda_ave=pda_ave/Real(comm%mxnode,wp)
+ 
+! Approximation for maximum global density by
+! the inter-domain imbalance of domain density
+
+  dens0=pda_max/vcell
+  If (comm%mxnode > 1) Then
+     If (Nint(pda_dom_min) == 0) Then
+        dens = dens0 ! domain(s) matched on vacuum (take no risk)
+     Else If (1.15_wp*pda_dom_min > pda_dom_max) Then
+        dens = pda_ave/vcell
+     Else If (1.25_wp*pda_dom_min > pda_dom_max) Then
+        dens = pda_dom_max/vcell
+     Else
+        dens = dens0 ! too big an imbalance (take no risk)
+     End If
+  Else
+     dens = 1.25_wp*pda_ave/vcell ! allow 25% imbalance
+  End If
+
+  Deallocate (pda, Stat=fail(1))
+  If (fail(1) > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'read_config deallocation failure, node: ', comm%idnode
+     Call error(0)
+  End If
+
+! PARTICLE DENSITY END
+
+  Return
+
+! error exit for CONFIG file read
+
+50 Continue
+  If (comm%idnode == 0) Close(Unit=nconf)
+  Call error(55)
+
+End Subroutine read_config
+
+Subroutine read_config_parallel                 &
+           (levcfg, dvar, l_ind, l_str, megatm, &
+            l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for reading in the CONFIG data file in parallel
+!
+! copyright - daresbury laboratory
+! author    - i.j.bush & i.t.todorov march 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+  Logical,                           Intent( In    ) :: l_ind,l_str,l_his,fast,l_xtr
+  Integer,                           Intent( In    ) :: levcfg,megatm,fh
+  Integer( Kind = MPI_OFFSET_KIND ), Intent( In    ) :: top_skip
+  Real( Kind = wp ),                 Intent( In    ) :: dvar
+  Real( Kind = wp ),                 Intent(   Out ) :: xhi,yhi,zhi
+  Type( comms_type ),                Intent( InOut ) :: comm
+  
+  Logical                :: safe,do_read
+  Character( Len = 200 ) :: record
+  Character( Len = 40  ) :: word,forma
+  Integer                :: fail(1:8),i,j,k,max_fail,min_fail, &
+                            idm,ipx,ipy,ipz,indatm,            &
+                            n_read_procs_use,per_read_proc,    &
+                            my_read_proc_num,ats_per_proc,     &
+                            recs_per_at,recs_per_proc,         &
+                            wp_vals_per_at,n_loc,              &
+                            to_read,which_read_proc,this_base_proc
+  Integer( Kind = li )   :: n_sk,n_ii,n_jj
+  Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz
+
+! Some parameters and variables needed by io interfaces
+
+  Integer                           :: io_read
+  Integer                           :: recsz, batsz
+  Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io, n_skip
+  Integer                           :: this_rec_buff, recs_to_read
+  Integer                           :: n_ats_in_file
+
+! netCDF
+
+  Integer :: frame, start(1:3), count(1:3)
+
+  Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf
+  Integer,              Dimension( : ),    Allocatable :: iwrk
+  Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx_read,ayy_read,azz_read, &
+                                                          bxx_read,byy_read,bzz_read, &
+                                                          cxx_read,cyy_read,czz_read
+
+  Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf_read,chbuf_scat
+  Integer,              Dimension( : ),    Allocatable :: iwrk_read,iwrk_scat
+
+  Integer,              Dimension( : ),    Allocatable :: first_at,orig_first_at
+  Integer,              Dimension( : ),    Allocatable :: n_held,where_buff
+  Integer,              Dimension( : ),    Allocatable :: owner_read
+
+  Real( Kind = wp ),    Dimension( :, : ), Allocatable :: scatter_buffer_read
+  Real( Kind = wp ),    Dimension( :, : ), Allocatable :: scatter_buffer
+
+  Character( Len = 1 ), Dimension( :, : ), Allocatable :: rec_buff
+  Integer :: ierr
+
+
+! Get reading method, total number of I/O heads and buffer size
+
+  Call io_get_parameters( user_method_read      = io_read          )
+  Call io_get_parameters( user_n_io_procs_read  = n_read_procs_use )
+  Call io_get_parameters( user_buffer_size_read = batsz            )
+
+  fail = 0 ! fail initialisation
+
+  If (levcfg /= 3) Then
+     wp_vals_per_at = 3 * (1+levcfg) ! Scatter buffer sizes
+     recs_per_at    = 2 + levcfg     ! Scatter buffer sizes
+  Else
+     wp_vals_per_at = 3 ! Scatter buffer sizes
+     recs_per_at    = 1 ! Scatter buffer sizes
+  End If
+
+! Note: make 'first_at' and 'orig_first_at' 1 element bigger than strictly
+! required to make checking at the end of reading much easier and clearer
+
+  Allocate (first_at(0:n_read_procs_use),orig_first_at(0:n_read_procs_use), Stat=fail(1))
+  Allocate (chbuf(1:batsz),iwrk(1:batsz),                                   Stat=fail(2))
+  Allocate (scatter_buffer(1:wp_vals_per_at,1:batsz),                       Stat=fail(3))
+  If (Any(fail(1:3) > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'read_config_parallel allocation failure 1, node: ', comm%idnode
+     Call error(0)
+  End If
+
+! define basic quantities for the parallel ASCII reading
+
+  per_read_proc = comm%mxnode / n_read_procs_use
+  do_read = (Mod( comm%idnode, per_read_proc ) == 0 .and. comm%idnode < per_read_proc * n_read_procs_use)
+  my_read_proc_num = comm%idnode / per_read_proc
+
+! Note 'first_at' and 'orig_first_at' have one more element
+! in the array than strictly required - makes it easier to
+! check that reading by the last I/O processor has finished
+
+  ats_per_proc = megatm / n_read_procs_use
+  Do i=0,n_read_procs_use
+     first_at(i) = i*ats_per_proc + Min(i,megatm-ats_per_proc*n_read_procs_use)
+  End Do
+  orig_first_at = first_at
+  ats_per_proc = Max(1,ats_per_proc) ! Fix it if 0
+  recs_per_proc = ats_per_proc * recs_per_at
+
+! Catch the case where the first atom belonging to
+! a read processor does not actually exists - i.e.
+! I/O procs count > megatm, and limit reading by do_read
+
+  If (my_read_proc_num < n_read_procs_use) &
+     do_read = (do_read .and. first_at(my_read_proc_num) < megatm)
+
+! Skip to the point of reading
+
+  If (do_read) Then
+
+     n_skip = Int(recs_per_at,MPI_OFFSET_KIND) * Int(first_at(my_read_proc_num),MPI_OFFSET_KIND) + &
+              top_skip-Int(1,MPI_OFFSET_KIND)
+     If (.not.fast) Then
+        n_sk=Int(n_skip,li)
+        n_jj=73*batsz ! Assuming average max line length of 73
+        If (n_sk > n_jj) Then
+           Do n_ii=1_li,n_sk/n_jj
+              forma=' '
+              Write(forma,'( "(", i0, "/)" )') n_jj
+              Read(Unit=nconf, Fmt=forma, End=100)
+           End Do
+           n_ii=Mod(n_sk,n_jj)-1_li
+           If (n_ii > 0_li) Then
+              forma=' '
+              Write(forma,'( "(", i0, "/)" )') n_ii
+              Read(Unit=nconf, Fmt=forma, End=100)
+           End If
+        Else
+           forma=' '
+           Write(forma,'( "(", i0, "/)" )') n_sk
+           Read(Unit=nconf, Fmt=forma, End=100)
+        End If
+
+        recsz=200
+        forma=' '
+        Write(forma,'( "(", i0, "a1)" )') recsz
+     Else
+        rec_mpi_io = n_skip + Int(1,MPI_OFFSET_KIND)
+        recsz=73
+        If (levcfg == 3) recsz = 35
+     End If
+
+! Allocate record buffer, reading buffers, scatter buffers and indexing arrays
+
+     If (io_read /= IO_READ_NETCDF) Then
+        Allocate (rec_buff(1:recsz,1:batsz),                                  Stat=fail(1))
+     Else
+        Allocate (rec_buff(1:Len( chbuf_read ),1:batsz),                      Stat=fail(1))
+     End If
+     Allocate (chbuf_read(1:batsz),iwrk_read(1:batsz),                        Stat=fail(2))
+     Allocate (axx_read(1:batsz),ayy_read(1:batsz),azz_read(1:batsz),         Stat=fail(3))
+     Allocate (bxx_read(1:batsz),byy_read(1:batsz),bzz_read(1:batsz),         Stat=fail(4))
+     Allocate (cxx_read(1:batsz),cyy_read(1:batsz),czz_read(1:batsz),         Stat=fail(5))
+     Allocate (scatter_buffer_read(1:wp_vals_per_at,1:batsz),                 Stat=fail(6))
+     Allocate (chbuf_scat(1:batsz),iwrk_scat(1:batsz),                        Stat=fail(7))
+     Allocate (n_held(0:comm%mxnode-1),where_buff(0:comm%mxnode-1),owner_read(1:batsz), Stat=fail(8))
+     If (Any(fail(1:8) > 0)) Then
+        Write(nrite,'(/,1x,a,i0)') 'read_config_parallel allocation failure 2, node: ', comm%idnode
+        Call error(0)
+     End If
+
+  Else
+
+! It is Illegal to pass unallocated allocatable arrays to routines.
+! Therefore for arrays that are used by the mpi_scatterv calls
+! below allocate them to zero size if they are not used on this core
+
+     Allocate (scatter_buffer_read(1:0,1:0),   Stat=fail(1))
+     Allocate (chbuf_scat(1:0),iwrk_scat(1:0), Stat=fail(2))
+     Allocate (n_held(0:-1),where_buff(0:-1),  Stat=fail(3))
+     If (Any(fail(1:3) > 0)) Then
+        Write(nrite,'(/,1x,a,i0)') 'read_config_parallel allocation failure 3, node: ', comm%idnode
+        Call error(0)
+     End If
+
+  End If
+
+! Initialise extreme box dimensions
+
+  xhi = 0.0_wp
+  yhi = 0.0_wp
+  zhi = 0.0_wp
+
+  If (.not.l_xtr) Call invert(cell,rcell,det)
+
+! Initialise domain localised atom counter (configuration),
+! dispatched atom counter and safe dispatch flag
+
+  natms =0
+  indatm=0
+  safe  =.true.
+
+  Do k=1,megatm
+
+! Read in transmission arrays
+
+     Readers_only: If (do_read .and. indatm == 0) Then
+        to_read = Min(batsz,orig_first_at(my_read_proc_num+1)-first_at(my_read_proc_num))
+
+        No_netCDF: If (io_read /= IO_READ_NETCDF) Then
+
+           this_rec_buff = 0
+           recs_to_read  = 0
+           Do i=1,to_read
+              If (this_rec_buff == 0) Then
+                 recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at )
+                 If (.not.fast) Then
+                    Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
+                 Else
+                    Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
+                    rec_mpi_io = rec_mpi_io + Int(recs_to_read,MPI_OFFSET_KIND)
+                 End If
+              End If
+
+! Atom details
+
+              this_rec_buff = this_rec_buff + 1
+              Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
+                 record( j:j ) = rec_buff( j, this_rec_buff )
+              End Do
+              Call strip_blanks(record)
+
+              Call get_word(record,word) ; chbuf_read(i)=word(1:8)
+              If (l_ind) Then
+                 Call get_word(record,word)
+                 iwrk_read(i)=Nint(word_2_real(word,comm,0.0_wp,l_str))
+                 If (iwrk_read(i) /= 0) Then
+                    iwrk_read(i)=Abs(iwrk_read(i))
+                 Else
+                    iwrk_read(i)=first_at(my_read_proc_num)+i
+                 End If
+              Else
+                 iwrk_read(i)=first_at(my_read_proc_num)+i
+              End If
+
+              If (levcfg == 3) Read(record, Fmt=*, End=100) axx_read(i),ayy_read(i),azz_read(i)
+
+              If (this_rec_buff == recs_to_read) Then
+                 this_rec_buff = 0
+                 recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at - 1 )
+                 If (.not.fast) Then
+                    Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
+                 Else
+                    Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
+                    rec_mpi_io = rec_mpi_io + Int(recs_to_read,MPI_OFFSET_KIND)
+                 End If
+              End If
+
+              If (levcfg /= 3) Then
+
+! Positions
+
+                 this_rec_buff = this_rec_buff + 1
+                 Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
+                    record( j:j ) = rec_buff( j, this_rec_buff )
+                 End Do
+                 Read(record, Fmt=*, End=100) axx_read(i),ayy_read(i),azz_read(i)
+                 If (this_rec_buff == recs_to_read) Then
+                    this_rec_buff = 0
+                    If (levcfg > 0) Then
+                       recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at - 2 )
+                       If (.not.fast) Then
+                          Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
+                       Else
+                          Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
+                          rec_mpi_io = rec_mpi_io + Int(recs_to_read,MPI_OFFSET_KIND)
+                       End If
+                    End If
+                 End If
+
+! Velocities
+
+                 If (levcfg > 0) Then
+                    this_rec_buff = this_rec_buff + 1
+                    Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
+                       record( j:j ) = rec_buff( j, this_rec_buff )
+                    End Do
+                    Read(record, Fmt=*, End=100) bxx_read(i),byy_read(i),bzz_read(i)
+                    If (this_rec_buff == recs_to_read) Then
+                       this_rec_buff = 0
+                       If (levcfg > 1) Then
+                          recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at - 3 )
+                          If (.not.fast) Then
+                             Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
+                          Else
+                             Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
+                             rec_mpi_io = rec_mpi_io + Int(recs_to_read,MPI_OFFSET_KIND)
+                          End If
+                       End If
+                    End If
+
+! Forces
+
+                    If (levcfg > 1) Then
+                       this_rec_buff = this_rec_buff + 1
+                       Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
+                          record( j:j ) = rec_buff( j, this_rec_buff )
+                       End Do
+                       Read(record, Fmt=*, End=100) cxx_read(i),cyy_read(i),czz_read(i)
+                       If (this_rec_buff == recs_to_read) Then
+                          this_rec_buff = 0
+                       End If
+                    End If
+                 End If
+
+              End If
+           End Do
+
+        Else
+
+           If (to_read /= 0) Then
+              frame = Int(top_skip,Kind(frame))
+
+              Call io_nc_get_var( 'atomnames', fh, rec_buff, (/ first_at( my_read_proc_num ) + 1, frame /), (/ 8, to_read, 1 /) )
+              Do i = 1, to_read
+                 Do j = 1, Min( Len( chbuf_read ), Size( rec_buff, Dim = 1 ) )
+                    chbuf_read( i )( j:j ) = rec_buff( j, i )
+                 End Do
+              End Do
+              If (l_ind) Then
+                 Call io_nc_get_var( 'indices', fh, iwrk_read , (/ first_at( my_read_proc_num ) + 1, frame /), (/ to_read, 1 /) )
+              End If
+
+              start = (/ 1, first_at( my_read_proc_num ) + 1, frame /)
+              count = (/ 3, to_read, 1 /)
+
+              Select Case( levcfg )
+              Case( 0, 3 )
+                 Call get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+              Case( 1 )
+                 Call get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+                 Call get_var( 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
+              Case( 2 )
+                 Call get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+                 Call get_var( 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
+                 Call get_var( 'forces'     , fh, start, count, cxx_read, cyy_read, czz_read )
+              End Select
+           End If
+
+        End If No_netCDF
+
+        If (.not.l_xtr) Then
+
+! Ensure all atoms are in prescribed simulation cell (DD bound)
+!
+           n_held=0
+           Do i=1,to_read
+              sxx=rcell(1)*axx_read(i)+rcell(4)*ayy_read(i)+rcell(7)*azz_read(i)
+              syy=rcell(2)*axx_read(i)+rcell(5)*ayy_read(i)+rcell(8)*azz_read(i)
+              szz=rcell(3)*axx_read(i)+rcell(6)*ayy_read(i)+rcell(9)*azz_read(i)
+
+! sxx,syy,szz are in [-0.5,0.5) interval as values as 0.4(9) may pose a problem
+
+              sxx=sxx-Anint(sxx) ; If (sxx >= half_minus) sxx=-sxx
+              syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
+              szz=szz-Anint(szz) ; If (szz >= half_minus) szz=-szz
+
+! fold back coordinates
+
+              axx_read(i)=cell(1)*sxx+cell(4)*syy+cell(7)*szz
+              ayy_read(i)=cell(2)*sxx+cell(5)*syy+cell(8)*szz
+              azz_read(i)=cell(3)*sxx+cell(6)*syy+cell(9)*szz
+
+! assign domain coordinates (call for errors)
+
+              ipx=Int((sxx+0.5_wp)*nprx_r)
+              ipy=Int((syy+0.5_wp)*npry_r)
+              ipz=Int((szz+0.5_wp)*nprz_r)
+
+              idm=ipx+nprx*(ipy+npry*ipz)
+              If (idm < 0 .or. idm > (comm%mxnode-1)) Call error(513)
+              owner_read(i) = idm
+              n_held(idm) = n_held(idm)+1
+           End Do
+
+           where_buff(0)=0
+           Do i=1,comm%mxnode-1
+              where_buff(i) = where_buff(i-1) + n_held(i-1)
+           End Do
+
+           Do i=1,to_read
+              idm = where_buff(owner_read(i))
+              idm = idm+1
+              where_buff(owner_read(i)) = idm
+
+              chbuf_scat(idm) = chbuf_read(i)
+              iwrk_scat(idm)  = iwrk_read(i)
+
+              scatter_buffer_read(1,idm) = axx_read(i)
+              scatter_buffer_read(2,idm) = ayy_read(i)
+              scatter_buffer_read(3,idm) = azz_read(i)
+
+              If (levcfg /= 3) Then
+                 If (levcfg > 0) Then
+                    scatter_buffer_read(4,idm) = bxx_read(i)
+                    scatter_buffer_read(5,idm) = byy_read(i)
+                    scatter_buffer_read(6,idm) = bzz_read(i)
+
+                    If (levcfg > 1) Then
+                       scatter_buffer_read(7,idm) = cxx_read(i)
+                       scatter_buffer_read(8,idm) = cyy_read(i)
+                       scatter_buffer_read(9,idm) = czz_read(i)
+                    End If
+                 End If
+              End If
+           End Do
+
+! If only detecting box dimensions for imcon == 0 or 6 or imc_n == 6
+
+        Else
+
+! Get extremes
+
+           xhi = Max( xhi, Maxval( Abs( axx_read( 1:to_read ) ) ) )
+           yhi = Max( yhi, Maxval( Abs( ayy_read( 1:to_read ) ) ) )
+           zhi = Max( zhi, Maxval( Abs( azz_read( 1:to_read ) ) ) )
+
+        End If
+     End If Readers_only
+
+! Increase buffer counter and update first_at for
+! the readers that have something left to read
+
+     indatm = indatm+1
+     If (do_read) Then
+        If (first_at(my_read_proc_num) < first_at(my_read_proc_num+1)) &
+             first_at(my_read_proc_num) = first_at(my_read_proc_num)+1
+     End If
+
+! Circulate configuration data to all nodes when transmission arrays are filled up
+! Check against megatm since at low processors counts (i.e. 1) batsz can be > megatm
+
+     Reorganize_buffer: If (indatm == batsz .or. (indatm > 0 .and. k == megatm)) Then
+
+        Extent_2: If (.not.l_xtr) Then
+
+           Do which_read_proc = 0 , n_read_procs_use-1
+              If (orig_first_at(which_read_proc) >= megatm) Exit ! for non-reading readers
+
+              this_base_proc = which_read_proc * per_read_proc
+              If (comm%idnode == this_base_proc) Then
+                 where_buff(0) = 0
+                 Do i=1,comm%mxnode-1
+                    where_buff(i) = where_buff(i-1) + n_held(i-1)
+                 End Do
+              End If
+
+              Call MPI_SCATTER( n_held, 1, MPI_INTEGER, n_loc, 1, MPI_INTEGER, this_base_proc, &
+                   comm%comm, comm%ierr )
+
+              Call MPI_SCATTERV( chbuf_scat, 8 * n_held, 8 * where_buff, MPI_CHARACTER, &
+                                 chbuf     , 8 * n_loc ,                 MPI_CHARACTER, &
+                                 this_base_proc, comm%comm, comm%ierr )
+
+              Call MPI_SCATTERV( iwrk_scat ,     n_held,     where_buff, MPI_INTEGER, &
+                                 iwrk      ,     n_loc ,                 MPI_INTEGER, &
+                                 this_base_proc, comm%comm, comm%ierr )
+
+              Call MPI_SCATTERV( scatter_buffer_read, wp_vals_per_at * n_held, wp_vals_per_at * where_buff, wp_mpi, &
+                                 scatter_buffer     , wp_vals_per_at * n_loc ,                              wp_mpi, &
+                                 this_base_proc, comm%comm, comm%ierr )
+
+! Assign atoms to correct domains
+
+              Do i=1,n_loc
+                 natms=natms+1
+
+! Check safety by the upper bound of: atmnam,ltg,xxx,yyy,zzz &
+! possibly vxx,vyy,vzz & possibly fxx,fyy,fzz as guided by xxx
+
+                 If (natms <= mxatms) Then
+                    atmnam(natms)=chbuf(i)
+                    ltg(natms)=iwrk(i)
+
+                    xxx(natms)=scatter_buffer(1,i)
+                    yyy(natms)=scatter_buffer(2,i)
+                    zzz(natms)=scatter_buffer(3,i)
+
+                    If (levcfg /=3 ) Then
+                       If (levcfg > 0) Then
+                          vxx(natms)=scatter_buffer(4,i)
+                          vyy(natms)=scatter_buffer(5,i)
+                          vzz(natms)=scatter_buffer(6,i)
+                       Else
+                          vxx(natms)=0.0_wp
+                          vyy(natms)=0.0_wp
+                          vzz(natms)=0.0_wp
+                       End If
+
+                       If (levcfg > 1) Then
+                          fxx(natms)=scatter_buffer(7,i)
+                          fyy(natms)=scatter_buffer(8,i)
+                          fzz(natms)=scatter_buffer(9,i)
+                       Else
+                          fxx(natms)=0.0_wp
+                          fyy(natms)=0.0_wp
+                          fzz(natms)=0.0_wp
+                       End If
+                    End If
+                  Else
+                    safe=.false.
+                 End If
+              End Do
+           End Do
+
+! Check if all is dispatched fine
+
+           max_fail=natms
+           min_fail=natms
+              Call gcheck(comm,safe)
+              Call gmax(comm,max_fail)
+              Call gmin(comm,min_fail)
+
+           If (.not.safe) Then
+              If (comm%idnode == 0) Then
+  Write(nrite,'(/,1x,a,i0)')  '*** warning - next error due to maximum number of atoms per domain set to : ', mxatms
+  Write(nrite,'(1x,2(a,i0))') '***           but maximum & minumum numbers of atoms per domain asked for : ', &
+       max_fail, ' & ', min_fail
+  Write(nrite,'(1x,a,i0)')    '***           estimated densvar value for passing this stage safely is : ', &
+       Ceiling((dvar*(Real(max_fail,wp)/Real(mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
+              End If
+              Call error(45)
+           End If
+
+        End If Extent_2
+
+! Nullify dispatch counter
+
+        indatm=0
+
+     End If Reorganize_buffer
+
+  End Do
+
+! If only detecting box dimensions for imcon == 0 or 6 or imc_n == 6
+
+  If (l_xtr) Then
+     Call gmax(comm,xhi)
+     Call gmax(comm,yhi)
+     Call gmax(comm,zhi)
+  End If
+
+  If (l_his) Then
+
+! Skip to the EoFrame of HISTORY when not fast
+
+     If (do_read .and. (.not.fast)) Then
+        n_skip = Int(recs_per_at,MPI_OFFSET_KIND) * Int(megatm-first_at(my_read_proc_num),MPI_OFFSET_KIND)
+
+        n_sk=Int(n_skip,li)
+        n_jj=73*batsz ! Assuming average max line length of 73
+        If (n_sk > n_jj) Then
+           Do n_ii=1_li,n_sk/n_jj
+              forma=' '
+              Write(forma,'( "(", i0, "/)" )') n_jj
+              Read(Unit=nconf, Fmt=forma, End=100)
+           End Do
+           n_ii=Mod(Int(n_skip,li),n_jj)
+           If (n_ii > 0_li) Then
+              forma=' '
+              Write(forma,'( "(", i0, "/)" )') n_ii
+              Read(Unit=nconf, Fmt=forma, End=100)
+           End If
+        Else
+           forma=' '
+           Write(forma,'( "(", i0, "/)" )') n_sk
+           Read(Unit=nconf, Fmt=forma, End=100)
+        End If
+     End If
+
+  Else
+
+     If (do_read) Then
+
+        If ( io_read /= IO_READ_NETCDF) Then
+
+! The last reader to check for EoFile in CONFIG
+! and if none is hit to call error to abort
+
+           If (first_at(my_read_proc_num) == megatm) Then
+              recs_to_read = 1
+              If (.not.fast) Then
+                 Read(Unit=nconf, Fmt=forma, Iostat=ierr) rec_buff( :, 1:recs_to_read )
+              Else
+                 Call io_read_batch( fh, rec_mpi_io, 1, rec_buff, ierr )
+              End If
+              safe = (ierr /= 0)
+           End If
+
+        Else
+
+! As netCDF files have no real concept of line numbers,
+! instead check the arrays are the correct size
+
+           Call io_nc_get_dim( 'atom', fh, n_ats_in_file )
+           safe = n_ats_in_file == megatm
+
+        End If
+
+     End If
+     Call gcheck(comm,safe)
+     If (.not.safe) Call error(58)
+
+  End If
+
+  If (do_read) Then
+     Deallocate (rec_buff,                   Stat=fail(1))
+     Deallocate (chbuf_read,iwrk_read,       Stat=fail(2))
+     Deallocate (axx_read,ayy_read,azz_read, Stat=fail(3))
+     Deallocate (bxx_read,byy_read,bzz_read, Stat=fail(4))
+     Deallocate (cxx_read,cyy_read,czz_read, Stat=fail(5))
+     Deallocate (owner_read,                 Stat=fail(6))
+     If (Any(fail(1:6) > 0)) Then
+        Write(nrite,'(/,1x,a,i0)') 'read_config_parallel deallocation failure 2, node: ', comm%idnode
+        Call error(0)
+     End If
+  End If
+
+  Deallocate (first_at,orig_first_at, Stat=fail(1))
+  Deallocate (n_held,where_buff,      Stat=fail(2))
+  Deallocate (chbuf,chbuf_scat,       Stat=fail(3))
+  Deallocate (iwrk,iwrk_scat,         Stat=fail(4))
+  Deallocate (scatter_buffer_read,    Stat=fail(5))
+  Deallocate (scatter_buffer,         Stat=fail(6))
+  If (Any(fail(1:6) > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'read_config_parallel deallocation failure 1, node: ', comm%idnode
+     Call error(0)
+  End If
+
+  Return
+
+! error exit for CONFIG file read
+
+100 Continue
+  Call error(55)
+
+Contains
+
+  Subroutine get_var( what, fh, start, count, x, y, z )
+
+    Character( Len = * )             , Intent( In    ) :: what
+    Integer                          , Intent( In    ) :: fh
+    Integer   ,        Dimension( : ), Intent( In    ) :: start
+    Integer   ,        Dimension( : ), Intent( In    ) :: count
+    Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: x
+    Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: y
+    Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: z
+
+    Real( Kind = wp ), Dimension( :, : ), Allocatable :: buff
+
+    Integer :: to_read
+    Integer :: fail
+    Integer :: i
+
+    to_read = count( 2 )
+
+    Allocate (buff( 1:3, 1:to_read ), Stat=fail)
+    If (fail /= 0) Then
+       Write( nrite, '(/,1x,a,i0)') 'read_config_parallel allocation failure 4, node: ', comm%idnode
+       Call error( 0 )
+    End If
+
+    Call io_nc_get_var( what, fh, buff, start, count )
+
+    Do i = 1, to_read
+       x( i ) = buff( 1, i )
+       y( i ) = buff( 2, i )
+       z( i ) = buff( 3, i )
+    End Do
+
+    Deallocate (buff, Stat=fail)
+    If (fail /= 0) Then
+       Write( nrite, '(/,1x,a,i0)') 'read_config_parallel allocation failure 4, node: ', comm%idnode
+       Call error( 0 )
+    End If
+
+  End Subroutine get_var
+
+End Subroutine read_config_parallel
 
 
 End Module configuration

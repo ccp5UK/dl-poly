@@ -1,12 +1,24 @@
-Module rdf_compute_module
+Module rdfs
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 module declaring RDF property variables and arrays
+! including USR (umbrella sampling restraint) RDF
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov november 2016
+! contrib   - a.b.g.chalk january 2017
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
+  Use site_module, Only: ntpatm
+  Use configuration, Only : natms,ltg,ltype,list
   Use comms,  Only : comms_type,gsum
   Use setup_module,  Only : fourpi,boltz,delr_max,nrite,nrdfdt,npdfdt,npdgdt, &
-                            mxgrdf,engunit,zero_plus,mxlist
+                            mxgrdf,engunit,zero_plus,mxlist,mxrdf,mxgusr
   Use site_module,   Only : ntpatm,unqatm,numtyp,dens
   Use configuration, Only : cfgname,volm
-  Use rdf_module
   Use parse_module
   Use io
 
@@ -15,7 +27,145 @@ Module rdf_compute_module
   Public  :: rdf_compute, calculate_errors, calculate_errors_jackknife
   Private :: calculate_block
 
+  Integer,                        Save :: ncfrdf = 0 , &
+                                          ntprdf = 0
+
+  Integer,                        Save :: ncfusr = 0
+
+  Real( Kind = wp ),              Save :: rusr   = 0.0_wp ! USR RDF cutoff
+
+  Integer,           Allocatable, Save :: lstrdf(:)
+
+  Real( Kind = wp ), Allocatable, Save :: rdf(:,:),usr(:)
+
+  Real( Kind = wp ), Allocatable, Save :: block_averages(:,:,:,:)
+  Integer, Parameter                   :: num_blocks = 25
+  Integer, Save                        :: block_size
+  Integer,                        Save :: block_number = 1
+  Real( Kind = wp ), Allocatable, Save :: tmp_rdf(:,:,:)
+  Logical,                        Save :: tmp_rdf_sync = .FALSE.
+  Logical,                        Save :: l_errors_block = .FALSE., l_errors_jack = .FALSE.
+
+  Public :: allocate_rdf_arrays, allocate_block_average_array
+
 Contains
+
+  Subroutine allocate_rdf_arrays()
+
+
+    Integer, Dimension( 1:3 ) :: fail
+
+    fail = 0
+
+    Allocate (lstrdf(1:mxrdf),       Stat = fail(1))
+    Allocate (rdf(1:mxgrdf,1:mxrdf), Stat = fail(2))
+    Allocate (usr(1:mxgusr),         Stat = fail(3))
+
+    If (Any(fail > 0)) Call error(1016)
+
+    lstrdf = 0
+
+    rdf = 0.0_wp ; usr = 0.0_wp
+
+  End Subroutine allocate_rdf_arrays
+
+Subroutine allocate_block_average_array(nstrun)
+
+  Integer, Intent( In ) :: nstrun
+  Integer :: temp1, temp2
+  
+  Integer, Dimension( 1:2 ) :: fail
+  block_size = nstrun/(num_blocks-1)
+  if(block_size < 2) then
+    block_size = 2
+  endif
+
+  temp1 = mxrdf + 16-Mod(mxrdf,16)
+  temp2 = mxgrdf + 16-Mod(mxgrdf,16)
+  Allocate(block_averages(1:ntpatm,1:ntpatm,1:mxgrdf,1:num_blocks+1), Stat = fail(1))
+  Allocate(tmp_rdf( 1:temp2,1:temp1, 1:num_blocks+1 ), Stat = fail(2))
+
+  If (Any(fail > 0)) Call error(1016)
+  block_averages = 0.0_wp
+  tmp_rdf = 0.0_wp
+
+  End Subroutine allocate_block_average_array
+
+
+  Subroutine rdf_collect(iatm,rcut,rrt)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for accumulating statistic for radial
+! distribution functions
+!
+! Note: to be used as part of two_body_forces
+!
+! copyright - daresbury laboratory
+! author    - t.forester march 1994
+! amended   - i.t.todorov november 2014
+! contrib   - a.b.g.chalk january 2017
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+  Integer,                                  Intent( In    ) :: iatm
+  Real( Kind = wp ),                        Intent( In    ) :: rcut
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rrt
+
+  Integer                 :: idi,jatm,ai,aj,keyrdf,kk,ll,m
+  Real( Kind = wp )       :: rdelr,rrr
+
+! set cutoff condition for pair forces and grid interval for rdf tables
+
+  rdelr= Real(mxgrdf,wp)/rcut
+
+! global identity and type of iatm
+
+  idi=ltg(iatm)
+  ai=ltype(iatm)
+
+! start of primary loop for rdf accumulation
+
+  Do m=1,list(0,iatm)
+
+! atomic and type indices
+
+     jatm=list(m,iatm)
+     aj=ltype(jatm)
+
+     If (jatm <= natms .or. idi < ltg(jatm)) Then
+
+! rdf function indices
+
+        keyrdf=(Max(ai,aj)*(Max(ai,aj)-1))/2+Min(ai,aj)
+        kk=lstrdf(keyrdf)
+
+! only for valid interactions specified for a look up
+
+        If (kk > 0 .and. kk <= ntprdf) Then
+
+! apply truncation of potential
+
+           rrr=rrt(m)
+
+           If (rrr < rcut) Then
+              ll=Min(1+Int(rrr*rdelr),mxgrdf)
+
+! accumulate correlation
+
+              rdf(ll,kk) = rdf(ll,kk) + 1.0_wp
+              If(l_errors_block .or. l_errors_jack) tmp_rdf(ll,kk,block_number) = tmp_rdf(ll,kk,block_number) + 1.0_wp
+
+           End If
+
+        End If
+
+     End If
+
+  End Do
+
+End Subroutine rdf_collect
 
 Subroutine rdf_compute(lpana,rcut,temp,comm)
 
@@ -580,6 +730,157 @@ Subroutine calculate_errors_jackknife(temp, rcut, num_steps,comm)
   End If
 End Subroutine calculate_errors_jackknife
 
+  Subroutine rdf_excl_collect(iatm,rcut,rrt)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for accumulating statistic for radial
+! distribution functions of excluded pairs
+!
+! Note: to be used as part of two_body_forces
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov november 2014
+! contrib   - a.b.g.chalk january 2017
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Integer,                                  Intent( In    ) :: iatm
+  Real( Kind = wp ),                        Intent( In    ) :: rcut
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rrt
+
+  Integer                 :: limit,idi,jatm,ai,aj,keyrdf,kk,ll,m
+  Real( Kind = wp )       :: rdelr,rrr
+
+! set cutoff condition for pair forces and grid interval for rdf tables
+
+  rdelr= Real(mxgrdf,wp)/rcut
+
+! global identity and type of iatm
+
+  idi=ltg(iatm)
+  ai=ltype(iatm)
+
+! Get list limit
+
+  limit=list(-1,iatm)-list(0,iatm)
+
+! start of primary loop for rdf accumulation
+
+  Do m=1,limit
+
+! atomic and type indices
+
+     jatm=list(list(0,iatm)+m,iatm)
+     aj=ltype(jatm)
+
+     If (jatm <= natms .or. idi < ltg(jatm)) Then
+
+! rdf function indices
+
+        keyrdf=(Max(ai,aj)*(Max(ai,aj)-1))/2+Min(ai,aj)
+        kk=lstrdf(keyrdf)
+
+! only for valid interactions specified for a look up
+
+        If (kk > 0 .and. kk <= ntprdf) Then
+
+! apply truncation of potential
+
+           rrr=rrt(m)
+
+           If (rrr < rcut) Then
+              ll=Min(1+Int(rrr*rdelr),mxgrdf)
+
+! accumulate correlation
+
+              rdf(ll,kk) = rdf(ll,kk) + 1.0_wp
+              If(l_errors_block .or. l_errors_jack) tmp_rdf(ll,kk,block_number) = tmp_rdf(ll,kk,block_number) + 1.0_wp
+           End If
+
+        End If
+
+     End If
+
+  End Do
+
+End Subroutine rdf_excl_collect
+
+Subroutine rdf_frzn_collect(iatm,rcut,rrt)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for accumulating statistic for radial
+! distribution functions of frozen pairs
+!
+! Note: to be used as part of two_body_forces
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov november 2014
+! contrib   - a.b.g.chalk january 2017
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Integer,                                  Intent( In    ) :: iatm
+  Real( Kind = wp ),                        Intent( In    ) :: rcut
+  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rrt
+
+  Integer                 :: limit,idi,jatm,ai,aj,keyrdf,kk,ll,m
+  Real( Kind = wp )       :: rdelr,rrr
+
+! set cutoff condition for pair forces and grid interval for rdf tables
+
+  rdelr= Real(mxgrdf,wp)/rcut
+
+! global identity and type of iatm
+
+  idi=ltg(iatm)
+  ai=ltype(iatm)
+
+! Get list limit
+
+  limit=list(-2,iatm)-list(-1,iatm)
+
+! start of primary loop for rdf accumulation
+
+  Do m=1,limit
+
+! atomic and type indices
+
+     jatm=list(list(-1,iatm)+m,iatm)
+     aj=ltype(jatm)
+
+     If (jatm <= natms .or. idi < ltg(jatm)) Then
+
+! rdf function indices
+
+        keyrdf=(Max(ai,aj)*(Max(ai,aj)-1))/2+Min(ai,aj)
+        kk=lstrdf(keyrdf)
+
+! only for valid interactions specified for a look up
+
+        If (kk > 0 .and. kk <= ntprdf) Then
+
+! apply truncation of potential
+
+           rrr=rrt(m)
+
+           If (rrr < rcut) Then
+              ll=Min(1+Int(rrr*rdelr),mxgrdf)
+
+! accumulate correlation
+
+              rdf(ll,kk) = rdf(ll,kk) + 1.0_wp
+              If(l_errors_block .or. l_errors_jack) tmp_rdf(ll,kk,block_number) = tmp_rdf(ll,kk,block_number) + 1.0_wp
+           End If
+
+        End If
+
+     End If
+
+  End Do
+
+End Subroutine rdf_frzn_collect
 
 
-End Module rdf_compute_module
+End Module rdfs

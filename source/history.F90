@@ -1,17 +1,7 @@
-Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for reading the trajectory data file
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov january 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Module history
 
   Use kinds, Only : wp, li
-  Use comms_module
-  Use setup_module
+  Use comms, Only : comms_type
   Use domains_module, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
   Use site_module
   Use configuration
@@ -31,6 +21,22 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 
   Implicit None
 
+  Private
+  Public :: read_history
+Contains
+
+
+Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for reading the trajectory data file
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov january 2017
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   Character( Len = * ), Intent( In    ) :: fname
   Logical,              Intent( In    ) :: l_str
   Integer,              Intent( In    ) :: megatm
@@ -39,6 +45,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
   Real( Kind = wp ),    Intent( In    ) :: dvar
   Real( Kind = wp ),    Intent( InOut ) :: tstep,time
   Integer,              Intent(   Out ) :: exout
+  Type( comms_type),    Intent( InOut ) :: comm
 
   Logical,               Save :: newjob = .true.  , &
                                  l_ind  = .true.  , &
@@ -69,6 +76,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
   Real( Kind = wp ),    Allocatable :: axx(:),ayy(:),azz(:), &
                                        bxx(:),byy(:),bzz(:), &
                                        cxx(:),cyy(:),czz(:)
+  Integer  :: ierr
 
   If (newjob) Then
      newjob = .false.
@@ -88,24 +96,24 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 ! Does HISTORY exist
 
         lexist=.true.
-        If (idnode == 0) Inquire(File=fname, Exist=lexist)
-        If (mxnode > 1) Call gcheck(lexist,"enforce")
+        If (comm%idnode == 0) Inquire(File=fname, Exist=lexist)
+        Call gcheck(comm,lexist,"enforce")
         If (.not.lexist) Go To 400
 
 ! Open HISTORY
 
-        If (idnode == 0) Open(Unit=nconf, File=fname)
+        If (comm%idnode == 0) Open(Unit=nconf, File=fname)
 
 ! read the HISTORY file header
 
-        Call get_line(safe,nconf,record); If (.not.safe) Go To 300
+        Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
 
-        Call get_line(safe,nconf,record); If (.not.safe) Go To 300
-        Call get_word(record,word) ; levcfg=Nint(word_2_real(word,0.0_wp))
+        Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
+        Call get_word(record,word) ; levcfg=Nint(word_2_real(word,comm,0.0_wp))
         Call get_word(record,word)
-        Call get_word(record,word) ; If (Nint(word_2_real(word)) /= megatm) Go To 300
-        Call get_word(record,word) ; frm=Nint(word_2_real(word,0.0_wp),li)
-        Call get_word(record,word) ; rec=Nint(word_2_real(word,0.0_wp),li)
+        Call get_word(record,word) ; If (Nint(word_2_real(word,comm)) /= megatm) Go To 300
+        Call get_word(record,word) ; frm=Nint(word_2_real(word,comm,0.0_wp),li)
+        Call get_word(record,word) ; rec=Nint(word_2_real(word,comm,0.0_wp),li)
 
 ! Change fast if no database records exists or the file is new
 
@@ -140,16 +148,16 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
            fail(1) = 0
            Allocate (buffer(1:recsz,1:4), Stat=fail(1))
            If (fail(1) > 0) Then
-              Write(nrite,'(/,1x,a,i0)') 'read_history allocation failure 1, node: ', idnode
+              Write(nrite,'(/,1x,a,i0)') 'read_history allocation failure 1, node: ', comm%idnode
               Call error(0)
            End If
 
            If (io_read == IO_READ_MPIIO) Then
               Close(Unit=nconf)
 
-              Call io_set_parameters( user_comm = dlp_comm_world )
+              Call io_set_parameters( user_comm = comm%comm )
               Call io_init( recsz )
-              Call io_open( io_read, dlp_comm_world, fname, MPI_MODE_RDONLY, fh )
+              Call io_open( io_read, comm%comm, fname, MPI_MODE_RDONLY, fh )
            End If
         End If
 
@@ -158,8 +166,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 ! Does HISTORY exist
 
         lexist=.true.
-        If (idnode == 0) Inquire(File=fname, Exist=lexist)
-        If (mxnode > 1) Call gcheck(lexist,"enforce")
+        If (comm%idnode == 0) Inquire(File=fname, Exist=lexist)
+        Call gcheck(comm,lexist,"enforce")
         If (.not.lexist) Go To 400
 
 ! fast and rec are irrelevant for netCDF (initialised at declaration)
@@ -167,8 +175,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
         fast = .true.
         rec  = Int(0,li)
 
-        Call io_set_parameters( user_comm = dlp_comm_world )
-        Call io_open( io_read, dlp_comm_world, fname, MPI_MODE_RDONLY, fh )
+        Call io_set_parameters( user_comm = comm%comm )
+        Call io_open( io_read, comm%comm, fname, MPI_MODE_RDONLY, fh )
         Call io_nc_get_dim( 'frame', fh, i )
 
         If (i > 0) Then
@@ -180,7 +188,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
      End If
   Else
      If (io_read == IO_READ_MPIIO .or. io_read == IO_READ_NETCDF) &
-        Call io_set_parameters( user_comm = dlp_comm_world )
+        Call io_set_parameters( user_comm = comm%comm )
      If (io_read == IO_READ_MPIIO) Call io_init( recsz )
   End If
 
@@ -205,49 +213,49 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
      Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(4))
      Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'read_history allocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'read_history allocation failure, node: ', comm%idnode
         Call error(0)
      End If
 
 ! read timestep and time
 
-     Call get_line(safe,nconf,record); If (.not.safe) Go To 200
+     Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 200
 
      xxx=0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp
      vxx=0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp
      fxx=0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
 
      Call get_word(record,word) ! timestep
-     Call get_word(record,word) ; nstep = Nint(word_2_real(word))
-     Call get_word(record,word) ; If (Nint(word_2_real(word)) /= megatm) Go To 300
-     Call get_word(record,word) ; levcfg = Nint(word_2_real(word))
-     Call get_word(record,word) ; imcon = Nint(word_2_real(word))
+     Call get_word(record,word) ; nstep = Nint(word_2_real(word,comm))
+     Call get_word(record,word) ; If (Nint(word_2_real(word,comm)) /= megatm) Go To 300
+     Call get_word(record,word) ; levcfg = Nint(word_2_real(word,comm))
+     Call get_word(record,word) ; imcon = Nint(word_2_real(word,comm))
 
 ! image conditions not compliant with DD and link-cell
 
      If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
-     Call get_word(record,word) ; tstep = word_2_real(word)
-     Call get_word(record,word) ; time = word_2_real(word)
+     Call get_word(record,word) ; tstep = word_2_real(word,comm)
+     Call get_word(record,word) ; time = word_2_real(word,comm)
 
-     If (idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
+     If (comm%idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
 
 ! read cell vectors
 
-     Call get_line(safe,nconf,record); If (.not.safe) Go To 300
-     Call get_word(record,word); cell(1)=word_2_real(word)
-     Call get_word(record,word); cell(2)=word_2_real(word)
-     Call get_word(record,word); cell(3)=word_2_real(word)
+     Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
+     Call get_word(record,word); cell(1)=word_2_real(word,comm)
+     Call get_word(record,word); cell(2)=word_2_real(word,comm)
+     Call get_word(record,word); cell(3)=word_2_real(word,comm)
 
-     Call get_line(safe,nconf,record); If (.not.safe) Go To 300
-     Call get_word(record,word); cell(4)=word_2_real(word)
-     Call get_word(record,word); cell(5)=word_2_real(word)
-     Call get_word(record,word); cell(6)=word_2_real(word)
+     Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
+     Call get_word(record,word); cell(4)=word_2_real(word,comm)
+     Call get_word(record,word); cell(5)=word_2_real(word,comm)
+     Call get_word(record,word); cell(6)=word_2_real(word,comm)
 
-     Call get_line(safe,nconf,record); If (.not.safe) Go To 300
-     Call get_word(record,word); cell(7)=word_2_real(word)
-     Call get_word(record,word); cell(8)=word_2_real(word)
-     Call get_word(record,word); cell(9)=word_2_real(word)
+     Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
+     Call get_word(record,word); cell(7)=word_2_real(word,comm)
+     Call get_word(record,word); cell(8)=word_2_real(word,comm)
+     Call get_word(record,word); cell(9)=word_2_real(word,comm)
 
      Call invert(cell,rcell,det)
 
@@ -283,13 +291,13 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 
 ! Read in transmission arrays
 
-              If (idnode == 0 .and. safe) Then
+              If (comm%idnode == 0 .and. safe) Then
                  record=' '; Read(Unit=nconf, Fmt='(a)', End=30) record
                  Call tabs_2_blanks(record) ; Call strip_blanks(record)
                  Call get_word(record,word) ; chbuf(indatm)=word(1:8)
                  If (l_ind) Then
                     Call get_word(record,word)
-                    iwrk(indatm)=Nint(word_2_real(word,0.0_wp,l_str))
+                    iwrk(indatm)=Nint(word_2_real(word,comm,0.0_wp,l_str))
                     If (iwrk(indatm) /= 0) Then
                        iwrk(indatm)=Abs(iwrk(indatm))
                     Else
@@ -307,9 +315,9 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
                        If (levcfg > 1) Read(Unit=nconf, Fmt=*, End=30) cxx(indatm),cyy(indatm),czz(indatm)
                     End If
                  Else
-                    Call get_word(record,word) ; axx(indatm)=word_2_real(word)
-                    Call get_word(record,word) ; bxx(indatm)=word_2_real(word)
-                    Call get_word(record,word) ; cxx(indatm)=word_2_real(word)
+                    Call get_word(record,word) ; axx(indatm)=word_2_real(word,comm)
+                    Call get_word(record,word) ; bxx(indatm)=word_2_real(word,comm)
+                    Call get_word(record,word) ; cxx(indatm)=word_2_real(word,comm)
                  End If
                  Go To 40
 
@@ -325,35 +333,37 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 
 ! Check if batch was read fine
 
-                 If (mxnode > 1) Call gcheck(safe)
+                 Call gcheck(comm,safe)
                  If (.not.safe) Go To 300 !Call error(25)
 
 ! Briadcaste all atoms
 
-                 If (mxnode > 1) Then
-                    Call MPI_BCAST(chbuf,indatm*8,MPI_CHARACTER,0,dlp_comm_world,ierr)
-                    Call MPI_BCAST(iwrk,indatm,MPI_INTEGER,0,dlp_comm_world,ierr)
+                    Call gbcast(comm,chbuf,0)
+                    Call gbcast(comm,iwrk,0)
 
                     If (levcfg /= 3) Then
-                       Call MPI_BCAST(axx,indatm,wp_mpi,0,dlp_comm_world,ierr)
-                       Call MPI_BCAST(ayy,indatm,wp_mpi,0,dlp_comm_world,ierr)
-                       Call MPI_BCAST(azz,indatm,wp_mpi,0,dlp_comm_world,ierr)
+
+                       Call gbcast(comm,axx,0)
+                       Call gbcast(comm,ayy,0)
+                       Call gbcast(comm,azz,0)
                        If (levcfg > 0) Then
-                          Call MPI_BCAST(bxx,indatm,wp_mpi,0,dlp_comm_world,ierr)
-                          Call MPI_BCAST(byy,indatm,wp_mpi,0,dlp_comm_world,ierr)
-                          Call MPI_BCAST(bzz,indatm,wp_mpi,0,dlp_comm_world,ierr)
+                         Call gbcast(comm,bxx,0)
+                         Call gbcast(comm,byy,0)
+                         Call gbcast(comm,bzz,0)
                           If (levcfg > 1) Then
-                             Call MPI_BCAST(bxx,indatm,wp_mpi,0,dlp_comm_world,ierr)
-                             Call MPI_BCAST(byy,indatm,wp_mpi,0,dlp_comm_world,ierr)
-                             Call MPI_BCAST(bzz,indatm,wp_mpi,0,dlp_comm_world,ierr)
+                             Call gbcast(comm,cxx,0)
+                             Call gbcast(comm,cyy,0)
+                             Call gbcast(comm,czz,0)
                           End If
                        End If
                     Else
-                       Call MPI_BCAST(axx,indatm,wp_mpi,0,dlp_comm_world,ierr)
-                       Call MPI_BCAST(ayy,indatm,wp_mpi,0,dlp_comm_world,ierr)
-                       Call MPI_BCAST(azz,indatm,wp_mpi,0,dlp_comm_world,ierr)
+                       !Call MPI_BCAST(axx,indatm,wp_mpi,0,comm%comm,ierr)
+                       !Call MPI_BCAST(ayy,indatm,wp_mpi,0,comm%comm,ierr)
+                       !Call MPI_BCAST(azz,indatm,wp_mpi,0,comm%comm,ierr)
+                       Call gbcast(comm,axx,0)
+                       Call gbcast(comm,ayy,0)
+                       Call gbcast(comm,azz,0)
                     End If
-                 End If
 
 ! Assign atoms to correct domains (DD bound)
 
@@ -368,7 +378,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
                     syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
                     szz=szz-Anint(szz) ; If (szz >= half_minus) szz=-szz
 
-! fold back coordinates
+! fold back coordinatesc
 
                     axx(i)=cell(1)*sxx+cell(4)*syy+cell(7)*szz
                     ayy(i)=cell(2)*sxx+cell(5)*syy+cell(8)*szz
@@ -381,9 +391,9 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
                     ipz=Int((szz+0.5_wp)*nprz_r)
 
                     idm=ipx+nprx*(ipy+npry*ipz)
-                    If      (idm < 0 .or. idm > (mxnode-1)) Then
+                    If      (idm < 0 .or. idm > (comm%mxnode-1)) Then
                        Call error(513)
-                    Else If (idm == idnode)                 Then
+                    Else If (idm == comm%idnode)                 Then
                        natms=natms+1
 
                        If (natms < mxatms) Then
@@ -417,7 +427,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 
 ! Check if all is dispatched fine
 
-                 If (mxnode > 1) Call gcheck(safe)
+                 Call gcheck(safe)
                  If (.not.safe) Call error(45)
 
 ! Nullify dispatch counter
@@ -435,7 +445,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
      Deallocate (bxx,byy,bzz, Stat=fail(4))
      Deallocate (cxx,cyy,czz, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'read_history deallocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'read_history deallocation failure, node: ', comm%idnode
         Call error(0)
      End If
 
@@ -452,19 +462,19 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
         record( i:i ) = buffer( i, 1 )
      End Do
      Call get_word(record,word) ! timestep
-     Call get_word(record,word) ; nstep = Nint(word_2_real(word))
-     Call get_word(record,word) ; If (Nint(word_2_real(word)) /= megatm) Go To 300
-     Call get_word(record,word) ; levcfg = Nint(word_2_real(word))
-     Call get_word(record,word) ; imcon = Nint(word_2_real(word))
+     Call get_word(record,word) ; nstep = Nint(word_2_real(word,comm))
+     Call get_word(record,word) ; If (Nint(word_2_real(word,comm)) /= megatm) Go To 300
+     Call get_word(record,word) ; levcfg = Nint(word_2_real(word,comm))
+     Call get_word(record,word) ; imcon = Nint(word_2_real(word,comm))
 
 ! image conditions not compliant with DD and link-cell
 
     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
-     Call get_word(record,word) ; tstep = word_2_real(word)
-     Call get_word(record,word) ; time = word_2_real(word)
+     Call get_word(record,word) ; tstep = word_2_real(word,comm)
+     Call get_word(record,word) ; time = word_2_real(word,comm)
 
-     If (idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
+     If (comm%idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
 
 ! read cell vectors
 
@@ -472,29 +482,29 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
      Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
         record( i:i ) = buffer( i, 2 )
      End Do
-     Call get_word(record,word); cell(1)=word_2_real(word)
-     Call get_word(record,word); cell(2)=word_2_real(word)
-     Call get_word(record,word); cell(3)=word_2_real(word)
+     Call get_word(record,word); cell(1)=word_2_real(word,comm)
+     Call get_word(record,word); cell(2)=word_2_real(word,comm)
+     Call get_word(record,word); cell(3)=word_2_real(word,comm)
 
      record = ' '
      Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
         record( i:i ) = buffer( i, 3 )
      End Do
-     Call get_word(record,word); cell(4)=word_2_real(word)
-     Call get_word(record,word); cell(5)=word_2_real(word)
-     Call get_word(record,word); cell(6)=word_2_real(word)
+     Call get_word(record,word); cell(4)=word_2_real(word,comm)
+     Call get_word(record,word); cell(5)=word_2_real(word,comm)
+     Call get_word(record,word); cell(6)=word_2_real(word,comm)
 
      record = ' '
      Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
         record( i:i ) = buffer( i, 4 )
      End Do
-     Call get_word(record,word); cell(7)=word_2_real(word)
-     Call get_word(record,word); cell(8)=word_2_real(word)
-     Call get_word(record,word); cell(9)=word_2_real(word)
+     Call get_word(record,word); cell(7)=word_2_real(word,comm)
+     Call get_word(record,word); cell(8)=word_2_real(word,comm)
+     Call get_word(record,word); cell(9)=word_2_real(word,comm)
 
      Call read_config_parallel                  &
            (levcfg, dvar, l_ind, l_str, megatm, &
-            l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi)
+            l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi,comm)
 
      If (fast) Then
         If (levcfg /= 3) Then
@@ -531,7 +541,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
      Call io_nc_get_var( 'timestep'       , fh,  tstep, i, 1 )
      Call io_nc_get_var( 'step'           , fh,  nstep, i, 1 )
 
-     If (idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
+     If (comm%idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
 
 ! Note that in netCDF the frames are not long integers - Int( frm1 )
 
@@ -540,7 +550,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 
      Call read_config_parallel                  &
            (levcfg, dvar, l_ind, l_str, megatm, &
-            l_his, l_xtr, fast, fh, Int( i, Kind( top_skip ) ), xhi, yhi, zhi)
+            l_his, l_xtr, fast, fh, Int( i, Kind( top_skip ) ), xhi, yhi, zhi,comm)
 
      If (frm1 == frm) Go To 200
 
@@ -556,7 +566,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 ! Check number of atoms in system (CONFIG = FIELD)
 
   totatm=natms
-  If (mxnode > 1) Call gsum(totatm)
+  Call gsum(comm,totatm)
   If (totatm /= megatm) Call error(58)
 
 ! Record global atom indices for local sorting (configuration)
@@ -585,7 +595,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 ! Check number of atoms in system (CONFIG = FIELD)
 
   totatm=natms
-  If (mxnode > 1) Call gsum(totatm)
+  Call gsum(comm,totatm)
   If (totatm /= megatm) Call error(58)
 
 ! Record global atom indices for local sorting (configuration)
@@ -598,7 +608,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 
   exout = 1 ! It's an indicator of the end of reading.
 
-  If (idnode == 0) Write(nrite,"(1x,a)") 'HISTORY end of file reached'
+  If (comm%idnode == 0) Write(nrite,"(1x,a)") 'HISTORY end of file reached'
 
   If (io_read == IO_READ_MASTER) Then
      If (imcon == 0) Close(Unit=nconf)
@@ -608,7 +618,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
      Deallocate (bxx,byy,bzz, Stat=fail(4))
      Deallocate (cxx,cyy,czz, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'read_history deallocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'read_history deallocation failure, node: ', comm%idnode
         Call error(0)
      End If
   Else
@@ -622,7 +632,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 
 300 Continue
 
-  If (idnode == 0) Write(nrite,"(/,1x,a)") 'HISTORY data mishmash detected'
+  If (comm%idnode == 0) Write(nrite,"(/,1x,a)") 'HISTORY data mishmash detected'
   exout = -1 ! It's an indicator of the end of reading.
   If (io_read == IO_READ_MASTER) Then
      If (imcon == 0) Close(Unit=nconf)
@@ -632,7 +642,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
      Deallocate (bxx,byy,bzz, Stat=fail(4))
      Deallocate (cxx,cyy,czz, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'read_history deallocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'read_history deallocation failure, node: ', comm%idnode
         Call error(0)
      End If
   Else
@@ -649,3 +659,5 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
   Call error(585)
 
 End Subroutine read_history
+
+End Module history

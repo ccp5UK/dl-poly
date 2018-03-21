@@ -1,4 +1,4 @@
-Module poisson_module
+Module poisson
 
   Use kinds, Only : wp
   Use comms, Only : gsum, comms_type,wp_mpi,ExchgGrid_tag
@@ -1675,4 +1675,4 @@ Contains
 
   End Subroutine poisson_frzn_forces
 
-End Module poisson_module
+End Module poisson
