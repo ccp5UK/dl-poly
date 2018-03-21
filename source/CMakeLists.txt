@@ -29,7 +29,6 @@ control.F90
 ffield.F90
 history.F90
 halo.F90
-regauss_temperature.F90
 report_topology.F90
 rigid_bodies_coms.F90
 rigid_bodies_move.F90
@@ -41,7 +40,6 @@ rigid_bodies_tags.F90
 rigid_bodies_widths.F90
 rsd_write.F90
 scale_config.F90
-scale_temperature.F90
 scan_config.F90
 scan_control.F90
 scan_control_io.F90
@@ -49,7 +47,6 @@ scan_control_pre.F90
 scan_field.F90
 set_bounds.F90
 set_halo_particles.F90
-set_temperature.F90
 spme_container.F90
 coul_spole.F90
 statistics_collect.F90
@@ -119,9 +116,9 @@ inversions.F90
 metal.F90
 minimise.F90
 poisson.F90
-
 setup_module.F90
 parse_module.F90
+temperature.F90
 development_module.F90
 domains_module.F90
 site_module.F90
