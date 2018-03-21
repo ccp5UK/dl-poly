@@ -30,14 +30,6 @@ ffield.F90
 history.F90
 halo.F90
 report_topology.F90
-rigid_bodies_coms.F90
-rigid_bodies_move.F90
-rigid_bodies_quench.F90
-rigid_bodies_setup.F90
-rigid_bodies_split_torque.F90
-rigid_bodies_stress.F90
-rigid_bodies_tags.F90
-rigid_bodies_widths.F90
 rsd_write.F90
 scale_config.F90
 scan_config.F90
@@ -127,7 +119,7 @@ vdw_module.F90
 tersoff_module.F90
 three_body_module.F90
 z_density_module.F90
-rigid_bodies_module.F90
+rigid_bodies.F90
 tethers_module.F90
 langevin_module.F90
 statistics_module.F90
