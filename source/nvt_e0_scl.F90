@@ -10,8 +10,8 @@ Subroutine nvt_e0_scl(isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use comms_module,  Only : mxnode,gsum
+  Use kinds, Only : wp
+  Use comms,  Only : comms_type, gsu,
   Use setup_module,  Only : mxatms
   Use configuration, Only : natms,weight
 

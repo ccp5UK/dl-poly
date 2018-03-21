@@ -26,7 +26,7 @@ Subroutine report_topology               &
   Use core_shell
 
   Use constraints
-  Use pmf_module
+  Use pmf
 
   Use rigid_bodies_module
 
@@ -34,8 +34,8 @@ Subroutine report_topology               &
 
   Use bonds_module
   Use angles_module
-  Use dihedrals_module
-  Use inversions_module
+  Use dihedrals
+  Use inversions
 
   Implicit None
 

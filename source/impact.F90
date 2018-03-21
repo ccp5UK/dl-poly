@@ -1,4 +1,23 @@
-Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
+Module impacts
+  Use kinds, Only : wp
+  Use setup_module,        Only : eu_ev
+  Use comms,               Only : comms_type,gcheck
+  Use configuration,       Only : natms,nlast,nfree,          &
+                                  lfrzn,lfree,lstfre,lsi,lsa, &
+                                  weight,vxx,vyy,vzz
+  Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd, &
+                                  rgdvxx,rgdvyy,rgdvzz
+  Use core_shell,   Only : ntshl,listshl
+  Use kinetics,      Only : getvom,l_vom,chvom
+
+  Implicit None
+  
+  Private
+  Public :: impact
+  
+  Contains
+
+Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -9,22 +28,10 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use setup_module,        Only : eu_ev
-  Use comms_module,        Only : mxnode,gcheck
-  Use configuration,       Only : natms,nlast,nfree,          &
-                                  lfrzn,lfree,lstfre,lsi,lsa, &
-                                  weight,vxx,vyy,vzz
-  Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd, &
-                                  rgdvxx,rgdvyy,rgdvzz
-  Use core_shell,   Only : ntshl,listshl
-  Use kinetic_module,      Only : getvom,l_vom,chvom
-
-  Implicit None
 
   Integer,           Intent( In    ) :: imd,megrgd
   Real( Kind = wp ), Intent( In    ) :: emd,vmx,vmy,vmz
-
+  Type( comms_type ), Intent( InOut ) :: comm
   Logical           :: safe = .true.
 
   Integer           :: local_index,i,j,irgd,jrgd,lrgd,rgdtyp
@@ -45,7 +52,7 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
      End If
   End If
 
-  If (mxnode > 1) Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Call error(610)
 
   Call chvom(.true.) ! Enable COM momentum removal
@@ -53,7 +60,7 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
 ! remove centre of mass motion
 
   If (megrgd > 0) Then
-     Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz)
+     Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,comm)
 
      Do j=1,nfree
         i=lstfre(j)
@@ -86,7 +93,7 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
         End If
      End Do
   Else
-     Call getvom(vom,vxx,vyy,vzz)
+     Call getvom(vom,vxx,vyy,vzz,comm)
 
      Do i=1,natms
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
@@ -100,3 +107,4 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd)
   Call chvom(l_vom) ! default to specification
 
 End Subroutine impact
+End Module impacts

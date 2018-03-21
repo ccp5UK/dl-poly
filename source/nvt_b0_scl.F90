@@ -13,7 +13,7 @@ Subroutine nvt_b0_scl(isw,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke)
   Use kinds, only : wp
   Use setup_module,   Only : mxatms
   Use configuration,  Only : natms
-  Use kinetic_module, Only : kinstress
+  Use kinetics, Only : kinstress
 
   Implicit None
 

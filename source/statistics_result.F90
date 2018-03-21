@@ -23,11 +23,11 @@ Subroutine statistics_result                                    &
   Use minimise_module,    Only : passmin
   Use core_shell,  Only : passshl
   Use constraints, Only : passcon
-  Use pmf_module,         Only : passpmf
+  Use pmf,         Only : passpmf
   Use bonds_module,       Only : ncfbnd
   Use angles_module,      Only : ncfang
-  Use dihedrals_module,   Only : ncfdih
-  Use inversions_module,  Only : ncfinv
+  Use dihedrals,   Only : ncfdih
+  Use inversions,  Only : ncfinv
   Use rdf_module,         Only : ncfrdf, l_errors_jack, l_errors_block, ncfusr
   Use z_density_module,   Only : ncfzdn
   Use statistics_module

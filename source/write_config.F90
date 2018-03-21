@@ -15,7 +15,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time)
   Use setup_module
   Use configuration, Only : cfgname,imcon,cell,natms,ltg,atmnam, &
                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use io_module,     Only : io_set_parameters,         &
+  Use io,     Only : io_set_parameters,         &
                             io_get_parameters,         &
                             io_init, io_nc_create,     &
                             io_open, io_write_record,  &
@@ -54,7 +54,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time)
   Real( Kind = wp )     :: celprp(1:10),cell_vecs(1:3,1:3)
   Real( Kind = wp )     :: lengths(1:3), angles(1:3)
 
-! Some parameters and variables needed by io_module interfaces
+! Some parameters and variables needed by io interfaces
 
   Integer                           :: fh
   Integer                           :: io_write,batsz

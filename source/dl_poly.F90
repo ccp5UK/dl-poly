@@ -54,13 +54,14 @@ Program dl_poly
 
   ! IO & DOMAINS MODULES
 
-  Use io_module
+  Use io
   Use domains_module
 
   ! SITE & CONFIG MODULES
 
   Use site_module
   Use configuration
+  Use control, Only : read_control
 
   ! VNL module
 
@@ -75,7 +76,7 @@ Program dl_poly
   Use core_shell
 
   Use constraints
-  Use pmf_module
+  Use pmf
 
   Use rigid_bodies_module
 
@@ -83,8 +84,8 @@ Program dl_poly
 
   Use bonds_module
   Use angles_module
-  Use dihedrals_module
-  Use inversions_module
+  Use dihedrals
+  Use inversions
 
   Use mpoles_module
 
@@ -108,11 +109,11 @@ Program dl_poly
 
   ! MSD MODULE
 
-  Use msd_module
+  Use msd
 
   ! KINETIC MODULE
 
-  Use kinetic_module
+  Use kinetics
 
   ! LANGEVIN MODULE
 
@@ -120,7 +121,7 @@ Program dl_poly
 
   ! TWO-TEMPERATURE MODEL MODULES
 
-  Use ttm_module
+  Use ttm
   Use ttm_utils
 
   ! MAIN PROGRAM VARIABLES

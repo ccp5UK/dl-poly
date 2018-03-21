@@ -6,101 +6,30 @@ build_book.F90
 build_chrm.F90
 build_excl.F90
 build_tplg.F90
-coul_cp_forces.F90
-coul_cp_mforces.F90
-coul_chrm_forces.F90
-coul_dddp_forces.F90
-coul_dddp_mforces.F90
-coul_fscp_forces.F90
-coul_fscp_mforces.F90
-coul_rfp_forces.F90
-coul_rfp_mforces.F90
-d_ene_trq_mpoles.F90
-defects1_write.F90
 defects_link_cells.F90
-defects_reference_export.F90
-defects_reference_read.F90
-defects_reference_read_parallel.F90
-defects_reference_set_halo.F90
-defects_reference_write.F90
-defects_write.F90
-deport_atomic_data.F90
-dihedrals_14_check.F90
-dihedrals_14_vdw.F90
-dihedrals_compute.F90
-dihedrals_forces.F90
-dihedrals_table_read.F90
-dpd_thermostat.F90
-dpd_v_export.F90
-dpd_v_set_halo.F90
-error.F90
-ewald_excl_forces.F90
-ewald_excl_mforces.F90
-ewald_excl_mforces_d.F90
-ewald_frzn_forces.F90
-ewald_frzn_mforces.F90
-ewald_real_forces.F90
-ewald_real_mforces.F90
-ewald_real_mforces_d.F90
-ewald_spme_forces.F90
-ewald_spme_mforces.F90
-ewald_spme_mforces_d.F90
-exchange_grid.F90
-export_atomic_data.F90
-export_atomic_positions.F90
-external_field_apply.F90
-external_field_correct.F90
-four_body_forces.F90
+defects.F90
+deport_data.F90
+dihedrals.F90
+dpd.F90
+errors.F90
+external_field.F90
+four_body.F90
 impact.F90
-init_intra.F90
 intra_coul.F90
-intra_mcoul.F90
-inversions_compute.F90
-inversions_forces.F90
-inversions_table_read.F90
-io_module.F90
 langevin_forces.F90
-link_cell_pairs.F90
-metal_forces.F90
-metal_generate.F90
-metal_generate_erf.F90
-metal_ld_collect_eam.F90
-metal_ld_collect_fst.F90
-metal_ld_compute.F90
-metal_ld_export.F90
-metal_ld_set_halo.F90
-metal_lrc.F90
-metal_table_derivatives.F90
-metal_table_read.F90
-minimise_relax.F90
-mpoles_container.F90
-mpoles_rotmat_export.F90
-mpoles_rotmat_set_halo.F90
-msd_write.F90
+link_cells.F90
 numerics.F90
 mm3lrc.F90
 origin_config.F90
-pass_shared_units.F90
-pmf_coms.F90
-pmf_pseudo_bonds.F90
-pmf_quench.F90
-pmf_tags.F90
-pmf_units_set.F90
-pmf_vcoms.F90
-quaternions_container.F90
-rdf_collect.F90
-rdf_compute.F90
-rdf_excl_collect.F90
-rdf_frzn_collect.F90
-read_config.F90
-read_config_parallel.F90
-read_control.F90
-read_field.F90
-read_history.F90
-read_mpoles.F90
-refresh_halo_positions.F90
+shared_units.F90
+pmf.F90
+quaternions.F90
+rdfs.F90
+control.F90
+ffield.F90
+history.F90
+halo.F90
 regauss_temperature.F90
-relocate_particles.F90
 report_topology.F90
 rigid_bodies_coms.F90
 rigid_bodies_move.F90
@@ -122,6 +51,7 @@ set_bounds.F90
 set_halo_particles.F90
 set_temperature.F90
 spme_container.F90
+coul_spole.F90
 statistics_collect.F90
 statistics_connect_frames.F90
 statistics_connect_set.F90
@@ -143,7 +73,6 @@ ttm_table_scan.F90
 ttm_thermal_diffusion.F90
 trajectory_write.F90
 two_body_forces.F90
-update_shared_units.F90
 usr_collect.F90
 usr_compute.F90
 vaf_collect.F90
@@ -163,52 +92,51 @@ z_density_collect.F90
 z_density_compute.F90
 zbl.F90
 zero_k_optimise.F90
+
 )
 
 set(dlpoly_CORE_SRCS
 kinds.F90
 comms.F90
+configuration.F90
+io.F90
+mpole.F90
+core_shell.F90
+kinetics.F90
+msd.F90
+ewald.F90
+mpoles_container.F90
+ttm.F90
+ttm_utils.F90
+ttm_track.F90
+angles.F90
+bonds.F90
+constraints.F90
+coul_mpoles.F90
+ewald_spole.F90
+ewald_mpoles.F90
+inversions.F90
+metal.F90
+minimise.F90
+poisson.F90
+
 setup_module.F90
 parse_module.F90
 development_module.F90
 domains_module.F90
 site_module.F90
-configuration.F90
 vnl_module.F90
-defects_module.F90
-defects1_module.F90
-dpd_module.F90
-ewald_module.F90
-mpoles_module.F90
-poisson_module.F90
 vdw_module.F90
-metal_module.F90
 tersoff_module.F90
 three_body_module.F90
-four_body_module.F90
-rdf_module.F90
 z_density_module.F90
-core_shell.F90
-constraints.F90
-pmf_module.F90
 rigid_bodies_module.F90
 tethers_module.F90
-bonds.F90
-angles.F90
-dihedrals_module.F90
-inversions_module.F90
-external_field_module.F90
 langevin_module.F90
-minimise_module.F90
-msd_module.F90
 statistics_module.F90
 greenkubo_module.F90
-kinetic_module.F90
 gpfa_module.F90
 parallel_fft.F90
-ttm_module.F90
-ttm_utils.F90
-ttm_track_module.F90
 )
 if(BUILDER)
   set_property(SOURCE development_module.F90 APPEND PROPERTY
@@ -224,27 +152,27 @@ nvt_e0_scl.F90
 nvt_e1_scl.F90
 )
 
-set(netcdf_SRCS netcdf_module.F90)
+set(netcdf_SRCS netcdf.F90)
 set(kim_SRCS kim_module.F90)
-set(plumed_SRCS plumed_module.F90)
+set(plumed_SRCS plumed.F90)
 
 if( NOT WITH_MPI)
   set(dlpoly_SERIAL_SRCS ${src_dir}/SERIAL/mpi_api.F90)
 endif()
 
-add_library(dlpoly ${dlpoly_SRCS} ${netcdf_SRCS})
-if(WITH_NETCDF)
-  set_target_properties(dlpoly PROPERTIES
-    COMPILE_DEFINITIONS "NETCDF"
-    )
-endif()
+add_library(dlpoly ${dlpoly_SRCS})
 
-add_library(dlpolycore ${dlpoly_CORE_SRCS} ${dlpoly_SERIAL_SRCS})
+add_library(dlpolycore ${dlpoly_CORE_SRCS} ${dlpoly_SERIAL_SRCS} ${netcdf_SRCS})
 if( NOT WITH_MPI)
   set_target_properties(dlpolycore PROPERTIES
      COMPILE_DEFINITIONS "SERIAL"
      INCLUDE_DIR ${src_dir}/SERIAL
      )
+endif()
+if(WITH_NETCDF)
+  set_target_properties(dlpolycore PROPERTIES
+    COMPILE_DEFINITIONS "NETCDF"
+    )
 endif()
 add_library(dlpolythermo  ${dlpoly_THERMO_SRCS})
 add_library(dlpolykim  ${kim_SRCS})
@@ -263,8 +191,8 @@ endif()
 link_directories (${LIBRARY_OUTPUT_PATH})
 add_subdirectory(VV)
 target_link_libraries(dlpolykim dlpolycore)
-target_link_libraries(dlpolyplumed dlpolycore)
 target_link_libraries(dlpolythermo dlpolycore)
+target_link_libraries(dlpolyplumed dlpolycore)
 target_link_libraries(dlpoly dlpolycore dlpolykim dlpolyplumed)
 add_executable(${target_name} dl_poly.F90)
 set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${OMP_LINK_FLAGS} ${MIC_LINK_FLAGS}")

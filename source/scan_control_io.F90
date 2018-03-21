@@ -16,7 +16,7 @@ Subroutine scan_control_io()
                             control,output,field,config,statis, &
                             history,historf,revive,revcon,revold
   Use parse_module,  Only : get_line,get_word,lower_case,strip_blanks,word_2_real
-  Use io_module,     Only : io_set_parameters,        &
+  Use io,     Only : io_set_parameters,        &
                             io_get_parameters,        &
                             io_nc_set_real_precision, &
                             io_nc_compiled,           &

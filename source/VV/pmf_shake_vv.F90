@@ -20,7 +20,7 @@ Subroutine pmf_shake_vv          &
   Use comms_module,  Only : idnode,mxnode,gsync,gcheck,gsum
   Use setup_module
   Use configuration, Only : natms,lfrzn
-  Use pmf_module
+  Use pmf
 
   Implicit None
 

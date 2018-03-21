@@ -24,8 +24,8 @@ Subroutine system_init                                             &
   Use z_density_module,   Only : ncfzdn,zdens
   Use bonds_module,       Only : ldfbnd,ncfbnd,dstbnd
   Use angles_module,      Only : ldfang,ncfang,dstang
-  Use dihedrals_module,   Only : ldfdih,ncfdih,dstdih
-  Use inversions_module,  Only : ldfinv,ncfinv,dstinv
+  Use dihedrals,   Only : ldfdih,ncfdih,dstdih
+  Use inversions,  Only : ldfinv,ncfinv,dstinv
   Use vdw_module,         Only : ls_vdw,ntpvdw
   Use metal_module,       Only : ntpmet
   Use greenkubo_module,   Only : nsvaf,vafsamp,vafcount,vafstep, &

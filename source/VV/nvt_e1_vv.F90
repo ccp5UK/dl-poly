@@ -30,7 +30,7 @@ Subroutine nvt_e1_vv                          &
   Use kinetic_module,     Only : kinstresf,kinstrest
   Use core_shell_module,  Only : legshl
   Use constraints_module, Only : passcon
-  Use pmf_module,         Only : passpmf
+  Use pmf,         Only : passpmf
 
   Implicit None
 

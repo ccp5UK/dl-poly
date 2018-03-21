@@ -25,7 +25,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
                             atmnam,xxx,yyy,zzz
   Use parse_module,  Only : tabs_2_blanks, get_word, strip_blanks, &
                             lower_case, word_2_real
-  Use io_module,     Only : io_set_parameters,        &
+  Use io,     Only : io_set_parameters,        &
                             io_get_parameters,        &
                             io_init, io_nc_create,    &
                             io_open, io_write_record, &
@@ -65,7 +65,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
                             xyz0(1:3), x1(1:1),y1(1:1),z1(1:1), &
                             cell_vecs(1:3,1:3), lengths(1:3), angles(1:3)
 
-! Some parameters and variables needed by io_module interfaces
+! Some parameters and variables needed by io interfaces
 
   Integer                           :: fh, io_write
   Character( Len = recsz )          :: record2, record3

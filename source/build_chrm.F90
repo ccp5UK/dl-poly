@@ -19,12 +19,12 @@ Module build_chrm
 
   Use bonds
   Use angles
-  Use dihedrals_module
-  Use inversions_module
+  Use dihedrals
+  Use inversions
 
   ! MULTIPOLES MODULE
 
-  Use mpoles_module, Only : keyind,lchatm ! equivalent to lexatm in configuration
+  Use mpole, Only : keyind,lchatm ! equivalent to lexatm in configuration
 
   Implicit None
 

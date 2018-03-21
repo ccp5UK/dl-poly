@@ -23,8 +23,8 @@ Subroutine system_revive                                      &
   Use z_density_module,   Only : ncfzdn,zdens
   Use bonds_module,       Only : ldfbnd,ncfbnd,dstbnd
   Use angles_module,      Only : ldfang,ncfang,dstang
-  Use dihedrals_module,   Only : ldfdih,ncfdih,dstdih
-  Use inversions_module,  Only : ldfinv,ncfinv,dstinv
+  Use dihedrals,   Only : ldfdih,ncfdih,dstdih
+  Use inversions,  Only : ldfinv,ncfinv,dstinv
   Use greenkubo_module,   Only : nsvaf,vafsamp,vafcount,vafstep, &
                                  vxi,vyi,vzi,vafdata,vaf,vaftime
 

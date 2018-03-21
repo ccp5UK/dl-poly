@@ -13,12 +13,12 @@ Module build_tplg
 
   Use bonds
   Use angles
-  Use dihedrals_module
-  Use inversions_module
+  Use dihedrals
+  Use inversions
 
   ! MULTIPOLES MODULE
 
-  Use mpoles_module, Only : ltpatm ! equivalent to lexatm in configuration
+  Use mpole, Only : ltpatm ! equivalent to lexatm in configuration
 
   Implicit None
 
