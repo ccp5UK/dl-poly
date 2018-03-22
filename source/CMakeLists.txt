@@ -31,10 +31,7 @@ history.F90
 halo.F90
 temperature.F90
 rsds.F90
-scale_config.F90
 bounds.F90
-spme_container.F90
-coul_spole.F90
 statistics_collect.F90
 statistics_connect_frames.F90
 statistics_connect_set.F90
@@ -75,6 +72,8 @@ z_density_collect.F90
 z_density_compute.F90
 zbl.F90
 zero_k_optimise.F90
+spme_container.F90
+coul_spole.F90
 )
 
 set(dlpoly_CORE_SRCS
