@@ -16,7 +16,7 @@ Module dpd
   Use configuration,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
                                   list,weight,xxx,yyy,zzz,vxx,vyy,vzz, &
                                   fxx,fyy,fzz, ixyz
-  Use rigid_bodies_module, Only : lshmv_rgd,lishp_rgd,lashp_rgd
+  Use rigid_bodies, Only : lshmv_rgd,lishp_rgd,lashp_rgd
   Use domains_module
   Use setup_module, Only : mxvdw
 #ifdef SERIAL

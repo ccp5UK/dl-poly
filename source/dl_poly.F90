@@ -69,7 +69,7 @@ Program dl_poly
 
   ! DPD module
 
-  Use dpd_module
+  Use dpd
 
   ! INTERACTION MODULES
 
@@ -78,7 +78,7 @@ Program dl_poly
   Use constraints
   Use pmf
 
-  Use rigid_bodies_module
+  Use rigid_bodies
 
   Use tethers_module
 

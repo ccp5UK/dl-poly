@@ -33,7 +33,7 @@ Subroutine npt_b1_vv                          &
   Use configuration,      Only : imcon,cell,volm,natms,nlast,nfree, &
                                  lfrzn,lstfre,weight,               &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use rigid_bodies_module
+  Use rigid_bodies
   Use kinetic_module,     Only : getvom
   Use core_shell_module,  Only : legshl
   Use constraints_module, Only : passcon

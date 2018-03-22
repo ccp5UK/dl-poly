@@ -1292,11 +1292,11 @@ Subroutine error(kode,comm)
 
      Else If (kode == 1042) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in rigid_bodies_module -> allocate_rigid_bodies_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in rigid_bodies -> allocate_rigid_bodies_arrays'
 
      Else If (kode == 1043) Then
 
-        Write(nrite,'(/,1x,a)') 'error - deallocation failure in rigid_bodies_module -> deallocate_rigid_bodies_arrays'
+        Write(nrite,'(/,1x,a)') 'error - deallocation failure in rigid_bodies -> deallocate_rigid_bodies_arrays'
 
      Else If (kode == 1044) Then
 
@@ -1400,7 +1400,7 @@ Subroutine error(kode,comm)
 
      Else If (kode == 1081) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in dpd_module -> allocate_dpd_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in dpd -> allocate_dpd_arrays'
 
      Else If (kode == 1082) Then
 

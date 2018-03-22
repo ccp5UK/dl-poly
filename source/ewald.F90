@@ -42,6 +42,8 @@ Module ewald
 
     Contains
       Private
+      Procedure :: ewald_allocate_kall_arrays
+      Procedure :: ewald_allocate_kfrz_arrays
       Procedure, Public :: check => ewald_check
       Procedure, Public :: refresh => ewald_refresh
       Final :: ewald_deallocate
@@ -100,7 +102,7 @@ Contains
 
 ! At restart allocate the "refresh" k-space frozen-frozen SPME arrays
 
-          Call ewald_allocate_kfrz_arrays(T)
+          Call T%ewald_allocate_kfrz_arrays()
 
 ! Allow copying into these arrays
 

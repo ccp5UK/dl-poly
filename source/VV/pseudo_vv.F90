@@ -26,7 +26,7 @@ Subroutine pseudo_vv                                      &
   Use setup_module,       Only : boltz,nrite,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
   Use site_module,        Only : dofsit
   Use configuration
-  Use rigid_bodies_module
+  Use rigid_bodies
   Use core_shell_module,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
   Use kinetic_module,     Only : getvom,getknr,kinstress,kinstresf,kinstrest
 

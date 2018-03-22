@@ -11,7 +11,7 @@ Module deport_data
 
   Use pmf,          Only : ntpmf,listpmf,legpmf
 
-  Use rigid_bodies_module, Only : ntrgd,listrgd,legrgd, &
+  Use rigid_bodies, Only : ntrgd,listrgd,legrgd, &
                                   q0,q1,q2,q3,          &
                                   rgdvxx,rgdvyy,rgdvzz, &
                                   rgdoxx,rgdoyy,rgdozz, &

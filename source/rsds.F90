@@ -1,17 +1,6 @@
-Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for writing RSDDAT file at selected intervals
-! in simulation
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov august 2016
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+Module rsds
   Use kinds, Only : wp, li
-  Use comms_module
+  Use comms, Only : comms_type,gbcast,RsdWrite_tag,gsum,wp_mpi,gsync
   Use setup_module
   Use configuration,     Only : cfgname,imcon,cell,natms, &
                                 atmnam,ltg,xxx,yyy,zzz
@@ -33,10 +22,31 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
                                 IO_WRITE_SORTED_NETCDF,   &
                                 IO_WRITE_SORTED_MASTER
 
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi
+#endif
   Implicit None
+
+Contains
+
+
+Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for writing RSDDAT file at selected intervals
+! in simulation
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov august 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer,           Intent( In    ) :: keyres,nsrsd,isrsd,nstep
   Real( Kind = wp ), Intent( In    ) :: rrsd,tstep,time
+  Type( comms_type ), Intent( InOut ) :: comm
 
   Integer, Parameter :: recsz = 73 ! default record size
 
@@ -88,8 +98,8 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
      lexist=.true.
      If (keyres == 1) Then
-        If (idnode == 0) Inquire(File='RSDDAT', Exist=lexist)
-        If (mxnode > 1) Call gcheck(lexist,"enforce")
+        If (comm%idnode == 0) Inquire(File='RSDDAT', Exist=lexist)
+        Call gcheck(comm,lexist,"enforce")
      Else
         lexist=.false.
      End If
@@ -99,7 +109,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 10   Continue
      If (.not.lexist) Then
 
-        If (idnode == 0) Then
+        If (comm%idnode == 0) Then
            Open(Unit=nrsddt, File='RSDDAT', Form='formatted', Access='direct', Status='replace', Recl=recsz)
            Write(Unit=nrsddt, Fmt='(a72,a1)',           Rec=1) cfgname(1:72),lf
            Write(Unit=nrsddt, Fmt='(f11.3,a19,2i21,a1)', Rec=2) rrsd,Repeat(' ',19),frm,rec,lf
@@ -113,7 +123,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
      Else
 
         safe=.true.
-        If (idnode == 0) Then
+        If (comm%idnode == 0) Then
 
            Open(Unit=nrsddt, File='RSDDAT', Form='formatted')
 
@@ -131,8 +141,8 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
                  If (word(1:Len_Trim(word)) /= 'timestep') Then
                     Call get_word(record,word) ; Call get_word(record,word)
-                    Call get_word(record,word) ; frm=Nint(word_2_real(word,0.0_wp),li)
-                    Call get_word(record,word) ; rec=Nint(word_2_real(word,0.0_wp),li)
+                    Call get_word(record,word) ; frm=Nint(word_2_real(word,comm,0.0_wp),li)
+                    Call get_word(record,word) ; rec=Nint(word_2_real(word,comm,0.0_wp),li)
                     If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
                        Go To 20 ! New style
                     Else
@@ -154,7 +164,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
                  rec=rec+Int(1,li)
 
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
-                 Call get_word(record,word) ; j=Nint(word_2_real(word))
+                 Call get_word(record,word) ; j=Nint(word_2_real(word,comm))
 
                  Do i=1,3+2*j ! 3 lines for cell parameters and 2*j entries for displacements
                     Read(Unit=nrsddt, Fmt=*, End=20)
@@ -171,7 +181,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
         End If
 
-        If (mxnode > 1) Call gcheck(safe,"enforce")
+        Call gcheck(comm,safe,"enforce")
         If (.not.safe) Then
            lexist=.false.
 
@@ -179,11 +189,11 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
            frm=Int(0,li)
 
            Go To 10
-        Else If (mxnode > 1) Then
+        Else If (comm%mxnode > 1) Then
            buffer(1)=Real(frm,wp)
            buffer(2)=Real(rec,wp)
 
-           Call MPI_BCAST(buffer(1:2), 2, wp_mpi, 0, dlp_comm_world, ierr)
+           Call gbcast(comm,buffer,0)
 
            frm=Nint(buffer(1),li)
            rec=Nint(buffer(2),li)
@@ -196,7 +206,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
   Allocate (nam(1:mxatms),ind(1:mxatms),dr(1:mxatms),  Stat=fail(1))
   Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'rsd_write allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'rsd_write allocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
@@ -217,20 +227,20 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 ! Sum global displacements values
 
   megn = n
-  If (mxnode > 1) Call gsum(megn)
+  Call gsum(comm,megn)
 
 ! Get relative offsets for parallel printing
 
-  Allocate (n_n(0:mxnode),          Stat=fail(1))
+  Allocate (n_n(0:comm%mxnode),          Stat=fail(1))
   Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'rsd_write allocation failure 2, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'rsd_write allocation failure 2, node: ', comm%idnode
      Call error(0)
   End If
 
-  n_n=0 ; n_n(idnode+1)=n
-  If (mxnode > 1) Call gsum(n_n)
-  n_n(0)=Sum(n_n(0:idnode))
+  n_n=0 ; n_n(comm%idnode+1)=n
+  Call gsum(comm,n_n)
+  n_n(0)=Sum(n_n(0:comm%idnode))
 
   chbat=' '
 
@@ -254,7 +264,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
      rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
      j=0
-     If (idnode == 0) Then
+     If (comm%idnode == 0) Then
 
         Call io_set_parameters( user_comm = MPI_COMM_SELF )
         Call io_init( recsz )
@@ -294,16 +304,16 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
         j=j+5
 
      End If
-     Call gsync()
+     Call gsync(comm)
 
 ! Start of file
 
      rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(j,MPI_OFFSET_KIND)+Int(2,MPI_OFFSET_KIND)*Int(n_n(0),MPI_OFFSET_KIND)
      j=0
 
-     Call io_set_parameters( user_comm = dlp_comm_world )
+     Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, dlp_comm_world, 'RSDDAT', MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, 'RSDDAT', MPI_MODE_WRONLY, fh )
 
      Do i=1,n
         Write(record, Fmt='(a8,i10,f11.3,a43,a1)') nam(i),ind(i),dr(i),Repeat(' ',43),lf
@@ -330,7 +340,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 ! Update and save offset pointer
 
      rec=rec+Int(5,li)+Int(2,li)*Int(megn,li)
-     If (idnode == 0) Then
+     If (comm%idnode == 0) Then
         Write(record, Fmt='(f11.3,a19,2i21,a1)') rrsd,Repeat(' ',19),frm,rec,lf
         Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record )
      End If
@@ -344,7 +354,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
      Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(2))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'rsd_write allocation failure 3, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'rsd_write allocation failure 3, node: ', comm%idnode
         Call error(0)
      End If
 
@@ -352,7 +362,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 ! Start of file
 
      j=0
-     If (idnode == 0) Then
+     If (comm%idnode == 0) Then
         Open(Unit=nrsddt, File='RSDDAT', Form='formatted', Access='direct', Recl=recsz)
 
 ! Accumulate header
@@ -397,19 +407,19 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
         jatms=n
         ready=.true.
-        Do jdnode=0,mxnode-1
+        Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,RsdWrite_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,RsdWrite_tag,comm%comm,comm%ierr)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,RsdWrite_tag,dlp_comm_world,status,ierr)
+              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,RsdWrite_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,RsdWrite_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(dr,jatms,wp_mpi,jdnode,RsdWrite_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(dr,jatms,wp_mpi,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
 
-                 Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,RsdWrite_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(byy,jatms,wp_mpi,jdnode,RsdWrite_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,RsdWrite_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(byy,jatms,wp_mpi,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
               End If
            End If
 
@@ -444,17 +454,17 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,RsdWrite_tag,dlp_comm_world,status,ierr)
+        Call MPI_RECV(ready,1,MPI_LOGICAL,0,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
 
-        Call MPI_SEND(n,1,MPI_INTEGER,0,RsdWrite_tag,dlp_comm_world,ierr)
+        Call MPI_SEND(n,1,MPI_INTEGER,0,RsdWrite_tag,comm%comm,comm%ierr)
         If (n > 0) Then
-           Call MPI_SEND(nam,8*n,MPI_CHARACTER,0,RsdWrite_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(ind,n,MPI_INTEGER,0,RsdWrite_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(dr,n,wp_mpi,0,RsdWrite_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(nam,8*n,MPI_CHARACTER,0,RsdWrite_tag,comm%comm,comm%ierr)
+           Call MPI_SEND(ind,n,MPI_INTEGER,0,RsdWrite_tag,comm%comm,comm%ierr)
+           Call MPI_SEND(dr,n,wp_mpi,0,RsdWrite_tag,comm%comm,comm%ierr)
 
-           Call MPI_SEND(axx,n,wp_mpi,0,RsdWrite_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(ayy,n,wp_mpi,0,RsdWrite_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(azz,n,wp_mpi,0,RsdWrite_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(axx,n,wp_mpi,0,RsdWrite_tag,comm%comm,comm%ierr)
+           Call MPI_SEND(ayy,n,wp_mpi,0,RsdWrite_tag,comm%comm,comm%ierr)
+           Call MPI_SEND(azz,n,wp_mpi,0,RsdWrite_tag,comm%comm,comm%ierr)
         End If
 
 ! Save offset pointer
@@ -466,26 +476,27 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
      Deallocate (chbuf,iwrk,  Stat=fail(1))
      Deallocate (bxx,byy,bzz, Stat=fail(2))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'rsd_write deallocation failure 3, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'rsd_write deallocation failure 3, node: ', comm%idnode
         Call error(0)
      End If
 
   End If
 
-  If (mxnode > 1) Call gsync()
+  Call gsync(comm)
 
   Deallocate (n_n,   Stat=fail(1))
   Deallocate (chbat, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'rsd_write deallocation failure 2, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'rsd_write deallocation failure 2, node: ', comm%idnode
      Call error(0)
   End If
 
   Deallocate (nam,ind,dr,  Stat=fail(1))
   Deallocate (axx,ayy,azz, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'rsd_write deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'rsd_write deallocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
 End Subroutine rsd_write
+End Module rsds

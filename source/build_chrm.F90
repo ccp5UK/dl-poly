@@ -15,7 +15,7 @@ Module build_chrm
 
   Use constraints
 
-  Use rigid_bodies_module
+  Use rigid_bodies
 
   Use bonds
   Use angles

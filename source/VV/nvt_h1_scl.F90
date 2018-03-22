@@ -21,7 +21,7 @@ Subroutine nvt_h1_scl &
   Use kinds, only : wp
   Use setup_module
   Use configuration,       Only : nfree,lstfre
-  Use rigid_bodies_module, Only : ntrgd
+  Use rigid_bodies, Only : ntrgd
   Use kinetic_module,      Only : getknf,getknt,getknr
 
   Implicit None

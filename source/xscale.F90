@@ -15,7 +15,7 @@ Subroutine xscale(m_rgd,keyens,tstep,eta)
   Use configuration,       Only : imcon,cell,natms,nlast,nfree,lstfre,lsi,lsa
   Use vnl_module,          Only : llvnl,l_vnl,xbg,ybg,zbg
   Use statistics_module,   Only : xin,yin,zin
-  Use rigid_bodies_module, Only : ntrgd,listrgd,indrgd,lshmv_rgd,lishp_rgd,lashp_rgd
+  Use rigid_bodies, Only : ntrgd,listrgd,indrgd,lshmv_rgd,lishp_rgd,lashp_rgd
   Use kinetics,      Only : getcom
 
   Implicit None

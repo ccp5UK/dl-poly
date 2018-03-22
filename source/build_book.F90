@@ -19,7 +19,7 @@ Module build_book
   Use constraints
   Use pmf
 
-  Use rigid_bodies_module
+  Use rigid_bodies
 
   Use tethers_module
 
@@ -1617,7 +1617,7 @@ Subroutine build_book_intra             &
 
 ! Set RB particulars and quaternions
 
-     If (m_rgd > 0) Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,megrgd,degtra,degrot)
+     If (m_rgd > 0) Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,megrgd,degtra,degrot,comm)
 
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
@@ -1650,9 +1650,9 @@ Subroutine build_book_intra             &
 
 ! Tag RBs, find their COMs and check their widths to rcut (system cutoff)
 
-     Call rigid_bodies_tags()
-     Call rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
-     Call rigid_bodies_widths(rcut)
+     Call rigid_bodies_tags(comm)
+     Call rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz,comm)
+     Call rigid_bodies_widths(rcut,comm)
 
   End If
 

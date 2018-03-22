@@ -29,16 +29,10 @@ control.F90
 ffield.F90
 history.F90
 halo.F90
-report_topology.F90
-rsd_write.F90
+temperature.F90
+rsds.F90
 scale_config.F90
-scan_config.F90
-scan_control.F90
-scan_control_io.F90
-scan_control_pre.F90
-scan_field.F90
-set_bounds.F90
-set_halo_particles.F90
+bounds.F90
 spme_container.F90
 coul_spole.F90
 statistics_collect.F90
@@ -81,7 +75,6 @@ z_density_collect.F90
 z_density_compute.F90
 zbl.F90
 zero_k_optimise.F90
-
 )
 
 set(dlpoly_CORE_SRCS
@@ -110,7 +103,6 @@ minimise.F90
 poisson.F90
 setup_module.F90
 parse_module.F90
-temperature.F90
 development_module.F90
 domains_module.F90
 site_module.F90

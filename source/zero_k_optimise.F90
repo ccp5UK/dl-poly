@@ -31,7 +31,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot)
   Use setup_module,   Only : mxrgd,mxlrgd,nrite
   Use configuration,  Only : imcon,cell,natms,nfree,lfrzn,lstfre,weight, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use rigid_bodies_module
+  Use rigid_bodies
   Use kinetics, Only : getcom,getvom,getkin,getknf,getknt,getknr, &
                              kinstress,kinstresf,kinstrest
 

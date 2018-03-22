@@ -5,7 +5,7 @@ Module impacts
   Use configuration,       Only : natms,nlast,nfree,          &
                                   lfrzn,lfree,lstfre,lsi,lsa, &
                                   weight,vxx,vyy,vzz
-  Use rigid_bodies_module, Only : ntrgd,rgdfrz,listrgd,indrgd, &
+  Use rigid_bodies, Only : ntrgd,rgdfrz,listrgd,indrgd, &
                                   rgdvxx,rgdvyy,rgdvzz
   Use core_shell,   Only : ntshl,listshl
   Use kinetics,      Only : getvom,l_vom,chvom

@@ -34,7 +34,7 @@ Subroutine statistics_collect             &
   Use site_module,    Only : ntpatm,numtypnf
   Use configuration,  Only : cfgname,imcon,cell,volm,natms,ltype, &
                              xxx,yyy,zzz,vxx,vyy,vzz
-  Use dpd_module,     Only : virdpd
+  Use dpd,     Only : virdpd
   Use statistics_module
   Use msd_module
 

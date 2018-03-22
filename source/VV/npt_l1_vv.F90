@@ -36,7 +36,7 @@ Subroutine npt_l1_vv                          &
   Use configuration,      Only : imcon,cell,volm,natms,nlast,nfree,  &
                                  lsi,lsa,lfrzn,lstfre,weight,        &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use rigid_bodies_module
+  Use rigid_bodies
   Use langevin_module,    Only : fxl,fyl,fzl,fpl
   Use kinetic_module,     Only : getvom,getknf,getknt,getknr, &
                                  kinstresf,kinstrest

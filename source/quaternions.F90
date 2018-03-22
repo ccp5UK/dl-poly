@@ -3,7 +3,7 @@ Module quaternions
   Use comms,       Only : comms_type,gmax,gsum
   Use setup_module
   Use configuration,      Only : imcon,cell,xxx,yyy,zzz
-  Use rigid_bodies_module
+  Use rigid_bodies
 
   Implicit None
 

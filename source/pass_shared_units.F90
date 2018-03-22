@@ -6,7 +6,7 @@ Subroutine pass_shared_units &
 ! dl_poly_4 subroutine for passing information about units between nodes
 ! and compressing list_u if needed
 !
-! Note (A): 'Use rigid_bodies_module' is only used when RB compression
+! Note (A): 'Use rigid_bodies' is only used when RB compression
 !           occurs in order to compress q., p., rgdv.. & rgdo.. arrays.
 !           RBs are detected by b_l=-1!
 !
@@ -25,7 +25,7 @@ Subroutine pass_shared_units &
   Use setup_module
   Use domains_module,      Only : map,mop
   Use configuration,       Only : natms,nlast,lsi,lsa
-  Use rigid_bodies_module, Only : q0,q1,q2,q3,          &
+  Use rigid_bodies, Only : q0,q1,q2,q3,          &
                                   rgdvxx,rgdvyy,rgdvzz, &
                                   rgdoxx,rgdoyy,rgdozz
 

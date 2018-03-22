@@ -25,7 +25,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
                                   atmnam,xxx,yyy,zzz
   Use core_shell,   Only : numshl,lstshl
   Use constraints,  Only : numcon,lstcon
-  Use rigid_bodies_module, Only : numrgd,lstrgd
+  Use rigid_bodies, Only : numrgd,lstrgd
   Use bonds_module,        Only : numbonds,lstbnd,keybnd
   Use angles_module,       Only : numang,lstang,keyang
   Use dihedrals,    Only : numdih,lstdih

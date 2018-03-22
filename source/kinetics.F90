@@ -28,7 +28,7 @@ Module kinetics
   Use setup_module,  Only : nrite,zero_plus,mxatms,mxrgd,boltz
   Use configuration, Only : imcon,cell,natms,ltg,lfrzn,xxx,yyy,zzz,weight,&
                             nfree, lstfre, vxx,vyy,vzz,fxx,fyy,fzz
-  Use rigid_bodies_module, Only : ntrgd,rgdfrz,rgdwgt,listrgd,indrgd, &
+  Use rigid_bodies, Only : ntrgd,rgdfrz,rgdwgt,listrgd,indrgd, &
                                    rgdrix,rgdriy,rgdriz
   Implicit None
 

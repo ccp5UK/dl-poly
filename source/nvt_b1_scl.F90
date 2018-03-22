@@ -17,7 +17,7 @@ Subroutine nvt_b1_scl &
   Use setup_module,        Only : mxatms,mxrgd
   Use configuration,       Only : nfree,lstfre
   Use kinetics,      Only : kinstresf,kinstrest,getknr
-  Use rigid_bodies_module, Only : ntrgd
+  Use rigid_bodies, Only : ntrgd
 
   Implicit None
 

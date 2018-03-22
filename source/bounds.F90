@@ -1,6 +1,28 @@
+Module bounds
+  Use kinds, Only : wp
+  Use comms,       Only : comms_type
+  Use setup_module
+  Use domains_module,     Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
+  Use configuration,      Only : imcon,imc_n,cfgname,cell,volm
+  Use vnl_module,         Only : llvnl ! Depends on l_str,lsim & rpad
+  Use msd
+  Use rdfs,         Only : rusr
+  Use kim_module,         Only : kim
+  Use bonds,       Only : rcbnd
+  Use tersoff_module,     Only : potter
+  Use development_module, Only : l_trm
+  Use greenkubo_module,   Only : vafsamp
+  Use mpole,      Only : keyind,induce
+  Use ttm,         Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
+
+  Implicit None
+
+Contains
+
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-           dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width)
+           dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce, &
+           alpha,width,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -15,28 +37,11 @@ Subroutine set_bounds                                 &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use comms_module,       Only : idnode,mxnode
-  Use setup_module
-  Use domains_module,     Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
-  Use configuration,      Only : imcon,imc_n,cfgname,cell,volm
-  Use vnl_module,         Only : llvnl ! Depends on l_str,lsim & rpad
-  Use msd_module
-  Use rdf_module,         Only : rusr
-  Use kim_module,         Only : kim
-  Use bonds_module,       Only : rcbnd
-  Use tersoff_module,     Only : potter
-  Use development_module, Only : l_trm
-  Use greenkubo_module,   Only : vafsamp
-  Use mpoles_module,      Only : keyind,induce
-  Use ttm_module,         Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
-
-  Implicit None
-
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_e,l_n_v,l_ind
   Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rpad,rlnk
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
+  Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
   Integer           :: megatm,ilx,ily,ilz,qlx,qly,qlz, &
@@ -167,17 +172,17 @@ Subroutine set_bounds                                 &
 
 ! maximum number of core-shell units per node
 
-  If (mxshl > 0 .and. mxnode > 1) Then
-     mxshl = Max(mxshl,mxnode*mtshl)
-     mxshl = (3*(Nint(fdvar*Real(mxshl,wp))+mxnode-1))/mxnode
+  If (mxshl > 0 .and. comm%mxnode > 1) Then
+     mxshl = Max(mxshl,comm%mxnode*mtshl)
+     mxshl = (3*(Nint(fdvar*Real(mxshl,wp))+comm%mxnode-1))/comm%mxnode
   End If
 
 
 ! maximum number of constraints per node
 
-  If (mxcons > 0 .and. mxnode > 1) Then
-     mxcons = Max(mxcons,mxnode*mtcons)
-     mxcons = (3*(Nint(fdvar*Real(mxcons,wp))+mxnode-1))/mxnode
+  If (mxcons > 0 .and. comm%mxnode > 1) Then
+     mxcons = Max(mxcons,comm%mxnode*mtcons)
+     mxcons = (3*(Nint(fdvar*Real(mxcons,wp))+comm%mxnode-1))/comm%mxnode
   End If
 
 
@@ -188,9 +193,9 @@ Subroutine set_bounds                                 &
 
 ! maximum number of RBs per node
 
-  If (mxrgd > 0 .and. mxnode > 1) Then
-     mxrgd = Max(mxrgd,mxnode*mtrgd)
-     mxrgd = (3*(Nint(fdvar*Real(mxrgd,wp))+mxnode-1))/mxnode
+  If (mxrgd > 0 .and. comm%mxnode > 1) Then
+     mxrgd = Max(mxrgd,comm%mxnode*mtrgd)
+     mxrgd = (3*(Nint(fdvar*Real(mxrgd,wp))+comm%mxnode-1))/comm%mxnode
   End If
 
 
@@ -198,7 +203,7 @@ Subroutine set_bounds                                 &
 ! Max=Max#(members-per-unit)*Max#(units-per-domain)/2
 ! and maximum number of neighbouring domains/nodes in 3D DD (3^3 - 1)
 
-  If (mxnode > 1) Then
+  If (comm%mxnode > 1) Then
      mxlshp = Max((2*mxshl)/2,(2*mxcons)/2,(mxlrgd*mxrgd)/2)
      mxproc = 26
   Else ! nothing is to be shared on one node
@@ -210,9 +215,9 @@ Subroutine set_bounds                                 &
 ! maximum number of tethered atoms per node and tether potential parameters
 
   If (mxteth > 0) Then
-     If (mxnode > 1) Then
-        mxteth = Max(mxteth,mxnode*mtteth)
-        mxteth = (3*(Nint(fdvar*Real(mxteth,wp))+mxnode-1))/mxnode
+     If (comm%mxnode > 1) Then
+        mxteth = Max(mxteth,comm%mxnode*mtteth)
+        mxteth = (3*(Nint(fdvar*Real(mxteth,wp))+comm%mxnode-1))/comm%mxnode
      End If
      mxpteth = 3
   Else
@@ -223,9 +228,9 @@ Subroutine set_bounds                                 &
 ! maximum number of chemical bonds per node and bond potential parameters
 
   If (mxbond > 0) Then
-     If (mxnode > 1) Then
-        mxbond = Max(mxbond,mxnode*mtbond)
-        mxbond = (3*(Nint(fdvar*Real(mxbond,wp))+mxnode-1))/mxnode
+     If (comm%mxnode > 1) Then
+        mxbond = Max(mxbond,comm%mxnode*mtbond)
+        mxbond = (3*(Nint(fdvar*Real(mxbond,wp))+comm%mxnode-1))/comm%mxnode
      End If
      mxpbnd = 4
   Else
@@ -236,9 +241,9 @@ Subroutine set_bounds                                 &
 ! maximum number of bond angles per node and angular potential parameters
 
   If (mxangl > 0) Then
-     If (mxnode > 1) Then
-        mxangl = Max(mxangl,mxnode*mtangl)
-        mxangl = (3*(Nint(fdvar*Real(mxangl,wp))+mxnode-1))/mxnode
+     If (comm%mxnode > 1) Then
+        mxangl = Max(mxangl,comm%mxnode*mtangl)
+        mxangl = (3*(Nint(fdvar*Real(mxangl,wp))+comm%mxnode-1))/comm%mxnode
      End If
      mxpang = 6
   Else
@@ -249,9 +254,9 @@ Subroutine set_bounds                                 &
 ! maximum number of torsion angles per node and dihedral potential parameters
 
   If (mxdihd > 0) Then
-     If (mxnode > 1) Then
-        mxdihd = Max(mxdihd,mxnode*mtdihd)
-        mxdihd = (3*(Nint(fdvar*Real(mxdihd,wp))+mxnode-1))/mxnode
+     If (comm%mxnode > 1) Then
+        mxdihd = Max(mxdihd,comm%mxnode*mtdihd)
+        mxdihd = (3*(Nint(fdvar*Real(mxdihd,wp))+comm%mxnode-1))/comm%mxnode
         mxdihd = mxdihd + (mxdihd+4)/5 ! allow for 25% higher density
      End If
      mxpdih = 7
@@ -264,9 +269,9 @@ Subroutine set_bounds                                 &
 ! allow for 20% higher density
 
   If (mxinv > 0) Then
-     If (mxnode > 1) Then
-        mxinv = Max(mxinv,mxnode*mtinv)
-        mxinv = (3*(Nint(fdvar*Real(mxinv,wp))+mxnode-1))/mxnode
+     If (comm%mxnode > 1) Then
+        mxinv = Max(mxinv,comm%mxnode*mtinv)
+        mxinv = (3*(Nint(fdvar*Real(mxinv,wp))+comm%mxnode-1))/comm%mxnode
         mxinv = mxinv + (mxinv+4)/5 ! allow for 25% higher density
      End If
      mxpinv = 3
@@ -460,9 +465,9 @@ Subroutine set_bounds                                 &
 ! DD PARAMETERS - by hypercube mapping of MD cell onto machine resources
 ! Dependences: MD cell widths (explicit) and machine resources (implicit)
 
-  Call map_domains(imc_n,celprp(7),celprp(8),celprp(9))
+  Call map_domains(imc_n,celprp(7),celprp(8),celprp(9),comm)
 
-  If (idnode == 0) Write(nrite,'(/,/,1x,a,3i6)') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
+  If (comm%idnode == 0) Write(nrite,'(/,/,1x,a,3i6)') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
 
   If (rpad > zero_plus) Then
 
@@ -476,7 +481,7 @@ Subroutine set_bounds                                 &
      qly=Int(celprp(8)/cut)
      qlz=Int(celprp(9)/cut)
 
-     If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                           &
+     If (comm%idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                           &
         'pure cutoff driven limit on largest possible decomposition:', qlx*qly*qlz , &
         ' nodes/domains (', qlx,',',qly,',',qlz,')'
 
@@ -484,7 +489,7 @@ Subroutine set_bounds                                 &
      qly=Max(1,qly/2)
      qlz=Max(1,qlz/2)
 
-     If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                           &
+     If (comm%idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                           &
         'pure cutoff driven limit on largest balanced decomposition:', qlx*qly*qlz , &
         ' nodes/domains (', qlx,',',qly,',',qlz,')'
 
@@ -506,7 +511,7 @@ Subroutine set_bounds                                 &
   qly=Int(celprp(8)/cut)
   qlz=Int(celprp(9)/cut)
 
-  If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                       &
+  If (comm%idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                       &
      'cutoffs driven limit on largest possible decomposition:', qlx*qly*qlz , &
      ' nodes/domains (', qlx,',',qly,',',qlz,')'
 
@@ -514,7 +519,7 @@ Subroutine set_bounds                                 &
   qly=Max(1,qly/2)
   qlz=Max(1,qlz/2)
 
-  If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                       &
+  If (comm%idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                       &
      'cutoffs driven limit on largest balanced decomposition:', qlx*qly*qlz , &
      ' nodes/domains (', qlx,',',qly,',',qlz,')'
 
@@ -526,7 +531,7 @@ Subroutine set_bounds                                 &
 
 ! print link cell algorithm and check for violations or...
 
-  If (idnode == 0) Write(nrite,'(/,1x,a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
+  If (comm%idnode == 0) Write(nrite,'(/,1x,a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
 
   tol=Min(0.05_wp,0.005_wp*rcut)                                        ! tolerance
   test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0)                    ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
@@ -535,12 +540,12 @@ Subroutine set_bounds                                 &
   If (ilx*ily*ilz == 0) Then
      If (l_trm) Then ! we are prepared to exit gracefully(-:
         rcut = cut   ! - rpad (was zeroed in scan_control)
-        If (idnode == 0) Write(nrite,'(/,1x,a)') &
+        If (comm%idnode == 0) Write(nrite,'(/,1x,a)') &
            "*** warning - real space cutoff reset has occurred, early run termination is due !!! ***"
         Go To 10
      Else
         If (cut < rcut) Then
-           If (idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
+           If (comm%idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
            Call error(307)
         Else ! rpad is defined & in 'no strict' mode
            If (rpad > zero_plus .and. (.not.l_str)) Then ! Re-set rpad with some slack
@@ -549,7 +554,7 @@ Subroutine set_bounds                                 &
               If (rpad < tol) rpad = 0.0_wp ! Don't bother
               Go To 10
            Else
-              If (idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
+              If (comm%idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
               Call error(307)
            End If
         End If
@@ -557,7 +562,7 @@ Subroutine set_bounds                                 &
   Else ! push/reset the limits in 'no strict' mode
      If (.not.l_str) Then
         If (.not.(mxmet == 0 .and. l_n_e .and. l_n_v .and. mxrdf == 0 .and. kim == ' ')) Then ! 2b link-cells are needed
-           If (mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
+           If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
               rpad = 0.95_wp * (0.5_wp*width - rcut - 1.0e-6_wp)
               rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
            End If
@@ -656,7 +661,7 @@ Subroutine set_bounds                                 &
 ! Hard luck, giving up
 
      If (qlx*qly*qlz == 0) Then
-        If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))') &
+        If (comm%idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))') &
            'SPME driven limit on largest possible decomposition:',  &
            (kmaxa/mxspl1)*(kmaxb/mxspl1)*(kmaxc/mxspl1) ,           &
            ' nodes/domains (', kmaxa/mxspl1,',',kmaxb/mxspl1,',',kmaxc/mxspl1,')'
@@ -673,7 +678,7 @@ Subroutine set_bounds                                 &
 
 ! Create f(fdvar,dens0,dens)
 
-  If (mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
+  If (comm%mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
      fdens = fdvar * (0.65_wp*dens0 + 0.35_wp*dens)
   Else If (Min(ilx,ily,ilz) == 1) Then
      fdens = fdvar * (0.50_wp*dens0 + 0.50_wp*dens)
@@ -698,7 +703,7 @@ Subroutine set_bounds                                 &
 
 ! get link-cell volume
 
-  vcell = volm / (Real(ilx*ily*ilz,wp) * Real(mxnode,wp))
+  vcell = volm / (Real(ilx*ily*ilz,wp) * Real(comm%mxnode,wp))
 
 ! get averaged link-cell particle number, boosted by fdens
 ! + 25% extra tolerance
@@ -708,7 +713,7 @@ Subroutine set_bounds                                 &
 ! set dimension of working coordinate arrays
 
   mxatms = Max(1 , Nint(test * Real((ilx+3)*(ily+3)*(ilz+3),wp)))
-  If (mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
+  If (comm%mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
     mxatms = Nint(Min(Real(mxatms,wp),Real(27.00_wp,wp)*Real(megatm,wp)))
 !  Else If (Min(ilx,ily,ilz) == 1) Then
 !    mxatms = Nint(Min(Real(mxatms,wp),Real(20.25_wp,wp)*Real(megatm,wp)))
@@ -741,7 +746,7 @@ Subroutine set_bounds                                 &
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
-  mxbfdp = Merge( 2, 0, mxnode > 1) * Nint( Real(                          &
+  mxbfdp = Merge( 2, 0, comm%mxnode > 1) * Nint( Real(                          &
            mxatdm*(18+12 + Merge(3,0,llvnl) + (mxexcl+1)                 + &
            Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0)  + &
            Merge(2*(6+mxstak), 0, l_msd)) + 3*vafsamp                    + &
@@ -752,7 +757,7 @@ Subroutine set_bounds                                 &
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
-  mxbfss = Merge( 4, 0, mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*(6+mxstak), 0, l_msd)),wp) * dens0)
+  mxbfss = Merge( 4, 0, comm%mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*(6+mxstak), 0, l_msd)),wp) * dens0)
 
 ! exporting single per atom (times 13 up to 35)
 
@@ -764,7 +769,7 @@ Subroutine set_bounds                                 &
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) - 1.0_wp
   dens0 = dens0/Max(rlnk/2.0_wp,1.0_wp)
-  mxbfsh = Merge( 1, 0, mxnode > 1) * Nint(Real(Max(2*mxshl,2*mxcons,mxlrgd*mxrgd),wp) * dens0)
+  mxbfsh = Merge( 1, 0, comm%mxnode > 1) * Nint(Real(Max(2*mxshl,2*mxcons,mxlrgd*mxrgd),wp) * dens0)
 
   mxbuff = Max( mxbfdp , 35*mxbfxp , 4*mxbfsh , 2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
                 mxnstk*mxstak , mxgrid , mxgrdf , mxlrgd*Max(mxrgd,mxtrgd), mxtrgd*(4+3*mxlrgd), 10000 )
@@ -782,7 +787,7 @@ Subroutine set_bounds                                 &
      ily=Int(r_npry*celprp(8)/cut)
      ilz=Int(r_nprz*celprp(9)/cut)
 
-     If (idnode == 0) Write(nrite,'(/,1x,a,3i6)') "link-cell decomposition 2 (x,y,z): ",ilx,ily,ilz
+     If (comm%idnode == 0) Write(nrite,'(/,1x,a,3i6)') "link-cell decomposition 2 (x,y,z): ",ilx,ily,ilz
 
      If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call error(305)
 
@@ -829,3 +834,5 @@ Subroutine set_bounds                                 &
   sysrho = Real(megatm,Kind=wp)/(cell(1)*cell(5)*cell(9))
 
 End Subroutine set_bounds
+
+End Module bounds

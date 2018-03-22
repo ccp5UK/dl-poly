@@ -33,7 +33,7 @@ Subroutine nvt_a1_vv                          &
   Use configuration,      Only : imcon,cell,natms,nlast,nfree,lsite, &
                                  lsi,lsa,ltg,lfrzn,lfree,lstfre,     &
                                  weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use rigid_bodies_module
+  Use rigid_bodies
   Use kinetic_module,     Only : getvom,getknr,kinstresf,kinstrest
   Use core_shell_module,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
   Use constraints_module, Only : passcon

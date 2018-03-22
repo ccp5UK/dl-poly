@@ -27,7 +27,7 @@ Subroutine minimise_relax &
   Use configuration,       Only : natms,nlast,nfree,          &
                                   lsi,lsa,lfrzn,lfree,lstfre, &
                                   weight,xxx,yyy,zzz,fxx,fyy,fzz
-  Use rigid_bodies_module, Only : lshmv_rgd,lishp_rgd,lashp_rgd
+  Use rigid_bodies, Only : lshmv_rgd,lishp_rgd,lashp_rgd
   Use parse_module,        Only : strip_blanks,lower_case
   Use minimise_module
 

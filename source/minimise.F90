@@ -17,7 +17,7 @@ Module minimise_module
   Use configuration,       Only : natms,nlast,nfree,          &
                                   lsi,lsa,lfrzn,lfree,lstfre, &
                                   weight,xxx,yyy,zzz,fxx,fyy,fzz
-  Use rigid_bodies_module, Only : lshmv_rgd,lishp_rgd,lashp_rgd
+  Use rigid_bodies, Only : lshmv_rgd,lishp_rgd,lashp_rgd
   Use parse_module,        Only : strip_blanks,lower_case
 
   Implicit None

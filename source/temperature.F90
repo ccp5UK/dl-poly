@@ -6,8 +6,8 @@ Module temperature
   Use configuration,       Only : imcon,natms,nlast,nfree,lsite,  &
                                   lsi,lsa,ltg,lfrzn,lfree,lstfre, &
                                   weight,vxx,vyy,vzz,xxx,yyy,zzz
-  Use dpd_module,          Only : keydpd
-  Use rigid_bodies_module, Only : rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
+  Use dpd,          Only : keydpd
+  Use rigid_bodies, Only : rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
                                   rgdxxx,rgdyyy,rgdzzz,rgdx,rgdy,rgdz, &
                                   rgdrix,rgdriy,rgdriz,rgdwgt,q0,q1,q2,q3, &
                                   ntrgd,rgdmeg,lashp_rgd,lishp_rgd,lshmv_rgd, &
