@@ -21,13 +21,6 @@ nst_l0_vv.F90
 nst_l1_vv.F90
 nst_m0_vv.F90
 nst_m1_vv.F90
-nvt_h0_scl.F90
-nvt_h0_vv.F90
-nvt_h1_scl.F90
-nvt_h1_vv.F90
-nvt_l0_vv.F90
-nvt_l1_vv.F90
-nvt_l2_vv.F90
 pmf_rattle.F90
 pmf_shake_vv.F90
 pseudo_vv.F90
