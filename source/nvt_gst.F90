@@ -1,4 +1,4 @@
-Module nvt_nose_hoover
+Module nvt_gst
   Use kinds, Only : wp, li
   Use comms,       Only : comms_type,gmax
   Use setup
@@ -1499,4 +1499,4 @@ Contains
     cint=cint + qstep*chit
 
   End Subroutine nvt_g1_scl
-End Module nvt_nose_hoover
+End Module nvt_gst
