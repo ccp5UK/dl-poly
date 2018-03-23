@@ -108,7 +108,9 @@ Module comms
 
   Interface gbcast
     Module procedure gbcast_integer
+    Module procedure gbcast_integer_scalar
     Module procedure gbcast_real
+    Module procedure gbcast_real_scalar
     Module procedure gbcast_char
   End Interface !gbcast
 
@@ -722,6 +724,26 @@ Contains
 
   End Subroutine gbcast_integer
 
+  Subroutine gbcast_integer_scalar(comm,s,root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 broadcast an integer array subroutine 
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.m.elena may 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Integer, Intent( InOut )                           :: s
+    Integer, Intent( In    )                           :: root
+    Type(comms_type), Intent (InOut)                   :: comm
+
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_BCAST(s, 1, MPI_INTEGER, root, comm%comm, comm%ierr)
+
+  End Subroutine gbcast_integer_scalar
+
   Subroutine gbcast_real(comm,vec,root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -745,6 +767,27 @@ Contains
     Call MPI_BCAST(vec(n_l:n_u), n_s, wp_mpi, root, comm%comm, comm%ierr)
   End Subroutine gbcast_real
 
+  Subroutine gbcast_real_scalar(comm,s,root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 broadcast a real array subroutine 
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.m.elena march 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Real(Kind= wp ), Intent( InOut )                   :: s
+    Integer, Intent( In    )                           :: root
+    Type(comms_type), Intent (InOut)                   :: comm
+
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_BCAST(s, 1, wp_mpi, root, comm%comm, comm%ierr)
+
+  End Subroutine gbcast_real_scalar
+
+
   Subroutine gbcast_char(comm,vec,root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -754,7 +797,7 @@ Contains
     ! author    - a.m.elena march 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Character(Len=*), Intent( InOut )                   :: vec(:)
+    Character(Len=*), Intent( InOut )                  :: vec(:)
     Integer, Intent( In    )                           :: root
     Type(comms_type), Intent (InOut)                   :: comm
 
@@ -763,7 +806,7 @@ Contains
     If (comm%mxnode == 1) Return
     n_l = Lbound(vec, Dim = 1)
     n_u = Ubound(vec, Dim = 1)
-    n_s = Size(vec, Dim = 1)*sizeof(vec(n_l))
+    n_s = Size(vec, Dim = 1)*Sizeof(vec(n_l))
 
     Call MPI_BCAST(vec(n_l:n_u), n_s,MPI_CHARACTER, root, comm%comm, comm%ierr)
   End Subroutine gbcast_char

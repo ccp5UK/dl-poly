@@ -1147,7 +1147,7 @@ Contains
 
   End Subroutine poisson_excl_forces
 
-  Subroutine poisson_frzn_forces(rcut,epsq,engcpe_fr,vircpe_fr,stress,comm,ewld)
+  Subroutine poisson_frzn_forces(rcut,epsq,engcpe_fr,vircpe_fr,stress,ewld,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !

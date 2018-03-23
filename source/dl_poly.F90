@@ -104,7 +104,7 @@ Program dl_poly
 
   Use rdf_module
   Use z_density_module
-  Use statistics_module
+  Use statistics
   Use greenkubo_module
 
   ! MSD MODULE

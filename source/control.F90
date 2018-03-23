@@ -24,7 +24,7 @@ Module kontrol
   Use parse_module,       Only : get_line,get_word,lower_case,word_2_real
   
   Use kim_module,         Only : kim,rkim
-  Use greenkubo_module,   Only : isvaf,nsvaf,vafsamp
+  Use greenkubo,   Only : isvaf,nsvaf,vafsamp
   Use rdfs,         Only : l_errors_jack, l_errors_block
   Use development_module, Only : l_trm
   Use ttm

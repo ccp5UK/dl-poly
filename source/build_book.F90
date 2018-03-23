@@ -21,7 +21,7 @@ Module build_book
 
   Use rigid_bodies
 
-  Use tethers_module
+  Use tethers
 
   Use bonds
   Use angles

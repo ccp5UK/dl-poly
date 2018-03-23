@@ -4,7 +4,7 @@
 #define TRUEFALSE(TRUTH) merge(1,0,(TRUTH))
 #endif
 
-Module kim_module
+Module kim
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -18,7 +18,7 @@ Module kim_module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use, Intrinsic :: iso_c_binding
-  Use kinds, only : wp
+  Use kinds, Only : wp
 #ifdef KIM
   Use KIM_API_F03
   Use domains_module, Only : map
@@ -837,4 +837,4 @@ Contains
 #endif
   End Subroutine kim_message
 
-End Module kim_module
+End Module kim

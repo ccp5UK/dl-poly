@@ -1,4 +1,4 @@
-Module parse_module
+Module parse
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -530,4 +530,4 @@ Contains
 
   End Function truncate_real
 
-End Module parse_module
+End Module parse

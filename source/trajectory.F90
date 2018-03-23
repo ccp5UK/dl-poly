@@ -1,33 +1,27 @@
-Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for writing history file at selected intervals
-! in simulation
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov august 2016
-! contrib   - w.smith, i.j.bush
-! contrib   - a.m.elena february 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Module trajectory
 
   Use kinds, Only : wp, li
-  Use comms_module
+  Use comms, Only : comms_type,Traject_tag,gsync,wp_mpi,gbcast
+  Use domains_module, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
+  Use site_module
   Use setup_module
+  Use parse_module,   Only : tabs_2_blanks, get_line, get_word, &
+                             strip_blanks, word_2_real
+
   Use configuration,     Only : cfgname,imcon,cell,natms, &
                                 ltg,atmnam,chge,weight,   &
-                                xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use statistics_module, Only : rsd
+                                xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz,&
+                                lsa,lsi,ltg,nlast
+  Use statistics, Only : rsd
   Use parse_module,      Only : tabs_2_blanks, get_word, &
                                 strip_blanks, word_2_real
   Use io,         Only : io_set_parameters,             &
                                 io_get_parameters,             &
                                 io_init, io_nc_create,         &
                                 io_open, io_write_record,      &
-                                io_write_batch,                &
+                                io_write_batch,io_read_batch,  &
                                 io_nc_get_dim,                 &
-                                io_nc_put_var,                 &
+                                io_nc_put_var,io_nc_get_var,   &
                                 io_write_sorted_file,          &
                                 io_close, io_finalize,         &
                                 io_nc_get_real_precision,      &
@@ -43,14 +37,678 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
                                 IO_WRITE_SORTED_MPIIO,         &
                                 IO_WRITE_SORTED_DIRECT,        &
                                 IO_WRITE_SORTED_NETCDF,        &
-                                IO_WRITE_SORTED_MASTER
+                                IO_WRITE_SORTED_MASTER,        &
+                                      IO_READ_MPIIO,         &
+                             IO_READ_DIRECT,        &
+                             IO_READ_NETCDF,        &
+                             IO_READ_MASTER
+#ifdef SERIAL
+   Use mpi_api
+#else
+   Use mpi
+#endif
 
   Implicit None
+
+  Private
+  Public :: read_history
+Contains
+
+
+Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for reading the trajectory data file
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov january 2017
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Character( Len = * ), Intent( In    ) :: fname
+  Logical,              Intent( In    ) :: l_str
+  Integer,              Intent( In    ) :: megatm
+
+  Integer,              Intent( InOut ) :: levcfg,nstep
+  Real( Kind = wp ),    Intent( In    ) :: dvar
+  Real( Kind = wp ),    Intent( InOut ) :: tstep,time
+  Integer,              Intent(   Out ) :: exout
+  Type( comms_type),    Intent( InOut ) :: comm
+
+  Logical,               Save :: newjob = .true.  , &
+                                 l_ind  = .true.  , &
+                                 l_his  = .true.  , &
+                                 l_xtr  = .false. , &
+                                 fast   = .true.
+  Integer(Kind=li),      Save :: rec  = 0_li , &
+                                 frm  = 0_li , &
+                                 frm1 = 0_li
+
+  Logical                :: safe, lexist
+  Character( Len = 200 ) :: record
+  Character( Len = 40  ) :: word
+  Integer                :: fail(1:5),i,k,l,m,idm,ipx,ipy,ipz, &
+                            indatm,nattot,totatm
+  Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz,xhi,yhi,zhi, &
+                            cell_vecs(1:3,1:3)
+
+! Some parameters and variables needed by io interfaces
+
+  Integer,                           Save :: recsz ! record size
+  Integer,                           Save :: fh, io_read
+  Integer( Kind = MPI_OFFSET_KIND ), Save :: top_skip
+  Character( Len = 1),  Allocatable, Save :: buffer(:,:)
+
+  Character( Len = 8 ), Allocatable :: chbuf(:)
+  Integer,              Allocatable :: iwrk(:)
+  Real( Kind = wp ),    Allocatable :: axx(:),ayy(:),azz(:), &
+                                       bxx(:),byy(:),bzz(:), &
+                                       cxx(:),cyy(:),czz(:)
+  Integer  :: ierr
+
+  If (newjob) Then
+     newjob = .false.
+
+! Get type of I/O
+
+     Call io_get_parameters( user_method_read = io_read )
+
+! ASCII read
+
+     If (io_read /= IO_READ_NETCDF) Then
+
+! Define the default record size
+
+        recsz = 73
+
+! Does HISTORY exist
+
+        lexist=.true.
+        If (comm%idnode == 0) Inquire(File=fname, Exist=lexist)
+        Call gcheck(comm,lexist,"enforce")
+        If (.not.lexist) Go To 400
+
+! Open HISTORY
+
+        If (comm%idnode == 0) Open(Unit=nconf, File=fname)
+
+! read the HISTORY file header
+
+        Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
+
+        Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
+        Call get_word(record,word) ; levcfg=Nint(word_2_real(word,comm,0.0_wp))
+        Call get_word(record,word)
+        Call get_word(record,word) ; If (Nint(word_2_real(word,comm)) /= megatm) Go To 300
+        Call get_word(record,word) ; frm=Nint(word_2_real(word,comm,0.0_wp),li)
+        Call get_word(record,word) ; rec=Nint(word_2_real(word,comm,0.0_wp),li)
+
+! Change fast if no database records exists or the file is new
+
+        If (frm == Int(0,li) .and. rec == Int(0,li)) fast = .false.
+
+        If (levcfg /= 3) Then
+
+! Detect DL_POLY_2 HISTORY and amend io_read and recsz
+
+           If ((.not.fast) .and. io_read == IO_READ_MPIIO) Then
+              io_read = IO_READ_DIRECT
+              recsz   = 200
+           End If
+
+        Else
+
+! Detect compressed HISTORY and make amendments
+
+           l_ind = .false.
+           If (fast .and. io_read /= IO_READ_MASTER) Then
+              io_read = IO_READ_MPIIO
+              recsz   = 35
+           Else
+              io_read = IO_READ_DIRECT
+           End If
+
+        End If
+
+        If (io_read /= IO_READ_MASTER) Then
+           top_skip = Int(2,MPI_OFFSET_KIND)
+
+           fail(1) = 0
+           Allocate (buffer(1:recsz,1:4), Stat=fail(1))
+           If (fail(1) > 0) Then
+              Write(nrite,'(/,1x,a,i0)') 'read_history allocation failure 1, node: ', comm%idnode
+              Call error(0)
+           End If
+
+           If (io_read == IO_READ_MPIIO) Then
+              Close(Unit=nconf)
+
+              Call io_set_parameters( user_comm = comm%comm )
+              Call io_init( recsz )
+              Call io_open( io_read, comm%comm, fname, MPI_MODE_RDONLY, fh )
+           End If
+        End If
+
+     Else ! netCDF read
+
+! Does HISTORY exist
+
+        lexist=.true.
+        If (comm%idnode == 0) Inquire(File=fname, Exist=lexist)
+        Call gcheck(comm,lexist,"enforce")
+        If (.not.lexist) Go To 400
+
+! fast and rec are irrelevant for netCDF (initialised at declaration)
+
+        fast = .true.
+        rec  = Int(0,li)
+
+        Call io_set_parameters( user_comm = comm%comm )
+        Call io_open( io_read, comm%comm, fname, MPI_MODE_RDONLY, fh )
+        Call io_nc_get_dim( 'frame', fh, i )
+
+        If (i > 0) Then
+           frm=Int(i,li)
+        Else
+           Go To 300
+        End If
+
+     End If
+  Else
+     If (io_read == IO_READ_MPIIO .or. io_read == IO_READ_NETCDF) &
+        Call io_set_parameters( user_comm = comm%comm )
+     If (io_read == IO_READ_MPIIO) Call io_init( recsz )
+  End If
+
+! Reinitialise local-to-global counters and all levels of information at every bloody read
+! Ilian's & Alin's fix to clear incoherencies with re-emptied/re-filled domains
+
+  lsi=0 ; lsa=0 ; ltg=0                     ! A must unfortunately
+
+! Necessary to not initialise keep the last frame info after hitting EOF
+!  xxx=0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp ! unfortunate but
+!  vxx=0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp ! unfortunate but
+!  fxx=0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp ! unfortunate but
+
+! MASTER READ
+
+  If      (io_read == IO_READ_MASTER) Then
+
+     fail=0
+     Allocate (chbuf(1:mxatms),                           Stat=fail(1))
+     Allocate (iwrk(1:mxatms),                            Stat=fail(2))
+     Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(3))
+     Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(4))
+     Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(5))
+     If (Any(fail > 0)) Then
+        Write(nrite,'(/,1x,a,i0)') 'read_history allocation failure, node: ', comm%idnode
+        Call error(0)
+     End If
+
+! read timestep and time
+
+     Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 200
+
+     xxx=0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp
+     vxx=0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp
+     fxx=0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
+
+     Call get_word(record,word) ! timestep
+     Call get_word(record,word) ; nstep = Nint(word_2_real(word,comm))
+     Call get_word(record,word) ; If (Nint(word_2_real(word,comm)) /= megatm) Go To 300
+     Call get_word(record,word) ; levcfg = Nint(word_2_real(word,comm))
+     Call get_word(record,word) ; imcon = Nint(word_2_real(word,comm))
+
+! image conditions not compliant with DD and link-cell
+
+     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
+
+     Call get_word(record,word) ; tstep = word_2_real(word,comm)
+     Call get_word(record,word) ; time = word_2_real(word,comm)
+
+     If (comm%idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
+
+! read cell vectors
+
+     Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
+     Call get_word(record,word); cell(1)=word_2_real(word,comm)
+     Call get_word(record,word); cell(2)=word_2_real(word,comm)
+     Call get_word(record,word); cell(3)=word_2_real(word,comm)
+
+     Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
+     Call get_word(record,word); cell(4)=word_2_real(word,comm)
+     Call get_word(record,word); cell(5)=word_2_real(word,comm)
+     Call get_word(record,word); cell(6)=word_2_real(word,comm)
+
+     Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
+     Call get_word(record,word); cell(7)=word_2_real(word,comm)
+     Call get_word(record,word); cell(8)=word_2_real(word,comm)
+     Call get_word(record,word); cell(9)=word_2_real(word,comm)
+
+     Call invert(cell,rcell,det)
+
+! Initialise domain localised atom counter (configuration)
+
+     natms=0
+
+! Initialise dispatched atom counter
+
+     indatm=0
+
+! Initialise total number of atoms counter
+
+     nattot=0
+
+     Do k=1,ntpmls
+        Do l=1,nummols(k)
+           Do m=1,numsit(k)
+
+! Increase counters
+
+              indatm=indatm+1
+              nattot=nattot+1
+
+! Initialise transmission arrays
+
+              chbuf(indatm)=' '
+              iwrk(indatm)=0
+
+              axx(indatm)=0.0_wp
+              ayy(indatm)=0.0_wp
+              azz(indatm)=0.0_wp
+
+! Read in transmission arrays
+
+              If (comm%idnode == 0 .and. safe) Then
+                 record=' '; Read(Unit=nconf, Fmt='(a)', End=30) record
+                 Call tabs_2_blanks(record) ; Call strip_blanks(record)
+                 Call get_word(record,word) ; chbuf(indatm)=word(1:8)
+                 If (l_ind) Then
+                    Call get_word(record,word)
+                    iwrk(indatm)=Nint(word_2_real(word,comm,0.0_wp,l_str))
+                    If (iwrk(indatm) /= 0) Then
+                       iwrk(indatm)=Abs(iwrk(indatm))
+                    Else
+                       iwrk(indatm)=nattot
+                    End If
+                 Else
+                    iwrk(indatm)=nattot
+                 End If
+
+                 If (levcfg /= 3) Then
+                    Read(Unit=nconf, Fmt=*, End=30) axx(indatm),ayy(indatm),azz(indatm)
+
+                    If (levcfg > 0) Then
+                       Read(Unit=nconf, Fmt=*, End=30) bxx(indatm),byy(indatm),bzz(indatm)
+                       If (levcfg > 1) Read(Unit=nconf, Fmt=*, End=30) cxx(indatm),cyy(indatm),czz(indatm)
+                    End If
+                 Else
+                    Call get_word(record,word) ; axx(indatm)=word_2_real(word,comm)
+                    Call get_word(record,word) ; bxx(indatm)=word_2_real(word,comm)
+                    Call get_word(record,word) ; cxx(indatm)=word_2_real(word,comm)
+                 End If
+                 Go To 40
+
+30               Continue
+                 safe=.false. ! catch error
+
+40               Continue
+              End If
+
+! Circulate configuration data to all nodes when transmission arrays are filled up
+
+              If (indatm == mxatms .or. nattot == megatm) Then
+
+! Check if batch was read fine
+
+                 Call gcheck(comm,safe)
+                 If (.not.safe) Go To 300 !Call error(25)
+
+! Briadcaste all atoms
+
+                    Call gbcast(comm,chbuf,0)
+                    Call gbcast(comm,iwrk,0)
+
+                    If (levcfg /= 3) Then
+
+                       Call gbcast(comm,axx,0)
+                       Call gbcast(comm,ayy,0)
+                       Call gbcast(comm,azz,0)
+                       If (levcfg > 0) Then
+                         Call gbcast(comm,bxx,0)
+                         Call gbcast(comm,byy,0)
+                         Call gbcast(comm,bzz,0)
+                          If (levcfg > 1) Then
+                             Call gbcast(comm,cxx,0)
+                             Call gbcast(comm,cyy,0)
+                             Call gbcast(comm,czz,0)
+                          End If
+                       End If
+                    Else
+                       !Call MPI_BCAST(axx,indatm,wp_mpi,0,comm%comm,ierr)
+                       !Call MPI_BCAST(ayy,indatm,wp_mpi,0,comm%comm,ierr)
+                       !Call MPI_BCAST(azz,indatm,wp_mpi,0,comm%comm,ierr)
+                       Call gbcast(comm,axx,0)
+                       Call gbcast(comm,ayy,0)
+                       Call gbcast(comm,azz,0)
+                    End If
+
+! Assign atoms to correct domains (DD bound)
+
+                 Do i=1,indatm
+                    sxx=rcell(1)*axx(i)+rcell(4)*ayy(i)+rcell(7)*azz(i)
+                    syy=rcell(2)*axx(i)+rcell(5)*ayy(i)+rcell(8)*azz(i)
+                    szz=rcell(3)*axx(i)+rcell(6)*ayy(i)+rcell(9)*azz(i)
+
+! sxx,syy,szz are in [-0.5,0.5) interval and values as 0.4(9) may pose a problem
+
+                    sxx=sxx-Anint(sxx) ; If (sxx >= half_minus) sxx=-sxx
+                    syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
+                    szz=szz-Anint(szz) ; If (szz >= half_minus) szz=-szz
+
+! fold back coordinatesc
+
+                    axx(i)=cell(1)*sxx+cell(4)*syy+cell(7)*szz
+                    ayy(i)=cell(2)*sxx+cell(5)*syy+cell(8)*szz
+                    azz(i)=cell(3)*sxx+cell(6)*syy+cell(9)*szz
+
+! assign domain coordinates (call for errors)
+
+                    ipx=Int((sxx+0.5_wp)*nprx_r)
+                    ipy=Int((syy+0.5_wp)*npry_r)
+                    ipz=Int((szz+0.5_wp)*nprz_r)
+
+                    idm=ipx+nprx*(ipy+npry*ipz)
+                    If      (idm < 0 .or. idm > (comm%mxnode-1)) Then
+                       Call error(513)
+                    Else If (idm == comm%idnode)                 Then
+                       natms=natms+1
+
+                       If (natms < mxatms) Then
+                          atmnam(natms)=chbuf(i)
+                          ltg(natms)=iwrk(i)
+
+                          If (levcfg /= 3) Then
+                             xxx(natms)=axx(i)
+                             yyy(natms)=ayy(i)
+                             zzz(natms)=azz(i)
+                             If (levcfg > 0) Then
+                                vxx(natms)=bxx(i)
+                                vyy(natms)=byy(i)
+                                vzz(natms)=bzz(i)
+                                If (levcfg > 1) Then
+                                   fxx(natms)=cxx(i)
+                                   fyy(natms)=cyy(i)
+                                   fzz(natms)=czz(i)
+                                End If
+                             End If
+                          Else
+                             xxx(natms)=axx(i)
+                             yyy(natms)=ayy(i)
+                             zzz(natms)=azz(i)
+                          End If
+                       Else
+                          safe=.false.
+                       End If
+                    End If
+                 End Do
+
+! Check if all is dispatched fine
+
+                 Call gcheck(safe)
+                 If (.not.safe) Call error(45)
+
+! Nullify dispatch counter
+
+                 indatm=0
+
+              End If
+           End Do
+        End Do
+     End Do
+
+     Deallocate (chbuf,       Stat=fail(1))
+     Deallocate (iwrk,        Stat=fail(2))
+     Deallocate (axx,ayy,azz, Stat=fail(3))
+     Deallocate (bxx,byy,bzz, Stat=fail(4))
+     Deallocate (cxx,cyy,czz, Stat=fail(5))
+     If (Any(fail > 0)) Then
+        Write(nrite,'(/,1x,a,i0)') 'read_history deallocation failure, node: ', comm%idnode
+        Call error(0)
+     End If
+
+! PROPER ASCII read
+
+  Else If (io_read /= IO_READ_NETCDF) Then
+
+     Call io_read_batch( fh, top_skip, 4, buffer, ierr )
+     If (ierr < 0) Go To 300
+     top_skip = top_skip + Int(4,MPI_OFFSET_KIND)
+
+     record = ' '
+     Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
+        record( i:i ) = buffer( i, 1 )
+     End Do
+     Call get_word(record,word) ! timestep
+     Call get_word(record,word) ; nstep = Nint(word_2_real(word,comm))
+     Call get_word(record,word) ; If (Nint(word_2_real(word,comm)) /= megatm) Go To 300
+     Call get_word(record,word) ; levcfg = Nint(word_2_real(word,comm))
+     Call get_word(record,word) ; imcon = Nint(word_2_real(word,comm))
+
+! image conditions not compliant with DD and link-cell
+
+    If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
+
+     Call get_word(record,word) ; tstep = word_2_real(word,comm)
+     Call get_word(record,word) ; time = word_2_real(word,comm)
+
+     If (comm%idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
+
+! read cell vectors
+
+     record = ' '
+     Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
+        record( i:i ) = buffer( i, 2 )
+     End Do
+     Call get_word(record,word); cell(1)=word_2_real(word,comm)
+     Call get_word(record,word); cell(2)=word_2_real(word,comm)
+     Call get_word(record,word); cell(3)=word_2_real(word,comm)
+
+     record = ' '
+     Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
+        record( i:i ) = buffer( i, 3 )
+     End Do
+     Call get_word(record,word); cell(4)=word_2_real(word,comm)
+     Call get_word(record,word); cell(5)=word_2_real(word,comm)
+     Call get_word(record,word); cell(6)=word_2_real(word,comm)
+
+     record = ' '
+     Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
+        record( i:i ) = buffer( i, 4 )
+     End Do
+     Call get_word(record,word); cell(7)=word_2_real(word,comm)
+     Call get_word(record,word); cell(8)=word_2_real(word,comm)
+     Call get_word(record,word); cell(9)=word_2_real(word,comm)
+
+     Call read_config_parallel                  &
+           (levcfg, dvar, l_ind, l_str, megatm, &
+            l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi,comm)
+
+     If (fast) Then
+        If (levcfg /= 3) Then
+           i=levcfg+2
+        Else
+           i=levcfg-2
+        End If
+
+        top_skip = top_skip + Int(i,MPI_OFFSET_KIND)*Int(megatm,MPI_OFFSET_KIND)
+     Else
+        top_skip = Int(0,MPI_OFFSET_KIND)
+     End If
+
+! Update current frame and exit gracefully
+
+     frm1 = frm1+Int(1,li)
+     If (frm1 == frm) Go To 200
+
+  Else ! netCDF read
+
+! Update current frame
+
+     frm1 = frm1+Int(1,li)
+     i = Int( frm1 )
+
+     Call io_nc_get_var( 'time'           , fh,   time, i, 1 )
+     Call io_nc_get_var( 'datalevel'      , fh, levcfg, i, 1 )
+     Call io_nc_get_var( 'imageconvention', fh,  imcon, i, 1 )
+
+! image conditions not compliant with DD and link-cell
+
+     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
+
+     Call io_nc_get_var( 'timestep'       , fh,  tstep, i, 1 )
+     Call io_nc_get_var( 'step'           , fh,  nstep, i, 1 )
+
+     If (comm%idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
+
+! Note that in netCDF the frames are not long integers - Int( frm1 )
+
+     Call io_nc_get_var( 'cell'           , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
+     cell = Reshape( cell_vecs, (/ Size( cell ) /) )
+
+     Call read_config_parallel                  &
+           (levcfg, dvar, l_ind, l_str, megatm, &
+            l_his, l_xtr, fast, fh, Int( i, Kind( top_skip ) ), xhi, yhi, zhi,comm)
+
+     If (frm1 == frm) Go To 200
+
+  End If
+
+! To prevent users from the danger of changing the order of calls
+! in dl_poly set 'nlast' to the innocent 'natms'
+
+  nlast=natms
+
+! Does the number of atoms in the system (MD cell) derived by
+! topology description (FIELD) match the crystallographic (CONFIG) one?
+! Check number of atoms in system (CONFIG = FIELD)
+
+  totatm=natms
+  Call gsum(comm,totatm)
+  If (totatm /= megatm) Call error(58)
+
+! Record global atom indices for local sorting (configuration)
+
+  Do i=1,natms
+     lsi(i)=i
+     lsa(i)=ltg(i)
+  End Do
+  Call shellsort2(natms,lsi,lsa)
+
+  exout = 0 ! more to read indicator
+
+  Return
+
+! Normal exit from HISTORY file read
+
+200 Continue
+
+! To prevent users from the danger of changing the order of calls
+! in dl_poly set 'nlast' to the innocent 'natms'
+
+  nlast=natms
+
+! Does the number of atoms in the system (MD cell) derived by
+! topology description (FIELD) match the crystallographic (CONFIG) one?
+! Check number of atoms in system (CONFIG = FIELD)
+
+  totatm=natms
+  Call gsum(comm,totatm)
+  If (totatm /= megatm) Call error(58)
+
+! Record global atom indices for local sorting (configuration)
+
+  Do i=1,natms
+     lsi(i)=i
+     lsa(i)=ltg(i)
+  End Do
+  Call shellsort2(natms,lsi,lsa)
+
+  exout = 1 ! It's an indicator of the end of reading.
+
+  If (comm%idnode == 0) Write(nrite,"(1x,a)") 'HISTORY end of file reached'
+
+  If (io_read == IO_READ_MASTER) Then
+     If (imcon == 0) Close(Unit=nconf)
+     Deallocate (chbuf,       Stat=fail(1))
+     Deallocate (iwrk,        Stat=fail(2))
+     Deallocate (axx,ayy,azz, Stat=fail(3))
+     Deallocate (bxx,byy,bzz, Stat=fail(4))
+     Deallocate (cxx,cyy,czz, Stat=fail(5))
+     If (Any(fail > 0)) Then
+        Write(nrite,'(/,1x,a,i0)') 'read_history deallocation failure, node: ', comm%idnode
+        Call error(0)
+     End If
+  Else
+     Call io_close( fh )
+     Call io_finalize
+  End If
+
+  Return
+
+! Abnormal exit from HISTORY file read
+
+300 Continue
+
+  If (comm%idnode == 0) Write(nrite,"(/,1x,a)") 'HISTORY data mishmash detected'
+  exout = -1 ! It's an indicator of the end of reading.
+  If (io_read == IO_READ_MASTER) Then
+     If (imcon == 0) Close(Unit=nconf)
+     Deallocate (chbuf,       Stat=fail(1))
+     Deallocate (iwrk,        Stat=fail(2))
+     Deallocate (axx,ayy,azz, Stat=fail(3))
+     Deallocate (bxx,byy,bzz, Stat=fail(4))
+     Deallocate (cxx,cyy,czz, Stat=fail(5))
+     If (Any(fail > 0)) Then
+        Write(nrite,'(/,1x,a,i0)') 'read_history deallocation failure, node: ', comm%idnode
+        Call error(0)
+     End If
+  Else
+     Call io_close( fh )
+     Call io_finalize
+  End If
+
+  Return
+
+! HISTORY not found
+
+400 Continue
+
+  Call error(585)
+
+End Subroutine read_history
+
+Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for writing history file at selected intervals
+! in simulation
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov august 2016
+! contrib   - w.smith, i.j.bush
+! contrib   - a.m.elena february 2017
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
   Integer,           Intent( In    ) :: keyres,               &
                                         nstraj,istraj,keytrj, &
                                         megatm,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,time
+  Type( comms_type ), Intent( InOut ) :: comm
 
 
   Logical,               Save :: newjob = .true. , &
@@ -86,7 +744,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 ! netCDF check
 
   Integer :: file_p, file_r
-  Integer :: io_p, io_r
+  Integer :: io_p, io_r,ierr
 
 
   If (.not.(nstep >= nstraj .and. Mod(nstep-nstraj,istraj) == 0)) Return
@@ -118,8 +776,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
      lexist=.true.
      If (keyres == 1) Then
-        If (idnode == 0) Inquire(File=fname, Exist=lexist)
-        If (mxnode > 1) Call gcheck(lexist,"enforce")
+        If (comm%idnode == 0) Inquire(File=fname, Exist=lexist)
+        Call gcheck(comm,lexist,"enforce")
      Else
         lexist=.false.
      End If
@@ -130,7 +788,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
      If (.not.lexist) Then
 
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-           If (idnode == 0) Then
+           If (comm%idnode == 0) Then
               Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Status='replace', Recl=recsz)
               Write(Unit=nhist, Fmt='(a72,a1)',       Rec=Int(1,li)) cfgname(1:72),lf
               Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) keytrj,imcon,megatm,frm,rec,lf
@@ -139,7 +797,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
            rec=Int(2,li)
            frm=Int(0,li)
         Else
-           If (idnode == 0) Then
+           If (comm%idnode == 0) Then
               Call io_set_parameters( user_comm = MPI_COMM_SELF )
               Call io_nc_create( MPI_COMM_SELF, fname, cfgname, megatm )
            End If
@@ -152,7 +810,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
         safe=.true.
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
 
-           If (idnode == 0) Then
+           If (comm%idnode == 0) Then
 
               Open(Unit=nhist, File=fname, Form='formatted')
 
@@ -173,8 +831,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
                     Call get_word(record(1:recsz),word)
                     If (word(1:Len_Trim(word)) /= 'timestep') Then
                        Call get_word(record(1:recsz),word) ; Call get_word(record(1:recsz),word)
-                       Call get_word(record(1:recsz),word) ; frm=Nint(word_2_real(word,0.0_wp),li)
-                       Call get_word(record(1:recsz),word) ; rec=Nint(word_2_real(word,0.0_wp),li)
+                       Call get_word(record(1:recsz),word) ; frm=Nint(word_2_real(word,comm,0.0_wp),li)
+                       Call get_word(record(1:recsz),word) ; rec=Nint(word_2_real(word,comm,0.0_wp),li)
                        If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
                           Go To 20 ! New style
                        Else
@@ -196,8 +854,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
                     rec=rec+Int(1,li)
 
                     Call get_word(record(1:recsz),word) ; Call get_word(record(1:recsz),word)
-                    Call get_word(record(1:recsz),word) ; jj=Nint(word_2_real(word))
-                    Call get_word(record(1:recsz),word) ; k=Nint(word_2_real(word))
+                    Call get_word(record(1:recsz),word) ; jj=Nint(word_2_real(word,comm))
+                    Call get_word(record(1:recsz),word) ; k=Nint(word_2_real(word,comm))
 
                     word=' '
                     i = 3 + (2+k)*jj ! total number of lines to read
@@ -215,7 +873,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
            End If
 
-           If (mxnode > 1) Call gcheck(safe,"enforce")
+           Call gcheck(comm,safe,"enforce")
            If (.not.safe) Then
               lexist=.false.
 
@@ -223,11 +881,11 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
               frm=Int(0,li)
 
               Go To 10
-           Else If (mxnode > 1) Then
+           Else If (comm%mxnode > 1) Then
               buffer(1)=Real(frm,wp)
               buffer(2)=Real(rec,wp)
 
-              Call MPI_BCAST(buffer(1:2), 2, wp_mpi, 0, dlp_comm_world, ierr)
+              Call gbcast(comm,buffer,0)
 
               frm=Nint(buffer(1),li)
               rec=Nint(buffer(2),li)
@@ -235,7 +893,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
         Else ! netCDF read
 
-           If (idnode == 0) Then
+           If (comm%idnode == 0) Then
               Call io_set_parameters( user_comm = MPI_COMM_SELF )
               Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_RDONLY, fh )
 
@@ -247,34 +905,34 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
            End If
            Call gcheck(safe)
            If (.not.safe) Then
-              If (idnode == 0) Write(nrite,'(/,1x,a)') &
+              If (comm%idnode == 0) Write(nrite,'(/,1x,a)') &
   "Can not determine precision in an exisiting HISTORY.nc file in trajectory_write"
 
 ! Sync before killing for the error in the hope that something sensible happens
 
-              Call gsync()
+              Call gsync(comm)
               Call error(0)
            End If
 
-           If (idnode == 0) Then
+           If (comm%idnode == 0) Then
               Call io_nc_get_real_precision( io_p, io_r, ierr )
               safe = (ierr == 0)
            End If
            Call gcheck(safe)
            If (.not.safe) Then
-              If (idnode == 0) Write(nrite,'(/,1x,a)') &
+              If (comm%idnode == 0) Write(nrite,'(/,1x,a)') &
   "Can not determine the desired writing precision in trajectory_write"
 
 ! Sync before killing for the error in the hope that something sensible happens
 
-              Call gsync()
+              Call gsync(comm)
               Call error(0)
            End If
 
-           If (idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
+           If (comm%idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
            Call gcheck(safe)
            If (.not.safe) Then
-              If (idnode == 0) Then
+              If (comm%idnode == 0) Then
                  Write(nrite,'(/,1x,a)') &
   "Requested writing precision inconsistent with that in an existing HISTORY.nc"
                  Write(nrite, Fmt='(1x,a)', Advance='No') "Precision requested:"
@@ -293,20 +951,20 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
                  End Select
               End If
 
-              Call gsync()
+              Call gsync(comm)
               Call error(0)
            End If
 
 ! Get the frame number to check
 ! For netCDF this is the "frame number" which is not a long integer!
 
-           If (idnode == 0) Call io_nc_get_dim( 'frame', fh, jj )
+           If (comm%idnode == 0) Call io_nc_get_dim( 'frame', fh, jj )
            Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
 
            If (jj > 0) Then
               frm=Int(jj,li)
 
-              If (idnode == 0) Call io_close( fh )
+              If (comm%idnode == 0) Call io_close( fh )
            Else ! Overwrite the file, it's junk to me
               lexist=.false.
 
@@ -326,17 +984,17 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
   If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
       io_write == IO_WRITE_UNSORTED_DIRECT .or. &
       io_write == IO_WRITE_UNSORTED_MASTER) Then
-     Allocate (n_atm(0:mxnode),        Stat=fail(1))
+     Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
      Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure 0, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure 0, node: ', comm%idnode
         Call error(0)
      End If
 
      chbat=' '
-     n_atm=0 ; n_atm(idnode+1)=natms
-     If (mxnode > 1) Call gsum(n_atm)
-     n_atm(0)=Sum(n_atm(0:idnode))
+     n_atm=0 ; n_atm(comm%idnode+1)=natms
+     Call gsum(comm,n_atm)
+     n_atm(0)=Sum(n_atm(0:comm%idnode))
   End If
 
 ! Notes:
@@ -359,7 +1017,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
      rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
      jj=0
-     If (idnode == 0) Then
+     If (comm%idnode == 0) Then
 
         Call io_set_parameters( user_comm = MPI_COMM_SELF )
         Call io_init( recsz )
@@ -392,16 +1050,16 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
         jj=jj+4
 
      End If
-     Call gsync()
+     Call gsync(comm)
 
 ! Start of file
 
      rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(jj,MPI_OFFSET_KIND)+Int(n_atm(0),MPI_OFFSET_KIND)*Int(keytrj+2,MPI_OFFSET_KIND)
      jj=0
 
-     Call io_set_parameters( user_comm = dlp_comm_world )
+     Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, fname, MPI_MODE_WRONLY, fh )
 
      Do i=1,natms
         Write(record(1:recsz), Fmt='(a8,i10,3f12.6,a18,a1)') atmnam(i),ltg(i),weight(i),chge(i),rsd(i),Repeat(' ',18),lf
@@ -444,7 +1102,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 ! Update and save offset pointer
 
      rec=rec+Int(4,li)+Int(megatm,li)*Int(keytrj+2,li)
-     If (idnode == 0) Then
+     If (comm%idnode == 0) Then
         Write(record(1:recsz), Fmt='(3i10,2i21,a1)') keytrj,imcon,megatm,frm,rec,lf
         Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record(1:recsz) )
      End If
@@ -462,7 +1120,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
      Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
      Allocate (ddd(1:mxatms),eee(1:mxatms),fff(1:mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure, node: ', comm%idnode
         Call error(0)
      End If
 
@@ -470,7 +1128,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 ! Start of file
 
      jj=0
-     If (idnode == 0) Then
+     If (comm%idnode == 0) Then
 
         Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Recl=recsz)
 
@@ -528,33 +1186,33 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
         jatms=natms
         ready=.true.
-        Do jdnode=0,mxnode-1
+        Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Traject_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Traject_tag,comm%comm,comm%ierr)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
 
-                 Call MPI_RECV(ddd,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(eee,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(fff,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(ddd,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(eee,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(fff,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
 
-                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
 
                  If (keytrj > 0) Then
-                    Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                    Call MPI_RECV(byy,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                    Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                    Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                    Call MPI_RECV(byy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                    Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
                  End If
 
                  If (keytrj > 1) Then
-                    Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                    Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                    Call MPI_RECV(czz,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                    Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                    Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                    Call MPI_RECV(czz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
                  End If
               End If
            End If
@@ -606,31 +1264,31 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,dlp_comm_world,status,ierr)
+        Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,comm%comm,comm%status,ierr)
 
-        Call MPI_SEND(natms,1,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
+        Call MPI_SEND(natms,1,MPI_INTEGER,0,Traject_tag,comm%comm,ierr)
         If (natms > 0) Then
-           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Traject_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Traject_tag,comm%comm,ierr)
+           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Traject_tag,comm%comm,ierr)
 
-           Call MPI_SEND(chge,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(weight,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(rsd,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(chge,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call MPI_SEND(weight,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call MPI_SEND(rsd,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
 
-           Call MPI_SEND(xxx,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(yyy,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(zzz,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(xxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call MPI_SEND(yyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call MPI_SEND(zzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
 
            If (keytrj > 0) Then
-              Call MPI_SEND(vxx,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-              Call MPI_SEND(vyy,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-              Call MPI_SEND(vzz,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(vxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+              Call MPI_SEND(vyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+              Call MPI_SEND(vzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
            End If
 
            If (keytrj > 1) Then
-              Call MPI_SEND(fxx,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-              Call MPI_SEND(fyy,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-              Call MPI_SEND(fzz,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(fxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+              Call MPI_SEND(fyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+              Call MPI_SEND(fzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
            End If
         End If
 
@@ -646,7 +1304,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
      Deallocate (cxx,cyy,czz, Stat=fail(4))
      Deallocate (ddd,eee,fff, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure, node: ', comm%idnode
         Call error(0)
      End If
 
@@ -662,7 +1320,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
      rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
      jj_io=rec_mpi_io
      jj=0 ! netCDF current frame
-     If (idnode == 0) Then
+     If (comm%idnode == 0) Then
 
         Call io_set_parameters( user_comm = MPI_COMM_SELF )
         Call io_init( recsz )
@@ -723,7 +1381,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
         Call io_finalize
 
      End If
-     Call gsync()
+     Call gsync(comm)
 
 ! Start of file
 
@@ -736,9 +1394,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
 ! Write the rest
 
-     Call io_set_parameters( user_comm = dlp_comm_world )
+     Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, fname, MPI_MODE_WRONLY, fh )
 
      Call io_write_sorted_file( fh, keytrj, IO_HISTORY, rec_mpi_io, natms, &
           ltg, atmnam, weight, chge, rsd, xxx, yyy, zzz,                   &
@@ -761,7 +1419,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         rec=rec+Int(4,li)+Int(megatm,li)*Int(keytrj+2,li)
-        If (idnode == 0) Then
+        If (comm%idnode == 0) Then
            Write(record(1:recsz), Fmt='(3i10,2i21,a1)') keytrj,imcon,megatm,frm,rec,lf
            Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record(1:recsz) )
         End If
@@ -780,13 +1438,13 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
      Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
      Allocate (ddd(1:mxatms),eee(1:mxatms),fff(1:mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure, node: ', comm%idnode
         Call error(0)
      End If
 
 ! node 0 handles I/O
 
-     If (idnode == 0) Then
+     If (comm%idnode == 0) Then
 
         Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Recl=recsz)
 
@@ -830,33 +1488,33 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
         jatms=natms
         ready=.true.
-        Do jdnode=0,mxnode-1
+        Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Traject_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Traject_tag,comm%comm,comm%ierr)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
 
-                 Call MPI_RECV(ddd,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(eee,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(fff,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(ddd,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(eee,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(fff,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
 
-                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
 
                  If (keytrj > 0) Then
-                    Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                    Call MPI_RECV(byy,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                    Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                    Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                    Call MPI_RECV(byy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                    Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
                  End If
 
                  If (keytrj > 1) Then
-                    Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                    Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                    Call MPI_RECV(czz,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                    Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                    Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                    Call MPI_RECV(czz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
                  End If
               End If
            End If
@@ -889,31 +1547,31 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,dlp_comm_world,status,ierr)
+        Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,comm%comm,comm%status,ierr)
 
-        Call MPI_SEND(natms,1,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
+        Call MPI_SEND(natms,1,MPI_INTEGER,0,Traject_tag,comm%comm,ierr)
         If (natms > 0) Then
-           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Traject_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Traject_tag,comm%comm,ierr)
+           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Traject_tag,comm%comm,ierr)
 
-           Call MPI_SEND(chge,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(weight,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(rsd,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(chge,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call MPI_SEND(weight,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call MPI_SEND(rsd,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
 
-           Call MPI_SEND(xxx,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(yyy,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(zzz,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(xxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call MPI_SEND(yyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call MPI_SEND(zzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
 
            If (keytrj > 0) Then
-              Call MPI_SEND(vxx,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-              Call MPI_SEND(vyy,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-              Call MPI_SEND(vzz,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(vxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+              Call MPI_SEND(vyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+              Call MPI_SEND(vzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
            End If
 
            If (keytrj > 1) Then
-              Call MPI_SEND(fxx,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-              Call MPI_SEND(fyy,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-              Call MPI_SEND(fzz,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(fxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+              Call MPI_SEND(fyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+              Call MPI_SEND(fzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
            End If
         End If
 
@@ -929,7 +1587,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
      Deallocate (cxx,cyy,czz, Stat=fail(4))
      Deallocate (ddd,eee,fff, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure, node: ', comm%idnode
         Call error(0)
      End If
 
@@ -941,12 +1599,12 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
      Deallocate (n_atm, Stat=fail(1))
      Deallocate (chbat, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure 0, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure 0, node: ', comm%idnode
         Call error(0)
      End If
   End If
 
-  If (mxnode > 1) Call gsync()
+  Call gsync(comm)
 
   Return
 
@@ -968,8 +1626,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
      lexist=.true.
      If (keyres == 1) Then
-        If (idnode == 0) Inquire(File=fname, Exist=lexist)
-        If (mxnode > 1) Call gcheck(lexist,"enforce")
+        If (comm%idnode == 0) Inquire(File=fname, Exist=lexist)
+        Call gcheck(comm,lexist,"enforce")
      Else
         lexist=.false.
      End If
@@ -980,7 +1638,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
      If (.not.lexist) Then
 
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-           If (idnode == 0) Then
+           If (comm%idnode == 0) Then
               Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Status='replace', Recl=recsz)
               Write(Unit=nhist, Fmt='(a34,a1)',      Rec=Int(1,li)) cfgname(1:34),lf
               Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) keytrj,imcon,megatm,frm,rec,lf
@@ -989,7 +1647,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
            rec=Int(2,li)
            frm=Int(0,li)
         Else
-           If (idnode == 0) Then
+           If (comm%idnode == 0) Then
               Call io_set_parameters( user_comm = MPI_COMM_SELF )
               Call io_nc_create( MPI_COMM_SELF, fname, cfgname, megatm )
            End If
@@ -1002,7 +1660,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
         safe=.true.
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
 
-           If (idnode == 0) Then
+           If (comm%idnode == 0) Then
 
               Open(Unit=nhist, File=fname, Form='formatted')
 
@@ -1023,8 +1681,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
                     Call get_word(record(1:recsz),word)
                     If (word(1:Len_Trim(word)) /= 'timestep') Then
                        Call get_word(record(1:recsz),word) ; Call get_word(record(1:recsz),word)
-                       Call get_word(record(1:recsz),word) ; frm=Nint(word_2_real(word,0.0_wp),li)
-                       Call get_word(record(1:recsz),word) ; rec=Nint(word_2_real(word,0.0_wp),li)
+                       Call get_word(record(1:recsz),word) ; frm=Nint(word_2_real(word,comm,0.0_wp),li)
+                       Call get_word(record(1:recsz),word) ; rec=Nint(word_2_real(word,comm,0.0_wp),li)
                        If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
                           Go To 120 ! New style
                        Else
@@ -1060,7 +1718,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
            End If
 
-           If (mxnode > 1) Call gcheck(safe,"enforce")
+           Call gcheck(comm,safe,"enforce")
            If (.not.safe) Then
               lexist=.false.
 
@@ -1068,11 +1726,11 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
               frm=Int(0,li)
 
               Go To 110
-           Else If (mxnode > 1) Then
+           Else If (comm%mxnode > 1) Then
               buffer(1)=Real(frm,wp)
               buffer(2)=Real(rec,wp)
 
-              Call MPI_BCAST(buffer(1:2), 2, wp_mpi, 0, dlp_comm_world, ierr)
+              Call gbcast(comm,buffer,0)
 
               frm=Nint(buffer(1),li)
               rec=Nint(buffer(2),li)
@@ -1080,7 +1738,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
         Else ! netCDF read
 
-           If (idnode == 0) Then
+           If (comm%idnode == 0) Then
               Call io_set_parameters( user_comm = MPI_COMM_SELF )
               Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_RDONLY, fh )
 
@@ -1090,36 +1748,36 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
               Call io_nc_get_file_real_precision( fh, file_p, file_r, ierr )
               safe = (ierr == 0)
            End If
-           Call gcheck(safe)
+           Call gcheck(comm,safe)
            If (.not.safe) Then
-              If (idnode == 0) Write(nrite,'(/,1x,a)') &
+              If (comm%idnode == 0) Write(nrite,'(/,1x,a)') &
   "Can not determine precision in an exisiting HISTORY.nc file in trajectory_write"
 
 ! Sync before killing for the error in the hope that something sensible happens
 
-              Call gsync()
+              Call gsync(comm)
               Call error(0)
            End If
 
-           If (idnode == 0) Then
+           If (comm%idnode == 0) Then
               Call io_nc_get_real_precision( io_p, io_r, ierr )
               safe = (ierr == 0)
            End If
-           Call gcheck(safe)
+           Call gcheck(comm,safe)
            If (.not.safe) Then
-              If (idnode == 0) Write(nrite,'(/,1x,a)') &
+              If (comm%idnode == 0) Write(nrite,'(/,1x,a)') &
   "Can not determine the desired writing precision in trajectory_write"
 
 ! Sync before killing for the error in the hope that something sensible happens
 
-              Call gsync()
+              Call gsync(comm)
               Call error(0)
            End If
 
-           If (idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
+           If (comm%idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
            Call gcheck(safe)
            If (.not.safe) Then
-              If (idnode == 0) Then
+              If (comm%idnode == 0) Then
                  Write(nrite,'(/,1x,a)') &
   "Requested writing precision inconsistent with that in an existing HISTORY.nc"
                  Write(nrite, Fmt='(1x,a)', Advance='No') "Precision requested:"
@@ -1138,7 +1796,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
                  End Select
               End If
 
-              Call gsync()
+              Call gsync(comm)
               Call error(0)
            End If
 
@@ -1146,13 +1804,13 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 ! For netCDF this is the "frame number" which is not a long integer!
 
            jj=0
-           If (idnode == 0) Call io_nc_get_dim( 'frame', fh, jj )
+           If (comm%idnode == 0) Call io_nc_get_dim( 'frame', fh, jj )
            Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
 
            If (jj > 0) Then
               frm=Int(jj,li)
 
-           If (idnode == 0) Call io_close( fh )
+           If (comm%idnode == 0) Call io_close( fh )
            Else ! Overwrite the file, it's junk to me
               lexist=.false.
 
@@ -1172,17 +1830,17 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
   If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
       io_write == IO_WRITE_UNSORTED_DIRECT .or. &
       io_write == IO_WRITE_UNSORTED_MASTER) Then
-     Allocate (n_atm(0:mxnode),        Stat=fail(1))
+     Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
      Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure 0, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure 0, node: ', comm%idnode
         Call error(0)
      End If
 
      chbat=' '
-     n_atm=0 ; n_atm(idnode+1)=natms
-     If (mxnode > 1) Call gsum(n_atm)
-     n_atm(0)=Sum(n_atm(0:idnode))
+     n_atm=0 ; n_atm(comm%idnode+1)=natms
+     Call gsum(comm,n_atm)
+     n_atm(0)=Sum(n_atm(0:comm%idnode))
   End If
 
 ! Update frame
@@ -1200,9 +1858,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
       io_write == IO_WRITE_SORTED_DIRECT   .or. &
       io_write == IO_WRITE_SORTED_NETCDF) Then
 
-     Call io_set_parameters( user_comm = dlp_comm_world )
+     Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, fname, MPI_MODE_WRONLY, fh )
 
 ! Write header only at start, where just one node is needed
 ! Start of file
@@ -1210,7 +1868,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
      rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
      jj_io=rec_mpi_io
      jj=0 ! netCDF current frame
-     If (idnode == 0) Then
+     If (comm%idnode == 0) Then
 
         Call io_set_parameters( user_comm = MPI_COMM_SELF )
         Call io_init( recsz )
@@ -1269,22 +1927,22 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
         Call io_finalize
 
      End If
-     Call gsync()
+     Call gsync(comm)
 
 ! Start of file
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(4,MPI_OFFSET_KIND)
      Else ! netCDF write
-        Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
+        Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, comm%comm, ierr)
         rec_mpi_io = Int(jj,MPI_OFFSET_KIND)
      End If
 
 ! Write the rest
 
-     Call io_set_parameters( user_comm = dlp_comm_world )
+     Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, dlp_comm_world, fname, MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, fname, MPI_MODE_WRONLY, fh )
 
      Call io_write_sorted_file( fh, 0*keytrj, IO_HISTORD, rec_mpi_io, natms, &
           ltg, atmnam,  (/ 0.0_wp /),  (/ 0.0_wp /), rsd, xxx, yyy, zzz,     &
@@ -1308,7 +1966,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         rec=rec+Int(4,li)+Int(megatm,li)
-        If (idnode == 0) Then
+        If (comm%idnode == 0) Then
            Write(record(1:recsz), Fmt='(2i2,3i10,a1)') keytrj,imcon,megatm,frm,rec,lf
            Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record(1:recsz) )
         End If
@@ -1325,13 +1983,13 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
      Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
      Allocate (fff(1:mxatms),                             Stat=fail(3))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure, node: ', comm%idnode
         Call error(0)
      End If
 
 ! node 0 handles I/O
 
-     If (idnode == 0) Then
+     If (comm%idnode == 0) Then
 
         Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Recl=recsz)
 
@@ -1357,20 +2015,20 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
         jatms=natms
         ready=.true.
-        Do jdnode=0,mxnode-1
+        Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Traject_tag,dlp_comm_world,ierr)
+              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Traject_tag,comm%comm,ierr)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,ierr)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,comm%comm,comm%status,ierr)
+                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,ierr)
 
-                 Call MPI_RECV(fff,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(fff,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,ierr)
 
-                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
-                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Traject_tag,dlp_comm_world,status,ierr)
+                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,ierr)
+                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,ierr)
+                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,ierr)
               End If
            End If
 
@@ -1389,18 +2047,18 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,dlp_comm_world,status,ierr)
+        Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,comm%comm,comm%status,ierr)
 
-        Call MPI_SEND(natms,1,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
+        Call MPI_SEND(natms,1,MPI_INTEGER,0,Traject_tag,comm%comm,ierr)
         If (natms > 0) Then
-           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Traject_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Traject_tag,comm%comm,ierr)
+           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Traject_tag,comm%comm,ierr)
 
-           Call MPI_SEND(rsd,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(rsd,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
 
-           Call MPI_SEND(xxx,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(yyy,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
-           Call MPI_SEND(zzz,natms,wp_mpi,0,Traject_tag,dlp_comm_world,ierr)
+           Call MPI_SEND(xxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call MPI_SEND(yyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call MPI_SEND(zzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
         End If
 
 ! Save offset pointer
@@ -1413,7 +2071,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
      Deallocate (axx,ayy,azz, Stat=fail(2))
      Deallocate (fff,         Stat=fail(3))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure, node: ', comm%idnode
         Call error(0)
      End If
 
@@ -1425,11 +2083,13 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
      Deallocate (n_atm, Stat=fail(1))
      Deallocate (chbat, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure 0, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure 0, node: ', comm%idnode
         Call error(0)
      End If
   End If
 
-  If (mxnode > 1) Call gsync()
+  Call gsync(comm)
 
 End Subroutine trajectory_write
+
+End Module trajectory

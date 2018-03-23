@@ -1,4 +1,63 @@
-Subroutine three_body_forces(rctbp,engtbp,virtbp,stress)
+Module three_body
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 module declaring global three-body potential variables and
+! arrays
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov june 2008
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds, Only : wp
+
+  Use comms,   Only : comms_type,gsum,gcheck
+  Use setup_module
+  Use domains_module, Only : idx,idy,idz, nprx,npry,nprz, &
+                             r_nprx,r_npry,r_nprz
+  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
+                             xxx,yyy,zzz,fxx,fyy,fzz
+  Implicit None
+
+  Integer,                        Save :: ntptbp = 0
+
+
+  Logical,           Allocatable, Save :: lfrtbp(:)
+
+  Integer,           Allocatable, Save :: lsttbp(:),ltptbp(:)
+
+  Real( Kind = wp ), Allocatable, Save :: prmtbp(:,:),rcttbp(:)
+
+  Public :: allocate_three_body_arrays
+
+Contains
+
+  Subroutine allocate_three_body_arrays()
+
+    Integer, Dimension( 1:5 ) :: fail
+
+    fail = 0
+
+    Allocate (lfrtbp(1:Merge(mxsite,0,mxtbp > 0)), Stat = fail(1))
+    Allocate (lsttbp(1:mxtbp),                     Stat = fail(2))
+    Allocate (ltptbp(1:mxtbp),                     Stat = fail(3))
+    Allocate (prmtbp(1:mxptbp,1:mxtbp),            Stat = fail(4))
+    Allocate (rcttbp(1:mxtbp),                     Stat = fail(5))
+
+    If (Any(fail > 0)) Call error(1024)
+
+    lfrtbp = .false.
+
+    lsttbp = 0
+    ltptbp = 0
+
+    prmtbp = 0.0_wp
+    rcttbp = 0.0_wp
+
+  End Subroutine allocate_three_body_arrays
+  
+  Subroutine three_body_forces(rctbp,engtbp,virtbp,stress,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -16,20 +75,11 @@ Subroutine three_body_forces(rctbp,engtbp,virtbp,stress)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use comms_module,   Only : idnode,mxnode,gsum,gcheck
-  Use setup_module
-  Use domains_module, Only : idx,idy,idz, nprx,npry,nprz, &
-                             r_nprx,r_npry,r_nprz
-  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
-                             xxx,yyy,zzz,fxx,fyy,fzz
-  Use three_body_module
-
-  Implicit None
 
   Real( Kind = wp ),                   Intent( In    ) :: rctbp
   Real( Kind = wp ),                   Intent(   Out ) :: engtbp,virtbp
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
+  Type(comms_type), Intent( InOut ) :: comm
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
 
@@ -93,7 +143,7 @@ Subroutine three_body_forces(rctbp,engtbp,virtbp,stress)
   Allocate (link(1:mxatms),listin(1:mxatms),lct(1:ncells),lst(1:ncells), Stat=fail(1))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'three_body_forces allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'three_body_forces allocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
@@ -186,7 +236,7 @@ Subroutine three_body_forces(rctbp,engtbp,virtbp,stress)
 ! bounding is unsafe!!!
 !
 ! Correction for particles (1,natms) belonging to this domain
-! (idnode) but due to some tiny numerical inaccuracy kicked into
+! (comm%idnode) but due to some tiny numerical inaccuracy kicked into
 ! the halo link-cell space and vice-versa particles from the
 ! halo (natms+1,nlast) kicked into the domain link-cell space
 !
@@ -679,18 +729,17 @@ Subroutine three_body_forces(rctbp,engtbp,virtbp,stress)
 
 ! check for undefined potentials
 
-  If (mxnode > 1) Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Call error(442)
 
 ! global sum of three-body potential and virial
 
-  If (mxnode > 1) Then
+
      buffer(1)=engtbp
      buffer(2)=virtbp
-     Call gsum(buffer(1:2))
+     Call gsum(comm,buffer(1:2))
      engtbp=buffer(1)
      virtbp=buffer(2)
-  End If
 
 ! complete stress tensor
 
@@ -707,8 +756,11 @@ Subroutine three_body_forces(rctbp,engtbp,virtbp,stress)
   Deallocate (link,listin,lct,lst, Stat=fail(1))
   Deallocate (xxt,yyt,zzt,         Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'three_body_forces deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'three_body_forces deallocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
 End Subroutine three_body_forces
+
+
+End Module three_body

@@ -17,16 +17,16 @@ Module deport_data
                                   rgdoxx,rgdoyy,rgdozz, &
                                   legrgd,lshmv_rgd,lishp_rgd,lashp_rgd
 
-  Use tethers_module,      Only : ntteth,listtet,legtet
+  Use tethers,      Only : ntteth,listtet,legtet
 
   Use bonds,        Only : ntbond,listbnd,legbnd
   Use angles,       Only : ntangl,listang,legang
   Use dihedrals,    Only : ntdihd,listdih,legdih,lx_dih
   Use inversions,   Only : ntinv,listinv,leginv
 
-  Use statistics_module
+  Use statistics
 
-  Use minimise_module,     Only : l_x,oxx,oyy,ozz
+  Use minimise,     Only : l_x,oxx,oyy,ozz
   Use langevin_module,     Only : l_lan,fxl,fyl,fzl
 
   Use ewald,               Only : ewald_type
@@ -35,7 +35,7 @@ Module deport_data
                                  mplgfr,mprotx,mproty,mprotz, mplflg
 
   Use msd
-  Use greenkubo_module,    Only : vxi,vyi,vzi,vafsamp
+  Use greenkubo,    Only : vxi,vyi,vzi,vafsamp
 
   Use kim_module,    Only : kim,idhalo
 
@@ -2945,7 +2945,7 @@ Subroutine relocate_particles       &
 ! check system for loss of atoms
 
      safe(1)=(All(ixyz(1:natms) == 0)) ; Call gcheck(comm,safe(1),"enforce")
-     nlimit=natms ; Call gsum(nlimit)
+     nlimit=natms ; Call gsum(comm,nlimit)
      If ((.not.safe(1)) .or. nlimit /= megatm) Call error(58)
 
 ! reassign atom properties

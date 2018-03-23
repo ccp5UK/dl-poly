@@ -9,9 +9,9 @@ Module bounds
   Use rdfs,         Only : rusr
   Use kim_module,         Only : kim
   Use bonds,       Only : rcbnd
-  Use tersoff_module,     Only : potter
+  Use tersoff,     Only : potter
   Use development_module, Only : l_trm
-  Use greenkubo_module,   Only : vafsamp
+  Use greenkubo,   Only : vafsamp
   Use mpole,      Only : keyind,induce
   Use ttm,         Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
 

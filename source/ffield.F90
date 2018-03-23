@@ -28,7 +28,7 @@ Module ffield
 
   Use rigid_bodies
 
-  Use tethers_module
+  Use tethers
 
   Use bonds
   Use angles
@@ -37,8 +37,8 @@ Module ffield
 
   Use vdw_module
   Use metal
-  Use tersoff_module
-  Use three_body_module
+  Use tersoff
+  Use three_body
   Use four_body
 
   Use external_field

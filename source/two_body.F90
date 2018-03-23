@@ -1,9 +1,31 @@
+Module two_body
+  Use kinds, Only : wp
+  Use comms,   Only : comms_type,gsum
+  Use setup_module
+  Use site_module,    Only : ntpatm,unqatm
+  Use configuration,  Only : volm,sumchg,natms,list,xxx,yyy,zzz
+  Use vnl_module,     Only : l_vnl
+  Use ewald,           Only : ewald_type
+  Use mpole,          Only : induce,keyind
+  Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
+  Use coul_mpoles,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
+                             coul_dddp_mforces, coul_chrm_forces, d_ene_trq_mpoles
+  Use poisson, Only : poisson_forces,poisson_excl_forces,poisson_frzn_forces
+  Use vdw_module,     Only : ntpvdw
+  Use metal,   Only : ntpmet
+  Use kim_module
+  Use rdfs,    Only : ncfrdf, block_size, l_errors_block, l_errors_jack, block_number
+
+  Implicit None
+  Private
+  Public :: two_body_forces
+Contains
 Subroutine two_body_forces                        &
            (rcut,rlnk,rvdw,rmet,pdplnc,keyens,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &
-           engcpe,vircpe,engsrp,virsrp,stress,ewld)
+           engcpe,vircpe,engsrp,virsrp,stress,ewld,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -35,24 +57,7 @@ Subroutine two_body_forces                        &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use comms_module,   Only : idnode,mxnode,gsum
-  Use setup_module
-  Use site_module,    Only : ntpatm,unqatm
-  Use configuration,  Only : volm,sumchg,natms,list,xxx,yyy,zzz
-  Use vnl_module,     Only : l_vnl
-  Use ewald           Only : ewald_type
-  Use mpole,          Only : induce,keyind
-  Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
-  Use coul_mpoles,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
-                             coul_dddp_mforces, coul_chrm_forces, d_ene_trq_mpoles
-  Use poisson_module, Only : poisson_forces,poisson_excl_forces,poisson_frzn_forces
-  Use vdw_module,     Only : ntpvdw
-  Use metal_module,   Only : ntpmet
-  Use kim_module
-  Use rdf_module,    Only : ncfrdf, block_size, l_errors_block, l_errors_jack, block_number
 
-  Implicit None
 
   Logical,                                  Intent( In    ) :: lbook,lrdf,leql
   Integer,                                  Intent( In    ) :: keyens,        &
@@ -67,6 +72,7 @@ Subroutine two_body_forces                        &
                                                                engsrp,virsrp
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
   Type( ewald_type ),                       Intent( InOut ) :: ewld
+  Type( comms_type ),                       Intent( InOut ) :: comm
 
 
   Logical,           Save :: new_nz    = .true.
@@ -87,7 +93,7 @@ Subroutine two_body_forces                        &
   fail=0
   Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'two_body_forces allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'two_body_forces allocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
@@ -152,9 +158,9 @@ Subroutine two_body_forces                        &
 ! Calculate all contributions from KIM
 
   If (kim /= ' ') Then
-     Call kim_setup(ntpatm,unqatm,kim)
-     Call kim_forces(engkim,virkim,stress)
-     Call kim_cleanup()
+     Call kim_setup(ntpatm,unqatm,kim,comm)
+     Call kim_forces(engkim,virkim,stress,comm)
+     Call kim_cleanup(comm)
   End If
 
   If (ntpmet > 0) Then
@@ -272,7 +278,7 @@ Subroutine two_body_forces                        &
 
 ! force-shifted coulomb potentials
 
-           Call coul_fscp_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Call coul_fscp_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -281,7 +287,7 @@ Subroutine two_body_forces                        &
 
 ! reaction field potential
 
-           Call coul_rfp_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Call coul_rfp_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -321,7 +327,7 @@ Subroutine two_body_forces                        &
 
 ! force-shifted coulomb potentials
 
-           Call coul_fscp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Call coul_fscp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -330,7 +336,7 @@ Subroutine two_body_forces                        &
 
 ! reaction field potential
 
-           Call coul_rfp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Call coul_rfp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -348,7 +354,7 @@ Subroutine two_body_forces                        &
 ! Poisson solver alternative to Ewald
 
   If (keyfce == 12) Then
-     Call poisson_forces(alpha,epsq,engacc,viracc,stress)
+     Call poisson_forces(alpha,epsq,engacc,viracc,stress,comm)
 
      engcpe_rl=engcpe_rl+engacc
      vircpe_rl=vircpe_rl+viracc
@@ -476,7 +482,7 @@ Subroutine two_body_forces                        &
 
   Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'two_body_forces deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'two_body_forces deallocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
@@ -498,7 +504,7 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
                  Call ewald_frzn_forces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
               End If
            Else !If (keyfce == 12) Then ! Poisson Solver
-              Call poisson_frzn_forces(rcut,epsq,engcpe_fr,vircpe_fr,stress)
+              Call poisson_frzn_forces(rcut,epsq,engcpe_fr,vircpe_fr,stress,ewld,comm)
            End If
         End If
 
@@ -531,7 +537,7 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
 
 ! sum up contributions to potentials
 
-  If (mxnode > 1) Then
+
      buffer( 0) = tmp
      buffer( 1) = engkim
      buffer( 2) = virkim
@@ -553,7 +559,7 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
      buffer(18) = vircpe_fr
      buffer(19) = vircpe_dt
 
-     Call gsum(buffer(0:17))
+     Call gsum(comm,buffer(0:17))
 
      tmp       = buffer( 0)
      engkim    = buffer( 1)
@@ -575,15 +581,15 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
      engcpe_fr = buffer(17)
      vircpe_fr = buffer(18)
      vircpe_dt = buffer(19)
-  End If
+
 
   safe=(tmp < 0.5_wp)
   If (.not.safe) Call error(505)
 
 ! Self-interaction is constant for the default charges only SPME
 
-  If (mxnode > 1 .and. keyfce == 2) Then ! Sum it up for multipolar SPME
-     If (mximpl > 0 .and. mxompl <= 2) Call gsum(T%engsic)
+  If (keyfce == 2) Then ! Sum it up for multipolar SPME
+     If (mximpl > 0 .and. mxompl <= 2) Call gsum(comm,ewld%engsic)
 !     If (idnode == 0) Write(nrite,'(1x,a,1p,e18.10 )') 'Self-interaction term: ',engsic
   End If
 
@@ -595,7 +601,7 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
 ! Add non-zero total system charge correction to
 ! diagonal terms of stress tensor (per node)
 
-  tmp = - vircpe_nz/(3.0_wp*Real(mxnode,wp))
+  tmp = - vircpe_nz/(3.0_wp*Real(comm%mxnode,wp))
   stress(1) = stress(1) + tmp
   stress(5) = stress(5) + tmp
   stress(9) = stress(9) + tmp
@@ -608,10 +614,11 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
 
 ! Add long-range corrections to diagonal terms of stress tensor (per node)
 
-  tmp = - (virlrc+vlrcm(0))/(3.0_wp*Real(mxnode,wp))
+  tmp = - (virlrc+vlrcm(0))/(3.0_wp*Real(comm%mxnode,wp))
   stress(1) = stress(1) + tmp
   stress(5) = stress(5) + tmp
   stress(9) = stress(9) + tmp
 
 
 End Subroutine two_body_forces
+End Module two_body

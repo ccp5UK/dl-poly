@@ -1,4 +1,40 @@
-Subroutine vnl_check(l_str,rcut,rpad,rlnk,width)
+Module vnl
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 module declaring VNL conditional update variables and arrays
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov august 2014
+! contrib   - i.j.bush february 2014
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds, Only : wp
+  Use comms,   Only : comms_type,gcheck
+  Use setup_module,   Only : nrite,mxspl,mxatms
+  Use domains_module, Only : r_nprx,r_npry,r_nprz
+  Use configuration,  Only : imcon,cell,natms,nlast,list, &
+                             xxx,yyy,zzz
+  Implicit None
+
+  Logical,                        Save :: l_vnl = .true., & ! Do update
+                                          llvnl = .false.   ! Unconditional VNL
+
+  Real( Kind = wp ),              Save :: skipvnl(1:5) = (/ &
+                                          0.0_wp         ,  & ! skips counter
+                                          0.0_wp         ,  & ! access counter
+                                          0.0_wp         ,  & ! average skips
+                                          999999999.0_wp ,  & ! minimum skips : ~Huge(1)
+                                          0.0_wp /)           ! maximum skips
+
+
+  Real( Kind = wp ), Allocatable, Save :: xbg(:),ybg(:),zbg(:)
+
+
+Contains
+
+Subroutine vnl_check(l_str,rcut,rpad,rlnk,width,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -10,19 +46,10 @@ Subroutine vnl_check(l_str,rcut,rpad,rlnk,width)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use comms_module,   Only : idnode,mxnode,gcheck
-  Use setup_module,   Only : nrite,mxspl,mxatms
-  Use domains_module, Only : r_nprx,r_npry,r_nprz
-  Use configuration,  Only : imcon,cell,natms,nlast,list, &
-                             xxx,yyy,zzz
-  Use vnl_module
-
-  Implicit None
-
   Logical,           Intent ( In    ) :: l_str
   Real( Kind = wp ), Intent ( In    ) :: rcut
   Real( Kind = wp ), Intent ( InOut ) :: rpad,rlnk,width
+  Type( comms_type ), Intent ( InOut ) :: comm
 
   Logical, Save :: newstart=.true.
 
@@ -39,7 +66,7 @@ Subroutine vnl_check(l_str,rcut,rpad,rlnk,width)
   fail = 0
   Allocate (x(1:mxatms),y(1:mxatms),z(1:mxatms),r(1:mxatms), Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'vnl_check allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'vnl_check allocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
@@ -78,11 +105,11 @@ Q:Do i=1,natms
 
   Deallocate (x,y,z,r, Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'vnl_check deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'vnl_check deallocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
-  If (mxnode > 1) Call gcheck(safe,"enforce")
+  Call gcheck(comm,safe,"enforce")
   l_vnl=.not.safe
 
 ! Get the dimensional properties of the MD cell
@@ -106,12 +133,12 @@ Q:Do i=1,natms
 
   If (ilx*ily*ilz == 0) Then
      If (cut < rcut) Then
-        If (idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
+        If (comm%idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
         Call error(307)
      Else ! rpad is defined & in 'no strict' mode
         If (cut < rlnk) Then
            If (l_str) Then
-              If (idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
+              If (comm%idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
               Call error(307)
            Else
               If (cut >= rcut) Then ! Re-set rpad with some slack
@@ -129,7 +156,7 @@ Q:Do i=1,natms
         If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then
            cut = test * rcut
         Else
-           If (mxnode > 1) Then
+           If (comm%mxnode > 1) Then
               cut = Min( 0.95_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
                                            r_npry * celprp(8) / Real(ily,wp) , &
                                            r_nprz * celprp(9) / Real(ilz,wp) ) &
@@ -140,7 +167,7 @@ Q:Do i=1,natms
         End If
         cut = Real( Int( 100.0_wp * cut ) , wp ) / 100.0_wp
         If ((.not.(cut < tol)) .and. cut-rpad > 0.005_wp) Then ! Do bother
-  If (idnode == 0) Write(nrite,'(/,1x,2(a,f5.2),a,/)') 'cutoff padding reset from ', rpad, ' Angs to ', cut, ' Angs'
+  If (comm%idnode == 0) Write(nrite,'(/,1x,2(a,f5.2),a,/)') 'cutoff padding reset from ', rpad, ' Angs to ', cut, ' Angs'
            rpad = cut
            rlnk = rcut + rpad
         End If
@@ -164,3 +191,53 @@ Q:Do i=1,natms
   End If
 
 End Subroutine vnl_check
+
+Subroutine vnl_set_check(comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine for (re)setting the conditional VNL checkpoint -
+! xbg,ybg,zbg at the end of set_halo_particles
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov january 2017
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Type ( comms_type ), Intent( InOut ) :: comm
+  Logical, Save :: newjob=.true.
+
+  Integer :: fail
+
+  If (.not.llvnl) Return
+
+  If (newjob) Then ! Init set
+     newjob = .false.
+
+     fail = 0
+     Allocate (xbg(1:mxatms),ybg(1:mxatms),zbg(1:mxatms), Stat = fail)
+     If (fail > 0) Then
+        Write(nrite,'(/,1x,a,i0)') 'vnl_set_check allocation failure, node: ', comm%idnode
+        Call error(0)
+     End If
+
+! CVNL state and skippage accumulators are initialised in vnl_module
+!
+!    l_vnl = .true.
+!    skipvnl(1) - cycles counter
+!    skipvnl(2) - access counter
+!    skipvnl(3) - average cycles
+!    skipvnl(4) - minimum cycles
+!    skipvnl(5) - maximum cycles
+  End If
+
+! set tracking point
+
+  xbg(1:nlast)=xxx(1:nlast)
+  ybg(1:nlast)=yyy(1:nlast)
+  zbg(1:nlast)=zzz(1:nlast)
+
+End Subroutine vnl_set_check
+
+
+End Module vnl

@@ -265,7 +265,7 @@
 ! Complete time check
 
            Call gtime(timelp)
-           If (idnode == 0) Then
+           If (comm%idnode == 0) Then
               Write(nrite,"(1x,'HISTORY step',i10,' (',i10,' entry) processed')") nstep,nstph
               Write(nrite,'(1x,"time elapsed since job start: ", f12.3, " sec")') timelp
            End If

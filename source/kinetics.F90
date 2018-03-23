@@ -11,7 +11,6 @@ Module kinetics
 ! Subroutine kinstress - calculates the kinetic stress
 ! Subroutine kinstresf - calculates the kinetic stress of free particles
 ! Subroutine kinstrest - calculates the kinetic stress of RBs (t, no r)
-! Subroutine getcom - calculates the centre of mass position
 ! Subroutine chvom - changes the behaviour of getvom
 ! Subroutine getvom - calculates the centre of mass momentum
 ! Subroutine freeze_atoms - quenches forces and velocities on 'frozen'
@@ -27,7 +26,8 @@ Module kinetics
   Use comms, Only : comms_type, gsum
   Use setup_module,  Only : nrite,zero_plus,mxatms,mxrgd,boltz
   Use configuration, Only : imcon,cell,natms,ltg,lfrzn,xxx,yyy,zzz,weight,&
-                            nfree, lstfre, vxx,vyy,vzz,fxx,fyy,fzz
+                            nfree, lstfre, vxx,vyy,vzz,fxx,fyy,fzz,getcom, &
+                            getcom_mol
   Use rigid_bodies, Only : ntrgd,rgdfrz,rgdwgt,listrgd,indrgd, &
                                    rgdrix,rgdriy,rgdriz
   Implicit None
@@ -39,7 +39,7 @@ Module kinetics
 
   Public :: getkin,getknf,getknt,getknr,    &
             kinstress,kinstresf,kinstrest,  &
-            getcom,getcom_mol,getvom,chvom, &
+            getvom,chvom, &
             freeze_atoms,cap_forces
 
   Interface getvom
@@ -331,140 +331,7 @@ Contains
 
   End Subroutine kinstrest
 
-  Subroutine getcom(xxx,yyy,zzz,com,comm)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine to calculate system centre of mass position
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov october 2012
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: xxx,yyy,zzz
-    Real( Kind = wp ), Dimension( 1:3 ), Intent(   Out ) :: com
-    Type(comms_type), Intent ( InOut )                   :: comm
-
-    Logical,           Save :: newjob = .true.
-    Real( Kind = wp ), Save :: totmas
-
-    Integer                 :: i
-
-! total system mass
-
-    If (newjob) Then
-       newjob = .false.
-
-       totmas = 0.0_wp
-       Do i=1,natms
-          If (lfrzn(i) == 0) totmas = totmas + weight(i)
-       End Do
-
-       Call gsum(comm,totmas)
-    End If
-
-    com = 0.0_wp
-
-    Do i=1,natms
-       If (lfrzn(i) == 0) Then
-          com(1) = com(1) + weight(i)*xxx(i)
-          com(2) = com(2) + weight(i)*yyy(i)
-          com(3) = com(3) + weight(i)*zzz(i)
-       End If
-    End Do
-
-    Call gsum(comm,com)
-    If (totmas >= zero_plus) com = com/totmas
-
-  End Subroutine getcom
-
-  Subroutine getcom_mol(istart,ifinish,cmm,comm)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine to calculate a molecule's mass and COM
-!
-! istart  - the global index of the first atom of the molecule
-! ifinish - the global index of the last atom of the molecule
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov november 2016
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-    Integer,           Intent( In    ) :: istart,ifinish
-
-    Real( Kind = wp ), Intent(   Out ) :: cmm(0:3)
-    Type(comms_type), Intent ( InOut ) :: comm
-
-    Integer           :: fail,i,j,k
-    Real( Kind = wp ) :: mass,r(1:3)
-
-    Real( Kind = wp ), Allocatable :: mol(:,:)
-
-    fail = 0
-    Allocate (mol(1:(ifinish-istart+1),0:3), Stat = fail)
-    If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'getcom_mol allocation failure, node: ', comm%idnode
-       Call error(0)
-    End If
-
-! Initialise
-
-    mass = 0.0_wp
-    cmm  = 0.0_wp
-
-    mol = 0.0_wp
-    Do i=1,natms
-       j=ltg(i)
-       If (j >= istart .and. j <= ifinish) Then
-          k=j-istart+1
-
-          mol(k,0) = weight(i)
-          mol(k,1) = xxx(i)
-          mol(k,2) = yyy(i)
-          mol(k,3) = zzz(i)
-       End If
-    End Do
-
-    Call gsum(comm,mol)
-
-    r(1) = mol(1,1)
-    r(2) = mol(1,2)
-    r(3) = mol(1,3)
-
-    mol(:,1) = mol(:,1)-r(1)
-    mol(:,2) = mol(:,2)-r(2)
-    mol(:,3) = mol(:,3)-r(3)
-
-    k=ifinish-istart+1
-    Call images(imcon,cell,k,mol(:,1),mol(:,2),mol(:,3))
-
-    mol(:,1) = mol(:,1)+r(1)
-    mol(:,2) = mol(:,2)+r(2)
-    mol(:,3) = mol(:,3)+r(3)
-
-    Do i=1,k
-       mass   = mass   + mol(i,0)
-       cmm(0) = cmm(0) + mol(i,0)*Real(1-lfrzn(i),wp)
-       cmm(1) = cmm(1) + mol(i,0)*mol(i,1)
-       cmm(2) = cmm(2) + mol(i,0)*mol(i,2)
-       cmm(3) = cmm(3) + mol(i,0)*mol(i,3)
-    End Do
-
-    If (cmm(0) >= zero_plus) cmm(1:3) = cmm(1:3) / mass
-
-    fail = 0
-    Deallocate (mol, Stat = fail)
-    If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'getcom_mol deallocation failure, node: ', comm%idnode
-       Call error(0)
-    End If
-
-  End Subroutine getcom_mol
-
+  
   Subroutine chvom(flag)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -630,28 +497,6 @@ Contains
 
   End Subroutine getvom_rgd
 
-  Subroutine freeze_atoms()
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine to quench forces and velocities on 'frozen' atoms
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov july 2004
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-    Integer :: i
-
-    Do i=1,natms
-       If (lfrzn(i) /= 0) Then
-           vxx(i) = 0.0_wp ; vyy(i) = 0.0_wp ; vzz(i) = 0.0_wp
-           fxx(i) = 0.0_wp ; fyy(i) = 0.0_wp ; fzz(i) = 0.0_wp
-       End If
-    End Do
-
-  End Subroutine freeze_atoms
 
   Subroutine cap_forces(fmax,temp,comm)
 

@@ -22,8 +22,9 @@ Module rdfs
   Use parse_module
   Use io
 
+
   Implicit None
-  
+
   Public  :: rdf_compute, calculate_errors, calculate_errors_jackknife
   Private :: calculate_block
 
@@ -882,5 +883,107 @@ Subroutine rdf_frzn_collect(iatm,rcut,rrt)
 
 End Subroutine rdf_frzn_collect
 
+
+Subroutine usr_collect(rrt)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for accumulating statistic for USR RDFs
+!
+! Note: to be used in external_field_apply
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov & a.brukhno november 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+  Real( Kind = wp ), Intent( In    ) :: rrt
+
+  Integer           :: ll
+  Real( Kind = wp ) :: rdelr
+
+! set cutoff condition for pair forces and grid interval for rdf tables
+
+  rdelr= Real(mxgusr,wp)/rusr
+
+  If (rrt < rusr) Then ! apply truncation of potential
+     ll=Min(1+Int(rrt*rdelr),mxgusr)
+     usr(ll) = usr(ll) + 1.0_wp ! accumulate correlation
+     ncfusr = ncfusr + 1        ! Increment sample
+  End If
+
+End Subroutine usr_collect
+
+Subroutine usr_compute(comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for calculating radial distribution function
+! from accumulated data for umbrella sampled two COMs separation (ushr)
+!
+! to be used in exernal_field_apply & statistics_result
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov & a.brukhno november 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Type( comms_type ), Intent( InOut ) :: comm
+  Integer           :: i
+  Real( Kind = wp ) :: delr,rdlr,factor1,rrr,dvol,gofr,sum0,sum1
+
+! grid interval for rdf tables
+
+  delr = rusr/Real(mxgusr,wp)
+  rdlr = 1.0_wp/delr
+
+! open RDF file and Write headers
+
+  If (comm%idnode == 0) Then
+     Open(Unit=nrdfdt, File='USRDAT', Status='replace')
+     Write(nrdfdt,'(2a)') '# '//cfgname
+     Write(nrdfdt,'(a)')  "# RDF for the two fragments' COMs (umbrella sampling)"
+     Write(nrdfdt,'(a,i10,f12.6,i10,e15.6,/)') '# bins, cutoff, frames, volume: ',mxgusr,rusr,ncfusr,volm
+     Write(nrdfdt,'(a)') '#'
+  End If
+
+! global sum of data on all nodes
+
+  Call gsum(comm,usr(1:mxgusr))
+
+! get normalisation factor
+
+  factor1 = Sum(usr(1:mxgusr))
+
+! running integration of rdf
+
+  sum0 = 0.0_wp
+  sum1 = 0.0_wp
+
+! loop over distances
+
+  Do i=1,mxgusr
+     gofr = usr(i)/factor1
+     sum0 = sum0 + gofr
+
+     rrr  = (Real(i,wp)-0.5_wp)*delr
+     dvol = fourpi*delr*(rrr**2+delr**2/12.0_wp)
+     gofr = gofr*volm/dvol
+     sum1 = sum1 + gofr
+
+! print out information
+
+     If (comm%idnode == 0) Write(nrdfdt,"(1p,4e15.6)") rrr,gofr
+!     If (idnode == 0) Write(nrdfdt,"(1p,4e15.6)") rrr,gofr,sum0,sum1
+  End Do
+
+  If (comm%idnode == 0) Close(Unit=nrdfdt)
+
+! distribute usr between nodes
+
+  usr(:) = usr(:) / Real(comm%mxnode,wp)
+
+End Subroutine usr_compute
 
 End Module rdfs

@@ -15,7 +15,6 @@ Module msd
   Use configuration,     Only : cfgname,natms,atmnam,lsite,ltg, &
                                 weight
 
-  Use statistics_module, Only : stpval
   Use parse_module,      Only : tabs_2_blanks, get_word, word_2_real
   Use io,         Only : io_set_parameters,             &
                                 io_get_parameters,             &
@@ -49,7 +48,7 @@ Module msd
   Public :: msd_write
   Contains
 
-  Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time,comm)
+  Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time,stpval,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -65,6 +64,7 @@ Module msd
   Integer,           Intent( In    ) :: keyres,nstmsd,istmsd, &
                                         megatm,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,time
+  Real( Kind = wp ), Intent( InOut ) :: stpval(:)
   Type( comms_type), Intent( InOut ) :: comm
 
   Integer, Parameter :: recsz = 53 ! default record size

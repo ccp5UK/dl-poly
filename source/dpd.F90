@@ -12,13 +12,12 @@ Module dpd
   Use kinds, Only : wp
   
   Use comms,        Only : comms_type,gsum,DpdVExp_tag,wp_mpi
-  Use setup_module,        Only : nrite,mxlist,mxatdm,mxatms,mxbfxp
+  Use setup_module,        Only : nrite,mxlist,mxatdm,mxatms,mxbfxp,mxvdw
   Use configuration,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
                                   list,weight,xxx,yyy,zzz,vxx,vyy,vzz, &
                                   fxx,fyy,fzz, ixyz
   Use rigid_bodies, Only : lshmv_rgd,lishp_rgd,lashp_rgd
   Use domains_module
-  Use setup_module, Only : mxvdw
 #ifdef SERIAL
   Use mpi_api
 #else

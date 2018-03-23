@@ -1,4 +1,4 @@
-Module domains_module
+Module domains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -443,4 +443,4 @@ Contains
 
   End Subroutine map_domains
 
-End Module domains_module
+End Module domains

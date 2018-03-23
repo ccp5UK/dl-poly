@@ -1,4 +1,4 @@
-Module gpfa_module
+Module gpfa235
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2522,9 +2522,7 @@ Contains
 
   End Subroutine ABORT_IT
 
-End Module gpfa_module
-
-Subroutine gpfa_wrap( a, trigs, stride, jump, n, n_ffts, direction, start )
+  Subroutine gpfa_wrap( a, trigs, stride, jump, n, n_ffts, direction, start )
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2535,11 +2533,6 @@ Subroutine gpfa_wrap( a, trigs, stride, jump, n, n_ffts, direction, start )
 ! amended   - i.t.todorov november 2009
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use kinds, only : wp
-  Use gpfa_module
-
-  Implicit None
 
   Real( Kind = wp ), Dimension( * ), Intent( InOut ) :: a
   Real( Kind = wp ), Dimension( * ), Intent( In    ) :: trigs
@@ -2553,3 +2546,6 @@ Subroutine gpfa_wrap( a, trigs, stride, jump, n, n_ffts, direction, start )
   Call gpfa( a( start ), a( start + 1 ), trigs, stride, jump, n, n_ffts, direction )
 
 End Subroutine gpfa_wrap
+
+End Module gpfa235
+

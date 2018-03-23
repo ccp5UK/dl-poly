@@ -1,4 +1,55 @@
-Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
+Module langevin_module
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 module declaring:
+!           1) Langevin npt, nst and nvt_lfv ensembles switches & arrays
+!           2) gentle stochastic ensembles switch & Gaussian random number
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov march 2014
+! amended   - i.t.todorov march 2017
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds, Only : wp
+  Use setup_module,      Only : boltz,mxatms
+  Use configuration,     Only : natms,ltg,lfrzn,weight,xxx,yyy,zzz
+  Use core_shell, Only : legshl
+  Use ttm,        Only : eltemp,zerocell,ntcell,delx,dely,delz,gvar,l_ttm,nstepcpl
+  Use ttm_utils,         Only : Gep
+
+  Implicit None
+
+
+  Implicit None
+
+  Logical,                        Save :: l_lan    = .false., &
+                                          l_gst    = .false.
+
+  Real( Kind = wp ),              Save :: fpl(1:9) = 0.0_wp
+
+  Real( Kind = wp ), Allocatable, Save :: fxl(:),fyl(:),fzl(:)
+
+  Public :: langevin_allocate_arrays
+
+Contains
+
+  Subroutine langevin_allocate_arrays()
+
+    Integer :: fail
+
+    fail = 0
+
+    Allocate (fxl(1:mxatms),fyl(1:mxatms),fzl(1:mxatms), Stat = fail)
+
+    If (fail > 0) Call error(1041)
+
+    fxl = 0.0_wp ; fyl = 0.0_wp ; fzl = 0.0_wp
+
+  End Subroutine langevin_allocate_arrays
+  
+  Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -18,15 +69,6 @@ Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
 ! contrib   - g.khara & m.a.seaton february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use kinds, only : wp
-  Use setup_module,      Only : boltz,mxatms
-  Use configuration,     Only : natms,ltg,lfrzn,weight,xxx,yyy,zzz
-  Use core_shell, Only : legshl
-  Use ttm,        Only : eltemp,zerocell,ntcell,delx,dely,delz,gvar,l_ttm,nstepcpl
-  Use ttm_utils,         Only : Gep
-
-  Implicit None
 
   Integer          , Intent( In    ) :: nstep
   Real( Kind = wp ), Intent( In    ) :: temp,tstep,chi
@@ -117,3 +159,6 @@ Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
   End If
 
 End Subroutine langevin_forces
+
+
+End Module langevin_module

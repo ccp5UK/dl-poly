@@ -1,4 +1,4 @@
-Module setup_module
+Module setup
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -220,4 +220,4 @@ Module setup_module
 
   Real( Kind = wp ), Save :: zero_plus,half_plus,half_minus
 
-End Module setup_module
+End Module setup

@@ -1,4 +1,4 @@
-Module minimise_module
+Module minimise
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -583,4 +583,4 @@ Contains
 End Subroutine minimise_relax
 
 
-End Module minimise_module
+End Module minimise

@@ -1,4 +1,81 @@
-Subroutine tethers_forces(engtet,virtet,stress)
+Module tethers
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 module for defining global tether interaction variables and
+! arrays
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov may 2004
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds, Only : wp
+  Use comms,      Only : comms_type,gsum,gcheck
+  Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
+                                xxx,yyy,zzz,fxx,fyy,fzz
+  Use statistics, Only : xin,yin,zin
+  Use setup_module, Only : mxtmls,mxtteth,mxteth,mxftet,mxpteth,mxatdm,nrite
+
+
+
+  Implicit None
+
+  Integer,                        Save :: ntteth = 0
+
+
+  Integer,           Allocatable, Save :: numteth(:),keytet(:)
+  Integer,           Allocatable, Save :: lsttet(:),listtet(:,:),legtet(:,:)
+
+  Real( Kind = wp ), Allocatable, Save :: prmtet(:,:)
+
+  Public :: allocate_tethers_arrays , deallocate_tethers_arrays
+
+Contains
+
+  Subroutine allocate_tethers_arrays()
+
+
+    Implicit None
+
+    Integer, Dimension( 1:6 ) :: fail
+
+    fail = 0
+
+    Allocate (numteth(1:mxtmls),           Stat = fail(1))
+    Allocate (keytet(1:mxtteth),           Stat = fail(2))
+    Allocate (lsttet(1:mxtteth),           Stat = fail(3))
+    Allocate (listtet(0:1,1:mxteth),       Stat = fail(4))
+    Allocate (legtet(0:mxftet,1:mxatdm),   Stat = fail(5))
+    Allocate (prmtet(1:mxpteth,1:mxtteth), Stat = fail(6))
+
+    If (Any(fail > 0)) Call error(1017)
+
+    numteth = 0
+    keytet  = 0
+    lsttet  = 0
+    listtet = 0
+    legtet  = 0
+
+    prmtet  = 0.0_wp
+
+  End Subroutine allocate_tethers_arrays
+
+  Subroutine deallocate_tethers_arrays()
+
+    Implicit None
+
+    Integer:: fail
+
+    fail = 0
+
+    Deallocate (numteth,lsttet, Stat = fail)
+
+    If (fail > 0) Call error(1031)
+
+  End Subroutine deallocate_tethers_arrays
+
+  Subroutine tethers_forces(engtet,virtet,stress,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -10,18 +87,10 @@ Subroutine tethers_forces(engtet,virtet,stress)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use comms_module,      Only : idnode,mxnode,gsum,gcheck
-  Use setup_module,      Only : mxteth,nrite
-  Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
-                                xxx,yyy,zzz,fxx,fyy,fzz
-  Use tethers_module,    Only : ntteth,keytet,listtet,prmtet
-  Use statistics_module, Only : xin,yin,zin
-
-  Implicit None
 
   Real( Kind = wp ),                   Intent(   Out ) :: engtet,virtet
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
+  Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe
   Integer           :: fail(1:2),i,ia,kk,local_index
@@ -35,7 +104,7 @@ Subroutine tethers_forces(engtet,virtet,stress)
   Allocate (lstopt(0:1,1:mxteth),                         Stat=fail(1))
   Allocate (xdab(1:mxteth),ydab(1:mxteth),zdab(1:mxteth), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'tethers_forces allocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'tethers_forces allocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
@@ -200,24 +269,25 @@ Subroutine tethers_forces(engtet,virtet,stress)
 
 ! check for undefined potentials
 
-  If (mxnode > 1) Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Call error(450)
 
 ! sum contributions to potential and virial
 
-  If (mxnode > 1) Then
      buffer(1)=engtet
      buffer(2)=virtet
-     Call gsum(buffer(1:2))
+     Call gsum(comm,buffer(1:2))
      engtet=buffer(1)
      virtet=buffer(2)
-  End If
 
   Deallocate (lstopt,         Stat=fail(1))
   Deallocate (xdab,ydab,zdab, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'tethers_forces deallocation failure, node: ', idnode
+     Write(nrite,'(/,1x,a,i0)') 'tethers_forces deallocation failure, node: ', comm%idnode
      Call error(0)
   End If
 
 End Subroutine tethers_forces
+
+  
+End Module tethers

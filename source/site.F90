@@ -1,4 +1,4 @@
-Module site_module
+Module site
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -10,7 +10,7 @@ Module site_module
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
+  Use kinds, only : Wp
 
   Implicit None
 
@@ -62,4 +62,4 @@ Contains
 
   End Subroutine allocate_site_arrays
 
-End Module site_module
+End Module site

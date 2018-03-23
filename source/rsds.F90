@@ -5,7 +5,7 @@ Module rsds
   Use configuration,     Only : cfgname,imcon,cell,natms, &
                                 atmnam,ltg,xxx,yyy,zzz
   Use core_shell, Only : legshl
-  Use statistics_module, Only : rsd
+  Use statistics, Only : rsd
 
   Use parse_module,      Only : tabs_2_blanks, get_word, word_2_real
   Use io,         Only : io_set_parameters,        &

@@ -14,9 +14,8 @@ Module core_shell
   Use comms,             Only : comms_type,gsync,gsum,gcheck
   Use setup_module,      Only : mxshl,nrite,boltz,engunit,output,mxatms,mxatdm,zero_plus
   Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,fxx,fyy,fzz, &
-    weight,vxx,vyy,vzz,lfrzn
+    weight,vxx,vyy,vzz,lfrzn,freeze_atoms
   Use parse_module,      Only : strip_blanks,lower_case
-  Use kinetics,    Only : freeze_atoms
 
   Implicit None
 
