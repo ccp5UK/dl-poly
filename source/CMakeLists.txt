@@ -97,11 +97,6 @@ endif()
 set_property(SOURCE development.F90 APPEND PROPERTY
   COMPILE_DEFINITIONS "HOST='${HOST}'")
 
-set(dlpoly_THERMO_SRCS
-nvt_b0_scl.F90
-nvt_b1_scl.F90
-)
-
 set(netcdf_SRCS netcdf.F90)
 set(kim_SRCS kim.F90)
 set(plumed_SRCS plumed.F90)
@@ -124,7 +119,6 @@ if(WITH_NETCDF)
     COMPILE_DEFINITIONS "NETCDF"
     )
 endif()
-add_library(dlpolythermo  ${dlpoly_THERMO_SRCS})
 add_library(dlpolykim  ${kim_SRCS})
 if(WITH_KIM)
   set_target_properties(dlpolykim PROPERTIES
@@ -141,15 +135,13 @@ endif()
 link_directories (${LIBRARY_OUTPUT_PATH})
 add_subdirectory(VV)
 target_link_libraries(dlpolykim dlpolycore)
-target_link_libraries(dlpolythermo dlpolycore)
 target_link_libraries(dlpolyplumed dlpolycore)
 target_link_libraries(dlpoly dlpolycore dlpolykim dlpolyplumed)
 add_executable(${target_name} dl_poly.F90)
 set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${OMP_LINK_FLAGS} ${MIC_LINK_FLAGS}")
-target_link_libraries(${target_name} dlpoly dlpolycore dlpolythermo dlpolyvv dlpolykim dlpolyplumed ${LIBS})
+target_link_libraries(${target_name} dlpoly dlpolycore dlpolyvv dlpolykim dlpolyplumed ${LIBS})
 install(TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 INSTALL_SUBLIB(dlpoly)
 INSTALL_SUBLIB(dlpolycore)
 INSTALL_SUBLIB(dlpolykim)
-INSTALL_SUBLIB(dlpolythermo)
 INSTALL_SUBLIB(dlpolyplumed)

@@ -6,7 +6,7 @@ Module nvt_berendsen
                                  lfrzn,lstfre,weight,          &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use domains,     Only : map
-  Use kinetics,     Only : getvom
+  Use kinetics,     Only : getvom,getknr
   Use core_shell,  Only : legshl
   Use constraints, Only : passcon
   Use pmf,         Only : passpmf
@@ -372,7 +372,7 @@ Contains
 
   ! integrate and apply nvt_b0_scl thermostat - full step
 
-       Call nvt_b0_scl(1,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke)
+       Call nvt_b0_scl(1,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke,comm)
 
   ! remove system centre of mass velocity
 
@@ -388,7 +388,7 @@ Contains
 
   ! update kinetic energy and stress
 
-       Call nvt_b0_scl(0,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke)
+       Call nvt_b0_scl(0,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke,comm)
 
     End If
 
@@ -1166,7 +1166,7 @@ Contains
        Call nvt_b1_scl &
              (1,tstep,sigma,taut,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,strkin,strknf,strknt,engke,engrot)
+             chit,strkin,strknf,strknt,engke,engrot,comm)
 
   ! remove system centre of mass velocity
 
@@ -1208,7 +1208,7 @@ Contains
        Call nvt_b1_scl &
              (0,tstep,sigma,taut,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,strkin,strknf,strknt,engke,engrot)
+             chit,strkin,strknf,strknt,engke,engrot,comm)
 
     End If
 
@@ -1238,4 +1238,132 @@ Contains
     End If
 
   End Subroutine nvt_b1_vv
+
+  Subroutine nvt_b0_scl(isw,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke,comm)
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 routine to integrate and apply NVT Berendsen thermostat
+  ! when no singled rigid bodies are present
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov february 2009
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer,                                  Intent( In    ) :: isw
+    Real( Kind = wp ),                        Intent( In    ) :: tstep,sigma,taut
+    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
+    Real( Kind = wp ), Dimension( 1:9 ),      Intent(   Out ) :: strkin
+    Real( Kind = wp ),                        Intent(   Out ) :: chit,engke
+    Type( comms_type), Intent ( InOut ) :: comm
+
+    Integer           :: i
+    Real( Kind = wp ) :: tmp
+
+  ! get kinetic energy and stress
+
+    Call kinstress(vxx,vyy,vzz,strkin,comm)
+    engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+
+  ! temperature scaling coefficient - taut is the decay constant
+
+    chit=Sqrt(1.0_wp+tstep/taut*(sigma/engke-1.0_wp))
+
+    If (isw == 0) Return
+
+  ! thermostat velocities
+
+    Do i=1,natms
+       vxx(i)=vxx(i)*chit
+       vyy(i)=vyy(i)*chit
+       vzz(i)=vzz(i)*chit
+    End Do
+
+  ! thermostat kinetic stress and energy
+
+    tmp=chit**2
+
+    strkin=strkin*tmp
+    engke=engke*tmp
+
+  End Subroutine nvt_b0_scl
+
+  Subroutine nvt_b1_scl &
+             (isw,tstep,sigma,taut,vxx,vyy,vzz,         &
+             rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
+             chit,strkin,strknf,strknt,engke,engrot,comm)
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 routine to integrate and apply NVT Berendsen thermostat
+  ! when singled rigid bodies are present
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov february 2009
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer,                                  Intent( In    ) :: isw
+    Real( Kind = wp ),                        Intent( In    ) :: tstep,sigma,taut
+    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
+    Real( Kind = wp ), Dimension( 1:mxrgd  ), Intent( InOut ) :: rgdvxx,rgdvyy,rgdvzz, &
+                                                                 rgdoxx,rgdoyy,rgdozz
+    Real( Kind = wp ), Dimension( 1:9 ),      Intent(   Out ) :: strkin,strknf,strknt
+    Real( Kind = wp ),                        Intent(   Out ) :: chit,engke,engrot
+    Type( comms_type), Intent ( InOut ) :: comm
+
+    Integer           :: i,j,irgd
+    Real( Kind = wp ) :: tmp
+
+  ! update kinetic energy and stress
+
+    Call kinstresf(vxx,vyy,vzz,strknf,comm)
+    Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+
+    strkin=strknf+strknt
+    engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+
+  ! update rotational energy
+
+    engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+
+  ! temperature scaling coefficient - taut is the decay constant
+
+    chit=Sqrt(1.0_wp+tstep/taut*(sigma/(engke+engrot)-1.0_wp))
+
+    If (isw == 0) Return
+
+  ! thermostat velocities
+
+    Do j=1,nfree
+       i=lstfre(j)
+
+       vxx(i)=vxx(i)*chit
+       vyy(i)=vyy(i)*chit
+       vzz(i)=vzz(i)*chit
+    End Do
+
+    Do irgd=1,ntrgd
+       rgdvxx(irgd)=rgdvxx(irgd)*chit
+       rgdvyy(irgd)=rgdvyy(irgd)*chit
+       rgdvzz(irgd)=rgdvzz(irgd)*chit
+
+       rgdoxx(irgd)=rgdoxx(irgd)*chit
+       rgdoyy(irgd)=rgdoyy(irgd)*chit
+       rgdozz(irgd)=rgdozz(irgd)*chit
+    End Do
+
+  ! thermostat kinetic stress and energy
+
+    tmp=chit**2
+
+    strknf=strknf*tmp
+    strknt=strknt*tmp
+    strkin=strknf+strknt
+
+    engke=engke*tmp
+    engrot=engrot*tmp
+
+  End Subroutine nvt_b1_scl
 End Module nvt_berendsen
