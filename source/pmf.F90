@@ -814,5 +814,391 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf,comm)
 
 End Subroutine pmf_vcoms
 
+Subroutine pmf_shake_vv          &
+           (mxshak,tolnce,tstep, &
+           indpmf,pxx,pyy,pzz,   &
+           xxx,yyy,zzz,strpmf,   &
+           virpmf,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for applying PMF constraint corrections after
+! possible constrained motion
+!
+! Note: must be used in conjunction with integration algorithms
+!       VV compliant
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov march 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+  Integer,           Intent( In    ) :: mxshak
+  Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
+  Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
+  Real( Kind = wp ), Intent( In    ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
+  Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
+  Real( Kind = wp ), Intent(   Out ) :: strpmf(1:9),virpmf
+  Type( comms_type ), Intent( InOut ) :: comm
+
+  Logical,           Save :: newjob = .true.
+  Real( Kind = wp ), Save :: rmass_pmf_unit(1:2),dis,dis2
+
+  Logical                 :: safe
+  Integer                 :: fail,ipmf,jpmf,k,l,icyc
+  Real( Kind = wp )       :: amt(1:2),gamma,gamm(1:2),tstep2,tmp
+
+  Real( Kind = wp ), Dimension( : ), Allocatable :: pxt,pyt,pzt,pt2,esig
+
+  fail=0
+  Allocate (pxt(1:mxpmf),pyt(1:mxpmf),pzt(1:mxpmf),pt2(1:mxpmf),esig(1:mxpmf), Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'pmf_shake allocation failure, node: ', comm%idnode
+     Call error(0)
+  End If
+
+
+  If (newjob) Then
+     newjob = .false.
+
+! Get reciprocal PMF units' masses
+
+     Do jpmf=1,2
+        If (pmffrz(jpmf) == mxtpmf(jpmf)) Then
+           rmass_pmf_unit(jpmf)=0.0_wp
+        Else
+           rmass_pmf_unit(jpmf)=pmfwg1(0,jpmf)
+        End If
+     End Do
+
+! set PMF constraint parameters
+
+     dis=prmpmf
+     dis2=dis**2
+  End If
+
+! squared timestep and reciprocal masses
+
+  tstep2 = tstep*tstep
+  amt = tstep2*rmass_pmf_unit
+
+! Initialise constraint virial and stress
+
+  virpmf=0.0_wp
+  strpmf=0.0_wp
+
+! application of PMF constraint (shake) algorithm
+! Initialise number of cycles to zero and unsafe passage of the algorithm
+
+  safe=.false.
+  icyc=0
+  Do While ((.not.safe) .and. icyc < mxshak)
+     icyc=icyc+1
+
+! calculate temporary PMF units' COM vectors
+
+     Call pmf_coms(indpmf,pxt,pyt,pzt,comm)
+
+! calculate maximum error in bondlength
+
+     Do ipmf=1,ntpmf
+        pt2(ipmf) =pxt(ipmf)**2+pyt(ipmf)**2+pzt(ipmf)**2 - dis2
+        esig(ipmf)=0.5_wp*Abs(pt2(ipmf))/dis
+     End Do
+
+! global verification of convergence
+
+     safe=Merge(Maxval(esig(1:ntpmf)) < tolnce,.true.,ntpmf > 0)
+     Call gcheck(comm,safe,"enforce")
+
+! bypass next section and terminate iteration if all tolerances ok
+
+     If (.not.safe) Then
+
+! calculate PMF constraint forces
+
+        Do ipmf=1,ntpmf
+
+! calculate PMF constraint force parameter
+
+           gamma = -pt2(ipmf) / &
+                   ((amt(1)+amt(2))*(pxx(ipmf)*pxt(ipmf)+pyy(ipmf)*pyt(ipmf)+pzz(ipmf)*pzt(ipmf)))
+           tmp   = gamma / Real(mxtpmf(1)+mxtpmf(2),wp)
+
+           Do jpmf=1,2
+
+! If this unit is present on my domain
+
+              If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
+                 gamm(jpmf) = 0.5_wp*Real(1-2*Mod(jpmf,2),wp)*gamma*amt(jpmf)
+
+                 Do k=1,mxtpmf(jpmf)
+                    l=indpmf(k,jpmf,ipmf)
+
+! for non-frozen domain particles accumulate PMF constraint stress
+! and atomic position corrections
+
+                    If (l > 0 .and. l <= natms) Then ! l is a domain particle
+                       If (lfrzn(l) == 0) Then
+                          strpmf(1) = strpmf(1) - tmp*pxx(ipmf)*pxx(ipmf)
+                          strpmf(2) = strpmf(2) - tmp*pxx(ipmf)*pyy(ipmf)
+                          strpmf(3) = strpmf(3) - tmp*pxx(ipmf)*pzz(ipmf)
+                          strpmf(5) = strpmf(5) - tmp*pyy(ipmf)*pyy(ipmf)
+                          strpmf(6) = strpmf(6) - tmp*pyy(ipmf)*pzz(ipmf)
+                          strpmf(9) = strpmf(9) - tmp*pzz(ipmf)*pzz(ipmf)
+
+                          xxx(l)=xxx(l)+pxx(ipmf)*gamm(jpmf)
+                          yyy(l)=yyy(l)+pyy(ipmf)*gamm(jpmf)
+                          zzz(l)=zzz(l)+pzz(ipmf)*gamm(jpmf)
+                       End If
+                    End If
+                 End Do
+              End If
+
+           End Do
+
+        End Do
+
+     End If
+  End Do
+
+  If (.not.safe) Then ! error exit for non-convergence
+     Do k=0,comm%mxnode-1
+        If (comm%idnode == k) Then
+           Do ipmf=1,ntpmf
+              If (esig(ipmf) >= tolnce .and. comm%idnode == 0)                   &
+                 Write(nrite,'(/,1x,3(a,i10),a,/,a,f8.2,a,1p,e12.4,a)')     &
+                   '*** warning - global PMF constraint number', ipmf,      &
+                   ' , with head particle numbers, U1:', listpmf(1,1,ipmf), &
+                   ' & U2:', listpmf(1,2,ipmf), ' ,',                       &
+                   ' , converges to a length of', Sqrt(pt2(ipmf)+dis2),     &
+                   ' Angstroms with factor', esig(ipmf), ' contributes towards next error !!! ***'
+           End Do
+        End If
+        Call gsync(comm)
+     End Do
+     Call error(498)
+  Else ! Collect per call and per step passage statistics
+     passpmf(1,1,1)=Real(icyc-1,wp)
+     passpmf(3,1,1)=passpmf(2,1,1)*passpmf(3,1,1)
+     passpmf(2,1,1)=passpmf(2,1,1)+1.0_wp
+     passpmf(3,1,1)=passpmf(3,1,1)/passpmf(2,1,1)+passpmf(1,1,1)/passpmf(2,1,1)
+     passpmf(4,1,1)=Min(passpmf(1,1,1),passpmf(4,1,1))
+     passpmf(5,1,1)=Max(passpmf(1,1,1),passpmf(5,1,1))
+
+     passpmf(1,2,1)=passpmf(1,2,1)+passpmf(1,1,1)
+     passpmf(1,1,1)=0.0_wp ! Reset
+  End If
+
+! global sum of stress tensor
+
+  Call gsum(comm,strpmf)
+
+! complete stress tensor (symmetrise)
+
+  strpmf(4) = strpmf(2)
+  strpmf(7) = strpmf(3)
+  strpmf(8) = strpmf(6)
+
+! total PMF constraint virial
+
+  virpmf=-(strpmf(1)+strpmf(5)+strpmf(9))
+
+  Deallocate (pxt,pyt,pzt,pt2,esig, Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'pmf_shake deallocation failure, node: ', comm%idnode
+     Call error(0)
+  End If
+
+End Subroutine pmf_shake_vv
+
+Subroutine pmf_rattle                      &
+           (mxshak,tolnce,tstep,lfst,lcol, &
+           indpmf,pxx,pyy,pzz,             &
+           vxx,vyy,vzz,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for applying PMF constraint corrections after
+! possible constrained motion
+!
+! Note: must be used in conjunction with integration algorithms
+!       VV compliant
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov march 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Integer,           Intent( In    ) :: mxshak
+  Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
+  Logical,           Intent( In    ) :: lfst,lcol
+  Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
+  Real( Kind = wp ), Intent( InOut ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
+  Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
+  Type( comms_type ), Intent( InOut ) :: comm
+
+  Logical,           Save :: newjob = .true.
+  Real( Kind = wp ), Save :: amt(1:2)
+
+  Logical                 :: safe
+  Integer                 :: fail(1:2),ipmf,jpmf,k,l,icyc
+  Real( Kind = wp )       :: dis,esig,gamma,gamm(1:2)
+
+  Real( Kind = wp ), Dimension( : )   , Allocatable :: vxt,vyt,vzt
+  Real( Kind = wp ), Dimension( :, : ), Allocatable :: xpmf,ypmf,zpmf
+
+  fail=0
+  Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),             Stat=fail(1))
+  Allocate (xpmf(1:2,1:mxpmf),ypmf(1:2,1:mxpmf),zpmf(1:2,1:mxpmf), Stat=fail(2))
+  If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'pmf_rattle allocation failure, node: ', comm%idnode
+     Call error(0)
+  End If
+
+! Get PMF units' reciprocal masses
+
+  If (newjob) Then
+     newjob = .false.
+
+     Do jpmf=1,2
+        If (pmffrz(jpmf) == mxtpmf(jpmf)) Then
+           amt(jpmf)=0.0_wp
+        Else
+           amt(jpmf)=pmfwg1(0,jpmf)
+        End If
+     End Do
+  End If
+
+! normalise PMF constraint vectors on first pass outside
+
+  If (lfst) Then
+     Do ipmf=1,ntpmf
+        dis=1.0_wp/Sqrt(pxx(ipmf)**2+pyy(ipmf)**2+pzz(ipmf)**2)
+        pxx(ipmf)=pxx(ipmf)*dis
+        pyy(ipmf)=pyy(ipmf)*dis
+        pzz(ipmf)=pzz(ipmf)*dis
+     End Do
+  End If
+
+! application of PMF constraint (rattle) algorithm
+! Initialise number of cycles to zero and unsafe passage of the algorithm
+
+  safe=.false.
+  icyc=0
+  Do While ((.not.safe) .and. icyc < mxshak)
+     icyc=icyc+1
+
+! initialise velocity correction arrays
+
+     Do l=1,natms
+        vxt(l)=0.0_wp
+        vyt(l)=0.0_wp
+        vzt(l)=0.0_wp
+     End Do
+
+! calculate temporary COM velocity of each unit
+
+     Call pmf_vcoms(indpmf,xpmf,ypmf,zpmf,comm)
+
+! calculate PMF velocity corrections
+
+     esig=0.0_wp
+     Do ipmf=1,ntpmf
+
+! calculate constraint force parameter - gamma
+
+        gamma = pxx(ipmf)*(xpmf(1,ipmf)-xpmf(2,ipmf)) + &
+                pyy(ipmf)*(ypmf(1,ipmf)-ypmf(2,ipmf)) + &
+                pzz(ipmf)*(zpmf(1,ipmf)-zpmf(2,ipmf))
+
+        esig=Max(esig,0.5_wp*tstep*Abs(gamma))
+
+        gamma = gamma / (amt(1)+amt(2))
+
+        Do jpmf=1,2
+
+! If this unit is present on my domain
+
+           If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
+              gamm(jpmf) = Real(1-2*Mod(jpmf,2),wp)*gamma*amt(jpmf)
+              Do k=1,mxtpmf(jpmf)
+                 l=indpmf(k,jpmf,ipmf)
+
+! improve approximate PMF particles velocity and force (if non-frozen)
+
+                 If (l > 0 .and. l <= natms) Then ! l is a domain particle
+                    If (lfrzn(l) == 0) Then
+                       vxt(l)=vxt(l)+pxx(ipmf)*gamm(jpmf)
+                       vyt(l)=vyt(l)+pyy(ipmf)*gamm(jpmf)
+                       vzt(l)=vzt(l)+pzz(ipmf)*gamm(jpmf)
+                    End If
+                 End If
+              End Do
+           End If
+
+        End Do
+
+     End Do
+
+! global verification of convergence
+
+     safe=(esig < tolnce)
+     Call gcheck(comm,safe,"enforce")
+
+! bypass next section and terminate iteration if all tolerances ok
+
+     If (.not.safe) Then
+        Do ipmf=1,ntpmf
+           Do jpmf=1,2
+              If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
+                 Do k=1,mxtpmf(jpmf)
+                    l=indpmf(k,jpmf,ipmf)
+                    If (l > 0 .and. l <= natms) Then ! l is a domain particle
+                       If (lfrzn(l) == 0) Then
+                          vxx(l)=vxx(l)+vxt(l)
+                          vyy(l)=vyy(l)+vyt(l)
+                          vzz(l)=vzz(l)+vzt(l)
+                       End If
+                    End If
+                 End Do
+              End If
+           End Do
+        End Do
+     End If
+  End Do
+
+  If (.not.safe) Then ! error exit for non-convergence
+     Call error(499)
+  Else ! Collect per call and per step passage statistics
+     passpmf(1,1,2)=Real(icyc-1,wp)
+     passpmf(3,1,2)=passpmf(2,1,2)*passpmf(3,1,2)
+     passpmf(2,1,2)=passpmf(2,1,2)+1.0_wp
+     passpmf(3,1,2)=passpmf(3,1,2)/passpmf(2,1,2)+passpmf(1,1,2)/passpmf(2,1,2)
+     passpmf(4,1,2)=Min(passpmf(1,1,2),passpmf(4,1,2))
+     passpmf(5,1,2)=Max(passpmf(1,1,2),passpmf(5,1,2))
+
+     passpmf(1,2,2)=passpmf(1,2,2)+passpmf(1,1,2)
+     If (lcol) Then ! Collect
+        passpmf(3,2,2)=passpmf(2,2,2)*passpmf(3,2,2)
+        passpmf(2,2,2)=passpmf(2,2,2)+1.0_wp
+        passpmf(3,2,2)=passpmf(3,2,2)/passpmf(2,2,2)+passpmf(1,2,2)/passpmf(2,2,2)
+        passpmf(4,2,2)=Min(passpmf(1,2,2),passpmf(4,2,2))
+        passpmf(5,2,2)=Max(passpmf(1,2,2),passpmf(5,2,2))
+        passpmf(1,2,2)=0.0_wp ! Reset
+     End If
+     passpmf(1,1,2)=0.0_wp ! Reset
+  End If
+
+  Deallocate (vxt,vyt,vzt,    Stat=fail(1))
+  Deallocate (xpmf,ypmf,zpmf, Stat=fail(2))
+  If (Any(fail > 0)) Then
+     Write(nrite,'(/,1x,a,i0)') 'pmf_rattle deallocation failure, node: ', comm%idnode
+     Call error(0)
+  End If
+
+End Subroutine pmf_rattle
+
 
 End module pmf

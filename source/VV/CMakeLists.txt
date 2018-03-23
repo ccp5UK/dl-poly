@@ -38,8 +38,6 @@ nvt_h1_vv.F90
 nvt_l0_vv.F90
 nvt_l1_vv.F90
 nvt_l2_vv.F90
-pmf_rattle.F90
-pmf_shake_vv.F90
 pseudo_vv.F90
 )
 add_library(dlpolyvv ${dlpoly_VV_SRCS})
