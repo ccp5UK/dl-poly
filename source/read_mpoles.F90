@@ -14,17 +14,17 @@ Subroutine read_mpoles(l_top,sumchg)
 
   Use kinds, only : wp
   Use comms_module,      Only : idnode
-  Use setup_module,      Only : nrite,nmpldt,mxompl,zero_plus
+  Use setup,      Only : nrite,nmpldt,mxompl,zero_plus
 
 ! SITE & MPOLES MODULE
 
-  Use site_module
+  Use site
   Use core_shell, Only : numshl,lstshl
   Use mpoles_module,     Only : mpllfr,plrsit,dmpsit
 
 ! PARSE MODULE
 
-  Use parse_module
+  Use setup
 
   Implicit None
 

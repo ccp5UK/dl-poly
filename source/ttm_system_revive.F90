@@ -11,7 +11,7 @@ Subroutine ttm_system_revive    &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use setup_module
+  Use setup
   Use ttm_module
   Use comms_module
 

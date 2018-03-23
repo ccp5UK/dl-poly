@@ -12,8 +12,8 @@ Module vnl
 
   Use kinds, Only : wp
   Use comms,   Only : comms_type,gcheck
-  Use setup_module,   Only : nrite,mxspl,mxatms
-  Use domains_module, Only : r_nprx,r_npry,r_nprz
+  Use setup,   Only : nrite,mxspl,mxatms
+  Use domains, Only : r_nprx,r_npry,r_nprz
   Use configuration,  Only : imcon,cell,natms,nlast,list, &
                              xxx,yyy,zzz
   Implicit None

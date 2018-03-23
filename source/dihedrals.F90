@@ -13,16 +13,16 @@ Module dihedrals
 
   Use kinds, only : wp
   Use comms, Only : comms_type,gcheck,gsum,gsync,gbcast
-  Use setup_module,  Only : pi,twopi,boltz,delth_max,nrite,npdfdt,npdgdt, &
+  Use setup,  Only : pi,twopi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                             mxgdih,mxgdih1,engunit,zero_plus, mxtmls,     &
                             mxtang,mxtdih,mxpdih,rtwopi,r4pie0,mxdihd,    &
                             mximpl, ntable, mxgvdw
-  Use site_module,   Only : unqatm,ntpatm
+  Use site,   Only : unqatm,ntpatm
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
                                 chge,xxx,yyy,zzz,fxx,fyy,fzz,cfgname
   Use vdw_module,    Only : ntpvdw,gvdw,vvdw,afs,prmvdw,bfs,ls_vdw,ld_vdw,  &
                                lstvdw,ltpvdw
-  Use parse_module,  Only : get_line,get_word,word_2_real
+  Use parse,  Only : get_line,get_word,word_2_real
   Implicit None
 
   Logical,                        Save :: lt_dih=.false. , & ! no tabulated potentials opted
@@ -54,10 +54,6 @@ Module dihedrals
 Contains
 
   Subroutine allocate_dihedrals_arrays()
-
-    Use setup_module, Only : mxtmls,mxtdih,mxdihd,mxfdih,mxpdih,mxgdih1,mxatdm
-
-    Implicit None
 
     Integer, Dimension( 1:8 ) :: fail
 
@@ -109,10 +105,6 @@ Contains
 
   Subroutine allocate_dihd_pot_arrays()
 
-    Use setup_module, Only : mxgdih
-
-    Implicit None
-
     Integer :: fail(1:2)
 
     fail = 0
@@ -129,9 +121,6 @@ Contains
 
   Subroutine allocate_dihd_dst_arrays()
 
-    Use setup_module, Only : mxgdih1
-
-    Implicit None
 
     Integer :: fail
 

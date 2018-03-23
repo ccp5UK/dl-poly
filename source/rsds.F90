@@ -1,13 +1,13 @@
 Module rsds
   Use kinds, Only : wp, li
   Use comms, Only : comms_type,gbcast,RsdWrite_tag,gsum,wp_mpi,gsync
-  Use setup_module
+  Use setup
   Use configuration,     Only : cfgname,imcon,cell,natms, &
                                 atmnam,ltg,xxx,yyy,zzz
   Use core_shell, Only : legshl
   Use statistics, Only : rsd
 
-  Use parse_module,      Only : tabs_2_blanks, get_word, word_2_real
+  Use parse,      Only : tabs_2_blanks, get_word, word_2_real
   Use io,         Only : io_set_parameters,        &
                                 io_get_parameters,        &
                                 io_init, io_open,         &

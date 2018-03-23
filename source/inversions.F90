@@ -12,9 +12,11 @@ Module inversions
 
   Use kinds, Only : wp
   Use comms, Only : comms_type,gsum,gsync,gcheck,gbcast
-  Use setup_module, Only : mxtmls,mxtinv,mxinv,mxfinv,mxpinv,mxginv,mxginv1, &
+  Use setup, Only : mxtmls,mxtinv,mxinv,mxfinv,mxpinv,mxginv,mxginv1, &
                            mxatdm,pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                            engunit,zero_plus,ntable
+    Use site,  Only : ntpatm,unqatm
+    Use parse, Only : get_line,get_word,word_2_real
 
   Implicit None
 
@@ -83,8 +85,6 @@ Contains
 
   Subroutine deallocate_inversions_arrays()
 
-    Implicit None
-
     Integer :: fail
 
     fail = 0
@@ -138,7 +138,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use site_module,   Only : unqatm
+    Use site,   Only : unqatm
     Use configuration, Only : cfgname
 
     Real( Kind = wp ),  Intent( In    ) :: temp
@@ -1180,10 +1180,6 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use site_module,  Only : ntpatm,unqatm
-    Use parse_module, Only : get_line,get_word,word_2_real
-
-    Implicit None
 
     Character( Len = 32 ), Intent( In    ) :: invr_name(1:mxtinv)
     Type( comms_type ),    Intent( InOut ) :: comm

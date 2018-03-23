@@ -14,7 +14,7 @@ Module parallel_fft
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,        Only : wp
-  Use setup_module, Only : pi
+  Use setup, Only : pi
 #ifdef SERIAL
   Use mpi_api
 #else

@@ -1,14 +1,14 @@
 Module link_cells
   Use kinds, Only : wp, li
   Use comms,       Only : comms_type,gcheck,gmax,gsum
-  Use setup_module
-  Use domains_module,     Only : idx,idy,idz, nprx,npry,nprz, &
+  Use setup
+  Use domains,     Only : idx,idy,idz, nprx,npry,nprz, &
                                  r_nprx,r_npry,r_nprz
   Use configuration,      Only : cell,natms,nlast,ltg,lfrzn, &
                                  xxx,yyy,zzz,lexatm,list
   Use core_shell,  Only : listshl,legshl
   Use mpole,      Only : keyind,lchatm
-  Use development_module, Only : l_dis,r_dis
+  Use development, Only : l_dis,r_dis
 
   Implicit None
   Private

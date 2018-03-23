@@ -10,9 +10,9 @@ Module rigid_bodies
 
   Use kinds,         Only : wp,li
   Use comms,         Only : comms_type,gsum,gmin,gmax,gsync,gcheck
-  Use setup_module,  Only : mxtmls,mxtrgd,mxrgd,mxlrgd,mxfrgd,mxlshp,mxproc,mxatdm, &
+  Use setup,  Only : mxtmls,mxtrgd,mxrgd,mxlrgd,mxfrgd,mxlshp,mxproc,mxatdm, &
                             nrite,mxatms,zero_plus
-  Use site_module
+  Use site
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz, &
                             ltg,lsite,lfrzn,fxx,fyy,fzz
   Use vnl,          Only : llvnl,l_vnl,xbg,ybg,zbg

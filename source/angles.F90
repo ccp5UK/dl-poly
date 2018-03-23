@@ -13,13 +13,13 @@ Module angles
 
   Use kinds, only : wp
   Use comms,  Only : comms_type,gsum,gbcast
-  Use setup_module,  Only : pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
+  Use setup,  Only : pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                             mxgang,mxgang1,engunit,zero_plus, mxangl, twopi, &
-                            delth_max,ntable,mxtang
-  Use site_module,   Only : unqatm,ntpatm
+                            delth_max,ntable,mxtang,mxatdm,mxfang,mxpang,mxtmls
+  Use site,   Only : unqatm,ntpatm
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                             xxx,yyy,zzz,fxx,fyy,fzz,cfgname
-  Use parse_module, Only : get_line,get_word,word_2_real
+  Use parse, Only : get_line,get_word,word_2_real
 
   Implicit None
 
@@ -52,10 +52,6 @@ Module angles
 Contains
 
   Subroutine allocate_angles_arrays()
-
-    Use setup_module, Only : mxtmls,mxtang,mxangl,mxfang,mxpang,mxgang1,mxatdm
-
-    Implicit None
 
     Integer, Dimension( 1:8 ) :: fail
 
@@ -106,10 +102,6 @@ Contains
 
   Subroutine allocate_angl_pot_arrays()
 
-    Use setup_module, Only : mxgang
-
-    Implicit None
-
     Integer :: fail(1:2)
 
     fail = 0
@@ -125,10 +117,6 @@ Contains
   End Subroutine allocate_angl_pot_arrays
 
   Subroutine allocate_angl_dst_arrays()
-
-    Use setup_module, Only : mxgang1
-
-    Implicit None
 
     Integer :: fail
 

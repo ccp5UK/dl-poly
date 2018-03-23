@@ -12,7 +12,7 @@ Module pmf
 
   Use kinds, Only : wp
   Use comms,  Only : comms_type,gcheck,gsum
-  Use setup_module
+  Use setup
   Use configuration, Only : imcon,cell,natms,xxx,yyy,zzz,lfrzn, &
                             vxx,vyy,vzz,nlast,lsi,lsa
 
@@ -44,10 +44,6 @@ Module pmf
 Contains
 
   Subroutine allocate_pmf_arrays()
-
-    Use setup_module, Only : mxtmls,mxtpmf,mxfpmf,mxpmf,mxatdm
-
-    Implicit None
 
     Integer, Dimension( 1:6 ) :: fail
 

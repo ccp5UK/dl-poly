@@ -14,8 +14,8 @@ Subroutine ttm_table_read()
 
   Use kinds, only : wp
   Use comms_module
-  Use setup_module, Only : ntable,nrite
-  Use parse_module, Only : get_line,get_word,word_2_real
+  Use setup, Only : ntable,nrite
+  Use parse, Only : get_line,get_word,word_2_real
   Use ttm_module
 
   Implicit None

@@ -13,7 +13,7 @@ Subroutine origin_config(megatm)
 
   Use kinds, only : wp
   Use configuration,      Only : imcon,cell,natms,xxx,yyy,zzz
-  Use development_module, Only : lvcforg,xorg,yorg,zorg
+  Use development, Only : lvcforg,xorg,yorg,zorg
 
   Implicit None
 

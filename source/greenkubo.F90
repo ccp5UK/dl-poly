@@ -14,9 +14,9 @@ Module greenkubo
   Use kinds, Only : wp
   
   Use comms,     Only : comms_type,gsum
-  Use setup_module,     Only : nrite,mxatyp,mxbuff,zero_plus,nvafdt
+  Use setup,     Only : nrite,mxatyp,mxbuff,zero_plus,nvafdt
   Use configuration,    Only : natms,ltype,lfrzn,vxx,vyy,vzz,cfgname
-  Use site_module,      Only : unqatm,numtypnf
+  Use site,      Only : unqatm,numtypnf
 
   Implicit None
 
@@ -39,10 +39,6 @@ Module greenkubo
 Contains
 
   Subroutine allocate_greenkubo_arrays()
-
-    Use setup_module, Only : mxatms,mxatyp
-
-    Implicit None
 
     Integer :: i
     Integer, Dimension( 1:7 ) :: fail

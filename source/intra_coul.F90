@@ -11,7 +11,7 @@ Subroutine intra_coul(keyfce,rcut,alpha,epsq,chgprd,rrr,rsq,coul,fcoul,safe)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, only : wp
-  Use setup_module, Only : sqrpi,zero_plus
+  Use setup, Only : sqrpi,zero_plus
 
   Implicit None
 

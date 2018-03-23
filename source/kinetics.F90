@@ -24,7 +24,7 @@ Module kinetics
 
   Use kinds, only : wp
   Use comms, Only : comms_type, gsum
-  Use setup_module,  Only : nrite,zero_plus,mxatms,mxrgd,boltz
+  Use setup,  Only : nrite,zero_plus,mxatms,mxrgd,boltz
   Use configuration, Only : imcon,cell,natms,ltg,lfrzn,xxx,yyy,zzz,weight,&
                             nfree, lstfre, vxx,vyy,vzz,fxx,fyy,fzz,getcom, &
                             getcom_mol

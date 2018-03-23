@@ -12,7 +12,7 @@ Subroutine tag_legend(safe,iatm,nt,legend,mxf)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use setup_module
+  Use setup
 
   Implicit None
 

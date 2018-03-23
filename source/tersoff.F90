@@ -12,8 +12,8 @@ Module tersoff
 
   Use kinds, Only : wp
   Use comms,   Only : comms_type,gsum
-  Use setup_module
-  Use domains_module, Only : idx,idy,idz, nprx,npry,nprz, &
+  Use setup
+  Use domains, Only : idx,idy,idz, nprx,npry,nprz, &
                              r_nprx,r_npry,r_nprz
   Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
                              xxx,yyy,zzz,fxx,fyy,fzz
@@ -36,10 +36,6 @@ Module tersoff
 Contains
 
   Subroutine allocate_tersoff_arrays()
-
-    Use setup_module, Only : mxsite,mxter,mxpter,mxgter
-
-    Implicit None
 
     Integer                   :: nprter
     Integer, Dimension( 1:7 ) :: fail

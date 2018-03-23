@@ -21,15 +21,15 @@ Module kim
   Use kinds, Only : wp
 #ifdef KIM
   Use KIM_API_F03
-  Use domains_module, Only : map
+  Use domains, Only : map
   Use configuration,  Only : natms,nlast,lsi,lsa,ltg,list,lsite, &
                              xxx,yyy,zzz,fxx,fyy,fzz
-  Use setup_module,   Only : nrite,mxsite,mxlist,mxatdm,mxbfxp
-  Use site_module,    Only : unqatm,ntpatm,sitnam
+  Use setup,   Only : nrite,mxsite,mxlist,mxatdm,mxbfxp
+  Use site,    Only : unqatm,ntpatm,sitnam
   Use comms, Only : comms_type
 #else  
   Use comms, Only : comms_type
-  Use setup_module, Only : nrite
+  Use setup, Only : nrite
 #endif
 
   Implicit None

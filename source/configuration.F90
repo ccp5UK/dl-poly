@@ -12,13 +12,14 @@ Module configuration
 
   Use kinds, Only : wp,li
   Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag
-  Use site_module
+  Use site
   
-  Use setup_module,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus
-  Use parse_module,   Only : tabs_2_blanks, &
+  Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
+                      mxatdm,mxexcl,mxlist
+  Use parse,   Only : tabs_2_blanks, &
                              strip_blanks, get_word, word_2_real,get_line
-  Use domains_module, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r,idx,idy,idz
-  Use development_module, Only : lvcfscl,cels
+  Use domains, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r,idx,idy,idz
+  Use development, Only : lvcfscl,cels
 
   Use io,     Only : io_set_parameters,         &
                             io_get_parameters,         &
@@ -244,9 +245,6 @@ Contains
 
   Subroutine allocate_config_arrays()
 
-    Use setup_module
-
-    Implicit None
 
     Integer           :: fail(1:5),stat(1:13)
 

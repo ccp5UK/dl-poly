@@ -1,12 +1,12 @@
 Module ffield
   Use kinds, Only : wp
   Use comms, Only : comms_type
-  Use setup_module
+  Use setup
   Use kim_module,   Only : kim,rkim,kim_cutoff
 
 ! SITE MODULE
 
-  Use site_module
+  Use site
 
 ! CONFIG MODULE
 ! Fuchs correction of charge non-neutral systems
@@ -51,7 +51,7 @@ Module ffield
 
 ! PARSE MODULE
 
-  Use parse_module
+  Use parse
 
   Implicit None
 

@@ -14,7 +14,7 @@ Module constraints
   Use comms,        Only    : comms_type,gsum,gcheck
   Use configuration,   Only : natms,lfrzn,nlast, vxx,vyy,vzz,weight,lsa,lsi, &
     imcon,cell,xxx,yyy,zzz
-  Use setup_module, Only    : mxtmls,mxtcon,mxcons,mxfcon,mxlshp,mxproc,mxatdm, &
+  Use setup, Only    : mxtmls,mxtcon,mxcons,mxfcon,mxlshp,mxproc,mxatdm, &
     mxatms,nrite
 
   Implicit None

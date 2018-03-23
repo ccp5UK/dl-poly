@@ -10,15 +10,14 @@ Module minimise
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : mxatms
   Use comms,               Only : comms_type,gsum,gmax
-  Use setup_module,        Only : engunit,nrite,output, &
+  Use setup,        Only : engunit,nrite,output, &
                                   mxatms,mxcons,mxtpmf,mxpmf,zero_plus
   Use configuration,       Only : natms,nlast,nfree,          &
                                   lsi,lsa,lfrzn,lfree,lstfre, &
                                   weight,xxx,yyy,zzz,fxx,fyy,fzz
   Use rigid_bodies, Only : lshmv_rgd,lishp_rgd,lashp_rgd
-  Use parse_module,        Only : strip_blanks,lower_case
+  Use parse,        Only : strip_blanks,lower_case
 
   Implicit None
 

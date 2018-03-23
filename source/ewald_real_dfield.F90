@@ -15,11 +15,11 @@ Subroutine ewald_real_dfield &
 
   Use kinds, only : wp
   Use comms_module,  Only : idnode,gtime
-  Use setup_module,  Only : mxgele
+  Use setup,  Only : mxgele
   Use configuration, Only : natms,nlast,ltg,list
   Use mpoles_module, Only : indipx,indipy,indipz,mpfldx,mpfldy,mpfldz,&
                             plratm
-  Use setup_module
+  Use setup
 
   Implicit None
 

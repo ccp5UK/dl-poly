@@ -11,8 +11,8 @@ Module z_density
 
   Use kinds, Only : wp
   Use comms,  Only : comms_type,gsum
-  Use setup_module,  Only : mxgrdf,nrite,nzdndt
-  Use site_module,   Only : ntpatm,unqatm
+  Use setup,  Only : mxgrdf,nrite,nzdndt,mxatyp
+  Use site,   Only : ntpatm,unqatm
   Use configuration, Only : cfgname,cell,volm,natms,ltype,zzz
 
   
@@ -27,10 +27,6 @@ Module z_density
 Contains
 
   Subroutine allocate_z_density_arrays()
-
-    Use setup_module, Only : mxatyp,mxgrdf
-
-    Implicit None
 
     Integer :: fail
 

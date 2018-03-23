@@ -17,7 +17,7 @@ Subroutine coul_fscp_mfield &
 
   Use kinds, only : wp
   Use comms_module,  Only : idnode
-  Use setup_module
+  Use setup
   Use configuration, Only : natms,nlast,ltg,ltype,list
   Use mpoles_module, Only : mplmap,mplgfr,mpfldx,mpfldy,mpfldz
 

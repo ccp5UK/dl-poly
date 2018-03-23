@@ -2,8 +2,8 @@ Module system
 
   Use kinds, Only : wp,li
   Use comms, Only : comms_type, gbcast,SysExpand_tag,Revive_tag,wp_mpi
-  Use setup_module
-  Use site_module,        Only : ntpatm,numtyp,numtypnf,dens,ntpmls,numsit,&
+  Use setup
+  Use site,        Only : ntpatm,numtyp,numtypnf,dens,ntpmls,numsit,&
                                  nummols
   Use configuration,      Only : volm,natms,ltg,ltype,lfrzn,xxx,yyy,zzz, &
                                  cfgname,imcon,cell,lsi,lsa,atmnam
@@ -19,11 +19,11 @@ Module system
   Use greenkubo,   Only : nsvaf,vafsamp,vafcount,vafstep, &
                                  vxi,vyi,vzi,vafdata,vaf,vaftime
 
-  Use development_module, Only : l_rin, l_rout
+  Use development, Only : l_rin, l_rout
   Use core_shell,   Only : numshl,lstshl
   Use constraints,  Only : numcon,lstcon
   Use rigid_bodies, Only : numrgd,lstrgd
-  Use parse_module,        Only : tabs_2_blanks, get_word, strip_blanks, &
+  Use parse,        Only : tabs_2_blanks, get_word, strip_blanks, &
                                   lower_case, word_2_real
   Use io,           Only : io_set_parameters,        &
                                   io_get_parameters,        &

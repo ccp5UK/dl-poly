@@ -123,7 +123,7 @@ Contains
   Subroutine kim_message()
 
     Use comms_module, Only : idnode
-    Use setup_module, Only : nrite
+    Use setup, Only : nrite
 
     Implicit None
 

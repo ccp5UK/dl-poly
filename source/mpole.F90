@@ -1,11 +1,11 @@
 Module mpole
   Use kinds, Only : wp
-  Use setup_module, Only : mxatdm, mxatms, mxexcl, mximpl, mxompl, mxsite, mxspl, &
+  Use setup, Only : mxatdm, mxatms, mxexcl, mximpl, mxompl, mxsite, mxspl, &
                            sqrpi,r4pie0,zero_plus,nrite,nmpldt
   Use configuration,Only : natms
-  Use site_module
+  Use site
   Use core_shell, Only : numshl,lstshl
-  Use parse_module
+  Use setup
 
   Implicit None
 

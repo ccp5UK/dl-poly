@@ -15,7 +15,7 @@ Module tethers
   Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                                 xxx,yyy,zzz,fxx,fyy,fzz
   Use statistics, Only : xin,yin,zin
-  Use setup_module, Only : mxtmls,mxtteth,mxteth,mxftet,mxpteth,mxatdm,nrite
+  Use setup, Only : mxtmls,mxtteth,mxteth,mxftet,mxpteth,mxatdm,nrite
 
 
 

@@ -14,7 +14,7 @@ Subroutine coul_dddp_mfield &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, only : wp
-  Use setup_module
+  Use setup
   Use configuration, Only : natms,nlast,ltg,ltype,list
   Use mpoles_module, Only : mplmap,mplgfr,mpfldx,mpfldy,mpfldz
 

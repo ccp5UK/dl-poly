@@ -12,14 +12,14 @@ Module rdfs
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use site_module, Only: ntpatm
+  Use site, Only: ntpatm
   Use configuration, Only : natms,ltg,ltype,list
   Use comms,  Only : comms_type,gsum
-  Use setup_module,  Only : fourpi,boltz,delr_max,nrite,nrdfdt,npdfdt,npdgdt, &
+  Use setup,  Only : fourpi,boltz,delr_max,nrite,nrdfdt,npdfdt,npdgdt, &
                             mxgrdf,engunit,zero_plus,mxlist,mxrdf,mxgusr
-  Use site_module,   Only : ntpatm,unqatm,numtyp,dens
+  Use site,   Only : ntpatm,unqatm,numtyp,dens
   Use configuration, Only : cfgname,volm
-  Use parse_module
+  Use parse
   Use io
 
 

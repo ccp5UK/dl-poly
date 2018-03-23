@@ -13,7 +13,7 @@ Module langevin_module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module,      Only : boltz,mxatms
+  Use setup,      Only : boltz,mxatms
   Use configuration,     Only : natms,ltg,lfrzn,weight,xxx,yyy,zzz
   Use core_shell, Only : legshl
   Use ttm,        Only : eltemp,zerocell,ntcell,delx,dely,delz,gvar,l_ttm,nstepcpl

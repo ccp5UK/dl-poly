@@ -10,12 +10,12 @@ Module msd
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Use kinds, Only : wp, li
   Use comms, Only : comms_type, gcheck,MsdWrite_tag,gsum,wp_mpi
-  Use setup_module
-  Use site_module,       Only : dofsit
+  Use setup
+  Use site,       Only : dofsit
   Use configuration,     Only : cfgname,natms,atmnam,lsite,ltg, &
                                 weight
 
-  Use parse_module,      Only : tabs_2_blanks, get_word, word_2_real
+  Use parse,      Only : tabs_2_blanks, get_word, word_2_real
   Use io,         Only : io_set_parameters,             &
                                 io_get_parameters,             &
                                 io_init,                       &

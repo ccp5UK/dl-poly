@@ -16,8 +16,8 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz)
 
   Use kinds, only : wp
   Use comms_module
-  Use setup_module
-  Use domains_module, Only : map,mop
+  Use setup
+  Use domains, Only : map,mop
 
   Implicit None
 
@@ -179,8 +179,8 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use comms_module
-  Use setup_module
-  Use domains_module, Only : map,mop
+  Use setup
+  Use domains, Only : map,mop
 
   Implicit None
 
@@ -339,8 +339,8 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr)
 
   Use kinds, only : wp
   Use comms_module
-  Use setup_module
-  Use domains_module, Only : map,mop
+  Use setup
+  Use domains, Only : map,mop
 
   Implicit None
 

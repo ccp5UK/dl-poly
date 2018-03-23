@@ -13,9 +13,9 @@ Module ttm
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module
+  Use setup
   Use configuration, Only : cell
-  Use domains_module
+  Use domains
   Use comms, Only : wp_mpi, comms_type
 #ifdef SERIAL
   Use mpi_api
@@ -86,7 +86,7 @@ Contains
     depoend = 0.0_wp
 
 ! Setup constants based on fundamental values (found in
-! setup_module.f90)
+! setup.f90)
 
     JKms_to_kBAps = 10.0_wp/(boltz*tenunt)    ! convert W m^-1 K^-1 to kB A^-1 ps^-1
     Jm3K_to_kBA3  = 1.0e-7_wp/(boltz*tenunt)  ! convert J m^-3 K^-1 to kB A^-3

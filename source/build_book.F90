@@ -2,11 +2,11 @@ Module build_book
 ! SETUP MODULES
   Use kinds,         Only : wp, li
   Use comms,  Only : comms_type,gcheck,gmax
-  Use setup_module
+  Use setup
 
 ! SITE MODULE
 
-  Use site_module
+  Use site
 
 ! CONFIG MODULE
 

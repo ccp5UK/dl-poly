@@ -13,11 +13,11 @@ Module four_body
   Use kinds,          Only : wp
   Use comms,          Only : comms_type,gsum,gcheck
   
-  Use domains_module, Only : idx,idy,idz, nprx,npry,nprz, &
+  Use domains, Only : idx,idy,idz, nprx,npry,nprz, &
                              r_nprx,r_npry,r_nprz
   Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
                              xxx,yyy,zzz,fxx,fyy,fzz
-  Use setup_module, Only : mxsite,mxfbp,mxpfbp,zero_plus,mx3fbp, &
+  Use setup, Only : mxsite,mxfbp,mxpfbp,zero_plus,mx3fbp, &
                           mxcell, mxatms,nrite
 
 

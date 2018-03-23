@@ -26,8 +26,8 @@ Subroutine ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
 
   Use kinds, only : wp
   Use comms_module,   Only : idnode,mxnode,gsum
-  Use setup_module
-  Use domains_module, Only : nprx,npry,nprz,idx,idy,idz
+  Use setup
+  Use domains, Only : nprx,npry,nprz,idx,idy,idz
   Use configuration,  Only : cell,volm,natms,nlast,xxx,yyy,zzz
   Use mpoles_module
   Use ewald_module

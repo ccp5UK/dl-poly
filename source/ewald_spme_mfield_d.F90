@@ -18,8 +18,8 @@ Subroutine ewald_spme_mfield_d(alpha,epsq)
 
   Use kinds, only : wp
   Use comms_module,   Only : idnode,mxnode,gcheck,gsum,dlp_comm_world
-  Use setup_module
-  Use domains_module, Only : nprx,npry,nprz,idx,idy,idz
+  Use setup
+  Use domains, Only : nprx,npry,nprz,idx,idy,idz
   Use configuration,  Only : cell,natms,nlast,xxx,yyy,zzz
   Use mpoles_module,  Only : mplgfr
   Use ewald_module

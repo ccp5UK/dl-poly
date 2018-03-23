@@ -17,7 +17,7 @@ Subroutine ewald_excl_mfield_d &
 
   Use kinds, only : wp
   Use comms_module,  Only : idnode,gtime
-  Use setup_module
+  Use setup
   Use configuration, Only : natms,nlast,ltg,list
   Use mpoles_module, Only : mplgfr,mpfldx,mpfldy,mpfldz
 

@@ -12,10 +12,11 @@ Module core_shell
 
   Use kinds,             Only : wp
   Use comms,             Only : comms_type,gsync,gsum,gcheck
-  Use setup_module,      Only : mxshl,nrite,boltz,engunit,output,mxatms,mxatdm,zero_plus
+  Use setup,      Only : mxshl,nrite,boltz,engunit,output,mxatms,mxatdm,zero_plus,&
+                         mxtshl, mxtmls,mxproc,mxlshp,mxfshl
   Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,fxx,fyy,fzz, &
     weight,vxx,vyy,vzz,lfrzn,freeze_atoms
-  Use parse_module,      Only : strip_blanks,lower_case
+  Use parse,      Only : strip_blanks,lower_case
 
   Implicit None
 
@@ -49,9 +50,6 @@ Contains
 
   Subroutine allocate_core_shell_arrays()
 
-    Use setup_module, Only : mxtmls,mxtshl,mxshl,mxfshl,mxlshp,mxproc,mxatdm
-
-    Implicit None
 
     Integer, Dimension( 1:6 ) :: fail
 

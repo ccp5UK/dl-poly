@@ -13,7 +13,7 @@ Module ttm_track
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module
+  Use setup
   Use ttm
   Use ttm_utils
   Use comms, Only : comms_type

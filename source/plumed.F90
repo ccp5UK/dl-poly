@@ -12,7 +12,7 @@ Module plumed
 
   Use kinds, Only : wp
   Use comms,  Only : comms_type
-  Use setup_module,  Only : nrite, boltz, mxatms, DLP_VERSION
+  Use setup,  Only : nrite, boltz, mxatms, DLP_VERSION
   Use configuration, Only : cell,natms,weight,ltg,chge,fxx,fyy,fzz
 
   Implicit None

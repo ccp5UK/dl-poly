@@ -10,14 +10,14 @@ Module defects
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,             Only : wp,li
-  Use setup_module,      Only : mxatms, nrite,mxbfxp,mxcell,ndefdt, &
+  Use setup,      Only : mxatms, nrite,mxbfxp,mxcell,ndefdt, &
                                 nrefdt,config,half_minus, zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
                                 DefRWrite_tag
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use core_shell,        Only : ntshl,listshl
-  Use parse_module,      Only : tabs_2_blanks,get_word,word_2_real,get_line,strip_blanks
+  Use parse,      Only : tabs_2_blanks,get_word,word_2_real,get_line,strip_blanks
   Use io,         Only : io_set_parameters,        &
                                 io_get_parameters,        &
                                 io_init, io_open,         &
@@ -44,8 +44,8 @@ Module defects
                                 IO_ALLOCATION_ERROR,      &
                                 IO_UNKNOWN_WRITE_OPTION,  &
                                 IO_UNKNOWN_WRITE_LEVEL
-  Use site_module
-  Use domains_module,   Only : nprx,npry,nprz,            &
+  Use site
+  Use domains,   Only : nprx,npry,nprz,            &
                                nprx_r,npry_r,nprz_r,map,  &
                                idx,idy,idz,r_nprx,r_npry, &
                                r_nprz

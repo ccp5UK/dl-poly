@@ -4,7 +4,7 @@ Module ewald_mpoles
   Use mpole
   Use configuration, Only : natms,ltg,list,fxx,fyy,fzz,cell,volm,nlast, &
                             xxx,yyy,zzz,lfrzn
-  Use setup_module, Only : mxlist, nrite, r4pie0, sqrpi, zero_plus, &
+  Use setup, Only : mxlist, nrite, r4pie0, sqrpi, zero_plus, &
                            kmaxa, kmaxb, kmaxc, mxspl1, mxspl2, twopi, mxgele
   Use ewald,        Only : ewald_type
 
@@ -1113,7 +1113,7 @@ Module ewald_mpoles
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use domains_module, Only : nprx,npry,nprz,idx,idy,idz
+    Use domains, Only : nprx,npry,nprz,idx,idy,idz
     Use parallel_fft, Only: initialize_fft, pfft, pfft_indices
 
     Real( Kind = wp ), Intent( In    ) :: alpha,epsq
@@ -2280,7 +2280,7 @@ Module ewald_mpoles
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use domains_module, Only : nprx,npry,nprz,idx,idy,idz
+    Use domains, Only : nprx,npry,nprz,idx,idy,idz
     Use parallel_fft, Only: initialize_fft, pfft, pfft_indices
 
     Real( Kind = wp ), Intent( In    ) :: alpha,epsq

@@ -13,10 +13,10 @@ Subroutine ttm_table_scan()
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, only : wp
-  Use comms_module
-  Use setup_module, Only : ntable,nrite
-  Use parse_module, Only : get_line,get_word,word_2_real
-  Use ttm_module
+  Use comms
+  Use setup, Only : ntable,nrite
+  Use parse, Only : get_line,get_word,word_2_real
+  Use ttm
 
   Implicit None
 

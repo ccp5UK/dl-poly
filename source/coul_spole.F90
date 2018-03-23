@@ -1,7 +1,7 @@
 Module coul_spole
   Use kinds, Only : wp
   Use comms,  Only : comms_type
-  Use setup_module, Only : mxlist, r4pie0, zero_plus, mxgele, nrite
+  Use setup, Only : mxlist, r4pie0, zero_plus, mxgele, nrite
   Use configuration, Only : natms,ltg,list,chge,fxx,fyy,fzz
   Implicit None
 

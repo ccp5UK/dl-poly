@@ -1,7 +1,7 @@
 Module quaternions
   Use kinds, Only : wp
   Use comms,       Only : comms_type,gmax,gsum
-  Use setup_module
+  Use setup
   Use configuration,      Only : imcon,cell,xxx,yyy,zzz
   Use rigid_bodies
 

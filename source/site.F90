@@ -34,7 +34,7 @@ Contains
 
   Subroutine allocate_site_arrays()
 
-    Use setup_module, Only : mxtmls,mxsite,mxatyp
+    Use setup, Only : mxtmls,mxsite,mxatyp
 
     Implicit None
 

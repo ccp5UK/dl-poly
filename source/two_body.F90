@@ -1,8 +1,8 @@
 Module two_body
   Use kinds, Only : wp
   Use comms,   Only : comms_type,gsum
-  Use setup_module
-  Use site_module,    Only : ntpatm,unqatm
+  Use setup
+  Use site,    Only : ntpatm,unqatm
   Use configuration,  Only : volm,sumchg,natms,list,xxx,yyy,zzz
   Use vnl_module,     Only : l_vnl
   Use ewald,           Only : ewald_type

@@ -12,10 +12,10 @@ Module ttm_utils
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use setup_module
+  Use setup
   Use ttm
   Use comms, Only : comms_type,Grid1_tag, Grid2_tag
-  Use domains_module, Only : idx,idy,idz,nprx,npry,nprz
+  Use domains, Only : idx,idy,idz,nprx,npry,nprz
 #ifdef SERIAL
   Use mpi_api
 #else

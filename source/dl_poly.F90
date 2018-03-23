@@ -42,24 +42,24 @@ Program dl_poly
 
   Use kinds, Only : wp,li
   Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime 
-  Use setup_module
+  Use setup
 
   ! PARSE MODULE
 
-  Use parse_module
+  Use parse 
 
   ! DEVELOPMENT MODULE
 
-  Use development_module
+  Use development
 
   ! IO & DOMAINS MODULES
 
   Use io
-  Use domains_module
+  Use domains
 
   ! SITE & CONFIG MODULES
 
-  Use site_module
+  Use site
   Use configuration
   Use control, Only : read_control
 
@@ -264,7 +264,7 @@ Program dl_poly
   Call scan_control_io()
 
   ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
-  ! (setup_module and domains_module)
+  ! (setup and domains)
 
   Call set_bounds                                     &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &

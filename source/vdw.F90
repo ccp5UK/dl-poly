@@ -11,16 +11,16 @@ Module vdw
 
   Use kinds, Only : wp
   Use comms,  Only : comms_type,gsum
-  Use setup_module
-  Use site_module,   Only : ntpatm,numtyp
+  Use setup
+  Use site,   Only : ntpatm,numtyp
   Use configuration, Only : imcon,volm,natms,ltype,lfrzn, &
                             ltg,list,fxx,fyy,fzz
   Use mm3lrc
   Use m_zbl,         Only : ab, intRadZBL, intdRadZBL, &
                             zbl,zbls,zblb
 
-  Use site_module,  Only : ntpatm,unqatm
-  Use parse_module, Only : get_line,get_word,word_2_real
+  Use site,  Only : ntpatm,unqatm
+  Use parse, Only : get_line,get_word,word_2_real
   Implicit None
 
   Logical,                        Save :: lt_vdw = .false., & ! no tabulated potentials are present
@@ -53,9 +53,6 @@ Contains
 
   Subroutine allocate_vdw_arrays()
 
-    Use setup_module, Only : mxvdw,mxpvdw
-
-    Implicit None
 
     Integer, Dimension( 1:4 ) :: fail
 
@@ -78,9 +75,6 @@ Contains
 
   Subroutine allocate_vdw_table_arrays()
 
-    Use setup_module, Only : mxvdw,mxgvdw
-
-    Implicit None
 
     Integer, Dimension( 1:2 ) :: fail
 
@@ -97,10 +91,6 @@ Contains
   End Subroutine allocate_vdw_table_arrays
 
   Subroutine allocate_vdw_direct_fs_arrays()
-
-    Use setup_module, Only : mxvdw
-
-    Implicit None
 
     Integer :: fail
 

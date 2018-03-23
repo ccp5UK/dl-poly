@@ -2,11 +2,11 @@ Module halo
 
   Use comms,  Only : comms_type,gcheck
   Use deport_data, Only : export_atomic_positions
-  Use setup_module,  Only : nrite,mxatms,kmaxa,kmaxb,kmaxc,mxspl1
+  Use setup,  Only : nrite,mxatms,kmaxa,kmaxb,kmaxc,mxspl1
   Use configuration 
 
-  Use domains_module
-  Use site_module
+  Use domains
+  Use site
   Use mpole
 
   Implicit None

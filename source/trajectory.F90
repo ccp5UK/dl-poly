@@ -2,10 +2,10 @@ Module trajectory
 
   Use kinds, Only : wp, li
   Use comms, Only : comms_type,Traject_tag,gsync,wp_mpi,gbcast
-  Use domains_module, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
-  Use site_module
-  Use setup_module
-  Use parse_module,   Only : tabs_2_blanks, get_line, get_word, &
+  Use domains, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
+  Use site
+  Use setup
+  Use parse,   Only : tabs_2_blanks, get_line, get_word, &
                              strip_blanks, word_2_real
 
   Use configuration,     Only : cfgname,imcon,cell,natms, &
@@ -13,8 +13,6 @@ Module trajectory
                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz,&
                                 lsa,lsi,ltg,nlast
   Use statistics, Only : rsd
-  Use parse_module,      Only : tabs_2_blanks, get_word, &
-                                strip_blanks, word_2_real
   Use io,         Only : io_set_parameters,             &
                                 io_get_parameters,             &
                                 io_init, io_nc_create,         &

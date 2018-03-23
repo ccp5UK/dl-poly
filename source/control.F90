@@ -5,7 +5,6 @@ Module kontrol
   Use mpole,     Only : thole
   Use dpd,        Only : keydpd,gamdpd
   Use langevin_module,   Only : l_lan,l_gst,langevin_allocate_arrays
-  Use parse_module
   Use bonds,      Only : rcbnd
   Use vdw_module,        Only : ld_vdw,ls_vdw,mxtvdw
   Use metal,      Only : ld_met,ls_met,tabmet
@@ -15,18 +14,18 @@ Module kontrol
   Use kinetics,  Only : l_vom
   Use plumed,   Only : l_plumed, plumed_input, plumed_log, &
                               plumed_precision, plumed_restart
-  Use development_module
+  Use development
   
   
-  Use setup_module,       Only : nread,nrite,control,pi,zero_plus,seed, &
+  Use setup,       Only : nread,nrite,control,pi,zero_plus,seed, &
                                             output,field,config,statis, &
                                   history,historf,revive,revcon,revold
-  Use parse_module,       Only : get_line,get_word,lower_case,word_2_real
+  Use parse,       Only : get_line,get_word,lower_case,word_2_real
   
-  Use kim_module,         Only : kim,rkim
+  Use kim,         Only : kim,rkim
   Use greenkubo,   Only : isvaf,nsvaf,vafsamp
   Use rdfs,         Only : l_errors_jack, l_errors_block
-  Use development_module, Only : l_trm
+  Use development, Only : l_trm
   Use ttm
   
     Use io,     Only : io_set_parameters,        &

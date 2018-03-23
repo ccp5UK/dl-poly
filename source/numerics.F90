@@ -148,7 +148,7 @@ Function uni(comm)
 
   Use kinds, Only : wp
   Use comms, Only : comms_type
-  Use setup_module, Only : lseed,seed
+  Use setup, Only : lseed,seed
 
   Implicit None
   Type(comms_type), Intent( In ) :: comm
@@ -262,7 +262,7 @@ Function sarurnd(seeda, seedb, seedc)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp, li
-  Use setup_module, Only : lseed,seed
+  Use setup, Only : lseed,seed
 
   Implicit None
 
@@ -442,7 +442,7 @@ Subroutine box_mueller_saru1(i,j,gauss1)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
+  Use setup, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
 
   Implicit None
 
@@ -489,7 +489,7 @@ Subroutine box_mueller_saru2(i,j,n,gauss1,l_str)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : rt3,zero_plus ! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
+  Use setup, Only : rt3,zero_plus ! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
 
   Implicit None
 
@@ -548,7 +548,7 @@ Subroutine box_mueller_saru3(i,j,gauss1,gauss2,gauss3)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
+  Use setup, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
 
   Implicit None
 
@@ -611,7 +611,7 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
+  Use setup, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
 
   Implicit None
 
@@ -695,7 +695,7 @@ Subroutine box_mueller_uni(gauss1,gauss2,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
+  Use setup, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
   Use comms, Only : comms_type
 
   Implicit None
@@ -849,7 +849,7 @@ Subroutine erfcgen(rcut,alpha,mxgele,erc,fer)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : sqrpi
+  Use setup, Only : sqrpi
 
   Implicit None
 
@@ -903,7 +903,7 @@ Subroutine erfgen_met(rmet,alpha,beta,mxgmet,merf,mfer)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : sqrpi
+  Use setup, Only : sqrpi
 
   Implicit None
 
@@ -1441,7 +1441,7 @@ Subroutine images(imcon,cell,pairs,xxx,yyy,zzz)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : rt2,rt3
+  Use setup, Only : rt2,rt3
 
   Implicit None
 
@@ -1620,7 +1620,7 @@ Subroutine images_s(imcon,cell,xxx,yyy,zzz)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : rt2,rt3
+  Use setup, Only : rt2,rt3
 
   Implicit None
 
@@ -1780,7 +1780,7 @@ Subroutine pbcshift(imcon,cell,natms,xxx,yyy,zzz)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : rt2,rt3,half_minus
+  Use setup, Only : rt2,rt3,half_minus
 
   Implicit None
 
@@ -2021,7 +2021,7 @@ Subroutine pbcshfrc(imcon,cell,natms,xxx,yyy,zzz)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : rt2,rt3,half_minus
+  Use setup, Only : rt2,rt3,half_minus
 
   Implicit None
 
@@ -2274,7 +2274,7 @@ Subroutine pbcshfrl(imcon,cell,natms,xxx,yyy,zzz)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : rt2,rt3,half_minus
+  Use setup, Only : rt2,rt3,half_minus
 
   Implicit None
 
@@ -2498,7 +2498,7 @@ Subroutine jacobi(n,aaa,vvv)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : zero_plus
+  Use setup, Only : zero_plus
 
   Integer,                                    Intent( In    ) :: n
   Real( Kind = wp ), Dimension ( 1:n , 1:n ), Intent( InOut ) :: aaa,vvv

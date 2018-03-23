@@ -3,7 +3,7 @@ Module build_tplg
 
   Use kinds, Only : wp
   Use comms,  Only : comms_type,gcheck,gmax
-  Use setup_module
+  Use setup
 
   ! CONFIG MODULE
 
@@ -221,10 +221,6 @@ Contains
       ! amended   - i.t.todorov august 2010
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      Use setup_module, Only : mxatdm,mxexcl
-
-      Implicit None
 
       Integer,                                  Intent( In    ) :: ia0,ib
       Logical,                                  Intent( InOut ) :: safe

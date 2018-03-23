@@ -2,8 +2,8 @@ Module poisson
 
   Use kinds, Only : wp
   Use comms, Only : gsum, comms_type,wp_mpi,ExchgGrid_tag
-  Use domains_module
-  Use setup_module,  Only : fourpi,r4pie0,nrite,            &
+  Use domains
+  Use setup,  Only : fourpi,r4pie0,nrite,            &
                             kmaxa,kmaxb,kmaxc,mxspl,mxspl1, &
                             mxlist,mxatms,mxatdm,half_minus,zero_plus
   Use configuration, Only : imcon,cell,natms,nlast,list,ltg,lfrzn, &

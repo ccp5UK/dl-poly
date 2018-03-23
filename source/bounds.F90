@@ -1,8 +1,8 @@
 Module bounds
   Use kinds, Only : wp
   Use comms,       Only : comms_type
-  Use setup_module
-  Use domains_module,     Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
+  Use setup
+  Use domains,     Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
   Use configuration,      Only : imcon,imc_n,cfgname,cell,volm
   Use vnl_module,         Only : llvnl ! Depends on l_str,lsim & rpad
   Use msd
@@ -10,7 +10,7 @@ Module bounds
   Use kim_module,         Only : kim
   Use bonds,       Only : rcbnd
   Use tersoff,     Only : potter
-  Use development_module, Only : l_trm
+  Use development, Only : l_trm
   Use greenkubo,   Only : vafsamp
   Use mpole,      Only : keyind,induce
   Use ttm,         Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
@@ -27,7 +27,7 @@ Subroutine set_bounds                                 &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine to determine various limits as array bounds,
-! grid sizes, paddings, iterations, etc. as specified in setup_module
+! grid sizes, paddings, iterations, etc. as specified in setup
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov december 2016
@@ -52,7 +52,7 @@ Subroutine set_bounds                                 &
                        rcter,rctbp,rcfbp,       &
                        xhi,yhi,zhi
 
-! define zero+ and half+/- (setup_module)
+! define zero+ and half+/- (setup)
 
   zero_plus  = Nearest( 0.0_wp , +1.0_wp)
   half_plus  = Nearest( 0.5_wp , +1.0_wp)

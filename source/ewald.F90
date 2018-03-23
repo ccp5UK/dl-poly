@@ -11,9 +11,9 @@ Module ewald
 
   Use kinds, Only : wp
   Use comms, Only : ExchgGrid_tag, comms_type,wp_mpi
-  Use setup_module, Only : mxatms,nrite,mxspl,mxspl2,twopi,kmaxa,kmaxb,kmaxc
+  Use setup, Only : mxatms,nrite,mxspl,mxspl2,twopi,kmaxa,kmaxb,kmaxc
   Use configuration, Only : natms,fxx,fyy,fzz,imcon
-  Use domains_module, Only : map
+  Use domains, Only : map
   Use mpole, Only : ncombk
 #ifdef SERIAL
   Use mpi_api

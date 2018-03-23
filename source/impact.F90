@@ -1,6 +1,6 @@
 Module impacts
   Use kinds, Only : wp
-  Use setup_module,        Only : eu_ev
+  Use setup,        Only : eu_ev
   Use comms,               Only : comms_type,gcheck
   Use configuration,       Only : natms,nlast,nfree,          &
                                   lfrzn,lfree,lstfre,lsi,lsa, &

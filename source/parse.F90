@@ -10,7 +10,7 @@ Module parse
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Use kinds, Only : wp
   Use comms, Only : comms_type,gsync,gbcast,gcheck
-  Use setup_module, Only : nrite
+  Use setup, Only : nrite
   Implicit None
 
   Public :: tabs_2_blanks, nls_2_blanks, strip_blanks, get_word, &

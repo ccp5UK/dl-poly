@@ -16,7 +16,7 @@ Module plumed_module
 
   Use kinds, only : wp
   Use comms_module,  Only : idnode,mxnode,dlp_comm_world
-  Use setup_module,  Only : nrite, boltz, mxatms, DLP_VERSION
+  Use setup,  Only : nrite, boltz, mxatms, DLP_VERSION
   Use configuration, Only : cell,natms,weight,ltg,chge,fxx,fyy,fzz
 
   Implicit None

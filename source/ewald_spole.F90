@@ -1,7 +1,7 @@
 Module ewald_spole
   Use kinds, Only : wp
   Use comms,  Only : comms_type, gcheck, gsum
-  Use setup_module, Only : mxlist, mxatdm, mxatms, nrite, r4pie0, sqrpi, twopi, &
+  Use setup, Only : mxlist, mxatdm, mxatms, nrite, r4pie0, sqrpi, twopi, &
                            mxspl, mxspl1, mxspl2, kmaxa, kmaxb, kmaxc, &
                            zero_plus, mxgele
   Use configuration, Only : natms,ltg,list,chge,fxx,fyy,fzz,cell,volm,nlast, &
@@ -229,7 +229,7 @@ Module ewald_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Use ewald,          Only : ewald_type
-    Use domains_module, Only : nprx,npry,nprz,idx,idy,idz
+    Use domains, Only : nprx,npry,nprz,idx,idy,idz
     Use parallel_fft, Only : initialize_fft, pfft, pfft_indices
 
     Real( Kind = wp ), Intent( In    ) :: alpha,epsq

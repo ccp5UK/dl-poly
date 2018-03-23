@@ -3,7 +3,7 @@ Module build_chrm
 
   Use kinds, only : wp
   Use comms,  Only : comms_type,gcheck,gmax,gsum
-  Use setup_module
+  Use setup
 
   ! CONFIG MODULE
 
@@ -1179,9 +1179,6 @@ Contains
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      Use setup_module, Only : mxatdm,mxexcl
-
-      Implicit None
 
       Integer,                                  Intent( In    ) :: ia0,ib
       Logical,                                  Intent( InOut ) :: safe

@@ -11,14 +11,13 @@ Module statistics
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,li
-  Use setup_module, Only : mxatdm,mxnstk,mxstak,nrite,mxbfss,zero_plus
+  Use setup, Only : mxatdm,mxnstk,mxstak,nrite,mxbfss,zero_plus
   Use comms,   Only : comms_type,gsum,Spread_tag,wp_mpi,gtime,gmax
-  Use setup_module
-  Use site_module,    Only : ntpatm,numtypnf,unqatm,dens
+  Use site,    Only : ntpatm,numtypnf,unqatm,dens
   Use configuration,  Only : cfgname,imcon,cell,volm,natms,ltype, &
                              xxx,yyy,zzz,vxx,vyy,vzz,ixyz,lsa,lsi,ltg
   Use dpd,     Only : virdpd
-  Use domains_module,    Only : nprx,npry,nprz,map,r_nprx,r_npry,r_nprz,&
+  Use domains,    Only : nprx,npry,nprz,map,r_nprx,r_npry,r_nprz,&
                                 nprx_r,npry_r,nprz_r,idx,idy,idz
   Use msd,    Only : l_msd
 

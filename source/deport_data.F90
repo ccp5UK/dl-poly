@@ -4,8 +4,8 @@ Module deport_data
   Use comms,            Only : comms_type,gcheck,wp_mpi, Deport_tag, &
                                Export_tag, MetLdExp_tag, ExpMplRM_tag
 
-  Use setup_module
-  Use domains_module
+  Use setup
+  Use domains
 
   Use configuration
 

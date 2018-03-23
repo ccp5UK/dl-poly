@@ -10,10 +10,8 @@ Module external_field
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module, Only : mxpfld
-  
   Use comms,   Only : comms_type,gcheck,gsum
-  Use setup_module,   Only : twopi,nrite,mxshl,mxatms
+  Use setup,   Only : twopi,nrite,mxshl,mxatms,mxpfld
   Use configuration,  Only : imcon,cell,natms,nfree,nlast,lsi,lsa,ltg, &
                              lfrzn,lstfre,weight,chge,           &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz

@@ -14,7 +14,7 @@ Subroutine ewald_frzn_mfield(rcut,alpha,epsq)
 
   Use kinds, only : wp
   Use comms_module
-  Use setup_module
+  Use setup
   Use configuration, Only : cell,natms,nlast,list,ltg,lfrzn, &
                             xxx,yyy,zzz,fxx,fyy,fzz
   Use mpoles_module

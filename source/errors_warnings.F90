@@ -1,7 +1,7 @@
 Module errors_warnings
   Use kinds, Only : wp
   Use comms, Only : comms_type,abort_comms
-  Use setup_module, Only : nread,nconf,nfield,ntable,nrefdt,nrite, &
+  Use setup, Only : nread,nconf,nfield,ntable,nrefdt,nrite, &
                            nstats,nrest,nhist,ndefdt,nrdfdt,nzdndt,nrsddt
 
   Implicit None
@@ -1793,11 +1793,11 @@ Subroutine error(kode,comm)
 
      Else If (kode == 1011) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in parse_module -> get_record'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in setup -> get_record'
 
      Else If (kode == 1012) Then
 
-        Write(nrite,'(/,1x,a)') 'error - deallocation failure in parse_module -> get_record'
+        Write(nrite,'(/,1x,a)') 'error - deallocation failure in setup -> get_record'
 
      Else If (kode == 1013) Then
 
@@ -1853,7 +1853,7 @@ Subroutine error(kode,comm)
 
      Else If (kode == 1026) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in site_module -> allocate_site_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in site -> allocate_site_arrays'
 
      Else If (kode == 1027) Then
 

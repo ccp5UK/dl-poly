@@ -3,7 +3,7 @@ Module build_excl
 
   Use kinds, Only : wp
   Use comms,  Only : comms_type,gcheck,gmax
-  Use setup_module
+  Use setup
 
 ! CONFIG MODULE
 
@@ -1194,10 +1194,6 @@ Contains
 ! amended   - i.t.todorov july 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use setup_module, Only : mxatdm,mxexcl
-
-    Implicit None
 
     Integer,                                  Intent( In    ) :: ia0,ib
     Logical,                                  Intent( InOut ) :: safe

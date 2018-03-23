@@ -12,16 +12,15 @@ Module bonds
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,         Only : wp
-  Use setup_module,  Only : mxtmls,mxtbnd,mxbond,mxfbnd,mxpbnd,mxgbnd1,mxatdm, &
+  Use setup,  Only : mxtmls,mxtbnd,mxbond,mxfbnd,mxpbnd,mxgbnd1,mxatdm, &
                            mxgbnd, fourpi,boltz,delr_max,nrite,npdfdt,npdgdt, &
-                           engunit,zero_plus,r4pie0,mximpl,ntable
+                           engunit,zero_plus,r4pie0,mximpl,ntable,delr_max,nrite, &
+                           mxtbnd,mxgbnd,zero_plus,engunit
   Use comms,         Only : comms_type,gsum, gsync, gcheck
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                             chge,xxx,yyy,zzz,fxx,fyy,fzz, cfgname
-  Use setup_module, Only : delr_max,nrite, &
-                           mxtbnd,mxgbnd,zero_plus,engunit
-  Use site_module,  Only : ntpatm,unqatm
-  Use parse_module, Only : get_line,get_word,word_2_real
+  Use site,  Only : ntpatm,unqatm
+  Use parse, Only : get_line,get_word,word_2_real
 
   Implicit None
 
@@ -121,10 +120,6 @@ Contains
   End Subroutine allocate_bond_pot_arrays
 
   Subroutine allocate_bond_dst_arrays()
-
-    Use setup_module, Only : mxgbnd1
-
-    Implicit None
 
     Integer :: fail
 

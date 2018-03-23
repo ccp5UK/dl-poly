@@ -13,14 +13,14 @@ Module development
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, only : wp
-  Use setup_module, Only : nrite, nread, control
+  Use setup, Only : nrite, nread, control
 #ifdef OLDMPI
   Use comms, Only : mpi_ver,mpi_subver, comms_type,gcheck, gtime, gsync
 #else
   Use comms, Only : mpi_ver,mpi_subver,lib_version,comms_type,gcheck, &
     gtime, gsync
 #endif
-  Use parse_module, Only : get_line,get_word,lower_case
+  Use parse, Only : get_line,get_word,lower_case
 
   Implicit None
 
@@ -278,4 +278,4 @@ Contains
 
   End Subroutine build_info
 
-End Module developmente
+End Module development

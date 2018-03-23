@@ -1,8 +1,8 @@
 Module temperature
   Use kinds,               Only : wp, li
   Use comms,               Only : comms_type,gsum
-  Use setup_module,        Only : nrite,boltz,mxatms,mxshl,zero_plus
-  Use site_module,         Only : dofsit
+  Use setup,        Only : nrite,boltz,mxatms,mxshl,zero_plus
+  Use site,         Only : dofsit
   Use configuration,       Only : imcon,natms,nlast,nfree,lsite,  &
                                   lsi,lsa,ltg,lfrzn,lfree,lstfre, &
                                   weight,vxx,vyy,vzz,xxx,yyy,zzz

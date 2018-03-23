@@ -2,8 +2,8 @@ Module shared_units
 
   Use kinds, Only : wp
   Use comms, Only : comms_type,PassUnit_tag,wp_mpi,UpdShUnit_tag
-  Use setup_module
-  Use domains_module,      Only : map,mop
+  Use setup
+  Use domains,      Only : map,mop
   Use configuration,       Only : natms,nlast,lsi,lsa
   Use rigid_bodies, Only : q0,q1,q2,q3,          &
                                   rgdvxx,rgdvyy,rgdvzz, &

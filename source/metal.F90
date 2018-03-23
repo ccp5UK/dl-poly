@@ -11,13 +11,13 @@ Module metal
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use setup_module
-  Use site_module,   Only : ntpatm,unqatm,dens
+  Use setup
+  Use site,   Only : ntpatm,unqatm,dens
   Use configuration, Only : natms,ltg,ltype,list,fxx,fyy,fzz,&
                             xxx,yyy,zzz,imcon,volm
 
   Use comms,  Only : comms_type,gsum,gcheck
-  Use parse_module, Only : get_line,get_word,lower_case,word_2_real
+  Use parse, Only : get_line,get_word,lower_case,word_2_real
 
   Implicit None
 
@@ -56,8 +56,6 @@ Contains
 
   Subroutine allocate_metal_arrays()
 
-    Use setup_module, Only : mxmet,mxpmet,mxatms,mxatyp
-
     Integer, Dimension( 1:7 ) :: fail
 
     If (tabmet == 3 .or. tabmet == 4) l2bmet=.true.
@@ -89,10 +87,6 @@ Contains
 
   Subroutine allocate_metal_table_arrays()
 
-    Use setup_module, Only : mxmet,mxmed,mxmds,mxatyp,mxgmet
-
-    Implicit None
-
     Integer, Dimension( 1:5 ) :: fail
 
     fail = 0
@@ -118,10 +112,6 @@ Contains
   End Subroutine allocate_metal_table_arrays
 
   Subroutine allocate_metal_erf_arrays()
-
-    Use setup_module, Only : mxgmet
-
-    Implicit None
 
     Integer :: fail
 

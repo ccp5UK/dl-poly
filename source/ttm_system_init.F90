@@ -10,12 +10,12 @@ Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use setup_module
+  Use setup
   Use ttm_module
   Use ttm_utils
   Use ttm_track_module
   Use comms_module
-  Use parse_module,   Only : tabs_2_blanks, get_line, get_word, &
+  Use setup,   Only : tabs_2_blanks, get_line, get_word, &
                              strip_blanks, word_2_real
 
   Implicit None

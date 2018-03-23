@@ -19,11 +19,11 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
 
   Use kinds, only : wp
   Use comms_module
-  Use setup_module,  Only : nfield,nconf,nrite,field,config
-  Use site_module
+  Use setup,  Only : nfield,nconf,nrite,field,config
+  Use site
   Use configuration, Only : cfgname,imcon,cell,natms,lsi,lsa, &
                             atmnam,xxx,yyy,zzz
-  Use parse_module,  Only : tabs_2_blanks, get_word, strip_blanks, &
+  Use setup,  Only : tabs_2_blanks, get_word, strip_blanks, &
                             lower_case, word_2_real
   Use io,     Only : io_set_parameters,        &
                             io_get_parameters,        &

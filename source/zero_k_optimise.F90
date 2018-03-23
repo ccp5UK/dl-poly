@@ -28,7 +28,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot)
 
   Use kinds, only : wp
   Use comms_module,   Only : idnode,mxnode,gsum
-  Use setup_module,   Only : mxrgd,mxlrgd,nrite
+  Use setup,   Only : mxrgd,mxlrgd,nrite
   Use configuration,  Only : imcon,cell,natms,nfree,lfrzn,lstfre,weight, &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies

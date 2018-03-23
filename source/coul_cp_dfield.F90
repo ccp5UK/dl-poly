@@ -14,7 +14,7 @@ Subroutine coul_cp_dfield &
 
   Use kinds, only : wp
   Use comms_module,  Only : idnode,gtime
-  Use setup_module
+  Use setup
   Use configuration, Only : natms,nlast,ltg,list
   Use mpoles_module, Only : indipx,indipy,indipz,mpfldx,mpfldy,mpfldz,&
                             plratm
