@@ -17,6 +17,8 @@ Module ttm
   Use configuration, Only : cell
   Use domains
   Use comms, Only : wp_mpi, comms_type
+  Use parse,   Only : tabs_2_blanks, get_line, get_word, &
+                             strip_blanks, word_2_real
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -63,6 +65,11 @@ Module ttm
   Real ( Kind = wp ) :: fluence,pdepth
   Real ( Kind = wp ) :: epthreshold = 1.1_wp
 
+  Real( Kind = wp ), Allocatable, Dimension (:,:,:) :: lat_U,lat_B,lat_I
+  Real( Kind = wp ) :: norm
+
+  Logical :: trackInit = .false.
+  
   Public :: allocate_ttm_arrays , deallocate_ttm_arrays
 
 Contains
@@ -342,5 +349,1116 @@ Contains
     idcube = i + nprx * ( j + npry * k )
 
   End Function idcube
+  
+  Subroutine eltemp_sum (eltempsum,comm)
+
+! Find sum of electronic temperatures over all active CET voxels
+
+    Real ( Kind = wp ), Intent (   Out ) :: eltempsum
+    Type ( comms_type), Intent ( In    ) :: comm
+    Real ( Kind = wp )                 :: tmp
+    Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
+    Logical                            :: lrange,lcentre
+
+    eltempsum = 0.0_wp
+
+    Do kk = -eltcell(3), eltcell(3)
+      If (eltcell(3)>0 .and. kk == -eltcell(3) .and. ttmbcmap(5)>=0) Then
+        kmin = ttmbc(5)
+      Else
+        kmin = 1
+      End If
+      If (eltcell(3)>0 .and. kk == eltcell(3) .and. ttmbcmap(6)>=0) Then
+        kmax = ttmbc(6)
+      Else
+        kmax = ntcell(3)
+      End If
+
+      Do jj = -eltcell(2), eltcell(2)
+        If (eltcell(2)>0 .and. jj == -eltcell(2) .and. ttmbcmap(3)>=0) Then
+          jmin = ttmbc(3)
+        Else
+          jmin = 1
+        End If
+        If (eltcell(2)>0 .and. jj == eltcell(2) .and. ttmbcmap(4)>=0) Then
+          jmax = ttmbc(4)
+        Else
+          jmax = ntcell(2)
+        End If
+
+        Do ii = -eltcell(1), eltcell(1)
+          If (eltcell(1)>0 .and. ii == -eltcell(1) .and. ttmbcmap(1)>=0) Then
+            imin = ttmbc(1)
+          Else
+            imin = 1
+          End If
+          If (eltcell(1)>0 .and. ii == eltcell(1) .and. ttmbcmap(2)>=0) Then
+            imax = ttmbc(2)
+          Else
+            imax = ntcell(1)
+          End If
+          lcentre = (ii==0 .and. jj==0 .and. kk==0)
+          Do k = kmin, kmax
+            lz = k + ntcelloff(3) + (kk + eltcell(3)) * ntsys(3) - zeroE(3)
+            Do j = jmin, jmax
+              ly = j + ntcelloff(2) + (jj + eltcell(2)) * ntsys(2) - zeroE(2)
+              Do i = imin, imax
+                lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
+                lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
+                ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+                tmp = eltemp(ijk,ii,jj,kk) * Merge (act_ele_cell (ijk,0,0,0), 1.0_wp, lcentre)
+                If (lrange) eltempsum = eltempsum + tmp
+              End Do
+            End Do
+          End Do
+
+        End Do
+      End Do
+    End Do
+
+    If (comm%mxnode>1) Then 
+      Call gsum (comm,eltempsum)
+    End If
+
+  End Subroutine eltemp_sum
+
+  Subroutine eltemp_mean (eltempav,comm)
+
+! Find mean electronic temperature over all active CET voxels
+
+    Real ( Kind = wp ), Intent ( Out ) :: eltempav
+    Real ( Kind = wp )                 :: tmp,acl
+    Type( comms_type ), Intent ( In )    :: comm
+    Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
+    Logical                            :: lrange,lcentre
+
+    eltempav = 0.0_wp
+    acl = 0.0_wp
+
+    Do kk = -eltcell(3), eltcell(3)
+      If (eltcell(3)>0 .and. kk == -eltcell(3) .and. ttmbcmap(5)>=0) Then
+        kmin = ttmbc(5)
+      Else
+        kmin = 1
+      End If
+      If (eltcell(3)>0 .and. kk == eltcell(3) .and. ttmbcmap(6)>=0) Then
+        kmax = ttmbc(6)
+      Else
+        kmax = ntcell(3)
+      End If
+
+      Do jj = -eltcell(2), eltcell(2)
+        If (eltcell(2)>0 .and. jj == -eltcell(2) .and. ttmbcmap(3)>=0) Then
+          jmin = ttmbc(3)
+        Else
+          jmin = 1
+        End If
+        If (eltcell(2)>0 .and. jj == eltcell(2) .and. ttmbcmap(4)>=0) Then
+          jmax = ttmbc(4)
+        Else
+          jmax = ntcell(2)
+        End If
+
+        Do ii = -eltcell(1), eltcell(1)
+          If (eltcell(1)>0 .and. ii == -eltcell(1) .and. ttmbcmap(1)>=0) Then
+            imin = ttmbc(1)
+          Else
+            imin = 1
+          End If
+          If (eltcell(1)>0 .and. ii == eltcell(1) .and. ttmbcmap(2)>=0) Then
+            imax = ttmbc(2)
+          Else
+            imax = ntcell(1)
+          End If
+          lcentre = (ii==0 .and. jj==0 .and. kk==0)
+          Do k = kmin, kmax
+            lz = k + ntcelloff(3) + (kk + eltcell(3)) * ntsys(3) - zeroE(3)
+            Do j = jmin, jmax
+              ly = j + ntcelloff(2) + (jj + eltcell(2)) * ntsys(2) - zeroE(2)
+              Do i = imin, imax
+                lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
+                lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
+                ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+                tmp = Merge (act_ele_cell (ijk,0,0,0), 1.0_wp, lcentre)
+                If (lrange) Then
+                  eltempav = eltempav + eltemp(ijk,ii,jj,kk) * tmp
+                  acl = acl + tmp
+                End If
+              End Do
+            End Do
+          End Do
+
+        End Do
+      End Do
+    End Do
+
+    If (comm%mxnode>1) Then
+      Call gsum (comm, eltempav)
+      Call gsum (comm, acl)
+    End If
+
+    If (acl>zero_plus) eltempav = eltempav/acl
+
+  End Subroutine eltemp_mean
+
+  Subroutine eltemp_maxKe (temp, eltempmax, comm)
+
+! Find maximum temperature for calculating tabulated
+! thermal conductivities (ionic or system) over all 
+! active CET voxels (note that system temperature 
+! applies over all CET voxels that do not overlap
+! CIT voxels)
+
+    Real ( Kind = wp ), Intent ( In )  :: temp
+    Real ( Kind = wp ), Intent ( Out ) :: eltempmax
+    Type( comms_type ), Intent ( In )  :: comm
+    Real ( Kind = wp )                 :: eltempKe
+    Integer                            :: i,j,k,ijk
+
+    eltempmax = 0.0_wp
+
+    Do k = 1, ntcell(3)
+      Do j = 1, ntcell(2)
+        Do i = 1, ntcell(1)
+          ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+          eltempKe = tempion(ijk)
+          If (act_ele_cell(ijk,0,0,0)>zero_plus) eltempmax = Max (eltempmax, eltempKe)
+        End Do
+      End Do
+    End Do
+    eltempmax = Max (eltempmax, temp)
+
+    If (comm%mxnode>1) Call gmax (comm,eltempmax)
+
+  End Subroutine eltemp_maxKe
+
+  Subroutine eltemp_max (eltempmax,comm)
+
+! Find maximum electronic temperature over all
+! active CET cells
+
+    Real ( Kind = wp ), Intent ( Out ) :: eltempmax
+    Type( comms_type ), Intent ( In )  :: comm
+    Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
+    Logical                            :: lrange,lcentre
+
+    eltempmax = 0.0_wp
+
+    Do kk = -eltcell(3), eltcell(3)
+      If (eltcell(3)>0 .and. kk == -eltcell(3) .and. ttmbcmap(5)>=0) Then
+        kmin = ttmbc(5)
+      Else
+        kmin = 1
+      End If
+      If (eltcell(3)>0 .and. kk == eltcell(3) .and. ttmbcmap(6)>=0) Then
+        kmax = ttmbc(6)
+      Else
+        kmax = ntcell(3)
+      End If
+
+      Do jj = -eltcell(2), eltcell(2)
+        If (eltcell(2)>0 .and. jj == -eltcell(2) .and. ttmbcmap(3)>=0) Then
+          jmin = ttmbc(3)
+        Else
+          jmin = 1
+        End If
+        If (eltcell(2)>0 .and. jj == eltcell(2) .and. ttmbcmap(4)>=0) Then
+          jmax = ttmbc(4)
+        Else
+          jmax = ntcell(2)
+        End If
+
+        Do ii = -eltcell(1), eltcell(1)
+          If (eltcell(1)>0 .and. ii == -eltcell(1) .and. ttmbcmap(1)>=0) Then
+            imin = ttmbc(1)
+          Else
+            imin = 1
+          End If
+          If (eltcell(1)>0 .and. ii == eltcell(1) .and. ttmbcmap(2)>=0) Then
+            imax = ttmbc(2)
+          Else
+            imax = ntcell(1)
+          End If
+          lcentre = (ii==0 .and. jj==0 .and. kk==0)
+          Do k = kmin, kmax
+            lz = k + ntcelloff(3) + (kk + eltcell(3)) * ntsys(3) - zeroE(3)
+            Do j = jmin, jmax
+              ly = j + ntcelloff(2) + (jj + eltcell(2)) * ntsys(2) - zeroE(2)
+              Do i = imin, imax
+                lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
+                ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+                lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
+                If (lcentre) lrange = (lrange .and. (act_ele_cell(ijk,0,0,0)>zero_plus))
+                If (lrange) eltempmax = Max (eltempmax, eltemp(ijk,ii,jj,kk))
+              End Do
+            End Do
+          End Do
+
+        End Do
+      End Do
+    End Do
+
+    If (comm%mxnode>1) Call gmax (comm,eltempmax)
+
+  End Subroutine eltemp_max
+
+  Subroutine eltemp_minKe (temp, eltempmin, comm)
+
+! Find minimum temperature for calculating tabulated
+! thermal conductivities (ionic or system) over all 
+! active CET voxels (note that system temperature
+! applies over all CET voxels that do not overlap
+! CIT voxels)
+
+    Type( comms_type ), Intent ( In )  :: comm
+    Real ( Kind = wp ), Intent ( In )  :: temp
+    Real ( Kind = wp ), Intent ( Out ) :: eltempmin
+    Real ( Kind = wp )                 :: eltempKe
+    Integer                            :: i,j,k,ijk
+
+    eltempmin = 1.0e30_wp
+
+    Do k = 1, ntcell(3)
+      Do j = 1, ntcell(2)
+        Do i = 1, ntcell(1)
+          ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+          eltempKe = tempion (ijk)
+          If (act_ele_cell(ijk,0,0,0)>zero_plus) eltempmin = Min (eltempmin, eltempKe)
+        End Do
+      End Do
+    End Do
+
+    eltempmin = Min (eltempmin, temp)
+
+    If (comm%mxnode>1) Call gmin (comm,eltempmin)
+
+  End Subroutine eltemp_minKe
+
+  Subroutine eltemp_min (eltempmin,comm)
+
+! Find minimum electronic temperature over all
+! active CET cells
+
+    Real( Kind = wp ), Intent ( Out ) :: eltempmin
+    Type( comms_type ), Intent ( In ) :: comm
+    Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
+    Logical                            :: lrange
+
+    eltempmin = 1.0e30_wp
+
+    Do kk = -eltcell(3), eltcell(3)
+      If (eltcell(3)>0 .and. kk == -eltcell(3) .and. ttmbcmap(5)>=0) Then
+        kmin = ttmbc(5)
+      Else
+        kmin = 1
+      End If
+      If (eltcell(3)>0 .and. kk == eltcell(3) .and. ttmbcmap(6)>=0) Then
+        kmax = ttmbc(6)
+      Else
+        kmax = ntcell(3)
+      End If
+
+      Do jj = -eltcell(2), eltcell(2)
+        If (eltcell(2)>0 .and. jj == -eltcell(2) .and. ttmbcmap(3)>=0) Then
+          jmin = ttmbc(3)
+        Else
+          jmin = 1
+        End If
+        If (eltcell(2)>0 .and. jj == eltcell(2) .and. ttmbcmap(4)>=0) Then
+          jmax = ttmbc(4)
+        Else
+          jmax = ntcell(2)
+        End If
+
+        Do ii = -eltcell(1), eltcell(1)
+          If (eltcell(1)>0 .and. ii == -eltcell(1) .and. ttmbcmap(1)>=0) Then
+            imin = ttmbc(1)
+          Else
+            imin = 1
+          End If
+          If (eltcell(1)>0 .and. ii == eltcell(1) .and. ttmbcmap(2)>=0) Then
+            imax = ttmbc(2)
+          Else
+            imax = ntcell(1)
+          End If
+          Do k = kmin, kmax
+            lz = k + ntcelloff(3) + (kk + eltcell(3)) * ntsys(3) - zeroE(3)
+            Do j = jmin, jmax
+              ly = j + ntcelloff(2) + (jj + eltcell(2)) * ntsys(2) - zeroE(2)
+              Do i = imin, imax
+                lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
+                ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+                lrange = (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3))
+                If (ii==0 .and. jj==0 .and. kk==0) lrange = (lrange .and. (act_ele_cell(ijk,0,0,0)>zero_plus))
+                If (lrange) eltempmin = Min (eltempmin, eltemp(ijk,ii,jj,kk))
+              End Do
+            End Do
+          End Do
+
+        End Do
+      End Do
+    End Do
+
+    If (comm%mxnode>1) Call gmin (comm,eltempmin)
+
+  End Subroutine eltemp_min
+  
+    Subroutine depoinit(time,comm)
+
+! determine initial energy deposition to electronic system,
+! both temporally and spatially
+
+    Real ( Kind = wp ), Intent( In ) :: time
+    Type( comms_type), Intent( InOut ) :: comm
+    Integer, Dimension( 1:3 ) :: fail
+    Character ( Len = 14 ) :: number
+
+    fail = 0
+
+    Allocate (lat_U (0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1), Stat = fail(1))
+    Allocate (lat_B (0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1), Stat = fail(2))
+    Allocate (lat_I (0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1), Stat = fail(3))
+
+    If (Any(fail>0)) Call error(1089)
+
+    lat_U(:,:,:) = 0.0_wp ! spatial deposition (eV)
+    lat_B(:,:,:) = 0.0_wp ! temporal deposition of lat_U (eV)
+    lat_I(:,:,:) = 0.0_wp ! sum of temporal deposition of lat_B (eV)
+
+! spatial distribution of track
+
+    Select Case (sdepoType)
+    Case (1)
+    ! Gaussian spatial deposition
+      Call gaussianTrack(lat_U,comm)
+    Case (2)
+    ! Constant (flat) spatial deposition
+      Call uniformDist(lat_U)
+    Case (3)
+    ! xy-flat, z-exp spatial deposition
+      Call uniformDistZexp(lat_U)
+    End Select
+
+    trackInit = .true.                           ! switch on flag indicating track initialisation is in progress
+    If (depostart<=zero_plus) depostart = time   ! time (ps) when deposition starts, i.e. current time
+
+! temporal deposition of track: calculate time normalisation factor
+
+    Select Case (tdepoType)
+!   type=1: gauss(t)
+    Case (1)
+    ! Gaussian temporal deposition
+      norm = 1.0_wp/(sqrpi*rt2*tdepo)
+      depoend = depostart+2.0_wp*tcdepo*tdepo
+    Case (2)
+    ! decaying exponential temporal deposition
+      norm = 1.0_wp/(1.0_wp-Exp(-tcdepo))
+      depoend = depostart+2.0_wp*tcdepo*tdepo
+    Case (3)
+    ! delta temporal deposition
+      norm = 1.0_wp
+      depoend = depostart
+    Case (4)
+    ! pulse temporal deposition
+      norm = 1.0_wp/tdepo
+      depoend = depostart+tdepo
+    End Select
+
+    ! report start of energy deposition
+
+    If (comm%idnode == 0) Then
+      Write(number, '(f14.5)') depostart
+      Write(nrite,"(/,6x,a,a,a,/)") &
+        'electronic energy deposition starting at time = ',Trim(Adjustl(number)),' ps'
+      Write(nrite,"(1x,130('-'))")
+    End If
+
+  End Subroutine depoinit
+  
+  Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for writing electronic temperature restart files
+! at job termination or selected intervals in simulation
+!
+! copyright - daresbury laboratory
+! authors   - s.l.daraszewicz & m.a.seaton september 2017
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Integer,             Intent ( In ) :: keyres,nstep,nsteql
+  Real ( Kind = wp ),  Intent ( In ) :: temp,time
+  Character (Len = *), Intent ( In ) :: dumpfile
+  Type( comms_type ), Intent( InOut ) :: comm
+
+  Character( Len = 200 ) :: record
+  Character( Len = 40  ) :: word
+  Logical                :: safe,l_tmp = .true.
+  Integer                :: nxx,nyy,nzz,nstp,i,ix,iy,iz,ii,jj,kk,ijk,ipos(3)
+  Real ( Kind = wp )     :: eltmp,tme,lat_sum,lat_max,lat_min
+  Integer                :: iounit = 225
+
+! check existence of readable restart file (DUMP_E)
+
+  If (comm%idnode == 0) Inquire(File=dumpfile, Exist=l_tmp)
+  Call gcheck(comm,l_tmp)
+  If ((.not. l_tmp) .and. keyres==keyres0) Call error(684)
+
+! if restarting simulation, read restart file
+
+  If (l_tmp .and. keyres==keyres0) Then
+
+    If (comm%idnode==0) Open (Unit=iounit, File=dumpfile)
+    Call get_line(safe,iounit,record,comm); If (.not.safe) Goto 100
+    Call get_word(record,word) ; nxx=Nint(word_2_real(word,comm,0.0_wp))
+    Call get_word(record,word) ; nyy=Nint(word_2_real(word,comm,0.0_wp))
+    Call get_word(record,word) ; nzz=Nint(word_2_real(word,comm,0.0_wp))
+    Call get_line(safe,iounit,record,comm); If (.not.safe) Goto 100
+    Call get_word(record,word) ; nstp=Nint(word_2_real(word,comm,0.0_wp))
+    Call get_word(record,word) ; tme=word_2_real(word,comm,0.0_wp)
+    Call get_word(record,word) ; depostart=word_2_real(word,comm,0.0_wp)
+    Call get_word(record,word) ; depoend=word_2_real(word,comm,0.0_wp)
+    ! check size of electronic temperature grid matches with size given in CONTROL file
+    If (nxx/=eltsys(1) .or. nyy/=eltsys(2) .or. nzz/=eltsys(3)) Call error(685)
+    ! check restart file is at same timestep as restart
+    ! (can proceed if not, but need to warn user)
+    If (nstp/=nstep .or. Abs(tme-time)>zero_plus) Call warning(520,0.0_wp,0.0_wp,0.0_wp)
+    ! read in each line, find appropriate grid cell and assign
+    ! electronic temperature if processor has that cell
+    Do i=1,eltsys(1)*eltsys(2)*eltsys(3)
+      Call get_line(safe,iounit,record,comm); If (.not.safe) Goto 100
+      Call get_word(record,word) ; ipos(1)=Nint(word_2_real(word,comm,0.0_wp))
+      Call get_word(record,word) ; ipos(2)=Nint(word_2_real(word,comm,0.0_wp))
+      Call get_word(record,word) ; ipos(3)=Nint(word_2_real(word,comm,0.0_wp))
+      Call get_word(record,word) ; eltmp=word_2_real(word,comm,0.0_wp)
+      ix = ipos(1) + midI(1) - 1
+      iy = ipos(2) + midI(2) - 1
+      iz = ipos(3) + midI(3) - 1
+      ii = Floor(Real(ix,Kind=wp)/Real(ntsys(1),Kind=wp))
+      jj = Floor(Real(iy,Kind=wp)/Real(ntsys(2),Kind=wp))
+      kk = Floor(Real(iz,Kind=wp)/Real(ntsys(3),Kind=wp))
+      ix = Mod(ix+ntsys(1)*eltcell(1),ntsys(1)) + 1 - ntcelloff(1)
+      iy = Mod(iy+ntsys(2)*eltcell(2),ntsys(2)) + 1 - ntcelloff(2)
+      iz = Mod(iz+ntsys(3)*eltcell(3),ntsys(3)) + 1 - ntcelloff(3)
+      If (ix>0 .and. ix<=ntcell(1) .and. iy>0 .and. iy<=ntcell(2) .and. iz>0 .and. iz<=ntcell(3)) Then
+        ijk = 1 + ix + (ntcell(1)+2) * (iy + (ntcell(2)+2) * iz)
+        eltemp(ijk,ii,jj,kk) = eltmp
+      End If
+    End Do
+    ! fill boundary halo values and deal with required boundary conditions
+    Call boundaryHalo (comm)
+    Call boundaryCond (bcTypeE, temp, comm)
+    ! check whether or not energy deposition has happened yet
+    If(nstep>nsteql .and. time>=depostart .and. time<depoend) Then
+      Call depoinit(time,comm)
+    Else If (time>=depoend) Then
+      findepo = .true.
+    End If
+
+    ! report successful reading and minimum, maximum and sums of
+    ! electronic temperatures
+    Call eltemp_sum (lat_sum,comm)
+    Call eltemp_max (lat_max,comm)
+    Call eltemp_min (lat_min,comm)
+    If (comm%idnode==0) Then
+      Write(nrite,'(/,1x,a)') 'electronic temperatures read from DUMP_E file for two-temperature model'
+      Write(nrite,'(1x,"minimum temperature (K) = ",ES11.4,&
+                 &/,1x,"maximum temperature (K) = ",ES11.4,&
+                 &/,1x,"sum of temperatures (K) = ",ES11.4)') &
+                 lat_min, lat_max, lat_sum
+      Close (iounit)
+    End If
+
+  Else
+
+! if not restarting simulation, set electronic temperature grid
+! to system temperature
+
+    eltemp = temp
+
+  End If
+
+  Return
+
+! Abnormal exit from electronic temperature dump file read
+
+100 Continue
+
+  If (comm%idnode == 0) Write(nrite,"(/,1x,a)") dumpfile, ' data mishmash detected'
+  Call error(686)
+  Return
+
+End Subroutine ttm_system_init
+
+Subroutine ttm_system_revive    &
+           (dumpfile,nstep,time,freq,nstrun,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for writing electronic temperature restart files
+! at job termination or selected intervals in simulation
+!
+! copyright - daresbury laboratory
+! authors   - s.l.daraszewicz & m.a.seaton september 2015
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Character (Len = *), Intent ( In ) :: dumpfile
+  Integer, Intent ( In ) :: nstep,freq,nstrun
+  Real(Kind=wp), Intent ( In ) :: time
+  Type(comms_type), Intent(InOut) :: comm
+  Integer :: iounit = 117
+  Integer :: id,ii,jj,kk,imin,jmin,kmin,imax,jmax,kmax,i,j,k,ijk,ix,iy,iz
+  Logical :: lrange
+
+  If (freq /=0) Then
+    If (Mod(nstep,freq)==0 .or. nstep==nstrun) Then
+
+      If (comm%idnode==0) Then
+        Open(Unit=iounit, File=dumpfile, Status='replace')
+        Write(iounit,'(3i8)') eltsys(1),eltsys(2),eltsys(3)
+        Write(iounit,'(i12,3(2x,es24.15))') nstep,time,depostart,depoend
+        Close(iounit)
+      End If
+      Call gsync(comm)
+
+      Do id=0,comm%mxnode-1
+        If (comm%idnode==id) Then
+          Open(Unit=iounit, File=dumpfile, Status='old', Position='append')
+          Do kk = -eltcell(3), eltcell(3)
+            If (eltcell(3)>0 .and. kk == -eltcell(3) .and. ttmbcmap(5)>=0) Then
+              kmin = ttmbc(5)
+            Else
+              kmin = 1
+            End If
+            If (eltcell(3)>0 .and. kk == eltcell(3) .and. ttmbcmap(6)>=0) Then
+              kmax = ttmbc(6)
+            Else
+              kmax = ntcell(3)
+            End If
+            Do jj = -eltcell(2), eltcell(2)
+              If (eltcell(2)>0 .and. jj == -eltcell(2) .and. ttmbcmap(3)>=0) Then
+                jmin = ttmbc(3)
+              Else
+                jmin = 1
+              End If
+              If (eltcell(2)>0 .and. jj == eltcell(2) .and. ttmbcmap(4)>=0) Then
+                jmax = ttmbc(4)
+              Else
+                jmax = ntcell(2)
+              End If
+              Do ii = -eltcell(1), eltcell(1)
+                If (eltcell(1)>0 .and. ii == -eltcell(1) .and. ttmbcmap(1)>=0) Then
+                  imin = ttmbc(1)
+                Else
+                  imin = 1
+                End If
+                If (eltcell(1)>0 .and. ii == eltcell(1) .and. ttmbcmap(2)>=0) Then
+                  imax = ttmbc(2)
+                Else
+                  imax = ntcell(1)
+                End If
+                Do k = kmin, kmax
+                  iz = k + ntcelloff(3) + (kk + eltcell(3)) * ntsys(3) - zeroE(3)
+                  Do j = jmin, jmax
+                    iy = j + ntcelloff(2) + (jj + eltcell(2)) * ntsys(2) - zeroE(2)
+                    Do i = imin, imax
+                      ix = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
+                      lrange = (ix>0 .and. ix<=eltsys(1) .and. iy>0 .and. iy<=eltsys(2) .and. iz>0 .and. iz<=eltsys(3))
+                      ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+                      If (lrange) Write(iounit,'(3i8,2x,es24.15)') ix-midE(1),iy-midE(2),iz-midE(3),eltemp(ijk,ii,jj,kk)
+                    End Do
+                  End Do
+                End Do
+              End Do
+            End Do
+          End Do
+          Close(iounit)
+        End If
+        Call gsync(comm)
+      End Do
+
+    End If 
+  End If
+
+End Subroutine ttm_system_revive
+
+
+Subroutine ttm_table_read(comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for reading specific heat capacity and coupling
+! constant table files
+!
+! copyright - daresbury laboratory
+! author    - m.a.seaton may 2012
+! contrib   - g.khara may 2016
+! contrib   - m.a.seaton february 2017
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  Logical                :: safe
+  Character( Len = 200 ) :: record
+  Character( Len = 40  ) :: word
+  Integer                :: i
+  Real( Kind = wp )      :: vk1,vk2
+  Type( comms_type ), Intent( InOut ) :: comm
+
+! read thermal conductivity data
+
+  If (KeType == 3) Then
+
+    If (comm%idnode == 0) Open(Unit=ntable, File='Ke.dat', Status='old')
+
+    i = 0
+    Do While(i<kel)
+
+      Call get_line(safe,ntable,record,comm)
+      If (.not.safe) Then
+        Go To 100
+      Else
+        Call get_word(record,word)
+        vk1 = word_2_real(word,comm)
+        Call get_word(record,word)
+        vk2 = word_2_real(word,comm)
+        If (vk1>=zero_plus) Then
+          i=i+1
+          ketable(i,1) = vk1
+          ketable(i,2) = vk2
+        End If
+      End If
+
+    End Do
+
+    If (comm%idnode==0) Then
+      Close(Unit=ntable)
+      Write(nrite,'(/,1x,a)') 'thermal conductivity table read from Ke.dat file for two-temperature model'
+      Write(nrite,'(1x,"minimum temperature            (K) = ",ES12.4,&
+                 &/,1x,"maximum temperature            (K) = ",ES12.4,&
+                 &/,1x,"minimum t.c. value   (W m^-1 K^-1) = ",ES12.4,&
+                 &/,1x,"maximum t.c. value   (W m^-1 K^-1) = ",ES12.4)') &
+                 Minval(ketable(:,1)),Maxval(ketable(:,1)),Minval(ketable(:,2)),Maxval(ketable(:,2))
+    End If
+
+! convert thermal conductivity values from W m^-1 K^-1 to kB A^-1 ps^-1
+
+    ketable(1:kel,2) = ketable(1:kel,2)*JKms_to_kBAps
+
+  End If
+
+! read volumetric heat capacity data
+
+  If (CeType == 3 .or. CeType == 7) Then
+
+    If (comm%idnode == 0) Open(Unit=ntable, File='Ce.dat', Status='old')
+
+    i = 0
+    Do While(i<cel)
+
+      Call get_line(safe,ntable,record,comm)
+      If (.not.safe) Then
+        Go To 100
+      Else
+        Call get_word(record,word)
+        vk1 = word_2_real(word,comm)
+        Call get_word(record,word)
+        vk2 = word_2_real(word,comm)
+        If (vk1>=zero_plus) Then
+          i=i+1
+          cetable(i,1) = vk1
+          cetable(i,2) = vk2
+        End If
+      End If
+
+    End Do
+
+    If (comm%idnode==0) Then
+      Close(Unit=ntable)
+      Write(nrite,'(/,1x,a)') 'electronic volumetric heat capacity table read from Ce.dat file for two-temperature model'
+      Write(nrite,'(1x,"minimum temperature            (K) = ",ES12.4,&
+                 &/,1x,"maximum temperature            (K) = ",ES12.4,&
+                 &/,1x,"minimum v.h.c. value (J m^-3 K^-1) = ",ES12.4,&
+                 &/,1x,"maximum v.h.c. value (J m^-3 K^-1) = ",ES12.4)') &
+                 Minval(cetable(:,1)),Maxval(cetable(:,1)),Minval(cetable(:,2)),Maxval(cetable(:,2))
+    End If
+
+! convert volumetric heat capacity values from J m^-3 K^-1 to kB A^-3
+
+    cetable(1:cel,2) = cetable(1:cel,2)*Jm3K_to_kBA3
+
+  End If
+
+! read thermal diffusivity data
+
+  If (DeType == 3) Then
+
+    If (comm%idnode == 0) Open(Unit=ntable, File='De.dat', Status='old')
+
+    i = 0
+    Do While(i<del)
+
+      Call get_line(safe,ntable,record,comm)
+      If (.not.safe) Then
+        Go To 100
+      Else
+        Call get_word(record,word)
+        vk1 = word_2_real(word,comm)
+        Call get_word(record,word)
+        vk2 = word_2_real(word,comm)
+        If (vk1>=zero_plus) Then
+          i=i+1
+          detable(i,1) = vk1
+          detable(i,2) = vk2
+        End If
+      End If
+
+    End Do
+
+    If (comm%idnode==0) Then
+      Close(Unit=ntable)
+      Write(nrite,'(/,1x,a)') 'thermal diffusivity table read from De.dat file for two-temperature model'
+      Write(nrite,'(1x,"minimum temperature            (K) = ",ES12.4,&
+                 &/,1x,"maximum temperature            (K) = ",ES12.4,&
+                 &/,1x,"minimum diffusivity value  (m^2/s) = ",ES12.4,&
+                 &/,1x,"maximum diffusivity value  (m^2/s) = ",ES12.4)') &
+                 Minval(detable(:,1)),Maxval(detable(:,1)),Minval(detable(:,2)),Maxval(detable(:,2))
+    End If
+
+! convert thermal diffusivity values from m^2 s^-1 to A^2 ps^-1
+
+    detable(1:del,2) = detable(1:del,2)*1e8_wp
+
+  End If
+
+! read coupling constant data
+
+  If (gvar>0) Then
+
+    If (comm%idnode == 0) Open(Unit=ntable, File='g.dat', Status='old')
+
+    i = 0
+    Do While(i<gel)
+
+      Call get_line(safe,ntable,record,comm)
+      If (.not.safe) Then
+        Go To 100
+      Else
+        Call get_word(record,word)
+        vk1 = word_2_real(word,comm)
+        Call get_word(record,word)
+        vk2 = word_2_real(word,comm)
+        If (vk1>=zero_plus) Then
+          i=i+1
+          gtable(i,1) = vk1
+          gtable(i,2) = vk2
+        End If
+      End If
+
+    End Do
+
+    If (comm%idnode==0) Then
+      Close(Unit=ntable)
+      Write(nrite,'(/,1x,a)') 'electron-phonon coupling table read from g.dat file for two-temperature model'
+      Write(nrite,'(1x,"minimum temperature            (K) = ",ES12.4,&
+                 &/,1x,"maximum temperature            (K) = ",ES12.4,&
+                 &/,1x,"minimum e-p value    (W m^-3 K^-1) = ",ES12.4,&
+                 &/,1x,"maximum e-p value    (W m^-3 K^-1) = ",ES12.4)') &
+                 Minval(gtable(:,1)),Maxval(gtable(:,1)),Minval(gtable(:,2)),Maxval(gtable(:,2))
+    End If
+
+! convert electron-phonon coupling values from W m^-3 K^-1 to ps^-1
+
+    gtable(1:gel,2) = gtable(1:gel,2)*epc_to_chi
+
+  End If
+
+  Return
+
+! end of file error exit
+
+100 Continue
+
+  If (comm%idnode == 0) Close(Unit=ntable)
+  Call error(682)
+
+End Subroutine ttm_table_read
+
+Subroutine ttm_table_scan(comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for scanning specific heat capacity,
+! thermal conductivity and electron-phonon coupling
+! constant table files to determine numbers of data points
+!
+! copyright - daresbury laboratory
+! author    - m.a.seaton may 2012
+! contrib   - g.khara    may 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+  Type(comms_type), Intent(InOut) :: comm
+  Logical                :: safe,lexist
+  Character( Len = 200 ) :: record
+  Character( Len = 40  ) :: word
+  Integer                :: fail
+  Real( Kind = wp )      :: vk1,vk2
+
+  Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
+
+  If (l_ttm) Then
+
+    fail=0
+    Allocate (buffer(1:mxbuff), Stat=fail)
+    If (fail > 0) Then
+       Write(nrite,'(/,1x,a,i0)') 'ttm_table_scan allocation failure, node: ', comm%idnode
+       Call error(0)
+    End If
+
+! check existence of thermal conductivity table file
+
+    If (KeType == 3) Then
+
+      Inquire (File='Ke.dat', Exist=lexist)
+      Call gcheck(comm,lexist)
+
+      If (.not.lexist) Then
+        Go To 100
+      Else
+        If (comm%idnode == 0) Open(Unit=ntable, File='Ke.dat', Status='old')
+      End If
+
+! determine number of lines of data to read
+
+      kel = 0
+      Do While(.true.)
+
+        Call get_line(safe,ntable,record,comm)
+        If (.not.safe) Then
+          Go To 5
+        Else
+          Call get_word(record,word)
+          vk1 = word_2_real(word,comm)
+          Call get_word(record,word)
+          vk2 = word_2_real(word,comm)
+          If (vk1>=zero_plus) kel=kel+1
+        End If
+
+      End Do
+5  Continue
+
+      If (comm%idnode == 0) Close(Unit=ntable)
+
+! check number of data lines and allocate array
+
+      safe = (kel>0)
+      Call gcheck(comm,safe)
+      If (.not. safe) Then
+        Call error(675)
+      Else
+        Allocate (ketable(1:kel,2), Stat=fail)
+        If (fail > 0) Then
+          Write(nrite,'(/,1x,a,i0)') 'ttm_table_scan allocation failure, node: ', comm%idnode
+          Call error(0)
+        End If
+        ketable(:,:) = 0.0_wp
+      End If
+
+    End If
+
+! check existence of specific heat capacity table file
+
+    If (CeType == 3) Then
+
+      Inquire (File='Ce.dat', Exist=lexist)
+      Call gcheck(comm,lexist)
+
+      If (.not.lexist) Then
+        Go To 200
+      Else
+        If (comm%idnode == 0) Open(Unit=ntable, File='Ce.dat', Status='old')
+      End If
+
+! determine number of lines of data to read
+
+      cel = 0
+      Do While(.true.)
+
+        Call get_line(safe,ntable,record,comm)
+        If (.not.safe) Then
+          Go To 10
+        Else
+          Call get_word(record,word)
+          vk1 = word_2_real(word,comm)
+          Call get_word(record,word)
+          vk2 = word_2_real(word,comm)
+          If (vk1>=zero_plus) cel=cel+1
+        End If
+
+      End Do
+10  Continue
+
+      If (comm%idnode == 0) Close(Unit=ntable)
+
+! check number of data lines and allocate array
+
+      safe = (cel>0)
+      Call gcheck(comm,safe)
+      If (.not. safe) Then
+        Call error(677)
+      Else
+        Allocate (cetable(1:cel,2), Stat=fail)
+        If (fail > 0) Then
+          Write(nrite,'(/,1x,a,i0)') 'ttm_table_scan allocation failure, node: ', comm%idnode
+          Call error(0)
+        End If
+        cetable(:,:) = 0.0_wp
+      End If
+
+    End If
+
+! check existence of thermal diffusivity table file
+
+    If (DeType == 3) Then
+
+      Inquire (File='De.dat', Exist=lexist)
+      Call gcheck(comm,lexist)
+
+      If (.not.lexist) Then
+        Go To 300
+      Else
+        If (comm%idnode == 0) Open(Unit=ntable, File='De.dat', Status='old')
+      End If
+
+! determine number of lines of data to read
+
+      del = 0
+      Do While(.true.)
+
+        Call get_line(safe,ntable,record,comm)
+        If (.not.safe) Then
+          Go To 15
+        Else
+          Call get_word(record,word)
+          vk1 = word_2_real(word,comm)
+          Call get_word(record,word)
+          vk2 = word_2_real(word,comm)
+          If (vk1>=zero_plus) del=del+1
+        End If
+
+      End Do
+15  Continue
+
+      If (comm%idnode == 0) Close(Unit=ntable)
+
+! check number of data lines and allocate array
+
+      safe = (del>0)
+      Call gcheck(comm,safe)
+      If (.not. safe) Then
+        Call error(679)
+      Else
+        Allocate (detable(1:del,2), Stat=fail)
+        If (fail > 0) Then
+          Write(nrite,'(/,1x,a,i0)') 'ttm_table_scan allocation failure, node: ', comm%idnode
+          Call error(0)
+        End If
+        detable(:,:) = 0.0_wp
+      End If
+
+    End If
+
+! check existence of coupling constant table file
+
+    If (gvar>0) Then
+
+      Inquire (File='g.dat', Exist=lexist)
+      Call gcheck(comm,lexist)
+
+      If (.not.lexist) Then
+        Go To 400
+      Else
+        If (comm%idnode == 0) Open(Unit=ntable, File='g.dat', Status='old')
+      End If
+
+! determine number of lines of data to read
+
+      gel = 0
+      Do While(.true.)
+
+        Call get_line(safe,ntable,record,comm)
+        If (.not.safe) Then
+          Go To 20
+        Else
+          Call get_word(record,word)
+          vk1 = word_2_real(word,comm)
+          Call get_word(record,word)
+          vk2 = word_2_real(word,comm)
+          If (vk1>=zero_plus) gel=gel+1
+        End If
+
+      End Do
+20  Continue
+
+      If (comm%idnode == 0) Close(Unit=ntable)
+
+! check number of data lines and allocate array
+
+      safe = (gel>0)
+      Call gcheck(comm,safe)
+      If (.not. safe) Then
+        Call error(681)
+      Else
+        Allocate (gtable(1:gel,2), Stat=fail) ! [GK] array length corrected
+        If (fail > 0) Then
+          Write(nrite,'(/,1x,a,i0)') 'ttm_table_scan allocation failure, node: ', comm%idnode
+          Call error(0)
+        End If
+        gtable(:,:) = 0.0_wp
+      End If
+
+    End If
+
+    Deallocate (buffer, Stat=fail)
+    If (fail > 0) Then
+       Write(nrite,'(/,1x,a,i0)') 'ttm_table_scan deallocation failure, node: ', comm%idnode
+       Call error(0)
+    End If
+
+  End If
+
+  Return
+
+! end of Ke.dat file error exit
+
+100 Continue
+
+  If (comm%idnode == 0) Close(Unit=ntable)
+  Call error(674)
+
+! end of Ce.dat file error exit
+
+200 Continue
+
+  If (comm%idnode == 0) Close(Unit=ntable)
+  Call error(676)
+
+! end of g.dat file error exit
+
+300 Continue
+
+  If (comm%idnode == 0) Close(Unit=ntable)
+  Call error(678)
+
+400 Continue
+
+  If (comm%idnode == 0) Close(Unit=ntable)
+  Call error(680)
+
+End Subroutine ttm_table_scan
+
+
 
 End Module ttm

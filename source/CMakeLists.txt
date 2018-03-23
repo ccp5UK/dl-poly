@@ -33,12 +33,6 @@ tethers.F90
 three_body.F90
 two_body.F90
 errors_warnings.F90
-ttm_ion_temperature.F90
-ttm_system_init.F90
-ttm_system_revive.F90
-ttm_table_read.F90
-ttm_table_scan.F90
-ttm_thermal_diffusion.F90
 coul_spole.F90
 )
 
@@ -64,9 +58,11 @@ msd.F90
 kinetics.F90
 ewald.F90
 mpoles_container.F90
+
 ttm.F90
 ttm_utils.F90
 ttm_track.F90
+
 angles.F90
 bonds.F90
 constraints.F90
