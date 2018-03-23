@@ -21,8 +21,6 @@ nst_l0_vv.F90
 nst_l1_vv.F90
 nst_m0_vv.F90
 nst_m1_vv.F90
-nvt_b0_vv.F90
-nvt_b1_vv.F90
 nvt_g0_scl.F90
 nvt_g0_vv.F90
 nvt_g1_scl.F90

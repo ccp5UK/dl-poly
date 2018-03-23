@@ -42,6 +42,7 @@ ttm_thermal_diffusion.F90
 coul_spole.F90
 nve.F90
 nvt_anderson.F90
+nvt_berendsen.F90
 nvt_ekin.F90
 )
 
