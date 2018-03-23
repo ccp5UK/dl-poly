@@ -1,6 +1,6 @@
 Module nvt_ekin
   Use kinds,              Only : wp
-  Use comms,       Only : comms_type,gmax
+  Use comms,       Only : comms_type,gmax,gsum
   Use setup
   Use configuration,      Only : imcon,cell,natms,nlast,nfree, &
                                  lstfre,weight,                &
@@ -15,7 +15,7 @@ Module nvt_ekin
 
   Private
 
-  Public :: nvt_e0_vv, nvt_e1_vv
+  Public :: nvt_e0_vv, nvt_e1_vv, nvt_e0_scl, nvt_e1_scl
 
 Contains
 
@@ -166,7 +166,7 @@ Contains
 
   ! integrate and apply nvt_e0_scl thermostat - half a step
 
-       Call nvt_e0_scl(1,hstep,fxt,fyt,fzt,vxx,vyy,vzz,chit,engke)
+       Call nvt_e0_scl(1,hstep,fxt,fyt,fzt,vxx,vyy,vzz,chit,engke,comm)
 
   ! update velocity and position
 
@@ -382,7 +382,7 @@ Contains
 
   ! integrate and apply nvt_e0_scl thermostat - half a step
 
-       Call nvt_e0_scl(1,hstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke)
+       Call nvt_e0_scl(1,hstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke,comm)
 
   ! kinetic contribution to stress tensor
 
@@ -732,7 +732,7 @@ Contains
              (1,hstep,fxt,fyt,fzt,vxx,vyy,vzz,          &
              rgdfxx,rgdfyy,rgdfzz,rgdtxx,rgdtyy,rgdtzz, &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,engke,engrot)
+             chit,engke,engrot,comm)
 
   ! update velocity and position of FPs
 
@@ -1196,7 +1196,7 @@ Contains
              (1,hstep,fxx,fyy,fzz,vxx,vyy,vzz,          &
              rgdfxx,rgdfyy,rgdfzz,rgdtxx,rgdtyy,rgdtzz, &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,engke,engrot)
+             chit,engke,engrot,comm)
 
   ! kinetic contributions to stress tensor
 
@@ -1235,4 +1235,184 @@ Contains
     End If
 
   End Subroutine nvt_e1_vv
+
+  Subroutine nvt_e0_scl(isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke,comm)
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 routine to integrate and apply NVT Evans thermostat
+  ! when no singled rigid bodies are present
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov february 2009
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer,                                  Intent( In    ) :: isw
+    Real( Kind = wp ),                        Intent( In    ) :: tstep
+    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: fxx,fyy,fzz
+    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
+    Real( Kind = wp ),                        Intent(   Out ) :: chit,engke
+    Type( comms_type), Intent ( InOut ) :: comm
+
+    Integer           :: i
+    Real( Kind = wp ) :: buffer(1:2),vdotf,scale
+
+    engke = 0.0_wp
+    vdotf = 0.0_wp
+    Do i=1,natms
+       engke = engke+weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
+       vdotf = vdotf+vxx(i)*fxx(i)+vyy(i)*fyy(i)+vzz(i)*fzz(i)
+    End Do
+
+   
+       buffer(1) = engke
+       buffer(2) = vdotf
+       Call gsum(comm,buffer)
+       engke = buffer(1)
+       vdotf = buffer(2)
+
+
+  ! velocity friction and temperature scaling coefficient
+  ! for Evans thermostat at tstep
+
+    chit = vdotf/engke
+
+  ! get corrected energy
+
+    engke = 0.5_wp*engke
+
+    If (isw == 0) Return
+
+  ! thermostat velocities
+
+    scale=Exp(-chit*tstep)
+    Do i=1,natms
+       vxx(i)=vxx(i)*scale
+       vyy(i)=vyy(i)*scale
+       vzz(i)=vzz(i)*scale
+    End Do
+
+  ! thermostat kinetic energy
+
+    engke = engke*scale**2
+
+  End Subroutine nvt_e0_scl
+
+  Subroutine nvt_e1_scl &
+             (isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,        &
+             rgdfxx,rgdfyy,rgdfzz,rgdtxx,rgdtyy,rgdtzz, &
+             rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
+             chit,engke,engrot,comm)
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 routine to integrate and apply NVT Evans thermostat
+  ! when singled rigid bodies are present
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov february 2009
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer,                                  Intent( In    ) :: isw
+    Real( Kind = wp ),                        Intent( In    ) :: tstep
+    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: fxx,fyy,fzz
+    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
+    Real( Kind = wp ), Dimension( 1:mxrgd  ), Intent( In    ) :: rgdfxx,rgdfyy,rgdfzz, &
+                                                                 rgdtxx,rgdtyy,rgdtzz
+    Real( Kind = wp ), Dimension( 1:mxrgd  ), Intent( InOut ) :: rgdvxx,rgdvyy,rgdvzz, &
+                                                                 rgdoxx,rgdoyy,rgdozz
+    Real( Kind = wp ),                        Intent(   Out ) :: chit,engke,engrot
+    Type( comms_type ), Intent ( InOut ) :: comm
+
+    Real( Kind = wp ) :: buffer(1:4),vdotf,odott,scale,tmp
+    Integer           :: i,j,irgd,lrgd,rgdtyp
+
+    engke = 0.0_wp
+    vdotf = 0.0_wp
+    engrot= 0.0_wp
+    odott = 0.0_wp
+
+  ! Free particles
+
+    Do j=1,nfree
+       i=lstfre(j)
+
+       engke = engke+weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
+       vdotf = vdotf+vxx(i)*fxx(i)+vyy(i)*fyy(i)+vzz(i)*fzz(i)
+    End Do
+
+  ! RBs
+
+    Do irgd=1,ntrgd
+       rgdtyp=listrgd(0,irgd)
+
+  ! For all good RBs
+
+       lrgd=listrgd(-1,irgd)
+       If (rgdfrz(0,rgdtyp) < lrgd) Then
+          tmp=Real(indrgd(0,irgd),wp)/Real(lrgd,wp)
+
+          If (rgdfrz(0,rgdtyp) == 0) Then
+             engke = engke+tmp*rgdwgt(0,rgdtyp)*(rgdvxx(irgd)**2+rgdvyy(irgd)**2+rgdvzz(irgd)**2)
+             vdotf = vdotf+tmp*(rgdvxx(irgd)*rgdfxx(irgd)+rgdvyy(irgd)*rgdfyy(irgd)+rgdvzz(irgd)*rgdfzz(irgd))
+          End If
+
+          engrot= engrot+tmp*(rgdrix(1,rgdtyp)*rgdoxx(irgd)**2+rgdriy(1,rgdtyp)*rgdoyy(irgd)**2+rgdriz(1,rgdtyp)*rgdozz(irgd)**2)
+          odott = odott+tmp*(rgdoxx(irgd)*rgdtxx(irgd)+rgdoyy(irgd)*rgdtyy(irgd)+rgdozz(irgd)*rgdtzz(irgd))
+       End If
+    End Do
+
+       buffer(1) = engke
+       buffer(2) = vdotf
+       buffer(3) = engrot
+       buffer(4) = odott
+       Call gsum(comm,buffer)
+       engke = buffer(1)
+       vdotf = buffer(2)
+       engrot= buffer(3)
+       odott = buffer(4)
+
+  ! velocity friction and temperature scaling coefficient
+  ! for Evans thermostat at tstep
+
+    chit = (vdotf+odott)/(engke+engrot)
+
+  ! get corrected energies
+
+    engke = 0.5_wp*engke
+    engrot = 0.5_wp*engrot
+
+    If (isw == 0) Return
+
+  ! thermostat velocities
+
+    scale=Exp(-chit*tstep)
+
+    Do j=1,nfree
+       i=lstfre(j)
+
+       vxx(i)=vxx(i)*scale
+       vyy(i)=vyy(i)*scale
+       vzz(i)=vzz(i)*scale
+    End Do
+
+    Do irgd=1,ntrgd
+       rgdvxx(irgd)=rgdvxx(irgd)*scale
+       rgdvyy(irgd)=rgdvyy(irgd)*scale
+       rgdvzz(irgd)=rgdvzz(irgd)*scale
+
+       rgdoxx(irgd)=rgdoxx(irgd)*scale
+       rgdoyy(irgd)=rgdoyy(irgd)*scale
+       rgdozz(irgd)=rgdozz(irgd)*scale
+    End Do
+
+  ! thermostat kinetic and rotational energy
+
+    tmp=scale**2
+    engke = engke*tmp
+    engrot = engrot*tmp
+
+  End Subroutine nvt_e1_scl
 End Module nvt_ekin

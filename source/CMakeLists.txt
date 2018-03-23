@@ -100,8 +100,6 @@ set_property(SOURCE development.F90 APPEND PROPERTY
 set(dlpoly_THERMO_SRCS
 nvt_b0_scl.F90
 nvt_b1_scl.F90
-nvt_e0_scl.F90
-nvt_e1_scl.F90
 )
 
 set(netcdf_SRCS netcdf.F90)
