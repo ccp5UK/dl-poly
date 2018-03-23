@@ -16,8 +16,8 @@ Module vdw
   Use configuration, Only : imcon,volm,natms,ltype,lfrzn, &
                             ltg,list,fxx,fyy,fzz
   Use mm3lrc
-  Use m_zbl,         Only : ab, intRadZBL, intdRadZBL, &
-                            zbl,zbls,zblb
+  Use zbl_pots,         Only : ab, intRadZBL, intdRadZBL, &
+                           zbl,zbls,zblb
 
   Use site,  Only : ntpatm,unqatm
   Use parse, Only : get_line,get_word,word_2_real
@@ -578,12 +578,12 @@ Subroutine vdw_direct_fs_generate(rvdw)
         bfs(ivdw) =-(4.0_wp*eps*sor6*(sor6-1.0_wp)+eps) - afs(ivdw)
         afs(ivdw) = afs(ivdw)/rvdw
 
-     Else If (keypot == 10) Then ! all zeroed in vdw_module
+     Else If (keypot == 10) Then ! all zeroed in vdw
 
 ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
 
-!       afs(ivdw) = 0.0_wp !initialised in vdw_module
-!       bfs(ivdw) = 0.0_wp !initialised in vdw_module
+!       afs(ivdw) = 0.0_wp !initialised in vdw
+!       bfs(ivdw) = 0.0_wp !initialised in vdw
 
      Else If (keypot == 11) Then
 
@@ -1348,7 +1348,7 @@ Subroutine vdw_generate(rvdw)
                        sigeps(2,ivdw)=-vvdw(i-1,ivdw)
                  End If
               End If
-           End If ! The else condition is satisfied by the vdw_module initialisation
+           End If ! The else condition is satisfied by the vdw initialisation
         End Do
         vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
         gvdw(0,ivdw)=Huge(gvdw(1,ivdw))

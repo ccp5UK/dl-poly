@@ -1,4 +1,4 @@
-Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp)
+Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -11,11 +11,11 @@ Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use setup
-  Use ttm_module
+  Use ttm
   Use ttm_utils
-  Use ttm_track_module
-  Use comms_module
-  Use setup,   Only : tabs_2_blanks, get_line, get_word, &
+  Use ttm_track
+  Use comms, Only : comms_type
+  Use parse,   Only : tabs_2_blanks, get_line, get_word, &
                              strip_blanks, word_2_real
 
   Implicit None
@@ -23,6 +23,7 @@ Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp)
   Integer,             Intent ( In ) :: keyres,nstep,nsteql
   Real ( Kind = wp ),  Intent ( In ) :: temp,time
   Character (Len = *), Intent ( In ) :: dumpfile
+  Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
@@ -33,24 +34,24 @@ Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp)
 
 ! check existence of readable restart file (DUMP_E)
 
-  If (idnode == 0) Inquire(File=dumpfile, Exist=l_tmp)
-  If (mxnode > 1) Call gcheck(l_tmp)
+  If (comm%idnode == 0) Inquire(File=dumpfile, Exist=l_tmp)
+  Call gcheck(comm,l_tmp)
   If ((.not. l_tmp) .and. keyres==keyres0) Call error(684)
 
 ! if restarting simulation, read restart file
 
   If (l_tmp .and. keyres==keyres0) Then
 
-    If (idnode==0) Open (Unit=iounit, File=dumpfile)
-    Call get_line(safe,iounit,record); If (.not.safe) Goto 100
-    Call get_word(record,word) ; nxx=Nint(word_2_real(word,0.0_wp))
-    Call get_word(record,word) ; nyy=Nint(word_2_real(word,0.0_wp))
-    Call get_word(record,word) ; nzz=Nint(word_2_real(word,0.0_wp))
-    Call get_line(safe,iounit,record); If (.not.safe) Goto 100
-    Call get_word(record,word) ; nstp=Nint(word_2_real(word,0.0_wp))
-    Call get_word(record,word) ; tme=word_2_real(word,0.0_wp)
-    Call get_word(record,word) ; depostart=word_2_real(word,0.0_wp)
-    Call get_word(record,word) ; depoend=word_2_real(word,0.0_wp)
+    If (comm%idnode==0) Open (Unit=iounit, File=dumpfile)
+    Call get_line(safe,iounit,record,comm); If (.not.safe) Goto 100
+    Call get_word(record,word) ; nxx=Nint(word_2_real(word,comm,0.0_wp))
+    Call get_word(record,word) ; nyy=Nint(word_2_real(word,comm,0.0_wp))
+    Call get_word(record,word) ; nzz=Nint(word_2_real(word,comm,0.0_wp))
+    Call get_line(safe,iounit,record,comm); If (.not.safe) Goto 100
+    Call get_word(record,word) ; nstp=Nint(word_2_real(word,comm,0.0_wp))
+    Call get_word(record,word) ; tme=word_2_real(word,comm,0.0_wp)
+    Call get_word(record,word) ; depostart=word_2_real(word,comm,0.0_wp)
+    Call get_word(record,word) ; depoend=word_2_real(word,comm,0.0_wp)
     ! check size of electronic temperature grid matches with size given in CONTROL file
     If (nxx/=eltsys(1) .or. nyy/=eltsys(2) .or. nzz/=eltsys(3)) Call error(685)
     ! check restart file is at same timestep as restart
@@ -59,11 +60,11 @@ Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp)
     ! read in each line, find appropriate grid cell and assign
     ! electronic temperature if processor has that cell
     Do i=1,eltsys(1)*eltsys(2)*eltsys(3)
-      Call get_line(safe,iounit,record); If (.not.safe) Goto 100
-      Call get_word(record,word) ; ipos(1)=Nint(word_2_real(word,0.0_wp))
-      Call get_word(record,word) ; ipos(2)=Nint(word_2_real(word,0.0_wp))
-      Call get_word(record,word) ; ipos(3)=Nint(word_2_real(word,0.0_wp))
-      Call get_word(record,word) ; eltmp=word_2_real(word,0.0_wp)
+      Call get_line(safe,iounit,record,comm); If (.not.safe) Goto 100
+      Call get_word(record,word) ; ipos(1)=Nint(word_2_real(word,comm,0.0_wp))
+      Call get_word(record,word) ; ipos(2)=Nint(word_2_real(word,comm,0.0_wp))
+      Call get_word(record,word) ; ipos(3)=Nint(word_2_real(word,comm,0.0_wp))
+      Call get_word(record,word) ; eltmp=word_2_real(word,comm,0.0_wp)
       ix = ipos(1) + midI(1) - 1
       iy = ipos(2) + midI(2) - 1
       iz = ipos(3) + midI(3) - 1
@@ -79,21 +80,21 @@ Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp)
       End If
     End Do
     ! fill boundary halo values and deal with required boundary conditions
-    Call boundaryHalo ()
-    Call boundaryCond (bcTypeE, temp)
+    Call boundaryHalo (comm)
+    Call boundaryCond (bcTypeE, temp, comm)
     ! check whether or not energy deposition has happened yet
     If(nstep>nsteql .and. time>=depostart .and. time<depoend) Then
-      Call depoinit(time)
+      Call depoinit(time,comm)
     Else If (time>=depoend) Then
       findepo = .true.
     End If
 
     ! report successful reading and minimum, maximum and sums of
     ! electronic temperatures
-    Call eltemp_sum (lat_sum)
-    Call eltemp_max (lat_max)
-    Call eltemp_min (lat_min)
-    If (idnode==0) Then
+    Call eltemp_sum (lat_sum,comm)
+    Call eltemp_max (lat_max,comm)
+    Call eltemp_min (lat_min,comm)
+    If (comm%idnode==0) Then
       Write(nrite,'(/,1x,a)') 'electronic temperatures read from DUMP_E file for two-temperature model'
       Write(nrite,'(1x,"minimum temperature (K) = ",ES11.4,&
                  &/,1x,"maximum temperature (K) = ",ES11.4,&
@@ -117,7 +118,7 @@ Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp)
 
 100 Continue
 
-  If (idnode == 0) Write(nrite,"(/,1x,a)") dumpfile, ' data mishmash detected'
+  If (comm%idnode == 0) Write(nrite,"(/,1x,a)") dumpfile, ' data mishmash detected'
   Call error(686)
   Return
 

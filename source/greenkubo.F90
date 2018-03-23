@@ -14,7 +14,7 @@ Module greenkubo
   Use kinds, Only : wp
   
   Use comms,     Only : comms_type,gsum
-  Use setup,     Only : nrite,mxatyp,mxbuff,zero_plus,nvafdt
+  Use setup,     Only : nrite,mxatyp,mxbuff,zero_plus,nvafdt,mxatms
   Use configuration,    Only : natms,ltype,lfrzn,vxx,vyy,vzz,cfgname
   Use site,      Only : unqatm,numtypnf
 

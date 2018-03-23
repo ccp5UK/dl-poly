@@ -16,11 +16,11 @@ Module dihedrals
   Use setup,  Only : pi,twopi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                             mxgdih,mxgdih1,engunit,zero_plus, mxtmls,     &
                             mxtang,mxtdih,mxpdih,rtwopi,r4pie0,mxdihd,    &
-                            mximpl, ntable, mxgvdw
+                            mximpl, ntable, mxgvdw,mxatdm,mxfdih
   Use site,   Only : unqatm,ntpatm
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
                                 chge,xxx,yyy,zzz,fxx,fyy,fzz,cfgname
-  Use vdw_module,    Only : ntpvdw,gvdw,vvdw,afs,prmvdw,bfs,ls_vdw,ld_vdw,  &
+  Use vdw,    Only : ntpvdw,gvdw,vvdw,afs,prmvdw,bfs,ls_vdw,ld_vdw,  &
                                lstvdw,ltpvdw
   Use parse,  Only : get_line,get_word,word_2_real
   Implicit None

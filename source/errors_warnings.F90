@@ -1837,7 +1837,7 @@ Subroutine error(kode,comm)
 
      Else If (kode == 1022) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in vdw_module -> allocate_vdw_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in vdw -> allocate_vdw_arrays'
 
      Else If (kode == 1023) Then
 
@@ -1973,11 +1973,11 @@ Subroutine error(kode,comm)
 
      Else If (kode == 1063) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in vdw_module -> allocate_vdw_table_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in vdw -> allocate_vdw_table_arrays'
 
      Else If (kode == 1066) Then
 
-        Write(nrite,'(/,1x,a)') 'error - allocation failure in vdw_module -> allocate_vdw_direct_fs_arrays'
+        Write(nrite,'(/,1x,a)') 'error - allocation failure in vdw -> allocate_vdw_direct_fs_arrays'
 
      Else If (kode == 1069) Then
 

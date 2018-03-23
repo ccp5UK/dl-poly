@@ -1,4 +1,4 @@
-Module m_zbl
+Module zbl_pots
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 module declaring constants and ZBL related routines
@@ -186,4 +186,4 @@ Contains
     intdRadZBL=s*h/3.0_wp
   End Function intdRadZBL
 
-End Module m_zbl
+End Module zbl_pots

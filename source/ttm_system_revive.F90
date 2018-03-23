@@ -1,5 +1,5 @@
 Subroutine ttm_system_revive    &
-           (dumpfile,nstep,time,freq,nstrun)
+           (dumpfile,nstep,time,freq,nstrun,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -12,14 +12,15 @@ Subroutine ttm_system_revive    &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use setup
-  Use ttm_module
-  Use comms_module
+  Use ttm
+  Use comms, Only : comms_type
 
   Implicit None
 
   Character (Len = *), Intent ( In ) :: dumpfile
   Integer, Intent ( In ) :: nstep,freq,nstrun
   Real(Kind=wp), Intent ( In ) :: time
+  Type(comms_type), Intent(InOut) :: comm
   Integer :: iounit = 117
   Integer :: id,ii,jj,kk,imin,jmin,kmin,imax,jmax,kmax,i,j,k,ijk,ix,iy,iz
   Logical :: lrange
@@ -27,16 +28,16 @@ Subroutine ttm_system_revive    &
   If (freq /=0) Then
     If (Mod(nstep,freq)==0 .or. nstep==nstrun) Then
 
-      If (idnode==0) Then
+      If (comm%idnode==0) Then
         Open(Unit=iounit, File=dumpfile, Status='replace')
         Write(iounit,'(3i8)') eltsys(1),eltsys(2),eltsys(3)
         Write(iounit,'(i12,3(2x,es24.15))') nstep,time,depostart,depoend
         Close(iounit)
       End If
-      If (mxnode > 1) Call gsync()
+      Call gsync(comm)
 
-      Do id=0,mxnode-1
-        If (idnode==id) Then
+      Do id=0,comm%mxnode-1
+        If (comm%idnode==id) Then
           Open(Unit=iounit, File=dumpfile, Status='old', Position='append')
           Do kk = -eltcell(3), eltcell(3)
             If (eltcell(3)>0 .and. kk == -eltcell(3) .and. ttmbcmap(5)>=0) Then
@@ -88,7 +89,7 @@ Subroutine ttm_system_revive    &
           End Do
           Close(iounit)
         End If
-        IF (mxnode>1) Call gsync()
+        Call gsync(comm)
       End Do
 
     End If 

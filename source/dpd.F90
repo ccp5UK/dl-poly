@@ -769,7 +769,4 @@ Contains
     End If
 
   End Subroutine dpd_v_set_halo
-
-
-
 End Module dpd

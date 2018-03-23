@@ -39,8 +39,7 @@ Module kinetics
 
   Public :: getkin,getknf,getknt,getknr,    &
             kinstress,kinstresf,kinstrest,  &
-            getvom,chvom, &
-            freeze_atoms,cap_forces
+            getvom,chvom
 
   Interface getvom
      Module Procedure getvom

@@ -14,7 +14,7 @@ Module rigid_bodies
                             nrite,mxatms,zero_plus
   Use site
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz, &
-                            ltg,lsite,lfrzn,fxx,fyy,fzz
+                            ltg,lsite,lfrzn,fxx,fyy,fzz,nfree,lstfre
   Use vnl,          Only : llvnl,l_vnl,xbg,ybg,zbg
   Use statistics,   Only : xin,yin,zin
 
@@ -2504,7 +2504,7 @@ Contains
 ! to get initial COMs
 
      If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xin,yin,zin)
-     Call rigid_bodies_coms(xin,yin,zin,rgdxin,rgdyin,rgdzin)
+     Call rigid_bodies_coms(xin,yin,zin,rgdxin,rgdyin,rgdzin,comm)
 
      If (keyens == 21 .or. keyens == 31) Then
 
@@ -2779,7 +2779,7 @@ Contains
 
      If (.not.l_vnl) Then
 
-        Call rigid_bodies_coms(xbg,ybg,zbg,rgdxin,rgdyin,rgdzin)
+        Call rigid_bodies_coms(xbg,ybg,zbg,rgdxin,rgdyin,rgdzin,comm)
 
         If (keyens == 21 .or. keyens == 31) Then
 

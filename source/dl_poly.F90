@@ -89,7 +89,7 @@ Program dl_poly
 
   Use mpoles_module
 
-  Use vdw_module
+  Use vdw
   Use metal_module
   Use tersoff_module
   Use three_body_module
@@ -179,7 +179,7 @@ Program dl_poly
 
   Integer(Kind=li)  :: degfre,degshl,degtra,degrot
 
-  ! elrc,virlrc - vdw energy and virial are scalars and in vdw_module
+  ! elrc,virlrc - vdw energy and virial are scalars and in vdw
   ! elrcm,vlrcm - metal energy and virial are array-like and in metal_module
 
   Real( Kind = wp ) :: tsths,                                     &

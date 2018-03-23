@@ -1,4 +1,4 @@
-Subroutine nvt_e0_scl(isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke)
+Subroutine nvt_e0_scl(isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -11,7 +11,7 @@ Subroutine nvt_e0_scl(isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use comms,  Only : comms_type, gsu,
+  Use comms,  Only : comms_type, gsum
   Use setup,  Only : mxatms
   Use configuration, Only : natms,weight
 
@@ -22,6 +22,7 @@ Subroutine nvt_e0_scl(isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke)
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: fxx,fyy,fzz
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
   Real( Kind = wp ),                        Intent(   Out ) :: chit,engke
+  Type( comms_type), Intent ( InOut ) :: comm
 
   Integer           :: i
   Real( Kind = wp ) :: buffer(1:2),vdotf,scale
@@ -33,13 +34,13 @@ Subroutine nvt_e0_scl(isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke)
      vdotf = vdotf+vxx(i)*fxx(i)+vyy(i)*fyy(i)+vzz(i)*fzz(i)
   End Do
 
-  If (mxnode > 1) Then
+ 
      buffer(1) = engke
      buffer(2) = vdotf
-     Call gsum(buffer)
+     Call gsum(comm,buffer)
      engke = buffer(1)
      vdotf = buffer(2)
-  End If
+
 
 ! velocity friction and temperature scaling coefficient
 ! for Evans thermostat at tstep

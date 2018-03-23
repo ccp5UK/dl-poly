@@ -11,25 +11,26 @@ Module statistics
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,li
-  Use setup, Only : mxatdm,mxnstk,mxstak,nrite,mxbfss,zero_plus
+  Use setup, Only : mxatdm,mxnstk,mxstak,nrite,mxbfss,zero_plus,&
+                   prsunt,nstats,tenunt,boltz,engunit,eu_ev,eu_kcpm,&
+                   eu_kjpm,mxatyp,statis,pi
+
   Use comms,   Only : comms_type,gsum,Spread_tag,wp_mpi,gtime,gmax
   Use site,    Only : ntpatm,numtypnf,unqatm,dens
   Use configuration,  Only : cfgname,imcon,cell,volm,natms,ltype, &
                              xxx,yyy,zzz,vxx,vyy,vzz,ixyz,lsa,lsi,ltg
-  Use dpd,     Only : virdpd
   Use domains,    Only : nprx,npry,nprz,map,r_nprx,r_npry,r_nprz,&
                                 nprx_r,npry_r,nprz_r,idx,idy,idz
   Use msd,    Only : l_msd
 
   Use vnl
-  Use minimise,    Only : passmin
   Use core_shell,  Only : passshl
   Use constraints, Only : passcon
   Use pmf,         Only : passpmf
-  Use bonds,       Only : ncfbnd
-  Use angles,      Only : ncfang
-  Use dihedrals,   Only : ncfdih
-  Use inversions,  Only : ncfinv
+  Use bonds,       Only : ncfbnd,mxgbnd1
+  Use angles,      Only : ncfang,mxgang1
+  Use dihedrals,   Only : ncfdih,mxgdih1
+  Use inversions,  Only : ncfinv,mxginv1
   Use rdfs,         Only : ncfrdf, l_errors_jack, l_errors_block, ncfusr
   Use z_density,   Only : ncfzdn
   Use msd
@@ -147,7 +148,7 @@ Contains
            engke,engrot,consv,vircom,     &
            strtot,press,strext,           &
            stpeng,stpvir,stpcfg,stpeth,   &
-           stptmp,stpprs,stpvol,comm)
+           stptmp,stpprs,stpvol,comm,virdpd)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -183,6 +184,7 @@ Contains
   Real( Kind = wp ), Intent(   Out ) :: stpeng,stpvir,stpcfg,stpeth, &
                                         stptmp,stpprs,stpvol
   Type( comms_type ), Intent( InOut ) :: comm
+  Real( Kind = wp ), Intent( In ) :: virdpd
 
   Logical,           Save :: newjob = .true.
 
@@ -193,6 +195,7 @@ Contains
 
   Real( Kind = wp ), Allocatable :: amsd(:)
   Real( Kind = wp ), Allocatable :: xxt(:),yyt(:),zzt(:)
+
 
   fail=0
   Allocate (amsd(1:mxatyp), Stat=fail)
@@ -1192,7 +1195,7 @@ Subroutine statistics_connect_spread(mdir,comm)
 
 ! Check for array bound overflow (have arrays coped with outgoing data)
 
-  Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Call error(163)
 
 ! record of number of atoms for transfer
@@ -1231,7 +1234,7 @@ Subroutine statistics_connect_spread(mdir,comm)
 ! Check for array bound overflow (can arrays cope with incoming data)
 
   safe=(natms0 <= mxatdm)
-  Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Call error(164)
 
 ! load transferred data
@@ -1306,7 +1309,7 @@ End Subroutine statistics_connect_spread
 Subroutine statistics_result                                    &
            (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
            nstrun,keyens,keyshl,megcon,megpmf,iso,              &
-           press,strext,nstep,tstep,time,tmst,comm)
+           press,strext,nstep,tstep,time,tmst,comm,passmin)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1323,6 +1326,7 @@ Subroutine statistics_result                                    &
   Integer,           Intent( In    ) :: nstrun,keyens,keyshl,megcon,megpmf,iso,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,press,strext(1:9),tstep,time,tmst
   Type( comms_type ), Intent( InOut ) :: comm
+  Real( Kind = wp ), Intent( In    ) ::  passmin(:)
   Logical           :: check
   Integer           :: i,iadd
   Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty,temp

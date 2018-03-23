@@ -9,12 +9,12 @@ Module system
                                  cfgname,imcon,cell,lsi,lsa,atmnam
   Use statistics
   Use rdfs,         Only : ncfrdf,rdf,ncfusr,rusr,usr
-  Use z_density_module,   Only : ncfzdn,zdens
+  Use z_density,   Only : ncfzdn,zdens
   Use bonds,       Only : ldfbnd,ncfbnd,dstbnd,numbonds,lstbnd,keybnd
   Use angles,      Only : ldfang,ncfang,dstang,numang,lstang,keyang
   Use dihedrals,   Only : ldfdih,ncfdih,dstdih,numdih,lstdih
   Use inversions,  Only : ldfinv,ncfinv,dstinv,numinv,lstinv
-  Use vdw_module,         Only : ls_vdw,ntpvdw
+  Use vdw,         Only : ls_vdw,ntpvdw
   Use metal,       Only : ntpmet
   Use greenkubo,   Only : nsvaf,vafsamp,vafcount,vafstep, &
                                  vxi,vyi,vzi,vafdata,vaf,vaftime
@@ -598,7 +598,7 @@ Module system
 
 ! Get long-range corrections
 
-! elrc & virlrc arrays are zeroed in vdw_module,
+! elrc & virlrc arrays are zeroed in vdw,
 ! no lrc when vdw interactions are force-shifted
 
   If (ntpvdw > 0 .and. (.not.ls_vdw)) Call vdw_lrc(rvdw,elrc,virlrc)

@@ -4,16 +4,16 @@ Module two_body
   Use setup
   Use site,    Only : ntpatm,unqatm
   Use configuration,  Only : volm,sumchg,natms,list,xxx,yyy,zzz
-  Use vnl_module,     Only : l_vnl
+  Use vnl,     Only : l_vnl
   Use ewald,           Only : ewald_type
   Use mpole,          Only : induce,keyind
   Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
   Use coul_mpoles,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
                              coul_dddp_mforces, coul_chrm_forces, d_ene_trq_mpoles
   Use poisson, Only : poisson_forces,poisson_excl_forces,poisson_frzn_forces
-  Use vdw_module,     Only : ntpvdw
+  Use vdw,     Only : ntpvdw
   Use metal,   Only : ntpmet
-  Use kim_module
+  Use kim
   Use rdfs,    Only : ncfrdf, block_size, l_errors_block, l_errors_jack, block_number
 
   Implicit None
@@ -157,8 +157,8 @@ Subroutine two_body_forces                        &
 
 ! Calculate all contributions from KIM
 
-  If (kim /= ' ') Then
-     Call kim_setup(ntpatm,unqatm,kim,comm)
+  If (kimim /= ' ') Then
+     Call kim_setup(ntpatm,unqatm,kimim,comm)
      Call kim_forces(engkim,virkim,stress,comm)
      Call kim_cleanup(comm)
   End If

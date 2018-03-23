@@ -1,4 +1,4 @@
-Subroutine ttm_table_read()
+Subroutine ttm_table_read(comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -12,11 +12,11 @@ Subroutine ttm_table_read()
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use comms_module
+  Use kinds, Only : wp
+  Use comms, Only : comms_type
   Use setup, Only : ntable,nrite
   Use parse, Only : get_line,get_word,word_2_real
-  Use ttm_module
+  Use ttm
 
   Implicit None
 
@@ -25,24 +25,25 @@ Subroutine ttm_table_read()
   Character( Len = 40  ) :: word
   Integer                :: i
   Real( Kind = wp )      :: vk1,vk2
+  Type( comms_type ), Intent( InOut ) :: comm
 
 ! read thermal conductivity data
 
   If (KeType == 3) Then
 
-    If (idnode == 0) Open(Unit=ntable, File='Ke.dat', Status='old')
+    If (comm%idnode == 0) Open(Unit=ntable, File='Ke.dat', Status='old')
 
     i = 0
     Do While(i<kel)
 
-      Call get_line(safe,ntable,record)
+      Call get_line(safe,ntable,record,comm)
       If (.not.safe) Then
         Go To 100
       Else
         Call get_word(record,word)
-        vk1 = word_2_real(word)
+        vk1 = word_2_real(word,comm)
         Call get_word(record,word)
-        vk2 = word_2_real(word)
+        vk2 = word_2_real(word,comm)
         If (vk1>=zero_plus) Then
           i=i+1
           ketable(i,1) = vk1
@@ -52,7 +53,7 @@ Subroutine ttm_table_read()
 
     End Do
 
-    If (idnode==0) Then
+    If (comm%idnode==0) Then
       Close(Unit=ntable)
       Write(nrite,'(/,1x,a)') 'thermal conductivity table read from Ke.dat file for two-temperature model'
       Write(nrite,'(1x,"minimum temperature            (K) = ",ES12.4,&
@@ -72,19 +73,19 @@ Subroutine ttm_table_read()
 
   If (CeType == 3 .or. CeType == 7) Then
 
-    If (idnode == 0) Open(Unit=ntable, File='Ce.dat', Status='old')
+    If (comm%idnode == 0) Open(Unit=ntable, File='Ce.dat', Status='old')
 
     i = 0
     Do While(i<cel)
 
-      Call get_line(safe,ntable,record)
+      Call get_line(safe,ntable,record,comm)
       If (.not.safe) Then
         Go To 100
       Else
         Call get_word(record,word)
-        vk1 = word_2_real(word)
+        vk1 = word_2_real(word,comm)
         Call get_word(record,word)
-        vk2 = word_2_real(word)
+        vk2 = word_2_real(word,comm)
         If (vk1>=zero_plus) Then
           i=i+1
           cetable(i,1) = vk1
@@ -94,7 +95,7 @@ Subroutine ttm_table_read()
 
     End Do
 
-    If (idnode==0) Then
+    If (comm%idnode==0) Then
       Close(Unit=ntable)
       Write(nrite,'(/,1x,a)') 'electronic volumetric heat capacity table read from Ce.dat file for two-temperature model'
       Write(nrite,'(1x,"minimum temperature            (K) = ",ES12.4,&
@@ -114,19 +115,19 @@ Subroutine ttm_table_read()
 
   If (DeType == 3) Then
 
-    If (idnode == 0) Open(Unit=ntable, File='De.dat', Status='old')
+    If (comm%idnode == 0) Open(Unit=ntable, File='De.dat', Status='old')
 
     i = 0
     Do While(i<del)
 
-      Call get_line(safe,ntable,record)
+      Call get_line(safe,ntable,record,comm)
       If (.not.safe) Then
         Go To 100
       Else
         Call get_word(record,word)
-        vk1 = word_2_real(word)
+        vk1 = word_2_real(word,comm)
         Call get_word(record,word)
-        vk2 = word_2_real(word)
+        vk2 = word_2_real(word,comm)
         If (vk1>=zero_plus) Then
           i=i+1
           detable(i,1) = vk1
@@ -136,7 +137,7 @@ Subroutine ttm_table_read()
 
     End Do
 
-    If (idnode==0) Then
+    If (comm%idnode==0) Then
       Close(Unit=ntable)
       Write(nrite,'(/,1x,a)') 'thermal diffusivity table read from De.dat file for two-temperature model'
       Write(nrite,'(1x,"minimum temperature            (K) = ",ES12.4,&
@@ -156,19 +157,19 @@ Subroutine ttm_table_read()
 
   If (gvar>0) Then
 
-    If (idnode == 0) Open(Unit=ntable, File='g.dat', Status='old')
+    If (comm%idnode == 0) Open(Unit=ntable, File='g.dat', Status='old')
 
     i = 0
     Do While(i<gel)
 
-      Call get_line(safe,ntable,record)
+      Call get_line(safe,ntable,record,comm)
       If (.not.safe) Then
         Go To 100
       Else
         Call get_word(record,word)
-        vk1 = word_2_real(word)
+        vk1 = word_2_real(word,comm)
         Call get_word(record,word)
-        vk2 = word_2_real(word)
+        vk2 = word_2_real(word,comm)
         If (vk1>=zero_plus) Then
           i=i+1
           gtable(i,1) = vk1
@@ -178,7 +179,7 @@ Subroutine ttm_table_read()
 
     End Do
 
-    If (idnode==0) Then
+    If (comm%idnode==0) Then
       Close(Unit=ntable)
       Write(nrite,'(/,1x,a)') 'electron-phonon coupling table read from g.dat file for two-temperature model'
       Write(nrite,'(1x,"minimum temperature            (K) = ",ES12.4,&
@@ -200,7 +201,7 @@ Subroutine ttm_table_read()
 
 100 Continue
 
-  If (idnode == 0) Close(Unit=ntable)
+  If (comm%idnode == 0) Close(Unit=ntable)
   Call error(682)
 
 End Subroutine ttm_table_read

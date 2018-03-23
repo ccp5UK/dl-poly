@@ -2,7 +2,7 @@ Subroutine nvt_e1_scl &
            (isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,        &
            rgdfxx,rgdfyy,rgdfzz,rgdtxx,rgdtyy,rgdtzz, &
            rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-           chit,engke,engrot)
+           chit,engke,engrot,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -33,6 +33,7 @@ Subroutine nvt_e1_scl &
   Real( Kind = wp ), Dimension( 1:mxrgd  ), Intent( InOut ) :: rgdvxx,rgdvyy,rgdvzz, &
                                                                rgdoxx,rgdoyy,rgdozz
   Real( Kind = wp ),                        Intent(   Out ) :: chit,engke,engrot
+  Type( comms_type ), Intent ( InOut ) :: comm
 
   Real( Kind = wp ) :: buffer(1:4),vdotf,odott,scale,tmp
   Integer           :: i,j,irgd,lrgd,rgdtyp
@@ -72,17 +73,15 @@ Subroutine nvt_e1_scl &
      End If
   End Do
 
-  If (mxnode > 1) Then
      buffer(1) = engke
      buffer(2) = vdotf
      buffer(3) = engrot
      buffer(4) = odott
-     Call gsum(buffer)
+     Call gsum(comm,buffer)
      engke = buffer(1)
      vdotf = buffer(2)
      engrot= buffer(3)
      odott = buffer(4)
-  End If
 
 ! velocity friction and temperature scaling coefficient
 ! for Evans thermostat at tstep

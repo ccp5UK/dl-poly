@@ -2,7 +2,7 @@ Module ffield
   Use kinds, Only : wp
   Use comms, Only : comms_type
   Use setup
-  Use kim_module,   Only : kim,rkim,kim_cutoff
+  Use kim,   Only : kimim,rkim,kim_cutoff
 
 ! SITE MODULE
 
@@ -35,7 +35,7 @@ Module ffield
   Use dihedrals
   Use inversions
 
-  Use vdw_module
+  Use vdw
   Use metal
   Use tersoff
   Use three_body
@@ -3758,7 +3758,7 @@ Subroutine read_field                      &
 
            If (.not.l_n_v) Then
               If ((.not. ld_vdw) .or. lt_vdw) Call vdw_generate(rvdw)
-              If (lt_vdw) Call vdw_table_read(rvdw)
+              If (lt_vdw) Call vdw_table_read(rvdw,comm)
               If (ld_vdw .and. Any(ltpvdw(1:ntpvdw) > 0)) Call vdw_direct_fs_generate(rvdw)
            End If
 
@@ -4443,7 +4443,7 @@ Subroutine read_field                      &
      Else If (word(1:3) == 'kim') Then
 
         If (comm%idnode == 0) &
-  Write(nrite,"(/,/,1x,'using open KIM interaction model: ',a)") kim
+  Write(nrite,"(/,/,1x,'using open KIM interaction model: ',a)") kimim
 
 ! read external field data
 
@@ -4597,12 +4597,12 @@ Subroutine read_field                      &
 ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
 
         If ( keyfce == 0 .and. ntpvdw == 0 .and. &
-             ntpmet == 0 .and. ntpter == 0 .and. kim == ' ') Call error(145)
+             ntpmet == 0 .and. ntpter == 0 .and. kimim == ' ') Call error(145)
 
 ! test for mixing KIM model with external interactions
 
         If ( (keyfce /= 0 .or. ntpvdw /= 0 .or. &
-              ntpmet /= 0 .or. ntpter /= 0) .and. kim /= ' ') Then
+              ntpmet /= 0 .or. ntpter /= 0) .and. kimim /= ' ') Then
            If (comm%idnode == 0) Write(nrite,"(/,1x,a)") &
   '*** warning - open KIM model in use together with extra intermolecular interactions !!! ***'
         End If
@@ -5431,7 +5431,7 @@ Subroutine scan_field                                &
 
      Else If (word(1:3) == 'vdw') Then
 
-!        lt_vdw=.false. ! initialised in vdw_module
+!        lt_vdw=.false. ! initialised in vdw
 
         Call get_word(record,word)
         If (word(1:3) == 'tab') Then
@@ -5700,8 +5700,8 @@ Subroutine scan_field                                &
 
         Call get_word(record_raw,word)
         Call strip_blanks(record_raw)
-        kim=record(1:Len_Trim(record_raw))
-        Call kim_cutoff(mxatyp,chr,kim,rkim,comm)
+        kimim=record(1:Len_Trim(record_raw))
+        Call kim_cutoff(mxatyp,chr,kimim,rkim,comm)
 
      Else If (word(1:6) == 'extern') Then
 

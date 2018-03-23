@@ -1,7 +1,7 @@
 Subroutine nvt_b1_scl &
            (isw,tstep,sigma,taut,vxx,vyy,vzz,         &
            rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-           chit,strkin,strknf,strknt,engke,engrot)
+           chit,strkin,strknf,strknt,engke,engrot,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -18,6 +18,7 @@ Subroutine nvt_b1_scl &
   Use configuration,       Only : nfree,lstfre
   Use kinetics,      Only : kinstresf,kinstrest,getknr
   Use rigid_bodies, Only : ntrgd
+  Use comms, Only : comms_type
 
   Implicit None
 
@@ -28,21 +29,22 @@ Subroutine nvt_b1_scl &
                                                                rgdoxx,rgdoyy,rgdozz
   Real( Kind = wp ), Dimension( 1:9 ),      Intent(   Out ) :: strkin,strknf,strknt
   Real( Kind = wp ),                        Intent(   Out ) :: chit,engke,engrot
+  Type( comms_type), Intent ( InOut ) :: comm
 
   Integer           :: i,j,irgd
   Real( Kind = wp ) :: tmp
 
 ! update kinetic energy and stress
 
-  Call kinstresf(vxx,vyy,vzz,strknf)
-  Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt)
+  Call kinstresf(vxx,vyy,vzz,strknf,comm)
+  Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
 
   strkin=strknf+strknt
   engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
 ! update rotational energy
 
-  engrot=getknr(rgdoxx,rgdoyy,rgdozz)
+  engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
 
 ! temperature scaling coefficient - taut is the decay constant
 

@@ -1,4 +1,4 @@
-Module langevin_module
+Module langevin
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -18,9 +18,6 @@ Module langevin_module
   Use core_shell, Only : legshl
   Use ttm,        Only : eltemp,zerocell,ntcell,delx,dely,delz,gvar,l_ttm,nstepcpl
   Use ttm_utils,         Only : Gep
-
-  Implicit None
-
 
   Implicit None
 
@@ -161,4 +158,4 @@ Contains
 End Subroutine langevin_forces
 
 
-End Module langevin_module
+End Module langevin

@@ -1,4 +1,4 @@
-Subroutine nvt_b0_scl(isw,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke)
+Subroutine nvt_b0_scl(isw,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -14,6 +14,7 @@ Subroutine nvt_b0_scl(isw,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke)
   Use setup,   Only : mxatms
   Use configuration,  Only : natms
   Use kinetics, Only : kinstress
+  Use comms, Only : comms_type
 
   Implicit None
 
@@ -22,13 +23,14 @@ Subroutine nvt_b0_scl(isw,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke)
   Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
   Real( Kind = wp ), Dimension( 1:9 ),      Intent(   Out ) :: strkin
   Real( Kind = wp ),                        Intent(   Out ) :: chit,engke
+  Type( comms_type), Intent ( InOut ) :: comm
 
   Integer           :: i
   Real( Kind = wp ) :: tmp
 
 ! get kinetic energy and stress
 
-  Call kinstress(vxx,vyy,vzz,strkin)
+  Call kinstress(vxx,vyy,vzz,strkin,comm)
   engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
 ! temperature scaling coefficient - taut is the decay constant

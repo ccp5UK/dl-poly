@@ -4,10 +4,10 @@ Module bounds
   Use setup
   Use domains,     Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
   Use configuration,      Only : imcon,imc_n,cfgname,cell,volm
-  Use vnl_module,         Only : llvnl ! Depends on l_str,lsim & rpad
+  Use vnl,         Only : llvnl ! Depends on l_str,lsim & rpad
   Use msd
   Use rdfs,         Only : rusr
-  Use kim_module,         Only : kim
+  Use kim,         Only : kimim
   Use bonds,       Only : rcbnd
   Use tersoff,     Only : potter
   Use development, Only : l_trm
@@ -561,7 +561,7 @@ Subroutine set_bounds                                 &
      End If
   Else ! push/reset the limits in 'no strict' mode
      If (.not.l_str) Then
-        If (.not.(mxmet == 0 .and. l_n_e .and. l_n_v .and. mxrdf == 0 .and. kim == ' ')) Then ! 2b link-cells are needed
+        If (.not.(mxmet == 0 .and. l_n_e .and. l_n_v .and. mxrdf == 0 .and. kimim == ' ')) Then ! 2b link-cells are needed
            If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
               rpad = 0.95_wp * (0.5_wp*width - rcut - 1.0e-6_wp)
               rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up

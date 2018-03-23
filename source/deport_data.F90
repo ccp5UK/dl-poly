@@ -27,7 +27,7 @@ Module deport_data
   Use statistics
 
   Use minimise,     Only : l_x,oxx,oyy,ozz
-  Use langevin_module,     Only : l_lan,fxl,fyl,fzl
+  Use langevin,     Only : l_lan,fxl,fyl,fzl
 
   Use ewald,               Only : ewald_type
   Use mpole ,              Only : keyind,ltpatm,lchatm, &
@@ -37,7 +37,7 @@ Module deport_data
   Use msd
   Use greenkubo,    Only : vxi,vyi,vzi,vafsamp
 
-  Use kim_module,    Only : kim,idhalo
+  Use kim,    Only : kimim,idhalo
 
   Use metal,  Only : tabmet,rho,rhs
   
@@ -1894,7 +1894,7 @@ Subroutine export_atomic_data(mdir,comm)
 
 ! openKIM halo indicators
 
-  If (kim /= ' ') Then
+  If (kimim /= ' ') Then
      i = Abs(2*mdir)+Sign(mdir,1) ! Merge( 2*mdir , -2*mdir-1 , mdir > 0 )
      idhalo(0,i)=imove/iadd       ! atoms to send
      idhalo(1,i)=nlast+1          ! first atom to receive
@@ -2162,7 +2162,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
 
 ! openKIM halo indicators
 
-  If (kim /= ' ') Then
+  If (kimim /= ' ') Then
      i = Abs(2*mdir)+Sign(mdir,1) ! Merge( 2*mdir , -2*mdir-1 , mdir > 0 )
      idhalo(0,i)=imove/iadd       ! atoms to send
      idhalo(1,i)=mlast+1          ! first atom to receive

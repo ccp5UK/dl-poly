@@ -4,9 +4,9 @@ Module kontrol
   Use configuration,     Only : sysname
   Use mpole,     Only : thole
   Use dpd,        Only : keydpd,gamdpd
-  Use langevin_module,   Only : l_lan,l_gst,langevin_allocate_arrays
+  Use langevin,   Only : l_lan,l_gst,langevin_allocate_arrays
   Use bonds,      Only : rcbnd
-  Use vdw_module,        Only : ld_vdw,ls_vdw,mxtvdw
+  Use vdw,        Only : ld_vdw,ls_vdw,mxtvdw
   Use metal,      Only : ld_met,ls_met,tabmet
   Use poisson,    Only : eps,mxitcg,mxitjb
   Use msd,        Only : l_msd
@@ -22,7 +22,7 @@ Module kontrol
                                   history,historf,revive,revcon,revold
   Use parse,       Only : get_line,get_word,lower_case,word_2_real
   
-  Use kim,         Only : kim,rkim
+  Use kim,         Only : kimim,rkim
   Use greenkubo,   Only : isvaf,nsvaf,vafsamp
   Use rdfs,         Only : l_errors_jack, l_errors_block
   Use development, Only : l_trm
@@ -164,9 +164,9 @@ Subroutine read_control                                &
 ! defaults for direct evaluation, force-shifting of VDW interactions
 ! and type of mixing for undefined cross interaction of certain type
 !
-! ld_vdw = .false. ! (initialised in vdw_module)
-! ls_vdw = .false. ! (initialised in vdw_module)
-  mxtvdw = 0       ! (initialised in vdw_module)
+! ld_vdw = .false. ! (initialised in vdw)
+! ls_vdw = .false. ! (initialised in vdw)
+  mxtvdw = 0       ! (initialised in vdw)
 !
 ! defaults for direct evaluation of metal interactions
 !
@@ -4625,7 +4625,7 @@ Subroutine scan_control                                    &
 ! Reset rcut to something sensible if sensible is an option
 
            If ( ((.not.lrcut) .or. (.not.l_str)) .and. &
-                (lrvdw .or. lrmet .or. lter .or. kim /= ' ') ) Then
+                (lrvdw .or. lrmet .or. lter .or. kimim /= ' ') ) Then
               lrcut=.true.
               If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
                  rcut=Max(rvdw,rmet,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
@@ -4637,7 +4637,7 @@ Subroutine scan_control                                    &
 ! Reset rvdw and rmet when only tersoff potentials are opted for and
 ! possibly reset rcut to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
 
-           If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r .and. kim == ' ') Then
+           If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r .and. kimim == ' ') Then
               rvdw=0.0_wp
               rmet=0.0_wp
               If (.not.l_str) Then

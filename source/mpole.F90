@@ -5,7 +5,9 @@ Module mpole
   Use configuration,Only : natms
   Use site
   Use core_shell, Only : numshl,lstshl
-  Use setup
+  Use parse
+  Use comms, Only : comms_type
+
 
   Implicit None
 

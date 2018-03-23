@@ -1,4 +1,4 @@
-Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstrun,lines,npage)
+Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstrun,lines,npage,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -16,15 +16,16 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
   Use kinds, only : wp
   Use setup
   Use configuration
-  Use comms_module
-  Use ttm_module
+  Use comms, Only : comms_type
+  Use ttm
   Use ttm_utils
-  Use ttm_track_module
+  Use ttm_track
 
   Implicit None
 
   Integer, Intent( In ) :: ndump,nstbpo,nsteql,nstep,nstrun,lines,npage
   Real ( Kind = wp ), Intent( In ) :: temp,tstep,time
+  Type( comms_type), Intent( InOut ) :: comm
 
   Real ( Kind = wp ), Allocatable :: eltemp1(:,:,:,:)
   Real ( Kind = wp ) :: fomAx,fomAy,fomAz,mintstep,maxtstep,opttstep,delx2,dely2,delz2
@@ -48,7 +49,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
 ! deposition stage 1 (initialization):
 ! nstep-nsteql offsets equilibration time
 
-  If ((nstep-nsteql)==1 .and. (sdepoType>0 .and. (dEdX>zero_plus .or. fluence>zero_plus))) Call depoinit (time)
+  If ((nstep-nsteql)==1 .and. (sdepoType>0 .and. (dEdX>zero_plus .or. fluence>zero_plus))) Call depoinit (time,comm)
 
 ! determine timestep reduction factor (chosen empirically, acts beyond minimum stability condition)
 
@@ -60,8 +61,8 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
   dely2 = dely*dely
   delz2 = delz*delz
   del2av = (delx2*dely2*delz2)/(dely2*delz2+delx2*delz2+delx2*dely2)
-  Call eltemp_max (eltempmax)
-  Call eltemp_min (eltempmin)
+  Call eltemp_max (eltempmax,comm)
+  Call eltemp_min (eltempmin,comm)
 
 ! This section of the code establishes the optimum size of fourier mesh to ensure stability of the electronic
 ! temperature finite difference solver
@@ -84,8 +85,8 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
     opttstep = fopttstep*Min(mintstep,maxtstep)
     redtstepmx = Max(Ceiling(tstep/opttstep),2)
   Case (3)
-  Call eltemp_maxKe (temp, eltempmaxKe)
-  Call eltemp_minKe (temp, eltempminKe)
+  Call eltemp_maxKe (temp, eltempmaxKe,comm)
+  Call eltemp_minKe (temp, eltempminKe,comm)
 ! tabulated thermal conductivity
     mintstep = 0.5_wp*del2av*Ce(eltempmax)/Ke(eltempmaxKe)
     maxtstep = 0.5_wp*del2av*Ce(eltempmin)/Ke(eltempminKe)
@@ -113,7 +114,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
 ! write information to OUTPUT
 
   If (mod(nstep,nstbpo) == 0 .or. nstep == 1) Then
-    If (idnode == 0) Then
+    If (comm%idnode == 0) Then
       Write(nrite,'(6x,"ttm thermal diffusion timesteps:",2x,"optimal/ps",3x,"actual/ps",5x,"diff/md")')
       Write(nrite,'(38x,es12.4,es12.4,2x,i10)') opttstep, tstep/Real(redtstepmx,Kind=wp), redtstepmx
       If (ttmdyndens) Then
@@ -126,34 +127,34 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
 
 ! apply boundary conditions
 
-  Call boundaryHalo ()
-  Call boundaryCond (bcTypeE, temp)
+  Call boundaryHalo (comm)
+  Call boundaryCond (bcTypeE, temp,comm)
 
 ! print statistics to files: electronic and ionic temperatures
 ! (note timestep is subtracted by 1, as these are values at
 !  beginning of MD timestep)
 
-  Call printElecLatticeStatsToFile('PEAK_E', time, temp, nstep-1, ttmstats)
-  Call peakProfilerElec('LATS_E', nstep-1, ttmtraj)
+  Call printElecLatticeStatsToFile('PEAK_E', time, temp, nstep-1, ttmstats,comm)
+  Call peakProfilerElec('LATS_E', nstep-1, ttmtraj,comm)
 
-  Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep-1, ttmstats)
-  Call peakProfiler(tempion, 'LATS_I', nstep-1, ttmtraj)
+  Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep-1, ttmstats,comm)
+  Call peakProfiler(tempion, 'LATS_I', nstep-1, ttmtraj,comm)
 
 ! debugging option: print electron-phonon and electronic stopping source terms
 !                   (normally switched off)
 
   If (debug1) Then
-    Call printLatticeStatsToFile(gsource, 'PEAK_G', time, nstep-1, ttmstats)
-    Call peakProfiler(gsource, 'LATS_G', nstep-1, ttmtraj)
-    Call printLatticeStatsToFile(asource, 'PEAK_A', time, nstep-1, ttmstats)
-    Call peakProfiler(asource, 'LATS_A', nstep-1, ttmtraj)
+    Call printLatticeStatsToFile(gsource, 'PEAK_G', time, nstep-1, ttmstats,comm)
+    Call peakProfiler(gsource, 'LATS_G', nstep-1, ttmtraj,comm)
+    Call printLatticeStatsToFile(asource, 'PEAK_A', time, nstep-1, ttmstats,comm)
+    Call peakProfiler(asource, 'LATS_A', nstep-1, ttmtraj,comm)
   End If
 
   safe=.true.
 
 ! determine energy redistribution from deactivated ionic temperature voxels for slab geometry
 
-  If (redistribute) Call redistribute_Te (temp)
+  If (redistribute) Call redistribute_Te (temp,comm)
 
 ! Adaptive timestep
 
@@ -162,8 +163,8 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
 ! deposition stage 2 (with boundary conditions)
 
     If (trackInit) Then
-      Call depoevolve(time, tstep, redtstep, redtstepmx)
-      Call boundaryCond(bcTypeE, temp)
+      Call depoevolve(time, tstep, redtstep, redtstepmx,comm)
+      Call boundaryCond(bcTypeE, temp,comm)
     End If
 
 ! MAIN LOOP
@@ -180,7 +181,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
     Case (0)
 ! infinite thermal conductivity case: set all electronic temperatures
 ! to mean value in active cells, to system temperature in inactive cells
-      Call eltemp_mean(eltempmean)
+      Call eltemp_mean(eltempmean,comm)
       eltemp1 = eltempmean
       Do ijk=1,numcell
         If(act_ele_cell(ijk,0,0,0)<=zero_plus) eltemp1(ijk,0,0,0) = temp
@@ -533,8 +534,8 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
 
 ! update boundary halo values and apply boundary conditions
 
-    Call boundaryHalo ()
-    Call boundaryCond (bcTypeE, temp)
+    Call boundaryHalo (comm)
+    Call boundaryCond (bcTypeE, temp,comm)
 
 ! simple stability check for simulation
 

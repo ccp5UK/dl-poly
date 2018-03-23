@@ -34,7 +34,7 @@ Module kim
 
   Implicit None
 
-  Character( Len = 200 ), Save :: kim  = ' '      ! KIM IM type for dl_poly
+  Character( Len = 200 ), Save :: kimim  = ' '      ! KIM IM type for dl_poly
   Real( Kind = wp ),      Save :: rkim = 0.0_wp   ! KIM cutoff for dl_poly
   Integer,                Save :: idhalo(0:2,1:6) ! KIM halo indicator
 
