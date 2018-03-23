@@ -46,7 +46,6 @@ ttm_system_revive.F90
 ttm_table_read.F90
 ttm_table_scan.F90
 ttm_thermal_diffusion.F90
-spme_container.F90
 coul_spole.F90
 minimise.F90
 )
