@@ -15,7 +15,7 @@ Module nvt_berendsen
 
   Private
 
-  Public :: nvt_b0_vv, nvt_b1_vv
+  Public :: nvt_b0_vv, nvt_b1_vv, nvt_b0_scl, nvt_b1_scl
 
 Contains
 
