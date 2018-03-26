@@ -12,7 +12,6 @@ langevin.F90
 external_field.F90
 four_body.F90
 impact.F90
-intra_coul.F90
 link_cells.F90
 numerics.F90
 origin_config.F90
