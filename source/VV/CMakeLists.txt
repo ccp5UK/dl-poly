@@ -1,10 +1,6 @@
 set(dlpoly_VV_SRCS
 constraints_rattle.F90
 constraints_shake_vv.F90
-npt_h0_scl.F90
-npt_h0_vv.F90
-npt_h1_scl.F90
-npt_h1_vv.F90
 npt_l0_vv.F90
 npt_l1_vv.F90
 npt_m0_vv.F90
