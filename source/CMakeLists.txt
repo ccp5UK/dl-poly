@@ -5,7 +5,6 @@ build_book.F90
 build_chrm.F90
 build_excl.F90
 build_tplg.F90
-defects_link_cells.F90
 defects.F90
 deport_data.F90
 langevin.F90
