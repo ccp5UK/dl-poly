@@ -5,7 +5,6 @@ build_book.F90
 build_chrm.F90
 build_excl.F90
 build_tplg.F90
-defects_link_cells.F90
 defects.F90
 deport_data.F90
 langevin.F90
@@ -14,7 +13,6 @@ four_body.F90
 impact.F90
 link_cells.F90
 numerics.F90
-origin_config.F90
 shared_units.F90
 quaternions.F90
 control.F90
@@ -25,7 +23,6 @@ temperature.F90
 rsds.F90
 bounds.F90
 system.F90
-tag_legend.F90
 tersoff.F90
 tethers.F90
 three_body.F90
