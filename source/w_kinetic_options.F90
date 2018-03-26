@@ -3,14 +3,14 @@
 
 ! Apply external field
 
-        If (keyfld > 0) Call external_field_correct(engfld)
+        If (keyfld > 0) Call external_field_correct(engfld,comm)
 
 ! Apply pseudo thermostat - velocity cycle (1)
 
         If (lpse) Then
               Call pseudo_vv                            &
            (1,keyshl,keyens,keypse,wthpse,tmppse,tstep, &
-           nstep,strkin,strknf,strknt,engke,engrot)
+           nstep,strkin,strknf,strknt,engke,engrot,comm)
         End If
 
 ! Apply temperature regaussing
@@ -24,8 +24,8 @@
 
 ! quench constraints & PMFs
 
-           If (megcon > 0) Call constraints_quench(mxshak,tolnce)
-           If (megpmf > 0) Call pmf_quench(mxshak,tolnce)
+           If (megcon > 0) Call constraints_quench(mxshak,tolnce,comm)
+           If (megpmf > 0) Call pmf_quench(mxshak,tolnce,comm)
 
 ! quench core-shell units in adiabatic model
 
@@ -33,10 +33,10 @@
               stptmp = 2.0_wp*(engke+engrot) / (boltz*Real(degfre,wp))
               Do
                  Call scale_temperature(engke+engrot,degtra,degrot,degfre)
-                 Call core_shell_quench(safe,stptmp)
-                 If (megcon > 0) Call constraints_quench(mxshak,tolnce)
-                 If (megpmf > 0) Call pmf_quench(mxshak,tolnce)
-                 If (megrgd > 0) Call rigid_bodies_quench()
+                 Call core_shell_quench(safe,stptmp,comm)
+                 If (megcon > 0) Call constraints_quench(mxshak,tolnce,comm)
+                 If (megpmf > 0) Call pmf_quench(mxshak,tolnce,comm)
+                 If (megrgd > 0) Call rigid_bodies_quench(comm)
                  If (safe) Exit
               End Do
            Else
@@ -46,14 +46,14 @@
 ! Correct kinetic stress and energy
 
            If (megrgd > 0) Then
-              Call kinstresf(vxx,vyy,vzz,strknf)
-              Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt)
+              Call kinstresf(vxx,vyy,vzz,strknf,comm)
+              Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
 
               strkin=strknf+strknt
 
-              engrot=getknr(rgdoxx,rgdoyy,rgdozz)
+              engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
            Else
-              Call kinstress(vxx,vyy,vzz,strkin)
+              Call kinstress(vxx,vyy,vzz,strkin,comm)
            End If
            engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
         End If
@@ -67,18 +67,18 @@
 
 ! quench constraints & PMFs
 
-           If (megcon > 0) Call constraints_quench(mxshak,tolnce)
-           If (megpmf > 0) Call pmf_quench(mxshak,tolnce)
+           If (megcon > 0) Call constraints_quench(mxshak,tolnce,comm)
+           If (megpmf > 0) Call pmf_quench(mxshak,tolnce,comm)
 
 ! quench core-shell units in adiabatic model
 
            If (megshl > 0 .and. keyshl == 1) Then
               Do
                  Call scale_temperature(sigma,degtra,degrot,degfre)
-                 Call core_shell_quench(safe,stptmp)
-                 If (megcon > 0) Call constraints_quench(mxshak,tolnce)
-                 If (megpmf > 0) Call pmf_quench(mxshak,tolnce)
-                 If (megrgd > 0) Call rigid_bodies_quench()
+                 Call core_shell_quench(safe,stptmp,comm)
+                 If (megcon > 0) Call constraints_quench(mxshak,tolnce,comm)
+                 If (megpmf > 0) Call pmf_quench(mxshak,tolnce,comm)
+                 If (megrgd > 0) Call rigid_bodies_quench(comm)
                  If (safe) Exit
               End Do
            Else
@@ -88,14 +88,14 @@
 ! Correct kinetic stress and energy
 
            If (megrgd > 0) Then
-              Call kinstresf(vxx,vyy,vzz,strknf)
-              Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt)
+              Call kinstresf(vxx,vyy,vzz,strknf,comm)
+              Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
 
               strkin=strknf+strknt
 
-              engrot=getknr(rgdoxx,rgdoyy,rgdozz)
+              engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
            Else
-              Call kinstress(vxx,vyy,vzz,strkin)
+              Call kinstress(vxx,vyy,vzz,strkin,comm)
            End If
            engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
         End If

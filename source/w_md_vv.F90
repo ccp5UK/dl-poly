@@ -10,12 +10,12 @@
 ! Calculate kinetic tensor and energy at restart
 
   If (megrgd > 0) Then
-     Call kinstresf(vxx,vyy,vzz,strknf)
-     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt)
+     Call kinstresf(vxx,vyy,vzz,strknf,comm)
+     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
 
      strkin=strknf+strknt
   Else
-     Call kinstress(vxx,vyy,vzz,strkin)
+     Call kinstress(vxx,vyy,vzz,strkin,comm)
   End If
   engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
@@ -30,9 +30,9 @@
         If (l_lan) Then
            Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
            If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
-           Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl)
+           Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl,comm)
         Else
-           Call rigid_bodies_str_ss(strcom)
+           Call rigid_bodies_str_ss(strcom,comm)
         End If
 
         vircom=-(strcom(1)+strcom(5)+strcom(9))
@@ -50,7 +50,8 @@
 
 ! Apply impact
 
-     Call w_impact_option()
+     Call w_impact_option(imd,tmd,levcfg,nstep,nsteql,engke,engrot,emd,vmx,vmy,vmz,megrgd,&
+      strkin,strknf,strknt,comm)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
 ! levcfg == 2 avoids application twice when forces are calculated at (re)start

@@ -10,7 +10,7 @@
               timelp-Real( ((Int(timelp)/(i*60)) * i*60) , wp ) < &
               timelp/Real( nstep , wp) ) ) Then
 
-           If (idnode == 0) Then
+           If (comm%idnode == 0) Then
               Inquire(File=Trim(output), Exist=l_out, Position=c_out)
               Call strip_blanks(c_out)
               Call lower_case(c_out)

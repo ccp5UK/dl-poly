@@ -26,7 +26,7 @@ Module drivers
   Contains 
 
   Subroutine w_impact_option(imd,tmd,levcfg,nstep,nsteql,engke,engrot,emd,vmx,vmy,vmz,megrgd,&
-      strkin,strknf,comm,strknt)
+      strkin,strknf,strknt,comm)
 
 
     Integer( Kind = wi ),   Intent( InOut ) :: imd, tmd,megrgd,levcfg,nstep,nsteql

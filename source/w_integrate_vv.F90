@@ -5,7 +5,7 @@
 ! One-off application for first order splitting and symmetric application for second order splitting
 ! Velocity field change + generation of DPD virial & stress due to random and drag forces
 
-        If (keydpd > 0 .and. keydpd*isw == 0) Call dpd_thermostat(isw,l_str,rcut,nstep,tstep)
+        If (keydpd > 0 .and. keydpd*isw == 0) Call dpd_thermostat(isw,l_str,rcut,nstep,tstep,comm)
 
 ! Integrate equations of motion - velocity verlet
 ! first (isw == 0) or second (isw == 1) stage
@@ -484,7 +484,7 @@
 ! Symmetric application for second order splitting
 ! Velocity field change + generation of DPD virial & stress due to random and drag forces
 
-        If (keydpd > 0 .and. keydpd*isw == 2) Call dpd_thermostat(isw,l_str,rcut,nstep,tstep)
+        If (keydpd > 0 .and. keydpd*isw == 2) Call dpd_thermostat(isw,l_str,rcut,nstep,tstep,comm)
 
 
 !!!!!!!!!!!!!!!!!!!!!!  W_INTEGRATE_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

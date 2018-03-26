@@ -123,6 +123,10 @@ Program dl_poly
 
   Use ttm
   Use ttm_utils
+  
+  Use drivers
+  
+  Use minimise, Only : passmin
 
   ! MAIN PROGRAM VARIABLES
 
@@ -208,12 +212,13 @@ Program dl_poly
     stptmp,stpprs,stpvol,stpcfg,stpeng,stpeth,stpvir
 
 
-  Type(comms_type), Allocatable :: dlp_world(:)
+  Type(comms_type), Allocatable :: dlp_world(:),comm
 
   ! SET UP COMMUNICATIONS & CLOCKING
 
   Allocate(dlp_world(0:0))
   Call init_comms(dlp_world(0))
+  comm=dlp_world(0) ! this shall vanish asap w_ are proper things
   If (dlp_world(0)%mxnode > 1) Call gsync(dlp_world(0))
   Call gtime(timelp)
   If (dlp_world(0)%idnode == 0) Then
@@ -222,7 +227,7 @@ Program dl_poly
     End If
   End If
 
-  Call scan_development()
+  Call scan_development(comm)
 
   ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
 
@@ -322,8 +327,8 @@ Program dl_poly
 
   ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
 
-  Call allocate_ttm_arrays()
-  Call ttm_table_scan()
+  Call allocate_ttm_arrays(comm)
+  Call ttm_table_scan(comm)
 
   ! READ SIMULATION CONTROL PARAMETERS
 
@@ -346,7 +351,7 @@ Program dl_poly
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
     nstmsd,istmsd,nstraj,istraj,keytrj,         &
     nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,timjob,timcls)
+    ndump,pdplnc,timjob,timcls,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -371,7 +376,7 @@ Program dl_poly
 
   ! CHECK MD CONFIGURATION
 
-  Call check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
+  Call check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm,comm)
 
   Call gtime(timelp)
   If (dlp_world(0)%idnode == 0) Then
@@ -407,7 +412,7 @@ Program dl_poly
       Write(nrite,'(1x,a)') "*** ... ***"
     End If
 
-    Call scale_config(megatm)
+    Call scale_config(megatm,comm)
 
     Call gtime(timelp)
     If (dlp_world(0)%idnode == 0) Then
@@ -541,8 +546,8 @@ Program dl_poly
   ! grid from any available restart file
 
   If (l_ttm) Then
-    Call ttm_table_read()
-    Call ttm_system_init(nstep,nsteql,keyres,'DUMP_E',time,temp)
+    Call ttm_table_read(comm)
+    Call ttm_system_init(nstep,nsteql,keyres,'DUMP_E',time,temp,comm)
   End If
 
   ! Frozen atoms option
@@ -551,15 +556,15 @@ Program dl_poly
 
   ! Cap forces in equilibration mode
 
-  If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,temp)
+  If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,temp,comm)
 
   ! PLUMED initialisation or information message
 
-  If (l_plumed) Call plumed_init(megatm,tstep,temp)
+  If (l_plumed) Call plumed_init(megatm,tstep,temp,comm)
 
   ! Print out sample of initial configuration on node zero
 
-  If (idnode == 0) Then
+  If (comm%idnode == 0) Then
     Write(nrite,"(/,/,1x,'sample of starting configuration on node zero',/)")
 
     If (levcfg <= 1) Write(nrite,"(8x,'i',7x,'x(i)',8x,'y(i)',8x,'z(i)', &
@@ -586,10 +591,10 @@ Program dl_poly
   j=0
   If (natms == 0) Then
     j=1
-    Write(nrite,'(/,1x,a,i0,a,/)') '*** warning - node ', idnode, ' mapped on vacuum (no particles) !!! ***'
+    Write(nrite,'(/,1x,a,i0,a,/)') '*** warning - node ', comm%idnode, ' mapped on vacuum (no particles) !!! ***'
   End If
-  If (mxnode > 1) Call gsum(j)
-  If (j > 0) Call warning(2,Real(j,wp),Real(mxnode,wp),0.0_wp)
+  Call gsum(comm,j)
+  If (j > 0) Call warning(2,Real(j,wp),Real(comm%mxnode,wp),0.0_wp)
 
   ! Initialise kinetic stress and energy contributions,
   ! energy(or stress) and virial accumulators for rigid bodies,
@@ -657,7 +662,7 @@ Program dl_poly
 
   ! Now you can run fast, boy
 
-  If (l_fast) Call gsync(l_fast)
+  If (l_fast) Call gsync(comm,l_fast)
 
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -714,10 +719,10 @@ Program dl_poly
 
   If (l_ttm) Then
     Call ttm_ion_temperature (chi_ep,chi_es,vel_es2)
-    Call printElecLatticeStatsToFile('PEAK_E', time, temp, nstep, ttmstats)
-    Call peakProfilerElec('LATS_E', nstep, ttmtraj)
-    Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep, ttmstats)
-    Call peakProfiler(tempion, 'LATS_I', nstep, ttmtraj)
+    Call printElecLatticeStatsToFile('PEAK_E', time, temp, nstep, ttmstats,comm)
+    Call peakProfilerElec('LATS_E', nstep, ttmtraj,comm)
+    Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep, ttmstats,comm)
+    Call peakProfiler(tempion, 'LATS_I', nstep, ttmtraj,comm)
   End If
 
   ! Save restart data for real simulations only (final)
@@ -726,7 +731,7 @@ Program dl_poly
     Call system_revive &
       (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
       chit,cint,chip,eta,strcon,strpmf,stress)
-    If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun)
+    If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
   End If
 
   ! Produce summary of simulation
@@ -734,7 +739,7 @@ Program dl_poly
   Call statistics_result                                        &
     (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
     nstrun,keyens,keyshl,megcon,megpmf,iso,              &
-    press,strext,nstep,tstep,time,tmst)
+    press,strext,nstep,tstep,time,tmst,comm,passmin)
 
   10 Continue
 
@@ -775,16 +780,12 @@ Program dl_poly
 
   ! Terminate job
 
-  If (dlp_world(0)%mxnode > 1) Call gsync()
-  Call exit_comms()
+  If (dlp_world(0)%mxnode > 1) Call gsync(dlp_world(0))
+  Call exit_comms(comm)
 
   ! Create wrappers for the MD cycle in VV, and replay history
   Call Deallocate(dlp_world)
 Contains
-
-  Subroutine w_impact_option()
-    Include 'w_impact_option.F90'
-  End Subroutine w_impact_option
 
   Subroutine w_calculate_forces()
     Include 'w_calculate_forces.F90'

@@ -3,7 +3,7 @@
 
 ! Report work
 
-  If (idnode == 0) &
+  If (comm%idnode == 0) &
      Write(nrite,"(/,/,1x,'*** HISTORY is replayed for recalculation of structural properties ***')")
 
 ! Stay safe
@@ -11,7 +11,7 @@
   If (ltraj) Then
      ltraj = .false.
 
-     If (idnode == 0) &
+     If (comm%idnode == 0) &
      Write(nrite,"(/,/,1x,'*** warning - aborting printing into HISTORY while reading it ***')")
   End If
 
@@ -65,12 +65,12 @@
 ! Calculate kinetic tensor and energy at restart as it may not exists later
 
   If (megrgd > 0) Then
-     Call kinstresf(vxx,vyy,vzz,strknf)
-     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt)
+     Call kinstresf(vxx,vyy,vzz,strknf,comm)
+     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
 
      strkin=strknf+strknt
   Else
-     Call kinstress(vxx,vyy,vzz,strkin)
+     Call kinstress(vxx,vyy,vzz,strkin,comm)
   End If
   engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
@@ -79,7 +79,7 @@
   Do
      Call allocate_statistics_connect()
 10   Continue
-     If (nstph > nstpe) Call statistics_connect_set(rlnk)
+     If (nstph > nstpe) Call statistics_connect_set(rlnk,comm)
 
 ! Make a move - Read a frame
 
@@ -107,7 +107,7 @@
 ! CHECK MD CONFIGURATION
 
            Call check_config &
-           (levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
+           (levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm,comm)
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
@@ -121,12 +121,12 @@
 !              xin(natms+1: ) = 0.0_wp
 !              yin(natms+1: ) = 0.0_wp
 !              zin(natms+1: ) = 0.0_wp
-              Call statistics_connect_set(rlnk)
+              Call statistics_connect_set(rlnk,comm)
            End If
 
 ! get xto/xin/msdtmp arrays sorted
 
-           Call statistics_connect_frames(megatm)
+           Call statistics_connect_frames(megatm,comm)
            Call deallocate_statistics_connect()
 
 ! SET domain borders and link-cells as default for new jobs
@@ -162,14 +162,14 @@
            If (megbnd > 0 .and. mxgbnd1 > 0) Then
               isw = 0
               Call bonds_forces(isw,engbnd,virbnd,stress, &
-              rcut,keyfce,alpha,epsq,engcpe,vircpe)
+              rcut,keyfce,alpha,epsq,engcpe,vircpe,comm)
            End If
 
 ! Calculate valence angle forces
 
            If (megang > 0 .and. mxgang1 > 0) Then
               isw = 0
-              Call angles_forces(isw,engang,virang,stress)
+              Call angles_forces(isw,engang,virang,stress,comm)
            End If
 
 ! Calculate dihedral forces
@@ -177,34 +177,34 @@
            If (megdih > 0 .and. mxgdih1 > 0) Then
               isw = 0
               Call dihedrals_forces(isw,engdih,virdih,stress, &
-           rcut,rvdw,keyfce,alpha,epsq,engcpe,vircpe,engsrp,virsrp)
+           rcut,rvdw,keyfce,alpha,epsq,engcpe,vircpe,engsrp,virsrp,comm)
            End If
 
 ! Calculate inversion forces
 
            If (meginv > 0 .and. mxginv1 > 0) Then
               isw = 0
-              Call inversions_forces(isw,enginv,virinv,stress)
+              Call inversions_forces(isw,enginv,virinv,stress,comm)
            End If
 
 ! Calculate kinetic stress and energy if available
 
            If (levcfg > 0 .and. levcfg < 3) Then
               If (megrgd > 0) Then
-                 Call rigid_bodies_quench()
+                 Call rigid_bodies_quench(comm)
 
-                 Call kinstresf(vxx,vyy,vzz,strknf)
-                 Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt)
+                 Call kinstresf(vxx,vyy,vzz,strknf,comm)
+                 Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
 
                  strkin=strknf+strknt
 
-                 engrot=getknr(rgdoxx,rgdoyy,rgdozz)
+                 engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
                  If (levcfg == 2) Then
-                    Call rigid_bodies_str_ss(strcom)
+                    Call rigid_bodies_str_ss(strcom,comm)
                     vircom=-(strcom(1)+strcom(5)+strcom(9))
                  End If
               Else
-                 Call kinstress(vxx,vyy,vzz,strkin)
+                 Call kinstress(vxx,vyy,vzz,strkin,comm)
               End If
               engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
@@ -214,7 +214,7 @@
 
 ! Get core-shell kinetic energy for adiabatic shell model
 
-              If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(shlke)
+              If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(shlke,comm)
            End If
 
 ! Get complete stress tensor
@@ -229,7 +229,7 @@
 
 ! Collect VAF if kinetics is available
 
-           Call vaf_collect(lvafav,leql,nsteql,nstph-1,time)
+           Call vaf_collect(lvafav,leql,nsteql,nstph-1,time,comm)
 
            Call statistics_collect        &
            (lsim,leql,nsteql,lzdn,nstzdn, &
@@ -247,7 +247,7 @@
            engke,engrot,consv,vircom,     &
            strtot,press,strext,           &
            stpeng,stpvir,stpcfg,stpeth,   &
-           stptmp,stpprs,stpvol)
+           stptmp,stpprs,stpvol,comm,virdpd)
 
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
@@ -256,11 +256,11 @@
            If (ldef) Call defects_write &
            (rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time)
            If (l_msd) Call msd_write &
-           (keyres,nstmsd,istmsd,megatm,nstep,tstep,time)
+           (keyres,nstmsd,istmsd,megatm,nstep,tstep,time,stpval,comm)
            If (lrsd) Call rsd_write &
            (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time)
            If (vafsamp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
-           (lvafav,keyres,nstph,tsths)
+           (lvafav,keyres,nstph,tsths,comm)
 
 ! Complete time check
 
@@ -285,7 +285,7 @@
                  timelp-Real( ((Int(timelp)/(i*60)) * i*60) , wp ) < &
                  timelp/Real( nstph , wp) ) ) Then
 
-              If (idnode == 0) Then
+              If (comm%idnode == 0) Then
                  Inquire(File=Trim(output), Exist=l_out, Position=c_out)
                  Call strip_blanks(c_out)
                  Call lower_case(c_out)

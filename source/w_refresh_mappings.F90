@@ -3,11 +3,11 @@
 
 ! Scale t=0 reference positions
 
-        If (nstep > 0) Call xscale(m_rgd,keyens,tstep,eta)
+        If (nstep > 0) Call xscale(m_rgd,keyens,tstep,eta,comm)
 
 ! Check VNL conditioning
 
-        Call vnl_check(l_str,rcut,rpad,rlnk,width)
+        Call vnl_check(l_str,rcut,rpad,rlnk,width,comm)
 
         If (l_vnl) Then
 
@@ -27,8 +27,8 @@
 ! when it's done in rigid_bodies_setup <- build_book_intra
 
            If (m_rgd > 0) Then
-              Call rigid_bodies_tags()
-              Call rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz)
+              Call rigid_bodies_tags(comm)
+              Call rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz,comm)
            End If
 
         Else
