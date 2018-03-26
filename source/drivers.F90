@@ -17,7 +17,7 @@ Module drivers
   Use site,        Only : dofsit
   Use core_shell,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
 
-  
+  Use impacts, Only : impact 
   Implicit None
   Private
   Public :: w_impact_option
@@ -50,7 +50,7 @@ Module drivers
 
         If (nstep+1 <= nsteql) Call warning(380,Real(nsteql,wp),0.0_wp,0.0_wp)
 
-        Call impact(imd,emd,vmx,vmy,vmz,megrgd)
+        Call impact(imd,emd,vmx,vmy,vmz,megrgd,comm)
 
 ! Correct kinetic stress and energy
 

@@ -125,6 +125,7 @@ Program dl_poly
   Use ttm_utils
   
   Use drivers
+  Use errors_warnings, Only : init_error_system
   
   Use minimise, Only : passmin
 
@@ -218,6 +219,7 @@ Program dl_poly
 
   Allocate(dlp_world(0:0))
   Call init_comms(dlp_world(0))
+  Call init_error_system(nrite,dlp_world(0))
   comm=dlp_world(0) ! this shall vanish asap w_ are proper things
   If (dlp_world(0)%mxnode > 1) Call gsync(dlp_world(0))
   Call gtime(timelp)

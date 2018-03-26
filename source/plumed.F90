@@ -14,6 +14,7 @@ Module plumed
   Use comms,  Only : comms_type
   Use setup,  Only : nrite, boltz, mxatms, DLP_VERSION
   Use configuration, Only : cell,natms,weight,ltg,chge,fxx,fyy,fzz
+  Use errors_warnings, Only : error
 
   Implicit None
 
@@ -52,6 +53,8 @@ Contains
     Type(comms_type),  Intent( InOut ) :: comm
 
 #ifdef PLUMED
+    Character( Len=256 ) :: message
+
     Call plumed_f_installed(has_plumed)
 
     If (has_plumed > 0) Then
@@ -73,8 +76,8 @@ Contains
        Call plumed_f_gcmd("setKbT"//sn,temp*boltz)
        Call plumed_f_gcmd("init"//sn,0)
     Else
-       If (comm%idnode == 0) Write(nrite,'(1x,a)') "*** warning - internal PLUMED library failure !!! ***"
-       Call error(0)
+       Write(message,'(1x,a)') "*** warning - internal PLUMED library failure !!! ***"
+       Call error(0,message,.true.)
     End If
 #endif
 
@@ -114,7 +117,7 @@ Contains
        Write(nrite,'(a,i0)')     "*** Using PLUMED restart (0: no, 1: yes): ", plumed_restart
     End If
 #else
-    Call plumed_message(comm)
+    Call plumed_message()
 #endif
 
   End Subroutine plumed_print_about
@@ -157,7 +160,7 @@ Contains
 #else
     nstrun=nstep
 
-    Call plumed_message(comm)
+    Call plumed_message()
 #endif
 
   End Subroutine plumed_apply
@@ -170,12 +173,12 @@ Contains
 
   End Subroutine plumed_finalize
 
-  Subroutine plumed_message(comm)
-    Type(comms_type), Intent( InOut ) :: comm
+  Subroutine plumed_message()
 #ifndef PLUMED
+    Character( Len = 256 ) :: message
 
-    If (comm%idnode == 0) Write(nrite,'(1x,a)') "*** warning - PLUMED directive found in CONTROL but PLUMED not available !!! ***"
-    Call error(0)
+    Write(message,'(1x,a)') "*** warning - PLUMED directive found in CONTROL but PLUMED not available !!! ***"
+    Call error(0,message,.true.)
 #endif
   End Subroutine plumed_message
 

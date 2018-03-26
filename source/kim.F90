@@ -19,6 +19,7 @@ Module kim
 
   Use, Intrinsic :: iso_c_binding
   Use kinds, Only : wp
+  Use errors_warnings, Only : error
 #ifdef KIM
   Use KIM_API_F03
   Use domains, Only : map
@@ -133,7 +134,7 @@ Contains
     pkim = c_null_ptr
 #else
     cutoff = 0.0_wp
-    Call kim_message(comm)
+    Call kim_message()
 #endif
   End Subroutine  kim_cutoff
 
@@ -161,6 +162,8 @@ Contains
     Integer( Kind = c_int ), Pointer :: numberOfSpecies;             Type( c_ptr ) :: pNPT
     Integer( Kind = c_int ), Pointer :: numberContributingParticles; Type( c_ptr ) :: pNCP
     Integer( Kind = c_int ), Pointer :: particleSpecies(:);          Type( c_ptr ) :: pPT
+
+    Character( Len = 256 ) :: message
 
     ier = KIM_STATUS_OK
 
@@ -194,25 +197,25 @@ Contains
     fail=0
     Allocate (kim_list(mxlist,mxatdm), Stat=fail)
     If (fail > 0) Then
-       Write(nrite, '(/,1x,a,i0)') &
-            'kim_setup kim_list allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message, '(/,1x,a)') &
+            'kim_setup kim_list allocation failure'
+       Call error(0,message)
     End If
 
     If (RijNeeded) Allocate (kim_Rij(3,mxlist,mxatdm), Stat=fail)
     If (fail > 0) Then
-       Write(nrite, '(/,1x,a,i0)') &
-            'kim_setup kim_Rij allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message '(/,1x,a)') &
+            'kim_setup kim_Rij allocation failure'
+       Call error(0,message)
     End If
 
     limit=iadd*mxbfxp
 
     Allocate (rev_comm_buffer(1:limit), Stat=fail)
     If (fail > 0) Then
-       Write(nrite, '(/,1x,a,i0)') &
-            'kim_setup rev_comm_buffer allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message, '(/,1x,a)') &
+            'kim_setup rev_comm_buffer allocation failure'
+       Call error(0,message)
     End If
 
 ! Set buffer limit (half for outgoing data - half for incoming)
@@ -269,7 +272,7 @@ Contains
        Stop
     End If
 #else
-    Call kim_message(comm)
+    Call kim_message()
 #endif
   End Subroutine kim_setup
 
@@ -289,27 +292,29 @@ Contains
     Integer                 :: fail
     Integer( Kind = c_int ) :: ier, idum
 
+    Character( Len = 256 ) :: message
+
     fail=0
     Deallocate (kim_list, Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') &
-            'failure deallocating kim_list in kim_module, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') &
+            'failure deallocating kim_list in kim_module'
+       Call error(0,message)
     End If
 
     fail=0
     If (RijNeeded) Deallocate (kim_Rij, Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') &
-            'failure deallocating kim_Rij in kim_module, node: ', comm%idnode
-       Call error(0)
+       Write(nrite,'(/,1x,a)') &
+            'failure deallocating kim_Rij in kim_module'
+       Call error(0,message)
     End If
 
     Deallocate (rev_comm_buffer, Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') &
-            'failure deallocating rev_comm_buffer in kim_module, node: ', comm%idnode
-       Call error(0)
+       Write(nrite,'(/,1x,a)') &
+            'failure deallocating rev_comm_buffer in kim_module'
+       Call error(0,message)
     End If
 
     ier = kim_api_model_destroy(pkim)
@@ -327,7 +332,7 @@ Contains
     End If
     pkim = c_null_ptr
 #else
-    Call kim_message(comm)
+    Call kim_message()
 #endif
   End Subroutine kim_cleanup
 
@@ -438,7 +443,7 @@ Contains
     virkim = 0.0_wp
     stress = 0.0_wp
 
-    Call kim_message(comm)
+    Call kim_message()
 #endif
   End Subroutine kim_forces
 
@@ -828,12 +833,12 @@ Contains
   End Function kim_basic_init
 #endif
 
-  Subroutine kim_message(comm)
-
+  Subroutine kim_message()
+   
 #ifndef KIM
-    Type(comms_type), Intent( In ) :: comm
-    If (comm%idnode == 0) Write(nrite,'(1x,a)') "*** warning - kim directive found in FIELD but openKIM not available !!! ***"
-    Call error(0)
+    Character( Len = 256 ) :: message
+    Write(message,'(1x,a)') "*** warning - kim directive found in FIELD but openKIM not available !!! ***"
+    Call error(0,message,.true.)
 #endif
   End Subroutine kim_message
 

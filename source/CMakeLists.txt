@@ -10,7 +10,6 @@ deport_data.F90
 langevin.F90
 external_field.F90
 four_body.F90
-impact.F90
 link_cells.F90
 numerics.F90
 shared_units.F90
@@ -27,11 +26,12 @@ tersoff.F90
 tethers.F90
 three_body.F90
 two_body.F90
-errors_warnings.F90
 coul_spole.F90
 )
 
 set(dlpoly_CORE_SRCS
+impacts.F90
+errors_warnings.F90
 zbl_pots.F90
 rdfs.F90
 kinds.F90

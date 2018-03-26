@@ -12,6 +12,7 @@ Module netcdf_wrap
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,  Only    : wp
+  Use errors_warnings, Only : error
 #ifdef NETCDF
   Use netcdf   , Only : NF90_NETCDF4, NF90_CLOBBER, NF90_WRITE,              &
                         NF90_GLOBAL, NF90_UNLIMITED, NF90_INDEPENDENT,       &
@@ -1017,10 +1018,10 @@ Contains
 
   Subroutine netcdf_compiled()
 
-    Implicit None
 #ifndef NETCDF
-    Write(Unit=*, Fmt=*) ' *** NOT netCDF COMPILED BUILD !!! ***'
-    Call error(0)
+    Character( Len = 256 ) :: message
+    Write(message,'(a)') ' *** NOT netCDF COMPILED BUILD !!! ***'
+    Call error(0,message,.true.)
 #endif
 
   End Subroutine netcdf_compiled
@@ -1134,16 +1135,12 @@ Contains
 #ifdef NETCDF
     Use netcdf, Only : nf90_noerr, nf90_strerror
 #endif
-    Implicit None
-
     Integer, Intent( In    ) :: status
-
+    Character( Len = 256 ) :: message
 #ifdef NETCDF
     If ( status /= nf90_noerr ) Then
-       Write( Unit=*, Fmt=* ) 'NETCDF error:'
-       Write( Unit=*, Fmt=* )
-       Write( Unit=*, Fmt='( a )' ) Trim( nf90_strerror( status ) )
-       Call error(0)
+       Write( message, '( a )' ) 'NETCDF error: '//Trim( nf90_strerror( status ) )
+       Call error(0,message,.true.)
     End If
 #else
     Call netcdf_compiled()

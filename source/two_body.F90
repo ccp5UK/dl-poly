@@ -15,7 +15,7 @@ Module two_body
   Use metal,   Only : ntpmet
   Use kim
   Use rdfs,    Only : ncfrdf, block_size, l_errors_block, l_errors_jack, block_number
-
+  Use errors_warnings, Only : error
   Implicit None
   Private
   Public :: two_body_forces
@@ -90,11 +90,12 @@ Subroutine two_body_forces                        &
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
 
+  Character( Len = 256 ) :: message
   fail=0
   Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'two_body_forces allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'two_body_forces allocation failure'
+     Call error(0,message)
   End If
 
   l_do_rdf = (lrdf .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstrdf) == 0)
@@ -482,8 +483,8 @@ Subroutine two_body_forces                        &
 
   Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'two_body_forces deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'two_body_forces deallocation failure'
+     Call error(0,message)
   End If
 
 !Increase block_number when required
