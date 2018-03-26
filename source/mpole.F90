@@ -65,7 +65,8 @@ Module mpole
   Real( Kind = wp ), Allocatable, Save :: upidpx(:,:),upidpy(:,:),upidpz(:,:)
   Real( Kind = wp ), Allocatable, Save :: rsdx(:),rsdy(:),rsdz(:)
   Real( Kind = wp ), Allocatable, Save :: polcof(:)
-  Contains
+
+Contains
 
   Subroutine allocate_mpoles_arrays()
 
@@ -274,845 +275,453 @@ Module mpole
     End If
 
   End Subroutine allocate_mpoles_arrays
-  
-  Subroutine intra_mcoul(keyfce,rcut,alpha,epsq,iatm,jatm,scale, &
-                      rrr,xdf,ydf,zdf,coul,virele,fx,fy,fz,safe)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for calculating bond's or 1-4 dihedral
-! electrostatics: adjusted by a weighting factor
-!
-! copyright - daresbury laboratory
-! amended   - i.t.todorov & h.a.boateng february 2016
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Integer,           Intent( In    ) :: keyfce,iatm,jatm
-  Real( Kind = wp ), Intent( In    ) :: rcut,alpha,epsq,scale
-  Real( Kind = wp ), Intent( In    ) :: xdf,ydf,zdf,rrr
-  Real( Kind = wp ), Intent(   Out ) :: coul,virele,fx,fy,fz
-  Logical,           Intent( InOut ) :: safe
-
-  Integer                 :: k1,k2,k3,s1,s2,s3,n
-  Integer                 :: ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
-
-  Logical,           Save :: newjob = .true. , damp
-  Real( Kind = wp ), Save :: aa     = 0.0_wp , &
-                             bb     = 0.0_wp , &
-                             rfld0  = 0.0_wp , &
-                             rfld1  = 0.0_wp , &
-                             rfld2  = 0.0_wp
 
-  Real( Kind = wp ) :: exp1,tt,erc,fer,b0,      &
-                       tix,tiy,tiz,tjx,tjy,tjz, &
-                       talpha,alphan,tmp,tmpi,tmpj,t1,t2,sx,sy,sz,kx,ky,kz,txyz
+  Subroutine read_mpoles(l_top,sumchg,comm)
 
-  Real( Kind = wp ) :: d1(-2:2*mxompl+1,-2:2*mxompl+1,-2:2*mxompl+1)
-  Real( Kind = wp ) :: b1(-2:2*mxompl+1,-2:2*mxompl+1,-2:2*mxompl+1)
-  Real( Kind = wp ) :: a1(-2:2*mxompl+1,-2:2*mxompl+1,-2:2*mxompl+1)
-  Real( Kind = wp ) :: imp(1:mximpl),jmp(1:mximpl)
-  Real( Kind = wp ) :: impx(1:mximpl),impy(1:mximpl),impz(1:mximpl)
-  Real( Kind = wp ) :: jmpx(1:mximpl),jmpy(1:mximpl),jmpz(1:mximpl)
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 subroutine for reading in the molecular mulitpole
+  ! specifications of the system to be simulated
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov february 2017
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Real( Kind = wp ), Parameter :: aa1 =  0.254829592_wp
-  Real( Kind = wp ), Parameter :: aa2 = -0.284496736_wp
-  Real( Kind = wp ), Parameter :: aa3 =  1.421413741_wp
-  Real( Kind = wp ), Parameter :: aa4 = -1.453152027_wp
-  Real( Kind = wp ), Parameter :: aa5 =  1.061405429_wp
-  Real( Kind = wp ), Parameter :: pp  =  0.3275911_wp
+    Logical,           Intent ( In    ) :: l_top
+    Real( Kind = wp ), Intent ( InOut ) :: sumchg
+    Type( comms_type ), Intent ( InOut ) :: comm
+    Logical                :: safe,l_rsh,l_ord=.false.
 
-  If (newjob) Then
-     newjob = .false.
+    Character( Len = 200 ) :: record,record1,record2
+    Character( Len = 40  ) :: word
+    Character( Len = 8   ) :: atom
 
-! Check for damped force-shifted coulombic and reaction field interactions
-! and set force and potential shifting parameters dependingly
+    Integer                :: itmols,nrept,i,j,k,l,                 &
+                              isite,jsite,ksite,lsite,nsite,sitmpl, &
+                              ishls,nshels,kshels,isite2,           &
+                              ordmpl,ordmpl_start,ordmpl_next,      &
+                              ordmpl_min,ordmpl_max,                &
+                              indmpl,indmpl_start,indmpl_final
 
-     damp=.false.
-     If (alpha > zero_plus) Then
-        damp=.true.
+    Real( Kind = wp )      :: Factorial,charge,scl,polarity,dumping
 
-        exp1= Exp(-(alpha*rcut)**2)
-        tt  = 1.0_wp/(1.0_wp+pp*alpha*rcut)
+  ! open MPOLES data file
 
-        erc = tt*(aa1+tt*(aa2+tt*(aa3+tt*(aa4+tt*aa5))))*exp1/rcut
-        fer = (erc + 2.0_wp*(alpha/sqrpi)*exp1)/rcut**2
+    If (comm%idnode == 0) Then
+       Open(Unit=nmpldt, File = 'MPOLES', Status = 'old')
+       Write(nrite,"(/,/,1x,'ELECTROSTATICS MULTIPOLES SPECIFICATION')")
+       If (.not.l_top) Write(nrite,"(/,1x,'detailed specification opted out')")
+    End If
 
-        aa  = fer*rcut
-        bb  = -(erc + aa*rcut)
-     Else If (keyfce == 8) Then
-        aa =  1.0_wp/rcut**2
-        bb = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
-     End If
+    Call get_line(safe,nmpldt,record,comm)
+    If (.not.safe) Go To 2000
 
-! set reaction field terms for RFC
+  ! omit first line
 
-     If (keyfce == 10) Then
-        b0    = 2.0_wp*(epsq - 1.0_wp)/(2.0_wp*epsq + 1.0_wp)
-        rfld0 = b0/rcut**3
-        rfld1 = (1.0_wp + 0.5_wp*b0)/rcut
-        rfld2 = 0.5_wp*rfld0
-     End If
-  End If
+    nsite  = 0
+    nshels = 0
+    sumchg = 0.0_wp
 
-! initialise defaults for coulombic energy and force contributions
+    ordmpl_min = 4
+    ordmpl_max = 0
 
-   coul =0.0_wp ; virele=0.0_wp
-   fx =0.0_wp ; fy =0.0_wp ; fz =0.0_wp
-   tix=0.0_wp ; tiy=0.0_wp ; tiz=0.0_wp
-   tjx=0.0_wp ; tjy=0.0_wp ; tjz=0.0_wp
+  ! read and process directives from mpols/field file
 
-! get the multipoles for sites i and j
+    Do
 
-  imp=mplgfr(:,iatm)
-  jmp=mplgfr(:,jatm)
+       word(1:1)='#'
+       Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+          Call get_line(safe,nmpldt,record,comm)
+          If (.not.safe) Go To 2000
+          Call get_word(record,word) ; Call lower_case(word)
+       End Do
 
-! ignore interaction if the charge is zero
+  ! specify molecular species
 
-  If (Maxval(Abs(imp)) <= zero_plus .or. Maxval(Abs(jmp)) <= zero_plus) Return
+       If (word(1:7) == 'molecul') Then
 
-  If(mxompl > 0 .and. induce) Then
+          Call get_word(record,word) ; Call lower_case(word)
+          If (word(1:4) == 'type') Call get_word(record,word)
 
-     imp(2)=imp(2)+indipx(iatm)
-     imp(3)=imp(3)+indipy(iatm)
-     imp(4)=imp(4)+indipz(iatm)
+          If (ntpmls == Nint(word_2_real(word,comm))) Then
+             If (comm%idnode == 0) Write(nrite,"(/,/,1x,'number of molecular types',6x,i10)") ntpmls
+          Else
+             If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')                        &
+    "*** warning - number of molecular types mistmatch between FIELD and MPOLES !!! ***", &
+    "***           FIELD  reports: ", ntpmls,                                             &
+    "***           MPOLES reports: ", Nint(word_2_real(word,comm))
 
-     jmp(2)=jmp(2)+indipx(jatm)
-     jmp(3)=jmp(3)+indipy(jatm)
-     jmp(4)=jmp(4)+indipz(jatm)
+             Call error(623)
+          End If
 
-  End If
+  ! read in molecular characteristics for every molecule
 
-! get the components for site i and j infinitesimal rotations
+          Do itmols=1,ntpmls
 
-  impx=mprotx(:,iatm)
-  impy=mproty(:,iatm)
-  impz=mprotz(:,iatm)
+             If (comm%idnode == 0 .and. l_top) Write(nrite,"(/,/,1x,'molecular species type',9x,i10)") itmols
 
-  jmpx=mprotx(:,jatm)
-  jmpy=mproty(:,jatm)
-  jmpz=mprotz(:,jatm)
+  ! name of molecular species
 
-! default convergence factor and derivative of 'r'
+             word(1:1)='#'
+             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                Call get_line(safe,nmpldt,record,comm)
+                If (.not.safe) Go To 2000
+                Call get_word(record,word)
+             End Do
+             Call strip_blanks(record)
+             record1=word(1:Len_Trim(word)+1)//record ; Call lower_case(record1)
+             record2=molnam(itmols) ;                   Call lower_case(record2)
 
-  talpha = 1.0_wp
-  a1     = 0.0_wp
+             If (record1 == record2) Then
+                If (comm%idnode == 0 .and. l_top) Write(nrite,"(/,1x,'name of species:',13x,a40)") molnam(itmols)
+             Else
+                If (comm%idnode == 0) Write(nrite,'(/,1x,a,i0)') &
+    "*** warning - molecular names mistmatch between FIELD and MPOLES for type !!! *** ", itmols
 
-! scale imp multipoles
+                Call error(623)
+             End If
 
-  imp = scale*imp*r4pie0/epsq
+  ! read molecular data
 
-! Electrostatics by ewald sum = direct coulombic
+             Do
 
-  If      (keyfce ==  2 .or. keyfce ==  6) Then
+                word(1:1)='#'
+                Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                   Call get_line(safe,nmpldt,record,comm)
+                   If (.not.safe) Go To 2000
+                   Call get_word(record,word) ; Call lower_case(word)
+                End Do
 
-! compute derivatives of 1/r kernel
+  ! number of molecules of this type
 
-     Call coul_deriv(1,2*mxompl+1,xdf,ydf,zdf,rrr,d1)
+                If (word(1:6) == 'nummol') Then
 
-! distance dependent dielectric
+                   Call get_word(record,word)
 
-  Else If (keyfce ==  4) Then
+                   If (nummols(itmols) == Nint(word_2_real(word,comm))) Then
+                      If (comm%idnode == 0 .and. l_top) Write(nrite,"(/,1x,'number of molecules  ',10x,i10)") nummols(itmols)
+                   Else
+                      If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')         &
+    "*** warning - number of molecules mistmatch between FIELD and MPOLES !!! ***", &
+    "***           FIELD  reports: ", nummols(itmols),                              &
+    "***           MPOLES reports: ", Nint(word_2_real(word,comm))
 
-! Compute derivatives of 1/r^2 kernel
+                      Call error(623)
+                   End If
+
+  ! read in atomic details
+
+                Else If (word(1:5) == 'atoms') Then
+
+                   Call get_word(record,word)
 
-     Call coul_deriv(2,2*mxompl+1,xdf,ydf,zdf,rrr,d1)
+                   If (numsit(itmols) == Nint(word_2_real(word,comm))) Then
+                      If (comm%idnode == 0 .and. l_top) Then
+    Write(nrite,"(/,1x,'number of atoms/sites',10x,i10)") numsit(itmols)
+    Write(nrite,"(/,1x,'atomic characteristics:', &
+         & /,/,15x,'site',4x,'name',2x,'multipolar order',2x,'repeat'/)")
+                      End If
+                   Else
+                      If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')                        &
+    "*** warning - number of atoms/sites per molecule mistmatch between FIELD and MPOLES !!! ***", &
+    "***           FIELD  reports: ", numsit(itmols),                                              &
+    "***           MPOLES reports: ", Nint(word_2_real(word,comm))
+
+                      Call error(623)
+                   End If
+
+  ! for every molecule of this type get site and atom description
+
+                   ksite=0 ! reference point
+                   Do isite=1,numsit(itmols)
+                      If (ksite < numsit(itmols)) Then
+
+  ! read atom name, highest pole order supplied, repeat
+
+                         word(1:1)='#'
+                         Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                            Call get_line(safe,nmpldt,record,comm)
+                            If (.not.safe) Go To 2000
+                            Call get_word(record,word)
+                         End Do
 
-! force shifted coulombic and reaction field
+                         atom=word(1:8)
 
-  Else If (keyfce ==  8 .or. keyfce == 10) Then
+  ! read supplied pole order
 
-     If (damp) Then ! calculate damping contributions
+                         Call get_word(record,word)
+                         ordmpl=Abs(Nint(word_2_real(word,comm)))
+                         indmpl=(ordmpl+3)*(ordmpl+2)*(ordmpl+1)/6
 
-! compute derivatives of 'r'
+  ! read supplied repetition
 
-        Call coul_deriv(-1,2*mxompl+1,xdf,ydf,zdf,rrr,a1)
+                         Call get_word(record,word)
+                         nrept=Abs(Nint(word_2_real(word,comm)))
+                         If (nrept == 0) nrept=1
 
-! scale the derivatives of 'r'
+                         jsite=nsite+1
+                         lsite=jsite+nrept-1
 
-        a1 = aa*a1
+                         Do i=jsite,lsite
+                            If (sitnam(i) /= atom) Then ! detect mish-mash
+                               If (comm%idnode == 0) Write(nrite,'(/,1x,a,i0,a)') &
+    "*** warning - site names mistmatch between FIELD and MPOLES for site ", ksite+1+i-jsite, " !!! ***"
 
-        exp1= Exp(-(alpha*rrr)**2)
-        tt  = 1.0_wp/(1.0_wp+pp*alpha*rrr)
+                               Call error(623)
+                            End If
+                         End Do
 
-        fer = erc/alpha
+  ! read supplied site polarisation and dumping factor
 
-! compute derivatives of the ewald real space kernel
+                         Call get_word(record,word) ; polarity=Abs(word_2_real(word,comm,0.0_wp))
+                         Call get_word(record,word) ; dumping =Abs(word_2_real(word,comm,0.0_wp))
 
-        Call ewald_deriv(-2,2*mxompl+1,1,fer,alpha*xdf,alpha*ydf,alpha*zdf,alpha*rrr,d1)
+                         l_rsh=.true. ! regular or no shelling (Drude)
+                         kshels=nshels
+                         Do ishls=1,numshl(itmols) ! detect beyond charge shelling
+                            kshels=kshels+1
+
+                            isite2=nsite+lstshl(2,kshels)
+                            If ((isite2 >= jsite .and. isite2 <= lsite)) Then
+                               l_rsh=.false.
+                               If (comm%idnode == 0) Then
+                                  If (ordmpl > 0) Write(nrite,'(/,1x,a)') &
+    "*** warning - a shell (of a polarisable multipolar ion) can only bear a charge to emulate a self-iduced dipole !!! ***"
+                                  If (polarity > zero_plus) Write(nrite,'(/,1x,a)') &
+    "*** warning - a shell (of a polarisable multipolar ion) cannot have its own associated polarisability !!! ***"
+                                  If (dumping  > zero_plus) Write(nrite,'(/,1x,a)') &
+    "*** warning - a shell (of a polarisable multipolar ion) cannot have its own associated dumping factor !!! ***"
+                               End If
+                            End If
+                         End Do
+
+  ! get the min and max order defined for cores/nucleus, ignore irregular shells
+
+                         If (l_rsh) Then
+                            ordmpl_min=Min(ordmpl_min,ordmpl)
+                            ordmpl_max=Max(ordmpl_max,ordmpl)
+                         End If
+
+                         If (comm%idnode == 0 .and. l_top) Then
+                            If (l_rsh) Then
+    Write(nrite,"(9x,i10,4x,a8,4x,i2,5x,i10,2f7.3)") ksite+1,atom,ordmpl,nrept,polarity,dumping
+                            Else
+    Write(nrite,"(9x,i10,4x,a8,4x,i2,5x,i10,2a)") ksite+1,atom,1,nrept,                                 &
+                                               Merge(' *ignored* ','           ',polarity > zero_plus), &
+                                               Merge(' *ignored* ','           ',dumping  > zero_plus)
+                            End If
+                         End If
 
-! scale the derivatives into the right form
+  ! monopole=charge
 
-        d1 = 2.0_wp*alpha*d1/sqrpi
+                         word(1:1)='#'
+                         Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                            Call get_line(safe,nmpldt,record,comm)
+                            If (.not.safe) Go To 2000
+                            Call get_word(record,word)
+                         End Do
+
+                         sitmpl = 1
+
+                         charge=word_2_real(word,comm)
+                         chgsit(jsite:lsite)=charge
+                         mpllfr(sitmpl,jsite:lsite)=charge
+                         If (l_rsh) Then
+                            plrsit(jsite:lsite)=polarity
+                            dmpsit(jsite:lsite)=dumping
+  !                      Else ! initilised to zero in mpoles_module
+                         End If
+
+  ! sum absolute charges
+
+                         sumchg=sumchg+Abs(charge)
+
+  ! report
+
+                         If (comm%idnode == 0 .and. l_top) &
+    Write(nrite,"(3x,a12,3x,f10.5)") 'charge',charge
+
+  ! higher poles counters
+
+                         ordmpl_start = 0
+                         ordmpl_next  = ordmpl_start+1
+                         indmpl_start = sitmpl+1
+                         indmpl_final = (ordmpl_next+3)*(ordmpl_next+2)*(ordmpl_next+1)/6
+
+                         Do While (ordmpl_next <= ordmpl)
+
+  ! read line per pole order
+
+                            word(1:1)='#'
+                            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                               Call get_line(safe,nmpldt,record,comm)
+                               If (.not.safe) Go To 2000
+                               Call get_word(record,word)
+                            End Do
+
+  ! Only assign what FIELD says is needed or it is a shell
+
+                            If (ordmpl_next <= Merge(mxompl,1,l_rsh)) Then
+
+                               Do i=indmpl_start,indmpl_final
+                                  sitmpl = sitmpl+1
+                                  mpllfr(sitmpl,jsite:lsite)=word_2_real(word,comm)
+                                  Call get_word(record,word)
+                               End Do
+
+  ! report
+
+                               If (comm%idnode == 0 .and. l_top) Then
+                                  If      (ordmpl_next == 1) Then
+    Write(nrite,"(3x,a12,3x, 3f10.5)") 'dipole',       mpllfr(indmpl_start:indmpl_final,jsite)
+                                  Else If (ordmpl_next == 2) Then
+    Write(nrite,"(3x,a12,3x, 6f10.5)") 'quadrupole',   mpllfr(indmpl_start:indmpl_final,jsite)
+                                  Else If (ordmpl_next == 3) Then
+    Write(nrite,"(3x,a12,3x,10f10.5)") 'octupole',     mpllfr(indmpl_start:indmpl_final,jsite)
+                                  Else If (ordmpl_next == 4) Then
+    Write(nrite,"(3x,a12,3x,15f10.5)") 'hexadecapole', mpllfr(indmpl_start:indmpl_final,jsite)
+                                  End If
+                               End If
+
+  ! rescale poles values by their degeneracy
+
+                               If (ordmpl_next > 1) Then
+                                  sitmpl=sitmpl-(indmpl_final-indmpl_start+1) ! rewind
+                                  Do i=ordmpl_next,0,-1
+                                     l=ordmpl_next-i
+                                     Do j=l,0,-1
+                                        k=l-j
+
+                                        scl=Exp(Factorial(ordmpl_next)-Factorial(k)-Factorial(j)-Factorial(i))
+  !                                      Write(*,*) i,j,k,Nint(scl)
 
-     End If
+                                        sitmpl = sitmpl+1 ! forward and apply scaling if degeneracy exists
+                                        If (Nint(scl) /= 1) mpllfr(sitmpl,jsite:lsite)=mpllfr(sitmpl,jsite:lsite)/scl
+                                     End Do
+                                  End Do
+                               End If
 
-     If      (keyfce ==  8) Then ! force shifted coulombic
-        If (.not.damp) Then ! pure
+                            Else
 
-! compute derivatives of '1/r'
+                               l_ord=.true.
 
-           Call coul_deriv(1,2*mxompl+1,xdf,ydf,zdf,rrr,d1)
+  ! update actual order marker
 
-! compute derivatives of 'r'
+                               sitmpl=indmpl_final
 
-           Call coul_deriv(-1,2*mxompl+1,xdf,ydf,zdf,rrr,a1)
+  ! report
 
-! scale the derivatives of 'r' and add to d1
+                               If (comm%idnode == 0 .and. l_top) Then
+                                  If (l_rsh) Then
+                                     If      (ordmpl_next == 1) Then
+    Write(nrite,"(3x,a12,1x,a)") 'dipole',                 '     *** supplied but not required ***'
+                                     Else If (ordmpl_next == 2) Then
+    Write(nrite,"(3x,a12,1x,a)") 'quadrupole',             '     *** supplied but not required ***'
+                                     Else If (ordmpl_next == 3) Then
+    Write(nrite,"(3x,a12,1x,a)") 'octupole',               '     *** supplied but not required ***'
+                                     Else If (ordmpl_next == 4) Then
+    Write(nrite,"(3x,a12,1x,a)") 'hexadecapole',           '     *** supplied but not required ***'
+                                     Else
+    Write(nrite,"(3x,a12,i0,a)") 'pole order ',ordmpl_next,'     *** supplied but not required ***'
+                                     End If
+                                  Else
+                                     If      (ordmpl_next == 1) Then
+    Write(nrite,"(3x,a12,1x,a)") 'dipole',                 '     *** supplied but ignored as invalid ***'
+                                     Else If (ordmpl_next == 2) Then
+    Write(nrite,"(3x,a12,1x,a)") 'quadrupole',             '     *** supplied but ignored as invalid ***'
+                                     Else If (ordmpl_next == 3) Then
+    Write(nrite,"(3x,a12,1x,a)") 'octupole',               '     *** supplied but ignored as invalid ***'
+                                     Else If (ordmpl_next == 4) Then
+    Write(nrite,"(3x,a12,1x,a)") 'hexadecapole',           '     *** supplied but ignored as invalid ***'
+                                     Else
+    Write(nrite,"(3x,a12,i0,a)") 'pole order ',ordmpl_next,'     *** supplied but ignored as invalid ***'
+                                     End If
+                                  End If
+                               End If
 
-           d1 = d1 + aa*a1
-           a1 = 0.0_wp
+                            End If
 
-        Else                ! damped
+  ! update poles counters
 
-           talpha = alpha
+                            ordmpl_next  = ordmpl_next+1
+                            indmpl_start = sitmpl+1
+                            indmpl_final = (ordmpl_next+3)*(ordmpl_next+2)*(ordmpl_next+1)/6
 
-        End If
-     Else If (keyfce == 10) Then ! reaction field
-        If (.not.damp) Then ! pure
+                         End Do
 
-! compute derivatives of '1/r'
+                         nsite=nsite+nrept
+                         ksite=ksite+nrept
 
-           Call coul_deriv(1,2*mxompl+1,xdf,ydf,zdf,rrr,d1)
+                         If (ksite == numsit(itmols)) nshels=kshels
 
-! compute derivatives of 'r^2'
+                      End If
+                   End Do
 
-           Call coul_deriv(-2,2*mxompl+1,xdf,ydf,zdf,rrr,a1)
+  ! finish of data for one molecular type
 
-! scale the derivatives of 'r' and add to d1
+                Else If (word(1:6) == 'finish') Then
 
-           d1 = d1 + rfld2*a1
-           a1 = 0.0_wp
+                   If (comm%idnode == 0) Then
+                      Write(nrite,'(/,1x,3(a,i0),a)') &
+    "*** warning - multipolar electrostatics requested up to order ", &
+    mxompl, " with specified interactions up order ",                 &
+    ordmpl_max," and least order ", ordmpl_min," !!! ***"
+                      If (ordmpl_max*mxompl == 0) Write(nrite,'(1x,2a)') &
+    "*** warning - multipolar electrostatics machinery to be used for ", &
+    "monopoles only electrostatic interactions (point charges only) !!! ***"
+                      If (ordmpl_max > 4) Write(nrite,'(1x,2a)')     &
+    "*** warning - electrostatic interactions beyond hexadecapole ", &
+    "order can not be considered and are thus ignored !!! ***"
+                   End If
 
-        Else
+                   Go To 1000
 
-! compute derivatives of 'r^2'
+                Else
 
-           Call coul_deriv(-2,2*mxompl+1,xdf,ydf,zdf,rrr,b1)
+  ! error exit for unidentified directive in molecular data
 
-! scale the derivatives of 'r^2' and add to scaled derivatives of 'r'
+                   Call strip_blanks(record)
+                   If (comm%idnode == 0) Write(nrite,'(/,1x,2a)') word(1:Len_Trim(word)+1),record
+                   Call error(12)
 
-           a1 = a1 + rfld2*b1
+                End If
 
-           talpha = alpha
+             End Do
 
-        End If
-     End If
+  ! just finished with this type molecule data
 
-  Else
+  1000       Continue
 
-     safe = .false.
+          End Do
 
-  End If
+  ! close MPOLES data file
 
-  If (safe) Then
+       Else If (word(1:5) == 'close') Then
 
-     kz = 1.0_wp
-     Do k3=0,mxompl
+          If (comm%idnode == 0) Close(Unit=nmpldt)
 
-        ky = kz
-        Do k2=0,mxompl-k3
+  ! EXIT IF ALL IS OK
 
-           kx = ky
-           Do k1=0,mxompl-k3-k2
+          Return
 
-              jj = mplmap(k1,k2,k3)
+       Else
 
-              If (Abs(jmp(jj)) > zero_plus) Then
+  ! error exit for unidentified directive
 
-                 txyz=kx*jmp(jj)
+          If (comm%idnode == 0) Write(nrite,'(/,1x,a)') word(1:Len_Trim(word))
+          Call error(4)
 
-                 sz = 1.0_wp
-                 Do s3=0,mxompl
-                    ks3=k3+s3; ks31=ks3+1
+       End If
 
-                    sy = sz
-                    Do s2=0,mxompl-s3
-                       ks2=k2+s2; ks21=ks2+1
+    End Do
 
-                       sx = sy
-                       Do s1=0,mxompl-s3-s2
-                          ks1=k1+s1; ks11=ks1+1
+    Return
 
-                          n      = ks1+ks2+ks3
-                          alphan = talpha**n
+  2000 Continue
 
-                          ii     = mplmap(s1,s2,s3)
+    If (comm%idnode == 0) Close(Unit=nmpldt)
+    Call error(52)
 
-                          tmp    = alphan * d1(ks1,ks2,ks3) + a1(ks1,ks2,ks3)
-
-                          tmpi   = txyz       * tmp
-                          tmpj   = sx*imp(ii) * tmp
-
-                          t2     = txyz*imp(ii)
-                          t1     = alphan*t2
-
-!  energy
-
-                          coul    = coul + t1*d1(ks1,ks2,ks3)  + t2*a1(ks1,ks2,ks3)
-
-!  force
-                          t1      = t1*talpha
-
-                          fx      = fx   - t1*d1(ks11,ks2,ks3) + t2*a1(ks11,ks2,ks3)
-                          fy      = fy   - t1*d1(ks1,ks21,ks3) + t2*a1(ks1,ks21,ks3)
-                          fz      = fz   - t1*d1(ks1,ks2,ks31) + t2*a1(ks1,ks2,ks31)
-
-!  torque on iatm
-
-                          tix     = tix  + impx(ii)*tmpi
-                          tiy     = tiy  + impy(ii)*tmpi
-                          tiz     = tiz  + impz(ii)*tmpi
-
-!  torque on jatm
-
-                          tjx     = tjx  + jmpx(jj)*tmpj
-                          tjy     = tjy  + jmpy(jj)*tmpj
-                          tjz     = tjz  + jmpz(jj)*tmpj
-
-                          sx = -sx
-                       End Do
-
-                       sy = -sy
-                    End Do
-
-                    sz = -sz
-                 End Do
-
-              End If
-
-              kx = -kx
-
-           End Do
-
-           ky = -ky
-
-        End Do
-
-        kz = -kz
-
-     End Do
-
-     If (keyfce == 2 .or. keyfce == 4 .or. keyfce == 6) Then
-
-        virele = -coul
-
-     Else If (keyfce ==  8) Then ! force shifted coulombic
-
-        virele = -(fx*xdf + fy*ydf + fz*zdf)
-
-! shift potential
-
-        tmp    = aa*rrr + bb
-        coul   = coul   + tmp*imp(1)*jmp(1)
-
-! shift torque
-
-        tmpi   = tmp*jmp(1)
-        tix    = tix    + impx(1)*tmpi
-        tiy    = tiy    + impy(1)*tmpi
-        tiz    = tiz    + impz(1)*tmpi
-
-        tmpj   = tmp*imp(1)
-        tjx    = tjx    + jmpx(1)*tmpj
-        tjy    = tjy    + jmpy(1)*tmpj
-        tjz    = tjz    + jmpz(1)*tmpj
-
-     Else If (keyfce == 10) Then ! reaction field
-
-        virele = -(fx*xdf + fy*ydf + fz*zdf)
-
-! shift potential
-
-        coul   = coul   - rfld1*imp(1)*jmp(1)
-
-! shift torque
-
-        tmpi   = -rfld1*jmp(1)
-        tix    = tix    + impx(1)*tmpi
-        tiy    = tiy    + impy(1)*tmpi
-        tiz    = tiz    + impz(1)*tmpi
-
-        tmpj   = -rfld1*imp(1)
-        tjx    = tjx    + jmpx(1)*tmpj
-        tjy    = tjy    + jmpy(1)*tmpj
-        tjz    = tjz    + jmpz(1)*tmpj
-
-     End If
-
-     tix = tix*r4pie0/epsq
-     tiy = tiy*r4pie0/epsq
-     tiz = tiz*r4pie0/epsq
-
-     If (iatm <= natms) Then
-
-        mptrqx(iatm)=mptrqx(iatm)+tix
-        mptrqy(iatm)=mptrqy(iatm)+tiy
-        mptrqz(iatm)=mptrqz(iatm)+tiz
-
-     End If
-
-     If (jatm <= natms) Then
-
-        mptrqx(jatm)=mptrqx(jatm)+tjx
-        mptrqy(jatm)=mptrqy(jatm)+tjy
-        mptrqz(jatm)=mptrqz(jatm)+tjz
-
-     End If
-
-  End If
-
-End Subroutine intra_mcoul
-
-Subroutine read_mpoles(l_top,sumchg,comm)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for reading in the molecular mulitpole
-! specifications of the system to be simulated
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov february 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Logical,           Intent ( In    ) :: l_top
-  Real( Kind = wp ), Intent ( InOut ) :: sumchg
-  Type( comms_type ), Intent ( InOut ) :: comm
-  Logical                :: safe,l_rsh,l_ord=.false.
-
-  Character( Len = 200 ) :: record,record1,record2
-  Character( Len = 40  ) :: word
-  Character( Len = 8   ) :: atom
-
-  Integer                :: itmols,nrept,i,j,k,l,                 &
-                            isite,jsite,ksite,lsite,nsite,sitmpl, &
-                            ishls,nshels,kshels,isite2,           &
-                            ordmpl,ordmpl_start,ordmpl_next,      &
-                            ordmpl_min,ordmpl_max,                &
-                            indmpl,indmpl_start,indmpl_final
-
-  Real( Kind = wp )      :: Factorial,charge,scl,polarity,dumping
-
-! open MPOLES data file
-
-  If (comm%idnode == 0) Then
-     Open(Unit=nmpldt, File = 'MPOLES', Status = 'old')
-     Write(nrite,"(/,/,1x,'ELECTROSTATICS MULTIPOLES SPECIFICATION')")
-     If (.not.l_top) Write(nrite,"(/,1x,'detailed specification opted out')")
-  End If
-
-  Call get_line(safe,nmpldt,record,comm)
-  If (.not.safe) Go To 2000
-
-! omit first line
-
-  nsite  = 0
-  nshels = 0
-  sumchg = 0.0_wp
-
-  ordmpl_min = 4
-  ordmpl_max = 0
-
-! read and process directives from mpols/field file
-
-  Do
-
-     word(1:1)='#'
-     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-        Call get_line(safe,nmpldt,record,comm)
-        If (.not.safe) Go To 2000
-        Call get_word(record,word) ; Call lower_case(word)
-     End Do
-
-! specify molecular species
-
-     If (word(1:7) == 'molecul') Then
-
-        Call get_word(record,word) ; Call lower_case(word)
-        If (word(1:4) == 'type') Call get_word(record,word)
-
-        If (ntpmls == Nint(word_2_real(word,comm))) Then
-           If (comm%idnode == 0) Write(nrite,"(/,/,1x,'number of molecular types',6x,i10)") ntpmls
-        Else
-           If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')                        &
-  "*** warning - number of molecular types mistmatch between FIELD and MPOLES !!! ***", &
-  "***           FIELD  reports: ", ntpmls,                                             &
-  "***           MPOLES reports: ", Nint(word_2_real(word,comm))
-
-           Call error(623)
-        End If
-
-! read in molecular characteristics for every molecule
-
-        Do itmols=1,ntpmls
-
-           If (comm%idnode == 0 .and. l_top) Write(nrite,"(/,/,1x,'molecular species type',9x,i10)") itmols
-
-! name of molecular species
-
-           word(1:1)='#'
-           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nmpldt,record,comm)
-              If (.not.safe) Go To 2000
-              Call get_word(record,word)
-           End Do
-           Call strip_blanks(record)
-           record1=word(1:Len_Trim(word)+1)//record ; Call lower_case(record1)
-           record2=molnam(itmols) ;                   Call lower_case(record2)
-
-           If (record1 == record2) Then
-              If (comm%idnode == 0 .and. l_top) Write(nrite,"(/,1x,'name of species:',13x,a40)") molnam(itmols)
-           Else
-              If (comm%idnode == 0) Write(nrite,'(/,1x,a,i0)') &
-  "*** warning - molecular names mistmatch between FIELD and MPOLES for type !!! *** ", itmols
-
-              Call error(623)
-           End If
-
-! read molecular data
-
-           Do
-
-              word(1:1)='#'
-              Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                 Call get_line(safe,nmpldt,record,comm)
-                 If (.not.safe) Go To 2000
-                 Call get_word(record,word) ; Call lower_case(word)
-              End Do
-
-! number of molecules of this type
-
-              If (word(1:6) == 'nummol') Then
-
-                 Call get_word(record,word)
-
-                 If (nummols(itmols) == Nint(word_2_real(word,comm))) Then
-                    If (comm%idnode == 0 .and. l_top) Write(nrite,"(/,1x,'number of molecules  ',10x,i10)") nummols(itmols)
-                 Else
-                    If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')         &
-  "*** warning - number of molecules mistmatch between FIELD and MPOLES !!! ***", &
-  "***           FIELD  reports: ", nummols(itmols),                              &
-  "***           MPOLES reports: ", Nint(word_2_real(word,comm))
-
-                    Call error(623)
-                 End If
-
-! read in atomic details
-
-              Else If (word(1:5) == 'atoms') Then
-
-                 Call get_word(record,word)
-
-                 If (numsit(itmols) == Nint(word_2_real(word,comm))) Then
-                    If (comm%idnode == 0 .and. l_top) Then
-  Write(nrite,"(/,1x,'number of atoms/sites',10x,i10)") numsit(itmols)
-  Write(nrite,"(/,1x,'atomic characteristics:', &
-       & /,/,15x,'site',4x,'name',2x,'multipolar order',2x,'repeat'/)")
-                    End If
-                 Else
-                    If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')                        &
-  "*** warning - number of atoms/sites per molecule mistmatch between FIELD and MPOLES !!! ***", &
-  "***           FIELD  reports: ", numsit(itmols),                                              &
-  "***           MPOLES reports: ", Nint(word_2_real(word,comm))
-
-                    Call error(623)
-                 End If
-
-! for every molecule of this type get site and atom description
-
-                 ksite=0 ! reference point
-                 Do isite=1,numsit(itmols)
-                    If (ksite < numsit(itmols)) Then
-
-! read atom name, highest pole order supplied, repeat
-
-                       word(1:1)='#'
-                       Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                          Call get_line(safe,nmpldt,record,comm)
-                          If (.not.safe) Go To 2000
-                          Call get_word(record,word)
-                       End Do
-
-                       atom=word(1:8)
-
-! read supplied pole order
-
-                       Call get_word(record,word)
-                       ordmpl=Abs(Nint(word_2_real(word,comm)))
-                       indmpl=(ordmpl+3)*(ordmpl+2)*(ordmpl+1)/6
-
-! read supplied repetition
-
-                       Call get_word(record,word)
-                       nrept=Abs(Nint(word_2_real(word,comm)))
-                       If (nrept == 0) nrept=1
-
-                       jsite=nsite+1
-                       lsite=jsite+nrept-1
-
-                       Do i=jsite,lsite
-                          If (sitnam(i) /= atom) Then ! detect mish-mash
-                             If (comm%idnode == 0) Write(nrite,'(/,1x,a,i0,a)') &
-  "*** warning - site names mistmatch between FIELD and MPOLES for site ", ksite+1+i-jsite, " !!! ***"
-
-                             Call error(623)
-                          End If
-                       End Do
-
-! read supplied site polarisation and dumping factor
-
-                       Call get_word(record,word) ; polarity=Abs(word_2_real(word,comm,0.0_wp))
-                       Call get_word(record,word) ; dumping =Abs(word_2_real(word,comm,0.0_wp))
-
-                       l_rsh=.true. ! regular or no shelling (Drude)
-                       kshels=nshels
-                       Do ishls=1,numshl(itmols) ! detect beyond charge shelling
-                          kshels=kshels+1
-
-                          isite2=nsite+lstshl(2,kshels)
-                          If ((isite2 >= jsite .and. isite2 <= lsite)) Then
-                             l_rsh=.false.
-                             If (comm%idnode == 0) Then
-                                If (ordmpl > 0) Write(nrite,'(/,1x,a)') &
-  "*** warning - a shell (of a polarisable multipolar ion) can only bear a charge to emulate a self-iduced dipole !!! ***"
-                                If (polarity > zero_plus) Write(nrite,'(/,1x,a)') &
-  "*** warning - a shell (of a polarisable multipolar ion) cannot have its own associated polarisability !!! ***"
-                                If (dumping  > zero_plus) Write(nrite,'(/,1x,a)') &
-  "*** warning - a shell (of a polarisable multipolar ion) cannot have its own associated dumping factor !!! ***"
-                             End If
-                          End If
-                       End Do
-
-! get the min and max order defined for cores/nucleus, ignore irregular shells
-
-                       If (l_rsh) Then
-                          ordmpl_min=Min(ordmpl_min,ordmpl)
-                          ordmpl_max=Max(ordmpl_max,ordmpl)
-                       End If
-
-                       If (comm%idnode == 0 .and. l_top) Then
-                          If (l_rsh) Then
-  Write(nrite,"(9x,i10,4x,a8,4x,i2,5x,i10,2f7.3)") ksite+1,atom,ordmpl,nrept,polarity,dumping
-                          Else
-  Write(nrite,"(9x,i10,4x,a8,4x,i2,5x,i10,2a)") ksite+1,atom,1,nrept,                                 &
-                                             Merge(' *ignored* ','           ',polarity > zero_plus), &
-                                             Merge(' *ignored* ','           ',dumping  > zero_plus)
-                          End If
-                       End If
-
-! monopole=charge
-
-                       word(1:1)='#'
-                       Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                          Call get_line(safe,nmpldt,record,comm)
-                          If (.not.safe) Go To 2000
-                          Call get_word(record,word)
-                       End Do
-
-                       sitmpl = 1
-
-                       charge=word_2_real(word,comm)
-                       chgsit(jsite:lsite)=charge
-                       mpllfr(sitmpl,jsite:lsite)=charge
-                       If (l_rsh) Then
-                          plrsit(jsite:lsite)=polarity
-                          dmpsit(jsite:lsite)=dumping
-!                      Else ! initilised to zero in mpoles_module
-                       End If
-
-! sum absolute charges
-
-                       sumchg=sumchg+Abs(charge)
-
-! report
-
-                       If (comm%idnode == 0 .and. l_top) &
-  Write(nrite,"(3x,a12,3x,f10.5)") 'charge',charge
-
-! higher poles counters
-
-                       ordmpl_start = 0
-                       ordmpl_next  = ordmpl_start+1
-                       indmpl_start = sitmpl+1
-                       indmpl_final = (ordmpl_next+3)*(ordmpl_next+2)*(ordmpl_next+1)/6
-
-                       Do While (ordmpl_next <= ordmpl)
-
-! read line per pole order
-
-                          word(1:1)='#'
-                          Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                             Call get_line(safe,nmpldt,record,comm)
-                             If (.not.safe) Go To 2000
-                             Call get_word(record,word)
-                          End Do
-
-! Only assign what FIELD says is needed or it is a shell
-
-                          If (ordmpl_next <= Merge(mxompl,1,l_rsh)) Then
-
-                             Do i=indmpl_start,indmpl_final
-                                sitmpl = sitmpl+1
-                                mpllfr(sitmpl,jsite:lsite)=word_2_real(word,comm)
-                                Call get_word(record,word)
-                             End Do
-
-! report
-
-                             If (comm%idnode == 0 .and. l_top) Then
-                                If      (ordmpl_next == 1) Then
-  Write(nrite,"(3x,a12,3x, 3f10.5)") 'dipole',       mpllfr(indmpl_start:indmpl_final,jsite)
-                                Else If (ordmpl_next == 2) Then
-  Write(nrite,"(3x,a12,3x, 6f10.5)") 'quadrupole',   mpllfr(indmpl_start:indmpl_final,jsite)
-                                Else If (ordmpl_next == 3) Then
-  Write(nrite,"(3x,a12,3x,10f10.5)") 'octupole',     mpllfr(indmpl_start:indmpl_final,jsite)
-                                Else If (ordmpl_next == 4) Then
-  Write(nrite,"(3x,a12,3x,15f10.5)") 'hexadecapole', mpllfr(indmpl_start:indmpl_final,jsite)
-                                End If
-                             End If
-
-! rescale poles values by their degeneracy
-
-                             If (ordmpl_next > 1) Then
-                                sitmpl=sitmpl-(indmpl_final-indmpl_start+1) ! rewind
-                                Do i=ordmpl_next,0,-1
-                                   l=ordmpl_next-i
-                                   Do j=l,0,-1
-                                      k=l-j
-
-                                      scl=Exp(Factorial(ordmpl_next)-Factorial(k)-Factorial(j)-Factorial(i))
-!                                      Write(*,*) i,j,k,Nint(scl)
-
-                                      sitmpl = sitmpl+1 ! forward and apply scaling if degeneracy exists
-                                      If (Nint(scl) /= 1) mpllfr(sitmpl,jsite:lsite)=mpllfr(sitmpl,jsite:lsite)/scl
-                                   End Do
-                                End Do
-                             End If
-
-                          Else
-
-                             l_ord=.true.
-
-! update actual order marker
-
-                             sitmpl=indmpl_final
-
-! report
-
-                             If (comm%idnode == 0 .and. l_top) Then
-                                If (l_rsh) Then
-                                   If      (ordmpl_next == 1) Then
-  Write(nrite,"(3x,a12,1x,a)") 'dipole',                 '     *** supplied but not required ***'
-                                   Else If (ordmpl_next == 2) Then
-  Write(nrite,"(3x,a12,1x,a)") 'quadrupole',             '     *** supplied but not required ***'
-                                   Else If (ordmpl_next == 3) Then
-  Write(nrite,"(3x,a12,1x,a)") 'octupole',               '     *** supplied but not required ***'
-                                   Else If (ordmpl_next == 4) Then
-  Write(nrite,"(3x,a12,1x,a)") 'hexadecapole',           '     *** supplied but not required ***'
-                                   Else
-  Write(nrite,"(3x,a12,i0,a)") 'pole order ',ordmpl_next,'     *** supplied but not required ***'
-                                   End If
-                                Else
-                                   If      (ordmpl_next == 1) Then
-  Write(nrite,"(3x,a12,1x,a)") 'dipole',                 '     *** supplied but ignored as invalid ***'
-                                   Else If (ordmpl_next == 2) Then
-  Write(nrite,"(3x,a12,1x,a)") 'quadrupole',             '     *** supplied but ignored as invalid ***'
-                                   Else If (ordmpl_next == 3) Then
-  Write(nrite,"(3x,a12,1x,a)") 'octupole',               '     *** supplied but ignored as invalid ***'
-                                   Else If (ordmpl_next == 4) Then
-  Write(nrite,"(3x,a12,1x,a)") 'hexadecapole',           '     *** supplied but ignored as invalid ***'
-                                   Else
-  Write(nrite,"(3x,a12,i0,a)") 'pole order ',ordmpl_next,'     *** supplied but ignored as invalid ***'
-                                   End If
-                                End If
-                             End If
-
-                          End If
-
-! update poles counters
-
-                          ordmpl_next  = ordmpl_next+1
-                          indmpl_start = sitmpl+1
-                          indmpl_final = (ordmpl_next+3)*(ordmpl_next+2)*(ordmpl_next+1)/6
-
-                       End Do
-
-                       nsite=nsite+nrept
-                       ksite=ksite+nrept
-
-                       If (ksite == numsit(itmols)) nshels=kshels
-
-                    End If
-                 End Do
-
-! finish of data for one molecular type
-
-              Else If (word(1:6) == 'finish') Then
-
-                 If (comm%idnode == 0) Then
-                    Write(nrite,'(/,1x,3(a,i0),a)') &
-  "*** warning - multipolar electrostatics requested up to order ", &
-  mxompl, " with specified interactions up order ",                 &
-  ordmpl_max," and least order ", ordmpl_min," !!! ***"
-                    If (ordmpl_max*mxompl == 0) Write(nrite,'(1x,2a)') &
-  "*** warning - multipolar electrostatics machinery to be used for ", &
-  "monopoles only electrostatic interactions (point charges only) !!! ***"
-                    If (ordmpl_max > 4) Write(nrite,'(1x,2a)')     &
-  "*** warning - electrostatic interactions beyond hexadecapole ", &
-  "order can not be considered and are thus ignored !!! ***"
-                 End If
-
-                 Go To 1000
-
-              Else
-
-! error exit for unidentified directive in molecular data
-
-                 Call strip_blanks(record)
-                 If (comm%idnode == 0) Write(nrite,'(/,1x,2a)') word(1:Len_Trim(word)+1),record
-                 Call error(12)
-
-              End If
-
-           End Do
-
-! just finished with this type molecule data
-
-1000       Continue
-
-        End Do
-
-! close MPOLES data file
-
-     Else If (word(1:5) == 'close') Then
-
-        If (comm%idnode == 0) Close(Unit=nmpldt)
-
-! EXIT IF ALL IS OK
-
-        Return
-
-     Else
-
-! error exit for unidentified directive
-
-        If (comm%idnode == 0) Write(nrite,'(/,1x,a)') word(1:Len_Trim(word))
-        Call error(4)
-
-     End If
-
-  End Do
-
-  Return
-
-2000 Continue
-
-  If (comm%idnode == 0) Close(Unit=nmpldt)
-  Call error(52)
-
-End Subroutine read_mpoles
-
-
-
+  End Subroutine read_mpoles
 End Module mpole
