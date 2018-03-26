@@ -1,8 +1,6 @@
 set(dlpoly_VV_SRCS
 constraints_rattle.F90
 constraints_shake_vv.F90
-npt_m0_vv.F90
-npt_m1_vv.F90
 pmf_rattle.F90
 pmf_shake_vv.F90
 pseudo_vv.F90

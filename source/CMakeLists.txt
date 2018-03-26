@@ -108,6 +108,7 @@ set(dlpoly_THERMO_SRCS
         npt_berendsen.F90
         npt_nose_hoover.F90
         npt_langevin.F90
+        npt_mtk.F90
         )
 
 set(netcdf_SRCS netcdf.F90)
