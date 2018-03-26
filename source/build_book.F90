@@ -28,6 +28,7 @@ Module build_book
   Use dihedrals
   Use inversions
   Use configuration, only : lexatm
+  Use deport_data, Only : tag_legend,pass_shared_units
 
   Implicit None
 
@@ -1660,13 +1661,13 @@ Subroutine build_book_intra             &
 ! (pmf data updated by construction)
 
   If (megshl > 0 .and. comm%mxnode > 1) Call pass_shared_units &
-     (mxshl, Lbound(listshl,Dim=1),Ubound(listshl,Dim=1),ntshl, listshl,mxfshl,legshl,lshmv_shl,lishp_shl,lashp_shl)
+     (mxshl, Lbound(listshl,Dim=1),Ubound(listshl,Dim=1),ntshl, listshl,mxfshl,legshl,lshmv_shl,lishp_shl,lashp_shl,comm)
 
   If (m_con > 0 .and. comm%mxnode > 1) Call pass_shared_units &
-     (mxcons,Lbound(listcon,Dim=1),Ubound(listcon,Dim=1),ntcons,listcon,mxfcon,legcon,lshmv_con,lishp_con,lashp_con)
+     (mxcons,Lbound(listcon,Dim=1),Ubound(listcon,Dim=1),ntcons,listcon,mxfcon,legcon,lshmv_con,lishp_con,lashp_con,comm)
 
   If (m_rgd > 0 .and. comm%mxnode > 1) Call pass_shared_units &
-     (mxrgd, Lbound(listrgd,Dim=1),Ubound(listrgd,Dim=1),ntrgd, listrgd,mxfrgd,legrgd,lshmv_rgd,lishp_rgd,lashp_rgd)
+     (mxrgd, Lbound(listrgd,Dim=1),Ubound(listrgd,Dim=1),ntrgd, listrgd,mxfrgd,legrgd,lshmv_rgd,lishp_rgd,lashp_rgd,comm)
 
 End Subroutine build_book_intra
 

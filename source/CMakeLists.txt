@@ -23,7 +23,6 @@ temperature.F90
 rsds.F90
 bounds.F90
 system.F90
-tag_legend.F90
 tersoff.F90
 tethers.F90
 three_body.F90
