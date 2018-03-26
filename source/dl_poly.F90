@@ -393,7 +393,7 @@ Program dl_poly
       Write(nrite,'(1x,a)') "*** ... ***"
     End If
 
-    Call origin_config(megatm)
+    Call origin_config(megatm,comm)
 
     Call gtime(timelp)
     If (dlp_world(0)%idnode == 0) Then
