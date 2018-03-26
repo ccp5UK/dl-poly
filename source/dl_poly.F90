@@ -61,11 +61,11 @@ Program dl_poly
 
   Use site
   Use configuration
-  Use control, Only : read_control
+  Use kontrol, Only : read_control
 
   ! VNL module
 
-  Use vnl_module
+  Use vnl
 
   ! DPD module
 
@@ -80,32 +80,32 @@ Program dl_poly
 
   Use rigid_bodies
 
-  Use tethers_module
+  Use tethers
 
-  Use bonds_module
-  Use angles_module
+  Use bonds
+  Use angles
   Use dihedrals
   Use inversions
 
-  Use mpoles_module
+  Use mpole
 
   Use vdw
-  Use metal_module
-  Use tersoff_module
-  Use three_body_module
-  Use four_body_module
+  Use metal
+  Use tersoff
+  Use three_body
+  Use four_body
 
-  Use kim_module
-  Use plumed_module
+  Use kim
+  Use plumed
 
-  Use external_field_module
+  Use external_field
 
   ! STATISTICS MODULES
 
-  Use rdf_module
-  Use z_density_module
+  Use rdfs
+  Use z_density
   Use statistics
-  Use greenkubo_module
+  Use greenkubo
 
   ! MSD MODULE
 
@@ -117,7 +117,7 @@ Program dl_poly
 
   ! LANGEVIN MODULE
 
-  Use langevin_module
+  Use langevin
 
   ! TWO-TEMPERATURE MODEL MODULES
 
@@ -793,10 +793,6 @@ Contains
   Subroutine w_refresh_mappings()
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
-
-  Subroutine w_at_start_vv()
-    Include 'w_at_start_vv.F90'
-  End Subroutine w_at_start_vv
 
   Subroutine w_integrate_vv(isw)
     Integer, Intent( In    ) :: isw ! used for vv stage control

@@ -1,5 +1,4 @@
 include_directories("${CMAKE_BINARY_DIR}/source")
-include_directories(VV)
 
 set(dlpoly_SRCS
 build_book.F90
@@ -81,6 +80,7 @@ z_density.F90
 greenkubo.F90
 gpfa235.F90
 parallel_fft.F90
+drivers.F90
 )
 if(BUILDER)
   set_property(SOURCE development.F90 APPEND PROPERTY
@@ -144,7 +144,6 @@ if(WITH_PLUMED)
 endif()
 ## sets the linking
 link_directories (${LIBRARY_OUTPUT_PATH})
-add_subdirectory(VV)
 target_link_libraries(dlpolykim dlpolycore)
 target_link_libraries(dlpolythermo dlpolycore)
 target_link_libraries(dlpolyplumed dlpolycore)

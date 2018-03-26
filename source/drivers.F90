@@ -1,6 +1,130 @@
+Module drivers
+  use kinds, Only : wp,wi
+  Use comms, Only : comms_type,gsum
+  use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getvom, getknr
+  Use configuration, Only : xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz,cell,natms,&
+                            weight,lfrzn,lstfre,lsite,lfree,ltg,nlast,nfree,&
+                            lsi,lsa,imcon
+  Use rigid_bodies, Only : rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz,&
+                           indrgd,listrgd,rgdfrz,rgdx,rgdy,rgdz,q0,q1,q2,q3,&
+                           rgdriz,rgdwgt,rgdrix,rgdriy,rgdriz,rgdind,rgdzzz,rgdyyy,&
+                           rgdxxx,rgdmeg,ntrgd,lshmv_rgd,lishp_rgd,lashp_rgd
+  Use setup, Only : nrite,boltz,nrite,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
+  Use angles, Only : mxgang1
+  Use bonds, Only : mxgbnd1
+  Use dihedrals, Only : mxgdih1
+  Use inversions, Only : mxginv1 
+  Use site,        Only : dofsit
+  Use core_shell,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
+
+  
+  Implicit None
+  Private
+  Public :: w_impact_option
+  Public :: pseudo_vv
+
+  Contains 
+
+  Subroutine w_impact_option(imd,tmd,levcfg,nstep,nsteql,engke,engrot,emd,vmx,vmy,vmz,megrgd,&
+      strkin,strknf,comm,strknt)
+
+
+    Integer( Kind = wi ),   Intent( InOut ) :: imd, tmd,megrgd,levcfg,nstep,nsteql
+    Real( Kind = wp ),      Intent(   Out ) :: engke,engrot,emd,vmx,vmy,vmz
+    Real ( Kind = wp), Intent( InOut ) :: strkin(:),strknf(:),strknt(:)
+    Type(comms_type), Intent(InOut)    :: comm
+!!!!!!!!!!!!!!!!!!!!!  W_IMPACT_OPTION INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+
+! Apply impact
+! levcfg == 2 avoids application twice when tmd happens at (re)start for VV
+
+     If (nstep == tmd .and. levcfg == 2) Then
+        If (comm%idnode == 0) Write(nrite,"(/,          &
+           & /,1x,'initiating IMPACT:',            &
+           & /,1x,46('-'),                         &
+           & /,1x,'particle (index)',15x,i10,      &
+           & /,1x,'timestep (steps)',15x,i10,      &
+           & /,1x,'energy   (keV)  ',18x,1p,e12.4, &
+           & /,1x,'v-r(x,y,z)',1p,3e12.4,          &
+           & /,1x,46('-'))") imd,tmd,emd,vmx,vmy,vmz
+
+        If (nstep+1 <= nsteql) Call warning(380,Real(nsteql,wp),0.0_wp,0.0_wp)
+
+        Call impact(imd,emd,vmx,vmy,vmz,megrgd)
+
+! Correct kinetic stress and energy
+
+        If (megrgd > 0) Then
+           Call kinstresf(vxx,vyy,vzz,strknf,comm)
+           Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+
+           strkin=strknf+strknt
+
+           engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+        Else
+           Call kinstress(vxx,vyy,vzz,strkin,comm)
+        End If
+        engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+     End If
+
+!!!!!!!!!!!!!!!!!!!!!  W_IMPACT_OPTION INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+  End Subroutine w_impact_option
+
+!  Subroutine w_refresh_mappings()
+!    Include 'w_refresh_mappings.F90'
+!  End Subroutine w_refresh_mappings
+!
+!  Subroutine w_at_start_vv()
+!    Include 'w_at_start_vv.F90'
+!  End Subroutine w_at_start_vv
+!
+!  Subroutine w_integrate_vv(isw)
+!    Integer, Intent( In    ) :: isw ! used for vv stage control
+!
+!    Include 'w_integrate_vv.F90'
+!  End Subroutine w_integrate_vv
+!
+!  Subroutine w_kinetic_options()
+!    Include 'w_kinetic_options.F90'
+!  End Subroutine w_kinetic_options
+!
+!  Subroutine w_statistics_report()
+!    Include 'w_statistics_report.F90'
+!  End Subroutine w_statistics_report
+!
+!  Subroutine w_write_options()
+!    Include 'w_write_options.F90'
+!  End Subroutine w_write_options
+!
+!  Subroutine w_refresh_output()
+!    Include 'w_refresh_output.F90'
+!  End Subroutine w_refresh_output
+!
+!  Subroutine w_md_vv()
+!    Include 'w_md_vv.F90'
+!  End Subroutine w_md_vv
+!
+!  Subroutine w_replay_history()
+!    Logical,     Save :: newjb = .true.
+!    Real( Kind = wp ) :: tmsh        ! tmst replacement
+!    Integer           :: nstpe,nstph ! nstep replacements
+!    Integer           :: exout       ! exit indicator for reading
+!
+!    Include 'w_replay_history.F90'
+!  End Subroutine w_replay_history
+!
+!  Subroutine w_replay_historf()
+!    Logical,     Save :: newjb = .true.
+!    Real( Kind = wp ) :: tmsh        ! tmst replacement
+!    Integer           :: nstpe,nstph ! nstep replacements
+!    Integer           :: exout       ! exit indicator for reading
+!
+!    Include 'w_replay_historf.F90'
+!  End Subroutine w_replay_historf
+
 Subroutine pseudo_vv                                      &
            (isw,keyshl,keyens,keypse,wthpse,tmppse,tstep, &
-           nstep,strkin,strknf,strknt,engke,engrot)
+           nstep,strkin,strknf,strknt,engke,engrot,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -21,21 +145,12 @@ Subroutine pseudo_vv                                      &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-  Use comms_module,       Only : idnode,mxnode,gsum
-  Use setup_module,       Only : boltz,nrite,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
-  Use site_module,        Only : dofsit
-  Use configuration
-  Use rigid_bodies
-  Use core_shell_module,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
-  Use kinetic_module,     Only : getvom,getknr,kinstress,kinstresf,kinstrest
-
-  Implicit None
 
   Integer,           Intent( In    ) :: isw,keyshl,keyens,keypse,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,wthpse,tmppse
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
+  Type( comms_type), Intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
   Integer,           Save :: ntp,stp,rtp,megrgd
@@ -68,7 +183,7 @@ Subroutine pseudo_vv                                      &
 ! set matms
 
   matms=nlast
-  If (mxnode == 1) matms=natms
+  If (comm%mxnode == 1) matms=natms
 
   If (isw == 0) Then
 
@@ -83,11 +198,11 @@ Subroutine pseudo_vv                                      &
 
            megrgd=rgdmeg
 
-           Allocate (qn(1:mxatms),tpn(0:mxnode-1),    Stat=fail(1))
-           Allocate (qs(0:2,1:mxshl),tps(0:mxnode-1), Stat=fail(2))
-           Allocate (qr(1:mxrgd),tpr(0:mxnode-1),     Stat=fail(3))
+           Allocate (qn(1:mxatms),tpn(0:comm%mxnode-1),    Stat=fail(1))
+           Allocate (qs(0:2,1:mxshl),tps(0:comm%mxnode-1), Stat=fail(2))
+           Allocate (qr(1:mxrgd),tpr(0:comm%mxnode-1),     Stat=fail(3))
            If (Any(fail > 0)) Then
-              Write(nrite,'(/,1x,a,i0)') 'pseudo (q. and tp.) allocation failure, node: ', idnode
+              Write(nrite,'(/,1x,a,i0)') 'pseudo (q. and tp.) allocation failure, node: ', comm%idnode
               Call error(0)
            End If
         End If
@@ -116,7 +231,7 @@ Subroutine pseudo_vv                                      &
 ! qualify non-shell, non-frozen free particles (n) for a random kick
 ! qualify RBs (r) by them and derive related shells (s)
 
-! tpn(idnode) number of thermostatted particles on this node (idnode)
+! tpn(comm%idnode) number of thermostatted particles on this node (comm%idnode)
 ! ntp - grand total of non-shell, non-frozen particles to thermostat
 
      qn(1:natms)     = 0 ! unqualified particle (non-massless, non-shells, non-frozen)
@@ -139,12 +254,12 @@ Subroutine pseudo_vv                                      &
            qn(i) = 1
         End If
      End Do
-     tpn(idnode) = j
-     If (mxnode > 1) Then
-        Do i=0,mxnode-1
-           If (i /= idnode) tpn(i) = 0
+     tpn(comm%idnode) = j
+     If (comm%mxnode > 1) Then
+        Do i=0,comm%mxnode-1
+           If (i /= comm%idnode) tpn(i) = 0
         End Do
-        Call gsum(tpn)
+        Call gsum(comm,tpn)
      End If
      ntp = Sum(tpn)
 
@@ -153,10 +268,10 @@ Subroutine pseudo_vv                                      &
 
 ! Allocate random force array of length j
 
-     j=tpn(idnode)
+     j=tpn(comm%idnode)
      Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'pseudo (forces) allocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'pseudo (forces) allocation failure, node: ', comm%idnode
         Call error(0)
      End If
 
@@ -187,7 +302,7 @@ Subroutine pseudo_vv                                      &
 
         End If
      End Do
-     If (mxnode > 1) Call gsum(vom)
+     Call gsum(comm,vom)
      vom = vom / Real(ntp,wp)
 
 ! Add random force and remove thermostat COM force
@@ -204,7 +319,7 @@ Subroutine pseudo_vv                                      &
 
      Deallocate (xxt,yyt,zzt, Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'pseudo (forces) deallocation failure, node: ', idnode
+        Write(nrite,'(/,1x,a,i0)') 'pseudo (forces) deallocation failure, node: ', comm%idnode
         Call error(0)
      End If
 
@@ -218,9 +333,9 @@ Subroutine pseudo_vv                                      &
            If (lfree(i) == 1) j = j + 1
         End If
      End Do
-     Call gsum(j)
+     Call gsum(comm,j)
 
-! tpr(idnode) number of thermostatted RB units on this node (idnode)
+! tpr(comm%idnode) number of thermostatted RB units on this node (comm%idnode)
 ! rtp - grand total of RB units to thermostat
 ! (can be larger than megrgd due to sharing)
 
@@ -247,7 +362,7 @@ Subroutine pseudo_vv                                      &
                        j = j + 1
                     End If
 
-                    If (i <= natms) tpn(idnode) = tpn(idnode) - 1 ! Less free particles are hit
+                    If (i <= natms) tpn(comm%idnode) = tpn(comm%idnode) - 1 ! Less free particles are hit
                  End If
               End Do
 
@@ -262,25 +377,25 @@ Subroutine pseudo_vv                                      &
            End If
         End Do
      End If
-! tpn(idnode) number of thermostatted free particles on this node (idnode)
+! tpn(comm%idnode) number of thermostatted free particles on this node (comm%idnode)
 ! ntp - grand total of non-shell, non-frozen free particles to thermostat
-     If (mxnode > 1) Then
-        Do i=0,mxnode-1
-           If (i /= idnode) tpn(i) = 0
+     If (comm%mxnode > 1) Then
+        Do i=0,comm%mxnode-1
+           If (i /= comm%idnode) tpn(i) = 0
         End Do
-        Call gsum(tpn)
+        Call gsum(comm,tpn)
      End If
      ntp = Sum(tpn)
-     tpr(idnode) = j
-     If (mxnode > 1) Then
-        Do i=0,mxnode-1
-           If (i /= idnode) tpr(i) = 0
+     tpr(comm%idnode) = j
+     If (comm%mxnode > 1) Then
+        Do i=0,comm%mxnode-1
+           If (i /= comm%idnode) tpr(i) = 0
         End Do
-        Call gsum(tpr)
+        Call gsum(comm,tpr)
      End If
      rtp = Sum(tpr)
 
-! tps(idnode) number of thermostatted core-shell units on this node (idnode)
+! tps(comm%idnode) number of thermostatted core-shell units on this node (comm%idnode)
 ! stp - grand total of core-shell units to thermostat
 
      j = 0
@@ -305,12 +420,12 @@ Subroutine pseudo_vv                                      &
            End Do
         End If
      End If
-     tps(idnode) = j
-     If (mxnode > 1) Then
-        Do i=0,mxnode-1
-           If (i /= idnode) tps(i) = 0
+     tps(comm%idnode) = j
+     If (comm%mxnode > 1) Then
+        Do i=0,comm%mxnode-1
+           If (i /= comm%idnode) tps(i) = 0
         End Do
-        Call gsum(tps)
+        Call gsum(comm,tps)
      End If
      stp = Sum(tps)
 
@@ -323,7 +438,7 @@ Subroutine pseudo_vv                                      &
 
         Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail(1))
         If (fail(1) > 0) Then
-           Write(nrite,'(/,1x,a,i0)') 'pseudo (velocities) allocation failure, node: ', idnode
+           Write(nrite,'(/,1x,a,i0)') 'pseudo (velocities) allocation failure, node: ', comm%idnode
            Call error(0)
         End If
 
@@ -409,9 +524,9 @@ Subroutine pseudo_vv                                      &
            End Do
         End If
 
-        If (mxnode > 1) Call gsum(tkin)
+        Call gsum(comm,tkin)
         If (tkin <= zero_plus) tkin = 1.0_wp
-        If (mxnode > 1) Call gsum(mxdr)
+        Call gsum(comm,mxdr)
 
 ! Scale to target temperature and apply thermostat
 
@@ -503,7 +618,7 @@ Subroutine pseudo_vv                                      &
 
         Deallocate (xxt,yyt,zzt, Stat=fail(1))
         If (fail(1) > 0) Then
-           Write(nrite,'(/,1x,a,i0)') 'pseudo (velocities) deallocation failure, node: ', idnode
+           Write(nrite,'(/,1x,a,i0)') 'pseudo (velocities) deallocation failure, node: ', comm%idnode
            Call error(0)
         End If
 
@@ -512,7 +627,7 @@ Subroutine pseudo_vv                                      &
         If (stp > 0) Then
            If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz)
 
-           If (tps(idnode) > 0) Then
+           If (tps(comm%idnode) > 0) Then
               j = 0
               Do k=1,ntshl
                  If (qs(0,k) == 1) Then
@@ -533,7 +648,7 @@ Subroutine pseudo_vv                                      &
 
 ! remove system centre of mass velocity (random momentum walk)
 
-           Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz)
+           Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,comm)
 
            Do j=1,nfree
               i=lstfre(j)
@@ -591,7 +706,7 @@ Subroutine pseudo_vv                                      &
               Allocate (rgdfxx(1:mxrgd),rgdfyy(1:mxrgd),rgdfzz(1:mxrgd),             Stat=fail(2))
               Allocate (rgdtxx(1:mxrgd),rgdtyy(1:mxrgd),rgdtzz(1:mxrgd),             Stat=fail(3))
               If (Any(fail > 0)) Then
-                 Write(nrite,'(/,1x,a,i0)') 'pseudo (RB) allocation failure, node: ', idnode
+                 Write(nrite,'(/,1x,a,i0)') 'pseudo (RB) allocation failure, node: ', comm%idnode
                  Call error(0)
               End If
 
@@ -727,7 +842,7 @@ Subroutine pseudo_vv                                      &
               Deallocate (rgdfxx,rgdfyy,rgdfzz, Stat=fail(2))
               Deallocate (rgdtxx,rgdtyy,rgdtzz, Stat=fail(3))
               If (Any(fail > 0)) Then
-                 Write(nrite,'(/,1x,a,i0)') 'pseudo (RB) deallocation failure, node: ', idnode
+                 Write(nrite,'(/,1x,a,i0)') 'pseudo (RB) deallocation failure, node: ', comm%idnode
                  Call error(0)
               End If
            End If
@@ -735,7 +850,7 @@ Subroutine pseudo_vv                                      &
 ! Shells
 
            If (stp > 0) Then
-              If (tps(idnode) > 0) Then
+              If (tps(comm%idnode) > 0) Then
                  Do k=1,ntshl
                     If (qs(0,k) == 1) Then
                        i2=qs(2,k)
@@ -747,17 +862,16 @@ Subroutine pseudo_vv                                      &
               End If
            End If
 
-           If (mxnode > 1) Then
               buffer(1) = tkin
               buffer(2) = vdotf
               buffer(3) = trot
               buffer(4) = odott
-              Call gsum(buffer(1:4))
+              Call gsum(comm,buffer(1:4))
               tkin  = buffer(1)
               vdotf = buffer(2)
               trot  = buffer(3)
               odott = buffer(4)
-           End If
+
            tmp=tkin+trot
            If (tmp <= zero_plus) tmp = 1.0_wp
            chit = (vdotf+odott)/tmp
@@ -766,7 +880,7 @@ Subroutine pseudo_vv                                      &
 
 ! remove system centre of mass velocity (random momentum walk)
 
-           Call getvom(vom,vxx,vyy,vzz)
+           Call getvom(vom,vxx,vyy,vzz,comm)
 
            Do i=1,natms
               If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
@@ -791,7 +905,7 @@ Subroutine pseudo_vv                                      &
 ! Shells
 
            If (stp > 0) Then
-              If (tps(idnode) > 0) Then
+              If (tps(comm%idnode) > 0) Then
                  Do k=1,ntshl
                     If (qs(0,k) == 1) Then
                        i2=qs(2,k)
@@ -803,13 +917,12 @@ Subroutine pseudo_vv                                      &
               End If
            End If
 
-           If (mxnode > 1) Then
               buffer(1) = tkin
               buffer(2) = vdotf
-              Call gsum(buffer(1:2))
+              Call gsum(comm,buffer(1:2))
               tkin  = buffer(1)
               vdotf = buffer(2)
-           End If
+
            If (tkin <= zero_plus) tkin = 1.0_wp
            chit = vdotf/tkin
 
@@ -910,7 +1023,7 @@ Subroutine pseudo_vv                                      &
         If (stp > 0) Then
            If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz)
 
-           If (tps(idnode) > 0) Then
+           If (tps(comm%idnode) > 0) Then
               Do k=1,ntshl
                  If (qs(0,k) == 1) Then
                     i1=qs(1,k)
@@ -928,7 +1041,7 @@ Subroutine pseudo_vv                                      &
 
         If (megrgd > 0) Then
 
-           Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz)
+           Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,comm)
 
            Do j=1,nfree
               i=lstfre(j)
@@ -963,7 +1076,7 @@ Subroutine pseudo_vv                                      &
 
         Else
 
-           Call getvom(vom,vxx,vyy,vzz)
+           Call getvom(vom,vxx,vyy,vzz,comm)
 
            Do i=1,natms
               If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
@@ -980,19 +1093,20 @@ Subroutine pseudo_vv                                      &
 ! Update total kinetic stress and energy
 
      If (megrgd > 0) Then
-        Call kinstresf(vxx,vyy,vzz,strknf)
-        Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt)
+        Call kinstresf(vxx,vyy,vzz,strknf,comm)
+        Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
 
         strkin=strknf+strknt
 
 ! update rotational energy
 
-        engrot=getknr(rgdoxx,rgdoyy,rgdozz)
+        engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
      Else
-        Call kinstress(vxx,vyy,vzz,strkin)
+        Call kinstress(vxx,vyy,vzz,strkin,comm)
      End If
      engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
   End If
 
 End Subroutine pseudo_vv
+End Module drivers
