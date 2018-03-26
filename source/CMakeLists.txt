@@ -13,7 +13,6 @@ four_body.F90
 impact.F90
 link_cells.F90
 numerics.F90
-origin_config.F90
 shared_units.F90
 quaternions.F90
 control.F90

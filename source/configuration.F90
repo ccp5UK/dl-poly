@@ -13,13 +13,13 @@ Module configuration
   Use kinds, Only : wp,li
   Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag
   Use site
-  
+
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
                       mxatdm,mxexcl,mxlist
   Use parse,   Only : tabs_2_blanks, &
                              strip_blanks, get_word, word_2_real,get_line
   Use domains, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r,idx,idy,idz
-  Use development, Only : lvcfscl,cels
+  Use development, Only : lvcfscl,cels,lvcforg,xorg,yorg,zorg
 
   Use io,     Only : io_set_parameters,         &
                             io_get_parameters,         &
@@ -33,7 +33,7 @@ Module configuration
                             io_read_batch,             &
                             io_nc_get_dim,             &
                             io_nc_get_var,             &
-                            io_nc_get_att,             & 
+                            io_nc_get_att,             &
                             IO_READ_MASTER,            &
                             IO_READ_NETCDF,            &
                             IO_RESTART,                &
@@ -48,13 +48,12 @@ Module configuration
                             IO_WRITE_SORTED_DIRECT,    &
                             IO_WRITE_SORTED_NETCDF,    &
                             IO_WRITE_SORTED_MASTER
-  
+
 #ifdef SERIAL
   Use mpi_api
 #else
   Use mpi
 #endif
-
   Implicit None
 
   Character( Len = 72 ), Save :: cfgname = ' ' , &
@@ -287,7 +286,7 @@ Contains
     If ( Any(stat /= 0 )) Call error(1025)
 
   End Subroutine allocate_config_arrays
-  
+
   Subroutine check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -848,7 +847,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
         Call gsync(comm)
         Call gcheck(comm,safe,"enforce")
         Call gcheck(comm,fast,"enforce")
-     
+
      If (.not.safe) Go To 50
 
 ! Close CONFIG
@@ -1266,7 +1265,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
      Call gsum(comm,pda_ave)
      pda_ave=pda_ave/Real(comm%mxnode,wp)
- 
+
 ! Approximation for maximum global density by
 ! the inter-domain imbalance of domain density
 
@@ -1323,7 +1322,7 @@ Subroutine read_config_parallel                 &
   Real( Kind = wp ),                 Intent( In    ) :: dvar
   Real( Kind = wp ),                 Intent(   Out ) :: xhi,yhi,zhi
   Type( comms_type ),                Intent( InOut ) :: comm
-  
+
   Logical                :: safe,do_read
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word,forma
@@ -3205,7 +3204,7 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
 
   End Subroutine getcom_mol
 
-  
+
   Subroutine freeze_atoms()
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3228,5 +3227,47 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
     End Do
 
   End Subroutine freeze_atoms
-  
+
+  Subroutine origin_config(megatm,comm)
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 subroutine for translating the origin of the MD box as
+  ! defined in CONFIG by the (xorg,yorg,zorg) vector and saving it in
+  ! CFGORG
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov february 2015
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer,            Intent( In    ) :: megatm
+    Type( comms_type ), Intent( InOut ) :: comm
+
+    Character ( Len = 6 ) :: name
+    Integer               :: i,nstep
+    Real( Kind = wp )     :: tstep,time
+
+  ! Translate
+
+    Do i=1,natms
+       xxx(i)=xxx(i)+xorg
+       yyy(i)=yyy(i)+yorg
+       zzz(i)=zzz(i)+zorg
+    End Do
+
+  ! Restore periodic boundaries
+
+    Call pbcshift(imcon,cell,natms,xxx,yyy,zzz)
+
+  ! Write REVCON
+
+    name   = 'CFGORG' ! file name
+    nstep  = 0        ! no steps done
+    tstep  = 0.0_wp   ! no step exists
+    time   = 0.0_wp   ! time is not relevant
+
+    Call write_config(name,lvcforg,megatm,nstep,tstep,time,comm)
+
+  End Subroutine origin_config
 End Module configuration
