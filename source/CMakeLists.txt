@@ -90,11 +90,22 @@ set_property(SOURCE development.F90 APPEND PROPERTY
   COMPILE_DEFINITIONS "HOST='${HOST}'")
 
 set(dlpoly_THERMO_SRCS
-nvt_b0_scl.F90
-nvt_b1_scl.F90
-nvt_e0_scl.F90
-nvt_e1_scl.F90
-)
+        nve.F90
+        nvt_anderson.F90
+        nvt_berendsen.F90
+        nvt_ekin.F90
+        nvt_gst.F90
+        nvt_nose_hoover.F90
+        nvt_langevin.F90
+        nst_berendsen.F90
+        nst_nose_hoover.F90
+        nst_langevin.F90
+        nst_mtk.F90
+        npt_berendsen.F90
+        npt_nose_hoover.F90
+        npt_langevin.F90
+        npt_mtk.F90
+        )
 
 set(netcdf_SRCS netcdf.F90)
 set(kim_SRCS kim.F90)
