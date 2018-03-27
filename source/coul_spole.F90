@@ -1,8 +1,11 @@
 Module coul_spole
-  Use kinds,         Only : wp
-  Use comms,         Only : comms_type
-  Use setup,         Only : mxlist, r4pie0, zero_plus, mxgele, nrite,sqrpi
-  Use configuration, Only : natms,ltg,list,chge,fxx,fyy,fzz
+  Use kinds,           Only : wp
+  Use comms,           Only : comms_type
+  Use setup,           Only : mxlist, r4pie0, zero_plus, mxgele, nrite,sqrpi
+  Use configuration,   Only : natms,ltg,list,chge,fxx,fyy,fzz
+  Use errors_warnings, Only : error
+  Use numerics,        Only : erfcgen
+
   Implicit None
 
   Private
@@ -180,6 +183,7 @@ Module coul_spole
                          strs1,strs2,strs3,strs5,strs6,strs9
 
     Real( Kind = wp ), Dimension( : ), Allocatable, Save :: erc,fer
+    Character ( Len = 256 ) :: message
 
     If (newjob) Then
        newjob = .false.
@@ -203,8 +207,8 @@ Module coul_spole
           fail=0
           Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
           If (fail > 0) Then
-             Write(nrite,'(/,1x,a,i0)') 'coul_fscp_forces allocation failure, idnode: ', comm%idnode
-             Call error(0)
+             Write(message,'(/,1x,a)') 'coul_fscp_forces allocation failure'
+             Call error(0,message)
           End If
 
   ! generate error function complement tables for ewald sum
@@ -432,6 +436,8 @@ Module coul_spole
                          strs1,strs2,strs3,strs5,strs6,strs9
 
     Real( Kind = wp ), Dimension( : ), Allocatable, Save :: erc,fer
+    Character ( Len = 256 )  :: message
+
 
     If (newjob) Then
        newjob = .false.
@@ -462,8 +468,8 @@ Module coul_spole
           fail=0
           Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
           If (fail > 0) Then
-             Write(nrite,'(/,1x,a,i0)') 'coul_fscp_forces allocation failure, idnode: ', comm%idnode
-             Call error(0)
+             Write(message,'(/,1x,a)') 'coul_fscp_forces allocation failure'
+             Call error(0,message)
           End If
 
   ! generate error function complement tables for ewald sum
