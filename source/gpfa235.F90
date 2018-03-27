@@ -16,13 +16,12 @@ Module gpfa235
   
   Implicit None
 
-
   Private
 
   Interface gpfa_set
      Module Procedure setgpfa
   End Interface
-  Public :: gpfa, gpfa_set, gpfa_wrap
+  Public :: gpfa, gpfa_set
 
 Contains
 
@@ -2436,8 +2435,6 @@ Contains
 !       WRITTEN BY CLIVE TEMPERTON 1990
 ! ----------------------------------------------------------------------
 
-     Implicit None
-
 !*** Start of declarations inserted by SPAG (plusFORT)
 !     Real( Kind = wp ) :: Trigs(*),angle,del,twopi
      Complex( Kind = wp ) :: Trigs(*)
@@ -2518,6 +2515,11 @@ Contains
 
   End Subroutine ABORT_IT
 
+
+End Module gpfa235
+
+
+!!!!!!!!!!!!!! This is horrible... relies on implicit conversion from complex to real...
   Subroutine gpfa_wrap( a, trigs, stride, jump, n, n_ffts, direction, start )
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2529,6 +2531,10 @@ Contains
 ! amended   - i.t.todorov november 2009
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use kinds, Only : wp
+  Use gpfa235, Only : gpfa
+  Implicit None
 
   Real( Kind = wp ), Dimension( * ), Intent( InOut ) :: a
   Real( Kind = wp ), Dimension( * ), Intent( In    ) :: trigs
@@ -2542,6 +2548,4 @@ Contains
   Call gpfa( a( start ), a( start + 1 ), trigs, stride, jump, n, n_ffts, direction )
 
 End Subroutine gpfa_wrap
-
-End Module gpfa235
 

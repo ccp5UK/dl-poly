@@ -22,7 +22,7 @@ Module parallel_fft
 #endif
   Use comms, Only : wp_mpi ! access to the generalised wp_mpi and
                    ! the intrinsics in mpif.h/mpi-module
-  Use gpfa235, Only : gpfa_set,gpfa_wrap
+  Use gpfa235, Only : gpfa_set
 
   Implicit None
 
