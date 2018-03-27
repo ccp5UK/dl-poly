@@ -53,6 +53,8 @@ Module ffield
 
   Use parse
 
+  Use numerics, Only : factorial, shellsort
+
   Implicit None
 
   Private
@@ -5813,7 +5815,7 @@ End Subroutine scan_field
                               ordmpl_min,ordmpl_max,                &
                               indmpl,indmpl_start,indmpl_final
 
-    Real( Kind = wp )      :: Factorial,charge,scl,polarity,dumping
+    Real( Kind = wp )      :: charge,scl,polarity,dumping
 
   ! open MPOLES data file
 
@@ -6103,7 +6105,7 @@ End Subroutine scan_field
                                      Do j=l,0,-1
                                         k=l-j
 
-                                        scl=Exp(Factorial(ordmpl_next)-Factorial(k)-Factorial(j)-Factorial(i))
+                                        scl=Exp(factorial(ordmpl_next)-factorial(k)-factorial(j)-factorial(i))
   !                                      Write(*,*) i,j,k,Nint(scl)
 
                                         sitmpl = sitmpl+1 ! forward and apply scaling if degeneracy exists
