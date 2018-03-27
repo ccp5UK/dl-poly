@@ -18,6 +18,9 @@ Module coul_mpoles
                             chge
   Use mpole
 
+  Use mpoles_container, Only :  coul_deriv, ewald_deriv
+  Use numerics,         Only :  erfcgen, images_s
+
   Implicit None
 
   Private
