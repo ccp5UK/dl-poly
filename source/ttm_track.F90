@@ -16,7 +16,7 @@ Module ttm_track
   Use setup
   Use ttm
   Use ttm_utils
-  Use comms, Only : comms_type,Grid4_tag,Grid3_tag
+  Use comms, Only : comms_type,Grid4_tag,Grid3_tag,gsum
   Use configuration
 #ifdef SERIAL
   Use mpi_api
@@ -186,22 +186,18 @@ Contains
       lat_I_min = Minval(lat_I(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
       lat_I_max = Maxval(lat_I(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
       lat_I_sum = Sum(lat_I(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
-      If (comm%mxnode>1) Then
-        Call gmin(comm,lat_I_min)
-        Call gmax(comm,lat_I_max)
-        Call gsum(comm,lat_I_sum)
-      End If
+      Call gmin(comm,lat_I_min)
+      Call gmax(comm,lat_I_max)
+      Call gsum(comm,lat_I_sum)
 
     ! find energy input into electronic temperature system
 
       lat_U_min = Minval(lat_U(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
       lat_U_max = Maxval(lat_U(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
       lat_U_sum = Sum(lat_U(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
-      If (comm%mxnode>1) Then
-        Call gmin(comm,lat_U_min)
-        Call gmax(comm,lat_U_max)
-        Call gsum(comm,lat_U_sum)
-      End If
+      Call gmin(comm,lat_U_min)
+      Call gmax(comm,lat_U_max)
+      Call gsum(comm,lat_U_sum)
 
     ! check how closely two values match up: if error greater than
     ! tolerance, report discrepancy as warning
@@ -370,7 +366,7 @@ Contains
     ! (note that stopping power is in z-direction)
 
     realdEdx = Sum(lat_in(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
-    If (comm%mxnode>1) Call gsum(comm,realdEdx)
+    Call gsum(comm,realdEdx)
     realdEdx = realdEdx/(Real(ntsys(3),Kind=wp)*delz)
 
     ! check if lattice sum equals the expected value
@@ -708,8 +704,8 @@ Contains
 ! communicate and work out active ionic temperature cells in boundary halos
 
   If (comm%mxnode>1) Then
-    Call gsum (acell)
-    Call gsum (crho)
+    Call gsum (comm,acell)
+    Call gsum (comm,crho)
     ijk1 = 2 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
     ijk2 = 1 + (ntcell(1)+1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
     ii = Merge (-1,0,(idx==nprx-1))

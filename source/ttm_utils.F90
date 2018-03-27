@@ -14,8 +14,9 @@ Module ttm_utils
 
   Use setup
   Use ttm
-  Use comms, Only : comms_type,Grid1_tag, Grid2_tag
+  Use comms, Only : comms_type,Grid1_tag,Grid2_tag,gsum,gmax,gmin
   Use domains, Only : idx,idy,idz,nprx,npry,nprz
+  Use errors_warnings, Only : error
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -897,11 +898,11 @@ Contains
 
 ! prints a slice across y (centred in xz-plane) of a lattice to a file
 
-    Type(comms_type), Intent ( In ) :: comm
     Real ( Kind = wp ), Dimension (numcell), Intent( In ) :: lat
     Real ( Kind = wp ), Dimension (ntsys(2)) :: laty
     Integer, Intent( In ) :: nstep,freq
     Character ( Len = * ), Intent( In ) :: peakfile
+    Type(comms_type), Intent ( InOut ) :: comm
     Integer :: iounit = 114
     Integer :: i,j,k,l,ijk
 
@@ -918,7 +919,7 @@ Contains
             laty(l) = lat(ijk)
           End Do
         End If
-        If (comm%mxnode>1) Call gsum (laty)
+        Call gsum (comm,laty)
         If (comm%idnode==0) Then
           If (nstep==0) Then
             Open (Unit=iounit, File=peakfile, Status='replace')
@@ -939,10 +940,10 @@ Contains
 
 ! prints a slice across y (centred in xz-plane) of the electronic temperature lattice to a file
 
-    Type(comms_type), Intent( In ) :: comm
     Real ( Kind = wp ), Dimension (eltsys(2)) :: laty
     Integer, Intent( In ) :: nstep,freq
     Character ( Len = * ), Intent( In ) :: peakfile
+    Type(comms_type), Intent( InOut ) :: comm
     Integer :: iounit = 114
     Integer :: i,j,jj,jmin,jmax,k,l,ijk
 
@@ -971,7 +972,7 @@ Contains
             End Do
           End Do
         End If
-        If (comm%mxnode>1) Call gsum (comm,laty)
+        Call gsum (comm,laty)
         If (comm%idnode==0) Then
           If (nstep==0) Then
             Open (Unit=iounit, File=peakfile, Status='replace')
@@ -997,7 +998,7 @@ Contains
     Integer, Intent( In ) :: nstep,freq
     Real ( Kind = wp ), Intent ( In ) :: time
     Character ( Len = * ), Intent ( In ) :: latfile
-    Type(comms_type), Intent ( In ) :: comm
+    Type(comms_type), Intent ( InOut ) :: comm
 
     Real (kind = wp) :: lat_sum,lat_min,lat_max,rtotal
     Integer :: iounit = 113
@@ -1024,11 +1025,9 @@ Contains
           End Do
         End Do
 
-        If (comm%mxnode>1) Then
-          Call gsum(comm,lat_sum)
-          Call gmin(comm,lat_min)
-          Call gmax(comm,lat_max)
-        End If
+        Call gsum(comm,lat_sum)
+        Call gmin(comm,lat_min)
+        Call gmax(comm,lat_max)
 
         rtotal = Merge(1.0_wp/Real(acell,Kind=wp),0.0_wp,(acell>0))
 
@@ -1055,7 +1054,7 @@ Contains
     Integer, Intent( In ) :: nstep,freq
     Real ( Kind = wp ), Intent ( In ) :: time,temp0
     Character ( Len = * ), Intent ( In ) :: latfile
-    Type( comms_type), Intent ( In ) :: comm
+    Type( comms_type), Intent ( InOut ) :: comm
 
     Real ( Kind = wp ) :: lat_sum,lat_min,lat_max,Ue,tmp,sgnplus,eltmp,totalcell,rtotal
     Real ( Kind = wp ) :: Ce0a,sh_Aa,Cemaxa
@@ -1158,10 +1157,8 @@ Contains
           End Do
         End Do
 
-        If (comm%mxnode>1) Then
-          Call gsum(comm,Ue)
-          Call gsum(comm,totalcell)
-        End If
+        Call gsum(comm,Ue)
+        Call gsum(comm,totalcell)
 
         rtotal = Merge(1.0_wp/totalcell,0.0_wp,(totalcell>zero_plus))
 
