@@ -44,6 +44,7 @@ Module kontrol
                             IO_WRITE_SORTED_NETCDF,   &
                             IO_WRITE_SORTED_MASTER
   
+  Use numerics, Only : dcell, invert
   Implicit None
   Private
   Public :: read_control
