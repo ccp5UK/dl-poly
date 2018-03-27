@@ -11,7 +11,7 @@ Module statistics
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,li
-  Use setup, Only : mxatdm,mxnstk,mxstak,nrite,mxbfss,zero_plus,&
+  Use setup, Only : mxatdm,mxnstk,mxstak,mxbfss,zero_plus,&
                    prsunt,nstats,tenunt,boltz,engunit,eu_ev,eu_kcpm,&
                    eu_kjpm,mxatyp,statis,pi
 
@@ -31,10 +31,18 @@ Module statistics
   Use angles,      Only : ncfang,mxgang1
   Use dihedrals,   Only : ncfdih,mxgdih1
   Use inversions,  Only : ncfinv,mxginv1
-  Use rdfs,         Only : ncfrdf, l_errors_jack, l_errors_block, ncfusr
-  Use z_density,   Only : ncfzdn
+  Use rdfs,         Only : ncfrdf,l_errors_jack,l_errors_block,ncfusr, &
+                           calculate_errors,calculate_errors_jackknife, &
+                           rdf_compute,usr_compute
+  Use z_density,   Only : ncfzdn,z_density_compute,z_density_collect
   Use msd
-  Use greenkubo,   Only : vafsamp,vafcount
+  Use greenkubo,   Only : vafsamp,vafcount,vaf_compute
+  Use bonds,       Only : bonds_compute
+  Use angles,      Only : angles_compute
+  Use dihedrals,   Only : dihedrals_compute
+  Use inversions,  Only : inversions_compute
+  Use errors_warnings, Only : error,warning,info
+  Use numerics,    Only : dcell,invert,shellsort,shellsort2,pbcshfrc,pbcshfrl
   
 #ifdef SERIAL
   Use mpi_api
@@ -195,13 +203,14 @@ Contains
 
   Real( Kind = wp ), Allocatable :: amsd(:)
   Real( Kind = wp ), Allocatable :: xxt(:),yyt(:),zzt(:)
+  Character( Len = 256 ) :: message
 
 
   fail=0
   Allocate (amsd(1:mxatyp), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'statistics_collect allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'statistics_collect allocation failure'
+     Call error(0,message)
   End If
 
 ! open statistics file and put header
@@ -360,8 +369,8 @@ Contains
      Else            ! HISTORY is replayed
         Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail)
         If (fail > 0) Then
-           Write(nrite,'(/,1x,a,i0)') 'statistics_collect allocation failure 1, node: ', comm%idnode
-           Call error(0)
+           Write(message,'(/,1x,a)') 'statistics_collect allocation failure 1'
+           Call error(0,message)
         End If
         Do i=1,natms
            xxt(i)=xxx(i)
@@ -377,8 +386,8 @@ Contains
         End Do
         Deallocate (xxt,yyt,zzt, Stat=fail)
         If (fail > 0) Then
-           Write(nrite,'(/,1x,a,i0)') 'statistics_collect deallocation failure 1, node: ', comm%idnode
-           Call error(0)
+           Write(message,'(/,1x,a)') 'statistics_collect deallocation failure 1'
+           Call error(0,message)
         End If
         Call pbcshfrl(imcon,cell,natms,xin,yin,zin)
         Do i=1,natms
@@ -540,8 +549,8 @@ Contains
 
   Deallocate (amsd, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'statistics_collect deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'statistics_collect deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine statistics_collect
@@ -565,6 +574,7 @@ Subroutine statistics_connect_frames(megatm,comm)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer :: icyc,nres
+  Character( Len = 256 ) :: message
 
   found = 0 ; icyc = 0 ; nres = 1
   Do While (icyc <= Max(nprx,npry,nprz)/2 .and. nres > 0)
@@ -588,8 +598,10 @@ Subroutine statistics_connect_frames(megatm,comm)
      End If
   End Do
 
-  If (nres > 0 .and. comm%idnode == 0) &
-     Write(nrite,'(/,1x,a)') '*** warning - particles dynamics properties will be corrupted !!! ***'
+  If (nres > 0) Then
+    Write(message,'(/,1x,a)') ' particles dynamics properties will be corrupted'
+    Call warning(message,.true.)
+  End If
 
 Contains
 
@@ -678,8 +690,8 @@ Contains
 
        Deallocate (lsa00, Stat = fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'match_compress_spread_sort deallocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'match_compress_spread_sort deallocation failure'
+          Call error(0,message)
        End If
     End If
 
@@ -808,8 +820,8 @@ Contains
        fail = 0
        Allocate (lsa00(1:mxatdm), Stat = fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'match_compress_spread_sort allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'match_compress_spread_sort allocation failure'
+          Call error(0,message)
        End If
        lsa00=0
 
@@ -980,14 +992,15 @@ Subroutine statistics_connect_spread(mdir,comm)
                        ix,iy,iz,kx,ky,kz,newatm
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
+  Character( Len = 256 ) :: message
 
   If (comm%mxnode == 1) Return
 
   fail=0
   Allocate (buffer(1:mxbfss), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'statistics_connect_spread allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'statistics_connect_spread allocation failure'
+     Call error(0,message)
   End If
 
 ! Set buffer limit (half for outgoing data - half for incoming)
@@ -1300,8 +1313,8 @@ Subroutine statistics_connect_spread(mdir,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'statistics_connect_spread deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'statistics_connect_spread deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine statistics_connect_spread
@@ -1330,6 +1343,7 @@ Subroutine statistics_result                                    &
   Logical           :: check
   Integer           :: i,iadd
   Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty,temp
+  Character( Len = 256 ) :: message
 
 ! VNL skipping statistics
 
@@ -1342,54 +1356,73 @@ Subroutine statistics_result                                    &
         skipvnl(5)=Max(skipvnl(1),skipvnl(5))
      End If
 
-     If (comm%idnode == 0) Write(nrite,"(//,                                        &
-        & ' VNL skipping run statistics - skips per timestep: average ', f7.2, &
-        & ' minimum ', i4, ' maximum ', i4)")                                  &
-        skipvnl(3),Nint(Merge(skipvnl(4),skipvnl(5),skipvnl(4)<skipvnl(5))),Nint(skipvnl(5))
+     Write(message,"(//,                                        &
+       & ' VNL skipping run statistics - skips per timestep: average ', f7.2, &
+       & ' minimum ', i4, ' maximum ', i4)")                                  &
+       skipvnl(3),Nint(Merge(skipvnl(4),skipvnl(5),skipvnl(4)<skipvnl(5))),Nint(skipvnl(5))
+     Call info(message,.true.)
   End If
 
 ! minimisation convergence statistics
 
-  If (lmin .and. comm%idnode == 0) Write(nrite,"(//,                          &
-     & ' minimisation run statistics - cycles per call: average ', f7.2, &
-     & ' minimum ', i4, ' maximum ', i4)") passmin(3),Nint(passmin(4)),Nint(passmin(5))
+  If (lmin) Then
+    Write(message,"(//,                          &
+      & ' minimisation run statistics - cycles per call: average ', f7.2, &
+      & ' minimum ', i4, ' maximum ', i4)") passmin(3),Nint(passmin(4)),Nint(passmin(5))
+    Call info(message,.true.)
+  End If
 
 ! shell relaxation convergence statistics
 
-  If (keyshl == 2 .and. comm%idnode == 0) Write(nrite,"(//,                           &
-     & ' shell relaxation run statistics - cycles per timestep: average ', f7.2, &
-     & ' minimum ', i4, ' maximum ', i4)") passshl(3),Nint(passshl(4)),Nint(passshl(5))
+  If (keyshl == 2) Then
+    Write(message,"(//,                           &
+      & ' shell relaxation run statistics - cycles per timestep: average ', f7.2, &
+      & ' minimum ', i4, ' maximum ', i4)") passshl(3),Nint(passshl(4)),Nint(passshl(5))
+    Call info(message,.true.)
+  End If
 
 ! bond constraints iterative cycles statistics
 
   If (megcon > 0) Then
      Call gmax(comm,passcon(3:5,1,1)) ; Call gmax(comm,passcon(3:5,2,1))
-     If (passcon(3,1,1) > 0.0_wp .and. comm%idnode == 0) Write(nrite,"(//,                                   &
-        & ' constraints shake  run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
-        & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                                     &
-        passcon(3,1,1),passcon(3,2,1),Nint(passcon(4,1,1)),Nint(passcon(4,2,1)),Nint(passcon(5,1,1)),Nint(passcon(5,2,1))
+     If (passcon(3,1,1) > 0.0_wp) Then
+       Write(message,"(//,                                   &
+         & ' constraints shake  run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
+         & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                                     &
+         passcon(3,1,1),passcon(3,2,1),Nint(passcon(4,1,1)),Nint(passcon(4,2,1)),Nint(passcon(5,1,1)),Nint(passcon(5,2,1))
+       Call info(message,.true.)
+     End If
 
      Call gmax(comm,passcon(3:5,1,2)) ; Call gmax(comm,passcon(3:5,2,2))
-     If (passcon(3,1,2) > 0.0_wp .and. comm%idnode == 0) Write(nrite,"(                                      &
-        & ' constraints rattle run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
-        & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                                     &
-        passcon(3,1,2),passcon(3,2,2),Nint(passcon(4,1,2)),Nint(passcon(4,2,2)),Nint(passcon(5,1,2)),Nint(passcon(5,2,2))
+     If (passcon(3,1,2) > 0.0_wp) Then
+       Write(message,"(                                      &
+         & ' constraints rattle run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
+         & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                                     &
+         passcon(3,1,2),passcon(3,2,2),Nint(passcon(4,1,2)),Nint(passcon(4,2,2)),Nint(passcon(5,1,2)),Nint(passcon(5,2,2))
+       Call info(message,.true.)
+     End If
   End If
 
 ! PMF constraints iterative cycles statistics
 
   If (megpmf > 0) Then
      Call gmax(comm,passpmf(3:5,1,1)) ; Call gmax(comm,passpmf(3:5,2,1))
-     If (passpmf(3,1,1) > 0.0_wp .and. comm%idnode == 0) Write(nrite,"(//,                            &
-        & ' PMFs shake  run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
-        & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                              &
-        passpmf(3,1,1),passpmf(3,2,1),Nint(passpmf(4,1,1)),Nint(passpmf(4,2,1)),Nint(passpmf(5,1,1)),Nint(passpmf(5,2,1))
+     If (passpmf(3,1,1) > 0.0_wp) Then
+       Write(message,"(//,                            &
+         & ' PMFs shake  run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
+         & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                              &
+         passpmf(3,1,1),passpmf(3,2,1),Nint(passpmf(4,1,1)),Nint(passpmf(4,2,1)),Nint(passpmf(5,1,1)),Nint(passpmf(5,2,1))
+       Call info(message,.true.)
+     EndIf
 
      Call gmax(comm,passpmf(3:5,1,2)) ; Call gmax(comm,passpmf(3:5,2,2))
-     If (passpmf(3,1,2) > 0.0_wp .and. comm%idnode == 0) Write(nrite,"(                               &
-        & ' PMFs rattle run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
-        & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                              &
-        passpmf(3,1,2),passpmf(3,2,2),Nint(passpmf(4,1,2)),Nint(passpmf(4,2,2)),Nint(passpmf(5,1,2)),Nint(passpmf(5,2,2))
+     If (passpmf(3,1,2) > 0.0_wp) Then
+       Write(message,"(                               &
+         & ' PMFs rattle run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
+         & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                              &
+         passpmf(3,1,2),passpmf(3,2,2),Nint(passpmf(4,1,2)),Nint(passpmf(4,2,2)),Nint(passpmf(5,1,2)),Nint(passpmf(5,2,2))
+       Call info(message,.true.)
+     End If
   End If
 
 ! Get elapsed time
@@ -1407,15 +1440,14 @@ Subroutine statistics_result                                    &
 ! Report termination
 
 
-  If (comm%idnode == 0) Then
-     If ((nstep == 0 .and. nstrun == 0) .or. numacc == 0) Then
-        Write(nrite,"(/,/,1x,'dry run terminated',/)")
-     Else
-        Write(nrite,"(/,/,1x,'run terminated after',i9,' steps (',f10.3,   &
-             & ' ps), final averages calculated over',i9,' steps (',f10.3, &
-             & ' ps).',/,/)") nstep,time,numacc,tmp
-     End If
+  If ((nstep == 0 .and. nstrun == 0) .or. numacc == 0) Then
+    Write(message,"(/,/,1x,'dry run terminated',/)")
+  Else
+    Write(message,"(/,/,1x,'run terminated after',i9,' steps (',f10.3,   &
+      & ' ps), final averages calculated over',i9,' steps (',f10.3, &
+      & ' ps).',/,/)") nstep,time,numacc,tmp
   End If
+  Call info(message,.true.)
 
 ! safe average volume and cell
 
@@ -1429,13 +1461,16 @@ Subroutine statistics_result                                    &
      iadd = 27+2*Merge(mxatdm,0,l_msd)+ntpatm
 
      If (comm%idnode == 0) Then
-        Write(nrite,"(16x,'pressure tensor  (katms)',/)")
+        Write(message,"(16x,'pressure tensor  (katms)',/)")
+        Call info(message,.true.)
 
         Do i=iadd,iadd+6,3
-           Write(nrite,'(9x,1p,3e12.4)') stpval(i+1:i+3)
+           Write(message,'(9x,1p,3e12.4)') stpval(i+1:i+3)
+           Call info(message,.true.)
         End Do
 
-        Write(nrite,'(/,12x,a,1p,e12.4)') 'trace/3  ', (stpval(iadd+1)+stpval(iadd+5)+stpval(iadd+9))/3.0_wp
+        Write(message,'(/,12x,a,1p,e12.4)') 'trace/3  ', (stpval(iadd+1)+stpval(iadd+5)+stpval(iadd+9))/3.0_wp
+        Call info(message,.true.)
      End If
 
      Go To 10
@@ -1463,39 +1498,44 @@ Subroutine statistics_result                                    &
 
 ! final averages and fluctuations
 
-  If (comm%idnode == 0) Then
-     Write(nrite,"(1x,130('-'),/,/,                                 &
-          & 10x,'step',5x,'eng_tot',4x,'temp_tot',5x,'eng_cfg',     &
-          & 5x,'eng_src',5x,'eng_cou',5x,'eng_bnd',5x,'eng_ang',    &
-          & 5x,'eng_dih',5x,'eng_tet',/,6x,'time(ps)',5x,' eng_pv', &
-          & 4x,'temp_rot',5x,'vir_cfg',5x,'vir_src',5x,'vir_cou',   &
-          & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet',/,  &
-          & 6x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',   &
-          & 5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',           &
-          & 5x,'vir_pmf',7x,'press',/,/,1x,130('-'))")
+  Write(message,"(1x,130('-'),/,/,                                 &
+    & 10x,'step',5x,'eng_tot',4x,'temp_tot',5x,'eng_cfg',     &
+    & 5x,'eng_src',5x,'eng_cou',5x,'eng_bnd',5x,'eng_ang',    &
+    & 5x,'eng_dih',5x,'eng_tet',/,6x,'time(ps)',5x,' eng_pv', &
+    & 4x,'temp_rot',5x,'vir_cfg',5x,'vir_src',5x,'vir_cou',   &
+    & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet',/,  &
+    & 6x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',   &
+    & 5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',           &
+    & 5x,'vir_pmf',7x,'press',/,/,1x,130('-'))")
+  Call info(message,.true.)
 
-     Write(nrite,'(1x,i13,1p,9e12.4,/,0p,f14.5,1p,9e12.4,/,1x,0p,f13.3, &
-          & 1p,9e12.4)') numacc,sumval(1:9),tmp,sumval(10:18),timelp,sumval(19:27)
+  Write(message,'(1x,i13,1p,9e12.4,/,0p,f14.5,1p,9e12.4,/,1x,0p,f13.3, &
+    & 1p,9e12.4)') numacc,sumval(1:9),tmp,sumval(10:18),timelp,sumval(19:27)
+  Call info(message,.true.)
 
-     Write(nrite,"(/,6x,' r.m.s. ',1p,9e12.4,/,6x,'fluctu- ',1p,9e12.4, &
-          & /,6x,'ations  ',1p,9e12.4)") ssqval(1:27)
+  Write(message,"(/,6x,' r.m.s. ',1p,9e12.4,/,6x,'fluctu- ',1p,9e12.4, &
+    & /,6x,'ations  ',1p,9e12.4)") ssqval(1:27)
+  Call info(message,.true.)
 
-     Write(nrite,"(1x,130('-'))")
+  Write(message,"(1x,130('-'))")
+  Call info(message,.true.)
 
-! Some extra information - conserved quantity=extended ensemble energy
+  ! Some extra information - conserved quantity=extended ensemble energy
 
-     Write(nrite,"(/,1x,a,1p,e12.4,5x,a,1p,e12.4)") &
-          "Extended energy:       ", sumval(0),     &
-          " r.m.s. fluctuations:  ", ssqval(0)
+  Write(message,"(/,1x,a,1p,e12.4,5x,a,1p,e12.4)") &
+    "Extended energy:       ", sumval(0),     &
+    " r.m.s. fluctuations:  ", ssqval(0)
+  Call info(message,.true.)
 
-! Some extra information - <P*V> term - only matters for NP/sT ensembles
+  ! Some extra information - <P*V> term - only matters for NP/sT ensembles
 
-     If (keyens >= 20) Write(nrite,"(/,1x,a,1p,e12.4,5x,a,1p,e12.4)")           &
-          "<P*V> term:            ", sumval(37+ntpatm+2*Merge(mxatdm,0,l_msd)), &
-          " r.m.s. fluctuations:  ", ssqval(37+ntpatm+2*Merge(mxatdm,0,l_msd))
+  If (keyens >= 20) Write(message,"(/,1x,a,1p,e12.4,5x,a,1p,e12.4)")           &
+    "<P*V> term:            ", sumval(37+ntpatm+2*Merge(mxatdm,0,l_msd)), &
+    " r.m.s. fluctuations:  ", ssqval(37+ntpatm+2*Merge(mxatdm,0,l_msd))
+  Call info(message,.true.)
 
-     Write(nrite,"(/,1x,130('-'))")
-  End If
+  Write(message,"(/,1x,130('-'))")
+  Call info(message,.true.)
 
 ! Move at the end of the default 27 quantities
 
@@ -1505,10 +1545,10 @@ Subroutine statistics_result                                    &
 
 ! Write out estimated diffusion coefficients
 
-  If (comm%idnode == 0) Then
-     Write(nrite,"(/,/,12x,a)") 'Approximate 3D Diffusion Coefficients and square root of MSDs'
-     Write(nrite,"(/,12x,'atom',9x,'DC (10^-9 m^2 s^-1)',3x,'Sqrt[MSD] (Ang)',/)")
-  End If
+  Write(message,"(/,/,12x,a)") 'Approximate 3D Diffusion Coefficients and square root of MSDs'
+  Call info(message,.true.)
+  Write(message,"(/,12x,'atom',9x,'DC (10^-9 m^2 s^-1)',3x,'Sqrt[MSD] (Ang)',/)")
+  Call info(message,.true.)
 
   Do i=1,ntpatm
      If (numtypnf(i) > zero_plus) Then
@@ -1517,10 +1557,11 @@ Subroutine statistics_result                                    &
         If (dc < 1.0e-10_wp) dc = 0.0_wp
 
         srmsd = Sqrt(ravval(iadd+i))
-        If (comm%idnode == 0) Write(nrite,'(12x,a8,1p,2(7x,e13.4))') unqatm(i),dc,srmsd
+        Write(message,'(12x,a8,1p,2(7x,e13.4))') unqatm(i),dc,srmsd
      Else
-        If (comm%idnode == 0) Write(nrite,'(12x,a8,1p,2(7x,e13.4))') unqatm(i),0.0_wp,0.0_wp
+        Write(message,'(12x,a8,1p,2(7x,e13.4))') unqatm(i),0.0_wp,0.0_wp
      End If
+     Call info(message,.true.)
   End Do
 
   iadd = iadd+ntpatm
@@ -1528,13 +1569,16 @@ Subroutine statistics_result                                    &
 ! print out average pressure tensor
 
   If (comm%idnode == 0) Then
-     Write(nrite,"(/,/,16x,'Average pressure tensor  (katms)',30x,'r.m.s. fluctuations',/)")
+    Write(message,"(/,/,16x,'Average pressure tensor  (katms)',30x,'r.m.s. fluctuations',/)")
+    Call info(message,.true.)
 
-     Do i=iadd,iadd+6,3
-        Write(nrite,'(9x,1p,3e12.4,24x,3e12.4)') sumval(i+1:i+3),ssqval(i+1:i+3)
-     End Do
+    Do i=iadd,iadd+6,3
+      Write(message,'(9x,1p,3e12.4,24x,3e12.4)') sumval(i+1:i+3),ssqval(i+1:i+3)
+      Call info(message,.true.)
+    End Do
 
-     Write(nrite,'(/,12x,a,1p,e12.4)') 'trace/3  ', (sumval(iadd+1)+sumval(iadd+5)+sumval(iadd+9))/3.0_wp
+    Write(message,'(/,12x,a,1p,e12.4)') 'trace/3  ', (sumval(iadd+1)+sumval(iadd+5)+sumval(iadd+9))/3.0_wp
+    Call info(message,.true.)
   End If
 
   iadd = iadd+9
@@ -1550,11 +1594,13 @@ Subroutine statistics_result                                    &
      End Do
 
      If (comm%idnode == 0) Then
-        Write(nrite,"(/,/,16x,'Average cell vectors     (Angs) ',30x,'r.m.s. fluctuations',/)")
+       Write(message,"(/,/,16x,'Average cell vectors     (Angs) ',30x,'r.m.s. fluctuations',/)")
+       Call info(message,.true.)
 
-        Do i=iadd,iadd+6,3
-           Write(nrite,'(3f20.10,9x,1p,3e12.4)') sumval(i+1:i+3),ssqval(i+1:i+3)
-        End Do
+       Do i=iadd,iadd+6,3
+         Write(message,'(3f20.10,9x,1p,3e12.4)') sumval(i+1:i+3),ssqval(i+1:i+3)
+         Call info(message,.true.)
+       End Do
      End If
 
      iadd = iadd+9
@@ -1566,22 +1612,24 @@ Subroutine statistics_result                                    &
      If (iso > 0) Then
         h_z=sumval(iadd+1)
 
-        If (comm%idnode == 0) Then
-           Write(nrite,"(/,/,16x,'Average surface area, fluctuations & mean estimate (Angs^2)',/)")
-           Write(nrite,'(1p,3e12.4)') sumval(iadd+2),ssqval(iadd+2),avvol/h_z
-        End If
+        Write(message,"(/,/,16x,'Average surface area, fluctuations & mean estimate (Angs^2)',/)")
+        Call info(message,.true.)
+        Write(message,'(1p,3e12.4)') sumval(iadd+2),ssqval(iadd+2),avvol/h_z
+        Call info(message,.true.)
 
         iadd = iadd+2
 
         If (iso > 1) Then
            tx= -h_z * ( sumval(iadd-9-8-2)/prsunt - (press+strext(1)) ) * tenunt
            ty= -h_z * ( sumval(iadd-9-7-2)/prsunt - (press+strext(5)) ) * tenunt
-           If (comm%idnode == 0) Then
-              Write(nrite,"(/,16x,'Average surface tension, fluctuations & mean estimate in x (dyn/cm)',/)")
-              Write(nrite,'(1p,3e12.4)') sumval(iadd+1),ssqval(iadd+1),tx
-              Write(nrite,"(/,16x,'Average surface tension, fluctuations & mean estimate in y (dyn/cm)',/)")
-              Write(nrite,'(1p,3e12.4)') sumval(iadd+2),ssqval(iadd+2),ty
-           End If
+           Write(message,"(/,16x,'Average surface tension, fluctuations & mean estimate in x (dyn/cm)',/)")
+           Call info(message,.true.)
+           Write(message,'(1p,3e12.4)') sumval(iadd+1),ssqval(iadd+1),tx
+           Call info(message,.true.)
+           Write(message,"(/,16x,'Average surface tension, fluctuations & mean estimate in y (dyn/cm)',/)")
+           Call info(message,.true.)
+           Write(message,'(1p,3e12.4)') sumval(iadd+2),ssqval(iadd+2),ty
+           Call info(message,.true.)
 
            iadd = iadd+2
         End If
@@ -1596,15 +1644,20 @@ Subroutine statistics_result                                    &
      If (Abs(sumval(i)) > zero_plus .or. Abs(ssqval(i)) > zero_plus) check=.true.
   End Do
 
-  If (check .and. comm%idnode == 0) Then
-     Write(nrite,"(/,/,12x,'Remaining non-zero statistics registers ', &
+  If (check) Then
+     Write(message,"(/,/,12x,'Remaining non-zero statistics registers ', &
           & /,/,12x,'Register',7x,'Average value',8x,'r.m.s. fluc.')")
+     Call info(message,.true.)
+   End If
 
+   If (comm%idnode == 0) Then
      Do i=iadd+1,mxnstk
-        If (Abs(sumval(i)) > zero_plus .or. Abs(ssqval(i)) > zero_plus) &
-           Write(nrite,'(10x,i10,2f20.10)') i,sumval(i),ssqval(i)
+       If (Abs(sumval(i)) > zero_plus .or. Abs(ssqval(i)) > zero_plus) Then
+         Write(message,'(10x,i10,2f20.10)') i,sumval(i),ssqval(i)
+         Call info(message,.true.)
+       End If
      End Do
-  End If
+   End If
 
 10 Continue
 
@@ -1623,27 +1676,33 @@ Subroutine statistics_result                                    &
 ! calculate and print radial distribution functions
 
 !If block average errors, output that, else if jackknife errors output those, else just RDF.
-  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_block) Call calculate_errors(temp, rcut, nstep)
-  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_jack .and. .not. l_errors_block) &
-     Call calculate_errors_jackknife(temp, rcut, nstep)
-  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. .not.(l_errors_block .or. l_errors_jack)) Call rdf_compute(lpana,rcut,temp)
-  If (ncfusr > 0) Call usr_compute()
+  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_block) Then
+    Call calculate_errors(temp, rcut, nstep, comm)
+  End If
+  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_jack .and. .not. l_errors_block) Then
+    Call calculate_errors_jackknife(temp, rcut, nstep, comm)
+  End If
+  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. .not.(l_errors_block .or. l_errors_jack)) Then
+    Call rdf_compute(lpana,rcut,temp,comm)
+  End IF
+  If (ncfusr > 0) Call usr_compute(comm)
 
 ! calculate and print z-density profile
-
-  If (lzdn .and. lpzdn .and. ncfzdn > 0) Call z_density_compute()
+  If (lzdn .and. lpzdn .and. ncfzdn > 0) Then
+    Call z_density_compute(comm)
+  End If
 
 ! calculate and print velocity autocorrelation function
-
-  If (vafsamp > 0 .and. lpvaf .and. vafcount > zero_plus) Call vaf_compute(lvafav,tstep)
+  If (vafsamp > 0 .and. lpvaf .and. vafcount > zero_plus) Then
+    Call vaf_compute(lvafav,tstep,comm)
+  End If
 
 ! Calculate and print PDFs
-
   If (lpana) Then
-     If (mxgbnd1 > 0 .and. ncfbnd > 0) Call bonds_compute(temp)
-     If (mxgang1 > 0 .and. ncfang > 0) Call angles_compute(temp)
-     If (mxgdih1 > 0 .and. ncfdih > 0) Call dihedrals_compute(temp)
-     If (mxginv1 > 0 .and. ncfinv > 0) Call inversions_compute(temp)
+     If (mxgbnd1 > 0 .and. ncfbnd > 0) Call bonds_compute(temp,comm)
+     If (mxgang1 > 0 .and. ncfang > 0) Call angles_compute(temp,comm)
+     If (mxgdih1 > 0 .and. ncfdih > 0) Call dihedrals_compute(temp,comm)
+     If (mxginv1 > 0 .and. ncfinv > 0) Call inversions_compute(temp,comm)
   End If
 
 20 Continue
@@ -1652,9 +1711,8 @@ Subroutine statistics_result                                    &
 
   Call gtime(timelp)
 
-  If (comm%idnode == 0) Write(nrite,'(/,/,/,1x,"time elapsed since job start: ", f12.3, " sec",/)') timelp
+  Write(message,'(/,/,/,1x,"time elapsed since job start: ", f12.3, " sec",/)') timelp
+  Call info(message,.true.)
 
 End Subroutine statistics_result
-
-
 End Module statistics
