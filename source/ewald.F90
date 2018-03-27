@@ -53,7 +53,7 @@ Module ewald
       Final :: ewald_deallocate
   End Type ewald_type
 
-  Public :: bspcoe, bspgen, bspgen_mpoles, dtpbsp, spl_cexp, dlpfft3
+  Public :: bspcoe, bspgen, bspgen_mpoles, dtpbsp, spl_cexp, dlpfft3, exchange_grid
 
 Contains
 
