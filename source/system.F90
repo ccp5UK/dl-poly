@@ -1,12 +1,13 @@
 Module system
 
   Use kinds, Only : wp,li
-  Use comms, Only : comms_type, gbcast,SysExpand_tag,Revive_tag,wp_mpi
+  Use comms, Only : comms_type, gbcast,SysExpand_tag,Revive_tag,wp_mpi, gsync
   Use setup
   Use site,        Only : ntpatm,numtyp,numtypnf,dens,ntpmls,numsit,&
                                  nummols
   Use configuration,      Only : volm,natms,ltg,ltype,lfrzn,xxx,yyy,zzz, &
-                                 cfgname,imcon,cell,lsi,lsa,atmnam
+                                 cfgname,imcon,cell,lsi,lsa,atmnam, &
+                                 write_config
   Use statistics
   Use rdfs,         Only : ncfrdf,rdf,ncfusr,rusr,usr
   Use z_density,   Only : ncfzdn,zdens
@@ -46,6 +47,8 @@ Module system
                                   IO_WRITE_SORTED_DIRECT,   &
                                   IO_WRITE_SORTED_NETCDF,   &
                                   IO_WRITE_SORTED_MASTER
+  Use vdw, Only : vdw_lrc
+  Use metal, Only : metal_lrc
   Implicit None
   Private
   Public :: system_revive
@@ -604,11 +607,11 @@ Module system
 ! elrc & virlrc arrays are zeroed in vdw,
 ! no lrc when vdw interactions are force-shifted
 
-  If (ntpvdw > 0 .and. (.not.ls_vdw)) Call vdw_lrc(rvdw,elrc,virlrc)
+  If (ntpvdw > 0 .and. (.not.ls_vdw)) Call vdw_lrc(rvdw,elrc,virlrc,comm)
 
 ! elrcm & vlrcm arrays are zeroed in metal_module
 
-  If (ntpmet > 0) Call metal_lrc(rmet,elrcm,vlrcm)
+  If (ntpmet > 0) Call metal_lrc(rmet,elrcm,vlrcm,comm)
 
 End Subroutine system_init
 
@@ -1901,7 +1904,7 @@ Subroutine system_revive                                      &
   name = Trim(revcon) ! file name
   levcfg = 2      ! define level of information in REVCON
 
-  Call write_config(name,levcfg,megatm,nstep,tstep,time)
+  Call write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 
 ! node 0 handles I/O
 

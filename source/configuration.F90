@@ -90,6 +90,8 @@ Module configuration
 
   Public :: reallocate, allocate_config_arrays_read, allocate_config_arrays
   Public :: check_config
+  Public :: read_config_parallel
+  Public :: scan_config
 
   Interface reallocate
      Module Procedure reallocate_chr_v

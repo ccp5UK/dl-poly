@@ -1,7 +1,7 @@
 Module trajectory
 
   Use kinds, Only : wp, li
-  Use comms, Only : comms_type,Traject_tag,gsync,wp_mpi,gbcast
+  Use comms, Only : comms_type,Traject_tag,gsync,wp_mpi,gbcast,gcheck,gsum
   Use domains, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
   Use site
   Use setup
@@ -40,6 +40,9 @@ Module trajectory
                              IO_READ_DIRECT,        &
                              IO_READ_NETCDF,        &
                              IO_READ_MASTER
+
+Use numerics, Only : dcell, invert, shellsort2
+Use configuration, Only : read_config_parallel
 #ifdef SERIAL
    Use mpi_api
 #else
@@ -455,7 +458,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
 
 ! Check if all is dispatched fine
 
-                 Call gcheck(safe)
+                 Call gcheck(comm,safe)
                  If (.not.safe) Call error(45)
 
 ! Nullify dispatch counter
@@ -902,7 +905,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
               Call io_nc_get_file_real_precision( fh, file_p, file_r, ierr )
               safe = (ierr == 0)
            End If
-           Call gcheck(safe)
+           Call gcheck(comm,safe)
            If (.not.safe) Then
               If (comm%idnode == 0) Write(nrite,'(/,1x,a)') &
   "Can not determine precision in an exisiting HISTORY.nc file in trajectory_write"
@@ -917,7 +920,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
               Call io_nc_get_real_precision( io_p, io_r, ierr )
               safe = (ierr == 0)
            End If
-           Call gcheck(safe)
+           Call gcheck(comm,safe)
            If (.not.safe) Then
               If (comm%idnode == 0) Write(nrite,'(/,1x,a)') &
   "Can not determine the desired writing precision in trajectory_write"
@@ -929,7 +932,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            End If
 
            If (comm%idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
-           Call gcheck(safe)
+           Call gcheck(comm,safe)
            If (.not.safe) Then
               If (comm%idnode == 0) Then
                  Write(nrite,'(/,1x,a)') &
@@ -1774,7 +1777,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            End If
 
            If (comm%idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
-           Call gcheck(safe)
+           Call gcheck(comm,safe)
            If (.not.safe) Then
               If (comm%idnode == 0) Then
                  Write(nrite,'(/,1x,a)') &

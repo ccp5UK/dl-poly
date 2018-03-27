@@ -61,6 +61,7 @@ Module ffield
   Public :: read_field
   Public :: read_mpoles
   Public :: report_topology
+  Public :: scan_field
 Contains
 Subroutine read_field                      &
            (l_str,l_top,l_n_v,             &

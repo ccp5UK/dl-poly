@@ -50,6 +50,8 @@ Module kontrol
   Public :: read_control
   Public :: scan_control_output
   Public :: scan_control_io
+  Public :: scan_control
+  Public :: scan_control_pre
   
   Contains
 

@@ -1,6 +1,6 @@
 Module rsds
   Use kinds, Only : wp, li
-  Use comms, Only : comms_type,gbcast,RsdWrite_tag,gsum,wp_mpi,gsync
+  Use comms, Only : comms_type,gbcast,RsdWrite_tag,gsum,wp_mpi,gsync,gcheck
   Use setup
   Use configuration,     Only : cfgname,imcon,cell,natms, &
                                 atmnam,ltg,xxx,yyy,zzz
@@ -22,6 +22,7 @@ Module rsds
                                 IO_WRITE_SORTED_NETCDF,   &
                                 IO_WRITE_SORTED_MASTER
 
+  Use errors_warnings, Only : error
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -78,6 +79,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx,ayy,azz
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: bxx,byy,bzz
 
+  Character( Len = 256 ) :: message
   If (.not.(nstep >= nsrsd .and. Mod(nstep-nsrsd,isrsd) == 0)) Return
 
 ! Get write buffer size and line feed character
@@ -206,8 +208,8 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
   Allocate (nam(1:mxatms),ind(1:mxatms),dr(1:mxatms),  Stat=fail(1))
   Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'rsd_write allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'rsd_write allocation failure'
+     Call error(0,message)
   End If
 
   n=0
@@ -234,8 +236,8 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
   Allocate (n_n(0:comm%mxnode),          Stat=fail(1))
   Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'rsd_write allocation failure 2, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'rsd_write allocation failure 2'
+     Call error(0,message)
   End If
 
   n_n=0 ; n_n(comm%idnode+1)=n
@@ -353,9 +355,9 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
 
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
      Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(2))
-     If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'rsd_write allocation failure 3, node: ', comm%idnode
-        Call error(0)
+     If (Any(fail > 0)) Then
+        Write(message,'(/,1x,a)') 'rsd_write allocation failure 3'
+        Call error(0,message)
      End If
 
 ! node 0 handles I/O
@@ -475,9 +477,9 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
 
      Deallocate (chbuf,iwrk,  Stat=fail(1))
      Deallocate (bxx,byy,bzz, Stat=fail(2))
-     If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'rsd_write deallocation failure 3, node: ', comm%idnode
-        Call error(0)
+     If (Any(fail > 0)) Then
+        Write(message,'(/,1x,a)') 'rsd_write deallocation failure 3'
+        Call error(0,message)
      End If
 
   End If
@@ -487,15 +489,15 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
   Deallocate (n_n,   Stat=fail(1))
   Deallocate (chbat, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'rsd_write deallocation failure 2, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a,i0)') 'rsd_write deallocation failure 2'
+     Call error(0,message)
   End If
 
   Deallocate (nam,ind,dr,  Stat=fail(1))
   Deallocate (axx,ayy,azz, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'rsd_write deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'rsd_write deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine rsd_write

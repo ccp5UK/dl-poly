@@ -14,7 +14,10 @@ Module bounds
   Use greenkubo,     Only : vafsamp
   Use mpole,         Only : keyind,induce
   Use ttm,           Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
-  Use numerics,      Only : adjust_kmax
+  Use numerics,      Only : adjust_kmax,dcell
+  Use Kontrol, Only : scan_control, scan_control_pre
+  Use configuration, Only : scan_config,read_config
+  Use ffield, Only : scan_field
 
   Implicit None
   Private
@@ -76,15 +79,15 @@ Subroutine set_bounds                                 &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,rmet,mxgmet,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,comm)
 
 ! Get imc_r & set dvar
 
-  Call scan_control_pre(imc_n,dvar)
+  Call scan_control_pre(imc_n,dvar,comm)
 
 ! scan CONFIG file data
 
-  Call scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi)
+  Call scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,comm)
 
 ! halt execution for unsupported image conditions in DD
 ! checks for some inherited from DL_POLY_2 are though kept
@@ -100,7 +103,7 @@ Subroutine set_bounds                                 &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -676,7 +679,7 @@ Subroutine set_bounds                                 &
 
 ! decide on MXATMS while reading CONFIG and scan particle density
 
-  Call read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens)
+  Call read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens,comm)
 
 ! Create f(fdvar,dens0,dens)
 

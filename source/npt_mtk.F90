@@ -10,8 +10,11 @@ Module npt_mtk
   Use rigid_bodies
   Use kinetics,      Only : getvom,kinstress,kinstresf,kinstrest
   Use core_shell,    Only : legshl
-  Use constraints,   Only : passcon
-  Use pmf,           Only : passpmf
+  Use constraints,   Only : passcon, constraints_shake_vv, constraints_rattle, &
+                            constraints_tags
+  Use pmf,           Only : passpmf, pmf_rattle,pmf_shake_vv,pmf_tags
+  Use nvt_nose_hoover, Only : nvt_h0_scl, nvt_h1_scl 
+  Use npt_nose_hoover, Only : npt_h0_scl,npt_h1_scl 
   Implicit None
 
   Private
@@ -168,12 +171,12 @@ Contains
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
-       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
+       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
-       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
+       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
     End If
 
   ! timestep derivatives
@@ -233,7 +236,7 @@ Contains
 
           Call nvt_h0_scl &
              (qstep,ceng,qmass,pmass,chip, &
-             vxx,vyy,vzz,chit,cint,engke)
+             vxx,vyy,vzz,chit,cint,engke,comm)
 
   ! constraint+pmf virial and stress
 
@@ -250,7 +253,7 @@ Contains
 
           Call nvt_h0_scl &
              (qstep,ceng,qmass,pmass,chip, &
-             vxx,vyy,vzz,chit,cint,engke)
+             vxx,vyy,vzz,chit,cint,engke,comm)
 
   ! update velocities
 
@@ -309,7 +312,7 @@ Contains
                    Call constraints_shake_vv &
              (mxshak,tolnce,tstep,      &
              lstopt,dxx,dyy,dzz,listot, &
-             xxx,yyy,zzz,str,vir)
+             xxx,yyy,zzz,str,vir,comm)
 
   ! constraint virial and stress tensor
 
@@ -326,7 +329,7 @@ Contains
                    Call pmf_shake_vv &
              (mxshak,tolnce,tstep, &
              indpmf,pxx,pyy,pzz,   &
-             xxx,yyy,zzz,str,vir)
+             xxx,yyy,zzz,str,vir,comm)
 
   ! PMF virial and stress tensor
 
@@ -514,12 +517,12 @@ Contains
              If (megcon > 0) Call constraints_rattle &
              (mxshak,tolnce,tstep,lfst,lcol, &
              lstopt,dxx,dyy,dzz,listot,      &
-             vxx,vyy,vzz)
+             vxx,vyy,vzz,comm)
 
              If (megpmf > 0) Call pmf_rattle &
              (mxshak,tolnce,tstep,lfst,lcol, &
              indpmf,pxx,pyy,pzz,             &
-             vxx,vyy,vzz)
+             vxx,vyy,vzz,comm)
           End Do
        End If
 
@@ -527,7 +530,7 @@ Contains
 
        Call nvt_h0_scl &
              (qstep,ceng,qmass,pmass,chip, &
-             vxx,vyy,vzz,chit,cint,engke)
+             vxx,vyy,vzz,chit,cint,engke,comm)
 
   ! constraint+pmf virial and stress
 
@@ -544,7 +547,7 @@ Contains
 
        Call nvt_h0_scl &
              (qstep,ceng,qmass,pmass,chip, &
-             vxx,vyy,vzz,chit,cint,engke)
+             vxx,vyy,vzz,chit,cint,engke,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
@@ -781,12 +784,12 @@ Contains
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
-       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
+       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
-       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
+       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
     End If
 
   ! Get the RB particles vectors wrt the RB's COM
@@ -897,7 +900,7 @@ Contains
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot)
+             chit,cint,engke,engrot,comm)
 
   ! constraint+pmf virial and stress
 
@@ -917,7 +920,7 @@ Contains
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot)
+             chit,cint,engke,engrot,comm)
 
   ! update velocity of FPs
 
@@ -982,7 +985,7 @@ Contains
                    Call constraints_shake_vv &
              (mxshak,tolnce,tstep,      &
              lstopt,dxx,dyy,dzz,listot, &
-             xxx,yyy,zzz,str,vir)
+             xxx,yyy,zzz,str,vir,comm)
 
   ! constraint virial and stress tensor
 
@@ -999,7 +1002,7 @@ Contains
                    Call pmf_shake_vv &
              (mxshak,tolnce,tstep, &
              indpmf,pxx,pyy,pzz,   &
-             xxx,yyy,zzz,str,vir)
+             xxx,yyy,zzz,str,vir,comm)
 
   ! PMF virial and stress tensor
 
@@ -1417,12 +1420,12 @@ Contains
              If (megcon > 0) Call constraints_rattle &
              (mxshak,tolnce,tstep,lfst,lcol, &
              lstopt,dxx,dyy,dzz,listot,      &
-             vxx,vyy,vzz)
+             vxx,vyy,vzz,comm)
 
              If (megpmf > 0) Call pmf_rattle &
              (mxshak,tolnce,tstep,lfst,lcol, &
              indpmf,pxx,pyy,pzz,             &
-             vxx,vyy,vzz)
+             vxx,vyy,vzz,comm)
           End Do
        End If
 
@@ -1569,7 +1572,7 @@ Contains
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot)
+             chit,cint,engke,engrot,comm)
 
   ! constraint+pmf virial and stress
 
@@ -1589,7 +1592,7 @@ Contains
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot)
+             chit,cint,engke,engrot,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
