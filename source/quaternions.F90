@@ -11,7 +11,7 @@ Module quaternions
 
 
   Private
-  Public :: getrotmat
+  Public :: q_setup,getrotmat
 
   Contains
 !!!!!!!!!!!!!!!!!!!!! THIS IS QUATERNIONS_CONTAINER !!!!!!!!!!!!!!!!!!!!
