@@ -8,7 +8,6 @@ build_tplg.F90
 defects.F90
 link_cells.F90
 control.F90
-ffield.F90
 trajectory.F90
 temperature.F90
 rsds.F90
@@ -20,6 +19,7 @@ two_body.F90
 deport_data.F90
 tethers.F90
 halo.F90
+ffield.F90
 )
 
 set(dlpoly_CORE_SRCS

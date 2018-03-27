@@ -53,6 +53,8 @@ Module ffield
 
   Use parse
 
+  Use numerics, Only : factorial, shellsort
+
   Implicit None
 
   Private
