@@ -18,7 +18,7 @@ Module minimise
                               lsi,lsa,lfrzn,lfree,lstfre, &
                               weight,xxx,yyy,zzz,fxx,fyy,fzz, &
                               imcon,cell,vxx,vyy,vzz, &
-                              write_config
+                              write_config,getcom
   Use rigid_bodies,    Only : lshmv_rgd,lishp_rgd,lashp_rgd,rgdxxx,rgdyyy,rgdzzz,&
                               listrgd,rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz,&
                               rgdx,rgdy,rgdz,rgdfrz,rgdrix,indrgd,rgdwgt,rgdmeg,&
@@ -26,7 +26,7 @@ Module minimise
                               q_setup,getrotmat
   Use parse,           Only : strip_blanks,lower_case
 
-  Use kinetics,        Only : getcom,getvom,getkin,getknf,getknt,getknr, &
+  Use kinetics,        Only : getvom,getkin,getknf,getknt,getknr, &
                               kinstress,kinstresf,kinstrest
   Use numerics,        Only : images,invert
   Use constraints,     Only : constraints_tags,constraints_pseudo_bonds
