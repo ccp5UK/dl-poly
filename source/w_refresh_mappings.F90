@@ -17,7 +17,7 @@
            (dvar,rlnk,lbook,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
-           megbnd,megang,megdih,meginv)
+           megbnd,megang,megdih,meginv,ewld,comm)
 
 ! Exchange atomic data in border regions
 
@@ -41,6 +41,6 @@
 
 ! set and halo rotational matrices and their infinitesimal rotations
 
-        If (mximpl > 0) Call mpoles_rotmat_set_halo()
+        If (mximpl > 0) Call mpoles_rotmat_set_halo(comm)
 
 !!!!!!!!!!!!!!!!!!  W_REFRESH_MAPPINGS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
