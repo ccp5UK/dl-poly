@@ -2170,7 +2170,7 @@ Subroutine info(message,master_only)
 
 ! abort comms
 
-  Call abort_comms(eworld)
+  Call abort_comms(eworld,kode)
 
 End Subroutine error
 

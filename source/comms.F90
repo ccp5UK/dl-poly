@@ -71,6 +71,7 @@ Module comms
     Integer               :: idnode = 0
     Integer               :: mxnode = 1
     Logical               :: l_fast
+    Integer               :: ou
   End Type 
 
   Public :: init_comms, exit_comms, abort_comms, &
@@ -146,7 +147,8 @@ Contains
     Else If (wp == qp) Then
       wp_mpi = MPI_REAL16
     Else
-      Call error(1000)
+      Write(0,'(/,1x,a)') 'error - working precision mismatch between FORTRAN90 and MPI implementation'
+      Call abort_comms(comm,1000)
     End If
 
     Call MPI_COMM_RANK(comm%comm, comm%idnode, comm%ierr)
@@ -176,7 +178,7 @@ Contains
 
   End Subroutine exit_comms
 
-  Subroutine abort_comms(comm)
+  Subroutine abort_comms(comm,ierr)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -188,7 +190,8 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type(comms_type), Intent (InOut) :: comm
-    Call MPI_ABORT(comm%comm, comm%idnode, comm%ierr)
+    Integer, Intent( In ) :: ierr
+    Call MPI_ABORT(comm%comm, ierr,comm%ierr)
 
   End Subroutine abort_comms
 
@@ -245,7 +248,10 @@ Contains
 
     fail = 0
     Allocate (bbb(n_l:n_u), Stat = fail)
-    If (fail > 0) Call error(1001)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - allocation failure in comms_module -> gcheck_vector'
+      Call abort_comms(comm,1001)
+    End If
 
     n_s = Size(aaa, Dim = 1)
 
@@ -254,7 +260,10 @@ Contains
     aaa = bbb
 
     Deallocate (bbb, Stat = fail)
-    If (fail > 0) Call error(1002)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - deallocation failure in comms_module -> gcheck_vector'
+      Call abort_comms(comm,1002)
+    End If
 
   End Subroutine gcheck_vector
 
@@ -313,7 +322,10 @@ Contains
 
     fail = 0
     Allocate (bbb(n_l:n_u), Stat = fail)
-    If (fail > 0) Call error(1003)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - allocation failure in comms -> gisum_vector'
+      Call abort_comms(comm,1003)
+    End If
 
     n_s = Size(aaa, Dim = 1)
 
@@ -322,7 +334,11 @@ Contains
     aaa = bbb
 
     Deallocate (bbb, Stat = fail)
-    If (fail > 0) Call error(1004)
+
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - deallocation failure in comms -> gisum_vector'
+      Call abort_comms(comm,1004)
+    End If
 
   End Subroutine gisum_vector
 
@@ -379,7 +395,10 @@ Contains
 
     fail = 0
     Allocate (bbb(n_l1:n_u1,n_l2:n_u2), Stat = fail)
-    If (fail > 0) Call error(1048)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - allocation failure in comms -> grsum_matrix'
+      Call abort_comms(comm,1048)
+    End If
 
     n_s = Size(aaa)
 
@@ -388,7 +407,10 @@ Contains
     aaa = bbb
 
     Deallocate (bbb, Stat = fail)
-    If (fail > 0) Call error(1049)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - deallocation failure in comms -> grsum_matrix'
+      Call abort_comms(comm,1049)
+    End If
 
   End Subroutine grsum_matrix
 
@@ -417,7 +439,10 @@ Contains
 
     fail = 0
     Allocate (bbb(n_l:n_u), Stat = fail)
-    If (fail > 0) Call error(1005)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - allocation failure in comms -> grsum_vector'
+      Call abort_comms(comm,1005)
+    End If
 
     n_s = Size(aaa, Dim = 1)
 
@@ -426,7 +451,10 @@ Contains
     aaa = bbb
 
     Deallocate (bbb, Stat = fail)
-    If (fail > 0) Call error(1006)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - deallocation failure in comms -> grsum_vector'
+      Call abort_comms(comm,1006)
+    End If
 
   End Subroutine grsum_vector
 
@@ -479,7 +507,10 @@ Contains
 
     fail = 0
     Allocate (bbb(n_l:n_u), Stat = fail)
-    If (fail > 0) Call error(1007)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - allocation failure in comms -> gimax_vector'
+      Call abort_comms(comm,1007)
+    End If
 
     n_s = Size(aaa, Dim = 1)
 
@@ -488,7 +519,10 @@ Contains
     aaa = bbb
 
     Deallocate (bbb, Stat = fail)
-    If (fail > 0) Call error(1008)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - deallocation failure in comms -> gimax_vector'
+      Call abort_comms(comm,1008)
+    End If
 
   End Subroutine gimax_vector
 
@@ -541,7 +575,10 @@ Contains
 
     fail = 0
     Allocate (bbb(n_l:n_u), Stat = fail)
-    If (fail > 0) Call error(1009)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - allocation failure in comms -> grmax_vector'
+      Call abort_comms(comm,1009)
+    End If
 
     n_s = Size(aaa, Dim = 1)
 
@@ -550,7 +587,10 @@ Contains
     aaa = bbb
 
     Deallocate (bbb, Stat = fail)
-    If (fail > 0) Call error(1010)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - deallocation failure in comms -> grmax_vector'
+      Call abort_comms(comm,1010)
+    End If
 
   End Subroutine grmax_vector
 
@@ -602,7 +642,10 @@ Contains
 
     fail = 0
     Allocate (bbb(n_l:n_u), Stat = fail)
-    If (fail > 0) Call error(1044)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - allocation failure in comms -> gimin_vector'
+      Call abort_comms(comm,1044)
+    End If
 
     n_s = Size(aaa, Dim = 1)
 
@@ -611,7 +654,10 @@ Contains
     aaa = bbb
 
     Deallocate (bbb, Stat = fail)
-    If (fail > 0) Call error(1045)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - deallocation failure in comms -> gimin_vector'
+      Call abort_comms(comm,1045)
+    End If
 
   End Subroutine gimin_vector
 
@@ -663,7 +709,10 @@ Contains
 
     fail = 0
     Allocate (bbb(n_l:n_u), Stat = fail)
-    If (fail > 0) Call error(1046)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - allocation failure in comms -> grmin_vector'
+      Call abort_comms(comm,1046)
+    End If
 
     n_s = Size(aaa, Dim = 1)
 
@@ -672,7 +721,10 @@ Contains
     aaa = bbb
 
     Deallocate (bbb, Stat = fail)
-    If (fail > 0) Call error(1047)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - deallocation failure in comms -> grmin_vector'
+      Call abort_comms(comm,1047)
+    End If
 
   End Subroutine grmin_vector
 
