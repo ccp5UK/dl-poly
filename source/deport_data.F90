@@ -59,7 +59,7 @@ Module deport_data
 
   Implicit None
   
-  Public :: deport_atomic_data
+  Public :: deport_atomic_data, export_atomic_data
   
   Contains 
   
