@@ -1,15 +1,14 @@
 Module ewald_spole
-  Use kinds, Only : wp
-  Use comms,  Only : comms_type, gcheck, gsum
-  Use setup, Only : mxlist, mxatdm, mxatms, nrite, r4pie0, sqrpi, twopi, &
-                           mxspl, mxspl1, mxspl2, kmaxa, kmaxb, kmaxc, &
-                           zero_plus, mxgele
-  Use configuration, Only : natms,ltg,list,chge,fxx,fyy,fzz,cell,volm,nlast, &
-                            xxx,yyy,zzz, lfrzn
-
-  Use numerics,         Only :  erfcgen, invert, dcell
-  Use errors_warnings,  Only :  error  
-  Use ewald,            Only :  spl_cexp, bspcoe, bspgen
+  Use kinds,           Only : wp
+  Use comms,           Only : comms_type, gcheck, gsum
+  Use setup,           Only : mxlist, mxatdm, mxatms, nrite, r4pie0, sqrpi, twopi, &
+                              mxspl, mxspl1, mxspl2, kmaxa, kmaxb, kmaxc, &
+                              zero_plus, mxgele
+  Use configuration,   Only : natms,ltg,list,chge,fxx,fyy,fzz,cell,volm,nlast, &
+                              xxx,yyy,zzz, lfrzn
+  Use numerics,        Only : erfcgen, invert, dcell
+  Use errors_warnings, Only : error
+  Use ewald,           Only : spl_cexp, bspcoe, bspgen, exchange_grid
 
   Implicit None
 
@@ -1200,8 +1199,8 @@ Module ewald_spole
          call error(0,message) 
       End If
 
-      Call exchange_grid( ixb , ixt , iyb , iyt , izb , izt , qqc_local , &
-                          ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain  )
+      Call exchange_grid(ixb , ixt , iyb , iyt , izb , izt , qqc_local, &
+                         ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, comm)
 
   ! Real values of kmax vectors
 
@@ -1556,6 +1555,7 @@ Module ewald_spole
     Integer,           Dimension( : ), Allocatable :: l_ind,nz_fr
     Real( Kind = wp ), Dimension( : ), Allocatable :: cfr,xfr,yfr,zfr
     Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
+    Character( Len = 256 ) :: message
 
     If (.not.ewld%lf_fce) Then ! All's been done but needs copying
        Do i=1,natms
@@ -1586,8 +1586,8 @@ Module ewald_spole
     fail=0
     Allocate (l_ind(1:mxatdm),nz_fr(0:comm%mxnode), Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'ewald_frzn_forces allocation failure'
+       Call error(0,message)
     End If
 
     Call invert(cell,rcell,det)
@@ -1620,8 +1620,8 @@ Module ewald_spole
 
        Allocate (cfr(1:nzfr),xfr(1:nzfr),yfr(1:nzfr),zfr(1:nzfr), Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces allocation failure 1, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a,i0)') 'ewald_frzn_forces allocation failure 1'
+          Call error(0,message)
        End If
 
        cfr=0.0_wp
@@ -1872,8 +1872,8 @@ Module ewald_spole
 
        Deallocate (cfr,xfr,yfr,zfr, Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces deallocation failure 1, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ewald_frzn_forces deallocation failure 1'
+          Call error(0,message)
        End If
 
     Else
@@ -1883,8 +1883,8 @@ Module ewald_spole
 
        Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces allocation failure 2, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ewald_frzn_forces allocation failure 2'
+          Call error(0,message)
        End If
 
        Do ii=1,nz_fr(comm%idnode+1)
@@ -2009,8 +2009,8 @@ Module ewald_spole
 
        Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces deallocation failure 2, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ewald_frzn_forces deallocation failure 2'
+          Call error(0,message)
        End If
 
     End If
@@ -2063,10 +2063,8 @@ Module ewald_spole
 
     Deallocate (l_ind,nz_fr, Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_forces deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'ewald_frzn_forces deallocation failure'
+       Call error(0,message)
     End If
-
   End Subroutine ewald_frzn_forces
-
 End Module ewald_spole
