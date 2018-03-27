@@ -11,7 +11,8 @@ Module configuration
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,li
-  Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum
+  Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
+                    gmax,gmin
   Use site
 
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
@@ -49,8 +50,8 @@ Module configuration
                             IO_WRITE_SORTED_NETCDF,    &
                             IO_WRITE_SORTED_MASTER
 
-  Use errors_warnings, Only : error,warning
-  use numerics, Only : shellsort2,invert,dcell,images
+  Use errors_warnings, Only : error,warning,info
+  use numerics, Only : shellsort2,invert,dcell,images,shellsort,pbcshift
 
 #ifdef SERIAL
   Use mpi_api

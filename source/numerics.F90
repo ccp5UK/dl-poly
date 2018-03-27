@@ -4,7 +4,7 @@ Module numerics
 
   Use setup, Only : lseed,seed
   Use comms, Only : comms_type
-  Use setup, Only : rt3,zero_plus, sqrpi! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
+  Use setup, Only : rt3,zero_plus, sqrpi,rt2,half_minus! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
 
   Implicit None
   Private
@@ -1739,10 +1739,6 @@ Subroutine pbcshift(imcon,cell,natms,xxx,yyy,zzz)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use setup, Only : rt2,rt3,half_minus
-
-  Implicit None
 
   Integer,                              Intent( In    ) :: imcon,natms
   Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
