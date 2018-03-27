@@ -22,13 +22,13 @@ Module minimise
   Use rigid_bodies,    Only : lshmv_rgd,lishp_rgd,lashp_rgd,rgdxxx,rgdyyy,rgdzzz,&
                               listrgd,rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz,&
                               rgdx,rgdy,rgdz,rgdfrz,rgdrix,indrgd,rgdwgt,rgdmeg,&
-                              rgdriz,rgdriy,ntrgd,q0,q1,q2,q3,rgdind
+                              rgdriz,rgdriy,ntrgd,q0,q1,q2,q3,rgdind,&
+                              q_setup,getrotmat
   Use parse,           Only : strip_blanks,lower_case
 
   Use kinetics,        Only : getcom,getvom,getkin,getknf,getknt,getknr, &
                               kinstress,kinstresf,kinstrest
   Use numerics,        Only : images,invert
-  Use quaternions,     Only : q_setup,getrotmat
   Use constraints,     Only : constraints_tags,constraints_pseudo_bonds
   Use pmf,             Only : pmf_tags,pmf_pseudo_bonds
   Use shared_units,    Only : update_shared_units
