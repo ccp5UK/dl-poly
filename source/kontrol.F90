@@ -48,6 +48,8 @@ Module kontrol
   Implicit None
   Private
   Public :: read_control
+  Public :: scan_control_output
+  Public :: scan_control_io
   
   Contains
 

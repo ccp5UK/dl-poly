@@ -19,6 +19,7 @@ Module build_tplg
   ! MULTIPOLES MODULE
 
   Use mpole, Only : ltpatm ! equivalent to lexatm in configuration
+  Use numerics, Only : local_index,shellsort
 
   Implicit None
 
@@ -43,7 +44,7 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical :: safe
-    Integer :: i,j,ia,ib,ic,id,ia0,ib0,ic0,id0,ibig,local_index
+    Integer :: i,j,ia,ib,ic,id,ia0,ib0,ic0,id0,ibig
 
     ! variables for array bound checking
 

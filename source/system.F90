@@ -47,7 +47,10 @@ Module system
                                   IO_WRITE_SORTED_NETCDF,   &
                                   IO_WRITE_SORTED_MASTER
   Implicit None
-
+  Private
+  Public :: system_revive
+  Public :: system_init
+  Public :: system_expand
   Contains
   
   Subroutine system_init                                             &

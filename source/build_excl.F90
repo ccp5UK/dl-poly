@@ -20,7 +20,8 @@ Module build_excl
   Use bonds
   Use angles
   Use dihedrals
-  Use inversions
+   Use inversions
+  Use numerics, Only : local_index,shellsort
 
   Implicit None
 
@@ -52,7 +53,7 @@ Subroutine build_excl_intra(lecx,comm)
   Integer :: fail(1:2),i,j,k,l,kk,             &
              ia,ib,ic,id,ia0,ib0,ic0,id0,      &
              ibig,ja,jb,jc,jd,ja0,jb0,jc0,jd0, &
-             ka,kb,kc,kd,ka0,kb0,kc0,kd0,local_index
+             ka,kb,kc,kd,ka0,kb0,kc0,kd0
 
   Integer, Dimension( : , : ), Allocatable :: irgd,irgd0,jrgd,jrgd0
 

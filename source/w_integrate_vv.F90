@@ -20,7 +20,7 @@
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf)
+           megpmf,strpmf,virpmf,comm)
 
            Else If (keyens ==  1) Then
 
@@ -32,7 +32,7 @@
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf)
+           megpmf,strpmf,virpmf,comm)
 
            Else If (keyens == 10) Then
 
@@ -44,7 +44,7 @@
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf)
+           megpmf,strpmf,virpmf,comm)
 
            Else If (keyens == 11) Then
 
@@ -56,7 +56,7 @@
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf)
+           megpmf,strpmf,virpmf,comm)
 
            Else If (keyens == 12) Then
 
@@ -68,7 +68,7 @@
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf)
+           megpmf,strpmf,virpmf,comm)
 
            Else If (keyens == 13) Then
 
@@ -81,7 +81,7 @@
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf)
+           megpmf,strpmf,virpmf,comm)
 
            Else If (keyens == 14) Then
 
@@ -95,7 +95,7 @@
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf)
+           megpmf,strpmf,virpmf,comm)
 
            Else If (keyens == 15) Then
 
@@ -108,7 +108,7 @@
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf)
+           megpmf,strpmf,virpmf,comm)
 
            Else If (keyens == 20) Then
 
@@ -124,7 +124,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 21) Then
 
@@ -139,7 +139,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 22) Then
 
@@ -155,7 +155,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 23) Then
 
@@ -171,7 +171,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 30) Then
 
@@ -187,7 +187,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 31) Then
 
@@ -202,7 +202,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 32) Then
 
@@ -218,7 +218,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 33) Then
 
@@ -234,7 +234,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else
 
@@ -254,7 +254,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           strcom,vircom)
+           strcom,vircom,comm)
 
            Else If (keyens ==  1) Then
 
@@ -267,7 +267,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           strcom,vircom)
+           strcom,vircom,comm)
 
            Else If (keyens == 10) Then
 
@@ -280,7 +280,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           strcom,vircom)
+           strcom,vircom,comm)
 
            Else If (keyens == 11) Then
 
@@ -293,7 +293,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           strcom,vircom)
+           strcom,vircom,comm)
 
            Else If (keyens == 12) Then
 
@@ -306,7 +306,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           strcom,vircom)
+           strcom,vircom,comm)
 
            Else If (keyens == 13) Then
 
@@ -320,7 +320,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           strcom,vircom)
+           strcom,vircom,comm)
 
            Else If (keyens == 14) Then
 
@@ -335,7 +335,7 @@
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           strcom,vircom)
+           strcom,vircom,comm)
 
            Else If (keyens == 20) Then
 
@@ -352,7 +352,7 @@
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 21) Then
 
@@ -368,7 +368,7 @@
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 22) Then
 
@@ -385,7 +385,7 @@
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 23) Then
 
@@ -402,7 +402,7 @@
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 30) Then
 
@@ -419,7 +419,7 @@
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 31) Then
 
@@ -435,7 +435,7 @@
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 32) Then
 
@@ -452,7 +452,7 @@
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else If (keyens == 33) Then
 
@@ -469,7 +469,7 @@
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc)
+           elrc,virlrc,comm)
 
            Else
 

@@ -127,16 +127,40 @@ program dl_poly
   Use drivers
   Use errors_warnings, Only : init_error_system
   
-  Use minimise, Only : passmin, minimise_relax
+  Use minimise, Only : passmin, minimise_relax,zero_k_optimise
   Use two_body, Only : two_body_forces
   Use ewald, Only : ewald_type
 
   Use halo, Only : refresh_halo_positions,set_halo_particles
   Use deport_data, Only : mpoles_rotmat_set_halo,relocate_particles
-  Use temperature, Only : scale_temperature,regauss_temperature
+  Use temperature, Only : scale_temperature,regauss_temperature,set_temperature
   Use rsds, Only : rsd_write
   Use defects, Only : defects_write
-  Use trajectory, Only : trajectory_write
+  Use trajectory, Only : trajectory_write,read_history
+  use system, Only : system_revive,system_expand,system_init
+  Use ttm_track, Only : ttm_ion_temperature,ttm_thermal_diffusion
+  Use build_excl, Only : build_excl_intra 
+  Use build_book, Only : build_book_intra
+  Use ffield, Only : read_field,report_topology
+  Use kontrol, Only : scan_control_output,scan_control_io
+  Use bounds, Only : set_bounds
+  Use build_tplg, Only : build_tplg_intra
+  use build_chrm, Only : build_chrm_intra
+Use nvt_anderson, Only : nvt_a0_vv, nvt_a1_vv
+Use nvt_berendsen, Only : nvt_b0_vv, nvt_b1_vv, nvt_b0_scl, nvt_b1_scl
+Use nvt_ekin, Only : nvt_e0_vv, nvt_e1_vv, nvt_e0_scl, nvt_e1_scl
+Use nvt_gst, Only : nvt_g0_vv, nvt_g1_vv, nvt_g0_scl, nvt_g1_scl
+Use nvt_langevin, Only : nvt_l0_vv, nvt_l1_vv, nvt_l2_vv
+Use nvt_nose_hoover, Only : nvt_h0_vv, nvt_h1_vv, nvt_h0_scl, nvt_h1_scl
+Use nst_berendsen, Only : nst_b0_vv,nst_b1_vv
+Use nst_langevin, Only : nst_l0_vv,nst_l1_vv
+Use nst_mtk, Only : nst_m0_vv,nst_m1_vv
+Use nst_nose_hoover, Only : nst_h0_vv,nst_h1_vv, nst_h0_scl, nst_h1_scl
+Use npt_berendsen, Only : npt_b0_vv,npt_b1_vv
+Use npt_langevin, Only : npt_l0_vv,npt_l1_vv
+Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
+Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv, npt_h0_scl, npt_h1_scl
+Use nve, Only : nve_0_vv, nve_1_vv 
     ! MAIN PROGRAM VARIABLES
 
   Implicit None
@@ -243,7 +267,7 @@ program dl_poly
 
   ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
 
-  Call scan_control_output()
+  Call scan_control_output(comm)
 
   If (dlp_world(0)%idnode == 0) Then
     If (.not.l_scr) Open(Unit=nrite, File=Trim(output), Status='replace')
@@ -278,14 +302,14 @@ program dl_poly
 
   ! TEST I/O
 
-  Call scan_control_io()
+  Call scan_control_io(comm)
 
   ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
   ! (setup and domains)
 
   Call set_bounds                                     &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width)
+    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,comm)
 
   Call gtime(timelp)
   If (dlp_world(0)%idnode == 0) Then
@@ -375,7 +399,7 @@ program dl_poly
     rcter,rctbp,rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
     megshl,megcon,megpmf,megrgd,    &
-    megtet,megbnd,megang,megdih,meginv)
+    megtet,megbnd,megang,megdih,meginv,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(l_errors_jack .or. l_errors_block) then
@@ -460,7 +484,7 @@ program dl_poly
 
   ! Expand current system if opted for
 
-  If (l_exp) Call system_expand(l_str,rcut,nx,ny,nz,megatm)
+  If (l_exp) Call system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
 
   ! EXIT gracefully
 
@@ -474,7 +498,7 @@ program dl_poly
   Call system_init                                                 &
     (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
     time,tmst,nstep,tstep,chit,cint,chip,eta,virtot,stress, &
-    vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm)
+    vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,comm)
 
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
@@ -496,17 +520,17 @@ program dl_poly
       megatm,megfrz,atmfre,atmfrz, &
       megshl,megcon,megpmf,        &
       megrgd,degrot,degtra,        &
-      megtet,megbnd,megang,megdih,meginv)
+      megtet,megbnd,megang,megdih,meginv,comm)
     If (mximpl > 0) Then
-      Call build_tplg_intra() ! multipoles topology for internal coordinate system
-      If (keyind == 1) Call build_chrm_intra() ! CHARMM core-shell screened electrostatic induction interactions
+      Call build_tplg_intra(comm) ! multipoles topology for internal coordinate system
+      If (keyind == 1) Call build_chrm_intra(comm) ! CHARMM core-shell screened electrostatic induction interactions
     End If
-    If (lexcl) Call build_excl_intra(lecx)
+    If (lexcl) Call build_excl_intra(lecx,comm)
   Else
     Call report_topology                &
       (megatm,megfrz,atmfre,atmfrz, &
       megshl,megcon,megpmf,megrgd,  &
-      megtet,megbnd,megang,megdih,meginv)
+      megtet,megbnd,megang,megdih,meginv,comm)
 
     ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -546,7 +570,7 @@ program dl_poly
     atmfre,atmfrz,            &
     megshl,megcon,megpmf,     &
     megrgd,degtra,degrot,     &
-    degfre,degshl,sigma,engrot)
+    degfre,degshl,sigma,engrot,comm)
 
   Call gtime(timelp)
   If (dlp_world(0)%idnode == 0) Then
@@ -730,7 +754,7 @@ program dl_poly
   ! (final)
 
   If (l_ttm) Then
-    Call ttm_ion_temperature (chi_ep,chi_es,vel_es2)
+    Call ttm_ion_temperature (chi_ep,chi_es,vel_es2,comm)
     Call printElecLatticeStatsToFile('PEAK_E', time, temp, nstep, ttmstats,comm)
     Call peakProfilerElec('LATS_E', nstep, ttmtraj,comm)
     Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep, ttmstats,comm)
@@ -742,7 +766,7 @@ program dl_poly
   If (lsim .and. (.not.l_tor)) Then
     Call system_revive &
       (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-      chit,cint,chip,eta,strcon,strpmf,stress)
+      chit,cint,chip,eta,strcon,strpmf,stress,comm)
     If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
   End If
 
@@ -796,7 +820,7 @@ program dl_poly
   Call exit_comms(comm)
 
   ! Create wrappers for the MD cycle in VV, and replay history
-  Call Deallocate(dlp_world)
+  Deallocate(dlp_world)
 Contains
 
   Subroutine w_calculate_forces()

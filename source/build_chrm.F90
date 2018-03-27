@@ -25,7 +25,7 @@ Module build_chrm
   ! MULTIPOLES MODULE
 
   Use mpole, Only : keyind,lchatm ! equivalent to lexatm in configuration
-
+  Use numerics, Only : local_index,shellsort
   Implicit None
 
   Private
@@ -60,7 +60,7 @@ Contains
     Integer :: fail,i,j,k,l,kk,                  &
       ia,ib,ic,id,ia0,ib0,ic0,id0,      &
       ibig,ja,jb,jc,jd,ja0,jb0,jc0,jd0, &
-      ka,kb,kc,kd,ka0,kb0,kc0,kd0,local_index
+      ka,kb,kc,kd,ka0,kb0,kc0,kd0
 
     ! variables for array bound checking
 

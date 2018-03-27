@@ -77,7 +77,7 @@
 ! zero Kelvin structure optimisation
 
         If (lzero .and. nstep <= nsteql .and. Mod(nstep-nsteql,nstzero) == 0) &
-           Call zero_k_optimise(strkin,strknf,strknt,engke,engrot)
+           Call zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
 ! Switch on electron-phonon coupling only after time offset
 
@@ -108,8 +108,8 @@
 ! Evolve electronic temperature for two-temperature model
 
         If (l_ttm) Then
-          Call ttm_ion_temperature(chi_ep,chi_es,vel_es2)
-          Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstrun,lines,npage)
+          Call ttm_ion_temperature(chi_ep,chi_es,vel_es2,comm)
+          Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstrun,lines,npage,comm)
         End If
 
 ! Integrate equations of motion - velocity verlet second stage
@@ -137,7 +137,7 @@
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.l_tor)) &
            Call system_revive                                 &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress)
+           chit,cint,chip,eta,strcon,strpmf,stress,comm)
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 

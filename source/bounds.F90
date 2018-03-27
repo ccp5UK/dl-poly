@@ -17,7 +17,8 @@ Module bounds
   Use numerics,      Only : adjust_kmax
 
   Implicit None
-
+  Private
+  Public :: set_bounds
 Contains
 
 Subroutine set_bounds                                 &

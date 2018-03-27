@@ -59,7 +59,7 @@
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout)
+     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,comm)
 
      If (newjb) Then
         newjb = .false.
@@ -119,8 +119,8 @@
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,megbnd,megang,megdih,meginv)
-              If (lexcl) Call build_excl_intra(lecx)
+           megtet,megbnd,megang,megdih,meginv,comm)
+              If (lexcl) Call build_excl_intra(lecx,comm)
            End If
 
 ! Evaluate forces, newjob must always be true for vircom evaluation
@@ -131,9 +131,9 @@
 
            If (levcfg > 0 .and. levcfg < 3) Then
               If (lzero .and. nstep <= nsteql .and. Mod(nstep+1-nsteql,nstzero) == 0) &
-                 Call zero_k_optimise(strkin,strknf,strknt,engke,engrot)
+                 Call zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
-              If (lzero .and. nstep <= nsteql) Call zero_k_optimise(strkin,strknf,strknt,engke,engrot)
+              If (lzero .and. nstep <= nsteql) Call zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
 ! Calculate kinetic stress and energy if available
 
@@ -240,7 +240,7 @@
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.l_tor)) &
               Call system_revive                              &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress)
+           chit,cint,chip,eta,strcon,strpmf,stress,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -306,7 +306,7 @@
            atmfre,atmfrz,            &
            megshl,megcon,megpmf,     &
            megrgd,degtra,degrot,     &
-           degfre,degshl,sigma,engrot)
+           degfre,degshl,sigma,engrot,comm)
 
   End If
   Call deallocate_statistics_connect()
@@ -315,7 +315,7 @@
 
   If (.not. l_tor) Call system_revive                         &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress)
+           chit,cint,chip,eta,strcon,strpmf,stress,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 
