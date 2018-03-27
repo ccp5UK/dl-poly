@@ -132,6 +132,8 @@ Program dl_poly
   Use ewald, Only : ewald_type
 
   Use halo, Only : refresh_halo_positions,set_halo_particles
+  Use deport_data, Only : mpoles_rotmat_set_halo,relocate_particles
+  Use temperature, Only : scale_temperature,regauss_temperature
     ! MAIN PROGRAM VARIABLES
 
   Implicit None
@@ -530,7 +532,7 @@ Program dl_poly
 
   ! set and halo rotational matrices and their infinitesimal rotations
 
-  If (mximpl > 0) Call mpoles_rotmat_set_halo()
+  If (mximpl > 0) Call mpoles_rotmat_set_halo(comm)
 
   ! SET initial system temperature
 
