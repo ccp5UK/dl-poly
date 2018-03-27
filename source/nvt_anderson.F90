@@ -472,7 +472,7 @@ Contains
        If (keyshl == 1) Then
           If (lshmv_shl) Then ! refresh the q array for shared core-shell units
              qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn,comm)
           End If
 
           If (ntshl > 0) Then
@@ -500,7 +500,7 @@ Contains
   ! Thermalise the shells on hit cores
 
        If (stp > 0) Then
-          If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz)
+          If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
 
           If (tps(comm%idnode) > 0) Then
              Do k=1,ntshl
@@ -1371,7 +1371,7 @@ Contains
        If (j > 0) Then
           If (lshmv_rgd) Then
              qn(natms+1:nlast) = 0 ! refresh the q array for shared RB units
-             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,qn)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,qn,comm)
           End If
 
           j = 0
@@ -1524,7 +1524,7 @@ Contains
 
   ! Update shared RBs' velocities
 
-          If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xxt,yyt,zzt)
+          If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xxt,yyt,zzt,comm)
 
   ! calculate new RBs' COM and angular velocities
 
@@ -1598,7 +1598,7 @@ Contains
        If (keyshl == 1) Then
           If (lshmv_shl) Then ! refresh the q array for shared core-shell units
              qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn,comm)
           End If
 
           If (ntshl > 0) Then
@@ -1626,7 +1626,7 @@ Contains
   ! Thermalise the shells on hit cores
 
        If (stp > 0) Then
-          If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz)
+          If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
 
           If (tps(comm%idnode) > 0) Then
              Do k=1,ntshl
