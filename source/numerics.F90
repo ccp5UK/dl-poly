@@ -2645,5 +2645,36 @@ Function Factorial(n)
   End Do
 
 End Function Factorial
+
+Subroutine adjust_kmax( kmax, P )
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine to adjust a k-vector length
+! with what DaFT can handle
+!
+! copyright - daresbury laboratory
+! author    - i.j.bush august 2010
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Use parallel_fft, Only : pfft_length_ok
+
+  Implicit None
+
+  Integer, Intent( InOut ) :: kmax
+  Integer, Intent( In    ) :: P
+
+! First make sure kmax is a multiple of P, and is at least as big as the input value
+
+  If ( Mod( kmax, P ) /= 0 ) kmax = ( kmax / P + 1 ) * P
+
+! Now check it has suitable factors
+
+  Do While ( .not. pfft_length_ok( kmax / P ) )
+     kmax = kmax + P
+  End Do
+
+End Subroutine adjust_kmax
 End Module numerics
 

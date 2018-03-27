@@ -1,17 +1,17 @@
 Module poisson
 
-  Use kinds, Only : wp
-  Use comms, Only : gsum, comms_type,wp_mpi,ExchgGrid_tag
+  Use kinds,           Only : wp
+  Use comms,           Only : gsum, comms_type,wp_mpi,ExchgGrid_tag
   Use domains
-  Use setup,  Only : fourpi,r4pie0,nrite,            &
-                            kmaxa,kmaxb,kmaxc,mxspl,mxspl1, &
-                            mxlist,mxatms,mxatdm,half_minus,zero_plus
-  Use configuration, Only : imcon,cell,natms,nlast,list,ltg,lfrzn, &
-                            chge,xxx,yyy,zzz,fxx,fyy,fzz
-  Use ewald,         Only : ewald_type
+  Use setup,           Only : fourpi,r4pie0,nrite,            &
+                              kmaxa,kmaxb,kmaxc,mxspl,mxspl1, &
+                              mxlist,mxatms,mxatdm,half_minus,zero_plus
+  Use configuration,   Only : imcon,cell,natms,nlast,list,ltg,lfrzn, &
+                              chge,xxx,yyy,zzz,fxx,fyy,fzz
+  Use ewald,           Only : ewald_type
   Use errors_warnings, Only : error
-  Use numerics, Only : dcell,invert
-  Use ewald_spole, Only : adjust_kmax 
+  Use numerics,        Only : dcell,invert,adjust_kmax
+  Use ewald_spole,     Only : adjust_kmax
 #ifdef SERIAL
   Use mpi_api
 #else

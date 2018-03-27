@@ -1,19 +1,20 @@
 Module bounds
-  Use kinds, Only : wp
-  Use comms,       Only : comms_type
+  Use kinds,         Only : wp
+  Use comms,         Only : comms_type
   Use setup
-  Use domains,     Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
-  Use configuration,      Only : imcon,imc_n,cfgname,cell,volm
-  Use vnl,         Only : llvnl ! Depends on l_str,lsim & rpad
+  Use domains,       Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
+  Use configuration, Only : imcon,imc_n,cfgname,cell,volm
+  Use vnl,           Only : llvnl ! Depends on l_str,lsim & rpad
   Use msd
-  Use rdfs,         Only : rusr
-  Use kim,         Only : kimim
-  Use bonds,       Only : rcbnd
-  Use tersoff,     Only : potter
-  Use development, Only : l_trm
-  Use greenkubo,   Only : vafsamp
-  Use mpole,      Only : keyind,induce
-  Use ttm,         Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
+  Use rdfs,          Only : rusr
+  Use kim,           Only : kimim
+  Use bonds,         Only : rcbnd
+  Use tersoff,       Only : potter
+  Use development,   Only : l_trm
+  Use greenkubo,     Only : vafsamp
+  Use mpole,         Only : keyind,induce
+  Use ttm,           Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
+  Use numerics,      Only : adjust_kmax
 
   Implicit None
 
