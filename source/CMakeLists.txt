@@ -60,9 +60,9 @@ ttm_track.F90
 angles.F90
 bonds.F90
 constraints.F90
-coul_mpoles.F90
+coul_mpole.F90
 ewald_spole.F90
-ewald_mpoles.F90
+ewald_mpole.F90
 inversions.F90
 metal.F90
 poisson.F90

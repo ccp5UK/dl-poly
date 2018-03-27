@@ -127,9 +127,12 @@ Program dl_poly
   Use drivers
   Use errors_warnings, Only : init_error_system
   
-  Use minimise, Only : passmin
+  Use minimise, Only : passmin, minimise_relax
+  Use two_body, Only : two_body_forces
+  Use ewald, Only : ewald_type
 
-  ! MAIN PROGRAM VARIABLES
+
+    ! MAIN PROGRAM VARIABLES
 
   Implicit None
 
@@ -214,6 +217,7 @@ Program dl_poly
 
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
+  Type(ewald_type) :: ewld
 
   ! SET UP COMMUNICATIONS & CLOCKING
 

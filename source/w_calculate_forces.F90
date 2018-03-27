@@ -31,7 +31,7 @@
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &
-           engcpe,vircpe,engsrp,virsrp,stress)
+           engcpe,vircpe,engsrp,virsrp,stress,ewld,comm)
 
 ! Calculate tersoff forces
 
@@ -133,11 +133,11 @@
            If      (nstmin == 0 .and. nstep == 0) Then
               Call minimise_relax &
            (l_str .or. keyshl == 2,relaxed_min,lrdf,megatm,megcon,megpmf,megrgd, &
-           keymin,min_tol,tstep,stpcfg)
+           keymin,min_tol,tstep,stpcfg,comm)
            Else If (nstmin >  0 .and. nstep >  0) Then
               If (Mod(nstep-nsteql,nstmin) == 0) Call minimise_relax &
            (l_str .or. keyshl == 2,relaxed_min,lrdf,megatm,megcon,megpmf,megrgd, &
-           keymin,min_tol,tstep,stpcfg)
+           keymin,min_tol,tstep,stpcfg,comm)
            End If
         End If
 

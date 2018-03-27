@@ -212,7 +212,7 @@ Module ewald_spole
 
   End Subroutine ewald_real_forces
 
-  Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress,comm,ewld)
+  Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1499,7 +1499,7 @@ Module ewald_spole
 
   End Subroutine ewald_excl_forces
 
-  Subroutine ewald_frzn_forces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress,comm,ewld)
+  Subroutine ewald_frzn_forces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress,ewld,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !

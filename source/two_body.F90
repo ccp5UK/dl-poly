@@ -8,14 +8,19 @@ Module two_body
   Use ewald,           Only : ewald_type
   Use mpole,          Only : induce,keyind
   Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
-  Use coul_mpoles,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
+  Use coul_mpole,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
                              coul_dddp_mforces, coul_chrm_forces, d_ene_trq_mpoles
   Use poisson, Only : poisson_forces,poisson_excl_forces,poisson_frzn_forces
-  Use vdw,     Only : ntpvdw
-  Use metal,   Only : ntpmet
+  Use vdw,     Only : ntpvdw, &
+                      vdw_forces
+  Use metal,   Only : ntpmet, &
+                      metal_forces, metal_ld_compute,metal_lrc
   Use kim
-  Use rdfs,    Only : ncfrdf, block_size, l_errors_block, l_errors_jack, block_number
+  Use rdfs,    Only : ncfrdf, block_size, l_errors_block, l_errors_jack, block_number, &
+                      rdf_collect,rdf_excl_collect,rdf_frzn_collect
   Use errors_warnings, Only : error
+  Use link_cells, Only : link_cell_pairs
+  Use ewald_spole, Only : ewald_spme_forces,ewald_real_forces,ewald_frzn_forces
   Implicit None
   Private
   Public :: two_body_forces
@@ -154,7 +159,7 @@ Subroutine two_body_forces                        &
 
 ! Set up non-bonded interaction (verlet) list using link cells
 
-  If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz)
+  If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,comm)
 
 ! Calculate all contributions from KIM
 
@@ -168,11 +173,11 @@ Subroutine two_body_forces                        &
 
 ! Reset metal long-range corrections (constant pressure/stress only)
 
-     If (keyens >= 20) Call metal_lrc(rmet,elrcm,vlrcm)
+     If (keyens >= 20) Call metal_lrc(rmet,elrcm,vlrcm,comm)
 
 ! calculate local density in metals
 
-     Call metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stress)
+     Call metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stress,comm)
 
   End If
 
@@ -186,7 +191,7 @@ Subroutine two_body_forces                        &
            Call ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
         End If
      Else
-        Call ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
+        Call ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,comm)
      End If
   End If
 
@@ -301,7 +306,7 @@ Subroutine two_body_forces                        &
 
 ! calculate coulombic forces, Ewald sum - real space contribution
 
-           Call ewald_real_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Call ewald_real_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -502,7 +507,7 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
               If (mximpl > 0) Then
                  Call ewald_frzn_mforces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
               Else
-                 Call ewald_frzn_forces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
+                 Call ewald_frzn_forces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress,ewld,comm)
               End If
            Else !If (keyfce == 12) Then ! Poisson Solver
               Call poisson_frzn_forces(rcut,epsq,engcpe_fr,vircpe_fr,stress,ewld,comm)

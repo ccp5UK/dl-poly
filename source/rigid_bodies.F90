@@ -19,11 +19,7 @@ Module rigid_bodies
   Use statistics,      Only : xin,yin,zin
   Use numerics,        Only : images, jacobi, invert
   Use shared_units,    Only : update_shared_units
-<<<<<<< HEAD
-  Use numerics,        Only : images, local_index,pbcshift
-=======
   Use numerics,        Only : images,local_index,pbcshift
->>>>>>> 77efa3a1ffec1f8a5e11d1f1263a8bbdf76c7362
   Use errors_warnings, Only : info, error, warning
 
 

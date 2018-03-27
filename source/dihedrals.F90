@@ -26,7 +26,7 @@ Module dihedrals
   Use errors_warnings, Only : error,warning
   Use numerics, Only : local_index,images
   Use coul_spole, Only : intra_coul
-  Use coul_mpoles, Only : intra_mcoul
+  Use coul_mpole, Only : intra_mcoul
   Implicit None
 
   Logical,                        Save :: lt_dih=.false. , & ! no tabulated potentials opted

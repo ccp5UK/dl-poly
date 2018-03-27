@@ -155,7 +155,7 @@
            alpha,epsq,keyfce,nstfce,.false.,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstph,         &
            elrc,virlrc,elrcm,vlrcm,               &
-           engcpe,vircpe,engsrp,virsrp,stress)
+           engcpe,vircpe,engsrp,virsrp,stress,ewld,comm)
 
 ! Calculate bond forces
 

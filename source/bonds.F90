@@ -23,7 +23,7 @@ Module bonds
   Use parse,           Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error, warning
   Use numerics,        Only : images, local_index 
-  Use coul_mpoles,     Only : intra_mcoul 
+  Use coul_mpole,     Only : intra_mcoul 
   Use coul_spole,      Only : intra_coul 
 
   Implicit None

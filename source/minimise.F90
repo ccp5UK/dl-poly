@@ -50,7 +50,8 @@ Module minimise
 
   Real( Kind = wp ), Allocatable, Save :: oxx(:),oyy(:),ozz(:)
 
-  Public :: allocate_minimise_arrays,deallocate_minimise_arrays
+  Public :: allocate_minimise_arrays,deallocate_minimise_arrays, minimise_relax
+
 
 Contains
 

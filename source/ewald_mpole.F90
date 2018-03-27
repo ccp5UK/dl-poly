@@ -1,4 +1,4 @@
-Module ewald_mpoles
+Module ewald_mpole
   Use kinds, Only : wp, sp
   Use comms, Only : comms_type, gcheck, gsum
   Use mpole
@@ -6748,4 +6748,4 @@ Module ewald_mpoles
     End If
 
   End Subroutine ewald_frzn_mforces
-End Module ewald_mpoles
+End Module ewald_mpole

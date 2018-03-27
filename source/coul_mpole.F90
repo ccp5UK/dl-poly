@@ -1,4 +1,4 @@
-Module coul_mpoles
+Module coul_mpole
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2637,4 +2637,4 @@ Contains
 
   End Subroutine d_ene_trq_mpoles
 
-End Module coul_mpoles
+End Module coul_mpole
