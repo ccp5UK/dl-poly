@@ -10,13 +10,16 @@ Module core_shell
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,             Only : wp
-  Use comms,             Only : comms_type,gsync,gsum,gcheck
-  Use setup,      Only : mxshl,nrite,boltz,engunit,output,mxatms,mxatdm,zero_plus,&
-                         mxtshl, mxtmls,mxproc,mxlshp,mxfshl
-  Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,fxx,fyy,fzz, &
-    weight,vxx,vyy,vzz,lfrzn,freeze_atoms
-  Use parse,      Only : strip_blanks,lower_case
+  Use kinds,           Only : wp
+  Use comms,           Only : comms_type,gsync,gsum,gcheck,gmax
+  Use setup,           Only : mxshl,nrite,boltz,engunit,output,mxatms,mxatdm,zero_plus,&
+                              mxtshl, mxtmls,mxproc,mxlshp,mxfshl
+  Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,fxx,fyy,fzz, &
+                              weight,vxx,vyy,vzz,lfrzn,freeze_atoms
+  Use parse,           Only : strip_blanks,lower_case
+  Use shared_units,    Only : update_shared_units
+  use numerics,        Only : local_index,images
+  Use errors_warnings, Only : error,warning,info
 
   Implicit None
 
@@ -107,20 +110,21 @@ Contains
     Type( comms_type ),                  Intent( InOut ) :: comm
 
     Logical           :: safe
-    Integer           :: fail(1:2),i,j,ia,ib,kk,local_index
+    Integer           :: fail(1:2),i,j,ia,ib,kk
     Real( Kind = wp ) :: rabsq,fx,fy,fz,gamma,omega,r_4_fac, &
       strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:2)
 
     Logical,           Allocatable :: lunsafe(:)
     Integer,           Allocatable :: lstopt(:,:)
     Real( Kind = wp ), Allocatable :: xdab(:),ydab(:),zdab(:)
+    Character( Len = 256 ) :: message
 
     fail=0
     Allocate (lunsafe(1:mxshl),lstopt(0:2,1:mxshl),      Stat=fail(1))
     Allocate (xdab(1:mxshl),ydab(1:mxshl),zdab(1:mxshl), Stat=fail(2))
     If (Any(fail > 0)) Then
-      Write(nrite,'(/,1x,a,i0)') 'core_shell_forces allocation failure, node: ', comm%idnode
-      Call error(0)
+      Write(message,'(/,1x,a)') 'core_shell_forces allocation failure'
+      Call error(0,message)
     End If
 
     r_4_fac = 1.0_wp/24.0_wp ! aharmonic shell coefficient = 1/(4!)
@@ -167,10 +171,13 @@ Contains
       Do j=0,comm%mxnode-1
         If (comm%idnode == j) Then
           Do i=1,ntshl
-            If (lunsafe(i)) Write(nrite,'(/,1x,a,2(i10,a))')     &
-              '*** warning - global unit number', listshl(0,i), &
-              ' , with a head particle number', listshl(1,i),   &
-              ' contributes towards next error !!! ***'
+            If (lunsafe(i)) Then
+              Write(message,'(/,1x,a,2(i10,a))')     &
+                'global unit number', listshl(0,i), &
+                ' , with a head particle number', listshl(1,i),   &
+                ' contributes towards next error'
+              Call warning(message)
+            End If
           End Do
         End If
         Call gsync(comm)
@@ -284,8 +291,8 @@ Contains
     Deallocate (lunsafe,lstopt, Stat=fail(1))
     Deallocate (xdab,ydab,zdab, Stat=fail(2))
     If (Any(fail > 0)) Then
-      Write(nrite,'(/,1x,a,i0)') 'core_shell_forces deallocation failure, node: ', comm%idnode
-      Call error(0)
+      Write(message,'(/,1x,a)') 'core_shell_forces deallocation failure'
+      Call error(0,message)
     End If
 
   End Subroutine core_shell_forces
@@ -305,12 +312,14 @@ Contains
     Real( Kind = wp ),  Intent(   Out ) :: shlke
     Type( comms_type ), Intent( InOut ) :: comm
 
-    Integer           :: i,j,k,local_index
+    Integer           :: i,j,k
     Real( Kind = wp ) :: rmu,rvx,rvy,rvz
 
     ! gather velocities of shared particles
 
-    If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz)
+    If (lshmv_shl) Then
+      Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
+    End If
 
     ! initialise energy
 
@@ -381,15 +390,16 @@ Contains
 
     Type( comms_type ),  Intent( InOut ) :: comm
     Logical :: safe
-    Integer :: fail,i,j,ia,ib,local_index
+    Integer :: fail,i,j,ia,ib
 
     Logical, Allocatable :: lunsafe(:)
+    Character( Len = 256 ) :: message
 
     fail=0
     Allocate (lunsafe(1:mxshl), Stat=fail)
     If (fail > 0) Then
-      Write(nrite,'(/,1x,a,i0)') 'core_shell_on_top allocation failure, node: ', comm%idnode
-      Call error(0)
+      Write(message,'(/,1x,a)') 'core_shell_on_top allocation failure'
+      Call error(0,message)
     End If
 
 
@@ -428,10 +438,13 @@ Contains
       Do j=0,comm%mxnode-1
         If (comm%idnode == j) Then
           Do i=1,ntshl
-            If (lunsafe(i)) Write(nrite,'(/,1x,a,2(i10,a))')     &
-              '*** warning - global unit number', listshl(0,i), &
-              ' , with a head particle number', listshl(1,i),   &
-              ' contributes towards next error !!! ***'
+            If (lunsafe(i)) Then
+              Write(message,'(/,1x,a,2(i10,a))')     &
+                'global unit number', listshl(0,i), &
+                ' , with a head particle number', listshl(1,i),   &
+                ' contributes towards next error'
+              Call warning(message)
+            End If
           End Do
         End If
         Call gsync(comm)
@@ -441,8 +454,8 @@ Contains
 
     Deallocate (lunsafe, Stat=fail)
     If (fail > 0) Then
-      Write(nrite,'(/,1x,a,i0)') 'core_shell_on_top deallocation failure, node: ', comm%idnode
-      Call error(0)
+      Write(message,'(/,1x,a)') 'core_shell_on_top deallocation failure'
+      Call error(0,message)
     End If
 
   End Subroutine core_shell_on_top
@@ -465,7 +478,7 @@ Contains
     Type( comms_type), Intent( InOut ) :: comm
 
     Logical           :: safek
-    Integer           :: ia,ib,k,local_index
+    Integer           :: ia,ib,k
     Real( Kind = wp ) :: dvx,dvy,dvz,pke,rmu,scl,tke,tmx,tmy,tmz
 
     ! Initialise safe flag
@@ -474,7 +487,9 @@ Contains
 
     ! gather velocities of shared particles
 
-    If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz)
+    If (lshmv_shl) Then
+      Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
+    End If
 
     ! permitted core-shell internal kinetic energy
 
@@ -552,7 +567,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg,comm)
 
   Logical,           Save :: newjob = .true. , l_rdf
   Integer,           Save :: keyopt
-  Integer                 :: fail(1:2),i,ia,ib,jshl,local_index
+  Integer                 :: fail(1:2),i,ia,ib,jshl
   Real( Kind = wp ), Save :: grad_tol,eng_tol,dist_tol(1:2),   &
                              step,eng,eng0,eng1,eng2,          &
                              grad,grad0,grad1,grad2,onorm,sgn, &
@@ -572,13 +587,14 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg,comm)
   Integer,           Allocatable       :: lstopt(:,:),lst_sh(:)
   Real( Kind = wp ), Allocatable       :: fxt(:),fyt(:),fzt(:)
   Real( Kind = wp ), Allocatable, Save :: oxt(:),oyt(:),ozt(:)
+  Character( Len = 256 ) :: message
 
   fail=0
   Allocate (lstopt(1:2,1:mxshl),lst_sh(1:mxatms),      Stat=fail(1))
   Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'core_shell_relax allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'core_shell_relax allocation failure'
+     Call error(0,message)
   End If
 
   If (newjob) Then
@@ -597,8 +613,8 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg,comm)
 
      Allocate (oxt(1:mxshl),oyt(1:mxshl),ozt(1:mxshl), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'core_shell_relax allocation failure SAVE, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'core_shell_relax allocation failure SAVE'
+        Call error(0,message)
      End If
   End If
 
@@ -635,17 +651,20 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg,comm)
 
 ! Print header
 
-     If (l_str .and. comm%idnode == 0) Then
-        Write(nrite, Fmt=*)
-        Write(nrite,'(1x,a,3x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
-  'Relaxing shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',rlx_tol(1),'step=',step
-        Write(nrite,"(1x,130('-'))")
-     End If
+    If (l_str) Then
+      Write(message,'(//,1x,a,3x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
+        'Relaxing shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',rlx_tol(1),'step=',step
+      Call info(message,.true.)
+      Write(message,"(1x,130('-'))")
+      Call info(message,.true.)
+    End If
   End If
 
 ! gather new forces on shared shells
 
-  If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,fxx,fyy,fzz)
+  If (lshmv_shl) Then
+    Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,fxx,fyy,fzz,comm)
+  End If
 
 ! Load shell forces on cores (cores don't move during the shell relaxation)
 
@@ -823,7 +842,9 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg,comm)
 
 ! Exchange original shell forces on shared cores across domains
 
-  If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,fxt,fyt,fzt)
+  If (lshmv_shl) Then
+    Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,fxt,fyt,fzt,comm)
+  End If
 
 ! Move shells accordingly to their new positions
 
@@ -847,13 +868,17 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg,comm)
 ! Fit headers in and Close and Open OUTPUT at every 25th print-out
 
   i=Nint(passshl(1))
-  If (l_str .and. comm%idnode == 0) Then
-     Write(nrite,'(1x,i31,1x,1p,2e18.8,4x,f7.4,4x,f7.4,12x,e18.8)') i-1,stpcfg/engunit,grad_tol,dist_tol(1),dist_tol(2),eng_tol
+  If (l_str) Then
+     Write(message,'(1x,i31,1x,1p,2e18.8,4x,f7.4,4x,f7.4,12x,e18.8)') i-1,stpcfg/engunit,grad_tol,dist_tol(1),dist_tol(2),eng_tol
+     Call info(message,.true.)
      If (Mod(i,25) == 0) Then
-        Write(nrite,"(1x,130('-'))")
-        Write(nrite,'(1x,a,3x,a,6x,a,11x,a,9x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
+        Write(message,"(1x,130('-'))")
+        Call info(message,.true.)
+        Write(message,'(1x,a,3x,a,6x,a,11x,a,9x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
   'Relaxing shells to cores:','pass','eng_tot','grad_tol','ds_tol','dcs_max','tol=',rlx_tol(1),'step=',step
-        Write(nrite,"(1x,130('-'))")
+        Call info(message,.true.)
+        Write(message,"(1x,130('-'))")
+        Call info(message,.true.)
 
         If (comm%idnode == 0) Then
            Inquire(File=Trim(output), Exist=l_out, Position=c_out)
@@ -874,18 +899,18 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg,comm)
 ! Final printout
 
      i=Nint(passshl(1))
-     If (comm%idnode == 0) Then
-        If (.not.l_str) Then
-           Write(nrite, Fmt=*)
-           Write(nrite,'(1x,a,4x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
-  'Relaxed shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',rlx_tol(1),'step=',step
-           Write(nrite,"(1x,130('-'))")
-        End If
-        Write(nrite,'(1x,i31,1x,1p,2e18.8,4x,f7.4,4x,f7.4,12x,e18.8)') &
-             i-1,stpcfg/engunit,grad_tol,dist_tol(1),dist_tol(2),eng_tol
-        Write(nrite, Fmt=*)
-        Write(nrite,"(1x,130('-'))")
+     If (.not.l_str) Then
+       Write(message,'(//,1x,a,4x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
+         'Relaxed shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',rlx_tol(1),'step=',step
+       Call info(message,.true.)
+       Write(message,"(1x,130('-'))")
+       Call info(message,.true.)
      End If
+     Write(message,'(1x,i31,1x,1p,2e18.8,4x,f7.4,4x,f7.4,12x,e18.8)') &
+       i-1,stpcfg/engunit,grad_tol,dist_tol(1),dist_tol(2),eng_tol
+     Call info(message,.true.)
+     Write(message,"(1x,130('-'))")
+     Call info(message,.true.)
 
 ! Collect passage statistics
 
@@ -939,11 +964,9 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg,comm)
   Deallocate (lstopt,lst_sh, Stat=fail(1))
   Deallocate (fxt,fyt,fzt,   Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'core_shell_relax deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'core_shell_relax deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine core_shell_relax
-
-  
 End module core_shell

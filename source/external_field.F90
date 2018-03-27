@@ -22,6 +22,7 @@ Module external_field
   Use errors_warnings, Only : error
   use numerics, Only : local_index,images
   Use rdfs, Only : usr_compute, usr_collect
+  use shared_units, Only : update_shared_units
   Implicit None
 
 ! Only one type of field can be applied on the system (keyfld is a scalar)
@@ -83,7 +84,7 @@ Contains
 
   Integer,           Allocatable :: lstopt(:,:),list(:)
   Real( Kind = wp ), Allocatable :: oxt(:),oyt(:),ozt(:)
-
+  Character( Len = 256 ) :: message
 ! Recover megrgd
 
   megrgd=rgdmeg
@@ -192,8 +193,8 @@ Contains
         Allocate (lstopt(1:2,1:mxshl),                       Stat=fail(1))
         Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms), Stat=fail(2))
         If (Any(fail > 0)) Then
-           Write(nrite,'(/,1x,a,i0)') 'external_field_apply allocation failure, node: ', comm%idnode
-           Call error(0)
+           Write(message,'(/,1x,a)') 'external_field_apply allocation failure'
+           Call error(0,message)
         End If
 
         Do i=1,ntshl
@@ -213,7 +214,7 @@ Contains
            End If
         End Do
 
-        If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,oxt,oyt,ozt)
+        If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,oxt,oyt,ozt,comm)
 
 ! Transfer cores' forces to shells
 
@@ -238,8 +239,8 @@ Contains
         Deallocate (lstopt,      Stat=fail(1))
         Deallocate (oxt,oyt,ozt, Stat=fail(2))
         If (Any(fail > 0)) Then
-           Write(nrite,'(/,1x,a,i0)') 'external_field_apply deallocation failure, node: ', comm%idnode
-           Call error(0)
+           Write(message,'(/,1x,a)') 'external_field_apply deallocation failure'
+           Call error(0,message)
         End If
 
      End If
@@ -264,8 +265,8 @@ Contains
         Allocate (lstopt(1:2,1:mxshl),                       Stat=fail(1))
         Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms), Stat=fail(2))
         If (Any(fail > 0)) Then
-           Write(nrite,'(/,1x,a,i0)') 'external_field_apply allocation failure, node: ', comm%idnode
-           Call error(0)
+           Write(message,'(/,1x,a)') 'external_field_apply allocation failure'
+           Call error(0,message)
         End If
 
         Do i=1,ntshl
@@ -287,7 +288,7 @@ Contains
            End If
         End Do
 
-        If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,oxt,oyt,ozt)
+        If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,oxt,oyt,ozt,comm)
 
 ! Transfer cores' velocities to shells
 
@@ -312,8 +313,8 @@ Contains
         Deallocate (lstopt,      Stat=fail(1))
         Deallocate (oxt,oyt,ozt, Stat=fail(2))
         If (Any(fail > 0)) Then
-           Write(nrite,'(/,1x,a,i0)') 'external_field_apply deallocation failure, node: ', comm%idnode
-           Call error(0)
+           Write(message,'(/,1x,a,i0)') 'external_field_apply deallocation failure'
+           Call error(0,message)
         End If
 
      End If

@@ -18,7 +18,8 @@ Module langevin
   Use core_shell, Only : legshl
   Use ttm,        Only : eltemp,zerocell,ntcell,delx,dely,delz,gvar,l_ttm,nstepcpl
   Use ttm_utils,         Only : Gep
-
+  Use numerics, Only : box_mueller_saru3
+  Use errors_warnings, Only : error
   Implicit None
 
   Logical,                        Save :: l_lan    = .false., &

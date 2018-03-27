@@ -11,6 +11,8 @@ Module link_cells
   Use mpole,         Only : keyind,lchatm
   Use development,   Only : l_dis,r_dis
 
+  Use errors_warnings, Only : error,warning
+  Use numerics, Only : dcell, invert,match
   Implicit None
 
   Private
@@ -37,7 +39,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,comm)
   Real( Kind = wp ) , Intent( In    ) :: rcut,rlnk,rvdw,rmet,pdplnc
   Type( comms_type ), Intent( InOut ) :: comm
 
-  Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1,match
+  Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
 
   Integer           :: fail(1:5),l_end,m_end,                 &
                        icell,ncells,ipass,                    &
@@ -58,7 +60,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,comm)
                                                     cell_dom,cell_bor,at_list
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
-
+  Character( Len = 256 ) :: message
 ! Get the dimensional properties of the MD cell
 
   Call dcell(cell,celprp)
@@ -125,8 +127,8 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,comm)
   Allocate (cell_dom(0:nlp3),cell_bor(0:nlp4),                               Stat=fail(4))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                       Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'link_cell_pairs allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'link_cell_pairs allocation failure'
+     Call error(0,message)
   End If
   cell_dom(0)=nlp3 ! save array's limit
   cell_bor(0)=nlp4 ! save array's limit
@@ -1025,8 +1027,8 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
   Deallocate (cell_dom,cell_bor,             Stat=fail(4))
   Deallocate (xxt,yyt,zzt,                   Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'link_cell_pairs deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'link_cell_pairs deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine link_cell_pairs

@@ -13,7 +13,7 @@ Module defects
   Use setup,      Only : mxatms, nrite,mxbfxp,mxcell,ndefdt, &
                                 nrefdt,config,half_minus, zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
-                                DefRWrite_tag
+                                DefRWrite_tag,gsum,gcheck,gsync,gmax
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use core_shell,        Only : ntshl,listshl
@@ -49,7 +49,9 @@ Module defects
                                nprx_r,npry_r,nprz_r,map,  &
                                idx,idy,idz,r_nprx,r_npry, &
                                r_nprz
-
+  Use numerics, Only : pbcshift,invert,dcell, shellsort2
+  Use errors_warnings, Only : error,warning
+  Use link_cells, Only : defects_link_cells
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -195,6 +197,7 @@ Contains
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: bxx,byy,bzz
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: cxx,cyy,czz
 
+  Character( Len = 256 ) :: message
 
   If (.not.(nstep >= nsdef .and. Mod(nstep-nsdef,isdef) == 0)) Return
 
@@ -361,8 +364,8 @@ Contains
   Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms),                   Stat=fail(6))
   Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms),                   Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects1_write allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects1_write allocation failure'
+     Call error(0,message)
   End If
 
 ! Build bookkeeping lists: interstitial, occupies
@@ -407,8 +410,8 @@ Contains
 
   Allocate (lctr(0:mxlcdef),lct(0:mxlcdef), Stat=fail(1))
   If (fail(1) > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects1_write allocation failure 1, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects1_write allocation failure 1'
+     Call error(0,message)
   End If
   Call defects_link_cells &
            (cutdef,mxlcdef,nrefs1,nlrefs1,xr1,yr1,zr1,nlx,nly,nlz,linkr,lctr)
@@ -722,8 +725,8 @@ Contains
   Allocate (ni_n(0:comm%mxnode),nv_n(0:comm%mxnode), Stat=fail(1))
   Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects1_write allocation failure 2, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects1_write allocation failure 2'
+     Call error(0,message)
   End If
 
   ni_n=0 ; ni_n(comm%idnode+1)=ni
@@ -797,7 +800,7 @@ Contains
         j=j+5
 
      End If
-     Call gsync()
+     Call gsync(comm)
 
 ! Start of file
 
@@ -878,8 +881,8 @@ Contains
 
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'defects1_write allocation failure 3, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'defects1_write allocation failure 3'
+        Call error(0,message)
      End If
 
 ! node 0 handles I/O
@@ -1056,8 +1059,8 @@ Contains
 
      Deallocate (chbuf,iwrk, Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'defects1_write deallocation failure 3, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'defects1_write deallocation failure 3'
+        Call error(0,message)
      End If
 
   End If
@@ -1067,8 +1070,8 @@ Contains
   Deallocate (ni_n,nv_n, Stat=fail(1))
   Deallocate (chbat,     Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects1_write deallocation failure 2, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects1_write deallocation failure 2'
+     Call error(0,message)
   End If
 
   Deallocate (dr,                    Stat=fail(1))
@@ -1079,8 +1082,8 @@ Contains
   Deallocate (bxx,byy,bzz,           Stat=fail(6))
   Deallocate (cxx,cyy,czz,           Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects1_write deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects1_write deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine defects1_write
@@ -1113,6 +1116,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
                        jdnode,kdnode,imove,jmove,itmp
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
+  Character( Len = 256 ) :: message
 
 ! Number of transported quantities per particle
 
@@ -1121,8 +1125,8 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
   fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_reference_export allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects_reference_export allocation failure'
+     Call error(0,message)
   End If
 
 ! Set buffer limit (half for outgoing data - half for incoming)
@@ -1278,7 +1282,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
   Call gcheck(comm,safe)
   If (.not.safe) Then
      itmp=Merge(2,1,comm%mxnode > 1)*imove
-     Call gmax(itmp)
+     Call gmax(comm,itmp)
      Call warning(150,Real(itmp,wp),Real(limit,wp),0.0_wp)
      Call error(558)
   End If
@@ -1299,7 +1303,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
   Call gcheck(comm,safe)
   If (.not.safe) Then
      itmp=nlrefs+jmove/iadd
-     Call gmax(itmp)
+     Call gmax(comm,itmp)
      Call warning(160,Real(itmp,wp),Real(mxatms,wp),0.0_wp)
      Call error(559)
   End If
@@ -1342,8 +1346,8 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_reference_export deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects_reference_export deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine defects_reference_export
@@ -1388,6 +1392,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
   Character( Len = 8 ), Dimension( : ), Allocatable :: chbuf
   Integer,              Dimension( : ), Allocatable :: iwrk
   Real( Kind = wp ),    Dimension( : ), Allocatable :: axx,ayy,azz
+  Character( Len = 256 ) :: message
 
 
 5 Continue
@@ -1620,8 +1625,8 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
      Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'defects_reference_read allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'defects_reference_read allocation failure'
+        Call error(0,message)
      End If
 
 ! Open file and skip header
@@ -1792,8 +1797,8 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
      Deallocate (chbuf,iwrk,  Stat=fail(1))
      Deallocate (axx,ayy,azz, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'defects_reference_read deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'defects_reference_read deallocation failure'
+        Call error(0,message)
      End If
 
 ! If PROPER read
@@ -1956,6 +1961,7 @@ Subroutine defects_reference_read_parallel      &
   Real( Kind = wp ),    Dimension( :, : ), Allocatable :: scatter_buffer
 
   Character( Len = 1 ), Dimension( :, : ), Allocatable :: rec_buff
+  Character( Len = 256 ) :: message
 
 
 ! Get reading method, total number of I/O heads and buffer size
@@ -1976,8 +1982,8 @@ Subroutine defects_reference_read_parallel      &
   Allocate (chbuf(1:batsz),iwrk(1:batsz),                                   Stat=fail(2))
   Allocate (scatter_buffer(1:wp_vals_per_at,1:batsz),                       Stat=fail(3))
   If (Any(fail(1:3) > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_reference_read_parallel allocation failure 1, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects_reference_read_parallel allocation failure 1'
+     Call error(0,message)
   End If
 
 ! define basic quantities for the parallel ASCII reading
@@ -2054,8 +2060,8 @@ Subroutine defects_reference_read_parallel      &
      Allocate (chbuf_scat(1:batsz),iwrk_scat(1:batsz),                        Stat=fail(5))
      Allocate (n_held(0:comm%mxnode-1),where_buff(0:comm%mxnode-1),owner_read(1:batsz), Stat=fail(6))
      If (Any(fail(1:6) > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'defects_reference_read_parallel allocation failure 2, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'defects_reference_read_parallel allocation failure 2'
+        Call error(0,message)
      End If
 
   Else
@@ -2068,8 +2074,8 @@ Subroutine defects_reference_read_parallel      &
      Allocate (chbuf_scat(1:0),iwrk_scat(1:0), Stat=fail(2))
      Allocate (n_held(0:-1),where_buff(0:-1),  Stat=fail(3))
      If (Any(fail(1:3) > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'defects_reference_read_parallel allocation failure 3, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'defects_reference_read_parallel allocation failure 3'
+        Call error(0,message)
      End If
 
   End If
@@ -2356,8 +2362,8 @@ Dispatch:  Do i=1,n_loc
      Deallocate (axx_read,ayy_read,azz_read, Stat=fail(3))
      Deallocate (owner_read,                 Stat=fail(4))
      If (Any(fail(1:4) > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'defects_reference_read_parallel deallocation failure 2, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'defects_reference_read_parallel deallocation failure 2'
+        Call error(0,message)
      End If
   End If
 
@@ -2368,8 +2374,8 @@ Dispatch:  Do i=1,n_loc
   Deallocate (scatter_buffer_read,    Stat=fail(5))
   Deallocate (scatter_buffer,         Stat=fail(6))
   If (Any(fail(1:6) > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_reference_read_parallel deallocation failure 1, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects_reference_read_parallel deallocation failure 1'
+     Call error(0,message)
   End If
 
   Return
@@ -2401,8 +2407,8 @@ Contains
 
     Allocate (buff( 1:3, 1:to_read ), Stat=fail)
     If (fail /= 0) Then
-       Write( nrite, '(/,1x,a,i0)') 'defects_reference_read_parallel allocation failure 4, node: ', comm%idnode
-       Call error( 0 )
+       Write( message, '(/,1x,a)') 'defects_reference_read_parallel allocation failure 4'
+       Call error( 0 ,message)
     End If
 
     Call io_nc_get_var( what, fh, buff, start, count )
@@ -2415,8 +2421,8 @@ Contains
 
     Deallocate (buff, Stat=fail)
     If (fail /= 0) Then
-       Write( nrite, '(/,1x,a,i0)') 'defects_reference_read_parallel allocation failure 4, node: ', comm%idnode
-       Call error( 0 )
+       Write( message, '(/,1x,a,i0)') 'defects_reference_read_parallel allocation failure 4'
+       Call error( 0,message )
     End If
 
   End Subroutine get_var
@@ -2452,12 +2458,13 @@ Subroutine defects_reference_set_halo                &
   Real( Kind = wp ) :: celprp(1:10),xdc,ydc,zdc
 
   Integer, Allocatable :: ixyz(:)
+  Character( Len = 256 ) :: message
 
   fail=0
   Allocate (ixyz(1:mxatms), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_reference_set_halo allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects_reference_set_halo allocation failure'
+     Call error(0,message)
   End If
 
 ! Get the dimensional properties of the MD cell
@@ -2563,8 +2570,8 @@ Subroutine defects_reference_set_halo                &
 
   Deallocate (ixyz, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_reference_set_halo deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects_reference_set_halo deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine defects_reference_set_halo
@@ -2611,13 +2618,14 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
   Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf
   Integer,              Dimension( : ),    Allocatable :: iwrk,n_atm
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx,ayy,azz
+  Character( Len = 256 ) :: message
 
 
   fail=0
   Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(1))
   If (fail(1) > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_reference_write allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects_reference_write allocation failure'
+     Call error(0,message)
   End If
 
 ! Get write buffer size and line feed character
@@ -2639,8 +2647,8 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
      Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
      Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'write_config allocation failure 0, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'write_config allocation failure 0'
+        Call error(0,message)
      End If
 
      chbat=' '
@@ -2707,7 +2715,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
         jj=jj+5
 
      End If
-     Call gsync()! Start of file (updated)
+     Call gsync(comm)! Start of file (updated)
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
@@ -2760,8 +2768,8 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'defects_reference_write allocation failure 1, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'defects_reference_write allocation failure 1'
+        Call error(0,message)
      End If
 
 ! node 0 handles I/O
@@ -2890,8 +2898,8 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
      Deallocate (chbuf,iwrk, Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'defects_reference_write deallocation failure 1, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'defects_reference_write deallocation failure 1'
+        Call error(0,message)
      End If
 
 ! SORTED MPI-I/O or Parallel Direct Access FORTRAN or netCDF
@@ -2978,7 +2986,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
         End If
 
      End If
-     Call gsync()
+     Call gsync(comm)
 
 ! Write the rest
 
@@ -3028,8 +3036,8 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'defects_reference_write allocation failure 1, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'defects_reference_write allocation failure 1'
+        Call error(0,message)
      End If
 
 ! node 0 handles I/O
@@ -3123,8 +3131,8 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
      Deallocate (chbuf,iwrk, Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'defects_reference_write deallocation failure 1, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'defects_reference_write deallocation failure 1'
+        Call error(0,message)
      End If
 
   End If
@@ -3135,15 +3143,15 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
      Deallocate (n_atm, Stat=fail(1))
      Deallocate (chbat, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'write_config deallocation failure 0, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a,i0)') 'write_config deallocation failure 0'
+        Call error(0,message)
      End If
   End If
 
   Deallocate (axx,ayy,azz, Stat=fail(1))
   If (fail(1) > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_reference_write deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects_reference_write deallocation failure'
+     Call error(0,message)
   End If
 
   Call gsync(comm)
@@ -3195,6 +3203,7 @@ Subroutine defects_write &
 ! Number of neighbouring cells to look around for counting defects
 
   Integer, Parameter :: nsbcll = 27
+  Character( Len = 256 ) :: message
 
 ! Direction arrays for jumping around in link-cell space
 
@@ -3382,8 +3391,8 @@ Subroutine defects_write &
   Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms),                   Stat=fail(6))
   Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms),                   Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_write allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects_write allocation failure'
+     Call error(0,message)
   End If
 
 ! Build bookkeeping lists: interstitial, occupies
@@ -3428,8 +3437,8 @@ Subroutine defects_write &
 
   Allocate (lctr(0:mxlcdef),lct(0:mxlcdef), Stat=fail(1))
   If (fail(1) > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_write allocation failure 1, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects_write allocation failure 1'
+     Call error(0,message)
   End If
   Call defects_link_cells &
            (cutdef,mxlcdef,nrefs,nlrefs,xr,yr,zr,nlx,nly,nlz,linkr,lctr)
@@ -3743,8 +3752,8 @@ Subroutine defects_write &
   Allocate (ni_n(0:comm%mxnode),nv_n(0:comm%mxnode), Stat=fail(1))
   Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_write allocation failure 2, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects_write allocation failure 2'
+     Call error(0,message)
   End If
 
   ni_n=0 ; ni_n(comm%idnode+1)=ni
@@ -3818,7 +3827,7 @@ Subroutine defects_write &
         j=j+5
 
      End If
-     Call gsync()
+     Call gsync(comm)
 
 ! Start of file
 
@@ -3899,8 +3908,8 @@ Subroutine defects_write &
 
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'defects_write allocation failure 3, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'defects_write allocation failure 3'
+        Call error(0,message)
      End If
 
 ! node 0 handles I/O
@@ -4077,8 +4086,8 @@ Subroutine defects_write &
 
      Deallocate (chbuf,iwrk, Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'defects_write deallocation failure 3, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'defects_write deallocation failure 3'
+        Call error(0,message)
      End If
 
   End If
@@ -4088,8 +4097,8 @@ Subroutine defects_write &
   Deallocate (ni_n,nv_n, Stat=fail(1))
   Deallocate (chbat,     Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_write deallocation failure 2, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects_write deallocation failure 2'
+     Call error(0,message)
   End If
 
   Deallocate (dr,                    Stat=fail(1))
@@ -4100,8 +4109,8 @@ Subroutine defects_write &
   Deallocate (bxx,byy,bzz,           Stat=fail(6))
   Deallocate (cxx,cyy,czz,           Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'defects_write deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'defects_write deallocation failure'
+     Call error(0,message)
   End If
 
   If (l_dfx) Call defects1_write(rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time,comm)

@@ -16,6 +16,8 @@ Module vnl
   Use domains, Only : r_nprx,r_npry,r_nprz
   Use configuration,  Only : imcon,cell,natms,nlast,list, &
                              xxx,yyy,zzz
+  Use errors_warnings, Only : error
+  Use numerics, Only : dcell,images
   Implicit None
 
   Logical,                        Save :: l_vnl = .true., & ! Do update
@@ -59,6 +61,7 @@ Subroutine vnl_check(l_str,rcut,rpad,rlnk,width,comm)
 
   Real( Kind = wp ), Allocatable :: x(:),y(:),z(:),r(:)
 
+  Character( Len = 256 ) :: message
   If (.not.llvnl) Return
 
 ! Checks
@@ -66,8 +69,8 @@ Subroutine vnl_check(l_str,rcut,rpad,rlnk,width,comm)
   fail = 0
   Allocate (x(1:mxatms),y(1:mxatms),z(1:mxatms),r(1:mxatms), Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'vnl_check allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'vnl_check allocation failure'
+     Call error(0,message)
   End If
 
   x(1:nlast) = xxx(1:nlast) - xbg(1:nlast)
@@ -105,8 +108,8 @@ Q:Do i=1,natms
 
   Deallocate (x,y,z,r, Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'vnl_check deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'vnl_check deallocation failure'
+     Call error(0,message)
   End If
 
   Call gcheck(comm,safe,"enforce")
@@ -133,13 +136,13 @@ Q:Do i=1,natms
 
   If (ilx*ily*ilz == 0) Then
      If (cut < rcut) Then
-        If (comm%idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
-        Call error(307)
+        Write(message,'(a)') '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
+        Call error(307,message,.true.)
      Else ! rpad is defined & in 'no strict' mode
         If (cut < rlnk) Then
            If (l_str) Then
-              If (comm%idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
-              Call error(307)
+              Write(message,'(a)') '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
+              Call error(307,message,.true.)
            Else
               If (cut >= rcut) Then ! Re-set rpad with some slack
                  rpad = Min( 0.95_wp * (cut - rcut) , test * rcut)
@@ -208,7 +211,7 @@ Subroutine vnl_set_check(comm)
   Logical, Save :: newjob=.true.
 
   Integer :: fail
-
+  Character( Len = 256 ):: message
   If (.not.llvnl) Return
 
   If (newjob) Then ! Init set
@@ -217,8 +220,8 @@ Subroutine vnl_set_check(comm)
      fail = 0
      Allocate (xbg(1:mxatms),ybg(1:mxatms),zbg(1:mxatms), Stat = fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'vnl_set_check allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'vnl_set_check allocation failure'
+        Call error(0,message)
      End If
 
 ! CVNL state and skippage accumulators are initialised in vnl_module

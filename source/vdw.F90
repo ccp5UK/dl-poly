@@ -10,7 +10,7 @@ Module vdw
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use comms,  Only : comms_type,gsum
+  Use comms,  Only : comms_type,gsum,gbcast
   Use setup
   Use site,   Only : ntpatm,numtyp
   Use configuration, Only : imcon,volm,natms,ltype,lfrzn, &
@@ -21,6 +21,7 @@ Module vdw
 
   Use site,  Only : ntpatm,unqatm
   Use parse, Only : get_line,get_word,word_2_real
+  Use errors_warnings, Only : error,warning
   Implicit None
 
   Logical,                        Save :: lt_vdw = .false., & ! no tabulated potentials are present
@@ -134,12 +135,13 @@ Contains
                        z1,z2,rm,al
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: numfrz
+  Character( Len = 256 ) :: message
 
   fail=0
   Allocate (numfrz(mxatyp), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'vdw_lrc allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'vdw_lrc allocation failure'
+     Call error(0,message)
   End If
 
 ! initialise long-range corrections to energy and pressure
@@ -405,8 +407,8 @@ Contains
 
   Deallocate (numfrz, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'vdw_lrc deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'vdw_lrc deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine vdw_lrc
@@ -731,6 +733,7 @@ Subroutine vdw_table_read(rvdw,comm)
   Real( Kind = wp )      :: delpot,cutpot,dlrpot,rdr,rrr,ppp,vk,vk1,vk2,t,t1,t2
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
+  Character( Len = 256 ) :: message
 
 
   If (comm%idnode == 0) Open(Unit=ntable, File='TABLE')
@@ -797,8 +800,8 @@ Subroutine vdw_table_read(rvdw,comm)
   fail=0
   Allocate (buffer(0:ngrid), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'vdw_table_read allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'vdw_table_read allocation failure'
+     Call error(0,message)
   End If
 
 ! read potential arrays for all pairs
@@ -832,8 +835,8 @@ Subroutine vdw_table_read(rvdw,comm)
         End Do
 
         If (katom1 == 0 .or. katom2 == 0) Then
-           If (comm%idnode == 0) Write(nrite,'(a)') '****',atom1,'***',atom2,'**** entry in TABLE'
-           Call error(81)
+           Write(message,'(a,i0,a,i0,a)') '****',atom1,'***',atom2,'**** entry in TABLE'
+           Call error(81,message,.true.)
         End If
 
         keyvdw=(Max(katom1,katom2)*(Max(katom1,katom2)-1))/2 + Min(katom1,katom2)
@@ -1044,8 +1047,8 @@ Subroutine vdw_table_read(rvdw,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'vdw_table_read deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'vdw_table_read deallocation failure'
+     Call error(0,message)
   End If
 
   Return

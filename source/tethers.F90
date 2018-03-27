@@ -16,7 +16,8 @@ Module tethers
                                 xxx,yyy,zzz,fxx,fyy,fzz
   Use statistics, Only : xin,yin,zin
   Use setup, Only : mxtmls,mxtteth,mxteth,mxftet,mxpteth,mxatdm,nrite
-
+  Use errors_warnings, Only : error, warning
+  Use numerics, Only : images,local_index
 
 
   Implicit None
@@ -93,19 +94,19 @@ Contains
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe
-  Integer           :: fail(1:2),i,ia,kk,local_index
+  Integer           :: fail(1:2),i,ia,kk
   Real( Kind = wp ) :: rab,rrab,fx,fy,fz,k,k2,k3,k4,rc,gamma,omega, &
                        strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:2)
 
   Integer,           Allocatable :: lstopt(:,:)
   Real( Kind = wp ), Allocatable :: xdab(:),ydab(:),zdab(:)
-
+  Character( Len = 256 ) :: message
   fail=0
   Allocate (lstopt(0:1,1:mxteth),                         Stat=fail(1))
   Allocate (xdab(1:mxteth),ydab(1:mxteth),zdab(1:mxteth), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'tethers_forces allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'tethers_forces allocation failure'
+     Call error(0,message)
   End If
 
 ! Initialise safety flag
@@ -283,8 +284,8 @@ Contains
   Deallocate (lstopt,         Stat=fail(1))
   Deallocate (xdab,ydab,zdab, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'tethers_forces deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'tethers_forces deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine tethers_forces

@@ -20,7 +20,8 @@ Module four_body
   Use setup, Only : mxsite,mxfbp,mxpfbp,zero_plus,mx3fbp, &
                           mxcell, mxatms,nrite
 
-
+  Use errors_warnings, Only : error, warning
+  use numerics, Only : invert, dcell
   Implicit None
 
   Integer,                        Save :: ntpfbp = 0
@@ -125,6 +126,7 @@ Contains
   Integer,           Dimension( : ), Allocatable :: link,lct,lst,listin
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
+  Character( Len = 256 ) :: message
 
 ! Get the dimensional properties of the MD cell
 
@@ -151,8 +153,8 @@ Contains
   Allocate (link(1:mxatms),listin(1:mxatms),lct(1:ncells),lst(1:ncells), Stat=fail(1))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'four_body_forces allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'four_body_forces allocation failure'
+     Call error(0,message)
   End If
 
 ! Calculate the displacements from the origin of the MD cell
@@ -800,8 +802,8 @@ Contains
   Deallocate (link,listin,lct,lst, Stat=fail(1))
   Deallocate (xxt,yyt,zzt,         Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'four_body_forces deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'four_body_forces deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine four_body_forces

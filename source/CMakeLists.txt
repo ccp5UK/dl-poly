@@ -6,8 +6,6 @@ build_chrm.F90
 build_excl.F90
 build_tplg.F90
 defects.F90
-external_field.F90
-four_body.F90
 link_cells.F90
 control.F90
 ffield.F90
@@ -25,6 +23,8 @@ halo.F90
 )
 
 set(dlpoly_CORE_SRCS
+external_field.F90
+four_body.F90
 langevin.F90
 coul_spole.F90
 shared_units.F90

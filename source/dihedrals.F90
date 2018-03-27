@@ -23,6 +23,10 @@ Module dihedrals
   Use vdw,    Only : ntpvdw,gvdw,vvdw,afs,prmvdw,bfs,ls_vdw,ld_vdw,  &
                                lstvdw,ltpvdw
   Use parse,  Only : get_line,get_word,word_2_real
+  Use errors_warnings, Only : error,warning
+  Use numerics, Only : local_index,images
+  Use coul_spole, Only : intra_coul
+  Use coul_mpoles, Only : intra_mcoul
   Implicit None
 
   Logical,                        Save :: lt_dih=.false. , & ! no tabulated potentials opted
@@ -302,11 +306,12 @@ Subroutine dihedrals_compute(temp,comm)
   Real( Kind = wp ), Allocatable :: dstddih(:,:)
   Real( Kind = wp ), Allocatable :: pmf(:),vir(:)
 
+  Character( Len = 256 ) :: message
   fail = 0
   Allocate (dstddih(0:mxgdih1,1:ldfdih(0)),pmf(0:mxgdih1+2),vir(0:mxgdih1+2), Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'dihedrals_compute - allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'dihedrals_compute - allocation failure'
+     Call error(0,message)
   End If
 
 ! conversion: internal units -> in/out units (kJ/mol, kcal/mol, eV etc)
@@ -587,8 +592,8 @@ Subroutine dihedrals_compute(temp,comm)
 
   Deallocate (dstddih,pmf,vir, Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'dihedrals_compute - deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'dihedrals_compute - deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine dihedrals_compute
@@ -626,7 +631,7 @@ Subroutine dihedrals_forces &
 
   Logical                 :: safe(1:3),csa,csd
   Integer                 :: fail(1:5),i,j,l,ia,ib,ic,id,kk,keyd, &
-                             ai,aj,ia0,id0,local_index
+                             ai,aj,ia0,id0
   Real( Kind = wp )       :: xab,yab,zab, xac,yac,zac,                 &
                              xad,yad,zad,rad(0:3),rad2(0:3),           &
                              xbc,ybc,zbc,rrbc,                         &
@@ -649,6 +654,7 @@ Subroutine dihedrals_forces &
   Real( Kind = wp ), Allocatable :: xdbc(:),ydbc(:),zdbc(:)
   Real( Kind = wp ), Allocatable :: xdcd(:),ydcd(:),zdcd(:)
   Real( Kind = wp ), Allocatable :: xdad(:,:),ydad(:,:),zdad(:,:)
+  Character( Len = 256 ) :: message
 
   fail=0
   Allocate (lunsafe(1:mxdihd),lstopt(0:6,1:mxdihd),lad(1:3,1:mxdihd), Stat=fail(1))
@@ -657,8 +663,8 @@ Subroutine dihedrals_forces &
   Allocate (xdcd(1:mxdihd),ydcd(1:mxdihd),zdcd(1:mxdihd),             Stat=fail(4))
   Allocate (xdad(1:3,1:mxdihd),ydad(1:3,1:mxdihd),zdad(1:3,1:mxdihd), Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'dihedrals_forces allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'dihedrals_forces allocation failure'
+     Call error(0,message)
   End If
 
 
@@ -1640,8 +1646,8 @@ Subroutine dihedrals_forces &
   Deallocate (xdcd,ydcd,zdcd,     Stat=fail(4))
   Deallocate (xdad,ydad,zdad,     Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'dihedrals_forces deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'dihedrals_forces deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine dihedrals_forces
@@ -1675,6 +1681,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
 
   Integer,           Allocatable :: read_type(:)
   Real( Kind = wp ), Allocatable :: bufpot(:),bufvir(:)
+  Character( Len = 256 ) :: message
 
 
   If (comm%idnode == 0) Open(Unit=ntable, File='TABDIH')
@@ -1743,8 +1750,8 @@ Subroutine dihedrals_table_read(dihd_name,comm)
   Allocate (read_type(1:ltpdih(0)),          Stat=fail(1))
   Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'error - dihedrals_table_read allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'error - dihedrals_table_read allocation failure'
+     Call error(0,message)
   End If
   Call allocate_dihd_pot_arrays()
 
@@ -1777,8 +1784,8 @@ Subroutine dihedrals_table_read(dihd_name,comm)
      End Do
 
      If (katom1 == 0 .or. katom2 == 0 .or. katom3 == 0 .or. katom4 == 0) Then
-        If (comm%idnode == 0) Write(nrite,'(a)') '****',atom1,'***',atom2,'***',atom3,'***',atom4,'**** entry in TABDIH'
-        Call error(91)
+        Write(message,'(a,i0,a,i0,a,i0,a,i0,a)') '****',atom1,'***',atom2,'***',atom3,'***',atom4,'**** entry in TABDIH'
+        Call error(91,message,.true.)
      End If
 
 ! Construct unique name for the tabulated dihedral
@@ -1802,12 +1809,12 @@ Subroutine dihedrals_table_read(dihd_name,comm)
      End Do
 
      If (itdih == 0) Then ! All(dihd_name /= iddihd)
-        If (comm%idnode == 0) Write(nrite,'(a)') '****',atom1,'***',atom2,'***',atom3,'***',atom4,'**** entry in TABDIH'
-        Call error(89)
+        Write(message,'(a,i0,a,i0,a,i0,a,i0,a)') '****',atom1,'***',atom2,'***',atom3,'***',atom4,'**** entry in TABDIH'
+        Call error(89,message,.true.)
      End If
      If (Any(read_type == jtdih)) Then
-        If (comm%idnode == 0) Write(nrite,'(a)') '****',atom1,'***',atom2,'***',atom3,'***',atom4,'**** entry in TABDIH'
-        Call error(172)
+        Write(nrite,'(a,i0,a,i0,a,i0,a,i0,a)') '****',atom1,'***',atom2,'***',atom3,'***',atom4,'**** entry in TABDIH'
+        Call error(172,message,.true.)
      Else
         read_type(jtdih)=jtdih
      End If
@@ -1976,8 +1983,8 @@ Subroutine dihedrals_table_read(dihd_name,comm)
   Deallocate (read_type,     Stat=fail(1))
   Deallocate (bufpot,bufvir, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'error - dihedrals_table_read deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'error - dihedrals_table_read deallocation failure'
+     Call error(0,message)
   End If
 
   Return
