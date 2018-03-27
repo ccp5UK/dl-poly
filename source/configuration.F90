@@ -11,7 +11,7 @@ Module configuration
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,li
-  Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag
+  Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum
   Use site
 
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
@@ -48,6 +48,9 @@ Module configuration
                             IO_WRITE_SORTED_DIRECT,    &
                             IO_WRITE_SORTED_NETCDF,    &
                             IO_WRITE_SORTED_MASTER
+
+  Use errors_warnings, Only : error,warning
+  use numerics, Only : shellsort2,invert,dcell,images
 
 #ifdef SERIAL
   Use mpi_api
@@ -312,20 +315,23 @@ Contains
   Real( Kind = wp ) :: rcell(1:9),det
 
   Integer, Allocatable :: iwrk(:)
+  Character( Len = 256 ) :: message
 
   fail=0
   If (l_str) Then
      Allocate (iwrk(1:mxatms), Stat=fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'check_config allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'check_config allocation failure'
+        Call error(0,message)
     End If
   End If
 
 
-  If (comm%idnode == 0 .and. newjob) Then
-     Write(nrite,"(/,1x,'configuration file name: ',/,/,10x,a)") cfgname
-     Write(nrite,"(/,/,1x,'selected image convention',6x,i10)") imcon
+  If (newjob) Then
+     Write(message,"(/,1x,'configuration file name: ',/,/,10x,a)") cfgname
+     Call info(message,.true.)
+     Write(message,"(/,/,1x,'selected image convention',6x,i10)") imcon
+     Call info(message,.true.)
   End If
 
 ! Check things for non-periodic systems
@@ -366,10 +372,13 @@ Contains
 
 ! Specify molecular dynamics simulation cell
 
-  If (comm%idnode == 0 .and. newjob) Then
-     Write(nrite,"(/,/,1x,'simulation cell vectors'/)")
-     Write(nrite,"(3f20.10)") cell
-     Write(nrite,"(/,/,1x,'system volume     ',2x,1p,g22.12)") det
+  If (newjob) Then
+     Write(message,"(/,/,1x,'simulation cell vectors'/)")
+     Call Info(message,.true.)
+     Write(message,"(3f20.10)") cell
+     Call Info(message,.true.)
+     Write(message,"(/,/,1x,'system volume     ',2x,1p,g22.12)") det
+     Call Info(message,.true.)
   End If
 
 ! Check on validity of config file contents
@@ -420,7 +429,8 @@ Contains
 ! Check for unidentified atoms in CONFIG by their existence in FIELD
 
               If (atmnam(loc_ind) /= sitnam(mol_sit+m)) Then
-                 Write(nrite,"(/,/,1x, 'unidentified atom label :',a8,': atom number ',i5)") atmnam(loc_ind),loc_ind
+                 Write(message,"(/,/,1x, 'unidentified atom label :',a8,': atom number ',i5)") atmnam(loc_ind),loc_ind
+                 Call info(message)
                  safe=.false.
               End If
 
@@ -468,8 +478,8 @@ Contains
 
      Deallocate (iwrk, Stat=fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'check_config deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'check_config deallocation failure'
+        Call error(0,message)
      End If
   End If
 
@@ -648,8 +658,8 @@ Contains
 
 100 Continue
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'all_inds_present allocation/deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'all_inds_present allocation/deallocation failure'
+       Call error(0,message)
     End If
 
   End Subroutine all_inds_present
@@ -713,7 +723,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
                                                        bxx,byy,bzz, &
                                                        cxx,cyy,czz
 
-
+  Character( Len = 256) :: message
 ! image conditions not compliant with DD and link-cell
 
   If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
@@ -884,8 +894,8 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
      Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(3))
      Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'read_config allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'read_config allocation failure'
+        Call error(0,message)
      End If
 
 ! Initialise domain localised atom counter (configuration)
@@ -2540,7 +2550,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
         If (imcon > 0) jj=jj+3
 
      End If
-     Call gsync()
+     Call gsync(comm)
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
@@ -2876,7 +2886,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
         End If
 
      End If
-     Call gsync()
+     Call gsync(comm)
 
 ! Write the rest
 

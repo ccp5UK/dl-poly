@@ -20,12 +20,12 @@ tersoff.F90
 three_body.F90
 two_body.F90
 deport_data.F90
-langevin.F90
 tethers.F90
 halo.F90
 )
 
 set(dlpoly_CORE_SRCS
+langevin.F90
 coul_spole.F90
 quaternions.F90
 shared_units.F90

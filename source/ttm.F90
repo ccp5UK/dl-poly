@@ -12,13 +12,15 @@ Module ttm
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds,           Only : wp
   Use setup
-  Use configuration, Only : cell
+  Use configuration,   Only : cell
   Use domains
-  Use comms, Only : wp_mpi, comms_type
-  Use parse,   Only : tabs_2_blanks, get_line, get_word, &
-                             strip_blanks, word_2_real
+  Use comms,           Only : wp_mpi,comms_type,gsum,gmin,gmax,gcheck,gsync, &
+                              grid1_tag,grid2_tag
+  Use parse,           Only : tabs_2_blanks, get_line, get_word, &
+                              strip_blanks, word_2_real
+  Use errors_warnings, Only : error,warning,info
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -355,7 +357,7 @@ Contains
 ! Find sum of electronic temperatures over all active CET voxels
 
     Real ( Kind = wp ), Intent (   Out ) :: eltempsum
-    Type ( comms_type), Intent ( In    ) :: comm
+    Type ( comms_type), Intent ( InOut ) :: comm
     Real ( Kind = wp )                 :: tmp
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
     Logical                            :: lrange,lcentre
@@ -416,9 +418,7 @@ Contains
       End Do
     End Do
 
-    If (comm%mxnode>1) Then 
-      Call gsum (comm,eltempsum)
-    End If
+    Call gsum (comm,eltempsum)
 
   End Subroutine eltemp_sum
 
@@ -428,7 +428,7 @@ Contains
 
     Real ( Kind = wp ), Intent ( Out ) :: eltempav
     Real ( Kind = wp )                 :: tmp,acl
-    Type( comms_type ), Intent ( In )    :: comm
+    Type( comms_type ), Intent ( InOut )    :: comm
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
     Logical                            :: lrange,lcentre
 
@@ -492,10 +492,8 @@ Contains
       End Do
     End Do
 
-    If (comm%mxnode>1) Then
-      Call gsum (comm, eltempav)
-      Call gsum (comm, acl)
-    End If
+    Call gsum (comm, eltempav)
+    Call gsum (comm, acl)
 
     If (acl>zero_plus) eltempav = eltempav/acl
 
@@ -511,7 +509,7 @@ Contains
 
     Real ( Kind = wp ), Intent ( In )  :: temp
     Real ( Kind = wp ), Intent ( Out ) :: eltempmax
-    Type( comms_type ), Intent ( In )  :: comm
+    Type( comms_type ), Intent ( InOut )  :: comm
     Real ( Kind = wp )                 :: eltempKe
     Integer                            :: i,j,k,ijk
 
@@ -528,7 +526,7 @@ Contains
     End Do
     eltempmax = Max (eltempmax, temp)
 
-    If (comm%mxnode>1) Call gmax (comm,eltempmax)
+    Call gmax (comm,eltempmax)
 
   End Subroutine eltemp_maxKe
 
@@ -538,7 +536,7 @@ Contains
 ! active CET cells
 
     Real ( Kind = wp ), Intent ( Out ) :: eltempmax
-    Type( comms_type ), Intent ( In )  :: comm
+    Type( comms_type ), Intent ( InOut )  :: comm
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
     Logical                            :: lrange,lcentre
 
@@ -598,7 +596,7 @@ Contains
       End Do
     End Do
 
-    If (comm%mxnode>1) Call gmax (comm,eltempmax)
+    Call gmax (comm,eltempmax)
 
   End Subroutine eltemp_max
 
@@ -610,7 +608,7 @@ Contains
 ! applies over all CET voxels that do not overlap
 ! CIT voxels)
 
-    Type( comms_type ), Intent ( In )  :: comm
+    Type( comms_type ), Intent ( InOut )  :: comm
     Real ( Kind = wp ), Intent ( In )  :: temp
     Real ( Kind = wp ), Intent ( Out ) :: eltempmin
     Real ( Kind = wp )                 :: eltempKe
@@ -630,7 +628,7 @@ Contains
 
     eltempmin = Min (eltempmin, temp)
 
-    If (comm%mxnode>1) Call gmin (comm,eltempmin)
+    Call gmin (comm,eltempmin)
 
   End Subroutine eltemp_minKe
 
@@ -640,7 +638,7 @@ Contains
 ! active CET cells
 
     Real( Kind = wp ), Intent ( Out ) :: eltempmin
-    Type( comms_type ), Intent ( In ) :: comm
+    Type( comms_type ), Intent ( InOut ) :: comm
     Integer                            :: i,j,k,ii,jj,kk,imin,imax,jmin,jmax,kmin,kmax,ijk,lx,ly,lz
     Logical                            :: lrange
 
@@ -699,7 +697,7 @@ Contains
       End Do
     End Do
 
-    If (comm%mxnode>1) Call gmin (comm,eltempmin)
+    Call gmin (comm,eltempmin)
 
   End Subroutine eltemp_min
   
@@ -712,6 +710,7 @@ Contains
     Type( comms_type), Intent( InOut ) :: comm
     Integer, Dimension( 1:3 ) :: fail
     Character ( Len = 14 ) :: number
+    Character( Len = 256 ) :: message
 
     fail = 0
 
@@ -766,12 +765,12 @@ Contains
 
     ! report start of energy deposition
 
-    If (comm%idnode == 0) Then
-      Write(number, '(f14.5)') depostart
-      Write(nrite,"(/,6x,a,a,a,/)") &
-        'electronic energy deposition starting at time = ',Trim(Adjustl(number)),' ps'
-      Write(nrite,"(1x,130('-'))")
-    End If
+    Write(number, '(f14.5)') depostart
+    Write(message,"(/,6x,a,a,a,/)") &
+      'electronic energy deposition starting at time = ',Trim(Adjustl(number)),' ps'
+    Call info(message,.true.)
+    Write(message,"(1x,130('-'))")
+    Call info(message,.true.)
 
   End Subroutine depoinit
   
@@ -798,6 +797,7 @@ Contains
   Integer                :: nxx,nyy,nzz,nstp,i,ix,iy,iz,ii,jj,kk,ijk,ipos(3)
   Real ( Kind = wp )     :: eltmp,tme,lat_sum,lat_max,lat_min
   Integer                :: iounit = 225
+  Character( Len = 256 ) :: message
 
 ! check existence of readable restart file (DUMP_E)
 
@@ -861,12 +861,14 @@ Contains
     Call eltemp_sum (lat_sum,comm)
     Call eltemp_max (lat_max,comm)
     Call eltemp_min (lat_min,comm)
+    Write(message,'(/,1x,a)') 'electronic temperatures read from DUMP_E file for two-temperature model'
+    Call info(message,.true.)
+    Write(message,'(1x,"minimum temperature (K) = ",ES11.4,&
+               &/,1x,"maximum temperature (K) = ",ES11.4,&
+               &/,1x,"sum of temperatures (K) = ",ES11.4)') &
+               lat_min, lat_max, lat_sum
+    Call info(message,.true.)
     If (comm%idnode==0) Then
-      Write(nrite,'(/,1x,a)') 'electronic temperatures read from DUMP_E file for two-temperature model'
-      Write(nrite,'(1x,"minimum temperature (K) = ",ES11.4,&
-                 &/,1x,"maximum temperature (K) = ",ES11.4,&
-                 &/,1x,"sum of temperatures (K) = ",ES11.4)') &
-                 lat_min, lat_max, lat_sum
       Close (iounit)
     End If
 
@@ -885,8 +887,8 @@ Contains
 
 100 Continue
 
-  If (comm%idnode == 0) Write(nrite,"(/,1x,a)") dumpfile, ' data mishmash detected'
-  Call error(686)
+  Write(message,"(/,1x,a)") dumpfile, ' data mishmash detected'
+  Call error(686,message,.true.)
   Return
 
 End Subroutine ttm_system_init
@@ -1004,6 +1006,7 @@ Subroutine ttm_table_read(comm)
   Integer                :: i
   Real( Kind = wp )      :: vk1,vk2
   Type( comms_type ), Intent( InOut ) :: comm
+  Character( Len = 256 ) :: message
 
 ! read thermal conductivity data
 
@@ -1033,13 +1036,15 @@ Subroutine ttm_table_read(comm)
 
     If (comm%idnode==0) Then
       Close(Unit=ntable)
-      Write(nrite,'(/,1x,a)') 'thermal conductivity table read from Ke.dat file for two-temperature model'
-      Write(nrite,'(1x,"minimum temperature            (K) = ",ES12.4,&
-                 &/,1x,"maximum temperature            (K) = ",ES12.4,&
-                 &/,1x,"minimum t.c. value   (W m^-1 K^-1) = ",ES12.4,&
-                 &/,1x,"maximum t.c. value   (W m^-1 K^-1) = ",ES12.4)') &
-                 Minval(ketable(:,1)),Maxval(ketable(:,1)),Minval(ketable(:,2)),Maxval(ketable(:,2))
     End If
+    Write(message,'(/,1x,a)') 'thermal conductivity table read from Ke.dat file for two-temperature model'
+    Call info(message,.true.)
+    Write(message,'(1x,"minimum temperature            (K) = ",ES12.4,&
+               &/,1x,"maximum temperature            (K) = ",ES12.4,&
+               &/,1x,"minimum t.c. value   (W m^-1 K^-1) = ",ES12.4,&
+               &/,1x,"maximum t.c. value   (W m^-1 K^-1) = ",ES12.4)') &
+               Minval(ketable(:,1)),Maxval(ketable(:,1)),Minval(ketable(:,2)),Maxval(ketable(:,2))
+    Call info(message,.true.)
 
 ! convert thermal conductivity values from W m^-1 K^-1 to kB A^-1 ps^-1
 
@@ -1075,13 +1080,15 @@ Subroutine ttm_table_read(comm)
 
     If (comm%idnode==0) Then
       Close(Unit=ntable)
-      Write(nrite,'(/,1x,a)') 'electronic volumetric heat capacity table read from Ce.dat file for two-temperature model'
-      Write(nrite,'(1x,"minimum temperature            (K) = ",ES12.4,&
-                 &/,1x,"maximum temperature            (K) = ",ES12.4,&
-                 &/,1x,"minimum v.h.c. value (J m^-3 K^-1) = ",ES12.4,&
-                 &/,1x,"maximum v.h.c. value (J m^-3 K^-1) = ",ES12.4)') &
-                 Minval(cetable(:,1)),Maxval(cetable(:,1)),Minval(cetable(:,2)),Maxval(cetable(:,2))
     End If
+    Write(message,'(/,1x,a)') 'electronic volumetric heat capacity table read from Ce.dat file for two-temperature model'
+    Call info(message,.true.)
+    Write(message,'(1x,"minimum temperature            (K) = ",ES12.4,&
+               &/,1x,"maximum temperature            (K) = ",ES12.4,&
+               &/,1x,"minimum v.h.c. value (J m^-3 K^-1) = ",ES12.4,&
+               &/,1x,"maximum v.h.c. value (J m^-3 K^-1) = ",ES12.4)') &
+               Minval(cetable(:,1)),Maxval(cetable(:,1)),Minval(cetable(:,2)),Maxval(cetable(:,2))
+    Call info(message,.true.)
 
 ! convert volumetric heat capacity values from J m^-3 K^-1 to kB A^-3
 
@@ -1117,13 +1124,15 @@ Subroutine ttm_table_read(comm)
 
     If (comm%idnode==0) Then
       Close(Unit=ntable)
-      Write(nrite,'(/,1x,a)') 'thermal diffusivity table read from De.dat file for two-temperature model'
-      Write(nrite,'(1x,"minimum temperature            (K) = ",ES12.4,&
-                 &/,1x,"maximum temperature            (K) = ",ES12.4,&
-                 &/,1x,"minimum diffusivity value  (m^2/s) = ",ES12.4,&
-                 &/,1x,"maximum diffusivity value  (m^2/s) = ",ES12.4)') &
-                 Minval(detable(:,1)),Maxval(detable(:,1)),Minval(detable(:,2)),Maxval(detable(:,2))
     End If
+    Write(message,'(/,1x,a)') 'thermal diffusivity table read from De.dat file for two-temperature model'
+    Call info(message,.true.)
+    Write(message,'(1x,"minimum temperature            (K) = ",ES12.4,&
+               &/,1x,"maximum temperature            (K) = ",ES12.4,&
+               &/,1x,"minimum diffusivity value  (m^2/s) = ",ES12.4,&
+               &/,1x,"maximum diffusivity value  (m^2/s) = ",ES12.4)') &
+               Minval(detable(:,1)),Maxval(detable(:,1)),Minval(detable(:,2)),Maxval(detable(:,2))
+    Call info(message,.true.)
 
 ! convert thermal diffusivity values from m^2 s^-1 to A^2 ps^-1
 
@@ -1159,13 +1168,15 @@ Subroutine ttm_table_read(comm)
 
     If (comm%idnode==0) Then
       Close(Unit=ntable)
-      Write(nrite,'(/,1x,a)') 'electron-phonon coupling table read from g.dat file for two-temperature model'
-      Write(nrite,'(1x,"minimum temperature            (K) = ",ES12.4,&
-                 &/,1x,"maximum temperature            (K) = ",ES12.4,&
-                 &/,1x,"minimum e-p value    (W m^-3 K^-1) = ",ES12.4,&
-                 &/,1x,"maximum e-p value    (W m^-3 K^-1) = ",ES12.4)') &
-                 Minval(gtable(:,1)),Maxval(gtable(:,1)),Minval(gtable(:,2)),Maxval(gtable(:,2))
     End If
+    Write(message,'(/,1x,a)') 'electron-phonon coupling table read from g.dat file for two-temperature model'
+    Call info(message,.true.)
+    Write(message,'(1x,"minimum temperature            (K) = ",ES12.4,&
+               &/,1x,"maximum temperature            (K) = ",ES12.4,&
+               &/,1x,"minimum e-p value    (W m^-3 K^-1) = ",ES12.4,&
+               &/,1x,"maximum e-p value    (W m^-3 K^-1) = ",ES12.4)') &
+               Minval(gtable(:,1)),Maxval(gtable(:,1)),Minval(gtable(:,2)),Maxval(gtable(:,2))
+    Call info(message,.true.)
 
 ! convert electron-phonon coupling values from W m^-3 K^-1 to ps^-1
 
@@ -1179,8 +1190,10 @@ Subroutine ttm_table_read(comm)
 
 100 Continue
 
-  If (comm%idnode == 0) Close(Unit=ntable)
-  Call error(682)
+  If (comm%idnode == 0) Then
+    Close(Unit=ntable)
+  End If
+  Call error(682,master_only=.true.)
 
 End Subroutine ttm_table_read
 
@@ -1208,13 +1221,15 @@ Subroutine ttm_table_scan(comm)
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
+  Character( Len = 256 ) :: message
+
   If (l_ttm) Then
 
     fail=0
     Allocate (buffer(1:mxbuff), Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'ttm_table_scan allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'ttm_table_scan allocation failure'
+       Call error(0,message)
     End If
 
 ! check existence of thermal conductivity table file
@@ -1260,8 +1275,8 @@ Subroutine ttm_table_scan(comm)
       Else
         Allocate (ketable(1:kel,2), Stat=fail)
         If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ttm_table_scan allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ttm_table_scan allocation failure'
+          Call error(0,message)
         End If
         ketable(:,:) = 0.0_wp
       End If
@@ -1311,8 +1326,8 @@ Subroutine ttm_table_scan(comm)
       Else
         Allocate (cetable(1:cel,2), Stat=fail)
         If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ttm_table_scan allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ttm_table_scan allocation failure'
+          Call error(0,message)
         End If
         cetable(:,:) = 0.0_wp
       End If
@@ -1362,8 +1377,8 @@ Subroutine ttm_table_scan(comm)
       Else
         Allocate (detable(1:del,2), Stat=fail)
         If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ttm_table_scan allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ttm_table_scan allocation failure'
+          Call error(0,message)
         End If
         detable(:,:) = 0.0_wp
       End If
@@ -1413,8 +1428,8 @@ Subroutine ttm_table_scan(comm)
       Else
         Allocate (gtable(1:gel,2), Stat=fail) ! [GK] array length corrected
         If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ttm_table_scan allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ttm_table_scan allocation failure'
+          Call error(0,message)
         End If
         gtable(:,:) = 0.0_wp
       End If
@@ -1423,8 +1438,8 @@ Subroutine ttm_table_scan(comm)
 
     Deallocate (buffer, Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'ttm_table_scan deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'ttm_table_scan deallocation failure'
+       Call error(0,message)
     End If
 
   End If
@@ -1459,6 +1474,845 @@ Subroutine ttm_table_scan(comm)
 
 End Subroutine ttm_table_scan
 
+Subroutine boundaryHalo (comm)
+
+! fills halo regions of electronic temperature lattice from neighbouring sections
+! (periodic boundary conditions)
+
+  Type(comms_type), Intent(In) :: comm
+  Integer :: i,ii,iii1,iii2,j,jj,jjj1,jjj2,k,kk,kkk1,kkk2,ijk1,ijk2
+  Integer, Dimension(4) :: req
+  Integer, Allocatable :: stats(:,:)
+
+  Integer :: ierr
+
+  Allocate (stats(1:MPI_STATUS_SIZE,1:4))
+  If (comm%mxnode>1) Then
+
+    Do kk = -eltcell(3), eltcell(3)
+      Do jj = -eltcell(2), eltcell(2)
+        Do ii = -eltcell(1), eltcell(1)
+          If (idx==nprx-1) Then
+            iii1 = Mod(ii+3*eltcell(1), (eltcell(1)*2+1)) - eltcell(1)
+          Else
+            iii1 = ii
+          End If
+          If (idx==0) Then
+            iii2 = Mod(ii+eltcell(1)+1, (eltcell(1)*2+1)) - eltcell(1)
+          Else
+            iii2 = ii
+          End If
+          ijk1 = 2 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
+          ijk2 = 1 + (ntcell(1)+1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
+          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgx, map(1), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+          Call MPI_IRECV (eltemp(ijk2,iii1,jj,kk), 1, tmpmsgx, map(2), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+          ijk1 = 1 + (ntcell(1)) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
+          ijk2 = 1 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
+          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgx, map(2), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+          Call MPI_IRECV (eltemp(ijk2,iii2,jj,kk), 1, tmpmsgx, map(1), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
+          Call MPI_WAITALL (4, req, stats, ierr)
+        End Do
+      End Do
+    End Do
+
+    Do kk = -eltcell(3), eltcell(3)
+      Do ii = -eltcell(1), eltcell(1)
+        Do jj = -eltcell(2), eltcell(2)
+          If (idy==npry-1) Then
+            jjj1 = Mod(jj+3*eltcell(2), (eltcell(2)*2+1)) - eltcell(2)
+          Else
+            jjj1 = jj
+          End If
+          If (idy==0) Then
+            jjj2 = Mod(jj+eltcell(2)+1, (eltcell(2)*2+1)) - eltcell(2)
+          Else
+            jjj2 = jj
+          End If
+          ijk1 = 1 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
+          ijk2 = 1 + (ntcell(1)+2) * (ntcell(2) + 1 + (ntcell(2)+2))
+          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgy, map(3), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+          Call MPI_IRECV (eltemp(ijk2,ii,jjj1,kk), 1, tmpmsgy, map(4), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+          ijk1 = 1 + (ntcell(1)+2) * (ntcell(2) + (ntcell(2)+2))
+          ijk2 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
+          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgy, map(4), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+          Call MPI_IRECV (eltemp(ijk2,ii,jjj2,kk), 1, tmpmsgy, map(3), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
+          Call MPI_WAITALL (4, req, stats, ierr)
+        End Do
+      End Do
+    End Do
+
+    Do jj = -eltcell(2), eltcell(2)
+      Do ii = -eltcell(1), eltcell(1)
+        Do kk = -eltcell(3), eltcell(3)
+          If (idz==nprz-1) Then
+            kkk1 = Mod(kk+3*eltcell(3), (eltcell(3)*2+1)) - eltcell(3)
+          Else
+            kkk1 = kk
+          End If
+          If (idz==0) Then
+            kkk2 = Mod(kk+eltcell(3)+1, (eltcell(3)*2+1)) - eltcell(3)
+          Else
+            kkk2 = kk
+          End If
+          ijk1 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
+          ijk2 = 1 + (ntcell(1)+2) * ((ntcell(2)+2) * (ntcell(3) + 1))
+          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgz, map(5), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+          Call MPI_IRECV (eltemp(ijk2,ii,jj,kkk1), 1, tmpmsgz, map(6), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+          ijk1 = 1 + (ntcell(1)+2) * ((ntcell(2)+2) * ntcell(3))
+          ijk2 = 1
+          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgz, map(6), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+          Call MPI_IRECV (eltemp(ijk2,ii,jj,kkk2), 1, tmpmsgz, map(5), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
+          Call MPI_WAITALL (4, req, stats, ierr)
+        End Do
+      End Do
+    End Do
+
+  Else
+
+    Do kk = -eltcell(3), eltcell(3)
+      kkk1 = Mod(kk+3*eltcell(3), (eltcell(3)*2+1)) - eltcell(3)
+      kkk2 = Mod(kk+eltcell(3)+1, (eltcell(3)*2+1)) - eltcell(3)
+      Do jj = -eltcell(2), eltcell(2)
+        jjj1 = Mod(jj+3*eltcell(2), (eltcell(2)*2+1)) - eltcell(2)
+        jjj2 = Mod(jj+eltcell(2)+1, (eltcell(2)*2+1)) - eltcell(2)
+        Do ii = -eltcell(1), eltcell(1)
+          iii1 = Mod(ii+3*eltcell(1), (eltcell(1)*2+1)) - eltcell(1)
+          iii2 = Mod(ii+eltcell(1)+1, (eltcell(1)*2+1)) - eltcell(1)
+          Do k = 1, ntcell(3)
+            Do j = 1, ntcell(2)
+              ijk1 = 2 + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+              ijk2 = 2 + ntcell(1) + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+              eltemp(ijk2,iii1,jj,kk) = eltemp(ijk1,ii,jj,kk)
+              ijk1 = 1 + ntcell(1) + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+              ijk2 = 1 + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
+              eltemp(ijk2,iii2,jj,kk) = eltemp(ijk1,ii,jj,kk)
+            End Do
+          End Do            
+          Do k = 1, ntcell(3)
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (1 + (ntcell(2)+2) * k)
+              ijk2 = 1 + i + (ntcell(1)+2) * (ntcell(2) + 1 + (ntcell(2)+2) * k)
+              eltemp(ijk2,ii,jjj1,kk) = eltemp(ijk1,ii,jj,kk)
+              ijk1 = 1 + i + (ntcell(1)+2) * (ntcell(2) + (ntcell(2)+2) * k)
+              ijk2 = 1 + i + (ntcell(1)+2) * (ntcell(2)+2) * k
+              eltemp(ijk2,ii,jjj2,kk) = eltemp(ijk1,ii,jj,kk)
+            End Do
+          End Do
+          Do j = 0, ntcell(2)+1
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2))
+              ijk2 = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * (ntcell(3)+1))
+              eltemp(ijk2,ii,jj,kkk1) = eltemp(ijk1,ii,jj,kk)
+              ijk1 = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * ntcell(3))
+              ijk2 = 1 + i + (ntcell(1)+2) * j
+              eltemp(ijk2,ii,jj,kkk2) = eltemp(ijk1,ii,jj,kk)
+            End Do
+          End Do
+        End Do
+      End Do
+    End Do
+
+  End If
+
+  Deallocate (stats)
+
+End Subroutine boundaryHalo
+
+Subroutine boundaryCond (key, temp,comm)
+
+! appends halo regions of entire electronic temperature lattice with appropriate boundary conditions
 
 
+  Real ( Kind = wp ), Intent ( In ) :: temp
+  Integer,            Intent ( In ) :: key
+  Type(comms_type),   Intent ( In ) :: comm
+
+  Integer :: i,ii,j,jj,k,kk,ijk1,ijk2,ierr
+  Integer, Dimension(4) :: req
+  Integer, Dimension(MPI_STATUS_SIZE,4) :: stat
+
+
+  Select Case (key)
+! Periodic boundary conditions
+  Case (1)
+    If (ttmbcmap(1)>=0 .or. ttmbcmap(2)>=0) Then
+      If (comm%mxnode>1) Then
+        Do kk = -eltcell(3), eltcell(3)
+          Do jj = -eltcell(2), eltcell(2)
+            If (ttmbcmap(1)>=0) Then
+              ijk1 = 1 + ttmbc(1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
+              ijk2 = 1 + (ttmbc(1) - 1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
+              ii = -eltcell(1)
+              Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgx, ttmbcmap(1), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+              Call MPI_IRECV (eltemp(ijk2,-ii,jj,kk), 1, tmpmsgx, ttmbcmap(1), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
+            End If
+            If (ttmbcmap(2)>=0) Then
+              ijk1 = 1 + ttmbc(2) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
+              ijk2 = 1 + (ttmbc(2) + 1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
+              ii = eltcell(1)
+              Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgx, ttmbcmap(2), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+              Call MPI_IRECV (eltemp(ijk2,-ii,jj,kk), 1, tmpmsgx, ttmbcmap(2), Grid1_tag, MPI_COMM_WORLD, req(4), ierr)
+            End If
+            Call MPI_WAITALL (4, req, stat, ierr)
+          End Do
+        End Do
+      Else
+        Do kk = -eltcell(3), eltcell(3)
+          Do jj = -eltcell(2), eltcell(2)
+            Do k = 1, ntcell(3)
+              Do j = 1, ntcell(2)
+                ijk1 = 1 + ttmbc(1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+                ijk2 = 1 + (ttmbc(2) + 1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+                eltemp(ijk2,eltcell(1),jj,kk) = eltemp(ijk1,-eltcell(1),jj,kk)
+                ijk1 = 1 + ttmbc(2) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+                ijk2 = 1 + (ttmbc(1) - 1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+                eltemp(ijk2,-eltcell(1),jj,kk) = eltemp(ijk1,eltcell(1),jj,kk)
+              End Do
+            End Do
+          End Do
+        End Do
+      End If
+    End If
+
+    If (ttmbcmap(3)>=0 .or. ttmbcmap(4)>=0) Then
+      If (comm%mxnode>1) Then
+        Do kk = -eltcell(3), eltcell(3)
+          Do ii = -eltcell(1), eltcell(1)
+            If (ttmbcmap(3)>=0) Then
+              ijk1 = 1 + (ntcell(1)+2) * (ttmbc(3) + (ntcell(2)+2))
+              ijk2 = 1 + (ntcell(1)+2) * (ttmbc(3) - 1 + (ntcell(2)+2))
+              jj = -eltcell(2)
+              Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgy, ttmbcmap(3), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+              Call MPI_IRECV (eltemp(ijk2,ii,-jj,kk), 1, tmpmsgy, ttmbcmap(3), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
+            End If
+            If (ttmbcmap(4)>=0) Then
+              ijk1 = 1 + (ntcell(1)+2) * (ttmbc(4) + (ntcell(2)+2))
+              ijk2 = 1 + (ntcell(1)+2) * (ttmbc(4) + 1 + (ntcell(2)+2))
+              jj = eltcell(2)
+              Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgy, ttmbcmap(4), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+              Call MPI_IRECV (eltemp(ijk2,ii,-jj,kk), 1, tmpmsgy, ttmbcmap(4), Grid1_tag, MPI_COMM_WORLD, req(4), ierr)
+            End If
+            Call MPI_WAITALL (4, req, stat, ierr)
+          End Do
+        End Do
+      Else
+        Do kk = -eltcell(3), eltcell(3)
+          Do ii = -eltcell(1), eltcell(1)
+            Do k = 1, ntcell(3)
+              Do i = 0, ntcell(1)+1
+                ijk1 = 1 + i + (ntcell(1)+2) * (ttmbc(3) + k * (ntcell(2)+2))
+                ijk2 = 1 + i + (ntcell(1)+2) * (ttmbc(4) + 1 + k * (ntcell(2)+2))
+                eltemp(ijk2,ii,eltcell(2),kk) = eltemp(ijk1,ii,-eltcell(2),kk)
+                ijk1 = 1 + i + (ntcell(1)+2) * (ttmbc(4) + k * (ntcell(2)+2))
+                ijk2 = 1 + i + (ntcell(1)+2) * (ttmbc(3) - 1 + k * (ntcell(2)+2))
+                eltemp(ijk2,ii,-eltcell(2),kk) = eltemp(ijk1,ii,eltcell(2),kk)
+              End Do
+            End Do
+          End Do
+        End Do
+      End If
+    End If
+
+    If (ttmbcmap(5)>=0 .or. ttmbcmap(6)>=0) Then
+      If (comm%mxnode>1) Then
+        Do jj = -eltcell(2), eltcell(2)
+          Do ii = -eltcell(1), eltcell(1)
+            If (ttmbcmap(5)>=0) Then
+              ijk1 = 1 + (ntcell(1)+2) * (ttmbc(5) * (ntcell(2)+2))
+              ijk2 = 1 + (ntcell(1)+2) * ((ttmbc(5) - 1) * (ntcell(2)+2))
+              kk = -eltcell(3)
+              Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgz, ttmbcmap(5), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+              Call MPI_IRECV (eltemp(ijk2,ii,jj,-kk), 1, tmpmsgz, ttmbcmap(5), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
+            End If
+            If (ttmbcmap(6)>=0) Then
+              ijk1 = 1 + (ntcell(1)+2) * (ttmbc(6) * (ntcell(2)+2))
+              ijk2 = 1 + (ntcell(1)+2) * ((ttmbc(6) + 1) * (ntcell(2)+2))
+              kk = eltcell(3)
+              Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgz, ttmbcmap(6), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+              Call MPI_IRECV (eltemp(ijk2,ii,jj,-kk), 1, tmpmsgz, ttmbcmap(6), Grid1_tag, MPI_COMM_WORLD, req(4), ierr)
+            End If
+            Call MPI_WAITALL (4, req, stat, ierr)
+          End Do
+        End Do
+      Else
+        Do jj = -eltcell(2), eltcell(2)
+          Do ii = -eltcell(1), eltcell(1)
+            Do j = 0, ntcell(2)+1
+              Do i = 0, ntcell(1)+1
+                ijk1 = 1 + i + (ntcell(1)+2) * (j + ttmbc(5) * (ntcell(2)+2))
+                ijk2 = 1 + i + (ntcell(1)+2) * (j + (ttmbc(6) + 1) * (ntcell(2)+2))
+                eltemp(ijk2,ii,jj,eltcell(3)) = eltemp(ijk1,ii,jj,-eltcell(3))
+                ijk1 = 1 + i + (ntcell(1)+2) * (j + ttmbc(6) * (ntcell(2)+2))
+                ijk2 = 1 + i + (ntcell(1)+2) * (j + (ttmbc(5) - 1) * (ntcell(2)+2))
+                eltemp(ijk2,ii,jj,-eltcell(3)) = eltemp(ijk1,ii,jj,eltcell(3))
+              End Do
+            End Do
+          End Do
+        End Do
+      End If
+
+    End If
+
+! Infinite sink/source (Dirichlet) boundary conditions
+  Case (2)
+    If (ttmbcmap(1)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do jj = -eltcell(2), eltcell(2)
+          Do k = 1, ntcell(3)
+            Do j = 1, ntcell(2)
+              ijk2 = 1 + (ttmbc(1)-1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+              eltemp(ijk2,-eltcell(1),jj,kk) = temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(2)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do jj = -eltcell(2), eltcell(2)
+          Do k = 1, ntcell(3)
+            Do j = 1, ntcell(2)
+              ijk2 = 1 + (ttmbc(2)+1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+              eltemp(ijk2,eltcell(1),jj,kk) = temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(3)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do ii = -eltcell(1), eltcell(1)
+          Do k = 1, ntcell(3)
+            Do i = 0, ntcell(1)+1
+              ijk2 = 1 + i + (ntcell(1)+2) * ((ttmbc(3)-1) + k * (ntcell(2)+2))
+              eltemp(ijk2,ii,-eltcell(2),kk) = temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(4)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do ii = -eltcell(1), eltcell(1)
+          Do k = 1, ntcell(3)
+            Do i = 0, ntcell(1)+1
+              ijk2 = 1 + i + (ntcell(1)+2) * ((ttmbc(4)+1) + k * (ntcell(2)+2))
+              eltemp(ijk2,ii,eltcell(2),kk) = temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(5)>=0) Then
+      Do jj = -eltcell(2), eltcell(2)
+        Do ii = -eltcell(1), eltcell(1)
+          Do j = 0, ntcell(2)+1
+            Do i = 0, ntcell(1)+1
+              ijk2 = 1 + i + (ntcell(1)+2) * (j + (ttmbc(5)-1) * (ntcell(2)+2))
+              eltemp(ijk2,ii,jj,-eltcell(3)) = temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(6)>=0) Then
+      Do jj = -eltcell(2), eltcell(2)
+        Do ii = -eltcell(1), eltcell(1)
+          Do j = 0, ntcell(2)+1
+            Do i = 0, ntcell(1)+1
+              ijk2 = 1 + i + (ntcell(1)+2) * (j + (ttmbc(6)+1) * (ntcell(2)+2))
+              eltemp(ijk2,ii,jj,eltcell(3)) = temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+! 'Confined' (von Neumann) boundary conditions
+  Case (3)
+    If (ttmbcmap(1)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do jj = -eltcell(2), eltcell(2)
+          Do k = 1, ntcell(3)
+            Do j = 1, ntcell(2)
+              ijk1 = 1 + ttmbc(1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+              ijk2 = ijk1 - 1
+              eltemp(ijk2,-eltcell(1),jj,kk) = eltemp(ijk1,-eltcell(1),jj,kk)
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(2)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do jj = -eltcell(2), eltcell(2)
+          Do k = 1, ntcell(3)
+            Do j = 1, ntcell(2)
+              ijk1 = 1 + ttmbc(2) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+              ijk2 = ijk1 + 1
+              eltemp(ijk2,eltcell(1),jj,kk) = eltemp(ijk1,eltcell(1),jj,kk)
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(3)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do ii = -eltcell(1), eltcell(1)
+          Do k = 1, ntcell(3)
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (ttmbc(3) + k * (ntcell(2)+2))
+              ijk2 = ijk1 - (ntcell(1)+2)
+              eltemp(ijk2,ii,-eltcell(2),kk) = eltemp(ijk1,ii,-eltcell(2),kk)
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(4)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do ii = -eltcell(1), eltcell(1)
+          Do k = 1, ntcell(3)
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (ttmbc(4) + k * (ntcell(2)+2))
+              ijk2 = ijk1 + (ntcell(1)+2)
+              eltemp(ijk2,ii,eltcell(2),kk) = eltemp(ijk1,ii,eltcell(2),kk)
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(5)>=0) Then
+      Do jj = -eltcell(2), eltcell(2)
+        Do ii = -eltcell(1), eltcell(1)
+          Do j = 0, ntcell(2)+1
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (j + ttmbc(5) * (ntcell(2)+2))
+              ijk2 = ijk1 - (ntcell(1)+2)*(ntcell(2)+2)
+              eltemp(ijk2,ii,jj,-eltcell(3)) = eltemp(ijk1,ii,jj,-eltcell(3))
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(6)>=0) Then
+      Do jj = -eltcell(2), eltcell(2)
+        Do ii = -eltcell(1), eltcell(1)
+          Do j = 0, ntcell(2)+1
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (j + ttmbc(6) * (ntcell(2)+2))
+              ijk2 = ijk1 + (ntcell(1)+2)*(ntcell(2)+2)
+              eltemp(ijk2,ii,jj,eltcell(3)) = eltemp(ijk1,ii,jj,eltcell(3))
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+! Mixed case: Infinite sink/source (Dirichlet) boundaries in x/y-directions
+!             'Confined' (von Neumann) boundary in z-direction
+  Case (4)
+    If (ttmbcmap(1)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do jj = -eltcell(2), eltcell(2)
+          Do k = 1, ntcell(3)
+            Do j = 1, ntcell(2)
+              ijk2 = 1 + (ttmbc(1)-1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+              eltemp(ijk2,-eltcell(1),jj,kk) = temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(2)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do jj = -eltcell(2), eltcell(2)
+          Do k = 1, ntcell(3)
+            Do j = 1, ntcell(2)
+              ijk2 = 1 + (ttmbc(2)+1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+              eltemp(ijk2,eltcell(1),jj,kk) = temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(3)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do ii = -eltcell(1), eltcell(1)
+          Do k = 1, ntcell(3)
+            Do i = 0, ntcell(1)+1
+              ijk2 = 1 + i + (ntcell(1)+2) * ((ttmbc(3)-1) + k * (ntcell(2)+2))
+              eltemp(ijk2,ii,-eltcell(2),kk) = temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(4)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do ii = -eltcell(1), eltcell(1)
+          Do k = 1, ntcell(3)
+            Do i = 0, ntcell(1)+1
+              ijk2 = 1 + i + (ntcell(1)+2) * ((ttmbc(4)+1) + k * (ntcell(2)+2))
+              eltemp(ijk2,ii,eltcell(2),kk) = temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(5)>=0) Then
+      Do jj = -eltcell(2), eltcell(2)
+        Do ii = -eltcell(1), eltcell(1)
+          Do j = 0, ntcell(2)+1
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (j + ttmbc(5) * (ntcell(2)+2))
+              ijk2 = ijk1 - (ntcell(1)+2)*(ntcell(2)+2)
+              eltemp(ijk2,ii,jj,-eltcell(3)) = eltemp(ijk1,ii,jj,-eltcell(3))
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(6)>=0) Then
+      Do jj = -eltcell(2), eltcell(2)
+        Do ii = -eltcell(1), eltcell(1)
+          Do j = 0, ntcell(2)+1
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (j + ttmbc(6) * (ntcell(2)+2))
+              ijk2 = ijk1 + (ntcell(1)+2)*(ntcell(2)+2)
+              eltemp(ijk2,ii,jj,eltcell(3)) = eltemp(ijk1,ii,jj,eltcell(3))
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+! Robin boundary conditions
+  Case (5)
+    If (ttmbcmap(1)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do jj = -eltcell(2), eltcell(2)
+          Do k = 1, ntcell(3)
+            Do j = 1, ntcell(2)
+              ijk1 = 1 + ttmbc(1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+              ijk2 = ijk1 - 1
+              eltemp(ijk2,-eltcell(1),jj,kk) = fluxout*(eltemp(ijk1,-eltcell(1),jj,kk)-temp) + temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(2)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do jj = -eltcell(2), eltcell(2)
+          Do k = 1, ntcell(3)
+            Do j = 1, ntcell(2)
+              ijk1 = 1 + ttmbc(2) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+              ijk2 = ijk1 + 1
+              eltemp(ijk2,eltcell(1),jj,kk) = fluxout*(eltemp(ijk1,eltcell(1),jj,kk)-temp) + temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(3)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do ii = -eltcell(1), eltcell(1)
+          Do k = 1, ntcell(3)
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (ttmbc(3) + k * (ntcell(2)+2))
+              ijk2 = ijk1 - (ntcell(1)+2)
+              eltemp(ijk2,ii,-eltcell(2),kk) = fluxout*(eltemp(ijk1,ii,-eltcell(2),kk)-temp) + temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(4)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do ii = -eltcell(1), eltcell(1)
+          Do k = 1, ntcell(3)
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (ttmbc(4) + k * (ntcell(2)+2))
+              ijk2 = ijk1 + (ntcell(1)+2)
+              eltemp(ijk2,ii,eltcell(2),kk) = fluxout*(eltemp(ijk1,ii,eltcell(2),kk)-temp) + temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(5)>=0) Then
+      Do jj = -eltcell(2), eltcell(2)
+        Do ii = -eltcell(1), eltcell(1)
+          Do j = 0, ntcell(2)+1
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (j + ttmbc(5) * (ntcell(2)+2))
+              ijk2 = ijk1 - (ntcell(1)+2)*(ntcell(2)+2)
+              eltemp(ijk2,ii,jj,-eltcell(3)) = fluxout*(eltemp(ijk1,ii,jj,-eltcell(3))-temp) + temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(6)>=0) Then
+      Do jj = -eltcell(2), eltcell(2)
+        Do ii = -eltcell(1), eltcell(1)
+          Do j = 0, ntcell(2)+1
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (j + ttmbc(6) * (ntcell(2)+2))
+              ijk2 = ijk1 + (ntcell(1)+2)*(ntcell(2)+2)
+              eltemp(ijk2,ii,jj,eltcell(3)) = fluxout*(eltemp(ijk1,ii,jj,eltcell(3))-temp) + temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+! Mixed case: Robin boundaries in x/y-directions
+!             'Confined' (von Neumann) boundary in z-direction
+  Case (6)
+    If (ttmbcmap(1)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do jj = -eltcell(2), eltcell(2)
+          Do k = 1, ntcell(3)
+            Do j = 1, ntcell(2)
+              ijk1 = 1 + ttmbc(1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+              ijk2 = ijk1 - 1
+              eltemp(ijk2,-eltcell(1),jj,kk) = fluxout*(eltemp(ijk1,-eltcell(1),jj,kk)-temp) + temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(2)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do jj = -eltcell(2), eltcell(2)
+          Do k = 1, ntcell(3)
+            Do j = 1, ntcell(2)
+              ijk1 = 1 + ttmbc(2) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
+              ijk2 = ijk1 + 1
+              eltemp(ijk2,eltcell(1),jj,kk) = fluxout*(eltemp(ijk1,eltcell(1),jj,kk)-temp) + temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(3)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do ii = -eltcell(1), eltcell(1)
+          Do k = 1, ntcell(3)
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (ttmbc(3) + k * (ntcell(2)+2))
+              ijk2 = ijk1 - (ntcell(1)+2)
+              eltemp(ijk2,ii,-eltcell(2),kk) = fluxout*(eltemp(ijk1,ii,-eltcell(2),kk)-temp) + temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(4)>=0) Then
+      Do kk = -eltcell(3), eltcell(3)
+        Do ii = -eltcell(1), eltcell(1)
+          Do k = 1, ntcell(3)
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (ttmbc(4) + k * (ntcell(2)+2))
+              ijk2 = ijk1 + (ntcell(1)+2)
+              eltemp(ijk2,ii,eltcell(2),kk) = fluxout*(eltemp(ijk1,ii,eltcell(2),kk)-temp) + temp
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(5)>=0) Then
+      Do jj = -eltcell(2), eltcell(2)
+        Do ii = -eltcell(1), eltcell(1)
+          Do j = 0, ntcell(2)+1
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (j + ttmbc(5) * (ntcell(2)+2))
+              ijk2 = ijk1 - (ntcell(1)+2)*(ntcell(2)+2)
+              eltemp(ijk2,ii,jj,-eltcell(3)) = eltemp(ijk1,ii,jj,-eltcell(3))
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+    If (ttmbcmap(6)>=0) Then
+      Do jj = -eltcell(2), eltcell(2)
+        Do ii = -eltcell(1), eltcell(1)
+          Do j = 0, ntcell(2)+1
+            Do i = 0, ntcell(1)+1
+              ijk1 = 1 + i + (ntcell(1)+2) * (j + ttmbc(6) * (ntcell(2)+2))
+              ijk2 = ijk1 + (ntcell(1)+2)*(ntcell(2)+2)
+              eltemp(ijk2,ii,jj,eltcell(3)) = eltemp(ijk1,ii,jj,eltcell(3))
+            End Do
+          End Do
+        End Do
+      End Do
+    End If
+
+  End Select
+
+End Subroutine boundaryCond
+
+Subroutine uniformDist(lat_in)
+
+! implement constant (homogeneous) spatial deposition
+
+  Implicit None
+  Real( Kind = wp ), Intent ( Inout ), Dimension(0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1) :: lat_in
+  Real( Kind = wp ) :: dEdV
+
+  ! express deposition energy per unit volume (eV/A^3):
+  ! note penetration depth will be non-zero if laser is
+  ! in use, otherwise use dE/dX value
+
+  If (pdepth>zero_plus) Then
+    dEdV = fluence/pdepth
+  Else
+    dEdV = dEdX/(Real(ntsys(1),Kind=wp)*Real(ntsys(2),Kind=wp)*delx*dely)
+  End If
+
+  ! homogeneous excitation: each temperature cell receives
+  ! the same energy
+
+  lat_in(1:ntcell(1),1:ntcell(2),1:ntcell(3))=dEdV*volume
+
+End Subroutine uniformDist
+
+Subroutine uniformDistZexp(lat_in)
+
+! implement constant (homogeneous) spatial deposition
+! in x and y-directions, exponential decay of fluence
+! in z-direction (only with laser)
+
+  Implicit None
+  Real( Kind = wp ), Intent ( Inout ), Dimension(0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1) :: lat_in
+  Real( Kind = wp ) :: dEdVmax, dEdV, zz, rpdepth
+  Integer :: k
+
+  ! express maximum deposition energy per unit volume (eV/A^3)
+
+  If (pdepth>zero_plus) Then
+    rpdepth = 1.0_wp/pdepth
+  Else
+    rpdepth = 0.0_wp
+  End If
+  dEdVmax = fluence*rpdepth
+
+  ! loop through z-cells: calculate stopping power per
+  ! cell based on z-position (maximum at z=0, grid centre)
+  ! and assign across all x and y points in plane
+
+  Do k = 1, ntcell(3)
+    zz = Abs(Real(k+ntcelloff(3)-midI(3),Kind=wp))
+    dEdV = dEdVmax*Exp(-zz*delz*rpdepth)
+    lat_in(1:ntcell(1),1:ntcell(2),k) = dEdV*volume
+  End Do
+
+End Subroutine uniformDistZexp
+
+Subroutine gaussianTrack(lat_in, comm)
+
+! implement gaussian spatial deposition
+
+  Real ( Kind = wp ), Intent ( Inout ), Dimension(0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1) :: lat_in
+  Type( comms_type), Intent( InOut) :: comm
+  Real ( Kind = wp ) :: normdEdX,realdEdx,sigmamx,sigmamy,sig2x,sig2y,sigcellx,sigcelly
+  Real ( Kind = wp ) :: ii,jj,ii2,jj2,iip2,jjp2,iim2,jjm2
+  Integer :: i,j,sgmx,sgmy
+  Logical :: cutwarn=.false.
+
+  lat_in(:,:,:) = 0.0_wp
+
+  ! converting stopping power to a value per cell (in z-direction)
+
+  normdEdX = dEdX*delz
+
+  ! find extents of gaussian in x and y directions
+
+  sigcellx = sig/delx
+  sigcelly = sig/dely
+  sig2x = 2.0_wp*sigcellx*sigcellx
+  sig2y = 2.0_wp*sigcelly*sigcelly
+  sigmamx = sigmax*sigcellx
+  sigmamy = sigmax*sigcelly
+  
+  ! if cutoff larger than ionic temperature grid,
+  ! warn of deposition errors
+
+  If (sigmamx > Ceiling(ntsys(1)/2.0_wp)) Then
+    sigmamx = Ceiling(ntsys(1)/2.0_wp)
+    cutwarn = .true.
+  End If
+  If (sigmamy > Ceiling(ntsys(2)/2.0_wp)) Then
+    sigmamy = Ceiling(ntsys(2)/2.0_wp)
+    cutwarn = .true.
+  End If
+
+  If (comm%idnode == 0 .and. cutwarn) Then
+    Call warning(535,0.0_wp,0.0_wp,0.0_wp)
+  End If
+
+  sgmx = Nint(sigmamx)
+  sgmy = Nint(sigmamy)
+
+  ! apply five-point linear stencil for gaussian track:
+  ! stencil modified to (hopefully!) deposit correct overall energy
+
+  Do j=1,ntcell(2)
+    jj = Real(j+ntcelloff(2)-midI(2),Kind=wp)
+    jj2 = -jj*jj/sig2y
+    jjp2 = -(jj+0.5_wp)*(jj+0.5_wp)/sig2y
+    jjm2 = -(jj-0.5_wp)*(jj-0.5_wp)/sig2y
+    Do i=1,ntcell(1)
+      ii = Real(i+ntcelloff(1)-midI(1),Kind=wp)
+      ii2 = -ii*ii/sig2x
+      iip2 = -(ii+0.5_wp)*(ii+0.5_wp)/sig2x
+      iim2 = -(ii-0.5_wp)*(ii-0.5_wp)/sig2x
+      If (Abs(ii)<=sgmx .and. Abs(jj)<=sgmy) Then
+        lat_in(i,j,1:ntcell(3)) = 0.2_wp*normdEdX/(2.0_wp*pi*sigcellx*sigcelly)*&
+                                  (Exp(ii2+jj2)+Exp(iim2+jj2)+Exp(iim2+jj2)+Exp(ii2+jjp2)+Exp(ii2+jjm2))
+      End If
+    End Do
+  End Do
+
+  ! calculate deposited energy for comparison with specified value
+  ! (note that stopping power is in z-direction)
+
+  realdEdx = Sum(lat_in(1:ntcell(1),1:ntcell(2),1:ntcell(3)))
+  Call gsum(comm,realdEdx)
+  realdEdx = realdEdx/(Real(ntsys(3),Kind=wp)*delz)
+
+  ! check if lattice sum equals the expected value
+
+  If (comm%idnode == 0 .and. Abs((realdEdx-dEdX)/dEdX) > 0.01_wp) Then
+    Call warning(540,Abs(realdEdx-dEdX)/dEdX*100_wp,0.0_wp,0.0_wp)
+  End If
+  
+End Subroutine gaussianTrack
 End Module ttm
