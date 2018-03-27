@@ -1,20 +1,19 @@
 Module nvt_langevin
-  Use kinds, only : wp
-  Use comms,       Only : comms_type,gmax
+  Use kinds,         only : wp
+  Use comms,         Only : comms_type,gmax
   Use setup
-  Use configuration,      Only : imcon,cell,natms,nlast,nfree, &
-                                 lsi,lsa,lfrzn,lstfre,weight,  &
-                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use domains,     Only : map
-  Use kinetics,     Only : kinstress,kinstresf,kinstrest,getvom,getknr
-  Use core_shell,  Only : legshl
-  Use constraints, Only : passcon
-  Use pmf,         Only : passpmf
+  Use configuration, Only : imcon,cell,natms,nlast,nfree, &
+                            lsi,lsa,lfrzn,lstfre,weight,  &
+                            xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use domains,       Only : map
+  Use kinetics,      Only : kinstress,kinstresf,kinstrest,getvom,getknr
+  Use core_shell,    Only : legshl
+  Use constraints,   Only : passcon
+  Use pmf,           Only : passpmf
   Use rigid_bodies
   Use ttm
-  Use ttm_utils,          Only : Gep,calcchies,eltemp_max
+  Use ttm_utils,     Only : Gep,calcchies,eltemp_max
   Implicit None
-
 
   Private
 
@@ -746,8 +745,8 @@ Contains
        Call langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
        Call langevin_forces(-nstep,temp,tstep,chi,fxl,fyl,fzl)
        If (lshmv_rgd) Then
-          Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxr,fyr,fzr)
-          Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
+          Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxr,fyr,fzr,comm)
+          Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
        End If
 
   100  Continue

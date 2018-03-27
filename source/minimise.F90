@@ -9,23 +9,31 @@ Module minimise
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use comms,               Only : comms_type,gsum,gmax
-  Use setup,        Only : engunit,nrite,output, &
-                                  mxatms,mxcons,mxtpmf,mxpmf,zero_plus, &
-                                  mxrgd,mxlrgd
-  Use configuration,       Only : natms,nlast,nfree,          &
-                                  lsi,lsa,lfrzn,lfree,lstfre, &
-                                  weight,xxx,yyy,zzz,fxx,fyy,fzz, &
-                                   imcon,cell,vxx,vyy,vzz
-  Use rigid_bodies, Only : lshmv_rgd,lishp_rgd,lashp_rgd,rgdxxx,rgdyyy,rgdzzz,&
-                           listrgd,rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz,&
-                           rgdx,rgdy,rgdz,rgdfrz,rgdrix,indrgd,rgdwgt,rgdmeg,&
-                           rgdriz,rgdriy,ntrgd,q0,q1,q2,q3,rgdind
-  Use parse,        Only : strip_blanks,lower_case
+  Use kinds,           Only : wp
+  Use comms,           Only : comms_type,gsum,gmax
+  Use setup,           Only : engunit,nrite,output, &
+                              mxatms,mxcons,mxtpmf,mxpmf,zero_plus, &
+                              mxrgd,mxlrgd
+  Use configuration,   Only : natms,nlast,nfree,          &
+                              lsi,lsa,lfrzn,lfree,lstfre, &
+                              weight,xxx,yyy,zzz,fxx,fyy,fzz, &
+                              imcon,cell,vxx,vyy,vzz, &
+                              write_config
+  Use rigid_bodies,    Only : lshmv_rgd,lishp_rgd,lashp_rgd,rgdxxx,rgdyyy,rgdzzz,&
+                              listrgd,rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz,&
+                              rgdx,rgdy,rgdz,rgdfrz,rgdrix,indrgd,rgdwgt,rgdmeg,&
+                              rgdriz,rgdriy,ntrgd,q0,q1,q2,q3,rgdind,&
+                              q_setup,getrotmat
+  Use parse,           Only : strip_blanks,lower_case
 
-  Use kinetics, Only : getcom,getvom,getkin,getknf,getknt,getknr, &
-                             kinstress,kinstresf,kinstrest
+  Use kinetics,        Only : getcom,getvom,getkin,getknf,getknt,getknr, &
+                              kinstress,kinstresf,kinstrest
+  Use numerics,        Only : images,invert
+  Use constraints,     Only : constraints_tags,constraints_pseudo_bonds
+  Use pmf,             Only : pmf_tags,pmf_pseudo_bonds
+  Use shared_units,    Only : update_shared_units
+  Use rigid_bodies,    Only : rigid_bodies_split_torque,rigid_bodies_move
+  Use errors_warnings, Only : error,warning,info
 
 
   Implicit None
@@ -131,6 +139,7 @@ Contains
   Real( Kind = wp ), Allocatable :: pxx(:),pyy(:),pzz(:)
   Real( Kind = wp ), Allocatable :: txx(:),tyy(:),tzz(:)
   Real( Kind = wp ), Allocatable :: uxx(:),uyy(:),uzz(:)
+  Character( Len = 256 ) :: message
 
 
   fail=0
@@ -151,8 +160,8 @@ Contains
   End If
   Allocate (gxx(1:mxatms),gyy(1:mxatms),gzz(1:mxatms),            Stat=fail(8))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'minimise_relax allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'minimise_relax allocation failure'
+     Call error(0,message)
   End If
 
   If (newjob) Then
@@ -248,12 +257,13 @@ Contains
 
 ! Print header
 
-     If (l_str .and. comm%idnode == 0) Then
-        Write(nrite, Fmt=*)
-        Write(nrite,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-  'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1),'step=',step
-        Write(nrite,"(1x,130('-'))")
-     End If
+    If (l_str) Then
+      Write(message,'(/,3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
+        'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1),'step=',step
+      Call info(message,.true.)
+      Write(message,"(1x,130('-'))")
+      Call info(message,.true.)
+    End If
   End If
 
 ! Load original forces
@@ -274,14 +284,14 @@ Contains
      lstitr(1:natms)=.false. ! initialise lstitr
 
      If (megcon > 0) Then
-        Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
-        Call constraints_pseudo_bonds(lstopt,dxx,dyy,dzz,gxx,gyy,gzz,engcon)
+        Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
+        Call constraints_pseudo_bonds(lstopt,dxx,dyy,dzz,gxx,gyy,gzz,engcon,comm)
         eng=eng+engcon
      End If
 
      If (megpmf > 0) Then
-        Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
-        Call pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf)
+        Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
+        Call pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf,comm)
         eng=eng+engpmf
      End If
   End If
@@ -289,8 +299,10 @@ Contains
 ! Average forces over all members of a RB and split torques accordingly
 
   If (megrgd > 0) Then
-     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,gxx,gyy,gzz)
-     Call rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz)
+     If (lshmv_rgd) Then
+       Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,gxx,gyy,gzz,comm)
+     End If
+     Call rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,comm)
   End If
 
 ! Initialise/get eng_tol & verify relaxed condition
@@ -486,24 +498,28 @@ Contains
 ! Fit headers in and Close and Open OUTPUT at every 25th print-out
 
   i=Nint(passmin(1))
-  If (l_str .and. comm%idnode == 0) Then
-     Write(nrite,'(1x,i23,1p,4e18.8)') i-1,eng/engunit,grad_tol,eng_tol,dist_tol
-     If (Mod(i,25) == 0) Then
-        Write(nrite,"(1x,130('-'))")
-        Write(nrite,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-  'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1),'step=',step
-        Write(nrite,"(1x,130('-'))")
+  If (l_str) Then
+    Write(message,'(1x,i23,1p,4e18.8)') i-1,eng/engunit,grad_tol,eng_tol,dist_tol
+    Call info(message,.true.)
+    If (Mod(i,25) == 0) Then
+      Write(message,"(1x,130('-'))")
+      Call info(message,.true.)
+      Write(message,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
+        'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1),'step=',step
+      Call info(message,.true.)
+      Write(message,"(1x,130('-'))")
+      Call info(message,.true.)
 
-        If (comm%idnode == 0) Then
-           Inquire(File=Trim(output), Exist=l_out, Position=c_out)
-           Call strip_blanks(c_out)
-           Call lower_case(c_out)
-           If (l_out .and. c_out(1:6) == 'append') Then
-              Close(Unit=nrite)
-              Open(Unit=nrite, File=Trim(output), Position='append')
-           End If
+      If (comm%idnode == 0) Then
+        Inquire(File=Trim(output), Exist=l_out, Position=c_out)
+        Call strip_blanks(c_out)
+        Call lower_case(c_out)
+        If (l_out .and. c_out(1:6) == 'append') Then
+          Close(Unit=nrite)
+          Open(Unit=nrite, File=Trim(output), Position='append')
         End If
-     End If
+      End If
+    End If
   End If
 
 100 Continue
@@ -514,17 +530,17 @@ Contains
 ! Final/Only printout
 
      i=Nint(passmin(1))
-     If (comm%idnode == 0) Then
-        If (.not.l_str) Then
-           Write(nrite, Fmt=*)
-           Write(nrite,'(3(1x,a),5x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-  'Minimised',word,'passes','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1),'step=',step
-           Write(nrite,"(1x,130('-'))")
-        End If
-        Write(nrite,'(1x,i23,1p,4e18.8)') i,eng/engunit,grad_tol,eng_tol,dist_tol
-        Write(nrite, Fmt=*)
-        Write(nrite,"(1x,130('-'))")
+     If (.not.l_str) Then
+       Write(message,'(/,3(1x,a),5x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
+         'Minimised',word,'passes','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1),'step=',step
+       Call info(message,.true.)
+       Write(message,"(1x,130('-'))")
+       Call info(message,.true.)
      End If
+     Write(message,'(1x,i23,1p,4e18.8)') i,eng/engunit,grad_tol,eng_tol,dist_tol
+     Call info(message,.true.)
+     Write(message,"(1x,130('-'))")
+     Call info(message,.true.)
 
 ! Collect passage statistics
 
@@ -555,14 +571,16 @@ Contains
         name = 'CFGMIN' ! file name
         levcfg = 0      ! define level of information in file
 
-        Call write_config(name,levcfg,megatm,i-1,eng_min/engunit,eng_0/engunit)
+        Call write_config(name,levcfg,megatm,i-1,eng_min/engunit,eng_0/engunit,comm)
      End If
 
 ! setup new quaternions
 
      If (l_mov) Then
-        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xxx,yyy,zzz)
-        Call q_setup()
+        If (lshmv_rgd) Then
+          Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xxx,yyy,zzz,comm)
+        End If
+        Call q_setup(comm)
      End If
 
   End If
@@ -584,8 +602,8 @@ Contains
   End If
   Deallocate (gxx,gyy,gzz,         Stat=fail(8))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'minimise_relax deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a,i0)') 'minimise_relax deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine minimise_relax
@@ -631,6 +649,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
                        vpx,vpy,vpz
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer,ggx,ggy,ggz
+  Character( Len = 256 ) :: message
 
 
 ! preserve magnitudes of old instantaneous energies in order to scale back to them
@@ -652,8 +671,8 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
      fail=0
      Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), Stat=fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'zero_k_optimise allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'zero_k_optimise allocation failure'
+        Call error(0,message)
      End If
 
 ! Get the RB particles vectors wrt the RB's COM
@@ -893,8 +912,8 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
      Deallocate (ggx,ggy,ggz, Stat=fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'zero_k_optimise deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'zero_k_optimise deallocation failure'
+        Call error(0,message)
      End If
   Else
      Do i=1,natms
@@ -944,8 +963,8 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
      fail=0
      Allocate (buffer(1:12), Stat=fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'zero_k_optimise allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'zero_k_optimise allocation failure'
+        Call error(0,message)
      End If
 
 ! initialise RB energy components
@@ -1235,8 +1254,8 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
      Deallocate (buffer, Stat=fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'zero_k_optimise deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'zero_k_optimise deallocation failure'
+        Call error(0,message)
      End If
   End If
 
