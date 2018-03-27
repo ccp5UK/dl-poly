@@ -21,7 +21,7 @@ Module drivers
   Use errors_warnings, Only : error,warning 
   Use shared_units, Only : update_shared_units,update_shared_units_int
   Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3
-  Use quaternions, Only : getrotmat
+  Use rigid_bodies, Only : getrotmat
   Implicit None
   Private
   Public :: w_impact_option
