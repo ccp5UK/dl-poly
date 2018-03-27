@@ -1,19 +1,25 @@
 Module temperature
-  Use kinds,               Only : wp, li
-  Use comms,               Only : comms_type,gsum
-  Use setup,        Only : nrite,boltz,mxatms,mxshl,zero_plus
-  Use site,         Only : dofsit
-  Use configuration,       Only : imcon,natms,nlast,nfree,lsite,  &
-                                  lsi,lsa,ltg,lfrzn,lfree,lstfre, &
-                                  weight,vxx,vyy,vzz,xxx,yyy,zzz
-  Use dpd,          Only : keydpd
-  Use rigid_bodies, Only : rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-                                  rgdxxx,rgdyyy,rgdzzz,rgdx,rgdy,rgdz, &
-                                  rgdrix,rgdriy,rgdriz,rgdwgt,q0,q1,q2,q3, &
-                                  ntrgd,rgdmeg,lashp_rgd,lishp_rgd,lshmv_rgd, &
-                                  rgdfrz,listrgd,indrgd
-  Use core_shell,          Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
-  Use kinetics,            Only : l_vom,chvom,getcom,getvom,getkin,getknf,getknt,getknr
+  Use kinds,           Only : wp, li
+  Use comms,           Only : comms_type,gsum
+  Use setup,           Only : nrite,boltz,mxatms,mxshl,zero_plus
+  Use site,            Only : dofsit
+  Use configuration,   Only : imcon,natms,nlast,nfree,lsite,  &
+                              lsi,lsa,ltg,lfrzn,lfree,lstfre, &
+                              weight,vxx,vyy,vzz,xxx,yyy,zzz
+  Use dpd,             Only : keydpd
+  Use rigid_bodies,    Only : rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
+                              rgdxxx,rgdyyy,rgdzzz,rgdx,rgdy,rgdz, &
+                              rgdrix,rgdriy,rgdriz,rgdwgt,q0,q1,q2,q3, &
+                              ntrgd,rgdmeg,lashp_rgd,lishp_rgd,lshmv_rgd, &
+                              rgdfrz,listrgd,indrgd,getrotmat,rigid_bodies_quench
+  Use constraints,     Only : constraints_quench
+  Use pmf,             Only : pmf_quench
+  Use core_shell,      Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl, &
+                              lashp_shl,core_shell_quench
+  Use kinetics,        Only : l_vom,chvom,getcom,getvom,getkin,getknf,getknt,getknr
+  Use numerics,        Only : invert,uni,local_index,box_mueller_saru3
+  use shared_units,    Only : update_shared_units,update_shared_units_int
+  Use errors_warnings, Only : error,warning
   Implicit None
 
   Private
@@ -58,7 +64,7 @@ Contains
 
     Logical           :: no_min_0,safe
     Integer           :: fail(1:2),i,j,k,ntp,   &
-                         stp,i1,i2,local_index, &
+                         stp,i1,i2, &
                          irgd,jrgd,lrgd,rgdtyp
     Integer(Kind=li)  :: com,con,frz,meg,non
     Real( Kind = wp ) :: tmp,vom(1:3),engk,engf,engt,engr, &
@@ -207,8 +213,8 @@ Contains
        If (keyshl == 1) Then ! just for the adiabatic shell model
           If (lshmv_shl) Then ! refresh the q array for shared core-shell units
              qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn)
-             Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn,comm)
+             Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
           End If
 
           If (ntshl > 0) Then
@@ -324,7 +330,9 @@ Contains
 
   ! Update shared RBs' velocities
 
-          If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,vxx,vyy,vzz)
+          If (lshmv_rgd) Then
+            Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,vxx,vyy,vzz,comm)
+          End If
 
   ! calculate new RBs' COM and angular velocities
 
@@ -417,8 +425,8 @@ Contains
        If (stp > 0) Then
           If (lshmv_shl) Then ! refresh the q array for shared core-shell units
              qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn)
-             Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn,comm)
+             Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
           End If
 
           If (tps(comm%idnode) > 0) Then
@@ -493,7 +501,9 @@ Contains
 
   ! quench RBs
 
-       If (megrgd > 0) Call rigid_bodies_quench()
+       If (megrgd > 0) Then
+         Call rigid_bodies_quench(comm)
+       End If
 
     End If
 
@@ -513,8 +523,8 @@ Contains
   ! quench constraints & PMFs
 
        If (no_min_0) Then
-          If (megcon > 0) Call constraints_quench(mxshak,tolnce)
-          If (megpmf > 0) Call pmf_quench(mxshak,tolnce)
+          If (megcon > 0) Call constraints_quench(mxshak,tolnce,comm)
+          If (megpmf > 0) Call pmf_quench(mxshak,tolnce,comm)
        End If
 
   ! quench core-shell units in adiabatic model
@@ -522,10 +532,16 @@ Contains
        If (megshl > 0 .and. keyshl == 1 .and. no_min_0) Then
           Do
              Call scale_temperature(sigma,degtra,degrot,degfre,comm)
-             Call core_shell_quench(safe,temp)
-             If (megcon > 0) Call constraints_quench(mxshak,tolnce)
-             If (megpmf > 0) Call pmf_quench(mxshak,tolnce)
-             If (megrgd > 0) Call rigid_bodies_quench()
+             Call core_shell_quench(safe,temp,comm)
+             If (megcon > 0) Then
+               Call constraints_quench(mxshak,tolnce,comm)
+             End If
+             If (megpmf > 0) Then
+               Call pmf_quench(mxshak,tolnce,comm)
+             End If
+             If (megrgd > 0) Then
+               Call rigid_bodies_quench(comm)
+             End If
              If (safe) Exit
           End Do
        Else
@@ -610,7 +626,7 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: fail,i,j,k,l,is,irgd,jrgd,lrgd,rgdtyp
-    Real( Kind = wp ) :: uni,vom(1:3),tmp
+    Real( Kind = wp ) :: vom(1:3),tmp
 
     Integer, Allocatable :: ind(:),pair(:,:)
 
@@ -658,7 +674,7 @@ Contains
 
     Do i=1,k/2
        Do l=1,2
-          is=1+Int(Real(j,wp)*uni())
+          is=1+Int(Real(j,wp)*uni(comm))
           pair(l,i)=ind(is)
           ind(is)=ind(j)
           ind(j)=0
@@ -691,7 +707,7 @@ Contains
 
   ! quench RBs
 
-       Call rigid_bodies_quench()
+       Call rigid_bodies_quench(comm)
 
   ! remove centre of mass motion
 
