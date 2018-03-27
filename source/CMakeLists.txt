@@ -27,7 +27,6 @@ halo.F90
 set(dlpoly_CORE_SRCS
 langevin.F90
 coul_spole.F90
-quaternions.F90
 shared_units.F90
 numerics.F90
 impacts.F90
