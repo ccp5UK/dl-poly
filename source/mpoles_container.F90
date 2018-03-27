@@ -6,6 +6,8 @@ Module mpoles_container
   Use mpole, Only : ltpatm,mpllfr,mprotm,mplltg,mplflg, &
                      mplgfr,mprotx,mproty,mprotz,mplmap
 
+
+  Use ewald, Only : dtpbsp
   Implicit None
 
   Private

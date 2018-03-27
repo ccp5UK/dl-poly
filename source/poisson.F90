@@ -11,7 +11,7 @@ Module poisson
   Use ewald,           Only : ewald_type
   Use errors_warnings, Only : error
   Use numerics,        Only : dcell,invert,adjust_kmax
-  Use ewald_spole,     Only : adjust_kmax
+  Use numerics,     Only : adjust_kmax
 #ifdef SERIAL
   Use mpi_api
 #else

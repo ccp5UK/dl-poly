@@ -4,7 +4,7 @@ Module numerics
 
   Use setup, Only : lseed,seed
   Use comms, Only : comms_type
-  Use setup, Only : rt3,zero_plus ! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
+  Use setup, Only : rt3,zero_plus, sqrpi! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
 
   Implicit None
   Private
@@ -111,6 +111,7 @@ Public ::  pbcshfrc
 Public ::  pbcshfrl
 Public ::  jacobi
 Public ::  mat_mul
+Public ::  adjust_kmax
 
 Contains
 
@@ -871,10 +872,6 @@ Subroutine erfgen_met(rmet,alpha,beta,mxgmet,merf,mfer)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use setup, Only : sqrpi
-
-  Implicit None
 
   Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
   Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp

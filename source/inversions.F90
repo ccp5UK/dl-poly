@@ -18,6 +18,8 @@ Module inversions
     Use site,  Only : ntpatm,unqatm
     Use parse, Only : get_line,get_word,word_2_real
 
+  Use errors_warnings, Only : error, warning
+  Use numerics, Only : local_index, images
   Implicit None
 
   Logical,                        Save :: lt_inv=.false. ! no tabulated potentials opted
@@ -153,11 +155,13 @@ Contains
     Real( Kind = wp ), Allocatable :: dstdinv(:,:)
     Real( Kind = wp ), Allocatable :: pmf(:),vir(:)
 
+    Character( Len = 256 ) :: message
+
     fail = 0
     Allocate (dstdinv(0:mxginv1,1:ldfinv(0)),pmf(0:mxginv1+2),vir(0:mxginv1+2), Stat = fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'inversions_compute - allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'inversions_compute - allocation failure'
+       Call error(0,message)
     End If
 
   ! conversion: internal units -> in/out units (kJ/mol, kcal/mol, eV etc)
@@ -438,8 +442,8 @@ Contains
 
     Deallocate (dstdinv,pmf,vir, Stat = fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'inversions_compute - deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'inversions_compute - deallocation failure'
+       Call error(0,message)
     End If
 
   End Subroutine inversions_compute
@@ -469,7 +473,7 @@ Contains
     Type( comms_type ),                  Intent( InOut ) :: comm
 
     Logical           :: safe
-    Integer           :: fail(1:4),i,j,l,ia,ib,ic,id,kk,keyi,local_index
+    Integer           :: fail(1:4),i,j,l,ia,ib,ic,id,kk,keyi
     Real( Kind = wp ) :: xab,yab,zab,rab2,rrab, xac,yac,zac,rac2,rrac,   &
                          xad,yad,zad,rad2,rrad, rbc,rcd,rdb,             &
                          ubx,uby,ubz,ubn,rub, vbx,vby,vbz,vbn,rvb,wwb,   &
@@ -491,14 +495,15 @@ Contains
     Real( Kind = wp ), Allocatable :: xdac(:),ydac(:),zdac(:)
     Real( Kind = wp ), Allocatable :: xdad(:),ydad(:),zdad(:)
 
+    Character( Len = 256 ) :: message
     fail=0
     Allocate (lunsafe(1:mxinv),lstopt(0:4,1:mxinv),      Stat=fail(1))
     Allocate (xdab(1:mxinv),ydab(1:mxinv),zdab(1:mxinv), Stat=fail(2))
     Allocate (xdac(1:mxinv),ydac(1:mxinv),zdac(1:mxinv), Stat=fail(3))
     Allocate (xdad(1:mxinv),ydad(1:mxinv),zdad(1:mxinv), Stat=fail(4))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'inversions_forces allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'inversions_forces allocation failure'
+       Call error(0,message)
     End If
 
 

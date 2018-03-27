@@ -11,7 +11,7 @@ Module angles
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
+  Use kinds, Only : wp
   Use comms,  Only : comms_type,gsum,gbcast
   Use setup,  Only : pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                             mxgang,mxgang1,engunit,zero_plus, mxangl, twopi, &

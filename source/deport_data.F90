@@ -40,14 +40,13 @@ Module deport_data
 
   Use kim,    Only : kimim,idhalo
 
-  Use metal,  Only : tabmet,rho,rhs
-  
 
   Use core_shell,   Only : ntshl, listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
 
   Use constraints,  Only : ntcons,listcon,legcon,lshmv_con,lishp_con,lashp_con
 
-
+  Use errors_warnings, Only : error, warning
+  Use mpoles_container, Only : rotate_mpoles, rotate_mpoles_d
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -100,13 +99,14 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
   Integer,           Dimension( : ), Allocatable :: ind_on,ind_off
   Integer,           Dimension( : ), Allocatable :: i1pmf,i2pmf
 
+  Character( Len = 256 ) :: message
   fail=0
   Allocate (buffer(1:mxbfdp),                   Stat=fail(1))
   Allocate (lrgd(-1:Max(mxlrgd,mxrgd)),         Stat=fail(2))
   Allocate (ind_on(0:mxatms),ind_off(0:mxatms), Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'deport_atomic_data allocation failure 1, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'deport_atomic_data allocation failure 1'
+     Call error(0,message)
   End If
 
 ! Set buffer limit (half for outgoing data - half for incoming)
@@ -1144,7 +1144,9 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
                  Call tag_legend(safe1,newatm,ll*jshels,legshl,mxfshl)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many core-shell units on node: ", comm%idnode, " !!! ***"
+                 Write(message,'(/,1x,a)') "too many core-shell units"
+                 Call warning(message)
+
               End If
            Else
               Call tag_legend(safe1,newatm,ll*kshels,legshl,mxfshl)
@@ -2194,305 +2196,6 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
 End Subroutine export_atomic_positions
 
 
-Subroutine metal_ld_export(mdir,mlast,ixyz0,comm)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine to export metal density data in domain boundary
-! regions for halo formation
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov august 2014
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Integer, Intent( In    ) :: mdir
-  Integer, Intent( InOut ) :: mlast,ixyz0(1:mxatms)
-  Type( comms_type ), Intent( InOut ) :: comm
-
-  Logical :: safe,lrhs
-  Integer :: fail,iadd,limit,iblock,          &
-             i,j,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
-             jdnode,kdnode,imove,jmove,itmp
-
-  Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
-
-! Number of transported quantities per particle
-
-  If (.not.(tabmet == 3 .or. tabmet == 4)) Then
-     lrhs=.false.
-     iadd=2
-  Else
-     lrhs=.true.
-     iadd=3
-  End If
-
-  fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
-  Allocate (buffer(1:limit), Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_ld_export allocation failure, node: ', comm%idnode
-     Call error(0)
-  End If
-
-! Set buffer limit (half for outgoing data - half for incoming)
-
-  iblock=limit/Merge(2,1,comm%mxnode > 1)
-
-! DIRECTION SETTINGS INITIALISATION
-
-! define the neighbouring domains as sending and receiving with
-! respect to the direction (mdir)
-! k.   - direction selection factor
-! jxyz - halo reduction factor
-! kxyz - corrected halo reduction factor particles haloing both +&- sides
-! jdnode - destination (send to), kdnode - source (receive from)
-
-  kx = 0 ; ky = 0 ; kz = 0
-  If      (mdir == -1) Then ! Direction -x
-     kx  = 1
-     jxyz= 1
-     kxyz= 3
-
-     jdnode = map(1)
-     kdnode = map(2)
-  Else If (mdir ==  1) Then ! Direction +x
-     kx  = 1
-     jxyz= 2
-     kxyz= 3
-
-     jdnode = map(2)
-     kdnode = map(1)
-  Else If (mdir == -2) Then ! Direction -y
-     ky  = 1
-     jxyz= 10
-     kxyz= 30
-
-     jdnode = map(3)
-     kdnode = map(4)
-  Else If (mdir ==  2) Then ! Direction +y
-     ky  = 1
-     jxyz= 20
-     kxyz= 30
-
-     jdnode = map(4)
-     kdnode = map(3)
-  Else If (mdir == -3) Then ! Direction -z
-     kz  = 1
-     jxyz= 100
-     kxyz= 300
-
-     jdnode = map(5)
-     kdnode = map(6)
-  Else If (mdir ==  3) Then ! Direction +z
-     kz  = 1
-     jxyz= 200
-     kxyz= 300
-
-     jdnode = map(6)
-     kdnode = map(5)
-  Else
-     Call error(47)
-  End If
-
-! Initialise counters for length of sending and receiving buffers
-! imove and jmove are the actual number of particles to get haloed
-
-  imove=0
-  jmove=0
-
-! Initialise array overflow flags
-
-  safe=.true.
-
-! LOOP OVER ALL PARTICLES ON THIS NODE
-
-
-  Do i=1,mlast
-
-! If the particle is within the remaining 'inverted halo' of this domain
-
-     If (ixyz0(i) > 0) Then
-
-! Get the necessary halo indices
-
-        ix=Mod(ixyz0(i),10)           ! [0,1,2,3=1+2]
-        iy=Mod(ixyz0(i)-ix,100)       ! [0,10,20,30=10+20]
-        iz=Mod(ixyz0(i)-(ix+iy),1000) ! [0,100,200,300=100+200]
-
-! Filter the halo index for the selected direction
-
-        j=ix*kx+iy*ky+iz*kz
-
-! If the particle is within the correct halo for the selected direction
-
-        If (j == jxyz .or. (j > jxyz .and. Mod(j,3) == 0)) Then
-
-! If safe to proceed
-
-           If ((imove+iadd) <= iblock) Then
-
-! pack particle density and halo indexing
-
-              If (.not.lrhs) Then
-                 buffer(imove+1)=rho(i)
-
-! Use the corrected halo reduction factor when the particle is halo to both +&- sides
-
-                 buffer(imove+2)=Real(ixyz0(i)-Merge(jxyz,kxyz,j == jxyz),wp)
-              Else
-                 buffer(imove+1)=rho(i)
-                 buffer(imove+2)=rhs(i)
-
-! Use the corrected halo reduction factor when the particle is halo to both +&- sides
-
-                 buffer(imove+3)=Real(ixyz0(i)-Merge(jxyz,kxyz,j == jxyz),wp)
-              End If
-
-           Else
-
-              safe=.false.
-
-
-           End If
-
-           imove=imove+iadd
-
-        End If
-
-     End If
-
-  End Do
-
-! Check for array bound overflow (have arrays coped with outgoing data)
-
-  Call gcheck(comm,safe)
-  If (.not.safe) Then
-     itmp=Merge(2,1,comm%mxnode > 1)*imove
-     Call gmax(comm,itmp)
-     Call warning(150,Real(itmp,wp),Real(limit,wp),0.0_wp)
-     Call error(38)
-  End If
-
-! exchange information on buffer sizes
-
-  If (comm%mxnode > 1) Then
-     Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,MetLdExp_tag,comm%comm,comm%request,comm%ierr)
-     Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,MetLdExp_tag,comm%comm,comm%ierr)
-     Call MPI_WAIT(comm%request,comm%status,comm%ierr)
-  Else
-     jmove=imove
-  End If
-
-! Check for array bound overflow (can arrays cope with incoming data)
-
-  safe=((mlast+jmove/iadd) <= mxatms)
-  Call gcheck(comm,safe)
-  If (.not.safe) Then
-     itmp=mlast+jmove/iadd
-     Call gmax(comm,itmp)
-     Call warning(160,Real(itmp,wp),Real(mxatms,wp),0.0_wp)
-     Call error(39)
-  End If
-
-! exchange buffers between nodes (this is a MUST)
-
-  If (comm%mxnode > 1) Then
-     If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,MetLdExp_tag,comm%comm,comm%request,comm%ierr)
-     If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,MetLdExp_tag,comm%comm,comm%ierr)
-     If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
-  End If
-
-! load transferred data
-
-  j=Merge(iblock,0,comm%mxnode > 1)
-  Do i=1,jmove/iadd
-     mlast=mlast+1
-
-! unpack particle density and remaining halo indexing
-
-     If (.not.lrhs) Then
-        rho(mlast) =buffer(j+1)
-        ixyz0(mlast)=Nint(buffer(j+2))
-     Else
-        rho(mlast) =buffer(j+1)
-        rhs(mlast) =buffer(j+2)
-        ixyz0(mlast)=Nint(buffer(j+3))
-     End If
-
-     j=j+iadd
-  End Do
-
-  Deallocate (buffer, Stat=fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_ld_export deallocation failure, node: ', comm%idnode
-     Call error(0)
-  End If
-
-End Subroutine metal_ld_export
-
-Subroutine metal_ld_set_halo(comm)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine to arrange exchange of density data between
-! neighbouring domains/nodes
-!
-! Note: all depends on the ixyz halo array set in set_halo, this assumes
-!       that (i) rmet=rcut! as well as (ii) all the error checks in there
-!
-! copyright - daresbury laboratory
-! amended   - i.t.todorov february 2014
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Type( comms_type ), Intent( InOut ) :: comm
-
-  Logical :: safe
-  Integer :: fail,mlast
-
-  Integer, Allocatable :: ixyz0(:)
-
-  fail = 0
-  Allocate (ixyz0(1:mxatms), Stat = fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_ld_set_halo allocation failure, node: ', comm%idnode
-     Call error(0)
-  End If
-  ixyz0(1:nlast) = ixyz(1:nlast)
-
-! No halo, start with domain only particles
-
-  mlast=natms
-
-! exchange atom data in -/+ x directions
-
-  Call metal_ld_export(-1,mlast,ixyz0,comm)
-  Call metal_ld_export( 1,mlast,ixyz0,comm)
-
-! exchange atom data in -/+ y directions
-
-  Call metal_ld_export(-2,mlast,ixyz0,comm)
-  Call metal_ld_export( 2,mlast,ixyz0,comm)
-
-! exchange atom data in -/+ z directions
-
-  Call metal_ld_export(-3,mlast,ixyz0,comm)
-  Call metal_ld_export( 3,mlast,ixyz0,comm)
-
-! check atom totals after data transfer
-
-  safe=(mlast == nlast)
-  Call gcheck(comm,safe)
-  If (.not.safe) Call error(96)
-
-  Deallocate (ixyz0, Stat = fail)
-  If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_ld_set_halo deallocation failure, node: ', comm%idnode
-     Call error(0)
-  End If
-
-End Subroutine metal_ld_set_halo
-
 
 Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
 
@@ -2742,9 +2445,9 @@ Subroutine mpoles_rotmat_set_halo(comm)
   Do i=1,natms
      mplflg(i)=0
      If (mxompl < 3) Then
-        Call rotate_mpoles_d(i)
+        Call rotate_mpoles_d(i,comm)
      Else
-        Call rotate_mpoles(i)
+        Call rotate_mpoles(i,comm)
      End If
   End Do
 

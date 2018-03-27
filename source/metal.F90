@@ -14,11 +14,19 @@ Module metal
   Use setup
   Use site,   Only : ntpatm,unqatm,dens
   Use configuration, Only : natms,ltg,ltype,list,fxx,fyy,fzz,&
-                            xxx,yyy,zzz,imcon,volm
+                            xxx,yyy,zzz,imcon,volm,nlast,ixyz
 
-  Use comms,  Only : comms_type,gsum,gcheck
+  Use comms,  Only : comms_type,gsum,gcheck,gmax,MetLdExp_tag, wp_mpi
   Use parse, Only : get_line,get_word,lower_case,word_2_real
+  Use domains, Only : map
 
+  Use errors_warnings, Only : error,warning, info
+  Use numerics, Only : erfgen_met
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi
+#endif
   Implicit None
 
   Logical,                        Save :: ld_met = .false., & ! no direct calculations are opted
@@ -831,6 +839,8 @@ Subroutine metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stress,comm)
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
 
+  Character( Len = 256 ) :: message
+
 ! check on mixing metal types done in read_field
 
 ! initialise energy and virial accumulators
@@ -851,8 +861,8 @@ Subroutine metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stress,comm)
   fail=0
   Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_ld_compute allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'metal_ld_compute allocation failure'
+     Call error(0,message)
   End If
 
   Do i=1,natms
@@ -889,8 +899,8 @@ Subroutine metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stress,comm)
 
   Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_ld_compute allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a,i0)') 'metal_ld_compute allocation failure'
+     Call error(0,message)
   End If
 
 ! Check safety for densities of EAM and MBPC
@@ -1090,7 +1100,8 @@ Subroutine metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stress,comm)
 
                  End If
               Else
-                 Write(*,*) 'bad density range problem: (LTG,RHS) ',ltg(i),rhs(i)
+                 Write(message,'(a,2(i0,1x))') 'bad density range problem: (LTG,RHS) ',ltg(i),rhs(i)
+                 Call info(message)
                  safe=.false.
               End If
 
@@ -1144,7 +1155,7 @@ Subroutine metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stress,comm)
 
 ! obtain atomic densities for outer border regions
 
-  Call metal_ld_set_halo()
+  Call metal_ld_set_halo(comm)
 
 End Subroutine metal_ld_compute
 
@@ -1397,6 +1408,8 @@ Subroutine metal_table_read(l_top,comm)
                                                     cembed,cembds
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
+  Character( Len = 256 ) :: message
+
   fail=0
   If      (tabmet == 1) Then ! EAM
      Allocate (cpair(1:(ntpmet*(ntpmet+1))/2),cdens(1:ntpmet),                              &
@@ -1413,8 +1426,8 @@ Subroutine metal_table_read(l_top,comm)
   End If
   Allocate (buffer(1:mxgmet),                                                    Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_table_read allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'metal_table_read allocation failure'
+     Call error(0,message)
   End If
   cpair=0 ; cp=0
   cdens=0 ; cd=0
@@ -1494,9 +1507,9 @@ Subroutine metal_table_read(l_top,comm)
      End Do
 
      If (katom1 == 0 .or. katom2 == 0) Then
-        If (comm%idnode == 0 .and. l_top) &
-           Write(nrite,'(a)') '****',atom1,'***',atom2,'**** entry in TABEAM'
-        Call error(81)
+        If (l_top) &
+           Write(message,'(a)') '****',atom1,'***',atom2,'**** entry in TABEAM'
+        Call error(81,message,.true.)
      End If
 
 ! store working parameters
@@ -1506,9 +1519,11 @@ Subroutine metal_table_read(l_top,comm)
      buffer(2)=start-5.0_wp*buffer(4)
      buffer(3)=finish
 
-     If (comm%idnode == 0 .and. l_top) &
-        Write(nrite,"(1x,i10,4x,2a8,3x,2a4,2x,i6,1p,3e15.6)") &
+     If (l_top) Then
+        Write(message,"(1x,i10,4x,2a8,3x,2a4,2x,i6,1p,3e15.6)") &
         ipot,atom1,atom2,'EAM-',keyword,ngrid,start,finish,buffer(4)
+      Call info(message,.true.)
+    End IF
 
 ! check array dimensions
 
@@ -1755,7 +1770,10 @@ Subroutine metal_table_read(l_top,comm)
   End Do
 
   If (comm%idnode == 0) Close(Unit=ntable)
-  If (comm%idnode == 0 .and. l_top) Write(nrite,'(/,1x,a)') 'potential tables read from TABEAM file'
+  If (l_top) Then
+    Write(message,'(/,1x,a)') 'potential tables read from TABEAM file'
+    Call info(message,.true.)
+  End IF
 
   If      (tabmet == 1 .or. tabmet == 2) Then ! EAM & EEAM
      Deallocate (cpair,cdens,cembed,              Stat=fail(1))
@@ -1764,8 +1782,8 @@ Subroutine metal_table_read(l_top,comm)
   End If
   Deallocate (buffer,                             Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_table_read deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a,i0)') 'metal_table_read deallocation failure'
+     Call error(0,message)
   End If
 
   Return
@@ -2690,6 +2708,305 @@ Subroutine metal_table_derivatives(ityp,buffer,v2d,vvv)
   End Do
 
 End Subroutine metal_table_derivatives
+
+Subroutine metal_ld_export(mdir,mlast,ixyz0,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine to export metal density data in domain boundary
+! regions for halo formation
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov august 2014
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Integer, Intent( In    ) :: mdir
+  Integer, Intent( InOut ) :: mlast,ixyz0(1:mxatms)
+  Type( comms_type ), Intent( InOut ) :: comm
+
+  Logical :: safe,lrhs
+  Integer :: fail,iadd,limit,iblock,          &
+             i,j,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
+             jdnode,kdnode,imove,jmove,itmp
+
+  Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
+  Character( Len = 256 ) :: message
+! Number of transported quantities per particle
+
+  If (.not.(tabmet == 3 .or. tabmet == 4)) Then
+     lrhs=.false.
+     iadd=2
+  Else
+     lrhs=.true.
+     iadd=3
+  End If
+
+  fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
+  Allocate (buffer(1:limit), Stat=fail)
+  If (fail > 0) Then
+     Write(nrite,'(/,1x,a,i0)') 'metal_ld_export allocation failure, node: ', comm%idnode
+     Call error(0)
+  End If
+
+! Set buffer limit (half for outgoing data - half for incoming)
+
+  iblock=limit/Merge(2,1,comm%mxnode > 1)
+
+! DIRECTION SETTINGS INITIALISATION
+
+! define the neighbouring domains as sending and receiving with
+! respect to the direction (mdir)
+! k.   - direction selection factor
+! jxyz - halo reduction factor
+! kxyz - corrected halo reduction factor particles haloing both +&- sides
+! jdnode - destination (send to), kdnode - source (receive from)
+
+  kx = 0 ; ky = 0 ; kz = 0
+  If      (mdir == -1) Then ! Direction -x
+     kx  = 1
+     jxyz= 1
+     kxyz= 3
+
+     jdnode = map(1)
+     kdnode = map(2)
+  Else If (mdir ==  1) Then ! Direction +x
+     kx  = 1
+     jxyz= 2
+     kxyz= 3
+
+     jdnode = map(2)
+     kdnode = map(1)
+  Else If (mdir == -2) Then ! Direction -y
+     ky  = 1
+     jxyz= 10
+     kxyz= 30
+
+     jdnode = map(3)
+     kdnode = map(4)
+  Else If (mdir ==  2) Then ! Direction +y
+     ky  = 1
+     jxyz= 20
+     kxyz= 30
+
+     jdnode = map(4)
+     kdnode = map(3)
+  Else If (mdir == -3) Then ! Direction -z
+     kz  = 1
+     jxyz= 100
+     kxyz= 300
+
+     jdnode = map(5)
+     kdnode = map(6)
+  Else If (mdir ==  3) Then ! Direction +z
+     kz  = 1
+     jxyz= 200
+     kxyz= 300
+
+     jdnode = map(6)
+     kdnode = map(5)
+  Else
+     Call error(47)
+  End If
+
+! Initialise counters for length of sending and receiving buffers
+! imove and jmove are the actual number of particles to get haloed
+
+  imove=0
+  jmove=0
+
+! Initialise array overflow flags
+
+  safe=.true.
+
+! LOOP OVER ALL PARTICLES ON THIS NODE
+
+
+  Do i=1,mlast
+
+! If the particle is within the remaining 'inverted halo' of this domain
+
+     If (ixyz0(i) > 0) Then
+
+! Get the necessary halo indices
+
+        ix=Mod(ixyz0(i),10)           ! [0,1,2,3=1+2]
+        iy=Mod(ixyz0(i)-ix,100)       ! [0,10,20,30=10+20]
+        iz=Mod(ixyz0(i)-(ix+iy),1000) ! [0,100,200,300=100+200]
+
+! Filter the halo index for the selected direction
+
+        j=ix*kx+iy*ky+iz*kz
+
+! If the particle is within the correct halo for the selected direction
+
+        If (j == jxyz .or. (j > jxyz .and. Mod(j,3) == 0)) Then
+
+! If safe to proceed
+
+           If ((imove+iadd) <= iblock) Then
+
+! pack particle density and halo indexing
+
+              If (.not.lrhs) Then
+                 buffer(imove+1)=rho(i)
+
+! Use the corrected halo reduction factor when the particle is halo to both +&- sides
+
+                 buffer(imove+2)=Real(ixyz0(i)-Merge(jxyz,kxyz,j == jxyz),wp)
+              Else
+                 buffer(imove+1)=rho(i)
+                 buffer(imove+2)=rhs(i)
+
+! Use the corrected halo reduction factor when the particle is halo to both +&- sides
+
+                 buffer(imove+3)=Real(ixyz0(i)-Merge(jxyz,kxyz,j == jxyz),wp)
+              End If
+
+           Else
+
+              safe=.false.
+
+
+           End If
+
+           imove=imove+iadd
+
+        End If
+
+     End If
+
+  End Do
+
+! Check for array bound overflow (have arrays coped with outgoing data)
+
+  Call gcheck(comm,safe)
+  If (.not.safe) Then
+     itmp=Merge(2,1,comm%mxnode > 1)*imove
+     Call gmax(comm,itmp)
+     Call warning(150,Real(itmp,wp),Real(limit,wp),0.0_wp)
+     Call error(38)
+  End If
+
+! exchange information on buffer sizes
+
+  If (comm%mxnode > 1) Then
+     Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,MetLdExp_tag,comm%comm,comm%request,comm%ierr)
+     Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,MetLdExp_tag,comm%comm,comm%ierr)
+     Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+  Else
+     jmove=imove
+  End If
+
+! Check for array bound overflow (can arrays cope with incoming data)
+
+  safe=((mlast+jmove/iadd) <= mxatms)
+  Call gcheck(comm,safe)
+  If (.not.safe) Then
+     itmp=mlast+jmove/iadd
+     Call gmax(comm,itmp)
+     Call warning(160,Real(itmp,wp),Real(mxatms,wp),0.0_wp)
+     Call error(39)
+  End If
+
+! exchange buffers between nodes (this is a MUST)
+
+  If (comm%mxnode > 1) Then
+     If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,MetLdExp_tag,comm%comm,comm%request,comm%ierr)
+     If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,MetLdExp_tag,comm%comm,comm%ierr)
+     If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+  End If
+
+! load transferred data
+
+  j=Merge(iblock,0,comm%mxnode > 1)
+  Do i=1,jmove/iadd
+     mlast=mlast+1
+
+! unpack particle density and remaining halo indexing
+
+     If (.not.lrhs) Then
+        rho(mlast) =buffer(j+1)
+        ixyz0(mlast)=Nint(buffer(j+2))
+     Else
+        rho(mlast) =buffer(j+1)
+        rhs(mlast) =buffer(j+2)
+        ixyz0(mlast)=Nint(buffer(j+3))
+     End If
+
+     j=j+iadd
+  End Do
+
+  Deallocate (buffer, Stat=fail)
+  If (fail > 0) Then
+     Write(message,'(/,1x,a)') 'metal_ld_export deallocation failure'
+     Call error(0,message)
+  End If
+
+End Subroutine metal_ld_export
+Subroutine metal_ld_set_halo(comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine to arrange exchange of density data between
+! neighbouring domains/nodes
+!
+! Note: all depends on the ixyz halo array set in set_halo, this assumes
+!       that (i) rmet=rcut! as well as (ii) all the error checks in there
+!
+! copyright - daresbury laboratory
+! amended   - i.t.todorov february 2014
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Type( comms_type ), Intent( InOut ) :: comm
+
+  Logical :: safe
+  Integer :: fail,mlast
+
+  Integer, Allocatable :: ixyz0(:)
+  Character( Len = 256 ) :: message
+
+  fail = 0
+  Allocate (ixyz0(1:mxatms), Stat = fail)
+  If (fail > 0) Then
+     Write(message,'(/,1x,a)') 'metal_ld_set_halo allocation failure'
+     Call error(0,message)
+  End If
+  ixyz0(1:nlast) = ixyz(1:nlast)
+
+! No halo, start with domain only particles
+
+  mlast=natms
+
+! exchange atom data in -/+ x directions
+
+  Call metal_ld_export(-1,mlast,ixyz0,comm)
+  Call metal_ld_export( 1,mlast,ixyz0,comm)
+
+! exchange atom data in -/+ y directions
+
+  Call metal_ld_export(-2,mlast,ixyz0,comm)
+  Call metal_ld_export( 2,mlast,ixyz0,comm)
+
+! exchange atom data in -/+ z directions
+
+  Call metal_ld_export(-3,mlast,ixyz0,comm)
+  Call metal_ld_export( 3,mlast,ixyz0,comm)
+
+! check atom totals after data transfer
+
+  safe=(mlast == nlast)
+  Call gcheck(comm,safe)
+  If (.not.safe) Call error(96)
+
+  Deallocate (ixyz0, Stat = fail)
+  If (fail > 0) Then
+     Write(message,'(/,1x,a)') 'metal_ld_set_halo deallocation failure'
+     Call error(0,message)
+  End If
+
+End Subroutine metal_ld_set_halo
 
 
 End Module metal

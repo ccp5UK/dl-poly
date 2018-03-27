@@ -13,7 +13,7 @@ Module halo
 
 
   Private
-  
+ 
   Contains
   
   Subroutine refresh_halo_positions(comm)
@@ -255,6 +255,7 @@ Subroutine set_halo_particles(rlnk,keyfce)
   End Do
 
 End Subroutine set_halo_particles
+
 
 
   End Module halo

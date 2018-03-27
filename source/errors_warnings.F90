@@ -15,6 +15,12 @@ Module errors_warnings
   Public :: error
   Public :: info
   Public :: init_error_system
+
+
+  Interface warning
+    Module Procedure warning_special
+    Module Procedure warning_general
+  End Interface
   Contains
   
 
@@ -28,7 +34,7 @@ Module errors_warnings
 
   End Subroutine init_error_system
 
-  Subroutine warning(kode,a,b,c)
+  Subroutine warning_special(kode,a,b,c)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -650,11 +656,30 @@ Module errors_warnings
 
   End If
 
-End Subroutine warning
+End Subroutine warning_special
+
+
+Subroutine warning_general(message,master_only)
+  Character( Len=* ), Intent( In ) :: message
+  Logical, Optional, Intent( In ) :: master_only
+
+  Logical :: zeroOnly 
+
+  zeroOnly=.false.
+  If (Present(master_only)) zeroOnly=master_only
+
+  If (zeroOnly) Then
+       Write(ounit,'(a,1x,i0,a)')"*** warning - "//Trim(message)//", node: ",eworld%idnode, " !!! ***"
+  Else
+     If (eworld%idnode == 0 ) Then 
+         Write(ounit,'(a)')"*** warning - "//Trim(message)//" !!! ***"
+     End If
+   End If   
+
+ End Subroutine  warning_general
+
 
 Subroutine info(message,master_only)
-
-
   Character( Len=* ), Intent( In ) :: message
   Logical, Optional, Intent( In ) :: master_only
 
