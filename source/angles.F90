@@ -12,7 +12,7 @@ Module angles
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use comms,  Only : comms_type,gsum,gbcast
+  Use comms,  Only : comms_type,gsum,gbcast,gsync,gcheck
   Use setup,  Only : pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                             mxgang,mxgang1,engunit,zero_plus, mxangl, twopi, &
                             delth_max,ntable,mxtang,mxatdm,mxfang,mxpang,mxtmls
@@ -20,6 +20,8 @@ Module angles
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                             xxx,yyy,zzz,fxx,fyy,fzz,cfgname
   Use parse, Only : get_line,get_word,word_2_real
+  Use errors_warnings, Only : error,warning
+  Use numerics, Only : local_index,images
 
   Implicit None
 
@@ -156,11 +158,13 @@ Contains
   Real( Kind = wp ), Allocatable :: dstdang(:,:)
   Real( Kind = wp ), Allocatable :: pmf(:),vir(:)
 
+  Character( Len = 256 ) :: message
+
   fail = 0
   Allocate (dstdang(0:mxgang1,1:ldfang(0)),pmf(0:mxgang1+2),vir(0:mxgang1+2), Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'angles_compute - allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'angles_compute - allocation failure, node'
+     Call error(0,message)
   End If
 
 ! conversion: internal units -> in/out units (kJ/mol, kcal/mol, eV etc)
@@ -449,8 +453,8 @@ Contains
 
   Deallocate (dstdang,pmf,vir, Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'angles_compute - deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'angles_compute - deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine angles_compute
@@ -479,7 +483,7 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
   Type( comms_type),                   Intent( InOut ) :: comm
 
   Logical           :: safe
-  Integer           :: fail(1:3),i,j,l,ia,ib,ic,keya,kk,local_index
+  Integer           :: fail(1:3),i,j,l,ia,ib,ic,keya,kk
   Real( Kind = wp ) :: xab,yab,zab,rab,rrab, xbc,ybc,zbc,rbc,rrbc, &
                        theta,cost,sint,rsint,                      &
                        fxa,fxc,fya, fyc,fza,fzc,                   &
@@ -494,13 +498,15 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
   Real( Kind = wp ), Allocatable :: xdab(:),ydab(:),zdab(:)
   Real( Kind = wp ), Allocatable :: xdbc(:),ydbc(:),zdbc(:)
 
+  Character( Len = 256 ) :: message
+
   fail=0
   Allocate (lunsafe(1:mxangl),lstopt(0:3,1:mxangl),       Stat=fail(1))
   Allocate (xdab(1:mxangl),ydab(1:mxangl),zdab(1:mxangl), Stat=fail(2))
   Allocate (xdbc(1:mxangl),ydbc(1:mxangl),zdbc(1:mxangl), Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'angles_forces allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'angles_forces allocation failure'
+     Call error(0,message)
   End If
 
 
@@ -558,10 +564,13 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
      Do j=0,comm%mxnode-1
         If (comm%idnode == j) Then
            Do i=1,ntangl
-              If (lunsafe(i)) Write(nrite,'(/,1x,a,2(i10,a))')     &
-                 '*** warning - global unit number', listang(0,i), &
+             If (lunsafe(i)) Then
+               Write(message,'(/,1x,a,2(i10,a))')     &
+                 'global unit number', listang(0,i), &
                  ' , with a head particle number', listang(1,i),   &
-                 ' contributes towards next error !!! ***'
+                 ' contributes towards next error'
+               Call warning(message)
+             End If
            End Do
         End If
         Call gsync(comm)
@@ -1043,8 +1052,8 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
   Deallocate (xdab,ydab,zdab, Stat=fail(2))
   Deallocate (xdbc,ydbc,zdbc, Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'angles_forces deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'angles_forces deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine angles_forces
@@ -1078,6 +1087,7 @@ Subroutine angles_table_read(angl_name,comm)
   Integer,           Allocatable :: read_type(:)
   Real( Kind = wp ), Allocatable :: bufpot(:),bufvir(:)
 
+  Character( Len = 256 ) :: message
 
   If (comm%idnode == 0) Open(Unit=ntable, File='TABANG')
 
@@ -1146,8 +1156,8 @@ Subroutine angles_table_read(angl_name,comm)
   Allocate (read_type(1:ltpang(0)),          Stat=fail(1))
   Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'error - angles_table_read allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'error - angles_table_read allocation failure'
+     Call error(0,message)
   End If
   Call allocate_angl_pot_arrays()
 
@@ -1381,8 +1391,8 @@ Subroutine angles_table_read(angl_name,comm)
   Deallocate (read_type,     Stat=fail(1))
   Deallocate (bufpot,bufvir, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'error - angles_table_read deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'error - angles_table_read deallocation failure'
+     Call error(0,message)
   End If
 
   Return

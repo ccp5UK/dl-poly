@@ -25,11 +25,11 @@
 
   If (levcfg == 2) Then
      If (megrgd > 0) Then
-        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxx,fyy,fzz)
+        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxx,fyy,fzz,comm)
 
         If (l_lan) Then
            Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
-           If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
+           If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
            Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl,comm)
         Else
            Call rigid_bodies_str_ss(strcom,comm)

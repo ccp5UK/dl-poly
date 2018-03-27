@@ -10,12 +10,15 @@ Module constraints
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only           : wp
-  Use comms,        Only    : comms_type,gsum,gcheck
+  Use kinds,           Only : wp
+  Use comms,           Only : comms_type,gsum,gcheck,gsync
   Use configuration,   Only : natms,lfrzn,nlast, vxx,vyy,vzz,weight,lsa,lsi, &
-    imcon,cell,xxx,yyy,zzz
-  Use setup, Only    : mxtmls,mxtcon,mxcons,mxfcon,mxlshp,mxproc,mxatdm, &
-    mxatms,nrite
+                              imcon,cell,xxx,yyy,zzz
+  Use setup,           Only : mxtmls,mxtcon,mxcons,mxfcon,mxlshp,mxproc,mxatdm, &
+                              mxatms,nrite
+  Use errors_warnings, Only : error,warning
+  Use shared_units,    Only : update_shared_units
+  Use numerics,        Only : images,local_index
 
   Implicit None
 
@@ -179,6 +182,7 @@ Contains
     Integer,           Allocatable :: lstopt(:,:),listot(:)
     Real( Kind = wp ), Allocatable :: dxx(:),dyy(:),dzz(:)
     Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
+    Character( Len = 256 )         :: message
 
     fail=0
     Allocate (lstitr(1:mxatms),                          Stat=fail(1))
@@ -186,13 +190,15 @@ Contains
     Allocate (dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons), Stat=fail(3))
     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail(4))
     If (Any(fail > 0)) Then
-      Write(nrite,'(/,1x,a,i0)') 'constraints_quench allocation failure, node: ', comm%idnode
-      Call error(0)
+      Write(message,'(/,1x,a)') 'constraints_quench allocation failure'
+      Call error(0,message)
     End If
 
     ! gather velocities of shared atoms
 
-    If (lshmv_con) Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz)
+    If (lshmv_con) Then
+      Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz,comm)
+    End If
 
     ! construct current constrained bond vectors and listot array (shared
     ! constraint atoms) for iterative (constraints) algorithms
@@ -310,9 +316,9 @@ Contains
         End Do
 
         ! transport velocity updates to other nodes
-
-        If (lshmv_con) Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz)
-
+        If (lshmv_con) Then
+          Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz,comm)
+        End If
       End If
     End Do
 
@@ -333,7 +339,7 @@ Contains
     Deallocate (dxx,dyy,dzz,   Stat=fail(3))
     Deallocate (vxt,vyt,vzt,   Stat=fail(4))
     If (Any(fail > 0)) Then
-      Write(nrite,'(/,1x,a,i0)') 'constraints_quench deallocation failure, node: ', comm%idnode
+      Write(message,'(/,1x,a)') 'constraints_quench deallocation failure'
       Call error(0)
     End If
 
@@ -360,15 +366,17 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical :: safe
-    Integer :: fail,i,j,k,l,local_index
+    Integer :: fail,i,j,k,l
 
     Logical, Allocatable :: lunsafe(:)
+
+    Character( Len = 256 ) :: message
 
     fail=0
     Allocate (lunsafe(1:mxcons), Stat=fail)
     If (fail > 0) Then
-      Write(nrite,'(/,1x,a,i0)') 'constraints_tags allocation failure, node: ', comm%idnode
-      Call error(0)
+      Write(message,'(/,1x,a)') 'constraints_tags allocation failure'
+      Call error(0,message)
     End If
 
     ! initialise listot array (shared constraint bond)
@@ -452,10 +460,13 @@ Contains
       Do l=0,comm%mxnode-1
         If (comm%idnode == l) Then
           Do k=1,ntcons
-            If (lunsafe(k)) Write(nrite,'(/,1x,a,2(i10,a))')     &
-              '*** warning - global unit number', listcon(0,k), &
-              ' , with a head particle number', listcon(1,k),   &
-              ' contributes towards next error !!! ***'
+            If (lunsafe(k)) Then
+                Write(message,'(/,1x,a,2(i10,a))')     &
+                'global unit number', listcon(0,k), &
+                ' , with a head particle number', listcon(1,k),   &
+                ' contributes towards next error'
+                Call warning(message)
+              End If
           End Do
         End If
         Call gsync(comm)
@@ -475,8 +486,8 @@ Contains
 
     Deallocate (lunsafe, Stat=fail)
     If (fail > 0) Then
-      Write(nrite,'(/,1x,a,i0)') 'constraints_tags deallocation failure, node: ', comm%idnode
-      Call error(0)
+      Write(message,'(/,1x,a)') 'constraints_tags deallocation failure'
+      Call error(0,message)
     End If
 
   End Subroutine constraints_tags
@@ -514,11 +525,13 @@ Subroutine constraints_rattle              &
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: vxt,vyt,vzt
 
+  Character( Len = 256 ) :: message
+
   fail=0
   Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'constraints_rattle allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'constraints_rattle allocation failure'
+     Call error(0,message)
   End If
 
 ! normalise constraint vectors on first pass outside
@@ -548,7 +561,9 @@ Subroutine constraints_rattle              &
 
 ! update velocities globally: transport velocity updates of shared atoms to other nodes
 
-     If (lshmv_con) Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz)
+     If (lshmv_con) Then
+       Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz,comm)
+     End If
 
 ! initialise velocity correction arrays
 
@@ -659,8 +674,8 @@ Subroutine constraints_rattle              &
 
   Deallocate (vxt,vyt,vzt, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'constraints_rattle deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'constraints_rattle deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine constraints_rattle
@@ -702,12 +717,14 @@ Subroutine constraints_shake_vv       &
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
   Real( Kind = wp ), Dimension( : ), Allocatable :: dxt,dyt,dzt,dt2,esig
 
+  Character(Len=256) :: message
+
   fail=0
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                              Stat=fail(1))
   Allocate (dxt(1:mxcons),dyt(1:mxcons),dzt(1:mxcons),dt2(1:mxcons),esig(1:mxcons), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'constraints_shake allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'constraints_shake allocation failure'
+     Call error(0,message)
   End If
 
 
@@ -731,7 +748,9 @@ Subroutine constraints_shake_vv       &
 
 ! update positions globally: transport position updates of shared atoms to other nodes
 
-     If (lshmv_con) Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,xxx,yyy,zzz)
+     If (lshmv_con) Then
+       Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,xxx,yyy,zzz,comm)
+     End If
 
 ! calculate temporary bond vector
 
@@ -864,17 +883,19 @@ Subroutine constraints_shake_vv       &
      Do i=0,comm%mxnode-1
         If (comm%idnode == i) Then
            Do k=1,ntcons
-              If (esig(k) >= tolnce*prmcon(listcon(0,k)))                       &
-                 Write(nrite,'(/,1x,3(a,i10),a,/,a,f8.2,a,1p,e12.4,a)')         &
-                      '*** warning - global constraint number', listcon(0,k),   &
-                      ' , with particle numbers:', listcon(1,k),                &
-                      ' &', listcon(2,k), ' ,', ' converges to a length of ',   &
-                      Sqrt(dt2(k)+prmcon(listcon(0,k))**2),                     &
-                      ' Angstroms with a factor', esig(k)/prmcon(listcon(0,k)), &
-                      ' ,contributes towards next error !!! ***'
+             If (esig(k) >= tolnce*prmcon(listcon(0,k))) Then
+               Write(message,'(/,1x,3(a,i10),a,/,a,f8.2,a,1p,e12.4,a)')         &
+                 'global constraint number', listcon(0,k),   &
+                 ' , with particle numbers:', listcon(1,k),                &
+                 ' &', listcon(2,k), ' ,', ' converges to a length of ',   &
+                 Sqrt(dt2(k)+prmcon(listcon(0,k))**2),                     &
+                 ' Angstroms with a factor', esig(k)/prmcon(listcon(0,k)), &
+                 ' ,contributes towards next error'
+               Call warning(message)
+             End If
            End Do
         End If
-        Call gsync()
+        Call gsync(comm)
      End Do
      Call error(105)
   Else ! Collect per call and per step passage statistics
@@ -906,8 +927,8 @@ Subroutine constraints_shake_vv       &
   Deallocate (xxt,yyt,zzt,          Stat=fail(1))
   Deallocate (dxt,dyt,dzt,dt2,esig, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'constraints_shake deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'constraints_shake deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine constraints_shake_vv
