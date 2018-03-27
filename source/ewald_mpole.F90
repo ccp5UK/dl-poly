@@ -1,12 +1,16 @@
 Module ewald_mpole
   Use kinds, Only : wp, sp
   Use comms, Only : comms_type, gcheck, gsum
-  Use mpole
   Use configuration, Only : natms,ltg,list,fxx,fyy,fzz,cell,volm,nlast, &
                             xxx,yyy,zzz,lfrzn
-  Use setup, Only : mxlist, nrite, r4pie0, sqrpi, zero_plus, &
+  Use setup, Only : mxlist, r4pie0, sqrpi, zero_plus, &
                            kmaxa, kmaxb, kmaxc, mxspl1, mxspl2, twopi, mxgele
-  Use ewald,        Only : ewald_type
+  Use ewald,        Only : ewald_type,spl_cexp,bspcoe,bspgen_mpoles,dtpbsp,exchange_grid
+  Use numerics, Only : invert,dcell,erfcgen
+  Use mpoles_container, Only : ewald_deriv,explicit_ewald_real_loops,&
+                               explicit_spme_loops,limit_erfr_deriv
+  Use errors_warnings, Only : error
+  Use mpole
 
   Implicit None
 
@@ -56,6 +60,7 @@ Module ewald_mpole
     Real( Kind = wp ) :: imp(1:mximpl),jmp(1:mximpl)
     Real( Kind = wp ) :: impx(1:mximpl),impy(1:mximpl),impz(1:mximpl)
     Real( Kind = wp ) :: jmpx(1:mximpl),jmpy(1:mximpl),jmpz(1:mximpl)
+    Character( Len = 256 ) :: message
 
     If (newjob) Then
        newjob = .false.
@@ -63,8 +68,8 @@ Module ewald_mpole
        fail=0
        Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ewald_real_mforces allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ewald_real_mforces allocation failure'
+          Call error(0,message)
        End If
 
   ! interpolation interval
@@ -456,6 +461,7 @@ Module ewald_mpole
     Real( Kind = wp ) :: imp(1:mximpl),jmp(1:mximpl)
     Real( Kind = wp ) :: impx(1:mximpl),impy(1:mximpl),impz(1:mximpl)
     Real( Kind = wp ) :: jmpx(1:mximpl),jmpy(1:mximpl),jmpz(1:mximpl)
+    Character( Len = 256 ) :: message
 
     If (newjob) Then
        newjob = .false.
@@ -463,8 +469,8 @@ Module ewald_mpole
        fail=0
        Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ewald_real_mforces allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ewald_real_mforces allocation failure'
+          Call error(0,message)
        End If
 
   ! interpolation interval
@@ -1133,7 +1139,7 @@ Module ewald_mpole
     Integer              :: fail(1:4), i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt, &
                             jjtjjb,counter, k1,k2,k3,s1,s2,s3,ks1,ks2,ks3, mm,nn
 
-    Real( Kind = wp )    :: Dtpbsp,det,rcell(1:9),celprp(1:10),ralph,rvolm,scale,exclcoef, &
+    Real( Kind = wp )    :: det,rcell(1:9),celprp(1:10),ralph,rvolm,scale,exclcoef, &
                             rcpcut,rcpct2,strs(1:9),eng,akv,tmp,bb1,bb2,bb3,mptmp,         &
                             rksq,rkx1,rkx2,rkx3, rky1,rky2,rky3, rkz1,rkz2,rkz3,           &
                             rrkxy,rrkxz,rrkyx,rrkyz,rrkzx,rrkzy, sq1,sq2,sq3, tx,ty,tz,    &
@@ -1190,6 +1196,7 @@ Module ewald_mpole
   ! DaFT arrays local indices
 
     Integer              :: j_local, k_local, l_local
+    Character( Len = 256 ) :: message
 
 
     fail=0
@@ -1226,8 +1233,8 @@ Module ewald_mpole
 
        Allocate (ww1(1:kmaxa),ww2(1:kmaxb),ww3(1:kmaxc), Stat = fail(1))
        If (fail(1) > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ww arrays allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ww arrays allocation failure'
+          Call error(0,message)
        End If
 
   ! initialise the complex exponential arrays
@@ -1239,8 +1246,8 @@ Module ewald_mpole
        Allocate (bscx(1:kmaxa),bscy(1:kmaxb),bscz(1:kmaxc), Stat = fail(1))
        Allocate (csp(1:mxspl),                              Stat = fail(2))
        If (Any(fail > 0)) Then
-          Write(nrite,'(/,1x,a,i0)') 'bsc and cse arrays allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'bsc and cse arrays allocation failure'
+          Call error(0,message)
        End If
 
   ! calculate the global B-spline coefficients
@@ -1252,8 +1259,8 @@ Module ewald_mpole
        Deallocate (csp,         Stat = fail(1))
        Deallocate (ww1,ww2,ww3, Stat = fail(2))
        If (Any(fail > 0)) Then
-          Write(nrite,'(/,1x,a,i0)') 'cse and ww arrays deallocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'cse and ww arrays deallocation failure'
+          Call error(0,message)
        End If
 
   !!! END CARDINAL B-SPLINES SET-UP
@@ -1278,8 +1285,8 @@ Module ewald_mpole
        Allocate ( index_y( 1:block_y ), Stat = fail(2) )
        Allocate ( index_z( 1:block_z ), Stat = fail(3) )
        If (Any(fail > 0)) Then
-          Write(nrite,'(/,1x,a,i0)') 'SPME index arrays allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'SPME index arrays allocation failure'
+          Call error(0,message)
        End If
 
        Call pfft_indices( kmaxa, block_x, idx, nprx, index_x )
@@ -1296,8 +1303,8 @@ Module ewald_mpole
                   qt3_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(3) )
        Allocate ( pfft_work( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(4) )
        If (Any(fail > 0)) Then
-          Write(nrite,'(/,1x,a,i0)') 'SPME DaFT workspace arrays allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'SPME DaFT workspace arrays allocation failure'
+          Call error(0,message)
        End If
 
   !!! END DAFT SET-UP
@@ -1314,8 +1321,8 @@ Module ewald_mpole
               bdz(0:mxspl),bsddz(0:mxspl,1:mxspl,1:mxatms),                         Stat = fail(3))
     Allocate (bspx(1:mxspl,1:mxatms),bspy(1:mxspl,1:mxatms),bspz(1:mxspl,1:mxatms), Stat = fail(4))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'ewald_spme_mforces allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'ewald_spme_mforces allocation failure'
+       Call error(0,message)
     End If
 
   ! compute self-interaction energy (per node) and torques
@@ -1488,13 +1495,13 @@ Module ewald_mpole
 
   ! construct B-splines for atoms
 
-    Call bspgen_mpoles(nlast,mxspl,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz)
+    Call bspgen_mpoles(nlast,mxspl,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,comm)
 
     Deallocate (txx,tyy,tzz,    Stat = fail(1))
     Deallocate (bspx,bspy,bspz, Stat = fail(2))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'ewald_spme_mforces allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'ewald_spme_mforces allocation failure'
+       Call error(0,message)
     End If
 
   ! zero 3D charge array
@@ -1684,7 +1691,7 @@ Module ewald_mpole
 
                                bdx=bsddx(:,j,i)
 
-                               tmp = mptmp*Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz)
+                               tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz)
 
                                qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + tmp
 
@@ -1701,7 +1708,7 @@ Module ewald_mpole
 
                                   bdx=bsddx(:,j,i)
 
-                                  tmp = mptmp*Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz)
+                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz)
 
                                   qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + tmp
 
@@ -1720,7 +1727,7 @@ Module ewald_mpole
                                   j_local = jj - ixb + 1
 
                                   bdx=bsddx(:,j,i)
-                                  tmp = mptmp*Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz)
+                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz)
 
                                   qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + tmp
 
@@ -1949,8 +1956,8 @@ Module ewald_mpole
     Deallocate (bdx,bdy,bdz,       Stat = fail(2))
     Deallocate (bsddx,bsddy,bsddz, Stat = fail(3))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'ewald_spme_mforces deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'ewald_spme_mforces deallocation failure'
+       Call error(0,message)
     End If
 
   Contains
@@ -1982,7 +1989,7 @@ Module ewald_mpole
 
       Integer           :: fail(1:2), delspl, ixdb,iydb,izdb,ixdt,iydt,izdt, &
                            i,j,k,l, jj,kk,ll, s1,s2,s3, mm
-      Real( Kind = wp ) :: Dtpbsp,tmp,gmp,fff(0:3),fix,fiy,fiz,qsum, &
+      Real( Kind = wp ) :: tmp,gmp,fff(0:3),fix,fiy,fiz,qsum, &
                            tmpi,tix,tiy,tiz,dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3
 
       Real( Kind = wp ) :: imp(1:mximpl)
@@ -2007,11 +2014,12 @@ Module ewald_mpole
       Allocate (bdx(0:mxspl),bdy(0:mxspl),bdz(0:mxspl),        Stat = fail(1))
       Allocate (qqc_domain( ixdb:ixdt, iydb:iydt, izdb:izdt ), Stat = fail(2))
       If (Any(fail > 0)) Then
-         Write(nrite,'(/,1x,a,i0)') 'spme_mforces allocation failure, node: ', comm%idnode
+         Write(message,'(/,1x,a)') 'spme_mforces allocation failure'
+         Call error(0,message)
       End If
 
-      Call exchange_grid( ixb , ixt , iyb , iyt , izb , izt , qqc_local , &
-                          ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain  )
+      Call exchange_grid(ixb , ixt , iyb , iyt , izb , izt , qqc_local, &
+                         ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, comm  )
 
       tmp=-2.0_wp*scale
 
@@ -2176,13 +2184,13 @@ Module ewald_mpole
 
                                  gmp = qsum*imp(mm)
 
-                                 fix = fix + gmp*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz)
-                                 fiy = fiy + gmp*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz)
-                                 fiz = fiz + gmp*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz)
+                                 fix = fix + gmp*dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz)
+                                 fiy = fiy + gmp*dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz)
+                                 fiz = fiz + gmp*dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz)
 
   ! torque
 
-                                 tmpi = qsum*Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz)
+                                 tmpi = qsum*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz)
 
                                  tix = tix + impx(mm)*tmpi
                                  tiy = tiy + impy(mm)*tmpi
@@ -2255,7 +2263,8 @@ Module ewald_mpole
       Deallocate (bdx,bdy,bdz, Stat = fail(1))
       Deallocate (qqc_domain,  Stat = fail(2))
       If (Any(fail > 0)) Then
-         Write(nrite,'(/,1x,a,i0)') 'spme_mforces dealocation failure, node: ', comm%idnode
+         Write(message,'(/,1x,a)') 'spme_mforces dealocation failure'
+         Call error(0,message)
       End If
 
     End Subroutine spme_mforces
@@ -2357,6 +2366,7 @@ Module ewald_mpole
   ! DaFT arrays local indices
 
     Integer              :: j_local, k_local, l_local
+    Character( Len = 256 ) :: message
 
 
     fail=0
@@ -2393,8 +2403,8 @@ Module ewald_mpole
 
        Allocate (ww1(1:kmaxa),ww2(1:kmaxb),ww3(1:kmaxc), Stat = fail(1))
        If (fail(1) > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ww arrays allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ww arrays allocation failure'
+          Call error(0,message)
        End If
 
   ! initialise the complex exponential arrays
@@ -2406,8 +2416,8 @@ Module ewald_mpole
        Allocate (bscx(1:kmaxa),bscy(1:kmaxb),bscz(1:kmaxc), Stat = fail(1))
        Allocate (csp(1:mxspl),                              Stat = fail(2))
        If (Any(fail > 0)) Then
-          Write(nrite,'(/,1x,a,i0)') 'bsc and cse arrays allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'bsc and cse arrays allocation failure'
+          Call error(0,message)
        End If
 
   ! calculate the global B-spline coefficients
@@ -2419,8 +2429,8 @@ Module ewald_mpole
        Deallocate (csp,         Stat = fail(1))
        Deallocate (ww1,ww2,ww3, Stat = fail(2))
        If (Any(fail > 0)) Then
-          Write(nrite,'(/,1x,a,i0)') 'cse and ww arrays deallocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'cse and ww arrays deallocation failure'
+          Call error(0,message)
        End If
 
   !!! END CARDINAL B-SPLINES SET-UP
@@ -2445,8 +2455,8 @@ Module ewald_mpole
        Allocate ( index_y( 1:block_y ), Stat = fail(2) )
        Allocate ( index_z( 1:block_z ), Stat = fail(3) )
        If (Any(fail > 0)) Then
-          Write(nrite,'(/,1x,a,i0)') 'SPME index arrays allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'SPME index arrays allocation failure'
+          Call error(0,message)
        End If
 
        Call pfft_indices( kmaxa, block_x, idx, nprx, index_x )
@@ -2463,8 +2473,8 @@ Module ewald_mpole
                   qt3_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(3) )
        Allocate ( pfft_work( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(4) )
        If (Any(fail > 0)) Then
-          Write(nrite,'(/,1x,a,i0)') 'SPME DaFT workspace arrays allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'SPME DaFT workspace arrays allocation failure'
+          Call error(0,message)
        End If
 
   !!! END DAFT SET-UP
@@ -2477,8 +2487,8 @@ Module ewald_mpole
               bdz(0:mxspl),bsddz(0:mxspl,1:mxspl,1:mxatms),                         Stat = fail(3))
     Allocate (bspx(1:mxspl,1:mxatms),bspy(1:mxspl,1:mxatms),bspz(1:mxspl,1:mxatms), Stat = fail(4))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'ewald_spme_mforces allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'ewald_spme_mforces allocation failure'
+       Call error(0,message)
     End If
 
   ! initialise coulombic potential energy and virial
@@ -2554,13 +2564,13 @@ Module ewald_mpole
 
   ! construct B-splines for atoms
 
-    Call bspgen_mpoles(nlast,mxspl,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz)
+    Call bspgen_mpoles(nlast,mxspl,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,comm)
 
     Deallocate (txx,tyy,tzz,    Stat = fail(1))
     Deallocate (bspx,bspy,bspz, Stat = fail(2))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'ewald_spme_mforces allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'ewald_spme_mforces allocation failure'
+       Call error(0,message)
     End If
 
   ! zero 3D charge array
@@ -4247,8 +4257,8 @@ Module ewald_mpole
     Deallocate (bdx,bdy,bdz,       Stat = fail(2))
     Deallocate (bsddx,bsddy,bsddz, Stat = fail(3))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'ewald_spme_mforces deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'ewald_spme_mforces deallocation failure'
+       Call error(0,message)
     End If
 
   Contains
@@ -4312,11 +4322,12 @@ Module ewald_mpole
       Allocate (bdx(0:mxspl),bdy(0:mxspl),bdz(0:mxspl),        Stat = fail(1))
       Allocate (qqc_domain( ixdb:ixdt, iydb:iydt, izdb:izdt ), Stat = fail(2))
       If (Any(fail > 0)) Then
-         Write(nrite,'(/,1x,a,i0)') 'spme_mforces allocation failure, node: ', comm%idnode
+         Write(message,'(/,1x,a)') 'spme_mforces allocation failure'
+         Call error(0,message)
       End If
 
-      Call exchange_grid( ixb , ixt , iyb , iyt , izb , izt , qqc_local , &
-                          ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain  )
+      Call exchange_grid( ixb , ixt , iyb , iyt , izb , izt , qqc_local, &
+                          ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, comm)
 
   ! Real values of kmax vectors
 
@@ -4522,7 +4533,8 @@ Module ewald_mpole
       Deallocate (bdx,bdy,bdz, Stat = fail(1))
       Deallocate (qqc_domain,  Stat = fail(2))
       If (Any(fail > 0)) Then
-         Write(nrite,'(/,1x,a,i0)') 'spme_mforces dealocation failure, node: ', comm%idnode
+         Write(message,'(/,1x,a)') 'spme_mforces dealocation failure'
+         Call error(0,message)
       End If
 
     End Subroutine spme_mforces
@@ -5642,6 +5654,7 @@ Module ewald_mpole
     Real( Kind = wp ) :: imp(1:mximpl),jmp(1:mximpl)
     Real( Kind = wp ) :: impx(1:mximpl),impy(1:mximpl),impz(1:mximpl)
     Real( Kind = wp ) :: jmpx(1:mximpl),jmpy(1:mximpl),jmpz(1:mximpl)
+    Character( Len = 256 ) :: message
 
     If (.not.ewld%lf_fce) Then ! All's been done but needs copying
        Do i=1,natms
@@ -5672,8 +5685,8 @@ Module ewald_mpole
     fail=0
     Allocate (l_ind(1:mxatdm),nz_fr(0:comm%mxnode), Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_mforces allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'ewald_frzn_mforces allocation failure'
+       Call error(0,message)
     End If
 
     Call invert(cell,rcell,det)
@@ -5717,8 +5730,8 @@ Module ewald_mpole
                  mmpx(1:mximpl,1:nzfr),mmpy(1:mximpl,1:nzfr),mmpz(1:mximpl,1:nzfr), &
                  xfr(1:nzfr),yfr(1:nzfr),zfr(1:nzfr), Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_mforces allocation failure 1, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ewald_frzn_mforces allocation failure 1'
+          Call error(0,message)
        End If
 
        mmp=0.0_wp
@@ -6393,8 +6406,8 @@ Module ewald_mpole
 
        Deallocate (mmp,mmpx,mmpy,mmpz,xfr,yfr,zfr, Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_mforces deallocation failure 1, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ewald_frzn_mforces deallocation failure 1'
+          Call error(0,message)
        End If
 
     Else
@@ -6404,8 +6417,8 @@ Module ewald_mpole
 
        Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_mforces allocation failure 2, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ewald_frzn_mforces allocation failure 2'
+          Call error(0,message)
        End If
 
        Do ii=1,nz_fr(comm%idnode+1)
@@ -6689,8 +6702,8 @@ Module ewald_mpole
 
        Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_mforces deallocation failure 2, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'ewald_frzn_mforces deallocation failure 2'
+          Call error(0,message)
        End If
 
     End If
@@ -6743,8 +6756,8 @@ Module ewald_mpole
 
     Deallocate (l_ind,nz_fr, Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'ewald_frzn_mforces deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'ewald_frzn_mforces deallocation failure'
+       Call error(0,message)
     End If
 
   End Subroutine ewald_frzn_mforces
