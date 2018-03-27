@@ -33,6 +33,7 @@ Module vnl
 
   Real( Kind = wp ), Allocatable, Save :: xbg(:),ybg(:),zbg(:)
 
+  Public :: vnl_set_check
 
 Contains
 

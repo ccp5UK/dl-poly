@@ -21,7 +21,7 @@
 
 ! Exchange atomic data in border regions
 
-           Call set_halo_particles(rlnk,keyfce) ! inducing in here only
+           Call set_halo_particles(rlnk,keyfce,comm) ! inducing in here only
 
 ! Re-tag RBs when called again after the very first time
 ! when it's done in rigid_bodies_setup <- build_book_intra
