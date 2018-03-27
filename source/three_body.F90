@@ -18,6 +18,8 @@ Module three_body
                              r_nprx,r_npry,r_nprz
   Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
                              xxx,yyy,zzz,fxx,fyy,fzz
+  Use errors_warnings, Only : error,warning
+  Use numerics, Only : dcell, invert
   Implicit None
 
   Integer,                        Save :: ntptbp = 0
@@ -116,7 +118,7 @@ Contains
 
   Integer,           Dimension( : ), Allocatable :: link,lct,lst,listin
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
-
+  Character( Len = 256 ) :: message
 
 ! Get the dimensional properties of the MD cell
 
@@ -143,8 +145,8 @@ Contains
   Allocate (link(1:mxatms),listin(1:mxatms),lct(1:ncells),lst(1:ncells), Stat=fail(1))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'three_body_forces allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'three_body_forces allocation failure'
+     Call error(0,message)
   End If
 
 ! Calculate the displacements from the origin of the MD cell
@@ -756,8 +758,8 @@ Contains
   Deallocate (link,listin,lct,lst, Stat=fail(1))
   Deallocate (xxt,yyt,zzt,         Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'three_body_forces deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'three_body_forces deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine three_body_forces

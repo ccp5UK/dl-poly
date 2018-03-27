@@ -18,6 +18,8 @@ Module tersoff
   Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
                              xxx,yyy,zzz,fxx,fyy,fzz
 
+  Use errors_warnings, Only : error,warning
+  use numerics, Only : dcell, invert
   Implicit None
 
   Integer,                        Save :: ntpter = 0, &
@@ -133,6 +135,7 @@ Contains
   Real( Kind = wp ), Dimension( : ), Allocatable :: scr,gcr,gam,gvr,cst,rkj,wkj
 
 
+  Character( Len = 256 ) :: message
 ! Get reciprocal of interpolation interval
 
   rdr=Real(mxgter-4,wp)/rcter
@@ -167,8 +170,8 @@ Contains
   Allocate (cst(1:mxlist),gam(1:mxlist),gvr(1:mxlist),                   Stat=fail(6))
   If (potter == 2) Allocate (rkj(1:mxlist),wkj(1:mxlist),                Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'tersoff_forces allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'tersoff_forces allocation failure'
+     Call error(0,message)
   End If
 
 ! Calculate the displacements from the origin of the MD cell
@@ -864,8 +867,8 @@ Contains
   Deallocate (cst,gam,gvr,              Stat=fail(6))
   If (potter == 2) Deallocate (rkj,wkj, Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'tersoff_forces deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'tersoff_forces deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine tersoff_forces
