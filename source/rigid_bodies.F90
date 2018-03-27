@@ -19,8 +19,8 @@ Module rigid_bodies
   Use statistics,      Only : xin,yin,zin
   Use numerics,        Only : images, jacobi, invert
   Use shared_units,    Only : update_shared_units
-  Use numerics,        Only : images
-  Use errors_warnings, Only : info, error
+  Use numerics,        Only : images, local_index,pbcshift
+  Use errors_warnings, Only : info, error, warning
 
 
   Implicit None
@@ -2094,7 +2094,7 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical :: safe
-    Integer :: fail,irgd,jrgd,lrgd,s,i,local_index
+    Integer :: fail,irgd,jrgd,lrgd,s,i
 
     Logical, Allocatable :: lunsafe(:)
     Character ( Len = 256 ) :: message
