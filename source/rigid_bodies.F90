@@ -14,12 +14,16 @@ Module rigid_bodies
                               nrite,mxatms,zero_plus
   Use site
   Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz, &
-                              ltg,lsite,lfrzn,fxx,fyy,fzz,nfree,lstfre
+                              ltg,lsite,lfrzn,fxx,fyy,fzz,nfree,lstfre,getcom
   Use vnl,             Only : llvnl,l_vnl,xbg,ybg,zbg
   Use statistics,      Only : xin,yin,zin
   Use numerics,        Only : images, jacobi, invert
   Use shared_units,    Only : update_shared_units
+<<<<<<< HEAD
   Use numerics,        Only : images, local_index,pbcshift
+=======
+  Use numerics,        Only : images,local_index,pbcshift
+>>>>>>> 77efa3a1ffec1f8a5e11d1f1263a8bbdf76c7362
   Use errors_warnings, Only : info, error, warning
 
 
