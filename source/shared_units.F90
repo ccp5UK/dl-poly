@@ -6,9 +6,6 @@ Module shared_units
   Use setup
   Use domains,      Only : map,mop
   Use configuration,       Only : natms,nlast,lsi,lsa
-  Use rigid_bodies, Only : q0,q1,q2,q3,          &
-                                  rgdvxx,rgdvyy,rgdvzz, &
-                                  rgdoxx,rgdoyy,rgdozz
   Use numerics, Only : local_index,shellsort
   Use errors_warnings, Only : error
   
@@ -28,7 +25,8 @@ Module shared_units
   Contains
   
   Subroutine pass_shared_units &
-           (mx_u,b_l,b_u,nt_u,list_u,mxf_u,leg_u,lshmv,lishp,lashp,comm)
+           (mx_u,b_l,b_u,nt_u,list_u,mxf_u,leg_u,lshmv,lishp,lashp,comm,&
+           q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -57,6 +55,8 @@ Module shared_units
   Logical, Intent(   Out ) :: lshmv
   Integer, Intent(   Out ) :: lishp(1:mxlshp),lashp(1:mxproc)
   Type( comms_type ), Intent( InOut ) :: comm
+  Real( Kind = wp ), Intent( InOut ),Dimension(*) :: q0,q1,q2,q3,rgdvxx,rgdvyy,&
+                                                      rgdvzz,rgdoxx,rgdoyy,rgdozz
 
   Logical, Save :: oldjob = .false.
 
