@@ -7,7 +7,8 @@ Module mpole
   Use core_shell, Only : numshl,lstshl
   Use parse
   Use comms, Only : comms_type
-
+  Use numerics, Only : factorial
+  Use errors_warnings, Only : error,warning,info
 
   Implicit None
 
@@ -71,7 +72,7 @@ Contains
   Subroutine allocate_mpoles_arrays()
 
     Integer           :: n,k,om1,numpl,fail(1:9)
-    Real( Kind = wp ) :: Factorial,gearp(1:7),aspcp(1:7)
+    Real( Kind = wp ) :: gearp(1:7),aspcp(1:7)
 
     If (mximpl < 1) Return ! no MPOLES file read <= no multipoles directive in FIELD
 
@@ -304,15 +305,20 @@ Contains
                               ordmpl_min,ordmpl_max,                &
                               indmpl,indmpl_start,indmpl_final
 
-    Real( Kind = wp )      :: Factorial,charge,scl,polarity,dumping
+    Real( Kind = wp )      :: charge,scl,polarity,dumping
+    Character( Len = 256 ) :: message
 
   ! open MPOLES data file
 
-    If (comm%idnode == 0) Then
-       Open(Unit=nmpldt, File = 'MPOLES', Status = 'old')
-       Write(nrite,"(/,/,1x,'ELECTROSTATICS MULTIPOLES SPECIFICATION')")
-       If (.not.l_top) Write(nrite,"(/,1x,'detailed specification opted out')")
-    End If
+  If (comm%idnode == 0) Then
+    Open(Unit=nmpldt, File = 'MPOLES', Status = 'old')
+  End If
+  Write(message,"(/,/,1x,'ELECTROSTATICS MULTIPOLES SPECIFICATION')")
+  Call info(message,.true.)
+  If (.not.l_top) Then
+    Write(message,"(/,1x,'detailed specification opted out')")
+    Call info(message,.true.)
+  End If
 
     Call get_line(safe,nmpldt,record,comm)
     If (.not.safe) Go To 2000
@@ -345,21 +351,25 @@ Contains
           If (word(1:4) == 'type') Call get_word(record,word)
 
           If (ntpmls == Nint(word_2_real(word))) Then
-             If (comm%idnode == 0) Write(nrite,"(/,/,1x,'number of molecular types',6x,i10)") ntpmls
+             Write(message,"(/,/,1x,'number of molecular types',6x,i10)") ntpmls
+             Call info(message,.true.)
           Else
-             If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')                        &
-    "*** warning - number of molecular types mistmatch between FIELD and MPOLES !!! ***", &
-    "***           FIELD  reports: ", ntpmls,                                             &
-    "***           MPOLES reports: ", Nint(word_2_real(word))
-
-             Call error(623)
+            Write(message,'(/,1x,a,2(/,1x,a,i0))')                        &
+              "number of molecular types mistmatch between FIELD and MPOLES !!! ***", &
+            "***           FIELD  reports: ", ntpmls,                                             &
+              "***           MPOLES reports: ", Nint(word_2_real(word))
+            Call warning(message,.true.)
+            Call error(623,master_only=.true.)
           End If
 
   ! read in molecular characteristics for every molecule
 
           Do itmols=1,ntpmls
 
-             If (comm%idnode == 0 .and. l_top) Write(nrite,"(/,/,1x,'molecular species type',9x,i10)") itmols
+            If (l_top) Then
+              Write(message,"(/,/,1x,'molecular species type',9x,i10)") itmols
+              Call info(message,.true.)
+            End If
 
   ! name of molecular species
 
@@ -374,12 +384,13 @@ Contains
              record2=molnam(itmols) ;                   Call lower_case(record2)
 
              If (record1 == record2) Then
-                If (comm%idnode == 0 .and. l_top) Write(nrite,"(/,1x,'name of species:',13x,a40)") molnam(itmols)
+               If (l_top) Then
+                 Write(message,"(/,1x,'name of species:',13x,a40)") molnam(itmols)
+                 Call info(message,.true.)
+               End If
              Else
-                If (comm%idnode == 0) Write(nrite,'(/,1x,a,i0)') &
-    "*** warning - molecular names mistmatch between FIELD and MPOLES for type !!! *** ", itmols
-
-                Call error(623)
+               Write(message,'(/,1x,a)') 'molecular names mistmatch between FIELD and MPOLES for type'
+               Call error(623,message,.true.)
              End If
 
   ! read molecular data
@@ -400,14 +411,17 @@ Contains
                    Call get_word(record,word)
 
                    If (nummols(itmols) == Nint(word_2_real(word))) Then
-                      If (comm%idnode == 0 .and. l_top) Write(nrite,"(/,1x,'number of molecules  ',10x,i10)") nummols(itmols)
+                     If (l_top) Then
+                       Write(message,"(/,1x,'number of molecules  ',10x,i10)") nummols(itmols)
+                       Call info(message,.true.)
+                     End If
                    Else
-                      If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')         &
-    "*** warning - number of molecules mistmatch between FIELD and MPOLES !!! ***", &
-    "***           FIELD  reports: ", nummols(itmols),                              &
-    "***           MPOLES reports: ", Nint(word_2_real(word))
-
-                      Call error(623)
+                     Write(message,'(/,1x,a,2(/,1x,a,i0))')         &
+                       " number of molecules mistmatch between FIELD and MPOLES !!! ***", &
+                     "***           FIELD  reports: ", nummols(itmols),                              &
+                       "***           MPOLES reports: ", Nint(word_2_real(word))
+                     Call warning(message,.true.)
+                     Call error(623,master_only=.true.)
                    End If
 
   ! read in atomic details
@@ -417,18 +431,20 @@ Contains
                    Call get_word(record,word)
 
                    If (numsit(itmols) == Nint(word_2_real(word))) Then
-                      If (comm%idnode == 0 .and. l_top) Then
-    Write(nrite,"(/,1x,'number of atoms/sites',10x,i10)") numsit(itmols)
-    Write(nrite,"(/,1x,'atomic characteristics:', &
-         & /,/,15x,'site',4x,'name',2x,'multipolar order',2x,'repeat'/)")
+                      If (l_top) Then
+                        Write(message,"(/,1x,'number of atoms/sites',10x,i10)") numsit(itmols)
+                        Call info(message,.true.)
+                        Write(message,"(/,1x,'atomic characteristics:', &
+                          & /,/,15x,'site',4x,'name',2x,'multipolar order',2x,'repeat'/)")
+                        Call info(message,.true.)
                       End If
                    Else
-                      If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')                        &
-    "*** warning - number of atoms/sites per molecule mistmatch between FIELD and MPOLES !!! ***", &
-    "***           FIELD  reports: ", numsit(itmols),                                              &
-    "***           MPOLES reports: ", Nint(word_2_real(word))
-
-                      Call error(623)
+                     Write(message,'(/,1x,a,2(/,1x,a,i0))')                        &
+                       "number of atoms/sites per molecule mistmatch between FIELD and MPOLES !!! ***", &
+                     "***           FIELD  reports: ", numsit(itmols),                                              &
+                       "***           MPOLES reports: ", Nint(word_2_real(word))
+                     Call warning(message,.true.)
+                     Call error(623,master_only=.true.)
                    End If
 
   ! for every molecule of this type get site and atom description
@@ -464,12 +480,11 @@ Contains
                          lsite=jsite+nrept-1
 
                          Do i=jsite,lsite
-                            If (sitnam(i) /= atom) Then ! detect mish-mash
-                               If (comm%idnode == 0) Write(nrite,'(/,1x,a,i0,a)') &
-    "*** warning - site names mistmatch between FIELD and MPOLES for site ", ksite+1+i-jsite, " !!! ***"
-
-                               Call error(623)
-                            End If
+                           If (sitnam(i) /= atom) Then ! detect mish-mash
+                             Write(message,'(/,1x,a,i0)') &
+                               "site names mistmatch between FIELD and MPOLES for site ", ksite+1+i-jsite
+                             Call error(623,message,.true.)
+                           End If
                          End Do
 
   ! read supplied site polarisation and dumping factor
@@ -485,14 +500,15 @@ Contains
                             isite2=nsite+lstshl(2,kshels)
                             If ((isite2 >= jsite .and. isite2 <= lsite)) Then
                                l_rsh=.false.
-                               If (comm%idnode == 0) Then
-                                  If (ordmpl > 0) Write(nrite,'(/,1x,a)') &
-    "*** warning - a shell (of a polarisable multipolar ion) can only bear a charge to emulate a self-iduced dipole !!! ***"
-                                  If (polarity > zero_plus) Write(nrite,'(/,1x,a)') &
-    "*** warning - a shell (of a polarisable multipolar ion) cannot have its own associated polarisability !!! ***"
-                                  If (dumping  > zero_plus) Write(nrite,'(/,1x,a)') &
-    "*** warning - a shell (of a polarisable multipolar ion) cannot have its own associated dumping factor !!! ***"
-                               End If
+                               If (ordmpl > 0) Write(message,'(/,1x,a)') &
+                                 "a shell (of a polarisable multipolar ion) can only bear a charge to emulate a self-iduced dipole"
+                               Call warning(message,.true.)
+                               If (polarity > zero_plus) Write(message,'(/,1x,a)') &
+                                 "a shell (of a polarisable multipolar ion) cannot have its own associated polarisability"
+                               Call warning(message,.true.)
+                               If (dumping  > zero_plus) Write(message,'(/,1x,a)') &
+                                 "a shell (of a polarisable multipolar ion) cannot have its own associated dumping factor"
+                               Call warning(message,.true.)
                             End If
                          End Do
 
@@ -503,14 +519,16 @@ Contains
                             ordmpl_max=Max(ordmpl_max,ordmpl)
                          End If
 
-                         If (comm%idnode == 0 .and. l_top) Then
-                            If (l_rsh) Then
-    Write(nrite,"(9x,i10,4x,a8,4x,i2,5x,i10,2f7.3)") ksite+1,atom,ordmpl,nrept,polarity,dumping
-                            Else
-    Write(nrite,"(9x,i10,4x,a8,4x,i2,5x,i10,2a)") ksite+1,atom,1,nrept,                                 &
-                                               Merge(' *ignored* ','           ',polarity > zero_plus), &
-                                               Merge(' *ignored* ','           ',dumping  > zero_plus)
-                            End If
+                         If (l_top) Then
+                           If (l_rsh) Then
+                             Write(message,"(9x,i10,4x,a8,4x,i2,5x,i10,2f7.3)") ksite+1,atom,ordmpl,nrept,polarity,dumping
+                             Call info(message,.true.)
+                           Else
+                             Write(message,"(9x,i10,4x,a8,4x,i2,5x,i10,2a)") ksite+1,atom,1,nrept,                                 &
+                               Merge(' *ignored* ','           ',polarity > zero_plus), &
+                               Merge(' *ignored* ','           ',dumping  > zero_plus)
+                             Call info(message,.true.)
+                           End If
                          End If
 
   ! monopole=charge
@@ -539,8 +557,10 @@ Contains
 
   ! report
 
-                         If (comm%idnode == 0 .and. l_top) &
-    Write(nrite,"(3x,a12,3x,f10.5)") 'charge',charge
+                          If (l_top) Then
+                            Write(message,"(3x,a12,3x,f10.5)") 'charge',charge
+                            Call info(message,.true.)
+                          End If
 
   ! higher poles counters
 
@@ -572,16 +592,20 @@ Contains
 
   ! report
 
-                               If (comm%idnode == 0 .and. l_top) Then
-                                  If      (ordmpl_next == 1) Then
-    Write(nrite,"(3x,a12,3x, 3f10.5)") 'dipole',       mpllfr(indmpl_start:indmpl_final,jsite)
-                                  Else If (ordmpl_next == 2) Then
-    Write(nrite,"(3x,a12,3x, 6f10.5)") 'quadrupole',   mpllfr(indmpl_start:indmpl_final,jsite)
-                                  Else If (ordmpl_next == 3) Then
-    Write(nrite,"(3x,a12,3x,10f10.5)") 'octupole',     mpllfr(indmpl_start:indmpl_final,jsite)
-                                  Else If (ordmpl_next == 4) Then
-    Write(nrite,"(3x,a12,3x,15f10.5)") 'hexadecapole', mpllfr(indmpl_start:indmpl_final,jsite)
-                                  End If
+                               If (l_top) Then
+                                 If      (ordmpl_next == 1) Then
+                                   Write(message,"(3x,a12,3x, 3f10.5)") 'dipole',       mpllfr(indmpl_start:indmpl_final,jsite)
+                                   Call info(message,.true.)
+                                 Else If (ordmpl_next == 2) Then
+                                   Write(message,"(3x,a12,3x, 6f10.5)") 'quadrupole',   mpllfr(indmpl_start:indmpl_final,jsite)
+                                   Call info(message,.true.)
+                                 Else If (ordmpl_next == 3) Then
+                                   Write(message,"(3x,a12,3x,10f10.5)") 'octupole',     mpllfr(indmpl_start:indmpl_final,jsite)
+                                   Call info(message,.true.)
+                                 Else If (ordmpl_next == 4) Then
+                                   Write(message,"(3x,a12,3x,15f10.5)") 'hexadecapole', mpllfr(indmpl_start:indmpl_final,jsite)
+                                   Call info(message,.true.)
+                                 End If
                                End If
 
   ! rescale poles values by their degeneracy
@@ -612,32 +636,52 @@ Contains
 
   ! report
 
-                               If (comm%idnode == 0 .and. l_top) Then
-                                  If (l_rsh) Then
-                                     If      (ordmpl_next == 1) Then
-    Write(nrite,"(3x,a12,1x,a)") 'dipole',                 '     *** supplied but not required ***'
-                                     Else If (ordmpl_next == 2) Then
-    Write(nrite,"(3x,a12,1x,a)") 'quadrupole',             '     *** supplied but not required ***'
-                                     Else If (ordmpl_next == 3) Then
-    Write(nrite,"(3x,a12,1x,a)") 'octupole',               '     *** supplied but not required ***'
-                                     Else If (ordmpl_next == 4) Then
-    Write(nrite,"(3x,a12,1x,a)") 'hexadecapole',           '     *** supplied but not required ***'
-                                     Else
-    Write(nrite,"(3x,a12,i0,a)") 'pole order ',ordmpl_next,'     *** supplied but not required ***'
-                                     End If
-                                  Else
-                                     If      (ordmpl_next == 1) Then
-    Write(nrite,"(3x,a12,1x,a)") 'dipole',                 '     *** supplied but ignored as invalid ***'
-                                     Else If (ordmpl_next == 2) Then
-    Write(nrite,"(3x,a12,1x,a)") 'quadrupole',             '     *** supplied but ignored as invalid ***'
-                                     Else If (ordmpl_next == 3) Then
-    Write(nrite,"(3x,a12,1x,a)") 'octupole',               '     *** supplied but ignored as invalid ***'
-                                     Else If (ordmpl_next == 4) Then
-    Write(nrite,"(3x,a12,1x,a)") 'hexadecapole',           '     *** supplied but ignored as invalid ***'
-                                     Else
-    Write(nrite,"(3x,a12,i0,a)") 'pole order ',ordmpl_next,'     *** supplied but ignored as invalid ***'
-                                     End If
-                                  End If
+                               If (l_top) Then
+                                 If (l_rsh) Then
+                                   If      (ordmpl_next == 1) Then
+                                     Write(message,"(3x,a12,1x,a)") &
+                                       'dipole', '     *** supplied but not required ***'
+                                     Call info(message,.true.)
+                                   Else If (ordmpl_next == 2) Then
+                                     Write(message,"(3x,a12,1x,a)") &
+                                       'quadrupole', '     *** supplied but not required ***'
+                                     Call info(message,.true.)
+                                   Else If (ordmpl_next == 3) Then
+                                     Write(message,"(3x,a12,1x,a)") &
+                                       'octupole', '     *** supplied but not required ***'
+                                     Call info(message,.true.)
+                                   Else If (ordmpl_next == 4) Then
+                                     Write(message,"(3x,a12,1x,a)") &
+                                       'hexadecapole', '     *** supplied but not required ***'
+                                     Call info(message,.true.)
+                                   Else
+                                     Write(message,"(3x,a12,i0,a)") &
+                                       'pole order ',ordmpl_next,'     *** supplied but not required ***'
+                                     Call info(message,.true.)
+                                   End If
+                                 Else
+                                   If      (ordmpl_next == 1) Then
+                                     Write(message,"(3x,a12,1x,a)") &
+                                       'dipole', '     *** supplied but ignored as invalid ***'
+                                     Call info(message,.true.)
+                                   Else If (ordmpl_next == 2) Then
+                                     Write(message,"(3x,a12,1x,a)") &
+                                       'quadrupole', '     *** supplied but ignored as invalid ***'
+                                     Call info(message,.true.)
+                                   Else If (ordmpl_next == 3) Then
+                                     Write(message,"(3x,a12,1x,a)") &
+                                       'octupole', '     *** supplied but ignored as invalid ***'
+                                     Call info(message,.true.)
+                                   Else If (ordmpl_next == 4) Then
+                                     Write(message,"(3x,a12,1x,a)") &
+                                       'hexadecapole', '     *** supplied but ignored as invalid ***'
+                                     Call info(message,.true.)
+                                   Else
+                                     Write(message,"(3x,a12,i0,a)") &
+                                       'pole order ',ordmpl_next,'     *** supplied but ignored as invalid ***'
+                                     Call info(message,.true.)
+                                   End If
+                                 End If
                                End If
 
                             End If
@@ -662,18 +706,23 @@ Contains
 
                 Else If (word(1:6) == 'finish') Then
 
-                   If (comm%idnode == 0) Then
-                      Write(nrite,'(/,1x,3(a,i0),a)') &
-    "*** warning - multipolar electrostatics requested up to order ", &
-    mxompl, " with specified interactions up order ",                 &
-    ordmpl_max," and least order ", ordmpl_min," !!! ***"
-                      If (ordmpl_max*mxompl == 0) Write(nrite,'(1x,2a)') &
-    "*** warning - multipolar electrostatics machinery to be used for ", &
-    "monopoles only electrostatic interactions (point charges only) !!! ***"
-                      If (ordmpl_max > 4) Write(nrite,'(1x,2a)')     &
-    "*** warning - electrostatic interactions beyond hexadecapole ", &
-    "order can not be considered and are thus ignored !!! ***"
-                   End If
+                  Write(message,'(/,1x,3(a,i0))') &
+                    "multipolar electrostatics requested up to order ", &
+                    mxompl, " with specified interactions up order ", &
+                    ordmpl_max," and least order ", ordmpl_min
+                  Call warning(message,.true.)
+                  If (ordmpl_max*mxompl == 0) Then
+                    Write(message,'(1x,2a)') &
+                      "multipolar electrostatics machinery to be used for ", &
+                      "monopoles only electrostatic interactions (point charges only)"
+                    Call warning(message,.true.)
+                  End If
+                  If (ordmpl_max > 4) Then
+                    Write(message,'(1x,2a)')     &
+                      "electrostatic interactions beyond hexadecapole ", &
+                      "order can not be considered and are thus ignored"
+                    Call warning(message,.true.)
+                  End If
 
                    Go To 1000
 
@@ -682,8 +731,8 @@ Contains
   ! error exit for unidentified directive in molecular data
 
                    Call strip_blanks(record)
-                   If (comm%idnode == 0) Write(nrite,'(/,1x,2a)') word(1:Len_Trim(word)+1),record
-                   Call error(12)
+                   Write(message,'(/,1x,2a)') word(1:Len_Trim(word)+1),record
+                   Call error(12,message,.true.)
 
                 End If
 
@@ -709,8 +758,8 @@ Contains
 
   ! error exit for unidentified directive
 
-          If (comm%idnode == 0) Write(nrite,'(/,1x,a)') word(1:Len_Trim(word))
-          Call error(4)
+          Write(message,'(/,1x,a)') word(1:Len_Trim(word))
+          Call error(4,message,.true.)
 
        End If
 
