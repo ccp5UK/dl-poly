@@ -219,6 +219,7 @@ Program dl_poly
 
   Allocate(dlp_world(0:0))
   Call init_comms(dlp_world(0))
+  dlp_world(0)%ou=nrite
   Call init_error_system(nrite,dlp_world(0))
   comm=dlp_world(0) ! this shall vanish asap w_ are proper things
   If (dlp_world(0)%mxnode > 1) Call gsync(dlp_world(0))
