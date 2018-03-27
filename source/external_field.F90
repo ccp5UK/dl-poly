@@ -18,6 +18,10 @@ Module external_field
   Use kinetics, Only : getcom_mol
   Use rigid_bodies
   Use core_shell
+
+  Use errors_warnings, Only : error
+  use numerics, Only : local_index,images
+  Use rdfs, Only : usr_compute, usr_collect
   Implicit None
 
 ! Only one type of field can be applied on the system (keyfld is a scalar)
@@ -72,7 +76,7 @@ Contains
   Logical, Save     :: newjob = .true.
 
   Logical           :: safe,l1,l2
-  Integer           :: i,j,ia,ib,ic,id,fail(1:2),local_index, &
+  Integer           :: i,j,ia,ib,ic,id,fail(1:2), &
                        irgd,jrgd,lrgd,rgdtyp,megrgd
   Real( Kind = wp ) :: gamma,rrr,rz,zdif,vxt,vyt,vzt,tmp,rtmp(1:2), &
                        x(1:1),y(1:1),z(1:1),cmm(0:3),cm2(0:3)
@@ -557,7 +561,7 @@ Contains
 
      If ((.not.leql) .or. nstep >= nsteql) Then
         If (Mod(nstep,50)  == 0) Call usr_collect(rrr)
-        If (Mod(nstep,500) == 0) Call usr_compute()
+        If (Mod(nstep,500) == 0) Call usr_compute(comm)
      End If
 
 ! get force magnitude

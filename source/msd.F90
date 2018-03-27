@@ -9,7 +9,7 @@ Module msd
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Use kinds, Only : wp, li
-  Use comms, Only : comms_type, gcheck,MsdWrite_tag,gsum,wp_mpi
+  Use comms, Only : comms_type, gcheck,MsdWrite_tag,gsum,wp_mpi,gsync
   Use setup
   Use site,       Only : dofsit
   Use configuration,     Only : cfgname,natms,atmnam,lsite,ltg, &
@@ -40,7 +40,7 @@ Module msd
 #else
   Use mpi
 #endif
-
+  Use errors_warnings, Only : error
   Implicit None
   Private
 
@@ -92,7 +92,7 @@ Module msd
   Integer,              Dimension( : ),    Allocatable :: iwrk,n_atm
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: ddd,eee
   Integer :: ierr
-
+  Character( Len = 256 ) :: message
 
   If (.not.(nstep >= nstmsd .and. Mod(nstep-nstmsd,istmsd) == 0)) Return
 
@@ -217,7 +217,7 @@ Module msd
           buffer(1)=Real(frm,wp)
           buffer(2)=Real(rec,wp)
 
-          Call MPI_BCAST(buffer(1:2), 2, wp_mpi, 0, comm%comm, comm%ierr)
+          Call gbcast(comm,buffer(1:2),9)
 
           frm=Nint(buffer(1),li)
           rec=Nint(buffer(2),li)
@@ -235,8 +235,8 @@ Module msd
     Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
     Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
     If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'msd_write allocation failure 0, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a,i0)') 'msd_write allocation failure 0'
+        Call error(0,message)
     End If
 
     chbat=' '
@@ -328,8 +328,8 @@ Module msd
 
     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),ddd(1:mxatms),eee(1:mxatms), Stat=fail(1))
     If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'msd_write allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'msd_write allocation failure'
+        Call error(0,message)
     End If
 
 ! node 0 handles I/O
@@ -423,8 +423,8 @@ Module msd
 
     Deallocate (chbuf,iwrk,ddd,eee, Stat=fail(1))
     If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'msd_write deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'msd_write deallocation failure'
+        Call error(0,message)
     End If
 
 ! SORTED MPI-I/O or Parallel Direct Access FORTRAN or netCDF
@@ -449,7 +449,7 @@ Module msd
         Call io_finalize
 
     End If
-    Call gsync()
+    Call gsync(comm)
 
 ! Start of file
 
@@ -463,8 +463,8 @@ Module msd
 
     Allocate (ddd(1:mxatms),eee(1:mxatms), Stat=fail(1))
     If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'msd_write allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'msd_write allocation failure'
+        Call error(0,message)
     End If
 
     Do i=1,natms
@@ -508,8 +508,8 @@ Module msd
 
     Deallocate (ddd,eee, Stat=fail(1))
     If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'msd_write deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'msd_write deallocation failure'
+        Call error(0,message)
     End If
 
 ! SORTED Serial Direct Access FORTRAN
@@ -518,8 +518,8 @@ Module msd
 
     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),ddd(1:mxatms),eee(1:mxatms), Stat=fail(1))
     If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'msd_write allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'msd_write allocation failure'
+        Call error(0,message)
     End If
 
 ! node 0 handles I/O
@@ -600,8 +600,8 @@ Module msd
 
     Deallocate (chbuf,iwrk,ddd,eee, Stat=fail(1))
     If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'msd_write deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'msd_write deallocation failure'
+        Call error(0,message)
     End If
 
   End If
@@ -612,8 +612,8 @@ Module msd
     Deallocate (n_atm, Stat=fail(1))
     Deallocate (chbat, Stat=fail(2))
     If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'msd_write deallocation failure 0, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'msd_write deallocation failure 0'
+        Call error(0,message)
     End If
   End If
 
