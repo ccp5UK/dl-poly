@@ -10,12 +10,15 @@ Module constraints
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only           : wp
-  Use comms,        Only    : comms_type,gsum,gcheck
+  Use kinds,           Only : wp
+  Use comms,           Only : comms_type,gsum,gcheck,gsync
   Use configuration,   Only : natms,lfrzn,nlast, vxx,vyy,vzz,weight,lsa,lsi, &
-    imcon,cell,xxx,yyy,zzz
-  Use setup, Only    : mxtmls,mxtcon,mxcons,mxfcon,mxlshp,mxproc,mxatdm, &
-    mxatms,nrite
+                              imcon,cell,xxx,yyy,zzz
+  Use setup,           Only : mxtmls,mxtcon,mxcons,mxfcon,mxlshp,mxproc,mxatdm, &
+                              mxatms,nrite
+  Use errors_warnings, Only : error
+  Use shared_units,    Only : update_shared_units
+  Use numerics,        Only : images,local_index
 
   Implicit None
 
@@ -192,7 +195,9 @@ Contains
 
     ! gather velocities of shared atoms
 
-    If (lshmv_con) Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz)
+    If (lshmv_con) Then
+      Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz,comm)
+    End If
 
     ! construct current constrained bond vectors and listot array (shared
     ! constraint atoms) for iterative (constraints) algorithms
@@ -310,9 +315,9 @@ Contains
         End Do
 
         ! transport velocity updates to other nodes
-
-        If (lshmv_con) Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz)
-
+        If (lshmv_con) Then
+          Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz,comm)
+        End If
       End If
     End Do
 
@@ -360,7 +365,7 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical :: safe
-    Integer :: fail,i,j,k,l,local_index
+    Integer :: fail,i,j,k,l
 
     Logical, Allocatable :: lunsafe(:)
 
@@ -548,7 +553,9 @@ Subroutine constraints_rattle              &
 
 ! update velocities globally: transport velocity updates of shared atoms to other nodes
 
-     If (lshmv_con) Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz)
+     If (lshmv_con) Then
+       Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz,comm)
+     End If
 
 ! initialise velocity correction arrays
 
@@ -731,7 +738,9 @@ Subroutine constraints_shake_vv       &
 
 ! update positions globally: transport position updates of shared atoms to other nodes
 
-     If (lshmv_con) Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,xxx,yyy,zzz)
+     If (lshmv_con) Then
+       Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,xxx,yyy,zzz,comm)
+     End If
 
 ! calculate temporary bond vector
 
@@ -874,7 +883,7 @@ Subroutine constraints_shake_vv       &
                       ' ,contributes towards next error !!! ***'
            End Do
         End If
-        Call gsync()
+        Call gsync(comm)
      End Do
      Call error(105)
   Else ! Collect per call and per step passage statistics
