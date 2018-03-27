@@ -50,6 +50,7 @@ Module trajectory
 
   Private
   Public :: read_history
+  Public :: trajectory_write
 Contains
 
 

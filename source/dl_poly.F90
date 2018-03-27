@@ -134,6 +134,9 @@ Program dl_poly
   Use halo, Only : refresh_halo_positions,set_halo_particles
   Use deport_data, Only : mpoles_rotmat_set_halo,relocate_particles
   Use temperature, Only : scale_temperature,regauss_temperature
+  Use rsds, Only : rsd_write
+  Use defects, Only : defects_write
+  Use trajectory, Only : trajectory_write
     ! MAIN PROGRAM VARIABLES
 
   Implicit None
@@ -445,7 +448,7 @@ Program dl_poly
     nstraj = 0 ; istraj = 1 ; keytrj = 0  ! default trajectory
     nstep  = 0                            ! no steps done
     time   = 0.0_wp                       ! time is not relevant
-    Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
+    Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,comm)
 
     Call gtime(timelp)
     If (dlp_world(0)%idnode == 0) Then
