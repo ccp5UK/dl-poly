@@ -1,7 +1,7 @@
 Module halo
 
   Use comms,  Only : comms_type,gcheck
-  Use deport_data, Only : export_atomic_positions
+  Use deport_data, Only : export_atomic_positions, export_atomic_data
   Use setup,  Only : nrite,mxatms,kmaxa,kmaxb,kmaxc,mxspl1
   Use configuration 
 
@@ -9,6 +9,9 @@ Module halo
   Use site
   Use mpole
 
+  Use vnl,              Only : vnl_set_check
+  Use errors_warnings,  Only : error
+  
   Implicit None
 
 
@@ -39,12 +42,14 @@ Module halo
   Integer :: fail,mlast
 
   Integer, Allocatable :: ixyz0(:)
+  Character ( Len = 256 )  :: message
+
 
   fail = 0
   Allocate (ixyz0(1:mxatms), Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'refresh_halo_ppositions allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'refresh_halo_ppositions allocation failure'
+     Call error(0,message)
   End If
   ixyz0(1:nlast) = ixyz(1:nlast)
 
@@ -73,14 +78,14 @@ Module halo
 
   Deallocate (ixyz0, Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'referesh_halo_positions deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'referesh_halo_positions deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(rlnk,keyfce)
+Subroutine set_halo_particles(rlnk,keyfce,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -100,6 +105,8 @@ Subroutine set_halo_particles(rlnk,keyfce)
   Integer           :: nlx,nly,nlz,i,j,ia,ib
   Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9),x,y,z, &
                        xdc,ydc,zdc,cwx,cwy,cwz,ecwx,ecwy,ecwz
+
+  Type ( comms_type ), Intent( InOut  ) :: comm
 
 ! Define cut
 
@@ -186,18 +193,18 @@ Subroutine set_halo_particles(rlnk,keyfce)
 
 ! exchange atom data in -/+ x directions
 
-  Call export_atomic_data(-1)
-  Call export_atomic_data( 1)
+  Call export_atomic_data(-1,comm)
+  Call export_atomic_data( 1,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call export_atomic_data(-2)
-  Call export_atomic_data( 2)
+  Call export_atomic_data(-2,comm)
+  Call export_atomic_data( 2,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call export_atomic_data(-3)
-  Call export_atomic_data( 3)
+  Call export_atomic_data(-3,comm)
+  Call export_atomic_data( 3,comm)
 
 ! assign incoming atom properties (of the halo only)
 
@@ -220,7 +227,7 @@ Subroutine set_halo_particles(rlnk,keyfce)
 
 ! Set VNL checkpoint
 
-  Call vnl_set_check()
+  Call vnl_set_check(comm)
 
 ! Record global atom indices for local+halo sorting
 ! and sort multiple entries
