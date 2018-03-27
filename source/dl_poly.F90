@@ -131,7 +131,7 @@ Program dl_poly
   Use two_body, Only : two_body_forces
   Use ewald, Only : ewald_type
 
-
+  Use halo, Only : refresh_halo_positions,set_halo_particles
     ! MAIN PROGRAM VARIABLES
 
   Implicit None

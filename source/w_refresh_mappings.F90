@@ -35,7 +35,7 @@
 
 ! Exchange atomic positions in border regions
 
-           Call refresh_halo_positions()
+           Call refresh_halo_positions(comm)
 
         End If
 

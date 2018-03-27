@@ -28,7 +28,9 @@ Module build_book
   Use dihedrals
   Use inversions
   Use configuration, only : lexatm
-  Use deport_data, Only : tag_legend,pass_shared_units
+  Use shared_units, Only : tag_legend,pass_shared_units
+  Use numerics, Only : local_index
+  Use ffield, Only : report_topology
 
   Implicit None
 
@@ -75,7 +77,7 @@ Subroutine build_book_intra             &
 
   Logical :: safe(1:11),go
   Integer :: fail(1:2),i,j,isite,itmols,imols,      &
-             nsatm,neatm,nlapm,local_index,         &
+             nsatm,neatm,nlapm,         &
              iat0,jat0,kat0,lat0,mat0,nat0,         &
              iatm,jatm,katm,latm,matm,natm,         &
              ishels,jshels,kshels,lshels,mshels,    &
@@ -1623,7 +1625,7 @@ Subroutine build_book_intra             &
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,megbnd,megang,megdih,meginv)
+           megtet,megbnd,megang,megdih,meginv,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -1661,13 +1663,16 @@ Subroutine build_book_intra             &
 ! (pmf data updated by construction)
 
   If (megshl > 0 .and. comm%mxnode > 1) Call pass_shared_units &
-     (mxshl, Lbound(listshl,Dim=1),Ubound(listshl,Dim=1),ntshl, listshl,mxfshl,legshl,lshmv_shl,lishp_shl,lashp_shl,comm)
+     (mxshl, Lbound(listshl,Dim=1),Ubound(listshl,Dim=1),ntshl, listshl,mxfshl,legshl,lshmv_shl,lishp_shl,lashp_shl,comm,&
+   q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
 
   If (m_con > 0 .and. comm%mxnode > 1) Call pass_shared_units &
-     (mxcons,Lbound(listcon,Dim=1),Ubound(listcon,Dim=1),ntcons,listcon,mxfcon,legcon,lshmv_con,lishp_con,lashp_con,comm)
+     (mxcons,Lbound(listcon,Dim=1),Ubound(listcon,Dim=1),ntcons,listcon,mxfcon,legcon,lshmv_con,lishp_con,lashp_con,comm,&
+   q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
 
   If (m_rgd > 0 .and. comm%mxnode > 1) Call pass_shared_units &
-     (mxrgd, Lbound(listrgd,Dim=1),Ubound(listrgd,Dim=1),ntrgd, listrgd,mxfrgd,legrgd,lshmv_rgd,lishp_rgd,lashp_rgd,comm)
+     (mxrgd, Lbound(listrgd,Dim=1),Ubound(listrgd,Dim=1),ntrgd, listrgd,mxfrgd,legrgd,lshmv_rgd,lishp_rgd,lashp_rgd,comm,&
+   q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
 
 End Subroutine build_book_intra
 
@@ -1691,7 +1696,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, comm)
   Type( comms_type), Intent( InOut) :: comm
 
   Logical :: ok,keep_k,keep_nt
-  Integer :: i,j,k,l,m,local_index
+  Integer :: i,j,k,l,m
 
 ! is it ok not to do it since it's safe - there's enough buffering space
 

@@ -56,7 +56,9 @@ Module ffield
   Implicit None
 
   Private
-  Public :: read_field, read_mpoles
+  Public :: read_field
+  Public :: read_mpoles
+  Public :: report_topology
 Contains
 Subroutine read_field                      &
            (l_str,l_top,l_n_v,             &
