@@ -11,16 +11,20 @@ Module bonds
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,         Only : wp
-  Use setup,  Only : mxtmls,mxtbnd,mxbond,mxfbnd,mxpbnd,mxgbnd1,mxatdm, &
+  Use kinds,           Only : wp
+  Use setup,           Only : mxtmls,mxtbnd,mxbond,mxfbnd,mxpbnd,mxgbnd1,mxatdm, &
                            mxgbnd, fourpi,boltz,delr_max,nrite,npdfdt,npdgdt, &
                            engunit,zero_plus,r4pie0,mximpl,ntable,delr_max,nrite, &
                            mxtbnd,mxgbnd,zero_plus,engunit
-  Use comms,         Only : comms_type,gsum, gsync, gcheck
-  Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
+  Use comms,           Only : comms_type,gsum, gsync, gcheck, gbcast
+  Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                             chge,xxx,yyy,zzz,fxx,fyy,fzz, cfgname
-  Use site,  Only : ntpatm,unqatm
-  Use parse, Only : get_line,get_word,word_2_real
+  Use site,            Only : ntpatm,unqatm
+  Use parse,           Only : get_line,get_word,word_2_real
+  Use errors_warnings, Only : error, warning
+  Use numerics,        Only : images, local_index 
+  Use coul_mpoles,     Only : intra_mcoul 
+  Use coul_spole,      Only : intra_coul 
 
   Implicit None
 
@@ -159,12 +163,13 @@ Contains
 
   Real( Kind = wp ), Allocatable :: dstdbnd(:,:)
   Real( Kind = wp ), Allocatable :: pmf(:),vir(:)
+  Character ( Len = 256 )  :: message
 
   fail = 0
   Allocate (dstdbnd(0:mxgbnd1,1:ldfbnd(0)),pmf(0:mxgbnd1+2),vir(0:mxgbnd1+2), Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'bonds_compute - allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'bonds_compute - allocation failure'
+     Call error(0,message)
   End If
 
 ! conversion: internal units -> in/out units (kJ/mol, kcal/mol, eV etc)
@@ -441,8 +446,8 @@ Contains
 
   Deallocate (dstdbnd,pmf,vir, Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'bonds_compute - deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'bonds_compute - deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine bonds_compute
@@ -474,7 +479,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
   Type( comms_type),                   Intent( InOut ) :: comm
 
   Logical           :: safe(1:3)
-  Integer           :: fail(1:2),i,j,l,ia,ib,keyb,kk,local_index
+  Integer           :: fail(1:2),i,j,l,ia,ib,keyb,kk
   Real( Kind = wp ) :: rab,rab2,fx,fy,fz,gamma,omega,    &
                        term,term1,term2,eps,sig,         &
                        k,k2,k3,k4,r0,dr,dra,dr2,         &
@@ -486,13 +491,14 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
   Logical,           Allocatable :: lunsafe(:)
   Integer,           Allocatable :: lstopt(:,:)
   Real( Kind = wp ), Allocatable :: xdab(:),ydab(:),zdab(:)
+  Character ( Len = 256 )        :: message
 
   fail=0
   Allocate (lunsafe(1:mxbond),lstopt(0:2,1:mxbond),       Stat=fail(1))
   Allocate (xdab(1:mxbond),ydab(1:mxbond),zdab(1:mxbond), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'bond_forces allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'bond_forces allocation failure'
+     Call error(0,message)
   End If
 
 
@@ -921,8 +927,8 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
   Deallocate (lunsafe,lstopt, Stat=fail(1))
   Deallocate (xdab,ydab,zdab, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'bond_forces deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'bond_forces deallocation failure, node'
+     Call error(0,message)
   End If
 
 End Subroutine bonds_forces
@@ -954,6 +960,7 @@ Subroutine bonds_table_read(bond_name,comm)
   Integer,           Allocatable :: read_type(:)
   Real( Kind = wp ), Allocatable :: bufpot(:),bufvir(:)
 
+  Character (Len = 256 )        :: message
 
   If (comm%idnode == 0) Open(Unit=ntable, File='TABBND')
 
@@ -1021,8 +1028,8 @@ Subroutine bonds_table_read(bond_name,comm)
   Allocate (read_type(1:ltpbnd(0)),          Stat=fail(1))
   Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'error - bonds_table_read allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'error - bonds_table_read allocation failure'
+     Call error(0,message)
   End If
   Call allocate_bond_pot_arrays()
 
@@ -1255,8 +1262,8 @@ Subroutine bonds_table_read(bond_name,comm)
   Deallocate (read_type,     Stat=fail(1))
   Deallocate (bufpot,bufvir, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'error - bonds_table_read deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'error - bonds_table_read deallocation failure'
+     Call error(0,message)
   End If
 
   Return
