@@ -141,8 +141,8 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
                  If (word(1:Len_Trim(word)) /= 'timestep') Then
                     Call get_word(record,word) ; Call get_word(record,word)
-                    Call get_word(record,word) ; frm=Nint(word_2_real(word,comm,0.0_wp),li)
-                    Call get_word(record,word) ; rec=Nint(word_2_real(word,comm,0.0_wp),li)
+                    Call get_word(record,word) ; frm=Nint(word_2_real(word,0.0_wp),li)
+                    Call get_word(record,word) ; rec=Nint(word_2_real(word,0.0_wp),li)
                     If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
                        Go To 20 ! New style
                     Else
@@ -164,7 +164,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
                  rec=rec+Int(1,li)
 
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
-                 Call get_word(record,word) ; j=Nint(word_2_real(word,comm))
+                 Call get_word(record,word) ; j=Nint(word_2_real(word))
 
                  Do i=1,3+2*j ! 3 lines for cell parameters and 2*j entries for displacements
                     Read(Unit=nrsddt, Fmt=*, End=20)

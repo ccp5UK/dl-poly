@@ -1436,7 +1436,7 @@ Subroutine metal_table_read(l_top,comm)
   Call get_line(safe,ntable,record,comm)
   If (.not.safe) Go To 100
   Call get_word(record,word)
-  numpot = Nint(word_2_real(word,comm))
+  numpot = Nint(word_2_real(word))
 
   Do ipot=1,numpot
 
@@ -1477,11 +1477,11 @@ Subroutine metal_table_read(l_top,comm)
 ! data specifiers
 
      Call get_word(record,word)
-     ngrid = Nint(word_2_real(word,comm))
+     ngrid = Nint(word_2_real(word))
      Call get_word(record,word)
-     start  = word_2_real(word,comm)
+     start  = word_2_real(word)
      Call get_word(record,word)
-     finish = word_2_real(word,comm)
+     finish = word_2_real(word)
 
 ! check atom identities
 

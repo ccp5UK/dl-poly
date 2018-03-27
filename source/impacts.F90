@@ -10,6 +10,8 @@ Module impacts
   Use core_shell,   Only : ntshl,listshl
   Use kinetics,      Only : getvom,l_vom,chvom
 
+  Use numerics, Only : local_index
+  Use errors_warnings, Only : error
   Implicit None
   
   Private
@@ -34,7 +36,7 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd,comm)
   Type( comms_type ), Intent( InOut ) :: comm
   Logical           :: safe = .true.
 
-  Integer           :: local_index,i,j,irgd,jrgd,lrgd,rgdtyp
+  Integer           :: i,j,irgd,jrgd,lrgd,rgdtyp
   Real( Kind = wp ) :: tmp,vom(1:3)
 
 

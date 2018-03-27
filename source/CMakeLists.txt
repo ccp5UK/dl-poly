@@ -11,9 +11,6 @@ langevin.F90
 external_field.F90
 four_body.F90
 link_cells.F90
-numerics.F90
-shared_units.F90
-quaternions.F90
 control.F90
 ffield.F90
 trajectory.F90
@@ -30,6 +27,9 @@ coul_spole.F90
 )
 
 set(dlpoly_CORE_SRCS
+  quaternions.F90
+  shared_units.F90
+  numerics.F90
 impacts.F90
 errors_warnings.F90
 zbl_pots.F90

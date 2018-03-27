@@ -22,11 +22,16 @@ Module parallel_fft
 #endif
   Use comms, Only : wp_mpi ! access to the generalised wp_mpi and
                    ! the intrinsics in mpif.h/mpi-module
-  Use gpfa235, Only : gpfa_set
+  Use gpfa235, Only : gpfa_set,gpfa_wrap
 
   Implicit None
 
   Public :: initialize_fft, summarize_fft, pfft, pfft_indices, pfft_length_ok
+
+  Interface get_start_point
+    Module Procedure get_start_point_complex
+    Module Procedure  get_start_point_real
+  End Interface
 
   Interface initialize_fft
      Module Procedure initialize_fft
@@ -898,8 +903,6 @@ Contains
 
   Subroutine fft_3d( a, work, context, direction )
 
-    Implicit None
-
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: a
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: work
     Integer                                      , Intent( In    ) :: context
@@ -920,8 +923,6 @@ Contains
   End Subroutine fft_3d
 
   Subroutine forward_3d_fft_x( a, work, desc )
-
-    Implicit None
 
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: a
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: work
@@ -1076,8 +1077,6 @@ Contains
 
   Subroutine forward_3d_fft_y( a, work, desc )
 
-    Implicit None
-
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: a
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: work
     Type( fft_descriptor )                                         :: desc
@@ -1218,8 +1217,6 @@ Contains
 
   Subroutine forward_3d_fft_z( a, work, desc )
 
-    Implicit None
-
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: a
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: work
     Type( fft_descriptor )                                         :: desc
@@ -1354,8 +1351,6 @@ Contains
   End Subroutine forward_3d_fft_z
 
   Subroutine back_3d_fft_x( a, work, desc )
-
-    Implicit None
 
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: a
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: work
@@ -2113,11 +2108,9 @@ Contains
     End If
   End Subroutine generate_indexing
 
-  Function get_start_point( a, ix, iy, iz )
+  Function get_start_point_complex( a, ix, iy, iz )
 
-    Implicit None
-
-    Integer                                                        :: get_start_point
+    Integer                                                        :: get_start_point_complex
 
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( In    ) :: a
     Integer                                      , Intent( In    ) :: ix
@@ -2132,10 +2125,32 @@ Contains
 
     lm = l * m
 
-    get_start_point = ix + iy * l + iz * lm
-    get_start_point = get_start_point * 2 + 1
+    get_start_point_complex = ix + iy * l + iz * lm
+    get_start_point_complex = get_start_point_complex * 2 + 1
 
-  End Function get_start_point
+  End Function get_start_point_complex
+  
+  Function get_start_point_real( a, ix, iy, iz )
+
+    Integer                                                        :: get_start_point_real
+
+    Real( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( In    ) :: a
+    Integer                                      , Intent( In    ) :: ix
+    Integer                                      , Intent( In    ) :: iy
+    Integer                                      , Intent( In    ) :: iz
+
+    Integer :: l, m, n, lm
+
+    l = Size( a, Dim = 1 )
+    m = Size( a, Dim = 2 )
+    n = Size( a, Dim = 3 )
+
+    lm = l * m
+
+    get_start_point_real = ix + iy * l + iz * lm
+    get_start_point_real = get_start_point_real * 2 + 1
+
+  End Function get_start_point_real
 
   Subroutine fft_error( status, calling_routine, message, called_routine )
 

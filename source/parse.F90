@@ -11,6 +11,7 @@ Module parse
   Use kinds, Only : wp
   Use comms, Only : comms_type,gsync,gbcast,gcheck
   Use setup, Only : nrite
+  Use errors_warnings, Only : error
   Implicit None
 
   Public :: tabs_2_blanks, nls_2_blanks, strip_blanks, get_word, &
@@ -399,7 +400,7 @@ Contains
 
   End Subroutine get_line
 
-  Function word_2_real(word,comm,def,report)
+  Function word_2_real(word,def,report)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -422,7 +423,6 @@ Contains
     Real( Kind = wp )                               :: word_2_real
 
     Character( Len = * ), Intent( In    )           :: word
-    Type(comms_type),     Intent( In    )           :: comm
     Real( Kind = wp ),    Intent( In    ), Optional :: def
     Logical,              Intent( In    ), Optional :: report
 
@@ -430,6 +430,7 @@ Contains
     Logical               :: l_report = .true.
     Integer               :: word_end,slash_position
     Real( Kind = wp )     :: denominator
+    Character( Len = 256 ) :: message
 
     If (Present(report)) l_report = report
 
@@ -466,18 +467,18 @@ Contains
     30  Continue
     If (Present(def)) Then
       word_2_real = def
-      If (comm%idnode == 0 .and. l_report) Write(nrite,'(1x,3a,g20.10,a)') &
+      If (l_report) Write(message,'(1x,3a,g20.10,a)') &
         "*** warning - word_2_real defaulted word # ", word(1:word_end), " # to number # ", def, " # ***"
     Else
       word_2_real = 0.0_wp
-      If (comm%idnode == 0) Write(nrite,'(1x,3a)') &
+      Write(message,'(1x,3a)') &
         "*** warning - word_2_real expected to read a number but found # ", word(1:word_end), " # ***"
-      Call error(1)
+      Call error(1,message,.true.)
     End If
 
   End Function word_2_real
 
-  Function truncate_real(r,comm)
+  Function truncate_real(r)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -493,7 +494,6 @@ Contains
     Real( Kind = wp )      :: truncate_real
 
     Real( Kind = wp ), Intent( In    ) :: r
-    Type(comms_type),     Intent( In    )           :: comm
 
     Logical               , Save :: newjob = .true.
     Character( Len = 40  ), Save :: forma  = ' '
@@ -526,7 +526,7 @@ Contains
     End Do
 
     Call strip_blanks(word)
-    truncate_real=word_2_real(word,comm)
+    truncate_real=word_2_real(word)
 
   End Function truncate_real
 

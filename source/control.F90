@@ -553,14 +553,14 @@ Subroutine read_control                                &
            "%%% vector and config level read as follows: %%%"
 
         Call get_word(record,word)
-        xorg = word_2_real(word,comm)
+        xorg = word_2_real(word)
         Call get_word(record,word)
-        yorg = word_2_real(word,comm)
+        yorg = word_2_real(word)
         Call get_word(record,word)
-        zorg = word_2_real(word,comm)
+        zorg = word_2_real(word)
 
         Call get_word(record,word)
-        lvcforg = Min( Int(Abs(word_2_real(word,comm,0.0_wp))) , levcfg)
+        lvcforg = Min( Int(Abs(word_2_real(word,0.0_wp))) , levcfg)
 
         If (comm%idnode == 0) Then
            Write(nrite,"(1x,a)")          '%%% '
@@ -575,7 +575,7 @@ Subroutine read_control                                &
            "%%% config level and new cell vectors to rescale to (read in a CONFIG-like manner): %%%"
 
         Call get_word(record,word)
-        lvcfscl = Min( Int(Abs(word_2_real(word,comm,0.0_wp))) , levcfg)
+        lvcfscl = Min( Int(Abs(word_2_real(word,0.0_wp))) , levcfg)
 
         itmp=0
         Do i=1,3
@@ -583,7 +583,7 @@ Subroutine read_control                                &
            Do j=1,3
               Call get_word(record,word)
               itmp=itmp+1
-              cels(itmp)=word_2_real(word,comm)
+              cels(itmp)=word_2_real(word)
            End Do
         End Do
 
@@ -631,7 +631,7 @@ Subroutine read_control                                &
      Else If (word(1:5) == 'l_dis') Then
 
         l_dis = .true.
-        r_dis = Min( r_dis , word_2_real(word,comm,0.1_wp) )
+        r_dis = Min( r_dis , word_2_real(word,0.1_wp) )
         If (comm%idnode == 0) Write(nrite,"(2(/,1x,a),1p,e12.4)")                            &
            "%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%", &
            "%%% separation criterion (Angstroms) %%% ", r_dis
@@ -772,11 +772,11 @@ Subroutine read_control                                &
 
         l_exp = .true.
         Call get_word(record,word)
-        nx = Max(1,Nint(Abs(word_2_real(word,comm))))
+        nx = Max(1,Nint(Abs(word_2_real(word))))
         Call get_word(record,word)
-        ny = Max(1,Nint(Abs(word_2_real(word,comm))))
+        ny = Max(1,Nint(Abs(word_2_real(word))))
         Call get_word(record,word)
-        nz = Max(1,Nint(Abs(word_2_real(word,comm))))
+        nz = Max(1,Nint(Abs(word_2_real(word))))
         If (comm%idnode == 0) Write(nrite,"(/,1x,'system expansion opted',9x,3i5)") nx,ny,nz
 
 ! read impact option
@@ -784,18 +784,18 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'impact') Then
 
         Call get_word(record,word)
-        imd = Max(1,Nint(Abs(word_2_real(word,comm))))
+        imd = Max(1,Nint(Abs(word_2_real(word))))
         Call get_word(record,word)
-        tmd = Nint(Abs(word_2_real(word,comm)))
+        tmd = Nint(Abs(word_2_real(word)))
 
         Call get_word(record,word)
-        emd = Abs(word_2_real(word,comm))
+        emd = Abs(word_2_real(word))
         Call get_word(record,word)
-        vmx = word_2_real(word,comm)
+        vmx = word_2_real(word)
         Call get_word(record,word)
-        vmy = word_2_real(word,comm)
+        vmy = word_2_real(word)
         Call get_word(record,word)
-        vmz = word_2_real(word,comm)
+        vmz = word_2_real(word)
 
         If (Sqrt(vmx**2+vmy**2+vmz**2) <= zero_plus) Then
            vmx = 1.0_wp
@@ -819,11 +819,11 @@ Subroutine read_control                                &
         lseed=.true.
 
         Call get_word(record,word)
-        seed(1)=Nint(Abs(word_2_real(word,comm)))
+        seed(1)=Nint(Abs(word_2_real(word)))
         Call get_word(record,word)
-        seed(2)=Nint(Abs(word_2_real(word,comm)))
+        seed(2)=Nint(Abs(word_2_real(word)))
         Call get_word(record,word)
-        seed(3)=Nint(Abs(word_2_real(word,comm)))
+        seed(3)=Nint(Abs(word_2_real(word)))
 
         If (comm%idnode == 0) &
            Write(nrite,"(/,1x,'radomisation seeds supplied',/,1x,'(seed1,seed2,seed3)  ',10x,3i5)") seed
@@ -834,7 +834,7 @@ Subroutine read_control                                &
 
         ltemp = .true.
         Call get_word(record,word)
-        temp = Abs(word_2_real(word,comm))
+        temp = Abs(word_2_real(word))
         If (comm%idnode == 0) Write(nrite,"(/,1x,'simulation temperature (K)  ',6x,1p,e12.4)") temp
 
 ! read zero temperature optimisation
@@ -847,10 +847,10 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         l_0 = (word(1:4) == 'fire')
-        nstzero = Max(1,Abs(Nint(word_2_real(word,comm,0.0_wp))))
+        nstzero = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
         If (word(1:5) == 'every') Call get_word(record,word)
-        nstzero = Max(nstzero,Abs(Nint(word_2_real(word,comm,0.0_wp))))
+        nstzero = Max(nstzero,Abs(Nint(word_2_real(word,0.0_wp))))
 
         If (comm%idnode == 0) Write(nrite,"(/,1x,'zero K optimisation on (during equilibration)', &
            & /,1x,'temperature regaussing interval',i10)") nstzero
@@ -878,19 +878,19 @@ Subroutine read_control                                &
            lstrext=.true.
 
            Call get_word(record,word)
-           strext(1) = word_2_real(word,comm)
+           strext(1) = word_2_real(word)
            Call get_word(record,word)
-           strext(5) = word_2_real(word,comm)
+           strext(5) = word_2_real(word)
            Call get_word(record,word)
-           strext(9) = word_2_real(word,comm)
+           strext(9) = word_2_real(word)
            Call get_word(record,word)
-           strext(2) = word_2_real(word,comm)
+           strext(2) = word_2_real(word)
            strext(4) = strext(2)
            Call get_word(record,word)
-           strext(3) = word_2_real(word,comm)
+           strext(3) = word_2_real(word)
            strext(7) = strext(3)
            Call get_word(record,word)
-           strext(6) = word_2_real(word,comm)
+           strext(6) = word_2_real(word)
            strext(8) = strext(6)
 
 
@@ -907,7 +907,7 @@ Subroutine read_control                                &
 
            lpres=.true.
 
-           press = word_2_real(word,comm)
+           press = word_2_real(word)
 
            If (comm%idnode == 0) Write(nrite,"(/,1x,'simulation pressure (katms)  ',5x,1p,e12.4)") press
 
@@ -948,12 +948,12 @@ Subroutine read_control                                &
         Call get_word(record,word1)
 
         If      (word(1:8) == 'timestep' .and. word1(1:8) /= 'variable') Then
-           tstep = word_2_real(word1,comm)
+           tstep = word_2_real(word1)
         Else If ( (word(1:8) == 'timestep' .and. word1(1:8) == 'variable') .or. &
                   (word(1:8) == 'variable' .and. word1(1:8) == 'timestep') ) Then
            lvar = .true.
            Call get_word(record,word)
-           tstep = word_2_real(word,comm)
+           tstep = word_2_real(word)
         Else
            Call strip_blanks(record)
            If (comm%idnode == 0) Write(nrite,"(/,/,3a)") word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
@@ -968,15 +968,15 @@ Subroutine read_control                                &
 
         If (word(1:6) == 'mindis') Then
            Call get_word(record,word)
-           mndis=Abs(word_2_real(word,comm))
+           mndis=Abs(word_2_real(word))
         End If
         If (word(1:6) == 'maxdis') Then
            Call get_word(record,word)
-           mxdis=Abs(word_2_real(word,comm))
+           mxdis=Abs(word_2_real(word))
         End If
         If (word(1:6) == 'mxstep') Then
            Call get_word(record,word)
-           mxstp=Abs(word_2_real(word,comm))
+           mxstp=Abs(word_2_real(word))
         End If
 
 ! read number of timesteps
@@ -984,7 +984,7 @@ Subroutine read_control                                &
      Else If (word(1:5) == 'steps') Then
 
         Call get_word(record,word)
-        nstrun = Nint(word_2_real(word,comm))
+        nstrun = Nint(word_2_real(word))
         If (comm%idnode == 0) Write(nrite,"(/,1x,'selected number of timesteps',3x,i10)") nstrun
 
 ! read number of equilibration timesteps
@@ -993,7 +993,7 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         If (word(1:5) == 'steps') Call get_word(record,word)
-        nsteql = Abs(Nint(word_2_real(word,comm)))
+        nsteql = Abs(Nint(word_2_real(word)))
         If (comm%idnode == 0) Write(nrite,"(/,1x,'equilibration period (steps)',3x,i10)") nsteql
 
 ! read collection option
@@ -1021,7 +1021,7 @@ Subroutine read_control                                &
 
 ! wthpse = 2 Angs by default
 
-        tmp = Abs(word_2_real(word,comm))
+        tmp = Abs(word_2_real(word))
         If (width/4.0_wp > wthpse) Then
            lpse = .true.
            If (comm%idnode == 0) Then
@@ -1049,7 +1049,7 @@ Subroutine read_control                                &
         End If
 
         Call get_word(record,word)
-        tmp = Abs(word_2_real(word,comm))
+        tmp = Abs(word_2_real(word))
         If (tmp <= zero_plus) Then
            tmppse = temp
         Else
@@ -1082,11 +1082,11 @@ Subroutine read_control                                &
 
         If (word2(1:5) == 'minim') Then
            Call get_word(record,word)
-           nstmin = Abs(Nint(word_2_real(word,comm,0.0_wp)))
+           nstmin = Abs(Nint(word_2_real(word,0.0_wp)))
         End If
 
         Call get_word(record,word)
-        tmp = Abs(word_2_real(word,comm))
+        tmp = Abs(word_2_real(word))
 
         itmp=0
         If      (keymin == 0) Then
@@ -1115,7 +1115,7 @@ Subroutine read_control                                &
         If (itmp == 1) Call warning(360,tmp,min_tol(1),0.0_wp)
 
         Call get_word(record,word3)
-        min_tol(2) = word_2_real(word3,comm,-1.0_wp)
+        min_tol(2) = word_2_real(word3,-1.0_wp)
 
         If (word2(1:5) == 'minim') Then
            If (comm%idnode == 0) Write(nrite,                                &
@@ -1145,7 +1145,7 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
-        nstgaus = Max(1,Abs(Nint(word_2_real(word,comm,0.0_wp))))
+        nstgaus = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
         ltgaus =.true.
         If (comm%idnode == 0) Write(nrite,"(/,1x,'regauss temperature on (during equilibration)', &
@@ -1158,7 +1158,7 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
-        nstscal = Max(1,Abs(Nint(word_2_real(word,comm,0.0_wp))))
+        nstscal = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
         ltscal =.true.
         If (comm%idnode == 0) Write(nrite,"(/,1x,'temperature scaling on (during equilibration)', &
@@ -1176,7 +1176,7 @@ Subroutine read_control                                &
               Call get_word(record,word)
               If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record,word)
               If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record,word)
-              thole = Abs(word_2_real(word,comm,0.0_wp))
+              thole = Abs(word_2_real(word,0.0_wp))
            End If
            If (comm%idnode == 0) Then
   Write(nrite,"(/,1x,'CHARMM polarisation scheme selected with optional atomic thole dumping of ',f5.2)") thole
@@ -1252,7 +1252,7 @@ Subroutine read_control                                &
               If (.not.l_vv) l_lan = .true.
 
               Call get_word(record,word)
-              chi = Abs(word_2_real(word,comm))
+              chi = Abs(word_2_real(word))
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVT Langevin (Stochastic Dynamics)', &
                  & /,1x,'thermostat friction     (ps^-1)',3x,1p,e12.4)") chi
@@ -1265,9 +1265,9 @@ Subroutine read_control                                &
               keyens = 11
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word,comm))
+              taut = Abs(word_2_real(word))
               Call get_word(record,word)
-              soft = Abs(word_2_real(word,comm))
+              soft = Abs(word_2_real(word))
               If (soft > 1.0_wp) soft=1.0_wp/soft
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVT Andersen', &
@@ -1282,7 +1282,7 @@ Subroutine read_control                                &
               keyens = 12
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word,comm))
+              taut = Abs(word_2_real(word))
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVT Berendsen', &
                  & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4)") taut
@@ -1295,7 +1295,7 @@ Subroutine read_control                                &
               keyens = 13
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word,comm))
+              taut = Abs(word_2_real(word))
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVT Nose-Hoover', &
                  & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4)") taut
@@ -1309,10 +1309,10 @@ Subroutine read_control                                &
               l_gst = .true.
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word,comm))
+              taut = Abs(word_2_real(word))
 
               Call get_word(record,word)
-              gama = Abs(word_2_real(word,comm))
+              gama = Abs(word_2_real(word))
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVT gentle stochastic thermostat', &
                  & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                         &
@@ -1327,11 +1327,11 @@ Subroutine read_control                                &
               If (.not.l_vv) l_lan = .true.
 
               Call get_word(record,word)
-              chi_ep  = Abs(word_2_real(word,comm))
+              chi_ep  = Abs(word_2_real(word))
               Call get_word(record,word)
-              chi_es  = Abs(word_2_real(word,comm))
+              chi_es  = Abs(word_2_real(word))
               Call get_word(record,word)
-              vel_es2 = Abs(word_2_real(word,comm))
+              vel_es2 = Abs(word_2_real(word))
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)', &
                  & /,1x,'e-phonon friction       (ps^-1)',3x,1p,e12.4, &
@@ -1360,7 +1360,7 @@ Subroutine read_control                                &
               End If
 
               Call get_word(record,word)
-              gamdpd(0) = Abs(word_2_real(word,comm,0.0_wp))
+              gamdpd(0) = Abs(word_2_real(word,0.0_wp))
 
               If (gamdpd(0) > zero_plus) Then
                  If (comm%idnode == 0) Write(nrite,"(1x,'drag coefficient (Dalton/ps)',6x,1p,e12.4)") gamdpd(0)
@@ -1387,9 +1387,9 @@ Subroutine read_control                                &
               l_lan = .true.
 
               Call get_word(record,word)
-              chi = Abs(word_2_real(word,comm))
+              chi = Abs(word_2_real(word))
               Call get_word(record,word)
-              tai = Abs(word_2_real(word,comm))
+              tai = Abs(word_2_real(word))
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT isotropic Langevin (Stochastic Dynamics)', &
                  & /,1x,'thermostat friction     (ps^-1)',3x,1p,e12.4,                                     &
@@ -1406,9 +1406,9 @@ Subroutine read_control                                &
               keyens = 21
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word,comm))
+              taut = Abs(word_2_real(word))
               Call get_word(record,word)
-              taup = Abs(word_2_real(word,comm))
+              taup = Abs(word_2_real(word))
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT isotropic Berendsen', &
                  & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                &
@@ -1422,9 +1422,9 @@ Subroutine read_control                                &
               keyens = 22
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word,comm))
+              taut = Abs(word_2_real(word))
               Call get_word(record,word)
-              taup = Abs(word_2_real(word,comm))
+              taup = Abs(word_2_real(word))
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT isotropic Nose-Hoover (Melchionna)', &
                  & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                               &
@@ -1438,9 +1438,9 @@ Subroutine read_control                                &
               keyens = 23
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word,comm))
+              taut = Abs(word_2_real(word))
               Call get_word(record,word)
-              taup = Abs(word_2_real(word,comm))
+              taup = Abs(word_2_real(word))
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT isotropic Martyna-Tuckerman-Klein', &
                  & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                              &
@@ -1467,9 +1467,9 @@ Subroutine read_control                                &
               l_lan = .true.
 
               Call get_word(record,word)
-              chi = Abs(word_2_real(word,comm))
+              chi = Abs(word_2_real(word))
               Call get_word(record,word)
-              tai = Abs(word_2_real(word,comm))
+              tai = Abs(word_2_real(word))
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT anisotropic Langevin (Stochastic Dynamics)', &
                  & /,1x,'thermostat friction     (ps^-1)',3x,1p,e12.4,                                       &
@@ -1487,7 +1487,7 @@ Subroutine read_control                                &
               Else If (word(1:4) == 'tens') Then
                  iso=2
                  Call get_word(record,word)
-                 ten = Abs(word_2_real(word,comm))
+                 ten = Abs(word_2_real(word))
                  If (comm%idnode == 0) Write(nrite,"(3(/,1x,a),1p,e11.4)")             &
                     'semi-isotropic barostat : constant normal pressure (Pn) &',  &
                     '     (N-Pn-gamma-T)     : constant surface tension (gamma)', &
@@ -1536,9 +1536,9 @@ Subroutine read_control                                &
               keyens = 31
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word,comm))
+              taut = Abs(word_2_real(word))
               Call get_word(record,word)
-              taup = Abs(word_2_real(word,comm))
+              taup = Abs(word_2_real(word))
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT anisotropic Berendsen', &
                  & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                  &
@@ -1553,7 +1553,7 @@ Subroutine read_control                                &
               Else If (word(1:4) == 'tens') Then
                  iso=2
                  Call get_word(record,word)
-                 ten = Abs(word_2_real(word,comm))
+                 ten = Abs(word_2_real(word))
                  If (comm%idnode == 0) Write(nrite,"(3(/,1x,a),1p,e11.4)")             &
                     'semi-isotropic barostat : constant normal pressure (Pn) &',  &
                     '     (N-Pn-gamma-T)     : constant surface tension (gamma)', &
@@ -1602,9 +1602,9 @@ Subroutine read_control                                &
               keyens = 32
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word,comm))
+              taut = Abs(word_2_real(word))
               Call get_word(record,word)
-              taup = Abs(word_2_real(word,comm))
+              taup = Abs(word_2_real(word))
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT anisotropic Nose-Hoover (Melchionna)', &
                  & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                                 &
@@ -1619,7 +1619,7 @@ Subroutine read_control                                &
               Else If (word(1:4) == 'tens') Then
                  iso=2
                  Call get_word(record,word)
-                 ten = Abs(word_2_real(word,comm))
+                 ten = Abs(word_2_real(word))
                  If (comm%idnode == 0) Write(nrite,"(3(/,1x,a),1p,e11.4)")             &
                     'semi-isotropic barostat : constant normal pressure (Pn) &',  &
                     '     (N-Pn-gamma-T)     : constant surface tension (gamma)', &
@@ -1668,9 +1668,9 @@ Subroutine read_control                                &
               keyens = 33
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word,comm))
+              taut = Abs(word_2_real(word))
               Call get_word(record,word)
-              taup = Abs(word_2_real(word,comm))
+              taup = Abs(word_2_real(word))
 
               If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT anisotropic Martyna-Tuckerman-Klein', &
                  & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                                &
@@ -1685,7 +1685,7 @@ Subroutine read_control                                &
               Else If (word(1:4) == 'tens') Then
                  iso=2
                  Call get_word(record,word)
-                 ten = Abs(word_2_real(word,comm))
+                 ten = Abs(word_2_real(word))
                  If (comm%idnode == 0) Write(nrite,"(3(/,1x,a),1p,e11.4)")             &
                     'semi-isotropic barostat : constant normal pressure (Pn) &',  &
                     '     (N-Pn-gamma-T)     : constant surface tension (gamma)', &
@@ -1754,7 +1754,7 @@ Subroutine read_control                                &
      Else If (word(1:7) == 'densvar') Then
 
         Call get_word(record,word)
-        tmp = Abs(word_2_real(word,comm))
+        tmp = Abs(word_2_real(word))
 
         If (comm%idnode == 0) Write(nrite,"(/,1x,'density variation allowance (%)',3x,1p,e12.4)") tmp
 
@@ -1764,7 +1764,7 @@ Subroutine read_control                                &
 
 
         Call get_word(record,word)
-        rcut1 = Abs(word_2_real(word,comm))
+        rcut1 = Abs(word_2_real(word))
 
         If (comm%idnode == 0) Write(nrite,"(/,1x,'real space cutoff (Angs)    ',6x,1p,e12.4)") rcut1
 
@@ -1773,7 +1773,7 @@ Subroutine read_control                                &
      Else If (word(1:3) == 'pad' .or. word(1:4) == 'rpad') Then
 
         Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
-        rpad1 = Abs(word_2_real(word,comm))
+        rpad1 = Abs(word_2_real(word))
         If (comm%idnode == 0) Write(nrite,"(/,1x,'cutoff padding (Angs)       ',6x,1p,e12.4)") rpad1
 
 ! read vdw cutoff (short-range potentials)
@@ -1782,7 +1782,7 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         If (word(1:3) == 'cut') Call get_word(record,word)
-        rvdw1 = Abs(word_2_real(word,comm))
+        rvdw1 = Abs(word_2_real(word))
 
         If (comm%idnode == 0) Write(nrite,"(/,1x,'vdw cutoff (Angs) ',16x,1p,e12.4)") rvdw1
 
@@ -1804,7 +1804,7 @@ Subroutine read_control                                &
 
            If (word(1:9) == 'precision') Then
               Call get_word(record,word)
-              tmp = Abs(word_2_real(word,comm))
+              tmp = Abs(word_2_real(word))
               If (comm%idnode == 0) Write(nrite,"(1x,'Ewald sum precision         ',6x,1p,e12.4)") tmp
            End If
 
@@ -1866,11 +1866,11 @@ Subroutine read_control                                &
 
         If      (word(1:4) == 'damp') Then
            Call get_word(record,word)
-           alpha = Abs(word_2_real(word,comm))
+           alpha = Abs(word_2_real(word))
            If (comm%idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1)',10x,1p,e12.4)") alpha
         Else If (word(1:9) == 'precision') Then
            Call get_word(record,word)
-           eps0 = Abs(word_2_real(word,comm))
+           eps0 = Abs(word_2_real(word))
            If (comm%idnode == 0) Write(nrite,"(1x,'precision parameter     ',10x,1p,e12.4)") eps0
            eps0 = Max(Min(eps0,0.5_wp),1.0e-20_wp)
            tol = Sqrt(Abs(Log(eps0*rcut)))
@@ -1897,11 +1897,11 @@ Subroutine read_control                                &
 
         If      (word(1:4) == 'damp') Then
            Call get_word(record,word)
-           alpha = Abs(word_2_real(word,comm))
+           alpha = Abs(word_2_real(word))
            If (comm%idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1)',10x,1p,e12.4)") alpha
         Else If (word(1:9) == 'precision') Then
            Call get_word(record,word)
-           eps0 = Abs(word_2_real(word,comm))
+           eps0 = Abs(word_2_real(word))
            If (comm%idnode == 0) Write(nrite,"(1x,'precision parameter     ',10x,1p,e12.4)") eps0
            eps0 = Max(Min(eps0,0.5_wp),1.0e-20_wp)
            tol = Sqrt(Abs(Log(eps0*rcut)))
@@ -1927,22 +1927,22 @@ Subroutine read_control                                &
 
            If (word(1:5) == 'delta') Then   ! spacing
               Call get_word(record,word)
-              prmps(1)=Abs(word_2_real(word,comm))
+              prmps(1)=Abs(word_2_real(word))
            End If
 
            If (word(1:3) == 'eps') Then     ! tolerance
               Call get_word(record,word)
-              prmps(2)=Abs(word_2_real(word,comm))
+              prmps(2)=Abs(word_2_real(word))
            End If
 
            If (word(1:6) == 'maxits') Then  ! max number of iteration
               Call get_word(record,word)
-              prmps(3)=Abs(word_2_real(word,comm))
+              prmps(3)=Abs(word_2_real(word))
            End If
 
            If (word(1:7) == 'jmaxits') Then ! max number Jacobian iterations
               Call get_word(record,word)
-              prmps(4)=Abs(word_2_real(word,comm))
+              prmps(4)=Abs(word_2_real(word))
            End If
         End Do
 
@@ -1971,7 +1971,7 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         If (word(1:8) == 'constant') Call get_word(record,word)
-        epsq = word_2_real(word,comm)
+        epsq = word_2_real(word)
         If (comm%idnode == 0) Write(nrite,"(/,1x,'relative dielectric constant',6x,1p,e12.4)") epsq
 
 !     Else If (word(1:6) == 'induce') Then
@@ -2009,7 +2009,7 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:5) == 'force') Call get_word(record,word)
 
-        tmp = Abs(word_2_real(word,comm))
+        tmp = Abs(word_2_real(word))
         If (tmp > zero_plus) fmax=tmp
         If (comm%idnode == 0) Write(nrite,"(/,1x,'force capping on (during equilibration)', &
            & /,1x,'force capping limit (kT/Angs)',5x,1p,e12.4)") fmax
@@ -2073,11 +2073,11 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'rlxtol') Then
 
         Call get_word(record,word)
-        rlx_tol(1) = Max(1.0_wp,Abs(word_2_real(word,comm)))
+        rlx_tol(1) = Max(1.0_wp,Abs(word_2_real(word)))
         If (comm%idnode == 0) Write(nrite,"(/,1x,'relaxed shell model CGM tolerance',1x,1p,e12.4)") rlx_tol(1)
 
         Call get_word(record,word1)
-        rlx_tol(2) = word_2_real(word1,comm,-1.0_wp)
+        rlx_tol(2) = word_2_real(word1,-1.0_wp)
         If (rlx_tol(2) > zero_plus .and. comm%idnode == 0) &
                          Write(nrite,"(/,1x,'relaxed shell model CGM step     ',1x,1p,e12.4)") rlx_tol(2)
 
@@ -2086,7 +2086,7 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'mxshak') Then
 
         Call get_word(record,word)
-        mxshak = Abs(Nint(word_2_real(word,comm)))
+        mxshak = Abs(Nint(word_2_real(word)))
 
 ! read tolerance for constraint algorithms
 
@@ -2094,14 +2094,14 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         If (word(1:9) == 'tolerance') Call get_word(record,word)
-        tolnce = Abs(word_2_real(word,comm))
+        tolnce = Abs(word_2_real(word))
 
 ! read maximum number of iterations in LFV quaternion integration algorithms
 
      Else If (word(1:6) == 'mxquat') Then
 
         Call get_word(record,word)
-        mxquat = Abs(Nint(word_2_real(word,comm)))
+        mxquat = Abs(Nint(word_2_real(word)))
 
 ! read tolerance in LFV quaternion integration algorithms
 
@@ -2109,7 +2109,7 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         If (word(1:9) == 'tolerance') Call get_word(record,word)
-        quattol = Abs(word_2_real(word,comm))
+        quattol = Abs(word_2_real(word))
 
 ! read two-temperature model (ttm) specific flags
 
@@ -2164,7 +2164,7 @@ Subroutine read_control                                &
         ! electronic specific heat capacity given as constant value
 
           Call get_word(record,word)
-          Ce0 = word_2_real(word,comm)
+          Ce0 = word_2_real(word)
           If (comm%idnode == 0) Then
             Write(nrite,"(/,1x,'electronic specific heat capacity set to constant value')")
             Write(nrite,"(1x,'electronic s.h.c. (kB/atom)',7x,1p,e12.4)") Ce0
@@ -2175,9 +2175,9 @@ Subroutine read_control                                &
         ! electronic specific heat capacity given as tanh function
 
           Call get_word(record,word)
-          sh_A = word_2_real(word,comm)
+          sh_A = word_2_real(word)
           Call get_word(record,word)
-          sh_B = word_2_real(word,comm)
+          sh_B = word_2_real(word)
           If (comm%idnode == 0) Then
             Write(nrite,"(/,1x,'electronic specific heat capacity set to hyperbolic tangent function')")
             Write(nrite,"(1x,'constant term A    (kB/atom)',6x,1p,e12.4)") sh_A
@@ -2190,9 +2190,9 @@ Subroutine read_control                                &
         ! up to Fermi temperature, constant afterwards
 
           Call get_word(record,word)
-          Cemax = word_2_real(word,comm)
+          Cemax = word_2_real(word)
           Call get_word(record,word)
-          Tfermi = word_2_real(word,comm)
+          Tfermi = word_2_real(word)
           If (comm%idnode == 0) Then
             Write(nrite,"(/,1x,'electronic specific heat capacity set to linear function up to Fermi temperature')")
             Write(nrite,"(1x,'max. electronic s.h.c. (kB/atom)',2x,1p,e12.4)") Cemax
@@ -2220,7 +2220,7 @@ Subroutine read_control                                &
         ! electronic thermal conductivity given as constant value
 
           Call get_word(record,word)
-          Ka0 = word_2_real(word,comm)
+          Ka0 = word_2_real(word)
           If (comm%idnode == 0) Then
             Write(nrite,"(/,1x,'electronic thermal conductivity set to constant value')")
             Write(nrite,"(1x,'electronic t.c. (W m^-1 K^-1)',5x,1p,e12.4)") Ka0
@@ -2232,7 +2232,7 @@ Subroutine read_control                                &
         ! electronic temperature, giving t.c. at system temperature)
 
           Call get_word(record,word)
-          Ka0 = word_2_real(word,comm)
+          Ka0 = word_2_real(word)
           If (comm%idnode == 0) Then
             Write(nrite,"(/,1x,'electronic thermal conductivity set to drude model')")
             Write(nrite,"(1x,'t.c. at system temp. (W m^-1 K^-1)',1p,e12.4)") Ka0
@@ -2254,7 +2254,7 @@ Subroutine read_control                                &
         ! (for non-metal systems)
 
           Call get_word(record,word)
-          Diff0 = word_2_real(word,comm)
+          Diff0 = word_2_real(word)
           If (comm%idnode == 0) Then
             Write(nrite,"(/,1x,'electronic thermal diffusivity set to constant value')")
             Write(nrite,"(1x,'electronic t.d. (m^2 s^-1)',8x,1p,e12.4)") Diff0
@@ -2266,9 +2266,9 @@ Subroutine read_control                                &
         ! of temperature (up to Fermi temperature), constant afterwards
 
           Call get_word(record,word)
-          Diff0 = word_2_real(word,comm)
+          Diff0 = word_2_real(word)
           Call get_word(record,word)
-          Tfermi = word_2_real(word,comm)
+          Tfermi = word_2_real(word)
           If (comm%idnode == 0) Then
             Write(nrite,"(/,1x,'electronic thermal diffusivity set to reciprocal function up to Fermi temperature')")
             Write(nrite,"(1x,'datum electronic t.d. (m^2 s^-1)',2x,1p,e12.4)") Diff0
@@ -2289,7 +2289,7 @@ Subroutine read_control                                &
         ! heat capacities to volumetric values
 
           Call get_word(record,word)
-          cellrho = word_2_real(word,comm)
+          cellrho = word_2_real(word)
           If (comm%idnode == 0) Then
             Write(nrite,"(/,1x,'user-specified atomic density (A^-3)',6x,f10.4)") cellrho
           End If
@@ -2313,7 +2313,7 @@ Subroutine read_control                                &
         ! (by default, electronic energies are not redistributed)
 
           Call get_word(record,word)
-          amin = Abs(Nint(word_2_real(word,comm)))
+          amin = Abs(Nint(word_2_real(word)))
           If (comm%idnode == 0) Then
             Write(nrite,"(/,1x,'min. atom no. for ionic cells',5x,1p,i8)") amin
           End If
@@ -2333,7 +2333,7 @@ Subroutine read_control                                &
         ! electronic stopping power of projectile entering electronic system
 
           Call get_word(record,word)
-          dEdX = word_2_real(word,comm)
+          dEdX = word_2_real(word)
           If (comm%idnode == 0) Then
             Write(nrite,"(/,1x,'elec. stopping power (eV/nm)',6x,1p,e12.4)") dEdX
           End If
@@ -2345,9 +2345,9 @@ Subroutine read_control                                &
 
           sdepoType = 1
           Call get_word(record,word)
-          sig = word_2_real(word,comm)
+          sig = word_2_real(word)
           Call get_word(record,word)
-          sigmax = word_2_real(word,comm)
+          sigmax = word_2_real(word)
           If (comm%idnode == 0) Then
             Write(nrite,"(/,1x,'initial gaussian spatial energy deposition in electronic system')")
             Write(nrite,"(1x,'sigma of distribution (nm)',8x,1p,e12.4)") sig
@@ -2372,9 +2372,9 @@ Subroutine read_control                                &
 
           sdepoType = 2
           Call get_word(record,word)
-          fluence = word_2_real(word,comm)
+          fluence = word_2_real(word)
           Call get_word(record,word)
-          pdepth = word_2_real(word,comm)
+          pdepth = word_2_real(word)
           Call get_word(record,word)
           If (word(1:4) == 'zdep') sdepoType = 3
           If (comm%idnode == 0) Then
@@ -2398,9 +2398,9 @@ Subroutine read_control                                &
 
           tdepoType = 1
           Call get_word(record,word)
-          tdepo = word_2_real(word,comm)
+          tdepo = word_2_real(word)
           Call get_word(record,word)
-          tcdepo = word_2_real(word,comm)
+          tcdepo = word_2_real(word)
           If (comm%idnode == 0) Then
             Write(nrite,"(/,1x,'gaussian temporal energy deposition in electronic system')")
             Write(nrite,"(1x,'sigma of distribution (ps)',8x,1p,e12.4)") tdepo
@@ -2414,9 +2414,9 @@ Subroutine read_control                                &
 
           tdepoType = 2
           Call get_word(record,word)
-          tdepo = word_2_real(word,comm)
+          tdepo = word_2_real(word)
           Call get_word(record,word)
-          tcdepo = word_2_real(word,comm)
+          tcdepo = word_2_real(word)
           If (comm%idnode == 0) Then
             Write(nrite,"(/,1x,'decaying exponential temporal energy deposition in electronic system')")
             Write(nrite,"(1x,'tau of distribution (ps)',10x,1p,e12.4)") tdepo
@@ -2441,7 +2441,7 @@ Subroutine read_control                                &
 
           tdepoType = 4
           Call get_word(record,word)
-          tdepo = word_2_real(word,comm)
+          tdepo = word_2_real(word)
           If (tdepo<=zero_plus) Then
             tdepoType = 3
             If (comm%idnode == 0) Then
@@ -2511,7 +2511,7 @@ Subroutine read_control                                &
           Else If (word(1:5) == 'robin') Then
             bcTypeE = 5
             Call get_word(record,word)
-            fluxout = word_2_real(word,comm)
+            fluxout = word_2_real(word)
             If (comm%idnode == 0) Then
               Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin:',&
                           & /,1x,'temperature leakage at boundaries of ',1p,e11.4)") fluxout
@@ -2519,7 +2519,7 @@ Subroutine read_control                                &
           Else If (word(1:7) == 'xyrobin') Then
             bcTypeE = 6
             Call get_word(record,word)
-            fluxout = word_2_real(word,comm)
+            fluxout = word_2_real(word)
             If (comm%idnode == 0) Then
               Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin (xy), neumann (z):',&
                           & /,1x,'temperature leakage at x and y boundaries of ',1p,e11.4,&
@@ -2532,7 +2532,7 @@ Subroutine read_control                                &
         ! time offset in coupling electronic and ionic systems
 
           Call get_word(record,word)
-          ttmoffset = word_2_real(word,comm)
+          ttmoffset = word_2_real(word)
           If (comm%idnode == 0) Write(nrite,"(/,1x,'electron-ion coupling offset (ps)',1x,1p,e12.4)") ttmoffset
 
         Else If (word1(1:6) == 'oneway') Then
@@ -2550,7 +2550,7 @@ Subroutine read_control                                &
         ! electronic energy) file option and output frequency
 
           Call get_word(record,word)
-          ttmstats = Abs(Nint(word_2_real(word,comm)))
+          ttmstats = Abs(Nint(word_2_real(word)))
           If (comm%idnode == 0) Write(nrite,"(/,1x,'ttm statistics file option on', &
              & /,1x,'ttm statistics file interval',3x,i10)") ttmstats
 
@@ -2560,7 +2560,7 @@ Subroutine read_control                                &
         ! temperature profile) file option and output frequency
 
           Call get_word(record,word)
-          ttmtraj = Abs(Nint(word_2_real(word,comm)))
+          ttmtraj = Abs(Nint(word_2_real(word)))
           If (comm%idnode == 0) Write(nrite,"(/,1x,'ttm trajectory (temperature profile) file option on', &
              & /,1x,'ttm trajectory file interval',3x,i10)") ttmtraj
 
@@ -2580,7 +2580,7 @@ Subroutine read_control                                &
      Else If (word(1:7) == 'binsize') Then
 
         Call get_word(record,word)
-        tmp = Abs(word_2_real(word,comm))
+        tmp = Abs(word_2_real(word))
         If (Abs(rbin-tmp) > 1.0e-6_wp) Call warning(340,tmp,rcut/4.0_wp,rbin)
 
 ! read analysis (intramolecular distributions calculation) option
@@ -2601,26 +2601,26 @@ Subroutine read_control                                &
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-        i=Abs(Nint(word_2_real(word,comm,0.0_wp))) ! frequency
+        i=Abs(Nint(word_2_real(word,0.0_wp))) ! frequency
 
         Call get_word(record,word)
         If (word(1:5) == 'nbins' .or. word(1:5) == 'ngrid' .or. word(1:4) == 'grid') Then
            Call get_word(record,word)
-           j=Abs(Nint(word_2_real(word,comm))) ! grid size
+           j=Abs(Nint(word_2_real(word))) ! grid size
         Else
            j=0
         End If
 
         If      (akey == 'all') Then
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
-           tmp=Abs(word_2_real(word,comm)) ! bond length
+           tmp=Abs(word_2_real(word)) ! bond length
 
            nstana=Max(nstana,i)
            grdana=Max(grdana,j)
            rcb_d =Max(rcb_d,tmp)
         Else If (akey == 'bon') Then
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
-           tmp=Abs(word_2_real(word,comm)) ! bond length
+           tmp=Abs(word_2_real(word)) ! bond length
 
            nstbnd=Max(nstbnd,i)
            grdbnd=j
@@ -2647,7 +2647,7 @@ Subroutine read_control                                &
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-        nstrdf = Abs(Nint(word_2_real(word,comm,1.0_wp)))
+        nstrdf = Abs(Nint(word_2_real(word,1.0_wp)))
 
 ! read z-density profile option
 
@@ -2659,7 +2659,7 @@ Subroutine read_control                                &
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-        nstzdn = Abs(Nint(word_2_real(word,comm,1.0_wp)))
+        nstzdn = Abs(Nint(word_2_real(word,1.0_wp)))
 
 ! read vaf calculation option dealt with in scan_control<-set_bounds
 
@@ -2678,7 +2678,7 @@ Subroutine read_control                                &
 !           Call get_word(record,word)
 !        If (word(1:4) == 'cond' .or. word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:4) == 'over') &
 !           Call get_word(record,word)
-!        nsttcond = Max(Abs(Nint(word_2_real(word,comm))),1)
+!        nsttcond = Max(Abs(Nint(word_2_real(word))),1)
 
 ! read print options
 
@@ -2696,7 +2696,7 @@ Subroutine read_control                                &
            lpvaf = .true.
         Else
            If (word(1:5) == 'every') Call get_word(record,word)
-           nstbpo = Abs(Nint(word_2_real(word,comm,1.0_wp)))
+           nstbpo = Abs(Nint(word_2_real(word,1.0_wp)))
            If (comm%idnode == 0) Write(nrite,"(/,1x,'data printing interval (steps)',1x,i10)") nstbpo
         End If
 
@@ -2714,7 +2714,7 @@ Subroutine read_control                                &
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-        intsta = Nint(word_2_real(word,comm))
+        intsta = Nint(word_2_real(word))
         If (comm%idnode == 0) Write(nrite,"(/,1x,'statistics file interval    ',3x,i10)") intsta
 
 ! read MSDTMP printing option
@@ -2722,11 +2722,11 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'msdtmp') Then
 
         Call get_word(record,word)
-        itmp = Abs(Nint(word_2_real(word,comm)))
+        itmp = Abs(Nint(word_2_real(word)))
         nstmsd = Max(nstmsd,itmp)
 
         Call get_word(record,word)
-        itmp = Abs(Nint(word_2_real(word,comm)))
+        itmp = Abs(Nint(word_2_real(word)))
         istmsd = Max(istmsd,itmp)
 
         If (comm%idnode == 0) Write(nrite,"(/,1x,'MSDTMP file option on', &
@@ -2740,15 +2740,15 @@ Subroutine read_control                                &
         ltraj = .true.
 
         Call get_word(record,word)
-        itmp = Abs(Nint(word_2_real(word,comm)))
+        itmp = Abs(Nint(word_2_real(word)))
         nstraj = Max(nstraj,itmp)
 
         Call get_word(record,word)
-        itmp = Abs(Nint(word_2_real(word,comm)))
+        itmp = Abs(Nint(word_2_real(word)))
         istraj = Max(istraj,itmp)
 
         Call get_word(record,word)
-        itmp = Abs(Nint(word_2_real(word,comm)))
+        itmp = Abs(Nint(word_2_real(word)))
         keytrj = Max(keytrj,itmp)
 
         If (comm%idnode == 0) Write(nrite,"(/,1x,'trajectory file option on', &
@@ -2768,15 +2768,15 @@ Subroutine read_control                                &
         ldef = .true.
 
         Call get_word(record,word)
-        itmp = Abs(Nint(word_2_real(word,comm)))
+        itmp = Abs(Nint(word_2_real(word)))
         nsdef = Max(nsdef,itmp)
 
         Call get_word(record,word)
-        itmp = Abs(Nint(word_2_real(word,comm)))
+        itmp = Abs(Nint(word_2_real(word)))
         isdef = Max(isdef,itmp)
 
         Call get_word(record,word)
-        tmp = Abs(word_2_real(word,comm))
+        tmp = Abs(word_2_real(word))
         If (tmp >= Min(0.3_wp,rcut/3.0_wp) .and. tmp <= Min(3.5_wp,rcut/2.0_wp)) Then
            rdef = tmp ! 3.43 Angs is the Cs VDW radius - largest possible
         Else
@@ -2803,15 +2803,15 @@ Subroutine read_control                                &
         lrsd = .true.
 
         Call get_word(record,word)
-        itmp = Abs(Nint(word_2_real(word,comm)))
+        itmp = Abs(Nint(word_2_real(word)))
         nsrsd = Max(nsrsd,itmp)
 
         Call get_word(record,word)
-        itmp = Abs(Nint(word_2_real(word,comm)))
+        itmp = Abs(Nint(word_2_real(word)))
         isrsd = Max(isrsd,itmp)
 
         Call get_word(record,word)
-        tmp = Abs(word_2_real(word,comm))
+        tmp = Abs(word_2_real(word))
         If (tmp > rrsd) Then
            rrsd = tmp
         Else
@@ -2830,7 +2830,7 @@ Subroutine read_control                                &
 
         Call warning(35,0.0_wp,0.0_wp,0.0_wp)
         Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
-        rpad1 = 0.25_wp * Abs(word_2_real(word,comm))
+        rpad1 = 0.25_wp * Abs(word_2_real(word))
         If (comm%idnode == 0) Write(nrite,"(1x,'cutoff padding (Angs)       ',6x,1p,e12.4)") rpad1
 
 ! read DL_POLY_2/Classic multiple timestep option (compatibility)
@@ -2862,7 +2862,7 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:4) == 'data' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:4) == 'data' .or. word(1:5) == 'every') Call get_word(record,word)
-        ndump = Max(Abs(Nint(word_2_real(word,comm))),1)
+        ndump = Max(Abs(Nint(word_2_real(word))),1)
 
 ! default for particle density per link cell below
 ! which decreasing link-cell size (subcelling) stops
@@ -2872,7 +2872,7 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:4) == 'dens' .or. word(1:6) == 'thresh') Call get_word(record,word)
         If (word(1:4) == 'dens' .or. word(1:6) == 'thresh') Call get_word(record,word)
-        pdplnc = Max(Abs(word_2_real(word,comm)),1.0_wp) ! disallow any less than 1
+        pdplnc = Max(Abs(word_2_real(word)),1.0_wp) ! disallow any less than 1
 
 ! read machine time for simulation run (in seconds)
 
@@ -2884,7 +2884,7 @@ Subroutine read_control                                &
            l_timjob=.true.
 
            Call get_word(record,word)
-           timjob = word_2_real(word,comm)
+           timjob = word_2_real(word)
 
         Else
 
@@ -2904,7 +2904,7 @@ Subroutine read_control                                &
            l_timcls=.true.
 
            Call get_word(record,word)
-           timcls = word_2_real(word,comm)
+           timcls = word_2_real(word)
 
         Else
 
@@ -2943,7 +2943,7 @@ Subroutine read_control                                &
 
            If (word(1:9) == 'precision') Then
               Call get_word(record,word)
-              plumed_precision=Abs(Nint(word_2_real(word,comm,1.0_wp)))
+              plumed_precision=Abs(Nint(word_2_real(word,1.0_wp)))
            End If
 
            If (word(1:7) == 'restart') Then
@@ -3822,7 +3822,7 @@ Subroutine scan_control                                    &
 
         lrcut = .true.
         Call get_word(record,word)
-        rcut = Abs(word_2_real(word,comm))
+        rcut = Abs(word_2_real(word))
         lrcut = (rcut > zero_plus) ! if zero or nothing is entered
 
 ! read real space cut off
@@ -3831,7 +3831,7 @@ Subroutine scan_control                                    &
 
         lrpad = .true.
         Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
-        rpad = Max(rpad,Abs(word_2_real(word,comm)))
+        rpad = Max(rpad,Abs(word_2_real(word)))
         lrpad = (rpad > zero_plus) ! if zero or nothing is entered
 
 ! read vdw cutoff
@@ -3842,9 +3842,9 @@ Subroutine scan_control                                    &
         Call get_word(record,word)
         If (word(1:3) == 'cut') Call get_word(record,word)
         If (rvdw > 1.0e-6_wp) Then
-           rvdw = Min(rvdw,word_2_real(word,comm))
+           rvdw = Min(rvdw,word_2_real(word))
         Else
-           rvdw = Abs(word_2_real(word,comm))
+           rvdw = Abs(word_2_real(word))
         End If
         lrvdw = (rvdw > zero_plus) ! if zero or nothing is entered
 
@@ -3853,7 +3853,7 @@ Subroutine scan_control                                    &
      Else If (word(1:7) == 'binsize') Then
 
         Call get_word(record,word)
-        rbin = Abs(word_2_real(word,comm))
+        rbin = Abs(word_2_real(word))
 
 ! read dpd ensembles option
 
@@ -3882,7 +3882,7 @@ Subroutine scan_control                                    &
      Else If (word(1:5) == 'steps') Then
 
         Call get_word(record,word)
-        nstrun = Nint(Abs(word_2_real(word,comm)))
+        nstrun = Nint(Abs(word_2_real(word)))
 
 ! read expansion option
 
@@ -3897,7 +3897,7 @@ Subroutine scan_control                                    &
         Call get_word(record,word)
         If (word(1:4) == 'size') Call get_word(record,word)
 
-        mxstak = Nint(Abs(word_2_real(word,comm)))
+        mxstak = Nint(Abs(word_2_real(word)))
 
 ! read MSD option
 
@@ -3913,13 +3913,13 @@ Subroutine scan_control                                    &
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-        isvaf = Abs(Nint(word_2_real(word,comm,0.0_wp)))
+        isvaf = Abs(Nint(word_2_real(word,0.0_wp)))
         If (isvaf == 0) isvaf=50
 
         Call get_word(record,word)
         If (word(1:3) == 'bin' .or. word(1:5) == 'size') Call get_word(record,word)
         If (word(1:3) == 'bin' .or. word(1:5) == 'size') Call get_word(record,word)
-        nsvaf = Abs(Nint(word_2_real(word,comm,0.0_wp)))
+        nsvaf = Abs(Nint(word_2_real(word,0.0_wp)))
 
         If (nsvaf == 0) nsvaf=Merge(2*isvaf,100,isvaf >= 100)
         vafsamp = Ceiling(Real(nsvaf,wp)/Real(isvaf,wp))
@@ -3931,7 +3931,7 @@ Subroutine scan_control                                    &
 
         lrpad = .true.
         Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
-        rpad = Max(rpad,0.25_wp*Abs(word_2_real(word,comm)))
+        rpad = Max(rpad,0.25_wp*Abs(word_2_real(word)))
         lrpad = (rpad > zero_plus) ! if zero or nothing is entered
 
 ! read DL_POLY_2/Classic multiple timestep option (compatibility)
@@ -3941,7 +3941,7 @@ Subroutine scan_control                                    &
 
         Call get_word(record,word)
         If (word(1:5) == 'times' .or. word(1:4) == 'step') Call get_word(record,word)
-        nstfce=Max(nstfce,Nint(Abs(word_2_real(word,comm))))
+        nstfce=Max(nstfce,Nint(Abs(word_2_real(word))))
 
 ! read electrostatics
 
@@ -3955,7 +3955,7 @@ Subroutine scan_control                                    &
 
            Call get_word(record,word)
            If (word(1:5) == 'every') Call get_word(record,word)
-           nstfce=Max(nstfce,Nint(Abs(word_2_real(word,comm))))
+           nstfce=Max(nstfce,Nint(Abs(word_2_real(word))))
 
         Else
 
@@ -3996,21 +3996,21 @@ Subroutine scan_control                                    &
 !
 !         gear=.true.
 !         Call get_word(record,word)
-!         numcof = Max(0,1+Nint(Abs(word_2_real(word,comm))))
+!         numcof = Max(0,1+Nint(Abs(word_2_real(word))))
 !         numcof = Min(numcof,7)
 !
 !     Else If (word(1:4) == 'aspc') Then
 !
 !         aspc=.true.
 !         Call get_word(record,word)
-!         numcof = Max(0,1+Nint(Abs(word_2_real(word,comm))))
+!         numcof = Max(0,1+Nint(Abs(word_2_real(word))))
 !         numcof = Min(numcof,7)
 !
 !     Else If (word(1:5) == 'lstsq') Then
 !
 !         lstsq=.true.
 !         Call get_word(record,word)
-!         numcof = Max(0,1+Nint(Abs(word_2_real(word,comm))))
+!         numcof = Max(0,1+Nint(Abs(word_2_real(word))))
 
 ! read "no vdw", "no elec" and "no str" options
 
@@ -4076,7 +4076,7 @@ Subroutine scan_control                                    &
            la_dih = .true.
            la_inv = .true.
 
-           mxgana = Abs(Nint(word_2_real(word,comm)))
+           mxgana = Abs(Nint(word_2_real(word)))
            mxgbnd1 = Max(mxgbnd1,mxgana)
            mxgang1 = Max(mxgang1,mxgana)
            mxgdih1 = Max(mxgdih1,mxgana)
@@ -4084,27 +4084,27 @@ Subroutine scan_control                                    &
 
            Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
-           rcbnd=Max(rcbnd,word_2_real(word,comm,0.0_wp))
+           rcbnd=Max(rcbnd,word_2_real(word,0.0_wp))
         Else If (akey == 'bon') Then
            la_bnd = .true.
 
-           mxgbnd1 = Max(mxgbnd1,Abs(Nint(word_2_real(word,comm))))
+           mxgbnd1 = Max(mxgbnd1,Abs(Nint(word_2_real(word))))
 
            Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
-           rcbnd=Max(rcbnd,word_2_real(word,comm,0.0_wp))
+           rcbnd=Max(rcbnd,word_2_real(word,0.0_wp))
         Else If (akey == 'ang') Then
            la_ang = .true.
 
-           mxgang1 = Max(mxgang1,Abs(Nint(word_2_real(word,comm))))
+           mxgang1 = Max(mxgang1,Abs(Nint(word_2_real(word))))
         Else If (akey == 'dih') Then
            la_dih = .true.
 
-           mxgdih1 = Max(mxgdih1,Abs(Nint(word_2_real(word,comm))))
+           mxgdih1 = Max(mxgdih1,Abs(Nint(word_2_real(word))))
         Else If (akey == 'inv') Then
            la_inv = .true.
 
-           mxginv1 = Max(mxginv1,Abs(Nint(word_2_real(word,comm))))
+           mxginv1 = Max(mxginv1,Abs(Nint(word_2_real(word))))
         End If
 
 ! read rdf calculation option
@@ -4135,7 +4135,7 @@ Subroutine scan_control                                    &
         ! CITs in x- and y-directions
 
           Call get_word(record,word)
-          ntsys(3) = Abs(Nint(word_2_real(word,comm)))
+          ntsys(3) = Abs(Nint(word_2_real(word)))
 
         Else If (word(1:4) == 'ncet') Then
 
@@ -4143,11 +4143,11 @@ Subroutine scan_control                                    &
         ! (CET) in x-, y- and z-directions
 
           Call get_word(record,word)
-          eltsys(1) = Abs(Nint(word_2_real(word,comm)))
+          eltsys(1) = Abs(Nint(word_2_real(word)))
           Call get_word(record,word)
-          eltsys(2) = Abs(Nint(word_2_real(word,comm)))
+          eltsys(2) = Abs(Nint(word_2_real(word)))
           Call get_word(record,word)
-          eltsys(3) = Abs(Nint(word_2_real(word,comm)))
+          eltsys(3) = Abs(Nint(word_2_real(word)))
 
         Else If (word1(1:5) == 'metal') Then
 
@@ -4439,11 +4439,11 @@ Subroutine scan_control                                    &
                  Call dcell(cell,celprp)
 
                  Call get_word(record,word)
-                 eps0 = Abs(word_2_real(word,comm))
+                 eps0 = Abs(word_2_real(word))
                  eps0 = Max(Min(eps0,0.5_wp),1.0e-20_wp)
 
                  Call get_word(record,word)
-                 mxspl = Abs(Nint(word_2_real(word,comm)))
+                 mxspl = Abs(Nint(word_2_real(word)))
 
                  tol = Sqrt(Abs(Log(eps0*rcut)))
                  alpha = Sqrt(Abs(Log(eps0*rcut*tol)))/rcut
@@ -4463,19 +4463,19 @@ Subroutine scan_control                                    &
               Else
 
                  If (word(1:3) == 'sum') Call get_word(record,word)
-                 alpha = Abs(word_2_real(word,comm))
+                 alpha = Abs(word_2_real(word))
 
                  Call get_word(record,word)
-                 kmaxa1 = itmp*Nint(Abs(word_2_real(word,comm)))
+                 kmaxa1 = itmp*Nint(Abs(word_2_real(word)))
 
                  Call get_word(record,word)
-                 kmaxb1 = itmp*Nint(Abs(word_2_real(word,comm)))
+                 kmaxb1 = itmp*Nint(Abs(word_2_real(word)))
 
                  Call get_word(record,word)
-                 kmaxc1 = itmp*Nint(Abs(word_2_real(word,comm)))
+                 kmaxc1 = itmp*Nint(Abs(word_2_real(word)))
 
                  Call get_word(record,word)
-                 mxspl = Nint(Abs(word_2_real(word,comm)))
+                 mxspl = Nint(Abs(word_2_real(word)))
 
 ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
 
@@ -4507,22 +4507,22 @@ Subroutine scan_control                                    &
               Do i=1,4
                  If (word(1:5) == 'delta') Then   ! spacing
                     Call get_word(record,word)
-                    alpha=1.0_wp/Abs(word_2_real(word,comm))
+                    alpha=1.0_wp/Abs(word_2_real(word))
                  End If
 
                  If (word(1:3) == 'eps') Then     ! tolerance
                     Call get_word(record,word)
-                    eps=Abs(word_2_real(word,comm))
+                    eps=Abs(word_2_real(word))
                  End If
 
                  If (word(1:6) == 'maxits') Then  ! max number of iteration
                     Call get_word(record,word)
-                    mxitcg=Nint(Abs(word_2_real(word,comm)))
+                    mxitcg=Nint(Abs(word_2_real(word)))
                  End If
 
                  If (word(1:7) == 'jmaxits') Then ! max number Jacobian iterations
                     Call get_word(record,word)
-                    mxitjb=Nint(Abs(word_2_real(word,comm)))
+                    mxitjb=Nint(Abs(word_2_real(word)))
                  End If
 
                  Call get_word(record,word)
@@ -4786,7 +4786,7 @@ Subroutine scan_control_pre(imc_n,dvar,comm)
      If      (word(1:7) == 'densvar') Then
 
         Call get_word(record,word)
-        dvar = Abs(word_2_real(word,comm))
+        dvar = Abs(word_2_real(word))
         dvar = 1.0_wp + Abs(dvar)/100.0_wp
 
 ! read slab option
@@ -4929,7 +4929,7 @@ Subroutine scan_control_io(comm)
                     io_read == IO_READ_NETCDF) Then
 
               Call get_word( record, word )
-              itmp = Nint( Abs( word_2_real(word, comm, 0.0_wp ) ) )
+              itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
               If (itmp == 0) Then
                  tmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
                  itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
@@ -4962,7 +4962,7 @@ Subroutine scan_control_io(comm)
 ! Note zero or negative values indicate use the default
 
               Call get_word( record, word )
-              itmp = Nint( Abs( word_2_real(word, comm, 0.0_wp ) ) )
+              itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
               If (itmp == 0) Then
                  Call io_get_parameters( user_batch_size_read = itmp )
                  If (comm%idnode == 0) Write(nrite,"(1x,'I/O read batch size (assumed)',2x,i10)") itmp
@@ -4993,7 +4993,7 @@ Subroutine scan_control_io(comm)
 ! Note zero or negative values indicate use the default
 
            Call get_word( record, word )
-           itmp = Nint( Abs( word_2_real(word, comm, 0.0_wp ) ) )
+           itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
            If (itmp == 0) Then
               Call io_get_parameters( user_buffer_size_read = itmp )
               If (comm%idnode == 0) Write(nrite,"(1x,'I/O read buffer size (assumed)',1x,i10)") itmp
@@ -5102,7 +5102,7 @@ Subroutine scan_control_io(comm)
                     io_write == IO_WRITE_SORTED_NETCDF ) Then
 
               Call get_word( record, word )
-              itmp = Nint( Abs( word_2_real(word, comm, 0.0_wp ) ) )
+              itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
               If (itmp == 0) Then
                  tmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
                  itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
@@ -5135,7 +5135,7 @@ Subroutine scan_control_io(comm)
 ! Note zero or negative values indicate use the default
 
               Call get_word( record, word )
-              itmp = Nint( Abs( word_2_real(word, comm, 0.0_wp ) ) )
+              itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
               If (itmp == 0) Then
                  Call io_get_parameters( user_batch_size_write = itmp )
                  If (comm%idnode == 0) Write(nrite,"(1x,'I/O write batch size (assumed)',1x,i10)") itmp
@@ -5167,7 +5167,7 @@ Subroutine scan_control_io(comm)
 ! Note zero or negative values indicate use the default
 
            Call get_word( record, word )
-           itmp = Nint( Abs( word_2_real(word, comm, 0.0_wp ) ) )
+           itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
            If (itmp == 0) Then
               Call io_get_parameters( user_buffer_size_write = itmp )
               If (comm%idnode == 0) Write(nrite,"(1x,'I/O write buffer size (assumed)',i10)") itmp

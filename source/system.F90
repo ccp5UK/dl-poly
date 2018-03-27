@@ -1624,7 +1624,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
         Else If (word(1:6) == 'nummol') Then
 
            Call get_word(record,word)
-           index=Nint(word_2_real(word,comm))
+           index=Nint(word_2_real(word))
            Call get_word(record1,word)
            Write(Unit=nconf,Fmt='(a,i10)') word(1:Len_Trim(word)), nall*index
 
@@ -1678,7 +1678,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
            If      (word(1:6) == 'nummol') Then
 
               Call get_word(record,word)
-              index=Nint(word_2_real(word,comm))
+              index=Nint(word_2_real(word))
               Call get_word(record1,word)
               Write(Unit=nconf,Fmt='(a,i10)') word(1:Len_Trim(word)), nall*index
 

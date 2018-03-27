@@ -136,11 +136,11 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
         Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
 
         Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
-        Call get_word(record,word) ; levcfg=Nint(word_2_real(word,comm,0.0_wp))
+        Call get_word(record,word) ; levcfg=Nint(word_2_real(word,0.0_wp))
         Call get_word(record,word)
-        Call get_word(record,word) ; If (Nint(word_2_real(word,comm)) /= megatm) Go To 300
-        Call get_word(record,word) ; frm=Nint(word_2_real(word,comm,0.0_wp),li)
-        Call get_word(record,word) ; rec=Nint(word_2_real(word,comm,0.0_wp),li)
+        Call get_word(record,word) ; If (Nint(word_2_real(word)) /= megatm) Go To 300
+        Call get_word(record,word) ; frm=Nint(word_2_real(word,0.0_wp),li)
+        Call get_word(record,word) ; rec=Nint(word_2_real(word,0.0_wp),li)
 
 ! Change fast if no database records exists or the file is new
 
@@ -253,36 +253,36 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
      fxx=0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
 
      Call get_word(record,word) ! timestep
-     Call get_word(record,word) ; nstep = Nint(word_2_real(word,comm))
-     Call get_word(record,word) ; If (Nint(word_2_real(word,comm)) /= megatm) Go To 300
-     Call get_word(record,word) ; levcfg = Nint(word_2_real(word,comm))
-     Call get_word(record,word) ; imcon = Nint(word_2_real(word,comm))
+     Call get_word(record,word) ; nstep = Nint(word_2_real(word))
+     Call get_word(record,word) ; If (Nint(word_2_real(word)) /= megatm) Go To 300
+     Call get_word(record,word) ; levcfg = Nint(word_2_real(word))
+     Call get_word(record,word) ; imcon = Nint(word_2_real(word))
 
 ! image conditions not compliant with DD and link-cell
 
      If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
-     Call get_word(record,word) ; tstep = word_2_real(word,comm)
-     Call get_word(record,word) ; time = word_2_real(word,comm)
+     Call get_word(record,word) ; tstep = word_2_real(word)
+     Call get_word(record,word) ; time = word_2_real(word)
 
      If (comm%idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
 
 ! read cell vectors
 
      Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
-     Call get_word(record,word); cell(1)=word_2_real(word,comm)
-     Call get_word(record,word); cell(2)=word_2_real(word,comm)
-     Call get_word(record,word); cell(3)=word_2_real(word,comm)
+     Call get_word(record,word); cell(1)=word_2_real(word)
+     Call get_word(record,word); cell(2)=word_2_real(word)
+     Call get_word(record,word); cell(3)=word_2_real(word)
 
      Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
-     Call get_word(record,word); cell(4)=word_2_real(word,comm)
-     Call get_word(record,word); cell(5)=word_2_real(word,comm)
-     Call get_word(record,word); cell(6)=word_2_real(word,comm)
+     Call get_word(record,word); cell(4)=word_2_real(word)
+     Call get_word(record,word); cell(5)=word_2_real(word)
+     Call get_word(record,word); cell(6)=word_2_real(word)
 
      Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
-     Call get_word(record,word); cell(7)=word_2_real(word,comm)
-     Call get_word(record,word); cell(8)=word_2_real(word,comm)
-     Call get_word(record,word); cell(9)=word_2_real(word,comm)
+     Call get_word(record,word); cell(7)=word_2_real(word)
+     Call get_word(record,word); cell(8)=word_2_real(word)
+     Call get_word(record,word); cell(9)=word_2_real(word)
 
      Call invert(cell,rcell,det)
 
@@ -324,7 +324,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
                  Call get_word(record,word) ; chbuf(indatm)=word(1:8)
                  If (l_ind) Then
                     Call get_word(record,word)
-                    iwrk(indatm)=Nint(word_2_real(word,comm,0.0_wp,l_str))
+                    iwrk(indatm)=Nint(word_2_real(word,0.0_wp,l_str))
                     If (iwrk(indatm) /= 0) Then
                        iwrk(indatm)=Abs(iwrk(indatm))
                     Else
@@ -342,9 +342,9 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
                        If (levcfg > 1) Read(Unit=nconf, Fmt=*, End=30) cxx(indatm),cyy(indatm),czz(indatm)
                     End If
                  Else
-                    Call get_word(record,word) ; axx(indatm)=word_2_real(word,comm)
-                    Call get_word(record,word) ; bxx(indatm)=word_2_real(word,comm)
-                    Call get_word(record,word) ; cxx(indatm)=word_2_real(word,comm)
+                    Call get_word(record,word) ; axx(indatm)=word_2_real(word)
+                    Call get_word(record,word) ; bxx(indatm)=word_2_real(word)
+                    Call get_word(record,word) ; cxx(indatm)=word_2_real(word)
                  End If
                  Go To 40
 
@@ -489,17 +489,17 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
         record( i:i ) = buffer( i, 1 )
      End Do
      Call get_word(record,word) ! timestep
-     Call get_word(record,word) ; nstep = Nint(word_2_real(word,comm))
-     Call get_word(record,word) ; If (Nint(word_2_real(word,comm)) /= megatm) Go To 300
-     Call get_word(record,word) ; levcfg = Nint(word_2_real(word,comm))
-     Call get_word(record,word) ; imcon = Nint(word_2_real(word,comm))
+     Call get_word(record,word) ; nstep = Nint(word_2_real(word))
+     Call get_word(record,word) ; If (Nint(word_2_real(word)) /= megatm) Go To 300
+     Call get_word(record,word) ; levcfg = Nint(word_2_real(word))
+     Call get_word(record,word) ; imcon = Nint(word_2_real(word))
 
 ! image conditions not compliant with DD and link-cell
 
     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
-     Call get_word(record,word) ; tstep = word_2_real(word,comm)
-     Call get_word(record,word) ; time = word_2_real(word,comm)
+     Call get_word(record,word) ; tstep = word_2_real(word)
+     Call get_word(record,word) ; time = word_2_real(word)
 
      If (comm%idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
 
@@ -509,25 +509,25 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
      Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
         record( i:i ) = buffer( i, 2 )
      End Do
-     Call get_word(record,word); cell(1)=word_2_real(word,comm)
-     Call get_word(record,word); cell(2)=word_2_real(word,comm)
-     Call get_word(record,word); cell(3)=word_2_real(word,comm)
+     Call get_word(record,word); cell(1)=word_2_real(word)
+     Call get_word(record,word); cell(2)=word_2_real(word)
+     Call get_word(record,word); cell(3)=word_2_real(word)
 
      record = ' '
      Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
         record( i:i ) = buffer( i, 3 )
      End Do
-     Call get_word(record,word); cell(4)=word_2_real(word,comm)
-     Call get_word(record,word); cell(5)=word_2_real(word,comm)
-     Call get_word(record,word); cell(6)=word_2_real(word,comm)
+     Call get_word(record,word); cell(4)=word_2_real(word)
+     Call get_word(record,word); cell(5)=word_2_real(word)
+     Call get_word(record,word); cell(6)=word_2_real(word)
 
      record = ' '
      Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
         record( i:i ) = buffer( i, 4 )
      End Do
-     Call get_word(record,word); cell(7)=word_2_real(word,comm)
-     Call get_word(record,word); cell(8)=word_2_real(word,comm)
-     Call get_word(record,word); cell(9)=word_2_real(word,comm)
+     Call get_word(record,word); cell(7)=word_2_real(word)
+     Call get_word(record,word); cell(8)=word_2_real(word)
+     Call get_word(record,word); cell(9)=word_2_real(word)
 
      Call read_config_parallel                  &
            (levcfg, dvar, l_ind, l_str, megatm, &
@@ -829,8 +829,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
                     Call get_word(record(1:recsz),word)
                     If (word(1:Len_Trim(word)) /= 'timestep') Then
                        Call get_word(record(1:recsz),word) ; Call get_word(record(1:recsz),word)
-                       Call get_word(record(1:recsz),word) ; frm=Nint(word_2_real(word,comm,0.0_wp),li)
-                       Call get_word(record(1:recsz),word) ; rec=Nint(word_2_real(word,comm,0.0_wp),li)
+                       Call get_word(record(1:recsz),word) ; frm=Nint(word_2_real(word,0.0_wp),li)
+                       Call get_word(record(1:recsz),word) ; rec=Nint(word_2_real(word,0.0_wp),li)
                        If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
                           Go To 20 ! New style
                        Else
@@ -852,8 +852,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
                     rec=rec+Int(1,li)
 
                     Call get_word(record(1:recsz),word) ; Call get_word(record(1:recsz),word)
-                    Call get_word(record(1:recsz),word) ; jj=Nint(word_2_real(word,comm))
-                    Call get_word(record(1:recsz),word) ; k=Nint(word_2_real(word,comm))
+                    Call get_word(record(1:recsz),word) ; jj=Nint(word_2_real(word))
+                    Call get_word(record(1:recsz),word) ; k=Nint(word_2_real(word))
 
                     word=' '
                     i = 3 + (2+k)*jj ! total number of lines to read
@@ -1679,8 +1679,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
                     Call get_word(record(1:recsz),word)
                     If (word(1:Len_Trim(word)) /= 'timestep') Then
                        Call get_word(record(1:recsz),word) ; Call get_word(record(1:recsz),word)
-                       Call get_word(record(1:recsz),word) ; frm=Nint(word_2_real(word,comm,0.0_wp),li)
-                       Call get_word(record(1:recsz),word) ; rec=Nint(word_2_real(word,comm,0.0_wp),li)
+                       Call get_word(record(1:recsz),word) ; frm=Nint(word_2_real(word,0.0_wp),li)
+                       Call get_word(record(1:recsz),word) ; rec=Nint(word_2_real(word,0.0_wp),li)
                        If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
                           Go To 120 ! New style
                        Else

@@ -840,7 +840,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 ! Read particles total value
 
         Call get_word(record,word) ; Call get_word(record,word)
-        Call get_word(record,word) ; i=Nint(word_2_real(word,comm,0.0_wp,l_str))
+        Call get_word(record,word) ; i=Nint(word_2_real(word,0.0_wp,l_str))
         fast = (fast .and. i == megatm)
 
      End If
@@ -926,7 +926,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
            Call get_word(record,word) ; chbuf(indatm)=word(1:8)
            If (l_ind) Then
               Call get_word(record,word)
-              iwrk(indatm)=Nint(word_2_real(word,comm,0.0_wp,l_str))
+              iwrk(indatm)=Nint(word_2_real(word,0.0_wp,l_str))
               If (iwrk(indatm) /= 0) Then
                  iwrk(indatm)=Abs(iwrk(indatm))
               Else
@@ -1539,7 +1539,7 @@ Subroutine read_config_parallel                 &
               Call get_word(record,word) ; chbuf_read(i)=word(1:8)
               If (l_ind) Then
                  Call get_word(record,word)
-                 iwrk_read(i)=Nint(word_2_real(word,comm,0.0_wp,l_str))
+                 iwrk_read(i)=Nint(word_2_real(word,0.0_wp,l_str))
                  If (iwrk_read(i) /= 0) Then
                     iwrk_read(i)=Abs(iwrk_read(i))
                  Else
@@ -2109,7 +2109,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,c
 ! Read particles total value
 
         Call get_word(record,word) ; Call get_word(record,word)
-        Call get_word(record,word) ; i=Nint(word_2_real(word,comm,0.0_wp,l_str))
+        Call get_word(record,word) ; i=Nint(word_2_real(word,0.0_wp,l_str))
         fast = (fast .and. i == megatm)
 
      End If
@@ -2148,14 +2148,14 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,c
      If (.not.safe) Go To 50
 
      Call get_word(record,word)
-     levcfg=Nint(word_2_real(word,comm))
+     levcfg=Nint(word_2_real(word))
 
 ! halt execution if configuration level is unsupported
 
      If (levcfg < 0 .or. levcfg > 2) Call error(517)
 
      Call get_word(record,word)
-     imcon=Nint(word_2_real(word,comm))
+     imcon=Nint(word_2_real(word))
 
 ! halt execution if image conventions is unsupported
 
@@ -2167,29 +2167,29 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,c
         Call get_line(safe,nconf,record,comm)
         If (.not.safe) Go To 50
         Call get_word(record,word)
-        cell(1)=word_2_real(word,comm)
+        cell(1)=word_2_real(word)
         Call get_word(record,word)
-        cell(2)=word_2_real(word,comm)
+        cell(2)=word_2_real(word)
         Call get_word(record,word)
-        cell(3)=word_2_real(word,comm)
+        cell(3)=word_2_real(word)
 
         Call get_line(safe,nconf,record,comm)
         If (.not.safe) Go To 50
         Call get_word(record,word)
-        cell(4)=word_2_real(word,comm)
+        cell(4)=word_2_real(word)
         Call get_word(record,word)
-        cell(5)=word_2_real(word,comm)
+        cell(5)=word_2_real(word)
         Call get_word(record,word)
-        cell(6)=word_2_real(word,comm)
+        cell(6)=word_2_real(word)
 
         Call get_line(safe,nconf,record,comm)
         If (.not.safe) Go To 50
         Call get_word(record,word)
-        cell(7)=word_2_real(word,comm)
+        cell(7)=word_2_real(word)
         Call get_word(record,word)
-        cell(8)=word_2_real(word,comm)
+        cell(8)=word_2_real(word)
         Call get_word(record,word)
-        cell(9)=word_2_real(word,comm)
+        cell(9)=word_2_real(word)
      End If
 
 ! Close CONFIG

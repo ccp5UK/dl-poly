@@ -10,7 +10,9 @@ Module site
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : Wp
+  Use kinds, Only : Wp
+  Use setup, Only : mxtmls,mxsite,mxatyp
+  Use errors_warnings, Only : error
 
   Implicit None
 
@@ -34,9 +36,6 @@ Contains
 
   Subroutine allocate_site_arrays()
 
-    Use setup, Only : mxtmls,mxsite,mxatyp
-
-    Implicit None
 
     Integer, Dimension( 1:7 ) :: fail
 

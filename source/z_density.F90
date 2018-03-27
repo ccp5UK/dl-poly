@@ -14,6 +14,7 @@ Module z_density
   Use setup,  Only : mxgrdf,nrite,nzdndt,mxatyp
   Use site,   Only : ntpatm,unqatm
   Use configuration, Only : cfgname,cell,volm,natms,ltype,zzz
+  Use errors_warnings, Only : error
 
   
   Implicit None

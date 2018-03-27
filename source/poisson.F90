@@ -9,6 +9,9 @@ Module poisson
   Use configuration, Only : imcon,cell,natms,nlast,list,ltg,lfrzn, &
                             chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use ewald,         Only : ewald_type
+  Use errors_warnings, Only : error
+  Use numerics, Only : dcell,invert
+  Use ewald_spole, Only : adjust_kmax 
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -56,7 +59,7 @@ Contains
        epsilon=epsq
        alpha=alphain
        delta=1.0_wp/alpha
-       Call biCGStab_init(comm)
+       Call biCGStab_init()
 
        Call biCGStab_charge_density(comm)
 
@@ -87,12 +90,11 @@ Contains
 
   End Subroutine poisson_forces
 
-  Subroutine biCGStab_init(comm)
+  Subroutine biCGStab_init()
 
 ! calculates preambles
-   Type(comms_type), Intent( InOut ) :: comm
 ! copy DD mapping
-
+    Character( Len = 256 ) :: message
     lmap=map
 
     If (imcon == 0 .or. imcon == 6) Then
@@ -170,8 +172,8 @@ Contains
     Allocate ( r0(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) , Stat = fail( 9) )
     Allocate (  v(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) , Stat = fail(10) )
     If (Any(fail(1:10) > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'biCGStab_init allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'biCGStab_init allocation failure'
+       Call error(0,message)
     End If
 
 ! Initialise
@@ -591,7 +593,7 @@ Contains
       Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: recv_buffer
 
       Integer :: length
-
+      Character( Len = 256 ) :: message
 ! If the processor to receive FROM is actually ME it means there is
 ! only one processor along this axis (so the processor to send TO is
 ! also ME) and so no message passing need be done.  However, there
@@ -612,8 +614,8 @@ Contains
          If (from > -1) Then
             Allocate ( recv_buffer( xdb:xdt, ydb:ydt, zdb:zdt ) , Stat = fail(1) )
             If (fail(1) > 0) Then
-               Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo receive allocation failure, node: ', comm%idnode
-               Call error(0)
+               Write(message,'(/,1x,a)') 'exchange_grid_halo receive allocation failure'
+               Call error(0,message)
             End If
 
             Call MPI_IRECV( recv_buffer, length, wp_mpi, from, ExchgGrid_tag, comm%comm, comm%request, comm%ierr )
@@ -622,8 +624,8 @@ Contains
          If (to   > -1) Then
             Allocate ( send_buffer( xlb:xlt, ylb:ylt, zlb:zlt ) , Stat = fail(1) )
             If (fail(1) > 0) Then
-               Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo send allocation failure, node: ', comm%idnode
-               Call error(0)
+               Write(message,'(/,1x,a)') 'exchange_grid_halo send allocation failure'
+               Call error(0,message)
             End If
 
 ! Copy the data to be sent
@@ -646,16 +648,16 @@ Contains
 
             Deallocate ( recv_buffer , Stat = fail(1) )
             If (fail(1) > 0) Then
-               Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo receive deallocation failure, node: ', comm%idnode
-               Call error(0)
+               Write(message,'(/,1x,a,i0)') 'exchange_grid_halo receive deallocation failure'
+               Call error(0,message)
             End If
          End If
 
          If (to   > -1) Then
             Deallocate ( send_buffer , Stat = fail(1) )
             If (fail(1) > 0) Then
-               Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo send deallocation failure, node: ', comm%idnode
-               Call error(0)
+               Write(message,'(/,1x,a,i0)') 'exchange_grid_halo send deallocation failure'
+               Call error(0,message)
             End If
          End If
 
@@ -671,15 +673,15 @@ Contains
 
   End Subroutine biCGStab_exchange_halo
 
-  Subroutine biCGStab_Deallocate_grids(comm)
+  Subroutine biCGStab_Deallocate_grids()
 
-    Type( comms_type ), Intent( InOut ) :: comm
+    Character( Len = 256 ) :: message
     Deallocate(t ,   b ,  v , Stat = fail(1) )
     Deallocate(F ,   s ,  r , Stat = fail(2) )
     Deallocate(p , phi , r0 , Stat = fail(3) )
     If (Any(fail(1:3) > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo send deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'exchange_grid_halo send deallocation failure'
+       Call error(0,message)
     End If
 
   End Subroutine biCGStab_Deallocate_grids
@@ -1182,6 +1184,7 @@ Contains
     Integer,           Dimension( : ), Allocatable :: l_ind,nz_fr
     Real( Kind = wp ), Dimension( : ), Allocatable :: cfr,xfr,yfr,zfr
     Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
+    Character( Len = 256 ) :: message
 
     If (.not.ewld%lf_fce) Then ! All's been done but needs copying
        Do i=1,natms
@@ -1213,8 +1216,8 @@ Contains
     fail=0
     Allocate (l_ind(1:mxatdm),nz_fr(0:comm%mxnode), Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'poisson_frzn_forces allocation failure'
+       Call error(0,message)
     End If
 
     Call invert(cell,rcell,det)
@@ -1246,8 +1249,8 @@ Contains
 
        Allocate (cfr(1:nzfr),xfr(1:nzfr),yfr(1:nzfr),zfr(1:nzfr), Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces allocation failure 1, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'poisson_frzn_forces allocation failure 1'
+          Call error(0,message)
        End If
 
        cfr=0.0_wp
@@ -1481,8 +1484,8 @@ Contains
 
        Deallocate (cfr,xfr,yfr,zfr, Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces deallocation failure 1, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a,i0)') 'poisson_frzn_forces deallocation failure 1'
+          Call error(0,message)
        End If
 
     Else
@@ -1492,8 +1495,8 @@ Contains
 
        Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces allocation failure 2, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a,i0)') 'poisson_frzn_forces allocation failure 2'
+          Call error(0,message)
        End If
 
        Do ii=1,nz_fr(comm%idnode+1)
@@ -1611,8 +1614,8 @@ Contains
 
        Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces deallocation failure 2, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'poisson_frzn_forces deallocation failure 2'
+          Call error(0,message)
        End If
 
     End If
@@ -1669,8 +1672,8 @@ Contains
 
     Deallocate (l_ind,nz_fr, Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'poisson_frzn_forces deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'poisson_frzn_forces deallocation failure'
+       Call error(0,message)
     End If
 
   End Subroutine poisson_frzn_forces

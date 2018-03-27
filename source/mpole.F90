@@ -344,13 +344,13 @@ Contains
           Call get_word(record,word) ; Call lower_case(word)
           If (word(1:4) == 'type') Call get_word(record,word)
 
-          If (ntpmls == Nint(word_2_real(word,comm))) Then
+          If (ntpmls == Nint(word_2_real(word))) Then
              If (comm%idnode == 0) Write(nrite,"(/,/,1x,'number of molecular types',6x,i10)") ntpmls
           Else
              If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')                        &
     "*** warning - number of molecular types mistmatch between FIELD and MPOLES !!! ***", &
     "***           FIELD  reports: ", ntpmls,                                             &
-    "***           MPOLES reports: ", Nint(word_2_real(word,comm))
+    "***           MPOLES reports: ", Nint(word_2_real(word))
 
              Call error(623)
           End If
@@ -399,13 +399,13 @@ Contains
 
                    Call get_word(record,word)
 
-                   If (nummols(itmols) == Nint(word_2_real(word,comm))) Then
+                   If (nummols(itmols) == Nint(word_2_real(word))) Then
                       If (comm%idnode == 0 .and. l_top) Write(nrite,"(/,1x,'number of molecules  ',10x,i10)") nummols(itmols)
                    Else
                       If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')         &
     "*** warning - number of molecules mistmatch between FIELD and MPOLES !!! ***", &
     "***           FIELD  reports: ", nummols(itmols),                              &
-    "***           MPOLES reports: ", Nint(word_2_real(word,comm))
+    "***           MPOLES reports: ", Nint(word_2_real(word))
 
                       Call error(623)
                    End If
@@ -416,7 +416,7 @@ Contains
 
                    Call get_word(record,word)
 
-                   If (numsit(itmols) == Nint(word_2_real(word,comm))) Then
+                   If (numsit(itmols) == Nint(word_2_real(word))) Then
                       If (comm%idnode == 0 .and. l_top) Then
     Write(nrite,"(/,1x,'number of atoms/sites',10x,i10)") numsit(itmols)
     Write(nrite,"(/,1x,'atomic characteristics:', &
@@ -426,7 +426,7 @@ Contains
                       If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')                        &
     "*** warning - number of atoms/sites per molecule mistmatch between FIELD and MPOLES !!! ***", &
     "***           FIELD  reports: ", numsit(itmols),                                              &
-    "***           MPOLES reports: ", Nint(word_2_real(word,comm))
+    "***           MPOLES reports: ", Nint(word_2_real(word))
 
                       Call error(623)
                    End If
@@ -451,13 +451,13 @@ Contains
   ! read supplied pole order
 
                          Call get_word(record,word)
-                         ordmpl=Abs(Nint(word_2_real(word,comm)))
+                         ordmpl=Abs(Nint(word_2_real(word)))
                          indmpl=(ordmpl+3)*(ordmpl+2)*(ordmpl+1)/6
 
   ! read supplied repetition
 
                          Call get_word(record,word)
-                         nrept=Abs(Nint(word_2_real(word,comm)))
+                         nrept=Abs(Nint(word_2_real(word)))
                          If (nrept == 0) nrept=1
 
                          jsite=nsite+1
@@ -474,8 +474,8 @@ Contains
 
   ! read supplied site polarisation and dumping factor
 
-                         Call get_word(record,word) ; polarity=Abs(word_2_real(word,comm,0.0_wp))
-                         Call get_word(record,word) ; dumping =Abs(word_2_real(word,comm,0.0_wp))
+                         Call get_word(record,word) ; polarity=Abs(word_2_real(word,0.0_wp))
+                         Call get_word(record,word) ; dumping =Abs(word_2_real(word,0.0_wp))
 
                          l_rsh=.true. ! regular or no shelling (Drude)
                          kshels=nshels
@@ -524,7 +524,7 @@ Contains
 
                          sitmpl = 1
 
-                         charge=word_2_real(word,comm)
+                         charge=word_2_real(word)
                          chgsit(jsite:lsite)=charge
                          mpllfr(sitmpl,jsite:lsite)=charge
                          If (l_rsh) Then
@@ -566,7 +566,7 @@ Contains
 
                                Do i=indmpl_start,indmpl_final
                                   sitmpl = sitmpl+1
-                                  mpllfr(sitmpl,jsite:lsite)=word_2_real(word,comm)
+                                  mpllfr(sitmpl,jsite:lsite)=word_2_real(word)
                                   Call get_word(record,word)
                                End Do
 

@@ -1,14 +1,17 @@
 Module shared_units
 
   Use kinds, Only : wp
-  Use comms, Only : comms_type,PassUnit_tag,wp_mpi,UpdShUnit_tag
+  Use comms, Only : comms_type,PassUnit_tag,wp_mpi,UpdShUnit_tag,&
+                    gcheck,gsync
   Use setup
   Use domains,      Only : map,mop
   Use configuration,       Only : natms,nlast,lsi,lsa
   Use rigid_bodies, Only : q0,q1,q2,q3,          &
                                   rgdvxx,rgdvyy,rgdvzz, &
                                   rgdoxx,rgdoyy,rgdozz
-
+  Use numerics, Only : local_index,shellsort
+  Use errors_warnings, Only : error
+  
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -19,6 +22,9 @@ Module shared_units
 
 
   Private
+  Public :: update_shared_units
+  Public :: update_shared_units_int
+
   Contains
   
   Subroutine pass_shared_units &
@@ -55,9 +61,10 @@ Module shared_units
   Logical, Save :: oldjob = .false.
 
   Logical :: safe,ok
-  Integer :: fail,i,j,k,l,m,n_k,n_nt,k0,l_me,l_out,l_in,jdnode,kdnode,local_index
+  Integer :: fail,i,j,k,l,m,n_k,n_nt,k0,l_me,l_out,l_in,jdnode,kdnode
 
   Integer, Dimension( : ), Allocatable :: i0,j0,listme,lstout,listin
+  Character( Len = 256 ) :: message
 
   fail=0
   Allocate (i0(1:b_u),j0(1:b_u),listme(1:mxatms),lstout(1:mxatms),listin(1:mxatms), Stat=fail)
@@ -81,7 +88,7 @@ Module shared_units
         Else
            ok=.not.(Real(nt_u,wp)/Real(mx_u,wp) > 0.85_wp)
         End If
-        Call gcheck(ok)
+        Call gcheck(comm,ok)
      End If
   End If
 
@@ -271,7 +278,7 @@ Module shared_units
 
 ! check for array overflow
 
-  Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Call error(104)
 
 ! check for a mess-up
@@ -308,7 +315,7 @@ Module shared_units
 
 ! synchronise all processors
 
-  Call gsync()
+  Call gsync(comm)
 
 ! loop over all processors connected to this one (I'm surrounded by 26)
 
@@ -365,21 +372,21 @@ Module shared_units
 
 ! check for array overflow
 
-  Call gcheck(safe)
+  Call gcheck(comm,safe)
   If (.not.safe) Call error(103)
 
 ! Get sharing flag
 
   lshmv=(m == 0)
-  Call gcheck(lshmv)
+  Call gcheck(comm,lshmv)
   lshmv=.not.lshmv
 
   If (.not.oldjob) oldjob = .true.
 
   Deallocate (i0,j0,listme,lstout,listin, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'pass_shared_units deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'pass_shared_units deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine pass_shared_units
@@ -408,10 +415,10 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
 
   Logical :: safe(1:2)
   Integer :: fail,iadd,limit,iblock, &
-             i,j,k,j0,k0,jdnode,kdnode,m,n,local_index
+             i,j,k,j0,k0,jdnode,kdnode,m,n
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
-
+  Character( Len = 256 ) :: message
 ! Number of transported quantities per particle
 
   iadd=4
@@ -419,8 +426,8 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
   fail=0 ; limit=iadd*mxbfsh ! limit=2*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'update_shared_units allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'update_shared_units allocation failure'
+     Call error(0,message)
   End If
 
 ! Set buffer limit (half for outgoing data - half for incoming)
@@ -433,7 +440,7 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
 
 ! synchronise all processors
 
-  Call gsync()
+  Call gsync(comm)
 
 ! transfer coordinate update data to all neighbouring nodes (26 surrounding me)
 
@@ -525,7 +532,7 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
 
   End Do
 
-  Call gcheck(safe)
+  Call gcheck(comm,safe)
 
 ! check for array overflow
 
@@ -537,8 +544,8 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'update_shared_units deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'update_shared_units deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine update_shared_units
@@ -567,7 +574,7 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,comm)
 
   Logical :: safe(1:2)
   Integer :: fail,iadd,limit,iblock, &
-             i,j,k,j0,k0,jdnode,kdnode,m,n,local_index
+             i,j,k,j0,k0,jdnode,kdnode,m,n
 
   Integer, Dimension( : ), Allocatable :: ibuffer
 
@@ -592,7 +599,7 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,comm)
 
 ! synchronise all processors
 
-  Call gsync()
+  Call gsync(comm)
 
 ! transfer coordinate update data to all neighbouring nodes (26 surrounding me)
 
@@ -680,7 +687,7 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,comm)
 
   End Do
 
-  Call gcheck(safe)
+  Call gcheck(comm,safe)
 
 ! check for array overflow
 
@@ -721,7 +728,7 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,comm)
 
   Logical :: safe(1:2)
   Integer :: fail,iadd,limit,iblock, &
-             i,j,k,j0,k0,jdnode,kdnode,m,n,local_index
+             i,j,k,j0,k0,jdnode,kdnode,m,n
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
@@ -746,7 +753,7 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,comm)
 
 ! synchronise all processors
 
-  Call gsync()
+  Call gsync(comm)
 
 ! transfer coordinate update data to all neighbouring nodes (26 surrounding me)
 
@@ -834,7 +841,7 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,comm)
 
   End Do
 
-  Call gcheck(safe)
+  Call gcheck(comm,safe)
 
 ! check for array overflow
 

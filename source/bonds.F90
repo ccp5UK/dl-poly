@@ -971,10 +971,10 @@ Subroutine bonds_table_read(bond_name,comm)
   If (i > 0) record(i:i)=' ' ! TABBND if it's in .xvg format
 
   Call get_word(record,word)
-  cutpot = word_2_real(word,comm)
+  cutpot = word_2_real(word)
 
   Call get_word(record,word)
-  ngrid = Nint(word_2_real(word,comm))
+  ngrid = Nint(word_2_real(word))
 
   delpot = cutpot/Real(ngrid,wp)
 

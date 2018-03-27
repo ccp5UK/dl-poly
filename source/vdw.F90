@@ -746,13 +746,13 @@ Subroutine vdw_table_read(rvdw,comm)
   If (.not.safe) Go To 100
 
   Call get_word(record,word)
-  delpot = word_2_real(word,comm)
+  delpot = word_2_real(word)
 
   Call get_word(record,word)
-  cutpot = word_2_real(word,comm)
+  cutpot = word_2_real(word)
 
   Call get_word(record,word)
-  ngrid = Nint(word_2_real(word,comm))
+  ngrid = Nint(word_2_real(word))
 
   dlrpot = rvdw/Real(mxgvdw-4,wp)
 
@@ -818,10 +818,10 @@ Subroutine vdw_table_read(rvdw,comm)
         Call get_word(record,atom2)
 
         Call get_word(record,word)
-        prmvdw(1,ivdw)=word_2_real(word,comm)*engunit
+        prmvdw(1,ivdw)=word_2_real(word)*engunit
 
         Call get_word(record,word)
-        prmvdw(2,ivdw)=word_2_real(word,comm)*engunit
+        prmvdw(2,ivdw)=word_2_real(word)*engunit
 
         katom1=0
         katom2=0

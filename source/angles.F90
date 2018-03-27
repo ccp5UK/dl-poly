@@ -1096,7 +1096,7 @@ Subroutine angles_table_read(angl_name,comm)
   If (i > 0) record(i:i)=' ' ! TABANG if it's in .xvg format
 
   Call get_word(record,word)
-  ngrid = Nint(word_2_real(word,comm))
+  ngrid = Nint(word_2_real(word))
 
   delpot = 180.0_wp/Real(ngrid,wp)
 

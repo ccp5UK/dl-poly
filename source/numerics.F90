@@ -1,5 +1,11 @@
 Module numerics 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,li
+  Use errors_warnings, Only : error
+
+  Use setup, Only : lseed,seed
+  Use comms, Only : comms_type
+  Use setup, Only : rt3,zero_plus ! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
+
   Implicit None
   Private
 
@@ -146,11 +152,7 @@ Function uni(comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use comms, Only : comms_type
-  Use setup, Only : lseed,seed
 
-  Implicit None
   Type(comms_type), Intent( In ) :: comm
   Real( Kind = wp )       :: uni
 
@@ -260,11 +262,6 @@ Function sarurnd(seeda, seedb, seedc)
 ! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use kinds, Only : wp, li
-  Use setup, Only : lseed,seed
-
-  Implicit None
 
   Real( Kind = wp )        :: sarurnd
 
@@ -441,16 +438,12 @@ Subroutine box_mueller_saru1(i,j,gauss1)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use setup, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
-
-  Implicit None
 
   Integer,           Intent( In    ) :: i,j
   Real( Kind = wp ), Intent(   Out ) :: gauss1
 
   Integer           :: k
-  Real( Kind = wp ) :: sarurnd,ran0,ran1,ran2
+  Real( Kind = wp ) :: ran0,ran1,ran2
 
 ! Initialise counter
 
@@ -488,17 +481,13 @@ Subroutine box_mueller_saru2(i,j,n,gauss1,l_str)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use setup, Only : rt3,zero_plus ! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
-
-  Implicit None
 
   Logical,           Intent( In    ) :: l_str
   Integer,           Intent( In    ) :: i,j,n
   Real( Kind = wp ), Intent(   Out ) :: gauss1
 
   Integer           :: k
-  Real( Kind = wp ) :: sarurnd,ran0,ran1,ran2
+  Real( Kind = wp ) :: ran0,ran1,ran2
 
 ! Initialise counter
 
@@ -547,16 +536,11 @@ Subroutine box_mueller_saru3(i,j,gauss1,gauss2,gauss3)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use setup, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
-
-  Implicit None
-
   Integer,           Intent( In    ) :: i,j
   Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2,gauss3
 
   Integer           :: k
-  Real( Kind = wp ) :: sarurnd,ran0,ran1,ran2
+  Real( Kind = wp ) :: ran0,ran1,ran2
 
 ! Initialise counter
 
@@ -610,17 +594,12 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use setup, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
-
-  Implicit None
-
   Integer,           Intent( In    ) :: i,j
   Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2,gauss3, &
                                         gauss4,gauss5,gauss6
 
   Integer           :: k
-  Real( Kind = wp ) :: sarurnd,ran0,ran1,ran2
+  Real( Kind = wp ) :: ran0,ran1,ran2
 
 ! Initialise counter
 
@@ -694,17 +673,11 @@ Subroutine box_mueller_uni(gauss1,gauss2,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use setup, Only : zero_plus ! = Nearest( 0.0_wp , +1.0_wp)
-  Use comms, Only : comms_type
-
-  Implicit None
-
   Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2
   Type(comms_type), Intent( In )  :: comm
 
   Logical           :: newjob = .true.
-  Real( Kind = wp ) :: uni,ran0,ran1,ran2
+  Real( Kind = wp ) :: ran0,ran1,ran2
 
 ! make sure uni is initialised
 
@@ -748,10 +721,6 @@ Subroutine gauss_1(natms,vxx,vyy,vzz,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use comms, Only : comms_type
-
-  Implicit None
 
   Real( Kind = wp ), Parameter :: a1 = 3.949846138_wp
   Real( Kind = wp ), Parameter :: a3 = 0.252408784_wp
@@ -764,7 +733,7 @@ Subroutine gauss_1(natms,vxx,vyy,vzz,comm)
   Type( comms_type ),                  Intent( In    ) :: comm
 
   Integer           :: i,j
-  Real( Kind = wp ) :: uni,rrr,rr2
+  Real( Kind = wp ) :: rrr,rr2
 
   Do i=1,natms
      rrr=0.0_wp
@@ -979,8 +948,6 @@ Function match(n,ind_top,list)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Implicit None
-
   Logical :: match
 
   Integer, Intent( In    ) :: n,ind_top,list(1:*)
@@ -1023,8 +990,6 @@ Subroutine shellsort(n,list)
 ! author    - i.t.todorov august 2004
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Implicit None
 
   Integer,                   Intent( In    ) :: n
   Integer, Dimension( 1:* ), Intent( InOut ) :: list
@@ -1166,8 +1131,6 @@ Function local_index(global_index,search_limit,rank,list)
 ! author    - i.t.todorov august 2004
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Implicit None
 
   Integer                                    :: local_index
 

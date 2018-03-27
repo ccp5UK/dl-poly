@@ -811,14 +811,14 @@ Contains
 
     If (comm%idnode==0) Open (Unit=iounit, File=dumpfile)
     Call get_line(safe,iounit,record,comm); If (.not.safe) Goto 100
-    Call get_word(record,word) ; nxx=Nint(word_2_real(word,comm,0.0_wp))
-    Call get_word(record,word) ; nyy=Nint(word_2_real(word,comm,0.0_wp))
-    Call get_word(record,word) ; nzz=Nint(word_2_real(word,comm,0.0_wp))
+    Call get_word(record,word) ; nxx=Nint(word_2_real(word,0.0_wp))
+    Call get_word(record,word) ; nyy=Nint(word_2_real(word,0.0_wp))
+    Call get_word(record,word) ; nzz=Nint(word_2_real(word,0.0_wp))
     Call get_line(safe,iounit,record,comm); If (.not.safe) Goto 100
-    Call get_word(record,word) ; nstp=Nint(word_2_real(word,comm,0.0_wp))
-    Call get_word(record,word) ; tme=word_2_real(word,comm,0.0_wp)
-    Call get_word(record,word) ; depostart=word_2_real(word,comm,0.0_wp)
-    Call get_word(record,word) ; depoend=word_2_real(word,comm,0.0_wp)
+    Call get_word(record,word) ; nstp=Nint(word_2_real(word,0.0_wp))
+    Call get_word(record,word) ; tme=word_2_real(word,0.0_wp)
+    Call get_word(record,word) ; depostart=word_2_real(word,0.0_wp)
+    Call get_word(record,word) ; depoend=word_2_real(word,0.0_wp)
     ! check size of electronic temperature grid matches with size given in CONTROL file
     If (nxx/=eltsys(1) .or. nyy/=eltsys(2) .or. nzz/=eltsys(3)) Call error(685)
     ! check restart file is at same timestep as restart
@@ -828,10 +828,10 @@ Contains
     ! electronic temperature if processor has that cell
     Do i=1,eltsys(1)*eltsys(2)*eltsys(3)
       Call get_line(safe,iounit,record,comm); If (.not.safe) Goto 100
-      Call get_word(record,word) ; ipos(1)=Nint(word_2_real(word,comm,0.0_wp))
-      Call get_word(record,word) ; ipos(2)=Nint(word_2_real(word,comm,0.0_wp))
-      Call get_word(record,word) ; ipos(3)=Nint(word_2_real(word,comm,0.0_wp))
-      Call get_word(record,word) ; eltmp=word_2_real(word,comm,0.0_wp)
+      Call get_word(record,word) ; ipos(1)=Nint(word_2_real(word,0.0_wp))
+      Call get_word(record,word) ; ipos(2)=Nint(word_2_real(word,0.0_wp))
+      Call get_word(record,word) ; ipos(3)=Nint(word_2_real(word,0.0_wp))
+      Call get_word(record,word) ; eltmp=word_2_real(word,0.0_wp)
       ix = ipos(1) + midI(1) - 1
       iy = ipos(2) + midI(2) - 1
       iz = ipos(3) + midI(3) - 1
@@ -1019,9 +1019,9 @@ Subroutine ttm_table_read(comm)
         Go To 100
       Else
         Call get_word(record,word)
-        vk1 = word_2_real(word,comm)
+        vk1 = word_2_real(word)
         Call get_word(record,word)
-        vk2 = word_2_real(word,comm)
+        vk2 = word_2_real(word)
         If (vk1>=zero_plus) Then
           i=i+1
           ketable(i,1) = vk1
@@ -1061,9 +1061,9 @@ Subroutine ttm_table_read(comm)
         Go To 100
       Else
         Call get_word(record,word)
-        vk1 = word_2_real(word,comm)
+        vk1 = word_2_real(word)
         Call get_word(record,word)
-        vk2 = word_2_real(word,comm)
+        vk2 = word_2_real(word)
         If (vk1>=zero_plus) Then
           i=i+1
           cetable(i,1) = vk1
@@ -1103,9 +1103,9 @@ Subroutine ttm_table_read(comm)
         Go To 100
       Else
         Call get_word(record,word)
-        vk1 = word_2_real(word,comm)
+        vk1 = word_2_real(word)
         Call get_word(record,word)
-        vk2 = word_2_real(word,comm)
+        vk2 = word_2_real(word)
         If (vk1>=zero_plus) Then
           i=i+1
           detable(i,1) = vk1
@@ -1145,9 +1145,9 @@ Subroutine ttm_table_read(comm)
         Go To 100
       Else
         Call get_word(record,word)
-        vk1 = word_2_real(word,comm)
+        vk1 = word_2_real(word)
         Call get_word(record,word)
-        vk2 = word_2_real(word,comm)
+        vk2 = word_2_real(word)
         If (vk1>=zero_plus) Then
           i=i+1
           gtable(i,1) = vk1
@@ -1240,9 +1240,9 @@ Subroutine ttm_table_scan(comm)
           Go To 5
         Else
           Call get_word(record,word)
-          vk1 = word_2_real(word,comm)
+          vk1 = word_2_real(word)
           Call get_word(record,word)
-          vk2 = word_2_real(word,comm)
+          vk2 = word_2_real(word)
           If (vk1>=zero_plus) kel=kel+1
         End If
 
@@ -1291,9 +1291,9 @@ Subroutine ttm_table_scan(comm)
           Go To 10
         Else
           Call get_word(record,word)
-          vk1 = word_2_real(word,comm)
+          vk1 = word_2_real(word)
           Call get_word(record,word)
-          vk2 = word_2_real(word,comm)
+          vk2 = word_2_real(word)
           If (vk1>=zero_plus) cel=cel+1
         End If
 
@@ -1342,9 +1342,9 @@ Subroutine ttm_table_scan(comm)
           Go To 15
         Else
           Call get_word(record,word)
-          vk1 = word_2_real(word,comm)
+          vk1 = word_2_real(word)
           Call get_word(record,word)
-          vk2 = word_2_real(word,comm)
+          vk2 = word_2_real(word)
           If (vk1>=zero_plus) del=del+1
         End If
 
@@ -1393,9 +1393,9 @@ Subroutine ttm_table_scan(comm)
           Go To 20
         Else
           Call get_word(record,word)
-          vk1 = word_2_real(word,comm)
+          vk1 = word_2_real(word)
           Call get_word(record,word)
-          vk2 = word_2_real(word,comm)
+          vk2 = word_2_real(word)
           If (vk1>=zero_plus) gel=gel+1
         End If
 

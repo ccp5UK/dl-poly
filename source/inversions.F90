@@ -1215,7 +1215,7 @@ Contains
     If (i > 0) record(i:i)=' ' ! TABINV if it's in .xvg format
 
     Call get_word(record,word)
-    ngrid = Nint(word_2_real(word,comm))
+    ngrid = Nint(word_2_real(word))
 
     delpot = 180.0_wp/Real(ngrid,wp)
 

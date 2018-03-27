@@ -278,8 +278,8 @@ Contains
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
                  If (word(1:Len_Trim(word)) /= 'timestep') Then
                     Call get_word(record,word) ; Call get_word(record,word)
-                    Call get_word(record,word) ; frm=Nint(word_2_real(word,comm,0.0_wp),li)
-                    Call get_word(record,word) ; rec=Nint(word_2_real(word,comm,0.0_wp),li)
+                    Call get_word(record,word) ; frm=Nint(word_2_real(word,0.0_wp),li)
+                    Call get_word(record,word) ; rec=Nint(word_2_real(word,0.0_wp),li)
                     If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
                        Go To 20 ! New style
                     Else
@@ -301,7 +301,7 @@ Contains
                  rec=rec+Int(1,li)
 
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
-                 Call get_word(record,word) ; j=Nint(word_2_real(word,comm))
+                 Call get_word(record,word) ; j=Nint(word_2_real(word))
 
                  Do i=1,3+2*j ! 3 lines for cell parameters and 2*j entries for defects
                     Read(Unit=ndefdt, Fmt=*, End=20)
@@ -1485,7 +1485,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
 ! Read particles total value
 
         Call get_word(record,word) ; Call get_word(record,word)
-        Call get_word(record,word) ; i=Nint(word_2_real(word,comm,0.0_wp,l_str))
+        Call get_word(record,word) ; i=Nint(word_2_real(word,0.0_wp,l_str))
         fast = (fast .and. i /= 0)
 
      End If
@@ -1528,38 +1528,38 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
      If (.not.safe) Go To 100
 
      Call get_word(record,word)
-     lvcfgr=Nint(word_2_real(word,comm))
+     lvcfgr=Nint(word_2_real(word))
 
      Call get_word(record,word)
-     imconr=Nint(word_2_real(word,comm))
+     imconr=Nint(word_2_real(word))
 
      If (imconr /= 0) Then
         Call get_line(safe,nrefdt,record,comm)
         If (.not.safe) Go To 100
         Call get_word(record,word)
-        celr(1)=word_2_real(word,comm)
+        celr(1)=word_2_real(word)
         Call get_word(record,word)
-        celr(2)=word_2_real(word,comm)
+        celr(2)=word_2_real(word)
         Call get_word(record,word)
-        celr(3)=word_2_real(word,comm)
+        celr(3)=word_2_real(word)
 
         Call get_line(safe,nrefdt,record,comm)
         If (.not.safe) Go To 100
         Call get_word(record,word)
-        celr(4)=word_2_real(word,comm)
+        celr(4)=word_2_real(word)
         Call get_word(record,word)
-        celr(5)=word_2_real(word,comm)
+        celr(5)=word_2_real(word)
         Call get_word(record,word)
-        celr(6)=word_2_real(word,comm)
+        celr(6)=word_2_real(word)
 
         Call get_line(safe,nrefdt,record,comm)
         If (.not.safe) Go To 100
         Call get_word(record,word)
-        celr(7)=word_2_real(word,comm)
+        celr(7)=word_2_real(word)
         Call get_word(record,word)
-        celr(8)=word_2_real(word,comm)
+        celr(8)=word_2_real(word)
         Call get_word(record,word)
-        celr(9)=word_2_real(word,comm)
+        celr(9)=word_2_real(word)
      Else
         Call error(552) ! Lattice parameters are a must
      End If
@@ -1661,7 +1661,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
            Read(Unit=nrefdt, Fmt='(a)', End=40) record
            Call tabs_2_blanks(record) ; Call strip_blanks(record)
            Call get_word(record,word) ; chbuf(indatm+1)=word(1:8)
-           Call get_word(record,word) ; iwrk(indatm+1) =Nint(word_2_real(word,comm))
+           Call get_word(record,word) ; iwrk(indatm+1) =Nint(word_2_real(word))
            If (iwrk(indatm+1) == 0) iwrk(indatm+1)=megref+1
 
            j=Max(j,iwrk(indatm+1))
@@ -2115,7 +2115,7 @@ Subroutine defects_reference_read_parallel      &
               Call get_word(record,word) ; chbuf_read(i)=word(1:8)
               If (l_ind) Then
                  Call get_word(record,word)
-                 iwrk_read(i)=Nint(word_2_real(word,comm,0.0_wp,l_str))
+                 iwrk_read(i)=Nint(word_2_real(word,0.0_wp,l_str))
                  If (iwrk_read(i) /= 0) Then
                     iwrk_read(i)=Abs(iwrk_read(i))
                  Else
@@ -3299,8 +3299,8 @@ Subroutine defects_write &
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
                  If (word(1:Len_Trim(word)) /= 'timestep') Then
                     Call get_word(record,word) ; Call get_word(record,word)
-                    Call get_word(record,word) ; frm=Nint(word_2_real(word,comm,0.0_wp),li)
-                    Call get_word(record,word) ; rec=Nint(word_2_real(word,comm,0.0_wp),li)
+                    Call get_word(record,word) ; frm=Nint(word_2_real(word,0.0_wp),li)
+                    Call get_word(record,word) ; rec=Nint(word_2_real(word,0.0_wp),li)
                     If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
                        Go To 20 ! New style
                     Else
@@ -3322,7 +3322,7 @@ Subroutine defects_write &
                  rec=rec+Int(1,li)
 
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
-                 Call get_word(record,word) ; j=Nint(word_2_real(word,comm))
+                 Call get_word(record,word) ; j=Nint(word_2_real(word))
 
                  Do i=1,3+2*j ! 3 lines for cell parameters and 2*j entries for defects
                     Read(Unit=ndefdt, Fmt=*, End=20)

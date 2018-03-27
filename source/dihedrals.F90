@@ -1694,7 +1694,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
   If (i > 0) record(i:i)=' ' ! TABDIH if it's in .xvg format
 
   Call get_word(record,word)
-  ngrid = Nint(word_2_real(word,comm))
+  ngrid = Nint(word_2_real(word))
 
   delpot = 360.0_wp/Real(ngrid,wp)
 

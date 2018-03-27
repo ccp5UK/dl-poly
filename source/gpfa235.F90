@@ -11,17 +11,18 @@ Module gpfa235
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
-
+  Use kinds, Only : wp
+  Use errors_warnings, Only : error
+  
   Implicit None
 
-  Public :: gpfa, gpfa_set
 
   Private
 
   Interface gpfa_set
      Module Procedure setgpfa
   End Interface
+  Public :: gpfa, gpfa_set, gpfa_wrap
 
 Contains
 
@@ -75,8 +76,6 @@ Contains
 !         for any n = (2**p)(3**q)(5**r)",
 !         siam j. sci. stat. comp., may 1992.
 ! ----------------------------------------------------------------------
-
-     Implicit None
 
 !*** Start of declarations inserted by SPAG (plusFORT)
      Real( Kind = wp ) :: A(*),B(*),Trigs(*)
@@ -145,8 +144,6 @@ Contains
 ! *     (greater than or equal to lot) for a scalar computer.      *
 ! *                                                                *
 ! ----------------------------------------------------------------------
-
-     Implicit None
 
 !*** Start of declarations inserted by SPAG (plusFORT)
      Real( Kind = wp ) :: A(*),B(*),Trigs(*),                      &
@@ -2511,13 +2508,12 @@ Contains
 
   Subroutine ABORT_IT()
 
-     Implicit None
-
-     Write(Unit=*, Fmt=100)
+     Character( Len = 256 ) :: message
+     Write(message, Fmt=100)
 100  Format(/'************************************'/ &
            & '*    CODE is aborting from GPFA    *'/ &
            & '************************************'/)
-     Call error(0)
+     Call error(0,message)
      Stop
 
   End Subroutine ABORT_IT

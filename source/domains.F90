@@ -13,6 +13,7 @@ Module domains
 
   Use kinds, Only : wp
   Use comms, Only : comms_type, gsync
+  Use errors_warnings, Only : error
 
   Implicit None
 

@@ -13,11 +13,12 @@ Module greenkubo
 
   Use kinds, Only : wp
   
-  Use comms,     Only : comms_type,gsum
+  Use comms,     Only : comms_type,gsum,gcheck
   Use setup,     Only : nrite,mxatyp,mxbuff,zero_plus,nvafdt,mxatms
   Use configuration,    Only : natms,ltype,lfrzn,vxx,vyy,vzz,cfgname
   Use site,      Only : unqatm,numtypnf
 
+  Use errors_warnings, Only : error
   Implicit None
 
   Integer           :: isvaf   = 1 , & ! VAF sampling frequency in steps

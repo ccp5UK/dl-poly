@@ -324,9 +324,9 @@ Subroutine read_field                      &
 
         If (comm%idnode == 0) Then
            Write(nrite,"(/,/,1x,a,i0)") &
-              "Multipolar electrostatics opted with poles up to order ", Nint(word_2_real(word,comm))
+              "Multipolar electrostatics opted with poles up to order ", Nint(word_2_real(word))
 
-           If (Nint(word_2_real(word,comm)) > mxompl) Write(nrite,"(1x,a)") &
+           If (Nint(word_2_real(word)) > mxompl) Write(nrite,"(1x,a)") &
               "*** warning - supplied multipolar expansion order reduced to the maximum allowed - 4 !!! ***"
 
            Write(nrite,"(1x,a)") &
@@ -353,7 +353,7 @@ Subroutine read_field                      &
 
         If (lmols) Call error(11)
         lmols=.true.
-        ntpmls=Nint(word_2_real(word,comm))
+        ntpmls=Nint(word_2_real(word))
 
         If (comm%idnode == 0) Write(nrite,"(/,/,1x,'number of molecular types',6x,i10)") ntpmls
 
@@ -410,7 +410,7 @@ Subroutine read_field                      &
               If (word(1:6) == 'nummol') Then
 
                  Call get_word(record,word)
-                 nummols(itmols)=Nint(word_2_real(word,comm))
+                 nummols(itmols)=Nint(word_2_real(word))
 
                  If (comm%idnode == 0) Write(nrite,"(/,1x,'number of molecules  ',10x,i10)") nummols(itmols)
 
@@ -419,7 +419,7 @@ Subroutine read_field                      &
               Else If (word(1:5) == 'atoms') Then
 
                  Call get_word(record,word)
-                 numsit(itmols)=Nint(word_2_real(word,comm))
+                 numsit(itmols)=Nint(word_2_real(word))
 
                  If (comm%idnode == 0) Then
   Write(nrite,"(/,1x,'number of atoms/sites',10x,i10)") numsit(itmols)
@@ -449,13 +449,13 @@ Subroutine read_field                      &
                        atom1=word(1:8)
 
                        Call get_word(record,word)
-                       weight=Abs(word_2_real(word,comm))
+                       weight=Abs(word_2_real(word))
 
                        Call get_word(record,word)
-                       charge=word_2_real(word,comm)
+                       charge=word_2_real(word)
 
                        Call get_word(record,word)
-                       nrept=Nint(word_2_real(word,comm))
+                       nrept=Nint(word_2_real(word))
                        If (nrept == 0) nrept=1
 
 ! sum absolute charges
@@ -463,7 +463,7 @@ Subroutine read_field                      &
                        sumchg=sumchg+Abs(charge)
 
                        Call get_word(record,word)
-                       ifrz=Nint(word_2_real(word,comm))
+                       ifrz=Nint(word_2_real(word))
                        If (ifrz /= 0) ifrz=1
 
                        numfrz(itmols)=numfrz(itmols)+ifrz*nrept
@@ -526,7 +526,7 @@ Subroutine read_field                      &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 ntmp=Nint(word_2_real(word,comm))
+                 ntmp=Nint(word_2_real(word))
                  numshl(itmols)=numshl(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
@@ -549,18 +549,18 @@ Subroutine read_field                      &
 
 ! read core & shell atom indices
 
-                    iatm1=Nint(word_2_real(word,comm))
+                    iatm1=Nint(word_2_real(word))
                     Call get_word(record,word)
-                    iatm2=Nint(word_2_real(word,comm))
+                    iatm2=Nint(word_2_real(word))
 
                     lstshl(1,nshels)=iatm1
                     lstshl(2,nshels)=iatm2
 
                     Call get_word(record,word)
-                    prmshl(1,nshels)=word_2_real(word,comm)
+                    prmshl(1,nshels)=word_2_real(word)
 
                     Call get_word(record,word)
-                    prmshl(2,nshels)=word_2_real(word,comm)
+                    prmshl(2,nshels)=word_2_real(word)
 
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
@@ -640,7 +640,7 @@ Subroutine read_field                      &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 ntmp=Nint(word_2_real(word,comm))
+                 ntmp=Nint(word_2_real(word))
                  numcon(itmols)=numcon(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
@@ -663,15 +663,15 @@ Subroutine read_field                      &
 
 ! read constraint bond atom indices
 
-                    iatm1=Nint(word_2_real(word,comm))
+                    iatm1=Nint(word_2_real(word))
                     Call get_word(record,word)
-                    iatm2=Nint(word_2_real(word,comm))
+                    iatm2=Nint(word_2_real(word))
 
                     lstcon(1,nconst)=iatm1
                     lstcon(2,nconst)=iatm2
 
                     Call get_word(record,word)
-                    prmcon(nconst)=word_2_real(word,comm)
+                    prmcon(nconst)=word_2_real(word)
 
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
@@ -755,7 +755,7 @@ Subroutine read_field                      &
 ! read PMF bondlength
 
                  Call get_word(record,word)
-                 prmpmf=word_2_real(word,comm)
+                 prmpmf=word_2_real(word)
 
                  If (comm%idnode == 0) Then
   Write(nrite,"(/,/,1x,'PMF constraint details')")
@@ -794,7 +794,7 @@ Subroutine read_field                      &
                           Call get_word(record,word)
                        End Do
 
-                       iatm1=Nint(word_2_real(word,comm))
+                       iatm1=Nint(word_2_real(word))
                        lstpmf(jpmf,ipmf)=iatm1
                        isite1 = nsite - numsit(itmols) + iatm1
 
@@ -803,7 +803,7 @@ Subroutine read_field                      &
                        pmffrz(ipmf)=pmffrz(ipmf)+frzsit(isite1)
 
                        Call get_word(record,word)
-                       weight=word_2_real(word,comm)
+                       weight=word_2_real(word)
                        pmfwgt(jpmf,ipmf)=weight
 
 ! test for weightless units
@@ -924,7 +924,7 @@ Subroutine read_field                      &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units' .or. word(1:3) == 'bod') Call get_word(record,word)
-                 ntmp=Nint(word_2_real(word,comm))
+                 ntmp=Nint(word_2_real(word))
                  numrgd(itmols)=numrgd(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
@@ -947,7 +947,7 @@ Subroutine read_field                      &
 
 ! read RB size and indices
 
-                    lrgd=Nint(word_2_real(word,comm))
+                    lrgd=Nint(word_2_real(word))
                     If (lrgd < 2 .or. lrgd > mxlrgd) Call error(632)
 
                     Do jrgd=1,lrgd
@@ -962,7 +962,7 @@ Subroutine read_field                      &
                           Call get_word(record,word)
                        End If
 
-                       iatm1=Nint(word_2_real(word,comm))
+                       iatm1=Nint(word_2_real(word))
                        lstrgd(jrgd,nrigid)=iatm1
 
                        isite1 = nsite - numsit(itmols) + iatm1
@@ -1046,7 +1046,7 @@ Subroutine read_field                      &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 ntmp=Nint(word_2_real(word,comm))
+                 ntmp=Nint(word_2_real(word))
                  numteth(itmols)=numteth(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
@@ -1088,16 +1088,16 @@ Subroutine read_field                      &
 ! read tethered atom indices
 
                     Call get_word(record,word)
-                    iatm1=Nint(word_2_real(word,comm))
+                    iatm1=Nint(word_2_real(word))
 
                     lsttet(nteth)=iatm1
 
                     Call get_word(record,word)
-                    prmtet(1,nteth)=word_2_real(word,comm)
+                    prmtet(1,nteth)=word_2_real(word)
                     Call get_word(record,word)
-                    prmtet(2,nteth)=word_2_real(word,comm)
+                    prmtet(2,nteth)=word_2_real(word)
                     Call get_word(record,word)
-                    prmtet(3,nteth)=word_2_real(word,comm)
+                    prmtet(3,nteth)=word_2_real(word)
 
                     isite1 = nsite - numsit(itmols) + iatm1
 
@@ -1149,7 +1149,7 @@ Subroutine read_field                      &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 ntmp=Nint(word_2_real(word,comm))
+                 ntmp=Nint(word_2_real(word))
                  numbonds(itmols)=numbonds(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
@@ -1231,9 +1231,9 @@ Subroutine read_field                      &
 ! read bond atom indices
 
                     Call get_word(record,word)
-                    iatm1=Nint(word_2_real(word,comm))
+                    iatm1=Nint(word_2_real(word))
                     Call get_word(record,word)
-                    iatm2=Nint(word_2_real(word,comm))
+                    iatm2=Nint(word_2_real(word))
 
                     lstbnd(1,nbonds)=iatm1
                     lstbnd(2,nbonds)=iatm2
@@ -1244,13 +1244,13 @@ Subroutine read_field                      &
                     If (Abs(keybnd(nbonds)) /= 20) Then
 
                        Call get_word(record,word)
-                       prmbnd(1,nbonds)=word_2_real(word,comm)
+                       prmbnd(1,nbonds)=word_2_real(word)
                        Call get_word(record,word)
-                       prmbnd(2,nbonds)=word_2_real(word,comm)
+                       prmbnd(2,nbonds)=word_2_real(word)
                        Call get_word(record,word)
-                       prmbnd(3,nbonds)=word_2_real(word,comm)
+                       prmbnd(3,nbonds)=word_2_real(word)
                        Call get_word(record,word)
-                       prmbnd(4,nbonds)=word_2_real(word,comm)
+                       prmbnd(4,nbonds)=word_2_real(word)
 
                        If (Abs(keybnd(nbonds)) == 9) Then
                           prmbnd(2,nbonds)=Abs(prmbnd(2,nbonds))
@@ -1370,7 +1370,7 @@ Subroutine read_field                      &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 ntmp=Nint(word_2_real(word,comm))
+                 ntmp=Nint(word_2_real(word))
                  numang(itmols)=numang(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
@@ -1468,11 +1468,11 @@ Subroutine read_field                      &
 ! read angle atom indices
 
                     Call get_word(record,word)
-                    iatm1=Nint(word_2_real(word,comm))
+                    iatm1=Nint(word_2_real(word))
                     Call get_word(record,word)
-                    iatm2=Nint(word_2_real(word,comm)) ! central atom
+                    iatm2=Nint(word_2_real(word)) ! central atom
                     Call get_word(record,word)
-                    iatm3=Nint(word_2_real(word,comm))
+                    iatm3=Nint(word_2_real(word))
 
                     lstang(1,nangle)=iatm1
                     lstang(2,nangle)=iatm2
@@ -1485,17 +1485,17 @@ Subroutine read_field                      &
                     If (Abs(keyang(nangle)) /= 20) Then
 
                        Call get_word(record,word)
-                       prmang(1,nangle)=word_2_real(word,comm)
+                       prmang(1,nangle)=word_2_real(word)
                        Call get_word(record,word)
-                       prmang(2,nangle)=word_2_real(word,comm)
+                       prmang(2,nangle)=word_2_real(word)
                        Call get_word(record,word)
-                       prmang(3,nangle)=word_2_real(word,comm)
+                       prmang(3,nangle)=word_2_real(word)
                        Call get_word(record,word)
-                       prmang(4,nangle)=word_2_real(word,comm)
+                       prmang(4,nangle)=word_2_real(word)
                        Call get_word(record,word)
-                       prmang(5,nangle)=word_2_real(word,comm)
+                       prmang(5,nangle)=word_2_real(word)
                        Call get_word(record,word)
-                       prmang(6,nangle)=word_2_real(word,comm)
+                       prmang(6,nangle)=word_2_real(word)
 
 ! test for frozen atoms and print unit
 
@@ -1614,7 +1614,7 @@ Subroutine read_field                      &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 ntmp=Nint(word_2_real(word,comm))
+                 ntmp=Nint(word_2_real(word))
                  numdih(itmols)=numdih(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
@@ -1682,13 +1682,13 @@ Subroutine read_field                      &
 ! read dihedral atom indices
 
                     Call get_word(record,word)
-                    iatm1=Nint(word_2_real(word,comm))
+                    iatm1=Nint(word_2_real(word))
                     Call get_word(record,word)
-                    iatm2=Nint(word_2_real(word,comm))
+                    iatm2=Nint(word_2_real(word))
                     Call get_word(record,word)
-                    iatm3=Nint(word_2_real(word,comm))
+                    iatm3=Nint(word_2_real(word))
                     Call get_word(record,word)
-                    iatm4=Nint(word_2_real(word,comm))
+                    iatm4=Nint(word_2_real(word))
 
                     lstdih(1,ndihed)=iatm1
                     lstdih(2,ndihed)=iatm2
@@ -1703,19 +1703,19 @@ Subroutine read_field                      &
                     If (keydih(ndihed) /= 20) Then
 
                        Call get_word(record,word)
-                       prmdih(1,ndihed)=word_2_real(word,comm)
+                       prmdih(1,ndihed)=word_2_real(word)
                        Call get_word(record,word)
-                       prmdih(2,ndihed)=word_2_real(word,comm)
+                       prmdih(2,ndihed)=word_2_real(word)
                        Call get_word(record,word)
-                       prmdih(3,ndihed)=word_2_real(word,comm)
+                       prmdih(3,ndihed)=word_2_real(word)
                        Call get_word(record,word)
-                       prmdih(4,ndihed)=word_2_real(word,comm)
+                       prmdih(4,ndihed)=word_2_real(word)
                        Call get_word(record,word)
-                       prmdih(5,ndihed)=word_2_real(word,comm)
+                       prmdih(5,ndihed)=word_2_real(word)
                        Call get_word(record,word)
-                       prmdih(6,ndihed)=word_2_real(word,comm)
+                       prmdih(6,ndihed)=word_2_real(word)
                        Call get_word(record,word)
-                       prmdih(7,ndihed)=word_2_real(word,comm)
+                       prmdih(7,ndihed)=word_2_real(word)
 
 ! test for frozen atoms and print unit
 
@@ -1844,7 +1844,7 @@ Subroutine read_field                      &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 ntmp=Nint(word_2_real(word,comm))
+                 ntmp=Nint(word_2_real(word))
                  numinv(itmols)=numinv(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
@@ -1905,13 +1905,13 @@ Subroutine read_field                      &
 ! read inversion atom indices
 
                     Call get_word(record,word)
-                    iatm1=Nint(word_2_real(word,comm)) ! central atom
+                    iatm1=Nint(word_2_real(word)) ! central atom
                     Call get_word(record,word)
-                    iatm2=Nint(word_2_real(word,comm))
+                    iatm2=Nint(word_2_real(word))
                     Call get_word(record,word)
-                    iatm3=Nint(word_2_real(word,comm))
+                    iatm3=Nint(word_2_real(word))
                     Call get_word(record,word)
-                    iatm4=Nint(word_2_real(word,comm))
+                    iatm4=Nint(word_2_real(word))
 
                     lstinv(1,ninver)=iatm1
                     lstinv(2,ninver)=iatm2
@@ -1926,11 +1926,11 @@ Subroutine read_field                      &
                     If (keyinv(ninver) /= 20) Then
 
                        Call get_word(record,word)
-                       prminv(1,ninver)=word_2_real(word,comm)
+                       prminv(1,ninver)=word_2_real(word)
                        Call get_word(record,word)
-                       prminv(2,ninver)=word_2_real(word,comm)
+                       prminv(2,ninver)=word_2_real(word)
                        Call get_word(record,word)
-                       prminv(3,ninver)=word_2_real(word,comm)
+                       prminv(3,ninver)=word_2_real(word)
 
 ! test for frozen atoms and print unit
 
@@ -3154,7 +3154,7 @@ Subroutine read_field                      &
      Else If (word(1:3) == 'rdf') Then
 
         Call get_word(record,word)
-        ntprdf=Nint(word_2_real(word,comm))
+        ntprdf=Nint(word_2_real(word))
 
         If (comm%idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of specified rdf look up pairs    ',i10)") ntprdf
@@ -3208,7 +3208,7 @@ Subroutine read_field                      &
      Else If (word(1:3) == 'vdw') Then
 
         Call get_word(record,word)
-        ntpvdw=Nint(word_2_real(word,comm))
+        ntpvdw=Nint(word_2_real(word))
         Call get_word(record,word)
 
         If (comm%idnode == 0) Then
@@ -3286,7 +3286,7 @@ Subroutine read_field                      &
            If (keypot == 0) Then
               If (keydpd > 0) Then ! make sure gamdpd is read and reported for DPD
                  Call get_word(record,word)
-                 parpot(1)=word_2_real(word,comm)
+                 parpot(1)=word_2_real(word)
                  If (comm%idnode == 0 .and. l_top) &
   Write(nrite,"(1x,i10,5x,2a8,30x,a9,1x,10f20.6)") itpvdw,atom1,atom2,"tabulated",parpot(1)
               Else
@@ -3297,7 +3297,7 @@ Subroutine read_field                      &
               itmp=Merge(mxpvdw+1,mxpvdw,keydpd > 0)
               Do i=1,itmp ! make sure gamdpd is read and reported for DPD
                  Call get_word(record,word)
-                 parpot(i)=word_2_real(word,comm)
+                 parpot(i)=word_2_real(word)
               End Do
               If (comm%idnode == 0 .and. l_top) &
   Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,10f20.6)") itpvdw,atom1,atom2,keyword,parpot(1:itmp)
@@ -3769,7 +3769,7 @@ Subroutine read_field                      &
      Else If (word(1:3) == 'met') Then
 
         Call get_word(record,word)
-        ntpmet=Nint(word_2_real(word,comm))
+        ntpmet=Nint(word_2_real(word))
 
         If (comm%idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of specified metal potentials     ',i10)") ntpmet
@@ -3832,23 +3832,23 @@ Subroutine read_field                      &
 
            If (keypot > 0) Then
               Call get_word(record,word)
-              parpot(1)=word_2_real(word,comm)
+              parpot(1)=word_2_real(word)
               Call get_word(record,word)
-              parpot(2)=word_2_real(word,comm)
+              parpot(2)=word_2_real(word)
               Call get_word(record,word)
-              parpot(3)=word_2_real(word,comm)
+              parpot(3)=word_2_real(word)
               Call get_word(record,word)
-              parpot(4)=word_2_real(word,comm)
+              parpot(4)=word_2_real(word)
               Call get_word(record,word)
-              parpot(5)=word_2_real(word,comm)
+              parpot(5)=word_2_real(word)
               Call get_word(record,word)
-              parpot(6)=word_2_real(word,comm)
+              parpot(6)=word_2_real(word)
               Call get_word(record,word)
-              parpot(7)=word_2_real(word,comm)
+              parpot(7)=word_2_real(word)
               Call get_word(record,word)
-              parpot(8)=word_2_real(word,comm)
+              parpot(8)=word_2_real(word)
               Call get_word(record,word)
-              parpot(9)=word_2_real(word,comm)
+              parpot(9)=word_2_real(word)
 
               If (comm%idnode == 0 .and. l_top) &
   Write(nrite,"(1x,i10,5x,2a8,3x,a4,1x,10f15.6)") itpmet,atom1,atom2,keyword,parpot(1:mxpmet)
@@ -3949,7 +3949,7 @@ Subroutine read_field                      &
      Else If (word(1:7) == 'tersoff') Then
 
         Call get_word(record,word)
-        ntpter=Nint(word_2_real(word,comm))
+        ntpter=Nint(word_2_real(word))
 
         If (comm%idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of specified tersoff potentials   ',i10)") ntpter
@@ -3990,15 +3990,15 @@ Subroutine read_field                      &
            End If
 
            Call get_word(record,word)
-           parpot(1 )=word_2_real(word,comm)      ! A_i
+           parpot(1 )=word_2_real(word)      ! A_i
            Call get_word(record,word)
-           parpot(2 )=word_2_real(word,comm)      ! a_i
+           parpot(2 )=word_2_real(word)      ! a_i
            Call get_word(record,word)
-           parpot(3 )=word_2_real(word,comm)      ! B_i
+           parpot(3 )=word_2_real(word)      ! B_i
            Call get_word(record,word)
-           parpot(4 )=word_2_real(word,comm)      ! b_i
+           parpot(4 )=word_2_real(word)      ! b_i
            Call get_word(record,word)
-           parpot(5 )=Abs(word_2_real(word,comm)) ! R_i
+           parpot(5 )=Abs(word_2_real(word)) ! R_i
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -4007,20 +4007,20 @@ Subroutine read_field                      &
               Call get_word(record,word)
            End Do
 
-           parpot(6 )=Abs(word_2_real(word,comm))    ! S_i
+           parpot(6 )=Abs(word_2_real(word))    ! S_i
            Call get_word(record,word)
 
            If      (keypot == 1) Then
 
-              parpot(7 )=word_2_real(word,comm)      ! beta_i
+              parpot(7 )=word_2_real(word)      ! beta_i
               Call get_word(record,word)
-              parpot(8 )=word_2_real(word,comm)      ! eta_i
+              parpot(8 )=word_2_real(word)      ! eta_i
               Call get_word(record,word)
-              parpot(9 )=word_2_real(word,comm)      ! c_i
+              parpot(9 )=word_2_real(word)      ! c_i
               Call get_word(record,word)
-              parpot(10)=word_2_real(word,comm)      ! d_i
+              parpot(10)=word_2_real(word)      ! d_i
               Call get_word(record,word)
-              parpot(11)=word_2_real(word,comm)      ! h_i
+              parpot(11)=word_2_real(word)      ! h_i
 
               If (comm%idnode == 0 .and. l_top) Then
   Write(nrite,"(1x,i10,5x,a8,3x,a4,1x,10(1p,e13.4))") itpter,atom0,keyword,parpot(1: 5)
@@ -4029,15 +4029,15 @@ Subroutine read_field                      &
 
            Else If (keypot == 2) Then
 
-              parpot(7 )=word_2_real(word,comm)      ! eta_i
+              parpot(7 )=word_2_real(word)      ! eta_i
               Call get_word(record,word)
-              parpot(8 )=word_2_real(word,comm)      ! delta_i
+              parpot(8 )=word_2_real(word)      ! delta_i
               Call get_word(record,word)
-              parpot(9 )=word_2_real(word,comm)      ! c1_i
+              parpot(9 )=word_2_real(word)      ! c1_i
               Call get_word(record,word)
-              parpot(10)=word_2_real(word,comm)      ! c2_i
+              parpot(10)=word_2_real(word)      ! c2_i
               Call get_word(record,word)
-              parpot(11)=word_2_real(word,comm)      ! c3_i
+              parpot(11)=word_2_real(word)      ! c3_i
 
               word(1:1)='#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -4046,15 +4046,15 @@ Subroutine read_field                      &
                  Call get_word(record,word)
               End Do
 
-              parpot(12)=word_2_real(word,comm)      ! c4_i
+              parpot(12)=word_2_real(word)      ! c4_i
               Call get_word(record,word)
-              parpot(13)=word_2_real(word,comm)      ! c5_i
+              parpot(13)=word_2_real(word)      ! c5_i
               Call get_word(record,word)
-              parpot(14)=word_2_real(word,comm)      ! h_i
+              parpot(14)=word_2_real(word)      ! h_i
               Call get_word(record,word)
-              parpot(15)=word_2_real(word,comm)      ! alpha_i
+              parpot(15)=word_2_real(word)      ! alpha_i
               Call get_word(record,word)
-              parpot(16)=word_2_real(word,comm)      ! beta_i
+              parpot(16)=word_2_real(word)      ! beta_i
 
               If (comm%idnode == 0 .and. l_top) Then
   Write(nrite,"(1x,i10,5x,a8,3x,a4,1x,10(1p,e13.4))") itpter,atom0,keyword,parpot( 1:     5)
@@ -4136,9 +4136,9 @@ Subroutine read_field                      &
               atom2=word(1:8)
 
               Call get_word(record,word)
-              parpot(1)=word_2_real(word,comm,1.0_wp) ! chi_ij
+              parpot(1)=word_2_real(word,1.0_wp) ! chi_ij
               Call get_word(record,word)
-              parpot(2)=word_2_real(word,comm,1.0_wp) ! omega_ij
+              parpot(2)=word_2_real(word,1.0_wp) ! omega_ij
 
               katom1=0
               katom2=0
@@ -4170,7 +4170,7 @@ Subroutine read_field                      &
      Else If (word(1:3) == 'tbp') Then
 
         Call get_word(record,word)
-        ntptbp=Nint(word_2_real(word,comm))
+        ntptbp=Nint(word_2_real(word))
 
         If (comm%idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of specified three-body potentials',i10)") ntptbp
@@ -4230,15 +4230,15 @@ Subroutine read_field                      &
            End If
 
            Call get_word(record,word)
-           parpot(1)=word_2_real(word,comm)
+           parpot(1)=word_2_real(word)
            Call get_word(record,word)
-           parpot(2)=word_2_real(word,comm)
+           parpot(2)=word_2_real(word)
            Call get_word(record,word)
-           parpot(3)=word_2_real(word,comm)
+           parpot(3)=word_2_real(word)
            Call get_word(record,word)
-           parpot(4)=word_2_real(word,comm)
+           parpot(4)=word_2_real(word)
            Call get_word(record,word)
-           parpot(5)=word_2_real(word,comm)
+           parpot(5)=word_2_real(word)
 
            If (comm%idnode == 0 .and. l_top) &
   Write(nrite,"(1x,i10,5x,3a8,3x,a4,1x,10f15.6)") itptbp,atom1,atom0,atom2,keyword,parpot(1:mxptbp)
@@ -4306,7 +4306,7 @@ Subroutine read_field                      &
      Else If (word(1:3) == 'fbp') Then
 
         Call get_word(record,word)
-        ntpfbp=Nint(word_2_real(word,comm))
+        ntpfbp=Nint(word_2_real(word))
 
         If (comm%idnode == 0) Then
   Write(nrite,"(/,/,1x,'number of specified four-body potentials ',i10)") ntpfbp
@@ -4363,11 +4363,11 @@ Subroutine read_field                      &
            End If
 
            Call get_word(record,word)
-           parpot(1)=word_2_real(word,comm)
+           parpot(1)=word_2_real(word)
            Call get_word(record,word)
-           parpot(2)=word_2_real(word,comm)
+           parpot(2)=word_2_real(word)
            Call get_word(record,word)
-           parpot(3)=word_2_real(word,comm)
+           parpot(3)=word_2_real(word)
 
            If (comm%idnode == 0 .and. l_top) &
   Write(nrite,"(1x,i10,3x,4a8,3x,a4,2x,10f15.6)") itpfbp,atom0,atom1,atom2,atom3,keyword,parpot(1:mxpfbp)
@@ -4451,7 +4451,7 @@ Subroutine read_field                      &
 
         Call get_word(record,word)
         nfld=0
-        If (word(1:1) /= '#' .and. word(1:1) /= ' ') nfld=Nint(word_2_real(word,comm))
+        If (word(1:1) /= '#' .and. word(1:1) /= ' ') nfld=Nint(word_2_real(word))
         If (nfld <= 0) nfld=6
 
         word(1:1)='#'
@@ -4506,7 +4506,7 @@ Subroutine read_field                      &
 
         Do i=1,nfld
            Call get_word(record,word)
-           prmfld(i)=word_2_real(word,comm)
+           prmfld(i)=word_2_real(word)
         End Do
 
         If (comm%idnode == 0) Then
@@ -5029,7 +5029,7 @@ Subroutine scan_field                                &
 
         l_n_e=.false. ! abandon assumptions
 
-        mxompl = Min(Max(0,Nint(word_2_real(word,comm))),4)
+        mxompl = Min(Max(0,Nint(word_2_real(word))),4)
 
         mximpl = (mxompl+3)*(mxompl+2)*(mxompl+1)/6
 
@@ -5037,7 +5037,7 @@ Subroutine scan_field                                &
 
         Call get_word(record,word)
         If (word(1:4) == 'type') Call get_word(record,word)
-        mxtmls=Nint(word_2_real(word,comm))
+        mxtmls=Nint(word_2_real(word))
 
         Do itmols=1,mxtmls
 
@@ -5062,12 +5062,12 @@ Subroutine scan_field                                &
               If (word(1:6) == 'nummol') Then
 
                  Call get_word(record,word)
-                 nummols=Nint(word_2_real(word,comm))
+                 nummols=Nint(word_2_real(word))
 
               Else If (word(1:5) == 'atoms') Then
 
                  Call get_word(record,word)
-                 numsit=Nint(word_2_real(word,comm))
+                 numsit=Nint(word_2_real(word))
                  mxnmst=Max(mxnmst,numsit)
                  megatm=megatm+nummols*numsit
                  mxsite=mxsite+numsit
@@ -5086,9 +5086,9 @@ Subroutine scan_field                                &
 
                     Call get_word(record,word)
                     Call get_word(record,word)
-                    l_n_e=(l_n_e.and.(Abs(word_2_real(word,comm)) < 1.0e-5_wp))
+                    l_n_e=(l_n_e.and.(Abs(word_2_real(word)) < 1.0e-5_wp))
                     Call get_word(record,word)
-                    nrept=Nint(word_2_real(word,comm))
+                    nrept=Nint(word_2_real(word))
                     If (nrept == 0) nrept=1
 
                     If (mxatyp == 0) Then
@@ -5116,7 +5116,7 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 numshl=Nint(word_2_real(word,comm))
+                 numshl=Nint(word_2_real(word))
                  mtshl=Max(mtshl,numshl)
                  mxtshl=mxtshl+numshl
                  mxshl=mxshl+nummols*numshl
@@ -5134,7 +5134,7 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 numcon=Nint(word_2_real(word,comm))
+                 numcon=Nint(word_2_real(word))
                  mtcons=Max(mtcons,numcon)
                  mxtcon=mxtcon+numcon
                  mxcons=mxcons+nummols*numcon
@@ -5171,7 +5171,7 @@ Subroutine scan_field                                &
                     Else
                        Go To 30
                     End If
-                    mxtpmf(ipmf)=Nint(word_2_real(word,comm))
+                    mxtpmf(ipmf)=Nint(word_2_real(word))
 
                     Do jpmf=1,mxtpmf(ipmf)
                        word(1:1)='#'
@@ -5187,7 +5187,7 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units' .or. word(1:3) == 'bod') Call get_word(record,word)
-                 numrgd=Nint(word_2_real(word,comm))
+                 numrgd=Nint(word_2_real(word))
                  mtrgd=Max(mtrgd,numrgd)
                  mxtrgd=mxtrgd+numrgd
                  mxrgd=mxrgd+nummols*numrgd
@@ -5199,7 +5199,7 @@ Subroutine scan_field                                &
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
-                    jrgd=Nint(word_2_real(word,comm))
+                    jrgd=Nint(word_2_real(word))
                     mxlrgd=Max(mxlrgd,jrgd)
 
                     Do lrgd=1,jrgd
@@ -5220,7 +5220,7 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 numteth=Nint(word_2_real(word,comm))
+                 numteth=Nint(word_2_real(word))
                  mtteth=Max(mtteth,numteth)
                  mxtteth=mxtteth+numteth
                  mxteth=mxteth+nummols*numteth
@@ -5240,7 +5240,7 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 numbonds=Nint(word_2_real(word,comm))
+                 numbonds=Nint(word_2_real(word))
                  mtbond=Max(mtbond,numbonds)
                  mxtbnd=mxtbnd+numbonds
                  mxbond=mxbond+nummols*numbonds
@@ -5269,10 +5269,10 @@ Subroutine scan_field                                &
                     If (i > 0) record(i:i)=' ' ! TABBND if it's in .xvg format
 
                     Call get_word(record,word)
-                    rcbnd=Max(rcbnd,word_2_real(word,comm))
+                    rcbnd=Max(rcbnd,word_2_real(word))
 
                     Call get_word(record,word)
-                    k=Nint(word_2_real(word,comm))
+                    k=Nint(word_2_real(word))
                     mxgbnd=Max(mxgbnd,k+4)
 
                     If (comm%idnode == 0) Close(Unit=ntable)
@@ -5284,7 +5284,7 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 numang=Nint(word_2_real(word,comm))
+                 numang=Nint(word_2_real(word))
                  mtangl=Max(mtangl,numang)
                  mxtang=mxtang+numang
                  mxangl=mxangl+nummols*numang
@@ -5313,7 +5313,7 @@ Subroutine scan_field                                &
                     If (i > 0) record(i:i)=' ' ! TABANG if it's in .xvg format
 
                     Call get_word(record,word) ! no need for cutoff in angles (max is always 180 degrees)
-                    k=Nint(word_2_real(word,comm))
+                    k=Nint(word_2_real(word))
                     mxgang=Max(mxgang,k+4)
 
                     If (comm%idnode == 0) Close(Unit=ntable)
@@ -5325,7 +5325,7 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 numdih=Nint(word_2_real(word,comm))
+                 numdih=Nint(word_2_real(word))
                  mtdihd=Max(mtdihd,numdih)
                  mxtdih=mxtdih+numdih
                  mxdihd=mxdihd+nummols*numdih
@@ -5354,7 +5354,7 @@ Subroutine scan_field                                &
                     If (i > 0) record(i:i)=' ' ! TABDIH if it's in .xvg format
 
                     Call get_word(record,word) ! no need for cutoff in angles (max is always 360 degrees
-                    k=Nint(word_2_real(word,comm))  ! from -180 to 180)
+                    k=Nint(word_2_real(word))  ! from -180 to 180)
                     mxgdih=Max(mxgdih,k+4)
 
                     If (comm%idnode == 0) Close(Unit=ntable)
@@ -5366,7 +5366,7 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 numinv=Nint(word_2_real(word,comm))
+                 numinv=Nint(word_2_real(word))
                  mtinv=Max(mtinv,numinv)
                  mxtinv=mxtinv+numinv
                  mxinv=mxinv+nummols*numinv
@@ -5395,7 +5395,7 @@ Subroutine scan_field                                &
                     If (i > 0) record(i:i)=' ' ! TABINV if it's in .xvg format
 
                     Call get_word(record,word) ! no need for cutoff in angles (max is always 180 degrees)
-                    k=Nint(word_2_real(word,comm))
+                    k=Nint(word_2_real(word))
                     mxginv=Max(mxginv,k+4)
 
                     If (comm%idnode == 0) Close(Unit=ntable)
@@ -5416,7 +5416,7 @@ Subroutine scan_field                                &
      Else If (word(1:3) == 'rdf') Then
 
         Call get_word(record,word)
-        mxrdf=Nint(word_2_real(word,comm))
+        mxrdf=Nint(word_2_real(word))
 
         Do itprdf=1,mxrdf
             word(1:1)='#'
@@ -5437,7 +5437,7 @@ Subroutine scan_field                                &
         If (word(1:3) == 'tab') Then
            lt_vdw=.true.
         Else
-           mxvdw=Nint(word_2_real(word,comm))
+           mxvdw=Nint(word_2_real(word))
         End If
 
         Do itpvdw=1,mxvdw
@@ -5459,16 +5459,16 @@ Subroutine scan_field                                &
               Call get_word(record,word)
               Call get_word(record,word)
               Call get_word(record,word)
-              rvdw=Max(rvdw,word_2_real(word,comm))
+              rvdw=Max(rvdw,word_2_real(word))
            Else If (word(1:3) == 'wca') Then
               Call get_word(record,word)
-              Call get_word(record,word) ; tmp1=word_2_real(word,comm)
-              Call get_word(record,word) ; tmp2=word_2_real(word,comm)
+              Call get_word(record,word) ; tmp1=word_2_real(word)
+              Call get_word(record,word) ; tmp2=word_2_real(word)
               tmp=tmp2+tmp1*2.0_wp**(1.0_wp/6.0_wp)
               rvdw=Max(rvdw,tmp)
            Else If (word(1:3) == 'dpd') Then
               Call get_word(record,word)
-              rvdw=Max(rvdw,word_2_real(word,comm))
+              rvdw=Max(rvdw,word_2_real(word))
            End If
         End Do
 
@@ -5486,10 +5486,10 @@ Subroutine scan_field                                &
               Call get_word(record,word)
 
               Call get_word(record,word)
-              rvdw=Max(rvdw,word_2_real(word,comm))
+              rvdw=Max(rvdw,word_2_real(word))
 
               Call get_word(record,word)
-              k=Nint(word_2_real(word,comm))
+              k=Nint(word_2_real(word))
               mxgvdw=Max(mxgvdw,k)
 
               If (comm%idnode == 0) Close(Unit=ntable)
@@ -5501,7 +5501,7 @@ Subroutine scan_field                                &
 !        tabmet=-1 ! initialised in metal_module
 
         Call get_word(record,word)
-        mxmet=Nint(word_2_real(word,comm))
+        mxmet=Nint(word_2_real(word))
 
         Do itpmet=1,mxmet
            word(1:1)='#'
@@ -5526,16 +5526,16 @@ Subroutine scan_field                                &
            Else If (word(1:4) == 'fnsc') Then
               Call get_word(record,word) ; Call get_word(record,word)
               Call get_word(record,word) ; Call get_word(record,word)
-              rmet=Max(rmet,word_2_real(word,comm))
+              rmet=Max(rmet,word_2_real(word))
               Call get_word(record,word) ; Call get_word(record,word)
-              rmet=Max(rmet,word_2_real(word,comm))
+              rmet=Max(rmet,word_2_real(word))
            Else If (word(1:4) == 'exfs') Then
               Call get_word(record,word) ; Call get_word(record,word)
               Call get_word(record,word) ; Call get_word(record,word)
               Call get_word(record,word) ; Call get_word(record,word)
-              rmet=Max(rmet,word_2_real(word,comm))
+              rmet=Max(rmet,word_2_real(word))
               Call get_word(record,word) ; Call get_word(record,word)
-              rmet=Max(rmet,word_2_real(word,comm))
+              rmet=Max(rmet,word_2_real(word))
            End If
         End Do
 
@@ -5565,7 +5565,7 @@ Subroutine scan_field                                &
               If (.not.safe) Go To 40
               Call get_word(record,word)
 
-              Do i=1,Nint(word_2_real(word,comm))
+              Do i=1,Nint(word_2_real(word))
                  Call get_line(safe,ntable,record,comm)
                  If (.not.safe) Go To 40
                  Call get_word(record,word)
@@ -5579,12 +5579,12 @@ Subroutine scan_field                                &
                  Call get_word(record,word)                          ! skip over one species
 
                  Call get_word(record,word)
-                 k=Nint(word_2_real(word,comm))
+                 k=Nint(word_2_real(word))
                  mxgmet=Max(mxgmet,k+4)
 
                  Call get_word(record,word)
                  Call get_word(record,word)
-                 If (j == 0) rmet=Max(rmet,word_2_real(word,comm))
+                 If (j == 0) rmet=Max(rmet,word_2_real(word))
 
                  Do j=1,(k+3)/4
                     Call get_line(safe,ntable,record,comm)
@@ -5599,7 +5599,7 @@ Subroutine scan_field                                &
      Else If (word(1:7) == 'tersoff') Then
 
         Call get_word(record,word)
-        mxter=Nint(word_2_real(word,comm))
+        mxter=Nint(word_2_real(word))
 
         Do itpter=1,mxter
            word(1:1)='#'
@@ -5624,7 +5624,7 @@ Subroutine scan_field                                &
               Call get_word(record,word)
            End Do
 
-           rct=word_2_real(word,comm)
+           rct=word_2_real(word)
            rcter=Max(rcter,rct)
 
            If (potter == 2) Then
@@ -5655,7 +5655,7 @@ Subroutine scan_field                                &
      Else If (word(1:3) == 'tbp') Then
 
         Call get_word(record,word)
-        mxtbp=Nint(word_2_real(word,comm))
+        mxtbp=Nint(word_2_real(word))
 
         Do itptbp=1,mxtbp
            word(1:1)='#'
@@ -5669,14 +5669,14 @@ Subroutine scan_field                                &
               Call get_word(record,word)
            End Do
 
-           rct=word_2_real(word,comm)
+           rct=word_2_real(word)
            rctbp=Max(rctbp,rct)
         End Do
 
      Else If (word(1:3) == 'fbp') Then
 
         Call get_word(record,word)
-        mxfbp=Nint(word_2_real(word,comm))
+        mxfbp=Nint(word_2_real(word))
 
         Do itpfbp=1,mxfbp
            word(1:1)='#'
@@ -5690,7 +5690,7 @@ Subroutine scan_field                                &
               Call get_word(record,word)
            End Do
 
-           rct=word_2_real(word,comm)
+           rct=word_2_real(word)
            rcfbp=Max(rcfbp,rct)
         End Do
 
@@ -5851,13 +5851,13 @@ End Subroutine scan_field
           Call get_word(record,word) ; Call lower_case(word)
           If (word(1:4) == 'type') Call get_word(record,word)
 
-          If (ntpmls == Nint(word_2_real(word,comm))) Then
+          If (ntpmls == Nint(word_2_real(word))) Then
              If (comm%idnode == 0) Write(nrite,"(/,/,1x,'number of molecular types',6x,i10)") ntpmls
           Else
              If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')                        &
     "*** warning - number of molecular types mistmatch between FIELD and MPOLES !!! ***", &
     "***           FIELD  reports: ", ntpmls,                                             &
-    "***           MPOLES reports: ", Nint(word_2_real(word,comm))
+    "***           MPOLES reports: ", Nint(word_2_real(word))
 
              Call error(623)
           End If
@@ -5906,13 +5906,13 @@ End Subroutine scan_field
 
                    Call get_word(record,word)
 
-                   If (nummols(itmols) == Nint(word_2_real(word,comm))) Then
+                   If (nummols(itmols) == Nint(word_2_real(word))) Then
                       If (comm%idnode == 0 .and. l_top) Write(nrite,"(/,1x,'number of molecules  ',10x,i10)") nummols(itmols)
                    Else
                       If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')         &
     "*** warning - number of molecules mistmatch between FIELD and MPOLES !!! ***", &
     "***           FIELD  reports: ", nummols(itmols),                              &
-    "***           MPOLES reports: ", Nint(word_2_real(word,comm))
+    "***           MPOLES reports: ", Nint(word_2_real(word))
 
                       Call error(623)
                    End If
@@ -5923,7 +5923,7 @@ End Subroutine scan_field
 
                    Call get_word(record,word)
 
-                   If (numsit(itmols) == Nint(word_2_real(word,comm))) Then
+                   If (numsit(itmols) == Nint(word_2_real(word))) Then
                       If (comm%idnode == 0 .and. l_top) Then
     Write(nrite,"(/,1x,'number of atoms/sites',10x,i10)") numsit(itmols)
     Write(nrite,"(/,1x,'atomic characteristics:', &
@@ -5933,7 +5933,7 @@ End Subroutine scan_field
                       If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')                        &
     "*** warning - number of atoms/sites per molecule mistmatch between FIELD and MPOLES !!! ***", &
     "***           FIELD  reports: ", numsit(itmols),                                              &
-    "***           MPOLES reports: ", Nint(word_2_real(word,comm))
+    "***           MPOLES reports: ", Nint(word_2_real(word))
 
                       Call error(623)
                    End If
@@ -5958,13 +5958,13 @@ End Subroutine scan_field
   ! read supplied pole order
 
                          Call get_word(record,word)
-                         ordmpl=Abs(Nint(word_2_real(word,comm)))
+                         ordmpl=Abs(Nint(word_2_real(word)))
                          indmpl=(ordmpl+3)*(ordmpl+2)*(ordmpl+1)/6
 
   ! read supplied repetition
 
                          Call get_word(record,word)
-                         nrept=Abs(Nint(word_2_real(word,comm)))
+                         nrept=Abs(Nint(word_2_real(word)))
                          If (nrept == 0) nrept=1
 
                          jsite=nsite+1
@@ -5981,8 +5981,8 @@ End Subroutine scan_field
 
   ! read supplied site polarisation and dumping factor
 
-                         Call get_word(record,word) ; polarity=Abs(word_2_real(word,comm,0.0_wp))
-                         Call get_word(record,word) ; dumping =Abs(word_2_real(word,comm,0.0_wp))
+                         Call get_word(record,word) ; polarity=Abs(word_2_real(word,0.0_wp))
+                         Call get_word(record,word) ; dumping =Abs(word_2_real(word,0.0_wp))
 
                          l_rsh=.true. ! regular or no shelling (Drude)
                          kshels=nshels
@@ -6031,7 +6031,7 @@ End Subroutine scan_field
 
                          sitmpl = 1
 
-                         charge=word_2_real(word,comm)
+                         charge=word_2_real(word)
 
                          chgsit(jsite:lsite)=charge
                          mpllfr(sitmpl,jsite:lsite)=charge
@@ -6074,7 +6074,7 @@ End Subroutine scan_field
 
                                Do i=indmpl_start,indmpl_final
                                   sitmpl = sitmpl+1
-                                  mpllfr(sitmpl,jsite:lsite)=word_2_real(word,comm)
+                                  mpllfr(sitmpl,jsite:lsite)=word_2_real(word)
                                   Call get_word(record,word)
                                End Do
 

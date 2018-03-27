@@ -20,7 +20,7 @@ Module development
   Use comms, Only : mpi_ver,mpi_subver,lib_version,comms_type,gcheck, &
     gtime, gsync
 #endif
-  Use parse, Only : get_line,get_word,lower_case
+  Use parse, Only : get_line,get_word,lower_case,clean_string
 
   Implicit None
 

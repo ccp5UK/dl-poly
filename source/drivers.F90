@@ -17,7 +17,11 @@ Module drivers
   Use site,        Only : dofsit
   Use core_shell,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
 
-  Use impacts, Only : impact 
+  Use impacts, Only : impact
+  Use errors_warnings, Only : error,warning 
+  Use shared_units, Only : update_shared_units,update_shared_units_int
+  Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3
+  Use quaternions, Only : getrotmat
   Implicit None
   Private
   Public :: w_impact_option
@@ -33,6 +37,7 @@ Module drivers
     Real( Kind = wp ),      Intent(   Out ) :: engke,engrot,emd,vmx,vmy,vmz
     Real ( Kind = wp), Intent( InOut ) :: strkin(:),strknf(:),strknt(:)
     Type(comms_type), Intent(InOut)    :: comm
+
 !!!!!!!!!!!!!!!!!!!!!  W_IMPACT_OPTION INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 ! Apply impact
@@ -151,10 +156,11 @@ Subroutine pseudo_vv                                      &
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
   Type( comms_type), Intent( InOut ) :: comm
+  Character( Len = 256 ) :: message
 
   Logical,           Save :: newjob = .true.
   Integer,           Save :: ntp,stp,rtp,megrgd
-  Integer                 :: fail(1:3),matms,local_index, &
+  Integer                 :: fail(1:3),matms, &
                              i,j,k,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp )       :: celprp(1:10),ssx,ssy,ssz,      &
                              vom(1:3),scale,tmp,mxdr,       &
@@ -202,8 +208,8 @@ Subroutine pseudo_vv                                      &
            Allocate (qs(0:2,1:mxshl),tps(0:comm%mxnode-1), Stat=fail(2))
            Allocate (qr(1:mxrgd),tpr(0:comm%mxnode-1),     Stat=fail(3))
            If (Any(fail > 0)) Then
-              Write(nrite,'(/,1x,a,i0)') 'pseudo (q. and tp.) allocation failure, node: ', comm%idnode
-              Call error(0)
+              Write(message,'(/,1x,a)') 'pseudo (q. and tp.) allocation failure'
+              Call error(0,message)
            End If
         End If
 
@@ -271,8 +277,8 @@ Subroutine pseudo_vv                                      &
      j=tpn(comm%idnode)
      Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'pseudo (forces) allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'pseudo (forces) allocation failure'
+        Call error(0,message)
      End If
 
 ! Get gaussian distribution
@@ -319,8 +325,8 @@ Subroutine pseudo_vv                                      &
 
      Deallocate (xxt,yyt,zzt, Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'pseudo (forces) deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'pseudo (forces) deallocation failure'
+        Call error(0,message)
      End If
 
   Else
@@ -343,7 +349,7 @@ Subroutine pseudo_vv                                      &
      If (j > 0) Then
         If (lshmv_rgd) Then
            qn(natms+1:nlast) = 0 ! refresh the q array for shared RB units
-           Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,qn)
+           Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,qn,comm)
         End If
 
         j = 0
@@ -402,7 +408,7 @@ Subroutine pseudo_vv                                      &
      If (keyshl == 1) Then
         If (lshmv_shl) Then ! refresh the q array for shared core-shell units
            qn(natms+1:nlast) = 0
-           Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn)
+           Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn,comm)
         End If
 
         If (ntshl > 0) Then
@@ -438,8 +444,8 @@ Subroutine pseudo_vv                                      &
 
         Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail(1))
         If (fail(1) > 0) Then
-           Write(nrite,'(/,1x,a,i0)') 'pseudo (velocities) allocation failure, node: ', comm%idnode
-           Call error(0)
+           Write(message,'(/,1x,a,i0)') 'pseudo (velocities) allocation failure'
+           Call error(0,message)
         End If
 
 ! Here we become node-dependent (using of uni and gauss) - i.e.
@@ -550,7 +556,7 @@ Subroutine pseudo_vv                                      &
 
 ! Update shared RBs' velocities
 
-           If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xxt,yyt,zzt)
+           If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xxt,yyt,zzt,comm)
 
 ! calculate new RBs' COM and angular velocities
 
@@ -625,7 +631,7 @@ Subroutine pseudo_vv                                      &
 ! Thermalise the shells on hit cores
 
         If (stp > 0) Then
-           If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz)
+           If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
 
            If (tps(comm%idnode) > 0) Then
               j = 0
@@ -1021,7 +1027,7 @@ Subroutine pseudo_vv                                      &
 ! Thermalise the shells on hit cores
 
         If (stp > 0) Then
-           If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz)
+           If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
 
            If (tps(comm%idnode) > 0) Then
               Do k=1,ntshl

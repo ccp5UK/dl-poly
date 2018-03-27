@@ -12,7 +12,7 @@ Module ewald_spole
   Private
 
   Public :: ewald_real_forces, ewald_spme_forces, ewald_excl_forces, ewald_frzn_forces
-
+  Public :: adjust_kmax
   Contains
 
   Subroutine ewald_real_forces &

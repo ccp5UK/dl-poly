@@ -13,6 +13,7 @@ Module errors_warnings
 
   Public :: warning
   Public :: error
+  Public :: info
   Public :: init_error_system
   Contains
   
@@ -651,7 +652,28 @@ Module errors_warnings
 
 End Subroutine warning
 
-Subroutine error(kode,message,master_only )
+Subroutine info(message,master_only)
+
+
+  Character( Len=* ), Intent( In ) :: message
+  Logical, Optional, Intent( In ) :: master_only
+
+  Logical :: zeroOnly 
+
+  zeroOnly=.false.
+  If (Present(master_only)) zeroOnly=master_only
+
+  If (zeroOnly) Then
+       Write(ounit,'(a,1x,i0)')Trim(message)//", node: ",eworld%idnode
+  Else
+     If (eworld%idnode == 0 ) Then 
+         Write(ounit,'(a)')Trim(message)
+     End If
+   End If   
+
+  End Subroutine info 
+
+  Subroutine error(kode,message,master_only )
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !

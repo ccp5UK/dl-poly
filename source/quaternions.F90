@@ -5,11 +5,13 @@ Module quaternions
   Use configuration,      Only : imcon,cell,xxx,yyy,zzz
   Use rigid_bodies
 
+  Use numerics, Only : images
+  Use errors_warnings, Only : error,info
   Implicit None
 
 
   Private
-
+  Public :: getrotmat
 
   Contains
 !!!!!!!!!!!!!!!!!!!!! THIS IS QUATERNIONS_CONTAINER !!!!!!!!!!!!!!!!!!!!
@@ -44,11 +46,12 @@ Subroutine q_setup(comm)
 
   Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
 
+  Character( Len = 256 ) :: message
   fail = 0
   Allocate (gxx(1:mxlrgd*mxrgd),gyy(1:mxlrgd*mxrgd),gzz(1:mxlrgd*mxrgd), Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'q_setup allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'q_setup allocation failure'
+     Call error(0,message)
   End If
 
 ! quaternions for all RB on this domain
@@ -224,9 +227,10 @@ Subroutine q_setup(comm)
 
            If (rnorm > tol) Then
               itmp=1
-              Write(nrite,'(/,1x,a,3i7,0p,2f7.3)')                                                            &
-                   '*** warning - q_setup failure for RB local_id member, on node, with norm > tolerance : ', &
-                   irgd,jrgd,comm%idnode,rnorm,tol
+              Write(message,'(/,1x,a,2i7,0p,2f7.3)')                                                            &
+                   '*** warning - q_setup failure for RB local_id member, with norm > tolerance : ', &
+                   irgd,jrgd,rnorm,tol
+              Call info(message)
            End If
 
            rsq=Max(rsq,rnorm)
@@ -238,15 +242,15 @@ Subroutine q_setup(comm)
   Call gmax(comm,rsq)
   If (rsq > tol) Then
      Call gsum(comm,ill)
-     If (comm%idnode == 0) Write(nrite,'(/,1x,a,i7,2f7.3)') &
+     Write(message,'(/,1x,a,i7,2f7.3)') &
         '*** warning - q_setup failure for RBs total, with Max(norm) > tolerance : ', ill,rsq,tol
-     Call error(648)
+     Call error(648,message,.true.)
   End If
 
   Deallocate (gxx,gyy,gzz, Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'q_setup deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'q_setup deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine q_setup

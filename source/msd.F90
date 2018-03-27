@@ -165,8 +165,8 @@ Module msd
                 Call get_word(record,word)
                 If (word(1:Len_Trim(word)) /= 'timestep') Then
                     Call get_word(record,word) ; Call get_word(record,word)
-                    Call get_word(record,word) ; frm=Nint(word_2_real(word,comm,0.0_wp),li)
-                    Call get_word(record,word) ; rec=Nint(word_2_real(word,comm,0.0_wp),li)
+                    Call get_word(record,word) ; frm=Nint(word_2_real(word,0.0_wp),li)
+                    Call get_word(record,word) ; rec=Nint(word_2_real(word,0.0_wp),li)
                     If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
                       Go To 20 ! New style
                     Else
@@ -188,7 +188,7 @@ Module msd
                 rec=rec+Int(1,li)
 
                 Call get_word(record,word)
-                Call get_word(record,word) ; jj=Nint(word_2_real(word,comm)) ! total number of lines to read
+                Call get_word(record,word) ; jj=Nint(word_2_real(word)) ! total number of lines to read
 
                 word=' '
                 Write(word,'( "(", i0, "( / ) )" )') jj-1
