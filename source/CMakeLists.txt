@@ -27,7 +27,6 @@ external_field.F90
 four_body.F90
 langevin.F90
 coul_spole.F90
-quaternions.F90
 shared_units.F90
 numerics.F90
 impacts.F90
