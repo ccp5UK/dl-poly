@@ -11,9 +11,12 @@ Module npt_langevin
   Use langevin,      Only : fxl,fyl,fzl,fpl
   Use kinetics,      Only : getvom,getknf,getknt,getknr,getkin, &
                             kinstress,kinstresf,kinstrest
-  Use core_shell,    Only : legshl
-  Use constraints,   Only : passcon
-  Use pmf,           Only : passpmf
+  Use core_shell,      Only : legshl
+  Use constraints,     Only : passcon
+  Use pmf,             Only : passpmf
+  Use shared_units,    Only : update_shared_units
+  Use errors_warnings, Only : error 
+
   Implicit None
 
   Private
@@ -105,6 +108,7 @@ Contains
     Real( Kind = wp ), Allocatable :: fxt(:),fyt(:),fzt(:)
 
     Real( Kind = wp ), Allocatable, Save :: dens0(:)
+    Character ( Len = 256 )        :: message
 
     fail=0
     If (megcon > 0 .or. megpmf > 0) Then
@@ -123,8 +127,8 @@ Contains
     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail(8))
     Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(9))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'npt_l0 allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'npt_l0 allocation failure'
+       Call error(0,message)
     End If
 
 
@@ -651,8 +655,8 @@ Contains
     Deallocate (vxt,vyt,vzt,         Stat=fail(8))
     Deallocate (fxt,fyt,fzt,         Stat=fail(9))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'npt_l0 deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'npt_l0 deallocation failure, node'
+       Call error(0,message)
     End If
   End Subroutine npt_l0_vv
 
@@ -761,6 +765,8 @@ Contains
     Real( Kind = wp ), Allocatable :: rgdoxt(:),rgdoyt(:),rgdozt(:)
 
     Real( Kind = wp ), Allocatable, Save :: dens0(:)
+    Character ( Len = 256 )        :: message
+ 
 
     fail=0
     If (megcon > 0 .or. megpmf > 0) Then
@@ -785,8 +791,8 @@ Contains
     Allocate (rgdvxt(1:mxrgd),rgdvyt(1:mxrgd),rgdvzt(1:mxrgd),      Stat=fail(13))
     Allocate (rgdoxt(1:mxrgd),rgdoyt(1:mxrgd),rgdozt(1:mxrgd),      Stat=fail(14))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'npt_l1 allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'npt_l1 allocation failure, node'
+       Call error(0,message)
     End If
 
 
@@ -899,7 +905,9 @@ Contains
 
   ! Globalise Langevin random forces for shared RBs
 
-       If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
+       If (lshmv_rgd)Then
+         Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
+       EndIf
 
   ! Get strcom & vircom when starting afresh now done in w_calculate_forces
   ! store initial values
@@ -1539,7 +1547,9 @@ Contains
   ! Langevin pseudo-tensor force for barostat piston
 
        Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
-       If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl)
+       If (lshmv_rgd)Then
+         Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
+       EndIf
 
        fpl=0.0_wp
        Call box_mueller_saru1(Int(degfre/3_li),nstep,tmp)
@@ -1893,8 +1903,8 @@ Contains
     Deallocate (rgdvxt,rgdvyt,rgdvzt, Stat=fail(13))
     Deallocate (rgdoxt,rgdoyt,rgdozt, Stat=fail(14))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'npt_l1 deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'npt_l1 deallocation failure'
+       Call error(0,message)
     End If
   End Subroutine npt_l1_vv
 End Module npt_langevin
