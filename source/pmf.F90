@@ -11,11 +11,13 @@ Module pmf
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use comms,  Only : comms_type,gcheck,gsum
+  Use comms,  Only : comms_type,gcheck,gsum,gsync
   Use setup
   Use configuration, Only : imcon,cell,natms,xxx,yyy,zzz,lfrzn, &
                             vxx,vyy,vzz,nlast,lsi,lsa
 
+  Use errors_warnings, Only : error, warning
+  Use numerics, Only : images,local_index,dcell
   Implicit None
 
   Integer,                        Save :: ntpmf  = 0
@@ -113,13 +115,14 @@ Contains
   Real( Kind = wp ), Dimension( :, : ), Allocatable :: xpmf,ypmf,zpmf
   Real( Kind = wp ), Dimension( : ),    Allocatable :: buffer
 
+  Character( Len = 256 ) :: message
   fail=0
   Allocate (xxt(1:Max(mxtpmf(1),mxtpmf(2))),yyt(1:Max(mxtpmf(1),mxtpmf(2))),zzt(1:Max(mxtpmf(1),mxtpmf(2))), Stat=fail(1))
   Allocate (xpmf(1:2,1:mxpmf),ypmf(1:2,1:mxpmf),zpmf(1:2,1:mxpmf),                                           Stat=fail(2))
   Allocate (buffer(1:(mxtpmf(1)+mxtpmf(2))*(mxpmf+2)),                                                       Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_coms allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'pmf_coms allocation failure'
+     Call error(0,message)
   End If
 
 
@@ -259,8 +262,8 @@ Contains
   Deallocate (xpmf,ypmf,zpmf, Stat=fail(2))
   Deallocate (buffer,         Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_coms deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'pmf_coms deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine pmf_coms
@@ -369,6 +372,7 @@ Subroutine pmf_quench(mxshak,tolnce,comm)
   Real( Kind = wp ), Allocatable :: pxx(:),pyy(:),pzz(:)
   Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
   Real( Kind = wp ), Allocatable :: xpmf(:,:),ypmf(:,:),zpmf(:,:)
+  Character( Len = 256 ) :: message
 
   fail=0
   Allocate (lstitr(1:mxatms),                                      Stat=fail(1))
@@ -377,8 +381,8 @@ Subroutine pmf_quench(mxshak,tolnce,comm)
   Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),             Stat=fail(4))
   Allocate (xpmf(1:2,1:mxpmf),ypmf(1:2,1:mxpmf),zpmf(1:2,1:mxpmf), Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_quench allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'pmf_quench allocation failure'
+     Call error(0,message)
   End If
 
 ! Get PMF units' reciprocal masses
@@ -513,8 +517,8 @@ Subroutine pmf_quench(mxshak,tolnce,comm)
   Deallocate (vxt,vyt,vzt,    Stat=fail(4))
   Deallocate (xpmf,ypmf,zpmf, Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_quench deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'pmf_quench deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine pmf_quench
@@ -538,7 +542,7 @@ Subroutine pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
   Real( Kind = wp ), Intent(   Out ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
   Type( comms_type ), Intent( InOut ) :: comm
 
-  Integer :: ipmf,jpmf,j,k,local_index
+  Integer :: ipmf,jpmf,j,k
 
 ! Loop over all local to this node PMF constraints, their units and
 ! save the indices of the members that are present on my domain (no halo)
@@ -586,15 +590,16 @@ Subroutine pmf_units_set(comm)
 
   Type( comms_type ), Intent( InOut) :: comm
   Logical :: safe,ok
-  Integer :: fail,ipmf,jpmf,gpmf,local_index
+  Integer :: fail,ipmf,jpmf,gpmf
 
   Integer, Dimension( : ), Allocatable :: i1pmf0,i2pmf0
+  Character( Len = 256 ) :: message
 
   fail=0
   Allocate (i1pmf0(1:mxtpmf(1)),i2pmf0(1:mxtpmf(2)), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_units_set allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'pmf_units_set allocation failure'
+     Call error(0,message)
   End If
 
 ! Initialise safety flag
@@ -684,8 +689,8 @@ Subroutine pmf_units_set(comm)
 
   Deallocate (i1pmf0,i2pmf0, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_units_set deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'pmf_units_set deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine pmf_units_set
@@ -714,6 +719,7 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf,comm)
                              j,k,l
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
+  Character( Len = 256 ) :: message
 
   fail=0
   Allocate (buffer(1:(mxtpmf(1)+mxtpmf(2))*(mxpmf+2)), Stat=fail)
@@ -808,8 +814,8 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_vcoms deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'pmf_vcoms deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine pmf_vcoms
@@ -850,12 +856,13 @@ Subroutine pmf_shake_vv          &
   Real( Kind = wp )       :: amt(1:2),gamma,gamm(1:2),tstep2,tmp
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: pxt,pyt,pzt,pt2,esig
+  Character( Len = 256 ) :: message
 
   fail=0
   Allocate (pxt(1:mxpmf),pyt(1:mxpmf),pzt(1:mxpmf),pt2(1:mxpmf),esig(1:mxpmf), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_shake allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'pmf_shake allocation failure'
+     Call error(0,message)
   End If
 
 
@@ -967,13 +974,14 @@ Subroutine pmf_shake_vv          &
      Do k=0,comm%mxnode-1
         If (comm%idnode == k) Then
            Do ipmf=1,ntpmf
-              If (esig(ipmf) >= tolnce .and. comm%idnode == 0)                   &
-                 Write(nrite,'(/,1x,3(a,i10),a,/,a,f8.2,a,1p,e12.4,a)')     &
-                   '*** warning - global PMF constraint number', ipmf,      &
+              If (esig(ipmf) >= tolnce)                   &
+                 Write(message,'(/,1x,3(a,i10),a,/,a,f8.2,a,1p,e12.4,a)')     &
+                   'global PMF constraint number', ipmf,      &
                    ' , with head particle numbers, U1:', listpmf(1,1,ipmf), &
                    ' & U2:', listpmf(1,2,ipmf), ' ,',                       &
                    ' , converges to a length of', Sqrt(pt2(ipmf)+dis2),     &
-                   ' Angstroms with factor', esig(ipmf), ' contributes towards next error !!! ***'
+                   ' Angstroms with factor', esig(ipmf), ' contributes towards next error'
+                 Call warning(message,.true.)
            End Do
         End If
         Call gsync(comm)
@@ -1007,8 +1015,8 @@ Subroutine pmf_shake_vv          &
 
   Deallocate (pxt,pyt,pzt,pt2,esig, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_shake deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'pmf_shake deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine pmf_shake_vv
@@ -1048,13 +1056,14 @@ Subroutine pmf_rattle                      &
 
   Real( Kind = wp ), Dimension( : )   , Allocatable :: vxt,vyt,vzt
   Real( Kind = wp ), Dimension( :, : ), Allocatable :: xpmf,ypmf,zpmf
+  Character( Len = 256 ) :: message
 
   fail=0
   Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),             Stat=fail(1))
   Allocate (xpmf(1:2,1:mxpmf),ypmf(1:2,1:mxpmf),zpmf(1:2,1:mxpmf), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_rattle allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'pmf_rattle allocation failure'
+     Call error(0,message)
   End If
 
 ! Get PMF units' reciprocal masses
@@ -1194,8 +1203,8 @@ Subroutine pmf_rattle                      &
   Deallocate (vxt,vyt,vzt,    Stat=fail(1))
   Deallocate (xpmf,ypmf,zpmf, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_rattle deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'pmf_rattle deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine pmf_rattle
