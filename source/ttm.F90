@@ -16,7 +16,7 @@ Module ttm
   Use setup
   Use configuration,   Only : cell
   Use domains
-  Use comms,           Only : wp_mpi, comms_type,gsum,gmin,gmax,gcheck, &
+  Use comms,           Only : wp_mpi,comms_type,gsum,gmin,gmax,gcheck,gsync, &
                               grid1_tag,grid2_tag
   Use parse,           Only : tabs_2_blanks, get_line, get_word, &
                               strip_blanks, word_2_real
