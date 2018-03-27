@@ -13,7 +13,7 @@ Module ewald_mpole
   Private
 
   Public :: ewald_real_mforces, ewald_real_mforces_d, ewald_spme_mforces, ewald_spme_mforces_d, &
-            ewald_excl_mforces, ewald_excl_mforces_d
+            ewald_excl_mforces, ewald_excl_mforces_d,ewald_frzn_mforces
 
   Contains
 
@@ -387,7 +387,7 @@ Module ewald_mpole
   End Subroutine ewald_real_mforces
 
   Subroutine ewald_real_mforces_d &
-             (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress,comm,ewld)
+             (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress,ewld,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1095,7 +1095,7 @@ Module ewald_mpole
 
   End Subroutine ewald_real_mforces_d
 
-  Subroutine ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress,comm,ewld)
+  Subroutine ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2262,7 +2262,7 @@ Module ewald_mpole
 
   End Subroutine ewald_spme_mforces
 
-  Subroutine ewald_spme_mforces_d(alpha,epsq,engcpe_rc,vircpe_rc,stress,comm,ewld)
+  Subroutine ewald_spme_mforces_d(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -5587,7 +5587,7 @@ Module ewald_mpole
 
   End Subroutine ewald_excl_mforces_d
 
-  Subroutine ewald_frzn_mforces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress,comm,ewld)
+  Subroutine ewald_frzn_mforces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress,ewld,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !

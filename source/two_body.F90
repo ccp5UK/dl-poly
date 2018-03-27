@@ -20,7 +20,9 @@ Module two_body
                       rdf_collect,rdf_excl_collect,rdf_frzn_collect
   Use errors_warnings, Only : error
   Use link_cells, Only : link_cell_pairs
-  Use ewald_spole, Only : ewald_spme_forces,ewald_real_forces,ewald_frzn_forces
+ Use ewald_spole, Only : ewald_spme_forces,ewald_real_forces,ewald_frzn_forces, ewald_excl_forces
+  Use ewald_mpole, Only : ewald_spme_mforces, ewald_real_mforces,ewald_frzn_mforces,ewald_excl_mforces, &
+                         ewald_spme_mforces_d,ewald_real_mforces_d,ewald_excl_mforces_d,ewald_excl_mforces
   Implicit None
   Private
   Public :: two_body_forces
@@ -186,9 +188,9 @@ Subroutine two_body_forces                        &
   If (keyfce == 2 .and. ewld%l_fce) Then
      If (mximpl > 0) Then
         If (mxompl <= 2) Then
-           Call ewald_spme_mforces_d(alpha,epsq,engcpe_rc,vircpe_rc,stress)
+           Call ewald_spme_mforces_d(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,comm)
         Else
-           Call ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress)
+           Call ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,comm)
         End If
      Else
         Call ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,comm)
@@ -254,9 +256,9 @@ Subroutine two_body_forces                        &
 ! calculate coulombic forces, Ewald sum - real space contribution
 
            If (mxompl <= 2) Then
-              Call ewald_real_mforces_d(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+              Call ewald_real_mforces_d(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,ewld,comm)
            Else
-              Call ewald_real_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+              Call ewald_real_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,comm)
            End If
 
            engcpe_rl=engcpe_rl+engacc
@@ -505,7 +507,7 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
         If (megfrz /= 0) Then
            If (keyfce == 2) Then ! Ewald
               If (mximpl > 0) Then
-                 Call ewald_frzn_mforces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress)
+                 Call ewald_frzn_mforces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress,ewld,comm)
               Else
                  Call ewald_frzn_forces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress,ewld,comm)
               End If
