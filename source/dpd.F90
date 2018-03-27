@@ -11,13 +11,19 @@ Module dpd
 
   Use kinds, Only : wp
   
-  Use comms,        Only : comms_type,gsum,DpdVExp_tag,wp_mpi
+  Use comms,        Only : comms_type,gsum, gcheck, gmax, DpdVExp_tag,wp_mpi
   Use setup,        Only : nrite,mxlist,mxatdm,mxatms,mxbfxp,mxvdw
   Use configuration,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
                                   list,weight,xxx,yyy,zzz,vxx,vyy,vzz, &
                                   fxx,fyy,fzz, ixyz
   Use rigid_bodies, Only : lshmv_rgd,lishp_rgd,lashp_rgd
   Use domains
+
+  Use shared_units,    Only : update_shared_units
+  Use errors_warnings, Only : error, warning
+  Use numerics,        Only : box_mueller_saru2
+
+
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -82,6 +88,8 @@ Contains
 
     Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
     Real( Kind = wp ), Dimension( : ), Allocatable :: fdpdx,fdpdy,fdpdz
+    Character ( len = 256 ) :: message
+
 
     If (keydpd /= 1 .or. keydpd /= 2 .or. keydpd*isw == 1) Return
 
@@ -89,8 +97,8 @@ Contains
     Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat = fail(1))
     Allocate (fdpdx(1:mxatdm),fdpdy(1:mxatdm),fdpdz(1:mxatdm),         Stat = fail(2))
     If (Any(fail > 0)) Then
-      Write(nrite,'(/,1x,a,i0)') 'dpd_thermostat allocation failure, node: ', comm%idnode
-      Call error(0)
+      Write(message,'(/,1x,a)') 'dpd_thermostat allocation failure'
+      Call error(0,message)
     End If
 
     ! set tstep and nstep wrt to order of splitting
@@ -478,7 +486,7 @@ Contains
 
     ! Update forces on RBs
 
-    If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxx,fyy,fzz)
+    If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxx,fyy,fzz,comm)
 
     ! globalise virdpd
 
@@ -487,8 +495,8 @@ Contains
     Deallocate (xxt,yyt,zzt,rrt,   Stat = fail(1))
     Deallocate (fdpdx,fdpdy,fdpdz, Stat = fail(2))
     If (Any(fail > 0)) Then
-      Write(nrite,'(/,1x,a,i0)') 'dpd_thermostat deallocation failure, node: ', comm%idnode
-      Call error(0)
+      Write(message,'(/,1x,a)') 'dpd_thermostat deallocation failure'
+      Call error(0,message)
     End If
 
   End Subroutine dpd_thermostat
