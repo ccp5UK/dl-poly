@@ -9,12 +9,15 @@ Module ewald
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use comms, Only : ExchgGrid_tag, comms_type,wp_mpi
-  Use setup, Only : mxatms,nrite,mxspl,mxspl2,twopi,kmaxa,kmaxb,kmaxc
-  Use configuration, Only : natms,fxx,fyy,fzz,imcon
-  Use domains, Only : map
-  Use mpole, Only : ncombk
+  Use kinds,           Only : wp
+  Use comms,           Only : ExchgGrid_tag, comms_type,wp_mpi
+  Use setup,           Only : mxatms,nrite,mxspl,mxspl2,twopi,kmaxa,kmaxb,kmaxc
+  Use configuration,   Only : natms,fxx,fyy,fzz,imcon
+  Use domains,         Only : map
+  Use mpole,           Only : ncombk
+
+  Use errors_warnings, Only : error
+
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -1021,6 +1024,8 @@ Contains
 
     Integer, Dimension( : ), Allocatable, Save :: key1,key2,key3
 
+    Character ( Len = 256 ) :: message   
+
     If (newjob) Then
        newjob = .false.
 
@@ -1034,16 +1039,16 @@ Contains
              (Log(2.0_wp)**3)
 
        If (Abs(tmp-Real(nu1*nu2*nu3,wp)) > 1.0e-6_wp) Then
-          Write(nrite,'(/,1x,a,20i2)') 'error - FFT array dimension not 2^N ',ndiv1,ndiv2,ndiv3
-          Call error(0)
+          Write(message,'(/,1x,a,20i2)') 'error - FFT array dimension not 2^N ',ndiv1,ndiv2,ndiv3
+          Call error(0,message)
        End If
 
   ! allocate reverse bit address arrays
 
        Allocate (key1(1:ndiv1),key2(1:ndiv2),key3(1:ndiv3), Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'dlpfft3 (FFT reverse bit address arrays) allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'dlpfft3 (FFT reverse bit address arrays) allocation failure'
+          Call error(0,message)
        End If
 
   ! set reverse bit address arrays
