@@ -13,6 +13,8 @@ Module halo
 
 
   Private
+  Public :: refresh_halo_positions
+  Public :: set_halo_particles
  
   Contains
   
