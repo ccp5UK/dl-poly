@@ -1,13 +1,15 @@
 Module mpoles_container
-  Use kinds, Only : wp
-  Use comms, Only : comms_type
-  Use setup, Only : mxompl, sqrpi, mximpl, mxspl, mxompl, nrite
-  Use configuration, Only : imcon,cell,lsite,nlast,lsi,lsa,ltg,xxx,yyy,zzz
-  Use mpole, Only : ltpatm,mpllfr,mprotm,mplltg,mplflg, &
-                     mplgfr,mprotx,mproty,mprotz,mplmap
+  Use kinds,           Only : wp
+  Use comms,           Only : comms_type
+  Use setup,           Only : mxompl, sqrpi, mximpl, mxspl, mxompl
+  Use configuration,   Only : imcon,cell,lsite,nlast,lsi,lsa,ltg,xxx,yyy,zzz
+  Use mpole,           Only : ltpatm,mpllfr,mprotm,mplltg,mplflg, &
+                              mplgfr,mprotx,mproty,mprotz,mplmap
 
+  Use ewald,           Only : dtpbsp
+  Use errors_warnings, Only : error
+  Use numerics,        Only : images_s, local_index
 
-  Use ewald, Only : dtpbsp
   Implicit None
 
   Private
@@ -3738,7 +3740,7 @@ Module mpoles_container
   ! Local variables
 
     Integer          :: mm,s1,s2,s3
-    Real( Kind = wp) :: Dtpbsp,tmp,impt,tid
+    Real( Kind = wp) :: tmp,impt,tid
 
   ! Initialise per loop contributions
 
@@ -4813,7 +4815,7 @@ Module mpoles_container
   ! Local variables
 
     Integer          :: mm,s1,s2,s3
-    Real( Kind = wp) :: Dtpbsp,tmp,impt,tid
+    Real( Kind = wp) :: tmp,impt,tid
 
     If (mxompl >= 0) Then
 
@@ -5277,13 +5279,15 @@ Module mpoles_container
 
   ! Local variables
 
-    Integer           :: i,j,k,m,n,numnbh,idi,fail,local_index
+    Integer           :: i,j,k,m,n,numnbh,idi,fail
     Real( Kind = wp ) :: a(9),temp(1:mximpl),mpole(1:mximpl) !(1:(3**(mxompl+1)-1)/2),temp(1:mximpl)
     Real( Kind = wp ) :: ai,ai3,ai6,aj3,aj6,ak3,ak6,am3,am6,                &
                          tmp,t1,t2,t3,t4,t5,t6,p1x,p1y,p1z,p2x,p2y,p2z,dpu, &
                          rrp1,rrp2,rrp3,rrp12,rrp22,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10
 
     Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rsqt
+    Character ( Len = 256 )                        :: message
+
 
   ! Now on to permanent multipoles
 
@@ -5461,8 +5465,8 @@ Module mpoles_container
           fail = 0
           Allocate (xxt(1:numnbh),yyt(1:numnbh),zzt(1:numnbh),rsqt(1:numnbh), Stat=fail)
           If (fail > 0) Then
-             Write(nrite,'(/,1x,a,i0)') 'allocation failure in rotate_mpoles, node: ', comm%idnode
-             Call error(0)
+             Write(message,'(/,1x,a)') 'allocation failure in rotate_mpoles'
+             Call error(0,message)
           End If
 
           Do i = 1,numnbh
@@ -5534,8 +5538,8 @@ Module mpoles_container
 
           Deallocate (xxt,yyt,zzt,rsqt, Stat=fail)
           If (fail > 0) Then
-             Write(nrite,'(/,1x,a,i0)') 'deallocation failure in rotate_mpoles, node: ', comm%idnode
-             Call error(0)
+             Write(message,'(/,1x,a)') 'deallocation failure in rotate_mpoles'
+             Call error(0,message)
           End If
 
        End If
@@ -5991,7 +5995,7 @@ Module mpoles_container
 
   ! Local variables
 
-    Integer          :: i,j,k,m,numnbh,idi,fail,local_index
+    Integer          :: i,j,k,m,numnbh,idi,fail
     Real( Kind = wp) :: temp1,temp2,temp3,temp4,temp5,temp6,mpole(1:mximpl)
     Real( Kind = wp) :: a1,a2,a3,a4,a5,a6,a7,a8,a9,           &
                         tt2,tt3,tt4,tt5,tt6,tt7,tt8,tt9,tt10, &
@@ -5999,6 +6003,8 @@ Module mpoles_container
                         rrp1,rrp2,rrp3,rrp12,rrp22
 
     Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rsqt
+
+    Character ( Len = 256 ) :: message
 
   ! Now on to permanent multipoles
 
@@ -6176,8 +6182,8 @@ Module mpoles_container
           fail = 0
           Allocate (xxt(1:numnbh),yyt(1:numnbh),zzt(1:numnbh),rsqt(1:numnbh), Stat=fail)
           If (fail > 0) Then
-             Write(nrite,'(/,1x,a,i0)') 'allocation failure in rotate_mpoles_d, node: ', comm%idnode
-             Call error(0)
+             Write(message,'(/,1x,a,i0)') 'allocation failure in rotate_mpoles_d'
+             Call error(0,message)
           End If
 
           Do i = 1,numnbh
@@ -6249,8 +6255,8 @@ Module mpoles_container
 
           Deallocate (xxt,yyt,zzt,rsqt, Stat=fail)
           If (fail > 0) Then
-             Write(nrite,'(/,1x,a,i0)') 'deallocation failure in rotate_mpoles_d, node: ', comm%idnode
-             Call error(0)
+             Write(message,'(/,1x,a)') 'deallocation failure in rotate_mpoles_d'
+             Call error(0,message)
           End If
 
        End If
