@@ -3113,7 +3113,7 @@ Subroutine pass_shared_units &
 
 ! synchronise all processors
 
-  Call gsync()
+  Call gsync(comm)
 
 ! loop over all processors connected to this one (I'm surrounded by 26)
 
