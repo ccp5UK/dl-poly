@@ -315,7 +315,7 @@ Contains
                    hstep = 0.50_wp*tstep
                 End If
                 Write(message,"( &
-                  & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
+                  & 'timestep decreased, new timestep is:',3x,1p,e12.4)") tstep
                 Call info(message,.true.)
              End If
              If (mxdr < mndis) Then
@@ -332,7 +332,7 @@ Contains
                    hstep = 0.50_wp*tstep
                 End If
                 Write(message,"( &
-                  & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
+                  & 'timestep increased, new timestep is:',3x,1p,e12.4)") tstep
                 Call info(message,.true.)
              End If
              rstep = 1.0_wp/tstep
@@ -949,7 +949,7 @@ Contains
                    hstep = 0.50_wp*tstep
                 End If
                 Write(message,"( &
-                  & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
+                  & 'timestep decreased, new timestep is:',3x,1p,e12.4)") tstep
                 Call info(message,.true.)
              End If
              If (mxdr < mndis) Then
@@ -966,7 +966,7 @@ Contains
                    hstep = 0.50_wp*tstep
                 End If
                 Write(message,"( &
-                  & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
+                  & 'timestep increased, new timestep is:',3x,1p,e12.4)") tstep
                 Call info(message,.true.)
              End If
              rstep = 1.0_wp/tstep

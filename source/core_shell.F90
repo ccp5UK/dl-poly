@@ -650,7 +650,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg,comm)
 ! Print header
 
     If (l_str) Then
-      Write(message,'(//,1x,a,3x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
+      Write(message,'(a,3x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
         'Relaxing shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',rlx_tol(1),'step=',step
       Call info(message,.true.)
       Write(message,"(1x,130('-'))")

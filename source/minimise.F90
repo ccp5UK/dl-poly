@@ -532,7 +532,7 @@ Contains
 
      i=Nint(passmin(1))
      If (.not.l_str) Then
-       Write(message,'(/,3(1x,a),5x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
+       Write(message,'(3(1x,a),5x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
          'Minimised',word,'passes','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1),'step=',step
        Call info(message,.true.)
        Write(message,"(1x,130('-'))")
