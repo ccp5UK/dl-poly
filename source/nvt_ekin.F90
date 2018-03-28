@@ -17,7 +17,8 @@ Module nvt_ekin
                               q0,q1,q2,q3,indrgd,listrgd,rgdfrz,rgdwgt, &
                               rgdrix,rgdriy,rgdriz,mxrgd,rgdind,getrotmat, &
                               no_squish,rigid_bodies_stress
-  Use errors_warnings, Only: error,info
+  Use numerics,        Only : images
+  Use errors_warnings, Only : error,info
   Implicit None
 
   Private
