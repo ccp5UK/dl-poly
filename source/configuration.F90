@@ -105,8 +105,6 @@ Contains
 
   Subroutine reallocate_chr_v( delta, a, stat )
 
-    Implicit None
-
     Integer,                           Intent( In    ) :: delta
     Character( Len = * ), Allocatable, Intent( InOut ) :: a(:)
     Integer,                           Intent(   Out ) :: stat
@@ -143,8 +141,6 @@ Contains
   End Subroutine reallocate_chr_v
 
   Subroutine reallocate_int_v( delta, a, stat )
-
-    Implicit None
 
     Integer,              Intent( In    ) :: delta
     Integer, Allocatable, Intent( InOut ) :: a(:)
@@ -183,8 +179,6 @@ Contains
 
   Subroutine reallocate_rwp_v( delta, a, stat )
 
-    Implicit None
-
     Integer,                        Intent( In    ) :: delta
     Real( Kind = wp ), Allocatable, Intent( InOut ) :: a(:)
     Integer,                        Intent(   Out ) :: stat
@@ -222,8 +216,6 @@ Contains
 
 
   Subroutine allocate_config_arrays_read( isize )
-
-    Implicit None
 
     Integer, Intent( In    ) :: isize
 
@@ -505,8 +497,6 @@ Contains
 ! adapted   - i.t.todorov june 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Implicit None
 
     Integer, Dimension( : ), Intent( In    ) :: ind
     Integer                , Intent( In    ) :: n_loc

@@ -22,7 +22,6 @@ Module rigid_bodies
   Use numerics,        Only : images,local_index,pbcshift
   Use errors_warnings, Only : info, error, warning
 
-
   Implicit None
 
   Logical,                        Save :: lshmv_rgd = .false.
@@ -106,7 +105,6 @@ Contains
 
   Subroutine deallocate_rigid_bodies_arrays()
 
-    Implicit None
     Integer :: fail
 
     fail = 0

@@ -90,8 +90,6 @@ Contains
 
   Subroutine deallocate_angles_arrays()
 
-    Implicit None
-
     Integer :: fail
 
     fail = 0

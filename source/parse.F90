@@ -30,8 +30,6 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Implicit None
-
     Character( Len = * ), Intent( InOut ) :: record
 
     Integer :: i
@@ -53,8 +51,6 @@ Contains
     ! author    - i.t.todorov april 2016
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Implicit None
 
     Character( Len = * ), Intent( InOut ) :: record
 
@@ -78,8 +74,6 @@ Contains
     ! author    - a.m.elena april 2016
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Implicit None
 
     Character( Len = * ), Intent( InOut ) :: record
 
@@ -112,8 +106,6 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Implicit None
-
     Character( Len = * ), Intent( InOut ) :: record
 
     record = Trim(Adjustl(record))
@@ -133,8 +125,6 @@ Contains
     ! author    - i.t.todorov june 2004
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Implicit None
 
     Character( Len = * ), Intent( InOut ) :: record
     Character( Len = * ), Intent(   Out ) :: word
@@ -214,8 +204,6 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Implicit None
-
     Character( Len = * ), Intent( InOut ) :: record
 
     Character( Len = 10000 ) :: record1
@@ -265,8 +253,6 @@ Contains
     ! author    - i.t.todorov june 2004
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Implicit None
 
     Character( Len = * ), Intent( InOut ) :: record
 

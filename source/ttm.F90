@@ -317,8 +317,6 @@ Contains
 
   Subroutine deallocate_ttm_arrays()
 
-    Implicit None
-
     Integer, Dimension ( 1:5 ) :: fail
 
     fail = 0
@@ -2183,7 +2181,6 @@ Subroutine uniformDist(lat_in)
 
 ! implement constant (homogeneous) spatial deposition
 
-  Implicit None
   Real( Kind = wp ), Intent ( Inout ), Dimension(0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1) :: lat_in
   Real( Kind = wp ) :: dEdV
 
@@ -2210,7 +2207,6 @@ Subroutine uniformDistZexp(lat_in)
 ! in x and y-directions, exponential decay of fluence
 ! in z-direction (only with laser)
 
-  Implicit None
   Real( Kind = wp ), Intent ( Inout ), Dimension(0:ntcell(1)+1,0:ntcell(2)+1,0:ntcell(3)+1) :: lat_in
   Real( Kind = wp ) :: dEdVmax, dEdV, zz, rpdepth
   Integer :: k

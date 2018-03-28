@@ -104,8 +104,6 @@ Contains
 
     
 
-    Implicit None
-
     Integer, Dimension( 1:6 ) :: fail
 
     fail = 0
@@ -122,8 +120,6 @@ Contains
   End Subroutine allocate_statistics_connect
 
   Subroutine deallocate_statistics_connect()
-
-    Implicit None
 
     Integer, Dimension( 1:6 ) :: fail
 

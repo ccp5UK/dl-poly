@@ -30,8 +30,6 @@ Contains
 
   ! Calcuate interpolated thermal conductivity from tabulated values: given as kB/A^3
 
-    Implicit None
-
     Real (Kind = wp), Intent(In) :: T
     Real (Kind = wp)             :: Kep
 
@@ -62,8 +60,6 @@ Contains
 ! given as kB/A^3: conversions from kB/atom carried out for cases 0, 1 and 2, allowing
 ! for changes in number of atoms per voxel (cellrho) if dynamic cell density option
 ! selected
-
-    Implicit None
 
     Real ( Kind = wp ), Intent ( In ) :: T
     Real ( Kind = wp )                :: Ce
@@ -107,8 +103,6 @@ Contains
 
 ! Temperature-dependent lattice thermal conductivity: given as kB/(ps A)
 
-    Implicit None
-    
     Real ( Kind = wp ) :: Ke
     Real ( Kind = wp ), Intent ( In ) :: T    
 
@@ -129,8 +123,6 @@ Contains
 ! Temperature-dependent Drude-like lattice thermal conductivity: given as kB/(ps A)
 ! (Ka0 = thermal conductivity at system temperature)
 
-    Implicit None
-
     Real ( Kind = wp ), Intent ( In ) :: Te, temp
     Real ( Kind = wp )                :: KeD
 
@@ -142,8 +134,6 @@ Contains
 
 ! Thermal diffusivity: given as A^2/ps
 ! (different cases for metals and insulators)
-
-    Implicit None
 
     Real ( Kind = wp ), Intent ( In ) :: Te
     Real ( Kind = wp )                :: alp

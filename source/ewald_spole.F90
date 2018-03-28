@@ -8,8 +8,9 @@ Module ewald_spole
                               xxx,yyy,zzz, lfrzn
   Use numerics,        Only : erfcgen, invert, dcell
   Use errors_warnings, Only : error
-  Use ewald,           Only : spl_cexp, bspcoe, bspgen, exchange_grid
-
+  Use ewald,           Only : ewald_type,spl_cexp, bspcoe, bspgen, exchange_grid
+  Use domains, Only : nprx,npry,nprz,idx,idy,idz
+  Use parallel_fft, Only : initialize_fft, pfft, pfft_indices
   Implicit None
 
   Private
@@ -231,10 +232,6 @@ Module ewald_spole
   ! author    - i.t.todorov & w.smith & i.j.bush february 2016
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use ewald,          Only : ewald_type
-    Use domains, Only : nprx,npry,nprz,idx,idy,idz
-    Use parallel_fft, Only : initialize_fft, pfft, pfft_indices
 
     Real( Kind = wp ), Intent( In    ) :: alpha,epsq
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
@@ -1530,8 +1527,6 @@ Module ewald_spole
   ! author    - i.t.todorov december 2015
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use ewald, Only : ewald_type
 
     Real( Kind = wp  ),                   Intent( In    ) :: rcut,alpha,epsq
     Real( Kind = wp  ),                   Intent(   Out ) :: engcpe_fr,vircpe_fr

@@ -894,8 +894,6 @@ Contains
 
   Function dPhidX(i,j,k) Result(dphi)
 
-    Implicit None
-
     Integer, Intent( In    ) :: i,j,k
 
     Integer           :: kk
@@ -916,8 +914,6 @@ Contains
   End Function dPhidX
 
   Function dPhidY(i,j,k) Result(dphi)
-
-    Implicit None
 
     Integer, Intent( In    ) :: i,j,k
 
@@ -940,8 +936,6 @@ Contains
 
   Function dPhidZ(i,j,k) Result(dphi)
 
-    Implicit None
-
     Integer, Intent( In    ) :: i,j,k
 
     Integer           :: kk
@@ -963,8 +957,6 @@ Contains
 
   Function d2PhidX2(i,j,k) Result(dphi)
 
-    Implicit None
-
     Integer, Intent( In    ) :: i,j,k
 
     Real( Kind = wp ) :: dphi
@@ -975,8 +967,6 @@ Contains
 
   Function d2PhidY2(i,j,k) Result(dphi)
 
-    Implicit None
-
     Integer, Intent( In    ) :: i,j,k
 
     Real( Kind = wp ) :: dphi
@@ -986,8 +976,6 @@ Contains
   End Function d2PhidY2
 
   Function d2PhidZ2(i,j,k) Result(dphi)
-
-    Implicit None
 
     Integer, Intent( In    ) :: i,j,k
 
@@ -1010,8 +998,6 @@ Contains
 ! author    - i.t.todorov march 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Implicit None
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: rcut,epsq

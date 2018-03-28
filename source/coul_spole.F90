@@ -406,9 +406,6 @@ Module coul_spole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-    Implicit None
-
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
     Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt

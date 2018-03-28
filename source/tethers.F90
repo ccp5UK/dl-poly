@@ -36,9 +36,6 @@ Contains
 
   Subroutine allocate_tethers_arrays()
 
-
-    Implicit None
-
     Integer, Dimension( 1:6 ) :: fail
 
     fail = 0
@@ -63,8 +60,6 @@ Contains
   End Subroutine allocate_tethers_arrays
 
   Subroutine deallocate_tethers_arrays()
-
-    Implicit None
 
     Integer:: fail
 

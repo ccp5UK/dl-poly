@@ -73,7 +73,6 @@ Contains
 
   Subroutine deallocate_pmf_arrays()
 
-    Implicit None
     Integer :: fail
 
     fail = 0

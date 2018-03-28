@@ -23,7 +23,8 @@ Module netcdf_wrap
                         nf90_put_att, nf90_put_var,                          &
                         nf90_get_att, nf90_get_var, nf90_var_par_access,     &
                         nf90_inquire_dimension, nf90_inq_dimid,              &
-                        nf90_inq_varid, nf90_inquire_variable
+                        nf90_inq_varid, nf90_inquire_variable,               &
+                        nf90_noerr, nf90_strerror
 #endif
   Implicit None
 
@@ -90,8 +91,6 @@ Contains
 
   Subroutine netcdf_create( name, desc, comm, info )
 
-    Implicit None
-
     Character( Len = * )  , Intent( In    )            :: name
     Type( netcdf_desc )   , Intent(   Out )            :: desc
     Integer               , Intent( In    ) , Optional :: comm
@@ -138,8 +137,6 @@ Contains
   End Subroutine netcdf_create
 
   Subroutine netcdf_open( name, desc, comm, info )
-
-    Implicit None
 
     Character( Len = * )  , Intent( In    )            :: name
     Type( netcdf_desc )   , Intent(   Out )            :: desc
@@ -188,8 +185,6 @@ Contains
 
   Subroutine netcdf_close( desc )
 
-    Implicit None
-
     Type( netcdf_desc ), Intent( In    ) :: desc
 
 #ifdef NETCDF
@@ -200,8 +195,6 @@ Contains
   End Subroutine netcdf_close
 
   Subroutine netcdf_set_def( title, n, desc )
-
-    Implicit None
 
     Character( Len = * )  , Intent( In    ) :: title
     Integer               , Intent( In    ) :: n
@@ -335,8 +328,6 @@ Contains
 
   Subroutine netcdf_put_var_rwp_0d( what, desc, val, start, count )
 
-    Implicit None
-
     Character( Len = * )  , Intent( In    )           :: what
     Type( netcdf_desc )   , Intent( In    )           :: desc
     Real( Kind = wp )     , Intent( In    )           :: val
@@ -365,8 +356,6 @@ Contains
   End Subroutine netcdf_put_var_rwp_0d
 
   Subroutine netcdf_put_var_rwp_1d( what, desc, val, start, count )
-
-    Implicit None
 
     Character( Len = * )                  , Intent( In    )           :: what
     Type( netcdf_desc )                   , Intent( In    )           :: desc
@@ -411,8 +400,6 @@ Contains
 
   Subroutine netcdf_put_var_rwp_2d( what, desc, val, start, count )
 
-    Implicit None
-
     Character( Len = * )                     , Intent( In    )           :: what
     Type( netcdf_desc )                      , Intent( In    )           :: desc
     Real( Kind = wp )     , Dimension( :, : ), Intent( In    )           :: val
@@ -454,8 +441,6 @@ Contains
 
   Subroutine netcdf_put_var_int_0d( what, desc, val, start, count )
 
-    Implicit None
-
     Character( Len = * )  , Intent( In    )           :: what
     Type( netcdf_desc )   , Intent( In    )           :: desc
     Integer               , Intent( In    )           :: val
@@ -486,8 +471,6 @@ Contains
   End Subroutine netcdf_put_var_int_0d
 
   Subroutine netcdf_put_var_int_1d( what, desc, val, start, count )
-
-    Implicit None
 
     Character( Len = * )                  , Intent( In    )           :: what
     Type( netcdf_desc )                   , Intent( In    )           :: desc
@@ -524,8 +507,6 @@ Contains
 
   Subroutine netcdf_put_var_chr_1d( what, desc, val, start, count )
 
-    Implicit None
-
     Character( Len = * )                  , Intent( In    )           :: what
     Type( netcdf_desc )                   , Intent( In    )           :: desc
     Character( Len = * )  , Dimension( : ), Intent( In    )           :: val
@@ -561,8 +542,6 @@ Contains
 
   Subroutine netcdf_put_var_chr_2d( what, desc, val, start, count )
 
-    Implicit None
-
     Character( Len = * )                     , Intent( In    )           :: what
     Type( netcdf_desc )                      , Intent( In    )           :: desc
     Character( Len = * )  , Dimension( :, : ), Intent( In    )           :: val
@@ -597,8 +576,6 @@ Contains
   End Subroutine netcdf_put_var_chr_2d
 
   Subroutine netcdf_get_def( desc, title, n )
-
-    Implicit None
 
     Type( netcdf_desc )   , Intent( InOut )           :: desc
     Character( Len = * )  , Intent(   Out ), Optional :: title
@@ -683,8 +660,6 @@ Contains
 
   Subroutine netcdf_get_dim( what, desc, val )
 
-    Implicit None
-
     Character( Len = * )  , Intent( In    ) :: what
     Type( netcdf_desc )   , Intent( In    ) :: desc
     Integer               , Intent(   Out ) :: val
@@ -716,8 +691,6 @@ Contains
 
   Subroutine netcdf_get_att_int( what, desc, val )
 
-    Implicit None
-
     Character( Len = * )  , Intent( In    )           :: what
     Type( netcdf_desc )   , Intent( In    )           :: desc
     Integer               , Intent(   Out )           :: val
@@ -732,8 +705,6 @@ Contains
 
   Subroutine netcdf_get_att_chr( what, desc, val )
 
-    Implicit None
-
     Character( Len = * )  , Intent( In    )           :: what
     Type( netcdf_desc )   , Intent( In    )           :: desc
     Character( Len = * )  , Intent(   Out )           :: val
@@ -747,8 +718,6 @@ Contains
   End Subroutine netcdf_get_att_chr
 
   Subroutine netcdf_get_var_rwp_0d( what, desc, val, start, count )
-
-    Implicit None
 
     Character( Len = * )  , Intent( In    )           :: what
     Type( netcdf_desc )   , Intent( In    )           :: desc
@@ -779,8 +748,6 @@ Contains
   End Subroutine netcdf_get_var_rwp_0d
 
   Subroutine netcdf_get_var_rwp_1d( what, desc, val, start, count )
-
-    Implicit None
 
     Character( Len = * )                  , Intent( In    )           :: what
     Type( netcdf_desc )                   , Intent( In    )           :: desc
@@ -826,8 +793,6 @@ Contains
 
   Subroutine netcdf_get_var_rwp_2d( what, desc, val, start, count )
 
-    Implicit None
-
     Character( Len = * )                     , Intent( In    )           :: what
     Type( netcdf_desc )                      , Intent( In    )           :: desc
     Real( Kind = wp )     , Dimension( :, : ), Intent(   Out )           :: val
@@ -870,8 +835,6 @@ Contains
 
   Subroutine netcdf_get_var_int_0d( what, desc, val, start, count )
 
-    Implicit None
-
     Character( Len = * )  , Intent( In    )           :: what
     Type( netcdf_desc )   , Intent( In    )           :: desc
     Integer               , Intent(   Out )           :: val
@@ -903,8 +866,6 @@ Contains
   End Subroutine netcdf_get_var_int_0d
 
   Subroutine netcdf_get_var_int_1d( what, desc, val, start, count )
-
-    Implicit None
 
     Character( Len = * )                  , Intent( In    )           :: what
     Type( netcdf_desc )                   , Intent( In    )           :: desc
@@ -942,8 +903,6 @@ Contains
 
   Subroutine netcdf_get_var_chr_1d( what, desc, val, start, count )
 
-    Implicit None
-
     Character( Len = * )                  , Intent( In    )           :: what
     Type( netcdf_desc )                   , Intent( In    )           :: desc
     Character( Len = * )  , Dimension( : ), Intent(   Out )           :: val
@@ -979,8 +938,6 @@ Contains
   End Subroutine netcdf_get_var_chr_1d
 
   Subroutine netcdf_get_var_chr_2d( what, desc, val, start, count )
-
-    Implicit None
 
     Character( Len = * )                     , Intent( In    )           :: what
     Type( netcdf_desc )                      , Intent( In    )           :: desc
@@ -1096,8 +1053,6 @@ Contains
 
   Subroutine netcdf_get_file_real_precision( desc, p, r, error )
 
-    Implicit None
-
     Type( netcdf_desc )   , Intent( In    ) :: desc
     Integer               , Intent(   Out ) :: p
     Integer               , Intent(   Out ) :: r
@@ -1131,10 +1086,6 @@ Contains
 
 
   Subroutine check( status )
-
-#ifdef NETCDF
-    Use netcdf, Only : nf90_noerr, nf90_strerror
-#endif
     Integer, Intent( In    ) :: status
     Character( Len = 256 ) :: message
 #ifdef NETCDF

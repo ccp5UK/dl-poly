@@ -1,11 +1,10 @@
 Module numerics 
   Use kinds, Only : wp,li
   Use errors_warnings, Only : error
-
-  Use setup, Only : lseed,seed
+  Use setup, Only : lseed,seed,zero_plus
   Use comms, Only : comms_type
   Use setup, Only : rt3,zero_plus, sqrpi,rt2,half_minus! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
-
+  Use parallel_fft, Only : pfft_length_ok
   Implicit None
   Private
 
@@ -777,9 +776,6 @@ Subroutine gauss_2(natms,vxx,vyy,vzz,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use comms, Only : comms_type
-
   Integer,                             Intent( In    ) :: natms
   Real( Kind = wp ), Dimension( 1:* ), Intent(   Out ) :: vxx,vyy,vzz
   Type(comms_type), Intent ( InOut )                   :: comm
@@ -817,11 +813,6 @@ Subroutine erfcgen(rcut,alpha,mxgele,erc,fer)
 ! amended   - i.t.todorov february 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use kinds, Only : wp
-  Use setup, Only : sqrpi
-
-  Implicit None
 
   Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
   Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
@@ -1053,8 +1044,6 @@ Subroutine shellsort2(n,rank,list)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Implicit None
-
   Integer,                   Intent( In    ) :: n
   Integer, Dimension( 1:* ), Intent( InOut ) :: list,rank
 
@@ -1230,10 +1219,6 @@ Subroutine dcell(aaa,bbb)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-
-  Implicit None
-
   Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: aaa
   Real( Kind = wp ), Dimension( 1:10 ), Intent(   Out ) :: bbb
 
@@ -1331,10 +1316,6 @@ Subroutine invert(a,b,d)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-
-  Implicit None
-
   Real( Kind = wp ), Dimension( 1:9 ), Intent( In    ) :: a
   Real( Kind = wp ), Dimension( 1:9 ), Intent(   Out ) :: b
   Real( Kind = wp ),                   Intent(   Out ) :: d
@@ -1399,11 +1380,6 @@ Subroutine images(imcon,cell,pairs,xxx,yyy,zzz)
 ! amended   - i.t.todorov march 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use kinds, Only : wp
-  Use setup, Only : rt2,rt3
-
-  Implicit None
 
   Integer,                              Intent( In    ) :: imcon,pairs
   Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
@@ -1578,11 +1554,6 @@ Subroutine images_s(imcon,cell,xxx,yyy,zzz)
 ! tweaked   - h.a.boateng january 2015
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use kinds, Only : wp
-  Use setup, Only : rt2,rt3
-
-  Implicit None
 
   Integer,                              Intent( In    ) :: imcon
   Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
@@ -1976,11 +1947,6 @@ Subroutine pbcshfrc(imcon,cell,natms,xxx,yyy,zzz)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use setup, Only : rt2,rt3,half_minus
-
-  Implicit None
-
   Integer,                              Intent( In    ) :: imcon,natms
   Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
   Real( Kind = wp ), Dimension( 1:* ),  Intent( InOut ) :: xxx,yyy,zzz
@@ -2229,11 +2195,6 @@ Subroutine pbcshfrl(imcon,cell,natms,xxx,yyy,zzz)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use setup, Only : rt2,rt3,half_minus
-
-  Implicit None
-
   Integer,                              Intent( In    ) :: imcon,natms
   Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
   Real( Kind = wp ), Dimension( 1:* ),  Intent( InOut ) :: xxx,yyy,zzz
@@ -2453,9 +2414,6 @@ Subroutine jacobi(n,aaa,vvv)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use setup, Only : zero_plus
-
   Integer,                                    Intent( In    ) :: n
   Real( Kind = wp ), Dimension ( 1:n , 1:n ), Intent( InOut ) :: aaa,vvv
 
@@ -2650,10 +2608,6 @@ Subroutine adjust_kmax( kmax, P )
 ! author    - i.j.bush august 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use parallel_fft, Only : pfft_length_ok
-
-  Implicit None
 
   Integer, Intent( InOut ) :: kmax
   Integer, Intent( In    ) :: P
