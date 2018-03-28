@@ -27,7 +27,8 @@ Module kim
                              xxx,yyy,zzz,fxx,fyy,fzz
   Use setup,   Only : nrite,mxsite,mxlist,mxatdm,mxbfxp
   Use site,    Only : unqatm,ntpatm,sitnam
-  Use comms, Only : comms_type
+  Use comms, Only : comms_type,export_tag,wp_mpi
+  Use numerics, Only : local_index
 #else  
   Use comms, Only : comms_type
   Use setup, Only : nrite
@@ -204,7 +205,7 @@ Contains
 
     If (RijNeeded) Allocate (kim_Rij(3,mxlist,mxatdm), Stat=fail)
     If (fail > 0) Then
-       Write(message '(/,1x,a)') &
+       Write(message, '(/,1x,a)') &
             'kim_setup kim_Rij allocation failure'
        Call error(0,message)
     End If
@@ -220,7 +221,7 @@ Contains
 
 ! Set buffer limit (half for outgoing data - half for incoming)
 
-    iblock=limit/Merge(2,1,mxnode > 1)
+    iblock=limit/Merge(2,1,comm%mxnode > 1)
 
     Call kim_api_allocate(pkim, nlast, 1, ier)
     If (ier < KIM_STATUS_OK) Then
@@ -425,7 +426,7 @@ Contains
 ! Distribute force contributions on this processors halo particles to their
 ! respective processors for inclusion in the fxx, fyy, and fzz arrays.
 
-    Call kim_reverse_communication(forces)
+    Call kim_reverse_communication(forces,comm)
 
     stress(1) = stress(1) - Real(virial(1), wp)
     stress(2) = stress(2) - Real(virial(6), wp)
@@ -448,7 +449,7 @@ Contains
   End Subroutine kim_forces
 
 #ifdef KIM
-  Subroutine kim_reverse_communication(forces)
+  Subroutine kim_reverse_communication(forces,comm)
 
 !-------------------------------------------------------------------------------
 !
@@ -462,9 +463,9 @@ Contains
     Implicit None
 
     Real( Kind = c_double ), Intent( In    ) :: forces(:,:)
+    Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: i,jdnode,kdnode,j,jj,k,imove,jmove
-    Integer :: local_index  ! function defined in numeric_container.f90
 
     Do i=1,6
 
@@ -503,18 +504,20 @@ Contains
 
 ! exchange buffers
 
-       If (mxnode > 1) Then
+       If (comm%mxnode > 1) Then
           jmove=idhalo(0,i)*iadd
-          If (jmove > 0) Call MPI_IRECV(rev_comm_buffer(iblock+1),jmove,wp_mpi,kdnode,Export_tag,dlp_comm_world,request,ierr)
-          If (imove > 0) Call MPI_SEND(rev_comm_buffer(1),imove,wp_mpi,jdnode,Export_tag,dlp_comm_world,ierr)
-          If (jmove > 0) Call MPI_WAIT(request,status,ierr)
+          If (jmove > 0) Then
+            Call MPI_IRECV(rev_comm_buffer(iblock+1),jmove,wp_mpi,kdnode,Export_tag,comm%comm,comm%request,comm%ierr)
+            Call MPI_SEND(rev_comm_buffer(1),imove,wp_mpi,jdnode,Export_tag,comm%comm,comm%ierr)
+            Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+          End  If
        Else
           jmove=imove
        End If
 
 ! unpack if need be
 
-       k=Merge(iblock,0,mxnode > 1)
+       k=Merge(iblock,0,comm%mxnode > 1)
        Do k=1,jmove/iadd
           jj=local_index(Nint(rev_comm_buffer(j+4)),nlast,lsi,lsa)
 
