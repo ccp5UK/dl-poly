@@ -142,7 +142,7 @@ Contains
     Call plumed_f_gcmd("setPositionsY"//sn,yyy)
     Call plumed_f_gcmd("setPositionsZ"//sn,zzz)
     Call plumed_f_gcmd("setBox"//sn,cell)
-    plumed_eng = stpcfg / real(mxnode)
+    plumed_eng = stpcfg / real(comm%mxnode)
     Call plumed_f_gcmd("setEnergy"//sn,plumed_eng)
     Call plumed_f_gcmd("setForcesX"//sn,fxx)
     Call plumed_f_gcmd("setForcesY"//sn,fyy)
