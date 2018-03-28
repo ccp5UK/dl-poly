@@ -1,23 +1,24 @@
 Module bounds
-  Use kinds,         Only : wp
-  Use comms,         Only : comms_type
+  Use kinds,           Only : wp
+  Use comms,           Only : comms_type
   Use setup
-  Use domains,       Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
-  Use configuration, Only : imcon,imc_n,cfgname,cell,volm
-  Use vnl,           Only : llvnl ! Depends on l_str,lsim & rpad
+  Use domains,         Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
+  Use configuration,   Only : imcon,imc_n,cfgname,cell,volm
+  Use vnl,             Only : llvnl ! Depends on l_str,lsim & rpad
   Use msd
-  Use rdfs,          Only : rusr
-  Use kim,           Only : kimim
-  Use bonds,         Only : rcbnd
-  Use tersoff,       Only : potter
-  Use development,   Only : l_trm
-  Use greenkubo,     Only : vafsamp
-  Use mpole,         Only : keyind,induce
-  Use ttm,           Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
-  Use numerics,      Only : adjust_kmax,dcell
-  Use Kontrol, Only : scan_control, scan_control_pre
-  Use configuration, Only : scan_config,read_config
-  Use ffield, Only : scan_field
+  Use rdfs,            Only : rusr
+  Use kim,             Only : kimim
+  Use bonds,           Only : rcbnd
+  Use tersoff,         Only : potter
+  Use development,     Only : l_trm
+  Use greenkubo,       Only : vafsamp
+  Use mpole,           Only : keyind,induce
+  Use ttm,             Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
+  Use numerics,        Only : adjust_kmax,dcell
+  Use Kontrol,         Only : scan_control, scan_control_pre
+  Use configuration,   Only : scan_config,read_config
+  Use ffield,          Only : scan_field
+  Use errors_warnings, Only : error,warning,info
 
   Implicit None
   Private
@@ -56,6 +57,7 @@ Subroutine set_bounds                                 &
                        test,vcell,tol,          &
                        rcter,rctbp,rcfbp,       &
                        xhi,yhi,zhi
+  Character( Len = 256 ) :: message
 
 ! define zero+ and half+/- (setup)
 
@@ -112,30 +114,46 @@ Subroutine set_bounds                                 &
 
      ats = (Abs(cell(1))+Abs(cell(5)))/2.0_wp
      test = 1.0e-10_wp*ats
-     If (Abs(cell(1)-ats) > test) Call error(410)
-     If (Abs(cell(5)-ats) > test) Call error(410)
+     If (Abs(cell(1)-ats) > test) Then
+       Call error(410)
+     End If
+     If (Abs(cell(5)-ats) > test) Then
+       Call error(410)
+     End If
      If (imcon == 5) Then
-        If (Abs(cell(9)-ats*rt2) > test) Call error(410)
+        If (Abs(cell(9)-ats*rt2) > test) Then
+          Call error(410)
+        End If
      Else
-        If (Abs(cell(9)-ats) > test) Call error(410)
+        If (Abs(cell(9)-ats) > test) Then
+          Call error(410)
+        End If
      End If
   End If
 
 ! check integrity of hexagonal prism cell vectors
 
   If (imcon == 7) Then
-     If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Call error(410)
+     If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Then
+       Call error(410)
+     End If
   End If
 
 ! check for diagonal cell matrix if appropriate: imcon=1,2,4,5,7
 
   If (imcon /= 0 .and. imcon /= 3 .and. imcon /= 6) Then
-     If (Abs(cell(2)) > zero_plus) Call error(410)
-     If (Abs(cell(3)) > zero_plus) Call error(410)
-     If (Abs(cell(4)) > zero_plus) Call error(410)
-     If (Abs(cell(6)) > zero_plus) Call error(410)
-     If (Abs(cell(7)) > zero_plus) Call error(410)
-     If (Abs(cell(8)) > zero_plus) Call error(410)
+    If (Any(Abs(cell(2:4)) > zero_plus)) Then
+      Call error(410)
+    End If
+    !If (Abs(cell(2)) > zero_plus) Call error(410)
+    !If (Abs(cell(3)) > zero_plus) Call error(410)
+    !If (Abs(cell(4)) > zero_plus) Call error(410)
+    If (Any(Abs(cell(6:8)) > zero_plus)) Then
+      Call error(410)
+    End If
+    !If (Abs(cell(6)) > zero_plus) Call error(410)
+    !If (Abs(cell(7)) > zero_plus) Call error(410)
+    !If (Abs(cell(8)) > zero_plus) Call error(410)
   End If
 
 ! calculate dimensional properties of simulation cell
@@ -472,7 +490,8 @@ Subroutine set_bounds                                 &
 
   Call map_domains(imc_n,celprp(7),celprp(8),celprp(9),comm)
 
-  If (comm%idnode == 0) Write(nrite,'(/,/,1x,a,3i6)') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
+  Write(message,'(/,/,1x,a,3i6)') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
+  Call info(message,.true.)
 
   If (rpad > zero_plus) Then
 
@@ -486,17 +505,19 @@ Subroutine set_bounds                                 &
      qly=Int(celprp(8)/cut)
      qlz=Int(celprp(9)/cut)
 
-     If (comm%idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                           &
-        'pure cutoff driven limit on largest possible decomposition:', qlx*qly*qlz , &
-        ' nodes/domains (', qlx,',',qly,',',qlz,')'
+     Write(message,'(/,1x,a,i6,a,3(i0,a))')                           &
+       'pure cutoff driven limit on largest possible decomposition:', qlx*qly*qlz , &
+       ' nodes/domains (', qlx,',',qly,',',qlz,')'
+     Call info(message,.true.)
 
      qlx=Max(1,qlx/2)
      qly=Max(1,qly/2)
      qlz=Max(1,qlz/2)
 
-     If (comm%idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                           &
-        'pure cutoff driven limit on largest balanced decomposition:', qlx*qly*qlz , &
-        ' nodes/domains (', qlx,',',qly,',',qlz,')'
+     Write(message,'(/,1x,a,i6,a,3(i0,a))')                           &
+       'pure cutoff driven limit on largest balanced decomposition:', qlx*qly*qlz , &
+       ' nodes/domains (', qlx,',',qly,',',qlz,')'
+     Call info(message,.true.)
 
   End If
 
@@ -516,17 +537,19 @@ Subroutine set_bounds                                 &
   qly=Int(celprp(8)/cut)
   qlz=Int(celprp(9)/cut)
 
-  If (comm%idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                       &
-     'cutoffs driven limit on largest possible decomposition:', qlx*qly*qlz , &
-     ' nodes/domains (', qlx,',',qly,',',qlz,')'
+  Write(message,'(/,1x,a,i6,a,3(i0,a))')                       &
+    'cutoffs driven limit on largest possible decomposition:', qlx*qly*qlz , &
+    ' nodes/domains (', qlx,',',qly,',',qlz,')'
+  Call info(message,.true.)
 
   qlx=Max(1,qlx/2)
   qly=Max(1,qly/2)
   qlz=Max(1,qlz/2)
 
-  If (comm%idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                       &
-     'cutoffs driven limit on largest balanced decomposition:', qlx*qly*qlz , &
-     ' nodes/domains (', qlx,',',qly,',',qlz,')'
+  Write(message,'(/,1x,a,i6,a,3(i0,a))')                       &
+    'cutoffs driven limit on largest balanced decomposition:', qlx*qly*qlz , &
+    ' nodes/domains (', qlx,',',qly,',',qlz,')'
+  Call info(message,.true.)
 
 ! calculate link cell dimensions per node
 
@@ -536,7 +559,8 @@ Subroutine set_bounds                                 &
 
 ! print link cell algorithm and check for violations or...
 
-  If (comm%idnode == 0) Write(nrite,'(/,1x,a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
+  Write(message,'(/,1x,a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
+  Call info(message,.true.)
 
   tol=Min(0.05_wp,0.005_wp*rcut)                                        ! tolerance
   test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0)                    ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
@@ -545,12 +569,14 @@ Subroutine set_bounds                                 &
   If (ilx*ily*ilz == 0) Then
      If (l_trm) Then ! we are prepared to exit gracefully(-:
         rcut = cut   ! - rpad (was zeroed in scan_control)
-        If (comm%idnode == 0) Write(nrite,'(/,1x,a)') &
-           "*** warning - real space cutoff reset has occurred, early run termination is due !!! ***"
+        Write(message,'(a)') &
+          "real space cutoff reset has occurred, early run termination is due"
+        Call warning(message,.true.)
         Go To 10
      Else
         If (cut < rcut) Then
-           If (comm%idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
+           Write(message,'(a)') 'rcut <= Min(domain width) < rlnk = rcut + rpad'
+           Call warning(message,.true.)
            Call error(307)
         Else ! rpad is defined & in 'no strict' mode
            If (rpad > zero_plus .and. (.not.l_str)) Then ! Re-set rpad with some slack
@@ -559,7 +585,8 @@ Subroutine set_bounds                                 &
               If (rpad < tol) rpad = 0.0_wp ! Don't bother
               Go To 10
            Else
-              If (comm%idnode == 0) Write(nrite,*) '*** warning - rcut <= Min(domain width) < rlnk = rcut + rpad !!! ***'
+              Write(message,'(a)') 'rcut <= Min(domain width) < rlnk = rcut + rpad'
+              Call warning(message,.true.)
               Call error(307)
            End If
         End If
@@ -665,13 +692,14 @@ Subroutine set_bounds                                 &
 
 ! Hard luck, giving up
 
-     If (qlx*qly*qlz == 0) Then
-        If (comm%idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))') &
-           'SPME driven limit on largest possible decomposition:',  &
-           (kmaxa/mxspl1)*(kmaxb/mxspl1)*(kmaxc/mxspl1) ,           &
-           ' nodes/domains (', kmaxa/mxspl1,',',kmaxb/mxspl1,',',kmaxc/mxspl1,')'
-        Call error(308)
-     End If
+    If (qlx*qly*qlz == 0) Then
+      Write(message,'(/,1x,a,i6,a,3(i0,a))') &
+        'SPME driven limit on largest possible decomposition:',  &
+        (kmaxa/mxspl1)*(kmaxb/mxspl1)*(kmaxc/mxspl1) ,           &
+        ' nodes/domains (', kmaxa/mxspl1,',',kmaxb/mxspl1,',',kmaxc/mxspl1,')'
+      Call info(message)
+      Call error(308)
+    End If
 
   End If
 
@@ -792,7 +820,8 @@ Subroutine set_bounds                                 &
      ily=Int(r_npry*celprp(8)/cut)
      ilz=Int(r_nprz*celprp(9)/cut)
 
-     If (comm%idnode == 0) Write(nrite,'(/,1x,a,3i6)') "link-cell decomposition 2 (x,y,z): ",ilx,ily,ilz
+     Write(message,'(/,1x,a,3i6)') "link-cell decomposition 2 (x,y,z): ",ilx,ily,ilz
+     Call info(message,.true.)
 
      If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call error(305)
 
