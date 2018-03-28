@@ -95,8 +95,6 @@ Contains
 
   Subroutine deallocate_dihedrals_arrays()
 
-    Implicit None
-
     Integer :: fail
 
     fail = 0

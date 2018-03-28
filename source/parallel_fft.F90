@@ -155,8 +155,6 @@ Contains
     ! This initialises things like the comms pattern and trigs
     ! data for the FFT.
 
-    Implicit None
-
     Integer                       , Intent( In    ) :: n_dims
     Integer, Dimension( 1:n_dims ), Intent( In    ) :: lengths
     Integer, Dimension( 1:n_dims ), Intent( In    ) :: proc_grid
@@ -266,8 +264,6 @@ Contains
       ! Simply sets up the trig factors for a forward FFT
       ! of length N
 
-      Implicit None
-
       Integer                              , Intent( In    ) :: n
       Complex( Kind = wp ), Dimension( 0: ), Intent(   Out ) :: trigs
 
@@ -292,8 +288,6 @@ Contains
     Subroutine set_comms( overall_communicator, grid_pos, this_dim, Block, communications )
 
       ! Sets up the communications strategy.
-
-      Implicit None
 
       Integer,                 Intent( In    ) :: overall_communicator
       Integer, Dimension( : ), Intent( In    ) :: grid_pos
@@ -421,8 +415,6 @@ Contains
     End Subroutine set_comms
 
     Subroutine set_opt_factor( dim, length, n_proc, my_grid_pos, block, n_fac, factors, comm, dim_fac )
-
-      Implicit None
 
       Integer                    , Intent( In    ) :: dim
       Integer                    , Intent( In    ) :: length
@@ -562,8 +554,6 @@ Contains
 
     Subroutine set_other_factor( dim, length, n_proc, my_grid_pos, block, n_fac, factors, comm, dim_fac )
 
-      Implicit None
-
       Integer                      , Intent( In    ) :: dim
       Integer                      , Intent( In    ) :: length
       Integer                      , Intent( In    ) :: n_proc
@@ -699,8 +689,6 @@ Contains
 
   Subroutine summarize_fft( processor, context )
 
-    Implicit None
-
     Integer, Intent( In    ) :: processor
     Integer, Intent( In    ) :: context
 
@@ -767,8 +755,6 @@ Contains
 
   Subroutine fft_1d( a, work, context, direction )
 
-    Implicit None
-
     Complex( Kind = wp ), Dimension( 0: ), Intent( InOut ) :: a
     Complex( Kind = wp ), Dimension( 0: ), Intent( InOut ) :: work
     Integer                              , Intent( In    ) :: context
@@ -784,8 +770,6 @@ Contains
   End Subroutine fft_1d
 
   Subroutine forward_1d_fft( a, work, desc )
-
-    Implicit None
 
     Complex( Kind = wp ), Dimension( 0: ), Intent( InOut ) :: a
     Complex( Kind = wp ), Dimension( 0: ), Intent( InOut ) :: work
@@ -1522,8 +1506,6 @@ Contains
 
   Subroutine back_3d_fft_y( a, work, desc )
 
-    Implicit None
-
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: a
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: work
     Type( fft_descriptor )                                         :: desc
@@ -1677,8 +1659,6 @@ Contains
 
   Subroutine back_3d_fft_z( a, work, desc )
 
-    Implicit None
-
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: a
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: work
     Type( fft_descriptor )                                         :: desc
@@ -1826,8 +1806,6 @@ Contains
 
   Subroutine fft_3d_other( a, work, desc, sign )
 
-    Implicit None
-
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: a
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: work
     Type( other_fact_descriptor )                                  :: desc
@@ -1918,8 +1896,6 @@ Contains
 
   Subroutine apply_twiddles_3d( a, desc, sign, dim )
 
-    Implicit None
-
     Complex( Kind = wp ), Dimension( 0:, 0:, 0: ), Intent( InOut ) :: a
     Type( other_fact_descriptor )                                  :: desc
     Integer                                      , Intent( In    ) :: sign
@@ -2001,8 +1977,6 @@ Contains
   End Subroutine apply_twiddles_3d
 
   Subroutine generate_indexing( n_tot, block, me_tot, nproc_tot, my_indices )
-
-    Implicit None
 
     Integer                , Intent( In    ) :: n_tot
     Integer                , Intent( In    ) :: block
@@ -2154,8 +2128,6 @@ Contains
 
   Subroutine fft_error( status, calling_routine, message, called_routine )
 
-    Implicit None
-
     Integer             , Intent( In    )           :: status
     Character( Len = * ), Intent( In    )           :: calling_routine
     Character( Len = * ), Intent( In    ), Optional :: message
@@ -2189,8 +2161,6 @@ Contains
 
   Function fft_time()
 
-    Implicit None
-
     Real( Kind = wp ) :: fft_time
 
     Integer           :: count, count_rate, count_max
@@ -2206,8 +2176,6 @@ Contains
   End Function fft_time
 
   Subroutine factor( n, facs )
-
-    Implicit None
 
     Integer                , Intent( In    ) :: n
     Integer, Dimension( : ), Intent(   Out ) :: facs
@@ -2236,8 +2204,6 @@ Contains
   End Subroutine factor
 
   Function get_nth_prime( n )
-
-    Implicit None
 
     Integer                  :: get_nth_prime
 
@@ -2275,8 +2241,6 @@ Contains
     ! Function to check that the a given length is OK for the serial FFT used
     ! by the module.
     ! THIS VERSION IS FOR GPFA. GPFA supports multiples of 2, 3 and 5.
-
-    Implicit None
 
     Logical                  :: pfft_length_ok
 

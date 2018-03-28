@@ -22,7 +22,6 @@ Module rdfs
   Use parse
   Use io
 
-
   Implicit None
 
   Public  :: rdf_compute, calculate_errors, calculate_errors_jackknife
@@ -478,8 +477,6 @@ End Subroutine rdf_compute
 
 Subroutine calculate_block(temp, rcut)
 
-  Implicit None
-
   Real( Kind = wp ), Intent(in)            :: temp, rcut
   Real( Kind = wp ), Dimension( 1:mxlist ) :: rrt, xxt, yyt, zzt
   Real( Kind = wp )                        :: kT2engo, delr, rdlr, dgrid, pdfzero, factor1, rrr,dvol,gofr,gofr1
@@ -527,8 +524,6 @@ Subroutine calculate_block(temp, rcut)
 End Subroutine calculate_block
 
 Subroutine calculate_errors(temp, rcut, num_steps, comm)
-
-  Implicit None
 
   Real( Kind = wp ), Intent( In )                      :: temp, rcut
   Type(comms_type), Intent( InOut )                    :: comm

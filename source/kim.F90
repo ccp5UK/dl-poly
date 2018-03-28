@@ -460,8 +460,6 @@ Contains
 !
 !-------------------------------------------------------------------------------
 
-    Implicit None
-
     Real( Kind = c_double ), Intent( In    ) :: forces(:,:)
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -540,8 +538,6 @@ Contains
 ! This function implements Locator and Iterator mode
 !
 !-------------------------------------------------------------------------------
-
-    Implicit None
 
     Integer( Kind = c_int )                  :: get_neigh
 
@@ -650,8 +646,6 @@ Contains
 !  support species types
 !
 !-------------------------------------------------------------------------------
-
-    Implicit None
 
     Character( Len = KIM_KEY_STRING_LENGTH ), Intent( In    ) :: NBC_method(:)
     Integer( Kind = c_int ),                  Intent( In    ) :: num_types
@@ -793,8 +787,6 @@ Contains
 ! This private function is for basic kim setup and is only used by kim_setup
 !
 !-------------------------------------------------------------------------------
-
-    Implicit None
 
     Integer( Kind = c_int )                  :: kim_basic_init
 

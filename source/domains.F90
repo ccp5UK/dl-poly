@@ -266,8 +266,6 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      Implicit None
-
       Integer                , Intent( In    ) :: n
       Integer, Dimension( : ), Intent(   Out ) :: facs
 
@@ -304,8 +302,6 @@ Contains
 ! author    - i.j.bush august 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      Implicit None
 
       Integer                  :: get_nth_prime
 
@@ -350,8 +346,6 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      Implicit None
-
       Integer                                  :: nfacs
 
       Integer, Dimension( : ), Intent( In    ) :: factors
@@ -373,8 +367,6 @@ Contains
 ! author    - i.j.bush august 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      Implicit None
 
       Integer                                  :: get_nth_factor
 
@@ -431,8 +423,6 @@ Contains
 ! author    - i.t.todorov august 2006
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      Implicit None
 
       Integer                  :: idcube
 

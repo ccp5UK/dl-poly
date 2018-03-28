@@ -80,8 +80,6 @@ Contains
 
   Subroutine deallocate_core_shell_arrays()
 
-    Implicit None
-
     Integer :: fail
 
     fail = 0

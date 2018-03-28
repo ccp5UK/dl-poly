@@ -13,7 +13,6 @@ Module gpfa235
 
   Use kinds, Only : wp
   Use errors_warnings, Only : error
-  Use gpfa235, Only : gpfa
   Implicit None
 
   Private
@@ -1132,8 +1131,6 @@ Contains
 ! *                                                                *
 ! ----------------------------------------------------------------------
 
-     Implicit None
-
 !*** Start of declarations inserted by SPAG (plusFORT)
      Real( Kind = wp ) :: A(*),B(*),Trigs(*),                  &
                           aja,ajb,ajc,ajd,aje,ajf,ajg,ajh,aji, &
@@ -1569,8 +1566,6 @@ Contains
 ! *     (GREATER THAN OR EQUAL TO LOT) FOR A SCALAR COMPUTER.      *
 ! *                                                                *
 ! ----------------------------------------------------------------------
-
-     Implicit None
 
 !*** Start of declarations inserted by SPAG (plusFORT)
      Real( Kind = wp ) :: A(*),B(*),Trigs(*),                      &
@@ -2521,6 +2516,9 @@ End Module gpfa235
 
 !!!!!!!!!!!!!! This is horrible... relies on implicit conversion from complex to real...
   Subroutine gpfa_wrap( a, trigs, stride, jump, n, n_ffts, direction, start )
+    Use kinds, Only : wp
+    Use gpfa235, Only : gpfa
+    Implicit None
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !

@@ -82,7 +82,6 @@ Contains
 
   Subroutine deallocate_constraints_arrays()
 
-    Implicit None
     Integer :: fail
 
     fail = 0

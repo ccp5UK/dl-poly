@@ -237,8 +237,6 @@ Contains
 
     ! Create a netCDF file.  Note it will overwrite any existing file.
 
-    Implicit None
-
     Integer             , Intent( In    ) :: comm
     Character( Len = * ), Intent( In    ) :: file_name
     Character( Len = * ), Intent( In    ) :: title
@@ -376,8 +374,6 @@ Contains
     ! Arguments are:
     ! FILE_HANDLE: The file handle
 
-    Implicit None
-
     Integer, Intent( In    ) :: io_file_handle
 
     Integer :: file_handle
@@ -410,8 +406,6 @@ Contains
   End Subroutine io_close
 
   Subroutine io_nc_get_dim( what, io_file_handle, val )
-
-    Implicit None
 
     Character( Len = * ), Intent( In    ) :: what
     Integer             , Intent( In    ) :: io_file_handle
@@ -486,8 +480,6 @@ Contains
     ! USER_ERROR_CHECK      : If true perform error checking across all the processors ( the default ).
     !                         If false perform error checking only locally.  This latter option
     !                         is less safe but has a much lower communication cost.
-
-    Implicit None
 
     Integer  , Intent( In    ), Optional :: user_comm
     Integer  , Intent( In    ), Optional :: user_method_write
@@ -608,8 +600,6 @@ Contains
     !                         If false perform error checking only locally.  This latter option
     !                         is less safe but has a much lower communication cost.
 
-    Implicit None
-
     Integer  , Intent(   Out ), Optional :: user_comm
     Integer  , Intent(   Out ), Optional :: user_method_write
     Integer  , Intent(   Out ), Optional :: user_method_read
@@ -698,8 +688,6 @@ Contains
     ! VX, VY, VZ    : The components of the atoms' velocities
     ! FX, FY, FZ    : The components of the forces on the atoms
     ! ERROR         : Return code.  Non-zero indicates an error
-
-    Implicit None
 
     Integer                             , Intent( In    ) :: file_handle
     Integer                             , Intent( In    ) :: write_level
@@ -1203,8 +1191,6 @@ Contains
       ! LOCAL_DATA          : The output single sorted array for real quantities
       ! LOCAL_NAME          : The output atom names as a 2d array of   Character( Len = 1 )
 
-      Implicit None
-
       Integer                                , Intent( In    ) :: write_level
       Integer                                , Intent( In    ) :: write_options
       Integer             , Dimension( :    ), Intent( In    ) :: global_index_rank
@@ -1284,8 +1270,6 @@ Contains
       ! Arguments:
       ! A         : Array to rank
       ! RANK_ARRAY: Returned ranking array
-
-      Implicit None
 
       Integer, Dimension( : ), Intent( In    ) :: a
       Integer, Dimension( : ), Intent(   Out ) :: rank_array
@@ -1385,8 +1369,6 @@ Contains
       ! GATHERED_NAME          : The gathered atomic names
       ! N_GATHERED             : Amount of data gathered onto the I/O proc
       ! ERROR                  : Zero on successful return
-
-      Implicit None
 
       Integer                                , Intent( In    ) :: io_gather_comm
       Integer                                , Intent( In    ) :: local_bottom
@@ -1516,8 +1498,6 @@ Contains
       ! NAME          : The atomic names
       ! ERROR         : zero on successful return.
 
-      Implicit None
-
       Integer                                , Intent( In    ) :: n
       Integer             , Dimension(    : ), Intent( InOut ) :: global_indices
       Real( Kind = wp )   , Dimension( :, : ), Intent( InOut ) :: data
@@ -1616,8 +1596,6 @@ Contains
       ! N      : The number of atoms in this batch for this I/O processor
       ! N_REORG: The number of atoms that are on each processor after the reorganisation
 
-      Implicit None
-
       Integer                 , Intent( In    ) :: io_comm
       Integer                 , Intent( In    ) :: n
       Integer, Dimension( 0: ), Intent(   Out ) :: n_reorg
@@ -1657,8 +1635,6 @@ Contains
       ! SORTED_DATA   : The final, globally sorted atomic data
       ! SORTED_NAME   : The final, globally sorted atom names
       ! ERROR         : zero on successful return.
-
-      Implicit None
 
       Integer                                , Intent( In    ) :: io_comm
       Integer                                , Intent( In    ) :: n
@@ -1824,8 +1800,6 @@ Contains
       ! DATA        : The final, globally sorted atomic data
       ! NAME        : The final, globally sorted atom names
       ! ERROR       : zero on successful return.
-
-      Implicit None
 
       Integer                                , Intent( In    ) :: io_comm
       Integer                                , Intent( In    ) :: write_level
@@ -2091,8 +2065,6 @@ Contains
     ! IN_BUFFER     : the number of records in the batch
     ! BUFFER        : the data batch to be written
 
-    Implicit None
-
     Integer,                                 Intent( In    ) :: io_file_handle,in_buffer
     Integer( Kind = MPI_OFFSET_KIND ),       Intent( In    ) :: next_rec
     Character( Len = 1 ), Dimension( :, : ), Intent( In    ) :: buffer
@@ -2126,8 +2098,6 @@ Contains
     ! NEXT_REC      : The starting record number
     ! IN_BUFFER     : the number of records in the batch
     ! BUFFER        : the data batch to be read
-
-    Implicit None
 
     Integer,                                 Intent( In    ) :: io_file_handle,in_buffer
     Integer( Kind = MPI_OFFSET_KIND ),       Intent( In    ) :: next_rec
@@ -2168,8 +2138,6 @@ Contains
 
   Subroutine io_nc_set_def( io_file_handle, title, n )
 
-    Implicit None
-
     Integer              , Intent( In    ) :: io_file_handle
     Character( Len = * ) , Intent( In    ) :: title
     Integer              , Intent( In    ) :: n
@@ -2179,8 +2147,6 @@ Contains
   End Subroutine io_nc_set_def
 
   Subroutine io_nc_put_var_rwp_0d( what, io_file_handle, val, start, count )
-
-    Implicit None
 
     Character( Len = * ), Intent( In    ) :: what
     Integer             , Intent( In    ) :: io_file_handle
@@ -2194,8 +2160,6 @@ Contains
 
   Subroutine io_nc_put_var_rwp_1d( what, io_file_handle, val, start, count )
 
-    Implicit None
-
     Character( Len = * )                , Intent( In    ) :: what
     Integer                             , Intent( In    ) :: io_file_handle
     Real( Kind = wp )   , Dimension( : ), Intent( In    ) :: val
@@ -2207,8 +2171,6 @@ Contains
   End Subroutine io_nc_put_var_rwp_1d
 
   Subroutine io_nc_put_var_rwp_2d( what, io_file_handle, val, start, count )
-
-    Implicit None
 
     Character( Len = * )                   , Intent( In    ) :: what
     Integer                                , Intent( In    ) :: io_file_handle
@@ -2222,8 +2184,6 @@ Contains
 
   Subroutine io_nc_put_var_int_0d( what, io_file_handle, val, start, count )
 
-    Implicit None
-
     Character( Len = * ), Intent( In    ) :: what
     Integer             , Intent( In    ) :: io_file_handle
     Integer             , Intent( In    ) :: val
@@ -2235,8 +2195,6 @@ Contains
   End Subroutine io_nc_put_var_int_0d
 
   Subroutine io_nc_put_var_int_1d( what, io_file_handle, val, start, count )
-
-    Implicit None
 
     Character( Len = * )                , Intent( In    ) :: what
     Integer                             , Intent( In    ) :: io_file_handle
@@ -2250,8 +2208,6 @@ Contains
 
   Subroutine io_nc_put_var_chr_2d( what, io_file_handle, val, start, count )
 
-    Implicit None
-
     Character( Len = * )                   , Intent( In    ) :: what
     Integer                                , Intent( In    ) :: io_file_handle
     Character           , Dimension( :, : ), Intent( In    ) :: val
@@ -2263,8 +2219,6 @@ Contains
   End Subroutine io_nc_put_var_chr_2d
 
   Subroutine io_nc_get_var_rwp_0d( what, io_file_handle, val, start, count )
-
-    Implicit None
 
     Character( Len = * ), Intent( In    ) :: what
     Integer             , Intent( In    ) :: io_file_handle
@@ -2278,8 +2232,6 @@ Contains
 
   Subroutine io_nc_get_var_rwp_1d( what, io_file_handle, val, start, count )
 
-    Implicit None
-
     Character( Len = * )                , Intent( In    ) :: what
     Integer                             , Intent( In    ) :: io_file_handle
     Real( Kind = wp )   , Dimension( : ), Intent(   Out ) :: val
@@ -2291,8 +2243,6 @@ Contains
   End Subroutine io_nc_get_var_rwp_1d
 
   Subroutine io_nc_get_var_rwp_2d( what, io_file_handle, val, start, count )
-
-    Implicit None
 
     Character( Len = * )                   , Intent( In    ) :: what
     Integer                                , Intent( In    ) :: io_file_handle
@@ -2306,8 +2256,6 @@ Contains
 
   Subroutine io_nc_get_var_int_0d( what, io_file_handle, val, start, count )
 
-    Implicit None
-
     Character( Len = * ), Intent( In    ) :: what
     Integer             , Intent( In    ) :: io_file_handle
     Integer             , Intent(   Out ) :: val
@@ -2319,8 +2267,6 @@ Contains
   End Subroutine io_nc_get_var_int_0d
 
   Subroutine io_nc_get_var_int_1d( what, io_file_handle, val, start, count )
-
-    Implicit None
 
     Character( Len = * )                , Intent( In    ) :: what
     Integer                             , Intent( In    ) :: io_file_handle
@@ -2334,8 +2280,6 @@ Contains
 
   Subroutine io_nc_get_var_chr_1d( what, io_file_handle, val, start, count )
 
-    Implicit None
-
     Character( Len = * )                , Intent( In    ) :: what
     Integer                             , Intent( In    ) :: io_file_handle
     Character( Len = * ), Dimension( : ), Intent(   Out ) :: val
@@ -2347,8 +2291,6 @@ Contains
   End Subroutine io_nc_get_var_chr_1d
 
   Subroutine io_nc_get_var_chr_2d( what, io_file_handle, val, start, count )
-
-    Implicit None
 
     Character( Len = * )                   , Intent( In    ) :: what
     Integer                                , Intent( In    ) :: io_file_handle
@@ -2362,8 +2304,6 @@ Contains
 
   Subroutine io_nc_get_att_int( what, io_file_handle, val )
 
-    Implicit None
-
     Character( Len = * ), Intent( In    ) :: what
     Integer             , Intent( In    ) :: io_file_handle
     Integer             , Intent(   Out ) :: val
@@ -2373,8 +2313,6 @@ Contains
   End Subroutine io_nc_get_att_int
 
   Subroutine io_nc_get_att_chr( what, io_file_handle, val )
-
-    Implicit None
 
     Character( Len = * ), Intent( In    ) :: what
     Integer             , Intent( In    ) :: io_file_handle
@@ -2522,8 +2460,6 @@ Contains
     ! have to be a little careful.  Similarly for TOP_BATCH.
     ! The arrays have assumed sorted, so can use a binary search.
 
-    Implicit None
-
     Integer, Dimension( : ), Intent( In    ) :: local_global_indices
     Integer,                 Intent( In    ) :: bottom_batch
     Integer,                 Intent( In    ) :: top_batch
@@ -2556,8 +2492,6 @@ Contains
     ! if the value is not found INDEX holds the value of the next highest entry
     ! in A, or one bigger than the size of the array if N is bigger than everything
     ! in A.
-
-    Implicit None
 
     Integer                , Intent( In    ) :: n
     Integer, Dimension( : ), Intent( In    ) :: a
@@ -2615,8 +2549,6 @@ Contains
     ! FLAG: The flag
     ! COMM: The communicator
 
-    Implicit None
-
     Logical                  :: ok
 
     Logical, Intent( In    ) :: flag
@@ -2645,8 +2577,6 @@ Contains
     ! ATOMS: The local number of atoms
     ! COMM : The communicator
 
-    Implicit None
-
     Integer                  :: get_tot_atoms
 
     Integer, Intent( In    ) :: atoms
@@ -2661,8 +2591,6 @@ Contains
   End Function get_tot_atoms
 
   Subroutine get_file_handle( file_handle )
-
-    Implicit None
 
     Integer, Intent(   Out ) :: file_handle
 
@@ -2685,8 +2613,6 @@ Contains
   End Subroutine get_file_handle
 
   Subroutine io_nc_compiled()
-
-    Implicit None
 
     Call netcdf_compiled()
 

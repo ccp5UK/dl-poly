@@ -1044,8 +1044,6 @@ Subroutine shellsort2(n,rank,list)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Implicit None
-
   Integer,                   Intent( In    ) :: n
   Integer, Dimension( 1:* ), Intent( InOut ) :: list,rank
 
