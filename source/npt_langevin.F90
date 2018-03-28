@@ -16,6 +16,11 @@ Module npt_langevin
   Use pmf,             Only : passpmf
   Use shared_units,    Only : update_shared_units
   Use errors_warnings, Only : error 
+  Use numerics,        Only : box_mueller_saru1
+  Use constraints,     Only : constraints_tags, constraints_shake_vv, constraints_rattle
+  Use pmf,             Only : pmf_tags, pmf_shake_vv, pmf_rattle
+  Use npt_nose_hoover, Only : npt_h0_scl,npt_h0_scl,npt_h1_scl
+  Use langevin,        Only : langevin_forces
 
   Implicit None
 
@@ -152,8 +157,8 @@ Contains
 
        Allocate (dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'dens0 allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'dens0 allocation failure'
+          Call error(0,message)
        End If
        Do i=1,ntpatm
           dens0(i) = dens(i)
@@ -190,12 +195,12 @@ Contains
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
-       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
+       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
-       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
+       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
     End If
 
   ! first pass of velocity verlet algorithm
@@ -332,7 +337,7 @@ Contains
                    Call constraints_shake_vv &
              (mxshak,tolnce,tstep,      &
              lstopt,dxx,dyy,dzz,listot, &
-             xxx,yyy,zzz,str,vir)
+             xxx,yyy,zzz,str,vir,comm)
 
   ! constraint virial and stress tensor
 
@@ -349,7 +354,7 @@ Contains
                    Call pmf_shake_vv &
              (mxshak,tolnce,tstep, &
              indpmf,pxx,pyy,pzz,   &
-             xxx,yyy,zzz,str,vir)
+             xxx,yyy,zzz,str,vir,comm)
 
   ! PMF virial and stress tensor
 
@@ -558,15 +563,19 @@ Contains
              lfst = (i == 1)
              lcol = (i == kit)
 
-             If (megcon > 0) Call constraints_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             lstopt,dxx,dyy,dzz,listot,      &
-             vxx,vyy,vzz)
+             If (megcon > 0)Then
+               Call constraints_rattle &
+                   (mxshak,tolnce,tstep,lfst,lcol, &
+                    lstopt,dxx,dyy,dzz,listot,      &
+                    vxx,vyy,vzz,comm)
+             EndIf
 
-             If (megpmf > 0) Call pmf_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             indpmf,pxx,pyy,pzz,             &
-             vxx,vyy,vzz)
+             If (megpmf > 0)Then
+               Call pmf_rattle &
+                   (mxshak,tolnce,tstep,lfst,lcol, &
+                    indpmf,pxx,pyy,pzz,             &
+                    vxx,vyy,vzz,comm)
+             EndIf
           End Do
        End If
 
@@ -816,8 +825,8 @@ Contains
 
        Allocate (dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'dens0 allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'dens0 allocation failure'
+          Call error(0,message)
        End If
        Do i=1,ntpatm
           dens0(i) = dens(i)
@@ -863,12 +872,12 @@ Contains
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
-       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
+       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
-       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
+       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
     End If
 
   ! Get the RB particles vectors wrt the RB's COM
@@ -1093,7 +1102,7 @@ Contains
                    Call constraints_shake_vv &
              (mxshak,tolnce,tstep,      &
              lstopt,dxx,dyy,dzz,listot, &
-             xxx,yyy,zzz,str,vir)
+             xxx,yyy,zzz,str,vir,comm)
 
   ! constraint virial and stress tensor
 
@@ -1110,7 +1119,7 @@ Contains
                    Call pmf_shake_vv &
              (mxshak,tolnce,tstep, &
              indpmf,pxx,pyy,pzz,   &
-             xxx,yyy,zzz,str,vir)
+             xxx,yyy,zzz,str,vir,comm)
 
   ! PMF virial and stress tensor
 
@@ -1579,15 +1588,19 @@ Contains
              lfst = (i == 1)
              lcol = (i == kit)
 
-             If (megcon > 0) Call constraints_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             lstopt,dxx,dyy,dzz,listot,      &
-             vxx,vyy,vzz)
+             If (megcon > 0)Then
+               Call constraints_rattle &
+                    (mxshak,tolnce,tstep,lfst,lcol, &
+                     lstopt,dxx,dyy,dzz,listot,      &
+                     vxx,vyy,vzz,comm)
+             EndIf
 
-             If (megpmf > 0) Call pmf_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             indpmf,pxx,pyy,pzz,             &
-             vxx,vyy,vzz)
+             If (megpmf > 0)Then
+               Call pmf_rattle &
+                   (mxshak,tolnce,tstep,lfst,lcol, &
+                    indpmf,pxx,pyy,pzz,             &
+                    vxx,vyy,vzz,comm)
+             EndIf
           End Do
        End If
 

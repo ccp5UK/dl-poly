@@ -29,7 +29,7 @@ Module langevin
 
   Real( Kind = wp ), Allocatable, Save :: fxl(:),fyl(:),fzl(:)
 
-  Public :: langevin_allocate_arrays
+  Public :: langevin_allocate_arrays, langevin_forces
 
 Contains
 
