@@ -81,8 +81,6 @@ testing-mpi-gcc-paranoid:
   stage: test
   script:
     - sh utils/mpi-testing-paranoid.sh
-  only:
-    - master
 
 testing-mpi-intel:
   stage: test
