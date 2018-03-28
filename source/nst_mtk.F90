@@ -9,9 +9,12 @@ Module nst_mtk
   Use domains,            Only : map
   Use kinetics,           Only : getvom,kinstress,kinstresf,kinstrest
   Use core_shell,         Only : legshl
-  Use constraints,        Only : passcon
-  Use pmf,                Only : passpmf
+  Use constraints,        Only : passcon,constraints_rattle,constraints_shake_vv,constraints_tags
+  Use pmf,                Only : passpmf,pmf_rattle,pmf_shake_vv,pmf_tags
   Use rigid_bodies
+  Use nvt_nose_hoover,    Only : nvt_h0_scl,nvt_h1_scl
+  Use nst_nose_hoover,    ONly : nst_h0_scl,nst_h1_scl
+  Use numerics,           Only : dcell, mat_mul
 
   Implicit None
 
@@ -207,12 +210,16 @@ Contains
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
-       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
+       If (megcon > 0)Then
+         Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
+       End If 
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
-       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
+       If (megpmf > 0)Then
+         Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
+       End If
     End If
 
   ! timestep derivatives
@@ -274,7 +281,7 @@ Contains
 
           Call nvt_h0_scl &
              (qstep,ceng,qmass,pmass,chip0, &
-             vxx,vyy,vzz,chit,cint,engke)
+             vxx,vyy,vzz,chit,cint,engke,comm)
 
   ! constraint+pmf virial and stress
 
@@ -286,7 +293,7 @@ Contains
           Call nst_h0_scl &
              (1,hstep,degfre,pmass,chit,volm,press, &
              iso,ten,h_z,strext,str,stress,         &
-             vxx,vyy,vzz,eta,strkin,engke)
+             vxx,vyy,vzz,eta,strkin,engke,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -296,7 +303,7 @@ Contains
 
           Call nvt_h0_scl &
              (qstep,ceng,qmass,pmass,chip0, &
-             vxx,vyy,vzz,chit,cint,engke)
+             vxx,vyy,vzz,chit,cint,engke,comm)
 
   ! update velocities
 
@@ -356,9 +363,9 @@ Contains
   ! apply constraint correction: vircon,strcon - constraint virial,stress
 
                    Call constraints_shake_vv &
-             (mxshak,tolnce,tstep,      &
-             lstopt,dxx,dyy,dzz,listot, &
-             xxx,yyy,zzz,str,vir)
+                     (mxshak,tolnce,tstep,      &
+                     lstopt,dxx,dyy,dzz,listot, &
+                     xxx,yyy,zzz,str,vir,comm)
 
   ! constraint virial and stress tensor
 
@@ -373,9 +380,9 @@ Contains
   ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
                    Call pmf_shake_vv &
-             (mxshak,tolnce,tstep, &
-             indpmf,pxx,pyy,pzz,   &
-             xxx,yyy,zzz,str,vir)
+                     (mxshak,tolnce,tstep, &
+                     indpmf,pxx,pyy,pzz,   &
+                     xxx,yyy,zzz,str,vir,comm)
 
   ! PMF virial and stress tensor
 
@@ -569,15 +576,19 @@ Contains
              lfst = (i == 1)
              lcol = (i == kit)
 
-             If (megcon > 0) Call constraints_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             lstopt,dxx,dyy,dzz,listot,      &
-             vxx,vyy,vzz)
+             If (megcon > 0)Then
+               Call constraints_rattle &
+                 (mxshak,tolnce,tstep,lfst,lcol, &
+                 lstopt,dxx,dyy,dzz,listot,      &
+                 vxx,vyy,vzz,comm)
+             End If
 
-             If (megpmf > 0) Call pmf_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             indpmf,pxx,pyy,pzz,             &
-             vxx,vyy,vzz)
+             If (megpmf > 0)Then
+               Call pmf_rattle &
+                 (mxshak,tolnce,tstep,lfst,lcol, &
+                 indpmf,pxx,pyy,pzz,             &
+                 vxx,vyy,vzz,comm)
+             End If
           End Do
        End If
 
@@ -585,7 +596,7 @@ Contains
 
        Call nvt_h0_scl &
              (qstep,ceng,qmass,pmass,chip0, &
-             vxx,vyy,vzz,chit,cint,engke)
+             vxx,vyy,vzz,chit,cint,engke,comm)
 
   ! constraint+pmf virial and stress
 
@@ -597,7 +608,7 @@ Contains
        Call nst_h0_scl &
              (1,hstep,degfre,pmass,chit,volm,press, &
              iso,ten,h_z,strext,str,stress,         &
-             vxx,vyy,vzz,eta,strkin,engke)
+             vxx,vyy,vzz,eta,strkin,engke,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -607,7 +618,7 @@ Contains
 
        Call nvt_h0_scl &
              (qstep,ceng,qmass,pmass,chip0, &
-             vxx,vyy,vzz,chit,cint,engke)
+             vxx,vyy,vzz,chit,cint,engke,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
@@ -768,6 +779,7 @@ Contains
     Real( Kind = wp ), Allocatable :: rgdoxt(:),rgdoyt(:),rgdozt(:)
 
     Real( Kind = wp ), Allocatable, Save :: dens0(:)
+    Character ( Len = 256 )        :: message
 
     fail=0
     If (megcon > 0 .or. megpmf > 0) Then
@@ -873,12 +885,16 @@ Contains
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
-       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
+       If (megcon > 0)Then
+         Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
+       End If
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
-       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
+       If (megpmf > 0)Then
+         Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
+       End If
     End If
 
   ! Get the RB particles vectors wrt the RB's COM
@@ -990,7 +1006,7 @@ Contains
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot)
+             chit,cint,engke,engrot,comm)
 
   ! constraint+pmf virial and stress
 
@@ -1002,7 +1018,7 @@ Contains
           Call nst_h1_scl &
              (1,hstep,degfre,degrot,pmass,chit,volm,press, &
              iso,ten,h_z,strext,str,stress,strcom,         &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke)
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -1015,7 +1031,7 @@ Contains
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot)
+             chit,cint,engke,engrot,comm)
 
   ! update velocity of FPs
 
@@ -1081,9 +1097,9 @@ Contains
   ! apply constraint correction: vircon,strcon - constraint virial,stress
 
                    Call constraints_shake_vv &
-             (mxshak,tolnce,tstep,      &
-             lstopt,dxx,dyy,dzz,listot, &
-             xxx,yyy,zzz,str,vir)
+                     (mxshak,tolnce,tstep,      &
+                     lstopt,dxx,dyy,dzz,listot, &
+                     xxx,yyy,zzz,str,vir,comm)
 
   ! constraint virial and stress tensor
 
@@ -1098,9 +1114,9 @@ Contains
   ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
                    Call pmf_shake_vv &
-             (mxshak,tolnce,tstep, &
-             indpmf,pxx,pyy,pzz,   &
-             xxx,yyy,zzz,str,vir)
+                     (mxshak,tolnce,tstep, &
+                     indpmf,pxx,pyy,pzz,   &
+                     xxx,yyy,zzz,str,vir,comm)
 
   ! PMF virial and stress tensor
 
@@ -1524,15 +1540,19 @@ Contains
              lfst = (i == 1)
              lcol = (i == kit)
 
-             If (megcon > 0) Call constraints_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             lstopt,dxx,dyy,dzz,listot,      &
-             vxx,vyy,vzz)
+             If (megcon > 0)Then
+               Call constraints_rattle &
+                 (mxshak,tolnce,tstep,lfst,lcol, &
+                 lstopt,dxx,dyy,dzz,listot,      &
+                 vxx,vyy,vzz,comm)
+             End If 
 
-             If (megpmf > 0) Call pmf_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             indpmf,pxx,pyy,pzz,             &
-             vxx,vyy,vzz)
+             If (megpmf > 0)Then
+               Call pmf_rattle &
+                 (mxshak,tolnce,tstep,lfst,lcol, &
+                 indpmf,pxx,pyy,pzz,             &
+                 vxx,vyy,vzz,comm)
+             End If
           End Do
        End If
 
@@ -1679,7 +1699,7 @@ Contains
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot)
+             chit,cint,engke,engrot,comm)
 
   ! constraint+pmf virial and stress
 
@@ -1691,7 +1711,7 @@ Contains
        Call nst_h1_scl &
              (1,hstep,degfre,degrot,pmass,chit,volm,press, &
              iso,ten,h_z,strext,str,stress,strcom,         &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke)
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -1704,7 +1724,7 @@ Contains
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot)
+             chit,cint,engke,engrot,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
@@ -1776,8 +1796,8 @@ Contains
     Deallocate (rgdvxt,rgdvyt,rgdvzt, Stat=fail(13))
     Deallocate (rgdoxt,rgdoyt,rgdozt, Stat=fail(14))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'nst_m1 deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'nst_m1 deallocation failure'
+       Call error(0,message)
     End If
 
   End Subroutine nst_m1_vv
