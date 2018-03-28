@@ -689,11 +689,11 @@ Subroutine info(message,master_only)
   If (Present(master_only)) zeroOnly=master_only
 
   If (zeroOnly) Then
-       Write(ounit,'(a,1x,i0)')Trim(message)//", node: ",eworld%idnode
-  Else
      If (eworld%idnode == 0 ) Then 
          Write(ounit,'(a)')Trim(message)
      End If
+  Else
+       Write(ounit,'(a,1x,i0)')Trim(message)//", node: ",eworld%idnode
    End If   
 
   End Subroutine info 
@@ -721,14 +721,14 @@ Subroutine info(message,master_only)
   If (Present(master_only)) zeroOnly=master_only
 
   If (zeroOnly) Then
-     If ( Present(message) ) Then
-       Write(ounit,'(a,1x,i0)')Trim(message)//", node: ",eworld%idnode
-     End If
-  Else
      If (eworld%idnode == 0 ) Then 
        If ( Present(message) ) Then
          Write(ounit,'(a)')Trim(message)
        End If
+     End If
+  Else
+     If ( Present(message) ) Then
+       Write(ounit,'(a,1x,i0)')Trim(message)//", node: ",eworld%idnode
      End If
   End If 
 

@@ -490,7 +490,7 @@ Subroutine set_bounds                                 &
 
   Call map_domains(imc_n,celprp(7),celprp(8),celprp(9),comm)
 
-  Write(message,'(/,/,1x,a,3i6)') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
+  Write(message,'(a,3(i6,1x))') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
   Call info(message,.true.)
 
   If (rpad > zero_plus) Then
@@ -537,7 +537,7 @@ Subroutine set_bounds                                 &
   qly=Int(celprp(8)/cut)
   qlz=Int(celprp(9)/cut)
 
-  Write(message,'(/,1x,a,i6,a,3(i0,a))')                       &
+  Write(message,'(a,i6,a,3(i0,a))')                       &
     'cutoffs driven limit on largest possible decomposition:', qlx*qly*qlz , &
     ' nodes/domains (', qlx,',',qly,',',qlz,')'
   Call info(message,.true.)
