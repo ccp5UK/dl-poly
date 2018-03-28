@@ -2,20 +2,25 @@ Module nvt_anderson
     Use kinds,         Only : wp
     Use comms,         Only : comms_type,gsum,gmax
     Use domains,       Only : map
-    Use setup,         Only : boltz,mxcons,mxpmf,mxshl,mxtpmf,zero_plus,nrite
+    Use setup,         Only : boltz,mxcons,mxpmf,mxshl,mxtpmf,zero_plus
     Use site,          Only : dofsit
     Use configuration, Only : imcon,cell,natms,nlast,nfree,lsite, &
                               lsi,lsa,ltg,lfrzn,lfree,lstfre,     &
                               weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
     Use kinetics,      Only : getvom,getknr,kinstress,kinstresf,kinstrest
     Use core_shell,    Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
-    Use constraints,   Only : passcon
-    Use pmf,           Only : passpmf
+    Use constraints,   Only : passcon,constraints_tags,constraints_shake_vv, &
+                              constraints_rattle
+    Use pmf,           Only : passpmf,pmf_tags,pmf_shake_vv,pmf_rattle
     Use rigid_bodies,  Only : lashp_rgd,lishp_rgd,lshmv_rgd,mxatms,mxlrgd, &
                               ntrgd,rgdx,rgdy,rgdz,rgdxxx,rgdyyy,rgdzzz, &
                               rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz, &
                               q0,q1,q2,q3,indrgd,listrgd,rgdfrz,rgdwgt, &
-                              rgdrix,rgdriy,rgdriz,mxrgd,rgdind
+                              rgdrix,rgdriy,rgdriz,mxrgd,rgdind,getrotmat, &
+                              no_squish,rigid_bodies_stress
+    Use numerics, Only : images,local_index,box_mueller_saru3,sarurnd
+    Use shared_units, Only : update_shared_units,update_shared_units_int
+    Use errors_warnings, Only : error,info
   Implicit None
 
   Private
@@ -72,9 +77,9 @@ Contains
     Logical                 :: safe,lcol,lfst,lv_up,lv_dn
     Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:11),i,j,k,ntp,  &
-                               stp,i1,i2,local_index, &
+                               stp,i1,i2, &
                                matms
-    Real( Kind = wp )       :: hstep,rstep,sarurnd
+    Real( Kind = wp )       :: hstep,rstep
     Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
                                scale,tkin,vom(1:3)
 
@@ -95,6 +100,7 @@ Contains
 
     Integer,           Allocatable :: qn(:),tpn(:)
     Integer,           Allocatable :: qs(:,:),tps(:)
+    Character( Len = 256 ) :: message
 
     fail=0
     If (megcon > 0 .or. megpmf > 0) Then
@@ -115,8 +121,8 @@ Contains
     Allocate (qn(1:mxatms),tpn(0:comm%mxnode-1),                    Stat=fail(10))
     Allocate (qs(0:2,1:mxshl),tps(0:comm%mxnode-1),                 Stat=fail(11))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'nvt_a0 allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'nvt_a0 allocation failure'
+       Call error(0,message)
     End If
 
 
@@ -140,12 +146,16 @@ Contains
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
-       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
+       If (megcon > 0) Then
+         Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
+       End If
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
-       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
+       If (megpmf > 0) Then
+         Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
+       End if
     End If
 
   ! timestep derivatives
@@ -232,7 +242,7 @@ Contains
                 Call constraints_shake_vv &
              (mxshak,tolnce,tstep,      &
              lstopt,dxx,dyy,dzz,listot, &
-             xxx,yyy,zzz,str,vir)
+             xxx,yyy,zzz,str,vir,comm)
 
   ! constraint virial and stress tensor
 
@@ -249,7 +259,7 @@ Contains
                 Call pmf_shake_vv  &
              (mxshak,tolnce,tstep, &
              indpmf,pxx,pyy,pzz,   &
-             xxx,yyy,zzz,str,vir)
+             xxx,yyy,zzz,str,vir,comm)
 
   ! PMF virial and stress tensor
 
@@ -333,8 +343,9 @@ Contains
                    tstep = hstep
                    hstep = 0.50_wp*tstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,"(/,1x, &
+                  & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Call info(message,.true.)
              End If
              If (mxdr < mndis) Then
                 lv_dn = .true.
@@ -349,8 +360,9 @@ Contains
                    tstep = mxstp
                    hstep = 0.50_wp*tstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,"(/,1x, &
+                  & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Call info(message,.true.)
              End If
              rstep = 1.0_wp/tstep
 
@@ -383,15 +395,19 @@ Contains
              lfst = (i == 1)
              lcol = (i == kit)
 
-             If (megcon > 0) Call constraints_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             lstopt,dxx,dyy,dzz,listot,      &
-             vxx,vyy,vzz)
+             If (megcon > 0) Then
+               Call constraints_rattle &
+                 (mxshak,tolnce,tstep,lfst,lcol, &
+                 lstopt,dxx,dyy,dzz,listot,      &
+                 vxx,vyy,vzz,comm)
+             End If
 
-             If (megpmf > 0) Call pmf_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             indpmf,pxx,pyy,pzz,             &
-             vxx,vyy,vzz)
+             If (megpmf > 0) Then
+               Call pmf_rattle &
+                 (mxshak,tolnce,tstep,lfst,lcol, &
+                 indpmf,pxx,pyy,pzz,             &
+                 vxx,vyy,vzz,comm)
+             End If
           End Do
        End If
 
@@ -555,8 +571,8 @@ Contains
     Deallocate (qn,tpn,              Stat=fail(10))
     Deallocate (qs,tps,              Stat=fail(11))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'nvt_a0 deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'nvt_a0 deallocation failure'
+       Call error(0,message)
     End If
 
   End Subroutine nvt_a0_vv
@@ -615,9 +631,9 @@ Contains
     Logical                 :: safe,lcol,lfst,lv_up,lv_dn
     Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:17),i,j,k,ntp,  &
-                               stp,i1,i2,local_index, &
+                               stp,i1,i2, &
                                matms,rtp,irgd,jrgd,krgd,lrgd,rgdtyp
-    Real( Kind = wp )       :: hstep,rstep,sarurnd
+    Real( Kind = wp )       :: hstep,rstep
     Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
                                scale,tkin,vom(1:3)
     Real( Kind = wp )       :: x(1:1),y(1:1),z(1:1),rot(1:9), &
@@ -650,6 +666,7 @@ Contains
     Integer,           Allocatable :: qn(:),tpn(:)
     Integer,           Allocatable :: qs(:,:),tps(:)
     Integer,           Allocatable :: qr(:),tpr(:)
+    Character( Len = 256 ) :: message
 
     fail=0
     If (megcon > 0 .or. megpmf > 0) Then
@@ -677,8 +694,8 @@ Contains
     Allocate (qs(0:2,1:mxshl),tps(0:comm%mxnode-1),                 Stat=fail(16))
     Allocate (qr(1:mxrgd),tpr(0:comm%mxnode-1),                     Stat=fail(17))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'nvt_a1 allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'nvt_a1 allocation failure'
+       Call error(0,message)
     End If
 
 
@@ -705,13 +722,15 @@ Contains
 
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
-
-       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
+       If (megcon > 0) Then
+         Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
+       End If
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
-
-       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
+       If (megpmf > 0) Then
+         Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
+       End If
     End If
 
   ! Get the RB particles vectors wrt the RB's COM
@@ -849,7 +868,7 @@ Contains
                 Call constraints_shake_vv &
              (mxshak,tolnce,tstep,      &
              lstopt,dxx,dyy,dzz,listot, &
-             xxx,yyy,zzz,str,vir)
+             xxx,yyy,zzz,str,vir,comm)
 
   ! constraint virial and stress tensor
 
@@ -866,7 +885,7 @@ Contains
                 Call pmf_shake_vv  &
              (mxshak,tolnce,tstep, &
              indpmf,pxx,pyy,pzz,   &
-             xxx,yyy,zzz,str,vir)
+             xxx,yyy,zzz,str,vir,comm)
 
   ! PMF virial and stress tensor
 
@@ -1115,8 +1134,9 @@ Contains
                    tstep = hstep
                    hstep = 0.50_wp*tstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,"(/,1x, &
+                  & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Call info(message,.true.)
              End If
              If (mxdr < mndis) Then
                 lv_dn = .true.
@@ -1131,8 +1151,9 @@ Contains
                    tstep = mxstp
                    hstep = 0.50_wp*tstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,"(/,1x, &
+                  & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Call info(message,.true.)
              End If
              rstep = 1.0_wp/tstep
 
@@ -1176,15 +1197,19 @@ Contains
              lfst = (i == 1)
              lcol = (i == kit)
 
-             If (megcon > 0) Call constraints_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             lstopt,dxx,dyy,dzz,listot,      &
-             vxx,vyy,vzz)
+             If (megcon > 0) Then
+               Call constraints_rattle &
+                 (mxshak,tolnce,tstep,lfst,lcol, &
+                 lstopt,dxx,dyy,dzz,listot,      &
+                 vxx,vyy,vzz,comm)
+             End If
 
-             If (megpmf > 0) Call pmf_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             indpmf,pxx,pyy,pzz,             &
-             vxx,vyy,vzz)
+             If (megpmf > 0) Then
+               Call pmf_rattle &
+                 (mxshak,tolnce,tstep,lfst,lcol, &
+                 indpmf,pxx,pyy,pzz,             &
+                 vxx,vyy,vzz,comm)
+             End If
           End Do
        End If
 
@@ -1717,8 +1742,8 @@ Contains
     Deallocate (qs,tps,               Stat=fail(16))
     Deallocate (qr,tpr,               Stat=fail(17))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'nvt_a1 deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'nvt_a1 deallocation failure'
+       Call error(0,message)
     End If
 
   End Subroutine nvt_a1_vv
