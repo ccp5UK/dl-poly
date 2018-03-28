@@ -9,6 +9,8 @@ Module ewald_mpole
   Use numerics, Only : invert,dcell,erfcgen
   Use mpoles_container, Only : ewald_deriv,explicit_ewald_real_loops,&
                                explicit_spme_loops,limit_erfr_deriv
+  Use domains, Only : nprx,npry,nprz,idx,idy,idz
+  Use parallel_fft, Only: initialize_fft, pfft, pfft_indices
   Use errors_warnings, Only : error
   Use mpole
 
@@ -1118,9 +1120,6 @@ Module ewald_mpole
   ! amended   - i.t.todorov march 2016
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use domains, Only : nprx,npry,nprz,idx,idy,idz
-    Use parallel_fft, Only: initialize_fft, pfft, pfft_indices
 
     Real( Kind = wp ), Intent( In    ) :: alpha,epsq
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
@@ -2288,9 +2287,6 @@ Module ewald_mpole
   ! amended   - i.t.todorov february 2015
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use domains, Only : nprx,npry,nprz,idx,idy,idz
-    Use parallel_fft, Only: initialize_fft, pfft, pfft_indices
 
     Real( Kind = wp ), Intent( In    ) :: alpha,epsq
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc

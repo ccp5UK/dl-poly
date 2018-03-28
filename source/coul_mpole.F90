@@ -17,9 +17,10 @@ Module coul_mpole
   Use configuration, Only : imcon,natms,ltg,fxx,fyy,fzz,xxx,yyy,zzz,cell,list, &
                             chge
   Use mpole
-
-  Use mpoles_container, Only :  coul_deriv, ewald_deriv
-  Use numerics,         Only :  erfcgen, images_s
+  Use mpoles_container, Only : coul_deriv, ewald_deriv, &
+                               explicit_fscp_rfp_loops, explicit_ewald_real_loops, &
+                               explicit_ewald_real_loops
+  Use numerics,         Only : erfcgen, images_s
 
   Implicit None
 
@@ -441,7 +442,6 @@ Contains
   ! amended   - i.t.todorov february 2016
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Use mpoles_container, Only : explicit_fscp_rfp_loops, explicit_ewald_real_loops
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
@@ -1022,7 +1022,6 @@ Contains
   ! amended   - i.t.todorov february 2016
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Use mpoles_container, Only : explicit_fscp_rfp_loops, explicit_ewald_real_loops
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
@@ -1629,7 +1628,6 @@ Contains
   ! amended   - i.t.todorov february 2016
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Use mpoles_container, Only : explicit_ewald_real_loops
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: rcut,epsq
@@ -1949,7 +1947,6 @@ Contains
   ! amended   - i.t.todorov february 2016
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Use mpoles_container, Only : explicit_ewald_real_loops
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: rcut,epsq
@@ -2273,8 +2270,6 @@ Contains
   ! author    - i.t.todorov february 2017
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use mpole, Only : plratm,dmpatm
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: epsq

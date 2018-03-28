@@ -23,7 +23,8 @@ Module netcdf_wrap
                         nf90_put_att, nf90_put_var,                          &
                         nf90_get_att, nf90_get_var, nf90_var_par_access,     &
                         nf90_inquire_dimension, nf90_inq_dimid,              &
-                        nf90_inq_varid, nf90_inquire_variable
+                        nf90_inq_varid, nf90_inquire_variable,               &
+                        nf90_noerr, nf90_strerror
 #endif
   Implicit None
 
@@ -1131,10 +1132,6 @@ Contains
 
 
   Subroutine check( status )
-
-#ifdef NETCDF
-    Use netcdf, Only : nf90_noerr, nf90_strerror
-#endif
     Integer, Intent( In    ) :: status
     Character( Len = 256 ) :: message
 #ifdef NETCDF

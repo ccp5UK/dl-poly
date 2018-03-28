@@ -13,7 +13,7 @@ Module gpfa235
 
   Use kinds, Only : wp
   Use errors_warnings, Only : error
-  
+  Use gpfa235, Only : gpfa
   Implicit None
 
   Private
@@ -2531,10 +2531,6 @@ End Module gpfa235
 ! amended   - i.t.todorov november 2009
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use kinds, Only : wp
-  Use gpfa235, Only : gpfa
-  Implicit None
 
   Real( Kind = wp ), Dimension( * ), Intent( InOut ) :: a
   Real( Kind = wp ), Dimension( * ), Intent( In    ) :: trigs

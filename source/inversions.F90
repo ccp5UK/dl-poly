@@ -15,9 +15,9 @@ Module inversions
   Use setup, Only : mxtmls,mxtinv,mxinv,mxfinv,mxpinv,mxginv,mxginv1, &
                            mxatdm,pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                            engunit,zero_plus,ntable
-    Use site,  Only : ntpatm,unqatm
-    Use parse, Only : get_line,get_word,word_2_real
-
+  Use site,  Only : ntpatm,unqatm
+  Use configuration, Only : cfgname
+  Use parse, Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error, warning
   Use numerics, Only : local_index, images
   Implicit None
@@ -139,9 +139,6 @@ Contains
   ! author    - a.v.brukhno & i.t.todorov march 2016
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Use site,   Only : unqatm
-    Use configuration, Only : cfgname
 
     Real( Kind = wp ),  Intent( In    ) :: temp
     Type( comms_type ), Intent( InOut ) :: comm
