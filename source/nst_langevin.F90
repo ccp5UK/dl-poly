@@ -11,12 +11,14 @@ Module nst_langevin
   Use kinetics,        Only : getvom,getkin,getknt,getknr,getknf, &
                               kinstress,kinstresf,kinstrest
   Use core_shell,      Only : legshl
-  Use constraints,     Only : passcon
-  Use pmf,             Only : passpmf
+  Use constraints,     Only : passcon,constraints_rattle,constraints_shake_vv,constraints_tags
+  Use pmf,             Only : passpmf,pmf_rattle,pmf_tags,pmf_shake_vv 
   Use rigid_bodies     
   Use errors_warnings, Only : error
   Use shared_units,    Only : update_shared_units
-  
+  Use numerics,        Only : dcell, mat_mul,box_mueller_saru6    
+  Use langevin,        Only : langevin_forces
+  Use nst_nose_hoover, Only : nst_h0_scl,nst_h1_scl
 
   Implicit None
 
@@ -218,12 +220,17 @@ Contains
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
-       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
+       If (megcon > 0)Then
+         Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
+       End If 
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
-       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
+       If (megpmf > 0)Then
+         Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
+       End If       
+
     End If
 
   ! first pass of velocity verlet algorithm
@@ -293,7 +300,7 @@ Contains
           Call nst_h0_scl &
              (1,hstep,degfre,pmass,tai,volm,press, &
              iso,ten,h_z,strext,str1,stress,       &
-             vxx,vyy,vzz,eta,strkin,engke)
+             vxx,vyy,vzz,eta,strkin,engke,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -363,9 +370,9 @@ Contains
   ! apply constraint correction: vircon,strcon - constraint virial,stress
 
                    Call constraints_shake_vv &
-             (mxshak,tolnce,tstep,      &
-             lstopt,dxx,dyy,dzz,listot, &
-             xxx,yyy,zzz,str,vir)
+                     (mxshak,tolnce,tstep,      &
+                     lstopt,dxx,dyy,dzz,listot, &
+                     xxx,yyy,zzz,str,vir,comm)
 
   ! constraint virial and stress tensor
 
@@ -380,9 +387,9 @@ Contains
   ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
                    Call pmf_shake_vv &
-             (mxshak,tolnce,tstep, &
-             indpmf,pxx,pyy,pzz,   &
-             xxx,yyy,zzz,str,vir)
+                     (mxshak,tolnce,tstep, &
+                     indpmf,pxx,pyy,pzz,   &
+                     xxx,yyy,zzz,str,vir,comm)
 
   ! PMF virial and stress tensor
 
@@ -598,15 +605,19 @@ Contains
              lfst = (i == 1)
              lcol = (i == kit)
 
-             If (megcon > 0) Call constraints_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             lstopt,dxx,dyy,dzz,listot,      &
-             vxx,vyy,vzz)
+             If (megcon > 0)Then
+               Call constraints_rattle &
+                 (mxshak,tolnce,tstep,lfst,lcol, &
+                 lstopt,dxx,dyy,dzz,listot,      &
+                 vxx,vyy,vzz,comm)
+             End If
 
-             If (megpmf > 0) Call pmf_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             indpmf,pxx,pyy,pzz,             &
-             vxx,vyy,vzz)
+             If (megpmf > 0)Then
+               Call pmf_rattle &
+                 (mxshak,tolnce,tstep,lfst,lcol, &
+                 indpmf,pxx,pyy,pzz,             &
+                 vxx,vyy,vzz,comm)
+             End If
           End Do
        End If
 
@@ -636,7 +647,7 @@ Contains
        Call nst_h0_scl &
              (1,hstep,degfre,pmass,tai,volm,press, &
              iso,ten,h_z,strext,str1,stress,       &
-             vxx,vyy,vzz,eta,strkin,engke)
+             vxx,vyy,vzz,eta,strkin,engke,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -925,12 +936,17 @@ Contains
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
-       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot)
+       If (megcon > 0)Then
+         Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
+       End If
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
-       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz)
+       If (megpmf > 0)Then
+         Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
+       End If
+
     End If
 
   ! Get the RB particles vectors wrt the RB's COM
@@ -1068,7 +1084,7 @@ Contains
           Call nst_h1_scl &
              (1,hstep,degfre,degrot,pmass,tai,volm,press,  &
              iso,ten,h_z,strext,str1,stress,strcom,        &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke)
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -1157,9 +1173,9 @@ Contains
   ! apply constraint correction: vircon,strcon - constraint virial,stress
 
                    Call constraints_shake_vv &
-             (mxshak,tolnce,tstep,      &
-             lstopt,dxx,dyy,dzz,listot, &
-             xxx,yyy,zzz,str,vir)
+                     (mxshak,tolnce,tstep,      &
+                     lstopt,dxx,dyy,dzz,listot, &
+                     xxx,yyy,zzz,str,vir,comm)
 
   ! constraint virial and stress tensor
 
@@ -1174,9 +1190,9 @@ Contains
   ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
                    Call pmf_shake_vv &
-             (mxshak,tolnce,tstep, &
-             indpmf,pxx,pyy,pzz,   &
-             xxx,yyy,zzz,str,vir)
+                     (mxshak,tolnce,tstep, &
+                     indpmf,pxx,pyy,pzz,   &
+                     xxx,yyy,zzz,str,vir,comm)
 
   ! PMF virial and stress tensor
 
@@ -1652,15 +1668,19 @@ Contains
              lfst = (i == 1)
              lcol = (i == kit)
 
-             If (megcon > 0) Call constraints_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             lstopt,dxx,dyy,dzz,listot,      &
-             vxx,vyy,vzz)
+             If (megcon > 0)Then
+               Call constraints_rattle &
+                 (mxshak,tolnce,tstep,lfst,lcol, &
+                 lstopt,dxx,dyy,dzz,listot,      &
+                 vxx,vyy,vzz,comm)
+             End If
 
-             If (megpmf > 0) Call pmf_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
-             indpmf,pxx,pyy,pzz,             &
-             vxx,vyy,vzz)
+             If (megpmf > 0)Then
+               Call pmf_rattle &
+                 (mxshak,tolnce,tstep,lfst,lcol, &
+                 indpmf,pxx,pyy,pzz,             &
+                 vxx,vyy,vzz,comm)
+             End If
           End Do
        End If
 
@@ -1873,7 +1893,7 @@ Contains
        Call nst_h1_scl &
              (1,hstep,degfre,degrot,pmass,tai,volm,press,  &
              iso,ten,h_z,strext,str1,stress,strcom,        &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke)
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
