@@ -313,14 +313,14 @@ Contains
     Stop
 
   End Subroutine MPI_ABORT_s
-  Subroutine MPI_ABORT_l(MPI_COMM_WORLD, idnode, ierr)
+  Subroutine MPI_ABORT_l(MPI_COMM_WORLD, sh_error, ierr)
 
     Implicit None
 
     Integer, Intent( In    ) :: MPI_COMM_WORLD
-    Integer, Intent(   Out ) :: idnode,ierr
+    Integer, Intent( In    ) :: sh_error
+    Integer, Intent(   Out ) :: ierr
 
-    idnode = 0
     ierr = 99
     Stop
 

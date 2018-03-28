@@ -111,6 +111,12 @@ if( NOT WITH_MPI)
 endif()
 
 add_library(dlpoly ${dlpoly_SRCS})
+if( NOT WITH_MPI)
+  set_target_properties(dlpoly PROPERTIES
+     COMPILE_DEFINITIONS "SERIAL"
+     INCLUDE_DIR ${src_dir}/SERIAL
+     )
+endif()
 
 add_library(dlpolycore ${dlpoly_CORE_SRCS} ${dlpoly_SERIAL_SRCS} ${netcdf_SRCS})
 if( NOT WITH_MPI)
