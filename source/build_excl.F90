@@ -56,14 +56,15 @@ Subroutine build_excl_intra(lecx,comm)
              ka,kb,kc,kd,ka0,kb0,kc0,kd0
 
   Integer, Dimension( : , : ), Allocatable :: irgd,irgd0,jrgd,jrgd0
+  Character ( Len = 256 )  ::  message
 
   If (mxrgd > 0) Then
      fail=0
      Allocate (irgd(1:mxlrgd,1:mxrgd),irgd0(1:mxlrgd,1:mxrgd), Stat=fail(1))
      Allocate (jrgd(1:mxlrgd,1:mxrgd),jrgd0(1:mxlrgd,1:mxrgd), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'build_excl_intra allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'build_excl_intra allocation failure'
+        Call error(0,message)
      End If
   End If
 
@@ -1176,8 +1177,8 @@ Subroutine build_excl_intra(lecx,comm)
      Deallocate (irgd,irgd0, Stat=fail(1))
      Deallocate (jrgd,jrgd0, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'build_excl_intra deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'build_excl_intra deallocation failure'
+        Call error(0,message)
      End If
   End If
 

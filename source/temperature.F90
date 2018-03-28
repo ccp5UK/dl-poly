@@ -20,6 +20,7 @@ Module temperature
   Use numerics,        Only : invert,uni,local_index,box_mueller_saru3
   use shared_units,    Only : update_shared_units,update_shared_units_int
   Use errors_warnings, Only : error,warning
+
   Implicit None
 
   Private
@@ -76,6 +77,8 @@ Contains
 
     Integer,           Allocatable :: qn(:),tpn(:)
     Integer,           Allocatable :: qs(:,:),tps(:)
+
+    Character ( Len = 256 )  ::  message
 
   ! initialise rotational and translational DoF if no RB are present
   ! or re-initialise if all are frozen (does no harm)
@@ -181,8 +184,8 @@ Contains
        Allocate (qn(1:mxatms),tpn(0:comm%mxnode-1),    Stat=fail(1))
        Allocate (qs(0:2,1:mxshl),tps(0:comm%mxnode-1), Stat=fail(2))
        If (Any(fail > 0)) Then
-          Write(nrite,'(/,1x,a,i0)') 'set_temperature allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'set_temperature allocation failure'
+          Call error(0,message)
        End If
 
   ! tpn(idnode) number of particles on this node (idnode)
@@ -446,8 +449,8 @@ Contains
        Deallocate (qn,tpn, Stat=fail(1))
        Deallocate (qs,tps, Stat=fail(2))
        If (Any(fail > 0)) Then
-          Write(nrite,'(/,1x,a,i0)') 'set_temperature deallocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'set_temperature deallocation failure'
+          Call error(0,message)
        End If
 
   ! remove centre of mass motion
@@ -629,12 +632,14 @@ Contains
     Real( Kind = wp ) :: vom(1:3),tmp
 
     Integer, Allocatable :: ind(:),pair(:,:)
+ 
+    Character ( Len = 256 )  :: message
 
     fail=0
     Allocate (ind(1:natms),pair(1:2,natms/2), Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'regauss_temperature allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'regauss_temperature allocation failure'
+       Call error(0,message)
     End If
 
   ! Create and index array containing the indices of the
@@ -762,8 +767,8 @@ Contains
 
     Deallocate (ind,pair, Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'regauss_temperature deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a)') 'regauss_temperature deallocation failure'
+       Call error(0,message)
     End If
 
   End Subroutine regauss_temperature
@@ -796,7 +801,7 @@ Contains
 
     Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
-
+    Character ( Len = 256 )  ::  message
 
   ! recover megrgd
 
@@ -855,8 +860,8 @@ Contains
        fail=0
        Allocate (buffer(1:12), Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'scale_temperature allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'scale_temperature allocation failure'
+          Call error(0,message)
        End If
 
   ! calculate centre of mass position
@@ -1127,8 +1132,8 @@ Contains
 
        Deallocate (buffer, Stat=fail)
        If (fail > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'scale_temperature deallocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(/,1x,a)') 'scale_temperature deallocation failure'
+          Call error(0,message)
        End If
     End If
 

@@ -47,8 +47,9 @@ Module system
                                   IO_WRITE_SORTED_DIRECT,   &
                                   IO_WRITE_SORTED_NETCDF,   &
                                   IO_WRITE_SORTED_MASTER
-  Use vdw, Only : vdw_lrc
-  Use metal, Only : metal_lrc
+  Use vdw,             Only : vdw_lrc
+  Use metal,           Only : metal_lrc
+  Use errors_warnings, Only : error, info
   Implicit None
   Private
   Public :: system_revive
@@ -684,6 +685,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
   Character( Len = Len( atmnam ) ), Dimension( : ), Allocatable :: atmnam_scaled
   Integer :: ierr
 
+  Character ( len = 256 )  :: message
 
   fail=0
   Allocate (f1(1:nx),f2(1:nx),f3(1:nx),                      Stat=fail(1))
@@ -693,8 +695,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
   Allocate (xm(1:10*mxatms),ym(1:10*mxatms),zm(1:10*mxatms), Stat=fail(5))
 
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'system_expand allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'system_expand allocation failure'
+     Call error(0,message)
   End If
 
 ! Get write buffer size and line feed character
@@ -894,8 +896,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
      Allocate ( x_scaled( 1:natms * nall ), y_scaled( 1:natms * nall ), z_scaled( 1:natms * nall ), &
                Stat = fail(2) )
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'system_expand allocation failure 0, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'system_expand allocation failure 0 '
+        Call error(0,message)
      End If
 
   End If
@@ -926,7 +928,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
   ndihed=0
   ninver=0
 
-  If (comm%idnode == 0) Write(nrite,Fmt='(/,1x,a)') 'Checking topological contiguity of molecules...'
+  Write(message,'(/,1x,a)') 'Checking topological contiguity of molecules...'
+  call info(message,.true.)
 
   safeg=.true. ! topology presumed safe
 
@@ -936,7 +939,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
 
      sapmtt=0
      Do imols=1,nummols(itmols)
-        If (numsit(itmols) > 10*mxatms) Call error(0)
+        If (numsit(itmols) > 10*mxatms) Call error(0,message)
 
 ! Grab the coordinates of the atoms constituting this molecule
 
@@ -1569,8 +1572,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
      Deallocate ( atmnam_scaled, ltg_scaled,    Stat = fail(1) )
      Deallocate ( x_scaled, y_scaled, z_scaled, Stat = fail(2) )
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'system_expand deallocation failure 0, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'system_expand deallocation failure 0 '
+        Call error(0,message)
      End If
 
   Else If (io_write == IO_WRITE_UNSORTED_DIRECT .or. &
@@ -1723,8 +1726,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
   Deallocate (i_xyz,    Stat=fail(4))
   Deallocate (xm,ym,zm, Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'system_expand dellocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(nrite,'(/,1x,a)') 'system_expand dellocation failure '
+     Call error(0,message)
   End If
 
 End Subroutine system_expand
@@ -1762,14 +1765,15 @@ Subroutine system_revive                                      &
   Integer,           Dimension( : ), Allocatable :: iwrk
   Real( Kind = wp ), Dimension( : ), Allocatable :: axx,ayy,azz
   Real( Kind = wp ), Dimension( : ), Allocatable :: bxx,byy,bzz
+  Character ( Len = 256 )  :: message 
 
   fail=0
   Allocate (iwrk(1:mxatms),                            Stat=fail(1))
   Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
   Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'system_revive allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'system_revive allocation failure '
+     Call error(0,message)
   End If
 
 
@@ -2144,8 +2148,8 @@ Subroutine system_revive                                      &
   Deallocate (axx,ayy,azz, Stat=fail(2))
   Deallocate (bxx,byy,bzz, Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'system_revive deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'system_revive deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine system_revive

@@ -41,8 +41,9 @@ Module trajectory
                              IO_READ_NETCDF,        &
                              IO_READ_MASTER
 
-Use numerics, Only : dcell, invert, shellsort2
-Use configuration, Only : read_config_parallel
+Use numerics,        Only : dcell, invert, shellsort2
+Use configuration,   Only : read_config_parallel
+Use errors_warnings, Only : error
 #ifdef SERIAL
    Use mpi_api
 #else
@@ -108,6 +109,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
                                        bxx(:),byy(:),bzz(:), &
                                        cxx(:),cyy(:),czz(:)
   Integer  :: ierr
+  Character ( Len = 256 )  :: message
 
   If (newjob) Then
      newjob = .false.
@@ -179,8 +181,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
            fail(1) = 0
            Allocate (buffer(1:recsz,1:4), Stat=fail(1))
            If (fail(1) > 0) Then
-              Write(nrite,'(/,1x,a,i0)') 'read_history allocation failure 1, node: ', comm%idnode
-              Call error(0)
+              Write(message,'(/,1x,a)') 'read_history allocation failure 1'
+              Call error(0,message)
            End If
 
            If (io_read == IO_READ_MPIIO) Then
@@ -244,8 +246,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
      Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(4))
      Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'read_history allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'read_history allocation failure'
+        Call error(0,message)
      End If
 
 ! read timestep and time
@@ -476,8 +478,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
      Deallocate (bxx,byy,bzz, Stat=fail(4))
      Deallocate (cxx,cyy,czz, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'read_history deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'read_history deallocation failure'
+        Call error(0,message)
      End If
 
 ! PROPER ASCII read
@@ -649,8 +651,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
      Deallocate (bxx,byy,bzz, Stat=fail(4))
      Deallocate (cxx,cyy,czz, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'read_history deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'read_history deallocation failure'
+        Call error(0,message)
      End If
   Else
      Call io_close( fh )
@@ -673,8 +675,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
      Deallocate (bxx,byy,bzz, Stat=fail(4))
      Deallocate (cxx,cyy,czz, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'read_history deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'read_history deallocation failure'
+        Call error(0,message)
      End If
   Else
      Call io_close( fh )
@@ -747,7 +749,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 
   Integer :: file_p, file_r
   Integer :: io_p, io_r,ierr
-
+ 
+  Character ( Len = 256 )  ::  message
 
   If (.not.(nstep >= nstraj .and. Mod(nstep-nstraj,istraj) == 0)) Return
 
@@ -907,13 +910,13 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            End If
            Call gcheck(comm,safe)
            If (.not.safe) Then
-              If (comm%idnode == 0) Write(nrite,'(/,1x,a)') &
+              If (comm%idnode == 0) Write(message,'(/,1x,a)') &
   "Can not determine precision in an exisiting HISTORY.nc file in trajectory_write"
 
 ! Sync before killing for the error in the hope that something sensible happens
 
               Call gsync(comm)
-              Call error(0)
+              Call error(0,message)
            End If
 
            If (comm%idnode == 0) Then
@@ -922,39 +925,39 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            End If
            Call gcheck(comm,safe)
            If (.not.safe) Then
-              If (comm%idnode == 0) Write(nrite,'(/,1x,a)') &
+              If (comm%idnode == 0) Write(message,'(/,1x,a)') &
   "Can not determine the desired writing precision in trajectory_write"
 
 ! Sync before killing for the error in the hope that something sensible happens
 
               Call gsync(comm)
-              Call error(0)
+              Call error(0,message)
            End If
 
            If (comm%idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
            Call gcheck(comm,safe)
            If (.not.safe) Then
               If (comm%idnode == 0) Then
-                 Write(nrite,'(/,1x,a)') &
+                 Write(message,'(/,1x,a)') &
   "Requested writing precision inconsistent with that in an existing HISTORY.nc"
                  Write(nrite, Fmt='(1x,a)', Advance='No') "Precision requested:"
                  Select Case( Selected_real_kind( io_p, io_r ) )
                  Case( Kind( 1.0 ) )
-                    Write(nrite,'(1x,a)') "Single"
+                    Write(message,'(1x,a)') "Single"
                  Case( Kind( 1.0d0 ) )
-                    Write(nrite,'(1x,a)') "Double"
+                    Write(message,'(1x,a)') "Double"
                  End Select
                  Write(nrite, Fmt='(1x,a)', Advance='No') "Precision in file  :"
                  Select Case( Selected_real_kind( file_p, file_r ) )
                  Case( Kind( 1.0 ) )
-                    Write(nrite,'(1x,a)') "Single"
+                    Write(message,'(1x,a)') "Single"
                  Case( Kind( 1.0d0 ) )
-                    Write(nrite,'(1x,a)') "Double"
+                    Write(message,'(1x,a)') "Double"
                  End Select
               End If
 
               Call gsync(comm)
-              Call error(0)
+              Call error(0,message)
            End If
 
 ! Get the frame number to check
@@ -989,8 +992,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
      Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure 0, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'trajectory_write allocation failure 0'
+        Call error(0,message)
      End If
 
      chbat=' '
@@ -1122,8 +1125,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
      Allocate (ddd(1:mxatms),eee(1:mxatms),fff(1:mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'trajectory_write allocation failure'
+        Call error(0,message)
      End If
 
 ! node 0 handles I/O
@@ -1306,8 +1309,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Deallocate (cxx,cyy,czz, Stat=fail(4))
      Deallocate (ddd,eee,fff, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'trajectory_write deallocation failure'
+        Call error(0,message)
      End If
 
 ! SORTED MPI-I/O or Parallel Direct Access FORTRAN or netCDF
@@ -1440,8 +1443,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
      Allocate (ddd(1:mxatms),eee(1:mxatms),fff(1:mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'trajectory_write allocation failure'
+        Call error(0,message)
      End If
 
 ! node 0 handles I/O
@@ -1589,8 +1592,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Deallocate (cxx,cyy,czz, Stat=fail(4))
      Deallocate (ddd,eee,fff, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'trajectory_write deallocation failure'
+        Call error(0,message)
      End If
 
   End If
@@ -1601,8 +1604,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Deallocate (n_atm, Stat=fail(1))
      Deallocate (chbat, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure 0, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'trajectory_write deallocation failure 0'
+        Call error(0,message)
      End If
   End If
 
@@ -1752,13 +1755,13 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            End If
            Call gcheck(comm,safe)
            If (.not.safe) Then
-              If (comm%idnode == 0) Write(nrite,'(/,1x,a)') &
+              If (comm%idnode == 0) Write(message,'(/,1x,a)') &
   "Can not determine precision in an exisiting HISTORY.nc file in trajectory_write"
 
 ! Sync before killing for the error in the hope that something sensible happens
 
               Call gsync(comm)
-              Call error(0)
+              Call error(0,message)
            End If
 
            If (comm%idnode == 0) Then
@@ -1767,39 +1770,39 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            End If
            Call gcheck(comm,safe)
            If (.not.safe) Then
-              If (comm%idnode == 0) Write(nrite,'(/,1x,a)') &
+              If (comm%idnode == 0) Write(message,'(/,1x,a)') &
   "Can not determine the desired writing precision in trajectory_write"
 
 ! Sync before killing for the error in the hope that something sensible happens
 
               Call gsync(comm)
-              Call error(0)
+              Call error(0,message)
            End If
 
            If (comm%idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
            Call gcheck(comm,safe)
            If (.not.safe) Then
               If (comm%idnode == 0) Then
-                 Write(nrite,'(/,1x,a)') &
+                 Write(message,'(/,1x,a)') &
   "Requested writing precision inconsistent with that in an existing HISTORY.nc"
                  Write(nrite, Fmt='(1x,a)', Advance='No') "Precision requested:"
                  Select Case( Selected_real_kind( io_p, io_r ) )
                  Case( Kind( 1.0 ) )
-                    Write(nrite,'(1x,a)') "Single"
+                    Write(message,'(1x,a)') "Single"
                  Case( Kind( 1.0d0 ) )
-                    Write(nrite,'(1x,a)') "Double"
+                    Write(message,'(1x,a)') "Double"
                  End Select
                  Write(nrite, Fmt='(1x,a)', Advance='No') "Precision in file  :"
                  Select Case( Selected_real_kind( file_p, file_r ) )
                  Case( Kind( 1.0 ) )
-                    Write(nrite,'(1x,a)') "Single"
+                    Write(message,'(1x,a)') "Single"
                  Case( Kind( 1.0d0 ) )
-                    Write(nrite,'(1x,a)') "Double"
+                    Write(message,'(1x,a)') "Double"
                  End Select
               End If
 
               Call gsync(comm)
-              Call error(0)
+              Call error(0,message)
            End If
 
 ! Get the frame number to check
@@ -1835,8 +1838,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
      Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure 0, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'trajectory_write allocation failure 0'
+        Call error(0,message)
      End If
 
      chbat=' '
@@ -1985,8 +1988,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
      Allocate (fff(1:mxatms),                             Stat=fail(3))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'trajectory_write allocation failure'
+        Call error(0,message)
      End If
 
 ! node 0 handles I/O
@@ -2073,8 +2076,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Deallocate (axx,ayy,azz, Stat=fail(2))
      Deallocate (fff,         Stat=fail(3))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'trajectory_write deallocation failure'
+        Call error(0,message)
      End If
 
   End If
@@ -2085,8 +2088,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Deallocate (n_atm, Stat=fail(1))
      Deallocate (chbat, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'trajectory_write deallocation failure 0, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(/,1x,a)') 'trajectory_write deallocation failure 0'
+        Call error(0,message)
      End If
   End If
 

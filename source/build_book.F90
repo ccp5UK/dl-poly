@@ -32,6 +32,8 @@ Module build_book
   Use numerics, Only : local_index
   Use ffield, Only : report_topology
 
+  Use errors_warnings, Only : error
+
   Implicit None
 
   Private
@@ -93,13 +95,14 @@ Subroutine build_book_intra             &
 
   Integer, Dimension( : ), Allocatable :: iwrk,irgd,irgd0, &
                                           i1pmf,i1pmf0,i2pmf,i2pmf0
+  Character ( Len = 256 )   ::  message 
 
   fail=0
   Allocate (iwrk(1:mxatms),                                Stat=fail(1))
   If (m_rgd > 0) Allocate (irgd(1:mxlrgd),irgd0(1:mxlrgd), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'build_book_intra allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'build_book_intra allocation failure'
+     Call error(0,message)
   End If
 
   If (.not.(newjob .or. lsim)) Call init_intra()
@@ -318,8 +321,8 @@ Subroutine build_book_intra             &
            Do lpmf=1,numpmf(itmols) ! numpmf can only be 1 or 0, so the 'Do' loop is used as an 'If' condition
               Allocate (i1pmf(1:mxtpmf(1)),i1pmf0(1:mxtpmf(1)),i2pmf(1:mxtpmf(2)),i2pmf0(1:mxtpmf(2)), Stat=fail(1))
               If (fail(1) > 0) Then
-                 Write(nrite,'(/,1x,a,i0)') 'build_book_intra PMF allocation failure, node: ', comm%idnode
-                 Call error(0)
+                 Write(message,'(/,1x,a)') 'build_book_intra PMF allocation failure'
+                 Call error(0,message)
               End If
 
               i1pmf=0 ; i1pmf0=0
@@ -397,8 +400,8 @@ Subroutine build_book_intra             &
 
               Deallocate (i1pmf,i1pmf0,i2pmf,i2pmf0, Stat=fail(1))
               If (fail(1) > 0) Then
-                 Write(nrite,'(/,1x,a,i0)') 'build_book_intra PMF deallocation failure, node: ', comm%idnode
-                 Call error(0)
+                 Write(message,'(/,1x,a)') 'build_book_intra PMF deallocation failure'
+                 Call error(0,message)
               End If
            End Do
 
@@ -1610,8 +1613,8 @@ Subroutine build_book_intra             &
   Deallocate (iwrk,                      Stat=fail(1))
   If (m_rgd > 0) Deallocate (irgd,irgd0, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'build_book_intra deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(/,1x,a)') 'build_book_intra deallocation failure'
+     Call error(0,message)
   End If
 
   If (newjob) Then
