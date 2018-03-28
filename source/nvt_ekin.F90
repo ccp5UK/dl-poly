@@ -1,17 +1,23 @@
 Module nvt_ekin
-  Use kinds,              Only : wp
-  Use comms,       Only : comms_type,gmax,gsum
-  Use setup
-  Use configuration,      Only : imcon,cell,natms,nlast,nfree, &
-                                 lstfre,weight,                &
-                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use domains,     Only : map
-  Use kinetics,     Only : kinstress,kinstresf,kinstrest
-  Use core_shell,  Only : legshl
-  Use constraints, Only : passcon,constraints_tags,constraints_shake_vv,&
-                          constraints_rattle
-  Use pmf,                Only : passpmf,pmf_tags,pmf_shake_vv,pmf_rattle
-  Use rigid_bodies
+  Use kinds,           Only : wp
+  Use comms,           Only : comms_type,gmax,gsum
+  Use setup,           Only : mxcons,mxpmf,mxtpmf,zero_plus
+  Use configuration,   Only : imcon,cell,natms,nlast,nfree, &
+                              lstfre,weight,                &
+                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use domains,         Only : map
+  Use kinetics,        Only : kinstress,kinstresf,kinstrest
+  Use core_shell,      Only : legshl
+  Use constraints,     Only : passcon,constraints_tags,constraints_shake_vv,&
+                              constraints_rattle
+  Use pmf,             Only : passpmf,pmf_tags,pmf_shake_vv,pmf_rattle
+  Use rigid_bodies,    Only : lashp_rgd,lishp_rgd,lshmv_rgd,mxatms,mxlrgd, &
+                              ntrgd,rgdx,rgdy,rgdz,rgdxxx,rgdyyy,rgdzzz, &
+                              rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz, &
+                              q0,q1,q2,q3,indrgd,listrgd,rgdfrz,rgdwgt, &
+                              rgdrix,rgdriy,rgdriz,mxrgd,rgdind,getrotmat, &
+                              no_squish,rigid_bodies_stress
+  Use errors_warnings, Only: error,info
   Implicit None
 
   Private
