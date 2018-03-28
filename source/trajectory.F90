@@ -181,7 +181,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
            fail(1) = 0
            Allocate (buffer(1:recsz,1:4), Stat=fail(1))
            If (fail(1) > 0) Then
-              Write(message,'(/,1x,a)') 'read_history allocation failure 1'
+              Write(message,'(a)') 'read_history allocation failure 1'
               Call error(0,message)
            End If
 
@@ -246,7 +246,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
      Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(4))
      Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'read_history allocation failure'
+        Write(message,'(a)') 'read_history allocation failure'
         Call error(0,message)
      End If
 
@@ -478,7 +478,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
      Deallocate (bxx,byy,bzz, Stat=fail(4))
      Deallocate (cxx,cyy,czz, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'read_history deallocation failure'
+        Write(message,'(a)') 'read_history deallocation failure'
         Call error(0,message)
      End If
 
@@ -651,7 +651,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
      Deallocate (bxx,byy,bzz, Stat=fail(4))
      Deallocate (cxx,cyy,czz, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'read_history deallocation failure'
+        Write(message,'(a)') 'read_history deallocation failure'
         Call error(0,message)
      End If
   Else
@@ -675,7 +675,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
      Deallocate (bxx,byy,bzz, Stat=fail(4))
      Deallocate (cxx,cyy,czz, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'read_history deallocation failure'
+        Write(message,'(a)') 'read_history deallocation failure'
         Call error(0,message)
      End If
   Else
@@ -910,7 +910,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            End If
            Call gcheck(comm,safe)
            If (.not.safe) Then
-              If (comm%idnode == 0) Write(message,'(/,1x,a)') &
+              If (comm%idnode == 0) Write(message,'(a)') &
   "Can not determine precision in an exisiting HISTORY.nc file in trajectory_write"
 
 ! Sync before killing for the error in the hope that something sensible happens
@@ -925,7 +925,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            End If
            Call gcheck(comm,safe)
            If (.not.safe) Then
-              If (comm%idnode == 0) Write(message,'(/,1x,a)') &
+              If (comm%idnode == 0) Write(message,'(a)') &
   "Can not determine the desired writing precision in trajectory_write"
 
 ! Sync before killing for the error in the hope that something sensible happens
@@ -938,7 +938,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            Call gcheck(comm,safe)
            If (.not.safe) Then
               If (comm%idnode == 0) Then
-                 Write(message,'(/,1x,a)') &
+                 Write(message,'(a)') &
   "Requested writing precision inconsistent with that in an existing HISTORY.nc"
                  Write(nrite, Fmt='(1x,a)', Advance='No') "Precision requested:"
                  Select Case( Selected_real_kind( io_p, io_r ) )
@@ -992,7 +992,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
      Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'trajectory_write allocation failure 0'
+        Write(message,'(a)') 'trajectory_write allocation failure 0'
         Call error(0,message)
      End If
 
@@ -1125,7 +1125,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
      Allocate (ddd(1:mxatms),eee(1:mxatms),fff(1:mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'trajectory_write allocation failure'
+        Write(message,'(a)') 'trajectory_write allocation failure'
         Call error(0,message)
      End If
 
@@ -1309,7 +1309,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Deallocate (cxx,cyy,czz, Stat=fail(4))
      Deallocate (ddd,eee,fff, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'trajectory_write deallocation failure'
+        Write(message,'(a)') 'trajectory_write deallocation failure'
         Call error(0,message)
      End If
 
@@ -1443,7 +1443,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
      Allocate (ddd(1:mxatms),eee(1:mxatms),fff(1:mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'trajectory_write allocation failure'
+        Write(message,'(a)') 'trajectory_write allocation failure'
         Call error(0,message)
      End If
 
@@ -1592,7 +1592,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Deallocate (cxx,cyy,czz, Stat=fail(4))
      Deallocate (ddd,eee,fff, Stat=fail(5))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'trajectory_write deallocation failure'
+        Write(message,'(a)') 'trajectory_write deallocation failure'
         Call error(0,message)
      End If
 
@@ -1604,7 +1604,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Deallocate (n_atm, Stat=fail(1))
      Deallocate (chbat, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'trajectory_write deallocation failure 0'
+        Write(message,'(a)') 'trajectory_write deallocation failure 0'
         Call error(0,message)
      End If
   End If
@@ -1755,7 +1755,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            End If
            Call gcheck(comm,safe)
            If (.not.safe) Then
-              If (comm%idnode == 0) Write(message,'(/,1x,a)') &
+              If (comm%idnode == 0) Write(message,'(a)') &
   "Can not determine precision in an exisiting HISTORY.nc file in trajectory_write"
 
 ! Sync before killing for the error in the hope that something sensible happens
@@ -1770,7 +1770,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            End If
            Call gcheck(comm,safe)
            If (.not.safe) Then
-              If (comm%idnode == 0) Write(message,'(/,1x,a)') &
+              If (comm%idnode == 0) Write(message,'(a)') &
   "Can not determine the desired writing precision in trajectory_write"
 
 ! Sync before killing for the error in the hope that something sensible happens
@@ -1783,7 +1783,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            Call gcheck(comm,safe)
            If (.not.safe) Then
               If (comm%idnode == 0) Then
-                 Write(message,'(/,1x,a)') &
+                 Write(message,'(a)') &
   "Requested writing precision inconsistent with that in an existing HISTORY.nc"
                  Write(nrite, Fmt='(1x,a)', Advance='No') "Precision requested:"
                  Select Case( Selected_real_kind( io_p, io_r ) )
@@ -1838,7 +1838,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
      Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'trajectory_write allocation failure 0'
+        Write(message,'(a)') 'trajectory_write allocation failure 0'
         Call error(0,message)
      End If
 
@@ -1988,7 +1988,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
      Allocate (fff(1:mxatms),                             Stat=fail(3))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'trajectory_write allocation failure'
+        Write(message,'(a)') 'trajectory_write allocation failure'
         Call error(0,message)
      End If
 
@@ -2076,7 +2076,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Deallocate (axx,ayy,azz, Stat=fail(2))
      Deallocate (fff,         Stat=fail(3))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'trajectory_write deallocation failure'
+        Write(message,'(a)') 'trajectory_write deallocation failure'
         Call error(0,message)
      End If
 
@@ -2088,7 +2088,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      Deallocate (n_atm, Stat=fail(1))
      Deallocate (chbat, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'trajectory_write deallocation failure 0'
+        Write(message,'(a)') 'trajectory_write deallocation failure 0'
         Call error(0,message)
      End If
   End If

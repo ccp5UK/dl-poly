@@ -168,7 +168,7 @@ Contains
   fail = 0
   Allocate (dstdbnd(0:mxgbnd1,1:ldfbnd(0)),pmf(0:mxgbnd1+2),vir(0:mxgbnd1+2), Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'bonds_compute - allocation failure'
+     Write(message,'(a)') 'bonds_compute - allocation failure'
      Call error(0,message)
   End If
 
@@ -446,7 +446,7 @@ Contains
 
   Deallocate (dstdbnd,pmf,vir, Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'bonds_compute - deallocation failure'
+     Write(message,'(a)') 'bonds_compute - deallocation failure'
      Call error(0,message)
   End If
 
@@ -497,7 +497,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
   Allocate (lunsafe(1:mxbond),lstopt(0:2,1:mxbond),       Stat=fail(1))
   Allocate (xdab(1:mxbond),ydab(1:mxbond),zdab(1:mxbond), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'bond_forces allocation failure'
+     Write(message,'(a)') 'bond_forces allocation failure'
      Call error(0,message)
   End If
 
@@ -927,7 +927,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
   Deallocate (lunsafe,lstopt, Stat=fail(1))
   Deallocate (xdab,ydab,zdab, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'bond_forces deallocation failure, node'
+     Write(message,'(a)') 'bond_forces deallocation failure, node'
      Call error(0,message)
   End If
 
@@ -1028,7 +1028,7 @@ Subroutine bonds_table_read(bond_name,comm)
   Allocate (read_type(1:ltpbnd(0)),          Stat=fail(1))
   Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'error - bonds_table_read allocation failure'
+     Write(message,'(a)') 'error - bonds_table_read allocation failure'
      Call error(0,message)
   End If
   Call allocate_bond_pot_arrays()
@@ -1262,7 +1262,7 @@ Subroutine bonds_table_read(bond_name,comm)
   Deallocate (read_type,     Stat=fail(1))
   Deallocate (bufpot,bufvir, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'error - bonds_table_read deallocation failure'
+     Write(message,'(a)') 'error - bonds_table_read deallocation failure'
      Call error(0,message)
   End If
 

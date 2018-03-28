@@ -48,7 +48,7 @@ Module halo
   fail = 0
   Allocate (ixyz0(1:mxatms), Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'refresh_halo_ppositions allocation failure'
+     Write(message,'(a)') 'refresh_halo_ppositions allocation failure'
      Call error(0,message)
   End If
   ixyz0(1:nlast) = ixyz(1:nlast)
@@ -78,7 +78,7 @@ Module halo
 
   Deallocate (ixyz0, Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'referesh_halo_positions deallocation failure'
+     Write(message,'(a)') 'referesh_halo_positions deallocation failure'
      Call error(0,message)
   End If
 

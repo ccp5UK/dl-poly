@@ -258,7 +258,7 @@ Subroutine read_field                      &
 
   If (comm%idnode == 0) Then
      Open(Unit=nfield, File = Trim(field), Status = 'old')
-     Write(nrite,"(/,/,1x,'SYSTEM SPECIFICATION')")
+     Write(nrite,"('SYSTEM SPECIFICATION')")
      If (.not.l_top) Write(nrite,"(/,1x,'detailed topology opted out')")
   End If
 
@@ -328,7 +328,7 @@ Subroutine read_field                      &
         If (word(1:5) == 'order') Call get_word(record,word)
 
         If (comm%idnode == 0) Then
-           Write(nrite,"(/,/,1x,a,i0)") &
+           Write(nrite,"(a,i0)") &
               "Multipolar electrostatics opted with poles up to order ", Nint(word_2_real(word))
 
            If (Nint(word_2_real(word)) > mxompl) Write(nrite,"(1x,a)") &
@@ -360,7 +360,7 @@ Subroutine read_field                      &
         lmols=.true.
         ntpmls=Nint(word_2_real(word))
 
-        If (comm%idnode == 0) Write(nrite,"(/,/,1x,'number of molecular types',6x,i10)") ntpmls
+        If (comm%idnode == 0) Write(nrite,"('number of molecular types',6x,i10)") ntpmls
 
         If (ntpmls > mxtmls) Call error(10)
 
@@ -379,7 +379,7 @@ Subroutine read_field                      &
            l_shl=.true. ; l_con=.true. ; l_rgd=.true. ; l_tet=.true.
            l_bnd=.true. ; l_ang=.true. ; l_dih=.true. ; l_inv=.true.
 
-           If (comm%idnode == 0) Write(nrite,"(/,/,1x,'molecular species type',9x,i10)") itmols
+           If (comm%idnode == 0) Write(nrite,"('molecular species type',9x,i10)") itmols
 
 ! name of molecular species
 
@@ -535,7 +535,7 @@ Subroutine read_field                      &
                  numshl(itmols)=numshl(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of core-shell units',5x,i10)") ntmp
+  Write(nrite,"('number of core-shell units',5x,i10)") ntmp
                     If (l_top)              &
   Write(nrite,"(/,1x,'core-shell details:', &
        & /,/,18x,'unit',5x,'index',5x,'index',13x,'parameters',/)")
@@ -649,7 +649,7 @@ Subroutine read_field                      &
                  numcon(itmols)=numcon(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of bond constraints',5x,i10)") ntmp
+  Write(nrite,"('number of bond constraints',5x,i10)") ntmp
                     If (l_top)                   &
   Write(nrite,"(/,1x,'constraint bond details:', &
        & /,/,18x,'unit',5x,'index',5x,'index',7x,'bondlength',/)")
@@ -763,7 +763,7 @@ Subroutine read_field                      &
                  prmpmf=word_2_real(word)
 
                  If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'PMF constraint details')")
+  Write(nrite,"('PMF constraint details')")
   Write(nrite,"(/,5x,'bondlength:',5x,f15.6)") prmpmf
                  End If
 
@@ -933,7 +933,7 @@ Subroutine read_field                      &
                  numrgd(itmols)=numrgd(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of rigid bodies',9x,i10)") ntmp
+  Write(nrite,"('number of rigid bodies',9x,i10)") ntmp
                     If (l_top) &
   Write(nrite,"(/,1x,'rigid body details:', &
        & /,/,18x,'unit',6x,'size',12x,'indices',/)")
@@ -1055,7 +1055,7 @@ Subroutine read_field                      &
                  numteth(itmols)=numteth(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of tethered sites',7x,i10)") ntmp
+  Write(nrite,"('number of tethered sites',7x,i10)") ntmp
                     If (l_top)                 &
   Write(nrite,"(/,1x,'tethered site details:', &
        & /,/,18x,'unit',5x,'key',6x,'site',19x,'parameters',/) ")
@@ -1158,7 +1158,7 @@ Subroutine read_field                      &
                  numbonds(itmols)=numbonds(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of chemical bonds',7x,i10)") ntmp
+  Write(nrite,"('number of chemical bonds',7x,i10)") ntmp
                     If (l_top)                 &
   Write(nrite,"(/,1x,'chemical bond details:', &
        & /,/,18x,'unit',5x,'key',5x,'index',5x,'index',28x,'parameters',/)")
@@ -1379,7 +1379,7 @@ Subroutine read_field                      &
                  numang(itmols)=numang(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of bond angles',10x,i10)") ntmp
+  Write(nrite,"('number of bond angles',10x,i10)") ntmp
                     If (l_top)              &
   Write(nrite,"(/,1x,'bond angle details:', &
        & /,/,18x,'unit',5x,'key',5x,'index',5x,'index',5x,'index',7x,'f-const',8x,'angle',/)")
@@ -1623,7 +1623,7 @@ Subroutine read_field                      &
                  numdih(itmols)=numdih(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of dihedral angles',6x,i10)") ntmp
+  Write(nrite,"('number of dihedral angles',6x,i10)") ntmp
                     If (l_top)                  &
   Write(nrite,"(/,1x,'dihedral angle details:', &
        & /,/,18x,'unit',5x,'key',5x,'index',5x,'index',5x,'index',5x,'index', &
@@ -1853,7 +1853,7 @@ Subroutine read_field                      &
                  numinv(itmols)=numinv(itmols)+ntmp
 
                  If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of inversion angles',5x,i10)") ntmp
+  Write(nrite,"('number of inversion angles',5x,i10)") ntmp
                     If (l_top)                   &
   Write(nrite,"(/,1x,'inversion angle details:', &
        & /,/,18x,'unit',5x,'key',5x,'index',5x,'index',5x,'index',5x,'index', &
@@ -2102,7 +2102,7 @@ Subroutine read_field                      &
 ! report total molecules and sites
 
         If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'total number of molecules',6x,i10)") Sum(nummols(1:ntpmls))
+  Write(nrite,"('total number of molecules',6x,i10)") Sum(nummols(1:ntpmls))
   Write(nrite,"(/,1x,'total number of sites',10x,i10)") nsite
         End If
 
@@ -2654,11 +2654,11 @@ Subroutine read_field                      &
         If (megshl > 0) Then
            If (.not.lshl_one) Then
               keyshl = 1
-  If (comm%idnode == 0) Write(nrite,"(/,/,1x,'adiabatic shell model in operation')")
+  If (comm%idnode == 0) Write(nrite,"('adiabatic shell model in operation')")
            Else
               If (lshl_all) Then
                  keyshl = 2
-  If (comm%idnode == 0) Write(nrite,"(/,/,1x,'relaxed shell model in operation')")
+  If (comm%idnode == 0) Write(nrite,"('relaxed shell model in operation')")
               Else
                  Call error(476)
               End If
@@ -3162,7 +3162,7 @@ Subroutine read_field                      &
         ntprdf=Nint(word_2_real(word))
 
         If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of specified rdf look up pairs    ',i10)") ntprdf
+  Write(nrite,"('number of specified rdf look up pairs    ',i10)") ntprdf
            If (l_top) &
   Write(nrite,"(/,10x,'pair',2x,'atom 1',2x,'atom 2',/)")
         End If
@@ -3217,7 +3217,7 @@ Subroutine read_field                      &
         Call get_word(record,word)
 
         If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of specified vdw potentials       ',i10)") ntpvdw
+  Write(nrite,"('number of specified vdw potentials       ',i10)") ntpvdw
            If (l_top) &
   Write(nrite,"(/,7x,'pair',5x,'atom 1',2x,'atom 2',5x,'key',30x,'parameters',/)")
         End If
@@ -3777,7 +3777,7 @@ Subroutine read_field                      &
         ntpmet=Nint(word_2_real(word))
 
         If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of specified metal potentials     ',i10)") ntpmet
+  Write(nrite,"('number of specified metal potentials     ',i10)") ntpmet
            If (l_top) &
   Write(nrite,"(/,7x,'pair',5x,'atom 1',2x,'atom 2',5x,'key',30x,'parameters',/)")
         End If
@@ -3957,7 +3957,7 @@ Subroutine read_field                      &
         ntpter=Nint(word_2_real(word))
 
         If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of specified tersoff potentials   ',i10)") ntpter
+  Write(nrite,"('number of specified tersoff potentials   ',i10)") ntpter
            If (l_top) &
   Write(nrite,"(/,5x,'number',5x,'atom',7x,'key',37x,'parameters'/)")
         End If
@@ -4178,7 +4178,7 @@ Subroutine read_field                      &
         ntptbp=Nint(word_2_real(word))
 
         If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of specified three-body potentials',i10)") ntptbp
+  Write(nrite,"('number of specified three-body potentials',i10)") ntptbp
            If (l_top) &
   Write(nrite,"(/,4x,'triplet',5x,'atom 1',2x,'atom 2',2x,'atom 3',5x,'key',22x,'parameters',/)")
         End If
@@ -4314,7 +4314,7 @@ Subroutine read_field                      &
         ntpfbp=Nint(word_2_real(word))
 
         If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'number of specified four-body potentials ',i10)") ntpfbp
+  Write(nrite,"('number of specified four-body potentials ',i10)") ntpfbp
            If (l_top) &
   Write(nrite,"(/,4x,'quartet',5x,'atom 1',2x,'atom 2',2x,'atom 3',2x,'atom 4',5x,'key',14x,'parameters',/)")
         End If
@@ -4448,7 +4448,7 @@ Subroutine read_field                      &
      Else If (word(1:3) == 'kim') Then
 
         If (comm%idnode == 0) &
-  Write(nrite,"(/,/,1x,'using open KIM interaction model: ',a)") kimim
+  Write(nrite,"('using open KIM interaction model: ',a)") kimim
 
 ! read external field data
 
@@ -4515,7 +4515,7 @@ Subroutine read_field                      &
         End Do
 
         If (comm%idnode == 0) Then
-  Write(nrite,"(/,/,1x,'external field key ',13x,a4)") keyword
+  Write(nrite,"('external field key ',13x,a4)") keyword
            If (l_top) Then
   Write(nrite,"(/,30x,'parameters')")
   Write(nrite,"(/,1x,10f15.6)") prmfld
@@ -4561,7 +4561,7 @@ Subroutine read_field                      &
            If ((keyfld == 2 .or. keyfld == 8) .and. (imcon /= 1 .and. imcon /= 2)) &
   Write(nrite,"(/,1x,a)") '*** warning - external field is ignored as only applicable for imcon=1,2 (orthorhombic geometry)!!! ***'
            If (keyfld == 3 .and. imcon /= 6) &
-  Write(nrite,"(/,/,1x,a)") '*** warning - external field is ignored as only applicable for imcon=6 (SLAB geometry)!!! ***'
+  Write(nrite,"(a)") '*** warning - external field is ignored as only applicable for imcon=6 (SLAB geometry)!!! ***'
         End If
 
         If (keyfld == 8 .and. keyens /= 0) Call error(7)
@@ -5822,7 +5822,7 @@ End Subroutine scan_field
 
     If (comm%idnode == 0) Then
        Open(Unit=nmpldt, File = 'MPOLES', Status = 'old')
-       Write(nrite,"(/,/,1x,'ELECTROSTATICS MULTIPOLES SPECIFICATION')")
+       Write(nrite,"('ELECTROSTATICS MULTIPOLES SPECIFICATION')")
        If (.not.l_top) Write(nrite,"(/,1x,'detailed specification opted out')")
     End If
 
@@ -5857,7 +5857,7 @@ End Subroutine scan_field
           If (word(1:4) == 'type') Call get_word(record,word)
 
           If (ntpmls == Nint(word_2_real(word))) Then
-             If (comm%idnode == 0) Write(nrite,"(/,/,1x,'number of molecular types',6x,i10)") ntpmls
+             If (comm%idnode == 0) Write(nrite,"('number of molecular types',6x,i10)") ntpmls
           Else
              If (comm%idnode == 0) Write(nrite,'(/,1x,a,2(/,1x,a,i0))')                        &
     "*** warning - number of molecular types mistmatch between FIELD and MPOLES !!! ***", &
@@ -5871,7 +5871,7 @@ End Subroutine scan_field
 
           Do itmols=1,ntpmls
 
-             If (comm%idnode == 0 .and. l_top) Write(nrite,"(/,/,1x,'molecular species type',9x,i10)") itmols
+             If (comm%idnode == 0 .and. l_top) Write(nrite,"('molecular species type',9x,i10)") itmols
 
   ! name of molecular species
 

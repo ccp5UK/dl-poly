@@ -205,7 +205,7 @@ Contains
   fail=0
   Allocate (amsd(1:mxatyp), Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'statistics_collect allocation failure'
+     Write(message,'(a)') 'statistics_collect allocation failure'
      Call error(0,message)
   End If
 
@@ -365,7 +365,7 @@ Contains
      Else            ! HISTORY is replayed
         Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail)
         If (fail > 0) Then
-           Write(message,'(/,1x,a)') 'statistics_collect allocation failure 1'
+           Write(message,'(a)') 'statistics_collect allocation failure 1'
            Call error(0,message)
         End If
         Do i=1,natms
@@ -382,7 +382,7 @@ Contains
         End Do
         Deallocate (xxt,yyt,zzt, Stat=fail)
         If (fail > 0) Then
-           Write(message,'(/,1x,a)') 'statistics_collect deallocation failure 1'
+           Write(message,'(a)') 'statistics_collect deallocation failure 1'
            Call error(0,message)
         End If
         Call pbcshfrl(imcon,cell,natms,xin,yin,zin)
@@ -545,7 +545,7 @@ Contains
 
   Deallocate (amsd, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'statistics_collect deallocation failure'
+     Write(message,'(a)') 'statistics_collect deallocation failure'
      Call error(0,message)
   End If
 
@@ -595,7 +595,7 @@ Subroutine statistics_connect_frames(megatm,comm)
   End Do
 
   If (nres > 0) Then
-    Write(message,'(/,1x,a)') ' particles dynamics properties will be corrupted'
+    Write(message,'(a)') ' particles dynamics properties will be corrupted'
     Call warning(message,.true.)
   End If
 
@@ -686,7 +686,7 @@ Contains
 
        Deallocate (lsa00, Stat = fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'match_compress_spread_sort deallocation failure'
+          Write(message,'(a)') 'match_compress_spread_sort deallocation failure'
           Call error(0,message)
        End If
     End If
@@ -816,7 +816,7 @@ Contains
        fail = 0
        Allocate (lsa00(1:mxatdm), Stat = fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'match_compress_spread_sort allocation failure'
+          Write(message,'(a)') 'match_compress_spread_sort allocation failure'
           Call error(0,message)
        End If
        lsa00=0
@@ -995,7 +995,7 @@ Subroutine statistics_connect_spread(mdir,comm)
   fail=0
   Allocate (buffer(1:mxbfss), Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'statistics_connect_spread allocation failure'
+     Write(message,'(a)') 'statistics_connect_spread allocation failure'
      Call error(0,message)
   End If
 
@@ -1309,7 +1309,7 @@ Subroutine statistics_connect_spread(mdir,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'statistics_connect_spread deallocation failure'
+     Write(message,'(a)') 'statistics_connect_spread deallocation failure'
      Call error(0,message)
   End If
 
@@ -1437,11 +1437,11 @@ Subroutine statistics_result                                    &
 
 
   If ((nstep == 0 .and. nstrun == 0) .or. numacc == 0) Then
-    Write(message,"(/,/,1x,'dry run terminated',/)")
+    Write(message,"('dry run terminated')")
   Else
-    Write(message,"(/,/,1x,'run terminated after',i9,' steps (',f10.3,   &
+    Write(message,"('run terminated after',i9,' steps (',f10.3,   &
       & ' ps), final averages calculated over',i9,' steps (',f10.3, &
-      & ' ps).',/,/)") nstep,time,numacc,tmp
+      & ' ps).')") nstep,time,numacc,tmp
   End If
   Call info(message,.true.)
 
@@ -1457,7 +1457,7 @@ Subroutine statistics_result                                    &
      iadd = 27+2*Merge(mxatdm,0,l_msd)+ntpatm
 
      If (comm%idnode == 0) Then
-        Write(message,"(16x,'pressure tensor  (katms)',/)")
+        Write(message,"(16x,'pressure tensor  (katms)')")
         Call info(message,.true.)
 
         Do i=iadd,iadd+6,3
@@ -1494,23 +1494,47 @@ Subroutine statistics_result                                    &
 
 ! final averages and fluctuations
 
-  Write(message,"(1x,130('-'),/,/,                                 &
-    & 10x,'step',5x,'eng_tot',4x,'temp_tot',5x,'eng_cfg',     &
+!  Write(message,"(1x,130('-'),/,/,                                 &
+!    & 10x,'step',5x,'eng_tot',4x,'temp_tot',5x,'eng_cfg',     &
+!    & 5x,'eng_src',5x,'eng_cou',5x,'eng_bnd',5x,'eng_ang',    &
+!    & 5x,'eng_dih',5x,'eng_tet',/,6x,'time(ps)',5x,' eng_pv', &
+!    & 4x,'temp_rot',5x,'vir_cfg',5x,'vir_src',5x,'vir_cou',   &
+!    & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet',/,  &
+!    & 6x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',   &
+!    & 5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',           &
+!    & 5x,'vir_pmf',7x,'press',130('-'))")
+  Write(message,"(1x,130('-'))")
+  Call info(message,.true.)  
+  Write(message,"(10x,'step',5x,'eng_tot',4x,'temp_tot',5x,'eng_cfg',     &
     & 5x,'eng_src',5x,'eng_cou',5x,'eng_bnd',5x,'eng_ang',    &
-    & 5x,'eng_dih',5x,'eng_tet',/,6x,'time(ps)',5x,' eng_pv', &
+    & 5x,'eng_dih',5x,'eng_tet')")
+  Call info(message,.true.)
+  Write(message,"(6x,'time(ps)',5x,' eng_pv', &
     & 4x,'temp_rot',5x,'vir_cfg',5x,'vir_src',5x,'vir_cou',   &
-    & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet',/,  &
+    & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet',  &
     & 6x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',   &
     & 5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',           &
-    & 5x,'vir_pmf',7x,'press',/,/,1x,130('-'))")
+    & 5x,'vir_pmf',7x,'press')")
+  Call info(message,.true.)
+  Write(message,"(1x,130('-'))")
+  Call info(message,.true.)  
+
+!  Write(message,'(1x,i13,1p,9e12.4,/,0p,f14.5,1p,9e12.4,/,1x,0p,f13.3, &
+!    & 1p,9e12.4)') numacc,sumval(1:9),tmp,sumval(10:18),timelp,sumval(19:27)
+  Write(message,'(1x,i13,1p,9e12.4)')numacc,sumval(1:9)
+  Call info(message,.true.)
+  Write(message,'(f14.5,1p,9e12.4)')tmp,sumval(10:18)
+  Call info(message,.true.)
+  Write(message,'(1x,0p,f13.3,1p,9e12.4)') timelp,sumval(19:27)
   Call info(message,.true.)
 
-  Write(message,'(1x,i13,1p,9e12.4,/,0p,f14.5,1p,9e12.4,/,1x,0p,f13.3, &
-    & 1p,9e12.4)') numacc,sumval(1:9),tmp,sumval(10:18),timelp,sumval(19:27)
+  !Write(message,"(/,6x,' r.m.s. ',1p,9e12.4,/,6x,'fluctu- ',1p,9e12.4, &
+  !  & /,6x,'ations  ',1p,9e12.4)") ssqval(1:27)
+  Write(message,"(6x,' r.m.s. ',1p,9e12.4)")ssqval(1:9)
   Call info(message,.true.)
-
-  Write(message,"(/,6x,' r.m.s. ',1p,9e12.4,/,6x,'fluctu- ',1p,9e12.4, &
-    & /,6x,'ations  ',1p,9e12.4)") ssqval(1:27)
+  Write(message,"(6x,'fluctu- ',1p,9e12.4)") ssqval(10:18)
+  Call info(message,.true.)
+  Write(message,"(6x,'ations  ',1p,9e12.4)") ssqval(19:27)
   Call info(message,.true.)
 
   Write(message,"(1x,130('-'))")
@@ -1518,19 +1542,19 @@ Subroutine statistics_result                                    &
 
   ! Some extra information - conserved quantity=extended ensemble energy
 
-  Write(message,"(/,1x,a,1p,e12.4,5x,a,1p,e12.4)") &
+  Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)") &
     "Extended energy:       ", sumval(0),     &
     " r.m.s. fluctuations:  ", ssqval(0)
   Call info(message,.true.)
 
   ! Some extra information - <P*V> term - only matters for NP/sT ensembles
 
-  If (keyens >= 20) Write(message,"(/,1x,a,1p,e12.4,5x,a,1p,e12.4)")           &
+  If (keyens >= 20) Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)")           &
     "<P*V> term:            ", sumval(37+ntpatm+2*Merge(mxatdm,0,l_msd)), &
     " r.m.s. fluctuations:  ", ssqval(37+ntpatm+2*Merge(mxatdm,0,l_msd))
   Call info(message,.true.)
 
-  Write(message,"(/,1x,130('-'))")
+  Write(message,"(130('-'))")
   Call info(message,.true.)
 
 ! Move at the end of the default 27 quantities
@@ -1541,9 +1565,9 @@ Subroutine statistics_result                                    &
 
 ! Write out estimated diffusion coefficients
 
-  Write(message,"(/,/,12x,a)") 'Approximate 3D Diffusion Coefficients and square root of MSDs'
+  Write(message,"(12x,a)") 'Approximate 3D Diffusion Coefficients and square root of MSDs'
   Call info(message,.true.)
-  Write(message,"(/,12x,'atom',9x,'DC (10^-9 m^2 s^-1)',3x,'Sqrt[MSD] (Ang)',/)")
+  Write(message,"(12x,'atom',9x,'DC (10^-9 m^2 s^-1)',3x,'Sqrt[MSD] (Ang)')")
   Call info(message,.true.)
 
   Do i=1,ntpatm
@@ -1565,7 +1589,7 @@ Subroutine statistics_result                                    &
 ! print out average pressure tensor
 
   If (comm%idnode == 0) Then
-    Write(message,"(/,/,16x,'Average pressure tensor  (katms)',30x,'r.m.s. fluctuations',/)")
+    Write(message,"(16x,'Average pressure tensor  (katms)',30x,'r.m.s. fluctuations')")
     Call info(message,.true.)
 
     Do i=iadd,iadd+6,3
@@ -1573,7 +1597,7 @@ Subroutine statistics_result                                    &
       Call info(message,.true.)
     End Do
 
-    Write(message,'(/,12x,a,1p,e12.4)') 'trace/3  ', (sumval(iadd+1)+sumval(iadd+5)+sumval(iadd+9))/3.0_wp
+    Write(message,'(12x,a,1p,e12.4)') 'trace/3  ', (sumval(iadd+1)+sumval(iadd+5)+sumval(iadd+9))/3.0_wp
     Call info(message,.true.)
   End If
 
@@ -1590,7 +1614,7 @@ Subroutine statistics_result                                    &
      End Do
 
      If (comm%idnode == 0) Then
-       Write(message,"(/,/,16x,'Average cell vectors     (Angs) ',30x,'r.m.s. fluctuations',/)")
+       Write(message,"(16x,'Average cell vectors     (Angs) ',30x,'r.m.s. fluctuations')")
        Call info(message,.true.)
 
        Do i=iadd,iadd+6,3
@@ -1608,7 +1632,7 @@ Subroutine statistics_result                                    &
      If (iso > 0) Then
         h_z=sumval(iadd+1)
 
-        Write(message,"(/,/,16x,'Average surface area, fluctuations & mean estimate (Angs^2)',/)")
+        Write(message,"(16x,'Average surface area, fluctuations & mean estimate (Angs^2)')")
         Call info(message,.true.)
         Write(message,'(1p,3e12.4)') sumval(iadd+2),ssqval(iadd+2),avvol/h_z
         Call info(message,.true.)
@@ -1618,11 +1642,11 @@ Subroutine statistics_result                                    &
         If (iso > 1) Then
            tx= -h_z * ( sumval(iadd-9-8-2)/prsunt - (press+strext(1)) ) * tenunt
            ty= -h_z * ( sumval(iadd-9-7-2)/prsunt - (press+strext(5)) ) * tenunt
-           Write(message,"(/,16x,'Average surface tension, fluctuations & mean estimate in x (dyn/cm)',/)")
+           Write(message,"(16x,'Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
            Call info(message,.true.)
            Write(message,'(1p,3e12.4)') sumval(iadd+1),ssqval(iadd+1),tx
            Call info(message,.true.)
-           Write(message,"(/,16x,'Average surface tension, fluctuations & mean estimate in y (dyn/cm)',/)")
+           Write(message,"(16x,'Average surface tension, fluctuations & mean estimate in y (dyn/cm)')")
            Call info(message,.true.)
            Write(message,'(1p,3e12.4)') sumval(iadd+2),ssqval(iadd+2),ty
            Call info(message,.true.)
@@ -1707,7 +1731,7 @@ Subroutine statistics_result                                    &
 
   Call gtime(timelp)
 
-  Write(message,'(/,/,/,1x,"time elapsed since job start: ", f12.3, " sec",/)') timelp
+  Write(message,'("time elapsed since job start: ", f12.3, " sec")') timelp
   Call info(message,.true.)
 
 End Subroutine statistics_result

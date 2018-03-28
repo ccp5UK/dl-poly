@@ -153,7 +153,7 @@ Contains
   Allocate (link(1:mxatms),listin(1:mxatms),lct(1:ncells),lst(1:ncells), Stat=fail(1))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'four_body_forces allocation failure'
+     Write(message,'(a)') 'four_body_forces allocation failure'
      Call error(0,message)
   End If
 
@@ -802,7 +802,7 @@ Contains
   Deallocate (link,listin,lct,lst, Stat=fail(1))
   Deallocate (xxt,yyt,zzt,         Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'four_body_forces deallocation failure'
+     Write(message,'(a)') 'four_body_forces deallocation failure'
      Call error(0,message)
   End If
 

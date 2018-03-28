@@ -121,7 +121,7 @@ Contains
     Allocate (lunsafe(1:mxshl),lstopt(0:2,1:mxshl),      Stat=fail(1))
     Allocate (xdab(1:mxshl),ydab(1:mxshl),zdab(1:mxshl), Stat=fail(2))
     If (Any(fail > 0)) Then
-      Write(message,'(/,1x,a)') 'core_shell_forces allocation failure'
+      Write(message,'(a)') 'core_shell_forces allocation failure'
       Call error(0,message)
     End If
 
@@ -170,7 +170,7 @@ Contains
         If (comm%idnode == j) Then
           Do i=1,ntshl
             If (lunsafe(i)) Then
-              Write(message,'(/,1x,a,2(i10,a))')     &
+              Write(message,'(a,2(i10,a))')     &
                 'global unit number', listshl(0,i), &
                 ' , with a head particle number', listshl(1,i),   &
                 ' contributes towards next error'
@@ -289,7 +289,7 @@ Contains
     Deallocate (lunsafe,lstopt, Stat=fail(1))
     Deallocate (xdab,ydab,zdab, Stat=fail(2))
     If (Any(fail > 0)) Then
-      Write(message,'(/,1x,a)') 'core_shell_forces deallocation failure'
+      Write(message,'(a)') 'core_shell_forces deallocation failure'
       Call error(0,message)
     End If
 
@@ -396,7 +396,7 @@ Contains
     fail=0
     Allocate (lunsafe(1:mxshl), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(/,1x,a)') 'core_shell_on_top allocation failure'
+      Write(message,'(a)') 'core_shell_on_top allocation failure'
       Call error(0,message)
     End If
 
@@ -437,7 +437,7 @@ Contains
         If (comm%idnode == j) Then
           Do i=1,ntshl
             If (lunsafe(i)) Then
-              Write(message,'(/,1x,a,2(i10,a))')     &
+              Write(message,'(a,2(i10,a))')     &
                 'global unit number', listshl(0,i), &
                 ' , with a head particle number', listshl(1,i),   &
                 ' contributes towards next error'
@@ -452,7 +452,7 @@ Contains
 
     Deallocate (lunsafe, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(/,1x,a)') 'core_shell_on_top deallocation failure'
+      Write(message,'(a)') 'core_shell_on_top deallocation failure'
       Call error(0,message)
     End If
 
@@ -591,7 +591,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg,comm)
   Allocate (lstopt(1:2,1:mxshl),lst_sh(1:mxatms),      Stat=fail(1))
   Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'core_shell_relax allocation failure'
+     Write(message,'(a)') 'core_shell_relax allocation failure'
      Call error(0,message)
   End If
 
@@ -611,7 +611,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg,comm)
 
      Allocate (oxt(1:mxshl),oyt(1:mxshl),ozt(1:mxshl), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'core_shell_relax allocation failure SAVE'
+        Write(message,'(a)') 'core_shell_relax allocation failure SAVE'
         Call error(0,message)
      End If
   End If
@@ -962,7 +962,7 @@ Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,megshl,stpcfg,comm)
   Deallocate (lstopt,lst_sh, Stat=fail(1))
   Deallocate (fxt,fyt,fzt,   Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'core_shell_relax deallocation failure'
+     Write(message,'(a)') 'core_shell_relax deallocation failure'
      Call error(0,message)
   End If
 

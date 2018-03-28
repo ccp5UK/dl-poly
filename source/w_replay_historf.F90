@@ -207,7 +207,7 @@
               & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet',/,  &
               & 6x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',   &
               & 5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',           &
-              & 5x,'vir_pmf',7x,'press',/,/,1x,130('-'))")
+              & 5x,'vir_pmf',7x,'press',130('-'))")
 
               Write(nrite,"(1x,i13,1p,9e12.4,/,0p,f14.5,1p,9e12.4,    &
                    & /,1x,0p,f13.3,1p,9e12.4)") nstep, stpval( 1: 9), &

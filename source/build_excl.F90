@@ -63,7 +63,7 @@ Subroutine build_excl_intra(lecx,comm)
      Allocate (irgd(1:mxlrgd,1:mxrgd),irgd0(1:mxlrgd,1:mxrgd), Stat=fail(1))
      Allocate (jrgd(1:mxlrgd,1:mxrgd),jrgd0(1:mxlrgd,1:mxrgd), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'build_excl_intra allocation failure'
+        Write(message,'(a)') 'build_excl_intra allocation failure'
         Call error(0,message)
      End If
   End If
@@ -1177,7 +1177,7 @@ Subroutine build_excl_intra(lecx,comm)
      Deallocate (irgd,irgd0, Stat=fail(1))
      Deallocate (jrgd,jrgd0, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'build_excl_intra deallocation failure'
+        Write(message,'(a)') 'build_excl_intra deallocation failure'
         Call error(0,message)
      End If
   End If

@@ -120,7 +120,7 @@ Contains
   Allocate (xpmf(1:2,1:mxpmf),ypmf(1:2,1:mxpmf),zpmf(1:2,1:mxpmf),                                           Stat=fail(2))
   Allocate (buffer(1:(mxtpmf(1)+mxtpmf(2))*(mxpmf+2)),                                                       Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'pmf_coms allocation failure'
+     Write(message,'(a)') 'pmf_coms allocation failure'
      Call error(0,message)
   End If
 
@@ -261,7 +261,7 @@ Contains
   Deallocate (xpmf,ypmf,zpmf, Stat=fail(2))
   Deallocate (buffer,         Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'pmf_coms deallocation failure'
+     Write(message,'(a)') 'pmf_coms deallocation failure'
      Call error(0,message)
   End If
 
@@ -380,7 +380,7 @@ Subroutine pmf_quench(mxshak,tolnce,comm)
   Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),             Stat=fail(4))
   Allocate (xpmf(1:2,1:mxpmf),ypmf(1:2,1:mxpmf),zpmf(1:2,1:mxpmf), Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'pmf_quench allocation failure'
+     Write(message,'(a)') 'pmf_quench allocation failure'
      Call error(0,message)
   End If
 
@@ -516,7 +516,7 @@ Subroutine pmf_quench(mxshak,tolnce,comm)
   Deallocate (vxt,vyt,vzt,    Stat=fail(4))
   Deallocate (xpmf,ypmf,zpmf, Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'pmf_quench deallocation failure'
+     Write(message,'(a)') 'pmf_quench deallocation failure'
      Call error(0,message)
   End If
 
@@ -597,7 +597,7 @@ Subroutine pmf_units_set(comm)
   fail=0
   Allocate (i1pmf0(1:mxtpmf(1)),i2pmf0(1:mxtpmf(2)), Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'pmf_units_set allocation failure'
+     Write(message,'(a)') 'pmf_units_set allocation failure'
      Call error(0,message)
   End If
 
@@ -688,7 +688,7 @@ Subroutine pmf_units_set(comm)
 
   Deallocate (i1pmf0,i2pmf0, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'pmf_units_set deallocation failure'
+     Write(message,'(a)') 'pmf_units_set deallocation failure'
      Call error(0,message)
   End If
 
@@ -813,7 +813,7 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'pmf_vcoms deallocation failure'
+     Write(message,'(a)') 'pmf_vcoms deallocation failure'
      Call error(0,message)
   End If
 
@@ -860,7 +860,7 @@ Subroutine pmf_shake_vv          &
   fail=0
   Allocate (pxt(1:mxpmf),pyt(1:mxpmf),pzt(1:mxpmf),pt2(1:mxpmf),esig(1:mxpmf), Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'pmf_shake allocation failure'
+     Write(message,'(a)') 'pmf_shake allocation failure'
      Call error(0,message)
   End If
 
@@ -974,7 +974,7 @@ Subroutine pmf_shake_vv          &
         If (comm%idnode == k) Then
            Do ipmf=1,ntpmf
               If (esig(ipmf) >= tolnce)                   &
-                 Write(message,'(/,1x,3(a,i10),a,/,a,f8.2,a,1p,e12.4,a)')     &
+                 Write(message,'(3(a,i10),a,/,a,f8.2,a,1p,e12.4,a)')     &
                    'global PMF constraint number', ipmf,      &
                    ' , with head particle numbers, U1:', listpmf(1,1,ipmf), &
                    ' & U2:', listpmf(1,2,ipmf), ' ,',                       &
@@ -1014,7 +1014,7 @@ Subroutine pmf_shake_vv          &
 
   Deallocate (pxt,pyt,pzt,pt2,esig, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'pmf_shake deallocation failure'
+     Write(message,'(a)') 'pmf_shake deallocation failure'
      Call error(0,message)
   End If
 
@@ -1061,7 +1061,7 @@ Subroutine pmf_rattle                      &
   Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),             Stat=fail(1))
   Allocate (xpmf(1:2,1:mxpmf),ypmf(1:2,1:mxpmf),zpmf(1:2,1:mxpmf), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'pmf_rattle allocation failure'
+     Write(message,'(a)') 'pmf_rattle allocation failure'
      Call error(0,message)
   End If
 
@@ -1202,7 +1202,7 @@ Subroutine pmf_rattle                      &
   Deallocate (vxt,vyt,vzt,    Stat=fail(1))
   Deallocate (xpmf,ypmf,zpmf, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'pmf_rattle deallocation failure'
+     Write(message,'(a)') 'pmf_rattle deallocation failure'
      Call error(0,message)
   End If
 

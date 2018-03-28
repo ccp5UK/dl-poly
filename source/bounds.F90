@@ -505,7 +505,7 @@ Subroutine set_bounds                                 &
      qly=Int(celprp(8)/cut)
      qlz=Int(celprp(9)/cut)
 
-     Write(message,'(/,1x,a,i6,a,3(i0,a))')                           &
+     Write(message,'(a,i6,a,3(i0,a))')                           &
        'pure cutoff driven limit on largest possible decomposition:', qlx*qly*qlz , &
        ' nodes/domains (', qlx,',',qly,',',qlz,')'
      Call info(message,.true.)
@@ -514,7 +514,7 @@ Subroutine set_bounds                                 &
      qly=Max(1,qly/2)
      qlz=Max(1,qlz/2)
 
-     Write(message,'(/,1x,a,i6,a,3(i0,a))')                           &
+     Write(message,'(a,i6,a,3(i0,a))')                           &
        'pure cutoff driven limit on largest balanced decomposition:', qlx*qly*qlz , &
        ' nodes/domains (', qlx,',',qly,',',qlz,')'
      Call info(message,.true.)
@@ -546,7 +546,7 @@ Subroutine set_bounds                                 &
   qly=Max(1,qly/2)
   qlz=Max(1,qlz/2)
 
-  Write(message,'(/,1x,a,i6,a,3(i0,a))')                       &
+  Write(message,'(a,i6,a,3(i0,a))')                       &
     'cutoffs driven limit on largest balanced decomposition:', qlx*qly*qlz , &
     ' nodes/domains (', qlx,',',qly,',',qlz,')'
   Call info(message,.true.)
@@ -559,7 +559,7 @@ Subroutine set_bounds                                 &
 
 ! print link cell algorithm and check for violations or...
 
-  Write(message,'(/,1x,a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
+  Write(message,'(a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
   Call info(message,.true.)
 
   tol=Min(0.05_wp,0.005_wp*rcut)                                        ! tolerance
@@ -693,7 +693,7 @@ Subroutine set_bounds                                 &
 ! Hard luck, giving up
 
     If (qlx*qly*qlz == 0) Then
-      Write(message,'(/,1x,a,i6,a,3(i0,a))') &
+      Write(message,'(a,i6,a,3(i0,a))') &
         'SPME driven limit on largest possible decomposition:',  &
         (kmaxa/mxspl1)*(kmaxb/mxspl1)*(kmaxc/mxspl1) ,           &
         ' nodes/domains (', kmaxa/mxspl1,',',kmaxb/mxspl1,',',kmaxc/mxspl1,')'
@@ -820,7 +820,7 @@ Subroutine set_bounds                                 &
      ily=Int(r_npry*celprp(8)/cut)
      ilz=Int(r_nprz*celprp(9)/cut)
 
-     Write(message,'(/,1x,a,3i6)') "link-cell decomposition 2 (x,y,z): ",ilx,ily,ilz
+     Write(message,'(a,3i6)') "link-cell decomposition 2 (x,y,z): ",ilx,ily,ilz
      Call info(message,.true.)
 
      If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call error(305)

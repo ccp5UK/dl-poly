@@ -1039,7 +1039,7 @@ Contains
              (Log(2.0_wp)**3)
 
        If (Abs(tmp-Real(nu1*nu2*nu3,wp)) > 1.0e-6_wp) Then
-          Write(message,'(/,1x,a,20i2)') 'error - FFT array dimension not 2^N ',ndiv1,ndiv2,ndiv3
+          Write(message,'(a,20i2)') 'error - FFT array dimension not 2^N ',ndiv1,ndiv2,ndiv3
           Call error(0,message)
        End If
 
@@ -1047,7 +1047,7 @@ Contains
 
        Allocate (key1(1:ndiv1),key2(1:ndiv2),key3(1:ndiv3), Stat=fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'dlpfft3 (FFT reverse bit address arrays) allocation failure'
+          Write(message,'(a)') 'dlpfft3 (FFT reverse bit address arrays) allocation failure'
           Call error(0,message)
        End If
 

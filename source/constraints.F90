@@ -189,7 +189,7 @@ Contains
     Allocate (dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons), Stat=fail(3))
     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail(4))
     If (Any(fail > 0)) Then
-      Write(message,'(/,1x,a)') 'constraints_quench allocation failure'
+      Write(message,'(a)') 'constraints_quench allocation failure'
       Call error(0,message)
     End If
 
@@ -338,7 +338,7 @@ Contains
     Deallocate (dxx,dyy,dzz,   Stat=fail(3))
     Deallocate (vxt,vyt,vzt,   Stat=fail(4))
     If (Any(fail > 0)) Then
-      Write(message,'(/,1x,a)') 'constraints_quench deallocation failure'
+      Write(message,'(a)') 'constraints_quench deallocation failure'
       Call error(0)
     End If
 
@@ -374,7 +374,7 @@ Contains
     fail=0
     Allocate (lunsafe(1:mxcons), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(/,1x,a)') 'constraints_tags allocation failure'
+      Write(message,'(a)') 'constraints_tags allocation failure'
       Call error(0,message)
     End If
 
@@ -460,7 +460,7 @@ Contains
         If (comm%idnode == l) Then
           Do k=1,ntcons
             If (lunsafe(k)) Then
-                Write(message,'(/,1x,a,2(i10,a))')     &
+                Write(message,'(a,2(i10,a))')     &
                 'global unit number', listcon(0,k), &
                 ' , with a head particle number', listcon(1,k),   &
                 ' contributes towards next error'
@@ -485,7 +485,7 @@ Contains
 
     Deallocate (lunsafe, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(/,1x,a)') 'constraints_tags deallocation failure'
+      Write(message,'(a)') 'constraints_tags deallocation failure'
       Call error(0,message)
     End If
 
@@ -529,7 +529,7 @@ Subroutine constraints_rattle              &
   fail=0
   Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'constraints_rattle allocation failure'
+     Write(message,'(a)') 'constraints_rattle allocation failure'
      Call error(0,message)
   End If
 
@@ -673,7 +673,7 @@ Subroutine constraints_rattle              &
 
   Deallocate (vxt,vyt,vzt, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'constraints_rattle deallocation failure'
+     Write(message,'(a)') 'constraints_rattle deallocation failure'
      Call error(0,message)
   End If
 
@@ -722,7 +722,7 @@ Subroutine constraints_shake_vv       &
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                              Stat=fail(1))
   Allocate (dxt(1:mxcons),dyt(1:mxcons),dzt(1:mxcons),dt2(1:mxcons),esig(1:mxcons), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'constraints_shake allocation failure'
+     Write(message,'(a)') 'constraints_shake allocation failure'
      Call error(0,message)
   End If
 
@@ -883,7 +883,7 @@ Subroutine constraints_shake_vv       &
         If (comm%idnode == i) Then
            Do k=1,ntcons
              If (esig(k) >= tolnce*prmcon(listcon(0,k))) Then
-               Write(message,'(/,1x,3(a,i10),a,/,a,f8.2,a,1p,e12.4,a)')         &
+               Write(message,'(3(a,i10),a,/,a,f8.2,a,1p,e12.4,a)')         &
                  'global constraint number', listcon(0,k),   &
                  ' , with particle numbers:', listcon(1,k),                &
                  ' &', listcon(2,k), ' ,', ' converges to a length of ',   &
@@ -926,7 +926,7 @@ Subroutine constraints_shake_vv       &
   Deallocate (xxt,yyt,zzt,          Stat=fail(1))
   Deallocate (dxt,dyt,dzt,dt2,esig, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'constraints_shake deallocation failure'
+     Write(message,'(a)') 'constraints_shake deallocation failure'
      Call error(0,message)
   End If
 

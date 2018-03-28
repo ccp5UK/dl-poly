@@ -695,7 +695,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
   Allocate (xm(1:10*mxatms),ym(1:10*mxatms),zm(1:10*mxatms), Stat=fail(5))
 
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'system_expand allocation failure'
+     Write(message,'(a)') 'system_expand allocation failure'
      Call error(0,message)
   End If
 
@@ -708,7 +708,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
 
   Call gtime(t)
   If (comm%idnode == 0) Then
-     Write(nrite,'(/,/,/,1x, "time elapsed since job start: ", f12.3, " sec",/)') t
+     Write(nrite,'(/, "time elapsed since job start: ", f12.3, " sec",/)') t
      Write(nrite,'(4(1x,a,/))')                                                     &
      "*** Expanding the MD system by a nx*ny*nz volumetric replication        ***", &
      "*** of its contents along the MD cell lattice vectors, creating         ***", &
@@ -896,7 +896,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
      Allocate ( x_scaled( 1:natms * nall ), y_scaled( 1:natms * nall ), z_scaled( 1:natms * nall ), &
                Stat = fail(2) )
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'system_expand allocation failure 0 '
+        Write(message,'(a)') 'system_expand allocation failure 0 '
         Call error(0,message)
      End If
 
@@ -928,7 +928,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
   ndihed=0
   ninver=0
 
-  Write(message,'(/,1x,a)') 'Checking topological contiguity of molecules...'
+  Write(message,'(a)') 'Checking topological contiguity of molecules...'
   call info(message,.true.)
 
   safeg=.true. ! topology presumed safe
@@ -1572,7 +1572,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
      Deallocate ( atmnam_scaled, ltg_scaled,    Stat = fail(1) )
      Deallocate ( x_scaled, y_scaled, z_scaled, Stat = fail(2) )
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'system_expand deallocation failure 0 '
+        Write(message,'(a)') 'system_expand deallocation failure 0 '
         Call error(0,message)
      End If
 
@@ -1772,7 +1772,7 @@ Subroutine system_revive                                      &
   Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
   Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'system_revive allocation failure '
+     Write(message,'(a)') 'system_revive allocation failure '
      Call error(0,message)
   End If
 
@@ -2148,7 +2148,7 @@ Subroutine system_revive                                      &
   Deallocate (axx,ayy,azz, Stat=fail(2))
   Deallocate (bxx,byy,bzz, Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'system_revive deallocation failure'
+     Write(message,'(a)') 'system_revive deallocation failure'
      Call error(0,message)
   End If
 

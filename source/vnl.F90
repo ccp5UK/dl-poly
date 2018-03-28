@@ -70,7 +70,7 @@ Subroutine vnl_check(l_str,rcut,rpad,rlnk,width,comm)
   fail = 0
   Allocate (x(1:mxatms),y(1:mxatms),z(1:mxatms),r(1:mxatms), Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'vnl_check allocation failure'
+     Write(message,'(a)') 'vnl_check allocation failure'
      Call error(0,message)
   End If
 
@@ -109,7 +109,7 @@ Q:Do i=1,natms
 
   Deallocate (x,y,z,r, Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'vnl_check deallocation failure'
+     Write(message,'(a)') 'vnl_check deallocation failure'
      Call error(0,message)
   End If
 
@@ -221,7 +221,7 @@ Subroutine vnl_set_check(comm)
      fail = 0
      Allocate (xbg(1:mxatms),ybg(1:mxatms),zbg(1:mxatms), Stat = fail)
      If (fail > 0) Then
-        Write(message,'(/,1x,a)') 'vnl_set_check allocation failure'
+        Write(message,'(a)') 'vnl_set_check allocation failure'
         Call error(0,message)
      End If
 

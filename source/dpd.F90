@@ -97,7 +97,7 @@ Contains
     Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat = fail(1))
     Allocate (fdpdx(1:mxatdm),fdpdy(1:mxatdm),fdpdz(1:mxatdm),         Stat = fail(2))
     If (Any(fail > 0)) Then
-      Write(message,'(/,1x,a)') 'dpd_thermostat allocation failure'
+      Write(message,'(a)') 'dpd_thermostat allocation failure'
       Call error(0,message)
     End If
 
@@ -495,7 +495,7 @@ Contains
     Deallocate (xxt,yyt,zzt,rrt,   Stat = fail(1))
     Deallocate (fdpdx,fdpdy,fdpdz, Stat = fail(2))
     If (Any(fail > 0)) Then
-      Write(message,'(/,1x,a)') 'dpd_thermostat deallocation failure'
+      Write(message,'(a)') 'dpd_thermostat deallocation failure'
       Call error(0,message)
     End If
 

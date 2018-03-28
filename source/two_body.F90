@@ -101,7 +101,7 @@ Subroutine two_body_forces                        &
   fail=0
   Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'two_body_forces allocation failure'
+     Write(message,'(a)') 'two_body_forces allocation failure'
      Call error(0,message)
   End If
 
@@ -490,7 +490,7 @@ Subroutine two_body_forces                        &
 
   Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'two_body_forces deallocation failure'
+     Write(message,'(a)') 'two_body_forces deallocation failure'
      Call error(0,message)
   End If
 

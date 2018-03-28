@@ -316,16 +316,16 @@ Contains
   If (l_str) Then
      Allocate (iwrk(1:mxatms), Stat=fail)
      If (fail > 0) Then
-        Write(message,'(/,1x,a)') 'check_config allocation failure'
+        Write(message,'(a)') 'check_config allocation failure'
         Call error(0,message)
     End If
   End If
 
 
   If (newjob) Then
-     Write(message,"(/,1x,'configuration file name: ',/,/,10x,a)") cfgname
+     Write(message,"('configuration file name: ',10x,a)") cfgname
      Call info(message,.true.)
-     Write(message,"(/,/,1x,'selected image convention',6x,i10)") imcon
+     Write(message,"('selected image convention',6x,i10)") imcon
      Call info(message,.true.)
   End If
 
@@ -368,11 +368,15 @@ Contains
 ! Specify molecular dynamics simulation cell
 
   If (newjob) Then
-     Write(message,"(/,/,1x,'simulation cell vectors'/)")
+     Write(message,"('simulation cell vectors')")
      Call Info(message,.true.)
-     Write(message,"(3f20.10)") cell
+     Write(message,"(3f20.10)") cell(1:3)
      Call Info(message,.true.)
-     Write(message,"(/,/,1x,'system volume     ',2x,1p,g22.12)") det
+     Write(message,"(3f20.10)") cell(4:6)
+     Call Info(message,.true.)
+     Write(message,"(3f20.10)") cell(7:9)
+     Call Info(message,.true.)
+     Write(message,"('system volume     ',2x,1p,g22.12)") det
      Call Info(message,.true.)
   End If
 
@@ -424,7 +428,7 @@ Contains
 ! Check for unidentified atoms in CONFIG by their existence in FIELD
 
               If (atmnam(loc_ind) /= sitnam(mol_sit+m)) Then
-                 Write(message,"(/,/,1x, 'unidentified atom label :',a8,': atom number ',i5)") atmnam(loc_ind),loc_ind
+                 Write(message,"( 'unidentified atom label :',a8,': atom number ',i5)") atmnam(loc_ind),loc_ind
                  Call info(message)
                  safe=.false.
               End If
@@ -473,7 +477,7 @@ Contains
 
      Deallocate (iwrk, Stat=fail)
      If (fail > 0) Then
-        Write(message,'(/,1x,a)') 'check_config deallocation failure'
+        Write(message,'(a)') 'check_config deallocation failure'
         Call error(0,message)
      End If
   End If
@@ -651,7 +655,7 @@ Contains
 
 100 Continue
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'all_inds_present allocation/deallocation failure'
+       Write(message,'(a)') 'all_inds_present allocation/deallocation failure'
        Call error(0,message)
     End If
 
@@ -887,7 +891,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
      Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(3))
      Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'read_config allocation failure'
+        Write(message,'(a)') 'read_config allocation failure'
         Call error(0,message)
      End If
 

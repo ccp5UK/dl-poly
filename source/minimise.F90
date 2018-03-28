@@ -161,7 +161,7 @@ Contains
   End If
   Allocate (gxx(1:mxatms),gyy(1:mxatms),gzz(1:mxatms),            Stat=fail(8))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'minimise_relax allocation failure'
+     Write(message,'(a)') 'minimise_relax allocation failure'
      Call error(0,message)
   End If
 
@@ -603,7 +603,7 @@ Contains
   End If
   Deallocate (gxx,gyy,gzz,         Stat=fail(8))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a,i0)') 'minimise_relax deallocation failure'
+     Write(message,'(a,i0)') 'minimise_relax deallocation failure'
      Call error(0,message)
   End If
 
@@ -672,7 +672,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
      fail=0
      Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), Stat=fail)
      If (fail > 0) Then
-        Write(message,'(/,1x,a)') 'zero_k_optimise allocation failure'
+        Write(message,'(a)') 'zero_k_optimise allocation failure'
         Call error(0,message)
      End If
 
@@ -913,7 +913,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
      Deallocate (ggx,ggy,ggz, Stat=fail)
      If (fail > 0) Then
-        Write(message,'(/,1x,a)') 'zero_k_optimise deallocation failure'
+        Write(message,'(a)') 'zero_k_optimise deallocation failure'
         Call error(0,message)
      End If
   Else
@@ -964,7 +964,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
      fail=0
      Allocate (buffer(1:12), Stat=fail)
      If (fail > 0) Then
-        Write(message,'(/,1x,a)') 'zero_k_optimise allocation failure'
+        Write(message,'(a)') 'zero_k_optimise allocation failure'
         Call error(0,message)
      End If
 
@@ -1255,7 +1255,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
      Deallocate (buffer, Stat=fail)
      If (fail > 0) Then
-        Write(message,'(/,1x,a)') 'zero_k_optimise deallocation failure'
+        Write(message,'(a)') 'zero_k_optimise deallocation failure'
         Call error(0,message)
      End If
   End If

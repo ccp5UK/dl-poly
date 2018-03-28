@@ -505,7 +505,7 @@ Subroutine read_control                                &
   If (.not.safe) Go To 1000
 
   If (comm%idnode == 0) Write(nrite,"(/,3(1x,130('*'),/),1x,     &
-     & 24('*'),5x,a72,5x,24('*'),/,3(1x,130('*'),/),/,/,1x, &
+     & 24('*'),5x,a72,5x,24('*'),/,3(1x,130('*'),/), &
      & 'SIMULATION CONTROL PARAMETERS')") sysname
 
 ! read and process directives from CONTROL file
@@ -1081,7 +1081,7 @@ Subroutine read_control                                &
            word1='distance'
         Else
            Call strip_blanks(record)
-           If (comm%idnode == 0) Write(nrite,"(/,/,1x,4a)") word2(1:Len_Trim(word2)+1),' ',word(1:Len_Trim(word)+1),record
+           If (comm%idnode == 0) Write(nrite,"(4a)") word2(1:Len_Trim(word2)+1),' ',word(1:Len_Trim(word)+1),record
            Call error(590)
         End If
 

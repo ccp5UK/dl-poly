@@ -208,7 +208,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
   Allocate (nam(1:mxatms),ind(1:mxatms),dr(1:mxatms),  Stat=fail(1))
   Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'rsd_write allocation failure'
+     Write(message,'(a)') 'rsd_write allocation failure'
      Call error(0,message)
   End If
 
@@ -236,7 +236,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
   Allocate (n_n(0:comm%mxnode),          Stat=fail(1))
   Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'rsd_write allocation failure 2'
+     Write(message,'(a)') 'rsd_write allocation failure 2'
      Call error(0,message)
   End If
 
@@ -356,7 +356,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
      Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'rsd_write allocation failure 3'
+        Write(message,'(a)') 'rsd_write allocation failure 3'
         Call error(0,message)
      End If
 
@@ -478,7 +478,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
      Deallocate (chbuf,iwrk,  Stat=fail(1))
      Deallocate (bxx,byy,bzz, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'rsd_write deallocation failure 3'
+        Write(message,'(a)') 'rsd_write deallocation failure 3'
         Call error(0,message)
      End If
 
@@ -489,14 +489,14 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
   Deallocate (n_n,   Stat=fail(1))
   Deallocate (chbat, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a,i0)') 'rsd_write deallocation failure 2'
+     Write(message,'(a,i0)') 'rsd_write deallocation failure 2'
      Call error(0,message)
   End If
 
   Deallocate (nam,ind,dr,  Stat=fail(1))
   Deallocate (axx,ayy,azz, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'rsd_write deallocation failure'
+     Write(message,'(a)') 'rsd_write deallocation failure'
      Call error(0,message)
   End If
 

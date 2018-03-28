@@ -101,7 +101,7 @@ Subroutine build_book_intra             &
   Allocate (iwrk(1:mxatms),                                Stat=fail(1))
   If (m_rgd > 0) Allocate (irgd(1:mxlrgd),irgd0(1:mxlrgd), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'build_book_intra allocation failure'
+     Write(message,'(a)') 'build_book_intra allocation failure'
      Call error(0,message)
   End If
 
@@ -321,7 +321,7 @@ Subroutine build_book_intra             &
            Do lpmf=1,numpmf(itmols) ! numpmf can only be 1 or 0, so the 'Do' loop is used as an 'If' condition
               Allocate (i1pmf(1:mxtpmf(1)),i1pmf0(1:mxtpmf(1)),i2pmf(1:mxtpmf(2)),i2pmf0(1:mxtpmf(2)), Stat=fail(1))
               If (fail(1) > 0) Then
-                 Write(message,'(/,1x,a)') 'build_book_intra PMF allocation failure'
+                 Write(message,'(a)') 'build_book_intra PMF allocation failure'
                  Call error(0,message)
               End If
 
@@ -400,7 +400,7 @@ Subroutine build_book_intra             &
 
               Deallocate (i1pmf,i1pmf0,i2pmf,i2pmf0, Stat=fail(1))
               If (fail(1) > 0) Then
-                 Write(message,'(/,1x,a)') 'build_book_intra PMF deallocation failure'
+                 Write(message,'(a)') 'build_book_intra PMF deallocation failure'
                  Call error(0,message)
               End If
            End Do
@@ -1613,7 +1613,7 @@ Subroutine build_book_intra             &
   Deallocate (iwrk,                      Stat=fail(1))
   If (m_rgd > 0) Deallocate (irgd,irgd0, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'build_book_intra deallocation failure'
+     Write(message,'(a)') 'build_book_intra deallocation failure'
      Call error(0,message)
   End If
 

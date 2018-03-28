@@ -193,7 +193,7 @@ Contains
         Allocate (lstopt(1:2,1:mxshl),                       Stat=fail(1))
         Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms), Stat=fail(2))
         If (Any(fail > 0)) Then
-           Write(message,'(/,1x,a)') 'external_field_apply allocation failure'
+           Write(message,'(a)') 'external_field_apply allocation failure'
            Call error(0,message)
         End If
 
@@ -239,7 +239,7 @@ Contains
         Deallocate (lstopt,      Stat=fail(1))
         Deallocate (oxt,oyt,ozt, Stat=fail(2))
         If (Any(fail > 0)) Then
-           Write(message,'(/,1x,a)') 'external_field_apply deallocation failure'
+           Write(message,'(a)') 'external_field_apply deallocation failure'
            Call error(0,message)
         End If
 
@@ -265,7 +265,7 @@ Contains
         Allocate (lstopt(1:2,1:mxshl),                       Stat=fail(1))
         Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms), Stat=fail(2))
         If (Any(fail > 0)) Then
-           Write(message,'(/,1x,a)') 'external_field_apply allocation failure'
+           Write(message,'(a)') 'external_field_apply allocation failure'
            Call error(0,message)
         End If
 
@@ -313,7 +313,7 @@ Contains
         Deallocate (lstopt,      Stat=fail(1))
         Deallocate (oxt,oyt,ozt, Stat=fail(2))
         If (Any(fail > 0)) Then
-           Write(message,'(/,1x,a,i0)') 'external_field_apply deallocation failure'
+           Write(message,'(a,i0)') 'external_field_apply deallocation failure'
            Call error(0,message)
         End If
 

@@ -313,10 +313,10 @@ Contains
   If (comm%idnode == 0) Then
     Open(Unit=nmpldt, File = 'MPOLES', Status = 'old')
   End If
-  Write(message,"(/,/,1x,'ELECTROSTATICS MULTIPOLES SPECIFICATION')")
+  Write(message,"('ELECTROSTATICS MULTIPOLES SPECIFICATION')")
   Call info(message,.true.)
   If (.not.l_top) Then
-    Write(message,"(/,1x,'detailed specification opted out')")
+    Write(message,"('detailed specification opted out')")
     Call info(message,.true.)
   End If
 
@@ -351,10 +351,10 @@ Contains
           If (word(1:4) == 'type') Call get_word(record,word)
 
           If (ntpmls == Nint(word_2_real(word))) Then
-             Write(message,"(/,/,1x,'number of molecular types',6x,i10)") ntpmls
+             Write(message,"('number of molecular types',6x,i10)") ntpmls
              Call info(message,.true.)
           Else
-            Write(message,'(/,1x,a,2(/,1x,a,i0))')                        &
+            Write(message,'(a,2(/,1x,a,i0))')                        &
               "number of molecular types mistmatch between FIELD and MPOLES !!! ***", &
             "***           FIELD  reports: ", ntpmls,                                             &
               "***           MPOLES reports: ", Nint(word_2_real(word))
@@ -367,7 +367,7 @@ Contains
           Do itmols=1,ntpmls
 
             If (l_top) Then
-              Write(message,"(/,/,1x,'molecular species type',9x,i10)") itmols
+              Write(message,"('molecular species type',9x,i10)") itmols
               Call info(message,.true.)
             End If
 
@@ -385,11 +385,11 @@ Contains
 
              If (record1 == record2) Then
                If (l_top) Then
-                 Write(message,"(/,1x,'name of species:',13x,a40)") molnam(itmols)
+                 Write(message,"('name of species:',13x,a40)") molnam(itmols)
                  Call info(message,.true.)
                End If
              Else
-               Write(message,'(/,1x,a)') 'molecular names mistmatch between FIELD and MPOLES for type'
+               Write(message,'(a)') 'molecular names mistmatch between FIELD and MPOLES for type'
                Call error(623,message,.true.)
              End If
 
@@ -412,11 +412,11 @@ Contains
 
                    If (nummols(itmols) == Nint(word_2_real(word))) Then
                      If (l_top) Then
-                       Write(message,"(/,1x,'number of molecules  ',10x,i10)") nummols(itmols)
+                       Write(message,"('number of molecules  ',10x,i10)") nummols(itmols)
                        Call info(message,.true.)
                      End If
                    Else
-                     Write(message,'(/,1x,a,2(/,1x,a,i0))')         &
+                     Write(message,'(a,2(/,1x,a,i0))')         &
                        " number of molecules mistmatch between FIELD and MPOLES !!! ***", &
                      "***           FIELD  reports: ", nummols(itmols),                              &
                        "***           MPOLES reports: ", Nint(word_2_real(word))
@@ -432,14 +432,14 @@ Contains
 
                    If (numsit(itmols) == Nint(word_2_real(word))) Then
                       If (l_top) Then
-                        Write(message,"(/,1x,'number of atoms/sites',10x,i10)") numsit(itmols)
+                        Write(message,"('number of atoms/sites',10x,i10)") numsit(itmols)
                         Call info(message,.true.)
-                        Write(message,"(/,1x,'atomic characteristics:', &
+                        Write(message,"('atomic characteristics:', &
                           & /,/,15x,'site',4x,'name',2x,'multipolar order',2x,'repeat'/)")
                         Call info(message,.true.)
                       End If
                    Else
-                     Write(message,'(/,1x,a,2(/,1x,a,i0))')                        &
+                     Write(message,'(a,2(/,1x,a,i0))')                        &
                        "number of atoms/sites per molecule mistmatch between FIELD and MPOLES !!! ***", &
                      "***           FIELD  reports: ", numsit(itmols),                                              &
                        "***           MPOLES reports: ", Nint(word_2_real(word))
@@ -481,7 +481,7 @@ Contains
 
                          Do i=jsite,lsite
                            If (sitnam(i) /= atom) Then ! detect mish-mash
-                             Write(message,'(/,1x,a,i0)') &
+                             Write(message,'(a,i0)') &
                                "site names mistmatch between FIELD and MPOLES for site ", ksite+1+i-jsite
                              Call error(623,message,.true.)
                            End If
@@ -500,13 +500,13 @@ Contains
                             isite2=nsite+lstshl(2,kshels)
                             If ((isite2 >= jsite .and. isite2 <= lsite)) Then
                                l_rsh=.false.
-                               If (ordmpl > 0) Write(message,'(/,1x,a)') &
+                               If (ordmpl > 0) Write(message,'(a)') &
                                  "a shell (of a polarisable multipolar ion) can only bear a charge to emulate a self-iduced dipole"
                                Call warning(message,.true.)
-                               If (polarity > zero_plus) Write(message,'(/,1x,a)') &
+                               If (polarity > zero_plus) Write(message,'(a)') &
                                  "a shell (of a polarisable multipolar ion) cannot have its own associated polarisability"
                                Call warning(message,.true.)
-                               If (dumping  > zero_plus) Write(message,'(/,1x,a)') &
+                               If (dumping  > zero_plus) Write(message,'(a)') &
                                  "a shell (of a polarisable multipolar ion) cannot have its own associated dumping factor"
                                Call warning(message,.true.)
                             End If
@@ -706,7 +706,7 @@ Contains
 
                 Else If (word(1:6) == 'finish') Then
 
-                  Write(message,'(/,1x,3(a,i0))') &
+                  Write(message,'(3(a,i0))') &
                     "multipolar electrostatics requested up to order ", &
                     mxompl, " with specified interactions up order ", &
                     ordmpl_max," and least order ", ordmpl_min
@@ -731,7 +731,7 @@ Contains
   ! error exit for unidentified directive in molecular data
 
                    Call strip_blanks(record)
-                   Write(message,'(/,1x,2a)') word(1:Len_Trim(word)+1),record
+                   Write(message,'(2a)') word(1:Len_Trim(word)+1),record
                    Call error(12,message,.true.)
 
                 End If
@@ -758,7 +758,7 @@ Contains
 
   ! error exit for unidentified directive
 
-          Write(message,'(/,1x,a)') word(1:Len_Trim(word))
+          Write(message,'(a)') word(1:Len_Trim(word))
           Call error(4,message,.true.)
 
        End If

@@ -861,7 +861,7 @@ Subroutine metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stress,comm)
   fail=0
   Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'metal_ld_compute allocation failure'
+     Write(message,'(a)') 'metal_ld_compute allocation failure'
      Call error(0,message)
   End If
 
@@ -899,7 +899,7 @@ Subroutine metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stress,comm)
 
   Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a,i0)') 'metal_ld_compute allocation failure'
+     Write(message,'(a,i0)') 'metal_ld_compute allocation failure'
      Call error(0,message)
   End If
 
@@ -1360,7 +1360,7 @@ Subroutine metal_lrc(rmet,elrcm,vlrcm,comm)
      newjob =.false.
 
      If (comm%idnode == 0) Then
-        Write(nrite,"(/,/,1x,1p,                                  &
+        Write(nrite,"(1p,                                  &
         & 'long-range correction to metal energy    ',e15.6,/,1x, &
         & 'lr correction for metal atom density     ',e15.6,/,1x, &
         & '1st partial lr correction to metal virial',e15.6,/)")  &
@@ -1426,7 +1426,7 @@ Subroutine metal_table_read(l_top,comm)
   End If
   Allocate (buffer(1:mxgmet),                                                    Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'metal_table_read allocation failure'
+     Write(message,'(a)') 'metal_table_read allocation failure'
      Call error(0,message)
   End If
   cpair=0 ; cp=0
@@ -1771,7 +1771,7 @@ Subroutine metal_table_read(l_top,comm)
 
   If (comm%idnode == 0) Close(Unit=ntable)
   If (l_top) Then
-    Write(message,'(/,1x,a)') 'potential tables read from TABEAM file'
+    Write(message,'(a)') 'potential tables read from TABEAM file'
     Call info(message,.true.)
   End IF
 
@@ -1782,7 +1782,7 @@ Subroutine metal_table_read(l_top,comm)
   End If
   Deallocate (buffer,                             Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a,i0)') 'metal_table_read deallocation failure'
+     Write(message,'(a,i0)') 'metal_table_read deallocation failure'
      Call error(0,message)
   End If
 
@@ -2939,7 +2939,7 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'metal_ld_export deallocation failure'
+     Write(message,'(a)') 'metal_ld_export deallocation failure'
      Call error(0,message)
   End If
 
@@ -2970,7 +2970,7 @@ Subroutine metal_ld_set_halo(comm)
   fail = 0
   Allocate (ixyz0(1:mxatms), Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'metal_ld_set_halo allocation failure'
+     Write(message,'(a)') 'metal_ld_set_halo allocation failure'
      Call error(0,message)
   End If
   ixyz0(1:nlast) = ixyz(1:nlast)
@@ -3002,7 +3002,7 @@ Subroutine metal_ld_set_halo(comm)
 
   Deallocate (ixyz0, Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'metal_ld_set_halo deallocation failure'
+     Write(message,'(a)') 'metal_ld_set_halo deallocation failure'
      Call error(0,message)
   End If
 

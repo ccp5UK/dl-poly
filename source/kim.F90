@@ -298,7 +298,7 @@ Contains
     fail=0
     Deallocate (kim_list, Stat=fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') &
+       Write(message,'(a)') &
             'failure deallocating kim_list in kim_module'
        Call error(0,message)
     End If

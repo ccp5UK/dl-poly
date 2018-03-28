@@ -100,7 +100,7 @@ Contains
   Allocate (lstopt(0:1,1:mxteth),                         Stat=fail(1))
   Allocate (xdab(1:mxteth),ydab(1:mxteth),zdab(1:mxteth), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'tethers_forces allocation failure'
+     Write(message,'(a)') 'tethers_forces allocation failure'
      Call error(0,message)
   End If
 
@@ -279,7 +279,7 @@ Contains
   Deallocate (lstopt,         Stat=fail(1))
   Deallocate (xdab,ydab,zdab, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'tethers_forces deallocation failure'
+     Write(message,'(a)') 'tethers_forces deallocation failure'
      Call error(0,message)
   End If
 

@@ -5465,7 +5465,7 @@ Module mpoles_container
           fail = 0
           Allocate (xxt(1:numnbh),yyt(1:numnbh),zzt(1:numnbh),rsqt(1:numnbh), Stat=fail)
           If (fail > 0) Then
-             Write(message,'(/,1x,a)') 'allocation failure in rotate_mpoles'
+             Write(message,'(a)') 'allocation failure in rotate_mpoles'
              Call error(0,message)
           End If
 
@@ -5538,7 +5538,7 @@ Module mpoles_container
 
           Deallocate (xxt,yyt,zzt,rsqt, Stat=fail)
           If (fail > 0) Then
-             Write(message,'(/,1x,a)') 'deallocation failure in rotate_mpoles'
+             Write(message,'(a)') 'deallocation failure in rotate_mpoles'
              Call error(0,message)
           End If
 
@@ -6182,7 +6182,7 @@ Module mpoles_container
           fail = 0
           Allocate (xxt(1:numnbh),yyt(1:numnbh),zzt(1:numnbh),rsqt(1:numnbh), Stat=fail)
           If (fail > 0) Then
-             Write(message,'(/,1x,a,i0)') 'allocation failure in rotate_mpoles_d'
+             Write(message,'(a,i0)') 'allocation failure in rotate_mpoles_d'
              Call error(0,message)
           End If
 
@@ -6255,7 +6255,7 @@ Module mpoles_container
 
           Deallocate (xxt,yyt,zzt,rsqt, Stat=fail)
           If (fail > 0) Then
-             Write(message,'(/,1x,a)') 'deallocation failure in rotate_mpoles_d'
+             Write(message,'(a)') 'deallocation failure in rotate_mpoles_d'
              Call error(0,message)
           End If
 

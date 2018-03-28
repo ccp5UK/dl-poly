@@ -125,7 +125,7 @@ Contains
   ! Report DoF
 
     If (comm%idnode == 0) Then
-       Write(nrite,"(/,/,1x,'degrees of freedom break-down list')")
+       Write(nrite,"('degrees of freedom break-down list')")
        Write(nrite,"(    1x,'----------------------------------')")
        Write(nrite,"(    1x,'free particles        ',i12)") meg
        Write(nrite,"(    1x,'centre of mass        ',i12)") -com
@@ -184,7 +184,7 @@ Contains
        Allocate (qn(1:mxatms),tpn(0:comm%mxnode-1),    Stat=fail(1))
        Allocate (qs(0:2,1:mxshl),tps(0:comm%mxnode-1), Stat=fail(2))
        If (Any(fail > 0)) Then
-          Write(message,'(/,1x,a)') 'set_temperature allocation failure'
+          Write(message,'(a)') 'set_temperature allocation failure'
           Call error(0,message)
        End If
 
@@ -449,7 +449,7 @@ Contains
        Deallocate (qn,tpn, Stat=fail(1))
        Deallocate (qs,tps, Stat=fail(2))
        If (Any(fail > 0)) Then
-          Write(message,'(/,1x,a)') 'set_temperature deallocation failure'
+          Write(message,'(a)') 'set_temperature deallocation failure'
           Call error(0,message)
        End If
 
@@ -638,7 +638,7 @@ Contains
     fail=0
     Allocate (ind(1:natms),pair(1:2,natms/2), Stat=fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'regauss_temperature allocation failure'
+       Write(message,'(a)') 'regauss_temperature allocation failure'
        Call error(0,message)
     End If
 
@@ -767,7 +767,7 @@ Contains
 
     Deallocate (ind,pair, Stat=fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'regauss_temperature deallocation failure'
+       Write(message,'(a)') 'regauss_temperature deallocation failure'
        Call error(0,message)
     End If
 
@@ -860,7 +860,7 @@ Contains
        fail=0
        Allocate (buffer(1:12), Stat=fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'scale_temperature allocation failure'
+          Write(message,'(a)') 'scale_temperature allocation failure'
           Call error(0,message)
        End If
 
@@ -1132,7 +1132,7 @@ Contains
 
        Deallocate (buffer, Stat=fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'scale_temperature deallocation failure'
+          Write(message,'(a)') 'scale_temperature deallocation failure'
           Call error(0,message)
        End If
     End If

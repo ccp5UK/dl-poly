@@ -172,7 +172,7 @@ Contains
     Allocate ( r0(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) , Stat = fail( 9) )
     Allocate (  v(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) , Stat = fail(10) )
     If (Any(fail(1:10) > 0)) Then
-       Write(message,'(/,1x,a)') 'biCGStab_init allocation failure'
+       Write(message,'(a)') 'biCGStab_init allocation failure'
        Call error(0,message)
     End If
 
@@ -614,7 +614,7 @@ Contains
          If (from > -1) Then
             Allocate ( recv_buffer( xdb:xdt, ydb:ydt, zdb:zdt ) , Stat = fail(1) )
             If (fail(1) > 0) Then
-               Write(message,'(/,1x,a)') 'exchange_grid_halo receive allocation failure'
+               Write(message,'(a)') 'exchange_grid_halo receive allocation failure'
                Call error(0,message)
             End If
 
@@ -624,7 +624,7 @@ Contains
          If (to   > -1) Then
             Allocate ( send_buffer( xlb:xlt, ylb:ylt, zlb:zlt ) , Stat = fail(1) )
             If (fail(1) > 0) Then
-               Write(message,'(/,1x,a)') 'exchange_grid_halo send allocation failure'
+               Write(message,'(a)') 'exchange_grid_halo send allocation failure'
                Call error(0,message)
             End If
 
@@ -648,7 +648,7 @@ Contains
 
             Deallocate ( recv_buffer , Stat = fail(1) )
             If (fail(1) > 0) Then
-               Write(message,'(/,1x,a,i0)') 'exchange_grid_halo receive deallocation failure'
+               Write(message,'(a,i0)') 'exchange_grid_halo receive deallocation failure'
                Call error(0,message)
             End If
          End If
@@ -656,7 +656,7 @@ Contains
          If (to   > -1) Then
             Deallocate ( send_buffer , Stat = fail(1) )
             If (fail(1) > 0) Then
-               Write(message,'(/,1x,a,i0)') 'exchange_grid_halo send deallocation failure'
+               Write(message,'(a,i0)') 'exchange_grid_halo send deallocation failure'
                Call error(0,message)
             End If
          End If
@@ -680,7 +680,7 @@ Contains
     Deallocate(F ,   s ,  r , Stat = fail(2) )
     Deallocate(p , phi , r0 , Stat = fail(3) )
     If (Any(fail(1:3) > 0)) Then
-       Write(message,'(/,1x,a)') 'exchange_grid_halo send deallocation failure'
+       Write(message,'(a)') 'exchange_grid_halo send deallocation failure'
        Call error(0,message)
     End If
 
@@ -1202,7 +1202,7 @@ Contains
     fail=0
     Allocate (l_ind(1:mxatdm),nz_fr(0:comm%mxnode), Stat=fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'poisson_frzn_forces allocation failure'
+       Write(message,'(a)') 'poisson_frzn_forces allocation failure'
        Call error(0,message)
     End If
 
@@ -1235,7 +1235,7 @@ Contains
 
        Allocate (cfr(1:nzfr),xfr(1:nzfr),yfr(1:nzfr),zfr(1:nzfr), Stat=fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'poisson_frzn_forces allocation failure 1'
+          Write(message,'(a)') 'poisson_frzn_forces allocation failure 1'
           Call error(0,message)
        End If
 
@@ -1470,7 +1470,7 @@ Contains
 
        Deallocate (cfr,xfr,yfr,zfr, Stat=fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a,i0)') 'poisson_frzn_forces deallocation failure 1'
+          Write(message,'(a,i0)') 'poisson_frzn_forces deallocation failure 1'
           Call error(0,message)
        End If
 
@@ -1481,7 +1481,7 @@ Contains
 
        Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a,i0)') 'poisson_frzn_forces allocation failure 2'
+          Write(message,'(a,i0)') 'poisson_frzn_forces allocation failure 2'
           Call error(0,message)
        End If
 
@@ -1600,7 +1600,7 @@ Contains
 
        Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'poisson_frzn_forces deallocation failure 2'
+          Write(message,'(a)') 'poisson_frzn_forces deallocation failure 2'
           Call error(0,message)
        End If
 
@@ -1658,7 +1658,7 @@ Contains
 
     Deallocate (l_ind,nz_fr, Stat=fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'poisson_frzn_forces deallocation failure'
+       Write(message,'(a)') 'poisson_frzn_forces deallocation failure'
        Call error(0,message)
     End If
 

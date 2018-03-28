@@ -127,7 +127,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,comm)
   Allocate (cell_dom(0:nlp3),cell_bor(0:nlp4),                               Stat=fail(4))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                       Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'link_cell_pairs allocation failure'
+     Write(message,'(a)') 'link_cell_pairs allocation failure'
      Call error(0,message)
   End If
   cell_dom(0)=nlp3 ! save array's limit
@@ -1027,7 +1027,7 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
   Deallocate (cell_dom,cell_bor,             Stat=fail(4))
   Deallocate (xxt,yyt,zzt,                   Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'link_cell_pairs deallocation failure'
+     Write(message,'(a)') 'link_cell_pairs deallocation failure'
      Call error(0,message)
   End If
 

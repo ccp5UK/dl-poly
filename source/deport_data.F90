@@ -109,7 +109,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
   Allocate (lrgd(-1:Max(mxlrgd,mxrgd)),         Stat=fail(2))
   Allocate (ind_on(0:mxatms),ind_off(0:mxatms), Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'deport_atomic_data allocation failure 1'
+     Write(message,'(a)') 'deport_atomic_data allocation failure 1'
      Call error(0,message)
   End If
 
@@ -1148,7 +1148,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
                  Call tag_legend(safe1,newatm,ll*jshels,legshl,mxfshl)
               Else
                  safe=.false.
-                 Write(message,'(/,1x,a)') "too many core-shell units"
+                 Write(message,'(a)') "too many core-shell units"
                  Call warning(message)
 
               End If

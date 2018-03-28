@@ -1796,7 +1796,7 @@ Contains
     Deallocate (rgdvxt,rgdvyt,rgdvzt, Stat=fail(13))
     Deallocate (rgdoxt,rgdoyt,rgdozt, Stat=fail(14))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nst_m1 deallocation failure'
+       Write(message,'(a)') 'nst_m1 deallocation failure'
        Call error(0,message)
     End If
 

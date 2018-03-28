@@ -97,7 +97,7 @@ Contains
     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail(8))
     Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(9))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nve_0 allocation failure'
+       Write(message,'(a)') 'nve_0 allocation failure'
        Call error(0,message)
     End If
 
@@ -314,7 +314,7 @@ Contains
                    tstep = hstep
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -331,7 +331,7 @@ Contains
                    tstep = mxstp
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -405,7 +405,7 @@ Contains
     Deallocate (vxt,vyt,vzt,         Stat=fail(8))
     Deallocate (fxt,fyt,fzt,         Stat=fail(9))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nve_0 deallocation failure'
+       Write(message,'(a)') 'nve_0 deallocation failure'
        Call error(0,message)
     End If
 
@@ -506,7 +506,7 @@ Contains
     Allocate (rgdvxt(1:mxrgd),rgdvyt(1:mxrgd),rgdvzt(1:mxrgd),      Stat=fail(13))
     Allocate (rgdoxt(1:mxrgd),rgdoyt(1:mxrgd),rgdozt(1:mxrgd),      Stat=fail(14))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nve_1 allocation failure'
+       Write(message,'(a)') 'nve_1 allocation failure'
        Call error(0,message)
     End If
 
@@ -948,7 +948,7 @@ Contains
                    tstep = hstep
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -965,7 +965,7 @@ Contains
                    tstep = mxstp
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -1198,7 +1198,7 @@ Contains
     Deallocate (rgdvxt,rgdvyt,rgdvzt, Stat=fail(13))
     Deallocate (rgdoxt,rgdoyt,rgdozt, Stat=fail(14))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nve_1 deallocation failure'
+       Write(message,'(a)') 'nve_1 deallocation failure'
        Call error(0,message)
     End If
 

@@ -170,7 +170,7 @@ Contains
   Allocate (cst(1:mxlist),gam(1:mxlist),gvr(1:mxlist),                   Stat=fail(6))
   If (potter == 2) Allocate (rkj(1:mxlist),wkj(1:mxlist),                Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'tersoff_forces allocation failure'
+     Write(message,'(a)') 'tersoff_forces allocation failure'
      Call error(0,message)
   End If
 
@@ -867,7 +867,7 @@ Contains
   Deallocate (cst,gam,gvr,              Stat=fail(6))
   If (potter == 2) Deallocate (rkj,wkj, Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'tersoff_forces deallocation failure'
+     Write(message,'(a)') 'tersoff_forces deallocation failure'
      Call error(0,message)
   End If
 

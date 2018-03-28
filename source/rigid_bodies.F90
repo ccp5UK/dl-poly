@@ -142,7 +142,7 @@ Contains
     fail = 0
     Allocate (gxx(1:mxlrgd*mxrgd),gyy(1:mxlrgd*mxrgd),gzz(1:mxlrgd*mxrgd), Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_coms allocation failure'
+       Write(message,'(a)') 'rigid_bodies_coms allocation failure'
        Call error(0,message)
     End If
 
@@ -196,7 +196,7 @@ Contains
 
     Deallocate (gxx,gyy,gzz, Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_coms deallocation failure'
+       Write(message,'(a)') 'rigid_bodies_coms deallocation failure'
        Call error(0,message)
     End If
 
@@ -313,7 +313,7 @@ Contains
     fail = 0
     Allocate (gxx(1:mxlrgd*mxrgd),gyy(1:mxlrgd*mxrgd),gzz(1:mxlrgd*mxrgd), Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_quench allocation failure'
+       Write(message,'(a)') 'rigid_bodies_quench allocation failure'
        Call error(0,message)
     End If
 
@@ -468,7 +468,7 @@ Contains
 
     Deallocate (gxx,gyy,gzz, Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_quench deallocation failure'
+       Write(message,'(a)') 'rigid_bodies_quench deallocation failure'
        Call error(0,message)
     End If
   End Subroutine rigid_bodies_quench
@@ -497,7 +497,7 @@ Contains
     fail = 0
     Allocate (gxx(1:mxlrgd*mxrgd),gyy(1:mxlrgd*mxrgd),gzz(1:mxlrgd*mxrgd), Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_q_ench allocation failure'
+       Write(message,'(a)') 'rigid_bodies_q_ench allocation failure'
        Call error(0,message)
     End If
 
@@ -656,7 +656,7 @@ Contains
 
     Deallocate (gxx,gyy,gzz, Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_q_ench deallocation failure'
+       Write(message,'(a)') 'rigid_bodies_q_ench deallocation failure'
        Call error(0,message)
     End If
   End Subroutine rigid_bodies_q_ench
@@ -694,7 +694,7 @@ Contains
     Allocate (allrgd(1:mxtrgd),fstrgd(1:mxrgd),      Stat = fail(1))
     Allocate (gxx(1:ntmp),gyy(1:ntmp), gzz(1:ntmp),  Stat = fail(2))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_setup allocation failure'
+       Write(message,'(a)') 'rigid_bodies_setup allocation failure'
        Call error(0,message)
     End If
 
@@ -837,7 +837,7 @@ Contains
 
     Allocate (buffer(1:mxtrgd*(4+3*mxlrgd)), Stat = fail(1))
     If (fail(1) > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_setup allocation failure 1'
+       Write(message,'(a)') 'rigid_bodies_setup allocation failure 1'
        Call error(0,message)
     End If
 
@@ -905,14 +905,14 @@ Contains
 
     Deallocate (buffer, Stat = fail(1))
     If (fail(1) > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_setup deallocation failure 1'
+       Write(message,'(a)') 'rigid_bodies_setup deallocation failure 1'
        Call error(0,message)
     End If
 
     Deallocate (allrgd,fstrgd, Stat = fail(1))
     Deallocate (gxx,gyy,gzz,   Stat = fail(2))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_setup deallocation failure'
+       Write(message,'(a)') 'rigid_bodies_setup deallocation failure'
        Call error(0,message)
     End If
 
@@ -1175,7 +1175,7 @@ Contains
 
     Allocate (lstsit(0:mxlrgd*mxtrgd), Stat = fail(1))
     If (fail(1) > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_setup allocation failure 2'
+       Write(message,'(a)') 'rigid_bodies_setup allocation failure 2'
        Call error(0,message)
     End If
     lstsit=0
@@ -1299,14 +1299,14 @@ Contains
 
     Deallocate (lstsit, Stat = fail(1))
     If (fail(1) > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_setup deallocation failure 2'
+       Write(message,'(a)') 'rigid_bodies_setup deallocation failure 2'
        Call error(0,message)
     End If
 
   ! summarise results
 
     If (comm%idnode==0 .and. l_print) Then
-       Write(nrite,"(/,/,1x,'summary of rigid body set up')")
+       Write(nrite,"('summary of rigid body set up')")
 
        nrigid=0
        Do itmols=1,ntpmls
@@ -1500,7 +1500,7 @@ Contains
     fail = 0
     Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_split_torque allocation failure'
+       Write(message,'(a)') 'rigid_bodies_split_torque allocation failure'
        Call error(0,message)
     End If
 
@@ -1718,7 +1718,7 @@ Contains
 
     Deallocate (ggx,ggy,ggz, Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_split_torque deallocation failure'
+       Write(message,'(a)') 'rigid_bodies_split_torque deallocation failure'
        Call error(0,message)
     End If
   End Subroutine rigid_bodies_split_torque
@@ -1882,7 +1882,7 @@ Contains
     fail = 0
     Allocate (gxx(1:mxlrgd*mxrgd),gyy(1:mxlrgd*mxrgd),gzz(1:mxlrgd*mxrgd), Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_stress allocation failure'
+       Write(message,'(a)') 'rigid_bodies_stress allocation failure'
        Call error(0,message)
     End If
 
@@ -1961,7 +1961,7 @@ Contains
     fail = 0
     Deallocate (gxx,gyy,gzz, Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_stress deallocation failure'
+       Write(message,'(a)') 'rigid_bodies_stress deallocation failure'
        Call error(0,message)
     End If
 
@@ -1992,7 +1992,7 @@ Contains
     fail = 0
     Allocate (gxx(1:mxlrgd*mxrgd),gyy(1:mxlrgd*mxrgd),gzz(1:mxlrgd*mxrgd), Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_stress allocation failure'
+       Write(message,'(a)') 'rigid_bodies_stress allocation failure'
        Call error(0,message)
     End If
 
@@ -2071,7 +2071,7 @@ Contains
     fail = 0
     Deallocate (gxx,gyy,gzz, Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_stress deallocation failure'
+       Write(message,'(a)') 'rigid_bodies_stress deallocation failure'
        Call error(0,message)
     End If
   End subroutine rigid_bodies_str__s
@@ -2101,7 +2101,7 @@ Contains
     fail=0
     Allocate (lunsafe(1:mxrgd), Stat=fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_tags allocation failure'
+       Write(message,'(a)') 'rigid_bodies_tags allocation failure'
        Call error(0,message)
     End If
 
@@ -2150,7 +2150,7 @@ Contains
 
     Deallocate (lunsafe, Stat=fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_tags deallocation failure, node'
+       Write(message,'(a)') 'rigid_bodies_tags deallocation failure, node'
        Call error(0,message)
     End If
   End Subroutine rigid_bodies_tags
@@ -2179,7 +2179,7 @@ Contains
     fail = 0
     Allocate (gxx(1:mxlrgd*mxrgd),gyy(1:mxlrgd*mxrgd),gzz(1:mxlrgd*mxrgd), Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_widths allocation failure'
+       Write(message,'(a)') 'rigid_bodies_widths allocation failure'
        Call error(0,message)
     End If
 
@@ -2236,7 +2236,7 @@ Contains
 
     Deallocate (gxx,gyy,gzz, Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'rigid_bodies_widths deallocation failure'
+       Write(message,'(a)') 'rigid_bodies_widths deallocation failure'
        Call error(0,message)
     End If
   End Subroutine rigid_bodies_widths
@@ -2519,7 +2519,7 @@ Contains
      fail = 0
      Allocate (rgdxin(1:mxrgd),rgdyin(1:mxrgd),rgdzin(1:mxrgd), Stat = fail)
      If (fail > 0) Then
-        Write(message,'(/,1x,a)') 'xscale allocation failure'
+        Write(message,'(a)') 'xscale allocation failure'
         Call error(0,message)
      End If
 
@@ -3083,7 +3083,7 @@ Contains
 
      Deallocate (rgdxin,rgdyin,rgdzin, Stat = fail)
      If (fail > 0) Then
-        Write(message,'(/,1x,a)') 'xscale deallocation failure, node'
+        Write(message,'(a)') 'xscale deallocation failure, node'
         Call error(0,message)
      End If
 
@@ -3132,7 +3132,7 @@ Subroutine q_setup(comm)
   fail = 0
   Allocate (gxx(1:mxlrgd*mxrgd),gyy(1:mxlrgd*mxrgd),gzz(1:mxlrgd*mxrgd), Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'q_setup allocation failure'
+     Write(message,'(a)') 'q_setup allocation failure'
      Call error(0,message)
   End If
 
@@ -3309,7 +3309,7 @@ Subroutine q_setup(comm)
 
            If (rnorm > tol) Then
               itmp=1
-              Write(message,'(/,1x,a,2i7,0p,2f7.3)')                                                            &
+              Write(message,'(a,2i7,0p,2f7.3)')                                                            &
                    '*** warning - q_setup failure for RB local_id member, with norm > tolerance : ', &
                    irgd,jrgd,rnorm,tol
               Call info(message)
@@ -3324,14 +3324,14 @@ Subroutine q_setup(comm)
   Call gmax(comm,rsq)
   If (rsq > tol) Then
      Call gsum(comm,ill)
-     Write(message,'(/,1x,a,i7,2f7.3)') &
+     Write(message,'(a,i7,2f7.3)') &
         '*** warning - q_setup failure for RBs total, with Max(norm) > tolerance : ', ill,rsq,tol
      Call error(648,message,.true.)
   End If
 
   Deallocate (gxx,gyy,gzz, Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'q_setup deallocation failure'
+     Write(message,'(a)') 'q_setup deallocation failure'
      Call error(0,message)
   End If
 

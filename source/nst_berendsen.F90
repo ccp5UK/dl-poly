@@ -139,7 +139,7 @@ Contains
     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail(8))
     Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(9))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nst_b0 allocation failure'
+       Write(message,'(a)') 'nst_b0 allocation failure'
        Call error(0,message)
     End If
 
@@ -155,7 +155,7 @@ Contains
 
        Allocate (dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
-          Write(message,'(/,1x,a)') 'dens0 allocation failure'
+          Write(message,'(a)') 'dens0 allocation failure'
           Call error(0,message)
        End If
        Do i=1,ntpatm
@@ -426,7 +426,7 @@ Contains
                    tstep = hstep
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -443,7 +443,7 @@ Contains
                    tstep = mxstp
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -565,7 +565,7 @@ Contains
     Deallocate (vxt,vyt,vzt,         Stat=fail(8))
     Deallocate (fxt,fyt,fzt,         Stat=fail(9))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nst_b0 deallocation failure'
+       Write(message,'(a)') 'nst_b0 deallocation failure'
        Call error(0,message)
     End If
 
@@ -707,7 +707,7 @@ Contains
     Allocate (rgdvxt(1:mxrgd),rgdvyt(1:mxrgd),rgdvzt(1:mxrgd),      Stat=fail(14))
     Allocate (rgdoxt(1:mxrgd),rgdoyt(1:mxrgd),rgdozt(1:mxrgd),      Stat=fail(15))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nst_b1 allocation failure'
+       Write(message,'(a)') 'nst_b1 allocation failure'
        Call error(0,message)
     End If
 
@@ -723,7 +723,7 @@ Contains
 
        Allocate (dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
-          Write(message,'(/,1x,a)') 'dens0 allocation failure'
+          Write(message,'(a)') 'dens0 allocation failure'
           Call error(0,message)
        End If
        Do i=1,ntpatm
@@ -1264,7 +1264,7 @@ Contains
                    tstep = hstep
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -1281,7 +1281,7 @@ Contains
                    tstep = mxstp
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -1579,7 +1579,7 @@ Contains
     Deallocate (rgdvxt,rgdvyt,rgdvzt, Stat=fail(14))
     Deallocate (rgdoxt,rgdoyt,rgdozt, Stat=fail(15))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nst_b1 deallocation failure'
+       Write(message,'(a)') 'nst_b1 deallocation failure'
        Call error(0,message)
     End If
 

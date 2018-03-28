@@ -859,7 +859,7 @@ Contains
     Call eltemp_sum (lat_sum,comm)
     Call eltemp_max (lat_max,comm)
     Call eltemp_min (lat_min,comm)
-    Write(message,'(/,1x,a)') 'electronic temperatures read from DUMP_E file for two-temperature model'
+    Write(message,'(a)') 'electronic temperatures read from DUMP_E file for two-temperature model'
     Call info(message,.true.)
     Write(message,'(1x,"minimum temperature (K) = ",ES11.4,&
                &/,1x,"maximum temperature (K) = ",ES11.4,&
@@ -885,7 +885,7 @@ Contains
 
 100 Continue
 
-  Write(message,"(/,1x,a)") dumpfile, ' data mishmash detected'
+  Write(message,"(a)") dumpfile, ' data mishmash detected'
   Call error(686,message,.true.)
   Return
 
@@ -1035,7 +1035,7 @@ Subroutine ttm_table_read(comm)
     If (comm%idnode==0) Then
       Close(Unit=ntable)
     End If
-    Write(message,'(/,1x,a)') 'thermal conductivity table read from Ke.dat file for two-temperature model'
+    Write(message,'(a)') 'thermal conductivity table read from Ke.dat file for two-temperature model'
     Call info(message,.true.)
     Write(message,'(1x,"minimum temperature            (K) = ",ES12.4,&
                &/,1x,"maximum temperature            (K) = ",ES12.4,&
@@ -1079,7 +1079,7 @@ Subroutine ttm_table_read(comm)
     If (comm%idnode==0) Then
       Close(Unit=ntable)
     End If
-    Write(message,'(/,1x,a)') 'electronic volumetric heat capacity table read from Ce.dat file for two-temperature model'
+    Write(message,'(a)') 'electronic volumetric heat capacity table read from Ce.dat file for two-temperature model'
     Call info(message,.true.)
     Write(message,'(1x,"minimum temperature            (K) = ",ES12.4,&
                &/,1x,"maximum temperature            (K) = ",ES12.4,&
@@ -1123,7 +1123,7 @@ Subroutine ttm_table_read(comm)
     If (comm%idnode==0) Then
       Close(Unit=ntable)
     End If
-    Write(message,'(/,1x,a)') 'thermal diffusivity table read from De.dat file for two-temperature model'
+    Write(message,'(a)') 'thermal diffusivity table read from De.dat file for two-temperature model'
     Call info(message,.true.)
     Write(message,'(1x,"minimum temperature            (K) = ",ES12.4,&
                &/,1x,"maximum temperature            (K) = ",ES12.4,&
@@ -1167,7 +1167,7 @@ Subroutine ttm_table_read(comm)
     If (comm%idnode==0) Then
       Close(Unit=ntable)
     End If
-    Write(message,'(/,1x,a)') 'electron-phonon coupling table read from g.dat file for two-temperature model'
+    Write(message,'(a)') 'electron-phonon coupling table read from g.dat file for two-temperature model'
     Call info(message,.true.)
     Write(message,'(1x,"minimum temperature            (K) = ",ES12.4,&
                &/,1x,"maximum temperature            (K) = ",ES12.4,&
@@ -1226,7 +1226,7 @@ Subroutine ttm_table_scan(comm)
     fail=0
     Allocate (buffer(1:mxbuff), Stat=fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'ttm_table_scan allocation failure'
+       Write(message,'(a)') 'ttm_table_scan allocation failure'
        Call error(0,message)
     End If
 
@@ -1273,7 +1273,7 @@ Subroutine ttm_table_scan(comm)
       Else
         Allocate (ketable(1:kel,2), Stat=fail)
         If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'ttm_table_scan allocation failure'
+          Write(message,'(a)') 'ttm_table_scan allocation failure'
           Call error(0,message)
         End If
         ketable(:,:) = 0.0_wp
@@ -1324,7 +1324,7 @@ Subroutine ttm_table_scan(comm)
       Else
         Allocate (cetable(1:cel,2), Stat=fail)
         If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'ttm_table_scan allocation failure'
+          Write(message,'(a)') 'ttm_table_scan allocation failure'
           Call error(0,message)
         End If
         cetable(:,:) = 0.0_wp
@@ -1375,7 +1375,7 @@ Subroutine ttm_table_scan(comm)
       Else
         Allocate (detable(1:del,2), Stat=fail)
         If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'ttm_table_scan allocation failure'
+          Write(message,'(a)') 'ttm_table_scan allocation failure'
           Call error(0,message)
         End If
         detable(:,:) = 0.0_wp
@@ -1426,7 +1426,7 @@ Subroutine ttm_table_scan(comm)
       Else
         Allocate (gtable(1:gel,2), Stat=fail) ! [GK] array length corrected
         If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'ttm_table_scan allocation failure'
+          Write(message,'(a)') 'ttm_table_scan allocation failure'
           Call error(0,message)
         End If
         gtable(:,:) = 0.0_wp
@@ -1436,7 +1436,7 @@ Subroutine ttm_table_scan(comm)
 
     Deallocate (buffer, Stat=fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'ttm_table_scan deallocation failure'
+       Write(message,'(a)') 'ttm_table_scan deallocation failure'
        Call error(0,message)
     End If
 

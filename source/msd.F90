@@ -235,7 +235,7 @@ Module msd
     Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
     Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
     If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a,i0)') 'msd_write allocation failure 0'
+        Write(message,'(a,i0)') 'msd_write allocation failure 0'
         Call error(0,message)
     End If
 
@@ -328,7 +328,7 @@ Module msd
 
     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),ddd(1:mxatms),eee(1:mxatms), Stat=fail(1))
     If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'msd_write allocation failure'
+        Write(message,'(a)') 'msd_write allocation failure'
         Call error(0,message)
     End If
 
@@ -423,7 +423,7 @@ Module msd
 
     Deallocate (chbuf,iwrk,ddd,eee, Stat=fail(1))
     If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'msd_write deallocation failure'
+        Write(message,'(a)') 'msd_write deallocation failure'
         Call error(0,message)
     End If
 
@@ -463,7 +463,7 @@ Module msd
 
     Allocate (ddd(1:mxatms),eee(1:mxatms), Stat=fail(1))
     If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'msd_write allocation failure'
+        Write(message,'(a)') 'msd_write allocation failure'
         Call error(0,message)
     End If
 
@@ -508,7 +508,7 @@ Module msd
 
     Deallocate (ddd,eee, Stat=fail(1))
     If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'msd_write deallocation failure'
+        Write(message,'(a)') 'msd_write deallocation failure'
         Call error(0,message)
     End If
 
@@ -518,7 +518,7 @@ Module msd
 
     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),ddd(1:mxatms),eee(1:mxatms), Stat=fail(1))
     If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'msd_write allocation failure'
+        Write(message,'(a)') 'msd_write allocation failure'
         Call error(0,message)
     End If
 
@@ -600,7 +600,7 @@ Module msd
 
     Deallocate (chbuf,iwrk,ddd,eee, Stat=fail(1))
     If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'msd_write deallocation failure'
+        Write(message,'(a)') 'msd_write deallocation failure'
         Call error(0,message)
     End If
 
@@ -612,7 +612,7 @@ Module msd
     Deallocate (n_atm, Stat=fail(1))
     Deallocate (chbat, Stat=fail(2))
     If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'msd_write deallocation failure 0'
+        Write(message,'(a)') 'msd_write deallocation failure 0'
         Call error(0,message)
     End If
   End If

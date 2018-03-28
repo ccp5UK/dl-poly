@@ -4,7 +4,7 @@
 ! Report work
 
   If (comm%idnode == 0) &
-     Write(nrite,"(/,/,1x,'*** HISTORY is replayed for recalculation of structural properties ***')")
+     Write(nrite,"('*** HISTORY is replayed for recalculation of structural properties ***')")
 
 ! Stay safe
 
@@ -12,7 +12,7 @@
      ltraj = .false.
 
      If (comm%idnode == 0) &
-     Write(nrite,"(/,/,1x,'*** warning - aborting printing into HISTORY while reading it ***')")
+     Write(nrite,"('*** warning - aborting printing into HISTORY while reading it ***')")
   End If
 
 ! Make sure of no equilibration

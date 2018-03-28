@@ -161,7 +161,7 @@ Contains
   fail = 0
   Allocate (dstdang(0:mxgang1,1:ldfang(0)),pmf(0:mxgang1+2),vir(0:mxgang1+2), Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'angles_compute - allocation failure, node'
+     Write(message,'(a)') 'angles_compute - allocation failure, node'
      Call error(0,message)
   End If
 
@@ -451,7 +451,7 @@ Contains
 
   Deallocate (dstdang,pmf,vir, Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'angles_compute - deallocation failure'
+     Write(message,'(a)') 'angles_compute - deallocation failure'
      Call error(0,message)
   End If
 
@@ -503,7 +503,7 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
   Allocate (xdab(1:mxangl),ydab(1:mxangl),zdab(1:mxangl), Stat=fail(2))
   Allocate (xdbc(1:mxangl),ydbc(1:mxangl),zdbc(1:mxangl), Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'angles_forces allocation failure'
+     Write(message,'(a)') 'angles_forces allocation failure'
      Call error(0,message)
   End If
 
@@ -563,7 +563,7 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
         If (comm%idnode == j) Then
            Do i=1,ntangl
              If (lunsafe(i)) Then
-               Write(message,'(/,1x,a,2(i10,a))')     &
+               Write(message,'(a,2(i10,a))')     &
                  'global unit number', listang(0,i), &
                  ' , with a head particle number', listang(1,i),   &
                  ' contributes towards next error'
@@ -1050,7 +1050,7 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
   Deallocate (xdab,ydab,zdab, Stat=fail(2))
   Deallocate (xdbc,ydbc,zdbc, Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'angles_forces deallocation failure'
+     Write(message,'(a)') 'angles_forces deallocation failure'
      Call error(0,message)
   End If
 
@@ -1154,7 +1154,7 @@ Subroutine angles_table_read(angl_name,comm)
   Allocate (read_type(1:ltpang(0)),          Stat=fail(1))
   Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'error - angles_table_read allocation failure'
+     Write(message,'(a)') 'error - angles_table_read allocation failure'
      Call error(0,message)
   End If
   Call allocate_angl_pot_arrays()
@@ -1389,7 +1389,7 @@ Subroutine angles_table_read(angl_name,comm)
   Deallocate (read_type,     Stat=fail(1))
   Deallocate (bufpot,bufvir, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'error - angles_table_read deallocation failure'
+     Write(message,'(a)') 'error - angles_table_read deallocation failure'
      Call error(0,message)
   End If
 

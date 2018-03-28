@@ -119,7 +119,7 @@ Contains
     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail(8))
     Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(9))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nvt_l0 allocation failure'
+       Write(message,'(a)') 'nvt_l0 allocation failure'
        Call error(0,message)
     End If
 
@@ -177,7 +177,7 @@ Contains
        Allocate (fxr(1:mxatms),fyr(1:mxatms),fzr(1:mxatms), Stat=fail(1))
        Allocate (fxl(1:mxatms),fyl(1:mxatms),fzl(1:mxatms), Stat=fail(2))
        If (Any(fail > 0)) Then
-          Write(message,'(/,1x,a)') 'nvt_l0 allocation failure+'
+          Write(message,'(a)') 'nvt_l0 allocation failure+'
           Call error(0,message)
        End If
 
@@ -212,7 +212,7 @@ Contains
           tmp=t1**2/t2
           If (tstep-tmp >= zero_plus) Then
             If ((.not.safe)) Then
-              Write(message,"(/,1x, &
+              Write(message,"( &
                 & 'timestep increased due to impossibility of integration, new timestep is:',3x,1p,e16.8,/)") tstep
 
               Call info(message,.true.)
@@ -390,7 +390,7 @@ Contains
                    tstep = hstep
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -410,7 +410,7 @@ Contains
                    tstep = mxstp
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -437,7 +437,7 @@ Contains
        Deallocate (fxr,fyr,fzr, Stat=fail(1))
        Deallocate (fxl,fyl,fzl, Stat=fail(2))
        If (Any(fail > 0)) Then
-          Write(message,'(/,1x,a)') 'nvt_l0 deallocation failure+'
+          Write(message,'(a)') 'nvt_l0 deallocation failure+'
           Call error(0,message)
        End If
 
@@ -515,7 +515,7 @@ Contains
     Deallocate (vxt,vyt,vzt,         Stat=fail(8))
     Deallocate (fxt,fyt,fzt,         Stat=fail(9))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nvt_l0 deallocation failure'
+       Write(message,'(a)') 'nvt_l0 deallocation failure'
        Call error(0,message)
     End If
 
@@ -638,7 +638,7 @@ Contains
     Allocate (rgdvxt(1:mxrgd),rgdvyt(1:mxrgd),rgdvzt(1:mxrgd),      Stat=fail(13))
     Allocate (rgdoxt(1:mxrgd),rgdoyt(1:mxrgd),rgdozt(1:mxrgd),      Stat=fail(14))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nvt_l1 allocation failure'
+       Write(message,'(a)') 'nvt_l1 allocation failure'
        Call error(0,message)
     End If
 
@@ -758,7 +758,7 @@ Contains
        Allocate (fxr(1:mxatms),fyr(1:mxatms),fzr(1:mxatms), Stat=fail(1))
        Allocate (fxl(1:mxatms),fyl(1:mxatms),fzl(1:mxatms), Stat=fail(2))
        If (Any(fail > 0)) Then
-          Write(message,'(/,1x,a)') 'nvt_l1 allocation failure+'
+          Write(message,'(a)') 'nvt_l1 allocation failure+'
           Call error(0,message)
        End If
 
@@ -797,7 +797,7 @@ Contains
           tmp=t1**2/t2
           If (tstep-tmp >= zero_plus) Then
             If (.not.safe) Then
-              Write(message,"(/,1x, &
+              Write(message,"( &
                 & 'timestep increased due to impossibility of integration, new timestep is:',3x,1p,e16.8,/)") tstep
               Call info(message,.true.)
             End If
@@ -1232,7 +1232,7 @@ Contains
                    tstep = hstep
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -1252,7 +1252,7 @@ Contains
                    tstep = mxstp
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -1288,7 +1288,7 @@ Contains
        Deallocate (fxr,fyr,fzr, Stat=fail(1))
        Deallocate (fxl,fyl,fzl, Stat=fail(2))
        If (Any(fail > 0)) Then
-          Write(message,'(/,1x,a)') 'nvt_l1 deallocation failure+'
+          Write(message,'(a)') 'nvt_l1 deallocation failure+'
           Call error(0,message)
        End If
 
@@ -1526,7 +1526,7 @@ Contains
     Deallocate (rgdvxt,rgdvyt,rgdvzt, Stat=fail(13))
     Deallocate (rgdoxt,rgdoyt,rgdozt, Stat=fail(14))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nvt_l1 deallocation failure'
+       Write(message,'(a)') 'nvt_l1 deallocation failure'
        Call error(0,message)
     End If
 
@@ -1622,7 +1622,7 @@ Contains
     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail(8))
     Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(9))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nvt_l2 allocation failure'
+       Write(message,'(a)') 'nvt_l2 allocation failure'
        Call error(0,message)
     End If
 
@@ -1690,7 +1690,7 @@ Contains
        Allocate (fxr(1:mxatms),fyr(1:mxatms),fzr(1:mxatms), Stat=fail(1))
        Allocate (fxl(1:mxatms),fyl(1:mxatms),fzl(1:mxatms), Stat=fail(2))
        If (Any(fail > 0)) Then
-          Write(message,'(/,1x,a)') 'nvt_l2 allocation failure+'
+          Write(message,'(a)') 'nvt_l2 allocation failure+'
           Call error(0,message)
        End If
 
@@ -1738,7 +1738,7 @@ Contains
           tmp=t1**2/t2
           If (tstep-tmp >= zero_plus) Then
              If (.not.safe) Then
-               Write(message,"(/,1x, &
+               Write(message,"( &
                  & 'timestep increased due to impossibility of integration, new timestep is:',3x,1p,e16.8,/)") tstep
                Call info(message,.true.)
              End If
@@ -2104,7 +2104,7 @@ Contains
                    tstep = hstep
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -2124,7 +2124,7 @@ Contains
                    tstep = mxstp
                    hstep = 0.50_wp*tstep
                 End If
-                Write(message,"(/,1x, &
+                Write(message,"( &
                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
                 Call info(message,.true.)
              End If
@@ -2151,7 +2151,7 @@ Contains
        Deallocate (fxr,fyr,fzr, Stat=fail(1))
        Deallocate (fxl,fyl,fzl, Stat=fail(2))
        If (Any(fail > 0)) Then
-          Write(message,'(/,1x,a,i0)') 'nvt_l2 deallocation failure+'
+          Write(message,'(a,i0)') 'nvt_l2 deallocation failure+'
           Call error(0,message)
        End If
 
@@ -2229,7 +2229,7 @@ Contains
     Deallocate (vxt,vyt,vzt,         Stat=fail(8))
     Deallocate (fxt,fyt,fzt,         Stat=fail(9))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'nvt_l2 deallocation failure'
+       Write(message,'(a)') 'nvt_l2 deallocation failure'
        Call error(0,message)
     End If
   End Subroutine nvt_l2_vv

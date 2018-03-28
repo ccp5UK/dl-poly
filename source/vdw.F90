@@ -140,7 +140,7 @@ Contains
   fail=0
   Allocate (numfrz(mxatyp), Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'vdw_lrc allocation failure'
+     Write(message,'(a)') 'vdw_lrc allocation failure'
      Call error(0,message)
   End If
 
@@ -397,7 +397,7 @@ Contains
 
 10 Continue
 
-  If (comm%idnode == 0) Write(nrite,"(/,/,1x, &
+  If (comm%idnode == 0) Write(nrite,"( &
      & 'long-range correction for: vdw energy  ',e15.6,/,26x, &
      & ': vdw pressure',e15.6)") elrc/engunit,plrc*prsunt
 
@@ -407,7 +407,7 @@ Contains
 
   Deallocate (numfrz, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'vdw_lrc deallocation failure'
+     Write(message,'(a)') 'vdw_lrc deallocation failure'
      Call error(0,message)
   End If
 
@@ -800,7 +800,7 @@ Subroutine vdw_table_read(rvdw,comm)
   fail=0
   Allocate (buffer(0:ngrid), Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'vdw_table_read allocation failure'
+     Write(message,'(a)') 'vdw_table_read allocation failure'
      Call error(0,message)
   End If
 
@@ -1047,7 +1047,7 @@ Subroutine vdw_table_read(rvdw,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'vdw_table_read deallocation failure'
+     Write(message,'(a)') 'vdw_table_read deallocation failure'
      Call error(0,message)
   End If
 

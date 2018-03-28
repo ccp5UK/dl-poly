@@ -387,7 +387,7 @@ Module shared_units
 
   Deallocate (i0,j0,listme,lstout,listin, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'pass_shared_units deallocation failure'
+     Write(message,'(a)') 'pass_shared_units deallocation failure'
      Call error(0,message)
   End If
 
@@ -428,7 +428,7 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
   fail=0 ; limit=iadd*mxbfsh ! limit=2*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'update_shared_units allocation failure'
+     Write(message,'(a)') 'update_shared_units allocation failure'
      Call error(0,message)
   End If
 
@@ -546,7 +546,7 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'update_shared_units deallocation failure'
+     Write(message,'(a)') 'update_shared_units deallocation failure'
      Call error(0,message)
   End If
 

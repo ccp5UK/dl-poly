@@ -208,7 +208,7 @@ Subroutine pseudo_vv                                      &
            Allocate (qs(0:2,1:mxshl),tps(0:comm%mxnode-1), Stat=fail(2))
            Allocate (qr(1:mxrgd),tpr(0:comm%mxnode-1),     Stat=fail(3))
            If (Any(fail > 0)) Then
-              Write(message,'(/,1x,a)') 'pseudo (q. and tp.) allocation failure'
+              Write(message,'(a)') 'pseudo (q. and tp.) allocation failure'
               Call error(0,message)
            End If
         End If
@@ -277,7 +277,7 @@ Subroutine pseudo_vv                                      &
      j=tpn(comm%idnode)
      Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'pseudo (forces) allocation failure'
+        Write(message,'(a)') 'pseudo (forces) allocation failure'
         Call error(0,message)
      End If
 
@@ -325,7 +325,7 @@ Subroutine pseudo_vv                                      &
 
      Deallocate (xxt,yyt,zzt, Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'pseudo (forces) deallocation failure'
+        Write(message,'(a)') 'pseudo (forces) deallocation failure'
         Call error(0,message)
      End If
 
@@ -444,7 +444,7 @@ Subroutine pseudo_vv                                      &
 
         Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail(1))
         If (fail(1) > 0) Then
-           Write(message,'(/,1x,a,i0)') 'pseudo (velocities) allocation failure'
+           Write(message,'(a,i0)') 'pseudo (velocities) allocation failure'
            Call error(0,message)
         End If
 

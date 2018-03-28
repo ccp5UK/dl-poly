@@ -601,7 +601,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
   ! Print out sample of initial configuration on node zero
 
   If (comm%idnode == 0) Then
-    Write(nrite,"(/,/,1x,'sample of starting configuration on node zero',/)")
+    Write(nrite,"('sample of starting configuration on node zero',/)")
 
     If (levcfg <= 1) Write(nrite,"(8x,'i',7x,'x(i)',8x,'y(i)',8x,'z(i)', &
       & 7x,'vx(i)',7x,'vy(i)',7x,'vz(i)',/,/)")
@@ -694,7 +694,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   Call gtime(timelp)
   If (dlp_world(0)%idnode == 0) &
-    Write(nrite,'(/,/,/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
+    Write(nrite,'(/, "time elapsed since job start: ", f12.3, " sec",/)') timelp
 
   ! Now you can run fast, boy
 
@@ -724,14 +724,14 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   ! Report termination of the MD simulation
 
-  If (dlp_world(0)%idnode == 0) Write(nrite,"(/,/,1x,'run terminating...  ',  &
+  If (dlp_world(0)%idnode == 0) Write(nrite,"('run terminating...  ',  &
     & 'elapsed cpu time: ', f12.3, ' sec, job time: ', f12.3,   &
     & ' sec, close time: ', f12.3, ' sec',/)") timelp,timjob,timcls
 
   ! Print out sample of final configuration on node zero
 
   If (dlp_world(0)%idnode == 0) Then
-    Write(nrite,"(/,/,1x,'sample of final configuration on node zero',/)")
+    Write(nrite,"('sample of final configuration on node zero',/)")
 
     Write(nrite,"(8x,'i',7x,'x(i)',8x,'y(i)',8x,'z(i)', &
       & 7x,'vx(i)',7x,'vy(i)',7x,'vz(i)',            &

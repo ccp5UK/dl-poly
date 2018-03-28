@@ -364,7 +364,7 @@ Contains
   Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms),                   Stat=fail(6))
   Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms),                   Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'defects1_write allocation failure'
+     Write(message,'(a)') 'defects1_write allocation failure'
      Call error(0,message)
   End If
 
@@ -410,7 +410,7 @@ Contains
 
   Allocate (lctr(0:mxlcdef),lct(0:mxlcdef), Stat=fail(1))
   If (fail(1) > 0) Then
-     Write(message,'(/,1x,a)') 'defects1_write allocation failure 1'
+     Write(message,'(a)') 'defects1_write allocation failure 1'
      Call error(0,message)
   End If
   Call defects_link_cells &
@@ -725,7 +725,7 @@ Contains
   Allocate (ni_n(0:comm%mxnode),nv_n(0:comm%mxnode), Stat=fail(1))
   Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'defects1_write allocation failure 2'
+     Write(message,'(a)') 'defects1_write allocation failure 2'
      Call error(0,message)
   End If
 
@@ -881,7 +881,7 @@ Contains
 
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'defects1_write allocation failure 3'
+        Write(message,'(a)') 'defects1_write allocation failure 3'
         Call error(0,message)
      End If
 
@@ -1059,7 +1059,7 @@ Contains
 
      Deallocate (chbuf,iwrk, Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'defects1_write deallocation failure 3'
+        Write(message,'(a)') 'defects1_write deallocation failure 3'
         Call error(0,message)
      End If
 
@@ -1070,7 +1070,7 @@ Contains
   Deallocate (ni_n,nv_n, Stat=fail(1))
   Deallocate (chbat,     Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'defects1_write deallocation failure 2'
+     Write(message,'(a)') 'defects1_write deallocation failure 2'
      Call error(0,message)
   End If
 
@@ -1082,7 +1082,7 @@ Contains
   Deallocate (bxx,byy,bzz,           Stat=fail(6))
   Deallocate (cxx,cyy,czz,           Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'defects1_write deallocation failure'
+     Write(message,'(a)') 'defects1_write deallocation failure'
      Call error(0,message)
   End If
 
@@ -1125,7 +1125,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
   fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'defects_reference_export allocation failure'
+     Write(message,'(a)') 'defects_reference_export allocation failure'
      Call error(0,message)
   End If
 
@@ -1346,7 +1346,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'defects_reference_export deallocation failure'
+     Write(message,'(a)') 'defects_reference_export deallocation failure'
      Call error(0,message)
   End If
 
@@ -1625,7 +1625,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
      Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'defects_reference_read allocation failure'
+        Write(message,'(a)') 'defects_reference_read allocation failure'
         Call error(0,message)
      End If
 
@@ -1797,7 +1797,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
      Deallocate (chbuf,iwrk,  Stat=fail(1))
      Deallocate (axx,ayy,azz, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'defects_reference_read deallocation failure'
+        Write(message,'(a)') 'defects_reference_read deallocation failure'
         Call error(0,message)
      End If
 
@@ -1982,7 +1982,7 @@ Subroutine defects_reference_read_parallel      &
   Allocate (chbuf(1:batsz),iwrk(1:batsz),                                   Stat=fail(2))
   Allocate (scatter_buffer(1:wp_vals_per_at,1:batsz),                       Stat=fail(3))
   If (Any(fail(1:3) > 0)) Then
-     Write(message,'(/,1x,a)') 'defects_reference_read_parallel allocation failure 1'
+     Write(message,'(a)') 'defects_reference_read_parallel allocation failure 1'
      Call error(0,message)
   End If
 
@@ -2060,7 +2060,7 @@ Subroutine defects_reference_read_parallel      &
      Allocate (chbuf_scat(1:batsz),iwrk_scat(1:batsz),                        Stat=fail(5))
      Allocate (n_held(0:comm%mxnode-1),where_buff(0:comm%mxnode-1),owner_read(1:batsz), Stat=fail(6))
      If (Any(fail(1:6) > 0)) Then
-        Write(message,'(/,1x,a)') 'defects_reference_read_parallel allocation failure 2'
+        Write(message,'(a)') 'defects_reference_read_parallel allocation failure 2'
         Call error(0,message)
      End If
 
@@ -2074,7 +2074,7 @@ Subroutine defects_reference_read_parallel      &
      Allocate (chbuf_scat(1:0),iwrk_scat(1:0), Stat=fail(2))
      Allocate (n_held(0:-1),where_buff(0:-1),  Stat=fail(3))
      If (Any(fail(1:3) > 0)) Then
-        Write(message,'(/,1x,a)') 'defects_reference_read_parallel allocation failure 3'
+        Write(message,'(a)') 'defects_reference_read_parallel allocation failure 3'
         Call error(0,message)
      End If
 
@@ -2362,7 +2362,7 @@ Dispatch:  Do i=1,n_loc
      Deallocate (axx_read,ayy_read,azz_read, Stat=fail(3))
      Deallocate (owner_read,                 Stat=fail(4))
      If (Any(fail(1:4) > 0)) Then
-        Write(message,'(/,1x,a)') 'defects_reference_read_parallel deallocation failure 2'
+        Write(message,'(a)') 'defects_reference_read_parallel deallocation failure 2'
         Call error(0,message)
      End If
   End If
@@ -2374,7 +2374,7 @@ Dispatch:  Do i=1,n_loc
   Deallocate (scatter_buffer_read,    Stat=fail(5))
   Deallocate (scatter_buffer,         Stat=fail(6))
   If (Any(fail(1:6) > 0)) Then
-     Write(message,'(/,1x,a)') 'defects_reference_read_parallel deallocation failure 1'
+     Write(message,'(a)') 'defects_reference_read_parallel deallocation failure 1'
      Call error(0,message)
   End If
 
@@ -2463,7 +2463,7 @@ Subroutine defects_reference_set_halo                &
   fail=0
   Allocate (ixyz(1:mxatms), Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'defects_reference_set_halo allocation failure'
+     Write(message,'(a)') 'defects_reference_set_halo allocation failure'
      Call error(0,message)
   End If
 
@@ -2570,7 +2570,7 @@ Subroutine defects_reference_set_halo                &
 
   Deallocate (ixyz, Stat=fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'defects_reference_set_halo deallocation failure'
+     Write(message,'(a)') 'defects_reference_set_halo deallocation failure'
      Call error(0,message)
   End If
 
@@ -2624,7 +2624,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
   fail=0
   Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(1))
   If (fail(1) > 0) Then
-     Write(message,'(/,1x,a)') 'defects_reference_write allocation failure'
+     Write(message,'(a)') 'defects_reference_write allocation failure'
      Call error(0,message)
   End If
 
@@ -2647,7 +2647,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
      Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
      Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a)') 'write_config allocation failure 0'
+        Write(message,'(a)') 'write_config allocation failure 0'
         Call error(0,message)
      End If
 
@@ -2768,7 +2768,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'defects_reference_write allocation failure 1'
+        Write(message,'(a)') 'defects_reference_write allocation failure 1'
         Call error(0,message)
      End If
 
@@ -2898,7 +2898,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
      Deallocate (chbuf,iwrk, Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'defects_reference_write deallocation failure 1'
+        Write(message,'(a)') 'defects_reference_write deallocation failure 1'
         Call error(0,message)
      End If
 
@@ -3036,7 +3036,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'defects_reference_write allocation failure 1'
+        Write(message,'(a)') 'defects_reference_write allocation failure 1'
         Call error(0,message)
      End If
 
@@ -3131,7 +3131,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
      Deallocate (chbuf,iwrk, Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'defects_reference_write deallocation failure 1'
+        Write(message,'(a)') 'defects_reference_write deallocation failure 1'
         Call error(0,message)
      End If
 
@@ -3143,14 +3143,14 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
      Deallocate (n_atm, Stat=fail(1))
      Deallocate (chbat, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(message,'(/,1x,a,i0)') 'write_config deallocation failure 0'
+        Write(message,'(a,i0)') 'write_config deallocation failure 0'
         Call error(0,message)
      End If
   End If
 
   Deallocate (axx,ayy,azz, Stat=fail(1))
   If (fail(1) > 0) Then
-     Write(message,'(/,1x,a)') 'defects_reference_write deallocation failure'
+     Write(message,'(a)') 'defects_reference_write deallocation failure'
      Call error(0,message)
   End If
 
@@ -3391,7 +3391,7 @@ Subroutine defects_write &
   Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms),                   Stat=fail(6))
   Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms),                   Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'defects_write allocation failure'
+     Write(message,'(a)') 'defects_write allocation failure'
      Call error(0,message)
   End If
 
@@ -3437,7 +3437,7 @@ Subroutine defects_write &
 
   Allocate (lctr(0:mxlcdef),lct(0:mxlcdef), Stat=fail(1))
   If (fail(1) > 0) Then
-     Write(message,'(/,1x,a)') 'defects_write allocation failure 1'
+     Write(message,'(a)') 'defects_write allocation failure 1'
      Call error(0,message)
   End If
   Call defects_link_cells &
@@ -3752,7 +3752,7 @@ Subroutine defects_write &
   Allocate (ni_n(0:comm%mxnode),nv_n(0:comm%mxnode), Stat=fail(1))
   Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'defects_write allocation failure 2'
+     Write(message,'(a)') 'defects_write allocation failure 2'
      Call error(0,message)
   End If
 
@@ -3908,7 +3908,7 @@ Subroutine defects_write &
 
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'defects_write allocation failure 3'
+        Write(message,'(a)') 'defects_write allocation failure 3'
         Call error(0,message)
      End If
 
@@ -4086,7 +4086,7 @@ Subroutine defects_write &
 
      Deallocate (chbuf,iwrk, Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(message,'(/,1x,a)') 'defects_write deallocation failure 3'
+        Write(message,'(a)') 'defects_write deallocation failure 3'
         Call error(0,message)
      End If
 
@@ -4097,7 +4097,7 @@ Subroutine defects_write &
   Deallocate (ni_n,nv_n, Stat=fail(1))
   Deallocate (chbat,     Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'defects_write deallocation failure 2'
+     Write(message,'(a)') 'defects_write deallocation failure 2'
      Call error(0,message)
   End If
 
@@ -4109,7 +4109,7 @@ Subroutine defects_write &
   Deallocate (bxx,byy,bzz,           Stat=fail(6))
   Deallocate (cxx,cyy,czz,           Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'defects_write deallocation failure'
+     Write(message,'(a)') 'defects_write deallocation failure'
      Call error(0,message)
   End If
 

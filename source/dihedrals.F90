@@ -308,7 +308,7 @@ Subroutine dihedrals_compute(temp,comm)
   fail = 0
   Allocate (dstddih(0:mxgdih1,1:ldfdih(0)),pmf(0:mxgdih1+2),vir(0:mxgdih1+2), Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'dihedrals_compute - allocation failure'
+     Write(message,'(a)') 'dihedrals_compute - allocation failure'
      Call error(0,message)
   End If
 
@@ -590,7 +590,7 @@ Subroutine dihedrals_compute(temp,comm)
 
   Deallocate (dstddih,pmf,vir, Stat = fail)
   If (fail > 0) Then
-     Write(message,'(/,1x,a)') 'dihedrals_compute - deallocation failure'
+     Write(message,'(a)') 'dihedrals_compute - deallocation failure'
      Call error(0,message)
   End If
 
@@ -661,7 +661,7 @@ Subroutine dihedrals_forces &
   Allocate (xdcd(1:mxdihd),ydcd(1:mxdihd),zdcd(1:mxdihd),             Stat=fail(4))
   Allocate (xdad(1:3,1:mxdihd),ydad(1:3,1:mxdihd),zdad(1:3,1:mxdihd), Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'dihedrals_forces allocation failure'
+     Write(message,'(a)') 'dihedrals_forces allocation failure'
      Call error(0,message)
   End If
 
@@ -1644,7 +1644,7 @@ Subroutine dihedrals_forces &
   Deallocate (xdcd,ydcd,zdcd,     Stat=fail(4))
   Deallocate (xdad,ydad,zdad,     Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'dihedrals_forces deallocation failure'
+     Write(message,'(a)') 'dihedrals_forces deallocation failure'
      Call error(0,message)
   End If
 
@@ -1748,7 +1748,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
   Allocate (read_type(1:ltpdih(0)),          Stat=fail(1))
   Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'error - dihedrals_table_read allocation failure'
+     Write(message,'(a)') 'error - dihedrals_table_read allocation failure'
      Call error(0,message)
   End If
   Call allocate_dihd_pot_arrays()
@@ -1981,7 +1981,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
   Deallocate (read_type,     Stat=fail(1))
   Deallocate (bufpot,bufvir, Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(/,1x,a)') 'error - dihedrals_table_read deallocation failure'
+     Write(message,'(a)') 'error - dihedrals_table_read deallocation failure'
      Call error(0,message)
   End If
 

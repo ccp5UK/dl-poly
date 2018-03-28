@@ -207,7 +207,7 @@ Module coul_spole
           fail=0
           Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
           If (fail > 0) Then
-             Write(message,'(/,1x,a)') 'coul_fscp_forces allocation failure'
+             Write(message,'(a)') 'coul_fscp_forces allocation failure'
              Call error(0,message)
           End If
 
@@ -465,7 +465,7 @@ Module coul_spole
           fail=0
           Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
           If (fail > 0) Then
-             Write(message,'(/,1x,a)') 'coul_fscp_forces allocation failure'
+             Write(message,'(a)') 'coul_fscp_forces allocation failure'
              Call error(0,message)
           End If
 

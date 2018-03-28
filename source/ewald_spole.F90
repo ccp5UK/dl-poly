@@ -60,7 +60,7 @@ Module ewald_spole
        fail=0
        Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'ewald_real_forces allocation failure'
+          Write(message,'(a)') 'ewald_real_forces allocation failure'
           Call error(0,message)
        End If
 
@@ -334,7 +334,7 @@ Module ewald_spole
 
        Allocate (ww1(1:kmaxa),ww2(1:kmaxb),ww3(1:kmaxc), Stat = fail(1))
        If (fail(1) > 0) Then
-          Write(message,'(/,1x,a)') 'ww arrays allocation failure'
+          Write(message,'(a)') 'ww arrays allocation failure'
           Call error(0,message)
        End If
 
@@ -347,7 +347,7 @@ Module ewald_spole
        Allocate (bscx(1:kmaxa),bscy(1:kmaxb),bscz(1:kmaxc), Stat = fail(1))
        Allocate (csp(1:mxspl),                              Stat = fail(2))
        If (Any(fail > 0)) Then
-          Write(message,'(/,1x,a)') 'bsc and cse arrays allocation failure'
+          Write(message,'(a)') 'bsc and cse arrays allocation failure'
           Call error(0,message)
        End If
 
@@ -360,7 +360,7 @@ Module ewald_spole
        Deallocate (csp,         Stat = fail(1))
        Deallocate (ww1,ww2,ww3, Stat = fail(2))
        If (Any(fail > 0)) Then
-          Write(message,'(/,1x,a)') 'cse and ww arrays deallocation failure'
+          Write(message,'(a)') 'cse and ww arrays deallocation failure'
           Call error(0,message)
        End If
 
@@ -386,7 +386,7 @@ Module ewald_spole
        Allocate ( index_y( 1:block_y ), Stat = fail(2) )
        Allocate ( index_z( 1:block_z ), Stat = fail(3) )
        If (Any(fail > 0)) Then
-          Write(message,'(/,1x,a)') 'SPME index arrays allocation failure'
+          Write(message,'(a)') 'SPME index arrays allocation failure'
           Call error(0,message)
        End If
 
@@ -400,7 +400,7 @@ Module ewald_spole
        Allocate ( qqq_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(2) )
        Allocate ( pfft_work( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(3) )
        If (Any(fail > 0)) Then
-          Write(message,'(/,1x,a)') 'SPME DaFT workspace arrays allocation failure'
+          Write(message,'(a)') 'SPME DaFT workspace arrays allocation failure'
           Call error(0,message)
        End If
 
@@ -421,7 +421,7 @@ Module ewald_spole
     Allocate (bsdx(1:mxspl,1:mxatms),bsdy(1:mxspl,1:mxatms),bsdz(1:mxspl,1:mxatms), Stat = fail(3))
     Allocate (bspx(1:mxspl,1:mxatms),bspy(1:mxspl,1:mxatms),bspz(1:mxspl,1:mxatms), Stat = fail(4))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'ewald_spme_forces allocation failure'
+       Write(message,'(a)') 'ewald_spme_forces allocation failure'
        Call error(0,message)
     End If
 
@@ -501,7 +501,7 @@ Module ewald_spole
 
     Deallocate (txx,tyy,tzz, Stat = fail(1))
     If (fail(1) > 0) Then
-       Write(message,'(/,1x,a)') 'ewald_spme_forces allocation failure'
+       Write(message,'(a)') 'ewald_spme_forces allocation failure'
        Call error(0,message)
     End If
 
@@ -1137,7 +1137,7 @@ Module ewald_spole
     Deallocate (bsdx,bsdy,bsdz, Stat = fail(2))
     Deallocate (bspx,bspy,bspz, Stat = fail(3))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'ewald_spme_forces deallocation failure'
+       Write(message,'(a)') 'ewald_spme_forces deallocation failure'
        Call error(0,message)
     End If
 
@@ -1192,7 +1192,7 @@ Module ewald_spole
       fail=0
       Allocate (qqc_domain( ixdb:ixdt, iydb:iydt, izdb:izdt ), Stat=fail)
       If (fail > 0) Then
-         Write(message,'(/,1x,a)') 'spme_forces allocation failure'
+         Write(message,'(a)') 'spme_forces allocation failure'
          call error(0,message) 
       End If
 
@@ -1308,7 +1308,7 @@ Module ewald_spole
 
       Deallocate (qqc_domain, Stat=fail)
       If (fail > 0) Then
-         Write(message,'(/,1x,a)') 'spme_forces dealocation failure'
+         Write(message,'(a)') 'spme_forces dealocation failure'
          call error(0,message)
       End If
 
@@ -1581,7 +1581,7 @@ Module ewald_spole
     fail=0
     Allocate (l_ind(1:mxatdm),nz_fr(0:comm%mxnode), Stat=fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'ewald_frzn_forces allocation failure'
+       Write(message,'(a)') 'ewald_frzn_forces allocation failure'
        Call error(0,message)
     End If
 
@@ -1615,7 +1615,7 @@ Module ewald_spole
 
        Allocate (cfr(1:nzfr),xfr(1:nzfr),yfr(1:nzfr),zfr(1:nzfr), Stat=fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a,i0)') 'ewald_frzn_forces allocation failure 1'
+          Write(message,'(a,i0)') 'ewald_frzn_forces allocation failure 1'
           Call error(0,message)
        End If
 
@@ -1867,7 +1867,7 @@ Module ewald_spole
 
        Deallocate (cfr,xfr,yfr,zfr, Stat=fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'ewald_frzn_forces deallocation failure 1'
+          Write(message,'(a)') 'ewald_frzn_forces deallocation failure 1'
           Call error(0,message)
        End If
 
@@ -1878,7 +1878,7 @@ Module ewald_spole
 
        Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'ewald_frzn_forces allocation failure 2'
+          Write(message,'(a)') 'ewald_frzn_forces allocation failure 2'
           Call error(0,message)
        End If
 
@@ -2004,7 +2004,7 @@ Module ewald_spole
 
        Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
        If (fail > 0) Then
-          Write(message,'(/,1x,a)') 'ewald_frzn_forces deallocation failure 2'
+          Write(message,'(a)') 'ewald_frzn_forces deallocation failure 2'
           Call error(0,message)
        End If
 
@@ -2058,7 +2058,7 @@ Module ewald_spole
 
     Deallocate (l_ind,nz_fr, Stat=fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'ewald_frzn_forces deallocation failure'
+       Write(message,'(a)') 'ewald_frzn_forces deallocation failure'
        Call error(0,message)
     End If
   End Subroutine ewald_frzn_forces

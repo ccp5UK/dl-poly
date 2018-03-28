@@ -157,7 +157,7 @@ Contains
     fail = 0
     Allocate (dstdinv(0:mxginv1,1:ldfinv(0)),pmf(0:mxginv1+2),vir(0:mxginv1+2), Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'inversions_compute - allocation failure'
+       Write(message,'(a)') 'inversions_compute - allocation failure'
        Call error(0,message)
     End If
 
@@ -439,7 +439,7 @@ Contains
 
     Deallocate (dstdinv,pmf,vir, Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a)') 'inversions_compute - deallocation failure'
+       Write(message,'(a)') 'inversions_compute - deallocation failure'
        Call error(0,message)
     End If
 
@@ -499,7 +499,7 @@ Contains
     Allocate (xdac(1:mxinv),ydac(1:mxinv),zdac(1:mxinv), Stat=fail(3))
     Allocate (xdad(1:mxinv),ydad(1:mxinv),zdad(1:mxinv), Stat=fail(4))
     If (Any(fail > 0)) Then
-       Write(message,'(/,1x,a)') 'inversions_forces allocation failure'
+       Write(message,'(a)') 'inversions_forces allocation failure'
        Call error(0,message)
     End If
 
