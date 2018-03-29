@@ -21,6 +21,12 @@ Module errors_warnings
     Module Procedure warning_special
     Module Procedure warning_general
   End Interface
+
+  Interface info
+     Module Procedure info_sl
+     Module Procedure info_ml
+  End Interface
+
   Contains
   
 
@@ -678,8 +684,31 @@ Subroutine warning_general(message,master_only)
 
  End Subroutine  warning_general
 
+Subroutine info_ml(message,n,master_only)
+  Character( Len=* ), Intent( In ) :: message(:)
+  Integer, Intent( In ) :: n
+  Logical, Optional, Intent( In ) :: master_only
 
-Subroutine info(message,master_only)
+  Logical :: zeroOnly
+  Integer :: i 
+
+  zeroOnly=.false.
+  If (Present(master_only)) zeroOnly=master_only
+
+  If (zeroOnly) Then
+     If (eworld%idnode == 0 ) Then 
+        Do i=1,n
+         Write(ounit,'(a)')Trim(message(i))
+       End Do
+     End If
+  Else
+     Do i=1,n
+       Write(ounit,'(a,1x,i0)')Trim(message(i))//", node: ",eworld%idnode
+     End Do
+   End If   
+End Subroutine info_ml
+
+Subroutine info_sl(message,master_only)
   Character( Len=* ), Intent( In ) :: message
   Logical, Optional, Intent( In ) :: master_only
 
@@ -696,7 +725,7 @@ Subroutine info(message,master_only)
        Write(ounit,'(a,1x,i0)')Trim(message)//", node: ",eworld%idnode
    End If   
 
-  End Subroutine info 
+  End Subroutine info_sl
 
   Subroutine error(kode,message,master_only )
 
