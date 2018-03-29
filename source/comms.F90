@@ -11,6 +11,7 @@ Module comms
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,sp,dp,qp
+  Use iso_fortran_env, Only : CHARACTER_STORAGE_SIZE                                                                                
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -858,7 +859,7 @@ Contains
     If (comm%mxnode == 1) Return
     n_l = Lbound(vec, Dim = 1)
     n_u = Ubound(vec, Dim = 1)
-    n_s = Size(vec, Dim = 1)*Sizeof(vec(n_l))
+    n_s = Size(vec, Dim = 1)*Len(vec(n_l))*CHARACTER_STORAGE_SIZE/8
 
     Call MPI_BCAST(vec(n_l:n_u), n_s,MPI_CHARACTER, root, comm%comm, comm%ierr)
   End Subroutine gbcast_char
