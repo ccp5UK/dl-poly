@@ -1081,11 +1081,13 @@ Subroutine ttm_table_read(comm)
     End If
     Write(message,'(a)') 'electronic volumetric heat capacity table read from Ce.dat file for two-temperature model'
     Call info(message,.true.)
-    Write(message,'(1x,"minimum temperature            (K) = ",ES12.4,&
-               &/,1x,"maximum temperature            (K) = ",ES12.4,&
-               &/,1x,"minimum v.h.c. value (J m^-3 K^-1) = ",ES12.4,&
-               &/,1x,"maximum v.h.c. value (J m^-3 K^-1) = ",ES12.4)') &
-               Minval(cetable(:,1)),Maxval(cetable(:,1)),Minval(cetable(:,2)),Maxval(cetable(:,2))
+    Write(message,'(1x,"minimum temperature            (K) = ",ES12.4)')Minval(cetable(:,1))
+    Call info(message,.true.)
+    Write(message,'(1x,"maximum temperature            (K) = ",ES12.4)')Maxval(cetable(:,1))
+    Call info(message,.true.)
+    Write(message,'(1x,"minimum v.h.c. value (J m^-3 K^-1) = ",ES12.4)')Minval(cetable(:,2))
+    Call info(message,.true.)
+    Write(message,'(1x,"maximum v.h.c. value (J m^-3 K^-1) = ",ES12.4)') Maxval(cetable(:,2))
     Call info(message,.true.)
 
 ! convert volumetric heat capacity values from J m^-3 K^-1 to kB A^-3

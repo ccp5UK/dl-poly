@@ -1739,7 +1739,7 @@ Contains
           If (tstep-tmp >= zero_plus) Then
              If (.not.safe) Then
                Write(message,"( &
-                 & 'timestep increased due to impossibility of integration, new timestep is:',3x,1p,e16.8,/)") tstep
+                 & 'timestep increased due to impossibility of integration, new timestep is:',3x,1p,e16.8)") tstep
                Call info(message,.true.)
              End If
              Exit
@@ -2105,7 +2105,7 @@ Contains
                    hstep = 0.50_wp*tstep
                 End If
                 Write(message,"( &
-                  & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
+                  & 'timestep decreased, new timestep is:',3x,1p,e12.4)") tstep
                 Call info(message,.true.)
              End If
              If (mxdr < mndis) Then
@@ -2125,7 +2125,7 @@ Contains
                    hstep = 0.50_wp*tstep
                 End If
                 Write(message,"( &
-                  & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
+                  & 'timestep increased, new timestep is:',3x,1p,e12.4)") tstep
                 Call info(message,.true.)
              End If
              rstep = 1.0_wp/tstep
