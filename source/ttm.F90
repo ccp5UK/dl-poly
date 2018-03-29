@@ -764,7 +764,7 @@ Contains
     ! report start of energy deposition
 
     Write(number, '(f14.5)') depostart
-    Write(message,"(/,6x,a,a,a,/)") &
+    Write(message,"(6x,a,a,a)") &
       'electronic energy deposition starting at time = ',Trim(Adjustl(number)),' ps'
     Call info(message,.true.)
     Write(message,"(1x,130('-'))")
@@ -1171,11 +1171,13 @@ Subroutine ttm_table_read(comm)
     End If
     Write(message,'(a)') 'electron-phonon coupling table read from g.dat file for two-temperature model'
     Call info(message,.true.)
-    Write(message,'(1x,"minimum temperature            (K) = ",ES12.4,&
-               &/,1x,"maximum temperature            (K) = ",ES12.4,&
-               &/,1x,"minimum e-p value    (W m^-3 K^-1) = ",ES12.4,&
-               &/,1x,"maximum e-p value    (W m^-3 K^-1) = ",ES12.4)') &
-               Minval(gtable(:,1)),Maxval(gtable(:,1)),Minval(gtable(:,2)),Maxval(gtable(:,2))
+    Write(message,'(1x,"minimum temperature            (K) = ",ES12.4)') Minval(gtable(:,1))
+    Call info(message,.true.)
+    Write(message,'(1x,"maximum temperature            (K) = ",ES12.4)') Maxval(gtable(:,1))
+    Call info(message,.true.)
+    Write(message,'(1x,"minimum e-p value    (W m^-3 K^-1) = ",ES12.4)')Minval(gtable(:,2))
+    Call info(message,.true.)
+    Write(message,'(1x,"maximum e-p value    (W m^-3 K^-1) = ",ES12.4)') Maxval(gtable(:,2))
     Call info(message,.true.)
 
 ! convert electron-phonon coupling values from W m^-3 K^-1 to ps^-1
