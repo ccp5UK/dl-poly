@@ -198,15 +198,13 @@ Contains
     fail=0
     Allocate (kim_list(mxlist,mxatdm), Stat=fail)
     If (fail > 0) Then
-       Write(message, '(/,1x,a)') &
-            'kim_setup kim_list allocation failure'
+       Write(message,'(a)') 'kim_setup kim_list allocation failure'
        Call error(0,message)
     End If
 
     If (RijNeeded) Allocate (kim_Rij(3,mxlist,mxatdm), Stat=fail)
     If (fail > 0) Then
-       Write(message, '(/,1x,a)') &
-            'kim_setup kim_Rij allocation failure'
+       Write(message,'(a)') 'kim_setup kim_Rij allocation failure'
        Call error(0,message)
     End If
 
@@ -214,8 +212,7 @@ Contains
 
     Allocate (rev_comm_buffer(1:limit), Stat=fail)
     If (fail > 0) Then
-       Write(message, '(/,1x,a)') &
-            'kim_setup rev_comm_buffer allocation failure'
+       Write(message, '(a)') 'kim_setup rev_comm_buffer allocation failure'
        Call error(0,message)
     End If
 

@@ -1340,6 +1340,7 @@ Subroutine statistics_result                                    &
   Integer           :: i,iadd
   Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty,temp
   Character( Len = 256 ) :: message
+  Character( Len = 256 ), Dimension(5) :: messages
 
 ! VNL skipping statistics
 
@@ -1465,7 +1466,7 @@ Subroutine statistics_result                                    &
            Call info(message,.true.)
         End Do
 
-        Write(message,'(/,12x,a,1p,e12.4)') 'trace/3  ', (stpval(iadd+1)+stpval(iadd+5)+stpval(iadd+9))/3.0_wp
+        Write(message,'(12x,a,1p,e12.4)') 'trace/3  ', (stpval(iadd+1)+stpval(iadd+5)+stpval(iadd+9))/3.0_wp
         Call info(message,.true.)
      End If
 
@@ -1493,49 +1494,28 @@ Subroutine statistics_result                                    &
   avvol = sumval(19)
 
 ! final averages and fluctuations
-
-!  Write(message,"(1x,130('-'),/,/,                                 &
-!    & 10x,'step',5x,'eng_tot',4x,'temp_tot',5x,'eng_cfg',     &
-!    & 5x,'eng_src',5x,'eng_cou',5x,'eng_bnd',5x,'eng_ang',    &
-!    & 5x,'eng_dih',5x,'eng_tet',/,6x,'time(ps)',5x,' eng_pv', &
-!    & 4x,'temp_rot',5x,'vir_cfg',5x,'vir_src',5x,'vir_cou',   &
-!    & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet',/,  &
-!    & 6x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',   &
-!    & 5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',           &
-!    & 5x,'vir_pmf',7x,'press',130('-'))")
-  Write(message,"(1x,130('-'))")
-  Call info(message,.true.)  
-  Write(message,"(10x,'step',5x,'eng_tot',4x,'temp_tot',5x,'eng_cfg',     &
+  Write(messages(1),"(1x,130('-'))")
+  Write(messages(2),"(10x,'step',5x,'eng_tot',4x,'temp_tot',5x,'eng_cfg',     &
     & 5x,'eng_src',5x,'eng_cou',5x,'eng_bnd',5x,'eng_ang',    &
     & 5x,'eng_dih',5x,'eng_tet')")
-  Call info(message,.true.)
-  Write(message,"(6x,'time(ps)',5x,' eng_pv', &
+  Write(messages(3),"(6x,'time(ps)',5x,' eng_pv', &
     & 4x,'temp_rot',5x,'vir_cfg',5x,'vir_src',5x,'vir_cou',   &
     & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet',  &
     & 6x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',   &
     & 5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',           &
     & 5x,'vir_pmf',7x,'press')")
-  Call info(message,.true.)
-  Write(message,"(1x,130('-'))")
-  Call info(message,.true.)  
+  Write(messages(4),"(1x,130('-'))")
+  Call info(messages,4,.true.)
 
-!  Write(message,'(1x,i13,1p,9e12.4,/,0p,f14.5,1p,9e12.4,/,1x,0p,f13.3, &
-!    & 1p,9e12.4)') numacc,sumval(1:9),tmp,sumval(10:18),timelp,sumval(19:27)
-  Write(message,'(1x,i13,1p,9e12.4)')numacc,sumval(1:9)
-  Call info(message,.true.)
-  Write(message,'(f14.5,1p,9e12.4)')tmp,sumval(10:18)
-  Call info(message,.true.)
-  Write(message,'(1x,0p,f13.3,1p,9e12.4)') timelp,sumval(19:27)
-  Call info(message,.true.)
+  Write(messages(1),'(1x,i13,1p,9e12.4)')numacc,sumval(1:9)
+  Write(messages(2),'(f14.5,1p,9e12.4)')tmp,sumval(10:18)
+  Write(messages(3),'(1x,0p,f13.3,1p,9e12.4)') timelp,sumval(19:27)
+  Call info(messages,3,.true.)
 
-  !Write(message,"(/,6x,' r.m.s. ',1p,9e12.4,/,6x,'fluctu- ',1p,9e12.4, &
-  !  & /,6x,'ations  ',1p,9e12.4)") ssqval(1:27)
-  Write(message,"(6x,' r.m.s. ',1p,9e12.4)")ssqval(1:9)
-  Call info(message,.true.)
-  Write(message,"(6x,'fluctu- ',1p,9e12.4)") ssqval(10:18)
-  Call info(message,.true.)
-  Write(message,"(6x,'ations  ',1p,9e12.4)") ssqval(19:27)
-  Call info(message,.true.)
+  Write(messages(1),"(6x,' r.m.s. ',1p,9e12.4)")ssqval(1:9)
+  Write(messages(2),"(6x,'fluctu- ',1p,9e12.4)") ssqval(10:18)
+  Write(messages(3),"(6x,'ations  ',1p,9e12.4)") ssqval(19:27)
+  Call info(messages,3,.true.)
 
   Write(message,"(1x,130('-'))")
   Call info(message,.true.)
@@ -1565,10 +1545,9 @@ Subroutine statistics_result                                    &
 
 ! Write out estimated diffusion coefficients
 
-  Write(message,"(12x,a)") 'Approximate 3D Diffusion Coefficients and square root of MSDs'
-  Call info(message,.true.)
-  Write(message,"(12x,'atom',9x,'DC (10^-9 m^2 s^-1)',3x,'Sqrt[MSD] (Ang)')")
-  Call info(message,.true.)
+  Write(messages(1),"(12x,a)") 'Approximate 3D Diffusion Coefficients and square root of MSDs'
+  Write(messages(2),"(12x,'atom',9x,'DC (10^-9 m^2 s^-1)',3x,'Sqrt[MSD] (Ang)')")
+  Call info(messages,2,.true.)
 
   Do i=1,ntpatm
      If (numtypnf(i) > zero_plus) Then
@@ -1665,9 +1644,9 @@ Subroutine statistics_result                                    &
   End Do
 
   If (check) Then
-     Write(message,"(/,/,12x,'Remaining non-zero statistics registers ', &
-          & /,/,12x,'Register',7x,'Average value',8x,'r.m.s. fluc.')")
-     Call info(message,.true.)
+     Write(messages(1),"(12x,'Remaining non-zero statistics registers ')")
+     Write(messages(2),"(12x,'Register',7x,'Average value',8x,'r.m.s. fluc.')")
+     Call info(messages,2,.true.)
    End If
 
    If (comm%idnode == 0) Then

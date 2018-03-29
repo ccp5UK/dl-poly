@@ -2407,8 +2407,8 @@ Contains
 
     Allocate (buff( 1:3, 1:to_read ), Stat=fail)
     If (fail /= 0) Then
-       Write( message, '(/,1x,a)') 'defects_reference_read_parallel allocation failure 4'
-       Call error( 0 ,message)
+       Write(message,'(a)') 'defects_reference_read_parallel allocation failure 4'
+       Call error(0,message)
     End If
 
     Call io_nc_get_var( what, fh, buff, start, count )
@@ -2421,8 +2421,8 @@ Contains
 
     Deallocate (buff, Stat=fail)
     If (fail /= 0) Then
-       Write( message, '(/,1x,a,i0)') 'defects_reference_read_parallel allocation failure 4'
-       Call error( 0,message )
+       Write(message,'(a,i0)') 'defects_reference_read_parallel allocation failure 4'
+       Call error(0,message)
     End If
 
   End Subroutine get_var

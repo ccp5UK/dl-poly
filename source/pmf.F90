@@ -10,14 +10,13 @@ Module pmf
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use comms,  Only : comms_type,gcheck,gsum,gsync
+  Use kinds,           Only : wp
+  Use comms,           Only : comms_type,gcheck,gsum,gsync
   Use setup
-  Use configuration, Only : imcon,cell,natms,xxx,yyy,zzz,lfrzn, &
-                            vxx,vyy,vzz,nlast,lsi,lsa
-
-  Use errors_warnings, Only : error, warning
-  Use numerics, Only : images,local_index,dcell
+  Use configuration,   Only : imcon,cell,natms,xxx,yyy,zzz,lfrzn, &
+                              vxx,vyy,vzz,nlast,lsi,lsa
+  Use errors_warnings, Only : error,warning,info
+  Use numerics,        Only : images,local_index,dcell
   Implicit None
 
   Integer,                        Save :: ntpmf  = 0
@@ -973,14 +972,18 @@ Subroutine pmf_shake_vv          &
      Do k=0,comm%mxnode-1
         If (comm%idnode == k) Then
            Do ipmf=1,ntpmf
-              If (esig(ipmf) >= tolnce)                   &
-                 Write(message,'(3(a,i10),a,/,a,f8.2,a,1p,e12.4,a)')     &
-                   'global PMF constraint number', ipmf,      &
-                   ' , with head particle numbers, U1:', listpmf(1,1,ipmf), &
-                   ' & U2:', listpmf(1,2,ipmf), ' ,',                       &
-                   ' , converges to a length of', Sqrt(pt2(ipmf)+dis2),     &
-                   ' Angstroms with factor', esig(ipmf), ' contributes towards next error'
-                 Call warning(message,.true.)
+             If (esig(ipmf) >= tolnce) Then
+                 Write(message,'(3(a,i10),a)') &
+                 'global PMF constraint number', ipmf, &
+                 ' , with head particle numbers, U1:', listpmf(1,1,ipmf), &
+                 ' & U2:', listpmf(1,2,ipmf)
+               Call info(message)
+               Write(message,'(a,f8.2,a,1p,e12.4)') &
+                 'converges to a length of', Sqrt(pt2(ipmf)+dis2), &
+                 ' Angstroms with factor', esig(ipmf)
+               Call info(message)
+               Call warning('Contributes towards next error',.true.)
+             End If
            End Do
         End If
         Call gsync(comm)

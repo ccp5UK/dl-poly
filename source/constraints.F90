@@ -16,10 +16,9 @@ Module constraints
                               imcon,cell,xxx,yyy,zzz
   Use setup,           Only : mxtmls,mxtcon,mxcons,mxfcon,mxlshp,mxproc,mxatdm, &
                               mxatms,nrite
-  Use errors_warnings, Only : error,warning
+  Use errors_warnings, Only : error,warning,info
   Use shared_units,    Only : update_shared_units
   Use numerics,        Only : images,local_index
-
   Implicit None
 
   Logical,                        Save :: lshmv_con = .false.
@@ -883,13 +882,17 @@ Subroutine constraints_shake_vv       &
         If (comm%idnode == i) Then
            Do k=1,ntcons
              If (esig(k) >= tolnce*prmcon(listcon(0,k))) Then
-               Write(message,'(3(a,i10),a,/,a,f8.2,a,1p,e12.4,a)')         &
-                 'global constraint number', listcon(0,k),   &
-                 ' , with particle numbers:', listcon(1,k),                &
-                 ' &', listcon(2,k), ' ,', ' converges to a length of ',   &
-                 Sqrt(dt2(k)+prmcon(listcon(0,k))**2),                     &
-                 ' Angstroms with a factor', esig(k)/prmcon(listcon(0,k)), &
-                 ' ,contributes towards next error'
+               Write(message,'(3(a,i10))') &
+                 'global constraint number', listcon(0,k),  &
+                 ' , with particle numbers:', listcon(1,k), &
+                 ' &', listcon(2,k)
+               Call info(message)
+               Write(message,'(a,f8.2,a,1p,e12.4)') &
+               'converges to a length of ', &
+                 Sqrt(dt2(k)+prmcon(listcon(0,k))**2), &
+                 ' Angstroms with a factor', esig(k)/prmcon(listcon(0,k))
+               Call info(message)
+               Write(message,'(a)') 'contributes towards next error'
                Call warning(message)
              End If
            End Do

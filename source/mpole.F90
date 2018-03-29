@@ -354,11 +354,10 @@ Contains
              Write(message,"('number of molecular types',6x,i10)") ntpmls
              Call info(message,.true.)
           Else
-            Write(message,'(a,2(/,1x,a,i0))')                        &
-              "number of molecular types mistmatch between FIELD and MPOLES !!! ***", &
-            "***           FIELD  reports: ", ntpmls,                                             &
-              "***           MPOLES reports: ", Nint(word_2_real(word))
-            Call warning(message,.true.)
+            Call warning("number of molecular types mistmatch between FIELD and MPOLES",.true.)
+            Write(message,'(2(a,i0))') &
+            "FIELD  reports: ", ntpmls, ", MPOLES reports: ", Nint(word_2_real(word))
+            Call info(message,.true.)
             Call error(623,master_only=.true.)
           End If
 
@@ -416,11 +415,10 @@ Contains
                        Call info(message,.true.)
                      End If
                    Else
-                     Write(message,'(a,2(/,1x,a,i0))')         &
-                       " number of molecules mistmatch between FIELD and MPOLES !!! ***", &
-                     "***           FIELD  reports: ", nummols(itmols),                              &
-                       "***           MPOLES reports: ", Nint(word_2_real(word))
-                     Call warning(message,.true.)
+                     Call warning("number of molecules mistmatch between FIELD and MPOLES",.true.)
+                     Write(message,'(2(a,i0))') &
+                     "FIELD  reports: ", nummols(itmols), ", MPOLES reports: ", Nint(word_2_real(word))
+                     Call info(message,.true.)
                      Call error(623,master_only=.true.)
                    End If
 
@@ -439,11 +437,10 @@ Contains
                         Call info(message,.true.)
                       End If
                    Else
-                     Write(message,'(a,2(/,1x,a,i0))')                        &
-                       "number of atoms/sites per molecule mistmatch between FIELD and MPOLES !!! ***", &
-                     "***           FIELD  reports: ", numsit(itmols),                                              &
-                       "***           MPOLES reports: ", Nint(word_2_real(word))
-                     Call warning(message,.true.)
+                     Call warning("number of molecules mistmatch between FIELD and MPOLES",.true.)
+                     Write(message,'(2(a,i0))') &
+                     "FIELD  reports: ", nummols(itmols), ", MPOLES reports: ", Nint(word_2_real(word))
+                     Call info(message,.true.)
                      Call error(623,master_only=.true.)
                    End If
 
