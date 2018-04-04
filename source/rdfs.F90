@@ -194,12 +194,14 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
   Real( Kind = wp ), Allocatable :: dstdrdf(:,:)
   Real( Kind = wp ), Allocatable :: pmf(:),vir(:)
 
+  Character ( Len = 256 )  :: message
+
   If (lpana) Then
      fail = 0
      Allocate (dstdrdf(0:mxgrdf,1:ntprdf),pmf(0:mxgrdf+2),vir(0:mxgrdf+2), Stat = fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'rdf_compute - allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(a)') 'rdf_compute - allocation failure'
+        Call error(0,message)
      End If
   End If
 
@@ -468,8 +470,8 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
 
      Deallocate (dstdrdf,pmf,vir, Stat = fail)
      If (fail > 0) Then
-        Write(nrite,'(/,1x,a,i0)') 'rdf_compute - deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(a)') 'rdf_compute - deallocation failure'
+        Call error(0,message)
      End If
   End If
 

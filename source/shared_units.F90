@@ -71,8 +71,8 @@ Module shared_units
   fail=0
   Allocate (i0(1:b_u),j0(1:b_u),listme(1:mxatms),lstout(1:mxatms),listin(1:mxatms), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'pass_shared_units allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'pass_shared_units allocation failure'
+     Call error(0,message)
   End If
 
 ! Initialise safety flag
@@ -579,7 +579,8 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,comm)
              i,j,k,j0,k0,jdnode,kdnode,m,n
 
   Integer, Dimension( : ), Allocatable :: ibuffer
-
+  Character ( Len = 256 ) :: message
+  
 ! Number of transported quantities per particle
 
   iadd=2
@@ -587,8 +588,8 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,comm)
   fail=0 ; limit=iadd*mxbfsh ! limit=2*iblock*iadd
   Allocate (ibuffer(1:limit), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'update_shared_units_int allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'update_shared_units_int allocation failure'
+     Call error(0,message)
   End If
 
 ! Set ibuffer limit (half for outgoing data - half for incoming)
@@ -701,8 +702,8 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,comm)
 
   Deallocate (ibuffer, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'update_shared_units_int deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'update_shared_units_int deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine update_shared_units_int
@@ -733,6 +734,7 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,comm)
              i,j,k,j0,k0,jdnode,kdnode,m,n
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
+  Character ( Len = 256 )  :: message
 
 ! Number of transported quantities per particle
 
@@ -741,8 +743,8 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,comm)
   fail=0 ; limit=iadd*mxbfsh ! limit=2*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'update_shared_units_rwp allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'update_shared_units_rwp allocation failure'
+     Call error(0,message)
   End If
 
 ! Set buffer limit (half for outgoing data - half for incoming)
@@ -855,8 +857,8 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'update_shared_units_rwp deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'update_shared_units_rwp deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine update_shared_units_rwp
