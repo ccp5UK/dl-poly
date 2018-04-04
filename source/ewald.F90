@@ -393,6 +393,8 @@ Contains
       Integer :: length
       Integer :: fail(1:2)
 
+      Character ( Len = 256 )  ::  message
+
   ! If the processor to receive FROM is actually ME it means there is
   ! only one processor along this axis (so the processor to send TO is
   ! also ME) and so no message passing need be done.  However, there
@@ -410,8 +412,8 @@ Contains
          Allocate ( send_buffer( xlb:xlt, ylb:ylt, zlb:zlt ) , Stat = fail(1) )
          Allocate ( recv_buffer( xdb:xdt, ydb:ydt, zdb:zdt ) , Stat = fail(2) )
          If (Any(fail > 0)) Then
-            Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo allocation failure, node: ', comm%idnode
-            Call error(0)
+            Write(message,'(a)') 'exchange_grid_halo allocation failure'
+            Call error(0,message)
          End If
 
   ! Copy the data to be sent
@@ -437,8 +439,8 @@ Contains
          Deallocate ( recv_buffer , Stat = fail(1) )
          Deallocate ( send_buffer , Stat = fail(2) )
          If (Any(fail > 0)) Then
-            Write(nrite,'(/,1x,a,i0)') 'exchange_grid_halo deallocation failure, node: ', comm%idnode
-            Call error(0)
+            Write(message,'(a)') 'exchange_grid_halo deallocation failure'
+            Call error(0,message)
          End If
 
       Else
@@ -544,11 +546,13 @@ Contains
 
     Real( Kind = wp ), Dimension( : ), Allocatable :: real_no, inv_no
 
+    Character ( Len = 256 )   ::  message
+
     fail=0
     Allocate (real_no(1:nospl),inv_no(1:nospl), Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'bspgen allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(a)') 'bspgen allocation failure'
+       Call error(0,message)
     End If
 
   ! construct B-splines
@@ -659,8 +663,8 @@ Contains
 
     Deallocate (real_no,inv_no, Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'bspgen allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(a)') 'bspgen allocation failure'
+       Call error(0,message)
     End If
 
   End Subroutine bspgen
@@ -691,11 +695,13 @@ Contains
 
     Real( Kind = wp ), Dimension( : ), Allocatable :: real_no, inv_no, pmo_no
 
+    Character  ( Len = 256 )  ::  message
+
     fail=0
     Allocate (real_no(1:nospl),inv_no(1:nospl),pmo_no(0:nospl), Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'bspgen_mpoles allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(a)') 'bspgen_mpoles allocation failure'
+       Call error(0,message)
     End If
 
   ! initialize derivatives
@@ -856,8 +862,8 @@ Contains
 
     Deallocate (real_no,inv_no,pmo_no, Stat=fail )
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'bspgen_moples deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(a)') 'bspgen_moples deallocation failure'
+       Call error(0,message)
     End If
 
   End Subroutine bspgen_mpoles
