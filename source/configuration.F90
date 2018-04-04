@@ -1092,8 +1092,8 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
      Deallocate (bxx,byy,bzz, Stat=fail(3))
      Deallocate (cxx,cyy,czz, Stat=fail(4))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'read_config deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(a)') 'read_config deallocation failure'
+        Call error(0,message)
      End If
 
 ! If PROPER read
@@ -1202,8 +1202,8 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
   Allocate (pda(1:ncells), Stat=fail(1))
   If (fail(1) > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'read_config allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'read_config allocation failure'
+     Call error(0,message)
   End If
   pda=0.0_wp
 
@@ -1293,8 +1293,8 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
   Deallocate (pda, Stat=fail(1))
   If (fail(1) > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'read_config deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'read_config deallocation failure'
+     Call error(0,message)
   End If
 
 ! PARTICLE DENSITY END
@@ -1374,6 +1374,8 @@ Subroutine read_config_parallel                 &
   Character( Len = 1 ), Dimension( :, : ), Allocatable :: rec_buff
   Integer :: ierr
 
+  Character( Len =  256 )  ::  message
+ 
 
 ! Get reading method, total number of I/O heads and buffer size
 
@@ -1398,8 +1400,8 @@ Subroutine read_config_parallel                 &
   Allocate (chbuf(1:batsz),iwrk(1:batsz),                                   Stat=fail(2))
   Allocate (scatter_buffer(1:wp_vals_per_at,1:batsz),                       Stat=fail(3))
   If (Any(fail(1:3) > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'read_config_parallel allocation failure 1, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'read_config_parallel allocation failure 1'
+     Call error(0,message)
   End If
 
 ! define basic quantities for the parallel ASCII reading
@@ -1478,8 +1480,8 @@ Subroutine read_config_parallel                 &
      Allocate (chbuf_scat(1:batsz),iwrk_scat(1:batsz),                        Stat=fail(7))
      Allocate (n_held(0:comm%mxnode-1),where_buff(0:comm%mxnode-1),owner_read(1:batsz), Stat=fail(8))
      If (Any(fail(1:8) > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'read_config_parallel allocation failure 2, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(a)') 'read_config_parallel allocation failure 2'
+        Call error(0,message)
      End If
 
   Else
@@ -1492,8 +1494,8 @@ Subroutine read_config_parallel                 &
      Allocate (chbuf_scat(1:0),iwrk_scat(1:0), Stat=fail(2))
      Allocate (n_held(0:-1),where_buff(0:-1),  Stat=fail(3))
      If (Any(fail(1:3) > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'read_config_parallel allocation failure 3, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(a)') 'read_config_parallel allocation failure 3'
+        Call error(0,message)
      End If
 
   End If
@@ -1934,8 +1936,8 @@ Subroutine read_config_parallel                 &
      Deallocate (cxx_read,cyy_read,czz_read, Stat=fail(5))
      Deallocate (owner_read,                 Stat=fail(6))
      If (Any(fail(1:6) > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'read_config_parallel deallocation failure 2, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(a)') 'read_config_parallel deallocation failure 2'
+        Call error(0,message)
      End If
   End If
 
@@ -1946,8 +1948,8 @@ Subroutine read_config_parallel                 &
   Deallocate (scatter_buffer_read,    Stat=fail(5))
   Deallocate (scatter_buffer,         Stat=fail(6))
   If (Any(fail(1:6) > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'read_config_parallel deallocation failure 1, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'read_config_parallel deallocation failure 1'
+     Call error(0,message)
   End If
 
   Return
@@ -2459,6 +2461,8 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: cxx,cyy,czz
 
   Integer :: ierr
+  Character ( Len = 256 )  ::  message
+
 ! Get write method buffer size and line feed character
 
   Call io_get_parameters( user_method_write      = io_write )
@@ -2474,8 +2478,8 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
      Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
      Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'write_config allocation failure 0, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(a)') 'write_config allocation failure 0'
+        Call error(0,message)
      End If
 
      chbat=' '
@@ -2608,8 +2612,8 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
      Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(3))
      Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'write_config allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(a)') 'write_config allocation failure'
+        Call error(0,message)
      End If
 
 ! node 0 handles I/O
@@ -2781,8 +2785,8 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
      Deallocate (bxx,byy,bzz, Stat=fail(3))
      Deallocate (cxx,cyy,czz, Stat=fail(4))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'write_config deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(a)') 'write_config deallocation failure'
+        Call error(0,message)
      End If
 
 ! SORTED MPI-I/O or Parallel Direct Access FORTRAN or netCDF
@@ -2921,8 +2925,8 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
      Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(3))
      Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'write_config allocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(a)') 'write_config allocation failure'
+        Call error(0,message)
      End If
 
 ! node 0 handles I/O
@@ -3055,8 +3059,8 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
      Deallocate (bxx,byy,bzz, Stat=fail(3))
      Deallocate (cxx,cyy,czz, Stat=fail(4))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'write_config deallocation failure, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(a)') 'write_config deallocation failure'
+        Call error(0,message)
      End If
 
   End If
@@ -3067,8 +3071,8 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
      Deallocate (n_atm, Stat=fail(1))
      Deallocate (chbat, Stat=fail(2))
      If (Any(fail > 0)) Then
-        Write(nrite,'(/,1x,a,i0)') 'write_config deallocation failure 0, node: ', comm%idnode
-        Call error(0)
+        Write(message,'(a)') 'write_config deallocation failure 0'
+        Call error(0,message)
      End If
   End If
 
@@ -3150,11 +3154,13 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
 
     Real( Kind = wp ), Allocatable :: mol(:,:)
 
+    Character ( Len = 256 )   ::  message
+
     fail = 0
     Allocate (mol(1:(ifinish-istart+1),0:3), Stat = fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'getcom_mol allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(/,1x,a,i0)') 'getcom_mol allocation failure'
+       Call error(0,message)
     End If
 
 ! Initialise
@@ -3205,8 +3211,8 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
     fail = 0
     Deallocate (mol, Stat = fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a,i0)') 'getcom_mol deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(a)') 'getcom_mol deallocation failure'
+       Call error(0,message)
     End If
 
   End Subroutine getcom_mol
