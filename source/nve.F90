@@ -527,7 +527,9 @@ Contains
   ! set matms
 
     matms=nlast
-    matms=natms
+    If (comm%mxnode == 1) Then
+      matms=natms
+    End If
 
     If (megcon > 0 .or. megpmf > 0) Then
        lstitr(1:natms)=.false. ! initialise lstitr
