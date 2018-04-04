@@ -186,8 +186,12 @@ Module mpoles_container
     Real( Kind = wp) :: d1(-2:torderlim,-2:torderlim,-2:torderlim)
     Real( Kind = wp) :: cf1(1:torderlim),cf2(1:torderlim),cf3(1:torderlim)
 
-    If (lbl /= 0 .and. lbl /= -2) STOP ! Allowed Lower_Bound_Limit
-    If (itype /= 1 .and. itype /= 2) STOP ! erfcr and erfr only
+    If (lbl /= 0 .and. lbl /= -2) Then
+      Call error(0, 'Disallowed lower bound limit in ewald_deriv')
+    End If
+    If (itype /= 1 .and. itype /= 2) Then
+      Call error(0, 'Disallowed value for itype in ewald_deriv')
+    End If
 
   ! setup variables
 
@@ -410,7 +414,9 @@ Module mpoles_container
     Integer          :: ii,n,s1,s2,s3,ks1,ks2,ks3,ks11,ks21,ks31
     Real( Kind = wp) :: tmp,tmpi,tmpj,t1,alphan,td
 
-    If (lbl /= 0 .and. lbl /= -2) STOP ! Allowed Lower_Bound_Limit
+    If (lbl /= 0 .and. lbl /= -2) Then
+      Call error(0, 'Disallowed lower bound limit in ewald_deriv')
+    End If
 
     If (mxompl >= 0) Then
 

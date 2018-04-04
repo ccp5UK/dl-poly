@@ -66,7 +66,7 @@ Contains
        If (normb > zero_plus) Then
           Call biCGStab_solver_omp(eps,comm)
        Else
-          STOP "normb too small"
+          Call error(0,'normb too small')
        End If
 
        pinitialized=.true.
@@ -81,7 +81,7 @@ Contains
        Call P_solver_omp(eps,comm)
        Call biCGStab_calc_forces(eng,virr,strs,comm)
     Else
-       STOP "normb too small"
+       Call error(0,'normb too small')
     End If
 
     engcpe=engcpe+eng
