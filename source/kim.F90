@@ -90,7 +90,7 @@ Contains
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_basic_init", ier)
-       Stop
+       Call error(0,'kim_basic_init failed in kim_cutoff')
     End If
 
 ! Allocate with 1 particle and 1 species, just to get the cutoff
@@ -99,21 +99,21 @@ Contains
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_allocate", ier)
-       Stop
+       Call error(0,'kim_api_allocate failed in kim_cutoff')
     End If
 
     ier = kim_api_model_init(pkim)
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_model_init", ier)
-       Stop
+       Call error(0,'kim_api_model_init failed in kim_cutoff')
     End If
 
     pcut = kim_api_get_data(pkim, "cutoff", ier)
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_getm_data", ier)
-       Stop
+       Call error(0,'kim_api_getm_data failed in kim_cutoff')
     End If
     Call c_f_Pointer(pcut, model_cutoff)
 
@@ -123,14 +123,14 @@ Contains
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_model_destroy", ier)
-       Stop
+       Call error(0,'kim_api_model_destroy failed in kim_cutoff')
     End If
 
     Call kim_api_free(pkim, ier)
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_free", ier)
-       Stop
+       Call error(0,'kim_api_free failed in kim_cutoff')
     End If
     pkim = c_null_ptr
 #else
@@ -172,14 +172,14 @@ Contains
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_basic_init", ier)
-       Stop
+       Call error(0, 'kim_basic_init failed in kim_setup')
     End If
 
     ier = kim_api_get_NBC_method(pkim, ActiveNBC_Method)
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_get_NBC_method", ier)
-       Stop
+       Call error(0, 'kim_api_get_NBC_method failed in kim_setup')
     End If
     If      (Index(ActiveNBC_Method,"NEIGH_RVEC_H") == 1) Then
        HalfList  = .true.
@@ -224,14 +224,14 @@ Contains
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_allocate", ier)
-       Stop
+       Call error(0, 'kim_api_allocate failed in kim_setup')
     End If
 
     ier = kim_api_model_init(pkim)
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_model_init", ier)
-       Stop
+       Call error(0, 'kim_api_model_init failed in kim_setup')
     End If
 
     Call kim_api_getm_data(pkim, ier,                           &
@@ -242,7 +242,7 @@ Contains
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_getm_data", ier)
-       Stop
+       Call error(0, 'kim_api_getm_data failed in kim_setup')
     End If
     Call c_f_Pointer(pNOP, numberOfParticles)
     Call c_f_Pointer(pNPT, numberOfSpecies)
@@ -258,8 +258,8 @@ Contains
                                                      Trim(sitnam(lsite(i))), ier)
        If (ier < KIM_STATUS_OK) Then
           idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
-                                      "kim_api_get_partcl_type_code", ier)
-          Stop
+                                      "kim_api_get_species", ier)
+          Call error(0, 'kim_api_get_species failed in kim_setup')
        End If
     End Do
 
@@ -267,7 +267,7 @@ Contains
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_set_method", ier)
-       Stop
+       Call error(0, 'kim_api_set_method failed in kim_setup')
     End If
 #else
     Call kim_message()
@@ -319,14 +319,14 @@ Contains
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_model_destroy", ier)
-       Stop
+       Call error(0, 'kim_api_model_destroy failed in kim_cleanup')
     End If
 
     Call kim_api_free(pkim, ier)
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_free", ier)
-       Stop
+       Call error(0, 'kim_api_free failed in kim_cleanup')
     End If
     pkim = c_null_ptr
 #else
@@ -371,7 +371,7 @@ Contains
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_getm_data", ier)
-       Stop
+       Call error(0, 'kim_api_getm_data failed in kim_forces')
     End If
     Call c_f_Pointer(pCOORD, coordinates, [3,nlast])
     Call c_f_Pointer(pE,     energy)
@@ -409,7 +409,7 @@ Contains
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_compute", ier)
-       Stop
+       Call error(0, 'kim_api_compute failed in kim_forces')
     End If
 
     engkim = Real(energy, wp)
@@ -558,7 +558,7 @@ Contains
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_get_data", ier)
-       Stop
+       Call error(0, 'kim_api_get_data failed in get_neigh')
     End If
     Call c_f_Pointer(pnAtoms, numberOfParticles)
 
@@ -811,14 +811,14 @@ Contains
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "Write_KIM_descriptor", ier)
-       Stop
+       Call error(0, 'Write_KIM_descriptor failed in kim_basic_init')
     End If
 
     ier = kim_api_string_init(pkim, Trim(kim_descriptor), Trim(model_name))
     If (ier < KIM_STATUS_OK) Then
        idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                    "kim_api_string_init", ier)
-       Stop
+       Call error(0, 'kim_api_string_init failed in kim_basic_init')
     End If
 
     kim_basic_init = ier
