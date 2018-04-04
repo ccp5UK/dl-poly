@@ -937,8 +937,8 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
   Deallocate (ind_on,ind_off,                        Stat=fail(1))
   Allocate   (i1pmf(1:mxtpmf(1)),i2pmf(1:mxtpmf(2)), Stat=fail(2))
   If (Any(fail(1:2) > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'deport_atomic_data de/allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'deport_atomic_data de/allocation failure'
+     Call error(0,message)
   End If
 
 ! load transferred data
@@ -1648,8 +1648,8 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
   Deallocate (lrgd,        Stat=fail(2))
   Deallocate (i1pmf,i2pmf, Stat=fail(3))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'deport_atomic_data deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'deport_atomic_data deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine deport_atomic_data
@@ -1681,6 +1681,8 @@ Subroutine export_atomic_data(mdir,comm)
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
+  Character ( Len = 256 )   ::  message
+
 ! Number of transported quantities per particle
 
   iadd=6+Merge(6,0,induce)
@@ -1688,8 +1690,8 @@ Subroutine export_atomic_data(mdir,comm)
   fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'export_atomic_data allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'export_atomic_data allocation failure'
+     Call error(0,message)
   End If
 
 ! Set buffer limit (half for outgoing data - half for incoming)
@@ -1947,8 +1949,8 @@ Subroutine export_atomic_data(mdir,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'export_atomic_data deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'export_atomic_data deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine export_atomic_data
@@ -1978,6 +1980,8 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
+  Character ( Len = 256 )  :: message
+
 ! Number of transported quantities per particle
 
   iadd=3
@@ -1985,8 +1989,8 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
   fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'export_atomic_positions allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'export_atomic_positions allocation failure'
+     Call error(0,message)
   End If
 
 ! Set buffer limit (half for outgoing data - half for incoming)
@@ -2193,8 +2197,8 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'export_atomic_positions deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'export_atomic_positions deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine export_atomic_positions
@@ -2226,6 +2230,8 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
+  Character  ( Len =  256 )  ::  message
+
 ! Number of transported quantities per particle
 
   iadd=4*mximpl+1
@@ -2234,8 +2240,8 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
   fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'export_atomic_positions allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'export_atomic_positions allocation failure'
+     Call error(0,message)
   End If
 
 ! Set buffer limit (half for outgoing data - half for incoming)
@@ -2418,8 +2424,8 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
 
   Deallocate (buffer, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'mpoles_rotmat_export deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'mpoles_rotmat_export deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine mpoles_rotmat_export
@@ -2446,6 +2452,8 @@ Subroutine mpoles_rotmat_set_halo(comm)
 
   Integer, Allocatable :: ixyz0(:)
 
+  Character ( Len = 256 )  ::  message
+
   Do i=1,natms
      mplflg(i)=0
      If (mxompl < 3) Then
@@ -2460,8 +2468,8 @@ Subroutine mpoles_rotmat_set_halo(comm)
   fail = 0
   Allocate (ixyz0(1:mxatms), Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'mpoles_rotmat_set_halo allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'mpoles_rotmat_set_halo allocation failure'
+     Call error(0,message)
   End If
   ixyz0(1:nlast) = ixyz(1:nlast)
 
@@ -2492,8 +2500,8 @@ Subroutine mpoles_rotmat_set_halo(comm)
 
   Deallocate (ixyz0, Stat = fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'mpoles_rotmat_set_halo deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'mpoles_rotmat_set_halo deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine mpoles_rotmat_set_halo
