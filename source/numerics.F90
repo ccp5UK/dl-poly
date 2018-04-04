@@ -942,7 +942,12 @@ Function match(n,ind_top,list)
 
   Integer :: ind_old,ind_now
 
-  If (n < 1) Call error(0)
+  Character ( Len = 256 )  :: message
+
+  If (n < 1)Then
+    write(message,'(a)') 'Wrong value of n has entered in Function match, called when defining ltg arrays in link_cells'
+    Call error(0,message)
+  End If
 
   match = .false.
 
