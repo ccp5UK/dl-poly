@@ -2506,7 +2506,6 @@ Contains
            & '*    CODE is aborting from GPFA    *'/ &
            & '************************************'/)
      Call error(0,message)
-     Stop
 
   End Subroutine ABORT_IT
 
