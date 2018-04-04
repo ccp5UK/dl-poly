@@ -106,6 +106,8 @@ Contains
     Real( Kind = wp ), Allocatable :: fxt(:),fyt(:),fzt(:)
 
     Real( Kind = wp ), Allocatable, Save :: dens0(:)
+    Character ( Len = 256 )  :: message
+
 
     fail=0
     If (megcon > 0 .or. megpmf > 0) Then
@@ -124,8 +126,8 @@ Contains
     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail(8))
     Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(9))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'npt_m0 allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(a)') 'npt_m0 allocation failure'
+       Call error(0,message)
     End If
 
 
@@ -141,8 +143,8 @@ Contains
 
        Allocate (dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'dens0 allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(a)') 'dens0 allocation failure'
+          Call error(0,message)
        End If
        Do i=1,ntpatm
           dens0(i) = dens(i)
@@ -597,8 +599,8 @@ Contains
     Deallocate (vxt,vyt,vzt,         Stat=fail(8))
     Deallocate (fxt,fyt,fzt,         Stat=fail(9))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'npt_m0 deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(a)') 'npt_m0 deallocation failure'
+       Call error(0,message)
     End If
   End Subroutine npt_m0_vv
 
@@ -704,6 +706,7 @@ Contains
     Real( Kind = wp ), Allocatable :: rgdoxt(:),rgdoyt(:),rgdozt(:)
 
     Real( Kind = wp ), Allocatable, Save :: dens0(:)
+    Character ( Len = 256 )  ::  message
 
     fail=0
     If (megcon > 0 .or. megpmf > 0) Then
@@ -728,8 +731,8 @@ Contains
     Allocate (rgdvxt(1:mxrgd),rgdvyt(1:mxrgd),rgdvzt(1:mxrgd),      Stat=fail(13))
     Allocate (rgdoxt(1:mxrgd),rgdoyt(1:mxrgd),rgdozt(1:mxrgd),      Stat=fail(14))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'npt_m1 allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(a)') 'npt_m1 allocation failure'
+       Call error(0,message)
     End If
 
 
@@ -745,8 +748,8 @@ Contains
 
        Allocate (dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
-          Write(nrite,'(/,1x,a,i0)') 'dens0 allocation failure, node: ', comm%idnode
-          Call error(0)
+          Write(message,'(a)') 'dens0 allocation failure'
+          Call error(0,message)
        End If
        Do i=1,ntpatm
           dens0(i) = dens(i)
@@ -1673,8 +1676,8 @@ Contains
     Deallocate (rgdvxt,rgdvyt,rgdvzt, Stat=fail(13))
     Deallocate (rgdoxt,rgdoyt,rgdozt, Stat=fail(14))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'npt_m1 deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(a)') 'npt_m1 deallocation failure'
+       Call error(0,message)
     End If
   End Subroutine npt_m1_vv
 End Module npt_mtk
