@@ -473,6 +473,8 @@ Contains
     Real( Kind = wp ) :: impx(1:mximpl),impy(1:mximpl),impz(1:mximpl)
     Real( Kind = wp ) :: jmpx(1:mximpl),jmpy(1:mximpl),jmpz(1:mximpl)
 
+    Character ( Len = 256 )  ::  message
+
     If (newjob) Then
        newjob = .false.
 
@@ -495,8 +497,8 @@ Contains
           fail=0
           Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
           If (fail > 0) Then
-             Write(nrite,'(/,1x,a,i0)') 'coul_fscp_mforces allocation failure, idnode: ', comm%idnode
-             Call error(0)
+             Write(message,'(a)') 'coul_fscp_mforces allocation failure'
+             Call error(0,message)
           End If
 
   ! generate error function complement tables for ewald sum
@@ -1057,6 +1059,8 @@ Contains
     Real( Kind = wp ) :: impx(1:mximpl),impy(1:mximpl),impz(1:mximpl)
     Real( Kind = wp ) :: jmpx(1:mximpl),jmpy(1:mximpl),jmpz(1:mximpl)
 
+    Character ( Len = 256 )   ::  message
+
     If (newjob) Then
        newjob = .false.
 
@@ -1086,8 +1090,8 @@ Contains
           fail=0
           Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
           If (fail > 0) Then
-             Write(nrite,'(/,1x,a,i0)') 'coul_rfp_mforces allocation failure, idnode: ', comm%idnode
-             Call error(0)
+             Write(message,'(a)') 'coul_rfp_mforces allocation failure'
+             Call error(0,message)
           End If
 
   ! generate error function complement tables for ewald sum

@@ -493,6 +493,7 @@ Contains
     Real( Kind = wp ), Allocatable :: xdad(:),ydad(:),zdad(:)
 
     Character( Len = 256 ) :: message
+
     fail=0
     Allocate (lunsafe(1:mxinv),lstopt(0:4,1:mxinv),      Stat=fail(1))
     Allocate (xdab(1:mxinv),ydab(1:mxinv),zdab(1:mxinv), Stat=fail(2))
@@ -1164,8 +1165,8 @@ Contains
     Deallocate (xdac,ydac,zdac, Stat=fail(3))
     Deallocate (xdad,ydad,zdad, Stat=fail(4))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'inversions_forces deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(a)') 'inversions_forces deallocation failure'
+       Call error(0,message)
     End If
 
   End Subroutine inversions_forces
@@ -1198,6 +1199,7 @@ Contains
 
     Integer,           Allocatable :: read_type(:)
     Real( Kind = wp ), Allocatable :: bufpot(:),bufvir(:)
+    Character( Len = 256   ) :: message
 
 
     If (comm%idnode == 0) Open(Unit=ntable, File='TABINV')
@@ -1266,8 +1268,8 @@ Contains
     Allocate (read_type(1:ltpinv(0)),          Stat=fail(1))
     Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'error - inversions_table_read allocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(a)') 'error - inversions_table_read allocation failure'
+       Call error(0,message)
     End If
     Call allocate_invr_pot_arrays()
 
@@ -1521,8 +1523,8 @@ Contains
     Deallocate (read_type,     Stat=fail(1))
     Deallocate (bufpot,bufvir, Stat=fail(2))
     If (Any(fail > 0)) Then
-       Write(nrite,'(/,1x,a,i0)') 'error - inversions_table_read deallocation failure, node: ', comm%idnode
-       Call error(0)
+       Write(message,'(a)') 'error - inversions_table_read deallocation failure'
+       Call error(0,message)
     End If
 
     Return

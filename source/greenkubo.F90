@@ -92,11 +92,13 @@ Contains
 
   Real( Kind = wp ), Allocatable :: vafcoll(:)
 
+  Character ( Len = 256 )  ::  message
+
   fail=0
   Allocate (vafcoll(1:mxatyp), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'vaf_collect allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'vaf_collect allocation failure'
+     Call error(0,message)
   End If
 
 ! set VAF timestep start
@@ -191,8 +193,8 @@ Contains
 
   Deallocate (vafcoll, Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'vaf_collect deallocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'vaf_collect deallocation failure'
+     Call error(0,message)
   End If
 
 End Subroutine vaf_collect

@@ -525,6 +525,7 @@ Contains
 
     Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
 
+    Character ( Len = 256 )   ::  message
     ! Number of transported quantities per particle
 
     iadd=4
@@ -532,8 +533,8 @@ Contains
     fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
     Allocate (buffer(1:limit), Stat=fail)
     If (fail > 0) Then
-      Write(nrite,'(/,1x,a,i0)') 'dpd_v_export allocation failure, node: ', comm%idnode
-      Call error(0)
+      Write(message,'(a)') 'dpd_v_export allocation failure'
+      Call error(0,message)
     End If
 
     ! Set buffer limit (half for outgoing data - half for incoming)
@@ -713,8 +714,8 @@ Contains
 
     Deallocate (buffer, Stat=fail)
     If (fail > 0) Then
-      Write(nrite,'(/,1x,a,i0)') 'dpd_v_export deallocation failure, node: ', comm%idnode
-      Call error(0)
+      Write(message,'(a)') 'dpd_v_export deallocation failure'
+      Call error(0,message)
     End If
 
   End Subroutine dpd_v_export
@@ -736,12 +737,13 @@ Contains
     Integer :: fail,mlast
 
     Integer, Allocatable :: ixyz0(:)
+    Character ( Len = 256 )  ::  message
 
     fail = 0
     Allocate (ixyz0(1:mxatms), Stat = fail)
     If (fail > 0) Then
-      Write(nrite,'(/,1x,a,i0)') 'dpd_v_set_halo allocation failure, node: ', comm%idnode
-      Call error(0)
+      Write(message,'(a)') 'dpd_v_set_halo allocation failure'
+      Call error(0,message)
     End If
     ixyz0(1:nlast) = ixyz(1:nlast)
 
@@ -772,8 +774,8 @@ Contains
 
     Deallocate (ixyz0, Stat = fail)
     If (fail > 0) Then
-      Write(nrite,'(/,1x,a,i0)') 'dpd_v_set_halo deallocation failure, node: ', comm%idnode
-      Call error(0)
+      Write(message,'(a)') 'dpd_v_set_halo deallocation failure'
+      Call error(0,message)
     End If
 
   End Subroutine dpd_v_set_halo

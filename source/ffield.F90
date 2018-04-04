@@ -142,10 +142,10 @@ Subroutine read_field                      &
                             p_core_p, p_core_s , p_core,                        &
                             d_core_p, d_core_s , d_core
 
-  Character( Len = 32 ), Allocatable :: dihd_name(:),invr_name(:)
-  Character( Len = 24 ), Allocatable :: angl_name(:)
-  Character( Len = 16 ), Allocatable :: bond_name(:)
-
+  Character ( Len = 32 ), Allocatable :: dihd_name(:),invr_name(:)
+  Character ( Len = 24 ), Allocatable :: angl_name(:)
+  Character ( Len = 16 ), Allocatable :: bond_name(:)
+  Character ( Len = 256 )             ::  message
 ! Initialise number of unique atom and shell types and of different types of molecules
 
   ntpatm = 0
@@ -186,8 +186,8 @@ Subroutine read_field                      &
   If (lt_dih .or. mxgdih1 > 0) Allocate (dihd_name(1:mxtdih), Stat=fail(3))
   If (lt_inv .or. mxginv1 > 0) Allocate (invr_name(1:mxtinv), Stat=fail(4))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a,i0)') 'read_field allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'read_field allocation failure'
+     Call error(0,message)
   End If
 
 ! Initialise number of selected unique intramolecular TPs
@@ -2637,8 +2637,8 @@ Subroutine read_field                      &
         If (lt_dih .or. mxgdih1 > 0) Deallocate (dihd_name, Stat=fail(3))
         If (lt_inv .or. mxginv1 > 0) Deallocate (invr_name, Stat=fail(4))
         If (Any(fail > 0)) Then
-           Write(nrite,'(/,1x,a,i0)') 'read_field deallocation failure, node: ', comm%idnode
-           Call error(0)
+           Write(message,'(a)') 'read_field deallocation failure'
+           Call error(0,message)
         End If
 
 ! just finished with molecular data

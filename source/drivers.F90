@@ -156,7 +156,6 @@ Subroutine pseudo_vv                                      &
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
   Type( comms_type), Intent( InOut ) :: comm
-  Character( Len = 256 ) :: message
 
   Logical,           Save :: newjob = .true.
   Integer,           Save :: ntp,stp,rtp,megrgd
@@ -183,6 +182,8 @@ Subroutine pseudo_vv                                      &
   Real( Kind = wp ), Allocatable :: ggx(:),ggy(:),ggz(:)
   Real( Kind = wp ), Allocatable :: rgdfxx(:),rgdfyy(:),rgdfzz(:)
   Real( Kind = wp ), Allocatable :: rgdtxx(:),rgdtyy(:),rgdtzz(:)
+
+  Character ( Len = 256 ) :: message
 
   fail = 0
 
@@ -624,8 +625,8 @@ Subroutine pseudo_vv                                      &
 
         Deallocate (xxt,yyt,zzt, Stat=fail(1))
         If (fail(1) > 0) Then
-           Write(nrite,'(/,1x,a,i0)') 'pseudo (velocities) deallocation failure, node: ', comm%idnode
-           Call error(0)
+           Write(message,'(a)') 'pseudo (velocities) deallocation failure'
+           Call error(0,message)
         End If
 
 ! Thermalise the shells on hit cores
@@ -712,8 +713,8 @@ Subroutine pseudo_vv                                      &
               Allocate (rgdfxx(1:mxrgd),rgdfyy(1:mxrgd),rgdfzz(1:mxrgd),             Stat=fail(2))
               Allocate (rgdtxx(1:mxrgd),rgdtyy(1:mxrgd),rgdtzz(1:mxrgd),             Stat=fail(3))
               If (Any(fail > 0)) Then
-                 Write(nrite,'(/,1x,a,i0)') 'pseudo (RB) allocation failure, node: ', comm%idnode
-                 Call error(0)
+                 Write(message,'(a)') 'pseudo (RB) allocation failure'
+                 Call error(0,message)
               End If
 
 ! Get the RB particles vectors wrt the RB's COM
@@ -848,8 +849,8 @@ Subroutine pseudo_vv                                      &
               Deallocate (rgdfxx,rgdfyy,rgdfzz, Stat=fail(2))
               Deallocate (rgdtxx,rgdtyy,rgdtzz, Stat=fail(3))
               If (Any(fail > 0)) Then
-                 Write(nrite,'(/,1x,a,i0)') 'pseudo (RB) deallocation failure, node: ', comm%idnode
-                 Call error(0)
+                 Write(message,'(a)') 'pseudo (RB) deallocation failure'
+                 Call error(0,message)
               End If
            End If
 
