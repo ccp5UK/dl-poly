@@ -338,7 +338,7 @@ Contains
     Deallocate (vxt,vyt,vzt,   Stat=fail(4))
     If (Any(fail > 0)) Then
       Write(message,'(a)') 'constraints_quench deallocation failure'
-      Call error(0)
+      Call error(0,message)
     End If
 
   End Subroutine constraints_quench
