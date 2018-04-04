@@ -722,8 +722,8 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf,comm)
   fail=0
   Allocate (buffer(1:(mxtpmf(1)+mxtpmf(2))*(mxpmf+2)), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'pmf_vcoms allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'pmf_vcoms allocation failure'
+     Call error(0,message)
   End If
 
 
