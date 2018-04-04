@@ -2745,8 +2745,8 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0,comm)
   fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
-     Write(nrite,'(/,1x,a,i0)') 'metal_ld_export allocation failure, node: ', comm%idnode
-     Call error(0)
+     Write(message,'(a)') 'metal_ld_export allocation failure'
+     Call error(0,message)
   End If
 
 ! Set buffer limit (half for outgoing data - half for incoming)
