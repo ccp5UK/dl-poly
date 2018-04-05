@@ -547,7 +547,7 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
      buffer(18) = vircpe_fr
      buffer(19) = vircpe_dt
 
-     Call gsum(buffer(0:17))
+     Call gsum(buffer(0:19))
 
      tmp       = buffer( 0)
      engkim    = buffer( 1)
