@@ -1,46 +1,43 @@
 Module trajectory
-
-  Use kinds, Only : wp, li
-  Use comms, Only : comms_type,Traject_tag,gsync,wp_mpi,gbcast,gcheck,gsum
-  Use domains, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
+  Use kinds,         Only : wp, li
+  Use comms,         Only : comms_type,Traject_tag,gsync,wp_mpi,gbcast,gcheck,gsum
+  Use domains,       Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
   Use site
   Use setup
-  Use parse,   Only : tabs_2_blanks, get_line, get_word, &
-                             strip_blanks, word_2_real
-
-  Use configuration,     Only : cfgname,imcon,cell,natms, &
-                                ltg,atmnam,chge,weight,   &
-                                xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz,&
-                                lsa,lsi,ltg,nlast
-  Use statistics, Only : rsd
-  Use io,         Only : io_set_parameters,             &
-                                io_get_parameters,             &
-                                io_init, io_nc_create,         &
-                                io_open, io_write_record,      &
-                                io_write_batch,io_read_batch,  &
-                                io_nc_get_dim,                 &
-                                io_nc_put_var,io_nc_get_var,   &
-                                io_write_sorted_file,          &
-                                io_close, io_finalize,         &
-                                io_nc_get_real_precision,      &
-                                io_nc_get_file_real_precision, &
-                                IO_HISTORY,IO_HISTORD,         &
-                                IO_BASE_COMM_NOT_SET,          &
-                                IO_ALLOCATION_ERROR,           &
-                                IO_UNKNOWN_WRITE_OPTION,       &
-                                IO_UNKNOWN_WRITE_LEVEL,        &
-                                IO_WRITE_UNSORTED_MPIIO,       &
-                                IO_WRITE_UNSORTED_DIRECT,      &
-                                IO_WRITE_UNSORTED_MASTER,      &
-                                IO_WRITE_SORTED_MPIIO,         &
-                                IO_WRITE_SORTED_DIRECT,        &
-                                IO_WRITE_SORTED_NETCDF,        &
-                                IO_WRITE_SORTED_MASTER,        &
-                                      IO_READ_MPIIO,         &
-                             IO_READ_DIRECT,        &
-                             IO_READ_NETCDF,        &
-                             IO_READ_MASTER
-
+  Use parse,         Only : tabs_2_blanks, get_line, get_word, &
+                            strip_blanks, word_2_real
+  Use configuration, Only : cfgname,imcon,cell,natms, &
+                            ltg,atmnam,chge,weight,   &
+                            xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz,&
+                            lsa,lsi,ltg,nlast
+  Use statistics,    Only : rsd
+  Use io,            Only : io_set_parameters,             &
+                            io_get_parameters,             &
+                            io_init, io_nc_create,         &
+                            io_open, io_write_record,      &
+                            io_write_batch,io_read_batch,  &
+                            io_nc_get_dim,                 &
+                            io_nc_put_var,io_nc_get_var,   &
+                            io_write_sorted_file,          &
+                            io_close, io_finalize,         &
+                            io_nc_get_real_precision,      &
+                            io_nc_get_file_real_precision, &
+                            IO_HISTORY,IO_HISTORD,         &
+                            IO_BASE_COMM_NOT_SET,          &
+                            IO_ALLOCATION_ERROR,           &
+                            IO_UNKNOWN_WRITE_OPTION,       &
+                            IO_UNKNOWN_WRITE_LEVEL,        &
+                            IO_WRITE_UNSORTED_MPIIO,       &
+                            IO_WRITE_UNSORTED_DIRECT,      &
+                            IO_WRITE_UNSORTED_MASTER,      &
+                            IO_WRITE_SORTED_MPIIO,         &
+                            IO_WRITE_SORTED_DIRECT,        &
+                            IO_WRITE_SORTED_NETCDF,        &
+                            IO_WRITE_SORTED_MASTER,        &
+                            IO_READ_MPIIO,         &
+                            IO_READ_DIRECT,        &
+                            IO_READ_NETCDF,        &
+                            IO_READ_MASTER
 Use numerics,        Only : dcell, invert, shellsort2
 Use configuration,   Only : read_config_parallel
 Use errors_warnings, Only : error
@@ -390,9 +387,6 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
                           End If
                        End If
                     Else
-                       !Call MPI_BCAST(axx,indatm,wp_mpi,0,comm%comm,ierr)
-                       !Call MPI_BCAST(ayy,indatm,wp_mpi,0,comm%comm,ierr)
-                       !Call MPI_BCAST(azz,indatm,wp_mpi,0,comm%comm,ierr)
                        Call gbcast(comm,axx,0)
                        Call gbcast(comm,ayy,0)
                        Call gbcast(comm,azz,0)
@@ -964,7 +958,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 ! For netCDF this is the "frame number" which is not a long integer!
 
            If (comm%idnode == 0) Call io_nc_get_dim( 'frame', fh, jj )
-           Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+           Call gbcast(comm,jj,0)
 
            If (jj > 0) Then
               frm=Int(jj,li)
@@ -1393,7 +1387,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(4,MPI_OFFSET_KIND)
      Else ! netCDF write
-        Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+        Call gbcast(comm,jj,0)
         rec_mpi_io = Int(jj,MPI_OFFSET_KIND)
      End If
 
@@ -1810,7 +1804,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 
            jj=0
            If (comm%idnode == 0) Call io_nc_get_dim( 'frame', fh, jj )
-           Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+           Call gbcast(comm,jj,0)
 
            If (jj > 0) Then
               frm=Int(jj,li)
@@ -1939,7 +1933,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(4,MPI_OFFSET_KIND)
      Else ! netCDF write
-        Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, comm%comm, ierr)
+        Call gbcast(comm,jj,0)
         rec_mpi_io = Int(jj,MPI_OFFSET_KIND)
      End If
 
