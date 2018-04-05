@@ -2,7 +2,7 @@ Module shared_units
 
   Use kinds, Only : wp
   Use comms, Only : comms_type,PassUnit_tag,wp_mpi,UpdShUnit_tag,&
-                    gcheck,gsync
+                    gcheck,gsync,gsend
   Use setup
   Use domains,      Only : map,mop
   Use configuration,       Only : natms,nlast,lsi,lsa
@@ -343,14 +343,16 @@ Module shared_units
 
         l_in=0
         Call MPI_IRECV(l_in,1,MPI_INTEGER,kdnode,PassUnit_tag+k,comm%comm,comm%request,comm%ierr)
-        Call MPI_SEND(l_out,1,MPI_INTEGER,jdnode,PassUnit_tag+k,comm%comm,comm%ierr)
+        Call gsend(comm,l_out,jdnode,PassUnit_tag+k)
         Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
 ! transmit atom list of units
 
         listin=0
         If (l_in  > 0) Call MPI_IRECV(listin,l_in,MPI_INTEGER,kdnode,PassUnit_tag+k,comm%comm,comm%request,comm%ierr)
-        If (l_out > 0) Call MPI_SEND(lstout,l_out,MPI_INTEGER,jdnode,PassUnit_tag+k,comm%comm,comm%ierr)
+        If (l_out > 0) Then
+          Call gsend(comm,lstout,jdnode,PassUnit_tag+k)
+        End If
         If (l_in  > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
         Do i=1,l_me
@@ -499,11 +501,13 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
 
         n=0
         Call MPI_IRECV(n,1,MPI_INTEGER,kdnode,UpdShUnit_tag+k,comm%comm,comm%request,comm%ierr)
-        Call MPI_SEND(i,1,MPI_INTEGER,jdnode,UpdShUnit_tag+k,comm%comm,comm%ierr)
+        Call gsend(comm,i,jdnode,UpdShUnit_tag+k)
         Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
         If (n > 0) Call MPI_IRECV(buffer(i+1),n,wp_mpi,kdnode,UpdShUnit_tag+k,comm%comm,comm%request,comm%ierr)
-        If (i > 0) Call MPI_SEND(buffer(1),i,wp_mpi,jdnode,UpdShUnit_tag+k,comm%comm,comm%ierr)
+        If (i > 0) Then
+          Call gsend(comm,buffer(1),jdnode,UpdShUnit_tag+k)
+        End If
         If (n > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
 ! consolidate transferred data
@@ -657,11 +661,13 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,comm)
 
         n=0
         Call MPI_IRECV(n,1,MPI_INTEGER,kdnode,UpdShUnit_tag+k,comm%comm,comm%request,comm%ierr)
-        Call MPI_SEND(i,1,MPI_INTEGER,jdnode,UpdShUnit_tag+k,comm%comm,comm%ierr)
+        Call gsend(comm,i,jdnode,UpdShUnit_tag+k)
         Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
         If (n > 0) Call MPI_IRECV(ibuffer(i+1),n,MPI_INTEGER,kdnode,UpdShUnit_tag+k,comm%comm,comm%request,comm%ierr)
-        If (i > 0) Call MPI_SEND(ibuffer(1),i,MPI_INTEGER,jdnode,UpdShUnit_tag+k,comm%comm,comm%ierr)
+        If (i > 0) Then
+          Call gsend(comm,ibuffer(1),jdnode,UpdShUnit_tag+k)
+        End If
         If (n > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
 ! consolidate transferred data
@@ -812,11 +818,13 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,comm)
 
         n=0
         Call MPI_IRECV(n,1,MPI_INTEGER,kdnode,UpdShUnit_tag+k,comm%comm,comm%request,comm%ierr)
-        Call MPI_SEND(i,1,MPI_INTEGER,jdnode,UpdShUnit_tag+k,comm%comm,comm%ierr)
+        Call gsend(comm,i,jdnode,UpdShUnit_tag+k)
         Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
         If (n > 0) Call MPI_IRECV(buffer(i+1),n,wp_mpi,kdnode,UpdShUnit_tag+k,comm%comm,comm%request,comm%ierr)
-        If (i > 0) Call MPI_SEND(buffer(1),i,wp_mpi,jdnode,UpdShUnit_tag+k,comm%comm,comm%ierr)
+        If (i > 0) Then
+          Call gsend(comm,buffer(1),jdnode,UpdShUnit_tag+k)
+        End If
         If (n > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
 ! consolidate transferred data
