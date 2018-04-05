@@ -1,7 +1,8 @@
 Module system
 
   Use kinds, Only : wp,li
-  Use comms, Only : comms_type, gbcast,SysExpand_tag,Revive_tag,wp_mpi, gsync
+  Use comms, Only : comms_type, gbcast,SysExpand_tag,Revive_tag,wp_mpi,gsync, &
+                    gsend
   Use setup
   Use site,        Only : ntpatm,numtyp,numtypnf,dens,ntpmls,numsit,&
                                  nummols
@@ -1474,8 +1475,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
                                 rec=rec+Int(1,li)
                                 Write(Unit=nconf, Fmt='(a73)', Rec=rec) record3
                              Else
-                                Call MPI_SEND(record2,recsz,MPI_CHARACTER,0,SysExpand_tag,comm%comm,comm%ierr)
-                                Call MPI_SEND(record3,recsz,MPI_CHARACTER,0,SysExpand_tag,comm%comm,comm%ierr)
+                                Call gsend(comm,record2,0,SysExpand_tag)
+                                Call gsend(comm,record3,0,SysExpand_tag)
                              End If
 
                           End If
@@ -2003,7 +2004,7 @@ Subroutine system_revive                                      &
      ready=.true.
      Do jdnode=0,comm%mxnode-1
         If (jdnode > 0) Then
-           Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Revive_tag,comm%comm,comm%ierr)
+           Call gsend(comm,ready,jdnode,Revive_tag)
 
            Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
 
@@ -2034,17 +2035,17 @@ Subroutine system_revive                                      &
 
      Call MPI_RECV(ready,1,MPI_LOGICAL,0,Revive_tag,comm%comm,comm%status,comm%ierr)
 
-     Call MPI_SEND(natms,1,MPI_INTEGER,0,Revive_tag,comm%comm,comm%ierr)
+     Call gsend(comm,natms,0,Revive_tag)
 
-     Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Revive_tag,comm%comm,comm%ierr)
+     Call gsend(comm,ltg(:),0,Revive_tag)
 
-     Call MPI_SEND(xin,natms,wp_mpi,0,Revive_tag,comm%comm,comm%ierr)
-     Call MPI_SEND(yin,natms,wp_mpi,0,Revive_tag,comm%comm,comm%ierr)
-     Call MPI_SEND(zin,natms,wp_mpi,0,Revive_tag,comm%comm,comm%ierr)
+     Call gsend(comm,xin(:),0,Revive_tag)
+     Call gsend(comm,yin(:),0,Revive_tag)
+     Call gsend(comm,zin(:),0,Revive_tag)
 
-     Call MPI_SEND(xto,natms,wp_mpi,0,Revive_tag,comm%comm,comm%ierr)
-     Call MPI_SEND(yto,natms,wp_mpi,0,Revive_tag,comm%comm,comm%ierr)
-     Call MPI_SEND(zto,natms,wp_mpi,0,Revive_tag,comm%comm,comm%ierr)
+     Call gsend(comm,xto(:),0,Revive_tag)
+     Call gsend(comm,yto(:),0,Revive_tag)
+     Call gsend(comm,zto(:),0,Revive_tag)
 
   End If
 
@@ -2066,7 +2067,7 @@ Subroutine system_revive                                      &
          ready=.true.
          Do jdnode=0,comm%mxnode-1
             If (jdnode > 0) Then
-               Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Revive_tag,comm%comm,comm%ierr)
+               Call gsend(comm,ready,jdnode,Revive_tag)
 
                Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
 
@@ -2096,13 +2097,13 @@ Subroutine system_revive                                      &
        Do j=1,vafsamp
          Call MPI_RECV(ready,1,MPI_LOGICAL,0,Revive_tag,comm%comm,comm%status,comm%ierr)
 
-         Call MPI_SEND(natms,1,MPI_INTEGER,0,Revive_tag,comm%comm,comm%ierr)
+         Call gsend(comm,natms,0,Revive_tag)
 
-         Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Revive_tag,comm%comm,comm%ierr)
+         Call gsend(comm,ltg(:),0,Revive_tag)
 
-         Call MPI_SEND(vxi(1,j),natms,wp_mpi,0,Revive_tag,comm%comm,comm%ierr)
-         Call MPI_SEND(vyi(1,j),natms,wp_mpi,0,Revive_tag,comm%comm,comm%ierr)
-         Call MPI_SEND(vzi(1,j),natms,wp_mpi,0,Revive_tag,comm%comm,comm%ierr)
+         Call gsend(comm,vxi(1,j),0,Revive_tag)
+         Call gsend(comm,vyi(1,j),0,Revive_tag)
+         Call gsend(comm,vzi(1,j),0,Revive_tag)
        End Do
 
     End If

@@ -16,7 +16,7 @@ Module metal
   Use configuration, Only : natms,ltg,ltype,list,fxx,fyy,fzz,&
                             xxx,yyy,zzz,imcon,volm,nlast,ixyz
 
-  Use comms,  Only : comms_type,gsum,gcheck,gmax,MetLdExp_tag, wp_mpi
+  Use comms,  Only : comms_type,gsum,gcheck,gmax,MetLdExp_tag,wp_mpi,gsend
   Use parse, Only : get_line,get_word,lower_case,word_2_real
   Use domains, Only : map
 
@@ -2892,7 +2892,7 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0,comm)
 
   If (comm%mxnode > 1) Then
      Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,MetLdExp_tag,comm%comm,comm%request,comm%ierr)
-     Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,MetLdExp_tag,comm%comm,comm%ierr)
+     Call gsend(comm,imove,jdnode,MetLdExp_tag)
      Call MPI_WAIT(comm%request,comm%status,comm%ierr)
   Else
      jmove=imove
@@ -2913,7 +2913,9 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0,comm)
 
   If (comm%mxnode > 1) Then
      If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,MetLdExp_tag,comm%comm,comm%request,comm%ierr)
-     If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,MetLdExp_tag,comm%comm,comm%ierr)
+     If (imove > 0) Then
+       Call gsend(comm,buffer(1),jdnode,MetLdExp_tag)
+     End If
      If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
   End If
 

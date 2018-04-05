@@ -12,7 +12,7 @@ Module configuration
 
   Use kinds, Only : wp,li
   Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
-                    gmax,gmin
+                    gmax,gmin,gsend
   Use site
 
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
@@ -2685,7 +2685,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,WriteConf_tag,comm%comm,comm%ierr)
+              Call gsend(comm,ready,jdnode,WriteConf_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
@@ -2756,24 +2756,24 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,WriteConf_tag,comm%comm,comm%status,comm%ierr)
 
-        Call MPI_SEND(natms,1,MPI_INTEGER,0,WriteConf_tag,comm%comm,comm%ierr)
+        Call gsend(comm,natms,0,WriteConf_tag)
         If (natms > 0) Then
-           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,WriteConf_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,WriteConf_tag,comm%comm,comm%ierr)
+           Call gsend(comm,atmnam(:),0,WriteConf_tag)
+           Call gsend(comm,ltg(:),0,WriteConf_tag)
 
-           Call MPI_SEND(xxx,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(yyy,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(zzz,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
+           Call gsend(comm,xxx(:),0,WriteConf_tag)
+           Call gsend(comm,yyy(:),0,WriteConf_tag)
+           Call gsend(comm,zzz(:),0,WriteConf_tag)
 
            If (levcfg > 0) Then
-              Call MPI_SEND(vxx,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
-              Call MPI_SEND(vyy,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
-              Call MPI_SEND(vzz,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
+              Call gsend(comm,vxx(:),0,WriteConf_tag)
+              Call gsend(comm,vyy(:),0,WriteConf_tag)
+              Call gsend(comm,vzz(:),0,WriteConf_tag)
 
               If (levcfg > 1) Then
-                 Call MPI_SEND(fxx,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
-                 Call MPI_SEND(fyy,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
-                 Call MPI_SEND(fzz,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
+                 Call gsend(comm,fxx(:),0,WriteConf_tag)
+                 Call gsend(comm,fyy(:),0,WriteConf_tag)
+                 Call gsend(comm,fzz(:),0,WriteConf_tag)
               End If
            End If
         End If
@@ -2981,11 +2981,11 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,WriteConf_tag,comm%comm,comm%ierr)
+              Call gsend(comm,ready,jdnode,WriteConf_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
+                 Call gsend(comm,chbuf(:),jdnode,WriteConf_tag)
                  Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
 
                  Call MPI_RECV(axx,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
@@ -3030,24 +3030,24 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,WriteConf_tag,comm%comm,comm%status,comm%ierr)
 
-        Call MPI_SEND(natms,1,MPI_INTEGER,0,WriteConf_tag,comm%comm,comm%ierr)
+        Call gsend(comm,natms,0,WriteConf_tag)
         If (natms > 0) Then
-           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,WriteConf_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,WriteConf_tag,comm%comm,comm%ierr)
+           Call gsend(comm,atmnam(:),0,WriteConf_tag)
+           Call gsend(comm,ltg(:),0,WriteConf_tag)
 
-           Call MPI_SEND(xxx,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(yyy,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(zzz,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
+           Call gsend(comm,xxx(:),0,WriteConf_tag)
+           Call gsend(comm,yyy(:),0,WriteConf_tag)
+           Call gsend(comm,zzz(:),0,WriteConf_tag)
 
            If (levcfg > 0) Then
-              Call MPI_SEND(vxx,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
-              Call MPI_SEND(vyy,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
-              Call MPI_SEND(vzz,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
+              Call gsend(comm,vxx(:),0,WriteConf_tag)
+              Call gsend(comm,vyy(:),0,WriteConf_tag)
+              Call gsend(comm,vzz(:),0,WriteConf_tag)
 
               If (levcfg > 1) Then
-                 Call MPI_SEND(fxx,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
-                 Call MPI_SEND(fyy,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
-                 Call MPI_SEND(fzz,natms,wp_mpi,0,WriteConf_tag,comm%comm,comm%ierr)
+                 Call gsend(comm,fxx(:),0,WriteConf_tag)
+                 Call gsend(comm,fyy(:),0,WriteConf_tag)
+                 Call gsend(comm,fzz(:),0,WriteConf_tag)
               End If
            End If
         End If

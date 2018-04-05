@@ -10,7 +10,7 @@ Module ewald
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,           Only : wp
-  Use comms,           Only : ExchgGrid_tag, comms_type,wp_mpi
+  Use comms,           Only : ExchgGrid_tag, comms_type,wp_mpi,gsend
   Use setup,           Only : mxatms,nrite,mxspl,mxspl2,twopi,kmaxa,kmaxb,kmaxc
   Use configuration,   Only : natms,fxx,fyy,fzz,imcon
   Use domains,         Only : map
@@ -427,7 +427,7 @@ Contains
   ! Exchange the data
 
          Call MPI_IRECV( recv_buffer, length, wp_mpi, from, ExchgGrid_tag, comm%comm, comm%request, comm%ierr )
-         Call MPI_SEND(  send_buffer, length, wp_mpi, to  , ExchgGrid_tag, comm%comm, comm%ierr )
+         Call gsend(comm,send_buffer,to,ExchgGrid_tag)
          Call MPI_WAIT(  comm%request, comm%status, comm%ierr )
 
   ! Copy the received data into the domain halo

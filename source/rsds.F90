@@ -1,6 +1,7 @@
 Module rsds
   Use kinds, Only : wp, li
-  Use comms, Only : comms_type,gbcast,RsdWrite_tag,gsum,wp_mpi,gsync,gcheck
+  Use comms, Only : comms_type,gbcast,RsdWrite_tag,gsum,wp_mpi,gsync,gcheck, &
+                    gsend
   Use setup
   Use configuration,     Only : cfgname,imcon,cell,natms, &
                                 atmnam,ltg,xxx,yyy,zzz
@@ -411,7 +412,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,RsdWrite_tag,comm%comm,comm%ierr)
+              Call gsend(comm,ready,jdnode,RsdWrite_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
@@ -458,15 +459,15 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
 
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
 
-        Call MPI_SEND(n,1,MPI_INTEGER,0,RsdWrite_tag,comm%comm,comm%ierr)
+        Call gsend(comm,n,0,RsdWrite_tag)
         If (n > 0) Then
-           Call MPI_SEND(nam,8*n,MPI_CHARACTER,0,RsdWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(ind,n,MPI_INTEGER,0,RsdWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(dr,n,wp_mpi,0,RsdWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,nam(:),0,RsdWrite_tag)
+           Call gsend(comm,ind(:),0,RsdWrite_tag)
+           Call gsend(comm,dr(:),0,RsdWrite_tag)
 
-           Call MPI_SEND(axx,n,wp_mpi,0,RsdWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(ayy,n,wp_mpi,0,RsdWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(azz,n,wp_mpi,0,RsdWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,axx(:),0,RsdWrite_tag)
+           Call gsend(comm,ayy(:),0,RsdWrite_tag)
+           Call gsend(comm,azz(:),0,RsdWrite_tag)
         End If
 
 ! Save offset pointer

@@ -11,7 +11,7 @@ Module comms
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,sp,dp,qp
-  Use iso_fortran_env, Only : CHARACTER_STORAGE_SIZE                                                                                
+  Use iso_fortran_env, Only : CHARACTER_STORAGE_SIZE
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -25,7 +25,7 @@ Module comms
 
   ! l_fast is controlled via gsync and affects gcheck - global safety checks
 
-  Integer, Save :: wp_mpi = 0 
+  Integer, Save :: wp_mpi = 0
 
 
   ! MPI-I/O representation
@@ -65,18 +65,18 @@ Module comms
     Grid4_tag     = 3333
 
   Type, Public :: comms_type
-    Integer               :: ierr 
-    Integer               :: request  
+    Integer               :: ierr
+    Integer               :: request
     Integer               :: status(1:MPI_STATUS_SIZE) = 0
     Integer               :: comm
     Integer               :: idnode = 0
     Integer               :: mxnode = 1
     Logical               :: l_fast
     Integer               :: ou
-  End Type 
+  End Type
 
   Public :: init_comms, exit_comms, abort_comms, &
-    gsync, gcheck, gsum, gmax, gtime
+    gsync, gcheck, gsum, gmax, gtime, gsend
 
   Interface gcheck
     Module Procedure gcheck_vector
@@ -115,6 +115,18 @@ Module comms
     Module procedure gbcast_real_scalar
     Module procedure gbcast_char
   End Interface !gbcast
+
+  Interface gsend
+    Module Procedure gsend_integer_scalar
+    Module Procedure gsend_integer_vector
+    Module Procedure gsend_real_scalar
+    Module Procedure gsend_real_vector
+    Module Procedure gsend_real_array3
+    Module Procedure gsend_logical_scalar
+    Module Procedure gsend_logical_vector
+    Module Procedure gsend_character_scalar
+    Module Procedure gsend_character_vector
+  End Interface
 
 Contains
 
@@ -756,7 +768,7 @@ Contains
   Subroutine gbcast_integer(comm,vec,root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 broadcast an integer array subroutine 
+    ! dl_poly_4 broadcast an integer array subroutine
     !
     ! copyright - daresbury laboratory
     ! author    - a.m.elena may 2018
@@ -780,7 +792,7 @@ Contains
   Subroutine gbcast_integer_scalar(comm,s,root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 broadcast an integer array subroutine 
+    ! dl_poly_4 broadcast an integer array subroutine
     !
     ! copyright - daresbury laboratory
     ! author    - a.m.elena may 2018
@@ -800,7 +812,7 @@ Contains
   Subroutine gbcast_real(comm,vec,root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 broadcast a real array subroutine 
+    ! dl_poly_4 broadcast a real array subroutine
     !
     ! copyright - daresbury laboratory
     ! author    - a.m.elena march 2018
@@ -823,7 +835,7 @@ Contains
   Subroutine gbcast_real_scalar(comm,s,root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 broadcast a real array subroutine 
+    ! dl_poly_4 broadcast a real array subroutine
     !
     ! copyright - daresbury laboratory
     ! author    - a.m.elena march 2018
@@ -844,7 +856,7 @@ Contains
   Subroutine gbcast_char(comm,vec,root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 broadcast a real array subroutine 
+    ! dl_poly_4 broadcast a real array subroutine
     !
     ! copyright - daresbury laboratory
     ! author    - a.m.elena march 2018
@@ -892,4 +904,206 @@ Contains
 
   End Subroutine gtime
 
+  Subroutine gsend_integer_scalar(comm,s,dest,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 send an integer
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: s,dest,tag
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_SEND(s,1,MPI_INTEGER,dest,tag,comm%comm,comm%ierr)
+  End Subroutine gsend_integer_scalar
+
+  Subroutine gsend_integer_vector(comm,vec,dest,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 send an integer array
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: vec(:),dest,tag
+
+    Integer                             :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+    n_l = Lbound(vec, Dim = 1)
+    n_u = Ubound(vec, Dim = 1)
+    n_s = Size(vec, Dim = 1)
+
+    Call MPI_SEND(vec(n_l:n_u),n_s,MPI_INTEGER,dest,tag,comm%comm,comm%ierr)
+  End Subroutine gsend_integer_vector
+
+  Subroutine gsend_real_scalar(comm,s,dest,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 send a real scalar
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),  Intent( In    ) :: s
+    Integer,            Intent( In    ) :: dest,tag
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_SEND(s,1,wp_mpi,dest,tag,comm%comm,comm%ierr)
+  End Subroutine gsend_real_scalar
+
+  Subroutine gsend_real_vector(comm,vec,dest,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 send a real array
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),  Intent( In    ) :: vec(:)
+    Integer,            Intent( In    ) :: dest,tag
+
+    Integer                             :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+    n_l = Lbound(vec, Dim = 1)
+    n_u = Ubound(vec, Dim = 1)
+    n_s = Size(vec, Dim = 1)
+
+    Call MPI_SEND(vec(n_l:n_u),n_s,wp_mpi,dest,tag,comm%comm,comm%ierr)
+  End Subroutine gsend_real_vector
+
+  Subroutine gsend_real_array3(comm,arr,dest,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 send a real three dimensional array
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),  Intent( In    ) :: arr(:,:,:)
+    Integer,            Intent( In    ) :: dest,tag
+
+    Integer                             :: i
+    Integer, Dimension(3)               :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+    Do i = 1, 3
+      n_l(i) = Lbound(arr, Dim = i)
+      n_u(i) = Ubound(arr, Dim = i)
+      n_s(i) = Size(arr, Dim = i)
+    End Do
+
+    Call MPI_SEND(arr(n_l(1):n_u(1),n_l(2):n_u(2),n_l(3):n_u(3)),product(n_s(1:3)), &
+      wp_mpi,dest,tag,comm%comm,comm%ierr)
+  End Subroutine gsend_real_array3
+
+  Subroutine gsend_logical_scalar(comm,s,dest,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 send a logical scalar
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Logical,            Intent( In    ) :: s
+    Integer,            Intent( In    ) :: dest,tag
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_SEND(s,1,MPI_LOGICAL,dest,tag,comm%comm,comm%ierr)
+  End Subroutine gsend_logical_scalar
+
+  Subroutine gsend_logical_vector(comm,vec,dest,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 send a logical array
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Logical,            Intent( In    ) :: vec(:)
+    Integer,            Intent( In    ) :: dest,tag
+
+    Integer                             :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+    n_l = Lbound(vec, Dim = 1)
+    n_u = Ubound(vec, Dim = 1)
+    n_s = Size(vec, Dim = 1)
+
+    Call MPI_SEND(vec(n_l:n_u),n_s,MPI_LOGICAL,dest,tag,comm%comm,comm%ierr)
+  End Subroutine gsend_logical_vector
+
+  Subroutine gsend_character_scalar(comm,s,dest,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 send a character string
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ),   Intent( InOut ) :: comm
+    Character( Len = * ), Intent( In    ) :: s
+    Integer,              Intent( In    ) :: dest,tag
+
+    Integer :: n_s
+
+    If (comm%mxnode == 1) Return
+
+    n_s = Len(s)
+
+    Call MPI_SEND(s,n_s,MPI_CHARACTER,dest,tag,comm%comm,comm%ierr)
+  End Subroutine gsend_character_scalar
+
+  Subroutine gsend_character_vector(comm,vec,dest,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 send a character string array
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ),   Intent( InOut ) :: comm
+    Character( Len = * ), Intent( In    ) :: vec(:)
+    Integer,              Intent( In    ) :: dest,tag
+
+    Integer :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+
+    n_l = Lbound(vec, Dim = 1)
+    n_u = Ubound(vec, Dim = 1)
+    n_s = Size(vec, Dim = 1)*Len(vec(n_l))
+
+    Call MPI_SEND(vec(n_l:n_u),n_s,MPI_CHARACTER,dest,tag,comm%comm,comm%ierr)
+  End Subroutine gsend_character_vector
 End Module comms

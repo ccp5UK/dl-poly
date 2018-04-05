@@ -9,7 +9,8 @@ Module msd
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Use kinds, Only : wp, li
-  Use comms, Only : comms_type, gcheck,MsdWrite_tag,gsum,wp_mpi,gsync,gbcast
+  Use comms, Only : comms_type, gcheck,MsdWrite_tag,gsum,wp_mpi,gsync,gbcast, &
+                    gsend
   Use setup
   Use site,       Only : dofsit
   Use configuration,     Only : cfgname,natms,atmnam,lsite,ltg, &
@@ -357,7 +358,7 @@ Module msd
         ready=.true.
         Do jdnode=0,comm%mxnode-1
           If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,MsdWrite_tag,comm%comm,comm%ierr)
+              Call gsend(comm,ready,jdnode,MsdWrite_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
@@ -406,13 +407,13 @@ Module msd
 
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
 
-        Call MPI_SEND(natms,1,MPI_INTEGER,0,MsdWrite_tag,comm%comm,comm%ierr)
+        Call gsend(comm,natms,0,MsdWrite_tag)
         If (natms > 0) Then
-          Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,MsdWrite_tag,comm%comm,comm%ierr)
-          Call MPI_SEND(ltg,natms,MPI_INTEGER,0,MsdWrite_tag,comm%comm,comm%ierr)
+          Call gsend(comm,atmnam(:),0,MsdWrite_tag)
+          Call gsend(comm,ltg(:),0,MsdWrite_tag)
 
-          Call MPI_SEND(ddd,natms,wp_mpi,0,MsdWrite_tag,comm%comm,comm%ierr)
-          Call MPI_SEND(eee,natms,wp_mpi,0,MsdWrite_tag,comm%comm,comm%ierr)
+          Call gsend(comm,ddd(:),0,MsdWrite_tag)
+          Call gsend(comm,eee(:),0,MsdWrite_tag)
         End If
 
 ! Save offset pointer
@@ -547,7 +548,7 @@ Module msd
         ready=.true.
         Do jdnode=0,comm%mxnode-1
           If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,MsdWrite_tag,comm%comm,comm%ierr)
+              Call gsend(comm,ready,jdnode,MsdWrite_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
@@ -585,13 +586,13 @@ Module msd
 
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
 
-        Call MPI_SEND(natms,1,MPI_INTEGER,0,MsdWrite_tag,comm%comm,comm%ierr)
+        Call gsend(comm,natms,0,MsdWrite_tag)
         If (natms > 0) Then
-          Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,MsdWrite_tag,comm%comm,comm%ierr)
-          Call MPI_SEND(ltg,natms,MPI_INTEGER,0,MsdWrite_tag,comm%comm,comm%ierr)
+          Call gsend(comm,atmnam(:),0,MsdWrite_tag)
+          Call gsend(comm,ltg(:),0,MsdWrite_tag)
 
-          Call MPI_SEND(ddd,natms,wp_mpi,0,MsdWrite_tag,comm%comm,comm%ierr)
-          Call MPI_SEND(eee,natms,wp_mpi,0,MsdWrite_tag,comm%comm,comm%ierr)
+          Call gsend(comm,ddd(:),0,MsdWrite_tag)
+          Call gsend(comm,eee(:),0,MsdWrite_tag)
         End If
 
         rec=rec+Int(megatm+1,li)

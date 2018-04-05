@@ -1,7 +1,7 @@
 Module poisson
 
   Use kinds,           Only : wp
-  Use comms,           Only : gsum, comms_type,wp_mpi,ExchgGrid_tag
+  Use comms,           Only : gsum,comms_type,wp_mpi,ExchgGrid_tag,gsend
   Use domains
   Use setup,           Only : fourpi,r4pie0,nrite,            &
                               kmaxa,kmaxb,kmaxc,mxspl,mxspl1, &
@@ -632,7 +632,7 @@ Contains
 
             send_buffer = vec( xlb:xlt, ylb:ylt, zlb:zlt )
 
-            Call MPI_SEND(  send_buffer, length, wp_mpi, to  , ExchgGrid_tag, comm%comm, comm%ierr )
+            Call gsend(comm,send_buffer,to,ExchgGrid_tag)
          End If
 
 ! Exchange the data

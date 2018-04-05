@@ -1,6 +1,7 @@
 Module trajectory
   Use kinds,         Only : wp, li
-  Use comms,         Only : comms_type,Traject_tag,gsync,wp_mpi,gbcast,gcheck,gsum
+  Use comms,         Only : comms_type,Traject_tag,gsync,wp_mpi,gbcast,gcheck, &
+                            gsum,gsend
   Use domains,       Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
   Use site
   Use setup
@@ -1187,7 +1188,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Traject_tag,comm%comm,comm%ierr)
+              Call gsend(comm,ready,jdnode,Traject_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
@@ -1265,29 +1266,29 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,comm%comm,comm%status,ierr)
 
-        Call MPI_SEND(natms,1,MPI_INTEGER,0,Traject_tag,comm%comm,ierr)
+        Call gsend(comm,natms,0,Traject_tag)
         If (natms > 0) Then
-           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Traject_tag,comm%comm,ierr)
-           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Traject_tag,comm%comm,ierr)
+           Call gsend(comm,atmnam(:),0,Traject_tag)
+           Call gsend(comm,ltg(:),0,Traject_tag)
 
-           Call MPI_SEND(chge,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-           Call MPI_SEND(weight,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-           Call MPI_SEND(rsd,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call gsend(comm,chge(:),0,Traject_tag)
+           Call gsend(comm,weight(:),0,Traject_tag)
+           Call gsend(comm,rsd(:),0,Traject_tag)
 
-           Call MPI_SEND(xxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-           Call MPI_SEND(yyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-           Call MPI_SEND(zzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call gsend(comm,xxx(:),0,Traject_tag)
+           Call gsend(comm,yyy(:),0,Traject_tag)
+           Call gsend(comm,zzz(:),0,Traject_tag)
 
            If (keytrj > 0) Then
-              Call MPI_SEND(vxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-              Call MPI_SEND(vyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-              Call MPI_SEND(vzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+              Call gsend(comm,vxx(:),0,Traject_tag)
+              Call gsend(comm,vyy(:),0,Traject_tag)
+              Call gsend(comm,vzz(:),0,Traject_tag)
            End If
 
            If (keytrj > 1) Then
-              Call MPI_SEND(fxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-              Call MPI_SEND(fyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-              Call MPI_SEND(fzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+              Call gsend(comm,fxx(:),0,Traject_tag)
+              Call gsend(comm,fyy(:),0,Traject_tag)
+              Call gsend(comm,fzz(:),0,Traject_tag)
            End If
         End If
 
@@ -1489,7 +1490,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Traject_tag,comm%comm,comm%ierr)
+              Call gsend(comm,ready,jdnode,Traject_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
@@ -1548,29 +1549,29 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,comm%comm,comm%status,ierr)
 
-        Call MPI_SEND(natms,1,MPI_INTEGER,0,Traject_tag,comm%comm,ierr)
+        Call gsend(comm,natms,0,Traject_tag)
         If (natms > 0) Then
-           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Traject_tag,comm%comm,ierr)
-           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Traject_tag,comm%comm,ierr)
+           Call gsend(comm,atmnam(:),0,Traject_tag)
+           Call gsend(comm,ltg(:),0,Traject_tag)
 
-           Call MPI_SEND(chge,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-           Call MPI_SEND(weight,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-           Call MPI_SEND(rsd,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call gsend(comm,chge(:),0,Traject_tag)
+           Call gsend(comm,weight(:),0,Traject_tag)
+           Call gsend(comm,rsd(:),0,Traject_tag)
 
-           Call MPI_SEND(xxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-           Call MPI_SEND(yyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-           Call MPI_SEND(zzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call gsend(comm,xxx(:),0,Traject_tag)
+           Call gsend(comm,yyy(:),0,Traject_tag)
+           Call gsend(comm,zzz(:),0,Traject_tag)
 
            If (keytrj > 0) Then
-              Call MPI_SEND(vxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-              Call MPI_SEND(vyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-              Call MPI_SEND(vzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+              Call gsend(comm,vxx(:),0,Traject_tag)
+              Call gsend(comm,vyy(:),0,Traject_tag)
+              Call gsend(comm,vzz(:),0,Traject_tag)
            End If
 
            If (keytrj > 1) Then
-              Call MPI_SEND(fxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-              Call MPI_SEND(fyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-              Call MPI_SEND(fzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+              Call gsend(comm,fxx(:),0,Traject_tag)
+              Call gsend(comm,fyy(:),0,Traject_tag)
+              Call gsend(comm,fzz(:),0,Traject_tag)
            End If
         End If
 
@@ -2016,7 +2017,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,Traject_tag,comm%comm,ierr)
+              Call gsend(comm,ready,jdnode,Traject_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,ierr)
               If (jatms > 0) Then
@@ -2048,16 +2049,16 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,comm%comm,comm%status,ierr)
 
-        Call MPI_SEND(natms,1,MPI_INTEGER,0,Traject_tag,comm%comm,ierr)
+        Call gsend(comm,natms,0,Traject_tag)
         If (natms > 0) Then
-           Call MPI_SEND(atmnam,8*natms,MPI_CHARACTER,0,Traject_tag,comm%comm,ierr)
-           Call MPI_SEND(ltg,natms,MPI_INTEGER,0,Traject_tag,comm%comm,ierr)
+           Call gsend(comm,atmnam(:),0,Traject_tag)
+           Call gsend(comm,ltg(:),0,Traject_tag)
 
-           Call MPI_SEND(rsd,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call gsend(comm,rsd(:),0,Traject_tag)
 
-           Call MPI_SEND(xxx,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-           Call MPI_SEND(yyy,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
-           Call MPI_SEND(zzz,natms,wp_mpi,0,Traject_tag,comm%comm,ierr)
+           Call gsend(comm,xxx(:),0,Traject_tag)
+           Call gsend(comm,yyy(:),0,Traject_tag)
+           Call gsend(comm,zzz(:),0,Traject_tag)
         End If
 
 ! Save offset pointer
