@@ -13,7 +13,7 @@ Module defects
   Use setup,      Only : mxatms, nrite,mxbfxp,mxcell,ndefdt, &
                                 nrefdt,config,half_minus, zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
-                                DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast
+                                DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast,gsend
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use core_shell,        Only : ntshl,listshl
@@ -936,7 +936,7 @@ Contains
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,DefWrite_tag,comm%comm,comm%ierr)
+              Call gsend(comm,ready,jdnode,DefWrite_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
@@ -974,14 +974,14 @@ Contains
      Else
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefWrite_tag,comm%comm,comm%status,comm%ierr)
 
-        Call MPI_SEND(ni,1,MPI_INTEGER,0,DefWrite_tag,comm%comm,comm%ierr)
+        Call gsend(comm,ni,0,DefWrite_tag)
         If (ni > 0) Then
-           Call MPI_SEND(nami,8*ni,MPI_CHARACTER,0,DefWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(indi,ni,MPI_INTEGER,0,DefWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,nami(:),0,DefWrite_tag)
+           Call gsend(comm,indi(:),0,DefWrite_tag)
 
-           Call MPI_SEND(bxx,ni,wp_mpi,0,DefWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(byy,ni,wp_mpi,0,DefWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(bzz,ni,wp_mpi,0,DefWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,bxx(:),0,DefWrite_tag)
+           Call gsend(comm,byy(:),0,DefWrite_tag)
+           Call gsend(comm,bzz(:),0,DefWrite_tag)
         End If
      End If
 
@@ -999,7 +999,7 @@ Contains
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,DefWrite_tag,comm%comm,comm%ierr)
+              Call gsend(comm,ready,jdnode,DefWrite_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
@@ -1037,14 +1037,14 @@ Contains
      Else
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefWrite_tag,comm%comm,comm%status,comm%ierr)
 
-        Call MPI_SEND(nv,1,MPI_INTEGER,0,DefWrite_tag,comm%comm,comm%ierr)
+        Call gsend(comm,nv,0,DefWrite_tag)
         If (nv > 0) Then
-           Call MPI_SEND(namv,8*nv,MPI_CHARACTER,0,DefWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(indv,nv,MPI_INTEGER,0,DefWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,namv(:),0,DefWrite_tag)
+           Call gsend(comm,indv(:),0,DefWrite_tag)
 
-           Call MPI_SEND(axx,nv,wp_mpi,0,DefWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(ayy,nv,wp_mpi,0,DefWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(azz,nv,wp_mpi,0,DefWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,axx(:),0,DefWrite_tag)
+           Call gsend(comm,ayy(:),0,DefWrite_tag)
+           Call gsend(comm,azz(:),0,DefWrite_tag)
         End If
      End If
 
@@ -1291,7 +1291,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 
   If (comm%mxnode > 1) Then
      Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,DefExport_tag,comm%comm,comm%request,comm%ierr)
-     Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,DefExport_tag,comm%comm,comm%ierr)
+     Call gsend(comm,imove,jdnode,DefExport_tag)
      Call MPI_WAIT(comm%request,comm%status,comm%ierr)
   Else
      jmove=imove
@@ -1312,7 +1312,9 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 
   If (comm%mxnode > 1) Then
      If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,DefExport_tag,comm%comm,comm%request,comm%ierr)
-     If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,DefExport_tag,comm%comm,comm%ierr)
+     If (imove > 0) Then
+       Call gsend(comm,buffer(1),jdnode,DefExport_tag)
+     End If
      If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
   End If
 
@@ -2827,7 +2829,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,DefRWrite_tag,comm%comm,comm%ierr)
+              Call gsend(comm,ready,jdnode,DefRWrite_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
@@ -2884,14 +2886,14 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
 
-        Call MPI_SEND(nrefs,1,MPI_INTEGER,0,DefRWrite_tag,comm%comm,comm%ierr)
+        Call gsend(comm,nrefs,0,DefRWrite_tag)
         If (nrefs > 0) Then
-           Call MPI_SEND(namr,8*nrefs,MPI_CHARACTER,0,DefRWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(indr,nrefs,MPI_INTEGER,0,DefRWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,namr(:),0,DefRWrite_tag)
+           Call gsend(comm,indr(:),0,DefRWrite_tag)
 
-           Call MPI_SEND(xr,nrefs,wp_mpi,0,DefRWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(yr,nrefs,wp_mpi,0,DefRWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(zr,nrefs,wp_mpi,0,DefRWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,xr(:),0,DefRWrite_tag)
+           Call gsend(comm,yr(:),0,DefRWrite_tag)
+           Call gsend(comm,zr(:),0,DefRWrite_tag)
         End If
 
      End If
@@ -3074,7 +3076,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,DefRWrite_tag,comm%comm,comm%ierr)
+              Call gsend(comm,ready,jdnode,DefRWrite_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
@@ -3117,14 +3119,14 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
 
-        Call MPI_SEND(nrefs,1,MPI_INTEGER,0,DefRWrite_tag,comm%comm,comm%ierr)
+        Call gsend(comm,nrefs,0,DefRWrite_tag)
         If (nrefs > 0) Then
-           Call MPI_SEND(namr,8*nrefs,MPI_CHARACTER,0,DefRWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(indr,nrefs,MPI_INTEGER,0,DefRWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,namr(:),0,DefRWrite_tag)
+           Call gsend(comm,indr(:),0,DefRWrite_tag)
 
-           Call MPI_SEND(xr,nrefs,wp_mpi,0,DefRWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(yr,nrefs,wp_mpi,0,DefRWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(zr,nrefs,wp_mpi,0,DefRWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,xr(:),0,DefRWrite_tag)
+           Call gsend(comm,yr(:),0,DefRWrite_tag)
+           Call gsend(comm,zr(:),0,DefRWrite_tag)
          End If
 
      End If
@@ -3963,7 +3965,7 @@ Subroutine defects_write &
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,DefWrite_tag,comm%comm,comm%ierr)
+              Call gsend(comm,ready,jdnode,DefWrite_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
@@ -4001,14 +4003,14 @@ Subroutine defects_write &
      Else
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefWrite_tag,comm%comm,comm%status,comm%ierr)
 
-        Call MPI_SEND(ni,1,MPI_INTEGER,0,DefWrite_tag,comm%comm,comm%ierr)
+        Call gsend(comm,ni,0,DefWrite_tag)
         If (ni > 0) Then
-           Call MPI_SEND(nami,8*ni,MPI_CHARACTER,0,DefWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(indi,ni,MPI_INTEGER,0,DefWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,nami(:),0,DefWrite_tag)
+           Call gsend(comm,indi(:),0,DefWrite_tag)
 
-           Call MPI_SEND(bxx,ni,wp_mpi,0,DefWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(byy,ni,wp_mpi,0,DefWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(bzz,ni,wp_mpi,0,DefWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,bxx(:),0,DefWrite_tag)
+           Call gsend(comm,byy(:),0,DefWrite_tag)
+           Call gsend(comm,bzz(:),0,DefWrite_tag)
         End If
      End If
 
@@ -4026,7 +4028,7 @@ Subroutine defects_write &
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
-              Call MPI_SEND(ready,1,MPI_LOGICAL,jdnode,DefWrite_tag,comm%comm,comm%ierr)
+              Call gsend(comm,ready,jdnode,DefWrite_tag)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
@@ -4064,14 +4066,14 @@ Subroutine defects_write &
      Else
         Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefWrite_tag,comm%comm,comm%status,comm%ierr)
 
-        Call MPI_SEND(nv,1,MPI_INTEGER,0,DefWrite_tag,comm%comm,comm%ierr)
+        Call gsend(comm,nv,0,DefWrite_tag)
         If (nv > 0) Then
-           Call MPI_SEND(namv,8*nv,MPI_CHARACTER,0,DefWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(indv,nv,MPI_INTEGER,0,DefWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,namv(:),0,DefWrite_tag)
+           Call gsend(comm,indv(:),0,DefWrite_tag)
 
-           Call MPI_SEND(axx,nv,wp_mpi,0,DefWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(ayy,nv,wp_mpi,0,DefWrite_tag,comm%comm,comm%ierr)
-           Call MPI_SEND(azz,nv,wp_mpi,0,DefWrite_tag,comm%comm,comm%ierr)
+           Call gsend(comm,axx(:),0,DefWrite_tag)
+           Call gsend(comm,ayy(:),0,DefWrite_tag)
+           Call gsend(comm,azz(:),0,DefWrite_tag)
         End If
      End If
 
