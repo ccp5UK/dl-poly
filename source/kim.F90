@@ -27,7 +27,7 @@ Module kim
                              xxx,yyy,zzz,fxx,fyy,fzz
   Use setup,   Only : nrite,mxsite,mxlist,mxatdm,mxbfxp
   Use site,    Only : unqatm,ntpatm,sitnam
-  Use comms, Only : comms_type,export_tag,wp_mpi
+  Use comms, Only : comms_type,export_tag,wp_mpi,gsend
   Use numerics, Only : local_index
 #else  
   Use comms, Only : comms_type
@@ -503,7 +503,7 @@ Contains
           jmove=idhalo(0,i)*iadd
           If (jmove > 0) Then
             Call MPI_IRECV(rev_comm_buffer(iblock+1),jmove,wp_mpi,kdnode,Export_tag,comm%comm,comm%request,comm%ierr)
-            Call MPI_SEND(rev_comm_buffer(1),imove,wp_mpi,jdnode,Export_tag,comm%comm,comm%ierr)
+            Call gsend(comm,rev_comm_buffer(1),jdnode,Export_tag)
             Call MPI_WAIT(comm%request,comm%status,comm%ierr)
           End  If
        Else
