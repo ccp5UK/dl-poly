@@ -13,7 +13,7 @@ Module defects
   Use setup,      Only : mxatms, nrite,mxbfxp,mxcell,ndefdt, &
                                 nrefdt,config,half_minus, zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
-                                DefRWrite_tag,gsum,gcheck,gsync,gmax
+                                DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use core_shell,        Only : ntshl,listshl
@@ -333,7 +333,7 @@ Contains
            buffer(1)=Real(frm,wp)
            buffer(2)=Real(rec,wp)
 
-           Call MPI_BCAST(buffer(1:2), 2, wp_mpi, 0, comm%comm, comm%ierr)
+           Call gbcast(comm,buffer(1:2),0)
 
            frm=Nint(buffer(1),li)
            rec=Nint(buffer(2),li)
@@ -1728,12 +1728,12 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
 !           Call pbcshift(imconr,celr,indatm,axx,ayy,azz)
 
            If (comm%mxnode > 1) Then
-              Call MPI_BCAST(chbuf,indatm*8,MPI_CHARACTER,0,comm%comm,comm%ierr)
-              Call MPI_BCAST(iwrk,indatm,MPI_INTEGER,0,comm%comm,comm%ierr)
+              Call gbcast(comm,chbuf,0)
+              Call gbcast(comm,iwrk,0)
 
-              Call MPI_BCAST(axx,indatm,wp_mpi,0,comm%comm,comm%ierr)
-              Call MPI_BCAST(ayy,indatm,wp_mpi,0,comm%comm,comm%ierr)
-              Call MPI_BCAST(azz,indatm,wp_mpi,0,comm%comm,comm%ierr)
+              Call gbcast(comm,axx,0)
+              Call gbcast(comm,ayy,0)
+              Call gbcast(comm,azz,0)
            End If
 
 ! Assign atoms positions in fractional coordinates to the correct domains
@@ -3360,7 +3360,7 @@ Subroutine defects_write &
            buffer(1)=Real(frm,wp)
            buffer(2)=Real(rec,wp)
 
-           Call MPI_BCAST(buffer(1:2), 2, wp_mpi, 0, comm%comm, comm%ierr)
+           Call gbcast(comm,buffer(1:2),0)
 
            frm=Nint(buffer(1),li)
            rec=Nint(buffer(2),li)
