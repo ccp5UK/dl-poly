@@ -11,7 +11,8 @@ Module dpd
 
   Use kinds, Only : wp
   
-  Use comms,        Only : comms_type,gsum, gcheck, gmax, DpdVExp_tag,wp_mpi
+  Use comms,        Only : comms_type,gsum,gcheck,gmax,DpdVExp_tag,wp_mpi, &
+                           gsend
   Use setup,        Only : nrite,mxlist,mxatdm,mxatms,mxbfxp,mxvdw
   Use configuration,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
                                   list,weight,xxx,yyy,zzz,vxx,vyy,vzz, &
@@ -671,7 +672,7 @@ Contains
 
     If (comm%mxnode > 1) Then
       Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,DpdVExp_tag,comm%comm,comm%request,comm%ierr)
-      Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,DpdVExp_tag,comm%comm,comm%ierr)
+      Call gsend(comm,imove,jdnode,DpdVExp_tag)
       Call MPI_WAIT(comm%request,comm%status,comm%ierr)
     Else
       jmove=imove
@@ -692,7 +693,9 @@ Contains
 
     If (comm%mxnode > 1) Then
       If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,DpdVExp_tag,comm%comm,comm%request,comm%ierr)
-      If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,DpdVExp_tag,comm%comm,comm%ierr)
+      If (imove > 0) Then
+        Call gsend(comm,buffer(1),jdnode,DpdVExp_tag)
+      End If
       If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
     End If
 
