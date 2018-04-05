@@ -121,6 +121,7 @@ Module comms
     Module Procedure gsend_integer_vector
     Module Procedure gsend_real_scalar
     Module Procedure gsend_real_vector
+    Module Procedure gsend_real_array3
     Module Procedure gsend_logical_scalar
     Module Procedure gsend_logical_vector
     Module Procedure gsend_character_scalar
@@ -986,6 +987,34 @@ Contains
 
     Call MPI_SEND(vec(n_l:n_u),n_s,wp_mpi,dest,tag,comm%comm,comm%ierr)
   End Subroutine gsend_real_vector
+
+  Subroutine gsend_real_array3(comm,arr,dest,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 send a real three dimensional array
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),  Intent( In    ) :: arr(:,:,:)
+    Integer,            Intent( In    ) :: dest,tag
+
+    Integer                             :: i
+    Integer, Dimension(3)               :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+    Do i = 1, 3
+      n_l(i) = Lbound(arr, Dim = i)
+      n_u(i) = Ubound(arr, Dim = i)
+      n_s(i) = Size(arr, Dim = i)
+    End Do
+
+    Call MPI_SEND(arr(n_l(1):n_u(1),n_l(2):n_u(2),n_l(3):n_u(3)),product(n_s(1:3)), &
+      wp_mpi,dest,tag,comm%comm,comm%ierr)
+  End Subroutine gsend_real_array3
 
   Subroutine gsend_logical_scalar(comm,s,dest,tag)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
