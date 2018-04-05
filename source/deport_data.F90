@@ -3,7 +3,7 @@ Module deport_data
   Use kinds,            Only : wp
   Use comms,            Only : comms_type,gcheck,wp_mpi, Deport_tag, &
                                Export_tag, MetLdExp_tag, ExpMplRM_tag, &
-                               PassUnit_tag
+                               PassUnit_tag,gsend
 
   Use setup
   Use domains
@@ -912,13 +912,15 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
 ! exchange information on buffer sizes
 
   Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Deport_tag,comm%comm,comm%request,comm%ierr)
-  Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,Deport_tag,comm%comm,comm%ierr)
+  Call gsend(comm,imove,jdnode,Deport_tag)
   Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
 ! exchange buffers between nodes (this is a MUST)
 
   If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Deport_tag,comm%comm,comm%request,comm%ierr)
-  If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Deport_tag,comm%comm,comm%ierr)
+  If (imove > 0) Then
+    Call gsend(comm,buffer(1),jdnode,Deport_tag)
+  End If
   If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
 ! check arrays can cope with incoming atom numbers
@@ -1876,7 +1878,7 @@ Subroutine export_atomic_data(mdir,comm)
 
   If (comm%mxnode > 1) Then
      Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Export_tag,comm%comm,comm%request,comm%ierr)
-     Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,Export_tag,comm%comm,comm%ierr)
+     Call gsend(comm,imove,jdnode,Export_tag)
      Call MPI_WAIT(comm%request,comm%status,comm%ierr)
   Else
      jmove=imove
@@ -1897,7 +1899,9 @@ Subroutine export_atomic_data(mdir,comm)
 
   If (comm%mxnode > 1) Then
      If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Export_tag,comm%comm,comm%request,comm%ierr)
-     If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Export_tag,comm%comm,comm%ierr)
+     If (imove > 0) Then
+       Call gsend(comm,buffer(1),jdnode,Export_tag)
+     End If
      If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
   End If
 
@@ -2146,7 +2150,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
 
   If (comm%mxnode > 1) Then
      Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Export_tag,comm%comm,comm%request,comm%ierr)
-     Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,Export_tag,comm%comm,comm%ierr)
+     Call gsend(comm,imove,jdnode,Export_tag)
      Call MPI_WAIT(comm%request,comm%status,comm%ierr)
   Else
      jmove=imove
@@ -2167,7 +2171,9 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
 
   If (comm%mxnode > 1) Then
      If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Export_tag,comm%comm,comm%request,comm%ierr)
-     If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,Export_tag,comm%comm,comm%ierr)
+     If (imove > 0 ) Then
+       Call gsend(comm,buffer(1),jdnode,Export_tag)
+     End If
      If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
   End If
 
@@ -2380,7 +2386,7 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
 
   If (comm%mxnode > 1) Then
      Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,ExpMplRM_tag,comm%comm,comm%request,comm%ierr)
-     Call MPI_SEND(imove,1,MPI_INTEGER,jdnode,ExpMplRM_tag,comm%comm,comm%ierr)
+     Call gsend(comm,imove,jdnode,ExpMplRM_tag)
      Call MPI_WAIT(comm%request,comm%status,comm%ierr)
   Else
      jmove=imove
@@ -2401,7 +2407,9 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
 
   If (comm%mxnode > 1) Then
      If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,ExpMplRM_tag,comm%comm,comm%request,comm%ierr)
-     If (imove > 0) Call MPI_SEND(buffer(1),imove,wp_mpi,jdnode,ExpMplRM_tag,comm%comm,comm%ierr)
+     If (imove > 0) Then
+       Call gsend(comm,buffer(1),jdnode,ExpMplRM_tag)
+     End If
      If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
   End If
 
