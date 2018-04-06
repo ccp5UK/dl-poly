@@ -976,12 +976,12 @@ Contains
 
         Call gsend(comm,ni,0,DefWrite_tag)
         If (ni > 0) Then
-           Call gsend(comm,nami(:),0,DefWrite_tag)
-           Call gsend(comm,indi(:),0,DefWrite_tag)
+           Call gsend(comm,nami(1:ni),0,DefWrite_tag)
+           Call gsend(comm,indi(1:ni),0,DefWrite_tag)
 
-           Call gsend(comm,bxx(:),0,DefWrite_tag)
-           Call gsend(comm,byy(:),0,DefWrite_tag)
-           Call gsend(comm,bzz(:),0,DefWrite_tag)
+           Call gsend(comm,bxx(1:ni),0,DefWrite_tag)
+           Call gsend(comm,byy(1:ni),0,DefWrite_tag)
+           Call gsend(comm,bzz(1:ni),0,DefWrite_tag)
         End If
      End If
 
@@ -1039,12 +1039,12 @@ Contains
 
         Call gsend(comm,nv,0,DefWrite_tag)
         If (nv > 0) Then
-           Call gsend(comm,namv(:),0,DefWrite_tag)
-           Call gsend(comm,indv(:),0,DefWrite_tag)
+           Call gsend(comm,namv(1:nv),0,DefWrite_tag)
+           Call gsend(comm,indv(1:nv),0,DefWrite_tag)
 
-           Call gsend(comm,axx(:),0,DefWrite_tag)
-           Call gsend(comm,ayy(:),0,DefWrite_tag)
-           Call gsend(comm,azz(:),0,DefWrite_tag)
+           Call gsend(comm,axx(1:nv),0,DefWrite_tag)
+           Call gsend(comm,ayy(1:nv),0,DefWrite_tag)
+           Call gsend(comm,azz(1:nv),0,DefWrite_tag)
         End If
      End If
 
@@ -2888,12 +2888,12 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
         Call gsend(comm,nrefs,0,DefRWrite_tag)
         If (nrefs > 0) Then
-           Call gsend(comm,namr(:),0,DefRWrite_tag)
-           Call gsend(comm,indr(:),0,DefRWrite_tag)
+           Call gsend(comm,namr(1:nrefs),0,DefRWrite_tag)
+           Call gsend(comm,indr(1:nrefs),0,DefRWrite_tag)
 
-           Call gsend(comm,xr(:),0,DefRWrite_tag)
-           Call gsend(comm,yr(:),0,DefRWrite_tag)
-           Call gsend(comm,zr(:),0,DefRWrite_tag)
+           Call gsend(comm,xr(1:nrefs),0,DefRWrite_tag)
+           Call gsend(comm,yr(1:nrefs),0,DefRWrite_tag)
+           Call gsend(comm,zr(1:nrefs),0,DefRWrite_tag)
         End If
 
      End If
@@ -3121,12 +3121,12 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
         Call gsend(comm,nrefs,0,DefRWrite_tag)
         If (nrefs > 0) Then
-           Call gsend(comm,namr(:),0,DefRWrite_tag)
-           Call gsend(comm,indr(:),0,DefRWrite_tag)
+           Call gsend(comm,namr(1:nrefs),0,DefRWrite_tag)
+           Call gsend(comm,indr(1:nrefs),0,DefRWrite_tag)
 
-           Call gsend(comm,xr(:),0,DefRWrite_tag)
-           Call gsend(comm,yr(:),0,DefRWrite_tag)
-           Call gsend(comm,zr(:),0,DefRWrite_tag)
+           Call gsend(comm,xr(1:nrefs),0,DefRWrite_tag)
+           Call gsend(comm,yr(1:nrefs),0,DefRWrite_tag)
+           Call gsend(comm,zr(1:nrefs),0,DefRWrite_tag)
          End If
 
      End If
@@ -4005,12 +4005,12 @@ Subroutine defects_write &
 
         Call gsend(comm,ni,0,DefWrite_tag)
         If (ni > 0) Then
-           Call gsend(comm,nami(:),0,DefWrite_tag)
-           Call gsend(comm,indi(:),0,DefWrite_tag)
+           Call gsend(comm,nami(1:ni),0,DefWrite_tag)
+           Call gsend(comm,indi(1:ni),0,DefWrite_tag)
 
-           Call gsend(comm,bxx(:),0,DefWrite_tag)
-           Call gsend(comm,byy(:),0,DefWrite_tag)
-           Call gsend(comm,bzz(:),0,DefWrite_tag)
+           Call gsend(comm,bxx(1:ni),0,DefWrite_tag)
+           Call gsend(comm,byy(1:ni),0,DefWrite_tag)
+           Call gsend(comm,bzz(1:ni),0,DefWrite_tag)
         End If
      End If
 
@@ -4068,12 +4068,12 @@ Subroutine defects_write &
 
         Call gsend(comm,nv,0,DefWrite_tag)
         If (nv > 0) Then
-           Call gsend(comm,namv(:),0,DefWrite_tag)
-           Call gsend(comm,indv(:),0,DefWrite_tag)
+           Call gsend(comm,namv(1:nv),0,DefWrite_tag)
+           Call gsend(comm,indv(1:nv),0,DefWrite_tag)
 
-           Call gsend(comm,axx(:),0,DefWrite_tag)
-           Call gsend(comm,ayy(:),0,DefWrite_tag)
-           Call gsend(comm,azz(:),0,DefWrite_tag)
+           Call gsend(comm,axx(1:nv),0,DefWrite_tag)
+           Call gsend(comm,ayy(1:nv),0,DefWrite_tag)
+           Call gsend(comm,azz(1:nv),0,DefWrite_tag)
         End If
      End If
 

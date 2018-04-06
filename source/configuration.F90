@@ -2761,9 +2761,9 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
            Call gsend(comm,atmnam(1:natms),0,WriteConf_tag)
            Call gsend(comm,ltg(1:natms),0,WriteConf_tag)
 
-           Call gsend(comm,xxx(1:atms),0,WriteConf_tag)
-           Call gsend(comm,yyy(1:atms),0,WriteConf_tag)
-           Call gsend(comm,zzz(1:atms),0,WriteConf_tag)
+           Call gsend(comm,xxx(1:natms),0,WriteConf_tag)
+           Call gsend(comm,yyy(1:natms),0,WriteConf_tag)
+           Call gsend(comm,zzz(1:natms),0,WriteConf_tag)
 
            If (levcfg > 0) Then
               Call gsend(comm,vxx(1:natms),0,WriteConf_tag)
