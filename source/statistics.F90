@@ -1220,7 +1220,7 @@ Subroutine statistics_connect_spread(mdir,comm)
 ! exchange buffers between nodes (this is a MUST)
 
   Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Spread_tag,comm%comm,comm%request,comm%ierr)
-  Call gsend(comm,buffer(1),jdnode,Spread_tag)
+  Call gsend(comm,buffer(1:imove),jdnode,Spread_tag)
   Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
 ! check arrays can cope with incoming atom numbers

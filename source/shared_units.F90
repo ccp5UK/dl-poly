@@ -506,7 +506,7 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
 
         If (n > 0) Call MPI_IRECV(buffer(i+1),n,wp_mpi,kdnode,UpdShUnit_tag+k,comm%comm,comm%request,comm%ierr)
         If (i > 0) Then
-          Call gsend(comm,buffer(1),jdnode,UpdShUnit_tag+k)
+          Call gsend(comm,buffer(1:i),jdnode,UpdShUnit_tag+k)
         End If
         If (n > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
@@ -666,7 +666,7 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,comm)
 
         If (n > 0) Call MPI_IRECV(ibuffer(i+1),n,MPI_INTEGER,kdnode,UpdShUnit_tag+k,comm%comm,comm%request,comm%ierr)
         If (i > 0) Then
-          Call gsend(comm,ibuffer(1),jdnode,UpdShUnit_tag+k)
+          Call gsend(comm,ibuffer(1:i),jdnode,UpdShUnit_tag+k)
         End If
         If (n > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
@@ -823,7 +823,7 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,comm)
 
         If (n > 0) Call MPI_IRECV(buffer(i+1),n,wp_mpi,kdnode,UpdShUnit_tag+k,comm%comm,comm%request,comm%ierr)
         If (i > 0) Then
-          Call gsend(comm,buffer(1),jdnode,UpdShUnit_tag+k)
+          Call gsend(comm,buffer(1:i),jdnode,UpdShUnit_tag+k)
         End If
         If (n > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
