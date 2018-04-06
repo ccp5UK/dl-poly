@@ -351,7 +351,7 @@ Module shared_units
         listin=0
         If (l_in  > 0) Call MPI_IRECV(listin,l_in,MPI_INTEGER,kdnode,PassUnit_tag+k,comm%comm,comm%request,comm%ierr)
         If (l_out > 0) Then
-          Call gsend(comm,lstout,jdnode,PassUnit_tag+k)
+          Call gsend(comm,lstout(1:l_out),jdnode,PassUnit_tag+k)
         End If
         If (l_in  > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
 
