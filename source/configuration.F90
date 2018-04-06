@@ -2758,22 +2758,22 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 
         Call gsend(comm,natms,0,WriteConf_tag)
         If (natms > 0) Then
-           Call gsend(comm,atmnam(:),0,WriteConf_tag)
-           Call gsend(comm,ltg(:),0,WriteConf_tag)
+           Call gsend(comm,atmnam(1:natms),0,WriteConf_tag)
+           Call gsend(comm,ltg(1:natms),0,WriteConf_tag)
 
-           Call gsend(comm,xxx(:),0,WriteConf_tag)
-           Call gsend(comm,yyy(:),0,WriteConf_tag)
-           Call gsend(comm,zzz(:),0,WriteConf_tag)
+           Call gsend(comm,xxx(1:atms),0,WriteConf_tag)
+           Call gsend(comm,yyy(1:atms),0,WriteConf_tag)
+           Call gsend(comm,zzz(1:atms),0,WriteConf_tag)
 
            If (levcfg > 0) Then
-              Call gsend(comm,vxx(:),0,WriteConf_tag)
-              Call gsend(comm,vyy(:),0,WriteConf_tag)
-              Call gsend(comm,vzz(:),0,WriteConf_tag)
+              Call gsend(comm,vxx(1:natms),0,WriteConf_tag)
+              Call gsend(comm,vyy(1:natms),0,WriteConf_tag)
+              Call gsend(comm,vzz(1:natms),0,WriteConf_tag)
 
               If (levcfg > 1) Then
-                 Call gsend(comm,fxx(:),0,WriteConf_tag)
-                 Call gsend(comm,fyy(:),0,WriteConf_tag)
-                 Call gsend(comm,fzz(:),0,WriteConf_tag)
+                 Call gsend(comm,fxx(1:natms),0,WriteConf_tag)
+                 Call gsend(comm,fyy(1:natms),0,WriteConf_tag)
+                 Call gsend(comm,fzz(1:natms),0,WriteConf_tag)
               End If
            End If
         End If
@@ -2985,7 +2985,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 
               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
               If (jatms > 0) Then
-                 Call gsend(comm,chbuf(:),jdnode,WriteConf_tag)
+                 Call gsend(comm,chbuf(1:jatms),jdnode,WriteConf_tag)
                  Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
 
                  Call MPI_RECV(axx,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
@@ -3032,22 +3032,22 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 
         Call gsend(comm,natms,0,WriteConf_tag)
         If (natms > 0) Then
-           Call gsend(comm,atmnam(:),0,WriteConf_tag)
-           Call gsend(comm,ltg(:),0,WriteConf_tag)
+           Call gsend(comm,atmnam(1:natms),0,WriteConf_tag)
+           Call gsend(comm,ltg(1:natms),0,WriteConf_tag)
 
-           Call gsend(comm,xxx(:),0,WriteConf_tag)
-           Call gsend(comm,yyy(:),0,WriteConf_tag)
-           Call gsend(comm,zzz(:),0,WriteConf_tag)
+           Call gsend(comm,xxx(1:natms),0,WriteConf_tag)
+           Call gsend(comm,yyy(1:natms),0,WriteConf_tag)
+           Call gsend(comm,zzz(1:natms),0,WriteConf_tag)
 
            If (levcfg > 0) Then
-              Call gsend(comm,vxx(:),0,WriteConf_tag)
-              Call gsend(comm,vyy(:),0,WriteConf_tag)
-              Call gsend(comm,vzz(:),0,WriteConf_tag)
+              Call gsend(comm,vxx(1:natms),0,WriteConf_tag)
+              Call gsend(comm,vyy(1:natms),0,WriteConf_tag)
+              Call gsend(comm,vzz(1:natms),0,WriteConf_tag)
 
               If (levcfg > 1) Then
-                 Call gsend(comm,fxx(:),0,WriteConf_tag)
-                 Call gsend(comm,fyy(:),0,WriteConf_tag)
-                 Call gsend(comm,fzz(:),0,WriteConf_tag)
+                 Call gsend(comm,fxx(1:natms),0,WriteConf_tag)
+                 Call gsend(comm,fyy(1:natms),0,WriteConf_tag)
+                 Call gsend(comm,fzz(1:natms),0,WriteConf_tag)
               End If
            End If
         End If
