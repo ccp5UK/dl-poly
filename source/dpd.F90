@@ -694,7 +694,7 @@ Contains
     If (comm%mxnode > 1) Then
       If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,DpdVExp_tag,comm%comm,comm%request,comm%ierr)
       If (imove > 0) Then
-        Call gsend(comm,buffer(1),jdnode,DpdVExp_tag)
+        Call gsend(comm,buffer(1:imove),jdnode,DpdVExp_tag)
       End If
       If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
     End If

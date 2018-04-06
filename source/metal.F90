@@ -2914,7 +2914,7 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0,comm)
   If (comm%mxnode > 1) Then
      If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,MetLdExp_tag,comm%comm,comm%request,comm%ierr)
      If (imove > 0) Then
-       Call gsend(comm,buffer(1),jdnode,MetLdExp_tag)
+       Call gsend(comm,buffer(1:imove),jdnode,MetLdExp_tag)
      End If
      If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
   End If
