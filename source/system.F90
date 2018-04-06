@@ -2037,15 +2037,15 @@ Subroutine system_revive                                      &
 
      Call gsend(comm,natms,0,Revive_tag)
 
-     Call gsend(comm,ltg(:),0,Revive_tag)
+     Call gsend(comm,ltg(1:natms),0,Revive_tag)
 
-     Call gsend(comm,xin(:),0,Revive_tag)
-     Call gsend(comm,yin(:),0,Revive_tag)
-     Call gsend(comm,zin(:),0,Revive_tag)
+     Call gsend(comm,xin(1:natms),0,Revive_tag)
+     Call gsend(comm,yin(1:natms),0,Revive_tag)
+     Call gsend(comm,zin(1:natms),0,Revive_tag)
 
-     Call gsend(comm,xto(:),0,Revive_tag)
-     Call gsend(comm,yto(:),0,Revive_tag)
-     Call gsend(comm,zto(:),0,Revive_tag)
+     Call gsend(comm,xto(1:natms),0,Revive_tag)
+     Call gsend(comm,yto(1:natms),0,Revive_tag)
+     Call gsend(comm,zto(1:natms),0,Revive_tag)
 
   End If
 
@@ -2099,7 +2099,7 @@ Subroutine system_revive                                      &
 
          Call gsend(comm,natms,0,Revive_tag)
 
-         Call gsend(comm,ltg(:),0,Revive_tag)
+         Call gsend(comm,ltg(1:natms),0,Revive_tag)
 
          Call gsend(comm,vxi(1,j),0,Revive_tag)
          Call gsend(comm,vyi(1,j),0,Revive_tag)
