@@ -461,13 +461,13 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
 
         Call gsend(comm,n,0,RsdWrite_tag)
         If (n > 0) Then
-           Call gsend(comm,nam(:),0,RsdWrite_tag)
-           Call gsend(comm,ind(:),0,RsdWrite_tag)
-           Call gsend(comm,dr(:),0,RsdWrite_tag)
+           Call gsend(comm,nam(1:n),0,RsdWrite_tag)
+           Call gsend(comm,ind(1:n),0,RsdWrite_tag)
+           Call gsend(comm,dr(1:n),0,RsdWrite_tag)
 
-           Call gsend(comm,axx(:),0,RsdWrite_tag)
-           Call gsend(comm,ayy(:),0,RsdWrite_tag)
-           Call gsend(comm,azz(:),0,RsdWrite_tag)
+           Call gsend(comm,axx(1:n),0,RsdWrite_tag)
+           Call gsend(comm,ayy(1:n),0,RsdWrite_tag)
+           Call gsend(comm,azz(1:n),0,RsdWrite_tag)
         End If
 
 ! Save offset pointer
