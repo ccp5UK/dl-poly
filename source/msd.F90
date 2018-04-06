@@ -409,11 +409,11 @@ Module msd
 
         Call gsend(comm,natms,0,MsdWrite_tag)
         If (natms > 0) Then
-          Call gsend(comm,atmnam(:),0,MsdWrite_tag)
-          Call gsend(comm,ltg(:),0,MsdWrite_tag)
+          Call gsend(comm,atmnam(1:natms),0,MsdWrite_tag)
+          Call gsend(comm,ltg(1:natms),0,MsdWrite_tag)
 
-          Call gsend(comm,ddd(:),0,MsdWrite_tag)
-          Call gsend(comm,eee(:),0,MsdWrite_tag)
+          Call gsend(comm,ddd(1:natms),0,MsdWrite_tag)
+          Call gsend(comm,eee(1:natms),0,MsdWrite_tag)
         End If
 
 ! Save offset pointer
@@ -588,11 +588,11 @@ Module msd
 
         Call gsend(comm,natms,0,MsdWrite_tag)
         If (natms > 0) Then
-          Call gsend(comm,atmnam(:),0,MsdWrite_tag)
-          Call gsend(comm,ltg(:),0,MsdWrite_tag)
+          Call gsend(comm,atmnam(1:natms),0,MsdWrite_tag)
+          Call gsend(comm,ltg(1:natms),0,MsdWrite_tag)
 
-          Call gsend(comm,ddd(:),0,MsdWrite_tag)
-          Call gsend(comm,eee(:),0,MsdWrite_tag)
+          Call gsend(comm,ddd(1:natms),0,MsdWrite_tag)
+          Call gsend(comm,eee(1:natms),0,MsdWrite_tag)
         End If
 
         rec=rec+Int(megatm+1,li)
