@@ -12,7 +12,7 @@ Module configuration
 
   Use kinds, Only : wp,li
   Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
-                    gmax,gmin,gsend
+                    gmax,gmin,gsend,grecv
   Use site
 
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
@@ -2687,24 +2687,24 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
            If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,WriteConf_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
+              Call grecv(comm,jatms,jdnode,WriteConf_tag)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,chbuf,jdnode,WriteConf_tag)
+                 Call grecv(comm,iwrk,jdnode,WriteConf_tag)
 
-                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,axx,jdnode,WriteConf_tag)
+                 Call grecv(comm,ayy,jdnode,WriteConf_tag)
+                 Call grecv(comm,azz,jdnode,WriteConf_tag)
 
                  If (levcfg > 0) Then
-                    Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
-                    Call MPI_RECV(byy,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
-                    Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
+                    Call grecv(comm,bxx,jdnode,WriteConf_tag)
+                    Call grecv(comm,byy,jdnode,WriteConf_tag)
+                    Call grecv(comm,bzz,jdnode,WriteConf_tag)
 
                     If (levcfg > 1) Then
-                       Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
-                       Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
-                       Call MPI_RECV(czz,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
+                       Call grecv(comm,cxx,jdnode,WriteConf_tag)
+                       Call grecv(comm,cyy,jdnode,WriteConf_tag)
+                       Call grecv(comm,czz,jdnode,WriteConf_tag)
                     End If
                  End If
               End If
@@ -2754,7 +2754,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,WriteConf_tag,comm%comm,comm%status,comm%ierr)
+        Call grecv(comm,ready,0,WriteConf_tag)
 
         Call gsend(comm,natms,0,WriteConf_tag)
         If (natms > 0) Then
@@ -2983,24 +2983,24 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
            If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,WriteConf_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
+              Call grecv(comm,jatms,jdnode,WriteConf_tag)
               If (jatms > 0) Then
                  Call gsend(comm,chbuf(1:jatms),jdnode,WriteConf_tag)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,iwrk,jdnode,WriteConf_tag)
 
-                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,axx,jdnode,WriteConf_tag)
+                 Call grecv(comm,ayy,jdnode,WriteConf_tag)
+                 Call grecv(comm,azz,jdnode,WriteConf_tag)
 
                  If (levcfg > 0) Then
-                    Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
-                    Call MPI_RECV(byy,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
-                    Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
+                    Call grecv(comm,bxx,jdnode,WriteConf_tag)
+                    Call grecv(comm,byy,jdnode,WriteConf_tag)
+                    Call grecv(comm,bzz,jdnode,WriteConf_tag)
 
                     If (levcfg > 1) Then
-                       Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
-                       Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
-                       Call MPI_RECV(czz,jatms,wp_mpi,jdnode,WriteConf_tag,comm%comm,comm%status,comm%ierr)
+                       Call grecv(comm,cxx,jdnode,WriteConf_tag)
+                       Call grecv(comm,cyy,jdnode,WriteConf_tag)
+                       Call grecv(comm,czz,jdnode,WriteConf_tag)
                     End If
                  End If
               End If
@@ -3028,7 +3028,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,WriteConf_tag,comm%comm,comm%status,comm%ierr)
+        Call grecv(comm,ready,0,WriteConf_tag)
 
         Call gsend(comm,natms,0,WriteConf_tag)
         If (natms > 0) Then
