@@ -2689,22 +2689,22 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 
               Call grecv(comm,jatms,jdnode,WriteConf_tag)
               If (jatms > 0) Then
-                 Call grecv(comm,chbuf,jdnode,WriteConf_tag)
-                 Call grecv(comm,iwrk,jdnode,WriteConf_tag)
+                 Call grecv(comm,chbuf(1:jatms),jdnode,WriteConf_tag)
+                 Call grecv(comm,iwrk(1:jatms),jdnode,WriteConf_tag)
 
-                 Call grecv(comm,axx,jdnode,WriteConf_tag)
-                 Call grecv(comm,ayy,jdnode,WriteConf_tag)
-                 Call grecv(comm,azz,jdnode,WriteConf_tag)
+                 Call grecv(comm,axx(1:jatms),jdnode,WriteConf_tag)
+                 Call grecv(comm,ayy(1:jatms),jdnode,WriteConf_tag)
+                 Call grecv(comm,azz(1:jatms),jdnode,WriteConf_tag)
 
                  If (levcfg > 0) Then
-                    Call grecv(comm,bxx,jdnode,WriteConf_tag)
-                    Call grecv(comm,byy,jdnode,WriteConf_tag)
-                    Call grecv(comm,bzz,jdnode,WriteConf_tag)
+                    Call grecv(comm,bxx(1:jatms),jdnode,WriteConf_tag)
+                    Call grecv(comm,byy(1:jatms),jdnode,WriteConf_tag)
+                    Call grecv(comm,bzz(1:jatms),jdnode,WriteConf_tag)
 
                     If (levcfg > 1) Then
-                       Call grecv(comm,cxx,jdnode,WriteConf_tag)
-                       Call grecv(comm,cyy,jdnode,WriteConf_tag)
-                       Call grecv(comm,czz,jdnode,WriteConf_tag)
+                       Call grecv(comm,cxx(1:jatms),jdnode,WriteConf_tag)
+                       Call grecv(comm,cyy(1:jatms),jdnode,WriteConf_tag)
+                       Call grecv(comm,czz(1:jatms),jdnode,WriteConf_tag)
                     End If
                  End If
               End If
@@ -2986,21 +2986,21 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
               Call grecv(comm,jatms,jdnode,WriteConf_tag)
               If (jatms > 0) Then
                  Call gsend(comm,chbuf(1:jatms),jdnode,WriteConf_tag)
-                 Call grecv(comm,iwrk,jdnode,WriteConf_tag)
+                 Call grecv(comm,iwrk(1:jatms),jdnode,WriteConf_tag)
 
-                 Call grecv(comm,axx,jdnode,WriteConf_tag)
-                 Call grecv(comm,ayy,jdnode,WriteConf_tag)
-                 Call grecv(comm,azz,jdnode,WriteConf_tag)
+                 Call grecv(comm,axx(1:jatms),jdnode,WriteConf_tag)
+                 Call grecv(comm,ayy(1:jatms),jdnode,WriteConf_tag)
+                 Call grecv(comm,azz(1:jatms),jdnode,WriteConf_tag)
 
                  If (levcfg > 0) Then
-                    Call grecv(comm,bxx,jdnode,WriteConf_tag)
-                    Call grecv(comm,byy,jdnode,WriteConf_tag)
-                    Call grecv(comm,bzz,jdnode,WriteConf_tag)
+                    Call grecv(comm,bxx(1:jatms),jdnode,WriteConf_tag)
+                    Call grecv(comm,byy(1:jatms),jdnode,WriteConf_tag)
+                    Call grecv(comm,bzz(1:jatms),jdnode,WriteConf_tag)
 
                     If (levcfg > 1) Then
-                       Call grecv(comm,cxx,jdnode,WriteConf_tag)
-                       Call grecv(comm,cyy,jdnode,WriteConf_tag)
-                       Call grecv(comm,czz,jdnode,WriteConf_tag)
+                       Call grecv(comm,cxx(1:jatms),jdnode,WriteConf_tag)
+                       Call grecv(comm,cyy(1:jatms),jdnode,WriteConf_tag)
+                       Call grecv(comm,czz(1:jatms),jdnode,WriteConf_tag)
                     End If
                  End If
               End If
