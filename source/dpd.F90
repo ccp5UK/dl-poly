@@ -12,7 +12,7 @@ Module dpd
   Use kinds, Only : wp
   
   Use comms,        Only : comms_type,gsum,gcheck,gmax,DpdVExp_tag,wp_mpi, &
-                           gsend
+                           gsend,gwait
   Use setup,        Only : nrite,mxlist,mxatdm,mxatms,mxbfxp,mxvdw
   Use configuration,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
                                   list,weight,xxx,yyy,zzz,vxx,vyy,vzz, &
@@ -673,7 +673,7 @@ Contains
     If (comm%mxnode > 1) Then
       Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,DpdVExp_tag,comm%comm,comm%request,comm%ierr)
       Call gsend(comm,imove,jdnode,DpdVExp_tag)
-      Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+      Call gwait(comm)
     Else
       jmove=imove
     End If
@@ -696,7 +696,7 @@ Contains
       If (imove > 0) Then
         Call gsend(comm,buffer(1:imove),jdnode,DpdVExp_tag)
       End If
-      If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+      If (jmove > 0) Call gwait(comm)
     End If
 
     ! load transferred data
