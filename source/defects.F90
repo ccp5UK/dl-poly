@@ -14,7 +14,7 @@ Module defects
                                 nrefdt,config,half_minus, zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
                                 DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
-                                gsend,grecv
+                                gsend,grecv,gwait
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use core_shell,        Only : ntshl,listshl
@@ -1293,7 +1293,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
   If (comm%mxnode > 1) Then
      Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,DefExport_tag,comm%comm,comm%request,comm%ierr)
      Call gsend(comm,imove,jdnode,DefExport_tag)
-     Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+     Call gwait(comm)
   Else
      jmove=imove
   End If
@@ -1316,7 +1316,9 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
      If (imove > 0) Then
        Call gsend(comm,buffer(1:imove),jdnode,DefExport_tag)
      End If
-     If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+     If (jmove > 0) Then
+       Call gwait(comm)
+     End If
   End If
 
 ! load transferred data
