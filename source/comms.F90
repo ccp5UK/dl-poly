@@ -75,7 +75,7 @@ Module comms
   End Type
 
   Public :: init_comms, exit_comms, abort_comms, &
-            gsync, gcheck, gsum, gmax, gtime, gsend, grecv
+            gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv
 
   Interface gcheck
     Module Procedure gcheck_vector
@@ -240,6 +240,25 @@ Contains
     Call MPI_BARRIER(comm%comm,comm%ierr)
 
   End Subroutine gsync
+
+  Subroutine gwait(comm)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 wait for a non-blocking send or receive to finish
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+
+    If (comm%mxnode == 1) Then
+      Return
+    End If
+
+    Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+  End subroutine gwait
 
   Subroutine gcheck_vector(comm, aaa, enforce)
 
