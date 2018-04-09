@@ -13,7 +13,8 @@ Module defects
   Use setup,      Only : mxatms, nrite,mxbfxp,mxcell,ndefdt, &
                                 nrefdt,config,half_minus, zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
-                                DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast,gsend
+                                DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
+                                gsend,grecv
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use core_shell,        Only : ntshl,listshl
@@ -938,14 +939,14 @@ Contains
            If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,DefWrite_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+              Call grecv(comm,jatms,jdnode,DefWrite_tag)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,chbuf(1:jatms),jdnode,DefWrite_tag)
+                 Call grecv(comm,iwrk(1:jatms),jdnode,DefWrite_tag)
 
-                 Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(czz,jatms,wp_mpi,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,cxx(1:jatms),jdnode,DefWrite_tag)
+                 Call grecv(comm,cyy(1:jatms),jdnode,DefWrite_tag)
+                 Call grecv(comm,czz(1:jatms),jdnode,DefWrite_tag)
               End If
            End If
 
@@ -972,7 +973,7 @@ Contains
            End Do
         End Do
      Else
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+        Call grecv(comm,ready,0,DefWrite_tag)
 
         Call gsend(comm,ni,0,DefWrite_tag)
         If (ni > 0) Then
@@ -1001,14 +1002,14 @@ Contains
            If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,DefWrite_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+              Call grecv(comm,jatms,jdnode,DefWrite_tag)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,chbuf(1:jatms),jdnode,DefWrite_tag)
+                 Call grecv(comm,iwrk(1:jatms),jdnode,DefWrite_tag)
 
-                 Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(czz,jatms,wp_mpi,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,cxx(1:jatms),jdnode,DefWrite_tag)
+                 Call grecv(comm,cyy(1:jatms),jdnode,DefWrite_tag)
+                 Call grecv(comm,czz(1:jatms),jdnode,DefWrite_tag)
               End If
            End If
 
@@ -1035,7 +1036,7 @@ Contains
            End Do
         End Do
      Else
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+        Call grecv(comm,ready,0,DefWrite_tag)
 
         Call gsend(comm,nv,0,DefWrite_tag)
         If (nv > 0) Then
@@ -2831,14 +2832,14 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
            If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,DefRWrite_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
+              Call grecv(comm,jatms,jdnode,DefRWrite_tag)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,chbuf(1:jatms),jdnode,DefRWrite_tag)
+                 Call grecv(comm,iwrk(1:jatms),jdnode,DefRWrite_tag)
 
-                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,axx(1:jatms),jdnode,DefRWrite_tag)
+                 Call grecv(comm,ayy(1:jatms),jdnode,DefRWrite_tag)
+                 Call grecv(comm,azz(1:jatms),jdnode,DefRWrite_tag)
               End If
 
 ! Get to real space
@@ -2884,7 +2885,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
+        Call grecv(comm,ready,0,DefRWrite_tag)
 
         Call gsend(comm,nrefs,0,DefRWrite_tag)
         If (nrefs > 0) Then
@@ -3078,14 +3079,14 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
            If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,DefRWrite_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
+              Call grecv(comm,jatms,jdnode,DefRWrite_tag)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,chbuf(1:jatms),jdnode,DefRWrite_tag)
+                 Call grecv(comm,iwrk(1:jatms),jdnode,DefRWrite_tag)
 
-                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,axx(1:jatms),jdnode,DefRWrite_tag)
+                 Call grecv(comm,ayy(1:jatms),jdnode,DefRWrite_tag)
+                 Call grecv(comm,azz(1:jatms),jdnode,DefRWrite_tag)
               End If
 
 ! Get to real space
@@ -3117,7 +3118,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefRWrite_tag,comm%comm,comm%status,comm%ierr)
+        Call grecv(comm,ready,0,DefRWrite_tag)
 
         Call gsend(comm,nrefs,0,DefRWrite_tag)
         If (nrefs > 0) Then
@@ -3967,14 +3968,14 @@ Subroutine defects_write &
            If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,DefWrite_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+              Call grecv(comm,jatms,jdnode,DefWrite_tag)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,chbuf(1:jatms),jdnode,DefWrite_tag)
+                 Call grecv(comm,iwrk(1:jatms),jdnode,DefWrite_tag)
 
-                 Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(czz,jatms,wp_mpi,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,cxx(1:jatms),jdnode,DefWrite_tag)
+                 Call grecv(comm,cyy(1:jatms),jdnode,DefWrite_tag)
+                 Call grecv(comm,czz(1:jatms),jdnode,DefWrite_tag)
               End If
            End If
 
@@ -4001,7 +4002,7 @@ Subroutine defects_write &
            End Do
         End Do
      Else
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+        Call grecv(comm,ready,0,DefWrite_tag)
 
         Call gsend(comm,ni,0,DefWrite_tag)
         If (ni > 0) Then
@@ -4030,14 +4031,14 @@ Subroutine defects_write &
            If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,DefWrite_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+              Call grecv(comm,jatms,jdnode,DefWrite_tag)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,chbuf(1:jatms),jdnode,DefWrite_tag)
+                 Call grecv(comm,iwrk(1:jatms),jdnode,DefWrite_tag)
 
-                 Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(czz,jatms,wp_mpi,jdnode,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,cxx(1:jatms),jdnode,DefWrite_tag)
+                 Call grecv(comm,cyy(1:jatms),jdnode,DefWrite_tag)
+                 Call grecv(comm,czz(1:jatms),jdnode,DefWrite_tag)
               End If
            End If
 
@@ -4064,7 +4065,7 @@ Subroutine defects_write &
            End Do
         End Do
      Else
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,DefWrite_tag,comm%comm,comm%status,comm%ierr)
+        Call grecv(comm,ready,0,DefWrite_tag)
 
         Call gsend(comm,nv,0,DefWrite_tag)
         If (nv > 0) Then

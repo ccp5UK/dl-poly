@@ -27,13 +27,12 @@ Module comms
 
   Integer, Save :: wp_mpi = 0
 
-
   ! MPI-I/O representation
-
   Character( Len = 6 ), Parameter :: datarep = 'native'
 
-  Integer,                                           Public :: mpi_ver     = -1, &
-    mpi_subver  = -1
+  Integer, Public :: mpi_ver     = -1, &
+                     mpi_subver  = -1
+
   Character( Len = MPI_MAX_PROCESSOR_NAME ),         Public :: proc_name   = "*"
 #ifndef OLDMPI
   Character( Len = MPI_MAX_LIBRARY_VERSION_STRING ), Public :: lib_version = "*"
@@ -42,27 +41,27 @@ Module comms
   ! Message tags
 
   Integer, Parameter :: Deport_tag    = 1100, &
-    Export_tag    = 1111, &
-    Revive_tag    = 1122, &
-    PassUnit_tag  = 1133, &
-    UpdShUnit_tag = 1144, &
-    SysExpand_tag = 1155, &
-    WriteConf_tag = 1166, &
-    Traject_tag   = 1177, &
-    Spread_tag    = 1188, &
-    DpdVExp_tag   = 1199, &
-    MetLdExp_tag  = 2200, &
-    ExpMplRM_tag  = 2211, &
-    ExchgGrid_tag = 2222, &
-    DefRWrite_tag = 2233, &
-    DefExport_tag = 2244, &
-    DefWrite_tag  = 2255, &
-    RsdWrite_tag  = 2266, &
-    MsdWrite_tag  = 2277, &
-    Grid1_tag     = 3300, &
-    Grid2_tag     = 3311, &
-    Grid3_tag     = 3322, &
-    Grid4_tag     = 3333
+                        Export_tag    = 1111, &
+                        Revive_tag    = 1122, &
+                        PassUnit_tag  = 1133, &
+                        UpdShUnit_tag = 1144, &
+                        SysExpand_tag = 1155, &
+                        WriteConf_tag = 1166, &
+                        Traject_tag   = 1177, &
+                        Spread_tag    = 1188, &
+                        DpdVExp_tag   = 1199, &
+                        MetLdExp_tag  = 2200, &
+                        ExpMplRM_tag  = 2211, &
+                        ExchgGrid_tag = 2222, &
+                        DefRWrite_tag = 2233, &
+                        DefExport_tag = 2244, &
+                        DefWrite_tag  = 2255, &
+                        RsdWrite_tag  = 2266, &
+                        MsdWrite_tag  = 2277, &
+                        Grid1_tag     = 3300, &
+                        Grid2_tag     = 3311, &
+                        Grid3_tag     = 3322, &
+                        Grid4_tag     = 3333
 
   Type, Public :: comms_type
     Integer               :: ierr
@@ -76,7 +75,7 @@ Module comms
   End Type
 
   Public :: init_comms, exit_comms, abort_comms, &
-    gsync, gcheck, gsum, gmax, gtime, gsend
+            gsync, gcheck, gsum, gmax, gtime, gsend, grecv
 
   Interface gcheck
     Module Procedure gcheck_vector
@@ -127,6 +126,18 @@ Module comms
     Module Procedure gsend_character_scalar
     Module Procedure gsend_character_vector
   End Interface
+
+  Interface grecv
+    Module Procedure grecv_integer_scalar
+    Module Procedure grecv_integer_vector
+    Module Procedure grecv_real_scalar
+    Module Procedure grecv_real_vector
+    Module Procedure grecv_real_array3
+    Module Procedure grecv_logical_scalar
+    Module Procedure grecv_logical_vector
+    Module Procedure grecv_character_scalar
+    Module Procedure grecv_character_vector
+  End Interface grecv
 
 Contains
 
@@ -1012,7 +1023,7 @@ Contains
       n_s(i) = Size(arr, Dim = i)
     End Do
 
-    Call MPI_SEND(arr(n_l(1):n_u(1),n_l(2):n_u(2),n_l(3):n_u(3)),product(n_s(1:3)), &
+    Call MPI_SEND(arr(n_l(1):n_u(1),n_l(2):n_u(2),n_l(3):n_u(3)),Product(n_s(1:3)), &
       wp_mpi,dest,tag,comm%comm,comm%ierr)
   End Subroutine gsend_real_array3
 
@@ -1106,4 +1117,209 @@ Contains
 
     Call MPI_SEND(vec(n_l:n_u),n_s,MPI_CHARACTER,dest,tag,comm%comm,comm%ierr)
   End Subroutine gsend_character_vector
+
+  Subroutine grecv_integer_scalar(comm,s,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive an integer scalar
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent(   Out ) :: s
+    Integer,            Intent( In    ) :: source,tag
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_RECV(s,1,MPI_INTEGER,source,tag,comm%comm,comm%status,comm%ierr)
+  End Subroutine grecv_integer_scalar
+
+  Subroutine grecv_integer_vector(comm,vec,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive an integer vector
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( InOut ) :: vec(:)
+    Integer,            Intent( In    ) :: source,tag
+
+    Integer                             :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+    n_l = Lbound(vec, Dim = 1)
+    n_u = Ubound(vec, Dim = 1)
+    n_s = Size(vec, Dim = 1)
+
+    Call MPI_RECV(vec(n_l:n_u),n_s,MPI_INTEGER,source,tag,comm%comm,comm%status,comm%ierr)
+  End Subroutine grecv_integer_vector
+
+  Subroutine grecv_real_scalar(comm,s,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a real scalar
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp),   Intent(   Out ) :: s
+    Integer,            Intent( In    ) :: source,tag
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_RECV(s,1,wp_mpi,source,tag,comm%comm,comm%status,comm%ierr)
+  End Subroutine grecv_real_scalar
+
+  Subroutine grecv_real_vector(comm,vec,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a real vector
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),  Intent( InOut ) :: vec(:)
+    Integer,            Intent( In    ) :: source,tag
+
+    Integer                             :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+    n_l = Lbound(vec, Dim = 1)
+    n_u = Ubound(vec, Dim = 1)
+    n_s = Size(vec, Dim = 1)
+
+    Call MPI_RECV(vec(n_l:n_u),n_s,wp_mpi,source,tag,comm%comm,comm%status,comm%ierr)
+  End Subroutine grecv_real_vector
+
+  Subroutine grecv_real_array3(comm,arr,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a real three dimensional array
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),  Intent( InOut ) :: arr(:,:,:)
+    Integer,            Intent( In    ) :: source,tag
+
+    Integer                             :: i
+    Integer, Dimension(3)               :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+    Do i = 1, 3
+      n_l(i) = Lbound(arr, Dim = i)
+      n_u(i) = Ubound(arr, Dim = i)
+      n_s(i) = Size(arr, Dim = i)
+    End Do
+
+    Call MPI_RECV(arr(n_l(1):n_u(1),n_l(2):n_u(2),n_l(3):n_u(3)),Product(n_s(1:3)), &
+                  wp_mpi,source,tag,comm%comm,comm%status,comm%ierr)
+  End Subroutine grecv_real_array3
+
+  Subroutine grecv_logical_scalar(comm,s,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a logical scalar
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Logical,            Intent(   Out ) :: s
+    Integer,            Intent( In    ) :: source,tag
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_RECV(s,1,MPI_LOGICAL,source,tag,comm%comm,comm%status,comm%ierr)
+  End Subroutine grecv_logical_scalar
+
+  Subroutine grecv_logical_vector(comm,vec,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a logical vector
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Logical,            Intent( InOut ) :: vec(:)
+    Integer,            Intent( In    ) :: source,tag
+
+    Integer                             :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+    n_l = Lbound(vec, Dim = 1)
+    n_u = Ubound(vec, Dim = 1)
+    n_s = Size(vec, Dim = 1)
+
+    Call MPI_RECV(vec(n_l:n_u),n_s,MPI_LOGICAL,source,tag,comm%comm,comm%status,comm%ierr)
+  End Subroutine grecv_logical_vector
+
+  Subroutine grecv_character_scalar(comm,s,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a character string
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ),   Intent( InOut ) :: comm
+    Character( Len = * ), Intent( InOut ) :: s
+    Integer,              Intent( In    ) :: source,tag
+
+    Integer :: n_s
+
+    If (comm%mxnode == 1) Return
+
+    n_s = Len(s)
+
+    Call MPI_RECV(s,n_s,MPI_CHARACTER,source,tag,comm%comm,comm%status,comm%ierr)
+  End Subroutine grecv_character_scalar
+
+  Subroutine grecv_character_vector(comm,vec,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a character string array
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ),   Intent( InOut ) :: comm
+    Character( Len = * ), Intent( InOut ) :: vec(:)
+    Integer,              Intent( In    ) :: source,tag
+
+    Integer :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+
+    n_l = Lbound(vec, Dim = 1)
+    n_u = Ubound(vec, Dim = 1)
+    n_s = Size(vec, Dim = 1)*Len(vec(n_l))
+
+    Call MPI_RECV(vec(n_l:n_u),n_s,MPI_CHARACTER,source,tag,comm%comm,comm%status,comm%ierr)
+  End Subroutine grecv_character_vector
 End Module comms

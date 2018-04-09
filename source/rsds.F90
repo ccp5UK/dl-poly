@@ -1,7 +1,7 @@
 Module rsds
   Use kinds, Only : wp, li
   Use comms, Only : comms_type,gbcast,RsdWrite_tag,gsum,wp_mpi,gsync,gcheck, &
-                    gsend
+                    gsend,grecv
   Use setup
   Use configuration,     Only : cfgname,imcon,cell,natms, &
                                 atmnam,ltg,xxx,yyy,zzz
@@ -414,15 +414,15 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
            If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,RsdWrite_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
+              Call grecv(comm,jatms,jdnode,RsdWrite_tag)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(dr,jatms,wp_mpi,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,chbuf(1:jatms),jdnode,RsdWrite_tag)
+                 Call grecv(comm,iwrk(1:jatms),jdnode,RsdWrite_tag)
+                 Call grecv(comm,dr(1:jatms),jdnode,RsdWrite_tag)
 
-                 Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(byy,jatms,wp_mpi,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,bxx(1:jatms),jdnode,RsdWrite_tag)
+                 Call grecv(comm,byy(1:jatms),jdnode,RsdWrite_tag)
+                 Call grecv(comm,bzz(1:jatms),jdnode,RsdWrite_tag)
               End If
            End If
 
@@ -457,7 +457,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,RsdWrite_tag,comm%comm,comm%status,comm%ierr)
+        Call grecv(comm,ready,0,RsdWrite_tag)
 
         Call gsend(comm,n,0,RsdWrite_tag)
         If (n > 0) Then

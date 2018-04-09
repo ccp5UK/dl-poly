@@ -1,7 +1,7 @@
 Module trajectory
   Use kinds,         Only : wp, li
   Use comms,         Only : comms_type,Traject_tag,gsync,wp_mpi,gbcast,gcheck, &
-                            gsum,gsend
+                            gsum,gsend,grecv
   Use domains,       Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
   Use site
   Use setup
@@ -1190,29 +1190,29 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,Traject_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+              Call grecv(comm,jatms,jdnode,Traject_tag)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,chbuf(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,iwrk(1:jatms),jdnode,Traject_tag)
 
-                 Call MPI_RECV(ddd,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(eee,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(fff,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,ddd(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,eee(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,fff(1:jatms),jdnode,Traject_tag)
 
-                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,axx(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,ayy(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,azz(1:jatms),jdnode,Traject_tag)
 
                  If (keytrj > 0) Then
-                    Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                    Call MPI_RECV(byy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                    Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                    Call grecv(comm,bxx(1:jatms),jdnode,Traject_tag)
+                    Call grecv(comm,byy(1:jatms),jdnode,Traject_tag)
+                    Call grecv(comm,bzz(1:jatms),jdnode,Traject_tag)
                  End If
 
                  If (keytrj > 1) Then
-                    Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                    Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                    Call MPI_RECV(czz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                    Call grecv(comm,cxx(1:jatms),jdnode,Traject_tag)
+                    Call grecv(comm,cyy(1:jatms),jdnode,Traject_tag)
+                    Call grecv(comm,czz(1:jatms),jdnode,Traject_tag)
                  End If
               End If
            End If
@@ -1264,7 +1264,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,comm%comm,comm%status,ierr)
+        Call grecv(comm,ready,0,Traject_tag)
 
         Call gsend(comm,natms,0,Traject_tag)
         If (natms > 0) Then
@@ -1492,29 +1492,29 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,Traject_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+              Call grecv(comm,jatms,jdnode,Traject_tag)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,chbuf(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,iwrk(1:jatms),jdnode,Traject_tag)
 
-                 Call MPI_RECV(ddd,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(eee,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(fff,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,ddd(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,eee(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,fff(1:jatms),jdnode,Traject_tag)
 
-                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                 Call grecv(comm,axx(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,ayy(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,azz(1:jatms),jdnode,Traject_tag)
 
                  If (keytrj > 0) Then
-                    Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                    Call MPI_RECV(byy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                    Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                    Call grecv(comm,bxx(1:jatms),jdnode,Traject_tag)
+                    Call grecv(comm,byy(1:jatms),jdnode,Traject_tag)
+                    Call grecv(comm,bzz(1:jatms),jdnode,Traject_tag)
                  End If
 
                  If (keytrj > 1) Then
-                    Call MPI_RECV(cxx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                    Call MPI_RECV(cyy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
-                    Call MPI_RECV(czz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,comm%ierr)
+                    Call grecv(comm,cxx(1:jatms),jdnode,Traject_tag)
+                    Call grecv(comm,cyy(1:jatms),jdnode,Traject_tag)
+                    Call grecv(comm,czz(1:jatms),jdnode,Traject_tag)
                  End If
               End If
            End If
@@ -1547,7 +1547,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,comm%comm,comm%status,ierr)
+        Call grecv(comm,ready,0,Traject_tag)
 
         Call gsend(comm,natms,0,Traject_tag)
         If (natms > 0) Then
@@ -2019,16 +2019,16 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,Traject_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,ierr)
+              Call grecv(comm,jatms,jdnode,Traject_tag)
               If (jatms > 0) Then
-                 Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,Traject_tag,comm%comm,comm%status,ierr)
-                 Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Traject_tag,comm%comm,comm%status,ierr)
+                 Call grecv(comm,chbuf(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,iwrk(1:jatms),jdnode,Traject_tag)
 
-                 Call MPI_RECV(fff,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,ierr)
+                 Call grecv(comm,fff(1:jatms),jdnode,Traject_tag)
 
-                 Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,ierr)
-                 Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,ierr)
-                 Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Traject_tag,comm%comm,comm%status,ierr)
+                 Call grecv(comm,axx(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,ayy(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,azz(1:jatms),jdnode,Traject_tag)
               End If
            End If
 
@@ -2047,7 +2047,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 
      Else
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,Traject_tag,comm%comm,comm%status,ierr)
+        Call grecv(comm,ready,0,Traject_tag)
 
         Call gsend(comm,natms,0,Traject_tag)
         If (natms > 0) Then

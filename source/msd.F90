@@ -10,7 +10,7 @@ Module msd
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Use kinds, Only : wp, li
   Use comms, Only : comms_type, gcheck,MsdWrite_tag,gsum,wp_mpi,gsync,gbcast, &
-                    gsend
+                    gsend,grecv
   Use setup
   Use site,       Only : dofsit
   Use configuration,     Only : cfgname,natms,atmnam,lsite,ltg, &
@@ -360,13 +360,13 @@ Module msd
           If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,MsdWrite_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
+              Call grecv(comm,jatms,jdnode,MsdWrite_tag)
               If (jatms > 0) Then
-                Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
-                Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
+                Call grecv(comm,chbuf(1:jatms),jdnode,MsdWrite_tag)
+                Call grecv(comm,iwrk(1:jatms),jdnode,MsdWrite_tag)
 
-                Call MPI_RECV(ddd,jatms,wp_mpi,jdnode,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
-                Call MPI_RECV(eee,jatms,wp_mpi,jdnode,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
+                Call grecv(comm,ddd(1:jatms),jdnode,MsdWrite_tag)
+                Call grecv(comm,eee(1:jatms),jdnode,MsdWrite_tag)
               End If
           End If
 
@@ -405,7 +405,7 @@ Module msd
           eee(i)=tmp
         End Do
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
+        Call grecv(comm,ready,0,MsdWrite_tag)
 
         Call gsend(comm,natms,0,MsdWrite_tag)
         If (natms > 0) Then
@@ -550,13 +550,13 @@ Module msd
           If (jdnode > 0) Then
               Call gsend(comm,ready,jdnode,MsdWrite_tag)
 
-              Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
+              Call grecv(comm,jatms,jdnode,MsdWrite_tag)
               If (jatms > 0) Then
-                Call MPI_RECV(chbuf,8*jatms,MPI_CHARACTER,jdnode,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
-                Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
+                Call grecv(comm,chbuf(1:jatms),jdnode,MsdWrite_tag)
+                Call grecv(comm,iwrk(1:jatms),jdnode,MsdWrite_tag)
 
-                Call MPI_RECV(ddd,jatms,wp_mpi,jdnode,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
-                Call MPI_RECV(eee,jatms,wp_mpi,jdnode,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
+                Call grecv(comm,ddd(1:jatms),jdnode,MsdWrite_tag)
+                Call grecv(comm,eee(1:jatms),jdnode,MsdWrite_tag)
               End If
           End If
 
@@ -584,7 +584,7 @@ Module msd
           eee(i)=tmp
         End Do
 
-        Call MPI_RECV(ready,1,MPI_LOGICAL,0,MsdWrite_tag,comm%comm,comm%status,comm%ierr)
+        Call grecv(comm,ready,0,MsdWrite_tag)
 
         Call gsend(comm,natms,0,MsdWrite_tag)
         If (natms > 0) Then
