@@ -3,7 +3,7 @@ Module deport_data
   Use kinds,            Only : wp
   Use comms,            Only : comms_type,gcheck,wp_mpi, Deport_tag, &
                                Export_tag, MetLdExp_tag, ExpMplRM_tag, &
-                               PassUnit_tag,gsend
+                               PassUnit_tag,gsend,gwait
 
   Use setup
   Use domains
@@ -913,7 +913,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
 
   Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Deport_tag,comm%comm,comm%request,comm%ierr)
   Call gsend(comm,imove,jdnode,Deport_tag)
-  Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+  Call gwait(comm)
 
 ! exchange buffers between nodes (this is a MUST)
 
@@ -921,7 +921,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
   If (imove > 0) Then
     Call gsend(comm,buffer(1:imove),jdnode,Deport_tag)
   End If
-  If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+  If (jmove > 0) Call gwait(comm)
 
 ! check arrays can cope with incoming atom numbers
 
@@ -1879,7 +1879,7 @@ Subroutine export_atomic_data(mdir,comm)
   If (comm%mxnode > 1) Then
      Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Export_tag,comm%comm,comm%request,comm%ierr)
      Call gsend(comm,imove,jdnode,Export_tag)
-     Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+     Call gwait(comm)
   Else
      jmove=imove
   End If
@@ -1902,7 +1902,7 @@ Subroutine export_atomic_data(mdir,comm)
      If (imove > 0) Then
        Call gsend(comm,buffer(1:imove),jdnode,Export_tag)
      End If
-     If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+     If (jmove > 0) Call gwait(comm)
   End If
 
 ! openKIM halo indicators
@@ -2151,7 +2151,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
   If (comm%mxnode > 1) Then
      Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Export_tag,comm%comm,comm%request,comm%ierr)
      Call gsend(comm,imove,jdnode,Export_tag)
-     Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+     Call gwait(comm)
   Else
      jmove=imove
   End If
@@ -2174,7 +2174,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
      If (imove > 0 ) Then
        Call gsend(comm,buffer(1:imove),jdnode,Export_tag)
      End If
-     If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+     If (jmove > 0) Call gwait(comm)
   End If
 
 ! openKIM halo indicators
@@ -2387,7 +2387,7 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
   If (comm%mxnode > 1) Then
      Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,ExpMplRM_tag,comm%comm,comm%request,comm%ierr)
      Call gsend(comm,imove,jdnode,ExpMplRM_tag)
-     Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+     Call gwait(comm)
   Else
      jmove=imove
   End If
@@ -2410,7 +2410,7 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
      If (imove > 0) Then
        Call gsend(comm,buffer(1:imove),jdnode,ExpMplRM_tag)
      End If
-     If (jmove > 0) Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+     If (jmove > 0) Call gwait(comm)
   End If
 
 ! load transferred data

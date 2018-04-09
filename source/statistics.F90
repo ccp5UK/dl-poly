@@ -15,7 +15,7 @@ Module statistics
                    prsunt,nstats,tenunt,boltz,engunit,eu_ev,eu_kcpm,&
                    eu_kjpm,mxatyp,statis,pi
 
-  Use comms,   Only : comms_type,gsum,Spread_tag,wp_mpi,gtime,gmax,gsend
+  Use comms,   Only : comms_type,gsum,Spread_tag,wp_mpi,gtime,gmax,gsend,gwait
   Use site,    Only : ntpatm,numtypnf,unqatm,dens
   Use configuration,  Only : cfgname,imcon,cell,volm,natms,ltype, &
                              xxx,yyy,zzz,vxx,vyy,vzz,ixyz,lsa,lsi,ltg
@@ -1215,13 +1215,13 @@ Subroutine statistics_connect_spread(mdir,comm)
 
   Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Spread_tag,comm%comm,comm%request,comm%ierr)
   Call gsend(comm,imove,jdnode,Spread_tag)
-  Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+  Call gwait(comm)
 
 ! exchange buffers between nodes (this is a MUST)
 
   Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Spread_tag,comm%comm,comm%request,comm%ierr)
   Call gsend(comm,buffer(1:imove),jdnode,Spread_tag)
-  Call MPI_WAIT(comm%request,comm%status,comm%ierr)
+  Call gwait(comm)
 
 ! check arrays can cope with incoming atom numbers
 

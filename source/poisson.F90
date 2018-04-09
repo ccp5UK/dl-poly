@@ -1,7 +1,7 @@
 Module poisson
 
   Use kinds,           Only : wp
-  Use comms,           Only : gsum,comms_type,wp_mpi,ExchgGrid_tag,gsend
+  Use comms,           Only : gsum,comms_type,wp_mpi,ExchgGrid_tag,gsend,gwait
   Use domains
   Use setup,           Only : fourpi,r4pie0,nrite,            &
                               kmaxa,kmaxb,kmaxc,mxspl,mxspl1, &
@@ -638,7 +638,7 @@ Contains
 ! Exchange the data
 
          If (from > -1) Then
-            Call MPI_WAIT(  comm%request, comm%status, comm%ierr )
+            Call gwait(comm)
 
 ! Copy the received data into the domain halo
 
