@@ -4034,7 +4034,7 @@ Subroutine defects_write &
               Call grecv(comm,jatms,jdnode,DefWrite_tag)
               If (jatms > 0) Then
                  Call grecv(comm,chbuf(1:jatms),jdnode,DefWrite_tag)
-                 Call grecv(comm,iwrk(1:jatms,jdnode,DefWrite_tag)
+                 Call grecv(comm,iwrk(1:jatms),jdnode,DefWrite_tag)
 
                  Call grecv(comm,cxx(1:jatms),jdnode,DefWrite_tag)
                  Call grecv(comm,cyy(1:jatms),jdnode,DefWrite_tag)
