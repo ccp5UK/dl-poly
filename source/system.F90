@@ -2,7 +2,7 @@ Module system
 
   Use kinds, Only : wp,li
   Use comms, Only : comms_type, gbcast,SysExpand_tag,Revive_tag,wp_mpi,gsync, &
-                    gsend
+                    gsend,grecv
   Use setup
   Use site,        Only : ntpatm,numtyp,numtypnf,dens,ntpmls,numsit,&
                                  nummols
@@ -1506,8 +1506,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
                           rec   = offset + Int(2,li)*(Int(i_xyz(ix,iy,iz),li)*Int(setspc,li) + Int(m,li)) - Int(2,li)
 
                           If (comm%idnode == 0) Then
-                             Call MPI_RECV(record2,recsz,MPI_CHARACTER,idm,SysExpand_tag,comm%comm,comm%status,comm%ierr)
-                             Call MPI_RECV(record3,recsz,MPI_CHARACTER,idm,SysExpand_tag,comm%comm,comm%status,comm%ierr)
+                             Call grecv(comm,record2,idm,SysExpand_tag)
+                             Call grecv(comm,record3,idm,SysExpand_tag)
 
                              rec=rec+Int(1,li)
                              Write(Unit=nconf, Fmt='(a73)', Rec=rec) record2
@@ -2006,17 +2006,17 @@ Subroutine system_revive                                      &
         If (jdnode > 0) Then
            Call gsend(comm,ready,jdnode,Revive_tag)
 
-           Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
+           Call grecv(comm,jatms,jdnode,Revive_tag)
 
-           Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
+           Call grecv(comm,iwrk(1:jatms),jdnode,Revive_tag)
 
-           Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
-           Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
-           Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
+           Call grecv(comm,axx(1:jatms),jdnode,Revive_tag)
+           Call grecv(comm,ayy(1:jatms),jdnode,Revive_tag)
+           Call grecv(comm,azz(1:jatms),jdnode,Revive_tag)
 
-           Call MPI_RECV(bxx,jatms,wp_mpi,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
-           Call MPI_RECV(byy,jatms,wp_mpi,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
-           Call MPI_RECV(bzz,jatms,wp_mpi,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
+           Call grecv(comm,bxx(1:jatms),jdnode,Revive_tag)
+           Call grecv(comm,byy(1:jatms),jdnode,Revive_tag)
+           Call grecv(comm,bzz(1:jatms),jdnode,Revive_tag)
         End If
 
         If (l_rout) Then
@@ -2033,7 +2033,7 @@ Subroutine system_revive                                      &
 
   Else
 
-     Call MPI_RECV(ready,1,MPI_LOGICAL,0,Revive_tag,comm%comm,comm%status,comm%ierr)
+     Call grecv(comm,ready,0,Revive_tag)
 
      Call gsend(comm,natms,0,Revive_tag)
 
@@ -2069,13 +2069,13 @@ Subroutine system_revive                                      &
             If (jdnode > 0) Then
                Call gsend(comm,ready,jdnode,Revive_tag)
 
-               Call MPI_RECV(jatms,1,MPI_INTEGER,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
+               Call grecv(comm,jatms,jdnode,Revive_tag)
 
-               Call MPI_RECV(iwrk,jatms,MPI_INTEGER,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
+               Call grecv(comm,iwrk(1:jatms),jdnode,Revive_tag)
 
-               Call MPI_RECV(axx,jatms,wp_mpi,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
-               Call MPI_RECV(ayy,jatms,wp_mpi,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
-               Call MPI_RECV(azz,jatms,wp_mpi,jdnode,Revive_tag,comm%comm,comm%status,comm%ierr)
+               Call grecv(comm,axx(1:jatms),jdnode,Revive_tag)
+               Call grecv(comm,ayy(1:jatms),jdnode,Revive_tag)
+               Call grecv(comm,azz(1:jatms),jdnode,Revive_tag)
             End If
 
 
@@ -2095,7 +2095,7 @@ Subroutine system_revive                                      &
     Else
 
        Do j=1,vafsamp
-         Call MPI_RECV(ready,1,MPI_LOGICAL,0,Revive_tag,comm%comm,comm%status,comm%ierr)
+         Call grecv(comm,ready,0,Revive_tag)
 
          Call gsend(comm,natms,0,Revive_tag)
 
