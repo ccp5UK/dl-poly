@@ -16,7 +16,8 @@ Module metal
   Use configuration, Only : natms,ltg,ltype,list,fxx,fyy,fzz,&
                             xxx,yyy,zzz,imcon,volm,nlast,ixyz
 
-  Use comms,  Only : comms_type,gsum,gcheck,gmax,MetLdExp_tag,wp_mpi,gsend,gwait
+  Use comms,  Only : comms_type,gsum,gcheck,gmax,MetLdExp_tag,wp_mpi,gsend, &
+                     gwait,girecv
   Use parse, Only : get_line,get_word,lower_case,word_2_real
   Use domains, Only : map
 
@@ -2891,7 +2892,7 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0,comm)
 ! exchange information on buffer sizes
 
   If (comm%mxnode > 1) Then
-     Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,MetLdExp_tag,comm%comm,comm%request,comm%ierr)
+     Call girecv(comm,jmove,kdnode,MetLdExp_tag)
      Call gsend(comm,imove,jdnode,MetLdExp_tag)
      Call gwait(comm)
   Else
@@ -2912,7 +2913,9 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0,comm)
 ! exchange buffers between nodes (this is a MUST)
 
   If (comm%mxnode > 1) Then
-     If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,MetLdExp_tag,comm%comm,comm%request,comm%ierr)
+     If (jmove > 0) Then
+       Call girecv(comm,buffer(iblock+1:iblock+jmove),kdnode,MetLdExp_tag)
+     End If
      If (imove > 0) Then
        Call gsend(comm,buffer(1:imove),jdnode,MetLdExp_tag)
      End If
