@@ -75,7 +75,8 @@ Module comms
   End Type
 
   Public :: init_comms, exit_comms, abort_comms, &
-            gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv, girecv
+            gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv, girecv, &
+            gscatter
 
   Interface gcheck
     Module Procedure gcheck_vector
@@ -150,6 +151,13 @@ Module comms
     Module Procedure girecv_character_scalar
     Module Procedure girecv_character_vector
   End Interface girecv
+
+  Interface gscatter
+    Module Procedure gscatter_integer_to_scalar
+    Module Procedure gscatter_integer_to_vector
+    Module Procedure gscatter_real_to_scalar
+    Module Procedure gscatter_real_to_vector
+  End Interface gscatter
 
 Contains
 
@@ -1558,4 +1566,118 @@ Contains
 
     Call MPI_IRECV(vec(n_l:n_u),n_s,MPI_CHARACTER,source,tag,comm%comm,comm%request,comm%ierr)
   End Subroutine girecv_character_vector
+
+  Subroutine gscatter_integer_to_scalar(comm,sendbuf,recv,root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 scatter an integer buffer to scalar variables
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: sendbuf(:)
+    Integer,            Intent(   Out ) :: recv
+    Integer,            Intent( In    ) :: root
+
+    Integer :: s_l,s_u
+
+    If (comm%mxnode == 1) Return
+
+    s_l = Lbound(sendbuf, Dim = 1)
+    s_u = Ubound(sendbuf, Dim = 1)
+
+    Call MPI_SCATTER(sendbuf(s_l:s_u),1,MPI_INTEGER, &
+                     recv,1,MPI_INTEGER,root,comm%comm,comm%ierr)
+  End Subroutine gscatter_integer_to_scalar
+
+  Subroutine gscatter_integer_to_vector(comm,sendbuf,scount,recvbuf,root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 scatter an integer buffer to vector variables
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: sendbuf(:)
+    Integer,            Intent( In    ) :: scount
+    Integer,            Intent(   Out ) :: recvbuf(:)
+    Integer,            Intent( In    ) :: root
+
+    Integer :: s_l,s_u,r_l,r_u,r_s
+
+    If (comm%mxnode == 1) Return
+
+    s_l = Lbound(sendbuf, Dim = 1)
+    s_u = Ubound(sendbuf, Dim = 1)
+
+    r_l = Lbound(recvbuf, Dim = 1)
+    r_u = Ubound(recvbuf, Dim = 1)
+    r_s = Size(recvbuf, Dim = 1)
+
+    Call MPI_SCATTER(sendbuf(s_l:s_u),scount,MPI_INTEGER, &
+                     recvbuf(r_l:r_u),r_s,MPI_INTEGER,root,comm%comm,comm%ierr)
+  End Subroutine gscatter_integer_to_vector
+
+  Subroutine gscatter_real_to_scalar(comm,sendbuf,recv,root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 scatter a real buffer to scalar variables
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),  Intent( In    ) :: sendbuf(:)
+    Real( Kind = wp ),  Intent(   Out ) :: recv
+    Integer,            Intent( In    ) :: root
+
+    Integer :: s_l,s_u
+
+    If (comm%mxnode == 1) Return
+
+    s_l = Lbound(sendbuf, Dim = 1)
+    s_u = Ubound(sendbuf, Dim = 1)
+
+    Call MPI_SCATTER(sendbuf(s_l:s_u),1,wp_mpi, &
+                     recv,1,wp_mpi,root,comm%comm,comm%ierr)
+  End Subroutine gscatter_real_to_scalar
+
+  Subroutine gscatter_real_to_vector(comm,sendbuf,scount,recvbuf,root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 scatter a real buffer to vector variables
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),  Intent( In    ) :: sendbuf(:)
+    Integer,            Intent( In    ) :: scount
+    Real( Kind = wp ),  Intent(   Out ) :: recvbuf(:)
+    Integer,            Intent( In    ) :: root
+
+    Integer :: s_l,s_u,r_l,r_u,r_s
+
+    If (comm%mxnode == 1) Return
+
+    s_l = Lbound(sendbuf, Dim = 1)
+    s_u = Ubound(sendbuf, Dim = 1)
+
+    r_l = Lbound(recvbuf, Dim = 1)
+    r_u = Ubound(recvbuf, Dim = 1)
+    r_s = Size(recvbuf, Dim = 1)
+
+    Call MPI_SCATTER(sendbuf(s_l:s_u),scount,wp_mpi, &
+                     recvbuf(r_l:r_u),r_s,wp_mpi,root,comm%comm,comm%ierr)
+  End Subroutine gscatter_real_to_vector
 End Module comms
