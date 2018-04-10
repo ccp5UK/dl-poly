@@ -15,7 +15,8 @@ Module statistics
                    prsunt,nstats,tenunt,boltz,engunit,eu_ev,eu_kcpm,&
                    eu_kjpm,mxatyp,statis,pi
 
-  Use comms,   Only : comms_type,gsum,Spread_tag,wp_mpi,gtime,gmax,gsend,gwait
+  Use comms,   Only : comms_type,gsum,Spread_tag,wp_mpi,gtime,gmax,gsend, &
+                      gwait,girecv
   Use site,    Only : ntpatm,numtypnf,unqatm,dens
   Use configuration,  Only : cfgname,imcon,cell,volm,natms,ltype, &
                              xxx,yyy,zzz,vxx,vyy,vzz,ixyz,lsa,lsi,ltg
@@ -1213,13 +1214,13 @@ Subroutine statistics_connect_spread(mdir,comm)
 
 ! exchange information on buffer sizes
 
-  Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,Spread_tag,comm%comm,comm%request,comm%ierr)
+  Call girecv(comm,jmove,kdnode,Spread_tag)
   Call gsend(comm,imove,jdnode,Spread_tag)
   Call gwait(comm)
 
 ! exchange buffers between nodes (this is a MUST)
 
-  Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,Spread_tag,comm%comm,comm%request,comm%ierr)
+  Call girecv(comm,buffer(iblock+1:iblock+jmove),kdnode,Spread_tag)
   Call gsend(comm,buffer(1:imove),jdnode,Spread_tag)
   Call gwait(comm)
 
