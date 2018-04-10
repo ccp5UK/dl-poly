@@ -12,7 +12,7 @@ Module configuration
 
   Use kinds, Only : wp,li
   Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
-                    gmax,gmin,gsend,grecv
+                    gmax,gmin,gsend,grecv,gscatter
   Use site
 
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
@@ -1770,8 +1770,7 @@ Subroutine read_config_parallel                 &
                  End Do
               End If
 
-              Call MPI_SCATTER( n_held, 1, MPI_INTEGER, n_loc, 1, MPI_INTEGER, this_base_proc, &
-                   comm%comm, comm%ierr )
+              Call gscatter(comm,n_held(:),n_loc,this_base_proc)
 
               Call MPI_SCATTERV( chbuf_scat, 8 * n_held, 8 * where_buff, MPI_CHARACTER, &
                                  chbuf     , 8 * n_loc ,                 MPI_CHARACTER, &
