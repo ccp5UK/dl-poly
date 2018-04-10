@@ -14,7 +14,7 @@ Module defects
                                 nrefdt,config,half_minus, zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
                                 DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
-                                gsend,grecv,gwait,girecv
+                                gsend,grecv,gwait,girecv,gscatter
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use core_shell,        Only : ntshl,listshl
@@ -2295,8 +2295,7 @@ Subroutine defects_reference_read_parallel      &
               End Do
            End If
 
-           Call MPI_SCATTER( n_held, 1, MPI_INTEGER, n_loc, 1, MPI_INTEGER, this_base_proc, &
-                comm%comm, comm%ierr )
+           Call gscatter(comm,n_held(:),n_loc,this_base_proc)
 
            Call MPI_SCATTERV( chbuf_scat, 8 * n_held, 8 * where_buff, MPI_CHARACTER, &
                               chbuf     , 8 * n_loc ,                 MPI_CHARACTER, &
