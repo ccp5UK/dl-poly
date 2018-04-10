@@ -12,7 +12,7 @@ Module dpd
   Use kinds, Only : wp
   
   Use comms,        Only : comms_type,gsum,gcheck,gmax,DpdVExp_tag,wp_mpi, &
-                           gsend,gwait
+                           gsend,gwait,girecv
   Use setup,        Only : nrite,mxlist,mxatdm,mxatms,mxbfxp,mxvdw
   Use configuration,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
                                   list,weight,xxx,yyy,zzz,vxx,vyy,vzz, &
@@ -671,7 +671,7 @@ Contains
     ! exchange information on buffer sizes
 
     If (comm%mxnode > 1) Then
-      Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,DpdVExp_tag,comm%comm,comm%request,comm%ierr)
+      Call girecv(comm,jmove,kdnode,DpdVExp_tag)
       Call gsend(comm,imove,jdnode,DpdVExp_tag)
       Call gwait(comm)
     Else
@@ -692,7 +692,9 @@ Contains
     ! exchange buffers between nodes (this is a MUST)
 
     If (comm%mxnode > 1) Then
-      If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,DpdVExp_tag,comm%comm,comm%request,comm%ierr)
+      If (jmove > 0) Then
+        Call girecv(comm,buffer(iblock+1:iblock+jmove),kdnode,DpdVExp_tag)
+      End If
       If (imove > 0) Then
         Call gsend(comm,buffer(1:imove),jdnode,DpdVExp_tag)
       End If

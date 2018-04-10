@@ -14,7 +14,7 @@ Module defects
                                 nrefdt,config,half_minus, zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
                                 DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
-                                gsend,grecv,gwait
+                                gsend,grecv,gwait,girecv
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use core_shell,        Only : ntshl,listshl
@@ -1291,7 +1291,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 ! exchange information on buffer sizes
 
   If (comm%mxnode > 1) Then
-     Call MPI_IRECV(jmove,1,MPI_INTEGER,kdnode,DefExport_tag,comm%comm,comm%request,comm%ierr)
+     Call girecv(comm,jmove,kdnode,DefExport_tag)
      Call gsend(comm,imove,jdnode,DefExport_tag)
      Call gwait(comm)
   Else
@@ -1311,14 +1311,14 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 
 ! exchange buffers between nodes (this is a MUST)
 
-  If (comm%mxnode > 1) Then
-     If (jmove > 0) Call MPI_IRECV(buffer(iblock+1),jmove,wp_mpi,kdnode,DefExport_tag,comm%comm,comm%request,comm%ierr)
-     If (imove > 0) Then
-       Call gsend(comm,buffer(1:imove),jdnode,DefExport_tag)
-     End If
-     If (jmove > 0) Then
-       Call gwait(comm)
-     End If
+  If (jmove > 0) Then
+    Call girecv(comm,buffer(iblock+1:iblock+jmove),kdnode,DefExport_tag)
+  End If
+  If (imove > 0) Then
+    Call gsend(comm,buffer(1:imove),jdnode,DefExport_tag)
+  End If
+  If (jmove > 0) Then
+    Call gwait(comm)
   End If
 
 ! load transferred data
