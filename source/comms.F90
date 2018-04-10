@@ -144,6 +144,7 @@ Module comms
     Module Procedure girecv_integer_vector
     Module Procedure girecv_real_scalar
     Module Procedure girecv_real_vector
+    Module Procedure girecv_real_array3
     Module Procedure girecv_logical_scalar
     Module Procedure girecv_logical_vector
     Module Procedure girecv_character_scalar

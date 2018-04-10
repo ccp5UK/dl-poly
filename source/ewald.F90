@@ -10,7 +10,8 @@ Module ewald
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,           Only : wp
-  Use comms,           Only : ExchgGrid_tag, comms_type,wp_mpi,gsend,gwait
+  Use comms,           Only : ExchgGrid_tag,comms_type,wp_mpi,gsend,gwait, &
+                              girecv
   Use setup,           Only : mxatms,nrite,mxspl,mxspl2,twopi,kmaxa,kmaxb,kmaxc
   Use configuration,   Only : natms,fxx,fyy,fzz,imcon
   Use domains,         Only : map
@@ -283,21 +284,18 @@ Contains
   ! +X direction face - negative halo
 
        Call exchange_grid_halo( map(1),                     map(2), &
-            mxspl2,                      ly,                          lz, &
             ixt-mxspl2+1, ixt  ,         iyb, iyt,                    izb, izt, &
             ixdb        , ixb-1,         iyb, iyt,                    izb, izt )
 
   ! +Y direction face (including the +X face extension) - negative halo
 
        Call exchange_grid_halo( map(3),                     map(4), &
-            lx+mxspl2,                   mxspl2,                      lz, &
             ixdb, ixt,                   iyt-mxspl2+1, iyt  ,         izb, izt, &
             ixdb, ixt,                   iydb        , iyb-1,         izb, izt )
 
   ! +Z direction face (including the +Y+X faces extensions) - negative halo
 
        Call exchange_grid_halo( map(5),                     map(6), &
-            lx+mxspl2,                   ly+mxspl2,                   mxspl2, &
             ixdb, ixt,                   iydb, iyt,                   izt-mxspl2+1, izt, &
             ixdb, ixt,                   iydb, iyt,                   izdb        , izb-1 )
 
@@ -306,7 +304,6 @@ Contains
   ! +X direction face - negative halo
 
        Call exchange_grid_halo( map(1),                     map(2), &
-            mxspl2,                      ly,                          lz, &
             ixt-mxspl2+1, ixt  ,         iyb, iyt,                    izb, izt, &
             ixdb        , ixb-1,         iyb, iyt,                    izb, izt )
   !          (ixt)-(ixt-mxspl2+1)+1=mxspl2
@@ -315,7 +312,6 @@ Contains
   ! -X direction face - positive halo
 
        Call exchange_grid_halo( map(2),                     map(1), &
-            delspl,                      ly,                          lz, &
             ixb          , ixb+delspl-1, iyb, iyt,                    izb, izt, &
             ixdt-delspl+1, ixdt        , iyb, iyt,                    izb, izt )
   !          (ixb+delspl-1)-(ixb)+1=delspl
@@ -325,28 +321,24 @@ Contains
   ! +Y direction face (including the +&-X faces extensions) - negative halo
 
        Call exchange_grid_halo( map(3),                     map(4), &
-            lx+mxspl2+delspl,            mxspl2,                      lz, &
             ixdb, ixdt,                  iyt-mxspl2+1, iyt  ,         izb, izt, &
             ixdb, ixdt,                  iydb        , iyb-1,         izb, izt )
 
   ! -Y direction face (including the +&-X faces extensions) - positive halo
 
        Call exchange_grid_halo( map(4),                     map(3), &
-            lx+mxspl2+delspl,            delspl,                      lz, &
             ixdb, ixdt,                  iyb          , iyb+delspl-1, izb, izt, &
             ixdb, ixdt,                  iydt-delspl+1, iydt        , izb, izt )
 
   ! +Z direction face (including the +&-Y+&-X faces extensions) - negative halo
 
        Call exchange_grid_halo( map(5),                     map(6), &
-            lx+mxspl2+delspl,            ly+mxspl2+delspl,            mxspl2, &
             ixdb, ixdt,                  iydb, iydt,                  izt-mxspl2+1, izt, &
             ixdb, ixdt,                  iydb, iydt,                  izdb        , izb-1 )
 
   ! -Z direction face (including the +&-Y+&-X faces extensions) - positive halo
 
        Call exchange_grid_halo( map(6),                     map(5), &
-            lx+mxspl2+delspl,            ly+mxspl2+delspl,            delspl, &
             ixdb, ixdt,                  iydb, iydt,                  izb          , izb+delspl-1, &
             ixdb, ixdt,                  iydb, iydt,                  izdt-delspl+1, izdt         )
 
@@ -355,7 +347,6 @@ Contains
   Contains
 
     Subroutine exchange_grid_halo(     from,       to,           &
-                                   lx,       ly,       lz,       &
                                    xlb, xlt, ylb, ylt, zlb, zlt, &
                                    xdb, xdt, ydb, ydt, zdb, zdt )
 
@@ -370,18 +361,12 @@ Contains
   !
   ! Note: Amount of data sent M-U-S-T be the same as that received!!!
   !
-  ! If properly written LX, LY, LZ should not be there, but Ian finds
-  ! this kind of thing confusing so they are included to make his life
-  ! easy.  They are the dimensions of bits of the arrays, i.e.
-  ! LX = XDT - XDB + 1 = XLT - XLB + 1, etc. for LY, LZ.
-
   ! copyright - daresbury laboratory
   ! author    - i.j.bush & i.t.todorov june 2014
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       Integer, Intent( In    ) :: from, to
-      Integer, Intent( In    ) :: lx, ly, lz
       Integer, Intent( In    ) :: xlb, ylb, zlb
       Integer, Intent( In    ) :: xlt, ylt, zlt
       Integer, Intent( In    ) :: xdb, ydb, zdb
@@ -390,7 +375,6 @@ Contains
       Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: send_buffer
       Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: recv_buffer
 
-      Integer :: length
       Integer :: fail(1:2)
 
       Character ( Len = 256 )  ::  message
@@ -420,14 +404,10 @@ Contains
 
          send_buffer = qqc_domain( xlb:xlt, ylb:ylt, zlb:zlt )
 
-  ! Length of message to send is the same as that to receive
-
-         length = lx * ly * lz
-
   ! Exchange the data
 
-         Call MPI_IRECV( recv_buffer, length, wp_mpi, from, ExchgGrid_tag, comm%comm, comm%request, comm%ierr )
-         Call gsend(comm,send_buffer,to,ExchgGrid_tag)
+         Call girecv(comm,recv_buffer(:,:,:),from,ExchgGrid_tag)
+         Call gsend(comm,send_buffer(:,:,:),to,ExchgGrid_tag)
          Call gwait(comm)
 
   ! Copy the received data into the domain halo
