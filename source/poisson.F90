@@ -1,7 +1,8 @@
 Module poisson
 
   Use kinds,           Only : wp
-  Use comms,           Only : gsum,comms_type,wp_mpi,ExchgGrid_tag,gsend,gwait
+  Use comms,           Only : gsum,comms_type,wp_mpi,ExchgGrid_tag,gsend, &
+                              gwait,girecv
   Use domains
   Use setup,           Only : fourpi,r4pie0,nrite,            &
                               kmaxa,kmaxb,kmaxc,mxspl,mxspl1, &
@@ -535,54 +536,46 @@ Contains
 ! +X direction face - negative halo
 
     Call exchange_grid_halo( lmap(1),                     lmap(2), &
-         xtra+1,                      ly,                          lz, &
          lx-(xtra+1)+1, lx  ,         1,              ly,            1,              lz, &
          1-(xtra+1),    1-1,          1,              ly,            1,              lz,comm)
 
 ! -X direction face - positive halo
 
     Call exchange_grid_halo( lmap(2),                     lmap(1), &
-         xtra+1,                      ly,                          lz, &
          1,             1+(xtra+1)-1, 1,              ly,            1,              lz, &
          lx+1,          lx+(xtra+1),  1,              ly,            1,              lz,comm)
 
 ! +Y direction face (including the +&-X faces extensions) - negative halo
 
     Call exchange_grid_halo( lmap(3),                     lmap(4), &
-         lx+2*(xtra+1),              xtra+1,                       lz, &
          1-(xtra+1),    lx+(xtra+1),  ly-(xtra+1)+1, ly,             1,              lz, &
          1-(xtra+1),    lx+(xtra+1),  1-(xtra+1)  ,  1-1,            1,              lz,comm)
 
 ! -Y direction face (including the +&-X faces extensions) - positive halo
 
     Call exchange_grid_halo( lmap(4),                     lmap(3), &
-         lx+2*(xtra+1),              xtra+1,                       lz, &
          1-(xtra+1),    lx+(xtra+1),  1,              1+(xtra+1)-1,  1, lz, &
          1-(xtra+1),    lx+(xtra+1),  ly+1,           ly+(xtra+1),   1, lz,comm)
 
 ! +Z direction face (including the +&-Y+&-X faces extensions) - negative halo
 
     Call exchange_grid_halo( lmap(5),                     lmap(6), &
-         lx+2*(xtra+1),              ly+2*(xtra+1),              xtra+1, &
          1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  lz-(xtra+1)+1, lz, &
          1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  1-(xtra+1)  ,  1-1,comm)
 
 ! -Z direction face (including the +&-Y+&-X faces extensions) - positive halo
 
     Call exchange_grid_halo( lmap(6),                     lmap(5), &
-         lx+2*(xtra+1),              ly+2*(xtra+1),              xtra+1, &
          1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  1,              1+(xtra+1)-1, &
          1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  lz+1,           lz+(xtra+1),comm)
 
   Contains
 
     Subroutine exchange_grid_halo(     from,       to,           &
-                                   lx,       ly,       lz,       &
                                    xlb, xlt, ylb, ylt, zlb, zlt, &
                                    xdb, xdt, ydb, ydt, zdb, zdt,comm )
 
       Integer, Intent( In    ) :: from, to
-      Integer, Intent( In    ) :: lx, ly, lz
       Integer, Intent( In    ) :: xlb, ylb, zlb
       Integer, Intent( In    ) :: xlt, ylt, zlt
       Integer, Intent( In    ) :: xdb, ydb, zdb
@@ -604,10 +597,6 @@ Contains
 
       If ( from /= me ) Then
 
-! Length of message to send is the same as that to receive
-
-         length = lx * ly * lz
-
 ! Allocate send and receive buffers (of the same size!!!)
 ! so all can be sent and received as one message!!!
 
@@ -618,7 +607,7 @@ Contains
                Call error(0,message)
             End If
 
-            Call MPI_IRECV( recv_buffer, length, wp_mpi, from, ExchgGrid_tag, comm%comm, comm%request, comm%ierr )
+            Call girecv(comm,recv_buffer(:,:,:),from,ExchgGrid_tag)
          End If
 
          If (to   > -1) Then
@@ -632,7 +621,7 @@ Contains
 
             send_buffer = vec( xlb:xlt, ylb:ylt, zlb:zlt )
 
-            Call gsend(comm,send_buffer,to,ExchgGrid_tag)
+            Call gsend(comm,send_buffer(:,:,:),to,ExchgGrid_tag)
          End If
 
 ! Exchange the data
