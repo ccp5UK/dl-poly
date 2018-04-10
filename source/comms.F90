@@ -76,7 +76,7 @@ Module comms
 
   Public :: init_comms, exit_comms, abort_comms, &
             gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv, girecv, &
-            gscatter
+            gscatter, gscatterv
 
   Interface gcheck
     Module Procedure gcheck_vector
@@ -158,6 +158,12 @@ Module comms
     Module Procedure gscatter_real_to_scalar
     Module Procedure gscatter_real_to_vector
   End Interface gscatter
+
+  Interface gscatterv
+    Module Procedure gscatterv_integer
+    Module Procedure gscatterv_real
+    Module Procedure gscatterv_character
+  End Interface gscatterv
 
 Contains
 
@@ -1680,4 +1686,109 @@ Contains
     Call MPI_SCATTER(sendbuf(s_l:s_u),scount,wp_mpi, &
                      recvbuf(r_l:r_u),r_s,wp_mpi,root,comm%comm,comm%ierr)
   End Subroutine gscatter_real_to_vector
+
+  Subroutine gscatterv_integer(comm,sendbuf,scounts,disps,recvbuf,root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 scatter an integer buffer with a defined displacement per
+    ! node
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: sendbuf(:)
+    Integer,            Intent( In    ) :: scounts(:)
+    Integer,            Intent( In    ) :: disps(:)
+    Integer,            Intent(   Out ) :: recvbuf(:)
+    Integer,            Intent( In    ) :: root
+
+    Integer :: s_l,s_u,r_l,r_u,r_s
+
+    If (comm%mxnode == 1) Return
+
+    s_l = Lbound(sendbuf, Dim = 1)
+    s_u = Ubound(sendbuf, Dim = 1)
+
+    r_l = Lbound(recvbuf, Dim = 1)
+    r_u = Ubound(recvbuf, Dim = 1)
+    r_s = Size(recvbuf, Dim = 1)
+
+    Call MPI_SCATTERV(sendbuf(s_l:s_u),scounts(:),disps(:),MPI_INTEGER, &
+                      recvbuf(r_l:r_u),r_s,MPI_INTEGER, &
+                      root,comm%request,comm%ierr)
+  End Subroutine gscatterv_integer
+
+  Subroutine gscatterv_real(comm,sendbuf,scounts,disps,recvbuf,root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 scatter a real buffer with a defined displacement per
+    ! node
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),  Intent( In    ) :: sendbuf(:)
+    Integer,            Intent( In    ) :: scounts(:)
+    Integer,            Intent( In    ) :: disps(:)
+    Real( Kind = wp),   Intent(   Out ) :: recvbuf(:)
+    Integer,            Intent( In    ) :: root
+
+    Integer :: s_l,s_u,r_l,r_u,r_s
+
+    If (comm%mxnode == 1) Return
+
+    s_l = Lbound(sendbuf, Dim = 1)
+    s_u = Ubound(sendbuf, Dim = 1)
+
+    r_l = Lbound(recvbuf, Dim = 1)
+    r_u = Ubound(recvbuf, Dim = 1)
+    r_s = Size(recvbuf, Dim = 1)
+
+    Call MPI_SCATTERV(sendbuf(s_l:s_u),scounts(:),disps(:),wp_mpi, &
+                      recvbuf(r_l:r_u),r_s,wp_mpi, &
+                      root,comm%request,comm%ierr)
+  End Subroutine gscatterv_real
+
+  Subroutine gscatterv_character(comm,sendbuf,scounts,disps,recvbuf,root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 scatter a real buffer with a defined displacement per
+    ! node
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ),   Intent( InOut ) :: comm
+    Character( Len = * ), Intent( In    ) :: sendbuf(:)
+    Integer,              Intent( In    ) :: scounts(:)
+    Integer,              Intent( In    ) :: disps(:)
+    Character( Len = * ), Intent(   Out ) :: recvbuf(:)
+    Integer,              Intent( In    ) :: root
+
+    Integer :: s_l,s_u,r_l,r_u,r_s
+    Integer :: s_str,r_str
+
+    If (comm%mxnode == 1) Return
+
+    s_l = Lbound(sendbuf, Dim = 1)
+    s_u = Ubound(sendbuf, Dim = 1)
+    s_str = Len(sendbuf(s_l))
+
+    r_l = Lbound(recvbuf, Dim = 1)
+    r_u = Ubound(recvbuf, Dim = 1)
+    r_s = Size(recvbuf, Dim = 1)
+    r_str = Len(recvbuf(s_l))
+
+    Call MPI_SCATTERV(sendbuf(s_l:s_u),scounts(:)*s_str,disps(:)*s_str,MPI_CHARACTER, &
+                      recvbuf(r_l:r_u),r_s*r_str,MPI_CHARACTER, &
+                      root,comm%request,comm%ierr)
+  End Subroutine gscatterv_character
 End Module comms
