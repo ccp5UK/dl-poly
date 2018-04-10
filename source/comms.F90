@@ -75,7 +75,7 @@ Module comms
   End Type
 
   Public :: init_comms, exit_comms, abort_comms, &
-            gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv
+            gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv, girecv
 
   Interface gcheck
     Module Procedure gcheck_vector
@@ -138,6 +138,17 @@ Module comms
     Module Procedure grecv_character_scalar
     Module Procedure grecv_character_vector
   End Interface grecv
+
+  Interface girecv
+    Module Procedure girecv_integer_scalar
+    Module Procedure girecv_integer_vector
+    Module Procedure girecv_real_scalar
+    Module Procedure girecv_real_vector
+    Module Procedure girecv_logical_scalar
+    Module Procedure girecv_logical_vector
+    Module Procedure girecv_character_scalar
+    Module Procedure girecv_character_vector
+  End Interface girecv
 
 Contains
 
@@ -1341,4 +1352,209 @@ Contains
 
     Call MPI_RECV(vec(n_l:n_u),n_s,MPI_CHARACTER,source,tag,comm%comm,comm%status,comm%ierr)
   End Subroutine grecv_character_vector
+
+  Subroutine girecv_integer_scalar(comm,s,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive an integer scalar (non-blocking)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent(   Out ) :: s
+    Integer,            Intent( In    ) :: source,tag
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_IRECV(s,1,MPI_INTEGER,source,tag,comm%comm,comm%request,comm%ierr)
+  End Subroutine girecv_integer_scalar
+
+  Subroutine girecv_integer_vector(comm,vec,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive an integer vector (non-blocking)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( InOut ) :: vec(:)
+    Integer,            Intent( In    ) :: source,tag
+
+    Integer                             :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+    n_l = Lbound(vec, Dim = 1)
+    n_u = Ubound(vec, Dim = 1)
+    n_s = Size(vec, Dim = 1)
+
+    Call MPI_IRECV(vec(n_l:n_u),n_s,MPI_INTEGER,source,tag,comm%comm,comm%request,comm%ierr)
+  End Subroutine girecv_integer_vector
+
+  Subroutine girecv_real_scalar(comm,s,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a real scalar (non-blocking)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp),   Intent(   Out ) :: s
+    Integer,            Intent( In    ) :: source,tag
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_IRECV(s,1,wp_mpi,source,tag,comm%comm,comm%request,comm%ierr)
+  End Subroutine girecv_real_scalar
+
+  Subroutine girecv_real_vector(comm,vec,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a real vector (non-blocking)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),  Intent( InOut ) :: vec(:)
+    Integer,            Intent( In    ) :: source,tag
+
+    Integer                             :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+    n_l = Lbound(vec, Dim = 1)
+    n_u = Ubound(vec, Dim = 1)
+    n_s = Size(vec, Dim = 1)
+
+    Call MPI_IRECV(vec(n_l:n_u),n_s,wp_mpi,source,tag,comm%comm,comm%request,comm%ierr)
+  End Subroutine girecv_real_vector
+
+  Subroutine girecv_real_array3(comm,arr,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a real three dimensional array (non-blocking)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),  Intent( InOut ) :: arr(:,:,:)
+    Integer,            Intent( In    ) :: source,tag
+
+    Integer                             :: i
+    Integer, Dimension(3)               :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+    Do i = 1, 3
+      n_l(i) = Lbound(arr, Dim = i)
+      n_u(i) = Ubound(arr, Dim = i)
+      n_s(i) = Size(arr, Dim = i)
+    End Do
+
+    Call MPI_IRECV(arr(n_l(1):n_u(1),n_l(2):n_u(2),n_l(3):n_u(3)),Product(n_s(1:3)), &
+                  wp_mpi,source,tag,comm%comm,comm%request,comm%ierr)
+  End Subroutine girecv_real_array3
+
+  Subroutine girecv_logical_scalar(comm,s,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a logical scalar (non-blocking)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Logical,            Intent(   Out ) :: s
+    Integer,            Intent( In    ) :: source,tag
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_IRECV(s,1,MPI_LOGICAL,source,tag,comm%comm,comm%request,comm%ierr)
+  End Subroutine girecv_logical_scalar
+
+  Subroutine girecv_logical_vector(comm,vec,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a logical vector (non-blocking)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Logical,            Intent( InOut ) :: vec(:)
+    Integer,            Intent( In    ) :: source,tag
+
+    Integer                             :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+    n_l = Lbound(vec, Dim = 1)
+    n_u = Ubound(vec, Dim = 1)
+    n_s = Size(vec, Dim = 1)
+
+    Call MPI_IRECV(vec(n_l:n_u),n_s,MPI_LOGICAL,source,tag,comm%comm,comm%request,comm%ierr)
+  End Subroutine girecv_logical_vector
+
+  Subroutine girecv_character_scalar(comm,s,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a character string (non-blocking)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ),   Intent( InOut ) :: comm
+    Character( Len = * ), Intent( InOut ) :: s
+    Integer,              Intent( In    ) :: source,tag
+
+    Integer :: n_s
+
+    If (comm%mxnode == 1) Return
+
+    n_s = Len(s)
+
+    Call MPI_IRECV(s,n_s,MPI_CHARACTER,source,tag,comm%comm,comm%request,comm%ierr)
+  End Subroutine girecv_character_scalar
+
+  Subroutine girecv_character_vector(comm,vec,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a character string array (non-blocking)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ),   Intent( InOut ) :: comm
+    Character( Len = * ), Intent( InOut ) :: vec(:)
+    Integer,              Intent( In    ) :: source,tag
+
+    Integer :: n_l,n_u,n_s
+
+    If (comm%mxnode == 1) Return
+
+    n_l = Lbound(vec, Dim = 1)
+    n_u = Ubound(vec, Dim = 1)
+    n_s = Size(vec, Dim = 1)*Len(vec(n_l))
+
+    Call MPI_IRECV(vec(n_l:n_u),n_s,MPI_CHARACTER,source,tag,comm%comm,comm%request,comm%ierr)
+  End Subroutine girecv_character_vector
 End Module comms
