@@ -1312,7 +1312,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 ! exchange buffers between nodes (this is a MUST)
 
   If (jmove > 0) Then
-    Call girecv(comm,buffer(iblock+1:jmove+1),kdnode,DefExport_tag)
+    Call girecv(comm,buffer(iblock+1:iblock+jmove),kdnode,DefExport_tag)
   End If
   If (imove > 0) Then
     Call gsend(comm,buffer(1:imove),jdnode,DefExport_tag)
