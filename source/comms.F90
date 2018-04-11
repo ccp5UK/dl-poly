@@ -76,7 +76,7 @@ Module comms
 
   Public :: init_comms, exit_comms, abort_comms, &
             gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv, girecv, &
-            gscatter, gscatterv
+            gscatter, gscatterv, gscatter_columns
 
   Interface gcheck
     Module Procedure gcheck_vector
@@ -164,6 +164,10 @@ Module comms
     Module Procedure gscatterv_real
     Module Procedure gscatterv_character
   End Interface gscatterv
+
+  Interface gscatter_columns
+    Module Procedure gscatter_columns_real
+  End Interface gscatter_columns
 
 Contains
 
@@ -1791,4 +1795,46 @@ Contains
                       recvbuf(r_l:r_u),r_s*r_str,MPI_CHARACTER, &
                       root,comm%request,comm%ierr)
   End Subroutine gscatterv_character
+
+  Subroutine gscatter_columns_real(comm,sendbuf,scounts,disps,recvbuf,root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 scatter the columns of a real two dimensional array
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),  Intent( In    ) :: sendbuf(:,:)
+    Integer,            Intent( In    ) :: scounts(:)
+    Integer,            Intent( In    ) :: disps(:)
+    Real( Kind = wp),   Intent(   Out ) :: recvbuf(:,:)
+    Integer,            Intent( In    ) :: root
+
+    Integer, Dimension(2) :: s_l,s_u,r_l,r_u
+    Integer               :: column_size,r_s
+    Integer               :: i
+
+    If (comm%mxnode == 1) Return
+
+    Do i = 1, 2
+      s_l(i) = Lbound(sendbuf, Dim = i)
+      s_u(i) = Ubound(sendbuf, Dim = i)
+
+      r_l(i) = Lbound(recvbuf, Dim = i)
+      r_u(i) = Ubound(recvbuf, Dim = i)
+    End Do
+    column_size = Size(sendbuf, Dim = 1)
+    r_s = Size(recvbuf, Dim = 2)
+
+    ! This implimentation relies on arrays being column major as defined in the
+    ! Fortran standard
+    Call MPI_SCATTERV(sendbuf(s_l(1):s_u(1),s_l(2):s_u(2)), &
+                      scounts(:)*column_size,disps(:)*column_size,wp_mpi, &
+                      recvbuf(r_l(1):r_u(1),r_l(2):r_l(2)), &
+                      r_s*column_size,wp_mpi, &
+                      root,comm%request,comm%ierr)
+  End Subroutine gscatter_columns_real
 End Module comms
