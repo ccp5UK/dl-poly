@@ -1814,7 +1814,7 @@ Contains
     Integer,            Intent( In    ) :: root
 
     Integer, Dimension(2) :: s_l,s_u,r_l,r_u
-    Integer               :: column_size,r_s
+    Integer               :: s_c,r_c,r_s
     Integer               :: i
 
     If (comm%mxnode == 1) Return
@@ -1826,15 +1826,16 @@ Contains
       r_l(i) = Lbound(recvbuf, Dim = i)
       r_u(i) = Ubound(recvbuf, Dim = i)
     End Do
-    column_size = Size(sendbuf, Dim = 1)
+    s_c = Size(sendbuf, Dim = 1)
+    r_c = Size(recvbuf, Dim = 1)
     r_s = Size(recvbuf, Dim = 2)
 
     ! This implimentation relies on arrays being column major as defined in the
     ! Fortran standard
     Call MPI_SCATTERV(sendbuf(s_l(1):s_u(1),s_l(2):s_u(2)), &
-                      scounts(:)*column_size,disps(:)*column_size,wp_mpi, &
+                      scounts(:)*s_c,disps(:)*s_c,wp_mpi, &
                       recvbuf(r_l(1):r_u(1),r_l(2):r_l(2)), &
-                      r_s*column_size,wp_mpi, &
+                      r_s*r_c,wp_mpi, &
                       root,comm%comm,comm%ierr)
   End Subroutine gscatter_columns_real
 End Module comms
