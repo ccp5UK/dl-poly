@@ -1722,7 +1722,7 @@ Contains
 
     Call MPI_SCATTERV(sendbuf(s_l:s_u),scounts(:),disps(:),MPI_INTEGER, &
                       recvbuf(r_l:r_u),r_s,MPI_INTEGER, &
-                      root,comm%request,comm%ierr)
+                      root,comm%comm,comm%ierr)
   End Subroutine gscatterv_integer
 
   Subroutine gscatterv_real(comm,sendbuf,scounts,disps,recvbuf,root)
@@ -1756,7 +1756,7 @@ Contains
 
     Call MPI_SCATTERV(sendbuf(s_l:s_u),scounts(:),disps(:),wp_mpi, &
                       recvbuf(r_l:r_u),r_s,wp_mpi, &
-                      root,comm%request,comm%ierr)
+                      root,comm%comm,comm%ierr)
   End Subroutine gscatterv_real
 
   Subroutine gscatterv_character(comm,sendbuf,scounts,disps,recvbuf,root)
@@ -1793,7 +1793,7 @@ Contains
 
     Call MPI_SCATTERV(sendbuf(s_l:s_u),scounts(:)*s_str,disps(:)*s_str,MPI_CHARACTER, &
                       recvbuf(r_l:r_u),r_s*r_str,MPI_CHARACTER, &
-                      root,comm%request,comm%ierr)
+                      root,comm%comm,comm%ierr)
   End Subroutine gscatterv_character
 
   Subroutine gscatter_columns_real(comm,sendbuf,scounts,disps,recvbuf,root)
@@ -1835,6 +1835,6 @@ Contains
                       scounts(:)*column_size,disps(:)*column_size,wp_mpi, &
                       recvbuf(r_l(1):r_u(1),r_l(2):r_l(2)), &
                       r_s*column_size,wp_mpi, &
-                      root,comm%request,comm%ierr)
+                      root,comm%comm,comm%ierr)
   End Subroutine gscatter_columns_real
 End Module comms
