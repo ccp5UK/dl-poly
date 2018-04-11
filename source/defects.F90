@@ -14,7 +14,8 @@ Module defects
                                 nrefdt,config,half_minus, zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
                                 DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
-                                gsend,grecv,gwait,girecv,gscatter
+                                gsend,grecv,gwait,girecv,gscatter,gscatterv, &
+                                gscatter_columns
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use core_shell,        Only : ntshl,listshl
@@ -2297,17 +2298,14 @@ Subroutine defects_reference_read_parallel      &
 
            Call gscatter(comm,n_held(:),n_loc,this_base_proc)
 
-           Call MPI_SCATTERV( chbuf_scat, 8 * n_held, 8 * where_buff, MPI_CHARACTER, &
-                              chbuf     , 8 * n_loc ,                 MPI_CHARACTER, &
-                              this_base_proc, comm%comm, comm%ierr )
-
-           Call MPI_SCATTERV( iwrk_scat ,     n_held,     where_buff, MPI_INTEGER, &
-                              iwrk      ,     n_loc ,                 MPI_INTEGER, &
-                              this_base_proc, comm%comm, comm%ierr )
-
-           Call MPI_SCATTERV( scatter_buffer_read, wp_vals_per_at * n_held, wp_vals_per_at * where_buff, wp_mpi, &
-                              scatter_buffer     , wp_vals_per_at * n_loc ,                              wp_mpi, &
-                              this_base_proc, comm%comm, comm%ierr )
+           Call gscatterv(comm,chbuf_scat(:),n_held(:),where_buff(:), &
+                          chbuf(1:n_loc),this_base_proc)
+           Call gscatterv(comm,iwrk_scat(:),n_held(:),where_buff(:), &
+                          iwrk(1:n_loc),this_base_proc)
+           Call gscatter_columns(comm,scatter_buffer_read(:,:),n_held(:), &
+                                 where_buff(:), &
+                                 scatter_buffer(1:wp_vals_per_at,1:n_loc), &
+                                 this_base_proc)
 
 ! Assign atoms to correct domains
 
