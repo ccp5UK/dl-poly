@@ -76,7 +76,7 @@ Module comms
 
   Public :: init_comms, exit_comms, abort_comms, &
             gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv, girecv, &
-            gscatter, gscatterv, gscatter_columns
+            gscatter, gscatterv, gscatter_columns, gallgather, galltoall
 
   Interface gcheck
     Module Procedure gcheck_vector
@@ -173,6 +173,10 @@ Module comms
     Module Procedure gallgather_integer_vector_to_vector
     Module Procedure gallgather_integer_scalar_to_vector
   End Interface gallgather
+
+  Interface galltoall
+    Module Procedure galltoall_integer
+  End Interface galltoall
 
 Contains
 
@@ -1848,7 +1852,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 gather rcount integers from all processes then distributes them
-    ! to all processes. Each process therefore recieves and itentical and
+    ! to all processes. Each process therefore receives and identical and
     ! complete buffer.
     !
     ! copyright - daresbury laboratory
@@ -1883,7 +1887,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 gather rcount integers from all processes then distributes them
-    ! to all processes. Each process therefore recieves and itentical and
+    ! to all processes. Each process therefore receives and identical and
     ! complete buffer.
     !
     ! copyright - daresbury laboratory
@@ -1906,4 +1910,35 @@ Contains
                        recvbuf(r_l:r_u),1,MPI_INTEGER, &
                        comm%comm,comm%ierr)
   End Subroutine gallgather_integer_scalar_to_vector
+
+  Subroutine galltoall_integer(comm,sendbuf,scount,recvbuf)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 all processes send scount integers from sendbuf to each
+    ! processes
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: sendbuf(:)
+    Integer,            Intent( In    ) :: scount
+    Integer,            Intent(   Out ) :: recvbuf(:)
+
+    Integer :: s_l,s_u,r_l,r_u
+
+    If (comm%mxnode == 1) Return
+
+    s_l = Lbound(sendbuf(:), Dim = 1)
+    s_u = Ubound(sendbuf(:), Dim = 1)
+
+    r_l = Lbound(recvbuf(:), Dim = 1 )
+    r_u = Ubound(recvbuf(:), Dim = 1 )
+
+    Call MPI_ALLTOALL(sendbuf(s_l:s_u),scount,MPI_INTEGER, &
+                      recvbuf(r_l:r_u),scount,MPI_INTEGER, &
+                      comm%comm,comm%ierr)
+  End Subroutine galltoall_integer
 End Module comms
