@@ -13,7 +13,7 @@ Module configuration
   Use kinds, Only : wp,li
   Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
                     gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns, &
-                    gallgather
+                    gallgather,galltoall
   Use site
 
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
@@ -582,9 +582,7 @@ Contains
     Allocate ( to_recv( 0:nproc - 1 ), Stat = fail )
     If ( fail /= 0 ) Go To 100
 
-    Call MPI_ALLTOALL( to_send, 1, MPI_INTEGER, &
-                       to_recv, 1, MPI_INTEGER, &
-                       comm%comm, comm%ierr )
+    Call galltoall(comm,to_send(:),1,to_recv(:))
 
     ! Work out the displacements in the sending and receiving arrays
     Allocate ( displs_send( 0:nproc - 1 ), Stat = fail )
