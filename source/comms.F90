@@ -169,6 +169,11 @@ Module comms
     Module Procedure gscatter_columns_real
   End Interface gscatter_columns
 
+  Interface gallgather
+    Module Procedure gallgather_integer_vector_to_vector
+    Module Procedure gallgather_integer_scalar_to_vector
+  End Interface gallgather
+
 Contains
 
   Subroutine init_comms(comm)
@@ -1838,4 +1843,67 @@ Contains
                       r_s*r_c,wp_mpi, &
                       root,comm%comm,comm%ierr)
   End Subroutine gscatter_columns_real
+
+  Subroutine gallgather_integer_vector_to_vector(comm,sendbuf,recvbuf,rcount)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 gather rcount integers from all processes then distributes them
+    ! to all processes. Each process therefore recieves and itentical and
+    ! complete buffer.
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: sendbuf(:)
+    Integer,            Intent(   Out ) :: recvbuf(:)
+    Integer,            Intent( In    ) :: rcount
+
+    Integer :: s_l,s_u,r_l,r_u
+    Integer :: s_s
+
+    If (comm%mxnode == 1) Return
+
+    s_l = Lbound(sendbuf, Dim = 1)
+    s_u = Ubound(sendbuf, Dim = 1)
+
+    r_l = Lbound(recvbuf, Dim = 1)
+    r_u = Ubound(recvbuf, Dim = 1)
+
+    s_s = Size(sendbuf, Dim = 1)
+
+    Call MPI_ALLGATHER(sendbuf(s_l:s_u),s_s,MPI_INTEGER, &
+                       recvbuf(r_l:r_u),rcount,MPI_INTEGER, &
+                       comm%comm,comm%ierr)
+  End Subroutine gallgather_integer_vector_to_vector
+
+  Subroutine gallgather_integer_scalar_to_vector(comm,s,recvbuf)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 gather rcount integers from all processes then distributes them
+    ! to all processes. Each process therefore recieves and itentical and
+    ! complete buffer.
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: s
+    Integer,            Intent(   Out ) :: recvbuf(:)
+
+    Integer :: r_l,r_u
+
+    If (comm%mxnode == 1) Return
+
+    r_l = Lbound(recvbuf, Dim = 1)
+    r_u = Ubound(recvbuf, Dim = 1)
+
+    Call MPI_ALLGATHER(s,1,MPI_INTEGER, &
+                       recvbuf(r_l:r_u),1,MPI_INTEGER, &
+                       comm%comm,comm%ierr)
+  End Subroutine gallgather_integer_scalar_to_vector
 End Module comms
