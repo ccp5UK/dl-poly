@@ -40,28 +40,42 @@ Module comms
 
   ! Message tags
 
-  Integer, Parameter :: Deport_tag    = 1100, &
-                        Export_tag    = 1111, &
-                        Revive_tag    = 1122, &
-                        PassUnit_tag  = 1133, &
-                        UpdShUnit_tag = 1144, &
-                        SysExpand_tag = 1155, &
-                        WriteConf_tag = 1166, &
-                        Traject_tag   = 1177, &
-                        Spread_tag    = 1188, &
-                        DpdVExp_tag   = 1199, &
-                        MetLdExp_tag  = 2200, &
-                        ExpMplRM_tag  = 2211, &
-                        ExchgGrid_tag = 2222, &
-                        DefRWrite_tag = 2233, &
-                        DefExport_tag = 2244, &
-                        DefWrite_tag  = 2255, &
-                        RsdWrite_tag  = 2266, &
-                        MsdWrite_tag  = 2277, &
-                        Grid1_tag     = 3300, &
-                        Grid2_tag     = 3311, &
-                        Grid3_tag     = 3322, &
-                        Grid4_tag     = 3333
+  Integer, Parameter, Public :: Deport_tag    = 1100, &
+                                Export_tag    = 1111, &
+                                Revive_tag    = 1122, &
+                                PassUnit_tag  = 1133, &
+                                UpdShUnit_tag = 1144, &
+                                SysExpand_tag = 1155, &
+                                WriteConf_tag = 1166, &
+                                Traject_tag   = 1177, &
+                                Spread_tag    = 1188, &
+                                DpdVExp_tag   = 1199, &
+                                MetLdExp_tag  = 2200, &
+                                ExpMplRM_tag  = 2211, &
+                                ExchgGrid_tag = 2222, &
+                                DefRWrite_tag = 2233, &
+                                DefExport_tag = 2244, &
+                                DefWrite_tag  = 2255, &
+                                RsdWrite_tag  = 2266, &
+                                MsdWrite_tag  = 2277, &
+                                Grid1_tag     = 3300, &
+                                Grid2_tag     = 3311, &
+                                Grid3_tag     = 3322, &
+                                Grid4_tag     = 3333
+
+  ! MPI operations
+  Integer, Parameter, Public :: op_sum = MPI_SUM, &
+                                op_max = MPI_MAX, &
+                                op_min = MPI_MIN, &
+                                op_prod = MPI_PROD, &
+                                op_land = MPI_LAND, &
+                                op_band = MPI_BAND, &
+                                op_lor = MPI_LOR, &
+                                op_bor = MPI_BOR, &
+                                op_lxor = MPI_LXOR, &
+                                op_bxor = MPI_BXOR, &
+                                op_maxloc = MPI_MAXLOC, &
+                                op_minloc = MPI_MINLOC
 
   Type, Public :: comms_type
     Integer               :: ierr
