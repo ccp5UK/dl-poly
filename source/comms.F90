@@ -90,7 +90,8 @@ Module comms
 
   Public :: init_comms, exit_comms, abort_comms, &
             gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv, girecv, &
-            gscatter, gscatterv, gscatter_columns
+            gscatter, gscatterv, gscatter_columns, gallgather, galltoall, &
+            galltoallv, gallreduce
 
   Interface gcheck
     Module Procedure gcheck_vector
@@ -182,6 +183,24 @@ Module comms
   Interface gscatter_columns
     Module Procedure gscatter_columns_real
   End Interface gscatter_columns
+
+  Interface gallgather
+    Module Procedure gallgather_integer_vector_to_vector
+    Module Procedure gallgather_integer_scalar_to_vector
+  End Interface gallgather
+
+  Interface galltoall
+    Module Procedure galltoall_integer
+  End Interface galltoall
+
+  Interface galltoallv
+    Module Procedure galltoallv_integer
+  End Interface galltoallv
+
+  Interface gallreduce
+    Module Procedure gallreduce_logical_scalar
+    Module Procedure gallreduce_logical_vector
+  End Interface gallreduce
 
 Contains
 
@@ -1852,4 +1871,177 @@ Contains
                       r_s*r_c,wp_mpi, &
                       root,comm%comm,comm%ierr)
   End Subroutine gscatter_columns_real
+
+  Subroutine gallgather_integer_vector_to_vector(comm,sendbuf,recvbuf,rcount)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 gather rcount integers from all processes then distributes them
+    ! to all processes. Each process therefore receives and identical and
+    ! complete buffer.
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: sendbuf(:)
+    Integer,            Intent(   Out ) :: recvbuf(:)
+    Integer,            Intent( In    ) :: rcount
+
+    Integer :: s_l,s_u,r_l,r_u
+    Integer :: s_s
+
+    If (comm%mxnode == 1) Return
+
+    s_l = Lbound(sendbuf, Dim = 1)
+    s_u = Ubound(sendbuf, Dim = 1)
+
+    r_l = Lbound(recvbuf, Dim = 1)
+    r_u = Ubound(recvbuf, Dim = 1)
+
+    s_s = Size(sendbuf, Dim = 1)
+
+    Call MPI_ALLGATHER(sendbuf(s_l:s_u),s_s,MPI_INTEGER, &
+                       recvbuf(r_l:r_u),rcount,MPI_INTEGER, &
+                       comm%comm,comm%ierr)
+  End Subroutine gallgather_integer_vector_to_vector
+
+  Subroutine gallgather_integer_scalar_to_vector(comm,s,recvbuf)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 gather rcount integers from all processes then distributes them
+    ! to all processes. Each process therefore receives and identical and
+    ! complete buffer.
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: s
+    Integer,            Intent(   Out ) :: recvbuf(:)
+
+    Integer :: r_l,r_u
+
+    If (comm%mxnode == 1) Return
+
+    r_l = Lbound(recvbuf, Dim = 1)
+    r_u = Ubound(recvbuf, Dim = 1)
+
+    Call MPI_ALLGATHER(s,1,MPI_INTEGER, &
+                       recvbuf(r_l:r_u),1,MPI_INTEGER, &
+                       comm%comm,comm%ierr)
+  End Subroutine gallgather_integer_scalar_to_vector
+
+  Subroutine galltoall_integer(comm,sendbuf,scount,recvbuf)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 all processes send scount integers from sendbuf to each
+    ! processes
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: sendbuf(:)
+    Integer,            Intent( In    ) :: scount
+    Integer,            Intent(   Out ) :: recvbuf(:)
+
+    Integer :: s_l,s_u,r_l,r_u
+
+    If (comm%mxnode == 1) Return
+
+    s_l = Lbound(sendbuf(:), Dim = 1)
+    s_u = Ubound(sendbuf(:), Dim = 1)
+
+    r_l = Lbound(recvbuf(:), Dim = 1 )
+    r_u = Ubound(recvbuf(:), Dim = 1 )
+
+    Call MPI_ALLTOALL(sendbuf(s_l:s_u),scount,MPI_INTEGER, &
+                      recvbuf(r_l:r_u),scount,MPI_INTEGER, &
+                      comm%comm,comm%ierr)
+  End Subroutine galltoall_integer
+
+  Subroutine galltoallv_integer(comm,sendbuf,scounts,sdisps, &
+                                recvbuf,rcounts,rdisps)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 all processes send and receive different amounts of data from
+    ! all other processes. The amount send and recieved to each process is
+    ! defined by scounts and rcounts respecctively. Displacements are defined by
+    ! sdisps and rdisps.
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: sendbuf(:)
+    Integer,            Intent( In    ) :: scounts(:)
+    Integer,            Intent( In    ) :: sdisps(:)
+    Integer,            Intent(   Out ) :: recvbuf(:)
+    Integer,            Intent( In    ) :: rcounts(:)
+    Integer,            Intent( In    ) :: rdisps(:)
+
+    Integer :: s_l,s_u,r_l,r_u
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_ALLTOALLV(sendbuf(:),scounts(:),sdisps(:),MPI_INTEGER, &
+                       recvbuf(:),rcounts(:),rdisps(:),MPI_INTEGER, &
+                       comm%comm,comm%ierr)
+  End Subroutine galltoallv_integer
+
+  Subroutine gallreduce_logical_scalar(comm,send,recv,op)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 perform a reduction with operation 'op' and share the result
+    ! with all processes
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Logical,            Intent( In    ) :: send
+    Logical,            Intent(   Out ) :: recv
+    Integer,            Intent( In    ) :: op
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_ALLREDUCE(send,recv,1,MPI_LOGICAL,op, &
+                       comm%comm,comm%ierr)
+  End Subroutine gallreduce_logical_scalar
+
+  Subroutine gallreduce_logical_vector(comm,sendbuf,recvbuf,op)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 perform a reduction with operation 'op' and share the result
+    ! with all processes
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Logical,            Intent( In    ) :: sendbuf(:)
+    Logical,            Intent(   Out ) :: recvbuf(:)
+    Integer,            Intent( In    ) :: op
+
+    Integer :: n_s
+
+    If (comm%mxnode == 1) Return
+
+    n_s = size(sendbuf(:), Dim = 1)
+
+    Call MPI_ALLREDUCE(sendbuf(:),recvbuf(:),n_s,MPI_LOGICAL,op, &
+                       comm%comm,comm%ierr)
+  End Subroutine gallreduce_logical_vector
 End Module comms

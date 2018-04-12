@@ -12,7 +12,8 @@ Module configuration
 
   Use kinds, Only : wp,li
   Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
-                    gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns
+                    gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns, &
+                    gallgather,galltoall,galltoallv,gallreduce,op_land
   Use site
 
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
@@ -542,8 +543,7 @@ Contains
 !    all_n_loc( comm%idnode ) = n_loc
 !    Call gsum( all_n_loc( 0:nrpocs - 1 ) )
 !
-    Call MPI_ALLGATHER(     n_loc, 1, MPI_INTEGER, &
-                        all_n_loc, 1, MPI_INTEGER, comm%comm, comm%ierr )
+    Call gallgather(comm,n_loc,all_n_loc(:))
     all_present = ( Sum( all_n_loc ) == n )
     If ( .not. all_present ) Return
 
@@ -582,9 +582,7 @@ Contains
     Allocate ( to_recv( 0:nproc - 1 ), Stat = fail )
     If ( fail /= 0 ) Go To 100
 
-    Call MPI_ALLTOALL( to_send, 1, MPI_INTEGER, &
-                       to_recv, 1, MPI_INTEGER, &
-                       comm%comm, comm%ierr )
+    Call galltoall(comm,to_send(:),1,to_recv(:))
 
     ! Work out the displacements in the sending and receiving arrays
     Allocate ( displs_send( 0:nproc - 1 ), Stat = fail )
@@ -607,9 +605,8 @@ Contains
     Allocate ( reorg_ind( 1:n_loc ), Stat = fail )
     If ( fail /= 0 ) Go To 100
 
-    Call MPI_ALLTOALLV( local_ind, to_send, displs_send, MPI_INTEGER, &
-                        reorg_ind, to_recv, displs_recv, MPI_INTEGER, &
-                        comm%comm, comm%ierr )
+    Call galltoallv(comm,local_ind(:),to_send(:),displs_send(:), &
+                    reorg_ind(:),to_recv(:),displs_recv(:))
 
     ! Sort the reorganized data
     Call shellsort( n_loc, reorg_ind )
@@ -632,7 +629,7 @@ Contains
 
     ! Is everybody happy?
     loc_present = all_present
-    Call MPI_ALLREDUCE( loc_present, all_present, 1, MPI_LOGICAL, MPI_LAND, comm%comm, comm%ierr )
+    Call gallreduce(comm,loc_present,all_present,op_land)
 
     Deallocate ( reorg_ind   , Stat = fail )
     If ( fail /= 0 ) Go To 100
