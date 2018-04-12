@@ -13,7 +13,7 @@ Module configuration
   Use kinds, Only : wp,li
   Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
                     gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns, &
-                    gallgather,galltoall,galltoallv
+                    gallgather,galltoall,galltoallv,gallreduce,op_land
   Use site
 
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
@@ -629,7 +629,7 @@ Contains
 
     ! Is everybody happy?
     loc_present = all_present
-    Call MPI_ALLREDUCE( loc_present, all_present, 1, MPI_LOGICAL, MPI_LAND, comm%comm, comm%ierr )
+    Call gallreduce(comm,loc_present,all_present,op_land)
 
     Deallocate ( reorg_ind   , Stat = fail )
     If ( fail /= 0 ) Go To 100
