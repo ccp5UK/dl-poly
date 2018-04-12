@@ -12,7 +12,8 @@ Module configuration
 
   Use kinds, Only : wp,li
   Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
-                    gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns
+                    gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns, &
+                    gallgather
   Use site
 
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
@@ -542,8 +543,7 @@ Contains
 !    all_n_loc( comm%idnode ) = n_loc
 !    Call gsum( all_n_loc( 0:nrpocs - 1 ) )
 !
-    Call MPI_ALLGATHER(     n_loc, 1, MPI_INTEGER, &
-                        all_n_loc, 1, MPI_INTEGER, comm%comm, comm%ierr )
+    Call gallgather(comm,n_loc,all_n_loc(:))
     all_present = ( Sum( all_n_loc ) == n )
     If ( .not. all_present ) Return
 
