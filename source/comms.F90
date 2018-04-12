@@ -76,7 +76,8 @@ Module comms
 
   Public :: init_comms, exit_comms, abort_comms, &
             gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv, girecv, &
-            gscatter, gscatterv, gscatter_columns, gallgather, galltoall
+            gscatter, gscatterv, gscatter_columns, gallgather, galltoall, &
+            galltoallv
 
   Interface gcheck
     Module Procedure gcheck_vector
@@ -177,6 +178,10 @@ Module comms
   Interface galltoall
     Module Procedure galltoall_integer
   End Interface galltoall
+
+  Interface galltoallv
+    Module Procedure galltoallv_integer
+  End Interface galltoallv
 
 Contains
 
@@ -1941,4 +1946,35 @@ Contains
                       recvbuf(r_l:r_u),scount,MPI_INTEGER, &
                       comm%comm,comm%ierr)
   End Subroutine galltoall_integer
+
+  Subroutine galltoallv_integer(comm,sendbuf,scounts,sdisps, &
+                                recvbuf,rcounts,rdisps)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 all processes send and receive different amounts of data from
+    ! all other processes. The amount send and recieved to each process is
+    ! defined by scounts and rcounts respecctively. Displacements are defined by
+    ! sdisps and rdisps.
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: sendbuf(:)
+    Integer,            Intent( In    ) :: scounts(:)
+    Integer,            Intent( In    ) :: sdisps(:)
+    Integer,            Intent(   Out ) :: recvbuf(:)
+    Integer,            Intent( In    ) :: rcounts(:)
+    Integer,            Intent( In    ) :: rdisps(:)
+
+    Integer :: s_l,s_u,r_l,r_u
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_ALLTOALLV(sendbuf(:),scounts(:),sdisps(:),MPI_INTEGER, &
+                       recvbuf(:),rcounts(:),rdisps(:),MPI_INTEGER, &
+                       comm%comm,comm%ierr)
+  End Subroutine galltoallv_integer
 End Module comms
