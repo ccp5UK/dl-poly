@@ -91,7 +91,7 @@ Module comms
   Public :: init_comms, exit_comms, abort_comms, &
             gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv, girecv, &
             gscatter, gscatterv, gscatter_columns, gallgather, galltoall, &
-            galltoallv
+            galltoallv, gallreduce
 
   Interface gcheck
     Module Procedure gcheck_vector
@@ -196,6 +196,11 @@ Module comms
   Interface galltoallv
     Module Procedure galltoallv_integer
   End Interface galltoallv
+
+  Interface gallreduce
+    Module Procedure gallreduce_logical_scalar
+    Module Procedure gallreduce_logical_vector
+  End Interface gallreduce
 
 Contains
 
@@ -1991,4 +1996,52 @@ Contains
                        recvbuf(:),rcounts(:),rdisps(:),MPI_INTEGER, &
                        comm%comm,comm%ierr)
   End Subroutine galltoallv_integer
+
+  Subroutine gallreduce_logical_scalar(comm,send,recv,op)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 perform a reduction with operation 'op' and share the result
+    ! with all processes
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Logical,            Intent( In    ) :: send
+    Logical,            Intent(   Out ) :: recv
+    Integer,            Intent( In    ) :: op
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_ALLREDUCE(send,recv,1,MPI_LOGICAL,op, &
+                       comm%comm,comm%ierr)
+  End Subroutine gallreduce_logical_scalar
+
+  Subroutine gallreduce_logical_vector(comm,sendbuf,recvbuf,op)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 perform a reduction with operation 'op' and share the result
+    ! with all processes
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.madge april 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Logical,            Intent( In    ) :: sendbuf(:)
+    Logical,            Intent(   Out ) :: recvbuf(:)
+    Integer,            Intent( In    ) :: op
+
+    Integer :: n_s
+
+    If (comm%mxnode == 1) Return
+
+    n_s = size(sendbuf(:), Dim = 1)
+
+    Call MPI_ALLREDUCE(sendbuf(:),recvbuf(:),n_s,MPI_LOGICAL,op, &
+                       comm%comm,comm%ierr)
+  End Subroutine gallreduce_logical_vector
 End Module comms
