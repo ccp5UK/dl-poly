@@ -23,10 +23,18 @@
 
 ! OPERANDS
 
-  Integer, Parameter :: MPI_LAND = 1
-  Integer, Parameter :: MPI_MAX  = 1
-  Integer, Parameter :: MPI_MIN  = 1
-  Integer, Parameter :: MPI_SUM  = 1
+  Integer, Parameter :: MPI_SUM    = 1
+  Integer, Parameter :: MPI_MAX    = 1
+  Integer, Parameter :: MPI_MIN    = 1
+  Integer, Parameter :: MPI_PROD   = 1
+  Integer, Parameter :: MPI_LAND   = 1
+  Integer, Parameter :: MPI_BAND   = 1
+  Integer, Parameter :: MPI_LOR    = 1
+  Integer, Parameter :: MPI_BOR    = 1
+  Integer, Parameter :: MPI_LXOR   = 1
+  Integer, Parameter :: MPI_BXOR   = 1
+  Integer, Parameter :: MPI_MAXLOC = 1
+  Integer, Parameter :: MPI_MINLOC = 1
 
 ! GLOBAL
 
