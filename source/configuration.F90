@@ -13,7 +13,7 @@ Module configuration
   Use kinds, Only : wp,li
   Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
                     gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns, &
-                    gallgather,galltoall
+                    gallgather,galltoall,galltoallv
   Use site
 
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
@@ -605,9 +605,8 @@ Contains
     Allocate ( reorg_ind( 1:n_loc ), Stat = fail )
     If ( fail /= 0 ) Go To 100
 
-    Call MPI_ALLTOALLV( local_ind, to_send, displs_send, MPI_INTEGER, &
-                        reorg_ind, to_recv, displs_recv, MPI_INTEGER, &
-                        comm%comm, comm%ierr )
+    Call galltoallv(comm,local_ind(:),to_send(:),displs_send(:), &
+                    reorg_ind(:),to_recv(:),displs_recv(:))
 
     ! Sort the reorganized data
     Call shellsort( n_loc, reorg_ind )
