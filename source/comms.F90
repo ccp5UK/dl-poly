@@ -83,7 +83,7 @@ Module comms
                                 comm_self = MPI_COMM_SELF, &
                                 comm_null = MPI_COMM_NULL
 
-  Integer, Parameter, Public :: mode_wronly = MPI_MODE_WRONLY                               
+  Integer, Parameter, Public :: mode_wronly = MPI_MODE_WRONLY
 
   Type, Public :: comms_type
     Integer               :: ierr
