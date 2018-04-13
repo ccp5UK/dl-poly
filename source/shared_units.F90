@@ -8,12 +8,6 @@ Module shared_units
   Use configuration,       Only : natms,nlast,lsi,lsa
   Use numerics, Only : local_index,shellsort
   Use errors_warnings, Only : error
-  
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif
 
   Implicit None
 
@@ -25,7 +19,7 @@ Module shared_units
   Public :: tag_legend
 
   Contains
-  
+
   Subroutine pass_shared_units &
            (mx_u,b_l,b_u,nt_u,list_u,mxf_u,leg_u,lshmv,lishp,lashp,comm,&
            q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)

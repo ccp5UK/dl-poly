@@ -13,7 +13,8 @@ Module configuration
   Use kinds, Only : wp,li
   Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
                     gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns, &
-                    gallgather,galltoall,galltoallv,gallreduce,op_land
+                    gallgather,galltoall,galltoallv,gallreduce,op_land, &
+                    offset_kind,comm_self,mode_create,mode_rdonly,mode_wronly
   Use site
 
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
@@ -53,12 +54,6 @@ Module configuration
 
   Use errors_warnings, Only : error,warning,info
   use numerics, Only : shellsort2,invert,dcell,images,shellsort,pbcshift
-
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif
   Implicit None
 
   Character( Len = 72 ), Save :: cfgname = ' ' , &
@@ -707,7 +702,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
   Integer                           :: recsz = 73 ! default record size
   Integer                           :: fh, io_read
-  Integer( Kind = MPI_OFFSET_KIND ) :: top_skip
+  Integer( Kind = offset_kind ) :: top_skip
 
   Real( Kind = wp ),    Dimension( : ), Allocatable :: pda
 
@@ -1102,7 +1097,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
      If (fast) Then
         Call io_set_parameters( user_comm = comm%comm )
         Call io_init( recsz )
-        Call io_open( io_read, comm%comm, fname, MPI_MODE_RDONLY, fh )
+        Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
      Else
         Open(Unit=nconf, File=fname)
      End If
@@ -1111,12 +1106,12 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
      If (io_read /= IO_READ_NETCDF) Then
         If (imcon == 0) Then
-           top_skip = Int(2,MPI_OFFSET_KIND)
+           top_skip = Int(2,offset_kind)
         Else
-           top_skip = Int(5,MPI_OFFSET_KIND)
+           top_skip = Int(5,offset_kind)
         End If
      Else
-        top_skip = Int(1,MPI_OFFSET_KIND) ! This is now the frame = 1
+        top_skip = Int(1,offset_kind) ! This is now the frame = 1
      End If
 
      Call read_config_parallel                  &
@@ -1322,7 +1317,7 @@ Subroutine read_config_parallel                 &
 
   Logical,                           Intent( In    ) :: l_ind,l_str,l_his,fast,l_xtr
   Integer,                           Intent( In    ) :: levcfg,megatm,fh
-  Integer( Kind = MPI_OFFSET_KIND ), Intent( In    ) :: top_skip
+  Integer( Kind = offset_kind ), Intent( In    ) :: top_skip
   Real( Kind = wp ),                 Intent( In    ) :: dvar
   Real( Kind = wp ),                 Intent(   Out ) :: xhi,yhi,zhi
   Type( comms_type ),                Intent( InOut ) :: comm
@@ -1344,7 +1339,7 @@ Subroutine read_config_parallel                 &
 
   Integer                           :: io_read
   Integer                           :: recsz, batsz
-  Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io, n_skip
+  Integer( Kind = offset_kind ) :: rec_mpi_io, n_skip
   Integer                           :: this_rec_buff, recs_to_read
   Integer                           :: n_ats_in_file
 
@@ -1430,8 +1425,8 @@ Subroutine read_config_parallel                 &
 
   If (do_read) Then
 
-     n_skip = Int(recs_per_at,MPI_OFFSET_KIND) * Int(first_at(my_read_proc_num),MPI_OFFSET_KIND) + &
-              top_skip-Int(1,MPI_OFFSET_KIND)
+     n_skip = Int(recs_per_at,offset_kind) * Int(first_at(my_read_proc_num),offset_kind) + &
+              top_skip-Int(1,offset_kind)
      If (.not.fast) Then
         n_sk=Int(n_skip,li)
         n_jj=73*batsz ! Assuming average max line length of 73
@@ -1457,7 +1452,7 @@ Subroutine read_config_parallel                 &
         forma=' '
         Write(forma,'( "(", i0, "a1)" )') recsz
      Else
-        rec_mpi_io = n_skip + Int(1,MPI_OFFSET_KIND)
+        rec_mpi_io = n_skip + Int(1,offset_kind)
         recsz=73
         If (levcfg == 3) recsz = 35
      End If
@@ -1530,7 +1525,7 @@ Subroutine read_config_parallel                 &
                     Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
                  Else
                     Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
-                    rec_mpi_io = rec_mpi_io + Int(recs_to_read,MPI_OFFSET_KIND)
+                    rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                  End If
               End If
 
@@ -1564,7 +1559,7 @@ Subroutine read_config_parallel                 &
                     Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
                  Else
                     Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
-                    rec_mpi_io = rec_mpi_io + Int(recs_to_read,MPI_OFFSET_KIND)
+                    rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                  End If
               End If
 
@@ -1585,7 +1580,7 @@ Subroutine read_config_parallel                 &
                           Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
                        Else
                           Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
-                          rec_mpi_io = rec_mpi_io + Int(recs_to_read,MPI_OFFSET_KIND)
+                          rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                        End If
                     End If
                  End If
@@ -1606,7 +1601,7 @@ Subroutine read_config_parallel                 &
                              Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
                           Else
                              Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
-                             rec_mpi_io = rec_mpi_io + Int(recs_to_read,MPI_OFFSET_KIND)
+                             rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                           End If
                        End If
                     End If
@@ -1863,7 +1858,7 @@ Subroutine read_config_parallel                 &
 ! Skip to the EoFrame of HISTORY when not fast
 
      If (do_read .and. (.not.fast)) Then
-        n_skip = Int(recs_per_at,MPI_OFFSET_KIND) * Int(megatm-first_at(my_read_proc_num),MPI_OFFSET_KIND)
+        n_skip = Int(recs_per_at,offset_kind) * Int(megatm-first_at(my_read_proc_num),offset_kind)
 
         n_sk=Int(n_skip,li)
         n_jj=73*batsz ! Assuming average max line length of 73
@@ -2031,7 +2026,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,c
 
   Integer                           :: recsz = 73 ! default record size
   Integer                           :: fh, io_read
-  Integer( Kind = MPI_OFFSET_KIND ) :: top_skip
+  Integer( Kind = offset_kind ) :: top_skip
 
 
 ! Get type of I/O for reading
@@ -2204,7 +2199,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,c
 ! Open CONFIG
 
      Call io_set_parameters( user_comm = comm%comm )
-     Call io_open( io_read, comm%comm, fname, MPI_MODE_RDONLY, fh )
+     Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
 
      i=1 ! For config there is only one frame
 
@@ -2309,7 +2304,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,c
         If (fast) Then
            Call io_set_parameters( user_comm = comm%comm )
            Call io_init( recsz )
-           Call io_open( io_read, comm%comm, fname, MPI_MODE_RDONLY, fh )
+           Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
         Else
            Open(Unit=nconf, File=fname)
         End If
@@ -2318,12 +2313,12 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,c
 
         If (io_read /= IO_READ_NETCDF) Then
            If (imcon == 0) Then
-              top_skip = Int(2,MPI_OFFSET_KIND)
+              top_skip = Int(2,offset_kind)
            Else
-              top_skip = Int(5,MPI_OFFSET_KIND)
+              top_skip = Int(5,offset_kind)
            End If
         Else
-           top_skip = Int(1,MPI_OFFSET_KIND) ! This is now the frame = 1
+           top_skip = Int(1,offset_kind) ! This is now the frame = 1
         End If
 
         Call read_config_parallel               &
@@ -2442,7 +2437,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 
   Integer                           :: fh
   Integer                           :: io_write,batsz
-  Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io
+  Integer( Kind = offset_kind ) :: rec_mpi_io
   Character( Len = recsz )          :: record
   Character                         :: lf
 
@@ -2485,7 +2480,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 ! the MPI-I/O records are numbered from 0 (not 1)
 ! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
 !   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
-!   both declared as: Integer(Kind = MPI_OFFSET_KIND)
+!   both declared as: Integer(Kind = offset_kind)
 
 ! UNSORTED MPI-I/O or Parallel Direct Access FORTRAN
 
@@ -2495,14 +2490,14 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 ! Write header only at start, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(1-1,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(1-1,offset_kind)
      jj=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
         Call io_delete( name,comm ) ! Sort existence issues
-        Call io_open( io_write, MPI_COMM_SELF, name, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
+        Call io_open( io_write, comm_self, name, mode_wronly + mode_create, fh )
 
 ! Accumulate header
 
@@ -2549,11 +2544,11 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
      Call io_delete( name ,comm)
-     Call io_open( io_write, comm%comm, name, MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, name, mode_wronly, fh )
 
 ! Start of file (updated)
 
-     rec_mpi_io=Int(jj,MPI_OFFSET_KIND)+Int(n_atm(0),MPI_OFFSET_KIND)*Int(levcfg+2,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(jj,offset_kind)+Int(n_atm(0),offset_kind)*Int(levcfg+2,offset_kind)
      jj=0
      Do i=1,natms
         Write(record, Fmt='(a8,i10,a54,a1)') atmnam(i),ltg(i),Repeat(' ',54),lf
@@ -2588,7 +2583,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 
         If (jj + levcfg + 2 >= batsz .or. i == natms) Then
            Call io_write_batch( fh, rec_mpi_io, jj, chbat )
-           rec_mpi_io=rec_mpi_io+Int(jj,MPI_OFFSET_KIND)
+           rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
            jj=0
         End If
      End Do
@@ -2799,15 +2794,15 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 ! Write header only at start, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(1-1,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(1-1,offset_kind)
      jj=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
         Call io_delete( fname,comm ) ! Sort existence issues
-        If (io_write == IO_WRITE_SORTED_NETCDF) Call io_nc_create( MPI_COMM_SELF, fname, cfgname, megatm )
-        Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
+        If (io_write == IO_WRITE_SORTED_NETCDF) Call io_nc_create( comm_self, fname, cfgname, megatm )
+        Call io_open( io_write, comm_self, fname, mode_wronly + mode_create, fh )
 
 ! Non netCDF
 
@@ -2816,11 +2811,11 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 ! Write header
 
            Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
-           Call io_write_record( fh, Int(jj,MPI_OFFSET_KIND), record )
+           Call io_write_record( fh, Int(jj,offset_kind), record )
            jj=jj+1
 
            Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,imcon,megatm,nstep,tstep,time,lf
-           Call io_write_record( fh, Int(jj,MPI_OFFSET_KIND), record )
+           Call io_write_record( fh, Int(jj,offset_kind), record )
            jj=jj+1
 
 ! Write optional cell information (if present)
@@ -2829,7 +2824,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
               Do i = 0, 2
                  Write( record, '( 3f20.10, a12, a1 )' ) &
                       cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
-                 Call io_write_record( fh, Int(jj,MPI_OFFSET_KIND), record )
+                 Call io_write_record( fh, Int(jj,offset_kind), record )
                  jj=jj+1
               End Do
            End If
@@ -2886,9 +2881,9 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, comm%comm, fname, MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
 
-     rec_mpi_io=rec_mpi_io+Int(jj,MPI_OFFSET_KIND)
+     rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
      Call io_write_sorted_file( fh, levcfg, IO_RESTART, rec_mpi_io, natms,      &
           ltg, atmnam, (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /), xxx, yyy, zzz, &
           vxx, vyy, vzz, fxx, fyy, fzz, ierr )

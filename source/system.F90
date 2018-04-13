@@ -2,7 +2,7 @@ Module system
 
   Use kinds, Only : wp,li
   Use comms, Only : comms_type, gbcast,SysExpand_tag,Revive_tag,wp_mpi,gsync, &
-                    gsend,grecv
+                    gsend,grecv,offset_kind,mode_wronly,comm_self,mode_create
   Use setup
   Use site,        Only : ntpatm,numtyp,numtypnf,dens,ntpmls,numsit,&
                                  nummols
@@ -669,7 +669,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
   Character( Len = recsz )          :: record2, record3
   Character                         :: lf
 
-  Integer( Kind = MPI_OFFSET_KIND ) :: top_skip
+  Integer( Kind = offset_kind ) :: top_skip
 
   Real( Kind = wp ), Dimension( : ),     Allocatable :: f1,f2,f3, &
                                                         f4,f5,f6, &
@@ -806,11 +806,11 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
          io_write == IO_WRITE_SORTED_DIRECT   .or. &
          io_write == IO_WRITE_SORTED_NETCDF) Then
 
-        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
         Call io_delete( fcfg(1:Len_Trim(fcfg) ),comm )
-        If (io_write == IO_WRITE_SORTED_NETCDF) Call io_nc_create( MPI_COMM_SELF, fcfg(1:Len_Trim(fcfg)), cfgname, megatm*nall )
-        Call io_open( io_write, MPI_COMM_SELF, fcfg(1:Len_Trim(fcfg)), MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
+        If (io_write == IO_WRITE_SORTED_NETCDF) Call io_nc_create( comm_self, fcfg(1:Len_Trim(fcfg)), cfgname, megatm*nall )
+        Call io_open( io_write, comm_self, fcfg(1:Len_Trim(fcfg)), mode_wronly + mode_create, fh )
 
      Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
               io_write == IO_WRITE_SORTED_MASTER ) Then
@@ -831,19 +831,19 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
               io_write == IO_WRITE_SORTED_DIRECT) Then
 
         Write(record2, Fmt='(a72,a1)') cfgname(1:72),lf
-        Call io_write_record( fh, Int(0,MPI_OFFSET_KIND), record2 )
+        Call io_write_record( fh, Int(0,offset_kind), record2 )
 
         Write(record2, Fmt='(3i10,a42,a1)') 0,imcon,nall*megatm,Repeat(' ',42),lf
-        Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record2 )
+        Call io_write_record( fh, Int(1,offset_kind), record2 )
 
         Write(record2, Fmt='(3f20.10,a12,a1)') fx*cell(1),fx*cell(2),fx*cell(3),Repeat(' ',12),lf
-        Call io_write_record( fh, Int(2,MPI_OFFSET_KIND), record2 )
+        Call io_write_record( fh, Int(2,offset_kind), record2 )
 
         Write(record2, Fmt='(3f20.10,a12,a1)') fy*cell(4),fy*cell(5),fy*cell(6),Repeat(' ',12),lf
-        Call io_write_record( fh, Int(3,MPI_OFFSET_KIND), record2 )
+        Call io_write_record( fh, Int(3,offset_kind), record2 )
 
         Write(record2, Fmt='(3f20.10,a12,a1)') fz*cell(7),fz*cell(8),fz*cell(9),Repeat(' ',12),lf
-        Call io_write_record( fh, Int(4,MPI_OFFSET_KIND), record2 )
+        Call io_write_record( fh, Int(4,offset_kind), record2 )
 
      Else If (io_write == IO_WRITE_SORTED_NETCDF) Then
 
@@ -1462,9 +1462,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
                           If (io_write == IO_WRITE_UNSORTED_DIRECT .or. &
                               io_write == IO_WRITE_SORTED_DIRECT) Then
 
-                             Call io_write_record( fh, Int(rec,MPI_OFFSET_KIND), record2 )
+                             Call io_write_record( fh, Int(rec,offset_kind), record2 )
                              rec=rec+Int(1,li)
-                             Call io_write_record( fh, Int(rec,MPI_OFFSET_KIND), record3 )
+                             Call io_write_record( fh, Int(rec,offset_kind), record3 )
 
                           Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
                                    io_write == IO_WRITE_SORTED_MASTER) Then
@@ -1539,12 +1539,12 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, comm%comm, fcfg(1:Len_Trim(fcfg)), MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, fcfg(1:Len_Trim(fcfg)), mode_wronly, fh )
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        top_skip = Int(5,MPI_OFFSET_KIND)
+        top_skip = Int(5,offset_kind)
      Else
-        top_skip = Int(1,MPI_OFFSET_KIND) ! netCDF frame
+        top_skip = Int(1,offset_kind) ! netCDF frame
      End If
 
      Call io_write_sorted_file( fh, 0, IO_RESTART, top_skip, at_scaled, &

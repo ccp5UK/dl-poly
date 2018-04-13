@@ -1,7 +1,7 @@
 Module rsds
   Use kinds, Only : wp, li
   Use comms, Only : comms_type,gbcast,RsdWrite_tag,gsum,wp_mpi,gsync,gcheck, &
-                    gsend,grecv
+                    gsend,grecv,offset_kind,comm_self,mode_wronly
   Use setup
   Use configuration,     Only : cfgname,imcon,cell,natms, &
                                 atmnam,ltg,xxx,yyy,zzz
@@ -24,11 +24,6 @@ Module rsds
                                 IO_WRITE_SORTED_MASTER
 
   Use errors_warnings, Only : error
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif
   Implicit None
 
 Contains
@@ -64,7 +59,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
 ! Some parameters and variables needed by io interfaces
 
   Integer                           :: fh, io_write, batsz
-  Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io
+  Integer( Kind = offset_kind ) :: rec_mpi_io
   Character( Len = recsz )          :: record
   Character                         :: lf
 
@@ -251,7 +246,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
 ! the MPI-I/O records are numbered from 0 (not 1)
 ! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
 !   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
-!   both declared as: Integer(Kind = MPI_OFFSET_KIND)
+!   both declared as: Integer(Kind = offset_kind)
 
 ! Update frame
 
@@ -265,13 +260,13 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
 ! Write header and cell information, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,offset_kind)
      j=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
-        Call io_open( io_write, MPI_COMM_SELF, 'RSDDAT', MPI_MODE_WRONLY, fh )
+        Call io_open( io_write, comm_self, 'RSDDAT', mode_wronly, fh )
 
         Write(record, Fmt='(a8,i10,2f20.6,i3,f11.3,a1)') &
            'timestep',nstep,tstep,time,imcon,rrsd,lf
@@ -311,12 +306,12 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(j,MPI_OFFSET_KIND)+Int(2,MPI_OFFSET_KIND)*Int(n_n(0),MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,offset_kind)+Int(j,offset_kind)+Int(2,offset_kind)*Int(n_n(0),offset_kind)
      j=0
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, comm%comm, 'RSDDAT', MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, 'RSDDAT', mode_wronly, fh )
 
      Do i=1,n
         Write(record, Fmt='(a8,i10,f11.3,a43,a1)') nam(i),ind(i),dr(i),Repeat(' ',43),lf
@@ -335,7 +330,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
 
         If (j + 2 >= batsz .or. i == n) Then
            Call io_write_batch( fh, rec_mpi_io, j, chbat )
-           rec_mpi_io=rec_mpi_io+Int(j,MPI_OFFSET_KIND)
+           rec_mpi_io=rec_mpi_io+Int(j,offset_kind)
            j=0
         End If
      End Do
@@ -345,7 +340,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
      rec=rec+Int(5,li)+Int(2,li)*Int(megn,li)
      If (comm%idnode == 0) Then
         Write(record, Fmt='(f11.3,a19,2i21,a1)') rrsd,Repeat(' ',19),frm,rec,lf
-        Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record )
+        Call io_write_record( fh, Int(1,offset_kind), record )
      End If
 
      Call io_close( fh )

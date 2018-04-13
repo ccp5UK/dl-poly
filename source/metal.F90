@@ -23,11 +23,6 @@ Module metal
 
   Use errors_warnings, Only : error,warning, info
   Use numerics, Only : erfgen_met
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif
   Implicit None
 
   Logical,                        Save :: ld_met = .false., & ! no direct calculations are opted

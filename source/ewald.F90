@@ -19,12 +19,6 @@ Module ewald
 
   Use errors_warnings, Only : error
 
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif
-
   Implicit None
 
   Private

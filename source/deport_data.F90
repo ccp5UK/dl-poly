@@ -51,12 +51,6 @@ Module deport_data
   Use pmf, Only : pmf_units_set
   Use build_book, Only : compress_book_intra
   Use shared_units, Only : pass_shared_units, tag_legend
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif  
-
   Implicit None
   
   Public :: deport_atomic_data, export_atomic_data

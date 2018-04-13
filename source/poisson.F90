@@ -13,11 +13,6 @@ Module poisson
   Use errors_warnings, Only : error,info
   Use numerics,        Only : dcell,invert,adjust_kmax
   Use numerics,     Only : adjust_kmax
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif
 
   Implicit None
 

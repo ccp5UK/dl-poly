@@ -24,12 +24,6 @@ Module dpd
   Use errors_warnings, Only : error, warning
   Use numerics,        Only : box_mueller_saru2
 
-
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif
   Implicit None
 
   Integer,           Save :: keydpd = 0 ! no DPD

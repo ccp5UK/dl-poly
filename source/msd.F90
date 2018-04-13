@@ -10,7 +10,7 @@ Module msd
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Use kinds, Only : wp, li
   Use comms, Only : comms_type, gcheck,MsdWrite_tag,gsum,wp_mpi,gsync,gbcast, &
-                    gsend,grecv
+                    gsend,grecv,offset_kind,comm_self,mode_wronly
   Use setup
   Use site,       Only : dofsit
   Use configuration,     Only : cfgname,natms,atmnam,lsite,ltg, &
@@ -36,11 +36,6 @@ Module msd
                                 IO_WRITE_SORTED_DIRECT,        &
                                 IO_WRITE_SORTED_NETCDF,        &
                                 IO_WRITE_SORTED_MASTER
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif
   Use errors_warnings, Only : error
   Implicit None
   Private
@@ -83,10 +78,10 @@ Module msd
 
 ! Some parameters and variables needed by io interfaces
 
-  Integer                           :: fh, io_write, batsz
-  Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io
-  Character( Len = recsz )          :: record
-  Character                         :: lf
+  Integer                       :: fh, io_write, batsz
+  Integer( Kind = offset_kind ) :: rec_mpi_io
+  Character( Len = recsz )      :: record
+  Character                     :: lf
 
   Character( Len = 1 ), Dimension( :, : ), Allocatable :: chbat
   Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf
@@ -250,7 +245,7 @@ Module msd
 ! the MPI-I/O records are numbered from 0 (not 1)
 ! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
 !   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
-!   both declared as: Integer(Kind = MPI_OFFSET_KIND)
+!   both declared as: Integer(Kind = offset_kind)
 
 ! Update frame
 
@@ -264,12 +259,12 @@ Module msd
 ! Write header information, where just one node is needed
 ! Start of file
 
-    rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+    rec_mpi_io=Int(rec,offset_kind)
     If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
-        Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_WRONLY, fh )
+        Call io_open( io_write, comm_self, fname, mode_wronly, fh )
 
         Write(record, Fmt='(a8,2i10,2f12.6,a1)') 'timestep',nstep,megatm,tstep,time,lf
 
@@ -285,12 +280,12 @@ Module msd
 ! Start of file
 
     rec=rec+Int(1,li)
-    rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(n_atm(0),MPI_OFFSET_KIND)
+    rec_mpi_io=Int(rec,offset_kind)+Int(n_atm(0),offset_kind)
     jj=0
 
     Call io_set_parameters( user_comm = comm%comm )
     Call io_init( recsz )
-    Call io_open( io_write, comm%comm, fname, MPI_MODE_WRONLY, fh )
+    Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
 
     Do i=1,natms
         k=2*i
@@ -307,7 +302,7 @@ Module msd
 
         If (jj >= batsz .or. i == natms) Then
           Call io_write_batch( fh, rec_mpi_io, jj, chbat )
-          rec_mpi_io=rec_mpi_io+Int(jj,MPI_OFFSET_KIND)
+          rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
           jj=0
         End If
     End Do
@@ -317,7 +312,7 @@ Module msd
     rec=rec+Int(megatm,li)
     If (comm%idnode == 0) Then
         Write(record, Fmt='(i10,2i21,a1)') megatm,frm,rec,lf
-        Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record )
+        Call io_write_record( fh, Int(1,offset_kind), record )
     End If
 
     Call io_close( fh )
@@ -433,13 +428,13 @@ Module msd
   Else If (io_write == IO_WRITE_SORTED_MPIIO  .or. &
           io_write == IO_WRITE_SORTED_DIRECT) Then
 
-    rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+    rec_mpi_io=Int(rec,offset_kind)
     jj=0
     If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
-        Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_WRONLY, fh )
+        Call io_open( io_write, comm_self, fname, mode_wronly, fh )
 
 ! Write header information
 
@@ -454,13 +449,13 @@ Module msd
 
 ! Start of file
 
-    rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(1,li)
+    rec_mpi_io=Int(rec,offset_kind)+Int(1,li)
 
 ! Write the rest
 
     Call io_set_parameters( user_comm = comm%comm )
     Call io_init( recsz )
-    Call io_open( io_write, comm%comm, fname,  MPI_MODE_WRONLY, fh )
+    Call io_open( io_write, comm%comm, fname,  mode_wronly, fh )
 
     Allocate (ddd(1:mxatms),eee(1:mxatms), Stat=fail(1))
     If (fail(1) > 0) Then
@@ -501,7 +496,7 @@ Module msd
     rec=rec+Int(1,li)+Int(megatm,li)
     If (comm%idnode == 0) Then
         Write(record, Fmt='(i10,2i21,a1)') megatm,frm,rec,lf
-        Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record )
+        Call io_write_record( fh, Int(1,offset_kind), record )
     End If
 
     Call io_close( fh )
