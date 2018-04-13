@@ -1,7 +1,8 @@
 Module trajectory
   Use kinds,         Only : wp, li
   Use comms,         Only : comms_type,Traject_tag,gsync,wp_mpi,gbcast,gcheck, &
-                            gsum,gsend,grecv
+                            gsum,gsend,grecv,offset_kind,mode_wronly, &
+                            mode_rdonly, comm_self
   Use domains,       Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
   Use site
   Use setup
@@ -39,15 +40,9 @@ Module trajectory
                             IO_READ_DIRECT,        &
                             IO_READ_NETCDF,        &
                             IO_READ_MASTER
-Use numerics,        Only : dcell, invert, shellsort2
-Use configuration,   Only : read_config_parallel
-Use errors_warnings, Only : error
-#ifdef SERIAL
-   Use mpi_api
-#else
-   Use mpi
-#endif
-
+  Use numerics,        Only : dcell, invert, shellsort2
+  Use configuration,   Only : read_config_parallel
+  Use errors_warnings, Only : error
   Implicit None
 
   Private
@@ -98,7 +93,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
 
   Integer,                           Save :: recsz ! record size
   Integer,                           Save :: fh, io_read
-  Integer( Kind = MPI_OFFSET_KIND ), Save :: top_skip
+  Integer( Kind = offset_kind ), Save :: top_skip
   Character( Len = 1),  Allocatable, Save :: buffer(:,:)
 
   Character( Len = 8 ), Allocatable :: chbuf(:)
@@ -174,7 +169,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
         End If
 
         If (io_read /= IO_READ_MASTER) Then
-           top_skip = Int(2,MPI_OFFSET_KIND)
+           top_skip = Int(2,offset_kind)
 
            fail(1) = 0
            Allocate (buffer(1:recsz,1:4), Stat=fail(1))
@@ -188,7 +183,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
 
               Call io_set_parameters( user_comm = comm%comm )
               Call io_init( recsz )
-              Call io_open( io_read, comm%comm, fname, MPI_MODE_RDONLY, fh )
+              Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
            End If
         End If
 
@@ -207,7 +202,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
         rec  = Int(0,li)
 
         Call io_set_parameters( user_comm = comm%comm )
-        Call io_open( io_read, comm%comm, fname, MPI_MODE_RDONLY, fh )
+        Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
         Call io_nc_get_dim( 'frame', fh, i )
 
         If (i > 0) Then
@@ -483,7 +478,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
 
      Call io_read_batch( fh, top_skip, 4, buffer, ierr )
      If (ierr < 0) Go To 300
-     top_skip = top_skip + Int(4,MPI_OFFSET_KIND)
+     top_skip = top_skip + Int(4,offset_kind)
 
      record = ' '
      Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
@@ -541,9 +536,9 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
            i=levcfg-2
         End If
 
-        top_skip = top_skip + Int(i,MPI_OFFSET_KIND)*Int(megatm,MPI_OFFSET_KIND)
+        top_skip = top_skip + Int(i,offset_kind)*Int(megatm,offset_kind)
      Else
-        top_skip = Int(0,MPI_OFFSET_KIND)
+        top_skip = Int(0,offset_kind)
      End If
 
 ! Update current frame and exit gracefully
@@ -728,7 +723,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 ! Some parameters and variables needed by io interfaces
 
   Integer                           :: fh, io_write, batsz
-  Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io,jj_io
+  Integer( Kind = offset_kind ) :: rec_mpi_io,jj_io
   Character                         :: lf
   Character( Len = 200 )            :: record
 
@@ -798,8 +793,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            frm=Int(0,li)
         Else
            If (comm%idnode == 0) Then
-              Call io_set_parameters( user_comm = MPI_COMM_SELF )
-              Call io_nc_create( MPI_COMM_SELF, fname, cfgname, megatm )
+              Call io_set_parameters( user_comm = comm_self )
+              Call io_nc_create( comm_self, fname, cfgname, megatm )
            End If
         End If
 
@@ -894,8 +889,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
         Else ! netCDF read
 
            If (comm%idnode == 0) Then
-              Call io_set_parameters( user_comm = MPI_COMM_SELF )
-              Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_RDONLY, fh )
+              Call io_set_parameters( user_comm = comm_self )
+              Call io_open( io_write, comm_self, fname, mode_rdonly, fh )
 
 ! Get the precision that the history file was written in
 ! and check it matches the requested precision
@@ -1001,7 +996,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 ! the MPI-I/O records are numbered from 0 (not 1)
 ! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
 !   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
-!   both declared as: Integer(Kind = MPI_OFFSET_KIND)
+!   both declared as: Integer(Kind = offset_kind)
 
 ! Update frame
 
@@ -1015,13 +1010,13 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 ! Write header and cell information, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,offset_kind)
      jj=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
-        Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_WRONLY, fh )
+        Call io_open( io_write, comm_self, fname, mode_wronly, fh )
 
         Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
         jj=jj+1
@@ -1054,12 +1049,12 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(jj,MPI_OFFSET_KIND)+Int(n_atm(0),MPI_OFFSET_KIND)*Int(keytrj+2,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,offset_kind)+Int(jj,offset_kind)+Int(n_atm(0),offset_kind)*Int(keytrj+2,offset_kind)
      jj=0
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, comm%comm, fname, MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
 
      Do i=1,natms
         Write(record(1:recsz), Fmt='(a8,i10,3f12.6,a18,a1)') atmnam(i),ltg(i),weight(i),chge(i),rsd(i),Repeat(' ',18),lf
@@ -1094,7 +1089,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 
         If (jj + keytrj + 2 >= batsz .or. i == natms) Then
            Call io_write_batch( fh, rec_mpi_io, jj, chbat )
-           rec_mpi_io=rec_mpi_io+Int(jj,MPI_OFFSET_KIND)
+           rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
            jj=0
         End If
      End Do
@@ -1104,7 +1099,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
      rec=rec+Int(4,li)+Int(megatm,li)*Int(keytrj+2,li)
      If (comm%idnode == 0) Then
         Write(record(1:recsz), Fmt='(3i10,2i21,a1)') keytrj,imcon,megatm,frm,rec,lf
-        Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record(1:recsz) )
+        Call io_write_record( fh, Int(1,offset_kind), record(1:recsz) )
      End If
 
      Call io_close( fh )
@@ -1317,14 +1312,14 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 ! Write header only at start, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,offset_kind)
      jj_io=rec_mpi_io
      jj=0 ! netCDF current frame
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
-        Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_WRONLY, fh )
+        Call io_open( io_write, comm_self, fname, mode_wronly, fh )
 
 ! Non netCDF
 
@@ -1334,13 +1329,13 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 
            Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
            Call io_write_record( fh, jj_io, record(1:recsz) )
-           jj_io=jj_io + Int(1,MPI_OFFSET_KIND)
+           jj_io=jj_io + Int(1,offset_kind)
 
            Do i = 0, 2
               Write(record(1:recsz), Fmt='(3f20.10,a12,a1)') &
                    cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
               Call io_write_record( fh, jj_io, record(1:recsz) )
-              jj_io=jj_io+Int(1,MPI_OFFSET_KIND)
+              jj_io=jj_io+Int(1,offset_kind)
            End Do
 
         Else ! netCDF write
@@ -1386,17 +1381,17 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 ! Start of file
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(4,MPI_OFFSET_KIND)
+        rec_mpi_io=Int(rec,offset_kind)+Int(4,offset_kind)
      Else ! netCDF write
         Call gbcast(comm,jj,0)
-        rec_mpi_io = Int(jj,MPI_OFFSET_KIND)
+        rec_mpi_io = Int(jj,offset_kind)
      End If
 
 ! Write the rest
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, comm%comm, fname, MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
 
      Call io_write_sorted_file( fh, keytrj, IO_HISTORY, rec_mpi_io, natms, &
           ltg, atmnam, weight, chge, rsd, xxx, yyy, zzz,                   &
@@ -1421,7 +1416,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
         rec=rec+Int(4,li)+Int(megatm,li)*Int(keytrj+2,li)
         If (comm%idnode == 0) Then
            Write(record(1:recsz), Fmt='(3i10,2i21,a1)') keytrj,imcon,megatm,frm,rec,lf
-           Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record(1:recsz) )
+           Call io_write_record( fh, Int(1,offset_kind), record(1:recsz) )
         End If
      End If
 
@@ -1648,8 +1643,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            frm=Int(0,li)
         Else
            If (comm%idnode == 0) Then
-              Call io_set_parameters( user_comm = MPI_COMM_SELF )
-              Call io_nc_create( MPI_COMM_SELF, fname, cfgname, megatm )
+              Call io_set_parameters( user_comm = comm_self )
+              Call io_nc_create( comm_self, fname, cfgname, megatm )
            End If
         End If
 
@@ -1739,8 +1734,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
         Else ! netCDF read
 
            If (comm%idnode == 0) Then
-              Call io_set_parameters( user_comm = MPI_COMM_SELF )
-              Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_RDONLY, fh )
+              Call io_set_parameters( user_comm = comm_self )
+              Call io_open( io_write, comm_self, fname, mode_rdonly, fh )
 
 ! Get the precision that the history file was written in
 ! and check it matches the requested precision
@@ -1860,19 +1855,19 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, comm%comm, fname, MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
 
 ! Write header only at start, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,offset_kind)
      jj_io=rec_mpi_io
      jj=0 ! netCDF current frame
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
-        Call io_open( io_write, MPI_COMM_SELF, fname, MPI_MODE_WRONLY, fh )
+        Call io_open( io_write, comm_self, fname, mode_wronly, fh )
 
 ! Non netCDF
 
@@ -1882,13 +1877,13 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 
            Write(record(1:recsz), Fmt='(a8,i6,f8.5,f12.5,a1)') 'timestep',nstep,tstep,time,lf
            Call io_write_record( fh, jj_io, record(1:recsz) )
-           jj_io=jj_io + Int(1,MPI_OFFSET_KIND)
+           jj_io=jj_io + Int(1,offset_kind)
 
            Do i = 0, 2
               Write(record(1:recsz), Fmt='(3f10.3,a4,a1)') &
                    cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 4 ), lf
               Call io_write_record( fh, jj_io, record(1:recsz) )
-              jj_io=jj_io+Int(1,MPI_OFFSET_KIND)
+              jj_io=jj_io+Int(1,offset_kind)
            End Do
 
         Else ! netCDF write
@@ -1932,17 +1927,17 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
 ! Start of file
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(4,MPI_OFFSET_KIND)
+        rec_mpi_io=Int(rec,offset_kind)+Int(4,offset_kind)
      Else ! netCDF write
         Call gbcast(comm,jj,0)
-        rec_mpi_io = Int(jj,MPI_OFFSET_KIND)
+        rec_mpi_io = Int(jj,offset_kind)
      End If
 
 ! Write the rest
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, comm%comm, fname, MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
 
      Call io_write_sorted_file( fh, 0*keytrj, IO_HISTORD, rec_mpi_io, natms, &
           ltg, atmnam,  (/ 0.0_wp /),  (/ 0.0_wp /), rsd, xxx, yyy, zzz,     &
@@ -1968,7 +1963,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
         rec=rec+Int(4,li)+Int(megatm,li)
         If (comm%idnode == 0) Then
            Write(record(1:recsz), Fmt='(2i2,3i10,a1)') keytrj,imcon,megatm,frm,rec,lf
-           Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record(1:recsz) )
+           Call io_write_record( fh, Int(1,offset_kind), record(1:recsz) )
         End If
      End If
 
