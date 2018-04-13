@@ -77,6 +77,14 @@ Module comms
                                 op_maxloc = MPI_MAXLOC, &
                                 op_minloc = MPI_MINLOC
 
+  Integer, Parameter, Public :: offset_kind = MPI_OFFSET_KIND,&
+                                status_size = MPI_STATUS_SIZE,&
+                                adress_kind = MPI_ADDRESS_KIND,&
+                                comm_self = MPI_COMM_SELF, &
+                                comm_null = MPI_COMM_NULL
+
+  Integer, Parameter, Public :: mode_wronly = MPI_MODE_WRONLY                               
+
   Type, Public :: comms_type
     Integer               :: ierr
     Integer               :: request
