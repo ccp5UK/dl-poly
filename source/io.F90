@@ -2122,8 +2122,9 @@ Contains
 
        ! using MPI-I/O
        Call MPI_FILE_READ_AT( file_handle, next_rec, buffer, in_buffer, rec_type, status, ierr )
-       Call MPI_FILE_GET_VIEW( file_handle, disp, etype, filetype, datarep, ierr )
-       Call MPI_GET_COUNT( status, etype, count, ierr )
+       !Call MPI_FILE_GET_VIEW( file_handle, disp, etype, filetype, datarep, ierr )
+       !Call MPI_GET_COUNT( status, etype, count, ierr )
+       Call MPI_GET_COUNT( status, rec_type, count, ierr )
        error = Merge( 0, -1, count == in_buffer )
 
     Else If ( method_read == IO_READ_DIRECT ) Then
