@@ -51,6 +51,11 @@ Module system
   Use vdw,             Only : vdw_lrc
   Use metal,           Only : metal_lrc
   Use errors_warnings, Only : error, info
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi
+#endif
   Implicit None
   Private
   Public :: system_revive

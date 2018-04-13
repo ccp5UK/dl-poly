@@ -44,12 +44,6 @@ Module statistics
   Use inversions,  Only : inversions_compute
   Use errors_warnings, Only : error,warning,info
   Use numerics,    Only : dcell,invert,shellsort,shellsort2,pbcshfrc,pbcshfrl
-  
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif
 
   Implicit None
 
