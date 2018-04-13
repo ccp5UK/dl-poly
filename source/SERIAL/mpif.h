@@ -43,8 +43,6 @@
   Integer, Parameter :: MPI_COMM_SELF   =  1
   Integer, Parameter :: MPI_COMM_WORLD  =  1
   Integer, Parameter :: MPI_STATUS_SIZE =  1
-  Integer, Parameter :: MPI_ADDRESS_KIND = 8
-  Integer, Parameter :: MPI_OFFSET_KIND = 8
 
 ! MPI_MODES for MPI-I/O
 
