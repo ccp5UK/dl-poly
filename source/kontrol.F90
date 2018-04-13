@@ -14,9 +14,6 @@ Module kontrol
   Use kinetics,  Only : l_vom
   Use plumed,   Only : l_plumed, plumed_input, plumed_log, &
                               plumed_precision, plumed_restart
-  Use development
-  
-  
   Use setup,       Only : nread,nrite,control,pi,zero_plus,seed, &
                                             output,field,config,statis, &
                                   history,historf,revive,revcon,revold
@@ -25,7 +22,9 @@ Module kontrol
   Use kim,         Only : kimim,rkim
   Use greenkubo,   Only : isvaf,nsvaf,vafsamp
   Use rdfs,         Only : l_errors_jack, l_errors_block
-  Use development, Only : l_trm
+  Use development, Only : l_trm,l_eng, l_rout,l_dis,r_dis,l_tor,&
+                          l_his,l_scl,l_rin,l_org,xorg,yorg,zorg,&
+                          lvcforg,lvcfscl,cels
   Use ttm
   
     Use io,     Only : io_set_parameters,        &

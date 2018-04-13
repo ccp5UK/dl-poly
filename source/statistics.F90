@@ -22,8 +22,6 @@ Module statistics
                              xxx,yyy,zzz,vxx,vyy,vzz,ixyz,lsa,lsi,ltg
   Use domains,    Only : nprx,npry,nprz,map,r_nprx,r_npry,r_nprz,&
                                 nprx_r,npry_r,nprz_r,idx,idy,idz
-  Use msd,    Only : l_msd
-
   Use vnl
   Use core_shell,  Only : passshl
   Use constraints, Only : passcon
@@ -96,8 +94,6 @@ Contains
   End Subroutine allocate_statistics_arrays
 
   Subroutine allocate_statistics_connect()
-
-    
 
     Integer, Dimension( 1:6 ) :: fail
 
@@ -1495,25 +1491,24 @@ Subroutine statistics_result                                    &
     & 5x,'eng_dih',5x,'eng_tet')")
   Write(messages(3),"(6x,'time(ps)',5x,' eng_pv', &
     & 4x,'temp_rot',5x,'vir_cfg',5x,'vir_src',5x,'vir_cou',   &
-    & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet',  &
-    & 6x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',   &
+    & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet')")
+  Write(messages(4), "(6x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',   &
     & 5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',           &
     & 5x,'vir_pmf',7x,'press')")
-  Write(messages(4),"(1x,130('-'))")
-  Call info(messages,4,.true.)
+  Write(messages(5),"(1x,130('-'))")
+  Call info(messages,5,.true.)
 
   Write(messages(1),'(1x,i13,1p,9e12.4)')numacc,sumval(1:9)
   Write(messages(2),'(f14.5,1p,9e12.4)')tmp,sumval(10:18)
   Write(messages(3),'(1x,0p,f13.3,1p,9e12.4)') timelp,sumval(19:27)
-  Call info(messages,3,.true.)
+  Write(messages(4),'(a)')''
+  Call info(messages,4,.true.)
 
   Write(messages(1),"(6x,' r.m.s. ',1p,9e12.4)")ssqval(1:9)
   Write(messages(2),"(6x,'fluctu- ',1p,9e12.4)") ssqval(10:18)
   Write(messages(3),"(6x,'ations  ',1p,9e12.4)") ssqval(19:27)
-  Call info(messages,3,.true.)
-
-  Write(message,"(1x,130('-'))")
-  Call info(message,.true.)
+  Write(messages(4),"(1x,130('-'))")
+  Call info(messages,4,.true.)
 
   ! Some extra information - conserved quantity=extended ensemble energy
 
@@ -1529,8 +1524,9 @@ Subroutine statistics_result                                    &
     " r.m.s. fluctuations:  ", ssqval(37+ntpatm+2*Merge(mxatdm,0,l_msd))
   Call info(message,.true.)
 
-  Write(message,"(130('-'))")
-  Call info(message,.true.)
+  Write(messages(1),"(130('-'))")
+  Write(messages(2),'(a)')''
+  Call info(messages,2,.true.)
 
 ! Move at the end of the default 27 quantities
 
@@ -1557,6 +1553,7 @@ Subroutine statistics_result                                    &
      End If
      Call info(message,.true.)
   End Do
+  Call info('',.true.)
 
   iadd = iadd+ntpatm
 
@@ -1573,6 +1570,7 @@ Subroutine statistics_result                                    &
 
     Write(message,'(12x,a,1p,e12.4)') 'trace/3  ', (sumval(iadd+1)+sumval(iadd+5)+sumval(iadd+9))/3.0_wp
     Call info(message,.true.)
+    Call info('',.true.)
   End If
 
   iadd = iadd+9
