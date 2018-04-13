@@ -2,7 +2,7 @@ Module poisson
 
   Use kinds,           Only : wp
   Use comms,           Only : gsum,comms_type,wp_mpi,ExchgGrid_tag,gsend, &
-                              gwait,girecv
+                              gwait,girecv,gtime
   Use domains
   Use setup,           Only : fourpi,r4pie0,nrite,            &
                               kmaxa,kmaxb,kmaxc,mxspl,mxspl1, &
@@ -10,7 +10,7 @@ Module poisson
   Use configuration,   Only : imcon,cell,natms,nlast,list,ltg,lfrzn, &
                               chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use ewald,           Only : ewald_type
-  Use errors_warnings, Only : error
+  Use errors_warnings, Only : error,info
   Use numerics,        Only : dcell,invert,adjust_kmax
   Use numerics,     Only : adjust_kmax
 #ifdef SERIAL
@@ -258,13 +258,14 @@ Contains
   Recursive Subroutine P_solver_omp(occ, comm)
 
 
-    Real( Kind = wp ) :: Totstart, occ, dphi
+    Real( Kind = wp ) :: Totstart, Totend, occ, dphi
     Type(comms_type), Intent( InOut)   :: comm
 
     Integer           :: mmm, i,j,k
     Real( Kind = wp ) :: element,  sm1,sm2,sm3,sm4 ! SM stands for Stoyan Markov (long live!!!)
+    Character ( Len = 80 ) :: message
 
-    Totstart=MPI_WTIME()
+    Call gtime(Totstart)
     pconverged=.false.
     normphi0=0.0_wp
 
@@ -335,9 +336,11 @@ Contains
        dphi=Abs(normphi1-normphi0)
        If (dphi <= occ*normb) Then
           Call biCGStab_exchange_halo(phi,xhalo,comm)
-          If (comm%idnode==0) Write (*,*)  "Jacobi it = ", mmm ,&
-               &"d|Coulomb potential|/NormB >>>",&
-               &Abs(normphi1 - normphi0)/normb, MPI_WTIME()-Totstart
+          Call gtime(Totend)
+          Write (message,'(a,i0,a,g0,g0)')  "Jacobi it = ", mmm ,&
+             &"d|Coulomb potential|/NormB >>>",&
+             &Abs(normphi1 - normphi0)/normb, Totend-Totstart
+          Call info(message,.true.)
           pconverged=.true.
           Return
        End If
@@ -347,7 +350,8 @@ Contains
 
     End Do
 
-    Print*,"poisson solver not converged in ",maxsteps,"steps..."
+    Write(message,'(a,i0,a)') "poisson solver not converged in ",maxsteps,"steps..."
+    Call info(message)
     pconverged=.false.
 
   End Subroutine P_solver_omp
@@ -356,11 +360,12 @@ Contains
 
     Type(comms_type), Intent( InOut )  :: comm
     Real( Kind = wp ) :: alfa, beta, omega, rho1,rho0,rv,tt,ts
-    Real( Kind = wp ) :: Totstart,occ
+    Real( Kind = wp ) :: Totstart,Totend,occ
 
     Integer :: mmm, kk
+    Character( Len = 80 ) :: message
 
-    Totstart=MPI_WTIME()
+    Call gtime(Totstart)
 
     alfa=1.0_wp
     omega=1.0_wp
@@ -477,25 +482,29 @@ Contains
 
           maxbicgst=0
           pconverged=.false.
-          If (comm%idnode==0) &
-             Print*, "bicgstab exceeded *maxbicgst*... reset potential... pconverged=.false."
+          Call info("bicgstab exceeded *maxbicgst*... reset potential... pconverged=.false.",.true.)
           Return
        End If
-       Write (*,*)  "biCGStab it = ", mmm ,&
+       Call gtime(Totend)
+       Write (message,'(a,i0,a,g0,g0)')  "biCGStab it = ", mmm ,&
             &"d|Coulomb potential|/NormB >>>",(Abs(normphi1 - normphi0)/normb),&
-            &MPI_WTIME()-Totstart
+            &Totend-Totstart
+       Call info(message)
 
        If (Abs(normphi1 - normphi0) <= occ*normb) Then
           Call biCGStab_exchange_halo(phi,xhalo,comm)
 
-         If (comm%idnode == 0) Write (*,*)  "biCGStab it = ", mmm ,&
+          Call gtime(Totend)
+          Write (message,'(a,i0,a,g0,g0)')  "biCGStab it = ", mmm ,&
               &"d|Coulomb potential|/NormB >>>",(Abs(normphi1 - normphi0)/normb),&
-              &MPI_WTIME()-Totstart
+              &Totend-Totstart
+          Call info(message,.true.)
           If (maxbicgst == 0) Then
              maxbicgst=mmm
           End If
           pconverged=.true.
-          If (comm%idnode == 0) Print*, "*maxbicgst* set to",maxbicgst,"pconverged=.true."
+          Write(message,'(a,i0,a)') "*maxbicgst* set to ",maxbicgst," pconverged=.true."
+          Call info(message,.true.)
           Return
        End If
 
@@ -508,7 +517,7 @@ Contains
        normphi0=normphi1
     End Do
     pconverged=.false.
-    If (comm%idnode == 0) Print*, "maxit reached... pconverged=.false."
+    Call info("maxit reached... pconverged=.false.",.true.)
 
   End Subroutine biCGStab_solver_omp
 
@@ -722,7 +731,7 @@ Contains
                      uenergy,r8veps0
 
     If(.Not.pconverged) Then
-       if (comm%idnode == 0) Print*, "poisson solver not converged"
+       Call info("poisson solver not converged",.true.)
        Return
     End If
 
