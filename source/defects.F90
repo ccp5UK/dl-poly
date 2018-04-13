@@ -15,7 +15,8 @@ Module defects
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
                                 DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
                                 gsend,grecv,gwait,girecv,gscatter,gscatterv, &
-                                gscatter_columns
+                                gscatter_columns,offset_kind,mode_wronly, &
+                                comm_self,mode_create,mode_rdonly
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use core_shell,        Only : ntshl,listshl
@@ -54,12 +55,6 @@ Module defects
   Use numerics, Only : pbcshift,invert,dcell, shellsort2
   Use errors_warnings, Only : error,warning
   Use link_cells, Only : defects_link_cells
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif
-
   Implicit None
 
 ! REFERENCE data
@@ -170,7 +165,7 @@ Contains
 ! Some parameters and variables needed by io interfaces
 
   Integer                           :: fh, io_write, batsz
-  Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io
+  Integer( Kind = offset_kind ) :: rec_mpi_io
   Character( Len = recsz )          :: record
   Character                         :: lf
 
@@ -745,7 +740,7 @@ Contains
 ! the MPI-I/O records are numbered from 0 (not 1)
 ! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
 !   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
-!   both declared as: Integer(Kind = MPI_OFFSET_KIND)
+!   both declared as: Integer(Kind = offset_kind)
 
 ! Update frame
 
@@ -759,13 +754,13 @@ Contains
 ! Write header and cell information, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,offset_kind)
      j=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
-        Call io_open( io_write, MPI_COMM_SELF, 'DEFECTS1', MPI_MODE_WRONLY, fh )
+        Call io_open( io_write, comm_self, 'DEFECTS1', mode_wronly, fh )
 
         Write(record, Fmt='(a8,i10,2f20.6,i5,f7.3,a2,a1)') &
            'timestep',nstep,tstep,time,imcon,rdef,Repeat(' ',2),lf
@@ -810,11 +805,11 @@ Contains
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, comm%comm, 'DEFECTS1', MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, 'DEFECTS1', mode_wronly, fh )
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(2,MPI_OFFSET_KIND)*Int(ni_n(0),MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,offset_kind)+Int(2,offset_kind)*Int(ni_n(0),offset_kind)
      j=0
      Do i=1,ni
         Write(record, Fmt='(a2,a8,i10,a52,a1)') 'i_',nami(i),indi(i),Repeat(' ',52),lf
@@ -833,7 +828,7 @@ Contains
 
         If (j + 2 >= batsz .or. i == ni) Then
            Call io_write_batch( fh, rec_mpi_io, j, chbat )
-           rec_mpi_io=rec_mpi_io+Int(j,MPI_OFFSET_KIND)
+           rec_mpi_io=rec_mpi_io+Int(j,offset_kind)
            j=0
         End If
      End Do
@@ -844,7 +839,7 @@ Contains
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(2,MPI_OFFSET_KIND)*Int(nv_n(0),MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,offset_kind)+Int(2,offset_kind)*Int(nv_n(0),offset_kind)
      Do i=1,nv
         Write(record, Fmt='(a2,a8,i10,a52,a1)') 'v_',namv(i),indv(i),Repeat(' ',52),lf
         j=j+1
@@ -862,7 +857,7 @@ Contains
 
         If (j + 2 >= batsz .or. i == nv) Then
            Call io_write_batch( fh, rec_mpi_io, j, chbat )
-           rec_mpi_io=rec_mpi_io+Int(j,MPI_OFFSET_KIND)
+           rec_mpi_io=rec_mpi_io+Int(j,offset_kind)
            j=0
         End If
      End Do
@@ -872,7 +867,7 @@ Contains
 
      If (comm%idnode == 0) Then
         Write(record, Fmt='(f7.3,a23,2i21,a1)') rdef,Repeat(' ',23),frm,rec,lf
-        Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record )
+        Call io_write_record( fh, Int(1,offset_kind), record )
      End If
 
      Call io_close( fh )
@@ -1393,7 +1388,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
 
   Integer                           :: recsz = 73 ! default record size
   Integer                           :: fh, io_read
-  Integer( Kind = MPI_OFFSET_KIND ) :: top_skip
+  Integer( Kind = offset_kind ) :: top_skip
 
   Character( Len = 8 ), Dimension( : ), Allocatable :: chbuf
   Integer,              Dimension( : ), Allocatable :: iwrk
@@ -1589,7 +1584,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
 ! Open file
 
      Call io_set_parameters( user_comm = comm%comm )
-     Call io_open( io_read, comm%comm, fname, MPI_MODE_RDONLY, fh )
+     Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
 
      i=1 ! For config there is only one frame
 
@@ -1816,7 +1811,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
      If (fast) Then
         Call io_set_parameters( user_comm = comm%comm )
         Call io_init( recsz )
-        Call io_open( io_read, comm%comm, fname, MPI_MODE_RDONLY, fh )
+        Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
      Else
         Open(Unit=nrefdt, File=fname)
      End If
@@ -1824,9 +1819,9 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
 ! top_skip is header size
 
      If (io_read /= IO_READ_NETCDF) Then
-        top_skip = Int(5,MPI_OFFSET_KIND) ! imcon is a must
+        top_skip = Int(5,offset_kind) ! imcon is a must
      Else
-        top_skip = Int(1,MPI_OFFSET_KIND) ! This is now the frame = 1
+        top_skip = Int(1,offset_kind) ! This is now the frame = 1
      End If
 
      Call defects_reference_read_parallel       &
@@ -1921,7 +1916,7 @@ Subroutine defects_reference_read_parallel      &
 
   Logical,                           Intent( In    ) :: l_ind,l_str,fast
   Integer,                           Intent( In    ) :: lvcfgr,megref,fh
-  Integer( Kind = MPI_OFFSET_KIND ), Intent( In    ) :: top_skip
+  Integer( Kind = offset_kind ), Intent( In    ) :: top_skip
   Real( Kind = wp ),                 Intent( In    ) :: celr(1:9)
   Character( Len = 8 ),              Intent(   Out ) :: namr(1:mxatms)
   Integer,                           Intent(   Out ) :: indr(1:mxatms),nrefs
@@ -1945,7 +1940,7 @@ Subroutine defects_reference_read_parallel      &
 
   Integer                           :: io_read,ierr
   Integer                           :: recsz, batsz
-  Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io, n_skip
+  Integer( Kind = offset_kind ) :: rec_mpi_io, n_skip
   Integer                           :: this_rec_buff, recs_to_read
 
 ! netCDF
@@ -2021,8 +2016,8 @@ Subroutine defects_reference_read_parallel      &
 
   If (do_read) Then
 
-     n_skip = Int(recs_per_at,MPI_OFFSET_KIND) * Int(first_at(my_read_proc_num),MPI_OFFSET_KIND) + &
-              top_skip-Int(1,MPI_OFFSET_KIND)
+     n_skip = Int(recs_per_at,offset_kind) * Int(first_at(my_read_proc_num),offset_kind) + &
+              top_skip-Int(1,offset_kind)
 
      If (.not.fast) Then
         n_sk=Int(n_skip,li)
@@ -2049,7 +2044,7 @@ Subroutine defects_reference_read_parallel      &
         forma=' '
         Write(forma,'( "(", i0, "a1)" )') recsz
      Else
-        rec_mpi_io = n_skip + Int(1,MPI_OFFSET_KIND)
+        rec_mpi_io = n_skip + Int(1,offset_kind)
         recsz=73
      End If
 
@@ -2113,7 +2108,7 @@ Subroutine defects_reference_read_parallel      &
                     Read(Unit=nrefdt, Fmt=forma) rec_buff( :, 1:recs_to_read )
                  Else
                     Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr )
-                    rec_mpi_io = rec_mpi_io + Int(recs_to_read,MPI_OFFSET_KIND)
+                    rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                  End If
               End If
 
@@ -2144,7 +2139,7 @@ Subroutine defects_reference_read_parallel      &
                     Read(Unit=nrefdt, Fmt=forma) rec_buff( :, 1:recs_to_read )
                  Else
                     Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr )
-                    rec_mpi_io = rec_mpi_io + Int(recs_to_read,MPI_OFFSET_KIND)
+                    rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                  End If
               End If
 
@@ -2163,7 +2158,7 @@ Subroutine defects_reference_read_parallel      &
                        Read(Unit=nrefdt, Fmt=forma) rec_buff( :, 1:recs_to_read )
                     Else
                        Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr )
-                       rec_mpi_io = rec_mpi_io + Int(recs_to_read,MPI_OFFSET_KIND)
+                       rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                     End If
                  End If
               End If
@@ -2180,7 +2175,7 @@ Subroutine defects_reference_read_parallel      &
                           Read(Unit=nrefdt, Fmt=forma) rec_buff( :, 1:recs_to_read )
                        Else
                           Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr )
-                          rec_mpi_io = rec_mpi_io + Int(recs_to_read,MPI_OFFSET_KIND)
+                          rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                        End If
                     End If
                  End If
@@ -2612,7 +2607,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
   Integer                           :: fh
   Integer                           :: io_write,io_read,batsz,ierr
-  Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io
+  Integer( Kind = offset_kind ) :: rec_mpi_io
   Character( Len = recsz )          :: record
   Character                         :: lf
 
@@ -2663,7 +2658,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 ! the MPI-I/O records are numbered from 0 (not 1)
 ! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
 !   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
-!   both declared as: Integer(Kind = MPI_OFFSET_KIND)
+!   both declared as: Integer(Kind = offset_kind)
 
 ! UNSORTED MPI-I/O or Parallel Direct Access FORTRAN
 
@@ -2673,14 +2668,14 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 ! Write header only at start, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(1-1,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(1-1,offset_kind)
      jj=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
         Call io_delete( name ,comm) ! Sort existence issues
-        Call io_open( io_write, MPI_COMM_SELF, name, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
+        Call io_open( io_write, comm_self, name, mode_wronly + mode_create, fh )
 
 ! Accumulate header
 
@@ -2721,7 +2716,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, comm%comm, name, MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, name, mode_wronly, fh )
 
 ! Get to real space
 
@@ -2737,7 +2732,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
 ! Start of file (updated)
 
-     rec_mpi_io=Int(jj,MPI_OFFSET_KIND)+Int(n_atm(0),MPI_OFFSET_KIND)*Int(2,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(jj,offset_kind)+Int(n_atm(0),offset_kind)*Int(2,offset_kind)
      jj=0
      Do i=1,nrefs
         Write(record, Fmt='(a8,i10,a54,a1)') namr(i),indr(i),Repeat(' ',54),lf
@@ -2756,7 +2751,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
         If (jj + 2 >= batsz .or. i == nrefs) Then
            Call io_write_batch( fh, rec_mpi_io, jj, chbat )
-           rec_mpi_io=rec_mpi_io+Int(jj,MPI_OFFSET_KIND)
+           rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
            jj=0
         End If
      End Do
@@ -2913,17 +2908,17 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 ! Write header only at start, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(1-1,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(1-1,offset_kind)
      jj=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
         Call io_delete( name, comm ) ! Sort existence issues
         If (io_write == IO_WRITE_SORTED_NETCDF) &
-        Call io_nc_create( MPI_COMM_SELF, name, cfgname, megref )
+        Call io_nc_create( comm_self, name, cfgname, megref )
 
-        Call io_open( io_write, MPI_COMM_SELF, name, MPI_MODE_WRONLY + MPI_MODE_CREATE, fh )
+        Call io_open( io_write, comm_self, name, mode_wronly + mode_create, fh )
 
 ! Non netCDF
 
@@ -2932,16 +2927,16 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 ! Write header
 
            Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
-           Call io_write_record( fh, Int(jj,MPI_OFFSET_KIND), record )
+           Call io_write_record( fh, Int(jj,offset_kind), record )
            jj=jj+1
 
            Write(record, Fmt='(3i10,a42,a1)') 0,imcon,megref,Repeat(' ',42),lf
-           Call io_write_record( fh, Int(jj,MPI_OFFSET_KIND), record )
+           Call io_write_record( fh, Int(jj,offset_kind), record )
            jj=jj+1
 
            Do i = 0, 2
               Write( record, '( 3f20.10, a12, a1 )' ) cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
-              Call io_write_record( fh, Int(jj,MPI_OFFSET_KIND), record )
+              Call io_write_record( fh, Int(jj,offset_kind), record )
               jj=jj+1
            End Do
 
@@ -2994,7 +2989,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, comm%comm, name, MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, name, mode_wronly, fh )
 
 ! Get to real space
 
@@ -3010,7 +3005,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
 ! Write the rest
 
-     rec_mpi_io=rec_mpi_io+Int(jj,MPI_OFFSET_KIND)
+     rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
      Call io_write_sorted_file( fh, 0, IO_RESTART, rec_mpi_io, nrefs,          &
           indr, namr, (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /), axx, ayy, azz, &
           (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /),                            &
@@ -3198,7 +3193,7 @@ Subroutine defects_write &
 ! Some parameters and variables needed by io interfaces
 
   Integer                           :: fh, io_write, batsz
-  Integer( Kind = MPI_OFFSET_KIND ) :: rec_mpi_io
+  Integer( Kind = offset_kind ) :: rec_mpi_io
   Character( Len = recsz )          :: record
   Character                         :: lf
 
@@ -3772,7 +3767,7 @@ Subroutine defects_write &
 ! the MPI-I/O records are numbered from 0 (not 1)
 ! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
 !   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
-!   both declared as: Integer(Kind = MPI_OFFSET_KIND)
+!   both declared as: Integer(Kind = offset_kind)
 
 ! Update frame
 
@@ -3786,13 +3781,13 @@ Subroutine defects_write &
 ! Write header and cell information, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,offset_kind)
      j=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = MPI_COMM_SELF )
+        Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
-        Call io_open( io_write, MPI_COMM_SELF, 'DEFECTS', MPI_MODE_WRONLY, fh )
+        Call io_open( io_write, comm_self, 'DEFECTS', mode_wronly, fh )
 
         Write(record, Fmt='(a8,i10,2f20.6,i5,f7.3,a2,a1)') &
            'timestep',nstep,tstep,time,imcon,rdef,Repeat(' ',2),lf
@@ -3837,11 +3832,11 @@ Subroutine defects_write &
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, comm%comm, 'DEFECTS', MPI_MODE_WRONLY, fh )
+     Call io_open( io_write, comm%comm, 'DEFECTS', mode_wronly, fh )
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(2,MPI_OFFSET_KIND)*Int(ni_n(0),MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,offset_kind)+Int(2,offset_kind)*Int(ni_n(0),offset_kind)
      j=0
      Do i=1,ni
         Write(record, Fmt='(a2,a8,i10,a52,a1)') 'i_',nami(i),indi(i),Repeat(' ',52),lf
@@ -3860,7 +3855,7 @@ Subroutine defects_write &
 
         If (j + 2 >= batsz .or. i == ni) Then
            Call io_write_batch( fh, rec_mpi_io, j, chbat )
-           rec_mpi_io=rec_mpi_io+Int(j,MPI_OFFSET_KIND)
+           rec_mpi_io=rec_mpi_io+Int(j,offset_kind)
            j=0
         End If
      End Do
@@ -3871,7 +3866,7 @@ Subroutine defects_write &
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(2,MPI_OFFSET_KIND)*Int(nv_n(0),MPI_OFFSET_KIND)
+     rec_mpi_io=Int(rec,offset_kind)+Int(2,offset_kind)*Int(nv_n(0),offset_kind)
      Do i=1,nv
         Write(record, Fmt='(a2,a8,i10,a52,a1)') 'v_',namv(i),indv(i),Repeat(' ',52),lf
         j=j+1
@@ -3889,7 +3884,7 @@ Subroutine defects_write &
 
         If (j + 2 >= batsz .or. i == nv) Then
            Call io_write_batch( fh, rec_mpi_io, j, chbat )
-           rec_mpi_io=rec_mpi_io+Int(j,MPI_OFFSET_KIND)
+           rec_mpi_io=rec_mpi_io+Int(j,offset_kind)
            j=0
         End If
      End Do
@@ -3899,7 +3894,7 @@ Subroutine defects_write &
 
      If (comm%idnode == 0) Then
         Write(record, Fmt='(f7.3,a23,2i21,a1)') rdef,Repeat(' ',23),frm,rec,lf
-        Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record )
+        Call io_write_record( fh, Int(1,offset_kind), record )
      End If
 
      Call io_close( fh )
