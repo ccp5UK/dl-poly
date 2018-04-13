@@ -2,7 +2,7 @@ Module poisson
 
   Use kinds,           Only : wp
   Use comms,           Only : gsum,comms_type,wp_mpi,ExchgGrid_tag,gsend, &
-                              gwait,girecv
+                              gwait,girecv,gtime
   Use domains
   Use setup,           Only : fourpi,r4pie0,nrite,            &
                               kmaxa,kmaxb,kmaxc,mxspl,mxspl1, &
@@ -258,13 +258,13 @@ Contains
   Recursive Subroutine P_solver_omp(occ, comm)
 
 
-    Real( Kind = wp ) :: Totstart, occ, dphi
+    Real( Kind = wp ) :: Totstart, Totend, occ, dphi
     Type(comms_type), Intent( InOut)   :: comm
 
     Integer           :: mmm, i,j,k
     Real( Kind = wp ) :: element,  sm1,sm2,sm3,sm4 ! SM stands for Stoyan Markov (long live!!!)
 
-    Totstart=MPI_WTIME()
+    Call gtime(Totstart)
     pconverged=.false.
     normphi0=0.0_wp
 
@@ -335,9 +335,10 @@ Contains
        dphi=Abs(normphi1-normphi0)
        If (dphi <= occ*normb) Then
           Call biCGStab_exchange_halo(phi,xhalo,comm)
+          Call gtime(Totend)
           If (comm%idnode==0) Write (*,*)  "Jacobi it = ", mmm ,&
                &"d|Coulomb potential|/NormB >>>",&
-               &Abs(normphi1 - normphi0)/normb, MPI_WTIME()-Totstart
+               &Abs(normphi1 - normphi0)/normb, Totend-Totstart
           pconverged=.true.
           Return
        End If
@@ -356,11 +357,11 @@ Contains
 
     Type(comms_type), Intent( InOut )  :: comm
     Real( Kind = wp ) :: alfa, beta, omega, rho1,rho0,rv,tt,ts
-    Real( Kind = wp ) :: Totstart,occ
+    Real( Kind = wp ) :: Totstart,Totend,occ
 
     Integer :: mmm, kk
 
-    Totstart=MPI_WTIME()
+    Call gtime(Totstart)
 
     alfa=1.0_wp
     omega=1.0_wp
@@ -481,16 +482,18 @@ Contains
              Print*, "bicgstab exceeded *maxbicgst*... reset potential... pconverged=.false."
           Return
        End If
+       Call gtime(Totend)
        Write (*,*)  "biCGStab it = ", mmm ,&
             &"d|Coulomb potential|/NormB >>>",(Abs(normphi1 - normphi0)/normb),&
-            &MPI_WTIME()-Totstart
+            &Totend-Totstart
 
        If (Abs(normphi1 - normphi0) <= occ*normb) Then
           Call biCGStab_exchange_halo(phi,xhalo,comm)
 
+          Call gtime(Totend)
          If (comm%idnode == 0) Write (*,*)  "biCGStab it = ", mmm ,&
               &"d|Coulomb potential|/NormB >>>",(Abs(normphi1 - normphi0)/normb),&
-              &MPI_WTIME()-Totstart
+              &Totend-Totstart
           If (maxbicgst == 0) Then
              maxbicgst=mmm
           End If
