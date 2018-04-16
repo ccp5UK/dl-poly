@@ -1020,8 +1020,6 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
     Integer,            Intent( In    ) :: s,dest,tag
 
-    If (comm%mxnode == 1) Return
-
     Call MPI_SEND(s,1,MPI_INTEGER,dest,tag,comm%comm,comm%ierr)
   End Subroutine gsend_integer_scalar
 
@@ -1038,14 +1036,11 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
     Integer,            Intent( In    ) :: vec(:),dest,tag
 
-    Integer                             :: n_l,n_u,n_s
+    Integer :: n_s
 
-    If (comm%mxnode == 1) Return
-    n_l = Lbound(vec, Dim = 1)
-    n_u = Ubound(vec, Dim = 1)
     n_s = Size(vec, Dim = 1)
 
-    Call MPI_SEND(vec(n_l:n_u),n_s,MPI_INTEGER,dest,tag,comm%comm,comm%ierr)
+    Call MPI_SEND(vec(:),n_s,MPI_INTEGER,dest,tag,comm%comm,comm%ierr)
   End Subroutine gsend_integer_vector
 
   Subroutine gsend_real_scalar(comm,s,dest,tag)
@@ -1061,8 +1056,6 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
     Real( Kind = wp ),  Intent( In    ) :: s
     Integer,            Intent( In    ) :: dest,tag
-
-    If (comm%mxnode == 1) Return
 
     Call MPI_SEND(s,1,wp_mpi,dest,tag,comm%comm,comm%ierr)
   End Subroutine gsend_real_scalar
@@ -1081,14 +1074,11 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: vec(:)
     Integer,            Intent( In    ) :: dest,tag
 
-    Integer                             :: n_l,n_u,n_s
+    Integer :: n_s
 
-    If (comm%mxnode == 1) Return
-    n_l = Lbound(vec, Dim = 1)
-    n_u = Ubound(vec, Dim = 1)
     n_s = Size(vec, Dim = 1)
 
-    Call MPI_SEND(vec(n_l:n_u),n_s,wp_mpi,dest,tag,comm%comm,comm%ierr)
+    Call MPI_SEND(vec(:),n_s,wp_mpi,dest,tag,comm%comm,comm%ierr)
   End Subroutine gsend_real_vector
 
   Subroutine gsend_real_array3(comm,arr,dest,tag)
@@ -1105,17 +1095,14 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: arr(:,:,:)
     Integer,            Intent( In    ) :: dest,tag
 
-    Integer                             :: i
-    Integer, Dimension(3)               :: n_l,n_u,n_s
+    Integer               :: i
+    Integer, Dimension(3) ::n_s
 
-    If (comm%mxnode == 1) Return
     Do i = 1, 3
-      n_l(i) = Lbound(arr, Dim = i)
-      n_u(i) = Ubound(arr, Dim = i)
       n_s(i) = Size(arr, Dim = i)
     End Do
 
-    Call MPI_SEND(arr(n_l(1):n_u(1),n_l(2):n_u(2),n_l(3):n_u(3)),Product(n_s(1:3)), &
+    Call MPI_SEND(arr(:,:,:),Product(n_s(1:3)), &
       wp_mpi,dest,tag,comm%comm,comm%ierr)
   End Subroutine gsend_real_array3
 
@@ -1132,8 +1119,6 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
     Logical,            Intent( In    ) :: s
     Integer,            Intent( In    ) :: dest,tag
-
-    If (comm%mxnode == 1) Return
 
     Call MPI_SEND(s,1,MPI_LOGICAL,dest,tag,comm%comm,comm%ierr)
   End Subroutine gsend_logical_scalar
@@ -1152,14 +1137,11 @@ Contains
     Logical,            Intent( In    ) :: vec(:)
     Integer,            Intent( In    ) :: dest,tag
 
-    Integer                             :: n_l,n_u,n_s
+    Integer :: n_l,n_u,n_s
 
-    If (comm%mxnode == 1) Return
-    n_l = Lbound(vec, Dim = 1)
-    n_u = Ubound(vec, Dim = 1)
     n_s = Size(vec, Dim = 1)
 
-    Call MPI_SEND(vec(n_l:n_u),n_s,MPI_LOGICAL,dest,tag,comm%comm,comm%ierr)
+    Call MPI_SEND(vec(:),n_s,MPI_LOGICAL,dest,tag,comm%comm,comm%ierr)
   End Subroutine gsend_logical_vector
 
   Subroutine gsend_character_scalar(comm,s,dest,tag)
@@ -1177,8 +1159,6 @@ Contains
     Integer,              Intent( In    ) :: dest,tag
 
     Integer :: n_s
-
-    If (comm%mxnode == 1) Return
 
     n_s = Len(s)
 
@@ -1199,15 +1179,11 @@ Contains
     Character( Len = * ), Intent( In    ) :: vec(:)
     Integer,              Intent( In    ) :: dest,tag
 
-    Integer :: n_l,n_u,n_s
+    Integer :: n_s
 
-    If (comm%mxnode == 1) Return
+    n_s = Size(vec, Dim = 1)*Len(vec(1))
 
-    n_l = Lbound(vec, Dim = 1)
-    n_u = Ubound(vec, Dim = 1)
-    n_s = Size(vec, Dim = 1)*Len(vec(n_l))
-
-    Call MPI_SEND(vec(n_l:n_u),n_s,MPI_CHARACTER,dest,tag,comm%comm,comm%ierr)
+    Call MPI_SEND(vec(:),n_s,MPI_CHARACTER,dest,tag,comm%comm,comm%ierr)
   End Subroutine gsend_character_vector
 
   Subroutine grecv_integer_scalar(comm,s,source,tag)
@@ -1223,8 +1199,6 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
     Integer,            Intent(   Out ) :: s
     Integer,            Intent( In    ) :: source,tag
-
-    If (comm%mxnode == 1) Return
 
     Call MPI_RECV(s,1,MPI_INTEGER,source,tag,comm%comm,comm%status,comm%ierr)
   End Subroutine grecv_integer_scalar
@@ -1243,14 +1217,11 @@ Contains
     Integer,            Intent( InOut ) :: vec(:)
     Integer,            Intent( In    ) :: source,tag
 
-    Integer                             :: n_l,n_u,n_s
+    Integer :: n_s
 
-    If (comm%mxnode == 1) Return
-    n_l = Lbound(vec, Dim = 1)
-    n_u = Ubound(vec, Dim = 1)
     n_s = Size(vec, Dim = 1)
 
-    Call MPI_RECV(vec(n_l:n_u),n_s,MPI_INTEGER,source,tag,comm%comm,comm%status,comm%ierr)
+    Call MPI_RECV(vec(:),n_s,MPI_INTEGER,source,tag,comm%comm,comm%status,comm%ierr)
   End Subroutine grecv_integer_vector
 
   Subroutine grecv_real_scalar(comm,s,source,tag)
@@ -1266,8 +1237,6 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
     Real( Kind = wp),   Intent(   Out ) :: s
     Integer,            Intent( In    ) :: source,tag
-
-    If (comm%mxnode == 1) Return
 
     Call MPI_RECV(s,1,wp_mpi,source,tag,comm%comm,comm%status,comm%ierr)
   End Subroutine grecv_real_scalar
@@ -1286,14 +1255,11 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: vec(:)
     Integer,            Intent( In    ) :: source,tag
 
-    Integer                             :: n_l,n_u,n_s
+    Integer :: n_s
 
-    If (comm%mxnode == 1) Return
-    n_l = Lbound(vec, Dim = 1)
-    n_u = Ubound(vec, Dim = 1)
     n_s = Size(vec, Dim = 1)
 
-    Call MPI_RECV(vec(n_l:n_u),n_s,wp_mpi,source,tag,comm%comm,comm%status,comm%ierr)
+    Call MPI_RECV(vec(:),n_s,wp_mpi,source,tag,comm%comm,comm%status,comm%ierr)
   End Subroutine grecv_real_vector
 
   Subroutine grecv_real_array3(comm,arr,source,tag)
@@ -1311,16 +1277,13 @@ Contains
     Integer,            Intent( In    ) :: source,tag
 
     Integer                             :: i
-    Integer, Dimension(3)               :: n_l,n_u,n_s
+    Integer, Dimension(3)               :: n_s
 
-    If (comm%mxnode == 1) Return
     Do i = 1, 3
-      n_l(i) = Lbound(arr, Dim = i)
-      n_u(i) = Ubound(arr, Dim = i)
       n_s(i) = Size(arr, Dim = i)
     End Do
 
-    Call MPI_RECV(arr(n_l(1):n_u(1),n_l(2):n_u(2),n_l(3):n_u(3)),Product(n_s(1:3)), &
+    Call MPI_RECV(arr(:,:,:),Product(n_s(1:3)), &
                   wp_mpi,source,tag,comm%comm,comm%status,comm%ierr)
   End Subroutine grecv_real_array3
 
@@ -1337,8 +1300,6 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
     Logical,            Intent(   Out ) :: s
     Integer,            Intent( In    ) :: source,tag
-
-    If (comm%mxnode == 1) Return
 
     Call MPI_RECV(s,1,MPI_LOGICAL,source,tag,comm%comm,comm%status,comm%ierr)
   End Subroutine grecv_logical_scalar
@@ -1357,14 +1318,11 @@ Contains
     Logical,            Intent( InOut ) :: vec(:)
     Integer,            Intent( In    ) :: source,tag
 
-    Integer                             :: n_l,n_u,n_s
+    Integer :: n_s
 
-    If (comm%mxnode == 1) Return
-    n_l = Lbound(vec, Dim = 1)
-    n_u = Ubound(vec, Dim = 1)
     n_s = Size(vec, Dim = 1)
 
-    Call MPI_RECV(vec(n_l:n_u),n_s,MPI_LOGICAL,source,tag,comm%comm,comm%status,comm%ierr)
+    Call MPI_RECV(vec(:),n_s,MPI_LOGICAL,source,tag,comm%comm,comm%status,comm%ierr)
   End Subroutine grecv_logical_vector
 
   Subroutine grecv_character_scalar(comm,s,source,tag)
@@ -1382,8 +1340,6 @@ Contains
     Integer,              Intent( In    ) :: source,tag
 
     Integer :: n_s
-
-    If (comm%mxnode == 1) Return
 
     n_s = Len(s)
 
@@ -1404,15 +1360,11 @@ Contains
     Character( Len = * ), Intent( InOut ) :: vec(:)
     Integer,              Intent( In    ) :: source,tag
 
-    Integer :: n_l,n_u,n_s
+    Integer :: n_s
 
-    If (comm%mxnode == 1) Return
+    n_s = Size(vec, Dim = 1)*Len(vec(1))
 
-    n_l = Lbound(vec, Dim = 1)
-    n_u = Ubound(vec, Dim = 1)
-    n_s = Size(vec, Dim = 1)*Len(vec(n_l))
-
-    Call MPI_RECV(vec(n_l:n_u),n_s,MPI_CHARACTER,source,tag,comm%comm,comm%status,comm%ierr)
+    Call MPI_RECV(vec(:),n_s,MPI_CHARACTER,source,tag,comm%comm,comm%status,comm%ierr)
   End Subroutine grecv_character_vector
 
   Subroutine girecv_integer_scalar(comm,s,source,tag)
@@ -1428,8 +1380,6 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
     Integer,            Intent(   Out ) :: s
     Integer,            Intent( In    ) :: source,tag
-
-    If (comm%mxnode == 1) Return
 
     Call MPI_IRECV(s,1,MPI_INTEGER,source,tag,comm%comm,comm%request,comm%ierr)
   End Subroutine girecv_integer_scalar
@@ -1448,14 +1398,11 @@ Contains
     Integer,            Intent( InOut ) :: vec(:)
     Integer,            Intent( In    ) :: source,tag
 
-    Integer                             :: n_l,n_u,n_s
+    Integer :: n_s
 
-    If (comm%mxnode == 1) Return
-    n_l = Lbound(vec, Dim = 1)
-    n_u = Ubound(vec, Dim = 1)
     n_s = Size(vec, Dim = 1)
 
-    Call MPI_IRECV(vec(n_l:n_u),n_s,MPI_INTEGER,source,tag,comm%comm,comm%request,comm%ierr)
+    Call MPI_IRECV(vec(:),n_s,MPI_INTEGER,source,tag,comm%comm,comm%request,comm%ierr)
   End Subroutine girecv_integer_vector
 
   Subroutine girecv_real_scalar(comm,s,source,tag)
@@ -1471,8 +1418,6 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
     Real( Kind = wp),   Intent(   Out ) :: s
     Integer,            Intent( In    ) :: source,tag
-
-    If (comm%mxnode == 1) Return
 
     Call MPI_IRECV(s,1,wp_mpi,source,tag,comm%comm,comm%request,comm%ierr)
   End Subroutine girecv_real_scalar
@@ -1491,14 +1436,11 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: vec(:)
     Integer,            Intent( In    ) :: source,tag
 
-    Integer                             :: n_l,n_u,n_s
+    Integer :: n_s
 
-    If (comm%mxnode == 1) Return
-    n_l = Lbound(vec, Dim = 1)
-    n_u = Ubound(vec, Dim = 1)
     n_s = Size(vec, Dim = 1)
 
-    Call MPI_IRECV(vec(n_l:n_u),n_s,wp_mpi,source,tag,comm%comm,comm%request,comm%ierr)
+    Call MPI_IRECV(vec(:),n_s,wp_mpi,source,tag,comm%comm,comm%request,comm%ierr)
   End Subroutine girecv_real_vector
 
   Subroutine girecv_real_array3(comm,arr,source,tag)
@@ -1515,17 +1457,14 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: arr(:,:,:)
     Integer,            Intent( In    ) :: source,tag
 
-    Integer                             :: i
-    Integer, Dimension(3)               :: n_l,n_u,n_s
+    Integer               :: i
+    Integer, Dimension(3) :: n_s
 
-    If (comm%mxnode == 1) Return
     Do i = 1, 3
-      n_l(i) = Lbound(arr, Dim = i)
-      n_u(i) = Ubound(arr, Dim = i)
       n_s(i) = Size(arr, Dim = i)
     End Do
 
-    Call MPI_IRECV(arr(n_l(1):n_u(1),n_l(2):n_u(2),n_l(3):n_u(3)),Product(n_s(1:3)), &
+    Call MPI_IRECV(arr(:,:,:),Product(n_s(1:3)), &
                   wp_mpi,source,tag,comm%comm,comm%request,comm%ierr)
   End Subroutine girecv_real_array3
 
@@ -1542,8 +1481,6 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
     Logical,            Intent(   Out ) :: s
     Integer,            Intent( In    ) :: source,tag
-
-    If (comm%mxnode == 1) Return
 
     Call MPI_IRECV(s,1,MPI_LOGICAL,source,tag,comm%comm,comm%request,comm%ierr)
   End Subroutine girecv_logical_scalar
@@ -1562,14 +1499,11 @@ Contains
     Logical,            Intent( InOut ) :: vec(:)
     Integer,            Intent( In    ) :: source,tag
 
-    Integer                             :: n_l,n_u,n_s
+    Integer :: n_s
 
-    If (comm%mxnode == 1) Return
-    n_l = Lbound(vec, Dim = 1)
-    n_u = Ubound(vec, Dim = 1)
     n_s = Size(vec, Dim = 1)
 
-    Call MPI_IRECV(vec(n_l:n_u),n_s,MPI_LOGICAL,source,tag,comm%comm,comm%request,comm%ierr)
+    Call MPI_IRECV(vec(:),n_s,MPI_LOGICAL,source,tag,comm%comm,comm%request,comm%ierr)
   End Subroutine girecv_logical_vector
 
   Subroutine girecv_character_scalar(comm,s,source,tag)
@@ -1587,8 +1521,6 @@ Contains
     Integer,              Intent( In    ) :: source,tag
 
     Integer :: n_s
-
-    If (comm%mxnode == 1) Return
 
     n_s = Len(s)
 
@@ -1609,15 +1541,11 @@ Contains
     Character( Len = * ), Intent( InOut ) :: vec(:)
     Integer,              Intent( In    ) :: source,tag
 
-    Integer :: n_l,n_u,n_s
+    Integer :: n_s
 
-    If (comm%mxnode == 1) Return
+    n_s = Size(vec, Dim = 1)*Len(vec(1))
 
-    n_l = Lbound(vec, Dim = 1)
-    n_u = Ubound(vec, Dim = 1)
-    n_s = Size(vec, Dim = 1)*Len(vec(n_l))
-
-    Call MPI_IRECV(vec(n_l:n_u),n_s,MPI_CHARACTER,source,tag,comm%comm,comm%request,comm%ierr)
+    Call MPI_IRECV(vec(:),n_s,MPI_CHARACTER,source,tag,comm%comm,comm%request,comm%ierr)
   End Subroutine girecv_character_vector
 
   Subroutine gscatter_integer_to_scalar(comm,sendbuf,recv,root)
@@ -1635,14 +1563,7 @@ Contains
     Integer,            Intent(   Out ) :: recv
     Integer,            Intent( In    ) :: root
 
-    Integer :: s_l,s_u
-
-    If (comm%mxnode == 1) Return
-
-    s_l = Lbound(sendbuf, Dim = 1)
-    s_u = Ubound(sendbuf, Dim = 1)
-
-    Call MPI_SCATTER(sendbuf(s_l:s_u),1,MPI_INTEGER, &
+    Call MPI_SCATTER(sendbuf(:),1,MPI_INTEGER, &
                      recv,1,MPI_INTEGER,root,comm%comm,comm%ierr)
   End Subroutine gscatter_integer_to_scalar
 
@@ -1662,19 +1583,12 @@ Contains
     Integer,            Intent(   Out ) :: recvbuf(:)
     Integer,            Intent( In    ) :: root
 
-    Integer :: s_l,s_u,r_l,r_u,r_s
+    Integer :: r_s
 
-    If (comm%mxnode == 1) Return
-
-    s_l = Lbound(sendbuf, Dim = 1)
-    s_u = Ubound(sendbuf, Dim = 1)
-
-    r_l = Lbound(recvbuf, Dim = 1)
-    r_u = Ubound(recvbuf, Dim = 1)
     r_s = Size(recvbuf, Dim = 1)
 
-    Call MPI_SCATTER(sendbuf(s_l:s_u),scount,MPI_INTEGER, &
-                     recvbuf(r_l:r_u),r_s,MPI_INTEGER,root,comm%comm,comm%ierr)
+    Call MPI_SCATTER(sendbuf(:),scount,MPI_INTEGER, &
+                     recvbuf(:),r_s,MPI_INTEGER,root,comm%comm,comm%ierr)
   End Subroutine gscatter_integer_to_vector
 
   Subroutine gscatter_real_to_scalar(comm,sendbuf,recv,root)
@@ -1692,14 +1606,7 @@ Contains
     Real( Kind = wp ),  Intent(   Out ) :: recv
     Integer,            Intent( In    ) :: root
 
-    Integer :: s_l,s_u
-
-    If (comm%mxnode == 1) Return
-
-    s_l = Lbound(sendbuf, Dim = 1)
-    s_u = Ubound(sendbuf, Dim = 1)
-
-    Call MPI_SCATTER(sendbuf(s_l:s_u),1,wp_mpi, &
+    Call MPI_SCATTER(sendbuf(:),1,wp_mpi, &
                      recv,1,wp_mpi,root,comm%comm,comm%ierr)
   End Subroutine gscatter_real_to_scalar
 
@@ -1719,19 +1626,12 @@ Contains
     Real( Kind = wp ),  Intent(   Out ) :: recvbuf(:)
     Integer,            Intent( In    ) :: root
 
-    Integer :: s_l,s_u,r_l,r_u,r_s
+    Integer :: r_s
 
-    If (comm%mxnode == 1) Return
-
-    s_l = Lbound(sendbuf, Dim = 1)
-    s_u = Ubound(sendbuf, Dim = 1)
-
-    r_l = Lbound(recvbuf, Dim = 1)
-    r_u = Ubound(recvbuf, Dim = 1)
     r_s = Size(recvbuf, Dim = 1)
 
-    Call MPI_SCATTER(sendbuf(s_l:s_u),scount,wp_mpi, &
-                     recvbuf(r_l:r_u),r_s,wp_mpi,root,comm%comm,comm%ierr)
+    Call MPI_SCATTER(sendbuf(:),scount,wp_mpi, &
+                     recvbuf(:),r_s,wp_mpi,root,comm%comm,comm%ierr)
   End Subroutine gscatter_real_to_vector
 
   Subroutine gscatterv_integer(comm,sendbuf,scounts,disps,recvbuf,root)
@@ -1752,19 +1652,12 @@ Contains
     Integer,            Intent(   Out ) :: recvbuf(:)
     Integer,            Intent( In    ) :: root
 
-    Integer :: s_l,s_u,r_l,r_u,r_s
+    Integer :: r_s
 
-    If (comm%mxnode == 1) Return
-
-    s_l = Lbound(sendbuf, Dim = 1)
-    s_u = Ubound(sendbuf, Dim = 1)
-
-    r_l = Lbound(recvbuf, Dim = 1)
-    r_u = Ubound(recvbuf, Dim = 1)
     r_s = Size(recvbuf, Dim = 1)
 
-    Call MPI_SCATTERV(sendbuf(s_l:s_u),scounts(:),disps(:),MPI_INTEGER, &
-                      recvbuf(r_l:r_u),r_s,MPI_INTEGER, &
+    Call MPI_SCATTERV(sendbuf(:),scounts(:),disps(:),MPI_INTEGER, &
+                      recvbuf(:),r_s,MPI_INTEGER, &
                       root,comm%comm,comm%ierr)
   End Subroutine gscatterv_integer
 
@@ -1786,19 +1679,12 @@ Contains
     Real( Kind = wp),   Intent(   Out ) :: recvbuf(:)
     Integer,            Intent( In    ) :: root
 
-    Integer :: s_l,s_u,r_l,r_u,r_s
+    Integer :: r_s
 
-    If (comm%mxnode == 1) Return
-
-    s_l = Lbound(sendbuf, Dim = 1)
-    s_u = Ubound(sendbuf, Dim = 1)
-
-    r_l = Lbound(recvbuf, Dim = 1)
-    r_u = Ubound(recvbuf, Dim = 1)
     r_s = Size(recvbuf, Dim = 1)
 
-    Call MPI_SCATTERV(sendbuf(s_l:s_u),scounts(:),disps(:),wp_mpi, &
-                      recvbuf(r_l:r_u),r_s,wp_mpi, &
+    Call MPI_SCATTERV(sendbuf(:),scounts(:),disps(:),wp_mpi, &
+                      recvbuf(:),r_s,wp_mpi, &
                       root,comm%comm,comm%ierr)
   End Subroutine gscatterv_real
 
@@ -1820,22 +1706,14 @@ Contains
     Character( Len = * ), Intent(   Out ) :: recvbuf(:)
     Integer,              Intent( In    ) :: root
 
-    Integer :: s_l,s_u,r_l,r_u,r_s
-    Integer :: s_str,r_str
+    Integer :: r_s,s_str,r_str
 
-    If (comm%mxnode == 1) Return
-
-    s_l = Lbound(sendbuf, Dim = 1)
-    s_u = Ubound(sendbuf, Dim = 1)
-    s_str = Len(sendbuf(s_l))
-
-    r_l = Lbound(recvbuf, Dim = 1)
-    r_u = Ubound(recvbuf, Dim = 1)
     r_s = Size(recvbuf, Dim = 1)
-    r_str = Len(recvbuf(s_l))
+    s_str = Len(sendbuf(1))
+    r_str = Len(recvbuf(1))
 
-    Call MPI_SCATTERV(sendbuf(s_l:s_u),scounts(:)*s_str,disps(:)*s_str,MPI_CHARACTER, &
-                      recvbuf(r_l:r_u),r_s*r_str,MPI_CHARACTER, &
+    Call MPI_SCATTERV(sendbuf(:),scounts(:)*s_str,disps(:)*s_str,MPI_CHARACTER, &
+                      recvbuf(:),r_s*r_str,MPI_CHARACTER, &
                       root,comm%comm,comm%ierr)
   End Subroutine gscatterv_character
 
@@ -1856,28 +1734,17 @@ Contains
     Real( Kind = wp),   Intent(   Out ) :: recvbuf(:,:)
     Integer,            Intent( In    ) :: root
 
-    Integer, Dimension(2) :: s_l,s_u,r_l,r_u
     Integer               :: s_c,r_c,r_s
-    Integer               :: i
 
-    If (comm%mxnode == 1) Return
-
-    Do i = 1, 2
-      s_l(i) = Lbound(sendbuf, Dim = i)
-      s_u(i) = Ubound(sendbuf, Dim = i)
-
-      r_l(i) = Lbound(recvbuf, Dim = i)
-      r_u(i) = Ubound(recvbuf, Dim = i)
-    End Do
     s_c = Size(sendbuf, Dim = 1)
     r_c = Size(recvbuf, Dim = 1)
     r_s = Size(recvbuf, Dim = 2)
 
     ! This implimentation relies on arrays being column major as defined in the
     ! Fortran standard
-    Call MPI_SCATTERV(sendbuf(s_l(1):s_u(1),s_l(2):s_u(2)), &
+    Call MPI_SCATTERV(sendbuf(:,:), &
                       scounts(:)*s_c,disps(:)*s_c,wp_mpi, &
-                      recvbuf(r_l(1):r_u(1),r_l(2):r_l(2)), &
+                      recvbuf(:,:), &
                       r_s*r_c,wp_mpi, &
                       root,comm%comm,comm%ierr)
   End Subroutine gscatter_columns_real
@@ -1899,21 +1766,10 @@ Contains
     Integer,            Intent(   Out ) :: recvbuf(:)
     Integer,            Intent( In    ) :: rcount
 
-    Integer :: s_l,s_u,r_l,r_u
     Integer :: s_s
 
-    If (comm%mxnode == 1) Return
-
-    s_l = Lbound(sendbuf, Dim = 1)
-    s_u = Ubound(sendbuf, Dim = 1)
-
-    r_l = Lbound(recvbuf, Dim = 1)
-    r_u = Ubound(recvbuf, Dim = 1)
-
-    s_s = Size(sendbuf, Dim = 1)
-
-    Call MPI_ALLGATHER(sendbuf(s_l:s_u),s_s,MPI_INTEGER, &
-                       recvbuf(r_l:r_u),rcount,MPI_INTEGER, &
+    Call MPI_ALLGATHER(sendbuf(:),s_s,MPI_INTEGER, &
+                       recvbuf(:),rcount,MPI_INTEGER, &
                        comm%comm,comm%ierr)
   End Subroutine gallgather_integer_vector_to_vector
 
@@ -1933,15 +1789,8 @@ Contains
     Integer,            Intent( In    ) :: s
     Integer,            Intent(   Out ) :: recvbuf(:)
 
-    Integer :: r_l,r_u
-
-    If (comm%mxnode == 1) Return
-
-    r_l = Lbound(recvbuf, Dim = 1)
-    r_u = Ubound(recvbuf, Dim = 1)
-
     Call MPI_ALLGATHER(s,1,MPI_INTEGER, &
-                       recvbuf(r_l:r_u),1,MPI_INTEGER, &
+                       recvbuf(:),1,MPI_INTEGER, &
                        comm%comm,comm%ierr)
   End Subroutine gallgather_integer_scalar_to_vector
 
@@ -1961,18 +1810,8 @@ Contains
     Integer,            Intent( In    ) :: scount
     Integer,            Intent(   Out ) :: recvbuf(:)
 
-    Integer :: s_l,s_u,r_l,r_u
-
-    If (comm%mxnode == 1) Return
-
-    s_l = Lbound(sendbuf(:), Dim = 1)
-    s_u = Ubound(sendbuf(:), Dim = 1)
-
-    r_l = Lbound(recvbuf(:), Dim = 1 )
-    r_u = Ubound(recvbuf(:), Dim = 1 )
-
-    Call MPI_ALLTOALL(sendbuf(s_l:s_u),scount,MPI_INTEGER, &
-                      recvbuf(r_l:r_u),scount,MPI_INTEGER, &
+    Call MPI_ALLTOALL(sendbuf(:),scount,MPI_INTEGER, &
+                      recvbuf(:),scount,MPI_INTEGER, &
                       comm%comm,comm%ierr)
   End Subroutine galltoall_integer
 
@@ -1998,10 +1837,6 @@ Contains
     Integer,            Intent( In    ) :: rcounts(:)
     Integer,            Intent( In    ) :: rdisps(:)
 
-    Integer :: s_l,s_u,r_l,r_u
-
-    If (comm%mxnode == 1) Return
-
     Call MPI_ALLTOALLV(sendbuf(:),scounts(:),sdisps(:),MPI_INTEGER, &
                        recvbuf(:),rcounts(:),rdisps(:),MPI_INTEGER, &
                        comm%comm,comm%ierr)
@@ -2022,8 +1857,6 @@ Contains
     Logical,            Intent( In    ) :: send
     Logical,            Intent(   Out ) :: recv
     Integer,            Intent( In    ) :: op
-
-    If (comm%mxnode == 1) Return
 
     Call MPI_ALLREDUCE(send,recv,1,MPI_LOGICAL,op, &
                        comm%comm,comm%ierr)
@@ -2046,8 +1879,6 @@ Contains
     Integer,            Intent( In    ) :: op
 
     Integer :: n_s
-
-    If (comm%mxnode == 1) Return
 
     n_s = size(sendbuf(:), Dim = 1)
 
