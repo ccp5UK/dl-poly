@@ -248,6 +248,8 @@ Use nve, Only : nve_0_vv, nve_1_vv
   Type(comms_type), Allocatable :: dlp_world(:),comm
   Type(ewald_type) :: ewld
 
+  Character( Len = 256 ) :: messages(5)
+
   ! SET UP COMMUNICATIONS & CLOCKING
 
   Allocate(dlp_world(0:0))
