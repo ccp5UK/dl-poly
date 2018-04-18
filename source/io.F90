@@ -23,6 +23,7 @@ Module io
 
   Use kinds, Only : wp, li
   Use comms, Only : comms_type, wp_mpi,datarep
+  Use errors_warnings, Only : error
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -79,6 +80,7 @@ Module io
   Public :: io_nc_get_dim
   Public :: io_nc_set_def
   Public :: io_nc_put_var
+  Public :: io_get_var
   Public :: io_nc_get_var
   Public :: io_nc_get_att
   Public :: io_nc_set_real_precision
@@ -2218,6 +2220,47 @@ Contains
     Call netcdf_put_var( what, known_files( io_file_handle )%desc, val, start, count )
 
   End Subroutine io_nc_put_var_chr_2d
+
+  Subroutine io_get_var( what, fh, start, count, x, y, z )
+
+    Character( Len = * )             , Intent( In    ) :: what
+    Integer                          , Intent( In    ) :: fh
+    Integer   ,        Dimension( : ), Intent( In    ) :: start
+    Integer   ,        Dimension( : ), Intent( In    ) :: count
+    Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: x
+    Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: y
+    Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: z
+
+    Real( Kind = wp ), Dimension( :, : ), Allocatable :: buff
+
+    Integer :: to_read
+    Integer :: fail
+    Integer :: i
+
+    Character( Len = 256 ) :: message
+
+    to_read = count( 2 )
+
+    Allocate (buff( 1:3, 1:to_read ), Stat=fail)
+    If (fail /= 0) Then
+       Write( message, '(a)') 'allocation failure in io_get_var'
+       Call error(0, message)
+    End If
+
+    Call io_nc_get_var( what, fh, buff, start, count )
+
+    Do i = 1, to_read
+       x( i ) = buff( 1, i )
+       y( i ) = buff( 2, i )
+       z( i ) = buff( 3, i )
+    End Do
+
+    Deallocate (buff, Stat=fail)
+    If (fail /= 0) Then
+       Write( message, '(a)') 'deallocation failure in io_get_var'
+       Call error(0, message)
+    End If
+  End Subroutine io_get_var
 
   Subroutine io_nc_get_var_rwp_0d( what, io_file_handle, val, start, count )
 
