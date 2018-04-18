@@ -35,6 +35,7 @@ Module configuration
                             io_close, io_finalize,     &
                             io_read_batch,             &
                             io_nc_get_dim,             &
+                            io_get_var,                &
                             io_nc_get_var,             &
                             io_nc_get_att,             &
                             IO_READ_MASTER,            &
@@ -1643,14 +1644,14 @@ Subroutine read_config_parallel                 &
 
               Select Case( levcfg )
               Case( 0, 3 )
-                 Call get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+                 Call io_get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
               Case( 1 )
-                 Call get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
-                 Call get_var( 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
+                 Call io_get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+                 Call io_get_var( 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
               Case( 2 )
-                 Call get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
-                 Call get_var( 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
-                 Call get_var( 'forces'     , fh, start, count, cxx_read, cyy_read, czz_read )
+                 Call io_get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+                 Call io_get_var( 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
+                 Call io_get_var( 'forces'     , fh, start, count, cxx_read, cyy_read, czz_read )
               End Select
            End If
 
@@ -1946,49 +1947,6 @@ Subroutine read_config_parallel                 &
 
 100 Continue
   Call error(55)
-
-Contains
-
-  Subroutine get_var( what, fh, start, count, x, y, z )
-
-    Character( Len = * )             , Intent( In    ) :: what
-    Integer                          , Intent( In    ) :: fh
-    Integer   ,        Dimension( : ), Intent( In    ) :: start
-    Integer   ,        Dimension( : ), Intent( In    ) :: count
-    Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: x
-    Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: y
-    Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: z
-
-    Real( Kind = wp ), Dimension( :, : ), Allocatable :: buff
-
-    Integer :: to_read
-    Integer :: fail
-    Integer :: i
-
-    to_read = count( 2 )
-
-    Allocate (buff( 1:3, 1:to_read ), Stat=fail)
-    If (fail /= 0) Then
-       Write( nrite, '(/,1x,a,i0)') 'read_config_parallel allocation failure 4, node: ', comm%idnode
-       Call error( 0 )
-    End If
-
-    Call io_nc_get_var( what, fh, buff, start, count )
-
-    Do i = 1, to_read
-       x( i ) = buff( 1, i )
-       y( i ) = buff( 2, i )
-       z( i ) = buff( 3, i )
-    End Do
-
-    Deallocate (buff, Stat=fail)
-    If (fail /= 0) Then
-       Write( nrite, '(/,1x,a,i0)') 'read_config_parallel allocation failure 4, node: ', comm%idnode
-       Call error( 0 )
-    End If
-
-  End Subroutine get_var
-
 End Subroutine read_config_parallel
 
 Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,comm)
