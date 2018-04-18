@@ -15,7 +15,8 @@ Module ttm
   Use kinds,           Only : wp
   Use setup
   Use configuration,   Only : cell
-  Use domains
+  Use domains,         Only : nprx,npry,nprz,r_nprx,r_npry,r_nprz,idcube,map, &
+                              idx,idy,idz
   Use comms,           Only : wp_mpi,comms_type,gsum,gmin,gmax,gcheck,gsync, &
                               grid1_tag,grid2_tag
   Use parse,           Only : tabs_2_blanks, get_line, get_word, &
@@ -331,25 +332,6 @@ Contains
 
   End Subroutine deallocate_ttm_arrays
 
-  Function idcube(i,j,k)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 hypercube mapping function
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov august 2006
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Integer, Intent( In    ) :: i,j,k
-
-    Integer                  :: idcube
-
-    idcube = i + nprx * ( j + npry * k )
-
-  End Function idcube
-  
   Subroutine eltemp_sum (eltempsum,comm)
 
 ! Find sum of electronic temperatures over all active CET voxels
