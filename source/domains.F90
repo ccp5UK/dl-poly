@@ -17,14 +17,15 @@ Module domains
 
   Implicit None
 
+  Private
+
   Integer          , Public, Save :: nprx,npry,nprz, &   ! dimensions of the 3D processor/domain grid
                                      idx,idy,idz,    &   ! this domain's coordinates on the grid
                                      map(1:26),mop(1:26) ! neighbourhood coordinates map of the grid
   Real( Kind = wp ), Public, Save :: nprx_r,npry_r,nprz_r, & ! RS = reduced space [-0.5:0.5)^3
                                      r_nprx,r_npry,r_nprz    ! domain's length in RS
 
-  Public  :: map_domains
-  Private
+  Public  :: map_domains,idcube
 
 ! Size of array for factorization. It allows for the first max_factor-1 prime numbers in the
 ! factorization, so 10 allows for the factors 2, 3, 5, 7, 11, 13, 17, 19, 23
@@ -413,25 +414,23 @@ Contains
 
     End Function get_nth_factor
 
-    Function idcube(i,j,k)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 hypercube mapping function
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov august 2006
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      Integer                  :: idcube
-
-      Integer, Intent( In    ) :: i,j,k
-
-      idcube = i + nprx * ( j + npry * k )
-
-    End Function idcube
-
   End Subroutine map_domains
+
+  Function idcube(i,j,k)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 hypercube mapping function
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov august 2006
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer                  :: idcube
+
+    Integer, Intent( In    ) :: i,j,k
+
+    idcube = i + nprx * ( j + npry * k )
+  End Function idcube
 
 End Module domains
