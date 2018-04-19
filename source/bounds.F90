@@ -14,11 +14,12 @@ Module bounds
   Use greenkubo,       Only : vafsamp
   Use mpole,           Only : keyind,induce
   Use ttm,             Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
-  Use numerics,        Only : adjust_kmax,dcell
+  Use numerics,        Only : dcell
   Use Kontrol,         Only : scan_control, scan_control_pre
   Use configuration,   Only : scan_config,read_config
   Use ffield,          Only : scan_field
   Use errors_warnings, Only : error,warning,info
+  Use parallel_fft,    Only : adjust_kmax
 
   Implicit None
   Private
