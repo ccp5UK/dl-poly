@@ -27,6 +27,7 @@ Module defects
                                 io_write_record,          &
                                 io_write_batch,           &
                                 io_close, io_finalize,    &
+                                io_get_var,               &
                                 io_nc_get_var,            &
                                 io_read_batch,            &
                                 io_nc_create,             &
@@ -2210,7 +2211,7 @@ Subroutine defects_reference_read_parallel      &
               start = (/ 1, first_at( my_read_proc_num ) + 1, frame /)
               count = (/ 3, to_read, 1 /)
 
-              Call get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+              Call io_get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
            End If
 
         End If No_netCDF
@@ -2381,49 +2382,6 @@ Dispatch:  Do i=1,n_loc
 
 100 Continue
   Call error(554)
-
-Contains
-
-  Subroutine get_var( what, fh, start, count, x, y, z )
-
-    Character( Len = * )             , Intent( In    ) :: what
-    Integer                          , Intent( In    ) :: fh
-    Integer   ,        Dimension( : ), Intent( In    ) :: start
-    Integer   ,        Dimension( : ), Intent( In    ) :: count
-    Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: x
-    Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: y
-    Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: z
-
-    Real( Kind = wp ), Dimension( :, : ), Allocatable :: buff
-
-    Integer :: to_read
-    Integer :: fail
-    Integer :: i
-
-    to_read = count( 2 )
-
-    Allocate (buff( 1:3, 1:to_read ), Stat=fail)
-    If (fail /= 0) Then
-       Write(message,'(a)') 'defects_reference_read_parallel allocation failure 4'
-       Call error(0,message)
-    End If
-
-    Call io_nc_get_var( what, fh, buff, start, count )
-
-    Do i = 1, to_read
-       x( i ) = buff( 1, i )
-       y( i ) = buff( 2, i )
-       z( i ) = buff( 3, i )
-    End Do
-
-    Deallocate (buff, Stat=fail)
-    If (fail /= 0) Then
-       Write(message,'(a,i0)') 'defects_reference_read_parallel allocation failure 4'
-       Call error(0,message)
-    End If
-
-  End Subroutine get_var
-
 End Subroutine defects_reference_read_parallel
 
 
