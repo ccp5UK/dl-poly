@@ -4,7 +4,6 @@ Module numerics
   Use setup, Only : lseed,seed,zero_plus
   Use comms, Only : comms_type
   Use setup, Only : rt3,zero_plus, sqrpi,rt2,half_minus! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
-  Use parallel_fft, Only : pfft_length_ok
   Implicit None
   Private
 
@@ -90,27 +89,28 @@ Public :: sarurnd
 Public :: match
 Public :: local_index
 Public :: Factorial
-Public ::  box_mueller_saru1
-Public ::  box_mueller_saru2
-Public ::  box_mueller_saru3
-Public ::  box_mueller_saru6
-Public ::  box_mueller_uni
-Public ::  gauss_1
-Public ::  gauss_2
-Public ::  erfcgen
-Public ::  erfgen_met
-Public ::  shellsort
-Public ::  shellsort2
-Public ::  dcell
-Public ::  invert
-Public ::  images
-Public ::  images_s
-Public ::  pbcshift
-Public ::  pbcshfrc
-Public ::  pbcshfrl
-Public ::  jacobi
-Public ::  mat_mul
-Public ::  adjust_kmax
+Public :: box_mueller_saru1
+Public :: box_mueller_saru2
+Public :: box_mueller_saru3
+Public :: box_mueller_saru6
+Public :: box_mueller_uni
+Public :: gauss_1
+Public :: gauss_2
+Public :: erfcgen
+Public :: erfgen_met
+Public :: shellsort
+Public :: shellsort2
+Public :: dcell
+Public :: invert
+Public :: images
+Public :: images_s
+Public :: pbcshift
+Public :: pbcshfrc
+Public :: pbcshfrl
+Public :: jacobi
+Public :: mat_mul
+Public :: factor
+Public :: get_nth_prime
 
 Contains
 
@@ -2602,31 +2602,82 @@ Function Factorial(n)
 
 End Function Factorial
 
-Subroutine adjust_kmax( kmax, P )
+Subroutine factor( n, facs )
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 routine to adjust a k-vector length
-! with what DaFT can handle
+! dl_poly_4 prime factorisability decomposition function
 !
 ! copyright - daresbury laboratory
 ! author    - i.j.bush august 2010
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer, Intent( InOut ) :: kmax
-  Integer, Intent( In    ) :: P
+  Integer                , Intent( In    ) :: n
+  Integer, Dimension( : ), Intent(   Out ) :: facs
 
-! First make sure kmax is a multiple of P, and is at least as big as the input value
+  Integer :: left
+  Integer :: p
+  Integer :: i
 
-  If ( Mod( kmax, P ) /= 0 ) kmax = ( kmax / P + 1 ) * P
+  facs = 0
 
-! Now check it has suitable factors
+  left = n
+  Do i = 1, Size( facs ) - 1
+     p = get_nth_prime( i )
 
-  Do While ( .not. pfft_length_ok( kmax / P ) )
-     kmax = kmax + P
+     If ( p <= 0 ) Exit
+
+     Do While ( p * ( left / p ) == left )
+        left = left / p
+
+        facs( i ) = facs( i ) + 1
+     End Do
   End Do
 
-End Subroutine adjust_kmax
-End Module numerics
+  facs( Size( facs ) ) = left
 
+End Subroutine factor
+
+Function get_nth_prime( n )
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 return n-th prime function
+!
+! copyright - daresbury laboratory
+! author    - i.j.bush august 2010
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Integer                  :: get_nth_prime
+
+  Integer, Intent( In    ) :: n
+
+  Integer, Dimension( 1:170 ), Parameter :: primes = (/                             &
+         2,      3,      5,      7,     11,     13,     17,     19,     23,     29, &
+        31,     37,     41,     43,     47,     53,     59,     61,     67,     71, &
+        73,     79,     83,     89,     97,    101,    103,    107,    109,    113, &
+       127,    131,    137,    139,    149,    151,    157,    163,    167,    173, &
+       179,    181,    191,    193,    197,    199,    211,    223,    227,    229, &
+       233,    239,    241,    251,    257,    263,    269,    271,    277,    281, &
+       283,    293,    307,    311,    313,    317,    331,    337,    347,    349, &
+       353,    359,    367,    373,    379,    383,    389,    397,    401,    409, &
+       419,    421,    431,    433,    439,    443,    449,    457,    461,    463, &
+       467,    479,    487,    491,    499,    503,    509,    521,    523,    541, &
+       547,    557,    563,    569,    571,    577,    587,    593,    599,    601, &
+       607,    613,    617,    619,    631,    641,    643,    647,    653,    659, &
+       661,    673,    677,    683,    691,    701,    709,    719,    727,    733, &
+       739,    743,    751,    757,    761,    769,    773,    787,    797,    809, &
+       811,    821,    823,    827,    829,    839,    853,    857,    859,    863, &
+       877,    881,    883,    887,    907,    911,    919,    929,    937,    941, &
+       947,    953,    967,    971,    977,    983,    991,    997,   1009,   1013 /)
+
+  If ( n <= Size( primes ) ) Then
+     get_nth_prime = primes( n )
+  Else
+     get_nth_prime = -1
+  End If
+
+End Function get_nth_prime
+End Module numerics

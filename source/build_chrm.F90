@@ -26,6 +26,7 @@ Module build_chrm
 
   Use mpole, Only : keyind,lchatm ! equivalent to lexatm in configuration
   Use numerics, Only : local_index,shellsort
+  Use build_excl, Only : add_exclusion
   Implicit None
 
   Private
@@ -1163,72 +1164,5 @@ Contains
       End If 
       Deallocate (lchatm, Stat=fail)
     End If
-
-  Contains
-
-    Subroutine add_exclusion(safe,ia0,ib,ibig,lchatm)
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !
-      ! dl_poly_4 subroutine to add CHARMMing core-shell atoms to the
-      ! CHARMMing core-shell atoms list provided they are not already included
-      !
-      ! copyright - daresbury laboratory
-      ! author    - w.smith march 1999
-      ! amended   - i.t.todorov december 2016
-      !
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-      Integer,                                  Intent( In    ) :: ia0,ib
-      Logical,                                  Intent( InOut ) :: safe
-      Integer,                                  Intent( InOut ) :: ibig
-      Integer, Dimension( 0:mxexcl, 1:mxatdm ), Intent( InOut ) :: lchatm
-
-      Logical :: safe_local,l_excluded
-      Integer :: last
-
-      ! Get current length
-
-      last = lchatm(0,ia0)
-
-      ! Determine possible exclusion
-
-      l_excluded = Any(lchatm(1:last,ia0) == ib)
-
-      If (.not.l_excluded) Then
-
-        ! Get local safety no array overflow
-
-        safe_local = (last < mxexcl-1)
-
-        ! Determine global safety
-
-        safe = safe .and. safe_local
-
-        If (safe_local) Then
-
-          ! Increase length of the ia0 exclusion list and tag ib in it
-
-          last = last + 1
-          lchatm(0,ia0) = last
-          lchatm(last,ia0) = ib
-
-          ibig=Max(ibig,last)
-
-        Else
-
-          ! Collect number of offences
-
-          lchatm(mxexcl,ia0) = lchatm(mxexcl,ia0) + 1
-
-          ibig=Max(ibig,last+lchatm(mxexcl,ia0))
-
-        End If
-
-      End If
-
-    End Subroutine add_exclusion
-
   End Subroutine build_chrm_intra
 End Module build_chrm

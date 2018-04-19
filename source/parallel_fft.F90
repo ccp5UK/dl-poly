@@ -23,10 +23,12 @@ Module parallel_fft
   Use comms, Only : wp_mpi ! access to the generalised wp_mpi and
                    ! the intrinsics in mpif.h/mpi-module
   Use gpfa235, Only : gpfa_set
+  Use numerics, Only : factor, get_nth_prime
 
   Implicit None
 
-  Public :: initialize_fft, summarize_fft, pfft, pfft_indices, pfft_length_ok
+  Public :: initialize_fft,summarize_fft,pfft,pfft_indices,adjust_kmax, &
+            pfft_length_ok
 
   Interface get_start_point
     Module Procedure get_start_point_complex
@@ -2175,66 +2177,32 @@ Contains
 
   End Function fft_time
 
-  Subroutine factor( n, facs )
+  Subroutine adjust_kmax( kmax, P )
 
-    Integer                , Intent( In    ) :: n
-    Integer, Dimension( : ), Intent(   Out ) :: facs
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 routine to adjust a k-vector length
+  ! with what DaFT can handle
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.j.bush august 2010
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer :: left
-    Integer :: p
-    Integer :: i
+    Integer, Intent( InOut ) :: kmax
+    Integer, Intent( In    ) :: P
 
-    facs = 0
+  ! First make sure kmax is a multiple of P, and is at least as big as the input value
 
-    left = n
-    Do i = 1, Size( facs ) - 1
-       p = get_nth_prime( i )
+    If ( Mod( kmax, P ) /= 0 ) kmax = ( kmax / P + 1 ) * P
 
-       If ( p <= 0 ) Exit
+  ! Now check it has suitable factors
 
-       Do While ( p * ( left / p ) == left )
-          left = left / p
-
-          facs( i ) = facs( i ) + 1
-       End Do
+    Do While ( .not. pfft_length_ok( kmax / P ) )
+       kmax = kmax + P
     End Do
 
-    facs( Size( facs ) ) = left
-
-  End Subroutine factor
-
-  Function get_nth_prime( n )
-
-    Integer                  :: get_nth_prime
-
-    Integer, Intent( In    ) :: n
-
-    Integer, Dimension( 1:170 ), Parameter :: primes = (/                             &
-           2,      3,      5,      7,     11,     13,     17,     19,     23,     29, &
-          31,     37,     41,     43,     47,     53,     59,     61,     67,     71, &
-          73,     79,     83,     89,     97,    101,    103,    107,    109,    113, &
-         127,    131,    137,    139,    149,    151,    157,    163,    167,    173, &
-         179,    181,    191,    193,    197,    199,    211,    223,    227,    229, &
-         233,    239,    241,    251,    257,    263,    269,    271,    277,    281, &
-         283,    293,    307,    311,    313,    317,    331,    337,    347,    349, &
-         353,    359,    367,    373,    379,    383,    389,    397,    401,    409, &
-         419,    421,    431,    433,    439,    443,    449,    457,    461,    463, &
-         467,    479,    487,    491,    499,    503,    509,    521,    523,    541, &
-         547,    557,    563,    569,    571,    577,    587,    593,    599,    601, &
-         607,    613,    617,    619,    631,    641,    643,    647,    653,    659, &
-         661,    673,    677,    683,    691,    701,    709,    719,    727,    733, &
-         739,    743,    751,    757,    761,    769,    773,    787,    797,    809, &
-         811,    821,    823,    827,    829,    839,    853,    857,    859,    863, &
-         877,    881,    883,    887,    907,    911,    919,    929,    937,    941, &
-         947,    953,    967,    971,    977,    983,    991,    997,   1009,   1013 /)
-
-    If ( n <= Size( primes ) ) Then
-       get_nth_prime = primes( n )
-    Else
-       get_nth_prime = -1
-    End If
-
-  End Function get_nth_prime
+  End Subroutine adjust_kmax
 
   Function pfft_length_ok( n )
 

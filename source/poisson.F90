@@ -11,8 +11,8 @@ Module poisson
                               chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use ewald,           Only : ewald_type
   Use errors_warnings, Only : error,info
-  Use numerics,        Only : dcell,invert,adjust_kmax
-  Use numerics,     Only : adjust_kmax
+  Use numerics,        Only : dcell,invert
+  Use parallel_fft,    Only : adjust_kmax
 
   Implicit None
 
