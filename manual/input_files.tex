@@ -2823,6 +2823,15 @@ key & potential type & \multicolumn{4}{c|}{Variables (1-4)}& functional form \\
   $U(r) = f\left(r\right)U_{ZBL}\left(r\right)+\left(1-f\left(r\right)\right)U_{buckingham}\left(r\right)$ \\
            & with Buckingham           &        $A$    &  $\rho$        &     $C$   &             & \\
            &                           &               &                &           &             & \\
+{\bf mlj}   & Lennard-Jones tapered with MDF      & $\epsilon$ & $\sigma$ &    $r_i$      &                               &
+  $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r}\right)^{6} \right]f(r)$ \\
+           &                           &            &          &          &                               & \\
+{\bf mbuc} & Buckingham tapered with MDF               & $A$        & $\rho$   & $C$      &   $r_i$                          &
+  $U(r) = \left[A~\exp \left( -\frac{r}{\rho} \right) - \frac{C}{r^{6}}\right]f(r)$ \\
+           &                           &            &          &          &                               & \\
+{\bf m126}   & 12-6 Lennard-Jones tapered with MDF      & $A$ & $B$ &    $r_i$      &                               &
+  $U(r) = \left( \frac{A}{r^{12}} - \frac{B}{r^{6}} \right)f(r)$ \\
+           &                           &            &          &          &                               & \\
 \hline
 \end{tabular}
 \vskip 1ex

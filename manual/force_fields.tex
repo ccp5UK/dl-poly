@@ -1199,7 +1199,32 @@ U(r_{ij}) = \epsilon\left(\frac{1.07}{(r_{ij}/r_{o})+0.07}\right)^{7}\left(\frac
        \end{array}
        \right.
   \end{equation*}
- 
+\item Lennard-Jones tapered with Mei-Davenport-Fernando taper (MDF), \cite{Raiteri2010}: ({\bf mlj})
+  \begin{equation}
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{LJ}\left(r_{ij}\right)
+  \end{equation}
+
+  where 
+
+    \begin{equation}                                                                                                                    
+    f(r)=                                                                                                                    
+     \begin{cases}                                                                                                                     
+       1 & r<r_i\\                                                                                                                     
+   \frac{\left(r_c-r\right)^3\left(10r_i^2-5r_cr_i-15rr_i+r_c^2+3rr_c+6r^2\right)}{\left(r_c-r_i\right)^5} & r_i \leq r \leq r_c \\    
+       0 & r>r_c\\                                                                                                                     
+     \end{cases}                                                                                                                       
+   \end{equation}  
+  $r_c$ is set to $r_{vdw}$ and controled by {\bf rvdw}
+\item Buckingham tapered with MDF: ({\bf mbuc})
+  \begin{equation}
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{Buckingham}\left(r_{ij}\right)
+  \end{equation}
+  see {\bf mlj} for more details
+\item 12-6 Lennard-Jones tapered with Mei-Davenport-Fernando taper (MDF): ({\bf m126})
+  \begin{equation}
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{12-6}\left(r_{ij}\right)
+  \end{equation}
+  see {\bf mlj} for more details
 \item Tabulation:  ({\bf tab}).  The potential is defined
 numerically only.
 \end{enumerate}

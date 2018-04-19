@@ -11,13 +11,15 @@ Subroutine vdw_direct_fs_generate(rvdw)
 ! contrib   - a.m.elena september 2017 (ryd)
 ! contrib   - a.m.elena october 2017 (zbl/zbls)
 ! contrib   - a.m.elena december 2017 (zblb)
+! contrib   - a.m.elena april 2018 (mlj/mbuc)
+! contrib   - a.m.elena may 2018 (m126)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module, Only : zero_plus, r4pie0
   Use vdw_module
-  Use m_zbl, Only : zbl,ab,zbls,zblb
+  Use m_zbl, Only : zbl,ab,zbls,zblb,mlj,mbuck,mlj126
 
   Implicit None
 
@@ -27,7 +29,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
   Real( Kind = wp ) :: r0,r0rn,r0rm,r_6,sor6,   &
                        rho,a,b,c,d,e0,kk,nr,mr, &
                        sig,eps,t1,t2,t3,z,dz,   &
-                       z1,z2,rm,ic,k
+                       z1,z2,rm,ic,k,ri
 
 ! allocate arrays for force-shifted corrections
 
@@ -284,6 +286,40 @@ Subroutine vdw_direct_fs_generate(rvdw)
         a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
         kk = z1*z2*r4pie0
         Call zblb(rvdw,kk,a,rm,ic,e0,r0,k,z,dz)
+        afs(ivdw) = dz/rvdw
+        bfs(ivdw) = -z-dz
+
+     Else If (keypot == 18) Then
+
+! LJ tappered with MDF:: u=f(r)LJ(r)
+
+        eps=prmvdw(1,ivdw)
+        sig=prmvdw(2,ivdw)
+        ri=prmvdw(3,ivdw)
+
+        Call mlj(rvdw,eps,sig,ri,rvdw,z,dz)
+        afs(ivdw) = dz/rvdw
+        bfs(ivdw) = -z-dz
+
+     Else If (keypot == 19) Then
+
+! Buckingham tappered with MDF:: u=f(r)Buck(r)
+        a  =prmvdw(1,ivdw)
+        rho=prmvdw(2,ivdw)
+        c  =prmvdw(3,ivdw)
+        ri  =prmvdw(4,ivdw)
+        Call mbuck(rvdw,A,rho,c,ri,rvdw,z,dz)
+
+        afs(ivdw) = dz/rvdw
+        bfs(ivdw) = -z-dz
+
+     Else If (keypot == 20) Then
+
+! LJ tappered with MDF:: u=f(r)LJ(r)
+         a = prmvdw(1,ivdw)
+         b = prmvdw(2,ivdw)
+        ri = prmvdw(3,ivdw)
+        Call mlj126(rvdw,A,B,ri,rvdw,z,dz)
         afs(ivdw) = dz/rvdw
         bfs(ivdw) = -z-dz
 

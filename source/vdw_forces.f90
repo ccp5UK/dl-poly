@@ -13,6 +13,8 @@ Subroutine vdw_forces &
 ! contrib   - a.m.elena september 2017 (rydberg)
 ! contrib   - a.m.elena october 2017 (zbl/zbls)
 ! contrib   - a.m.elena december 2017 (zblb)
+! contrib   - a.m.elena april 2018 (mlj/mbuc)
+! contrib   - a.m.elena may 2018 (m126)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,7 +22,7 @@ Subroutine vdw_forces &
   Use setup_module
   Use config_module, Only : natms,ltg,ltype,list,fxx,fyy,fzz
   Use vdw_module
-  Use m_zbl, Only : ab,zbl,zbls,zblb
+  Use m_zbl, Only : ab,zbl,zbls,zblb,mlj,mbuck,mlj126
 
   Implicit None
 
@@ -42,7 +44,7 @@ Subroutine vdw_forces &
                        fix,fiy,fiz,fx,fy,fz,              &
                        gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3,t,  &
                        strs1,strs2,strs3,strs5,strs6,     &
-                       strs9,z1,z2,rm
+                       strs9,z1,z2,rm,ri
 
 ! define grid resolution for potential arrays and interpolation spacing
 
@@ -190,6 +192,8 @@ Subroutine vdw_forces &
               rho=prmvdw(2,k)
               c  =prmvdw(3,k)
 
+              ! since this involves any constants shall not be tested here, probably read_field is where any sanity checks should
+              ! happen and to the GP for the rest
               If (Abs(rho) <= zero_plus) Then
                  If (Abs(a) <= zero_plus) Then
                     rho=1.0_wp
@@ -506,6 +510,70 @@ Subroutine vdw_forces &
               eng = t1
               gamma = gamma*r_rsq
 
+              If (ls_vdw) Then ! force-shifting
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 eng   = eng + afs(k)*rrr + bfs(k)
+                 gamma = gamma - afs(k)*r_rrr
+              End If
+
+           Else If (ityp == 18) Then
+
+! LJ tappered with MDF:: u=f(r)LJ(r)
+
+              eps=prmvdw(1,k)
+              sig=prmvdw(2,k)
+              ri=prmvdw(3,k)
+              !rc=rvdw
+
+              Call mlj(rrr,eps,sig,ri,rvdw,t1,gamma)
+
+              If (jatm <= natms .or. idi < ltg(jatm)) &
+              eng = t1
+              gamma = gamma*r_rsq
+
+              If (ls_vdw) Then ! force-shifting
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 eng   = eng + afs(k)*rrr + bfs(k)
+                 gamma = gamma - afs(k)*r_rrr
+              End If
+
+           Else If (ityp == 19) Then
+
+! Buckingham tappered with MDF:: u=f(r)Buck(r)
+              a   = prmvdw(1,k)
+              rho = prmvdw(2,k)
+              c   = prmvdw(3,k)
+              ri  = prmvdw(4,k)
+
+              Call mbuck(rrr,a,rho,c,ri,rvdw,t1,gamma)
+
+              If (jatm <= natms .or. idi < ltg(jatm)) &
+              eng = t1
+              gamma = gamma*r_rsq
+
+              ! by construction is zero outside rvdw so no shifting
+              If (ls_vdw) Then ! force-shifting
+                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 eng   = eng + afs(k)*rrr + bfs(k)
+                 gamma = gamma - afs(k)*r_rrr
+              End If
+
+           Else If (ityp == 20) Then
+
+! LJ tappered with MDF:: u=f(r)LJ12-6(r)
+
+               a = prmvdw(1,k)
+               b = prmvdw(2,k)
+              ri = prmvdw(3,k)
+              !rc=rvdw
+
+              Call mlj126(rrr,a,b,ri,rvdw,t1,gamma)
+
+              If (jatm <= natms .or. idi < ltg(jatm)) &
+              eng = t1
+              gamma = gamma*r_rsq
+
+              ! by construction is zero outside rvdw so no shifting
               If (ls_vdw) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = eng + afs(k)*rrr + bfs(k)
