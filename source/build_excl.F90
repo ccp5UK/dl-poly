@@ -20,13 +20,13 @@ Module build_excl
   Use bonds
   Use angles
   Use dihedrals
-   Use inversions
+  Use inversions
   Use numerics, Only : local_index,shellsort
 
   Implicit None
 
   Private
-  Public :: build_excl_intra
+  Public :: build_excl_intra, add_exclusion
 
 Contains
 
@@ -1181,10 +1181,9 @@ Subroutine build_excl_intra(lecx,comm)
         Call error(0,message)
      End If
   End If
+End Subroutine build_excl_intra
 
-Contains
-
-  Subroutine add_exclusion(safe,ia0,ib,ibig,lexatm)
+Subroutine add_exclusion(safe,ia0,ib,ibig,lexatm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1197,55 +1196,54 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                                  Intent( In    ) :: ia0,ib
-    Logical,                                  Intent( InOut ) :: safe
-    Integer,                                  Intent( InOut ) :: ibig
-    Integer, Dimension( 0:mxexcl, 1:mxatdm ), Intent( InOut ) :: lexatm
+  Integer,                                  Intent( In    ) :: ia0,ib
+  Logical,                                  Intent( InOut ) :: safe
+  Integer,                                  Intent( InOut ) :: ibig
+  Integer, Dimension( 0:mxexcl, 1:mxatdm ), Intent( InOut ) :: lexatm
 
-    Logical :: safe_local,l_excluded
-    Integer :: last
+  Logical :: safe_local,l_excluded
+  Integer :: last
 
 ! Get current length
 
-    last = lexatm(0,ia0)
+  last = lexatm(0,ia0)
 
 ! Determine possible exclusion
 
-    l_excluded = Any(lexatm(1:last,ia0) == ib)
+  l_excluded = Any(lexatm(1:last,ia0) == ib)
 
-    If (.not.l_excluded) Then
+  If (.not.l_excluded) Then
 
 ! Get local safety no array overflow
 
-       safe_local = (last < mxexcl-1)
+     safe_local = (last < mxexcl-1)
 
 ! Determine global safety
 
-       safe = safe .and. safe_local
+     safe = safe .and. safe_local
 
-       If (safe_local) Then
+     If (safe_local) Then
 
 ! Increase length of the ia0 exclusion list and tag ib in it
 
-          last = last + 1
-          lexatm(0,ia0) = last
-          lexatm(last,ia0) = ib
+        last = last + 1
+        lexatm(0,ia0) = last
+        lexatm(last,ia0) = ib
 
-          ibig=Max(ibig,last)
+        ibig=Max(ibig,last)
 
-       Else
+     Else
 
 ! Collect number of offences
 
-          lexatm(mxexcl,ia0) = lexatm(mxexcl,ia0) + 1
+        lexatm(mxexcl,ia0) = lexatm(mxexcl,ia0) + 1
 
-          ibig=Max(ibig,last+lexatm(mxexcl,ia0))
+        ibig=Max(ibig,last+lexatm(mxexcl,ia0))
 
-       End If
+     End If
 
-    End If
+  End If
 
-  End Subroutine add_exclusion
+End Subroutine add_exclusion
 
-End Subroutine build_excl_intra
 End Module build_excl

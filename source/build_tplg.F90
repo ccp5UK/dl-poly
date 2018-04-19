@@ -20,6 +20,7 @@ Module build_tplg
 
   Use mpole, Only : ltpatm ! equivalent to lexatm in configuration
   Use numerics, Only : local_index,shellsort
+  Use build_excl, Only : add_exclusion
 
   Implicit None
 
@@ -207,72 +208,6 @@ Contains
       j=ltpatm(0,i)
       If (j > 0) Call shellsort(j,ltpatm(1:j,i))
     End Do
-
-  Contains
-
-    Subroutine add_exclusion(safe,ia0,ib,ibig,ltpatm)
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !
-      ! dl_poly_4 subroutine to add excluded atoms to the excluded atom list
-      ! provided they are not already excluded
-      !
-      ! copyright - daresbury laboratory
-      ! author    - w.smith march 1999
-      ! amended   - i.t.todorov august 2010
-      !
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      Integer,                                  Intent( In    ) :: ia0,ib
-      Logical,                                  Intent( InOut ) :: safe
-      Integer,                                  Intent( InOut ) :: ibig
-      Integer, Dimension( 0:mxexcl, 1:mxatdm ), Intent( InOut ) :: ltpatm
-
-      Logical :: safe_local,l_excluded
-      Integer :: last
-
-      ! Get current length
-
-      last = ltpatm(0,ia0)
-
-      ! Determine possible exclusion
-
-      l_excluded = Any(ltpatm(1:last,ia0) == ib)
-
-      If (.not.l_excluded) Then
-
-        ! Get local safety no array overflow
-
-        safe_local = (last < mxexcl-1)
-
-        ! Determine global safety
-
-        safe = safe .and. safe_local
-
-        If (safe_local) Then
-
-          ! Increase length of the ia0 exclusion list and tag ib in it
-
-          last = last + 1
-          ltpatm(0,ia0) = last
-          ltpatm(last,ia0) = ib
-
-          ibig=Max(ibig,last)
-
-        Else
-
-          ! Collect number of offences
-
-          ltpatm(mxexcl,ia0) = ltpatm(mxexcl,ia0) + 1
-
-          ibig=Max(ibig,last+ltpatm(mxexcl,ia0))
-
-        End If
-
-      End If
-
-    End Subroutine add_exclusion
-
   End Subroutine build_tplg_intra
 End Module build_tplg
 
