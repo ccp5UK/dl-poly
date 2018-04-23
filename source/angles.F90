@@ -20,7 +20,7 @@ Module angles
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                             xxx,yyy,zzz,fxx,fyy,fzz,cfgname
   Use parse, Only : get_line,get_word,word_2_real
-  Use errors_warnings, Only : error,warning
+  Use errors_warnings, Only : error,warning,info
   Use numerics, Only : local_index,images
 
   Implicit None
@@ -203,11 +203,10 @@ Contains
 
   pdfzero = 1.0e-5_wp
 
-  If (comm%idnode == 0) Then
-     Write(nrite,'(/,/,12x,a)') 'ANGLES : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)'
-     Write(nrite,'(/,1x,a,5(1x,i10))') &
-           '# bins, cutoff, frames, types: ',mxgang1,180,ncfang,kk,ll
-  End If
+  Call info('',.true.)
+  Call info('ANGLES : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)',.true.)
+  Write(message,'(a,5(1x,i10))') '# bins, cutoff, frames, types: ',mxgang1,180,ncfang,kk,ll
+  Call info(message,.true.)
 
 ! open RDF file and write headers
 
@@ -228,12 +227,14 @@ Contains
      If (typang(0,i) > 0) Then
         j=j+1
 
-        If (comm%idnode == 0) Then
-           Write(nrite,'(/,1x,a,3(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-                unqatm(typang(1,i)),unqatm(typang(2,i)),unqatm(typang(3,i)),j,typang(0,i)
-           Write(nrite,'(/,1x,a,f8.5,/)') &
-                'Theta(degrees)  PDF_ang(Theta)  Sum_PDF_ang(Theta)   @   dTheta_bin = ',delth*rad2dgr
+        Write(message,'(a,3(a8,1x),2(i10,1x))') 'type, index, instances: ', &
+          unqatm(typang(1,i)),unqatm(typang(2,i)),unqatm(typang(3,i)),j,typang(0,i)
+        Call info(message,.true.)
+        Write(message,'(a,f8.5)') &
+         'Theta(degrees)  PDF_ang(Theta)  Sum_PDF_ang(Theta)   @   dTheta_bin = ',delth*rad2dgr
+        Call info(message,.true.)
 
+        If (comm%idnode == 0) Then
            Write(npdfdt,'(/,a,3(a8,1x),2(i10,1x))') '# type, index, instances: ', &
                 unqatm(typang(1,i)),unqatm(typang(2,i)),unqatm(typang(3,i)),j,typang(0,i)
         End If
@@ -288,8 +289,11 @@ Contains
 ! print out information
 
            theta  = theta*rad2dgr
+           If (.not.zero) Then
+             Write(message,"(f11.5,1p,2e14.6)") theta,pdfang1,sum1
+             Call info(message,.true.)
+           End If
            If (comm%idnode == 0) Then
-              If (.not.zero) Write(nrite,"(f11.5,1p,2e14.6)") theta,pdfang1,sum1
               Write(npdfdt,"(f11.5,1p,2e14.6)") theta,pdfang,pdfang*rsint
            End If
 
@@ -1086,6 +1090,7 @@ Subroutine angles_table_read(angl_name,comm)
   Real( Kind = wp ), Allocatable :: bufpot(:),bufvir(:)
 
   Character( Len = 256 ) :: message
+  Character( Len = 256 ) :: messages(4)
 
   If (comm%idnode == 0) Open(Unit=ntable, File='TABANG')
 
@@ -1118,18 +1123,12 @@ Subroutine angles_table_read(angl_name,comm)
      delpot = dlrpot
   End If
   If (delpot > delth_max .and. (.not.safe)) Then
-     If (comm%idnode == 0) Then
-        Write(nrite,"(/,                                              &
-             & ' expected (maximum) angular increment : ',1p,e15.7,/, &
-             & ' TABANG file actual angular increment : ',1p,e15.7)") &
-             delth_max, delpot
-        Write(nrite,"(/,                                                &
-             & ' expected (minimum) number of grid points : ',0p,i10,/, &
-             & ' TABANG file actual number of grid points : ',0p,i10)") &
-             mxgang-4, ngrid
-     End If
-
-     Call error(22)
+    Write(messages(1),'(a,1p,e15.7)') 'expected (maximum) angular increment : ', delth_max
+    Write(messages(2),'(a,1p,e15.7)') 'TABANG file actual angular increment : ', delpot
+    Write(messages(3),'(a,0p,i10)') ' expected (minimum) number of grid points : ', mxgang-4
+    Write(messages(4),'(a,0p,i10)') ' TABANG file actual number of grid points : ', ngrid
+    Call info(messages,4,.true.)
+    Call error(22)
   End If
   safe=.true.
 
@@ -1137,7 +1136,8 @@ Subroutine angles_table_read(angl_name,comm)
   If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
      remake=.true.
      rdr=1.0_wp/delpot
-     If (comm%idnode == 0) Write(nrite,"(/,' TABANG arrays resized for mxgrid = ',i10)") mxgang-4
+     Write(message,'(a,i10)') 'TABANG arrays resized for mxgrid = ', mxgang-4
+     Call info(message,.true.)
   End If
 
 ! compare grids dimensions
@@ -1185,7 +1185,8 @@ Subroutine angles_table_read(angl_name,comm)
      End Do
 
      If (katom1 == 0 .or. katom2 == 0 .or. katom3 == 0) Then
-        If (comm%idnode == 0) Write(nrite,'(a)') '****',atom1,'***',atom2,'***',atom3,'**** entry in TABANG'
+        Write(message, '(a)') '****',atom1,'***',atom2,'***',atom3,'**** entry in TABANG'
+        Call info(message,.true.)
         Call error(84)
      End If
 
@@ -1210,11 +1211,13 @@ Subroutine angles_table_read(angl_name,comm)
      End Do
 
      If (itang == 0) Then ! All(angl_name /= idangl)
-        If (comm%idnode == 0) Write(nrite,'(a)') '****',atom1,'***',atom2,'***',atom3,'**** entry in TABANG'
+        Write(message, '(a)') '****',atom1,'***',atom2,'***',atom3,'**** entry in TABANG'
+        Call info(message,.true.)
         Call error(83)
      End If
      If (Any(read_type == jtang)) Then
-        If (comm%idnode == 0) Write(nrite,'(a)') '****',atom1,'***',atom2,'***',atom3,'**** entry in TABANG'
+        Write(message, '(a)') '****',atom1,'***',atom2,'***',atom3,'**** entry in TABANG'
+        Call info(message,.true.)
         Call error(172)
      Else
         read_type(jtang)=jtang
@@ -1236,10 +1239,9 @@ Subroutine angles_table_read(angl_name,comm)
         If (rrr > zero_plus) Then ! no zero element data => extrapolate to zero
            If (Abs((rrr-delpot)/delpot) > 1.0e-8_wp) Then
               safe=.false.
-              If (comm%idnode == 0) Write(nrite,"(/,                       &
-                 & ' TABANG stated  angular increment : ',1p,e15.7,/, &
-                 & ' TABANG read-in angular increment : ',1p,e15.7)") &
-                 delpot,rrr
+              Write(messages(1),'(a,1p,e15.7)') 'TABANG stated angular increment : ', delpot
+              Write(messages(2),'(a,1p,e15.7)') 'TABANG read-in angular increment : ', rrr
+              Call info(messages,2,.true.)
            End If
 
            bufpot(1) = bufp0
@@ -1250,10 +1252,9 @@ Subroutine angles_table_read(angl_name,comm)
 
            If (Abs((rrr-rrr0-delpot)/delpot) > 1.0e-8_wp) Then
               safe=.false.
-              If (comm%idnode == 0) Write(nrite,"(/,                       &
-                 & ' TABANG stated  angular increment : ',1p,e15.7,/, &
-                 & ' TABANG read-in angular increment : ',1p,e15.7)") &
-                 delpot,rrr-rrr0
+              Write(messages(1),'(a,1p,e15.7)') 'TABANG stated angular increment : ', delpot
+              Write(messages(2),'(a,1p,e15.7)') 'TABANG read-in angular increment : ', rrr-rrr0
+              Call info(messages,2,.true.)
            End If
 
            bufpot(2) = bufp0
@@ -1271,10 +1272,9 @@ Subroutine angles_table_read(angl_name,comm)
 
            If (Abs((rrr-delpot)/delpot) > 1.0e-8_wp) Then
               safe=.false.
-              If (comm%idnode == 0) Write(nrite,"(/,                       &
-                 & ' TABANG stated  angular increment : ',1p,e15.7,/, &
-                 & ' TABANG read-in angular increment : ',1p,e15.7)") &
-                 delpot,rrr
+              Write(messages(1),'(a,1p,e15.7)') 'TABANG stated angular increment : ', delpot
+              Write(messages(2),'(a,1p,e15.7)') 'TABANG read-in angular increment : ', rrr
+              Call info(messages,2,.true.)
            End If
 
            bufpot(1) = bufp0
@@ -1378,8 +1378,9 @@ Subroutine angles_table_read(angl_name,comm)
 
   If (comm%idnode == 0) Then
      Close(Unit=ntable)
-     Write(nrite,'(/,1x,a)') 'potential tables read from TABANG file'
   End If
+  Call info('',.true.)
+  Call info('potential tables read from TABANG file',.true.)
 
 ! Break if not safe
 
