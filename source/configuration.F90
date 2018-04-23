@@ -714,6 +714,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
                                                        cxx,cyy,czz
 
   Character( Len = 256) :: message
+  Character( Len = 256) :: messages(3)
 ! image conditions not compliant with DD and link-cell
 
   If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
@@ -1058,13 +1059,12 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
               Call gmin(comm,min_fail)
 
            If (.not.safe) Then
-              If (comm%idnode == 0) Then
-  Write(nrite,'(/,1x,a,i0)')  '*** warning - next error due to maximum number of atoms per domain set to : ', mxatms
-  Write(nrite,'(1x,2(a,i0))') '***           but maximum & minumum numbers of atoms per domain asked for : ', &
-       max_fail, ' & ', min_fail
-  Write(nrite,'(1x,a,i0)')    '***           estimated densvar value for passing this stage safely is : ', &
-       Ceiling((dvar*(Real(max_fail,wp)/Real(mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
-              End If
+              Write(messages(1),'(a,i0)') 'next error due to maximum number of atoms per domain set to : ', mxatms
+              Write(messages(2),'(2(a,i0))') 'but maximum & minumum numbers of atoms per domain asked for : ', &
+                 max_fail, ' & ', min_fail
+              Write(messages(3),'(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
+                 Ceiling((dvar*(Real(max_fail,wp)/Real(mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
+              Call info(messages,3,.true.)
               Call error(45)
            End If
 
@@ -1368,7 +1368,7 @@ Subroutine read_config_parallel                 &
   Integer :: ierr
 
   Character( Len =  256 )  ::  message
- 
+  Character( Len =  256 )  ::  messages(3)
 
 ! Get reading method, total number of I/O heads and buffer size
 
@@ -1826,13 +1826,12 @@ Subroutine read_config_parallel                 &
               Call gmin(comm,min_fail)
 
            If (.not.safe) Then
-              If (comm%idnode == 0) Then
-  Write(nrite,'(/,1x,a,i0)')  '*** warning - next error due to maximum number of atoms per domain set to : ', mxatms
-  Write(nrite,'(1x,2(a,i0))') '***           but maximum & minumum numbers of atoms per domain asked for : ', &
-       max_fail, ' & ', min_fail
-  Write(nrite,'(1x,a,i0)')    '***           estimated densvar value for passing this stage safely is : ', &
-       Ceiling((dvar*(Real(max_fail,wp)/Real(mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
-              End If
+              Write(messages(1),'(a,i0)') 'next error due to maximum number of atoms per domain set to : ', mxatms
+              Write(messages(2),'(2(a,i0))') 'but maximum & minumum numbers of atoms per domain asked for : ', & 
+                 max_fail, ' & ', min_fail
+              Write(messages(3),'(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
+                 Ceiling((dvar*(Real(max_fail,wp)/Real(mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
+              Call info(messages,3,.true.)
               Call error(45)
            End If
 
