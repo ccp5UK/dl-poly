@@ -248,7 +248,12 @@ Use nve, Only : nve_0_vv, nve_1_vv
   Type(comms_type), Allocatable :: dlp_world(:),comm
   Type(ewald_type) :: ewld
 
-  Character( Len = 256 ) :: messages(5)
+  Character( Len = 256 ) :: message,messages(5)
+  Character( Len = 66 )  :: banner(13)
+
+  Character( Len = * ), Parameter :: fmt1 = '(a)', &
+                                     fmt2 = '(a25,a8,a4,a14,a15)', &
+                                     fmt3 = '(a,i10,a)'
 
   ! SET UP COMMUNICATIONS & CLOCKING
 
@@ -272,35 +277,34 @@ Use nve, Only : nve_0_vv, nve_1_vv
   Call scan_control_output(comm)
 
   If (dlp_world(0)%idnode == 0) Then
-    If (.not.l_scr) Open(Unit=nrite, File=Trim(output), Status='replace')
-
-    Write(nrite,'(5(1x,a,/),(1x,a25,a8,a4,a14,a15/),1x,a,i10,a,/,5(1x,a,/))')  &
-      "******************************************************************", &
-      "*************  stfc/ccp5  program  library  package  ** D ********", &
-      "*************  daresbury laboratory general purpose  *** L *******", &
-      "**         **  classical molecular dynamics program  **** \ ******", &
-      "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****", &
-      "**         **  version:  ", DLP_VERSION,                 " /  "    , &
-      DLP_RELEASE,          "  ****** O ****", &
-      "*************  execution on  ",dlp_world(0)%mxnode," process(es)  ******* L ***", &
-      "*************  contributors' list:                   ******** Y **", &
-      "*************  ------------------------------------  *************", &
-      "*************  i.j.bush, h.a.boateng, r.davidchak,   *************", &
-      "*************  m.a.seaton, a.v.brukhno, a.m.elena,   *************", &
-      "*************  s.l.daraszewicz,g.khara,s.t.murphy    *************", &
-      "******************************************************************"
-
-    Call build_info()
-
-    Write(nrite,'(7(1x,a,/))') &
-      "******************************************************************", &
-      "****  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ****", &
-      "****  Please do cite `J. Mater. Chem.', 16, 1911-1918 (2006)  ****", &
-      "****  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ****", &
-      "****  when publishing research data obtained using DL_POLY_4  ****", &
-      "****  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ****", &
-      "******************************************************************"
+    If (.not.l_scr) Then
+      Open(Unit=nrite, File=Trim(output), Status='replace')
+    End If
   End If
+
+  Write(banner(1),fmt1)  Repeat("*",66)
+  Write(banner(2),fmt1)  "*************  stfc/ccp5  program  library  package  ** D ********"
+  Write(banner(3),fmt1)  "*************  daresbury laboratory general purpose  *** L *******"
+  Write(banner(4),fmt1)  "**         **  classical molecular dynamics program  **** \ ******"
+  Write(banner(5),fmt1)  "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****"
+  Write(banner(6),fmt2)  "**         **  version:  ", DLP_VERSION, " /  ", DLP_RELEASE, "  ****** O ****"
+  Write(banner(7),fmt3)  "*************  execution on  ",dlp_world(0)%mxnode," process(es)  ******* L ***"
+  Write(banner(8),fmt1)  "*************  contributors' list:                   ******** Y **"
+  Write(banner(9),fmt1)  "*************  ------------------------------------  *************"
+  Write(banner(10),fmt1) "*************  i.j.bush, h.a.boateng, r.davidchak,   *************"
+  Write(banner(11),fmt1) "*************  m.a.seaton, a.v.brukhno, a.m.elena,   *************"
+  Write(banner(12),fmt1) "*************  s.l.daraszewicz,g.khara,s.t.murphy    *************"
+  Write(banner(13),fmt1) "******************************************************************"
+  Call info(banner,13,.true.)
+
+  Call build_info()
+
+  Call info('',.true.)
+  Write(banner(1),fmt1) Repeat("*",66)
+  Write(banner(2),fmt1) "****  Please do cite `J. Mater. Chem.', 16, 1911-1918 (2006)  ****"
+  Write(banner(3),fmt1) "****  when publishing research data obtained using DL_POLY_4  ****"
+  Write(banner(4),fmt1) Repeat("*",66)
+  Call info(banner,4,.true.)
 
   ! TEST I/O
 
@@ -314,10 +318,9 @@ Use nve, Only : nve_0_vv, nve_1_vv
     dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,comm)
 
   Call gtime(timelp)
-  If (dlp_world(0)%idnode == 0) Then
-    Write(nrite,'(/,1x,a)') "*** pre-scanning stage (set_bounds) DONE ***"
-    Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
-  End If
+  Call info('',.true.)
+  Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
+  Call time_elapsed(timelp)
 
   ! ALLOCATE SITE & CONFIG
 
@@ -417,57 +420,44 @@ Use nve, Only : nve_0_vv, nve_1_vv
   Call check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm,comm)
 
   Call gtime(timelp)
-  If (dlp_world(0)%idnode == 0) Then
-    Write(nrite,'(/,1x,a)') "*** all reading and connectivity checks DONE ***"
-    Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
-  End If
+  Call info('',.true.)
+  Call info("*** all reading and connectivity checks DONE ***",.true.)
+  Call time_elapsed(timelp)
 
   ! l_org: translate CONFIG into CFGORG and exit gracefully
 
   If (l_org) Then
     Call gtime(timelp)
-    If (dlp_world(0)%idnode == 0) Then
-      Write(nrite,'(/,1x,a)') "*** Translating the MD system along a vector (CONFIG to CFGORG) ***"
-      Write(nrite,'(1x,a)') "*** ... ***"
-    End If
+    Call info('',.true.)
+    Call info("*** Translating the MD system along a vector (CONFIG to CFGORG) ***",.true.)
 
     Call origin_config(megatm,comm)
 
     Call gtime(timelp)
-    If (dlp_world(0)%idnode == 0) Then
-      Write(nrite,'(1x,a)') "*** ... ***"
-      Write(nrite,'(1x,a)') "*** ALL DONE ***"
-      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
-    End If
+    Call info("*** ALL DONE ***",.true.)
+    Call time_elapsed(timelp)
   End If
 
   ! l_scl: rescale CONFIG to CFGSCL and exit gracefully
 
   If (l_scl) Then
     Call gtime(timelp)
-    If (dlp_world(0)%idnode == 0) Then
-      Write(nrite,'(/,1x,a)') "*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***"
-      Write(nrite,'(1x,a)') "*** ... ***"
-    End If
+    Call info('',.true.)
+    Call info("*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***",.true.)
 
     Call scale_config(megatm,comm)
 
     Call gtime(timelp)
-    If (dlp_world(0)%idnode == 0) Then
-      Write(nrite,'(1x,a)') "*** ... ***"
-      Write(nrite,'(1x,a)') "*** ALL DONE ***"
-      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
-    End If
+    Call info("*** ALL DONE ***",.true.)
+    Call time_elapsed(timelp)
   End If
 
   ! l_his: generate HISTORY and exit gracefully
 
   If (l_his) Then
     Call gtime(timelp)
-    If (dlp_world(0)%idnode == 0) Then
-      Write(nrite,'(/,1x,a)') "*** Generating a zero timestep HISTORY frame of the MD system ***"
-      Write(nrite,'(1x,a)') "*** ... ***"
-    End If
+    Call info('',.true.)
+    Call info("*** Generating a zero timestep HISTORY frame of the MD system ***",.true.)
 
     ! Nail down necessary parameters
 
@@ -477,11 +467,8 @@ Use nve, Only : nve_0_vv, nve_1_vv
     Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,comm)
 
     Call gtime(timelp)
-    If (dlp_world(0)%idnode == 0) Then
-      Write(nrite,'(1x,a)') "*** ... ***"
-      Write(nrite,'(1x,a)') "*** ALL DONE ***"
-      Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') timelp
-    End If
+    Call info("*** ALL DONE ***",.true.)
+    Call time_elapsed(timelp)
   End If
 
   ! Expand current system if opted for
@@ -491,7 +478,8 @@ Use nve, Only : nve_0_vv, nve_1_vv
   ! EXIT gracefully
 
   If (l_trm) Then
-    If (dlp_world(0)%idnode == 0) Write(nrite,'(/,1x,a)') "*** Exiting gracefully ***"
+    Call info('',.true.)
+    Call info("*** Exiting gracefully ***",.true.)
     Go To 10
   End If
 
@@ -508,10 +496,9 @@ Use nve, Only : nve_0_vv, nve_1_vv
   Call set_halo_particles(rlnk,keyfce,comm)
 
   Call gtime(timelp)
-  If (dlp_world(0)%idnode == 0) Then
-    Write(nrite,'(/,1x,a)') "*** initialisation and haloing DONE ***"
-    Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
-  End If
+  Call info('',.true.)
+  Call info("*** initialisation and haloing DONE ***",.true.)
+  Call time_elapsed(timelp)
 
   ! For any intra-like interaction, construct book keeping arrays and
   ! exclusion arrays for overlapped two-body inter-like interactions
@@ -554,10 +541,9 @@ Use nve, Only : nve_0_vv, nve_1_vv
   End If
 
   Call gtime(timelp)
-  If (dlp_world(0)%idnode == 0) Then
-    Write(nrite,'(/,1x,a)') "*** bookkeeping DONE ***"
-    Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
-  End If
+  Call info('',.true.)
+  Call info("*** bookkeeping DONE ***",.true.)
+  Call time_elapsed(timelp)
 
   ! set and halo rotational matrices and their infinitesimal rotations
 
@@ -575,10 +561,9 @@ Use nve, Only : nve_0_vv, nve_1_vv
     degfre,degshl,sigma,engrot,comm)
 
   Call gtime(timelp)
-  If (dlp_world(0)%idnode == 0) Then
-    Write(nrite,'(/,1x,a)') "*** temperature setting DONE ***"
-    Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') timelp
-  End If
+  Call info('',.true.)
+  Call info("*** temperature setting DONE ***",.true.)
+  Call time_elapsed(timelp)
 
   ! Read ttm table file and initialise electronic temperature
   ! grid from any available restart file
@@ -602,26 +587,36 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   ! Print out sample of initial configuration on node zero
 
-  If (comm%idnode == 0) Then
-    Write(nrite,"('sample of starting configuration on node zero',/)")
+  Call info("sample of starting configuration on node zero",.true.)
+  Call info('',.true.)
+  If (levcfg <= 1) Then
+    Write(message,'(7x,a1,7x,a4,2(8x,a4),3(7x,a5))') &
+      'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)'
+    Call info(message,.true.)
+  End If
 
-    If (levcfg <= 1) Write(nrite,"(8x,'i',7x,'x(i)',8x,'y(i)',8x,'z(i)', &
-      & 7x,'vx(i)',7x,'vy(i)',7x,'vz(i)',/,/)")
+  If (levcfg == 2) Then
+    Write(message,'(7x,a1,7x,a4,2(8x,a4),6(7x,a5))') &
+      'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)', &
+      'fx(i)', 'fy(i)', 'fz(i)'
+    Call info(message,.true.)
+  End If
 
-    If (levcfg == 2) Write(nrite,"(8x,'i',7x,'x(i)',8x,'y(i)',8x,'z(i)', &
-      & 7x,'vx(i)',7x,'vy(i)',7x,'vz(i)',                               &
-      & 7x,'fx(i)',7x,'fy(i)',7x,'fz(i)',/,/)")
-
-    j=(natms+19)/20
-    If (j > 0) Then
-      Do i=1,natms,j
-        If (levcfg <= 1) Write(nrite,"(1x,i8,1p,3e12.4,3e12.4,3e12.4)") &
+  Call info('',.true.)
+  j=(natms+19)/20
+  If (j > 0) Then
+    Do i=1,natms,j
+      If (levcfg <= 1) Then
+        Write(message,'(i8,1p,6e12.4)') &
           ltg(i),xxx(i),yyy(i),zzz(i),vxx(i),vyy(i),vzz(i)
+      End If
 
-        If (levcfg == 2) Write(nrite,"(1x,i8,1p,3e12.4,3e12.4,3e12.4)") &
-          ltg(i),xxx(i),yyy(i),zzz(i),vxx(i),vyy(i),vzz(i),fxx(i),fyy(i),fzz(i)
-      End Do
-    End If
+      If (levcfg == 2) Then
+        Write(message,"(i8,1p,9e12.4)") &
+        ltg(i),xxx(i),yyy(i),zzz(i),vxx(i),vyy(i),vzz(i),fxx(i),fyy(i),fzz(i)
+      End If
+      Call info(message,.true.)
+    End Do
   End If
 
   ! Indicate nodes mapped on vacuum (no particles)
@@ -629,7 +624,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
   j=0
   If (natms == 0) Then
     j=1
-    Write(nrite,'(/,1x,a,i0,a,/)') '*** warning - node ', comm%idnode, ' mapped on vacuum (no particles) !!! ***'
+    Call warning('mapped on vacuum (no particles)')
   End If
   Call gsum(comm,j)
   If (j > 0) Call warning(2,Real(j,wp),Real(comm%mxnode,wp),0.0_wp)
@@ -695,8 +690,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
   ! start-up time when forces are not recalculated
 
   Call gtime(timelp)
-  If (dlp_world(0)%idnode == 0) &
-    Write(nrite,'(/, "time elapsed since job start: ", f12.3, " sec",/)') timelp
+  Call time_elapsed(timelp)
 
   ! Now you can run fast, boy
 
@@ -726,29 +720,33 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   ! Report termination of the MD simulation
 
-  If (dlp_world(0)%idnode == 0) Write(nrite,"('run terminating...  ',  &
-    & 'elapsed cpu time: ', f12.3, ' sec, job time: ', f12.3,   &
-    & ' sec, close time: ', f12.3, ' sec',/)") timelp,timjob,timcls
+  Write(message,'(3(a,f12.3),a)') 'run terminating... elapsed  cpu time: ', &
+    timelp , ' sec, job time: ', timjob, ' sec, close time: ', timcls, ' sec'
+  Call info(message,.true.)
 
   ! Print out sample of final configuration on node zero
 
-  If (dlp_world(0)%idnode == 0) Then
-    Write(nrite,"('sample of final configuration on node zero',/)")
-
-    Write(nrite,"(8x,'i',7x,'x(i)',8x,'y(i)',8x,'z(i)', &
-      & 7x,'vx(i)',7x,'vy(i)',7x,'vz(i)',            &
-      & 7x,'fx(i)',7x,'fy(i)',7x,'fz(i)',/,/)")
-
-    j=(natms+19)/20
-    If (j > 0) Then
-      Do i=1,natms,j
-        If (levcfg <= 1) Write(nrite,"(1x,i8,1p,3e12.4,3e12.4,3e12.4)") &
+  Call info("sample of final configuration on node zero",.true.)
+  Call info('',.true.)
+  Write(message,'(7x,a1,7x,a4,2(8x,a4),6(7x,a5))') &
+    'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)', &
+    'fx(i)', 'fy(i)', 'fz(i)'
+  Call info(message,.true.)
+  Call info('',.true.)
+  j=(natms+19)/20
+  If (j > 0) Then
+    Do i=1,natms,j
+      If (levcfg <= 1) Then
+        Write(message,'(i8,1p,6e12.4)') &
           ltg(i),xxx(i),yyy(i),zzz(i),vxx(i),vyy(i),vzz(i)
+      End If
 
-        If (levcfg == 2) Write(nrite,"(1x,i8,1p,3e12.4,3e12.4,3e12.4)") &
-          ltg(i),xxx(i),yyy(i),zzz(i),vxx(i),vyy(i),vzz(i),fxx(i),fyy(i),fzz(i)
-      End Do
-    End If
+      If (levcfg == 2) Then
+        Write(message,"(i8,1p,9e12.4)") &
+        ltg(i),xxx(i),yyy(i),zzz(i),vxx(i),vyy(i),vzz(i),fxx(i),fyy(i),fzz(i)
+      End If
+      Call info(message,.true.)
+    End Do
   End If
 
   ! Two-temperature model simulations: calculate final 
@@ -787,30 +785,30 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   ! Ask for reference in publications
 
-  If (dlp_world(0)%idnode == 0) Then
-    Write(nrite,'(/,/,6(1x,a,/),1x,a)') &
-      "*************************************************************************************************************************", &
-      "**************                                                                                             **************", &
-      "**************  Thank you for using the DL_POLY_4 package in your work.  Please, acknowledge our efforts   **************", &
-      "**************                                                                                             **************", &
-      "**************  by including the following references when publishing data obtained using DL_POLY_4:       **************", &
-      "**************                                                                                             **************", &
-      "**************  I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove, `J. Mater. Chem.', 16, 1911-1918 (2006)  **************"
-
-    If (keyfce == 2) Write(nrite,'(1x,a)') &
-      "**************  I.J. Bush, I.T. Todorov & W. Smith, `Comp. Phys. Commun.', 175, 323-329 (2006)             **************"
-
-    If (mximpl > 0)  Write(nrite,'(1x,a)') &
-      "**************  H.A. Boateng & I.T. Todorov, `J. Chem. Phys.', 142, 034117 (2015)                          **************"
-
-    Write(nrite,'(2(1x,a,/))') &
-      "**************                                                                                             **************", &
-      "*************************************************************************************************************************"
+  Call info('',.true.)
+  Write(banner(1),'(a)') Repeat("*",66)
+  Write(banner(2),'(a)') '****                                                          ****'
+  Write(banner(3),'(a)') '**** Thank you for using the DL_POLY_4 package in your work.  ****'
+  Write(banner(4),'(a)') '**** Please, acknowledge our efforts by including the         ****'
+  Write(banner(5),'(a)') '**** following references when publishing data obtained using ****'
+  Write(banner(6),'(a)') '**** DL_POLY_4:                                               ****'
+  Write(banner(7),'(a)') '****   - J. Mater. Chem., 16, 1911-1918 (2006)                ****'
+  Call info(banner,7,.true.)
+  If (keyfce == 2) Then
+    Call info('****   - Comp. Phys. Commun., 175, 323-329 (2006)             ****',.true.)
   End If
+  If (mximpl > 0) Then
+    Call info('****   - J. Chem. Phys., 142, 034117 (2015)                   ****',.true.)
+  End If
+  Call info(Repeat("*",66),.true.)
 
   ! Get just the one number to compare against
 
-  If (dlp_world(0)%idnode == 0 .and. l_eng) Write(nrite,"(/,1x,a,1p,e20.10)") "TOTAL ENERGY: ", stpval(1)
+  If (l_eng) Then
+    Write(message,'(a,1p,e20.10)') "TOTAL ENERGY: ", stpval(1)
+    Call info('',.true.)
+    Call info(message,.true.)
+  End If
 
   ! Close output channel
 
@@ -876,5 +874,14 @@ Contains
 
     Include 'w_replay_historf.F90'
   End Subroutine w_replay_historf
+
+  Subroutine time_elapsed(time)
+    Real( Kind = wp ), Intent( In    ) :: time
+
+    Character( Len = 256 ) :: message
+
+    Write(message,'(a,f12.3,a)') "time elapsed since job start: ", time, " sec"
+    Call info(message,.true.)
+  End Subroutine time_elapsed
 
 End Program dl_poly
