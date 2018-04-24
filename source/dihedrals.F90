@@ -13,7 +13,7 @@ Module dihedrals
 
   Use kinds, only : wp
   Use comms, Only : comms_type,gcheck,gsum,gsync,gbcast
-  Use setup,  Only : pi,twopi,boltz,delth_max,nrite,npdfdt,npdgdt, &
+  Use setup,  Only : pi,twopi,boltz,delth_max,npdfdt,npdgdt, &
                             mxgdih,mxgdih1,engunit,zero_plus, mxtmls,     &
                             mxtang,mxtdih,mxpdih,rtwopi,r4pie0,mxdihd,    &
                             mximpl, ntable, mxgvdw,mxatdm,mxfdih
@@ -23,7 +23,7 @@ Module dihedrals
   Use vdw,    Only : ntpvdw,gvdw,vvdw,afs,prmvdw,bfs,ls_vdw,ld_vdw,  &
                                lstvdw,ltpvdw
   Use parse,  Only : get_line,get_word,word_2_real
-  Use errors_warnings, Only : error,warning
+  Use errors_warnings, Only : error,warning,info
   Use numerics, Only : local_index,images
   Use coul_spole, Only : intra_coul
   Use coul_mpole, Only : intra_mcoul
@@ -291,7 +291,7 @@ Subroutine dihedrals_compute(temp,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  
+
   Real( Kind = wp ), Intent( In    ) :: temp
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -304,7 +304,8 @@ Subroutine dihedrals_compute(temp,comm)
   Real( Kind = wp ), Allocatable :: dstddih(:,:)
   Real( Kind = wp ), Allocatable :: pmf(:),vir(:)
 
-  Character( Len = 256 ) :: message
+  Character( Len = 256 ) :: message,messages(3)
+
   fail = 0
   Allocate (dstddih(0:mxgdih1,1:ldfdih(0)),pmf(0:mxgdih1+2),vir(0:mxgdih1+2), Stat = fail)
   If (fail > 0) Then
@@ -350,11 +351,12 @@ Subroutine dihedrals_compute(temp,comm)
 
   pdfzero = 1.0e-5_wp
 
-  If (comm%idnode == 0) Then
-     Write(nrite,'(/,/,12x,a)') 'DIHEDRALS : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)'
-     Write(nrite,'(/,1x,a,i10,1x,a,2(i0,a),3(1x,i10))') &
-           '# bins, range, frames, types: ',mxgdih1,'[',-180,',',180,']',ncfdih,kk,ll
-  End If
+  Write(messages(1),*) ''
+  Write(messages(2),'(a)') &
+     'DIHEDRALS : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)'
+  Write(messages(3),'(a,i10,1x,a,2(i0,a),3(1x,i10))') &
+     '# bins, range, frames, types: ',mxgdih1,'[',-180,',',180,']',ncfdih,kk,ll
+  Call info(messages,3,.true.)
 
 ! open RDF file and write headers
 
@@ -375,13 +377,17 @@ Subroutine dihedrals_compute(temp,comm)
      If (typdih(0,i) > 0) Then
         j=j+1
 
+        Write(messages(1),*) ''
+        Write(messages(2),'(a,4(a8,1x),2(i10,1x))') 'type, index, instances: ', &
+           unqatm(typdih(1,i)),unqatm(typdih(2,i)),unqatm(typdih(3,i)), &
+           unqatm(typdih(4,i)),j,typdih(0,i)
+        Write(messages(3),'(a,f8.5)') &
+           'Theta(degrees)  P_dih(Theta)  Sum_P_dih(Theta)   @   dTheta_bin = ',delth*rad2dgr
+        Call info(messages,3,.true.)
         If (comm%idnode == 0) Then
-           Write(nrite,'(/,1x,a,4(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-                unqatm(typdih(1,i)),unqatm(typdih(2,i)),unqatm(typdih(3,i)),unqatm(typdih(4,i)),j,typdih(0,i)
-           Write(nrite,'(/,1x,a,f8.5)') 'Theta(degrees)  P_dih(Theta)  Sum_P_dih(Theta)   @   dTheta_bin = ',delth*rad2dgr
-
            Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-                unqatm(typdih(1,i)),unqatm(typdih(2,i)),unqatm(typdih(3,i)),unqatm(typdih(4,i)),j,typdih(0,i)
+              unqatm(typdih(1,i)),unqatm(typdih(2,i)),unqatm(typdih(3,i)), &
+              unqatm(typdih(4,i)),j,typdih(0,i)
         End If
 
 ! global sum of data on all nodes
@@ -428,8 +434,11 @@ Subroutine dihedrals_compute(temp,comm)
 ! print out information
 
            theta  = theta*rad2dgr
+           If (.not.zero) Then
+             Write(message,'(f11.5,1p,2e14.6)') theta,pdfdih1,sum1
+             Call info(message,.true.)
+           End If
            If (comm%idnode == 0) Then
-              If (.not.zero) Write(nrite,"(f11.5,1p,2e14.6)") theta,pdfdih1,sum1
               Write(npdfdt,"(f11.5,1p,e14.6)") theta,pdfdih
            End If
 
@@ -652,7 +661,7 @@ Subroutine dihedrals_forces &
   Real( Kind = wp ), Allocatable :: xdbc(:),ydbc(:),zdbc(:)
   Real( Kind = wp ), Allocatable :: xdcd(:),ydcd(:),zdcd(:)
   Real( Kind = wp ), Allocatable :: xdad(:,:),ydad(:,:),zdad(:,:)
-  Character( Len = 256 ) :: message
+  Character( Len = 256 ) :: message,messages(7)
 
   fail=0
   Allocate (lunsafe(1:mxdihd),lstopt(0:6,1:mxdihd),lad(1:3,1:mxdihd), Stat=fail(1))
@@ -797,10 +806,13 @@ Subroutine dihedrals_forces &
      Do j=0,comm%mxnode-1
         If (comm%idnode == j) Then
            Do i=1,ntdihd
-              If (lunsafe(i)) Write(nrite,'(/,1x,a,2(i10,a))')     &
-                 '*** warning - global unit number', listdih(0,i), &
-                 ' , with a head particle number', listdih(1,i),   &
-                 ' contributes towards next error !!! ***'
+             If (lunsafe(i)) Then
+               Write(message,'(2(a,i10))') &
+                 'global unit number', listdih(0,i), &
+                 ' , with a head particle number', listdih(1,i)
+               Call info(message)
+               Call warning('contributes towards next error')
+             End If
            End Do
         End If
         Call gsync(comm)
@@ -1181,22 +1193,39 @@ Subroutine dihedrals_forces &
 ! flag error if rad > cutoff
 
         If (Any(rad > rcut)) Then
-           Write(*,*) 'AB',xab,yab,zab
-           Write(*,*) 'BC',xbc,ybc,zbc,xac,yac,zac
-           Write(*,*) 'CD',xcd,ycd,zcd,xad,yad,zad
-           Write(*,*) 'A',xxx(ia),yyy(ia),zzz(ia)
-           Write(*,*) 'B',xxx(ib),yyy(ib),zzz(ib)
-           Write(*,*) 'C',xxx(ic),yyy(ic),zzz(ic)
-           Write(*,*) 'D',xxx(id),yyy(id),zzz(id)
+           Write(messages(1),*) 'AB',xab,yab,zab
+           Write(messages(2),*) 'BC',xbc,ybc,zbc,xac,yac,zac
+           Write(messages(3),*) 'CD',xcd,ycd,zcd,xad,yad,zad
+           Write(messages(4),*) 'A',xxx(ia),yyy(ia),zzz(ia)
+           Write(messages(5),*) 'B',xxx(ib),yyy(ib),zzz(ib)
+           Write(messages(6),*) 'C',xxx(ic),yyy(ic),zzz(ic)
+           Write(messages(7),*) 'D',xxx(id),yyy(id),zzz(id)
+           Call info(messages,7)
            If (lx_dih) Then
-              If (lad(1,i)) Write(*,*) 'A0',xxx(ia0),yyy(ia0),zzz(ia0)
-              If (lad(2,i)) Write(*,*) 'D0',xxx(id0),yyy(id0),zzz(id0)
+              If (lad(1,i)) Then
+                Write(message,*) 'A0',xxx(ia0),yyy(ia0),zzz(ia0)
+                Call info(message)
+              End If
+              If (lad(2,i)) Then
+                Write(message,*) 'D0',xxx(id0),yyy(id0),zzz(id0)
+                Call info(message)
+              End If
            End If
-           Write(*,*) i,ltg(ia),ltg(ib),ltg(ic),ltg(id),rcut,rad(0)
+           Write(message,*) i,ltg(ia),ltg(ib),ltg(ic),ltg(id),rcut,rad(0)
+           Call info(message)
            If (lx_dih) Then
-              If (lad(1,i)) Write(*,*) i,ltg(ia0),ltg(id),rad(1)
-              If (lad(2,i)) Write(*,*) i,ltg(ia),ltg(id0),rad(2)
-              If (lad(3,i)) Write(*,*) i,ltg(ia0),ltg(id0),rad(3)
+              If (lad(1,i)) Then
+                Write(message,*) i,ltg(ia0),ltg(id),rad(1)
+                Call info(message)
+              End If
+              If (lad(2,i)) Then
+                Write(message,*) i,ltg(ia),ltg(id0),rad(2)
+                Call info(message)
+              End If
+              If (lad(3,i)) Then
+                Write(message,*) i,ltg(ia0),ltg(id0),rad(3)
+                Call info(message)
+              End If
            End If
            safe(2) = .false.
         End If
@@ -1679,8 +1708,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
 
   Integer,           Allocatable :: read_type(:)
   Real( Kind = wp ), Allocatable :: bufpot(:),bufvir(:)
-  Character( Len = 256 ) :: message
-
+  Character( Len = 256 ) :: message,messages(5)
 
   If (comm%idnode == 0) Open(Unit=ntable, File='TABDIH')
 
@@ -1713,16 +1741,12 @@ Subroutine dihedrals_table_read(dihd_name,comm)
      delpot = dlrpot
   End If
   If (delpot > delth_max .and. (.not.safe)) Then
-      If (comm%idnode == 0) Then
-        Write(nrite,"(/,                                              &
-             & ' expected (maximum) angular increment : ',1p,e15.7,/, &
-             & ' TABDIH file actual angular increment : ',1p,e15.7)") &
-             delth_max, delpot
-        Write(nrite,"(/,                                                &
-             & ' expected (minimum) number of grid points : ',0p,i10,/, &
-             & ' TABDIH file actual number of grid points : ',0p,i10)") &
-             mxgdih-4, ngrid
-     End If
+     Write(messages(1),*) ''
+     Write(messages(2),'(a,1p,e15.7)') 'expected (maximum) angular increment : ', delth_max
+     Write(messages(3),'(a,1p,e15.7)') 'TABDIH file actual angular increment : ', delpot
+     Write(messages(4),'(a,0p,i10)') 'expected (minimum) number of grid points : ', mxgdih-4
+     Write(messages(5),'(a,0p,i10)') 'TABDIH file actual number of grid points : ', ngrid
+     Call info(messages,5,.true.)
      Call error(22)
   End If
   safe=.true.
@@ -1731,7 +1755,9 @@ Subroutine dihedrals_table_read(dihd_name,comm)
   If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
      remake=.true.
      rdr=1.0_wp/delpot
-     If (comm%idnode == 0) Write(nrite,"(/,' TABDIH arrays resized for mxgrid = ',i10)") mxgdih-4
+     Write(message,'(a,i10)') 'TABDIH arrays resized for mxgrid = ', mxgdih-4
+     Call info('',.true.)
+     Call info(message,.true.)
   End If
 
 ! compare grids dimensions
@@ -1811,7 +1837,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
         Call error(89,message,.true.)
      End If
      If (Any(read_type == jtdih)) Then
-        Write(nrite,'(a,i0,a,i0,a,i0,a,i0,a)') '****',atom1,'***',atom2,'***',atom3,'***',atom4,'**** entry in TABDIH'
+        Write(message,'(a,i0,a,i0,a,i0,a,i0,a)') '****',atom1,'***',atom2,'***',atom3,'***',atom4,'**** entry in TABDIH'
         Call error(172,message,.true.)
      Else
         read_type(jtdih)=jtdih
@@ -1840,10 +1866,10 @@ Subroutine dihedrals_table_read(dihd_name,comm)
 
            If (Abs((rrr-rrr0-delpot)/delpot) > 1.0e-8_wp) Then
               safe=.false.
-              If (comm%idnode == 0) Write(nrite,"(/,                       &
-                 & ' TABDIH stated  angular increment : ',1p,e15.7,/, &
-                 & ' TABDIH read-in angular increment : ',1p,e15.7)") &
-                 delpot,rrr-rrr0
+              Write(messages(1),*) ''
+              Write(messages(2),'(a,1p,e15.7)') 'TABDIH stated  angular increment : ', delpot
+              Write(messages(3),'(a,1p,e15.7)') 'TABDIH read-in angular increment : ', rrr-rrr0
+              Call info(messages,3,.true.)
            End If
 
            bufpot(2) = bufp0
@@ -1857,10 +1883,10 @@ Subroutine dihedrals_table_read(dihd_name,comm)
 
            If (Abs((rrr-delpot)/delpot) > 1.0e-8_wp) Then
               safe=.false.
-              If (comm%idnode == 0) Write(nrite,"(/,                       &
-                 & ' TABDIH stated  angular increment : ',1p,e15.7,/, &
-                 & ' TABDIH read-in angular increment : ',1p,e15.7)") &
-                 delpot,rrr
+              Write(messages(1),*) ''
+              Write(messages(2),'(a,1p,e15.7)') 'TABDIH stated  angular increment : ', delpot
+              Write(messages(3),'(a,1p,e15.7)') 'TABDIH read-in angular increment : ',rrr
+              Call info(messages,3,.true.)
            End If
 
            bufpot(1) = bufp0
@@ -1970,8 +1996,9 @@ Subroutine dihedrals_table_read(dihd_name,comm)
 
   If (comm%idnode == 0) Then
      Close(Unit=ntable)
-     Write(nrite,'(/,1x,a)') 'potential tables read from TABDIH file'
   End If
+  Call info('',.true.)
+  Call info('potential tables read from TABDIH file',.true.)
 
 ! Break if not safe
 
