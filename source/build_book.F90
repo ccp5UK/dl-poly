@@ -1595,7 +1595,7 @@ Subroutine build_book_intra             &
         tmp=Max(tmp,1.0_wp+Real(itmp(i),wp)/Real(Max(1,jtmp(i)),wp))
      End Do
 
-     Write(message,'(a,i0,2f5.2)') 'estimated densvar value for passing this stage safely is : ', &
+     Write(message,'(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
         Nint((dvar*tmp-1.0_wp)*100.0_wp+0.5_wp)
      Call warning(message,.true.)
   End If
