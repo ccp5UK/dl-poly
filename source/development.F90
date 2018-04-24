@@ -220,8 +220,8 @@ Contains
     Character( Len = 66 ) :: message
     Integer               :: i,l
 
-    Call info('')
-    Call info(Repeat("*",66))
+    Call info('',.true.)
+    Call info(Repeat("*",66),.true.)
     If (Len_Trim( __DATE__//"  @  "//__TIME__) > 47) Then
       Write(aux,'(a47)') __DATE__//"  @  "//__TIME__
     Else
@@ -229,7 +229,7 @@ Contains
     End If
     Call clean_string(aux)
     Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", "birthday:", aux, "****"
-    Call info(message)
+    Call info(message,.true.)
 
     If (Len_Trim(__HOSTNAME__) > 47) Then
       Write(aux,'(a47)') __HOSTNAME__
@@ -238,7 +238,7 @@ Contains
     End If
     Call clean_string(aux)
     Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", " machine:", aux, "****"
-    Call info(message)
+    Call info(message,.true.)
 
     If (Len_Trim(__BUILDER__) > 47) Then
       Write(aux,'(a47)') __BUILDER__
@@ -247,7 +247,7 @@ Contains
     End If
     Call clean_string(aux)
     Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", " builder:", aux, "****"
-    Call info(message)
+    Call info(message,.true.)
 
     If      (mpi_ver == 0) Then
       If (Len_Trim(__COMPILER__//" v"//__VERSION__//" (serial build)") > 47) Then
@@ -264,24 +264,24 @@ Contains
     End If
     Call clean_string(aux)
     Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", "compiler:", aux, "****"
-    Call info(message)
+    Call info(message,.true.)
 
     If (mpi_ver > 0) Then
       Write(aux,'(a1,i0,a1,i0)') "v",mpi_ver,".",mpi_subver
       Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", "     MPI:", aux, "****"
-      Call info(message)
+      Call info(message,.true.)
 #ifndef OLDMPI
       Call clean_string(lib_version)
       Do i=1,Len_Trim(lib_version),46
         aux=lib_version(i:Min(i+45,Len_Trim(lib_version)))
         Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
-        Call info(message)
+        Call info(message,.true.)
       End Do
 #endif
     Else If (mpi_ver < 0) Then
       Write(aux,*) "MPI Library too old.  Please update!!!"
       Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
-      Call info(message)
+      Call info(message,.true.)
     End If
 
     Call date_and_time(date,time,zone,value)
@@ -289,10 +289,9 @@ Contains
       time(1:2),":",time(3:4),":",time(5:10),"  (GMT", &
       zone(1:3),":",zone(4:5),")"
     Write(message,'(a4,1x,a9,a47,1x,a4)') "****", "executed:", aux, "****"
-    Call info(message)
-    Write(message,'(a66)') Repeat("*",66)
-    Call info(message)
-    Call info('')
+    Call info(message,.true.)
+    Call info(Repeat("*",66),.true.)
+    Call info('',.true.)
 
   End Subroutine build_info
 
