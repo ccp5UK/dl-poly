@@ -9,7 +9,7 @@ Module drivers
                            indrgd,listrgd,rgdfrz,rgdx,rgdy,rgdz,q0,q1,q2,q3,&
                            rgdriz,rgdwgt,rgdrix,rgdriy,rgdriz,rgdind,rgdzzz,rgdyyy,&
                            rgdxxx,rgdmeg,ntrgd,lshmv_rgd,lishp_rgd,lashp_rgd
-  Use setup, Only : nrite,boltz,nrite,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
+  Use setup, Only : boltz,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
   Use angles, Only : mxgang1
   Use bonds, Only : mxgbnd1
   Use dihedrals, Only : mxgdih1
@@ -18,7 +18,7 @@ Module drivers
   Use core_shell,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
 
   Use impacts, Only : impact
-  Use errors_warnings, Only : error,warning 
+  Use errors_warnings, Only : error,warning,info
   Use shared_units, Only : update_shared_units,update_shared_units_int
   Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3
   Use rigid_bodies, Only : getrotmat
@@ -38,20 +38,21 @@ Module drivers
     Real ( Kind = wp), Intent( InOut ) :: strkin(:),strknf(:),strknt(:)
     Type(comms_type), Intent(InOut)    :: comm
 
+    Character( Len = 256 ) :: messages(6)
+
 !!!!!!!!!!!!!!!!!!!!!  W_IMPACT_OPTION INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 ! Apply impact
 ! levcfg == 2 avoids application twice when tmd happens at (re)start for VV
 
      If (nstep == tmd .and. levcfg == 2) Then
-        If (comm%idnode == 0) Write(nrite,"(/,          &
-           & /,1x,'initiating IMPACT:',            &
-           & /,1x,46('-'),                         &
-           & /,1x,'particle (index)',15x,i10,      &
-           & /,1x,'timestep (steps)',15x,i10,      &
-           & /,1x,'energy   (keV)  ',18x,1p,e12.4, &
-           & /,1x,'v-r(x,y,z)',1p,3e12.4,          &
-           & /,1x,46('-'))") imd,tmd,emd,vmx,vmy,vmz
+       Write(messages(1),'(a)') ''
+       Write(messages(2),'(a)') 'initiating IMPACT:'
+       Write(messages(3),'(a,i10)') 'particle (index): ', imd
+       Write(messages(4),'(a,i10)') 'timestep (steps): ', tmd
+       Write(messages(5),'(a,i10)') 'energy   (keV):   ', emd
+       Write(messages(6),'(a,1p,3e12.4)') 'v-r(x,y,z):       ', vmx, vmy, vmz
+       Call info(messages,6,.true.)
 
         If (nstep+1 <= nsteql) Call warning(380,Real(nsteql,wp),0.0_wp,0.0_wp)
 
