@@ -787,15 +787,14 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   Call info('',.true.)
   Write(banner(1),fmt1) Repeat("*",66)
-  Write(banner(2),fmt1) '****                                                          ****'
-  Write(banner(3),fmt1) '**** Thank you for using the DL_POLY_4 package in your work.  ****'
-  Write(banner(4),fmt1) '**** Please, acknowledge our efforts by including the         ****'
-  Write(banner(5),fmt1) '**** following references when publishing data obtained using ****'
-  Write(banner(6),fmt1) '**** DL_POLY_4:                                               ****'
-  Write(banner(7),fmt1) '****   - I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,    ****'
-  Write(banner(8),fmt1) '****     J. Mater. Chem., 16, 1911-1918 (2006),               ****'
-  Write(banner(9),fmt1) '****     https://doi.org/10.1039/B517931A                     ****'
-  Call info(banner,7,.true.)
+  Write(banner(2),fmt1) '**** Thank you for using the DL_POLY_4 package in your work.  ****'
+  Write(banner(3),fmt1) '**** Please, acknowledge our efforts by including the         ****'
+  Write(banner(4),fmt1) '**** following references when publishing data obtained using ****'
+  Write(banner(5),fmt1) '**** DL_POLY_4:                                               ****'
+  Write(banner(6),fmt1) '****   - I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,    ****'
+  Write(banner(7),fmt1) '****     J. Mater. Chem., 16, 1911-1918 (2006),               ****'
+  Write(banner(8),fmt1) '****     https://doi.org/10.1039/B517931A                     ****'
+  Call info(banner,8,.true.)
   If (keyfce == 2) Then
     Write(banner(1),fmt1) '****   - I.J. Bush, I.T. Todorov & W. Smith,                  ****'
     Write(banner(2),fmt1) '****     Comp. Phys. Commun., 175, 323-329 (2006),            ****'
