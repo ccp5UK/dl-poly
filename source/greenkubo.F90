@@ -18,7 +18,7 @@ Module greenkubo
   Use configuration,    Only : natms,ltype,lfrzn,vxx,vyy,vzz,cfgname
   Use site,      Only : unqatm,numtypnf
 
-  Use errors_warnings, Only : error
+  Use errors_warnings, Only : error,info
   Implicit None
 
   Integer           :: isvaf   = 1 , & ! VAF sampling frequency in steps
@@ -220,15 +220,16 @@ Subroutine vaf_compute(lvafav,tstep,comm)
   Integer           :: i
   Real( Kind = wp ) :: factor,gvaf,ovaf,time0,timei,numt
 
-  If (comm%idnode == 0) Then
-     If (lvafav) Then
-        Write(nrite,"(/,/,12x,'VELOCITY AUTOCORRELATION FUNCTIONS',/,/, &
-             & 'calculated using ',i8,' samples')") Nint(vafcount)
-     Else
-        Write(nrite,"(/,/,12x,'VELOCITY AUTOCORRELATION FUNCTIONS',/,/, &
-             & 'calculated using sample ',i8,' starting at ',f10.4,' ps')") Nint(vafcount), vaftime(0)
-     End If
+  Character( Len = 256 ) :: message
+
+  Call info('velocity autocorrelation functions',.true.)
+  If (lvafav) Then
+    Write(message,'(a,i8,a)') 'calculated using ', Nint(vafcount), ' samples'
+  Else
+    Write(message,'(a,i8,a,f10.4,a)') 'calculated using sample ', &
+      Nint(vafcount), ' starting at ',vaftime(0), ' ps'
   End If
+  Call info(message,.true.)
 
   time0 = vaftime(0)
   numt = Sum(numtypnf(1:mxatyp))
@@ -236,7 +237,8 @@ Subroutine vaf_compute(lvafav,tstep,comm)
   ovaf = Sum(vaf(0,1:mxatyp))/Real(numt,Kind=wp)
   If (lvafav) ovaf = ovaf/vafcount
 
-  If (comm%idnode == 0) Write(nrite,"(12x,'absolute value at origin (3kT/m) = ',1p,e16.8)") ovaf
+  Write(message,'(a,1p,e16.8)') 'absolute value at origin (3kT/m) = ', ovaf
+  Call info(message,.true.)
 
 ! loop over time steps
 
@@ -260,7 +262,8 @@ Subroutine vaf_compute(lvafav,tstep,comm)
 
 ! print out information
 
-     If (comm%idnode == 0) Write(nrite,"(12x,f10.4,1p,e14.6)") timei,gvaf
+     Write(message,'(f10.4,1p,e14.6)') timei,gvaf
+     Call info(message,.true.)
 
   End Do
 
