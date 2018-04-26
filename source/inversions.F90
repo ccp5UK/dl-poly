@@ -18,7 +18,7 @@ Module inversions
   Use site,  Only : ntpatm,unqatm
   Use configuration, Only : cfgname
   Use parse, Only : get_line,get_word,word_2_real
-  Use errors_warnings, Only : error, warning
+  Use errors_warnings, Only : error, warning, info
   Use numerics, Only : local_index, images
   Implicit None
 
@@ -199,11 +199,11 @@ Contains
 
     pdfzero = 1.0e-5_wp
 
-    If (comm%idnode == 0) Then
-       Write(nrite,'(/,/,12x,a)') 'INVERSIONS : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)'
-       Write(nrite,'(/,1x,a,5(1x,i10))') &
-              '# bins, cutoff, frames, types: ',mxginv1,180,ncfinv,kk,ll
-    End If
+    Call info('',.true.)
+    Call info('INVERSIONS : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)',.true.)
+    Write(message,'(a,5(1x,i10))') '# bins, cutoff, frames, types: ', &
+      mxginv1,180,ncfinv,kk,ll
+    Call info(message,.true.)
 
   ! open RDF file and write headers
 
@@ -224,11 +224,15 @@ Contains
        If (typinv(0,i) > 0) Then
           j=j+1
 
+          Write(message,'(a,4(a8,1x),2(i10,1x))') 'type, index, instances: ', &
+            unqatm(typinv(1,i)),unqatm(typinv(2,i)),unqatm(typinv(3,i)), &
+            unqatm(typinv(4,i)),j,typinv(0,i)
+          Call info(message,.true.)
+          Write(message,'(a,f8.5)') &
+            'Theta(degrees)  P_inv(Theta)  Sum_P_inv(Theta)   @   dTheta_bin = ', &
+            delth*rad2dgr
+          Call info(message,.true.)
           If (comm%idnode == 0) Then
-             Write(nrite,'(/,1x,a,4(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-                  unqatm(typinv(1,i)),unqatm(typinv(2,i)),unqatm(typinv(3,i)),unqatm(typinv(4,i)),j,typinv(0,i)
-             Write(nrite,'(/,1x,a,f8.5)') 'Theta(degrees)  P_inv(Theta)  Sum_P_inv(Theta)   @   dTheta_bin = ',delth*rad2dgr
-
              Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
                   unqatm(typinv(1,i)),unqatm(typinv(2,i)),unqatm(typinv(3,i)),unqatm(typinv(4,i)),j,typinv(0,i)
           End If
@@ -277,8 +281,11 @@ Contains
   ! print out information
 
              theta  = theta*rad2dgr
+             If (.not.zero) Then
+               Write(message,"(f11.5,1p,2e14.6)") theta,pdfinv1,sum1
+               Call info(message,.true.)
+             End If
              If (comm%idnode == 0) Then
-                If (.not.zero) Write(nrite,"(f11.5,1p,2e14.6)") theta,pdfinv1,sum1
                 Write(npdfdt,"(f11.5,1p,e14.6)") theta,pdfinv
              End If
 
@@ -584,10 +591,12 @@ Contains
        Do j=0,comm%mxnode-1
           If (comm%idnode == j) Then
              Do i=1,ntinv
-                If (lunsafe(i)) Write(nrite,'(/,1x,a,2(i10,a))')     &
-                   '*** warning - global unit number', listinv(0,i), &
-                   ' , with a head particle number', listinv(1,i),   &
-                   ' contributes towards next error !!! ***'
+                If (lunsafe(i)) Then
+                  Write(message,'(2(a,i10))') 'global unit number', listinv(0,i), &
+                    ' , with a head particle number', listinv(1,i)
+                  Call info(message)
+                  Call warning('contributes towards next error')
+                End If
              End Do
           End If
           Call gsync(comm)
@@ -1199,7 +1208,7 @@ Contains
 
     Integer,           Allocatable :: read_type(:)
     Real( Kind = wp ), Allocatable :: bufpot(:),bufvir(:)
-    Character( Len = 256   ) :: message
+    Character( Len = 256   ) :: message,messages(4)
 
 
     If (comm%idnode == 0) Open(Unit=ntable, File='TABINV')
@@ -1233,16 +1242,11 @@ Contains
        delpot = dlrpot
     End If
     If (delpot > delth_max .and. (.not.safe)) Then
-       If (comm%idnode == 0) Then
-          Write(nrite,"(/,                                              &
-               & ' expected (maximum) angular increment : ',1p,e15.7,/, &
-               & ' TABINV file actual angular increment : ',1p,e15.7)") &
-               delth_max, delpot
-          Write(nrite,"(/,                                                &
-               & ' expected (minimum) number of grid points : ',0p,i10,/, &
-               & ' TABINV file actual number of grid points : ',0p,i10)") &
-               mxginv-4, ngrid
-       End If
+       Write(messages(1),'(a,1p,e15.7)') 'expected (maximum) angular increment : ', delth_max
+       Write(messages(2),'(a,1p,e15.7)') 'TABINV file actual angular increment : ', delpot
+       Write(messages(3),'(a,i10)') 'expected (minimum) number of grid points : ', mxginv-4
+       Write(messages(4),'(a,i10)') 'TABINV file actual number of grid points : ', ngrid
+       Call info(messages,4,.true.)
        Call error(22)
     End If
     safe=.true.
@@ -1251,7 +1255,8 @@ Contains
     If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
        remake=.true.
        rdr=1.0_wp/delpot
-       If (comm%idnode == 0) Write(nrite,"(/,' TABINV arrays resized for mxgrid = ',i10)") mxginv-4
+       Write(message,'(a,i10)') 'TABINV arrays resized for mxgrid = ', mxginv-4
+       Call info(message,.true.)
     End If
 
   ! compare grids dimensions
@@ -1302,7 +1307,8 @@ Contains
        End Do
 
        If (katom1 == 0 .or. katom2 == 0 .or. katom3 == 0 .or. katom4 == 0) Then
-          If (comm%idnode == 0) Write(nrite,'(a)') '****',atom1,'***',atom2,'***',atom3,'***',atom4,'**** entry in TABINV'
+          Call info('****'//atom1//'***'//atom2//'***'//atom3//'***'//atom4// &
+            '**** entry in TABINV')
           Call error(91)
        End If
 
@@ -1341,11 +1347,13 @@ Contains
        End Do
 
        If (itinv == 0) Then ! All(invr_name /= idinvr)
-          If (comm%idnode == 0) Write(nrite,'(a)') '****',atom1,'***',atom2,'***',atom3,'***',atom4,'**** entry in TABINV'
+          Call info('****'//atom1//'***'//atom2//'***'//atom3//'***'//atom4// &
+            '**** entry in TABINV')
           Call error(89)
        End If
        If (Any(read_type == jtinv)) Then
-          If (comm%idnode == 0) Write(nrite,'(a)') '****',atom1,'***',atom2,'***',atom3,'***',atom4,'**** entry in TABINV'
+          Call info('****'//atom1//'***'//atom2//'***'//atom3//'***'//atom4// &
+            '**** entry in TABINV')
           Call error(172)
        Else
           read_type(jtinv)=jtinv
@@ -1367,10 +1375,9 @@ Contains
           If (rrr > zero_plus) Then ! no zero element data => extrapolate to zero
              If (Abs((rrr-delpot)/delpot) > 1.0e-8_wp) Then
                 safe=.false.
-                If (comm%idnode == 0) Write(nrite,"(/,                       &
-                   & ' TABINV stated  angular increment : ',1p,e15.7,/, &
-                   & ' TABINV read-in angular increment : ',1p,e15.7)") &
-                   delpot,rrr
+                 Write(messages(1),'(a,1p,e15.7)') 'TABINV stated  angular increment : ', delpot
+                 Write(messages(2),'(a,1p,e15.7)') 'TABINV read-in angular increment : ', rrr
+                 Call info(messages,2,.true.)
              End If
 
              bufpot(1) = bufp0
@@ -1381,10 +1388,9 @@ Contains
 
              If (Abs((rrr-rrr0-delpot)/delpot) > 1.0e-8_wp) Then
                 safe=.false.
-                If (comm%idnode == 0) Write(nrite,"(/,                       &
-                   & ' TABINV stated  angular increment : ',1p,e15.7,/, &
-                   & ' TABINV read-in angular increment : ',1p,e15.7)") &
-                   delpot,rrr-rrr0
+                 Write(messages(1),'(a,1p,e15.7)') 'TABINV stated  angular increment : ', delpot
+                 Write(messages(2),'(a,1p,e15.7)') 'TABINV read-in angular increment : ', rrr
+                 Call info(messages,2,.true.)
              End If
 
              bufpot(2) = bufp0
@@ -1402,10 +1408,9 @@ Contains
 
              If (Abs((rrr-delpot)/delpot) > 1.0e-8_wp) Then
                 safe=.false.
-                If (comm%idnode == 0) Write(nrite,"(/,                       &
-                   & ' TABINV stated  angular increment : ',1p,e15.7,/, &
-                   & ' TABINV read-in angular increment : ',1p,e15.7)") &
-                   delpot,rrr
+                 Write(messages(1),'(a,1p,e15.7)') 'TABINV stated  angular increment : ', delpot
+                 Write(messages(2),'(a,1p,e15.7)') 'TABINV read-in angular increment : ', rrr
+                 Call info(messages,2,.true.)
              End If
 
              bufpot(1) = bufp0
@@ -1512,8 +1517,8 @@ Contains
 
     If (comm%idnode == 0) Then
        Close(Unit=ntable)
-       Write(nrite,'(/,1x,a)') 'potential tables read from TABINV file'
     End If
+    Call info('potential tables read from TABINV file',.true.)
 
   ! Break if not safe
 

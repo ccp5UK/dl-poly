@@ -459,11 +459,11 @@ Contains
         If (comm%idnode == l) Then
           Do k=1,ntcons
             If (lunsafe(k)) Then
-                Write(message,'(a,2(i10,a))')     &
-                'global unit number', listcon(0,k), &
-                ' , with a head particle number', listcon(1,k),   &
-                ' contributes towards next error'
-                Call warning(message)
+                Write(message,'(2(a,i10))')     &
+                  'global unit number', listcon(0,k), &
+                  ' , with a head particle number', listcon(1,k)
+                Call info(message)
+                Call warning('contributes towards next error')
               End If
           End Do
         End If
