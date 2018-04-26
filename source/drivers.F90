@@ -50,7 +50,7 @@ Module drivers
        Write(messages(2),'(a)') 'initiating IMPACT:'
        Write(messages(3),'(a,i10)') 'particle (index): ', imd
        Write(messages(4),'(a,i10)') 'timestep (steps): ', tmd
-       Write(messages(5),'(a,i10)') 'energy   (keV):   ', emd
+       Write(messages(5),'(a,1p,e12.5)') 'energy   (keV):   ', emd
        Write(messages(6),'(a,1p,3e12.4)') 'v-r(x,y,z):       ', vmx, vmy, vmz
        Call info(messages,6,.true.)
 
