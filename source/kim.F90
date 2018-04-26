@@ -25,13 +25,12 @@ Module kim
   Use domains, Only : map
   Use configuration,  Only : natms,nlast,lsi,lsa,ltg,list,lsite, &
                              xxx,yyy,zzz,fxx,fyy,fzz
-  Use setup,   Only : nrite,mxsite,mxlist,mxatdm,mxbfxp
+  Use setup,   Only : mxsite,mxlist,mxatdm,mxbfxp
   Use site,    Only : unqatm,ntpatm,sitnam
   Use comms, Only : comms_type,export_tag,wp_mpi,gsend,gwait,girecv
   Use numerics, Only : local_index
 #else  
   Use comms, Only : comms_type
-  Use setup, Only : nrite
 #endif
 
   Implicit None
@@ -303,15 +302,13 @@ Contains
     fail=0
     If (RijNeeded) Deallocate (kim_Rij, Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a)') &
-            'failure deallocating kim_Rij in kim_module'
+       Call info('failure deallocating kim_Rij in kim_module')
        Call error(0,message)
     End If
 
     Deallocate (rev_comm_buffer, Stat=fail)
     If (fail > 0) Then
-       Write(nrite,'(/,1x,a)') &
-            'failure deallocating rev_comm_buffer in kim_module'
+       Call info('failure deallocating rev_comm_buffer in kim_module')
        Call error(0,message)
     End If
 
