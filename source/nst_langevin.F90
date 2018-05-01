@@ -14,7 +14,7 @@ Module nst_langevin
   Use constraints,     Only : passcon,constraints_rattle,constraints_shake_vv,constraints_tags
   Use pmf,             Only : passpmf,pmf_rattle,pmf_tags,pmf_shake_vv 
   Use rigid_bodies     
-  Use errors_warnings, Only : error
+  Use errors_warnings, Only : error,info
   Use shared_units,    Only : update_shared_units
   Use numerics,        Only : dcell, mat_mul,box_mueller_saru6    
   Use langevin,        Only : langevin_forces
@@ -496,8 +496,9 @@ Contains
                    hstep = 0.50_wp*tstep
                    qstep = 0.50_wp*hstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,'(a,1p,e12.4)') &
+                  'timestep decreased, new timestep is: ', tstep
+                Call info(message,.true.)
              End If
              If (mxdr < mndis) Then
                 lv_dn = .true.
@@ -518,8 +519,9 @@ Contains
                    hstep = 0.50_wp*tstep
                    qstep = 0.50_wp*hstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,'(a,1p,e12.4)') &
+                  'timestep increased, new timestep is: ', tstep
+                Call info(message,.true.)
              End If
              rstep = 1.0_wp/tstep
 
@@ -1538,8 +1540,9 @@ Contains
                    hstep = 0.50_wp*tstep
                    qstep = 0.50_wp*hstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,'(a,1p,e12.4)') &
+                  'timestep decreased, new timestep is: ', tstep
+                Call info(message,.true.)
              End If
              If (mxdr < mndis) Then
                 lv_dn = .true.
@@ -1560,8 +1563,9 @@ Contains
                    hstep = 0.50_wp*tstep
                    qstep = 0.50_wp*hstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,'(a,1p,e12.4)') &
+                  'timestep increased, new timestep is: ', tstep
+                Call info(message,.true.)
              End If
              rstep = 1.0_wp/tstep
 
