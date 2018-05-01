@@ -1,19 +1,20 @@
 Module npt_berendsen
-  Use kinds,         Only : wp
-  Use comms,         Only : comms_type,gmax
-  Use configuration, Only : imcon,cell,volm,natms,nlast,nfree, &
-                            lfrzn,lstfre,weight,               &
-                            xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use domains,       Only : map
+  Use kinds,           Only : wp
+  Use comms,           Only : comms_type,gmax
+  Use configuration,   Only : imcon,cell,volm,natms,nlast,nfree, &
+                              lfrzn,lstfre,weight,               &
+                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use domains,         Only : map
   Use setup
-  Use site,          Only : ntpatm,dens
-  Use kinetics,      Only : getvom
-  Use core_shell,    Only : legshl
-  Use constraints,   Only : passcon,constraints_rattle
-  Use pmf,           Only : passpmf,pmf_tags,pmf_shake_vv,pmf_rattle
+  Use site,            Only : ntpatm,dens
+  Use kinetics,        Only : getvom
+  Use core_shell,      Only : legshl
+  Use constraints,     Only : passcon,constraints_rattle
+  Use pmf,             Only : passpmf,pmf_tags,pmf_shake_vv,pmf_rattle
   Use rigid_bodies
-  Use constraints,   Only : constraints_tags,constraints_shake_vv
-  Use nvt_berendsen, Only : nvt_b0_scl,nvt_b1_scl
+  Use constraints,     Only : constraints_tags,constraints_shake_vv
+  Use nvt_berendsen,   Only : nvt_b0_scl,nvt_b1_scl
+  Use errors_warnings, Only : error,info
   Implicit None
 
   Private
@@ -381,8 +382,9 @@ Contains
                    tstep = hstep
                    hstep = 0.50_wp*tstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,'(a,1p,e12.4)') &
+                  'timestep decreased, new timestep is: ', tstep
+                Call info(message,.true.)
              End If
              If (mxdr < mndis) Then
                 lv_dn = .true.
@@ -397,8 +399,9 @@ Contains
                    tstep = mxstp
                    hstep = 0.50_wp*tstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,'(a,1p,e12.4)') &
+                  'timestep increased, new timestep is: ', tstep
+                Call info(message,.true.)
              End If
              rstep = 1.0_wp/tstep
 
@@ -1178,8 +1181,9 @@ Contains
                    tstep = hstep
                    hstep = 0.50_wp*tstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,'(a,1p,e12.4)') &
+                  'timestep decreased, new timestep is: ', tstep
+                Call info(message,.true.)
              End If
              If (mxdr < mndis) Then
                 lv_dn = .true.
@@ -1194,8 +1198,9 @@ Contains
                    tstep = mxstp
                    hstep = 0.50_wp*tstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,'(a,1p,e12.4)') &
+                  'timestep increased, new timestep is: ', tstep
+                Call info(message,.true.)
              End If
              rstep = 1.0_wp/tstep
 
