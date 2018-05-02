@@ -688,7 +688,7 @@ Contains
     Integer,           Allocatable :: allrgd(:),fstrgd(:),lstsit(:)
     Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
     Real( Kind = wp ), Allocatable :: buffer(:)
-    Character ( Len = 256 )        :: message
+    Character ( Len = 256 )        :: message,messages(2)
 
     fail = 0 ; ntmp = mxlrgd*Max(mxrgd,mxtrgd)
     Allocate (allrgd(1:mxtrgd),fstrgd(1:mxrgd),      Stat = fail(1))

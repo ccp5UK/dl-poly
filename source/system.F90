@@ -686,7 +686,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
   Character( Len = Len( atmnam ) ), Dimension( : ), Allocatable :: atmnam_scaled
   Integer :: ierr
 
-  Character ( len = 256 )  :: message
+  Character ( len = 256 )  :: message,messages(5)
 
   fail=0
   Allocate (f1(1:nx),f2(1:nx),f3(1:nx),                      Stat=fail(1))
@@ -1776,7 +1776,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
 
 20   Continue
 
-     Write(message,'(a,f12.3,a') 'time elapsed since job start: ', t, ' sec'
+     Write(message,'(a,f12.3,a)') 'time elapsed since job start: ', t, ' sec'
      Call info(message,.true.)
      Call info('*** Simulation continues as scheduled...')
   End If

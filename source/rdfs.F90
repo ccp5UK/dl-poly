@@ -248,7 +248,7 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
 ! only for valid interactions specified for a look up
 
         If (kk > 0 .and. kk <= ntprdf) Then
-           Write(messages(1),'(2x,a,2(1x,a8)') 'g(r): ',unqatm(ia),unqatm(ib)
+           Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',unqatm(ia),unqatm(ib)
            Write(messages(2),'(8x,a1,6x,a4,9x,a4)') 'r','g(r)','n(r)'
            Call info(messages,2,.true.)
            If (comm%idnode == 0) Then
@@ -611,7 +611,7 @@ Subroutine calculate_errors(temp, rcut, num_steps, comm)
         Do k = j, ntpatm
            kk=lstrdf(k*(k-1)/2+j)
            If (kk > 0 .and. kk <= ntprdf) Then
-              Write(messages(1),'(2x,a,2(1x,a8)') 'g(r): ',unqatm(j),unqatm(k)
+              Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',unqatm(j),unqatm(k)
               Write(messages(2),'(8x,a1,6x,a4,9x,a4)') 'r','g(r)','n(r)'
               Call info(messages,2,.true.)
               Write(nrdfdt,'(2a8)') unqatm(j),unqatm(k)
@@ -729,7 +729,7 @@ Subroutine calculate_errors_jackknife(temp, rcut, num_steps,comm)
         Do k = j, ntpatm
            kk=lstrdf(k*(k-1)/2+j)
            If (kk > 0 .and. kk <= ntprdf) Then
-              Write(messages(1),'(2x,a,2(1x,a8)') 'g(r): ',unqatm(j),unqatm(k)
+              Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',unqatm(j),unqatm(k)
               Write(messages(2),'(8x,a1,6x,a4,9x,a4)') 'r','g(r)','n(r)'
               Call info(messages,2,.true.)
               Write(nrdfdt,'(2a8)') unqatm(j),unqatm(k)
