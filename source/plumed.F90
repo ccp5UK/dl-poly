@@ -14,7 +14,7 @@ Module plumed
   Use comms,  Only : comms_type
   Use setup,  Only : boltz, mxatms, DLP_VERSION
   Use configuration, Only : cell,natms,weight,ltg,chge,fxx,fyy,fzz
-  Use errors_warnings, Only : error
+  Use errors_warnings, Only : error,warning,info
 
   Implicit None
 
@@ -53,8 +53,6 @@ Contains
     Type(comms_type),  Intent( InOut ) :: comm
 
 #ifdef PLUMED
-    Character( Len=256 ) :: message,messages(?),banner(15)
-
     Call plumed_f_installed(has_plumed)
 
     If (has_plumed > 0) Then
@@ -88,6 +86,8 @@ Contains
 
     Type(comms_type), Intent( InOut ) :: comm
 #ifdef PLUMED
+    Character( Len = 256 ) :: message,messages(9),banner(15)
+
     Write(banner(1),'(a)')  ""
     Write(banner(2),'(a)')  "***_____________________________________ "
     Write(banner(3),'(a)')  "***|     .--                            |"
@@ -132,6 +132,8 @@ Contains
     Type(comms_type), Intent( InOut )  :: comm
 
 #ifdef PLUMED
+    Character( Len = 256 ) :: message
+
     Call plumed_f_gcmd("setAtomsNlocal"//sn,natms)
     Call plumed_f_gcmd("setAtomsFGatindex"//sn,ltg)
     Call plumed_f_gcmd("setStep"//sn,nstep)
