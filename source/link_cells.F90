@@ -11,7 +11,7 @@ Module link_cells
   Use mpole,         Only : keyind,lchatm
   Use development,   Only : l_dis,r_dis
 
-  Use errors_warnings, Only : error,warning
+  Use errors_warnings, Only : error,warning,info
   Use numerics, Only : dcell, invert,match
   Implicit None
 
@@ -60,7 +60,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,comm)
                                                     cell_dom,cell_bor,at_list
   Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
-  Character( Len = 256 ) :: message
+  Character( Len = 256 ) :: message,messages(3)
 ! Get the dimensional properties of the MD cell
 
   Call dcell(cell,celprp)
@@ -982,10 +982,10 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
 
               If (det < r_dis) Then
                  safe=.false.
-                 Write(nrite,'(/,1x,a,2(i10,a),f5.3,a)')                      &
-                      '*** warning - the pair with global indeces: '      ,   &
-                      ii,'  &',jj,'  violates minimum separation distance (', &
-                      det,' Angs) ***'
+                 Write(message,'(a,2(i10,a),f5.3,a)') &
+                      ' the pair with global indeces: ', ii,'  &',jj, &
+                      '  violates minimum separation distance (', det,' Angs)'
+                 Call warning(message)
                  cnt(0)=cnt(0)+1.0_wp ! sum up violators
               End If
 
@@ -998,27 +998,29 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
         End Do
      End Do
 
-        Call gcheck(comm,safe,"enforce")
-        Call gsum(comm,cnt)
+     Call gcheck(comm,safe,"enforce")
+     Call gsum(comm,cnt)
 
-     If (comm%idnode == 0) Then
-        If (.not.safe) Write(nrite,'(/,1x,a,i20,2a,f7.3,a,/)')                &
-        '*** warning - ', Int(cnt(0),li), ' pair(s) of particles in CONFIG ', &
-        'violate(s) the minimum separation distance of ',r_dis,' Angs ***'
-
-        Write(nrite,'(/,1x,a)') &
-        'Pair totals of short range interactions over cutoffs (in Angstroms):'
-        If (Abs(rlnk-rcut) > 1.0e-6_wp) Write(nrite,'(6x,a,i20,a,f7.3)') &
-        'extended       -  ', Int(cnt(1),li), '  within rlnk = ', rlnk
-        Write(nrite,'(6x,a,i20,a,f7.3)') &
-        'electrostatics -  ', Int(cnt(2),li), '  within rcut = ', rcut
-
-        Write(nrite,'(6x,a,i20,a,f7.3)') &
-        'van der Waals  -  ', Int(cnt(3),li), '  within rvdw = ', rvdw
-
-        Write(nrite,'(6x,a,i20,a,f7.3,/)') &
-        'metal          -  ', Int(cnt(4),li), '  within rmet = ', rmet
+     If (.not.safe) Then
+       Write(message,'(i20,2a,f7.3,a)') &
+         Int(cnt(0),li), ' pair(s) of particles in CONFIG ', &
+         'violate(s) the minimum separation distance of ',r_dis,' Angs'
+       Call warning(message,.true.)
      End If
+
+      Call info('Pair totals of short range interactions over cutoffs (in Angstroms):',.true.)
+      If (Abs(rlnk-rcut) > 1.0e-6_wp) Then
+        Write(message,'(2x,a,i20,a,f7.3)') &
+          'extended       -  ', Int(cnt(1),li), '  within rlnk = ', rlnk
+        Call info(message,.true.)
+      End If
+      Write(messages(1),'(2x,a,i20,a,f7.3)') &
+        'electrostatics -  ', Int(cnt(2),li), '  within rcut = ', rcut
+      Write(messages(2),'(2x,a,i20,a,f7.3)') &
+        'van der Waals  -  ', Int(cnt(3),li), '  within rvdw = ', rvdw
+      Write(messages(3),'(2x,a,i20,a,f7.3)') &
+        'metal          -  ', Int(cnt(4),li), '  within rmet = ', rmet
+      Call info(messages,3,.true.)
   End If
 
   Deallocate (nix,niy,niz,                   Stat=fail(1))

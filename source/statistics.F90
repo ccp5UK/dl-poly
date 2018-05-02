@@ -293,13 +293,6 @@ Contains
 
 ! store current values in statistics array
 
-!  If (idnode == 0) Write(nrite,'(5(/,5e12.4))')   &
-!     engke  , engrot , stpprs , stpprs , stpvol , &
-!     vircpe , virsrp , virter , virtbp , virfbp , &
-!     virfld , virshl , vircon , virpmf , vircom , &
-!     virtet , virbnd , virang , virdih , virinv , &
-!     virdpd
-
   stpval(0) =consv/engunit
   stpval(1) =stpcns/engunit
   stpval(2) =stptmp

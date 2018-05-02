@@ -15,12 +15,13 @@ Module rdfs
   Use site, Only: ntpatm
   Use configuration, Only : natms,ltg,ltype,list
   Use comms,  Only : comms_type,gsum
-  Use setup,  Only : fourpi,boltz,delr_max,nrite,nrdfdt,npdfdt,npdgdt, &
+  Use setup,  Only : fourpi,boltz,delr_max,nrdfdt,npdfdt,npdgdt, &
                             mxgrdf,engunit,zero_plus,mxlist,mxrdf,mxgusr
   Use site,   Only : ntpatm,unqatm,numtyp,dens
   Use configuration, Only : cfgname,volm
   Use parse
   Use io
+  Use errors_warnings, Only : error,info
 
   Implicit None
 
@@ -194,7 +195,7 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
   Real( Kind = wp ), Allocatable :: dstdrdf(:,:)
   Real( Kind = wp ), Allocatable :: pmf(:),vir(:)
 
-  Character ( Len = 256 )  :: message
+  Character ( Len = 256 )  :: message,messages(2)
 
   If (lpana) Then
      fail = 0
@@ -219,8 +220,9 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
   ngrid = Max(Nint(rcut/delr_max),mxgrdf)
   dgrid = rcut/Real(ngrid,wp)
 
-  If (comm%idnode == 0) Write(nrite,"(/,/,12x,'RADIAL DISTRIBUTION FUNCTIONS',/,/, &
-     & ' calculated using ',i8,' configurations')") ncfrdf
+  Write(messages(1),'(a)') 'radial distribution functions:'
+  Write(messages(2),'(2x,a,i8,a)') 'calculated using ', ncfrdf, ' configurations'
+  Call info(messages,2,.true.)
 
 ! open RDF file and Write headers
 
@@ -246,8 +248,10 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
 ! only for valid interactions specified for a look up
 
         If (kk > 0 .and. kk <= ntprdf) Then
+           Write(messages(1),'(2x,a,2(1x,a8)') 'g(r): ',unqatm(ia),unqatm(ib)
+           Write(messages(2),'(8x,a1,6x,a4,9x,a4)') 'r','g(r)','n(r)'
+           Call info(messages,2,.true.)
            If (comm%idnode == 0) Then
-              Write(nrite,"(/,' g(r)  :',2(1x,a8),/,/,8x,'r',6x,'g(r)',9x,'n(r)',/)") unqatm(ia),unqatm(ib)
               Write(nrdfdt,'(2a8)') unqatm(ia),unqatm(ib)
            End If
 
@@ -293,8 +297,11 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
 
 ! print out information
 
+              If (.not.zero) Then
+                Write(message,'(f10.4,1p,2e14.6)') rrr,gofr1,sum1
+                Call info(message,.true.)
+              End If
               If (comm%idnode == 0) Then
-                 If (.not.zero) Write(nrite,"(f10.4,1p,2e14.6)") rrr,gofr1,sum1
                  Write(nrdfdt,"(1p,2e14.6)") rrr,gofr
               End If
 
@@ -536,6 +543,8 @@ Subroutine calculate_errors(temp, rcut, num_steps, comm)
   Integer, Intent(In) :: num_steps
   Integer             :: nr_blocks, i, j,k ,l, ierr, ierr2, ierr3, a, b, ia, ib, kk
 
+  Character ( Len = 256 )  :: messages(2)
+
   test1 = 0.0_wp
   block_number = 1
 
@@ -602,7 +611,9 @@ Subroutine calculate_errors(temp, rcut, num_steps, comm)
         Do k = j, ntpatm
            kk=lstrdf(k*(k-1)/2+j)
            If (kk > 0 .and. kk <= ntprdf) Then
-              Write(nrite,"(/,' g(r)  :',2(1x,a8),/,/,8x,'r',6x,'g(r)',9x,'n(r)',/)") unqatm(j),unqatm(k)
+              Write(messages(1),'(2x,a,2(1x,a8)') 'g(r): ',unqatm(j),unqatm(k)
+              Write(messages(2),'(8x,a1,6x,a4,9x,a4)') 'r','g(r)','n(r)'
+              Call info(messages,2,.true.)
               Write(nrdfdt,'(2a8)') unqatm(j),unqatm(k)
               Do i=1,mxgrdf
                  Write(nrdfdt,"(1p,2e14.6,2e14.6)") ((Real(i,wp)-0.5_wp)*delr),averages(j,k,i),errors(j,k,i)
@@ -625,6 +636,8 @@ Subroutine calculate_errors_jackknife(temp, rcut, num_steps,comm)
 
   Integer, Intent(in) :: num_steps
   Integer             :: nr_blocks, i, j,k ,l, ierr, ierr2, ierr3, a, b, kk
+
+  Character( Len = 256 ) :: messages(2)
 
   test1 = 0.0_wp
   block_number = 1
@@ -716,7 +729,9 @@ Subroutine calculate_errors_jackknife(temp, rcut, num_steps,comm)
         Do k = j, ntpatm
            kk=lstrdf(k*(k-1)/2+j)
            If (kk > 0 .and. kk <= ntprdf) Then
-              Write(nrite,"(/,' g(r)  :',2(1x,a8),/,/,8x,'r',6x,'g(r)',9x,'n(r)',/)") unqatm(j),unqatm(k)
+              Write(messages(1),'(2x,a,2(1x,a8)') 'g(r): ',unqatm(j),unqatm(k)
+              Write(messages(2),'(8x,a1,6x,a4,9x,a4)') 'r','g(r)','n(r)'
+              Call info(messages,2,.true.)
               Write(nrdfdt,'(2a8)') unqatm(j),unqatm(k)
               Do i=1,mxgrdf
                  Write(nrdfdt,"(1p,2e14.6,2e14.6)") ((Real(i,wp)-0.5_wp)*delr),averages(j,k,i),errors(j,k,i)

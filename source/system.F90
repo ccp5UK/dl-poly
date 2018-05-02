@@ -708,15 +708,14 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
 ! Print elapsed time and option header
 
   Call gtime(t)
-  If (comm%idnode == 0) Then
-     Write(nrite,'(/, "time elapsed since job start: ", f12.3, " sec",/)') t
-     Write(nrite,'(4(1x,a,/))')                                                     &
-     "*** Expanding the MD system by a nx*ny*nz volumetric replication        ***", &
-     "*** of its contents along the MD cell lattice vectors, creating         ***", &
-     "*** a new matching pair of topology-interaction (FIELD) and             ***", &
-     "*** crystallographic (CONFIG) files, preserving FIELD's template intact ***"
-     Write(nrite,'(1x,a,3i5,/)') '*** Replication dimensions (nx,ny,nz):', nx,ny,nz
-  End If
+  Write(message,'(a,f12.3,a)') 'time elapsed since job start: ', t, ' sec'
+  Call info(message,.true.)
+  Write(messages(1),'(a)') '*** Expanding the MD system by a nx*ny*nz volumetric replication        ***'
+  Write(messages(2),'(a)') '*** of its contents along the MD cell lattice vectors, creating         ***'
+  Write(messages(3),'(a)') '*** a new matching pair of topology-interaction (FIELD) and             ***'
+  Write(messages(4),'(a)') "*** crystallographic (CONFIG) files, preserving FIELD's template intact ***"
+  Write(messages(5),'(a,3i5)') '*** Replication dimensions (nx,ny,nz):', nx,ny,nz
+  Call info(messages,5,.true.)
 
 ! Holt or change execution if imcon is unsupported
 
@@ -724,7 +723,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
   If (imcon == 6 .and. nz > 1) Then
      nz=1
      Call warning(350,0.0_wp,0.0_wp,0.0_wp)
-     Write(nrite,'(1x,a,3i5,/)') '*** Replication dimensions (nx,ny,nz):', nx,ny,nz
+     Write(message,'(a,3i5)') '*** Replication dimensions (nx,ny,nz):', nx,ny,nz
+     Call info(message)
   End If
 
 ! Create names for the expanded CONFIG and FIELD
@@ -822,8 +822,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
 
 ! Write configuration file headers
 
-     Write(nrite,'(1x,2a)') '*** Expanding CONFIG in file ',fcfg(1:Len_Trim(fcfg))
-     Write(nrite,'(1x,a)') '***'
+     Write(message,'(2a)') '*** Expanding CONFIG in file ',fcfg(1:Len_Trim(fcfg))
+     Call info(message,.true.)
 
      If      (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
               io_write == IO_WRITE_UNSORTED_DIRECT .or. &
@@ -974,8 +974,10 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
         Do While ((.not.safe) .and. mxiter < 42) ! meaning of LUEE is the limit
            If (.not.safe) mxiter=mxiter+1
 
-           If ((mxiter == 42 .and. (.not.safe)) .and. (l_str .and. comm%idnode == 0)) &
-              Write(nrite,Fmt='(/,1x,2(a,i10),/)') 'MOLECULAR TYPE #: ',itmols, ' MOLECULE #: ',imols
+           If ((mxiter == 42 .and. (.not.safe)) .and. l_str) Then
+             Write(message,'(2(a,i10))') 'molecular type #: ',itmols, ' molecule #: ',imols
+             Call info(message,.true.)
+           End If
 
            safe=.true.
 
@@ -1014,15 +1016,25 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
                  safer=.false.
               End If
               If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. comm%idnode == 0)) Then
-                 Write(nrite,Fmt='(1x,a,2(f7.2,a))') 'POSSIBLE DISTANCE VIOLATION: ', r, ' > ', t, ' Angstroms'
+                 Write(message,'(a,2(f7.2,a))') &
+                   'possible distance violation: ', r, ' > ', t, ' Angstroms'
+                 Call info(message,.true.)
 
                  t=c2
-                 If (r > t) Write(nrite,Fmt='(1x,a,f7.2,a)') '*** WARNING **** WARNING *** CUTOFF: ', t, ' Angstroms'
+                 If (r > t) Then
+                   Write(message,Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                   Call warning(message,.true.)
+                 End If
 
-                 Write(nrite,Fmt='(1x,a,3i10)') 'CORE_SHELL UNIT #(LOCAL) -> M. TYPE # -> MOLECULE #:',ishls,itmols,imols
-                 Write(nrite,Fmt='(1x,a,3(1x,l1))') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z',safex,safey,safez
-                 Write(nrite,Fmt='(1x,a,i10,3f10.1)')   'CORE  ',nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
-                 Write(nrite,Fmt='(1x,a,i10,3f10.1,/)') 'SHELL ',nattot+jatm,xm(jatm),ym(jatm),zm(jatm)
+                 Write(messages(1),'(a,3i10)') &
+                   'core_shell unit #(local) -> m. type # -> molecule #:',ishls,itmols,imols
+                 Write(messages(2),'(a,3(1x,l1))') &
+                   'member :: global index :: x ::      y ::      z',safex,safey,safez
+                 Write(messages(3),'(a,i10,3f10.1)') &
+                   'core  ',nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
+                 Write(messages(4),'(a,i10,3f10.1)') &
+                   'shell ',nattot+jatm,xm(jatm),ym(jatm),zm(jatm)
+                 Call info(messages,4,.true.)
               End If
               safel=(safel .and. safer)
            End Do
@@ -1063,15 +1075,25 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
                  safer=.false.
               End If
               If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. comm%idnode == 0)) Then
-                 Write(nrite,Fmt='(1x,a,2(f7.2,a))') 'POSSIBLE DISTANCE VIOLATION: ', r, ' > ', t, ' Angstroms'
+                 Write(message,'(a,2(f7.2,a))') &
+                   'possible distance violation: ', r, ' > ', t, ' Angstroms'
+                 Call info(message,.true.)
 
                  t=c3
-                 If (r > t) Write(nrite,Fmt='(1x,a,f7.2,a)') '*** WARNING **** WARNING *** CUTOFF: ', t, ' Angstroms'
+                 If (r > t) Then
+                   Write(message,Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                   Call warning(message,.true.)
+                 End If
 
-                 Write(nrite,Fmt='(1x,a,3i10)') 'CONSTRAINT UNIT #(LOCAL) -> M. TYPE # -> MOLECULE #:',icnst,itmols,imols
-                 Write(nrite,Fmt='(1x,a,3(1x,l1))') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z',safex,safey,safez
-                 Write(nrite,Fmt='(2i10,3f10.1)')   1,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
-                 Write(nrite,Fmt='(2i10,3f10.1,/)') 2,nattot+jatm,xm(jatm),ym(jatm),zm(jatm)
+                 Write(messages(1),'(a,3i10)') &
+                   'constraint unit #(local) -> m. type # -> molecule #:',icnst,itmols,imols
+                 Write(messages(2),'(a,3(1x,l1))') &
+                   'member :: global index :: x ::      y ::      z',safex,safey,safez
+                 Write(messages(3),'(2i10,3f10.1)') &
+                   1,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
+                 Write(messages(4),'(2i10,3f10.1)') &
+                   2,nattot+jatm,xm(jatm),ym(jatm),zm(jatm)
+                 Call info(messages,4,.true.)
               End If
               safel=(safel .and. safer)
            End Do
@@ -1115,23 +1137,26 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
                     Else
                        safer=.false.
                     End If
-                    If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. comm%idnode == 0)) &
-                       Write(nrite,Fmt='(1x,a,2i10,2(f7.2,a))') &
-                            '*** WARNING **** WARNING *** DISTANCE VIOLATION: ', i,j,r, ' > ', t, ' Angstroms'
+                    If ((mxiter == 42 .and. (.not.safer)) .and. l_str) Then
+                      Write(message,'(a,2i10,2(f7.2,a))') &
+                        'distance violation: ', i,j,r, ' > ', t, ' Angstroms'
+                      Call warning(message,.true.)
+                    End If
                     safem=(safem .and. safer)
                  End Do
               End Do
 
               If ((mxiter == 42 .and. (.not.safem)) .and. (l_str .and. comm%idnode == 0)) Then
-                 Write(nrite,Fmt='(1x,a,3i10)') 'RIGID BODY UNIT #(LOCAL) -> M. TYPE # -> MOLECULE #:',irgd,itmols,imols
-                 Write(nrite,Fmt='(1x,a)') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z'
+                 Write(messages(1),'(a,3i10)') &
+                   'rigid body unit #(local) -> m. type # -> molecule #:',irgd,itmols,imols
+                 Write(messages(2),'(a)') &
+                   'member :: global index :: x ::      y ::      z'
+                 Call info(messages,2,.true.)
+
                  Do i=1,lrgd
-                    iatm=lstrgd(i,nrigid)-indatm1
-                    If (i < lrgd) Then
-                       Write(nrite,Fmt='(2i10,3f10.1)')   i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
-                    Else
-                       Write(nrite,Fmt='(2i10,3f10.1,/)') i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
-                    End If
+                   iatm=lstrgd(i,nrigid)-indatm1
+                   Write(message,'(2i10,3f10.1)') i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
+                   Call info(message,.true.)
                  End Do
               End If
               safel=(safel .and. safem)
@@ -1177,19 +1202,29 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
                  safer=.false.
               End If
               If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. comm%idnode == 0)) Then
-                 Write(nrite,Fmt='(1x,a,2(f7.2,a))') 'POSSIBLE DISTANCE VIOLATION: ', r, ' > ', t, ' Angstroms'
+                 Write(message,'(a,2(f7.2,a))') &
+                   'possible distance violation: ', r, ' > ', t, ' Angstroms'
+                 Call info(message,.true.)
 
                  If (keybnd(nbonds) > 0) Then
                     t=c3
                  Else
                     t=3.0_wp*c2
                  End If
-                 If (r > t) Write(nrite,Fmt='(1x,a,f7.2,a)') '*** WARNING **** WARNING *** CUTOFF: ', t, ' Angstroms'
+                 If (r > t) Then
+                   Write(message,Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                   Call warning(message,.true.)
+                 End If
 
-                 Write(nrite,Fmt='(1x,a,3i10)') 'BOND UNIT #(LOCAL) -> M. TYPE # -> MOLECULE #:',ibond,itmols,imols
-                 Write(nrite,Fmt='(1x,a,3(1x,l1))') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z',safex,safey,safez
-                 Write(nrite,Fmt='(2i10,3f10.1)')   1,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
-                 Write(nrite,Fmt='(2i10,3f10.1,/)') 2,nattot+jatm,xm(jatm),ym(jatm),zm(jatm)
+                 Write(messages(1),'(a,3i10)') &
+                   'bond unit #(local) -> m. type # -> molecule #:',ibond,itmols,imols
+                 Write(messages(2),'(a,3(1x,l1))') &
+                   'member :: global index :: x ::      y ::      z',safex,safey,safez
+                 Write(messages(3),'(2i10,3f10.1)') &
+                   1,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
+                 Write(messages(4),'(2i10,3f10.1)') &
+                   2,nattot+jatm,xm(jatm),ym(jatm),zm(jatm)
+                 Call info(messages,4,.true.)
               End If
               safel=(safel .and. safer)
            End Do
@@ -1237,29 +1272,35 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
                        safer=.false.
                     End If
                     If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. comm%idnode == 0)) Then
-                       Write(nrite,Fmt='(1x,a,2i10,2(f7.2,a))') 'POSSIBLE DISTANCE VIOLATION: ', i,j,r, ' > ', t, ' Angstroms'
+                      Write(message,'(a,2i10,2(f7.2,a))') &
+                        'possible distance violation: ', i,j,r, ' > ', t, ' Angstroms'
+                      Call info(message,.true.)
 
                        If (keyang(nangle) > 0) Then
                           t=c2*Real(j-i+1,wp)
                        Else
                           t=c4*Real(j-i+1,wp)
                        End If
-                       If (r > t) Write(nrite,Fmt='(1x,a,f7.2,a)') '*** WARNING **** WARNING *** CUTOFF: ', t, ' Angstroms'
+                       If (r > t) Then
+                         Write(message,'(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                         Call warning(message,.true.)
+                       End IF
                     End If
                     safem=(safem .and. safer)
                  End Do
               End Do
 
               If ((mxiter == 42 .and. (.not.safem)) .and. (l_str .and. comm%idnode == 0)) Then
-                 Write(nrite,Fmt='(1x,a,3i10)') 'ANGLE UNIT #(LOCAL) -> M. TYPE # -> MOLECULE #:',iang,itmols,imols
-                 Write(nrite,Fmt='(1x,a)') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z'
+                 Write(messages(1),'(a,3i10)') &
+                   'angle unit #(local) -> m. type # -> molecule #:',iang,itmols,imols
+                 Write(messages(2),'(a)') &
+                   'member :: global index :: x ::      y ::      z'
+                 Call info(messages,2,.true.)
+
                  Do i=1,3
-                    iatm=lstang(i,nangle)-indatm1
-                    If (i < 3) Then
-                       Write(nrite,Fmt='(2i10,3f10.1)')   i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
-                    Else
-                       Write(nrite,Fmt='(2i10,3f10.1,/)') i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
-                    End If
+                   iatm=lstang(i,nangle)-indatm1
+                   Write(message,'(2i10,3f10.1)') i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
+                   Call info(message,.true.)
                  End Do
               End If
               safel=(safel .and. safem)
@@ -1304,25 +1345,31 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
                        safer=.false.
                     End If
                     If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. comm%idnode == 0)) Then
-                       Write(nrite,Fmt='(1x,a,2i10,2(f7.2,a))') 'POSSIBLE DISTANCE VIOLATION: ', i,j,r, ' > ', t, ' Angstroms'
+                      Write(message,'(a,2i10,2(f7.2,a))') &
+                        'possible distance violation: ', i,j,r, ' > ', t, ' Angstroms'
+                      Call info(message,.true.)
 
                        t=(c2+c3)*Real(j-i+1,wp)/2.0_wp
-                       If (r > t) Write(nrite,Fmt='(1x,a,f7.2,a)') '*** WARNING **** WARNING *** CUTOFF: ', t, ' Angstroms'
+                       If (r > t) Then
+                         Write(message,Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                         Call warning(message,.true.)
+                       End If
                     End If
                     safem=(safem .and. safer)
                  End Do
               End Do
 
               If ((mxiter == 42 .and. (.not.safem)) .and. (l_str .and. comm%idnode == 0)) Then
-                 Write(nrite,Fmt='(1x,a,3i10)') 'DIHEDRAL UNIT #(LOCAL) -> M. TYPE # -> MOLECULE #:',idih,itmols,imols
-                 Write(nrite,Fmt='(1x,a)') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z'
+                 Write(messages(1),'(a,3i10)') &
+                   'dihedral unit #(local) -> m. type # -> molecule #:',idih,itmols,imols
+                 Write(messages(2),'(a)') &
+                   'member :: global index :: x ::      y ::      z'
+                 Call info(messages,2,.true.)
+
                  Do i=1,4
-                    iatm=lstdih(i,ndihed)-indatm1
-                    If (i < 4) Then
-                       Write(nrite,Fmt='(2i10,3f10.1)')   i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
-                    Else
-                       Write(nrite,Fmt='(2i10,3f10.1,/)') i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
-                    End If
+                   iatm=lstdih(i,ndihed)-indatm1
+                   Write(message,'(2i10,3f10.1)') i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
+                   Call info(message,.true.)
                  End Do
               End If
               safel=(safel .and. safem)
@@ -1367,10 +1414,15 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
                        safer=.false.
                     End If
                     If ((mxiter == 42 .and. (.not.safer)) .and. (l_str .and. comm%idnode == 0)) Then
-                       Write(nrite,Fmt='(1x,a,2i10,2(f7.2,a))') 'POSSIBLE DISTANCE VIOLATION: ', i,j,r, ' > ', t, ' Angstroms'
+                      Write(message,'(a,2i10,2(f7.2,a))') &
+                        'possible distance violation: ', i,j,r, ' > ', t, ' Angstroms'
+                      Call info(message,.true.)
 
                        t=c3
-                       If (r > t) Write(nrite,Fmt='(1x,a,f7.2,a)') '*** WARNING **** WARNING *** CUTOFF: ', t, ' Angstroms'
+                       If (r > t) Then
+                         Write(message,Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                         Call warning(message,.true.)
+                       End If
                     End If
 
                     safem=(safem .and. safer)
@@ -1378,15 +1430,16 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
               End Do
 
               If ((mxiter == 42 .and. (.not.safem)) .and. (l_str .and. comm%idnode == 0)) Then
-                 Write(nrite,Fmt='(1x,a,3i10)') 'INVERSION UNIT #(LOCAL) -> M. TYPE # -> MOLECULE #:',iinv,itmols,imols
-                 Write(nrite,Fmt='(1x,a)') 'MEMBER :: GLOBAL INDEX :: X ::      Y ::      Z'
+                 Write(messages(1),'(a,3i10)') &
+                   'inversion unit #(local) -> m. type # -> molecule #:',iinv,itmols,imols
+                 Write(messages(2),'(a)') &
+                   'member :: global index :: x ::      y ::      z'
+                 Call info(messages,2,.true.)
+
                  Do i=1,4
-                    iatm=lstinv(i,ninver)-indatm1
-                    If (i < 4) Then
-                       Write(nrite,Fmt='(2i10,3f10.1)')   i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
-                    Else
-                       Write(nrite,Fmt='(2i10,3f10.1,/)') i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
-                    End If
+                   iatm=lstinv(i,ninver)-indatm1
+                   Write(message,'(2i10,3f10.1)') i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
+                   Call info(message,.true.)
                  End Do
               End If
               safel=(safel .and. safem)
@@ -1530,8 +1583,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
      offset = offset + Int(2,li)*Int(nall-1,li)*Int(setspc,li)
   End Do
 
-  If ((.not.safeg) .and. comm%idnode == 0) Write(nrite,Fmt='(/,1x,a)') &
-     '*** warning - possible topological contiguity failures occurred !!! ***'
+  If (.not.safeg) Then
+    Call warning('possible topological contiguity failures occurred')
+  End If
 
   If      (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
            io_write == IO_WRITE_SORTED_MPIIO   .or. &
@@ -1596,15 +1650,19 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
 
   x=0.5_wp*Min(fx*celprp(7),fy*celprp(8),fz*celprp(9))
 
+  Write(messages(1),'(3a)') '*** ', fcfg(1:Len_Trim(fcfg)), ' expansion completed !'
+  Write(messages(2),'(a,i10,a)') '*** Size: ', nall*megatm, ' particles'
+  Write(messages(3),'(a,f10.2,a)') '*** Maximum radius of cutoff: ', x, ' Angstroms'
+  Call info(messages,3,.true.)
+
+  Write(message,'(a,f12.3,a)') 'time elapsed since job start: ', t, ' sec'
+  Call info(message,.true.)
+
   If (comm%idnode == 0) Then
-     Write(nrite,'(/,1x,3a)') '*** ', fcfg(1:Len_Trim(fcfg)), ' expansion completed !'
-     Write(nrite,'(1x,a,i10,a)') '*** Size: ', nall*megatm, ' particles'
-     Write(nrite,'(1x,a,f10.2,a)') '*** Maximum radius of cutoff: ', x, ' Angstroms'
-     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec")') t
      Open(Unit=nfield, File='FIELD', Status='old')
      Open(Unit=nconf, File=ffld(1:Len_Trim(ffld)), Status='replace')
-     Write(nrite,'(/,1x,2a)')'*** Expanding FIELD in file ', ffld(1:Len_Trim(ffld))
-     Write(nrite,'(1x,a)') '***'
+     Write(message,'(2a)')'*** Expanding FIELD in file ', ffld(1:Len_Trim(ffld))
+     Call info(message,.true.)
 
 ! omit first line
 
@@ -1647,7 +1705,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
            Write(Unit=nconf,Fmt='(a)') record1(1:Len_Trim(record1))
            Close(Unit=nfield)
            Close(Unit=nconf)
-           Write(nrite,'(1x,3a)') '*** ', ffld(1:Len_Trim(ffld)), ' expansion done !'
+           Write(message,'(3a)') '*** ', ffld(1:Len_Trim(ffld)), ' expansion done !'
+           Call info(message,.true.)
            Exit
 
 ! just paste the copy
@@ -1665,8 +1724,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
      If (lmpldt) Then
         Open(Unit=nmpldt, File='MPOLES', Status='old')
         Open(Unit=nconf, File=fmpl(1:Len_Trim(fmpl)), Status='replace')
-        Write(nrite,'(/,1x,2a)')'*** Expanding MPOLES in file ', fmpl(1:Len_Trim(fmpl))
-        Write(nrite,'(1x,a)') '***'
+        Write(message,'(2a)')'*** Expanding MPOLES in file ', fmpl(1:Len_Trim(fmpl))
+        Call info(message,.true.)
 
 ! omit first line
 
@@ -1701,7 +1760,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
               Write(Unit=nconf,Fmt='(a)') record1(1:Len_Trim(record1))
               Close(Unit=nmpldt)
               Close(Unit=nconf)
-              Write(nrite,'(1x,3a)') '*** ', fmpl(1:Len_Trim(fmpl)), ' expansion done !'
+              Write(message,'(3a)') '*** ', fmpl(1:Len_Trim(fmpl)), ' expansion done !'
+              Call info(message,.true.)
               Exit
 
 ! just paste the copy
@@ -1716,8 +1776,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
 
 20   Continue
 
-     Write(nrite,'(/,1x, "time elapsed since job start: ", f12.3, " sec",/)') t
-     Write(nrite,'(1x,a)') '*** Simulation continues as scheduled...'
+     Write(message,'(a,f12.3,a') 'time elapsed since job start: ', t, ' sec'
+     Call info(message,.true.)
+     Call info('*** Simulation continues as scheduled...')
   End If
   Call gsync(comm)
 
@@ -1727,7 +1788,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
   Deallocate (i_xyz,    Stat=fail(4))
   Deallocate (xm,ym,zm, Stat=fail(5))
   If (Any(fail > 0)) Then
-     Write(nrite,'(/,1x,a)') 'system_expand dellocation failure '
+     Call info('system_expand dellocation failure ')
      Call error(0,message)
   End If
 

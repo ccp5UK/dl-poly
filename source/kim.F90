@@ -302,13 +302,15 @@ Contains
     fail=0
     If (RijNeeded) Deallocate (kim_Rij, Stat=fail)
     If (fail > 0) Then
-       Call info('failure deallocating kim_Rij in kim_module')
+       Write(message,'(a)') &
+            'failure deallocating kim_Rij in kim_module'
        Call error(0,message)
     End If
 
     Deallocate (rev_comm_buffer, Stat=fail)
     If (fail > 0) Then
-       Call info('failure deallocating rev_comm_buffer in kim_module')
+       Write(message,'(a)') &
+            'failure deallocating rev_comm_buffer in kim_module'
        Call error(0,message)
     End If
 
