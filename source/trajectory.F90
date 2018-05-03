@@ -42,7 +42,7 @@ Module trajectory
                             IO_READ_MASTER
   Use numerics,        Only : dcell, invert, shellsort2
   Use configuration,   Only : read_config_parallel
-  Use errors_warnings, Only : error
+  Use errors_warnings, Only : error,warning,info
   Implicit None
 
   Private
@@ -264,7 +264,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
      Call get_word(record,word) ; tstep = word_2_real(word)
      Call get_word(record,word) ; time = word_2_real(word)
 
-     If (comm%idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
+     Write(message,'(a,i10,a,f10.3,a)') 'HISTORY step ',nstep,' (',time,' ps) is being read'
+     Call info(message,.true.)
 
 ! read cell vectors
 
@@ -497,7 +498,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
      Call get_word(record,word) ; tstep = word_2_real(word)
      Call get_word(record,word) ; time = word_2_real(word)
 
-     If (comm%idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
+     Write(message,'(a,i10,a,f10.3,a)') 'HISTORY step ',nstep,' (',time,' ps) is being read'
+     Call info(message,.true.)
 
 ! read cell vectors
 
@@ -564,7 +566,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
      Call io_nc_get_var( 'timestep'       , fh,  tstep, i, 1 )
      Call io_nc_get_var( 'step'           , fh,  nstep, i, 1 )
 
-     If (comm%idnode == 0) Write(nrite,"(/,1x,'HISTORY step',i10,' (',f10.3,' ps) is being read')") nstep,time
+     Write(message,'(a,i10,a,f10.3,a)') 'HISTORY step ',nstep,' (',time,' ps) is being read'
+     Call info(message,.true.)
 
 ! Note that in netCDF the frames are not long integers - Int( frm1 )
 
@@ -631,7 +634,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
 
   exout = 1 ! It's an indicator of the end of reading.
 
-  If (comm%idnode == 0) Write(nrite,"(1x,a)") 'HISTORY end of file reached'
+  Call info('HISTORY end of file reached',.true.)
 
   If (io_read == IO_READ_MASTER) Then
      If (imcon == 0) Close(Unit=nconf)
@@ -655,7 +658,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
 
 300 Continue
 
-  If (comm%idnode == 0) Write(nrite,"(/,1x,a)") 'HISTORY data mishmash detected'
+  Call info('HISTORY data mishmash detected',.true.)
   exout = -1 ! It's an indicator of the end of reading.
   If (io_read == IO_READ_MASTER) Then
      If (imcon == 0) Close(Unit=nconf)
@@ -927,27 +930,23 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            If (comm%idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
            Call gcheck(comm,safe)
            If (.not.safe) Then
-              If (comm%idnode == 0) Then
-                 Write(message,'(a)') &
-  "Requested writing precision inconsistent with that in an existing HISTORY.nc"
-                 Write(nrite, Fmt='(1x,a)', Advance='No') "Precision requested:"
-                 Select Case( Selected_real_kind( io_p, io_r ) )
-                 Case( Kind( 1.0 ) )
-                    Write(message,'(1x,a)') "Single"
-                 Case( Kind( 1.0d0 ) )
-                    Write(message,'(1x,a)') "Double"
-                 End Select
-                 Write(nrite, Fmt='(1x,a)', Advance='No') "Precision in file  :"
-                 Select Case( Selected_real_kind( file_p, file_r ) )
-                 Case( Kind( 1.0 ) )
-                    Write(message,'(1x,a)') "Single"
-                 Case( Kind( 1.0d0 ) )
-                    Write(message,'(1x,a)') "Double"
-                 End Select
-              End If
+              Select Case( Selected_real_kind( io_p, io_r ) )
+              Case( Kind( 1.0 ) )
+                 Write(message,'(a)') 'Precision requested: Single'
+              Case( Kind( 1.0d0 ) )
+                 Write(message,'(a)') 'Precision requested: Double'
+              End Select
+              Call info(message,.true.)
+              Select Case( Selected_real_kind( file_p, file_r ) )
+              Case( Kind( 1.0 ) )
+                 Write(message,'(a)') "Precision in file: Single"
+              Case( Kind( 1.0d0 ) )
+                 Write(message,'(a)') "Precision in file: Double"
+              End Select
+              Call info(message,.true.)
 
               Call gsync(comm)
-              Call error(0,message)
+              Call error(0,'Requested writing precision inconsistent with that in an existing HISTORY.nc')
            End If
 
 ! Get the frame number to check
@@ -1772,27 +1771,23 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            If (comm%idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
            Call gcheck(comm,safe)
            If (.not.safe) Then
-              If (comm%idnode == 0) Then
-                 Write(message,'(a)') &
-  "Requested writing precision inconsistent with that in an existing HISTORY.nc"
-                 Write(nrite, Fmt='(1x,a)', Advance='No') "Precision requested:"
-                 Select Case( Selected_real_kind( io_p, io_r ) )
-                 Case( Kind( 1.0 ) )
-                    Write(message,'(1x,a)') "Single"
-                 Case( Kind( 1.0d0 ) )
-                    Write(message,'(1x,a)') "Double"
-                 End Select
-                 Write(nrite, Fmt='(1x,a)', Advance='No') "Precision in file  :"
-                 Select Case( Selected_real_kind( file_p, file_r ) )
-                 Case( Kind( 1.0 ) )
-                    Write(message,'(1x,a)') "Single"
-                 Case( Kind( 1.0d0 ) )
-                    Write(message,'(1x,a)') "Double"
-                 End Select
-              End If
+              Select Case( Selected_real_kind( io_p, io_r ) )
+              Case( Kind( 1.0 ) )
+                 Write(message,'(a)') 'Precision requested: Single'
+              Case( Kind( 1.0d0 ) )
+                 Write(message,'(a)') 'Precision requested: Double'
+              End Select
+              Call info(message,.true.)
+              Select Case( Selected_real_kind( file_p, file_r ) )
+              Case( Kind( 1.0 ) )
+                 Write(message,'(a)') "Precision in file: Single"
+              Case( Kind( 1.0d0 ) )
+                 Write(message,'(a)') "Precision in file: Double"
+              End Select
+              Call info(message,.true.)
 
               Call gsync(comm)
-              Call error(0,message)
+              Call error(0,'Requested writing precision inconsistent with that in an existing HISTORY.nc')
            End If
 
 ! Get the frame number to check
