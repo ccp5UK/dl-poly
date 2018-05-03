@@ -19,7 +19,7 @@ Module temperature
   Use kinetics,        Only : l_vom,chvom,getcom,getvom,getkin,getknf,getknt,getknr
   Use numerics,        Only : invert,uni,local_index,box_mueller_saru3
   use shared_units,    Only : update_shared_units,update_shared_units_int
-  Use errors_warnings, Only : error,warning
+  Use errors_warnings, Only : error,warning,info
 
   Implicit None
 
@@ -78,7 +78,7 @@ Contains
     Integer,           Allocatable :: qn(:),tpn(:)
     Integer,           Allocatable :: qs(:,:),tps(:)
 
-    Character ( Len = 256 )  ::  message
+    Character ( Len = 256 )  ::  message,messages(10)
 
   ! initialise rotational and translational DoF if no RB are present
   ! or re-initialise if all are frozen (does no harm)
@@ -124,20 +124,17 @@ Contains
 
   ! Report DoF
 
-    If (comm%idnode == 0) Then
-       Write(nrite,"('degrees of freedom break-down list')")
-       Write(nrite,"(    1x,'----------------------------------')")
-       Write(nrite,"(    1x,'free particles        ',i12)") meg
-       Write(nrite,"(    1x,'centre of mass        ',i12)") -com
-       Write(nrite,"(    1x,'non-periodicity       ',i12)") -non
-       Write(nrite,"(    1x,'frozen free particles ',i12)") -frz
-       Write(nrite,"(    1x,'shell-pseudo          ',i12)") -degshl
-       Write(nrite,"(    1x,'constrained           ',i12)") -con
-       Write(nrite,"(    1x,'RB translational      ',i12)") degtra
-       Write(nrite,"(    1x,'RB rotational         ',i12)") degrot
-       Write(nrite,"(    1x,'----------------------------------')")
-       Write(nrite,"(    1x,'total (real)          ',i12)") degfre
-    End If
+    Write(messages(1),'(a)') 'degrees of freedom break-down list:'
+    Write(messages(2),'(2x,a,i12)') 'free particles        ',meg
+    Write(messages(3),'(2x,a,i12)') 'centre of mass        ',-com
+    Write(messages(4),'(2x,a,i12)') 'non-periodicity       ',-non
+    Write(messages(5),'(2x,a,i12)') 'frozen free particles ',-frz
+    Write(messages(6),'(2x,a,i12)') 'shell-pseudo          ',-degshl
+    Write(messages(7),'(2x,a,i12)') 'constrained           ',-con
+    Write(messages(8),'(2x,a,i12)') 'RB translational      ',degtra
+    Write(messages(9),'(2x,a,i12)') 'RB rotational         ',degrot
+    Write(messages(10),'(2x,a,i12)') 'total (real)          ',degfre
+    Call info(messages,10,.true.)
 
   ! Check DoF distribution
 
@@ -172,9 +169,8 @@ Contains
        engk=getkin(vxx,vyy,vzz,comm)/Real(Max(1_li,degfre),wp)
     End If
     If (sigma > 1.0e-6_wp .and. engk < 1.0e-6_wp .and. (keyres /= 0 .and. nstrun /= 0)) Then
-       If (comm%idnode == 0) Write(nrite,"(2(/,1x,a))") &
-    "*** warning - 0K velocity field detected in CONFIG with a restart at non 0K temperature in CONTROL !!! ***", &
-    "*** clean start enforced ***"
+       Call warning('0K velocity field detected in CONFIG with a restart at non 0K temperature in CONTROL',.true.)
+       Call info('*** clean start enforced ***',.true.)
 
        keyres = 0
     End If
