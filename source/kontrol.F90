@@ -508,7 +508,7 @@ Subroutine read_control                                &
 
   Write(banner(1),'(a)') ''
   Write(banner(2),'(a)') Repeat('*',80)
-  Write(banner(3),'(a4,a72,a4)') '*** ', 'title:', ' ***'
+  Write(banner(3),'(a4,a72,a4)') '*** ', 'title:'//Repeat(' ',66), ' ***'
   Write(banner(4),'(a4,a72,a4)') '*** ', sysname, ' ***'
   Write(banner(5),'(a)') Repeat('*',80)
   Write(banner(6),'(a)') ''
@@ -641,7 +641,7 @@ Subroutine read_control                                &
 
            Call info('vdw cross terms mixing opted (for undefined mixed potentials)',.true.)
            Call info('mixing is limited to potentials of the same type only',.true.)
-           Call info('mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)')
+           Call info('mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)',.true.)
 
            Call get_word(record,word2)
 
@@ -672,7 +672,7 @@ Subroutine read_control                                &
               mxtvdw = 7
               Call info('type of mixing selected - Functional :: ' &
                 //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}',.true.)
-              Call info(Repeat(' ',40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}')
+              Call info(Repeat(' ',40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}',.true.)
            Else
               Call strip_blanks(record)
               Write(message,'(4a)') word(1:Len_Trim(word)+1), &
@@ -684,7 +684,7 @@ Subroutine read_control                                &
         Else If (word1(1:5) == 'shift') Then
 ! force-shifting option
            ls_vdw = .true.
-           Call info('vdw force-shifting option on')
+           Call info('vdw force-shifting option on',.true.)
         Else
            Call strip_blanks(record)
            Write(message,'(3a)') word(1:Len_Trim(word)+1), &
@@ -882,13 +882,13 @@ Subroutine read_control                                &
 
         If (word(1:7) == 'noscale' .or. word(1:7) == 'unscale') Then
            keyres = 3
-           Call info('unscaled restart requested (starting a new simulation)')
+           Call info('unscaled restart requested (starting a new simulation)',.true.)
         Else If (word(1:5) == 'scale') Then
            keyres = 2
-           Call info('scaled restart requested (starting a new simulation)')
+           Call info('scaled restart requested (starting a new simulation)',.true.)
         Else
            keyres = 1
-           Call info('restart requested (continuing an old simulation)')
+           Call info('restart requested (continuing an old simulation)',.true.)
         End If
 
 ! read timestep options
@@ -948,7 +948,7 @@ Subroutine read_control                                &
 ! read collection option
      Else If (word(1:7) == 'collect') Then
         leql = .false.
-        Call info('equilibration included in overall averages')
+        Call info('equilibration included in overall averages',.true.)
 ! read pseudo thermostat option
      Else If (word(1:6) == 'pseudo') Then
 
@@ -2282,7 +2282,7 @@ Subroutine read_control                                &
         ! to volumetric values
 
           ttmdyndens = .true.
-          Call info('dynamic calculations of average atomic density in active ionic cells')
+          Call info('dynamic calculations of average atomic density in active ionic cells',.true.)
 
         Else If (word1(1:4) == 'amin') Then
 
@@ -2404,7 +2404,7 @@ Subroutine read_control                                &
         ! electronic system
 
           tdepoType = 3
-          Call info('dirac delta temporal energy deposition in electronic system')
+          Call info('dirac delta temporal energy deposition in electronic system',.true.)
 
         Else If (word1(1:5) == 'pulse') Then
 
@@ -2988,7 +2988,7 @@ Subroutine read_control                                &
     If (l_vv) Then
       Call info('Integration : Velocity Verlet',.true.)
     Else
-      Call info('Integration : Leapfrog Verlet')
+      Call info('Integration : Leapfrog Verlet',.true.)
     End If
     If (l_ttm) Then
       Write(messages(1),'(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
@@ -2997,7 +2997,7 @@ Subroutine read_control                                &
       Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1)',vel_es2
       Call info(messages,4,.true.)
     Else
-      Call info('Ensemble : NVE (Microcanonical)')
+      Call info('Ensemble : NVE (Microcanonical)',.true.)
     End If
     If (l_ttm) keyens = 15
     lens=.true.
@@ -3053,9 +3053,9 @@ Subroutine read_control                                &
 
   If (keyfce /= 0) Then
      If (lecx) Then
-        Call info('Extended Coulombic eXclusion : YES')
+        Call info('Extended Coulombic eXclusion : YES',.true.)
      Else
-        Call info('Extended Coulombic eXclusion : NO')
+        Call info('Extended Coulombic eXclusion : NO',.true.)
      End If
   End If
 
@@ -3078,7 +3078,7 @@ Subroutine read_control                                &
 ! report vdw
 
   If (l_n_v) Then
-    Call info('vdw potential terms switched off')
+    Call info('vdw potential terms switched off',.true.)
   End If
 
 ! report if rvdw is reset (measures taken in scan_config)
@@ -3143,9 +3143,9 @@ Subroutine read_control                                &
      Else
         If (mxgbnd1 > 0 .and. mxgang1 > 0 .and. &
             mxgdih1 > 0 .and. mxginv1 > 0) Then
-           Call info('full intramolecular distribution collection requested (all=bnd/ang/dih/inv):')
+           Call info('full intramolecular distribution collection requested (all=bnd/ang/dih/inv):',.true.)
         Else
-           Call info('intramolecular distribution collection requested for:')
+           Call info('intramolecular distribution collection requested for:',.true.)
         End If
 
         i=Max(1,nstana,nstbnd,nstang,nstdih,nstinv)
