@@ -512,7 +512,7 @@ Subroutine read_control                                &
   Write(banner(4),'(a4,a72,a4)') '*** ', sysname, ' ***'
   Write(banner(5),'(a)') Repeat('*',80)
   Write(banner(6),'(a)') ''
-  Call info(banner,5,.true.)
+  Call info(banner,6,.true.)
 
   Call info('simulation control parameters',.true.)
 
@@ -1489,7 +1489,7 @@ Subroutine read_control                                &
               End If
               If (iso >= 1 .and. iso <= 2) Then
                  Call warning('semi-isotropic ensembles are only correct for infinite' &
-                   //'interfaces placed perpendicularly to the z axis')
+                   //'interfaces placed perpendicularly to the z axis',.true.)
               End If
 
               If (lens) Call error(414)
@@ -1623,7 +1623,7 @@ Subroutine read_control                                &
               End If
               If (iso >= 1 .and. iso <= 2) Then
                  Call warning('semi-isotropic ensembles are only correct for infinite' &
-                   //'interfaces placed perpendicularly to the z axis')
+                   //'interfaces placed perpendicularly to the z axis',.true.)
               End If
 
               If (lens) Call error(414)
@@ -1690,7 +1690,7 @@ Subroutine read_control                                &
               End If
               If (iso >= 1 .and. iso <= 2) Then
                  Call warning('semi-isotropic ensembles are only correct for infinite' &
-                   //'interfaces placed perpendicularly to the z axis')
+                   //'interfaces placed perpendicularly to the z axis',.true.)
               End If
 
               If (lens) Call error(414)
@@ -2044,8 +2044,9 @@ Subroutine read_control                                &
         Else If (word1(1:3) == 'vom' ) Then ! "no vom" should be used with TTM
 
            If (.not. l_ttm) Then
-             Call warning('"no vom" option auto-switched on - COM momentum removal will be abandoned',.true.)
-             Call info('this may lead to a build up of the COM momentum and a manifestation of the "flying ice-cube" effect',.true.)
+             Call info('"no vom" option auto-switched on - COM momentum removal will be abandoned',.true.)
+             Call warning('this may lead to a build up of the COM momentum ' &
+               //'and a manifestation of the "flying ice-cube" effect',.true.)
            End If
 
            l_vom    = .false.
@@ -2129,7 +2130,7 @@ Subroutine read_control                                &
         ! already determined in scan_control
 
            Write(messages(1),'(a,3(1x,i8))') 'ionic temperature grid size (x,y,z):',ntsys(1:3)
-           Write(messages(2),'(a,3(1x,i8))') 'temperature grid size (x,y,z):',delx,dely,delz
+           Write(messages(2),'(a,3(1x,f8.4))') 'temperature grid size (x,y,z):',delx,dely,delz
            Write(messages(3),'(a,f10.4)') 'average number of atoms/cell: ',sysrho*volume
            Call info(messages,3,.true.)
 
@@ -3094,7 +3095,7 @@ Subroutine read_control                                &
 
      If (keydpd > 0) Then
         lvar=.false.
-        Call warning('variable timestep unavalable in DPD themostats')
+        Call warning('variable timestep unavalable in DPD themostats',.true.)
         Write(message,'(a,1p,e12.4)') 'fixed simulation timestep (ps) ',tstep
         Call info(message,.true.)
      Else
@@ -5024,7 +5025,7 @@ Subroutine scan_control_io(comm)
            Else If ( word( 1:6 ) == 'direct' ) Then
               io_write = IO_WRITE_SORTED_DIRECT
               Call info('I/O write method: parallel by using direct access',.true.)
-              Call warning('in parallel this I/O write method has portability issues')
+              Call warning('in parallel this I/O write method has portability issues',.true.)
            Else If ( word( 1:6 ) == 'netcdf' ) Then
               io_write = IO_WRITE_SORTED_NETCDF
               Call get_word( record, word ) ! Check if the user wants the "amber-like/32-bit" format
