@@ -14,9 +14,8 @@ Module z_density
   Use setup,  Only : mxgrdf,nrite,nzdndt,mxatyp
   Use site,   Only : ntpatm,unqatm
   Use configuration, Only : cfgname,cell,volm,natms,ltype,zzz
-  Use errors_warnings, Only : error
+  Use errors_warnings, Only : error,info
 
-  
   Implicit None
 
   Integer,                        Save :: ncfzdn = 0
@@ -100,9 +99,11 @@ Subroutine z_density_compute(comm)
   Type( comms_type ), Intent( InOut ) :: comm
   Integer           :: j,k
   Real( Kind = wp ) :: zlen,delr,dvolz,factor,rho,rho1,rrr,sum,sum1
+  Character( Len = 256 ) :: messages(2)
 
-  If (comm%idnode == 0) Write(nrite,"(/,/,12x,'Z DENSITY PROFILES',/,/, &
-     & 'calculated using ',i8,' configurations')") ncfzdn
+  Write(messages(1),'(a)') 'z density profiles:'
+  Write(messages(2),'(2x,a,i8,a)') 'calculated using ',ncfzdn,' configurations'
+  Call info(messages,2,.true.)
 
 ! open Z density file and write headers
 
@@ -132,8 +133,10 @@ Subroutine z_density_compute(comm)
 ! for every species
 
   Do k=1,ntpatm
+     Write(messages(1),'(2x,a,a8)') 'rho(r): ',unqatm(k)
+     Write(messages(2),'(9x,a1,6x,a3,9x,a4)') 'r','rho','n(r)'
+     Call info(messages,2,.true.)
      If (comm%idnode == 0) Then
-        Write(nrite,"(/,'rho(r)  :',a8,/,/,8x,'r',6x,'rho',9x,'n(r)',/)") unqatm(k)
         Write(nzdndt,'(a8)') unqatm(k)
      End If
 
@@ -168,9 +171,10 @@ Subroutine z_density_compute(comm)
 
 ! print out information
 
+        Write(messages(1),'(2x,f10.4,1p,2e14.6)') rrr,rho1,sum1
+        Call info(messages(1),.true.)
         If (comm%idnode == 0) Then
            Write(nzdndt,"(1p,2e14.6)") rrr,rho
-           Write(nrite,"(f10.4,1p,2e14.6)") rrr,rho1,sum1
         End If
      End Do
   End Do
