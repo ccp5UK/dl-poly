@@ -16,7 +16,7 @@ Module vnl
   Use domains, Only : r_nprx,r_npry,r_nprz
   Use configuration,  Only : imcon,cell,natms,nlast,list, &
                              xxx,yyy,zzz
-  Use errors_warnings, Only : error
+  Use errors_warnings, Only : error,info
   Use numerics, Only : dcell,images
   Implicit None
 
@@ -171,7 +171,9 @@ Q:Do i=1,natms
         End If
         cut = Real( Int( 100.0_wp * cut ) , wp ) / 100.0_wp
         If ((.not.(cut < tol)) .and. cut-rpad > 0.005_wp) Then ! Do bother
-  If (comm%idnode == 0) Write(nrite,'(/,1x,2(a,f5.2),a,/)') 'cutoff padding reset from ', rpad, ' Angs to ', cut, ' Angs'
+           Write(message,'(2(a,f5.2),a)') 'cutoff padding reset from ', rpad, &
+             ' Angs to ', cut, ' Angs'
+           Call info(message,.true.)
            rpad = cut
            rlnk = rcut + rpad
         End If
