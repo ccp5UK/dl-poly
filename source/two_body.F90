@@ -598,7 +598,8 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
 
   If (keyfce == 2) Then ! Sum it up for multipolar SPME
      If (mximpl > 0 .and. mxompl <= 2) Call gsum(comm,ewld%engsic)
-!     If (idnode == 0) Write(nrite,'(1x,a,1p,e18.10 )') 'Self-interaction term: ',engsic
+     !Write(message,'(a,1p,e18.10)') 'Self-interaction term: ',engsic
+     !Call info(message,.true.)
   End If
 
 ! Globalise coulombic contributions: cpe
