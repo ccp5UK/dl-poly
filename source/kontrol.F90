@@ -4879,6 +4879,7 @@ Subroutine scan_control_io(comm)
 
 ! get read method
 
+           Call info('',.true.)
            word1=' ' ; word1=word
            Call get_word( record, word )
            If      ( word( 1:5 ) == 'mpiio'  ) Then
@@ -5019,6 +5020,7 @@ Subroutine scan_control_io(comm)
 
 ! get write method
 
+           Call info('',.true.)
            If      ( word( 1:5 ) == 'mpiio'  ) Then
               io_write = IO_WRITE_SORTED_MPIIO
               Call info('I/O write method: parallel by using MPI-I/O',.true.)
@@ -5228,6 +5230,7 @@ Subroutine scan_control_io(comm)
 ! read method
 
      Call io_set_parameters( user_method_read = IO_READ_MPIIO ) ; io_read = IO_READ_MPIIO
+     Call info('',.true.)
      Call info('I/O read method: parallel by using MPI-I/O (assumed)',.true.)
 
 ! number of readers
@@ -5267,6 +5270,7 @@ Subroutine scan_control_io(comm)
 ! write method
 
      Call io_set_parameters( user_method_write = IO_WRITE_SORTED_MPIIO ) ; io_write = IO_WRITE_SORTED_MPIIO
+     call info('',.true.)
      Call info('I/O write method: parallel by using MPI-I/O (assumed)',.true.)
 
 ! write type

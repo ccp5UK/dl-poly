@@ -491,6 +491,7 @@ Subroutine set_bounds                                 &
 
   Call map_domains(imc_n,celprp(7),celprp(8),celprp(9),comm)
 
+  Call info(' ',.true.)
   Write(message,'(a,3(i6,1x))') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
   Call info(message,.true.)
 

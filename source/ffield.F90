@@ -262,7 +262,8 @@ Subroutine read_field                      &
   If (comm%idnode == 0) Then
      Open(Unit=nfield, File = Trim(field), Status = 'old')
   End If
-  Call info('SYSTEM SPECIFICATION',.true.)
+  Call info(' ',.true.)
+  Call info('system specification',.true.)
   If (.not.l_top) Then
     Call info('detailed topology opted out',.true.)
   End If
@@ -426,9 +427,10 @@ Subroutine read_field                      &
                  Write(message,'(a,10x,i10)') 'number of atoms/sites', numsit(itmols)
                  Call info(message,.true.)
 
-                 Call info('atomic characteristics:',.true.)
-                 Write(message,'(8x,a4,4x,a4,13x,a4,9x,a6,6x,a6,6x,a6)') &
+                 Write(messages(1),'(a)') 'atomic characteristics:'
+                 Write(messages(2),'(8x,a4,4x,a4,13x,a4,9x,a6,6x,a6,6x,a6)') &
                   'site','name','mass','charge','repeat','freeze'
+                 Call info(messages,2,.true.)
 
 ! for every molecule of this type get site and atom description
 
@@ -535,7 +537,7 @@ Subroutine read_field                      &
                  Call info(message,.true.)
                  If (l_top) Then
                    Call info('core-shell details:',.true.)
-                   Write(message,'(8x,a4,5x,a5,5x,a5,13x,a10)') &
+                   Write(message,'(8x,a4,5x,a5,5x,a5,5x,a10)') &
                      'unit','index','index','parameters'
                    Call info(message,.true.)
                  End If
@@ -654,7 +656,7 @@ Subroutine read_field                      &
                  Call info(message,.true.)
                  If (l_top) Then
                    Call info('constraint bond details:',.true.)
-                   Write(message,'(8x,a5,5x,a5,5x,a5,7x,a10)') &
+                   Write(message,'(7x,a5,5x,a5,5x,a5,5x,a10)') &
                      'unit','index','index','bondlength'
                    Call info(message,.true.)
                  End If
@@ -868,7 +870,7 @@ Subroutine read_field                      &
                           End If
                           Call info(message,.true.)
                        End Do
-                       If (ipmf == 1) Call info('',.true.)
+                       If (ipmf == 1) Call info(' ',.true.)
                     End Do
                  End If
 
@@ -1081,7 +1083,7 @@ Subroutine read_field                      &
                  Call info(message,.true.)
                  If (l_top) Then
                    Call info('tethered site details:',.true.)
-                   Write(message,'(8x,a4,5x,a3,6x,a4,19x,a10)') &
+                   Write(message,'(8x,a4,5x,a3,6x,a4,5x,a10)') &
                      'unit','key','site','parameters'
                    Call info(message,.true.)
                  End If
@@ -1189,7 +1191,7 @@ Subroutine read_field                      &
                  Call info(message,.true.)
                  If (l_top) Then
                    Call info('chemical bond details:',.true.)
-                   Write(message,'(8x,a4,5x,a3,5x,a5,5x,a5,2x,a10)') &
+                   Write(message,'(8x,a4,5x,a3,5x,a5,5x,a5,5x,a10)') &
                      'unit','key','index','index','parameters'
                    Call info(message,.true.)
                  End If
@@ -1420,7 +1422,7 @@ Subroutine read_field                      &
                  Call info(message,.true.)
                  If (l_top) Then
                    Write(messages(1),'(a)') 'bond angle details:'
-                   Write(messages(2),'(8x,a4,5x,a3,3(5x,a5),7x,a7,8x,a5)') &
+                   Write(messages(2),'(8x,a4,5x,a3,3(5x,a5),8x,a7,8x,a5)') &
                      'unit','key','index','index','index','f-const','angle'
                    Call info(messages,2,.true.)
                  End If
@@ -1671,7 +1673,7 @@ Subroutine read_field                      &
 
                  If (l_top) Then
                    Write(messages(1),'(a)') 'dihedral angle details:'
-                   Write(messages(2),'(8x,a4,5x,a3,4(5x,a5),7x,a7,8x,a5,9x,a4,11x,a8,7x,a7)') &
+                   Write(messages(2),'(8x,a4,5x,a3,4(5x,a5),8x,a7,10x,a5,11x,a4,7x,a8,8x,a7)') &
                      'unit','key','index','index','index','index','f-const', &
                      'angle','trig','1-4 elec','1-4 vdw'
                    Call info(messages,2,.true.)
@@ -3272,7 +3274,7 @@ Subroutine read_field                      &
         Write(message,'(a,i10)') 'number of specified vdw potentials ',ntpvdw
         Call info(message,.true.)
         If (l_top) Then
-          Write(message,'(8x,a4,5x,a6,2x,a6,5x,a3,10x,a10)') &
+          Write(message,'(8x,a4,5x,a6,2x,a6,5x,a3,7x,a10)') &
             'pair','atom 1','atom 2','key','parameters'
           Call info(message,.true.)
         End If
@@ -3364,7 +3366,7 @@ Subroutine read_field                      &
                  parpot(i)=word_2_real(word)
               End Do
               If (l_top) Then
-                Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',itmp,'f20.6)'
+                Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',itmp,'f15.6)'
                 Write(message,rfmt) itpvdw,atom1,atom2,keyword,parpot(1:itmp)
                 Call info(message,.true.)
               End If
@@ -3851,7 +3853,7 @@ Subroutine read_field                      &
         Write(message,'(a,i10)') 'number of specified metal potentials ',ntpmet
         Call info(message,.true.)
         If (l_top) Then
-          Write(message,'(8x,a4,5x,a6,2x,a6,5x,a3,10x,a10)') &
+          Write(message,'(8x,a4,5x,a6,2x,a6,5x,a3,5x,a10)') &
             'pair','atom 1','atom 2','key','parameters'
           Call info(message,.true.)
         End If
@@ -4034,7 +4036,7 @@ Subroutine read_field                      &
         Write(message,'(a,i10)') 'number of specified tersoff potentials ',ntpter
         Call info(message,.true.)
         If (l_top) Then
-          Write(message,'(6x,a6,5x,a5,7x,a3,2x,a10)') &
+          Write(message,'(6x,a6,5x,a5,7x,a3,5x,a10)') &
             'number','atom','key','parameters'
           Call info(message,.true.)
         End If
@@ -4203,7 +4205,7 @@ Subroutine read_field                      &
           Write(message,'(a,i10)') 'number of tersoff cross terms ', (ntpter*(ntpter+1))/2
           Call info(message,.true.)
           If (l_top) Then
-            Write(message,'(8x,a4,5x,a6,2x,a6,1x,a10)') &
+            Write(message,'(8x,a4,5x,a6,2x,a6,5x,a10)') &
               'pair','atom 1','atom 2','paramters'
             Call info(message,.true.)
           End If
@@ -4262,7 +4264,7 @@ Subroutine read_field                      &
         Write(message,'(a,i10)') 'number of specified three-body potentials ',ntptbp
         Call info(message,.true.)
         If (l_top) Then
-          Write(message,'(5x,a7,5x,a6,2(2x,a6),5x,a3,1x,a10)') &
+          Write(message,'(5x,a7,5x,a6,2(2x,a6),5x,a3,5x,a10)') &
             'triplet','atom 1','atom 2','atom 3','key','parameters'
           Call info(message,.true.)
         End If
@@ -4401,7 +4403,7 @@ Subroutine read_field                      &
         Write(message,'(a,i10)') 'number of specified four-body potentials ',ntpfbp
         Call info(message,.true.)
         If (l_top) Then
-          Write(message,'(5x,a7,5x,a6,3(2x,a6),5x,a3,1x,a10)') &
+          Write(message,'(5x,a7,5x,a6,3(2x,a6),5x,a3,5x,a10)') &
             'quartet','atom 1','atom 2','atom 3','atom 4','key','parameters'
           Call info(message,.true.)
         End If
