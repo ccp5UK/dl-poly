@@ -3,16 +3,13 @@
 
 ! Report work
 
-  If (comm%idnode == 0) &
-     Write(nrite,"('*** HISTORY is replayed for recalculation of structural properties ***')")
+  Call info('*** HISTORY is replayed for recalculation of structural properties ***',.true.)
 
 ! Stay safe
 
   If (ltraj) Then
-     ltraj = .false.
-
-     If (comm%idnode == 0) &
-     Write(nrite,"('*** warning - aborting printing into HISTORY while reading it ***')")
+    ltraj = .false.
+    Call info('*** warning - aborting printing into HISTORY while reading it ***',.true.)
   End If
 
 ! Make sure of no equilibration
@@ -265,10 +262,11 @@
 ! Complete time check
 
            Call gtime(timelp)
-           If (comm%idnode == 0) Then
-              Write(nrite,"(1x,'HISTORY step',i10,' (',i10,' entry) processed')") nstep,nstph
-              Write(nrite,'(1x,"time elapsed since job start: ", f12.3, " sec")') timelp
-           End If
+           Write(messages(1),'(2(a,i10),a)') &
+             'HISTORY step ',nstep,' (',nstph,' entry) processed'
+           Write(messages(2),'(a,f12.3,a)') &
+             'time elapsed since job start: ',timelp,' sec'
+           Call info(messages,2,.true.)
 
 ! Save restart data in event of system crash
 
