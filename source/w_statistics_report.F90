@@ -50,8 +50,8 @@ If (lines == 0 .or. Mod(nstep,nstbpo) == 0) Then
      'step','eng_tot','temp_tot','eng_cfg','eng_src','eng_cou','eng_bnd','eng_ang','eng_dih','eng_tet'
     Write(messages(3),'(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
      'time(ps)',' eng_pv','temp_rot','vir_cfg','vir_src','vir_cou','vir_bnd','vir_ang','vir_con','vir_tet'
-    Write(messages(4), '(5x,a8,6x,a7,4x,a7,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
-      'cpu  (s)','volume','temp_shl','eng_shl','vir_pmf','press'
+    Write(messages(4), '(5x,a8,6x,a7,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
+      'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','press'
     Write(messages(5),'(a)') Repeat('-',130)
     Call info(messages,5,.true.)
   End If
