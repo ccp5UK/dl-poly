@@ -1532,7 +1532,7 @@ Subroutine statistics_result                                    &
 
 ! Write out estimated diffusion coefficients
 
-  Write(messages(1),"(a)") 'Approximate 3D Diffusion Coefficients and square root of MSDs:'
+  Write(messages(1),'(a)') 'Approximate 3D Diffusion Coefficients and square root of MSDs:'
   Write(messages(2),'(6x,a4,2x,a19,6x,a15)') 'atom','DC (10^-9 m^2 s^-1)','Sqrt[MSD] (Ang)'
   Call info(messages,2,.true.)
 
@@ -1556,8 +1556,9 @@ Subroutine statistics_result                                    &
 ! print out average pressure tensor
 
   If (comm%idnode == 0) Then
-    Write(message,'(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)','r.m.s. fluctuations'
-    Call info(message,.true.)
+    Write(messages(1),'(a)') 'Pressure tensor:'
+    Write(messages(2),'(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)','r.m.s. fluctuations'
+    Call info(messages,2,.true.)
 
     Do i=iadd,iadd+6,3
       Write(message,'(2x,1p,3e12.4,5x,3e12.4)') sumval(i+1:i+3),ssqval(i+1:i+3)

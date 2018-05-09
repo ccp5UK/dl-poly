@@ -587,8 +587,8 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   ! Print out sample of initial configuration on node zero
 
-  Call info("sample of starting configuration on node zero",.true.)
   Call info('',.true.)
+  Call info('sample of starting configuration on node zero:',.true.)
   If (levcfg <= 1) Then
     Write(message,'(7x,a1,7x,a4,2(8x,a4),3(7x,a5))') &
       'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)'
@@ -602,7 +602,6 @@ Use nve, Only : nve_0_vv, nve_1_vv
     Call info(message,.true.)
   End If
 
-  Call info('',.true.)
   j=(natms+19)/20
   If (j > 0) Then
     Do i=1,natms,j
@@ -618,6 +617,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
       Call info(message,.true.)
     End Do
   End If
+  Call info('',.true.)
 
   ! Indicate nodes mapped on vacuum (no particles)
 
@@ -726,13 +726,12 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   ! Print out sample of final configuration on node zero
 
-  Call info("sample of final configuration on node zero",.true.)
   Call info('',.true.)
+  Call info("sample of final configuration on node zero",.true.)
   Write(message,'(7x,a1,7x,a4,2(8x,a4),6(7x,a5))') &
     'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)', &
     'fx(i)', 'fy(i)', 'fz(i)'
   Call info(message,.true.)
-  Call info('',.true.)
   j=(natms+19)/20
   If (j > 0) Then
     Do i=1,natms,j
@@ -748,6 +747,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
       Call info(message,.true.)
     End Do
   End If
+  Call info('',.true.)
 
   ! Two-temperature model simulations: calculate final 
   ! ionic temperatures and print statistics to files
