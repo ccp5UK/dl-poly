@@ -3,10 +3,11 @@
 
 ! Report work
 
-  If (comm%idnode == 0) Write(nrite,"(/,3(/,1x,a))") &
-     '*** HISTORF is replayed in full as statics (no dynamics)!!! ***', &
-     '*** Big frame differences as particle move distance within HISTROF ***', &
-     '*** and w.r.t. CONFIG at start may lead failures in parallel !!! ***'
+  Write(messages(1),'(a)') ''
+  Write(messages(2),'(a)') '*** HISTORF will be replayed in full (with no dynamics)!!!     ***'
+  Write(messages(3),'(a)') '*** Large particle displacements between frames within HISTROF ***'
+  Write(messages(4),'(a)') '*** w.r.t. CONFIG at start may lead failures in parallel!!!    ***'
+  Call info(messages,3,.true.)
 
 ! defect detection for every entry in HISTORF
 
@@ -198,27 +199,29 @@
 ! Update cpu time
 
            Call gtime(timelp)
-           If (comm%idnode == 0) Then
-              If (Mod(lines,npage) == 0) Write(nrite,"(1x,130('-'),/,/, &
-              & 10x,'step',5x,'eng_tot',4x,'temp_tot',5x,'eng_cfg',     &
-              & 5x,'eng_src',5x,'eng_cou',5x,'eng_bnd',5x,'eng_ang',    &
-              & 5x,'eng_dih',5x,'eng_tet',/,6x,'time(ps)',5x,' eng_pv', &
-              & 4x,'temp_rot',5x,'vir_cfg',5x,'vir_src',5x,'vir_cou',   &
-              & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet',/,  &
-              & 6x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',   &
-              & 5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',           &
-              & 5x,'vir_pmf',7x,'press',130('-'))")
-
-              Write(nrite,"(1x,i13,1p,9e12.4,/,0p,f14.5,1p,9e12.4,    &
-                   & /,1x,0p,f13.3,1p,9e12.4)") nstep, stpval( 1: 9), &
-                                                time,  stpval(10:18), &
-                                                timelp,stpval(19:27)
-
-              Write(nrite,"(/,7x,'rolling',1p,9e12.4,/,6x,'averages', &
-                   & 1p,9e12.4,/,14x,9e12.4)")         ravval( 1:27)
-
-              Write(nrite,"(1x,130('-'))")
+           If (Mod(lines,npage) == 0) Then
+             Write(messages(1),'(a)') Repeat('-',130)
+             Write(messages(2),'(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+              'step','eng_tot','temp_tot','eng_cfg','eng_src','eng_cou','eng_bnd','eng_ang','eng_dih','eng_tet'
+             Write(messages(3),'(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+              'time(ps)',' eng_pv','temp_rot','vir_cfg','vir_src','vir_cou','vir_bnd','vir_ang','vir_con','vir_tet'
+             Write(messages(4), '(5x,a8,6x,a7,4x,a7,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
+               'cpu  (s)','volume','temp_shl','eng_shl','vir_pmf','press'
+             Write(messages(5),'(a)') Repeat('-',130)
+             Call info(messages,5,.true.)
            End If
+
+           Write(messages(1),'(i13,1p,9e12.4)')nstep,stpval(1:9)
+           Write(messages(2),'(f13.5,1p,9e12.4)')time,stpval(10:18)
+           Write(messages(3),'(0p,f13.3,1p,9e12.4)') timelp,stpval(19:27)
+           Write(messages(4),'(a)')''
+           Call info(messages,4,.true.)
+
+           Write(messages(1),'(6x,a7,1p,9e12.4)') 'rolling',ravval(1:9)
+           Write(messages(2),'(5x,a8,1p,9e12.4)') 'averages',ravval(10:18)
+           Write(messages(3),'(13x,9e12.4)') ravval(19:27)
+           Write(messages(4),'(a)') Repeat('-',130)
+           Call info(messages,4,.true.)
 
            If (nstph /= 0) lines=lines+1
 
