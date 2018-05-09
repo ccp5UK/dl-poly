@@ -293,13 +293,6 @@ Contains
 
 ! store current values in statistics array
 
-!  If (idnode == 0) Write(nrite,'(5(/,5e12.4))')   &
-!     engke  , engrot , stpprs , stpprs , stpvol , &
-!     vircpe , virsrp , virter , virtbp , virfbp , &
-!     virfld , virshl , vircon , virpmf , vircom , &
-!     virtet , virbnd , virang , virdih , virinv , &
-!     virdpd
-
   stpval(0) =consv/engunit
   stpval(1) =stpcns/engunit
   stpval(2) =stptmp
@@ -1333,6 +1326,8 @@ Subroutine statistics_result                                    &
   Character( Len = 256 ) :: message
   Character( Len = 256 ), Dimension(5) :: messages
 
+  Call info('',.true.)
+
 ! VNL skipping statistics
 
   If (llvnl .and. nstep > 0) Then
@@ -1344,28 +1339,28 @@ Subroutine statistics_result                                    &
         skipvnl(5)=Max(skipvnl(1),skipvnl(5))
      End If
 
-     Write(message,"(                                        &
-       & ' VNL skipping run statistics - skips per timestep: average ', f7.2, &
-       & ' minimum ', i4, ' maximum ', i4)")                                  &
-       skipvnl(3),Nint(Merge(skipvnl(4),skipvnl(5),skipvnl(4)<skipvnl(5))),Nint(skipvnl(5))
+     Write(message,'(a,f7.2,2(a,i4))') &
+       'VNL skipping run statistics - skips per timestep: average ',skipvnl(3), &
+       ' minimum ',Nint(Merge(skipvnl(4),skipvnl(5),skipvnl(4)<skipvnl(5))), &
+       ' maximum ',Nint(skipvnl(5))
      Call info(message,.true.)
   End If
 
 ! minimisation convergence statistics
 
   If (lmin) Then
-    Write(message,"(                          &
-      & ' minimisation run statistics - cycles per call: average ', f7.2, &
-      & ' minimum ', i4, ' maximum ', i4)") passmin(3),Nint(passmin(4)),Nint(passmin(5))
+     Write(message,'(a,f7.2,2(a,i4))') &
+       'minimisation run statistics - cycles per call: average ',passmin(3), &
+       ' minimum ',Nint(passmin(4)),' maximum ',Nint(passmin(5))
     Call info(message,.true.)
   End If
 
 ! shell relaxation convergence statistics
 
   If (keyshl == 2) Then
-    Write(message,"(                           &
-      & ' shell relaxation run statistics - cycles per timestep: average ', f7.2, &
-      & ' minimum ', i4, ' maximum ', i4)") passshl(3),Nint(passshl(4)),Nint(passshl(5))
+     Write(message,'(a,f7.2,2(a,i4))') &
+       'hell relaxation run statistics - cycles per timestep: average ',passshl(3), &
+       ' minimum ',Nint(passshl(4)),' maximum ',Nint(passshl(5))
     Call info(message,.true.)
   End If
 
@@ -1374,19 +1369,21 @@ Subroutine statistics_result                                    &
   If (megcon > 0) Then
      Call gmax(comm,passcon(3:5,1,1)) ; Call gmax(comm,passcon(3:5,2,1))
      If (passcon(3,1,1) > 0.0_wp) Then
-       Write(message,"(                                   &
-         & ' constraints shake  run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
-         & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                                     &
-         passcon(3,1,1),passcon(3,2,1),Nint(passcon(4,1,1)),Nint(passcon(4,2,1)),Nint(passcon(5,1,1)),Nint(passcon(5,2,1))
+       Write(message,'(2(a,f5.2),4(a,i3))') &
+         'constraints shake  run statistics - cycles per call/timestep: average ', &
+         passcon(3,1,1),' / ',passcon(3,2,1), &
+         ' minimum ',Nint(passcon(4,1,1)),' / ',Nint(passcon(4,2,1)), &
+         ' maximum ',Nint(passcon(5,1,1)),' / ',Nint(passcon(5,2,1))
        Call info(message,.true.)
      End If
 
      Call gmax(comm,passcon(3:5,1,2)) ; Call gmax(comm,passcon(3:5,2,2))
      If (passcon(3,1,2) > 0.0_wp) Then
-       Write(message,"(                                      &
-         & ' constraints rattle run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
-         & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                                     &
-         passcon(3,1,2),passcon(3,2,2),Nint(passcon(4,1,2)),Nint(passcon(4,2,2)),Nint(passcon(5,1,2)),Nint(passcon(5,2,2))
+       Write(message,'(2(a,f5.2),4(a,i3))') &
+         'constraints rattle  run statistics - cycles per call/timestep: average ', &
+         passcon(3,1,1),' / ',passcon(3,2,1), &
+         ' minimum ',Nint(passcon(4,1,2)),' / ',Nint(passcon(4,2,2)), &
+         ' maximum ',Nint(passcon(5,1,2)),' / ',Nint(passcon(5,2,2))
        Call info(message,.true.)
      End If
   End If
@@ -1396,19 +1393,21 @@ Subroutine statistics_result                                    &
   If (megpmf > 0) Then
      Call gmax(comm,passpmf(3:5,1,1)) ; Call gmax(comm,passpmf(3:5,2,1))
      If (passpmf(3,1,1) > 0.0_wp) Then
-       Write(message,"(                            &
-         & ' PMFs shake  run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
-         & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                              &
-         passpmf(3,1,1),passpmf(3,2,1),Nint(passpmf(4,1,1)),Nint(passpmf(4,2,1)),Nint(passpmf(5,1,1)),Nint(passpmf(5,2,1))
+       Write(message,'(2(a,f5.2),4(a,i3))') &
+         'PMFs shake  run statistics - cycles per call/timestep: average ', &
+         passpmf(3,1,1),' / ',passpmf(3,2,1), &
+         ' minimum ',Nint(passpmf(4,1,1)),' / ',Nint(passpmf(4,2,1)), &
+         ' maximum ',Nint(passpmf(5,1,1)),' / ',Nint(passpmf(5,2,1))
        Call info(message,.true.)
      EndIf
 
      Call gmax(comm,passpmf(3:5,1,2)) ; Call gmax(comm,passpmf(3:5,2,2))
      If (passpmf(3,1,2) > 0.0_wp) Then
-       Write(message,"(                               &
-         & ' PMFs rattle run statistics - cycles per call/timestep: average ', f5.2, ' / ', f5.2, &
-         & ' minimum ', i3, ' / ', i3, ' maximum ', i3, ' / ', i3)")                              &
-         passpmf(3,1,2),passpmf(3,2,2),Nint(passpmf(4,1,2)),Nint(passpmf(4,2,2)),Nint(passpmf(5,1,2)),Nint(passpmf(5,2,2))
+       Write(message,'(2(a,f5.2),4(a,i3))') &
+         'PMFs rattle  run statistics - cycles per call/timestep: average ', &
+         passpmf(3,1,2),' / ',passpmf(3,2,2), &
+         ' minimum ',Nint(passpmf(4,1,2)),' / ',Nint(passpmf(4,2,2)), &
+         ' maximum ',Nint(passpmf(5,1,2)),' / ',Nint(passpmf(5,2,2))
        Call info(message,.true.)
      End If
   End If
@@ -1429,11 +1428,11 @@ Subroutine statistics_result                                    &
 
 
   If ((nstep == 0 .and. nstrun == 0) .or. numacc == 0) Then
-    Write(message,"('dry run terminated')")
+    Write(message,'(a)') 'dry run terminated'
   Else
-    Write(message,"('run terminated after',i9,' steps (',f10.3,   &
-      & ' ps), final averages calculated over',i9,' steps (',f10.3, &
-      & ' ps).')") nstep,time,numacc,tmp
+    Write(message,'(2(a,i9,a,f10.3),a)') 'run terminated after ',nstep, &
+      ' steps (',time,' ps), final averages calculated over',numacc, &
+      ' steps (',tmp,' ps)'
   End If
   Call info(message,.true.)
 
@@ -1449,15 +1448,15 @@ Subroutine statistics_result                                    &
      iadd = 27+2*Merge(mxatdm,0,l_msd)+ntpatm
 
      If (comm%idnode == 0) Then
-        Write(message,"(16x,'pressure tensor  (katms)')")
+        Write(message,'(a)') 'pressure tensor  (katms):'
         Call info(message,.true.)
 
         Do i=iadd,iadd+6,3
-           Write(message,'(9x,1p,3e12.4)') stpval(i+1:i+3)
+           Write(message,'(2x,1p,3e12.4)') stpval(i+1:i+3)
            Call info(message,.true.)
         End Do
 
-        Write(message,'(12x,a,1p,e12.4)') 'trace/3  ', (stpval(iadd+1)+stpval(iadd+5)+stpval(iadd+9))/3.0_wp
+        Write(message,'(2x,a,1p,e12.4)') 'trace/3  ', (stpval(iadd+1)+stpval(iadd+5)+stpval(iadd+9))/3.0_wp
         Call info(message,.true.)
      End If
 
@@ -1485,29 +1484,26 @@ Subroutine statistics_result                                    &
   avvol = sumval(19)
 
 ! final averages and fluctuations
-  Write(messages(1),"(1x,130('-'))")
-  Write(messages(2),"(10x,'step',5x,'eng_tot',4x,'temp_tot',5x,'eng_cfg',     &
-    & 5x,'eng_src',5x,'eng_cou',5x,'eng_bnd',5x,'eng_ang',    &
-    & 5x,'eng_dih',5x,'eng_tet')")
-  Write(messages(3),"(6x,'time(ps)',5x,' eng_pv', &
-    & 4x,'temp_rot',5x,'vir_cfg',5x,'vir_src',5x,'vir_cou',   &
-    & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet')")
-  Write(messages(4), "(6x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',   &
-    & 5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',           &
-    & 5x,'vir_pmf',7x,'press')")
-  Write(messages(5),"(1x,130('-'))")
+  Write(messages(1),'(a)') Repeat('-',130)
+  Write(messages(2),'(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+   'step','eng_tot','temp_tot','eng_cfg','eng_src','eng_cou','eng_bnd','eng_ang','eng_dih','eng_tet'
+  Write(messages(3),'(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+   'time(ps)',' eng_pv','temp_rot','vir_cfg','vir_src','vir_cou','vir_bnd','vir_ang','vir_con','vir_tet'
+  Write(messages(4), '(5x,a8,6x,a6,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
+    'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','press'
+  Write(messages(5),'(a)') Repeat('-',130)
   Call info(messages,5,.true.)
 
-  Write(messages(1),'(1x,i13,1p,9e12.4)')numacc,sumval(1:9)
-  Write(messages(2),'(f14.5,1p,9e12.4)')tmp,sumval(10:18)
-  Write(messages(3),'(1x,0p,f13.3,1p,9e12.4)') timelp,sumval(19:27)
+  Write(messages(1),'(i13,1p,9e12.4)')numacc,sumval(1:9)
+  Write(messages(2),'(f13.5,1p,9e12.4)')tmp,sumval(10:18)
+  Write(messages(3),'(0p,f13.3,1p,9e12.4)') timelp,sumval(19:27)
   Write(messages(4),'(a)')''
   Call info(messages,4,.true.)
 
-  Write(messages(1),"(6x,' r.m.s. ',1p,9e12.4)")ssqval(1:9)
-  Write(messages(2),"(6x,'fluctu- ',1p,9e12.4)") ssqval(10:18)
-  Write(messages(3),"(6x,'ations  ',1p,9e12.4)") ssqval(19:27)
-  Write(messages(4),"(1x,130('-'))")
+  Write(messages(1),'(6x,a8,1p,9e12.4)') ' r.m.s. ',ssqval(1:9)
+  Write(messages(2),'(6x,a8,1p,9e12.4)') 'fluctu- ',ssqval(10:18)
+  Write(messages(3),'(6x,a8,1p,9e12.4)') 'ations  ',ssqval(19:27)
+  Write(messages(4),'(a)') Repeat('-',130)
   Call info(messages,4,.true.)
 
   ! Some extra information - conserved quantity=extended ensemble energy
@@ -1536,8 +1532,8 @@ Subroutine statistics_result                                    &
 
 ! Write out estimated diffusion coefficients
 
-  Write(messages(1),"(12x,a)") 'Approximate 3D Diffusion Coefficients and square root of MSDs'
-  Write(messages(2),"(12x,'atom',9x,'DC (10^-9 m^2 s^-1)',3x,'Sqrt[MSD] (Ang)')")
+  Write(messages(1),'(a)') 'Approximate 3D Diffusion Coefficients and square root of MSDs:'
+  Write(messages(2),'(6x,a4,2x,a19,6x,a15)') 'atom','DC (10^-9 m^2 s^-1)','Sqrt[MSD] (Ang)'
   Call info(messages,2,.true.)
 
   Do i=1,ntpatm
@@ -1547,9 +1543,9 @@ Subroutine statistics_result                                    &
         If (dc < 1.0e-10_wp) dc = 0.0_wp
 
         srmsd = Sqrt(ravval(iadd+i))
-        Write(message,'(12x,a8,1p,2(7x,e13.4))') unqatm(i),dc,srmsd
+        Write(message,'(2x,a8,1p,2(8x,e13.4))') unqatm(i),dc,srmsd
      Else
-        Write(message,'(12x,a8,1p,2(7x,e13.4))') unqatm(i),0.0_wp,0.0_wp
+        Write(message,'(2x,a8,1p,2(8x,e13.4))') unqatm(i),0.0_wp,0.0_wp
      End If
      Call info(message,.true.)
   End Do
@@ -1560,15 +1556,16 @@ Subroutine statistics_result                                    &
 ! print out average pressure tensor
 
   If (comm%idnode == 0) Then
-    Write(message,"(16x,'Average pressure tensor  (katms)',30x,'r.m.s. fluctuations')")
-    Call info(message,.true.)
+    Write(messages(1),'(a)') 'Pressure tensor:'
+    Write(messages(2),'(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)','r.m.s. fluctuations'
+    Call info(messages,2,.true.)
 
     Do i=iadd,iadd+6,3
-      Write(message,'(9x,1p,3e12.4,24x,3e12.4)') sumval(i+1:i+3),ssqval(i+1:i+3)
+      Write(message,'(2x,1p,3e12.4,5x,3e12.4)') sumval(i+1:i+3),ssqval(i+1:i+3)
       Call info(message,.true.)
     End Do
 
-    Write(message,'(12x,a,1p,e12.4)') 'trace/3  ', (sumval(iadd+1)+sumval(iadd+5)+sumval(iadd+9))/3.0_wp
+    Write(message,'(2x,a,1p,e12.4)') 'trace/3  ', (sumval(iadd+1)+sumval(iadd+5)+sumval(iadd+9))/3.0_wp
     Call info(message,.true.)
     Call info('',.true.)
   End If
@@ -1586,11 +1583,12 @@ Subroutine statistics_result                                    &
      End Do
 
      If (comm%idnode == 0) Then
-       Write(message,"(16x,'Average cell vectors     (Angs) ',30x,'r.m.s. fluctuations')")
+       Write(message,'(a32,33x,a19)') 'Average cell vectors     (Angs) ','r.m.s. fluctuations'
        Call info(message,.true.)
 
+
        Do i=iadd,iadd+6,3
-         Write(message,'(3f20.10,9x,1p,3e12.4)') sumval(i+1:i+3),ssqval(i+1:i+3)
+         Write(message,'(3f20.10,5x,1p,3e12.4)') sumval(i+1:i+3),ssqval(i+1:i+3)
          Call info(message,.true.)
        End Do
      End If
@@ -1604,7 +1602,7 @@ Subroutine statistics_result                                    &
      If (iso > 0) Then
         h_z=sumval(iadd+1)
 
-        Write(message,"(16x,'Average surface area, fluctuations & mean estimate (Angs^2)')")
+        Write(message,"('Average surface area, fluctuations & mean estimate (Angs^2)')")
         Call info(message,.true.)
         Write(message,'(1p,3e12.4)') sumval(iadd+2),ssqval(iadd+2),avvol/h_z
         Call info(message,.true.)
@@ -1614,11 +1612,11 @@ Subroutine statistics_result                                    &
         If (iso > 1) Then
            tx= -h_z * ( sumval(iadd-9-8-2)/prsunt - (press+strext(1)) ) * tenunt
            ty= -h_z * ( sumval(iadd-9-7-2)/prsunt - (press+strext(5)) ) * tenunt
-           Write(message,"(16x,'Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
+           Write(message,"('Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
            Call info(message,.true.)
            Write(message,'(1p,3e12.4)') sumval(iadd+1),ssqval(iadd+1),tx
            Call info(message,.true.)
-           Write(message,"(16x,'Average surface tension, fluctuations & mean estimate in y (dyn/cm)')")
+           Write(message,"('Average surface tension, fluctuations & mean estimate in y (dyn/cm)')")
            Call info(message,.true.)
            Write(message,'(1p,3e12.4)') sumval(iadd+2),ssqval(iadd+2),ty
            Call info(message,.true.)
@@ -1637,15 +1635,15 @@ Subroutine statistics_result                                    &
   End Do
 
   If (check) Then
-     Write(messages(1),"(12x,'Remaining non-zero statistics registers ')")
-     Write(messages(2),"(12x,'Register',7x,'Average value',8x,'r.m.s. fluc.')")
+     Write(messages(1),"('Remaining non-zero statistics registers:')")
+     Write(messages(2),"(4x,'Register',7x,'Average value',8x,'r.m.s. fluc.')")
      Call info(messages,2,.true.)
    End If
 
    If (comm%idnode == 0) Then
      Do i=iadd+1,mxnstk
        If (Abs(sumval(i)) > zero_plus .or. Abs(ssqval(i)) > zero_plus) Then
-         Write(message,'(10x,i10,2f20.10)') i,sumval(i),ssqval(i)
+         Write(message,'(2x,i10,2f20.10)') i,sumval(i),ssqval(i)
          Call info(message,.true.)
        End If
      End Do

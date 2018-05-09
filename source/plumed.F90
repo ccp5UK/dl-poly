@@ -12,9 +12,9 @@ Module plumed
 
   Use kinds, Only : wp
   Use comms,  Only : comms_type
-  Use setup,  Only : nrite, boltz, mxatms, DLP_VERSION
+  Use setup,  Only : boltz, mxatms, DLP_VERSION
   Use configuration, Only : cell,natms,weight,ltg,chge,fxx,fyy,fzz
-  Use errors_warnings, Only : error
+  Use errors_warnings, Only : error,warning,info
 
   Implicit None
 
@@ -53,8 +53,6 @@ Contains
     Type(comms_type),  Intent( InOut ) :: comm
 
 #ifdef PLUMED
-    Character( Len=256 ) :: message
-
     Call plumed_f_installed(has_plumed)
 
     If (has_plumed > 0) Then
@@ -76,8 +74,7 @@ Contains
        Call plumed_f_gcmd("setKbT"//sn,temp*boltz)
        Call plumed_f_gcmd("init"//sn,0)
     Else
-       Write(message,'(1x,a)') "*** warning - internal PLUMED library failure !!! ***"
-       Call error(0,message,.true.)
+       Call error(0,'internal PLUMED library failure',.true.)
     End If
 #endif
 
@@ -89,33 +86,35 @@ Contains
 
     Type(comms_type), Intent( InOut ) :: comm
 #ifdef PLUMED
-    If (comm%idnode == 0) Then
-       Write(nrite,'(a)')""
-       Write(nrite,'(14(a42,/))')                      &
-       "***_____________________________________ ",    &
-       "***|     .--                            |",    &
-       "***|  _/ o)  \                          |",    &
-       "***| `""'.'=- |                          |",   &
-       "***|     )   (                          |",    &
-       "***|    /     `=._                      |",    &
-       "***|   |    .-   .`=._                  |",    &
-       "***|   |   ;   .' ' _.:===.             |",    &
-       "***|   ',   '-====""``""""~^`'=.,          |", &
-       "***|     '.,_____,,..=-""'""""','=,       |", &
-       "***|      /` /`               ', '= .   |",    &
-       "***|     /,=='-,                 ''= )  |",    &
-       "***|   ;==`-,                           |",    &
-       "***--------------------------------------"
-       Write(nrite,'(a)')        "*** Activating PLUMED Extension. ***"
-       Write(nrite,'(a)')        "*** Using PLUMED input file: "//Trim(plumed_input)
-       Write(nrite,'(a)')        "*** Using PLUMED log file: "//Trim(plumed_log)
-       Write(nrite,'(a,i0)')     "*** Using PLUMED API version: ",plumed_version
-       Write(nrite,'(a,i0)')     "*** Using PLUMED Real precision: ", plumed_precision
-       Write(nrite,'(a,es15.6)') "*** Using PLUMED energy conversion factor: ", plumed_energyUnits
-       Write(nrite,'(a,es15.6)') "*** Using PLUMED length conversion factor: ", plumed_lengthUnits
-       Write(nrite,'(a,es15.6)') "*** Using PLUMED time conversion factor: ", plumed_timeUnits
-       Write(nrite,'(a,i0)')     "*** Using PLUMED restart (0: no, 1: yes): ", plumed_restart
-    End If
+    Character( Len = 256 ) :: message,messages(9),banner(15)
+
+    Write(banner(1),'(a)')  ""
+    Write(banner(2),'(a)')  "***_____________________________________ "
+    Write(banner(3),'(a)')  "***|     .--                            |"
+    Write(banner(4),'(a)')  "***|  _/ o)  \                          |"
+    Write(banner(5),'(a)')  "***| `""'.'=- |                          |"
+    Write(banner(6),'(a)')  "***|     )   (                          |"
+    Write(banner(7),'(a)')  "***|    /     `=._                      |"
+    Write(banner(8),'(a)')  "***|   |    .-   .`=._                  |"
+    Write(banner(9),'(a)')  "***|   |   ;   .' ' _.:===.             |"
+    Write(banner(10),'(a)') "***|   ',   '-====""``""""~^`'=.,          |"
+    Write(banner(11),'(a)') "***|     '.,_____,,..=-""'""""','=,       |"
+    Write(banner(12),'(a)') "***|      /` /`               ', '= .   |"
+    Write(banner(13),'(a)') "***|     /,=='-,                 ''= )  |"
+    Write(banner(14),'(a)') "***|   ;==`-,                           |"
+    Write(banner(15),'(a)') "***--------------------------------------"
+    Call info(banner,15,.true.)
+
+    Write(messages(1),'(a)')        "*** Activating PLUMED Extension. ***"
+    Write(messages(2),'(a)')        "*** Using PLUMED input file: "//Trim(plumed_input)
+    Write(messages(3),'(a)')        "*** Using PLUMED log file: "//Trim(plumed_log)
+    Write(messages(4),'(a,i0)')     "*** Using PLUMED API version: ",plumed_version
+    Write(messages(5),'(a,i0)')     "*** Using PLUMED Real precision: ", plumed_precision
+    Write(messages(6),'(a,es15.6)') "*** Using PLUMED energy conversion factor: ", plumed_energyUnits
+    Write(messages(7),'(a,es15.6)') "*** Using PLUMED length conversion factor: ", plumed_lengthUnits
+    Write(messages(8),'(a,es15.6)') "*** Using PLUMED time conversion factor: ", plumed_timeUnits
+    Write(messages(9),'(a,i0)')     "*** Using PLUMED restart (0: no, 1: yes): ", plumed_restart
+    Call info(messages,9,.true.)
 #else
     Call plumed_message()
 #endif
@@ -133,6 +132,8 @@ Contains
     Type(comms_type), Intent( InOut )  :: comm
 
 #ifdef PLUMED
+    Character( Len = 256 ) :: message
+
     Call plumed_f_gcmd("setAtomsNlocal"//sn,natms)
     Call plumed_f_gcmd("setAtomsFGatindex"//sn,ltg)
     Call plumed_f_gcmd("setStep"//sn,nstep)
@@ -154,7 +155,8 @@ Contains
     Call plumed_f_gcmd("calc"//sn )
 
     If (plumed_stop /= 0) Then
-       If (comm%idnode == 0) Write(nrite,'(a,i0,a)')"*** warning - DL_POLY was stopped cleanly by PLUMED at step: ",nstep," *** "
+       Write(message,'(a,i0)') 'DL_POLY was stopped cleanly by PLUMED at step: ',nstep
+       Call warning(message,.true.)
        nstrun=nstep
     End If
 #else
@@ -175,10 +177,7 @@ Contains
 
   Subroutine plumed_message()
 #ifndef PLUMED
-    Character( Len = 256 ) :: message
-
-    Write(message,'(1x,a)') "*** warning - PLUMED directive found in CONTROL but PLUMED not available !!! ***"
-    Call error(0,message,.true.)
+    Call error(0,'PLUMED directive found in CONTROL but PLUMED not available',.true.)
 #endif
   End Subroutine plumed_message
 

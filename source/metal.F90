@@ -21,7 +21,7 @@ Module metal
   Use parse, Only : get_line,get_word,lower_case,word_2_real
   Use domains, Only : map
 
-  Use errors_warnings, Only : error,warning, info
+  Use errors_warnings, Only : error,warning,info
   Use numerics, Only : erfgen_met
   Implicit None
 
@@ -1178,6 +1178,8 @@ Subroutine metal_lrc(rmet,elrcm,vlrcm,comm)
   Real( Kind = wp ) :: elrc0,elrc1,elrc2,elrcsum,vlrc0,vlrc1,vlrc2, tmp, &
                        eps,sig,nnnr,mmmr,ccc, aaa,rr0,ppp,zet,qqq,eee
 
+  Character( Len = 256 ) :: message,messages(3)
+
 
 ! long-range corrections to energy, pressure and density
 
@@ -1355,19 +1357,24 @@ Subroutine metal_lrc(rmet,elrcm,vlrcm,comm)
   If (newjob) Then
      newjob =.false.
 
-     If (comm%idnode == 0) Then
-        Write(nrite,"(1p,                                  &
-        & 'long-range correction to metal energy    ',e15.6,/,1x, &
-        & 'lr correction for metal atom density     ',e15.6,/,1x, &
-        & '1st partial lr correction to metal virial',e15.6,/)")  &
-           elrcm(0)/engunit,elrcsum/engunit**2,vlrcm(0)/engunit
+     Write(messages(1),'(a,1p,e15.6)') &
+       'long-range correction to metal energy ', elrcm(0)/engunit
+     Write(messages(2),'(a,1p,e15.6)') &
+       'lr correction for metal atom density ', elrcsum/engunit**2
+     Write(messages(3),'(a,1p,e15.6)') &
+       '1st partial lr correction to metal virial', vlrcm(0)/engunit
+     Call info(messages,3,.true.)
 
-        Write(nrite,"(1x,'density dependent energy and virial corrections',/)")
-        Do i=1,ntpatm
-           kmet=lstmet((i*(i+1))/2)
-           If (lstmet(kmet) > 0) Write(nrite,"(25x,a8,1p,2e15.6)") &
-              unqatm(i),elrcm(i)/engunit,vlrcm(i)/engunit
-        End Do
+     Call info('density dependent energy and virial corrections:',.true.)
+     If (comm%idnode == 0) Then
+       Do i=1,ntpatm
+         kmet=lstmet((i*(i+1))/2)
+         If (lstmet(kmet) > 0) Then
+           Write(message,"(2x,a8,1p,2e15.6)") &
+             unqatm(i),elrcm(i)/engunit,vlrcm(i)/engunit
+           Call info(message,.true.)
+         End If
+       End Do
      End If
   End If
 

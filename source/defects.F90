@@ -10,7 +10,7 @@ Module defects
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,             Only : wp,li
-  Use setup,      Only : mxatms, nrite,mxbfxp,mxcell,ndefdt, &
+  Use setup,      Only : mxatms,mxbfxp,mxcell,ndefdt, &
                                 nrefdt,config,half_minus, zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
                                 DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
@@ -690,12 +690,14 @@ Contains
 !     taken = 0
 !     Do i=1,natms
 !        If (occupies(i) > 0 .and. atmnam(i) /= namr1(occupies(i))) Then
-!!           Write(Unit=*,'(3(1x,a))') 'occupant/site type mismatch:', atmnam(i), namr1(occupies(i))
+!!           Write(message,'(a,2(1x,a))') 'occupant/site type mismatch:', atmnam(i), namr1(occupies(i))
+!            Call info(message)
 !           taken = taken + 1
 !        End If
 !     End Do
-!     If (mxnode > 1) Call gsum(taken)
-!     If (comm%idnode == 0) Write(nrite,'(3(1x,a,i10))') 'occupant/site type mismatches', taken
+!     Call gsum(taken)
+!     Write(message,'(a,i10,2(1x,a,i10))') 'occupant/site type mismatches', taken
+!     Call info(message,.true.)
 
 ! Interstitials: i <= natms & interstitial(i) /= 0 means we've found an interstitial
 
@@ -3674,12 +3676,14 @@ Subroutine defects_write &
 !     taken = 0
 !     Do i=1,natms
 !        If (occupies(i) > 0 .and. atmnam(i) /= namr(occupies(i))) Then
-!!           Write(Unit=*,'(3(1x,a))') 'occupant/site type mismatch:', atmnam(i), namr(occupies(i))
+!!           Write(message,'(a,2(1x,a))') 'occupant/site type mismatch:', atmnam(i), namr(occupies(i))
+!            Call info(message)
 !           taken = taken + 1
 !        End If
 !     End Do
-!     If (mxnode > 1) Call gsum(taken)
-!     If (comm%idnode == 0) Write(nrite,'(3(1x,a,i10))') 'occupant/site type mismatches', taken
+!     Call gsum(taken)
+!     Write(message,'(a,i10,2(1x,a,i10))') 'occupant/site type mismatches', taken
+!     Call info(message,.true.)
 
 ! Interstitials: i <= natms & interstitial(i) /= 0 means we've found an interstitial
 

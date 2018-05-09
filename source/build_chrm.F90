@@ -63,6 +63,8 @@ Contains
       ibig,ja,jb,jc,jd,ja0,jb0,jc0,jd0, &
       ka,kb,kc,kd,ka0,kb0,kc0,kd0
 
+    Character( Len = 256 ) :: message
+
     ! variables for array bound checking
 
     ibig=0
@@ -1155,13 +1157,13 @@ Contains
     End Do
     Call gsum(comm,kk)
 
-    If (comm%idnode == 0) Write(nrite,'(/,1x,a,i11)') "Total of CHARMMing core-shell (scaled and dumped) cross-interatcions",kk/2
+    Write(message,'(a,i11)') "Total of CHARMMing core-shell (scaled and dumped) cross-interatcions",kk/2
+    Call info('',.true.)
+    Call info(message,.true.)
 
     If (kk == 0) Then
       keyind = 0
-      If (comm%idnode == 0) Then 
-        Write(nrite,"(1x,a)") "*** warning - CHARMM polarisation scheme unapplicable as no pair are detected !!! ***"
-      End If 
+      Call warning('CHARMM polarisation scheme unapplicable as no pair are detected',.true.)
       Deallocate (lchatm, Stat=fail)
     End If
   End Subroutine build_chrm_intra

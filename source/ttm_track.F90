@@ -18,6 +18,7 @@ Module ttm_track
   Use ttm_utils
   Use comms, Only : comms_type,Grid4_tag,Grid3_tag,gsum
   Use configuration
+  Use errors_warnings, Only : error,warning,info
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -46,6 +47,8 @@ Contains
     Integer, Dimension( 1:3 ) :: fail = 0
     Character ( Len = 14 ) :: number
     Logical :: deposit
+
+    Character ( Len = 256 ) :: message
 
     ! provide atomic density corrections to heat capacities
 
@@ -212,18 +215,18 @@ Contains
 
     ! report successful completion of energy deposition
 
-      If (comm%idnode == 0) Then
-        If (currenttime<1.0_wp) Then
-          Write(number, '(f14.3)') currenttime*1000.0_wp
-          Write(nrite,"(/,6x,a,es12.5,a,a,a,/)") &
-            'electronic energy deposition of ',lat_I_sum,' eV completed successfully after ',Trim(Adjustl(number)),' fs'
-        Else
-          Write(number, '(f14.6)') currenttime
-          Write(nrite,"(/,6x,a,es12.5,a,a,a,/)") &
-            'electronic energy deposition of ',lat_I_sum,' eV completed successfully after ',Trim(Adjustl(number)),' ps'
-        End If
-        Write(nrite,"(1x,130('-'))")
+      If (currenttime<1.0_wp) Then
+        Write(number, '(f14.3)') currenttime*1000.0_wp
+        Write(message,'(a,es12.5,3a)') &
+          'electronic energy deposition of ',lat_I_sum, &
+          ' eV completed successfully after ',Trim(Adjustl(number)),' fs'
+      Else
+        Write(number, '(f14.6)') currenttime
+        Write(message,'(a,es12.5,3a)') &
+          'electronic energy deposition of ',lat_I_sum, &
+          ' eV completed successfully after ',Trim(Adjustl(number)),' ps'
       End If
+      Call info(message,.true.)
 
     ! switch off tracking and deallocate arrays
 
@@ -720,6 +723,8 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
 
   Logical :: debug1=.false.
 
+  Character( Len = 256 ) :: messages(6)
+
 ! Initialise eltemp1 (electronic temperature grid for next timestep) and timestep sizes
 
   Allocate (eltemp1(1:numcell,-eltcell(1):eltcell(1),-eltcell(2):eltcell(2),-eltcell(3):eltcell(3)), Stat = fail)
@@ -795,14 +800,16 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
 ! write information to OUTPUT
 
   If (mod(nstep,nstbpo) == 0 .or. nstep == 1) Then
-    If (comm%idnode == 0) Then
-      Write(nrite,'(6x,"ttm thermal diffusion timesteps:",2x,"optimal/ps",3x,"actual/ps",5x,"diff/md")')
-      Write(nrite,'(38x,es12.4,es12.4,2x,i10)') opttstep, tstep/Real(redtstepmx,Kind=wp), redtstepmx
-      If (ttmdyndens) Then
-        Write(nrite,'(6x,"active ion temperature cells:",5x,"atom dens.",5x,"no. of active cells")')
-        Write(nrite,'(38x,es12.4,14x,i10)') cellrho,acell
-      End If
-      If(nstep>1 .and. Mod(lines,npage)/=0) Write(nrite,"(1x,130('-'))")
+    Write(messages(1),'(a)') 'ttm thermal diffusion timesteps:'
+    Write(messages(2),'(4x,a,3x,a,5x,a)') 'optimal/ps','actual/ps','diff/md'
+    Write(messages(3),'(2x,2es12.4,2x,i10)') opttstep, tstep/Real(redtstepmx,Kind=wp),redtstepmx
+    If (ttmdyndens) Then
+      Write(messages(4),'(a)') 'active ion temperature cells:'
+      Write(messages(5),'(4x,a,2x,a)') 'atom dens.','no. of active cells'
+      Write(messages(6),'(2x,es12.4,11x,i10)') cellrho,acell
+      Call info(messages,6,.true.)
+    Else
+      Call info(messages,3,.true.)
     End If
   End If
 

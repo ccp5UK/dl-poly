@@ -31,8 +31,10 @@ Call statistics_collect           &
 
 ! VV forces evaluation report for 0th or weird restart
 
-If (l_vv .and. levcfg == 1 .and. comm%idnode == 0) &
-  Write(nrite,'(1x,a,/)') "forces evaluated at (re)start for VV integration..."
+If (l_vv .and. levcfg == 1) Then
+  Call info('forces evaluated at (re)start for VV integration...',.true.)
+  Call info('',.true.)
+End If
 
 ! line-printer output every nstbpo steps
 
@@ -42,31 +44,28 @@ If (lines == 0 .or. Mod(nstep,nstbpo) == 0) Then
 
   Call gtime(timelp)
 
-  If (Mod(lines,npage) == 0) Then 
-    Write(messages(1),"(1x,130('-'))")
-    Write(messages(2),"(10x,'step',5x,'eng_tot',4x,'temp_tot',5x,'eng_cfg',     &
-      & 5x,'eng_src',5x,'eng_cou',5x,'eng_bnd',5x,'eng_ang',    &
-      & 5x,'eng_dih',5x,'eng_tet')")
-    Write(messages(3),"(6x,'time(ps)',5x,' eng_pv', &
-      & 4x,'temp_rot',5x,'vir_cfg',5x,'vir_src',5x,'vir_cou',   &
-      & 5x,'vir_bnd',5x,'vir_ang',5x,'vir_con',5x,'vir_tet')")
-    Write(messages(4), "(6x,'cpu  (s)',6x,'volume',4x,'temp_shl',5x,'eng_shl',   &
-      & 5x,'vir_shl',7x,'alpha',8x,'beta',7x,'gamma',           &
-      & 5x,'vir_pmf',7x,'press')")
-    Write(messages(5),"(1x,130('-'))")
+  If (Mod(lines,npage) == 0) Then
+    Write(messages(1),'(a)') Repeat('-',130)
+    Write(messages(2),'(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+     'step','eng_tot','temp_tot','eng_cfg','eng_src','eng_cou','eng_bnd','eng_ang','eng_dih','eng_tet'
+    Write(messages(3),'(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+     'time(ps)',' eng_pv','temp_rot','vir_cfg','vir_src','vir_cou','vir_bnd','vir_ang','vir_con','vir_tet'
+    Write(messages(4), '(5x,a8,6x,a7,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
+      'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','press'
+    Write(messages(5),'(a)') Repeat('-',130)
     Call info(messages,5,.true.)
-  End IF
+  End If
 
-  Write(messages(1),'(1x,i13,1p,9e12.4)')nstep,stpval(1:9)
-  Write(messages(2),'(f14.5,1p,9e12.4)')time,stpval(10:18)
-  Write(messages(3),'(1x,0p,f13.3,1p,9e12.4)') timelp,stpval(19:27)
+  Write(messages(1),'(i13,1p,9e12.4)')nstep,stpval(1:9)
+  Write(messages(2),'(f13.5,1p,9e12.4)')time,stpval(10:18)
+  Write(messages(3),'(0p,f13.3,1p,9e12.4)') timelp,stpval(19:27)
   Write(messages(4),'(a)')''
   Call info(messages,4,.true.)
 
-  Write(messages(1),"(7x,'rolling',1p,9e12.4)") ravval(1:9)
-  Write(messages(2),"(6x,'averages',1p,9e12.4)") ravval(10:18)
-  Write(messages(3),"(14x,9e12.4)") ravval(19:27)
-  Write(messages(4),"(1x,130('-'))")
+  Write(messages(1),'(6x,a7,1p,9e12.4)') 'rolling',ravval(1:9)
+  Write(messages(2),'(5x,a8,1p,9e12.4)') 'averages',ravval(10:18)
+  Write(messages(3),'(13x,9e12.4)') ravval(19:27)
+  Write(messages(4),'(a)') Repeat('-',130)
   Call info(messages,4,.true.)
 
   If (nstep /= 0) lines=lines+1
@@ -78,28 +77,29 @@ End If
 If (nstep == nsteql) Then
 
   If (nstep > 0) Then
+    Call info(repeat('-',130),.true.)
     If (lzero) Then
       lzero=.false.
-      If (comm%idnode == 0) Write(nrite,"(/,1x,a,i0)") &
-        'switching off zero Kelvin optimiser at step ',nstep
+      Write(message,'(a,i10)') 'switching off zero Kelvin optimiser at step ',nstep
+      Call info(message,.true.)
     End If
 
     If (lmin) Then
       lmin=.false.
-      If (comm%idnode == 0) Write(nrite,"(/,1x,a,i0)") &
-        'switching off CGM minimiser at step ',nstep
+      Write(message,'(a,i10)') 'switching off CGM minimiser at step ',nstep
+      Call info(message,.true.)
     End If
 
     If (ltscal) Then
       ltscal=.false.
-      If (comm%idnode == 0) Write(nrite,"(/,1x,a,i0)") &
-        'switching off temperature scaling at step ',nstep
+      Write(message,'(a,i10)') 'switching off temperature scaling at step ',nstep
+      Call info(message,.true.)
     End If
 
     If (ltgaus) Then
       ltgaus=.false.
-      If (comm%idnode == 0) Write(nrite,"(/,1x,a,i0)") &
-        'switching off temperature regaussing at step ',nstep
+      Write(message,'(a,i10)') 'switching off temperature regaussing at step ',nstep
+      Call info(message,.true.)
     End If
   End If
 
@@ -107,22 +107,31 @@ If (nstep == nsteql) Then
 
   If (megcon > 0) Then
     Call gmax(comm,passcnq(3:5))
-    If (passcnq(3) > 0.0_wp .and. comm%idnode == 0) Write(nrite,"(/,                             &
-      & ' constraints quench run statistics per call: average cycles ', f5.2, ' / ', f5.2, &
-      & ' minimum cycles ', i3, ' / ', i3, ' maximum cycles ', i3, ' / ', i3)")          &
-      passcnq(3),passcnq(3),Nint(passcnq(4)),Nint(passcnq(4)),Nint(passcnq(5)),Nint(passcnq(5))
+    If (passcnq(3) > 0.0_wp) Then
+      Write(message,'(2(a,f5.2),4(a,i3))') &
+        'constraints quench run statistics per call: average cycles ', &
+        passcnq(3),'/',passcnq(3), &
+        ' minimum cycles ',Nint(passcnq(4)),'/',Nint(passcnq(4)), &
+        ' maximum cycles ',Nint(passcnq(5)),'/',Nint(passcnq(5))
+      Call info(message,.true.)
+    End If
   End If
 
   If (megpmf > 0) Then
     Call gmax(comm,passpmq(3:5))
-    If (passpmq(3) > 0.0_wp .and. comm%idnode == 0) Write(nrite,"(/,                      &
-      & ' PMFs quench run statistics per call: average cycles ', f5.2, ' / ', f5.2, &
-      & ' minimum cycles ', i3, ' / ', i3, ' maximum cycles ', i3, ' / ', i3)")   &
-      passpmq(3),passpmq(3),Nint(passpmq(4)),Nint(passpmq(4)),Nint(passpmq(5)),Nint(passpmq(5))
+    If (passpmq(3) > 0.0_wp) Then
+      Write(message,'(2(a,f5.2),4(a,i3))') &
+        'PMFs quench run statistics per call: average cycles ', &
+        passpmq(3),'/',passpmq(3), &
+        ' minimum cycles ',Nint(passpmq(4)),'/',Nint(passpmq(4)), &
+        ' maximum cycles ',Nint(passpmq(5)),'/',Nint(passpmq(5))
+      Call info(message,.true.)
+    End If
   End If
 
-  If ((nstep > 0 .or. megcon > 0 .or. megpmf > 0) .and. comm%idnode == 0) &
-    Write(nrite,"(/,1x,130('-'))")
+  If (nstep > 0 .or. megcon > 0 .or. megpmf > 0) Then
+    Call info(repeat('-',130),.true.)
+  End If
 End If
 
 ! Calculate green-kubo properties

@@ -21,7 +21,7 @@ Module vdw
 
   Use site,  Only : ntpatm,unqatm
   Use parse, Only : get_line,get_word,word_2_real
-  Use errors_warnings, Only : error,warning
+  Use errors_warnings, Only : error,warning,info
   Implicit None
 
   Logical,                        Save :: lt_vdw = .false., & ! no tabulated potentials are present
@@ -135,7 +135,7 @@ Contains
                        z1,z2,rm,al
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: numfrz
-  Character( Len = 256 ) :: message
+  Character( Len = 256 ) :: message,messages(3)
 
   fail=0
   Allocate (numfrz(mxatyp), Stat=fail)
@@ -397,9 +397,10 @@ Contains
 
 10 Continue
 
-  If (comm%idnode == 0) Write(nrite,"( &
-     & 'long-range correction for: vdw energy  ',e15.6,/,26x, &
-     & ': vdw pressure',e15.6)") elrc/engunit,plrc*prsunt
+  Write(messages(1),'(a)') 'long-range correction for:'
+  Write(messages(2),'(2x,a,e15.6)') 'vdw energy ',elrc/engunit
+  Write(messages(3),'(2x,a,e15.6)') 'vdw pressure ',plrc*prsunt
+  Call info(messages,3,.true.)
 
 ! convert plrc to a viral term
 
@@ -733,8 +734,7 @@ Subroutine vdw_table_read(rvdw,comm)
   Real( Kind = wp )      :: delpot,cutpot,dlrpot,rdr,rrr,ppp,vk,vk1,vk2,t,t1,t2
 
   Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
-  Character( Len = 256 ) :: message
-
+  Character( Len = 256 ) :: message,messages(4)
 
   If (comm%idnode == 0) Open(Unit=ntable, File='TABLE')
 
@@ -767,16 +767,11 @@ Subroutine vdw_table_read(rvdw,comm)
      delpot=dlrpot
   End If
   If (delpot > delr_max .and. (.not.safe)) Then
-     If (comm%idnode == 0) Then
-        Write(nrite,"(/,                                             &
-             & ' expected (maximum) radial increment : ',1p,e15.7,/, &
-             & ' TABLE  file actual radial increment : ',1p,e15.7)") &
-             delr_max, delpot
-        Write(nrite,"(/,                                                &
-             & ' expected (minimum) number of grid points : ',0p,i10,/, &
-             & ' TABLE  file actual number of grid points : ',0p,i10)") &
-             mxgvdw, ngrid
-     End If
+     Write(messages(1),'(a,1p,e15.7)') 'expected (maximum) radial increment: ',delr_max
+     Write(messages(2),'(a,1p,e15.7)') 'TABLE  file actual radial increment: ',delpot
+     Write(messages(3),'(a,i10)') 'expected (minimum) number of grid points: ',mxgvdw
+     Write(messages(4),'(a,i10)') 'TABLE  file actual number of grid points: ',ngrid
+     Call info(messages,4,.true.)
      Call error(22)
   End If
   safe=.true.
@@ -785,7 +780,8 @@ Subroutine vdw_table_read(rvdw,comm)
   If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
      remake=.true.
      rdr=1.0_wp/delpot
-     If (comm%idnode == 0) Write(nrite,"(/,' TABLE arrays resized for mxgrid = ',i10)") mxgvdw-4
+     Write(message,'(a,i10)') 'TABLE arrays resized for mxgrid = ',mxgvdw-4
+     Call info(message,.true.)
   End If
 
 ! compare grids dimensions
@@ -971,9 +967,9 @@ Subroutine vdw_table_read(rvdw,comm)
 
   End Do
 
+  Call info('potential tables read from TABLE file',.true.)
   If (comm%idnode == 0) Then
      Close(Unit=ntable)
-     Write(nrite,'(/,1x,a)') 'potential tables read from TABLE file'
   End If
 
 ! convert to internal units

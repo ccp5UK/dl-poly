@@ -14,7 +14,7 @@ Module kontrol
   Use kinetics,  Only : l_vom
   Use plumed,   Only : l_plumed, plumed_input, plumed_log, &
                               plumed_precision, plumed_restart
-  Use setup,       Only : nread,nrite,control,pi,zero_plus,seed, &
+  Use setup,       Only : nread,control,pi,zero_plus,seed, &
                                             output,field,config,statis, &
                                   history,historf,revive,revcon,revold
   Use parse,       Only : get_line,get_word,lower_case,word_2_real
@@ -154,6 +154,9 @@ Subroutine read_control                                &
                                              grddih,grdinv,nstall
 
   Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,eps0,tol,rcb_d,prmps(1:4)
+
+  Character( Len = 256 ) :: message,messages(7)
+  Character( Len = 80 )  :: banner(9)
 
 
 ! initialise system control variables and their logical switches
@@ -503,9 +506,15 @@ Subroutine read_control                                &
 
   If (.not.safe) Go To 1000
 
-  If (comm%idnode == 0) Write(nrite,"(/,3(1x,130('*'),/),1x,     &
-     & 24('*'),5x,a72,5x,24('*'),/,3(1x,130('*'),/), &
-     & 'SIMULATION CONTROL PARAMETERS')") sysname
+  Write(banner(1),'(a)') ''
+  Write(banner(2),'(a)') Repeat('*',80)
+  Write(banner(3),'(a4,a72,a4)') '*** ', 'title:'//Repeat(' ',66), ' ***'
+  Write(banner(4),'(a4,a72,a4)') '*** ', sysname, ' ***'
+  Write(banner(5),'(a)') Repeat('*',80)
+  Write(banner(6),'(a)') ''
+  Call info(banner,6,.true.)
+
+  Call info('simulation control parameters',.true.)
 
 ! read and process directives from CONTROL file
 
@@ -523,38 +532,26 @@ Subroutine read_control                                &
 ! read DEVELOPMENT options
 
      Else If (word(1:5) == 'l_scr') Then
-
 !        l_scr = .true. ! done in scan_development
-        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "%%% OUTPUT redirected to the default output (screen) !!! %%%"
-
+        Call info('%%% OUTPUT redirected to the default output (screen) !!! %%%',.true.)
      Else If (word(1:6) == 'l_fast') Then
-
 !        l_fast = .true. ! done in scan_development
-        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "%%% speed up by avoiding global safety checks !!! %%%"
-
+        Call info('%%% speed up by avoiding global safety checks !!! %%%',.true.)
      Else If (word(1:5) == 'l_eng') Then
-
         l_eng = .true.
-        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "%%% OUTPUT contains an extra last line with E_tot !!! %%%"
-
+        Call info('%%% OUTPUT contains an extra last line with E_tot !!! %%%',.true.)
      Else If (word(1:6) == 'l_rout') Then
-
         l_rout = .true.
-        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "%%% REVIVE writing in ASCII opted !!! %%%"
-
+        Call info('%%% REVIVE writing in ASCII opted !!! %%%',.true.)
      Else If (word(1:5) == 'l_rin') Then
-
         l_rin = .true.
-        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "%%% REVOLD reading in ASCII opted !!! %%%"
-
+        Call info('%%% REVOLD reading in ASCII opted !!! %%%',.true.)
      Else If (word(1:5) == 'l_org') Then
-
         l_org = .true.
         l_trm  = .true.
 
-        If (comm%idnode == 0) Write(nrite,"(2(/,1x,a))")                                                   &
-           "%%% translate CONFIG along a vector into CFGORG after reading input & terminate !!! %%%", &
-           "%%% vector and config level read as follows: %%%"
+        Call info('%%% translate CONFIG along a vector into CFGORG after reading input & terminate !!! %%%',.true.)
+        Call info('%%% vector and config level read as follows: %%%',.true.)
 
         Call get_word(record,word)
         xorg = word_2_real(word)
@@ -566,17 +563,14 @@ Subroutine read_control                                &
         Call get_word(record,word)
         lvcforg = Min( Int(Abs(word_2_real(word,0.0_wp))) , levcfg)
 
-        If (comm%idnode == 0) Then
-           Write(nrite,"(1x,a)")          '%%% '
-           Write(nrite,"(1x,a,3f10.3,a)") '%%% vector(x,y,x) ', xorg, yorg, zorg, ' %%%'
-           Write(nrite,"(1x,a,i0,a)")     '%%% CFGORG level ', lvcforg, ' %%%'
-        End If
+        Write(messages(1),'(a)') '%%%'
+        Write(messages(2),'(a,3f10.3,a)') '%%% vector(x,y,x) ', xorg, yorg, zorg, ' %%%'
+        Write(messages(3),'(a,i0,a)') '%%% CFGORG level ', lvcforg, ' %%%'
+        Call info(messages,3,.true.)
 
      Else If (word(1:5) == 'l_scl') Then
-
-        If (comm%idnode == 0) Write(nrite,"(2(/,1x,a))")                                 &
-           "%%% rescale CONFIG to CFGSCL, after reading input & terminate !!! %%%", &
-           "%%% config level and new cell vectors to rescale to (read in a CONFIG-like manner): %%%"
+        Call info('%%% rescale CONFIG to CFGSCL, after reading input & terminate !!! %%%',.true.)
+        Call info('%%% config level and new cell vectors to rescale to (read in a CONFIG-like manner): %%%',.true.)
 
         Call get_word(record,word)
         lvcfscl = Min( Int(Abs(word_2_real(word,0.0_wp))) , levcfg)
@@ -593,57 +587,45 @@ Subroutine read_control                                &
 
         Call invert(cels,rcell,tmp)
 
-        If (comm%idnode == 0) Then
-           Write(nrite,"(1x,a)")             '%%% '
-           Write(nrite,"(1x,a,i0,a)")        '%%% CFGSCL level ', lvcfscl, ' %%%'
-           Write(nrite,"(1x,a,3f20.10,a)")   '%%% ', cels(1:3), ' %%%'
-           Write(nrite,"(1x,a,3f20.10,a)")   '%%% ', cels(4:6), ' %%%'
-           Write(nrite,"(1x,a,3f20.10,a)")   '%%% ', cels(7:9), ' %%%'
-           Write(nrite,"(1x,a)")             '%%% '
-           Write(nrite,"(1x,a,1p,g22.12,a)") '%%% CFGSCL volume ', tmp, '%%%'
-        End If
+        Write(messages(1),'(a)') '%%%'
+        Write(messages(2),'(1x,a,i0,a)')        '%%% CFGSCL level ', lvcfscl, ' %%%'
+        Write(messages(3),'(1x,a,3f20.10,a)')   '%%% ', cels(1:3), ' %%%'
+        Write(messages(4),'(1x,a,3f20.10,a)')   '%%% ', cels(4:6), ' %%%'
+        Write(messages(5),'(1x,a,3f20.10,a)')   '%%% ', cels(7:9), ' %%%'
+        Write(messages(6),'(1x,a)')             '%%%'
+        Write(messages(7),'(1x,a,1p,g22.12,a)') '%%% CFGSCL volume ', tmp, '%%%'
+        Call info(messages,7,.true.)
 
         If (tmp > zero_plus) Then
            l_scl = .true.
            l_trm  = .true.
         Else
-           If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "%%% OPTION ABORTED DUE TO ZERO VOLUME !!! %%%"
+           Call info('%%% OPTION ABORTED DUE TO ZERO VOLUME !!! %%%',.true.)
            l_trm  = .true.
         End If
-
      Else If (word(1:5) == 'l_his') Then
-
         l_his = .true.
         l_trm = .true.
-        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "%%% generate HISTORY after reading input & terminate !!! %%%"
-
+        Call info('%%% generate HISTORY after reading input & terminate !!! %%%',.true.)
      Else If (word(1:5) == 'l_tim') Then
-
 !        l_tim = .true.  ! done in scan_development
-        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "%%% generate detailed timing !!! %%%"
-
+        Call info('%%% generate detailed timing !!! %%%',.true.)
      Else If (word(1:5) == 'l_tor') Then
-
         l_tor = .true.
-        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "%%% Turn off production of REVCON & REVIVE !!! %%%"
-
+        Call info('%%% Turn off production of REVCON & REVIVE !!! %%%',.true.)
      Else If (word(1:5) == 'l_trm') Then
-
         l_trm = .true.
-        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "%%% Terminate gracefully before initialisation !!! %%%"
-
+        Call info('%%% Terminate gracefully before initialisation !!! %%%',.true.)
      Else If (word(1:5) == 'l_dis') Then
-
         l_dis = .true.
         r_dis = Min( r_dis , word_2_real(word,0.1_wp) )
-        If (comm%idnode == 0) Write(nrite,"(2(/,1x,a),1p,e12.4)")                            &
-           "%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%", &
-           "%%% separation criterion (Angstroms) %%% ", r_dis
+        Call info('%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%',.true.)
+        Write(message,'(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', r_dis
+        Call info(message,.true.)
 
 ! read VDW options
 
      Else If (word(1:3) == 'vdw') Then
-
         Call get_word(record,word1)
 
         If      (word1(1:6) == 'direct') Then
@@ -651,112 +633,85 @@ Subroutine read_control                                &
 ! direct evaluation option
 
            ld_vdw = .true.
-           If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "vdw direct option on"
+           Call info('vdw direct option on',.true.)
 
         Else If (word1(1:6) == 'mixing') Then
 
 ! mixing type keywords
 
-           If (comm%idnode == 0) Write(nrite,"(3(/,1x,a))") "vdw cross terms mixing opted (for undefined mixed potentials)", &
-                                                       "mixing is limited to potentials of the same type only",         &
-                                                       "mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)"
+           Call info('vdw cross terms mixing opted (for undefined mixed potentials)',.true.)
+           Call info('mixing is limited to potentials of the same type only',.true.)
+           Call info('mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)',.true.)
 
            Call get_word(record,word2)
 
            If      (word2(1:4) == 'lore') Then
-
               mxtvdw = 1
-              If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-  "type of mixing selected - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2"
-
+              Call info('type of mixing selected - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2',.true.)
            Else If (word2(1:4) == 'fend') Then
-
               mxtvdw = 2
-              If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-"type of mixing selected - Fender-Halsey :: e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2"
-
+              Call info('type of mixing selected - Fender-Halsey :: e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2',.true.)
            Else If (word2(1:4) == 'hoge') Then
-
               mxtvdw = 3
-              If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-"type of mixing selected - Hogervorst (good hope) :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)"
-
+              Call info('type of mixing selected - Hogervorst (good hope) :: ' &
+                //'e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)',.true.)
            Else If (word2(1:4) == 'halg') Then
-
               mxtvdw = 4
-              If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-"type of mixing selected - Halgren HHG :: e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)"
-
+              Call info('type of mixing selected - Halgren HHG :: ' &
+                //'e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)',.true.)
            Else If (word2(1:4) == 'wald') Then
-
               mxtvdw = 5
-              If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-"type of mixing selected - Waldman–Hagler :: e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ; s_ij=[(s_i^6+s_j^6)/2]^(1/6)"
-
+              Call info('type of mixing selected - Waldman–Hagler :: ' &
+                //'e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ;s_ij=[(s_i^6+s_j^6)/2]^(1/6)',.true.)
            Else If (word2(1:4) == 'tang') Then
-
               mxtvdw = 6
-              If (comm%idnode == 0) Write(nrite,"(1x,a,/,1x,a)") &
-"type of mixing selected - Tang-Toennies :: e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13 ;", &
-"                                           s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)"
-
+              Call info('type of mixing selected - Tang-Toennies :: ' &
+                //' e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13',.true.)
+              Call info(Repeat(' ',43)//'s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)',.true.)
            Else If (word2(1:4) == 'func') Then
-
               mxtvdw = 7
-              If (comm%idnode == 0) Write(nrite,"(1x,a,a,/,1x,a)")                &
-"type of mixing selected - Functional :: e_ij=3 * (e_i*e_j)^(1/2) * ",       &
-"(s_i*s_j)^3 / SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))} ;", &
-"                                        s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}"
-
+              Call info('type of mixing selected - Functional :: ' &
+                //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}',.true.)
+              Call info(Repeat(' ',40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}',.true.)
            Else
-
               Call strip_blanks(record)
-              If (comm%idnode == 0) Write(nrite,"(/,/,4a)") &
-                 word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),word2(1:Len_Trim(word2)+1),record
+              Write(message,'(4a)') word(1:Len_Trim(word)+1), &
+                word1(1:Len_Trim(word1)+1),word2(1:Len_Trim(word2)+1),record
+              Call info(message,.true.)
               Call error(3)
-
            End If
 
         Else If (word1(1:5) == 'shift') Then
-
 ! force-shifting option
-
            ls_vdw = .true.
-           If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "vdw force-shifting option on"
-
+           Call info('vdw force-shifting option on',.true.)
         Else
-
            Call strip_blanks(record)
-           If (comm%idnode == 0) Write(nrite,"(/,/,3a)") word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+           Write(message,'(3a)') word(1:Len_Trim(word)+1), &
+             word1(1:Len_Trim(word1)+1),record
+           Call info(message,.true.)
            Call error(3)
-
         End If
 
      Else If (word(1:5) == 'metal') Then
 
         Call get_word(record,word)
         If      (word(1:6) == 'direct') Then
-
 ! read metal direct evaluation option
-
-           If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "metal direct option on"
+           Call info('metal direct option on',.true.)
            If (tabmet > 0) Then
               Call warning(480,0.0_wp,0.0_wp,0.0_wp)
            Else
               ld_met = .true.
            End If
-
         Else If (word(1:7) == 'sqrtrho') Then
-
 ! read metal sqrtrho interpolation option for EAM embeding function in TABEAM
-
-           If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "metal sqrtrho option on"
+           Call info('metal sqrtrho option on',.true.)
            If (tabmet > 0) Then
               ls_met = .true.
            Else
               Call warning(490,0.0_wp,0.0_wp,0.0_wp)
            End If
-
         End If
 
 ! read slab option (dealt with in scan_control<-set_bounds,
@@ -764,7 +719,7 @@ Subroutine read_control                                &
 
      Else If (word(1:4) == 'slab') Then
 
-        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "slab option on"
+        Call info('slab option on',.true.)
 
 ! io options (dealt with in scan_control<-set_bounds)
 
@@ -781,7 +736,8 @@ Subroutine read_control                                &
         ny = Max(1,Nint(Abs(word_2_real(word))))
         Call get_word(record,word)
         nz = Max(1,Nint(Abs(word_2_real(word))))
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'system expansion opted',9x,3i5)") nx,ny,nz
+        Write(message,'(a,9x,3i5)') 'system expansion opted',nx,ny,nz
+        Call info(message,.true.)
 
 ! read impact option
 
@@ -807,11 +763,12 @@ Subroutine read_control                                &
            vmz = 1.0_wp
         End If
 
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'impact option on', &
-           & /,1x,'particle (index)',15x,i10,                   &
-           & /,1x,'timestep (steps)',15x,i10,                   &
-           & /,1x,'energy   (keV)  ',18x,1p,e12.4,              &
-           & /,1x,'v-r(x,y,z)',1p,3e12.4)") imd,tmd,emd,vmx,vmy,vmz
+        Write(messages(1),'(a)') ''
+        Write(messages(2),'(a,i10)') 'particle (index)',imd
+        Write(messages(3),'(a,i10)') 'timestep (steps)',tmd
+        Write(messages(4),'(a,1p,e12.4)') 'energy   (keV)  ',emd
+        Write(messages(5),'(a,1p,3e12.4)') 'v-r(x,y,z)      ',vmx,vmy,vmz
+        Call info(messages,5,.true.)
 
         If (limp) Call error(600)
         limp = .true.
@@ -829,8 +786,8 @@ Subroutine read_control                                &
         Call get_word(record,word)
         seed(3)=Nint(Abs(word_2_real(word)))
 
-        If (comm%idnode == 0) &
-           Write(nrite,"(/,1x,'radomisation seeds supplied',/,1x,'(seed1,seed2,seed3)  ',10x,3i5)") seed
+        Write(message,'(a,3i5)') 'radomisation seeds supplied: ',seed
+        Call info(message,.true.)
 
 ! read temperature
 
@@ -839,7 +796,8 @@ Subroutine read_control                                &
         ltemp = .true.
         Call get_word(record,word)
         temp = Abs(word_2_real(word))
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'simulation temperature (K)  ',6x,1p,e12.4)") temp
+        Write(message,'(a,1p,e12.4)') 'simulation temperature (K)  ',temp
+        Call info(message,.true.)
 
 ! read zero temperature optimisation
 
@@ -856,17 +814,16 @@ Subroutine read_control                                &
         If (word(1:5) == 'every') Call get_word(record,word)
         nstzero = Max(nstzero,Abs(Nint(word_2_real(word,0.0_wp))))
 
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'zero K optimisation on (during equilibration)', &
-           & /,1x,'temperature regaussing interval',i10)") nstzero
+        Call info('zero K optimisation on (during equilibration)',.true.)
+        Write(message,'(a,i10)') 'temperature regaussing interval',nstzero
 
         If (l_0) Then
            If (comm%idnode == 0) &
-  Write(nrite,"(1x,a)") 'fire option on - actual temperature will reset to 10 Kelvin if no target tempreature is specified'
+           Call info('fire option on - actual temperature will reset to 10 Kelvin if no target tempreature is specified',.true.)
         Else
            ltemp  = .true.
            temp = 10.0_wp
-           If (comm%idnode == 0) &
-  Write(nrite,"(1x,a)") 'fire option off - actual temperature reset to 10 Kelvin'
+           Call info('fire option off - actual temperature reset to 10 Kelvin',.true.)
         End If
 
 ! read pressure
@@ -878,7 +835,6 @@ Subroutine read_control                                &
 ! read stress (6 components only: xx,yy,zz,xy,xz,yz - it's forced symmetric)
 
         If (word(1:6) == 'tensor') Then
-
            lstrext=.true.
 
            Call get_word(record,word)
@@ -897,28 +853,25 @@ Subroutine read_control                                &
            strext(6) = word_2_real(word)
            strext(8) = strext(6)
 
-
-           If (comm%idnode == 0) Then
-              Write(nrite,"(/,1x,'simulation pressure tensor (katms)'/)")
-              Write(nrite,"(3f20.10)") strext
-           End If
+           Call info('simulation pressure tensor (katms):',.true.)
+           Write(messages(1),'(3f20.10)') strext(1:3)
+           Write(messages(2),'(3f20.10)') strext(4:6)
+           Write(messages(3),'(3f20.10)') strext(7:9)
+           Call info(messages,3,.true.)
 
 ! convert from katms to internal units of pressure
 
            strext = strext/prsunt
-
         Else
-
            lpres=.true.
 
            press = word_2_real(word)
 
-           If (comm%idnode == 0) Write(nrite,"(/,1x,'simulation pressure (katms)  ',5x,1p,e12.4)") press
+           Write(message,'(a,1p,e12.4)') 'simulation pressure (katms) ',press
 
 ! convert from katms to internal units of pressure
 
            press = press/prsunt
-
         End If
 
 ! read restart
@@ -928,20 +881,14 @@ Subroutine read_control                                &
         Call get_word(record,word)
 
         If (word(1:7) == 'noscale' .or. word(1:7) == 'unscale') Then
-
            keyres = 3
-           If (comm%idnode == 0) Write(nrite,"(/,1x,'unscaled restart requested (starting a new simulation)')")
-
+           Call info('unscaled restart requested (starting a new simulation)',.true.)
         Else If (word(1:5) == 'scale') Then
-
            keyres = 2
-           If (comm%idnode == 0) Write(nrite,"(/,1x,'scaled restart requested (starting a new simulation)')")
-
+           Call info('scaled restart requested (starting a new simulation)',.true.)
         Else
-
            keyres = 1
-           If (comm%idnode == 0) Write(nrite,"(/,1x,'restart requested (continuing an old simulation)')")
-
+           Call info('restart requested (continuing an old simulation)',.true.)
         End If
 
 ! read timestep options
@@ -960,7 +907,8 @@ Subroutine read_control                                &
            tstep = word_2_real(word)
         Else
            Call strip_blanks(record)
-           If (comm%idnode == 0) Write(nrite,"(/,/,3a)") word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+           Write(message,'(3a)') word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+           Call info(message,.true.)
            Call error(3)
         End If
 
@@ -986,29 +934,22 @@ Subroutine read_control                                &
 ! read number of timesteps
 
      Else If (word(1:5) == 'steps') Then
-
         Call get_word(record,word)
         nstrun = Nint(word_2_real(word))
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'selected number of timesteps',3x,i10)") nstrun
-
+        Write(message,'(a,i10)') 'selected number of timesteps ',nstrun
+        Call info(message,.true.)
 ! read number of equilibration timesteps
-
      Else If (word(1:5) == 'equil') Then
-
         Call get_word(record,word)
         If (word(1:5) == 'steps') Call get_word(record,word)
         nsteql = Abs(Nint(word_2_real(word)))
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'equilibration period (steps)',3x,i10)") nsteql
-
+        Write(message,'(a,i10)') 'equilibration period (steps) ', nsteql
+        Call info(message,.true.)
 ! read collection option
-
      Else If (word(1:7) == 'collect') Then
-
         leql = .false.
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'equilibration included in overall averages')")
-
+        Call info('equilibration included in overall averages',.true.)
 ! read pseudo thermostat option
-
      Else If (word(1:6) == 'pseudo') Then
 
         Call get_word(record,word)
@@ -1029,23 +970,23 @@ Subroutine read_control                                &
         If (width/4.0_wp > wthpse) Then
            lpse = .true.
            If (comm%idnode == 0) Then
-              Write(nrite,"(/,1x,'pseudo thermostat attached to MD cell boundary')")
+              Call info('pseudo thermostat attached to MD cell boundary',.true.)
               If      (keypse == 0) Then
-                      Write(nrite,'(1x,a)') "thermostat control: Langevin + direct temperature scaling"
+                Call info('thermostat control: Langevin + direct temperature scaling',.true.)
               Else If (keypse == 1) Then
-                      Write(nrite,'(1x,a)') "thermostat control: Langevin temperature scaling"
+                Call info('thermostat control: Langevin temperature scaling',.true.)
               Else If (keypse == 2) Then
-                      Write(nrite,'(1x,a)') "thermostat control: gaussian temperature scaling"
+                Call info('thermostat control: gaussian temperature scaling',.true.)
               Else If (keypse == 3) Then
-                      Write(nrite,'(1x,a)') "thermostat control: direct temperature scaling"
+                Call info('thermostat control: direct temperature scaling',.true.)
               End If
-              Write(nrite,"(1x,'thermostat thickness (Angs) ',6x,1p,e12.4)") tmp
+              Write(message,'(a,1p,e12.4)') 'thermostat thickness (Angs) ',tmp
            End If
 
            If (width/4.0_wp > tmp .and. tmp >= wthpse) Then
               wthpse = tmp
            Else
-              If (comm%idnode == 0) Write(nrite,"(1x,'thermostat thickness insufficient - reset to 2 Angs')")
+              Call info('thermostat thickness insufficient - reset to 2 Angs',.true.)
            End If
         Else
            Call warning(280,wthpse,width,0.0_wp)
@@ -1059,7 +1000,8 @@ Subroutine read_control                                &
         Else
            tmppse = Max(tmppse,tmp)
         End If
-        If (comm%idnode == 0) Write(nrite,"(1x,'thermostat temperature (K)',8x,1p,e12.4)") tmppse
+        Write(message,'(a,1p,e12.4)') 'thermostat temperature (K) ',tmppse
+        Call info(message,.true.)
 
 ! read minimiser option
 
@@ -1080,7 +1022,8 @@ Subroutine read_control                                &
            word1='distance'
         Else
            Call strip_blanks(record)
-           If (comm%idnode == 0) Write(nrite,"(4a)") word2(1:Len_Trim(word2)+1),' ',word(1:Len_Trim(word)+1),record
+           Write(message,'(4a)') word2(1:Len_Trim(word2)+1),' ',word(1:Len_Trim(word)+1),record
+           Call info(message,.true.)
            Call error(590)
         End If
 
@@ -1122,25 +1065,24 @@ Subroutine read_control                                &
         min_tol(2) = word_2_real(word3,-1.0_wp)
 
         If (word2(1:5) == 'minim') Then
-           If (comm%idnode == 0) Write(nrite,                                &
-              & "(/,1x,'minimisation option on (during equilibration)', &
-              &   /,1x,'minimisation criterion        ',1x,a8,          &
-              &   /,1x,'minimisation frequency (steps)',1x,i10,         &
-              &   /,1x,'minimisation tolerance        ',4x,1p,e12.4)")  &
-              word1(1:8),nstmin,min_tol(1)
-           If (min_tol(2) > zero_plus .and. comm%idnode == 0) Write(nrite,   &
-              & "(  1x,'minimisation CGM step         ',4x,1p,e12.4)") min_tol(2)
+           Write(messages(1),'(a)') 'minimisation option on (during equilibration)'
+           Write(messages(2),'(a,a8)') 'minimisation criterion        ',word1(1:8)
+           Write(messages(3),'(a,i10)') 'minimisation frequency (steps)',nstmin
+           Write(messages(4),'(a,1p,e12.4)') 'minimisation tolerance        ',min_tol(1)
+           Call info(messages,4,.true.)
+           If (min_tol(2) > zero_plus) Then
+             Write(message,'(a,1p,e12.4)') 'minimisation CGM step         ',min_tol(2)
+             Call info(message,.true.)
+           End If
         Else
-           If (comm%idnode == 0) Write(nrite,                               &
-              & "(/,1x,'optimisation at start',                        &
-              &   /,1x,'optimisation criterion        ',1x,a8,         &
-              &   /,1x,'optimisation tolerance        ',4x,1p,e12.4)") &
-              word1(1:8),min_tol(1)
-           If (min_tol(2) > zero_plus .and. comm%idnode == 0) Write(nrite,  &
-              & "(  1x,'optimisation CGM step         ',4x,1p,e12.4)") min_tol(2)
+           Write(messages(1),'(a)') 'optimisation at start'
+           Write(messages(2),'(a,a8)') 'optimisation criterion        ',word(1:8)
+           Write(messages(4),'(a,1p,e12.4)') 'optimisation tolerance        ',min_tol(1)
+           Call info(messages,3,.true.)
+           If (min_tol(2) > zero_plus) Then
+             Write(message,'(a,1p,e12.4)')'optimisation CGM step         ',min_tol(2)
+           End If
         End If
-
-
 
 ! read regauss option
 
@@ -1152,8 +1094,8 @@ Subroutine read_control                                &
         nstgaus = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
         ltgaus =.true.
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'regauss temperature on (during equilibration)', &
-           & /,1x,'temperature regaussing interval',i10)") nstgaus
+        Write(message,'(a,i10)') 'temperature regaussing interval ', nstgaus
+        Call info(message,.true.)
 
 ! read temperature scaling option
 
@@ -1165,8 +1107,9 @@ Subroutine read_control                                &
         nstscal = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
         ltscal =.true.
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'temperature scaling on (during equilibration)', &
-           & /,1x,'temperature scaling interval',3x,i10)") nstscal
+        Call info('temperature scaling on (during equilibration)',.true.)
+        Write(message,'(a,i10)') 'temperature scaling interval ',nstscal
+        Call info(message,.true.)
 
 ! read polarisation option
 
@@ -1182,20 +1125,23 @@ Subroutine read_control                                &
               If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record,word)
               thole = Abs(word_2_real(word,0.0_wp))
            End If
-           If (comm%idnode == 0) Then
-  Write(nrite,"(/,1x,'CHARMM polarisation scheme selected with optional atomic thole dumping of ',f5.2)") thole
-              If (mximpl == 0) &
-  Write(nrite,"(1x,a)") "*** warning - scheme deselected due to switched off electrostatics !!! ***"
-              If (mxshl == 0) &
-  Write(nrite,"(1x,a)") "*** warning - scheme disabled due to lack of core-shell defined interatcions !!! ***"
+
+           Write(message,'(a,f5.2)') &
+             'CHARMM polarisation scheme selected with optional atomic thole dumping of ', &
+             thole
+           Call info(message,.true.)
+           If (mximpl == 0 ) Then
+             Call warning('scheme deselected due to switched off electrostatics',.true.)
+           End If
+           If (mxshl == 0) Then
+             Call warning('scheme disabled due to lack of core-shell defined interatcions',.true.)
            End If
 
            If (mximpl == 0 .or. mxshl == 0) Then
 !              keyind=0 ! done in scan_control
            Else
               lecx = .true. ! enable extended coulombic exclusion
-              If (comm%idnode == 0) &
-  Write(nrite,"(1x,'Extended Coulombic eXclusion activated for CHARMM polarisation')")
+              Call info('Extended Coulombic eXclusion activated for CHARMM polarisation',.true.)
            End If
         End If
 
@@ -1210,19 +1156,18 @@ Subroutine read_control                                &
 
 ! keydpd detected in scan_control
 
-        If (keydpd > 0 .and. (lvv .neqv. l_vv) .and. comm%idnode == 0) Write(nrite,"(/,1x,a)") &
-           "*** warning - Leapfrog Verlet selected integration defaulted to Velocity Verlet for DPD thermostats !!! ***"
+        If (keydpd > 0 .and. (lvv .neqv. l_vv)) Then
+          Call warning('Leapfrog Verlet selected integration defaulted to Velocity Verlet for DPD thermostats',.true.)
+        End If
 
 ! read ensemble
 
      Else If (word(1:8) == 'ensemble') Then
 
-        If (comm%idnode == 0) Then
-           If (l_vv) Then
-              Write(nrite,"(/,1x,'Integration : Velocity Verlet')")
-           Else
-              Write(nrite,"(/,1x,'Integration : Leapfrog Verlet')")
-           End If
+        If (l_vv) Then
+          Call info('Integration : Velocity Verlet',.true.)
+        Else
+          Call info('Integration : Leapfrog Verlet',.true.)
         End If
 
         Call get_word(record,word)
@@ -1231,7 +1176,7 @@ Subroutine read_control                                &
 
            keyens = 0
 
-           If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVE (Microcanonical)')")
+           Call info('Ensemble : NVE (Microcanonical)',.true.)
 
            If (lens) Call error(414)
            lens=.true.
@@ -1244,8 +1189,8 @@ Subroutine read_control                                &
 
               keyens = 1
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVT Evans (Isokinetic)', &
-                 & /,1x,'Gaussian temperature constraints in use')")
+              Call info('Ensemble : NVT Evans (Isokinetic)',.true.)
+              Call info('Gaussian temperature constraints in use',.true.)
 
               If (lens) Call error(414)
               lens=.true.
@@ -1258,8 +1203,9 @@ Subroutine read_control                                &
               Call get_word(record,word)
               chi = Abs(word_2_real(word))
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVT Langevin (Stochastic Dynamics)', &
-                 & /,1x,'thermostat friction     (ps^-1)',3x,1p,e12.4)") chi
+              Call info('Ensemble : NVT Langevin (Stochastic Dynamics)',.true.)
+              Write(message,'(a,1p,e12.4)') 'thermostat friction ', chi
+              Call info(message,.true.)
 
               If (lens) Call error(414)
               lens=.true.
@@ -1274,9 +1220,10 @@ Subroutine read_control                                &
               soft = Abs(word_2_real(word))
               If (soft > 1.0_wp) soft=1.0_wp/soft
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVT Andersen', &
-                 & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,       &
-                 & /,1x,'softness        (dimensionless)',3x,1p,e12.4)") taut,soft
+              Write(messages(1),'(a)') 'Ensemble : NVT Andersen'
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
+              Write(messages(3),'(a,1p,e12.4)') 'softness (dimensionless)',soft
+              Call info(messages,3,.true.)
 
               If (lens) Call error(414)
               lens=.true.
@@ -1288,8 +1235,9 @@ Subroutine read_control                                &
               Call get_word(record,word)
               taut = Abs(word_2_real(word))
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVT Berendsen', &
-                 & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4)") taut
+              Call info('Ensemble : NVT Berendsen',.true.)
+              Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
+              Call info(message,.true.)
 
               If (lens) Call error(414)
               lens=.true.
@@ -1301,8 +1249,9 @@ Subroutine read_control                                &
               Call get_word(record,word)
               taut = Abs(word_2_real(word))
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVT Nose-Hoover', &
-                 & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4)") taut
+              Call info('Ensemble : NVT Nose-Hoover',.true.)
+              Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
+              Call info(message,.true.)
 
               If (lens) Call error(414)
               lens=.true.
@@ -1318,9 +1267,10 @@ Subroutine read_control                                &
               Call get_word(record,word)
               gama = Abs(word_2_real(word))
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVT gentle stochastic thermostat', &
-                 & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                         &
-                 & /,1x,'friction on thermostat  (ps^-1)',3x,1p,e12.4)") taut,gama
+              Write(messages(1),'(a)') 'Ensemble : NVT gentle stochastic thermostat'
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
+              Write(messages(3),'(a,1p,e12.4)') 'friction on thermostat  (ps^-1) ',gama
+              Call info(messages,3,.true.)
 
               If (lens) Call error(414)
               lens=.true.
@@ -1337,29 +1287,31 @@ Subroutine read_control                                &
               Call get_word(record,word)
               vel_es2 = Abs(word_2_real(word))
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)', &
-                 & /,1x,'e-phonon friction       (ps^-1)',3x,1p,e12.4, &
-                 & /,1x,'e-stopping friction     (ps^-1)',3x,1p,e12.4, &
-                 & /,1x,'e-stopping velocity   (A ps^-1)',3x,1p,e12.4)") chi_ep,chi_es,vel_es2
+              Write(messages(1),'(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
+              Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',chi_ep
+              Write(messages(3),'(a,1p,e12.4)') 'e-stopping friction (ps^-1) ',chi_es
+              Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1) ',vel_es2
+              Call info(messages,4,.true.)
 
               If (lens) Call error(414)
               lens=.true.
 
            Else If (word(1:3) == 'dpd') Then
 
-              If (comm%idnode == 0) Write(nrite,"(1x,a)") "Ensemble : NVT dpd (Dissipative Particle Dynamics)"
+              Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
 
 ! keydpd determined in scan_control
 
               If      (keydpd == 1) Then
                  keyens = 0 ! equivalence to doing NVE with some extra fiddling before VV(0)
-                 If (comm%idnode == 0) Write(nrite,"(1x,a)") "Ensemble type : Shardlow's first order splitting (S1)"
+                 Call info("Ensemble type : Shardlow's first order splitting (S1)",.true.)
               Else If (keydpd == 2) Then
                  keyens = 0 ! equivalence to doing NVE with some extra fiddling before VV(0) and after VV(1)
-                 If (comm%idnode == 0) Write(nrite,"(1x,a)") "Ensemble type : Shardlow's second order splitting (S2)"
+                 Call info("Ensemble type : Shardlow's second order splitting (S2)",.true.)
               Else
                  Call strip_blanks(record)
-                 If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                 Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+                 Call info(message,.true.)
                  Call error(436)
               End If
 
@@ -1367,7 +1319,8 @@ Subroutine read_control                                &
               gamdpd(0) = Abs(word_2_real(word,0.0_wp))
 
               If (gamdpd(0) > zero_plus) Then
-                 If (comm%idnode == 0) Write(nrite,"(1x,'drag coefficient (Dalton/ps)',6x,1p,e12.4)") gamdpd(0)
+                 Write(message,'(a,1p,e12.4)') 'drag coefficient (Dalton/ps) ', gamdpd(0)
+                 Call info(message,.true.)
               End If
 
               If (lens) Call error(414)
@@ -1376,7 +1329,8 @@ Subroutine read_control                                &
            Else
 
               Call strip_blanks(record)
-              If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+              Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+              Call info(message,.true.)
               Call error(436)
 
            End If
@@ -1395,9 +1349,10 @@ Subroutine read_control                                &
               Call get_word(record,word)
               tai = Abs(word_2_real(word))
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT isotropic Langevin (Stochastic Dynamics)', &
-                 & /,1x,'thermostat friction     (ps^-1)',3x,1p,e12.4,                                     &
-                 & /,1x,'barostat friction       (ps^-1)',3x,1p,e12.4)") chi,tai
+              Write(messages(1),'(a)') 'Ensemble : NPT isotropic Langevin (Stochastic Dynamics)'
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',chi
+              Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',tai
+              Call info(messages,3,.true.)
 
 !                 taut=1/(2.0_wp*pi*chi)
 !                 taup=1/(2.0_wp*pi*tai)
@@ -1414,9 +1369,10 @@ Subroutine read_control                                &
               Call get_word(record,word)
               taup = Abs(word_2_real(word))
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT isotropic Berendsen', &
-                 & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                &
-                 & /,1x,'barostat relaxation time   (ps)',3x,1p,e12.4)") taut,taup
+              Write(messages(1),'(a)') 'Ensemble : NPT isotropic Berendsen'
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
+              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',taup
+              Call info(messages,3,.true.)
 
               If (lens) Call error(414)
               lens=.true.
@@ -1430,9 +1386,10 @@ Subroutine read_control                                &
               Call get_word(record,word)
               taup = Abs(word_2_real(word))
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT isotropic Nose-Hoover (Melchionna)', &
-                 & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                               &
-                 & /,1x,'barostat relaxation time   (ps)',3x,1p,e12.4)") taut,taup
+              Write(messages(1),'(a)') 'Ensemble : NPT isotropic Nose-Hoover (Melchionna)'
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
+              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',taup
+              Call info(messages,3,.true.)
 
               If (lens) Call error(414)
               lens=.true.
@@ -1446,9 +1403,10 @@ Subroutine read_control                                &
               Call get_word(record,word)
               taup = Abs(word_2_real(word))
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT isotropic Martyna-Tuckerman-Klein', &
-                 & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                              &
-                 & /,1x,'barostat relaxation time   (ps)',3x,1p,e12.4)") taut,taup
+              Write(messages(1),'(a)') 'Ensemble : NPT isotropic Martyna-Tuckerman-Klein'
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
+              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',taup
+              Call info(messages,3,.true.)
 
               If (lens) Call error(414)
               lens=.true.
@@ -1456,7 +1414,8 @@ Subroutine read_control                                &
            Else
 
               Call strip_blanks(record)
-              If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+              Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+              Call info(message,.true.)
               Call error(436)
 
            End If
@@ -1475,9 +1434,10 @@ Subroutine read_control                                &
               Call get_word(record,word)
               tai = Abs(word_2_real(word))
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT anisotropic Langevin (Stochastic Dynamics)', &
-                 & /,1x,'thermostat friction     (ps^-1)',3x,1p,e12.4,                                       &
-                 & /,1x,'barostat friction       (ps^-1)',3x,1p,e12.4)") chi,tai
+              Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Langevin (Stochastic Dynamics)'
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',chi
+              Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',tai
+              Call info(messages,3,.true.)
 
 !                 taut=chi
 !                 taup=2.0_wp*pi/tai
@@ -1485,52 +1445,52 @@ Subroutine read_control                                &
               Call get_word(record,word)
               If      (word(1:4) == 'area') Then
                  iso=1
-                 If (comm%idnode == 0) Write(nrite,"(2(/,1x,a))")                     &
-                    'semi-isotropic barostat : constant normal pressure (Pn) &', &
-                    '       (N-Pn-A-T)       : constant surface area (A)'
+                 Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
+                 Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
               Else If (word(1:4) == 'tens') Then
                  iso=2
                  Call get_word(record,word)
                  ten = Abs(word_2_real(word))
-                 If (comm%idnode == 0) Write(nrite,"(3(/,1x,a),1p,e11.4)")             &
-                    'semi-isotropic barostat : constant normal pressure (Pn) &',  &
-                    '     (N-Pn-gamma-T)     : constant surface tension (gamma)', &
-                    'sumulation surface tension (dyn/cm)', ten
+                 Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
+                 Write(messages(2),'(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
+                 Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', ten
+                 Call info(messages,3,.true.)
                  ten=ten/tenunt
 
                  Call get_word(record,word)
                  If (word(1:4) == 'semi') Then
                     iso=3
-                    If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                    Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else If (Len_Trim(word) > 0) Then
                     Call strip_blanks(record)
-                    If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+                    Call info(message,.true.)
                     Call warning(460,0.0_wp,0.0_wp,0.0_wp)
                  End If
               Else If (word(1:4) == 'orth') Then
                  Call get_word(record,word)
                  If (Len_Trim(word) == 0) Then
                     iso=2
-                    If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-                       'semi-isotropic barostat : orthorhombic MD cell constraints'
+                    Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
                  Else If (word(1:4) == 'semi') Then
                     iso=3
-                    If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                    Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else
                     Call strip_blanks(record)
-                    If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+                    Call info(message,.true.)
                     Call warning(460,0.0_wp,0.0_wp,0.0_wp)
                  End If
               Else If (Len_Trim(word) > 0 ) Then
                  Call strip_blanks(record)
-                 If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                 Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+                 Call info(message,.true.)
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (iso >= 1 .and. iso <= 2 .and. comm%idnode == 0) Write(nrite,'(2(/,1x,a))') &
-                 '*** warning - semi-isotropic ensembles are only correct for ***',     &
-                 '*** infinite interfaces placed perpendicularly to the z axis !!! ***'
+              If (iso >= 1 .and. iso <= 2) Then
+                 Call warning('semi-isotropic ensembles are only correct for infinite' &
+                   //'interfaces placed perpendicularly to the z axis',.true.)
+              End If
 
               If (lens) Call error(414)
               lens=.true.
@@ -1544,59 +1504,60 @@ Subroutine read_control                                &
               Call get_word(record,word)
               taup = Abs(word_2_real(word))
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT anisotropic Berendsen', &
-                 & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                  &
-                 & /,1x,'barostat relaxation time   (ps)',3x,1p,e12.4)") taut,taup
+              Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Berendsen'
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
+              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',taup
+              Call info(messages,3,.true.)
 
               Call get_word(record,word)
               If      (word(1:4) == 'area') Then
                  iso=1
-                 If (comm%idnode == 0) Write(nrite,"(2(/,1x,a))")                     &
-                    'semi-isotropic barostat : constant normal pressure (Pn) &', &
-                    '       (N-Pn-A-T)       : constant surface area (A)'
+                 Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
+                 Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
               Else If (word(1:4) == 'tens') Then
                  iso=2
                  Call get_word(record,word)
                  ten = Abs(word_2_real(word))
-                 If (comm%idnode == 0) Write(nrite,"(3(/,1x,a),1p,e11.4)")             &
-                    'semi-isotropic barostat : constant normal pressure (Pn) &',  &
-                    '     (N-Pn-gamma-T)     : constant surface tension (gamma)', &
-                    'sumulation surface tension (dyn/cm)', ten
+                 Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
+                 Write(messages(2),'(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
+                 Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', ten
+                 Call info(messages,3,.true.)
                  ten=ten/tenunt
 
                  Call get_word(record,word)
                  If (word(1:4) == 'semi') Then
                     iso=3
-                    If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                    Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else If (Len_Trim(word) > 0) Then
                     Call strip_blanks(record)
-                    If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+                    Call info(message,.true.)
                     Call warning(460,0.0_wp,0.0_wp,0.0_wp)
                  End If
               Else If (word(1:4) == 'orth') Then
                  Call get_word(record,word)
                  If (Len_Trim(word) == 0) Then
                     iso=2
-                    If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-                       'semi-isotropic barostat : orthorhombic MD cell constraints'
+                    Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
                  Else If (word(1:4) == 'semi') Then
                     iso=3
-                    If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                    Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else
                     Call strip_blanks(record)
-                    If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+                    Call info(message,.true.)
                     Call warning(460,0.0_wp,0.0_wp,0.0_wp)
                  End If
               Else If (Len_Trim(word) > 0 ) Then
                  Call strip_blanks(record)
-                 If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                 Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+                 Call info(message,.true.)
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (iso >= 1 .and. iso <= 2 .and. comm%idnode == 0) Write(nrite,'(2(/,1x,a))') &
-                 '*** warning - semi-isotropic ensembles are only correct for ***',     &
-                 '*** infinite interfaces placed perpendicularly to the z axis !!! ***'
+              If (iso >= 1 .and. iso <= 2) Then
+                 Call warning('semi-isotropic ensembles are only correct for infinite' &
+                   //'interfaces placed perpendicularly to the z axis')
+              End If
 
               If (lens) Call error(414)
               lens=.true.
@@ -1610,59 +1571,60 @@ Subroutine read_control                                &
               Call get_word(record,word)
               taup = Abs(word_2_real(word))
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT anisotropic Nose-Hoover (Melchionna)', &
-                 & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                                 &
-                 & /,1x,'barostat relaxation time   (ps)',3x,1p,e12.4)") taut,taup
+              Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Nose-Hoover (Melchionna)'
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
+              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',taup
+              Call info(messages,3,.true.)
 
               Call get_word(record,word)
               If      (word(1:4) == 'area') Then
                  iso=1
-                 If (comm%idnode == 0) Write(nrite,"(2(/,1x,a))")                     &
-                    'semi-isotropic barostat : constant normal pressure (Pn) &', &
-                    '       (N-Pn-A-T)       : constant surface area (A)'
+                 Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
+                 Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
               Else If (word(1:4) == 'tens') Then
                  iso=2
                  Call get_word(record,word)
                  ten = Abs(word_2_real(word))
-                 If (comm%idnode == 0) Write(nrite,"(3(/,1x,a),1p,e11.4)")             &
-                    'semi-isotropic barostat : constant normal pressure (Pn) &',  &
-                    '     (N-Pn-gamma-T)     : constant surface tension (gamma)', &
-                    'sumulation surface tension (dyn/cm)', ten
+                 Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
+                 Write(messages(2),'(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
+                 Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', ten
+                 Call info(messages,3,.true.)
                  ten=ten/tenunt
 
                  Call get_word(record,word)
                  If (word(1:4) == 'semi') Then
                     iso=3
-                    If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                    Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else If (Len_Trim(word) > 0) Then
                     Call strip_blanks(record)
-                    If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+                    Call info(message,.true.)
                     Call warning(460,0.0_wp,0.0_wp,0.0_wp)
                  End If
               Else If (word(1:4) == 'orth') Then
                  Call get_word(record,word)
                  If (Len_Trim(word) == 0) Then
                     iso=2
-                    If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-                       'semi-isotropic barostat : orthorhombic MD cell constraints'
+                    Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
                  Else If (word(1:4) == 'semi') Then
                     iso=3
-                    If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                    Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else
                     Call strip_blanks(record)
-                    If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+                    Call info(message,.true.)
                     Call warning(460,0.0_wp,0.0_wp,0.0_wp)
                  End If
               Else If (Len_Trim(word) > 0 ) Then
                  Call strip_blanks(record)
-                 If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                 Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+                 Call info(message,.true.)
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (iso >= 1 .and. iso <= 2 .and. comm%idnode == 0) Write(nrite,'(2(/,1x,a))') &
-                 '*** warning - semi-isotropic ensembles are only correct for ***',     &
-                 '*** infinite interfaces placed perpendicularly to the z axis !!! ***'
+              If (iso >= 1 .and. iso <= 2) Then
+                 Call warning('semi-isotropic ensembles are only correct for infinite' &
+                   //'interfaces placed perpendicularly to the z axis',.true.)
+              End If
 
               If (lens) Call error(414)
               lens=.true.
@@ -1676,59 +1638,60 @@ Subroutine read_control                                &
               Call get_word(record,word)
               taup = Abs(word_2_real(word))
 
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ensemble : NPT anisotropic Martyna-Tuckerman-Klein', &
-                 & /,1x,'thermostat relaxation time (ps)',3x,1p,e12.4,                                &
-                 & /,1x,'barostat relaxation time   (ps)',3x,1p,e12.4)") taut,taup
+              Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Martyna-Tuckerman-Klein'
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
+              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',taup
+              Call info(messages,3,.true.)
 
               Call get_word(record,word)
               If      (word(1:4) == 'area') Then
                  iso=1
-                 If (comm%idnode == 0) Write(nrite,"(2(/,1x,a))")                     &
-                    'semi-isotropic barostat : constant normal pressure (Pn) &', &
-                    '       (N-Pn-A-T)       : constant surface area (A)'
+                 Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
+                 Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
               Else If (word(1:4) == 'tens') Then
                  iso=2
                  Call get_word(record,word)
                  ten = Abs(word_2_real(word))
-                 If (comm%idnode == 0) Write(nrite,"(3(/,1x,a),1p,e11.4)")             &
-                    'semi-isotropic barostat : constant normal pressure (Pn) &',  &
-                    '     (N-Pn-gamma-T)     : constant surface tension (gamma)', &
-                    'sumulation surface tension (dyn/cm)', ten
+                 Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
+                 Write(messages(2),'(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
+                 Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', ten
+                 Call info(messages,3,.true.)
                  ten=ten/tenunt
 
                  Call get_word(record,word)
                  If (word(1:4) == 'semi') Then
                     iso=3
-                    If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                    Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else If (Len_Trim(word) > 0) Then
                     Call strip_blanks(record)
-                    If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+                    Call info(message,.true.)
                     Call warning(460,0.0_wp,0.0_wp,0.0_wp)
                  End If
               Else If (word(1:4) == 'orth') Then
                  Call get_word(record,word)
                  If (Len_Trim(word) == 0) Then
                     iso=2
-                    If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-                       'semi-isotropic barostat : orthorhombic MD cell constraints'
+                    Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
                  Else If (word(1:4) == 'semi') Then
                     iso=3
-                    If (comm%idnode == 0) Write(nrite,"(1x,a)") &
-                       'semi-isotropic barostat : semi-orthorhombic MD cell constraints'
+                    Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else
                     Call strip_blanks(record)
-                    If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                    Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+                    Call info(message,.true.)
                     Call warning(460,0.0_wp,0.0_wp,0.0_wp)
                  End If
               Else If (Len_Trim(word) > 0 ) Then
                  Call strip_blanks(record)
-                 If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+                 Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+                 Call info(message,.true.)
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (iso >= 1 .and. iso <= 2 .and. comm%idnode == 0) Write(nrite,'(2(/,1x,a))') &
-                 '*** warning - semi-isotropic ensembles are only correct for ***',     &
-                 '*** infinite interfaces placed perpendicularly to the z axis !!! ***'
+              If (iso >= 1 .and. iso <= 2) Then
+                 Call warning('semi-isotropic ensembles are only correct for infinite' &
+                   //'interfaces placed perpendicularly to the z axis',.true.)
+              End If
 
               If (lens) Call error(414)
               lens=.true.
@@ -1736,7 +1699,8 @@ Subroutine read_control                                &
            Else
 
               Call strip_blanks(record)
-              If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+              Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+              Call info(message,.true.)
               Call error(436)
 
            End If
@@ -1744,7 +1708,8 @@ Subroutine read_control                                &
         Else
 
            Call strip_blanks(record)
-           If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+           Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+           Call info(message,.true.)
            Call error(436)
 
         End If
@@ -1760,7 +1725,8 @@ Subroutine read_control                                &
         Call get_word(record,word)
         tmp = Abs(word_2_real(word))
 
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'density variation allowance (%)',3x,1p,e12.4)") tmp
+        Write(message,'(a,1p,e12.4)') 'density variation allowance (%) ', tmp
+        Call info(message,.true.)
 
 ! read real space cutoff
 
@@ -1770,7 +1736,8 @@ Subroutine read_control                                &
         Call get_word(record,word)
         rcut1 = Abs(word_2_real(word))
 
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'real space cutoff (Angs)    ',6x,1p,e12.4)") rcut1
+        Write(message,'(a,1p,e12.4)') 'real space cutoff (Angs) ', rcut1
+        Call info(message,.true.)
 
 ! read real space cutoff padding
 
@@ -1778,7 +1745,8 @@ Subroutine read_control                                &
 
         Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
         rpad1 = Abs(word_2_real(word))
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'cutoff padding (Angs)       ',6x,1p,e12.4)") rpad1
+        Write(message,'(a,1p,e12.4)') 'cutoff padding (Angs) ', rpad1
+        Call info(message,.true.)
 
 ! read vdw cutoff (short-range potentials)
 
@@ -1788,7 +1756,8 @@ Subroutine read_control                                &
         If (word(1:3) == 'cut') Call get_word(record,word)
         rvdw1 = Abs(word_2_real(word))
 
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'vdw cutoff (Angs) ',16x,1p,e12.4)") rvdw1
+        Write(message,'(a,1p,e12.4)') 'vdw cutoff (Angs) ', rvdw1
+        Call info(message,.true.)
 
 ! read Ewald sum parameters
 
@@ -1804,22 +1773,26 @@ Subroutine read_control                                &
 
            keyfce = 2
 
-           If (comm%idnode == 0) Write(nrite,"(/,1x,'Electrostatics : Smooth Particle Mesh Ewald')")
+           Call info('Electrostatics : Smooth Particle Mesh Ewald',.true.)
 
            If (word(1:9) == 'precision') Then
               Call get_word(record,word)
               tmp = Abs(word_2_real(word))
-              If (comm%idnode == 0) Write(nrite,"(1x,'Ewald sum precision         ',6x,1p,e12.4)") tmp
+              Write(message,'(a,1p,e12.4)') 'Ewald sum precision ',tmp
+              Call info(message,.true.)
            End If
 
 ! This is sorted in set_bounds -> scan_control
 
-           If (comm%idnode == 0) Then
-              Write(nrite,"(1x,'Ewald convergence parameter (A^-1)',1p,e12.4)") alpha
-              Write(nrite,"(1x,'Ewald kmax1 kmax2 kmax3   (x2)',1x,3i5)") kmaxa1,kmaxb1,kmaxc1
-              If (kmaxa /= kmaxa1 .or. kmaxb /= kmaxb1 .or. kmaxc /= kmaxc1) &
-              Write(nrite,"(1x,'DaFT adjusted kmax values (x2)',1x,3i5)") kmaxa,kmaxb,kmaxc
-              Write(nrite,"(1x,'B-spline interpolation order',8x,1p,i5)") mxspl
+           Write(messages(1),'(a,1p,e12.4)') 'Ewald convergence parameter (A^-1) ',alpha
+           Write(messages(2),'(a,3i5)') 'Ewald kmax1 kmax2 kmax3   (x2) ',kmaxa1,kmaxb1,kmaxc1
+           If (kmaxa /= kmaxa1 .or. kmaxb /= kmaxb1 .or. kmaxc /= kmaxc1) Then
+             Write(messages(3),'(a,3i5)') 'DaFT adjusted kmax values (x2) ',kmaxa,kmaxb,kmaxc
+             Write(messages(4),'(a,1p,i5)') 'B-spline interpolation order ',mxspl
+             Call info(messages,4,.true.)
+           Else
+             Write(messages(3),'(a,1p,i5)') 'B-spline interpolation order ',mxspl
+             Call info(messages,3,.true.)
            End If
 
 ! Print infrequent k-space SPME evaluation
@@ -1831,8 +1804,10 @@ Subroutine read_control                                &
               Call warning(370,Real(nstfce,wp),4.0_wp,0.0_wp)
               nstfce=4
            End If
-           If (nstfce >= 1 .and. comm%idnode == 0) &
-              Write(nrite,"(1x,'k-space evaluation interval (steps)',1x,1p,i5)") nstfce
+           If (nstfce >= 1) Then
+              Write(message,'(a,1p,i5)') 'k-space evaluation interval (steps)',nstfce
+              Call info(message,.true.)
+           End If
 
            If (lforc) Call error(416)
            lforc=.true.
@@ -1844,7 +1819,7 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'distan') Then
 
         keyfce = 4
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'Electrostatics : Distance Dependent Dielectric')")
+        Call info('Electrostatics : Distance Dependent Dielectric',.true.)
 
         If (lforc) Call error(416)
         lforc=.true.
@@ -1854,7 +1829,7 @@ Subroutine read_control                                &
      Else If (word(1:4) == 'coul') Then
 
         keyfce = 6
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'Electrostatics : Coulombic Potential')")
+        Call info('Electrostatics : Coulombic Potential',.true.)
 
         If (lforc) Call error(416)
         lforc=.true.
@@ -1864,25 +1839,28 @@ Subroutine read_control                                &
      Else If (word(1:5) == 'shift') Then
 
         keyfce = 8
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'Electrostatics : Force-Shifted Coulombic Potential')")
+        Call info('Electrostatics : Force-Shifted Coulombic Potential',.true.)
 
         Call get_word(record,word)
 
         If      (word(1:4) == 'damp') Then
            Call get_word(record,word)
            alpha = Abs(word_2_real(word))
-           If (comm%idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1)',10x,1p,e12.4)") alpha
+           Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) ', alpha
+           Call info(message,.true.)
         Else If (word(1:9) == 'precision') Then
            Call get_word(record,word)
            eps0 = Abs(word_2_real(word))
-           If (comm%idnode == 0) Write(nrite,"(1x,'precision parameter     ',10x,1p,e12.4)") eps0
+           Write(message,'(a,1p,e12.4)') 'precision parameter ', eps0
+           Call info(message,.true.)
            eps0 = Max(Min(eps0,0.5_wp),1.0e-20_wp)
            tol = Sqrt(Abs(Log(eps0*rcut)))
            alpha = Sqrt(Abs(Log(eps0*rcut*tol)))/rcut
-           If (comm%idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1) derived',2x,1p,e12.4)") alpha
+           Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) derived ', alpha
+           Call info(message,.true.)
         End If
         If (alpha > zero_plus) Then
-           If (comm%idnode == 0) Write(nrite,"(1x,'Fennell damping applied')")
+           Call info('Fennell damping applied',.true.)
            If (rcut < 12.0_wp) Call warning(7,rcut,12.0_wp,0.0_wp)
         End If
 
@@ -1894,7 +1872,7 @@ Subroutine read_control                                &
      Else If (word(1:8) == 'reaction') Then
 
         keyfce = 10
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'Electrostatics : Reaction Field')")
+        Call info('Electrostatics : Reaction Field',.true.)
 
         If (word(1:5) == 'field') Call get_word(record,word)
         Call get_word(record,word)
@@ -1902,18 +1880,21 @@ Subroutine read_control                                &
         If      (word(1:4) == 'damp') Then
            Call get_word(record,word)
            alpha = Abs(word_2_real(word))
-           If (comm%idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1)',10x,1p,e12.4)") alpha
+           Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) ', alpha
+           Call info(message,.true.)
         Else If (word(1:9) == 'precision') Then
            Call get_word(record,word)
            eps0 = Abs(word_2_real(word))
-           If (comm%idnode == 0) Write(nrite,"(1x,'precision parameter     ',10x,1p,e12.4)") eps0
+           Write(message,'(a,1p,e12.4)') 'precision parameter ', eps0
+           Call info(message,.true.)
            eps0 = Max(Min(eps0,0.5_wp),1.0e-20_wp)
            tol = Sqrt(Abs(Log(eps0*rcut)))
            alpha = Sqrt(Abs(Log(eps0*rcut*tol)))/rcut
-           If (comm%idnode == 0) Write(nrite,"(1x,'damping parameter (A^-1) derived',2x,1p,e12.4)") alpha
+           Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) derived ', alpha
+           Call info(message,.true.)
         End If
         If (alpha > zero_plus) Then
-           If (comm%idnode == 0) Write(nrite,"(1x,'Fennell damping applied')")
+           Call info('Fennell damping applied',.true.)
            If (rcut < 12.0_wp) Call warning(7,rcut,12.0_wp,0.0_wp)
         End If
 
@@ -1923,7 +1904,7 @@ Subroutine read_control                                &
      Else If (word(1:5) == 'poiss' .or. word(1:5) == 'psolv' ) Then
 
         keyfce = 12
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'Electrostatics : Poisson equation solver')")
+        Call info('Electrostatics : Poisson equation solver',.true.)
 
         prmps=0.0_wp
         Do i=1,4
@@ -1950,20 +1931,20 @@ Subroutine read_control                                &
            End If
         End Do
 
-        If (comm%idnode == 0) Then
-           Write(nrite,"(1x,'gridspacing parameter (A)',9x,1p,e12.4)") prmps(1)
-           Write(nrite,"(1x,'convergance epsilon      ',9x,1p,e12.4)") prmps(2)
-           Write(nrite,"(1x,'max # of Psolver iterations',9x,1p,i5)") Nint(prmps(3))
-           Write(nrite,"(1x,'max # of Jacobi  iterations',9x,1p,i5)") Nint(prmps(4))
+        Write(messages(1),'(a,1p,e12.4)') 'gridspacing parameter (A) ',prmps(1)
+        Write(messages(2),'(a,1p,e12.4)') 'convergance epsilon ',prmps(2)
+        Write(messages(3),'(a,1p,i5)') 'max # of Psolver iterations ',Nint(prmps(3))
+        Write(messages(4),'(a,1p,i5)') 'max # of Jacobi  iterations ',Nint(prmps(4))
+        Call info(messages,4,.true.)
 
-           If ( Abs(prmps(1)-1.0_wp/alpha) > 1.0e-6_wp .or. Abs(prmps(2)-eps) > 1.0e-6_wp .or. &
-                Nint(prmps(3)) == 0 .or. Nint(prmps(4)) == 0 ) Then
-              Write(nrite,"(/,1x,a)") "*** warning - parameters reset to safe defaults occurred !!! ***"
-              Write(nrite,"(1x,'gridspacing parameter (A)',9x,1p,e12.4)") 1.0_wp/alpha
-              Write(nrite,"(1x,'convergance epsilon      ',9x,1p,e12.4)") eps
-              Write(nrite,"(1x,'max # of Psolver iterations',9x,1p,i5)") mxitcg
-              Write(nrite,"(1x,'max # of Jacobi  iterations',9x,1p,i5)") mxitjb
-           End If
+        If ( Abs(prmps(1)-1.0_wp/alpha) > 1.0e-6_wp .or. Abs(prmps(2)-eps) > 1.0e-6_wp .or. &
+             Nint(prmps(3)) == 0 .or. Nint(prmps(4)) == 0 ) Then
+           Call warning('parameters reset to safe defaults occurred',.true.)
+           Write(messages(1),'(a,1p,e12.4)') 'gridspacing parameter (A) ',1.0_wp/alpha
+           Write(messages(2),'(a,1p,e12.4)') 'convergance epsilon ',eps
+           Write(messages(3),'(a,1p,i5)') 'max # of Psolver iterations ',mxitcg
+           Write(messages(4),'(a,1p,i5)') 'max # of Jacobi  iterations ',mxitjb
+           Call info(messages,4,.true.)
         End If
 
         If (lforc) Call error(416)
@@ -1976,33 +1957,38 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:8) == 'constant') Call get_word(record,word)
         epsq = word_2_real(word)
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'relative dielectric constant',6x,1p,e12.4)") epsq
+        Write(message,'(a,1p,e12.4)') 'relative dielectric constant ',epsq
+        Call info(message,.true.)
 
 !     Else If (word(1:6) == 'induce') Then
 !
-!        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "Employing induced dipoles"
-!        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "Induced dipole conjugate gradient :"
-!        If (comm%idnode == 0) Write(nrite,"(/,1x,a,i0)") "        max number of steps = ", politer
-!        If (comm%idnode == 0) Write(nrite,"(/,1x,a,e7.3)") "        convergence criterion = ", convcrit
+!        Write(messages(1),'(a)') 'Employing induced dipoles'
+!        Write(messages(2),'(a)') 'Induced dipole conjugate gradient :'
+!        Write(messages(3),'(a,i0)') 'max number of steps = ',politer
+!        Write(messages(4),'(a,e7.3') 'convergence criterion = ',convcrit
+!        Call info(messages,4,.true.)
 !
 !     Else If (word(1:4) == 'gear') Then
 !
-!       If (comm%idnode == 0) Write(nrite,"(/,1x,a,io,a)") "Using gear predictor with ",numcof," points"
+!       Write(message,'(a,i0,a)') "Using gear predictor with ",numcof," points"
+!       Call info(message,.true.)
 !
 !     Else If (word(1:4) == 'aspc') Then
 !
-!       If (comm%idnode == 0) Write(nrite,"(/,1x,a,io,a)") "Using always stable predictor corrector with ",numcof," points"
+!       Write(message,'(a,i0,a)') Using always stable predictor corrector with ",numcof," points"
+!       Call info(message,.true.)
 !
 !     Else If (word(1:5) == 'lstsq') Then
 !
-!       If (comm%idnode == 0) Write(nrite,"(/,1x,a,io,a)") "Using least squares predictor with ",numcof," points"
+!       Write(message,'(a,i0,a)' "Using least squares predictor with ",numcof," points"
+!       Call info(message,.true.)
 
 ! read option for accounting for extended coulombic exclusion
 
      Else If (word(1:5) == 'exclu') Then
 
         lecx = .true.
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'Extended Coulombic eXclusion opted for')")
+        Call info('Extended Coulombic eXclusion opted for',.true.)
 
 ! read force capping option
 
@@ -2015,8 +2001,9 @@ Subroutine read_control                                &
 
         tmp = Abs(word_2_real(word))
         If (tmp > zero_plus) fmax=tmp
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'force capping on (during equilibration)', &
-           & /,1x,'force capping limit (kT/Angs)',5x,1p,e12.4)") fmax
+        Write(messages(1),'(a)') 'force capping on (during equilibration)'
+        Write(messages(2),'(a,1p,e12.4)') 'force capping limit (kT/Angs)',fmax
+        Call info(messages,2,.true.)
 
 ! read 'no vdw', 'no elec', 'no ind' and 'no vafav' options
 
@@ -2032,18 +2019,21 @@ Subroutine read_control                                &
 
         Else If (word1(1:3) == 'str' ) Then
 
-           If (comm%idnode == 0) Write(nrite,"(8(/,1x,a))") "no strict option on" ,                                             &
-              "*** Warning *** It skips printing inessential information in OUTPUT such as many warnings, FIELD",          &
-              "*** wArning *** digested information and full iteration cycles information from CGM based routines!",       &
-              "*** waRning *** However, it also assumes some, deemed safe, defaults for some specified as well as",        &
-              "*** warNing *** unspecified by the user options, that may or may not be needed for the simulation to run!", &
-              "*** warnIng *** The defaults are deemed to deliver safer passage as well as optimal performance without",   &
-              "*** warniNg *** sacrificing on accuracy!  While it may, by chance, help to pass previously failing runs",   &
-              "*** warninG *** it may as well lead to a run failure without warnings!  Beware, avoid usage if uncertain!"
+           Call info('no strict option on',.true.)
+           Write(banner(1),'(a)') '*** It skips printing inessential information in OUTPUT such as many       ***'
+           Write(banner(2),'(a)') '*** warnings, FIELD digested information and full iteration cycles         ***'
+           Write(banner(3),'(a)') '*** information from CGM based routines!  However, it also assumes some,   ***'
+           Write(banner(4),'(a)') '*** deemed safe, defaults for some specified as well as unspecified by the ***'
+           Write(banner(5),'(a)') '*** user options, that may or may not be needed for the simulation to run! ***'
+           Write(banner(6),'(a)') '*** The defaults are deemed to deliver safer passage as well as optimal    ***'
+           Write(banner(7),'(a)') '*** performance without sacrificing on accuracy!  While it may, by chance, ***'
+           Write(banner(8),'(a)') '*** help to pass previously failing runs it may as well lead to a run      ***'
+           Write(banner(9),'(a)') '*** failure without warnings!  Beware, avoid usage if uncertain!           ***'
+           Call info(banner,9,.true.)
 
         Else If (word1(1:3) == 'top' ) Then
 
-           If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "no topology option on (avoids printing extended FIELD topology in OUTPUT)"
+           Call info('no topology option on (avoids printing extended FIELD topology in OUTPUT)',.true.)
 
            l_top = .false.
 
@@ -2053,10 +2043,11 @@ Subroutine read_control                                &
 
         Else If (word1(1:3) == 'vom' ) Then ! "no vom" should be used with TTM
 
-           If (comm%idnode == 0 .and. .not.l_ttm) Write(nrite,"(3(/,1x,a))")                    &
-              '"no vom" option auto-switched on - COM momentum removal will be abandoned', &
-              '*** warning - this may lead to a build up of the COM momentum and ***',     &
-              '***           a manifestation of the "flying ice-cube" effect !!! ***'
+           If (.not. l_ttm) Then
+             Call info('"no vom" option auto-switched on - COM momentum removal will be abandoned',.true.)
+             Call warning('this may lead to a build up of the COM momentum ' &
+               //'and a manifestation of the "flying ice-cube" effect',.true.)
+           End If
 
            l_vom    = .false.
 
@@ -2067,7 +2058,8 @@ Subroutine read_control                                &
         Else
 
            Call strip_blanks(record)
-           If (comm%idnode == 0) Write(nrite,"(/,/,3a)") word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+           Write(message,'(3a)') word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+           Call info(message,.true.)
            Call error(3)
 
         End If
@@ -2078,12 +2070,16 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         rlx_tol(1) = Max(1.0_wp,Abs(word_2_real(word)))
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'relaxed shell model CGM tolerance',1x,1p,e12.4)") rlx_tol(1)
+        Write(message,'(a,1p,e12.4)') 'relaxed shell model CGM tolerance ',rlx_tol(1)
+        Call info(message,.true.)
 
         Call get_word(record,word1)
         rlx_tol(2) = word_2_real(word1,-1.0_wp)
-        If (rlx_tol(2) > zero_plus .and. comm%idnode == 0) &
-                         Write(nrite,"(/,1x,'relaxed shell model CGM step     ',1x,1p,e12.4)") rlx_tol(2)
+        If (rlx_tol(2) > zero_plus) Then
+           Write(message,'(a,1p,e12.4)') 'relaxed shell model CGM step ',rlx_tol(2)
+           Call info(message,.true.)
+        End If
+
 
 ! read maximum number of iterations in constraint algorithms
 
@@ -2123,7 +2119,7 @@ Subroutine read_control                                &
 
         If (.not. l_ttm) Then
           l_ttm = .true.
-          If (comm%idnode == 0) Write(nrite,"(/,1x,'Two Temperature Model (TTM) opted for')")
+          Call info('Two Temperature Model (TTM) opted for',.true.)
         End If
 
         Call get_word(record,word1)
@@ -2133,35 +2129,32 @@ Subroutine read_control                                &
         ! number of coarse-grained ion temperature cells (CIT):
         ! already determined in scan_control
 
-           If (comm%idnode == 0) Write(nrite,"(/,1x,'ionic temperature grid size      (x,y,z): ',3(2x,i8),&
-                                         &/,1x,'temperature cell size (A)        (x,y,z): ',3(2x,f8.4),&
-                                         &/,1x,'average number of atoms/cell              ',f10.4)") &
-                                           ntsys(1),ntsys(2),ntsys(3),delx,dely,delz,sysrho*volume
+           Write(messages(1),'(a,3(1x,i8))') 'ionic temperature grid size (x,y,z):',ntsys(1:3)
+           Write(messages(2),'(a,3(1x,f8.4))') 'temperature grid size (x,y,z):',delx,dely,delz
+           Write(messages(3),'(a,f10.4)') 'average number of atoms/cell: ',sysrho*volume
+           Call info(messages,3,.true.)
 
         Else If (word1(1:4) == 'ncet') Then
 
         ! number of coarse-grained electronic temperature cells (CET):
         ! already determined in scan_control
 
-           If (comm%idnode == 0 ) Write(nrite,"(/,1x,'electronic temperature grid size (x,y,z): ',3(2x,i8))") &
-                                           eltsys(1),eltsys(2),eltsys(3)
+           Write(message,'(a,3(1x,i8))') 'electronic temperature grid size (x,y,z):', &
+             eltsys(1:3)
+           Call info(message,.true.)
 
         Else If (word1(1:5) == 'metal') Then
 
         ! sets properties of electronic subsystem as a metal:
         ! already determined in scan_control
 
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic subsystem represents metal: thermal conductivity required')")
-          End If
+          Call info('electronic subsystem represents metal: thermal conductivity required',.true.)
 
         Else If (word1(1:8) == 'nonmetal') Then
 
         ! sets properties of electronic subsystem as a non-metal
 
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic subsystem represents non-metal: thermal diffusivity required')")
-          End If
+          Call info('electronic subsystem represents non-metal: thermal diffusivity required',.true.)
 
         Else If (word1(1:7) == 'ceconst') Then
 
@@ -2169,10 +2162,9 @@ Subroutine read_control                                &
 
           Call get_word(record,word)
           Ce0 = word_2_real(word)
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic specific heat capacity set to constant value')")
-            Write(nrite,"(1x,'electronic s.h.c. (kB/atom)',7x,1p,e12.4)") Ce0
-          End If
+          Call info('electronic specific heat capacity set to constant value',.true.)
+          Write(message,'(a,1p,e12.4)') 'electronic s.h.c. (kB/atom) ', Ce0
+          Call info(message,.true.)
 
         Else If (word1(1:6) == 'cetanh') Then
 
@@ -2182,11 +2174,10 @@ Subroutine read_control                                &
           sh_A = word_2_real(word)
           Call get_word(record,word)
           sh_B = word_2_real(word)
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic specific heat capacity set to hyperbolic tangent function')")
-            Write(nrite,"(1x,'constant term A    (kB/atom)',6x,1p,e12.4)") sh_A
-            Write(nrite,"(1x,'temperature term B    (K^-1)',6x,1p,e12.4)") sh_B
-          End If
+          Write(messages(1),'(a)') 'electronic specific heat capacity set to hyperbolic tangent function'
+          Write(messages(2),'(a,1p,e12.4)') 'constant term A (kB/atom) ',sh_A
+          Write(messages(3),'(a,1p,e12.4)') 'emperature term B (K^-1) ',sh_B
+          Call info(messages,3,.true.)
 
         Else If (word1(1:5) == 'celin') Then
 
@@ -2197,27 +2188,22 @@ Subroutine read_control                                &
           Cemax = word_2_real(word)
           Call get_word(record,word)
           Tfermi = word_2_real(word)
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic specific heat capacity set to linear function up to Fermi temperature')")
-            Write(nrite,"(1x,'max. electronic s.h.c. (kB/atom)',2x,1p,e12.4)") Cemax
-            Write(nrite,"(1x,'Fermi temperature            (K)',2x,1p,e12.4)") Tfermi
-          End If
+          Write(messages(1),'(a)') 'electronic specific heat capacity set to linear function up to Fermi temperature'
+          Write(messages(2),'(a,1p,e12.4)') 'max. electronic s.h.c. (kB/atom) ',Cemax
+          Write(messages(3),'(a,1p,e12.4)') 'Fermi temperature (K)',Tfermi
+          Call info(messages,3,.true.)
 
         Else If (word1(1:5) == 'cetab') Then
 
         ! electronic volumetric heat capacity given in tabulated form
 
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic volumetric heat capacity given as tabulated function of temperature')")
-          End If
+          Call info('electronic volumetric heat capacity given as tabulated function of temperature',.true.)
 
         Else If (word1(1:5) == 'keinf') Then
 
         ! infinite electronic thermal conductivity
 
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic thermal conductivity set to infinity')")
-          End If
+          Call info('electronic thermal conductivity set to infinity',.true.)
 
         Else If (word1(1:7) == "keconst") Then
 
@@ -2225,10 +2211,9 @@ Subroutine read_control                                &
 
           Call get_word(record,word)
           Ka0 = word_2_real(word)
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic thermal conductivity set to constant value')")
-            Write(nrite,"(1x,'electronic t.c. (W m^-1 K^-1)',5x,1p,e12.4)") Ka0
-          End If
+          Write(messages(1),'(a)') 'electronic thermal conductivity set to constant value'
+          Write(messages(2),'(a,1p,e12.4)') 'electronic t.c. (W m^-1 K^-1) ',Ka0
+          Call info(messages,2,.true.)
 
         Else If (word1(1:7) == 'kedrude') Then
 
@@ -2237,20 +2222,18 @@ Subroutine read_control                                &
 
           Call get_word(record,word)
           Ka0 = word_2_real(word)
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic thermal conductivity set to drude model')")
-            Write(nrite,"(1x,'t.c. at system temp. (W m^-1 K^-1)',1p,e12.4)") Ka0
-          End If
+          Write(messages(1),'(a)') 'electronic thermal conductivity set to drude model'
+          Write(messages(2),'(a,1p,e12.4)') 't.c. at system temp. (W m^-1 K^-1) ',Ka0
+          Call info(messages,2,.true.)
 
         Else If (word1(1:5) == 'ketab') Then
 
         ! electronic thermal conductivity given in tabulated form
 
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic thermal conductivity given as tabulated function of temperature:',&
-                        & /,1x,'uses ionic or system temperature to calculate cell conductivity value',&
-                        & /,1x,'for thermal diffusion equation')")
-          End If
+          Write(messages(1),'(a)') 'electronic thermal conductivity given as tabulated function of temperature:'
+          Write(messages(2),'(a)') 'uses ionic or system temperature to calculate cell conductivity value'
+          Write(messages(3),'(a)') 'for thermal diffusion equation'
+          Call info(messages,3,.true.)
 
         Else If (word1(1:4) == 'diff' .or. word1(1:7)=='deconst') Then
 
@@ -2259,10 +2242,9 @@ Subroutine read_control                                &
 
           Call get_word(record,word)
           Diff0 = word_2_real(word)
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic thermal diffusivity set to constant value')")
-            Write(nrite,"(1x,'electronic t.d. (m^2 s^-1)',8x,1p,e12.4)") Diff0
-          End If
+          Write(messages(1),'(a)') 'electronic thermal diffusivity set to constant value'
+          Write(messages(2),'(a,1p,e12.4)') 'electronic t.d. (m^2 s^-1) ',Diff0
+          Call info(messages,2,.true.)
 
         Else If (word1(1:7) == 'derecip') Then
 
@@ -2273,19 +2255,16 @@ Subroutine read_control                                &
           Diff0 = word_2_real(word)
           Call get_word(record,word)
           Tfermi = word_2_real(word)
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic thermal diffusivity set to reciprocal function up to Fermi temperature')")
-            Write(nrite,"(1x,'datum electronic t.d. (m^2 s^-1)',2x,1p,e12.4)") Diff0
-            Write(nrite,"(1x,'Fermi temperature            (K)',2x,1p,e12.4)") Tfermi
-          End If
+          Write(messages(1),'(a)') 'electronic thermal diffusivity set to reciprocal function up to Fermi temperature'
+          Write(messages(2),'(a,1p,e12.4)') 'datum electronic t.d. (m^2 s^-1) ',Diff0
+          Write(messages(3),'(a,1p,e12.4)') 'Fermi temperature (K) ',Tfermi
+          Call info(messages,3,.true.)
 
         Else If (word1(1:4) == 'detab') Then
 
         ! electronic thermal diffusivity given in tabulated form
 
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'electronic thermal diffusivity given as tabulated function of temperature')")
-          End If
+          Call info('electronic thermal diffusivity given as tabulated function of temperature',.true.)
 
         Else If (word1(1:8) == 'atomdens') Then
 
@@ -2294,9 +2273,8 @@ Subroutine read_control                                &
 
           Call get_word(record,word)
           cellrho = word_2_real(word)
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'user-specified atomic density (A^-3)',6x,f10.4)") cellrho
-          End If
+          Write(message,'(a,f10.4)') 'user-specified atomic density (A^-3) ',cellrho
+          Call info(message,.true.)
 
         Else If (word1(1:7) == 'dyndens') Then
 
@@ -2305,9 +2283,7 @@ Subroutine read_control                                &
         ! to volumetric values
 
           ttmdyndens = .true.
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'dynamic calculations of average atomic density in active ionic cells')")
-          End If
+          Call info('dynamic calculations of average atomic density in active ionic cells',.true.)
 
         Else If (word1(1:4) == 'amin') Then
 
@@ -2318,18 +2294,18 @@ Subroutine read_control                                &
 
           Call get_word(record,word)
           amin = Abs(Nint(word_2_real(word)))
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'min. atom no. for ionic cells',5x,1p,i8)") amin
-          End If
+          Write(message,'(a,1p,i8)') 'min. atom no. for ionic cells ',amin
+          Call info(message,.true.)
 
         Else If (word1(1:6) == 'redist') Then
 
         ! redistribution of electronic energy from deactivated cells 
         ! to active neighbours
 
-          If (redistribute .and. comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'redistributing energy from deactivated electronic cells into active neighbours',&
-                        & /,1x,'(requires at least one electronic temperature cell beyond ionic cells)')")
+          If (redistribute) Then
+            Write(messages(1),'(a)') 'redistributing energy from deactivated electronic cells into active neighbours'
+            Write(messages(2),'(a)') '(requires at least one electronic temperature cell beyond ionic cells)'
+            Call info(messages,2,.true.)
           End If
 
         Else If (word1(1:4) == 'dedx') Then
@@ -2338,9 +2314,8 @@ Subroutine read_control                                &
 
           Call get_word(record,word)
           dEdX = word_2_real(word)
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'elec. stopping power (eV/nm)',6x,1p,e12.4)") dEdX
-          End If
+          Write(message,'(a,1p,e12.4)') 'elec. stopping power (eV/nm) ',dEdX
+          Call info(message,.true.)
 
         Else If (word1(1:6) == 'sgauss' .or. word1(1:5) == 'sigma') Then
 
@@ -2352,11 +2327,10 @@ Subroutine read_control                                &
           sig = word_2_real(word)
           Call get_word(record,word)
           sigmax = word_2_real(word)
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'initial gaussian spatial energy deposition in electronic system')")
-            Write(nrite,"(1x,'sigma of distribution (nm)',8x,1p,e12.4)") sig
-            Write(nrite,"(1x,'distribution cutoff   (nm)',8x,1p,e12.4)") sigmax*sig
-          End If
+          Write(messages(1),'(a)') 'initial gaussian spatial energy deposition in electronic system'
+          Write(messages(2),'(a,1p,e12.4)') 'sigma of distribution (nm) ',sig
+          Write(messages(3),'(a,1p,e12.4)') 'distribution cutoff (nm) ',sigmax*sig
+          Call info(messages,3,.true.)
 
         Else If (word1(1:5) == 'sflat') Then
 
@@ -2364,9 +2338,7 @@ Subroutine read_control                                &
         ! electronic system
 
           sdepoType = 2
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'initial homogeneous (flat) spatial energy deposition in electronic system')")
-          End If
+          Call info('initial homogeneous (flat) spatial energy deposition in electronic system',.true.)
 
         Else If (word1(1:5) == 'laser') Then
 
@@ -2381,19 +2353,21 @@ Subroutine read_control                                &
           pdepth = word_2_real(word)
           Call get_word(record,word)
           If (word(1:4) == 'zdep') sdepoType = 3
-          If (comm%idnode == 0) Then
-            Select Case (sdepoType)
-            Case (2)
-              Write(nrite,"(/,1x,'initial homogeneous (flat) spatial energy deposition in electronic system due to laser')")
-              Write(nrite,"(1x,'absorbed fluence (mJ cm^-2)',7x,1p,e12.4)") fluence
-              Write(nrite,"(1x,'penetration depth      (nm)',7x,1p,e12.4)") pdepth
-            Case (3)
-              Write(nrite,"(/,1x,'initial xy-homogeneous, z-exponential decaying spatial energy deposition in',/&
-                            &,1x,'electronic system due to laser')")
-              Write(nrite,"(1x,'absorbed fluence at surface (mJ cm^-2)',7x,1p,e12.4)") fluence
-              Write(nrite,"(1x,'penetration depth                 (nm)',7x,1p,e12.4)") pdepth
-            End Select
-          End If
+          Select Case (sdepoType)
+          Case (2)
+            Write(messages(1),'(a)') 'initial homogeneous (flat) spatial ' &
+              //'energy deposition in electronic system due to laser'
+            Write(messages(2),'(a,1p,e12.4)') &
+              'absorbed fluence (mJ cm^-2) ',fluence
+            Write(messages(3),'(a,1p,e12.4)') 'penetration depth (nm) ',pdepth
+          Case (3)
+            Write(messages(1),'(a)') 'initial xy-homogeneous, z-exponential ' &
+              //'decaying spatial energy deposition in electronic system due to laser'
+            Write(messages(2),'(a,1p,e12.4)') &
+              'absorbed fluence at surface (mJ cm^-2) ',fluence
+            Write(messages(3),'(a,1p,e12.4)') 'penetration depth (nm) ',pdepth
+          End Select
+          Call info(messages,3,.true.)
 
         Else If (word1(1:5) == 'gauss') Then
 
@@ -2405,11 +2379,10 @@ Subroutine read_control                                &
           tdepo = word_2_real(word)
           Call get_word(record,word)
           tcdepo = word_2_real(word)
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'gaussian temporal energy deposition in electronic system')")
-            Write(nrite,"(1x,'sigma of distribution (ps)',8x,1p,e12.4)") tdepo
-            Write(nrite,"(1x,'distribution cutoff   (ps)',8x,1p,e12.4)") 2.0_wp*tcdepo*tdepo
-          End If
+          Write(messages(1),'(a)') 'gaussian temporal energy deposition in electronic system'
+          Write(messages(2),'(a,1p,e12.4)') 'sigma of distribution (ps) ',tdepo
+          Write(messages(3),'(a,1p,e12.4)') 'distribution cutoff (ps) ',2.0_wp*tcdepo*tdepo
+          Call info(messages,3,.true.)
 
         Else If (word1(1:5) == 'nexp') Then
 
@@ -2421,11 +2394,10 @@ Subroutine read_control                                &
           tdepo = word_2_real(word)
           Call get_word(record,word)
           tcdepo = word_2_real(word)
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'decaying exponential temporal energy deposition in electronic system')")
-            Write(nrite,"(1x,'tau of distribution (ps)',10x,1p,e12.4)") tdepo
-            Write(nrite,"(1x,'distribution cutoff (ps)',10x,1p,e12.4)") tcdepo*tdepo
-          End If
+          Write(messages(1),'(a)') 'decaying exponential temporal energy deposition in electronic system'
+          Write(messages(2),'(a,1p,e12.4)') 'tau of distribution (ps) ',tdepo
+          Write(messages(3),'(a,1p,e12.4)') 'distribution cutoff (ps) ',tcdepo*tdepo
+          Call info(messages,3,.true.)
 
         Else If (word1(1:5) == 'delta') Then
 
@@ -2433,9 +2405,7 @@ Subroutine read_control                                &
         ! electronic system
 
           tdepoType = 3
-          If (comm%idnode == 0) Then
-            Write(nrite,"(/,1x,'dirac delta temporal energy deposition in electronic system')")
-          End If
+          Call info('dirac delta temporal energy deposition in electronic system',.true.)
 
         Else If (word1(1:5) == 'pulse') Then
 
@@ -2448,15 +2418,12 @@ Subroutine read_control                                &
           tdepo = word_2_real(word)
           If (tdepo<=zero_plus) Then
             tdepoType = 3
-            If (comm%idnode == 0) Then
-              Write(nrite,"(/,1x,'square pulse temporal energy deposition in electronic system',/&
-                             &1x,'of zero duration: being treated as dirac delta')")
-            End If
+            Call info('square pulse temporal energy deposition in electronic' &
+              //'system of zero duration: being treated as dirac delta')
           Else
-            If (comm%idnode == 0) Then
-              Write(nrite,"(/,1x,'square pulse temporal energy deposition in electronic system')")
-              Write(nrite,"(1x,'pulse duration (ps)',15x,1p,e12.4)") tdepo
-            End If
+            Write(messages(1),'(a)') 'square pulse temporal energy deposition in electronic system'
+            Write(messages(2),'(a,1p,e12.4)') 'pulse duration (ps) ',tdepo
+            Call info(messages,2,.true.)
           End If
 
         Else If (word1(1:4) == 'varg') Then
@@ -2469,18 +2436,13 @@ Subroutine read_control                                &
 
           Select Case (gvar)
           Case (1)
-            If (comm%idnode == 0) Then
-              Write(nrite,"(/,1x,'variable electron-phonon coupling values to be applied homogeneously',&
-                          & /,1x,'(overrides value given for ensemble, required tabulated stopping',&
-                           & /,2x,'terms in g.dat file)')")
-            End If
+            Write(messages(1),'(a)') 'variable electron-phonon coupling values to be applied homogeneously'
           Case (2)
-            If (comm%idnode == 0) Then
-              Write(nrite,"(/,1x,'variable electron-phonon coupling values to be applied heterogeneously',&
-                          & /,1x,'(overrides value given for ensemble, required tabulated stopping',&
-                           & /,2x,'terms in g.dat file)')")
-            End If
+            Write(messages(1),'(a)') 'variable electron-phonon coupling values to be applied heterogeneously'
           End Select
+          Write(messages(2),'(a)') '(overrides value given for ensemble, required tabulated stopping'
+          Write(messages(3),'(a)') 'terms in g.dat file)'
+          Call info(messages,3,.true.)
 
         Else If (word1(1:3) == 'bcs') Then
 
@@ -2490,45 +2452,38 @@ Subroutine read_control                                &
 
           If (word(1:8) == 'periodic') Then
             bcTypeE = 1
-            If (comm%idnode == 0) Then
-              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as periodic')")
-            End If
+            Call info('electronic temperature boundary conditions set as periodic',.true.)
           Else If (word(1:6) == 'dirich') Then
             bcTypeE = 2
-            If (comm%idnode == 0) Then
-              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as dirichlet:',&
-                          & /,1x,'setting boundaries to system temperature')")
-            End If
+            Write(messages(1),'(a)') 'electronic temperature boundary conditions set as dirichlet:'
+            Write(messages(2),'(a)') 'setting boundaries to system temperature'
+            Call info(messages,2,.true.)
           Else If (word(1:7) == 'neumann') Then
             bcTypeE = 3
-            If (comm%idnode == 0) Then
-              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as neumann:',&
-                          & /,1x,'zero energy flux at boundaries')")
-            End If
+            Write(messages(1),'(a)') 'electronic temperature boundary conditions set as neumann:'
+            Write(messages(2),'(a)') 'zero energy flux at boundaries'
+            Call info(messages,2,.true.)
           Else If (word(1:8) == 'xydirich') Then
             bcTypeE = 4
-            If (comm%idnode == 0) Then
-              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as dirichlet (xy), neumann (z):',&
-                          & /,1x,'system temperature at x and y boundaries',&
-                          & /,1x,'zero energy flux at z boundaries')")
-            End If
+            Write(messages(1),'(a)') 'electronic temperature boundary conditions set as dirichlet (xy), neumann (z):'
+            Write(messages(2),'(a)') 'system temperature at x and y boundaries'
+            Write(messages(3),'(a)') 'zero energy flux at z boundaries'
+            Call info(messages,3,.true.)
           Else If (word(1:5) == 'robin') Then
             bcTypeE = 5
             Call get_word(record,word)
             fluxout = word_2_real(word)
-            If (comm%idnode == 0) Then
-              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin:',&
-                          & /,1x,'temperature leakage at boundaries of ',1p,e11.4)") fluxout
-            End If
+            Write(messages(1),'(a)') 'electronic temperature boundary conditions set as robin:'
+            Write(messages(2),'(a,1p,e11.4)') 'temperature leakage at boundaries of ',fluxout
+            Call info(messages,2,.true.)
           Else If (word(1:7) == 'xyrobin') Then
             bcTypeE = 6
             Call get_word(record,word)
             fluxout = word_2_real(word)
-            If (comm%idnode == 0) Then
-              Write(nrite,"(/,1x,'electronic temperature boundary conditions set as robin (xy), neumann (z):',&
-                          & /,1x,'temperature leakage at x and y boundaries of ',1p,e11.4,&
-                          & /,1x,'zero energy flux at z boundaries')") fluxout
-            End If
+            Write(messages(1),'(a)') 'electronic temperature boundary conditions set as robin (xy), neumann (z):'
+            Write(messages(2),'(a,1p,e11.4)') 'temperature leakage at x and y boundaries of ',fluxout
+            Write(messages(3),'(a)') 'zero energy flux at z boundaries'
+            Call info(messages,3,.true.)
           End If
 
         Else If (word1(1:6) == 'offset') Then
@@ -2537,7 +2492,8 @@ Subroutine read_control                                &
 
           Call get_word(record,word)
           ttmoffset = word_2_real(word)
-          If (comm%idnode == 0) Write(nrite,"(/,1x,'electron-ion coupling offset (ps)',1x,1p,e12.4)") ttmoffset
+          Write(message,'(a,1p,e12.4)') 'electron-ion coupling offset (ps) ',ttmoffset
+          Call info(message,.true.)
 
         Else If (word1(1:6) == 'oneway') Then
 
@@ -2546,7 +2502,7 @@ Subroutine read_control                                &
         ! ionic temperature
 
           oneway = .true.
-          If (comm%idnode == 0) Write(nrite,"(/,1x,'one-way electron-phonon coupling option switched on')")
+          Call info('one-way electron-phonon coupling option switched on',.true.)
 
         Else If (word1(1:5) == 'stats') Then
 
@@ -2555,8 +2511,9 @@ Subroutine read_control                                &
 
           Call get_word(record,word)
           ttmstats = Abs(Nint(word_2_real(word)))
-          If (comm%idnode == 0) Write(nrite,"(/,1x,'ttm statistics file option on', &
-             & /,1x,'ttm statistics file interval',3x,i10)") ttmstats
+          Write(messages(1),'(a)') 'ttm statistics file option on'
+          Write(messages(2),'(a,i10)') 'ttm statistics file interval ',ttmstats
+          Call info(messages,2,.true.)
 
         Else If (word1(1:4) == 'traj') Then
 
@@ -2565,8 +2522,9 @@ Subroutine read_control                                &
 
           Call get_word(record,word)
           ttmtraj = Abs(Nint(word_2_real(word)))
-          If (comm%idnode == 0) Write(nrite,"(/,1x,'ttm trajectory (temperature profile) file option on', &
-             & /,1x,'ttm trajectory file interval',3x,i10)") ttmtraj
+          Write(messages(1),'(a)') 'ttm trajectory (temperature profile) file option on'
+          Write(messages(2),'(a,i10)') 'ttm trajectory file interval',ttmtraj
+          Call info(messages,2,.true.)
 
         End If
 
@@ -2597,7 +2555,8 @@ Subroutine read_control                                &
         If (akey /= 'all' .and. akey /= 'bon' .and. akey /= 'ang' .and. &
             akey /= 'dih' .and. akey /= 'inv') Then
            Call strip_blanks(record)
-           If (comm%idnode == 0) Write(nrite,"(/,/,3a)") word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+           Write(message,'(3a)') word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+           Call info(message,.true.)
            Call error(3)
         End If
 
@@ -2701,14 +2660,16 @@ Subroutine read_control                                &
         Else
            If (word(1:5) == 'every') Call get_word(record,word)
            nstbpo = Abs(Nint(word_2_real(word,1.0_wp)))
-           If (comm%idnode == 0) Write(nrite,"(/,1x,'data printing interval (steps)',1x,i10)") nstbpo
+           Write(message,'(a,i10)') 'data printing interval (steps) ',nstbpo
+           Call info(message,.true.)
         End If
 
 ! read stack option (reading done in set_bounds -> scan_control)
 
      Else If (word(1:5) == 'stack') Then
 
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'data stacking interval (steps)',1x,i10)") mxstak
+        Write(message,'(a,i10)') 'data stacking interval (steps) ',mxstak
+        Call info(message,.true.)
 
 ! read statistics printing option
 
@@ -2719,7 +2680,8 @@ Subroutine read_control                                &
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         intsta = Nint(word_2_real(word))
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'statistics file interval    ',3x,i10)") intsta
+        Write(message,'(a,i10)') 'statistics file interval ',intsta
+        Call info(message,.true.)
 
 ! read MSDTMP printing option
 
@@ -2733,9 +2695,10 @@ Subroutine read_control                                &
         itmp = Abs(Nint(word_2_real(word)))
         istmsd = Max(istmsd,itmp)
 
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'MSDTMP file option on', &
-           & /,1x,'MSDTMP file start    ',10x,i10,                   &
-           & /,1x,'MSDTMP file interval ',10x,i10)") nstmsd,istmsd
+        Write(messages(1),'(a)') 'MSDTMP file option on'
+        Write(messages(2),'(2x,a,i10)') 'MSDTMP file start ',nstmsd
+        Write(messages(3),'(2x,a,i10)') 'MSDTMP file interval ',istmsd
+        Call info(messages,3,.true.)
 
 ! read trajectory printing option
 
@@ -2755,15 +2718,16 @@ Subroutine read_control                                &
         itmp = Abs(Nint(word_2_real(word)))
         keytrj = Max(keytrj,itmp)
 
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'trajectory file option on', &
-           & /,1x,'trajectory file start       ',3x,i10,                 &
-           & /,1x,'trajectory file interval    ',3x,i10,                 &
-           & /,1x,'trajectory file info key    ',3x,i10)") nstraj,istraj,keytrj
+        Write(messages(1),'(a)') 'trajectory file option on'
+        Write(messages(2),'(2x,a,i10)') 'trajectory file start ',nstraj
+        Write(messages(3),'(2x,a,i10)') 'trajectory file interval ',istraj
+        Write(messages(4),'(2x,a,i10)') 'trajectory file info key ',keytrj
+        Call info(messages,4,.true.)
 
         If (keytrj > 3) Call error(517)
-        If (keytrj == 3 .and. comm%idnode == 0) Write(nrite,'(2(/,1x,a))')   &
-           '%%% warning - trajectory file info key == 3 generates %%%', &
-           '%%% HISTORY in an unindexed and consize manner !!! %%%'
+        If (keytrj == 3) Then
+          Call warning('trajectory file info key == 3 generates HISTORY in an unindexed and consize manner',.true.)
+        End If
 
 ! read defects trajectory printing option
 
@@ -2787,17 +2751,18 @@ Subroutine read_control                                &
            Call warning(310,tmp,rdef,0.0_wp)
         End If
 
-        If (comm%idnode == 0) Write(nrite, "(/,1x,'defects file option on    ', &
-           & /,1x,'defects file start        ',5x,i10,                     &
-           & /,1x,'defects file interval     ',5x,i10,                     &
-           & /,1x,'defects distance condition (Angs) ',1p,e12.4)") nsdef,isdef,rdef
+        Write(messages(1),'(a)') 'defects file option on'
+        Write(messages(2),'(2x,a,i10)') 'defects file start ',nsdef
+        Write(messages(3),'(2x,a,i10)') 'defects file interval ',isdef
+        Write(messages(4),'(2x,a,1p,e12.4)') 'defects distance condition (Angs) ',rdef
+        Call info(messages,4,.true.)
 
 ! REFERENCE1 forcing
 
         Call get_word(record,word)
         If (word(1:5) == 'extra') Then
            l_dfx=.true.
-           If (comm%idnode == 0) Write(nrite, "(/,1x,'%%% defects1 file option on %%%')")
+           Call info('defects1 file option on',.true.)
         End If
 
 ! read displacements trajectory printing option
@@ -2822,10 +2787,11 @@ Subroutine read_control                                &
            Call warning(470,tmp,rrsd,0.0_wp)
         End If
 
-        If (comm%idnode == 0) Write(nrite, "(/,1x,'displacements file option on', &
-           & /,1x,'DISPDAT file start        ',5x,i10,                       &
-           & /,1x,'DISPDAT file interval     ',5x,i10,                       &
-           & /,1x,'DISPDAT distance condition (Angs)' ,1p,e12.4)") nsrsd,isrsd,rrsd
+        Write(messages(1),'(a)') 'displacements file option on'
+        Write(messages(2),'(2x,a,i10)') 'DISPDAT file start ',nsrsd
+        Write(messages(3),'(2x,a,i10)') 'DISPDAT file interval ',isrsd
+        Write(messages(4),'(2x,a,1p,e12.4)') 'DISPDAT distance condition (Angs) ',rrsd
+        Call info(messages,4,.true.)
 
 ! read DL_POLY_2/Classic delr Verlet shell strip cutoff option (compatibility)
 ! as DL_POLY_4 real space cutoff padding option
@@ -2835,7 +2801,8 @@ Subroutine read_control                                &
         Call warning(35,0.0_wp,0.0_wp,0.0_wp)
         Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
         rpad1 = 0.25_wp * Abs(word_2_real(word))
-        If (comm%idnode == 0) Write(nrite,"(1x,'cutoff padding (Angs)       ',6x,1p,e12.4)") rpad1
+        Write(message,'(a,1p,e12.4)') 'cutoff padding (Angs) ',rpad1
+        Call info(message,.true.)
 
 ! read DL_POLY_2/Classic multiple timestep option (compatibility)
 ! as DL_POLY_4 infrequent k-space SPME evaluation option
@@ -2893,7 +2860,8 @@ Subroutine read_control                                &
         Else
 
            Call strip_blanks(record)
-           If (comm%idnode == 0) Write(nrite,"(/,/,3a)") word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+           Write(message,'(3a)') word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+           Call info(message,.true.)
            Call error(3)
 
         End If
@@ -2913,7 +2881,8 @@ Subroutine read_control                                &
         Else
 
            Call strip_blanks(record)
-           If (comm%idnode == 0) Write(nrite,"(/,/,3a)") word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+           Write(message,'(3a)') word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
+           Call info(message,.true.)
            Call error(3)
 
         End If
@@ -2968,7 +2937,8 @@ Subroutine read_control                                &
      Else
 
         Call strip_blanks(record)
-        If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+        Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+        Call info(message,.true.)
         Call error(3)
 
      End If
@@ -3004,7 +2974,7 @@ Subroutine read_control                                &
 ! report restart
 
   If (keyres == 0) Then
-     If (comm%idnode == 0) Write(nrite,"(/,1x,'clean start requested')")
+     Call info('clean start requested',.true.)
   Else If (levcfg == 0) Then
      Call warning(200,0.0_wp,0.0_wp,0.0_wp)
      keyres=0
@@ -3015,24 +2985,23 @@ Subroutine read_control                                &
 ! is in use, NVE if not
 
   If (.not.lens) Then
-     Call warning(130,0.0_wp,0.0_wp,0.0_wp)
-     If (comm%idnode == 0) Then
-        If (l_vv) Then
-           Write(nrite,"(/,1x,'Integration : Velocity Verlet')")
-        Else
-           Write(nrite,"(/,1x,'Integration : Leapfrog Verlet')")
-        End If
-        If (l_ttm) Then
-          Write(nrite,"(1x,'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)', &
-                    & /,1x,'e-phonon friction       (ps^-1)',3x,1p,e12.4, &
-                    & /,1x,'e-stopping friction     (ps^-1)',3x,1p,e12.4, &
-                    & /,1x,'e-stopping velocity   (A ps^-1)',3x,1p,e12.4)") chi_ep,chi_es,vel_es2
-        Else
-          Write(nrite,"(1x,'Ensemble : NVE (Microcanonical)')")
-        End If
-     End If
-     If (l_ttm) keyens = 15
-     lens=.true.
+    Call warning(130,0.0_wp,0.0_wp,0.0_wp)
+    If (l_vv) Then
+      Call info('Integration : Velocity Verlet',.true.)
+    Else
+      Call info('Integration : Leapfrog Verlet',.true.)
+    End If
+    If (l_ttm) Then
+      Write(messages(1),'(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
+      Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',chi_ep
+      Write(messages(3),'(a,1p,e12.4)') 'e-stopping friction (ps^-1) ',chi_es
+      Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1)',vel_es2
+      Call info(messages,4,.true.)
+    Else
+      Call info('Ensemble : NVE (Microcanonical)',.true.)
+    End If
+    If (l_ttm) keyens = 15
+    lens=.true.
   End If
 
 ! report replacement of specified ensemble with inhomogeneous
@@ -3042,72 +3011,83 @@ Subroutine read_control                                &
 ! thermal velocities only for thermostat
 
   If (l_ttm .and. keyens/=15) Then
-     Call warning(130,0.0_wp,0.0_wp,0.0_wp)
-     If (keyens==10 .or. keyens==20 .or. keyens==30 .and. chi>zero_plus) chi_ep = chi
-     If (comm%idnode == 0) Then
-       Write(nrite,"(1x,'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)', &
-                 & /,1x,'e-phonon friction       (ps^-1)',3x,1p,e12.4, &
-                 & /,1x,'e-stopping friction     (ps^-1)',3x,1p,e12.4, &
-                 & /,1x,'e-stopping velocity   (A ps^-1)',3x,1p,e12.4)") chi_ep,chi_es,vel_es2
-       If (ttmthvel) Then
-         Write(nrite,"(/,1x,'applying to thermal velocities in all directions')")
-       Else If (ttmthvelz) Then
-         Write(nrite,"(/,1x,'applying to total velocities in x and y directions,', &
-                     & /,1x,'thermal velocities in z direction')")
-       Else
-         Write(nrite,"(/,1x,'applying to total velocities in all directions')")
-       End If
-     End If
-     keyens = 15
+    Call warning(130,0.0_wp,0.0_wp,0.0_wp)
+    If (keyens==10 .or. keyens==20 .or. keyens==30 .and. chi>zero_plus) Then
+      chi_ep = chi
+    End If
+
+    Write(messages(1),'(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
+    Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',chi_ep
+    Write(messages(3),'(a,1p,e12.4)') 'e-stopping friction (ps^-1) ',chi_es
+    Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1)',vel_es2
+    Call info(messages,4,.true.)
+
+    If (ttmthvel) Then
+      Call info('applying to thermal velocities in all directions',.true.)
+    Else If (ttmthvelz) Then
+      Call info('applying to total velocities in x and y directions, thermal velocities in z direction',.true.)
+    Else
+      Call info('applying to total velocities in all directions',.true.)
+    End If
+    keyens = 15
 
   End If
 
 ! report iteration length and tolerance condition for constraints and PMF algorithms
 
   If ((mxcons > 0 .or. mxpmf > 0) .and. comm%idnode == 0) Then
-     Write(nrite,"(/,1x,'iterations for shake/rattle ',3x,i10)") mxshak
-     Write(nrite,"(1x,'tolerance for shake/rattle (Angs) ',1p,e12.4)") tolnce
+     Write(messages(1),'(a,i10)') 'iterations for shake/rattle ',mxshak
+     Write(messages(2),'(a,1p,e12.4)') 'tolerance for shake/rattle (Angs) ',tolnce
+     Call info(messages,2,.true.)
   End If
 
 ! report electrostatics
 
   If (l_n_e) Then
      keyfce=0
-     If (comm%idnode == 0) Write(nrite,"(/,1x,'Electrostatics switched off!!!')")
+     Call info('Electrostatics switched off!!!',.true.)
   Else If (keyfce == 0) Then
-     If (comm%idnode == 0) Write(nrite,"(/,1x,'Electrostatics : None Assumed')")
+     Call info('Electrostatics : None Assumed',.true.)
   End If
 
 ! report for extended coulombic exclusion if needed
 
   If (keyfce /= 0) Then
      If (lecx) Then
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'Extended Coulombic eXclusion : YES')")
+        Call info('Extended Coulombic eXclusion : YES',.true.)
      Else
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'Extended Coulombic eXclusion : NO')")
+        Call info('Extended Coulombic eXclusion : NO',.true.)
      End If
   End If
 
 ! report if rcut is reset (measures taken in scan_config -
 ! rcut is the maximum cutoff needed in the system)
 
-  If (Abs(rcut-rcut1) > 1.0e-6_wp .and. comm%idnode == 0) &
-     Write(nrite,"(/,1x,'real space cutoff reset to (Angs) ',1p,e12.4)") rcut
+  If (Abs(rcut-rcut1) > 1.0e-6_wp) Then
+    Write(message,'(a,1p,e12.4)') 'real space cutoff reset to (Angs) ',rcut
+    Call info(message,.true.)
+  End If
 
 ! report if rpad is reset (measures taken in scan_config & set_bounds -
 ! rpad is the cutoff padding needed the conditional VNL update)
 
-  If (Abs(rpad-rpad1) > 1.0e-6_wp .and. comm%idnode == 0) &
-     Write(nrite,"(/,1x,'cutoff padding reset to (Angs)  ',2x,1p,e12.4)") rpad
+  If (Abs(rpad-rpad1) > 1.0e-6_wp) Then
+    Write(message,'(a,1p,e12.4)') 'cutoff padding reset to (Angs) ',rpad
+    Call info(message,.true.)
+  End If
 
 ! report vdw
 
-  If (l_n_v .and. comm%idnode == 0) Write(nrite,"(/,1x,'vdw potential terms switched off')")
+  If (l_n_v) Then
+    Call info('vdw potential terms switched off',.true.)
+  End If
 
 ! report if rvdw is reset (measures taken in scan_config)
 
-  If ((.not.l_n_v) .and. Abs(rvdw-rvdw1) > 1.0e-6_wp .and. comm%idnode == 0) &
-     Write(nrite,"(/,1x,'vdw cutoff reset to (Angs)',8x,1p,e12.4)") rvdw
+  If ((.not.l_n_v) .and. Abs(rvdw-rvdw1) > 1.0e-6_wp) Then
+    Write(message,'(a,1p,e12.4)') 'vdw cutoff reset to (Angs) ',rvdw
+    Call info(message,.true.)
+  End If
 
 ! report timestep
 
@@ -3115,23 +3095,20 @@ Subroutine read_control                                &
 
      If (keydpd > 0) Then
         lvar=.false.
-        If (comm%idnode == 0) Then
-           Write(nrite,'(/,1x,a)') "*** warning - variable timestep unavalable in DPD themostats, defaulting to:"
-           Write(nrite,"(/,1x,'fixed simulation timestep (ps)   ',1x,1p,e12.4)") tstep
-        End If
+        Call warning('variable timestep unavalable in DPD themostats',.true.)
+        Write(message,'(a,1p,e12.4)') 'fixed simulation timestep (ps) ',tstep
+        Call info(message,.true.)
      Else
         If (mxdis >= 2.5_wp*mndis .and. mndis > 0.0_wp) Then
-           If (comm%idnode == 0) Then
-              Write(nrite,"(/,1x,'variable simulation timestep (ps)',1x,1p,e12.4)") tstep
-              Write(nrite,"(/,1x,a,2(/,1x,a,5x,1p,e12.4))") &
-              "controls for variable timestep",             &
-              "minimum distance Dmin (Angs) ",mndis,        &
-              "maximum distance Dmax (Angs) ",mxdis
-           End If
+          Write(messages(1),'(a,1p,e12.4)') 'variable simulation timestep (ps) ',tstep
+          Write(messages(2),'(a)') 'controls for variable timestep:'
+          Write(messages(3),'(2x,a,1p,e12.4)') 'minimum distance Dmin (Angs) ',mndis
+          Write(messages(4),'(2x,a,1p,e12.4)') 'maximum distance Dmax (Angs) ',mxdis
+          Call info(messages,4,.true.)
 
            If (mxstp > zero_plus) Then
-              If (comm%idnode == 0) Write(nrite,"(1x,a,7x,1p,e12.4)") &
-              "timestep ceiling mxstp (ps)",mxstp
+              Write(message,'(a,1p,e12.4)') 'timestep ceiling mxstp (ps) ',mxstp
+              Call info(message,.true.)
               tstep=Min(tstep,mxstp)
            Else
               mxstp=Huge(1.0_wp)
@@ -3142,39 +3119,34 @@ Subroutine read_control                                &
         End If
      End If
 
-  Else If (lstep) Then
-
-     If (comm%idnode == 0) &
-        Write(nrite,"(/,1x,'fixed simulation timestep (ps)   ',1x,1p,e12.4)") tstep
-
-  End If
+   Else If (lstep) Then
+     Write(message,'(a,1p,e12.4)') 'fixed simulation timestep (ps) ',tstep
+     Call info(message,.true.)
+   End If
 
 ! report no vom option: its use recommended with ttm
 
   If (.not.l_vom .and. .not.l_ttm) Then
-     If (comm%idnode == 0) Write(nrite,"(3(/,1x,a))")                                 &
-        'no vom option on - COM momentum removal will be abandoned',             &
-        '*** warning - this may lead to a build up of the COM momentum and ***', &
-        '***           a manifestation of the "flying ice-cube" effect !!! ***'
+    Call info('no vom option on - COM momentum removal will be abandoned',.true.)
+    Call warning('this may lead to a build up of the COM momentum and a' &
+      //'manifestation of the "flying ice-cube" effect',.true.)
   Else If (l_vom .and. l_ttm) Then
-     If (comm%idnode == 0) Write(nrite,"(3(/,1x,a))")                                         &
-        'no vom option off - COM momentum removal will be used',                         &
-        '*** warning - this may lead to incorrect dynamic behaviour for            ***', &
-        '***           two-temperature model: COM momentum removal recommended !!! ***'
+    Call info('no vom option off - COM momentum removal will be used',.true.)
+    Call warning('this may lead to incorrect dynamic behaviour for' &
+      //'two-temperature model: COM momentum removal recommended',.true.)
   End If
 
 ! report intramolecular analysis options
 
   If (lpana .or. mxgana > 0) Then
      If (mxgana == 0) Then
-        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") 'no intramolecular distribution collection requested'
+        Call info('no intramolecular distribution collection requested',.true.)
      Else
         If (mxgbnd1 > 0 .and. mxgang1 > 0 .and. &
             mxgdih1 > 0 .and. mxginv1 > 0) Then
-           If (comm%idnode == 0) &
-              Write(nrite,"(/,1x,a)") 'full intramolecular distribution collection requested (all=bnd/ang/dih/inv):'
+           Call info('full intramolecular distribution collection requested (all=bnd/ang/dih/inv):',.true.)
         Else
-           If (comm%idnode == 0) Write(nrite,"(/,1x,a)") 'intramolecular distribution collection requested for:'
+           Call info('intramolecular distribution collection requested for:',.true.)
         End If
 
         i=Max(1,nstana,nstbnd,nstang,nstdih,nstinv)
@@ -3193,10 +3165,16 @@ Subroutine read_control                                &
            End If
            j=Merge(1, 0, grdbnd /= mxgbnd1)
            k=Merge(1, 0, Abs(rcbnd-rcb_d) > 1.0e-3_wp)
-           If (comm%idnode == 0) Write(nrite,"(1x,2(a,i10),a,f7.2,a)") &
-              'bonds      - collection every ',nstbnd,' step(s); ngrid = ',mxgbnd1,' points; cutoff = ',rcbnd, ' Angs'
-           If (i+j+k > 1 .and. comm%idnode == 0) Write(nrite,"(1x,3(a,i10))") &
-              'bonds      - reset values at  ',     i,'                  ',     j,'                 ',    k
+           Write(message,'(2(a,i10),a,f7.2,a)') &
+             'bonds      - collection every ',nstbnd,' step(s); ngrid = ', &
+             mxgbnd1,' points; cutoff = ',rcbnd, ' Angs'
+           Call info(message,.true.)
+           If (i+j+k > 1) Then
+             Write(message,'(3(a,i10))') &
+               'bonds      - reset values at  ', i,'                  ', j, &
+               '                 ', k
+             Call info(message,.true.)
+           End If
         End If
 
         If (mxgang1 > 0) Then
@@ -3207,10 +3185,14 @@ Subroutine read_control                                &
               i = 0
            End If
            j=Merge(1, 0, grdang /= mxgang1)
-           If (comm%idnode == 0) Write(nrite,"(1x,2(a,i10),a)") &
+           Write(message,'(2(a,i10),a)') &
               'angles     - collection every ',nstang,' step(s); ngrid = ',mxgang1,' points'
-           If (i+j > 1 .and. comm%idnode == 0) Write(nrite,"(1x,2(a,i10))") &
-              'angles     - reset values at  ',     i,'                  ',     j
+           Call info(message,.true.)
+           If (i+j > 1) Then
+             Write(message,'(2(a,i10))') &
+               'angles     - reset values at  ',     i,'                  ',     j
+             Call info(message,.true.)
+           End If
         End If
 
         If (mxgdih1 > 0) Then
@@ -3221,10 +3203,14 @@ Subroutine read_control                                &
               i = 0
            End If
            j=Merge(1, 0, grddih /= mxgdih1)
-           If (comm%idnode == 0) Write(nrite,"(1x,2(a,i10),a)") &
-              'dihedrals  - collection every ',nstdih,' step(s); ngrid = ',mxgdih1,' points'
-           If (i+j > 1 .and. comm%idnode == 0) Write(nrite,"(1x,2(a,i10))") &
-              'dihedrals  - reset values at  ',     i,'                  ',     j
+           Write(message,'(2(a,i10),a)') &
+             'dihedrals  - collection every ',nstdih,' step(s); ngrid = ',mxgdih1,' points'
+           Call info(message,.true.)
+           If (i+j > 1) Then
+             Write(message,'(2(a,i10))') &
+               'dihedrals  - reset values at  ',     i,'                  ',     j
+             Call info(message,.true.)
+           End If
         End If
 
         If (mxginv1 > 0) Then
@@ -3235,17 +3221,21 @@ Subroutine read_control                                &
               i = 0
            End If
            j=Merge(1, 0, grdinv /= mxginv1)
-           If (comm%idnode == 0) Write(nrite,"(1x,2(a,i10),a)") &
-              'inversions - collection every ',nstinv,' step(s); ngrid = ',mxginv1,' points'
-           If (i+j > 1 .and. comm%idnode == 0) Write(nrite,"(1x,2(a,i10))") &
-              'inversions - reset values at  ',     i,'                  ',     j
+           Write(message,'(2(a,i10),a)') &
+             'inversions - collection every ',nstinv,' step(s); ngrid = ',mxginv1,' points'
+           Call info(message,.true.)
+           If (i+j > 1) Then
+             Write(message,'(2(a,i10))') &
+               'inversions - reset values at  ',     i,'                  ',     j
+             Call info(message,.true.)
+           End If
         End If
      End If
 
      If (lpana) Then
-        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") 'probability distribution analysis printing requested'
+        Call info('probability distribution analysis printing requested',.true.)
      Else
-        If (comm%idnode == 0) Write(nrite,"(/,1x,a)") 'no probability distribution analysis printing requested'
+        Call info('no probability distribution analysis printing requested',.true.)
      End If
   End If
 
@@ -3260,34 +3250,33 @@ Subroutine read_control                                &
 
   If (lrdf .or. lprdf) Then
      If (lrdf) Then
-        If (comm%idnode == 0) Then
-           Write(nrite,"(/,1x,'rdf collection requested')")
-           Write(nrite,"(  1x,'rdf collection interval',8x,i10)") nstrdf
-           Write(nrite,"(  1x,'rdf binsize (Angstroms)',11x,1p,e12.4)") rbin
-        End If
+        Write(messages(1),'(a)') 'rdf collection requested:'
+        Write(messages(2),'(2x,a,i10)') 'rdf collection interval ',nstrdf
+        Write(messages(3),'(2x,a,1p,e12.4)') 'rdf binsize (Angstroms) ',rbin
+        Call info(messages,3,.true.)
      Else
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'no rdf collection requested')")
+        Call info('no rdf collection requested',.true.)
      End If
 
      If (lprdf) Then
-        If (comm%idnode == 0) Write(nrite,"(1x,'rdf printing requested')")
+        Call info('rdf printing requested',.true.)
      Else
         If (lpana) Then
-           If (comm%idnode == 0) Write(nrite,"(1x,'rdf printing triggered due to a PDA printing request')")
+           Call info('rdf printing triggered due to a PDA printing request',.true.)
            lprdf=lpana
         Else
-           If (comm%idnode == 0) Write(nrite,"(1x,'no rdf printing requested')")
+           Call info('no rdf printing requested',.true.)
         End If
      End If
 
      If (mxrdf == 0) Then
-        If (comm%idnode == 0) Write(nrite,"(1x,'no rdf pairs specified in FIELD')")
+        Call info('no rdf pairs specified in FIELD',.true.)
      Else
-        If (comm%idnode == 0) Write(nrite,"(1x,'rdf pairs specified in FIELD')")
+        Call info('rdf pairs specified in FIELD',.true.)
      End If
 
      If ((.not.lrdf) .or. mxrdf == 0) Then
-        If (comm%idnode == 0) Write(nrite,"(1x,'rdf routines not to be activated')")
+        Call info('rdf routines not to be activated',.true.)
         lrdf=.false.
         lprdf=.false.
      End If
@@ -3297,23 +3286,22 @@ Subroutine read_control                                &
 
   If (lzdn .or. lpzdn) Then
      If (lzdn) Then
-        If (comm%idnode == 0) Then
-           Write(nrite,"(/,1x,'z-density profiles requested')")
-           Write(nrite,"(  1x,'z-density collection interval',2x,i10)") nstzdn
-           Write(nrite,"(  1x,'z-density binsize (Angstroms)',5x,1p,e12.4)") rbin
-        End If
+        Write(messages(1),'(a)') 'z-density profiles requested:'
+        Write(messages(2),'(2x,a,i10)') 'z-density collection interval ',nstzdn
+        Write(messages(3),'(2x,a,1p,e12.4)') 'z-density binsize (Angstroms) ',rbin
+        Call info(messages,3,.true.)
      Else
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'no z-density profiles requested')")
+        Call info('no z-density profiles requested',.true.)
      End If
 
      If (lpzdn) Then
-        If (comm%idnode == 0) Write(nrite,"(1x,'z-density printing requested')")
+        Call info('z-density printing requested',.true.)
      Else
-        If (comm%idnode == 0) Write(nrite,"(1x,'no z-density printing requested')")
+        Call info('no z-density printing requested',.true.)
      End If
 
      If (.not.lzdn) Then
-        If (comm%idnode == 0) Write(nrite,"(  1x,'z-density routines not to be activated')")
+        Call info('z-density routines not to be activated',.true.)
         lpzdn=.false.
      End If
   End If
@@ -3322,25 +3310,24 @@ Subroutine read_control                                &
 
   If (vafsamp > 0 .or. lpvaf) Then
      If (vafsamp > 0) Then
-        If (comm%idnode == 0) Then
-           Write(nrite,"(/,1x,'vaf profiles requested')")
-           Write(nrite,"(  1x,'vaf collection frequency',7x,i10)") isvaf
-           Write(nrite,"(  1x,'vaf collection binsize  ',7x,i10)") nsvaf
-        End If
+        Write(messages(1),'(a)') 'vaf profiles requested:'
+        Write(messages(2),'(2x,a,i10)') 'vaf collection interval ',isvaf
+        Write(messages(3),'(2x,a,i10)') 'vaf binsize  ',nsvaf
+        Call info(messages,3,.true.)
      Else
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'no vaf collection requested')")
+        Call info('no vaf collection requested',.true.)
      End If
 
      If (lpvaf) Then
-        If (comm%idnode == 0) Write(nrite,"(1x,'vaf printing requested')")
+        Call info('vaf printing requested',.true.)
      Else
-        If (comm%idnode == 0) Write(nrite,"(1x,'no vaf printing requested')")
+        Call info('no vaf printing requested',.true.)
      End If
 
      If (lvafav) Then
-        If (comm%idnode == 0) Write(nrite,"(1x,'time-averaged vaf profile')")
+        Call info('time-averaged vaf profile',.true.)
      Else
-        If (comm%idnode == 0) Write(nrite,"(1x,'instantaneous vaf profiles')")
+        Call info('instantaneous vaf profiles',.true.)
      End If
   End If
 
@@ -3348,106 +3335,97 @@ Subroutine read_control                                &
 
 !  If (ltcond) Then
 !    If (comm%idnode == 0) Then
-!      Write(nrite,"(/,1x,'thermal conductivities requested')")
-!      Write(nrite,"(  1x,'heat current collection binsize',8x,i10)") nsttcond
+!      Write(messages(1),'(a)') 'thermal conductivities requested'
+!      Write(messages(2),'(a,i10)') 'heat current collection binsize',nsttcond
+!      Call info(messages,2,.true.)
 !    End If
 !  End If
 
 ! report data dumping interval, subcelling threshold density and job times
 
-  If (comm%idnode == 0) Then
-     Write(nrite,"(/,1x,'data dumping interval (steps)',2x,i10)") ndump
-     Write(nrite,"(/,1x,'subcelling threshold density',6x,1p,e12.4)") pdplnc
-     Write(nrite,"(/,1x,'allocated job run time   (s)',6x,1p,e12.4)") timjob
-     Write(nrite,"(/,1x,'allocated job close time (s)',6x,1p,e12.4)") timcls
-  End If
+  Write(messages(1),'(a,i10)') 'data dumping interval (steps) ',ndump
+  Write(messages(2),'(a,1p,e12.4)') 'subcelling threshold density ',pdplnc
+  Write(messages(3),'(a,1p,e12.4)') 'allocated job run time (s) ',timjob
+  Write(messages(4),'(a,1p,e12.4)') 'allocated job close time (s) ',timcls
+  Call info(messages,4,.true.)
 
 ! report replay history
 
   If (.not.lsim) Then
      If (lfce) Then
-        If (comm%idnode == 0) Then
-           Write(nrite,"(/,1x,'*** HISTORF will be replayed with full force recalculation ***', &
-                       & /,1x,'*** There is no actual dynamics/integration!!! ***')")
-        End If
+        Write(messages(1),'(a)') '*** HISTORF will be replayed with full force recalculation ***'
+        Write(messages(2),'(a)') '*** There is no actual dynamics/integration!!!             ***'
+        Call info(messages,2,.true.)
      Else
-        If (comm%idnode == 0) Then
-           Write(nrite,"(/,1x,'*** HISTORY will be replayed (no actual simulation) ***', &
-                       & /,1x,'*** with structural properties will be recalculated ***')")
-        End If
-
+        Write(messages(1),'(a)') '*** HISTORY will be replayed (no actual simulation) ***'
+        Write(messages(2),'(a)') '*** with structural properties will be recalculated ***'
+        Call info(messages,2,.true.)
 ! abort if there's no structural property to recalculate
-
         If (.not.(lrdf .or. lzdn .or. ldef .or. l_msd .or. lrsd .or. (mxgana > 0))) Call error(580)
      End If
 
      If (keyres /= 0) Then
         keyres=0 ! Force clean restart
-        If (comm%idnode == 0) Write(nrite,"(/,1x,'clean start enforced')")
+        Call info('clean start enforced',.true.)
      End If
   End If
 
 !!! RESORT TO DEFAULTS IF NEED BE !!!
 
   If      (nstrun == 0) Then !!! DRY RUN
-
      ltemp = .true. ! zero is ok
      lpres = .true. ! zero is ok
 
      lstep = .true. ! zero is not ok
      If (tstep <= zero_plus) Then
         tstep = 0.001_wp
-        If (comm%idnode == 0) &
-           Write(nrite,"(/,1x,'default simulation timestep (ps) ',1x,1p,e12.4)") tstep
+        Write(message,'(a,1p,e12.4)') 'default simulation timestep (ps) ',tstep
+        Call info(message,.true.)
      End If
-
   Else If (.not.l_str) Then !!! NO STRICT
-
      If (.not.ltemp) Then ! Simulation temperature
         ltemp=.true.
         temp=300.0_wp
-        If (comm%idnode == 0) &
-           Write(nrite,"(/,1x,'default simulation temperature (K)',1p,e12.4)") temp
+        Write(message,'(a,1p,e12.4)') 'default simulation temperature (K) ',temp
+        Call info(message,.true.)
      End If
 
      If (.not.lpres) Then ! Simulation pressure
         lpres=.true.
         press=0.0_wp
-        If (comm%idnode == 0) &
-           Write(nrite,"(/,1x,'default simulation pressure (katms)',1p,e11.4)") press*prsunt
+        Write(message,'(a,1p,e12.4)') 'default simulation pressure (katms) ',press*prsunt
+        Call info(message,.true.)
      End If
 
      If (.not.lstep) Then ! Simulation timestep
         lstep = .true.
         tstep = 0.001_wp
-        If (comm%idnode == 0) &
-           Write(nrite,"(/,1x,'default simulation timestep (ps) ',1x,1p,e12.4)") tstep
+        Write(message,'(a,1p,e12.4)') 'default simulation timestep (ps) ',tstep
+        Call info(message,.true.)
      End If
 
      If ((.not.l_timjob) .and. (.not.l_timcls)) Then ! Job times
         timjob=1.0e8_wp
         timcls=1.0e7_wp
-
-        If (comm%idnode == 0) Then
-           Write(nrite,"(/,1x,'allocated job run time   (s)',6x,1p,e12.4)") timjob
-           Write(nrite,"(/,1x,'allocated job close time (s)',6x,1p,e12.4)") timcls
-        End If
+        Write(messages(1),'(a,1p,e12.4)') 'allocated job run time (s) ',timjob
+        Write(messages(1),'(a,1p,e12.4)') 'allocated job close time (s) ',timcls
+        Call info(messages,2,.true.)
      Else If ((.not.l_timjob) .and. l_timcls) Then
         timjob=100.0_wp*timcls
-        If (comm%idnode == 0) &
-           Write(nrite,"(/,1x,'allocated job run time   (s)',6x,1p,e12.4)") timjob
+        Write(message,'(a,1p,e12.4)') 'allocated job run time (s) ',timjob
+        Call info(message,.true.)
      Else If (l_timjob .and. (.not.l_timcls)) Then
         timcls=0.01_wp*timjob
-        If (comm%idnode == 0) &
-           Write(nrite,"(/,1x,'allocated job close time (s)',6x,1p,e12.4)") timcls
+        Write(message,'(a,1p,e12.4)') 'allocated job close time (s) ',timcls
+        Call info(message,.true.)
      End If
 
   End If
 
   If (l_0 .and. (.not. ltemp)) Then ! zero K over zero fire
      temp = 10.0_wp
-     If (comm%idnode == 0) &
-        Write(nrite,"(/,1x,'default simulation temperature (K)',1p,e12.4)") temp
+     Write(message,'(a,1p,e12.4)') 'default simulation temperature (K) ',temp
+     Call info(message,.true.)
   End If
 
   vel_es2 = vel_es2 * vel_es2 ! square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
@@ -3469,8 +3447,9 @@ Subroutine read_control                                &
 
   If (keyens == 15 ) Then
     If (gvar==0 .and. chi_ep <= zero_plus) Call error(462)
-    If (Abs(chi_es) <= zero_plus .and. comm%idnode == 0) &
-      Write(nrite,"(1x,'assuming no electronic stopping in inhomogeneous Langevin thermostat')")
+    If (Abs(chi_es) <= zero_plus) Then
+      Call info('assuming no electronic stopping in inhomogeneous Langevin thermostat',.true.)
+    End If
   End If
 
   If ((keyens == 20 .or. keyens == 30) .and. &
@@ -3492,12 +3471,11 @@ Subroutine read_control                                &
               press=(strext(1)+strext(5)+strext(9))/3.0_wp
               strext=0.0_wp
 
-              If (comm%idnode == 0) Then
-                 Write(nrite,"(/,1x,'tensorial system pressure specified for an npt ensemble simulation')")
-                 Write(nrite,"(  1x,'scalar pressure derived from pressure tensor as p = Trace[P]/3')")
-                 Write(nrite,"(  1x,'tensorial pressure to be zeroed (discarded)')")
-                 Write(nrite,"(/,1x,'simulation pressure (katms)  ',5x,1p,e12.4)") press*prsunt
-              End If
+              Write(messages(1),'(a)') 'tensorial system pressure specified for an npt ensemble simulation'
+              Write(messages(2),'(a)') 'scalar pressure derived from pressure tensor as p = Trace[P]/3'
+              Write(messages(3),'(a)') 'tensorial pressure to be zeroed (discarded)'
+              Write(messages(4),'(a,1p,e12.4)') 'simulation pressure (katms) ',press*prsunt
+              Call info(messages,4,.true.)
            Else
               Call error(387)
            End If
@@ -3505,11 +3483,10 @@ Subroutine read_control                                &
            If (lstrext) Then
               strext=0.0_wp
 
-              If (comm%idnode == 0) Then
-                 Write(nrite,"(/,1x,'both tensorial and scalar system pressure specified for an npt ensemble simulation')")
-                 Write(nrite,"(  1x,'tensorial pressure directive is ignored')")
-                 Write(nrite,"(  1x,'tensorial pressure to be zeroed (discarded)')")
-              End If
+              Write(messages(1),'(a)') 'both tensorial and scalar system pressure specified for an npt ensemble simulation'
+              Write(messages(2),'(a)') 'tensorial pressure directive is ignored'
+              Write(messages(3),'(a)') 'tensorial pressure to be zeroed (discarded)'
+              Call info(messages,3,.true.)
            End If
         End If
      Else If (keyens >= 30 .and. keyens <= 33) Then
@@ -3517,10 +3494,9 @@ Subroutine read_control                                &
            If (.not.lpres) Call error(387)
         Else
            If (lpres) Then
-              If (comm%idnode == 0) Then
-                 Write(nrite,"(/,1x,'both tensorial and scalar system pressure specified for an nst ensemble simulation')")
-                 Write(nrite,"(  1x,'scalar pressure directive is ignored')")
-              End If
+              Write(messages(1),'(a)') 'both tensorial and scalar system pressure specified for an nst ensemble simulation'
+              Write(messages(2),'(a)') 'scalar pressure directive is ignored'
+              Call info(messages,2,.true.)
 
 ! Define new scalar pressure and zero trace pressure tensor
 
@@ -4040,7 +4016,7 @@ Subroutine scan_control                                    &
         Else If (word(1:3) == 'ind' ) Then
 
            l_ind=.false.
-           If (comm%idnode == 0) Write(nrite,"(/,1x,a)") "no index (reading in CONFIG) option on"
+           Call info('no index (reading in CONFIG) option on',.true.)
 
         Else If (word(1:3) == 'str' ) Then
 
@@ -4856,6 +4832,8 @@ Subroutine scan_control_io(comm)
   Integer, Parameter :: MAX_BATCH_SIZE  = 10000000 !~1GB memory per writer
   Integer, Parameter :: MAX_BUFFER_SIZE =   100000 !~1GB memory per node/domain
 
+  Character( Len = 256 ) :: message
+
 
 ! flags
 
@@ -4901,23 +4879,25 @@ Subroutine scan_control_io(comm)
 
 ! get read method
 
+           Call info('',.true.)
            word1=' ' ; word1=word
            Call get_word( record, word )
            If      ( word( 1:5 ) == 'mpiio'  ) Then
               io_read = IO_READ_MPIIO
-              If (comm%idnode == 0) Write(nrite,"(/,1x,'I/O read method: parallel by using MPI-I/O')" )
+              Call info('I/O read method: parallel by using MPI-I/O',.true.)
            Else If ( word( 1:6 ) == 'direct' ) Then
               io_read = IO_READ_DIRECT
-              If (comm%idnode == 0) Write(nrite,"(/,1x,'I/O read method: parallel by using direct access')" )
+              Call info('I/O read method: parallel by using direct access',.true.)
            Else If ( word( 1:6 ) == 'netcdf' ) Then
               io_read = IO_READ_NETCDF
-              If (comm%idnode == 0) Write(nrite,"(/,1x,'I/O read method: parallel by using netCDF')" )
+              Call info('I/O read method: parallel by using netCDF',.true.)
            Else If ( word( 1:6 ) == 'master' ) Then
               io_read = IO_READ_MASTER
-              If (comm%idnode == 0) Write(nrite,"(/,1x,'I/O read method: serial by using a single master process')" )
+              Call info('I/O read method: serial by using a single master process',.true.)
            Else
               Call strip_blanks(record)
-              If (comm%idnode == 0) Write(nrite,"(/,/,4a)") 'io ',word1(1:Len_Trim(word1)+1),word(1:Len_Trim(word)+1),record
+              Write(message,'(4a)') 'io ',word1(1:Len_Trim(word1)+1),word(1:Len_Trim(word)+1),record
+              Call info(message,.true.)
               Call error(3)
            End If
 
@@ -4940,7 +4920,8 @@ Subroutine scan_control_io(comm)
                  Do While ( Mod( comm%mxnode, itmp ) /= 0 )
                     itmp = itmp - 1
                  End Do
-                 If (comm%idnode == 0) Write(nrite,"(1x,'I/O readers (assumed) ',9x,i10)") itmp
+                 Write(message,'(a,i10)') 'I/O readers (assumed) ',itmp
+                 Call info(message,.true.)
               Else
                  If (itmp > comm%mxnode) Then
                     tmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
@@ -4948,12 +4929,14 @@ Subroutine scan_control_io(comm)
                     Do While ( Mod( comm%mxnode, itmp ) /= 0 )
                        itmp = itmp - 1
                     End Do
-                    If (comm%idnode == 0) Write(nrite,"(1x,'I/O readers (enforced)',9x,i10)") itmp
+                    Write(message,'(a,i10)') 'I/O readers (enforced) ',itmp
+                    Call info(message,.true.)
                  Else
                     Do While ( Mod( comm%mxnode, itmp ) /= 0 )
                        itmp = itmp - 1
                     End Do
-                    If (comm%idnode == 0) Write(nrite,"(1x,'I/O readers set to    ',9x,i10)") itmp
+                    Write(message,'(a,i10)') 'I/O readers set to ',itmp
+                    Call info(message,.true.)
                  End If
               End If
 
@@ -4969,27 +4952,24 @@ Subroutine scan_control_io(comm)
               itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
               If (itmp == 0) Then
                  Call io_get_parameters( user_batch_size_read = itmp )
-                 If (comm%idnode == 0) Write(nrite,"(1x,'I/O read batch size (assumed)',2x,i10)") itmp
+                 Write(message,'(a,i10)') 'I/O read batch size (assumed) ', itmp
+                 Call info(message,.true.)
               Else
                  itmp = Min( itmp, MAX_BATCH_SIZE )
                  Call io_set_parameters( user_batch_size_read = itmp )
-                 If (comm%idnode == 0) Write(nrite,"(1x,'I/O read batch size set to   ',2x,i10)") itmp
+                 Write(message,'(a,i10)') 'I/O read batch size set to ', itmp
+                 Call info(message,.true.)
               End If
-
            Else If (io_read == IO_READ_MASTER) Then
-
-              If (comm%idnode == 0) Write(nrite,"(1x,'I/O readers (enforced)',9x,i10)") 1
-
+              Write(message,'(a,i10)') 'I/O readers (enforced) ', 1
+              Call info(message,.true.)
            Else
-
               tmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
               itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
-              If (comm%idnode == 0) Write(nrite,"(1x,'I/O readers (enforced)',9x,i10)") itmp
-
+              Write(message,'(a,i10)') 'I/O readers (enforced) ', itmp
+              Call info(message,.true.)
 ! the number of readers is now ready to set
-
               Call io_set_parameters( user_n_io_procs_read = itmp )
-
            End If
 
 ! get read buffer size
@@ -5000,11 +4980,13 @@ Subroutine scan_control_io(comm)
            itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
            If (itmp == 0) Then
               Call io_get_parameters( user_buffer_size_read = itmp )
-              If (comm%idnode == 0) Write(nrite,"(1x,'I/O read buffer size (assumed)',1x,i10)") itmp
+              Write(message,'(a,i10)') 'I/O read buffer size (assumed) ',itmp
+              Call info(message,.true.)
            Else
               itmp = Min( Max( itmp,100 ),Min( itmp,MAX_BUFFER_SIZE ))
               Call io_set_parameters( user_buffer_size_read = itmp )
-              If (comm%idnode == 0) Write(nrite,"(1x,'I/O read buffer size set to   ',1x,i10)") itmp
+              Write(message,'(a,i10)') 'I/O read buffer size set to ',itmp
+              Call info(message,.true.)
            End If
 
 ! switch error checking flag for reading
@@ -5013,9 +4995,9 @@ Subroutine scan_control_io(comm)
               Call get_word( record, word )
               l_tmp = ( word( 1:1 ) == 'Y' .or. word( 1:1 ) == 'y' )
               If (.not.l_tmp) Then
-                 If (comm%idnode == 0) Write(nrite,"(1x,'I/O parallel read error checking off')")
+                 Call info('I/O parallel read error checking off',.true.)
               Else
-                 If (comm%idnode == 0) Write(nrite,"(1x,'I/O parallel read error checking on')")
+                 Call info('I/O parallel read error checking on',.true.)
               End If
               Call io_set_parameters( user_error_check = l_tmp )
            End If
@@ -5038,24 +5020,25 @@ Subroutine scan_control_io(comm)
 
 ! get write method
 
+           Call info('',.true.)
            If      ( word( 1:5 ) == 'mpiio'  ) Then
               io_write = IO_WRITE_SORTED_MPIIO
-              If (comm%idnode == 0) Write(nrite,"(/,1x,'I/O write method: parallel by using MPI-I/O')" )
+              Call info('I/O write method: parallel by using MPI-I/O',.true.)
            Else If ( word( 1:6 ) == 'direct' ) Then
               io_write = IO_WRITE_SORTED_DIRECT
-              If (comm%idnode == 0) Write(nrite,"(/,1x,'I/O write method: parallel by using direct access', &
-                                           & /,1x,'*** warning - in parallel this has portability issues !!! ***' )" )
+              Call info('I/O write method: parallel by using direct access',.true.)
+              Call warning('in parallel this I/O write method has portability issues',.true.)
            Else If ( word( 1:6 ) == 'netcdf' ) Then
               io_write = IO_WRITE_SORTED_NETCDF
               Call get_word( record, word ) ! Check if the user wants the "amber-like/32-bit" format
               If ( word( 1:5 ) == 'amber' .or. word( 1:5 ) == '32bit' ) Then
                  ! Use 32-bit quantities in output for real numbers
                  If (comm%idnode == 0) &
-                 Write(nrite,"(/,1x,'I/O write method: parallel by using netCDF in the amber-like/32-bit format')" )
+                 Call info('I/O write method: parallel by using netCDF in the amber-like/32-bit format',.true.)
                  Call io_nc_set_real_precision( Precision( 1.0 ), Range( 1.0 ), err_r )
               Else
                  ! Use 64-bit quantities in output for real numbers
-                 If (comm%idnode == 0) Write(nrite,"(/,1x,'I/O write method: parallel by using netCDF in 64-bit format')" )
+                 Call info('I/O write method: parallel by using netCDF in 64-bit format',.true.)
                  Call io_nc_set_real_precision( Precision( 1.0d0 ), Range( 1.0d0 ), err_r )
                  record1=' '
                  record1=word(1:Len_Trim(word)+1) // record ! back up
@@ -5063,10 +5046,11 @@ Subroutine scan_control_io(comm)
               End If
            Else If ( word( 1:6 ) == 'master' ) Then
               io_write = IO_WRITE_SORTED_MASTER
-              If (comm%idnode == 0) Write(nrite,"(/,1x,'I/O write method: serial by using a single master process')" )
+              Call info('I/O write method: serial by using a single master process',.true.)
            Else
               Call strip_blanks(record)
-               If (comm%idnode == 0) Write(nrite,"(/,/,4a)") 'io ',word1(1:Len_Trim(word1)+1),word(1:Len_Trim(word)+1),record
+              Write(message,'(4a)') 'io ',word1(1:Len_Trim(word1)+1),word(1:Len_Trim(word)+1),record
+              Call info(message,.true.)
               Call error(3)
            End If
 
@@ -5074,7 +5058,7 @@ Subroutine scan_control_io(comm)
 
            Call get_word( record, word )
            If      ( word( 1:6 ) == 'unsort' ) Then
-              If (comm%idnode == 0) Write(nrite,"(1x,'I/O write type: data sorting off')")
+              Call info('I/O write type: data sorting off',.true.)
               Select Case( io_write )
               Case( IO_WRITE_SORTED_MPIIO  )
                  io_write = IO_WRITE_UNSORTED_MPIIO
@@ -5085,12 +5069,12 @@ Subroutine scan_control_io(comm)
               End Select
            Else
               If ( word( 1:6 ) == 'sorted' ) Then
-                 If (comm%idnode == 0) Write(nrite,"(1x,'I/O write type: data sorting on')")
+                 Call info('I/O write type: data sorting on',.true.)
               Else
                  record1=' '
                  record1=word(1:Len_Trim(word)+1) // record ! back up
                  record=record1
-                 If (comm%idnode == 0) Write(nrite,"(1x,'I/O write type: data sorting on (assumed)')")
+                 Call info('I/O write type: data sorting on (assumed)',.true.)
               End If
            End If
 
@@ -5113,7 +5097,8 @@ Subroutine scan_control_io(comm)
                  Do While ( Mod( comm%mxnode, itmp ) /= 0 )
                     itmp = itmp - 1
                  End Do
-                 If (comm%idnode == 0) Write(nrite,"(1x,'I/O writers (assumed) ',9x,i10)") itmp
+                 Write(message,'(a,i10)') 'I/O writers (assumed) ',itmp
+                 Call info(message,.true.)
               Else
                  If (itmp > comm%mxnode) Then
                     tmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
@@ -5121,12 +5106,14 @@ Subroutine scan_control_io(comm)
                     Do While ( Mod( comm%mxnode, itmp ) /= 0 )
                        itmp = itmp - 1
                     End Do
-                    If (comm%idnode == 0) Write(nrite,"(1x,'I/O writers (enforced)',9x,i10)") itmp
+                    Write(message,'(a,i10)') 'I/O writers (enforced) ',itmp
+                    Call info(message,.true.)
                  Else
                     Do While ( Mod( comm%mxnode, itmp ) /= 0 )
                        itmp = itmp - 1
                     End Do
-                    If (comm%idnode == 0) Write(nrite,"(1x,'I/O writers set to    ',9x,i10)") itmp
+                    Write(message,'(a,i10)') 'I/O writers set to ',itmp
+                    Call info(message,.true.)
                  End If
               End If
 
@@ -5142,28 +5129,24 @@ Subroutine scan_control_io(comm)
               itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
               If (itmp == 0) Then
                  Call io_get_parameters( user_batch_size_write = itmp )
-                 If (comm%idnode == 0) Write(nrite,"(1x,'I/O write batch size (assumed)',1x,i10)") itmp
+                 Write(message,'(a,i10)') 'I/O write batch size (assumed) ',itmp
+                 Call info(message,.true.)
               Else
                  itmp = Min( itmp, MAX_BATCH_SIZE )
                  Call io_set_parameters( user_batch_size_write = itmp )
-                 If (comm%idnode == 0) Write(nrite,"(1x,'I/O write batch size set to   ',1x,i10)") itmp
+                 Write(message,'(a,i10)') 'I/O write batch size set to ',itmp
+                 Call info(message,.true.)
               End If
-
-
            Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. io_write == IO_WRITE_SORTED_MASTER) Then
-
-              If (comm%idnode == 0) Write(nrite,"(1x,'I/O writers (enforced)',9x,i10)") 1
-
+              Write(message,'(a,i10)') 'I/O writers (enforced) ',1
+              Call info(message,.true.)
            Else
-
               tmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
               itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
-              If (comm%idnode == 0) Write(nrite,"(1x,'I/O writers (enforced)',9x,i10)") itmp
-
+              Write(message,'(a,i10)') 'I/O writers (enforced) ',itmp
+              Call info(message,.true.)
 ! the number of writers is now ready to set
-
               Call io_set_parameters( user_n_io_procs_write = itmp )
-
            End If
 
 ! get write buffer size
@@ -5174,11 +5157,13 @@ Subroutine scan_control_io(comm)
            itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
            If (itmp == 0) Then
               Call io_get_parameters( user_buffer_size_write = itmp )
-              If (comm%idnode == 0) Write(nrite,"(1x,'I/O write buffer size (assumed)',i10)") itmp
+              Write(message,'(a,i10)') 'I/O write buffer size (assumed) ',itmp
+              Call info(message,.true.)
            Else
               itmp = Min( Max( itmp,100 ),Min( itmp,MAX_BUFFER_SIZE ))
               Call io_set_parameters( user_buffer_size_write = itmp )
-              If (comm%idnode == 0) Write(nrite,"(1x,'I/O write buffer size set to   ',i10)") itmp
+              Write(message,'(a,i10)') 'I/O write buffer size set to ',itmp
+              Call info(message,.true.)
            End If
 
 ! switch error checking flag for writing
@@ -5187,9 +5172,9 @@ Subroutine scan_control_io(comm)
               Call get_word( record, word )
               l_tmp = ( word( 1:1 ) == 'Y' .or. word( 1:1 ) == 'y' )
               If (.not.l_tmp) Then
-                 If (comm%idnode == 0) Write(nrite,"(1x,'I/O parallel write error checking off')")
+                 Call info('I/O parallel write error checking off',.true.)
               Else
-                 If (comm%idnode == 0) Write(nrite,"(1x,'I/O parallel write error checking on')")
+                 Call info('I/O parallel write error checking on',.true.)
               End If
               Call io_set_parameters( user_error_check = l_tmp )
            End If
@@ -5198,61 +5183,40 @@ Subroutine scan_control_io(comm)
           (word(1:5) == 'field') .or. (word(1:7) == 'statis') .or. (word(1:7) == 'history') &
           .or. (word(1:7) == 'historf') .or. (word(1:6) == 'revive') .or. &
           (word(1:6) == 'revcon') .or. (word(1:6) == 'revold')) Then
+
           If (word(1:6) == 'output') Then
-
-            If (comm%idnode == 0) Write(nrite,"(/,1a)")" OUTPUT file is "//Trim(output)
-
+            Call info('OUTPUT file is '//Trim(output),.true.)
           Else If (word(1:6) == 'config') Then
-
-            If (comm%idnode == 0) Write(nrite,"(1a)")" CONFIG file is "//Trim(config)
-
+            Call info('CONFIG file is '//Trim(config),.true.)
           Else If (word(1:5) == 'field') Then
-
-            If (comm%idnode == 0) Write(nrite,"(1a)")" FIELD file is "//Trim(field)
-
+            Call info('FIELD file is '//Trim(field),.true.)
           Else If (word(1:6) == 'statis') Then
-
-            If (comm%idnode == 0) Write(nrite,"(1a)")" STATIS file is "//Trim(statis)
-
+            Call info('STATIS file is '//Trim(statis),.true.)
           Else If (word(1:7) == 'history') Then
-
-            If (comm%idnode == 0) Write(nrite,"(1a)")" HISTORY file is "//Trim(history)
-
+            Call info('HISTORY file is '//Trim(history),.true.)
           Else If (word(1:7) == 'historf') Then
-
-            If (comm%idnode == 0) Write(nrite,"(1a)")" HISTORF file is "//Trim(historf)
-
+            Call info('HISTORF file is '//Trim(historf),.true.)
           Else If (word(1:6) == 'revive') Then
-
-            If (comm%idnode == 0) Write(nrite,"(1a)")" REVIVE file is "//Trim(revive)
-
+            Call info('REVIVE file is '//Trim(revive),.true.)
           Else If (word(1:6) == 'revcon') Then
-
-            If (comm%idnode == 0) Write(nrite,"(1a)")" REVCON file is "//Trim(revcon)
-
+            Call info('REVCON file is '//Trim(revcon),.true.)
           Else If (word(1:6) == 'revold') Then
-
-            If (comm%idnode == 0) Write(nrite,"(1a,/)")" REVOLD file is "//Trim(revold)
-
+            Call info('REVOLD file is '//Trim(revold),.true.)
           End If
 ! close control file
 
         Else
-
            Call strip_blanks(record)
-           If (comm%idnode == 0) Write(nrite,"(/,/,2a)") word(1:Len_Trim(word)+1),record
+           Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+           Call info(message,.true.)
            Call error(3)
-
         End If
 
 ! read finish
 
      Else If (word(1:6) == 'finish') Then
-
         carry=.false.
-
      End If
-
   End Do
 
   If (comm%idnode == 0) Close(Unit=nread)
@@ -5266,7 +5230,8 @@ Subroutine scan_control_io(comm)
 ! read method
 
      Call io_set_parameters( user_method_read = IO_READ_MPIIO ) ; io_read = IO_READ_MPIIO
-     If (comm%idnode == 0) Write(nrite,"(/,1x,'I/O read method: parallel by using MPI-I/O (assumed)')")
+     Call info('',.true.)
+     Call info('I/O read method: parallel by using MPI-I/O (assumed)',.true.)
 
 ! number of readers
 
@@ -5276,23 +5241,26 @@ Subroutine scan_control_io(comm)
         itmp = itmp - 1
      End Do
      Call io_set_parameters( user_n_io_procs_read = itmp )
-     If (comm%idnode == 0) Write(nrite,"(1x,'I/O readers (assumed) ',9x,i10)") itmp
+     Write(message,'(a,i10)') 'I/O readers (assumed) ',itmp
+     Call info(message,.true.)
 
 ! read batch size
 
      Call io_get_parameters( user_batch_size_read = itmp )
-     If (comm%idnode == 0) Write(nrite,"(1x,'I/O read batch size (assumed)',2x,i10)") itmp
+     Write(message,'(a,i10)') 'I/O read batch size (assumed) ',itmp
+     Call info(message,.true.)
 
 ! read buffer size
 
      Call io_get_parameters( user_buffer_size_read = itmp )
-     If (comm%idnode == 0) Write(nrite,"(1x,'I/O read buffer size (assumed)',1x,i10)") itmp
+     Write(message,'(a,i10)') 'I/O read buffer size (assumed) ',itmp
+     Call info(message,.true.)
 
 ! error checking flag for reading
 
      If (io_read /= IO_READ_MASTER) Then
         Call io_set_parameters( user_error_check = .false. )
-        If (comm%idnode == 0) Write(nrite,"(1x,'I/O parallel read error checking off (assumed)')")
+        Call info('I/O parallel read error checking off (assumed)',.true.)
      End If
 
   End If
@@ -5302,11 +5270,12 @@ Subroutine scan_control_io(comm)
 ! write method
 
      Call io_set_parameters( user_method_write = IO_WRITE_SORTED_MPIIO ) ; io_write = IO_WRITE_SORTED_MPIIO
-     If (comm%idnode == 0) Write(nrite,"(/,1x,'I/O write method: parallel by using MPI-I/O (assumed)')")
+     call info('',.true.)
+     Call info('I/O write method: parallel by using MPI-I/O (assumed)',.true.)
 
 ! write type
 
-     If (comm%idnode == 0) Write(nrite, "(1x,'I/O write type: data sorting on (assumed)')")
+     Call info('I/O write type: data sorting on (assumed)',.true.)
 
 ! number of writers
 
@@ -5316,23 +5285,26 @@ Subroutine scan_control_io(comm)
         itmp = itmp - 1
      End Do
      Call io_set_parameters( user_n_io_procs_write = itmp )
-     If (comm%idnode == 0) Write(nrite,"(1x,'I/O writers (assumed) ',9x,i10)") itmp
+     Write(message,'(a,i10)') 'I/O writers (assumed) ',itmp
+     Call info(message,.true.)
 
 ! batch size
 
      Call io_get_parameters( user_batch_size_write = itmp )
-     If (comm%idnode == 0) Write(nrite,"(1x,'I/O write batch size (assumed)',1x,i10)") itmp
+     Write(message,'(a,i10)') 'I/O write batch size (assumed) ',itmp
+     Call info(message,.true.)
 
 ! write buffer size
 
      Call io_get_parameters( user_buffer_size_write = itmp )
-     If (comm%idnode == 0) Write(nrite,"(1x,'I/O write buffer size (assumed)',i10)") itmp
+     Write(message,'(a,i10)') 'I/O write buffer size (assumed) ',itmp
+     Call info(message,.true.)
 
 ! error checking flag for writing
 
      If (io_write /= IO_WRITE_UNSORTED_MASTER .and. io_write /= IO_WRITE_SORTED_MASTER) Then
         Call io_set_parameters( user_error_check = .false. )
-        If (comm%idnode == 0) Write(nrite,"(1x,'I/O parallel write error checking off (assumed)')")
+        Call info('I/O parallel write error checking off (assumed)',.true.)
      End If
 
   End If

@@ -11,7 +11,7 @@ Module rigid_bodies
   Use kinds,           Only : wp,li
   Use comms,           Only : comms_type,gsum,gmin,gmax,gsync,gcheck
   Use setup,           Only : mxtmls,mxtrgd,mxrgd,mxlrgd,mxfrgd,mxlshp,mxproc,mxatdm, &
-                              nrite,mxatms,zero_plus
+                              mxatms,zero_plus
   Use site
   Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz, &
                               ltg,lsite,lfrzn,fxx,fyy,fzz,nfree,lstfre,getcom
@@ -688,7 +688,7 @@ Contains
     Integer,           Allocatable :: allrgd(:),fstrgd(:),lstsit(:)
     Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
     Real( Kind = wp ), Allocatable :: buffer(:)
-    Character ( Len = 256 )        :: message
+    Character ( Len = 256 )        :: message,messages(2)
 
     fail = 0 ; ntmp = mxlrgd*Max(mxrgd,mxtrgd)
     Allocate (allrgd(1:mxtrgd),fstrgd(1:mxrgd),      Stat = fail(1))
@@ -1306,18 +1306,26 @@ Contains
   ! summarise results
 
     If (comm%idnode==0 .and. l_print) Then
-       Write(nrite,"('summary of rigid body set up')")
+       Call info('summary of rigid body set up',.true.)
 
        nrigid=0
        Do itmols=1,ntpmls
-          Write(nrite,"(/,2x,'in molecule',i6)") itmols
+          Write(message,'(2x,a,i6)') 'in molecule',itmols
+          Call info(message,.true.)
 
-          If (numrgd(itmols) == 0) Write(nrite,"(/,2x,'no rigid bodies specified')")
+          If (numrgd(itmols) == 0) Then
+            Write(message,'(2x,a)') 'no rigid bodies specified'
+            Call info(message,.true.)
+          End If
 
           Do i=1,numrgd(itmols)
              If (Mod(nrigid,5) == 0) Then
-   Write(nrite,"(/,1x,' type :: members :: frozen status :: unfrozen mass :: translational DoF :: rotational DoF')")
-   Write(nrite,"(  1x,'               rotational inertia:        x                   y                   z      ')")
+               Write(messages(1),'(2x,a)') &
+                 'type :: members :: frozen status :: unfrozen mass :: ' &
+                 //'translational DoF :: rotational DoF'
+               Write(messages(2),'(4x,a)') &
+                 'rotational inertia:        x                   y                   z'
+               Call info(messages,2,.true.)
              End If
              nrigid=nrigid+1
 
@@ -1348,18 +1356,27 @@ Contains
                 rotrgd=0
              End If
 
-   Write(nrite,"(/,i5,2x,i6,9x,i6,9x,f13.6,8x,i6,14x,i6)") nrigid,lrgd,ifrz,rgdwgt(0,nrigid),trargd,rotrgd
-   Write(nrite,"(30x,3f20.10)") rgdrix(1,nrigid),rgdriy(1,nrigid),rgdriz(1,nrigid)
+             Write(messages(1),'(i5,2x,i6,9x,i6,9x,f13.6,8x,i6,14x,i6)') &
+               nrigid,lrgd,ifrz,rgdwgt(0,nrigid),trargd,rotrgd
+             Write(messages(2),'(18x,3f20.10)') &
+               rgdrix(1,nrigid),rgdriy(1,nrigid),rgdriz(1,nrigid)
+             Call info(messages,2,.true.)
              If (lrgd > ifrz) Then
-   Write(nrite,"(  1x,'         member  ::   coordinates:        x                   y                   z      ')")
+               Write(message,'(6x,a)') &
+                 'member  ::   coordinates:        x                   y                   z'
+               Call info(message,.true.)
                 Do jrgd=1,lrgd
-   Write(nrite,"(7x,i6,17x,3f20.10)") jrgd,rgdx(jrgd,nrigid),rgdy(jrgd,nrigid),rgdz(jrgd,nrigid)
+                  Write(message,'(3x,i6,17x,3f20.10)') &
+                    jrgd,rgdx(jrgd,nrigid),rgdy(jrgd,nrigid),rgdz(jrgd,nrigid)
+                  Call info(message,.true.)
                 End Do
              End If
           End Do
        End Do
     End If
-    If (comm%idnode == 0 .and. l_print) Write(nrite,Fmt=*)
+    If (l_print) Then
+      Call info('',.true.)
+    End If
 
   ! equalise sites DoF due to participating in a good RB (not fully frozen)
 
@@ -2137,10 +2154,13 @@ Contains
        Do i=0,comm%mxnode-1
           If (comm%idnode == i) Then
              Do irgd=1,ntrgd
-                If (lunsafe(irgd)) Write(nrite,'(/,1x,a,2(i10,a))')        &
-                   '*** warning - global unit number', listrgd(0,irgd), &
-                   ' , with a head particle number', listrgd(1,irgd),   &
-                   ' contributes towards next error !!! ***'
+                If (lunsafe(irgd)) Then
+                  Write(message,'(a,2(i10,a))') &
+                    'global unit number', listrgd(0,irgd), &
+                    ' , with a head particle number', listrgd(1,irgd), &
+                    ' contributes towards next error'
+                  Call warning(message)
+                End If
              End Do
           End If
           Call gsync(comm)
@@ -2219,9 +2239,12 @@ Contains
              d=Sqrt((gxx(krgd)-gxx(nrgd))**2+(gyy(krgd)-gyy(nrgd))**2+(gzz(krgd)-gzz(nrgd))**2)
              width=Max(width,d)
 
-             If (d > rcut) Write(nrite, Fmt='(1x,a,4i5,2f8.3)')  &
-                'comm%idnode, RB type, members(1,2), width > cutoff', &
-                comm%idnode,rgdtyp,jrgd,mrgd,width,rcut
+             If (d > rcut) Then
+               Write(message,'(a,3i5,2f8.3)') &
+                 'RB type, members(1,2), width > cutoff', &
+                 rgdtyp,jrgd,mrgd,width,rcut
+               Call info(message)
+             End If
           End Do
        End Do
     End Do

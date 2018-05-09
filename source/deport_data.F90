@@ -1189,7 +1189,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
                  Call tag_legend(safe1,newatm,jconst,legcon,mxfcon)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many constraint units on node: ", comm%idnode, " !!! ***"
+                 Call warning('too many constraint units')
               End If
            Else
               Call tag_legend(safe1,newatm,kconst,legcon,mxfcon)
@@ -1245,7 +1245,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
                  Call tag_legend(safe1,newatm,jpmf,legpmf,mxfpmf)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many PMF units on node: ", comm%idnode, " !!! ***"
+                 Call warning('too many PMF units')
               End If
            Else
               Call tag_legend(safe1,newatm,kpmf,legpmf,mxfpmf)
@@ -1375,7 +1375,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
                  kmove=kmove+3
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many rigid body units on node: ", comm%idnode, " !!! ***"
+                 Call warning('too many rigid body units on node')
               End If
            Else
               If (lrgd(2) == 0) Then  ! Unduplication: Details have already been sent -
@@ -1419,7 +1419,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
                  Call tag_legend(safe1,newatm,jteths,legtet,mxftet)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many tether units on node: ", comm%idnode, " !!! ***"
+                 Call warning('too many tether units')
               End If
            Else
               Call tag_legend(safe1,newatm,kteths,legtet,mxftet)
@@ -1460,7 +1460,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
                  Call tag_legend(safe1,newatm,jbonds,legbnd,mxfbnd)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many bond units on node: ", comm%idnode, " !!! ***"
+                 Call warning('too many bond units')
               End If
            Else
               Call tag_legend(safe1,newatm,kbonds,legbnd,mxfbnd)
@@ -1504,7 +1504,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
                  Call tag_legend(safe1,newatm,jangle,legang,mxfang)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many angle units on node: ", comm%idnode, " !!! ***"
+                 Call warning('too many angle units')
               End If
            Else
               Call tag_legend(safe1,newatm,kangle,legang,mxfang)
@@ -1561,7 +1561,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
                  Call tag_legend(safe1,newatm,jdihed,legdih,mxfdih)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many dihedral units on node: ", comm%idnode, " !!! ***"
+                 Call warning('too many dihedral units')
               End If
            Else
               Call tag_legend(safe1,newatm,kdihed,legdih,mxfdih)
@@ -1608,7 +1608,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
                  Call tag_legend(safe1,newatm,jinver,leginv,mxfinv)
               Else
                  safe=.false.
-                 Write(nrite,'(/,1x,a,i0,a)') "*** warning - too many inversion units on node: ", comm%idnode, " !!! ***"
+                 Call warning('too many inversion units')
               End If
            Else
               Call tag_legend(safe1,newatm,kinver,leginv,mxfinv)
@@ -2549,6 +2549,8 @@ Subroutine relocate_particles       &
   Integer           :: i,nlimit,ipx,ipy,ipz,itmp(1:9),jtmp(1:9)
   Real( Kind = wp ) :: big(1:3),det,celprp(1:10),rcell(1:9),x,y,z,tmp
 
+  Character( Len = 256 ) :: message
+
 ! Define cut
 
   cut=rlnk+1.0e-6_wp
@@ -2734,9 +2736,10 @@ Subroutine relocate_particles       &
               tmp=Max(tmp,1.0_wp+Real(itmp(i),wp)/Real(Max(1,jtmp(i)),wp))
            End Do
 
-           If (comm%idnode == 0) Write(nrite,'(1x,a,i0,2f5.2)')                                 &
-              '*** warning - estimated densvar value for passing this stage safely is : ', &
+           Write(message,'(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
               Nint((dvar*tmp-1.0_wp)*100.0_wp+0.5_wp)
+           Call warning(message,.true.)
+
         End If
 
         If (.not.safe(1)) Call error( 59)

@@ -15,7 +15,7 @@ Module nst_nose_hoover
   Use rigid_bodies
   Use numerics,        Only : dcell, mat_mul
   Use nvt_nose_hoover, Only : nvt_h0_scl, nvt_h1_scl
-  Use errors_warnings, Only :  error
+  Use errors_warnings, Only : error,info
 
   Implicit None
 
@@ -506,8 +506,9 @@ Contains
                    hstep = 0.50_wp*tstep
                    qstep = 0.50_wp*hstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,'(a,1p,e12.4)') &
+                  'timestep decreased, new timestep is: ', tstep
+                Call info(message,.true.)
              End If
              If (mxdr < mndis) Then
                 lv_dn = .true.
@@ -525,8 +526,9 @@ Contains
                    hstep = 0.50_wp*tstep
                    qstep = 0.50_wp*hstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,'(a,1p,e12.4)') &
+                  'timestep increased, new timestep is: ', tstep
+                Call info(message,.true.)
              End If
              rstep = 1.0_wp/tstep
 
@@ -1479,8 +1481,9 @@ Contains
                    hstep = 0.50_wp*tstep
                    qstep = 0.50_wp*hstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,'(a,1p,e12.4)') &
+                  'timestep decreased, new timestep is: ', tstep
+                Call info(message,.true.)
              End If
              If (mxdr < mndis) Then
                 lv_dn = .true.
@@ -1498,8 +1501,9 @@ Contains
                    hstep = 0.50_wp*tstep
                    qstep = 0.50_wp*hstep
                 End If
-                If (comm%idnode == 0) Write(nrite,"(/,1x, &
-                   & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
+                Write(message,'(a,1p,e12.4)') &
+                  'timestep increased, new timestep is: ', tstep
+                Call info(message,.true.)
              End If
              rstep = 1.0_wp/tstep
 
